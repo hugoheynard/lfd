@@ -12,6 +12,7 @@
 | D3 | **Périmètre recettes / BOM** | Nomenclatures matières dans le scope v1 (calcul besoins farine…) ou plus tard ? | 🔴 ouvert |
 | D4 | **Accès PI Electronique / Helios** | API contractuelle **ou** export fichier (CSV/XML) ? **Principal inconnu technique** — conditionne l'adaptateur PI | 🔴 ouvert |
 | D5 | **TVA** | Taux paramétrables + distinction emporter / sur place — à confirmer avec le comptable | 🟠 à confirmer |
+| D6 | **Frontières d'agrégat (event store)** | `Product` possède-t-il ses variantes ? `Category` = agrégat séparé ? Granularité & versioning des events | 🔴 ouvert |
 
 ## Décisions fermées récemment
 
@@ -26,10 +27,18 @@
 - [x] Couche de flags TS backend partagée (`tsconfig/tsflags.backend.json`)
 - [x] Conf de test : Jest (back, ESM→CJS) + Vitest (front)
 - [x] Repo distant privé `hugoheynard/lfd`, branche `dev`
+- [x] **Prisma** + Postgres local Docker (`pnpm dev:infra`, port 5433) — infra dans `src/infra/database/`
+- [x] **Auth0 côté API** — guard global `jose`, `@Public()` / `@CurrentUser()` (ADR-12)
+- [ ] **Créer le tenant Auth0** + une *API* (son Identifier = l'audience), puis renseigner
+      `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` — sans ça, aucun jeton n'est validé
+- [ ] Table `User` interne (notre id ↔ `sub` Auth0) — découple le domaine de l'IdP
+- [ ] Câblage **front Angular** : `@auth0/auth0-angular` (PKCE) + interceptor qui porte le token
 - [ ] Lib `packages/shared-types` (DTOs partagés front/back, source de vérité TS)
 - [ ] Lib UI `packages/ui` (design system, à venir)
 
 ### Domaine & données
+- [ ] **Event store** append-only (table `events` jsonb) + projecteurs `Product`/`Category` (ADR-11)
+- [ ] Trancher **D6** (frontières d'agrégat) avant le schéma Prisma
 - [x] Slice **allergènes** GS1→INCO (galop d'essai, domaine pur + tests)
 - [ ] **Peupler les vrais codes GS1** depuis `ref.gs1.org/voc/AllergenTypeCode` (actuellement provisoires)
 - [ ] Envelopper le domaine allergènes en provider Nest (ou extraire `libs/allergen-mapping`)

@@ -38,6 +38,13 @@ production) et aux champs **`jsonb`**.
 **Raison** : migrations, relations typées, sécurité de type, meilleure DX ; ne pas réécrire une couche
 d'accès à la main.
 **Conséquences** : Prisma fonctionne avec n'importe quel Postgres → pas de lock-in hébergeur.
+- **Prisma 7** impose un **driver adapter** (l'URL seule ne suffit plus) → on utilise
+  **`@prisma/adapter-pg`** (node-postgres, TCP + pool), cohérent avec le déploiement **long-running**
+  (ADR-02) ; `adapter-neon` viserait le serverless/edge. Neon parle le protocole Postgres standard.
+- Le client est généré en **TS ESM** dans `src/infra/database/client/` (gitignoré, régénéré au
+  `postinstall`) et compilé par notre build — il passe nos flags stricts (ADR-10).
+- Les **tests backend tournent en ESM** (`ts-jest useESM` + `--experimental-vm-modules`) : le client
+  généré utilise `import.meta`, incompatible avec une transpilation CommonJS.
 
 ## ADR-05 — PostgreSQL (pas MongoDB), catalogue compris
 
@@ -95,3 +102,44 @@ transpilés en CommonJS via `tsconfig.test.json`.
 gestion explicite de l'`undefined`/hors-borne → moins de bugs silencieux. Setup éprouvé sur SH3PHERD.
 **Conséquences** : chaque futur backend `extends` cette couche ; front en **Vitest**
 (`@angular/build:unit-test` + analog).
+
+## ADR-11 — Catalogue event-sourced (event store dès le départ)
+
+**Décision** : le catalogue est **event-sourced**. Un **event store append-only** (table Postgres
+`events`, payload `jsonb` — cohérent ADR-05) est la **source de vérité**. Les tables relationnelles
+(`Product`, `ProductVariant`, `Category`…) sont des **projections reconstructibles** par **replay** des
+events.
+**Raison** : rejouer / rebâtir la base à volonté, requêtes **as-of** (état du catalogue à une date T),
+audit gratuit — et surtout **ne pas polluer le modèle** avec de la métadonnée : le « qui / quand /
+version » vit sur l'**event**, pas sur l'entité. Pattern éprouvé sur SH3PHERD (event store + as-of +
+hard-gate de reconstruction).
+**Conséquences** :
+- **Zéro `created_at` / `updated_at`** sur les entités de projection. « Créé » = premier event ;
+  « modifié » = dernier event ; l'historique complet = le log.
+- Chaque event porte `{ id, aggregate_type, aggregate_id, type, version, occurred_at, actor, payload }`.
+- Les commandes (`CreateProduct`, `RenameProduct`, `AddVariant`, `ArchiveProduct`…) émettent des events ;
+  des projecteurs alimentent les tables de lecture ; un **replay** doit reproduire l'état à l'identique
+  (hard gate).
+- **Coût assumé** : plus lourd qu'un CRUD (projecteurs, versioning d'events) — justifié par le replay,
+  l'as-of et l'audit natifs.
+**À cadrer** (sous-décisions) : **frontières d'agrégat** (`Product` possède-t-il ses variantes ?
+`Category` = agrégat séparé ?) ; granularité des events ; stratégie de **versioning / upcasting**.
+
+## ADR-12 — Authentification déléguée à Auth0, vérifiée avec `jose`
+
+**Décision** : l'authentification est **déléguée à Auth0** (OIDC). L'API valide les **access tokens
+JWT (RS256)** contre le **JWKS** du tenant via **`jose`** (pas Passport). Le guard est branché en
+**`APP_GUARD`** → API **protégée par défaut**, ouverture explicite avec `@Public()`.
+**Raison** : login / reset / MFA / social est du travail **non différenciant**. Le volume est dérisoire
+(staff interne + quelques pros B2B — les clients **B2C s'authentifient sur Shopify**, pas ici), donc
+très loin du free tier. `jose` est ESM natif (ADR-10), typé, sans le boilerplate Passport. Surtout,
+l'identité reste **hors du domaine** : l'`actor` d'un event n'est qu'un `sub` vérifié.
+**Conséquences** :
+- `AUTH0_DOMAIN` + `AUTH0_AUDIENCE` obligatoires — l'API **refuse de démarrer** sans (une auth mal
+  configurée valide des jetons contre le mauvais émetteur).
+- JWKS résolu **paresseusement** et mis en cache par `jose` (rotation des clés gérée) — aucun appel
+  réseau à l'amorçage.
+- **À faire** : table `User` interne (notre id ↔ `sub` Auth0), pour que domaine et events ne
+  référencent **jamais** l'id du fournisseur → changer d'IdP reste indolore.
+- Le **domaine de login custom est payant** : la page de login restera sur `*.auth0.com` (sans
+  importance pour un back-office ; à revoir si un portail B2B brandé apparaît).

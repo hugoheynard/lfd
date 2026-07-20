@@ -12,6 +12,7 @@ plan de production du labo.
 
 | Doc | Contenu |
 |---|---|
+| [`ledger.md`](./ledger.md) | **Journal de bord** — chaque ajout, résumé **PM** + **Tech**. Commence ici pour savoir où on en est |
 | [`adr.md`](./adr.md) | Décisions d'architecture figées (format ADR) — le **pourquoi** technique |
 | [`todo.md`](./todo.md) | Décisions ouvertes + backlog — ce qui reste à trancher / faire |
 | [`data-model/`](./data-model/) | Le modèle de données détaillé, par couche |
@@ -20,14 +21,30 @@ plan de production du labo.
 
 Trois rythmes de vie différents, à ne jamais confondre :
 
+Le **produit** (identité) au centre ; les autres concerns sont des **couches** posées autour, chacune
+son doc et son rythme de vie. Substrat transverse : l'**event store** (ADR-11).
+
 | Couche | Doc | Rôle |
 |---|---|---|
-| **Catalogue (socle)** 🔒 | [`data-model/02-catalogue-items.md`](./data-model/02-catalogue-items.md) | **Figé** — `Product` / `ProductVariant` / `Category`, le **quoi** |
-| **Catalogue (premium)** | [`data-model/01-produit.md`](./data-model/01-produit.md) | Enrichissement éditorial — récit, provenance, labels, médias |
-| **Prix** | `data-model/02-pricing-canaux.md` *(à porter)* | Le **combien** — par canal, jamais un attribut produit |
-| **Disponibilité** | `data-model/03-disponibilite-production.md` *(à porter)* | Le **quand / combien produire** — capacité, pas stock |
-| **Publication** | `data-model/04-publication-versioning.md` *(à porter)* | Le **comment ça se propage** — brouillon → push, diff |
-| **Allergènes** | `data-model/05-allergenes-gs1-inco.md` *(à porter)* | Stockage GS1 → projection INCO ([code en place](../../apps/chevallot-PIM-backend/src/allergens)) |
+| 🧩 **Identité (socle)** | [`data-model/02-catalogue-items.md`](./data-model/02-catalogue-items.md) | Le **quoi** — `Product` / `ProductVariant` / `Category` |
+| 🥗 **Réglementaire** | [`data-model/03-nutrition.md`](./data-model/03-nutrition.md) | Nutrition + **allergènes** (GS1 → INCO, [code](../../apps/chevallot-PIM-backend/src/allergens)) |
+| ✍️ **Éditorial** | [`data-model/01-produit.md`](./data-model/01-produit.md) | Récit, provenance, labels, médias, SEO |
+| 💶 **Prix** | *à porter* | Le **combien** — par canal + TVA |
+| 📅 **Disponibilité** | *à porter* | Le **quand** — capacité, créneaux, cut-off (pas un stock) |
+| 📡 **Publication** | *à porter* | Le **comment ça se propage** — brouillon → push, diff, ids externes |
+| 🗄️ **Event store** *(transverse)* | [`adr.md` ADR-11](./adr.md#adr-11--catalogue-event-sourced-event-store-dès-le-départ) | Source de vérité, historique, replay |
+
+## Démarrer en local
+
+```bash
+pnpm install                       # deps (génère le client Prisma au postinstall)
+pnpm dev:infra                     # Postgres 17 dans Docker (port hôte 5433)
+cp apps/chevallot-PIM-backend/.env.example apps/chevallot-PIM-backend/.env
+pnpm chevallot-suite:dev:watch     # front (4200) + back (3100) en watch
+```
+
+`pnpm dev:infra:down` arrête la base (données gardées) · `dev:infra:nuke` détruit le volume.
+En prod la même `DATABASE_URL` pointera sur **Neon** (ADR-09) — seul l'URL change.
 
 ## Stack (résumé — détail dans [`adr.md`](./adr.md))
 

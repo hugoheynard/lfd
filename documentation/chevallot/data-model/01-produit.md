@@ -34,10 +34,8 @@ les labels, les médias soignés, le SEO. On distingue trois natures de champ :
 | `category_id` | UUID | Famille de rattachement | → `Category` (alignée familles caisse PI) |
 | `has_variants` | bool | Possède des déclinaisons | Sinon variante « défaut » implicite |
 | `unit_of_sale` | enum | `piece` \| `weight_kg` \| `lot` \| `portion` | |
-| `is_active` | bool | Vivant dans le catalogue | `false` = retiré sans suppression |
-| `default_tax_category` | enum | Régime TVA par défaut | Détail couche 02 |
+| `status` | enum | Cycle de vie | `active` \| `archived` — **dérivé des events** (ADR-11), pas d'audit |
 | `tags` | string[] | Étiquettes libres | `signature`, `tradition`, `noel`, `bio` |
-| `created_at`/`updated_at` | timestamp | Audit | |
 
 `kind` (spécifique boulangerie) : **`daily`** (frais du jour, dispo = capacité de production) ·
 **`made_to_order`** (sur commande, dispo = date retrait + délai + cut-off) · **`resale`** (revendu tel
