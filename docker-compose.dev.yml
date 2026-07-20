@@ -1,0 +1,37 @@
+# Infrastructure de dev locale — uniquement l'état persistant dont les apps ont
+# besoin. Les apps elles-mêmes tournent sur l'hôte (`pnpm chevallot-suite:dev:watch`)
+# pour garder le HMR rapide ; ce fichier ne porte que l'état externe.
+#
+# Usage :
+#   pnpm dev:infra              # démarre (docker compose up -d)
+#   pnpm dev:infra:down         # arrête, garde les données
+#   pnpm dev:infra:nuke         # arrête ET détruit le volume (repart de zéro)
+#
+# Miroir prod : Neon (Postgres managé, ADR-09). Même contrat de connexion via
+# `DATABASE_URL` — seule l'URL change. En dev :
+#   DATABASE_URL="postgresql://chevallot:chevallot@localhost:5433/chevallot_pim?schema=public"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: lfd-dev-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chevallot
+      POSTGRES_PASSWORD: chevallot
+      POSTGRES_DB: chevallot_pim
+    # Port hôte 5433 (et non 5432) : 5432 est déjà occupé sur cette machine.
+    # Même logique que l'API sur 3100 pour éviter le 3000 de SH3PHERD.
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chevallot -d chevallot_pim"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  postgres-data:
