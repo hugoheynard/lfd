@@ -1,0 +1,69 @@
+# ─────────────────────────────────────────────────────────────
+# LaFolieDouce monorepo — .gitignore aligné sur SH3PHERD.
+# Objectif : zéro fuite. Secrets, caches et builds ne sont jamais suivis.
+# Les noms « nus » (sans slash de tête) matchent à toute profondeur
+# (apps/* et packages/* inclus).
+# ─────────────────────────────────────────────────────────────
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Dépendances
+node_modules/
+
+# Builds locaux (toutes apps + packages)
+dist/
+out-tsc/
+build/
+tmp/
+
+# Cache TypeScript
+*.tsbuildinfo
+
+# Cache Angular
+.angular/
+
+# Caches d'outillage (Turbo / Nx / Lerna / ESLint)
+.turbo/
+.nx/
+.cache/
+.eslintcache
+lerna-debug.log
+
+# IDE / Editor config
+.idea/
+.vscode/*
+
+# Environnements — NE JAMAIS committer de secrets.
+# … mais les templates d'onboarding (sans secrets) sont versionnés.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Tests / couverture
+coverage/
+
+# Durcissement anti-fuite : artefacts d'auth / secrets / dumps
+*.cookies
+*.token
+*.session
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+*.local
+
+# Rapports générés (lighthouse, storybook…)
+*.report.html
+storybook-static/
+*storybook.log

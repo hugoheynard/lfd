@@ -1,0 +1,21 @@
+{
+  "name": "lafoliedouce-monorepo",
+  "version": "1.0.0",
+  "author": "Hugo Heynard",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.12.1",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.0",
+    "typescript": "~5.9.3"
+  }
+}

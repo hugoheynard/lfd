@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    // --- Strictness ---
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "useUnknownInCatchVariables": true,
+    "allowUnreachableCode": false,
+    "forceConsistentCasingInFileNames": true,
+
+    // --- Interop & modules ---
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // --- Build ergonomics ---
+    "skipLibCheck": true,
+    "incremental": true,
+    "sourceMap": true
+  }
+}
