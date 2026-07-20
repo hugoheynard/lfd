@@ -1,9 +1,9 @@
 /** @type {import('jest').Config} */
-// Mirrors the proven SH3PHERD backend jest setup: NodeNext source, tests
-// transpiled to CommonJS via tsconfig.test.json. The `.js` moduleNameMapper
-// strips the extension NodeNext relative imports carry, so ESM-style imports
-// resolve under the CJS test runtime. No MongoMemoryServer globalSetup here —
-// added if/when the backend grows an E2E DB harness.
+// Le backend est ESM (ADR-10) et le client Prisma généré l'est aussi (il utilise
+// `import.meta`). Les tests tournent donc en **ESM** : ts-jest en `useESM`,
+// `.ts` traités comme modules ES, et `--experimental-vm-modules` côté Node
+// (voir le script `test`). Le moduleNameMapper retire l'extension `.js` que
+// portent les imports relatifs NodeNext pour que Jest résolve la source TS.
 module.exports = {
   testEnvironment: 'node',
   rootDir: './',
@@ -12,10 +12,13 @@ module.exports = {
   silent: true,
   testMatch: ['**/?(*.)+(spec|test|e2e-spec).ts'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  setupFiles: ['<rootDir>/test/setup-env.ts'],
+  extensionsToTreatAsEsm: ['.ts'],
   transform: {
     '^.+\\.ts$': [
       'ts-jest',
       {
+        useESM: true,
         tsconfig: './tsconfig.test.json',
       },
     ],
