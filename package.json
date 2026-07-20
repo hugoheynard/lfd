@@ -9,6 +9,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "chevallot-suite:dev:watch": "turbo run dev --filter=chevallot-pim-frontend --filter=chevallot-pim-backend",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "clean": "turbo run clean"

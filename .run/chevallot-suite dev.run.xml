@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="chevallot-suite dev" type="CompoundRunConfigurationType">
+    <toRun name="chevallot-PIM-backend &gt; dev" type="js.build_tools.npm" />
+    <toRun name="chevallot-PIM-frontend &gt; dev" type="js.build_tools.npm" />
+    <method v="2" />
+  </configuration>
+</component>
