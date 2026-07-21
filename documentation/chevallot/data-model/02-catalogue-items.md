@@ -164,7 +164,7 @@ Table de liaison `product_collection` : `(product_id, collection_id, position)`,
 |---|---|
 | **`LocalizedText`** 🌐 | `jsonb` `{ "fr": string, "en"?: string }` — `fr` obligatoire, fallback → `fr` |
 | **Identifiants** | UUID **v7**, générés **applicativement** par la commande (R1). Jamais de séquence, jamais de `default gen_random_uuid()` |
-| **`sku`** | **Espace de noms unique** produits + déclinaisons confondus. Modifiable par un verbe explicite ; les canaux bindent sur l'**`id`**, jamais sur le `sku` |
+| **`sku`** | **Value object** `Sku` (constructeur unique, normalisé majuscules) — espace de noms **global** produits + déclinaisons confondus. Modifiable par un verbe explicite ; les canaux bindent sur l'**`id`**, jamais sur le `sku` ; **rien ne le parse**. Détail : [`06-identifiants-et-sku.md`](./06-identifiants-et-sku.md) |
 | **Cycle de vie** | `status` / `is_discontinued` / `is_archived` sont des **conséquences de verbes** ; **jamais** de `DELETE` physique (R3) |
 | **Colonnes système** | `created_at` / `updated_at` / `updated_by` existent, **hors-domaine** : jamais lues par une règle métier, jamais exposées en DTO (cf. [`00`](./00-langage-et-comportement.md#6--métadonnée--la-position-honnête)) |
 | **`attributes` (jsonb)** | Clés **namespacées** (`labo.temperature_service`). **Jamais** de donnée réglementée. **Règle de promotion** : dès qu'un attribut est lu par un adaptateur canal **ou** utilisé par ≥2 familles, il devient une **colonne** — sinon le jsonb redevient le fourre-tout que ce découpage cherche à éviter |
@@ -193,6 +193,7 @@ Table de liaison `product_collection` : `(product_id, collection_id, position)`,
 | **🥗 Réglementaire** | allergènes GS1 → INCO, nutrition | [`03-nutrition.md`](./03-nutrition.md) |
 | **✍️ Éditorial** | descriptions, récit, provenance, labels, médias, SEO | [`01-produit.md`](./01-produit.md) |
 | **📡 Canaux** | bindings, overrides, état de synchro | [`04-composition-et-canaux.md`](./04-composition-et-canaux.md) |
+| **🔖 Identifiants** | `Sku` value object, SKU par défaut, références canal | [`06-identifiants-et-sku.md`](./06-identifiants-et-sku.md) |
 | **💶 Prix** | par canal + TVA | *à porter* |
 | **📅 Disponibilité** | capacité, créneaux, cut-off | *à porter* |
 | **⚖️ Logistique** | poids, dimensions, GTIN, GDSN | **descopé v1** |

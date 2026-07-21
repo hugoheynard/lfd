@@ -64,6 +64,13 @@
       `product_collection`, `nutrition_declaration` (PK=FK) — **débloqué**
 - [ ] Handlers de commande nommés (§3 du doc 00) + garde `PublishProduct` sans fiche réglementaire
 - [ ] **UUID v7 applicatif** (R1) — un `IdGenerator` injecté, jamais de défaut base
+- [ ] **Value object `Sku`** + générateur de SKU par défaut (port `SkuAvailability`), tests colocalisés
+      dans `__tests__/` — [ADR-16](./adr.md#adr-16--un-sku-interne-unique--les-références-canal-vivent-au-bord)
+- [ ] **Catégories d'erreurs** `DomainError` / `BusinessError` / `TechnicalError` + filtre HTTP —
+      prérequis de `SkuAlreadyUsedError` (traduction du `23505` dans l'**adaptateur de dépôt**, pas
+      dans le service)
+- [ ] Format du SKU (motif + longueurs + `normalize`) dans `packages/shared-types` — partage
+      **à la compilation**, pas un registre runtime
 - [ ] Event store append-only : **différé** (ADR-11 révisé). Déclencheur = premier besoin d'as-of réel
 - [x] Slice **allergènes** GS1→INCO (galop d'essai, domaine pur + tests)
 - [ ] **Peupler les vrais codes GS1** depuis `ref.gs1.org/voc/AllergenTypeCode` (actuellement provisoires)

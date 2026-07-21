@@ -269,3 +269,52 @@ Formulé en une ligne : **construire le spécifique, différer le générique, g
 
 **Revue** : à la réponse de **D4** et de **D1**. Ces deux réponses suffisent à confirmer ou infirmer
 cet ADR — la décision est **testable**, pas une conviction.
+
+## ADR-16 — Un SKU interne unique ; les références canal vivent au bord
+
+**Décision** : le `Sku` est **un seul identifiant, global à notre catalogue**, émis par nous, porté
+par la déclinaison (l'unité vendue) — **pas** un identifiant par canal. Il est modélisé en **value
+object** du module `catalogue`, jamais en module/entité/endpoint autonome. Ce que chaque système
+tiers appelle l'article est une **référence canal**, qui vit dans la table de binding de son
+adaptateur (ADR-13).
+
+**Raison** : *Stock Keeping Unit* désigne la référence **du commerçant** ; un SKU qui change selon
+l'interlocuteur cesse d'être le référentiel commun qu'on construit. Trois conséquences techniques
+s'ajoutent : une énumération de canaux dans le domaine violerait ADR-13 (test : *le catalogue
+compile-t-il sans le module Shopify ?*), un `GTIN/EAN-13` n'est **pas** un canal mais un identifiant
+mondial émis par GS1, et les tables `*_variant_binding` font déjà ce travail du bon côté de la
+frontière.
+
+**Unicité — trois couches, une seule garantie** :
+- **value object** → la **forme** (constructeur unique `Sku.create()`, normalisation incluse : un SKU
+  invalide ou non normalisé **ne peut pas exister en mémoire**) ;
+- **vérification en commande** → le **message clair**. Elle ne garantit rien (TOCTOU assumé et
+  documenté), elle existe pour l'ergonomie ;
+- **index unique en base** → **la** garantie. La violation `23505` est traduite en
+  `SkuAlreadyUsedError` par l'**adaptateur de dépôt** — pas en `ConflictException` dans le service :
+  ni Postgres ni HTTP ne remontent dans l'application.
+
+La normalisation en value object a un effet non évident : puisque la valeur stockée est toujours en
+majuscules, un index unique **ordinaire** suffit à garantir l'unicité insensible à la casse.
+
+**Unicité *par canal*** : garantie par un index unique sur la colonne de référence de **chaque table
+de binding** — une table **étant** un canal, l'unicité par canal est structurelle et n'exige aucun
+discriminant. Par défaut la colonne est `NULL` et l'adaptateur pousse le SKU interne ; elle n'est
+renseignée que si le canal ne peut pas l'accepter (PLU numérique).
+
+**SKU par défaut** : **signifiant** (pas séquentiel), `{FAMILLE}-{PRODUIT}[-{DÉCLINAISON}][-{N}]`,
+charset `A-Z 0-9 -`. Le signifiant l'emporte parce que le SKU sera lu à voix haute au labo et cherché
+sur un écran de caisse ; son défaut habituel (l'information se périme) est neutralisé par l'invariant
+**« rien ne parse jamais un SKU »**. Il est **proposé** à la création, **calculé une seule fois**
+(renommer un produit ne renomme pas sa référence) et **modifiable**. Collision → suffixe numérique
+lisible, jamais un hash.
+
+**Conséquences** :
+- Le `sku` reste **modifiable** par un verbe explicite ; les canaux bindent sur l'**`id`** (R1).
+- Le partage front/back du format se fait **à la compilation** via `packages/shared-types` — un
+  registre runtime contenant `RegExp` et fonctions ne traverse pas JSON, contrairement à ce
+  qu'affirmait la proposition d'origine.
+- **GTIN/EAN-13 descopé** (ADR-14) : la plupart des articles sont vendus non préemballés, les codes
+  valides s'achètent auprès de GS1, et le code-barres est un besoin de **caisse** → binding, à D4.
+- Détail : [`data-model/06-identifiants-et-sku.md`](../chevallot/data-model/06-identifiants-et-sku.md).
+  Proposition d'origine archivée (non normative) sous `data-model/_sources/`.

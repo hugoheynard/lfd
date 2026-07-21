@@ -13,6 +13,58 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ## 2026-07-21 — Jour 2
 
+### Le SKU : une seule référence, et des libellés de canal au bord
+
+**PM** — Premier sujet traité en profondeur. Une proposition de conception voulait **un SKU différent
+par canal** (un pour Shopify, un pour la caisse, un pour le code-barres). Écartée : c'est exactement
+ce qui détruirait le référentiel commun qu'on construit. **Un article, une référence** — celle que le
+boulanger prononce. Ce que chaque logiciel appelle l'article reste au niveau de ce logiciel. Et le
+système **propose désormais une référence lisible tout seul** (`PATI-TARTE-FRAISE-6P`), modifiable.
+
+**Tech** — Revue adversariale de `_sources/sku-module-nestjs-doc.md` (archivée, non normative) →
+[`06-identifiants-et-sku.md`](./data-model/06-identifiants-et-sku.md) +
+[ADR-16](./adr.md#adr-16--un-sku-interne-unique--les-références-canal-vivent-au-bord).
+
+*Erreur de catégorie* — `Sku = (variantUuid, channel, value)` avec `channel ∈ {shopify, caisse,
+ean13}` : un SKU est par définition la référence **du commerçant** ; `ean13` n'est pas un canal mais
+un identifiant **mondial** émis par GS1 ; et un enum de canaux dans le domaine **viole ADR-13** (le
+catalogue ne compilerait plus sans le module Shopify). Les tables `*_variant_binding` faisaient déjà
+ce travail du bon côté de la frontière.
+
+*Exigence « unicité par canal » satisfaite autrement, et mieux* — un index unique sur la colonne de
+référence de **chaque table de binding**. Une table **étant** un canal, l'unicité par canal devient
+structurelle, sans discriminant ni ligne de domaine à toucher pour en ajouter un. Cas nominal :
+colonne `NULL`, l'adaptateur pousse le SKU interne ; renseignée uniquement si le canal ne peut pas
+l'accepter (PLU numérique).
+
+*Le SKU n'est pas un module* — pas d'entité, pas de service, pas de `POST /skus` (API en forme de
+table, et **second chemin d'écriture** contre R2 : les verbes `CreateProduct` / `AddVariant` /
+`ChangeVariantSku` le portent déjà). C'est un **value object** à constructeur unique : un SKU invalide
+ou non normalisé ne peut pas exister en mémoire — là où la proposition validait dans un DTO Zod, donc
+seulement sur le chemin HTTP (un import CSV ou un seed l'aurait contourné).
+
+*Effet non évident de la normalisation* — la valeur stockée étant toujours en majuscules, un index
+unique **ordinaire** garantit l'unicité insensible à la casse ; pas besoin d'index fonctionnel. Avec
+la normalisation en `.transform()` Zod, `ecl-01` importé hors HTTP cohabitait avec `ECL-01`.
+
+*Unicité : trois couches, une seule garantie* — value object (forme) · vérification en commande
+(**message**, TOCTOU assumé et documenté pour que personne ne s'y fie ni ne la supprime) · index
+unique (**la** garantie). Le `23505` est traduit en `SkuAlreadyUsedError` par l'**adaptateur de
+dépôt**, pas en `ConflictException` dans le service : ni Postgres ni HTTP ne remontent dans
+l'application.
+
+*SKU par défaut* — **signifiant** plutôt que séquentiel (il sera lu à voix haute au labo et cherché
+sur un écran de caisse à 6h) ; son défaut habituel — l'information se périme — est neutralisé par
+l'invariant **« rien ne parse jamais un SKU »**. Format `{FAMILLE}-{PRODUIT}[-{DÉCLINAISON}][-{N}]`,
+charset `A-Z 0-9 -` (l'intersection sûre de Shopify, caisse, CSV, étiquettes, URL). Proposé, calculé
+**une seule fois** (renommer un produit ne renomme pas sa référence), modifiable ; collision →
+suffixe numérique lisible, jamais un hash.
+
+*Deux relevés de vigilance* — le partage front/back annoncé par la proposition était **impossible**
+(le registre contient `RegExp` et fonctions : rien ne traverse JSON) → partage **à la compilation**
+via `shared-types`, les libellés d'aide restant côté front. Et ses constantes (`16` caractères
+Shopify, `6` chiffres caisse) sont **affirmées sans source** — marquées à vérifier avant tout usage.
+
 ### Cadrage global : anti-drift, pricing, et pourquoi on construit
 
 **PM** — Prise de recul sur l'ensemble. Trois clarifications qui changent la façon de piloter le
