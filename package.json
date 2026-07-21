@@ -12,7 +12,7 @@
     "dev:infra:down": "docker compose -f docker-compose.dev.yml down",
     "dev:infra:nuke": "docker compose -f docker-compose.dev.yml down -v",
     "dev": "turbo run dev",
-    "chevallot-suite:dev:watch": "turbo run dev --filter=chevallot-pim-frontend --filter=chevallot-pim-backend",
+    "lfc-suite:dev:watch": "turbo run dev --filter=lfc-pim-frontend --filter=lfc-pim-backend",
     "lint": "turbo run lint",
     "lint:no-direct-env": "node dev-toolbox/gates/no-direct-env.mjs",
     "test": "turbo run test",

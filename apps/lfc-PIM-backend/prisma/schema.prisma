@@ -1,0 +1,272 @@
+// Schéma du socle catalogue.
+// Modèle de référence : documentation/lfc/data-model/02-catalogue-items.md
+//
+// Conventions appliquées :
+// - identifiants assignés par la COMMANDE (R1) → aucun `@default(uuid())`, jamais de séquence ;
+// - aucun DELETE physique (R3) → archivage par drapeau ;
+// - `created_at` / `updated_at` / `updated_by` sont des colonnes SYSTÈME, hors-domaine :
+//   jamais lues par une règle métier, jamais exposées en DTO (doc 00 §6) ;
+// - textes traduisibles = `Json` `{ fr, en? }` (LocalizedText, `fr` obligatoire).
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/infra/database/client"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+  runtime             = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProductKind {
+  daily
+  made_to_order
+  resale
+}
+
+enum ProductStatus {
+  draft
+  published
+  archived
+}
+
+enum SkuOwnerType {
+  product
+  variant
+}
+
+/// Registre des références — garantit l'unicité du SKU dans un espace de noms
+/// GLOBAL (produits et déclinaisons confondus, doc 06 invariant 1).
+/// Une contrainte d'unicité ne pouvant pas s'étendre à deux tables, c'est ce
+/// registre qui porte la garantie : la violation de sa clé primaire est le
+/// `23505` traduit en `SkuAlreadyUsedError` par l'adaptateur de dépôt.
+model SkuRegistry {
+  value     String       @id
+  ownerType SkuOwnerType @map("owner_type")
+  ownerId   String       @map("owner_id")
+
+  @@index([ownerId])
+  @@map("sku_registry")
+}
+
+model Category {
+  id         String     @id
+  name       Json
+  slug       Json
+  parentId   String?    @map("parent_id")
+  parent     Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children   Category[] @relation("CategoryTree")
+  position   Int        @default(0)
+  isArchived Boolean    @default(false) @map("is_archived")
+  products   Product[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@index([parentId])
+  @@map("category")
+}
+
+model Product {
+  id         String           @id
+  sku        String           @unique
+  slug       Json
+  kind       ProductKind
+  name       Json
+  categoryId String           @map("category_id")
+  category   Category         @relation(fields: [categoryId], references: [id])
+  status     ProductStatus    @default(draft)
+  attributes Json             @default("{}")
+  variants   ProductVariant[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  /// Couche éditoriale — satellite **optionnel** (PK = FK, ADR-13) : la ligne
+  /// n'existe que si quelqu'un a écrit quelque chose.
+  editorial ProductEditorial?
+  media     ProductMedia[]
+
+  /// Relation virtuelle — la clé étrangère est portée par le binding (ADR-13).
+  shopifyBinding ShopifyProductBinding?
+
+  @@index([categoryId])
+  @@map("product")
+}
+
+model ProductVariant {
+  id             String  @id
+  productId      String  @map("product_id")
+  product        Product @relation(fields: [productId], references: [id])
+  sku            String  @unique
+  name           Json
+  options        Json    @default("{}")
+  isDefault      Boolean @default(false) @map("is_default")
+  isDiscontinued Boolean @default(false) @map("is_discontinued")
+  position       Int     @default(0)
+  attributes     Json    @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  /// Fiche réglementaire — **optionnelle** (`o|`) : son absence signifie
+  /// « pas encore renseigné ». Un 1:1 obligatoire forcerait une ligne vide à la
+  /// création, donc affirmerait « aucun allergène » sans vérification. La garde
+  /// est ailleurs : pas de publication sans fiche (doc 03).
+  nutrition NutritionDeclaration?
+
+  /// Relation **virtuelle** : aucune colonne n'est ajoutée ici. La clé étrangère
+  /// physique est portée par `shopify_variant_binding` — le sens imposé par ADR-13
+  /// (le socle ne pointe jamais vers un canal). Prisma exige seulement de déclarer
+  /// l'autre extrémité.
+  shopifyBinding ShopifyVariantBinding?
+
+  @@index([productId])
+  @@map("product_variant")
+}
+
+// ---------------------------------------------------------------------------
+// Canal Shopify — tables possédées par l'ADAPTATEUR (ADR-13).
+// Non event-sourçables : ce sont des états de synchro re-dérivables, pas des
+// faits métier. Elles peuvent être perdues et reconstruites par un re-push.
+// ---------------------------------------------------------------------------
+
+enum ShopifySyncStatus {
+  never_pushed
+  up_to_date
+  drifted
+  failed
+}
+
+/// Réglages de l'intégration — ligne unique.
+/// ⚠️ Aucun secret ici : le jeton d'API vit dans l'environnement (`AppConfig`).
+model ShopifySettings {
+  id         String   @id
+  shopDomain String   @map("shop_domain")
+  apiVersion String   @map("api_version")
+  isEnabled  Boolean  @default(false) @map("is_enabled")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("shopify_settings")
+}
+
+/// État de synchro d'un **produit** — Shopify pousse un produit et ses variantes
+/// ensemble, donc l'empreinte et le statut vivent à ce niveau. Les *références*,
+/// elles, restent sur la déclinaison (R4) : ce sont deux choses différentes.
+model ShopifyProductBinding {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  shopifyProductGid String?           @map("shopify_product_gid")
+  lastPushedHash    String?           @map("last_pushed_hash")
+  lastPushedAt      DateTime?         @map("last_pushed_at")
+  syncStatus        ShopifySyncStatus @default(never_pushed) @map("sync_status")
+  lastError         String?           @map("last_error")
+
+  @@map("shopify_product_binding")
+}
+
+/// Ce que Shopify sait d'une **déclinaison** — l'unité réellement vendue (R4).
+model ShopifyVariantBinding {
+  variantId String         @id @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  /// Référence propre au canal. `NULL` = le SKU interne est poussé tel quel.
+  /// L'index unique **est** l'unicité par canal : la table étant le canal, aucun
+  /// discriminant n'est nécessaire.
+  channelReference  String? @unique @map("channel_reference")
+  shopifyVariantGid String? @map("shopify_variant_gid")
+
+  @@map("shopify_variant_binding")
+}
+
+/// Fiche réglementaire d'une **déclinaison** — c'est elle qui est mise sur le
+/// marché (doc 03). `variant_id` est PK **et** FK (*shared primary key*) : pas
+/// d'identifiant de substitution, donc deux fiches sont structurellement
+/// impossibles pour une même déclinaison.
+model NutritionDeclaration {
+  variantId String         @id @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  /// Codes GS1 canoniques. `[]` = déclaration positive « aucun allergène »,
+  /// à ne pas confondre avec l'absence de ligne (= non renseigné).
+  allergens   Json
+  mayContain  Json    @default("[]") @map("may_contain")
+  energyKcal  Float?  @map("energy_kcal")
+  carbsG      Float?  @map("carbs_g")
+  fatG        Float?  @map("fat_g")
+  proteinG    Float?  @map("protein_g")
+  glycemicIndex Float? @map("glycemic_index")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("nutrition_declaration")
+}
+
+// ---------------------------------------------------------------------------
+// Couche éditoriale (doc 01). Rythme de vie propre : change à chaque saison,
+// là où l'identité ne bouge jamais. D'où une table séparée, pas des colonnes.
+// ---------------------------------------------------------------------------
+
+enum MediaRole {
+  hero
+  gallery
+  lifestyle
+  thumbnail
+  print
+}
+
+model ProductEditorial {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  descriptionShort Json?   @map("description_short")
+  descriptionLong  Json?   @map("description_long")
+  story            Json?
+  pairing          Json?
+  brand            String?
+  seoTitle         Json?   @map("seo_title")
+  seoDescription   Json?   @map("seo_description")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("product_editorial")
+}
+
+/// Agrégat propre : un visuel a son cycle de vie (upload, CDN) et peut servir
+/// plusieurs produits. On stocke le **master** + un point focal ; les tailles
+/// dérivées sont calculées par chaque canal, jamais ressaisies.
+model MediaAsset {
+  id     String  @id
+  url    String
+  alt    Json
+  focalX Float?  @map("focal_x")
+  focalY Float?  @map("focal_y")
+
+  products ProductMedia[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("media_asset")
+}
+
+/// Table de liaison dédiée — **pas** de FK polymorphe (`owner_type`/`owner_id`),
+/// qui priverait Postgres de toute intégrité référentielle (doc 01).
+model ProductMedia {
+  productId String     @map("product_id")
+  mediaId   String     @map("media_id")
+  product   Product    @relation(fields: [productId], references: [id])
+  media     MediaAsset @relation(fields: [mediaId], references: [id])
+  role      MediaRole
+  position  Int        @default(0)
+
+  @@id([productId, mediaId])
+  @@index([productId])
+  @@map("product_media")
+}
