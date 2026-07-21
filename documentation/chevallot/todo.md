@@ -93,8 +93,12 @@
 - [ ] Garde `PublishProduct` : refuser la publication si une déclinaison active n'a pas de fiche
 - [ ] Envelopper le domaine allergènes en provider Nest (ou extraire `libs/allergen-mapping`)
 - [ ] Porter dans le repo les docs de cadrage restantes : pricing, disponibilité, `05-allergenes`
-- [ ] Couches satellites au fil du besoin : `product_editorial`, `product_certification`,
-      `media_asset` + liaisons (PK=FK, cf. ADR-13)
+- [x] Couche **éditoriale** : `product_editorial` (PK=FK, optionnelle) + `media_asset` /
+      `product_media` (liaison dédiée, pas de FK polymorphe) ; fiche en 3 cartes côté front
+- [ ] **Envoi de fichiers** (R2/S3) — aujourd'hui on saisit une URL. Décision d'infra à prendre :
+      fournisseur, nommage, dérivés de taille, ADR à écrire
+- [ ] `product_certification` (labels : bio, IGP, AOP…) — `certifications` fait foi, pas de booléen
+- [ ] Éditer l'éditorial d'un produit **existant** (aujourd'hui : seulement à la création)
 
 ### Intégrations (adaptateurs `ChannelAdapter`)
 - [ ] Contrat d'intégration **PI Helios** (bloqué par D4) → `helios_*_binding`, dont le

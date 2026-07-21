@@ -16,6 +16,12 @@ import {
   type AllergenScope,
 } from './reference-api';
 
+export interface MediaSlot {
+  role: string;
+  url: string;
+  alt?: string;
+}
+
 export interface NewProductForm {
   nameFr: string;
   kind: ProductKind;
@@ -30,7 +36,12 @@ export interface NewProductForm {
     proteinG?: number;
     glycemicIndex?: number;
   };
+  editorial?: Record<string, string>;
+  media?: MediaSlot[];
 }
+
+/** Un onglet par nature de contenu — trois rythmes de vie différents. */
+type CardKey = 'identity' | 'nutrition' | 'communication';
 
 interface AllergenGroup {
   readonly incoLabel: string;
@@ -56,7 +67,23 @@ const KIND_LABELS: Record<ProductKind, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="form" (submit)="submit($event)">
-      <section class="block">
+      <nav class="tabs">
+        @for (card of cards; track card.key) {
+          <button
+            type="button"
+            class="tab"
+            [class.on]="active() === card.key"
+            (click)="active.set(card.key)"
+          >
+            {{ card.label }}
+            @if (card.key === 'nutrition' && !declaresSomething()) {
+              <span class="dot" title="Fiche réglementaire non renseignée"></span>
+            }
+          </button>
+        }
+      </nav>
+
+      <section class="block" [hidden]="active() !== 'identity'">
         <h2>Identité</h2>
         <div class="grid">
           <label>
@@ -99,7 +126,7 @@ const KIND_LABELS: Record<ProductKind, string> = {
         </div>
       </section>
 
-      <section class="block">
+      <section class="block" [hidden]="active() !== 'nutrition'">
         <div class="block-head">
           <h2>Allergènes <span class="required">obligatoire</span></h2>
           <div class="scope">
@@ -159,7 +186,7 @@ const KIND_LABELS: Record<ProductKind, string> = {
         </div>
       </section>
 
-      <section class="block">
+      <section class="block" [hidden]="active() !== 'nutrition'">
         <h2>Valeurs nutritionnelles <span class="optional">pour 100 g · optionnel</span></h2>
         <div class="grid">
           @for (field of nutritionFields; track field.key) {
@@ -175,6 +202,114 @@ const KIND_LABELS: Record<ProductKind, string> = {
             </label>
           }
         </div>
+      </section>
+
+      <section class="block" [hidden]="active() !== 'communication'">
+        <h2>Texte <span class="optional">optionnel</span></h2>
+        <div class="grid">
+          <label>
+            <span>Résumé court</span>
+            <input
+              type="text"
+              placeholder="Affiché en caisse et sur les listes"
+              [value]="editorial()['descriptionShort'] ?? ''"
+              (input)="setEditorial('descriptionShort', text($event))"
+            />
+          </label>
+          <label>
+            <span>Marque / gamme</span>
+            <input
+              type="text"
+              placeholder="Signature Chevallot"
+              [value]="editorial()['brand'] ?? ''"
+              (input)="setEditorial('brand', text($event))"
+            />
+          </label>
+        </div>
+        <label>
+          <span>Description longue</span>
+          <textarea
+            rows="4"
+            placeholder="La fiche complète du site — markdown accepté."
+            [value]="editorial()['descriptionLong'] ?? ''"
+            (input)="setEditorial('descriptionLong', text($event))"
+          ></textarea>
+        </label>
+        <label>
+          <span>Récit / savoir-faire</span>
+          <textarea
+            rows="3"
+            placeholder="Façonnée à la main chaque matin…"
+            [value]="editorial()['story'] ?? ''"
+            (input)="setEditorial('story', text($event))"
+          ></textarea>
+        </label>
+        <label>
+          <span>Accord / conseil de dégustation</span>
+          <input
+            type="text"
+            [value]="editorial()['pairing'] ?? ''"
+            (input)="setEditorial('pairing', text($event))"
+          />
+        </label>
+
+        <h2>Référencement <span class="optional">optionnel</span></h2>
+        <div class="grid">
+          <label>
+            <span>Titre SEO</span>
+            <input
+              type="text"
+              [value]="editorial()['seoTitle'] ?? ''"
+              (input)="setEditorial('seoTitle', text($event))"
+            />
+          </label>
+          <label>
+            <span>Description SEO</span>
+            <input
+              type="text"
+              [value]="editorial()['seoDescription'] ?? ''"
+              (input)="setEditorial('seoDescription', text($event))"
+            />
+          </label>
+        </div>
+
+        <h2>Visuels</h2>
+        <p class="hint">
+          On stocke le <strong>master</strong> ; chaque canal en dérive ses tailles.
+          L'envoi de fichiers n'est pas encore branché — on renseigne une adresse.
+        </p>
+        <div class="media">
+          @for (slot of media(); track $index) {
+            <div class="media-row">
+              <select
+                [value]="slot.role"
+                (change)="setMedia($index, 'role', text($event))"
+              >
+                @for (role of mediaRoles; track role.value) {
+                  <option [value]="role.value">{{ role.label }}</option>
+                }
+              </select>
+              <input
+                type="url"
+                placeholder="https://…"
+                [value]="slot.url"
+                (input)="setMedia($index, 'url', text($event))"
+              />
+              <input
+                type="text"
+                placeholder="Texte alternatif (accessibilité + SEO)"
+                [value]="slot.alt ?? ''"
+                (input)="setMedia($index, 'alt', text($event))"
+              />
+              <button type="button" class="ghost" (click)="removeMedia($index)">
+                Retirer
+              </button>
+            </div>
+          }
+        </div>
+        <button type="button" class="ghost add" (click)="addMedia()">
+          Ajouter un visuel
+        </button>
       </section>
 
       <div class="actions">
@@ -321,6 +456,57 @@ const KIND_LABELS: Record<ProductKind, string> = {
         align-items: center;
         gap: 0.6rem;
       }
+      .tabs {
+        display: flex;
+        gap: 0.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.9rem;
+        font-size: 0.88rem;
+        color: var(--muted);
+        background: transparent;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+      }
+      .tab.on {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+      }
+      .dot {
+        width: 0.45rem;
+        height: 0.45rem;
+        border-radius: 50%;
+        background: var(--danger);
+      }
+      .block[hidden] {
+        display: none;
+      }
+      textarea {
+        padding: 0.5rem 0.6rem;
+        font: inherit;
+        color: inherit;
+        background: var(--field);
+        border: 1px solid var(--line);
+        border-radius: 0.4rem;
+        resize: vertical;
+      }
+      .media {
+        display: grid;
+        gap: 0.4rem;
+      }
+      .media-row {
+        display: grid;
+        grid-template-columns: 9rem minmax(10rem, 1.2fr) minmax(10rem, 1fr) auto;
+        gap: 0.4rem;
+      }
+      .add {
+        justify-self: start;
+      }
     `,
   ],
 })
@@ -358,6 +544,23 @@ export class ProductForm {
   protected readonly selected = signal<string[]>([]);
   protected readonly declaresNone = signal(false);
   protected readonly nutrition = signal<Record<string, number | undefined>>({});
+  protected readonly editorial = signal<Record<string, string>>({});
+  protected readonly media = signal<MediaSlot[]>([]);
+  protected readonly active = signal<CardKey>('identity');
+
+  protected readonly cards: readonly { key: CardKey; label: string }[] = [
+    { key: 'identity', label: 'Identité' },
+    { key: 'nutrition', label: 'Nutrition & allergènes' },
+    { key: 'communication', label: 'Communication' },
+  ];
+
+  protected readonly mediaRoles = [
+    { value: 'hero', label: 'Principale' },
+    { value: 'gallery', label: 'Galerie' },
+    { value: 'lifestyle', label: 'Ambiance' },
+    { value: 'thumbnail', label: 'Miniature' },
+    { value: 'print', label: 'Impression' },
+  ];
 
   /** Groupé par catégorie réglementaire : c'est le mapping n:1 rendu lisible. */
   protected readonly groups = computed<AllergenGroup[]>(() => {
@@ -389,6 +592,36 @@ export class ProductForm {
     });
   }
 
+  /** Alimente la pastille de l'onglet : une fiche non renseignée doit se voir. */
+  protected declaresSomething(): boolean {
+    return this.declaresNone() || this.selected().length > 0;
+  }
+
+  protected setEditorial(key: string, value: string): void {
+    this.editorial.update((current) => ({ ...current, [key]: value }));
+  }
+
+  protected addMedia(): void {
+    this.media.update((current) => [
+      ...current,
+      { role: current.length === 0 ? 'hero' : 'gallery', url: '' },
+    ]);
+  }
+
+  protected removeMedia(index: number): void {
+    this.media.update((current) =>
+      current.filter((_, position) => position !== index),
+    );
+  }
+
+  protected setMedia(index: number, key: keyof MediaSlot, value: string): void {
+    this.media.update((current) =>
+      current.map((slot, position) =>
+        position === index ? { ...slot, [key]: value } : slot,
+      ),
+    );
+  }
+
   protected isValid(): boolean {
     return this.nameFr().trim() !== '' && this.categoryId() !== '';
   }
@@ -400,7 +633,8 @@ export class ProductForm {
   protected text(event: Event): string {
     const target = event.target;
     return target instanceof HTMLInputElement ||
-      target instanceof HTMLSelectElement
+      target instanceof HTMLSelectElement ||
+      target instanceof HTMLTextAreaElement
       ? target.value
       : '';
   }
@@ -452,6 +686,13 @@ export class ProductForm {
     // le produit reste « non renseigné », ce qui bloquera sa publication.
     const declares = this.declaresNone() || this.selected().length > 0;
 
+    const story = Object.fromEntries(
+      Object.entries(this.editorial()).filter(
+        ([, value]) => value.trim() !== '',
+      ),
+    );
+    const visuals = this.media().filter((slot) => slot.url.trim() !== '');
+
     this.created.emit({
       nameFr: this.nameFr().trim(),
       kind,
@@ -459,6 +700,8 @@ export class ProductForm {
       ...(sku === '' ? {} : { sku }),
       ...(declares ? { allergens: this.selected() } : {}),
       ...(Object.keys(values).length > 0 ? { nutrition: values } : {}),
+      ...(Object.keys(story).length > 0 ? { editorial: story } : {}),
+      ...(visuals.length > 0 ? { media: visuals } : {}),
     });
   }
 

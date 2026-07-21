@@ -113,6 +113,8 @@ export class CatalogueApi {
     allergens?: string[];
     mayContain?: string[];
     nutrition?: Record<string, number>;
+    editorial?: Record<string, string>;
+    media?: { role: string; url: string; alt?: string }[];
   }): Promise<{ id: string }> {
     return this.send(
       this.http.post<{ id: string }>(`${BASE_URL}/products`, payload),

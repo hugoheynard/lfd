@@ -86,6 +86,11 @@ model Product {
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
 
+  /// Couche éditoriale — satellite **optionnel** (PK = FK, ADR-13) : la ligne
+  /// n'existe que si quelqu'un a écrit quelque chose.
+  editorial ProductEditorial?
+  media     ProductMedia[]
+
   /// Relation virtuelle — la clé étrangère est portée par le binding (ADR-13).
   shopifyBinding ShopifyProductBinding?
 
@@ -202,4 +207,66 @@ model NutritionDeclaration {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("nutrition_declaration")
+}
+
+// ---------------------------------------------------------------------------
+// Couche éditoriale (doc 01). Rythme de vie propre : change à chaque saison,
+// là où l'identité ne bouge jamais. D'où une table séparée, pas des colonnes.
+// ---------------------------------------------------------------------------
+
+enum MediaRole {
+  hero
+  gallery
+  lifestyle
+  thumbnail
+  print
+}
+
+model ProductEditorial {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  descriptionShort Json?   @map("description_short")
+  descriptionLong  Json?   @map("description_long")
+  story            Json?
+  pairing          Json?
+  brand            String?
+  seoTitle         Json?   @map("seo_title")
+  seoDescription   Json?   @map("seo_description")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("product_editorial")
+}
+
+/// Agrégat propre : un visuel a son cycle de vie (upload, CDN) et peut servir
+/// plusieurs produits. On stocke le **master** + un point focal ; les tailles
+/// dérivées sont calculées par chaque canal, jamais ressaisies.
+model MediaAsset {
+  id     String  @id
+  url    String
+  alt    Json
+  focalX Float?  @map("focal_x")
+  focalY Float?  @map("focal_y")
+
+  products ProductMedia[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("media_asset")
+}
+
+/// Table de liaison dédiée — **pas** de FK polymorphe (`owner_type`/`owner_id`),
+/// qui priverait Postgres de toute intégrité référentielle (doc 01).
+model ProductMedia {
+  productId String     @map("product_id")
+  mediaId   String     @map("media_id")
+  product   Product    @relation(fields: [productId], references: [id])
+  media     MediaAsset @relation(fields: [mediaId], references: [id])
+  role      MediaRole
+  position  Int        @default(0)
+
+  @@id([productId, mediaId])
+  @@index([productId])
+  @@map("product_media")
 }

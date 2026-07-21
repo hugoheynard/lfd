@@ -7,6 +7,7 @@ import {
   ProductNotFoundError,
 } from '../domain/errors/catalogue-errors.js';
 import { CategoryRepository } from '../domain/ports/category.repository.js';
+import { EditorialRepository } from '../domain/ports/editorial.repository.js';
 import { NutritionRepository } from '../domain/ports/nutrition.repository.js';
 import {
   ProductRepository,
@@ -23,6 +24,13 @@ import {
   slugify,
   type LocalizedText,
 } from '../domain/value-objects/localized-text.js';
+import {
+  editorial,
+  isEmptyEditorial,
+  mediaItems,
+  type EditorialInput,
+  type MediaInput,
+} from '../domain/value-objects/editorial.js';
 import {
   nutritionDeclaration,
   type NutritionValues,
@@ -44,6 +52,9 @@ export interface CreateProductInput {
   readonly allergens?: readonly string[] | undefined;
   readonly mayContain?: readonly string[] | undefined;
   readonly nutrition?: NutritionValues | undefined;
+  /** Couche éditoriale — entièrement optionnelle. */
+  readonly editorial?: EditorialInput | undefined;
+  readonly media?: readonly MediaInput[] | undefined;
 }
 
 @Injectable()
@@ -52,6 +63,7 @@ export class ProductCommands {
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
     private readonly nutrition: NutritionRepository,
+    private readonly editorials: EditorialRepository,
     @Inject(IdGenerator) private readonly ids: IdGenerator,
     @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
   ) {}
@@ -90,6 +102,9 @@ export class ProductCommands {
             input.nutrition ?? {},
           );
 
+    const story = editorial(input.editorial ?? {});
+    const visuals = mediaItems(input.media ?? []);
+
     const productId = this.ids.next();
     const variantId = this.ids.next();
     const variantSku = await proposeSku(
@@ -109,6 +124,10 @@ export class ProductCommands {
 
     if (declaration !== null) {
       await this.nutrition.declare(variantId, declaration);
+    }
+    // Pas de ligne éditoriale si personne n'a rien écrit (satellite optionnel).
+    if (!isEmptyEditorial(story) || visuals.length > 0) {
+      await this.editorials.save(productId, story, visuals);
     }
 
     return productId;

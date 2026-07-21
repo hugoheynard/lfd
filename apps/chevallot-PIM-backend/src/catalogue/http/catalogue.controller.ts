@@ -31,6 +31,26 @@ const productPayload = z.object({
       glycemicIndex: z.number().optional(),
     })
     .optional(),
+  editorial: z
+    .object({
+      descriptionShort: z.string().optional(),
+      descriptionLong: z.string().optional(),
+      story: z.string().optional(),
+      pairing: z.string().optional(),
+      brand: z.string().optional(),
+      seoTitle: z.string().optional(),
+      seoDescription: z.string().optional(),
+    })
+    .optional(),
+  media: z
+    .array(
+      z.object({
+        role: z.string(),
+        url: z.string(),
+        alt: z.string().optional(),
+      }),
+    )
+    .optional(),
 });
 
 const renamePayload = z.object({

@@ -13,6 +13,35 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ## 2026-07-21 — Jour 2
 
+### La fiche produit en trois cartes : Identité · Nutrition · Communication
+
+**PM** — La fiche de création est réorganisée en **trois onglets** correspondant à trois métiers
+différents : ce qu'**est** le produit, ce qu'il **contient**, et comment on en **parle**. L'onglet
+Nutrition porte une **pastille rouge** tant que les allergènes ne sont pas renseignés — on ne peut
+plus l'oublier par inadvertance. L'onglet Communication ouvre la partie éditoriale : résumé court,
+description longue, récit, accord, marque, SEO, et des **emplacements de visuels** (principale,
+galerie, ambiance, miniature, impression).
+
+**Tech** — Implémentation de la couche éditoriale (doc 01), jusque-là seulement conçue.
+
+- **`product_editorial`** — satellite **optionnel** en PK = FK : la ligne n'existe que si quelqu'un
+  a écrit quelque chose. Rythme de vie propre (l'éditorial change chaque saison, l'identité jamais),
+  ce qui justifie une table plutôt que des colonnes.
+- **`media_asset` + `product_media`** — agrégat propre et **table de liaison dédiée**. Pas de FK
+  polymorphe `owner_type`/`owner_id` : Postgres ne pourrait alors garantir **aucune** intégrité
+  référentielle. On stocke le master ; les tailles dérivées sont calculées par chaque canal.
+- **Invariant ajouté** : un seul visuel `hero`, un seul `thumbnail`. Vérifié dans le domaine,
+  refusé en **400** — sans quoi le canal choisirait arbitrairement lequel afficher.
+- **Un champ vidé efface la colonne** (`Prisma.DbNull`) au lieu de la laisser telle quelle : une
+  clé omise en `update` ne changerait rien, et le texte supprimé resterait en ligne.
+- Le vide n'est jamais une valeur : aucun `{ fr: "" }` n'est écrit.
+
+*Vérifié en base* — création complète relue : `VIEN-GALETT-ROIS`, marque, résumé, **2 visuels**
+avec leurs rôles ; deux `hero` → refusé. tsc, lint, gate, 70 tests, build AOT.
+
+⚠️ **L'envoi de fichiers n'est pas branché** — on saisit une adresse. Le stockage (R2/S3) est une
+décision d'infrastructure à part entière, pas un détail de formulaire.
+
 ### Fiche de création produit, avec les allergènes
 
 **PM** — Un bouton **Créer un produit** ouvre une vraie fiche : identité, **allergènes**, et
