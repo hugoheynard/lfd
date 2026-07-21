@@ -1,31 +1,26 @@
 import { Injectable } from '@nestjs/common';
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (value === undefined || value.trim() === '') {
-    throw new Error(
-      `${name} manquant : voir .env.example (configuration Auth0).`,
-    );
-  }
-  return value;
-}
+import { AppConfig } from '../config/app-config.js';
 
 /**
- * Configuration Auth0, lue à l'amorçage. Une auth mal configurée est un risque
- * de sécurité (jetons validés contre le mauvais émetteur) : on échoue tôt et
- * bruyamment plutôt que de démarrer dans un état douteux.
+ * Configuration Auth0 **dérivée** : elle ne lit pas l'environnement (seul
+ * `AppConfig` en a le droit), elle construit les valeurs propres à l'auth —
+ * l'URL d'émetteur attendue et l'endpoint JWKS — à partir du tenant.
+ *
+ * Une auth mal configurée est un risque de sécurité (jetons validés contre le
+ * mauvais émetteur) : les variables requises échouent déjà au démarrage dans
+ * `AppConfig`.
  */
 @Injectable()
 export class AuthConfig {
-  /** Émetteur attendu — `https://<tenant>.<region>.auth0.com/` (slash final inclus). */
+  /** Émetteur attendu — `https://<tenant>/` (slash final inclus). */
   readonly issuer: string;
 
   /** Audience : l'identifiant de l'API déclarée dans Auth0. */
   readonly audience: string;
 
-  constructor() {
-    this.issuer = `https://${requireEnv('AUTH0_DOMAIN')}/`;
-    this.audience = requireEnv('AUTH0_AUDIENCE');
+  constructor(config: AppConfig) {
+    this.issuer = `https://${config.auth0Domain()}/`;
+    this.audience = config.auth0Audience();
   }
 
   /** Endpoint JWKS public du tenant (clés de signature). */
