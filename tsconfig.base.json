@@ -1,24 +1,45 @@
 {
+  // Jeu de flags partagé par tout le monorepo. Les couches par cible
+  // (`tsconfig/tsflags.backend.json`, …) l'étendent et ajoutent ce qui leur est
+  // propre : module/moduleResolution, décorateurs, noUncheckedIndexedAccess…
   "compilerOptions": {
-    // --- Strictness ---
+    // --- Déjà impliqués par `strict`, épinglés explicitement -------------
+    // Aucun effet supplémentaire, mais l'intention reste lisible et survit à
+    // quelqu'un qui passerait `strict` à false dans une couche enfant.
     "strict": true,
-    "noImplicitOverride": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "useUnknownInCatchVariables": true,
+
+    // --- NON couverts par `strict` : le vrai durcissement -----------------
+    "noImplicitReturns": true, // tous les chemins d'une fonction renvoient
+    "noImplicitOverride": true, // `override` obligatoire quand on surcharge
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "noPropertyAccessFromIndexSignature": true, // process.env['X'], pas .X
+    "exactOptionalPropertyTypes": true, // `{a?: T}` ≠ `{a: T | undefined}`
+
+    // --- Robustesse / lisibilité -----------------------------------------
     "noFallthroughCasesInSwitch": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "useUnknownInCatchVariables": true,
     "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
     "forceConsistentCasingInFileNames": true,
 
-    // --- Interop & modules ---
-    "verbatimModuleSyntax": true,
+    // --- Interop & modules ------------------------------------------------
+    "verbatimModuleSyntax": true, // pas d'import fantôme
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "noUncheckedSideEffectImports": true, // `import './x'` doit exister
+    "allowJs": false,
 
-    // --- Build ergonomics ---
+    // --- Ergonomie de build ------------------------------------------------
     "skipLibCheck": true,
     "incremental": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "removeComments": false // commentaires gardés dans le JS émis (debug)
   }
 }
