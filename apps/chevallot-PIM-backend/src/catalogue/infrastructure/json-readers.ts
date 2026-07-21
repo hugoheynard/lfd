@@ -51,6 +51,18 @@ export function readStringMapColumn(
   return result;
 }
 
+export function readStringArrayColumn(value: unknown, field: string): string[] {
+  if (!Array.isArray(value)) {
+    throw new CorruptedRecordError(field);
+  }
+  return value.map((entry) => {
+    if (typeof entry !== 'string') {
+      throw new CorruptedRecordError(field);
+    }
+    return entry;
+  });
+}
+
 /**
  * Sens inverse : `LocalizedText` → valeur écrivable en `jsonb`.
  *

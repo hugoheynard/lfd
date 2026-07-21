@@ -20,6 +20,7 @@ import {
   type Product,
   type ProductKind,
 } from './catalogue-api';
+import { ProductForm, type NewProductForm } from './product-form';
 
 const KIND_LABELS: Record<ProductKind, string> = {
   daily: 'Frais du jour',
@@ -37,16 +38,23 @@ const SYNC_LABELS: Record<SyncStatus, string> = {
 @Component({
   selector: 'app-products-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, ProductForm],
   template: `
     <header class="page-head">
       <div class="head-row">
         <h1>Produits</h1>
-        @if (products().length > 0) {
-          <button type="button" (click)="pushAll()" [disabled]="busy()">
-            Tout pousser sur Shopify
-          </button>
-        }
+        <div class="head-actions">
+          @if (categories().length > 0) {
+            <button type="button" (click)="toggleForm()">
+              {{ showForm() ? 'Fermer' : 'Créer un produit' }}
+            </button>
+          }
+          @if (products().length > 0) {
+            <button type="button" class="ghost" (click)="pushAll()" [disabled]="busy()">
+              Tout pousser sur Shopify
+            </button>
+          }
+        </div>
       </div>
       <p>
         La référence est <strong>proposée</strong> si on la laisse vide — modifiable
@@ -63,33 +71,13 @@ const SYNC_LABELS: Record<SyncStatus, string> = {
         Créez d’abord une <a routerLink="/familles">famille</a> : un produit s’y rattache.
       </p>
     } @else {
-      <form class="row-form" (submit)="create($event)">
-        <input
-          type="text"
-          placeholder="Nom du produit — ex. Tarte aux fraises"
-          [value]="draftName()"
-          (input)="draftName.set(inputValue($event))"
-          required
+      @if (showForm()) {
+        <app-product-form
+          [categories]="categories()"
+          (created)="create($event)"
+          (cancelled)="showForm.set(false)"
         />
-        <select [value]="draftCategory()" (change)="draftCategory.set(inputValue($event))">
-          @for (category of categories(); track category.id) {
-            <option [value]="category.id">{{ category.name.fr }}</option>
-          }
-        </select>
-        <select [value]="draftKind()" (change)="draftKind.set(inputValue($event))">
-          @for (kind of kinds; track kind) {
-            <option [value]="kind">{{ label(kind) }}</option>
-          }
-        </select>
-        <input
-          type="text"
-          class="sku"
-          placeholder="Référence (optionnelle)"
-          [value]="draftSku()"
-          (input)="draftSku.set(inputValue($event))"
-        />
-        <button type="submit" [disabled]="busy()">Ajouter</button>
-      </form>
+      }
     }
 
     @if (error(); as message) {
@@ -105,6 +93,7 @@ const SYNC_LABELS: Record<SyncStatus, string> = {
             <th>Famille</th>
             <th>Nature</th>
             <th>Déclinaison par défaut</th>
+            <th>Allergènes</th>
             <th>État</th>
             <th>Shopify</th>
             <th></th>
@@ -124,6 +113,13 @@ const SYNC_LABELS: Record<SyncStatus, string> = {
               <td>{{ categoryName(product.categoryId) }}</td>
               <td>{{ label(product.kind) }}</td>
               <td><code>{{ defaultVariantSku(product) }}</code></td>
+              <td>
+                @if (allergenSummary(product); as summary) {
+                  <span class="tag" [class.warn]="summary === 'non renseignés'">
+                    {{ summary }}
+                  </span>
+                }
+              </td>
               <td><span class="tag">{{ product.status }}</span></td>
               <td>
                 <span class="tag" [class.warn]="syncStatus(product.id) === 'failed'">
@@ -147,6 +143,10 @@ const SYNC_LABELS: Record<SyncStatus, string> = {
   styleUrl: './catalogue.scss',
   styles: [
     `
+      .head-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
       .head-row {
         display: flex;
         align-items: center;
@@ -175,18 +175,9 @@ export class ProductsPage {
   private readonly api = inject(CatalogueApi);
   private readonly shopify = inject(ShopifyApi);
 
-  protected readonly kinds: readonly ProductKind[] = [
-    'daily',
-    'made_to_order',
-    'resale',
-  ];
-
   protected readonly products = signal<Product[]>([]);
   protected readonly categories = signal<Category[]>([]);
-  protected readonly draftName = signal('');
-  protected readonly draftCategory = signal('');
-  protected readonly draftKind = signal<string>('daily');
-  protected readonly draftSku = signal('');
+  protected readonly showForm = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly bindings = signal<ProductBinding[]>([]);
@@ -204,8 +195,8 @@ export class ProductsPage {
     void this.reload();
   }
 
-  protected label(kind: string): string {
-    return this.isKind(kind) ? KIND_LABELS[kind] : kind;
+  protected label(kind: ProductKind): string {
+    return KIND_LABELS[kind];
   }
 
   protected syncStatus(productId: string): SyncStatus {
@@ -242,25 +233,26 @@ export class ProductsPage {
       : '';
   }
 
-  protected async create(event: Event): Promise<void> {
-    event.preventDefault();
-    const nameFr = this.draftName().trim();
-    const categoryId = this.draftCategory();
-    const kind = this.draftKind();
+  protected toggleForm(): void {
+    this.showForm.update((open) => !open);
+  }
 
-    if (nameFr === '' || categoryId === '' || !this.isKind(kind)) {
-      return;
+  /**
+   * Trois états distincts, et la distinction compte : pas de fiche du tout
+   * (bloque la publication), fiche déclarant « aucun », ou liste d'allergènes.
+   */
+  protected allergenSummary(product: Product): string {
+    const codes = product.variants.find((v) => v.isDefault)?.allergens;
+    if (codes === null || codes === undefined) {
+      return 'non renseignés';
     }
+    return codes.length === 0 ? 'aucun (déclaré)' : codes.join(', ');
+  }
 
-    const sku = this.draftSku().trim();
+  protected async create(form: NewProductForm): Promise<void> {
     await this.run(async () => {
-      await this.api.createProduct(
-        sku === ''
-          ? { nameFr, kind, categoryId }
-          : { nameFr, kind, categoryId, sku },
-      );
-      this.draftName.set('');
-      this.draftSku.set('');
+      await this.api.createProduct(form);
+      this.showForm.set(false);
     });
   }
 
@@ -300,10 +292,6 @@ export class ProductsPage {
     }
   }
 
-  private isKind(value: string): value is ProductKind {
-    return value === 'daily' || value === 'made_to_order' || value === 'resale';
-  }
-
   private async run(action: () => Promise<unknown>): Promise<void> {
     this.busy.set(true);
     this.error.set(null);
@@ -330,9 +318,6 @@ export class ProductsPage {
       this.bindings.set(bindings);
       this.categories.set(categories.filter((category) => !category.isArchived));
 
-      if (this.draftCategory() === '' && categories.length > 0) {
-        this.draftCategory.set(categories[0]?.id ?? '');
-      }
     } catch (caught) {
       this.error.set(
         caught instanceof Error ? caught.message : 'Erreur inattendue.',

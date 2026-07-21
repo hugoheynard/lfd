@@ -29,6 +29,8 @@ export interface Variant {
   name: LocalizedText;
   isDefault: boolean;
   isDiscontinued: boolean;
+  /** `null` = fiche non renseignée ; `[]` = « aucun allergène » déclaré. */
+  allergens: string[] | null;
 }
 
 export interface Product {
@@ -108,6 +110,9 @@ export class CatalogueApi {
     kind: ProductKind;
     categoryId: string;
     sku?: string;
+    allergens?: string[];
+    mayContain?: string[];
+    nutrition?: Record<string, number>;
   }): Promise<{ id: string }> {
     return this.send(
       this.http.post<{ id: string }>(`${BASE_URL}/products`, payload),

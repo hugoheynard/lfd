@@ -7,6 +7,7 @@ import {
   ProductNotFoundError,
 } from '../domain/errors/catalogue-errors.js';
 import { CategoryRepository } from '../domain/ports/category.repository.js';
+import { NutritionRepository } from '../domain/ports/nutrition.repository.js';
 import {
   ProductRepository,
   type ProductKind,
@@ -22,6 +23,10 @@ import {
   slugify,
   type LocalizedText,
 } from '../domain/value-objects/localized-text.js';
+import {
+  nutritionDeclaration,
+  type NutritionValues,
+} from '../domain/value-objects/nutrition-declaration.js';
 import { Sku } from '../domain/value-objects/sku.value-object.js';
 import { SKU_AVAILABILITY } from '../infrastructure/prisma-sku-availability.js';
 
@@ -32,6 +37,13 @@ export interface CreateProductInput {
   readonly categoryId: string;
   /** Laissé vide, une référence lisible est **proposée**. */
   readonly sku?: string | undefined;
+  /**
+   * Fiche réglementaire de la déclinaison par défaut. **Absente** = non renseignée
+   * (bloque la publication) ; `[]` = « aucun allergène », une affirmation positive.
+   */
+  readonly allergens?: readonly string[] | undefined;
+  readonly mayContain?: readonly string[] | undefined;
+  readonly nutrition?: NutritionValues | undefined;
 }
 
 @Injectable()
@@ -39,6 +51,7 @@ export class ProductCommands {
   constructor(
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
+    private readonly nutrition: NutritionRepository,
     @Inject(IdGenerator) private readonly ids: IdGenerator,
     @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
   ) {}
@@ -66,7 +79,19 @@ export class ProductCommands {
           )
         : Sku.create(input.sku);
 
+    // Validée AVANT toute écriture : une fiche refusée ne doit pas laisser
+    // derrière elle un produit à moitié créé.
+    const declaration =
+      input.allergens === undefined
+        ? null
+        : nutritionDeclaration(
+            input.allergens,
+            input.mayContain ?? [],
+            input.nutrition ?? {},
+          );
+
     const productId = this.ids.next();
+    const variantId = this.ids.next();
     const variantSku = await proposeSku(
       variantSkuRoot(sku, new Map(), 0),
       this.availability,
@@ -79,12 +104,12 @@ export class ProductCommands {
       slug: this.slugOf(name),
       kind: input.kind,
       categoryId: input.categoryId,
-      defaultVariant: {
-        id: this.ids.next(),
-        sku: variantSku,
-        name,
-      },
+      defaultVariant: { id: variantId, sku: variantSku, name },
     });
+
+    if (declaration !== null) {
+      await this.nutrition.declare(variantId, declaration);
+    }
 
     return productId;
   }

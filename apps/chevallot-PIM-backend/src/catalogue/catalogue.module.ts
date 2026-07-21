@@ -9,10 +9,13 @@ import { CategoryCommands } from './application/category-commands.service.js';
 import { ProductCommands } from './application/product-commands.service.js';
 import { CatalogueReader } from './domain/ports/catalogue-reader.js';
 import { CategoryRepository } from './domain/ports/category.repository.js';
+import { NutritionRepository } from './domain/ports/nutrition.repository.js';
 import { ProductRepository } from './domain/ports/product.repository.js';
 import { CatalogueController } from './http/catalogue.controller.js';
+import { ReferenceController } from './http/reference.controller.js';
 import { PrismaCatalogueReader } from './infrastructure/prisma-catalogue-reader.js';
 import { PrismaCategoryRepository } from './infrastructure/prisma-category.repository.js';
+import { PrismaNutritionRepository } from './infrastructure/prisma-nutrition.repository.js';
 import { PrismaProductRepository } from './infrastructure/prisma-product.repository.js';
 import {
   PrismaSkuAvailability,
@@ -28,7 +31,7 @@ import {
  */
 @Module({
   imports: [DatabaseModule],
-  controllers: [CatalogueController],
+  controllers: [CatalogueController, ReferenceController],
   providers: [
     CategoryCommands,
     ProductCommands,
@@ -37,6 +40,7 @@ import {
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },
+    { provide: NutritionRepository, useClass: PrismaNutritionRepository },
   ],
   // Seul contrat visible depuis l'extérieur : les adaptateurs de canal lisent le
   // catalogue par ce port, jamais par ses dépôts ni ses tables (ADR-13).

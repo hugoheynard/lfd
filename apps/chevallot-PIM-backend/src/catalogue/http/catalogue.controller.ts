@@ -20,6 +20,17 @@ const productPayload = z.object({
   kind: z.enum(['daily', 'made_to_order', 'resale']),
   categoryId: z.string().min(1),
   sku: z.string().optional(),
+  allergens: z.array(z.string()).optional(),
+  mayContain: z.array(z.string()).optional(),
+  nutrition: z
+    .object({
+      energyKcal: z.number().optional(),
+      carbsG: z.number().optional(),
+      fatG: z.number().optional(),
+      proteinG: z.number().optional(),
+      glycemicIndex: z.number().optional(),
+    })
+    .optional(),
 });
 
 const renamePayload = z.object({

@@ -13,6 +13,40 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ## 2026-07-21 — Jour 2
 
+### Fiche de création produit, avec les allergènes
+
+**PM** — Un bouton **Créer un produit** ouvre une vraie fiche : identité, **allergènes**, et
+valeurs nutritionnelles optionnelles. Les allergènes se cochent depuis notre référentiel, groupés
+par **catégorie d'étiquette** — cocher « blé », « seigle » ou « orge » revient au même sur
+l'étiquette (« Céréales contenant du gluten »), et le formulaire le montre au lieu de le cacher.
+Deux catalogues : **UE / France** par défaut (la liste légale) et **Monde** (l'interopérable, B2B).
+Et une distinction qui compte : « aucun allergène » **coché** ≠ champ laissé vide.
+
+**Tech** — ⚠️ Le référentiel ne couvrait que **6 catégories INCO sur 14** : insuffisant pour un
+formulaire réglementaire. Complété aux **14 de l'annexe II du règlement UE 1169/2011**, avec les
+codes granulaires n:1 (blé/seigle/orge/avoine/épeautre → gluten ; noix/noisette/amande/pistache/
+cajou/pécan → fruits à coque). **Les catégories sont exactes ; les codes GS1 restent tous
+provisoires** — ceux ajoutés portent le préfixe `TBD_`, repérables au grep, et un drapeau
+`provisional` remonte jusqu'au bandeau d'avertissement du formulaire. Sur un champ réglementé, une
+donnée provisoire doit se voir.
+
+- **`nutrition_declaration`** — `variant_id` PK **et** FK (*shared primary key*), fiche
+  **optionnelle** : son absence signifie « non renseigné ». Un 1:1 obligatoire aurait forcé une
+  ligne vide à la création, donc affirmé « aucun allergène » sans vérification.
+- **Validation dans le domaine, pas dans le DTO** : code inconnu, chevauchement
+  `allergens ∩ mayContain`, valeurs négatives. Vérifiée **avant toute écriture** — une fiche
+  refusée ne laisse pas un produit à moitié créé.
+- **`GET /reference/allergens?scope=eu|world`** — deux catalogues, une seule donnée. Ce n'est pas un
+  filtre d'affichage : `eu` est la liste **légale**, `world` la liste **interopérable**.
+
+*Piège évité de justesse* — `UnknownAllergenError` déclarait un champ `code`, qui **masquait** le
+code d'erreur lu par le filtre HTTP : l'API aurait renvoyé `TBD_FISH` là où on attend
+`catalogue.allergen.unknown`. Renommé `allergenCode`, avec le commentaire qui explique pourquoi.
+
+*Vérifié en vrai* — catalogue UE (23 entrées) et Monde (24), création avec `["AW","AM","AE"]`
+relue correctement, code inconnu → **400**, chevauchement → **400**. tsc, lint, gate, 70 tests,
+build AOT.
+
 ### Canal Shopify : écran Réglages et bouton « Pousser »
 
 **PM** — Un écran **Réglages** apparaît : domaine de la boutique, version d'API, activation. Et le

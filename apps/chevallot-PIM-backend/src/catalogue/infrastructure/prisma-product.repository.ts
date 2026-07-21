@@ -15,6 +15,7 @@ import {
   isUniqueViolation,
   localizedColumn,
   readLocalizedColumn,
+  readStringArrayColumn,
   readStringMapColumn,
 } from './json-readers.js';
 
@@ -26,6 +27,7 @@ interface VariantRow {
   isDefault: boolean;
   isDiscontinued: boolean;
   position: number;
+  nutrition: { allergens: unknown } | null;
 }
 
 interface ProductRow {
@@ -48,6 +50,10 @@ function toVariant(row: VariantRow): VariantRecord {
     isDefault: row.isDefault,
     isDiscontinued: row.isDiscontinued,
     position: row.position,
+    allergens:
+      row.nutrition === null
+        ? null
+        : readStringArrayColumn(row.nutrition.allergens, 'nutrition.allergens'),
   };
 }
 
@@ -73,14 +79,24 @@ export class PrismaProductRepository extends ProductRepository {
   async findById(id: string): Promise<ProductRecord | null> {
     const row = await this.prisma.product.findUnique({
       where: { id },
-      include: { variants: { orderBy: { position: 'asc' } } },
+      include: {
+        variants: {
+          orderBy: { position: 'asc' },
+          include: { nutrition: { select: { allergens: true } } },
+        },
+      },
     });
     return row === null ? null : toRecord(row);
   }
 
   async listAll(): Promise<ProductRecord[]> {
     const rows = await this.prisma.product.findMany({
-      include: { variants: { orderBy: { position: 'asc' } } },
+      include: {
+        variants: {
+          orderBy: { position: 'asc' },
+          include: { nutrition: { select: { allergens: true } } },
+        },
+      },
       orderBy: { sku: 'asc' },
     });
     return rows.map(toRecord);

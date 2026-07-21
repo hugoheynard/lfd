@@ -83,7 +83,14 @@
       **à la compilation**, pas un registre runtime
 - [ ] Event store append-only : **différé** (ADR-11 révisé). Déclencheur = premier besoin d'as-of réel
 - [x] Slice **allergènes** GS1→INCO (galop d'essai, domaine pur + tests)
-- [ ] **Peupler les vrais codes GS1** depuis `ref.gs1.org/voc/AllergenTypeCode` (actuellement provisoires)
+- [ ] 🔴 **Peupler les vrais codes GS1** depuis `ref.gs1.org/voc/AllergenTypeCode` — les 14
+      catégories INCO sont exactes, **tous les codes sont provisoires** (`grep TBD_` + drapeau
+      `provisional`). Bloquant avant tout export GDSN/B2B réel
+- [x] **Fiche réglementaire** : table `nutrition_declaration` (PK=FK, optionnelle), validation dans
+      le domaine (code inconnu, chevauchement, valeurs négatives), endpoint `/reference/allergens`
+      (`scope=eu|world`), formulaire de création complet côté front
+- [ ] Éditer la fiche d'un produit **existant** (aujourd'hui : seulement à la création)
+- [ ] Garde `PublishProduct` : refuser la publication si une déclinaison active n'a pas de fiche
 - [ ] Envelopper le domaine allergènes en provider Nest (ou extraire `libs/allergen-mapping`)
 - [ ] Porter dans le repo les docs de cadrage restantes : pricing, disponibilité, `05-allergenes`
 - [ ] Couches satellites au fil du besoin : `product_editorial`, `product_certification`,

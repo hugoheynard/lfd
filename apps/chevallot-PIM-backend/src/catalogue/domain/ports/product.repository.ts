@@ -23,6 +23,8 @@ export interface VariantRecord {
   readonly isDefault: boolean;
   readonly isDiscontinued: boolean;
   readonly position: number;
+  /** `null` = fiche **non renseignée** ; `[]` = « aucun allergène » déclaré. */
+  readonly allergens: readonly string[] | null;
 }
 
 /**
