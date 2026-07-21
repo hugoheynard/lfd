@@ -13,6 +13,48 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ## 2026-07-21 — Jour 2
 
+### Cadrage global : anti-drift, pricing, et pourquoi on construit
+
+**PM** — Prise de recul sur l'ensemble. Trois clarifications qui changent la façon de piloter le
+projet. **La bataille « qui détient le catalogue » n'a pas lieu d'être** : ce qui compte n'est pas le
+catalogue mais chaque champ, et une seule règle — un champ, un seul auteur. **Les prix négociés ne
+sont pas des exceptions bricolées** mais des règles qu'on possède et qu'on calcule. Et surtout : ce
+qu'on construit n'est **pas un PIM**, c'est la **colonne vertébrale** qui fait tenir ensemble la
+caisse, le web et le labo — le catalogue n'en est que la première vertèbre.
+
+**Tech** — Quatre cadres posés, aucun code.
+
+*Anti-drift* — l'unité de décision est le **champ**, pas le catalogue : une matrice
+champ × système avec **un seul `W` par ligne**. Quatre familles à régimes opposés (catalogue ⬇️ ·
+prix ⬇️ · transactions ⬆️ · production ⬆️) et une règle : **le flux ne boucle jamais**. Trois
+régimes possibles par champ, dont le plus réaliste est le troisième, souvent oublié : **surveillé**
+— le PIM connaît l'état voulu, **ne corrige pas**, mais **signale l'écart** (relecture + écran de
+dérives). Écraser silencieusement la correction faite en caisse à 7h est le meilleur moyen de faire
+débrancher l'outil.
+
+*Promotions* — elles ne sont **pas portables** : ce sont des programmes, pas des données. Shopify
+applique au panier, une caisse au ticket. Cible retenue : le PIM possède l'**intention commerciale**
+(`Campagne`), chaque adaptateur la **compile**, et on supporte explicitement l'**intersection** — pas
+l'union. Une campagne qu'un canal ne sait pas exprimer est **refusée à la saisie**, jamais dégradée.
+
+*Pricing* — correction d'un modèle mental : il n'y a **pas de prix canonique**. Le prix est une
+fonction `f(déclinaison, canal, client, date, quantité)`. Le tarif B2B n'est **pas** un override du
+canal — **canal ≠ client** (deux axes : par où / à qui). Trois objets : `PriceList`, `PriceRule`, et
+`Agreement` — ce dernier appartenant au **contexte commercial, pas au PIM** (sinon le PIM aspire le
+CRM). La résolution **calcule** et **trace** le chemin au lieu d'empiler des écarts indébogables.
+Corollaire pratique : les canaux reçoivent un **nombre déjà résolu** — le moteur est unique, chez
+nous.
+
+*Construire vs acheter* → [ADR-15](./adr.md#adr-15--construire-un-pim-minimal-plutôt-quen-acheter-un).
+Décision : construire, **minimal**. L'argument décisif n'est pas le coût mais l'**ajustement sur le
+spécifique** (`kind`, capacité de production ≠ stock, GS1→INCO, déclinaison commune caisse/web) —
+qu'aucun PIM générique ne porte autrement qu'en **configuration**, c'est-à-dire en renonçant au
+bénéfice des types (ADR-10). Le socle fait six tables ; 80 % de l'effort est l'intégration, qu'aucun
+achat ne dispense. Coût réel assumé et nommé : **le back-office**, pas le modèle — d'où la consigne
+« garder le back-office laid ». Périmètre fermé (pas de moteur d'attributs, pas de workflows, pas de
+DAM, pas de multi-tenant), **test permanent** écrit, et **conditions d'invalidation** posées :
+la décision est **testable** par D4 et D1, pas une conviction.
+
 ### Revue adversariale du modèle de données — et son redressement
 
 **PM** — Passe critique sur le modèle avant d'écrire la moindre table : on a cherché ses défauts au

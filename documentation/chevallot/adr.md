@@ -209,3 +209,63 @@ l'identité reste **hors du domaine** : l'`actor` d'un event n'est qu'un `sub` v
   référencent **jamais** l'id du fournisseur → changer d'IdP reste indolore.
 - Le **domaine de login custom est payant** : la page de login restera sur `*.auth0.com` (sans
   importance pour un back-office ; à revoir si un portail B2B brandé apparaît).
+
+## ADR-15 — Construire un PIM minimal plutôt qu'en acheter un
+
+**Décision** : développer nous-mêmes le PIM, **volontairement minimal**, plutôt qu'adopter un PIM du
+marché (Akeneo CE, Plytix, Sales Layer, Pimcore) ou faire de **Shopify le maître du catalogue**.
+
+**Requalification préalable** — ce qu'on construit n'est pas *un PIM*, c'est une **jonction** : le
+référentiel commun qui fait tenir ensemble la caisse (PI Helios), le web (Shopify) et le **labo de
+production**. Le catalogue en est la première vertèbre, pas la finalité. Cette distinction n'est pas
+rhétorique : elle est le critère d'arbitrage de tout le reste (voir « Test permanent »).
+
+**Raison** :
+1. **La valeur est dans la jonction, et elle ne s'achète pas.** Aucun éditeur ne vend le point où
+   deux de ses concurrents doivent se rejoindre. La consolidation des ventes multi-canal et le plan
+   de production du labo n'existent dans aucun catalogue produit du marché.
+2. **80 % de l'effort est l'intégration**, et aucun PIM acheté n'en dispense : les adaptateurs PI et
+   Shopify seraient à écrire de toute façon. Acheter revient à ajouter un système à administrer pour
+   économiser la partie la plus simple du travail.
+3. **Le modèle est spécifique et petit.** `kind = daily | made_to_order | resale`, la disponibilité
+   comme **capacité de production** (pas un stock), les allergènes en **GS1 canonique projeté INCO**,
+   la **déclinaison** comme unité vendue commune caisse/web : aucun PIM générique ne porte ça. On ne
+   l'obtiendrait qu'en encodant le métier dans de la **configuration** là où on peut l'encoder dans
+   des **types** — c'est-à-dire en renonçant au bénéfice des flags stricts (ADR-10) : un attribut
+   dynamique est un `any` avec une interface d'admin. Le socle fait **six tables**.
+4. **Shopify-comme-maître est intenable** malgré son coût minimal : pas de plan de production, pas de
+   champ allergène natif (metafields + travail de thème), et un maître qui ignore l'existence de la
+   caisse ne peut pas arbitrer ce qui descend vers elle.
+
+**Ce qui est assumé — le coût réel n'est pas le modèle, c'est le back-office.** Un PIM du marché ne
+vend pas un schéma (le nôtre est meilleur, et il a coûté une journée) : il vend quinze ans
+d'**interface d'édition** — recherche, édition en masse, import CSV avec rapport d'erreurs,
+annulation, complétude par famille, droits. C'est là que partira le temps. Conséquence directe :
+**back-office volontairement rustique**, saisie à l'essentiel, aucun clone d'Akeneo.
+
+**Périmètre — ce qu'on ne construira PAS** (la légitimité s'arrête ici) :
+- moteur d'**attributs configurables** (familles à attributs dynamiques, types paramétrables) ;
+- **workflows** de validation multi-rôles ;
+- **DAM** (recadrage, dérivés d'images, versioning d'assets) ;
+- **multi-tenant** « au cas où on le vendrait à d'autres boulangeries ».
+
+Chacun est un projet à part entière et **aucun ne sert la jonction**. Le descope de la couche
+logistique (ADR-14) est la première application de cette règle ; il en faudra d'autres.
+
+**Test permanent**, à opposer à toute fonctionnalité envisagée :
+
+> *Est-ce que ça sert à faire tenir ensemble la caisse, le web et le labo ?*
+> Si non, c'est du PIM générique : à acheter, à emprunter, ou à différer.
+
+Formulé en une ligne : **construire le spécifique, différer le générique, garder le back-office laid.**
+
+**Conditions d'invalidation** (écrites maintenant, pour ne pas être rediscutées de mémoire) :
+- **PI se révèle fermé** — ni écriture, ni export de ventes exploitable (D4). La jonction devient
+  impossible : il ne reste qu'un PIM, qu'il vaudrait alors mieux acheter.
+- **Le B2B se révèle du volume contractuel** avec facturation et logistique (D1). On est dans le
+  périmètre d'un ERP, pas d'un PIM maison.
+- **Changement d'échelle** : plusieurs points de vente, ou un second client de l'outil. Le
+  multi-tenant est explicitement hors périmètre — l'atteindre invaliderait la décision, pas le code.
+
+**Revue** : à la réponse de **D4** et de **D1**. Ces deux réponses suffisent à confirmer ou infirmer
+cet ADR — la décision est **testable**, pas une conviction.
