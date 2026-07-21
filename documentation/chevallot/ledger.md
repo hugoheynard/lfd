@@ -11,6 +11,98 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ---
 
+## 2026-07-21 — Jour 2
+
+### Revue adversariale du modèle de données — et son redressement
+
+**PM** — Passe critique sur le modèle avant d'écrire la moindre table : on a cherché ses défauts au
+lieu de le défendre. Trois choses importantes en sont sorties. **Un risque légal** a été éliminé : le
+modèle affirmait « aucun allergène » par défaut sur un produit que personne n'avait vérifié.
+**Une complexité coûteuse** a été reportée : l'historisation complète du catalogue, qu'on payait à
+vie pour un bénéfice qu'on n'a pas encore. **Un flou** a été levé : trois documents décrivaient le
+même produit différemment. Le modèle est maintenant plus simple, plus sûr, et prêt à être codé.
+
+**Tech** — Douze défauts relevés, tous traités :
+
+*Fond* — le modèle était **conçu table-first** puis étiqueté « event-sourced » : aucune commande,
+aucun event nommé nulle part, alors que D6 (frontières d'agrégat) était déclaré bloquant. Nouveau
+doc [`00-langage-et-comportement.md`](./data-model/00-langage-et-comportement.md) : glossaire
+ubiquitaire (« un client achète une **déclinaison**, jamais un produit »), **4 agrégats** (`Product`
+racine possédant déclinaisons + fiches réglementaires ; `Category` ; `Collection` ; `MediaAsset`),
+la **liste exhaustive des commandes et des faits**, le cycle de vie `draft → published → archived`.
+**D6 est clos**, le schéma Prisma est débloqué.
+
+*ADR-11 rétrogradé* — sa justification (« zéro `created_at`/`updated_at` ») était esthétique **et
+fausse** : une projection a de toute façon besoin de `last_event_version`/`projected_at`. Coût réel
+(projecteurs, upcasting, hard-gate de replay, à vie) disproportionné pour un catalogue édité par
+trois personnes. Précédent interne : sur SH3PHERD l'event store est arrivé en **couche 3 phase C**,
+pas au jour 1. Conservé de façon **irréversible** : **R1** ids assignés par la commande (UUID v7
+applicatif — le seul point vraiment irrattrapable, la caisse et Shopify pointent dessus), **R2** toute
+mutation porte un nom métier, **R3** aucun `DELETE`. Colonnes système assumées, hors-domaine.
+
+*Sécurité de la donnée réglementaire* — `PRODUCT ||--|| NUTRITION_INFO` (1:1 **obligatoire**) forçait
+une ligne vide à la création, donc `allergens: []` = « aucun allergène » **sans vérification**. Passé
+en **1:1 optionnelle**, PK = FK (plus d'`id` de substitution qui autorisait deux fiches), **rattachée
+à la déclinaison** (c'est elle qui est mise sur le marché) et **sans fallback à la lecture** — la
+duplication est écrite à la commande. Garde : pas de publication sans fiche.
+
+*Cohérence* — `01-produit.md` re-spécifiait le socle **différemment** de `02` (`name` string vs
+LocalizedText, `has_variants`, `barcode`…) : amputé, il ne couvre plus que l'éditorial. Nettoyages :
+`has_variants` supprimé (dérivable, et sa « déclinaison implicite » remplacée par une déclinaison
+**toujours matérialisée**), `is_bio` supprimé **×2** (trois sources de vérité pour un fait —
+`certifications` fait foi), `sku` rendu **modifiable** et à espace de noms **global**, FK polymorphe
+des médias remplacée par trois tables de liaison, `kind` explicitement marqué « pas un aiguillage »
+(OCP), `Category` scindée en **taxonomie** (arbre) + **`Collection`** (n:n).
+
+*Nouveau* — [ADR-13](./adr.md#adr-13--composition-par-tables-satellites-canaux-au-bord) et
+[`04-composition-et-canaux.md`](./data-model/04-composition-et-canaux.md) : trois natures de table
+(socle / couche canonique / contexte canal), motif **PK = FK**, bindings sur la **déclinaison** par
+`id`, séparation binding mécanique ↔ overrides éditoriaux, **règle de promotion** de `attributes`.
+Le `pos_family_code` PI Helios **sort de `Category`**. [ADR-14](./adr.md#adr-14--couche-logistique-descopée-de-la-v1) :
+couche logistique et hiérarchie GDSN **descopées** — le code-barres reviendra par le binding caisse
+quand D4 sera tranché.
+
+### Correctif : le `.env` n'était pas chargé au démarrage
+
+**PM** — Le backend refusait de démarrer en disant qu'il manquait la configuration de la base… alors
+qu'elle était bien renseignée. Corrigé : l'application lit désormais son fichier de configuration au
+démarrage.
+
+**Tech** — Le `.env` n'était chargé que par la **CLI Prisma** (`prisma.config.ts` importe
+`dotenv/config`) ; **rien ne le chargeait au runtime Nest** → `process.env.DATABASE_URL` vide → le
+fail-fast se déclenchait (il faisait son travail, sur une cause que je n'avais pas câblée). Ajout de
+**`@nestjs/config`** et de `ConfigModule.forRoot({ isGlobal: true })` **en tête** des imports
+d'`AppModule`, pour que l'env soit peuplé avant l'instanciation des providers d'infra. Vérifié par un
+boot **isolé sur le port 3101** (« Nest application successfully started », HTTP 200 sur `/`).
+
+> Découverte au passage : le pool `pg` se connecte **paresseusement** — `$connect()` n'ouvre aucune
+> session et ne prouve donc pas que la base est joignable. Le fail-fast ne couvre que la *config*.
+> Ajouter un `SELECT 1` au boot est une **décision ouverte** (l'app refuserait alors de démarrer sans
+> `pnpm dev:infra`).
+
+### Une seule porte vers l'environnement — et un garde-fou qui la tient
+
+**PM** — Les réglages (base, Auth0, port) ne se lisent plus n'importe où dans le code : ils passent par
+un **point unique**, validé au démarrage. Et un contrôle automatique empêche de contourner la règle
+plus tard — y compris par moi dans six mois.
+
+**Tech** — `src/infra/config/AppConfig` : **seule** classe autorisée à lire `process.env`, valide au
+boot (fail-fast) et expose des méthodes typées (`databaseUrl()`, `auth0Domain()`, `auth0Audience()`,
+`port()`). `PrismaService`, `AuthConfig` et `main.ts` la consomment par injection — plus aucun accès
+direct. **Deux filets** :
+1. **ESLint** — couvre `process.env`, `process['env']`, la déstructuration, l'**alias**
+   (`VariableDeclarator[init.name='process']`), `globalThis.process` et l'import `node:process`.
+   Les 6 formes vérifiées une par une par fichiers sondes.
+2. **Gate** `dev-toolbox/gates/no-direct-env.mjs` (`pnpm lint:no-direct-env`), **indépendant
+   d'ESLint** : il détecte en plus les `// eslint-disable` visant la règle. Démonstration faite —
+   ESLint seul se laisse bâillonner, le gate non.
+
+Dérogations **explicites et justifiées** : la passerelle + son test, le harnais de test,
+`prisma.config.ts` (CLI Prisma, hors runtime Nest) et `src/server.ts` (SSR Angular — le front n'a pas
+encore de passerelle, dette notée au `todo.md`).
+
+---
+
 ## 2026-07-20 — Jour 1 : socle, modèle, base, auth
 
 ### Choix du monorepo : Turborepo (Nx écarté)
@@ -93,8 +185,11 @@ alourdir les fiches produit avec des colonnes techniques.
 **Tech** — Le log d'events devient la **source de vérité** ; les tables sont des **projections**
 reconstructibles. Conséquence directe : **suppression des `created_at`/`updated_at`** du modèle — le
 « qui / quand / version » vit sur l'event. `status` devient une projection d'events.
-→ [ADR-11](./adr.md#adr-11--catalogue-event-sourced-event-store-dès-le-départ). Reste à trancher :
-les **frontières d'agrégat** (D6).
+→ ADR-11. Reste à trancher : les **frontières d'agrégat** (D6).
+
+> ⚠️ **Révisé le 2026-07-21** — décision rétrogradée en « event store *préparé, pas activé* » après
+> la revue adversariale (voir l'entrée du jour 2). Les `created_at`/`updated_at` sont **conservés**
+> en colonnes système hors-domaine.
 
 ### Nutrition & allergènes
 
@@ -126,6 +221,20 @@ clients B2C — eux passent par Shopify).
 (pas Passport — ESM natif, testable). Guard **global** → API **protégée par défaut**, ouverture
 explicite via `@Public()`. Fail-fast si la config Auth0 manque. Tests d'intégration sur une mini-app
 Nest. → [ADR-12](./adr.md#adr-12--authentification-déléguée-à-auth0-vérifiée-avec-jose)
+
+### Durcissement du jeu de flags TypeScript
+
+**PM** — Revue du filet de sécurité : il paraissait plus maigre que sur l'autre projet. Vérification
+faite, l'essentiel était déjà là, mais deux vraies failles ont été comblées et le filet a été **resserré
+au-delà** de la référence. Concrètement : moins de bugs qui passent en production.
+
+**Tech** — Diff réel avec SH3PHERD : sur 11 flags « manquants », **6 étaient déjà actifs** (impliqués
+par `strict`), 2 étaient des défauts TS, 1 avait été déplacé dans la couche backend — et **2 étaient de
+vrais trous** : `noImplicitReturns` et `allowUnusedLabels: false`. Comblés, puis ajout de
+**`exactOptionalPropertyTypes`** et **`noUncheckedSideEffectImports`** (absents de SH3), et épinglage
+explicite des flags impliqués par `strict`. **`erasableSyntaxOnly` délibérément écarté** : il casserait
+Nest (parameter properties + enums). Build, lint et 17 tests verts — le client Prisma généré passe la
+barre sans concession. → [ADR-10](./adr.md#adr-10--backend-esm--flags-ts-stricts-partagés)
 
 ---
 

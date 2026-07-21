@@ -1,186 +1,106 @@
-# 01 — Anatomie d'un produit (le cas premium)
+# 01 — Éditorial (couche ✍️) : ce qui fait la fiche premium
 
-> 🔒 **Le socle figé des items** (`Product` / `ProductVariant` / `Category`, champs & invariants qui
-> font foi pour Prisma) est dans [`02-catalogue-items.md`](./02-catalogue-items.md). **Ce document-ci**
-> couvre l'**enrichissement éditorial premium** (récit, provenance, labels, médias, SEO) et la
-> projection par canal — il n'altère pas le socle.
-
-> Source de vérité du **quoi** : ce que la boulangerie vend, décrit **une seule fois**, de façon
-> canonique et **neutre par rapport aux canaux**. Ni prix (couche 02), ni disponibilité (couche 03),
-> ni ids de plateformes (couche 04) — trois rythmes de vie différents.
+> 🔒 **Ce document ne décrit PAS le socle.** L'identité (`Product` / `ProductVariant` / `Category` /
+> `Collection`), ses champs et ses invariants sont dans
+> [`02-catalogue-items.md`](./02-catalogue-items.md), qui fait **seul** autorité. Le réglementaire est
+> dans [`03-nutrition.md`](./03-nutrition.md).
+>
+> Ici : uniquement l'**enrichissement éditorial** — récit, provenance, labels, médias, SEO. Ni prix,
+> ni disponibilité, ni ids de plateformes ([`04`](./04-composition-et-canaux.md)).
 
 ## Méthode : partir du cas le plus riche
 
 Pour n'oublier aucun champ, on modélise à partir d'un **produit premium / signature** — le cas qui
-mobilise *toute* la fiche. Un produit simple (une baguette) n'en remplit qu'une partie ; un produit
-premium (une **Tarte aux fraises signature**, une **Galette des Rois**) exige le récit, la provenance,
-les labels, les médias soignés, le SEO. On distingue trois natures de champ :
+mobilise *toute* la fiche. Une baguette n'en remplit qu'une partie ; une **Tarte aux fraises
+signature** ou une **Galette des Rois** exige le récit, la provenance, les labels, les médias
+soignés, le SEO.
 
-- 🟦 **Socle** — obligatoire pour tout produit vendable (identité, classement, variante).
-- 🟨 **Premium** — enrichissement qui fait la valeur perçue (récit, provenance, labels, médias, SEO).
-- 🟥 **Réglementaire** — non négociable en agroalimentaire (allergènes, ingrédients, conservation).
-
----
-
-## 1. Identité & classification 🟦
-
-| Champ | Type | Rôle | Notes |
-|---|---|---|---|
-| `id` | UUID | Identifiant interne stable | Ne change **jamais** |
-| `sku` | string | Référence métier lisible, unique | Ex. `PATI-TARTE-FRAISE` |
-| `name` | string | Désignation commerciale | « Tarte aux fraises » |
-| `slug` | string | Identifiant URL | `tarte-aux-fraises` |
-| `kind` | enum | `daily` \| `made_to_order` \| `resale` | Détermine la logique de dispo (couche 03) |
-| `category_id` | UUID | Famille de rattachement | → `Category` (alignée familles caisse PI) |
-| `has_variants` | bool | Possède des déclinaisons | Sinon variante « défaut » implicite |
-| `unit_of_sale` | enum | `piece` \| `weight_kg` \| `lot` \| `portion` | |
-| `status` | enum | Cycle de vie | `active` \| `archived` — **dérivé des events** (ADR-11), pas d'audit |
-| `tags` | string[] | Étiquettes libres | `signature`, `tradition`, `noel`, `bio` |
-
-`kind` (spécifique boulangerie) : **`daily`** (frais du jour, dispo = capacité de production) ·
-**`made_to_order`** (sur commande, dispo = date retrait + délai + cut-off) · **`resale`** (revendu tel
-quel — seul cas de vrai stock).
+Cette couche est **entièrement optionnelle** : la ligne `product_editorial` n'existe que si quelqu'un
+a écrit quelque chose (motif *shared primary key*, cf. [`04`](./04-composition-et-canaux.md#le-motif--shared-primary-key)).
 
 ---
 
-## 2. Contenu commercial premium 🟨
-
-C'est ce qui distingue une fiche premium d'une fiche minimale. Le récit **vend**, surtout sur le web.
+## 1. `ProductEditorial` — PK/FK `product_id`
 
 | Champ | Type | Rôle |
 |---|---|---|
-| `description_short` | string | Résumé (caisse, listes, cartes produit) |
-| `description_long` | text (markdown) | Fiche complète web — texte éditorial |
-| `story` | text? | Récit / savoir-faire : « façonnée à la main chaque matin… » |
-| `provenance` | Provenance[]? | Origine des ingrédients nobles (voir ci-dessous) |
-| `producer` / `brand` | string? | Signature maison / gamme (« Signature Chevallot ») |
-| `pairing` / `suggestions` | string? | Accord / conseil de dégustation (premium web) |
+| `description_short` 🌐 | LocalizedText? | Résumé (listes, cartes produit, écran caisse) |
+| `description_long` 🌐 | LocalizedText? (markdown) | Fiche complète web |
+| `story` 🌐 | LocalizedText? | Récit / savoir-faire : « façonnée à la main chaque matin… » |
+| `provenance` | `Provenance[]` | Origine des ingrédients nobles |
+| `brand` | string? | Signature maison / gamme (« Signature Chevallot ») |
+| `pairing` 🌐 | LocalizedText? | Accord / conseil de dégustation |
+| `seo_title` 🌐 | LocalizedText? | |
+| `seo_description` 🌐 | LocalizedText? | |
 
 `Provenance` : `{ ingredient, origin, label? }` — ex. `{ "beurre", "AOP Charentes-Poitou", "AOP" }`,
-`{ "farine", "Moulin de Val d'Isère", null }`. Fait la crédibilité du positionnement premium.
+`{ "farine", "Moulin de Val d'Isère", null }`. C'est ce qui fait la crédibilité du positionnement
+premium — donc **structuré**, pas noyé dans le markdown : chaque canal le rend à sa façon.
 
----
+## 2. Labels & certifications (le marqueur premium)
 
-## 3. Labels & certifications 🟨 (le marqueur premium)
+`ProductCertification` : `(product_id, code)` en PK composite, plus `authority?`, `valid_until?`.
+
+Codes : `bio` (AB / Eurofeuille), `label_rouge`, `igp`, `aop`, `fait_maison`, `artisan_boulanger`,
+`commerce_equitable`. Certains ont des **règles d'affichage légales** (logo, mentions) → l'adaptateur
+canal les rend, la donnée les déclare.
+
+> ⚠️ **Pas de booléen `is_bio`.** Le premier jet en portait un sur le produit *et* un sur la fiche
+> nutrition, en plus du code `bio` dans les certifications : trois sources de vérité pour un même
+> fait, sans règle de préséance. `certifications` fait foi, seul. « Est bio » se calcule.
+
+## 3. Médias
+
+Le premium se joue beaucoup à l'image : plusieurs assets, qualité maîtrisée, par usage.
+
+`MediaAsset` est un **agrégat propre** (cycle de vie d'upload, réutilisable) :
 
 | Champ | Type | Rôle |
 |---|---|---|
-| `certifications` | Certification[] | Labels officiels — preuve, pas marketing |
-| `is_bio` | bool | Certifié bio (aussi porté par la fiche nutrition) |
-
-`Certification` : `{ code, label, authority?, valid_until? }`. Ex. `bio` (AB/Eurofeuille), `label_rouge`,
-`igp`, `aop`, `fait_maison`, `artisan_boulanger`, `commerce_equitable`. Certains ont des **règles
-d'affichage légales** (logo, mentions) → l'adaptateur canal les rend, la donnée les déclare.
-
----
-
-## 4. Médias 🟨
-
-Le premium se joue beaucoup à l'image. Plusieurs assets, qualité maîtrisée, par usage.
-
-| Champ (`MediaAsset`) | Type | Rôle |
-|---|---|---|
-| `id` | UUID | |
-| `owner_type` / `owner_id` | enum / UUID | `product` \| `variant` \| `category` |
-| `role` | enum | `hero` \| `gallery` \| `lifestyle` \| `thumbnail` \| `print` |
+| `id` | UUID v7 | |
 | `url` | string | Stockage / CDN |
-| `alt` | string | Accessibilité + SEO |
-| `position` | int | 0 = image principale |
-| `focal_point` | {x,y}? | Recadrage propre selon les ratios de chaque canal |
+| `alt` 🌐 | LocalizedText | Accessibilité + SEO |
+| `focal_point` | `{x,y}?` | Recadrage propre selon les ratios de chaque canal |
 
-> Chaque canal a ses contraintes (Shopify multi-format, vignette caisse PI, haute-déf pour l'impression
-> B2B). On stocke le **master** + un `focal_point` ; les déclinaisons de taille sont dérivées, pas
-> ressaisies.
+L'attachement passe par des **tables de liaison dédiées** — `product_media`, `variant_media`,
+`category_media` — portant `(owner_id, media_id, role, position)`.
 
----
+> ⚠️ **Pas de FK polymorphe** (`owner_type` + `owner_id`). Postgres ne peut alors garantir **aucune**
+> intégrité référentielle, et l'appartenance à l'agrégat devient illisible. Trois petites tables
+> valent mieux qu'une colonne discriminante.
 
-## 5. Déclinaisons — `ProductVariant` 🟦
+`role` : `hero` · `gallery` · `lifestyle` · `thumbnail` · `print`. `position` : 0 = principale.
 
-**C'est la variante, pas le produit, qui porte le prix et la disponibilité.** Un produit sans
-déclinaison a une variante « défaut » unique.
-
-| Champ | Type | Rôle |
-|---|---|---|
-| `id` | UUID | Stable |
-| `product_id` | UUID | Produit parent |
-| `sku` | string | Unique — ex. `PATI-TARTE-FRAISE-6P` |
-| `name` | string | « 6 personnes » |
-| `barcode` | string? | EAN13 — caisse PI & `resale` |
-| `options` | map<string,string> | Axes — `{ "taille": "6 pers" }` |
-| `weight_grams` | int? | Si vente au poids/portion |
-| `is_default` | bool | Variante par défaut |
-| `is_active` | bool | Vivante |
-| `position` | int | Ordre d'affichage |
-
-> **Règle** : on ne crée une variante que si elle a un **prix ou une disponibilité propre**. Sinon
-> c'est une **option de préparation** (« bien cuit »), une note de commande — pas une déclinaison.
+> Chaque canal a ses contraintes (Shopify multi-format, vignette caisse PI, haute-déf pour
+> l'impression B2B). On stocke le **master** + un `focal_point` ; les déclinaisons de taille sont
+> **dérivées**, jamais ressaisies.
 
 ---
 
-## 6. Réglementaire — `NutritionInfo` 🟥
+## 4. Ce que chaque canal consomme de cette couche
 
-**Obligatoire** (règlement INCO / UE 1169/2011). Porté au niveau `Product` (ou `ProductVariant` si la
-recette diffère selon la déclinaison).
-
-| Champ | Type | Rôle |
-|---|---|---|
-| `allergens` | AllergenCode[] (**GS1**) | Allergènes présents — stockage canonique GS1 |
-| `may_contain` | AllergenCode[] (**GS1**) | Traces — « peut contenir » |
-| `ingredients_text` | text | Liste d'ingrédients réglementaire |
-| `nutrition_per_100g` | object? | Énergie, MG, sucres, sel… (selon obligations) |
-| `conservation` | string? | Conseil conservation / DLC |
-| `is_bio` | bool | Certifié bio |
-
-> Stockage **GS1 `AllergenTypeCode`** → projection **INCO** (14 UE + libellés + mise en forme) à
-> l'affichage. Mapping n:1, cf. [`05-allergenes-gs1-inco.md`](./05-allergenes-gs1-inco.md) et le code
-> [`src/allergens`](../../../apps/chevallot-PIM-backend/src/allergens). Les **14 INCO** à couvrir :
-> gluten, crustacés, œufs, poissons, arachides, soja, lait, fruits à coque, céleri, moutarde, sésame,
-> sulfites, lupin, mollusques.
-
----
-
-## 7. Recette / BOM (option) 🟨
-
-Hors périmètre v1 de vente. À inclure **seulement si** on couvre la planification matières du labo.
-
-`Recipe` : `{ id, product_variant_id, yield_quantity, components: RecipeComponent[] }` ;
-`RecipeComponent` : `{ ingredient_id, quantity, unit }`. Permet de déduire les **besoins matières**
-depuis le plan de production (couche 03). Décision de scope : **D3** dans [`todo.md`](../todo.md).
-
----
-
-## 8. Projection par canal (ce que chaque canal consomme)
-
-Le produit est canonique ; chaque adaptateur ne prend que ce dont il a besoin.
-
-| Donnée | Shopify (C&C web) | Caisse PI / Helios | B2B / GDSN |
+| Donnée | Shopify (C&C web) | Caisse PI / Helios | B2B |
 |---|---|---|---|
-| Identité (`name`, `sku`) | ✅ | ✅ (`pos_family_code`) | ✅ |
-| `slug`, SEO, `description_long`, `story` | ✅ | — | — |
-| Médias `hero`/`gallery` | ✅ | `thumbnail` | `print` |
-| Déclinaisons (`options`→variants) | ✅ | ✅ (`barcode`) | ✅ (unités logistiques) |
-| Allergènes | **INCO** (filtré + gras) | INCO (libellés) | **GS1** (pass-through) |
-| Nutrition, `ingredients_text` | ✅ | selon affichage | ✅ (fiche GDSN) |
-| Labels / certifications | ✅ (logos) | éventuel | ✅ |
+| `description_short` | ✅ | ✅ (tronqué) | ✅ |
+| `description_long`, `story`, `pairing`, SEO | ✅ | — | — |
+| `provenance` | ✅ | — | ✅ |
+| Médias | `hero` + `gallery` | `thumbnail` | `print` |
+| Certifications | ✅ (logos) | éventuel | ✅ |
 
----
+Le **comment** de cette projection (bindings, overrides, état de synchro) est dans
+[`04-composition-et-canaux.md`](./04-composition-et-canaux.md).
 
-## 9. Ce qui n'est PAS ici (volontairement)
+## 5. Recette / BOM — hors périmètre
 
-- **Prix** → `02-pricing-canaux.md` (un prix *par canal*, jamais un attribut produit).
-- **Disponibilité / stock** → `03-disponibilite-production.md` (capacité de production, pas inventaire).
-- **Ids Shopify / PI** → `04-publication-versioning.md` (table de mapping, ne pas polluer le canonique).
+À inclure **seulement si** on couvre la planification matières du labo. Forme pressentie :
+`Recipe { id, variant_id, yield_quantity, components: { ingredient_id, quantity, unit }[] }`.
+Décision de scope : **D3** dans [`todo.md`](../todo.md).
 
----
+## 6. Questions ouvertes
 
-## 10. Questions ouvertes sur le produit
-
-1. **`story` / `provenance` / `pairing`** : champs structurés (comme ci-dessus) ou bloc markdown libre
-   dans `description_long` ? Le structuré = réutilisable par canal ; le libre = plus souple à éditer.
-2. **Attributs extensibles** : prévoit-on un `attributes: jsonb` fourre-tout (par famille) pour les
-   spécificités qu'on ne veut pas figer en colonnes (ex. « température de service », « allergie
-   croisée labo ») ? (cohérent avec le `jsonb` d'ADR-05).
-3. **Multilingue** : la vitrine est-elle FR seul, ou FR/EN (Val d'Isère = clientèle internationale) ?
-   Impacte `name`/`description`/labels → `map<lang,string>` vs string simple.
-4. **Niveau de la fiche nutrition** : `Product` suffit, ou certaines déclinaisons ont des recettes
-   assez différentes pour porter leur propre `NutritionInfo` ?
+1. **`story` / `provenance` / `pairing` structurés ou markdown libre ?** Tranché ici en faveur du
+   **structuré** (réutilisable par canal) — à confirmer à l'usage, quand quelqu'un aura réellement
+   saisi dix fiches.
+2. **Niveau de l'éditorial** : produit uniquement, ou certaines déclinaisons méritent-elles leur
+   propre récit ? (par défaut : **produit** — c'est le produit qui raconte une histoire, pas la
+   taille 6 personnes).

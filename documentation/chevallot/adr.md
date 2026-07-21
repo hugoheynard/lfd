@@ -94,36 +94,102 @@ reste compatible → aucun lock-in, bascule possible.
 
 ## ADR-10 — Backend ESM + flags TS stricts partagés
 
-**Décision** : backend en **ESM** (`type: module`, imports `.js` NodeNext). Flags stricts partagés via
-[`tsconfig/tsflags.backend.json`](../../tsconfig/tsflags.backend.json) (extend une base stricte, +
-`noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `noPropertyAccessFromIndexSignature`). Tests **Jest**
-transpilés en CommonJS via `tsconfig.test.json`.
-**Raison** : `verbatimModuleSyntax` (« no ghost imports ») impose l'ESM ; les flags forcent la
-gestion explicite de l'`undefined`/hors-borne → moins de bugs silencieux. Setup éprouvé sur SH3PHERD.
-**Conséquences** : chaque futur backend `extends` cette couche ; front en **Vitest**
-(`@angular/build:unit-test` + analog).
+**Décision** : backend en **ESM** (`type: module`, imports `.js` NodeNext). Flags stricts en deux
+couches : [`tsconfig.base.json`](../../tsconfig.base.json) (tout le monorepo) puis
+[`tsconfig/tsflags.backend.json`](../../tsconfig/tsflags.backend.json) (spécifique Node/Nest :
+`module`, décorateurs, **`noUncheckedIndexedAccess`**).
+**Raison** : `verbatimModuleSyntax` (« no ghost imports ») impose l'ESM ; les flags forcent la gestion
+explicite de l'`undefined`/hors-borne → moins de bugs silencieux. Base héritée de SH3PHERD, **durcie**
+au-delà.
+**Ce que la base ajoute par rapport à SH3PHERD** :
+- `noImplicitReturns` et `allowUnusedLabels: false` — deux trous réels chez SH3 (non couverts par `strict`).
+- **`exactOptionalPropertyTypes`** — distingue `{a?: T}` de `{a: T | undefined}`.
+- **`noUncheckedSideEffectImports`** — un `import './x'` doit exister.
+- **`noUncheckedIndexedAccess`** (couche backend) — que SH3PHERD laisse volontairement OFF.
+- Les flags déjà impliqués par `strict` sont **épinglés explicitement** : l'intention survit à une
+  couche enfant qui toucherait `strict`.
+**Écarté délibérément** : `erasableSyntaxOnly` (TS 5.8) — il interdit les *parameter properties*
+(`constructor(private readonly x: X)`) et les enums, ce qui **casserait NestJS de fond en comble**.
+`isolatedDeclarations` : trop verbeux ici (gain surtout pour une lib publiée).
+**Conséquences** : chaque futur backend `extends` la couche backend ; le front est en **Vitest**
+(`@angular/build:unit-test` + analog). Les **tests backend tournent en ESM** (cf. ADR-04) — le client
+Prisma généré, compilé avec ces flags, passe sans concession.
 
-## ADR-11 — Catalogue event-sourced (event store dès le départ)
+## ADR-11 — Catalogue orienté comportement ; event store **préparé, pas activé**
 
-**Décision** : le catalogue est **event-sourced**. Un **event store append-only** (table Postgres
-`events`, payload `jsonb` — cohérent ADR-05) est la **source de vérité**. Les tables relationnelles
-(`Product`, `ProductVariant`, `Category`…) sont des **projections reconstructibles** par **replay** des
-events.
-**Raison** : rejouer / rebâtir la base à volonté, requêtes **as-of** (état du catalogue à une date T),
-audit gratuit — et surtout **ne pas polluer le modèle** avec de la métadonnée : le « qui / quand /
-version » vit sur l'**event**, pas sur l'entité. Pattern éprouvé sur SH3PHERD (event store + as-of +
-hard-gate de reconstruction).
+> **Révisé le 2026-07-21** — la v1 décidait « event-sourced dès le départ ». Cette version-là est
+> rétrogradée à l'issue d'une revue adversariale du modèle. Le raisonnement d'origine est conservé
+> plus bas.
+
+**Décision** : le catalogue est modélisé **par ses comportements** (commandes → faits nommés), mais
+les tables sont **écrites directement** par les handlers. **Pas** de table `events`, **pas** de
+projecteurs, **pas** d'upcasting — pour l'instant. Trois règles rendent le passage ultérieur à
+l'event store **non destructif** (détail dans
+[`data-model/00-langage-et-comportement.md`](../chevallot/data-model/00-langage-et-comportement.md#5--les-trois-règles-irréversibles)) :
+
+- **R1 — ids assignés par la commande** (UUID v7 applicatif). Jamais de séquence ni de
+  `gen_random_uuid()` en base : un replay régénérerait des ids différents, alors que la caisse,
+  Shopify et l'historique de commandes pointent dessus. **Seule règle réellement irrattrapable.**
+- **R2 — toute mutation porte un nom métier** (`RenameProduct`, `DiscontinueVariant`…). Pas
+  d'`update(partial)` générique : une intention non nommée ne peut pas être rétro-nommée.
+- **R3 — aucun `DELETE` physique**, on archive.
+
+**Raison du recul** : la justification v1 était **esthétique et fausse**. Elle promettait « zéro
+`created_at`/`updated_at` » — mais une table de projection a de toute façon besoin de
+`last_event_version` et `projected_at` : la métadonnée revenait, juste renommée. Surtout, le rapport
+coût/bénéfice ne tient pas : projecteurs + versioning + upcasting + hard-gate de replay **à vie**,
+pour un catalogue de boulangerie édité par trois personnes, sans contention ni invariant temporel
+riche. L'ES brille sur les domaines à comportement dense (contrat, compte, réservation) ; ici on a du
+CRUD enrichi. Précédent interne : sur **SH3PHERD**, l'event store est arrivé en **couche 3 phase C**,
+*après* stabilisation du modèle — pas au jour 1.
+
+**Ce qui remplace la promesse v1** : `created_at` / `updated_at` / `updated_by` existent, en colonnes
+**système hors-domaine** — jamais lues par une règle métier, jamais exposées en DTO. Le jour où
+l'event store arrive, elles deviennent redondantes et disparaissent d'un bloc.
+
+**Déclencheur de révision** (quand activer l'ES) : premier besoin réel d'**as-of** (« quel était le
+prix affiché le 24/12 ? »), ou obligation d'audit externe, ou un domaine à comportement dense
+(production, commandes) — pas le catalogue.
+
 **Conséquences** :
-- **Zéro `created_at` / `updated_at`** sur les entités de projection. « Créé » = premier event ;
-  « modifié » = dernier event ; l'historique complet = le log.
-- Chaque event porte `{ id, aggregate_type, aggregate_id, type, version, occurred_at, actor, payload }`.
-- Les commandes (`CreateProduct`, `RenameProduct`, `AddVariant`, `ArchiveProduct`…) émettent des events ;
-  des projecteurs alimentent les tables de lecture ; un **replay** doit reproduire l'état à l'identique
-  (hard gate).
-- **Coût assumé** : plus lourd qu'un CRUD (projecteurs, versioning d'events) — justifié par le replay,
-  l'as-of et l'audit natifs.
-**À cadrer** (sous-décisions) : **frontières d'agrégat** (`Product` possède-t-il ses variantes ?
-`Category` = agrégat séparé ?) ; granularité des events ; stratégie de **versioning / upcasting**.
+- **D6 est clos** : les frontières d'agrégat sont tranchées dans
+  [`00-langage-et-comportement.md`](../chevallot/data-model/00-langage-et-comportement.md#2--agrégats--la-décision-ex-d6)
+  — `Product` (racine, possède déclinaisons + fiches réglementaires), `Category`, `Collection`,
+  `MediaAsset`.
+- Le schéma Prisma n'est plus bloqué.
+- La liste des commandes et des faits est écrite **maintenant**, et fait autorité même sans event
+  store : c'est elle qui définit la surface d'écriture.
+
+## ADR-13 — Composition par tables satellites, canaux au bord
+
+**Décision** : trois natures de table, jamais mélangées — **socle** (identité), **couche canonique**
+(ce que le produit *est*, ex. réglementaire, éditorial), **contexte canal** (ce qu'un système tiers
+*en sait*, ex. `shopify_variant_binding`). Toute table satellite utilise le motif *shared primary
+key* (**PK = FK**). Les tables canal sont possédées par leur **adaptateur**, bindent sur la
+**déclinaison** (l'unité vendue) via son **`id`**, et ne sont **pas** event-sourçables (état de
+synchro re-dérivable).
+**Raison** : « étendre par clé étrangère » ne doit pas devenir « le PIM prend la forme de Shopify ».
+La FK ne pointe **jamais** du socle vers un canal — test de validation : *si on supprimait le module
+Shopify, le catalogue compilerait-il encore ?*
+**Conséquences** :
+- L'absence de donnée se représente par **absence de ligne**, pas par colonnes `NULL`.
+- Le code famille caisse PI Helios **sort de `Category`** → `helios_category_binding`.
+- Binding mécanique et overrides éditoriaux par canal sont **deux tables séparées** : le premier est
+  jetable et re-poussable, le second est une saisie utilisateur à ne jamais écraser.
+- `attributes` (jsonb) est soumis à une **règle de promotion** : lu par un adaptateur ou utilisé par
+  ≥2 familles ⇒ devient une colonne.
+- Détail : [`data-model/04-composition-et-canaux.md`](../chevallot/data-model/04-composition-et-canaux.md).
+
+## ADR-14 — Couche logistique descopée de la v1
+
+**Décision** : aucune modélisation du **poids, des dimensions, des unités logistiques** (colis,
+palette) ni de la **hiérarchie GTIN / GDSN** dans la v1.
+**Raison** : ces champs n'étaient présents que par anticipation d'un B2B non spécifié (**D1** ouvert).
+Modéliser une hiérarchie d'unités commerciales sans savoir ce qui est réellement vendu en gros, c'est
+figer une structure qu'on paiera à chaque migration.
+**Conséquences** : le **code-barres** n'est pas un attribut du catalogue — il reviendra par le
+**binding caisse** (`helios_variant_binding`) quand **D4** sera tranché. La projection GDSN reste un
+objectif d'`AllergenMapping.toGdsn()` (ADR-07), pas une structure de données.
 
 ## ADR-12 — Authentification déléguée à Auth0, vérifiée avec `jose`
 
