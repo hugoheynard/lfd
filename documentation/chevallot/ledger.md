@@ -13,6 +13,45 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ## 2026-07-21 — Jour 2
 
+### Canal Shopify : écran Réglages et bouton « Pousser »
+
+**PM** — Un écran **Réglages** apparaît : domaine de la boutique, version d'API, activation. Et le
+tableau produits gagne une colonne **Shopify** plus un bouton **Pousser** — par ligne ou pour tout le
+catalogue. Tant qu'aucun jeton n'est fourni, tout tourne en **simulation** : la chaîne complète
+s'exécute, rien ne part vers l'extérieur, et chaque compte-rendu le rappelle. Deux garde-fous
+utiles : un produit poussé deux fois sans modification est **ignoré** la seconde fois, et un produit
+en brouillon arrive **en brouillon** — jamais en ligne par accident.
+
+**Tech** — Adaptateur `channels/shopify/`, dépendant du catalogue et jamais l'inverse
+→ [ADR-17](./adr.md#adr-17--secrets-dintégration-hors-base--pilote-de-canal-derrière-un-port).
+
+*Le secret ne va pas en base.* Réglages non sensibles en base et pilotables depuis l'écran ; **jeton
+d'API dans l'environnement** (`SHOPIFY_ADMIN_TOKEN` via `AppConfig`). L'écran affiche sa *présence*,
+jamais sa valeur. Un secret en base fuite par les sauvegardes, les exports et les logs — c'est une
+frontière de sécurité, pas un détail de rangement. Conséquence : `mode = live` exige **deux**
+conditions (activé **et** approvisionné), sinon on croirait pousser pour de vrai.
+
+*Le pilote réel n'est pas écrit — délibérément.* L'API Admin de Shopify est versionnée
+trimestriellement et nous n'avons ni boutique ni jeton : écrire des mutations invérifiables
+produirait du code plausible et faux. `ShopifyDriver` est un port ; l'implémentation par défaut est
+un pilote `dry-run` qui exerce **toute** la chaîne sans réseau. Le spike d'une journée ne touchera
+que ce fichier.
+
+*Ce qui a de la valeur, c'est la projection.* `projectProduct` est **pure** : catalogue → vocabulaire
+Shopify. `fingerprint` sérialise **à clés triées** — sans ce tri, deux objets équivalents donneraient
+deux empreintes et tout paraîtrait modifié en permanence. L'empreinte sert à ne pas repousser
+l'identique (les canaux ont des quotas) et à détecter la dérive. **8 tests** dédiés.
+
+*Frontières.* `CatalogueReader` devient le **seul** contrat exporté par le catalogue : l'adaptateur
+ne voit ni ses dépôts, ni ses tables, ni ses commandes. Deux tables de binding, pas une : l'état de
+synchro est au niveau **produit** (Shopify pousse produit + variantes ensemble), la *référence de
+canal* reste sur la **déclinaison** (R4) avec son index unique — l'unicité par canal, structurelle.
+Les relations Prisma vers le socle sont **virtuelles** : aucune colonne n'est ajoutée au catalogue,
+la clé étrangère est portée par le binding.
+
+*Vérifié en vrai* — réglages lus, enregistrés, push exécuté (2 produits « simulé »), **re-push
+renvoyant « inchangé »**, bindings passés à `up_to_date`. tsc, lint, gate, **70 tests**, build AOT.
+
 ### Le PIM existe : familles paramétrables et tableau produits
 
 **PM** — Il y a maintenant quelque chose à ouvrir. On crée des **familles** (Viennoiseries,

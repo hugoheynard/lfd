@@ -9,6 +9,12 @@ export const routes: Routes = [
       import('./catalogue/categories-page').then((m) => m.CategoriesPage),
   },
   {
+    path: 'reglages',
+    title: 'Réglages — Chevallot PIM',
+    loadComponent: () =>
+      import('./channels/settings-page').then((m) => m.SettingsPage),
+  },
+  {
     path: 'produits',
     title: 'Produits — Chevallot PIM',
     loadComponent: () =>

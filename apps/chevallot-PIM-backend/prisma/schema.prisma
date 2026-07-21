@@ -86,6 +86,9 @@ model Product {
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
 
+  /// Relation virtuelle — la clé étrangère est portée par le binding (ADR-13).
+  shopifyBinding ShopifyProductBinding?
+
   @@index([categoryId])
   @@map("product")
 }
@@ -106,6 +109,67 @@ model ProductVariant {
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
 
+  /// Relation **virtuelle** : aucune colonne n'est ajoutée ici. La clé étrangère
+  /// physique est portée par `shopify_variant_binding` — le sens imposé par ADR-13
+  /// (le socle ne pointe jamais vers un canal). Prisma exige seulement de déclarer
+  /// l'autre extrémité.
+  shopifyBinding ShopifyVariantBinding?
+
   @@index([productId])
   @@map("product_variant")
+}
+
+// ---------------------------------------------------------------------------
+// Canal Shopify — tables possédées par l'ADAPTATEUR (ADR-13).
+// Non event-sourçables : ce sont des états de synchro re-dérivables, pas des
+// faits métier. Elles peuvent être perdues et reconstruites par un re-push.
+// ---------------------------------------------------------------------------
+
+enum ShopifySyncStatus {
+  never_pushed
+  up_to_date
+  drifted
+  failed
+}
+
+/// Réglages de l'intégration — ligne unique.
+/// ⚠️ Aucun secret ici : le jeton d'API vit dans l'environnement (`AppConfig`).
+model ShopifySettings {
+  id         String   @id
+  shopDomain String   @map("shop_domain")
+  apiVersion String   @map("api_version")
+  isEnabled  Boolean  @default(false) @map("is_enabled")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("shopify_settings")
+}
+
+/// État de synchro d'un **produit** — Shopify pousse un produit et ses variantes
+/// ensemble, donc l'empreinte et le statut vivent à ce niveau. Les *références*,
+/// elles, restent sur la déclinaison (R4) : ce sont deux choses différentes.
+model ShopifyProductBinding {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  shopifyProductGid String?           @map("shopify_product_gid")
+  lastPushedHash    String?           @map("last_pushed_hash")
+  lastPushedAt      DateTime?         @map("last_pushed_at")
+  syncStatus        ShopifySyncStatus @default(never_pushed) @map("sync_status")
+  lastError         String?           @map("last_error")
+
+  @@map("shopify_product_binding")
+}
+
+/// Ce que Shopify sait d'une **déclinaison** — l'unité réellement vendue (R4).
+model ShopifyVariantBinding {
+  variantId String         @id @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  /// Référence propre au canal. `NULL` = le SKU interne est poussé tel quel.
+  /// L'index unique **est** l'unicité par canal : la table étant le canal, aucun
+  /// discriminant n'est nécessaire.
+  channelReference  String? @unique @map("channel_reference")
+  shopifyVariantGid String? @map("shopify_variant_gid")
+
+  @@map("shopify_variant_binding")
 }

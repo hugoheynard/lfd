@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { CatalogueModule } from './catalogue/catalogue.module.js';
+import { ShopifyModule } from './channels/shopify/shopify.module.js';
 import { AuthModule } from './infra/auth/auth.module.js';
 import { AppConfigModule } from './infra/config/config.module.js';
 import { DatabaseModule } from './infra/database/database.module.js';
@@ -19,6 +20,7 @@ import { DatabaseModule } from './infra/database/database.module.js';
     DatabaseModule,
     AuthModule,
     CatalogueModule,
+    ShopifyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

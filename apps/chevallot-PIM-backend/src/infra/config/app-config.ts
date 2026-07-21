@@ -15,12 +15,14 @@ export class AppConfig {
   private readonly auth0DomainValue: string;
   private readonly auth0AudienceValue: string;
   private readonly portValue: number;
+  private readonly shopifyToken: string | null;
 
   constructor() {
     this.database = required('DATABASE_URL');
     this.auth0DomainValue = required('AUTH0_DOMAIN');
     this.auth0AudienceValue = required('AUTH0_AUDIENCE');
     this.portValue = optionalPort('PORT', 3100);
+    this.shopifyToken = optional('SHOPIFY_ADMIN_TOKEN');
   }
 
   /** URL Postgres (Docker en dev, Neon en prod — ADR-09). */
@@ -42,6 +44,28 @@ export class AppConfig {
   port(): number {
     return this.portValue;
   }
+
+  /**
+   * Jeton d'API Shopify — **secret**, donc dans l'environnement et **pas en base**.
+   *
+   * Les réglages non sensibles de l'intégration (domaine de la boutique, activation)
+   * vivent en base et se pilotent depuis l'écran Réglages. Le jeton, non : un secret
+   * en base fuite par les sauvegardes, les exports et les logs, et se retrouve lisible
+   * par quiconque ouvre l'admin. L'écran affiche seulement s'il est **présent**.
+   */
+  shopifyAdminToken(): string | null {
+    return this.shopifyToken;
+  }
+
+  /** L'intégration ne peut fonctionner que si le secret est fourni. */
+  hasShopifyToken(): boolean {
+    return this.shopifyToken !== null;
+  }
+}
+
+function optional(name: string): string | null {
+  const value = process.env[name];
+  return value === undefined || value.trim() === '' ? null : value;
 }
 
 function required(name: string): string {

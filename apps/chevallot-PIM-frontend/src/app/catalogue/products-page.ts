@@ -9,6 +9,12 @@ import {
 import { RouterLink } from '@angular/router';
 
 import {
+  ShopifyApi,
+  type ProductBinding,
+  type SyncStatus,
+} from '../channels/shopify-api';
+
+import {
   CatalogueApi,
   type Category,
   type Product,
@@ -21,18 +27,36 @@ const KIND_LABELS: Record<ProductKind, string> = {
   resale: 'Revente',
 };
 
+const SYNC_LABELS: Record<SyncStatus, string> = {
+  never_pushed: 'jamais poussé',
+  up_to_date: 'à jour',
+  drifted: 'en écart',
+  failed: 'échec',
+};
+
 @Component({
   selector: 'app-products-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `
     <header class="page-head">
-      <h1>Produits</h1>
+      <div class="head-row">
+        <h1>Produits</h1>
+        @if (products().length > 0) {
+          <button type="button" (click)="pushAll()" [disabled]="busy()">
+            Tout pousser sur Shopify
+          </button>
+        }
+      </div>
       <p>
         La référence est <strong>proposée</strong> si on la laisse vide — modifiable
         ensuite. Chaque produit naît avec sa déclinaison par défaut.
       </p>
     </header>
+
+    @if (pushMessage(); as text) {
+      <p class="notice" role="status">{{ text }}</p>
+    }
 
     @if (categories().length === 0) {
       <p class="empty">
@@ -82,6 +106,7 @@ const KIND_LABELS: Record<ProductKind, string> = {
             <th>Nature</th>
             <th>Déclinaison par défaut</th>
             <th>État</th>
+            <th>Shopify</th>
             <th></th>
           </tr>
         </thead>
@@ -101,6 +126,14 @@ const KIND_LABELS: Record<ProductKind, string> = {
               <td><code>{{ defaultVariantSku(product) }}</code></td>
               <td><span class="tag">{{ product.status }}</span></td>
               <td>
+                <span class="tag" [class.warn]="syncStatus(product.id) === 'failed'">
+                  {{ syncLabel(product.id) }}
+                </span>
+              </td>
+              <td class="row-actions">
+                <button type="button" class="ghost" (click)="push(product)" [disabled]="busy()">
+                  Pousser
+                </button>
                 @if (product.status !== 'archived') {
                   <button type="button" class="ghost" (click)="archive(product)">Archiver</button>
                 }
@@ -112,9 +145,35 @@ const KIND_LABELS: Record<ProductKind, string> = {
     }
   `,
   styleUrl: './catalogue.scss',
+  styles: [
+    `
+      .head-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      .row-actions {
+        display: flex;
+        gap: 0.4rem;
+        white-space: nowrap;
+      }
+      .tag.warn {
+        color: var(--danger);
+      }
+      .notice {
+        padding: 0.6rem 0.8rem;
+        margin-bottom: 1rem;
+        background: var(--field);
+        border-radius: 0.4rem;
+        font-size: 0.9rem;
+      }
+    `,
+  ],
 })
 export class ProductsPage {
   private readonly api = inject(CatalogueApi);
+  private readonly shopify = inject(ShopifyApi);
 
   protected readonly kinds: readonly ProductKind[] = [
     'daily',
@@ -130,6 +189,12 @@ export class ProductsPage {
   protected readonly draftSku = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
+  protected readonly bindings = signal<ProductBinding[]>([]);
+  protected readonly pushMessage = signal<string | null>(null);
+
+  private readonly bindingById = computed(
+    () => new Map(this.bindings().map((binding) => [binding.productId, binding])),
+  );
 
   private readonly byId = computed(
     () => new Map(this.categories().map((category) => [category.id, category])),
@@ -141,6 +206,24 @@ export class ProductsPage {
 
   protected label(kind: string): string {
     return this.isKind(kind) ? KIND_LABELS[kind] : kind;
+  }
+
+  protected syncStatus(productId: string): SyncStatus {
+    return this.bindingById().get(productId)?.syncStatus ?? 'never_pushed';
+  }
+
+  protected syncLabel(productId: string): string {
+    return SYNC_LABELS[this.syncStatus(productId)];
+  }
+
+  /** Un produit précis — le bouton de la ligne. */
+  protected async push(product: Product): Promise<void> {
+    await this.runPush([product.id]);
+  }
+
+  /** Tout le catalogue publiable — le bouton d'entête. */
+  protected async pushAll(): Promise<void> {
+    await this.runPush(undefined);
   }
 
   protected categoryName(id: string): string {
@@ -192,6 +275,31 @@ export class ProductsPage {
     await this.run(() => this.api.archiveProduct(product.id));
   }
 
+  private async runPush(productIds: string[] | undefined): Promise<void> {
+    this.busy.set(true);
+    this.pushMessage.set(null);
+    try {
+      const summary = await this.shopify.push(productIds);
+      const pushed = summary.results.filter((r) => r.outcome === 'pushed').length;
+      const unchanged = summary.results.filter(
+        (r) => r.outcome === 'unchanged',
+      ).length;
+      const failed = summary.results.filter((r) => r.outcome === 'failed').length;
+
+      // Le mode est rappelé à chaque fois : sans ça on croirait pousser pour de vrai.
+      const prefix =
+        summary.mode === 'dry-run' ? 'Simulation — ' : 'Envoi réel — ';
+      this.pushMessage.set(
+        `${prefix}${pushed} poussé(s), ${unchanged} inchangé(s), ${failed} en échec.`,
+      );
+      this.bindings.set(await this.shopify.listBindings());
+    } catch {
+      this.pushMessage.set('Envoi impossible : le serveur est injoignable.');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   private isKind(value: string): value is ProductKind {
     return value === 'daily' || value === 'made_to_order' || value === 'resale';
   }
@@ -213,11 +321,13 @@ export class ProductsPage {
 
   private async reload(): Promise<void> {
     try {
-      const [products, categories] = await Promise.all([
+      const [products, categories, bindings] = await Promise.all([
         this.api.listProducts(),
         this.api.listCategories(),
+        this.shopify.listBindings(),
       ]);
       this.products.set(products);
+      this.bindings.set(bindings);
       this.categories.set(categories.filter((category) => !category.isArchived));
 
       if (this.draftCategory() === '' && categories.length > 0) {

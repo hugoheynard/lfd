@@ -92,8 +92,14 @@
 ### Intégrations (adaptateurs `ChannelAdapter`)
 - [ ] Contrat d'intégration **PI Helios** (bloqué par D4) → `helios_*_binding`, dont le
       `pos_family_code` et le **code-barres** (sortis du socle, ADR-13/14)
-- [ ] Adaptateur **Shopify** (push Admin API + webhooks stock/commandes) → `shopify_*_binding`
-      + `shopify_product_override`
+- [x] **Seam Shopify** : écran Réglages, projection pure + empreinte, bindings produit/déclinaison,
+      bouton Pousser (ligne + global), pilote `dry-run` par défaut ([ADR-17](./adr.md#adr-17--secrets-dintégration-hors-base--pilote-de-canal-derrière-un-port))
+- [ ] **Pilote Shopify réel** — à écrire **après le spike** (boutique de dev + jeton). Ne touche que
+      `shopify-driver.ts`. Y compris : metafield allergènes, et l'`id` de déclinaison déposé côté
+      Shopify comme clé de jointure
+- [ ] **Webhooks Shopify** (`products/update`) → détection de dérive, régime *surveillé*
+- [ ] `shopify_product_override` (titre, handle, tags saisis à la main) — à ne jamais écraser au re-push
+- [ ] Modèle de **disponibilité** côté Shopify (capacité de production ≠ stock) — le vrai point dur
 - [ ] Port de lecture `CatalogueReader` — les adaptateurs ne lisent **jamais** les tables du socle
 - [ ] Adaptateur **B2B** (export fiches, pass-through GS1) — sans hiérarchie GDSN (ADR-14)
 

@@ -318,3 +318,35 @@ lisible, jamais un hash.
   valides s'achètent auprès de GS1, et le code-barres est un besoin de **caisse** → binding, à D4.
 - Détail : [`data-model/06-identifiants-et-sku.md`](../chevallot/data-model/06-identifiants-et-sku.md).
   Proposition d'origine archivée (non normative) sous `data-model/_sources/`.
+
+## ADR-17 — Secrets d'intégration hors base ; pilote de canal derrière un port
+
+**Décision** : les **réglages** d'un canal (domaine de boutique, version d'API, activation)
+vivent en base et se pilotent depuis l'écran Réglages ; le **jeton d'API** vit dans
+l'environnement (`AppConfig`) et **jamais en base**. L'écran affiche seulement sa *présence*, jamais
+sa valeur. Le transport vers le canal est isolé derrière un port `ShopifyDriver`, dont
+l'implémentation par défaut est un pilote **`dry-run`** qui n'émet aucun appel réseau.
+
+**Raison** :
+- Un secret en base **fuite par les sauvegardes, les exports, les dumps et les logs**, et devient
+  lisible par quiconque ouvre l'admin. Le distinguer d'un réglage ordinaire est une frontière de
+  sécurité, pas une préférence.
+- Le pilote réel **ne peut pas être écrit honnêtement aujourd'hui** : l'API Admin de Shopify est
+  versionnée trimestriellement et nous n'avons ni boutique ni jeton. Écrire des mutations
+  invérifiables produirait du code *plausible et faux*. Le spike (une journée, boutique de
+  développement) tranchera, et ne touchera **que ce fichier**.
+- Le mode `dry-run` n'est pas un bouchon : il exerce toute la chaîne — lecture par le port,
+  projection, empreinte, écriture du binding — et rend le comportement observable **maintenant**.
+
+**Conséquences** :
+- `mode = live` exige **deux** conditions : intégration activée **et** jeton présent. Activer sans
+  jeton ne doit pas laisser croire qu'on pousse pour de vrai ; l'écran et chaque compte-rendu de
+  push rappellent le mode.
+- L'**empreinte** (`sha256` d'une sérialisation à clés triées) sert deux fins : ne pas repousser
+  l'identique (les canaux ont des quotas), et détecter la dérive. Le tri des clés n'est pas
+  cosmétique — sans lui, deux objets équivalents donneraient deux empreintes et tout paraîtrait
+  modifié en permanence.
+- Un produit **non publié est projeté en brouillon** : aucune mise en ligne par inadvertance.
+- Les pushs sont **séquentiels** : une rafale parallèle se ferait étrangler par les quotas.
+- L'adaptateur lit le catalogue par le seul port exporté, `CatalogueReader` (ADR-13). Le module
+  `catalogue` n'exporte **ni ses dépôts ni ses commandes** — supprimer le canal ne casserait rien.
