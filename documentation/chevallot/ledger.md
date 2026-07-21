@@ -13,6 +13,30 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ## 2026-07-21 — Jour 2
 
+### Premier code du catalogue : la référence produit
+
+**PM** — Le système sait maintenant fabriquer une référence lisible tout seul
+(`PATI-TARTE-FRAISE-6P`), refuser une référence mal formée, et rattraper une collision sans jamais
+produire deux fois la même. Rien n'est encore branché à la base — mais la règle est écrite une fois,
+au bon endroit, et testée.
+
+**Tech** — Premier slice de `catalogue/domain`, **pur** : ni Nest, ni Prisma, ni HTTP.
+
+- `shared/errors/app-error.ts` — trois catégories (`domain` / `business` / `technical`), aucune ne
+  connaît HTTP : la traduction en statut appartient au filtre d'exceptions, à la frontière.
+- `catalogue/domain/value-objects/sku.value-object.ts` — constructeur privé, `Sku.create()` unique
+  point d'entrée : **un SKU invalide ou non normalisé ne peut pas exister en mémoire**. Conséquence
+  vérifiée par un test dédié : `' ecl-01 '` et `'ECL_01'` sont structurellement égaux — c'est ce qui
+  permet à un index unique **ordinaire** de garantir l'unicité insensible à la casse.
+- `catalogue/domain/services/sku-generator.ts` — génération signifiante
+  `{FAMILLE}-{PRODUIT}[-{DÉCLINAISON}][-{N}]`, mots vides français retirés, troncature sans tiret
+  orphelin, collision → suffixe numérique lisible, échec franc après 10 tentatives plutôt qu'une
+  boucle. Dépend d'un **port** `SkuAvailability`, jamais d'un dépôt.
+
+**35 tests** ajoutés (62 au total, 7 suites) ; tsc, lint et gate verts. Les cas limites couverts sont
+ceux qui mordent en vrai : accents, séparateurs multiples, nom entièrement composé de mots vides,
+troncature à la longueur maximale **avec** place pour le suffixe.
+
 ### Le SKU : une seule référence, et des libellés de canal au bord
 
 **PM** — Premier sujet traité en profondeur. Une proposition de conception voulait **un SKU différent
