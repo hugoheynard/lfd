@@ -1,0 +1,45 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.shell-head {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 0.9rem clamp(1rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+
+  .brand {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .brand-sub {
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  nav {
+    display: flex;
+    gap: 1.25rem;
+  }
+
+  a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding-bottom: 0.15rem;
+    border-bottom: 2px solid transparent;
+
+    &:hover {
+      color: var(--text);
+    }
+
+    &.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+    }
+  }
+}

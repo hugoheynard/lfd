@@ -104,14 +104,23 @@ export function productSkuRoot(
     .join('-');
 }
 
+/**
+ * Racine d'une déclinaison : la référence du produit, **suffixée**.
+ *
+ * Le suffixe n'est pas décoratif. L'espace de noms des références est global (produits et
+ * déclinaisons confondus) : sans lui, la déclinaison par défaut d'un produit sans option
+ * viserait exactement la référence de son produit, et la création échouerait sur le
+ * registre. Quand aucune option ne distingue la déclinaison, on retombe donc sur son
+ * **rang** — `-1`, `-2` — ce qui reste lisible et se lit comme une numérotation d'atelier.
+ */
 export function variantSkuRoot(
   productSku: Sku,
   options: ReadonlyMap<string, string>,
+  position: number,
 ): string {
   const discriminator = optionsDiscriminator(options);
-  return discriminator === ''
-    ? productSku.value
-    : `${productSku.value}-${discriminator}`;
+  const suffix = discriminator === '' ? `${position + 1}` : discriminator;
+  return `${productSku.value}-${suffix}`;
 }
 
 /** Tronque sans laisser de tiret orphelin en fin de chaîne. */

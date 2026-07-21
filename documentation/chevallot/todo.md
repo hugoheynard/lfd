@@ -60,17 +60,25 @@
 
 ### Domaine & données
 - [x] **Langage ubiquitaire + commandes/faits + agrégats** (clôt D6) → [`00-langage-et-comportement.md`](./data-model/00-langage-et-comportement.md)
-- [ ] **Schéma Prisma du socle** — `product`, `product_variant`, `category`, `collection`,
-      `product_collection`, `nutrition_declaration` (PK=FK) — **débloqué**
-- [ ] Handlers de commande nommés (§3 du doc 00) + garde `PublishProduct` sans fiche réglementaire
-- [ ] **UUID v7 applicatif** (R1) — un `IdGenerator` injecté, jamais de défaut base
+- [ ] Tables restantes du socle : `collection`, `product_collection`, `nutrition_declaration` (PK=FK)
 - [x] **Value object `Sku`** + générateur de SKU par défaut (port `SkuAvailability`), 35 tests
       — [ADR-16](./adr.md#adr-16--un-sku-interne-unique--les-références-canal-vivent-au-bord)
 - [x] **Catégories d'erreurs** `DomainError` / `BusinessError` / `TechnicalError`
-- [ ] **Filtre d'exceptions HTTP** — traduire les catégories en statuts (`domain` → 400,
-      `business` → 409/422, `technical` → 500). Aucune classe d'erreur ne connaît HTTP
-- [ ] Brancher `SkuAlreadyUsedError` sur la violation `23505` **dans l'adaptateur de dépôt**
-      (n'existera qu'avec le premier dépôt Prisma)
+- [x] **Filtre d'exceptions HTTP** — `domain` → 400, `business` → 409, `ResourceNotFound` → 404,
+      `technical` → 500 (détail masqué + tracé). Aucune classe d'erreur ne connaît HTTP
+- [x] Brancher `SkuAlreadyUsedError` sur la violation d'unicité **dans l'adaptateur de dépôt**
+- [x] **Schéma Prisma du socle** + migration `socle_catalogue` (+ `sku_registry` : l'unicité
+      globale du SKU ne pouvant pas s'exprimer sur deux tables)
+- [x] **`IdGenerator` UUID v7** applicatif (R1), injecté — aucun défaut en base
+- [x] **Verbes catalogue** : familles (créer / renommer / archiver) et produits
+      (créer avec déclinaison par défaut / renommer / archiver)
+- [x] **Back-office Angular** : écran Familles + tableau Produits (signals, zoneless, zéro `FormsModule`)
+- [ ] 🔴 **Retirer le `@Public()` du contrôleur catalogue** dès qu'Auth0 est configuré — l'API
+      catalogue est actuellement **ouverte** en local pour que le back-office fonctionne
+- [ ] Tests des handlers (dépôts en double) — seul le domaine pur est couvert aujourd'hui
+- [ ] `packages/shared-types` — le front redéclare aujourd'hui `Category` / `Product`
+- [ ] Verbes manquants : `AddVariant`, `ChangeVariantSku`, `MoveCategory` (le contrôle de cycle
+      est écrit et testable mais pas encore exposé), `PublishProduct` (gardé par les allergènes)
 - [ ] Format du SKU (motif + longueurs + `normalize`) dans `packages/shared-types` — partage
       **à la compilation**, pas un registre runtime
 - [ ] Event store append-only : **différé** (ADR-11 révisé). Déclencheur = premier besoin d'as-of réel
@@ -91,5 +99,6 @@
 
 ## Prochaine étape en cours
 
-➡️ **Schéma Prisma du socle** (débloqué par la clôture de D6) — dérivé de
-[`data-model/02-catalogue-items.md`](./data-model/02-catalogue-items.md)
+➡️ **Le questionnaire PI** (§ actions de cadrage) — c'est lui qui débloque le pricing,
+l'anti-drift et la validité d'ADR-15. Côté code, la suite naturelle est `AddVariant`
+(saisir les déclinaisons) puis la fiche réglementaire.

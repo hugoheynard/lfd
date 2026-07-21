@@ -1,0 +1,119 @@
+import { Inject, Injectable } from '@nestjs/common';
+
+import { IdGenerator } from '../../shared/identity/id-generator.js';
+import {
+  CategoryArchivedError,
+  CategoryNotFoundError,
+  ProductNotFoundError,
+} from '../domain/errors/catalogue-errors.js';
+import { CategoryRepository } from '../domain/ports/category.repository.js';
+import {
+  ProductRepository,
+  type ProductKind,
+} from '../domain/ports/product.repository.js';
+import {
+  productSkuRoot,
+  proposeSku,
+  variantSkuRoot,
+  type SkuAvailability,
+} from '../domain/services/sku-generator.js';
+import {
+  localizedText,
+  slugify,
+  type LocalizedText,
+} from '../domain/value-objects/localized-text.js';
+import { Sku } from '../domain/value-objects/sku.value-object.js';
+import { SKU_AVAILABILITY } from '../infrastructure/prisma-sku-availability.js';
+
+export interface CreateProductInput {
+  readonly nameFr: string;
+  readonly nameEn?: string | undefined;
+  readonly kind: ProductKind;
+  readonly categoryId: string;
+  /** Laissé vide, une référence lisible est **proposée**. */
+  readonly sku?: string | undefined;
+}
+
+@Injectable()
+export class ProductCommands {
+  constructor(
+    private readonly products: ProductRepository,
+    private readonly categories: CategoryRepository,
+    @Inject(IdGenerator) private readonly ids: IdGenerator,
+    @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
+  ) {}
+
+  /**
+   * Crée le produit **et sa déclinaison par défaut** — indissociables (invariant 2).
+   * La persistance les écrit en une transaction : l'invariant n'est jamais faux.
+   */
+  async create(input: CreateProductInput): Promise<string> {
+    const name = localizedText('nom', input.nameFr, input.nameEn);
+    const category = await this.categories.findById(input.categoryId);
+
+    if (category === null) {
+      throw new CategoryNotFoundError(input.categoryId);
+    }
+    if (category.isArchived) {
+      throw new CategoryArchivedError(input.categoryId);
+    }
+
+    const sku =
+      input.sku === undefined || input.sku.trim() === ''
+        ? await proposeSku(
+            productSkuRoot(category.slug.fr, name.fr),
+            this.availability,
+          )
+        : Sku.create(input.sku);
+
+    const productId = this.ids.next();
+    const variantSku = await proposeSku(
+      variantSkuRoot(sku, new Map(), 0),
+      this.availability,
+    );
+
+    await this.products.createWithDefaultVariant({
+      id: productId,
+      sku,
+      name,
+      slug: this.slugOf(name),
+      kind: input.kind,
+      categoryId: input.categoryId,
+      defaultVariant: {
+        id: this.ids.next(),
+        sku: variantSku,
+        name,
+      },
+    });
+
+    return productId;
+  }
+
+  async rename(id: string, nameFr: string, nameEn?: string): Promise<void> {
+    await this.requireProduct(id);
+    const name = localizedText('nom', nameFr, nameEn);
+    await this.products.rename(id, name, this.slugOf(name));
+  }
+
+  async archive(id: string): Promise<void> {
+    await this.requireProduct(id);
+    await this.products.setStatus(id, 'archived');
+  }
+
+  async restore(id: string): Promise<void> {
+    await this.requireProduct(id);
+    await this.products.setStatus(id, 'draft');
+  }
+
+  private slugOf(name: LocalizedText): LocalizedText {
+    return name.en === undefined
+      ? { fr: slugify(name.fr) }
+      : { fr: slugify(name.fr), en: slugify(name.en) };
+  }
+
+  private async requireProduct(id: string): Promise<void> {
+    if ((await this.products.findById(id)) === null) {
+      throw new ProductNotFoundError(id);
+    }
+  }
+}

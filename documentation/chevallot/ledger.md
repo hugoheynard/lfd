@@ -13,6 +13,50 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ## 2026-07-21 — Jour 2
 
+### Le PIM existe : familles paramétrables et tableau produits
+
+**PM** — Il y a maintenant quelque chose à ouvrir. On crée des **familles** (Viennoiseries,
+Pâtisserie…), on saisit des **produits** dans un tableau, et le système attribue tout seul une
+référence lisible — `PATI-TARTE-FRAISE`. Deux produits du même nom ? Le second devient
+`…-FRAISE-2`, sans qu'on ait à y penser. Rien ne s'efface : on archive.
+
+**Tech** — Chaîne complète en une passe, socle → base → API → écran.
+
+*Base* — migration `socle_catalogue` : `category`, `product`, `product_variant`, plus un
+**`sku_registry`**. Ce dernier n'était pas prévu : l'unicité du SKU est déclarée **globale**
+(produits et déclinaisons confondus) et une contrainte d'unicité ne s'étend pas à deux tables. Le
+registre porte la garantie — sa clé primaire **est** l'invariant. Aucun identifiant par défaut en
+base (**R1**) : `IdGenerator` fournit des **UUID v7**, ordonnés donc amicaux pour l'index.
+
+*Collision de conception rencontrée en chemin* — la déclinaison par défaut d'un produit sans option
+visait exactement la référence de son produit, donc échouait sur le registre. Corrigé : sans option
+discriminante, la déclinaison retombe sur son **rang** (`PATI-TARTE-FRAISE-1`), ce qui se lit comme
+une numérotation d'atelier. C'est l'espace de noms global qui l'impose — la doc 06 le dit désormais.
+
+*Frontières tenues* — le domaine ne connaît ni Prisma ni HTTP. Les dépôts sont des classes
+abstraites servant de **jetons d'injection** ; la violation d'unicité est traduite en
+`SkuAlreadyUsedError` **dans l'adaptateur**. Un filtre unique traduit les catégories en statuts
+(400 / 404 / 409 / 500) — seul point du système qui connaît à la fois le domaine et le transport.
+Produit + déclinaison + réservations partent en **une transaction** : l'invariant « au moins une
+déclinaison, exactement une par défaut » n'est jamais faux, pas même une fraction de seconde.
+
+*Deux frictions des flags stricts, résolues sans concession* — `exactOptionalPropertyTypes` impose
+`?: string | undefined` aux frontières ; et une interface à clés fixes n'est pas assignable au JSON
+de Prisma (pas d'index signature) → conversion explicite `localizedColumn()` plutôt qu'un cast. Le
+compilateur avait raison les deux fois.
+
+*Front* — Angular zoneless, standalone, **signals uniquement** : zéro `FormsModule`, les champs sont
+des `signal` pilotés par `(input)`. Deux écrans (Familles, Produits), routes paresseuses, thème
+clair/sombre. Rendu **client** assumé côté SSR : préparer les pages au build n'aurait rien à afficher.
+
+*Vérifié* — tsc, lint, gate, **62 tests**, build AOT ; et l'API éprouvée au `curl` de bout en bout,
+y compris les refus (payload invalide → 400, famille inconnue → 404, référence prise → 409).
+
+⚠️ **Dette assumée et suivie** : le contrôleur catalogue est en `@Public()`, donc **l'API est
+ouverte** — sans ça le guard Auth0 global rejetterait tout et le back-office serait inutilisable
+tant que le tenant n'existe pas. À retirer en priorité. Le front redéclare aussi les types du
+contrat, faute de `packages/shared-types`.
+
 ### Premier code du catalogue : la référence produit
 
 **PM** — Le système sait maintenant fabriquer une référence lisible tout seul

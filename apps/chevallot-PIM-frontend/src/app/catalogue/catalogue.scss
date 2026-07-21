@@ -1,0 +1,152 @@
+:host {
+  display: block;
+  padding: 2rem clamp(1rem, 4vw, 3rem);
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+.page-head {
+  margin-bottom: 1.75rem;
+
+  h1 {
+    margin: 0 0 0.35rem;
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    max-width: 60ch;
+  }
+}
+
+.row-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+
+  input,
+  select {
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+
+  .sku {
+    flex: 0 1 14rem;
+    font-family: var(--mono);
+  }
+}
+
+input,
+select {
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  color: inherit;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+}
+
+button {
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 500;
+  color: var(--on-accent);
+  background: var(--accent);
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &.ghost {
+    color: var(--muted);
+    background: transparent;
+    border-color: var(--line);
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  th,
+  td {
+    padding: 0.5rem 0.6rem;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+
+  th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+
+  td input {
+    width: 100%;
+    background: transparent;
+    border-color: transparent;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--field);
+      border-color: var(--line);
+    }
+  }
+
+  tr.archived {
+    opacity: 0.45;
+  }
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--field);
+  border-radius: 0.3rem;
+}
+
+.error {
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 1rem;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+  border-radius: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 0.6rem;
+}

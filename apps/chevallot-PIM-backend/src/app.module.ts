@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { CatalogueModule } from './catalogue/catalogue.module.js';
 import { AuthModule } from './infra/auth/auth.module.js';
 import { AppConfigModule } from './infra/config/config.module.js';
 import { DatabaseModule } from './infra/database/database.module.js';
@@ -17,6 +18,7 @@ import { DatabaseModule } from './infra/database/database.module.js';
     AppConfigModule,
     DatabaseModule,
     AuthModule,
+    CatalogueModule,
   ],
   controllers: [AppController],
   providers: [AppService],

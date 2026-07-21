@@ -78,12 +78,15 @@ describe('génération de la référence par défaut', () => {
     it('préfixe la déclinaison par la référence du produit', () => {
       const product = Sku.create('PATI-TARTE-FRAISE');
       const options = new Map([['taille', '6 pers']]);
-      expect(variantSkuRoot(product, options)).toBe('PATI-TARTE-FRAISE-6P');
+      expect(variantSkuRoot(product, options, 0)).toBe('PATI-TARTE-FRAISE-6P');
     });
 
-    it('laisse la référence du produit intacte sans option', () => {
+    // Sans suffixe, la déclinaison par défaut viserait la référence du produit
+    // lui-même — or l'espace de noms est global. On retombe sur le rang.
+    it('retombe sur le rang quand aucune option ne distingue', () => {
       const product = Sku.create('VIEN-CROISS');
-      expect(variantSkuRoot(product, new Map())).toBe('VIEN-CROISS');
+      expect(variantSkuRoot(product, new Map(), 0)).toBe('VIEN-CROISS-1');
+      expect(variantSkuRoot(product, new Map(), 1)).toBe('VIEN-CROISS-2');
     });
   });
 

@@ -42,6 +42,14 @@ export abstract class BusinessError extends AppError {
   }
 }
 
+/**
+ * Sous-famille de `BusinessError` : la ressource visée n'existe pas.
+ *
+ * Distinguée parce qu'elle vaut un **404**, là où le reste du métier vaut un 409.
+ * C'est le filtre HTTP qui le sait — l'erreur, elle, ignore toujours le transport.
+ */
+export abstract class ResourceNotFoundError extends BusinessError {}
+
 export abstract class TechnicalError extends AppError {
   protected constructor(code: string, message: string, cause?: unknown) {
     super('technical', code, message, cause);
