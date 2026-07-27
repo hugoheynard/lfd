@@ -17,13 +17,22 @@ export interface LocalizedText {
 export type ProductKind = 'daily' | 'made_to_order' | 'resale';
 export type ProductStatus = 'draft' | 'published' | 'archived';
 
-/** Catégorie fiscale — porte la TVA via le croisement (catégorie × canal). */
-export type FiscalCategory =
-  | 'viennoiserie'
-  | 'pain'
-  | 'patisserie'
-  | 'sale-traiteur'
-  | 'chocolat-confiserie';
+/**
+ * Un **régime de TVA** = un taux, = une collection Shopify (Famille A du doc :
+ * `tva-5-5`, `tva-10`, `tva-20`). Donnée créable — la base qui porte les
+ * dérogations. Une catégorie référence un régime à emporter et un sur place.
+ */
+export interface TvaRegime {
+  id: string;
+  /** Nom lisible — « Réduit », « Intermédiaire », « Normal ». */
+  name: string;
+  /** À quoi il s'applique — note libre pour l'équipe. */
+  description: string;
+  /** Taux en pourcentage : 5.5, 10, 20. */
+  percent: number;
+  /** Tag / handle de la collection Shopify — dérivé du taux (`tva-5-5`). */
+  tag: string;
+}
 
 /** Ce qu'une boutique propose pour un produit : à emporter et/ou sur place. */
 export interface BoutiqueChannels {
@@ -70,9 +79,11 @@ export interface Category {
   parentId: string | null;
   position: number;
   isArchived: boolean;
-  /** Défaut dont héritent les produits de la gamme (sauf override). */
-  fiscalCategory: FiscalCategory;
+  /** Défauts dont héritent les produits de la catégorie (sauf override). */
   channelPreset: SalesChannels;
+  /** Régime de TVA appliqué aux fiches à emporter / sur place. */
+  emporterTvaId: string;
+  surPlaceTvaId: string;
 }
 
 export type SyncStatus = 'never_pushed' | 'up_to_date' | 'drifted' | 'failed';

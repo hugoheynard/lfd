@@ -2,9 +2,9 @@ import { BOUTIQUE_LABEL } from './boutiques';
 import type {
   BoutiqueChannels,
   Category,
-  FiscalCategory,
   Product,
   SalesChannels,
+  TvaRegime,
 } from './models';
 import { slugify } from './sku';
 
@@ -23,42 +23,14 @@ export function boutiquesWith(
   return result;
 }
 
-/**
- * Le croisement `(catégorie fiscale × canal) → taux`. C'est ici — et **nulle
- * part ailleurs** — que vit l'exception chocolat (20 % même en salle). Une case
- * « sur place → tva-10 » brute la casserait.
- */
-const TVA: Record<FiscalCategory, { emporter: string; surPlace: string }> = {
-  viennoiserie: { emporter: '5,5 %', surPlace: '10 %' },
-  pain: { emporter: '5,5 %', surPlace: '10 %' },
-  patisserie: { emporter: '5,5 %', surPlace: '10 %' },
-  'sale-traiteur': { emporter: '5,5 %', surPlace: '10 %' },
-  'chocolat-confiserie': { emporter: '20 %', surPlace: '20 %' },
-};
+/** `5.5` → « 5,5 % » ; `10` → « 10 % ». Affichage FR. */
+export function formatPercent(percent: number): string {
+  return `${percent.toString().replace('.', ',')} %`;
+}
 
-export const FISCAL_LABELS: Record<FiscalCategory, string> = {
-  viennoiserie: 'Viennoiserie',
-  pain: 'Pain',
-  patisserie: 'Pâtisserie',
-  'sale-traiteur': 'Salé & traiteur',
-  'chocolat-confiserie': 'Chocolat & confiserie',
-};
-
-/** Les régimes fiscaux, dans l'ordre d'affichage. */
-export const FISCAL_CATEGORIES: readonly FiscalCategory[] = [
-  'viennoiserie',
-  'pain',
-  'patisserie',
-  'sale-traiteur',
-  'chocolat-confiserie',
-];
-
-/** Taux à emporter / sur place d'un régime fiscal (le chocolat reste 20/20). */
-export function tvaFor(category: FiscalCategory): {
-  emporter: string;
-  surPlace: string;
-} {
-  return TVA[category];
+/** Handle de la collection Shopify dérivé du taux : `5.5` → `tva-5-5`. */
+export function tvaTagFromPercent(percent: number): string {
+  return `tva-${percent.toString().replace('.', '-')}`;
 }
 
 export interface ResolvedChannels {
@@ -90,50 +62,52 @@ export interface GeneratedFiche {
   tvaRate: string;
 }
 
-function tvaTag(rate: string): string {
-  if (rate.startsWith('5')) {
-    return 'tva-5-5';
-  }
-  if (rate.startsWith('10')) {
-    return 'tva-10';
-  }
-  return 'tva-20';
+function tagOf(regime: TvaRegime | undefined): string {
+  return regime?.tag ?? '—';
+}
+
+function rateOf(regime: TvaRegime | undefined): string {
+  return regime === undefined ? '—' : formatPercent(regime.percent);
 }
 
 /**
- * Les fiches Shopify qu'une recette produit au push, dérivées de ses canaux.
- * Une recette → 0, 1 ou 2 fiches (emporter et/ou sur place).
+ * Les fiches Shopify qu'une recette produit au push, dérivées de ses canaux et
+ * des régimes de TVA de sa catégorie. Une recette → 0, 1 ou 2 fiches (emporter
+ * et/ou sur place). Le taux/tag vient du régime référencé — l'exception chocolat
+ * (20 % sur place) n'est plus une règle codée, juste `surPlaceTvaId = tva-20`.
  */
 export function generateFiches(
   product: Product,
   category: Category,
+  regimeById: ReadonlyMap<string, TvaRegime>,
 ): GeneratedFiche[] {
   const { channels } = resolveChannels(product, category);
-  const rates = TVA[category.fiscalCategory];
   const handle = slugify(product.name.fr);
   const fiches: GeneratedFiche[] = [];
 
   const emporter = boutiquesWith(channels, 'emporter');
   if (emporter.length > 0) {
+    const regime = regimeById.get(category.emporterTvaId);
     fiches.push({
       mode: 'emporter',
       title: product.name.fr,
       handle,
       boutiques: emporter,
-      tvaTag: tvaTag(rates.emporter),
-      tvaRate: rates.emporter,
+      tvaTag: tagOf(regime),
+      tvaRate: rateOf(regime),
     });
   }
 
   const surPlace = boutiquesWith(channels, 'surPlace');
   if (surPlace.length > 0) {
+    const regime = regimeById.get(category.surPlaceTvaId);
     fiches.push({
       mode: 'surPlace',
       title: `${product.name.fr} (sur place)`,
       handle: `${handle}-sur-place`,
       boutiques: surPlace,
-      tvaTag: tvaTag(rates.surPlace),
-      tvaRate: rates.surPlace,
+      tvaTag: tagOf(regime),
+      tvaRate: rateOf(regime),
     });
   }
 

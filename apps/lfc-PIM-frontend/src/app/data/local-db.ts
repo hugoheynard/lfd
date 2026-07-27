@@ -3,9 +3,10 @@ import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 
 import { DB_SEED, type DbShape } from './db.seed';
 
-// v2 : la forme de SalesChannels est passée en per-boutique — bumper la clé
-// invalide tout localStorage à l'ancienne forme (sinon `channelPreset.b1` casse).
-const STORAGE_KEY = 'lfc-pim:db:v2';
+// Bumper la clé invalide tout localStorage à l'ancienne forme à chaque
+// changement de schéma. v2 : SalesChannels per-boutique. v3 : régimes de TVA
+// (tvaRegimes + category.emporterTvaId/surPlaceTvaId au lieu de fiscalCategory).
+const STORAGE_KEY = 'lfc-pim:db:v3';
 
 /**
  * La base du POC, côté navigateur. **Aucun serveur** :

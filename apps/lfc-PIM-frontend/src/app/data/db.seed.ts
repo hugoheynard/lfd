@@ -1,9 +1,9 @@
 import type {
   Category,
-  FiscalCategory,
   Product,
   ProductBinding,
   SalesChannels,
+  TvaRegime,
 } from './models';
 
 /**
@@ -17,6 +17,7 @@ import type {
  * JSON depuis les réglages, et recopier ici.
  */
 export interface DbShape {
+  readonly tvaRegimes: TvaRegime[];
   readonly categories: Category[];
   readonly products: Product[];
   readonly bindings: ProductBinding[];
@@ -41,7 +42,8 @@ function category(
   fr: string,
   slug: string,
   position: number,
-  fiscalCategory: FiscalCategory,
+  emporterTvaId: string,
+  surPlaceTvaId: string,
   channelPreset: SalesChannels = EMPORTER_ONLY,
 ): Category {
   return {
@@ -51,8 +53,9 @@ function category(
     parentId: null,
     position,
     isArchived: false,
-    fiscalCategory,
     channelPreset,
+    emporterTvaId,
+    surPlaceTvaId,
   };
 }
 
@@ -97,12 +100,19 @@ function binding(
 }
 
 // blé = AW · lait = AM · œuf = AE  (codes GS1 du référentiel allergènes)
+// Régimes : réduit (5,5) à emporter → intermédiaire (10) sur place ; le
+// chocolat reste au taux normal (20) dans les deux canaux.
 export const DB_SEED: DbShape = {
+  tvaRegimes: [
+    { id: 'tva_55', name: 'Réduit', description: 'Denrées à emporter (boulangerie, pâtisserie, pains).', percent: 5.5, tag: 'tva-5-5' },
+    { id: 'tva_10', name: 'Intermédiaire', description: 'Consommation sur place (service à table).', percent: 10, tag: 'tva-10' },
+    { id: 'tva_20', name: 'Normal', description: 'Chocolat, confiserie, alcool — taux plein partout.', percent: 20, tag: 'tva-20' },
+  ],
   categories: [
-    category('cat_vien', 'Viennoiseries', 'viennoiseries', 1, 'viennoiserie'),
-    category('cat_patis', 'Pâtisseries', 'patisseries', 2, 'patisserie'),
-    category('cat_pains', 'Pains', 'pains', 3, 'pain'),
-    category('cat_choco', 'Chocolat & confiserie', 'chocolat-confiserie', 4, 'chocolat-confiserie'),
+    category('cat_vien', 'Viennoiseries', 'viennoiseries', 1, 'tva_55', 'tva_10'),
+    category('cat_patis', 'Pâtisseries', 'patisseries', 2, 'tva_55', 'tva_10'),
+    category('cat_pains', 'Pains', 'pains', 3, 'tva_55', 'tva_10'),
+    category('cat_choco', 'Chocolat & confiserie', 'chocolat-confiserie', 4, 'tva_20', 'tva_20'),
   ],
   // Croissant : aussi servi en salle à Village. Éclair : en salle dans les deux.
   products: [
