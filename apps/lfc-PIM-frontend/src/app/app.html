@@ -11,7 +11,7 @@
 
     <a
       fold-menu-item
-      icon="grid"
+      icon="grid"ACCESSKEY=""
       label="Produits"
       routerLink="/produits"
       routerLinkActive
@@ -22,11 +22,11 @@
     <a
       fold-menu-item
       icon="folder"
-      label="Familles"
-      routerLink="/familles"
+      label="Catégories"
+      routerLink="/categories"
       routerLinkActive
-      #famillesRla="routerLinkActive"
-      [active]="famillesRla.isActive"
+      #categoriesRla="routerLinkActive"
+      [active]="categoriesRla.isActive"
       (click)="mobileNavOpen.set(false)"
     ></a>
     <a
@@ -42,28 +42,20 @@
   </fold-menu>
 
   <!-- Header -->
-  <div header class="app-header">
-    <button
-      type="button"
+  <div header foldSurface="chrome" class="app-header">
+    <fold-button-icon
       class="app-hamburger"
-      aria-haspopup="dialog"
+      [icon]="mobileNavOpen() ? 'close' : 'menu'"
+      tooltip="Ouvrir la navigation"
       [attr.aria-expanded]="mobileNavOpen()"
       [attr.aria-controls]="shell.drawerId"
-      aria-label="Ouvrir la navigation"
-      (click)="mobileNavOpen.set(!mobileNavOpen())"
-    >
-      <fold-icon [name]="mobileNavOpen() ? 'close' : 'menu'" size="md" />
-    </button>
+      (clicked)="mobileNavOpen.set(!mobileNavOpen())"
+    />
 
-    <label class="app-search">
-      <fold-icon name="search" size="sm" />
-      <input
-        type="search"
-        class="app-search-input"
-        placeholder="Rechercher un produit, une référence…"
-        aria-label="Rechercher dans le catalogue"
-      />
-    </label>
+    <fold-search
+      class="app-search"
+      placeholder="Rechercher un produit, une référence…"
+    />
 
     <div class="app-header-actions">
       <fold-avatar name="Folie Douce" size="sm" />

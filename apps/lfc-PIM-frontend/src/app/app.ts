@@ -3,9 +3,11 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   FoldAppShellComponent,
   FoldAvatarComponent,
-  FoldIconComponent,
+  FoldButtonIconComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
+  FoldSearchComponent,
+  FoldSurfaceDirective,
 } from 'fold-ng';
 
 @Component({
@@ -17,9 +19,11 @@ import {
     RouterLinkActive,
     FoldAppShellComponent,
     FoldAvatarComponent,
-    FoldIconComponent,
+    FoldButtonIconComponent,
     FoldMenuComponent,
     FoldMenuItemComponent,
+    FoldSearchComponent,
+    FoldSurfaceDirective,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',

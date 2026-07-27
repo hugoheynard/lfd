@@ -1,0 +1,119 @@
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+  padding-bottom: var(--fold-space-sm, 0.6rem);
+}
+
+.toolbar-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--fold-color-primary);
+}
+
+.toolbar-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 26rem;
+}
+
+@media (max-width: 640px) {
+  .table-toolbar {
+    flex-wrap: wrap;
+  }
+}
+
+.cell-name {
+  width: 100%;
+  min-width: 8rem;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--fold-radius-sm, 6px);
+}
+
+.cell-name:hover,
+.cell-name:focus-visible {
+  background: var(--fold-color-surface-sunken);
+  border-color: var(--fold-color-border);
+  outline: none;
+}
+
+.chan-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.35rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--fold-radius-sm, 6px);
+}
+
+.chan-cell:hover {
+  background: var(--fold-color-surface-sunken);
+}
+
+.chan-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.chan-perso {
+  color: var(--fold-color-primary);
+  font-size: 0.7rem;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.chan-editor {
+  display: grid;
+  gap: var(--fold-space-lg, 1.25rem);
+}
+
+.chan-editor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md, 1rem);
+}
+
+.chan-editor-head .muted {
+  margin-left: var(--fold-space-sm, 0.5rem);
+}
+
+.chan-fiches {
+  display: grid;
+  gap: 0.5rem;
+  border-top: 0.5px solid var(--fold-color-border);
+  padding-top: var(--fold-space-md, 1rem);
+}
+
+.fiche {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.fiche-title {
+  font-weight: 500;
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+  font-size: 0.9rem;
+}

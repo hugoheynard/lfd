@@ -1,0 +1,153 @@
+<fold-page-layout icon="folder" title="Catégories">
+  <p description>
+    Une <strong>catégorie</strong> — aussi appelée <em>famille</em>, ou
+    <em>gamme</em> dans le métier — porte les <strong>défauts de canaux</strong>
+    et le <strong>régime de TVA</strong> dont héritent ses produits. Côté Shopify,
+    elle devient une <em>collection</em>.
+  </p>
+
+  <fold-card class="create">
+    <fold-input
+      label="Nouvelle catégorie"
+      placeholder="ex. Viennoiseries"
+      [value]="draftName()"
+      (valueChange)="draftName.set($event)"
+    />
+    <fold-listbox
+      label="Parent"
+      [value]="draftParent()"
+      (selectionChange)="draftParent.set($event)"
+    >
+      <fold-option value="">— Racine —</fold-option>
+      @for (category of activeCategories(); track category.id) {
+        <fold-option [value]="category.id">{{ category.name.fr }}</fold-option>
+      }
+    </fold-listbox>
+    <button foldButton [disabled]="busy()" (click)="create()">Ajouter</button>
+  </fold-card>
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">
+      {{ message }}
+    </fold-callout>
+  }
+
+  @if (selected(); as cat) {
+    <fold-card class="gamme-editor">
+      <div class="editor-head">
+        <div>
+          <strong>{{ cat.name.fr }}</strong>
+          <span class="muted">réglage de la catégorie</span>
+        </div>
+        <button
+          foldButton
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          (click)="closeEditor()"
+        >
+          Fermer
+        </button>
+      </div>
+
+      <div class="editor-block">
+        <span class="block-label">Canaux par défaut</span>
+        <app-channel-matrix
+          [channels]="cat.channelPreset"
+          [showState]="false"
+          (channelsChange)="onPreset(cat, $event)"
+        />
+      </div>
+
+      <div class="editor-block">
+        <span class="block-label">Régime de TVA</span>
+        <fold-listbox
+          [value]="cat.fiscalCategory"
+          (selectionChange)="onFiscal(cat, $event)"
+        >
+          @for (fiscal of fiscalCategories; track fiscal) {
+            <fold-option [value]="fiscal">
+              {{ fiscalLabel(fiscal) }} — {{ ratesOf(fiscal) }}
+            </fold-option>
+          }
+        </fold-listbox>
+        <p class="muted">
+          À emporter puis sur place : <strong>{{ ratesOf(cat.fiscalCategory) }}</strong>.
+          Le chocolat reste 20 % partout — l'exception vit dans le croisement,
+          pas dans une case.
+        </p>
+      </div>
+
+      @if (isPatisserie(cat)) {
+        <fold-callout appearance="inset" variant="alert">
+          <strong>5 fiches en attente de validation TVA (cabinet comptable).</strong>
+          Les bouchées &lt; 20 g et le chocolat noir peuvent relever du taux
+          réduit : sablés Gianduja, meringuettes, mendiants, magalinettes et
+          grignottines sont taguées <code>tva-a-valider</code>. Ne rien publier ni
+          exporter tant que le cabinet n'a pas tranché la frontière 5,5 / 10 %.
+        </fold-callout>
+      }
+    </fold-card>
+  }
+
+  <fold-data-table
+    [columns]="columns"
+    [rows]="categories()"
+    [rowKey]="rowKey"
+    zebra
+    [empty]="emptyState"
+  >
+    <ng-template foldCell="name" let-c>
+      <input
+        class="cell-name"
+        type="text"
+        [value]="c.name.fr"
+        aria-label="Nom de la catégorie"
+        (change)="rename(c, inputValue($event))"
+      />
+    </ng-template>
+
+    <ng-template foldCell="parent" let-c>{{ parentName(c) }}</ng-template>
+
+    <ng-template foldCell="tva" let-c>
+      <span class="tva-cell">
+        {{ fiscalLabel(c.fiscalCategory) }} · {{ ratesOf(c.fiscalCategory) }}
+      </span>
+    </ng-template>
+
+    <ng-template foldCell="channels" let-c>
+      <span class="chan-pills">
+        @if (presetEmporter(c).length > 0) {
+          <fold-badge
+            [content]="'Emporter ' + presetEmporter(c).join(' · ')"
+            variant="accent"
+          />
+        }
+        @if (presetSurPlace(c).length > 0) {
+          <fold-badge
+            [content]="'Salle ' + presetSurPlace(c).join(' · ')"
+            variant="info"
+          />
+        }
+        @if (presetEmporter(c).length === 0 && presetSurPlace(c).length === 0) {
+          <span class="muted">aucun</span>
+        }
+      </span>
+    </ng-template>
+
+    <ng-template foldCell="actions" let-c>
+      <div class="row-actions">
+        <button foldButton emphasis="outline" size="sm" (click)="editGamme(c)">
+          Réglages
+        </button>
+        @if (!c.isArchived) {
+          <button foldButton emphasis="soft" intent="neutral" size="sm" (click)="archive(c)">
+            Archiver
+          </button>
+        } @else {
+          <fold-badge content="archivée" variant="neutral" />
+        }
+      </div>
+    </ng-template>
+  </fold-data-table>
+</fold-page-layout>

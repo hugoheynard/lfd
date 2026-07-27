@@ -1,0 +1,209 @@
+<fold-page-layout icon="grid" title="Produits">
+  <p description>
+    La référence est <strong>proposée</strong> si on la laisse vide — modifiable
+    ensuite. Chaque produit naît avec sa déclinaison par défaut et hérite des
+    canaux de sa gamme.
+  </p>
+
+  <div pageActions>
+    @if (categories().length > 0) {
+      <button foldButton emphasis="outline" (click)="toggleForm()">
+        {{ showForm() ? 'Fermer' : 'Créer un produit' }}
+      </button>
+    }
+    @if (products().length > 0) {
+      <button
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        [disabled]="busy()"
+        (click)="pushAll()"
+      >
+        Tout pousser sur Shopify
+      </button>
+    }
+  </div>
+
+  @if (pushMessage(); as text) {
+    <fold-callout appearance="inset" variant="info">{{ text }}</fold-callout>
+  }
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">
+      {{ message }}
+    </fold-callout>
+  }
+
+  @if (categories().length === 0) {
+    <fold-callout appearance="inset" variant="warning">
+      Créez d'abord une <a routerLink="/categories">catégorie</a> : un produit s'y
+      rattache.
+    </fold-callout>
+  } @else if (showForm()) {
+    <app-product-form
+      [categories]="categories()"
+      (created)="create($event)"
+      (cancelled)="showForm.set(false)"
+    />
+  }
+
+  @if (channelEdit(); as edit) {
+    <fold-card class="chan-editor">
+      <div class="chan-editor-head">
+        <div>
+          <strong>{{ edit.product.name.fr }}</strong>
+          <span class="muted">{{ fiscalLabel(edit.category) }} · TVA auto</span>
+        </div>
+        <button
+          foldButton
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          (click)="closeEditor()"
+        >
+          Fermer
+        </button>
+      </div>
+
+      <app-channel-matrix
+        [channels]="edit.channels"
+        [inherited]="edit.isInherited"
+        (channelsChange)="onChannelsChange(edit.product, $event)"
+        (revert)="onRevert(edit.product)"
+      />
+
+      <div class="chan-fiches">
+        <p class="muted">Fiches Shopify générées</p>
+        @for (fiche of edit.fiches; track fiche.handle) {
+          <div class="fiche">
+            <span class="fiche-title">{{ fiche.title }}</span>
+            <code>/{{ fiche.handle }}</code>
+            @if (fiche.boutiques.length > 0) {
+              <span class="muted">{{ fiche.boutiques.join(' + ') }}</span>
+            }
+            <fold-badge
+              [content]="fiche.tvaTag + ' · ' + fiche.tvaRate"
+              [variant]="fiche.mode === 'emporter' ? 'accent' : 'info'"
+            />
+          </div>
+        } @empty {
+          <span class="muted">Aucun canal actif — rien ne sera poussé.</span>
+        }
+      </div>
+    </fold-card>
+  }
+
+  <div class="table-toolbar">
+    <span class="toolbar-title">CATALOGUE</span>
+    <fold-search
+      class="toolbar-search"
+      placeholder="Filtrer par nom ou référence…"
+      (searchChange)="query.set($event)"
+    />
+    <fold-badge
+      [content]="catalogueStatus().label"
+      [variant]="catalogueStatus().variant"
+    />
+  </div>
+
+  <fold-data-table
+    [columns]="columns"
+    [rows]="visibleProducts()"
+    [rowKey]="rowKey"
+    [rowTone]="rowTone"
+    zebra
+    [empty]="emptyState"
+  >
+    <ng-template foldCell="sku" let-p>
+      <code>{{ p.sku }}</code>
+    </ng-template>
+
+    <ng-template foldCell="name" let-p>
+      <!-- Éditeur en cellule : commit-on-blur (change). Exception assumée au
+           fold-first — fold-input est un contrôle model à commit continu,
+           inadapté à l'édition inline d'une ligne de tableau. -->
+      <input
+        class="cell-name"
+        type="text"
+        [value]="p.name.fr"
+        aria-label="Nom du produit"
+        (change)="rename(p, inputValue($event))"
+      />
+    </ng-template>
+
+    <ng-template foldCell="category" let-p>
+      {{ categoryName(p.categoryId) }}
+    </ng-template>
+
+    <ng-template foldCell="kind" let-p>{{ label(p.kind) }}</ng-template>
+
+    <ng-template foldCell="channels" let-p>
+      <button class="chan-cell" type="button" (click)="editChannels(p)">
+        <span class="chan-pills">
+          @if (rowEmporter(p).length > 0) {
+            <fold-badge
+              [content]="'Emporter ' + rowEmporter(p).join(' · ')"
+              variant="accent"
+            />
+          }
+          @if (rowSurPlace(p).length > 0) {
+            <fold-badge
+              [content]="'Salle ' + rowSurPlace(p).join(' · ')"
+              variant="info"
+            />
+          }
+          @if (rowEmporter(p).length === 0 && rowSurPlace(p).length === 0) {
+            <span class="muted">aucun</span>
+          }
+        </span>
+        @if (!rowInherited(p)) {
+          <span class="chan-perso" title="Personnalisé">●</span>
+        }
+      </button>
+    </ng-template>
+
+    <ng-template foldCell="allergens" let-p>
+      @if (allergenSummary(p); as summary) {
+        <fold-badge
+          [content]="summary"
+          [variant]="summary === 'non renseignés' ? 'warning' : 'neutral'"
+        />
+      }
+    </ng-template>
+
+    <ng-template foldCell="status" let-p>
+      <fold-badge
+        [content]="p.status"
+        [variant]="p.status === 'archived' ? 'neutral' : 'success'"
+      />
+    </ng-template>
+
+    <ng-template foldCell="sync" let-p>
+      <fold-badge [content]="syncLabel(p.id)" [variant]="syncVariant(p.id)" />
+    </ng-template>
+
+    <ng-template foldCell="actions" let-p>
+      <div class="row-actions">
+        <button
+          foldButton
+          emphasis="outline"
+          size="sm"
+          [disabled]="busy()"
+          (click)="push(p)"
+        >
+          Pousser
+        </button>
+        @if (p.status !== 'archived') {
+          <button
+            foldButton
+            emphasis="soft"
+            intent="neutral"
+            size="sm"
+            (click)="archive(p)"
+          >
+            Archiver
+          </button>
+        }
+      </div>
+    </ng-template>
+  </fold-data-table>
+</fold-page-layout>

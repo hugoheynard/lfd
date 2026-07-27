@@ -1,0 +1,38 @@
+.stack {
+  display: grid;
+  gap: var(--fold-space-lg, 1.1rem);
+  max-width: 40rem;
+}
+
+.token {
+  display: grid;
+  gap: var(--fold-space-sm, 0.5rem);
+  max-width: 40rem;
+}
+
+.token-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+.token-label {
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+}
+
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: 0.9rem;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}

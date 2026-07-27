@@ -1,0 +1,44 @@
+<div class="cm">
+  @if (showState()) {
+    <div class="cm-head">
+      @if (inherited()) {
+        <fold-badge content="Hérité de la gamme" variant="neutral" />
+      } @else {
+        <fold-badge content="Personnalisé" variant="accent" />
+        <button foldButton emphasis="soft" intent="neutral" size="sm" (click)="revert.emit()">
+          Revenir au défaut de la gamme
+        </button>
+      }
+    </div>
+  }
+
+  <div class="cm-grid">
+    <span class="cm-corner"></span>
+    <span class="cm-col">À emporter</span>
+    <span class="cm-col">Sur place</span>
+
+    <span class="cm-row">{{ boutiques.b1 }}</span>
+    <fold-checkbox
+      [ariaLabel]="boutiques.b1 + ' — à emporter'"
+      [checked]="channels().b1.emporter"
+      (checkedChange)="setCell('b1', 'emporter', $event)"
+    />
+    <fold-checkbox
+      [ariaLabel]="boutiques.b1 + ' — sur place'"
+      [checked]="channels().b1.surPlace"
+      (checkedChange)="setCell('b1', 'surPlace', $event)"
+    />
+
+    <span class="cm-row">{{ boutiques.b2 }}</span>
+    <fold-checkbox
+      [ariaLabel]="boutiques.b2 + ' — à emporter'"
+      [checked]="channels().b2.emporter"
+      (checkedChange)="setCell('b2', 'emporter', $event)"
+    />
+    <fold-checkbox
+      [ariaLabel]="boutiques.b2 + ' — sur place'"
+      [checked]="channels().b2.surPlace"
+      (checkedChange)="setCell('b2', 'surPlace', $event)"
+    />
+  </div>
+</div>

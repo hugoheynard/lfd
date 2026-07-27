@@ -1,0 +1,37 @@
+.cm {
+  display: grid;
+  gap: var(--fold-space-md, 1rem);
+}
+
+.cm-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+.cm-grid {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: var(--fold-space-sm, 0.5rem) var(--fold-space-lg, 1.25rem);
+  align-items: center;
+  width: fit-content;
+}
+
+.cm-col {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fold-color-text-muted);
+  text-align: center;
+}
+
+.cm-row {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--fold-color-text);
+}
+
+.cm-grid fold-checkbox {
+  justify-self: center;
+}

@@ -12,27 +12,38 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldCardComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldPageLayoutComponent,
+  FoldSearchComponent,
   type FoldBadgeVariant,
   type FoldTableColumn,
   type FoldTableTone,
 } from 'fold-ng';
 
 import {
+  boutiquesWith,
+  FISCAL_LABELS,
+  generateFiches,
+  resolveChannels,
+  type GeneratedFiche,
+} from '../../data/channels';
+import {
   ShopifyApi,
   type ProductBinding,
   type SyncStatus,
-} from '../channels/shopify-api';
+} from '../../channels/shopify-api';
 
+import { ChannelMatrix } from '../channel-matrix/channel-matrix';
 import {
   CatalogueApi,
   type Category,
   type Product,
   type ProductKind,
-} from './catalogue-api';
-import { ProductForm, type NewProductForm } from './product-form';
+  type SalesChannels,
+} from '../catalogue-api';
+import { ProductForm, type NewProductForm } from '../product-form/product-form';
 
 const KIND_LABELS: Record<ProductKind, string> = {
   daily: 'Frais du jour',
@@ -54,179 +65,37 @@ const SYNC_VARIANTS: Record<SyncStatus, FoldBadgeVariant> = {
   failed: 'alert',
 };
 
+const NO_CHANNELS: SalesChannels = {
+  b1: { emporter: false, surPlace: false },
+  b2: { emporter: false, surPlace: false },
+};
+
+interface ChannelEdit {
+  product: Product;
+  category: Category;
+  channels: SalesChannels;
+  isInherited: boolean;
+  fiches: GeneratedFiche[];
+}
+
 @Component({
   selector: 'app-products-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
     ProductForm,
+    ChannelMatrix,
     FoldPageLayoutComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    FoldCardComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldBadgeComponent,
+    FoldSearchComponent,
   ],
-  template: `
-    <fold-page-layout icon="grid" title="Produits">
-      <p description>
-        La référence est <strong>proposée</strong> si on la laisse vide —
-        modifiable ensuite. Chaque produit naît avec sa déclinaison par défaut.
-      </p>
-
-      <div pageActions>
-        @if (categories().length > 0) {
-          <button foldButton emphasis="outline" (click)="toggleForm()">
-            {{ showForm() ? 'Fermer' : 'Créer un produit' }}
-          </button>
-        }
-        @if (products().length > 0) {
-          <button
-            foldButton
-            emphasis="outline"
-            intent="neutral"
-            [disabled]="busy()"
-            (click)="pushAll()"
-          >
-            Tout pousser sur Shopify
-          </button>
-        }
-      </div>
-
-      @if (pushMessage(); as text) {
-        <fold-callout appearance="inset" variant="info">{{ text }}</fold-callout>
-      }
-      @if (error(); as message) {
-        <fold-callout appearance="inset" variant="alert" role="alert">
-          {{ message }}
-        </fold-callout>
-      }
-
-      @if (categories().length === 0) {
-        <fold-callout appearance="inset" variant="warning">
-          Créez d'abord une <a routerLink="/familles">famille</a> : un produit
-          s'y rattache.
-        </fold-callout>
-      } @else if (showForm()) {
-        <app-product-form
-          [categories]="categories()"
-          (created)="create($event)"
-          (cancelled)="showForm.set(false)"
-        />
-      }
-
-      <fold-data-table
-        [columns]="columns"
-        [rows]="products()"
-        [rowKey]="rowKey"
-        [rowTone]="rowTone"
-        zebra
-        [empty]="emptyState"
-      >
-        <ng-template foldCell="sku" let-p>
-          <code>{{ p.sku }}</code>
-        </ng-template>
-
-        <ng-template foldCell="name" let-p>
-          <input
-            class="cell-name"
-            type="text"
-            [value]="p.name.fr"
-            aria-label="Nom du produit"
-            (change)="rename(p, inputValue($event))"
-          />
-        </ng-template>
-
-        <ng-template foldCell="category" let-p>
-          {{ categoryName(p.categoryId) }}
-        </ng-template>
-
-        <ng-template foldCell="kind" let-p>{{ label(p.kind) }}</ng-template>
-
-        <ng-template foldCell="defaultVariant" let-p>
-          <code>{{ defaultVariantSku(p) }}</code>
-        </ng-template>
-
-        <ng-template foldCell="allergens" let-p>
-          @if (allergenSummary(p); as summary) {
-            <fold-badge
-              [content]="summary"
-              [variant]="summary === 'non renseignés' ? 'warning' : 'neutral'"
-            />
-          }
-        </ng-template>
-
-        <ng-template foldCell="status" let-p>
-          <fold-badge
-            [content]="p.status"
-            [variant]="p.status === 'archived' ? 'neutral' : 'success'"
-          />
-        </ng-template>
-
-        <ng-template foldCell="sync" let-p>
-          <fold-badge [content]="syncLabel(p.id)" [variant]="syncVariant(p.id)" />
-        </ng-template>
-
-        <ng-template foldCell="actions" let-p>
-          <div class="row-actions">
-            <button
-              foldButton
-              emphasis="outline"
-              size="sm"
-              [disabled]="busy()"
-              (click)="push(p)"
-            >
-              Pousser
-            </button>
-            @if (p.status !== 'archived') {
-              <button
-                foldButton
-                emphasis="soft"
-                intent="neutral"
-                size="sm"
-                (click)="archive(p)"
-              >
-                Archiver
-              </button>
-            }
-          </div>
-        </ng-template>
-      </fold-data-table>
-    </fold-page-layout>
-  `,
-  styles: [
-    `
-      code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 0.85em;
-      }
-
-      .cell-name {
-        width: 100%;
-        min-width: 8rem;
-        padding: 0.35rem 0.5rem;
-        font: inherit;
-        color: inherit;
-        background: transparent;
-        border: 1px solid transparent;
-        border-radius: var(--fold-radius-sm, 6px);
-      }
-
-      .cell-name:hover,
-      .cell-name:focus-visible {
-        background: var(--fold-color-surface-sunken);
-        border-color: var(--fold-color-border);
-        outline: none;
-      }
-
-      .row-actions {
-        display: flex;
-        gap: 0.4rem;
-        justify-content: flex-end;
-        white-space: nowrap;
-      }
-    `,
-  ],
+  templateUrl: './products-page.html',
+  styleUrl: './products-page.scss',
 })
 export class ProductsPage {
   private readonly api = inject(CatalogueApi);
@@ -239,13 +108,62 @@ export class ProductsPage {
   protected readonly busy = signal(false);
   protected readonly bindings = signal<ProductBinding[]>([]);
   protected readonly pushMessage = signal<string | null>(null);
+  protected readonly editingId = signal<string | null>(null);
+  protected readonly query = signal('');
+
+  /** Filtre du tableau : par nom ou par référence. */
+  protected readonly visibleProducts = computed<Product[]>(() => {
+    const q = this.query().trim().toLowerCase();
+    const products = this.products();
+    if (q === '') {
+      return products;
+    }
+    return products.filter(
+      (p) =>
+        p.name.fr.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
+    );
+  });
+
+  /** Santé de synchro du catalogue — le statut de la barre de titre. */
+  protected readonly catalogueStatus = computed<{
+    label: string;
+    variant: FoldBadgeVariant;
+  }>(() => {
+    const products = this.products();
+    if (products.length === 0) {
+      return { label: 'vide', variant: 'neutral' };
+    }
+    let failed = 0;
+    let drifted = 0;
+    let pending = 0;
+    for (const product of products) {
+      const status = this.syncStatus(product.id);
+      if (status === 'failed') {
+        failed += 1;
+      } else if (status === 'drifted') {
+        drifted += 1;
+      } else if (status === 'never_pushed') {
+        pending += 1;
+      }
+    }
+    if (failed > 0) {
+      return { label: `${failed} en échec`, variant: 'alert' };
+    }
+    if (drifted > 0) {
+      return { label: `${drifted} en écart`, variant: 'warning' };
+    }
+    if (pending > 0) {
+      return { label: `${pending} à pousser`, variant: 'info' };
+    }
+    return { label: 'à jour', variant: 'success' };
+  });
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'sku', label: 'Référence', width: '9rem' },
     { key: 'name', label: 'Nom' },
     { key: 'category', label: 'Famille' },
     { key: 'kind', label: 'Nature' },
-    { key: 'defaultVariant', label: 'Déclinaison' },
+    { key: 'channels', label: 'Canaux', width: '12rem' },
     { key: 'allergens', label: 'Allergènes' },
     { key: 'status', label: 'État' },
     { key: 'sync', label: 'Shopify' },
@@ -270,6 +188,27 @@ export class ProductsPage {
     () => new Map(this.categories().map((category) => [category.id, category])),
   );
 
+  /** Le produit en cours d'édition de canaux, résolu + ses fiches. */
+  protected readonly channelEdit = computed<ChannelEdit | null>(() => {
+    const id = this.editingId();
+    if (id === null) {
+      return null;
+    }
+    const product = this.products().find((p) => p.id === id);
+    const category = product && this.byId().get(product.categoryId);
+    if (product === undefined || category === undefined) {
+      return null;
+    }
+    const resolved = resolveChannels(product, category);
+    return {
+      product,
+      category,
+      channels: resolved.channels,
+      isInherited: resolved.isInherited,
+      fiches: generateFiches(product, category),
+    };
+  });
+
   constructor() {
     void this.reload();
   }
@@ -290,6 +229,41 @@ export class ProductsPage {
     return SYNC_VARIANTS[this.syncStatus(productId)];
   }
 
+  protected rowEmporter(product: Product): string[] {
+    return boutiquesWith(this.rowChannels(product), 'emporter');
+  }
+
+  protected rowSurPlace(product: Product): string[] {
+    return boutiquesWith(this.rowChannels(product), 'surPlace');
+  }
+
+  protected rowInherited(product: Product): boolean {
+    return product.channelsOverride === null;
+  }
+
+  protected fiscalLabel(category: Category): string {
+    return FISCAL_LABELS[category.fiscalCategory];
+  }
+
+  protected editChannels(product: Product): void {
+    this.editingId.set(product.id);
+  }
+
+  protected closeEditor(): void {
+    this.editingId.set(null);
+  }
+
+  protected async onChannelsChange(
+    product: Product,
+    channels: SalesChannels,
+  ): Promise<void> {
+    await this.run(() => this.api.setProductChannels(product.id, channels));
+  }
+
+  protected async onRevert(product: Product): Promise<void> {
+    await this.run(() => this.api.setProductChannels(product.id, null));
+  }
+
   /** Un produit précis — le bouton de la ligne. */
   protected async push(product: Product): Promise<void> {
     await this.runPush([product.id]);
@@ -302,10 +276,6 @@ export class ProductsPage {
 
   protected categoryName(id: string): string {
     return this.byId().get(id)?.name.fr ?? '—';
-  }
-
-  protected defaultVariantSku(product: Product): string {
-    return product.variants.find((variant) => variant.isDefault)?.sku ?? '—';
   }
 
   protected inputValue(event: Event): string {
@@ -348,6 +318,14 @@ export class ProductsPage {
 
   protected async archive(product: Product): Promise<void> {
     await this.run(() => this.api.archiveProduct(product.id));
+  }
+
+  private rowChannels(product: Product): SalesChannels {
+    const category = this.byId().get(product.categoryId);
+    if (category === undefined) {
+      return product.channelsOverride ?? NO_CHANNELS;
+    }
+    return resolveChannels(product, category).channels;
   }
 
   private async runPush(productIds: string[] | undefined): Promise<void> {

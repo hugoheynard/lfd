@@ -1,0 +1,86 @@
+.create {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) minmax(12rem, 1fr) auto;
+  align-items: end;
+  gap: var(--fold-space-md, 1rem);
+}
+
+.gamme-editor {
+  display: grid;
+  gap: var(--fold-space-lg, 1.25rem);
+}
+
+.editor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md, 1rem);
+}
+
+.editor-head .muted {
+  margin-left: var(--fold-space-sm, 0.5rem);
+}
+
+.editor-block {
+  display: grid;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+.block-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.tva-cell {
+  font-size: 0.9rem;
+}
+
+.chan-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.cell-name {
+  width: 100%;
+  min-width: 8rem;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--fold-radius-sm, 6px);
+}
+
+.cell-name:hover,
+.cell-name:focus-visible {
+  background: var(--fold-color-surface-sunken);
+  border-color: var(--fold-color-border);
+  outline: none;
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+  font-size: 0.9rem;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}
+
+@media (max-width: 640px) {
+  .create {
+    grid-template-columns: 1fr;
+  }
+}
