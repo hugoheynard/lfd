@@ -27,6 +27,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'emplacements',
+    title: 'Emplacements — LFC PIM',
+    loadComponent: () =>
+      import('./emplacements/emplacements-page').then(
+        (m) => m.EmplacementsPage,
+      ),
+  },
+  {
     path: 'documentation',
     title: 'Documentation — LFC PIM',
     loadComponent: () =>

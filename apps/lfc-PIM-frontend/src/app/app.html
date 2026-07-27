@@ -50,6 +50,16 @@
       (click)="mobileNavOpen.set(false)"
     ></a>
     <a
+      fold-menu-item
+      icon="company"
+      label="Emplacements"
+      routerLink="/emplacements"
+      routerLinkActive
+      #empRla="routerLinkActive"
+      [active]="empRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
       footer
       fold-menu-item
       icon="library"

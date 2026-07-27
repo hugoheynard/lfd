@@ -1,0 +1,12 @@
+<svg
+  class="qr"
+  [attr.viewBox]="'0 0 ' + matrix().dim + ' ' + matrix().dim"
+  shape-rendering="crispEdges"
+  role="img"
+  [attr.aria-label]="'QR code : ' + url()"
+>
+  <rect class="qr-bg" x="0" y="0" [attr.width]="matrix().dim" [attr.height]="matrix().dim" />
+  @for (module of matrix().dark; track $index) {
+    <rect class="qr-mod" [attr.x]="module.x" [attr.y]="module.y" width="1" height="1" />
+  }
+</svg>

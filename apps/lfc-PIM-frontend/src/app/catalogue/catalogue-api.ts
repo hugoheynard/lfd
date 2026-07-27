@@ -8,6 +8,8 @@ import { productSkuRoot, proposeSku, slugify } from '../data/sku';
 // `type Category` / `type Product` depuis ce fichier sans changement.
 export type {
   Category,
+  Emplacement,
+  EmplacementTable,
   LocalizedText,
   Product,
   ProductKind,
@@ -19,6 +21,7 @@ export type {
 
 import type {
   Category,
+  Emplacement,
   Product,
   ProductKind,
   SalesChannels,
@@ -298,4 +301,135 @@ export class CatalogueApi {
       target.channelsOverride = channels;
     });
   }
+
+  // ── Emplacements (boutiques : modes, tables, QR click & collect) ──────────
+
+  async listEmplacements(): Promise<Emplacement[]> {
+    return structuredClone(this.db.snapshot().emplacements);
+  }
+
+  async createEmplacement(payload: {
+    name: string;
+    clickCollect: boolean;
+    surPlace: boolean;
+    tableCount: number;
+    baseUrl: string;
+  }): Promise<{ id: string }> {
+    const name = payload.name.trim();
+    if (name === '') {
+      throw new CatalogueApiError('emplacement.name.empty', 'Le nom est obligatoire.');
+    }
+    const id = nextId('emp');
+    this.db.update((draft) => {
+      draft.emplacements.push({
+        id,
+        name,
+        clickCollect: payload.clickCollect,
+        surPlace: payload.surPlace,
+        baseUrl: payload.baseUrl.trim(),
+        tables: payload.surPlace ? syncTables([], payload.tableCount) : [],
+      });
+    });
+    return { id };
+  }
+
+  /** Met à jour un emplacement ; le nombre de tables re-synchronise le tableau
+   *  en préservant l'état QR des tables existantes. */
+  async updateEmplacement(
+    id: string,
+    patch: {
+      name?: string;
+      clickCollect?: boolean;
+      surPlace?: boolean;
+      baseUrl?: string;
+      tableCount?: number;
+    },
+  ): Promise<void> {
+    this.db.update((draft) => {
+      const target = draft.emplacements.find((e) => e.id === id);
+      if (target === undefined) {
+        throw new CatalogueApiError('emplacement.not_found', 'Emplacement introuvable.');
+      }
+      if (patch.name !== undefined) {
+        target.name = patch.name.trim();
+      }
+      if (patch.clickCollect !== undefined) {
+        target.clickCollect = patch.clickCollect;
+      }
+      if (patch.surPlace !== undefined) {
+        target.surPlace = patch.surPlace;
+        if (!patch.surPlace) {
+          target.tables = [];
+        }
+      }
+      if (patch.baseUrl !== undefined) {
+        target.baseUrl = patch.baseUrl.trim();
+      }
+      if (patch.tableCount !== undefined && target.surPlace) {
+        target.tables = syncTables(target.tables, patch.tableCount);
+      }
+    });
+  }
+
+  async deleteEmplacement(id: string): Promise<void> {
+    this.db.update((draft) => {
+      const index = draft.emplacements.findIndex((e) => e.id === id);
+      if (index !== -1) {
+        draft.emplacements.splice(index, 1);
+      }
+    });
+  }
+
+  /** Génère (ou régénère) le QR d'une table : un nouveau token remplace
+   *  l'ancien, ce qui invalide tout QR déjà imprimé. */
+  async generateTableQr(
+    emplacementId: string,
+    tableNumber: number,
+    token: string,
+  ): Promise<void> {
+    this.db.update((draft) => {
+      const table = this.findTable(draft, emplacementId, tableNumber);
+      table.qrCreated = true;
+      table.token = token;
+    });
+  }
+
+  /** Retire le QR d'une table (et son token). */
+  async removeTableQr(
+    emplacementId: string,
+    tableNumber: number,
+  ): Promise<void> {
+    this.db.update((draft) => {
+      const table = this.findTable(draft, emplacementId, tableNumber);
+      table.qrCreated = false;
+      delete table.token;
+    });
+  }
+
+  private findTable(
+    draft: { emplacements: Emplacement[] },
+    emplacementId: string,
+    tableNumber: number,
+  ): Emplacement['tables'][number] {
+    const target = draft.emplacements.find((e) => e.id === emplacementId);
+    const table = target?.tables.find((t) => t.number === tableNumber);
+    if (table === undefined) {
+      throw new CatalogueApiError('emplacement.table.not_found', 'Table introuvable.');
+    }
+    return table;
+  }
+}
+
+/** Aligne le tableau des tables sur `count`, en gardant l'état QR existant. */
+function syncTables(
+  current: readonly { number: number; qrCreated: boolean }[],
+  count: number,
+): { number: number; qrCreated: boolean }[] {
+  const clamped = Math.max(0, Math.min(200, Math.floor(count)));
+  const tables: { number: number; qrCreated: boolean }[] = [];
+  for (let n = 1; n <= clamped; n += 1) {
+    const existing = current.find((t) => t.number === n);
+    tables.push({ number: n, qrCreated: existing?.qrCreated ?? false });
+  }
+  return tables;
 }
