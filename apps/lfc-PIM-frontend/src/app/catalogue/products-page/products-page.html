@@ -86,27 +86,31 @@
     </fold-card>
   }
 
-  <div class="table-toolbar">
-    <span class="toolbar-title">CATALOGUE</span>
-    <fold-search
-      class="toolbar-search"
-      placeholder="Filtrer par nom ou référence…"
-      (searchChange)="query.set($event)"
-    />
-    <fold-badge
-      [content]="catalogueStatus().label"
-      [variant]="catalogueStatus().variant"
-    />
-  </div>
+
 
   <fold-data-table
     [columns]="columns"
-    [rows]="visibleProducts()"
+    [rows]="pagedProducts()"
     [rowKey]="rowKey"
     [rowTone]="rowTone"
     zebra
+    toolbarSurface="accent"
     [empty]="emptyState"
   >
+    <div foldToolbar class="table-toolbar">
+      <span class="toolbar-title">CATALOGUE</span>
+      <fold-search
+        class="toolbar-search"
+        placeholder="Filtrer par nom ou référence…"
+        (searchChange)="onSearch($event)"
+      />
+      <fold-badge
+        [content]="catalogueStatus().label"
+        [variant]="catalogueStatus().variant"
+      />
+    </div>
+
+
     <ng-template foldCell="sku" let-p>
       <code>{{ p.sku }}</code>
     </ng-template>
@@ -200,4 +204,15 @@
       </div>
     </ng-template>
   </fold-data-table>
+
+  @if (visibleProducts().length > 0) {
+    <fold-paginator
+      class="products-paginator"
+      [currentPage]="currentPage()"
+      [totalItems]="visibleProducts().length"
+      [pageSize]="pageSize()"
+      (pageChange)="page.set($event)"
+      (pageSizeChange)="onPageSize($event)"
+    />
+  }
 </fold-page-layout>

@@ -16,6 +16,7 @@ import {
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldPageLayoutComponent,
+  FoldPaginatorComponent,
   FoldSearchComponent,
   type FoldBadgeVariant,
   type FoldTableColumn,
@@ -92,6 +93,7 @@ interface ChannelEdit {
     FoldCalloutComponent,
     FoldBadgeComponent,
     FoldSearchComponent,
+    FoldPaginatorComponent,
   ],
   templateUrl: './products-page.html',
   styleUrl: './products-page.scss',
@@ -109,6 +111,8 @@ export class ProductsPage {
   protected readonly pushMessage = signal<string | null>(null);
   protected readonly editingId = signal<string | null>(null);
   protected readonly query = signal('');
+  protected readonly page = signal(1);
+  protected readonly pageSize = signal(25);
 
   /** Filtre du tableau : par nom ou par référence. */
   protected readonly visibleProducts = computed<Product[]>(() => {
@@ -121,6 +125,20 @@ export class ProductsPage {
       (p) =>
         p.name.fr.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
     );
+  });
+
+  /** Nombre de pages, page courante bornée, et la tranche affichée. */
+  protected readonly pageCount = computed(() =>
+    Math.max(1, Math.ceil(this.visibleProducts().length / this.pageSize())),
+  );
+
+  protected readonly currentPage = computed(() =>
+    Math.min(this.page(), this.pageCount()),
+  );
+
+  protected readonly pagedProducts = computed<Product[]>(() => {
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return this.visibleProducts().slice(start, start + this.pageSize());
   });
 
   /** Santé de synchro du catalogue — le statut de la barre de titre. */
@@ -218,6 +236,17 @@ export class ProductsPage {
 
   protected label(kind: ProductKind): string {
     return KIND_LABELS[kind];
+  }
+
+  /** Filtrer remet en page 1 pour ne pas rester sur une page vide. */
+  protected onSearch(query: string): void {
+    this.query.set(query);
+    this.page.set(1);
+  }
+
+  protected onPageSize(size: number): void {
+    this.pageSize.set(size);
+    this.page.set(1);
   }
 
   protected syncStatus(productId: string): SyncStatus {

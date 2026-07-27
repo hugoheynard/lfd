@@ -117,3 +117,8 @@ code {
   color: var(--fold-color-text-muted);
   font-size: 0.9rem;
 }
+
+.products-paginator {
+  display: block;
+  margin-top: var(--fold-space-md, 1rem);
+}
