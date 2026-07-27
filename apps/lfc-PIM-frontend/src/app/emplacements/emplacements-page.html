@@ -157,20 +157,21 @@
           </fold-field-list>
         }
 
-        <!-- Actions QR d'une table : régénérer (nouveau token) + retirer. -->
+        <!-- Actions QR d'une table : export vectoriel nommé + retirer.
+             (regen retiré — cf. ledger.md) -->
         <ng-template #qrActions let-emp="emp" let-t="t">
           <button
             foldButton
             emphasis="soft"
             intent="neutral"
             size="sm"
-            (click)="generateQr(emp.id, t.number)"
+            (click)="exportQr(emp, t)"
           >
-            Regénérer
+            Exporter (SVG)
           </button>
           <fold-inline-confirm
             intent="danger"
-            message="Retirer ce QR ? L'ancien code deviendra invalide."
+            message="Retirer ce QR ?"
             (confirmed)="removeQr(emp.id, t.number)"
           >
             <button

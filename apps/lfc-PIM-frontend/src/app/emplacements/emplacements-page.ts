@@ -25,7 +25,9 @@ import {
   type Emplacement,
   type EmplacementTable,
 } from '../catalogue/catalogue-api';
+import { slugify } from '../data/sku';
 import { QrCode } from './qr-code/qr-code';
+import { qrSvgString } from './qr-code/qr';
 
 /**
  * Admin **Emplacements** — on crée des boutiques, on choisit leurs modes
@@ -175,6 +177,22 @@ export class EmplacementsPage {
 
   protected async removeQr(id: string, tableNumber: number): Promise<void> {
     await this.run(() => this.api.removeTableQr(id, tableNumber));
+  }
+
+  /** Export vectoriel nommé : `qr-{boutique}-table-N.svg`. */
+  protected exportQr(emplacement: Emplacement, table: EmplacementTable): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const svg = qrSvgString(this.tableUrl(emplacement, table));
+    const filename = `qr-${slugify(emplacement.name)}-table-${table.number}.svg`;
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(href);
   }
 
   private async run(action: () => Promise<unknown>): Promise<void> {
