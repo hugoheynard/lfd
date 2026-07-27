@@ -1,24 +1,24 @@
 .create {
   display: grid;
+  gap: var(--fold-space-md, 1rem);
+}
+
+.create-fields {
+  display: grid;
   grid-template-columns: minmax(14rem, 1fr) minmax(12rem, 1fr) auto;
   align-items: end;
   gap: var(--fold-space-md, 1rem);
 }
 
 .gamme-editor {
+  --fold-card-padding: var(--fold-space-lg, 16px);
+}
+
+/* Corps : les blocs de réglage espacés (ils vivent dans le .card-body, pas
+   dans la grille de l'hôte). */
+.editor-body {
   display: grid;
   gap: var(--fold-space-lg, 1.25rem);
-}
-
-.editor-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--fold-space-md, 1rem);
-}
-
-.editor-head .muted {
-  margin-left: var(--fold-space-sm, 0.5rem);
 }
 
 .editor-block {
@@ -80,7 +80,7 @@ code {
 }
 
 @media (max-width: 640px) {
-  .create {
+  .create-fields {
     grid-template-columns: 1fr;
   }
 }

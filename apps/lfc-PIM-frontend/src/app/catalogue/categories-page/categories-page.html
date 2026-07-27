@@ -7,23 +7,26 @@
   </p>
 
   <fold-card class="create">
-    <fold-input
-      label="Nouvelle catégorie"
-      placeholder="ex. Viennoiseries"
-      [value]="draftName()"
-      (valueChange)="draftName.set($event)"
-    />
-    <fold-listbox
-      label="Parent"
-      [value]="draftParent()"
-      (selectionChange)="draftParent.set($event)"
-    >
-      <fold-option value="">— Racine —</fold-option>
-      @for (category of activeCategories(); track category.id) {
-        <fold-option [value]="category.id">{{ category.name.fr }}</fold-option>
-      }
-    </fold-listbox>
-    <button foldButton [disabled]="busy()" (click)="create()">Ajouter</button>
+    <fold-element-title variant="eyebrow" icon="plus" title="Ajouter une catégorie" />
+    <div class="create-fields">
+      <fold-input
+        label="Nom"
+        placeholder="ex. Viennoiseries"
+        [value]="draftName()"
+        (valueChange)="draftName.set($event)"
+      />
+      <fold-listbox
+        label="Parent"
+        [value]="draftParent()"
+        (selectionChange)="draftParent.set($event)"
+      >
+        <fold-option value="">— Racine —</fold-option>
+        @for (category of activeCategories(); track category.id) {
+          <fold-option [value]="category.id">{{ category.name.fr }}</fold-option>
+        }
+      </fold-listbox>
+      <button foldButton [disabled]="busy()" (click)="create()">Ajouter</button>
+    </div>
   </fold-card>
 
   @if (error(); as message) {
@@ -33,13 +36,17 @@
   }
 
   @if (selected(); as cat) {
-    <fold-card class="gamme-editor">
-      <div class="editor-head">
-        <div>
-          <strong>{{ cat.name.fr }}</strong>
-          <span class="muted">réglage de la catégorie</span>
-        </div>
+    <fold-card surface="accent" raisedBands="header" class="gamme-editor">
+      <fold-element-title
+        cardHeader
+        variant="title"
+        icon="settings"
+        iconTone="primary"
+        [title]="cat.name.fr"
+        subtitle="Réglage de la catégorie"
+      >
         <button
+          titleAction
           foldButton
           emphasis="soft"
           intent="neutral"
@@ -48,55 +55,58 @@
         >
           Fermer
         </button>
-      </div>
+      </fold-element-title>
 
-      <div class="editor-block">
-        <span class="block-label">Canaux par défaut</span>
-        <app-channel-matrix
-          [channels]="cat.channelPreset"
-          [showState]="false"
-          (channelsChange)="onPreset(cat, $event)"
-        />
-      </div>
-
-      <div class="editor-block">
-        <span class="block-label">Régimes de TVA</span>
-        <div class="tva-pickers">
-          <fold-listbox
-            label="À emporter"
-            [value]="cat.emporterTvaId"
-            (selectionChange)="onEmporterTva(cat, $event)"
-          >
-            @for (regime of regimes(); track regime.id) {
-              <fold-option [value]="regime.id">{{ regimeLabel(regime) }}</fold-option>
-            }
-          </fold-listbox>
-          <fold-listbox
-            label="Sur place"
-            [value]="cat.surPlaceTvaId"
-            (selectionChange)="onSurPlaceTva(cat, $event)"
-          >
-            @for (regime of regimes(); track regime.id) {
-              <fold-option [value]="regime.id">{{ regimeLabel(regime) }}</fold-option>
-            }
-          </fold-listbox>
+      <div class="editor-body">
+        <div class="editor-block">
+          <span class="block-label">Canaux par défaut</span>
+          <app-channel-matrix
+            [channels]="cat.channelPreset"
+            [showState]="false"
+            (channelsChange)="onPreset(cat, $event)"
+          />
         </div>
-        <p class="muted">
-          Deux régimes, un par canal : le chocolat prend « Normal » sur place
-          comme à emporter. Les régimes se gèrent dans
-          <a routerLink="/tva">Régimes de TVA</a>.
-        </p>
-      </div>
 
-      @if (isPatisserie(cat)) {
-        <fold-callout appearance="inset" variant="alert">
-          <strong>5 fiches en attente de validation TVA (cabinet comptable).</strong>
-          Les bouchées &lt; 20 g et le chocolat noir peuvent relever du taux
-          réduit : sablés Gianduja, meringuettes, mendiants, magalinettes et
-          grignottines sont taguées <code>tva-a-valider</code>. Ne rien publier ni
-          exporter tant que le cabinet n'a pas tranché la frontière 5,5 / 10 %.
-        </fold-callout>
-      }
+        <div class="editor-block">
+          <span class="block-label">Régimes de TVA</span>
+          <div class="tva-pickers">
+            <fold-listbox
+              label="À emporter"
+              [value]="cat.emporterTvaId"
+              (selectionChange)="onEmporterTva(cat, $event)"
+            >
+              @for (regime of regimes(); track regime.id) {
+                <fold-option [value]="regime.id">{{ regimeLabel(regime) }}</fold-option>
+              }
+            </fold-listbox>
+            <fold-listbox
+              label="Sur place"
+              [value]="cat.surPlaceTvaId"
+              (selectionChange)="onSurPlaceTva(cat, $event)"
+            >
+              @for (regime of regimes(); track regime.id) {
+                <fold-option [value]="regime.id">{{ regimeLabel(regime) }}</fold-option>
+              }
+            </fold-listbox>
+          </div>
+          <p class="muted">
+            Deux régimes, un par canal : le chocolat prend « Normal » sur place
+            comme à emporter. Les régimes se gèrent dans
+            <a routerLink="/tva">Régimes de TVA</a>.
+          </p>
+        </div>
+
+        @if (isPatisserie(cat)) {
+          <fold-callout appearance="inset" variant="alert">
+            <strong>5 fiches en attente de validation TVA (cabinet comptable).</strong>
+            Les bouchées &lt; 20 g et le chocolat noir peuvent relever du taux
+            réduit : sablés Gianduja, meringuettes, mendiants, magalinettes et
+            grignottines sont taguées <code>tva-a-valider</code>. Ne rien publier
+            ni exporter tant que le cabinet n'a pas tranché la frontière
+            5,5 / 10 %.
+          </fold-callout>
+        }
+      </div>
     </fold-card>
   }
 
