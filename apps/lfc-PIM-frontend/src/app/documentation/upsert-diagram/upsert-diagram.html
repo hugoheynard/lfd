@@ -1,0 +1,66 @@
+<svg
+  class="diagram"
+  viewBox="0 0 740 392"
+  role="img"
+  aria-label="Push idempotent : selon le binding, create une fois ou update par id ; le handle reste stable"
+>
+  <defs>
+    <marker
+      id="up-arrow"
+      viewBox="0 0 10 10"
+      refX="8"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path class="arrowhead" d="M0 0 L10 5 L0 10 z" />
+    </marker>
+  </defs>
+
+  <!-- Entité PIM -->
+  <rect class="box" x="280" y="14" width="180" height="48" rx="10" />
+  <text class="box-title" x="370" y="43">Entité PIM</text>
+
+  <path class="branch" d="M370 62 L370 84" marker-end="url(#up-arrow)" />
+
+  <!-- Gate : hash -->
+  <rect class="gate" x="285" y="84" width="170" height="46" rx="10" />
+  <text class="gate-text" x="370" y="112">contenu changé ? (hash)</text>
+
+  <text class="edge-label" x="502" y="100">non</text>
+  <path class="branch" d="M455 107 L562 107" marker-end="url(#up-arrow)" />
+  <rect class="skip" x="564" y="86" width="160" height="42" rx="8" />
+  <text class="skip-text" x="644" y="112">rien à pousser</text>
+
+  <text class="edge-label" x="384" y="147">oui</text>
+  <path class="branch" d="M370 130 L370 152" marker-end="url(#up-arrow)" />
+
+  <!-- Gate : binding -->
+  <rect class="gate" x="285" y="152" width="170" height="46" rx="10" />
+  <text class="gate-text" x="370" y="180">déjà liée ? (binding)</text>
+
+  <!-- non → CREATE -->
+  <text class="edge-label" x="210" y="167">non</text>
+  <path class="branch" d="M285 175 L160 175 L160 230" marker-end="url(#up-arrow)" />
+  <rect class="box" x="60" y="232" width="200" height="52" rx="10" />
+  <text class="box-title" x="160" y="256">CREATE</text>
+  <text class="box-sub" x="160" y="274">Shopify → id + handle</text>
+
+  <path class="branch" d="M160 284 L160 312" marker-end="url(#up-arrow)" />
+  <rect class="box" x="60" y="314" width="200" height="54" rx="10" />
+  <text class="box-title" x="160" y="338">Mémorise le binding</text>
+  <text class="box-sub" x="160" y="356">id + handle · une seule fois</text>
+
+  <!-- oui → UPDATE -->
+  <text class="edge-label" x="520" y="167">oui</text>
+  <path class="branch" d="M455 175 L580 175 L580 230" marker-end="url(#up-arrow)" />
+  <rect class="box box-accent" x="480" y="232" width="200" height="52" rx="10" />
+  <text class="box-title on-accent" x="580" y="256">UPDATE by id</text>
+  <text class="box-sub on-accent" x="580" y="274">le contenu, pas le handle</text>
+
+  <path class="branch" d="M580 284 L580 312" marker-end="url(#up-arrow)" />
+  <rect class="result" x="480" y="314" width="200" height="54" rx="10" />
+  <text class="box-title" x="580" y="338">Handle préservé</text>
+  <text class="result-sub" x="580" y="356">URL stable · SEO intact</text>
+</svg>

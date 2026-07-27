@@ -13,6 +13,7 @@ import {
 import { SystemDiagram } from './system-diagram/system-diagram';
 import { FlowDiagram } from './flow-diagram/flow-diagram';
 import { LeafPreview } from './leaf-preview/leaf-preview';
+import { UpsertDiagram } from './upsert-diagram/upsert-diagram';
 
 /**
  * Documentation vivante — explique, au fil des onglets, l'architecture des
@@ -32,6 +33,7 @@ import { LeafPreview } from './leaf-preview/leaf-preview';
     SystemDiagram,
     FlowDiagram,
     LeafPreview,
+    UpsertDiagram,
   ],
   templateUrl: './documentation-page.html',
   styleUrl: './documentation-page.scss',
@@ -42,6 +44,8 @@ export class DocumentationPage {
     { key: 'bricks', label: 'Les briques', icon: 'grid' },
     { key: 'flow', label: 'Flux des collections', icon: 'sliders' },
     { key: 'web', label: 'Segmentation web', icon: 'globe' },
+    { key: 'emplacements', label: 'Emplacements', icon: 'company' },
+    { key: 'shopify', label: 'Intégration Shopify', icon: 'upload' },
   ];
 
   protected readonly active = signal<string>('overview');
