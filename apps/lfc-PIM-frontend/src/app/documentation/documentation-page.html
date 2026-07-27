@@ -1,0 +1,168 @@
+<fold-page-layout icon="library" title="Documentation">
+  <p description>
+    Comment le PIM est pensé — et comment un simple paramétrage se transforme en
+    <strong>collections Shopify</strong>. À parcourir onglet par onglet.
+  </p>
+
+  <fold-tabs
+    [tabs]="tabs"
+    [activeKey]="active()"
+    (tabChange)="active.set($event)"
+    #ref="foldTabs"
+  />
+
+  <!-- 1 · Vue d'ensemble -->
+  <fold-tab-panel [tabs]="ref" key="overview">
+    <div class="doc-stack">
+      <fold-callout appearance="inset" variant="info">
+        <strong>POC front-only.</strong> Les données vivent dans un
+        <em>seed</em> versionné dans le repo, surchargé par le
+        <code>localStorage</code> du navigateur. Aucun back pour l'instant — la
+        démo tourne depuis n'importe quel poste.
+      </fold-callout>
+
+      <fold-card class="doc-card">
+        <p>
+          Le PIM est la <strong>source de vérité</strong> du catalogue. On y
+          décrit les catégories, les régimes de TVA et les produits ; le système
+          en <strong>dérive</strong> les collections finales, prêtes à être
+          poussées vers Shopify.
+        </p>
+        <app-system-diagram />
+      </fold-card>
+    </div>
+  </fold-tab-panel>
+
+  <!-- 2 · Les briques -->
+  <fold-tab-panel [tabs]="ref" key="bricks">
+    <div class="doc-grid">
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          icon="sliders"
+          iconTone="primary"
+          title="Régime de TVA"
+          subtitle="Un taux nommé"
+        />
+        <p>
+          « Réduit · 5,5 % », « Normal · 20 % »… Chaque régime est une donnée
+          éditable, et correspond à <strong>une collection</strong> côté TVA.
+        </p>
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          icon="folder"
+          iconTone="primary"
+          title="Catégorie"
+          subtitle="= famille = gamme"
+        />
+        <p>
+          Porte les <strong>défauts de canaux</strong> (par boutique × à
+          emporter / sur place) et <strong>deux régimes de TVA</strong>. Côté
+          Shopify, elle devient une collection.
+        </p>
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          icon="grid"
+          iconTone="primary"
+          title="Produit"
+          subtitle="hérite de sa catégorie"
+        />
+        <p>
+          Reprend les canaux et la TVA de sa catégorie. On peut
+          <strong>override</strong> les canaux, en <em>tout-ou-rien</em>, pour ce
+          produit précis.
+        </p>
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          icon="globe"
+          iconTone="primary"
+          title="Collection"
+          subtitle="le résultat visible"
+        />
+        <p>
+          Ce que voit le client : un rayon en ligne. Générée automatiquement à
+          partir des canaux actifs — jamais saisie à la main.
+        </p>
+      </fold-card>
+    </div>
+  </fold-tab-panel>
+
+  <!-- 3 · Flux des collections -->
+  <fold-tab-panel [tabs]="ref" key="flow">
+    <div class="doc-stack">
+      <fold-card class="doc-card">
+        <p>
+          Vu comme un <strong>arbre</strong> : le paramétrage est la
+          <strong>racine</strong>, chaque collection en est une
+          <strong>feuille</strong>. Sur chaque branche, le
+          <em>bloc de raison</em> dit pourquoi la feuille existe — rien n'est
+          créé à la main.
+        </p>
+        <app-flow-diagram />
+      </fold-card>
+
+      <fold-card>
+        <ol class="doc-steps">
+          <li>La <strong>racine</strong> : catégorie + produit portent les canaux et la TVA.</li>
+          <li>Une <strong>branche</strong> ne pousse que si sa raison est vraie (canal actif, régime défini).</li>
+          <li>Au bout, une <strong>feuille</strong> : une collection, taxée au bon taux.</li>
+          <li>Les feuilles se répartissent dans les <strong>trois familles</strong> de collections.</li>
+        </ol>
+      </fold-card>
+
+      <fold-card class="doc-card">
+        <fold-element-title
+          variant="title"
+          icon="label"
+          iconTone="primary"
+          title="La feuille, en vrai"
+          subtitle="Disponibilité « sur place » après scan du QR"
+        />
+        <p>
+          Une feuille n'est pas abstraite : c'est ce que voit le client. Ici, la
+          <strong>disponibilité</strong> d'une table — catégories dépliables,
+          produits dedans (données live du catalogue).
+        </p>
+        <app-leaf-preview />
+      </fold-card>
+    </div>
+  </fold-tab-panel>
+
+  <!-- 4 · Segmentation web -->
+  <fold-tab-panel [tabs]="ref" key="web">
+    <div class="doc-grid">
+      <fold-card>
+        <fold-element-title variant="title" icon="lock" title="Famille TVA" subtitle="invisible" />
+        <p>
+          Technique : elle regroupe les fiches par taux pour la compta et
+          l'export. <strong>Jamais montrée</strong> au client.
+        </p>
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title variant="title" icon="globe" title="Click &amp; collect public" subtitle="le site" />
+        <p>
+          Le catalogue en ligne, rayons publics — la vente à emporter commandée
+          depuis le site.
+        </p>
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title variant="title" icon="label" title="Sur place" subtitle="QR table" />
+        <p>
+          Click &amp; collect <strong>immédiat</strong>, commandé depuis une URL
+          custom liée au QR code d'une table.
+        </p>
+      </fold-card>
+    </div>
+  </fold-tab-panel>
+</fold-page-layout>

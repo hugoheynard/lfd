@@ -1,0 +1,34 @@
+<div class="leaf">
+  <header class="leaf-head">
+    <svg class="qr" viewBox="0 0 40 40" role="img" aria-label="QR code de la table">
+      <rect class="qr-bg" x="0" y="0" width="40" height="40" rx="4" />
+      <path
+        class="qr-fg"
+        d="M5 5h10v10H5zM7 7v6h6V7zM25 5h10v10H25zM27 7v6h6V7zM5 25h10v10H5zM7 27v6h6V7zM19 5h3v3h-3zM19 11h3v3h-3zM19 17h3v6h-3zM25 19h3v3h-3zM31 19h4v3h-4zM25 25h3v3h-3zM31 25h4v10h-4zM25 31h3v4h-3z"
+      />
+    </svg>
+    <div class="leaf-head-text">
+      <span class="leaf-kicker">Feuille · disponibilité</span>
+      <strong>Sur place — Table 12</strong>
+      <span class="muted">Scannez pour commander</span>
+    </div>
+  </header>
+
+  <div class="menu">
+    @for (group of groups(); track group.category.id) {
+      <fold-disclosure [open]="$first">
+        <span summary class="menu-cat">
+          {{ group.category.name.fr }}
+          <span class="count">{{ group.products.length }}</span>
+        </span>
+        <ul class="items">
+          @for (product of group.products; track product.id) {
+            <li>{{ product.name.fr }}</li>
+          }
+        </ul>
+      </fold-disclosure>
+    } @empty {
+      <p class="muted">Aucun produit disponible pour l'instant.</p>
+    }
+  </div>
+</div>

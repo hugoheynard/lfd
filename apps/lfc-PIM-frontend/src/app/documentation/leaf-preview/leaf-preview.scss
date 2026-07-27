@@ -1,0 +1,83 @@
+:host {
+  display: block;
+}
+
+/* La feuille : un bloc « appareil » type carte QR, bord accent (c'est une
+   collection née du paramétrage). */
+.leaf {
+  display: grid;
+  gap: var(--fold-space-md, 1rem);
+  max-width: 26rem;
+  padding: var(--fold-space-lg, 1.25rem);
+  border: 1.5px solid var(--fold-color-primary);
+  border-radius: var(--fold-radius-lg, 0.9rem);
+  background: var(--fold-color-surface-card);
+}
+
+.leaf-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+}
+
+.qr {
+  flex: 0 0 auto;
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.qr-bg {
+  fill: var(--fold-color-surface-raised);
+  stroke: var(--fold-color-border);
+}
+
+.qr-fg {
+  fill: var(--fold-color-text);
+}
+
+.leaf-head-text {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.leaf-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fold-color-primary);
+}
+
+.leaf-head-text strong {
+  font-size: 1.05rem;
+}
+
+.menu {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.menu-cat {
+  font-weight: 600;
+}
+
+.count {
+  margin-left: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--fold-color-text-muted);
+}
+
+.items {
+  margin: 0;
+  padding: 0.2rem 0 0.2rem 1.1rem;
+  display: grid;
+  gap: 0.3rem;
+  color: var(--fold-color-text-secondary);
+}
+
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: 0.9rem;
+}

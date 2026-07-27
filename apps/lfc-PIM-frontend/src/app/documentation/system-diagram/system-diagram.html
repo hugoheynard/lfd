@@ -1,0 +1,58 @@
+<svg
+  class="diagram"
+  viewBox="0 0 740 170"
+  role="img"
+  aria-label="Chemin de la donnée : seed en repo, PIM, collections, Shopify"
+>
+  <defs>
+    <marker
+      id="sys-arrow"
+      viewBox="0 0 10 10"
+      refX="8"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path class="arrowhead" d="M0 0 L10 5 L0 10 z" />
+    </marker>
+  </defs>
+
+  <!-- 1 · Seed + localStorage -->
+  <g>
+    <rect class="box" x="8" y="46" width="158" height="66" rx="10" />
+    <text class="box-title" x="87" y="72">Seed JSON</text>
+    <text class="box-sub" x="87" y="92">+ localStorage</text>
+    <text class="caption" x="87" y="130">source de vérité (POC)</text>
+  </g>
+
+  <line class="arrow" x1="170" y1="79" x2="204" y2="79" marker-end="url(#sys-arrow)" />
+
+  <!-- 2 · PIM -->
+  <g>
+    <rect class="box box-accent" x="208" y="46" width="158" height="66" rx="10" />
+    <text class="box-title on-accent" x="287" y="72">PIM</text>
+    <text class="box-sub on-accent" x="287" y="92">paramétrage</text>
+    <text class="caption" x="287" y="130">catégories · TVA · produits</text>
+  </g>
+
+  <line class="arrow" x1="370" y1="79" x2="404" y2="79" marker-end="url(#sys-arrow)" />
+
+  <!-- 3 · Collections -->
+  <g>
+    <rect class="box" x="408" y="46" width="158" height="66" rx="10" />
+    <text class="box-title" x="487" y="72">Collections</text>
+    <text class="box-sub" x="487" y="92">générées</text>
+    <text class="caption" x="487" y="130">dérivées du paramétrage</text>
+  </g>
+
+  <line class="arrow" x1="570" y1="79" x2="604" y2="79" marker-end="url(#sys-arrow)" />
+
+  <!-- 4 · Shopify -->
+  <g>
+    <rect class="box" x="608" y="46" width="124" height="66" rx="10" />
+    <text class="box-title" x="670" y="72">Shopify</text>
+    <text class="box-sub" x="670" y="92">boutique</text>
+    <text class="caption" x="670" y="130">push (à venir)</text>
+  </g>
+</svg>

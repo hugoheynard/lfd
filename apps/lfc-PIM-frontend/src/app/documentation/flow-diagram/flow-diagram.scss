@@ -1,0 +1,76 @@
+:host {
+  display: block;
+}
+
+.diagram {
+  width: 100%;
+  height: auto;
+}
+
+.box {
+  fill: var(--fold-color-surface-raised);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.box-accent {
+  fill: var(--fold-color-primary);
+  stroke: var(--fold-color-primary);
+}
+
+/* Feuille = une collection née du paramétrage. Bord accent + coin marqué. */
+.leaf {
+  fill: var(--fold-color-surface-card);
+  stroke: var(--fold-color-primary);
+  stroke-width: 1.5;
+}
+
+.leaf-tag {
+  fill: var(--fold-color-primary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Bloc de raison, posé sur le trait de liaison. */
+.reason {
+  fill: var(--fold-color-surface-sunken);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.reason-text {
+  fill: var(--fold-color-text-secondary);
+  font-size: 11.5px;
+  font-style: italic;
+  text-anchor: middle;
+}
+
+.box-title {
+  fill: var(--fold-color-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.box-sub {
+  fill: var(--fold-color-text-secondary);
+  font-size: 11px;
+  text-anchor: middle;
+}
+
+.on-accent {
+  fill: var(--fold-color-on-primary);
+}
+
+.branch {
+  fill: none;
+  stroke: var(--fold-color-text-muted);
+  stroke-width: 1.5;
+}
+
+.arrowhead {
+  fill: var(--fold-color-text-muted);
+}

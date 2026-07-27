@@ -50,6 +50,18 @@
       (click)="mobileNavOpen.set(false)"
     ></a>
     <a
+      footer
+      fold-menu-item
+      icon="library"
+      label="Documentation"
+      routerLink="/documentation"
+      routerLinkActive
+      #docRla="routerLinkActive"
+      [active]="docRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      footer
       fold-menu-item
       icon="settings"
       label="Réglages"

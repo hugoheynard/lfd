@@ -1,0 +1,66 @@
+<svg
+  class="diagram"
+  viewBox="0 0 740 380"
+  role="img"
+  aria-label="Arbre : le paramétrage crée des feuilles (collections) ; chaque branche porte sa raison"
+>
+  <defs>
+    <marker
+      id="flow-arrow"
+      viewBox="0 0 10 10"
+      refX="8"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path class="arrowhead" d="M0 0 L10 5 L0 10 z" />
+    </marker>
+  </defs>
+
+  <!-- Racine : le paramétrage -->
+  <rect class="box box-accent" x="255" y="18" width="230" height="66" rx="12" />
+  <text class="box-title on-accent" x="370" y="46">Paramétrage</text>
+  <text class="box-sub on-accent" x="370" y="66">Catégorie → Produit : canaux + TVA</text>
+
+  <!-- Branches : tronc, bus horizontal, descentes vers chaque raison -->
+  <path class="branch" d="M370 84 L370 112" />
+  <path class="branch" d="M130 112 L610 112" />
+  <path class="branch" d="M130 112 L130 146" />
+  <path class="branch" d="M370 112 L370 146" />
+  <path class="branch" d="M610 112 L610 146" />
+
+  <!-- Blocs de raison, posés sur les traits de liaison -->
+  <rect class="reason" x="34" y="146" width="192" height="48" rx="8" />
+  <text class="reason-text" x="130" y="167">canal « à emporter »</text>
+  <text class="reason-text" x="130" y="183">actif</text>
+
+  <rect class="reason" x="274" y="146" width="192" height="48" rx="8" />
+  <text class="reason-text" x="370" y="167">canal « sur place »</text>
+  <text class="reason-text" x="370" y="183">actif</text>
+
+  <rect class="reason" x="514" y="146" width="192" height="48" rx="8" />
+  <text class="reason-text" x="610" y="167">régime TVA</text>
+  <text class="reason-text" x="610" y="183">de la catégorie</text>
+
+  <!-- Liaison raison → feuille -->
+  <path class="branch" d="M130 194 L130 286" marker-end="url(#flow-arrow)" />
+  <path class="branch" d="M370 194 L370 286" marker-end="url(#flow-arrow)" />
+  <path class="branch" d="M610 194 L610 286" marker-end="url(#flow-arrow)" />
+
+  <!-- Feuilles = les collections -->
+  <rect class="leaf" x="30" y="288" width="200" height="72" rx="12" />
+  <text class="leaf-tag" x="46" y="310">feuille</text>
+  <text class="box-title" x="130" y="332">Click &amp; collect public</text>
+  <text class="box-sub" x="130" y="350">rayon en ligne</text>
+
+  <rect class="leaf" x="270" y="288" width="200" height="72" rx="12" />
+  <text class="leaf-tag" x="286" y="310">feuille</text>
+  <text class="box-title" x="370" y="332">Sur place</text>
+  <text class="box-sub" x="370" y="350">QR table — immédiat</text>
+
+  <rect class="leaf" x="510" y="288" width="200" height="72" rx="12" />
+  <text class="leaf-tag" x="526" y="310">feuille</text>
+  <text class="box-title" x="610" y="332">Famille TVA</text>
+  <text class="box-sub" x="610" y="350">invisible — technique</text>
+</svg>
