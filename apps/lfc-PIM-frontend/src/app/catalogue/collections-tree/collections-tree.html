@@ -1,0 +1,44 @@
+<div class="tree">
+  @for (family of families(); track family.key) {
+    <fold-disclosure class="family" [open]="true">
+      <div summary class="node">
+        <span class="node-title">{{ family.title }}</span>
+        <fold-badge
+          [content]="family.isPublic ? 'public' : 'invisible'"
+          [variant]="family.isPublic ? 'success' : 'neutral'"
+        />
+        <fold-badge [content]="count(family) + ''" variant="accent" />
+      </div>
+
+      <p class="family-desc">{{ family.description }}</p>
+      <p class="visibility">{{ family.visibility }}</p>
+
+      @for (collection of family.collections; track collection.tag) {
+        <fold-disclosure class="collection">
+          <div summary class="node">
+            <span class="node-label">{{ collection.label }}</span>
+            <code>{{ collection.tag }}</code>
+            <fold-badge
+              [content]="collection.entries.length + ''"
+              [variant]="collection.entries.length > 0 ? 'info' : 'neutral'"
+            />
+          </div>
+
+          <ul class="fiches">
+            @for (entry of collection.entries; track entry.handle) {
+              <li>
+                <span class="fiche-title">{{ entry.title }}</span>
+                <code>/{{ entry.handle }}</code>
+                @if (entry.boutiques.length > 0) {
+                  <span class="fiche-boutiques">{{ entry.boutiques.join(' · ') }}</span>
+                }
+              </li>
+            } @empty {
+              <li class="muted">vide</li>
+            }
+          </ul>
+        </fold-disclosure>
+      }
+    </fold-disclosure>
+  }
+</div>

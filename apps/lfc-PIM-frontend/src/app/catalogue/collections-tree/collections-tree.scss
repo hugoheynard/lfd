@@ -1,0 +1,73 @@
+.tree {
+  display: grid;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.node-title {
+  font-weight: 600;
+}
+
+.node-label {
+  font-weight: 500;
+}
+
+.family > .collection {
+  margin-left: var(--fold-space-md, 1rem);
+}
+
+.family-desc {
+  margin: 0.15rem 0 0.15rem;
+  font-size: 0.82rem;
+  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
+  line-height: 1.4;
+}
+
+.visibility {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  color: var(--fold-color-text-muted);
+}
+
+.fiches {
+  margin: 0.25rem 0 0.25rem 1rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.fiches li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+}
+
+.fiche-title {
+  color: var(--fold-color-text);
+}
+
+.fiche-boutiques {
+  font-size: 0.78rem;
+  color: var(--fold-color-text-muted);
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+  font-size: 0.85rem;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8em;
+  color: var(--fold-color-text-muted);
+}
