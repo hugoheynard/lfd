@@ -1,12 +1,59 @@
-<header class="shell-head">
-  <span class="brand">LFC <span class="brand-sub">PIM</span></span>
-  <nav>
-    <a routerLink="/produits" routerLinkActive="active">Produits</a>
-    <a routerLink="/familles" routerLinkActive="active">Familles</a>
-    <a routerLink="/reglages" routerLinkActive="active">Réglages</a>
-  </nav>
-</header>
+<fold-app-shell #shell="foldAppShell" contentScroll="auto" [(mobileNavOpen)]="mobileNavOpen">
+  <!-- Primary rail — the app menu. Expanded by default, collapsible via the
+       built-in chevron. Becomes an off-canvas drawer ≤768px. -->
+  <fold-menu railPrimary collapsible tint="primary" [(expanded)]="menuExpanded">
+    <a header class="rail-brand" routerLink="/" aria-label="LFC PIM — accueil">
+      <fold-icon name="diamond" [size]="22" />
+    </a>
 
-<main>
+    <a
+      fold-menu-item
+      icon="grid"
+      label="Produits"
+      routerLink="/produits"
+      routerLinkActive
+      #produitsRla="routerLinkActive"
+      [active]="produitsRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-menu-item
+      icon="folder"
+      label="Familles"
+      routerLink="/familles"
+      routerLinkActive
+      #famillesRla="routerLinkActive"
+      [active]="famillesRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-menu-item
+      icon="settings"
+      label="Réglages"
+      routerLink="/reglages"
+      routerLinkActive
+      #reglagesRla="routerLinkActive"
+      [active]="reglagesRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+  </fold-menu>
+
+  <!-- Header -->
+  <div header class="app-header">
+    <button
+      type="button"
+      class="app-hamburger"
+      aria-haspopup="dialog"
+      [attr.aria-expanded]="mobileNavOpen()"
+      [attr.aria-controls]="shell.drawerId"
+      aria-label="Ouvrir la navigation"
+      (click)="mobileNavOpen.set(!mobileNavOpen())"
+    >
+      <fold-icon [name]="mobileNavOpen() ? 'close' : 'menu'" size="md" />
+    </button>
+    <span class="brand">LFC <span class="brand-sub">PIM</span></span>
+  </div>
+
+  <!-- Content -->
   <router-outlet />
-</main>
+</fold-app-shell>

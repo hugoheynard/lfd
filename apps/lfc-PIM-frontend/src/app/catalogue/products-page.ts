@@ -159,12 +159,12 @@ const SYNC_LABELS: Record<SyncStatus, string> = {
         white-space: nowrap;
       }
       .tag.warn {
-        color: var(--danger);
+        color: var(--fold-color-alert);
       }
       .notice {
         padding: 0.6rem 0.8rem;
         margin-bottom: 1rem;
-        background: var(--field);
+        background: var(--fold-color-surface-sunken);
         border-radius: 0.4rem;
         font-size: 0.9rem;
       }

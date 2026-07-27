@@ -100,8 +100,8 @@ import { ShopifyApi, type ShopifySettings } from './shopify-api';
         gap: 1.1rem;
         max-width: 40rem;
         padding: 1.25rem;
-        background: var(--surface);
-        border: 1px solid var(--line);
+        background: var(--fold-color-surface-card);
+        border: 1px solid var(--fold-color-border);
         border-radius: 0.6rem;
       }
       label {
@@ -118,7 +118,7 @@ import { ShopifyApi, type ShopifySettings } from './shopify-api';
         width: auto;
       }
       small {
-        color: var(--muted);
+        color: var(--fold-color-text-muted);
         font-size: 0.8rem;
       }
       .mode {
@@ -126,23 +126,23 @@ import { ShopifyApi, type ShopifySettings } from './shopify-api';
         gap: 0.2rem;
         padding: 0.7rem 0.85rem;
         border-radius: 0.45rem;
-        background: var(--field);
-        border-left: 3px solid var(--muted);
+        background: var(--fold-color-surface-sunken);
+        border-left: 3px solid var(--fold-color-text-muted);
         font-size: 0.85rem;
       }
       .mode.live {
-        border-left-color: var(--accent);
+        border-left-color: var(--fold-color-primary);
       }
       .token {
         display: grid;
         gap: 0.2rem;
         padding: 0.7rem 0.85rem;
         border-radius: 0.45rem;
-        background: var(--field);
+        background: var(--fold-color-surface-sunken);
         font-size: 0.85rem;
       }
       .token.missing strong {
-        color: var(--danger);
+        color: var(--fold-color-alert);
       }
       .actions {
         display: flex;
@@ -151,7 +151,7 @@ import { ShopifyApi, type ShopifySettings } from './shopify-api';
       }
       .notice {
         margin-top: 1rem;
-        color: var(--muted);
+        color: var(--fold-color-text-muted);
         font-size: 0.9rem;
       }
     `,

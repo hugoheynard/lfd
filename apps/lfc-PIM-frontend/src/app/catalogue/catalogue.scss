@@ -17,7 +17,7 @@
 
   p {
     margin: 0;
-    color: var(--muted);
+    color: var(--fold-color-text-muted);
     font-size: 0.9rem;
     max-width: 60ch;
   }
@@ -29,8 +29,8 @@
   gap: 0.5rem;
   padding: 0.85rem;
   margin-bottom: 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--fold-color-surface-card);
+  border: 1px solid var(--fold-color-border);
   border-radius: 0.6rem;
 
   input,
@@ -41,7 +41,7 @@
 
   .sku {
     flex: 0 1 14rem;
-    font-family: var(--mono);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 }
 
@@ -50,12 +50,12 @@ select {
   padding: 0.5rem 0.6rem;
   font: inherit;
   color: inherit;
-  background: var(--field);
-  border: 1px solid var(--line);
+  background: var(--fold-color-surface-sunken);
+  border: 1px solid var(--fold-color-border);
   border-radius: 0.4rem;
 
   &:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--fold-color-primary);
     outline-offset: 1px;
   }
 }
@@ -64,8 +64,8 @@ button {
   padding: 0.5rem 1rem;
   font: inherit;
   font-weight: 500;
-  color: var(--on-accent);
-  background: var(--accent);
+  color: var(--fold-color-on-primary);
+  background: var(--fold-color-primary);
   border: 1px solid transparent;
   border-radius: 0.4rem;
   cursor: pointer;
@@ -76,9 +76,9 @@ button {
   }
 
   &.ghost {
-    color: var(--muted);
+    color: var(--fold-color-text-muted);
     background: transparent;
-    border-color: var(--line);
+    border-color: var(--fold-color-border);
   }
 }
 
@@ -91,7 +91,7 @@ table {
   td {
     padding: 0.5rem 0.6rem;
     text-align: left;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--fold-color-border);
   }
 
   th {
@@ -99,7 +99,7 @@ table {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--muted);
+    color: var(--fold-color-text-muted);
   }
 
   td input {
@@ -109,8 +109,8 @@ table {
 
     &:hover,
     &:focus-visible {
-      background: var(--field);
-      border-color: var(--line);
+      background: var(--fold-color-surface-sunken);
+      border-color: var(--fold-color-border);
     }
   }
 
@@ -120,7 +120,7 @@ table {
 }
 
 code {
-  font-family: var(--mono);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.85em;
 }
 
@@ -128,17 +128,17 @@ code {
   display: inline-block;
   padding: 0.1rem 0.45rem;
   font-size: 0.75rem;
-  color: var(--muted);
-  background: var(--field);
+  color: var(--fold-color-text-muted);
+  background: var(--fold-color-surface-sunken);
   border-radius: 0.3rem;
 }
 
 .error {
   padding: 0.6rem 0.8rem;
   margin-bottom: 1rem;
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+  color: var(--fold-color-alert);
+  background: color-mix(in srgb, var(--fold-color-alert) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fold-color-alert) 25%, transparent);
   border-radius: 0.4rem;
   font-size: 0.9rem;
 }
@@ -146,7 +146,7 @@ code {
 .empty {
   padding: 2rem;
   text-align: center;
-  color: var(--muted);
-  border: 1px dashed var(--line);
+  color: var(--fold-color-text-muted);
+  border: 1px dashed var(--fold-color-border);
   border-radius: 0.6rem;
 }

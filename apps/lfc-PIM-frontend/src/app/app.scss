@@ -1,45 +1,61 @@
 :host {
   display: block;
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
-.shell-head {
+fold-app-shell {
+  height: 100%;
+}
+
+/* Brand tile in the rail's header band — square so it reads as a logo whether
+   the rail is collapsed (icon only) or expanded. */
+.rail-brand {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fold-radius-md, 8px);
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-header {
   display: flex;
   align-items: center;
-  gap: 2rem;
-  padding: 0.9rem clamp(1rem, 4vw, 3rem);
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
+  gap: var(--fold-space-3, 0.75rem);
+  height: 100%;
+  padding-inline: var(--fold-space-4, 1rem);
+}
 
-  .brand {
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
 
-  .brand-sub {
-    color: var(--muted);
-    font-weight: 400;
-  }
+.brand-sub {
+  opacity: 0.6;
+  font-weight: 500;
+}
 
-  nav {
-    display: flex;
-    gap: 1.25rem;
-  }
+/* Desktop: the rail is always visible, so no hamburger. It appears only when
+   the rail collapses into the mobile drawer (≤768px, matching the shell). */
+.app-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--fold-radius-sm, 6px);
+}
 
-  a {
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 0.9rem;
-    padding-bottom: 0.15rem;
-    border-bottom: 2px solid transparent;
-
-    &:hover {
-      color: var(--text);
-    }
-
-    &.active {
-      color: var(--text);
-      border-bottom-color: var(--accent);
-    }
+@media (max-width: 768px) {
+  .app-hamburger {
+    display: inline-flex;
   }
 }

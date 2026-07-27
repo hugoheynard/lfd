@@ -329,8 +329,8 @@ const KIND_LABELS: Record<ProductKind, string> = {
         gap: 1.25rem;
         padding: 1.25rem;
         margin-bottom: 1.5rem;
-        background: var(--surface);
-        border: 1px solid var(--line);
+        background: var(--fold-color-surface-card);
+        border: 1px solid var(--fold-color-border);
         border-radius: 0.6rem;
       }
       .block {
@@ -339,7 +339,7 @@ const KIND_LABELS: Record<ProductKind, string> = {
       }
       .block + .block {
         padding-top: 1.1rem;
-        border-top: 1px solid var(--line);
+        border-top: 1px solid var(--fold-color-border);
       }
       h2 {
         margin: 0;
@@ -347,7 +347,7 @@ const KIND_LABELS: Record<ProductKind, string> = {
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: var(--muted);
+        color: var(--fold-color-text-muted);
       }
       .required,
       .optional {
@@ -357,7 +357,7 @@ const KIND_LABELS: Record<ProductKind, string> = {
         letter-spacing: 0;
       }
       .required {
-        color: var(--danger);
+        color: var(--fold-color-alert);
       }
       .block-head {
         display: flex;
@@ -377,34 +377,34 @@ const KIND_LABELS: Record<ProductKind, string> = {
         font-size: 0.9rem;
       }
       small {
-        color: var(--muted);
+        color: var(--fold-color-text-muted);
         font-size: 0.78rem;
       }
       .chip {
         padding: 0.25rem 0.7rem;
         font-size: 0.8rem;
-        color: var(--muted);
+        color: var(--fold-color-text-muted);
         background: transparent;
-        border: 1px solid var(--line);
+        border: 1px solid var(--fold-color-border);
         border-radius: 999px;
       }
       .chip.on {
-        color: var(--on-accent);
-        background: var(--accent);
-        border-color: var(--accent);
+        color: var(--fold-color-on-primary);
+        background: var(--fold-color-primary);
+        border-color: var(--fold-color-primary);
       }
       .warn {
         margin: 0;
         padding: 0.55rem 0.75rem;
         font-size: 0.83rem;
-        background: color-mix(in srgb, var(--danger) 8%, transparent);
-        border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+        background: color-mix(in srgb, var(--fold-color-alert) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fold-color-alert) 25%, transparent);
         border-radius: 0.4rem;
       }
       .hint {
         margin: 0;
         font-size: 0.83rem;
-        color: var(--muted);
+        color: var(--fold-color-text-muted);
       }
       .none {
         display: flex;
@@ -426,14 +426,14 @@ const KIND_LABELS: Record<ProductKind, string> = {
       fieldset {
         margin: 0;
         padding: 0.5rem 0.7rem 0.6rem;
-        border: 1px solid var(--line);
+        border: 1px solid var(--fold-color-border);
         border-radius: 0.45rem;
       }
       legend {
         padding: 0 0.3rem;
         font-size: 0.78rem;
         font-weight: 600;
-        color: var(--muted);
+        color: var(--fold-color-text-muted);
       }
       .entry {
         display: flex;
@@ -449,7 +449,7 @@ const KIND_LABELS: Record<ProductKind, string> = {
       }
       .entry code {
         font-size: 0.72rem;
-        color: var(--muted);
+        color: var(--fold-color-text-muted);
       }
       .actions {
         display: flex;
@@ -459,7 +459,7 @@ const KIND_LABELS: Record<ProductKind, string> = {
       .tabs {
         display: flex;
         gap: 0.25rem;
-        border-bottom: 1px solid var(--line);
+        border-bottom: 1px solid var(--fold-color-border);
       }
       .tab {
         display: flex;
@@ -467,21 +467,21 @@ const KIND_LABELS: Record<ProductKind, string> = {
         gap: 0.4rem;
         padding: 0.45rem 0.9rem;
         font-size: 0.88rem;
-        color: var(--muted);
+        color: var(--fold-color-text-muted);
         background: transparent;
         border: 0;
         border-bottom: 2px solid transparent;
         border-radius: 0;
       }
       .tab.on {
-        color: var(--text);
-        border-bottom-color: var(--accent);
+        color: var(--fold-color-text);
+        border-bottom-color: var(--fold-color-primary);
       }
       .dot {
         width: 0.45rem;
         height: 0.45rem;
         border-radius: 50%;
-        background: var(--danger);
+        background: var(--fold-color-alert);
       }
       .block[hidden] {
         display: none;
@@ -490,8 +490,8 @@ const KIND_LABELS: Record<ProductKind, string> = {
         padding: 0.5rem 0.6rem;
         font: inherit;
         color: inherit;
-        background: var(--field);
-        border: 1px solid var(--line);
+        background: var(--fold-color-surface-sunken);
+        border: 1px solid var(--fold-color-border);
         border-radius: 0.4rem;
         resize: vertical;
       }
