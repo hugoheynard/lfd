@@ -158,23 +158,27 @@
 
       <!-- Output : les collections que ces canaux génèrent, TVA comprise. -->
       <fold-card class="stack fiches-card">
-        <span class="card-kicker card-kicker--out">Conséquence</span>
-        <div class="chan-head">
-          <span class="chan-cat">Collections générées</span>
-        </div>
+
+        <span cardHeader class="card-kicker card-kicker--out">Conséquence</span>
+
         <div class="fiches">
+          <span class="chan-cat">Collections générées</span>
           @for (fiche of previewFiches(); track fiche.handle) {
             <div class="fiche">
-              <fold-badge
-                [content]="fiche.mode === 'emporter' ? 'À emporter' : 'Sur place'"
-                [variant]="fiche.mode === 'emporter' ? 'accent' : 'info'"
-              />
-              <span class="fiche-title">{{ fiche.title }}</span>
-              <span class="fiche-tva">TVA {{ fiche.tvaRate }}</span>
-              @if (fiche.boutiques.length > 0) {
-                <span class="muted">{{ fiche.boutiques.join(' · ') }}</span>
-              }
-              <code>/{{ fiche.handle }}</code>
+              <div class="fiche-top">
+                <fold-badge
+                  [content]="fiche.mode === 'emporter' ? 'À emporter' : 'Sur place'"
+                  [variant]="fiche.mode === 'emporter' ? 'accent' : 'info'"
+                />
+                <span class="fiche-title">{{ fiche.title }}</span>
+                <span class="fiche-tva">TVA {{ fiche.tvaRate }}</span>
+              </div>
+              <div class="fiche-meta">
+                @if (fiche.boutiques.length > 0) {
+                  <span>{{ fiche.boutiques.join(' · ') }}</span>
+                }
+                <code>/{{ fiche.handle }}</code>
+              </div>
             </div>
           } @empty {
             <span class="muted">

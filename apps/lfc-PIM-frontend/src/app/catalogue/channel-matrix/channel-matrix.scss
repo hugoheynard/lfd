@@ -1,6 +1,9 @@
 .cm {
+  /* Largeur des colonnes de mode : en-têtes et cases partagent la même mesure
+     pour rester alignés. */
+  --cm-mode-col: 6.5rem;
   display: grid;
-  gap: var(--fold-space-md, 1rem);
+  gap: var(--fold-space-md, 0.75rem);
 }
 
 .cm-head {
@@ -9,29 +12,48 @@
   gap: var(--fold-space-sm, 0.5rem);
 }
 
-.cm-grid {
+/* Petite table : une ligne d'en-tête + une ligne par boutique, séparateurs
+   fins, cases centrées sous leur colonne. */
+.cm-table {
   display: grid;
-  grid-template-columns: auto 1fr 1fr;
-  gap: var(--fold-space-sm, 0.5rem) var(--fold-space-lg, 1.25rem);
-  align-items: center;
-  width: fit-content;
-}
-
-.cm-col {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--fold-color-text-muted);
-  text-align: center;
 }
 
 .cm-row {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--fold-color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0;
+  border-bottom: 0.5px solid var(--fold-color-border-subtle);
 }
 
-.cm-grid fold-checkbox {
-  justify-self: center;
+.cm-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.cm-row--head {
+  padding-top: 0;
+  padding-bottom: 0.55rem;
+  border-bottom: 0.5px solid var(--fold-color-border);
+}
+
+.cm-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.cm-cell {
+  flex: 0 0 var(--cm-mode-col);
+  display: flex;
+  justify-content: center;
+}
+
+.cm-col {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fold-color-text-muted);
 }
