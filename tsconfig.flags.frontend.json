@@ -1,0 +1,61 @@
+{
+  // Jeu de flags de compilation partagé par les frontends du monorepo, calqué
+  // sur fold-ng (la librairie mène : elle durcit au-delà du minimum, on ne
+  // desserre jamais un flag ici). Un frontend l'`extends`, puis n'ajoute que ce
+  // qui lui est propre (target/module/lib/types, fichiers, références).
+  //
+  // But : attraper les mêmes erreurs que fold, tôt — surtout
+  // noUncheckedIndexedAccess + exactOptionalPropertyTypes + strictTemplates.
+  "compilerOptions": {
+    // --- Strictness (types) ---
+    "strict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "useUnknownInCatchVariables": true,
+    // arr[i] / obj[key] sont typés `T | undefined` — l'accès doit être gardé.
+    "noUncheckedIndexedAccess": true,
+    // `x?: T` (peut être absent) ≠ `x: T | undefined` (présent, mis à undefined).
+    "exactOptionalPropertyTypes": true,
+
+    // --- Robustesse / lisibilité ---
+    "noFallthroughCasesInSwitch": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "forceConsistentCasingInFileNames": true,
+
+    // --- Interop & modules ---
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // --- Ergonomie de build ---
+    "skipLibCheck": true,
+
+    // --- Décorateurs (Angular) ---
+    "experimentalDecorators": true
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true,
+    // Tout composant/directive/pipe doit être standalone.
+    "strictStandalone": true,
+    // Type-check des bindings `host: {}` comme les templates.
+    "typeCheckHostBindings": true,
+    // Chaque diagnostic de template étendu devient une erreur (imports standalone
+    // morts, projection cassée, ?./?? redondants…) — un warning finit en prod.
+    "extendedDiagnostics": { "defaultCategory": "error" }
+  }
+}

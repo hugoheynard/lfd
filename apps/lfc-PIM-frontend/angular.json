@@ -65,6 +65,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "port": 7315
+          },
           "configurations": {
             "production": {
               "buildTarget": "lfc-pim-frontend:build:production"
