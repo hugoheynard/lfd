@@ -2,6 +2,13 @@ packages:
   - apps/*
   - packages/*
 
+# Shared version floor for the design system, locked once here so every
+# frontend app stays aligned. Apps reference it with `"fold-ng": "catalog:"`;
+# bump the version in this one place. Exact pin (no caret) — fold-ng is pre-1.0,
+# so a minor can carry a breaking change; we adopt new versions deliberately.
+catalog:
+  fold-ng: 0.5.2
+
 onlyBuiltDependencies:
   - esbuild
   - "@parcel/watcher"
