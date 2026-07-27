@@ -1,10 +1,12 @@
 import type {
   Category,
+  Emplacement,
   Product,
   ProductBinding,
   SalesChannels,
   TvaRegime,
 } from './models';
+import { SEED_PRODUCTS } from './products.seed';
 
 /**
  * La **DB en dur du POC** — versionnée dans le repo, embarquée dans le build.
@@ -20,6 +22,7 @@ export interface DbShape {
   readonly tvaRegimes: TvaRegime[];
   readonly categories: Category[];
   readonly products: Product[];
+  readonly emplacements: Emplacement[];
   readonly bindings: ProductBinding[];
   /** Dernière empreinte poussée par produit — sert à détecter « déjà à jour ». */
   readonly bindingHashes: Record<string, string>;
@@ -31,10 +34,16 @@ export interface DbShape {
   };
 }
 
-/** À emporter dans les deux boutiques, jamais en salle — le défaut courant. */
+/** À emporter dans les deux boutiques, jamais en salle. */
 const EMPORTER_ONLY: SalesChannels = {
   b1: { emporter: true, surPlace: false },
   b2: { emporter: true, surPlace: false },
+};
+
+/** À emporter ET sur place dans les deux boutiques — le service complet. */
+const ALL_CHANNELS: SalesChannels = {
+  b1: { emporter: true, surPlace: true },
+  b2: { emporter: true, surPlace: true },
 };
 
 function category(
@@ -59,82 +68,51 @@ function category(
   };
 }
 
-function product(
-  id: string,
-  sku: string,
-  fr: string,
-  kind: Product['kind'],
-  categoryId: string,
-  status: Product['status'],
-  allergens: string[] | null,
-  channelsOverride: SalesChannels | null = null,
-): Product {
-  return {
-    id,
-    sku,
-    name: { fr },
-    kind,
-    categoryId,
-    status,
-    channelsOverride,
-    variants: [
-      {
-        id: `${id}_v1`,
-        sku: `${sku}-1`,
-        name: { fr },
-        isDefault: true,
-        isDiscontinued: false,
-        allergens,
-      },
-    ],
-  };
-}
-
-function binding(
-  productId: string,
-  syncStatus: ProductBinding['syncStatus'],
-  lastPushedAt: string | null,
-  lastError: string | null = null,
-): ProductBinding {
-  return { productId, syncStatus, lastPushedAt, lastError };
-}
-
-// blé = AW · lait = AM · œuf = AE  (codes GS1 du référentiel allergènes)
-// Régimes : réduit (5,5) à emporter → intermédiaire (10) sur place ; le
-// chocolat reste au taux normal (20) dans les deux canaux.
+// Régimes : réduit (5,5) à emporter → intermédiaire (10) sur place pour la
+// boulange/pâtisserie ; salé & traiteur à 10 partout (consommation immédiate) ;
+// chocolat/confiserie au taux normal (20) dans les deux canaux.
 export const DB_SEED: DbShape = {
   tvaRegimes: [
-    { id: 'tva_55', name: 'Réduit', description: 'Denrées à emporter (boulangerie, pâtisserie, pains).', percent: 5.5, tag: 'tva-5-5' },
-    { id: 'tva_10', name: 'Intermédiaire', description: 'Consommation sur place (service à table).', percent: 10, tag: 'tva-10' },
+    { id: 'tva_55', name: 'Réduit', description: 'Denrées conservables à emporter (boulangerie, pâtisserie, pains).', percent: 5.5, tag: 'tva-5-5' },
+    { id: 'tva_10', name: 'Intermédiaire', description: 'Consommation immédiate — sur place ou à emporter (salé, traiteur).', percent: 10, tag: 'tva-10' },
     { id: 'tva_20', name: 'Normal', description: 'Chocolat, confiserie, alcool — taux plein partout.', percent: 20, tag: 'tva-20' },
   ],
   categories: [
-    category('cat_vien', 'Viennoiseries', 'viennoiseries', 1, 'tva_55', 'tva_10'),
-    category('cat_patis', 'Pâtisseries', 'patisseries', 2, 'tva_55', 'tva_10'),
-    category('cat_pains', 'Pains', 'pains', 3, 'tva_55', 'tva_10'),
-    category('cat_choco', 'Chocolat & confiserie', 'chocolat-confiserie', 4, 'tva_20', 'tva_20'),
+    category('cat_vien', 'Viennoiseries', 'viennoiseries', 1, 'tva_55', 'tva_10', ALL_CHANNELS),
+    category('cat_pains', 'Pains', 'pains', 2, 'tva_55', 'tva_10', EMPORTER_ONLY),
+    category('cat_patis', 'Pâtisseries', 'patisseries', 3, 'tva_55', 'tva_10', ALL_CHANNELS),
+    category('cat_sale', 'Salé & traiteur', 'sale-traiteur', 4, 'tva_10', 'tva_10', ALL_CHANNELS),
+    category('cat_choco', 'Chocolat & confiserie', 'chocolat-confiserie', 5, 'tva_20', 'tva_20', EMPORTER_ONLY),
   ],
-  // Croissant : aussi servi en salle à Village. Éclair : en salle dans les deux.
-  products: [
-    product('prd_croissant', 'VIEN-CROISS-BEURR', 'Croissant au beurre', 'daily', 'cat_vien', 'published', ['AW', 'AM', 'AE'], { b1: { emporter: true, surPlace: true }, b2: { emporter: true, surPlace: false } }),
-    product('prd_painchoc', 'VIEN-PAIN-CHOCO', 'Pain au chocolat', 'daily', 'cat_vien', 'published', ['AW', 'AM', 'AE']),
-    product('prd_chausson', 'VIEN-CHAUSS-POMME', 'Chausson aux pommes', 'daily', 'cat_vien', 'draft', ['AW', 'AM']),
-    product('prd_tarte', 'PATI-TARTE-MYRTI', 'Tarte aux myrtilles', 'made_to_order', 'cat_patis', 'published', ['AW', 'AM', 'AE']),
-    product('prd_eclair', 'PATI-ECLAIR-CHOCO', 'Éclair au chocolat', 'daily', 'cat_patis', 'published', ['AW', 'AM', 'AE'], { b1: { emporter: true, surPlace: true }, b2: { emporter: true, surPlace: true } }),
-    product('prd_baguette', 'PAIN-BAGUET-TRADI', 'Baguette tradition', 'daily', 'cat_pains', 'published', ['AW']),
-    product('prd_seigle', 'PAIN-SEIGLE', 'Pain de seigle', 'daily', 'cat_pains', 'draft', null),
-    product('prd_mendiants', 'CHOC-MENDIANT', 'Mendiants', 'resale', 'cat_choco', 'published', ['AM', 'AN']),
+  // Catalogue importé du CSV Shopify (92 produits, tous en brouillon).
+  products: SEED_PRODUCTS,
+  // Deux boutiques : Village (sur place, 12 tables) et Ardroit (emporter seul).
+  emplacements: [
+    {
+      id: 'emp_village',
+      name: 'Village',
+      clickCollect: true,
+      surPlace: true,
+      baseUrl: 'https://la-folie-coffee.com/village/commander',
+      tables: Array.from({ length: 12 }, (_, i) => ({
+        number: i + 1,
+        qrCreated: i < 3,
+        ...(i < 3 ? { token: ['k4a1', 'k9b7', 'k2c8'][i] } : {}),
+      })),
+    },
+    {
+      id: 'emp_ardroit',
+      name: 'Ardroit',
+      clickCollect: true,
+      surPlace: false,
+      baseUrl: 'https://la-folie-coffee.com/ardroit/commander',
+      tables: [],
+    },
   ],
-  bindings: [
-    binding('prd_croissant', 'up_to_date', '2026-07-24T06:12:00.000Z'),
-    binding('prd_painchoc', 'up_to_date', '2026-07-24T06:12:00.000Z'),
-    binding('prd_tarte', 'drifted', '2026-07-20T09:30:00.000Z'),
-    binding('prd_eclair', 'failed', '2026-07-22T07:45:00.000Z', 'Variante sans référence : SKU manquant côté Shopify.'),
-    binding('prd_baguette', 'never_pushed', null),
-  ],
+  bindings: [],
   bindingHashes: {},
   shopify: {
-    shopDomain: 'chevallot.myshopify.com',
+    shopDomain: 'la-folie-coffee.myshopify.com',
     apiVersion: '2026-07',
     isEnabled: false,
     updatedAt: null,

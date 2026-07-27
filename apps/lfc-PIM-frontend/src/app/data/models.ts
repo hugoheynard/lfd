@@ -70,6 +70,17 @@ export interface Product {
   variants: Variant[];
   /** `null` = canaux hérités de la gamme ; sinon override tout-ou-rien. */
   channelsOverride: SalesChannels | null;
+  /** Handle Shopify — pilote l'URL, jamais changé après création (SEO). */
+  slug?: LocalizedText;
+  /** Prix de vente TTC, en euros. */
+  priceEur?: number;
+  /** Description courte (fiche produit + listes). */
+  descriptionFr?: string;
+  /** Poids en grammes, quand le produit se vend au format/poids. */
+  weightGrams?: number | null;
+  /** Étiquettes de workflow interne : `a-decrire`, `prix-a-verifier`,
+   *  `titre-a-verifier`, `tva-a-valider` — ce qui reste à compléter. */
+  workflowFlags?: string[];
 }
 
 export interface Category {
@@ -116,6 +127,37 @@ export interface ShopifySettings {
   hasToken: boolean;
   mode: 'live' | 'dry-run';
   updatedAt: string | null;
+}
+
+/**
+ * Une **table** d'un emplacement en click & collect sur place : elle porte une
+ * URL dérivée (`baseUrl?table=N`) et sait si son QR code a été généré.
+ */
+export interface EmplacementTable {
+  /** Numéro de table — verrouillé une fois créé (identité de l'URL). */
+  number: number;
+  qrCreated: boolean;
+  /** Token rotatif du QR : le régénérer produit un nouveau code et invalide
+   *  l'ancien (`…?table=N&k=token`). Absent tant qu'aucun QR n'est généré. */
+  token?: string;
+}
+
+/**
+ * Un **emplacement** (boutique / point de vente). Il expose ses modes de vente ;
+ * s'il fait « sur place », son nombre de tables ouvre une section click & collect
+ * par table (une URL + un QR par table).
+ */
+export interface Emplacement {
+  id: string;
+  name: string;
+  /** Vente à emporter en ligne. */
+  clickCollect: boolean;
+  /** Consommation sur place (ouvre les tables). */
+  surPlace: boolean;
+  /** URL de base du click & collect de la boutique. */
+  baseUrl: string;
+  /** Tables (si sur place) — dérivées du nombre de tables. */
+  tables: EmplacementTable[];
 }
 
 export type AllergenScope = 'eu' | 'world';

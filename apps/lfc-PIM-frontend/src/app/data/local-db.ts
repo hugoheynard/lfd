@@ -6,7 +6,10 @@ import { DB_SEED, type DbShape } from './db.seed';
 // Bumper la clé invalide tout localStorage à l'ancienne forme à chaque
 // changement de schéma. v2 : SalesChannels per-boutique. v3 : régimes de TVA
 // (tvaRegimes + category.emporterTvaId/surPlaceTvaId au lieu de fiscalCategory).
-const STORAGE_KEY = 'lfc-pim:db:v3';
+// v4 : Product porte prix/slug/description/poids/flags + catalogue CSV (92 réfs).
+// v5 : emplacements (boutiques + modes + tables + QR click & collect).
+// v6 : token rotatif par table (regen invalide l'ancien QR).
+const STORAGE_KEY = 'lfc-pim:db:v6';
 
 /**
  * La base du POC, côté navigateur. **Aucun serveur** :
