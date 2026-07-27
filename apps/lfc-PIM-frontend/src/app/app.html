@@ -1,4 +1,4 @@
-<fold-app-shell #shell="foldAppShell" contentScroll="auto" [(mobileNavOpen)]="mobileNavOpen">
+<fold-app-shell #shell="foldAppShell" contentScroll="clip" [(mobileNavOpen)]="mobileNavOpen">
   <!-- Primary rail — the app menu. Expanded by default, collapsible via the
        built-in chevron. Becomes an off-canvas drawer ≤768px. -->
   <fold-menu railPrimary collapsible tint="primary" [(expanded)]="menuExpanded">
@@ -11,7 +11,7 @@
 
     <a
       fold-menu-item
-      icon="grid"ACCESSKEY=""
+      icon="grid"
       label="Produits"
       routerLink="/produits"
       routerLinkActive
@@ -27,6 +27,26 @@
       routerLinkActive
       #categoriesRla="routerLinkActive"
       [active]="categoriesRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-menu-item
+      icon="sliders"
+      label="Régimes de TVA"
+      routerLink="/tva"
+      routerLinkActive
+      #tvaRla="routerLinkActive"
+      [active]="tvaRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-menu-item
+      icon="org-chart"
+      label="Collections"
+      routerLink="/collections"
+      routerLinkActive
+      #collectionsRla="routerLinkActive"
+      [active]="collectionsRla.isActive"
       (click)="mobileNavOpen.set(false)"
     ></a>
     <a

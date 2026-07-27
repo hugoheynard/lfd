@@ -3,6 +3,22 @@ import { type Routes } from '@angular/router';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'produits' },
   {
+    path: 'tva',
+    title: 'Régimes de TVA — LFC PIM',
+    loadComponent: () =>
+      import('./catalogue/tva-regimes/tva-regimes-page').then(
+        (m) => m.TvaRegimesPage,
+      ),
+  },
+  {
+    path: 'collections',
+    title: 'Collections — LFC PIM',
+    loadComponent: () =>
+      import('./catalogue/collections/collections-page').then(
+        (m) => m.CollectionsPage,
+      ),
+  },
+  {
     path: 'categories',
     title: 'Catégories — LFC PIM',
     loadComponent: () =>
@@ -16,6 +32,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./channels/settings-page/settings-page').then(
         (m) => m.SettingsPage,
+      ),
+  },
+  {
+    path: 'produits/nouveau',
+    title: 'Nouveau produit — LFC PIM',
+    loadComponent: () =>
+      import('./catalogue/create-product/create-product-page').then(
+        (m) => m.CreateProductPage,
       ),
   },
   {
