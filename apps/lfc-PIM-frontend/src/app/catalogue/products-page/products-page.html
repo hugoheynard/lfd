@@ -7,8 +7,8 @@
 
   <div pageActions>
     @if (categories().length > 0) {
-      <button foldButton emphasis="outline" (click)="toggleForm()">
-        {{ showForm() ? 'Fermer' : 'Créer un produit' }}
+      <button foldButton emphasis="outline" routerLink="/produits/nouveau">
+        Créer un produit
       </button>
     }
     @if (products().length > 0) {
@@ -38,12 +38,6 @@
       Créez d'abord une <a routerLink="/categories">catégorie</a> : un produit s'y
       rattache.
     </fold-callout>
-  } @else if (showForm()) {
-    <app-product-form
-      [categories]="categories()"
-      (created)="create($event)"
-      (cancelled)="showForm.set(false)"
-    />
   }
 
   @if (channelEdit(); as edit) {
@@ -51,7 +45,7 @@
       <div class="chan-editor-head">
         <div>
           <strong>{{ edit.product.name.fr }}</strong>
-          <span class="muted">{{ fiscalLabel(edit.category) }} · TVA auto</span>
+          <span class="muted">TVA {{ categoryTvaText(edit.category) }}</span>
         </div>
         <button
           foldButton

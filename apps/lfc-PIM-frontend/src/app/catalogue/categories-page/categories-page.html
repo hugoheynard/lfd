@@ -60,21 +60,31 @@
       </div>
 
       <div class="editor-block">
-        <span class="block-label">Régime de TVA</span>
-        <fold-listbox
-          [value]="cat.fiscalCategory"
-          (selectionChange)="onFiscal(cat, $event)"
-        >
-          @for (fiscal of fiscalCategories; track fiscal) {
-            <fold-option [value]="fiscal">
-              {{ fiscalLabel(fiscal) }} — {{ ratesOf(fiscal) }}
-            </fold-option>
-          }
-        </fold-listbox>
+        <span class="block-label">Régimes de TVA</span>
+        <div class="tva-pickers">
+          <fold-listbox
+            label="À emporter"
+            [value]="cat.emporterTvaId"
+            (selectionChange)="onEmporterTva(cat, $event)"
+          >
+            @for (regime of regimes(); track regime.id) {
+              <fold-option [value]="regime.id">{{ regimeLabel(regime) }}</fold-option>
+            }
+          </fold-listbox>
+          <fold-listbox
+            label="Sur place"
+            [value]="cat.surPlaceTvaId"
+            (selectionChange)="onSurPlaceTva(cat, $event)"
+          >
+            @for (regime of regimes(); track regime.id) {
+              <fold-option [value]="regime.id">{{ regimeLabel(regime) }}</fold-option>
+            }
+          </fold-listbox>
+        </div>
         <p class="muted">
-          À emporter puis sur place : <strong>{{ ratesOf(cat.fiscalCategory) }}</strong>.
-          Le chocolat reste 20 % partout — l'exception vit dans le croisement,
-          pas dans une case.
+          Deux régimes, un par canal : le chocolat prend « Normal » sur place
+          comme à emporter. Les régimes se gèrent dans
+          <a routerLink="/tva">Régimes de TVA</a>.
         </p>
       </div>
 
@@ -111,7 +121,7 @@
 
     <ng-template foldCell="tva" let-c>
       <span class="tva-cell">
-        {{ fiscalLabel(c.fiscalCategory) }} · {{ ratesOf(c.fiscalCategory) }}
+        {{ rateOf(c.emporterTvaId) }} → {{ rateOf(c.surPlaceTvaId) }}
       </span>
     </ng-template>
 

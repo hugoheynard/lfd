@@ -24,7 +24,7 @@ import {
 
 import {
   boutiquesWith,
-  FISCAL_LABELS,
+  formatPercent,
   generateFiches,
   resolveChannels,
   type GeneratedFiche,
@@ -42,8 +42,8 @@ import {
   type Product,
   type ProductKind,
   type SalesChannels,
+  type TvaRegime,
 } from '../catalogue-api';
-import { ProductForm, type NewProductForm } from '../product-form/product-form';
 
 const KIND_LABELS: Record<ProductKind, string> = {
   daily: 'Frais du jour',
@@ -83,7 +83,6 @@ interface ChannelEdit {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
-    ProductForm,
     ChannelMatrix,
     FoldPageLayoutComponent,
     FoldDataTableComponent,
@@ -103,10 +102,10 @@ export class ProductsPage {
 
   protected readonly products = signal<Product[]>([]);
   protected readonly categories = signal<Category[]>([]);
-  protected readonly showForm = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly bindings = signal<ProductBinding[]>([]);
+  protected readonly regimes = signal<TvaRegime[]>([]);
   protected readonly pushMessage = signal<string | null>(null);
   protected readonly editingId = signal<string | null>(null);
   protected readonly query = signal('');
@@ -188,6 +187,10 @@ export class ProductsPage {
     () => new Map(this.categories().map((category) => [category.id, category])),
   );
 
+  private readonly regimeById = computed(
+    () => new Map(this.regimes().map((regime) => [regime.id, regime])),
+  );
+
   /** Le produit en cours d'édition de canaux, résolu + ses fiches. */
   protected readonly channelEdit = computed<ChannelEdit | null>(() => {
     const id = this.editingId();
@@ -205,7 +208,7 @@ export class ProductsPage {
       category,
       channels: resolved.channels,
       isInherited: resolved.isInherited,
-      fiches: generateFiches(product, category),
+      fiches: generateFiches(product, category, this.regimeById()),
     };
   });
 
@@ -241,8 +244,13 @@ export class ProductsPage {
     return product.channelsOverride === null;
   }
 
-  protected fiscalLabel(category: Category): string {
-    return FISCAL_LABELS[category.fiscalCategory];
+  /** « 5,5 % → 10 % » : les taux à emporter / sur place de la catégorie. */
+  protected categoryTvaText(category: Category): string {
+    const emporter = this.regimeById().get(category.emporterTvaId);
+    const surPlace = this.regimeById().get(category.surPlaceTvaId);
+    const rate = (regime: TvaRegime | undefined): string =>
+      regime === undefined ? '—' : formatPercent(regime.percent);
+    return `${rate(emporter)} → ${rate(surPlace)}`;
   }
 
   protected editChannels(product: Product): void {
@@ -286,10 +294,6 @@ export class ProductsPage {
       : '';
   }
 
-  protected toggleForm(): void {
-    this.showForm.update((open) => !open);
-  }
-
   /**
    * Trois états distincts, et la distinction compte : pas de fiche du tout
    * (bloque la publication), fiche déclarant « aucun », ou liste d'allergènes.
@@ -300,13 +304,6 @@ export class ProductsPage {
       return 'non renseignés';
     }
     return codes.length === 0 ? 'aucun (déclaré)' : codes.join(', ');
-  }
-
-  protected async create(form: NewProductForm): Promise<void> {
-    await this.run(async () => {
-      await this.api.createProduct(form);
-      this.showForm.set(false);
-    });
   }
 
   protected async rename(product: Product, nameFr: string): Promise<void> {
@@ -370,13 +367,15 @@ export class ProductsPage {
 
   private async reload(): Promise<void> {
     try {
-      const [products, categories, bindings] = await Promise.all([
+      const [products, categories, bindings, regimes] = await Promise.all([
         this.api.listProducts(),
         this.api.listCategories(),
         this.shopify.listBindings(),
+        this.api.listTvaRegimes(),
       ]);
       this.products.set(products);
       this.bindings.set(bindings);
+      this.regimes.set(regimes);
       this.categories.set(categories.filter((category) => !category.isArchived));
     } catch (caught) {
       this.error.set(

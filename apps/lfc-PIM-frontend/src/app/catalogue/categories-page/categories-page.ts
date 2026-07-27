@@ -5,6 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import {
   FoldBadgeComponent,
@@ -20,29 +21,25 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import {
-  boutiquesWith,
-  FISCAL_CATEGORIES,
-  FISCAL_LABELS,
-  tvaFor,
-} from '../../data/channels';
+import { boutiquesWith, formatPercent } from '../../data/channels';
 import { ChannelMatrix } from '../channel-matrix/channel-matrix';
 import {
   CatalogueApi,
   type Category,
-  type FiscalCategory,
   type SalesChannels,
+  type TvaRegime,
 } from '../catalogue-api';
 
 /**
  * Catégories (= familles = gammes). Chaque catégorie porte les **défauts de
- * canaux** et le **régime de TVA** dont héritent ses produits. Composants fold ;
- * l'unique `<input>` natif est l'éditeur en cellule (commit on blur).
+ * canaux** et les **régimes de TVA** (à emporter / sur place) dont héritent ses
+ * produits. Composants fold ; l'unique `<input>` natif est l'éditeur en cellule.
  */
 @Component({
   selector: 'app-categories-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     FoldPageLayoutComponent,
     FoldCardComponent,
     FoldInputComponent,
@@ -62,18 +59,17 @@ export class CategoriesPage {
   private readonly api = inject(CatalogueApi);
 
   protected readonly categories = signal<Category[]>([]);
+  protected readonly regimes = signal<TvaRegime[]>([]);
   protected readonly draftName = signal('');
   protected readonly draftParent = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly editingId = signal<string | null>(null);
 
-  protected readonly fiscalCategories = FISCAL_CATEGORIES;
-
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'name', label: 'Nom' },
     { key: 'parent', label: 'Parent' },
-    { key: 'tva', label: 'TVA' },
+    { key: 'tva', label: 'TVA (emporter → sur place)' },
     { key: 'channels', label: 'Canaux par défaut' },
     { key: 'actions', label: '', align: 'right', width: '13rem' },
   ];
@@ -84,6 +80,10 @@ export class CategoriesPage {
   };
 
   protected readonly rowKey = (category: Category): string => category.id;
+
+  private readonly regimeById = computed(
+    () => new Map(this.regimes().map((regime) => [regime.id, regime])),
+  );
 
   /** La catégorie en cours de réglage. */
   protected readonly selected = computed<Category | null>(() => {
@@ -112,14 +112,14 @@ export class CategoriesPage {
     return parent?.name.fr ?? '—';
   }
 
-  protected fiscalLabel(fiscal: FiscalCategory): string {
-    return FISCAL_LABELS[fiscal];
+  /** Libellé d'un régime : « Réduit · 5,5 % ». */
+  protected regimeLabel(regime: TvaRegime): string {
+    return `${regime.name} · ${formatPercent(regime.percent)}`;
   }
 
-  /** « 5,5 % · 10 % » — à emporter puis sur place. */
-  protected ratesOf(fiscal: FiscalCategory): string {
-    const rates = tvaFor(fiscal);
-    return `${rates.emporter} · ${rates.surPlace}`;
+  protected rateOf(regimeId: string): string {
+    const regime = this.regimeById().get(regimeId);
+    return regime === undefined ? '—' : formatPercent(regime.percent);
   }
 
   protected presetEmporter(category: Category): string[] {
@@ -130,8 +130,9 @@ export class CategoriesPage {
     return boutiquesWith(category.channelPreset, 'surPlace');
   }
 
+  /** Alerte de démo : la pâtisserie a des cas tva-a-valider (cf. doc §3). */
   protected isPatisserie(category: Category): boolean {
-    return category.fiscalCategory === 'patisserie';
+    return category.slug.fr.includes('patisser');
   }
 
   protected editGamme(category: Category): void {
@@ -151,11 +152,22 @@ export class CategoriesPage {
     );
   }
 
-  protected async onFiscal(
+  protected async onEmporterTva(
     category: Category,
-    fiscal: FiscalCategory,
+    regimeId: string,
   ): Promise<void> {
-    await this.run(() => this.api.setCategoryFiscal(category.id, fiscal));
+    await this.run(() =>
+      this.api.setCategoryTva(category.id, regimeId, category.surPlaceTvaId),
+    );
+  }
+
+  protected async onSurPlaceTva(
+    category: Category,
+    regimeId: string,
+  ): Promise<void> {
+    await this.run(() =>
+      this.api.setCategoryTva(category.id, category.emporterTvaId, regimeId),
+    );
   }
 
   protected inputValue(event: Event): string {
@@ -205,7 +217,12 @@ export class CategoriesPage {
 
   private async reload(): Promise<void> {
     try {
-      this.categories.set(await this.api.listCategories());
+      const [categories, regimes] = await Promise.all([
+        this.api.listCategories(),
+        this.api.listTvaRegimes(),
+      ]);
+      this.categories.set(categories);
+      this.regimes.set(regimes);
     } catch (caught) {
       this.error.set(
         caught instanceof Error ? caught.message : 'Erreur inattendue.',
