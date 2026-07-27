@@ -3,7 +3,10 @@
        built-in chevron. Becomes an off-canvas drawer ≤768px. -->
   <fold-menu railPrimary collapsible tint="primary" [(expanded)]="menuExpanded">
     <a header class="rail-brand" routerLink="/" aria-label="LFC PIM — accueil">
-      <fold-icon name="diamond" [size]="22" />
+      <span class="pim-mark" aria-hidden="true">PIM</span>
+      @if (menuExpanded()) {
+        <span class="rail-wordmark">LFC-PIM</span>
+      }
     </a>
 
     <a
@@ -51,7 +54,20 @@
     >
       <fold-icon [name]="mobileNavOpen() ? 'close' : 'menu'" size="md" />
     </button>
-    <span class="brand">LFC <span class="brand-sub">PIM</span></span>
+
+    <label class="app-search">
+      <fold-icon name="search" size="sm" />
+      <input
+        type="search"
+        class="app-search-input"
+        placeholder="Rechercher un produit, une référence…"
+        aria-label="Rechercher dans le catalogue"
+      />
+    </label>
+
+    <div class="app-header-actions">
+      <fold-avatar name="Folie Douce" size="sm" />
+    </div>
   </div>
 
   <!-- Content -->

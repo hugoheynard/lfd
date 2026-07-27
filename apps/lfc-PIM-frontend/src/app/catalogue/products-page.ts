@@ -9,6 +9,18 @@ import {
 import { RouterLink } from '@angular/router';
 
 import {
+  FoldBadgeComponent,
+  FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldDataTableCellDirective,
+  FoldDataTableComponent,
+  FoldPageLayoutComponent,
+  type FoldBadgeVariant,
+  type FoldTableColumn,
+  type FoldTableTone,
+} from 'fold-ng';
+
+import {
   ShopifyApi,
   type ProductBinding,
   type SyncStatus,
@@ -35,138 +47,183 @@ const SYNC_LABELS: Record<SyncStatus, string> = {
   failed: 'échec',
 };
 
+const SYNC_VARIANTS: Record<SyncStatus, FoldBadgeVariant> = {
+  never_pushed: 'neutral',
+  up_to_date: 'success',
+  drifted: 'warning',
+  failed: 'alert',
+};
+
 @Component({
   selector: 'app-products-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ProductForm],
+  imports: [
+    RouterLink,
+    ProductForm,
+    FoldPageLayoutComponent,
+    FoldDataTableComponent,
+    FoldDataTableCellDirective,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldBadgeComponent,
+  ],
   template: `
-    <header class="page-head">
-      <div class="head-row">
-        <h1>Produits</h1>
-        <div class="head-actions">
-          @if (categories().length > 0) {
-            <button type="button" (click)="toggleForm()">
-              {{ showForm() ? 'Fermer' : 'Créer un produit' }}
-            </button>
-          }
-          @if (products().length > 0) {
-            <button type="button" class="ghost" (click)="pushAll()" [disabled]="busy()">
-              Tout pousser sur Shopify
-            </button>
-          }
-        </div>
+    <fold-page-layout icon="grid" title="Produits">
+      <p description>
+        La référence est <strong>proposée</strong> si on la laisse vide —
+        modifiable ensuite. Chaque produit naît avec sa déclinaison par défaut.
+      </p>
+
+      <div pageActions>
+        @if (categories().length > 0) {
+          <button foldButton emphasis="outline" (click)="toggleForm()">
+            {{ showForm() ? 'Fermer' : 'Créer un produit' }}
+          </button>
+        }
+        @if (products().length > 0) {
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            [disabled]="busy()"
+            (click)="pushAll()"
+          >
+            Tout pousser sur Shopify
+          </button>
+        }
       </div>
-      <p>
-        La référence est <strong>proposée</strong> si on la laisse vide — modifiable
-        ensuite. Chaque produit naît avec sa déclinaison par défaut.
-      </p>
-    </header>
 
-    @if (pushMessage(); as text) {
-      <p class="notice" role="status">{{ text }}</p>
-    }
+      @if (pushMessage(); as text) {
+        <fold-callout appearance="inset" variant="info">{{ text }}</fold-callout>
+      }
+      @if (error(); as message) {
+        <fold-callout appearance="inset" variant="alert" role="alert">
+          {{ message }}
+        </fold-callout>
+      }
 
-    @if (categories().length === 0) {
-      <p class="empty">
-        Créez d’abord une <a routerLink="/familles">famille</a> : un produit s’y rattache.
-      </p>
-    } @else {
-      @if (showForm()) {
+      @if (categories().length === 0) {
+        <fold-callout appearance="inset" variant="warning">
+          Créez d'abord une <a routerLink="/familles">famille</a> : un produit
+          s'y rattache.
+        </fold-callout>
+      } @else if (showForm()) {
         <app-product-form
           [categories]="categories()"
           (created)="create($event)"
           (cancelled)="showForm.set(false)"
         />
       }
-    }
 
-    @if (error(); as message) {
-      <p class="error" role="alert">{{ message }}</p>
-    }
+      <fold-data-table
+        [columns]="columns"
+        [rows]="products()"
+        [rowKey]="rowKey"
+        [rowTone]="rowTone"
+        zebra
+        [empty]="emptyState"
+      >
+        <ng-template foldCell="sku" let-p>
+          <code>{{ p.sku }}</code>
+        </ng-template>
 
-    @if (products().length > 0) {
-      <table>
-        <thead>
-          <tr>
-            <th>Référence</th>
-            <th>Nom</th>
-            <th>Famille</th>
-            <th>Nature</th>
-            <th>Déclinaison par défaut</th>
-            <th>Allergènes</th>
-            <th>État</th>
-            <th>Shopify</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (product of products(); track product.id) {
-            <tr [class.archived]="product.status === 'archived'">
-              <td><code>{{ product.sku }}</code></td>
-              <td>
-                <input
-                  type="text"
-                  [value]="product.name.fr"
-                  (change)="rename(product, inputValue($event))"
-                />
-              </td>
-              <td>{{ categoryName(product.categoryId) }}</td>
-              <td>{{ label(product.kind) }}</td>
-              <td><code>{{ defaultVariantSku(product) }}</code></td>
-              <td>
-                @if (allergenSummary(product); as summary) {
-                  <span class="tag" [class.warn]="summary === 'non renseignés'">
-                    {{ summary }}
-                  </span>
-                }
-              </td>
-              <td><span class="tag">{{ product.status }}</span></td>
-              <td>
-                <span class="tag" [class.warn]="syncStatus(product.id) === 'failed'">
-                  {{ syncLabel(product.id) }}
-                </span>
-              </td>
-              <td class="row-actions">
-                <button type="button" class="ghost" (click)="push(product)" [disabled]="busy()">
-                  Pousser
-                </button>
-                @if (product.status !== 'archived') {
-                  <button type="button" class="ghost" (click)="archive(product)">Archiver</button>
-                }
-              </td>
-            </tr>
+        <ng-template foldCell="name" let-p>
+          <input
+            class="cell-name"
+            type="text"
+            [value]="p.name.fr"
+            aria-label="Nom du produit"
+            (change)="rename(p, inputValue($event))"
+          />
+        </ng-template>
+
+        <ng-template foldCell="category" let-p>
+          {{ categoryName(p.categoryId) }}
+        </ng-template>
+
+        <ng-template foldCell="kind" let-p>{{ label(p.kind) }}</ng-template>
+
+        <ng-template foldCell="defaultVariant" let-p>
+          <code>{{ defaultVariantSku(p) }}</code>
+        </ng-template>
+
+        <ng-template foldCell="allergens" let-p>
+          @if (allergenSummary(p); as summary) {
+            <fold-badge
+              [content]="summary"
+              [variant]="summary === 'non renseignés' ? 'warning' : 'neutral'"
+            />
           }
-        </tbody>
-      </table>
-    }
+        </ng-template>
+
+        <ng-template foldCell="status" let-p>
+          <fold-badge
+            [content]="p.status"
+            [variant]="p.status === 'archived' ? 'neutral' : 'success'"
+          />
+        </ng-template>
+
+        <ng-template foldCell="sync" let-p>
+          <fold-badge [content]="syncLabel(p.id)" [variant]="syncVariant(p.id)" />
+        </ng-template>
+
+        <ng-template foldCell="actions" let-p>
+          <div class="row-actions">
+            <button
+              foldButton
+              emphasis="outline"
+              size="sm"
+              [disabled]="busy()"
+              (click)="push(p)"
+            >
+              Pousser
+            </button>
+            @if (p.status !== 'archived') {
+              <button
+                foldButton
+                emphasis="soft"
+                intent="neutral"
+                size="sm"
+                (click)="archive(p)"
+              >
+                Archiver
+              </button>
+            }
+          </div>
+        </ng-template>
+      </fold-data-table>
+    </fold-page-layout>
   `,
-  styleUrl: './catalogue.scss',
   styles: [
     `
-      .head-actions {
-        display: flex;
-        gap: 0.5rem;
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.85em;
       }
-      .head-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
+
+      .cell-name {
+        width: 100%;
+        min-width: 8rem;
+        padding: 0.35rem 0.5rem;
+        font: inherit;
+        color: inherit;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: var(--fold-radius-sm, 6px);
       }
+
+      .cell-name:hover,
+      .cell-name:focus-visible {
+        background: var(--fold-color-surface-sunken);
+        border-color: var(--fold-color-border);
+        outline: none;
+      }
+
       .row-actions {
         display: flex;
         gap: 0.4rem;
+        justify-content: flex-end;
         white-space: nowrap;
-      }
-      .tag.warn {
-        color: var(--fold-color-alert);
-      }
-      .notice {
-        padding: 0.6rem 0.8rem;
-        margin-bottom: 1rem;
-        background: var(--fold-color-surface-sunken);
-        border-radius: 0.4rem;
-        font-size: 0.9rem;
       }
     `,
   ],
@@ -182,6 +239,28 @@ export class ProductsPage {
   protected readonly busy = signal(false);
   protected readonly bindings = signal<ProductBinding[]>([]);
   protected readonly pushMessage = signal<string | null>(null);
+
+  protected readonly columns: readonly FoldTableColumn[] = [
+    { key: 'sku', label: 'Référence', width: '9rem' },
+    { key: 'name', label: 'Nom' },
+    { key: 'category', label: 'Famille' },
+    { key: 'kind', label: 'Nature' },
+    { key: 'defaultVariant', label: 'Déclinaison' },
+    { key: 'allergens', label: 'Allergènes' },
+    { key: 'status', label: 'État' },
+    { key: 'sync', label: 'Shopify' },
+    { key: 'actions', label: '', align: 'right', width: '12rem' },
+  ];
+
+  protected readonly emptyState = {
+    title: 'Aucun produit',
+    subtitle: 'Créez votre premier produit pour démarrer le catalogue.',
+  };
+
+  protected readonly rowKey = (product: Product): string => product.id;
+
+  protected readonly rowTone = (product: Product): FoldTableTone =>
+    this.syncStatus(product.id) === 'failed' ? 'alert' : null;
 
   private readonly bindingById = computed(
     () => new Map(this.bindings().map((binding) => [binding.productId, binding])),
@@ -205,6 +284,10 @@ export class ProductsPage {
 
   protected syncLabel(productId: string): string {
     return SYNC_LABELS[this.syncStatus(productId)];
+  }
+
+  protected syncVariant(productId: string): FoldBadgeVariant {
+    return SYNC_VARIANTS[this.syncStatus(productId)];
   }
 
   /** Un produit précis — le bouton de la ligne. */
@@ -317,7 +400,6 @@ export class ProductsPage {
       this.products.set(products);
       this.bindings.set(bindings);
       this.categories.set(categories.filter((category) => !category.isArchived));
-
     } catch (caught) {
       this.error.set(
         caught instanceof Error ? caught.message : 'Erreur inattendue.',
