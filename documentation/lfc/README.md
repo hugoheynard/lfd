@@ -16,6 +16,7 @@ plan de production du labo.
 | [`adr.md`](./adr.md) | Décisions d'architecture figées (format ADR) — le **pourquoi** technique |
 | [`todo.md`](./todo.md) | Décisions ouvertes + backlog — ce qui reste à trancher / faire |
 | [`data-model/`](./data-model/) | Le modèle de données détaillé, par couche |
+| [`projection-shopify.md`](./projection-shopify.md) | **Projection Shopify** — emporter/sur place, TVA par collection, boutiques, QR, SKU partagé |
 
 ### Modèle de données
 

@@ -11,6 +11,26 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ---
 
+## 2026-07-28
+
+### Cadrage : projection Shopify emporter / sur place, TVA, boutiques
+
+**PM** — On fige comment le catalogue se projette sur Shopify quand un article se vend **à emporter**
+(rayon public) **et** **sur place** (commande à la table via QR), à des **TVA différentes**, sur
+**plusieurs boutiques**. Point clé métier : _croissant emporter_ et _croissant sur place_ gardent le
+**même SKU** → le « total croissant » des suivis se réconcilie. L'alcool (bar) est traité comme de la
+**disponibilité** par boutique, pas comme une divergence de taux — donc rien de lourd à faire.
+
+**Tech** — Nouveau doc [`projection-shopify.md`](./projection-shopify.md). Modèle : la **fiche**
+`produit × mode` = **un produit Shopify** ; la TVA vit **uniquement** sur les collections `tva-*`
+(`tax override`, une seule par produit), les collections de nav/salle ne re-taxent jamais (invariants
+Shopify S1–S5). Le **SKU est partagé** entre les fiches d'un produit (S4 : SKU ≠ identité, duplication
+permise). Boutique = disponibilité (`SalesChannels`) + navigation du QR, jamais le taux ; le fork
+`× boutique` reste **différé** au seul cas d'un article identique portant deux taux. Conséquences :
+`projectProduct` doit passer de 1:1 à **fiche→produit** (même SKU propagé), et le binding gagne le grain
+`(variant, mode)` — affine R4 de [`data-model/04`](./data-model/04-composition-et-canaux.md). Décisions
+D-SHOP-1..5 dans le doc, à graduer en ADR une fois le push livré. **Design seul — zéro code.**
+
 ## 2026-07-21 — Jour 2
 
 ### Renommage : le produit s'appelle LFC PIM
