@@ -2,19 +2,19 @@ import { Module } from '@nestjs/common';
 
 import { CatalogueModule } from '../../catalogue/catalogue.module.js';
 import { DatabaseModule } from '../../infra/database/database.module.js';
-import { ChannelController } from './channel.controller.js';
-import { ShopifyAdminClient } from './shopify-admin-client.js';
+import { ShopifyCollectionsController } from './collections/collections.controller.js';
+import { ShopifyCollectionsService } from './collections/collections.service.js';
 import {
   DryRunShopifyCollectionsGateway,
   LiveShopifyCollectionsGateway,
-} from './shopify-collections-gateway.js';
-import { ShopifyCollectionsService } from './shopify-collections.service.js';
-import { ShopifyConnectionService } from './shopify-connection.service.js';
-import { DryRunShopifyDriver, ShopifyDriver } from './shopify-driver.js';
-import { ShopifyCollectionsController } from './shopify-collections.controller.js';
-import { ShopifyPushService } from './shopify-push.service.js';
-import { ShopifyProductsController } from './shopify-products.controller.js';
-import { ShopifySettingsService } from './shopify-settings.service.js';
+} from './collections/gateway.js';
+import { ChannelController } from './connection/channel.controller.js';
+import { ShopifyConnectionService } from './connection/connection.service.js';
+import { DryRunShopifyDriver, ShopifyDriver } from './products/driver.js';
+import { ShopifyProductsController } from './products/products.controller.js';
+import { ShopifyPushService } from './products/push.service.js';
+import { ShopifyAdminClient } from './shared/admin-client.js';
+import { ShopifySettingsService } from './shared/settings.service.js';
 
 /**
  * Adaptateur de canal — il **dépend** du catalogue, jamais l'inverse.

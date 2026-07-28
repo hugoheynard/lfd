@@ -1,7 +1,7 @@
 import {
   BusinessError,
   TechnicalError,
-} from '../../shared/errors/app-error.js';
+} from '../../../shared/errors/app-error.js';
 
 /** Le transport vers Shopify a échoué (réseau, HTTP non-2xx, erreurs GraphQL). */
 export class ShopifyTransportError extends TechnicalError {

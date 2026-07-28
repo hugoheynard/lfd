@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
-import { CatalogueReader } from '../../catalogue/domain/ports/catalogue-reader.js';
-import type { ProductRecord } from '../../catalogue/domain/ports/product.repository.js';
-import { PrismaService } from '../../infra/database/prisma.service.js';
-import { ShopifyDriver } from './shopify-driver.js';
-import { fingerprint, projectProduct } from './shopify-projection.js';
-import { ShopifySettingsService } from './shopify-settings.service.js';
+import { CatalogueReader } from '../../../catalogue/domain/ports/catalogue-reader.js';
+import type { ProductRecord } from '../../../catalogue/domain/ports/product.repository.js';
+import { PrismaService } from '../../../infra/database/prisma.service.js';
+import { ShopifyDriver } from './driver.js';
+import { fingerprint, projectProduct } from './projection.js';
+import { ShopifySettingsService } from '../shared/settings.service.js';
 
 export type PushOutcome = 'pushed' | 'unchanged' | 'failed';
 

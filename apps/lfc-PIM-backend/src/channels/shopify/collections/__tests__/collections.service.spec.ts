@@ -3,10 +3,10 @@ import { Test } from '@nestjs/testing';
 import {
   DryRunShopifyCollectionsGateway,
   LiveShopifyCollectionsGateway,
-} from '../shopify-collections-gateway.js';
-import { ShopifyCollectionsService } from '../shopify-collections.service.js';
-import type { ShopifySettingsView } from '../shopify-settings.service.js';
-import { ShopifySettingsService } from '../shopify-settings.service.js';
+} from '../gateway.js';
+import { ShopifyCollectionsService } from '../collections.service.js';
+import type { ShopifySettingsView } from '../../shared/settings.service.js';
+import { ShopifySettingsService } from '../../shared/settings.service.js';
 
 const DRY_RUN_VIEW: ShopifySettingsView = {
   shopDomain: '',

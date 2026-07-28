@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { z } from 'zod';
 
-import { Public } from '../../infra/auth/public.decorator.js';
-import { PrismaService } from '../../infra/database/prisma.service.js';
-import { ZodBody } from '../../shared/http/zod-body.pipe.js';
-import { ShopifyPushService } from './shopify-push.service.js';
+import { Public } from '../../../infra/auth/public.decorator.js';
+import { PrismaService } from '../../../infra/database/prisma.service.js';
+import { ZodBody } from '../../../shared/http/zod-body.pipe.js';
+import { ShopifyPushService } from './push.service.js';
 
 const pushPayload = z.object({
   productIds: z.array(z.string()).optional(),

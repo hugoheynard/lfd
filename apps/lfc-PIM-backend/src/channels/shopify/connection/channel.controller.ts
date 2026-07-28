@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Post, Put } from '@nestjs/common';
 import { z } from 'zod';
 
-import { Public } from '../../infra/auth/public.decorator.js';
-import { ZodBody } from '../../shared/http/zod-body.pipe.js';
-import { ShopifyConnectionService } from './shopify-connection.service.js';
-import { ShopifySettingsService } from './shopify-settings.service.js';
+import { Public } from '../../../infra/auth/public.decorator.js';
+import { ZodBody } from '../../../shared/http/zod-body.pipe.js';
+import { ShopifyConnectionService } from './connection.service.js';
+import { ShopifySettingsService } from '../shared/settings.service.js';
 
 const settingsPayload = z.object({
   shopDomain: z.string(),

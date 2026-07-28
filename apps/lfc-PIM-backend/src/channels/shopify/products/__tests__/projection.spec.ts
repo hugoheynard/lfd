@@ -1,5 +1,5 @@
-import type { ProductRecord } from '../../../catalogue/domain/ports/product.repository.js';
-import { fingerprint, projectProduct } from '../shopify-projection.js';
+import type { ProductRecord } from '../../../../catalogue/domain/ports/product.repository.js';
+import { fingerprint, projectProduct } from '../projection.js';
 
 function product(overrides: Partial<ProductRecord> = {}): ProductRecord {
   return {

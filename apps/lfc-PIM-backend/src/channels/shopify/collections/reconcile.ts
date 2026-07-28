@@ -10,22 +10,11 @@
  * **orpheline**.
  */
 
-/** Une collection Shopify, réduite à ce dont la réconciliation a besoin. */
-export interface ShopifyCollection {
-  readonly id: string;
-  /** Handle = clé de rapprochement (`tva-5-5`). */
-  readonly handle: string;
-  readonly title: string;
-  /** Fiches rattachées côté boutique — `0` = collection poussée vide. */
-  readonly productCount: number;
-}
-
-/** Ce que le front veut voir exister sur la boutique. */
-export interface DesiredCollection {
-  /** Handle attendu — le tag du régime (`tva-5-5`). */
-  readonly handle: string;
-  readonly title: string;
-}
+import {
+  type DesiredCollection,
+  type ShopifyCollection,
+  TVA_HANDLE_PREFIX,
+} from '../shared/collection-types.js';
 
 /** Une collection désirée rapprochée de son éventuelle contrepartie distante. */
 export interface ReconcileRow {
@@ -42,9 +31,6 @@ export interface Reconciliation {
   readonly orphans: readonly ShopifyCollection[];
   readonly missingCount: number;
 }
-
-/** Préfixe qui marque une collection comme « gérée par la TVA ». */
-export const TVA_HANDLE_PREFIX = 'tva-';
 
 export function reconcileCollections(
   desired: readonly DesiredCollection[],

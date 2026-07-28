@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import type { ShopifyProductPayload } from './shopify-projection.js';
+import type { ShopifyProductPayload } from './projection.js';
 
 export interface ShopifyPushResult {
   readonly productGid: string | null;

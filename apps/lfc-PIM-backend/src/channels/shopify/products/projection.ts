@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import type { ProductRecord } from '../../catalogue/domain/ports/product.repository.js';
+import type { ProductRecord } from '../../../catalogue/domain/ports/product.repository.js';
 
 /**
  * Projection canonique → vocabulaire Shopify. **Pure et testable** : aucun appel réseau,

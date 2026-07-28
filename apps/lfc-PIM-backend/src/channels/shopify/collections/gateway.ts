@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { ShopifyAdminClient } from './shopify-admin-client.js';
+import { ShopifyAdminClient } from '../shared/admin-client.js';
 import type {
   DesiredCollection,
   ShopifyCollection,
-} from './shopify-reconcile.js';
+} from '../shared/collection-types.js';
 
 /**
  * Port de lecture/écriture des collections Shopify. Deux implémentations : une

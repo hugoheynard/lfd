@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 
-import { AppConfig } from '../../infra/config/app-config.js';
-import { PrismaService } from '../../infra/database/prisma.service.js';
+import { AppConfig } from '../../../infra/config/app-config.js';
+import { PrismaService } from '../../../infra/database/prisma.service.js';
 
 const SINGLETON_ID = 'shopify';
 const DEFAULT_API_VERSION = '2026-07';
+
+/** Mode du canal — `live` seulement si activé **et** approvisionné en jeton.
+ *  Vocabulaire partagé : lu par les collections, la connexion, le push produit. */
+export type ChannelMode = 'live' | 'dry-run';
 
 export interface ShopifySettingsView {
   readonly shopDomain: string;
@@ -13,7 +17,7 @@ export interface ShopifySettingsView {
   /** **Jamais** le jeton lui-même — seulement sa présence. */
   readonly hasToken: boolean;
   /** `dry-run` tant que l'intégration n'est pas activée **et** approvisionnée. */
-  readonly mode: 'live' | 'dry-run';
+  readonly mode: ChannelMode;
   readonly updatedAt: string | null;
 }
 

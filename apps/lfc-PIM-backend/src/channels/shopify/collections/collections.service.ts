@@ -1,20 +1,23 @@
 import { Injectable } from '@nestjs/common';
 
+import type {
+  DesiredCollection,
+  ShopifyCollection,
+} from '../shared/collection-types.js';
+import {
+  type ChannelMode,
+  ShopifySettingsService,
+} from '../shared/settings.service.js';
 import {
   DryRunShopifyCollectionsGateway,
   LiveShopifyCollectionsGateway,
   ShopifyCollectionsGateway,
-} from './shopify-collections-gateway.js';
+} from './gateway.js';
 import {
-  type DesiredCollection,
   missingCollections,
   type Reconciliation,
   reconcileCollections,
-  type ShopifyCollection,
-} from './shopify-reconcile.js';
-import { ShopifySettingsService } from './shopify-settings.service.js';
-
-export type ChannelMode = 'live' | 'dry-run';
+} from './reconcile.js';
 
 export interface InspectResult {
   readonly mode: ChannelMode;

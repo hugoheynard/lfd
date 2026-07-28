@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
-import { AppError } from '../../shared/errors/app-error.js';
-import { ShopifyAdminClient } from './shopify-admin-client.js';
-import type { ChannelMode } from './shopify-collections.service.js';
-import { ShopifySettingsService } from './shopify-settings.service.js';
+import { AppError } from '../../../shared/errors/app-error.js';
+import { ShopifyAdminClient } from '../shared/admin-client.js';
+import {
+  type ChannelMode,
+  ShopifySettingsService,
+} from '../shared/settings.service.js';
 
 export interface VerifyResult {
   readonly mode: ChannelMode;

@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 
-import { AppConfig } from '../../infra/config/app-config.js';
+import { AppConfig } from '../../../infra/config/app-config.js';
 import {
   ShopifyNotConfiguredError,
   ShopifyRejectedError,
   ShopifyTransportError,
-} from './shopify-errors.js';
+} from './errors.js';
 import type {
   DesiredCollection,
   ShopifyCollection,
-} from './shopify-reconcile.js';
-import { ShopifySettingsService } from './shopify-settings.service.js';
+} from './collection-types.js';
+import { ShopifySettingsService } from './settings.service.js';
 
 /** Ce que confirme une vérification de connexion. */
 export interface ShopifyShopIdentity {

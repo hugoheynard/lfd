@@ -1,9 +1,8 @@
-import {
-  type DesiredCollection,
-  missingCollections,
-  reconcileCollections,
-  type ShopifyCollection,
-} from '../shopify-reconcile.js';
+import type {
+  DesiredCollection,
+  ShopifyCollection,
+} from '../../shared/collection-types.js';
+import { missingCollections, reconcileCollections } from '../reconcile.js';
 
 const collection = (handle: string, productCount = 0): ShopifyCollection => ({
   id: `gid://shopify/Collection/${handle}`,

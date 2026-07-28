@@ -1,9 +1,9 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { z } from 'zod';
 
-import { Public } from '../../infra/auth/public.decorator.js';
-import { ZodBody } from '../../shared/http/zod-body.pipe.js';
-import { ShopifyCollectionsService } from './shopify-collections.service.js';
+import { Public } from '../../../infra/auth/public.decorator.js';
+import { ZodBody } from '../../../shared/http/zod-body.pipe.js';
+import { ShopifyCollectionsService } from './collections.service.js';
 
 /** Les collections de TVA voulues, telles que le front les connaît (handle + titre). */
 const desiredCollectionsPayload = z.object({
