@@ -152,7 +152,9 @@ code {
 }
 
 .products-paginator {
-  display: block;
+  /* Ne pas toucher au `display` : le host fold-paginator est déjà `display: flex`
+     (barre sur une ligne, info à gauche / nav à droite). Le forcer en `block`
+     l'aplatissait en deux blocs empilés à gauche. On ajoute juste la marge. */
   margin-top: var(--fold-space-md, 1rem);
 }
 
