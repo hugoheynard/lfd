@@ -6,6 +6,7 @@ import {
   FoldButtonIconComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
+  FoldPanelHostComponent,
   FoldSearchComponent,
   FoldSurfaceDirective,
 } from 'fold-ng';
@@ -22,6 +23,7 @@ import {
     FoldButtonIconComponent,
     FoldMenuComponent,
     FoldMenuItemComponent,
+    FoldPanelHostComponent,
     FoldSearchComponent,
     FoldSurfaceDirective,
   ],
