@@ -1,0 +1,76 @@
+.muted {
+  color: var(--fold-color-text-muted);
+  font-size: 0.9rem;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  color: var(--fold-color-text-muted);
+}
+
+// ── Bloc de réconciliation ────────────────────────────────────────────────
+.recon {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.recon-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm) var(--fold-space-md);
+}
+
+.recon-status {
+  display: flex;
+  flex-direction: column;
+}
+
+.recon-actions {
+  display: flex;
+  gap: var(--fold-space-sm);
+}
+
+.block-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fold-color-text-muted);
+}
+
+.recon-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.recon-row {
+  display: grid;
+  grid-template-columns: 8rem 1fr auto auto;
+  align-items: center;
+  gap: var(--fold-space-sm) var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.recon-row.is-missing {
+  // Souligne discrètement les lignes à pousser.
+  --fold-color-text-muted: var(--fold-color-warning-text, currentColor);
+}
+
+.recon-name {
+  color: var(--fold-color-text);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 720px) {
+  .recon-row {
+    grid-template-columns: 1fr auto;
+  }
+}

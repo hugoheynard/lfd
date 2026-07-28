@@ -1,0 +1,54 @@
+<fold-card class="create">
+  <fold-input
+    label="Nom"
+    placeholder="ex. Réduit"
+    [value]="draftName()"
+    (valueChange)="draftName.set($event)"
+  />
+  <fold-input
+    label="Description"
+    placeholder="À quoi il s'applique"
+    [value]="draftDescription()"
+    (valueChange)="draftDescription.set($event)"
+  />
+  <fold-number-input
+    label="Taux (%)"
+    [min]="0"
+    [step]="0.1"
+    [value]="draftPercent()"
+    (valueChange)="draftPercent.set($event)"
+  />
+  <button foldButton [disabled]="busy()" (click)="create()">Ajouter</button>
+</fold-card>
+
+@if (error(); as message) {
+  <fold-callout appearance="inset" variant="alert" role="alert">
+    {{ message }}
+  </fold-callout>
+}
+
+<fold-data-table
+  [columns]="columns"
+  [rows]="regimes()"
+  [rowKey]="rowKey"
+  zebra
+  [empty]="emptyState"
+>
+  <ng-template foldCell="name" let-r><strong>{{ r.name }}</strong></ng-template>
+
+  <ng-template foldCell="description" let-r>
+    <span class="muted">{{ r.description || '—' }}</span>
+  </ng-template>
+
+  <ng-template foldCell="rate" let-r>
+    <fold-badge [content]="format(r.percent)" variant="accent" />
+  </ng-template>
+
+  <ng-template foldCell="tag" let-r><code>{{ r.tag }}</code></ng-template>
+
+  <ng-template foldCell="actions" let-r>
+    <button foldButton emphasis="soft" intent="danger" size="sm" (click)="remove(r)">
+      Supprimer
+    </button>
+  </ng-template>
+</fold-data-table>
