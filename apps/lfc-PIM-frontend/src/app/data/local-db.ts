@@ -12,7 +12,9 @@ import { DB_SEED, type DbShape } from './db.seed';
 // v7 : miroir Shopify (shopifyCollections) pour la réconciliation des collections de taxe.
 // v8 : miroir Shopify retiré — la réconciliation des collections de TVA est
 //      passée au backend (channels/shopify) ; le front ne le stocke plus.
-const STORAGE_KEY = 'lfc-pim:db:v8';
+// v9 : publication — état publié par fiche (publishedFiches) + push programmé
+//      (scheduledPush), pour le staging catalogue → Shopify.
+const STORAGE_KEY = 'lfc-pim:db:v9';
 
 /**
  * La base du POC, côté navigateur. **Aucun serveur** :

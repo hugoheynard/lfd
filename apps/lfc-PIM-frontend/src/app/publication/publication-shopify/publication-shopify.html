@@ -1,0 +1,207 @@
+@let counts = plan().counts;
+
+@if (plan().entries.length === 0) {
+  <fold-empty-state
+    title="Catalogue vide"
+    subtitle="Aucune fiche à projeter. Ajoutez des produits au catalogue FOLIE COFFEE."
+  >
+    <fold-icon empty-icon name="grid" [size]="40" />
+  </fold-empty-state>
+} @else {
+  <!-- Barre d'action : compteurs à gauche, actions à droite. -->
+  <div class="pub-toolbar">
+    <div class="pub-counts">
+      <fold-badge [content]="counts.new + ' nouvelles'" variant="info" />
+      <fold-badge [content]="counts.drifted + ' modifiées'" variant="warning" />
+      <fold-badge [content]="counts['to-remove'] + ' à retirer'" variant="alert" />
+      <fold-badge [content]="counts['up-to-date'] + ' à jour'" variant="success" />
+    </div>
+
+    <div class="pub-actions">
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        [disabled]="selectedCount() === 0"
+        (click)="prePush()"
+      >
+        <fold-icon name="eye" [size]="15" /> Pré-push
+      </button>
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        [disabled]="selectedCount() === 0"
+        (click)="openSchedule()"
+      >
+        <fold-icon name="calendar" [size]="15" /> Programmer…
+      </button>
+      <button
+        foldButton
+        size="sm"
+        [disabled]="selectedCount() === 0"
+        (click)="approveAndPush()"
+      >
+        <fold-icon name="upload" [size]="15" /> Approuver & pousser
+        ({{ selectedCount() }})
+      </button>
+    </div>
+  </div>
+
+  @if (dryRun(); as message) {
+    <fold-callout appearance="inset" variant="info" class="pub-note">
+      {{ message }}
+    </fold-callout>
+  }
+
+  @if (scheduled(); as sched) {
+    <fold-callout appearance="inset" variant="warning" class="pub-note">
+      Push programmé pour <strong>{{ sched.at }}</strong> —
+      {{ sched.handles.length }} fiche(s). S'exécutera à la prochaine ouverture
+      après l'heure.
+      <button
+        foldButton
+        size="sm"
+        emphasis="soft"
+        intent="danger"
+        (click)="cancelSchedule()"
+      >
+        Annuler
+      </button>
+    </fold-callout>
+  }
+
+  @if (scheduling()) {
+    <fold-callout appearance="inset" variant="info" class="pub-note">
+      <div class="pub-schedule">
+        <label class="pub-schedule-field">
+          <span>Pousser les {{ selectedCount() }} fiche(s) sélectionnées le :</span>
+          <input
+            #dt
+            type="datetime-local"
+            [value]="scheduleAt()"
+            (change)="scheduleAt.set(dt.value)"
+          />
+        </label>
+        <button foldButton size="sm" (click)="confirmSchedule()">Programmer</button>
+        <button
+          foldButton
+          size="sm"
+          emphasis="soft"
+          intent="neutral"
+          (click)="scheduling.set(false)"
+        >
+          Fermer
+        </button>
+      </div>
+    </fold-callout>
+  }
+
+  <!-- Sélection globale des fiches actionnables. -->
+  <div class="pub-selectall">
+    <fold-checkbox
+      label="Tout sélectionner (actions)"
+      [checked]="allActionableSelected()"
+      (checkedChange)="toggleAll($event)"
+    />
+  </div>
+
+  <!-- La liste des fiches projetées. -->
+  <ul class="pub-list">
+    @for (entry of plan().entries; track entry.handle) {
+      <li
+        class="pub-row"
+        [class.is-new]="entry.status === 'new'"
+        [class.is-drifted]="entry.status === 'drifted'"
+        [class.is-to-remove]="entry.status === 'to-remove'"
+        [class.is-up-to-date]="entry.status === 'up-to-date'"
+      >
+        <div class="pub-main">
+          @if (entry.status !== 'up-to-date') {
+            <fold-checkbox
+              [checked]="isSelected(entry.handle)"
+              (checkedChange)="toggle(entry.handle, $event)"
+            />
+          } @else {
+            <span class="pub-checkspacer" aria-hidden="true"></span>
+          }
+
+          <div class="pub-ident">
+            <span class="pub-title">{{ entry.fiche.title }}</span>
+            <code class="pub-handle">/{{ entry.handle }}</code>
+          </div>
+
+          <div class="pub-badges">
+            <fold-badge [content]="modeLabel(entry)" [variant]="modeVariant(entry)" />
+            <fold-badge
+              [content]="entry.fiche.tvaTag + ' · ' + entry.fiche.tvaRate"
+              variant="neutral"
+              radius="square"
+            />
+            <code class="pub-sku">{{ entry.fiche.sku }}</code>
+          </div>
+
+          <fold-badge
+            class="pub-status"
+            [content]="style(entry.status).label"
+            [variant]="style(entry.status).variant"
+          />
+
+          <button
+            class="pub-expand"
+            type="button"
+            [attr.aria-expanded]="isExpanded(entry.handle)"
+            [attr.aria-label]="'Détail de ' + entry.fiche.title"
+            (click)="toggleExpand(entry.handle)"
+          >
+            <fold-icon
+              [name]="isExpanded(entry.handle) ? 'chevron-up' : 'chevron-down'"
+              [size]="16"
+            />
+          </button>
+        </div>
+
+        @if (isExpanded(entry.handle)) {
+          <div class="pub-detail">
+            @switch (entry.status) {
+              @case ('drifted') {
+                <span class="pub-detail-head">Changements à pousser</span>
+                <ul class="pub-diff">
+                  @for (d of entry.diffs; track d.field) {
+                    <li>
+                      <span class="pub-diff-field">{{ d.field }}</span>
+                      <span class="pub-diff-before">{{ d.before }}</span>
+                      <fold-icon name="arrow-right" [size]="13" />
+                      <span class="pub-diff-after">{{ d.after }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+              @case ('to-remove') {
+                <span class="pub-detail-head">
+                  Cette fiche n'est plus projetée — elle sera <strong>retirée</strong>
+                  de Shopify au push.
+                </span>
+              }
+              @default {
+                <span class="pub-detail-head">Fiche projetée (ce qui partira)</span>
+                <dl class="pub-fields">
+                  <dt>Boutiques</dt>
+                  <dd>{{ entry.fiche.boutiques.join(', ') || '—' }}</dd>
+                  <dt>Déclinaisons</dt>
+                  <dd>
+                    @for (v of entry.fiche.variants; track v.sku) {
+                      <code>{{ v.sku }}</code> — {{ v.title }}<br />
+                    }
+                  </dd>
+                </dl>
+              }
+            }
+          </div>
+        }
+      </li>
+    }
+  </ul>
+}

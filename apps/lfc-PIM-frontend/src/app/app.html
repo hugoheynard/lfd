@@ -51,6 +51,16 @@
     ></a>
     <a
       fold-menu-item
+      icon="upload"
+      label="Publication"
+      routerLink="/publication"
+      routerLinkActive
+      #publicationRla="routerLinkActive"
+      [active]="publicationRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-menu-item
       icon="company"
       label="Emplacements"
       routerLink="/emplacements"

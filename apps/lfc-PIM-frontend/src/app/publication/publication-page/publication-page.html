@@ -1,0 +1,34 @@
+<fold-page-layout icon="upload" title="Publication">
+  <p description>
+    Le catalogue FOLIE COFFEE poussé vers ses canaux. On <strong>pré-pousse</strong>,
+    on vérifie les fiches et les changements, puis on <strong>approuve</strong> —
+    tout de suite ou à l'heure programmée. Rien n'est édité ici : la source reste
+    le catalogue.
+  </p>
+
+  <fold-nav-layout>
+    <fold-tabs
+      tabNav
+      [tabs]="tabs"
+      [(activeKey)]="activeTab"
+      direction="horizontal"
+      size="compact"
+      background="surface"
+      activeStyle="fill"
+      #ref="foldTabs"
+    />
+
+    <fold-tab-panel [tabs]="ref" key="shopify">
+      <app-publication-shopify />
+    </fold-tab-panel>
+
+    <fold-tab-panel [tabs]="ref" key="autre">
+      <fold-empty-state
+        title="Pas d'autre canal"
+        subtitle="Shopify est le seul canal de publication branché. Caisse, marketplace ou B2B viendront s'ajouter ici comme de nouveaux onglets."
+      >
+        <fold-icon empty-icon name="teams" [size]="40" />
+      </fold-empty-state>
+    </fold-tab-panel>
+  </fold-nav-layout>
+</fold-page-layout>
