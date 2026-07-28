@@ -1,4 +1,5 @@
-<!-- Synchronisation boutique : la table de taxe = première brique Shopify. -->
+<!-- La barre horizontale + ses panneaux. La section (titre + rythme) qui
+     l'enveloppe est portée par la page parente, pour la clarté du layout. -->
 <fold-nav-layout>
   <fold-tabs
     tabNav
@@ -11,12 +12,7 @@
     #ref="foldTabs"
   />
 
-  <fold-tab-panel [tabs]="ref" key="shopify">
-    <fold-page-section
-      title="Collections de taxe"
-      icon="shopify"
-      description="Famille A : une collection Shopify par taux, poussée avant toute segmentation."
-    >
+    <fold-tab-panel [tabs]="ref" key="shopify">
       <!-- 1 · Descriptif : pourquoi la TVA est la première collection. -->
       <fold-callout appearance="inset" variant="info">
         <p>
@@ -114,15 +110,14 @@
           }
         }
       </fold-card>
-    </fold-page-section>
-  </fold-tab-panel>
+    </fold-tab-panel>
 
-  <fold-tab-panel [tabs]="ref" key="autre">
-    <fold-empty-state
-      title="Pas d'autre consommateur du catalogue"
-      subtitle="Shopify est le seul canal branché sur les régimes de TVA. D'autres intégrations (caisse, marketplace) viendront s'y rattacher ici."
-    >
-      <fold-icon empty-icon name="teams" [size]="40" />
-    </fold-empty-state>
-  </fold-tab-panel>
+    <fold-tab-panel [tabs]="ref" key="autre">
+      <fold-empty-state
+        title="Pas d'autre consommateur du catalogue"
+        subtitle="Shopify est le seul canal branché sur les régimes de TVA. D'autres intégrations (caisse, marketplace) viendront s'y rattacher ici."
+      >
+        <fold-icon empty-icon name="teams" [size]="40" />
+      </fold-empty-state>
+    </fold-tab-panel>
 </fold-nav-layout>

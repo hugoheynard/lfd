@@ -1,39 +1,18 @@
-<fold-card class="create">
-  <fold-input
-    label="Nom"
-    placeholder="ex. Réduit"
-    [value]="draftName()"
-    (valueChange)="draftName.set($event)"
-  />
-  <fold-input
-    label="Description"
-    placeholder="À quoi il s'applique"
-    [value]="draftDescription()"
-    (valueChange)="draftDescription.set($event)"
-  />
-  <fold-number-input
-    label="Taux (%)"
-    [min]="0"
-    [step]="0.1"
-    [value]="draftPercent()"
-    (valueChange)="draftPercent.set($event)"
-  />
-  <button foldButton [disabled]="busy()" (click)="create()">Ajouter</button>
-</fold-card>
-
-@if (error(); as message) {
-  <fold-callout appearance="inset" variant="alert" role="alert">
-    {{ message }}
-  </fold-callout>
-}
-
 <fold-data-table
   [columns]="columns"
   [rows]="regimes()"
   [rowKey]="rowKey"
   zebra
+  toolbarSurface="accent"
   [empty]="emptyState"
 >
+  <div foldToolbar class="table-toolbar">
+    <span class="toolbar-title">
+      <fold-icon name="sliders" size="sm" />
+      Régimes
+    </span>
+  </div>
+
   <ng-template foldCell="name" let-r><strong>{{ r.name }}</strong></ng-template>
 
   <ng-template foldCell="description" let-r>
@@ -47,8 +26,23 @@
   <ng-template foldCell="tag" let-r><code>{{ r.tag }}</code></ng-template>
 
   <ng-template foldCell="actions" let-r>
-    <button foldButton emphasis="soft" intent="danger" size="sm" (click)="remove(r)">
-      Supprimer
-    </button>
+    <fold-dropdown ariaLabel="Actions du régime" placement="bottom-end">
+      <button
+        foldPopoverTrigger
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        aria-label="Actions"
+      >
+        <fold-icon name="more-vertical" size="sm" />
+      </button>
+      <fold-dropdown-item icon="edit" (selected)="openEdit(r)">
+        Modifier
+      </fold-dropdown-item>
+      <fold-dropdown-item icon="bin" tone="danger" (selected)="openDelete(r)">
+        Supprimer
+      </fold-dropdown-item>
+    </fold-dropdown>
   </ng-template>
 </fold-data-table>

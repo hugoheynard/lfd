@@ -7,7 +7,13 @@
     du taux automatiquement.
   </p>
 
+  <button pageActions foldButton size="sm" (click)="openCreate()">
+    + Nouveau régime
+  </button>
+
   <app-tva-regime-table />
 
-  <app-tva-regime-platform-usages />
+  <fold-page-section title="Usages plateforme">
+    <app-tva-regime-platform-usages />
+  </fold-page-section>
 </fold-page-layout>

@@ -1,62 +1,68 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
-  signal,
 } from '@angular/core';
 
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
-  FoldCalloutComponent,
-  FoldCardComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
-  FoldInputComponent,
-  FoldNumberInputComponent,
+  FoldDropdownComponent,
+  FoldDropdownItemComponent,
+  FoldIconComponent,
+  FoldPanelHostService,
+  FoldPopoverTriggerDirective,
   type FoldTableColumn,
 } from 'fold-ng';
 
 import { formatPercent } from '../../../data/channels';
-import { CatalogueApi, type TvaRegime } from '../../catalogue-api';
+import { LocalDb } from '../../../data/local-db';
+import { type TvaRegime } from '../../catalogue-api';
+import {
+  TvaRegimeFormPanel,
+  type TvaRegimePanelData,
+} from '../tva-regime-form-panel/tva-regime-form-panel';
 
 /**
- * La **gestion des régimes** : le formulaire de création et le tableau des taux
- * existants (Famille A — `tva-5-5`, `tva-10`, `tva-20`). Une brique autonome,
- * branchée sur {@link CatalogueApi} ; la page ne fait que la composer.
+ * Le **tableau des régimes** de TVA (Famille A — `tva-5-5`, `tva-10`,
+ * `tva-20`). Il lit la liste en direct depuis {@link LocalDb} et n'expose que
+ * l'affichage + un menu par ligne (modifier / supprimer) : toute mutation passe
+ * par le side-panel, donc la liste se met à jour toute seule.
  */
 @Component({
   selector: 'app-tva-regime-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldCardComponent,
-    FoldInputComponent,
-    FoldNumberInputComponent,
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldBadgeComponent,
+    FoldIconComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    FoldDropdownComponent,
+    FoldDropdownItemComponent,
+    FoldPopoverTriggerDirective,
   ],
   templateUrl: './tva-regime-table.html',
   styleUrl: './tva-regime-table.scss',
 })
 export class TvaRegimeTable {
-  private readonly api = inject(CatalogueApi);
+  private readonly db = inject(LocalDb);
+  private readonly panelHost = inject(FoldPanelHostService);
 
-  protected readonly regimes = signal<TvaRegime[]>([]);
-  protected readonly draftName = signal('');
-  protected readonly draftDescription = signal('');
-  protected readonly draftPercent = signal<number | null>(null);
-  protected readonly error = signal<string | null>(null);
-  protected readonly busy = signal(false);
+  /** Liste réactive : suit la DB, donc création / édition / suppression se voient direct. */
+  protected readonly regimes = computed<readonly TvaRegime[]>(
+    () => this.db.snapshot().tvaRegimes,
+  );
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'name', label: 'Nom', width: '12rem' },
     { key: 'description', label: 'Description' },
     { key: 'rate', label: 'Taux', width: '7rem' },
     { key: 'tag', label: 'Collection', width: '10rem' },
-    { key: 'actions', label: '', align: 'right', width: '9rem' },
+    { key: 'actions', label: '', align: 'right', width: '5rem' },
   ];
 
   protected readonly emptyState = {
@@ -66,58 +72,21 @@ export class TvaRegimeTable {
 
   protected readonly rowKey = (regime: TvaRegime): string => regime.id;
 
-  constructor() {
-    void this.reload();
-  }
-
   protected format(percent: number): string {
     return formatPercent(percent);
   }
 
-  protected async create(): Promise<void> {
-    const name = this.draftName().trim();
-    const percent = this.draftPercent();
-    if (name === '' || percent === null) {
-      return;
-    }
-    await this.run(async () => {
-      await this.api.createTvaRegime({
-        name,
-        description: this.draftDescription(),
-        percent,
-      });
-      this.draftName.set('');
-      this.draftDescription.set('');
-      this.draftPercent.set(null);
-    });
+  /** Édition : side-panel prérempli sur ce régime. */
+  protected openEdit(regime: TvaRegime): void {
+    this.openPanel({ mode: 'edit', regime });
   }
 
-  protected async remove(regime: TvaRegime): Promise<void> {
-    await this.run(() => this.api.deleteTvaRegime(regime.id));
+  /** Suppression : side-panel en zone dangereuse (confirmation par le nom). */
+  protected openDelete(regime: TvaRegime): void {
+    this.openPanel({ mode: 'delete', regime });
   }
 
-  private async run(action: () => Promise<unknown>): Promise<void> {
-    this.busy.set(true);
-    this.error.set(null);
-    try {
-      await action();
-      await this.reload();
-    } catch (caught) {
-      this.error.set(
-        caught instanceof Error ? caught.message : 'Erreur inattendue.',
-      );
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  private async reload(): Promise<void> {
-    try {
-      this.regimes.set(await this.api.listTvaRegimes());
-    } catch (caught) {
-      this.error.set(
-        caught instanceof Error ? caught.message : 'Erreur inattendue.',
-      );
-    }
+  private openPanel(data: TvaRegimePanelData): void {
+    this.panelHost.open(TvaRegimeFormPanel, { data, side: 'right' });
   }
 }

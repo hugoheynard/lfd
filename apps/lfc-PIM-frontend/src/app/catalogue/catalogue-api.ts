@@ -191,6 +191,37 @@ export class CatalogueApi {
     return { id };
   }
 
+  /** Met à jour un régime ; le tag se re-dérive du taux (unicité contrôlée). */
+  async updateTvaRegime(
+    id: string,
+    payload: { name: string; description?: string; percent: number },
+  ): Promise<void> {
+    const name = payload.name.trim();
+    if (name === '') {
+      throw new CatalogueApiError('tva.name.empty', 'Le nom est obligatoire.');
+    }
+    if (!Number.isFinite(payload.percent) || payload.percent < 0) {
+      throw new CatalogueApiError('tva.percent.invalid', 'Taux invalide.');
+    }
+    this.db.update((draft) => {
+      const target = draft.tvaRegimes.find((r) => r.id === id);
+      if (target === undefined) {
+        throw new CatalogueApiError('tva.not_found', 'Régime introuvable.');
+      }
+      const tag = tvaTagFromPercent(payload.percent);
+      if (draft.tvaRegimes.some((r) => r.tag === tag && r.id !== id)) {
+        throw new CatalogueApiError(
+          'tva.tag.duplicate',
+          `Un régime à ${payload.percent} % existe déjà (${tag}).`,
+        );
+      }
+      target.name = name;
+      target.description = payload.description?.trim() ?? '';
+      target.percent = payload.percent;
+      target.tag = tag;
+    });
+  }
+
   /** Supprime un régime — refusé s'il est encore référencé par une catégorie. */
   async deleteTvaRegime(id: string): Promise<void> {
     this.db.update((draft) => {

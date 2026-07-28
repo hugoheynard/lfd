@@ -1,0 +1,63 @@
+<fold-panel-header [title]="heading()" [subtitle]="subtitle()" />
+
+<div class="body">
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">
+      {{ message }}
+    </fold-callout>
+  }
+
+  @if (isDelete()) {
+    <!-- Zone dangereuse : confirmation en retapant le nom du régime. -->
+    <fold-callout appearance="inset" variant="alert">
+      <strong>Zone dangereuse.</strong> Vous êtes sur le point de supprimer
+      «&nbsp;{{ regime()?.name }}&nbsp;» (<code>{{ regime()?.tag }}</code>). À la
+      prochaine synchronisation, les <strong>plateformes qui utilisent ce taux</strong>
+      (Shopify, et les futurs canaux) seront affectées&nbsp;: la collection
+      <code>{{ regime()?.tag }}</code> et les fiches qui s'y rattachent perdent
+      leur référence de taxe.
+    </fold-callout>
+
+    <fold-input
+      label="Retapez le nom du régime pour confirmer"
+      [placeholder]="regime()?.name ?? ''"
+      [value]="confirmName()"
+      (valueChange)="confirmName.set($event)"
+    />
+  } @else {
+    <fold-input
+      label="Nom"
+      placeholder="ex. Réduit"
+      required
+      [value]="draftName()"
+      (valueChange)="draftName.set($event)"
+    />
+    <fold-input
+      label="Description"
+      placeholder="À quoi il s'applique"
+      [value]="draftDescription()"
+      (valueChange)="draftDescription.set($event)"
+    />
+    <fold-number-input
+      label="Taux (%)"
+      [min]="0"
+      [step]="0.1"
+      [value]="draftPercent()"
+      (valueChange)="draftPercent.set($event)"
+    />
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    [intent]="isDelete() ? 'danger' : 'primary'"
+    [disabled]="busy() || !canSubmit"
+    (click)="submit()"
+  >
+    {{ submitLabel() }}
+  </button>
+</footer>

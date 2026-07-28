@@ -14,7 +14,6 @@ import {
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldNavLayoutComponent,
-  FoldPageSectionComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
   type FoldTabItem,
@@ -40,7 +39,6 @@ import {
   selector: 'app-tva-regime-platform-usages',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldPageSectionComponent,
     FoldNavLayoutComponent,
     FoldTabsComponent,
     FoldTabPanelComponent,
