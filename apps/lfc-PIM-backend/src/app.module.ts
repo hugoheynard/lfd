@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { RouterModule } from '@nestjs/core';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { CatalogueModule } from './catalogue/catalogue.module.js';
@@ -21,6 +22,15 @@ import { DatabaseModule } from './infra/database/database.module.js';
     AuthModule,
     CatalogueModule,
     ShopifyModule,
+    // Hiérarchie des routes montée ici (racine de composition) : tous les
+    // contrôleurs de ShopifyModule héritent du préfixe `channels/shopify`, donc
+    // ils ne déclarent que leur sous-chemin (`settings`, `collections/tva/…`).
+    RouterModule.register([
+      {
+        path: 'channels',
+        children: [{ path: 'shopify', module: ShopifyModule }],
+      },
+    ]),
   ],
   controllers: [AppController],
   providers: [AppService],

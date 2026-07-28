@@ -1,19 +1,11 @@
-import { Body, Controller, Get, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { z } from 'zod';
 
 import { Public } from '../../infra/auth/public.decorator.js';
 import { PrismaService } from '../../infra/database/prisma.service.js';
 import { ZodBody } from '../../shared/http/zod-body.pipe.js';
 import { ShopifyCollectionsService } from './shopify-collections.service.js';
-import { ShopifyConnectionService } from './shopify-connection.service.js';
 import { ShopifyPushService } from './shopify-push.service.js';
-import { ShopifySettingsService } from './shopify-settings.service.js';
-
-const settingsPayload = z.object({
-  shopDomain: z.string(),
-  apiVersion: z.string().min(1),
-  isEnabled: z.boolean(),
-});
 
 const pushPayload = z.object({
   productIds: z.array(z.string()).optional(),
@@ -29,35 +21,24 @@ const desiredCollectionsPayload = z.object({
   ),
 });
 
-/** ⚠️ `@Public()` temporaire — même dérogation que le catalogue (Auth0 non configuré). */
+/**
+ * Les **ressources Shopify** : la réconciliation des collections de TVA et le
+ * push produit. La connexion au canal (réglages, vérification) vit à côté, dans
+ * {@link ChannelController}.
+ *
+ * Préfixe monté par le module (`channels/shopify`) via `RouterModule` : ce
+ * contrôleur ne déclare que ses sous-chemins.
+ *
+ * ⚠️ `@Public()` temporaire — même dérogation que le catalogue (Auth0 non câblé).
+ */
 @Public()
-@Controller('channels/shopify')
+@Controller()
 export class ShopifyController {
   constructor(
-    private readonly settings: ShopifySettingsService,
-    private readonly connection: ShopifyConnectionService,
     private readonly collections: ShopifyCollectionsService,
     private readonly pushService: ShopifyPushService,
     private readonly prisma: PrismaService,
   ) {}
-
-  @Get('settings')
-  readSettings() {
-    return this.settings.read();
-  }
-
-  @Put('settings')
-  saveSettings(
-    @Body(new ZodBody(settingsPayload)) body: z.infer<typeof settingsPayload>,
-  ) {
-    return this.settings.save(body);
-  }
-
-  /** Test de connexion — bouton « Vérifier » de l'écran d'intégration. */
-  @Post('settings/verify')
-  verify() {
-    return this.connection.verify();
-  }
 
   /** Rapproche les collections de TVA voulues et la boutique, sans rien écrire. */
   @Post('collections/tva/inspect')
