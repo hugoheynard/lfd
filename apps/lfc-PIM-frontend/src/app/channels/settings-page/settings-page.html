@@ -1,109 +1,27 @@
 <fold-page-layout icon="settings" title="Réglages">
   <p description>
-    Le catalogue descend vers la boutique Shopify. Rien ne remonte : les
-    commandes et les ventes se lisent, elles ne se réécrivent pas ici.
+    Les réglages généraux du PIM. La connexion aux boutiques (Shopify et les autres canaux) vit dans
+    <strong>Intégrations</strong>.
   </p>
 
-  @if (settings(); as current) {
-    <fold-callout
-      appearance="inset"
-      [variant]="current.mode === 'live' ? 'success' : 'info'"
-    >
-      @if (current.mode === 'live') {
-        <strong>Mode réel.</strong> Les envois atteignent la boutique.
-      } @else {
-        <strong>Mode simulation.</strong> En POC (frontend seul), le push est
-        toujours simulé : la projection et l'empreinte s'exécutent, mais aucun
-        appel réseau n'est émis. Le vrai envoi arrivera avec le backend.
-      }
-    </fold-callout>
-
-    <fold-page-section
-      title="Connexion"
-      icon="globe"
-      description="L'adresse de la boutique et la version d'API visées."
-    >
-      <fold-card class="stack">
-        <fold-input
-          label="Domaine de la boutique"
-          placeholder="chevallot.myshopify.com"
-          autocomplete="off"
-          [value]="draftDomain()"
-          (valueChange)="draftDomain.set($event)"
-        />
-        <fold-input
-          label="Version d'API"
-          hint="Shopify publie une version par trimestre — à relever à chaque montée."
-          autocomplete="off"
-          [value]="draftVersion()"
-          (valueChange)="draftVersion.set($event)"
-        />
-        <fold-checkbox
-          label="Intégration active"
-          hint="Sans jeton, l'intégration reste en simulation même activée."
-          [checked]="draftEnabled()"
-          (checkedChange)="draftEnabled.set($event)"
-        />
-        <div class="actions">
-          <button foldButton [disabled]="busy()" (click)="save()">
-            Enregistrer
-          </button>
-          @if (current.updatedAt) {
-            <small class="muted">
-              Modifié le {{ current.updatedAt | date: 'short' }}
-            </small>
-          }
-        </div>
-      </fold-card>
-    </fold-page-section>
-
-    <fold-page-section
-      title="Jeton d'API"
-      icon="lock"
-      description="Le secret qui autorise l'écriture chez Shopify."
-    >
-      <fold-card class="token">
-        <div class="token-head">
-          <span class="token-label">Jeton Admin</span>
-          <fold-badge
-            [content]="current.hasToken ? 'présent' : 'à venir'"
-            [variant]="current.hasToken ? 'success' : 'neutral'"
-          />
-        </div>
-        <p class="muted">
-          Un jeton Admin est un secret : il ne peut pas vivre dans le navigateur
-          (ni CORS vers l'Admin API). Il sera posé côté serveur le jour du
-          backend — via <code>SHOPIFY_ADMIN_TOKEN</code>, jamais saisi ni affiché
-          ici. D'ici là, le push reste une simulation fidèle.
-        </p>
-      </fold-card>
-    </fold-page-section>
-
-    <fold-page-section
-      title="Base de démo"
-      icon="save"
-      description="POC : la base vit dans le repo, les actions dans ce navigateur."
-    >
-      <fold-card class="stack">
-        <p class="muted">
-          Aucun serveur : l'état initial est embarqué dans le build, et vos
-          actions sont conservées dans ce navigateur. « Réinitialiser » revient à
-          l'état d'origine — pratique entre deux démos.
-        </p>
-        <div class="actions">
-          <button
-            foldButton
-            emphasis="outline"
-            intent="danger"
-            [disabled]="busy()"
-            (click)="reset()"
-          >
-            Réinitialiser la base
-          </button>
-        </div>
-      </fold-card>
-    </fold-page-section>
-  }
+  <fold-page-section
+    title="Base de démo"
+    icon="save"
+    description="POC : le catalogue vit dans le repo, les actions dans ce navigateur."
+  >
+    <fold-card class="stack">
+      <p class="muted">
+        Le catalogue de démonstration (produits, régimes, emplacements) est embarqué dans le build
+        et vos actions restent dans ce navigateur. « Réinitialiser » revient à l'état d'origine —
+        pratique entre deux démos.
+      </p>
+      <div class="actions">
+        <button foldButton emphasis="outline" intent="danger" (click)="reset()">
+          Réinitialiser la base de démo
+        </button>
+      </div>
+    </fold-card>
+  </fold-page-section>
 
   @if (message(); as text) {
     <fold-callout appearance="inset" variant="info" role="status">

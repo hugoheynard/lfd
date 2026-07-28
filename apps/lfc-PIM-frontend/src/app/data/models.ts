@@ -130,23 +130,6 @@ export interface ShopifySettings {
 }
 
 /**
- * L'état **distant** d'une collection Shopify, tel qu'on le lit sur la boutique.
- * Le PIM en garde un miroir local (POC sans backend) : c'est ce miroir que la
- * réconciliation compare aux régimes de TVA voulus (Famille A). Le `handle` — le
- * tag dérivé du taux (`tva-5-5`) — est la clé de rapprochement.
- */
-export interface ShopifyCollection {
-  /** Identifiant côté Shopify (gid simulé en POC). */
-  id: string;
-  /** Handle = tag de collection (`tva-5-5`), la clé de rapprochement. */
-  handle: string;
-  title: string;
-  /** Fiches rattachées côté boutique — `0` = collection poussée vide. */
-  productCount: number;
-  createdAt: string;
-}
-
-/**
  * Une **table** d'un emplacement en click & collect sur place : elle porte une
  * URL dérivée (`baseUrl?table=N`) et sait si son QR code a été généré.
  */

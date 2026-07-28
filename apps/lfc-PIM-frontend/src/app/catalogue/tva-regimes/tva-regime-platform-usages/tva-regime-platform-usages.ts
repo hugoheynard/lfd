@@ -1,6 +1,8 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  PLATFORM_ID,
   effect,
   inject,
   signal,
@@ -19,21 +21,42 @@ import {
   type FoldTabItem,
 } from 'fold-ng';
 
+import {
+  ShopifyChannelApi,
+  type ChannelMode,
+  type DesiredCollection,
+  type Reconciliation,
+  type ShopifyCollection,
+} from '../../../channels/shopify-channel-api';
 import { formatPercent } from '../../../data/channels';
 import { LocalDb } from '../../../data/local-db';
-import {
-  CatalogueApi,
-  type TvaReconciliation,
-} from '../../catalogue-api';
+import { type TvaRegime } from '../../catalogue-api';
+
+/** Une ligne d'usage : le régime local rapproché de sa collection distante. */
+interface TvaUsageRow {
+  readonly regimeId: string;
+  readonly name: string;
+  readonly percent: number;
+  readonly handle: string;
+  readonly state: 'present' | 'missing';
+  readonly remote: ShopifyCollection | null;
+}
+
+interface TvaUsageView {
+  readonly rows: readonly TvaUsageRow[];
+  readonly orphans: readonly ShopifyCollection[];
+  readonly missingCount: number;
+}
 
 /**
  * Les **usages plateforme** d'un régime de TVA : comment ses collections de taxe
- * (Famille A) se rapprochent des consommateurs du catalogue. Aujourd'hui un seul
- * canal — Shopify — dans un onglet de réconciliation ; les autres viendront.
+ * (Famille A) se rapprochent des consommateurs du catalogue. Un seul canal
+ * aujourd'hui — Shopify — dans un onglet de réconciliation **réelle** : le front
+ * envoie les régimes voulus au backend ({@link ShopifyChannelApi}), qui inspecte
+ * la boutique et pousse les collections manquantes.
  *
- * Découplée du tableau : elle relit la réconciliation depuis {@link LocalDb} via
- * un `effect`, donc un régime ajouté / retiré ailleurs (ou une collection
- * poussée ici) re-déclenche l'inspection sans câblage entre composants.
+ * Découplée du tableau : elle relit les régimes depuis {@link LocalDb} via un
+ * `effect`, donc un régime ajouté / retiré ailleurs re-déclenche l'inspection.
  */
 @Component({
   selector: 'app-tva-regime-platform-usages',
@@ -53,8 +76,9 @@ import {
   styleUrl: './tva-regime-platform-usages.scss',
 })
 export class TvaRegimePlatformUsages {
-  private readonly api = inject(CatalogueApi);
+  private readonly api = inject(ShopifyChannelApi);
   private readonly db = inject(LocalDb);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly tabs: FoldTabItem[] = [
     { key: 'shopify', label: 'Shopify', icon: 'shopify' },
@@ -62,18 +86,20 @@ export class TvaRegimePlatformUsages {
   ];
   protected readonly activeTab = signal('shopify');
 
-  protected readonly recon = signal<TvaReconciliation | null>(null);
+  protected readonly recon = signal<TvaUsageView | null>(null);
+  protected readonly mode = signal<ChannelMode | null>(null);
   protected readonly inspecting = signal(false);
   protected readonly pushing = signal(false);
   protected readonly lastInspectedAt = signal<string | null>(null);
   protected readonly error = signal<string | null>(null);
 
   constructor() {
-    // Relit la boutique dès que la DB bouge (régime CRUD, push) : l'inspection
-    // reste alignée sans que le tableau ait à nous prévenir.
+    // Ré-inspecte dès que la DB bouge (régime CRUD) — réseau, donc navigateur seul.
     effect(() => {
       this.db.snapshot();
-      void this.inspect();
+      if (this.isBrowser) {
+        void this.inspect();
+      }
     });
   }
 
@@ -84,40 +110,88 @@ export class TvaRegimePlatformUsages {
   /** Interroge la boutique : rapproche les régimes et les collections présentes. */
   protected async inspect(): Promise<void> {
     this.inspecting.set(true);
+    this.error.set(null);
     try {
-      this.recon.set(await this.api.inspectTvaCollections());
+      const regimes = this.regimes();
+      const result = await this.api.inspectTvaCollections(this.desired(regimes));
+      this.mode.set(result.mode);
+      this.recon.set(this.toView(result.reconciliation, regimes));
       this.lastInspectedAt.set(nowLabel());
-    } catch (caught) {
-      this.error.set(
-        caught instanceof Error ? caught.message : 'Erreur inattendue.',
-      );
+    } catch {
+      this.error.set(this.unreachable());
     } finally {
       this.inspecting.set(false);
     }
   }
 
-  /** Pousse toutes les collections de taxe manquantes (l'effect ré-inspecte). */
+  /** Pousse toutes les collections de taxe manquantes, puis affiche l'état rendu. */
   protected async pushMissing(): Promise<void> {
-    await this.push(() => this.api.pushMissingTvaCollections());
+    const regimes = this.regimes();
+    await this.push(async () => {
+      const result = await this.api.pushTvaCollections(this.desired(regimes));
+      this.mode.set(result.mode);
+      this.recon.set(this.toView(result.reconciliation, regimes));
+    });
   }
 
-  /** Pousse la collection d'un seul régime (l'effect ré-inspecte). */
+  /** Pousse la collection d'un seul régime, puis ré-inspecte l'ensemble. */
   protected async pushOne(regimeId: string): Promise<void> {
-    await this.push(() => this.api.pushTvaCollection(regimeId));
+    const regime = this.regimes().find((r) => r.id === regimeId);
+    if (regime === undefined) {
+      return;
+    }
+    await this.push(async () => {
+      await this.api.pushTvaCollections([this.desiredOf(regime)]);
+      await this.inspect();
+    });
   }
 
-  private async push(action: () => Promise<unknown>): Promise<void> {
+  private async push(action: () => Promise<void>): Promise<void> {
     this.pushing.set(true);
     this.error.set(null);
     try {
       await action();
-    } catch (caught) {
-      this.error.set(
-        caught instanceof Error ? caught.message : 'Erreur inattendue.',
-      );
+    } catch {
+      this.error.set(this.unreachable());
     } finally {
       this.pushing.set(false);
     }
+  }
+
+  private regimes(): readonly TvaRegime[] {
+    return this.db.snapshot().tvaRegimes;
+  }
+
+  private desired(regimes: readonly TvaRegime[]): DesiredCollection[] {
+    return regimes.map((regime) => this.desiredOf(regime));
+  }
+
+  private desiredOf(regime: TvaRegime): DesiredCollection {
+    return { handle: regime.tag, title: `TVA ${formatPercent(regime.percent)}` };
+  }
+
+  /** Joint la réconciliation du backend (par handle) aux régimes locaux. */
+  private toView(reconciliation: Reconciliation, regimes: readonly TvaRegime[]): TvaUsageView {
+    const rows = regimes.map<TvaUsageRow>((regime) => {
+      const remote = reconciliation.rows.find((row) => row.handle === regime.tag)?.remote ?? null;
+      return {
+        regimeId: regime.id,
+        name: regime.name,
+        percent: regime.percent,
+        handle: regime.tag,
+        state: remote === null ? 'missing' : 'present',
+        remote,
+      };
+    });
+    return {
+      rows,
+      orphans: reconciliation.orphans,
+      missingCount: rows.filter((row) => row.state === 'missing').length,
+    };
+  }
+
+  private unreachable(): string {
+    return 'Backend PIM injoignable — démarrez lfc-PIM-backend (port 3100).';
   }
 }
 

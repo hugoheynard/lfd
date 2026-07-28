@@ -43,6 +43,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'integration',
+    title: 'Intégrations — LFC PIM',
+    loadComponent: () =>
+      import('./integration/integration-page/integration-page').then(
+        (m) => m.IntegrationPage,
+      ),
+  },
+  {
     path: 'reglages',
     title: 'Réglages — LFC PIM',
     loadComponent: () =>

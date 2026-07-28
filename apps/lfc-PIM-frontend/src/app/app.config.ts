@@ -1,7 +1,5 @@
-import {
-  type ApplicationConfig,
-  provideBrowserGlobalErrorListeners,
-} from '@angular/core';
+import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideClientHydration } from '@angular/platform-browser';
 import { provideFoldIcons } from 'fold-ng';
@@ -23,13 +21,25 @@ const KEBAB_ICON =
   '<circle cx="12" cy="12" r="1.7"/>' +
   '<circle cx="12" cy="19" r="1.7"/></svg>';
 
-// POC frontend-only : plus aucun service ne fait de HTTP (tout passe par LocalDb),
-// donc pas de provideHttpClient — ça évite d'embarquer le polyfill xhr2.
+// Déconnexion : porte + flèche sortante.
+const LOGOUT_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+  'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>' +
+  '<path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>';
+
+// L'intégration Shopify parle au backend : on active HttpClient en mode `fetch`
+// (pas de polyfill xhr2). Le reste du catalogue reste sur LocalDb.
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideClientHydration(),
-    provideFoldIcons({ shopify: SHOPIFY_ICON, kebab: KEBAB_ICON }),
+    provideHttpClient(withFetch()),
+    provideFoldIcons({
+      shopify: SHOPIFY_ICON,
+      kebab: KEBAB_ICON,
+      logout: LOGOUT_ICON,
+    }),
   ],
 };

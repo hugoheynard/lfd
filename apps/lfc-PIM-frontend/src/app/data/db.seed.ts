@@ -4,7 +4,6 @@ import type {
   Product,
   ProductBinding,
   SalesChannels,
-  ShopifyCollection,
   TvaRegime,
 } from './models';
 import { SEED_PRODUCTS } from './products.seed';
@@ -33,9 +32,6 @@ export interface DbShape {
     isEnabled: boolean;
     updatedAt: string | null;
   };
-  /** Miroir des collections présentes sur la boutique — cible de la
-   *  réconciliation des collections de taxe (Famille A). */
-  readonly shopifyCollections: ShopifyCollection[];
 }
 
 /** À emporter dans les deux boutiques, jamais en salle. */
@@ -77,16 +73,42 @@ function category(
 // chocolat/confiserie au taux normal (20) dans les deux canaux.
 export const DB_SEED: DbShape = {
   tvaRegimes: [
-    { id: 'tva_55', name: 'Réduit', description: 'Denrées conservables à emporter (boulangerie, pâtisserie, pains).', percent: 5.5, tag: 'tva-5-5' },
-    { id: 'tva_10', name: 'Intermédiaire', description: 'Consommation immédiate — sur place ou à emporter (salé, traiteur).', percent: 10, tag: 'tva-10' },
-    { id: 'tva_20', name: 'Normal', description: 'Chocolat, confiserie, alcool — taux plein partout.', percent: 20, tag: 'tva-20' },
+    {
+      id: 'tva_55',
+      name: 'Réduit',
+      description: 'Denrées conservables à emporter (boulangerie, pâtisserie, pains).',
+      percent: 5.5,
+      tag: 'tva-5-5',
+    },
+    {
+      id: 'tva_10',
+      name: 'Intermédiaire',
+      description: 'Consommation immédiate — sur place ou à emporter (salé, traiteur).',
+      percent: 10,
+      tag: 'tva-10',
+    },
+    {
+      id: 'tva_20',
+      name: 'Normal',
+      description: 'Chocolat, confiserie, alcool — taux plein partout.',
+      percent: 20,
+      tag: 'tva-20',
+    },
   ],
   categories: [
     category('cat_vien', 'Viennoiseries', 'viennoiseries', 1, 'tva_55', 'tva_10', ALL_CHANNELS),
     category('cat_pains', 'Pains', 'pains', 2, 'tva_55', 'tva_10', EMPORTER_ONLY),
     category('cat_patis', 'Pâtisseries', 'patisseries', 3, 'tva_55', 'tva_10', ALL_CHANNELS),
     category('cat_sale', 'Salé & traiteur', 'sale-traiteur', 4, 'tva_10', 'tva_10', ALL_CHANNELS),
-    category('cat_choco', 'Chocolat & confiserie', 'chocolat-confiserie', 5, 'tva_20', 'tva_20', EMPORTER_ONLY),
+    category(
+      'cat_choco',
+      'Chocolat & confiserie',
+      'chocolat-confiserie',
+      5,
+      'tva_20',
+      'tva_20',
+      EMPORTER_ONLY,
+    ),
   ],
   // Catalogue importé du CSV Shopify (92 produits, tous en brouillon).
   products: SEED_PRODUCTS,
@@ -121,31 +143,4 @@ export const DB_SEED: DbShape = {
     isEnabled: false,
     updatedAt: null,
   },
-  // Miroir de démo volontairement partiel : « Réduit » et « Intermédiaire »
-  // existent déjà sur la boutique, « Normal » (tva-20) reste à pousser, et une
-  // vieille collection tva-8-5 traîne sans régime — de quoi montrer les trois
-  // cas de la réconciliation dès le premier chargement.
-  shopifyCollections: [
-    {
-      id: 'col_tva55',
-      handle: 'tva-5-5',
-      title: 'Réduit',
-      productCount: 42,
-      createdAt: '2026-05-02T09:00:00.000Z',
-    },
-    {
-      id: 'col_tva10',
-      handle: 'tva-10',
-      title: 'Intermédiaire',
-      productCount: 18,
-      createdAt: '2026-05-02T09:00:00.000Z',
-    },
-    {
-      id: 'col_tva85',
-      handle: 'tva-8-5',
-      title: 'Ancien taux (2025)',
-      productCount: 0,
-      createdAt: '2025-01-11T09:00:00.000Z',
-    },
-  ] satisfies ShopifyCollection[],
 };

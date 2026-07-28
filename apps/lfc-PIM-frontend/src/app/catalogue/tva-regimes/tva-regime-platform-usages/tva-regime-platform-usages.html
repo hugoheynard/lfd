@@ -12,112 +12,115 @@
     #ref="foldTabs"
   />
 
-    <fold-tab-panel [tabs]="ref" key="shopify">
-      <!-- 1 · Descriptif : pourquoi la TVA est la première collection. -->
-      <fold-callout appearance="inset" variant="info">
-        <p>
-          Le taux de TVA est la <strong>première collection à créer</strong> :
-          toute la segmentation des usages — navigation publique, salle,
-          dérogations — se greffe sur ces collections de taxe. Tant qu'elles
-          n'existent pas côté Shopify, rien ne peut s'y rattacher.
-        </p>
-        <p>
-          On <strong>pousse les collections vides</strong> si elles manquent — un
-          squelette <code>tva-5-5</code> / <code>tva-10</code> /
-          <code>tva-20</code> — que les fiches viennent remplir ensuite.
-          L'inspection ci-dessous rapproche les régimes du PIM et les collections
-          réellement présentes sur la boutique, pour la <strong>réconciliation</strong>.
-        </p>
+  <fold-tab-panel [tabs]="ref" key="shopify">
+    <!-- 1 · Descriptif : pourquoi la TVA est la première collection. -->
+    <fold-callout appearance="inset" variant="info">
+      <p>
+        Le taux de TVA est la <strong>première collection à créer</strong> : toute la segmentation
+        des usages — navigation publique, salle, dérogations — se greffe sur ces collections de
+        taxe. Tant qu'elles n'existent pas côté Shopify, rien ne peut s'y rattacher.
+      </p>
+      <p>
+        On <strong>pousse les collections vides</strong> si elles manquent — un squelette
+        <code>tva-5-5</code> / <code>tva-10</code> / <code>tva-20</code> — que les fiches viennent
+        remplir ensuite. L'inspection ci-dessous rapproche les régimes du PIM et les collections
+        réellement présentes sur la boutique, pour la <strong>réconciliation</strong>.
+      </p>
+    </fold-callout>
+
+    @if (error(); as message) {
+      <fold-callout appearance="inset" variant="alert" role="alert">
+        {{ message }}
       </fold-callout>
+    }
 
-      @if (error(); as message) {
-        <fold-callout appearance="inset" variant="alert" role="alert">
-          {{ message }}
-        </fold-callout>
-      }
-
-      <!-- 2 · Réconciliation : inspecter l'existant, pousser ce qui manque. -->
-      <fold-card class="recon">
-        <header class="recon-head">
-          <div class="recon-status">
-            <span class="block-label">Réconciliation</span>
-            @if (lastInspectedAt(); as at) {
-              <span class="muted">Dernière inspection à {{ at }}</span>
-            } @else {
-              <span class="muted">Pas encore inspecté</span>
+    <!-- 2 · Réconciliation : inspecter l'existant, pousser ce qui manque. -->
+    <fold-card class="recon">
+      <header class="recon-head">
+        <div class="recon-status">
+          <span class="block-label">
+            Réconciliation
+            @if (mode(); as m) {
+              <fold-badge
+                [content]="m === 'live' ? 'réel' : 'simulation'"
+                [variant]="m === 'live' ? 'success' : 'neutral'"
+              />
             }
-          </div>
-          <div class="recon-actions">
+          </span>
+          @if (lastInspectedAt(); as at) {
+            <span class="muted">Dernière inspection à {{ at }}</span>
+          } @else {
+            <span class="muted">Pas encore inspecté</span>
+          }
+        </div>
+        <div class="recon-actions">
+          <button
+            foldButton
+            emphasis="outline"
+            size="sm"
+            [disabled]="inspecting()"
+            (click)="inspect()"
+          >
+            {{ inspecting() ? 'Inspection…' : 'Inspecter' }}
+          </button>
+          @if (recon(); as r) {
             <button
               foldButton
-              emphasis="outline"
               size="sm"
-              [disabled]="inspecting()"
-              (click)="inspect()"
+              [disabled]="pushing() || r.missingCount === 0"
+              (click)="pushMissing()"
             >
-              {{ inspecting() ? 'Inspection…' : 'Inspecter' }}
+              Pousser {{ r.missingCount }} manquante(s)
             </button>
-            @if (recon(); as r) {
-              <button
-                foldButton
-                size="sm"
-                [disabled]="pushing() || r.missingCount === 0"
-                (click)="pushMissing()"
-              >
-                Pousser {{ r.missingCount }} manquante(s)
-              </button>
-            }
-          </div>
-        </header>
-
-        @if (recon(); as r) {
-          <ul class="recon-list">
-            @for (row of r.rows; track row.regimeId) {
-              <li class="recon-row" [class.is-missing]="row.state === 'missing'">
-                <code>{{ row.handle }}</code>
-                <span class="recon-name">
-                  {{ row.name }} · {{ format(row.percent) }}
-                </span>
-                @if (row.state === 'present') {
-                  <fold-badge content="Présente" variant="success" />
-                  <span class="muted">{{ row.remote?.productCount ?? 0 }} fiche(s)</span>
-                } @else {
-                  <fold-badge content="Manquante" variant="warning" />
-                  <button
-                    foldButton
-                    emphasis="soft"
-                    size="sm"
-                    [disabled]="pushing()"
-                    (click)="pushOne(row.regimeId)"
-                  >
-                    Pousser
-                  </button>
-                }
-              </li>
-            }
-          </ul>
-
-          @if (r.orphans.length > 0) {
-            <fold-callout appearance="inset" variant="warning">
-              <strong>Orphelines</strong> — des collections <code>tva-*</code> sur
-              la boutique n'ont plus de régime correspondant :
-              @for (o of r.orphans; track o.handle) {
-                <code>{{ o.handle }}</code>
-              }
-              — à rapprocher (recréer le régime au bon taux, ou nettoyer côté
-              Shopify).
-            </fold-callout>
           }
-        }
-      </fold-card>
-    </fold-tab-panel>
+        </div>
+      </header>
 
-    <fold-tab-panel [tabs]="ref" key="autre">
-      <fold-empty-state
-        title="Pas d'autre consommateur du catalogue"
-        subtitle="Shopify est le seul canal branché sur les régimes de TVA. D'autres intégrations (caisse, marketplace) viendront s'y rattacher ici."
-      >
-        <fold-icon empty-icon name="teams" [size]="40" />
-      </fold-empty-state>
-    </fold-tab-panel>
+      @if (recon(); as r) {
+        <ul class="recon-list">
+          @for (row of r.rows; track row.regimeId) {
+            <li class="recon-row" [class.is-missing]="row.state === 'missing'">
+              <code>{{ row.handle }}</code>
+              <span class="recon-name"> {{ row.name }} · {{ format(row.percent) }} </span>
+              @if (row.state === 'present') {
+                <fold-badge content="Présente" variant="success" />
+                <span class="muted">{{ row.remote?.productCount ?? 0 }} fiche(s)</span>
+              } @else {
+                <fold-badge content="Manquante" variant="warning" />
+                <button
+                  foldButton
+                  emphasis="soft"
+                  size="sm"
+                  [disabled]="pushing()"
+                  (click)="pushOne(row.regimeId)"
+                >
+                  Pousser
+                </button>
+              }
+            </li>
+          }
+        </ul>
+
+        @if (r.orphans.length > 0) {
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Orphelines</strong> — des collections <code>tva-*</code> sur la boutique n'ont
+            plus de régime correspondant :
+            @for (o of r.orphans; track o.handle) {
+              <code>{{ o.handle }}</code>
+            }
+            — à rapprocher (recréer le régime au bon taux, ou nettoyer côté Shopify).
+          </fold-callout>
+        }
+      }
+    </fold-card>
+  </fold-tab-panel>
+
+  <fold-tab-panel [tabs]="ref" key="autre">
+    <fold-empty-state
+      title="Pas d'autre consommateur du catalogue"
+      subtitle="Shopify est le seul canal branché sur les régimes de TVA. D'autres intégrations (caisse, marketplace) viendront s'y rattacher ici."
+    >
+      <fold-icon empty-icon name="teams" [size]="40" />
+    </fold-empty-state>
+  </fold-tab-panel>
 </fold-nav-layout>

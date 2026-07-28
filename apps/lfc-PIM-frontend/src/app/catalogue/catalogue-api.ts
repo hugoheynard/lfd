@@ -2,10 +2,6 @@ import { Injectable, inject } from '@angular/core';
 
 import { tvaTagFromPercent } from '../data/channels';
 import { LocalDb } from '../data/local-db';
-import {
-  reconcileTvaCollections,
-  type TvaReconciliation,
-} from '../data/shopify-recon';
 import { productSkuRoot, proposeSku, slugify } from '../data/sku';
 
 // Types re-exportés depuis le modèle central : les pages continuent d'importer
@@ -19,15 +15,9 @@ export type {
   ProductKind,
   ProductStatus,
   SalesChannels,
-  ShopifyCollection,
   TvaRegime,
   Variant,
 } from '../data/models';
-export type {
-  TvaCollectionRow,
-  TvaCollectionState,
-  TvaReconciliation,
-} from '../data/shopify-recon';
 
 import type {
   Category,
@@ -35,7 +25,6 @@ import type {
   Product,
   ProductKind,
   SalesChannels,
-  ShopifyCollection,
   TvaRegime,
 } from '../data/models';
 
@@ -68,10 +57,7 @@ export class CatalogueApi {
     return structuredClone(this.db.snapshot().categories);
   }
 
-  async createCategory(payload: {
-    nameFr: string;
-    parentId?: string;
-  }): Promise<{ id: string }> {
+  async createCategory(payload: { nameFr: string; parentId?: string }): Promise<{ id: string }> {
     const name = payload.nameFr.trim();
     if (name === '') {
       throw new CatalogueApiError('category.name.empty', 'Le nom est obligatoire.');
@@ -124,10 +110,7 @@ export class CatalogueApi {
   }
 
   /** Défaut de canaux d'une gamme — les produits hérités en héritent. */
-  async setCategoryChannelPreset(
-    id: string,
-    preset: SalesChannels,
-  ): Promise<void> {
+  async setCategoryChannelPreset(id: string, preset: SalesChannels): Promise<void> {
     this.db.update((draft) => {
       const target = draft.categories.find((c) => c.id === id);
       if (target === undefined) {
@@ -138,11 +121,7 @@ export class CatalogueApi {
   }
 
   /** Régimes de TVA appliqués aux fiches à emporter / sur place d'une catégorie. */
-  async setCategoryTva(
-    id: string,
-    emporterTvaId: string,
-    surPlaceTvaId: string,
-  ): Promise<void> {
+  async setCategoryTva(id: string, emporterTvaId: string, surPlaceTvaId: string): Promise<void> {
     this.db.update((draft) => {
       const target = draft.categories.find((c) => c.id === id);
       if (target === undefined) {
@@ -225,9 +204,7 @@ export class CatalogueApi {
   /** Supprime un régime — refusé s'il est encore référencé par une catégorie. */
   async deleteTvaRegime(id: string): Promise<void> {
     this.db.update((draft) => {
-      const used = draft.categories.some(
-        (c) => c.emporterTvaId === id || c.surPlaceTvaId === id,
-      );
+      const used = draft.categories.some((c) => c.emporterTvaId === id || c.surPlaceTvaId === id);
       if (used) {
         throw new CatalogueApiError(
           'tva.in_use',
@@ -241,43 +218,7 @@ export class CatalogueApi {
     });
   }
 
-  // ── Collections Shopify (miroir distant + réconciliation Famille A) ────────
-
-  /**
-   * Inspecte la boutique : rapproche les régimes du PIM et le miroir des
-   * collections Shopify. Lecture pure — c'est le pas de réconciliation.
-   */
-  async inspectTvaCollections(): Promise<TvaReconciliation> {
-    const db = this.db.snapshot();
-    return reconcileTvaCollections(db.tvaRegimes, db.shopifyCollections);
-  }
-
-  /**
-   * Pousse (vide) la collection de taxe d'un régime si elle manque. No-op quand
-   * elle existe déjà — l'opération est idempotente (rejouable sans doublon).
-   */
-  async pushTvaCollection(regimeId: string): Promise<void> {
-    this.db.update((draft) => {
-      const regime = draft.tvaRegimes.find((r) => r.id === regimeId);
-      if (regime === undefined) {
-        throw new CatalogueApiError('tva.not_found', 'Régime introuvable.');
-      }
-      pushCollectionIfMissing(draft.shopifyCollections, regime);
-    });
-  }
-
-  /** Pousse toutes les collections de taxe absentes ; retourne les handles créés. */
-  async pushMissingTvaCollections(): Promise<{ created: string[] }> {
-    const created: string[] = [];
-    this.db.update((draft) => {
-      for (const regime of draft.tvaRegimes) {
-        if (pushCollectionIfMissing(draft.shopifyCollections, regime)) {
-          created.push(regime.tag);
-        }
-      }
-    });
-    return { created };
-  }
+  // ── Produits ──────────────────────────────────────────────────────────────
 
   async listProducts(): Promise<Product[]> {
     return structuredClone(this.db.snapshot().products);
@@ -338,12 +279,8 @@ export class CatalogueApi {
         channelsOverride: payload.channelsOverride ?? null,
         slug: { fr: handle },
         ...(payload.priceEur === undefined ? {} : { priceEur: payload.priceEur }),
-        ...(payload.weightGrams === undefined
-          ? {}
-          : { weightGrams: payload.weightGrams }),
-        ...(payload.descriptionFr === undefined
-          ? {}
-          : { descriptionFr: payload.descriptionFr }),
+        ...(payload.weightGrams === undefined ? {} : { weightGrams: payload.weightGrams }),
+        ...(payload.descriptionFr === undefined ? {} : { descriptionFr: payload.descriptionFr }),
         variants: [
           {
             id: `${id}_v1`,
@@ -392,10 +329,7 @@ export class CatalogueApi {
   }
 
   /** Override tout-ou-rien des canaux ; `null` = revenir au défaut de la gamme. */
-  async setProductChannels(
-    id: string,
-    channels: SalesChannels | null,
-  ): Promise<void> {
+  async setProductChannels(id: string, channels: SalesChannels | null): Promise<void> {
     this.db.update((draft) => {
       const target = draft.products.find((p) => p.id === id);
       if (target === undefined) {
@@ -485,11 +419,7 @@ export class CatalogueApi {
 
   /** Génère (ou régénère) le QR d'une table : un nouveau token remplace
    *  l'ancien, ce qui invalide tout QR déjà imprimé. */
-  async generateTableQr(
-    emplacementId: string,
-    tableNumber: number,
-    token: string,
-  ): Promise<void> {
+  async generateTableQr(emplacementId: string, tableNumber: number, token: string): Promise<void> {
     this.db.update((draft) => {
       const table = this.findTable(draft, emplacementId, tableNumber);
       table.qrCreated = true;
@@ -498,10 +428,7 @@ export class CatalogueApi {
   }
 
   /** Retire le QR d'une table (et son token). */
-  async removeTableQr(
-    emplacementId: string,
-    tableNumber: number,
-  ): Promise<void> {
+  async removeTableQr(emplacementId: string, tableNumber: number): Promise<void> {
     this.db.update((draft) => {
       const table = this.findTable(draft, emplacementId, tableNumber);
       table.qrCreated = false;
@@ -521,27 +448,6 @@ export class CatalogueApi {
     }
     return table;
   }
-}
-
-/**
- * Ajoute au miroir la collection de taxe (vide) d'un régime si elle manque.
- * Retourne `true` si une collection a été créée, `false` si elle existait déjà.
- */
-function pushCollectionIfMissing(
-  mirror: ShopifyCollection[],
-  regime: TvaRegime,
-): boolean {
-  if (mirror.some((c) => c.handle === regime.tag)) {
-    return false;
-  }
-  mirror.push({
-    id: nextId('col'),
-    handle: regime.tag,
-    title: regime.name,
-    productCount: 0,
-    createdAt: new Date().toISOString(),
-  });
-  return true;
 }
 
 /** Aligne le tableau des tables sur `count`, en gardant l'état QR existant. */

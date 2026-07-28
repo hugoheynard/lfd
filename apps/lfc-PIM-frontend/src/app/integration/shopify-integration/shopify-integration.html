@@ -1,0 +1,101 @@
+@if (error(); as text) {
+  <fold-callout appearance="inset" variant="alert" role="alert">
+    {{ text }}
+  </fold-callout>
+}
+
+@if (settings(); as current) {
+  <fold-callout appearance="inset" [variant]="current.mode === 'live' ? 'success' : 'info'">
+    @if (current.mode === 'live') {
+      <strong>Mode réel.</strong> Les envois atteignent la boutique.
+    } @else {
+      <strong>Mode simulation.</strong> Tant que le jeton (<code>SHOPIFY_ADMIN_TOKEN</code>) manque
+      ou que l'intégration n'est pas activée, l'inspection et le push tournent sur un miroir simulé
+      — aucun appel n'atteint la boutique.
+    }
+  </fold-callout>
+
+  <fold-page-section
+    title="Connexion"
+    icon="globe"
+    description="L'adresse de la boutique et la version d'API visées."
+  >
+    <fold-card class="stack">
+      <fold-input
+        label="Domaine de la boutique"
+        placeholder="chevallot.myshopify.com"
+        autocomplete="off"
+        [value]="draftDomain()"
+        (valueChange)="draftDomain.set($event)"
+      />
+      <fold-input
+        label="Version d'API"
+        hint="Shopify publie une version par trimestre — à relever à chaque montée."
+        autocomplete="off"
+        [value]="draftVersion()"
+        (valueChange)="draftVersion.set($event)"
+      />
+      <fold-checkbox
+        label="Intégration active"
+        hint="Sans jeton, l'intégration reste en simulation même activée."
+        [checked]="draftEnabled()"
+        (checkedChange)="draftEnabled.set($event)"
+      />
+      <div class="actions">
+        <button foldButton [disabled]="busy()" (click)="save()">Enregistrer</button>
+        @if (current.updatedAt) {
+          <small class="muted"> Modifié le {{ current.updatedAt | date: 'short' }} </small>
+        }
+      </div>
+    </fold-card>
+  </fold-page-section>
+
+  <fold-page-section
+    title="Jeton d'API"
+    icon="lock"
+    description="Le secret qui autorise l'écriture chez Shopify."
+  >
+    <fold-card class="token">
+      <div class="token-head">
+        <span class="token-label">Jeton Admin</span>
+        <fold-badge
+          [content]="current.hasToken ? 'présent' : 'absent'"
+          [variant]="current.hasToken ? 'success' : 'neutral'"
+        />
+      </div>
+      <p class="muted">
+        Un jeton Admin est un secret : il vit côté serveur, dans
+        <code>SHOPIFY_ADMIN_TOKEN</code> — jamais saisi ni affiché ici. Cet écran n'en montre que la
+        <strong>présence</strong>. Sans lui, l'intégration reste une simulation fidèle.
+      </p>
+    </fold-card>
+  </fold-page-section>
+
+  <fold-page-section
+    title="Vérification"
+    icon="shopify"
+    description="Confirme que le couple domaine + jeton parle bien à la boutique."
+  >
+    <fold-card class="stack">
+      <div class="actions">
+        <button foldButton emphasis="outline" [disabled]="verifying()" (click)="verify()">
+          {{ verifying() ? 'Vérification…' : 'Vérifier la connexion' }}
+        </button>
+      </div>
+      @if (verifyResult(); as result) {
+        <fold-callout
+          appearance="inset"
+          [variant]="result.connected ? 'success' : result.mode === 'live' ? 'alert' : 'info'"
+        >
+          {{ result.detail }}
+        </fold-callout>
+      }
+    </fold-card>
+  </fold-page-section>
+}
+
+@if (message(); as text) {
+  <fold-callout appearance="inset" variant="info" role="status">
+    {{ text }}
+  </fold-callout>
+}

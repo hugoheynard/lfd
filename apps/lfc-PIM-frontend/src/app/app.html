@@ -60,6 +60,16 @@
       (click)="mobileNavOpen.set(false)"
     ></a>
     <a
+      fold-menu-item
+      icon="shopify"
+      label="Intégrations"
+      routerLink="/integration"
+      routerLinkActive
+      #integrationRla="routerLinkActive"
+      [active]="integrationRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
       footer
       fold-menu-item
       icon="library"
@@ -81,6 +91,14 @@
       [active]="reglagesRla.isActive"
       (click)="mobileNavOpen.set(false)"
     ></a>
+    <button
+      footer
+      fold-menu-item
+      icon="logout"
+      label="Déconnexion"
+      type="button"
+      (click)="logout()"
+    ></button>
   </fold-menu>
 
   <!-- Header -->
@@ -94,10 +112,7 @@
       (clicked)="mobileNavOpen.set(!mobileNavOpen())"
     />
 
-    <fold-search
-      class="app-search"
-      placeholder="Rechercher un produit, une référence…"
-    />
+    <fold-search class="app-search" placeholder="Rechercher un produit, une référence…" />
 
     <div class="app-header-actions">
       <fold-avatar name="Folie Douce" size="sm" />

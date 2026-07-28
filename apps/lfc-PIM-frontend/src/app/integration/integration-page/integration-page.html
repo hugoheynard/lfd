@@ -1,0 +1,32 @@
+<fold-page-layout icon="shopify" title="Intégrations">
+  <p description>
+    Les canaux branchés sur le catalogue. Chaque intégration a sa page ; le catalogue descend vers
+    elles, rien ne remonte.
+  </p>
+
+  <fold-nav-layout>
+    <fold-tabs
+      tabNav
+      [tabs]="tabs"
+      [(activeKey)]="activeTab"
+      direction="horizontal"
+      size="compact"
+      background="surface"
+      activeStyle="fill"
+      #ref="foldTabs"
+    />
+
+    <fold-tab-panel [tabs]="ref" key="shopify">
+      <app-shopify-integration />
+    </fold-tab-panel>
+
+    <fold-tab-panel [tabs]="ref" key="autres">
+      <fold-empty-state
+        title="Pas d'autre intégration"
+        subtitle="Shopify est le seul canal branché. Caisse, marketplace ou ERP viendront s'ajouter ici comme de nouveaux onglets."
+      >
+        <fold-icon empty-icon name="teams" [size]="40" />
+      </fold-empty-state>
+    </fold-tab-panel>
+  </fold-nav-layout>
+</fold-page-layout>
