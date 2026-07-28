@@ -9,11 +9,36 @@ async function bootstrap(): Promise<void> {
   // Traduction des catégories d'erreur en statuts — le seul point qui connaît HTTP.
   app.useGlobalFilters(new AppErrorFilter());
 
-  // Le back-office Angular tourne sur un autre port en développement.
-  app.enableCors({ origin: ['http://localhost:4200'] });
+  // Le front tourne sur un autre port en développement : 7315 (PIM Angular),
+  // 4200 gardé pour un éventuel second front.
+  app.enableCors({
+    origin: ['http://localhost:7315', 'http://localhost:4200'],
+  });
 
   // Le port passe par AppConfig comme toute autre valeur d'environnement.
-  await app.listen(app.get(AppConfig).port());
+  const port = app.get(AppConfig).port();
+  try {
+    await app.listen(port);
+  } catch (error) {
+    if (isAddressInUse(error)) {
+      // Cause quasi-certaine : un backend tourne déjà. On garde le port fixe (le
+      // front y est épinglé) et on dit quoi faire, plutôt qu'une stack brute.
+      process.stderr.write(
+        `\n⛔ Port ${port} déjà utilisé — un backend tourne sans doute déjà.\n` +
+          `   Libère-le puis relance :  lsof -ti:${port} | xargs kill\n\n`,
+      );
+      process.exit(1);
+    }
+    throw error;
+  }
+}
+
+/** Vrai si l'erreur est un `EADDRINUSE` (port déjà pris). */
+function isAddressInUse(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error as NodeJS.ErrnoException).code === 'EADDRINUSE'
+  );
 }
 
 void bootstrap();
