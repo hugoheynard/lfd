@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="lfc-PIM-backend &gt; dev" type="js.build_tools.npm" nameIsGenerated="true">
+  <configuration default="false" name="lfc-PIM-backend &gt; dev" type="js.build_tools.npm">
     <package-json value="$PROJECT_DIR$/apps/lfc-PIM-backend/package.json" />
     <command value="run" />
     <scripts>
