@@ -6,8 +6,7 @@
 
   <fold-tabs
     [tabs]="tabs"
-    [activeKey]="active()"
-    (tabChange)="active.set($event)"
+    [(activeKey)]="active"
     #ref="foldTabs"
   />
 
