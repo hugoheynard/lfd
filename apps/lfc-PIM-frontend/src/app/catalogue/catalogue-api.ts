@@ -2,6 +2,10 @@ import { Injectable, inject } from '@angular/core';
 
 import { tvaTagFromPercent } from '../data/channels';
 import { LocalDb } from '../data/local-db';
+import {
+  reconcileTvaCollections,
+  type TvaReconciliation,
+} from '../data/shopify-recon';
 import { productSkuRoot, proposeSku, slugify } from '../data/sku';
 
 // Types re-exportés depuis le modèle central : les pages continuent d'importer
@@ -15,9 +19,15 @@ export type {
   ProductKind,
   ProductStatus,
   SalesChannels,
+  ShopifyCollection,
   TvaRegime,
   Variant,
 } from '../data/models';
+export type {
+  TvaCollectionRow,
+  TvaCollectionState,
+  TvaReconciliation,
+} from '../data/shopify-recon';
 
 import type {
   Category,
@@ -25,6 +35,7 @@ import type {
   Product,
   ProductKind,
   SalesChannels,
+  ShopifyCollection,
   TvaRegime,
 } from '../data/models';
 
@@ -199,6 +210,44 @@ export class CatalogueApi {
     });
   }
 
+  // ── Collections Shopify (miroir distant + réconciliation Famille A) ────────
+
+  /**
+   * Inspecte la boutique : rapproche les régimes du PIM et le miroir des
+   * collections Shopify. Lecture pure — c'est le pas de réconciliation.
+   */
+  async inspectTvaCollections(): Promise<TvaReconciliation> {
+    const db = this.db.snapshot();
+    return reconcileTvaCollections(db.tvaRegimes, db.shopifyCollections);
+  }
+
+  /**
+   * Pousse (vide) la collection de taxe d'un régime si elle manque. No-op quand
+   * elle existe déjà — l'opération est idempotente (rejouable sans doublon).
+   */
+  async pushTvaCollection(regimeId: string): Promise<void> {
+    this.db.update((draft) => {
+      const regime = draft.tvaRegimes.find((r) => r.id === regimeId);
+      if (regime === undefined) {
+        throw new CatalogueApiError('tva.not_found', 'Régime introuvable.');
+      }
+      pushCollectionIfMissing(draft.shopifyCollections, regime);
+    });
+  }
+
+  /** Pousse toutes les collections de taxe absentes ; retourne les handles créés. */
+  async pushMissingTvaCollections(): Promise<{ created: string[] }> {
+    const created: string[] = [];
+    this.db.update((draft) => {
+      for (const regime of draft.tvaRegimes) {
+        if (pushCollectionIfMissing(draft.shopifyCollections, regime)) {
+          created.push(regime.tag);
+        }
+      }
+    });
+    return { created };
+  }
+
   async listProducts(): Promise<Product[]> {
     return structuredClone(this.db.snapshot().products);
   }
@@ -210,6 +259,10 @@ export class CatalogueApi {
     sku?: string;
     allergens?: string[];
     channelsOverride?: SalesChannels | null;
+    priceEur?: number;
+    weightGrams?: number;
+    handleFr?: string;
+    descriptionFr?: string;
   }): Promise<{ id: string }> {
     const name = payload.nameFr.trim();
     if (name === '') {
@@ -242,6 +295,7 @@ export class CatalogueApi {
 
       const variantSku = proposeSku(`${proposed}-1`, taken);
 
+      const handle = payload.handleFr ?? slugify(name);
       draft.products.push({
         id,
         sku: proposed,
@@ -251,6 +305,14 @@ export class CatalogueApi {
         status: 'draft',
         // Canaux hérités de la catégorie, sauf override fourni à la création.
         channelsOverride: payload.channelsOverride ?? null,
+        slug: { fr: handle },
+        ...(payload.priceEur === undefined ? {} : { priceEur: payload.priceEur }),
+        ...(payload.weightGrams === undefined
+          ? {}
+          : { weightGrams: payload.weightGrams }),
+        ...(payload.descriptionFr === undefined
+          ? {}
+          : { descriptionFr: payload.descriptionFr }),
         variants: [
           {
             id: `${id}_v1`,
@@ -285,6 +347,16 @@ export class CatalogueApi {
         throw new CatalogueApiError('product.not_found', 'Produit introuvable.');
       }
       target.status = 'archived';
+    });
+  }
+
+  /** Suppression définitive — POC : « Réinitialiser » restaure le seed. */
+  async deleteProduct(id: string): Promise<void> {
+    this.db.update((draft) => {
+      const index = draft.products.findIndex((p) => p.id === id);
+      if (index !== -1) {
+        draft.products.splice(index, 1);
+      }
     });
   }
 
@@ -418,6 +490,27 @@ export class CatalogueApi {
     }
     return table;
   }
+}
+
+/**
+ * Ajoute au miroir la collection de taxe (vide) d'un régime si elle manque.
+ * Retourne `true` si une collection a été créée, `false` si elle existait déjà.
+ */
+function pushCollectionIfMissing(
+  mirror: ShopifyCollection[],
+  regime: TvaRegime,
+): boolean {
+  if (mirror.some((c) => c.handle === regime.tag)) {
+    return false;
+  }
+  mirror.push({
+    id: nextId('col'),
+    handle: regime.tag,
+    title: regime.name,
+    productCount: 0,
+    createdAt: new Date().toISOString(),
+  });
+  return true;
 }
 
 /** Aligne le tableau des tables sur `count`, en gardant l'état QR existant. */

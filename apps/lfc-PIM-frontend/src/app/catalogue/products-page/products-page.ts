@@ -15,8 +15,12 @@ import {
   FoldCardComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDropdownComponent,
+  FoldDropdownItemComponent,
+  FoldIconComponent,
   FoldPageLayoutComponent,
   FoldPaginatorComponent,
+  FoldPopoverTriggerDirective,
   FoldSearchComponent,
   type FoldBadgeVariant,
   type FoldTableColumn,
@@ -41,16 +45,9 @@ import {
   CatalogueApi,
   type Category,
   type Product,
-  type ProductKind,
   type SalesChannels,
   type TvaRegime,
 } from '../catalogue-api';
-
-const KIND_LABELS: Record<ProductKind, string> = {
-  daily: 'Frais du jour',
-  made_to_order: 'Sur commande',
-  resale: 'Revente',
-};
 
 const SYNC_LABELS: Record<SyncStatus, string> = {
   never_pushed: 'jamais poussé',
@@ -94,6 +91,10 @@ interface ChannelEdit {
     FoldBadgeComponent,
     FoldSearchComponent,
     FoldPaginatorComponent,
+    FoldDropdownComponent,
+    FoldDropdownItemComponent,
+    FoldPopoverTriggerDirective,
+    FoldIconComponent,
   ],
   templateUrl: './products-page.html',
   styleUrl: './products-page.scss',
@@ -113,6 +114,13 @@ export class ProductsPage {
   protected readonly query = signal('');
   protected readonly page = signal(1);
   protected readonly pageSize = signal(25);
+
+  /** Sélection multi-lignes (clés = ids produit) pour les actions groupées. */
+  protected readonly selection = signal<ReadonlySet<string | number>>(new Set());
+  protected readonly selectedCount = computed(() => this.selection().size);
+  private readonly selectedIds = computed(() =>
+    [...this.selection()].map((key) => String(key)),
+  );
 
   /** Filtre du tableau : par nom ou par référence. */
   protected readonly visibleProducts = computed<Product[]>(() => {
@@ -179,12 +187,10 @@ export class ProductsPage {
     { key: 'sku', label: 'Référence', width: '9rem' },
     { key: 'name', label: 'Nom' },
     { key: 'category', label: 'Famille' },
-    { key: 'kind', label: 'Nature' },
     { key: 'channels', label: 'Canaux', width: '12rem' },
-    { key: 'allergens', label: 'Allergènes' },
     { key: 'status', label: 'État' },
     { key: 'sync', label: 'Shopify' },
-    { key: 'actions', label: '', align: 'right', width: '12rem' },
+    { key: 'actions', label: '', align: 'right', width: '8rem' },
   ];
 
   protected readonly emptyState = {
@@ -232,10 +238,6 @@ export class ProductsPage {
 
   constructor() {
     void this.reload();
-  }
-
-  protected label(kind: ProductKind): string {
-    return KIND_LABELS[kind];
   }
 
   /** Filtrer remet en page 1 pour ne pas rester sur une page vide. */
@@ -323,18 +325,6 @@ export class ProductsPage {
       : '';
   }
 
-  /**
-   * Trois états distincts, et la distinction compte : pas de fiche du tout
-   * (bloque la publication), fiche déclarant « aucun », ou liste d'allergènes.
-   */
-  protected allergenSummary(product: Product): string {
-    const codes = product.variants.find((v) => v.isDefault)?.allergens;
-    if (codes === null || codes === undefined) {
-      return 'non renseignés';
-    }
-    return codes.length === 0 ? 'aucun (déclaré)' : codes.join(', ');
-  }
-
   protected async rename(product: Product, nameFr: string): Promise<void> {
     if (nameFr.trim() === '' || nameFr === product.name.fr) {
       return;
@@ -344,6 +334,56 @@ export class ProductsPage {
 
   protected async archive(product: Product): Promise<void> {
     await this.run(() => this.api.archiveProduct(product.id));
+  }
+
+  /** « Éditer » du menu : ouvre l'éditeur de canaux du produit. */
+  protected edit(product: Product): void {
+    this.editChannels(product);
+  }
+
+  protected async remove(product: Product): Promise<void> {
+    await this.run(() => this.api.deleteProduct(product.id));
+  }
+
+  // ── Actions groupées (sur la sélection) ──────────────────────────────────
+
+  protected async pushSelected(): Promise<void> {
+    const ids = this.selectedIds();
+    if (ids.length === 0) {
+      return;
+    }
+    await this.runPush(ids);
+    this.selection.set(new Set());
+  }
+
+  protected async archiveSelected(): Promise<void> {
+    await this.batch((id) => this.api.archiveProduct(id));
+  }
+
+  protected async deleteSelected(): Promise<void> {
+    await this.batch((id) => this.api.deleteProduct(id));
+  }
+
+  private async batch(action: (id: string) => Promise<void>): Promise<void> {
+    const ids = this.selectedIds();
+    if (ids.length === 0) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      for (const id of ids) {
+        await action(id);
+      }
+      await this.reload();
+      this.selection.set(new Set());
+    } catch (caught) {
+      this.error.set(
+        caught instanceof Error ? caught.message : 'Erreur inattendue.',
+      );
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   private rowChannels(product: Product): SalesChannels {

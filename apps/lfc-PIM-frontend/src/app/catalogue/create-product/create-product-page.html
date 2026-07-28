@@ -20,7 +20,17 @@
     </fold-callout>
   }
 
-  <!-- 1 · Identité -->
+  <!-- Onglets PIM / Shopify — le second n'apparaît que si l'intégration est
+       active (Réglages). Style souligné, fond transparent. -->
+  <fold-tabs
+    class="product-tabs"
+    [tabs]="tabs()"
+    [(activeKey)]="activeTab"
+    #ref="foldTabs"
+  />
+
+  <fold-tab-panel [tabs]="ref" key="pim">
+    <!-- 1 · Identité -->
   <fold-page-section
     title="Identité"
     icon="grid"
@@ -397,6 +407,58 @@
       </button>
     </fold-card>
   </fold-page-section>
+  </fold-tab-panel>
+
+  <!-- Onglet Shopify : les champs dédiés à la boutique. -->
+  @if (shopifyEnabled()) {
+    <fold-tab-panel [tabs]="ref" key="shopify">
+      <fold-page-section
+        title="Champs Shopify"
+        icon="shopify"
+        description="Ce qui part vers la boutique — visible car l'intégration est active."
+      >
+        <fold-card class="stack">
+          <div class="grid">
+            <fold-number-input
+              label="Prix (€)"
+              [min]="0"
+              [step]="0.1"
+              [value]="priceEur()"
+              (valueChange)="priceEur.set($event)"
+            />
+            <fold-number-input
+              label="Poids (g)"
+              [min]="0"
+              [value]="weightGrams()"
+              (valueChange)="weightGrams.set($event)"
+            />
+            <fold-input
+              label="Handle / URL"
+              placeholder="dérivé du nom si vide"
+              hint="Pilote l'URL Shopify — ne pas changer après publication (SEO)."
+              [value]="handle()"
+              (valueChange)="handle.set($event)"
+            />
+          </div>
+
+          @if (effectiveHandle(); as h) {
+            <p class="muted">URL Shopify : <code>/products/{{ h }}</code></p>
+          }
+
+          <div class="stack">
+            <span class="block-label">Tags générés</span>
+            <div class="tag-row">
+              @for (tag of derivedTags(); track tag) {
+                <fold-badge [content]="tag" variant="neutral" radius="square" />
+              } @empty {
+                <span class="muted">Choisissez une catégorie pour voir les tags.</span>
+              }
+            </div>
+          </div>
+        </fold-card>
+      </fold-page-section>
+    </fold-tab-panel>
+  }
 
   <div class="save-bar">
     @if (!isValid()) {

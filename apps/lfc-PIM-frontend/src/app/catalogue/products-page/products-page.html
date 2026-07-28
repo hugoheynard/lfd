@@ -94,16 +94,49 @@
     [rowKey]="rowKey"
     [rowTone]="rowTone"
     zebra
+    selectable
+    [(selected)]="selection"
     toolbarSurface="accent"
     [empty]="emptyState"
   >
     <div foldToolbar class="table-toolbar">
-      <span class="toolbar-title">CATALOGUE</span>
+      <span class="toolbar-title">
+        <fold-icon name="grid" size="sm" />
+        Catalogue
+      </span>
+
       <fold-search
         class="toolbar-search"
         placeholder="Filtrer par nom ou référence…"
         (searchChange)="onSearch($event)"
       />
+
+      <!-- Actions groupées sur la sélection (batch). -->
+      <fold-dropdown
+        class="batch"
+        ariaLabel="Actions groupées"
+        placement="bottom-end"
+      >
+        <button
+          foldPopoverTrigger
+          foldButton
+          emphasis="outline"
+          class="batch-trigger"
+          [disabled]="selectedCount() === 0"
+        >
+          Actions ({{ selectedCount() }})
+        </button>
+        <fold-dropdown-item icon="upload" (selected)="pushSelected()">
+          Pousser la sélection
+        </fold-dropdown-item>
+        <fold-dropdown-item icon="folder" (selected)="archiveSelected()">
+          Archiver la sélection
+        </fold-dropdown-item>
+        <fold-dropdown-item icon="bin" tone="danger" (selected)="deleteSelected()">
+          Supprimer la sélection
+        </fold-dropdown-item>
+      </fold-dropdown>
+
       <fold-badge
         [content]="catalogueStatus().label"
         [variant]="catalogueStatus().variant"
@@ -132,8 +165,6 @@
       {{ categoryName(p.categoryId) }}
     </ng-template>
 
-    <ng-template foldCell="kind" let-p>{{ label(p.kind) }}</ng-template>
-
     <ng-template foldCell="channels" let-p>
       <button class="chan-cell" type="button" (click)="editChannels(p)">
         <span class="chan-pills">
@@ -159,15 +190,6 @@
       </button>
     </ng-template>
 
-    <ng-template foldCell="allergens" let-p>
-      @if (allergenSummary(p); as summary) {
-        <fold-badge
-          [content]="summary"
-          [variant]="summary === 'non renseignés' ? 'warning' : 'neutral'"
-        />
-      }
-    </ng-template>
-
     <ng-template foldCell="status" let-p>
       <fold-badge
         [content]="p.status"
@@ -181,26 +203,31 @@
 
     <ng-template foldCell="actions" let-p>
       <div class="row-actions">
-        <button
-          foldButton
-          emphasis="outline"
-          size="sm"
-          [disabled]="busy()"
-          (click)="push(p)"
-        >
-          Pousser
-        </button>
-        @if (p.status !== 'archived') {
+        <fold-dropdown ariaLabel="Actions du produit" placement="bottom-end">
           <button
-            foldButton
-            emphasis="soft"
-            intent="neutral"
-            size="sm"
-            (click)="archive(p)"
+            foldPopoverTrigger
+            type="button"
+            class="kebab"
+            aria-label="Actions"
           >
-            Archiver
+            <fold-icon name="kebab" />
           </button>
-        }
+
+          <fold-dropdown-item icon="upload" [disabled]="busy()" (selected)="push(p)">
+            Pousser
+          </fold-dropdown-item>
+          <fold-dropdown-item icon="edit" (selected)="edit(p)">
+            Éditer
+          </fold-dropdown-item>
+          @if (p.status !== 'archived') {
+            <fold-dropdown-item icon="folder" (selected)="archive(p)">
+              Archiver
+            </fold-dropdown-item>
+          }
+          <fold-dropdown-item icon="bin" tone="danger" (selected)="remove(p)">
+            Supprimer
+          </fold-dropdown-item>
+        </fold-dropdown>
       </div>
     </ng-template>
   </fold-data-table>

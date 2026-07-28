@@ -9,7 +9,8 @@ import { DB_SEED, type DbShape } from './db.seed';
 // v4 : Product porte prix/slug/description/poids/flags + catalogue CSV (92 réfs).
 // v5 : emplacements (boutiques + modes + tables + QR click & collect).
 // v6 : token rotatif par table (regen invalide l'ancien QR).
-const STORAGE_KEY = 'lfc-pim:db:v6';
+// v7 : miroir Shopify (shopifyCollections) pour la réconciliation des collections de taxe.
+const STORAGE_KEY = 'lfc-pim:db:v7';
 
 /**
  * La base du POC, côté navigateur. **Aucun serveur** :

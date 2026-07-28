@@ -20,6 +20,9 @@ import {
   FoldOptionComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
 } from 'fold-ng';
 
 import {
@@ -27,7 +30,8 @@ import {
   generateFiches,
   type GeneratedFiche,
 } from '../../data/channels';
-import { productSkuRoot } from '../../data/sku';
+import { LocalDb } from '../../data/local-db';
+import { productSkuRoot, slugify } from '../../data/sku';
 import type {
   AllergenEntry,
   AllergenScope,
@@ -85,6 +89,8 @@ const NO_CHANNELS: SalesChannels = {
     FoldCalloutComponent,
     FoldBadgeComponent,
     FoldIconComponent,
+    FoldTabsComponent,
+    FoldTabPanelComponent,
     ChannelMatrix,
   ],
   templateUrl: './create-product-page.html',
@@ -93,6 +99,7 @@ const NO_CHANNELS: SalesChannels = {
 export class CreateProductPage {
   private readonly api = inject(CatalogueApi);
   private readonly reference = inject(ReferenceApi);
+  private readonly db = inject(LocalDb);
   private readonly router = inject(Router);
 
   protected readonly kinds: readonly ProductKind[] = [
@@ -141,6 +148,48 @@ export class CreateProductPage {
   protected readonly media = signal<
     { role: string; url: string; alt?: string }[]
   >([]);
+
+  // Onglets PIM / Shopify — l'onglet Shopify n'apparaît que si l'intégration
+  // est activée dans les Réglages. Lecture **réactive** du store : basculer le
+  // réglage met la barre d'onglets à jour en direct.
+  protected readonly shopifyEnabled = computed(
+    () => this.db.snapshot().shopify.isEnabled,
+  );
+  protected readonly activeTab = signal<string>('pim');
+  protected readonly priceEur = signal<number | null>(null);
+  protected readonly weightGrams = signal<number | null>(null);
+  protected readonly handle = signal('');
+
+  protected readonly tabs = computed<FoldTabItem[]>(() => {
+    const tabs: FoldTabItem[] = [{ key: 'pim', label: 'PIM', icon: 'edit' }];
+    if (this.shopifyEnabled()) {
+      tabs.push({ key: 'shopify', label: 'Shopify', icon: 'shopify' });
+    }
+    return tabs;
+  });
+
+  /** Aperçu des tags Shopify dérivés : régime TVA du canal + click & collect. */
+  protected readonly derivedTags = computed<string[]>(() => {
+    const category = this.selectedCategory();
+    if (category === undefined) {
+      return [];
+    }
+    const emporter = this.regimeById().get(category.emporterTvaId);
+    const tags = [category.slug.fr, 'click-collect'];
+    if (emporter !== undefined) {
+      tags.push(emporter.tag);
+    }
+    return tags;
+  });
+
+  /** Handle proposé : l'override s'il existe, sinon dérivé du nom. */
+  protected readonly effectiveHandle = computed<string>(() => {
+    const override = this.handle().trim();
+    if (override !== '') {
+      return slugify(override);
+    }
+    return this.name().trim() === '' ? '' : slugify(this.name());
+  });
 
   private readonly regimeById = computed(
     () => new Map(this.regimes().map((r) => [r.id, r])),
@@ -335,6 +384,10 @@ export class CreateProductPage {
     try {
       const declares = this.declaresNone() || this.selected().length > 0;
       const sku = this.sku().trim();
+      const price = this.priceEur();
+      const weight = this.weightGrams();
+      const handle = this.handle().trim();
+      const description = this.editorialValue('descriptionShort').trim();
       await this.api.createProduct({
         nameFr: this.name().trim(),
         kind,
@@ -344,6 +397,10 @@ export class CreateProductPage {
         ...(this.channelsOverride() === null
           ? {}
           : { channelsOverride: this.channelsOverride() }),
+        ...(price === null ? {} : { priceEur: price }),
+        ...(weight === null ? {} : { weightGrams: weight }),
+        ...(handle === '' ? {} : { handleFr: slugify(handle) }),
+        ...(description === '' ? {} : { descriptionFr: description }),
       });
       await this.router.navigate(['/produits']);
     } catch (caught) {

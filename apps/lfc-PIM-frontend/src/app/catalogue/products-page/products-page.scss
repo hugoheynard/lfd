@@ -7,25 +7,58 @@ code {
   display: flex;
   align-items: center;
   gap: var(--fold-space-md, 1rem);
-  padding-bottom: var(--fold-space-sm, 0.6rem);
+  width: 100%;
 }
 
+/* Sur la bande accent, le texte s'inverse : on lit via les tokens sémantiques
+   (jamais `--fold-color-primary`, qui resterait navy sur navy). */
 .toolbar-title {
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  color: var(--fold-color-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fold-color-text);
+  white-space: nowrap;
 }
 
+/* La recherche exploite tout l'espace libre entre le titre et les actions. */
 .toolbar-search {
   flex: 1 1 auto;
-  min-width: 0;
-  max-width: 26rem;
+  min-width: 12rem;
+  max-width: none;
+}
+
+.batch {
+  flex: 0 0 auto;
+}
+
+/* Contrôles alignés en hauteur : recherche, bouton Actions et titre partagent
+   la même mesure verticale. */
+.toolbar-title,
+.toolbar-search,
+.batch,
+.batch-trigger {
+  min-height: 2.5rem;
+}
+
+.batch-trigger {
+  display: inline-flex;
+  align-items: center;
 }
 
 @media (max-width: 640px) {
   .table-toolbar {
     flex-wrap: wrap;
+  }
+
+  .toolbar-search {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
   }
 }
 
@@ -121,4 +154,26 @@ code {
 .products-paginator {
   display: block;
   margin-top: var(--fold-space-md, 1rem);
+}
+
+/* Déclencheur du menu kebab : bouton icône discret. */
+.kebab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--fold-color-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--fold-radius-sm, 0.4rem);
+  cursor: pointer;
+}
+
+.kebab:hover,
+.kebab:focus-visible {
+  color: var(--fold-color-text);
+  background: var(--fold-color-surface-hover);
+  outline: none;
 }

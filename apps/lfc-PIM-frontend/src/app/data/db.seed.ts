@@ -4,6 +4,7 @@ import type {
   Product,
   ProductBinding,
   SalesChannels,
+  ShopifyCollection,
   TvaRegime,
 } from './models';
 import { SEED_PRODUCTS } from './products.seed';
@@ -32,6 +33,9 @@ export interface DbShape {
     isEnabled: boolean;
     updatedAt: string | null;
   };
+  /** Miroir des collections présentes sur la boutique — cible de la
+   *  réconciliation des collections de taxe (Famille A). */
+  readonly shopifyCollections: ShopifyCollection[];
 }
 
 /** À emporter dans les deux boutiques, jamais en salle. */
@@ -117,4 +121,31 @@ export const DB_SEED: DbShape = {
     isEnabled: false,
     updatedAt: null,
   },
+  // Miroir de démo volontairement partiel : « Réduit » et « Intermédiaire »
+  // existent déjà sur la boutique, « Normal » (tva-20) reste à pousser, et une
+  // vieille collection tva-8-5 traîne sans régime — de quoi montrer les trois
+  // cas de la réconciliation dès le premier chargement.
+  shopifyCollections: [
+    {
+      id: 'col_tva55',
+      handle: 'tva-5-5',
+      title: 'Réduit',
+      productCount: 42,
+      createdAt: '2026-05-02T09:00:00.000Z',
+    },
+    {
+      id: 'col_tva10',
+      handle: 'tva-10',
+      title: 'Intermédiaire',
+      productCount: 18,
+      createdAt: '2026-05-02T09:00:00.000Z',
+    },
+    {
+      id: 'col_tva85',
+      handle: 'tva-8-5',
+      title: 'Ancien taux (2025)',
+      productCount: 0,
+      createdAt: '2025-01-11T09:00:00.000Z',
+    },
+  ] satisfies ShopifyCollection[],
 };

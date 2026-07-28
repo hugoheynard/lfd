@@ -31,6 +31,17 @@
   color: var(--fold-color-text-secondary);
 }
 
+.product-tabs {
+  display: block;
+  margin-bottom: var(--fold-space-md, 1rem);
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .block-label {
   font-size: 0.78rem;
   font-weight: 600;
