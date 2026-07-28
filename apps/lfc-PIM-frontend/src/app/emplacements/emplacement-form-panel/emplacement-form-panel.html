@@ -1,0 +1,76 @@
+<fold-panel-header [title]="heading()" [subtitle]="subtitle()" />
+
+<div class="body">
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">
+      {{ message }}
+    </fold-callout>
+  }
+
+  @if (isDelete()) {
+    <!-- Zone dangereuse : confirmation en retapant le nom de la boutique. -->
+    <fold-callout appearance="inset" variant="alert">
+      <strong>Zone dangereuse.</strong> Vous êtes sur le point de supprimer «&nbsp;{{
+        emplacement()?.name
+      }}&nbsp;». Ses <strong>tables</strong> et leurs URLs de click &amp; collect disparaissent, et
+      les <strong>QR déjà imprimés</strong> deviennent caducs — il faudra les régénérer sur une
+      nouvelle boutique.
+    </fold-callout>
+
+    <fold-input
+      label="Retapez le nom de la boutique pour confirmer"
+      [placeholder]="emplacement()?.name ?? ''"
+      [value]="confirmName()"
+      (valueChange)="confirmName.set($event)"
+    />
+  } @else {
+    <fold-input
+      label="Nom"
+      placeholder="ex. Village"
+      required
+      [value]="draftName()"
+      (valueChange)="draftName.set($event)"
+    />
+    <fold-input
+      label="URL de base — click & collect"
+      placeholder="https://…/commander"
+      [value]="draftBaseUrl()"
+      (valueChange)="draftBaseUrl.set($event)"
+    />
+
+    <div class="modes">
+      <fold-checkbox
+        label="Click & collect"
+        [checked]="draftClickCollect()"
+        (checkedChange)="draftClickCollect.set($event)"
+      />
+      <fold-checkbox
+        label="Sur place"
+        hint="ouvre les tables"
+        [checked]="draftSurPlace()"
+        (checkedChange)="draftSurPlace.set($event)"
+      />
+    </div>
+
+    @if (draftSurPlace()) {
+      <fold-number-input
+        label="Nombre de tables"
+        [min]="0"
+        [value]="draftTables()"
+        (valueChange)="draftTables.set($event)"
+      />
+    }
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button
+    foldButton
+    [intent]="isDelete() ? 'danger' : 'primary'"
+    [disabled]="busy() || !canSubmit"
+    (click)="submit()"
+  >
+    {{ submitLabel() }}
+  </button>
+</footer>

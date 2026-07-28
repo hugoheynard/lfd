@@ -1,0 +1,63 @@
+.emp {
+  --fold-card-padding: var(--fold-space-lg);
+
+  &:not(:first-child) {
+    margin-top: var(--fold-space-md);
+  }
+}
+
+.emp-body {
+  display: grid;
+  gap: var(--fold-space-lg);
+}
+
+.block-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fold-color-text-muted);
+}
+
+.tables {
+  display: grid;
+  gap: var(--fold-space-sm);
+  padding-top: var(--fold-space-md);
+  border-top: 0.5px solid var(--fold-color-border);
+}
+
+/* Lecture : une carte par table (titre boutique·table, QR, actions). */
+.tcards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--fold-space-sm);
+}
+
+.tcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+  border: 0.5px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-raised);
+  text-align: center;
+}
+
+.tcard-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.tcard-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: 0.9rem;
+}

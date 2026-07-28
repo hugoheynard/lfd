@@ -1,0 +1,110 @@
+@if (error(); as message) {
+  <fold-callout appearance="inset" variant="alert" role="alert">
+    {{ message }}
+  </fold-callout>
+}
+
+@for (emp of emplacements(); track emp.id) {
+  <fold-card class="emp">
+    <fold-element-title
+      cardHeader
+      variant="title"
+      icon="company"
+      iconTone="primary"
+      [title]="emp.name"
+      subtitle="Emplacement"
+    >
+      <fold-dropdown titleAction ariaLabel="Actions de la boutique" placement="bottom-end">
+        <button
+          foldPopoverTrigger
+          foldButton
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          aria-label="Actions"
+        >
+          <fold-icon name="more-vertical" size="sm" />
+        </button>
+        <fold-dropdown-item icon="edit" (selected)="openEdit(emp)"> Modifier </fold-dropdown-item>
+        <fold-dropdown-item icon="bin" tone="danger" (selected)="openDelete(emp)">
+          Supprimer
+        </fold-dropdown-item>
+      </fold-dropdown>
+    </fold-element-title>
+
+    <div class="emp-body">
+      <!-- Lecture : les réglages en display, non éditables (édition = panel). -->
+      <fold-field-list>
+        <fold-field
+          label="URL click & collect"
+          [empty]="emp.baseUrl === ''"
+          placeholder="non renseignée"
+        >
+          <code>{{ emp.baseUrl }}</code>
+        </fold-field>
+        <fold-field label="Modes">{{ modesLabel(emp) }}</fold-field>
+        @if (emp.surPlace) {
+          <fold-field label="Tables">{{ emp.tables.length }}</fold-field>
+        }
+      </fold-field-list>
+
+      <!-- Tables : ouvertes par le sur place. Une carte QR par table. -->
+      @if (emp.surPlace && emp.tables.length > 0) {
+        <div class="tables">
+          <span class="block-label"> Tables — click & collect ({{ emp.tables.length }}) </span>
+
+          <div class="tcards">
+            @for (t of emp.tables; track t.number) {
+              <div class="tcard">
+                <span class="tcard-title"> {{ emp.name }} · Table {{ t.number }} </span>
+                @if (t.qrCreated) {
+                  <app-qr-code [url]="tableUrl(emp, t)" />
+                  <div class="tcard-actions">
+                    <button
+                      foldButton
+                      emphasis="soft"
+                      intent="neutral"
+                      size="sm"
+                      (click)="exportQr(emp, t)"
+                    >
+                      Exporter (SVG)
+                    </button>
+                    <fold-inline-confirm
+                      intent="danger"
+                      message="Retirer ce QR ?"
+                      (confirmed)="removeQr(emp.id, t.number)"
+                    >
+                      <button
+                        foldButton
+                        emphasis="soft"
+                        intent="danger"
+                        size="sm"
+                        aria-label="Retirer le QR"
+                      >
+                        ✕
+                      </button>
+                    </fold-inline-confirm>
+                  </div>
+                } @else {
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    size="sm"
+                    (click)="generateQr(emp.id, t.number)"
+                  >
+                    Générer le QR
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      } @else if (emp.surPlace) {
+        <p class="muted">
+          Aucune table — définissez leur nombre via
+          <strong>Modifier</strong>.
+        </p>
+      }
+    </div>
+  </fold-card>
+}
