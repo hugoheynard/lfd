@@ -1,0 +1,274 @@
+// Schéma de la db B2B COMMERCE (la « B2B platform »).
+// Contexte : clients pros (customers) qui commandent à La Folie Coffee.
+// Doc d'archi : documentation/architecture-identite-auth-tenancy.md
+//              documentation/architecture-flux-commande-prod.md
+//
+// Conventions (alignées sur le PIM) :
+// - `User` ICI = un CUSTOMER (client pro). Le staff/back-office vit dans une db
+//   SÉPARÉE (bounded context distinct) ; pas de table staff ici.
+// - Tenancy : chaque table possédée par un client porte `company_id` (le « mur »).
+//   On filtre TOUJOURS par le company_id du token. Le staff (autre db) n'est pas muré.
+// - Auth : aucune credential stockée. Auth0 possède l'auth ; on ne garde que
+//   `auth0_sub` (clé stable) + `email` (clé humaine / secours migration).
+// - Pas de DELETE physique : archivage par drapeau (`archived_at`) ou statut.
+// - `created_at` / `updated_at` = colonnes SYSTÈME, hors-domaine.
+// - Argent : entiers en CENTIMES (`*_cents`), jamais de float. Devise = EUR.
+//
+// ⚠️ Décisions à confirmer :
+// - IDs : `@default(cuid())` ici pour démarrer vite. Le PIM assigne les IDs par la
+//   commande (préfixés, sans default). À aligner si tu veux la parité monorepo.
+// - `runtime = "nodejs"` : à passer en driver-adapter si le back devient Workers (Hono).
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/infra/database/client"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+  runtime             = "nodejs"
+}
+
+// Prisma 7 : plus d'`url` ici. La connexion (db distincte du PIM/admin) est
+// fournie par `prisma.config.ts` (Migrate) + l'adapter au constructeur de
+// PrismaClient (runtime), comme le PIM.
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Énumérations
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Conditions de paiement accordées au client (échéance de règlement).
+/// Valeurs alignées sur le front (`PaymentTerm` dans profil.model.ts).
+enum PaymentTerm {
+  per_order
+  monthly
+  net60
+  net90
+}
+
+/// Cycle de vie d'un compte client (établissement).
+enum CompanyStatus {
+  active
+  suspended
+}
+
+/// Rôle d'un customer AU SEIN de son établissement.
+/// `company_admin` = gère les users/commandes de sa société (le « gestionnaire ») ;
+/// `member` = passe des commandes.
+enum CustomerRole {
+  company_admin
+  member
+}
+
+/// Cycle de vie d'une identité customer (provisioning → actif).
+enum UserStatus {
+  invited
+  active
+  disabled
+}
+
+/// À quoi sert une adresse (aligné sur `AdresseKind` du front).
+enum AddressKind {
+  facturation
+  livraison
+}
+
+/// Cycle de vie d'une commande.
+enum OrderStatus {
+  draft
+  placed
+  confirmed
+  in_production
+  fulfilled
+  cancelled
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Company — le TENANT (établissement client pro)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Company {
+  id String @id @default(cuid())
+
+  // Identité légale (cf. Etablissement, front)
+  raisonSociale  String @map("raison_sociale")
+  enseigne       String @default("") // nom commercial si différent
+  formeJuridique String @map("forme_juridique") // SAS, SARL, EI…
+  siret          String
+  tvaIntracom    String @default("") @map("tva_intracom")
+
+  // Contact principal du compte (value object aplati)
+  contactPrenom    String @map("contact_prenom")
+  contactNom       String @map("contact_nom")
+  contactFonction  String @default("") @map("contact_fonction")
+  contactEmail     String @map("contact_email")
+  contactTelephone String @default("") @map("contact_telephone")
+
+  // Représentant optionnel (gestionnaire de commande interne au client).
+  // Tous null = pas de représentant.
+  repPrenom    String? @map("rep_prenom")
+  repNom       String? @map("rep_nom")
+  repFonction  String? @map("rep_fonction")
+  repEmail     String? @map("rep_email")
+  repTelephone String? @map("rep_telephone")
+
+  // Facturation (un seul champ pour l'instant → sur Company ; extraire un
+  // BillingProfile le jour où ça grossit : plafond crédit, email de facturation…).
+  paymentTerm PaymentTerm @default(per_order) @map("payment_term")
+
+  status CompanyStatus @default(active)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users     User[]
+  addresses Address[]
+  orders    Order[]
+
+  @@index([siret])
+  @@map("companies")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// User — un CUSTOMER (client pro), tenant-scoped
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id String @id @default(cuid())
+
+  // Identité Auth0 (aucun mot de passe stocké ici)
+  auth0Sub String @unique @map("auth0_sub")
+  email    String
+
+  role   CustomerRole @default(member)
+  status UserStatus   @default(invited)
+
+  // Tenancy — le mur
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+
+  // Traçabilité : id du STAFF (autre db) qui a provisionné ce client.
+  // Pas de FK cross-db → simple identifiant.
+  invitedBy String? @map("invited_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  ordersPlaced Order[]
+
+  @@index([companyId])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Address — 1 facturation + N livraison, 1 livraison par défaut
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Address {
+  id String @id @default(cuid())
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+
+  kind  AddressKind
+  label String // « Siège », « Boutique Bastille »…
+
+  ligne1     String
+  ligne2     String @default("")
+  codePostal String @map("code_postal")
+  ville      String
+  pays       String
+
+  // Adresse de livraison par défaut. Invariant (appliqué en applicatif) :
+  // au plus une `livraison` à `true` par company ; exactement une `facturation`.
+  isDefault Boolean @default(false) @map("is_default")
+
+  // Pas de DELETE physique : on archive.
+  archivedAt DateTime? @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  deliveredOrders Order[] @relation("OrderDeliveryAddress")
+
+  @@index([companyId, kind])
+  @@map("addresses")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Order — une commande, tenant-scoped
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Order {
+  id          String @id @default(cuid())
+  orderNumber String @unique @map("order_number") // référence humaine
+
+  // Tenancy
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+
+  // Qui a passé la commande (un customer de la même company)
+  placedByUserId String @map("placed_by_user_id")
+  placedBy       User   @relation(fields: [placedByUserId], references: [id])
+
+  status OrderStatus @default(placed)
+
+  // Alimente le plan de prod (« à produire pour demain »).
+  requestedDeliveryDate DateTime? @map("requested_delivery_date") @db.Date
+
+  deliveryAddressId String  @map("delivery_address_id")
+  deliveryAddress   Address @relation("OrderDeliveryAddress", fields: [deliveryAddressId], references: [id])
+
+  // Argent en centimes (snapshot au moment de la commande)
+  subtotalCents Int    @map("subtotal_cents")
+  totalCents    Int    @map("total_cents")
+  currency      String @default("EUR")
+
+  note String @default("")
+
+  createdAt DateTime @default(now()) @map("created_at") // = passée le
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lines OrderLine[]
+
+  @@index([companyId])
+  @@index([requestedDeliveryDate])
+  @@index([status])
+  @@map("orders")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OrderLine — réfère le SKU du PIM (cross-context), snapshot prix/nom/TVA
+// ─────────────────────────────────────────────────────────────────────────────
+
+model OrderLine {
+  id String @id @default(cuid())
+
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Référence au catalogue PIM. String, PAS une FK (autre db / bounded context).
+  sku String
+
+  // Snapshots au moment de la commande : le prix/nom/TVA du PIM peut changer,
+  // la commande garde ce qu'elle a facturé.
+  productNameSnapshot String  @map("product_name_snapshot")
+  unitPriceCents      Int     @map("unit_price_cents")
+  vatRate             Decimal @default(0) @map("vat_rate") @db.Decimal(5, 2) // %, ex. 5.50
+
+  quantity       Int
+  lineTotalCents Int @map("line_total_cents")
+
+  @@index([orderId])
+  @@index([sku]) // agrégation par SKU pour le plan de prod
+  @@map("order_lines")
+}
+
+// NB — Volontairement HORS de ce schéma :
+// - ProductionPlan (« qtés à produire demain ») : c'est de la donnée PRODUCTION
+//   (contexte interne/labo), pas du commerce customer-facing. Elle vit côté admin,
+//   comme une projection dérivée des Order de ce schéma (calculée par le cron).
+// - Cart : reste côté client (localStorage) jusqu'à la validation ; seule la
+//   commande (Order) est persistée.
+// - Stock : décision « source de vérité » reportée (Shopify vs nous).

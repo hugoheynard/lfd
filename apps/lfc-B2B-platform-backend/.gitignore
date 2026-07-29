@@ -1,0 +1,6 @@
+node_modules
+# Garder les variables d'environnement hors du versionnage
+.env
+
+# Prisma — client généré (regénéré au postinstall via `prisma generate`)
+/src/infra/database/client/
