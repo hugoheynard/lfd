@@ -6,7 +6,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   FoldAppShellComponent,
   FoldButtonIconComponent,
@@ -16,9 +16,11 @@ import {
   FoldPanelHostComponent,
   FoldPanelHostService,
   FoldSearchComponent,
+  FoldSpinnerComponent,
   FoldSurfaceDirective,
 } from 'fold-ng';
 
+import { AuthFacade } from './auth/auth.facade';
 import { CartPanel } from './cart/cart-panel/cart-panel';
 import { CartService } from './data/cart.service';
 
@@ -36,6 +38,7 @@ import { CartService } from './data/cart.service';
     FoldMenuItemComponent,
     FoldPanelHostComponent,
     FoldSearchComponent,
+    FoldSpinnerComponent,
     FoldSurfaceDirective,
   ],
   templateUrl: './app.html',
@@ -54,9 +57,9 @@ export class App {
   /** Tiroir mobile — le rail primaire devient off-canvas ≤768px. */
   protected readonly mobileNavOpen = signal(false);
 
-  private readonly router = inject(Router);
   private readonly panelHost = inject(FoldPanelHostService);
   protected readonly cart = inject(CartService);
+  protected readonly auth = inject(AuthFacade);
 
   /** Vrai tant qu'un panneau panier est ouvert (évite la ré-ouverture). */
   private cartOpen = false;
@@ -88,12 +91,11 @@ export class App {
   }
 
   /**
-   * Déconnexion. L'auth n'est pas encore câblée côté front : on ferme le tiroir
-   * et on revient au tableau de bord. Le vrai flux (purge du jeton + redirection
-   * login) se branchera ici quand le backend B2B existera.
+   * Déconnexion Auth0 : purge la session côté SDK et redirige vers l'origine
+   * (le guard renverra ensuite vers `/login`). Ferme d'abord le tiroir mobile.
    */
   protected logout(): void {
     this.mobileNavOpen.set(false);
-    void this.router.navigateByUrl('/');
+    this.auth.logout();
   }
 }

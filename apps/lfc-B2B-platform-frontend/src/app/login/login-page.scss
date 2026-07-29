@@ -1,0 +1,81 @@
+:host {
+  display: block;
+}
+
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--fold-space-lg, 1.5rem);
+  background: var(--fold-color-bg, #f7f6f3);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 26rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md, 1rem);
+  padding: var(--fold-space-xl, 2rem);
+  border-radius: var(--fold-radius-lg, 12px);
+  background: var(--fold-color-surface, #fff);
+  box-shadow: var(--fold-shadow-md);
+  text-align: center;
+}
+
+.login-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  margin-bottom: var(--fold-space-sm, 0.5rem);
+}
+
+.login-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fold-radius-md, 8px);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary, #fff);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.login-wordmark {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: var(--fold-color-text);
+}
+
+.login-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--fold-color-text);
+}
+
+.login-lead {
+  margin: 0;
+  color: var(--fold-color-text-muted, #6b6b6b);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.login-hint {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.85rem);
+  color: var(--fold-color-text-muted, #6b6b6b);
+}
+
+.login-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  color: var(--fold-color-text-muted, #6b6b6b);
+  font-size: 0.95rem;
+}

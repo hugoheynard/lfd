@@ -1,4 +1,11 @@
-<fold-app-shell #shell="foldAppShell" contentScroll="clip" [(mobileNavOpen)]="mobileNavOpen">
+@if (auth.isLoading()) {
+  <!-- SDK Auth0 en train de résoudre la session : squelette neutre (aussi le
+       rendu pré-généré du build statique, avant hydratation navigateur). -->
+  <div class="app-boot" role="status" aria-label="Chargement">
+    <fold-spinner />
+  </div>
+} @else if (auth.isAuthenticated()) {
+  <fold-app-shell #shell="foldAppShell" contentScroll="clip" [(mobileNavOpen)]="mobileNavOpen">
   <!-- Primary rail — the B2B app menu. Always expanded and NOT collapsible (no
        chevron): `[expanded]="true"` is authoritative, otherwise a non-collapsible
        rail would boot as the icon rail. Becomes an off-canvas drawer ≤768px. -->
@@ -87,6 +94,9 @@
     <fold-search class="app-search" placeholder="Rechercher un client, une commande…" />
 
     <div class="app-header-actions">
+      @if (auth.displayEmail(); as email) {
+        <span class="app-user" [title]="email">{{ email }}</span>
+      }
       <button
         type="button"
         class="cart-trigger"
@@ -107,4 +117,8 @@
 
   <!-- Hôte unique des side-panels. -->
   <fold-panel-host />
-</fold-app-shell>
+  </fold-app-shell>
+} @else {
+  <!-- Non authentifié : la page (login) se rend seule, sans le chrome pro. -->
+  <router-outlet />
+}

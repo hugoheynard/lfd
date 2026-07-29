@@ -1,0 +1,27 @@
+<main class="login">
+  <section class="login-card">
+    <div class="login-brand">
+      <span class="login-mark" aria-hidden="true">B2B</span>
+      <span class="login-wordmark">La Folie Coffee</span>
+    </div>
+
+    <h1 class="login-title">Espace professionnel</h1>
+    <p class="login-lead">
+      Connectez-vous pour accéder à votre boutique, vos commandes et votre catalogue.
+    </p>
+
+    @if (facade.isLoading()) {
+      <div class="login-loading" role="status">
+        <fold-spinner />
+        <span>Vérification de votre session…</span>
+      </div>
+    } @else {
+      <button foldButton emphasis="solid" intent="primary" block type="button" (click)="signIn()">
+        Se connecter
+      </button>
+      <p class="login-hint">
+        Vous serez redirigé vers la page de connexion sécurisée, puis ramené ici.
+      </p>
+    }
+  </section>
+</main>

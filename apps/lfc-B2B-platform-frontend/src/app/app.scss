@@ -70,6 +70,31 @@ fold-app-shell {
   margin-inline-start: auto;
 }
 
+/* Email de l'utilisateur connecté (identité backend si dispo, sinon Auth0).
+   Tronqué sur petit écran pour ne pas pousser le panier hors du header. */
+.app-user {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fold-text-sm, 0.9rem);
+  opacity: 0.85;
+}
+
+@media (max-width: 640px) {
+  .app-user {
+    display: none;
+  }
+}
+
+/* Écran de démarrage : le SDK Auth0 résout la session (ou pré-rendu statique
+   avant hydratation). Centre un spinner sur toute la hauteur. */
+.app-boot {
+  display: grid;
+  place-items: center;
+  height: 100dvh;
+}
+
 /* Contexte de l'espace, premier élément du header. Sur le chrome navy, un
    libellé clair légèrement estompé. */
 .app-context {
