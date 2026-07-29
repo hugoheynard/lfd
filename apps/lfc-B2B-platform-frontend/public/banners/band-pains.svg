@@ -1,0 +1,25 @@
+<svg viewBox="0 0 320 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nos pains">
+  <defs>
+    <linearGradient id="bp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EAD9B4"/><stop offset="1" stop-color="#CBA96A"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="460" fill="url(#bp)"/>
+  <path d="M0 460 L0 360 Q80 300 160 340 Q240 380 320 320 L320 460 Z" fill="#B9924E" opacity=".45"/>
+  <g opacity=".9">
+    <circle cx="160" cy="250" r="86" fill="#C98A3C" stroke="#8A5A22" stroke-width="5"/>
+    <g stroke="#7A4E1E" stroke-width="5" stroke-linecap="round" fill="none" opacity=".8">
+      <path d="M120 214 L200 286"/><path d="M200 214 L120 286"/><path d="M160 196 L160 304"/>
+    </g>
+  </g>
+  <g transform="rotate(-38 160 250)">
+    <rect x="30" y="236" width="260" height="30" rx="15" fill="#E0B368" stroke="#8A5A22" stroke-width="4"/>
+    <g stroke="#7A4E1E" stroke-width="3" stroke-linecap="round" opacity=".7">
+      <path d="M80 246 l12 12"/><path d="M120 246 l12 12"/><path d="M160 246 l12 12"/><path d="M200 246 l12 12"/><path d="M240 246 l12 12"/>
+    </g>
+  </g>
+  <g stroke="#8A6A2A" stroke-width="3" fill="none" opacity=".55">
+    <path d="M60 120 q6 -30 0 -60 M60 90 l-14 -10 M60 90 l14 -10 M60 70 l-14 -10 M60 70 l14 -10"/>
+    <path d="M262 130 q6 -30 0 -60 M262 100 l-14 -10 M262 100 l14 -10 M262 80 l-14 -10 M262 80 l14 -10"/>
+  </g>
+</svg>

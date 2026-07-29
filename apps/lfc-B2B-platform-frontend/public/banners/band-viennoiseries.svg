@@ -1,0 +1,25 @@
+<svg viewBox="0 0 320 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Viennoiseries">
+  <defs>
+    <linearGradient id="bv" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#CFE0EC"/><stop offset="1" stop-color="#8FB0CB"/>
+    </linearGradient>
+    <linearGradient id="bvc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EDBE6E"/><stop offset="1" stop-color="#C6863A"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="460" fill="url(#bv)"/>
+  <path d="M0 0 L320 0 L320 96 Q160 150 0 96 Z" fill="#EFE6D2" opacity=".4"/>
+  <g opacity=".95" stroke="#9E6626" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+    <g transform="rotate(-8 160 250)">
+      <path d="M56 300 Q160 150 264 300 Q160 258 56 300 Z" fill="url(#bvc)"/>
+      <path d="M110 280 Q118 250 110 224" fill="none" stroke-width="3"/>
+      <path d="M160 274 Q160 240 160 210" fill="none" stroke-width="3"/>
+      <path d="M210 280 Q202 250 210 224" fill="none" stroke-width="3"/>
+      <circle cx="56" cy="300" r="12" fill="url(#bvc)"/><circle cx="264" cy="300" r="12" fill="url(#bvc)"/>
+    </g>
+  </g>
+  <g fill="#EFE6D2" opacity=".5">
+    <circle cx="50" cy="120" r="7"/><circle cx="270" cy="150" r="8"/><circle cx="90" cy="400" r="7"/>
+    <circle cx="240" cy="400" r="8"/><circle cx="160" cy="420" r="6"/>
+  </g>
+</svg>

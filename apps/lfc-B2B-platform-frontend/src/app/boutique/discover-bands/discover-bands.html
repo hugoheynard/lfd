@@ -1,0 +1,32 @@
+<section class="discover" aria-labelledby="discover-title">
+  <h2 id="discover-title" class="discover-title">Découvrez</h2>
+
+  <div class="discover-bands">
+    @for (b of bands; track b.title) {
+      <div class="band">
+        <img class="band-img" [src]="b.image" alt="" />
+        <div class="band-body">
+          <span class="band-label">{{ b.title }}</span>
+          <fold-link class="band-link" trailingIcon="arrow-right" (clicked)="seeMore()">
+            Voir plus
+          </fold-link>
+        </div>
+      </div>
+    }
+
+    <!-- Tuile CTA : accès au catalogue complet — fond plein primary. -->
+    <button type="button" class="band explore-tile" (click)="seeMore()">
+      <span class="explore-text">Explorer notre catalogue</span>
+      <svg class="explore-arrow" viewBox="0 0 24 24" aria-hidden="true" width="40" height="40">
+        <path
+          d="M5 12 H19 M13 6 L19 12 L13 18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+  </div>
+</section>

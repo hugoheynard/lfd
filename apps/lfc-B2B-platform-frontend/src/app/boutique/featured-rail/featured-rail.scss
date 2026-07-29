@@ -1,0 +1,124 @@
+:host {
+  display: block;
+}
+
+.rail {
+  position: relative;
+}
+
+/* Desktop : exactement 3 cartes en grille, plus grandes. */
+.rail-track {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--fold-space-xl, 1.75rem);
+  align-items: start;
+}
+
+/* Cartes plus hautes : média en portrait doux (4/5 au lieu de 4/3). */
+.rail-track fold-product-card {
+  --fold-product-card-ratio: 4 / 5;
+}
+
+/* Enveloppe d'un item : le tag se pose au-dessus de la carte. */
+.featured-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+}
+
+/* Tag « Best seller » — plaque éditoriale (ambiance expo catalogue) : capitales,
+   chasse large, graisse moderne, coins nets. Chevauche le haut de la carte. */
+.featured-flag {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: -0.85rem;
+  /* padding droit réduit : compense l'espace de chasse après la dernière lettre */
+  padding: 0.4rem 0.72rem 0.4rem 0.9rem;
+  border-radius: 3px;
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary, #fff);
+  font-size: clamp(0.6rem, 1.2vw, 0.7rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  box-shadow: var(--fold-shadow-sm);
+}
+/* Petit repère — un point clair, détail de signalétique. */
+.ff-mark {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--fold-color-on-primary, #fff);
+  opacity: 0.85;
+}
+
+.featured-item.is-highlight {
+  transform: translateY(-6px);
+}
+
+/* Flèches — cachées sur desktop (la grille montre tout). */
+.rail-nav {
+  display: none;
+}
+
+/* Mobile : carrousel scroll-snap + flèches, best-seller en premier. */
+@media (max-width: 720px) {
+  .rail-track {
+    display: flex;
+    grid-template-columns: none;
+    gap: var(--fold-space-md, 1rem);
+    /* `overflow-y: hidden` est CRUCIAL : avec `overflow-x: auto` seul, la spec
+       CSS calcule `overflow-y` à `auto` → le rail devient un conteneur de scroll
+       VERTICAL qui, combiné au scroll-snap, piège le scroll vertical de la page
+       (on ne pouvait plus descendre sous cette section). On ne défile qu'en X. */
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 var(--fold-space-md, 1rem);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: var(--fold-space-sm, 0.5rem);
+  }
+  .rail-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .featured-item {
+    flex: 0 0 82%;
+    scroll-snap-align: center;
+  }
+  /* Best-seller en tête sur mobile (au centre en desktop, ordre source). */
+  .featured-item.is-highlight {
+    order: -1;
+    transform: none;
+  }
+
+  .rail-nav {
+    position: absolute;
+    top: 42%;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--fold-color-border);
+    border-radius: var(--fold-radius-pill, 999px);
+    background: var(--fold-color-glass, rgba(255, 255, 255, 0.82));
+    backdrop-filter: blur(4px);
+    color: var(--fold-color-text);
+    box-shadow: var(--fold-shadow-md);
+    cursor: pointer;
+  }
+  .rail-prev {
+    left: 2px;
+  }
+  .rail-next {
+    right: 2px;
+  }
+}

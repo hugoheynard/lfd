@@ -9,25 +9,20 @@
     />
   </fold-page-section>
 
+  <fold-page-section bleed>
+    <app-discover-bands />
+  </fold-page-section>
+
   <fold-page-section
     title="À la une"
     icon="star"
     description="Notre sélection du moment pour les professionnels."
   >
-    <div class="product-grid product-grid--featured">
-      @for (p of featured; track p.id) {
-        <fold-product-card
-          [product]="p"
-          [favorite]="favorites.has(p.id)"
-          (favoriteToggle)="onFav($event)"
-          (action)="onAdd($event)"
-          (notify)="onNotify($event)"
-        />
-      }
-    </div>
+    <app-featured-rail [items]="featured" (add)="onAdd($event)" (notify)="onNotify($event)" />
   </fold-page-section>
 
   <fold-page-section
+    id="catalogue"
     title="Le catalogue"
     icon="grid"
     description="Filtrez par catégorie, cherchez, ajoutez à vos favoris."

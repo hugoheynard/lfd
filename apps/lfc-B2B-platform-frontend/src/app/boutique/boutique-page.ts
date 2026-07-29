@@ -2,16 +2,37 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 
 import { FoldPageLayoutComponent, FoldPageSectionComponent } from 'fold-ng';
 
-import {
-  FoldBannerCarouselComponent,
-  FoldProductCardComponent,
-  type FoldBanner,
-  type FoldProduct,
-} from '../../shared';
+import { FoldBannerCarouselComponent, type FoldBanner, type FoldProduct } from '../../shared';
 import { CATEGORIES, PRODUCTS } from '../data/catalogue-seed';
+import { CartService } from '../data/cart.service';
 import { FavoritesService } from '../data/favorites.service';
 import { SiteFooter } from '../footer/site-footer';
 import { ProductCatalogue } from '../catalogue/product-catalogue/product-catalogue';
+import { DiscoverBands } from './discover-bands/discover-bands';
+import { FeaturedRail, type FeaturedItem } from './featured-rail/featured-rail';
+
+/** Sélection éditoriale : le croissant (best-seller) au centre des trois. */
+const FEATURED_SPEC: readonly {
+  readonly id: string;
+  readonly flag: string;
+  readonly highlight: boolean;
+}[] = [
+  { id: 'VIE-002', flag: '', highlight: false },
+  { id: 'VIE-001', flag: 'Best seller', highlight: true },
+  { id: 'PAI-001', flag: '', highlight: false },
+];
+
+/** Résout la sélection en produits réels ; ignore un id absent du catalogue. */
+function buildFeatured(): FeaturedItem[] {
+  const out: FeaturedItem[] = [];
+  for (const spec of FEATURED_SPEC) {
+    const product = PRODUCTS.find((p) => p.id === spec.id);
+    if (product) {
+      out.push({ product, flag: spec.flag, highlight: spec.highlight });
+    }
+  }
+  return out;
+}
 
 /**
  * Boutique — le point d'entrée du client pro : un hero de bannières en pleine
@@ -25,15 +46,17 @@ import { ProductCatalogue } from '../catalogue/product-catalogue/product-catalog
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
     FoldBannerCarouselComponent,
-    FoldProductCardComponent,
     ProductCatalogue,
     SiteFooter,
+    DiscoverBands,
+    FeaturedRail,
   ],
   templateUrl: './boutique-page.html',
   styleUrl: './boutique-page.scss',
 })
 export class BoutiquePage {
   protected readonly favorites = inject(FavoritesService);
+  private readonly cart = inject(CartService);
 
   protected readonly products = PRODUCTS;
   protected readonly categories = CATEGORIES;
@@ -57,14 +80,13 @@ export class BoutiquePage {
     { id: 'habillage-2', image: 'banners/banner-3.svg', imageAlt: '' },
   ];
 
-  /** Sélection mise en avant (les premiers du catalogue). */
-  protected readonly featured: readonly FoldProduct[] = PRODUCTS.slice(0, 4);
+  /** Sélection mise en avant : 3 produits, le best-seller (croissant) au milieu. */
+  protected readonly featured: readonly FeaturedItem[] = buildFeatured();
 
-  protected readonly cartIds = signal<readonly string[]>([]);
   protected readonly notifyIds = signal<readonly string[]>([]);
 
   protected onAdd(product: FoldProduct): void {
-    this.cartIds.update((ids) => [...ids, product.id]);
+    this.cart.add(product.id);
   }
 
   protected onFav(product: FoldProduct): void {
