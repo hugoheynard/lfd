@@ -1,126 +1,110 @@
-# Déploiement — Cloudflare Pages (pas à pas)
+# Déploiement — Cloudflare Pages
 
 Le B2B se déploie comme un **SPA statique** (browser-only, pas de SSR) sur
-**Cloudflare Pages**. Ce doc décrit exactement quoi cliquer et paramétrer sur le
-site Cloudflare. Pour le _pourquoi_ (statique vs SSR, appels API), voir le
+**Cloudflare Pages**. Pour le _pourquoi_ (statique vs SSR, appels API), voir le
 [README](./README.md).
 
+**Méthode retenue : CI (GitHub Actions).** On build + gate dans notre CI, puis on
+pousse les fichiers à Cloudflare (Direct Upload) — Cloudflare ne fait
+qu'**héberger**. C'est plus robuste que laisser Cloudflare builder (contrôle total
+du toolchain monorepo, un build rouge ne déploie jamais, cohérent avec fold-ng).
+La méthode « Git integration » (build côté Cloudflare) reste possible et est
+décrite en [annexe](#annexe--git-integration-build-côté-cloudflare).
+
 > ⚠️ **Le piège à retenir** : le build **par défaut** (`ng build`) est **SSR**
-> (`outputMode: server`). Cloudflare Pages ne sert que du statique → il faut
-> impérativement la configuration `cloudflare` via le script `build:cloudflare`.
-> Si tu laisses la build command sur `npm run build`, le déploiement produit un
-> bundle serveur inutilisable.
+> (`outputMode: server`). Pages ne sert que du statique → il faut la configuration
+> `cloudflare` (script `build:cloudflare`). Le workflow s'en charge déjà ; ne
+> déploie jamais un build par défaut.
 
 ---
 
-## 0. Prérequis (déjà en place)
+## Méthode CI — `.github/workflows/deploy-b2b.yml`
 
-- Le repo est sur GitHub : `hugoheynard/lfd`.
-- La configuration Angular `cloudflare` existe (`angular.json` → `outputMode:
-static`, `ssr: false`, `server: false`).
-- Le script existe : `build:cloudflare` (`ng build --configuration cloudflare`).
-- Le fallback SPA existe : `public/_redirects` (`/* /index.html 200`) — copié tel
-  quel dans la sortie, donc les deep-links marchent.
+Le workflow (déjà présent dans le repo) fait, à chaque push sur **`main`** :
 
-Rien à coder : tout se passe côté dashboard Cloudflare.
+1. `pnpm install --frozen-lockfile` (racine du workspace),
+2. **gate** : `tsc --noEmit` (typecheck),
+3. `ng build --configuration cloudflare` (sortie statique `…/browser`),
+4. `wrangler pages deploy … --project-name=lfc-b2b --branch=main` (→ prod).
 
----
+Un typecheck ou un build rouge **stoppe** avant tout déploiement.
 
-## 1. Créer le projet Pages
+### Ce que TU dois faire une seule fois (je ne peux pas le faire à ta place)
 
-1. Se connecter sur **dash.cloudflare.com**.
-2. Menu de gauche : **Workers & Pages** → bouton **Create** → onglet **Pages** →
-   **Connect to Git**.
-3. Autoriser Cloudflare à accéder à GitHub (si pas déjà fait), puis choisir le
-   repo **`hugoheynard/lfd`**.
-4. **Set up builds and deployments** → passer aux réglages ci-dessous.
+#### 1. Créer le projet Pages en mode « Direct Upload »
 
----
+Deux options :
 
-## 2. Build settings (l'écran clé)
+- **Dashboard** : dash.cloudflare.com → **Workers & Pages** → **Create** →
+  onglet **Pages** → **Upload assets** (= Direct Upload, _pas_ Connect to Git) →
+  nommer le projet **`lfc-b2b`** → créer (tu peux uploader un dossier vide, la CI
+  écrasera au premier deploy).
+- **ou CLI** :
+  ```bash
+  npx wrangler pages project create lfc-b2b --production-branch=main
+  ```
 
-Renseigner **exactement** ces valeurs :
+> Le nom **`lfc-b2b`** doit correspondre à `--project-name` dans le workflow. Si
+> tu changes l'un, change l'autre.
 
-| Champ Cloudflare                | Valeur                                                                  |
-| ------------------------------- | ----------------------------------------------------------------------- |
-| **Framework preset**            | `None`                                                                  |
-| **Build command**               | `pnpm --filter lfc-b2b-platform-frontend build:cloudflare`              |
-| **Build output directory**      | `apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser` |
-| **Root directory** _(advanced)_ | `/` (racine du repo — **ne pas** mettre le sous-dossier de l'app)       |
+#### 2. Récupérer un API token + l'Account ID
 
-**Pourquoi la racine et pas `apps/lfc-B2B-platform-frontend` ?** C'est un monorepo
-pnpm : `fold-ng` est résolu via `catalog:` dans `pnpm-workspace.yaml`. L'install
-doit tourner à la **racine** pour que le workspace se résolve ; le `--filter` ne
-build que l'app B2B. Si tu mets le root sur le sous-dossier, l'install échoue sur
-la dépendance catalog.
+- **API token** : dash.cloudflare.com → **My Profile** → **API Tokens** →
+  **Create Token** → **Create Custom Token**. Permission :
+  **Account · Cloudflare Pages · Edit**. (Optionnel : restreindre à ton compte.)
+  Copier le token (affiché une seule fois).
+- **Account ID** : visible dans **Workers & Pages** (colonne de droite) ou dans
+  l'URL du dashboard.
 
-Cloudflare détecte **pnpm** automatiquement (champ `packageManager: pnpm@10.12.1`).
+#### 3. Poser les 2 secrets sur le repo GitHub `lfd`
 
----
+GitHub → repo **`hugoheynard/lfd`** → **Settings** → **Secrets and variables** →
+**Actions** → **New repository secret** :
 
-## 3. Variables d'environnement (build-time)
+| Secret                  | Valeur                    |
+| ----------------------- | ------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | le token créé à l'étape 2 |
+| `CLOUDFLARE_ACCOUNT_ID` | ton Account ID            |
 
-Section **Environment variables** (onglet _Production_ **et** _Preview_) :
+### Déclencher un déploiement
 
-| Variable       | Valeur | Rôle                                                          |
-| -------------- | ------ | ------------------------------------------------------------- |
-| `NODE_VERSION` | `22`   | Angular 22 exige Node ≥ 20.19 ; force une version compatible. |
+- **Auto** : chaque push sur **`main`** touchant l'app B2B (ou le lockfile /
+  workspace) lance le workflow → prod.
+- **Manuel** : onglet **Actions** du repo → workflow **Deploy B2B platform** →
+  **Run workflow**.
 
-> 🔎 **Important** : ces variables agissent au **build**, pas dans le navigateur.
-> Une variable Cloudflare **n'atteint jamais** le JS côté client. L'URL de l'API
-> (le jour où le back existe) doit être **bakée au build** via les
-> `environment.ts` d'Angular, **ou** lue à l'exécution depuis un `config.json`
-> servi en statique. Ne compte pas sur une env var Cloudflare pour ça.
+Tu bosses sur `dev` → la prod ne bouge que quand tu **merges `dev → main`**
+(hygiène : la prod = un acte délibéré).
 
----
+### Vérifier
 
-## 4. Branche de production & preview deploys
-
-- **Production branch** : choisis la branche qui représente la prod.
-  - Recommandé : **`main`** → tu bosses sur `dev`, et tu « promeus » en prod par
-    un merge `dev → main` (hygiène : la prod ne bouge que sur un acte délibéré).
-  - Alternative si tu veux du déploiement continu direct : mets **`dev`** en
-    production branch (chaque push `dev` redéploie la prod).
-- **Preview deployments** : toute autre branche (et les PR) génère
-  automatiquement une URL de preview `*.pages.dev` — pratique pour tester une
-  feature avant merge.
-
-Chaque push sur la branche de prod déclenche un **redéploiement automatique**.
+Après le run vert : ouvrir `https://lfc-b2b.pages.dev`, naviguer, **recharger sur
+une route profonde** (ex. `/boutique`) → la page s'affiche (grâce à
+`public/_redirects`), pas un 404.
 
 ---
 
-## 5. Déployer
-
-1. Cliquer **Save and Deploy**.
-2. Cloudflare clone, `pnpm install` (racine), lance la build command, publie le
-   contenu de `…/browser`.
-3. À la fin : une URL **`https://<projet>.pages.dev`**. C'est en ligne.
-
-**Vérifier** : ouvrir l'URL, naviguer, **recharger sur une route profonde** (ex.
-`/boutique`) → doit afficher la page (grâce à `_redirects`), pas un 404.
-
----
-
-## 6. Domaine personnalisé (optionnel)
+## Domaine personnalisé (optionnel)
 
 Projet Pages → onglet **Custom domains** → **Set up a custom domain** → saisir le
-domaine (ex. `pro.lafoliecoffee.com`). Si le DNS est déjà chez Cloudflare, le
-record est créé automatiquement ; sinon suivre les instructions CNAME. HTTPS est
-provisionné tout seul.
+domaine (ex. `pro.lafoliecoffee.com`). DNS déjà chez Cloudflare → record créé
+automatiquement ; sinon suivre le CNAME. HTTPS provisionné tout seul.
 
 ---
 
-## 7. Quand le backend arrivera (rappel)
+## Quand le backend arrivera (rappel)
 
-La sortie étant **100 % statique**, tous les appels API partent du **navigateur** :
+Sortie **100 % statique** → tous les appels API partent du **navigateur** :
 
 - Le backend NestJS doit renvoyer les en-têtes **CORS** autorisant l'origine
-  `https://<projet>.pages.dev` (et le domaine custom).
-- En dev local, `http://localhost:PORT` marche depuis **ta** machine ; pour
-  tester le site déployé contre ton back local depuis un autre appareil, expose
-  le back : `cloudflared tunnel --url http://localhost:PORT`.
+  `https://lfc-b2b.pages.dev` (et le domaine custom).
+- L'URL de l'API se **bake au build** (`environment.ts`) ou se lit depuis un
+  `config.json` statique — une env var Cloudflare **n'atteint pas** le navigateur.
+- En dev, `http://localhost:PORT` marche depuis **ta** machine ; pour tester le
+  site déployé contre ton back local depuis ailleurs :
+  `cloudflared tunnel --url http://localhost:PORT`.
 - Le backend vit en **process Node always-on** (Railway / Render / Fly), pas en
-  serverless — voir la note d'architecture DB/backend.
+  serverless.
 
 ---
 
@@ -128,19 +112,47 @@ La sortie étant **100 % statique**, tous les appels API partent du **navigateur
 
 |                |                                                                         |
 | -------------- | ----------------------------------------------------------------------- |
-| Build command  | `pnpm --filter lfc-b2b-platform-frontend build:cloudflare`              |
-| Output dir     | `apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser` |
-| Root directory | `/`                                                                     |
-| `NODE_VERSION` | `22`                                                                    |
+| Méthode        | CI GitHub Actions → Direct Upload                                       |
+| Workflow       | `.github/workflows/deploy-b2b.yml`                                      |
+| Projet Pages   | `lfc-b2b` (Direct Upload)                                               |
+| Secrets repo   | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`                         |
+| Build interne  | `ng build --configuration cloudflare`                                   |
+| Sortie publiée | `apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser` |
+| Déploie sur    | push `main` (ou Run workflow)                                           |
 | SPA routing    | `public/_redirects` (déjà là)                                           |
-| Prod branch    | `main` (recommandé)                                                     |
+
+---
 
 ## Dépannage
 
-- **Page blanche / 404 sur reload d'une sous-route** → `_redirects` non pris en
-  compte : vérifier qu'il est bien dans `public/` (donc copié dans `…/browser/`).
-- **Build échoue sur `fold-ng` introuvable** → Root directory n'est pas `/`
-  (l'install ne résout pas le `catalog:`). Remettre la racine du repo.
-- **Erreur Node / syntaxe** → `NODE_VERSION` absente ou trop basse : mettre `22`.
-- **Un `server/` apparaît dans la sortie** → tu as buildé le défaut SSR, pas la
-  config `cloudflare`. Vérifier la build command.
+- **Le workflow échoue à `wrangler pages deploy` (project not found)** → le projet
+  `lfc-b2b` n'existe pas encore : créer le Direct Upload (étape 1).
+- **`Authentication error` wrangler** → secret `CLOUDFLARE_API_TOKEN` absent/mauvaise
+  permission (il faut **Pages · Edit**) ou `CLOUDFLARE_ACCOUNT_ID` faux.
+- **Build échoue sur `fold-ng` introuvable** → install pas lancé à la racine du
+  workspace (le workflow le fait déjà avec `pnpm install` à la racine).
+- **404 au reload d'une sous-route** → `_redirects` absent de `public/` (donc de
+  `…/browser/`).
+- **Un `server/` dans la sortie** → build par défaut (SSR) au lieu de
+  `--configuration cloudflare`.
+
+---
+
+## Annexe — Git integration (build côté Cloudflare)
+
+Alternative sans CI : Cloudflare clone le repo et build lui-même. Plus simple mais
+tu perds le gate et le contrôle du toolchain monorepo.
+
+Workers & Pages → **Create** → **Pages** → **Connect to Git** → repo `lfd`, puis :
+
+| Champ Cloudflare            | Valeur                                                                  |
+| --------------------------- | ----------------------------------------------------------------------- |
+| Framework preset            | `None`                                                                  |
+| Build command               | `pnpm --filter lfc-b2b-platform-frontend build:cloudflare`              |
+| Build output directory      | `apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser` |
+| Root directory _(advanced)_ | `/` (racine — sinon le `catalog:` fold-ng ne se résout pas)             |
+| Env var `NODE_VERSION`      | `22` (Angular 22 exige Node ≥ 20.19)                                    |
+
+Production branch = `main` (les autres branches → preview `*.pages.dev`).
+**Ne pas** combiner les deux méthodes sur le même projet (elles se marcheraient
+dessus) : choisis CI **ou** Git integration.

@@ -16,22 +16,19 @@ pnpm --filter lfc-b2b-platform-frontend test     # Vitest (ng test)
 Le B2B est derrière login → **pas de besoin SEO**, donc on déploie un **SPA
 browser-only** (pas de SSR). ⚠️ Le build par défaut (`ng build`) est SSR
 (`outputMode: server`) ; le statique n'existe **que** via la configuration
-`cloudflare` (`outputMode: static`, `ssr: false`, `server: false`). D'où un
-script dédié — ne déploie jamais le build par défaut sur Pages :
+`cloudflare` (script `build:cloudflare`).
+
+**Méthode : CI (GitHub Actions).** Le workflow `.github/workflows/deploy-b2b.yml`
+build (gate `tsc` + `build:cloudflare`) et pousse à Cloudflare Pages (Direct
+Upload, projet `lfc-b2b`) à chaque push sur `main`. Build local pour vérifier :
 
 ```bash
 pnpm --filter lfc-b2b-platform-frontend build:cloudflare
 ```
 
-👉 **Pas à pas complet du dashboard Cloudflare** (quoi cliquer, quoi paramétrer) :
+👉 **Pas à pas complet** (créer le projet, où trouver l'API token + l'Account ID,
+poser les 2 secrets GitHub, méthode Git-integration en annexe) :
 [`DEPLOYMENT-CLOUDFLARE.md`](./DEPLOYMENT-CLOUDFLARE.md).
-
-Réglages Cloudflare Pages (résumé) :
-
-- **Build command** : `pnpm --filter lfc-b2b-platform-frontend build:cloudflare`
-- **Output directory** : `apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser`
-- Le routing SPA est géré par `public/_redirects` (`/* /index.html 200`), donc les
-  deep-links fonctionnent.
 
 Comme la sortie est 100 % statique, **tous les appels API partent du navigateur**
 (aucun fetch côté serveur). En dev, `http://localhost:PORT` marche depuis ta

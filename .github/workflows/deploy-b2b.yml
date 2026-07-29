@@ -44,6 +44,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Gate: a red typecheck must never reach Pages. The AOT build below also
+      # type-checks the app + templates, so together they fail fast on any error.
+      - name: Typecheck
+        run: pnpm --filter lfc-b2b-platform-frontend exec tsc --noEmit
+
       - name: Build (static, browser-only)
         run: pnpm --filter lfc-b2b-platform-frontend exec ng build --configuration cloudflare
 
