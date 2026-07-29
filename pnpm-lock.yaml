@@ -120,6 +120,9 @@ importers:
       tsconfig-paths:
         specifier: ^4.2.0
         version: 4.2.0
+      tsx:
+        specifier: ^4.23.1
+        version: 4.23.1
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -171,13 +174,13 @@ importers:
     devDependencies:
       '@analogjs/vite-plugin-angular':
         specifier: ^2.6.2
-        version: 2.6.3(@angular/build@22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))
+        version: 2.6.3(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))
       '@analogjs/vitest-angular':
         specifier: ^2.6.2
-        version: 2.6.3(@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)))(@angular-devkit/architect@0.2200.7(chokidar@5.0.0))(@angular-devkit/schematics@22.0.7(chokidar@5.0.0))(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)))
+        version: 2.6.3(@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)))(@angular-devkit/architect@0.2200.7(chokidar@5.0.0))(@angular-devkit/schematics@22.0.7(chokidar@5.0.0))(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)))
       '@angular/build':
         specifier: ^22.0.7
-        version: 22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b)
+        version: 22.0.7(9b89e1879c7bf856f799bfd781892a9f)
       '@angular/cli':
         specifier: ^22.0.7
         version: 22.0.7(@types/node@26.1.1)(chokidar@5.0.0)
@@ -201,7 +204,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^4.0.8
-        version: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))
+        version: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))
 
   apps/lfc-PIM-backend:
     dependencies:
@@ -362,13 +365,13 @@ importers:
     devDependencies:
       '@analogjs/vite-plugin-angular':
         specifier: ^2.6.2
-        version: 2.6.3(@angular/build@22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))
+        version: 2.6.3(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))
       '@analogjs/vitest-angular':
         specifier: ^2.6.2
-        version: 2.6.3(@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)))(@angular-devkit/architect@0.2200.7(chokidar@5.0.0))(@angular-devkit/schematics@22.0.7(chokidar@5.0.0))(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)))
+        version: 2.6.3(@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)))(@angular-devkit/architect@0.2200.7(chokidar@5.0.0))(@angular-devkit/schematics@22.0.7(chokidar@5.0.0))(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)))
       '@angular/build':
         specifier: ^22.0.7
-        version: 22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b)
+        version: 22.0.7(9b89e1879c7bf856f799bfd781892a9f)
       '@angular/cli':
         specifier: ^22.0.7
         version: 22.0.7(@types/node@26.1.1)(chokidar@5.0.0)
@@ -392,7 +395,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^4.0.8
-        version: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))
+        version: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))
 
   packages/storage:
     devDependencies:
@@ -5712,6 +5715,11 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
+  tsx@4.23.1:
+    resolution: {integrity: sha512-GQHnkIfxyx1wYCOS/wonik5MVRZU9hi1TEZmzGZSCJB1y9YgoZ8H6itNE/u4suE+yLmOzuE4E5S4TZ/ZX2wcWQ==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
   tuf-js@4.1.0:
     resolution: {integrity: sha512-50QV99kCKH5P/Vs4E2Gzp7BopNV+KzTXqWeaxrfu5IQJBOULRsTIS9seSsOVT8ZnGXzCyx55nYWAi4qJzpZKEQ==}
     engines: {node: ^20.17.0 || >=22.9.0}
@@ -6198,7 +6206,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
 
-  '@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))':
+  '@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))':
     dependencies:
       magic-string: 0.30.21
       obug: 2.1.4
@@ -6206,18 +6214,18 @@ snapshots:
       tinyglobby: 0.2.17
       ts-morph: 21.0.1
     optionalDependencies:
-      '@angular/build': 22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b)
-      vite: 7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)
+      '@angular/build': 22.0.7(9b89e1879c7bf856f799bfd781892a9f)
+      vite: 7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
 
-  '@analogjs/vitest-angular@2.6.3(@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)))(@angular-devkit/architect@0.2200.7(chokidar@5.0.0))(@angular-devkit/schematics@22.0.7(chokidar@5.0.0))(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)))':
+  '@analogjs/vitest-angular@2.6.3(@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)))(@angular-devkit/architect@0.2200.7(chokidar@5.0.0))(@angular-devkit/schematics@22.0.7(chokidar@5.0.0))(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)))':
     dependencies:
-      '@analogjs/vite-plugin-angular': 2.6.3(@angular/build@22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))
+      '@analogjs/vite-plugin-angular': 2.6.3(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))
       '@angular-devkit/architect': 0.2200.7(chokidar@5.0.0)
       '@angular-devkit/schematics': 22.0.7(chokidar@5.0.0)
-      vitest: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))
+      vitest: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))
 
   '@angular-devkit/architect@0.2200.7(chokidar@5.0.0)':
     dependencies:
@@ -6301,7 +6309,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@angular/build@22.0.7(cb40cc933ef35f1ca5ca984b3cbbda5b)':
+  '@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@angular-devkit/architect': 0.2200.7(chokidar@5.0.0)
@@ -6311,7 +6319,7 @@ snapshots:
       '@babel/helper-annotate-as-pure': 7.29.7
       '@babel/helper-split-export-declaration': 7.24.7
       '@inquirer/confirm': 6.0.12(@types/node@26.1.1)
-      '@vitejs/plugin-basic-ssl': 2.3.0(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))
+      '@vitejs/plugin-basic-ssl': 2.3.0(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))
       beasties: 0.4.2
       browserslist: 4.28.6
       esbuild: 0.28.1
@@ -6330,7 +6338,7 @@ snapshots:
       tinyglobby: 0.2.16
       tslib: 2.8.1
       typescript: 6.0.3
-      vite: 7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)
+      vite: 7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)
       watchpack: 2.5.1
     optionalDependencies:
       '@angular/core': 22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)
@@ -6340,7 +6348,7 @@ snapshots:
       istanbul-lib-instrument: 6.0.3
       lmdb: 3.5.4
       postcss: 8.5.20
-      vitest: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))
+      vitest: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))
     transitivePeerDependencies:
       - '@types/node'
       - chokidar
@@ -8686,9 +8694,9 @@ snapshots:
       '@typescript-eslint/types': 8.64.0
       eslint-visitor-keys: 5.0.1
 
-  '@vitejs/plugin-basic-ssl@2.3.0(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))':
+  '@vitejs/plugin-basic-ssl@2.3.0(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))':
     dependencies:
-      vite: 7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)
+      vite: 7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)
 
   '@vitest/expect@4.1.10':
     dependencies:
@@ -8699,13 +8707,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.10(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))':
+  '@vitest/mocker@4.1.10(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))':
     dependencies:
       '@vitest/spy': 4.1.10
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)
+      vite: 7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)
 
   '@vitest/pretty-format@4.1.10':
     dependencies:
@@ -11852,6 +11860,12 @@ snapshots:
 
   tslib@2.8.1: {}
 
+  tsx@4.23.1:
+    dependencies:
+      esbuild: 0.28.1
+    optionalDependencies:
+      fsevents: 2.3.3
+
   tuf-js@4.1.0:
     dependencies:
       '@tufjs/models': 4.1.0
@@ -11958,7 +11972,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0):
+  vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1):
     dependencies:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.5)
@@ -11972,11 +11986,12 @@ snapshots:
       jiti: 2.7.0
       sass: 1.99.0
       terser: 5.49.0
+      tsx: 4.23.1
 
-  vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)):
+  vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)):
     dependencies:
       '@vitest/expect': 4.1.10
-      '@vitest/mocker': 4.1.10(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0))
+      '@vitest/mocker': 4.1.10(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))
       '@vitest/pretty-format': 4.1.10
       '@vitest/runner': 4.1.10
       '@vitest/snapshot': 4.1.10
@@ -11993,7 +12008,7 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)
+      vite: 7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 26.1.1
