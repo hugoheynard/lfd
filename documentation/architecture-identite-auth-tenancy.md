@@ -5,6 +5,9 @@ Décisions figées avant d'écrire le schéma. Contexte : LaFolieDouce B2B, ~20 
 
 > **Config concrète du tenant Auth0** (réglages exacts du dashboard, valeurs,
 > pièges rencontrés) : [`auth0-setup-b2b.md`](auth0-setup-b2b.md) — runbook daté.
+>
+> **Onboarding & provisioning** (comment un client entre : self-signup + porte
+> commerciale, états, activation) : [`architecture-onboarding-provisioning-b2b.md`](architecture-onboarding-provisioning-b2b.md).
 
 ## 1. Principe de frontière
 
