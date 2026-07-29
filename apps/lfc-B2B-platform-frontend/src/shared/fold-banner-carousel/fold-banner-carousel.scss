@@ -1,0 +1,211 @@
+/* fold-banner-carousel — a rotating hero of visual banners. Tokens only, except
+   the dark scrim gradient (a media overlay, not a themed surface) and the light
+   foreground, exposed as component vars so a consumer can retune them. */
+:host {
+  display: block;
+
+  /* Public knobs. */
+  --fold-banner-carousel-height: clamp(14rem, 32vw, 26rem);
+  --fold-banner-carousel-radius: var(--fold-radius-lg, 16px);
+  /* Foreground sits over arbitrary imagery → light by default. */
+  --fbc-fg: #fff;
+  --fbc-transition: 480ms;
+}
+
+.fbc {
+  position: relative;
+  height: var(--fold-banner-carousel-height);
+  border-radius: var(--fold-banner-carousel-radius);
+  overflow: hidden;
+  background: var(--fold-color-bg-rail-tertiary, #1a1a1a);
+  isolation: isolate;
+}
+
+/* ── Slides: stacked, cross-fade ── */
+.fbc-viewport {
+  position: absolute;
+  inset: 0;
+}
+
+.fbc-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--fbc-transition) ease,
+    visibility 0s linear var(--fbc-transition);
+}
+.fbc-slide.is-active {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--fbc-transition) ease,
+    visibility 0s;
+}
+
+.fbc-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Dark wash, stronger where the copy sits — keeps text legible over any image. */
+.fbc-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    75deg,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.45) 42%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+}
+
+/* ── Content ── */
+.fbc-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: clamp(var(--fold-space-lg, 1.5rem), 4vw, var(--fold-space-2xl, 3rem));
+  max-width: min(46rem, 80%);
+  color: var(--fbc-fg);
+}
+
+.fbc-eyebrow {
+  margin: 0;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.fbc-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.fbc-subtitle {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.4vw, 1.15rem);
+  line-height: 1.4;
+  opacity: 0.92;
+}
+
+.fbc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm, 0.75rem);
+  margin-top: var(--fold-space-sm, 0.5rem);
+}
+
+/* ── Controls: hidden, revealed on hover / focus (or always on touch) ── */
+.fbc-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--fold-color-glass-border, rgba(255, 255, 255, 0.25));
+  border-radius: var(--fold-radius-full, 999px);
+  background: var(--fold-color-glass, rgba(0, 0, 0, 0.35));
+  color: var(--fbc-fg);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 160ms ease,
+    background 120ms ease;
+  backdrop-filter: blur(6px);
+}
+.fbc-arrow svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.fbc-arrow--prev {
+  left: var(--fold-space-md, 1rem);
+}
+.fbc-arrow--next {
+  right: var(--fold-space-md, 1rem);
+}
+.fbc-arrow:hover {
+  background: var(--fold-color-glass-strong, rgba(0, 0, 0, 0.55));
+}
+
+.fbc-dots {
+  position: absolute;
+  z-index: 2;
+  bottom: var(--fold-space-md, 1rem);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--fold-space-xs, 0.4rem);
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--fold-radius-full, 999px);
+  background: var(--fold-color-glass, rgba(0, 0, 0, 0.3));
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.fbc-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    transform 120ms ease;
+}
+.fbc-dot.is-active {
+  background: var(--fbc-fg);
+  transform: scale(1.25);
+}
+
+/* Reveal controls when the carousel is hovered or holds focus. */
+.fbc:hover .fbc-arrow,
+.fbc:focus-within .fbc-arrow,
+.fbc:hover .fbc-dots,
+.fbc:focus-within .fbc-dots {
+  opacity: 1;
+}
+
+/* No hover (touch): controls stay visible so navigation is reachable. */
+@media (hover: none) {
+  .fbc-arrow,
+  .fbc-dots {
+    opacity: 1;
+  }
+}
+
+/* Focus ring on every interactive control. */
+.fbc-arrow:focus-visible,
+.fbc-dot:focus-visible {
+  outline: 2px solid var(--fold-color-primary, #4f7cff);
+  outline-offset: 2px;
+}
+
+/* Respect reduced motion: no cross-fade, no control transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .fbc-slide,
+  .fbc-slide.is-active,
+  .fbc-arrow,
+  .fbc-dots,
+  .fbc-dot {
+    transition: none;
+  }
+}

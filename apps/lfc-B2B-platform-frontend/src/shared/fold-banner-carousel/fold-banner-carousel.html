@@ -1,0 +1,105 @@
+<section
+  class="fbc"
+  [class.is-paused]="paused()"
+  aria-roledescription="carrousel"
+  [attr.aria-label]="ariaLabel()"
+  (mouseenter)="onEnter()"
+  (mouseleave)="onLeave()"
+  (focusin)="onEnter()"
+  (focusout)="onLeave()"
+>
+  <div class="fbc-viewport">
+    @for (banner of ordered(); track banner.id; let i = $index) {
+      <article
+        class="fbc-slide"
+        [class.is-active]="i === activeIndex()"
+        [attr.aria-hidden]="i === activeIndex() ? null : 'true'"
+        [attr.aria-roledescription]="'diapositive'"
+        [attr.aria-label]="i + 1 + ' / ' + count()"
+      >
+        @if (banner.image) {
+          <img class="fbc-img" [src]="banner.image" [alt]="banner.imageAlt ?? ''" />
+        }
+        <div class="fbc-scrim"></div>
+
+        <div class="fbc-content">
+          @if (banner.eyebrow) {
+            <p class="fbc-eyebrow">{{ banner.eyebrow }}</p>
+          }
+          @if (banner.title) {
+            <h2 class="fbc-title">{{ banner.title }}</h2>
+          }
+          @if (banner.subtitle) {
+            <p class="fbc-subtitle">{{ banner.subtitle }}</p>
+          }
+
+          @if (actionsFor(banner).length) {
+            <div class="fbc-actions">
+              @for (row of actionsFor(banner); track row.key) {
+                <fold-action-button
+                  [action]="row.action"
+                  [emphasis]="row.primary ? 'solid' : 'outline'"
+                  [buttonTabIndex]="i === activeIndex() ? 0 : -1"
+                  (activate)="onAction(banner, row)"
+                />
+              }
+            </div>
+          }
+        </div>
+      </article>
+    }
+  </div>
+
+  @if (showArrows()) {
+    <button
+      class="fbc-arrow fbc-arrow--prev"
+      type="button"
+      aria-label="Bannière précédente"
+      (click)="prev()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          d="M15 5l-7 7 7 7"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    <button
+      class="fbc-arrow fbc-arrow--next"
+      type="button"
+      aria-label="Bannière suivante"
+      (click)="next()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          d="M9 5l7 7-7 7"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+  }
+
+  @if (showDots()) {
+    <div class="fbc-dots" role="tablist" aria-label="Choisir une bannière">
+      @for (banner of ordered(); track banner.id; let i = $index) {
+        <button
+          class="fbc-dot"
+          type="button"
+          role="tab"
+          [class.is-active]="i === activeIndex()"
+          [attr.aria-selected]="i === activeIndex()"
+          [attr.aria-label]="'Aller à la bannière ' + (i + 1)"
+          (click)="goTo(i)"
+        ></button>
+      }
+    </div>
+  }
+</section>

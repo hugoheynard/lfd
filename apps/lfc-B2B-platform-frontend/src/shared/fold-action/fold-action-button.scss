@@ -1,0 +1,5 @@
+/* Transparent wrapper: the projected fold button is the real flex/grid item, so
+   the host adds no box of its own. */
+:host {
+  display: contents;
+}

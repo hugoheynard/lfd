@@ -1,0 +1,148 @@
+/* fold-product-card — tokens only. The media keeps a fixed ratio so a grid of
+   cards stays even regardless of the source images. */
+:host {
+  display: block;
+
+  --fold-product-card-ratio: 4 / 3;
+  --fold-product-card-radius: var(--fold-radius-lg, 14px);
+}
+
+.fpc {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-product-card-radius);
+  background: var(--fold-color-surface-card);
+  overflow: hidden;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+.fpc:hover {
+  border-color: var(--fold-color-border-strong, var(--fold-color-primary));
+  box-shadow: var(--fold-shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Rupture de stock : contour d'alerte + média grisé. */
+.fpc.is-out {
+  border-color: var(--fold-color-alert, #c0392b);
+}
+.fpc.is-out:hover {
+  border-color: var(--fold-color-alert, #c0392b);
+}
+.fpc.is-out .fpc-img,
+.fpc.is-out .fpc-placeholder {
+  filter: grayscale(0.4);
+  opacity: 0.7;
+}
+
+/* Bientôt indisponible : contour d'avertissement (média non grisé). */
+.fpc.is-warn {
+  border-color: var(--fold-color-warning, #d68a00);
+}
+
+.fpc-out-ribbon,
+.fpc-warn-ribbon {
+  position: absolute;
+  top: var(--fold-space-sm, 0.5rem);
+  left: var(--fold-space-sm, 0.5rem);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--fold-radius-sm, 6px);
+  color: #fff;
+  font-size: var(--fold-text-xs, 0.7rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.fpc-out-ribbon {
+  background: var(--fold-color-alert, #c0392b);
+}
+.fpc-warn-ribbon {
+  background: var(--fold-color-warning, #d68a00);
+}
+
+.fpc-media {
+  position: relative;
+  aspect-ratio: var(--fold-product-card-ratio);
+  background: var(--fold-color-bg-rail-tertiary, var(--fold-color-surface-sunken));
+}
+.fpc-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Imageless: a tinted panel carrying the product's initial. */
+.fpc-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface, var(--fold-color-surface-sunken));
+}
+
+.fpc-badge {
+  position: absolute;
+  top: var(--fold-space-sm, 0.5rem);
+  left: var(--fold-space-sm, 0.5rem);
+}
+
+/* Favourite heart, top-right, on a glass chip so it reads over any image. */
+.fpc-fav {
+  position: absolute;
+  top: var(--fold-space-xs, 0.35rem);
+  right: var(--fold-space-xs, 0.35rem);
+  border-radius: var(--fold-radius-full, 999px);
+  background: var(--fold-color-glass, rgba(255, 255, 255, 0.7));
+  backdrop-filter: blur(4px);
+}
+
+.fpc-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs, 0.35rem);
+  padding: var(--fold-space-md, 1rem);
+  flex: 1 1 auto;
+}
+
+.fpc-name {
+  margin: 0;
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.fpc-detail {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.fpc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm, 0.5rem);
+  margin-top: auto;
+  padding-top: var(--fold-space-sm, 0.5rem);
+}
+
+.fpc-price {
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 700;
+  color: var(--fold-color-text);
+  white-space: nowrap;
+}
+.fpc-unit {
+  margin-inline-start: 0.15rem;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 500;
+  color: var(--fold-color-text-muted);
+}

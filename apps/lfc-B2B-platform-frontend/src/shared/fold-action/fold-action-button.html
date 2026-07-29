@@ -1,0 +1,39 @@
+@let a = action();
+@if (a.routerLink) {
+  <a
+    foldButton
+    [emphasis]="emphasis()"
+    [intent]="intent()"
+    [size]="size()"
+    [icon]="a.icon"
+    [routerLink]="a.routerLink"
+    [tabIndex]="buttonTabIndex()"
+    (click)="onClick()"
+    >{{ a.label }}</a
+  >
+} @else if (a.href) {
+  <a
+    foldButton
+    [emphasis]="emphasis()"
+    [intent]="intent()"
+    [size]="size()"
+    [icon]="a.icon"
+    [href]="a.href"
+    [tabIndex]="buttonTabIndex()"
+    (click)="onClick()"
+    >{{ a.label }}</a
+  >
+} @else {
+  <button
+    foldButton
+    type="button"
+    [emphasis]="emphasis()"
+    [intent]="intent()"
+    [size]="size()"
+    [icon]="a.icon"
+    [tabIndex]="buttonTabIndex()"
+    (click)="onClick()"
+  >
+    {{ a.label }}
+  </button>
+}
