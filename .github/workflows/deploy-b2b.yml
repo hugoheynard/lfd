@@ -16,10 +16,13 @@ name: Deploy B2B platform
 on:
   push:
     branches: [main]
+    # Only what actually affects the B2B build. The app's own code, and
+    # pnpm-workspace.yaml (the `catalog:` pin — where a fold-ng bump lands). NOT
+    # pnpm-lock.yaml (any other app installing a dep would redeploy B2B for
+    # nothing) nor packages/** (B2B consumes no local package). Force a rebuild
+    # anytime via Actions → Run workflow (workflow_dispatch).
     paths:
       - "apps/lfc-B2B-platform-frontend/**"
-      - "packages/**"
-      - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - ".github/workflows/deploy-b2b.yml"
   workflow_dispatch:

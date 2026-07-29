@@ -75,8 +75,10 @@ GitHub → repo **`hugoheynard/lfd`** → **Settings** → **Secrets and variabl
 
 ### Déclencher un déploiement
 
-- **Auto** : chaque push sur **`main`** touchant l'app B2B (ou le lockfile /
-  workspace) lance le workflow → prod.
+- **Auto** : un push sur **`main`** lance le workflow **uniquement** s'il touche
+  `apps/lfc-B2B-platform-frontend/**` ou `pnpm-workspace.yaml` (le pin `catalog:`
+  fold-ng). Bosser sur le **PIM ne redéploie pas** le B2B — même si tu installes
+  une dépendance PIM (le lockfile n'est **pas** dans le trigger).
 - **Manuel** : onglet **Actions** du repo → workflow **Deploy B2B platform** →
   **Run workflow**.
 
