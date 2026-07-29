@@ -1,0 +1,60 @@
+<fold-panel-header
+  title="Mon panier"
+  [subtitle]="cart.count() + (cart.count() > 1 ? ' articles' : ' article')"
+/>
+
+<div class="body">
+  @for (line of cart.lines(); track line.product.id) {
+    <article class="line">
+      @if (line.product.image) {
+        <img class="line-img" [src]="line.product.image" [alt]="line.product.imageAlt ?? ''" />
+      } @else {
+        <div class="line-img line-img--ph" aria-hidden="true">
+          {{ line.product.name.charAt(0) }}
+        </div>
+      }
+
+      <div class="line-main">
+        <p class="line-name">{{ line.product.name }}</p>
+        <p class="line-unit">{{ fmt(line.unitPriceEur) }} {{ line.product.unit }}</p>
+
+        <div class="qty">
+          <fold-button-icon icon="minus" size="sm" tooltip="Retirer un" (clicked)="dec(line)" />
+          <span class="qty-value">{{ line.qty }}</span>
+          <fold-button-icon icon="plus" size="sm" tooltip="Ajouter un" (clicked)="inc(line)" />
+        </div>
+      </div>
+
+      <div class="line-end">
+        <span class="line-total">{{ fmt(line.lineTotalEur) }}</span>
+        <fold-button-icon
+          icon="bin"
+          size="sm"
+          tone="critical"
+          tooltip="Retirer du panier"
+          (clicked)="remove(line)"
+        />
+      </div>
+    </article>
+  } @empty {
+    <div class="empty">
+      <p>Votre panier est vide.</p>
+      <p class="empty-hint">Ajoutez des produits depuis la boutique.</p>
+    </div>
+  }
+</div>
+
+<footer class="foot">
+  <div class="foot-total">
+    <span>Total TTC</span>
+    <strong>{{ fmt(cart.totalEur()) }}</strong>
+  </div>
+  <div class="foot-actions">
+    @if (!cart.isEmpty()) {
+      <button foldButton emphasis="outline" intent="neutral" (click)="clear()">Vider</button>
+    }
+    <button foldButton intent="primary" [disabled]="cart.isEmpty()" (click)="checkout()">
+      Valider ma commande
+    </button>
+  </div>
+</footer>

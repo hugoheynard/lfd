@@ -1,0 +1,110 @@
+// Header figé, corps scrollable, pied collé — pattern des panels de l'app.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+}
+
+// Une ligne : vignette · infos + quantité · total + suppression.
+.line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+.line-img {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--fold-radius-md, 10px);
+  object-fit: cover;
+  background: var(--fold-color-surface-sunken);
+}
+.line-img--ph {
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface, var(--fold-color-surface-sunken));
+}
+.line-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.line-name {
+  margin: 0;
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+.line-unit {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+.qty {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-top: var(--fold-space-xs);
+}
+.qty-value {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+.line-end {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+.line-total {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.empty {
+  margin: auto;
+  text-align: center;
+  color: var(--fold-color-text-muted);
+}
+.empty-hint {
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+.foot-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: var(--fold-text-md, 1rem);
+}
+.foot-total strong {
+  font-size: var(--fold-text-lg, 1.25rem);
+}
+.foot-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}

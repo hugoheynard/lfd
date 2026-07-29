@@ -1,15 +1,26 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   FoldAppShellComponent,
-  FoldAvatarComponent,
   FoldButtonIconComponent,
+  FoldIconComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
   FoldPanelHostComponent,
+  FoldPanelHostService,
   FoldSearchComponent,
   FoldSurfaceDirective,
 } from 'fold-ng';
+
+import { CartPanel } from './cart/cart-panel/cart-panel';
+import { CartService } from './data/cart.service';
 
 @Component({
   selector: 'app-root',
@@ -19,8 +30,8 @@ import {
     RouterLink,
     RouterLinkActive,
     FoldAppShellComponent,
-    FoldAvatarComponent,
     FoldButtonIconComponent,
+    FoldIconComponent,
     FoldMenuComponent,
     FoldMenuItemComponent,
     FoldPanelHostComponent,
@@ -44,6 +55,37 @@ export class App {
   protected readonly mobileNavOpen = signal(false);
 
   private readonly router = inject(Router);
+  private readonly panelHost = inject(FoldPanelHostService);
+  protected readonly cart = inject(CartService);
+
+  /** Vrai tant qu'un panneau panier est ouvert (évite la ré-ouverture). */
+  private cartOpen = false;
+  /** Nombre d'articles au tick précédent (détecte le passage vide → non-vide). */
+  private prevCartCount = 0;
+
+  constructor() {
+    // Ouverture automatique au **premier** produit ajouté (vide → non-vide).
+    effect(() => {
+      const count = this.cart.count();
+      if (this.prevCartCount === 0 && count > 0) {
+        untracked(() => this.openCart());
+      }
+      this.prevCartCount = count;
+    });
+  }
+
+  /** Ouvre le panneau panier (le host est mono-panneau : il remplace l'existant). */
+  protected openCart(): void {
+    if (this.cartOpen) {
+      return;
+    }
+    this.cartOpen = true;
+    // Panier = non-modal + surface solid, déclaré sur CartPanel.foldPanel.
+    const ref = this.panelHost.open(CartPanel);
+    void ref.closed.then(() => {
+      this.cartOpen = false;
+    });
+  }
 
   /**
    * Déconnexion. L'auth n'est pas encore câblée côté front : on ferme le tiroir

@@ -66,8 +66,72 @@ fold-app-shell {
 .app-header-actions {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-sm, 0.5rem);
+  gap: var(--fold-space-md, 1rem);
   margin-inline-start: auto;
+}
+
+/* Contexte de l'espace, premier élément du header. Sur le chrome navy, un
+   libellé clair légèrement estompé. */
+.app-context {
+  font-weight: 600;
+  font-size: var(--fold-text-sm, 0.9rem);
+  letter-spacing: 0.01em;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+/* Déclencheur panier — un vrai bouton d'action : primary plein, icône + libellé
+   + badge de comptage (chip clair contrasté). Se lit immédiatement comme une
+   action, pas comme un simple avatar. */
+.cart-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: 0.5rem 0.95rem;
+  border: none;
+  border-radius: var(--fold-radius-pill, 999px);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary, #fff);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--fold-shadow-sm);
+  transition:
+    filter 0.15s ease,
+    transform 0.15s ease;
+}
+.cart-trigger:hover {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+}
+.cart-label {
+  white-space: nowrap;
+}
+.cart-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.32rem;
+  border-radius: var(--fold-radius-pill, 999px);
+  background: #fff;
+  color: var(--fold-color-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+@media (max-width: 768px) {
+  .app-context {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .cart-label {
+    display: none;
+  }
 }
 
 /* Desktop: the rail is always visible, so no hamburger. It appears only when

@@ -82,10 +82,23 @@
       (clicked)="mobileNavOpen.set(!mobileNavOpen())"
     />
 
+    <span class="app-context">Espace professionnel</span>
+
     <fold-search class="app-search" placeholder="Rechercher un client, une commande…" />
 
     <div class="app-header-actions">
-      <fold-avatar name="La Folie Coffee" size="sm" />
+      <button
+        type="button"
+        class="cart-trigger"
+        (click)="openCart()"
+        aria-label="Ouvrir mon panier"
+      >
+        <fold-icon name="cart" [size]="19" />
+        <span class="cart-label">Mon panier</span>
+        @if (cart.count() > 0) {
+          <span class="cart-badge" aria-hidden="true">{{ cart.count() }}</span>
+        }
+      </button>
     </div>
   </div>
 
