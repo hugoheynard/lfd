@@ -1,0 +1,59 @@
+name: Deploy B2B platform
+
+# Builds the browser-only static bundle of lfc-B2B-platform-frontend and pushes
+# it to Cloudflare Pages on every push to main. No SSR (the B2B space needs no
+# SEO), so the output is plain files served straight from Pages.
+#
+# Requires two repo secrets (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN  — token with "Account · Cloudflare Pages · Edit"
+#   CLOUDFLARE_ACCOUNT_ID — your Cloudflare account id
+# and a Pages project named `lfc-b2b` (create it once: `npx wrangler pages
+# project create lfc-b2b`, or the first manual `wrangler pages deploy`).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/lfc-B2B-platform-frontend/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/deploy-b2b.yml"
+  workflow_dispatch:
+
+# One live deploy at a time; a newer push supersedes an in-flight one.
+concurrency:
+  group: deploy-b2b
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build (static, browser-only)
+        run: pnpm --filter lfc-b2b-platform-frontend exec ng build --configuration cloudflare
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy
+            apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser
+            --project-name=lfc-b2b
+            --branch=main
