@@ -1,0 +1,23 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  // Flags stricts (calqués sur fold-ng) hérités de la base du monorepo. Ici on
+  // ne garde que ce qui est propre à cette app : cible/module. Ne PAS déclarer
+  // d'`angularCompilerOptions` — un bloc enfant remplacerait celui des flags.
+  "extends": "../../tsconfig.flags.frontend.json",
+  "compileOnSave": false,
+  "compilerOptions": {
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve"
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+<fold-page-layout>
+  <fold-page-section bleed>
+    <fold-banner-carousel
+      [banners]="banners"
+      [leadId]="leadBannerId"
+      [intervalMs]="5000"
+      controls="both"
+      ariaLabel="Mises en avant boutique"
+    />
+  </fold-page-section>
+
+  <fold-page-section
+    title="À la une"
+    icon="star"
+    description="Notre sélection du moment pour les professionnels."
+  >
+    <div class="product-grid product-grid--featured">
+      @for (p of featured; track p.id) {
+        <fold-product-card
+          [product]="p"
+          [favorite]="favorites.has(p.id)"
+          (favoriteToggle)="onFav($event)"
+          (action)="onAdd($event)"
+          (notify)="onNotify($event)"
+        />
+      }
+    </div>
+  </fold-page-section>
+
+  <fold-page-section
+    title="Le catalogue"
+    icon="grid"
+    description="Filtrez par catégorie, cherchez, ajoutez à vos favoris."
+  >
+    <app-product-catalogue
+      [products]="products"
+      [categories]="categories"
+      (add)="onAdd($event)"
+      (notify)="onNotify($event)"
+    />
+  </fold-page-section>
+
+  <fold-page-section bleed>
+    <app-site-footer />
+  </fold-page-section>
+</fold-page-layout>

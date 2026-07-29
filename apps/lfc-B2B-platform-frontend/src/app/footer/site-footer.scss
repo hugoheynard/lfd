@@ -1,0 +1,142 @@
+/* Pied de page storefront — surface sombre (rail tertiaire), texte clair. Posé
+   en bleed en bas de page, il s'étend d'un bord à l'autre. */
+:host {
+  display: block;
+  --ftr-fg: #f7efdd;
+}
+
+.ftr {
+  background: var(--fold-color-bg-header, #0e2a47);
+  color: var(--ftr-fg);
+  padding: clamp(var(--fold-space-lg, 1.5rem), 4vw, var(--fold-space-2xl, 3rem));
+  padding-bottom: var(--fold-space-lg, 1.5rem);
+}
+
+.ftr-main {
+  display: grid;
+  gap: var(--fold-space-xl, 2rem);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+/* Marque */
+.ftr-brand {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm, 0.75rem);
+}
+.ftr-mark {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fold-radius-md, 8px);
+  background: var(--fold-color-primary, #2e6b9e);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.ftr-name {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.ftr-addr {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
+/* Colonnes */
+.ftr-h {
+  margin: 0 0 var(--fold-space-sm, 0.75rem);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.ftr-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  color: var(--ftr-fg);
+  text-decoration: none;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+.ftr-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Newsletter */
+.ftr-news-text {
+  margin: 0 0 var(--fold-space-sm, 0.75rem);
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+.ftr-news-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.ftr-input {
+  flex: 1 1 10rem;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--fold-radius-sm, 6px);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ftr-fg);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.ftr-input::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+.ftr-input:focus-visible {
+  outline: 2px solid var(--fold-color-primary, #5b93c4);
+  outline-offset: 1px;
+}
+.ftr-news-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+.ftr-err {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: #ffb4a2;
+}
+
+/* Bandeau légal */
+.ftr-legal {
+  max-width: 72rem;
+  margin: var(--fold-space-xl, 2rem) auto 0;
+  padding-top: var(--fold-space-md, 1rem);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.75rem;
+  opacity: 0.7;
+  line-height: 1.5;
+}
+.ftr-legal p {
+  margin: 0;
+}
+.ftr-legal-links {
+  margin-top: 0.4rem;
+}
+.ftr-legal-links a {
+  color: var(--ftr-fg);
+  text-decoration: none;
+}
+.ftr-legal-links a:hover {
+  text-decoration: underline;
+}

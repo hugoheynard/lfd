@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="">
+  <defs>
+    <linearGradient id="b3-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#A9CBE4"/>
+      <stop offset="0.55" stop-color="#EAD9B0"/>
+      <stop offset="1" stop-color="#FBF4E4"/>
+    </linearGradient>
+    <g id="b3-bean">
+      <ellipse rx="30" ry="18" fill="#123A5C"/>
+      <path d="M-22 0 q22 -15 44 0 q-22 15 -44 0" fill="#A9CBE4" opacity="0.7"/>
+    </g>
+  </defs>
+
+  <rect width="1600" height="600" fill="url(#b3-bg)"/>
+
+  <!-- Bokeh -->
+  <circle cx="1300" cy="150" r="150" fill="#FBF4E4" opacity="0.4"/>
+  <circle cx="1180" cy="440" r="230" fill="#79A9CE" opacity="0.26"/>
+  <circle cx="1460" cy="470" r="120" fill="#3E82BB" opacity="0.24"/>
+  <circle cx="320" cy="120" r="92" fill="#FBF4E4" opacity="0.34"/>
+
+  <!-- Grains de café, cluster droite -->
+  <use href="#b3-bean" transform="translate(1230 250) rotate(28) scale(1.1)" opacity="0.85"/>
+  <use href="#b3-bean" transform="translate(1335 345) rotate(-12) scale(0.95)" opacity="0.8"/>
+  <use href="#b3-bean" transform="translate(1185 365) rotate(50) scale(0.8)" opacity="0.72"/>
+  <use href="#b3-bean" transform="translate(1385 215) rotate(8) scale(0.7)" opacity="0.68"/>
+</svg>

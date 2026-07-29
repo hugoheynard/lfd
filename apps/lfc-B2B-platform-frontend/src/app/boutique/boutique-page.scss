@@ -1,0 +1,11 @@
+/* Responsive product grid — even columns that reflow with the width. Featured
+   cards get a wider minimum so the section reads as a highlight. */
+.product-grid {
+  display: grid;
+  gap: var(--fold-space-lg, 1.25rem);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.product-grid--featured {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}

@@ -1,0 +1,97 @@
+:host {
+  display: block;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+fold-app-shell {
+  height: 100%;
+}
+
+/* ── Rail brand: a square "B2B" mark + the "La Folie Coffee" wordmark beside it.
+   The rail is always expanded (non-collapsible), so the wordmark is always
+   shown. ── */
+.rail-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-mark {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--fold-radius-md, 8px);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.rail-wordmark {
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Header ── */
+/* Surface chrome (data-surface="chrome" via foldSurface) : le thème remappe le
+   texte en clair ; on peint le fond avec le token d'entête — navy en navi, et
+   naturellement la bonne nuance dans tout autre thème. */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+  height: 100%;
+  padding-inline: var(--fold-space-md, 1rem);
+  background: var(--fold-color-bg-header);
+  color: var(--fold-color-text);
+}
+
+.app-search {
+  flex: 1 1 22rem;
+  max-width: 32rem;
+  min-width: 0;
+}
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  margin-inline-start: auto;
+}
+
+/* Desktop: the rail is always visible, so no hamburger. It appears only when
+   the rail collapses into the mobile drawer (≤768px, matching the shell). */
+.app-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--fold-radius-sm, 6px);
+}
+
+@media (max-width: 768px) {
+  .app-hamburger {
+    display: inline-flex;
+  }
+
+  .app-search {
+    flex-basis: auto;
+  }
+}

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Montagnes au petit matin dans des tons bleus et crème">
+  <defs>
+    <linearGradient id="fc-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBF4E4"/>
+      <stop offset="0.5" stop-color="#EAD9B0"/>
+      <stop offset="1" stop-color="#A9CBE4"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="600" fill="url(#fc-sky)"/>
+
+  <!-- Soleil crème au lever -->
+  <circle cx="1180" cy="185" r="128" fill="#FBF4E4" opacity="0.28"/>
+  <circle cx="1180" cy="185" r="88" fill="#FBF4E4"/>
+
+  <!-- Chaîne arrière -->
+  <polygon points="0,400 220,300 430,370 660,255 900,350 1160,250 1410,335 1600,285 1600,600 0,600" fill="#79A9CE"/>
+
+  <!-- Chaîne médiane + neige -->
+  <polygon points="0,470 260,335 500,435 740,300 1010,420 1270,325 1520,420 1600,390 1600,600 0,600" fill="#3E82BB"/>
+  <polygon points="740,300 705,345 780,345" fill="#FBF4E4" opacity="0.92"/>
+  <polygon points="1270,325 1240,362 1305,362" fill="#FBF4E4" opacity="0.85"/>
+
+  <!-- Chaîne avant + neige -->
+  <polygon points="0,540 300,400 560,510 830,375 1090,500 1360,405 1600,485 1600,600 0,600" fill="#123A5C"/>
+  <polygon points="830,375 792,425 872,425" fill="#EAF2FA" opacity="0.95"/>
+  <polygon points="300,400 268,443 335,443" fill="#EAF2FA" opacity="0.9"/>
+
+  <!-- Brume / vapeur de café au fil des crêtes -->
+  <ellipse cx="500" cy="430" rx="640" ry="34" fill="#FBF4E4" opacity="0.34"/>
+  <ellipse cx="1080" cy="470" rx="720" ry="30" fill="#FBF4E4" opacity="0.26"/>
+  <ellipse cx="760" cy="520" rx="900" ry="26" fill="#FBF4E4" opacity="0.2"/>
+</svg>

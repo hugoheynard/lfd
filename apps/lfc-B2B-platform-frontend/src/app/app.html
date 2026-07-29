@@ -1,0 +1,86 @@
+<fold-app-shell #shell="foldAppShell" contentScroll="clip" [(mobileNavOpen)]="mobileNavOpen">
+  <!-- Primary rail — the B2B app menu. Always expanded and NOT collapsible (no
+       chevron): `[expanded]="true"` is authoritative, otherwise a non-collapsible
+       rail would boot as the icon rail. Becomes an off-canvas drawer ≤768px. -->
+  <fold-menu railPrimary tint="primary" [expanded]="menuExpanded">
+    <a header class="rail-brand" routerLink="/" aria-label="La Folie Coffee B2B — accueil">
+      <span class="brand-mark" aria-hidden="true">B2B</span>
+      <span class="rail-wordmark">La Folie Coffee</span>
+    </a>
+
+    <a
+      fold-menu-item
+      icon="grid"
+      label="Boutique"
+      routerLink="/boutique"
+      routerLinkActive
+      #boutiqueRla="routerLinkActive"
+      [active]="boutiqueRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-menu-item
+      icon="home"
+      label="Tableau de bord"
+      routerLink="/"
+      routerLinkActive
+      [routerLinkActiveOptions]="{ exact: true }"
+      #dashboardRla="routerLinkActive"
+      [active]="dashboardRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-menu-item
+      icon="contracts"
+      label="Mes commandes"
+      routerLink="/commandes"
+      routerLinkActive
+      #commandesRla="routerLinkActive"
+      [active]="commandesRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      footer
+      fold-menu-item
+      icon="settings"
+      label="Réglages"
+      routerLink="/reglages"
+      routerLinkActive
+      #reglagesRla="routerLinkActive"
+      [active]="reglagesRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <button
+      footer
+      fold-menu-item
+      icon="logout"
+      label="Déconnexion"
+      type="button"
+      (click)="logout()"
+    ></button>
+  </fold-menu>
+
+  <!-- Header -->
+  <div header foldSurface="chrome" class="app-header">
+    <fold-button-icon
+      class="app-hamburger"
+      [icon]="mobileNavOpen() ? 'close' : 'menu'"
+      tooltip="Ouvrir la navigation"
+      [attr.aria-expanded]="mobileNavOpen()"
+      [attr.aria-controls]="shell.drawerId"
+      (clicked)="mobileNavOpen.set(!mobileNavOpen())"
+    />
+
+    <fold-search class="app-search" placeholder="Rechercher un client, une commande…" />
+
+    <div class="app-header-actions">
+      <fold-avatar name="La Folie Coffee" size="sm" />
+    </div>
+  </div>
+
+  <!-- Content -->
+  <router-outlet />
+
+  <!-- Hôte unique des side-panels. -->
+  <fold-panel-host />
+</fold-app-shell>
