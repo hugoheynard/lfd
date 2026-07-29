@@ -23,7 +23,10 @@ script dédié — ne déploie jamais le build par défaut sur Pages :
 pnpm --filter lfc-b2b-platform-frontend build:cloudflare
 ```
 
-Réglages Cloudflare Pages :
+👉 **Pas à pas complet du dashboard Cloudflare** (quoi cliquer, quoi paramétrer) :
+[`DEPLOYMENT-CLOUDFLARE.md`](./DEPLOYMENT-CLOUDFLARE.md).
+
+Réglages Cloudflare Pages (résumé) :
 
 - **Build command** : `pnpm --filter lfc-b2b-platform-frontend build:cloudflare`
 - **Output directory** : `apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser`
