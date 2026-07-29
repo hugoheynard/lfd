@@ -67,3 +67,6 @@ secrets.json
 *.report.html
 storybook-static/
 *storybook.log
+
+# Claude Code local agent state
+.claude/
