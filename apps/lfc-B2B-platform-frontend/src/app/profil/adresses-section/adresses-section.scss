@@ -1,0 +1,74 @@
+// Facturation + Livraison côte à côte sur large écran, empilées sinon.
+.addresses {
+  display: grid;
+  gap: var(--fold-space-lg);
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  align-items: start;
+}
+
+.card-kicker {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text-muted);
+}
+
+.addr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-md);
+}
+
+// Un bloc adresse : lignes empilées, style non-italique (override du <address>).
+.addr {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-style: normal;
+  color: var(--fold-color-text);
+  line-height: 1.4;
+}
+.addr-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.deliveries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.delivery {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md, 10px);
+}
+.delivery.is-default {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface, transparent);
+}
+
+.delivery-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  flex-shrink: 0;
+}
+
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}

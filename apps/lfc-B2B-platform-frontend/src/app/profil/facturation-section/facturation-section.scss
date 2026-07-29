@@ -1,0 +1,16 @@
+.billing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+// Le sélecteur n'a pas besoin de toute la largeur de la carte.
+.term {
+  max-width: 28rem;
+}
+
+.term-note {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}

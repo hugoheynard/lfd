@@ -1,0 +1,60 @@
+<fold-panel-header [title]="heading()" subtitle="Une adresse postale complète." />
+
+<div class="body">
+  <fold-input
+    label="Nom de l'adresse"
+    hint="ex. Siège, Boutique Bastille"
+    optional
+    [value]="label()"
+    (valueChange)="label.set($event)"
+  />
+  <fold-input
+    label="Adresse"
+    placeholder="n° et voie"
+    required
+    [value]="ligne1()"
+    (valueChange)="ligne1.set($event)"
+  />
+  <fold-input
+    label="Complément"
+    hint="bâtiment, étage, instructions de livraison…"
+    optional
+    [value]="ligne2()"
+    (valueChange)="ligne2.set($event)"
+  />
+
+  <div class="row">
+    <fold-input
+      class="cp"
+      label="Code postal"
+      required
+      [value]="codePostal()"
+      (valueChange)="codePostal.set($event)"
+    />
+    <fold-input
+      class="ville"
+      label="Ville"
+      required
+      [value]="ville()"
+      (valueChange)="ville.set($event)"
+    />
+  </div>
+
+  <fold-input label="Pays" required [value]="pays()" (valueChange)="pays.set($event)" />
+
+  @if (isLivraison()) {
+    <fold-checkbox
+      label="Adresse de livraison par défaut"
+      hint="utilisée d'office pour vos prochaines commandes"
+      [checked]="isDefaut()"
+      (checkedChange)="isDefaut.set($event)"
+    />
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit()" (click)="submit()">
+    {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+  </button>
+</footer>

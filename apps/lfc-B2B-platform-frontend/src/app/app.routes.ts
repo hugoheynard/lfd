@@ -18,6 +18,11 @@ export const routes: Routes = [
     loadComponent: () => import('./commandes/commandes-page').then((m) => m.CommandesPage),
   },
   {
+    path: 'profil',
+    title: 'Mon profil — La Folie Coffee B2B',
+    loadComponent: () => import('./profil/profil-page').then((m) => m.ProfilPage),
+  },
+  {
     path: 'reglages',
     title: 'Réglages — La Folie Coffee B2B',
     loadComponent: () => import('./reglages/reglages-page').then((m) => m.ReglagesPage),

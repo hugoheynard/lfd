@@ -42,6 +42,17 @@
     <a
       footer
       fold-menu-item
+      icon="user"
+      label="Mon profil"
+      routerLink="/profil"
+      routerLinkActive
+      #profilRla="routerLinkActive"
+      [active]="profilRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      footer
+      fold-menu-item
       icon="settings"
       label="Réglages"
       routerLink="/reglages"

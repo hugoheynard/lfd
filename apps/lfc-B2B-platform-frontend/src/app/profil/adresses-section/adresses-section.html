@@ -1,0 +1,88 @@
+<fold-page-section
+  title="Mes adresses"
+  icon="home"
+  description="Une adresse de facturation, une ou plusieurs adresses de livraison."
+>
+  <div class="addresses">
+    @let fa = profile().adresseFacturation;
+    <fold-card>
+      <div class="addr-head">
+        <p class="card-kicker">Facturation</p>
+        <button foldButton emphasis="soft" size="sm" icon="edit" (click)="editBilling()">
+          Modifier
+        </button>
+      </div>
+      <address class="addr">
+        @if (fa.label) {
+          <span class="addr-label">{{ fa.label }}</span>
+        }
+        <span>{{ fa.ligne1 }}</span>
+        @if (fa.ligne2) {
+          <span>{{ fa.ligne2 }}</span>
+        }
+        <span>{{ fa.codePostal }} {{ fa.ville }}</span>
+        <span>{{ fa.pays }}</span>
+      </address>
+    </fold-card>
+
+    <fold-card>
+      <div class="addr-head">
+        <p class="card-kicker">Livraison</p>
+        <button foldButton emphasis="outline" size="sm" icon="plus" (click)="addDelivery()">
+          Ajouter une adresse
+        </button>
+      </div>
+
+      <ul class="deliveries">
+        @for (a of profil.adressesLivraison(); track a.id) {
+          <li class="delivery" [class.is-default]="a.isDefaut">
+            <address class="addr">
+              <span class="addr-label">
+                {{ a.label || a.ville }}
+                @if (a.isDefaut) {
+                  <fold-badge content="Par défaut" variant="success" />
+                }
+              </span>
+              <span>{{ a.ligne1 }}</span>
+              @if (a.ligne2) {
+                <span>{{ a.ligne2 }}</span>
+              }
+              <span>{{ a.codePostal }} {{ a.ville }}</span>
+              <span>{{ a.pays }}</span>
+            </address>
+
+            <div class="delivery-actions">
+              @if (!a.isDefaut) {
+                <button
+                  foldButton
+                  emphasis="soft"
+                  size="sm"
+                  icon="star"
+                  (click)="setDefaultDelivery(a)"
+                >
+                  Par défaut
+                </button>
+              }
+              <fold-button-icon
+                icon="edit"
+                size="sm"
+                tooltip="Modifier"
+                (clicked)="editDelivery(a)"
+              />
+              <fold-button-icon
+                icon="bin"
+                size="sm"
+                tone="critical"
+                tooltip="Supprimer"
+                [disabled]="a.isDefaut && profil.adressesLivraison().length === 1"
+                (clicked)="removeDelivery(a)"
+              />
+            </div>
+          </li>
+        } @empty {
+          <li class="muted">Aucune adresse de livraison. Ajoutez-en une pour commander.</li>
+        }
+      </ul>
+    </fold-card>
+  </div>
+</fold-page-section>
