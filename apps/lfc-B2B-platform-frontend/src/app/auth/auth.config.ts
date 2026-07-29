@@ -31,8 +31,9 @@ export interface AuthConfig {
  */
 export const AUTH_CONFIG: AuthConfig = {
   domain: 'dev-bjvl7ct5se266ij4.eu.auth0.com',
-  clientId: 'REMPLACER_PAR_LE_CLIENT_ID_SPA',
-  audience: 'https://api.lfc-b2b-plateform',
+  clientId: 'Qk5sMKDBKB8OD3YC3JjIzfeXXkUf00qJ',
+  // = Identifier de l'API Auth0 = AUTH0_AUDIENCE du backend (match exact).
+  audience: 'https://api.lfc-b2b-platform',
   // Backend B2B en local (Node always-on, port 3200). L'URL de prod sera
   // câblée quand le backend sera déployé.
   apiBaseUrl: 'http://localhost:3200',
