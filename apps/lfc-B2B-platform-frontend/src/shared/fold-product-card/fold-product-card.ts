@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  output,
+} from '@angular/core';
 import { FoldBadgeComponent, FoldToggleIconComponent } from 'fold-ng';
 
 import { FoldActionButtonComponent } from '../fold-action';
@@ -30,6 +37,13 @@ export class FoldProductCardComponent {
 
   /** Emphasis of the action button. */
   readonly actionEmphasis = input<'solid' | 'soft' | 'outline'>('soft');
+
+  /**
+   * Mise en avant : contour primary plus épais. Générique (le libellé « best
+   * seller » et son tag restent à la charge du parent), pour rester réutilisable
+   * dans fold-ng.
+   */
+  readonly highlight = input(false, { transform: booleanAttribute });
 
   /** Label of the out-of-stock ribbon. */
   readonly outOfStockLabel = input('Rupture de stock');

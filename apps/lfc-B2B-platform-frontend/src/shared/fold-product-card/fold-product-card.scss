@@ -44,6 +44,16 @@
   border-color: var(--fold-color-warning, #d68a00);
 }
 
+/* Mise en avant : contour primary plus épais + légère surélévation. */
+.fpc.is-highlight {
+  border-width: 2px;
+  border-color: var(--fold-color-primary);
+  box-shadow: var(--fold-shadow-md);
+}
+.fpc.is-highlight:hover {
+  border-color: var(--fold-color-primary);
+}
+
 .fpc-out-ribbon,
 .fpc-warn-ribbon {
   position: absolute;

@@ -1,0 +1,11 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Boîte de chocolats">
+  <rect width="400" height="300" fill="#F4EAD8"/>
+  <circle cx="200" cy="150" r="120" fill="#D8E4EE"/>
+  <g stroke="#31506A" stroke-width="4" stroke-linejoin="round">
+    <rect x="118" y="132" width="164" height="86" rx="8" fill="#3E6389"/>
+    <rect x="108" y="112" width="184" height="34" rx="8" fill="#4E75A0"/>
+    <rect x="188" y="112" width="24" height="106" fill="#EFE6D2" stroke="none"/>
+    <path d="M200 112 Q170 78 150 100 Q142 118 200 120 Q258 118 250 100 Q230 78 200 112 Z" fill="#E7B45E"/>
+    <circle cx="200" cy="112" r="9" fill="#D79A4E"/>
+  </g>
+</svg>

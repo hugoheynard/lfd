@@ -1,0 +1,18 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Florentin">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="60%">
+      <stop offset="0" stop-color="#F3E9D4" stop-opacity=".85"/><stop offset="1" stop-color="#223F5A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="300" fill="#223F5A"/>
+  <ellipse cx="200" cy="150" rx="160" ry="125" fill="url(#glow)"/>
+  <path d="M114 158 a86 30 0 0 0 172 0 l0 -8 a86 34 0 0 1 -172 0 Z" fill="#4B2E1A"/>
+  <ellipse cx="200" cy="150" rx="86" ry="34" fill="#E0A94E" stroke="#A96E2E" stroke-width="4"/>
+  <g fill="#C98A3C" stroke="#9E6626" stroke-width="1.5">
+    <ellipse cx="176" cy="142" rx="14" ry="6" transform="rotate(24 176 142)"/>
+    <ellipse cx="214" cy="140" rx="14" ry="6" transform="rotate(-20 214 140)"/>
+    <ellipse cx="196" cy="158" rx="14" ry="6" transform="rotate(8 196 158)"/>
+    <ellipse cx="232" cy="156" rx="12" ry="5" transform="rotate(40 232 156)"/>
+    <ellipse cx="162" cy="158" rx="12" ry="5" transform="rotate(-36 162 158)"/>
+  </g>
+</svg>

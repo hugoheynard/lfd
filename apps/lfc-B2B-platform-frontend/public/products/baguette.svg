@@ -1,0 +1,11 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Baguette">
+  <rect width="400" height="300" fill="#F4EAD8"/>
+  <circle cx="200" cy="150" r="120" fill="#D8E4EE"/>
+  <g transform="rotate(-32 200 150)">
+    <rect x="66" y="128" width="268" height="46" rx="23" fill="#E2B368" stroke="#A96E2E" stroke-width="4"/>
+    <g stroke="#9E6626" stroke-width="4" stroke-linecap="round" opacity=".75">
+      <path d="M120 142 l18 18"/><path d="M156 140 l18 18"/><path d="M192 140 l18 18"/>
+      <path d="M228 140 l18 18"/><path d="M264 142 l18 18"/>
+    </g>
+  </g>
+</svg>

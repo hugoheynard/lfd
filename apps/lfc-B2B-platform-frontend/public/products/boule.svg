@@ -1,0 +1,13 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pain de campagne">
+  <rect width="400" height="300" fill="#F2E7D2"/>
+  <rect x="-40" y="150" width="520" height="92" fill="#CBDBE8" transform="rotate(-18 200 150)"/>
+  <circle cx="200" cy="152" r="92" fill="#D9A65E" stroke="#9E6626" stroke-width="4"/>
+  <g stroke="#8A5A22" stroke-width="5" stroke-linecap="round" opacity=".8" fill="none">
+    <path d="M150 118 L250 186"/><path d="M250 118 L150 186"/>
+    <path d="M200 96 L200 208"/>
+  </g>
+  <g fill="#F0DCA8" opacity=".7">
+    <circle cx="176" cy="126" r="4"/><circle cx="224" cy="132" r="4"/><circle cx="204" cy="170" r="4"/>
+    <circle cx="168" cy="176" r="3"/><circle cx="236" cy="170" r="3"/>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pain de mie">
+  <rect width="400" height="300" fill="#EEE1C4"/>
+  <g fill="none" stroke="#E1D0A6" stroke-width="10">
+    <circle cx="200" cy="150" r="62"/><circle cx="200" cy="150" r="98"/><circle cx="200" cy="150" r="134"/>
+  </g>
+  <g stroke="#A96E2E" stroke-width="4" stroke-linejoin="round">
+    <path d="M112 200 L112 150 Q112 96 200 96 Q288 96 288 150 L288 200 Z" fill="#E9CC8E"/>
+    <rect x="112" y="188" width="176" height="24" rx="6" fill="#D9A65E"/>
+    <path d="M150 120 Q200 108 250 120" fill="none" stroke-width="3" opacity=".5"/>
+  </g>
+</svg>

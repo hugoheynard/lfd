@@ -1,0 +1,14 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Brioche">
+  <rect width="400" height="300" fill="#A7BFD2"/>
+  <g fill="#EEE6D4" opacity=".5">
+    <circle cx="60" cy="60" r="10"/><circle cx="150" cy="40" r="8"/><circle cx="250" cy="58" r="10"/>
+    <circle cx="340" cy="44" r="8"/><circle cx="110" cy="120" r="7"/><circle cx="300" cy="130" r="9"/>
+    <circle cx="52" cy="220" r="9"/><circle cx="360" cy="230" r="10"/><circle cx="200" cy="264" r="8"/>
+    <circle cx="120" cy="256" r="7"/><circle cx="290" cy="250" r="7"/>
+  </g>
+  <g stroke="#9E6626" stroke-width="4" stroke-linejoin="round">
+    <path d="M118 210 Q112 150 200 150 Q288 150 282 210 Q282 226 260 226 L140 226 Q118 226 118 210 Z" fill="#E7B45E"/>
+    <ellipse cx="200" cy="120" rx="52" ry="44" fill="#EDC272"/>
+    <path d="M150 160 Q200 148 250 160" fill="none" stroke-width="3" opacity=".6"/>
+  </g>
+</svg>

@@ -1,0 +1,14 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Quiche">
+  <rect width="400" height="300" fill="#F2E7D2"/>
+  <rect x="-40" y="150" width="520" height="92" fill="#CBDBE8" transform="rotate(-18 200 150)"/>
+  <circle cx="200" cy="152" r="94" fill="#D19A4E" stroke="#9E6626" stroke-width="4"/>
+  <circle cx="200" cy="152" r="74" fill="#EBC873"/>
+  <circle cx="200" cy="152" r="74" fill="#E0B45A" opacity=".4"/>
+  <g fill="#8A5A2E">
+    <rect x="176" y="128" width="16" height="9" rx="3" transform="rotate(20 184 132)"/>
+    <rect x="210" y="150" width="16" height="9" rx="3" transform="rotate(-30 218 154)"/>
+    <rect x="180" y="172" width="16" height="9" rx="3" transform="rotate(10 188 176)"/>
+    <rect x="212" y="182" width="14" height="8" rx="3" transform="rotate(40 219 186)"/>
+    <rect x="158" y="156" width="14" height="8" rx="3" transform="rotate(-10 165 160)"/>
+  </g>
+</svg>

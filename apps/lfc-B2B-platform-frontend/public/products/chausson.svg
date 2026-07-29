@@ -1,0 +1,13 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Chausson aux pommes">
+  <rect width="400" height="300" fill="#37566F"/>
+  <path d="M0 300 L0 214 Q110 158 210 200 Q310 240 400 186 L400 300 Z" fill="#EFE6D2"/>
+  <path d="M74 214 l34 -52 l34 52 Z" fill="#31506A" opacity=".5"/>
+  <path d="M250 200 l26 -40 l26 40 Z" fill="#31506A" opacity=".4"/>
+  <g stroke="#9E6626" stroke-width="4" stroke-linejoin="round">
+    <path d="M112 168 Q200 96 300 150 Q296 210 210 214 Q140 216 112 168 Z" fill="#E7B45E"/>
+    <path d="M124 176 Q136 190 128 202 M150 186 Q162 200 154 212 M180 190 Q192 204 184 216
+             M210 190 Q222 204 214 216 M240 186 Q252 200 244 210"
+          fill="none" stroke-width="3" opacity=".55"/>
+    <path d="M180 128 l14 10 M204 120 l14 10 M228 124 l12 9" fill="none" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

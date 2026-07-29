@@ -1,0 +1,16 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tarte">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="60%">
+      <stop offset="0" stop-color="#F3E9D4" stop-opacity=".85"/><stop offset="1" stop-color="#223F5A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="300" fill="#223F5A"/>
+  <ellipse cx="200" cy="150" rx="160" ry="125" fill="url(#glow)"/>
+  <circle cx="200" cy="150" r="96" fill="#D9A65E" stroke="#A96E2E" stroke-width="4"/>
+  <circle cx="200" cy="150" r="76" fill="#EAD9A8"/>
+  <g stroke="#8E2F63" stroke-width="1.5">
+    <circle cx="200" cy="120" r="12" fill="#B03A55"/><circle cx="234" cy="140" r="12" fill="#8E2F63"/>
+    <circle cx="222" cy="180" r="12" fill="#B03A55"/><circle cx="178" cy="180" r="12" fill="#8E2F63"/>
+    <circle cx="166" cy="140" r="12" fill="#B03A55"/><circle cx="200" cy="158" r="12" fill="#8E2F63"/>
+  </g>
+</svg>

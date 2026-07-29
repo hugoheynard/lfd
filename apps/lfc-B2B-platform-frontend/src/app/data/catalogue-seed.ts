@@ -923,6 +923,89 @@ function formatEur(value: number): string {
   return `${value.toFixed(2).replace('.', ',')} €`;
 }
 
+/**
+ * Bibliothèque d'illustrations (SVG 4/3, servies depuis `public/products/`).
+ * Chaque produit reçoit le visuel de son **type**, choisi par mots-clés du nom
+ * — les règles sont testées dans l'ordre, la première qui matche gagne (le
+ * spécifique avant le générique : « pain au chocolat » avant « pain », « brioché »
+ * avant « pain de mie »).
+ */
+const ILLUSTRATIONS: readonly { readonly file: string; readonly keys: readonly string[] }[] = [
+  { file: 'croissant', keys: ['croissant'] },
+  { file: 'pain-choco', keys: ['pain au chocolat', 'chocolat-banane'] },
+  { file: 'escargot', keys: ['raisins', 'escargot', 'abricotin'] },
+  { file: 'chausson', keys: ['chausson', "patte d'ours", 'sable suisse', 'croix de savoie'] },
+  { file: 'brioche', keys: ['brioch', 'pain au lait'] },
+  { file: 'cookie', keys: ['cookie'] },
+  { file: 'baguette', keys: ['baguette', 'flute', 'ficelle'] },
+  { file: 'pain-mie', keys: ['pain de mie'] },
+  { file: 'tartelette', keys: ['tartelette'] },
+  { file: 'eclair', keys: ['eclair'] },
+  {
+    file: 'tarte',
+    keys: [
+      'tarte',
+      'flan',
+      'crumble',
+      'mousse',
+      'mont-blanc',
+      'delice',
+      'rose des sables',
+      'pyramide',
+    ],
+  },
+  { file: 'salade', keys: ['salade'] },
+  { file: 'quiche', keys: ['quiche', 'tourte', 'tartiflette'] },
+  { file: 'pizza', keys: ['pizza', 'fougasse'] },
+  { file: 'sandwich', keys: ['sandwich', 'club', 'pan bagnat', 'croque', 'tranche'] },
+  {
+    file: 'florentin',
+    keys: ['florentin', 'mendiant', 'meringuette', 'grignottines', 'magalinettes'],
+  },
+  { file: 'tablette', keys: ['tablette', 'gianduja'] },
+  { file: 'boite-choco', keys: ['boite', 'ufs', 'ourson', 'oups'] },
+  {
+    file: 'boule',
+    keys: [
+      'campagne',
+      'complet',
+      'seigle',
+      'viking',
+      'moisson',
+      'pave',
+      'campaillou',
+      'sportif',
+      'petit pain',
+      'pain',
+    ],
+  },
+];
+
+/** Illustration de repli par catégorie, si aucun mot-clé ne matche. */
+const FALLBACK_ILLUSTRATION: Record<string, string> = {
+  cat_vien: 'croissant',
+  cat_pains: 'boule',
+  cat_patis: 'tarte',
+  cat_sale: 'sandwich',
+  cat_choco: 'tablette',
+};
+
+/** Minuscule + sans accents, pour un matching robuste sur les noms. */
+function normalise(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+/** Chemin du visuel d'un produit (mot-clé du nom, sinon repli catégorie). */
+function illustrationFor(name: string, categoryId: string): string {
+  const haystack = normalise(name);
+  const hit = ILLUSTRATIONS.find((entry) => entry.keys.some((k) => haystack.includes(k)));
+  const file = hit?.file ?? FALLBACK_ILLUSTRATION[categoryId] ?? 'boule';
+  return `products/${file}.svg`;
+}
+
 function toProduct(row: Row): FoldProduct {
   const [sku, name, , priceEur, weightGrams, categoryId, description] = row;
   const unit = weightGrams === null ? '/ pièce' : `/ ${weightGrams} g`;
@@ -934,6 +1017,8 @@ function toProduct(row: Row): FoldProduct {
     price: formatEur(priceEur),
     unit,
     action: ADD,
+    image: illustrationFor(name, categoryId),
+    imageAlt: name,
     ...(OUT_OF_STOCK.has(sku) ? { outOfStock: true } : {}),
     ...(soon !== undefined ? { daysLeft: soon } : {}),
     ...(description === '' ? {} : { detail: description }),
@@ -942,3 +1027,23 @@ function toProduct(row: Row): FoldProduct {
 
 /** Les 92 produits La Folie Coffee, copiés du PIM, en {@link FoldProduct}. */
 export const PRODUCTS: readonly FoldProduct[] = ROWS.map(toProduct);
+
+/** Prix TTC numérique par SKU — pour les totaux du panier. */
+const PRICE_BY_SKU = new Map<string, number>(ROWS.map((r) => [r[0], r[3]]));
+
+/** Prix unitaire TTC (€) d'un SKU ; 0 si inconnu. */
+export function priceEurOf(sku: string): number {
+  return PRICE_BY_SKU.get(sku) ?? 0;
+}
+
+/** Produit (modèle d'affichage) par id ; `undefined` si absent. */
+const PRODUCT_BY_ID = new Map<string, FoldProduct>(PRODUCTS.map((p) => [p.id, p]));
+
+export function productById(id: string): FoldProduct | undefined {
+  return PRODUCT_BY_ID.get(id);
+}
+
+/** Prix TTC en euros → "2,50 €" (réutilisé par le panier). */
+export function formatEurValue(value: number): string {
+  return formatEur(value);
+}

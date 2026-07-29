@@ -1,0 +1,14 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Salade">
+  <rect width="400" height="300" fill="#37566F"/>
+  <path d="M0 300 L0 214 Q110 158 210 200 Q310 240 400 186 L400 300 Z" fill="#EFE6D2"/>
+  <path d="M70 214 l36 -54 l36 54 Z" fill="#31506A" opacity=".5"/>
+  <g stroke="#B8C0C6" stroke-width="4" stroke-linejoin="round">
+    <path d="M120 168 L280 168 Q272 214 200 214 Q128 214 120 168 Z" fill="#EDE7DA"/>
+    <ellipse cx="200" cy="168" rx="80" ry="16" fill="#DED6C4"/>
+  </g>
+  <g stroke="#3F6B32" stroke-width="2">
+    <circle cx="168" cy="158" r="18" fill="#6E9A4E"/><circle cx="204" cy="150" r="20" fill="#7FA857"/>
+    <circle cx="238" cy="160" r="16" fill="#5F8A44"/><circle cx="186" cy="168" r="14" fill="#6E9A4E"/>
+  </g>
+  <circle cx="216" cy="166" r="9" fill="#C0504D"/><circle cx="176" cy="172" r="8" fill="#C0504D"/>
+</svg>

@@ -1,0 +1,15 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pain au chocolat">
+  <defs>
+    <linearGradient id="d" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EABE6C"/><stop offset="1" stop-color="#C6863A"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="#F2E7D2"/>
+  <rect x="-40" y="150" width="520" height="92" fill="#CBDBE8" transform="rotate(-18 200 150)"/>
+  <g stroke="#9E6626" stroke-width="4" stroke-linejoin="round">
+    <rect x="104" y="104" width="192" height="92" rx="20" fill="url(#d)"/>
+    <rect x="120" y="104" width="16" height="92" rx="6" fill="#5A3A22" stroke="none"/>
+    <rect x="264" y="104" width="16" height="92" rx="6" fill="#5A3A22" stroke="none"/>
+    <path d="M170 108 V192 M200 108 V192 M230 108 V192" fill="none" stroke-width="3" opacity=".7"/>
+  </g>
+</svg>

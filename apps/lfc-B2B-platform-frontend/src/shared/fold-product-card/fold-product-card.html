@@ -1,5 +1,10 @@
 @let p = product();
-<article class="fpc" [class.is-out]="isOut()" [class.is-warn]="warnDays() !== null">
+<article
+  class="fpc"
+  [class.is-out]="isOut()"
+  [class.is-warn]="warnDays() !== null"
+  [class.is-highlight]="highlight()"
+>
   <div class="fpc-media">
     @if (p.image) {
       <img class="fpc-img" [src]="p.image" [alt]="p.imageAlt ?? p.name" loading="lazy" />

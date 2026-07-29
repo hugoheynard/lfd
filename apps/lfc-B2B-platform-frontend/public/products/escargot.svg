@@ -1,0 +1,13 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pain aux raisins">
+  <rect width="400" height="300" fill="#EEE1C4"/>
+  <g fill="none" stroke="#E1D0A6" stroke-width="10">
+    <circle cx="200" cy="150" r="62"/><circle cx="200" cy="150" r="98"/><circle cx="200" cy="150" r="134"/>
+  </g>
+  <circle cx="200" cy="150" r="86" fill="#E7B45E" stroke="#9E6626" stroke-width="4"/>
+  <path d="M200 150 m0 -66 a66 66 0 1 1 -46 19 a46 46 0 1 1 30 -13 a26 26 0 1 1 -14 8"
+        fill="none" stroke="#B47A2E" stroke-width="6" stroke-linecap="round"/>
+  <g fill="#5A3A22">
+    <circle cx="176" cy="128" r="6"/><circle cx="224" cy="140" r="6"/><circle cx="196" cy="182" r="6"/>
+    <circle cx="230" cy="176" r="5"/><circle cx="164" cy="164" r="5"/>
+  </g>
+</svg>

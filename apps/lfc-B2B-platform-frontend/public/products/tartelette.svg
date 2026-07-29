@@ -1,0 +1,15 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tartelette aux fruits">
+  <rect width="400" height="300" fill="#37566F"/>
+  <path d="M0 300 L0 214 Q110 158 210 200 Q310 240 400 186 L400 300 Z" fill="#EFE6D2"/>
+  <path d="M70 214 l36 -54 l36 54 Z" fill="#31506A" opacity=".5"/>
+  <g stroke="#A96E2E" stroke-width="4">
+    <ellipse cx="200" cy="176" rx="98" ry="30" fill="#D9A65E"/>
+    <path d="M102 168 a98 26 0 0 0 196 0 l0 8 a98 30 0 0 1 -196 0 Z" fill="#C68A3A" stroke="none"/>
+    <ellipse cx="200" cy="160" rx="86" ry="24" fill="#F0E4C8" stroke="none"/>
+  </g>
+  <g stroke="#5E1E44" stroke-width="1.5">
+    <circle cx="168" cy="158" r="11" fill="#8E2F63"/><circle cx="200" cy="152" r="11" fill="#B03A55"/>
+    <circle cx="232" cy="158" r="11" fill="#8E2F63"/><circle cx="184" cy="166" r="10" fill="#B03A55"/>
+    <circle cx="216" cy="166" r="10" fill="#8E2F63"/>
+  </g>
+</svg>
