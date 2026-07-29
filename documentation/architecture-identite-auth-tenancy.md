@@ -3,6 +3,9 @@
 Décisions figées avant d'écrire le schéma. Contexte : LaFolieDouce B2B, ~20 users
 (peak < 200), Auth0 pour l'auth, Postgres + Prisma, Cloudflare (statique + Workers).
 
+> **Config concrète du tenant Auth0** (réglages exacts du dashboard, valeurs,
+> pièges rencontrés) : [`auth0-setup-b2b.md`](auth0-setup-b2b.md) — runbook daté.
+
 ## 1. Principe de frontière
 
 - **Auth0 = authentification** (mots de passe, MFA, social, reset). **On ne stocke
