@@ -1,0 +1,4 @@
+# Espace B2B derrière login — aucun besoin SEO. On interdit tout crawl pour
+# ne pas être indexé / découvrable via les moteurs de recherche.
+User-agent: *
+Disallow: /
