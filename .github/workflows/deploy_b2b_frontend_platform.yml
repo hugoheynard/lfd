@@ -58,6 +58,17 @@ jobs:
       - name: Build (static, browser-only)
         run: pnpm --filter lfc-b2b-platform-frontend exec ng build --configuration cloudflare
 
+      # Crée le projet Pages au premier run s'il n'existe pas (idempotent : le
+      # `|| true` avale le "already exists" des runs suivants). Évite toute étape
+      # manuelle dans le dashboard.
+      - name: Ensure Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_B2B_PLATFORM }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm dlx wrangler pages project create lfc-b2b
+          --production-branch=main || true
+
       # `cloudflare/wrangler-action` tente d'installer wrangler via `pnpm add` à
       # la racine du workspace → ERR_PNPM_ADDING_TO_ROOT. On l'invoque plutôt en
       # direct avec `pnpm dlx` (fetch éphémère, ne touche pas le workspace).
