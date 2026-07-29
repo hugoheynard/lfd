@@ -31,21 +31,14 @@ Un typecheck ou un build rouge **stoppe** avant tout déploiement.
 
 ### Ce que TU dois faire une seule fois (je ne peux pas le faire à ta place)
 
-#### 1. Créer le projet Pages en mode « Direct Upload »
+#### 1. Le projet Pages `lfc-b2b` — automatique
 
-Deux options :
+Rien à créer à la main : le workflow contient une étape **Ensure Pages project
+exists** qui crée `lfc-b2b` au premier run (idempotente ensuite). Il te reste
+donc **uniquement** les secrets ci-dessous.
 
-- **Dashboard** : dash.cloudflare.com → **Workers & Pages** → **Create** →
-  onglet **Pages** → **Upload assets** (= Direct Upload, _pas_ Connect to Git) →
-  nommer le projet **`lfc-b2b`** → créer (tu peux uploader un dossier vide, la CI
-  écrasera au premier deploy).
-- **ou CLI** :
-  ```bash
-  npx wrangler pages project create lfc-b2b --production-branch=main
-  ```
-
-> Le nom **`lfc-b2b`** doit correspondre à `--project-name` dans le workflow. Si
-> tu changes l'un, change l'autre.
+> Le nom **`lfc-b2b`** doit rester cohérent entre l'étape de création et
+> `--project-name` du deploy dans le workflow.
 
 #### 2. Récupérer un API token + l'Account ID
 
@@ -134,8 +127,9 @@ Sortie **100 % statique** → tous les appels API partent du **navigateur** :
 
 ## Dépannage
 
-- **Le workflow échoue à `wrangler pages deploy` (project not found)** → le projet
-  `lfc-b2b` n'existe pas encore : créer le Direct Upload (étape 1).
+- **`project not found` au deploy** → ne devrait plus arriver (l'étape _Ensure
+  Pages project exists_ le crée). Si ça persiste, c'est que le token n'a pas
+  `Pages · Edit` (donc pas le droit de créer/déployer).
 - **`Authentication error` wrangler** → secret `CLOUDFLARE_API_TOKEN_B2B_PLATFORM`
   absent/mauvaise permission (il faut **Pages · Edit**) ou `CLOUDFLARE_ACCOUNT_ID`
   faux.
