@@ -1,7 +1,13 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { computed, effect, Injectable, signal } from '@angular/core';
 
 import type { FoldProduct } from '../../shared';
 import { priceEurOf, productById } from './catalogue-seed';
+
+/**
+ * Clé de persistance — **versionnée** : si la forme stockée change un jour, on
+ * bumpe le suffixe (`-v2`) pour ignorer proprement les anciens paniers.
+ */
+const CART_STORAGE_KEY = 'lfc-b2b-cart-v1';
 
 /** Une ligne du panier — le produit résolu, sa quantité et ses totaux. */
 export interface CartLine {
@@ -12,15 +18,31 @@ export interface CartLine {
 }
 
 /**
- * Panier du client pro — état **en mémoire** (id → quantité). Les lignes, le
- * nombre d'articles et le total sont dérivés : la source de vérité est la seule
- * table des quantités, tout le reste est `computed`. Se branchera sur l'API B2B
- * (Prisma) plus tard sans changer la surface.
+ * Panier du client pro. Source de vérité = la seule table `id → quantité` ;
+ * lignes, nombre d'articles et total sont **dérivés** (`computed`), les prix
+ * re-résolus à l'affichage (un prix qui change est reflété tout seul).
+ *
+ * **Persistance : localStorage réactif** — on écrit à *chaque* mutation (pas à
+ * la fermeture du panel : le panel n'est qu'une vue) et on ré-hydrate à la
+ * construction du singleton. Le panier survit ainsi au reload, à la fermeture
+ * d'onglet et à la navigation. On ne persiste QUE la map `id→qty` (la source de
+ * vérité), jamais les dérivés.
+ *
+ * Brouillon **par appareil** — suffisant à ce stade. Trajectoire notée dans
+ * `documentation/architecture-flux-commande-prod.md` : passage à un **cart
+ * serveur (Redis/Upstash) multi-appareil + merge-on-login** avant le launch si
+ * voulu. La surface du service ne changera pas — seule la couche persistance.
  */
 @Injectable({ providedIn: 'root' })
 export class CartService {
   /** id produit → quantité (immutable ; on remplace la Map à chaque mutation). */
-  private readonly qtys = signal<ReadonlyMap<string, number>>(new Map());
+  private readonly qtys = signal<ReadonlyMap<string, number>>(hydrate());
+
+  constructor() {
+    // Écrit à chaque changement de la source de vérité. Tourne aussi une fois à
+    // l'init (ré-écrit l'état hydraté — idempotent).
+    effect(() => persist(this.qtys()));
+  }
 
   /** Lignes résolues (produit + prix), dans l'ordre d'ajout. */
   readonly lines = computed<readonly CartLine[]>(() => {
@@ -76,4 +98,67 @@ export class CartService {
   clear(): void {
     this.qtys.set(new Map());
   }
+}
+
+/** Vrai si `localStorage` est disponible (SSR / mode privé strict → faux). */
+function hasStorage(): boolean {
+  return typeof localStorage !== 'undefined';
+}
+
+/** Recharge la map `id→qty` depuis localStorage — vide si absent ou corrompu. */
+function hydrate(): ReadonlyMap<string, number> {
+  if (!hasStorage()) {
+    return new Map();
+  }
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(CART_STORAGE_KEY);
+  } catch {
+    return new Map();
+  }
+  if (raw === null) {
+    return new Map();
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return new Map();
+    }
+    const map = new Map<string, number>();
+    for (const entry of parsed) {
+      const line = asLine(entry);
+      if (line !== null) {
+        map.set(line[0], line[1]);
+      }
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+/** Écrit la map `id→qty` en localStorage (échec silencieux : quota / mode privé). */
+function persist(qtys: ReadonlyMap<string, number>): void {
+  if (!hasStorage()) {
+    return;
+  }
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([...qtys]));
+  } catch {
+    // Quota dépassé ou stockage refusé : le panier reste en mémoire, tant pis
+    // pour la persistance de cette session.
+  }
+}
+
+/** Valide une entrée stockée en `[id, qty]` avec `qty > 0`, sinon `null`. */
+function asLine(value: unknown): readonly [string, number] | null {
+  if (!Array.isArray(value) || value.length !== 2) {
+    return null;
+  }
+  const pair: readonly unknown[] = value;
+  const [id, qty] = pair;
+  if (typeof id === 'string' && typeof qty === 'number' && qty > 0) {
+    return [id, qty];
+  }
+  return null;
 }

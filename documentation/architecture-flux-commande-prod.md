@@ -106,6 +106,23 @@ pub/sub) : enqueue dans **plusieurs queues** (une par réaction), **ou** un **Wo
 dispatcher** qui appelle les handlers concernés, **ou** un seul consommateur qui
 fait les N réactions.
 
+## Panier — persistance & trajectoire
+
+- **Maintenant (fait)** : le panier est un **brouillon client**, persisté en
+  **localStorage réactif** (écrit à chaque mutation, ré-hydraté à l'init du
+  singleton `CartService`). On ne persiste que la source de vérité `id→qty` ;
+  prix/lignes/total sont dérivés et re-résolus. Survit reload / fermeture d'onglet
+  / navigation. **Par appareil.** La `Order` (validée) est la seule chose en
+  Postgres — jamais le brouillon.
+- **📌 NOTE — avant launch, si voulu : « cart Redis » multi-appareil.** Le pattern
+  des concurrents multi-plateformes = **cart serveur** (Redis actif → `Order` en
+  DB au checkout) + **merge-on-login** du panier device dans le panier user.
+  Choisir **Upstash Redis** (serverless, free tier, TTL, edge-compatible) — **pas**
+  un Redis always-on. **Jamais** le brouillon en Postgres (churny → brûle
+  ops/compute). La **surface de `CartService` ne change pas** : seule la couche
+  persistance (localStorage → API cart) + l'étape merge-on-login. Décision : à
+  trancher avant launch selon le besoin cross-device / 2ᵉ plateforme.
+
 ## Coût
 
 - Chemin **tout Workers + cron** : **0 €** (Workers free + Cron Triggers gratuits).
