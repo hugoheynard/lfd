@@ -18,7 +18,7 @@ décrite en [annexe](#annexe--git-integration-build-côté-cloudflare).
 
 ---
 
-## Méthode CI — `.github/workflows/deploy-b2b.yml`
+## Méthode CI — `.github/workflows/deploy_b2b_frontend_platform.yml`
 
 Le workflow (déjà présent dans le repo) fait, à chaque push sur **`main`** :
 
@@ -79,8 +79,8 @@ GitHub → repo **`hugoheynard/lfd`** → **Settings** → **Secrets and variabl
   `apps/lfc-B2B-platform-frontend/**` ou `pnpm-workspace.yaml` (le pin `catalog:`
   fold-ng). Bosser sur le **PIM ne redéploie pas** le B2B — même si tu installes
   une dépendance PIM (le lockfile n'est **pas** dans le trigger).
-- **Manuel** : onglet **Actions** du repo → workflow **Deploy B2B platform** →
-  **Run workflow**.
+- **Manuel** : onglet **Actions** du repo → workflow **deploy_b2b_frontend_platform**
+  → **Run workflow**.
 
 Tu bosses sur `dev` → la prod ne bouge que quand tu **merges `dev → main`**
 (hygiène : la prod = un acte délibéré).
@@ -122,7 +122,7 @@ Sortie **100 % statique** → tous les appels API partent du **navigateur** :
 |                |                                                                         |
 | -------------- | ----------------------------------------------------------------------- |
 | Méthode        | CI GitHub Actions → Direct Upload                                       |
-| Workflow       | `.github/workflows/deploy-b2b.yml`                                      |
+| Workflow       | `.github/workflows/deploy_b2b_frontend_platform.yml`                    |
 | Projet Pages   | `lfc-b2b` (Direct Upload)                                               |
 | Secrets repo   | `CLOUDFLARE_API_TOKEN_B2B_PLATFORM`, `CLOUDFLARE_ACCOUNT_ID`            |
 | Build interne  | `ng build --configuration cloudflare`                                   |

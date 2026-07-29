@@ -18,7 +18,7 @@ browser-only** (pas de SSR). ⚠️ Le build par défaut (`ng build`) est SSR
 (`outputMode: server`) ; le statique n'existe **que** via la configuration
 `cloudflare` (script `build:cloudflare`).
 
-**Méthode : CI (GitHub Actions).** Le workflow `.github/workflows/deploy-b2b.yml`
+**Méthode : CI (GitHub Actions).** Le workflow `.github/workflows/deploy_b2b_frontend_platform.yml`
 build (gate `tsc` + `build:cloudflare`) et pousse à Cloudflare Pages (Direct
 Upload, projet `lfc-b2b`) à chaque push sur `main`. Build local pour vérifier :
 
