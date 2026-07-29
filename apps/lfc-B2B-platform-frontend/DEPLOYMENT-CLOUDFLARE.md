@@ -61,10 +61,17 @@ Deux options :
 GitHub → repo **`hugoheynard/lfd`** → **Settings** → **Secrets and variables** →
 **Actions** → **New repository secret** :
 
-| Secret                  | Valeur                    |
-| ----------------------- | ------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | le token créé à l'étape 2 |
-| `CLOUDFLARE_ACCOUNT_ID` | ton Account ID            |
+| Secret                              | Valeur                    |
+| ----------------------------------- | ------------------------- |
+| `CLOUDFLARE_API_TOKEN_B2B_PLATFORM` | le token créé à l'étape 2 |
+| `CLOUDFLARE_ACCOUNT_ID`             | ton Account ID            |
+
+> **Convention de nommage** — ce repo héberge plusieurs apps static (B2B, PIM,
+> futur B2B admin) qui déploient toutes depuis `lfd`. Le token est donc **suffixé
+> par app** (`…_B2B_PLATFORM`) pour les révoquer/roter indépendamment. L'**Account
+> ID**, lui, est **partagé** (un seul compte Cloudflare) → un seul
+> `CLOUDFLARE_ACCOUNT_ID` pour tout le monde. Le PIM aura son
+> `CLOUDFLARE_API_TOKEN_PIM`, etc.
 
 ### Déclencher un déploiement
 
@@ -115,7 +122,7 @@ Sortie **100 % statique** → tous les appels API partent du **navigateur** :
 | Méthode        | CI GitHub Actions → Direct Upload                                       |
 | Workflow       | `.github/workflows/deploy-b2b.yml`                                      |
 | Projet Pages   | `lfc-b2b` (Direct Upload)                                               |
-| Secrets repo   | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`                         |
+| Secrets repo   | `CLOUDFLARE_API_TOKEN_B2B_PLATFORM`, `CLOUDFLARE_ACCOUNT_ID`            |
 | Build interne  | `ng build --configuration cloudflare`                                   |
 | Sortie publiée | `apps/lfc-B2B-platform-frontend/dist/lfc-b2b-platform-frontend/browser` |
 | Déploie sur    | push `main` (ou Run workflow)                                           |
@@ -127,8 +134,9 @@ Sortie **100 % statique** → tous les appels API partent du **navigateur** :
 
 - **Le workflow échoue à `wrangler pages deploy` (project not found)** → le projet
   `lfc-b2b` n'existe pas encore : créer le Direct Upload (étape 1).
-- **`Authentication error` wrangler** → secret `CLOUDFLARE_API_TOKEN` absent/mauvaise
-  permission (il faut **Pages · Edit**) ou `CLOUDFLARE_ACCOUNT_ID` faux.
+- **`Authentication error` wrangler** → secret `CLOUDFLARE_API_TOKEN_B2B_PLATFORM`
+  absent/mauvaise permission (il faut **Pages · Edit**) ou `CLOUDFLARE_ACCOUNT_ID`
+  faux.
 - **Build échoue sur `fold-ng` introuvable** → install pas lancé à la racine du
   workspace (le workflow le fait déjà avec `pnpm install` à la racine).
 - **404 au reload d'une sous-route** → `_redirects` absent de `public/` (donc de

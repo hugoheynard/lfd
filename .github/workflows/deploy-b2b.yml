@@ -5,8 +5,11 @@ name: Deploy B2B platform
 # SEO), so the output is plain files served straight from Pages.
 #
 # Requires two repo secrets (Settings → Secrets and variables → Actions):
-#   CLOUDFLARE_API_TOKEN  — token with "Account · Cloudflare Pages · Edit"
-#   CLOUDFLARE_ACCOUNT_ID — your Cloudflare account id
+#   CLOUDFLARE_API_TOKEN_B2B_PLATFORM — token with "Account · Cloudflare Pages ·
+#     Edit" (per-app name: this repo hosts several static apps, each gets its own
+#     token so they rotate/revoke independently).
+#   CLOUDFLARE_ACCOUNT_ID — the Cloudflare account id (shared across every app —
+#     one account, one id).
 # and a Pages project named `lfc-b2b` (create it once: `npx wrangler pages
 # project create lfc-b2b`, or the first manual `wrangler pages deploy`).
 
@@ -55,7 +58,7 @@ jobs:
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_B2B_PLATFORM }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: >-
             pages deploy
