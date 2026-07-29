@@ -1,0 +1,17 @@
+{
+  // ts-jest compiles specs to CommonJS in-memory — override the NodeNext/ESM
+  // emit of the build config just for the test run.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "target": "ES2022",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "allowSyntheticDefaultImports": true,
+    "types": ["jest", "node"],
+    "noEmit": true
+  },
+  "include": ["src", "src/__tests__"]
+}

@@ -1,0 +1,17 @@
+{
+  // Storage core (S3/R2 adapter + primitives) — inherits the monorepo backend
+  // flag layer (NodeNext, ES2023, strict). Emits declarations so consumers get
+  // types from `dist`, while `exports.types` points at source in-workspace.
+  "extends": "../../tsconfig/tsflags.backend.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+}
