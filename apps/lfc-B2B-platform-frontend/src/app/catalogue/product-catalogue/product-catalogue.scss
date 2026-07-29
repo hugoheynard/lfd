@@ -1,0 +1,51 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg, 1.25rem);
+}
+
+.cat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md, 1rem);
+}
+
+.cat-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md, 1rem);
+}
+.cat-f-cats {
+  flex: 1 1 16rem;
+  max-width: 22rem;
+  min-width: 0;
+}
+.cat-f-search {
+  flex: 1 1 16rem;
+  max-width: 24rem;
+  min-width: 0;
+}
+
+.cat-count {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+/* Grid fluide : le `min` (≈210px) fixe le nombre de colonnes — ~5 sur un
+   MacBook, moins en descendant — et `min(…, 100%)` évite tout débordement sous
+   210px (mobile = 1 colonne). Aucune média-query. */
+.product-grid {
+  display: grid;
+  gap: var(--fold-space-lg, 1.25rem);
+  grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
+}
+
+/* « Voir plus » — centré sous la dernière ligne de la grille. */
+.cat-more {
+  display: flex;
+  justify-content: center;
+}
+/* Le paginator garde sa mise en page naturelle (host flex de fold) — on n'y
+   touche pas ; le `gap` de `.cat` gère l'espacement. */

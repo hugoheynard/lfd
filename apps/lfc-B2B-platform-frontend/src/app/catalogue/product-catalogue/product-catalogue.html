@@ -1,0 +1,72 @@
+<div class="cat">
+  <div class="cat-filters">
+    <fold-multiselect
+      class="cat-f-cats"
+      label="Catégories"
+      placeholder="Toutes les catégories"
+      [options]="categoryOptions()"
+      [(value)]="selectedCategories"
+    />
+    <fold-search
+      class="cat-f-search"
+      placeholder="Rechercher un produit…"
+      (searchChange)="query.set($event)"
+    />
+    <button
+      foldButton
+      type="button"
+      icon="heart"
+      [emphasis]="favoritesOnly() ? 'solid' : 'outline'"
+      [intent]="favoritesOnly() ? 'primary' : 'neutral'"
+      (click)="favoritesOnly.set(!favoritesOnly())"
+    >
+      Favoris
+      @if (favorites.count() > 0) {
+        ({{ favorites.count() }})
+      }
+    </button>
+    @if (hasFilters()) {
+      <button foldButton type="button" emphasis="soft" intent="neutral" (click)="clearFilters()">
+        Effacer
+      </button>
+    }
+  </div>
+
+  @if (total() > 0) {
+    <p class="cat-count">{{ total() }} produit{{ total() > 1 ? 's' : '' }}</p>
+
+    <div class="product-grid">
+      @for (p of paged(); track p.id) {
+        <fold-product-card
+          [product]="p"
+          [favorite]="favorites.has(p.id)"
+          (favoriteToggle)="onFav($event)"
+          (action)="onAdd($event)"
+          (notify)="onNotify($event)"
+        />
+      }
+    </div>
+
+    @if (canSeeMore()) {
+      <div class="cat-more">
+        <button foldButton type="button" emphasis="soft" intent="neutral" (click)="seeMore()">
+          Voir plus
+        </button>
+      </div>
+    }
+
+    @if (total() > pageSize()) {
+      <fold-paginator
+        [currentPage]="page()"
+        [totalItems]="total()"
+        [pageSize]="pageSize()"
+        (pageChange)="page.set($event)"
+      />
+    }
+  } @else {
+    <fold-empty-state
+      title="Aucun produit"
+      subtitle="Aucun produit ne correspond à ces filtres. Essayez d'en retirer."
+    />
+  }
+</div>
