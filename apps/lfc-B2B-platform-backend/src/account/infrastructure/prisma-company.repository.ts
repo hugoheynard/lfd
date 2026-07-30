@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { CompanyStatus, CustomerRole } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
+import type { PaymentTerm } from "../domain/ports/account.reader.js";
 import type { Company } from "../domain/entities/company.js";
 import {
   CompanyRepository,
@@ -9,6 +10,46 @@ import {
   type KbisMetadata,
 } from "../domain/ports/company.repository.js";
 import type { ContactDetails } from "../domain/value-objects/contact-details.js";
+
+/**
+ * Alphabet de la référence humaine — **sans caractères ambigus** (ni `I`, `O`,
+ * `0`, `1`) : elle se dicte au téléphone sans confusion.
+ */
+const REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+/**
+ * Tire une référence `C-XXXXXX`. L'unicité est **garantie** par la colonne
+ * `@unique` ; ce tirage vise seulement à ne pas tomber dessus (32⁶ ≈ 1,07 Md de
+ * combinaisons), l'index restant le juge de paix en cas de course.
+ */
+function drawCompanyReference(): string {
+  let code = "";
+  for (let i = 0; i < 6; i += 1) {
+    code += REFERENCE_ALPHABET[Math.floor(Math.random() * REFERENCE_ALPHABET.length)];
+  }
+  return `C-${code}`;
+}
+
+/** Nombre de re-tirages avant d'abandonner (une collision est déjà quasi impossible). */
+const REFERENCE_MAX_ATTEMPTS = 5;
+
+/**
+ * Référence libre à la lecture — re-tire tant que la valeur est déjà prise, pour
+ * éviter qu'une collision (extrêmement rare) ne fasse échouer la création avec un
+ * P2002 trompeur. L'`@unique` reste la garantie finale sous course concurrente.
+ */
+async function pickFreeCompanyReference(
+  isTaken: (reference: string) => Promise<boolean>,
+): Promise<string> {
+  for (let attempt = 0; attempt < REFERENCE_MAX_ATTEMPTS; attempt += 1) {
+    const reference = drawCompanyReference();
+    if (!(await isTaken(reference))) {
+      return reference;
+    }
+  }
+  // Extrêmement improbable : on rend quand même une valeur, l'index tranchera.
+  return drawCompanyReference();
+}
 
 /** Adaptateur Prisma du port des sociétés. */
 @Injectable()
@@ -33,8 +74,16 @@ export class PrismaCompanyRepository extends CompanyRepository {
    */
   async declareOwnedBy(company: Company, ownerUserId: string): Promise<string> {
     return this.prisma.$transaction(async (tx) => {
+      const reference = await pickFreeCompanyReference(async (candidate) => {
+        const clash = await tx.company.findUnique({
+          where: { reference: candidate },
+          select: { id: true },
+        });
+        return clash !== null;
+      });
       const created = await tx.company.create({
         data: {
+          reference,
           raisonSociale: company.raisonSociale,
           enseigne: company.enseigne,
           formeJuridique: company.formeJuridique,
@@ -76,6 +125,20 @@ export class PrismaCompanyRepository extends CompanyRepository {
         contactTelephone: details.phone.value,
       },
     });
+  }
+
+  async updateIdentity(
+    companyId: string,
+    identity: { enseigne: string; tvaIntracom: string },
+  ): Promise<void> {
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: { enseigne: identity.enseigne, tvaIntracom: identity.tvaIntracom },
+    });
+  }
+
+  async updatePaymentTerm(companyId: string, term: PaymentTerm): Promise<void> {
+    await this.prisma.company.update({ where: { id: companyId }, data: { paymentTerm: term } });
   }
 
   async saveKbisMetadata(companyId: string, meta: KbisMetadata): Promise<void> {

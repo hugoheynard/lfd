@@ -62,6 +62,7 @@ async function main(): Promise<void> {
 
   const company = await prisma.company.create({
     data: {
+      reference: "C-DEV001",
       raisonSociale: COMPANY_NAME,
       formeJuridique: "SAS",
       siret: "00000000000000",

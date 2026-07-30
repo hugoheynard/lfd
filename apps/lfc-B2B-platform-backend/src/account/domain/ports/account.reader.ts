@@ -1,6 +1,14 @@
 import type { CompanyRole } from "../value-objects/company-role.js";
 import type { CompanyStatus } from "../value-objects/company-status.js";
 
+/**
+ * Condition de règlement (miroir de l'enum Prisma `PaymentTerm`). C'est un
+ * réglage **toujours présent** de l'entreprise — jamais absent —, défaut « à la
+ * commande » (`per_order`), et **validé par le commercial** (le client ne
+ * l'édite pas librement).
+ */
+export type PaymentTerm = "per_order" | "monthly" | "net60" | "net90";
+
 /** Le profil de la personne, tel que l'écran « Mon profil » l'affiche. */
 export interface ProfileView {
   readonly userId: string;
@@ -37,12 +45,18 @@ export interface KbisView {
 /** Une société de la personne, telle qu'un onglet de « Mes entreprises » l'affiche. */
 export interface CompanyView {
   readonly id: string;
+  /** Référence humaine courte (`C-XXXXXX`), dictable au téléphone. */
+  readonly reference: string;
   readonly raisonSociale: string;
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
   readonly tvaIntracom: string;
+  /** La forme juridique impose-t-elle un n° de TVA ? (dérivé, cf. `vat-liability`). */
+  readonly vatNumberRequired: boolean;
   readonly status: CompanyStatus;
+  /** Condition de règlement, toujours présente (défaut « à la commande »). */
+  readonly paymentTerm: PaymentTerm;
   /** Rôle de la personne dans CETTE société. */
   readonly role: CompanyRole;
   /** Contact **principal** (carte « Admin du compte entreprise »), toujours présent. */

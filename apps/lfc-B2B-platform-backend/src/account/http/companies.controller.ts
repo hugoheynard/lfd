@@ -1,9 +1,19 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import {
+  type UpdateIdentityPayload,
+  updateIdentityPayloadSchema,
+  type UpdatePaymentTermPayload,
+  updatePaymentTermPayloadSchema,
+} from "@lfd/contracts";
+import { Body, Controller, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { CurrentUser } from "../../infra/auth/current-user.decorator.js";
 import type { Principal } from "../../infra/auth/principal.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
+import {
+  UpdateCompanyIdentityCommand,
+  UpdatePaymentTermCommand,
+} from "../application/commands/company-settings-commands.js";
 import { CreateCompanyCommand } from "../application/commands/create-company.command.js";
 import { createCompanyPayload, type CreateCompanyPayload } from "./payloads.js";
 
@@ -13,16 +23,13 @@ export interface CreatedCompanyResponse {
 }
 
 /**
- * `POST /companies` — déclarer une entreprise depuis « Mes entreprises ».
+ * Le cœur d'une entreprise : sa **création** et ses **réglages** propres
+ * (identité souple, condition de règlement). Les sous-ressources (contacts, KBIS,
+ * adresses) vivent dans leurs propres contrôleurs. Ce contrôleur ne porte pas de
+ * logique : il dispatche au bus.
  *
- * Ce contrôleur ne fait **que** la création : les opérations sur une entreprise
- * existante (contacts, KBIS) vivent dans leurs propres sous-contrôleurs
- * (`CompanyContactsController`, `CompanyKbisController`), une responsabilité par
- * fichier. Il ne porte pas de logique : il dispatche la commande au
- * `CreateCompanyHandler` via le bus.
- *
- * Pas de garde de rôle sur la création : n'importe quelle personne authentifiée
- * déclare la sienne et en devient gestionnaire.
+ * Création : aucune garde de rôle (chacun déclare la sienne). Réglages sur une
+ * entreprise existante : **murés gestionnaire** (le handler s'en charge).
  */
 @Controller("companies")
 export class CompaniesController {
@@ -45,5 +52,31 @@ export class CompaniesController {
       ),
     );
     return { id };
+  }
+
+  /** Édite l'identité souple (enseigne + n° de TVA) — gestionnaire. */
+  @Patch(":companyId/identity")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateIdentity(
+    @CurrentUser() user: Principal,
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(updateIdentityPayloadSchema)) payload: UpdateIdentityPayload,
+  ): Promise<void> {
+    await this.commands.execute<UpdateCompanyIdentityCommand, void>(
+      new UpdateCompanyIdentityCommand(user.userId, companyId, payload),
+    );
+  }
+
+  /** Enregistre la condition de règlement souhaitée — gestionnaire. */
+  @Patch(":companyId/payment-term")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updatePaymentTerm(
+    @CurrentUser() user: Principal,
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(updatePaymentTermPayloadSchema)) payload: UpdatePaymentTermPayload,
+  ): Promise<void> {
+    await this.commands.execute<UpdatePaymentTermCommand, void>(
+      new UpdatePaymentTermCommand(user.userId, companyId, payload.paymentTerm),
+    );
   }
 }

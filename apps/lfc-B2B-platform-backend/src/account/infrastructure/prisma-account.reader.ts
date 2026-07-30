@@ -7,6 +7,7 @@ import {
   type CompanyView,
   type ContactView,
 } from "../domain/ports/account.reader.js";
+import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 
 /** Une ligne de contact additionnel telle que Prisma la sélectionne. */
 interface ContactRow {
@@ -50,12 +51,14 @@ export class PrismaAccountReader extends AccountReader {
             company: {
               select: {
                 id: true,
+                reference: true,
                 raisonSociale: true,
                 enseigne: true,
                 formeJuridique: true,
                 siret: true,
                 tvaIntracom: true,
                 status: true,
+                paymentTerm: true,
                 kbisFileName: true,
                 kbisUploadedAt: true,
                 // Contact principal, aplati sur la société.
@@ -87,12 +90,15 @@ export class PrismaAccountReader extends AccountReader {
 
     const companies: CompanyView[] = row.memberships.map(({ role, company }) => ({
       id: company.id,
+      reference: company.reference,
       raisonSociale: company.raisonSociale,
       enseigne: company.enseigne,
       formeJuridique: company.formeJuridique,
       siret: company.siret,
       tvaIntracom: company.tvaIntracom,
+      vatNumberRequired: requiresVatNumber(company.formeJuridique),
       status: company.status,
+      paymentTerm: company.paymentTerm,
       role,
       primaryContact: {
         id: null,

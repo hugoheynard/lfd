@@ -1,5 +1,12 @@
+import type { PaymentTerm } from "../ports/account.reader.js";
 import type { Company } from "../entities/company.js";
 import type { ContactDetails } from "../value-objects/contact-details.js";
+
+/** Identité **souple** éditable : enseigne + n° de TVA. */
+export interface EditableIdentity {
+  readonly enseigne: string;
+  readonly tvaIntracom: string;
+}
 
 /** Port d'**écriture** des sociétés. */
 export abstract class CompanyRepository {
@@ -26,6 +33,12 @@ export abstract class CompanyRepository {
    * jour, on ne le supprime jamais.
    */
   abstract updatePrimaryContact(companyId: string, details: ContactDetails): Promise<void>;
+
+  /** Édite l'identité souple (enseigne + n° de TVA). L'identité légale reste fixée. */
+  abstract updateIdentity(companyId: string, identity: EditableIdentity): Promise<void>;
+
+  /** Enregistre la condition de règlement souhaitée par le client. */
+  abstract updatePaymentTerm(companyId: string, term: PaymentTerm): Promise<void>;
 
   /** Enregistre les métadonnées du KBIS déposé (le fichier, lui, est dans R2). */
   abstract saveKbisMetadata(companyId: string, meta: KbisMetadata): Promise<void>;

@@ -6,10 +6,13 @@ import { AddDeliveryAddressHandler } from "./application/commands/add-delivery-a
 import { CreateCompanyHandler } from "./application/commands/create-company.handler.js";
 import { RemoveCompanyContactHandler } from "./application/commands/remove-company-contact.handler.js";
 import { RemoveDeliveryAddressHandler } from "./application/commands/remove-delivery-address.handler.js";
+import { RequestActivationSupportHandler } from "./application/commands/request-activation-support.handler.js";
 import { SaveBillingAddressHandler } from "./application/commands/save-billing-address.handler.js";
 import { SetDefaultDeliveryAddressHandler } from "./application/commands/set-default-delivery-address.handler.js";
 import { UpdateCompanyContactHandler } from "./application/commands/update-company-contact.handler.js";
+import { UpdateCompanyIdentityHandler } from "./application/commands/update-company-identity.handler.js";
 import { UpdateDeliveryAddressHandler } from "./application/commands/update-delivery-address.handler.js";
+import { UpdatePaymentTermHandler } from "./application/commands/update-payment-term.handler.js";
 import { UpdateMyProfileHandler } from "./application/commands/update-my-profile.handler.js";
 import { UpdatePrimaryContactHandler } from "./application/commands/update-primary-contact.handler.js";
 import { UploadKbisHandler } from "./application/commands/upload-kbis.handler.js";
@@ -33,8 +36,11 @@ import { PrismaCompanyContactRepository } from "./infrastructure/prisma-company-
 import { PrismaCompanyRepository } from "./infrastructure/prisma-company.repository.js";
 import { PrismaMembershipReader } from "./infrastructure/prisma-membership.reader.js";
 import { PrismaUserProfileRepository } from "./infrastructure/prisma-user-profile.repository.js";
+import { PrismaSupportRequestRepository } from "./infrastructure/prisma-support-request.repository.js";
 import { S3KbisStore } from "./infrastructure/s3-kbis-store.js";
+import { SupportRequestRepository } from "./domain/ports/support-request.repository.js";
 import { CompaniesController } from "./http/companies.controller.js";
+import { CompanySupportController } from "./http/company-support.controller.js";
 import { CompanyAddressesController } from "./http/company-addresses.controller.js";
 import { CompanyContactsController } from "./http/company-contacts.controller.js";
 import { CompanyKbisController } from "./http/company-kbis.controller.js";
@@ -56,6 +62,7 @@ import { MeController } from "./http/me.controller.js";
     CompanyContactsController,
     CompanyKbisController,
     CompanyAddressesController,
+    CompanySupportController,
   ],
   providers: [
     UpdateMyProfileHandler,
@@ -73,6 +80,9 @@ import { MeController } from "./http/me.controller.js";
     RemoveDeliveryAddressHandler,
     SetDefaultDeliveryAddressHandler,
     ListCompanyAddressesHandler,
+    UpdateCompanyIdentityHandler,
+    UpdatePaymentTermHandler,
+    RequestActivationSupportHandler,
     { provide: UserProfileRepository, useClass: PrismaUserProfileRepository },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },
     { provide: CompanyContactRepository, useClass: PrismaCompanyContactRepository },
@@ -82,6 +92,7 @@ import { MeController } from "./http/me.controller.js";
     { provide: AccountReader, useClass: PrismaAccountReader },
     { provide: CustomerIdentityPort, useClass: Auth0CustomerIdentity },
     { provide: KbisStore, useClass: S3KbisStore },
+    { provide: SupportRequestRepository, useClass: PrismaSupportRequestRepository },
   ],
 })
 export class AccountModule {}

@@ -43,9 +43,14 @@ export interface UserSeed {
  * des tests veulent une société utilisable, et ceux qui exercent l'attente de
  * validation passent `pending` explicitement.
  */
+let referenceSeq = 0;
+
 export function createCompany(prisma: PrismaService, seed: CompanySeed = {}): Promise<Company> {
+  referenceSeq += 1;
   return prisma.company.create({
     data: {
+      // Référence unique par appel (la base est purgée entre les tests).
+      reference: `C-T${referenceSeq.toString().padStart(5, "0")}`,
       raisonSociale: seed.raisonSociale ?? "Café de Test SAS",
       formeJuridique: "SAS",
       siret: seed.siret ?? "12345678900015",

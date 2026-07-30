@@ -103,6 +103,11 @@ enum OrderStatus {
 model Company {
   id String @id @default(cuid())
 
+  // Référence humaine courte (`C-XXXXXX`), lisible et dictable au téléphone —
+  // pour que le client donne sa référence en cas de panne de service. Générée à
+  // la création, jamais l'`id` technique (cuid, imprononçable).
+  reference String @unique
+
   // Identité légale (cf. Etablissement, front)
   raisonSociale  String @map("raison_sociale")
   enseigne       String @default("") // nom commercial si différent
@@ -141,10 +146,11 @@ model Company {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships Membership[]
-  contacts    CompanyContact[]
-  addresses   Address[]
-  orders      Order[]
+  memberships     Membership[]
+  contacts        CompanyContact[]
+  addresses       Address[]
+  orders          Order[]
+  supportRequests SupportRequest[]
 
   @@index([siret])
   @@map("companies")
@@ -177,10 +183,57 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships  Membership[]
-  ordersPlaced Order[]
+  memberships     Membership[]
+  ordersPlaced    Order[]
+  supportRequests SupportRequest[]
 
   @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SupportRequest — une demande de rappel/contact à l'activation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Canal de contact souhaité (aligné sur `SupportChannel`, front).
+enum SupportChannel {
+  phone
+  email
+}
+
+/// Demi-journée d'un créneau de rappel.
+enum SupportSlot {
+  morning
+  afternoon
+}
+
+/// Une demande de support à l'activation : le client veut être contacté par
+/// l'équipe commerciale. Wallée par `company_id`. Lue par le commercial (la
+/// notification e-mail viendra avec l'infra mailer) ; `handled_at` marque le
+/// traitement.
+model SupportRequest {
+  id String @id @default(cuid())
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  requestedByUserId String @map("requested_by_user_id")
+  requestedBy       User   @relation(fields: [requestedByUserId], references: [id])
+
+  channel     SupportChannel
+  phoneNumber String  @default("") @map("phone_number")
+  asap        Boolean @default(true)
+
+  // Créneau daté si `asap = false`.
+  scheduledDate DateTime?    @map("scheduled_date") @db.Date
+  slot          SupportSlot?
+
+  message String @default("")
+
+  handledAt DateTime? @map("handled_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([companyId])
+  @@map("support_requests")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
