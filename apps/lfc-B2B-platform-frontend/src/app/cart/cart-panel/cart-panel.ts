@@ -5,11 +5,13 @@ import {
   FoldButtonIconComponent,
   type FoldPanelDefaults,
   FoldPanelHeaderComponent,
+  FoldPanelHostService,
   FoldPanelRef,
 } from 'fold-ng';
 
 import { formatEurValue } from '../../data/catalogue-seed';
 import { type CartLine, CartService } from '../../data/cart.service';
+import { CheckoutPanel } from '../../orders/checkout-panel/checkout-panel';
 
 /**
  * Panneau **Mon panier** — ouvert via `FoldPanelHostService.open()`. Liste les
@@ -37,6 +39,7 @@ export class CartPanel {
   };
 
   private readonly ref = inject(FoldPanelRef);
+  private readonly panelHost = inject(FoldPanelHostService);
   protected readonly cart = inject(CartService);
 
   /** "2,50 €". */
@@ -60,9 +63,10 @@ export class CartPanel {
     this.cart.clear();
   }
 
-  /** Validation — placeholder tant que le backend commandes n'existe pas. */
+  /** Validation : ferme le panier et ouvre le checkout (choix livraison + envoi). */
   protected checkout(): void {
-    this.ref.close(true);
+    this.ref.close();
+    this.panelHost.open(CheckoutPanel, { side: 'right' });
   }
 
   protected close(): void {

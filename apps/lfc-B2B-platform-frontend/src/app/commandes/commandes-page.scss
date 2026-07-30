@@ -1,2 +1,39 @@
 /* Layout + scroll are owned by fold-page-layout and the global
    `router-outlet ~ *` rule in styles.scss. Page-local styles go here. */
+
+.company {
+  display: block;
+  max-width: 22rem;
+  margin-bottom: var(--fold-space-lg);
+}
+
+.orders {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+.order-number {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+.order-meta {
+  margin: var(--fold-space-xs) 0 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.order-total {
+  margin: var(--fold-space-sm) 0 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}

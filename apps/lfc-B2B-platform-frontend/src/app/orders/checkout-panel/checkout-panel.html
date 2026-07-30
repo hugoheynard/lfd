@@ -1,0 +1,109 @@
+<fold-panel-header title="Passer commande" subtitle="Livraison, date et note." />
+
+<div class="body">
+  @if (placedNumber(); as number) {
+    <!-- Confirmation : la commande est en base. -->
+    <fold-callout variant="success">
+      Commande <strong>{{ number }}</strong> enregistrée. Vous la retrouverez dans « Commandes ».
+    </fold-callout>
+    <div class="foot">
+      <button foldButton intent="primary" (click)="done()">Continuer</button>
+    </div>
+  } @else {
+    <!-- Récapitulatif du panier -->
+    <section class="summary">
+      <p class="section-label">Votre panier</p>
+      <ul class="lines">
+        @for (line of cart.lines(); track line.product.id) {
+          <li class="line">
+            <span class="line-name">{{ line.qty }} × {{ line.product.name }}</span>
+            <span class="line-total">{{ fmt(line.lineTotalEur) }}</span>
+          </li>
+        } @empty {
+          <li class="muted">Votre panier est vide.</li>
+        }
+      </ul>
+      <p class="total"><span>Total</span><span>{{ fmt(cart.totalEur()) }}</span></p>
+    </section>
+
+    <!-- Entreprise cliente -->
+    @if (companies().length === 0) {
+      <fold-callout variant="warning">
+        Vous n'avez pas encore d'entreprise. Créez-en une dans « Mes entreprises » pour commander.
+      </fold-callout>
+    } @else if (companies().length === 1) {
+      <p class="section-label">Entreprise</p>
+      <p class="single-company">{{ selectedCompany()?.raisonSociale }}</p>
+    } @else {
+      <fold-select
+        label="Entreprise cliente"
+        [value]="companyId()"
+        (valueChange)="selectCompany($event)"
+      >
+        <option value="" disabled>Choisir une entreprise…</option>
+        @for (company of companies(); track company.id) {
+          <option [value]="company.id">{{ company.raisonSociale }}</option>
+        }
+      </fold-select>
+    }
+
+    <!-- Gate d'activation -->
+    @if (companyId() !== '' && !isActive()) {
+      <fold-callout variant="warning">
+        Cette entreprise n'est pas encore activée : vous pouvez préparer ce panier, mais la commande
+        ne pourra être passée qu'une fois le compte validé (conditions de règlement + KBIS).
+      </fold-callout>
+    }
+
+    <!-- Adresse de livraison -->
+    @if (isActive()) {
+      @if (addresses().length === 0) {
+        <fold-callout variant="info">
+          Aucune adresse de livraison pour cette entreprise. Ajoutez-en une avant de commander.
+        </fold-callout>
+      } @else {
+        <fold-select
+          label="Adresse de livraison"
+          [value]="addressId()"
+          (valueChange)="addressId.set($event)"
+        >
+          @for (address of addresses(); track address.id) {
+            <option [value]="address.id">{{ addressLabel(address) }}</option>
+          }
+        </fold-select>
+      }
+
+      <label class="field">
+        <span class="section-label">Date de livraison souhaitée <em>(optionnel)</em></span>
+        <input
+          class="date"
+          type="date"
+          [value]="requestedDate()"
+          (input)="requestedDate.set(inputValue($event))"
+        />
+      </label>
+
+      <label class="field">
+        <span class="section-label">Note <em>(optionnel)</em></span>
+        <textarea
+          class="note"
+          rows="2"
+          placeholder="Consigne pour cette commande…"
+          [value]="note()"
+          (input)="note.set(inputValue($event))"
+        ></textarea>
+      </label>
+    }
+
+    @if (errorMessage(); as message) {
+      <fold-callout variant="alert">{{ message }}</fold-callout>
+    }
+
+    <div class="foot">
+      <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+      <button foldButton intent="primary" [disabled]="!canSubmit()" (click)="placeOrder()">
+        {{ submitting() ? 'Envoi…' : 'Passer commande' }}
+      </button>
+    </div>
+  }
+</div>

@@ -1,0 +1,103 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+}
+
+.section-label {
+  margin: 0 0 var(--fold-space-xs);
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+.section-label em {
+  font-weight: 400;
+  font-style: normal;
+  color: var(--fold-color-text-muted);
+}
+
+.summary {
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md, 10px);
+}
+.lines {
+  list-style: none;
+  margin: 0 0 var(--fold-space-sm);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+.line-total {
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+.total {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding-top: var(--fold-space-sm);
+  border-top: 1px solid var(--fold-color-border-subtle);
+  font-weight: 600;
+}
+
+.single-company {
+  margin: 0;
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.date,
+.note {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--fold-space-sm);
+  font: inherit;
+  color: var(--fold-color-text);
+  background: var(--fold-color-surface, transparent);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 10px);
+}
+.note {
+  resize: vertical;
+  min-height: 3rem;
+}
+.date:focus-visible,
+.note:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 1px;
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  margin-top: auto;
+  padding-top: var(--fold-space-sm);
+}
