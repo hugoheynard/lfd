@@ -82,22 +82,22 @@ porte des `memberships` 0..N, pas un `company_id` unique) :
   `AccountService.uploadKbis` / `fetchKbis`.
 - **Dropover + inline-confirm** est le pattern d'actions de ligne partagé :
   contacts ET adresses de livraison (`profil/adresses-section/`) l'utilisent.
-- **Adresses de livraison** — l'adresse **par défaut remonte toujours en tête** de
-  la pile (tri stable dans le computed `adressesLivraison`). Le type suit une
-  chaîne : base `Adresse` (postale) puis `AdresseLivraison = Adresse &
-  DeliverySpecs` où `DeliverySpecs` = une **note pour les livreurs** + des
-  **créneaux préférés** (`DeliverySlots` : `everyday` = un créneau global tous les
-  jours, ou `perDay` = un créneau optionnel par jour ouvré). Le panneau
-  `adresse-panel` édite tout ça (natifs `<textarea>`/`<input type="time">`, lus via
-  un helper `inputValue()` typé — pas de `$any`).
+- **Adresses de livraison** (`AddressesService`, réelles par entreprise) —
+  l'adresse **par défaut remonte toujours en tête** (le backend la trie). Note
+  livreurs + **créneaux préférés** (`everyday` = global, ou `perDay` = par jour) +
+  contact sur place + point GPS, tout édité par `adresse-panel` (natifs
+  `<textarea>`/`<input type="time">`, lus via un helper `inputValue()` typé — pas de
+  `$any`). Types = `@lfd/contracts` ; formateurs neutres dans
+  `entreprises/delivery-format.ts`.
 
-⚠️ Dans l'onglet d'une entreprise, identité légale, **contacts** et **KBIS**
-viennent de l'API. **Adresses et facturation** lisent encore
-`data/profil.service.ts` (en mémoire, démo) — un `fold-callout` le dit, c'est la
-tranche suivante à câbler. Quand ce fil existera, `DeliverySpecs` (`note`,
-`slots`) est le sous-ensemble à promouvoir dans un futur package feuille
-`@lfd/contracts` (Zod), consommé par back **et** front — l'app reste un puits, elle
-ne possède jamais le contrat (cf. la même logique que `@lfd/storage`).
+✅ Dans l'onglet d'une entreprise, **tout** est servi par l'API par entreprise :
+identité, contacts, KBIS, **adresses** (facturation + livraison via
+`AddressesService`) et **facturation** (condition de règlement, **lecture seule** —
+réglage toujours présent, défaut « à la commande », validé par le commercial ;
+exposée dans `/me` via `CompanyView.paymentTerm`). Le `ProfilService` démo ne sert
+plus que `societe-section` (héritage). Les types de fil viennent de
+`@lfd/contracts` en **import de type** (aucun zod dans le bundle) — l'app reste un
+puits, elle ne possède jamais le contrat.
 
 ⚠️ `tsc -p tsconfig.json` ne vérifie **rien** ici (`files: []` + `references`).
 Pour type-checker : `npx tsc --noEmit -p tsconfig.app.json`, ou `pnpm build`
