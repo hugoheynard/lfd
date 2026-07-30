@@ -123,6 +123,43 @@ fait les N réactions.
   persistance (localStorage → API cart) + l'étape merge-on-login. Décision : à
   trancher avant launch selon le besoin cross-device / 2ᵉ plateforme.
 
+## Responsabilité des contrats inter-briques (producteur vs consommateur)
+
+Règle : **le producteur publie un contrat stable ; le consommateur adapte.** Le
+B2B (commerce, source des commandes) **ne produit pas** d'adapter taillé pour le
+labo — il **publie un format canonique** et **le back labo écrit son propre
+adapter** (anti-corruption layer) pour le traduire vers ses écrans/machines.
+
+Le plan de prod **EST** l'agrégation : le Worker cron du soir somme les quantités
+**par SKU** sur les commandes à livrer demain (« demain : 120 croissants, 80
+baguettes »), avec la date, éventuellement groupé par catégorie. C'est ça le read
+model canonique publié. La ligne de partage porte sur le **format**, pas sur
+l'agrégation :
+
+| Élément | Qui | Statut |
+| --- | --- | --- |
+| Agrégation SKU→quantité pour demain (date, catégorie) | **prod** (le plan) | contrat canonique **publié** |
+| Mise en forme labo (regroupement par poste, ordre de fournée, format machine) | **labo** (son ACL) | adapter du **consommateur** |
+
+L'agrégation est une **projection sur les commandes commerce** — calculée par le
+Worker prod (ou exposée par le back commerce), elle reste le read model canonique ;
+le labo n'y touche qu'en lecture.
+
+Pourquoi jamais l'inverse :
+
+- **Sens de dépendance** — si le B2B fabriquait l'adapter labo, il devrait
+  connaître le schéma du labo et changerait à chaque évolution de celui-ci : le
+  consommateur piloterait le producteur. C'est le **cycle app→app** qu'on refuse
+  (même logique que la chaîne de responsabilité des types : une app est un puits).
+- **Le consommateur connaît ses besoins** — l'ACL vit **à la frontière du
+  consommateur** ; chaque contexte adapte ce qui entre chez lui.
+- **N consommateurs** — un adapter par cible (labo, projection Shopify, compta,
+  analytics) ne scale pas ; **un contrat publié** oui.
+
+Si le contrat devient un vrai **format d'échange partagé** (JSON/CSV/PDF de fiche
+de prod), sa **forme** va dans le package feuille `@lfd/contracts` (comme les DTO
+HTTP) — dépendu des deux côtés, possédé par aucune app.
+
 ## Coût
 
 - Chemin **tout Workers + cron** : **0 €** (Workers free + Cron Triggers gratuits).
