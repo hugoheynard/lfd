@@ -27,6 +27,10 @@
     "db:test:setup": "tsx test/setup-test-database.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1097.0",
+    "@aws-sdk/s3-request-presigner": "^3.1097.0",
+    "@lfd/contracts": "workspace:*",
+    "@lfd/storage": "workspace:*",
     "@nestjs/common": "^11.1.9",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.9",
@@ -47,6 +51,7 @@
     "@nestjs/testing": "^11.1.9",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
+    "@types/multer": "^2.2.0",
     "@types/node": "^22.9.0",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^6.0.3",
