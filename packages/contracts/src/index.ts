@@ -26,6 +26,18 @@ export type {
   CompanyAddressesView,
   CreatedAddressResponse,
 } from "./address.js";
+export {
+  paymentTermSchema,
+  updateIdentityPayloadSchema,
+  updatePaymentTermPayloadSchema,
+} from "./company.js";
+export type { PaymentTerm, UpdateIdentityPayload, UpdatePaymentTermPayload } from "./company.js";
+export {
+  supportChannelSchema,
+  supportSlotSchema,
+  activationSupportPayloadSchema,
+} from "./support.js";
+export type { SupportChannel, SupportSlot, ActivationSupportPayload } from "./support.js";
 export { orderStatusSchema, orderLineInputSchema, placeOrderPayloadSchema } from "./order.js";
 export type {
   OrderStatus,
