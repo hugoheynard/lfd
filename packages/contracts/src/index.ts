@@ -26,3 +26,12 @@ export type {
   CompanyAddressesView,
   CreatedAddressResponse,
 } from "./address.js";
+export { orderStatusSchema, orderLineInputSchema, placeOrderPayloadSchema } from "./order.js";
+export type {
+  OrderStatus,
+  OrderLineInput,
+  PlaceOrderPayload,
+  OrderLineView,
+  OrderView,
+  PlacedOrderResponse,
+} from "./order.js";

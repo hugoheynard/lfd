@@ -189,6 +189,9 @@ importers:
       '@auth0/auth0-angular':
         specifier: ^2.11.0
         version: 2.11.0(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/router@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/platform-browser@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)))(rxjs@7.8.2))
+      '@lfd/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       express:
         specifier: ^5.1.0
         version: 5.2.1
