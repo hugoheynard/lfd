@@ -10,23 +10,30 @@ const token: VerifiedToken = {
   scopes: ["read:orders"],
 };
 
-/** Un customer actif de référence. */
-const activeUser: User = {
+/** Ce que le resolver lit : la personne et ses rattachements. */
+type UserWithMemberships = User & {
+  memberships: { companyId: string; role: CustomerRole }[];
+};
+
+/** Une personne active, rattachée à une société. */
+const activeUser: UserWithMemberships = {
   id: "user_1",
   auth0Sub: "auth0|123",
   email: "jean@client.fr",
-  role: CustomerRole.member,
+  firstName: "Jean",
+  lastName: "Client",
+  phone: "01 02 03 04 05",
   status: UserStatus.active,
-  companyId: "company_1",
   invitedBy: null,
   createdAt: new Date(0),
   updatedAt: new Date(0),
+  memberships: [{ companyId: "company_1", role: CustomerRole.member }],
 };
 
 /** Resolver dont la base renvoie `user` (ou `null`) pour n'importe quel lookup. */
-async function resolverReturning(user: User | null): Promise<CustomerUserResolver> {
+async function resolverReturning(user: UserWithMemberships | null): Promise<CustomerUserResolver> {
   const prismaStub = {
-    user: { findUnique: (): Promise<User | null> => Promise.resolve(user) },
+    user: { findUnique: (): Promise<UserWithMemberships | null> => Promise.resolve(user) },
   };
   const moduleRef = await Test.createTestingModule({
     providers: [CustomerUserResolver, { provide: PrismaService, useValue: prismaStub }],
@@ -51,15 +58,46 @@ describe("CustomerUserResolver", () => {
 
   it("résout un Principal autoritaire depuis la base pour un compte actif", async () => {
     const resolver = await resolverReturning(activeUser);
-    // userId / companyId / role / email viennent de la BASE (pas du token) ;
+    // userId / email / memberships viennent de la BASE (pas du token) ;
     // seuls subject + scopes viennent du token.
     await expect(resolver.resolve(token)).resolves.toEqual({
       subject: "auth0|123",
       userId: "user_1",
-      companyId: "company_1",
-      role: CustomerRole.member,
       email: "jean@client.fr",
+      memberships: [{ companyId: "company_1", role: CustomerRole.member }],
       scopes: ["read:orders"],
+    });
+  });
+
+  it("authentifie une personne sans aucune société (compte tout juste créé)", async () => {
+    // Le cas qui n'existait pas avant : `company_id` était NOT NULL, donc « aucune
+    // société » était irreprésentable. C'est désormais l'état de départ normal —
+    // il doit passer l'authentification, sinon l'empty state « Mes entreprises »
+    // serait inatteignable.
+    const resolver = await resolverReturning({ ...activeUser, memberships: [] });
+
+    await expect(resolver.resolve(token)).resolves.toMatchObject({
+      userId: "user_1",
+      memberships: [],
+    });
+  });
+
+  it("porte le rôle propre à chaque société pour une personne multi-sociétés", async () => {
+    const resolver = await resolverReturning({
+      ...activeUser,
+      memberships: [
+        { companyId: "company_1", role: CustomerRole.company_admin },
+        { companyId: "company_2", role: CustomerRole.member },
+      ],
+    });
+
+    // Gestionnaire ici, simple membre là : c'est bien le rattachement qui porte le
+    // rôle, et non la personne.
+    await expect(resolver.resolve(token)).resolves.toMatchObject({
+      memberships: [
+        { companyId: "company_1", role: CustomerRole.company_admin },
+        { companyId: "company_2", role: CustomerRole.member },
+      ],
     });
   });
 });

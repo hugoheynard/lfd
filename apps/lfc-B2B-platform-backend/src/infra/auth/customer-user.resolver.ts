@@ -25,6 +25,10 @@ export class CustomerUserResolver {
   async resolve(token: VerifiedToken): Promise<Principal> {
     const user = await this.prisma.user.findUnique({
       where: { auth0Sub: token.subject },
+      // Les rattachements font partie de l'identité autorisée : on les charge
+      // AVEC la personne, plutôt que dans une seconde requête que chaque
+      // appelant pourrait oublier.
+      include: { memberships: { select: { companyId: true, role: true } } },
     });
 
     if (user === null) {
@@ -34,12 +38,15 @@ export class CustomerUserResolver {
       throw new UnauthorizedException("Compte non actif.");
     }
 
+    // Une personne sans aucune société est parfaitement légitime : elle vient de
+    // créer son compte et n'a pas encore déclaré d'entreprise. Elle accède à son
+    // profil et à « Mes entreprises » — ce sont les endpoints MURÉS qui exigeront
+    // une société, pas l'authentification.
     return {
       subject: token.subject,
       userId: user.id,
-      companyId: user.companyId,
-      role: user.role,
       email: user.email,
+      memberships: user.memberships,
       scopes: token.scopes,
     };
   }

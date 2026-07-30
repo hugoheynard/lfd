@@ -16,9 +16,8 @@ import { Public } from "../public.decorator.js";
 const principal: Principal = {
   subject: "auth0|active",
   userId: "user_1",
-  companyId: "company_1",
-  role: CustomerRole.member,
   email: "jean@client.fr",
+  memberships: [{ companyId: "company_1", role: CustomerRole.member }],
   scopes: ["read:orders"],
 };
 

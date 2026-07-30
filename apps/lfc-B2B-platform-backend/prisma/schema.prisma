@@ -4,10 +4,15 @@
 //              documentation/architecture-flux-commande-prod.md
 //
 // Conventions (alignées sur le PIM) :
-// - `User` ICI = un CUSTOMER (client pro). Le staff/back-office vit dans une db
-//   SÉPARÉE (bounded context distinct) ; pas de table staff ici.
+// - `User` ICI = une PERSONNE côté client (customer), avec son profil : nom,
+//   prénom, e-mail, téléphone. Le staff/back-office vit dans une db SÉPARÉE
+//   (bounded context distinct) ; pas de table staff ici.
+// - Une personne et une société sont deux choses : le rattachement passe par
+//   `memberships` (0..N sociétés par personne, cf. le modèle Membership).
 // - Tenancy : chaque table possédée par un client porte `company_id` (le « mur »).
-//   On filtre TOUJOURS par le company_id du token. Le staff (autre db) n'est pas muré.
+//   On filtre TOUJOURS par ce company_id ; il ne se déduit PLUS du jeton, il est
+//   choisi par la requête et vérifié contre les memberships du demandeur.
+//   Le staff (autre db) n'est pas muré.
 // - Auth : aucune credential stockée. Auth0 possède l'auth ; on ne garde que
 //   `auth0_sub` (clé stable) + `email` (clé humaine / secours migration).
 // - Pas de DELETE physique : archivage par drapeau (`archived_at`) ou statut.
@@ -48,14 +53,21 @@ enum PaymentTerm {
 }
 
 /// Cycle de vie d'un compte client (établissement).
+///
+/// `pending` = société déclarée par le client depuis « Mes entreprises », pas
+/// encore validée commercialement (défaut à la création). L'activation reste
+/// **manuelle côté commercial** — décision verrouillée dans
+/// `documentation/architecture-onboarding-provisioning-b2b.md`.
 enum CompanyStatus {
+  pending
   active
   suspended
 }
 
-/// Rôle d'un customer AU SEIN de son établissement.
-/// `company_admin` = gère les users/commandes de sa société (le « gestionnaire ») ;
-/// `member` = passe des commandes.
+/// Rôle d'une personne AU SEIN d'une société donnée — porté par le `Membership`,
+/// donc variable d'une société à l'autre pour la même personne.
+/// `company_admin` = gère les users/commandes de cette société (le
+/// « gestionnaire », rôle du créateur) ; `member` = passe des commandes.
 enum CustomerRole {
   company_admin
   member
@@ -117,36 +129,40 @@ model Company {
   // BillingProfile le jour où ça grossit : plafond crédit, email de facturation…).
   paymentTerm PaymentTerm @default(per_order) @map("payment_term")
 
-  status CompanyStatus @default(active)
+  // Défaut `pending` : une société n'est jamais cliente parce qu'elle a été
+  // saisie — elle le devient par une activation commerciale explicite.
+  status CompanyStatus @default(pending)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  users     User[]
-  addresses Address[]
-  orders    Order[]
+  memberships Membership[]
+  addresses   Address[]
+  orders      Order[]
 
   @@index([siret])
   @@map("companies")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// User — un CUSTOMER (client pro), tenant-scoped
+// User — la PERSONNE qui possède le compte (son profil), sans société propre
 // ─────────────────────────────────────────────────────────────────────────────
 
 model User {
   id String @id @default(cuid())
 
-  // Identité Auth0 (aucun mot de passe stocké ici)
+  // Identité Auth0 (aucun mot de passe stocké ici). `email` est la clé humaine ;
+  // Auth0 en reste propriétaire, on le synchronise (cf. CustomerIdentityPort).
   auth0Sub String @unique @map("auth0_sub")
   email    String
 
-  role   CustomerRole @default(member)
-  status UserStatus   @default(invited)
+  // Profil de la personne — DISTINCT du contact de la société. Chaîne vide et
+  // non `null` pour l'absence, comme partout ailleurs dans ce schéma.
+  firstName String @default("") @map("first_name")
+  lastName  String @default("") @map("last_name")
+  phone     String @default("")
 
-  // Tenancy — le mur
-  companyId String  @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id])
+  status UserStatus @default(invited)
 
   // Traçabilité : id du STAFF (autre db) qui a provisionné ce client.
   // Pas de FK cross-db → simple identifiant.
@@ -155,10 +171,47 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  memberships  Membership[]
   ordersPlaced Order[]
 
-  @@index([companyId])
   @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Membership — le RATTACHEMENT d'une personne à une société cliente
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Une personne peut n'appartenir à aucune société (elle vient de créer son
+/// compte : « Mes entreprises » est vide et propose d'en créer une), à une, ou à
+/// plusieurs. C'est pourquoi le rattachement est une table à part et non une
+/// colonne `company_id` sur `users` : cette colonne imposait exactement une
+/// société, et rendait l'état « aucune » impossible à représenter.
+///
+/// Le `role` vit ICI, pas sur `users` : on peut être gestionnaire d'une société
+/// et simple membre d'une autre.
+///
+/// ⚠️ Tenancy : le mur reste `company_id`, mais la société d'une requête ne se
+/// déduit plus de l'utilisateur — elle doit être **choisie explicitement** et
+/// vérifiée contre les memberships du demandeur. Aucun endpoint métier n'est
+/// encore muré ; le premier (commandes, adresses) devra porter ce choix.
+model Membership {
+  id String @id @default(cuid())
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+
+  role CustomerRole @default(member)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Une personne n'est rattachée qu'une fois à une société donnée.
+  @@unique([userId, companyId])
+  @@index([companyId])
+  @@map("memberships")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

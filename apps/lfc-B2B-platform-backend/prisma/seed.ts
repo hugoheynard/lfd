@@ -9,16 +9,21 @@ import {
 /**
  * Seed de développement — **provisionne un customer de test**, exactement comme
  * le ferait un commercial (porte B du pipeline d'onboarding, cf.
- * `documentation/architecture-onboarding-provisioning-b2b.md`). Crée une
- * `Company` + un `User` `active` lié à un `sub` Auth0, pour que `GET /me`
- * réponde une identité réelle en dev.
+ * `documentation/architecture-onboarding-provisioning-b2b.md`). Crée la
+ * **personne** (son profil), sa **société**, et le **membership** qui les relie,
+ * pour que `GET /me` réponde une identité réelle en dev.
  *
  * Idempotent : si le `User` (par `auth0Sub`) existe déjà, on ne recrée rien.
  * Surchargeable par variables d'env (SEED_*), défauts = compte de test du dev.
+ *
+ * `SEED_SKIP_COMPANY=1` sème la personne **sans aucune société** : c'est l'état
+ * qui déclenche l'empty state « Mes entreprises » côté front, autrement pénible
+ * à obtenir à la main.
  */
 const AUTH0_SUB = process.env["SEED_AUTH0_SUB"] ?? "auth0|6a6a2fb1a5c185cc18313e33";
 const EMAIL = process.env["SEED_EMAIL"] ?? "hheynard@gmail.com";
 const COMPANY_NAME = process.env["SEED_COMPANY"] ?? "LFC-TestComp-1";
+const SKIP_COMPANY = process.env["SEED_SKIP_COMPANY"] === "1";
 
 const url = process.env["DATABASE_B2B_URL"];
 if (!url) {
@@ -28,10 +33,30 @@ if (!url) {
 const prisma = new PrismaClient({ accelerateUrl: url });
 
 async function main(): Promise<void> {
-  const existing = await prisma.user.findUnique({ where: { auth0Sub: AUTH0_SUB } });
+  const existing = await prisma.user.findUnique({
+    where: { auth0Sub: AUTH0_SUB },
+    include: { memberships: true },
+  });
   if (existing) {
     console.log(`✓ User déjà présent (${AUTH0_SUB}) — rien à faire.`);
     console.log(existing);
+    return;
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      auth0Sub: AUTH0_SUB,
+      email: EMAIL,
+      firstName: "Hugo",
+      lastName: "Heynard",
+      phone: "",
+      status: UserStatus.active,
+    },
+  });
+
+  if (SKIP_COMPANY) {
+    console.log("✓ Personne semée SANS société (empty state « Mes entreprises ») :");
+    console.log(user);
     return;
   }
 
@@ -43,23 +68,19 @@ async function main(): Promise<void> {
       contactPrenom: "Hugo",
       contactNom: "Heynard",
       contactEmail: EMAIL,
+      // Société de test déjà validée : le dev n'a pas à jouer l'activation
+      // commerciale pour travailler.
       status: CompanyStatus.active,
     },
   });
 
-  const user = await prisma.user.create({
-    data: {
-      auth0Sub: AUTH0_SUB,
-      email: EMAIL,
-      // Gestionnaire de sa société (owner du compte de test).
-      role: CustomerRole.company_admin,
-      status: UserStatus.active,
-      companyId: company.id,
-    },
+  // Le créateur d'une société en est le gestionnaire.
+  await prisma.membership.create({
+    data: { userId: user.id, companyId: company.id, role: CustomerRole.company_admin },
   });
 
   console.log("✓ Seed créé :");
-  console.log({ company: { id: company.id, raisonSociale: company.raisonSociale }, user });
+  console.log({ user, company: { id: company.id, raisonSociale: company.raisonSociale } });
 }
 
 main()

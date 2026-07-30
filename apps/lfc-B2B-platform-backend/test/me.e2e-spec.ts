@@ -1,108 +1,159 @@
-import { INestApplication } from "@nestjs/common";
-import { Test } from "@nestjs/testing";
-import request from "supertest";
-import { App } from "supertest/types";
-import { AppModule } from "../src/app.module.js";
-import { AccessTokenVerifier } from "../src/infra/auth/access-token.verifier.js";
-import { PrismaService } from "../src/infra/database/prisma.service.js";
-import { CustomerRole, UserStatus, type User } from "../src/infra/database/client/client.js";
-import type { VerifiedToken } from "../src/infra/auth/principal.js";
-
 /**
- * E2E du **cycle d'accès vu du backend** (register → login → logout), via
- * `GET /me`. register/login/logout au sens UI appartiennent à Auth0 ; côté
- * back, ce sont des états du `User` en base — et c'est ce que ce test exerce,
- * app NestJS complète bootée (guard global + resolver + endpoint).
+ * E2E du **cycle d'accès** vu du backend, via `GET /me` : app NestJS complète
+ * (guard global + resolver + endpoint) devant un **vrai** Postgres.
  *
- * On stubbe seulement les frontières externes : la signature Auth0 (verifier)
- * et la base (Prisma renvoie `currentUser`, muté par chaque étape). Le cycle se
- * joue par le **statut en base**, pas par le token — c'est tout l'intérêt du
- * design **DB-autoritaire** : révoquer en base = blocage immédiat même avec un
- * jeton encore valide.
+ * register / login / logout au sens UI appartiennent à Auth0. Côté backend, ce
+ * sont des **états du `User` en base** — et c'est ce que cette suite exerce, en
+ * écrivant et relisant réellement ces états. Tout l'enjeu du design
+ * **DB-autoritaire** est là : le jeton n'atteste que le `sub`, la base décide
+ * l'autorisation, donc révoquer en base bloque *immédiatement* même avec un
+ * jeton encore parfaitement valide.
  */
+import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+import { CustomerRole, UserStatus } from "../src/infra/database/client/client.js";
+import type { AccountView } from "../src/account/domain/ports/account.reader.js";
+
 const SUB = "auth0|lifecycle";
 
-/** Ce que la base "renvoie" — muté à chaque étape du cycle. */
-let currentUser: User | null = null;
+let ctx: E2eContext;
 
-function userWith(status: User["status"]): User {
-  return {
-    id: "user_test",
-    auth0Sub: SUB,
-    email: "test@client.fr",
-    role: CustomerRole.member,
-    status,
-    companyId: "company_test",
-    invitedBy: null,
-    createdAt: new Date(0),
-    updatedAt: new Date(0),
-  };
-}
+beforeAll(async () => {
+  ctx = await bootstrapE2e();
+});
 
-const verifierStub = {
-  verify: (): Promise<VerifiedToken> => Promise.resolve({ subject: SUB, scopes: [] }),
-};
+afterAll(async () => {
+  await ctx.close();
+});
 
-const prismaStub = {
-  $connect: (): Promise<void> => Promise.resolve(),
-  $disconnect: (): Promise<void> => Promise.resolve(),
-  user: {
-    findUnique: (): Promise<User | null> => Promise.resolve(currentUser),
-  },
-};
+beforeEach(async () => {
+  await ctx.reset();
+});
 
-describe("Auth lifecycle (e2e) — GET /me", () => {
-  let app: INestApplication<App>;
+describe("GET /me — la porte d'entrée", () => {
+  it("refuse une requête sans jeton (guard global, secure-by-default)", async () => {
+    const response = await ctx.http().get("/me");
 
-  beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-      .overrideProvider(AccessTokenVerifier)
-      .useValue(verifierStub)
-      .overrideProvider(PrismaService)
-      .useValue(prismaStub)
-      .compile();
-    app = moduleRef.createNestApplication();
-    await app.init();
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({ message: "Jeton Bearer manquant." });
   });
 
-  afterAll(async () => {
-    await app.close();
+  it("refuse un jeton dont la signature ne passe pas, sans détailler pourquoi", async () => {
+    const response = await ctx.asSub("invalid-token").get("/me");
+
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({ message: "Jeton invalide ou expiré." });
+  });
+});
+
+describe("GET /me — le cycle se joue en base", () => {
+  it("refuse un sub valide inconnu de notre base (pas encore provisionné)", async () => {
+    const response = await ctx.asSub("auth0|jamais-vu").get("/me");
+
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({ message: "Compte inconnu." });
   });
 
-  /** Appel authentifié : le token est valide (stub), le cycle se joue en base. */
-  function callMe() {
-    return request(app.getHttpServer()).get("/me").set("Authorization", "Bearer valid-token");
-  }
+  it("refuse un compte seulement invité (provisionné, pas activé)", async () => {
+    await createUser(ctx.prisma, { auth0Sub: SUB, status: UserStatus.invited });
 
-  it("sans jeton → 401", async () => {
-    await request(app.getHttpServer()).get("/me").expect(401);
+    const response = await ctx.asSub(SUB).get("/me");
+
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({ message: "Compte non actif." });
   });
 
-  it("register / invited : compte pas encore actif → 401", async () => {
-    currentUser = userWith(UserStatus.invited);
-    await callMe().expect(401);
-  });
+  it("renvoie le profil lu en base pour un compte actif", async () => {
+    const user = await createUser(ctx.prisma, {
+      auth0Sub: SUB,
+      email: "gerant@client-cycle.fr",
+      firstName: "Camille",
+      lastName: "Rousseau",
+      phone: "01 42 71 08 44",
+    });
 
-  it("login : compte actif → 200 + Principal autoritaire (depuis la base)", async () => {
-    currentUser = userWith(UserStatus.active);
-    const res = await callMe().expect(200);
-    expect(res.body).toEqual({
-      subject: SUB,
-      userId: "user_test",
-      companyId: "company_test",
-      role: CustomerRole.member,
-      email: "test@client.fr",
-      scopes: [],
+    const response = await ctx.asSub(SUB).get("/me").expect(200);
+
+    // Chaque champ vient de la LIGNE en base, pas d'un claim du jeton.
+    expect(response.body).toEqual({
+      profile: {
+        userId: user.id,
+        subject: SUB,
+        firstName: "Camille",
+        lastName: "Rousseau",
+        email: "gerant@client-cycle.fr",
+        phone: "01 42 71 08 44",
+      },
+      companies: [],
     });
   });
 
-  it("logout / révocation : status disabled → MÊME jeton refusé (401)", async () => {
-    currentUser = userWith(UserStatus.disabled);
-    await callMe().expect(401);
+  it("bloque dès la requête suivante un compte désactivé en base, à jeton inchangé", async () => {
+    await createUser(ctx.prisma, { auth0Sub: SUB });
+    await ctx.asSub(SUB).get("/me").expect(200);
+
+    // Le « logout » qui compte : la révocation côté base, pas côté client.
+    await ctx.prisma.user.update({
+      where: { auth0Sub: SUB },
+      data: { status: UserStatus.disabled },
+    });
+
+    const response = await ctx.asSub(SUB).get("/me");
+
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({ message: "Compte non actif." });
+  });
+});
+
+describe("GET /me — mes entreprises", () => {
+  it("authentifie une personne sans aucune entreprise (l'état de départ)", async () => {
+    // Cet état était irreprésentable avant (`users.company_id` NOT NULL). Il est
+    // désormais celui d'un compte tout juste créé, et c'est lui qui déclenche
+    // l'empty state « Mes entreprises » côté front : s'il renvoyait 401, la page
+    // serait inatteignable.
+    await createUser(ctx.prisma, { auth0Sub: SUB });
+
+    const response = await ctx.asSub(SUB).get("/me").expect(200);
+
+    expect(response.body).toMatchObject({ companies: [] });
   });
 
-  it("compte supprimé (inconnu en base) → 401", async () => {
-    currentUser = null;
-    await callMe().expect(401);
+  it("liste les entreprises de la personne avec son rôle dans chacune", async () => {
+    const user = await createUser(ctx.prisma, { auth0Sub: SUB });
+    const premiere = await createCompany(ctx.prisma, { raisonSociale: "Boulangerie A SAS" });
+    const seconde = await createCompany(ctx.prisma, {
+      raisonSociale: "Torréfaction B SARL",
+      siret: "98765432100023",
+    });
+    await attachTo(ctx.prisma, user.id, premiere.id, CustomerRole.company_admin);
+    await attachTo(ctx.prisma, user.id, seconde.id, CustomerRole.member);
+
+    const response = await ctx.asSub(SUB).get("/me").expect(200);
+
+    // Gestionnaire ici, membre là : le rôle appartient au rattachement.
+    expect(jsonBody<AccountView>(response).companies).toEqual([
+      expect.objectContaining({ id: premiere.id, role: "company_admin" }),
+      expect.objectContaining({ id: seconde.id, role: "member" }),
+    ]);
+  });
+
+  it("ne montre à personne les entreprises d'une autre (isolation)", async () => {
+    const moi = await createUser(ctx.prisma, { auth0Sub: "auth0|moi" });
+    const autre = await createUser(ctx.prisma, { auth0Sub: "auth0|autre" });
+    const laMienne = await createCompany(ctx.prisma, { raisonSociale: "La Mienne SAS" });
+    const laSienne = await createCompany(ctx.prisma, {
+      raisonSociale: "La Sienne SARL",
+      siret: "98765432100023",
+    });
+    await attachTo(ctx.prisma, moi.id, laMienne.id);
+    await attachTo(ctx.prisma, autre.id, laSienne.id);
+
+    const mine = await ctx.asSub("auth0|moi").get("/me").expect(200);
+
+    expect(jsonBody<AccountView>(mine).companies).toEqual([
+      expect.objectContaining({ id: laMienne.id }),
+    ]);
+    expect(JSON.stringify(mine.body)).not.toContain(laSienne.id);
+    expect(JSON.stringify(mine.body)).not.toContain("La Sienne");
   });
 });
