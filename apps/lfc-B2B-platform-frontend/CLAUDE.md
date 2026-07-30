@@ -64,13 +64,40 @@ porte des `memberships` 0..N, pas un `company_id` unique) :
   téléphone. Changer l'e-mail le propage à Auth0, qui en est propriétaire.
 - **Mes entreprises** (`entreprises/`) — remplace l'ancienne page « Mon profil » ;
   `/profil` y redirige. Aucune entreprise → empty state fold + « Créer une
-  entreprise » ; une seule → sa fiche **sans onglet** ; plusieurs → un
-  `fold-tab-panel` chacune.
+  entreprise » ; une seule → sa fiche **sans barre** ; plusieurs → une barre
+  `fold-view-nav` (horizontale, `activeStyle="fill"`, transparente) qui bascule
+  entre les fiches (boutons pilotés par `activeKey`, ce ne sont pas des routes).
+  Le bouton « Créer une entreprise » vit dans le slot `[pageActions]`.
+- **Contacts par entreprise** (`entreprises/company-contacts-section/`) — liste de
+  cartes ; carte 1 = contact principal (« Admin du compte entreprise », badge
+  **Vous** si c'est vous ; carte en `surface="accent"` + `raisedBands="both"`),
+  puis les additionnels. Bande titre _raised_ + menu dropover (`fold-dropdown`) :
+  « Modifier » partout, « Supprimer » (→ `fold-inline-confirm`) sur les
+  additionnels, qui portent aussi un callout « pas d'espace utilisateur » + bouton
+  **Inviter** (pas encore câblé). Réservé au `company_admin` (lecture seule sinon).
+- **KBIS** (`entreprises/entreprise-identite/`) — bloc sous l'identité : badge
+  Certifié (= entreprise validée) / En attente, **Voir** (blob → onglet) +
+  **Télécharger** (blob → download) pour tout membre, **Déposer/Remplacer**
+  (`<label foldButton>` + input file caché) pour le gestionnaire.
+  `AccountService.uploadKbis` / `fetchKbis`.
+- **Dropover + inline-confirm** est le pattern d'actions de ligne partagé :
+  contacts ET adresses de livraison (`profil/adresses-section/`) l'utilisent.
+- **Adresses de livraison** — l'adresse **par défaut remonte toujours en tête** de
+  la pile (tri stable dans le computed `adressesLivraison`). Le type suit une
+  chaîne : base `Adresse` (postale) puis `AdresseLivraison = Adresse &
+  DeliverySpecs` où `DeliverySpecs` = une **note pour les livreurs** + des
+  **créneaux préférés** (`DeliverySlots` : `everyday` = un créneau global tous les
+  jours, ou `perDay` = un créneau optionnel par jour ouvré). Le panneau
+  `adresse-panel` édite tout ça (natifs `<textarea>`/`<input type="time">`, lus via
+  un helper `inputValue()` typé — pas de `$any`).
 
-⚠️ Dans l'onglet d'une entreprise, seule l'**identité légale** vient de l'API.
-Contact, adresses et facturation lisent encore `data/profil.service.ts` (en
-mémoire, données de démonstration) — un `fold-callout` le dit à l'utilisateur, et
-c'est la tranche suivante à câbler.
+⚠️ Dans l'onglet d'une entreprise, identité légale, **contacts** et **KBIS**
+viennent de l'API. **Adresses et facturation** lisent encore
+`data/profil.service.ts` (en mémoire, démo) — un `fold-callout` le dit, c'est la
+tranche suivante à câbler. Quand ce fil existera, `DeliverySpecs` (`note`,
+`slots`) est le sous-ensemble à promouvoir dans un futur package feuille
+`@lfd/contracts` (Zod), consommé par back **et** front — l'app reste un puits, elle
+ne possède jamais le contrat (cf. la même logique que `@lfd/storage`).
 
 ⚠️ `tsc -p tsconfig.json` ne vérifie **rien** ici (`files: []` + `references`).
 Pour type-checker : `npx tsc --noEmit -p tsconfig.app.json`, ou `pnpm build`
