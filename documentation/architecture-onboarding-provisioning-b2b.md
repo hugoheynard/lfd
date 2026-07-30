@@ -6,8 +6,69 @@
 >
 > Décidé le **2026-07-29**. Prérequis lus : [`architecture-identite-auth-tenancy.md`](architecture-identite-auth-tenancy.md)
 > (Auth0 = auth, DB = identité/authz, mur `company_id`) et
-> [`auth0-setup-b2b.md`](auth0-setup-b2b.md) (config tenant). **Statut : design,
-> pas encore implémenté.**
+> [`auth0-setup-b2b.md`](auth0-setup-b2b.md) (config tenant).
+>
+> ⚠️ **Partiellement remplacé le 2026-07-30** par la chaîne compte / entreprises —
+> lire l'[amendement en §0](#0-amendement-2026-07-30--la-personne-avant-la-société)
+> **avant** le reste de ce document. Ce qui suit garde son intérêt pour la
+> validation commerciale et la porte B (provisioning), mais le moment où la
+> société est collectée, et la relation personne ↔ société, ont changé.
+
+---
+
+## 0. Amendement 2026-07-30 — la personne avant la société
+
+**Ce qui a changé, et pourquoi.** Le modèle d'origine faisait d'une personne et de
+sa société une seule et même chose : `users.company_id` était `NOT NULL`, donc
+tout compte portait exactement une société, et « je me suis inscrit mais je n'ai
+pas encore déclaré d'entreprise » était **irreprésentable**. C'est aussi ce qui
+imposait de collecter la société **au signup** : il n'y avait pas d'état où le
+compte pouvait exister sans elle.
+
+La chaîne livrée sépare les deux :
+
+|                             | Avant                              | Maintenant                                         |
+| --------------------------- | ---------------------------------- | -------------------------------------------------- |
+| Relation personne ↔ société | `users.company_id` (exactement 1)  | table `memberships` (**0..N**)                     |
+| Rôle                        | `users.role`                       | `memberships.role` — propre à chaque société       |
+| Profil de la personne       | seulement `email`                  | `first_name`, `last_name`, `email`, `phone`        |
+| Société collectée           | **au signup**                      | par une action explicite, dans « Mes entreprises » |
+| `GET /me`                   | `Principal` plat, avec `companyId` | `{ profile, companies[] }`                         |
+| Écrans                      | « Mon profil » (société + contact) | Réglages → **Mon profil** · **Mes entreprises**    |
+
+Conséquences à retenir :
+
+- **Le `Principal` n'a plus de `companyId`.** Un endpoint muré ne peut donc plus
+  déduire son tenant de l'utilisateur : il doit **recevoir** la société visée et
+  la vérifier contre les `memberships` du demandeur. Reconstruire « la première
+  société » serait exactement le raccourci qui fuit. Aucun endpoint métier n'est
+  encore muré ; le premier (commandes, adresses) devra porter ce choix.
+- **`CompanyStatus` gagne `pending`**, qui devient le **défaut**. Une société
+  n'est jamais cliente parce qu'elle a été saisie : la décision « activation
+  manuelle côté commercial » du §2 est donc **conservée intacte**, simplement
+  déplacée après la déclaration au lieu d'après le signup.
+- **Le créateur devient `company_admin`** de la société qu'il déclare, dans la
+  même transaction. Une société sans membre n'appartiendrait à personne et
+  disparaîtrait de « Mes entreprises » sans recours.
+- **Le contact principal de la société est repris du profil du créateur** — pas
+  redemandé au formulaire. Il reste modifiable ensuite.
+- **Point ouvert du §8 tranché** au passage : une personne **peut** appartenir à
+  plusieurs sociétés (c'est ce que les onglets de « Mes entreprises » rendent).
+  Le flux « rejoindre une société existante » (invitation intra-société) reste à
+  faire ; seule la création par son propre auteur est implémentée.
+- **`POST /onboarding` et le `/me` discriminé par état d'accès (§5) ne sont pas
+  implémentés** et ne le seront probablement pas sous cette forme : « aucune
+  entreprise » remplace l'état `onboarding`, et le front y répond par l'empty
+  state de « Mes entreprises » plutôt que par un écran d'onboarding dédié. Le
+  gating du catalogue pour un client non validé (§2) reste, lui, à faire.
+- **Changement d'e-mail** : Auth0 est propriétaire de l'e-mail de connexion. Il
+  est propagé via la Management API **avant** l'écriture locale, et une
+  application M2M doit être créée côté tenant (`AUTH0_M2M_CLIENT_ID` /
+  `AUTH0_M2M_CLIENT_SECRET`, scopes `read:users` + `update:users`). Sans elle,
+  l'API démarre normalement et seule l'édition de l'e-mail est refusée.
+
+Code : `apps/lfc-B2B-platform-backend/src/account/` (contexte DDD + bus CQRS),
+`apps/lfc-B2B-platform-frontend/src/app/account/` et `.../entreprises/`.
 
 ---
 
@@ -27,14 +88,14 @@ mais **gated** : il produit un **dossier en attente**, pas un client actif.
 
 ## 2. Décisions (verrouillées 2026-07-29)
 
-| Sujet | Décision |
-|-------|----------|
-| Self-signup autorisé ? | **Oui** — le prospect peut s'inscrire seul. |
-| Accès d'un compte **non validé** (`pending`) | **Catalogue en lecture seule** — parcourt le catalogue **sans prix ni commande** tant qu'il n'est pas activé. |
-| Infos société collectées quand ? | **Au signup** — un formulaire d'onboarding crée une `Company` en état `pending` (raison sociale, SIRET, TVA, contact) déclarée par le prospect. |
-| Activation `pending → active` | **Manuelle, côté commercial** (« activation commerciale »). Jamais automatique. |
-| Gestion du dossier | **Par les deux bouts** — le prospect le déclare/complète ; le commercial peut aussi l'initier, le pré-remplir, le corriger. Seule la **validation** est réservée au commercial. |
-| Connection Auth0 | Une connection dédiée **`lfc-b2b-customers`** (isolée des autres apps du tenant), activée seulement sur l'app SPA B2B. |
+| Sujet                                        | Décision                                                                                                                                                                        |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Self-signup autorisé ?                       | **Oui** — le prospect peut s'inscrire seul.                                                                                                                                     |
+| Accès d'un compte **non validé** (`pending`) | **Catalogue en lecture seule** — parcourt le catalogue **sans prix ni commande** tant qu'il n'est pas activé.                                                                   |
+| Infos société collectées quand ?             | **Au signup** — un formulaire d'onboarding crée une `Company` en état `pending` (raison sociale, SIRET, TVA, contact) déclarée par le prospect.                                 |
+| Activation `pending → active`                | **Manuelle, côté commercial** (« activation commerciale »). Jamais automatique.                                                                                                 |
+| Gestion du dossier                           | **Par les deux bouts** — le prospect le déclare/complète ; le commercial peut aussi l'initier, le pré-remplir, le corriger. Seule la **validation** est réservée au commercial. |
+| Connection Auth0                             | Une connection dédiée **`lfc-b2b-customers`** (isolée des autres apps du tenant), activée seulement sur l'app SPA B2B.                                                          |
 
 ---
 
@@ -115,12 +176,12 @@ et écrivent ce dossier ; la transition `pending → active` est **commerciale**
 Aujourd'hui `/me` renvoie un `Principal` plat ou `401`. On le fait évoluer vers
 un **état d'accès** discriminé par `status`, qui pilote le routage front :
 
-| Cas backend | Réponse `/me` | Front |
-|-------------|---------------|-------|
-| Token valide, **aucune** ligne `User` | `200 { status: "onboarding" }` | Formulaire d'onboarding |
-| `User.status = pending` | `200 { status: "pending", user, company }` | Catalogue lecture seule (bandeau « en cours de validation ») |
-| `User.status = active` | `200 { status: "active", ...principal }` | App complète |
-| `User.status = disabled` | `401` | Retour login (révocation) |
+| Cas backend                           | Réponse `/me`                              | Front                                                        |
+| ------------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
+| Token valide, **aucune** ligne `User` | `200 { status: "onboarding" }`             | Formulaire d'onboarding                                      |
+| `User.status = pending`               | `200 { status: "pending", user, company }` | Catalogue lecture seule (bandeau « en cours de validation ») |
+| `User.status = active`                | `200 { status: "active", ...principal }`   | App complète                                                 |
+| `User.status = disabled`              | `401`                                      | Retour login (révocation)                                    |
 
 La **garde** de sécurité reste inchangée (un token valide = authentifié) ;
 l'`état d'accès` n'est qu'une **autorisation applicative**, portée par la base.
@@ -130,12 +191,12 @@ Le resolver ne rejette plus « sub inconnu » : il renvoie `onboarding`.
 
 ## 6. Endpoints (backend B2B)
 
-| Méthode | But | Auteur | Effet |
-|---------|-----|--------|-------|
-| `GET /me` | état d'accès | user connecté | lecture (cf. §5) |
-| `POST /onboarding` | déclarer sa société | prospect (`onboarding`) | crée `Company(pending)` + `User(pending)`, lie `sub`+email ; idempotent par `sub` |
-| `POST /companies/:id/activate` | **activation commerciale** | commercial (back-office) | `Company → active`, ses `User pending → active` |
-| `POST /companies` · `POST /invitations` | provisioning porte B | commercial (back-office) | crée le dossier / invite (porte B) |
+| Méthode                                 | But                        | Auteur                   | Effet                                                                             |
+| --------------------------------------- | -------------------------- | ------------------------ | --------------------------------------------------------------------------------- |
+| `GET /me`                               | état d'accès               | user connecté            | lecture (cf. §5)                                                                  |
+| `POST /onboarding`                      | déclarer sa société        | prospect (`onboarding`)  | crée `Company(pending)` + `User(pending)`, lie `sub`+email ; idempotent par `sub` |
+| `POST /companies/:id/activate`          | **activation commerciale** | commercial (back-office) | `Company → active`, ses `User pending → active`                                   |
+| `POST /companies` · `POST /invitations` | provisioning porte B       | commercial (back-office) | crée le dossier / invite (porte B)                                                |
 
 Le catalogue en lecture seule pour `pending` se gate **des deux côtés** : le
 backend ne sert pas les prix et refuse toute création de commande à un non-`active`
@@ -149,7 +210,7 @@ backend ne sert pas les prix et refuse toute création de commande à un non-`ac
 
 ## 7. Plan d'implémentation (phases)
 
-- **Phase 0 — Auth0** *(toi, dashboard)* : connection dédiée `lfc-b2b-customers`,
+- **Phase 0 — Auth0** _(toi, dashboard)_ : connection dédiée `lfc-b2b-customers`,
   activée seulement sur l'app SPA B2B ; ouvrir les sign-ups sur cette connection.
 - **Phase 1 — backend model** : ajouter `pending` à `CompanyStatus`/`UserStatus` ;
   resolver → renvoie `onboarding` au lieu de rejeter ; contrat `/me` discriminé ;
