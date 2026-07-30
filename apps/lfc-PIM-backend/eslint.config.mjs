@@ -41,9 +41,13 @@ export default tseslint.config(
   },
   {
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
+      // --- Typage strict, tenu par l'outil (cf. CLAUDE.md §6) --------------
+      // Les trois règles étaient relâchées à l'amorçage du projet. Le code ne
+      // les violait nulle part au moment du durcissement : passer en `error`
+      // ne demandait aucun nettoyage, et empêche la dette d'entrer.
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
 
       // --- L'environnement ne se lit QUE via AppConfig ---------------------
