@@ -11,6 +11,14 @@ export class PrismaSupportRequestRepository extends SupportRequestRepository {
     super();
   }
 
+  async hasOpenRequest(companyId: string): Promise<boolean> {
+    const open = await this.prisma.supportRequest.findFirst({
+      where: { companyId, handledAt: null },
+      select: { id: true },
+    });
+    return open !== null;
+  }
+
   async record(
     companyId: string,
     requestedByUserId: string,

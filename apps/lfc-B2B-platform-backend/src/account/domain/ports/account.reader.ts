@@ -4,8 +4,8 @@ import type { CompanyStatus } from "../value-objects/company-status.js";
 /**
  * Condition de règlement (miroir de l'enum Prisma `PaymentTerm`). C'est un
  * réglage **toujours présent** de l'entreprise — jamais absent —, défaut « à la
- * commande » (`per_order`), et **validé par le commercial** (le client ne
- * l'édite pas librement).
+ * commande » (`per_order`). Le terme **convenu** n'est écrit que par le staff ;
+ * le client exprime un souhait via une **demande** (cf. `requestedPaymentTerm`).
  */
 export type PaymentTerm = "per_order" | "monthly" | "net60" | "net90";
 
@@ -36,8 +36,9 @@ export interface KbisView {
   /** ISO. Quand le fichier a été déposé. */
   readonly uploadedAt: string;
   /**
-   * Certifié = l'entreprise est validée (`status = active`). Pas de drapeau
-   * séparé : la certification EST la validation, deux vérités divergeraient.
+   * Certifié = **ce fichier** a été validé par le staff (`kbisCertifiedAt`
+   * posé). Propre au fichier, découplé de `status` : un KBIS remplacé repasse
+   * « à valider » même sur une société active.
    */
   readonly certified: boolean;
 }
@@ -55,8 +56,10 @@ export interface CompanyView {
   /** La forme juridique impose-t-elle un n° de TVA ? (dérivé, cf. `vat-liability`). */
   readonly vatNumberRequired: boolean;
   readonly status: CompanyStatus;
-  /** Condition de règlement, toujours présente (défaut « à la commande »). */
+  /** Condition de règlement **convenue**, toujours présente (défaut « à la commande »). */
   readonly paymentTerm: PaymentTerm;
+  /** Terme **demandé** par le client, en attente de validation staff ; `null` = aucune demande. */
+  readonly requestedPaymentTerm: PaymentTerm | null;
   /** Rôle de la personne dans CETTE société. */
   readonly role: CompanyRole;
   /** Contact **principal** (carte « Admin du compte entreprise »), toujours présent. */

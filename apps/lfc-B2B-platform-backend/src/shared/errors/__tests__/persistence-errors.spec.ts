@@ -25,15 +25,15 @@ describe("mapPersistenceError", () => {
     const error = mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P2022"));
     expect(error).toBeInstanceOf(DatabaseSchemaOutOfSyncError);
     expect(error?.category).toBe("technical");
-    expect(mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P2021"))).toBeInstanceOf(
-      DatabaseSchemaOutOfSyncError,
-    );
+    expect(
+      mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P2021")),
+    ).toBeInstanceOf(DatabaseSchemaOutOfSyncError);
   });
 
   it("connexion/init (P1001, PrismaClientInitializationError) → technique, injoignable", () => {
-    expect(mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P1001"))).toBeInstanceOf(
-      DatabaseUnavailableError,
-    );
+    expect(
+      mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P1001")),
+    ).toBeInstanceOf(DatabaseUnavailableError);
     expect(mapPersistenceError(prismaError("PrismaClientInitializationError"))).toBeInstanceOf(
       DatabaseUnavailableError,
     );
@@ -46,9 +46,9 @@ describe("mapPersistenceError", () => {
   });
 
   it("clé étrangère (P2003) → business, référence manquante", () => {
-    expect(mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P2003"))).toBeInstanceOf(
-      RelatedResourceMissingError,
-    );
+    expect(
+      mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P2003")),
+    ).toBeInstanceOf(RelatedResourceMissingError);
   });
 
   it("enregistrement absent (P2025) → 404 (ResourceNotFound)", () => {
@@ -58,9 +58,9 @@ describe("mapPersistenceError", () => {
   });
 
   it("code connu non listé, validation, panic → technique générique", () => {
-    expect(mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P2099"))).toBeInstanceOf(
-      PersistenceError,
-    );
+    expect(
+      mapPersistenceError(prismaError("PrismaClientKnownRequestError", "P2099")),
+    ).toBeInstanceOf(PersistenceError);
     expect(mapPersistenceError(prismaError("PrismaClientValidationError"))).toBeInstanceOf(
       PersistenceError,
     );

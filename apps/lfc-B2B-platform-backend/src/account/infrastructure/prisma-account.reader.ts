@@ -59,8 +59,10 @@ export class PrismaAccountReader extends AccountReader {
                 tvaIntracom: true,
                 status: true,
                 paymentTerm: true,
+                requestedPaymentTerm: true,
                 kbisFileName: true,
                 kbisUploadedAt: true,
+                kbisCertifiedAt: true,
                 // Contact principal, aplati sur la société.
                 contactPrenom: true,
                 contactNom: true,
@@ -99,6 +101,7 @@ export class PrismaAccountReader extends AccountReader {
       vatNumberRequired: requiresVatNumber(company.formeJuridique),
       status: company.status,
       paymentTerm: company.paymentTerm,
+      requestedPaymentTerm: company.requestedPaymentTerm,
       role,
       primaryContact: {
         id: null,
@@ -109,13 +112,14 @@ export class PrismaAccountReader extends AccountReader {
         phone: company.contactTelephone,
       },
       contacts: company.contacts.map(toContactView),
-      // KBIS présent seulement si un fichier a été déposé ; certifié = validé.
+      // KBIS présent seulement si un fichier a été déposé ; certifié = ce
+      // fichier a été validé par le staff (indépendant de status).
       kbis:
         company.kbisFileName !== null && company.kbisUploadedAt !== null
           ? {
               fileName: company.kbisFileName,
               uploadedAt: company.kbisUploadedAt.toISOString(),
-              certified: company.status === "active",
+              certified: company.kbisCertifiedAt !== null,
             }
           : null,
     }));

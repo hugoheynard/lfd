@@ -11,8 +11,8 @@ import { CurrentUser } from "../../infra/auth/current-user.decorator.js";
 import type { Principal } from "../../infra/auth/principal.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import {
+  RequestPaymentTermCommand,
   UpdateCompanyIdentityCommand,
-  UpdatePaymentTermCommand,
 } from "../application/commands/company-settings-commands.js";
 import { CreateCompanyCommand } from "../application/commands/create-company.command.js";
 import { createCompanyPayload, type CreateCompanyPayload } from "./payloads.js";
@@ -67,16 +67,16 @@ export class CompaniesController {
     );
   }
 
-  /** Enregistre la condition de règlement souhaitée — gestionnaire. */
+  /** Enregistre la condition de règlement **demandée** — gestionnaire. */
   @Patch(":companyId/payment-term")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async updatePaymentTerm(
+  async requestPaymentTerm(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
     @Body(new ZodBody(updatePaymentTermPayloadSchema)) payload: UpdatePaymentTermPayload,
   ): Promise<void> {
-    await this.commands.execute<UpdatePaymentTermCommand, void>(
-      new UpdatePaymentTermCommand(user.userId, companyId, payload.paymentTerm),
+    await this.commands.execute<RequestPaymentTermCommand, void>(
+      new RequestPaymentTermCommand(user.userId, companyId, payload.paymentTerm),
     );
   }
 }

@@ -126,7 +126,14 @@ model Company {
 
   // Facturation (un seul champ pour l'instant → sur Company ; extraire un
   // BillingProfile le jour où ça grossit : plafond crédit, email de facturation…).
-  paymentTerm PaymentTerm @default(per_order) @map("payment_term")
+  //
+  // `paymentTerm` = le terme **convenu** (celui qui s'applique). Écrit
+  // **uniquement par le staff** : le client ne le mute jamais en direct. Une
+  // évolution souhaitée par le client atterrit dans `requestedPaymentTerm` (une
+  // demande, promue plus tard par le commercial), `null` = aucune demande en
+  // cours. Deux colonnes pour ne pas confondre « souhaité » et « convenu ».
+  paymentTerm          PaymentTerm  @default(per_order) @map("payment_term")
+  requestedPaymentTerm PaymentTerm? @map("requested_payment_term")
 
   // Défaut `pending` : une société n'est jamais cliente parce qu'elle a été
   // saisie — elle le devient par une activation commerciale explicite.
@@ -134,14 +141,17 @@ model Company {
 
   // KBIS — l'extrait déposé par le client, demandé pour la validation. Le fichier
   // vit dans le stockage objet (R2) ; on ne garde ici que ses métadonnées et sa
-  // CLÉ de stockage. Tous null = aucun KBIS déposé. « Certifié » n'est PAS un
-  // champ : il se dérive de `status = active` (validé), pour ne pas laisser deux
-  // vérités diverger.
+  // CLÉ de stockage. Tous null = aucun KBIS déposé. La **certification** est
+  // propre au fichier : `kbisCertifiedAt` est posé par le staff quand l'extrait
+  // est validé, et **remis à null à chaque (re)dépôt** — remplacer le KBIS
+  // invalide la certification précédente. Découplé de `status` : un fichier
+  // remplacé sur une société active ne reste pas « certifié » à tort.
   kbisStorageKey  String?   @map("kbis_storage_key")
   kbisFileName    String?   @map("kbis_file_name")
   kbisContentType String?   @map("kbis_content_type")
   kbisSize        Int?      @map("kbis_size")
   kbisUploadedAt  DateTime? @map("kbis_uploaded_at")
+  kbisCertifiedAt DateTime? @map("kbis_certified_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

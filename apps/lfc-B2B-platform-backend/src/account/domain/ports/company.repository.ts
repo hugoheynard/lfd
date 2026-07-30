@@ -37,10 +37,18 @@ export abstract class CompanyRepository {
   /** Édite l'identité souple (enseigne + n° de TVA). L'identité légale reste fixée. */
   abstract updateIdentity(companyId: string, identity: EditableIdentity): Promise<void>;
 
-  /** Enregistre la condition de règlement souhaitée par le client. */
-  abstract updatePaymentTerm(companyId: string, term: PaymentTerm): Promise<void>;
+  /**
+   * Enregistre la condition de règlement **demandée** par le client (colonne
+   * `requested_payment_term`) : une demande, pas le terme convenu — que seul le
+   * staff écrit. `null` retire la demande en cours (souhait retiré).
+   */
+  abstract requestPaymentTerm(companyId: string, term: PaymentTerm | null): Promise<void>;
 
-  /** Enregistre les métadonnées du KBIS déposé (le fichier, lui, est dans R2). */
+  /**
+   * Enregistre les métadonnées du KBIS déposé (le fichier, lui, est dans R2), et
+   * **remet la certification à zéro** : un nouveau fichier n'est jamais certifié
+   * tant que le staff ne l'a pas revalidé.
+   */
   abstract saveKbisMetadata(companyId: string, meta: KbisMetadata): Promise<void>;
 
   /**

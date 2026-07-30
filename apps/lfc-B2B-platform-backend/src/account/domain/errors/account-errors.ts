@@ -67,6 +67,20 @@ export class SiretAlreadyRegisteredError extends BusinessError {
   }
 }
 
+/**
+ * Une demande de support est déjà **ouverte** (non traitée) pour cette
+ * entreprise. Une seule à la fois : inutile d'empiler des rappels, et ça borne
+ * naturellement l'écriture (un membre ne peut pas inonder la table).
+ */
+export class OpenSupportRequestExistsError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.support.request_already_open",
+      "Une demande de support est déjà en cours pour cette entreprise ; notre équipe va vous recontacter.",
+    );
+  }
+}
+
 /** L'adresse e-mail visée appartient déjà à un autre compte. */
 export class EmailAlreadyUsedError extends BusinessError {
   constructor(readonly email: string) {

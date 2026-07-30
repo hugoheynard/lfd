@@ -14,8 +14,12 @@ export class UpdateCompanyIdentityCommand {
   ) {}
 }
 
-/** Enregistre la condition de règlement **souhaitée** (validée ensuite par le commercial). */
-export class UpdatePaymentTermCommand {
+/**
+ * Demande une condition de règlement (le client exprime un **souhait** ; le
+ * terme convenu reste écrit par le staff). Enregistrée dans
+ * `requested_payment_term` ; demander le terme déjà convenu retire la demande.
+ */
+export class RequestPaymentTermCommand {
   constructor(
     readonly actorUserId: string,
     readonly companyId: string,

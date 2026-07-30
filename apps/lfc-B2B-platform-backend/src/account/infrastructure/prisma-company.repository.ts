@@ -137,8 +137,12 @@ export class PrismaCompanyRepository extends CompanyRepository {
     });
   }
 
-  async updatePaymentTerm(companyId: string, term: PaymentTerm): Promise<void> {
-    await this.prisma.company.update({ where: { id: companyId }, data: { paymentTerm: term } });
+  async requestPaymentTerm(companyId: string, term: PaymentTerm | null): Promise<void> {
+    // On écrit la DEMANDE, jamais le terme convenu (staff-only).
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: { requestedPaymentTerm: term },
+    });
   }
 
   async saveKbisMetadata(companyId: string, meta: KbisMetadata): Promise<void> {
@@ -150,6 +154,8 @@ export class PrismaCompanyRepository extends CompanyRepository {
         kbisContentType: meta.contentType,
         kbisSize: meta.size,
         kbisUploadedAt: new Date(),
+        // Nouveau fichier ⇒ certification précédente invalidée.
+        kbisCertifiedAt: null,
       },
     });
   }

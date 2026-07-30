@@ -12,7 +12,7 @@ import { SetDefaultDeliveryAddressHandler } from "./application/commands/set-def
 import { UpdateCompanyContactHandler } from "./application/commands/update-company-contact.handler.js";
 import { UpdateCompanyIdentityHandler } from "./application/commands/update-company-identity.handler.js";
 import { UpdateDeliveryAddressHandler } from "./application/commands/update-delivery-address.handler.js";
-import { UpdatePaymentTermHandler } from "./application/commands/update-payment-term.handler.js";
+import { RequestPaymentTermHandler } from "./application/commands/request-payment-term.handler.js";
 import { UpdateMyProfileHandler } from "./application/commands/update-my-profile.handler.js";
 import { UpdatePrimaryContactHandler } from "./application/commands/update-primary-contact.handler.js";
 import { UploadKbisHandler } from "./application/commands/upload-kbis.handler.js";
@@ -81,7 +81,7 @@ import { MeController } from "./http/me.controller.js";
     SetDefaultDeliveryAddressHandler,
     ListCompanyAddressesHandler,
     UpdateCompanyIdentityHandler,
-    UpdatePaymentTermHandler,
+    RequestPaymentTermHandler,
     RequestActivationSupportHandler,
     { provide: UserProfileRepository, useClass: PrismaUserProfileRepository },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },
