@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import { FoldPanelHostService } from 'fold-ng';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { Company } from '../account/account.model';
+import type { Company, UserProfile } from '../account/account.model';
 import { AccountService, type AccountStatus } from '../account/account.service';
 import { EntreprisesPage } from './entreprises-page';
 
@@ -24,6 +24,16 @@ function company(id: string, raisonSociale: string, enseigne = ''): Company {
     tvaIntracom: '',
     status: 'pending',
     role: 'company_admin',
+    primaryContact: {
+      id: null,
+      firstName: 'Camille',
+      lastName: 'Rousseau',
+      fonction: '',
+      email: 'camille@test.fr',
+      phone: '',
+    },
+    contacts: [],
+    kbis: null,
   };
 }
 
@@ -36,6 +46,10 @@ class AccountServiceDouble {
   readonly status = this.statusSignal.asReadonly();
   readonly error = signal<string | null>(null).asReadonly();
   readonly hasNoCompany = signal(false);
+  // La page rend `app-entreprise-detail` → `app-company-contacts-section`, qui lit
+  // `profile()` pour le badge « Vous ». `null` suffit : aucun test ici ne
+  // l'exerce, mais l'appel doit exister sous peine de plantage au rendu.
+  readonly profile = signal<UserProfile | null>(null).asReadonly();
 
   sync(): void {
     this.hasNoCompany.set(this.statusSignal() === 'ready' && this.companiesSignal().length === 0);
@@ -74,27 +88,29 @@ describe('EntreprisesPage', () => {
     expect(host.querySelector('fold-empty-state')).not.toBeNull();
     expect(host.textContent).toContain('Aucune entreprise');
     expect(host.querySelector('app-entreprise-detail')).toBeNull();
-    expect(host.querySelector('fold-tabs')).toBeNull();
+    expect(host.querySelector('fold-view-nav')).toBeNull();
   });
 
-  it('n’affiche PAS d’onglet pour une seule entreprise', () => {
+  it('n’affiche PAS de barre pour une seule entreprise', () => {
     const host = render([company('c1', 'Boulangerie du Marais SAS')]);
 
-    // La règle explicite : un onglet unique n'apporte rien.
-    expect(host.querySelector('fold-tabs')).toBeNull();
+    // La règle explicite : un sélecteur d'un seul élément n'apporte rien.
+    expect(host.querySelector('fold-view-nav')).toBeNull();
     expect(host.querySelectorAll('app-entreprise-detail')).toHaveLength(1);
     expect(host.querySelector('fold-empty-state')).toBeNull();
   });
 
-  it('affiche un onglet par entreprise dès qu’il y en a plusieurs', () => {
+  it('affiche une barre nav et la fiche active dès qu’il y a plusieurs entreprises', () => {
     const host = render([
       company('c1', 'Boulangerie du Marais SAS', 'Le Pain Quotidien'),
       company('c2', 'Torréfaction B SARL'),
     ]);
 
-    expect(host.querySelector('fold-tabs')).not.toBeNull();
-    expect(host.querySelectorAll('fold-tab-panel')).toHaveLength(2);
-    // L'onglet porte l'enseigne quand elle existe, la raison sociale sinon.
+    // Une barre nav (pas un bandeau d'onglets), et UNE seule fiche rendue —
+    // celle de l'entreprise active, les autres n'existent pas dans le DOM.
+    expect(host.querySelector('fold-view-nav')).not.toBeNull();
+    expect(host.querySelectorAll('app-entreprise-detail')).toHaveLength(1);
+    // La barre porte l'enseigne quand elle existe, la raison sociale sinon.
     expect(host.textContent).toContain('Le Pain Quotidien');
     expect(host.textContent).toContain('Torréfaction B SARL');
   });

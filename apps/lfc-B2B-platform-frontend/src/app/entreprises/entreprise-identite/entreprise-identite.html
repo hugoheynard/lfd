@@ -20,4 +20,55 @@
       </fold-field>
     </fold-field-list>
   </fold-card>
+
+  <!-- KBIS : l'extrait demandé pour la validation. -->
+  <fold-card class="kbis">
+    <div class="kbis-head">
+      <div class="kbis-title">
+        <fold-icon name="contracts" [size]="18" />
+        <span>Extrait KBIS</span>
+        @if (kbis()?.certified) {
+          <fold-badge content="Certifié" variant="success" />
+        } @else if (kbis()) {
+          <fold-badge content="En attente de validation" variant="warning" />
+        }
+      </div>
+
+      @if (canManageKbis()) {
+        <label foldButton emphasis="outline" size="sm" icon="plus" class="kbis-deposer">
+          {{ kbis() ? 'Remplacer' : 'Déposer le KBIS' }}
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            hidden
+            [disabled]="busy()"
+            (change)="onKbisSelected($event)"
+          />
+        </label>
+      }
+    </div>
+
+    @if (error(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @if (kbis(); as k) {
+      <div class="kbis-file">
+        <div class="kbis-meta">
+          <span class="kbis-name">{{ k.fileName }}</span>
+          <span class="kbis-date">Déposé le {{ k.uploadedAt | date: 'dd/MM/yyyy' }}</span>
+        </div>
+        <div class="kbis-actions">
+          <button foldButton emphasis="outline" size="sm" icon="grid" (click)="view()">Voir</button>
+          <button foldButton emphasis="soft" size="sm" icon="contracts" (click)="download()">
+            Télécharger
+          </button>
+        </div>
+      </div>
+    } @else {
+      <p class="muted">
+        Aucun KBIS déposé. L'extrait est demandé pour la validation de votre entreprise.
+      </p>
+    }
+  </fold-card>
 </fold-page-section>

@@ -13,9 +13,8 @@ import {
   FoldEmptyStateComponent,
   FoldPageLayoutComponent,
   FoldPanelHostService,
-  FoldTabsComponent,
-  FoldTabPanelComponent,
-  type FoldTabItem,
+  FoldViewNavComponent,
+  type FoldViewNavItem,
 } from 'fold-ng';
 
 import { companyDisplayName } from '../account/account.model';
@@ -32,9 +31,12 @@ import { EntrepriseDetail } from './entreprise-detail/entreprise-detail';
  *   - **aucune** → empty state avec « Créer une entreprise ». C'est l'état de
  *     départ d'un compte, désormais représentable (avant, une personne portait
  *     obligatoirement une société) ;
- *   - **une** → la fiche directement, **sans onglet** : un onglet unique
- *     n'apporte rien et ajoute un niveau de navigation pour rien ;
- *   - **plusieurs** → un onglet par entreprise.
+ *   - **une** → la fiche directement, **sans barre** : un sélecteur d'un seul
+ *     élément n'apporte rien et ajoute un niveau de navigation pour rien ;
+ *   - **plusieurs** → une barre `fold-view-nav` (horizontale, remplie,
+ *     transparente) qui bascule entre les fiches. Ce ne sont pas des routes :
+ *     les items sont des boutons pilotés par `activeKey`, et on rend la fiche
+ *     de l'entreprise active.
  */
 @Component({
   selector: 'app-entreprises-page',
@@ -44,8 +46,7 @@ import { EntrepriseDetail } from './entreprise-detail/entreprise-detail';
     FoldEmptyStateComponent,
     FoldCalloutComponent,
     FoldButtonComponent,
-    FoldTabsComponent,
-    FoldTabPanelComponent,
+    FoldViewNavComponent,
     EntrepriseDetail,
   ],
   templateUrl: './entreprises-page.html',
@@ -75,9 +76,10 @@ export class EntreprisesPage {
     this.companies().length === 1 ? (this.companies()[0] ?? null) : null,
   );
 
-  protected readonly hasTabs = computed(() => this.companies().length > 1);
+  /** Barre visible seulement à partir de deux entreprises. */
+  protected readonly hasNav = computed(() => this.companies().length > 1);
 
-  protected readonly tabs = computed<FoldTabItem[]>(() =>
+  protected readonly navItems = computed<FoldViewNavItem[]>(() =>
     this.companies().map((company) => ({
       key: company.id,
       label: companyDisplayName(company),
@@ -87,11 +89,16 @@ export class EntreprisesPage {
 
   protected readonly activeKey = signal('');
 
+  /** L'entreprise dont la fiche est affichée (celle que la barre désigne). */
+  protected readonly activeCompany = computed(
+    () => this.companies().find((company) => company.id === this.activeKey()) ?? null,
+  );
+
   constructor() {
-    // L'onglet actif suit la liste : à la première charge comme après une
-    // création, la clé courante peut ne désigner aucune entreprise (chaîne vide,
-    // ou société disparue). On retombe alors sur la première, sinon plus aucun
-    // panneau ne serait rendu.
+    // La sélection suit la liste : à la première charge comme après une création,
+    // la clé courante peut ne désigner aucune entreprise (chaîne vide, ou société
+    // disparue). On retombe alors sur la première, sinon aucune fiche ne serait
+    // rendue.
     effect(() => {
       const keys = this.companies().map((company) => company.id);
       if (keys.length > 0 && !keys.includes(this.activeKey())) {

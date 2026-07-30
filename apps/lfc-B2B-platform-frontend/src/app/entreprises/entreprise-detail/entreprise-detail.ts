@@ -4,20 +4,18 @@ import { FoldCalloutComponent } from 'fold-ng';
 
 import type { Company } from '../../account/account.model';
 import { AdressesSection } from '../../profil/adresses-section/adresses-section';
-import { ContactSection } from '../../profil/contact-section/contact-section';
 import { FacturationSection } from '../../profil/facturation-section/facturation-section';
+import { CompanyContactsSection } from '../company-contacts-section/company-contacts-section';
 import { EntrepriseIdentite } from '../entreprise-identite/entreprise-identite';
 
 /**
- * Le contenu d'**une** entreprise : son identité, puis son contact, ses adresses
- * et sa facturation.
+ * Le contenu d'**une** entreprise : son identité, ses contacts, ses adresses et
+ * sa facturation.
  *
- * ⚠️ Seule l'identité vient de l'API. Les trois sections suivantes sont celles de
- * l'ancienne page « Mon profil » et lisent encore `ProfilService`, en mémoire —
- * elles affichent donc les mêmes données de démonstration pour toutes les
- * entreprises. Le bandeau le dit à l'utilisateur plutôt que de le laisser croire
- * que ces données sont les siennes ; c'est la tranche suivante à câbler
- * (endpoints contact / adresses / facturation par société).
+ * Identité et **contacts** viennent de l'API (réels, propres à cette entreprise).
+ * ⚠️ Adresses et facturation lisent encore `ProfilService`, en mémoire — mêmes
+ * données de démonstration pour toutes les entreprises. Le bandeau le dit plutôt
+ * que de laisser croire le contraire ; c'est la tranche suivante à câbler.
  */
 @Component({
   selector: 'app-entreprise-detail',
@@ -25,7 +23,7 @@ import { EntrepriseIdentite } from '../entreprise-identite/entreprise-identite';
   imports: [
     FoldCalloutComponent,
     EntrepriseIdentite,
-    ContactSection,
+    CompanyContactsSection,
     AdressesSection,
     FacturationSection,
   ],

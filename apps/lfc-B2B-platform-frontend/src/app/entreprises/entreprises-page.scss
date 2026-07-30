@@ -3,8 +3,8 @@
   color: var(--fold-color-text-muted);
 }
 
-// La barre d'onglets respire au-dessus du contenu de l'entreprise active.
-fold-tabs {
+// La barre de navigation respire au-dessus du contenu de l'entreprise active.
+fold-view-nav {
   display: block;
   margin-bottom: var(--fold-space-lg);
 }

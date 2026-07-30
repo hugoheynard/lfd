@@ -31,6 +31,26 @@ export interface UserProfile {
   readonly phone: string;
 }
 
+/** Un interlocuteur d'une entreprise (principal ou additionnel). */
+export interface Contact {
+  /** Id d'un contact additionnel ; `null` pour le contact **principal** (aplati). */
+  readonly id: string | null;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly fonction: string;
+  readonly email: string;
+  readonly phone: string;
+}
+
+/** Le KBIS déposé, tel que la section Identité l'affiche. */
+export interface Kbis {
+  readonly fileName: string;
+  /** ISO — quand il a été déposé. */
+  readonly uploadedAt: string;
+  /** Certifié = entreprise validée (`status = active`). */
+  readonly certified: boolean;
+}
+
 /** Une entreprise de la personne, telle qu'un onglet l'affiche. */
 export interface Company {
   readonly id: string;
@@ -41,6 +61,12 @@ export interface Company {
   readonly tvaIntracom: string;
   readonly status: CompanyStatus;
   readonly role: CompanyRole;
+  /** Contact principal (carte « Admin du compte entreprise »), toujours présent. */
+  readonly primaryContact: Contact;
+  /** Contacts additionnels, dans l'ordre d'ajout. Possiblement vide. */
+  readonly contacts: readonly Contact[];
+  /** KBIS déposé, ou `null` si l'entreprise n'en a pas encore fourni. */
+  readonly kbis: Kbis | null;
 }
 
 export interface Account {
@@ -56,6 +82,18 @@ export type CompanyDraft = Pick<
   Company,
   'raisonSociale' | 'enseigne' | 'formeJuridique' | 'siret' | 'tvaIntracom'
 >;
+
+/** Ce qu'un formulaire de contact envoie (principal comme additionnel). */
+export type ContactDraft = Pick<Contact, 'firstName' | 'lastName' | 'fonction' | 'email' | 'phone'>;
+
+/** Un contact vierge — préremplissage d'un ajout. */
+export const EMPTY_CONTACT: ContactDraft = {
+  firstName: '',
+  lastName: '',
+  fonction: '',
+  email: '',
+  phone: '',
+};
 
 /** Libellés d'état, pour les badges. */
 const STATUS_LABELS: Readonly<Record<CompanyStatus, string>> = {

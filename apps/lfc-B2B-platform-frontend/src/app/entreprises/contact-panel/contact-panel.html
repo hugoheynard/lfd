@@ -1,0 +1,46 @@
+<fold-panel-header [title]="heading()" subtitle="Coordonnées de l'interlocuteur." />
+
+<div class="body">
+  @if (error(); as message) {
+    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  <div class="row">
+    <fold-input
+      label="Prénom"
+      required
+      [value]="firstName()"
+      (valueChange)="firstName.set($event)"
+    />
+    <fold-input label="Nom" required [value]="lastName()" (valueChange)="lastName.set($event)" />
+  </div>
+
+  <fold-input
+    label="Fonction"
+    placeholder="ex. Responsable achats"
+    optional
+    [value]="fonction()"
+    (valueChange)="fonction.set($event)"
+  />
+  <fold-input
+    label="E-mail"
+    type="email"
+    required
+    [value]="email()"
+    (valueChange)="email.set($event)"
+  />
+  <fold-input
+    label="Téléphone"
+    type="tel"
+    optional
+    [value]="phone()"
+    (valueChange)="phone.set($event)"
+  />
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || submitting()" (click)="submit()">
+    Enregistrer
+  </button>
+</footer>

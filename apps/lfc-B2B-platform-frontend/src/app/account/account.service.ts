@@ -5,7 +5,7 @@ import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
-import type { Account, CompanyDraft, UserProfileDraft } from './account.model';
+import type { Account, CompanyDraft, ContactDraft, UserProfileDraft } from './account.model';
 
 /** Où en est le chargement du compte — l'app doit distinguer « vide » de « pas encore su ». */
 export type AccountStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -85,32 +85,107 @@ export class AccountService {
    * modèle de lecture) : on relit donc `/me` pour obtenir l'entreprise telle que
    * le backend l'a enregistrée — statut `pending` et SIRET normalisé compris.
    *
-   * @param onCreated appelé après le rechargement, pour que l'appelant referme
-   *   son panneau seulement en cas de succès.
+   * @param onDone appelé après le rechargement, pour que l'appelant referme son
+   *   panneau seulement en cas de succès.
    */
-  createCompany(draft: CompanyDraft, onCreated?: () => void): void {
-    this._status.set('loading');
-    this.auth
-      .accessToken$()
-      .pipe(
-        switchMap((token) =>
-          this.http.post<{ id: string }>(
-            `${AUTH_CONFIG.apiBaseUrl}/companies`,
-            draft,
-            headers(token),
-          ),
-        ),
-      )
-      .subscribe({
-        next: () => {
-          this.load();
-          onCreated?.();
-        },
-        error: (error: unknown) => this.fail(error),
-      });
+  createCompany(draft: CompanyDraft, onDone?: () => void): void {
+    this.mutate(
+      (token) => this.http.post(`${AUTH_CONFIG.apiBaseUrl}/companies`, draft, headers(token)),
+      onDone,
+    );
   }
 
-  /** Enchaîne « jeton → appel » et range la réponse dans l'état. */
+  /** Édite le contact **principal** (carte « Admin du compte entreprise »). */
+  updatePrimaryContact(companyId: string, draft: ContactDraft, onDone?: () => void): void {
+    this.mutate(
+      (token) =>
+        this.http.patch(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contact`,
+          draft,
+          headers(token),
+        ),
+      onDone,
+    );
+  }
+
+  /** Ajoute un contact additionnel. */
+  addContact(companyId: string, draft: ContactDraft, onDone?: () => void): void {
+    this.mutate(
+      (token) =>
+        this.http.post(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts`,
+          draft,
+          headers(token),
+        ),
+      onDone,
+    );
+  }
+
+  /** Remplace un contact additionnel. */
+  updateContact(
+    companyId: string,
+    contactId: string,
+    draft: ContactDraft,
+    onDone?: () => void,
+  ): void {
+    this.mutate(
+      (token) =>
+        this.http.patch(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts/${contactId}`,
+          draft,
+          headers(token),
+        ),
+      onDone,
+    );
+  }
+
+  /** Retire un contact additionnel. */
+  removeContact(companyId: string, contactId: string, onDone?: () => void): void {
+    this.mutate(
+      (token) =>
+        this.http.delete(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts/${contactId}`,
+          headers(token),
+        ),
+      onDone,
+    );
+  }
+
+  /**
+   * Dépose (ou remplace) le KBIS de l'entreprise (multipart), puis recharge le
+   * compte pour refléter le fichier et sa date.
+   */
+  uploadKbis(companyId: string, file: File, onDone?: () => void): void {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    this.mutate(
+      (token) =>
+        this.http.put(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/kbis`,
+          form,
+          headers(token),
+        ),
+      onDone,
+    );
+  }
+
+  /**
+   * Récupère le KBIS en **blob** (l'endpoint est authentifié : un `<a href>` ne
+   * pourrait pas porter le jeton). L'appelant décide ensuite de l'ouvrir (voir)
+   * ou de le télécharger.
+   */
+  fetchKbis(companyId: string): Observable<Blob> {
+    return this.auth.accessToken$().pipe(
+      switchMap((token) =>
+        this.http.get(`${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/kbis`, {
+          ...headers(token),
+          responseType: 'blob',
+        }),
+      ),
+    );
+  }
+
+  /** Enchaîne « jeton → appel » et range la réponse (le compte relu) dans l'état. */
   private request(call: (token: string) => Observable<Account>): void {
     this.auth
       .accessToken$()
@@ -120,6 +195,29 @@ export class AccountService {
           this.state.set(account);
           this._status.set('ready');
           this._error.set(null);
+        },
+        error: (error: unknown) => this.fail(error),
+      });
+  }
+
+  /**
+   * Exécute une écriture puis **recharge** le compte.
+   *
+   * Toutes les mutations d'entreprise/contacts renvoient `void` ou un id (une
+   * commande ne produit pas de modèle de lecture) : on relit donc `/me` pour
+   * obtenir l'état exact enregistré par le backend, plutôt que de le recomposer
+   * localement. `onDone` ne se déclenche qu'au succès — l'appelant ne referme son
+   * panneau que si l'écriture a abouti.
+   */
+  private mutate(call: (token: string) => Observable<unknown>, onDone?: () => void): void {
+    this._status.set('loading');
+    this.auth
+      .accessToken$()
+      .pipe(switchMap(call))
+      .subscribe({
+        next: () => {
+          this.load();
+          onDone?.();
         },
         error: (error: unknown) => this.fail(error),
       });

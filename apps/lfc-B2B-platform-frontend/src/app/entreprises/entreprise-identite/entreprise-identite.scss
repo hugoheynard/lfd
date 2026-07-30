@@ -4,3 +4,62 @@
   flex-wrap: wrap;
   gap: var(--fold-space-xs);
 }
+
+// Bloc KBIS — sous la carte d'identité.
+.kbis {
+  margin-top: var(--fold-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.kbis-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.kbis-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  font-weight: 600;
+}
+
+// Le déclencheur de dépôt est un <label> stylé en bouton, avec l'input caché.
+.kbis-deposer {
+  cursor: pointer;
+}
+
+.kbis-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+
+.kbis-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.kbis-name {
+  font-weight: 500;
+}
+.kbis-date {
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.kbis-actions {
+  display: flex;
+  gap: var(--fold-space-xs);
+}
+
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
