@@ -5,7 +5,18 @@ import {
   AccountReader,
   type AccountView,
   type CompanyView,
+  type ContactView,
 } from "../domain/ports/account.reader.js";
+
+/** Une ligne de contact additionnel telle que Prisma la sélectionne. */
+interface ContactRow {
+  readonly id: string;
+  readonly prenom: string;
+  readonly nom: string;
+  readonly fonction: string;
+  readonly email: string;
+  readonly telephone: string;
+}
 
 /**
  * Lecture du compte en **une** requête : la personne, ses rattachements, et la
@@ -45,6 +56,25 @@ export class PrismaAccountReader extends AccountReader {
                 siret: true,
                 tvaIntracom: true,
                 status: true,
+                kbisFileName: true,
+                kbisUploadedAt: true,
+                // Contact principal, aplati sur la société.
+                contactPrenom: true,
+                contactNom: true,
+                contactFonction: true,
+                contactEmail: true,
+                contactTelephone: true,
+                contacts: {
+                  orderBy: { createdAt: "asc" },
+                  select: {
+                    id: true,
+                    prenom: true,
+                    nom: true,
+                    fonction: true,
+                    email: true,
+                    telephone: true,
+                  },
+                },
               },
             },
           },
@@ -55,9 +85,33 @@ export class PrismaAccountReader extends AccountReader {
       return null;
     }
 
-    const companies: CompanyView[] = row.memberships.map((membership) => ({
-      ...membership.company,
-      role: membership.role,
+    const companies: CompanyView[] = row.memberships.map(({ role, company }) => ({
+      id: company.id,
+      raisonSociale: company.raisonSociale,
+      enseigne: company.enseigne,
+      formeJuridique: company.formeJuridique,
+      siret: company.siret,
+      tvaIntracom: company.tvaIntracom,
+      status: company.status,
+      role,
+      primaryContact: {
+        id: null,
+        firstName: company.contactPrenom,
+        lastName: company.contactNom,
+        fonction: company.contactFonction,
+        email: company.contactEmail,
+        phone: company.contactTelephone,
+      },
+      contacts: company.contacts.map(toContactView),
+      // KBIS présent seulement si un fichier a été déposé ; certifié = validé.
+      kbis:
+        company.kbisFileName !== null && company.kbisUploadedAt !== null
+          ? {
+              fileName: company.kbisFileName,
+              uploadedAt: company.kbisUploadedAt.toISOString(),
+              certified: company.status === "active",
+            }
+          : null,
     }));
 
     return {
@@ -72,4 +126,16 @@ export class PrismaAccountReader extends AccountReader {
       companies,
     };
   }
+}
+
+/** Une ligne de contact additionnel → la vue (renommage prenom→firstName, etc.). */
+function toContactView(row: ContactRow): ContactView {
+  return {
+    id: row.id,
+    firstName: row.prenom,
+    lastName: row.nom,
+    fonction: row.fonction,
+    email: row.email,
+    phone: row.telephone,
+  };
 }

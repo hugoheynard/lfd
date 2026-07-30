@@ -1,4 +1,5 @@
 import {
+  AuthorizationError,
   BusinessError,
   DomainError,
   ResourceNotFoundError,
@@ -81,6 +82,65 @@ export class UserProfileNotFoundError extends ResourceNotFoundError {
   }
 }
 
+/**
+ * L'entreprise visée n'est pas accessible au demandeur.
+ *
+ * Volontairement un **404** et non un 403 : quand le demandeur n'est rattaché à
+ * aucune membership de cette entreprise, on ne divulgue même pas qu'elle existe.
+ * Un client normal ne vise que ses propres entreprises (celles de son `/me`) ;
+ * ce cas n'arrive que sur un id forgé.
+ */
+export class CompanyNotFoundError extends ResourceNotFoundError {
+  constructor(readonly companyId: string) {
+    super("account.company.not_found", "Entreprise introuvable.");
+  }
+}
+
+/** Le contact visé n'appartient pas à cette entreprise (ou n'existe plus). */
+export class CompanyContactNotFoundError extends ResourceNotFoundError {
+  constructor(readonly contactId: string) {
+    super("account.contact.not_found", "Contact introuvable.");
+  }
+}
+
+/** Aucun KBIS n'a encore été déposé pour cette entreprise. */
+export class KbisNotFoundError extends ResourceNotFoundError {
+  constructor(readonly companyId: string) {
+    super("account.kbis.not_found", "Aucun KBIS n'a été déposé pour cette entreprise.");
+  }
+}
+
+/** Le fichier déposé n'est pas un KBIS acceptable (format, taille). */
+export class InvalidKbisFileError extends DomainError {
+  constructor(reason: string) {
+    super("account.kbis.invalid_file", `KBIS refusé : ${reason}`);
+  }
+}
+
+/** L'adresse visée n'appartient pas à cette entreprise (ou est archivée). */
+export class CompanyAddressNotFoundError extends ResourceNotFoundError {
+  constructor(readonly addressId: string) {
+    super("account.address.not_found", "Adresse introuvable.");
+  }
+}
+
+// ─── Rôle insuffisant : authentifié, mais pas le droit (403) ─────────────────
+
+/**
+ * Le demandeur est bien membre de l'entreprise, mais n'en est pas le
+ * gestionnaire. Gérer les contacts est réservé au `company_admin` — révéler que
+ * l'entreprise existe est ici acceptable (il en est membre), d'où le 403 plutôt
+ * qu'un 404.
+ */
+export class CompanyAdminRequiredError extends AuthorizationError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.company.admin_required",
+      "Seul le gestionnaire de l'entreprise peut effectuer cette action.",
+    );
+  }
+}
+
 // ─── Panne technique (500) ───────────────────────────────────────────────────
 
 /**
@@ -94,5 +154,18 @@ export class UserProfileNotFoundError extends ResourceNotFoundError {
 export class IdentityProviderUnavailableError extends TechnicalError {
   constructor(reason: string, cause?: unknown) {
     super("account.identity_provider.unavailable", reason, cause);
+  }
+}
+
+/**
+ * Le stockage objet (R2) n'est pas configuré, ou a échoué.
+ *
+ * Technique et non métier : le client n'a rien fait de mal. Sans bucket
+ * configuré (`STORAGE_*` absents), dépôt et téléchargement du KBIS sont
+ * indisponibles ; le reste de l'app fonctionne.
+ */
+export class KbisStorageUnavailableError extends TechnicalError {
+  constructor(reason: string, cause?: unknown) {
+    super("account.kbis.storage_unavailable", reason, cause);
   }
 }

@@ -35,6 +35,9 @@ function doubles(
       declared.push({ company, ownerUserId });
       return Promise.resolve("company_new");
     },
+    updatePrimaryContact: () => Promise.resolve(),
+    saveKbisMetadata: () => Promise.resolve(),
+    kbisLocation: () => Promise.resolve(null),
   };
 
   const profiles: UserProfileRepository = {

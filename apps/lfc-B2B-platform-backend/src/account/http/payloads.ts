@@ -28,3 +28,18 @@ export const createCompanyPayload = z.object({
 });
 
 export type CreateCompanyPayload = z.infer<typeof createCompanyPayload>;
+
+/**
+ * Coordonnées d'un contact — même forme pour le contact principal et les
+ * additionnels (cf. le value object `ContactDetails`, qui en tient les vraies
+ * règles ; ici on ne valide que la structure).
+ */
+export const contactPayload = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  fonction: z.string().default(""),
+  email: z.string(),
+  phone: z.string().default(""),
+});
+
+export type ContactPayload = z.infer<typeof contactPayload>;

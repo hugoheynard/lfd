@@ -7,13 +7,16 @@
  * - `business`  — l'opération est refusée pour une raison métier légitime (référence déjà
  *                 prise, publication sans allergènes). L'appelant a fait une demande
  *                 valide dans sa forme, mais impossible dans l'état courant.
+ * - `authorization` — l'appelant est authentifié mais n'a pas le droit d'agir ici (il
+ *                 n'est pas membre de l'entreprise, ou n'en est pas gestionnaire). Le mur
+ *                 de tenancy et les rôles vivent là.
  * - `technical` — l'infrastructure a échoué (base injoignable, appel réseau). Rien à
  *                 corriger côté appelant.
  *
  * Aucune de ces classes ne connaît HTTP : la traduction en code de statut est le travail
  * du filtre d'exceptions, à la frontière.
  */
-export type ErrorCategory = "domain" | "business" | "technical";
+export type ErrorCategory = "domain" | "business" | "authorization" | "technical";
 
 export abstract class AppError extends Error {
   protected constructor(
@@ -49,6 +52,21 @@ export abstract class BusinessError extends AppError {
  * C'est le filtre HTTP qui le sait — l'erreur, elle, ignore toujours le transport.
  */
 export abstract class ResourceNotFoundError extends BusinessError {}
+
+/**
+ * L'appelant est authentifié mais n'a pas le droit d'agir sur cette ressource.
+ *
+ * Vaut un **403** — distinct du 401 (pas authentifié, géré par le guard) et du
+ * 404 (n'existe pas). On l'emploie pour une violation du mur de tenancy ou un
+ * rôle insuffisant, quand révéler l'existence de la ressource est acceptable ;
+ * quand ça ne l'est pas, on préfère un `ResourceNotFoundError` (404) qui ne
+ * divulgue rien.
+ */
+export abstract class AuthorizationError extends AppError {
+  protected constructor(code: string, message: string, cause?: unknown) {
+    super("authorization", code, message, cause);
+  }
+}
 
 export abstract class TechnicalError extends AppError {
   protected constructor(code: string, message: string, cause?: unknown) {

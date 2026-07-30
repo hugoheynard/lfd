@@ -15,13 +15,14 @@ export interface CreatedCompanyResponse {
 /**
  * `POST /companies` — déclarer une entreprise depuis « Mes entreprises ».
  *
- * Aucune liste ici : les entreprises d'une personne font partie de son compte et
- * se lisent par `GET /me`. Un `GET /companies` dupliquerait cette lecture sans
- * second consommateur pour le justifier.
+ * Ce contrôleur ne fait **que** la création : les opérations sur une entreprise
+ * existante (contacts, KBIS) vivent dans leurs propres sous-contrôleurs
+ * (`CompanyContactsController`, `CompanyKbisController`), une responsabilité par
+ * fichier. Il ne porte pas de logique : il dispatche la commande au
+ * `CreateCompanyHandler` via le bus.
  *
- * Pas de garde de rôle non plus : n'importe quelle personne authentifiée peut
- * déclarer **sa** société, et en devient le gestionnaire. Les gardes de rôle
- * viendront sur les opérations qui touchent une société **existante**.
+ * Pas de garde de rôle sur la création : n'importe quelle personne authentifiée
+ * déclare la sienne et en devient gestionnaire.
  */
 @Controller("companies")
 export class CompaniesController {

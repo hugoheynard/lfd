@@ -14,6 +14,7 @@ import { AppError, ResourceNotFoundError, type ErrorCategory } from "../errors/a
 const STATUS_BY_CATEGORY: Record<ErrorCategory, HttpStatus> = {
   domain: HttpStatus.BAD_REQUEST,
   business: HttpStatus.CONFLICT,
+  authorization: HttpStatus.FORBIDDEN,
   technical: HttpStatus.INTERNAL_SERVER_ERROR,
 };
 

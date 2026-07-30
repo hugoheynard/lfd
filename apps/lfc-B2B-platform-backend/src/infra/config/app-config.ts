@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import type { S3StorageConfig } from "@lfd/storage";
 
 /**
  * Passerelle **unique** vers l'environnement.
@@ -15,6 +16,7 @@ export class AppConfig {
   private readonly auth0DomainValue: string;
   private readonly auth0AudienceValue: string;
   private readonly management: Auth0ManagementCredentials | null;
+  private readonly storage: S3StorageConfig | null;
   private readonly portValue: number;
 
   constructor() {
@@ -22,6 +24,7 @@ export class AppConfig {
     this.auth0DomainValue = required("AUTH0_DOMAIN");
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
     this.management = optionalManagementCredentials();
+    this.storage = optionalStorageConfig();
     this.portValue = optionalPort("PORT", 3200);
   }
 
@@ -63,6 +66,18 @@ export class AppConfig {
     return this.management;
   }
 
+  /**
+   * Configuration du **stockage objet** (R2/S3) pour les KBIS, ou `null` si le
+   * bucket n'est pas configuré.
+   *
+   * Optionnel comme le M2M : l'API démarre sans (dev, CI). C'est l'adaptateur qui
+   * refuse explicitement dépôt et téléchargement quand c'est `null` — le reste de
+   * l'app fonctionne, seul le KBIS est indisponible.
+   */
+  storageConfig(): S3StorageConfig | null {
+    return this.storage;
+  }
+
   /** Port d'écoute de l'API. */
   port(): number {
     return this.portValue;
@@ -93,6 +108,38 @@ function optionalManagementCredentials(): Auth0ManagementCredentials | null {
     );
   }
   return { clientId, clientSecret };
+}
+
+/**
+ * Configuration R2/S3, ou `null` si non fournie.
+ *
+ * `bucket`, `accessKeyId` et `secretAccessKey` forment le trio requis : si l'un
+ * est là, les trois doivent l'être (une config partielle est une erreur de
+ * démarrage, pas un `undefined` découvert au premier dépôt). `endpoint` (l'URL
+ * R2) et `region` sont optionnels — `region` vaut « auto » côté service.
+ */
+function optionalStorageConfig(): S3StorageConfig | null {
+  const bucket = process.env["STORAGE_BUCKET"]?.trim() ?? "";
+  const accessKeyId = process.env["STORAGE_ACCESS_KEY_ID"]?.trim() ?? "";
+  const secretAccessKey = process.env["STORAGE_SECRET_ACCESS_KEY"]?.trim() ?? "";
+  const endpoint = process.env["STORAGE_ENDPOINT"]?.trim() ?? "";
+  const region = process.env["STORAGE_REGION"]?.trim() ?? "";
+
+  if (bucket === "" && accessKeyId === "" && secretAccessKey === "") {
+    return null;
+  }
+  if (bucket === "" || accessKeyId === "" || secretAccessKey === "") {
+    throw new Error(
+      "STORAGE_BUCKET, STORAGE_ACCESS_KEY_ID et STORAGE_SECRET_ACCESS_KEY vont ensemble : renseignez les trois, ou aucun.",
+    );
+  }
+  return {
+    bucket,
+    accessKeyId,
+    secretAccessKey,
+    ...(endpoint !== "" ? { endpoint } : {}),
+    ...(region !== "" ? { region } : {}),
+  };
 }
 
 function required(name: string): string {

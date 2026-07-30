@@ -110,20 +110,14 @@ model Company {
   siret          String
   tvaIntracom    String @default("") @map("tva_intracom")
 
-  // Contact principal du compte (value object aplati)
+  // Contact PRINCIPAL de l'entreprise (value object aplati). Semé du profil du
+  // créateur ; c'est la carte « Admin du compte entreprise ». Contact unique et
+  // obligatoire — les autres interlocuteurs sont des `CompanyContact` (0..N).
   contactPrenom    String @map("contact_prenom")
   contactNom       String @map("contact_nom")
   contactFonction  String @default("") @map("contact_fonction")
   contactEmail     String @map("contact_email")
   contactTelephone String @default("") @map("contact_telephone")
-
-  // Représentant optionnel (gestionnaire de commande interne au client).
-  // Tous null = pas de représentant.
-  repPrenom    String? @map("rep_prenom")
-  repNom       String? @map("rep_nom")
-  repFonction  String? @map("rep_fonction")
-  repEmail     String? @map("rep_email")
-  repTelephone String? @map("rep_telephone")
 
   // Facturation (un seul champ pour l'instant → sur Company ; extraire un
   // BillingProfile le jour où ça grossit : plafond crédit, email de facturation…).
@@ -133,10 +127,22 @@ model Company {
   // saisie — elle le devient par une activation commerciale explicite.
   status CompanyStatus @default(pending)
 
+  // KBIS — l'extrait déposé par le client, demandé pour la validation. Le fichier
+  // vit dans le stockage objet (R2) ; on ne garde ici que ses métadonnées et sa
+  // CLÉ de stockage. Tous null = aucun KBIS déposé. « Certifié » n'est PAS un
+  // champ : il se dérive de `status = active` (validé), pour ne pas laisser deux
+  // vérités diverger.
+  kbisStorageKey  String?   @map("kbis_storage_key")
+  kbisFileName    String?   @map("kbis_file_name")
+  kbisContentType String?   @map("kbis_content_type")
+  kbisSize        Int?      @map("kbis_size")
+  kbisUploadedAt  DateTime? @map("kbis_uploaded_at")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   memberships Membership[]
+  contacts    CompanyContact[]
   addresses   Address[]
   orders      Order[]
 
@@ -215,6 +221,35 @@ model Membership {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CompanyContact — un interlocuteur ADDITIONNEL de l'entreprise
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Les contacts en plus du contact principal (qui, lui, vit aplati sur `Company`
+/// et n'est jamais supprimable). Carnet d'adresses de l'entreprise : ce sont des
+/// personnes à joindre, PAS des utilisateurs du logiciel — aucun `auth0_sub`,
+/// aucun accès. Inviter un collègue à se connecter est un autre flux (membership).
+///
+/// Wallé par `company_id` comme tout ce qui appartient à un client.
+model CompanyContact {
+  id String @id @default(cuid())
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  prenom    String
+  nom       String
+  fonction  String @default("")
+  email     String
+  telephone String @default("")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@map("company_contacts")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Address — 1 facturation + N livraison, 1 livraison par défaut
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -236,6 +271,12 @@ model Address {
   // Adresse de livraison par défaut. Invariant (appliqué en applicatif) :
   // au plus une `livraison` à `true` par company ; exactement une `facturation`.
   isDefault Boolean @default(false) @map("is_default")
+
+  // Consignes de LIVRAISON (note livreurs, créneaux préférés, contact sur place,
+  // point GPS) — la forme est le `DeliverySpecs` de `@lfd/contracts`, stockée en
+  // JSON car on ne requête jamais par créneau. `null` sur une facturation, et sur
+  // une livraison tant qu'aucune consigne n'a été saisie.
+  deliverySpecs Json? @map("delivery_specs")
 
   // Pas de DELETE physique : on archive.
   archivedAt DateTime? @map("archived_at")
