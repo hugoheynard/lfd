@@ -21,26 +21,37 @@ devra exposer.
 
 - Lecture de l'identité légale, des contacts, des adresses (facturation +
   livraison), et du **KBIS** (visualiser le PDF).
-- **Condition de règlement DEMANDÉE** par le client (`companies.paymentTerm`) — à
-  valider ou ajuster.
+- **Condition de règlement** : deux colonnes distinctes sur `companies` —
+  `payment_term` = le terme **convenu** (celui qui s'applique, écrit **uniquement
+  par le staff**) et `requested_payment_term` = la **demande** du client (nullable,
+  `null` = aucune). Le client ne mute jamais le convenu ; il exprime un souhait
+  (onboarding **ou** après activation) que le staff **promeut** (voir §3).
 
 ## 3. Activation (`pending → active`) — le geste clé
 
-- Le commercial **valide** le KBIS + la condition de règlement, puis passe la
-  société `active`. C'est **ce geste** qui débloque la commande côté client
-  (`ensureCanOrder` lit `status`).
-- Besoin : un endpoint **admin** (auth staff/M2M) type `PATCH
-  /admin/companies/:id/status` → `active` (et `suspended` / réactivation).
-- La règle « active = règlement validé + KBIS validé » est aujourd'hui **portée
-  par le geste** (le commercial ne l'active que si les deux sont OK). Si on veut
-  la rendre explicite : deux drapeaux `kbisValidated` / `paymentTermValidated`
-  sur `Company`, et `active` dérivé — à trancher (cf. la note « certified =
-  status active » côté KBIS, qui devra sans doute se dédoubler).
+- Le commercial **valide** le KBIS et **accorde** la condition de règlement, puis
+  passe la société `active`. C'est **ce geste** qui débloque la commande côté
+  client (`ensureCanOrder` lit `status`).
+- Endpoints **admin** (auth staff/M2M) à créer :
+  - `PATCH /admin/companies/:id/status` → `active` / `suspended` / réactivation.
+  - **Accorder le règlement** : recopier `requested_payment_term` dans
+    `payment_term` puis remettre `requested_payment_term` à `null` (ou ajuster à un
+    autre terme). C'est la seule voie d'écriture du terme convenu.
+  - **Certifier le KBIS** : poser `kbis_certified_at = now()`. La certification est
+    désormais **propre au fichier** et découplée de `status` : tout (re)dépôt côté
+    client remet `kbis_certified_at` à `null` (le badge « Certifié » retombe). Le
+    front lit `certified = kbis_certified_at != null`. Tant que cet endpoint
+    n'existe pas, **aucun** KBIS n'est certifié (badge « en attente » partout) —
+    c'est volontaire (pas de fausse certification).
 
 ## 4. Boîte de réception « Support activation »
 
 - Les `SupportRequest` (table `support_requests`) : canal (`phone`/`email`),
   numéro, disponibilité (`asap` ou date + `slot` matin/après-midi), message.
+- **Une seule demande ouverte par société** : tant que `handled_at` est nul, le
+  client ne peut pas en créer une autre (409 côté client). Le geste admin
+  « marquer traité » (`handled_at = now()`) **rouvre** donc la possibilité d'une
+  nouvelle demande.
 - Afficher, **rappeler**, puis marquer traité (`handled_at`).
 
 ## 5. Suspension / réactivation
