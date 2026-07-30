@@ -91,8 +91,10 @@ export interface Company {
   /** La forme juridique impose-t-elle un n° de TVA ? (dérivé côté backend). */
   readonly vatNumberRequired: boolean;
   readonly status: CompanyStatus;
-  /** Condition de règlement, toujours présente (défaut « à la commande »). */
+  /** Condition de règlement **convenue**, toujours présente (défaut « à la commande »). */
   readonly paymentTerm: PaymentTerm;
+  /** Terme **demandé** en attente de validation staff ; `null` = aucune demande. */
+  readonly requestedPaymentTerm: PaymentTerm | null;
   readonly role: CompanyRole;
   /** Contact principal (carte « Admin du compte entreprise »), toujours présent. */
   readonly primaryContact: Contact;

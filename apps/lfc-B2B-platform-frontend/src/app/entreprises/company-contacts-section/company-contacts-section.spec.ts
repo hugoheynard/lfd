@@ -28,6 +28,7 @@ function company(over: Partial<Company> = {}): Company {
     vatNumberRequired: true,
     status: 'active',
     paymentTerm: 'per_order',
+    requestedPaymentTerm: null,
     role: 'company_admin',
     primaryContact: {
       id: null,

@@ -26,6 +26,7 @@ function company(id: string, raisonSociale: string, enseigne = ''): Company {
     vatNumberRequired: true,
     status: 'pending',
     paymentTerm: 'per_order',
+    requestedPaymentTerm: null,
     role: 'company_admin',
     primaryContact: {
       id: null,

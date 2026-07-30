@@ -60,7 +60,7 @@ export class PaymentTermPanel {
       return;
     }
     this.saving.set(true);
-    this.account.updatePaymentTerm(data.companyId, this.term(), () => this.ref.close(true));
+    this.account.requestPaymentTerm(data.companyId, this.term(), () => this.ref.close(true));
   }
 
   protected cancel(): void {

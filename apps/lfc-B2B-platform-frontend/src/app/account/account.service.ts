@@ -118,8 +118,11 @@ export class AccountService {
     );
   }
 
-  /** Enregistre la condition de règlement souhaitée (validée ensuite par le commercial). */
-  updatePaymentTerm(companyId: string, paymentTerm: PaymentTerm, onDone?: () => void): void {
+  /**
+   * **Demande** une condition de règlement (le terme convenu reste écrit par le
+   * staff). Enregistrée comme souhait, validée ensuite par le commercial.
+   */
+  requestPaymentTerm(companyId: string, paymentTerm: PaymentTerm, onDone?: () => void): void {
     this.mutate(
       (token) =>
         this.http.patch(
