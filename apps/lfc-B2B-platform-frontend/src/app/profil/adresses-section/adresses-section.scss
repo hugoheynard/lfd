@@ -49,9 +49,8 @@
 
 .delivery {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--fold-space-md);
+  flex-direction: column;
+  gap: var(--fold-space-sm);
   padding: var(--fold-space-md);
   border: 1px solid var(--fold-color-border-subtle);
   border-radius: var(--fold-radius-md, 10px);
@@ -61,11 +60,100 @@
   background: var(--fold-color-primary-surface, transparent);
 }
 
-.delivery-actions {
+// L'adresse à gauche, le menu dropover à droite.
+.delivery-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+// Déclencheur du menu — bouton icône discret (même que les contacts).
+.menu-trigger {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm, 6px);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+.menu-trigger:hover {
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
+  color: var(--fold-color-text);
+}
+
+// Détail de livraison dépliable sous la ligne d'adresse.
+.delivery-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  align-items: flex-start;
+}
+.detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  width: 100%;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.03));
+  border-radius: var(--fold-radius-md, 10px);
+}
+
+.detail-title {
   display: flex;
   align-items: center;
   gap: var(--fold-space-xs);
-  flex-shrink: 0;
+  margin: 0 0 var(--fold-space-xs);
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+// Grille hebdo : un jour par ligne, le créneau aligné à droite.
+.week {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 0.1rem var(--fold-space-lg);
+}
+.week-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+.week-day {
+  color: var(--fold-color-text-muted);
+}
+.week-slot {
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+.week-row.is-empty .week-slot {
+  color: var(--fold-color-text-subtle, var(--fold-color-text-muted));
+}
+
+// Contact / note / GPS : ligne discrète avec icône alignée en tête.
+.detail-line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+.detail-line fold-icon {
+  flex: none;
+  margin-top: 0.1rem;
+}
+.detail-line a {
+  color: var(--fold-color-primary);
 }
 
 .muted {

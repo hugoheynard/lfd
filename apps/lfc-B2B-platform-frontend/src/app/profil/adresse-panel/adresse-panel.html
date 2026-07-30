@@ -49,6 +49,147 @@
       [checked]="isDefaut()"
       (checkedChange)="isDefaut.set($event)"
     />
+
+    <hr class="sep" />
+
+    <label class="field">
+      <span class="field-label">Note pour les livreurs <em>(optionnel)</em></span>
+      <textarea
+        class="note"
+        rows="3"
+        placeholder="Code d'accès, étage, contact sur place, consignes de dépôt…"
+        [value]="note()"
+        (input)="note.set(inputValue($event))"
+      ></textarea>
+    </label>
+
+    <fieldset class="slots">
+      <legend class="field-label">Créneaux de livraison préférés</legend>
+
+      <fold-checkbox
+        label="Le même créneau tous les jours"
+        hint="décochez pour définir un créneau par jour"
+        [checked]="sameEveryDay()"
+        (checkedChange)="sameEveryDay.set($event)"
+      />
+
+      @if (sameEveryDay()) {
+        <div class="slot-row">
+          <span class="slot-day">Tous les jours</span>
+          <input class="time" type="time" [value]="everyStart()" (input)="everyStart.set(inputValue($event))" />
+          <span class="dash">–</span>
+          <input class="time" type="time" [value]="everyEnd()" (input)="everyEnd.set(inputValue($event))" />
+        </div>
+      } @else {
+        @for (d of weekdays; track d.value) {
+          <div class="slot-row">
+            <span class="slot-day">{{ d.label }}</span>
+            <input
+              class="time"
+              type="time"
+              [value]="days()[d.value].start"
+              (input)="setDay(d.value, 'start', inputValue($event))"
+            />
+            <span class="dash">–</span>
+            <input
+              class="time"
+              type="time"
+              [value]="days()[d.value].end"
+              (input)="setDay(d.value, 'end', inputValue($event))"
+            />
+          </div>
+        }
+      }
+
+      @if (slotIssue()) {
+        <p class="slot-issue">{{ slotIssue() }}</p>
+      }
+    </fieldset>
+
+    <hr class="sep" />
+
+    <fieldset class="contact">
+      <legend class="field-label">Contact sur place à la livraison</legend>
+
+      <fold-checkbox
+        label="Pas de contact de livraison dédié"
+        hint="cochez si le livreur n'a personne à prévenir sur place"
+        [checked]="noContact()"
+        (checkedChange)="noContact.set($event)"
+      />
+
+      @if (!noContact()) {
+        @if (knownContacts().length > 0) {
+          <fold-select
+            label="Reprendre un contact connu"
+            optional
+            placeholder="Choisir un contact…"
+            [value]="contactPick()"
+            (valueChange)="onPickContact($event)"
+          >
+            @for (c of knownContacts(); track $index) {
+              <option [value]="$index">{{ contactLabel(c) }}</option>
+            }
+          </fold-select>
+        }
+
+        <div class="row">
+          <fold-input
+            class="grow"
+            label="Prénom"
+            required
+            [value]="contactPrenom()"
+            (valueChange)="contactPrenom.set($event)"
+          />
+          <fold-input
+            class="grow"
+            label="Nom"
+            required
+            [value]="contactNom()"
+            (valueChange)="contactNom.set($event)"
+          />
+        </div>
+        <fold-input
+          label="Téléphone"
+          required
+          [value]="contactTel()"
+          (valueChange)="contactTel.set($event)"
+        />
+
+        @if (contactIssue()) {
+          <p class="slot-issue">{{ contactIssue() }}</p>
+        }
+      }
+    </fieldset>
+
+    <hr class="sep" />
+
+    <fieldset class="gps">
+      <legend class="field-label">
+        Point GPS <em>(optionnel — lieux difficiles à localiser)</em>
+      </legend>
+      <div class="row">
+        <fold-input
+          class="grow"
+          label="Latitude"
+          optional
+          placeholder="48.8566"
+          [value]="gpsLat()"
+          (valueChange)="gpsLat.set($event)"
+        />
+        <fold-input
+          class="grow"
+          label="Longitude"
+          optional
+          placeholder="2.3522"
+          [value]="gpsLng()"
+          (valueChange)="gpsLng.set($event)"
+        />
+      </div>
+      @if (gpsIssue()) {
+        <p class="slot-issue">{{ gpsIssue() }}</p>
+      }
+    </fieldset>
   }
 </div>
 

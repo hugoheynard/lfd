@@ -1,9 +1,20 @@
 import { computed, Injectable, signal } from '@angular/core';
 
-import type { Adresse, ClientProfile, Contact, Etablissement, PaymentTerm } from './profil.model';
+import type {
+  Adresse,
+  AdresseLivraison,
+  ClientProfile,
+  Contact,
+  DeliveryContact,
+  Etablissement,
+  PaymentTerm,
+} from './profil.model';
 
-/** Charge de création/édition d'une adresse de livraison (sans l'`id` géré ici). */
+/** Charge de création/édition de l'adresse de facturation (sans l'`id` géré ici). */
 export type AdresseDraft = Omit<Adresse, 'id'>;
+
+/** Charge de création/édition d'une adresse de livraison (note + créneaux compris). */
+export type AdresseLivraisonDraft = Omit<AdresseLivraison, 'id'>;
 
 /**
  * Source de vérité du profil client pro — pour l'instant **en mémoire**, semée
@@ -21,9 +32,25 @@ export class ProfilService {
   /** Le profil complet, en lecture. */
   readonly profile = this.state.asReadonly();
 
-  /** Raccourcis dérivés fréquemment lus par les vues. */
-  readonly adressesLivraison = computed(() => this.state().adressesLivraison);
+  /**
+   * Adresses de livraison, **l'adresse par défaut toujours en tête**. Le tri est
+   * stable (comparateur sur le seul `isDefaut`) : les autres gardent leur ordre.
+   */
+  readonly adressesLivraison = computed(() =>
+    [...this.state().adressesLivraison].sort((a, b) => Number(b.isDefaut) - Number(a.isDefaut)),
+  );
   readonly representant = computed(() => this.state().representant);
+
+  /**
+   * Contacts connus de l'app, proposés pour préremplir un contact de livraison :
+   * le contact principal et le représentant s'il existe. Réduit à `prenom`/`nom`/
+   * `telephone` — la partie utile pour le livreur.
+   */
+  readonly knownContacts = computed<readonly DeliveryContact[]>(() => {
+    const p = this.state();
+    const people: Contact[] = p.representant ? [p.contact, p.representant] : [p.contact];
+    return people.map((c) => ({ prenom: c.prenom, nom: c.nom, telephone: c.telephone }));
+  });
 
   updateEtablissement(etablissement: Etablissement): void {
     this.state.update((p) => ({ ...p, etablissement }));
@@ -55,7 +82,7 @@ export class ProfilService {
    * brouillon est marqué par défaut, il devient le seul par défaut ; la toute
    * première adresse ajoutée est promue par défaut d'office.
    */
-  saveDeliveryAddress(draft: AdresseDraft, id: string | null): void {
+  saveDeliveryAddress(draft: AdresseLivraisonDraft, id: string | null): void {
     this.state.update((p) => {
       const list = p.adressesLivraison;
       const targetId = id ?? nextAddressId(list);
@@ -86,7 +113,11 @@ export class ProfilService {
 }
 
 /** Remplace l'adresse `id` par le brouillon, en conservant son `id`. */
-function replaceById(list: readonly Adresse[], id: string, draft: AdresseDraft): Adresse[] {
+function replaceById(
+  list: readonly AdresseLivraison[],
+  id: string,
+  draft: AdresseLivraisonDraft,
+): AdresseLivraison[] {
   return list.map((a) => (a.id === id ? { ...draft, id } : a));
 }
 
@@ -95,7 +126,10 @@ function replaceById(list: readonly Adresse[], id: string, draft: AdresseDraft):
  * fourni, il gagne ; sinon on conserve un défaut existant, ou on promeut la
  * première quand aucune n'est marquée (une liste non vide a toujours un défaut).
  */
-function normaliseDefault(list: readonly Adresse[], defaultId: string | null): Adresse[] {
+function normaliseDefault(
+  list: readonly AdresseLivraison[],
+  defaultId: string | null,
+): AdresseLivraison[] {
   if (list.length === 0) {
     return [];
   }
@@ -104,7 +138,7 @@ function normaliseDefault(list: readonly Adresse[], defaultId: string | null): A
 }
 
 /** Id incrémental stable (SSR-safe : pas de `Math.random`/`Date.now`). */
-function nextAddressId(list: readonly Adresse[]): string {
+function nextAddressId(list: readonly AdresseLivraison[]): string {
   const max = list.reduce((acc, a) => {
     const n = Number.parseInt(a.id.replace(/\D/g, ''), 10);
     return Number.isNaN(n) ? acc : Math.max(acc, n);
@@ -155,6 +189,10 @@ const SEED: ClientProfile = {
       ville: 'Paris',
       pays: 'France',
       isDefaut: true,
+      note: "Sonner à l'interphone « Boulangerie ». Livraison par la cour, pas la vitrine.",
+      slots: { mode: 'everyday', slot: { start: '07:00', end: '09:00' } },
+      deliveryContact: { prenom: 'Camille', nom: 'Rousseau', telephone: '01 42 71 08 44' },
+      gps: { lat: 48.8592, lng: 2.3616 },
     },
     {
       id: 'liv_2',
@@ -165,6 +203,21 @@ const SEED: ClientProfile = {
       ville: 'Paris',
       pays: 'France',
       isDefaut: false,
+      note: '',
+      slots: {
+        mode: 'perDay',
+        byDay: {
+          mon: { start: '06:30', end: '08:00' },
+          tue: null,
+          wed: { start: '06:30', end: '08:00' },
+          thu: null,
+          fri: { start: '06:30', end: '08:00' },
+          sat: { start: '07:30', end: '09:00' },
+          sun: null,
+        },
+      },
+      deliveryContact: null,
+      gps: null,
     },
   ],
   paymentTerm: 'monthly',
