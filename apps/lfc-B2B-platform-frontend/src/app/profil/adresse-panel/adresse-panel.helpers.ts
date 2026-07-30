@@ -1,4 +1,4 @@
-import type { DeliverySlot, SlotByDay, Weekday } from '../../data/profil.model';
+import type { DeliverySlot, SlotByDay, Weekday } from '@lfd/contracts';
 
 /** Brouillon de créneau par jour côté formulaire (chaînes, `''` = vide). */
 export type DraftDay = { readonly start: string; readonly end: string };

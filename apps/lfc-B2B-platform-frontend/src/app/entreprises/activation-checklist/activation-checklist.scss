@@ -1,0 +1,56 @@
+.ready {
+  margin: var(--fold-space-sm) 0 0;
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.support {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+
+// Bouton rendu comme un lien inline (pas de chrome bouton).
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--fold-color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.steps {
+  list-style: none;
+  margin: var(--fold-space-sm) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+}
+
+.step-text {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+.step-text fold-icon {
+  flex: none;
+  margin-top: 0.1rem;
+  color: var(--fold-color-text-muted);
+}
+
+// Le bouton KBIS est un <label> (input fichier caché) — mêmes métriques qu'un bouton.
+.kbis-btn {
+  flex: none;
+  cursor: pointer;
+}

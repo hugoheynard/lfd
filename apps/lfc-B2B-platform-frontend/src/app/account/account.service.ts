@@ -5,7 +5,13 @@ import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
-import type { Account, CompanyDraft, ContactDraft, UserProfileDraft } from './account.model';
+import type {
+  Account,
+  CompanyDraft,
+  ContactDraft,
+  PaymentTerm,
+  UserProfileDraft,
+} from './account.model';
 
 /** Où en est le chargement du compte — l'app doit distinguer « vide » de « pas encore su ». */
 export type AccountStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -91,6 +97,36 @@ export class AccountService {
   createCompany(draft: CompanyDraft, onDone?: () => void): void {
     this.mutate(
       (token) => this.http.post(`${AUTH_CONFIG.apiBaseUrl}/companies`, draft, headers(token)),
+      onDone,
+    );
+  }
+
+  /** Édite l'identité souple (enseigne + n° de TVA), puis recharge le compte. */
+  updateIdentity(
+    companyId: string,
+    identity: { enseigne: string; tvaIntracom: string },
+    onDone?: () => void,
+  ): void {
+    this.mutate(
+      (token) =>
+        this.http.patch(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/identity`,
+          identity,
+          headers(token),
+        ),
+      onDone,
+    );
+  }
+
+  /** Enregistre la condition de règlement souhaitée (validée ensuite par le commercial). */
+  updatePaymentTerm(companyId: string, paymentTerm: PaymentTerm, onDone?: () => void): void {
+    this.mutate(
+      (token) =>
+        this.http.patch(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/payment-term`,
+          { paymentTerm },
+          headers(token),
+        ),
       onDone,
     );
   }

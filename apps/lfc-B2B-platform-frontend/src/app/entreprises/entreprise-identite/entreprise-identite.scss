@@ -28,28 +28,37 @@
   font-weight: 600;
 }
 
-// Le déclencheur de dépôt est un <label> stylé en bouton, avec l'input caché.
-.kbis-deposer {
-  cursor: pointer;
-}
-
+// KBIS présent : une ligne « fichier » — icône + nom/date à gauche, actions à droite.
 .kbis-file {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md, 10px);
 }
 
 .kbis-meta {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: var(--fold-space-sm);
   min-width: 0;
 }
+.kbis-meta fold-icon {
+  grid-row: span 2;
+  color: var(--fold-color-primary);
+}
 .kbis-name {
-  font-weight: 500;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .kbis-date {
+  grid-column: 2;
   font-size: var(--fold-text-sm, 0.875rem);
   color: var(--fold-color-text-muted);
 }
@@ -59,7 +68,29 @@
   gap: var(--fold-space-xs);
 }
 
-.muted {
-  margin: 0;
+// KBIS absent : zone de dépôt centrée, bordure pointillée, teintée « à faire ».
+.kbis-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-lg);
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 10px);
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.02));
+}
+.kbis-drop fold-icon {
+  color: var(--fold-color-text-muted);
+}
+.kbis-drop-title {
+  margin: var(--fold-space-xs) 0 0;
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+.kbis-drop-sub {
+  margin: 0 0 var(--fold-space-sm);
+  max-width: 34rem;
+  font-size: var(--fold-text-sm, 0.875rem);
   color: var(--fold-color-text-muted);
 }

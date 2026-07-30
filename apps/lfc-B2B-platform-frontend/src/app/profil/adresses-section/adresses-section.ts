@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 
+import type { BillingAddressView, DeliveryAddressView, DeliveryContact, GpsPoint } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -14,27 +15,24 @@ import {
   FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
+import type { Company } from '../../account/account.model';
+import { AddressesService } from '../../entreprises/addresses.service';
 import {
-  type Adresse,
-  type AdresseLivraison,
-  type DeliveryContact,
   formatDeliveryContact,
   formatGps,
-  type GpsPoint,
   gpsMapUrl,
   hasDeliverySlot,
   type WeeklySlotRow,
   weeklySlots,
-} from '../../data/profil.model';
-import { ProfilService } from '../../data/profil.service';
+} from '../../entreprises/delivery-format';
 import { AdressePanel, type AdressePanelData } from '../adresse-panel/adresse-panel';
 
 /**
- * Section **Mes adresses** — une adresse de facturation (unique) et une liste
- * d'adresses de livraison (une par défaut). L'ajout et l'édition passent par un
- * side-panel ; les actions par ligne (par défaut / modifier / supprimer) vivent
- * dans un **menu dropover**, comme les contacts, avec confirmation *inline* de la
- * suppression.
+ * Section **Adresses** d'une entreprise — une facturation (unique) et des
+ * adresses de livraison (une par défaut), lues et écrites sur la **vraie API**
+ * (`/companies/:id/addresses`), par entreprise. L'ajout/édition passe par un
+ * side-panel ; les actions par ligne vivent dans un dropover avec confirmation
+ * *inline* de la suppression. Édition réservée au **gestionnaire**.
  */
 @Component({
   selector: 'app-adresses-section',
@@ -56,45 +54,73 @@ import { AdressePanel, type AdressePanelData } from '../adresse-panel/adresse-pa
 })
 export class AdressesSection {
   private readonly panelHost = inject(FoldPanelHostService);
-  protected readonly profil = inject(ProfilService);
+  private readonly addresses = inject(AddressesService);
 
-  protected readonly profile = this.profil.profile;
+  readonly company = input.required<Company>();
+
+  protected readonly canManage = computed(() => this.company().role === 'company_admin');
+  protected readonly view = this.addresses.view;
+
+  /** Contacts de l'entreprise proposés pour préremplir le contact de livraison. */
+  private readonly knownContacts = computed<readonly DeliveryContact[]>(() => {
+    const company = this.company();
+    return [company.primaryContact, ...company.contacts].map((contact) => ({
+      prenom: contact.firstName,
+      nom: contact.lastName,
+      telephone: contact.phone,
+    }));
+  });
+  protected readonly billing = computed<BillingAddressView | null>(() => this.view()?.billing ?? null);
+  protected readonly deliveries = computed<readonly DeliveryAddressView[]>(
+    () => this.view()?.deliveries ?? [],
+  );
 
   /** L'adresse dont on confirme la suppression (inline), ou `null`. */
   protected readonly confirmingId = signal<string | null>(null);
-
   /** L'adresse dont le détail de livraison est déplié, ou `null`. */
   protected readonly expandedId = signal<string | null>(null);
 
+  constructor() {
+    // Charge (ou recharge) les adresses de l'entreprise affichée.
+    effect(() => this.addresses.loadFor(this.company().id));
+  }
+
   protected editBilling(): void {
     const data: AdressePanelData = {
+      companyId: this.company().id,
       kind: 'facturation',
-      address: this.profile().adresseFacturation,
+      address: this.billing(),
     };
     this.panelHost.open(AdressePanel, { data, side: 'right' });
   }
 
   protected addDelivery(): void {
-    const data: AdressePanelData = { kind: 'livraison', address: null };
+    const data: AdressePanelData = {
+      companyId: this.company().id,
+      kind: 'livraison',
+      address: null,
+      knownContacts: this.knownContacts(),
+    };
     this.panelHost.open(AdressePanel, { data, side: 'right' });
   }
 
-  protected editDelivery(address: AdresseLivraison): void {
-    const data: AdressePanelData = { kind: 'livraison', address };
+  protected editDelivery(address: DeliveryAddressView): void {
+    const data: AdressePanelData = {
+      companyId: this.company().id,
+      kind: 'livraison',
+      address,
+      knownContacts: this.knownContacts(),
+    };
     this.panelHost.open(AdressePanel, { data, side: 'right' });
   }
 
-  /**
-   * Commandable seulement si un créneau de livraison est défini. Sans créneau,
-   * la carte affiche un avertissement plutôt qu'un détail.
-   */
-  protected isUsable(address: AdresseLivraison): boolean {
-    return hasDeliverySlot(address.slots);
+  /** Commandable seulement si un créneau de livraison est défini. */
+  protected isUsable(address: DeliveryAddressView): boolean {
+    return hasDeliverySlot(address.specs.slots);
   }
 
-  /** Vue hebdomadaire pour la visualisation dépliée. */
-  protected weekly(address: AdresseLivraison): readonly WeeklySlotRow[] {
-    return weeklySlots(address.slots);
+  protected weekly(address: DeliveryAddressView): readonly WeeklySlotRow[] {
+    return weeklySlots(address.specs.slots);
   }
 
   protected contactName(contact: DeliveryContact): string {
@@ -109,35 +135,29 @@ export class AdressesSection {
     return gpsMapUrl(gps);
   }
 
-  /** Déplie / replie le détail de livraison d'une adresse. */
-  protected toggleDetails(address: AdresseLivraison): void {
+  protected toggleDetails(address: DeliveryAddressView): void {
     this.expandedId.update((id) => (id === address.id ? null : address.id));
   }
 
-  /** « Ajouter des instructions » depuis l'avertissement : ouvre l'édition. */
-  protected addInstructions(address: AdresseLivraison): void {
+  protected addInstructions(address: DeliveryAddressView): void {
     this.editDelivery(address);
   }
 
-  protected setDefaultDelivery(address: Adresse): void {
-    this.profil.setDefaultDelivery(address.id);
+  protected setDefaultDelivery(address: DeliveryAddressView): void {
+    this.addresses.setDefaultDelivery(this.company().id, address.id);
   }
 
-  /**
-   * Supprimable sauf si c'est la seule adresse par défaut restante : une liste
-   * non vide doit toujours garder un défaut.
-   */
-  protected canRemove(address: Adresse): boolean {
-    return !(address.isDefaut && this.profil.adressesLivraison().length === 1);
+  /** Supprimable sauf si c'est la seule adresse par défaut restante. */
+  protected canRemove(address: DeliveryAddressView): boolean {
+    return !(address.isDefault && this.deliveries().length === 1);
   }
 
-  /** « Supprimer » du menu : ouvre la confirmation inline, sans rien effacer. */
-  protected askRemove(address: Adresse): void {
+  protected askRemove(address: DeliveryAddressView): void {
     this.confirmingId.set(address.id);
   }
 
-  protected confirmRemove(address: Adresse): void {
+  protected confirmRemove(address: DeliveryAddressView): void {
     this.confirmingId.set(null);
-    this.profil.removeDeliveryAddress(address.id);
+    this.addresses.removeDelivery(this.company().id, address.id);
   }
 }

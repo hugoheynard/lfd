@@ -1,0 +1,78 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+.field-label {
+  margin: 0 0 var(--fold-space-xs);
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+.field-label em {
+  font-weight: 400;
+  font-style: normal;
+  color: var(--fold-color-text-muted);
+}
+
+.current-phone {
+  margin: 0;
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.slot-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+  align-items: flex-end;
+}
+.slot-row .field,
+.slot-row .half {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+.date,
+.note {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--fold-space-sm);
+  font: inherit;
+  color: var(--fold-color-text);
+  background: var(--fold-color-surface, transparent);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 10px);
+}
+.note {
+  resize: vertical;
+  min-height: 3rem;
+}
+.date:focus-visible,
+.note:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 1px;
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  margin-top: auto;
+  padding-top: var(--fold-space-sm);
+}

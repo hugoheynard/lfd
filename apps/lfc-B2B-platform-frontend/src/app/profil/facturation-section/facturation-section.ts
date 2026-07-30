@@ -1,34 +1,24 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { FoldCardComponent, FoldPageSectionComponent, FoldSelectComponent } from 'fold-ng';
+import { FoldCardComponent, FoldPageSectionComponent } from 'fold-ng';
 
-import { PAYMENT_TERMS } from '../../data/profil.model';
-import { ProfilService } from '../../data/profil.service';
+import { type Company, paymentTermLabel } from '../../account/account.model';
 
 /**
- * Section **Facturation** — les conditions de règlement du client. Un seul
- * champ (l'échéance) : édité *en place* via un `fold-select`, sans mode
- * lecture/édition séparé — un panel ou un toggle serait disproportionné.
+ * Section **Facturation** — la condition de règlement de l'entreprise. C'est un
+ * réglage **toujours présent** (défaut « à la commande »), **validé par le
+ * commercial** : on l'affiche en lecture seule côté client — un changement se
+ * négocie avec La Folie Coffee, pas dans l'app.
  */
 @Component({
   selector: 'app-facturation-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPageSectionComponent, FoldCardComponent, FoldSelectComponent],
+  imports: [FoldPageSectionComponent, FoldCardComponent],
   templateUrl: './facturation-section.html',
   styleUrl: './facturation-section.scss',
 })
 export class FacturationSection {
-  protected readonly profil = inject(ProfilService);
+  readonly company = input.required<Company>();
 
-  protected readonly profile = this.profil.profile;
-  protected readonly paymentTerms = PAYMENT_TERMS;
-
-  /** Le `<select>` n'émet qu'une valeur listée ; on la retrouve dans le
-   *  catalogue plutôt que de forcer un cast de type. */
-  protected onPaymentTermChange(value: string): void {
-    const term = PAYMENT_TERMS.find((t) => t.value === value);
-    if (term) {
-      this.profil.updatePaymentTerm(term.value);
-    }
-  }
+  protected readonly termLabel = computed(() => paymentTermLabel(this.company().paymentTerm));
 }

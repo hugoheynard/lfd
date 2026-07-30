@@ -4,9 +4,18 @@
   gap: var(--fold-space-md);
 }
 
-// Le sélecteur n'a pas besoin de toute la largeur de la carte.
+.card-kicker {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text-muted);
+}
+
 .term {
-  max-width: 28rem;
+  margin: 0;
+  font-size: var(--fold-text-lg, 1.125rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
 }
 
 .term-note {

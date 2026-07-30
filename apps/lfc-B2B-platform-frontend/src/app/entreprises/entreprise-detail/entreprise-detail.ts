@@ -1,27 +1,25 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-import { FoldCalloutComponent } from 'fold-ng';
-
 import type { Company } from '../../account/account.model';
 import { AdressesSection } from '../../profil/adresses-section/adresses-section';
 import { FacturationSection } from '../../profil/facturation-section/facturation-section';
+import { ActivationChecklist } from '../activation-checklist/activation-checklist';
 import { CompanyContactsSection } from '../company-contacts-section/company-contacts-section';
 import { EntrepriseIdentite } from '../entreprise-identite/entreprise-identite';
+import { ReferenceCard } from '../reference-card/reference-card';
 
 /**
  * Le contenu d'**une** entreprise : son identité, ses contacts, ses adresses et
- * sa facturation.
- *
- * Identité et **contacts** viennent de l'API (réels, propres à cette entreprise).
- * ⚠️ Adresses et facturation lisent encore `ProfilService`, en mémoire — mêmes
- * données de démonstration pour toutes les entreprises. Le bandeau le dit plutôt
- * que de laisser croire le contraire ; c'est la tranche suivante à câbler.
+ * sa facturation — **tout** propre à cette entreprise et servi par l'API
+ * (`/companies/:id/...`). En tête, l'encart d'activation liste ce qu'il reste à
+ * compléter tant que l'entreprise est `pending`.
  */
 @Component({
   selector: 'app-entreprise-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldCalloutComponent,
+    ReferenceCard,
+    ActivationChecklist,
     EntrepriseIdentite,
     CompanyContactsSection,
     AdressesSection,

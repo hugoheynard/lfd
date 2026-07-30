@@ -10,6 +10,7 @@ import {
   FoldFieldListComponent,
   FoldIconComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
 } from 'fold-ng';
 
 import {
@@ -19,6 +20,7 @@ import {
   type Company,
 } from '../../account/account.model';
 import { AccountService } from '../../account/account.service';
+import { EntrepriseIdentitePanel } from '../entreprise-identite-panel/entreprise-identite-panel';
 
 /**
  * Section **Identité légale** d'une entreprise — les données réelles, telles que
@@ -26,9 +28,10 @@ import { AccountService } from '../../account/account.service';
  * validation) : voir/télécharger pour tout membre, déposer/remplacer pour le
  * gestionnaire, badge « Certifié » quand l'entreprise est validée.
  *
- * L'identité légale reste en **lecture seule** : l'API n'expose pas encore sa
- * mise à jour (`POST /companies` seulement). Afficher un « Modifier » qui
- * n'écrirait nulle part mentirait — mieux vaut une fiche honnête.
+ * L'identité **souple** (enseigne + n° de TVA) est éditable par le gestionnaire
+ * via un panneau (`PATCH /companies/:id/identity`) ; la raison sociale, la forme
+ * juridique et le SIRET restent fixés à la création (les changer = une autre
+ * société). Quand la TVA est requise mais absente, la zone passe en `warning`.
  */
 @Component({
   selector: 'app-entreprise-identite',
@@ -49,8 +52,16 @@ import { AccountService } from '../../account/account.service';
 })
 export class EntrepriseIdentite {
   private readonly account = inject(AccountService);
+  private readonly panelHost = inject(FoldPanelHostService);
 
   readonly company = input.required<Company>();
+
+  protected readonly canManage = computed(() => this.company().role === 'company_admin');
+
+  /** TVA requise par la forme juridique mais absente : zone à compléter. */
+  protected readonly tvaMissing = computed(
+    () => this.company().vatNumberRequired && this.company().tvaIntracom.trim() === '',
+  );
 
   protected readonly siret = computed(() => formatSiret(this.company().siret));
   protected readonly statusLabel = computed(() => companyStatusLabel(this.company().status));
@@ -75,6 +86,19 @@ export class EntrepriseIdentite {
         return 'alert' as const;
     }
   });
+
+  /** Édite l'identité souple (enseigne + n° de TVA) via un panneau. */
+  protected modifier(): void {
+    const company = this.company();
+    this.panelHost.open(EntrepriseIdentitePanel, {
+      data: {
+        companyId: company.id,
+        enseigne: company.enseigne,
+        tvaIntracom: company.tvaIntracom,
+      },
+      side: 'right',
+    });
+  }
 
   /** Dépose le fichier choisi. `input` est réinitialisé pour permettre un re-dépôt du même nom. */
   protected onKbisSelected(event: Event): void {

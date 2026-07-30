@@ -20,6 +20,33 @@ export type CompanyStatus = 'pending' | 'active' | 'suspended';
 /** Rôle de la personne **dans une entreprise donnée**. */
 export type CompanyRole = 'company_admin' | 'member';
 
+/**
+ * Condition de règlement (mode de facturation). **Toujours présente** — défaut
+ * « à la commande » (`per_order`) — et **validée par le commercial** : côté
+ * client, on l'affiche, on ne l'édite pas librement.
+ */
+export type PaymentTerm = 'per_order' | 'monthly' | 'net60' | 'net90';
+
+const PAYMENT_TERM_LABELS: Readonly<Record<PaymentTerm, string>> = {
+  per_order: 'À la commande',
+  monthly: 'Mensuel — relevé de fin de mois',
+  net60: 'À 60 jours',
+  net90: 'À 90 jours',
+};
+
+/** Libellé lisible d'une condition de règlement. */
+export function paymentTermLabel(term: PaymentTerm): string {
+  return PAYMENT_TERM_LABELS[term];
+}
+
+/** Conditions de règlement dans l'ordre d'affichage (options de sélecteur). */
+export const PAYMENT_TERMS: readonly { readonly value: PaymentTerm; readonly label: string }[] = [
+  { value: 'per_order', label: PAYMENT_TERM_LABELS.per_order },
+  { value: 'monthly', label: PAYMENT_TERM_LABELS.monthly },
+  { value: 'net60', label: PAYMENT_TERM_LABELS.net60 },
+  { value: 'net90', label: PAYMENT_TERM_LABELS.net90 },
+];
+
 /** Le profil de la personne connectée. */
 export interface UserProfile {
   readonly userId: string;
@@ -54,12 +81,18 @@ export interface Kbis {
 /** Une entreprise de la personne, telle qu'un onglet l'affiche. */
 export interface Company {
   readonly id: string;
+  /** Référence humaine courte (`C-XXXXXX`), dictable au téléphone. */
+  readonly reference: string;
   readonly raisonSociale: string;
   readonly enseigne: string;
   readonly formeJuridique: string;
   readonly siret: string;
   readonly tvaIntracom: string;
+  /** La forme juridique impose-t-elle un n° de TVA ? (dérivé côté backend). */
+  readonly vatNumberRequired: boolean;
   readonly status: CompanyStatus;
+  /** Condition de règlement, toujours présente (défaut « à la commande »). */
+  readonly paymentTerm: PaymentTerm;
   readonly role: CompanyRole;
   /** Contact principal (carte « Admin du compte entreprise »), toujours présent. */
   readonly primaryContact: Contact;

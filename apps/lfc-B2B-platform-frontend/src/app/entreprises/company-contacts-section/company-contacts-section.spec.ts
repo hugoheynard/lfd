@@ -19,12 +19,15 @@ function contact(email: string, firstName = 'Jean', lastName = 'Client'): Contac
 function company(over: Partial<Company> = {}): Company {
   return {
     id: 'c1',
+    reference: 'C-TEST01',
     raisonSociale: 'Boulangerie du Marais SAS',
     enseigne: '',
     formeJuridique: 'SAS',
     siret: '81245678900021',
     tvaIntracom: '',
+    vatNumberRequired: true,
     status: 'active',
+    paymentTerm: 'per_order',
     role: 'company_admin',
     primaryContact: {
       id: null,

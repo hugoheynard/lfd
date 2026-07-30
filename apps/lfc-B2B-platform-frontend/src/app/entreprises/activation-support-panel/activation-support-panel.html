@@ -1,0 +1,89 @@
+<fold-panel-header
+  title="Demande de support"
+  subtitle="Notre équipe vous accompagne pour finir l'activation."
+/>
+
+<div class="body">
+  @if (placed()) {
+    <fold-callout variant="success">
+      Votre demande est enregistrée. Notre équipe commerciale vous recontacte au plus vite.
+    </fold-callout>
+    <div class="foot">
+      <button foldButton intent="primary" (click)="close()">Fermer</button>
+    </div>
+  } @else {
+    <fold-select label="Comment souhaitez-vous être contacté ?" [value]="channel()" (valueChange)="onChannel($event)">
+      <option value="phone">Être rappelé par téléphone</option>
+      <option value="email">Échanger par e-mail</option>
+    </fold-select>
+
+    @if (isPhone()) {
+      <!-- Numéro -->
+      @if (hasProfilePhone()) {
+        <p class="field-label">Numéro de rappel</p>
+        <p class="current-phone">
+          {{ useOtherNumber() ? 'Autre numéro' : profilePhone() }}
+        </p>
+        <fold-checkbox
+          label="Utiliser un autre numéro"
+          [checked]="useOtherNumber()"
+          (checkedChange)="useOtherNumber.set($event)"
+        />
+      }
+      @if (showCustomPhone()) {
+        <fold-input
+          label="Numéro de téléphone"
+          placeholder="06 12 34 56 78"
+          [value]="customPhone()"
+          (valueChange)="customPhone.set($event)"
+        />
+      }
+
+      <!-- Disponibilité -->
+      <fold-checkbox
+        label="Au plus vite"
+        hint="décochez pour choisir un créneau"
+        [checked]="asap()"
+        (checkedChange)="asap.set($event)"
+      />
+      @if (!asap()) {
+        <div class="slot-row">
+          <label class="field">
+            <span class="field-label">Date souhaitée</span>
+            <input class="date" type="date" [value]="scheduledDate()" (input)="scheduledDate.set(inputValue($event))" />
+          </label>
+          <fold-select class="half" label="Moment" [value]="slot()" (valueChange)="onSlot($event)">
+            <option value="morning">Matin</option>
+            <option value="afternoon">Après-midi</option>
+          </fold-select>
+        </div>
+      }
+    } @else {
+      <fold-callout appearance="inset" variant="info">
+        Nous vous répondrons à <strong>{{ profileEmail() }}</strong>.
+      </fold-callout>
+    }
+
+    <label class="field">
+      <span class="field-label">Message <em>(optionnel)</em></span>
+      <textarea
+        class="note"
+        rows="3"
+        placeholder="Précisez votre besoin…"
+        [value]="message()"
+        (input)="message.set(inputValue($event))"
+      ></textarea>
+    </label>
+
+    @if (errorMessage(); as msg) {
+      <fold-callout variant="alert">{{ msg }}</fold-callout>
+    }
+
+    <div class="foot">
+      <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+      <button foldButton intent="primary" [disabled]="!canSubmit()" (click)="submit()">
+        {{ submitting() ? 'Envoi…' : 'Envoyer la demande' }}
+      </button>
+    </div>
+  }
+</div>

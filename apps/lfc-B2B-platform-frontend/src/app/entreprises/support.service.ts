@@ -1,0 +1,40 @@
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import type { ActivationSupportPayload } from '@lfd/contracts';
+import type { Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+
+import { AUTH_CONFIG } from '../auth/auth.config';
+import { AuthFacade } from '../auth/auth.facade';
+
+/** Réponse de création d'une demande de support. */
+export interface SupportRequestResponse {
+  readonly id: string;
+}
+
+/**
+ * Demandes de **support à l'activation** — le client demande à être contacté par
+ * l'équipe commerciale. Une simple écriture (pas de rechargement de compte).
+ */
+@Injectable({ providedIn: 'root' })
+export class SupportService {
+  private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthFacade);
+
+  requestActivation(
+    companyId: string,
+    payload: ActivationSupportPayload,
+  ): Observable<SupportRequestResponse> {
+    return this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.post<SupportRequestResponse>(
+            `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/support/activation`,
+            payload,
+            { headers: { Authorization: `Bearer ${token}` } },
+          ),
+        ),
+      );
+  }
+}

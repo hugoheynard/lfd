@@ -1,0 +1,28 @@
+<fold-panel-header
+  title="Identité de l'entreprise"
+  subtitle="Enseigne et numéro de TVA. L'identité légale reste fixée à la création."
+/>
+
+<div class="body">
+  <fold-input
+    label="Enseigne (nom commercial)"
+    hint="si différent de la raison sociale"
+    optional
+    [value]="enseigne()"
+    (valueChange)="enseigne.set($event)"
+  />
+  <fold-input
+    label="N° de TVA intracommunautaire"
+    placeholder="FR00 000000000"
+    optional
+    [value]="tvaIntracom()"
+    (valueChange)="tvaIntracom.set($event)"
+  />
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit()" (click)="submit()">
+    {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+  </button>
+</footer>

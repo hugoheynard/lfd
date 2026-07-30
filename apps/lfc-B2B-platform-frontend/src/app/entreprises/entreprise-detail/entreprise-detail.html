@@ -1,11 +1,11 @@
+<app-reference-card [company]="company()" />
+
+<app-activation-checklist [company]="company()" />
+
 <app-entreprise-identite [company]="company()" />
 
 <app-company-contacts-section [company]="company()" />
 
-<fold-callout variant="info">
-  Adresses et facturation ne sont pas encore reliées à l'API : les valeurs ci-dessous sont des
-  données de démonstration, communes à toutes vos entreprises.
-</fold-callout>
+<app-adresses-section [company]="company()" />
 
-<app-adresses-section />
-<app-facturation-section />
+<app-facturation-section [company]="company()" />

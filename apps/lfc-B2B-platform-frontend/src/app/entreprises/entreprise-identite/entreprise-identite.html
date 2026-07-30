@@ -6,6 +6,18 @@
   <div sectionActions class="badges">
     <fold-badge [content]="statusLabel()" [variant]="statusVariant()" />
     <fold-badge [content]="roleLabel()" variant="neutral" />
+    @if (canManage()) {
+      <button
+        foldButton
+        size="sm"
+        icon="edit"
+        [intent]="tvaMissing() ? 'warning' : 'neutral'"
+        [emphasis]="tvaMissing() ? 'soft' : 'outline'"
+        (click)="modifier()"
+      >
+        Modifier
+      </button>
+    }
   </div>
 
   @let c = company();
@@ -19,10 +31,29 @@
         {{ c.tvaIntracom }}
       </fold-field>
     </fold-field-list>
+
+    @if (tvaMissing()) {
+      <fold-callout variant="warning">
+        Votre forme juridique nécessite un numéro de TVA intracommunautaire.
+        <button actions foldButton intent="warning" emphasis="soft" size="sm" (click)="modifier()">
+          Renseigner la TVA
+        </button>
+      </fold-callout>
+    }
   </fold-card>
 
   <!-- KBIS : l'extrait demandé pour la validation. -->
   <fold-card class="kbis">
+    <!-- Input caché mutualisé (au niveau carte pour être visible des deux vues). -->
+    <input
+      #kbisInput
+      type="file"
+      accept="application/pdf,.pdf"
+      hidden
+      [disabled]="busy()"
+      (change)="onKbisSelected($event)"
+    />
+
     <div class="kbis-head">
       <div class="kbis-title">
         <fold-icon name="contracts" [size]="18" />
@@ -34,17 +65,17 @@
         }
       </div>
 
-      @if (canManageKbis()) {
-        <label foldButton emphasis="outline" size="sm" icon="plus" class="kbis-deposer">
-          {{ kbis() ? 'Remplacer' : 'Déposer le KBIS' }}
-          <input
-            type="file"
-            accept="application/pdf,.pdf"
-            hidden
-            [disabled]="busy()"
-            (change)="onKbisSelected($event)"
-          />
-        </label>
+      @if (canManageKbis() && kbis()) {
+        <button
+          foldButton
+          emphasis="outline"
+          size="sm"
+          icon="plus"
+          [disabled]="busy()"
+          (click)="kbisInput.click()"
+        >
+          Remplacer
+        </button>
       }
     </div>
 
@@ -55,6 +86,7 @@
     @if (kbis(); as k) {
       <div class="kbis-file">
         <div class="kbis-meta">
+          <fold-icon name="contracts" [size]="20" />
           <span class="kbis-name">{{ k.fileName }}</span>
           <span class="kbis-date">Déposé le {{ k.uploadedAt | date: 'dd/MM/yyyy' }}</span>
         </div>
@@ -66,9 +98,26 @@
         </div>
       </div>
     } @else {
-      <p class="muted">
-        Aucun KBIS déposé. L'extrait est demandé pour la validation de votre entreprise.
-      </p>
+      <div class="kbis-drop">
+        <fold-icon name="upload" [size]="30" />
+        <p class="kbis-drop-title">Aucun KBIS déposé</p>
+        <p class="kbis-drop-sub">
+          L'activation de votre compte passe par la réception de votre extrait KBIS (format PDF).
+        </p>
+        @if (canManageKbis()) {
+          <button
+            foldButton
+            intent="warning"
+            emphasis="solid"
+            size="sm"
+            icon="plus"
+            [disabled]="busy()"
+            (click)="kbisInput.click()"
+          >
+            {{ busy() ? 'Dépôt…' : 'Déposer le KBIS' }}
+          </button>
+        }
+      </div>
     }
   </fold-card>
 </fold-page-section>

@@ -4,20 +4,11 @@
   description="Vos conditions de règlement, convenues avec La Folie Coffee."
 >
   <fold-card class="billing">
-    <fold-select
-      class="term"
-      label="Conditions de paiement"
-      hint="l'échéance appliquée à vos commandes"
-      [value]="profile().paymentTerm"
-      (valueChange)="onPaymentTermChange($event)"
-    >
-      @for (t of paymentTerms; track t.value) {
-        <option [value]="t.value">{{ t.label }}</option>
-      }
-    </fold-select>
+    <p class="card-kicker">Condition de règlement</p>
+    <p class="term">{{ termLabel() }}</p>
     <p class="term-note">
-      Un changement de conditions est soumis à validation par La Folie Coffee et s'appliquera à vos
-      prochaines commandes.
+      Définie avec votre commercial La Folie Coffee. Toute évolution passe par lui et s'appliquera à
+      vos prochaines commandes.
     </p>
   </fold-card>
 </fold-page-section>

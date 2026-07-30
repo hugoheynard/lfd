@@ -1,5 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 
+import type {
+  BillingAddressPayload,
+  BillingAddressView,
+  DeliveryAddressPayload,
+  DeliveryAddressView,
+  DeliveryContact,
+  DeliverySlots,
+  DeliverySpecs,
+  GpsPoint,
+  SlotByDay,
+  Weekday,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCheckboxComponent,
@@ -9,18 +21,8 @@ import {
   FoldSelectComponent,
 } from 'fold-ng';
 
-import {
-  type Adresse,
-  type AdresseLivraison,
-  type DeliveryContact,
-  type DeliverySlots,
-  formatDeliveryContact,
-  type GpsPoint,
-  type SlotByDay,
-  type Weekday,
-  WEEKDAYS,
-} from '../../data/profil.model';
-import { type AdresseLivraisonDraft, ProfilService } from '../../data/profil.service';
+import { AddressesService } from '../../entreprises/addresses.service';
+import { formatDeliveryContact, WEEKDAYS } from '../../entreprises/delivery-format';
 import {
   BLANK_DAYS,
   type DraftDays,
@@ -31,19 +33,25 @@ import {
 } from './adresse-panel.helpers';
 
 /**
- * Charge d'ouverture du panneau. Union **discriminée** par `kind` : une
- * facturation édite toujours une adresse existante (jamais de créneaux) ; une
- * livraison crée (`null`) ou édite une `AdresseLivraison` (note + créneaux).
+ * Charge d'ouverture du panneau. Union **discriminée** par `kind`, toujours
+ * porteuse du `companyId` (mur). Une facturation crée (`null`) ou édite une
+ * `BillingAddressView` ; une livraison crée/édite une `DeliveryAddressView` et
+ * reçoit les contacts connus de l'entreprise pour préremplir le contact sur place.
  */
 export type AdressePanelData =
-  | { readonly kind: 'facturation'; readonly address: Adresse }
-  | { readonly kind: 'livraison'; readonly address: AdresseLivraison | null };
+  | { readonly companyId: string; readonly kind: 'facturation'; readonly address: BillingAddressView | null }
+  | {
+      readonly companyId: string;
+      readonly kind: 'livraison';
+      readonly address: DeliveryAddressView | null;
+      readonly knownContacts: readonly DeliveryContact[];
+    };
 
 /**
  * Panneau **Adresse** — crée ou édite une adresse de facturation (unique) ou de
- * livraison (plusieurs, une par défaut). Une livraison porte en plus une note
- * pour les livreurs et des créneaux préférés (un créneau global tous les jours,
- * ou un créneau par jour).
+ * livraison (plusieurs, une par défaut), sur la vraie API par entreprise. Une
+ * livraison porte en plus une note, des créneaux préférés, un contact sur place
+ * et un point GPS.
  */
 @Component({
   selector: 'app-adresse-panel',
@@ -59,7 +67,7 @@ export type AdressePanelData =
   styleUrl: './adresse-panel.scss',
 })
 export class AdressePanel {
-  private readonly profil = inject(ProfilService);
+  private readonly addresses = inject(AddressesService);
   private readonly ref = inject(FoldPanelRef);
 
   readonly data = input<AdressePanelData | undefined>(undefined);
@@ -68,6 +76,10 @@ export class AdressePanel {
   protected readonly kind = computed(() => this.data()?.kind ?? 'livraison');
   protected readonly isLivraison = computed(() => this.kind() === 'livraison');
   protected readonly isCreate = computed(() => (this.data()?.address ?? null) === null);
+  protected readonly knownContacts = computed<readonly DeliveryContact[]>(() => {
+    const data = this.data();
+    return data?.kind === 'livraison' ? data.knownContacts : [];
+  });
 
   // Champs postaux (communs facturation / livraison).
   protected readonly label = signal('');
@@ -86,7 +98,6 @@ export class AdressePanel {
   protected readonly days = signal<DraftDays>(BLANK_DAYS);
 
   // Contact sur place. « Pas de contact » est un choix explicite (case cochée).
-  protected readonly knownContacts = this.profil.knownContacts;
   protected readonly noContact = signal(false);
   protected readonly contactPick = signal('');
   protected readonly contactPrenom = signal('');
@@ -98,8 +109,7 @@ export class AdressePanel {
   protected readonly gpsLng = signal('');
 
   constructor() {
-    // Préremplit les champs à l'ouverture. `data` est fixé et ne change plus :
-    // l'effet sème une seule fois.
+    // Préremplit les champs à l'ouverture. `data` est fixé et ne change plus.
     effect(() => {
       const data = this.data();
       if (data === undefined) {
@@ -109,28 +119,28 @@ export class AdressePanel {
         this.seedPostal(data.address);
       }
       if (data.kind === 'livraison' && data.address !== null) {
-        this.seedSpecs(data.address);
+        this.isDefaut.set(data.address.isDefault);
+        this.seedSpecs(data.address.specs);
       }
     });
   }
 
-  private seedPostal(a: Adresse): void {
+  private seedPostal(a: BillingAddressView): void {
     this.label.set(a.label);
     this.ligne1.set(a.ligne1);
     this.ligne2.set(a.ligne2);
     this.codePostal.set(a.codePostal);
     this.ville.set(a.ville);
     this.pays.set(a.pays);
-    this.isDefaut.set(a.isDefaut);
   }
 
-  private seedSpecs(a: AdresseLivraison): void {
-    this.note.set(a.note);
-    this.seedSlots(a.slots);
-    this.seedContact(a.deliveryContact);
-    if (a.gps !== null) {
-      this.gpsLat.set(String(a.gps.lat));
-      this.gpsLng.set(String(a.gps.lng));
+  private seedSpecs(specs: DeliverySpecs): void {
+    this.note.set(specs.note);
+    this.seedSlots(specs.slots);
+    this.seedContact(specs.deliveryContact);
+    if (specs.gps !== null) {
+      this.gpsLat.set(String(specs.gps.lat));
+      this.gpsLng.set(String(specs.gps.lng));
     }
   }
 
@@ -235,23 +245,31 @@ export class AdressePanel {
   );
 
   protected submit(): void {
-    if (!this.canSubmit()) {
+    const data = this.data();
+    if (!this.canSubmit() || data === undefined) {
       return;
     }
-    if (this.kind() === 'facturation') {
-      this.profil.updateBillingAddress({ ...this.postalDraft(), isDefaut: false });
-      this.ref.close(true);
+    const close = (): void => this.ref.close(true);
+    if (data.kind === 'facturation') {
+      const payload: BillingAddressPayload = this.postalFields();
+      this.addresses.saveBilling(data.companyId, payload, close);
       return;
     }
-    const draft: AdresseLivraisonDraft = {
-      ...this.postalDraft(),
-      note: this.note().trim(),
-      slots: this.buildSlots(),
-      deliveryContact: this.buildContact(),
-      gps: this.buildGps(),
+    const payload: DeliveryAddressPayload = {
+      ...this.postalFields(),
+      isDefault: this.isDefaut(),
+      specs: {
+        note: this.note().trim(),
+        slots: this.buildSlots(),
+        deliveryContact: this.buildContact(),
+        gps: this.buildGps(),
+      },
     };
-    this.profil.saveDeliveryAddress(draft, this.data()?.address?.id ?? null);
-    this.ref.close(true);
+    if (data.address === null) {
+      this.addresses.addDelivery(data.companyId, payload, close);
+    } else {
+      this.addresses.updateDelivery(data.companyId, data.address.id, payload, close);
+    }
   }
 
   private buildContact(): DeliveryContact | null {
@@ -274,7 +292,7 @@ export class AdressePanel {
     return { lat: Number(lat), lng: Number(lng) };
   }
 
-  private postalDraft(): Omit<Adresse, 'id'> {
+  private postalFields(): BillingAddressPayload {
     return {
       label: this.label().trim(),
       ligne1: this.ligne1().trim(),
@@ -282,7 +300,6 @@ export class AdressePanel {
       codePostal: this.codePostal().trim(),
       ville: this.ville().trim(),
       pays: this.pays().trim(),
-      isDefaut: this.isDefaut(),
     };
   }
 

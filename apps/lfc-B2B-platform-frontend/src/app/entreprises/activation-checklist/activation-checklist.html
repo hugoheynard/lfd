@@ -1,0 +1,48 @@
+@if (visible()) {
+  <fold-callout variant="warning">
+    <strong>Activation de votre compte</strong> — complétez votre dossier pour qu'il soit activé par
+    notre équipe. Vous pouvez néanmoins bénéficier de toutes les fonctionnalités de votre
+    <a routerLink="/boutique">espace boutique</a> et préparer vos premiers paniers.
+
+    @if (ready()) {
+      <p class="ready">Pièces complètes : votre dossier peut partir en validation commerciale.</p>
+    }
+
+    <p class="support">
+      Si vous rencontrez des difficultés à paramétrer votre espace ou souhaitez finir l'activation
+      en direct,
+      <button type="button" class="link" (click)="openSupport()">
+        demandez à être contacté par notre équipe commerciale</button
+      >.
+    </p>
+
+    <ul class="steps">
+      @for (step of steps(); track step.key) {
+        <li class="step">
+          <div class="step-text">
+            <fold-icon name="check-circle" [size]="16" />
+            <span><strong>{{ step.title }}</strong> — {{ step.detail }}</span>
+          </div>
+
+          @if (step.key === 'kbis') {
+            <input #kbisInput type="file" accept="application/pdf" hidden (change)="onKbisFile($event)" />
+            <button
+              foldButton
+              intent="warning"
+              emphasis="soft"
+              size="sm"
+              icon="upload"
+              (click)="kbisInput.click()"
+            >
+              {{ step.cta }}
+            </button>
+          } @else {
+            <button foldButton intent="warning" emphasis="soft" size="sm" (click)="act(step.key)">
+              {{ step.cta }}
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  </fold-callout>
+}

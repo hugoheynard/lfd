@@ -1,0 +1,24 @@
+<fold-panel-header
+  title="Condition de règlement"
+  subtitle="Choisissez la condition souhaitée."
+/>
+
+<div class="body">
+  <fold-select label="Condition souhaitée" [value]="term()" (valueChange)="onChange($event)">
+    @for (option of terms; track option.value) {
+      <option [value]="option.value">{{ option.label }}</option>
+    }
+  </fold-select>
+
+  <fold-callout appearance="inset" variant="info">
+    C'est une demande : votre commercial La Folie Coffee la valide lors de l'activation de votre
+    compte.
+  </fold-callout>
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="saving()" (click)="submit()">
+    {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+  </button>
+</footer>

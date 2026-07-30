@@ -17,12 +17,15 @@ import { EntreprisesPage } from './entreprises-page';
 function company(id: string, raisonSociale: string, enseigne = ''): Company {
   return {
     id,
+    reference: 'C-TEST01',
     raisonSociale,
     enseigne,
     formeJuridique: 'SAS',
     siret: '81245678900021',
     tvaIntracom: '',
+    vatNumberRequired: true,
     status: 'pending',
+    paymentTerm: 'per_order',
     role: 'company_admin',
     primaryContact: {
       id: null,
