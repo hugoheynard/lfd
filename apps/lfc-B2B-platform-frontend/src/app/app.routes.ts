@@ -29,10 +29,18 @@ export const routes: Routes = [
     loadComponent: () => import('./commandes/commandes-page').then((m) => m.CommandesPage),
   },
   {
-    path: 'profil',
-    title: 'Mon profil — La Folie Coffee B2B',
+    path: 'entreprises',
+    title: 'Mes entreprises — La Folie Coffee B2B',
     canActivate: [authenticatedGuard],
-    loadComponent: () => import('./profil/profil-page').then((m) => m.ProfilPage),
+    loadComponent: () => import('./entreprises/entreprises-page').then((m) => m.EntreprisesPage),
+  },
+  {
+    // « Mon profil » a été scindée : la personne est passée dans Réglages, les
+    // sociétés dans « Mes entreprises ». La redirection garde les liens et
+    // signets existants valides.
+    path: 'profil',
+    redirectTo: 'entreprises',
+    pathMatch: 'full',
   },
   {
     path: 'reglages',

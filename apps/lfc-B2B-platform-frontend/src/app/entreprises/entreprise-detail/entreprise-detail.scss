@@ -1,0 +1,10 @@
+// Les sections portent déjà leur propre espacement ; on n'ajoute que le rythme
+// entre le bandeau et ce qui l'entoure.
+:host {
+  display: block;
+}
+
+fold-callout {
+  display: block;
+  margin: var(--fold-space-lg) 0;
+}

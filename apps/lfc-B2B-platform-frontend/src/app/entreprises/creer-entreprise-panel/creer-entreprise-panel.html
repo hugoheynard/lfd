@@ -1,0 +1,73 @@
+<fold-panel-header
+  title="Créer une entreprise"
+  subtitle="Son identité légale. Vous en serez le gestionnaire."
+/>
+
+<div class="body">
+  @if (profileIncomplete()) {
+    <fold-callout variant="warning">
+      Renseignez d'abord votre <strong>prénom et nom</strong> dans Réglages → Mon profil : ils
+      deviennent le contact principal de l'entreprise.
+    </fold-callout>
+  }
+
+  @if (error(); as message) {
+    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  <fold-input
+    label="Raison sociale"
+    hint="la dénomination légale, telle qu'elle figure au registre"
+    required
+    [value]="raisonSociale()"
+    (valueChange)="raisonSociale.set($event)"
+  />
+  <fold-input
+    label="Enseigne"
+    hint="nom commercial, s'il diffère de la raison sociale"
+    optional
+    [value]="enseigne()"
+    (valueChange)="enseigne.set($event)"
+  />
+
+  <div class="row">
+    <fold-input
+      class="forme"
+      label="Forme juridique"
+      placeholder="SAS, SARL, EI…"
+      required
+      [value]="formeJuridique()"
+      (valueChange)="formeJuridique.set($event)"
+    />
+    <fold-input
+      class="siret"
+      label="SIRET"
+      placeholder="812 456 789 00021"
+      hint="14 chiffres — la clé de contrôle est vérifiée"
+      required
+      [value]="siret()"
+      (valueChange)="siret.set($event)"
+    />
+  </div>
+
+  <fold-input
+    label="TVA intracommunautaire"
+    optional
+    hint="laissez vide si vous n'êtes pas assujetti"
+    [value]="tvaIntracom()"
+    (valueChange)="tvaIntracom.set($event)"
+  />
+
+  <p class="note">
+    Le contact principal de l'entreprise est repris de votre profil. Votre entreprise sera créée
+    <strong>en attente de validation</strong> : notre équipe commerciale l'active après
+    vérification.
+  </p>
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || submitting()" (click)="submit()">
+    Créer l'entreprise
+  </button>
+</footer>

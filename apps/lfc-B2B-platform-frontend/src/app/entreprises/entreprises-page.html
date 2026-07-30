@@ -1,0 +1,38 @@
+<fold-page-layout icon="company" title="Mes entreprises">
+  <p description>Les établissements que vous gérez chez La Folie Coffee.</p>
+
+  @if (companies().length > 0) {
+    <button sectionActions foldButton emphasis="outline" size="sm" icon="plus" (click)="create()">
+      Créer une entreprise
+    </button>
+  }
+
+  @if (error(); as message) {
+    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  @if (showEmptyState()) {
+    <!-- Aucune entreprise : l'état de départ d'un compte. -->
+    <fold-empty-state
+      title="Aucune entreprise"
+      subtitle="Déclarez votre établissement pour commander chez La Folie Coffee. Vous en serez le gestionnaire."
+    >
+      <button foldButton intent="primary" icon="plus" (click)="create()">
+        Créer une entreprise
+      </button>
+    </fold-empty-state>
+  } @else if (single(); as company) {
+    <!-- Une seule entreprise : sa fiche directement, sans onglet. -->
+    <app-entreprise-detail [company]="company" />
+  } @else if (hasTabs()) {
+    <!-- Plusieurs entreprises : un onglet chacune. -->
+    <fold-tabs #companyTabs="foldTabs" [tabs]="tabs()" [(activeKey)]="activeKey" />
+    @for (company of companies(); track company.id) {
+      <fold-tab-panel [tabs]="companyTabs" [key]="company.id">
+        <app-entreprise-detail [company]="company" />
+      </fold-tab-panel>
+    }
+  } @else if (loading()) {
+    <p class="muted">Chargement de vos entreprises…</p>
+  }
+</fold-page-layout>

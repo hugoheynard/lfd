@@ -1,0 +1,45 @@
+// Header figé, corps scrollable, pied collé — même pattern que les autres panels.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg);
+}
+
+// Forme juridique + SIRET sur une ligne ; passe en colonne si trop étroit.
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+.forme {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+.siret {
+  flex: 2 1 12rem;
+  min-width: 0;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}

@@ -49,12 +49,12 @@
     <a
       footer
       fold-menu-item
-      icon="user"
-      label="Mon profil"
-      routerLink="/profil"
+      icon="company"
+      label="Mes entreprises"
+      routerLink="/entreprises"
       routerLinkActive
-      #profilRla="routerLinkActive"
-      [active]="profilRla.isActive"
+      #entreprisesRla="routerLinkActive"
+      [active]="entreprisesRla.isActive"
       (click)="mobileNavOpen.set(false)"
     ></a>
     <a
@@ -94,7 +94,7 @@
     <fold-search class="app-search" placeholder="Rechercher un client, une commande…" />
 
     <div class="app-header-actions">
-      @if (auth.displayEmail(); as email) {
+      @if (account.displayEmail(); as email) {
         <span class="app-user" [title]="email">{{ email }}</span>
       }
       <button

@@ -1,0 +1,10 @@
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+// La barre d'onglets respire au-dessus du contenu de l'entreprise active.
+fold-tabs {
+  display: block;
+  margin-bottom: var(--fold-space-lg);
+}

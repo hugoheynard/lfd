@@ -1,0 +1,6 @@
+// Statut + rôle, alignés dans les actions de la section.
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

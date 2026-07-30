@@ -1,0 +1,79 @@
+<fold-page-section
+  title="Mon profil"
+  icon="user"
+  description="Votre identité personnelle, indépendante de vos entreprises."
+>
+  @if (!editing()) {
+    <button
+      sectionActions
+      foldButton
+      emphasis="outline"
+      size="sm"
+      icon="edit"
+      [disabled]="!profile()"
+      (click)="startEdit()"
+    >
+      Modifier
+    </button>
+  }
+
+  @if (error(); as message) {
+    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  @if (!editing()) {
+    <fold-card>
+      @if (profile(); as p) {
+        <fold-field-list>
+          <fold-field label="Prénom" [empty]="!p.firstName">{{ p.firstName }}</fold-field>
+          <fold-field label="Nom" [empty]="!p.lastName">{{ p.lastName }}</fold-field>
+          <fold-field label="E-mail">{{ p.email }}</fold-field>
+          <fold-field label="Téléphone" [empty]="!p.phone">{{ p.phone }}</fold-field>
+        </fold-field-list>
+      } @else {
+        <p class="muted">Chargement de votre profil…</p>
+      }
+    </fold-card>
+  } @else {
+    <fold-card>
+      <form class="edit" (submit)="$event.preventDefault(); save()">
+        <fold-input
+          label="Prénom"
+          required
+          [value]="firstName()"
+          (valueChange)="firstName.set($event)"
+        />
+        <fold-input
+          label="Nom"
+          required
+          [value]="lastName()"
+          (valueChange)="lastName.set($event)"
+        />
+        <fold-input
+          label="E-mail"
+          type="email"
+          required
+          hint="Sert aussi à vous connecter : le changer déclenche un e-mail de vérification."
+          [value]="email()"
+          (valueChange)="email.set($event)"
+        />
+        <fold-input
+          label="Téléphone"
+          type="tel"
+          optional
+          [value]="phone()"
+          (valueChange)="phone.set($event)"
+        />
+
+        <div class="edit-actions">
+          <button foldButton type="button" emphasis="outline" intent="neutral" (click)="cancel()">
+            Annuler
+          </button>
+          <button foldButton type="submit" intent="primary" [disabled]="!canSave() || saving()">
+            Enregistrer
+          </button>
+        </div>
+      </form>
+    </fold-card>
+  }
+</fold-page-section>

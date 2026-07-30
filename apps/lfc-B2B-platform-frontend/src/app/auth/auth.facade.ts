@@ -1,12 +1,4 @@
-import { HttpClient } from '@angular/common/http';
-import {
-  Injectable,
-  PLATFORM_ID,
-  computed,
-  effect,
-  inject,
-  signal,
-} from '@angular/core';
+import { Injectable, PLATFORM_ID, computed, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -14,9 +6,6 @@ import { AuthService } from '@auth0/auth0-angular';
 import { NEVER, of } from 'rxjs';
 import type { Observable } from 'rxjs';
 import { filter, switchMap, take } from 'rxjs/operators';
-
-import { AUTH_CONFIG } from './auth.config';
-import type { Session } from './session.model';
 
 /**
  * Façade d'authentification **SSR-safe** — l'unique frontière entre l'app et le
@@ -27,12 +16,17 @@ import type { Session } from './session.model';
  * Côté serveur (pré-rendu), `inject(AuthService, { optional: true })` renvoie
  * `null` : les flux Auth0 retombent sur `NEVER` et la façade se fige en « en
  * cours de chargement / non authentifié » sans jamais toucher `window`.
+ *
+ * Elle ne répond **que** d'Auth0 — « ce porteur a prouvé ce `sub` ». Ce que nous
+ * savons de la personne (profil, entreprises) appartient à `AccountService`, qui
+ * le lit dans notre base. Cette séparation évite d'en faire un fourre-tout, et
+ * garde la dépendance à sens unique : le service compte connaît la façade, jamais
+ * l'inverse.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthFacade {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
-  private readonly http = inject(HttpClient);
   /** `null` côté serveur : Auth0 n'est fourni qu'au navigateur. */
   private readonly auth0 = inject(AuthService, { optional: true });
 
@@ -53,18 +47,12 @@ export class AuthFacade {
     initialValue: null,
   });
 
-  /** Identité autoritaire résolue par le backend (`GET /me`). */
-  private readonly _session = signal<Session | null>(null);
-  readonly session = this._session.asReadonly();
-
-  /** Message si `/me` échoue (backend éteint, compte non provisionné…). */
-  private readonly _sessionError = signal<string | null>(null);
-  readonly sessionError = this._sessionError.asReadonly();
-
-  /** Email affichable : privilégie l'identité backend, retombe sur Auth0. */
-  readonly displayEmail = computed(
-    () => this._session()?.email ?? this.authUser()?.email ?? null,
-  );
+  /**
+   * E-mail connu d'Auth0. C'est un **repli** : l'e-mail que l'app affiche vient
+   * de notre base, via `AccountService` (autoritaire). Celui-ci ne sert que le
+   * temps que `GET /me` réponde, ou si l'appel échoue.
+   */
+  readonly authEmail = computed(() => this.authUser()?.email ?? null);
 
   constructor() {
     // Restauration de la route demandée : au **retour** du callback Auth0 (un
@@ -75,15 +63,6 @@ export class AuthFacade {
       const target = readTarget(state);
       if (target) {
         void this.router.navigateByUrl(target);
-      }
-    });
-
-    // Dès qu'Auth0 confirme l'authentification, on résout l'identité *chez
-    // nous* : le token ne dit que le `sub`, la base dit le reste (rôle,
-    // société, statut). C'est le contrat DB-autoritaire, vu du front.
-    effect(() => {
-      if (this.isAuthenticated() && !this._session()) {
-        this.loadSession();
       }
     });
   }
@@ -107,9 +86,7 @@ export class AuthFacade {
 
   /** Redirige vers Auth0 ; `target` sera restauré au retour (`appState`). */
   login(target: string): void {
-    void this.auth0
-      ?.loginWithRedirect({ appState: { target } })
-      .subscribe();
+    void this.auth0?.loginWithRedirect({ appState: { target } }).subscribe();
   }
 
   /** Déconnexion Auth0 puis retour à l'origine (le guard renverra vers /login). */
@@ -117,39 +94,23 @@ export class AuthFacade {
     if (!this.isBrowser) {
       return;
     }
-    void this.auth0
-      ?.logout({ logoutParams: { returnTo: window.location.origin } })
-      .subscribe();
+    void this.auth0?.logout({ logoutParams: { returnTo: window.location.origin } }).subscribe();
   }
 
   /**
-   * Appelle `GET /me` avec le jeton d'accès. Le SDK fournit le token via
-   * `getAccessTokenSilently()` ; on l'attache manuellement plutôt que via
-   * l'intercepteur DI du SDK (qui injecte `AuthService` et compliquerait la
-   * garde SSR). Échec toléré : la démo affiche l'identité Auth0 même si le
-   * backend local est éteint.
+   * Jeton d'accès courant, pour appeler notre API.
+   *
+   * Exposé ici parce que le SDK Auth0 est **confiné à cette façade** : les
+   * services métier obtiennent un jeton sans jamais injecter `AuthService`, ce
+   * qui les garde SSR-safe. On attache l'en-tête à la main plutôt que via
+   * l'intercepteur DI du SDK, qui injecterait `AuthService` partout et
+   * compliquerait la garde de pré-rendu.
+   *
+   * Côté serveur (pas de SDK), l'observable n'émet **jamais** : les appels API
+   * ne partent tout simplement pas pendant le pré-rendu.
    */
-  private loadSession(): void {
-    this.auth0
-      ?.getAccessTokenSilently()
-      .pipe(
-        switchMap((token) =>
-          this.http.get<Session>(`${AUTH_CONFIG.apiBaseUrl}/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ),
-      )
-      .subscribe({
-        next: (session) => {
-          this._session.set(session);
-          this._sessionError.set(null);
-        },
-        error: () => {
-          this._sessionError.set(
-            'Identité backend indisponible (backend éteint ou compte non provisionné).',
-          );
-        },
-      });
+  accessToken$(): Observable<string> {
+    return this.auth0?.getAccessTokenSilently() ?? NEVER;
   }
 }
 

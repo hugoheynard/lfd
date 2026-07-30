@@ -1,5 +1,7 @@
 <fold-page-layout icon="settings" title="Réglages">
-  <p description>Les réglages de votre espace B2B La Folie Coffee.</p>
+  <p description>Votre profil et les réglages de votre espace B2B La Folie Coffee.</p>
+
+  <app-profil-section />
 
   <fold-page-section
     title="Session"
@@ -7,10 +9,7 @@
     description="Fermer votre session sur cet appareil."
   >
     <fold-card class="stack">
-      <p class="muted">
-        La déconnexion est aussi accessible en bas du menu, à tout moment. Le flux
-        d'authentification complet se branchera ici quand le backend B2B sera en place.
-      </p>
+      <p class="muted">La déconnexion est aussi accessible en bas du menu, à tout moment.</p>
       <div class="actions">
         <button foldButton emphasis="outline" intent="danger" icon="logout" (click)="logout()">
           Se déconnecter

@@ -20,6 +20,7 @@ import {
   FoldSurfaceDirective,
 } from 'fold-ng';
 
+import { AccountService } from './account/account.service';
 import { AuthFacade } from './auth/auth.facade';
 import { CartPanel } from './cart/cart-panel/cart-panel';
 import { CartService } from './data/cart.service';
@@ -60,6 +61,12 @@ export class App {
   private readonly panelHost = inject(FoldPanelHostService);
   protected readonly cart = inject(CartService);
   protected readonly auth = inject(AuthFacade);
+  /**
+   * Injecté ici même si le template ne lit que `displayEmail` : c'est ce qui
+   * instancie le service au démarrage de l'app, et donc ce qui déclenche le
+   * chargement de `GET /me` dès qu'Auth0 confirme l'authentification.
+   */
+  protected readonly account = inject(AccountService);
 
   /** Vrai tant qu'un panneau panier est ouvert (évite la ré-ouverture). */
   private cartOpen = false;

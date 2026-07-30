@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
 
 import {
   FoldButtonComponent,
@@ -8,9 +7,15 @@ import {
   FoldPageSectionComponent,
 } from 'fold-ng';
 
+import { AuthFacade } from '../auth/auth.facade';
+import { ProfilSection } from './profil-section/profil-section';
+
 /**
- * Réglages de l'espace B2B. Aujourd'hui : la session (déconnexion). Les
- * préférences de compte viendront s'ajouter quand le backend existera.
+ * Réglages de l'espace B2B : le **profil de la personne** et la session.
+ *
+ * Le profil vit ici, et non dans « Mes entreprises » : c'est qui vous êtes, pas
+ * une société. Les deux étaient confondus avant — le compte portait une société
+ * unique, ce qui rendait impossible d'exister sans entreprise.
  */
 @Component({
   selector: 'app-reglages-page',
@@ -20,18 +25,16 @@ import {
     FoldPageSectionComponent,
     FoldCardComponent,
     FoldButtonComponent,
+    ProfilSection,
   ],
   templateUrl: './reglages-page.html',
   styleUrl: './reglages-page.scss',
 })
 export class ReglagesPage {
-  private readonly router = inject(Router);
+  private readonly auth = inject(AuthFacade);
 
-  /**
-   * Déconnexion. L'auth n'est pas encore câblée : on revient au tableau de bord.
-   * Le vrai flux (purge du jeton + redirection login) se branchera ici.
-   */
+  /** Déconnexion réelle (Auth0) — le guard renverra ensuite vers `/login`. */
   protected logout(): void {
-    void this.router.navigateByUrl('/');
+    this.auth.logout();
   }
 }
