@@ -1,0 +1,19 @@
+{
+  // Registre des ports/URLs dev (localhost) — source de vérité UNIQUE consommée
+  // par le shell (valeur), et par les backends PIM/B2B (CORS dev). Feuille du
+  // graphe : zéro dépendance. Émet un `dist` pour les consommateurs Node
+  // (backends), tandis que `exports.browser` pointe la source pour le bundler du
+  // shell (comme @lfd/storage émet, @lfd/contracts sert ses types depuis src).
+  "extends": "../../tsconfig/tsflags.backend.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules"]
+}

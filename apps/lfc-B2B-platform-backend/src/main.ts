@@ -1,4 +1,5 @@
 import { NestFactory } from "@nestjs/core";
+import { DEV_CORS_ORIGINS } from "@lfd/endpoints";
 import { AppModule } from "./app.module.js";
 import { AppConfig } from "./infra/config/app-config.js";
 import { AppErrorFilter } from "./shared/http/app-error.filter.js";
@@ -9,10 +10,10 @@ async function bootstrap(): Promise<void> {
   // Traduction des catégories d'erreur en statuts — le seul point qui connaît HTTP.
   app.useGlobalFilters(new AppErrorFilter());
 
-  // Le front B2B tourne sur un autre port en développement : 7316 (Angular),
-  // 4200 gardé pour un éventuel second front.
+  // Origines dev (front B2B + port spare) tenues dans le registre unique
+  // `@lfd/endpoints`. La prod passe par l'env.
   app.enableCors({
-    origin: ["http://localhost:7316", "http://localhost:4200"],
+    origin: DEV_CORS_ORIGINS.b2b,
   });
 
   // Le port passe par AppConfig comme toute autre valeur d'environnement.
