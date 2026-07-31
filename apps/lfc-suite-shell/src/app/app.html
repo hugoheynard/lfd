@@ -35,15 +35,10 @@
       ></button>
     </fold-menu>
 
-    <!-- Header mince. -->
-    <div header foldSurface="chrome" class="app-header">
-      <span class="app-context">Suite interne</span>
-    </div>
-
-    <!-- L'app montée. Elle apportera son propre menu (donnée du remote). -->
+    <!-- Pas de header : l'app hostée (iframe) a le sien. -->
     <router-outlet />
 
-    <!-- Hôte unique des side-panels. -->
+    <!-- Hôte unique des side-panels du shell. -->
     <fold-panel-host />
   </fold-app-shell>
 } @else {

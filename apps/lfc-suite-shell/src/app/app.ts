@@ -6,7 +6,6 @@ import {
   FoldMenuItemComponent,
   FoldPanelHostComponent,
   FoldSpinnerComponent,
-  FoldSurfaceDirective,
 } from 'fold-ng';
 
 import { AuthFacade } from './auth/auth.facade';
@@ -30,7 +29,6 @@ import { SUITE_APPS } from './suite/suite-registry';
     FoldMenuItemComponent,
     FoldPanelHostComponent,
     FoldSpinnerComponent,
-    FoldSurfaceDirective,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',

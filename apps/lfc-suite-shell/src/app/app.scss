@@ -29,18 +29,6 @@
   font-weight: 600;
 }
 
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-md);
-  height: 100%;
-  padding-inline: var(--fold-space-md);
-}
-.app-context {
-  font-weight: 600;
-  color: var(--fold-color-text-muted, inherit);
-}
-
 /* Porte de login unique. */
 .app-login {
   display: flex;
