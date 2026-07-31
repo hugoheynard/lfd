@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 
 import {
   FoldBadgeComponent,
@@ -45,10 +45,19 @@ interface CompanyOrders {
 export class OrdersTable {
   private readonly context = inject(CommerceContextService);
 
-  /** Toutes les entreprises gérées, chacune avec ses commandes. */
-  protected readonly groups = computed<readonly CompanyOrders[]>(() =>
-    this.context.companies().map((company) => ({ company, orders: buildDemoOrders(company) })),
-  );
+  /** Année de filtrage (pagination) ; `null` = toutes les années. */
+  readonly year = input<number | null>(null);
+
+  /** Toutes les entreprises gérées, chacune avec ses commandes de l'année filtrée. */
+  protected readonly groups = computed<readonly CompanyOrders[]>(() => {
+    const year = this.year();
+    return this.context.companies().map((company) => {
+      const orders = buildDemoOrders(company).filter(
+        (order) => year === null || new Date(order.date).getFullYear() === year,
+      );
+      return { company, orders };
+    });
+  });
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'reference', label: 'Référence', width: '11rem' },

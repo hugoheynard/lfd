@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
 import {
+  FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldPageLayoutComponent,
   FoldViewToggleComponent,
@@ -39,6 +40,7 @@ type OrdersView = 'periods' | 'all';
     FoldPageLayoutComponent,
     FoldCalloutComponent,
     FoldViewToggleComponent,
+    FoldButtonIconComponent,
     CommerceNav,
     BillingPeriodsView,
     OrdersTable,
@@ -67,14 +69,33 @@ export class CommandesPage {
     this.view.set(value === 'all' ? 'all' : 'periods');
   }
 
+  /** Année courante — borne haute du navigateur (pas de commandes futures). */
+  protected readonly currentYear = this.now.getFullYear();
+
+  /** Année affichée — sert de filtre de pagination naturel. Défaut : année en cours. */
+  protected readonly year = signal<number>(this.currentYear);
+
+  protected prevYear(): void {
+    this.year.update((y) => y - 1);
+  }
+
+  protected nextYear(): void {
+    this.year.update((y) => Math.min(y + 1, this.currentYear));
+  }
+
   private readonly rows = computed<readonly CommandeRow[]>(() => {
     const company = this.selected();
     return company === null ? [] : buildDemoOrders(company);
   });
 
+  /** Commandes de l'établissement filtrées sur l'année affichée. */
+  private readonly yearRows = computed<readonly CommandeRow[]>(() =>
+    this.rows().filter((row) => new Date(row.date).getFullYear() === this.year()),
+  );
+
   /** Commandes payées à la commande (hors relevé) — colonne de droite. */
   protected readonly immediateOrders = computed<readonly CommandeRow[]>(() =>
-    this.rows().filter((row) => row.paid),
+    this.yearRows().filter((row) => row.paid),
   );
 
   /** Changements de régime de règlement (frise) — seed démo front-only. */
@@ -88,7 +109,7 @@ export class CommandesPage {
   /** Relevés mensuels : seules les commandes **non** payées immédiatement entrent au relevé. */
   protected readonly periods = computed<readonly BillingPeriod[]>(() => {
     const settled = this.settledPeriods();
-    const releve = this.rows().filter((row) => !row.paid);
+    const releve = this.yearRows().filter((row) => !row.paid);
     return groupIntoPeriods(releve, MONTHLY_DUE_DAYS, this.now).map((period) =>
       settled.has(period.key) ? { ...period, status: 'paid' } : period,
     );

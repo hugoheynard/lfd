@@ -17,6 +17,24 @@
       />
     </div>
 
+    <!-- Navigateur d'année : filtre de pagination naturel (défaut année en cours). -->
+    <div class="year-nav">
+      <fold-button-icon
+        icon="chevron-left"
+        size="sm"
+        tooltip="Année précédente"
+        (clicked)="prevYear()"
+      />
+      <span class="year">{{ year() }}</span>
+      <fold-button-icon
+        icon="chevron-right"
+        size="sm"
+        tooltip="Année suivante"
+        [disabled]="year() >= currentYear"
+        (clicked)="nextYear()"
+      />
+    </div>
+
     @if (view() === 'periods') {
       <app-billing-periods-view
         [periods]="periods()"
@@ -26,7 +44,7 @@
         (settlePeriod)="settlePeriod($event)"
       />
     } @else {
-      <app-orders-table />
+      <app-orders-table [year]="year()" />
     }
   }
 </fold-page-layout>

@@ -6,3 +6,18 @@
   justify-content: center;
   margin-bottom: var(--fold-space-md);
 }
+
+.year-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-lg);
+}
+.year-nav .year {
+  min-width: 4ch;
+  text-align: center;
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
