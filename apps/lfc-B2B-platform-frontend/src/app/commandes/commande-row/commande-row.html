@@ -1,0 +1,11 @@
+<code class="ref">{{ order().reference }}</code>
+<span class="date">{{ day(order().date) }}</span>
+<fold-badge [content]="badgeLabel()" [variant]="badgeVariant()" />
+<span class="place">{{ order().deliveryPlace }}</span>
+<span class="total">{{ fmt(order().totalEur) }}</span>
+<fold-button-icon
+  icon="download"
+  size="sm"
+  tooltip="Télécharger le bon de commande"
+  (clicked)="onDownload()"
+/>

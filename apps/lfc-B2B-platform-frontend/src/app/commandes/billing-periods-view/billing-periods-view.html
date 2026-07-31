@@ -1,0 +1,88 @@
+<div class="ledger">
+  <!-- Intitulés de colonnes (légers, pas de chrome de tableau) -->
+  <span class="h h-periodic" aria-hidden="true">Paiement périodique</span>
+  <span class="h h-paid" aria-hidden="true">Payé à la commande</span>
+
+  @for (row of ledger(); track $index) {
+    @switch (row.kind) {
+      @case ('change') {
+        @let change = row.change;
+        <div class="regime" [class.regime--pending]="change.acceptedAt === null">
+          <span class="regime-dot" aria-hidden="true"></span>
+          <span class="regime-title">
+            {{ termLabel(change.from) }} <span class="regime-arrow">→</span>
+            {{ termLabel(change.to) }}
+          </span>
+          <span class="regime-meta">Demandé le {{ fullDate(change.requestedAt) }}</span>
+          @if (change.acceptedAt !== null) {
+            <fold-badge [content]="'Accepté · ' + fullDate(change.acceptedAt)" variant="success" />
+          } @else {
+            <fold-badge content="En attente" variant="warning" />
+          }
+        </div>
+      }
+      @case ('month') {
+        @let month = row.month;
+        @let period = month.period;
+
+        <!-- Colonne 1 : la carte du relevé (ou rien → fond de page) -->
+        @if (period) {
+          @let m = meta(period.status);
+          <app-command-period-card
+            class="col-period"
+            [orders]="period.orders"
+            [tone]="m.variant"
+            (download)="onDownload($event)"
+          >
+            <div info class="minfo">
+              <span class="minfo-month">{{ month.label }}</span>
+              <fold-badge [content]="m.label" [variant]="m.variant" />
+              <span class="minfo-balance" [class.minfo-balance--muted]="period.status === 'paid'">
+                {{ fmt(period.total) }}
+              </span>
+              <span class="minfo-due">
+                @if (period.status === 'current') {
+                  période en cours · échéance le {{ due(period.dueDate) }}
+                } @else {
+                  échéance le {{ due(period.dueDate) }}
+                }
+              </span>
+              @if (
+                (period.status === 'due' || period.status === 'overdue') && period.outstanding > 0
+              ) {
+                <button
+                  foldButton
+                  intent="primary"
+                  size="sm"
+                  icon="check"
+                  class="minfo-settle"
+                  (click)="onSettle(period)"
+                >
+                  Régler — {{ fmt(period.outstanding) }}
+                </button>
+              }
+            </div>
+          </app-command-period-card>
+        } @else {
+          <div class="col-empty" aria-hidden="true"></div>
+        }
+
+        <!-- Colonne 2 : une carte par commande payée (ou rien → fond de page) -->
+        @if (month.paid.length > 0) {
+          <div class="col-singles">
+            <span class="singles-month">{{ month.label }}</span>
+            @for (order of month.paid; track order.id) {
+              <app-command-single
+                [order]="order"
+                [tone]="statusVariant(order.status)"
+                (download)="onDownload($event)"
+              />
+            }
+          </div>
+        } @else {
+          <div class="col-empty" aria-hidden="true"></div>
+        }
+      }
+    }
+  }
+</div>

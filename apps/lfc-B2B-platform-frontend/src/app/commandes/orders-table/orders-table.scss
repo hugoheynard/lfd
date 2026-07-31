@@ -1,0 +1,37 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl, 2rem);
+}
+
+.company-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.company-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+.company-name {
+  margin: 0;
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 600;
+}
+.company-ref {
+  font-size: var(--fold-text-sm, 0.8125rem);
+  color: var(--fold-color-text-muted);
+}
+.company-term {
+  margin-left: auto;
+}
+
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-xs);
+}

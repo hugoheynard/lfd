@@ -1,0 +1,57 @@
+:host {
+  display: block;
+  position: relative;
+  container-type: inline-size;
+  --rail: var(--fold-color-text-muted);
+}
+:host([data-tone='warning']) {
+  --rail: var(--fold-color-warning, #b0740f);
+}
+:host([data-tone='success']) {
+  --rail: var(--fold-color-success, #1d9e75);
+}
+:host([data-tone='info']) {
+  --rail: var(--fold-color-info, #2f6feb);
+}
+:host([data-tone='alert']) {
+  --rail: var(--fold-color-alert, #c0392b);
+}
+
+// Liseré de statut à gauche de la carte (respecte l'arrondi).
+:host::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  z-index: 1;
+  background: var(--rail);
+  border-radius: var(--fold-radius-lg, 12px) 0 0 var(--fold-radius-lg, 12px);
+}
+
+// Carte scindée : info à gauche (largeur fixe), commandes du relevé à droite.
+.split {
+  display: grid;
+  grid-template-columns: minmax(12rem, 14rem) minmax(0, 1fr);
+  column-gap: var(--fold-space-md);
+  align-items: start;
+}
+.pane {
+  min-width: 0;
+  padding: var(--fold-space-md);
+}
+.pane-rows {
+  display: flex;
+  flex-direction: column;
+}
+app-commande-row + app-commande-row {
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+// Carte étroite : l'info repasse au-dessus des commandes.
+@container (max-width: 34rem) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}

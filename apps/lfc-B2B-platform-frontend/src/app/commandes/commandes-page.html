@@ -1,51 +1,32 @@
 <fold-page-layout icon="contracts" title="Mes commandes">
-  <p description>Vos commandes La Folie Coffee — suivi, statuts et détail.</p>
+  <p description>Vos commandes La Folie Coffee — relevés par période et bons de commande.</p>
+
+  <app-commerce-nav />
 
   @if (!hasCompany()) {
     <fold-callout appearance="inset" variant="info">
       Créez une entreprise dans « Mes entreprises » pour passer et suivre vos commandes.
     </fold-callout>
   } @else {
-    @if (companies().length > 1) {
-      <fold-select
-        class="company"
-        label="Entreprise"
-        [value]="companyId()"
-        (valueChange)="select($event)"
-      >
-        @for (company of companies(); track company.id) {
-          <option [value]="company.id">{{ company.raisonSociale }}</option>
-        }
-      </fold-select>
-    }
+    <div class="toolbar">
+      <fold-view-toggle
+        [options]="viewOptions"
+        [value]="view()"
+        (valueChange)="setView($event)"
+        ariaLabel="Représentation des commandes"
+      />
+    </div>
 
-    @if (list().length === 0) {
-      <fold-callout appearance="inset" variant="info">
-        Aucune commande pour l'instant. Depuis la boutique, ajoutez des produits au panier puis
-        validez la commande.
-      </fold-callout>
+    @if (view() === 'periods') {
+      <app-billing-periods-view
+        [periods]="periods()"
+        [immediateOrders]="immediateOrders()"
+        [regimeChanges]="regimeChanges"
+        (downloadOrder)="downloadBon($event)"
+        (settlePeriod)="settlePeriod($event)"
+      />
     } @else {
-      <div class="orders">
-        @for (order of list(); track order.id) {
-          <fold-card>
-            <div class="order-head">
-              <span class="order-number">{{ order.orderNumber }}</span>
-              <fold-badge
-                [content]="statusLabel(order.status)"
-                [variant]="statusVariant(order.status)"
-              />
-            </div>
-            <p class="order-meta">
-              Passée le {{ date(order.placedAt) }}
-              @if (order.requestedDeliveryDate) {
-                · livraison souhaitée le {{ date(order.requestedDeliveryDate) }}
-              }
-              · {{ itemCount(order) }} article(s)
-            </p>
-            <p class="order-total">{{ euros(order.totalCents) }}</p>
-          </fold-card>
-        }
-      </div>
+      <app-orders-table />
     }
   }
 </fold-page-layout>

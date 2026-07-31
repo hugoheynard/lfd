@@ -1,0 +1,54 @@
+@for (group of groups(); track group.company.id) {
+  <section class="company-group">
+    <header class="company-head">
+      <h2 class="company-name">{{ companyName(group.company) }}</h2>
+      <code class="company-ref">{{ group.company.reference }}</code>
+      <fold-badge
+        class="company-term"
+        [content]="termLabel(group.company.paymentTerm)"
+        variant="neutral"
+      />
+    </header>
+
+    <fold-data-table
+      [columns]="columns"
+      [rows]="group.orders"
+      [rowKey]="rowKey"
+      [empty]="emptyState"
+      zebra
+      hover
+    >
+      <ng-template foldCell="reference" let-row>
+        <code>{{ row.reference }}</code>
+      </ng-template>
+
+      <ng-template foldCell="date" let-row>
+        {{ date(row.date) }}
+      </ng-template>
+
+      <ng-template foldCell="status" let-row>
+        <fold-badge [content]="statusLabel(row.status)" [variant]="statusVariant(row.status)" />
+      </ng-template>
+
+      <ng-template foldCell="total" let-row>
+        <strong>{{ fmt(row.totalEur) }}</strong>
+      </ng-template>
+
+      <ng-template foldCell="actions" let-row>
+        <div class="row-actions">
+          <fold-button-icon
+            icon="download"
+            size="sm"
+            tooltip="Télécharger le bon de commande"
+            (clicked)="downloadBon(row)"
+          />
+          @if (isSettleAsked(row.id)) {
+            <fold-badge content="Règlement demandé" variant="success" />
+          } @else {
+            <button foldButton emphasis="soft" size="sm" (click)="askSettle(row)">Régler</button>
+          }
+        </div>
+      </ng-template>
+    </fold-data-table>
+  </section>
+}

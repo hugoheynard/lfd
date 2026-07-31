@@ -1,0 +1,12 @@
+<fold-card padding="none" surface="card">
+  <div class="split">
+    <div class="pane pane-info">
+      <ng-content select="[info]" />
+    </div>
+    <div class="pane pane-rows">
+      @for (order of orders(); track order.id) {
+        <app-commande-row [order]="order" [mode]="mode()" (download)="onDownload($event)" />
+      }
+    </div>
+  </div>
+</fold-card>

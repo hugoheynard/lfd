@@ -1,0 +1,30 @@
+:host {
+  display: block;
+  position: relative;
+  --rail: var(--fold-color-text-muted);
+}
+:host([data-tone='warning']) {
+  --rail: var(--fold-color-warning, #b0740f);
+}
+:host([data-tone='success']) {
+  --rail: var(--fold-color-success, #1d9e75);
+}
+:host([data-tone='info']) {
+  --rail: var(--fold-color-info, #2f6feb);
+}
+:host([data-tone='alert']) {
+  --rail: var(--fold-color-alert, #c0392b);
+}
+
+// Liseré de statut à gauche (respecte l'arrondi de la carte).
+:host::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  z-index: 1;
+  background: var(--rail);
+  border-radius: var(--fold-radius-lg, 12px) 0 0 var(--fold-radius-lg, 12px);
+}

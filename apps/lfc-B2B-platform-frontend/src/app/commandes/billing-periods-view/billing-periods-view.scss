@@ -1,0 +1,115 @@
+:host {
+  display: block;
+}
+
+// Deux colonnes (relevé | à la commande), mais SANS chrome de tableau : de vrais
+// gaps laissent voir le fond de page entre les cartes.
+.ledger {
+  --ledger-cols: minmax(0, 1.5fr) minmax(0, 1fr);
+  display: grid;
+  grid-template-columns: var(--ledger-cols);
+  column-gap: var(--fold-space-lg);
+  row-gap: var(--fold-space-lg);
+  align-items: start;
+  container-type: inline-size;
+}
+
+// ---- Intitulés de colonnes (légers) ----
+.h {
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fold-color-text-muted);
+}
+
+.col-period,
+.col-singles,
+.col-empty {
+  min-width: 0;
+}
+
+// ---- Colonne 2 : pile de cartes-commande, séparées par le fond de page ----
+.col-singles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+.singles-month {
+  font-size: var(--fold-text-sm, 0.8125rem);
+  font-weight: 500;
+  color: var(--fold-color-text-muted);
+}
+
+// ---- Panneau info (projeté dans la carte-relevé via [info]) ----
+.minfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-2xs, 0.25rem);
+}
+.minfo-month {
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 500;
+}
+.minfo-balance {
+  font-size: var(--fold-text-xl, 1.375rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.minfo-balance--muted {
+  color: var(--fold-color-text-muted);
+}
+.minfo-due {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+}
+.minfo-settle {
+  margin-top: var(--fold-space-xs);
+}
+
+// ---- Changement de régime : pleine largeur, entre deux rangées ----
+.regime {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: 0 var(--fold-space-md);
+}
+.regime-dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--fold-color-success, #1d9e75);
+}
+.regime--pending .regime-dot {
+  background: var(--fold-color-warning, #b0740f);
+}
+.regime-title {
+  font-size: var(--fold-text-sm, 0.8125rem);
+  font-weight: 500;
+}
+.regime-arrow {
+  color: var(--fold-color-text-muted);
+}
+.regime-meta {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+}
+.regime fold-badge {
+  margin-left: auto;
+}
+
+// Vue étroite : une seule colonne, intitulés masqués.
+@container (max-width: 52rem) {
+  .ledger {
+    grid-template-columns: 1fr;
+  }
+  .h {
+    display: none;
+  }
+  .col-empty {
+    display: none;
+  }
+}

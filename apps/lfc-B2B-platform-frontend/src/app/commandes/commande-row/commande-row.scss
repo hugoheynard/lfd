@@ -1,0 +1,32 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+  padding: var(--fold-space-2xs, 0.25rem) 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  white-space: nowrap;
+}
+
+.ref {
+  flex: none;
+  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
+}
+.date {
+  flex: none;
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.place {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--fold-color-text-muted);
+}
+.total {
+  flex: none;
+  text-align: right;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}

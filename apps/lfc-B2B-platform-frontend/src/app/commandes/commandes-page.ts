@@ -1,32 +1,36 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
-import type { OrderStatus, OrderView } from '@lfd/contracts';
 import {
-  FoldBadgeComponent,
-  type FoldBadgeVariant,
   FoldCalloutComponent,
-  FoldCardComponent,
   FoldPageLayoutComponent,
-  FoldSelectComponent,
+  FoldViewToggleComponent,
+  type FoldViewToggleOption,
 } from 'fold-ng';
 
-import { AccountService } from '../account/account.service';
-import { OrdersService } from '../orders/orders.service';
+import { CommerceNav } from '../commerce/commerce-nav/commerce-nav';
+import { CommerceContextService } from '../commerce/commerce-context.service';
+import { type BillingPeriod, groupIntoPeriods } from './billing-periods';
+import { BillingPeriodsView } from './billing-periods-view/billing-periods-view';
+import { downloadBon as downloadBonFile } from './download-bon';
+import { OrdersTable } from './orders-table/orders-table';
+import { buildDemoOrders, type CommandeRow } from './orders-demo-seed';
+import { buildDemoRegimeChanges, type PaymentRegimeChange } from './payment-regime-changes';
 
-/** Libellé + ton du badge de statut, dans le langage du client. */
-const STATUS: Record<OrderStatus, { readonly label: string; readonly variant: FoldBadgeVariant }> = {
-  draft: { label: 'Brouillon', variant: 'neutral' },
-  placed: { label: 'Passée', variant: 'info' },
-  confirmed: { label: 'Confirmée', variant: 'info' },
-  in_production: { label: 'En production', variant: 'warning' },
-  fulfilled: { label: 'Livrée', variant: 'success' },
-  cancelled: { label: 'Annulée', variant: 'alert' },
-};
+/** Délai de règlement (jours après clôture). `0` = 1er du mois suivant (front-only). */
+const MONTHLY_DUE_DAYS = 0;
+
+/** Les deux représentations du carnet, choisies par le view-toggle. */
+type OrdersView = 'periods' | 'all';
 
 /**
- * Mes commandes — le carnet de commandes de l'entreprise sélectionnée, branché
- * sur l'API commandes (`GET /companies/:id/orders`). Une seule entreprise → pas
- * de sélecteur ; plusieurs → on choisit laquelle.
+ * **Mes commandes** — un `fold-view-toggle` bascule entre deux lectures :
+ *
+ * - **Par périodes** (cards) : la vue **de base** — relevés mensuels + payé à la
+ *   commande, pour l'établissement choisi dans la nav commerce ;
+ * - **Toutes les commandes** (list) : la table exhaustive, **par entreprise
+ *   gérée** (composant `OrdersTable`).
+ *
+ * Front-only à ce stade : les lignes viennent d'un seed démo (`orders-demo-seed`).
  */
 @Component({
   selector: 'app-commandes-page',
@@ -34,59 +38,69 @@ const STATUS: Record<OrderStatus, { readonly label: string; readonly variant: Fo
   imports: [
     FoldPageLayoutComponent,
     FoldCalloutComponent,
-    FoldSelectComponent,
-    FoldCardComponent,
-    FoldBadgeComponent,
+    FoldViewToggleComponent,
+    CommerceNav,
+    BillingPeriodsView,
+    OrdersTable,
   ],
   templateUrl: './commandes-page.html',
   styleUrl: './commandes-page.scss',
 })
 export class CommandesPage {
-  private readonly account = inject(AccountService);
-  private readonly orders = inject(OrdersService);
+  private readonly context = inject(CommerceContextService);
 
-  protected readonly companies = this.account.companies;
-  protected readonly companyId = signal('');
-  protected readonly list = this.orders.orders;
+  /** Instant de référence, figé (une lecture ⇒ un `computed` pur). */
+  private readonly now = new Date();
 
-  protected readonly hasCompany = computed(() => this.companies().length > 0);
+  protected readonly hasCompany = this.context.hasCompany;
+  protected readonly selected = this.context.selected;
 
-  constructor() {
-    // Sélectionne la 1ʳᵉ entreprise dès qu'elle est connue (et charge ses commandes).
-    effect(() => {
-      const companies = this.companies();
-      if (this.companyId() === '' && companies.length > 0 && companies[0]) {
-        this.select(companies[0].id);
-      }
-    });
+  /** Vue active — « par périodes » par défaut (la vue de base). */
+  protected readonly view = signal<OrdersView>('periods');
+
+  protected readonly viewOptions: readonly FoldViewToggleOption[] = [
+    { value: 'periods', icon: 'grid', label: 'Par périodes' },
+    { value: 'all', icon: 'list', label: 'Toutes les commandes' },
+  ];
+
+  protected setView(value: string): void {
+    this.view.set(value === 'all' ? 'all' : 'periods');
   }
 
-  protected select(id: string): void {
-    this.companyId.set(id);
-    if (id !== '') {
-      this.orders.loadOrders(id);
-    }
+  private readonly rows = computed<readonly CommandeRow[]>(() => {
+    const company = this.selected();
+    return company === null ? [] : buildDemoOrders(company);
+  });
+
+  /** Commandes payées à la commande (hors relevé) — colonne de droite. */
+  protected readonly immediateOrders = computed<readonly CommandeRow[]>(() =>
+    this.rows().filter((row) => row.paid),
+  );
+
+  /** Changements de régime de règlement (frise) — seed démo front-only. */
+  protected readonly regimeChanges: readonly PaymentRegimeChange[] = buildDemoRegimeChanges(
+    this.now,
+  );
+
+  /** Clés de périodes réglées (relevés mensuels, stub front-only). */
+  protected readonly settledPeriods = signal<ReadonlySet<string>>(new Set());
+
+  /** Relevés mensuels : seules les commandes **non** payées immédiatement entrent au relevé. */
+  protected readonly periods = computed<readonly BillingPeriod[]>(() => {
+    const settled = this.settledPeriods();
+    const releve = this.rows().filter((row) => !row.paid);
+    return groupIntoPeriods(releve, MONTHLY_DUE_DAYS, this.now).map((period) =>
+      settled.has(period.key) ? { ...period, status: 'paid' } : period,
+    );
+  });
+
+  /** Règle un relevé mensuel — stub front-only : la période passe « Réglé ». */
+  protected settlePeriod(period: BillingPeriod): void {
+    this.settledPeriods.update((set) => new Set(set).add(period.key));
   }
 
-  protected statusLabel(status: OrderStatus): string {
-    return STATUS[status].label;
-  }
-
-  protected statusVariant(status: OrderStatus): FoldBadgeVariant {
-    return STATUS[status].variant;
-  }
-
-  /** Centimes → « 12,50 € ». */
-  protected euros(cents: number): string {
-    return `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €`;
-  }
-
-  /** ISO → « 30/07/2026 ». */
-  protected date(iso: string): string {
-    return new Date(iso).toLocaleDateString('fr-FR');
-  }
-
-  protected itemCount(order: OrderView): number {
-    return order.lines.reduce((sum, line) => sum + line.quantity, 0);
+  /** Télécharge le bon de commande (util partagé, côté navigateur). */
+  protected downloadBon(row: CommandeRow): void {
+    downloadBonFile(row);
   }
 }
