@@ -2,7 +2,7 @@
 
 Ce document fixe la **cible de topologie réseau** de la suite interne
 (`lfc-suite-shell` + apps hostées + backends) et le **plan de bataille** pour y
-arriver, avec une **revue adversariale** en fin de doc (§8) : on écrit d'abord ce
+arriver, avec une **revue adversariale** en fin de doc (§9) : on écrit d'abord ce
 qui peut casser, ensuite on planifie.
 
 Complément de [`apps/lfc-suite-shell/ARCHITECTURE.md`](../apps/lfc-suite-shell/ARCHITECTURE.md)
@@ -105,7 +105,7 @@ le gateway :
 | Isolation iframe | ❌ same-origin, app = accès total au parent | ✅ cross-origin, isolation navigateur gardée |
 | Verdict | OK **outils internes staff** de confiance | requis si une app est moins fiable / tierce |
 
-**Recommandation** : voir §9 D-1. La décision a basculé vers **B (sous-domaines)**
+**Recommandation** : voir §10 D-1. La décision a basculé vers **B (sous-domaines)**
 une fois deux faits posés : le relais de token est gardé (D-3, l'argument auth de
 A tombe) et le backend B2B a un consommateur public cross-origin par conception
 (ci-dessous, l'argument « pas de CORS » de A tombe aussi).
@@ -160,7 +160,7 @@ applicative — il relaie l'`Authorization` tel quel.
 ## 6. Plan de bataille (phases ordonnées)
 
 > Ordre **impératif** : on ne proxifie pas vers du vide. Les backends doivent
-> avoir une **origine hébergée** avant que le gateway existe (cf. §8 AD-6).
+> avoir une **origine hébergée** avant que le gateway existe (cf. §9 AD-6).
 
 **Phase 0 — Hébergement des backends (bloquant).**
 Déployer les NestJS sur **Cloudflare Containers** (D-2, tranché) : instance
@@ -205,13 +205,63 @@ future doit être isolée.
 
 - Le domaine `lafoliecoffee.xyz` est une **zone Cloudflare** (DNS chez CF), sinon
   les `routes` du Worker ne s'attachent pas.
-- Cloud Run (ou l'hôte retenu) **autoscale** et expose **une URL stable** par
-  service (Invariant A).
+- **Cloudflare Containers** (D-2) expose **une URL stable** par service, avec
+  autoscale + scale-to-zero derrière (Invariant A).
 - Un `/health` existe sur chaque backend (Phase 0) pour les probes et le canary.
 
 ---
 
-## 8. Revue adversariale
+## 8. Automatisation prod (CI/CD)
+
+En prod, **le registre dev ne sert plus** — et c'est voulu : il n'y a **pas de
+ports exposés** (chaque backend est une origine stable, Invariant A). Ce qui
+« se met en place tout seul », c'est la **CI/CD self-bootstrap**, sur le patron
+déjà en place pour le B2B front (`.github/workflows/deploy_b2b_frontend_platform.yml`).
+
+### Un workflow par déployable (push `main` → deploy)
+
+Chaque déployable a **son** workflow : build → `wrangler … deploy` →
+**la ressource Cloudflare se crée si absente** (`… create … || true`, idempotent).
+Un **token de déploiement par app** + l'`ACCOUNT_ID` partagé (cf. §5, tokens CI ≠
+tokens Auth0).
+
+| Déployable | Cible Cloudflare | Commande | Statut |
+| --- | --- | --- | --- |
+| Shell, PIM front, B2B front | **Pages** (statique) | `wrangler pages deploy` | B2B fait ; shell/PIM à cloner |
+| PIM back, B2B back | **Containers** (D-2) | `wrangler … deploy` (image + service) | à écrire (Phase 0) |
+| Gateway | **Worker** | `wrangler deploy` | à écrire (Phase 4) |
+
+1ᵉʳ push = la ressource se crée ; pushs suivants = mise à jour. **Zéro clic
+dashboard.**
+
+### La config prod = as-code, versionnée
+
+Là où le dev a `@lfd/endpoints`, la prod a **deux fichiers versionnés**, déployés
+comme du code (revus en PR) :
+
+- `suite-config.ts` — URLs Pages des fronts (déjà là) ;
+- le `wrangler.toml` du gateway — `[vars]` = carte des upstreams backend.
+
+> **Anti-drift (AD-5).** Dev (registre TS) et prod (ces fichiers) sont deux
+> sources. On ferme le risque en **générant** le `[vars]` prod depuis une
+> déclaration unique, **ou** par un **test CI** qui vérifie qu'ils concordent.
+
+### Le genuinely-manuel : les secrets (une fois par environnement)
+
+Ne se commit **jamais**, ne s'auto-génère pas : `DATABASE_URL` (prod = **Neon**,
+Postgres managé), creds Auth0, tokens Cloudflare. Posés **une fois** comme
+*secrets* (GitHub Actions pour le deploy ; `wrangler secret put` / dashboard pour
+le runtime des containers). Les **origines CORS prod** viennent de ces env (Phase
+3, validation zod qui *crashe* si une URL manque), **pas** du registre dev.
+
+### Ordre de déploiement (imposé par le plan)
+
+Backends (containers, `/health`, origine stable) **d'abord**, gateway **ensuite**
+(AD-6 : on ne proxifie pas vers du vide). Miroir exact des Phases 0 → 4.
+
+---
+
+## 9. Revue adversariale
 
 On attaque le plan. Verdict : **tenu** (le plan répond) · **à corriger** (le doc
 a été amendé) · **risque accepté** (connu, borné).
@@ -238,7 +288,7 @@ JWT, cold start, WS futur) sont **bornés et assumés**, pas ignorés.
 
 ---
 
-## 9. Décisions
+## 10. Décisions
 
 - **D-3 — Relais de token : GARDÉ.** ✅ *(décidé)* L'auth reste le relais
   postMessage, **quelle que soit l'origine**. Conséquence : l'auth est
@@ -259,7 +309,7 @@ JWT, cold start, WS futur) sont **bornés et assumés**, pas ignorés.
   gateway→backend en HTTP via l'origine stable, Invariant A) — coût acceptable
   vu l'enjeu de shipper sans toucher au backend.
 
-  **Coût (tarifs Cloudflare, cf. §10).** CPU facturé **à l'usage réel** ; seuls
+  **Coût (tarifs Cloudflare, cf. §11).** CPU facturé **à l'usage réel** ; seuls
   **mémoire + disque** courent tant que le conteneur est **réveillé** ; **endormi
   = $0** (mais cold start au réveil). Instance réaliste NestJS+Prisma =
   **`basic`** (1/4 vCPU, 1 GiB, 4 GB) — la `lite` (256 MiB) est trop juste pour
@@ -287,7 +337,7 @@ validation boot) est **indépendant** et peut avancer tout de suite.
 
 ---
 
-## 10. Références (tarifs Cloudflare Containers)
+## 11. Références (tarifs Cloudflare Containers)
 
 Source : [Cloudflare Containers — Pricing](https://developers.cloudflare.com/containers/pricing/)
 (relevé le 2026-07-31 ; **à revérifier**, ces tarifs bougent).
