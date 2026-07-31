@@ -168,11 +168,14 @@ Déployer les NestJS sur **Cloudflare Containers** (D-2, tranché) : instance
 `api-pim.…` et `api-b2b.…` répondent `/health`, une **origine stable** par
 service (Invariant A). **Sans ça, rien en aval** (on ne proxifie pas vers du vide).
 
-**Phase 1 — Registre de ports/URLs (dev).**
-Un fichier unique au niveau repo (`lfc-endpoints.ts` / `.dev.json`) alloue le
-bloc 73xx/3xxx. `suite-config.dev.ts`, les CORS des deux backends (via `.env`),
-et les ports de serve **en dérivent**. Tue les 3 duplications de `7315`. Zéro
-changement de comportement.
+**Phase 1 — Registre de ports/URLs (dev). ✅ FAIT.**
+Package workspace **`@lfd/endpoints`** = source de vérité unique (localhost).
+`suite-config.dev.ts` (→ `DEV_URLS`) et les CORS dev des backends PIM/B2B (→
+`DEV_CORS_ORIGINS`) **en dérivent** au lieu de recopier le port. Le package
+expose `browser`→source (bundler shell) et `import`→`dist` (Node backends). Les
+ports de serve dans `angular.json` (JSON non importable) restent mais alignés sur
+`DEV_PORTS` ; les tests du shell épinglent `7315` = garde-fou. Zéro changement de
+comportement.
 
 **Phase 2 — Redis (prérequis scaling).**
 Externaliser rate-limit (+ futur pub/sub) dans Redis. Tant que ce n'est pas
