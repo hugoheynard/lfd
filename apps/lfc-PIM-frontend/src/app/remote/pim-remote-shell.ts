@@ -17,7 +17,7 @@ import { PIM_NAV } from './pim-nav';
   imports: [RouterOutlet, FoldViewNavComponent],
   template: `
     <div class="pim-remote">
-      <fold-view-nav [items]="nav" />
+      <fold-view-nav [items]="nav" direction="horizontal" />
       <router-outlet />
     </div>
   `,
