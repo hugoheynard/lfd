@@ -278,7 +278,23 @@ contre la solution astucieuse.
 
 ---
 
-## 7. Documentation et JSDoc — en français
+## 7. Déploiement — contrat minimal
+
+- **Tout backend déployé expose un `GET /health` public** (`@Public()`, sans
+  jeton). C'est une **liveness** : elle signale seulement que le process a booté
+  et route. Elle sert aux **probes** de l'orchestrateur (Cloudflare Containers) et
+  au **canary** de déploiement. Un backend sans `/health` n'est pas déployable.
+- La **readiness** (disponibilité DB, dépendances) est un endpoint **distinct**,
+  volontairement découplé : un hoquet Postgres ne doit **pas** faire tuer le
+  container via la liveness.
+
+> Le reste du contrat de déploiement (origine stable devant le fan-out, backends
+> stateless, passerelle, CI self-bootstrap) vit dans
+> [`documentation/architecture-suite-gateway-scaling.md`](documentation/architecture-suite-gateway-scaling.md).
+
+---
+
+## 8. Documentation et JSDoc — en français
 
 **Tout ce qui s'écrit en prose s'écrit en français** : JSDoc, commentaires,
 documentation, messages d'erreur destinés à l'utilisateur, messages de commit.
@@ -324,7 +340,7 @@ d'appel qui compte).
 
 ---
 
-## 8. Commits
+## 9. Commits
 
 - **Atomiques et conventionnels** : `feat(scope)`, `fix(scope)`, `refactor(scope)`,
   `test(scope)`, `docs(scope)`, `build(scope)`. Un seul sujet par commit — on ne
@@ -335,7 +351,7 @@ d'appel qui compte).
 
 ---
 
-## 9. Commandes utiles
+## 10. Commandes utiles
 
 ```bash
 pnpm dev:infra          # Postgres de dev (localhost:5433) — requis pour les e2e
