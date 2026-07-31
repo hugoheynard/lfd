@@ -60,6 +60,10 @@
                 {
                   "replace": "src/app/auth/dev-flags.ts",
                   "with": "src/app/auth/dev-flags.dev.ts"
+                },
+                {
+                  "replace": "src/app/suite/suite-config.ts",
+                  "with": "src/app/suite/suite-config.dev.ts"
                 }
               ]
             }

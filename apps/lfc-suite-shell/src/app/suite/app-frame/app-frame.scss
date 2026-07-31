@@ -1,0 +1,36 @@
+:host {
+  display: block;
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.frame {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  border: 0;
+}
+
+.frame-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  block-size: 100%;
+  padding: var(--fold-space-lg);
+}
+
+.frame-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  max-inline-size: 26rem;
+  text-align: center;
+}
+.frame-error p {
+  margin: 0;
+  color: var(--fold-color-text-muted, inherit);
+}
+.frame-error button {
+  margin-top: var(--fold-space-sm);
+}

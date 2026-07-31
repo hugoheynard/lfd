@@ -1,10 +1,16 @@
-import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  type ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 
 import { routes } from './app.routes';
 import { provideSuiteAuth } from './auth/auth.providers';
 import { DEV_BYPASS_AUTH } from './auth/dev-flags';
+import { SuiteBridge } from './suite/suite-bridge';
 
 /**
  * Config de l'app hôte. Browser-only (pas de SSR), donc Auth0 est fourni
@@ -21,5 +27,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withFetch()),
     ...(DEV_BYPASS_AUTH ? [] : [provideSuiteAuth()]),
+    // Le bridge postMessage écoute dès le boot (relais de token + sync d'URL).
+    provideAppInitializer(() => inject(SuiteBridge).start()),
   ],
 };
