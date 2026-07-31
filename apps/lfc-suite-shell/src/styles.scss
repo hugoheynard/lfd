@@ -25,3 +25,12 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* L'app hostée (iframe) occupe TOUTE la hauteur du content. Avec
+   `contentScroll="clip"`, le shell ne scrolle pas : c'est l'iframe qui scrolle
+   en interne. `+ *` = la seule page routée (pas le panel-host). */
+router-outlet + * {
+  display: block;
+  block-size: 100%;
+  min-block-size: 0;
+}

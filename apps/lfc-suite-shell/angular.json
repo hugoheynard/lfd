@@ -18,42 +18,6 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-architects/native-federation:build",
-          "options": {
-            "cacheExternalArtifacts": true
-          },
-          "configurations": {
-            "production": {
-              "target": "lfc-suite-shell:esbuild:production"
-            },
-            "development": {
-              "target": "lfc-suite-shell:esbuild:development",
-              "dev": true
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "serve": {
-          "builder": "@angular-architects/native-federation:build",
-          "options": {
-            "target": "lfc-suite-shell:serve-original:development",
-            "rebuildDelay": 500,
-            "cacheExternalArtifacts": true,
-            "dev": true,
-            "devServer": true,
-            "port": 0
-          }
-        },
-        "test": {
-          "builder": "@angular/build:unit-test",
-          "options": {
-            "buildTarget": "::development",
-            "tsConfig": "tsconfig.spec.json",
-            "runner": "vitest",
-            "isolate": true
-          }
-        },
-        "esbuild": {
           "builder": "@angular/build:application",
           "options": {
             "browser": "src/main.ts",
@@ -70,8 +34,7 @@
                 "output": "fold-tokens"
               }
             ],
-            "styles": ["src/styles.scss"],
-            "polyfills": ["es-module-shims"]
+            "styles": ["src/styles.scss"]
           },
           "configurations": {
             "production": {
@@ -103,20 +66,29 @@
           },
           "defaultConfiguration": "production"
         },
-        "serve-original": {
+        "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
             "port": 7300
           },
           "configurations": {
             "production": {
-              "buildTarget": "lfc-suite-shell:esbuild:production"
+              "buildTarget": "lfc-suite-shell:build:production"
             },
             "development": {
-              "buildTarget": "lfc-suite-shell:esbuild:development"
+              "buildTarget": "lfc-suite-shell:build:development"
             }
           },
           "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "::development",
+            "tsConfig": "tsconfig.spec.json",
+            "runner": "vitest",
+            "isolate": true
+          }
         }
       }
     }

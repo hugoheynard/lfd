@@ -12,7 +12,6 @@
   "private": true,
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
-    "@angular-architects/native-federation": "22.0.6",
     "@angular/common": "^22.0.7",
     "@angular/compiler": "^22.0.7",
     "@angular/core": "^22.0.7",
@@ -20,7 +19,6 @@
     "@angular/platform-browser": "^22.0.7",
     "@angular/router": "^22.0.7",
     "@auth0/auth0-angular": "^2.11.0",
-    "es-module-shims": "^2.8.0",
     "fold-ng": "catalog:",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
@@ -31,7 +29,6 @@
     "@angular/build": "^22.0.7",
     "@angular/cli": "^22.0.7",
     "@angular/compiler-cli": "^22.0.7",
-    "@softarc/native-federation-orchestrator": "^4.2.2",
     "@types/node": "^26.1.0",
     "jsdom": "^26.1.0",
     "prettier": "^3.5.3",

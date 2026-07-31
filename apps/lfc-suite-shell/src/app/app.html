@@ -4,7 +4,7 @@
     <fold-spinner />
   </div>
 } @else if (auth.isAuthenticated()) {
-  <fold-app-shell #shell="foldAppShell" footerBehavior="scroll" [(mobileNavOpen)]="mobileNavOpen">
+  <fold-app-shell #shell="foldAppShell" contentScroll="clip" [(mobileNavOpen)]="mobileNavOpen">
     <!-- Rail primaire = LE switcher d'apps de la suite. -->
     <fold-menu railPrimary tint="primary" [expanded]="true">
       <a header class="rail-brand" routerLink="/" aria-label="La Folie Coffee — Suite">
