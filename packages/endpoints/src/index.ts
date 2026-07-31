@@ -11,7 +11,8 @@
  * dans `suite-config.ts` et, à terme, les vars de la passerelle — pas ici.
  *
  * ⚠️ Les ports de serve dans les `angular.json` (JSON, non importable) doivent
- * rester alignés sur `DEV_PORTS` : shell→7300, pimFront→7315, b2bFront→7316.
+ * rester alignés sur `DEV_PORTS` : shell→7300, pimFront→7315, b2bFront→7316,
+ * b2bAdminFront→7317.
  */
 
 /** Bloc de ports alloué en dev. Le seul endroit où ces nombres sont écrits. */
@@ -22,6 +23,8 @@ export const DEV_PORTS = {
   pimFront: 7315,
   /** Front B2B (`lfc-B2B-platform-frontend`). */
   b2bFront: 7316,
+  /** Front B2B admin (`lfc-B2B-admin-frontend`). */
+  b2bAdminFront: 7317,
   /** Backend PIM (`lfc-PIM-backend`). */
   pimBack: 3100,
   /** Backend B2B (`lfc-B2B-platform-backend`). */
@@ -32,11 +35,14 @@ export const DEV_PORTS = {
 
 const localhost = (port: number): string => `http://localhost:${port}`;
 
-/** URLs dev des fronts (localhost), dérivées de `DEV_PORTS`. */
+/** URLs dev (localhost) des fronts ET des backends, dérivées de `DEV_PORTS`. */
 export const DEV_URLS = {
   suiteShell: localhost(DEV_PORTS.suiteShell),
   pimFront: localhost(DEV_PORTS.pimFront),
   b2bFront: localhost(DEV_PORTS.b2bFront),
+  b2bAdminFront: localhost(DEV_PORTS.b2bAdminFront),
+  pimBack: localhost(DEV_PORTS.pimBack),
+  b2bBack: localhost(DEV_PORTS.b2bBack),
 } as const;
 
 /**
@@ -47,5 +53,7 @@ export const DEV_URLS = {
  */
 export const DEV_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
   pim: [DEV_URLS.pimFront, localhost(DEV_PORTS.spareFront)],
-  b2b: [DEV_URLS.b2bFront, localhost(DEV_PORTS.spareFront)],
+  // Le backend B2B sert DEUX fronts : la boutique cliente ET l'app admin staff
+  // (Invariant C). Les deux origines dev sont donc autorisées.
+  b2b: [DEV_URLS.b2bFront, DEV_URLS.b2bAdminFront, localhost(DEV_PORTS.spareFront)],
 };
