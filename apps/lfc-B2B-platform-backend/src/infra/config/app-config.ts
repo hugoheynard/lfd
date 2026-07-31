@@ -114,15 +114,19 @@ export class AppConfig {
   }
 
   /**
-   * Bypass d'authentification **staff** de DÉVELOPPEMENT (`AUTH_ADMIN_DEV_BYPASS`).
+   * Bypass d'authentification **staff** de DÉVELOPPEMENT (surface `/admin/*`).
    *
-   * Quand il est actif, la surface `/admin/*` ne vérifie aucun token : le guard
-   * pose un staff synthétique. Comme l'impersonation client, c'est un bypass qui
-   * ne doit JAMAIS exister en prod — le garde-fou `optionalAdminDevBypass`
-   * **refuse de démarrer** si le flag est mis avec `NODE_ENV=production`.
+   * Actif si `AUTH_ADMIN_DEV_BYPASS=true` **ou** si l'impersonation client est
+   * active (`AUTH_DEV_IMPERSONATE=true`) : c'est **le même interrupteur « auth
+   * off en dev »**, on ne demande pas de flag séparé pour l'admin. Quand il est
+   * actif, `/admin/*` ne vérifie aucun token (le guard pose un staff synthétique).
+   *
+   * **Fail-closed** : les deux flags refusent de démarrer avec
+   * `NODE_ENV=production` (cf. leurs helpers), donc `adminDevBypass()` est
+   * toujours `false` en prod.
    */
   adminDevBypass(): boolean {
-    return this.adminBypass;
+    return this.adminBypass || this.impersonation !== null;
   }
 }
 
