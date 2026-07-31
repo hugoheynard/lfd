@@ -9,6 +9,14 @@ Ce qui manque vit dans l'**app admin** (côté STAFF, autre contexte/db, auth
 distincte — **pas** le token customer). Voici ce que l'onglet « Comptes clients »
 devra exposer.
 
+> **État (2026-07-31).** Le socle backend de §1 est posé : surface staff
+> `/admin/*` (`AdminAuthGuard`, audience distincte + bypass dev fail-closed,
+> Invariant C) et `GET /admin/companies` (query cross-tenant `ListAllCompanies` →
+> `AdminCompanyReader`, hors mur `company_id`). La vue liste porte identité,
+> statut, conditions de règlement, **contact principal** et KBIS ; contacts
+> additionnels + adresses relèvent de la fiche (§2, à venir). Filtres/tri (§1) et
+> endpoints de mutation (§3) restent à faire.
+
 ## 1. Liste des comptes clients
 
 - Tableau des entreprises, **filtrable / cherchable** par :

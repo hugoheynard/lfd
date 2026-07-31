@@ -19,6 +19,8 @@ export class AppConfig {
   private readonly storage: S3StorageConfig | null;
   private readonly portValue: number;
   private readonly impersonation: DevImpersonationConfig | null;
+  private readonly adminAudienceValue: string | null;
+  private readonly adminBypass: boolean;
 
   constructor() {
     this.database = required("DATABASE_B2B_URL");
@@ -28,6 +30,8 @@ export class AppConfig {
     this.storage = optionalStorageConfig();
     this.portValue = optionalPort("PORT", 3200);
     this.impersonation = optionalDevImpersonation();
+    this.adminAudienceValue = optionalString("AUTH0_ADMIN_AUDIENCE");
+    this.adminBypass = optionalAdminDevBypass();
   }
 
   /**
@@ -96,6 +100,29 @@ export class AppConfig {
    */
   devImpersonation(): DevImpersonationConfig | null {
     return this.impersonation;
+  }
+
+  /**
+   * Audience Auth0 de la surface **staff** (app admin), ou `null` si non
+   * configurée. Distincte de l'audience client (`AUTH0_AUDIENCE`) — c'est elle
+   * qui sépare les deux surfaces (Invariant C). Optionnelle : l'API démarre sans
+   * (dev par bypass, CI) ; c'est `AdminTokenVerifier` qui **refuse** tout token
+   * quand elle est `null` (fail-closed).
+   */
+  auth0AdminAudience(): string | null {
+    return this.adminAudienceValue;
+  }
+
+  /**
+   * Bypass d'authentification **staff** de DÉVELOPPEMENT (`AUTH_ADMIN_DEV_BYPASS`).
+   *
+   * Quand il est actif, la surface `/admin/*` ne vérifie aucun token : le guard
+   * pose un staff synthétique. Comme l'impersonation client, c'est un bypass qui
+   * ne doit JAMAIS exister en prod — le garde-fou `optionalAdminDevBypass`
+   * **refuse de démarrer** si le flag est mis avec `NODE_ENV=production`.
+   */
+  adminDevBypass(): boolean {
+    return this.adminBypass;
   }
 }
 
@@ -189,6 +216,28 @@ function required(name: string): string {
     throw new Error(`Variable d'environnement manquante : ${name}. Voir .env.example.`);
   }
   return value;
+}
+
+/** Variable optionnelle : sa valeur trimée, ou `null` si absente/vide. */
+function optionalString(name: string): string | null {
+  const value = process.env[name]?.trim() ?? "";
+  return value === "" ? null : value;
+}
+
+/**
+ * Lit le flag de bypass staff de dev. **Fail-closed** : actif avec
+ * `NODE_ENV=production` ⇒ refus de démarrer (un bypass d'auth staff en prod
+ * serait une faille). Absent ou différent de `"true"` ⇒ `false`.
+ */
+function optionalAdminDevBypass(): boolean {
+  const enabled = process.env["AUTH_ADMIN_DEV_BYPASS"]?.trim().toLowerCase() === "true";
+  if (enabled && (process.env["NODE_ENV"]?.trim() ?? "") === "production") {
+    throw new Error(
+      "AUTH_ADMIN_DEV_BYPASS=true est INTERDIT en production : il contourne " +
+        "l'authentification staff. Il n'existe qu'en développement local.",
+    );
+  }
+  return enabled;
 }
 
 function optionalPort(name: string, fallback: number): number {
