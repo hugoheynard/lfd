@@ -1,7 +1,13 @@
 <fold-app-shell #shell="foldAppShell" contentScroll="clip" [(mobileNavOpen)]="mobileNavOpen">
   <!-- Primary rail — the app menu. Expanded by default, collapsible via the
        built-in chevron. Becomes an off-canvas drawer ≤768px. -->
-  <fold-menu railPrimary collapsible tint="primary" [(expanded)]="menuExpanded">
+  <fold-menu
+    railPrimary
+    collapsible
+    tint="primary"
+    [level]="hosted ? 'secondary' : 'primary'"
+    [(expanded)]="menuExpanded"
+  >
     <a header class="rail-brand" routerLink="/" aria-label="LFC PIM — accueil">
       <span class="pim-mark" aria-hidden="true">PIM</span>
       @if (menuExpanded()) {

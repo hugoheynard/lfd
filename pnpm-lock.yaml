@@ -356,9 +356,6 @@ importers:
 
   apps/lfc-PIM-frontend:
     dependencies:
-      '@angular-architects/native-federation':
-        specifier: 22.0.6
-        version: 22.0.6(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(chokidar@5.0.0)(typescript@6.0.3)
       '@angular/common':
         specifier: ^22.0.7
         version: 22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2)
@@ -377,12 +374,6 @@ importers:
       '@angular/router':
         specifier: ^22.0.7
         version: 22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/platform-browser@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)))(rxjs@7.8.2)
-      '@softarc/native-federation-orchestrator':
-        specifier: ^4.2.2
-        version: 4.5.3
-      es-module-shims:
-        specifier: ^2.8.0
-        version: 2.8.4
       fold-ng:
         specifier: 'catalog:'
         version: 0.7.0(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/forms@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/platform-browser@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)))(rxjs@7.8.2))(@angular/platform-browser@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)))
@@ -429,9 +420,6 @@ importers:
 
   apps/lfc-suite-shell:
     dependencies:
-      '@angular-architects/native-federation':
-        specifier: 22.0.6
-        version: 22.0.6(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(chokidar@5.0.0)(typescript@6.0.3)
       '@angular/common':
         specifier: ^22.0.7
         version: 22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2)
@@ -453,9 +441,6 @@ importers:
       '@auth0/auth0-angular':
         specifier: ^2.11.0
         version: 2.11.0(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/router@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/platform-browser@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)))(rxjs@7.8.2))
-      es-module-shims:
-        specifier: ^2.8.0
-        version: 2.8.4
       fold-ng:
         specifier: 'catalog:'
         version: 0.7.0(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/forms@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/platform-browser@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)))(rxjs@7.8.2))(@angular/platform-browser@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)))
@@ -481,9 +466,6 @@ importers:
       '@angular/compiler-cli':
         specifier: ^22.0.7
         version: 22.0.7(@angular/compiler@22.0.7)(typescript@6.0.3)
-      '@softarc/native-federation-orchestrator':
-        specifier: ^4.2.2
-        version: 4.5.3
       '@types/node':
         specifier: ^26.1.0
         version: 26.1.1
@@ -672,11 +654,6 @@ packages:
     peerDependenciesMeta:
       zone.js:
         optional: true
-
-  '@angular-architects/native-federation@22.0.6':
-    resolution: {integrity: sha512-k4nkpZbUck8KmalJpxptaAOCPM+eb5MUOF3kWgXfuLdfJxZDPF34z+iIxlSHBmzIAVnnvgPDf4kzyGH8CLwE+A==}
-    peerDependencies:
-      '@angular/build': ~22.0.0
 
   '@angular-devkit/architect@0.2200.7':
     resolution: {integrity: sha512-t03YYe5amlcpsX5gpMGi96kpBNTMKY7/rJsRDNO3v98mSy7kzNXlgzy/jyfdFev7AJusuwVM5TKVsUAgQxCgCw==}
@@ -1133,26 +1110,6 @@ packages:
 
   '@borewit/text-codec@0.2.2':
     resolution: {integrity: sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ==}
-
-  '@chialab/cjs-to-esm@0.19.2':
-    resolution: {integrity: sha512-si+dfCzglT+zh+4okOjA+BKnb2SfdmD81pEYW9qgtzWQbHSSai4niz7kd0Q7JtfHSMlttYkYw1TSybl1M7ETpA==}
-    engines: {node: '>=18'}
-
-  '@chialab/esbuild-plugin-commonjs@0.19.1':
-    resolution: {integrity: sha512-jqX7SmHjelH90DrIUZoB9iGoMdML4hKCwqomZrfvfgx6t22llDXP7MkawHmrny/kZmreA0Ytjsp46dsV51OioQ==}
-    engines: {node: '>=18'}
-
-  '@chialab/esbuild-rna@0.19.3':
-    resolution: {integrity: sha512-os4rxgolT256uO6OPP2FZE8/CPdSFN7j7QrqPWjLI2ZsPRds4K0nQTEtJm8FOEmWhGJZxFa4ofxzwFIhWyabhw==}
-    engines: {node: '>=18'}
-
-  '@chialab/estransform@0.20.0':
-    resolution: {integrity: sha512-ziaUvRJy520iI5qCRTdMoYvXShLFa6QsIUR8Pj7H/4sJzUOia1OY3QgAAsuGcBjj30nsBSqc4W0Y/jF6phMYQA==}
-    engines: {node: '>=18'}
-
-  '@chialab/node-resolve@0.19.1':
-    resolution: {integrity: sha512-J4i4YJNaFuYG6UWpum9y8XfICWsWxoCawy6HQtU2lDqp915oboxXvpZ3lBdA5Llb8VexCKQZYufY8QXPyzU62Q==}
-    engines: {node: '>=18'}
 
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -2077,88 +2034,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@napi-rs/magic-string-android-arm-eabi@0.3.4':
-    resolution: {integrity: sha512-sszAYxqtzzJ4FDerDNHcqL9NhqPhj8W4DNiOanXYy50mA5oojlRtaAFPiB5ZMrWDBM32v5Q30LrmxQ4eTtu2Dg==}
-    engines: {node: '>= 10'}
-    cpu: [arm]
-    os: [android]
-
-  '@napi-rs/magic-string-android-arm64@0.3.4':
-    resolution: {integrity: sha512-jdQ6HuO0X5rkX4MauTcWR4HWdgjakTOmmzqXg8L26+jOHVVG1LZE+Su5qvV4bP8vMb2h+vPE+JsnwqSmWymu3Q==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [android]
-
-  '@napi-rs/magic-string-darwin-arm64@0.3.4':
-    resolution: {integrity: sha512-6NmMtvURce9/oq09XBZmuIeI6lPLGtEJ2ZPO/QzL3nLZa6wygiCnO/sFACKYNg5/73ET5HMMTeuogE1JI+r2Lw==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@napi-rs/magic-string-darwin-x64@0.3.4':
-    resolution: {integrity: sha512-f9LmfMiUAKDOtl0meOuLYeVb6OERrgGzrTg1Tn3R3fTAShM2kxRbfAuPE9ljuXxIFzOv/uqRNLSl/LqCJwpREA==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@napi-rs/magic-string-freebsd-x64@0.3.4':
-    resolution: {integrity: sha512-rqduQ4odiDK4QdM45xHWRTU4wtFIfpp8g8QGpz+3qqg7ivldDqbbNOrBaf6Oeu77uuEvWggnkyuChotfKgJdJQ==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [freebsd]
-
-  '@napi-rs/magic-string-linux-arm-gnueabihf@0.3.4':
-    resolution: {integrity: sha512-pVaJEdEpiPqIfq3M4+yMAATS7Z9muDcWYn8H7GFH1ygh8GwgLgKfy/n/lG2M6zp18Mwd0x7E2E/qg9GgCyUzoQ==}
-    engines: {node: '>= 10'}
-    cpu: [arm]
-    os: [linux]
-
-  '@napi-rs/magic-string-linux-arm64-gnu@0.3.4':
-    resolution: {integrity: sha512-9FwoAih/0tzEZx0BjYYIxWkSRMjonIn91RFM3q3MBs/evmThXUYXUqLNa1PPIkK1JoksswtDi48qWWLt8nGflQ==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@napi-rs/magic-string-linux-arm64-musl@0.3.4':
-    resolution: {integrity: sha512-wCR7R+WPOcAKmVQc1s6h6HwfwW1vL9pM8BjUY9Ljkdb8wt1LmZEmV2Sgfc1SfbRQzbyl+pKeufP6adRRQVzYDA==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@napi-rs/magic-string-linux-x64-gnu@0.3.4':
-    resolution: {integrity: sha512-sbxFDpYnt5WFbxQ1xozwOvh5A7IftqSI0WnE9O7KsQIOi0ej2dvFbfOW4tmFkvH/YP8KJELo5AhP2+kEq1DpYA==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@napi-rs/magic-string-linux-x64-musl@0.3.4':
-    resolution: {integrity: sha512-jN4h/7e2Ul8v3UK5IZu38NXLMdzVWhY4uEDlnwuUAhwRh26wBQ1/pLD97Uy/Z3dFNBQPcsv60XS9fOM1YDNT6w==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@napi-rs/magic-string-win32-arm64-msvc@0.3.4':
-    resolution: {integrity: sha512-gMUyTRHLWpzX2ntJFCbW2Gnla9Y/WUmbkZuW5SBAo/Jo8QojHn76Y4PNgnoXdzcsV9b/45RBxurYKAfFg9WTyg==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [win32]
-
-  '@napi-rs/magic-string-win32-ia32-msvc@0.3.4':
-    resolution: {integrity: sha512-QIMauMOvEHgL00K9np/c9CT/CRtLOz3mRTQqcZ9XGzSoAMrpxH71KSpDJrKl7h7Ro6TZ+hJ0C3T+JVuTCZNv4A==}
-    engines: {node: '>= 10'}
-    cpu: [ia32]
-    os: [win32]
-
-  '@napi-rs/magic-string-win32-x64-msvc@0.3.4':
-    resolution: {integrity: sha512-V8FMSf828MzOI3P6/765MR7zHU6CUZqiyPhmAnwYoKFNxfv7oCviN/G6NcENeCdcYOvNgh5fYzaNLB96ndId5A==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [win32]
-
-  '@napi-rs/magic-string@0.3.4':
-    resolution: {integrity: sha512-DEWl/B99RQsyMT3F9bvrXuhL01/eIQp/dtNSE3G1jQ4mTGRcP4iHWxoPZ577WrbjUinrNgvRA5+08g8fkPgimQ==}
-    engines: {node: '>= 10'}
-
   '@napi-rs/nice-android-arm-eabi@1.1.1':
     resolution: {integrity: sha512-kjirL3N6TnRPv5iuHw36wnucNqXAO46dzK9oPb0wj076R5Xm8PfUVA9nAFB5ZNMmfJQJVKACAPd/Z2KYMppthw==}
     engines: {node: '>= 10'}
@@ -2534,10 +2409,6 @@ packages:
 
   '@paralleldrive/cuid2@2.3.1':
     resolution: {integrity: sha512-XO7cAxhnTZl0Yggq6jOgjiOHhbgcO4NqFqwSmQpjK3b6TEE6Uj/jfSk6wzYyemh3+I0sHirKSetjQwn5cZktFw==}
-
-  '@parcel/source-map@2.1.1':
-    resolution: {integrity: sha512-Ejx1P/mj+kMjQb8/y5XxDUn4reGdr+WyKYloBljpppUy8gs42T+BNoEOuRYqDVdgPc6NxduzIDoJS9pOFfV5Ew==}
-    engines: {node: ^12.18.3 || >=14}
 
   '@parcel/watcher-android-arm64@2.6.0':
     resolution: {integrity: sha512-trgpLSCKRC/huFjXX/Smh+0sWe4+YtKfktIToiMl59ghz7z+qkH6kMvNnUbLyRs9N11t8l4svSCs1+5B3rOAhA==}
@@ -2950,19 +2821,6 @@ packages:
   '@smithy/types@4.16.1':
     resolution: {integrity: sha512-0JFs3V2y2M9tKW5na/qxe69Zv+uxLMO7QBbhxF/FHu/Gp2NFZAAL9tWl9PU02xxo07pb3G9FTyjNc6D5uZrJIg==}
     engines: {node: '>=18.0.0'}
-
-  '@softarc/native-federation-orchestrator@4.5.3':
-    resolution: {integrity: sha512-KmEt7IOjycfUVdI+QjNI3dOtzBNHkMJzi8HasGg1eAfo03idNd3qb0JVeX4spxjAhdpGKhytuCudZfVxNtqgsg==}
-    engines: {node: '>=24.16.0'}
-
-  '@softarc/native-federation@4.3.2':
-    resolution: {integrity: sha512-kRYaAWXNDtj5GURzs0yucPeQ4lODxgnyoUUoNqfM7H4ePIYZFOV+GLu8MkXSHokswOirjSmGAaSZZHkvCT/JIg==}
-
-  '@softarc/sheriff-core@0.19.6':
-    resolution: {integrity: sha512-KACxHG9sS7kNWgnnBODzdr14kMLMrJVlQKc+tViUP03p2fRwNhESOA49bz51Yn7dro1mbtMmmFjICLmZSJDZZA==}
-    hasBin: true
-    peerDependencies:
-      typescript: '>=4.8'
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -3835,11 +3693,6 @@ packages:
   destr@2.0.5:
     resolution: {integrity: sha512-ugFTXCtDZunbzasqBxrK93Ik/DRYsO6S/fedkWEMKqt04xZ4csmnmwGDBAb07QWNaGMAmnTIemsYZCksjATwsA==}
 
-  detect-libc@1.0.3:
-    resolution: {integrity: sha512-pGjwhsmsp4kL2RTz08wcOlGN83otlqHeD/Z5T8GXZB+/YcpQ/dgo+lbU8ZsGxV0HIvqqxo9l7mqYwyYMD9bKDg==}
-    engines: {node: '>=0.10'}
-    hasBin: true
-
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
@@ -3972,14 +3825,8 @@ packages:
     resolution: {integrity: sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw==}
     engines: {node: '>= 0.4'}
 
-  es-module-lexer@1.7.0:
-    resolution: {integrity: sha512-jEQoCwk8hyb2AZziIOLhDqpm5+2ww5uIE6lkO/6jcOCusfk6LhMHpXXfBLXTZ7Ydyt0j4VoUQv6uGNYbdW+kBA==}
-
   es-module-lexer@2.3.1:
     resolution: {integrity: sha512-shc1dbU90Yl/xq1QrC7QRtfcwURZuVRfPhZbDoldJ1cn1gzDvBaBWlv0eFolj5+0znnPJz5TXLxsN77X/12KTA==}
-
-  es-module-shims@2.8.4:
-    resolution: {integrity: sha512-ea5srn5L89PWVad6Qle6r2kg+HvvLiL/GHqgNx06eFrkERHkrTFWaqo1w8Sd+XI3Xr0iAG5x3ZQ7mQ/hnQzNpA==}
 
   es-object-atoms@1.1.2:
     resolution: {integrity: sha512-HWcBoN6NileqtSydK2FqHbS/LoDd2pqrnQHLyJzBj4kOp/ky2MWMN694xOfkK8/SnUsW2DH7EfyVlydKCsm1Zw==}
@@ -6516,24 +6363,6 @@ snapshots:
       '@angular-devkit/schematics': 22.0.7(chokidar@5.0.0)
       vitest: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@7.3.5(@types/node@26.1.1)(jiti@2.7.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.23.1))
 
-  '@angular-architects/native-federation@22.0.6(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(chokidar@5.0.0)(typescript@6.0.3)':
-    dependencies:
-      '@angular-devkit/architect': 0.2200.7(chokidar@5.0.0)
-      '@angular-devkit/core': 22.0.7(chokidar@5.0.0)
-      '@angular-devkit/schematics': 22.0.7(chokidar@5.0.0)
-      '@angular/build': 22.0.7(9b89e1879c7bf856f799bfd781892a9f)
-      '@chialab/esbuild-plugin-commonjs': 0.19.1(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
-      '@softarc/native-federation': 4.3.2(typescript@6.0.3)
-      '@softarc/native-federation-orchestrator': 4.5.3
-      es-module-shims: 2.8.4
-      esbuild: 0.28.1
-      mrmime: 2.0.1
-    transitivePeerDependencies:
-      - '@emnapi/core'
-      - '@emnapi/runtime'
-      - chokidar
-      - typescript
-
   '@angular-devkit/architect@0.2200.7(chokidar@5.0.0)':
     dependencies:
       '@angular-devkit/core': 22.0.7(chokidar@5.0.0)
@@ -7171,42 +7000,6 @@ snapshots:
   '@bcoe/v8-coverage@0.2.3': {}
 
   '@borewit/text-codec@0.2.2': {}
-
-  '@chialab/cjs-to-esm@0.19.2(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
-    dependencies:
-      '@chialab/estransform': 0.20.0(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
-    transitivePeerDependencies:
-      - '@emnapi/core'
-      - '@emnapi/runtime'
-
-  '@chialab/esbuild-plugin-commonjs@0.19.1(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
-    dependencies:
-      '@chialab/cjs-to-esm': 0.19.2(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
-      '@chialab/esbuild-rna': 0.19.3(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
-    transitivePeerDependencies:
-      - '@emnapi/core'
-      - '@emnapi/runtime'
-
-  '@chialab/esbuild-rna@0.19.3(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
-    dependencies:
-      '@chialab/estransform': 0.20.0(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
-      '@chialab/node-resolve': 0.19.1
-    transitivePeerDependencies:
-      - '@emnapi/core'
-      - '@emnapi/runtime'
-
-  '@chialab/estransform@0.20.0(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
-    dependencies:
-      '@napi-rs/magic-string': 0.3.4
-      '@parcel/source-map': 2.1.1
-      cjs-module-lexer: 1.4.3
-      es-module-lexer: 1.7.0
-      oxc-parser: 0.121.0(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
-    transitivePeerDependencies:
-      - '@emnapi/core'
-      - '@emnapi/runtime'
-
-  '@chialab/node-resolve@0.19.1': {}
 
   '@colors/colors@1.5.0':
     optional: true
@@ -8036,61 +7829,6 @@ snapshots:
   '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.4':
     optional: true
 
-  '@napi-rs/magic-string-android-arm-eabi@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-android-arm64@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-darwin-arm64@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-darwin-x64@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-freebsd-x64@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-linux-arm-gnueabihf@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-linux-arm64-gnu@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-linux-arm64-musl@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-linux-x64-gnu@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-linux-x64-musl@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-win32-arm64-msvc@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-win32-ia32-msvc@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string-win32-x64-msvc@0.3.4':
-    optional: true
-
-  '@napi-rs/magic-string@0.3.4':
-    optionalDependencies:
-      '@napi-rs/magic-string-android-arm-eabi': 0.3.4
-      '@napi-rs/magic-string-android-arm64': 0.3.4
-      '@napi-rs/magic-string-darwin-arm64': 0.3.4
-      '@napi-rs/magic-string-darwin-x64': 0.3.4
-      '@napi-rs/magic-string-freebsd-x64': 0.3.4
-      '@napi-rs/magic-string-linux-arm-gnueabihf': 0.3.4
-      '@napi-rs/magic-string-linux-arm64-gnu': 0.3.4
-      '@napi-rs/magic-string-linux-arm64-musl': 0.3.4
-      '@napi-rs/magic-string-linux-x64-gnu': 0.3.4
-      '@napi-rs/magic-string-linux-x64-musl': 0.3.4
-      '@napi-rs/magic-string-win32-arm64-msvc': 0.3.4
-      '@napi-rs/magic-string-win32-ia32-msvc': 0.3.4
-      '@napi-rs/magic-string-win32-x64-msvc': 0.3.4
-
   '@napi-rs/nice-android-arm-eabi@1.1.1':
     optional: true
 
@@ -8419,10 +8157,6 @@ snapshots:
   '@paralleldrive/cuid2@2.3.1':
     dependencies:
       '@noble/hashes': 1.8.0
-
-  '@parcel/source-map@2.1.1':
-    dependencies:
-      detect-libc: 1.0.3
 
   '@parcel/watcher-android-arm64@2.6.0':
     optional: true
@@ -8807,24 +8541,6 @@ snapshots:
   '@smithy/types@4.16.1':
     dependencies:
       tslib: 2.8.1
-
-  '@softarc/native-federation-orchestrator@4.5.3':
-    dependencies:
-      semver: 7.8.5
-
-  '@softarc/native-federation@4.3.2(typescript@6.0.3)':
-    dependencies:
-      '@softarc/sheriff-core': 0.19.6(typescript@6.0.3)
-      chalk: 5.6.2
-      esbuild: 0.28.1
-      fast-glob: 3.3.3
-      json5: 2.2.3
-    transitivePeerDependencies:
-      - typescript
-
-  '@softarc/sheriff-core@0.19.6(typescript@6.0.3)':
-    dependencies:
-      typescript: 6.0.3
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -9801,8 +9517,6 @@ snapshots:
 
   destr@2.0.5: {}
 
-  detect-libc@1.0.3: {}
-
   detect-libc@2.1.2:
     optional: true
 
@@ -9903,11 +9617,7 @@ snapshots:
 
   es-errors@1.3.0: {}
 
-  es-module-lexer@1.7.0: {}
-
   es-module-lexer@2.3.1: {}
-
-  es-module-shims@2.8.4: {}
 
   es-object-atoms@1.1.2:
     dependencies:

@@ -18,42 +18,6 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-architects/native-federation:build",
-          "options": {
-            "cacheExternalArtifacts": true
-          },
-          "configurations": {
-            "production": {
-              "target": "lfc-pim-frontend:esbuild:production"
-            },
-            "development": {
-              "target": "lfc-pim-frontend:esbuild:development",
-              "dev": true
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "serve": {
-          "builder": "@angular-architects/native-federation:build",
-          "options": {
-            "target": "lfc-pim-frontend:serve-original:development",
-            "rebuildDelay": 500,
-            "cacheExternalArtifacts": true,
-            "dev": true,
-            "devServer": true,
-            "port": 7315
-          }
-        },
-        "test": {
-          "builder": "@angular/build:unit-test",
-          "options": {
-            "buildTarget": "::development",
-            "tsConfig": "tsconfig.spec.json",
-            "runner": "vitest",
-            "isolate": true
-          }
-        },
-        "esbuild": {
           "builder": "@angular/build:application",
           "options": {
             "browser": "src/main.ts",
@@ -70,11 +34,7 @@
                 "output": "fold-tokens"
               }
             ],
-            "styles": ["src/styles.scss"],
-            "security": {
-              "allowedHosts": ["localhost"]
-            },
-            "polyfills": ["es-module-shims"]
+            "styles": ["src/styles.scss"]
           },
           "configurations": {
             "production": {
@@ -116,20 +76,29 @@
           },
           "defaultConfiguration": "production"
         },
-        "serve-original": {
+        "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "port": 7316
+            "port": 7315
           },
           "configurations": {
             "production": {
-              "buildTarget": "lfc-pim-frontend:esbuild:production"
+              "buildTarget": "lfc-pim-frontend:build:production"
             },
             "development": {
-              "buildTarget": "lfc-pim-frontend:esbuild:development"
+              "buildTarget": "lfc-pim-frontend:build:development"
             }
           },
           "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "::development",
+            "tsConfig": "tsconfig.spec.json",
+            "runner": "vitest",
+            "isolate": true
+          }
         }
       }
     }

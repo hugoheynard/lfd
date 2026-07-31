@@ -37,6 +37,13 @@ export class App {
   /** Mobile drawer state — the primary rail becomes an off-canvas drawer ≤768px. */
   protected readonly mobileNavOpen = signal(false);
 
+  /**
+   * Embarqué dans la suite (iframe) ? Si oui, on baisse le rail de `primary` à
+   * `secondary` (niveau fold) : le rail navy primaire, c'est le switcher de la
+   * suite ; le nôtre devient le second rail. En standalone, `primary`.
+   */
+  protected readonly hosted = typeof window !== 'undefined' && window.self !== window.top;
+
   private readonly router = inject(Router);
 
   /**
