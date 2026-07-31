@@ -214,11 +214,17 @@ sequenceDiagram
 
 ## 9. Lancer en dev
 
-Deux apps à démarrer (le shell iframe les apps par leur URL) :
+Le shell iframe les apps par leur URL — il faut donc que ces apps tournent :
 
 ```bash
-pnpm suite:dev          # shell (7300) + PIM (7315) ensemble
+pnpm suite:dev          # shell (7300) + PIM front (7315) — cas courant
+pnpm suite:dev:full     # + PIM/B2B backends + B2B front + infra Postgres
+pnpm suite:status       # doctor : ping les 5 ports, affiche up/down
 ```
+
+Les ports sont tenus dans le registre unique `@lfd/endpoints` (`DEV_PORTS`), et
+`turbo run dev` build les packages avant les apps → un checkout frais démarre
+sans « module introuvable ».
 
 Puis ouvrir `http://localhost:7300`. Au tout premier démarrage, si l'app hostée
 n'a pas fini son build, le cadre **re-sonde tout seul** (quelques secondes) puis
