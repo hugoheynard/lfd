@@ -105,9 +105,41 @@ le gateway :
 | Isolation iframe | ❌ same-origin, app = accès total au parent | ✅ cross-origin, isolation navigateur gardée |
 | Verdict | OK **outils internes staff** de confiance | requis si une app est moins fiable / tierce |
 
-**Recommandation** : **A (single-origin)** pour la suite *interne* staff — apps
-maison, confiance mutuelle, simplicité maximale. **Jamais A** pour le shell
-*client*. Ce doc suppose A ; le §8 acte la décision.
+**Recommandation** : voir §9 D-1. La décision a basculé vers **B (sous-domaines)**
+une fois deux faits posés : le relais de token est gardé (D-3, l'argument auth de
+A tombe) et le backend B2B a un consommateur public cross-origin par conception
+(ci-dessous, l'argument « pas de CORS » de A tombe aussi).
+
+### Périmètre — le B2B platform *client* reste HORS suite
+
+Deux mondes à ne jamais confondre :
+
+- **Suite interne** (`suite…`) = **staff** : PIM + **B2B admin**. C'est ce que
+  gouverne D-1.
+- **B2B platform client** (`boutique…`) = **clients, public** : **shell séparé**,
+  hors suite, modèle de confiance opposé. D-1 ne le touche pas.
+
+Le vrai couplage est **sous** les frontends : **un seul backend B2B, deux
+frontends, deux niveaux de confiance.**
+
+```mermaid
+flowchart TB
+  ApiB2B["api-b2b.lafoliecoffee.xyz<br/>UN backend"]
+  GW["gateway suite (staff, interne)"] -->|"/api/b2b/*"| ApiB2B
+  Shop["B2B platform client<br/>(origine publique séparée,<br/>connexion Auth0 lfc-b2b-customers)"] --> ApiB2B
+```
+
+**Invariant C — la confiance vient du JWT, pas de l'origine.** Le backend B2B :
+
+- **ne peut jamais « supprimer le CORS »** — il a un consommateur cross-origin
+  **public** (la boutique) par conception. Ça **enterre A** pour D-1, définitivement.
+- **n'est pas « possédé » par le gateway** — deux chemins y mènent (gateway staff
+  *et* boutique publique). Le gateway route du trafic, il n'encapsule pas le backend.
+- **sépare staff et client par l'authz** (connexions Auth0 distinctes —
+  `lfc-b2b-customers` côté client —, audiences/rôles, mur `company_id`), **pas par
+  le réseau**. Corollaire : le backend matérialise **deux surfaces** (ex.
+  `/admin/*` vs `/shop/*`, scopes disjoints), car exposé à deux niveaux de
+  confiance en même temps.
 
 ---
 
@@ -202,13 +234,36 @@ JWT, cold start, WS futur) sont **bornés et assumés**, pas ignorés.
 
 ---
 
-## 9. Décisions à acter (pour toi)
+## 9. Décisions
 
-- **D-1 — Fork §4** : single-origin (A) ou sous-domaines (B) pour la suite
-  interne ? *(recommandé : A)*
-- **D-2 — Phase 0** : cible d'hébergement backend — Cloud Run ? autre ?
-- **D-3 — Relais de token** : le supprimer à la bascule same-origin (A), ou le
-  garder par prudence tant que l'auth n'est pas éprouvée contre B2B admin ?
+- **D-3 — Relais de token : GARDÉ.** ✅ *(décidé)* L'auth reste le relais
+  postMessage, **quelle que soit l'origine**. Conséquence : l'auth est
+  **découplée du fork §4** — plus besoin de same-origin pour la faire marcher.
 
-Rien en Phase 4+ ne démarre avant D-1/D-2. Le §6 Phases 1→3 (registre, Redis,
-validation boot) est **indépendant du fork** et peut avancer tout de suite.
+- **D-1 — Fork §4 : B (sous-domaines).** ✅ *(tranché)* Deux arguments de A sont
+  tombés : (1) D-3 garde le relais → A ne « supprime » plus le relais ; (2) le
+  backend B2B a un consommateur public cross-origin (Invariant C) → A ne
+  « supprime » pas le CORS non plus. Il ne restait à A que le coût (perte
+  d'isolation iframe). **B : sous-domaines, isolation cross-origin gardée, CORS
+  réglé par l'allowlist du gateway.**
+
+- **D-2 — Hébergement backend : Cloudflare.** ✅ *(cible)* Sous-fork ouvert, car
+  les Workers ne tournent pas sur Node :
+
+  | | **Workers (`workerd`)** | **Cloudflare Containers** |
+  | --- | --- | --- |
+  | NestJS | à adapter (`nodejs_compat`, friction réelle) | **tourne tel quel** (process Node) |
+  | Prisma | ✅ Accelerate = chemin edge natif | ✅ inchangé |
+  | Queue / rate-limit | **CF Queues + Durable Objects / KV** (Redis ne tourne pas) | **Redis** classique, inchangé |
+  | Lien gateway→backend | **service bindings** (interne, zéro hop, zéro CORS) | HTTP via origine (Invariant A) |
+
+  La couche queue/Redis étant **encore Phase 2 (non construite)**, partir Workers
+  n'est **pas une réécriture** — c'est adopter CF Queues/DO **au lieu de** Redis.
+  Le vrai coût Workers = **NestJS-sur-workerd**. → **Containers** pour avancer
+  sans toucher au Nest ; **Workers** pour un choix edge-native assumé (+ service
+  bindings en récompense). *(à trancher : D-2b)*
+
+Rien en Phase 4+ ne démarre avant **D-2b** (Workers vs Containers) et **D-1**. Le
+§6 Phases 1→3 (registre, Redis/Queues, validation boot) est **indépendant du
+fork** et peut avancer tout de suite — au détail près que « Redis » devient
+« CF Queues/DO » si D-2b = Workers.
