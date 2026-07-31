@@ -8,7 +8,7 @@ import type { SuiteAppEntry } from './suite-app';
  *
  * `pim` est le 1er remote réel. `b2b-admin` est une **tuile stub** (l'app admin
  * n'existe pas encore) — présente au switcher pour matérialiser la cible, mais
- * son montage affiche « bientôt disponible » tant que `remoteName` est absent.
+ * son montage affiche « bientôt disponible » tant que `remoteEntry` est absent.
  */
 export const SUITE_APPS: readonly SuiteAppEntry[] = [
   {
@@ -16,7 +16,9 @@ export const SUITE_APPS: readonly SuiteAppEntry[] = [
     title: 'PIM',
     icon: 'grid',
     routePath: 'pim',
-    remoteName: 'pim',
+    // ⚠️ URL de dev (localhost). En prod → l'URL Pages du remoteEntry déployé
+    // (à câbler avec le déploiement, cf. README « reste à faire »).
+    remoteEntry: 'http://localhost:7315/remoteEntry.json',
     exposedModule: './app',
   },
   {
@@ -24,6 +26,6 @@ export const SUITE_APPS: readonly SuiteAppEntry[] = [
     title: 'B2B admin',
     icon: 'company',
     routePath: 'b2b-admin',
-    // remoteName absent ⇒ stub (app pas encore construite).
+    // remoteEntry absent ⇒ stub (app pas encore construite).
   },
 ];

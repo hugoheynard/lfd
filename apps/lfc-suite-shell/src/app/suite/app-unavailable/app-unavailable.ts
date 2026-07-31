@@ -4,7 +4,7 @@ import type { FoldCalloutVariant } from 'fold-ng';
 
 /**
  * Rendu de repli quand une app n'est pas montable : soit une **tuile stub**
- * (app pas encore construite, `remoteName` absent), soit un **remote injoignable**
+ * (app pas encore construite, `remoteEntry` absent), soit un **remote injoignable**
  * (deploy KO / réseau) — l'error boundary du montage retombe ici. Le reste de la
  * suite reste utilisable : c'est l'isolation des pannes rendue visible.
  */

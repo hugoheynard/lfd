@@ -16,10 +16,10 @@ export interface SuiteRemoteModule {
 }
 
 /**
- * Entrée du **registre** d'apps, statique et possédée par le shell. `remoteName`
+ * Entrée du **registre** d'apps, statique et possédée par le shell. `remoteEntry`
  * absent = tuile **stub** (app pas encore construite) : le switcher la montre,
- * le montage affiche « bientôt disponible ». `remoteName` présent = clé dans le
- * `federation.manifest.json` → URL du `remoteEntry.json`.
+ * le montage affiche « bientôt disponible ». `remoteEntry` présent = URL du
+ * `remoteEntry.json` chargée à la demande.
  */
 export interface SuiteAppEntry {
   /** Identité stable de l'app. */
@@ -30,8 +30,13 @@ export interface SuiteAppEntry {
   readonly icon: string;
   /** 1er segment de route où l'app est montée (`pim` → `/pim/**`). */
   readonly routePath: string;
-  /** Clé Native Federation du remote ; absent ⇒ stub. */
-  readonly remoteName?: string;
+  /**
+   * URL du `remoteEntry.json` du remote ; **absent ⇒ tuile stub**. On charge le
+   * remote **à la demande depuis cette URL** (`loadRemoteModule({ remoteEntry })`)
+   * plutôt que via le pré-init du manifest : le nom NF est résolu depuis l'entry,
+   * et on ne dépend pas d'un remote enregistré au boot (init robuste en dev).
+   */
+  readonly remoteEntry?: string;
   /** Module exposé par le remote (défaut `./app`). */
   readonly exposedModule?: string;
 }
