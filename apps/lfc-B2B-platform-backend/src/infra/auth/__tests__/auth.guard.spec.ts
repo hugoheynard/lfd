@@ -7,6 +7,7 @@ import { App } from "supertest/types";
 import { AccessTokenVerifier } from "../access-token.verifier.js";
 import { AuthGuard } from "../auth.guard.js";
 import { CustomerUserResolver } from "../customer-user.resolver.js";
+import { DevImpersonation } from "../dev-impersonation.js";
 import { CurrentUser } from "../current-user.decorator.js";
 import { CustomerRole } from "../../database/client/client.js";
 import type { Principal, VerifiedToken } from "../principal.js";
@@ -58,6 +59,9 @@ const resolverStub = {
       : Promise.reject(new UnauthorizedException("Compte inconnu.")),
 };
 
+/** Impersonation DÉSACTIVÉE : le chemin normal (Bearer) s'applique. */
+const impersonationOff = { enabled: false };
+
 describe("AuthGuard (intégration)", () => {
   let app: INestApplication<App>;
 
@@ -67,6 +71,7 @@ describe("AuthGuard (intégration)", () => {
       providers: [
         { provide: AccessTokenVerifier, useValue: verifierStub },
         { provide: CustomerUserResolver, useValue: resolverStub },
+        { provide: DevImpersonation, useValue: impersonationOff },
         { provide: APP_GUARD, useClass: AuthGuard },
       ],
     }).compile();
@@ -119,6 +124,45 @@ describe("AuthGuard (intégration)", () => {
       .set("Authorization", "Bearer auth0|active")
       .expect(200);
 
+    expect(response.body).toEqual(principal);
+  });
+});
+
+describe("AuthGuard — impersonation de dev", () => {
+  let app: INestApplication<App>;
+
+  /**
+   * Impersonation ACTIVE : le guard court-circuite le jeton et résout le sujet
+   * directement. On garde le vrai `resolverStub` pour prouver que ses refus
+   * métier (compte inconnu / inactif) s'appliquent toujours.
+   */
+  const impersonationOn = {
+    enabled: true,
+    verifiedToken: (): Promise<VerifiedToken> =>
+      Promise.resolve({ subject: "auth0|active", scopes: [] }),
+  };
+
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      controllers: [ProbeController],
+      providers: [
+        { provide: AccessTokenVerifier, useValue: verifierStub },
+        { provide: CustomerUserResolver, useValue: resolverStub },
+        { provide: DevImpersonation, useValue: impersonationOn },
+        { provide: APP_GUARD, useClass: AuthGuard },
+      ],
+    }).compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it("accepte une route protégée SANS jeton et expose le Principal impersonaté", async () => {
+    const response = await request(app.getHttpServer()).get("/protected").expect(200);
     expect(response.body).toEqual(principal);
   });
 });

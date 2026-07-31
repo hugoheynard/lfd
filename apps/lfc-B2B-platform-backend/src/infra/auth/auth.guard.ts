@@ -7,6 +7,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { AccessTokenVerifier } from "./access-token.verifier.js";
 import { CustomerUserResolver } from "./customer-user.resolver.js";
+import { DevImpersonation } from "./dev-impersonation.js";
 import type { AuthenticatedRequest, Principal, VerifiedToken } from "./principal.js";
 import { IS_PUBLIC_KEY } from "./public.decorator.js";
 
@@ -26,6 +27,7 @@ export class AuthGuard implements CanActivate {
     private readonly verifier: AccessTokenVerifier,
     private readonly resolver: CustomerUserResolver,
     private readonly reflector: Reflector,
+    private readonly impersonation: DevImpersonation,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -34,6 +36,18 @@ export class AuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+
+    // Bypass de DÉVELOPPEMENT : quand l'impersonation est active (jamais en
+    // production, cf. AppConfig), on saute la vérification du jeton et on résout
+    // directement le `User` choisi. Le resolver applique les mêmes refus métier
+    // (compte inconnu / inactif) que le chemin normal.
+    if (this.impersonation.enabled) {
+      request.principal = await this.resolver.resolve(
+        await this.impersonation.verifiedToken(request),
+      );
+      return true;
+    }
+
     const token = bearerToken(request.headers.authorization);
     if (token === undefined) {
       throw new UnauthorizedException("Jeton Bearer manquant.");

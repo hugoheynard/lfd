@@ -24,7 +24,9 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "db:test:setup": "tsx test/setup-test-database.ts"
+    "db:test:setup": "tsx test/setup-test-database.ts",
+    "db:dev:setup": "tsx prisma/setup-dev-database.ts",
+    "db:dev:clone": "tsx prisma/clone-dev.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1097.0",

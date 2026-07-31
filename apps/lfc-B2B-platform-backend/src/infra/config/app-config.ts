@@ -18,6 +18,7 @@ export class AppConfig {
   private readonly management: Auth0ManagementCredentials | null;
   private readonly storage: S3StorageConfig | null;
   private readonly portValue: number;
+  private readonly impersonation: DevImpersonationConfig | null;
 
   constructor() {
     this.database = required("DATABASE_B2B_URL");
@@ -26,6 +27,7 @@ export class AppConfig {
     this.management = optionalManagementCredentials();
     this.storage = optionalStorageConfig();
     this.portValue = optionalPort("PORT", 3200);
+    this.impersonation = optionalDevImpersonation();
   }
 
   /**
@@ -82,6 +84,25 @@ export class AppConfig {
   port(): number {
     return this.portValue;
   }
+
+  /**
+   * Impersonation de **DÉVELOPPEMENT**, ou `null` si désactivée.
+   *
+   * Quand elle est active (`AUTH_DEV_IMPERSONATE=true`), le guard **court-circuite
+   * la vérification du jeton Auth0** et résout un `User` de la base directement.
+   * C'est un bypass d'authentification : il ne doit JAMAIS exister ailleurs qu'en
+   * local. Le garde-fou est ici, au boot — `optionalDevImpersonation` **refuse de
+   * démarrer** si le flag est mis avec `NODE_ENV=production` (fail-closed).
+   */
+  devImpersonation(): DevImpersonationConfig | null {
+    return this.impersonation;
+  }
+}
+
+/** Réglage de l'impersonation de dev : le sujet par défaut (ou `null`). */
+export interface DevImpersonationConfig {
+  /** `auth0_sub` ou e-mail par défaut à impersonater, ou `null` (alors header requis). */
+  readonly subject: string | null;
 }
 
 /** Application M2M autorisée sur la Management API du tenant. */
@@ -140,6 +161,26 @@ function optionalStorageConfig(): S3StorageConfig | null {
     ...(endpoint !== "" ? { endpoint } : {}),
     ...(region !== "" ? { region } : {}),
   };
+}
+
+/**
+ * Lit le flag d'impersonation de dev. **Fail-closed** : si le flag est actif
+ * alors que `NODE_ENV=production`, on refuse de démarrer plutôt que d'ouvrir un
+ * bypass d'auth en prod. Absent ou différent de `"true"` ⇒ `null` (désactivé).
+ */
+function optionalDevImpersonation(): DevImpersonationConfig | null {
+  const enabled = process.env["AUTH_DEV_IMPERSONATE"]?.trim().toLowerCase() === "true";
+  if (!enabled) {
+    return null;
+  }
+  if ((process.env["NODE_ENV"]?.trim() ?? "") === "production") {
+    throw new Error(
+      "AUTH_DEV_IMPERSONATE=true est INTERDIT en production : l'impersonation contourne " +
+        "l'authentification. Elle n'existe qu'en développement local.",
+    );
+  }
+  const subject = process.env["AUTH_DEV_IMPERSONATE_SUBJECT"]?.trim() ?? "";
+  return { subject: subject === "" ? null : subject };
 }
 
 function required(name: string): string {
