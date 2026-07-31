@@ -3,9 +3,9 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FoldCalloutComponent, FoldPageLayoutComponent } from 'fold-ng';
 
 /**
- * Tableau de bord B2B — page d'accueil de l'espace pro. Placeholder pour
- * l'instant : les widgets (commandes du jour, encours, clients actifs) se
- * brancheront quand le backend existera.
+ * Tableau de bord B2B — page d'accueil de l'espace pro. Les indicateurs
+ * (dernières commandes, encours, réassorts) viendront ici une fois le backend
+ * branché ; le suivi des commandes vit sur « Mes commandes ».
  */
 @Component({
   selector: 'app-dashboard-page',

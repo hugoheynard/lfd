@@ -27,15 +27,27 @@
     ></a>
     <a
       fold-menu-item
-      icon="home"
-      label="Tableau de bord"
-      routerLink="/"
+      icon="repeat"
+      label="Mes paniers"
+      routerLink="/mes-paniers"
       routerLinkActive
-      [routerLinkActiveOptions]="{ exact: true }"
-      #dashboardRla="routerLinkActive"
-      [active]="dashboardRla.isActive"
+      #paniersRla="routerLinkActive"
+      [active]="paniersRla.isActive"
       (click)="mobileNavOpen.set(false)"
     ></a>
+    @if (showDashboard) {
+      <a
+        fold-menu-item
+        icon="home"
+        label="Tableau de bord"
+        routerLink="/"
+        routerLinkActive
+        [routerLinkActiveOptions]="{ exact: true }"
+        #dashboardRla="routerLinkActive"
+        [active]="dashboardRla.isActive"
+        (click)="mobileNavOpen.set(false)"
+      ></a>
+    }
     <a
       fold-menu-item
       icon="contracts"

@@ -1,6 +1,22 @@
-import { type Routes } from '@angular/router';
+import { type Route, type Routes } from '@angular/router';
 
 import { authenticatedGuard } from './auth/authenticated.guard';
+import { FEATURE_DASHBOARD } from './feature-flags';
+
+/**
+ * Accueil `/` : le tableau de bord quand son feature flag est actif, sinon une
+ * simple redirection vers Boutique (le dashboard reste alors inaccessible en
+ * direct — masqué, pas seulement retiré du menu).
+ */
+const homeRoute: Route = FEATURE_DASHBOARD
+  ? {
+      path: '',
+      pathMatch: 'full',
+      title: 'Tableau de bord — La Folie Coffee B2B',
+      canActivate: [authenticatedGuard],
+      loadComponent: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage),
+    }
+  : { path: '', pathMatch: 'full', redirectTo: 'boutique' };
 
 export const routes: Routes = [
   {
@@ -15,12 +31,26 @@ export const routes: Routes = [
     canActivate: [authenticatedGuard],
     loadComponent: () => import('./boutique/boutique-page').then((m) => m.BoutiquePage),
   },
+  homeRoute,
   {
-    path: '',
-    pathMatch: 'full',
-    title: 'Tableau de bord — La Folie Coffee B2B',
+    path: 'panier',
+    title: 'Panier — La Folie Coffee B2B',
     canActivate: [authenticatedGuard],
-    loadComponent: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage),
+    loadComponent: () => import('./cart/cart-page/cart-page').then((m) => m.CartPage),
+  },
+  {
+    path: 'mes-paniers',
+    title: 'Mes paniers — La Folie Coffee B2B',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./cart/saved-baskets-page/saved-baskets-page').then((m) => m.SavedBasketsPage),
+  },
+  {
+    path: 'mes-paniers/:id',
+    title: 'Panier enregistré — La Folie Coffee B2B',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./cart/basket-detail-page/basket-detail-page').then((m) => m.BasketDetailPage),
   },
   {
     path: 'commandes',

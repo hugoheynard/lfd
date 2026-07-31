@@ -24,6 +24,7 @@ import { AccountService } from './account/account.service';
 import { AuthFacade } from './auth/auth.facade';
 import { CartPanel } from './cart/cart-panel/cart-panel';
 import { CartService } from './data/cart.service';
+import { FEATURE_DASHBOARD } from './feature-flags';
 
 @Component({
   selector: 'app-root',
@@ -54,6 +55,9 @@ export class App {
    * wordmark est donc rendu en permanence.
    */
   protected readonly menuExpanded = true;
+
+  /** Le tableau de bord est masqué tant que le feature flag est off (cf. routes). */
+  protected readonly showDashboard = FEATURE_DASHBOARD;
 
   /** Tiroir mobile — le rail primaire devient off-canvas ≤768px. */
   protected readonly mobileNavOpen = signal(false);
