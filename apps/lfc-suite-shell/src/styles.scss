@@ -1,7 +1,8 @@
-/* fold-ng design tokens — source unique (primitives + scales + semantic). Le
-   thème `navi` est sélectionné via `data-theme="navi"` sur <html> ; l'app-shell
-   peint la chrome. Importé dans le graphe SCSS pour le hot-reload des edits pkg. */
-@import 'fold-ng/tokens.css';
+/* fold-ng design tokens : liés depuis index.html (`fold-tokens/index.css`,
+   copié en asset depuis node_modules/fold-ng/tokens), PAS via un `@import`
+   Sass/styles-array — le dev-server Native Federation n'inline pas ces CSS et
+   laisserait un import nu qui 404 (fold non stylé). En asset, ce sont de vrais
+   fichiers servis. Ce fichier ne fait donc plus que les styles applicatifs. */
 
 * {
   box-sizing: border-box;

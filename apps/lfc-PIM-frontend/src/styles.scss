@@ -1,8 +1,7 @@
-/* fold-ng design tokens — the single source of truth (primitives + scales +
-   semantic). The `navi` theme is selected via `data-theme="navi"` on <html>;
-   the app-shell paints the navy chrome + ivory page from these. Imported in the
-   SCSS graph so package edits hot-reload. */
-@import 'fold-ng/tokens.css';
+/* fold-ng design tokens : liés depuis index.html (`fold-tokens/index.css`,
+   copié en asset depuis node_modules/fold-ng/tokens), PAS via un `@import`
+   Sass/styles-array — depuis le passage sous le builder Native Federation, il
+   n'inline plus ces CSS et laisserait un import nu qui 404 (tokens absents). */
 
 /* Tokens applicatifs LFD, dérivés des tokens fold (donc théma-agnostiques).
    `--lfd-backdrop-navi` : lavis bleu pâle de l'accent de marque, posé derrière
