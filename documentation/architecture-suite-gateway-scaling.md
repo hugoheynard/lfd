@@ -160,12 +160,13 @@ applicative — il relaie l'`Authorization` tel quel.
 ## 6. Plan de bataille (phases ordonnées)
 
 > Ordre **impératif** : on ne proxifie pas vers du vide. Les backends doivent
-> avoir une **origine hébergée** avant que le gateway existe (cf. §8 A-BACKEND).
+> avoir une **origine hébergée** avant que le gateway existe (cf. §8 AD-6).
 
 **Phase 0 — Hébergement des backends (bloquant).**
-Choisir la cible d'exécution des NestJS (Cloud Run recommandé : autoscale +
-scale-to-zero + une URL stable par service). Livrable : `api-pim.…` et
-`api-b2b.…` répondent `/health`, derrière un LB. **Sans ça, rien en aval.**
+Déployer les NestJS sur **Cloudflare Containers** (D-2, tranché) : instance
+`basic`, **1 réplica chaud** (min-instance=1) + scale-to-zero au-delà. Livrable :
+`api-pim.…` et `api-b2b.…` répondent `/health`, une **origine stable** par
+service (Invariant A). **Sans ça, rien en aval** (on ne proxifie pas vers du vide).
 
 **Phase 1 — Registre de ports/URLs (dev).**
 Un fichier unique au niveau repo (`lfc-endpoints.ts` / `.dev.json`) alloue le
@@ -247,23 +248,54 @@ JWT, cold start, WS futur) sont **bornés et assumés**, pas ignorés.
   d'isolation iframe). **B : sous-domaines, isolation cross-origin gardée, CORS
   réglé par l'allowlist du gateway.**
 
-- **D-2 — Hébergement backend : Cloudflare.** ✅ *(cible)* Sous-fork ouvert, car
-  les Workers ne tournent pas sur Node :
+- **D-2 — Hébergement backend : Cloudflare Containers.** ✅ *(tranché)* Le
+  sous-fork Workers vs Containers est clos en faveur de **Containers** : le
+  NestJS existant **tourne tel quel** (vrai process Node), **Redis reste
+  classique** (pas de réécriture vers CF Queues/Durable Objects), Prisma
+  Accelerate inchangé. On renonce aux *service bindings* des Workers (lien
+  gateway→backend en HTTP via l'origine stable, Invariant A) — coût acceptable
+  vu l'enjeu de shipper sans toucher au backend.
 
-  | | **Workers (`workerd`)** | **Cloudflare Containers** |
-  | --- | --- | --- |
-  | NestJS | à adapter (`nodejs_compat`, friction réelle) | **tourne tel quel** (process Node) |
-  | Prisma | ✅ Accelerate = chemin edge natif | ✅ inchangé |
-  | Queue / rate-limit | **CF Queues + Durable Objects / KV** (Redis ne tourne pas) | **Redis** classique, inchangé |
-  | Lien gateway→backend | **service bindings** (interne, zéro hop, zéro CORS) | HTTP via origine (Invariant A) |
+  **Coût (tarifs Cloudflare, cf. §10).** CPU facturé **à l'usage réel** ; seuls
+  **mémoire + disque** courent tant que le conteneur est **réveillé** ; **endormi
+  = $0** (mais cold start au réveil). Instance réaliste NestJS+Prisma =
+  **`basic`** (1/4 vCPU, 1 GiB, 4 GB) — la `lite` (256 MiB) est trop juste pour
+  booter Nest.
 
-  La couche queue/Redis étant **encore Phase 2 (non construite)**, partir Workers
-  n'est **pas une réécriture** — c'est adopter CF Queues/DO **au lieu de** Redis.
-  Le vrai coût Workers = **NestJS-sur-workerd**. → **Containers** pour avancer
-  sans toucher au Nest ; **Workers** pour un choix edge-native assumé (+ service
-  bindings en récompense). *(à trancher : D-2b)*
+  | Unité | Coût /mois |
+  | --- | --- |
+  | **1 conteneur `basic` chaud 24/7** | **≈ $7** (mémoire ~$6.6 + disque ~$0.7 + CPU ~$0) |
+  | 2 backends (PIM + B2B) chauds | ≈ $14 |
+  | Socle Workers Paid (obligatoire) | $5 |
+  | **Total base** | **≈ $19** |
 
-Rien en Phase 4+ ne démarre avant **D-2b** (Workers vs Containers) et **D-1**. Le
-§6 Phases 1→3 (registre, Redis/Queues, validation boot) est **indépendant du
-fork** et peut avancer tout de suite — au détail près que « Redis » devient
-« CF Queues/DO » si D-2b = Workers.
+  **Motif de scaling « 1 chaud + N à la demande ».** L'unité de coût du fan-out
+  (Invariant A) est le **conteneur-chaud** : chaque réplica chaud supplémentaire
+  ≈ **+$7/mo**. Inutile de garder chaud *tous* les réplicas : **1 réplica chaud**
+  (min-instance=1, pas de cold start sur le trafic de base) **+ des réplicas en
+  scale-to-zero** montés seulement sous pic (facturés à la seconde d'éveil). À
+  charge normale on reste à ~$7/backend ; on ne paie les extras que pendant les
+  pointes réelles. À l'échelle actuelle (solo, outils internes), le coût est une
+  **erreur d'arrondi** — il n'a pas décidé, l'ingénierie l'a fait.
+
+Rien en Phase 4+ ne démarre avant que la **Phase 0** (backends sur Containers,
+`/health`, origine stable) soit faite. Le §6 Phases 1→3 (registre, Redis,
+validation boot) est **indépendant** et peut avancer tout de suite.
+
+---
+
+## 10. Références (tarifs Cloudflare Containers)
+
+Source : [Cloudflare Containers — Pricing](https://developers.cloudflare.com/containers/pricing/)
+(relevé le 2026-07-31 ; **à revérifier**, ces tarifs bougent).
+
+- **Socle** : Workers Paid **$5/mo** requis.
+- **Facturation** : mémoire + disque courent tant que l'instance est **réveillée**
+  (ressources provisionnées) ; **CPU à l'usage réel** ; endormie = $0. Charges
+  démarrent à la 1ʳᵉ requête / démarrage manuel, s'arrêtent à la mise en veille.
+- **Tarifs au-delà des franchises** : mémoire $0.0000025/GiB-s · CPU
+  $0.000020/vCPU-s · disque $0.00000007/GB-s.
+- **Franchises incluses (compte)** : 25 GiB-h mémoire · 375 vCPU-min · 200 GB-h
+  disque · 1 To egress (NA/EU).
+- **Types** : `lite` (1/16 vCPU, 256 MiB, 2 GB) · **`basic`** (1/4, 1 GiB, 4 GB)
+  · `standard-1..4` (jusqu'à 4 vCPU, 12 GiB, 20 GB).
