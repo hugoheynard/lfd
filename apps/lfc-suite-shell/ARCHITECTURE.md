@@ -190,8 +190,11 @@ sequenceDiagram
 
 - **Reachability** : `AppFrame` sonde le serveur de l'app (`fetch` en `no-cors`)
   avant de monter l'iframe — car un échec de chargement cross-origin n'est **pas
-  détectable** depuis l'iframe. Injoignable → **état d'erreur + bouton
-  Recharger**, jamais le « refused » brut du navigateur.
+  détectable** depuis l'iframe. La sonde **réessaie** (backoff borné) avant
+  d'abandonner : au (re)chargement de la suite, le dev-server de l'app finit
+  parfois son build un instant plus tard — le cadre se rattrape seul, sans F5.
+  Toujours injoignable → **état d'erreur + bouton Recharger**, jamais le
+  « refused » brut du navigateur.
 - **Isolation** : une app qui plante/est down n'entraîne pas les autres (process
   navigateur séparé). Le shell reste utilisable.
 - **SPOF** : le **shell** est le point de défaillance unique — d'où « shell
@@ -217,9 +220,10 @@ Deux apps à démarrer (le shell iframe les apps par leur URL) :
 pnpm suite:dev          # shell (7300) + PIM (7315) ensemble
 ```
 
-Puis ouvrir `http://localhost:7300`. Si le cadre affiche « injoignable » au tout
-premier chargement (l'app finit de builder), un **F5** suffit — pas besoin de
-redémarrer le serveur.
+Puis ouvrir `http://localhost:7300`. Au tout premier démarrage, si l'app hostée
+n'a pas fini son build, le cadre **re-sonde tout seul** (quelques secondes) puis
+monte l'iframe — pas de F5, pas de redémarrage. Le bouton **Recharger** reste là
+si l'app est réellement down.
 
 > ⚠️ Après un changement de **config** (`angular.json`, `fileReplacements`),
 > vider le cache : `rm -rf apps/*/.angular`, et vérifier dans un **onglet frais**

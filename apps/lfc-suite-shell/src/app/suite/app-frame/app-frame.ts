@@ -57,6 +57,12 @@ export class AppFrame implements OnInit {
   protected readonly status = signal<FrameStatus>('probing');
   /** Incrémenté par « Recharger » → force une nouvelle URL d'iframe. */
   private readonly reloadNonce = signal(0);
+  /** Génération de sonde : une nouvelle sonde invalide la précédente (annule ses retries). */
+  private probeGeneration = 0;
+  /** Combien de tentatives, et l'attente entre chacune — laisse au dev-server hôte le
+   *  temps de finir son (re)build sans que l'utilisateur ait à faire F5. */
+  private static readonly PROBE_ATTEMPTS = 6;
+  private static readonly PROBE_DELAY_MS = 500;
   /** Sous-chemin figé au montage (deep-link) ; fixé en `ngOnInit` (les inputs
    *  requis ne sont pas disponibles dans un initialiseur de champ). */
   private initialPath = '';
@@ -97,18 +103,35 @@ export class AppFrame implements OnInit {
     this.reloadNonce.update((n) => n + 1);
   }
 
-  /** Vérifie que le serveur de l'app répond (opaque = up ; rejet = injoignable). */
+  /**
+   * Vérifie que le serveur de l'app répond (opaque = up ; rejet = injoignable).
+   * Réessaie quelques fois avant d'abandonner : au (re)chargement de la suite,
+   * le dev-server de l'app peut finir son build une fraction de seconde plus tard.
+   * Une sonde plus récente (changement d'app / Recharger) invalide celle-ci.
+   */
   private async probe(): Promise<void> {
+    const generation = ++this.probeGeneration;
     const base = this.baseUrl();
     if (base === undefined) {
       this.status.set('error');
       return;
     }
     this.status.set('probing');
-    try {
-      await fetch(base, { mode: 'no-cors', cache: 'no-store' });
-      this.status.set('ready');
-    } catch {
+    for (let attempt = 1; attempt <= AppFrame.PROBE_ATTEMPTS; attempt++) {
+      if (generation !== this.probeGeneration) {
+        return;
+      }
+      try {
+        await fetch(base, { mode: 'no-cors', cache: 'no-store' });
+        this.status.set('ready');
+        return;
+      } catch {
+        if (attempt < AppFrame.PROBE_ATTEMPTS) {
+          await new Promise((resolve) => setTimeout(resolve, AppFrame.PROBE_DELAY_MS));
+        }
+      }
+    }
+    if (generation === this.probeGeneration) {
       this.status.set('error');
     }
   }

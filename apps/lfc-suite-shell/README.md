@@ -13,6 +13,7 @@ embarqué).
 pnpm suite:dev      # démarre le shell (7300) + PIM (7315) ensemble
 ```
 
-Ouvrir `http://localhost:7300`. Un « app injoignable » au 1er chargement se règle
-par un **F5** (l'app finissait de builder). Après un changement de config
-(`angular.json`), vider `.angular` et vérifier dans un **onglet frais**.
+Ouvrir `http://localhost:7300`. Au 1er chargement, si l'app hostée finit encore
+son build, le cadre re-sonde tout seul et monte l'iframe (pas de F5). Après un
+changement de config (`angular.json`), vider `.angular` et vérifier dans un
+**onglet frais**.
