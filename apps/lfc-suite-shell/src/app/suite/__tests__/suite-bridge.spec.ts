@@ -3,7 +3,6 @@ import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthFacade } from '../../auth/auth.facade';
-import { TokenService } from '../../auth/token.service';
 import { SuiteBridge } from '../suite-bridge';
 import { SUITE_CHANNEL } from '../embed-protocol';
 
@@ -49,8 +48,7 @@ describe('SuiteBridge', () => {
         SuiteBridge,
         { provide: DOCUMENT, useValue: { defaultView: fakeWin } },
         { provide: Location, useValue: { replaceState } },
-        { provide: TokenService, useValue: { getToken } },
-        { provide: AuthFacade, useValue: { isAuthenticated: () => authed } },
+        { provide: AuthFacade, useValue: { isAuthenticated: () => authed, getToken } },
       ],
     });
     bridge = TestBed.inject(SuiteBridge);

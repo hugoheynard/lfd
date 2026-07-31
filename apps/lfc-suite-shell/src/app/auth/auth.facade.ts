@@ -1,17 +1,25 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@auth0/auth0-angular';
 
+import { SUITE_AUTH_CONFIG, type SuiteAudience } from './auth.config';
 import { DEV_BYPASS_AUTH } from './dev-flags';
 
+/** Jeton factice rendu en bypass de dev (aucun backend réel n'est appelé). */
+const DEV_TOKEN = 'dev-token';
+
 /**
- * Façade d'auth du shell. Le shell est le SEUL propriétaire de la session : le
- * template décide chrome-vs-login à partir d'ici, les remotes n'y touchent pas.
+ * Façade d'auth du shell — **seul propriétaire** de l'`AuthService` Auth0.
  *
- * Bypass de dev : `DEV_BYPASS_AUTH` (const de module, `false` en prod → branches
- * repliées par DCE) court-circuite le gate ET rend `AuthService` optionnel — en
- * bypass, Auth0 n'est pas fourni (cf. `app.config`), donc on ne l'injecte qu'en
- * option et le fallback signals suffisent.
+ * C'est délibéré : l'`AuthService` d'Auth0 est `providedIn: 'root'` ET enregistre
+ * son propre `APP_INITIALIZER`, donc l'injecter depuis DEUX endroits crée un
+ * cycle d'injection (NG0200). En le concentrant ici (singleton unique), tout le
+ * reste — le gate du template, le bridge (relais de token) — consomme CETTE
+ * façade en injection normale, sans lazy ni service-locator.
+ *
+ * En bypass de dev, Auth0 n'est pas fourni (`inject(..., optional)` = null) :
+ * authentifié d'office, jeton factice.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthFacade {
@@ -39,5 +47,20 @@ export class AuthFacade {
       return;
     }
     this.auth?.logout({ logoutParams: { returnTo: window.location.origin } });
+  }
+
+  /**
+   * Access token pour le backend `audience` (relayé aux apps embarquées par le
+   * bridge). Auth0 met en cache par audience. Jeton factice en bypass.
+   */
+  getToken(audience: SuiteAudience): Promise<string> {
+    if (DEV_BYPASS_AUTH || !this.auth) {
+      return Promise.resolve(DEV_TOKEN);
+    }
+    return firstValueFrom(
+      this.auth.getAccessTokenSilently({
+        authorizationParams: { audience: SUITE_AUTH_CONFIG.audiences[audience] },
+      }),
+    );
   }
 }

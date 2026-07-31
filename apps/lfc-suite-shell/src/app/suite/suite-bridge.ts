@@ -1,10 +1,8 @@
 import { DOCUMENT, Location } from '@angular/common';
-import { inject, Injectable, Injector } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import { AuthFacade } from '../auth/auth.facade';
-import { TokenService } from '../auth/token.service';
-import type { SuiteAudience } from '../auth/token.service';
-import { SUITE_AUTH_CONFIG } from '../auth/auth.config';
+import { SUITE_AUTH_CONFIG, type SuiteAudience } from '../auth/auth.config';
 import { SUITE_APPS } from './suite-registry';
 import { appUrlFor, SUITE_ALLOWED_ORIGINS } from './suite-app';
 import type { SuiteAppEntry } from './suite-app';
@@ -39,10 +37,9 @@ interface KnownFrame {
 export class SuiteBridge {
   private readonly document = inject(DOCUMENT);
   private readonly location = inject(Location);
-  // Auth résolue PARESSEUSEMENT (au 1er token demandé), jamais à la construction :
-  // le bridge démarre en APP_INITIALIZER, et résoudre `AuthService` (Auth0) si tôt
-  // provoque un cycle d'injection (NG0200).
-  private readonly injector = inject(Injector);
+  // AuthFacade est le SEUL propriétaire d'Auth0 (cf. sa doc) : injection normale,
+  // singleton partagé avec le gate de `App` — pas de 2ᵉ résolution d'AuthService.
+  private readonly auth = inject(AuthFacade);
 
   /** origine → app déclarée (résolue depuis le registre + les URLs). */
   private readonly appByOrigin = this.buildOriginIndex();
@@ -117,15 +114,11 @@ export class SuiteBridge {
   }
 
   private async resolveToken(audience: string): Promise<string | null> {
-    if (!this.isKnownAudience(audience)) {
-      return null;
-    }
-    // Résolution paresseuse (post-bootstrap) — cf. commentaire sur `injector`.
-    if (!this.injector.get(AuthFacade).isAuthenticated()) {
+    if (!this.isKnownAudience(audience) || !this.auth.isAuthenticated()) {
       return null;
     }
     try {
-      return await this.injector.get(TokenService).getToken(audience);
+      return await this.auth.getToken(audience);
     } catch {
       return null;
     }

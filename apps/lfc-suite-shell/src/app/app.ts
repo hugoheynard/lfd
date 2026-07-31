@@ -9,13 +9,14 @@ import {
 } from 'fold-ng';
 
 import { AuthFacade } from './auth/auth.facade';
+import { SuiteBridge } from './suite/suite-bridge';
 import { SUITE_APPS } from './suite/suite-registry';
 
 /**
  * Le **shell hôte** de la suite : mince par conception (login + rail switcher +
  * montage), zéro métier — c'est le point de défaillance unique, on le garde
- * minimal. Le rail primaire liste les apps ; l'app montée occupe le content et
- * apportera son propre menu (donnée exposée par le remote, câblée tâche #21).
+ * minimal. Le rail primaire liste les apps ; l'app montée (iframe) occupe le
+ * content avec sa propre chrome.
  */
 @Component({
   selector: 'app-root',
@@ -41,4 +42,12 @@ export class App {
 
   /** Tiroir off-canvas ≤768px. */
   protected readonly mobileNavOpen = signal(false);
+
+  constructor() {
+    // Le bridge écoute les apps embarquées. Démarré ICI (post-bootstrap) et pas
+    // en APP_INITIALIZER : le bridge partage le singleton AuthFacade que ce gate
+    // construit déjà, donc pas de 2ᵉ résolution d'AuthService (cycle NG0200). Le
+    // listener est prêt avant que la 1ʳᵉ iframe (AppFrame, route enfant) ne charge.
+    inject(SuiteBridge).start();
+  }
 }

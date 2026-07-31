@@ -34,3 +34,6 @@ export const SUITE_AUTH_CONFIG: SuiteAuthConfig = {
     pim: 'https://api.lfc-pim',
   },
 };
+
+/** Backends adressables par la suite — une audience Auth0 chacun. */
+export type SuiteAudience = keyof typeof SUITE_AUTH_CONFIG.audiences;

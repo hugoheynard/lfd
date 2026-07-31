@@ -11,7 +11,7 @@ import { SUITE_AUTH_CONFIG } from './auth.config';
  * juste listée côté Auth0.
  *
  * On ne fixe PAS d'`audience` par défaut : le shell demande un jeton par
- * audience à la volée (voir `token.service.ts`), un backend à la fois.
+ * audience à la volée (voir `AuthFacade.getToken`), un backend à la fois.
  */
 export function provideSuiteAuth(): EnvironmentProviders {
   return makeEnvironmentProviders([
