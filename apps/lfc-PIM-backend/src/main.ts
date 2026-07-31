@@ -3,9 +3,14 @@ import { DEV_CORS_ORIGINS } from '@lfd/endpoints';
 import { AppModule } from './app.module.js';
 import { AppConfig } from './infra/config/app-config.js';
 import { AppErrorFilter } from './shared/http/app-error.filter.js';
+import { QuietBootLogger } from './shared/quiet-boot-logger.js';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  // Logger de démarrage silencieux : masque l'énumération des routes/modules
+  // (bruit en watch), garde erreurs/warnings — un montage qui échoue reste loud.
+  const app = await NestFactory.create(AppModule, {
+    logger: new QuietBootLogger(),
+  });
 
   // Traduction des catégories d'erreur en statuts — le seul point qui connaît HTTP.
   app.useGlobalFilters(new AppErrorFilter());
