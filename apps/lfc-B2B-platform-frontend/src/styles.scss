@@ -33,15 +33,28 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Une page routée est projetée dans le `.content` du shell fold — un flex
-   column à hauteur bornée. Son hôte (app-…-page) est `display:block` par défaut,
-   donc le `flex:1` du fold-page-layout à l'intérieur est ignoré et rien ne
-   défile. On fait de chaque hôte routé un flex-item qui remplit la zone ET un
-   flex column, pour que le fold-page-layout prenne sa hauteur et gère son propre
-   scroll (`overflow-y:auto`). */
-router-outlet ~ * {
+/* Le shell possède le scroll (`footerBehavior="scroll"` ⇒ `.content` en
+   `overflow:auto`). La page routée FLUE et fait AU MOINS toute la hauteur du
+   contenu (`min-height:100%`) : sur une page courte, le footer in-flow du shell
+   est ainsi repoussé SOUS la ligne de flottaison (invisible tant qu'on ne
+   scrolle pas) ; sur une page longue, il passe naturellement en fin de scroll.
+   `+ *` cible la seule page (pas le footer ni le panel-host, siblings suivants). */
+router-outlet + * {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
+  min-height: 100%;
+  min-width: 0;
+}
+
+/* `fold-page-layout` possède son propre scroll EN DUR (`overflow-y:auto` +
+   `overscroll-behavior:contain`) — conçu pour `contentScroll="clip"`, et sans
+   input pour l'en dissuader. Comme ici c'est le SHELL qui possède le scroll
+   (`footerBehavior="scroll"`, pour que le footer se pose en fin de page), on
+   neutralise ce scroll interne : la page FLUE, son contenu pousse la hauteur, et
+   le scroll — donc l'accès au footer — revient au shell. `flex-shrink:0` évite
+   qu'un contenu long ne soit comprimé (il doit allonger la page, pas se tasser). */
+router-outlet + * fold-page-layout {
+  overflow: visible !important;
+  overscroll-behavior: auto !important;
+  flex-shrink: 0 !important;
 }

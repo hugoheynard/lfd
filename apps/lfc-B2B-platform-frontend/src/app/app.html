@@ -5,7 +5,7 @@
     <fold-spinner />
   </div>
 } @else if (auth.isAuthenticated()) {
-  <fold-app-shell #shell="foldAppShell" contentScroll="clip" [(mobileNavOpen)]="mobileNavOpen">
+  <fold-app-shell #shell="foldAppShell" footerBehavior="scroll" [(mobileNavOpen)]="mobileNavOpen">
   <!-- Primary rail — the B2B app menu. Always expanded and NOT collapsible (no
        chevron): `[expanded]="true"` is authoritative, otherwise a non-collapsible
        rail would boot as the icon rail. Becomes an off-canvas drawer ≤768px. -->
