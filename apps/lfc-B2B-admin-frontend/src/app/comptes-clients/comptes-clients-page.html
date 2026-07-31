@@ -1,0 +1,74 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Comptes clients</h1>
+      <p class="subtitle">Les sociétés B2B — activation, suivi commercial.</p>
+    </div>
+    @if (state() === 'ready') {
+      <span class="count">{{ companies().length }} société(s)</span>
+    }
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="state">
+        <fold-spinner />
+        <p>Chargement des comptes…</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="state">
+        <p>Impossible de charger les comptes clients.</p>
+        <button foldButton (click)="load()">Réessayer</button>
+      </div>
+    }
+    @case ('ready') {
+      @if (companies().length === 0) {
+        <div class="state">
+          <p>Aucune société pour le moment.</p>
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table class="companies">
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Société</th>
+                <th>SIRET</th>
+                <th>Statut</th>
+                <th>Contact</th>
+                <th>Créé le</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (company of companies(); track company.id) {
+                <tr>
+                  <td class="ref">{{ company.reference }}</td>
+                  <td>
+                    <span class="raison">{{ company.raisonSociale }}</span>
+                    @if (company.enseigne) {
+                      <span class="enseigne">{{ company.enseigne }}</span>
+                    }
+                  </td>
+                  <td class="siret">{{ company.siret }}</td>
+                  <td>
+                    <span class="badge" [class]="'status-' + company.status">
+                      {{ statusLabels[company.status] }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="contact">{{ contactName(company) }}</span>
+                    @if (company.primaryContact.email) {
+                      <span class="contact-email">{{ company.primaryContact.email }}</span>
+                    }
+                  </td>
+                  <td class="date">{{ formatDate(company.createdAt) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+</section>

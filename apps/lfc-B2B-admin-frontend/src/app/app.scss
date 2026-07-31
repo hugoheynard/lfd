@@ -1,0 +1,43 @@
+:host {
+  display: block;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+fold-app-shell {
+  height: 100%;
+}
+
+/* Rail brand : une pastille carrée "B2B" + le mot "Admin" à côté (masqué quand
+   le rail est replié). */
+.rail-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-mark {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--fold-radius-md, 8px);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.rail-wordmark {
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

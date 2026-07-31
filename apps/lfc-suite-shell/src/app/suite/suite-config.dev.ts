@@ -10,4 +10,5 @@ import { DEV_URLS } from '@lfd/endpoints';
  */
 export const SUITE_APP_URLS: Readonly<Record<string, string>> = {
   pim: DEV_URLS.pimFront,
+  'b2b-admin': DEV_URLS.b2bAdminFront,
 };

@@ -13,7 +13,7 @@
     "dev:infra:nuke": "docker compose -f docker-compose.dev.yml down -v",
     "dev": "turbo run dev",
     "suite:dev": "turbo run dev --filter=lfc-suite-shell --filter=lfc-pim-frontend",
-    "suite:dev:full": "pnpm dev:infra && turbo run dev --filter=lfc-suite-shell --filter=lfc-pim-frontend --filter=lfc-pim-backend --filter=lfc-b2b-platform-frontend --filter=lfc-b2b-platform-backend",
+    "suite:dev:full": "pnpm dev:infra && turbo run dev --filter=lfc-suite-shell --filter=lfc-pim-frontend --filter=lfc-pim-backend --filter=lfc-b2b-platform-frontend --filter=lfc-b2b-platform-backend --filter=lfc-b2b-admin-frontend",
     "suite:status": "node dev-toolbox/suite-status.mjs",
     "lfc-suite:dev:watch": "turbo run dev --filter=lfc-pim-frontend --filter=lfc-pim-backend",
     "lint": "turbo run lint",

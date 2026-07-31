@@ -1,0 +1,26 @@
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# Angular / build caches
+/.angular
+.angular/
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.settings/
+*.launch
+*.sublime-workspace
+
+# Misc
+.DS_Store
+Thumbs.db

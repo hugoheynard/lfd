@@ -11,5 +11,5 @@
  */
 export const SUITE_APP_URLS: Readonly<Record<string, string>> = {
   pim: 'https://lfc-pim.pages.dev',
-  // 'b2b-admin': 'https://lfc-b2b-admin.pages.dev',  // quand l'app existera
+  'b2b-admin': 'https://lfc-b2b-admin.pages.dev',
 };

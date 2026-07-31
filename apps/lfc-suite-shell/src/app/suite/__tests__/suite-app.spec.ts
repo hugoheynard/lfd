@@ -6,10 +6,10 @@ describe('suite-app helpers', () => {
   // Les tests tournent en config `development` → suite-config.dev.ts (localhost).
   it('résout l’URL d’une app déclarée', () => {
     expect(appUrlFor('pim')).toBe('http://localhost:7315');
+    expect(appUrlFor('b2b-admin')).toBe('http://localhost:7317');
   });
 
-  it('rend undefined pour une app sans URL (stub)', () => {
-    expect(appUrlFor('b2b-admin')).toBeUndefined();
+  it('rend undefined pour une app inconnue (non déclarée)', () => {
     expect(appUrlFor('inconnue')).toBeUndefined();
   });
 

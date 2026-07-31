@@ -1,0 +1,31 @@
+/* fold-ng design tokens : liés depuis index.html (`fold-tokens/index.css`, copié
+   en asset depuis node_modules/fold-ng/tokens), PAS via un `@import` Sass — le
+   builder ne les inline pas et laisserait un import nu qui 404. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--fold-color-bg-page);
+  color: var(--fold-color-text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Une page routée est projetée dans le `.content` du shell fold (flex column à
+   hauteur bornée). Son hôte est `display:block` par défaut, donc rien ne défile.
+   On fait de chaque hôte routé un flex-item qui remplit la zone ET un flex
+   column, pour que la page prenne sa hauteur et gère son propre scroll. */
+router-outlet ~ * {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}

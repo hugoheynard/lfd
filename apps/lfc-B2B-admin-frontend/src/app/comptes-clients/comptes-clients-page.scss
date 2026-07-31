@@ -1,0 +1,131 @@
+:host {
+  display: block;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg, 1.5rem);
+  padding: var(--fold-space-lg, 1.5rem);
+  max-width: 72rem;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md, 1rem);
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: 0.9rem;
+}
+
+.count {
+  flex: 0 0 auto;
+  color: var(--fold-color-text-muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+  padding: var(--fold-space-xl, 2.5rem);
+  color: var(--fold-color-text-muted);
+}
+
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 8px);
+}
+
+table.companies {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+thead th {
+  text-align: left;
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 1rem);
+  background: var(--fold-color-bg-subtle, var(--fold-color-bg-page));
+  color: var(--fold-color-text-muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+tbody td {
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 1rem);
+  border-bottom: 1px solid var(--fold-color-border);
+  vertical-align: top;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ref,
+.siret,
+.date {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.raison {
+  display: block;
+  font-weight: 600;
+}
+
+.enseigne,
+.contact-email {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: 0.82rem;
+}
+
+.contact {
+  display: block;
+}
+
+/* Badge de statut — sémantique (bon / attente / coupé), indépendant de l'accent. */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-active {
+  background: color-mix(in srgb, var(--fold-color-success, #1a7f37) 15%, transparent);
+  color: var(--fold-color-success, #1a7f37);
+}
+
+.status-pending {
+  background: color-mix(in srgb, var(--fold-color-warning, #9a6700) 15%, transparent);
+  color: var(--fold-color-warning, #9a6700);
+}
+
+.status-suspended {
+  background: color-mix(in srgb, var(--fold-color-danger, #cf222e) 15%, transparent);
+  color: var(--fold-color-danger, #cf222e);
+}

@@ -1,0 +1,49 @@
+<fold-app-shell
+  #shell="foldAppShell"
+  contentScroll="clip"
+  [headerHeight]="0"
+  [(mobileNavOpen)]="mobileNavOpen"
+>
+  <!-- Rail primaire — le menu de l'app. Déployé par défaut, repliable. Devient un
+       tiroir off-canvas ≤768px. Embarqué : `secondary` (2ᵉ rail sous le switcher). -->
+  <fold-menu
+    railPrimary
+    collapsible
+    tint="primary"
+    [level]="hosted ? 'secondary' : 'primary'"
+    [(expanded)]="menuExpanded"
+  >
+    <a header class="rail-brand" routerLink="/" aria-label="LFC B2B admin — accueil">
+      <span class="brand-mark" aria-hidden="true">B2B</span>
+      @if (menuExpanded()) {
+        <span class="rail-wordmark">Admin</span>
+      }
+    </a>
+
+    <a
+      fold-menu-item
+      icon="company"
+      label="Comptes clients"
+      routerLink="/comptes-clients"
+      routerLinkActive
+      #comptesRla="routerLinkActive"
+      [active]="comptesRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+
+    <button
+      footer
+      fold-menu-item
+      icon="logout"
+      label="Déconnexion"
+      type="button"
+      (click)="logout()"
+    ></button>
+  </fold-menu>
+
+  <!-- Contenu routé -->
+  <router-outlet />
+
+  <!-- Hôte unique des side-panels (fiche compte à venir). -->
+  <fold-panel-host />
+</fold-app-shell>
