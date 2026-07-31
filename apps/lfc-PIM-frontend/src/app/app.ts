@@ -11,6 +11,8 @@ import {
   FoldSurfaceDirective,
 } from 'fold-ng';
 
+import { SuiteEmbed } from './suite-embed/suite-embed';
+
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,7 +44,7 @@ export class App {
    * `secondary` (niveau fold) : le rail navy primaire, c'est le switcher de la
    * suite ; le nôtre devient le second rail. En standalone, `primary`.
    */
-  protected readonly hosted = typeof window !== 'undefined' && window.self !== window.top;
+  protected readonly hosted = inject(SuiteEmbed).hosted;
 
   private readonly router = inject(Router);
 
