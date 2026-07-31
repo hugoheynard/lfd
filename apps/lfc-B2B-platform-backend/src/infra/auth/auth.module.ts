@@ -33,6 +33,6 @@ import { DevImpersonation } from "./dev-impersonation.js";
     AdminAuthGuard,
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
-  exports: [AccessTokenVerifier, CustomerUserResolver, AdminAuthGuard],
+  exports: [AccessTokenVerifier, CustomerUserResolver, AdminTokenVerifier, AdminAuthGuard],
 })
 export class AuthModule {}
