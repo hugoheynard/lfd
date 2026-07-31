@@ -11,7 +11,7 @@ import {
   SUITE_CHANNEL,
   type EmbedMessage,
   type HostMessage,
-} from './embed-protocol';
+} from '@lfd/suite-embed';
 
 /** Une frame embarquée connue (établie via un message entrant). */
 interface KnownFrame {

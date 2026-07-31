@@ -243,6 +243,7 @@ si l'app est réellement down.
 - Finaliser le **flux d'auth** (refresh, expiration) contre **B2B admin**.
 - Construire **B2B admin** puis retirer sa tuile stub.
 - Cosmétique : masquer le **double « Déconnexion »** quand l'app est hostée.
-- Extraire le contrat postMessage dans `@lfd/suite-embed` au 2ᵉ consommateur
-  (aujourd'hui dupliqué shell ↔ PIM).
+- ~~Extraire le contrat postMessage dans `@lfd/suite-embed` au 2ᵉ consommateur~~
+  **✅ fait** : `packages/suite-embed` est la source de vérité unique (shell + PIM
+  + B2B admin l'importent ; plus de copie dupliquée).
 ```

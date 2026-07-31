@@ -19,6 +19,7 @@
     "@angular/forms": "^22.0.7",
     "@angular/platform-browser": "^22.0.7",
     "@angular/router": "^22.0.7",
+    "@lfd/suite-embed": "workspace:*",
     "fold-ng": "catalog:",
     "qrcode-generator": "^2.0.4",
     "rxjs": "~7.8.0",

@@ -5,7 +5,7 @@ import { Subject } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SuiteEmbed } from '../suite-embed';
-import { SUITE_CHANNEL } from '../embed-protocol';
+import { SUITE_CHANNEL } from '@lfd/suite-embed';
 
 const SHELL_ORIGIN = 'https://shell.example.com';
 

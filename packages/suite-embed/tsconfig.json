@@ -1,0 +1,19 @@
+{
+  // Contrat postMessage **shell ↔ app hostée** de la suite — source de vérité
+  // UNIQUE, consommée par le shell (host) et chaque app embarquée (PIM, B2B
+  // admin, …). Feuille du graphe : zéro dépendance. Émet un `dist` pour un
+  // éventuel consommateur Node, `exports.browser` pointe la source pour les
+  // bundlers Angular (comme @lfd/endpoints).
+  "extends": "../../tsconfig/tsflags.backend.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules"]
+}

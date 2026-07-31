@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import { SuiteBridge } from '../suite-bridge';
-import { SUITE_CHANNEL } from '../embed-protocol';
+import { SUITE_CHANNEL } from '@lfd/suite-embed';
 
 /** Origine de PIM — les tests tournent en config `development` (suite-config.dev.ts). */
 const PIM_ORIGIN = 'http://localhost:7315';

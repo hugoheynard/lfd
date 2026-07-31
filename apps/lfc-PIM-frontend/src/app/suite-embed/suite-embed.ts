@@ -8,7 +8,7 @@ import {
   SUITE_CHANNEL,
   type EmbedMessage,
   type HostMessage,
-} from './embed-protocol';
+} from '@lfd/suite-embed';
 
 /** Délai max d'attente d'un token relayé par le shell. */
 const TOKEN_TIMEOUT_MS = 10_000;
