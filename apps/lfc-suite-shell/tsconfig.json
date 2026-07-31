@@ -1,0 +1,22 @@
+/* Config TypeScript de l'app hôte (suite). Hérite des flags stricts du
+   monorepo (calqués fold-ng) ; on ne garde ici que cible/module. Ne PAS
+   déclarer d'`angularCompilerOptions` — un bloc enfant remplacerait celui
+   des flags. */
+{
+  "extends": "../../tsconfig.flags.frontend.json",
+  "compileOnSave": false,
+  "compilerOptions": {
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve"
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
+    }
+  ]
+}
