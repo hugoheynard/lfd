@@ -9,11 +9,12 @@
     "test": "ng test",
     "test:watch": "ng test --watch",
     "dev": "ng serve",
-    "serve:ssr:lfc-pim-frontend": "node dist/lfc-pim-frontend/server/server.mjs"
+    "serve:ssr:lfc-pim-frontend": "node --import @angular-architects/native-federation/node-preload dist/lfc-pim-frontend/server/server.mjs"
   },
   "private": true,
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
+    "@angular-architects/native-federation": "22.0.6",
     "@angular/common": "^22.0.7",
     "@angular/compiler": "^22.0.7",
     "@angular/core": "^22.0.7",
@@ -22,6 +23,9 @@
     "@angular/platform-server": "^22.0.7",
     "@angular/router": "^22.0.7",
     "@angular/ssr": "^22.0.7",
+    "@softarc/native-federation-orchestrator": "^4.2.2",
+    "cors": "^2.8.5",
+    "es-module-shims": "^2.8.0",
     "express": "^5.1.0",
     "fold-ng": "catalog:",
     "qrcode-generator": "^2.0.4",

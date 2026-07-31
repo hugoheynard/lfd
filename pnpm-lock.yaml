@@ -356,6 +356,9 @@ importers:
 
   apps/lfc-PIM-frontend:
     dependencies:
+      '@angular-architects/native-federation':
+        specifier: 22.0.6
+        version: 22.0.6(@angular/build@22.0.7(9b89e1879c7bf856f799bfd781892a9f))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(chokidar@5.0.0)(typescript@6.0.3)
       '@angular/common':
         specifier: ^22.0.7
         version: 22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2)
@@ -380,6 +383,15 @@ importers:
       '@angular/ssr':
         specifier: ^22.0.7
         version: 22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/platform-server@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/compiler@22.0.7)(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/platform-browser@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)))(rxjs@7.8.2))(@angular/router@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(@angular/platform-browser@22.0.7(@angular/common@22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)))(rxjs@7.8.2))
+      '@softarc/native-federation-orchestrator':
+        specifier: ^4.2.2
+        version: 4.5.3
+      cors:
+        specifier: ^2.8.5
+        version: 2.8.6
+      es-module-shims:
+        specifier: ^2.8.0
+        version: 2.8.4
       express:
         specifier: ^5.1.0
         version: 5.2.1

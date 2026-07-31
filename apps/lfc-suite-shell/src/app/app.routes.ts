@@ -1,30 +1,59 @@
-import type { Routes } from '@angular/router';
+import type { Route, Routes } from '@angular/router';
+import { loadRemoteModule } from '@angular-architects/native-federation';
 
 import { SUITE_APPS } from './suite/suite-registry';
+import type { SuiteAppEntry, SuiteRemoteModule } from './suite/suite-app';
 import { AppUnavailable } from './suite/app-unavailable/app-unavailable';
 
 /**
- * Le routing de 1er niveau : une branche par app du registre, montée sous son
+ * Routing de 1er niveau : une branche par app du registre, montée sous son
  * `routePath` (`/pim/**`, `/b2b-admin/**`).
  *
- * ⚠️ Étape 1 (ce commit) : le shell BUILDE sans Native Federation, donc chaque
- * app monte le stub. Étape 2 (tâche #21) : les apps avec `remoteName` basculent
- * sur `loadRemoteModule(remoteName, exposedModule).routes`, entourées d'une
- * error boundary qui retombe sur `AppUnavailable[reason=error]`. Les apps sans
- * `remoteName` (stub) restent sur `AppUnavailable[reason=stub]`.
+ * - App avec `remoteName` → `loadRemoteModule(...).routes`, **entourée d'une
+ *   error boundary** : si le remote est injoignable (deploy KO / réseau), on
+ *   retombe sur `AppUnavailable[error]` au lieu de casser toute la suite. C'est
+ *   l'isolation des pannes : les autres apps restent accessibles.
+ * - App sans `remoteName` → tuile **stub** `AppUnavailable[stub]`.
  */
+
+/** Routes de repli montées quand un remote ne charge pas (ou n'existe pas). */
+function fallbackRoutes(appTitle: string, reason: 'stub' | 'error'): Routes {
+  const data = { reason, appTitle };
+  return [
+    { path: '', loadComponent: () => Promise.resolve(AppUnavailable), data },
+    { path: '**', loadComponent: () => Promise.resolve(AppUnavailable), data },
+  ];
+}
+
+function branchFor(app: SuiteAppEntry): Route {
+  if (app.remoteName === undefined) {
+    // Stub : app pas encore construite.
+    return {
+      path: app.routePath,
+      loadChildren: () => Promise.resolve(fallbackRoutes(app.title, 'stub')),
+    };
+  }
+  const remoteName = app.remoteName;
+  const exposedModule = app.exposedModule ?? './app';
+  return {
+    path: app.routePath,
+    loadChildren: () =>
+      loadRemoteModule(remoteName, exposedModule)
+        .then((m: SuiteRemoteModule) => m.routes)
+        .catch((err: unknown) => {
+          console.error(`[suite] remote « ${app.id} » indisponible`, err);
+          return fallbackRoutes(app.title, 'error');
+        }),
+  };
+}
+
 const [firstApp] = SUITE_APPS;
 if (!firstApp) {
   throw new Error('SUITE_APPS doit déclarer au moins une app.');
 }
-const firstPath = firstApp.routePath;
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: firstPath },
-  ...SUITE_APPS.map((app) => ({
-    path: app.routePath,
-    loadComponent: () => Promise.resolve(AppUnavailable),
-    data: { reason: app.remoteName ? 'error' : 'stub', appTitle: app.title },
-  })),
-  { path: '**', redirectTo: firstPath },
+  { path: '', pathMatch: 'full', redirectTo: firstApp.routePath },
+  ...SUITE_APPS.map(branchFor),
+  { path: '**', redirectTo: firstApp.routePath },
 ];

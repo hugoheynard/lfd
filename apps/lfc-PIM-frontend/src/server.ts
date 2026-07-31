@@ -1,3 +1,6 @@
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const cors = require('cors');
 import {
   AngularNodeAppEngine,
   createNodeRequestHandler,
@@ -10,6 +13,7 @@ import { join } from 'node:path';
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
+app.use(cors());
 const angularApp = new AngularNodeAppEngine();
 
 /**
