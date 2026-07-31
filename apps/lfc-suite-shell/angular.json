@@ -87,7 +87,13 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/app/auth/dev-flags.ts",
+                  "with": "src/app/auth/dev-flags.dev.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
