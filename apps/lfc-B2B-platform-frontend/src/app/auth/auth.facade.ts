@@ -7,6 +7,8 @@ import { NEVER, of } from 'rxjs';
 import type { Observable } from 'rxjs';
 import { filter, switchMap, take } from 'rxjs/operators';
 
+import { DEV_BYPASS_AUTH } from './dev-flags';
+
 /**
  * Façade d'authentification **SSR-safe** — l'unique frontière entre l'app et le
  * SDK `@auth0/auth0-angular` (qui n'existe qu'au navigateur, cf.
@@ -32,15 +34,35 @@ export class AuthFacade {
 
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
-  /** Vrai tant que le SDK résout la session initiale (`checkSession`). */
-  readonly isLoading = toSignal(this.auth0?.isLoading$ ?? NEVER, {
+  /*
+   * Bypass d'auth de **développement**, effectif au navigateur.
+   *
+   * La sûreté prod ne repose PAS sur un contrôle d'hôte runtime mais sur le
+   * **build** : `DEV_BYPASS_AUTH` est un const de module valant `false` en
+   * production/cloudflare (via `fileReplacements`), `true` seulement en config
+   * `development` (`ng serve`). Placé **en tête** de chaque `&&` ci-dessous,
+   * `false && …` est plié par esbuild et toute la branche de bypass (jeton
+   * placeholder compris) est **éliminée** du bundle prod — pas seulement gardée à
+   * l'exécution : absente. On l'inline à chaque usage (plutôt qu'un champ lu par
+   * `this.`) précisément pour laisser ce pliage opérer. `this.isBrowser` évite
+   * juste que le bypass s'active au pré-rendu SSR ; il n'a aucun rôle de sécurité.
+   */
+
+  private readonly rawIsLoading = toSignal(this.auth0?.isLoading$ ?? NEVER, {
     initialValue: true,
   });
+  /** Vrai tant que le SDK résout la session initiale (`checkSession`). */
+  readonly isLoading = computed(() =>
+    DEV_BYPASS_AUTH && this.isBrowser ? false : this.rawIsLoading(),
+  );
 
-  /** Vrai si un utilisateur a prouvé son identité auprès d'Auth0. */
-  readonly isAuthenticated = toSignal(this.auth0?.isAuthenticated$ ?? NEVER, {
+  private readonly rawIsAuthenticated = toSignal(this.auth0?.isAuthenticated$ ?? NEVER, {
     initialValue: false,
   });
+  /** Vrai si un utilisateur a prouvé son identité auprès d'Auth0 (ou bypass dev). */
+  readonly isAuthenticated = computed(
+    () => (DEV_BYPASS_AUTH && this.isBrowser) || this.rawIsAuthenticated(),
+  );
 
   /** Profil Auth0 (claims du token) — « qui a prouvé son sub ». */
   readonly authUser = toSignal(this.auth0?.user$ ?? NEVER, {
@@ -73,6 +95,9 @@ export class AuthFacade {
    * pas bloquer le pré-rendu — la vraie garde s'applique au navigateur.
    */
   authGate$(): Observable<boolean> {
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      return of(true);
+    }
     const auth = this.auth0;
     if (!auth) {
       return of(true);
@@ -110,6 +135,11 @@ export class AuthFacade {
    * ne partent tout simplement pas pendant le pré-rendu.
    */
   accessToken$(): Observable<string> {
+    // En bypass dev, l'API ignore le jeton (impersonation backend) : on évite
+    // `getAccessTokenSilently()`, qui lèverait faute de session Auth0.
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      return of('dev-impersonation');
+    }
     return this.auth0?.getAccessTokenSilently() ?? NEVER;
   }
 }
