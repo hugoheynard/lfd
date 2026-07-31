@@ -1,0 +1,13 @@
+.commerce-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-lg);
+}
+
+// Le rail d'établissements se distingue des sections (souligné vs plein) et
+// s'en sépare d'un mince filet.
+.establishments {
+  padding-bottom: var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}

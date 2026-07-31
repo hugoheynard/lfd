@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 
 import type { DeliveryAddressView, PlaceOrderPayload } from '@lfd/contracts';
 import {
@@ -45,6 +53,9 @@ export class CheckoutPanel {
   private readonly orders = inject(OrdersService);
   protected readonly cart = inject(CartService);
 
+  /** Ouverture depuis une page qui sait déjà quel établissement viser. */
+  readonly data = input<{ readonly companyId?: string } | undefined>(undefined);
+
   protected readonly companies = this.account.companies;
 
   protected readonly companyId = signal('');
@@ -79,6 +90,14 @@ export class CheckoutPanel {
     if (only.length === 1 && only[0]) {
       this.selectCompany(only[0].id);
     }
+
+    // Établissement pré-choisi par la page appelante (contexte commerce).
+    effect(() => {
+      const preselect = this.data()?.companyId;
+      if (preselect !== undefined && preselect !== '' && this.companyId() === '') {
+        this.selectCompany(preselect);
+      }
+    });
   }
 
   protected fmt(value: number): string {

@@ -53,6 +53,15 @@
     @if (!cart.isEmpty()) {
       <button foldButton emphasis="outline" intent="neutral" (click)="clear()">Vider</button>
     }
+    <button
+      foldButton
+      emphasis="soft"
+      intent="neutral"
+      [disabled]="cart.isEmpty()"
+      (click)="viewFullCart()"
+    >
+      Voir le panier
+    </button>
     <button foldButton intent="primary" [disabled]="cart.isEmpty()" (click)="checkout()">
       Valider ma commande
     </button>

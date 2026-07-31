@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 
 import {
   FoldButtonComponent,
@@ -40,6 +41,7 @@ export class CartPanel {
 
   private readonly ref = inject(FoldPanelRef);
   private readonly panelHost = inject(FoldPanelHostService);
+  private readonly router = inject(Router);
   protected readonly cart = inject(CartService);
 
   /** "2,50 €". */
@@ -67,6 +69,12 @@ export class CartPanel {
   protected checkout(): void {
     this.ref.close();
     this.panelHost.open(CheckoutPanel, { side: 'right' });
+  }
+
+  /** Ferme le panneau et ouvre la page panier complète (quantités, suggestions…). */
+  protected viewFullCart(): void {
+    this.ref.close();
+    void this.router.navigate(['/panier']);
   }
 
   protected close(): void {

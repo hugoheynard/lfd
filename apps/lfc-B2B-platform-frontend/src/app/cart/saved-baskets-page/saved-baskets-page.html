@@ -1,0 +1,43 @@
+<fold-page-layout icon="repeat" title="Mes paniers">
+  <p description>Vos paniers pré-configurés — récurrence, montant, et recommande en un clic.</p>
+
+  @if (hasCompany()) {
+    <button pageActions foldButton intent="primary" icon="plus" (click)="createNew()">
+      Nouveau panier
+    </button>
+  }
+
+  <app-commerce-nav />
+
+  @if (!hasCompany()) {
+    <fold-callout appearance="inset" variant="info">
+      Créez une entreprise dans « Mes entreprises » pour composer des paniers.
+    </fold-callout>
+  } @else if (cards().length === 0) {
+    <fold-callout appearance="inset" variant="info">
+      Aucun panier enregistré. Créez-en un, ou depuis le panier « Enregistrer ce panier ».
+    </fold-callout>
+  } @else {
+    <div class="baskets">
+      @for (card of cards(); track card.basket.id) {
+        <button type="button" class="basket" (click)="open(card.basket.id)">
+          <div class="basket-head">
+            <span class="basket-name">{{ card.basket.name }}</span>
+            <fold-badge [content]="recurrenceLabel(card.basket.recurrence)" variant="info" />
+          </div>
+
+          <div class="basket-stats">
+            <div class="stat">
+              <span class="stat-value">{{ fmt(card.total) }}</span>
+              <span class="stat-label">{{ card.count }} article(s)</span>
+            </div>
+            <div class="stat stat--right">
+              <span class="stat-value">{{ card.basket.usageCount }}×</span>
+              <span class="stat-label">utilisé</span>
+            </div>
+          </div>
+        </button>
+      }
+    </div>
+  }
+</fold-page-layout>

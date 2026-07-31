@@ -1,0 +1,13 @@
+@if (multi()) {
+  <div class="commerce-nav">
+    <fold-view-nav
+      class="establishments"
+      [items]="companyItems()"
+      [activeKey]="context.selectedId()"
+      (activeKeyChange)="onSelectCompany($event)"
+      direction="horizontal"
+      activeStyle="underline"
+      background="transparent"
+    />
+  </div>
+}

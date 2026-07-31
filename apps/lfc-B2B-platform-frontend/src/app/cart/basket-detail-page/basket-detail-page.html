@@ -1,0 +1,130 @@
+<fold-page-layout icon="repeat" title="Panier enregistré">
+  <button
+    pageActions
+    foldButton
+    emphasis="outline"
+    intent="neutral"
+    icon="chevron-left"
+    (click)="back()"
+  >
+    Mes paniers
+  </button>
+
+  @if (basket(); as b) {
+    <div class="editor">
+      <!-- En-tête éditable : nom + récurrence + compteur d'utilisations. -->
+      <div class="head">
+        <label class="name">
+          <span class="name-label">Nom du panier</span>
+          <input type="text" [value]="b.name" (change)="onName($event)" />
+        </label>
+
+        <div class="head-meta">
+          <fold-select
+            label="Récurrence"
+            [value]="b.recurrence"
+            (valueChange)="onRecurrence($event)"
+          >
+            @for (option of recurrenceOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </fold-select>
+
+          @if (b.recurrence !== 'none') {
+            <label class="date">
+              <span>Prochaine date</span>
+              <input type="date" [value]="b.nextDate ?? ''" (change)="onDate($event)" />
+            </label>
+          }
+
+          <span class="usage">Utilisé {{ b.usageCount }}×</span>
+        </div>
+      </div>
+
+      <!-- Lignes du panier — ajustement des quantités. -->
+      @if (lines().length === 0) {
+        <fold-callout appearance="inset" variant="info">
+          Ce panier est vide. Ajoutez des produits depuis les suggestions ci-dessous.
+        </fold-callout>
+      } @else {
+        <div class="lines">
+          @for (line of lines(); track line.product.id) {
+            <article class="line">
+              @if (line.product.image) {
+                <img
+                  class="line-img"
+                  [src]="line.product.image"
+                  [alt]="line.product.imageAlt ?? ''"
+                />
+              } @else {
+                <div class="line-img line-img--ph" aria-hidden="true">
+                  {{ line.product.name.charAt(0) }}
+                </div>
+              }
+              <div class="line-main">
+                <p class="line-name">{{ line.product.name }}</p>
+                <p class="line-unit">{{ fmt(line.unitPriceEur) }} {{ line.product.unit }}</p>
+              </div>
+              <fold-number-input
+                class="line-qty"
+                [value]="line.qty"
+                [min]="1"
+                [step]="1"
+                [integer]="true"
+                size="sm"
+                (valueChange)="onQty(line.product.id, $event)"
+              />
+              <span class="line-total">{{ fmt(line.lineTotalEur) }}</span>
+              <fold-button-icon
+                icon="bin"
+                size="sm"
+                tone="critical"
+                tooltip="Retirer du panier"
+                (clicked)="removeLine(line.product.id)"
+              />
+            </article>
+          }
+        </div>
+      }
+
+      <!-- Résumé + actions. -->
+      <div class="summary">
+        <div class="summary-total">
+          <span>Total TTC · {{ count() }} article(s)</span>
+          <strong>{{ fmt(total()) }}</strong>
+        </div>
+        <div class="summary-actions">
+          <button foldButton emphasis="outline" intent="danger" icon="bin" (click)="remove()">
+            Supprimer
+          </button>
+          <button
+            foldButton
+            intent="primary"
+            icon="repeat"
+            [disabled]="lines().length === 0"
+            (click)="recommander()"
+          >
+            Recommander
+          </button>
+        </div>
+      </div>
+
+      <!-- Ajout de produits via suggestions. -->
+      @if (suggestions().length > 0) {
+        <fold-page-section
+          title="Ajouter des produits"
+          description="Complétez ce panier avec des produits du catalogue."
+        >
+          <app-featured-rail [items]="suggestions()" (add)="addProduct($event)" />
+        </fold-page-section>
+      }
+    </div>
+  } @else {
+    <fold-callout appearance="inset" variant="warning">
+      Ce panier est introuvable (peut-être supprimé).
+      <button actions foldButton intent="warning" emphasis="soft" size="sm" (click)="back()">
+        Revenir à mes paniers
+      </button>
+    </fold-callout>
+  }
+</fold-page-layout>

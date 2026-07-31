@@ -1,0 +1,89 @@
+<fold-page-layout icon="package" title="Panier">
+  <p description>Ajustez, verrouillez pour plus tard, ou commandez tout de suite.</p>
+
+  <app-commerce-nav />
+
+  @if (cart.isEmpty()) {
+    <fold-callout appearance="inset" variant="info">
+      Votre panier est vide. Ajoutez des produits depuis la boutique.
+    </fold-callout>
+  } @else {
+    <div class="lines">
+      @for (line of lines(); track line.product.id) {
+        <article class="line">
+          @if (line.product.image) {
+            <img class="line-img" [src]="line.product.image" [alt]="line.product.imageAlt ?? ''" />
+          } @else {
+            <div class="line-img line-img--ph" aria-hidden="true">
+              {{ line.product.name.charAt(0) }}
+            </div>
+          }
+
+          <div class="line-main">
+            <p class="line-name">{{ line.product.name }}</p>
+            <p class="line-unit">{{ fmt(line.unitPriceEur) }} {{ line.product.unit }}</p>
+          </div>
+
+          <fold-number-input
+            class="line-qty"
+            [value]="line.qty"
+            [min]="1"
+            [step]="1"
+            [integer]="true"
+            size="sm"
+            (valueChange)="onQty(line, $event)"
+          />
+
+          <span class="line-total">{{ fmt(line.lineTotalEur) }}</span>
+
+          <fold-button-icon
+            icon="bin"
+            size="sm"
+            tone="critical"
+            tooltip="Retirer du panier"
+            (clicked)="remove(line)"
+          />
+        </article>
+      }
+    </div>
+
+    <div class="summary">
+      <div class="summary-total">
+        <span>Total TTC</span>
+        <strong>{{ fmt(cart.totalEur()) }}</strong>
+      </div>
+
+      @if (!canLock()) {
+        <fold-callout appearance="inset" variant="warning">
+          Choisissez un établissement ci-dessus pour enregistrer ce panier ou commander.
+        </fold-callout>
+      }
+
+      <div class="summary-actions">
+        <button foldButton emphasis="outline" intent="neutral" (click)="clear()">Vider</button>
+        <button
+          foldButton
+          emphasis="soft"
+          intent="neutral"
+          icon="repeat"
+          [disabled]="!canLock()"
+          (click)="save()"
+        >
+          Enregistrer ce panier
+        </button>
+        <button foldButton intent="primary" [disabled]="!canLock()" (click)="checkout()">
+          Commander
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (suggestions().length > 0) {
+    <fold-page-section
+      title="Vous avez ajouté ces produits récemment"
+      description="Les rajouter à votre panier ?"
+    >
+      <app-featured-rail [items]="suggestions()" (add)="addSuggestion($event)" />
+    </fold-page-section>
+  }
+</fold-page-layout>

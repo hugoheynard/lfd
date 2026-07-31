@@ -1,0 +1,72 @@
+.baskets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--fold-space-md);
+}
+
+// Carte cliquable : un bouton plein cadre, mais dessiné comme une carte.
+.basket {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg);
+  text-align: left;
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md, 12px);
+  background: var(--fold-color-surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+.basket:hover {
+  border-color: var(--fold-color-primary);
+  box-shadow: var(--fold-shadow-sm, 0 1px 4px rgba(0, 0, 0, 0.08));
+  transform: translateY(-1px);
+}
+.basket:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+.basket-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.basket-name {
+  font-weight: 600;
+  font-size: var(--fold-text-lg, 1.125rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.basket-stats {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xs, 0.15rem);
+}
+.stat--right {
+  text-align: right;
+}
+.stat-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.stat-label {
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
