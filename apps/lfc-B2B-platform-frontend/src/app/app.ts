@@ -25,6 +25,7 @@ import { AuthFacade } from './auth/auth.facade';
 import { CartPanel } from './cart/cart-panel/cart-panel';
 import { CartService } from './data/cart.service';
 import { FEATURE_DASHBOARD } from './feature-flags';
+import { SiteFooter } from './footer/site-footer';
 
 @Component({
   selector: 'app-root',
@@ -42,6 +43,7 @@ import { FEATURE_DASHBOARD } from './feature-flags';
     FoldSearchComponent,
     FoldSpinnerComponent,
     FoldSurfaceDirective,
+    SiteFooter,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
