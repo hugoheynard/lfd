@@ -22,6 +22,7 @@ import {
 
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import type { AdminCompany } from '../../comptes-clients/admin-company';
+import { AcquisitionSettingsService } from '../settings/acquisition-settings.service';
 import {
   ACQUISITION_SOURCES,
   buildAcquisitionEvents,
@@ -58,6 +59,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 })
 export class AcquisitionPage {
   private readonly service = inject(AdminCompaniesService);
+  private readonly settings = inject(AcquisitionSettingsService);
 
   /** Le jour courant, posé au 1er rendu navigateur — `undefined` en SSR. */
   protected readonly today = signal<FoldCalendarDate | undefined>(undefined);
@@ -81,7 +83,13 @@ export class AcquisitionPage {
   /** Tous les événements — vides tant que `today` n'est pas posé (donc en SSR). */
   protected readonly events = computed<readonly AcquisitionEvent[]>(() => {
     const today = this.today();
-    return today === undefined ? [] : buildAcquisitionEvents(this.companies(), today);
+    if (today === undefined) {
+      return [];
+    }
+    return buildAcquisitionEvents(this.companies(), today, {
+      warnDays: this.settings.warnDays(),
+      alertDays: this.settings.alertDays(),
+    });
   });
 
   /** Les événements des flux actifs — ce que le calendrier et le rail tracent. */

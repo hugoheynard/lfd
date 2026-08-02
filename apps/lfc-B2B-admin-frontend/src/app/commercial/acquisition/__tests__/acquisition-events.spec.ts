@@ -78,4 +78,13 @@ describe('buildAcquisitionEvents', () => {
     expect(tone('2026-07-26T00:00:00.000Z')).toBe('warning'); // 7 j
     expect(tone('2026-07-19T00:00:00.000Z')).toBe('alert'); // 14 j
   });
+
+  it('respecte des seuils personnalisés (alerte dès 3 jours)', () => {
+    const band = buildAcquisitionEvents(
+      [makeCompany('1', 'pending', '2026-07-30T00:00:00.000Z')], // 3 j avant TODAY
+      TODAY,
+      { warnDays: 2, alertDays: 3 },
+    ).find((e) => e.sourceKey === 'attente');
+    expect(band?.tone).toBe('alert');
+  });
 });

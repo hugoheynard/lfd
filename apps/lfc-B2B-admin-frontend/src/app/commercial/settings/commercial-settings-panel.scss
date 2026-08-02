@@ -1,0 +1,61 @@
+:host {
+  display: block;
+}
+
+.pnl-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+}
+
+.alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.alerts-intro {
+  margin: 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.field-label {
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: 500;
+}
+
+.field-control {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.field-input {
+  width: 5rem;
+  padding: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: -1px;
+  }
+}
+
+.field-suffix {
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+}

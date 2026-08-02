@@ -1,4 +1,6 @@
 <fold-page-layout icon="calendar" title="Commercial">
+  <button pageActions foldButton (click)="openSettings()">Réglages</button>
+
   <fold-view-nav [items]="tabs" direction="horizontal" size="comfortable" activeStyle="fill" />
 
   <router-outlet />
