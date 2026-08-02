@@ -3,7 +3,7 @@
  * `AdminCompanyView` côté backend — le front tient sa propre déclaration de la
  * forme JSON, il n'importe pas les types du backend).
  */
-export type CompanyStatus = 'pending' | 'active' | 'suspended';
+export type CompanyStatus = 'pending' | 'active' | 'suspended' | 'terminated';
 
 export type PaymentTerm = 'per_order' | 'monthly' | 'net60' | 'net90';
 
@@ -43,6 +43,7 @@ export const STATUS_LABELS: Readonly<Record<CompanyStatus, string>> = {
   pending: 'En attente',
   active: 'Actif',
   suspended: 'Suspendu',
+  terminated: 'Résilié',
 };
 
 /** Libellé FR d'une condition de règlement. */

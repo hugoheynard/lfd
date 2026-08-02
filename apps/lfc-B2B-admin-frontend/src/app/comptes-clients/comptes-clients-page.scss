@@ -31,13 +31,6 @@ h1 {
   font-size: 0.9rem;
 }
 
-.count {
-  flex: 0 0 auto;
-  color: var(--fold-color-text-muted);
-  font-size: 0.85rem;
-  font-variant-numeric: tabular-nums;
-}
-
 .state {
   display: flex;
   flex-direction: column;
@@ -47,41 +40,13 @@ h1 {
   color: var(--fold-color-text-muted);
 }
 
-.table-scroll {
-  overflow-x: auto;
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md, 8px);
+/* Le filtre segmenté s'aligne à gauche, largeur intrinsèque. */
+.filter {
+  align-self: flex-start;
 }
 
-table.companies {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-thead th {
-  text-align: left;
-  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 1rem);
-  background: var(--fold-color-bg-subtle, var(--fold-color-bg-page));
-  color: var(--fold-color-text-muted);
-  font-weight: 600;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--fold-color-border);
-}
-
-tbody td {
-  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 1rem);
-  border-bottom: 1px solid var(--fold-color-border);
-  vertical-align: top;
-}
-
-tbody tr:last-child td {
-  border-bottom: 0;
-}
-
+/* Typographie des cellules — la data-table fold porte la grille, ces classes
+   n'habillent que le contenu projeté dans chaque cellule. */
 .ref,
 .siret,
 .date {
@@ -103,29 +68,4 @@ tbody tr:last-child td {
 
 .contact {
   display: block;
-}
-
-/* Badge de statut — sémantique (bon / attente / coupé), indépendant de l'accent. */
-.badge {
-  display: inline-block;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.status-active {
-  background: color-mix(in srgb, var(--fold-color-success, #1a7f37) 15%, transparent);
-  color: var(--fold-color-success, #1a7f37);
-}
-
-.status-pending {
-  background: color-mix(in srgb, var(--fold-color-warning, #9a6700) 15%, transparent);
-  color: var(--fold-color-warning, #9a6700);
-}
-
-.status-suspended {
-  background: color-mix(in srgb, var(--fold-color-danger, #cf222e) 15%, transparent);
-  color: var(--fold-color-danger, #cf222e);
 }
