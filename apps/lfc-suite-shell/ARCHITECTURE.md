@@ -218,13 +218,18 @@ Le shell iframe les apps par leur URL — il faut donc que ces apps tournent :
 
 ```bash
 pnpm suite:dev          # shell (7300) + PIM front (7315) — cas courant
-pnpm suite:dev:full     # + PIM/B2B backends + B2B front + infra Postgres
-pnpm suite:status       # doctor : ping les 5 ports, affiche up/down
+pnpm suite:dev:full     # tout : fronts (ng serve) + backends (nest --watch)
+                        #        + packages (tsc -b --watch) + infra Postgres
+pnpm suite:status       # doctor : ping les 6 ports, affiche up/down
 ```
 
-Les ports sont tenus dans le registre unique `@lfd/endpoints` (`DEV_PORTS`), et
-`turbo run dev` build les packages avant les apps → un checkout frais démarre
-sans « module introuvable ».
+`suite:dev:full` met **tout en watch** — chaque service a son propre watcher
+indépendant (une correction ne recompile que le service concerné, pas les
+autres), et les **packages `@lfd/*` sont surveillés** (`dev:watch`) pour que leur
+`dist` se rebuild à chaud → les backends qui les consomment reprennent le
+changement sans relance manuelle. Les ports viennent du registre `@lfd/endpoints`
+(`DEV_PORTS`) ; `^build` construit les packages avant les apps → un checkout
+frais démarre sans « module introuvable ».
 
 Puis ouvrir `http://localhost:7300`. Au tout premier démarrage, si l'app hostée
 n'a pas fini son build, le cadre **re-sonde tout seul** (quelques secondes) puis

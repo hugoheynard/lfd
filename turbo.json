@@ -12,6 +12,8 @@
     },
     "dev:watch": {
       "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true,
       "outputs": []
     },
     "lint": {
