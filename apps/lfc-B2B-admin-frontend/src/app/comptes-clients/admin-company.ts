@@ -35,6 +35,12 @@ export interface AdminCompany {
   readonly requestedPaymentTerm: PaymentTerm | null;
   readonly primaryContact: PrimaryContact;
   readonly kbis: Kbis | null;
+  /**
+   * Une demande de support **ouverte** est rattachée à la société. Distingue,
+   * parmi les `pending`, l'**assistance à la création** (le client veut être
+   * rappelé) de la simple **attente de vérification** (dossier auto-rempli).
+   */
+  readonly hasOpenSupportRequest: boolean;
   readonly createdAt: string;
 }
 

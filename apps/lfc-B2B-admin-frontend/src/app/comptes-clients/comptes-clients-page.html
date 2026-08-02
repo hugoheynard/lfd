@@ -4,8 +4,15 @@
       <h1>Comptes clients</h1>
       <p class="subtitle">Les sociétés B2B — activation, suivi commercial.</p>
     </div>
-    @if (state() === 'ready' && pendingCount() > 0) {
-      <fold-badge variant="warning" [content]="pendingCount() + ' en attente'" />
+    @if (state() === 'ready') {
+      <div class="queues">
+        @if (awaitingActivationCount() > 0) {
+          <fold-badge variant="warning" [content]="awaitingActivationCount() + ' à vérifier'" />
+        }
+        @if (assistanceCount() > 0) {
+          <fold-badge variant="info" [content]="assistanceCount() + ' assistance'" />
+        }
+      </div>
     }
   </header>
 
@@ -49,7 +56,11 @@
       </ng-template>
 
       <ng-template foldCell="status" let-row>
-        <fold-status-badge [status]="row.status" [label]="statusLabel(row)" />
+        @if (isAssistance(row)) {
+          <fold-badge variant="info" content="Assistance" />
+        } @else {
+          <fold-status-badge [status]="row.status" [label]="statusLabel(row)" />
+        }
       </ng-template>
 
       <ng-template foldCell="contact" let-row>

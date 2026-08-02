@@ -40,6 +40,14 @@ h1 {
   color: var(--fold-color-text-muted);
 }
 
+/* Les deux files (à vérifier / assistance) côte à côte, alignées à droite. */
+.queues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm, 0.5rem);
+  justify-content: flex-end;
+}
+
 /* Le filtre segmenté s'aligne à gauche, largeur intrinsèque. */
 .filter {
   align-self: flex-start;

@@ -39,8 +39,10 @@ function isFilterValue(value: string): value is FilterValue {
  *
  * Un seul jeu de données, filtré par un **segment** (`fold-view-toggle`) plutôt
  * que par des pages séparées : les colonnes sont identiques d'un statut à
- * l'autre, la recherche/tri restent partagés, et la file actionnable (`pending`)
- * porte un **badge de quantité**. Tri et fiche détail viennent ensuite
+ * l'autre, la recherche/tri restent partagés. Les `pending` se lisent en **deux
+ * files distinctes au premier coup d'œil** — *à vérifier* (dossier auto-rempli)
+ * vs *assistance* (le client a demandé un rappel, support ouvert) — via un badge
+ * dédié en tête et dans la colonne Statut. Tri et fiche détail viennent ensuite
  * (cf. admin-commercial-comptes-clients.md).
  */
 @Component({
@@ -83,9 +85,22 @@ export class ComptesClientsPage {
     { value: 'terminated', label: 'Résilié' },
   ];
 
-  /** Quantité de comptes en attente — la file de travail du commercial. */
-  protected readonly pendingCount = computed(
-    () => this.companies().filter((company) => company.status === 'pending').length,
+  /**
+   * Une société `pending` qui a **demandé de l'assistance** (support ouvert) —
+   * à rappeler, distinct de la simple attente de vérification des pièces.
+   */
+  protected isAssistance(company: AdminCompany): boolean {
+    return company.status === 'pending' && company.hasOpenSupportRequest;
+  }
+
+  /** `pending` **sans** demande d'assistance : dossier auto-rempli à vérifier. */
+  protected readonly awaitingActivationCount = computed(
+    () => this.companies().filter((c) => c.status === 'pending' && !c.hasOpenSupportRequest).length,
+  );
+
+  /** `pending` **avec** demande d'assistance ouverte : le client veut un rappel. */
+  protected readonly assistanceCount = computed(
+    () => this.companies().filter((c) => this.isAssistance(c)).length,
   );
 
   /** Sociétés du statut sélectionné (ou toutes). */

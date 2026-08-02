@@ -24,8 +24,15 @@ devra exposer.
 ## 1. Liste des comptes clients
 
 - Tableau des entreprises (**fold data-table**), **filtrable** par statut via un
-  segment (`all` / `pending` / `active` / `suspended` / `terminated`), la file
-  `pending` portant un badge de quantité. **Livré.**
+  segment (`all` / `pending` / `active` / `suspended` / `terminated`). **Livré.**
+- **Deux files de `pending` distinguées au premier coup d'œil** (badge dédié en
+  tête + colonne Statut), sur le drapeau `AdminCompanyView.hasOpenSupportRequest`
+  (= une `SupportRequest` avec `handled_at = null`), **orthogonal au statut** :
+  - **À vérifier** — dossier auto-rempli par le client, pièces à contrôler (badge
+    ambre « N à vérifier »).
+  - **Assistance** — le client a demandé un rappel à la création (badge info
+    « M assistance » ; colonne Statut = « Assistance » au lieu de « En attente »).
+    Reader : relation filtrée `supportRequests { where handled_at = null, take 1 }`.
 - Reste à ajouter — **recherche** cherchable par :
   - **référence** `C-XXXXXX` (le champ `companies.reference`, dictable au
     téléphone — c'est fait pour le support en cas de panne de service),
@@ -85,5 +92,5 @@ devra exposer.
 - **Notifications** (quand l'infra mailer existera) : notifier le commercial à la
   réception d'une `SupportRequest`, et le client à l'**activation** de son compte.
 - **Dev / test** : tant que l'activation admin n'existe pas, pour tester le flux
-  *commander* il faut flipper `pending → active` à la main (seed `active`, endpoint
+  _commander_ il faut flipper `pending → active` à la main (seed `active`, endpoint
   dev jetable, ou update DB).

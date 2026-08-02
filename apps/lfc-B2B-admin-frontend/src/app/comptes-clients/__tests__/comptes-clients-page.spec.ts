@@ -6,7 +6,11 @@ import type { AdminCompany, CompanyStatus } from '../admin-company';
 import { ComptesClientsPage } from '../comptes-clients-page';
 
 /** Fabrique une société d'un statut donné (le reste des champs importe peu ici). */
-function makeCompany(id: string, status: CompanyStatus): AdminCompany {
+function makeCompany(
+  id: string,
+  status: CompanyStatus,
+  hasOpenSupportRequest = false,
+): AdminCompany {
   return {
     id,
     reference: `C-${id}`,
@@ -20,13 +24,14 @@ function makeCompany(id: string, status: CompanyStatus): AdminCompany {
     requestedPaymentTerm: null,
     primaryContact: { id: null, firstName: 'A', lastName: 'B', fonction: '', email: '', phone: '' },
     kbis: null,
+    hasOpenSupportRequest,
     createdAt: '2026-07-30T10:00:00.000Z',
   };
 }
 
 const COMPANIES: readonly AdminCompany[] = [
-  makeCompany('1', 'pending'),
-  makeCompany('2', 'pending'),
+  makeCompany('1', 'pending'), // en attente de vérification
+  makeCompany('2', 'pending', true), // assistance demandée
   makeCompany('3', 'active'),
   makeCompany('4', 'suspended'),
   makeCompany('5', 'terminated'),
@@ -59,9 +64,23 @@ describe('ComptesClientsPage', () => {
     expect(page['companies']()).toHaveLength(5);
   });
 
-  it('compte les comptes en attente pour le badge', async () => {
+  it('sépare les deux files de pending pour les badges', async () => {
     const page = await setup();
-    expect(page['pendingCount']()).toBe(2);
+    // company 1 = pending sans support, company 2 = pending + support ouvert.
+    expect(page['awaitingActivationCount']()).toBe(1);
+    expect(page['assistanceCount']()).toBe(1);
+  });
+
+  it('marque comme assistance un pending avec demande de support ouverte', async () => {
+    const page = await setup();
+    expect(page['isAssistance'](makeCompany('a', 'pending', false))).toBe(false);
+    expect(page['isAssistance'](makeCompany('b', 'pending', true))).toBe(true);
+  });
+
+  it('ne marque pas assistance un non-pending même avec support ouvert', async () => {
+    const page = await setup([makeCompany('9', 'active', true)]);
+    expect(page['isAssistance'](makeCompany('9', 'active', true))).toBe(false);
+    expect(page['assistanceCount']()).toBe(0);
   });
 
   it("montre tout quand le filtre est 'all'", async () => {

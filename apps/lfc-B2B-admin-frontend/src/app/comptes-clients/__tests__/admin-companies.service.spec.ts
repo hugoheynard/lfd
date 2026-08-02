@@ -28,6 +28,7 @@ const company: AdminCompany = {
     phone: '0102030405',
   },
   kbis: null,
+  hasOpenSupportRequest: false,
   createdAt: '2026-07-30T10:00:00.000Z',
 };
 
