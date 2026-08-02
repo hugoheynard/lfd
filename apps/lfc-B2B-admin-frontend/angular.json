@@ -65,7 +65,8 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "port": 7317
+            "port": 7317,
+            "host": "127.0.0.1"
           },
           "configurations": {
             "production": {

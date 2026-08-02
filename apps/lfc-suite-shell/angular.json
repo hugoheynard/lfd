@@ -73,7 +73,8 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "port": 7300
+            "port": 7300,
+            "host": "127.0.0.1"
           },
           "configurations": {
             "production": {
