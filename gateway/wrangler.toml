@@ -1,0 +1,18 @@
+# Passerelle de la suite LFC (Cloudflare Worker). UN worker possède toute la zone :
+# il route CHAQUE sous-domaine (option B, cf.
+# documentation/architecture-suite-gateway-scaling.md) vers son upstream — fronts
+# (Pages) et backends (Containers) en prod, serveurs dev locaux en dev.
+#
+# En DEV : `wrangler dev` sert sur 127.0.0.1:8787 et route les `*.localhost:8787`
+# vers les serveurs locaux (voir src/routes.ts, dérivé de @lfd/endpoints). Les
+# navigateurs résolvent `*.localhost` → 127.0.0.1 sans /etc/hosts.
+#
+# En PROD : les `routes` sur la zone réelle seront ajoutées ici au déploiement
+# (Phase 4 du plan) ; la carte prod vit dans src/routes.ts.
+name = "lfc-suite-gateway"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+[dev]
+ip = "127.0.0.1"
+port = 8787

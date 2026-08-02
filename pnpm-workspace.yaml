@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - gateway
 
 # Shared version floor for the design system, locked once here so every
 # frontend app stays aligned. Apps reference it with `"fold-ng": "catalog:"`;

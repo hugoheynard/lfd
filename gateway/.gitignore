@@ -1,0 +1,8 @@
+# wrangler / miniflare local dev state
+.wrangler/
+
+# Node
+/node_modules
+
+# Build output
+/dist
