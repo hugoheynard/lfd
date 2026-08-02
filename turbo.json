@@ -11,7 +11,11 @@
       "persistent": true
     },
     "dev:watch": {
-      "dependsOn": ["^build"],
+      // `build` (du MÊME package), pas `^build` : turbo lance le build une seule
+      // fois (partagé avec le `^build` des apps), le termine, PUIS démarre le
+      // `tsc -b --watch`. Sans ça, build et watch tournent en concurrence sur le
+      // même `.tsbuildinfo` et se bloquent.
+      "dependsOn": ["build"],
       "cache": false,
       "persistent": true,
       "outputs": []
