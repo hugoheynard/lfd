@@ -15,14 +15,17 @@ import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 
 /**
- * Une ligne appartient à la table des chunks si :
- * - c'est un en-tête de section (`Initial/Lazy chunk files`), OU
- * - c'est une ligne de colonnes d'en-tête / total (`| Names`, `| Raw size`, …), OU
- * - elle se termine par une taille (`… 26.73 kB |` / `938 bytes`).
- * Les warnings de budget se terminent par `kB.` (point) et ne matchent donc pas.
+ * Bruit à masquer :
+ * - la **table des chunks** : en-tête de section (`Initial/Lazy chunk files`),
+ *   ligne de colonnes / total (`| Names`, `| Raw size`, …), ligne de taille
+ *   (`… 26.73 kB |` / `938 bytes`). Les warnings de budget finissent par `kB.`
+ *   (point) et ne matchent donc pas — ils passent ;
+ * - le hint `press h + enter to show help` (inutile sous turbo : l'input va à
+ *   turbo, pas au front) ;
+ * - la `NOTE: Raw file sizes…` et les labels `Browser/Server bundles`.
  */
-const CHUNK_TABLE_LINE =
-  /^(Initial|Lazy) chunk files\b|\|\s*(Names|Raw size|Estimated transfer size|Initial total)\b|(kB|bytes)\s*\|?\s*$/;
+const NOISE_LINE =
+  /^(Initial|Lazy) chunk files\b|\|\s*(Names|Raw size|Estimated transfer size|Initial total)\b|(kB|bytes)\s*\|?\s*$|press .+ to show help|Raw file sizes do not reflect|^(Browser|Server) bundles\s*$/;
 
 const child = spawn(`ng serve ${process.argv.slice(2).join(' ')}`, {
   stdio: ['inherit', 'pipe', 'inherit'],
@@ -30,10 +33,18 @@ const child = spawn(`ng serve ${process.argv.slice(2).join(' ')}`, {
   env: process.env,
 });
 
+// Collapse aussi les lignes vides consécutives (la table filtrée en laisse).
+let lastBlank = false;
 createInterface({ input: child.stdout }).on('line', (line) => {
-  if (!CHUNK_TABLE_LINE.test(line)) {
-    process.stdout.write(`${line}\n`);
+  if (NOISE_LINE.test(line)) {
+    return;
   }
+  const blank = line.trim() === '';
+  if (blank && lastBlank) {
+    return;
+  }
+  lastBlank = blank;
+  process.stdout.write(`${line}\n`);
 });
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
