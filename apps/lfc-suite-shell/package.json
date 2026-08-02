@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "dev": "ng serve"
+    "dev": "node ../../dev-toolbox/ng-serve-quiet.mjs"
   },
   "private": true,
   "packageManager": "pnpm@10.12.1",
