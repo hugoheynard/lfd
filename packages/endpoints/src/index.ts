@@ -35,6 +35,18 @@ export const DEV_PORTS = {
 
 const localhost = (port: number): string => `http://localhost:${port}`;
 
+/**
+ * Les **deux** noms du loopback pour un port. Le dev-server Angular bind
+ * `127.0.0.1` (cf. le piège host IPv6), mais un navigateur atteint la page en
+ * `localhost` comme en `127.0.0.1`, et l'`Origin` qu'il envoie suit exactement
+ * l'URL tapée. Les deux doivent donc passer le CORS, sinon ouvrir la page en
+ * `127.0.0.1:PORT` fait échouer tous les appels API (« serveur injoignable »).
+ */
+const loopbacks = (port: number): string[] => [
+  `http://localhost:${port}`,
+  `http://127.0.0.1:${port}`,
+];
+
 /** URLs dev (localhost) des fronts ET des backends, dérivées de `DEV_PORTS`. */
 export const DEV_URLS = {
   suiteShell: localhost(DEV_PORTS.suiteShell),
@@ -93,16 +105,21 @@ export function isViaGateway(hostname: string): boolean {
  * (Phase 3), pas de ce registre.
  */
 export const DEV_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
-  // Direct (localhost:PORT) ET via la passerelle (*.localhost:8787) : le front
-  // peut appeler l'API des deux façons selon comment il a été ouvert.
-  pim: [DEV_URLS.pimFront, GATEWAY_URLS.pimFront, localhost(DEV_PORTS.spareFront)],
+  // Direct (localhost:PORT **et** 127.0.0.1:PORT — le dev-server bind 127.0.0.1)
+  // ET via la passerelle (*.localhost:8787) : le front peut appeler l'API de
+  // toutes ces façons selon comment il a été ouvert.
+  pim: [
+    ...loopbacks(DEV_PORTS.pimFront),
+    GATEWAY_URLS.pimFront,
+    ...loopbacks(DEV_PORTS.spareFront),
+  ],
   // Le backend B2B sert DEUX fronts : la boutique cliente ET l'app admin staff
   // (Invariant C) — en direct et via la passerelle.
   b2b: [
-    DEV_URLS.b2bFront,
-    DEV_URLS.b2bAdminFront,
+    ...loopbacks(DEV_PORTS.b2bFront),
+    ...loopbacks(DEV_PORTS.b2bAdminFront),
     GATEWAY_URLS.b2bFront,
     GATEWAY_URLS.b2bAdminFront,
-    localhost(DEV_PORTS.spareFront),
+    ...loopbacks(DEV_PORTS.spareFront),
   ],
 };
