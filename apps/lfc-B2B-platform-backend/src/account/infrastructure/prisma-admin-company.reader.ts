@@ -40,6 +40,13 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
         contactEmail: true,
         contactTelephone: true,
         createdAt: true,
+        // Une seule demande ouverte suffit à lever le drapeau ; `take: 1` évite
+        // de charger l'historique juste pour un booléen.
+        supportRequests: {
+          where: { handledAt: null },
+          select: { id: true },
+          take: 1,
+        },
       },
     });
 
@@ -70,6 +77,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
               certified: company.kbisCertifiedAt !== null,
             }
           : null,
+      hasOpenSupportRequest: company.supportRequests.length > 0,
       createdAt: company.createdAt.toISOString(),
     }));
   }

@@ -32,6 +32,13 @@ export interface AdminCompanyView {
   readonly primaryContact: ContactView;
   /** KBIS déposé, ou `null`. `certified` = validé par le staff. */
   readonly kbis: KbisView | null;
+  /**
+   * Une demande de support **ouverte** (`handled_at = null`) est rattachée à la
+   * société. Orthogonal au `status` : distingue, parmi les `pending`, celles où
+   * le client **demande de l'assistance à la création** (à rappeler) de celles
+   * simplement **en attente de vérification des pièces** (dossier auto-rempli).
+   */
+  readonly hasOpenSupportRequest: boolean;
   /** ISO. Ancienneté du compte (tri par défaut : plus récent d'abord). */
   readonly createdAt: string;
 }
