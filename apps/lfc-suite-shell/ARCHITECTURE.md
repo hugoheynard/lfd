@@ -217,11 +217,19 @@ sequenceDiagram
 Le shell iframe les apps par leur URL — il faut donc que ces apps tournent :
 
 ```bash
-pnpm suite:dev          # shell (7300) + PIM front (7315) — cas courant
-pnpm suite:dev:full     # tout : fronts (ng serve) + backends (nest --watch)
-                        #        + packages (tsc -b --watch) + infra Postgres
+pnpm suite:dev          # léger : shell (7300) + PIM front (7315)
+pnpm suite:dev:pim      # portée PIM : shell + PIM front/back + infra
+pnpm suite:dev:b2b      # portée B2B : shell + B2B front/admin/back + infra
+pnpm suite:dev:full     # tout : les 6 apps + packages en watch + infra
 pnpm suite:status       # doctor : ping les 6 ports, affiche up/down
 ```
+
+Chaque launcher **attend que le shell réponde puis ouvre le navigateur** (bannière
+« ✅ Suite prête », cf. `dev-toolbox/suite-ready.mjs` ; `SUITE_NO_OPEN=1` pour ne
+pas ouvrir). Les fronts passent par `ng-serve-quiet` (table des chunks masquée) ;
+les backends par le `QuietBootLogger` (énumération des routes masquée). Les
+launchers de **portée** (`:pim`, `:b2b`) n'allument que la brique concernée pour
+alléger la machine.
 
 `suite:dev:full` met **tout en watch** — chaque service a son propre watcher
 indépendant (une correction ne recompile que le service concerné, pas les
