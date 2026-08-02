@@ -9,21 +9,29 @@ Ce qui manque vit dans l'**app admin** (côté STAFF, autre contexte/db, auth
 distincte — **pas** le token customer). Voici ce que l'onglet « Comptes clients »
 devra exposer.
 
-> **État (2026-07-31).** Le socle backend de §1 est posé : surface staff
-> `/admin/*` (`AdminAuthGuard`, audience distincte + bypass dev fail-closed,
-> Invariant C) et `GET /admin/companies` (query cross-tenant `ListAllCompanies` →
-> `AdminCompanyReader`, hors mur `company_id`). La vue liste porte identité,
-> statut, conditions de règlement, **contact principal** et KBIS ; contacts
-> additionnels + adresses relèvent de la fiche (§2, à venir). Filtres/tri (§1) et
-> endpoints de mutation (§3) restent à faire.
+> **État (2026-08-02).** §1 **livré** côté front : la page « Comptes clients »
+> (`lfc-B2B-admin-frontend`) affiche la liste dans une **fold data-table** avec un
+> **filtre segmenté** par statut (`fold-view-toggle` : Tous / En attente / Actif /
+> Suspendu / Résilié) et un **badge de quantité** sur la file en attente — la file
+> de travail du commercial. Colonnes : référence, société (+enseigne), SIRET,
+> statut (`fold-status-badge`), contact principal, date. Socle backend = celui du
+> 2026-07-31 (surface staff `/admin/*`, `GET /admin/companies`).
+> **Ajout de statut** : `terminated` (fin de relation commerciale) rejoint
+> `pending`/`active`/`suspended` — distinct de `suspended` (coupure temporaire
+> réversible) ; refusé à la commande comme tout non-`active`. Reste : **recherche
+> plein-texte + tri** (§1), la **fiche** (§2) et les **endpoints de mutation** (§3).
 
 ## 1. Liste des comptes clients
 
-- Tableau des entreprises, **filtrable / cherchable** par :
+- Tableau des entreprises (**fold data-table**), **filtrable** par statut via un
+  segment (`all` / `pending` / `active` / `suspended` / `terminated`), la file
+  `pending` portant un badge de quantité. **Livré.**
+- Reste à ajouter — **recherche** cherchable par :
   - **référence** `C-XXXXXX` (le champ `companies.reference`, dictable au
     téléphone — c'est fait pour le support en cas de panne de service),
-  - SIRET, raison sociale, statut (`pending` / `active` / `suspended`).
-- Tri par ancienneté, statut, dernière activité.
+  - SIRET, raison sociale.
+- Tri par ancienneté, statut, dernière activité (la data-table le supporte via
+  `sortable` + `sortChange` — à câbler).
 
 ## 2. Dossier d'un compte
 
@@ -41,7 +49,9 @@ devra exposer.
   passe la société `active`. C'est **ce geste** qui débloque la commande côté
   client (`ensureCanOrder` lit `status`).
 - Endpoints **admin** (auth staff/M2M) à créer :
-  - `PATCH /admin/companies/:id/status` → `active` / `suspended` / réactivation.
+  - `PATCH /admin/companies/:id/status` → `active` / `suspended` / `terminated` /
+    réactivation. `terminated` acte la **fin de relation** (définitif côté métier,
+    on ne réactive pas — on recrée une société) ; `suspended` reste réversible.
   - **Accorder le règlement** : recopier `requested_payment_term` dans
     `payment_term` puis remettre `requested_payment_term` à `null` (ou ajuster à un
     autre terme). C'est la seule voie d'écriture du terme convenu.

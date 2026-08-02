@@ -58,10 +58,15 @@ enum PaymentTerm {
 /// encore validée commercialement (défaut à la création). L'activation reste
 /// **manuelle côté commercial** — décision verrouillée dans
 /// `documentation/architecture-onboarding-provisioning-b2b.md`.
+///
+/// `suspended` ≠ `terminated` : `suspended` coupe l'accès **temporairement**
+/// (impayé, litige) et se lève ; `terminated` acte la **fin de la relation
+/// commerciale** — définitif du point de vue métier, l'historique est conservé.
 enum CompanyStatus {
   pending
   active
   suspended
+  terminated
 }
 
 /// Rôle d'une personne AU SEIN d'une société donnée — porté par le `Membership`,

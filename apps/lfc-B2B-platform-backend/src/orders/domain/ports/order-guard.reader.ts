@@ -2,7 +2,7 @@
 export type OrderRole = "company_admin" | "member";
 
 /** Cycle de vie de l'entreprise (miroir de `CompanyStatus` Prisma). */
-export type OrderCompanyStatus = "pending" | "active" | "suspended";
+export type OrderCompanyStatus = "pending" | "active" | "suspended" | "terminated";
 
 /**
  * Port de **lecture** des garde-fous d'une commande : le rôle du demandeur dans
