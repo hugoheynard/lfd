@@ -38,13 +38,19 @@ function flush(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-function setup(token: string | null): { service: AdminCompaniesService; http: HttpTestingController } {
+function setup(token: string | null): {
+  service: AdminCompaniesService;
+  http: HttpTestingController;
+} {
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
       AdminCompaniesService,
-      { provide: SuiteEmbed, useValue: { requestToken: (): Promise<string | null> => Promise.resolve(token) } },
+      {
+        provide: SuiteEmbed,
+        useValue: { requestToken: (): Promise<string | null> => Promise.resolve(token) },
+      },
     ],
   });
   return {
