@@ -1,0 +1,28 @@
+:host {
+  display: block;
+}
+
+.acq {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+// Toolbar à gauche, chips de flux à droite ; empile sous les petites largeurs.
+.acq-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.acq-error {
+  margin: 0;
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-alert-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-alert-surface);
+  color: var(--fold-color-alert-text);
+  font-size: var(--fold-text-sm);
+}

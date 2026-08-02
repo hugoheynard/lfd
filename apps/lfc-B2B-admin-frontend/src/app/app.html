@@ -31,6 +31,17 @@
       (click)="mobileNavOpen.set(false)"
     ></a>
 
+    <a
+      fold-menu-item
+      icon="calendar"
+      label="Commercial"
+      routerLink="/commercial"
+      routerLinkActive
+      #commercialRla="routerLinkActive"
+      [active]="commercialRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+
     <button
       footer
       fold-menu-item

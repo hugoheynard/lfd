@@ -1,0 +1,18 @@
+<section class="acq">
+  <div class="acq-bar">
+    <fold-calendar-toolbar [(date)]="month" [(view)]="view" [today]="today()" [views]="['month']" />
+    <fold-calendar-source-filter [sources]="sources" [events]="events()" [(active)]="active" />
+  </div>
+
+  @if (state() === 'error') {
+    <p class="acq-error" role="alert">Serveur injoignable — le backend B2B est-il démarré ?</p>
+  }
+
+  <fold-calendar-month
+    [(month)]="month"
+    [events]="visibleEvents()"
+    [today]="today()"
+    maxLanes="4"
+    (eventClick)="openCompany($event)"
+  />
+</section>
