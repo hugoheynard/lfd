@@ -46,14 +46,63 @@ export const DEV_URLS = {
 } as const;
 
 /**
+ * Passerelle dev (`lfc-suite-gateway`, `wrangler dev`) : UN worker route par
+ * sous-domaine `*.localhost:PORT` vers les serveurs locaux, pour **simuler la
+ * prod B** (sous-domaines) en dev. `*.localhost` résout en loopback sans
+ * `/etc/hosts`. Le gateway ET les fronts (détection à l'exécution) dérivent de
+ * cette même topologie — source unique, pas de drift.
+ */
+export const DEV_GATEWAY_PORT = 8787;
+
+/** app → sous-domaine de la passerelle. Le worker `gateway/src/routes.ts` en dérive. */
+export const GATEWAY_SUBDOMAINS = {
+  suiteShell: "suite",
+  pimFront: "pim",
+  b2bFront: "b2b",
+  b2bAdminFront: "b2b-admin",
+  pimBack: "api-pim",
+  b2bBack: "api-b2b",
+} as const;
+
+const gatewayUrl = (subdomain: string): string =>
+  `http://${subdomain}.localhost:${DEV_GATEWAY_PORT}`;
+
+/** URLs des apps **via la passerelle** (sous-domaines `*.localhost:8787`). */
+export const GATEWAY_URLS = {
+  suiteShell: gatewayUrl(GATEWAY_SUBDOMAINS.suiteShell),
+  pimFront: gatewayUrl(GATEWAY_SUBDOMAINS.pimFront),
+  b2bFront: gatewayUrl(GATEWAY_SUBDOMAINS.b2bFront),
+  b2bAdminFront: gatewayUrl(GATEWAY_SUBDOMAINS.b2bAdminFront),
+  pimBack: gatewayUrl(GATEWAY_SUBDOMAINS.pimBack),
+  b2bBack: gatewayUrl(GATEWAY_SUBDOMAINS.b2bBack),
+} as const;
+
+/**
+ * Vrai si l'origine courante est servie **via la passerelle** (hostname en
+ * `*.localhost`). Le direct dev (`localhost` / `127.0.0.1`) rend `false`. Sert
+ * aux fronts à choisir entre `DEV_URLS` (direct) et `GATEWAY_URLS` (passerelle).
+ */
+export function isViaGateway(hostname: string): boolean {
+  return hostname.endsWith(".localhost");
+}
+
+/**
  * Origines CORS autorisées **en dev** pour chaque backend : son front + le port
  * spare. Type `string[]` (mutable) pour rester assignable à l'option `origin`
  * de NestJS `enableCors`. En prod, les origines viennent de l'environnement
  * (Phase 3), pas de ce registre.
  */
 export const DEV_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
-  pim: [DEV_URLS.pimFront, localhost(DEV_PORTS.spareFront)],
+  // Direct (localhost:PORT) ET via la passerelle (*.localhost:8787) : le front
+  // peut appeler l'API des deux façons selon comment il a été ouvert.
+  pim: [DEV_URLS.pimFront, GATEWAY_URLS.pimFront, localhost(DEV_PORTS.spareFront)],
   // Le backend B2B sert DEUX fronts : la boutique cliente ET l'app admin staff
-  // (Invariant C). Les deux origines dev sont donc autorisées.
-  b2b: [DEV_URLS.b2bFront, DEV_URLS.b2bAdminFront, localhost(DEV_PORTS.spareFront)],
+  // (Invariant C) — en direct et via la passerelle.
+  b2b: [
+    DEV_URLS.b2bFront,
+    DEV_URLS.b2bAdminFront,
+    GATEWAY_URLS.b2bFront,
+    GATEWAY_URLS.b2bAdminFront,
+    localhost(DEV_PORTS.spareFront),
+  ],
 };

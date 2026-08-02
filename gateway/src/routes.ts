@@ -1,4 +1,4 @@
-import { DEV_PORTS } from "@lfd/endpoints";
+import { DEV_PORTS, GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
 
 const local = (port: number): string => `http://127.0.0.1:${port}`;
 
@@ -12,12 +12,12 @@ const local = (port: number): string => `http://127.0.0.1:${port}`;
  * bindent en IPv4 (cf. angular.json).
  */
 export const DEV_ROUTES: Readonly<Record<string, string>> = {
-  "suite.localhost": local(DEV_PORTS.suiteShell),
-  "pim.localhost": local(DEV_PORTS.pimFront),
-  "b2b.localhost": local(DEV_PORTS.b2bFront),
-  "b2b-admin.localhost": local(DEV_PORTS.b2bAdminFront),
-  "api-pim.localhost": local(DEV_PORTS.pimBack),
-  "api-b2b.localhost": local(DEV_PORTS.b2bBack),
+  [`${GATEWAY_SUBDOMAINS.suiteShell}.localhost`]: local(DEV_PORTS.suiteShell),
+  [`${GATEWAY_SUBDOMAINS.pimFront}.localhost`]: local(DEV_PORTS.pimFront),
+  [`${GATEWAY_SUBDOMAINS.b2bFront}.localhost`]: local(DEV_PORTS.b2bFront),
+  [`${GATEWAY_SUBDOMAINS.b2bAdminFront}.localhost`]: local(DEV_PORTS.b2bAdminFront),
+  [`${GATEWAY_SUBDOMAINS.pimBack}.localhost`]: local(DEV_PORTS.pimBack),
+  [`${GATEWAY_SUBDOMAINS.b2bBack}.localhost`]: local(DEV_PORTS.b2bBack),
 };
 
 /**

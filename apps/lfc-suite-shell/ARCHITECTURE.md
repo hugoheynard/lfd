@@ -221,8 +221,17 @@ pnpm suite:dev          # léger : shell (7300) + PIM front (7315)
 pnpm suite:dev:pim      # portée PIM : shell + PIM front/back + infra
 pnpm suite:dev:b2b      # portée B2B : shell + B2B front/admin/back + infra
 pnpm suite:dev:full     # tout : les 6 apps + packages en watch + infra
+pnpm suite:dev:gateway  # + la passerelle (wrangler dev) → ouvre suite.localhost:8787
 pnpm suite:status       # doctor : ping les 6 ports, affiche up/down
 ```
+
+**Mode passerelle** (`suite:dev:gateway`) : simule la **prod B (sous-domaines)** en
+dev. Le worker `gateway/` (`wrangler dev` sur `127.0.0.1:8787`) route chaque
+`*.localhost:8787` vers le bon serveur local (`*.localhost` résout en loopback
+sans `/etc/hosts`). Servi via la passerelle, le shell **iframe les sous-domaines**
+(`pim.localhost:8787`, …) au lieu de `localhost:PORT` — cross-origin par
+sous-domaine, relais de token en conditions réelles, fidèle à la prod. Les fronts
+choisissent direct vs passerelle **à l'exécution** (`isViaGateway`, `@lfd/endpoints`).
 
 Chaque launcher **attend que le shell réponde puis ouvre le navigateur** (bannière
 « ✅ Suite prête », cf. `dev-toolbox/suite-ready.mjs` ; `SUITE_NO_OPEN=1` pour ne

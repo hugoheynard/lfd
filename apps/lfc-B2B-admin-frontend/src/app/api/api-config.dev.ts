@@ -1,11 +1,13 @@
-import { DEV_URLS } from '@lfd/endpoints';
+import { DEV_URLS, GATEWAY_URLS, isViaGateway } from '@lfd/endpoints';
 
 /**
- * Base de l'API B2B — version **DEV** (localhost). Substituée à `api-config.ts`
- * par la configuration `development` d'angular.json.
+ * Base de l'API B2B — version **DEV**. Substituée à `api-config.ts` par la
+ * configuration `development` d'angular.json.
  *
- * Le port n'est PAS écrit ici : il vient du registre unique `@lfd/endpoints`
- * (le même que le CORS dev du backend B2B, qui autorise déjà l'origine de cette
- * app admin).
+ * **Gateway-aware** : servie via la passerelle (`b2b-admin.localhost:8787`), l'app
+ * appelle `api-b2b.localhost:8787` (tout passe par le gateway, cross-origin) ; en
+ * direct, `localhost:3200`. Le CORS du backend autorise les deux (cf. registre).
  */
-export const B2B_API_BASE = DEV_URLS.b2bBack;
+const viaGateway = typeof window !== 'undefined' && isViaGateway(window.location.hostname);
+
+export const B2B_API_BASE = viaGateway ? GATEWAY_URLS.b2bBack : DEV_URLS.b2bBack;

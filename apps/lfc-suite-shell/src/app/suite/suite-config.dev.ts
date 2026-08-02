@@ -1,14 +1,19 @@
-import { DEV_URLS } from '@lfd/endpoints';
+import { DEV_URLS, GATEWAY_URLS, isViaGateway } from '@lfd/endpoints';
 
 /**
- * URLs des apps hostées — version **DEV** (localhost). Substituée à
- * `suite-config.ts` par la configuration `development` d'angular.json.
+ * URLs des apps hostées — version **DEV**. Substituée à `suite-config.ts` par la
+ * configuration `development` d'angular.json.
  *
- * Le port PIM n'est PAS écrit ici : il vient du registre unique `@lfd/endpoints`
- * (le même que les CORS dev du backend PIM), pour qu'un changement de port ne se
- * fasse qu'à un seul endroit.
+ * **Gateway-aware** : si le shell est servi via la passerelle (`suite.localhost:8787`),
+ * il iframe les apps par leurs sous-domaines de passerelle (`pim.localhost:8787`,
+ * …) → tout passe par le gateway, cross-origin par sous-domaine, fidèle à la
+ * prod B. En direct (`localhost:7300`), il iframe les `localhost:PORT`. Les ports
+ * comme les sous-domaines viennent du registre unique `@lfd/endpoints`.
  */
+const viaGateway = typeof window !== 'undefined' && isViaGateway(window.location.hostname);
+const urls = viaGateway ? GATEWAY_URLS : DEV_URLS;
+
 export const SUITE_APP_URLS: Readonly<Record<string, string>> = {
-  pim: DEV_URLS.pimFront,
-  'b2b-admin': DEV_URLS.b2bAdminFront,
+  pim: urls.pimFront,
+  'b2b-admin': urls.b2bAdminFront,
 };
