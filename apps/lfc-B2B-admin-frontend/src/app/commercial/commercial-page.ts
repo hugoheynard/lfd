@@ -1,18 +1,19 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { FoldViewNavComponent, type FoldViewNavItem } from 'fold-ng';
+import { FoldPageLayoutComponent, FoldViewNavComponent, type FoldViewNavItem } from 'fold-ng';
 
 /**
- * Page **Commercial** : le poste de travail du commercial, structuré par un
- * `fold-view-nav` horizontal (barre d'onglets routés). Le premier onglet est
- * **Acquisition** (le calendrier du pipeline d'entrée) ; les suivants viendront
- * s'ajouter à la liste sans toucher au reste — chaque onglet est une route
- * enfant, `<router-outlet>` en dessous.
+ * Page **Commercial** : le poste de travail du commercial. Toute la page est un
+ * `fold-page-layout` (titre, gouttières, rythme) dont le corps porte un
+ * `fold-view-nav` horizontal (barre d'onglets routés) puis le `<router-outlet>`.
+ * Le premier onglet est **Acquisition** (le calendrier du pipeline d'entrée) ;
+ * les suivants s'ajoutent à la liste `tabs` + une route enfant, sans toucher au
+ * reste.
  */
 @Component({
   selector: 'app-commercial-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, FoldViewNavComponent],
+  imports: [RouterOutlet, FoldPageLayoutComponent, FoldViewNavComponent],
   templateUrl: './commercial-page.html',
   styleUrl: './commercial-page.scss',
 })

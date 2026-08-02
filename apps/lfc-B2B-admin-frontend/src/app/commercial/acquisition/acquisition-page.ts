@@ -7,11 +7,15 @@ import {
   signal,
 } from '@angular/core';
 import {
+  FoldCalendarAgendaComponent,
+  FoldCalendarDayComponent,
   FoldCalendarMonthComponent,
   FoldCalendarSourceFilterComponent,
   FoldCalendarToolbarComponent,
+  FoldCalendarWeekComponent,
   foldFilterBySource,
   foldToday,
+  type FoldCalendarAgendaMode,
   type FoldCalendarDate,
   type FoldCalendarView,
 } from 'fold-ng';
@@ -27,24 +31,27 @@ import {
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * Onglet **Acquisition** du commercial : un mois calendrier qui rassemble le
- * pipeline d'entrée — les **inscriptions** (un repère au jour d'inscription), les
- * comptes **en attente** (bandes ouvertes dont la teinte monte avec la durée) et
- * les **RDV de création** (les `pending` qui ont demandé un rappel), filtrables
- * par les chips de flux. La projection vit dans `acquisition-events.ts` (pure) ;
- * ici on ne fait que charger, filtrer et rendre.
+ * Onglet **Acquisition** du commercial : le pipeline d'entrée dans un calendrier
+ * fold — mois, semaine ou jour — flanqué à droite du **rail « à traiter »**
+ * (`fold-calendar-agenda`), la file des tâches (les tons `warning`/`alert` : les
+ * attentes qui traînent et les RDV de création). Trois flux filtrables par les
+ * chips (`inscriptions` / `attente` / `rdv`). La projection vit dans
+ * `acquisition-events.ts` (pure) ; ici on charge, filtre et rend.
  *
  * `today` est posé **après le premier rendu** (navigateur) : le paquet fold n'a
  * pas d'horloge et un SSR ne doit pas en inventer une, sinon l'hydratation
- * diverge. Côté serveur, aucun marqueur « aujourd'hui » ni bande datée.
+ * diverge — côté serveur, aucun marqueur « aujourd'hui » ni bande datée.
  */
 @Component({
   selector: 'app-acquisition-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldCalendarMonthComponent,
+    FoldCalendarWeekComponent,
+    FoldCalendarDayComponent,
     FoldCalendarToolbarComponent,
     FoldCalendarSourceFilterComponent,
+    FoldCalendarAgendaComponent,
   ],
   templateUrl: './acquisition-page.html',
   styleUrl: './acquisition-page.scss',
@@ -54,13 +61,19 @@ export class AcquisitionPage {
 
   /** Le jour courant, posé au 1er rendu navigateur — `undefined` en SSR. */
   protected readonly today = signal<FoldCalendarDate | undefined>(undefined);
-  /** N'importe quel jour du mois affiché ; la pagination clavier/toolbar l'écrit. */
-  protected readonly month = signal<FoldCalendarDate>(foldToday());
+  /** Le jour de référence affiché ; la pagination toolbar/clavier l'écrit. */
+  protected readonly date = signal<FoldCalendarDate>(foldToday());
   protected readonly view = signal<FoldCalendarView>('month');
+  /** Les lectures offertes par la toolbar. */
+  protected readonly views: readonly FoldCalendarView[] = ['month', 'week', 'day'];
 
   protected readonly sources = ACQUISITION_SOURCES;
   /** Flux affichés ; `null` = tous (valeur initiale des chips). */
   protected readonly active = signal<ReadonlySet<string> | null>(null);
+
+  /** État du rail « à traiter » — persistés côté app si on veut qu'ils collent. */
+  protected readonly agendaMode = signal<FoldCalendarAgendaMode>('todo');
+  protected readonly agendaCollapsed = signal(false);
 
   protected readonly state = signal<LoadState>('loading');
   private readonly companies = signal<readonly AdminCompany[]>([]);
@@ -71,7 +84,7 @@ export class AcquisitionPage {
     return today === undefined ? [] : buildAcquisitionEvents(this.companies(), today);
   });
 
-  /** Les événements des flux actifs — ce que le calendrier trace réellement. */
+  /** Les événements des flux actifs — ce que le calendrier et le rail tracent. */
   protected readonly visibleEvents = computed<readonly AcquisitionEvent[]>(() =>
     foldFilterBySource(this.events(), this.active()),
   );

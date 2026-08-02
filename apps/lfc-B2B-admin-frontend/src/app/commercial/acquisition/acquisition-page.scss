@@ -1,5 +1,6 @@
 :host {
   display: block;
+  container-type: inline-size;
 }
 
 .acq {
@@ -15,6 +16,36 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--fold-space-md);
+}
+
+// Le calendrier prend la place, le rail « à traiter » se cale à droite.
+.acq-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-lg);
+}
+
+.acq-cal {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.acq-aside {
+  flex: 0 0 auto;
+  position: sticky;
+  top: var(--fold-space-lg);
+}
+
+// Sous 900px le rail passe sous le calendrier plutôt que de l'écraser.
+@container (max-width: 900px) {
+  .acq-body {
+    flex-direction: column;
+  }
+
+  .acq-aside {
+    position: static;
+    align-self: stretch;
+  }
 }
 
 .acq-error {

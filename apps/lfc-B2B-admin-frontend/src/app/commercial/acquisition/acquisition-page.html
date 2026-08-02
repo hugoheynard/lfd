@@ -1,6 +1,6 @@
 <section class="acq">
   <div class="acq-bar">
-    <fold-calendar-toolbar [(date)]="month" [(view)]="view" [today]="today()" [views]="['month']" />
+    <fold-calendar-toolbar [(date)]="date" [(view)]="view" [today]="today()" [views]="views" />
     <fold-calendar-source-filter [sources]="sources" [events]="events()" [(active)]="active" />
   </div>
 
@@ -8,11 +8,45 @@
     <p class="acq-error" role="alert">Serveur injoignable — le backend B2B est-il démarré ?</p>
   }
 
-  <fold-calendar-month
-    [(month)]="month"
-    [events]="visibleEvents()"
-    [today]="today()"
-    maxLanes="4"
-    (eventClick)="openCompany($event)"
-  />
+  <div class="acq-body">
+    <div class="acq-cal">
+      @switch (view()) {
+        @case ('week') {
+          <fold-calendar-week
+            [date]="date()"
+            [events]="visibleEvents()"
+            [today]="today()"
+            (eventClick)="openCompany($event)"
+          />
+        }
+        @case ('day') {
+          <fold-calendar-day
+            [date]="date()"
+            [events]="visibleEvents()"
+            [today]="today()"
+            (eventClick)="openCompany($event)"
+          />
+        }
+        @default {
+          <fold-calendar-month
+            [(month)]="date"
+            [events]="visibleEvents()"
+            [today]="today()"
+            maxLanes="4"
+            (eventClick)="openCompany($event)"
+          />
+        }
+      }
+    </div>
+
+    <aside class="acq-aside">
+      <fold-calendar-agenda
+        [from]="today() ?? date()"
+        [events]="visibleEvents()"
+        [(mode)]="agendaMode"
+        [(collapsed)]="agendaCollapsed"
+        (eventClick)="openCompany($event)"
+      />
+    </aside>
+  </div>
 </section>
