@@ -21,6 +21,7 @@ export class AppConfig {
   private readonly impersonation: DevImpersonationConfig | null;
   private readonly adminAudienceValue: string | null;
   private readonly adminBypass: boolean;
+  private readonly exposeDetail: boolean;
 
   constructor() {
     this.database = required("DATABASE_B2B_URL");
@@ -32,6 +33,7 @@ export class AppConfig {
     this.impersonation = optionalDevImpersonation();
     this.adminAudienceValue = optionalString("AUTH0_ADMIN_AUDIENCE");
     this.adminBypass = optionalAdminDevBypass();
+    this.exposeDetail = (process.env["NODE_ENV"]?.trim() ?? "") !== "production";
   }
 
   /**
@@ -127,6 +129,19 @@ export class AppConfig {
    */
   adminDevBypass(): boolean {
     return this.adminBypass || this.impersonation !== null;
+  }
+
+  /**
+   * Faut-il joindre le **détail technique** d'une erreur 500 à la réponse HTTP ?
+   *
+   * `true` hors production, `false` en production. Le message renvoyé au client
+   * reste **toujours** neutre (cf. `AppErrorFilter`) : ce flag n'ouvre qu'un champ
+   * `detail` **supplémentaire**, pour lire la cause dans l'onglet réseau en dev
+   * sans avoir à ouvrir les logs serveur. En prod il est fermé — zéro indice
+   * exploitable ne sort de l'API.
+   */
+  exposeErrorDetail(): boolean {
+    return this.exposeDetail;
   }
 }
 

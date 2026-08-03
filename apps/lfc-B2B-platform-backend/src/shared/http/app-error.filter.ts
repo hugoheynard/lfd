@@ -28,10 +28,18 @@ const STATUS_BY_CATEGORY: Record<ErrorCategory, HttpStatus> = {
  *    d'infra ne fuit jamais sa stack ni ses noms de colonnes).
  * 2. `HttpException` de Nest (401 du guard, 404 de route…) — on laisse passer son statut.
  * 3. Tout le reste — filet technique 500, tracé, détail masqué.
+ *
+ * **Hors production**, les 500 (technical + inconnues) portent en plus un champ
+ * `detail` avec la cause réelle — pour la lire dans l'onglet réseau sans ouvrir
+ * les logs serveur. Le `message` reste neutre dans les deux cas : `detail` est un
+ * ajout, pas un remplacement, et il est fermé en prod (`exposeDetail=false`).
  */
 @Catch()
 export class AppErrorFilter implements ExceptionFilter {
   private readonly logger = new Logger(AppErrorFilter.name);
+
+  /** @param exposeDetail joindre le détail technique aux 500 (dev uniquement). */
+  constructor(private readonly exposeDetail: boolean = false) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
@@ -55,6 +63,7 @@ export class AppErrorFilter implements ExceptionFilter {
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       code: "internal.unexpected",
       message: "Une erreur technique est survenue.",
+      ...this.detailOf(exception),
     });
   }
 
@@ -69,11 +78,25 @@ export class AppErrorFilter implements ExceptionFilter {
       this.logger.error(`${error.code} — ${error.message}`, error.stack);
     }
 
+    const technical = error.category === "technical";
     response.status(status).json({
       code: error.code,
-      message:
-        error.category === "technical" ? "Une erreur technique est survenue." : error.message,
+      message: technical ? "Une erreur technique est survenue." : error.message,
+      ...(technical ? this.detailOf(error) : {}),
     });
+  }
+
+  /**
+   * Le détail technique à joindre à une 500 — **hors production seulement**. Sa
+   * présence ne dépend jamais de l'entrée : en prod c'est toujours `{}`, aucun
+   * indice ne sort. On ne renvoie que le message de l'erreur, pas la stack.
+   */
+  private detailOf(exception: unknown): { detail: string } | Record<string, never> {
+    if (!this.exposeDetail) {
+      return {};
+    }
+    const detail = exception instanceof Error ? exception.message : String(exception);
+    return { detail };
   }
 }
 

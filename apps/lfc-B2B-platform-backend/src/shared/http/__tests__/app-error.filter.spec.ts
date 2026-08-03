@@ -1,0 +1,106 @@
+import { HttpStatus } from "@nestjs/common";
+import type { ArgumentsHost } from "@nestjs/common";
+import type { Response } from "express";
+
+import { InvalidEmailError } from "../../../account/domain/errors/account-errors.js";
+import { PersistenceError } from "../../errors/persistence-errors.js";
+import { AppErrorFilter } from "../app-error.filter.js";
+
+/** Réponse Express factice : capture le statut et le corps JSON. */
+interface CapturedResponse {
+  readonly response: Response;
+  status(): number | null;
+  body(): Record<string, unknown> | null;
+}
+
+function fakeResponse(): CapturedResponse {
+  let status: number | null = null;
+  let body: Record<string, unknown> | null = null;
+  const response = {
+    status(code: number): typeof response {
+      status = code;
+      return response;
+    },
+    json(payload: Record<string, unknown>): typeof response {
+      body = payload;
+      return response;
+    },
+  };
+  return {
+    response: response as unknown as Response,
+    status: () => status,
+    body: () => body,
+  };
+}
+
+/** `ArgumentsHost` réduit à ce que le filtre lit : `switchToHttp().getResponse()`. */
+function hostFor(response: Response): ArgumentsHost {
+  return {
+    switchToHttp: () => ({ getResponse: () => response }),
+  } as unknown as ArgumentsHost;
+}
+
+describe("AppErrorFilter", () => {
+  describe("erreur technique (500)", () => {
+    it("renvoie un message neutre, sans détail, quand exposeDetail est faux", () => {
+      const captured = fakeResponse();
+      new AppErrorFilter(false).catch(
+        new PersistenceError("colonne secrète absente"),
+        hostFor(captured.response),
+      );
+
+      expect(captured.status()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(captured.body()).toEqual({
+        code: "persistence.failure",
+        message: "Une erreur technique est survenue.",
+      });
+    });
+
+    it("joint le détail technique quand exposeDetail est vrai — message toujours neutre", () => {
+      const captured = fakeResponse();
+      new AppErrorFilter(true).catch(
+        new PersistenceError("colonne secrète absente"),
+        hostFor(captured.response),
+      );
+
+      expect(captured.status()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(captured.body()).toEqual({
+        code: "persistence.failure",
+        message: "Une erreur technique est survenue.",
+        detail: "Échec de persistance : colonne secrète absente",
+      });
+    });
+  });
+
+  describe("erreur inconnue (500)", () => {
+    it("masque tout en prod, expose le message en dev", () => {
+      const prod = fakeResponse();
+      new AppErrorFilter(false).catch(new Error("boom interne"), hostFor(prod.response));
+      expect(prod.body()).toEqual({
+        code: "internal.unexpected",
+        message: "Une erreur technique est survenue.",
+      });
+
+      const dev = fakeResponse();
+      new AppErrorFilter(true).catch(new Error("boom interne"), hostFor(dev.response));
+      expect(dev.body()).toEqual({
+        code: "internal.unexpected",
+        message: "Une erreur technique est survenue.",
+        detail: "boom interne",
+      });
+    });
+  });
+
+  describe("erreur domaine (400)", () => {
+    it("passe son message voulu, jamais de détail — même en dev", () => {
+      const captured = fakeResponse();
+      new AppErrorFilter(true).catch(new InvalidEmailError("nope"), hostFor(captured.response));
+
+      expect(captured.status()).toBe(HttpStatus.BAD_REQUEST);
+      const body = captured.body();
+      expect(body).not.toBeNull();
+      expect(body?.["code"]).toBe("account.email.invalid");
+      expect(body).not.toHaveProperty("detail");
+    });
+  });
+});

@@ -10,8 +10,11 @@ async function bootstrap(): Promise<void> {
   // (bruit en watch), garde erreurs/warnings — un montage qui échoue reste loud.
   const app = await NestFactory.create(AppModule, { logger: new QuietBootLogger() });
 
+  const config = app.get(AppConfig);
+
   // Traduction des catégories d'erreur en statuts — le seul point qui connaît HTTP.
-  app.useGlobalFilters(new AppErrorFilter());
+  // Hors prod, le filtre joint le détail technique des 500 (le message reste neutre).
+  app.useGlobalFilters(new AppErrorFilter(config.exposeErrorDetail()));
 
   // Origines dev (front B2B + port spare) tenues dans le registre unique
   // `@lfd/endpoints`. La prod passe par l'env.
@@ -20,7 +23,7 @@ async function bootstrap(): Promise<void> {
   });
 
   // Le port passe par AppConfig comme toute autre valeur d'environnement.
-  const port = app.get(AppConfig).port();
+  const port = config.port();
   try {
     await app.listen(port);
   } catch (error) {
