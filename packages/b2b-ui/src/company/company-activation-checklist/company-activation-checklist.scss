@@ -1,0 +1,34 @@
+.ready {
+  margin: var(--fold-space-sm) 0 0;
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.steps {
+  list-style: none;
+  margin: var(--fold-space-sm) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+}
+
+.step-text {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+.step-text fold-icon {
+  flex: none;
+  margin-top: 0.1rem;
+  color: var(--fold-color-text-muted);
+}

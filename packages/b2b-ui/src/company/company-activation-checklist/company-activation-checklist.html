@@ -1,0 +1,50 @@
+<fold-callout variant="warning">
+  <ng-content select="[intro]"></ng-content>
+
+  @if (ready()) {
+    <p class="ready">{{ readyNote() }}</p>
+  }
+
+  <ng-content select="[support]"></ng-content>
+
+  <ul class="steps">
+    @for (step of steps(); track step.key) {
+      <li class="step">
+        <div class="step-text">
+          <fold-icon name="check-circle" [size]="16" />
+          <span><strong>{{ step.title }}</strong> — {{ step.detail }}</span>
+        </div>
+
+        @if (step.kind === 'file') {
+          <input
+            #fileInput
+            type="file"
+            accept="application/pdf"
+            hidden
+            (change)="onFile($event, step.key)"
+          />
+          <button
+            foldButton
+            intent="warning"
+            emphasis="soft"
+            size="sm"
+            icon="upload"
+            (click)="fileInput.click()"
+          >
+            {{ step.cta }}
+          </button>
+        } @else {
+          <button
+            foldButton
+            intent="warning"
+            emphasis="soft"
+            size="sm"
+            (click)="stepAction.emit(step.key)"
+          >
+            {{ step.cta }}
+          </button>
+        }
+      </li>
+    }
+  </ul>
+</fold-callout>

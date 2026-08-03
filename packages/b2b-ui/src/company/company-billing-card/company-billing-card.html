@@ -1,0 +1,24 @@
+<fold-page-section title="Facturation" icon="calendar" [description]="description()">
+  @if (canManage()) {
+    <button sectionActions foldButton emphasis="outline" size="sm" icon="edit" (click)="action.emit()">
+      {{ actionLabel() }}
+    </button>
+  }
+
+  <fold-card class="billing">
+    <p class="card-kicker">Condition de règlement</p>
+    <p class="term">{{ termLabel() }}</p>
+    @if (note(); as note) {
+      <p class="term-note">{{ note }}</p>
+    }
+
+    @if (pendingLabel(); as pending) {
+      <fold-callout appearance="inset" variant="info">
+        Demande en attente : <strong>{{ pending }}</strong>.
+        @if (pendingNote(); as pendingNote) {
+          {{ pendingNote }}
+        }
+      </fold-callout>
+    }
+  </fold-card>
+</fold-page-section>

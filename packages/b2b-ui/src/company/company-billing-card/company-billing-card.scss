@@ -1,0 +1,25 @@
+.billing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.card-kicker {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text-muted);
+}
+
+.term {
+  margin: 0;
+  font-size: var(--fold-text-lg, 1.125rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.term-note {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
