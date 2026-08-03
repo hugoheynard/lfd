@@ -1,0 +1,198 @@
+<fold-page-section
+  title="Adresses"
+  icon="home"
+  description="Une adresse de facturation, une ou plusieurs adresses de livraison."
+>
+  <div class="addresses">
+    <fold-card>
+      <div class="addr-head">
+        <p class="card-kicker">Facturation</p>
+        @if (canManage()) {
+          <button
+            foldButton
+            emphasis="soft"
+            size="sm"
+            icon="edit"
+            [intent]="billing() ? 'neutral' : 'warning'"
+            (click)="editBilling.emit()"
+          >
+            {{ billing() ? 'Modifier' : 'Renseigner' }}
+          </button>
+        }
+      </div>
+      @if (billing(); as fa) {
+        <address class="addr">
+          @if (fa.label) {
+            <span class="addr-label">{{ fa.label }}</span>
+          }
+          <span>{{ fa.ligne1 }}</span>
+          @if (fa.ligne2) {
+            <span>{{ fa.ligne2 }}</span>
+          }
+          <span>{{ fa.codePostal }} {{ fa.ville }}</span>
+          <span>{{ fa.pays }}</span>
+        </address>
+      } @else {
+        <fold-callout variant="warning">Aucune adresse de facturation renseignée.</fold-callout>
+      }
+    </fold-card>
+
+    <fold-card>
+      <div class="addr-head">
+        <p class="card-kicker">Livraison</p>
+        @if (canManage()) {
+          <button
+            foldButton
+            size="sm"
+            icon="plus"
+            [intent]="deliveries().length === 0 ? 'warning' : 'neutral'"
+            [emphasis]="deliveries().length === 0 ? 'soft' : 'outline'"
+            (click)="addDelivery.emit()"
+          >
+            Ajouter une adresse
+          </button>
+        }
+      </div>
+
+      <ul class="deliveries">
+        @for (a of deliveries(); track a.id) {
+          <li class="delivery" [class.is-default]="a.isDefault">
+            <div class="delivery-row">
+              <address class="addr">
+                <span class="addr-label">
+                  {{ a.label || a.ville }}
+                  @if (a.isDefault) {
+                    <fold-badge content="Par défaut" variant="success" />
+                  }
+                </span>
+                <span>{{ a.ligne1 }}</span>
+                @if (a.ligne2) {
+                  <span>{{ a.ligne2 }}</span>
+                }
+                <span>{{ a.codePostal }} {{ a.ville }}</span>
+                <span>{{ a.pays }}</span>
+              </address>
+
+              @if (canManage()) {
+                <fold-dropdown placement="bottom-end" ariaLabel="Actions de l'adresse">
+                  <button
+                    foldPopoverTrigger="menu"
+                    type="button"
+                    class="menu-trigger"
+                    aria-label="Actions de l'adresse"
+                  >
+                    <fold-icon name="more-vertical" [size]="18" />
+                  </button>
+                  @if (!a.isDefault) {
+                    <fold-dropdown-item icon="star" (selected)="setDefault.emit(a)">
+                      Définir par défaut
+                    </fold-dropdown-item>
+                  }
+                  <fold-dropdown-item icon="edit" (selected)="editDelivery.emit(a)">
+                    Modifier
+                  </fold-dropdown-item>
+                  @if (canRemove(a)) {
+                    <fold-dropdown-item icon="trash" tone="danger" (selected)="askRemove(a)">
+                      Supprimer
+                    </fold-dropdown-item>
+                  }
+                </fold-dropdown>
+              }
+            </div>
+
+            @if (!isUsable(a)) {
+              <fold-callout variant="warning">
+                Cette adresse n'est pas utilisable pour vos commandes tant qu'aucun créneau de
+                livraison n'est défini.
+                @if (canManage()) {
+                  <button
+                    actions
+                    foldButton
+                    emphasis="soft"
+                    size="sm"
+                    icon="edit"
+                    (click)="editDelivery.emit(a)"
+                  >
+                    Ajouter des instructions de livraison
+                  </button>
+                }
+              </fold-callout>
+            } @else {
+              <div class="delivery-detail">
+                <button
+                  foldButton
+                  emphasis="soft"
+                  size="sm"
+                  [icon]="expandedId() === a.id ? 'chevron-up' : 'chevron-down'"
+                  (click)="toggleDetails(a)"
+                >
+                  {{ expandedId() === a.id ? 'Masquer les détails' : 'Voir détails de livraison' }}
+                </button>
+
+                @if (expandedId() === a.id) {
+                  <div class="detail-body">
+                    <div class="detail-block">
+                      <p class="detail-title">
+                        <fold-icon name="clock" [size]="15" />
+                        Créneaux de livraison
+                      </p>
+                      <ul class="week">
+                        @for (row of weekly(a); track row.short) {
+                          <li class="week-row" [class.is-empty]="!row.slot">
+                            <span class="week-day">{{ row.label }}</span>
+                            <span class="week-slot">
+                              {{ row.slot ? row.slot.start + '–' + row.slot.end : '—' }}
+                            </span>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+
+                    @if (a.specs.deliveryContact; as contact) {
+                      <p class="detail-line">
+                        <fold-icon name="user" [size]="15" />
+                        <span>{{ contactName(contact) }} · {{ contact.telephone }}</span>
+                      </p>
+                    }
+                    @if (a.specs.note) {
+                      <p class="detail-line">
+                        <fold-icon name="chat" [size]="15" />
+                        <span>{{ a.specs.note }}</span>
+                      </p>
+                    }
+                    @if (a.specs.gps; as gps) {
+                      <p class="detail-line">
+                        <fold-icon name="home" [size]="15" />
+                        <a [href]="gpsLink(gps)" target="_blank" rel="noopener noreferrer">
+                          {{ gpsText(gps) }}
+                        </a>
+                      </p>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            @if (confirmingId() === a.id) {
+              <fold-inline-confirm
+                [open]="true"
+                intent="danger"
+                message="Supprimer cette adresse de livraison ?"
+                (confirmed)="confirmRemove(a)"
+                (cancelled)="confirmingId.set(null)"
+              >
+                <span hidden></span>
+              </fold-inline-confirm>
+            }
+          </li>
+        } @empty {
+          <li>
+            <fold-callout variant="warning">
+              Aucune adresse de livraison. Ajoutez-en une pour pouvoir commander.
+            </fold-callout>
+          </li>
+        }
+      </ul>
+    </fold-card>
+  </div>
+</fold-page-section>
