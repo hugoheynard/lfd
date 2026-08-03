@@ -5,6 +5,7 @@ import {
   FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldPanelHostService,
   FoldStatusBadgeComponent,
   FoldViewToggleComponent,
   type FoldTableColumn,
@@ -14,6 +15,7 @@ import {
 
 import { AdminCompaniesService } from './admin-companies.service';
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-company';
+import { CreerComptePanel } from './creer-compte-panel/creer-compte-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -63,6 +65,7 @@ function isFilterValue(value: string): value is FilterValue {
 })
 export class ComptesClientsPage {
   private readonly service = inject(AdminCompaniesService);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly companies = signal<readonly AdminCompany[]>([]);
@@ -130,6 +133,11 @@ export class ComptesClientsPage {
 
   constructor() {
     void this.load();
+  }
+
+  /** Ouvre le panneau de création d'un compte client. */
+  protected openCreate(): void {
+    this.panels.open(CreerComptePanel, { width: 'md' });
   }
 
   protected async load(): Promise<void> {

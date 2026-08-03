@@ -29,6 +29,12 @@
   gap: var(--fold-space-md, 1rem);
 }
 
+.head-right {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
 h1 {
   margin: 0;
   font-size: 1.4rem;

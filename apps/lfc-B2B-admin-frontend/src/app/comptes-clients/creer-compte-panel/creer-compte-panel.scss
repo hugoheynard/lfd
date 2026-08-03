@@ -1,0 +1,27 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg);
+}
+
+.section-label {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text-muted);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}

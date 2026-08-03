@@ -4,16 +4,21 @@
       <h1>Comptes clients</h1>
       <p class="subtitle">Les sociétés B2B — activation, suivi commercial.</p>
     </div>
-    @if (state() === 'ready') {
-      <div class="queues">
-        @if (awaitingActivationCount() > 0) {
-          <fold-badge variant="warning" [content]="awaitingActivationCount() + ' à vérifier'" />
-        }
-        @if (assistanceCount() > 0) {
-          <fold-badge variant="info" [content]="assistanceCount() + ' assistance'" />
-        }
-      </div>
-    }
+    <div class="head-right">
+      @if (state() === 'ready') {
+        <div class="queues">
+          @if (awaitingActivationCount() > 0) {
+            <fold-badge variant="warning" [content]="awaitingActivationCount() + ' à vérifier'" />
+          }
+          @if (assistanceCount() > 0) {
+            <fold-badge variant="info" [content]="assistanceCount() + ' assistance'" />
+          }
+        </div>
+      }
+      <button foldButton intent="primary" size="sm" icon="plus" (click)="openCreate()">
+        Créer un compte
+      </button>
+    </div>
   </header>
 
   @if (state() === 'error') {
