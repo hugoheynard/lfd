@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
+import { httpErrorMessage } from '@lfd/endpoints';
 import type {
   BillingAddressPayload,
   CompanyAddressesView,
@@ -10,24 +11,24 @@ import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
+import { NotifyService } from '../notify.service';
 
 /** Où en est le chargement des adresses d'une entreprise. */
 export type AddressesStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 /**
  * Adresses **par entreprise**, branchées sur la vraie API (`/companies/:id/
- * addresses`). Remplace le `ProfilService` démo (singleton, commun à toutes les
- * entreprises) pour la fiche entreprise.
+ * addresses`). Une seule entreprise à l'écran : l'état porte la vue de la
+ * dernière chargée. Chaque écriture recharge cette entreprise.
  *
- * Une seule entreprise est affichée à la fois : l'état porte la vue de la
- * **dernière chargée** et l'id correspondant. Chaque écriture recharge cette
- * entreprise — la page n'a jamais à recomposer localement ce que le backend
- * vient de normaliser (défaut, tri, archivage).
+ * Comme `AccountService` : un **chargement** raté est un état de page (`error`) ;
+ * une **opération** ratée est un toast, un succès aussi.
  */
 @Injectable({ providedIn: 'root' })
 export class AddressesService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
+  private readonly notify = inject(NotifyService);
 
   private readonly loadedCompanyId = signal<string | null>(null);
   private readonly _view = signal<CompanyAddressesView | null>(null);
@@ -36,6 +37,7 @@ export class AddressesService {
 
   readonly view = this._view.asReadonly();
   readonly status = this._status.asReadonly();
+  /** Message d'un échec de **chargement** (état de page) ; `null` sinon. */
   readonly error = this._error.asReadonly();
 
   /** (Re)charge les adresses d'une entreprise si elle n'est pas déjà à l'écran. */
@@ -55,6 +57,7 @@ export class AddressesService {
           payload,
           headers(token),
         ),
+      'Adresse de facturation enregistrée.',
       onDone,
     );
   }
@@ -68,6 +71,7 @@ export class AddressesService {
           payload,
           headers(token),
         ),
+      'Adresse de livraison ajoutée.',
       onDone,
     );
   }
@@ -86,6 +90,7 @@ export class AddressesService {
           payload,
           headers(token),
         ),
+      'Adresse de livraison mise à jour.',
       onDone,
     );
   }
@@ -98,6 +103,7 @@ export class AddressesService {
           `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/delivery-addresses/${addressId}`,
           headers(token),
         ),
+      'Adresse de livraison supprimée.',
       onDone,
     );
   }
@@ -111,11 +117,12 @@ export class AddressesService {
           {},
           headers(token),
         ),
+      'Adresse par défaut mise à jour.',
       onDone,
     );
   }
 
-  /** GET des adresses → état. */
+  /** GET des adresses → état. Un échec est un **état de page**. */
   private reload(companyId: string): void {
     this._status.set('loading');
     this.auth
@@ -135,14 +142,18 @@ export class AddressesService {
           this._status.set('ready');
           this._error.set(null);
         },
-        error: (error: unknown) => this.fail(error),
+        error: (error: unknown) => {
+          this._status.set('error');
+          this._error.set(httpErrorMessage(error));
+        },
       });
   }
 
-  /** Écrit puis recharge l'entreprise visée. */
+  /** Écrit puis recharge l'entreprise visée. Succès → toast ; échec → toast. */
   private mutate(
     companyId: string,
     call: (token: string) => Observable<unknown>,
+    success: string,
     onDone?: () => void,
   ): void {
     this._status.set('loading');
@@ -152,32 +163,17 @@ export class AddressesService {
       .subscribe({
         next: () => {
           this.reload(companyId);
+          this.notify.success(success);
           onDone?.();
         },
-        error: (error: unknown) => this.fail(error),
+        error: (error: unknown) => {
+          this._status.set('ready');
+          this.notify.error(error);
+        },
       });
-  }
-
-  private fail(error: unknown): void {
-    this._status.set('error');
-    this._error.set(readErrorMessage(error));
   }
 }
 
 function headers(token: string): { headers: Record<string, string> } {
   return { headers: { Authorization: `Bearer ${token}` } };
-}
-
-/** Message backend s'il est lisible (erreur métier rédigée), sinon générique. */
-function readErrorMessage(error: unknown): string {
-  if (typeof error === 'object' && error !== null && 'error' in error) {
-    const body = (error as { error: unknown }).error;
-    if (typeof body === 'object' && body !== null && 'message' in body) {
-      const message = (body as { message: unknown }).message;
-      if (typeof message === 'string' && message !== '') {
-        return message;
-      }
-    }
-  }
-  return 'Une erreur est survenue sur les adresses. Réessayez.';
 }

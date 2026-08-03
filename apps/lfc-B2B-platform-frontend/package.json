@@ -26,6 +26,7 @@
     "@auth0/auth0-angular": "^2.11.0",
     "@lfd/b2b-ui": "workspace:*",
     "@lfd/contracts": "workspace:*",
+    "@lfd/endpoints": "workspace:*",
     "express": "^5.1.0",
     "fold-ng": "catalog:",
     "rxjs": "~7.8.0",

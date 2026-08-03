@@ -2,7 +2,7 @@ import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@ang
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideClientHydration } from '@angular/platform-browser';
-import { provideFoldIcons } from 'fold-ng';
+import { provideFoldIcons, provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
 
@@ -14,6 +14,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideClientHydration(),
     provideHttpClient(withFetch()),
+    // Toasts d'opération (succès/échec) : succès bref, erreur sticky (défauts fold).
+    provideFoldToasts({}),
     // Icône panier (absente du jeu fold intégré), enregistrée pour le
     // déclencheur d'en-tête et le panneau panier.
     provideFoldIcons({

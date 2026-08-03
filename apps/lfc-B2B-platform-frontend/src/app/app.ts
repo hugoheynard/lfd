@@ -18,6 +18,7 @@ import {
   FoldSearchComponent,
   FoldSpinnerComponent,
   FoldSurfaceDirective,
+  FoldToastContainerComponent,
 } from 'fold-ng';
 
 import { AccountService } from './account/account.service';
@@ -43,6 +44,7 @@ import { SiteFooter } from './footer/site-footer';
     FoldSearchComponent,
     FoldSpinnerComponent,
     FoldSurfaceDirective,
+    FoldToastContainerComponent,
     SiteFooter,
   ],
   templateUrl: './app.html',

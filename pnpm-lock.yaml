@@ -271,6 +271,9 @@ importers:
       '@lfd/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@lfd/endpoints':
+        specifier: workspace:*
+        version: link:../../packages/endpoints
       express:
         specifier: ^5.1.0
         version: 5.2.1
