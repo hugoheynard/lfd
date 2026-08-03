@@ -13,7 +13,9 @@
 > (deux portes, dossier `pending` validé côté commercial) et la fiche client admin
 > livrée (synthèse d'activation + mutations staff Porte B).
 >
-> **Statut : design, non implémenté.** Ce document fixe le modèle avant le code.
+> **Statut : Slice A LIVRÉE (2026-08-03)** — config + page Réglages + masquage UI
+> + commande `ActivateCompanyByStaff` gatée + CTA « Activer ». **Slice B**
+> (conformité / grâce, §4) reste à faire.
 
 ---
 
@@ -121,8 +123,10 @@ synthèse. Le jour où la config change, rien n'est écrit sur les sociétés.
 
 - **Hors périmètre pour l'instant** : la **désactivation / suspension**
   (`active → suspended`) — on ne fait que `pending → active`. _(Décision 2.)_
-- **Slice A** (d'abord) : config + modes + page Réglages + masquage UI + commande
-  `ActivateCompanyByStaff` gatée + CTA. De quoi activer un compte proprement.
+- **Slice A** ✅ **LIVRÉE** : config (`b2b_platform_settings`, un `PieceMode` par
+  pièce) + page Réglages admin + `GET /platform-settings` public + `PATCH` staff +
+  masquage UI (synthèse admin, cartes client+admin via `showDeliveries`) + commande
+  `ActivateCompanyByStaff` gatée serveur (`missingRequiredPieces`) + CTA « Activer ».
 - **Slice B** (ensuite) : la couche **conformité / grâce** — indépendante et plus
   subtile, dérivée en lecture. _(Décision 3.)_
 
