@@ -1,11 +1,15 @@
 /* Pied de page storefront — surface sombre (rail tertiaire), texte clair. Posé
-   en bleed en bas de page, il s'étend d'un bord à l'autre. */
+   en bleed en bas de page, il s'étend d'un bord à l'autre. Espacement 100% en
+   `gap` (aucune marge de composant). */
 :host {
   display: block;
   --ftr-fg: #f7efdd;
 }
 
 .ftr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl, 2rem);
   background: var(--fold-color-bg-header, #0e2a47);
   color: var(--ftr-fg);
   padding: clamp(var(--fold-space-lg, 1.5rem), 4vw, var(--fold-space-2xl, 3rem));
@@ -18,13 +22,19 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   max-width: 72rem;
   margin-inline: auto;
+  width: 100%;
 }
 
-/* Marque */
+/* Marque : logo + bloc texte (nom + adresse, empilés). */
 .ftr-brand {
   display: flex;
   align-items: flex-start;
   gap: var(--fold-space-sm, 0.75rem);
+}
+.ftr-brand > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 .ftr-mark {
   flex: 0 0 auto;
@@ -45,15 +55,20 @@
   font-size: 1.05rem;
 }
 .ftr-addr {
-  margin: 0.25rem 0 0;
+  margin: 0;
   font-size: 0.85rem;
   opacity: 0.75;
   line-height: 1.4;
 }
 
-/* Colonnes */
+/* Colonnes : titre + contenu empilés, écart uniforme. */
+.ftr-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.75rem);
+}
 .ftr-h {
-  margin: 0 0 var(--fold-space-sm, 0.75rem);
+  margin: 0;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -64,7 +79,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.15rem 0;
   color: var(--ftr-fg);
   text-decoration: none;
   font-size: 0.9rem;
@@ -77,7 +91,7 @@
 
 /* Newsletter */
 .ftr-news-text {
-  margin: 0 0 var(--fold-space-sm, 0.75rem);
+  margin: 0;
   font-size: 0.85rem;
   opacity: 0.8;
 }
@@ -112,15 +126,19 @@
   font-size: 0.9rem;
 }
 .ftr-err {
-  margin: 0.4rem 0 0;
+  margin: 0;
   font-size: 0.8rem;
   color: #ffb4a2;
 }
 
-/* Bandeau légal */
+/* Bandeau légal : texte + liens empilés, séparé du reste par le gap de .ftr. */
 .ftr-legal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
   max-width: 72rem;
-  margin: var(--fold-space-xl, 2rem) auto 0;
+  margin-inline: auto;
+  width: 100%;
   padding-top: var(--fold-space-md, 1rem);
   border-top: 1px solid rgba(255, 255, 255, 0.15);
   font-size: 0.75rem;
@@ -129,9 +147,6 @@
 }
 .ftr-legal p {
   margin: 0;
-}
-.ftr-legal-links {
-  margin-top: 0.4rem;
 }
 .ftr-legal-links a {
   color: var(--ftr-fg);
