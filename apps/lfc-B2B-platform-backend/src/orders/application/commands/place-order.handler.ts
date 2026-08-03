@@ -1,6 +1,12 @@
+import type { BillingAddressPayload } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { EmptyOrderError, UnknownSkuError } from "../../domain/errors/order-errors.js";
+import { PlatformSettingsRepository } from "../../../platform-settings/domain/platform-settings.repository.js";
+import {
+  EmptyOrderError,
+  PickupNotConfiguredError,
+  UnknownSkuError,
+} from "../../domain/errors/order-errors.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import {
   OrderRepository,
@@ -22,6 +28,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly guard: OrderGuardReader,
     private readonly catalog: ProductCatalogReader,
     private readonly orders: OrderRepository,
+    private readonly settings: PlatformSettingsRepository,
   ) {}
 
   async execute(command: PlaceOrderCommand): Promise<PlacedOrder> {
@@ -31,13 +38,16 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     const status = await this.guard.companyStatusOf(command.companyId);
     ensureCanOrder(status, command.companyId);
 
+    const acheminement = await this.resolveFulfillment(command);
     const lines = this.resolveLines(command.payload.lines);
     const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
 
     return this.orders.place({
       companyId: command.companyId,
       placedByUserId: command.actorUserId,
-      deliveryAddressId: command.payload.deliveryAddressId,
+      fulfillmentMethod: command.payload.fulfillmentMethod,
+      deliveryAddressId: acheminement.deliveryAddressId,
+      pickupAddress: acheminement.pickupAddress,
       requestedDeliveryDate: command.payload.requestedDeliveryDate
         ? new Date(command.payload.requestedDeliveryDate)
         : null,
@@ -47,6 +57,26 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       totalCents: subtotalCents,
       lines,
     });
+  }
+
+  /**
+   * Résout l'acheminement. En **retrait**, on **fige** l'adresse du point de retrait
+   * du moment (Réglages) — sinon `PickupNotConfiguredError` (aucun point configuré).
+   * En **livraison**, l'`addressId` du payload (le schéma garantit sa présence) ;
+   * son appartenance à l'entreprise est vérifiée dans la transaction du repository.
+   */
+  private async resolveFulfillment(command: PlaceOrderCommand): Promise<{
+    readonly deliveryAddressId: string | null;
+    readonly pickupAddress: BillingAddressPayload | null;
+  }> {
+    if (command.payload.fulfillmentMethod === "pickup") {
+      const pickup = (await this.settings.read()).pickupAddress;
+      if (pickup === null) {
+        throw new PickupNotConfiguredError();
+      }
+      return { deliveryAddressId: null, pickupAddress: pickup };
+    }
+    return { deliveryAddressId: command.payload.deliveryAddressId, pickupAddress: null };
   }
 
   /**

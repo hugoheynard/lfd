@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
+import { PlatformSettingsModule } from "../platform-settings/platform-settings.module.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
@@ -22,7 +23,7 @@ import { OrdersController } from "./http/orders.controller.js";
  * résolus par un catalogue semé (jetable jusqu'au sync PIM).
  */
 @Module({
-  imports: [CqrsModule],
+  imports: [CqrsModule, PlatformSettingsModule],
   controllers: [OrdersController],
   providers: [
     PlaceOrderHandler,

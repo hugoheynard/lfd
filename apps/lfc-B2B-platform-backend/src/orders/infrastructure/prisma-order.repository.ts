@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { AddressKind } from "../../infra/database/client/client.js";
+import { AddressKind, Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { DeliveryAddressInvalidError } from "../domain/errors/order-errors.js";
 import {
@@ -32,19 +32,22 @@ export class PrismaOrderRepository extends OrderRepository {
 
   async place(order: OrderToPlace): Promise<PlacedOrder> {
     return this.prisma.$transaction(async (tx) => {
-      // L'adresse de livraison doit relever de CETTE entreprise (livraison, non
-      // archivée) — filtre sur (id ET companyId), jamais l'id seul.
-      const address = await tx.address.findFirst({
-        where: {
-          id: order.deliveryAddressId,
-          companyId: order.companyId,
-          kind: AddressKind.livraison,
-          archivedAt: null,
-        },
-        select: { id: true },
-      });
-      if (address === null) {
-        throw new DeliveryAddressInvalidError(order.deliveryAddressId);
+      // En **livraison**, l'adresse doit relever de CETTE entreprise (livraison,
+      // non archivée) — filtre sur (id ET companyId), jamais l'id seul. En
+      // **retrait**, aucune adresse à valider : le snapshot est déjà figé.
+      if (order.fulfillmentMethod === "delivery") {
+        const address = await tx.address.findFirst({
+          where: {
+            id: order.deliveryAddressId ?? "",
+            companyId: order.companyId,
+            kind: AddressKind.livraison,
+            archivedAt: null,
+          },
+          select: { id: true },
+        });
+        if (address === null) {
+          throw new DeliveryAddressInvalidError(order.deliveryAddressId ?? "");
+        }
       }
 
       return tx.order.create({
@@ -53,7 +56,9 @@ export class PrismaOrderRepository extends OrderRepository {
           companyId: order.companyId,
           placedByUserId: order.placedByUserId,
           requestedDeliveryDate: order.requestedDeliveryDate,
+          fulfillmentMethod: order.fulfillmentMethod,
           deliveryAddressId: order.deliveryAddressId,
+          pickupAddress: order.pickupAddress ?? Prisma.DbNull,
           subtotalCents: order.subtotalCents,
           totalCents: order.totalCents,
           note: order.note,

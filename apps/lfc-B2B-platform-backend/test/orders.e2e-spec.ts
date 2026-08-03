@@ -168,3 +168,57 @@ describe("checkout → Order", () => {
     expect(await ctx.prisma.order.count({ where: { companyId } })).toBe(0);
   });
 });
+
+describe("retrait (fallback sans livraison)", () => {
+  const LABO = {
+    label: "Labo",
+    ligne1: "5 rue du Four",
+    ligne2: "",
+    codePostal: "75002",
+    ville: "Paris",
+    pays: "France",
+  };
+
+  /** Configure le point de retrait sur le singleton des réglages. */
+  async function setPickup(address: typeof LABO | null): Promise<void> {
+    await ctx.prisma.platformSettings.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", pickupAddress: address ?? undefined },
+      update: { pickupAddress: address ?? null },
+    });
+  }
+
+  it("passe une commande en RETRAIT : adresse labo figée, sans adresse de livraison", async () => {
+    const { companyId } = await seedCompany("active");
+    await setPickup(LABO);
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post(`/companies/${companyId}/orders`)
+      .send({
+        fulfillmentMethod: "pickup",
+        note: "",
+        lines: [{ sku: "VIE-001", quantity: 2 }],
+      })
+      .expect(201);
+
+    const stored = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: jsonBody<PlacedOrderResponse>(response).id },
+    });
+    expect(stored.fulfillmentMethod).toBe("pickup");
+    expect(stored.deliveryAddressId).toBeNull();
+    expect(stored.pickupAddress).toEqual(LABO);
+  });
+
+  it("refuse le retrait si aucun point de retrait n'est configuré (409)", async () => {
+    const { companyId } = await seedCompany("active");
+    await setPickup(null);
+
+    await ctx
+      .asSub(MEMBER)
+      .post(`/companies/${companyId}/orders`)
+      .send({ fulfillmentMethod: "pickup", note: "", lines: [{ sku: "VIE-001", quantity: 1 }] })
+      .expect(409);
+    expect(await ctx.prisma.order.count({ where: { companyId } })).toBe(0);
+  });
+});

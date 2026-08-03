@@ -102,6 +102,14 @@ enum PieceMode {
   required
 }
 
+/// Mode d'**acheminement** d'une commande. `delivery` = livraison à une adresse ;
+/// `pickup` = retrait au point de retrait (labo), fallback tant que la livraison
+/// n'existe pas. Cf. `documentation/architecture-activation-configuration-b2b.md`.
+enum FulfillmentMethod {
+  delivery
+  pickup
+}
+
 /// Cycle de vie d'une commande.
 enum OrderStatus {
   draft
@@ -394,8 +402,15 @@ model Order {
   // Alimente le plan de prod (« à produire pour demain »).
   requestedDeliveryDate DateTime? @map("requested_delivery_date") @db.Date
 
-  deliveryAddressId String  @map("delivery_address_id")
-  deliveryAddress   Address @relation("OrderDeliveryAddress", fields: [deliveryAddressId], references: [id])
+  // Acheminement. `delivery` → `deliveryAddressId` renseigné ; `pickup` → adresse
+  // de retrait FIGÉE dans `pickupAddress` (snapshot des champs postaux du labo au
+  // moment de la commande, comme les prix), `deliveryAddressId` null.
+  fulfillmentMethod FulfillmentMethod @default(delivery) @map("fulfillment_method")
+
+  deliveryAddressId String?  @map("delivery_address_id")
+  deliveryAddress   Address? @relation("OrderDeliveryAddress", fields: [deliveryAddressId], references: [id])
+
+  pickupAddress Json? @map("pickup_address")
 
   // Argent en centimes (snapshot au moment de la commande)
   subtotalCents Int    @map("subtotal_cents")
@@ -462,6 +477,10 @@ model PlatformSettings {
   kbisMode     PieceMode @default(optional) @map("kbis_mode")
   billingMode  PieceMode @default(required) @map("billing_mode")
   deliveryMode PieceMode @default(hidden) @map("delivery_mode")
+
+  // Adresse du **point de retrait** (labo) — champs postaux en JSON, ou null si non
+  // configuré. Fallback d'acheminement quand la livraison n'existe pas encore.
+  pickupAddress Json? @map("pickup_address")
 
   updatedAt DateTime @updatedAt @map("updated_at")
 

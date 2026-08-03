@@ -38,6 +38,7 @@ const allRequired: PlatformSettings = {
   kbis: "required",
   billing: "required",
   delivery: "required",
+  pickupAddress: null,
 };
 
 describe("missingRequiredPieces", () => {
@@ -56,6 +57,7 @@ describe("missingRequiredPieces", () => {
       kbis: "hidden",
       billing: "required",
       delivery: "hidden",
+      pickupAddress: null,
     };
     expect(missingRequiredPieces(detail(), settings)).toEqual(["billing"]);
   });

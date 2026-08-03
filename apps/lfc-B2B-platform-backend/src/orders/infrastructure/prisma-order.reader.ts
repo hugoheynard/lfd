@@ -1,6 +1,14 @@
-import type { OrderLineView, OrderStatus, OrderView } from "@lfd/contracts";
+import {
+  type BillingAddressPayload,
+  billingAddressPayloadSchema,
+  type FulfillmentMethod,
+  type OrderLineView,
+  type OrderStatus,
+  type OrderView,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import type { Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { OrderReader } from "../domain/ports/order.reader.js";
 
@@ -20,7 +28,9 @@ interface OrderRow {
   readonly orderNumber: string;
   readonly status: OrderStatus;
   readonly requestedDeliveryDate: Date | null;
-  readonly deliveryAddressId: string;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly deliveryAddressId: string | null;
+  readonly pickupAddress: Prisma.JsonValue | null;
   readonly note: string;
   readonly subtotalCents: number;
   readonly totalCents: number;
@@ -45,7 +55,9 @@ export class PrismaOrderReader extends OrderReader {
         orderNumber: true,
         status: true,
         requestedDeliveryDate: true,
+        fulfillmentMethod: true,
         deliveryAddressId: true,
+        pickupAddress: true,
         note: true,
         subtotalCents: true,
         totalCents: true,
@@ -72,13 +84,20 @@ function toIsoDate(date: Date | null): string | null {
   return date === null ? null : date.toISOString().slice(0, 10);
 }
 
+/** Valide le JSON de l'adresse de retrait figée, ou `null` (commande en livraison). */
+function parsePickup(value: Prisma.JsonValue | null): BillingAddressPayload | null {
+  return value === null ? null : billingAddressPayloadSchema.parse(value);
+}
+
 function toOrderView(row: OrderRow): OrderView {
   return {
     id: row.id,
     orderNumber: row.orderNumber,
     status: row.status,
     requestedDeliveryDate: toIsoDate(row.requestedDeliveryDate),
+    fulfillmentMethod: row.fulfillmentMethod,
     deliveryAddressId: row.deliveryAddressId,
+    pickupAddress: parsePickup(row.pickupAddress),
     note: row.note,
     subtotalCents: row.subtotalCents,
     totalCents: row.totalCents,

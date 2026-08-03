@@ -42,6 +42,20 @@ export class UnknownSkuError extends DomainError {
   }
 }
 
+/**
+ * Un **retrait** est demandé mais aucun point de retrait n'est configuré (l'adresse
+ * labo dans les Réglages). Refus **métier** (409) : la demande est bien formée,
+ * mais l'état de la plateforme ne permet pas ce mode d'acheminement.
+ */
+export class PickupNotConfiguredError extends BusinessError {
+  constructor() {
+    super(
+      "orders.pickup.not_configured",
+      "Le retrait n'est pas disponible : aucun point de retrait n'est configuré.",
+    );
+  }
+}
+
 /** L'adresse de livraison visée n'appartient pas à cette entreprise. */
 export class DeliveryAddressInvalidError extends DomainError {
   constructor(readonly addressId: string) {

@@ -1,3 +1,5 @@
+import type { BillingAddressPayload, FulfillmentMethod } from "@lfd/contracts";
+
 /** Une ligne prête à persister : SKU + snapshots (nom, prix, TVA) + total. */
 export interface OrderLineToPersist {
   readonly sku: string;
@@ -12,7 +14,12 @@ export interface OrderLineToPersist {
 export interface OrderToPlace {
   readonly companyId: string;
   readonly placedByUserId: string;
-  readonly deliveryAddressId: string;
+  /** Acheminement : `delivery` → `deliveryAddressId` ; `pickup` → `pickupAddress`. */
+  readonly fulfillmentMethod: FulfillmentMethod;
+  /** Adresse de livraison (livraison), ou `null` (retrait). */
+  readonly deliveryAddressId: string | null;
+  /** Adresse de retrait **figée** (retrait), ou `null` (livraison). */
+  readonly pickupAddress: BillingAddressPayload | null;
   readonly requestedDeliveryDate: Date | null;
   readonly note: string;
   readonly subtotalCents: number;
