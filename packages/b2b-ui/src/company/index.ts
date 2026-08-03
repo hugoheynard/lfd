@@ -3,6 +3,8 @@ export { CompanyContactsCard } from './company-contacts-card/company-contacts-ca
 export { CompanyReferenceCard } from './company-reference-card/company-reference-card';
 export { CompanyAddressesCard } from './company-addresses-card/company-addresses-card';
 export { CompanyBillingCard } from './company-billing-card/company-billing-card';
+export { CompanyIdentityFields } from './company-identity-fields/company-identity-fields';
+export { ContactFields } from './contact-fields/contact-fields';
 export { CompanyActivationChecklist } from './company-activation-checklist/company-activation-checklist';
 export type { CompanyActivationStep } from './company-activation-checklist/company-activation-checklist';
 export type {
@@ -12,6 +14,13 @@ export type {
 } from './company-identity.view-model';
 export type { CompanyContactCardView } from './company-contacts.view-model';
 export { formatSiret } from './format';
+export {
+  EMPTY_COMPANY_IDENTITY_DRAFT,
+  EMPTY_COMPANY_CONTACT_DRAFT,
+  isCompanyIdentityValid,
+  isCompanyContactValid,
+} from './company-form.model';
+export type { CompanyIdentityDraft, CompanyContactDraft } from './company-form.model';
 export {
   WEEKDAYS,
   formatSlot,

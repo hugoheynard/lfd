@@ -1,0 +1,31 @@
+<div class="row">
+  <fold-input
+    label="Prénom"
+    required
+    [value]="value().firstName"
+    (valueChange)="setFirstName($event)"
+  />
+  <fold-input label="Nom" required [value]="value().lastName" (valueChange)="setLastName($event)" />
+</div>
+
+<fold-input
+  label="Fonction"
+  placeholder="ex. Responsable achats"
+  optional
+  [value]="value().fonction"
+  (valueChange)="setFonction($event)"
+/>
+<fold-input
+  label="E-mail"
+  type="email"
+  required
+  [value]="value().email"
+  (valueChange)="setEmail($event)"
+/>
+<fold-input
+  label="Téléphone"
+  type="tel"
+  optional
+  [value]="value().phone"
+  (valueChange)="setPhone($event)"
+/>

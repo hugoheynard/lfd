@@ -1,0 +1,42 @@
+<fold-input
+  label="Raison sociale"
+  hint="la dénomination légale, telle qu'elle figure au registre"
+  required
+  [value]="value().raisonSociale"
+  (valueChange)="setRaisonSociale($event)"
+/>
+<fold-input
+  label="Enseigne"
+  hint="nom commercial, s'il diffère de la raison sociale"
+  optional
+  [value]="value().enseigne"
+  (valueChange)="setEnseigne($event)"
+/>
+
+<div class="row">
+  <fold-input
+    class="forme"
+    label="Forme juridique"
+    placeholder="SAS, SARL, EI…"
+    required
+    [value]="value().formeJuridique"
+    (valueChange)="setFormeJuridique($event)"
+  />
+  <fold-input
+    class="siret"
+    label="SIRET"
+    placeholder="812 456 789 00021"
+    hint="14 chiffres — la clé de contrôle est vérifiée"
+    required
+    [value]="value().siret"
+    (valueChange)="setSiret($event)"
+  />
+</div>
+
+<fold-input
+  label="TVA intracommunautaire"
+  optional
+  hint="laissez vide si vous n'êtes pas assujetti"
+  [value]="value().tvaIntracom"
+  (valueChange)="setTvaIntracom($event)"
+/>

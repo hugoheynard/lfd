@@ -1,0 +1,14 @@
+// Le fragment coule dans la colonne du corps de panneau (mêmes gouttières).
+:host {
+  display: contents;
+}
+
+.row {
+  display: flex;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+}
+.row > * {
+  flex: 1;
+  min-width: 12rem;
+}
