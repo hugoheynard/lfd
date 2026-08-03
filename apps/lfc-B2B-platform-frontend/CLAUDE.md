@@ -21,6 +21,15 @@ commandes/
   `templateUrl` / `styleUrl` vers les fichiers frères.
 - Nom du dossier = nom du composant (kebab-case) ; les fichiers reprennent ce nom.
 - `ViewEncapsulation.None` autorisé **uniquement** pour relocaliser du CSS global.
+- Le `.scss` n'est créé **que s'il y a du style** (pas de fichier vide pour la
+  symétrie) ; un composant sans style n'a pas de `styleUrl`.
+- **Un spec par NOUVEAU composant** (`x.spec.ts` colocalisé). On ne backfille pas
+  en masse l'existant : on teste en priorité la **logique** (panels de formulaire,
+  checkout, activation, tables), pas les vues purement présentationnelles.
+- **Services / helpers / modèles ne traînent pas à côté d'une page** : une page
+  est dans son dossier ; les fichiers non-composant vivent ailleurs (ex.
+  `entreprises/addresses.service.ts` reste, mais `entreprises-page` doit avoir son
+  propre dossier `entreprises-page/`).
 
 ## Fold d'abord (reuse-before-create)
 
@@ -29,6 +38,28 @@ réimplémentation maison d'un bouton, champ, badge, carte, table, callout, pane
 On ne crée un composant applicatif que pour de la logique **métier**, et il
 **compose** des primitives fold. Tokens fold uniquement (`--fold-color-*`,
 `--fold-space-*`, …) — pas de couleur ni d'espacement en dur.
+
+## CSS propre & marges (règles permanentes)
+
+- **Zéro CSS morte.** Toute classe définie dans un `.scss` est référencée dans le
+  `.html`/`.ts` du même composant. Une classe non utilisée se supprime.
+- **Un composant ne pose JAMAIS sa marge.** Pas de `margin` sur `:host`, ni de
+  marge externe / inter-composants, ni de `margin-top/bottom` de séparation entre
+  enfants. L'espacement vient :
+  - du **`gap`** du conteneur flex/grid parent (y compris les slots de
+    `fold-page-layout`, `fold-aside-layout`, panels `.body`) ;
+  - des **écarts naturels** des composants fold.
+  Seules exceptions tolérées : `margin: auto` (centrage / poussée flex, ex.
+  `.foot { margin-top: auto }`) et `margin: 0` (reset). Pour séparer un label de
+  son contrôle, envelopper la paire dans un flex-column avec `gap` — pas un
+  `margin-bottom` sur le label.
+
+## Toute page dans un fold-page-layout
+
+Tout composant **routé** a `<fold-page-layout>` comme élément **racine** de son
+template (titre, description, `[pageActions]`, rythme via `gap`). Exception : les
+pages **publiques hors-shell** (ex. `login`), rendues bare dans la branche
+non-authentifiée d'`app.html`.
 
 ## Shell
 
