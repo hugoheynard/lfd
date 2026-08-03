@@ -23,7 +23,16 @@
           <li class="muted">Votre panier est vide.</li>
         }
       </ul>
-      <p class="total"><span>Total</span><span>{{ fmt(cart.totalEur()) }}</span></p>
+      @if (adjustment(); as adj) {
+        <p class="line line-adjust">
+          <span>Sous-total</span><span>{{ fmtCents(subtotalCents()) }}</span>
+        </p>
+        <p class="line line-adjust">
+          <span>{{ adj.label }}</span>
+          <span>{{ adj.kind === 'discount' ? '− ' : '+ ' }}{{ fmtCents(adj.cents) }}</span>
+        </p>
+      }
+      <p class="total"><span>Total</span><span>{{ fmtCents(totalCents()) }}</span></p>
     </section>
 
     <!-- Entreprise cliente -->

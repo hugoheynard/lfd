@@ -8,7 +8,12 @@ import {
   signal,
 } from '@angular/core';
 
-import type { DeliveryAddressView, FulfillmentMethod, PlaceOrderPayload } from '@lfd/contracts';
+import type {
+  CartAdjustment,
+  DeliveryAddressView,
+  FulfillmentMethod,
+  PlaceOrderPayload,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -22,9 +27,30 @@ import type { Company } from '../../account/account.model';
 import { AccountService } from '../../account/account.service';
 import { formatEurValue } from '../../data/catalogue-seed';
 import { CartService } from '../../data/cart.service';
+import { DeliveryZonesService } from '../../entreprises/delivery-zones.service';
 import { PickupAddressesService } from '../../entreprises/pickup-addresses.service';
 import { PlatformSettingsService } from '../../entreprises/platform-settings.service';
 import { OrdersService } from '../orders.service';
+
+/** Un ajustement de panier affiché au checkout : remise (retrait) ou frais (zone). */
+interface CheckoutAdjustment {
+  readonly kind: 'discount' | 'fee';
+  readonly label: string;
+  readonly cents: number;
+}
+
+/**
+ * Montant en centimes d'un {@link CartAdjustment} sur un sous-total — **miroir
+ * local** de `cartAdjustmentCents` de `@lfd/contracts`, réimplémenté ici pour
+ * garder le contrat **type-only** côté client (importer la fonction tirerait zod
+ * dans le bundle). Le serveur reste l'autorité ; ceci n'est qu'un affichage.
+ */
+function adjustmentCents(adjustment: CartAdjustment, subtotalCents: number): number {
+  if (adjustment.mode === 'amount') {
+    return Math.max(0, adjustment.cents);
+  }
+  return Math.max(0, Math.round((subtotalCents * adjustment.bp) / 10000));
+}
 
 /**
  * Panneau **Checkout** — dernière étape du panier : choisir l'entreprise
@@ -55,6 +81,7 @@ export class CheckoutPanel {
   private readonly orders = inject(OrdersService);
   private readonly settings = inject(PlatformSettingsService);
   private readonly pickups = inject(PickupAddressesService);
+  private readonly zones = inject(DeliveryZonesService);
   protected readonly cart = inject(CartService);
 
   /** Ouverture depuis une page qui sait déjà quel établissement viser. */
@@ -76,6 +103,50 @@ export class CheckoutPanel {
   /** Le point de retrait par défaut (labo), présélectionné, affiché en lecture seule. */
   protected readonly defaultPickup = this.pickups.defaultPickup;
   protected readonly isPickup = computed(() => this.fulfillment() === 'pickup');
+
+  /** Sous-total du panier, en centimes (le panier raisonne en euros). */
+  protected readonly subtotalCents = computed(() => Math.round(this.cart.totalEur() * 100));
+
+  /** L'adresse de livraison sélectionnée (pour retrouver sa zone), ou `null`. */
+  private readonly selectedAddress = computed<DeliveryAddressView | null>(
+    () => this.addresses().find((address) => address.id === this.addressId()) ?? null,
+  );
+
+  /**
+   * L'ajustement affiché : la **remise** du point de retrait (retrait), ou le
+   * **frais** de la zone du code postal livré (livraison), ou `null`. Miroir du
+   * calcul serveur (qui reste l'autorité) — juste pour montrer le prix.
+   */
+  protected readonly adjustment = computed<CheckoutAdjustment | null>(() => {
+    const subtotal = this.subtotalCents();
+    if (this.isPickup()) {
+      const discount = this.defaultPickup()?.discount ?? null;
+      return discount === null
+        ? null
+        : { kind: 'discount', label: 'Remise retrait', cents: adjustmentCents(discount, subtotal) };
+    }
+    const address = this.selectedAddress();
+    const zone = address === null ? null : this.zones.zoneFor(address.codePostal);
+    return zone === null
+      ? null
+      : {
+          kind: 'fee',
+          label: `Livraison ${zone.label || zone.codePostal}`,
+          cents: adjustmentCents(zone.fee, subtotal),
+        };
+  });
+
+  /** Total affiché : `max(0, sous-total − remise) + frais`, en centimes. */
+  protected readonly totalCents = computed(() => {
+    const subtotal = this.subtotalCents();
+    const adjustment = this.adjustment();
+    if (adjustment === null) {
+      return subtotal;
+    }
+    return adjustment.kind === 'discount'
+      ? Math.max(0, subtotal - adjustment.cents)
+      : subtotal + adjustment.cents;
+  });
 
   /** État de soumission : erreur backend, et numéro de commande une fois passée. */
   protected readonly submitting = signal(false);
@@ -135,6 +206,11 @@ export class CheckoutPanel {
 
   protected fmt(value: number): string {
     return formatEurValue(value);
+  }
+
+  /** Formate un montant en **centimes** (les ajustements raisonnent en centimes). */
+  protected fmtCents(cents: number): string {
+    return formatEurValue(cents / 100);
   }
 
   /** Lit la valeur d'un `<input>` / `<textarea>` natif sans caster en `any`. */
