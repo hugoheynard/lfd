@@ -29,7 +29,8 @@ export const routes: Routes = [
     path: 'boutique',
     title: 'Boutique — La Folie Coffee B2B',
     canActivate: [authenticatedGuard],
-    loadComponent: () => import('./boutique/boutique-page').then((m) => m.BoutiquePage),
+    loadComponent: () =>
+      import('./boutique/boutique-page/boutique-page').then((m) => m.BoutiquePage),
   },
   homeRoute,
   {
@@ -56,13 +57,15 @@ export const routes: Routes = [
     path: 'commandes',
     title: 'Mes commandes — La Folie Coffee B2B',
     canActivate: [authenticatedGuard],
-    loadComponent: () => import('./commandes/commandes-page').then((m) => m.CommandesPage),
+    loadComponent: () =>
+      import('./commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
   },
   {
     path: 'entreprises',
     title: 'Mes entreprises — La Folie Coffee B2B',
     canActivate: [authenticatedGuard],
-    loadComponent: () => import('./entreprises/entreprises-page').then((m) => m.EntreprisesPage),
+    loadComponent: () =>
+      import('./entreprises/entreprises-page/entreprises-page').then((m) => m.EntreprisesPage),
   },
   {
     // « Mon profil » a été scindée : la personne est passée dans Réglages, les

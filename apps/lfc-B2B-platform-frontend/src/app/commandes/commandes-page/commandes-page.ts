@@ -8,14 +8,14 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
-import { CommerceNav } from '../commerce/commerce-nav/commerce-nav';
-import { CommerceContextService } from '../commerce/commerce-context.service';
-import { type BillingPeriod, groupIntoPeriods } from './billing-periods';
-import { BillingPeriodsView } from './billing-periods-view/billing-periods-view';
-import { downloadBon as downloadBonFile } from './download-bon';
-import { OrdersTable } from './orders-table/orders-table';
-import { buildDemoOrders, type CommandeRow } from './orders-demo-seed';
-import { buildDemoRegimeChanges, type PaymentRegimeChange } from './payment-regime-changes';
+import { CommerceNav } from '../../commerce/commerce-nav/commerce-nav';
+import { CommerceContextService } from '../../commerce/commerce-context.service';
+import { type BillingPeriod, groupIntoPeriods } from '../billing-periods';
+import { BillingPeriodsView } from '../billing-periods-view/billing-periods-view';
+import { downloadBon as downloadBonFile } from '../download-bon';
+import { OrdersTable } from '../orders-table/orders-table';
+import { buildDemoOrders, type CommandeRow } from '../orders-demo-seed';
+import { buildDemoRegimeChanges, type PaymentRegimeChange } from '../payment-regime-changes';
 
 /** Délai de règlement (jours après clôture). `0` = 1er du mois suivant (front-only). */
 const MONTHLY_DUE_DAYS = 0;

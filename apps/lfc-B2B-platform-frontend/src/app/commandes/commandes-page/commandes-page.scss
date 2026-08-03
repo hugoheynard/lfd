@@ -4,7 +4,6 @@
 .toolbar {
   display: flex;
   justify-content: center;
-  margin-bottom: var(--fold-space-md);
 }
 
 .year-nav {
@@ -12,7 +11,6 @@
   align-items: center;
   justify-content: center;
   gap: var(--fold-space-sm);
-  margin-bottom: var(--fold-space-lg);
 }
 .year-nav .year {
   min-width: 4ch;

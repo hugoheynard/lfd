@@ -2,13 +2,13 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 
 import { FoldPageLayoutComponent, FoldPageSectionComponent } from 'fold-ng';
 
-import { FoldBannerCarouselComponent, type FoldBanner, type FoldProduct } from '../../shared';
-import { CATEGORIES, PRODUCTS } from '../data/catalogue-seed';
-import { CartService } from '../data/cart.service';
-import { FavoritesService } from '../data/favorites.service';
-import { ProductCatalogue } from '../catalogue/product-catalogue/product-catalogue';
-import { DiscoverBands } from './discover-bands/discover-bands';
-import { FeaturedRail, type FeaturedItem } from './featured-rail/featured-rail';
+import { FoldBannerCarouselComponent, type FoldBanner, type FoldProduct } from '../../../shared';
+import { CATEGORIES, PRODUCTS } from '../../data/catalogue-seed';
+import { CartService } from '../../data/cart.service';
+import { FavoritesService } from '../../data/favorites.service';
+import { ProductCatalogue } from '../../catalogue/product-catalogue/product-catalogue';
+import { DiscoverBands } from '../discover-bands/discover-bands';
+import { FeaturedRail, type FeaturedItem } from '../featured-rail/featured-rail';
 
 /** Sélection éditoriale : le croissant (best-seller) au centre des trois. */
 const FEATURED_SPEC: readonly {

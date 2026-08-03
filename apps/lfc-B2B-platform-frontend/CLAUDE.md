@@ -28,8 +28,11 @@ commandes/
   checkout, activation, tables), pas les vues purement présentationnelles.
 - **Services / helpers / modèles ne traînent pas à côté d'une page** : une page
   est dans son dossier ; les fichiers non-composant vivent ailleurs (ex.
-  `entreprises/addresses.service.ts` reste, mais `entreprises-page` doit avoir son
+  `entreprises/addresses.service.ts` reste, mais `entreprises-page` est dans son
   propre dossier `entreprises-page/`).
+- **Exception racine** : le composant `App` (bootstrappé, non routé) reste à
+  `src/app/` aux côtés de `app.config.*` / `app.routes.*` — c'est la racine de
+  l'app, pas une page.
 
 ## Fold d'abord (reuse-before-create)
 

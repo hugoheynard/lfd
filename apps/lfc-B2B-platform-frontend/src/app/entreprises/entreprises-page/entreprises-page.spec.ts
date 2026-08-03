@@ -4,8 +4,8 @@ import { provideRouter } from '@angular/router';
 import { FoldPanelHostService } from 'fold-ng';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { Company, UserProfile } from '../account/account.model';
-import { AccountService, type AccountStatus } from '../account/account.service';
+import type { Company, UserProfile } from '../../account/account.model';
+import { AccountService, type AccountStatus } from '../../account/account.service';
 import { EntreprisesPage } from './entreprises-page';
 
 /**

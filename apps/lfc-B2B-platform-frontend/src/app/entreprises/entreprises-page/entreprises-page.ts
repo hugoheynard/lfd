@@ -17,10 +17,10 @@ import {
   type FoldViewNavItem,
 } from 'fold-ng';
 
-import { companyDisplayName } from '../account/account.model';
-import { AccountService } from '../account/account.service';
-import { CreerEntreprisePanel } from './creer-entreprise-panel/creer-entreprise-panel';
-import { EntrepriseDetail } from './entreprise-detail/entreprise-detail';
+import { companyDisplayName } from '../../account/account.model';
+import { AccountService } from '../../account/account.service';
+import { CreerEntreprisePanel } from '../creer-entreprise-panel/creer-entreprise-panel';
+import { EntrepriseDetail } from '../entreprise-detail/entreprise-detail';
 
 /**
  * Page **Mes entreprises** — remplace l'ancienne « Mon profil », dont elle
