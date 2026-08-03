@@ -1,54 +1,45 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
-
+import { FoldPanelHostService } from 'fold-ng';
 import {
-  FoldBadgeComponent,
-  FoldButtonComponent,
-  FoldCalloutComponent,
-  FoldCardComponent,
-  FoldFieldComponent,
-  FoldFieldListComponent,
-  FoldIconComponent,
-  FoldPageSectionComponent,
-  FoldPanelHostService,
-} from 'fold-ng';
+  CompanyIdentityCard,
+  type CompanyBadgeTone,
+  type CompanyIdentityView,
+} from '@lfd/b2b-ui/company';
 
 import {
   companyRoleLabel,
   companyStatusLabel,
   formatSiret,
   type Company,
+  type CompanyStatus,
 } from '../../account/account.model';
 import { AccountService } from '../../account/account.service';
 import { EntrepriseIdentitePanel } from '../entreprise-identite-panel/entreprise-identite-panel';
 
+/** Ton du badge de statut, par statut de société. */
+const STATUS_TONE: Readonly<Record<CompanyStatus, CompanyBadgeTone>> = {
+  active: 'success',
+  pending: 'warning',
+  suspended: 'alert',
+};
+
+/** Zone de dépôt KBIS vide, formulée pour le **client** (« votre compte »). */
+const KBIS_EMPTY_HINT =
+  "L'activation de votre compte passe par la réception de votre extrait KBIS (format PDF).";
+
 /**
- * Section **Identité légale** d'une entreprise — les données réelles, telles que
- * le backend les a enregistrées, plus le **KBIS** (l'extrait demandé pour la
- * validation) : voir/télécharger pour tout membre, déposer/remplacer pour le
- * gestionnaire, badge « Certifié » quand l'entreprise est validée.
- *
- * L'identité **souple** (enseigne + n° de TVA) est éditable par le gestionnaire
- * via un panneau (`PATCH /companies/:id/identity`) ; la raison sociale, la forme
- * juridique et le SIRET restent fixés à la création (les changer = une autre
- * société). Quand la TVA est requise mais absente, la zone passe en `warning`.
+ * Section **Identité légale** d'une entreprise côté **client** — _container_ de
+ * la carte présentationnelle `@lfd/b2b-ui/company`. Il mappe le modèle `Company`
+ * vers le view-model neutre, calcule les capacités (gestionnaire =
+ * `company_admin`) et câble les intentions de la carte (édition, KBIS) vers
+ * `AccountService` et le panneau d'édition. Toute la présentation vit dans la
+ * lib ; ici, uniquement la donnée, l'auth et les mutations.
  */
 @Component({
   selector: 'app-entreprise-identite',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DatePipe,
-    FoldPageSectionComponent,
-    FoldCardComponent,
-    FoldCalloutComponent,
-    FoldFieldListComponent,
-    FoldFieldComponent,
-    FoldBadgeComponent,
-    FoldButtonComponent,
-    FoldIconComponent,
-  ],
+  imports: [CompanyIdentityCard],
   templateUrl: './entreprise-identite.html',
-  styleUrl: './entreprise-identite.scss',
 })
 export class EntrepriseIdentite {
   private readonly account = inject(AccountService);
@@ -56,36 +47,33 @@ export class EntrepriseIdentite {
 
   readonly company = input.required<Company>();
 
+  /** Texte de la zone de dépôt KBIS vide, exposé au template. */
+  protected readonly kbisEmptyHint = KBIS_EMPTY_HINT;
+
+  /** Modèle `Company` projeté vers le view-model neutre de la carte. */
+  protected readonly identity = computed<CompanyIdentityView>(() => {
+    const c = this.company();
+    return {
+      raisonSociale: c.raisonSociale,
+      enseigne: c.enseigne,
+      formeJuridique: c.formeJuridique,
+      siret: formatSiret(c.siret),
+      tvaIntracom: c.tvaIntracom,
+      tvaMissing: c.vatNumberRequired && c.tvaIntracom.trim() === '',
+      statusLabel: companyStatusLabel(c.status),
+      statusTone: STATUS_TONE[c.status],
+      roleLabel: companyRoleLabel(c.role),
+      kbis: c.kbis,
+    };
+  });
+
+  /** Seul le gestionnaire édite l'identité souple et gère le KBIS. */
   protected readonly canManage = computed(() => this.company().role === 'company_admin');
-
-  /** TVA requise par la forme juridique mais absente : zone à compléter. */
-  protected readonly tvaMissing = computed(
-    () => this.company().vatNumberRequired && this.company().tvaIntracom.trim() === '',
-  );
-
-  protected readonly siret = computed(() => formatSiret(this.company().siret));
-  protected readonly statusLabel = computed(() => companyStatusLabel(this.company().status));
-  protected readonly roleLabel = computed(() => companyRoleLabel(this.company().role));
-
-  protected readonly kbis = computed(() => this.company().kbis);
-  protected readonly canManageKbis = computed(() => this.company().role === 'company_admin');
 
   /** Vrai le temps du dépôt (le service passe en `loading`). */
   protected readonly busy = computed(() => this.account.status() === 'loading');
   /** Erreur d'une action KBIS (dépôt / téléchargement). */
   protected readonly error = signal<string | null>(null);
-
-  /** Une société en attente est signalée en `warning`, une active en `success`. */
-  protected readonly statusVariant = computed(() => {
-    switch (this.company().status) {
-      case 'active':
-        return 'success' as const;
-      case 'pending':
-        return 'warning' as const;
-      case 'suspended':
-        return 'alert' as const;
-    }
-  });
 
   /** Édite l'identité souple (enseigne + n° de TVA) via un panneau. */
   protected modifier(): void {
@@ -100,14 +88,8 @@ export class EntrepriseIdentite {
     });
   }
 
-  /** Dépose le fichier choisi. `input` est réinitialisé pour permettre un re-dépôt du même nom. */
-  protected onKbisSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
-    if (file === undefined) {
-      return;
-    }
+  /** Téléverse le fichier KBIS choisi dans la carte. */
+  protected onKbisSelected(file: File): void {
     this.error.set(null);
     this.account.uploadKbis(this.company().id, file);
   }
@@ -119,7 +101,7 @@ export class EntrepriseIdentite {
 
   /** Télécharge le KBIS sous son nom. */
   protected download(): void {
-    const fileName = this.kbis()?.fileName ?? 'kbis.pdf';
+    const fileName = this.company().kbis?.fileName ?? 'kbis.pdf';
     this.withBlob((url) => {
       const a = document.createElement('a');
       a.href = url;
