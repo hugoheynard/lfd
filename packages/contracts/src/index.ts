@@ -52,7 +52,7 @@ export type {
   PickupAddressView,
   CreatedPickupResponse,
 } from "./pickup.js";
-export { deliveryZonePayloadSchema } from "./delivery-zone.js";
+export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,
   DeliveryZoneView,
