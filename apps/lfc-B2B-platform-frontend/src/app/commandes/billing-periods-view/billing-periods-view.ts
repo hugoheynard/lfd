@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import { FoldBadgeComponent, type FoldBadgeVariant, FoldButtonComponent } from 'fold-ng';
+import {
+  FoldBadgeComponent,
+  type FoldBadgeVariant,
+  FoldButtonComponent,
+  FoldElementTitleComponent,
+} from 'fold-ng';
 
 import { paymentTermLabel } from '../../account/account.model';
 import { CommandPeriodCard } from '../command-period-card/command-period-card';
@@ -41,7 +46,13 @@ const STATUS_META: Record<PeriodStatus, StatusMeta> = {
 @Component({
   selector: 'app-billing-periods-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldButtonComponent, CommandPeriodCard, CommandSingle],
+  imports: [
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldElementTitleComponent,
+    CommandPeriodCard,
+    CommandSingle,
+  ],
   templateUrl: './billing-periods-view.html',
   styleUrl: './billing-periods-view.scss',
 })

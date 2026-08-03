@@ -14,14 +14,8 @@
   container-type: inline-size;
 }
 
-// ---- Intitulés de colonnes (légers) ----
-.h {
-  font-size: var(--fold-text-xs, 0.75rem);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--fold-color-text-muted);
-}
+// Intitulés de colonnes : eyebrow fold (type porté par fold-element-title) ; ici
+// seule leur mise en grille compte. Masqués en vue étroite (voir plus bas).
 
 .col-period,
 .col-singles,

@@ -1,7 +1,7 @@
 <div class="ledger">
-  <!-- Intitulés de colonnes (légers, pas de chrome de tableau) -->
-  <span class="h h-periodic" aria-hidden="true">Paiement périodique</span>
-  <span class="h h-paid" aria-hidden="true">Payé à la commande</span>
+  <!-- Intitulés de colonnes (eyebrow fold, pas de chrome de tableau) -->
+  <fold-element-title class="h" variant="eyebrow" title="Paiement périodique" aria-hidden="true" />
+  <fold-element-title class="h" variant="eyebrow" title="Payé à la commande" aria-hidden="true" />
 
   @for (row of ledger(); track $index) {
     @switch (row.kind) {
