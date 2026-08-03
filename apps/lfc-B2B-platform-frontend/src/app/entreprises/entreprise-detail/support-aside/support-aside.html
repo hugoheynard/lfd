@@ -1,0 +1,27 @@
+<fold-card class="support">
+  @if (needsSetup()) {
+    <p class="kicker">
+      <fold-icon name="chat" [size]="15" />
+      Assistance commerciale
+    </p>
+    <p class="lede">
+      Vous rencontrez une difficulté pour terminer le paramétrage de votre compte ? Bénéficiez de
+      notre assistance commerciale en prenant rendez-vous.
+    </p>
+    <button foldButton intent="primary" icon="calendar" (click)="openSupport()">
+      Prendre rendez-vous
+    </button>
+  } @else {
+    <p class="kicker">
+      <fold-icon name="chat" [size]="15" />
+      Besoin d'aide ?
+    </p>
+    <p class="lede">
+      Votre compte est actif. Notre équipe commerciale reste disponible pour toute question sur vos
+      commandes ou votre paramétrage.
+    </p>
+    <button foldButton emphasis="outline" icon="calendar" (click)="openSupport()">
+      Prendre rendez-vous
+    </button>
+  }
+</fold-card>

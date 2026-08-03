@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { FoldAsideLayoutComponent } from 'fold-ng';
 
 import type { Company } from '../../account/account.model';
 import { AdressesSection } from '../../profil/adresses-section/adresses-section';
@@ -7,6 +8,7 @@ import { ActivationChecklist } from '../activation-checklist/activation-checklis
 import { CompanyContactsSection } from '../company-contacts-section/company-contacts-section';
 import { EntrepriseIdentite } from '../entreprise-identite/entreprise-identite';
 import { ReferenceCard } from '../reference-card/reference-card';
+import { SupportAside } from './support-aside/support-aside';
 
 /**
  * Le contenu d'**une** entreprise : son identité, ses contacts, ses adresses et
@@ -18,12 +20,14 @@ import { ReferenceCard } from '../reference-card/reference-card';
   selector: 'app-entreprise-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldAsideLayoutComponent,
     ReferenceCard,
     ActivationChecklist,
     EntrepriseIdentite,
     CompanyContactsSection,
     AdressesSection,
     FacturationSection,
+    SupportAside,
   ],
   templateUrl: './entreprise-detail.html',
   styleUrl: './entreprise-detail.scss',
