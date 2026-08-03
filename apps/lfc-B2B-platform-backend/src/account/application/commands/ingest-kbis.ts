@@ -1,0 +1,34 @@
+import type { CompanyRepository } from "../../domain/ports/company.repository.js";
+import type { KbisStore } from "../../domain/ports/kbis-store.js";
+import { KbisFile } from "../../domain/value-objects/kbis-file.js";
+
+/**
+ * Dépose un KBIS : **valide** le fichier, le **range** dans le stockage objet,
+ * puis écrit ses **métadonnées**. Le coeur du dépôt, **sans mur** — l'appelant
+ * (membre gestionnaire *ou* staff) a déjà décidé du droit d'agir.
+ *
+ * Extrait pour être partagé par le chemin **client** (mur membre) et le chemin
+ * **staff** (Porte B) : la séquence — et son invariant d'ordre — n'est écrite
+ * qu'une fois.
+ */
+export async function ingestKbis(
+  companyId: string,
+  fileName: string,
+  bytes: Buffer,
+  store: KbisStore,
+  companies: CompanyRepository,
+): Promise<void> {
+  // Le fichier se valide lui-même (PDF par ses octets, taille) avant de partir
+  // au stockage : on ne range jamais un fichier douteux.
+  const file = KbisFile.create(fileName, bytes);
+
+  // Ranger d'abord, écrire les métadonnées ensuite : si le stockage échoue, la
+  // base ne pointe pas vers un fichier absent.
+  const storageKey = await store.save(companyId, file);
+  await companies.saveKbisMetadata(companyId, {
+    storageKey,
+    fileName: file.fileName,
+    contentType: file.contentType,
+    size: file.size,
+  });
+}

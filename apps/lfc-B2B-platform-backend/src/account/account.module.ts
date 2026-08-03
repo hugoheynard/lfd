@@ -2,6 +2,13 @@ import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
 import { AddCompanyContactHandler } from "./application/commands/add-company-contact.handler.js";
+import {
+  AddDeliveryAddressByStaffHandler,
+  SaveBillingAddressByStaffHandler,
+  SetAgreedPaymentTermHandler,
+  UpdateIdentityByStaffHandler,
+  UploadKbisByStaffHandler,
+} from "./application/commands/admin-company.handlers.js";
 import { AddDeliveryAddressHandler } from "./application/commands/add-delivery-address.handler.js";
 import { CreateCompanyByStaffHandler } from "./application/commands/create-company-by-staff.handler.js";
 import { CreateCompanyHandler } from "./application/commands/create-company.handler.js";
@@ -45,6 +52,7 @@ import { PrismaSupportRequestRepository } from "./infrastructure/prisma-support-
 import { S3KbisStore } from "./infrastructure/s3-kbis-store.js";
 import { SupportRequestRepository } from "./domain/ports/support-request.repository.js";
 import { AdminCompaniesController } from "./http/admin-companies.controller.js";
+import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
 import { CompaniesController } from "./http/companies.controller.js";
 import { CompanySupportController } from "./http/company-support.controller.js";
 import { CompanyAddressesController } from "./http/company-addresses.controller.js";
@@ -70,6 +78,7 @@ import { MeController } from "./http/me.controller.js";
     CompanyAddressesController,
     CompanySupportController,
     AdminCompaniesController,
+    AdminCompanyPiecesController,
   ],
   providers: [
     UpdateMyProfileHandler,
@@ -91,6 +100,11 @@ import { MeController } from "./http/me.controller.js";
     GetCompanyForStaffHandler,
     UpdateCompanyIdentityHandler,
     RequestPaymentTermHandler,
+    UploadKbisByStaffHandler,
+    UpdateIdentityByStaffHandler,
+    SetAgreedPaymentTermHandler,
+    SaveBillingAddressByStaffHandler,
+    AddDeliveryAddressByStaffHandler,
     RequestActivationSupportHandler,
     ListAllCompaniesHandler,
     { provide: UserProfileRepository, useClass: PrismaUserProfileRepository },

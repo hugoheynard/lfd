@@ -56,6 +56,14 @@ export abstract class CompanyRepository {
   abstract requestPaymentTerm(companyId: string, term: PaymentTerm | null): Promise<void>;
 
   /**
+   * Fixe la condition de règlement **convenue** (colonne `payment_term`) —
+   * réservé au **staff** (Porte B). Écrire le terme convenu **solde** la demande
+   * en cours (`requested_payment_term` remis à `null`) : le commercial a tranché,
+   * il n'y a plus rien « en attente » à afficher côté client.
+   */
+  abstract setAgreedPaymentTerm(companyId: string, term: PaymentTerm): Promise<void>;
+
+  /**
    * Enregistre les métadonnées du KBIS déposé (le fichier, lui, est dans R2), et
    * **remet la certification à zéro** : un nouveau fichier n'est jamais certifié
    * tant que le staff ne l'a pas revalidé.
