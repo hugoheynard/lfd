@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
-import type { PickupAddressPayload, PickupAddressView } from '@lfd/contracts';
+import type { CartAdjustment, PickupAddressPayload, PickupAddressView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCheckboxComponent,
@@ -16,6 +16,7 @@ import {
 } from '@lfd/b2b-ui/company';
 
 import { NotifyService } from '../../../notify.service';
+import { CartAdjustmentField } from '../cart-adjustment-field/cart-adjustment-field';
 import { PickupAddressesService } from '../pickup-addresses.service';
 
 /** Charge d'ouverture du panneau : le point à éditer, ou `null` pour en créer un. */
@@ -34,7 +35,13 @@ export interface PickupPanelData {
 @Component({
   selector: 'app-pickup-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldButtonComponent, FoldCheckboxComponent, AddressFields],
+  imports: [
+    FoldPanelHeaderComponent,
+    FoldButtonComponent,
+    FoldCheckboxComponent,
+    AddressFields,
+    CartAdjustmentField,
+  ],
   templateUrl: './pickup-panel.html',
   styleUrl: './pickup-panel.scss',
 })
@@ -46,6 +53,8 @@ export class PickupPanel {
   readonly data = input<PickupPanelData | undefined>(undefined);
 
   protected readonly draft = signal<AddressDraft>(EMPTY_ADDRESS_DRAFT);
+  /** Remise du point (retirer ici coûte moins cher), ou `null`. */
+  protected readonly discount = signal<CartAdjustment | null>(null);
   protected readonly saving = signal(false);
 
   protected readonly isCreate = computed(() => (this.data()?.address ?? null) === null);
@@ -63,6 +72,7 @@ export class PickupPanel {
         return;
       }
       this.draft.set({ ...billingDraftFrom(address), isDefault: address.isDefault });
+      this.discount.set(address.discount);
     });
   }
 
@@ -79,6 +89,7 @@ export class PickupPanel {
     const payload: PickupAddressPayload = {
       ...toBillingPayload(this.draft()),
       isDefault: this.draft().isDefault,
+      discount: this.discount(),
     };
     try {
       if (address === null) {

@@ -9,6 +9,12 @@
     [checked]="draft().isDefault"
     (checkedChange)="setDefault($event)"
   />
+
+  <app-cart-adjustment-field
+    label="Réduction de retrait"
+    [value]="discount()"
+    (valueChange)="discount.set($event)"
+  />
 </div>
 
 <footer class="foot">

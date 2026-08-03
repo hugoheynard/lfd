@@ -1,0 +1,31 @@
+<fold-panel-header [title]="heading()" subtitle="Un code postal et son frais de livraison." />
+
+<div class="body">
+  <fold-input
+    label="Code postal"
+    placeholder="73150"
+    hint="4 à 5 chiffres"
+    [value]="codePostal()"
+    (valueChange)="codePostal.set($event)"
+  />
+  <fold-input
+    label="Libellé"
+    optional
+    placeholder="Val d'Isère"
+    [value]="label()"
+    (valueChange)="label.set($event)"
+  />
+  <app-cart-adjustment-field
+    label="Frais de livraison"
+    [allowNone]="false"
+    [value]="fee()"
+    (valueChange)="fee.set($event)"
+  />
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || saving()" (click)="submit()">
+    {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+  </button>
+</footer>

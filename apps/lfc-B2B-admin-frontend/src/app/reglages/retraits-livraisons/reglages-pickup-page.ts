@@ -14,6 +14,8 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
+import { formatAdjustment } from './cart-adjustment-format';
+import { DeliveryZonesSection } from './delivery-zones-section/delivery-zones-section';
 import { PickupAddressesService } from './pickup-addresses.service';
 import { PickupPanel, type PickupPanelData } from './pickup-panel/pickup-panel';
 
@@ -39,6 +41,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldDropdownItemComponent,
     FoldInlineConfirmComponent,
     FoldPopoverTriggerDirective,
+    DeliveryZonesSection,
   ],
   templateUrl: './reglages-pickup-page.html',
   styleUrl: './reglages-pickup-page.scss',
@@ -55,6 +58,9 @@ export class ReglagesPickupPage {
 
   /** On garde toujours au moins un point : le dernier n'est pas supprimable. */
   protected readonly canRemove = computed(() => this.addresses().length > 1);
+
+  /** Formate la remise d'un point de retrait pour l'affichage. */
+  protected readonly fee = formatAdjustment;
 
   constructor() {
     void this.load();

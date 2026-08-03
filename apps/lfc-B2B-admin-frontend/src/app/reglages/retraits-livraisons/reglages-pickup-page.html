@@ -32,6 +32,9 @@
                   @if (point.isDefault) {
                     <fold-badge content="Par défaut" variant="success" />
                   }
+                  @if (point.discount; as discount) {
+                    <fold-badge [content]="'− ' + fee(discount)" variant="accent" />
+                  }
                 </span>
                 <span>{{ point.ligne1 }}</span>
                 @if (point.ligne2) {
@@ -86,5 +89,7 @@
         }
       </ul>
     </fold-card>
+
+    <app-delivery-zones-section />
   }
 }
