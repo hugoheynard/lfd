@@ -5,37 +5,7 @@
     <fold-callout variant="alert" announce>{{ message }}</fold-callout>
   }
 
-  <div class="row">
-    <fold-input
-      label="Prénom"
-      required
-      [value]="firstName()"
-      (valueChange)="firstName.set($event)"
-    />
-    <fold-input label="Nom" required [value]="lastName()" (valueChange)="lastName.set($event)" />
-  </div>
-
-  <fold-input
-    label="Fonction"
-    placeholder="ex. Responsable achats"
-    optional
-    [value]="fonction()"
-    (valueChange)="fonction.set($event)"
-  />
-  <fold-input
-    label="E-mail"
-    type="email"
-    required
-    [value]="email()"
-    (valueChange)="email.set($event)"
-  />
-  <fold-input
-    label="Téléphone"
-    type="tel"
-    optional
-    [value]="phone()"
-    (valueChange)="phone.set($event)"
-  />
+  <lfd-contact-fields [value]="draft()" (valueChange)="draft.set($event)" />
 </div>
 
 <footer class="foot">

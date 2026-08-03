@@ -1,20 +1,16 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
-
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldInputComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
 } from 'fold-ng';
+import {
+  ContactFields,
+  EMPTY_COMPANY_CONTACT_DRAFT,
+  isCompanyContactValid,
+  type CompanyContactDraft,
+} from '@lfd/b2b-ui/company';
 
 import type { Contact, ContactDraft } from '../../account/account.model';
 import { AccountService } from '../../account/account.service';
@@ -26,7 +22,8 @@ import { AccountService } from '../../account/account.service';
  * - `additional` avec un `contactId` — un contact existant à remplacer.
  */
 export type ContactTarget =
-  { readonly kind: 'primary' } | { readonly kind: 'additional'; readonly contactId: string | null };
+  | { readonly kind: 'primary' }
+  | { readonly kind: 'additional'; readonly contactId: string | null };
 
 /** Charge d'ouverture du panneau. */
 export interface ContactPanelData {
@@ -40,19 +37,14 @@ export interface ContactPanelData {
  * Panneau **contact** — ajoute ou édite un interlocuteur d'une entreprise.
  *
  * Un seul panneau pour les trois cas (principal / nouveau / existant) : le
- * formulaire est identique, seule l'action de sauvegarde diffère, choisie
- * d'après la cible. Il ne se referme qu'**après** confirmation du backend, pour
- * qu'une erreur (e-mail invalide, droit refusé) reste visible dans le formulaire.
+ * formulaire (fragment partagé `@lfd/b2b-ui`) est identique, seule l'action de
+ * sauvegarde diffère, choisie d'après la cible. Il ne se referme qu'**après**
+ * confirmation du backend, pour qu'une erreur reste visible dans le formulaire.
  */
 @Component({
   selector: 'app-contact-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldPanelHeaderComponent,
-    FoldCalloutComponent,
-    FoldInputComponent,
-    FoldButtonComponent,
-  ],
+  imports: [FoldPanelHeaderComponent, FoldCalloutComponent, FoldButtonComponent, ContactFields],
   templateUrl: './contact-panel.html',
   styleUrl: './contact-panel.scss',
 })
@@ -62,11 +54,7 @@ export class ContactPanel {
 
   readonly data = input<ContactPanelData | undefined>(undefined);
 
-  protected readonly firstName = signal('');
-  protected readonly lastName = signal('');
-  protected readonly fonction = signal('');
-  protected readonly email = signal('');
-  protected readonly phone = signal('');
+  protected readonly draft = signal<CompanyContactDraft>(EMPTY_COMPANY_CONTACT_DRAFT);
 
   protected readonly error = this.account.error;
   protected readonly submitting = computed(() => this.account.status() === 'loading');
@@ -80,21 +68,20 @@ export class ContactPanel {
     return target?.contactId ? 'Modifier le contact' : 'Ajouter un contact';
   });
 
-  protected readonly canSubmit = computed(
-    () =>
-      this.firstName().trim() !== '' && this.lastName().trim() !== '' && this.email().trim() !== '',
-  );
+  protected readonly canSubmit = computed(() => isCompanyContactValid(this.draft()));
 
   constructor() {
     // L'input est fixé à l'ouverture ; on sème les champs une fois.
     effect(() => {
       const initial = this.data()?.initial;
       if (initial) {
-        this.firstName.set(initial.firstName);
-        this.lastName.set(initial.lastName);
-        this.fonction.set(initial.fonction);
-        this.email.set(initial.email);
-        this.phone.set(initial.phone);
+        this.draft.set({
+          firstName: initial.firstName,
+          lastName: initial.lastName,
+          fonction: initial.fonction,
+          email: initial.email,
+          phone: initial.phone,
+        });
       }
     });
   }
@@ -104,12 +91,13 @@ export class ContactPanel {
     if (data === undefined || !this.canSubmit() || this.submitting()) {
       return;
     }
+    const current = this.draft();
     const draft: ContactDraft = {
-      firstName: this.firstName().trim(),
-      lastName: this.lastName().trim(),
-      fonction: this.fonction().trim(),
-      email: this.email().trim(),
-      phone: this.phone().trim(),
+      firstName: current.firstName.trim(),
+      lastName: current.lastName.trim(),
+      fonction: current.fonction.trim(),
+      email: current.email.trim(),
+      phone: current.phone.trim(),
     };
     const close = (): void => this.ref.close();
 

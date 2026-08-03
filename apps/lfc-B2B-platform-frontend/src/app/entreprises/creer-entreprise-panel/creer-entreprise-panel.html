@@ -15,48 +15,7 @@
     <fold-callout variant="alert" announce>{{ message }}</fold-callout>
   }
 
-  <fold-input
-    label="Raison sociale"
-    hint="la dénomination légale, telle qu'elle figure au registre"
-    required
-    [value]="raisonSociale()"
-    (valueChange)="raisonSociale.set($event)"
-  />
-  <fold-input
-    label="Enseigne"
-    hint="nom commercial, s'il diffère de la raison sociale"
-    optional
-    [value]="enseigne()"
-    (valueChange)="enseigne.set($event)"
-  />
-
-  <div class="row">
-    <fold-input
-      class="forme"
-      label="Forme juridique"
-      placeholder="SAS, SARL, EI…"
-      required
-      [value]="formeJuridique()"
-      (valueChange)="formeJuridique.set($event)"
-    />
-    <fold-input
-      class="siret"
-      label="SIRET"
-      placeholder="812 456 789 00021"
-      hint="14 chiffres — la clé de contrôle est vérifiée"
-      required
-      [value]="siret()"
-      (valueChange)="siret.set($event)"
-    />
-  </div>
-
-  <fold-input
-    label="TVA intracommunautaire"
-    optional
-    hint="laissez vide si vous n'êtes pas assujetti"
-    [value]="tvaIntracom()"
-    (valueChange)="tvaIntracom.set($event)"
-  />
+  <lfd-company-identity-fields [value]="draft()" (valueChange)="draft.set($event)" />
 
   <p class="note">
     Le contact principal de l'entreprise est repris de votre profil. Votre entreprise sera créée
