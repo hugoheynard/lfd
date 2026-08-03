@@ -21,7 +21,8 @@ devra exposer.
 > réversible) ; refusé à la commande comme tout non-`active`.
 > **Livré côté front (2026-08-03)** : la **fiche** (§2, lecture seule, cartes
 > partagées `@lfd/b2b-ui`) et le **panneau de création** (§6, `POST /admin/companies`
-> câblé). Reste **backend** : la création (§6, cadrée ci-dessous) et les **endpoints
+> câblé). **Création `POST /admin/companies` (§6) LIVRÉE côté backend** (société
+> `pending` sans propriétaire ; e2e restant). Reste **backend** : les **endpoints
 > de mutation** (§3), plus **recherche plein-texte + tri** (§1).
 
 ## 1. Liste des comptes clients
@@ -96,7 +97,10 @@ _créer le dossier_ : voir
 **Front livré** : `lfc-B2B-admin-frontend` a un panneau « Créer un compte »
 (`CreerComptePanel`) qui compose les fragments de saisie partagés
 `CompanyIdentityFields` + `ContactFields` (`@lfd/b2b-ui/company`) et appelle
-`AdminCompaniesService.create()` → `POST /admin/companies`. **Backend à créer.**
+`AdminCompaniesService.create()` → `POST /admin/companies`. **Backend livré**
+(2026-08-03) : `CreateCompanyByStaffCommand` → `CreateCompanyByStaffHandler` →
+`CompanyRepository.declareUnowned` ; typecheck + tests unitaires verts. **Reste**
+l'e2e (§6.6). Ci-dessous, le cadre tel qu'implémenté.
 
 ### 6.1 La décision centrale — une société créée **sans propriétaire**
 
