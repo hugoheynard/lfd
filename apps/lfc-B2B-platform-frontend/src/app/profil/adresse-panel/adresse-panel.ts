@@ -22,7 +22,7 @@ import {
 } from 'fold-ng';
 
 import { AddressesService } from '../../entreprises/addresses.service';
-import { formatDeliveryContact, WEEKDAYS } from '../../entreprises/delivery-format';
+import { formatDeliveryContact, WEEKDAYS } from '@lfd/b2b-ui/company';
 import {
   BLANK_DAYS,
   type DraftDays,
