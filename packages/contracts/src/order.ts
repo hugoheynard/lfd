@@ -92,6 +92,11 @@ export interface OrderView {
   readonly pickupAddress: BillingAddressPayload | null;
   readonly note: string;
   readonly subtotalCents: number;
+  /** Remise (retrait) déduite du sous-total, en centimes. `0` si aucune. */
+  readonly discountCents: number;
+  /** Frais de livraison (zone) ajouté, en centimes. `0` si aucun. */
+  readonly deliveryFeeCents: number;
+  /** `max(0, subtotal − discount) + deliveryFee`. */
   readonly totalCents: number;
   readonly currency: string;
   /** ISO. Passée le. */

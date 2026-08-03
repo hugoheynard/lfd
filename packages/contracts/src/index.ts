@@ -44,12 +44,20 @@ export {
   platformSettingsSchema,
 } from "./platform-settings.js";
 export type { PieceMode, ActivationPiece, PlatformSettings } from "./platform-settings.js";
+export { cartAdjustmentSchema, cartAdjustmentCents } from "./cart-adjustment.js";
+export type { CartAdjustment } from "./cart-adjustment.js";
 export { pickupAddressPayloadSchema } from "./pickup.js";
 export type {
   PickupAddressPayload,
   PickupAddressView,
   CreatedPickupResponse,
 } from "./pickup.js";
+export { deliveryZonePayloadSchema } from "./delivery-zone.js";
+export type {
+  DeliveryZonePayload,
+  DeliveryZoneView,
+  CreatedDeliveryZoneResponse,
+} from "./delivery-zone.js";
 export { staffScopeSchema, staffUserPayloadSchema } from "./staff-user.js";
 export type {
   StaffScope,
