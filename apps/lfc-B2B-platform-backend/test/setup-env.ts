@@ -22,6 +22,16 @@ process.env["DATABASE_B2B_URL"] ??= DEFAULT_TEST_DATABASE_URL;
 process.env["AUTH0_DOMAIN"] ??= "test-tenant.eu.auth0.com";
 process.env["AUTH0_AUDIENCE"] ??= "https://api.test.local";
 
+// Neutralise les **bypass d'auth de dev** qui traînent dans le `.env` local
+// (impersonation client, bypass staff). Contrairement au reste, c'est un
+// **écrasement dur**, pas un `??=` : les e2e doivent éprouver les VRAIS guards
+// (jeton porteur = `sub` via le verifier doublé), sinon un `pnpm test` local
+// n'exerce pas la même application que la CI — et un e2e d'auth y échoue avec un
+// 401 trompeur. Un test qui a besoin d'un staff s'authentifie en doublant
+// `AdminTokenVerifier` (cf. `admin-companies.e2e-spec.ts`).
+process.env["AUTH_DEV_IMPERSONATE"] = "false";
+process.env["AUTH_ADMIN_DEV_BYPASS"] = "false";
+
 /** URL de la base de test, une fois le défaut ci-dessus appliqué. */
 export function testDatabaseUrl(): string {
   return process.env["DATABASE_B2B_URL"] ?? DEFAULT_TEST_DATABASE_URL;
