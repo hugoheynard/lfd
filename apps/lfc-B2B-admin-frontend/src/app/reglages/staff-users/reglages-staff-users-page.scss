@@ -1,0 +1,59 @@
+.state {
+  padding: var(--fold-space-lg);
+  color: var(--fold-color-text-muted);
+}
+
+// En-tête de section : texte à gauche, bouton « Ajouter » à droite.
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--fold-space-md);
+}
+.head-text {
+  min-width: 0;
+  flex: 1 1 18rem;
+}
+
+.section-title {
+  margin: 0 0 var(--fold-space-xs);
+  font-size: var(--fold-text-lg, 1.125rem);
+}
+.section-desc {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.strong {
+  font-weight: 600;
+}
+.muted {
+  color: var(--fold-color-text-muted);
+}
+
+// Badges de périmètre : sur une ligne, repliés si étroit.
+.scopes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+// Déclencheur du menu — bouton icône discret (même que les autres tables).
+.menu-trigger {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm, 6px);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+.menu-trigger:hover {
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
+  color: var(--fold-color-text);
+}

@@ -1,0 +1,22 @@
+<fold-panel-header [title]="heading()" subtitle="Identité et périmètre d'accès." />
+
+<div class="body">
+  <fold-input label="Prénom" [(value)]="firstName" required />
+  <fold-input label="Nom" [(value)]="lastName" required />
+  <fold-input label="E-mail" type="email" [(value)]="email" required />
+
+  <fold-multiselect
+    label="Périmètre"
+    placeholder="Aucun accès"
+    hint="Les domaines du back-office auxquels cette personne a accès."
+    [options]="scopeOptions"
+    [(value)]="scopes"
+  />
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || saving()" (click)="submit()">
+    {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+  </button>
+</footer>

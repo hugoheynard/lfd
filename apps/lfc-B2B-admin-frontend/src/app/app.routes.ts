@@ -43,6 +43,14 @@ export const routes: Routes = [
             (m) => m.ReglagesCommercialPage,
           ),
       },
+      {
+        path: 'utilisateurs',
+        title: 'Utilisateurs — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/staff-users/reglages-staff-users-page').then(
+            (m) => m.ReglagesStaffUsersPage,
+          ),
+      },
     ],
   },
   {

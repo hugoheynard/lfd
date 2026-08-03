@@ -36,5 +36,6 @@ export class ReglagesPage {
       icon: 'package',
     },
     { key: 'commercial', label: 'Commercial', link: 'commercial', icon: 'bell' },
+    { key: 'utilisateurs', label: 'Utilisateurs', link: 'utilisateurs', icon: 'user' },
   ];
 }
