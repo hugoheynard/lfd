@@ -126,12 +126,12 @@ export class CheckoutPanel {
         : { kind: 'discount', label: 'Remise retrait', cents: adjustmentCents(discount, subtotal) };
     }
     const address = this.selectedAddress();
-    const zone = address === null ? null : this.zones.zoneFor(address.codePostal);
+    const zone = address === null ? null : this.zones.resolveForPostalCode(address.codePostal);
     return zone === null
       ? null
       : {
           kind: 'fee',
-          label: `Livraison ${zone.label || zone.codePostal}`,
+          label: `Livraison ${zone.label || zone.postalPrefixes[0] || ''}`,
           cents: adjustmentCents(zone.fee, subtotal),
         };
   });
