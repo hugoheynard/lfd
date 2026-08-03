@@ -1,3 +1,5 @@
+import type { CompanyAddressesView } from "@lfd/contracts";
+
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import type { ContactView, KbisView, PaymentTerm } from "./account.reader.js";
 
@@ -11,8 +13,8 @@ import type { ContactView, KbisView, PaymentTerm } from "./account.reader.js";
  * **propres** de la société : la tenancy `company` isole les clients entre eux,
  * elle n'aveugle pas le staff.
  *
- * La liste des contacts additionnels et les adresses détaillées relèvent de la
- * **fiche** (à venir), pas de la liste — une liste reste scannable.
+ * Les adresses détaillées et l'obligation de TVA relèvent de la **fiche**
+ * ({@link AdminCompanyDetailView}), pas de la liste — une liste reste scannable.
  */
 export interface AdminCompanyView {
   readonly id: string;
@@ -44,6 +46,25 @@ export interface AdminCompanyView {
 }
 
 /**
+ * La **fiche** d'une société côté staff : tout ce que porte la liste, plus ce
+ * qu'il faut pour **refléter l'état d'activation** et le compléter à la place du
+ * client (Porte B) — l'obligation de TVA (dérivée de la forme juridique) et les
+ * **adresses complètes** (facturation + livraisons). Le contact principal est
+ * déjà dans {@link AdminCompanyView} ; la synthèse d'activation se calcule
+ * entièrement à partir de ces champs.
+ */
+export interface AdminCompanyDetailView extends AdminCompanyView {
+  /**
+   * La forme juridique impose-t-elle un n° de TVA intracommunautaire ? Dérivé
+   * côté serveur (comme pour le client), pour que la fiche signale la TVA
+   * manquante sans redémontrer la règle côté front.
+   */
+  readonly vatNumberRequired: boolean;
+  /** Facturation (ou `null`) + livraisons non archivées, la défaut en tête. */
+  readonly addresses: CompanyAddressesView;
+}
+
+/**
  * Port de **lecture admin** des sociétés — **cross-tenant assumé** : contrairement
  * à `AccountReader` (qui part de `user → memberships → company`), on lit
  * directement `company.findMany`, sans mur `company_id`. L'accès est gardé en
@@ -51,4 +72,10 @@ export interface AdminCompanyView {
  */
 export abstract class AdminCompanyReader {
   abstract listAll(): Promise<readonly AdminCompanyView[]>;
+
+  /**
+   * La fiche d'une société par son id, ou `null` si aucune société ne porte cet
+   * id. Cross-tenant comme {@link listAll} — l'auth staff est le seul mur.
+   */
+  abstract byId(companyId: string): Promise<AdminCompanyDetailView | null>;
 }

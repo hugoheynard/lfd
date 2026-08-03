@@ -97,3 +97,33 @@ describe("POST /admin/companies", () => {
   // La porte staff (401 sans jeton valide) est couverte par le test unitaire du
   // guard ; ici le bypass de dev est actif, donc l'endpoint ne peut pas la jouer.
 });
+
+/** Forme de la fiche détail (sous-ensemble éprouvé ici). */
+interface AdminCompanyDetailBody {
+  readonly id: string;
+  readonly status: string;
+  readonly vatNumberRequired: boolean;
+  readonly addresses: { readonly billing: unknown; readonly deliveries: readonly unknown[] };
+}
+
+describe("GET /admin/companies/:id", () => {
+  it("renvoie la fiche cross-tenant enrichie (TVA requise + adresses)", async () => {
+    // La factory pose une SAS ⇒ assujettie à la TVA ; aucune adresse ⇒
+    // facturation nulle, aucune livraison. `pending` : un dossier à compléter.
+    const seed = await createCompany(ctx.prisma, { status: CompanyStatus.pending });
+
+    const response = await staff().get(`/admin/companies/${seed.id}`).expect(200);
+    const body = jsonBody<AdminCompanyDetailBody>(response);
+
+    expect(body.id).toBe(seed.id);
+    expect(body.status).toBe(CompanyStatus.pending);
+    expect(body.vatNumberRequired).toBe(true);
+    expect(body.addresses).toEqual({ billing: null, deliveries: [] });
+  });
+
+  it("répond 404 pour un id inconnu", async () => {
+    const response = await staff().get("/admin/companies/company_inexistante");
+
+    expect(response.status).toBe(404);
+  });
+});

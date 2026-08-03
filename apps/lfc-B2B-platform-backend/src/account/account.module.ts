@@ -19,6 +19,7 @@ import { UpdatePrimaryContactHandler } from "./application/commands/update-prima
 import { UploadKbisHandler } from "./application/commands/upload-kbis.handler.js";
 import { DownloadKbisHandler } from "./application/queries/download-kbis.handler.js";
 import { GetMyAccountHandler } from "./application/queries/get-my-account.handler.js";
+import { GetCompanyForStaffHandler } from "./application/queries/get-company-for-staff.handler.js";
 import { ListAllCompaniesHandler } from "./application/queries/list-all-companies.handler.js";
 import { ListCompanyAddressesHandler } from "./application/queries/list-company-addresses.handler.js";
 import { AccountReader } from "./domain/ports/account.reader.js";
@@ -87,6 +88,7 @@ import { MeController } from "./http/me.controller.js";
     RemoveDeliveryAddressHandler,
     SetDefaultDeliveryAddressHandler,
     ListCompanyAddressesHandler,
+    GetCompanyForStaffHandler,
     UpdateCompanyIdentityHandler,
     RequestPaymentTermHandler,
     RequestActivationSupportHandler,

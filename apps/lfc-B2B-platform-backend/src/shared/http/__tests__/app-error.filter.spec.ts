@@ -13,15 +13,21 @@ interface CapturedResponse {
   body(): Record<string, unknown> | null;
 }
 
+/** Le sous-ensemble de `Response` que le filtre appelle (status + json chaînés). */
+interface FakeResponse {
+  status(code: number): FakeResponse;
+  json(payload: Record<string, unknown>): FakeResponse;
+}
+
 function fakeResponse(): CapturedResponse {
   let status: number | null = null;
   let body: Record<string, unknown> | null = null;
-  const response = {
-    status(code: number): typeof response {
+  const response: FakeResponse = {
+    status(code: number): FakeResponse {
       status = code;
       return response;
     },
-    json(payload: Record<string, unknown>): typeof response {
+    json(payload: Record<string, unknown>): FakeResponse {
       body = payload;
       return response;
     },

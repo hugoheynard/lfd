@@ -32,7 +32,10 @@ describe("ListAllCompaniesHandler", () => {
   it("renvoie la liste cross-tenant fournie par le AdminCompanyReader", async () => {
     // Le handler admin ne rejoue aucune règle : il délègue au port de lecture.
     // Prouver la délégation = prouver que sa sortie EST celle du reader.
-    const reader: AdminCompanyReader = { listAll: () => Promise.resolve([view]) };
+    const reader: AdminCompanyReader = {
+      listAll: () => Promise.resolve([view]),
+      byId: () => Promise.resolve(null),
+    };
     const handler = new ListAllCompaniesHandler(reader);
 
     await expect(handler.execute()).resolves.toEqual([view]);
