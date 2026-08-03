@@ -2,6 +2,7 @@
   [billing]="billing()"
   [deliveries]="deliveries()"
   [canManage]="canManage()"
+  [showDeliveries]="!deliveryHidden()"
   (editBilling)="editBilling()"
   (addDelivery)="addDelivery()"
   (editDelivery)="editDelivery($event)"

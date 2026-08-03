@@ -5,6 +5,7 @@ import { CompanyAddressesCard } from '@lfd/b2b-ui/company';
 
 import type { Company } from '../../account/account.model';
 import { AddressesService } from '../../entreprises/addresses.service';
+import { PlatformSettingsService } from '../../entreprises/platform-settings.service';
 import { AdressePanel, type AdressePanelData } from '../adresse-panel/adresse-panel';
 
 /**
@@ -23,10 +24,13 @@ import { AdressePanel, type AdressePanelData } from '../adresse-panel/adresse-pa
 export class AdressesSection {
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly addresses = inject(AddressesService);
+  private readonly settings = inject(PlatformSettingsService);
 
   readonly company = input.required<Company>();
 
   protected readonly canManage = computed(() => this.company().role === 'company_admin');
+  /** Masque le bloc livraison tant que le service n'existe pas (config globale). */
+  protected readonly deliveryHidden = this.settings.deliveryHidden;
   protected readonly view = this.addresses.view;
 
   /** Contacts de l'entreprise proposés pour préremplir le contact de livraison. */

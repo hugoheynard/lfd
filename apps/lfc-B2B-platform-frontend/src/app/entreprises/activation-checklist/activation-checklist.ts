@@ -5,6 +5,7 @@ import { CompanyActivationChecklist, type CompanyActivationStep } from '@lfd/b2b
 
 import type { Company } from '../../account/account.model';
 import { AccountService } from '../../account/account.service';
+import { PlatformSettingsService } from '../platform-settings.service';
 import { AdressePanel, type AdressePanelData } from '../../profil/adresse-panel/adresse-panel';
 import { ActivationSupportPanel } from '../activation-support-panel/activation-support-panel';
 import { AddressesService } from '../addresses.service';
@@ -41,6 +42,7 @@ export class ActivationChecklist {
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly account = inject(AccountService);
   private readonly addresses = inject(AddressesService);
+  private readonly settings = inject(PlatformSettingsService);
 
   readonly company = input.required<Company>();
 
@@ -86,7 +88,8 @@ export class ActivationChecklist {
         cta: 'Ajouter la facturation',
       });
     }
-    if (view !== null && view.deliveries.length === 0) {
+    // Livraison masquée (service absent, config globale) : on ne la demande pas.
+    if (view !== null && view.deliveries.length === 0 && !this.settings.deliveryHidden()) {
       steps.push({
         key: 'delivery',
         title: 'Adresse de livraison',
