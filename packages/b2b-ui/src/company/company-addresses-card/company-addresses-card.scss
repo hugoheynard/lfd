@@ -160,3 +160,10 @@
   margin: 0;
   color: var(--fold-color-text-muted);
 }
+
+// Note discrète sous l'adresse du point de retrait (lecture seule).
+.pickup-hint {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}

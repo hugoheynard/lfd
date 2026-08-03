@@ -4,6 +4,7 @@ import type {
   DeliveryAddressView,
   DeliveryContact,
   GpsPoint,
+  PickupAddressView,
 } from "@lfd/contracts";
 import {
   FoldBadgeComponent,
@@ -65,6 +66,17 @@ export class CompanyAddressesCard {
    * facturation, sur les deux surfaces (client + admin).
    */
   readonly showDeliveries = input(true);
+  /**
+   * Le **point de retrait** par défaut (laboratoire), ou `null` si aucun n'est
+   * configuré. Affichage en lecture seule — la gestion des points vit côté staff
+   * (Réglages → Retraits & livraisons), jamais ici.
+   */
+  readonly pickup = input<PickupAddressView | null>(null);
+  /**
+   * Afficher le bloc **point de retrait**. `true` quand la livraison est masquée
+   * (le retrait est alors l'acheminement) — complémentaire de `showDeliveries`.
+   */
+  readonly showPickup = input(false);
 
   /** Éditer la facturation. */
   readonly editBilling = output<void>();

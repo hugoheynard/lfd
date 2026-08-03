@@ -190,5 +190,29 @@
       </ul>
     </fold-card>
     }
+
+    @if (showPickup()) {
+    <fold-card>
+      <div class="addr-head">
+        <p class="card-kicker">Point de retrait</p>
+      </div>
+      @if (pickup(); as p) {
+      <address class="addr">
+        <span class="addr-label">{{ p.label || p.ville }}</span>
+        <span>{{ p.ligne1 }}</span>
+        @if (p.ligne2) {
+        <span>{{ p.ligne2 }}</span>
+        }
+        <span>{{ p.codePostal }} {{ p.ville }}</span>
+        <span>{{ p.pays }}</span>
+      </address>
+      <p class="pickup-hint">
+        Retrait au laboratoire, en attendant le service de livraison à domicile.
+      </p>
+      } @else {
+      <fold-callout variant="warning">Aucun point de retrait configuré pour le moment.</fold-callout>
+      }
+    </fold-card>
+    }
   </div>
 </fold-page-section>
