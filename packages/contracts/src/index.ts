@@ -44,9 +44,15 @@ export {
   platformSettingsSchema,
 } from "./platform-settings.js";
 export type { PieceMode, ActivationPiece, PlatformSettings } from "./platform-settings.js";
-export { orderStatusSchema, orderLineInputSchema, placeOrderPayloadSchema } from "./order.js";
+export {
+  orderStatusSchema,
+  fulfillmentMethodSchema,
+  orderLineInputSchema,
+  placeOrderPayloadSchema,
+} from "./order.js";
 export type {
   OrderStatus,
+  FulfillmentMethod,
   OrderLineInput,
   PlaceOrderPayload,
   OrderLineView,
