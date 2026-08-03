@@ -38,6 +38,12 @@ export {
   activationSupportPayloadSchema,
 } from "./support.js";
 export type { SupportChannel, SupportSlot, ActivationSupportPayload } from "./support.js";
+export {
+  pieceModeSchema,
+  activationPieceSchema,
+  platformSettingsSchema,
+} from "./platform-settings.js";
+export type { PieceMode, ActivationPiece, PlatformSettings } from "./platform-settings.js";
 export { orderStatusSchema, orderLineInputSchema, placeOrderPayloadSchema } from "./order.js";
 export type {
   OrderStatus,
