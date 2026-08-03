@@ -43,3 +43,13 @@ export const contactPayload = z.object({
 });
 
 export type ContactPayload = z.infer<typeof contactPayload>;
+
+/**
+ * Création d'un compte **depuis l'admin** : l'identité de la société **et** son
+ * contact principal (le staff n'a pas de profil créateur d'où le dériver).
+ */
+export const adminCreateCompanyPayload = createCompanyPayload.extend({
+  primaryContact: contactPayload,
+});
+
+export type AdminCreateCompanyPayload = z.infer<typeof adminCreateCompanyPayload>;

@@ -3,6 +3,7 @@ import { CqrsModule } from "@nestjs/cqrs";
 
 import { AddCompanyContactHandler } from "./application/commands/add-company-contact.handler.js";
 import { AddDeliveryAddressHandler } from "./application/commands/add-delivery-address.handler.js";
+import { CreateCompanyByStaffHandler } from "./application/commands/create-company-by-staff.handler.js";
 import { CreateCompanyHandler } from "./application/commands/create-company.handler.js";
 import { RemoveCompanyContactHandler } from "./application/commands/remove-company-contact.handler.js";
 import { RemoveDeliveryAddressHandler } from "./application/commands/remove-delivery-address.handler.js";
@@ -72,6 +73,7 @@ import { MeController } from "./http/me.controller.js";
   providers: [
     UpdateMyProfileHandler,
     CreateCompanyHandler,
+    CreateCompanyByStaffHandler,
     GetMyAccountHandler,
     UpdatePrimaryContactHandler,
     AddCompanyContactHandler,
