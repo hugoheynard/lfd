@@ -10,10 +10,15 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
-    // Lib source partagée `@lfd/b2b-ui` (pas de build) : compilée par cette app
-    // via ce mapping. Un subpath par domaine.
+    // Packages du workspace résolus vers leur SOURCE (pas leur build) : compilés
+    // par cette app via ces mappings. Conséquence voulue : Vite les traite comme
+    // du code projet, pas comme des deps externes — il ne les pré-bundle donc pas
+    // dans `vite/deps`, ce qui supprime le cache figé « does not provide an export
+    // named X » quand on ajoute un export au package. `@lfd/endpoints` (un seul
+    // fichier, zéro import externe) comme `@lfd/b2b-ui` : un subpath par domaine.
     "paths": {
-      "@lfd/b2b-ui/company": ["../../packages/b2b-ui/src/company/index.ts"]
+      "@lfd/b2b-ui/company": ["../../packages/b2b-ui/src/company/index.ts"],
+      "@lfd/endpoints": ["../../packages/endpoints/src/index.ts"]
     }
   },
   "files": [],
