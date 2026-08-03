@@ -33,28 +33,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Le shell possède le scroll (`footerBehavior="scroll"` ⇒ `.content` en
-   `overflow:auto`). La page routée FLUE et fait AU MOINS toute la hauteur du
-   contenu (`min-height:100%`) : sur une page courte, le footer in-flow du shell
-   est ainsi repoussé SOUS la ligne de flottaison (invisible tant qu'on ne
-   scrolle pas) ; sur une page longue, il passe naturellement en fin de scroll.
-   `+ *` cible la seule page (pas le footer ni le panel-host, siblings suivants). */
+/* Le shell possède le scroll (`footerBehavior="scroll"` ⇒ `.content` est un flex
+   column en `overflow:auto`, et pose le footer in-flow en fin de contenu via
+   `margin-top:auto`). Pour qu'une page COURTE ne laisse pas le footer flotter au
+   milieu, la page routée **grossit pour remplir** la hauteur du contenu
+   (`flex: 1 0 auto`, le pattern sticky-footer flexbox classique) : le footer est
+   alors repoussé tout en bas — sous la ligne de flottaison sur une page courte
+   (invisible tant qu'on ne scrolle pas), en fin de scroll sur une page longue.
+   On évite `min-height:100%` (un % sur flex-item ne se résout pas de façon
+   fiable, d'où le footer au milieu). `+ *` cible la seule page (pas le footer ni
+   le panel-host, siblings suivants). */
 router-outlet + * {
   display: flex;
+  flex: 1 0 auto;
   flex-direction: column;
-  min-height: 100%;
   min-width: 0;
-}
-
-/* `fold-page-layout` possède son propre scroll EN DUR (`overflow-y:auto` +
-   `overscroll-behavior:contain`) — conçu pour `contentScroll="clip"`, et sans
-   input pour l'en dissuader. Comme ici c'est le SHELL qui possède le scroll
-   (`footerBehavior="scroll"`, pour que le footer se pose en fin de page), on
-   neutralise ce scroll interne : la page FLUE, son contenu pousse la hauteur, et
-   le scroll — donc l'accès au footer — revient au shell. `flex-shrink:0` évite
-   qu'un contenu long ne soit comprimé (il doit allonger la page, pas se tasser). */
-router-outlet + * fold-page-layout {
-  overflow: visible !important;
-  overscroll-behavior: auto !important;
-  flex-shrink: 0 !important;
 }
