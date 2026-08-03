@@ -142,7 +142,9 @@ export class CheckoutPanel {
     this.submitting.set(true);
     this.errorMessage.set(null);
     const payload: PlaceOrderPayload = {
+      fulfillmentMethod: 'delivery',
       deliveryAddressId: this.addressId(),
+      pickupAddressId: null,
       requestedDeliveryDate: this.requestedDate() === '' ? null : this.requestedDate(),
       note: this.note().trim(),
       lines: this.cart.lines().map((line) => ({ sku: line.product.id, quantity: line.qty })),
