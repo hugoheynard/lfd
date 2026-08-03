@@ -1,6 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import type { BillingAddressView, DeliveryAddressView, DeliveryContact } from '@lfd/contracts';
+import type {
+  ActivationPiece,
+  BillingAddressView,
+  DeliveryAddressView,
+  DeliveryContact,
+  PlatformSettings,
+} from '@lfd/contracts';
 import { FoldButtonComponent, FoldPageLayoutComponent, FoldPanelHostService } from 'fold-ng';
 import {
   CompanyActivationChecklist,
@@ -16,6 +22,7 @@ import {
 import type { AdminCompanyDetail } from '../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../comptes-clients/admin-companies.service';
 import { NotifyService } from '../notify.service';
+import { PlatformSettingsService } from '../reglages/platform-settings.service';
 import { toContactCards, toIdentityView } from './admin-company-view';
 import { AdminAdressePanel } from './panels/adresse-panel/adresse-panel';
 import { AdminIdentitePanel } from './panels/identite-panel/identite-panel';
@@ -61,9 +68,15 @@ export class FicheClientPage {
   private readonly service = inject(AdminCompaniesService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
+  private readonly settingsService = inject(PlatformSettingsService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly company = signal<AdminCompanyDetail | null>(null);
+  /** Config plateforme (modes des pièces) — filtre la synthèse et le gate. */
+  protected readonly settings = signal<PlatformSettings | null>(null);
+
+  /** La livraison est-elle masquée (service absent) ? Cache la carte livraison. */
+  protected readonly deliveryHidden = computed(() => this.settings()?.delivery === 'hidden');
 
   protected readonly identity = computed<CompanyIdentityView | null>(() => {
     const company = this.company();
@@ -80,14 +93,20 @@ export class FicheClientPage {
     () => this.company()?.addresses.deliveries ?? [],
   );
 
-  /** Les pièces restantes à compléter (les faites disparaissent). */
+  /**
+   * Les pièces restantes à compléter (les faites disparaissent). Une pièce
+   * `hidden` (config) est retirée de la synthèse — on ne demande pas ce qui
+   * n'existe pas (ex. livraison sans service).
+   */
   private readonly steps = computed<readonly Step[]>(() => {
     const company = this.company();
-    if (company === null) {
+    const settings = this.settings();
+    if (company === null || settings === null) {
       return [];
     }
+    const visible = (piece: ActivationPiece): boolean => settings[piece] !== 'hidden';
     const steps: Step[] = [];
-    if (company.vatNumberRequired && company.tvaIntracom.trim() === '') {
+    if (visible('tva') && company.vatNumberRequired && company.tvaIntracom.trim() === '') {
       steps.push({
         key: 'tva',
         title: 'Numéro de TVA',
@@ -95,7 +114,7 @@ export class FicheClientPage {
         cta: 'Renseigner la TVA',
       });
     }
-    if (company.kbis === null) {
+    if (visible('kbis') && company.kbis === null) {
       steps.push({
         key: 'kbis',
         title: 'Extrait KBIS',
@@ -103,7 +122,7 @@ export class FicheClientPage {
         cta: 'Déposer le KBIS',
       });
     }
-    if (company.addresses.billing === null) {
+    if (visible('billing') && company.addresses.billing === null) {
       steps.push({
         key: 'billing',
         title: 'Adresse de facturation',
@@ -111,7 +130,7 @@ export class FicheClientPage {
         cta: 'Ajouter la facturation',
       });
     }
-    if (company.addresses.deliveries.length === 0) {
+    if (visible('delivery') && company.addresses.deliveries.length === 0) {
       steps.push({
         key: 'delivery',
         title: 'Adresse de livraison',
@@ -136,6 +155,31 @@ export class FicheClientPage {
   /** Vrai quand il ne reste que la condition de règlement (les pièces sont là). */
   protected readonly ready = computed(() => this.steps().every((step) => step.key === 'payment'));
 
+  /** Le compte est-il en attente d'activation ? (Le CTA n'a de sens que là.) */
+  protected readonly isPending = computed(() => this.company()?.status === 'pending');
+
+  /** Pièces `required` encore manquantes (applicables) — miroir du gate serveur. */
+  private readonly missingRequired = computed<readonly ActivationPiece[]>(() => {
+    const company = this.company();
+    const settings = this.settings();
+    if (company === null || settings === null) {
+      return [];
+    }
+    const present: Record<ActivationPiece, boolean> = {
+      tva: !company.vatNumberRequired || company.tvaIntracom.trim() !== '',
+      kbis: company.kbis !== null,
+      billing: company.addresses.billing !== null,
+      delivery: company.addresses.deliveries.length > 0,
+    };
+    const pieces: ActivationPiece[] = ['tva', 'kbis', 'billing', 'delivery'];
+    return pieces.filter((piece) => settings[piece] === 'required' && !present[piece]);
+  });
+
+  /** Le compte peut-il être activé ? (pending + aucune pièce requise manquante.) */
+  protected readonly canActivate = computed(
+    () => this.isPending() && this.missingRequired().length === 0,
+  );
+
   constructor() {
     void this.load();
   }
@@ -148,15 +192,34 @@ export class FicheClientPage {
     }
     this.state.set('loading');
     try {
-      const company = await this.service.getById(id);
+      const [company, settings] = await Promise.all([
+        this.service.getById(id),
+        this.settingsService.get(),
+      ]);
       if (company === undefined) {
         this.state.set('notfound');
         return;
       }
       this.company.set(company);
+      this.settings.set(settings);
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  /** Active le compte (gate serveur). Recharge + toast ; l'erreur 409 est affichée. */
+  protected async activate(): Promise<void> {
+    const company = this.company();
+    if (company === null || !this.canActivate()) {
+      return;
+    }
+    try {
+      await this.service.activate(company.id);
+      this.notify.success('Compte activé.');
+      await this.load();
+    } catch (error) {
+      this.notify.error(error);
     }
   }
 

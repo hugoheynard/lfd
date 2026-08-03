@@ -42,6 +42,17 @@
       (click)="mobileNavOpen.set(false)"
     ></a>
 
+    <a
+      fold-menu-item
+      icon="settings"
+      label="Réglages"
+      routerLink="/reglages"
+      routerLinkActive
+      #reglagesRla="routerLinkActive"
+      [active]="reglagesRla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+
     <button
       footer
       fold-menu-item

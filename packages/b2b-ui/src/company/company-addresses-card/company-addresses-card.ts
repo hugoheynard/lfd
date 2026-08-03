@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from "@angular/core";
 import type {
   BillingAddressView,
   DeliveryAddressView,
   DeliveryContact,
   GpsPoint,
-} from '@lfd/contracts';
+} from "@lfd/contracts";
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -16,7 +16,7 @@ import {
   FoldInlineConfirmComponent,
   FoldPageSectionComponent,
   FoldPopoverTriggerDirective,
-} from 'fold-ng';
+} from "fold-ng";
 
 import {
   formatDeliveryContact,
@@ -25,7 +25,7 @@ import {
   hasDeliverySlot,
   type WeeklySlotRow,
   weeklySlots,
-} from '../delivery-format';
+} from "../delivery-format";
 
 /**
  * Section **Adresses** d'une société — présentation pure. Une facturation
@@ -35,7 +35,7 @@ import {
  * mutations (via panneau/service) restent au container, atteint par intentions.
  */
 @Component({
-  selector: 'lfd-company-addresses-card',
+  selector: "lfd-company-addresses-card",
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldPageSectionComponent,
@@ -49,8 +49,8 @@ import {
     FoldCalloutComponent,
     FoldPopoverTriggerDirective,
   ],
-  templateUrl: './company-addresses-card.html',
-  styleUrl: './company-addresses-card.scss',
+  templateUrl: "./company-addresses-card.html",
+  styleUrl: "./company-addresses-card.scss",
 })
 export class CompanyAddressesCard {
   /** L'adresse de facturation, ou `null` si non renseignée. */
@@ -59,6 +59,12 @@ export class CompanyAddressesCard {
   readonly deliveries = input.required<readonly DeliveryAddressView[]>();
   /** Le gestionnaire peut éditer / ajouter / supprimer. */
   readonly canManage = input(false);
+  /**
+   * Afficher le bloc **livraison**. `false` quand le service de livraison n'existe
+   * pas encore (pièce `hidden` en config) — la carte ne montre alors que la
+   * facturation, sur les deux surfaces (client + admin).
+   */
+  readonly showDeliveries = input(true);
 
   /** Éditer la facturation. */
   readonly editBilling = output<void>();

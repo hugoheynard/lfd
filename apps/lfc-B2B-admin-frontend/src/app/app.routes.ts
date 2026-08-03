@@ -14,6 +14,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fiche-client/fiche-client-page').then((m) => m.FicheClientPage),
   },
   {
+    path: 'reglages',
+    title: 'Réglages — LFC B2B admin',
+    loadComponent: () => import('./reglages/reglages-page').then((m) => m.ReglagesPage),
+  },
+  {
     path: 'commercial',
     title: 'Commercial — LFC B2B admin',
     loadComponent: () => import('./commercial/commercial-page').then((m) => m.CommercialPage),

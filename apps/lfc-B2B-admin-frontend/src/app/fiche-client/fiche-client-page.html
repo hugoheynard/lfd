@@ -3,6 +3,20 @@
     Retour
   </button>
 
+  @if (isPending()) {
+    <button
+      pageActions
+      foldButton
+      intent="primary"
+      size="sm"
+      icon="check"
+      [disabled]="!canActivate()"
+      (click)="activate()"
+    >
+      Activer le compte
+    </button>
+  }
+
   @switch (state()) {
     @case ('loading') {
       <p class="state">Chargement…</p>
@@ -51,6 +65,7 @@
             [billing]="billing()"
             [deliveries]="deliveries()"
             [canManage]="false"
+            [showDeliveries]="!deliveryHidden()"
           />
         </div>
       }

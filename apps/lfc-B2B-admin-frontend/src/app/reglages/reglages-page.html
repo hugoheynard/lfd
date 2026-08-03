@@ -1,0 +1,51 @@
+<fold-page-layout icon="settings" title="Réglages">
+  @switch (state()) {
+    @case ('loading') {
+      <p class="state">Chargement…</p>
+    }
+    @case ('error') {
+      <div class="state">
+        <p>Impossible de charger les réglages.</p>
+        <button foldButton (click)="load()">Réessayer</button>
+      </div>
+    }
+    @case ('ready') {
+      @if (settings(); as s) {
+        <fold-card>
+          <h2 class="section-title">Pièces d'activation</h2>
+          <p class="section-desc">
+            Ce qu'un compte client doit fournir pour être activé. « Masquée » retire la pièce des
+            deux interfaces (client et admin) ; « Requise » bloque l'activation tant qu'elle manque.
+          </p>
+
+          <ul class="pieces">
+            @for (piece of pieces; track piece.key) {
+              <li class="piece">
+                <div class="piece-text">
+                  <strong>{{ piece.label }}</strong>
+                  <span class="piece-hint">{{ piece.hint }}</span>
+                </div>
+                <fold-select
+                  class="piece-mode"
+                  [attr.aria-label]="'Mode — ' + piece.label"
+                  [value]="s[piece.key]"
+                  (valueChange)="onMode(piece.key, $event)"
+                >
+                  @for (mode of modes; track mode.value) {
+                    <option [value]="mode.value">{{ mode.label }}</option>
+                  }
+                </fold-select>
+              </li>
+            }
+          </ul>
+
+          <div class="actions">
+            <button foldButton intent="primary" [disabled]="saving()" (click)="save()">
+              Enregistrer
+            </button>
+          </div>
+        </fold-card>
+      }
+    }
+  }
+</fold-page-layout>

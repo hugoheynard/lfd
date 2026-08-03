@@ -118,6 +118,15 @@ export class AdminCompaniesService {
     );
   }
 
+  /** Active le compte (`pending → active`). Le gate (pièces requises) est serveur. */
+  async activate(companyId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${B2B_API_BASE}/admin/companies/${companyId}/activate`, null, {
+        headers: await this.authHeaders(),
+      }),
+    );
+  }
+
   /** Ajoute une adresse de livraison. */
   async addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<void> {
     await firstValueFrom(
