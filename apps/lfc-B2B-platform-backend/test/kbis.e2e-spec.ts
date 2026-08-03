@@ -83,15 +83,19 @@ describe("dépôt du KBIS", () => {
     expect(company.kbis?.uploadedAt).toBeTruthy();
   });
 
-  it("est certifié une fois l'entreprise validée (status active)", async () => {
+  it("est certifié quand le staff pose kbis_certified_at (découplé du statut)", async () => {
     await ctx
       .asSub(ADMIN)
       .put(`/companies/${companyId}/kbis`)
       .attach("file", PDF, "k.pdf")
       .expect(204);
+    // La certification est **propre au fichier**, pas dérivée du statut : c'est
+    // le staff qui pose `kbis_certified_at` (l'endpoint de certification, §3, est
+    // à venir — ici on simule son écriture). Le reader lit
+    // `certified = kbis_certified_at != null`.
     await ctx.prisma.company.update({
       where: { id: companyId },
-      data: { status: CompanyStatus.active },
+      data: { kbisCertifiedAt: new Date() },
     });
 
     expect((await companyOf(ADMIN)).kbis?.certified).toBe(true);
