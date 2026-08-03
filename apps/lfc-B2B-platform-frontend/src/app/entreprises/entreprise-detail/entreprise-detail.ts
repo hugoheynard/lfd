@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { FoldAsideLayoutComponent } from 'fold-ng';
 
 import type { Company } from '../../account/account.model';
 import { AdressesSection } from '../../profil/adresses-section/adresses-section';
@@ -19,6 +20,7 @@ import { SupportAside } from './support-aside/support-aside';
   selector: 'app-entreprise-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldAsideLayoutComponent,
     ReferenceCard,
     ActivationChecklist,
     EntrepriseIdentite,
