@@ -17,6 +17,33 @@ export const routes: Routes = [
     path: 'reglages',
     title: 'Réglages — LFC B2B admin',
     loadComponent: () => import('./reglages/reglages-page').then((m) => m.ReglagesPage),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'activation' },
+      {
+        path: 'activation',
+        title: 'Activation client — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/activation/reglages-activation-page').then(
+            (m) => m.ReglagesActivationPage,
+          ),
+      },
+      {
+        path: 'retraits-livraisons',
+        title: 'Retraits & livraisons — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/retraits-livraisons/reglages-pickup-page').then(
+            (m) => m.ReglagesPickupPage,
+          ),
+      },
+      {
+        path: 'commercial',
+        title: 'Commercial — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/commercial/reglages-commercial-page').then(
+            (m) => m.ReglagesCommercialPage,
+          ),
+      },
+    ],
   },
   {
     path: 'commercial',

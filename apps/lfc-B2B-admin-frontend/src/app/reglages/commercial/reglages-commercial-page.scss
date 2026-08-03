@@ -1,24 +1,16 @@
-:host {
-  display: block;
+.section-title {
+  margin: 0 0 var(--fold-space-xs);
+  font-size: var(--fold-text-lg, 1.125rem);
+}
+.section-desc {
+  margin: 0 0 var(--fold-space-md);
+  color: var(--fold-color-text-muted);
 }
 
-.pnl-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-lg);
-  padding: var(--fold-space-lg);
-}
-
-.alerts {
+.fields {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
-}
-
-.alerts-intro {
-  margin: 0;
-  color: var(--fold-color-text-secondary);
-  font-size: var(--fold-text-sm);
 }
 
 .field {

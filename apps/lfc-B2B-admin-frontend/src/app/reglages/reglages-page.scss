@@ -1,59 +1,27 @@
-.state {
-  padding: var(--fold-space-lg);
-  color: var(--fold-color-text-muted);
+// Rail vertical (view-nav) à gauche, contenu de la sous-page à droite.
+// Passe en pile sur écran étroit (le rail devient une barre en tête).
+.reglages-split {
+  display: grid;
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+  gap: var(--fold-space-xl);
+  align-items: start;
 }
 
-.section-title {
-  margin: 0 0 var(--fold-space-xs);
-  font-size: var(--fold-text-lg, 1.125rem);
-}
-.section-desc {
-  margin: 0 0 var(--fold-space-md);
-  color: var(--fold-color-text-muted);
+.reglages-nav {
+  position: sticky;
+  top: var(--fold-space-lg);
 }
 
-.pieces {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
+.reglages-content {
+  min-width: 0;
 }
 
-// Libellé à gauche, sélecteur de mode à droite ; passe en colonne si étroit.
-.piece {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-md);
-  flex-wrap: wrap;
-  padding: var(--fold-space-sm) 0;
-  border-top: 1px solid var(--fold-color-border-subtle);
-}
-.piece:first-child {
-  border-top: 0;
-}
-
-.piece-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 12rem;
-  flex: 1 1 14rem;
-}
-.piece-hint {
-  font-size: var(--fold-text-sm, 0.875rem);
-  color: var(--fold-color-text-muted);
-}
-
-.piece-mode {
-  flex: 0 0 auto;
-  min-width: 10rem;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--fold-space-lg);
+@media (max-width: 40rem) {
+  .reglages-split {
+    grid-template-columns: 1fr;
+    gap: var(--fold-space-lg);
+  }
+  .reglages-nav {
+    position: static;
+  }
 }
