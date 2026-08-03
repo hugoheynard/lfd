@@ -1,0 +1,125 @@
+@let id = identity();
+<fold-page-section
+  title="Identité légale"
+  icon="company"
+  description="Les informations enregistrées pour cet établissement."
+>
+  <div sectionActions class="badges">
+    <fold-badge [content]="id.statusLabel" [variant]="id.statusTone" />
+    @if (id.roleLabel; as roleLabel) {
+      <fold-badge [content]="roleLabel" variant="neutral" />
+    }
+    @if (canManage()) {
+      <button
+        foldButton
+        size="sm"
+        icon="edit"
+        [intent]="id.tvaMissing ? 'warning' : 'neutral'"
+        [emphasis]="id.tvaMissing ? 'soft' : 'outline'"
+        (click)="edit.emit()"
+      >
+        Modifier
+      </button>
+    }
+  </div>
+
+  <fold-card>
+    <fold-field-list>
+      <fold-field label="Raison sociale">{{ id.raisonSociale }}</fold-field>
+      <fold-field label="Enseigne" [empty]="!id.enseigne">{{ id.enseigne }}</fold-field>
+      <fold-field label="Forme juridique">{{ id.formeJuridique }}</fold-field>
+      <fold-field label="SIRET">{{ id.siret }}</fold-field>
+      <fold-field label="TVA intracommunautaire" [empty]="!id.tvaIntracom">
+        {{ id.tvaIntracom }}
+      </fold-field>
+    </fold-field-list>
+
+    @if (id.tvaMissing) {
+      <fold-callout variant="warning">
+        Votre forme juridique nécessite un numéro de TVA intracommunautaire.
+        <button actions foldButton intent="warning" emphasis="soft" size="sm" (click)="edit.emit()">
+          Renseigner la TVA
+        </button>
+      </fold-callout>
+    }
+  </fold-card>
+
+  <!-- KBIS : l'extrait demandé pour la validation. -->
+  <fold-card class="kbis">
+    <!-- Input caché mutualisé (au niveau carte pour être visible des deux vues). -->
+    <input
+      #kbisInput
+      type="file"
+      accept="application/pdf,.pdf"
+      hidden
+      [disabled]="busy()"
+      (change)="onKbisSelected($event)"
+    />
+
+    <div class="kbis-head">
+      <div class="kbis-title">
+        <fold-icon name="contracts" [size]="18" />
+        <span>Extrait KBIS</span>
+        @if (id.kbis?.certified) {
+          <fold-badge content="Certifié" variant="success" />
+        } @else if (id.kbis) {
+          <fold-badge content="En attente de validation" variant="warning" />
+        }
+      </div>
+
+      @if (canManageKbis() && id.kbis) {
+        <button
+          foldButton
+          emphasis="outline"
+          size="sm"
+          icon="plus"
+          [disabled]="busy()"
+          (click)="kbisInput.click()"
+        >
+          Remplacer
+        </button>
+      }
+    </div>
+
+    @if (error(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @if (id.kbis; as k) {
+      <div class="kbis-file">
+        <div class="kbis-meta">
+          <fold-icon name="contracts" [size]="20" />
+          <span class="kbis-name">{{ k.fileName }}</span>
+          <span class="kbis-date">Déposé le {{ k.uploadedAt | date: 'dd/MM/yyyy' }}</span>
+        </div>
+        <div class="kbis-actions">
+          <button foldButton emphasis="outline" size="sm" icon="grid" (click)="viewKbis.emit()">
+            Voir
+          </button>
+          <button foldButton emphasis="soft" size="sm" icon="contracts" (click)="downloadKbis.emit()">
+            Télécharger
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="kbis-drop">
+        <fold-icon name="upload" [size]="30" />
+        <p class="kbis-drop-title">Aucun KBIS déposé</p>
+        <p class="kbis-drop-sub">{{ kbisEmptyHint() }}</p>
+        @if (canManageKbis()) {
+          <button
+            foldButton
+            intent="warning"
+            emphasis="solid"
+            size="sm"
+            icon="plus"
+            [disabled]="busy()"
+            (click)="kbisInput.click()"
+          >
+            {{ busy() ? 'Dépôt…' : 'Déposer le KBIS' }}
+          </button>
+        }
+      </div>
+    }
+  </fold-card>
+</fold-page-section>
