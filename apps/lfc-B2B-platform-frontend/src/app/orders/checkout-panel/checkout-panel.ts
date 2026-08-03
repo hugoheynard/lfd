@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 
-import type { DeliveryAddressView, PlaceOrderPayload } from '@lfd/contracts';
+import type { DeliveryAddressView, FulfillmentMethod, PlaceOrderPayload } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -22,6 +22,8 @@ import type { Company } from '../../account/account.model';
 import { AccountService } from '../../account/account.service';
 import { formatEurValue } from '../../data/catalogue-seed';
 import { CartService } from '../../data/cart.service';
+import { PickupAddressesService } from '../../entreprises/pickup-addresses.service';
+import { PlatformSettingsService } from '../../entreprises/platform-settings.service';
 import { OrdersService } from '../orders.service';
 
 /**
@@ -51,6 +53,8 @@ export class CheckoutPanel {
   private readonly ref = inject(FoldPanelRef);
   private readonly account = inject(AccountService);
   private readonly orders = inject(OrdersService);
+  private readonly settings = inject(PlatformSettingsService);
+  private readonly pickups = inject(PickupAddressesService);
   protected readonly cart = inject(CartService);
 
   /** Ouverture depuis une page qui sait déjà quel établissement viser. */
@@ -64,6 +68,15 @@ export class CheckoutPanel {
   protected readonly requestedDate = signal('');
   protected readonly note = signal('');
 
+  /** Acheminement choisi. Défaut livraison ; forcé au retrait si la livraison
+   * n'existe pas encore (config globale). */
+  protected readonly fulfillment = signal<FulfillmentMethod>('delivery');
+  /** La livraison est-elle masquée (service absent) ? Verrouille le choix. */
+  protected readonly deliveryHidden = this.settings.deliveryHidden;
+  /** Le point de retrait par défaut (labo), présélectionné, affiché en lecture seule. */
+  protected readonly defaultPickup = this.pickups.defaultPickup;
+  protected readonly isPickup = computed(() => this.fulfillment() === 'pickup');
+
   /** État de soumission : erreur backend, et numéro de commande une fois passée. */
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -73,14 +86,19 @@ export class CheckoutPanel {
     () => this.companies().find((company) => company.id === this.companyId()) ?? null,
   );
   protected readonly isActive = computed(() => this.selectedCompany()?.status === 'active');
-  protected readonly hasAddress = computed(() => this.addressId() !== '');
+
+  /** Acheminement prêt : en retrait, un point par défaut existe ; en livraison,
+   * une adresse est choisie. */
+  protected readonly fulfillmentReady = computed(() =>
+    this.isPickup() ? this.defaultPickup() !== null : this.addressId() !== '',
+  );
 
   protected readonly canSubmit = computed(
     () =>
       !this.submitting() &&
       !this.cart.isEmpty() &&
       this.isActive() &&
-      this.hasAddress() &&
+      this.fulfillmentReady() &&
       this.placedNumber() === null,
   );
 
@@ -98,6 +116,21 @@ export class CheckoutPanel {
         this.selectCompany(preselect);
       }
     });
+
+    // Livraison masquée (service absent) → le retrait est le seul acheminement.
+    effect(() => {
+      if (this.deliveryHidden()) {
+        this.fulfillment.set('pickup');
+      }
+    });
+  }
+
+  /** Change l'acheminement (verrouillé sur retrait si la livraison est masquée). */
+  protected setFulfillment(method: FulfillmentMethod): void {
+    if (this.deliveryHidden()) {
+      return;
+    }
+    this.fulfillment.set(method);
   }
 
   protected fmt(value: number): string {
@@ -141,9 +174,11 @@ export class CheckoutPanel {
     }
     this.submitting.set(true);
     this.errorMessage.set(null);
+    const pickup = this.isPickup();
     const payload: PlaceOrderPayload = {
-      fulfillmentMethod: 'delivery',
-      deliveryAddressId: this.addressId(),
+      fulfillmentMethod: this.fulfillment(),
+      // En retrait, on laisse le serveur résoudre le point par défaut (labo).
+      deliveryAddressId: pickup ? null : this.addressId(),
       pickupAddressId: null,
       requestedDeliveryDate: this.requestedDate() === '' ? null : this.requestedDate(),
       note: this.note().trim(),

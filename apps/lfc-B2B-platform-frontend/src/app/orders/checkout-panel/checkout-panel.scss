@@ -94,6 +94,54 @@
   color: var(--fold-color-text-muted);
 }
 
+// Choix d'acheminement : deux options radio côte à côte.
+.fulfillment {
+  display: flex;
+  flex-direction: column;
+}
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 10px);
+  cursor: pointer;
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+.choice:has(input:checked) {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface, transparent);
+}
+.choice.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+// Point de retrait affiché en lecture seule (adresse du labo par défaut).
+.pickup-box {
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md, 10px);
+}
+.pickup-box .addr {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-style: normal;
+  color: var(--fold-color-text);
+  line-height: 1.4;
+}
+.pickup-box .addr-label {
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
 .foot {
   display: flex;
   justify-content: flex-end;

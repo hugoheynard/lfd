@@ -1,4 +1,4 @@
-<fold-panel-header title="Passer commande" subtitle="Livraison, date et note." />
+<fold-panel-header title="Passer commande" subtitle="Acheminement, date et note." />
 
 <div class="body">
   @if (placedNumber(); as number) {
@@ -55,26 +55,77 @@
       </fold-callout>
     }
 
-    <!-- Adresse de livraison -->
+    <!-- Acheminement : livraison ou retrait -->
     @if (isActive()) {
-      @if (addresses().length === 0) {
-        <fold-callout variant="info">
-          Aucune adresse de livraison pour cette entreprise. Ajoutez-en une avant de commander.
-        </fold-callout>
+      <div class="fulfillment">
+        <span class="section-label">Acheminement</span>
+        <div class="choices" role="radiogroup" aria-label="Acheminement">
+          <label class="choice" [class.is-disabled]="deliveryHidden()">
+            <input
+              type="radio"
+              name="fulfillment"
+              value="delivery"
+              [checked]="fulfillment() === 'delivery'"
+              [disabled]="deliveryHidden()"
+              (change)="setFulfillment('delivery')"
+            />
+            <span>Livraison</span>
+          </label>
+          <label class="choice">
+            <input
+              type="radio"
+              name="fulfillment"
+              value="pickup"
+              [checked]="fulfillment() === 'pickup'"
+              (change)="setFulfillment('pickup')"
+            />
+            <span>Retrait au laboratoire</span>
+          </label>
+        </div>
+      </div>
+
+      @if (fulfillment() === 'delivery') {
+        @if (addresses().length === 0) {
+          <fold-callout variant="info">
+            Aucune adresse de livraison pour cette entreprise. Ajoutez-en une avant de commander.
+          </fold-callout>
+        } @else {
+          <fold-select
+            label="Adresse de livraison"
+            [value]="addressId()"
+            (valueChange)="addressId.set($event)"
+          >
+            @for (address of addresses(); track address.id) {
+              <option [value]="address.id">{{ addressLabel(address) }}</option>
+            }
+          </fold-select>
+        }
       } @else {
-        <fold-select
-          label="Adresse de livraison"
-          [value]="addressId()"
-          (valueChange)="addressId.set($event)"
-        >
-          @for (address of addresses(); track address.id) {
-            <option [value]="address.id">{{ addressLabel(address) }}</option>
-          }
-        </fold-select>
+        @if (defaultPickup(); as p) {
+          <div class="pickup-box">
+            <p class="section-label">Point de retrait</p>
+            <address class="addr">
+              <span class="addr-label">{{ p.label || p.ville }}</span>
+              <span>{{ p.ligne1 }}</span>
+              @if (p.ligne2) {
+                <span>{{ p.ligne2 }}</span>
+              }
+              <span>{{ p.codePostal }} {{ p.ville }}</span>
+              <span>{{ p.pays }}</span>
+            </address>
+          </div>
+        } @else {
+          <fold-callout variant="warning">
+            Aucun point de retrait configuré pour le moment. Réessayez plus tard.
+          </fold-callout>
+        }
       }
 
       <label class="field">
-        <span class="section-label">Date de livraison souhaitée <em>(optionnel)</em></span>
+        <span class="section-label">
+          {{ isPickup() ? 'Date de retrait souhaitée' : 'Date de livraison souhaitée' }}
+          <em>(optionnel)</em>
+        </span>
         <input
           class="date"
           type="date"
