@@ -22,6 +22,18 @@
     @case ('ready') {
       @if (company(); as c) {
         <div class="fiche">
+          <lfd-company-activation-checklist
+            [steps]="libSteps()"
+            [ready]="ready()"
+            readyNote="Toutes les pièces sont réunies — le compte peut être activé."
+            (stepAction)="act($event)"
+            (fileSelected)="onFile($event)"
+          >
+            <p intro>
+              Complétez les pièces manquantes pour activer ce compte, à la place du client.
+            </p>
+          </lfd-company-activation-checklist>
+
           <lfd-company-reference-card [reference]="c.reference" label="Référence client" />
 
           @if (identity(); as id) {
@@ -34,6 +46,12 @@
           }
 
           <lfd-company-contacts-card [contacts]="contacts()" [canManage]="false" />
+
+          <lfd-company-addresses-card
+            [billing]="billing()"
+            [deliveries]="deliveries()"
+            [canManage]="false"
+          />
         </div>
       }
     }

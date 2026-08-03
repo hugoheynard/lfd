@@ -5,7 +5,11 @@ import {
   type CompanyIdentityView,
 } from '@lfd/b2b-ui/company';
 
-import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from '../comptes-clients/admin-company';
+import {
+  STATUS_LABELS,
+  type AdminCompany,
+  type CompanyStatus,
+} from '../comptes-clients/admin-company';
 
 /** Ton du badge de statut admin — `terminated` en plus du client. */
 const STATUS_TONE: Readonly<Record<CompanyStatus, CompanyBadgeTone>> = {

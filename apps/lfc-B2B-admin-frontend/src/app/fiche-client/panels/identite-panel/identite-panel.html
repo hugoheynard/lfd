@@ -1,0 +1,25 @@
+<fold-panel-header title="Identité" subtitle="Enseigne et n° de TVA — modifiables." />
+
+<div class="body">
+  <fold-input
+    label="Enseigne"
+    hint="nom commercial, s'il diffère de la raison sociale"
+    optional
+    [value]="enseigne()"
+    (valueChange)="enseigne.set($event)"
+  />
+  <fold-input
+    label="N° de TVA intracommunautaire"
+    placeholder="FR12345678901"
+    optional
+    [value]="tvaIntracom()"
+    (valueChange)="tvaIntracom.set($event)"
+  />
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="submitting()" (click)="submit()">
+    Enregistrer
+  </button>
+</footer>
