@@ -1,10 +1,5 @@
-<fold-card class="reference-card">
-  <fold-icon name="hash" [size]="20" />
-  <div class="body">
-    <p class="label">Votre référence client</p>
-    <p class="note">
-      À noter si vous souhaitez opérer en toute tranquillité au téléphone avec notre équipe.
-    </p>
-  </div>
-  <span class="value">{{ company().reference }}</span>
-</fold-card>
+<lfd-company-reference-card
+  [reference]="company().reference"
+  label="Votre référence client"
+  note="À noter si vous souhaitez opérer en toute tranquillité au téléphone avec notre équipe."
+/>
