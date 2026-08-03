@@ -120,6 +120,15 @@ enum OrderStatus {
   cancelled
 }
 
+/// **Périmètre** d'un utilisateur staff — les domaines du back-office auxquels il
+/// a accès. Stocké pour l'instant (l'annuaire) ; l'enforcement (masquer les
+/// sections) viendra quand le login staff sera branché sur Auth0.
+enum StaffScope {
+  commercial
+  comptabilite
+  admin
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Company — le TENANT (établissement client pro)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -505,6 +514,32 @@ model PickupAddress {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("pickup_addresses")
+}
+
+/// Utilisateur **staff** (back-office) — l'annuaire des personnes qui opèrent la
+/// suite : prénom, nom, e-mail (clé humaine + futur lien de connexion) et un
+/// **périmètre** (ensemble de `StaffScope`). Source de vérité **locale** : on ne
+/// dépend pas d'Auth0 pour administrer sa propre suite. Le provisioning de
+/// connexion (Auth0) est différé ; `auth0Id` reste nul jusque-là.
+model StaffUser {
+  id String @id @default(cuid())
+
+  firstName String @map("first_name")
+  lastName  String @map("last_name")
+  email     String @unique
+
+  /// Le périmètre : quels domaines du back-office. Vide = aucun accès (annuaire
+  /// seul). Premier tableau scalaire du schéma (Postgres enum array).
+  scopes StaffScope[]
+
+  /// Identité Auth0, si/quand un compte de connexion est provisionné. Nul tant
+  /// que le login staff n'est pas branché.
+  auth0Id String? @unique @map("auth0_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("staff_users")
 }
 
 // NB — Volontairement HORS de ce schéma :
