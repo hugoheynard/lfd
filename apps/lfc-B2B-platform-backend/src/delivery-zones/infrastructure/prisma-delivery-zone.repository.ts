@@ -1,4 +1,8 @@
-import type { DeliveryZonePayload, DeliveryZoneView } from "@lfd/contracts";
+import {
+  longestMatchingPrefix,
+  type DeliveryZonePayload,
+  type DeliveryZoneView,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
@@ -14,7 +18,7 @@ import {
 
 interface ZoneRow {
   readonly id: string;
-  readonly codePostal: string;
+  readonly postalPrefixes: string[];
   readonly label: string;
   readonly feeMode: "percent" | "amount";
   readonly feeValue: number;
@@ -25,21 +29,26 @@ function toView(row: ZoneRow): DeliveryZoneView {
   // `feeMode`/`feeValue` sont non-null en base (colonnes requises) → jamais `null`.
   return {
     id: row.id,
-    codePostal: row.codePostal,
+    postalPrefixes: row.postalPrefixes,
     label: row.label,
     fee: fee ?? { mode: "amount", cents: 0 },
   };
 }
 
+/** Préfixes normalisés (dédupliqués, ordre stable) — l'unicité inter-zone en dépend. */
+function normalizePrefixes(prefixes: readonly string[]): string[] {
+  return [...new Set(prefixes.map((prefix) => prefix.trim()))];
+}
+
 function writable(payload: DeliveryZonePayload): {
-  codePostal: string;
+  postalPrefixes: string[];
   label: string;
   feeMode: "percent" | "amount";
   feeValue: number;
 } {
   const fee = toAdjustmentColumns(payload.fee);
   return {
-    codePostal: payload.codePostal,
+    postalPrefixes: normalizePrefixes(payload.postalPrefixes),
     label: payload.label,
     feeMode: fee.mode ?? "amount",
     feeValue: fee.value ?? 0,
@@ -48,13 +57,13 @@ function writable(payload: DeliveryZonePayload): {
 
 const SELECT = {
   id: true,
-  codePostal: true,
+  postalPrefixes: true,
   label: true,
   feeMode: true,
   feeValue: true,
 } as const;
 
-/** Adaptateur Prisma des zones de livraison (globales). Code postal unique. */
+/** Adaptateur Prisma des zones de livraison (globales). Préfixes uniques inter-zone. */
 @Injectable()
 export class PrismaDeliveryZoneRepository extends DeliveryZoneRepository {
   constructor(private readonly prisma: PrismaService) {
@@ -63,22 +72,34 @@ export class PrismaDeliveryZoneRepository extends DeliveryZoneRepository {
 
   async list(): Promise<readonly DeliveryZoneView[]> {
     const rows = await this.prisma.deliveryZone.findMany({
-      orderBy: { codePostal: "asc" },
+      orderBy: { label: "asc" },
       select: SELECT,
     });
     return rows.map(toView);
   }
 
-  async findByPostalCode(codePostal: string): Promise<DeliveryZoneView | null> {
-    const row = await this.prisma.deliveryZone.findUnique({
-      where: { codePostal },
-      select: SELECT,
-    });
-    return row === null ? null : toView(row);
+  /**
+   * La zone couvrant `codePostal`, ou `null`. En cas de chevauchement, la zone au
+   * **préfixe le plus long** (le plus spécifique) gagne. Les zones sont peu
+   * nombreuses (config globale) → on résout en mémoire.
+   */
+  async resolveForPostalCode(codePostal: string): Promise<DeliveryZoneView | null> {
+    const zones = await this.list();
+    let best: DeliveryZoneView | null = null;
+    let bestLength = -1;
+    for (const zone of zones) {
+      const length = longestMatchingPrefix(zone.postalPrefixes, codePostal);
+      if (length > bestLength) {
+        best = zone;
+        bestLength = length;
+      }
+    }
+    return best;
   }
 
   async create(payload: DeliveryZonePayload): Promise<string> {
-    await this.assertPostalCodeFree(payload.codePostal, null);
+    const prefixes = normalizePrefixes(payload.postalPrefixes);
+    await this.assertPrefixesFree(prefixes, null);
     const created = await this.prisma.deliveryZone.create({
       data: writable(payload),
       select: { id: true },
@@ -94,7 +115,7 @@ export class PrismaDeliveryZoneRepository extends DeliveryZoneRepository {
     if (existing === null) {
       throw new DeliveryZoneNotFoundError(id);
     }
-    await this.assertPostalCodeFree(payload.codePostal, id);
+    await this.assertPrefixesFree(normalizePrefixes(payload.postalPrefixes), id);
     await this.prisma.deliveryZone.update({ where: { id }, data: writable(payload) });
   }
 
@@ -109,14 +130,16 @@ export class PrismaDeliveryZoneRepository extends DeliveryZoneRepository {
     await this.prisma.deliveryZone.delete({ where: { id } });
   }
 
-  /** Refuse un code postal déjà pris par une **autre** zone (`exceptId` s'exclut). */
-  private async assertPostalCodeFree(codePostal: string, exceptId: string | null): Promise<void> {
-    const owner = await this.prisma.deliveryZone.findUnique({
-      where: { codePostal },
-      select: { id: true },
+  /** Refuse un préfixe déjà couvert par une **autre** zone (`exceptId` s'exclut). */
+  private async assertPrefixesFree(prefixes: string[], exceptId: string | null): Promise<void> {
+    const zones = await this.prisma.deliveryZone.findMany({
+      ...(exceptId === null ? {} : { where: { id: { not: exceptId } } }),
+      select: { postalPrefixes: true },
     });
-    if (owner !== null && owner.id !== exceptId) {
-      throw new DuplicatePostalCodeError(codePostal);
+    const taken = new Set(zones.flatMap((zone) => zone.postalPrefixes));
+    const clash = prefixes.find((prefix) => taken.has(prefix));
+    if (clash !== undefined) {
+      throw new DuplicatePostalCodeError(clash);
     }
   }
 }

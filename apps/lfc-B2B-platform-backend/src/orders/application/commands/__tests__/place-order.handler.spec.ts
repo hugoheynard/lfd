@@ -58,8 +58,8 @@ function pickups(resolved: PickupAddressView | null = null): PickupAddressReposi
 /** Zones de livraison doublées : seule la zone **trouvée par code postal** varie. */
 function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
   return {
-    list: () => Promise.resolve([]),
-    findByPostalCode: () => Promise.resolve(found),
+    list: () => Promise.resolve(found === null ? [] : [found]),
+    resolveForPostalCode: () => Promise.resolve(found),
     create: () => Promise.resolve("zone_1"),
     update: () => Promise.resolve(),
     remove: () => Promise.resolve(),
@@ -314,7 +314,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const zone: DeliveryZoneView = {
       id: "z1",
-      codePostal: "73150",
+      postalPrefixes: ["73150"],
       label: "Val d'Isère",
       fee: { mode: "amount", cents: 2000 },
     };

@@ -130,7 +130,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     if (postalCode === null) {
       return 0;
     }
-    const zone = await this.zones.findByPostalCode(postalCode);
+    const zone = await this.zones.resolveForPostalCode(postalCode);
     return zone === null ? 0 : cartAdjustmentCents(zone.fee, subtotalCents);
   }
 

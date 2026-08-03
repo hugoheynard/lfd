@@ -532,14 +532,15 @@ model PickupAddress {
   @@map("pickup_addresses")
 }
 
-/// **Zone de livraison** — un code postal (station éloignée) portant un frais de
-/// livraison HT ajouté au panier quand la commande est livrée vers ce code postal.
-/// Config globale (pas par entreprise). `feeValue` = bp (percent) ou centimes
-/// (amount) selon `feeMode`.
+/// **Zone de livraison** — un secteur de codes postaux (stations éloignées)
+/// portant un frais de livraison HT ajouté au panier quand la commande est livrée
+/// vers ce secteur. `postalPrefixes` = préfixes couverts (`73150` exact, `731` =
+/// secteur) ; le plus long gagne. Config globale. `feeValue` = bp (percent) ou
+/// centimes (amount) selon `feeMode`.
 model DeliveryZone {
-  id         String @id @default(cuid())
-  codePostal String @unique @map("code_postal")
-  label      String @default("")
+  id             String   @id @default(cuid())
+  postalPrefixes String[] @map("postal_prefixes")
+  label          String   @default("")
 
   feeMode  CartAdjustmentMode @map("fee_mode")
   feeValue Int                @map("fee_value")

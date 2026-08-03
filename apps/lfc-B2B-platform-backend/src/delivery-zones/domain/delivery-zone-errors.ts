@@ -7,9 +7,12 @@ export class DeliveryZoneNotFoundError extends ResourceNotFoundError {
   }
 }
 
-/** Le code postal a déjà une zone (**409**) — un code postal, une zone. */
+/** Un préfixe est déjà couvert par une autre zone (**409**) — un préfixe, une zone. */
 export class DuplicatePostalCodeError extends BusinessError {
-  constructor(readonly codePostal: string) {
-    super("delivery_zone.duplicate_postal_code", "Ce code postal a déjà une zone de livraison.");
+  constructor(readonly prefix: string) {
+    super(
+      "delivery_zone.duplicate_postal_code",
+      `Le code postal « ${prefix} » est déjà couvert par une zone de livraison.`,
+    );
   }
 }
