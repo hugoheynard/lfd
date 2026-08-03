@@ -1,10 +1,4 @@
-// Les sections portent déjà leur propre espacement ; on n'ajoute que le rythme
-// entre le bandeau et ce qui l'entoure.
+// La mise en page (centre + rail droit collant, écarts) vit dans fold-aside-layout.
 :host {
   display: block;
-}
-
-fold-callout {
-  display: block;
-  margin: var(--fold-space-lg) 0;
 }

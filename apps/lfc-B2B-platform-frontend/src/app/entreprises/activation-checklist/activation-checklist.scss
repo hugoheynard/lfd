@@ -1,6 +1,6 @@
 // Contenu projeté dans la checklist (lib) : styles portés par ce container.
+// L'écart au-dessus vient de l'espacement naturel du slot fold (pas de marge ici).
 .support {
-  margin: var(--fold-space-sm) 0 0;
   font-size: var(--fold-text-sm, 0.875rem);
 }
 

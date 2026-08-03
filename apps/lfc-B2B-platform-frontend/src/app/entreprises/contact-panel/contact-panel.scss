@@ -15,17 +15,6 @@
   padding: var(--fold-space-lg);
 }
 
-// Prénom + nom sur une ligne ; passe en colonne si trop étroit.
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-md);
-}
-.row > * {
-  flex: 1 1 10rem;
-  min-width: 0;
-}
-
 .foot {
   display: flex;
   justify-content: flex-end;
