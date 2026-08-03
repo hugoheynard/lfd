@@ -1,27 +1,10 @@
-<fold-page-section
-  title="Facturation"
-  icon="calendar"
+<lfd-company-billing-card
+  [termLabel]="termLabel()"
+  [pendingLabel]="pendingLabel()"
+  [canManage]="canManage()"
   description="Vos conditions de règlement, convenues avec La Folie Coffee."
->
-  @if (canManage()) {
-    <button sectionActions foldButton emphasis="outline" size="sm" icon="edit" (click)="demander()">
-      Demander une modification
-    </button>
-  }
-
-  <fold-card class="billing">
-    <p class="card-kicker">Condition de règlement</p>
-    <p class="term">{{ termLabel() }}</p>
-    <p class="term-note">
-      Définie avec votre commercial La Folie Coffee. Toute évolution passe par lui et s'appliquera à
-      vos prochaines commandes.
-    </p>
-
-    @if (pendingLabel(); as pending) {
-      <fold-callout appearance="inset" variant="info">
-        Demande en attente : <strong>{{ pending }}</strong>. Votre commercial La Folie Coffee la
-        validera prochainement.
-      </fold-callout>
-    }
-  </fold-card>
-</fold-page-section>
+  note="Définie avec votre commercial La Folie Coffee. Toute évolution passe par lui et s'appliquera à vos prochaines commandes."
+  pendingNote="Votre commercial La Folie Coffee la validera prochainement."
+  actionLabel="Demander une modification"
+  (action)="demander()"
+/>

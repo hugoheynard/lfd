@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { FoldPanelHostService } from 'fold-ng';
 import {
   CompanyIdentityCard,
+  formatSiret,
   type CompanyBadgeTone,
   type CompanyIdentityView,
 } from '@lfd/b2b-ui/company';
@@ -9,7 +10,6 @@ import {
 import {
   companyRoleLabel,
   companyStatusLabel,
-  formatSiret,
   type Company,
   type CompanyStatus,
 } from '../../account/account.model';

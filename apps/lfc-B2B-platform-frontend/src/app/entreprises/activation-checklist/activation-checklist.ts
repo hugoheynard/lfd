@@ -1,20 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-
-import { FoldButtonComponent, FoldCalloutComponent, FoldIconComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldPanelHostService } from 'fold-ng';
+import { CompanyActivationChecklist, type CompanyActivationStep } from '@lfd/b2b-ui/company';
 
 import type { Company } from '../../account/account.model';
 import { AccountService } from '../../account/account.service';
-import { AddressesService } from '../addresses.service';
 import { AdressePanel, type AdressePanelData } from '../../profil/adresse-panel/adresse-panel';
 import { ActivationSupportPanel } from '../activation-support-panel/activation-support-panel';
+import { AddressesService } from '../addresses.service';
 import { EntrepriseIdentitePanel } from '../entreprise-identite-panel/entreprise-identite-panel';
 import { PaymentTermPanel } from '../payment-term-panel/payment-term-panel';
 
 /** Les étapes possibles du dossier d'activation. */
 type StepKey = 'tva' | 'kbis' | 'billing' | 'delivery' | 'payment';
 
-/** Une étape à faire : ce qui s'affiche dans l'encart. */
+/** Une étape à faire, telle que le container la calcule (sans le `kind` d'UI). */
 interface Step {
   readonly key: StepKey;
   readonly title: string;
@@ -23,16 +23,17 @@ interface Step {
 }
 
 /**
- * Encart **d'activation** — visible tant que l'entreprise est `pending`, réservé
- * au gestionnaire. Il liste ce qu'il reste à compléter pour que le compte soit
- * activable, chaque étape avec un bouton qui ouvre le bon panneau (ou dépose le
- * KBIS). Quand tout est fait, il indique que le dossier part en validation
- * commerciale (l'activation elle-même n'est pas un geste client).
+ * Encart **d'activation** côté **client** — _container_ de
+ * `@lfd/b2b-ui/company`. Il calcule les étapes restantes (pièces manquantes),
+ * les passe à la checklist présentationnelle et exécute les intentions (ouvrir
+ * le bon panneau, déposer le KBIS). Le **récit** propre au client (intro avec le
+ * lien boutique, demande de support) est **projeté** dans les slots de la vue —
+ * la lib ne connaît ni cette route ni cette copie.
  */
 @Component({
   selector: 'app-activation-checklist',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FoldCalloutComponent, FoldButtonComponent, FoldIconComponent],
+  imports: [RouterLink, CompanyActivationChecklist],
   templateUrl: './activation-checklist.html',
   styleUrl: './activation-checklist.scss',
 })
@@ -56,7 +57,7 @@ export class ActivationChecklist {
   }
 
   /** Les étapes restantes (les faites disparaissent). */
-  protected readonly steps = computed<readonly Step[]>(() => {
+  private readonly steps = computed<readonly Step[]>(() => {
     const company = this.company();
     const view = this.addressesView();
     const steps: Step[] = [];
@@ -103,16 +104,24 @@ export class ActivationChecklist {
     return steps;
   });
 
-  /** Vrai quand il ne reste que la condition de règlement (les pièces sont là). */
-  protected readonly ready = computed(
-    () => this.steps().every((step) => step.key === 'payment'),
+  /** Étapes projetées vers le view-model de la lib (ajout du `kind` d'UI). */
+  protected readonly libSteps = computed<readonly CompanyActivationStep[]>(() =>
+    this.steps().map((step) => ({ ...step, kind: step.key === 'kbis' ? 'file' : 'action' })),
   );
 
-  protected act(key: StepKey): void {
+  /** Vrai quand il ne reste que la condition de règlement (les pièces sont là). */
+  protected readonly ready = computed(() => this.steps().every((step) => step.key === 'payment'));
+
+  /** Exécute l'action d'une étape (ouvre le bon panneau). */
+  protected act(key: string): void {
     const company = this.company();
     if (key === 'tva') {
       this.panelHost.open(EntrepriseIdentitePanel, {
-        data: { companyId: company.id, enseigne: company.enseigne, tvaIntracom: company.tvaIntracom },
+        data: {
+          companyId: company.id,
+          enseigne: company.enseigne,
+          tvaIntracom: company.tvaIntracom,
+        },
         side: 'right',
       });
     } else if (key === 'billing') {
@@ -138,24 +147,16 @@ export class ActivationChecklist {
     }
   }
 
+  /** Dépôt de fichier d'une étape (`kbis`). */
+  protected onFile(payload: { readonly key: string; readonly file: File }): void {
+    this.account.uploadKbis(this.company().id, payload.file);
+  }
+
   /** Ouvre la demande de support (rappel / e-mail par l'équipe commerciale). */
   protected openSupport(): void {
     this.panelHost.open(ActivationSupportPanel, {
       data: { companyId: this.company().id },
       side: 'right',
     });
-  }
-
-  /** Dépose le KBIS choisi (l'étape KBIS a son propre input fichier). */
-  protected onKbisFile(event: Event): void {
-    const input = event.target;
-    if (!(input instanceof HTMLInputElement) || input.files === null || input.files.length === 0) {
-      return;
-    }
-    const file = input.files[0];
-    if (file !== undefined) {
-      this.account.uploadKbis(this.company().id, file);
-    }
-    input.value = '';
   }
 }
