@@ -1,3 +1,5 @@
+import type { CompanyAddressesView } from '@lfd/contracts';
+
 /**
  * Vue **front** d'une société renvoyée par `GET /admin/companies` (miroir de
  * `AdminCompanyView` côté backend — le front tient sa propre déclaration de la
@@ -42,6 +44,17 @@ export interface AdminCompany {
    */
   readonly hasOpenSupportRequest: boolean;
   readonly createdAt: string;
+}
+
+/**
+ * La **fiche** d'une société (miroir d'`AdminCompanyDetailView` — `GET
+ * /admin/companies/:id`). Tout ce que porte la liste, plus de quoi refléter
+ * l'état d'activation : l'obligation de TVA (dérivée serveur) et les adresses
+ * complètes (facturation + livraisons).
+ */
+export interface AdminCompanyDetail extends AdminCompany {
+  readonly vatNumberRequired: boolean;
+  readonly addresses: CompanyAddressesView;
 }
 
 /** Libellé FR d'un statut de société. */

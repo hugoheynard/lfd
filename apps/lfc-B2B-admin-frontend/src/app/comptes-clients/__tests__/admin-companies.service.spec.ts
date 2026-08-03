@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { B2B_API_BASE } from '../../api/api-config';
 import { SuiteEmbed } from '../../suite-embed/suite-embed';
 import { AdminCompaniesService } from '../admin-companies.service';
-import type { AdminCompany } from '../admin-company';
+import type { AdminCompany, AdminCompanyDetail } from '../admin-company';
 
 const company: AdminCompany = {
   id: 'company_1',
@@ -96,6 +96,45 @@ describe('AdminCompaniesService', () => {
     const req = http.expectOne(URL);
     expect(req.request.headers.has('Authorization')).toBe(false);
     req.flush([]);
+    await promise;
+  });
+
+  it('GET /admin/companies/:id renvoie la fiche détail', async () => {
+    const detail: AdminCompanyDetail = {
+      ...company,
+      vatNumberRequired: true,
+      addresses: { billing: null, deliveries: [] },
+    };
+    const { service, http } = setup(null);
+    const promise = service.getById('company_1');
+    await flush();
+
+    const req = http.expectOne(`${URL}/company_1`);
+    expect(req.request.method).toBe('GET');
+    req.flush(detail);
+
+    await expect(promise).resolves.toEqual(detail);
+  });
+
+  it('getById renvoie undefined sur 404 (société inconnue)', async () => {
+    const { service, http } = setup(null);
+    const promise = service.getById('company_absente');
+    await flush();
+
+    http.expectOne(`${URL}/company_absente`).flush('', { status: 404, statusText: 'Not Found' });
+
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  it('setPaymentTerm PATCH le terme convenu', async () => {
+    const { service, http } = setup(null);
+    const promise = service.setPaymentTerm('company_1', 'net90');
+    await flush();
+
+    const req = http.expectOne(`${URL}/company_1/payment-term`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ paymentTerm: 'net90' });
+    req.flush(null);
     await promise;
   });
 });
