@@ -4,16 +4,36 @@
   gap: var(--fold-space-lg);
   padding: var(--fold-space-lg);
 }
-.prefixes {
+
+.rows {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);
 }
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-2xs, 0.25rem);
+.rows-label {
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
 }
+.rows-hint {
+  margin: 0;
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+  line-height: 1.4;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+.row-type {
+  flex: 0 0 8.5rem;
+}
+.row-value {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .foot {
   display: flex;
   justify-content: flex-end;

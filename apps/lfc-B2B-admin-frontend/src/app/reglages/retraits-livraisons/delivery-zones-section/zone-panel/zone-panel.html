@@ -1,22 +1,45 @@
 <fold-panel-header [title]="heading()" subtitle="Un secteur de codes postaux et son frais." />
 
 <div class="body">
-  <div class="prefixes">
-    <fold-input
-      label="Codes postaux"
-      placeholder="73150 73320 731"
-      hint="un ou plusieurs, séparés par un espace — un code complet (73150) ou un préfixe de secteur (731). Le plus précis gagne."
-      [value]="prefixesText()"
-      (valueChange)="prefixesText.set($event)"
-    />
-    @if (prefixes().length > 0) {
-      <div class="chips">
-        @for (prefix of prefixes(); track prefix) {
-          <fold-badge [content]="prefix" variant="neutral" radius="square" />
-        }
+  <div class="rows">
+    <span class="rows-label">Codes postaux couverts</span>
+    <p class="rows-hint">
+      Un <strong>code postal</strong> (73150) matche exactement ; un
+      <strong>préfixe</strong> (731) couvre tout le secteur. Le plus précis gagne.
+    </p>
+
+    @for (row of rows(); track row.id) {
+      <div class="row">
+        <fold-select
+          class="row-type"
+          [value]="row.type"
+          (valueChange)="setType(row.id, $any($event))"
+        >
+          <option value="postcode">Code postal</option>
+          <option value="prefix">Préfixe</option>
+        </fold-select>
+        <fold-input
+          class="row-value"
+          [placeholder]="row.type === 'postcode' ? '73150' : '731'"
+          [value]="row.value"
+          (valueChange)="setValue(row.id, $event)"
+        />
+        <fold-button-icon
+          icon="close"
+          size="sm"
+          tone="critical"
+          tooltip="Retirer"
+          [disabled]="rows().length <= 1"
+          (clicked)="removeRow(row.id)"
+        />
       </div>
     }
+
+    <button foldButton emphasis="outline" intent="neutral" size="sm" icon="plus" (click)="addRow()">
+      Ajouter
+    </button>
   </div>
+
   <fold-input
     label="Libellé"
     optional
@@ -24,6 +47,7 @@
     [value]="label()"
     (valueChange)="label.set($event)"
   />
+
   <app-cart-adjustment-field
     label="Frais de livraison"
     [allowNone]="false"
