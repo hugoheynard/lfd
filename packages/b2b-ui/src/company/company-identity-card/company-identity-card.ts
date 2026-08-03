@@ -46,6 +46,12 @@ export class CompanyIdentityCard {
   readonly canManage = input(false);
   /** Le gestionnaire peut déposer / remplacer le KBIS. */
   readonly canManageKbis = input(false);
+  /**
+   * Les actions **Voir / Télécharger** du KBIS sont disponibles — vrai quand un
+   * endpoint de récupération du fichier existe pour ce consommateur. Faux masque
+   * les boutons tout en gardant la métadonnée (nom, date, badge certifié).
+   */
+  readonly canAccessKbis = input(true);
   /** Une action KBIS est en cours (dépôt) — désactive les contrôles. */
   readonly busy = input(false);
   /** Message d'erreur d'une action KBIS, ou `null`. */

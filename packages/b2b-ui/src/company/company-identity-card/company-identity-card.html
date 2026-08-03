@@ -92,14 +92,16 @@
           <span class="kbis-name">{{ k.fileName }}</span>
           <span class="kbis-date">Déposé le {{ k.uploadedAt | date: 'dd/MM/yyyy' }}</span>
         </div>
-        <div class="kbis-actions">
-          <button foldButton emphasis="outline" size="sm" icon="grid" (click)="viewKbis.emit()">
-            Voir
-          </button>
-          <button foldButton emphasis="soft" size="sm" icon="contracts" (click)="downloadKbis.emit()">
-            Télécharger
-          </button>
-        </div>
+        @if (canAccessKbis()) {
+          <div class="kbis-actions">
+            <button foldButton emphasis="outline" size="sm" icon="grid" (click)="viewKbis.emit()">
+              Voir
+            </button>
+            <button foldButton emphasis="soft" size="sm" icon="contracts" (click)="downloadKbis.emit()">
+              Télécharger
+            </button>
+          </div>
+        }
       </div>
     } @else {
       <div class="kbis-drop">
