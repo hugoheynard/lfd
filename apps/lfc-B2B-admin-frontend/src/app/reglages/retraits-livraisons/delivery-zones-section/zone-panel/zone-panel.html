@@ -1,13 +1,22 @@
-<fold-panel-header [title]="heading()" subtitle="Un code postal et son frais de livraison." />
+<fold-panel-header [title]="heading()" subtitle="Un secteur de codes postaux et son frais." />
 
 <div class="body">
-  <fold-input
-    label="Code postal"
-    placeholder="73150"
-    hint="4 à 5 chiffres"
-    [value]="codePostal()"
-    (valueChange)="codePostal.set($event)"
-  />
+  <div class="prefixes">
+    <fold-input
+      label="Codes postaux"
+      placeholder="73150 73320 731"
+      hint="un ou plusieurs, séparés par un espace — un code complet (73150) ou un préfixe de secteur (731). Le plus précis gagne."
+      [value]="prefixesText()"
+      (valueChange)="prefixesText.set($event)"
+    />
+    @if (prefixes().length > 0) {
+      <div class="chips">
+        @for (prefix of prefixes(); track prefix) {
+          <fold-badge [content]="prefix" variant="neutral" radius="square" />
+        }
+      </div>
+    }
+  </div>
   <fold-input
     label="Libellé"
     optional

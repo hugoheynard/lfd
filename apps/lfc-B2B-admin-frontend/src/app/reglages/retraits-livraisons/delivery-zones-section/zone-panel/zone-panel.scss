@@ -4,6 +4,16 @@
   gap: var(--fold-space-lg);
   padding: var(--fold-space-lg);
 }
+.prefixes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-2xs, 0.25rem);
+}
 .foot {
   display: flex;
   justify-content: flex-end;

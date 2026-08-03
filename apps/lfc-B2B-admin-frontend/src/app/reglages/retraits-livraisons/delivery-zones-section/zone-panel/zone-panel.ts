@@ -8,7 +8,13 @@ import {
   signal,
 } from '@angular/core';
 import type { CartAdjustment, DeliveryZonePayload, DeliveryZoneView } from '@lfd/contracts';
-import { FoldButtonComponent, FoldInputComponent, FoldPanelHeaderComponent, FoldPanelRef } from 'fold-ng';
+import {
+  FoldBadgeComponent,
+  FoldButtonComponent,
+  FoldInputComponent,
+  FoldPanelHeaderComponent,
+  FoldPanelRef,
+} from 'fold-ng';
 
 import { NotifyService } from '../../../../notify.service';
 import { CartAdjustmentField } from '../../cart-adjustment-field/cart-adjustment-field';
@@ -19,17 +25,29 @@ export interface ZonePanelData {
   readonly zone: DeliveryZoneView | null;
 }
 
-const POSTAL_RE = /^\d{4,5}$/u;
+const PREFIX_RE = /^\d{2,5}$/u;
+
+/** Découpe une saisie libre en préfixes (séparés par espace, virgule, retour). */
+function parsePrefixes(raw: string): string[] {
+  return [...new Set(raw.split(/[\s,;]+/u).map((token) => token.trim()).filter(Boolean))];
+}
 
 /**
- * Panneau **Zone de livraison** — crée ou édite un code postal + son frais de
- * livraison (% ou €, toujours présent). Container mince : seede depuis `data`,
- * valide (code postal 4-5 chiffres + frais saisi), sauvegarde, ferme `true`.
+ * Panneau **Zone de livraison** — crée ou édite un secteur de codes postaux +
+ * son frais de livraison (% ou €, toujours présent). On saisit un ou plusieurs
+ * **préfixes** (`73150` exact, `731` = secteur). Container mince : seede depuis
+ * `data`, valide (≥1 préfixe 2-5 chiffres + frais), sauvegarde, ferme `true`.
  */
 @Component({
   selector: 'app-zone-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldButtonComponent, FoldInputComponent, CartAdjustmentField],
+  imports: [
+    FoldPanelHeaderComponent,
+    FoldButtonComponent,
+    FoldInputComponent,
+    FoldBadgeComponent,
+    CartAdjustmentField,
+  ],
   templateUrl: './zone-panel.html',
   styleUrl: './zone-panel.scss',
 })
@@ -40,17 +58,23 @@ export class ZonePanel {
 
   readonly data = input<ZonePanelData | undefined>(undefined);
 
-  protected readonly codePostal = signal('');
+  /** Saisie libre des codes postaux / préfixes (espaces ou virgules). */
+  protected readonly prefixesText = signal('');
   protected readonly label = signal('');
   protected readonly fee = signal<CartAdjustment | null>(null);
   protected readonly saving = signal(false);
+
+  /** Les préfixes valides extraits de la saisie (feedback + payload). */
+  protected readonly prefixes = computed(() =>
+    parsePrefixes(this.prefixesText()).filter((prefix) => PREFIX_RE.test(prefix)),
+  );
 
   protected readonly isCreate = computed(() => (this.data()?.zone ?? null) === null);
   protected readonly heading = computed(() =>
     this.isCreate() ? 'Nouvelle zone de livraison' : 'Modifier la zone de livraison',
   );
   protected readonly canSubmit = computed(
-    () => POSTAL_RE.test(this.codePostal().trim()) && this.fee() !== null,
+    () => this.prefixes().length > 0 && this.fee() !== null,
   );
 
   constructor() {
@@ -59,7 +83,7 @@ export class ZonePanel {
       if (zone === null) {
         return;
       }
-      this.codePostal.set(zone.codePostal);
+      this.prefixesText.set(zone.postalPrefixes.join(' '));
       this.label.set(zone.label);
       this.fee.set(zone.fee);
     });
@@ -73,7 +97,7 @@ export class ZonePanel {
     }
     this.saving.set(true);
     const payload: DeliveryZonePayload = {
-      codePostal: this.codePostal().trim(),
+      postalPrefixes: this.prefixes(),
       label: this.label().trim(),
       fee,
     };
