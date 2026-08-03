@@ -53,9 +53,10 @@ On ne crée un composant applicatif que pour de la logique **métier**, et il
     `fold-page-layout`, `fold-aside-layout`, panels `.body`) ;
   - des **écarts naturels** des composants fold.
   Seules exceptions tolérées : `margin: auto` (centrage / poussée flex, ex.
-  `.foot { margin-top: auto }`) et `margin: 0` (reset). Pour séparer un label de
-  son contrôle, envelopper la paire dans un flex-column avec `gap` — pas un
-  `margin-bottom` sur le label.
+  `.foot { margin-top: auto }`), `margin: 0` (reset), et une **marge négative**
+  délibérée de chevauchement (effet visuel, ex. `featured-flag`). Pour séparer un
+  label de son contrôle, envelopper la paire dans un flex-column avec `gap` — pas
+  un `margin-bottom` sur le label.
 
 ## Toute page dans un fold-page-layout
 
