@@ -1,0 +1,37 @@
+.reference-card {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.reference-card fold-icon {
+  color: var(--fold-color-text-muted);
+  flex: none;
+}
+
+.body {
+  min-width: 0;
+  flex: 1;
+}
+
+.label {
+  margin: 0;
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+// La référence elle-même — grande, monospace, facile à lire et à dicter.
+.value {
+  flex: none;
+  font-family: var(--fold-font-mono, ui-monospace, monospace);
+  font-weight: 600;
+  font-size: var(--fold-text-lg, 1.125rem);
+  letter-spacing: 0.08em;
+  color: var(--fold-color-text);
+}

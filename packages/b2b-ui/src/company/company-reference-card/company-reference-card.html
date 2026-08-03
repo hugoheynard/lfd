@@ -1,0 +1,10 @@
+<fold-card class="reference-card">
+  <fold-icon name="hash" [size]="20" />
+  <div class="body">
+    <p class="label">{{ label() }}</p>
+    @if (note(); as note) {
+      <p class="note">{{ note }}</p>
+    }
+  </div>
+  <span class="value">{{ reference() }}</span>
+</fold-card>
