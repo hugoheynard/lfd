@@ -1,7 +1,8 @@
-import type {
-  CompanyBadgeTone,
-  CompanyContactCardView,
-  CompanyIdentityView,
+import {
+  formatSiret,
+  type CompanyBadgeTone,
+  type CompanyContactCardView,
+  type CompanyIdentityView,
 } from '@lfd/b2b-ui/company';
 
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from '../comptes-clients/admin-company';
@@ -25,7 +26,7 @@ export function toIdentityView(company: AdminCompany): CompanyIdentityView {
     raisonSociale: company.raisonSociale,
     enseigne: company.enseigne,
     formeJuridique: company.formeJuridique,
-    siret: company.siret,
+    siret: formatSiret(company.siret),
     tvaIntracom: company.tvaIntracom,
     tvaMissing: false,
     statusLabel: STATUS_LABELS[company.status],
