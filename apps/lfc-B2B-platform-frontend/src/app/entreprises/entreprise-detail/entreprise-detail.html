@@ -1,15 +1,17 @@
-<fold-aside-layout asideRightLabel="Assistance">
-  <app-reference-card [company]="company()" />
+<div class="detail">
+  <div class="main">
+    <app-reference-card [company]="company()" />
 
-  <app-activation-checklist [company]="company()" />
+    <app-activation-checklist [company]="company()" />
 
-  <app-entreprise-identite [company]="company()" />
+    <app-entreprise-identite [company]="company()" />
 
-  <app-company-contacts-section [company]="company()" />
+    <app-company-contacts-section [company]="company()" />
 
-  <app-adresses-section [company]="company()" />
+    <app-adresses-section [company]="company()" />
 
-  <app-facturation-section [company]="company()" />
+    <app-facturation-section [company]="company()" />
+  </div>
 
-  <app-support-aside asideRight [company]="company()" />
-</fold-aside-layout>
+  <app-support-aside class="rail" [company]="company()" />
+</div>

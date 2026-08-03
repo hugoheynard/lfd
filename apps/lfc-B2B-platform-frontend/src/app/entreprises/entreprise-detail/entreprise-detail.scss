@@ -1,10 +1,42 @@
-// Les sections portent déjà leur propre espacement ; on n'ajoute que le rythme
-// entre le bandeau et ce qui l'entoure.
+// Fiche entreprise : contenu au centre, rail droit d'assistance **collant**.
+// Tout est en flux — c'est le shell (footerBehavior="scroll") qui possède le
+// scroll, donc pas de colonne auto-scrollante ici (sinon le footer se retrouve
+// coincé au milieu et chevauche les panneaux). Le rail se colle via
+// `position: sticky` dans le document qui scrolle.
 :host {
   display: block;
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: var(--fold-space-xl);
+  align-items: start;
+}
+
+// Les sous-sections gardent leur propre rythme vertical (comme avant le rail).
+.main {
+  min-width: 0;
 }
 
 fold-callout {
   display: block;
   margin: var(--fold-space-lg) 0;
+}
+
+// Barre latérale collante : suit le scroll, s'arrête en bas de la colonne.
+.rail {
+  position: sticky;
+  top: var(--fold-space-lg);
+}
+
+// Sous un certain seuil, on empile : le rail passe sous le contenu.
+@media (max-width: 60rem) {
+  .detail {
+    grid-template-columns: 1fr;
+    gap: var(--fold-space-lg);
+  }
+  .rail {
+    position: static;
+  }
 }
