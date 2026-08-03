@@ -1,7 +1,7 @@
-import type { BillingAddressPayload } from "@lfd/contracts";
+import type { BillingAddressPayload, PickupAddressView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { PlatformSettingsRepository } from "../../../platform-settings/domain/platform-settings.repository.js";
+import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
   EmptyOrderError,
   PickupNotConfiguredError,
@@ -28,7 +28,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly guard: OrderGuardReader,
     private readonly catalog: ProductCatalogReader,
     private readonly orders: OrderRepository,
-    private readonly settings: PlatformSettingsRepository,
+    private readonly pickups: PickupAddressRepository,
   ) {}
 
   async execute(command: PlaceOrderCommand): Promise<PlacedOrder> {
@@ -60,21 +60,21 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
   }
 
   /**
-   * Résout l'acheminement. En **retrait**, on **fige** l'adresse du point de retrait
-   * du moment (Réglages) — sinon `PickupNotConfiguredError` (aucun point configuré).
-   * En **livraison**, l'`addressId` du payload (le schéma garantit sa présence) ;
-   * son appartenance à l'entreprise est vérifiée dans la transaction du repository.
+   * Résout l'acheminement. En **retrait**, on **fige** un snapshot du point de
+   * retrait **choisi** (ou du défaut) — sinon `PickupNotConfiguredError` (aucun
+   * point). En **livraison**, l'`addressId` du payload (le schéma garantit sa
+   * présence) ; son appartenance à l'entreprise est vérifiée dans la transaction.
    */
   private async resolveFulfillment(command: PlaceOrderCommand): Promise<{
     readonly deliveryAddressId: string | null;
     readonly pickupAddress: BillingAddressPayload | null;
   }> {
     if (command.payload.fulfillmentMethod === "pickup") {
-      const pickup = (await this.settings.read()).pickupAddress;
-      if (pickup === null) {
+      const point = await this.pickups.resolve(command.payload.pickupAddressId);
+      if (point === null) {
         throw new PickupNotConfiguredError();
       }
-      return { deliveryAddressId: null, pickupAddress: pickup };
+      return { deliveryAddressId: null, pickupAddress: toSnapshot(point) };
     }
     return { deliveryAddressId: command.payload.deliveryAddressId, pickupAddress: null };
   }
@@ -108,4 +108,16 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       };
     });
   }
+}
+
+/** Le point de retrait résolu, réduit à ses champs postaux (le snapshot figé). */
+function toSnapshot(point: PickupAddressView): BillingAddressPayload {
+  return {
+    label: point.label,
+    ligne1: point.ligne1,
+    ligne2: point.ligne2,
+    codePostal: point.codePostal,
+    ville: point.ville,
+    pays: point.pays,
+  };
 }

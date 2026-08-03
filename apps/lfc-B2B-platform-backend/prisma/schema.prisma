@@ -478,13 +478,33 @@ model PlatformSettings {
   billingMode  PieceMode @default(required) @map("billing_mode")
   deliveryMode PieceMode @default(hidden) @map("delivery_mode")
 
-  // Adresse du **point de retrait** (labo) — champs postaux en JSON, ou null si non
-  // configuré. Fallback d'acheminement quand la livraison n'existe pas encore.
-  pickupAddress Json? @map("pickup_address")
-
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("b2b_platform_settings")
+}
+
+/// Un **point de retrait** (laboratoire) — adresse **globale** (pas par entreprise),
+/// fallback d'acheminement tant que la livraison n'existe pas. Plusieurs points
+/// possibles, un seul `isDefault`. Une commande en retrait fige un snapshot de
+/// l'adresse choisie. Cf. `documentation/architecture-activation-configuration-b2b.md`.
+model PickupAddress {
+  id String @id @default(cuid())
+
+  label      String
+  ligne1     String
+  ligne2     String @default("")
+  codePostal String @map("code_postal")
+  ville      String
+  pays       String
+
+  // Un seul point par défaut (le préselectionné au checkout). L'invariant « au
+  // moins un point » et « un seul défaut » est tenu par le repository.
+  isDefault Boolean @default(false) @map("is_default")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("pickup_addresses")
 }
 
 // NB — Volontairement HORS de ce schéma :

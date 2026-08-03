@@ -179,18 +179,14 @@ describe("retrait (fallback sans livraison)", () => {
     pays: "France",
   };
 
-  /** Configure le point de retrait sur le singleton des réglages. */
-  async function setPickup(address: typeof LABO | null): Promise<void> {
-    await ctx.prisma.platformSettings.upsert({
-      where: { id: "singleton" },
-      create: { id: "singleton", pickupAddress: address ?? undefined },
-      update: { pickupAddress: address ?? null },
-    });
+  /** Sème un point de retrait par défaut (table globale). */
+  async function seedPickup(): Promise<void> {
+    await ctx.prisma.pickupAddress.create({ data: { ...LABO, isDefault: true } });
   }
 
   it("passe une commande en RETRAIT : adresse labo figée, sans adresse de livraison", async () => {
     const { companyId } = await seedCompany("active");
-    await setPickup(LABO);
+    await seedPickup();
 
     const response = await ctx
       .asSub(MEMBER)
@@ -212,7 +208,7 @@ describe("retrait (fallback sans livraison)", () => {
 
   it("refuse le retrait si aucun point de retrait n'est configuré (409)", async () => {
     const { companyId } = await seedCompany("active");
-    await setPickup(null);
+    // Aucun point de retrait semé → résolution nulle → refus.
 
     await ctx
       .asSub(MEMBER)

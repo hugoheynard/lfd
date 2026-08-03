@@ -1,6 +1,6 @@
-import type { BillingAddressPayload, PlaceOrderPayload } from "@lfd/contracts";
+import type { BillingAddressPayload, PickupAddressView, PlaceOrderPayload } from "@lfd/contracts";
 
-import { PlatformSettingsRepository } from "../../../../platform-settings/domain/platform-settings.repository.js";
+import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
   CompanyNotActivatedError,
   OrderCompanyNotFoundError,
@@ -36,22 +36,31 @@ const catalog: ProductCatalogReader = {
   resolve: (sku) => CATALOG[sku] ?? null,
 };
 
-/** Réglages doublés : seule l'adresse de retrait varie (le reste importe peu ici). */
-function settings(pickupAddress: BillingAddressPayload | null = null): PlatformSettingsRepository {
+/** Points de retrait doublés : seul le point **résolu** varie (le reste inutilisé ici). */
+function pickups(resolved: PickupAddressView | null = null): PickupAddressRepository {
   return {
-    read: () =>
-      Promise.resolve({
-        tva: "required",
-        kbis: "optional",
-        billing: "required",
-        delivery: "hidden",
-        pickupAddress,
-      }),
-    save: () => Promise.resolve(),
+    list: () => Promise.resolve([]),
+    resolve: () => Promise.resolve(resolved),
+    create: () => Promise.resolve("pickup_1"),
+    update: () => Promise.resolve(),
+    remove: () => Promise.resolve(),
+    setDefault: () => Promise.resolve(),
   };
 }
 
-const LABO: BillingAddressPayload = {
+const LABO_POINT: PickupAddressView = {
+  id: "pickup_1",
+  label: "Labo",
+  ligne1: "5 rue du Four",
+  ligne2: "",
+  codePostal: "75002",
+  ville: "Paris",
+  pays: "France",
+  isDefault: true,
+};
+
+/** Le snapshot attendu : le point résolu réduit à ses champs postaux. */
+const LABO_SNAPSHOT: BillingAddressPayload = {
   label: "Labo",
   ligne1: "5 rue du Four",
   ligne2: "",
@@ -74,6 +83,7 @@ function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
   return {
     fulfillmentMethod: "delivery",
     deliveryAddressId: "addr_1",
+    pickupAddressId: null,
     requestedDeliveryDate: null,
     note: "",
     lines: [{ sku: "VIE-001", quantity: 2 }],
@@ -88,7 +98,7 @@ describe("PlaceOrderHandler", () => {
       guard(null, "active"),
       catalog,
       capturingRepo(sink),
-      settings(),
+      pickups(),
     );
 
     await expect(
@@ -103,7 +113,7 @@ describe("PlaceOrderHandler", () => {
       guard("member", "pending"),
       catalog,
       capturingRepo(sink),
-      settings(),
+      pickups(),
     );
 
     await expect(
@@ -118,7 +128,7 @@ describe("PlaceOrderHandler", () => {
       guard("member", "active"),
       catalog,
       capturingRepo(sink),
-      settings(),
+      pickups(),
     );
 
     // Le payload ne porte que sku+quantité ; même si un client forgeait un prix,
@@ -147,7 +157,7 @@ describe("PlaceOrderHandler", () => {
       guard("member", "active"),
       catalog,
       capturingRepo(sink),
-      settings(),
+      pickups(),
     );
 
     await handler.execute(
@@ -177,7 +187,7 @@ describe("PlaceOrderHandler", () => {
       guard("member", "active"),
       catalog,
       capturingRepo(sink),
-      settings(),
+      pickups(),
     );
 
     await expect(
@@ -194,7 +204,7 @@ describe("PlaceOrderHandler", () => {
       guard("member", "active"),
       catalog,
       capturingRepo(sink),
-      settings(LABO),
+      pickups(LABO_POINT),
     );
 
     await handler.execute(
@@ -207,7 +217,7 @@ describe("PlaceOrderHandler", () => {
 
     expect(sink.placed?.fulfillmentMethod).toBe("pickup");
     expect(sink.placed?.deliveryAddressId).toBeNull();
-    expect(sink.placed?.pickupAddress).toEqual(LABO);
+    expect(sink.placed?.pickupAddress).toEqual(LABO_SNAPSHOT);
   });
 
   it("refuse le RETRAIT quand aucun point de retrait n'est configuré (409)", async () => {
@@ -216,7 +226,7 @@ describe("PlaceOrderHandler", () => {
       guard("member", "active"),
       catalog,
       capturingRepo(sink),
-      settings(null),
+      pickups(null),
     );
 
     await expect(

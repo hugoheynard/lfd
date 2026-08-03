@@ -41,24 +41,15 @@ describe("réglages plateforme", () => {
       kbis: "optional",
       billing: "required",
       delivery: "hidden",
-      pickupAddress: null,
     });
   });
 
-  it("PATCH staff met à jour (dont l'adresse de retrait), et la lecture le reflète", async () => {
+  it("PATCH staff met à jour, et la lecture le reflète", async () => {
     const next: PlatformSettings = {
       tva: "required",
       kbis: "required",
       billing: "required",
       delivery: "optional",
-      pickupAddress: {
-        label: "Labo",
-        ligne1: "5 rue du Four",
-        ligne2: "",
-        codePostal: "75002",
-        ville: "Paris",
-        pays: "France",
-      },
     };
     await staff().patch("/admin/platform-settings").send(next).expect(204);
 
