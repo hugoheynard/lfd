@@ -34,18 +34,24 @@ body {
 }
 
 /* Le shell possède le scroll (`footerBehavior="scroll"` ⇒ `.content` est un flex
-   column en `overflow:auto`, et pose le footer in-flow en fin de contenu via
-   `margin-top:auto`). Pour qu'une page COURTE ne laisse pas le footer flotter au
-   milieu, la page routée **grossit pour remplir** la hauteur du contenu
-   (`flex: 1 0 auto`, le pattern sticky-footer flexbox classique) : le footer est
-   alors repoussé tout en bas — sous la ligne de flottaison sur une page courte
-   (invisible tant qu'on ne scrolle pas), en fin de scroll sur une page longue.
-   On évite `min-height:100%` (un % sur flex-item ne se résout pas de façon
-   fiable, d'où le footer au milieu). `+ *` cible la seule page (pas le footer ni
-   le panel-host, siblings suivants). */
+   column en `overflow:auto`) et pose son footer in-flow en fin de contenu. Pour
+   que le footer soit RÉVÉLÉ EN SCROLLANT (sous la ligne de flottaison sur une
+   page courte, en fin de scroll sur une longue) et jamais figé au milieu, la
+   page routée **grossit pour remplir** le scrollport (pattern sticky-footer). */
 router-outlet + * {
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
   min-width: 0;
+}
+
+/* MAIS le shell colle son footer via `margin-top:auto`, et en flexbox une marge
+   auto absorbe l'espace libre AVANT `flex-grow` : la page ne grossit donc jamais,
+   le footer se retrouve collé/au milieu et le scrollport fait pile la hauteur du
+   contenu (rien à scroller — le footer devient injoignable sur une page à ras).
+   On neutralise ce `margin-top:auto` : la page (flex-grow) remplit, le footer se
+   pose juste après, sous la ligne de flottaison, et le scroll y mène. `!important`
+   pour battre la règle scopée du composant shell. */
+.footer-inflow {
+  margin-top: 0 !important;
 }
