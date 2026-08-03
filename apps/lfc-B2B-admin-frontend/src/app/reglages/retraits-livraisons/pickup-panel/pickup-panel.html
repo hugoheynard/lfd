@@ -1,0 +1,19 @@
+<fold-panel-header [title]="heading()" subtitle="Adresse du laboratoire de retrait." />
+
+<div class="body">
+  <lfd-address-fields [(value)]="draft" kind="facturation" />
+
+  <fold-checkbox
+    label="Point de retrait par défaut"
+    hint="proposé d'office au checkout tant que la livraison n'existe pas"
+    [checked]="draft().isDefault"
+    (checkedChange)="setDefault($event)"
+  />
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || saving()" (click)="submit()">
+    {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+  </button>
+</footer>

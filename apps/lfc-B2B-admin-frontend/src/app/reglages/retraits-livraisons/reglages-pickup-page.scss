@@ -1,0 +1,92 @@
+.state {
+  padding: var(--fold-space-lg);
+  color: var(--fold-color-text-muted);
+}
+
+// En-tête de section : texte à gauche, bouton « Ajouter » à droite.
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--fold-space-md);
+}
+.head-text {
+  min-width: 0;
+  flex: 1 1 18rem;
+}
+
+.section-title {
+  margin: 0 0 var(--fold-space-xs);
+  font-size: var(--fold-text-lg, 1.125rem);
+}
+.section-desc {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.point {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md, 10px);
+}
+.point.is-default {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface, transparent);
+}
+
+// L'adresse à gauche, le menu dropover à droite.
+.point-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+// Un bloc adresse : lignes empilées, style non-italique (override du <address>).
+.addr {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-style: normal;
+  color: var(--fold-color-text);
+  line-height: 1.4;
+}
+.addr-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+// Déclencheur du menu — bouton icône discret (même que les adresses de livraison).
+.menu-trigger {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm, 6px);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+.menu-trigger:hover {
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
+  color: var(--fold-color-text);
+}
