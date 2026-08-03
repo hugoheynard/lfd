@@ -50,6 +50,13 @@ export type {
   PickupAddressView,
   CreatedPickupResponse,
 } from "./pickup.js";
+export { staffScopeSchema, staffUserPayloadSchema } from "./staff-user.js";
+export type {
+  StaffScope,
+  StaffUserPayload,
+  StaffUserView,
+  CreatedStaffUserResponse,
+} from "./staff-user.js";
 export {
   orderStatusSchema,
   fulfillmentMethodSchema,
