@@ -91,6 +91,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
           tvaIntracom: company.tvaIntracom,
           contactPrenom: company.contact.firstName.value,
           contactNom: company.contact.lastName.value,
+          contactFonction: company.contact.fonction,
           contactEmail: company.contact.email.value,
           contactTelephone: company.contact.phone.value,
           // Déclarée, pas cliente : l'activation est commerciale.
@@ -110,6 +111,42 @@ export class PrismaCompanyRepository extends CompanyRepository {
 
       return created.id;
     });
+  }
+
+  /**
+   * Société créée **par le staff**, sans propriétaire : le contact principal est
+   * saisi (pas dérivé d'un profil), aucun `membership` n'est posé. Jumeau assumé
+   * de {@link declareOwnedBy} moins le rattachement — légitime car la société
+   * reste **visible du staff** (lecture cross-tenant) et sera **réclamée** plus
+   * tard par le client (invitation). Une seule écriture, donc pas de transaction.
+   */
+  async declareUnowned(company: Company): Promise<string> {
+    const reference = await pickFreeCompanyReference(async (candidate) => {
+      const clash = await this.prisma.company.findUnique({
+        where: { reference: candidate },
+        select: { id: true },
+      });
+      return clash !== null;
+    });
+    const created = await this.prisma.company.create({
+      data: {
+        reference,
+        raisonSociale: company.raisonSociale,
+        enseigne: company.enseigne,
+        formeJuridique: company.formeJuridique,
+        siret: company.siret.value,
+        tvaIntracom: company.tvaIntracom,
+        contactPrenom: company.contact.firstName.value,
+        contactNom: company.contact.lastName.value,
+        contactFonction: company.contact.fonction,
+        contactEmail: company.contact.email.value,
+        contactTelephone: company.contact.phone.value,
+        // Déclarée, pas cliente : l'activation reste commerciale.
+        status: CompanyStatus.pending,
+      },
+      select: { id: true },
+    });
+    return created.id;
   }
 
   async updatePrimaryContact(companyId: string, details: ContactDetails): Promise<void> {

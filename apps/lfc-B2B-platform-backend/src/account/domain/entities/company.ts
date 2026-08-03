@@ -22,6 +22,8 @@ export interface CompanyIdentityInput {
 export interface CompanyContact {
   readonly firstName: PersonName;
   readonly lastName: PersonName;
+  /** Rôle/fonction dans l'entreprise — vide si non renseigné (le client le laisse vide). */
+  readonly fonction: string;
   readonly email: EmailAddress;
   readonly phone: PhoneNumber;
 }

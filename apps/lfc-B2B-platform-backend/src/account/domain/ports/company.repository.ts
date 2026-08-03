@@ -28,6 +28,17 @@ export abstract class CompanyRepository {
   abstract declareOwnedBy(company: Company, ownerUserId: string): Promise<string>;
 
   /**
+   * Enregistre une société déclarée **par le staff**, **sans** propriétaire ni
+   * membership. À l'inverse de {@link declareOwnedBy}, la peur « société sans
+   * membre invisible » ne s'applique pas : cette société n'est pas destinée à
+   * « Mes entreprises » d'un client, elle est **gérée par le staff** (lecture
+   * cross-tenant) jusqu'à ce qu'un client la **réclame** (invitation, à venir).
+   *
+   * @returns l'identifiant de la société créée.
+   */
+  abstract declareUnowned(company: Company): Promise<string>;
+
+  /**
    * Remplace le contact **principal** de l'entreprise (la carte « Admin du compte
    * entreprise »). Contact aplati sur la société, toujours présent — on le met à
    * jour, on ne le supprime jamais.

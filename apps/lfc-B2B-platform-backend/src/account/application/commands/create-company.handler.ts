@@ -38,6 +38,9 @@ export class CreateCompanyHandler implements ICommandHandler<CreateCompanyComman
     const company = Company.declare(command, {
       firstName: PersonName.create(owner.firstName, "Prénom du contact"),
       lastName: PersonName.create(owner.lastName, "Nom du contact"),
+      // Le contact dérivé d'un profil n'a pas de fonction ; le staff, lui, en
+      // fournit une à la création admin (cf. CreateCompanyByStaffHandler).
+      fonction: "",
       email: EmailAddress.create(owner.email),
       phone: PhoneNumber.create(owner.phone),
     });

@@ -7,6 +7,7 @@ import { Company, type CompanyContact, type CompanyIdentityInput } from "../comp
 const contact: CompanyContact = {
   firstName: PersonName.create("Camille", "Prénom"),
   lastName: PersonName.create("Rousseau", "Nom"),
+  fonction: "",
   email: EmailAddress.create("camille@pqmarais.fr"),
   phone: PhoneNumber.create("01 42 71 08 44"),
 };
