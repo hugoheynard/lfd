@@ -43,7 +43,6 @@ export class CreerEntreprisePanel {
 
   protected readonly draft = signal<CompanyIdentityDraft>(EMPTY_COMPANY_IDENTITY_DRAFT);
 
-  protected readonly error = this.account.error;
   protected readonly submitting = computed(() => this.account.status() === 'loading');
 
   /**

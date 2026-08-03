@@ -17,10 +17,6 @@
     </button>
   }
 
-  @if (error(); as message) {
-    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
-  }
-
   @if (!editing()) {
     <fold-card>
       @if (profile(); as p) {

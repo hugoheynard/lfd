@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import {
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
 } from 'fold-ng';
@@ -44,7 +43,7 @@ export interface ContactPanelData {
 @Component({
   selector: 'app-contact-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldCalloutComponent, FoldButtonComponent, ContactFields],
+  imports: [FoldPanelHeaderComponent, FoldButtonComponent, ContactFields],
   templateUrl: './contact-panel.html',
   styleUrl: './contact-panel.scss',
 })
@@ -56,7 +55,6 @@ export class ContactPanel {
 
   protected readonly draft = signal<CompanyContactDraft>(EMPTY_COMPANY_CONTACT_DRAFT);
 
-  protected readonly error = this.account.error;
   protected readonly submitting = computed(() => this.account.status() === 'loading');
 
   /** Le contact principal ne se renomme pas « ajouter » : c'est toujours une édition. */

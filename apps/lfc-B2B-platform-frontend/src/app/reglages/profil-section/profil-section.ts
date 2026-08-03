@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 
 import {
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldCardComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
@@ -28,7 +27,6 @@ import { AccountService } from '../../account/account.service';
   imports: [
     FoldPageSectionComponent,
     FoldCardComponent,
-    FoldCalloutComponent,
     FoldFieldListComponent,
     FoldFieldComponent,
     FoldInputComponent,
@@ -41,7 +39,6 @@ export class ProfilSection {
   private readonly account = inject(AccountService);
 
   protected readonly profile = this.account.profile;
-  protected readonly error = this.account.error;
   protected readonly saving = computed(() => this.account.status() === 'loading');
 
   protected readonly editing = signal(false);

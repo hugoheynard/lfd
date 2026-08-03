@@ -11,10 +11,6 @@
     </fold-callout>
   }
 
-  @if (error(); as message) {
-    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
-  }
-
   <lfd-company-identity-fields [value]="draft()" (valueChange)="draft.set($event)" />
 
   <p class="note">

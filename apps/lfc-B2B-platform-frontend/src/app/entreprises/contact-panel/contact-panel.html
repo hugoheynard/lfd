@@ -1,10 +1,6 @@
 <fold-panel-header [title]="heading()" subtitle="Coordonnées de l'interlocuteur." />
 
 <div class="body">
-  @if (error(); as message) {
-    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
-  }
-
   <lfd-contact-fields [value]="draft()" (valueChange)="draft.set($event)" />
 </div>
 
