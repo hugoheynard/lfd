@@ -2,18 +2,25 @@ import type { PickupAddressPayload, PickupAddressView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
+import {
+  fromAdjustmentColumns,
+  toAdjustmentColumns,
+} from "../../pricing/cart-adjustment.mapper.js";
 import { PickupAddressRepository } from "../domain/pickup-address.repository.js";
 import { LastPickupAddressError, PickupAddressNotFoundError } from "../domain/pickup-errors.js";
 
-/** Colonnes postales d'une charge (hors `isDefault`, géré à part). */
-function postal(payload: PickupAddressPayload): {
+/** Colonnes postales + remise d'une charge (hors `isDefault`, géré à part). */
+function writable(payload: PickupAddressPayload): {
   label: string;
   ligne1: string;
   ligne2: string;
   codePostal: string;
   ville: string;
   pays: string;
+  discountMode: "percent" | "amount" | null;
+  discountValue: number | null;
 } {
+  const discount = toAdjustmentColumns(payload.discount);
   return {
     label: payload.label,
     ligne1: payload.ligne1,
@@ -21,6 +28,8 @@ function postal(payload: PickupAddressPayload): {
     codePostal: payload.codePostal,
     ville: payload.ville,
     pays: payload.pays,
+    discountMode: discount.mode,
+    discountValue: discount.value,
   };
 }
 
@@ -33,6 +42,8 @@ interface PickupRow {
   readonly ville: string;
   readonly pays: string;
   readonly isDefault: boolean;
+  readonly discountMode: "percent" | "amount" | null;
+  readonly discountValue: number | null;
 }
 
 function toView(row: PickupRow): PickupAddressView {
@@ -45,6 +56,7 @@ function toView(row: PickupRow): PickupAddressView {
     ville: row.ville,
     pays: row.pays,
     isDefault: row.isDefault,
+    discount: fromAdjustmentColumns(row.discountMode, row.discountValue),
   };
 }
 
@@ -57,6 +69,8 @@ const SELECT = {
   ville: true,
   pays: true,
   isDefault: true,
+  discountMode: true,
+  discountValue: true,
 } as const;
 
 /** Adaptateur Prisma des points de retrait (globaux). Tient les invariants ≥1/défaut. */
@@ -93,7 +107,7 @@ export class PrismaPickupAddressRepository extends PickupAddressRepository {
         await tx.pickupAddress.updateMany({ data: { isDefault: false } });
       }
       const created = await tx.pickupAddress.create({
-        data: { ...postal(payload), isDefault: makeDefault },
+        data: { ...writable(payload), isDefault: makeDefault },
         select: { id: true },
       });
       return created.id;
@@ -116,7 +130,7 @@ export class PrismaPickupAddressRepository extends PickupAddressRepository {
       }
       await tx.pickupAddress.update({
         where: { id },
-        data: { ...postal(payload), ...(promote ? { isDefault: true } : {}) },
+        data: { ...writable(payload), ...(promote ? { isDefault: true } : {}) },
       });
     });
   }

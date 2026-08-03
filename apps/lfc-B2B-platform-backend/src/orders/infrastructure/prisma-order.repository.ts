@@ -60,6 +60,8 @@ export class PrismaOrderRepository extends OrderRepository {
           deliveryAddressId: order.deliveryAddressId,
           pickupAddress: order.pickupAddress ?? Prisma.DbNull,
           subtotalCents: order.subtotalCents,
+          discountCents: order.discountCents,
+          deliveryFeeCents: order.deliveryFeeCents,
           totalCents: order.totalCents,
           note: order.note,
           lines: {

@@ -1,12 +1,19 @@
-import type { BillingAddressPayload, PickupAddressView } from "@lfd/contracts";
+import {
+  cartAdjustmentCents,
+  type BillingAddressPayload,
+  type CartAdjustment,
+  type PickupAddressView,
+} from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DeliveryZoneRepository } from "../../../delivery-zones/domain/delivery-zone.repository.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
   EmptyOrderError,
   PickupNotConfiguredError,
   UnknownSkuError,
 } from "../../domain/errors/order-errors.js";
+import { DeliveryAddressReader } from "../../domain/ports/delivery-address.reader.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import {
   OrderRepository,
@@ -29,6 +36,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly catalog: ProductCatalogReader,
     private readonly orders: OrderRepository,
     private readonly pickups: PickupAddressRepository,
+    private readonly zones: DeliveryZoneRepository,
+    private readonly deliveryAddresses: DeliveryAddressReader,
   ) {}
 
   async execute(command: PlaceOrderCommand): Promise<PlacedOrder> {
@@ -42,6 +51,14 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     const lines = this.resolveLines(command.payload.lines);
     const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
 
+    // Prix ré-résolus serveur : la remise (retrait) et le frais (zone livraison)
+    // sont **autoritaires**, calculés ici, jamais envoyés par le client.
+    const discountCents = acheminement.discount
+      ? cartAdjustmentCents(acheminement.discount, subtotalCents)
+      : 0;
+    const deliveryFeeCents = await this.resolveDeliveryFee(command, acheminement, subtotalCents);
+    const totalCents = Math.max(0, subtotalCents - discountCents) + deliveryFeeCents;
+
     return this.orders.place({
       companyId: command.companyId,
       placedByUserId: command.actorUserId,
@@ -53,8 +70,9 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
         : null,
       note: command.payload.note,
       subtotalCents,
-      // Phase 1 : pas de frais ni remise, prix TTC — total = sous-total.
-      totalCents: subtotalCents,
+      discountCents,
+      deliveryFeeCents,
+      totalCents,
       lines,
     });
   }
@@ -62,21 +80,58 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
   /**
    * Résout l'acheminement. En **retrait**, on **fige** un snapshot du point de
    * retrait **choisi** (ou du défaut) — sinon `PickupNotConfiguredError` (aucun
-   * point). En **livraison**, l'`addressId` du payload (le schéma garantit sa
-   * présence) ; son appartenance à l'entreprise est vérifiée dans la transaction.
+   * point) — et on remonte sa **remise**. En **livraison**, l'`addressId` du
+   * payload (le schéma garantit sa présence) ; son appartenance à l'entreprise est
+   * vérifiée dans la transaction.
    */
   private async resolveFulfillment(command: PlaceOrderCommand): Promise<{
     readonly deliveryAddressId: string | null;
     readonly pickupAddress: BillingAddressPayload | null;
+    readonly discount: CartAdjustment | null;
   }> {
     if (command.payload.fulfillmentMethod === "pickup") {
       const point = await this.pickups.resolve(command.payload.pickupAddressId);
       if (point === null) {
         throw new PickupNotConfiguredError();
       }
-      return { deliveryAddressId: null, pickupAddress: toSnapshot(point) };
+      return {
+        deliveryAddressId: null,
+        pickupAddress: toSnapshot(point),
+        discount: point.discount,
+      };
     }
-    return { deliveryAddressId: command.payload.deliveryAddressId, pickupAddress: null };
+    return {
+      deliveryAddressId: command.payload.deliveryAddressId,
+      pickupAddress: null,
+      discount: null,
+    };
+  }
+
+  /**
+   * Frais de livraison de la **zone** du code postal livré, ou `0` (retrait, pas
+   * d'adresse, ou aucune zone pour ce code postal). Le code postal est ré-lu
+   * serveur depuis l'adresse de l'entreprise (jamais envoyé par le client).
+   */
+  private async resolveDeliveryFee(
+    command: PlaceOrderCommand,
+    acheminement: { readonly deliveryAddressId: string | null },
+    subtotalCents: number,
+  ): Promise<number> {
+    if (
+      command.payload.fulfillmentMethod !== "delivery" ||
+      acheminement.deliveryAddressId === null
+    ) {
+      return 0;
+    }
+    const postalCode = await this.deliveryAddresses.postalCodeOf(
+      command.companyId,
+      acheminement.deliveryAddressId,
+    );
+    if (postalCode === null) {
+      return 0;
+    }
+    const zone = await this.zones.findByPostalCode(postalCode);
+    return zone === null ? 0 : cartAdjustmentCents(zone.fee, subtotalCents);
   }
 
   /**

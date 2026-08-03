@@ -110,6 +110,14 @@ enum FulfillmentMethod {
   pickup
 }
 
+/// Mode d'un **ajustement de panier** (remise d'un point de retrait, frais d'une
+/// zone de livraison) : `percent` → la valeur est en points de base (2000 = 20 %) ;
+/// `amount` → la valeur est en centimes (2000 = 20 €).
+enum CartAdjustmentMode {
+  percent
+  amount
+}
+
 /// Cycle de vie d'une commande.
 enum OrderStatus {
   draft
@@ -421,10 +429,13 @@ model Order {
 
   pickupAddress Json? @map("pickup_address")
 
-  // Argent en centimes (snapshot au moment de la commande)
-  subtotalCents Int    @map("subtotal_cents")
-  totalCents    Int    @map("total_cents")
-  currency      String @default("EUR")
+  // Argent en centimes (snapshot au moment de la commande). `total = max(0,
+  // subtotal − discount) + deliveryFee`. Remise = point de retrait ; frais = zone.
+  subtotalCents    Int    @map("subtotal_cents")
+  discountCents    Int    @default(0) @map("discount_cents")
+  deliveryFeeCents Int    @default(0) @map("delivery_fee_cents")
+  totalCents       Int    @map("total_cents")
+  currency         String @default("EUR")
 
   note String @default("")
 
@@ -510,10 +521,33 @@ model PickupAddress {
   // moins un point » et « un seul défaut » est tenu par le repository.
   isDefault Boolean @default(false) @map("is_default")
 
+  // Remise appliquée au panier en cas de retrait ici. `discountMode` null =
+  // aucune remise ; sinon `discountValue` = bp (percent) ou centimes (amount).
+  discountMode  CartAdjustmentMode? @map("discount_mode")
+  discountValue Int?               @map("discount_value")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("pickup_addresses")
+}
+
+/// **Zone de livraison** — un code postal (station éloignée) portant un frais de
+/// livraison HT ajouté au panier quand la commande est livrée vers ce code postal.
+/// Config globale (pas par entreprise). `feeValue` = bp (percent) ou centimes
+/// (amount) selon `feeMode`.
+model DeliveryZone {
+  id         String @id @default(cuid())
+  codePostal String @unique @map("code_postal")
+  label      String @default("")
+
+  feeMode  CartAdjustmentMode @map("fee_mode")
+  feeValue Int                @map("fee_value")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("delivery_zones")
 }
 
 /// Utilisateur **staff** (back-office) — l'annuaire des personnes qui opèrent la

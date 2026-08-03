@@ -1,13 +1,16 @@
 import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
+import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
+import { DeliveryAddressReader } from "./domain/ports/delivery-address.reader.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
 import { OrderReader } from "./domain/ports/order.reader.js";
 import { OrderRepository } from "./domain/ports/order.repository.js";
 import { ProductCatalogReader } from "./domain/ports/product-catalog.reader.js";
+import { PrismaDeliveryAddressReader } from "./infrastructure/prisma-delivery-address.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
@@ -23,7 +26,7 @@ import { OrdersController } from "./http/orders.controller.js";
  * résolus par un catalogue semé (jetable jusqu'au sync PIM).
  */
 @Module({
-  imports: [CqrsModule, PickupAddressesModule],
+  imports: [CqrsModule, PickupAddressesModule, DeliveryZonesModule],
   controllers: [OrdersController],
   providers: [
     PlaceOrderHandler,
@@ -32,6 +35,7 @@ import { OrdersController } from "./http/orders.controller.js";
     { provide: ProductCatalogReader, useClass: SeededProductCatalog },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },
+    { provide: DeliveryAddressReader, useClass: PrismaDeliveryAddressReader },
   ],
 })
 export class OrdersModule {}

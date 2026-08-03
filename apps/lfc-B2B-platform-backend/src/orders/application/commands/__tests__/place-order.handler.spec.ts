@@ -1,6 +1,13 @@
-import type { BillingAddressPayload, PickupAddressView, PlaceOrderPayload } from "@lfd/contracts";
+import type {
+  BillingAddressPayload,
+  DeliveryZoneView,
+  PickupAddressView,
+  PlaceOrderPayload,
+} from "@lfd/contracts";
 
+import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
+import { DeliveryAddressReader } from "../../../domain/ports/delivery-address.reader.js";
 import {
   CompanyNotActivatedError,
   OrderCompanyNotFoundError,
@@ -48,6 +55,22 @@ function pickups(resolved: PickupAddressView | null = null): PickupAddressReposi
   };
 }
 
+/** Zones de livraison doublées : seule la zone **trouvée par code postal** varie. */
+function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
+  return {
+    list: () => Promise.resolve([]),
+    findByPostalCode: () => Promise.resolve(found),
+    create: () => Promise.resolve("zone_1"),
+    update: () => Promise.resolve(),
+    remove: () => Promise.resolve(),
+  };
+}
+
+/** Lecteur d'adresse de livraison doublé : le code postal résolu varie. */
+function deliveryAddrs(postalCode: string | null = null): DeliveryAddressReader {
+  return { postalCodeOf: () => Promise.resolve(postalCode) };
+}
+
 const LABO_POINT: PickupAddressView = {
   id: "pickup_1",
   label: "Labo",
@@ -57,6 +80,7 @@ const LABO_POINT: PickupAddressView = {
   ville: "Paris",
   pays: "France",
   isDefault: true,
+  discount: null,
 };
 
 /** Le snapshot attendu : le point résolu réduit à ses champs postaux. */
@@ -99,6 +123,8 @@ describe("PlaceOrderHandler", () => {
       catalog,
       capturingRepo(sink),
       pickups(),
+      zones(),
+      deliveryAddrs(),
     );
 
     await expect(
@@ -114,6 +140,8 @@ describe("PlaceOrderHandler", () => {
       catalog,
       capturingRepo(sink),
       pickups(),
+      zones(),
+      deliveryAddrs(),
     );
 
     await expect(
@@ -129,6 +157,8 @@ describe("PlaceOrderHandler", () => {
       catalog,
       capturingRepo(sink),
       pickups(),
+      zones(),
+      deliveryAddrs(),
     );
 
     // Le payload ne porte que sku+quantité ; même si un client forgeait un prix,
@@ -158,6 +188,8 @@ describe("PlaceOrderHandler", () => {
       catalog,
       capturingRepo(sink),
       pickups(),
+      zones(),
+      deliveryAddrs(),
     );
 
     await handler.execute(
@@ -188,6 +220,8 @@ describe("PlaceOrderHandler", () => {
       catalog,
       capturingRepo(sink),
       pickups(),
+      zones(),
+      deliveryAddrs(),
     );
 
     await expect(
@@ -205,6 +239,8 @@ describe("PlaceOrderHandler", () => {
       catalog,
       capturingRepo(sink),
       pickups(LABO_POINT),
+      zones(),
+      deliveryAddrs(),
     );
 
     await handler.execute(
@@ -227,6 +263,8 @@ describe("PlaceOrderHandler", () => {
       catalog,
       capturingRepo(sink),
       pickups(null),
+      zones(),
+      deliveryAddrs(),
     );
 
     await expect(
@@ -239,5 +277,64 @@ describe("PlaceOrderHandler", () => {
       ),
     ).rejects.toBeInstanceOf(PickupNotConfiguredError);
     expect(sink.placed).toBeNull();
+  });
+
+  it("en RETRAIT, applique la remise du point au total", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const point: PickupAddressView = { ...LABO_POINT, discount: { mode: "percent", bp: 2000 } };
+    const handler = new PlaceOrderHandler(
+      guard("member", "active"),
+      catalog,
+      capturingRepo(sink),
+      pickups(point),
+      zones(),
+      deliveryAddrs(),
+    );
+
+    // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
+    await handler.execute(
+      new PlaceOrderCommand(
+        "u1",
+        "c1",
+        payload({
+          fulfillmentMethod: "pickup",
+          deliveryAddressId: null,
+          lines: [{ sku: "VIE-001", quantity: 2 }],
+        }),
+      ),
+    );
+
+    expect(sink.placed?.subtotalCents).toBe(400);
+    expect(sink.placed?.discountCents).toBe(80);
+    expect(sink.placed?.deliveryFeeCents).toBe(0);
+    expect(sink.placed?.totalCents).toBe(320);
+  });
+
+  it("en LIVRAISON vers une zone, ajoute le frais fixe au total", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const zone: DeliveryZoneView = {
+      id: "z1",
+      codePostal: "73150",
+      label: "Val d'Isère",
+      fee: { mode: "amount", cents: 2000 },
+    };
+    const handler = new PlaceOrderHandler(
+      guard("member", "active"),
+      catalog,
+      capturingRepo(sink),
+      pickups(),
+      zones(zone),
+      deliveryAddrs("73150"),
+    );
+
+    // 2 × 200 = 400 ; frais 20 € = 2000 ; total = 2400.
+    await handler.execute(
+      new PlaceOrderCommand("u1", "c1", payload({ lines: [{ sku: "VIE-001", quantity: 2 }] })),
+    );
+
+    expect(sink.placed?.subtotalCents).toBe(400);
+    expect(sink.placed?.discountCents).toBe(0);
+    expect(sink.placed?.deliveryFeeCents).toBe(2000);
+    expect(sink.placed?.totalCents).toBe(2400);
   });
 });

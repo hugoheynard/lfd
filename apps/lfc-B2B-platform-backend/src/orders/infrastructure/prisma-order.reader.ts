@@ -33,6 +33,8 @@ interface OrderRow {
   readonly pickupAddress: Prisma.JsonValue | null;
   readonly note: string;
   readonly subtotalCents: number;
+  readonly discountCents: number;
+  readonly deliveryFeeCents: number;
   readonly totalCents: number;
   readonly currency: string;
   readonly createdAt: Date;
@@ -60,6 +62,8 @@ export class PrismaOrderReader extends OrderReader {
         pickupAddress: true,
         note: true,
         subtotalCents: true,
+        discountCents: true,
+        deliveryFeeCents: true,
         totalCents: true,
         currency: true,
         createdAt: true,
@@ -100,6 +104,8 @@ function toOrderView(row: OrderRow): OrderView {
     pickupAddress: parsePickup(row.pickupAddress),
     note: row.note,
     subtotalCents: row.subtotalCents,
+    discountCents: row.discountCents,
+    deliveryFeeCents: row.deliveryFeeCents,
     totalCents: row.totalCents,
     currency: row.currency,
     placedAt: row.createdAt.toISOString(),

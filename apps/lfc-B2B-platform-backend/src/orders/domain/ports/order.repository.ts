@@ -23,6 +23,10 @@ export interface OrderToPlace {
   readonly requestedDeliveryDate: Date | null;
   readonly note: string;
   readonly subtotalCents: number;
+  /** Remise (retrait) déduite, en centimes. `0` si aucune. */
+  readonly discountCents: number;
+  /** Frais de livraison (zone) ajouté, en centimes. `0` si aucun. */
+  readonly deliveryFeeCents: number;
   readonly totalCents: number;
   readonly lines: readonly OrderLineToPersist[];
 }
