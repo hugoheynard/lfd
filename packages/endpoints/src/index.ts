@@ -123,3 +123,30 @@ export const DEV_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
     ...loopbacks(DEV_PORTS.spareFront),
   ],
 };
+
+/**
+ * Message **affichable** tiré d'une erreur HTTP (front), sûr **par
+ * construction** : on ne lit que le `message` de l'enveloppe d'API — déjà filtré
+ * côté backend (une erreur technique y est neutre, cf. `AppErrorFilter`) — jamais
+ * un détail interne. `status: 0` = requête qui n'a pas atteint le serveur
+ * (réseau/CORS). À défaut, un repli générique. Typé `unknown` + narrowing (pas
+ * d'`as`) pour rester agnostique d'Angular (`HttpErrorResponse` structurel).
+ */
+export function httpErrorMessage(error: unknown, fallback = "Une erreur est survenue."): string {
+  if (typeof error !== "object" || error === null) {
+    return fallback;
+  }
+  if ("status" in error && error.status === 0) {
+    return "Serveur injoignable. Vérifiez votre connexion et réessayez.";
+  }
+  if ("error" in error) {
+    const body = error.error;
+    if (typeof body === "object" && body !== null && "message" in body) {
+      const message = body.message;
+      if (typeof message === "string" && message.trim() !== "") {
+        return message;
+      }
+    }
+  }
+  return fallback;
+}
