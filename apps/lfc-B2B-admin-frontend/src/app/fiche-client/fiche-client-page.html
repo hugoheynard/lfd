@@ -66,6 +66,8 @@
             [deliveries]="deliveries()"
             [canManage]="false"
             [showDeliveries]="!deliveryHidden()"
+            [showPickup]="deliveryHidden()"
+            [pickup]="defaultPickup()"
           />
         </div>
       }

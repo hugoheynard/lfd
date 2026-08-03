@@ -5,6 +5,7 @@ import type {
   BillingAddressView,
   DeliveryAddressView,
   DeliveryContact,
+  PickupAddressView,
   PlatformSettings,
 } from '@lfd/contracts';
 import { FoldButtonComponent, FoldPageLayoutComponent, FoldPanelHostService } from 'fold-ng';
@@ -22,6 +23,7 @@ import {
 import type { AdminCompanyDetail } from '../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../comptes-clients/admin-companies.service';
 import { NotifyService } from '../notify.service';
+import { PickupAddressesService } from '../reglages/retraits-livraisons/pickup-addresses.service';
 import { PlatformSettingsService } from '../reglages/platform-settings.service';
 import { toContactCards, toIdentityView } from './admin-company-view';
 import { AdminAdressePanel } from './panels/adresse-panel/adresse-panel';
@@ -69,11 +71,14 @@ export class FicheClientPage {
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
   private readonly settingsService = inject(PlatformSettingsService);
+  private readonly pickupsService = inject(PickupAddressesService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly company = signal<AdminCompanyDetail | null>(null);
   /** Config plateforme (modes des pièces) — filtre la synthèse et le gate. */
   protected readonly settings = signal<PlatformSettings | null>(null);
+  /** Le point de retrait par défaut, reflété quand la livraison est masquée. */
+  protected readonly defaultPickup = signal<PickupAddressView | null>(null);
 
   /** La livraison est-elle masquée (service absent) ? Cache la carte livraison. */
   protected readonly deliveryHidden = computed(() => this.settings()?.delivery === 'hidden');
@@ -192,9 +197,10 @@ export class FicheClientPage {
     }
     this.state.set('loading');
     try {
-      const [company, settings] = await Promise.all([
+      const [company, settings, pickups] = await Promise.all([
         this.service.getById(id),
         this.settingsService.get(),
+        this.pickupsService.list().catch(() => [] as readonly PickupAddressView[]),
       ]);
       if (company === undefined) {
         this.state.set('notfound');
@@ -202,6 +208,7 @@ export class FicheClientPage {
       }
       this.company.set(company);
       this.settings.set(settings);
+      this.defaultPickup.set(pickups.find((p) => p.isDefault) ?? pickups[0] ?? null);
       this.state.set('ready');
     } catch {
       this.state.set('error');
