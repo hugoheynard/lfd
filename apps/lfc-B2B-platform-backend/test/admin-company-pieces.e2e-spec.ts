@@ -145,3 +145,49 @@ describe("pièces d'activation staff (Porte B)", () => {
     expect(count).toBe(1);
   });
 });
+
+describe("activation d'un compte (gate serveur)", () => {
+  it("refuse l'activation si des pièces requises manquent (409)", async () => {
+    // Défauts : tva + billing requises. La société pending n'a ni l'une ni l'autre.
+    const response = await staff().post(`/admin/companies/${companyId}/activate`);
+    expect(response.status).toBe(409);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.status).toBe(CompanyStatus.pending);
+  });
+
+  it("active quand les pièces requises sont présentes (kbis/livraison non requis)", async () => {
+    // TVA renseignée + facturation présente ; KBIS optionnel et livraison cachée
+    // par défaut ⇒ non requis. L'activation doit passer.
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { tvaIntracom: "FR32812456789" },
+    });
+    await ctx.prisma.address.create({
+      data: {
+        companyId,
+        kind: AddressKind.facturation,
+        label: "Siège",
+        ligne1: "18 rue des Archives",
+        codePostal: "75004",
+        ville: "Paris",
+        pays: "France",
+      },
+    });
+
+    await staff().post(`/admin/companies/${companyId}/activate`).expect(204);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.status).toBe(CompanyStatus.active);
+    expect(company.activatedAt).not.toBeNull();
+  });
+
+  it("refuse d'activer un compte déjà actif (409)", async () => {
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { status: CompanyStatus.active },
+    });
+    const response = await staff().post(`/admin/companies/${companyId}/activate`);
+    expect(response.status).toBe(409);
+  });
+});

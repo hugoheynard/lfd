@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
+import { PlatformSettingsModule } from "../platform-settings/platform-settings.module.js";
+import { ActivateCompanyByStaffHandler } from "./application/commands/activate-company.handler.js";
 import { AddCompanyContactHandler } from "./application/commands/add-company-contact.handler.js";
 import {
   AddDeliveryAddressByStaffHandler,
@@ -69,7 +71,7 @@ import { MeController } from "./http/me.controller.js";
  * sans Prisma ni réseau.
  */
 @Module({
-  imports: [CqrsModule],
+  imports: [CqrsModule, PlatformSettingsModule],
   controllers: [
     MeController,
     CompaniesController,
@@ -100,6 +102,7 @@ import { MeController } from "./http/me.controller.js";
     GetCompanyForStaffHandler,
     UpdateCompanyIdentityHandler,
     RequestPaymentTermHandler,
+    ActivateCompanyByStaffHandler,
     UploadKbisByStaffHandler,
     UpdateIdentityByStaffHandler,
     SetAgreedPaymentTermHandler,

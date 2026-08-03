@@ -49,6 +49,13 @@ export abstract class CompanyRepository {
   abstract updateIdentity(companyId: string, identity: EditableIdentity): Promise<void>;
 
   /**
+   * Passe la société à `active` et **pose `activatedAt`** (activation commerciale
+   * explicite). Écriture nue : le gate (pièces requises présentes, statut
+   * `pending`) est vérifié en amont par le handler, pas ici.
+   */
+  abstract markActive(companyId: string): Promise<void>;
+
+  /**
    * Enregistre la condition de règlement **demandée** par le client (colonne
    * `requested_payment_term`) : une demande, pas le terme convenu — que seul le
    * staff écrit. `null` retire la demande en cours (souhait retiré).

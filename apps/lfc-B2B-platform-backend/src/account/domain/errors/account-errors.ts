@@ -110,6 +110,22 @@ export class CompanyNotFoundError extends ResourceNotFoundError {
   }
 }
 
+/**
+ * L'activation est refusée : des **pièces requises** manquent, ou la société n'est
+ * pas dans l'état `pending`. Refus **métier** (409) — la demande est bien formée,
+ * mais l'état courant l'interdit. `missing` liste les pièces à compléter (vide si
+ * le refus tient au statut).
+ */
+export class CompanyActivationBlockedError extends BusinessError {
+  constructor(
+    readonly companyId: string,
+    readonly missing: readonly string[],
+    message: string,
+  ) {
+    super("account.company.activation_blocked", message);
+  }
+}
+
 /** Le contact visé n'appartient pas à cette entreprise (ou n'existe plus). */
 export class CompanyContactNotFoundError extends ResourceNotFoundError {
   constructor(readonly contactId: string) {

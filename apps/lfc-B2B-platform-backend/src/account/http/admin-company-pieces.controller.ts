@@ -28,6 +28,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
+import { ActivateCompanyByStaffCommand } from "../application/commands/activate-company.command.js";
 import {
   AddDeliveryAddressByStaffCommand,
   SaveBillingAddressByStaffCommand,
@@ -116,6 +117,19 @@ export class AdminCompanyPiecesController {
   ): Promise<void> {
     await this.commands.execute<SaveBillingAddressByStaffCommand, void>(
       new SaveBillingAddressByStaffCommand(companyId, payload),
+    );
+  }
+
+  /**
+   * **Active** le compte (`pending → active`). Gaté serveur : la société doit être
+   * en attente et ses pièces `required` présentes, sinon `409`
+   * (`CompanyActivationBlockedError`).
+   */
+  @Post(":companyId/activate")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async activate(@Param("companyId") companyId: string): Promise<void> {
+    await this.commands.execute<ActivateCompanyByStaffCommand, void>(
+      new ActivateCompanyByStaffCommand(companyId),
     );
   }
 

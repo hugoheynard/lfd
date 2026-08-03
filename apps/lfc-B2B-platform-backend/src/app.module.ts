@@ -4,6 +4,7 @@ import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 import { AccountModule } from "./account/account.module.js";
 import { OrdersModule } from "./orders/orders.module.js";
+import { PlatformSettingsModule } from "./platform-settings/platform-settings.module.js";
 import { AuthModule } from "./infra/auth/auth.module.js";
 import { AppConfigModule } from "./infra/config/config.module.js";
 import { DatabaseModule } from "./infra/database/database.module.js";
@@ -19,6 +20,8 @@ import { DatabaseModule } from "./infra/database/database.module.js";
     AppConfigModule,
     DatabaseModule,
     AuthModule,
+    // Config globale (feature flags d'activation) — avant les contextes qui la lisent.
+    PlatformSettingsModule,
     // Contextes métier.
     AccountModule,
     OrdersModule,

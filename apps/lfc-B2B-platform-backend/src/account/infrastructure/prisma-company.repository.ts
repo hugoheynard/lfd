@@ -182,6 +182,13 @@ export class PrismaCompanyRepository extends CompanyRepository {
     });
   }
 
+  async markActive(companyId: string): Promise<void> {
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: { status: "active", activatedAt: new Date() },
+    });
+  }
+
   async setAgreedPaymentTerm(companyId: string, term: PaymentTerm): Promise<void> {
     // Le staff tranche : on écrit le terme convenu ET on solde la demande.
     await this.prisma.company.update({
