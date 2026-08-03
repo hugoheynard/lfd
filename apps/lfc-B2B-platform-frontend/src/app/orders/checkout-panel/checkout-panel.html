@@ -32,8 +32,10 @@
         Vous n'avez pas encore d'entreprise. Créez-en une dans « Mes entreprises » pour commander.
       </fold-callout>
     } @else if (companies().length === 1) {
-      <p class="section-label">Entreprise</p>
-      <p class="single-company">{{ selectedCompany()?.raisonSociale }}</p>
+      <div class="company-static">
+        <p class="section-label">Entreprise</p>
+        <p class="single-company">{{ selectedCompany()?.raisonSociale }}</p>
+      </div>
     } @else {
       <fold-select
         label="Entreprise cliente"

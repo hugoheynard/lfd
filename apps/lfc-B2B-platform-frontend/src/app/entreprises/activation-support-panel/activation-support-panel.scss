@@ -17,9 +17,10 @@
 .field {
   display: flex;
   flex-direction: column;
+  gap: var(--fold-space-xs);
 }
 .field-label {
-  margin: 0 0 var(--fold-space-xs);
+  margin: 0;
   font-size: var(--fold-text-sm, 0.875rem);
   font-weight: 600;
   color: var(--fold-color-text);
