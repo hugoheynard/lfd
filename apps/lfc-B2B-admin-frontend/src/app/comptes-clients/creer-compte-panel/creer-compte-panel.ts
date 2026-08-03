@@ -1,11 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import {
-  FoldButtonComponent,
-  FoldCalloutComponent,
-  FoldPanelHeaderComponent,
-  FoldPanelRef,
-} from 'fold-ng';
+import { FoldButtonComponent, FoldPanelHeaderComponent, FoldPanelRef } from 'fold-ng';
 import {
   CompanyIdentityFields,
   ContactFields,
@@ -17,24 +12,20 @@ import {
   type CompanyIdentityDraft,
 } from '@lfd/b2b-ui/company';
 
+import { NotifyService } from '../../notify.service';
 import { AdminCompaniesService } from '../admin-companies.service';
 
 /**
  * Panneau **Créer un compte client** (staff). Compose les deux fragments de
  * formulaire partagés — identité société + contact principal. Contrairement au
  * self-signup client, le staff saisit **aussi** le contact (pas de profil
- * créateur). À la réussite, ouvre la fiche du compte créé.
+ * créateur). À la réussite : toast + fiche du compte créé ; à l'échec : toast
+ * d'erreur (message sûr de l'API), le panneau reste ouvert pour corriger.
  */
 @Component({
   selector: 'app-creer-compte-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldPanelHeaderComponent,
-    FoldCalloutComponent,
-    FoldButtonComponent,
-    CompanyIdentityFields,
-    ContactFields,
-  ],
+  imports: [FoldPanelHeaderComponent, FoldButtonComponent, CompanyIdentityFields, ContactFields],
   templateUrl: './creer-compte-panel.html',
   styleUrl: './creer-compte-panel.scss',
 })
@@ -42,12 +33,11 @@ export class CreerComptePanel {
   private readonly service = inject(AdminCompaniesService);
   private readonly ref = inject(FoldPanelRef);
   private readonly router = inject(Router);
+  private readonly notify = inject(NotifyService);
 
   protected readonly identity = signal<CompanyIdentityDraft>(EMPTY_COMPANY_IDENTITY_DRAFT);
   protected readonly contact = signal<CompanyContactDraft>(EMPTY_COMPANY_CONTACT_DRAFT);
-
   protected readonly submitting = signal(false);
-  protected readonly error = signal<string | null>(null);
 
   protected readonly canSubmit = computed(
     () => isCompanyIdentityValid(this.identity()) && isCompanyContactValid(this.contact()),
@@ -58,7 +48,6 @@ export class CreerComptePanel {
       return;
     }
     this.submitting.set(true);
-    this.error.set(null);
     const identity = this.identity();
     const contact = this.contact();
     try {
@@ -79,9 +68,10 @@ export class CreerComptePanel {
         },
       });
       this.ref.close();
+      this.notify.success('Compte client créé.');
       await this.router.navigate(['/comptes-clients', created.id]);
-    } catch {
-      this.error.set('La création a échoué. Réessayez.');
+    } catch (error) {
+      this.notify.error(error);
     } finally {
       this.submitting.set(false);
     }

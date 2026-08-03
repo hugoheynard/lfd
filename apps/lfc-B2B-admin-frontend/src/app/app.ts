@@ -5,6 +5,7 @@ import {
   FoldMenuComponent,
   FoldMenuItemComponent,
   FoldPanelHostComponent,
+  FoldToastContainerComponent,
 } from 'fold-ng';
 
 import { SuiteEmbed } from './suite-embed/suite-embed';
@@ -26,6 +27,7 @@ import { SuiteEmbed } from './suite-embed/suite-embed';
     FoldMenuComponent,
     FoldMenuItemComponent,
     FoldPanelHostComponent,
+    FoldToastContainerComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',

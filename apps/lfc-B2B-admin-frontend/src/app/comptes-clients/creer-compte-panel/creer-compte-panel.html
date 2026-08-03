@@ -4,10 +4,6 @@
 />
 
 <div class="body">
-  @if (error(); as message) {
-    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
-  }
-
   <p class="section-label">Identité légale</p>
   <lfd-company-identity-fields [value]="identity()" (valueChange)="identity.set($event)" />
 
