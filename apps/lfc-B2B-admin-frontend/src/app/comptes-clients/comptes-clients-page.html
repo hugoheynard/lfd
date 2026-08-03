@@ -41,7 +41,7 @@
       [empty]="emptyState()"
     >
       <ng-template foldCell="reference" let-row>
-        <span class="ref">{{ row.reference }}</span>
+        <a class="ref-link" [routerLink]="['/comptes-clients', row.id]">{{ row.reference }}</a>
       </ng-template>
 
       <ng-template foldCell="raisonSociale" let-row>

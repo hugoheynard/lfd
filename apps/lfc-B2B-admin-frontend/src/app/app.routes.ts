@@ -9,6 +9,11 @@ export const routes: Routes = [
       import('./comptes-clients/comptes-clients-page').then((m) => m.ComptesClientsPage),
   },
   {
+    path: 'comptes-clients/:id',
+    title: 'Fiche client — LFC B2B admin',
+    loadComponent: () => import('./fiche-client/fiche-client-page').then((m) => m.FicheClientPage),
+  },
+  {
     path: 'commercial',
     title: 'Commercial — LFC B2B admin',
     loadComponent: () => import('./commercial/commercial-page').then((m) => m.CommercialPage),

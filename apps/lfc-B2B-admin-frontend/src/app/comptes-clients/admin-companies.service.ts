@@ -30,4 +30,14 @@ export class AdminCompaniesService {
       this.http.get<readonly AdminCompany[]>(`${B2B_API_BASE}/admin/companies`, { headers }),
     );
   }
+
+  /**
+   * Une société par id. Il n'existe pas (encore) d'endpoint détail dédié : on
+   * lit la liste et on filtre. `undefined` si l'id est inconnu. À remplacer par
+   * `GET /admin/companies/:id` le jour où le backend l'expose.
+   */
+  async getById(id: string): Promise<AdminCompany | undefined> {
+    const companies = await this.list();
+    return companies.find((company) => company.id === id);
+  }
 }

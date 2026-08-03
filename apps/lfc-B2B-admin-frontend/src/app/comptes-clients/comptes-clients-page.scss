@@ -12,6 +12,16 @@
   max-width: 72rem;
 }
 
+// La référence ouvre la fiche détail.
+.ref-link {
+  color: var(--fold-color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.ref-link:hover {
+  text-decoration: underline;
+}
+
 .page-head {
   display: flex;
   align-items: flex-start;

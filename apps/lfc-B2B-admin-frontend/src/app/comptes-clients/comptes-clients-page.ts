@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -55,6 +56,7 @@ function isFilterValue(value: string): value is FilterValue {
     FoldDataTableCellDirective,
     FoldStatusBadgeComponent,
     FoldViewToggleComponent,
+    RouterLink,
   ],
   templateUrl: './comptes-clients-page.html',
   styleUrl: './comptes-clients-page.scss',

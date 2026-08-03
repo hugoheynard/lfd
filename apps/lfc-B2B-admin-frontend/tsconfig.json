@@ -9,7 +9,12 @@
   "compilerOptions": {
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "preserve",
+    // Lib source partagée `@lfd/b2b-ui` (pas de build) : compilée par cette app
+    // via ce mapping. Un subpath par domaine.
+    "paths": {
+      "@lfd/b2b-ui/company": ["../../packages/b2b-ui/src/company/index.ts"]
+    }
   },
   "files": [],
   "references": [
