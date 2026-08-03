@@ -44,6 +44,12 @@ export {
   platformSettingsSchema,
 } from "./platform-settings.js";
 export type { PieceMode, ActivationPiece, PlatformSettings } from "./platform-settings.js";
+export { pickupAddressPayloadSchema } from "./pickup.js";
+export type {
+  PickupAddressPayload,
+  PickupAddressView,
+  CreatedPickupResponse,
+} from "./pickup.js";
 export {
   orderStatusSchema,
   fulfillmentMethodSchema,

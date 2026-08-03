@@ -1,11 +1,9 @@
 import { z } from "zod";
 
-import { billingAddressPayloadSchema } from "./address.js";
-
 /**
  * Contrat de fil des **réglages plateforme B2B** — la configuration **globale**
- * qui pilote les pièces d'activation d'un compte client, et l'**acheminement**
- * (livraison / point de retrait). Cf.
+ * qui pilote les pièces d'activation d'un compte client. Les **points de retrait**
+ * (acheminement) ont leur propre contrat (`pickup.ts`). Cf.
  * `documentation/architecture-activation-configuration-b2b.md`.
  */
 
@@ -32,11 +30,5 @@ export const platformSettingsSchema = z.object({
   kbis: pieceModeSchema,
   billing: pieceModeSchema,
   delivery: pieceModeSchema,
-  /**
-   * Adresse du **point de retrait** (le labo), ou `null` si non configuré. Sert de
-   * fallback d'acheminement tant que la livraison n'existe pas (`delivery: hidden`)
-   * — une commande peut alors être passée en **retrait**. Champs postaux only.
-   */
-  pickupAddress: billingAddressPayloadSchema.nullable().default(null),
 });
 export type PlatformSettings = z.infer<typeof platformSettingsSchema>;

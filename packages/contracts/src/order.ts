@@ -48,6 +48,8 @@ export const placeOrderPayloadSchema = z
     fulfillmentMethod: fulfillmentMethodSchema.default("delivery"),
     /** Requis si `delivery` ; ignoré (et `null`) si `pickup`. */
     deliveryAddressId: z.string().trim().nullable().default(null),
+    /** Point de retrait choisi si `pickup` ; `null` = le point par défaut (serveur). */
+    pickupAddressId: z.string().trim().nullable().default(null),
     requestedDeliveryDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/u, "date attendue au format AAAA-MM-JJ")
