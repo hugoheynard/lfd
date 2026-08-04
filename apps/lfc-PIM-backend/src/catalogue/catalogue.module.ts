@@ -13,7 +13,8 @@ import { EditorialReader } from './domain/ports/editorial-reader.js';
 import { EditorialRepository } from './domain/ports/editorial.repository.js';
 import { NutritionRepository } from './domain/ports/nutrition.repository.js';
 import { ProductRepository } from './domain/ports/product.repository.js';
-import { CatalogueController } from './http/catalogue.controller.js';
+import { CategoryController } from './http/category.controller.js';
+import { ProductController } from './http/product.controller.js';
 import { ReferenceController } from './http/reference.controller.js';
 import { PrismaCatalogueReader } from './infrastructure/prisma-catalogue-reader.js';
 import { PrismaCategoryRepository } from './infrastructure/prisma-category.repository.js';
@@ -35,7 +36,7 @@ import {
  */
 @Module({
   imports: [DatabaseModule],
-  controllers: [CatalogueController, ReferenceController],
+  controllers: [CategoryController, ProductController, ReferenceController],
   providers: [
     CategoryCommands,
     ProductCommands,
