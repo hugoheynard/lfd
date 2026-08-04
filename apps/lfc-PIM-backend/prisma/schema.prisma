@@ -110,6 +110,14 @@ model ProductVariant {
   position       Int     @default(0)
   attributes     Json    @default("{}")
 
+  /// Prix **canonique** de l'unité réellement vendue (R4) — tarif de référence,
+  /// HT, en centimes d'euro, **pré-altération**. `NULL` = pas encore tarifé. Les
+  /// dégressifs de volume et remises vivent dans la couche pricing B2B, jamais
+  /// ici (cf. documentation/architecture-conditionnements-pricing.md).
+  priceCents  Int? @map("price_cents")
+  /// Poids net de l'unité vendue, en grammes. Fait physique de la déclinaison.
+  weightGrams Int? @map("weight_grams")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")

@@ -23,6 +23,10 @@ export interface VariantRecord {
   readonly isDefault: boolean;
   readonly isDiscontinued: boolean;
   readonly position: number;
+  /** Prix canonique HT en centimes ; `null` = pas encore tarifé. */
+  readonly priceCents: number | null;
+  /** Poids net de l'unité vendue, en grammes ; `null` = non renseigné. */
+  readonly weightGrams: number | null;
   /** `null` = fiche **non renseignée** ; `[]` = « aucun allergène » déclaré. */
   readonly allergens: readonly string[] | null;
 }
@@ -58,4 +62,16 @@ export abstract class ProductRepository {
     slug: LocalizedText,
   ): Promise<void>;
   abstract setStatus(id: string, status: ProductStatus): Promise<void>;
+  abstract setKind(id: string, kind: ProductKind): Promise<void>;
+  abstract moveToCategory(id: string, categoryId: string): Promise<void>;
+  /** Tarif canonique HT (centimes) de la déclinaison ; `null` = dé-tarifer. */
+  abstract setVariantPrice(
+    variantId: string,
+    priceCents: number | null,
+  ): Promise<void>;
+  /** Poids net (grammes) de la déclinaison ; `null` = effacer. */
+  abstract setVariantWeight(
+    variantId: string,
+    weightGrams: number | null,
+  ): Promise<void>;
 }

@@ -58,6 +58,47 @@ const renamePayload = z.object({
   nameEn: z.string().optional(),
 });
 
+const kindPayload = z.object({
+  kind: z.enum(['daily', 'made_to_order', 'resale']),
+});
+
+const categoryRefPayload = z.object({
+  categoryId: z.string().min(1),
+});
+
+/** `null` = dé-tarifer / effacer ; un entier ≥ 0 = valeur en centimes / grammes. */
+const pricePayload = z.object({
+  priceCents: z.number().int().min(0).nullable(),
+});
+
+const weightPayload = z.object({
+  weightGrams: z.number().int().min(0).nullable(),
+});
+
+const editorialPayload = z.object({
+  descriptionShort: z.string().optional(),
+  descriptionLong: z.string().optional(),
+  story: z.string().optional(),
+  pairing: z.string().optional(),
+  brand: z.string().optional(),
+  seoTitle: z.string().optional(),
+  seoDescription: z.string().optional(),
+});
+
+const nutritionPayload = z.object({
+  allergens: z.array(z.string()),
+  mayContain: z.array(z.string()).optional(),
+  nutrition: z
+    .object({
+      energyKcal: z.number().optional(),
+      carbsG: z.number().optional(),
+      fatG: z.number().optional(),
+      proteinG: z.number().optional(),
+      glycemicIndex: z.number().optional(),
+    })
+    .optional(),
+});
+
 /**
  * ⚠️ **`@Public()` temporaire.** Le tenant Auth0 n'existe pas encore : sans dérogation,
  * le guard global rejetterait tout et le back-office serait inutilisable. À retirer dès
@@ -126,9 +167,77 @@ export class CatalogueController {
     return { id };
   }
 
+  @Put('products/:id/kind')
+  async changeProductKind(
+    @Param('id') id: string,
+    @Body(new ZodBody(kindPayload)) body: z.infer<typeof kindPayload>,
+  ) {
+    await this.productCommands.changeKind(id, body.kind);
+    return { id };
+  }
+
+  @Put('products/:id/category')
+  async moveProduct(
+    @Param('id') id: string,
+    @Body(new ZodBody(categoryRefPayload))
+    body: z.infer<typeof categoryRefPayload>,
+  ) {
+    await this.productCommands.moveToCategory(id, body.categoryId);
+    return { id };
+  }
+
+  @Put('products/:id/editorial')
+  async editProductEditorial(
+    @Param('id') id: string,
+    @Body(new ZodBody(editorialPayload)) body: z.infer<typeof editorialPayload>,
+  ) {
+    await this.productCommands.updateEditorial(id, body);
+    return { id };
+  }
+
+  @Put('products/:id/variants/:variantId/price')
+  async setVariantPrice(
+    @Param('id') id: string,
+    @Param('variantId') variantId: string,
+    @Body(new ZodBody(pricePayload)) body: z.infer<typeof pricePayload>,
+  ) {
+    await this.productCommands.setVariantPrice(id, variantId, body.priceCents);
+    return { id, variantId };
+  }
+
+  @Put('products/:id/variants/:variantId/weight')
+  async setVariantWeight(
+    @Param('id') id: string,
+    @Param('variantId') variantId: string,
+    @Body(new ZodBody(weightPayload)) body: z.infer<typeof weightPayload>,
+  ) {
+    await this.productCommands.setVariantWeight(
+      id,
+      variantId,
+      body.weightGrams,
+    );
+    return { id, variantId };
+  }
+
+  @Put('products/:id/variants/:variantId/nutrition')
+  async declareVariantNutrition(
+    @Param('id') id: string,
+    @Param('variantId') variantId: string,
+    @Body(new ZodBody(nutritionPayload)) body: z.infer<typeof nutritionPayload>,
+  ) {
+    await this.productCommands.declareNutrition(id, variantId, body);
+    return { id, variantId };
+  }
+
   @Put('products/:id/archive')
   async archiveProduct(@Param('id') id: string) {
     await this.productCommands.archive(id);
+    return { id };
+  }
+
+  @Put('products/:id/restore')
+  async restoreProduct(@Param('id') id: string) {
+    await this.productCommands.restore(id);
     return { id };
   }
 }

@@ -27,6 +27,8 @@ interface VariantRow {
   isDefault: boolean;
   isDiscontinued: boolean;
   position: number;
+  priceCents: number | null;
+  weightGrams: number | null;
   nutrition: { allergens: unknown } | null;
 }
 
@@ -50,6 +52,8 @@ function toVariant(row: VariantRow): VariantRecord {
     isDefault: row.isDefault,
     isDiscontinued: row.isDiscontinued,
     position: row.position,
+    priceCents: row.priceCents,
+    weightGrams: row.weightGrams,
     allergens:
       row.nutrition === null
         ? null
@@ -170,5 +174,33 @@ export class PrismaProductRepository extends ProductRepository {
 
   async setStatus(id: string, status: ProductStatus): Promise<void> {
     await this.prisma.product.update({ where: { id }, data: { status } });
+  }
+
+  async setKind(id: string, kind: ProductKind): Promise<void> {
+    await this.prisma.product.update({ where: { id }, data: { kind } });
+  }
+
+  async moveToCategory(id: string, categoryId: string): Promise<void> {
+    await this.prisma.product.update({ where: { id }, data: { categoryId } });
+  }
+
+  async setVariantPrice(
+    variantId: string,
+    priceCents: number | null,
+  ): Promise<void> {
+    await this.prisma.productVariant.update({
+      where: { id: variantId },
+      data: { priceCents },
+    });
+  }
+
+  async setVariantWeight(
+    variantId: string,
+    weightGrams: number | null,
+  ): Promise<void> {
+    await this.prisma.productVariant.update({
+      where: { id: variantId },
+      data: { weightGrams },
+    });
   }
 }

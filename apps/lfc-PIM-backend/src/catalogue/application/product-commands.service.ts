@@ -5,6 +5,7 @@ import {
   CategoryArchivedError,
   CategoryNotFoundError,
   ProductNotFoundError,
+  VariantNotFoundError,
 } from '../domain/errors/catalogue-errors.js';
 import { CategoryRepository } from '../domain/ports/category.repository.js';
 import { EditorialRepository } from '../domain/ports/editorial.repository.js';
@@ -139,6 +140,72 @@ export class ProductCommands {
     await this.products.rename(id, name, this.slugOf(name));
   }
 
+  async changeKind(id: string, kind: ProductKind): Promise<void> {
+    await this.requireProduct(id);
+    await this.products.setKind(id, kind);
+  }
+
+  /** Reclasse le produit sous une autre famille — refuse une famille archivée. */
+  async moveToCategory(id: string, categoryId: string): Promise<void> {
+    await this.requireProduct(id);
+    const category = await this.categories.findById(categoryId);
+    if (category === null) {
+      throw new CategoryNotFoundError(categoryId);
+    }
+    if (category.isArchived) {
+      throw new CategoryArchivedError(categoryId);
+    }
+    await this.products.moveToCategory(id, categoryId);
+  }
+
+  /** Prix canonique HT (centimes) d'une déclinaison ; `null` = dé-tarifer. */
+  async setVariantPrice(
+    productId: string,
+    variantId: string,
+    priceCents: number | null,
+  ): Promise<void> {
+    await this.requireVariant(productId, variantId);
+    await this.products.setVariantPrice(variantId, priceCents);
+  }
+
+  /** Poids net (grammes) d'une déclinaison ; `null` = effacer. */
+  async setVariantWeight(
+    productId: string,
+    variantId: string,
+    weightGrams: number | null,
+  ): Promise<void> {
+    await this.requireVariant(productId, variantId);
+    await this.products.setVariantWeight(variantId, weightGrams);
+  }
+
+  /**
+   * Met à jour la couche éditoriale (texte). Les médias suivent leur propre cycle
+   * (doc 01) et ne sont **pas** touchés ici — d'où la liste vide passée à `save`.
+   */
+  async updateEditorial(id: string, input: EditorialInput): Promise<void> {
+    await this.requireProduct(id);
+    await this.editorials.save(id, editorial(input), []);
+  }
+
+  /** (Re)déclare la fiche réglementaire d'une déclinaison (doc 03). */
+  async declareNutrition(
+    productId: string,
+    variantId: string,
+    input: {
+      allergens: readonly string[];
+      mayContain?: readonly string[] | undefined;
+      nutrition?: NutritionValues | undefined;
+    },
+  ): Promise<void> {
+    await this.requireVariant(productId, variantId);
+    const declaration = nutritionDeclaration(
+      input.allergens,
+      input.mayContain ?? [],
+      input.nutrition ?? {},
+    );
+    await this.nutrition.declare(variantId, declaration);
+  }
+
   async archive(id: string): Promise<void> {
     await this.requireProduct(id);
     await this.products.setStatus(id, 'archived');
@@ -158,6 +225,23 @@ export class ProductCommands {
   private async requireProduct(id: string): Promise<void> {
     if ((await this.products.findById(id)) === null) {
       throw new ProductNotFoundError(id);
+    }
+  }
+
+  /**
+   * Garantit que la déclinaison appartient bien au produit visé — sinon une
+   * requête forgée pourrait tarifer la variante d'un autre produit.
+   */
+  private async requireVariant(
+    productId: string,
+    variantId: string,
+  ): Promise<void> {
+    const product = await this.products.findById(productId);
+    if (product === null) {
+      throw new ProductNotFoundError(productId);
+    }
+    if (!product.variants.some((variant) => variant.id === variantId)) {
+      throw new VariantNotFoundError(productId, variantId);
     }
   }
 }
