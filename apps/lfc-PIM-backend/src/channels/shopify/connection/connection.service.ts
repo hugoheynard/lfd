@@ -63,10 +63,13 @@ export class ShopifyConnectionService {
 }
 
 /** Pourquoi on est encore en simulation — formulé à partir des deux mêmes signaux
- *  que la vue des réglages (jeton présent, intégration activée). */
+ *  que la vue des réglages (identifiants présents, intégration activée). */
 function dryRunReason(isEnabled: boolean, hasToken: boolean): string {
   if (!hasToken) {
-    return 'Mode simulation : aucun jeton Admin (SHOPIFY_ADMIN_TOKEN) fourni.';
+    return (
+      'Mode simulation : aucun identifiant Shopify fourni ' +
+      '(SHOPIFY_ADMIN_TOKEN, ou SHOPIFY_CLIENT_ID / SHOPIFY_CLIENT_SECRET).'
+    );
   }
   if (!isEnabled) {
     return "Mode simulation : l'intégration n'est pas activée dans les réglages.";

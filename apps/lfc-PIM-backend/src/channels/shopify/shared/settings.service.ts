@@ -14,7 +14,8 @@ export interface ShopifySettingsView {
   readonly shopDomain: string;
   readonly apiVersion: string;
   readonly isEnabled: boolean;
-  /** **Jamais** le jeton lui-même — seulement sa présence. */
+  /** Présence d'un moyen d'authentification (jeton legacy **ou** client credentials) —
+   *  **jamais** le secret lui-même. Nom historique conservé (contrat lu par le front). */
   readonly hasToken: boolean;
   /** `dry-run` tant que l'intégration n'est pas activée **et** approvisionnée. */
   readonly mode: ChannelMode;
@@ -40,15 +41,15 @@ export class ShopifySettingsService {
     });
 
     const isEnabled = row?.isEnabled ?? false;
-    const hasToken = this.config.hasShopifyToken();
+    const hasToken = this.config.hasShopifyCredentials();
 
     return {
       shopDomain: row?.shopDomain ?? '',
       apiVersion: row?.apiVersion ?? DEFAULT_API_VERSION,
       isEnabled,
       hasToken,
-      // Deux conditions, pas une : activer sans jeton ne doit pas faire croire
-      // que ça pousse pour de vrai.
+      // Deux conditions, pas une : activer sans identifiants ne doit pas faire
+      // croire que ça pousse pour de vrai.
       mode: isEnabled && hasToken ? 'live' : 'dry-run',
       updatedAt: row?.updatedAt.toISOString() ?? null,
     };

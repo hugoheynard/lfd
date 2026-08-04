@@ -13,8 +13,13 @@ import { ShopifyConnectionService } from './connection/connection.service.js';
 import { DryRunShopifyDriver, ShopifyDriver } from './products/driver.js';
 import { ShopifyProductsController } from './products/products.controller.js';
 import { ShopifyPushService } from './products/push.service.js';
+import { AppConfig } from '../../infra/config/app-config.js';
 import { ShopifyAdminClient } from './shared/admin-client.js';
 import { ShopifySettingsService } from './shared/settings.service.js';
+import {
+  SHOPIFY_CREDENTIALS_SOURCE,
+  ShopifyTokenProvider,
+} from './shared/token-provider.js';
 
 /**
  * Adaptateur de canal — il **dépend** du catalogue, jamais l'inverse.
@@ -41,6 +46,9 @@ import { ShopifySettingsService } from './shared/settings.service.js';
     { provide: ShopifyDriver, useClass: DryRunShopifyDriver },
     // Collections de TVA : transport réel + les deux passerelles (simulation / réel),
     // le service choisissant selon le mode des réglages.
+    // Le provider de jeton lit ses identifiants via le port étroit, aliasé sur AppConfig.
+    { provide: SHOPIFY_CREDENTIALS_SOURCE, useExisting: AppConfig },
+    ShopifyTokenProvider,
     ShopifyAdminClient,
     DryRunShopifyCollectionsGateway,
     LiveShopifyCollectionsGateway,

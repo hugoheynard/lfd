@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 
-import { AppConfig } from '../../../infra/config/app-config.js';
 import {
   ShopifyNotConfiguredError,
   ShopifyRejectedError,
@@ -11,6 +10,7 @@ import type {
   ShopifyCollection,
 } from './collection-types.js';
 import { ShopifySettingsService } from './settings.service.js';
+import { ShopifyTokenProvider } from './token-provider.js';
 
 /** Ce que confirme une vérification de connexion. */
 export interface ShopifyShopIdentity {
@@ -50,14 +50,15 @@ interface CollectionsPage {
  * Transport **réel** vers l'API Admin GraphQL de Shopify. Isolé ici pour la raison
  * annoncée par le port {@link ShopifyDriver} : c'est le seul endroit qui connaît la
  * forme des mutations et la version d'API. Le domaine de la boutique et la version
- * viennent des réglages (en base) ; le jeton vient de l'environnement (secret, jamais
- * en base). Sans domaine ni jeton, on refuse plutôt que d'émettre un appel bancal.
+ * viennent des réglages (en base) ; le jeton vient du {@link ShopifyTokenProvider}
+ * (secret d'environnement ou échange client credentials, jamais en base). Sans
+ * domaine ni jeton, on refuse plutôt que d'émettre un appel bancal.
  */
 @Injectable()
 export class ShopifyAdminClient {
   constructor(
     private readonly settings: ShopifySettingsService,
-    private readonly config: AppConfig,
+    private readonly tokens: ShopifyTokenProvider,
   ) {}
 
   /** Confirme que le couple (domaine, jeton) parle bien à une boutique. */
@@ -136,13 +137,15 @@ export class ShopifyAdminClient {
     query: string,
     variables: Record<string, unknown> = {},
   ): Promise<T> {
-    const endpoint = await this.endpoint();
-    const token = this.config.shopifyAdminToken();
-    if (token === null) {
+    const { shopDomain, apiVersion } = await this.settings.read();
+    const domain = shopDomain.trim();
+    if (domain === '') {
       throw new ShopifyNotConfiguredError(
-        'Jeton Admin Shopify absent (SHOPIFY_ADMIN_TOKEN).',
+        'Domaine de boutique manquant — renseignez-le dans les réglages.',
       );
     }
+    const token = await this.tokens.accessTokenFor(domain);
+    const endpoint = `https://${domain}/admin/api/${apiVersion}/graphql.json`;
 
     let response: Response;
     try {
@@ -174,16 +177,6 @@ export class ShopifyAdminClient {
       throw new ShopifyTransportError('Réponse Shopify sans données.');
     }
     return body.data;
-  }
-
-  private async endpoint(): Promise<string> {
-    const { shopDomain, apiVersion } = await this.settings.read();
-    if (shopDomain.trim() === '') {
-      throw new ShopifyNotConfiguredError(
-        'Domaine de boutique manquant — renseignez-le dans les réglages.',
-      );
-    }
-    return `https://${shopDomain}/admin/api/${apiVersion}/graphql.json`;
   }
 }
 

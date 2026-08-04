@@ -1,5 +1,13 @@
 import { Injectable } from '@nestjs/common';
 
+/** Identifiants d'une app **Dev Dashboard** — échangés contre un jeton d'accès
+ *  (client credentials grant). Les deux vont ensemble : l'un sans l'autre ne vaut
+ *  rien, donc on ne les expose qu'en paire ou pas du tout. */
+export interface ShopifyOAuthCredentials {
+  readonly clientId: string;
+  readonly clientSecret: string;
+}
+
 /**
  * Passerelle **unique** vers l'environnement.
  *
@@ -16,6 +24,8 @@ export class AppConfig {
   private readonly auth0AudienceValue: string;
   private readonly portValue: number;
   private readonly shopifyToken: string | null;
+  private readonly shopifyClientIdValue: string | null;
+  private readonly shopifyClientSecretValue: string | null;
 
   constructor() {
     this.database = required('DATABASE_URL');
@@ -23,6 +33,8 @@ export class AppConfig {
     this.auth0AudienceValue = required('AUTH0_AUDIENCE');
     this.portValue = optionalPort('PORT', 3100);
     this.shopifyToken = optional('SHOPIFY_ADMIN_TOKEN');
+    this.shopifyClientIdValue = optional('SHOPIFY_CLIENT_ID');
+    this.shopifyClientSecretValue = optional('SHOPIFY_CLIENT_SECRET');
   }
 
   /** URL Postgres (Docker en dev, Neon en prod — ADR-09). */
@@ -57,9 +69,34 @@ export class AppConfig {
     return this.shopifyToken;
   }
 
-  /** L'intégration ne peut fonctionner que si le secret est fourni. */
-  hasShopifyToken(): boolean {
-    return this.shopifyToken !== null;
+  /**
+   * Identifiants d'app **Dev Dashboard** — l'unique manière d'obtenir un jeton
+   * depuis le 01/01/2026 (plus aucun token statique n'y est affiché). Échangés
+   * server-to-server via le *client credentials grant*. Deux secrets, jamais en base.
+   * `null` tant que l'un des deux manque : une moitié d'identifiant est inutile.
+   */
+  shopifyOAuthCredentials(): ShopifyOAuthCredentials | null {
+    if (
+      this.shopifyClientIdValue === null ||
+      this.shopifyClientSecretValue === null
+    ) {
+      return null;
+    }
+    return {
+      clientId: this.shopifyClientIdValue,
+      clientSecret: this.shopifyClientSecretValue,
+    };
+  }
+
+  /**
+   * L'intégration peut passer en mode réel dès qu'**un** chemin d'authentification
+   * est approvisionné : soit le jeton legacy statique, soit la paire client
+   * credentials. L'écran n'affiche que cette présence, jamais les secrets eux-mêmes.
+   */
+  hasShopifyCredentials(): boolean {
+    return (
+      this.shopifyToken !== null || this.shopifyOAuthCredentials() !== null
+    );
   }
 }
 
