@@ -1,13 +1,39 @@
 <p class="panel-desc">
-  Hérités de la famille. L'override par produit arrive avec le contexte commerce.
+  Canaux de vente et TVA sont <strong>hérités de la famille</strong> du produit.
+  L'override par produit arrive avec le contexte commerce.
 </p>
-<fold-card class="stack">
-  @if (tva(); as t) {
+@if (inheritance(); as inh) {
+  <fold-card class="stack">
+    <p class="inherit-from">
+      Hérité de la famille <strong>{{ inh.categoryName }}</strong>
+    </p>
     <dl class="tva-list">
-      <div><dt>À emporter</dt><dd>{{ t.emporter }}</dd></div>
-      <div><dt>Sur place</dt><dd>{{ t.surPlace }}</dd></div>
+      <div>
+        <dt>À emporter</dt>
+        <dd>
+          @if (inh.emporter.boutiques.length > 0) {
+            {{ inh.emporter.boutiques.join(' · ') }} — TVA
+            <strong>{{ inh.emporter.tva }}</strong>
+          } @else {
+            <span class="muted">non proposé</span>
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>Sur place</dt>
+        <dd>
+          @if (inh.surPlace.boutiques.length > 0) {
+            {{ inh.surPlace.boutiques.join(' · ') }} — TVA
+            <strong>{{ inh.surPlace.tva }}</strong>
+          } @else {
+            <span class="muted">non proposé</span>
+          }
+        </dd>
+      </div>
     </dl>
-  } @else {
-    <p class="muted">Choisissez une famille pour voir la TVA héritée.</p>
-  }
-</fold-card>
+  </fold-card>
+} @else {
+  <fold-card>
+    <p class="muted">Choisissez une famille pour voir l'héritage.</p>
+  </fold-card>
+}

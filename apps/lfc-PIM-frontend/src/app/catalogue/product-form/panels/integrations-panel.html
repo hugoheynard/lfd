@@ -1,0 +1,29 @@
+<p class="panel-desc">
+  Champs spécifiques à chaque canal de diffusion. Un sous-onglet par intégration.
+</p>
+
+<fold-nav-layout placement="side">
+  <fold-tabs
+    tabNav
+    direction="vertical"
+    activeStyle="underline"
+    background="transparent"
+    [tabs]="subTabs"
+    [(activeKey)]="activeSub"
+    #sub="foldTabs"
+  />
+
+  <fold-tab-panel [tabs]="sub" key="b2b">
+    <fold-empty-state
+      title="B2B"
+      subtitle="Les champs spécifiques à la boutique B2B seront ajoutés ici."
+    />
+  </fold-tab-panel>
+
+  <fold-tab-panel [tabs]="sub" key="shopify">
+    <fold-empty-state
+      title="Shopify"
+      subtitle="Les champs spécifiques à Shopify (handle, tags, statut de sync…) seront ajoutés ici."
+    />
+  </fold-tab-panel>
+</fold-nav-layout>

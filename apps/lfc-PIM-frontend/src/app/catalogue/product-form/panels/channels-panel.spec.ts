@@ -4,21 +4,23 @@ import { describe, expect, it } from 'vitest';
 import { ChannelsPanel } from './channels-panel';
 
 describe('ChannelsPanel', () => {
-  it('affiche la TVA héritée quand fournie', () => {
+  it('rend l’héritage par famille (mode + boutiques + TVA)', () => {
     const fixture = TestBed.createComponent(ChannelsPanel);
-    fixture.componentRef.setInput('tva', {
-      emporter: 'Réduit · 5,5 %',
-      surPlace: 'Intermédiaire · 10 %',
+    fixture.componentRef.setInput('inheritance', {
+      categoryName: 'Viennoiseries',
+      emporter: { boutiques: ['Village', 'Ardroit'], tva: 'Réduit · 5,5 %' },
+      surPlace: { boutiques: ['Village'], tva: 'Intermédiaire · 10 %' },
     });
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Viennoiseries');
     expect(text).toContain('Réduit · 5,5 %');
-    expect(text).toContain('Intermédiaire · 10 %');
+    expect(text).toContain('Village · Ardroit');
   });
 
-  it('invite à choisir une famille sans TVA', () => {
+  it('invite à choisir une famille sans héritage', () => {
     const fixture = TestBed.createComponent(ChannelsPanel);
-    fixture.componentRef.setInput('tva', null);
+    fixture.componentRef.setInput('inheritance', null);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Choisissez une famille');

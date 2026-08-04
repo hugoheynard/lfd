@@ -65,7 +65,7 @@
       </fold-tab-panel>
 
       <fold-tab-panel [tabs]="ref" key="canaux">
-        <app-channels-panel [tva]="categoryTva()" />
+        <app-channels-panel [inheritance]="channelsInheritance()" />
       </fold-tab-panel>
 
       <fold-tab-panel [tabs]="ref" key="fiche">
@@ -94,6 +94,10 @@
 
       <fold-tab-panel [tabs]="ref" key="visuels">
         <app-visuals-panel [(media)]="media" />
+      </fold-tab-panel>
+
+      <fold-tab-panel [tabs]="ref" key="integrations">
+        <app-integrations-panel />
       </fold-tab-panel>
     </fold-nav-layout>
 

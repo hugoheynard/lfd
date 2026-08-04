@@ -20,7 +20,7 @@ import {
   type FoldTabItem,
 } from 'fold-ng';
 
-import { formatPercent } from '../../data/channels';
+import { boutiquesWith, formatPercent } from '../../data/channels';
 import type {
   AllergenEntry,
   AllergenScope,
@@ -35,9 +35,13 @@ import {
   type EditorialFields,
   type NutritionValues,
 } from '../product-http-api';
-import { ChannelsPanel } from './panels/channels-panel';
+import {
+  ChannelsPanel,
+  type CategoryInheritanceView,
+} from './panels/channels-panel';
 import { CommunicationPanel } from './panels/communication-panel';
 import { IdentityPanel, type KindOption } from './panels/identity-panel';
+import { IntegrationsPanel } from './panels/integrations-panel';
 import { PricingPanel } from './panels/pricing-panel';
 import {
   RegulatoryPanel,
@@ -96,6 +100,7 @@ const EMPTY_EDITORIAL: EditorialFields = {
     RegulatoryPanel,
     CommunicationPanel,
     VisualsPanel,
+    IntegrationsPanel,
   ],
   templateUrl: './product-form-page.html',
   styleUrl: './product-form-page.scss',
@@ -115,6 +120,7 @@ export class ProductFormPage {
     { key: 'fiche', label: 'Allergènes & nutrition', icon: 'shield' },
     { key: 'communication', label: 'Communication', icon: 'edit' },
     { key: 'visuels', label: 'Visuels', icon: 'eye' },
+    { key: 'integrations', label: 'Intégrations', icon: 'shopify' },
   ];
   protected readonly activeTab = signal<string>('identite');
 
@@ -165,22 +171,32 @@ export class ProductFormPage {
     this.categories().find((c) => c.id === this.categoryId()),
   );
 
-  protected readonly categoryTva = computed(() => {
-    const category = this.selectedCategory();
-    if (category === undefined) {
-      return null;
-    }
-    const label = (id: string): string => {
-      const regime = this.regimeById().get(id);
-      return regime === undefined
-        ? '—'
-        : `${regime.name} · ${formatPercent(regime.percent)}`;
-    };
-    return {
-      emporter: label(category.emporterTvaId),
-      surPlace: label(category.surPlaceTvaId),
-    };
-  });
+  /** Héritage complet de la famille : boutiques + TVA par mode (lecture seule). */
+  protected readonly channelsInheritance = computed<CategoryInheritanceView | null>(
+    () => {
+      const category = this.selectedCategory();
+      if (category === undefined) {
+        return null;
+      }
+      const tva = (id: string): string => {
+        const regime = this.regimeById().get(id);
+        return regime === undefined
+          ? '—'
+          : `${regime.name} · ${formatPercent(regime.percent)}`;
+      };
+      return {
+        categoryName: category.name.fr,
+        emporter: {
+          boutiques: boutiquesWith(category.channelPreset, 'emporter'),
+          tva: tva(category.emporterTvaId),
+        },
+        surPlace: {
+          boutiques: boutiquesWith(category.channelPreset, 'surPlace'),
+          tva: tva(category.surPlaceTvaId),
+        },
+      };
+    },
+  );
 
   protected readonly groups = computed<AllergenGroup[]>(() => {
     const byLabel = new Map<string, AllergenEntry[]>();

@@ -96,6 +96,12 @@
   }
 }
 
+.inherit-from {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--fold-color-text-muted, #71717a);
+}
+
 .tva-list {
   margin: 0;
   display: grid;
