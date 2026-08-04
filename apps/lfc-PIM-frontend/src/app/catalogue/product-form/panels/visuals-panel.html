@@ -4,11 +4,11 @@
     La persistance des visuels n'est pas encore branchée (stockage média à venir).
   </fold-callout>
   <div class="media">
-    @for (slot of media(); track $index) {
+    @for (slot of store.media(); track $index) {
       <div class="media-row">
         <fold-listbox
           [value]="slot.role"
-          (selectionChange)="set($index, 'role', $event)"
+          (selectionChange)="store.setMedia($index, 'role', $event)"
         >
           @for (role of roles; track role.value) {
             <fold-option [value]="role.value">{{ role.label }}</fold-option>
@@ -17,21 +17,21 @@
         <fold-input
           placeholder="https://…"
           [value]="slot.url"
-          (valueChange)="set($index, 'url', $event)"
+          (valueChange)="store.setMedia($index, 'url', $event)"
         />
         <button
           foldButton
           emphasis="soft"
           intent="neutral"
           size="sm"
-          (click)="remove($index)"
+          (click)="store.removeMedia($index)"
         >
           Retirer
         </button>
       </div>
     }
   </div>
-  <button foldButton emphasis="outline" size="sm" (click)="add()">
+  <button foldButton emphasis="outline" size="sm" (click)="store.addMedia()">
     Ajouter un visuel
   </button>
 </fold-card>

@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  model,
-  output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import {
   FoldButtonComponent,
@@ -14,15 +8,9 @@ import {
   FoldOptionComponent,
 } from 'fold-ng';
 
-import type { Category, ProductKind } from '../../../data/models';
+import { ProductFormStore } from '../product-form-store';
 
-export interface KindOption {
-  readonly value: ProductKind;
-  readonly label: string;
-}
-
-/** Panneau Identité — nom, nature, famille, référence. Présentational : l'état
- *  vit dans le parent via des `model()` ; le save remonte par l'output. */
+/** Panneau Identité — nom, nature, famille, référence. Lit/écrit le store injecté. */
 @Component({
   selector: 'app-identity-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,27 +25,5 @@ export interface KindOption {
   styleUrl: './panel.scss',
 })
 export class IdentityPanel {
-  readonly name = model.required<string>();
-  readonly kind = model.required<ProductKind>();
-  readonly categoryId = model.required<string>();
-  readonly sku = model.required<string>();
-
-  readonly kinds = input.required<readonly KindOption[]>();
-  readonly categories = input.required<readonly Category[]>();
-  readonly isEdit = input(false);
-  readonly saveable = input(false);
-  readonly status = input('');
-  readonly save = output<void>();
-
-  protected setKind(value: string): void {
-    if (value === 'daily' || value === 'made_to_order' || value === 'resale') {
-      this.kind.set(value);
-    }
-  }
-
-  protected setCategory(value: string): void {
-    if (value !== '') {
-      this.categoryId.set(value);
-    }
-  }
+  protected readonly store = inject(ProductFormStore);
 }

@@ -4,8 +4,8 @@
     @for (field of fields; track field.key) {
       <fold-input
         [label]="field.label"
-        [value]="value(field.key)"
-        (valueChange)="set(field.key, $event)"
+        [value]="store.editorial()[field.key]"
+        (valueChange)="store.setEditorial(field.key, $event)"
       />
     }
   </div>
@@ -14,8 +14,8 @@
     <textarea
       class="native-input native-textarea"
       rows="4"
-      [value]="value('descriptionLong')"
-      (input)="set('descriptionLong', text($event))"
+      [value]="store.editorial().descriptionLong"
+      (input)="store.setEditorial('descriptionLong', textValue($event))"
     ></textarea>
   </label>
   <label class="field">
@@ -23,14 +23,16 @@
     <textarea
       class="native-input native-textarea"
       rows="3"
-      [value]="value('story')"
-      (input)="set('story', text($event))"
+      [value]="store.editorial().story"
+      (input)="store.setEditorial('story', textValue($event))"
     ></textarea>
   </label>
-  @if (saveable()) {
+  @if (store.isEdit()) {
     <div class="section-footer">
-      <button foldButton size="sm" (click)="save.emit()">Enregistrer</button>
-      <span class="section-status">{{ status() }}</span>
+      <button foldButton size="sm" (click)="store.saveCommunication()">
+        Enregistrer
+      </button>
+      <span class="section-status">{{ store.statusText('communication') }}</span>
     </div>
   }
 </fold-card>

@@ -1,12 +1,9 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  model,
-  output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { FoldButtonComponent, FoldCardComponent } from 'fold-ng';
+
+import { ProductFormStore } from '../product-form-store';
+import { numberValue } from './dom';
 
 /** Panneau Tarif & logistique — prix canonique HT + poids de l'unité vendue. */
 @Component({
@@ -17,19 +14,6 @@ import { FoldButtonComponent, FoldCardComponent } from 'fold-ng';
   styleUrl: './panel.scss',
 })
 export class PricingPanel {
-  readonly priceEur = model.required<number | null>();
-  readonly weightGrams = model.required<number | null>();
-
-  readonly saveable = input(false);
-  readonly status = input('');
-  readonly save = output<void>();
-
-  protected numberValue(event: Event): number | null {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement) || target.value.trim() === '') {
-      return null;
-    }
-    const parsed = Number(target.value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
+  protected readonly store = inject(ProductFormStore);
+  protected readonly numberValue = numberValue;
 }

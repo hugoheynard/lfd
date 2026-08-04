@@ -2,7 +2,7 @@
   Canaux de vente et TVA sont <strong>hérités de la famille</strong> du produit.
   L'override par produit arrive avec le contexte commerce.
 </p>
-@if (inheritance(); as inh) {
+@if (store.channelsInheritance(); as inh) {
   <fold-card class="stack">
     <p class="inherit-from">
       Hérité de la famille <strong>{{ inh.categoryName }}</strong>

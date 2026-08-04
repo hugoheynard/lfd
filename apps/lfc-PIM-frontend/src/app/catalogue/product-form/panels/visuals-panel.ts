@@ -1,8 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  model,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import {
   FoldButtonComponent,
@@ -13,11 +9,7 @@ import {
   FoldOptionComponent,
 } from 'fold-ng';
 
-export interface MediaSlot {
-  role: string;
-  url: string;
-  alt?: string;
-}
+import { ProductFormStore } from '../product-form-store';
 
 const MEDIA_ROLES: readonly { value: string; label: string }[] = [
   { value: 'hero', label: 'Principale' },
@@ -27,7 +19,7 @@ const MEDIA_ROLES: readonly { value: string; label: string }[] = [
   { value: 'print', label: 'Impression' },
 ];
 
-/** Panneau Visuels — la persistance média n'est pas encore branchée (stockage à venir). */
+/** Panneau Visuels — la persistance média n'est pas encore branchée. */
 @Component({
   selector: 'app-visuals-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,28 +35,6 @@ const MEDIA_ROLES: readonly { value: string; label: string }[] = [
   styleUrl: './panel.scss',
 })
 export class VisualsPanel {
-  readonly media = model.required<MediaSlot[]>();
-
+  protected readonly store = inject(ProductFormStore);
   protected readonly roles = MEDIA_ROLES;
-
-  protected add(): void {
-    this.media.update((current) => [
-      ...current,
-      { role: current.length === 0 ? 'hero' : 'gallery', url: '' },
-    ]);
-  }
-
-  protected remove(index: number): void {
-    this.media.update((current) =>
-      current.filter((_, position) => position !== index),
-    );
-  }
-
-  protected set(index: number, key: 'role' | 'url' | 'alt', value: string): void {
-    this.media.update((current) =>
-      current.map((slot, position) =>
-        position === index ? { ...slot, [key]: value } : slot,
-      ),
-    );
-  }
 }

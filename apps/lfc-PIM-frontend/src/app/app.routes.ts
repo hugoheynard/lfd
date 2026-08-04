@@ -1,5 +1,7 @@
 import { type Routes } from '@angular/router';
 
+import { pendingChangesGuard } from './catalogue/product-form/pending-changes.guard';
+
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'produits' },
   {
@@ -69,6 +71,7 @@ export const routes: Routes = [
   {
     path: 'produits/nouveau',
     title: 'Nouveau produit — LFC PIM',
+    canDeactivate: [pendingChangesGuard],
     loadComponent: () =>
       import('./catalogue/product-form/product-form-page').then(
         (m) => m.ProductFormPage,
@@ -77,6 +80,7 @@ export const routes: Routes = [
   {
     path: 'produits/:id',
     title: 'Éditer un produit — LFC PIM',
+    canDeactivate: [pendingChangesGuard],
     loadComponent: () =>
       import('./catalogue/product-form/product-form-page').then(
         (m) => m.ProductFormPage,

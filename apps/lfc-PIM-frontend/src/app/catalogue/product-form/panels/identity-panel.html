@@ -4,39 +4,43 @@
     <fold-input
       label="Nom du produit"
       required
-      [value]="name()"
-      (valueChange)="name.set($event)"
+      [value]="store.name()"
+      (valueChange)="store.name.set($event)"
     />
     <fold-listbox
       label="Nature"
-      [value]="kind()"
-      (selectionChange)="setKind($event)"
+      [value]="store.kind()"
+      (selectionChange)="store.setKind($event)"
     >
-      @for (option of kinds(); track option.value) {
+      @for (option of store.kinds; track option.value) {
         <fold-option [value]="option.value">{{ option.label }}</fold-option>
       }
     </fold-listbox>
     <fold-listbox
       label="Famille"
-      [value]="categoryId()"
-      (selectionChange)="setCategory($event)"
+      [value]="store.categoryId()"
+      (selectionChange)="store.setCategory($event)"
     >
-      @for (category of categories(); track category.id) {
+      @for (category of store.categories(); track category.id) {
         <fold-option [value]="category.id">{{ category.name.fr }}</fold-option>
       }
     </fold-listbox>
     <fold-input
       label="Référence — SKU"
-      [hint]="isEdit() ? 'Figée après création.' : 'Calculée si laissée vide.'"
-      [value]="sku()"
-      [disabled]="isEdit()"
-      (valueChange)="sku.set($event)"
+      [hint]="
+        store.isEdit() ? 'Figée après création.' : 'Calculée si laissée vide.'
+      "
+      [value]="store.sku()"
+      [disabled]="store.isEdit()"
+      (valueChange)="store.sku.set($event)"
     />
   </div>
-  @if (saveable()) {
+  @if (store.isEdit()) {
     <div class="section-footer">
-      <button foldButton size="sm" (click)="save.emit()">Enregistrer</button>
-      <span class="section-status">{{ status() }}</span>
+      <button foldButton size="sm" (click)="store.saveIdentity()">
+        Enregistrer
+      </button>
+      <span class="section-status">{{ store.statusText('identite') }}</span>
     </div>
   }
 </fold-card>

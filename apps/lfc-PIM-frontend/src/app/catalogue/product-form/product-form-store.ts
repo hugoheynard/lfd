@@ -1,0 +1,502 @@
+import { Injectable, computed, inject, signal } from '@angular/core';
+
+import { boutiquesWith, formatPercent } from '../../data/channels';
+import type {
+  AllergenEntry,
+  AllergenScope,
+  Category,
+  ProductKind,
+  TvaRegime,
+} from '../../data/models';
+import { CatalogueApi } from '../catalogue-api';
+import { ReferenceApi } from '../reference-api';
+import {
+  ProductHttpApi,
+  type EditorialFields,
+  type NutritionValues,
+} from '../product-http-api';
+
+// ── Types de vue partagés par la page et les panneaux ──────────────────────
+
+export interface KindOption {
+  readonly value: ProductKind;
+  readonly label: string;
+}
+
+export interface AllergenGroup {
+  readonly incoLabel: string;
+  readonly entries: readonly AllergenEntry[];
+}
+
+export interface ModeInheritance {
+  readonly boutiques: readonly string[];
+  readonly tva: string;
+}
+
+export interface CategoryInheritanceView {
+  readonly categoryName: string;
+  readonly emporter: ModeInheritance;
+  readonly surPlace: ModeInheritance;
+}
+
+export interface MediaSlot {
+  role: string;
+  url: string;
+  alt?: string;
+}
+
+/** Les sections **enregistrables** — la seule source des clés de section. */
+export type FormSection = 'identite' | 'tarif' | 'fiche' | 'communication';
+
+export interface SectionRef {
+  readonly key: FormSection;
+  readonly label: string;
+}
+
+type SectionStatus = 'saving' | 'saved' | 'error';
+
+const KINDS: readonly KindOption[] = [
+  { value: 'daily', label: 'Frais du jour' },
+  { value: 'made_to_order', label: 'Sur commande' },
+  { value: 'resale', label: 'Revente' },
+];
+
+const SAVEABLE: readonly SectionRef[] = [
+  { key: 'identite', label: 'Identité' },
+  { key: 'tarif', label: 'Tarif & logistique' },
+  { key: 'fiche', label: 'Allergènes & nutrition' },
+  { key: 'communication', label: 'Communication' },
+];
+
+const EMPTY_NUTRITION: NutritionValues = {
+  energyKcal: null,
+  carbsG: null,
+  fatG: null,
+  proteinG: null,
+  glycemicIndex: null,
+};
+
+const EMPTY_EDITORIAL: EditorialFields = {
+  descriptionShort: '',
+  descriptionLong: '',
+  story: '',
+  pairing: '',
+  brand: '',
+  seoTitle: '',
+  seoDescription: '',
+};
+
+/**
+ * Store du formulaire produit — **fourni au niveau de la page** (une instance
+ * par formulaire) et injecté par tous les panneaux. Détient l'état, les appels
+ * réseau et la logique (chargement, hydratation, save par section, dirty). La
+ * page ne garde que la coquille (routing, guard, shell) ; les panneaux ne font
+ * que rendre leur tranche. Aucun routing ici — c'est le rôle de la page.
+ */
+@Injectable()
+export class ProductFormStore {
+  private readonly products = inject(ProductHttpApi);
+  private readonly api = inject(CatalogueApi);
+  private readonly reference = inject(ReferenceApi);
+
+  readonly kinds = KINDS;
+
+  // État de chargement / mode
+  readonly isEdit = signal(false);
+  readonly loading = signal(true);
+  readonly notFound = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly busy = signal(false);
+
+  // Référentiels
+  readonly categories = signal<Category[]>([]);
+  readonly regimes = signal<TvaRegime[]>([]);
+  readonly entries = signal<AllergenEntry[]>([]);
+  readonly provisional = signal(false);
+  readonly scope = signal<AllergenScope>('eu');
+
+  // Champs éditables
+  readonly name = signal('');
+  readonly kind = signal<ProductKind>('daily');
+  readonly categoryId = signal('');
+  readonly sku = signal('');
+  readonly priceEur = signal<number | null>(null);
+  readonly weightGrams = signal<number | null>(null);
+  readonly selected = signal<string[]>([]);
+  readonly declaresNone = signal(false);
+  readonly nutrition = signal<NutritionValues>(EMPTY_NUTRITION);
+  readonly editorial = signal<EditorialFields>(EMPTY_EDITORIAL);
+  readonly media = signal<MediaSlot[]>([]);
+
+  private readonly productId = signal('');
+  private readonly variantId = signal('');
+  private readonly statusMap = signal<
+    Partial<Record<FormSection, SectionStatus>>
+  >({});
+  private readonly baseline = signal<Partial<Record<FormSection, string>>>({});
+
+  readonly pageTitle = computed(() => {
+    if (!this.isEdit()) {
+      return 'Nouveau produit';
+    }
+    const name = this.name().trim();
+    return name === '' ? 'Éditer le produit' : `Éditer le produit — ${name}`;
+  });
+
+  private readonly regimeById = computed(
+    () => new Map(this.regimes().map((r) => [r.id, r])),
+  );
+
+  private readonly selectedCategory = computed<Category | undefined>(() =>
+    this.categories().find((c) => c.id === this.categoryId()),
+  );
+
+  readonly channelsInheritance = computed<CategoryInheritanceView | null>(() => {
+    const category = this.selectedCategory();
+    if (category === undefined) {
+      return null;
+    }
+    const tva = (id: string): string => {
+      const regime = this.regimeById().get(id);
+      return regime === undefined
+        ? '—'
+        : `${regime.name} · ${formatPercent(regime.percent)}`;
+    };
+    return {
+      categoryName: category.name.fr,
+      emporter: {
+        boutiques: boutiquesWith(category.channelPreset, 'emporter'),
+        tva: tva(category.emporterTvaId),
+      },
+      surPlace: {
+        boutiques: boutiquesWith(category.channelPreset, 'surPlace'),
+        tva: tva(category.surPlaceTvaId),
+      },
+    };
+  });
+
+  readonly groups = computed<AllergenGroup[]>(() => {
+    const byLabel = new Map<string, AllergenEntry[]>();
+    for (const entry of this.entries()) {
+      const key = entry.incoLabel ?? 'Hors obligation UE';
+      const bucket = byLabel.get(key);
+      if (bucket === undefined) {
+        byLabel.set(key, [entry]);
+      } else {
+        bucket.push(entry);
+      }
+    }
+    return [...byLabel.entries()].map(([incoLabel, group]) => ({
+      incoLabel,
+      entries: group,
+    }));
+  });
+
+  readonly dirtySections = computed<SectionRef[]>(() => {
+    if (!this.isEdit()) {
+      return [];
+    }
+    const base = this.baseline();
+    return SAVEABLE.filter(
+      (section) =>
+        base[section.key] !== undefined &&
+        this.snapshot(section.key) !== base[section.key],
+    );
+  });
+
+  readonly dirtyLabel = computed(() =>
+    this.dirtySections()
+      .map((section) => section.label)
+      .join(', '),
+  );
+
+  statusText(section: FormSection): string {
+    switch (this.statusMap()[section]) {
+      case 'saving':
+        return 'Enregistrement…';
+      case 'saved':
+        return 'Enregistré ✓';
+      case 'error':
+        return 'Échec';
+      default:
+        return '';
+    }
+  }
+
+  isValid(): boolean {
+    return this.name().trim() !== '' && this.categoryId() !== '';
+  }
+
+  // ── Mutations d'état avec un peu de logique ──────────────────────────────
+
+  setKind(value: string): void {
+    if (value === 'daily' || value === 'made_to_order' || value === 'resale') {
+      this.kind.set(value);
+    }
+  }
+
+  setCategory(value: string): void {
+    if (value !== '') {
+      this.categoryId.set(value);
+    }
+  }
+
+  setEditorial(key: keyof EditorialFields, value: string): void {
+    this.editorial.update((current) => ({ ...current, [key]: value }));
+  }
+
+  setNutrition(key: keyof NutritionValues, value: number | null): void {
+    this.nutrition.update((current) => ({ ...current, [key]: value }));
+  }
+
+  toggleAllergen(code: string, on: boolean): void {
+    this.selected.update((current) =>
+      on ? [...current, code] : current.filter((entry) => entry !== code),
+    );
+  }
+
+  declareNoAllergen(on: boolean): void {
+    this.declaresNone.set(on);
+    if (on) {
+      this.selected.set([]);
+    }
+  }
+
+  addMedia(): void {
+    this.media.update((current) => [
+      ...current,
+      { role: current.length === 0 ? 'hero' : 'gallery', url: '' },
+    ]);
+  }
+
+  removeMedia(index: number): void {
+    this.media.update((current) =>
+      current.filter((_, position) => position !== index),
+    );
+  }
+
+  setMedia(index: number, key: 'role' | 'url' | 'alt', value: string): void {
+    this.media.update((current) =>
+      current.map((slot, position) =>
+        position === index ? { ...slot, [key]: value } : slot,
+      ),
+    );
+  }
+
+  // ── Chargement / mode ────────────────────────────────────────────────────
+
+  async init(id: string | null): Promise<void> {
+    this.isEdit.set(id !== null);
+    this.productId.set(id ?? '');
+    this.loading.set(true);
+    try {
+      const [categories, regimes] = await Promise.all([
+        this.api.listCategories(),
+        this.api.listTvaRegimes(),
+      ]);
+      const active = categories.filter((category) => !category.isArchived);
+      this.categories.set(active);
+      this.regimes.set(regimes);
+      await this.loadReference('eu');
+      if (id === null) {
+        const first = active[0];
+        if (first !== undefined) {
+          this.categoryId.set(first.id);
+        }
+        return;
+      }
+      await this.hydrate(id);
+    } catch (caught) {
+      this.error.set(messageOf(caught));
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async changeScope(scope: AllergenScope): Promise<void> {
+    this.scope.set(scope);
+    await this.loadReference(scope);
+  }
+
+  // ── Create : un submit ; renvoie l'id créé (la page navigue) ─────────────
+
+  async submit(): Promise<string | null> {
+    if (!this.isValid()) {
+      return null;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      const sku = this.sku().trim();
+      const price = this.priceEur();
+      const weight = this.weightGrams();
+      const description = this.editorial().descriptionShort.trim();
+      const declares = this.declaresNone() || this.selected().length > 0;
+      const created = await this.api.createProduct({
+        nameFr: this.name().trim(),
+        kind: this.kind(),
+        categoryId: this.categoryId(),
+        ...(sku === '' ? {} : { sku }),
+        ...(declares ? { allergens: this.selected() } : {}),
+        ...(price === null ? {} : { priceEur: price }),
+        ...(weight === null ? {} : { weightGrams: weight }),
+        ...(description === '' ? {} : { descriptionFr: description }),
+      });
+      return created.id;
+    } catch (caught) {
+      this.error.set(messageOf(caught));
+      return null;
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  // ── Edit : un save par section ───────────────────────────────────────────
+
+  saveIdentity(): Promise<void> {
+    if (!this.isValid()) {
+      return Promise.resolve();
+    }
+    return this.save('identite', () =>
+      this.products.saveIdentity(this.productId(), {
+        nameFr: this.name().trim(),
+        kind: this.kind(),
+        categoryId: this.categoryId(),
+      }),
+    );
+  }
+
+  savePricing(): Promise<void> {
+    const price = this.priceEur();
+    const weight = this.weightGrams();
+    return this.save('tarif', () =>
+      this.products.savePricing(this.productId(), this.variantId(), {
+        priceCents: price === null ? null : Math.round(price * 100),
+        weightGrams: weight === null ? null : Math.round(weight),
+      }),
+    );
+  }
+
+  saveFiche(): Promise<void> {
+    return this.save('fiche', () =>
+      this.products.saveNutrition(this.productId(), this.variantId(), {
+        allergens: this.declaresNone() ? [] : this.selected(),
+        nutrition: this.nutrition(),
+      }),
+    );
+  }
+
+  saveCommunication(): Promise<void> {
+    return this.save('communication', () =>
+      this.products.saveEditorial(this.productId(), this.editorial()),
+    );
+  }
+
+  /** Enregistre chaque section modifiée (pour « sauvegarder puis quitter »). */
+  async saveDirty(): Promise<void> {
+    for (const section of this.dirtySections()) {
+      await this.saveSection(section.key);
+    }
+  }
+
+  private saveSection(key: FormSection): Promise<void> {
+    switch (key) {
+      case 'identite':
+        return this.saveIdentity();
+      case 'tarif':
+        return this.savePricing();
+      case 'fiche':
+        return this.saveFiche();
+      case 'communication':
+        return this.saveCommunication();
+    }
+  }
+
+  private async save(
+    section: FormSection,
+    action: () => Promise<void>,
+  ): Promise<void> {
+    this.statusMap.update((current) => ({ ...current, [section]: 'saving' }));
+    this.error.set(null);
+    try {
+      await action();
+      this.statusMap.update((current) => ({ ...current, [section]: 'saved' }));
+      this.baseline.update((base) => ({
+        ...base,
+        [section]: this.snapshot(section),
+      }));
+    } catch (caught) {
+      this.statusMap.update((current) => ({ ...current, [section]: 'error' }));
+      this.error.set(messageOf(caught));
+    }
+  }
+
+  private snapshot(section: FormSection): string {
+    switch (section) {
+      case 'identite':
+        return JSON.stringify([
+          this.name().trim(),
+          this.kind(),
+          this.categoryId(),
+        ]);
+      case 'tarif':
+        return JSON.stringify([this.priceEur(), this.weightGrams()]);
+      case 'fiche':
+        return JSON.stringify([
+          this.declaresNone(),
+          [...this.selected()].sort(),
+          this.nutrition(),
+        ]);
+      case 'communication':
+        return JSON.stringify(this.editorial());
+    }
+  }
+
+  private captureBaseline(): void {
+    const base: Record<string, string> = {};
+    for (const section of SAVEABLE) {
+      base[section.key] = this.snapshot(section.key);
+    }
+    this.baseline.set(base);
+  }
+
+  private async hydrate(id: string): Promise<void> {
+    const detail = await this.products.getDetail(id);
+    if (detail === null) {
+      this.notFound.set(true);
+      return;
+    }
+    const product = detail.product;
+    this.sku.set(product.sku);
+    this.name.set(product.name.fr);
+    this.kind.set(product.kind);
+    this.categoryId.set(product.categoryId);
+    this.priceEur.set(product.priceEur ?? null);
+    this.weightGrams.set(product.weightGrams ?? null);
+    this.editorial.set(detail.editorial);
+    this.nutrition.set(detail.nutrition);
+    const variant =
+      product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
+    this.variantId.set(variant?.id ?? '');
+    const allergens = detail.allergens;
+    if (allergens === null) {
+      this.declaresNone.set(false);
+      this.selected.set([]);
+    } else if (allergens.length === 0) {
+      this.declaresNone.set(true);
+    } else {
+      this.selected.set([...allergens]);
+    }
+    this.captureBaseline();
+  }
+
+  private async loadReference(scope: AllergenScope): Promise<void> {
+    const ref = await this.reference.allergens(scope);
+    this.entries.set(ref.entries);
+    this.provisional.set(ref.hasProvisionalCodes);
+  }
+}
+
+function messageOf(caught: unknown): string {
+  return caught instanceof Error ? caught.message : 'Erreur inattendue.';
+}

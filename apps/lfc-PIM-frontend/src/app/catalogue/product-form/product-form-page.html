@@ -1,12 +1,12 @@
-<fold-page-layout icon="edit" [title]="pageTitle()">
+<fold-page-layout icon="edit" [title]="store.pageTitle()">
   <fold-back-link
     pageActions
     label="Retour aux produits"
-    (click)="attemptBack()"
+    routerLink="/produits"
   />
 
   <p description>
-    @if (isEdit()) {
+    @if (store.isEdit()) {
       Chaque section s'enregistre indépendamment (un bouton par section).
     } @else {
       Un nom et une catégorie suffisent pour créer le brouillon ; le reste se
@@ -14,15 +14,15 @@
     }
   </p>
 
-  @if (error(); as message) {
+  @if (store.error(); as message) {
     <fold-callout appearance="inset" variant="alert" role="alert">
       {{ message }}
     </fold-callout>
   }
 
-  @if (loading()) {
+  @if (store.loading()) {
     <fold-loading message="Chargement du produit…" />
-  } @else if (notFound()) {
+  } @else if (store.notFound()) {
     <fold-empty-state
       title="Produit introuvable"
       subtitle="Ce produit n'existe pas ou a été supprimé."
@@ -37,8 +37,9 @@
       >
         <div class="leave-body">
           <span>
-            Vous avez modifié des champs de <strong>{{ dirtyLabel() }}</strong>.
-            Enregistrer avant de quitter ?
+            Vous avez modifié des champs de
+            <strong>{{ store.dirtyLabel() }}</strong>. Enregistrer avant de
+            quitter ?
           </span>
           <div class="leave-actions">
             <button foldButton size="sm" (click)="saveDirtyAndLeave()">
@@ -70,77 +71,47 @@
       />
 
       <fold-tab-panel [tabs]="ref" key="identite">
-        <app-identity-panel
-          [(name)]="name"
-          [(kind)]="kind"
-          [(categoryId)]="categoryId"
-          [(sku)]="sku"
-          [kinds]="kinds"
-          [categories]="categories()"
-          [isEdit]="isEdit()"
-          [saveable]="isEdit()"
-          [status]="statusText('identite')"
-          (save)="saveIdentity()"
-        />
+        <app-identity-panel />
       </fold-tab-panel>
-
       <fold-tab-panel [tabs]="ref" key="tarif">
-        <app-pricing-panel
-          [(priceEur)]="priceEur"
-          [(weightGrams)]="weightGrams"
-          [saveable]="isEdit()"
-          [status]="statusText('tarif')"
-          (save)="savePricing()"
-        />
+        <app-pricing-panel />
       </fold-tab-panel>
-
       <fold-tab-panel [tabs]="ref" key="canaux">
-        <app-channels-panel [inheritance]="channelsInheritance()" />
+        <app-channels-panel />
       </fold-tab-panel>
-
       <fold-tab-panel [tabs]="ref" key="fiche">
-        <app-regulatory-panel
-          [(declaresNone)]="declaresNone"
-          [(selected)]="selected"
-          [(nutrition)]="nutrition"
-          [scope]="scope()"
-          [groups]="groups()"
-          [provisional]="provisional()"
-          [saveable]="isEdit()"
-          [status]="statusText('fiche')"
-          (scopeChange)="changeScope($event)"
-          (save)="saveFiche()"
-        />
+        <app-regulatory-panel />
       </fold-tab-panel>
-
       <fold-tab-panel [tabs]="ref" key="communication">
-        <app-communication-panel
-          [(editorial)]="editorial"
-          [saveable]="isEdit()"
-          [status]="statusText('communication')"
-          (save)="saveCommunication()"
-        />
+        <app-communication-panel />
       </fold-tab-panel>
-
       <fold-tab-panel [tabs]="ref" key="visuels">
-        <app-visuals-panel [(media)]="media" />
+        <app-visuals-panel />
       </fold-tab-panel>
-
       <fold-tab-panel [tabs]="ref" key="integrations">
         <app-integrations-panel />
       </fold-tab-panel>
     </fold-nav-layout>
 
-    @if (!isEdit()) {
+    @if (!store.isEdit()) {
       <div class="save-bar">
-        @if (!isValid()) {
+        @if (!store.isValid()) {
           <small class="muted">Un nom et une catégorie suffisent.</small>
         }
         <div class="save-actions">
-          <button foldButton emphasis="soft" intent="neutral" (click)="back()">
+          <button
+            foldButton
+            emphasis="soft"
+            intent="neutral"
+            routerLink="/produits"
+          >
             Annuler
           </button>
-          <button foldButton [disabled]="!isValid() || busy()" (click)="submit()">
+          <button
+            foldButton
+            [disabled]="!store.isValid() || store.busy()"
+            (click)="submit()"
+          >
             Créer le brouillon
           </button>
         </div>

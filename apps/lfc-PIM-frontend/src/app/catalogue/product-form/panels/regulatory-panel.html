@@ -3,45 +3,47 @@
 </p>
 <fold-callout
   appearance="inset"
-  [variant]="declaresSomething() ? 'success' : 'warning'"
+  [variant]="
+    store.declaresNone() || store.selected().length > 0 ? 'success' : 'warning'
+  "
 >
   <fold-checkbox
     label="Aucun allergène"
     hint="Une affirmation explicite — différente d'un champ laissé vide."
-    [checked]="declaresNone()"
-    (checkedChange)="toggleNone($event)"
+    [checked]="store.declaresNone()"
+    (checkedChange)="store.declareNoAllergen($event)"
   />
 </fold-callout>
 
-@if (!declaresNone()) {
+@if (!store.declaresNone()) {
   <fold-card class="stack">
     <div class="scope">
       @for (option of scopes; track option.value) {
         <button
           foldButton
           size="sm"
-          [emphasis]="scope() === option.value ? 'solid' : 'outline'"
-          (click)="scopeChange.emit(option.value)"
+          [emphasis]="store.scope() === option.value ? 'solid' : 'outline'"
+          (click)="store.changeScope(option.value)"
         >
           {{ option.label }}
         </button>
       }
     </div>
-    @if (provisional()) {
+    @if (store.provisional()) {
       <fold-callout appearance="inset" variant="warning">
         Les <strong>codes</strong> de ce référentiel sont provisoires.
       </fold-callout>
     }
     <div class="groups">
-      @for (group of groups(); track group.incoLabel) {
+      @for (group of store.groups(); track group.incoLabel) {
         <fieldset>
           <legend>{{ group.incoLabel }}</legend>
           @for (item of group.entries; track item.code) {
             <fold-checkbox
               size="sm"
               [label]="item.label"
-              [checked]="selected().includes(item.code)"
-              (checkedChange)="toggle(item.code, $event)"
+              [checked]="store.selected().includes(item.code)"
+              (checkedChange)="store.toggleAllergen(item.code, $event)"
             />
           }
         </fieldset>
@@ -61,17 +63,19 @@
           type="number"
           step="0.1"
           min="0"
-          [value]="nutritionValue(field.key) ?? ''"
-          (input)="setNutrition(field.key, numberValue($event))"
+          [value]="store.nutrition()[field.key] ?? ''"
+          (input)="store.setNutrition(field.key, numberValue($event))"
         />
       </label>
     }
   </div>
 </fold-card>
 
-@if (saveable()) {
+@if (store.isEdit()) {
   <div class="section-footer">
-    <button foldButton size="sm" (click)="save.emit()">Enregistrer la fiche</button>
-    <span class="section-status">{{ status() }}</span>
+    <button foldButton size="sm" (click)="store.saveFiche()">
+      Enregistrer la fiche
+    </button>
+    <span class="section-status">{{ store.statusText('fiche') }}</span>
   </div>
 }
