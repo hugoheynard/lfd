@@ -171,15 +171,46 @@
   font-weight: 500;
   color: var(--fold-color-text-muted);
 }
-/* Colisage (PCB) label, e.g. "par 10". */
-.fpc-pack {
+/* Ordering mode toggle (unité ↔ par 10) — a compact segmented control, shown
+   only when the product has a pack (PCB). */
+.fpc-mode {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-full, 999px);
+  background: var(--fold-color-surface-sunken);
+}
+.fpc-mode-opt {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--fold-radius-full, 999px);
+  background: transparent;
+  color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs, 0.75rem);
   font-weight: 600;
-  color: var(--fold-color-primary-text, var(--fold-color-primary));
   white-space: nowrap;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.fpc-mode-opt:hover {
+  color: var(--fold-color-text);
+}
+.fpc-mode-opt.is-on {
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+}
+.fpc-mode-opt:focus-visible {
+  outline: 2px solid var(--fold-color-primary-border, var(--fold-color-primary));
+  outline-offset: 1px;
 }
 
-/* Stepper + add button on one row; the add button takes the remaining width. */
+/* Stepper + add button on one row; the add button takes the remaining width.
+   The stepper is capped narrow so "Ajouter N" always fits beside it. */
 .fpc-order {
   display: flex;
   align-items: stretch;
@@ -187,6 +218,7 @@
 }
 .fpc-qty {
   flex: 0 0 auto;
+  width: 7.5rem;
 }
 .fpc-add {
   flex: 1 1 auto;

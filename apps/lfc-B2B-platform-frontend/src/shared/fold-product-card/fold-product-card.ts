@@ -97,16 +97,29 @@ export class FoldProductCardComponent {
   /** Placeholder glyph when there is no image: the product's initial. */
   readonly initial = computed(() => this.product().name.charAt(0).toUpperCase());
 
-  /** Order multiple (colisage / PCB); `1` = free unit ordering. */
-  readonly step = computed(() => this.product().step ?? 1);
-  /** Minimum orderable quantity (never below the step). */
-  readonly minQty = computed(() => Math.max(this.product().minQty ?? 1, this.step()));
+  /** Pack size (colisage / PCB); `1` = no pack. */
+  readonly packSize = computed(() => this.product().step ?? 1);
+  /** Whether this product can be ordered by pack (has a PCB > 1). */
+  readonly hasPack = computed(() => this.packSize() > 1);
 
-  /** The quantity to add — starts at the minimum, resets when the product changes. */
-  readonly quantity = linkedSignal<FoldProduct, number>({
+  /** Ordering mode — by pack (multiples of `packSize`) or by unit. Defaults to
+   *  by-pack when a pack exists; resets when the product changes. */
+  readonly byPack = linkedSignal<FoldProduct, boolean>({
     source: this.product,
-    computation: () => this.minQty(),
+    computation: () => (this.product().step ?? 1) > 1,
   });
+
+  /** Effective order multiple: the pack size in pack mode, else 1. */
+  readonly step = computed(() => (this.byPack() ? this.packSize() : 1));
+  /** Minimum orderable quantity — one pack in pack mode, else one unit. */
+  readonly minQty = computed(() => this.step());
+
+  /** Label of the pack option, e.g. "Par 10". */
+  readonly packOptionLabel = computed(() => this.product().packLabel ?? `Par ${this.packSize()}`);
+
+  /** The quantity to add — snaps to the minimum whenever the product OR the
+   *  ordering mode changes (switching unit ↔ pack resets to one pack/unit). */
+  readonly quantity = linkedSignal(() => this.minQty());
 
   /** Add-button text with the chosen quantity, e.g. "Ajouter 10". */
   readonly addText = computed(() => `${this.addLabel()} ${this.quantity()}`);

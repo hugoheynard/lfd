@@ -49,9 +49,6 @@
             }
           </span>
         }
-        @if (p.packLabel; as pack) {
-          <span class="fpc-pack">{{ pack }}</span>
-        }
       </div>
 
       @if (isOut()) {
@@ -68,10 +65,37 @@
           {{ notifyLabel() }}
         </button>
       } @else {
+        @if (hasPack()) {
+          <div class="fpc-mode" role="group" aria-label="Mode de commande">
+            <button
+              type="button"
+              class="fpc-mode-opt"
+              [class.is-on]="!byPack()"
+              [attr.aria-pressed]="!byPack()"
+              (click)="byPack.set(false)"
+            >
+              À l'unité
+            </button>
+            <button
+              type="button"
+              class="fpc-mode-opt"
+              [class.is-on]="byPack()"
+              [attr.aria-pressed]="byPack()"
+              (click)="byPack.set(true)"
+            >
+              {{ packOptionLabel() }}
+            </button>
+          </div>
+        }
+
         <div class="fpc-order">
           <fold-number-input
             class="fpc-qty"
             spinner="plusminus"
+            controls="outside"
+            size="sm"
+            align="center"
+            snapToStep
             aria-label="Quantité"
             [min]="minQty()"
             [step]="step()"

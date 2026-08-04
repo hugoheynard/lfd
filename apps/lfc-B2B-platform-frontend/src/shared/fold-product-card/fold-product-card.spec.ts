@@ -51,6 +51,32 @@ describe('FoldProductCardComponent', () => {
     expect(cmp.quantity()).toBe(10);
   });
 
+  it('toggles between unit and pack ordering, snapping the quantity', () => {
+    make(PACKED);
+    // A packed product defaults to by-pack: step = pack size, qty = one pack.
+    expect(cmp.hasPack()).toBe(true);
+    expect(cmp.byPack()).toBe(true);
+    expect(cmp.step()).toBe(10);
+    expect(cmp.quantity()).toBe(10);
+
+    // Switch to "à l'unité": step 1, quantity snaps to 1.
+    cmp.byPack.set(false);
+    expect(cmp.step()).toBe(1);
+    expect(cmp.minQty()).toBe(1);
+    expect(cmp.quantity()).toBe(1);
+
+    // Back to pack: step 10, quantity snaps to one pack.
+    cmp.byPack.set(true);
+    expect(cmp.step()).toBe(10);
+    expect(cmp.quantity()).toBe(10);
+  });
+
+  it('exposes no pack toggle for a free-unit product', () => {
+    expect(cmp.hasPack()).toBe(false);
+    expect(cmp.byPack()).toBe(false);
+    expect(cmp.step()).toBe(1);
+  });
+
   it('labels the add button with the chosen quantity', () => {
     make(PACKED);
     expect(cmp.addText()).toBe('Ajouter 10');
