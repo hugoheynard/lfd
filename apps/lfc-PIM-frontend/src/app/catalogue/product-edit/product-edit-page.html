@@ -1,0 +1,143 @@
+<fold-page-layout icon="edit" title="Éditer le produit">
+  <p description>
+    Chaque section s'édite et s'enregistre <strong>indépendamment</strong> : une
+    requête par section, pas champ par champ. Le prix et le poids portent sur la
+    déclinaison par défaut.
+  </p>
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">
+      {{ message }}
+    </fold-callout>
+  }
+
+  @if (loading()) {
+    <fold-card><p class="muted">Chargement…</p></fold-card>
+  } @else if (notFound()) {
+    <fold-card>
+      <p class="muted">Ce produit est introuvable.</p>
+      <button foldButton emphasis="soft" intent="neutral" (click)="back()">
+        Retour aux produits
+      </button>
+    </fold-card>
+  } @else {
+    <!-- 1 · Identité -->
+    <fold-page-section
+      title="Identité"
+      icon="grid"
+      description="Nom, nature et famille. La référence ne change pas."
+    >
+      <fold-card>
+        <div class="grid">
+          <label class="field">
+            <span class="field-label">Nom du produit</span>
+            <input
+              class="native-input"
+              type="text"
+              [value]="name()"
+              (input)="setName(inputValue($event))"
+            />
+          </label>
+
+          <fold-listbox
+            label="Nature"
+            [value]="kind()"
+            (selectionChange)="setKind($event)"
+          >
+            @for (option of kinds; track option.value) {
+              <fold-option [value]="option.value">{{ option.label }}</fold-option>
+            }
+          </fold-listbox>
+
+          <fold-listbox
+            label="Famille"
+            [value]="categoryId()"
+            (selectionChange)="setCategory($event)"
+          >
+            @for (category of categories(); track category.id) {
+              <fold-option [value]="category.id">{{ category.name.fr }}</fold-option>
+            }
+          </fold-listbox>
+
+          <label class="field">
+            <span class="field-label">Référence — SKU</span>
+            <input class="native-input" type="text" [value]="sku()" disabled />
+            <span class="field-hint">La référence est figée après création.</span>
+          </label>
+        </div>
+        <div class="section-footer">
+          <button foldButton size="sm" (click)="saveIdentity()">Enregistrer</button>
+          <span class="section-status">{{ statusText('identity') }}</span>
+        </div>
+      </fold-card>
+    </fold-page-section>
+
+    <!-- 2 · Tarif & logistique -->
+    <fold-page-section
+      title="Tarif & logistique"
+      icon="tag"
+      description="Prix canonique HT et poids de l'unité vendue."
+    >
+      <fold-card>
+        <div class="grid">
+          <label class="field">
+            <span class="field-label">Prix (€)</span>
+            <input
+              class="native-input"
+              type="number"
+              step="0.01"
+              min="0"
+              [value]="priceEur() ?? ''"
+              (input)="setPrice(numberValue($event))"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Poids (g)</span>
+            <input
+              class="native-input"
+              type="number"
+              step="1"
+              min="0"
+              [value]="weightGrams() ?? ''"
+              (input)="setWeight(numberValue($event))"
+            />
+          </label>
+        </div>
+        <div class="section-footer">
+          <button foldButton size="sm" (click)="savePricing()">Enregistrer</button>
+          <span class="section-status">{{ statusText('pricing') }}</span>
+        </div>
+      </fold-card>
+    </fold-page-section>
+
+    <!-- 3 · Description -->
+    <fold-page-section
+      title="Description"
+      icon="edit"
+      description="Le résumé affiché sur la fiche et les listes."
+    >
+      <fold-card>
+        <label class="field">
+          <span class="field-label">Description courte</span>
+          <textarea
+            class="native-input native-textarea"
+            rows="4"
+            [value]="descriptionFr()"
+            (input)="setDescription(inputValue($event))"
+          ></textarea>
+        </label>
+        <div class="section-footer">
+          <button foldButton size="sm" (click)="saveDescription()">Enregistrer</button>
+          <span class="section-status">{{ statusText('description') }}</span>
+        </div>
+      </fold-card>
+    </fold-page-section>
+
+    <div class="actions">
+      <button foldButton emphasis="soft" intent="neutral" (click)="back()">
+        Retour aux produits
+      </button>
+    </div>
+  }
+</fold-page-layout>

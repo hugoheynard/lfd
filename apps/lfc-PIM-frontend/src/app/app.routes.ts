@@ -75,6 +75,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'produits/:id',
+    title: 'Éditer un produit — LFC PIM',
+    loadComponent: () =>
+      import('./catalogue/product-edit/product-edit-page').then(
+        (m) => m.ProductEditPage,
+      ),
+  },
+  {
     path: 'produits',
     title: 'Produits — LFC PIM',
     loadComponent: () =>

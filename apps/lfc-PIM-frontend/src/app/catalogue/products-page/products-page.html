@@ -39,54 +39,6 @@
     </fold-callout>
   }
 
-  @if (channelEdit(); as edit) {
-    <fold-card class="chan-editor">
-      <div class="chan-editor-head">
-        <div>
-          <strong>{{ edit.product.name.fr }}</strong>
-          <span class="muted">TVA {{ categoryTvaText(edit.category) }}</span>
-        </div>
-        <button
-          foldButton
-          emphasis="soft"
-          intent="neutral"
-          size="sm"
-          (click)="closeEditor()"
-        >
-          Fermer
-        </button>
-      </div>
-
-      <app-channel-matrix
-        [channels]="edit.channels"
-        [inherited]="edit.isInherited"
-        (channelsChange)="onChannelsChange(edit.product, $event)"
-        (revert)="onRevert(edit.product)"
-      />
-
-      <div class="chan-fiches">
-        <p class="muted">Fiches Shopify générées</p>
-        @for (fiche of edit.fiches; track fiche.handle) {
-          <div class="fiche">
-            <span class="fiche-title">{{ fiche.title }}</span>
-            <code>/{{ fiche.handle }}</code>
-            @if (fiche.boutiques.length > 0) {
-              <span class="muted">{{ fiche.boutiques.join(' + ') }}</span>
-            }
-            <fold-badge
-              [content]="fiche.tvaTag + ' · ' + fiche.tvaRate"
-              [variant]="fiche.mode === 'emporter' ? 'accent' : 'info'"
-            />
-          </div>
-        } @empty {
-          <span class="muted">Aucun canal actif — rien ne sera poussé.</span>
-        }
-      </div>
-    </fold-card>
-  }
-
-
-
   <fold-data-table
     [columns]="columns"
     [rows]="pagedProducts()"
@@ -148,16 +100,10 @@
     </ng-template>
 
     <ng-template foldCell="name" let-p>
-      <!-- Éditeur en cellule : commit-on-blur (change). Exception assumée au
-           fold-first — fold-input est un contrôle model à commit continu,
-           inadapté à l'édition inline d'une ligne de tableau. -->
-      <input
-        class="cell-name"
-        type="text"
-        [value]="p.name.fr"
-        aria-label="Nom du produit"
-        (change)="rename(p, inputValue($event))"
-      />
+      <!-- Plus d'édition dans la table : le nom ouvre la fiche produit. -->
+      <button class="cell-name-link" type="button" (click)="openProduct(p)">
+        {{ p.name.fr }}
+      </button>
     </ng-template>
 
     <ng-template foldCell="category" let-p>
@@ -165,28 +111,23 @@
     </ng-template>
 
     <ng-template foldCell="channels" let-p>
-      <button class="chan-cell" type="button" (click)="editChannels(p)">
-        <span class="chan-pills">
-          @if (rowEmporter(p).length > 0) {
-            <fold-badge
-              [content]="'Emporter ' + rowEmporter(p).join(' · ')"
-              variant="accent"
-            />
-          }
-          @if (rowSurPlace(p).length > 0) {
-            <fold-badge
-              [content]="'Salle ' + rowSurPlace(p).join(' · ')"
-              variant="info"
-            />
-          }
-          @if (rowEmporter(p).length === 0 && rowSurPlace(p).length === 0) {
-            <span class="muted">aucun</span>
-          }
-        </span>
-        @if (!rowInherited(p)) {
-          <span class="chan-perso" title="Personnalisé">●</span>
+      <span class="chan-pills">
+        @if (rowEmporter(p).length > 0) {
+          <fold-badge
+            [content]="'Emporter ' + rowEmporter(p).join(' · ')"
+            variant="accent"
+          />
         }
-      </button>
+        @if (rowSurPlace(p).length > 0) {
+          <fold-badge
+            [content]="'Salle ' + rowSurPlace(p).join(' · ')"
+            variant="info"
+          />
+        }
+        @if (rowEmporter(p).length === 0 && rowSurPlace(p).length === 0) {
+          <span class="muted">aucun</span>
+        }
+      </span>
     </ng-template>
 
     <ng-template foldCell="status" let-p>
@@ -212,11 +153,11 @@
             <fold-icon name="kebab" />
           </button>
 
+          <fold-dropdown-item icon="edit" (selected)="openProduct(p)">
+            Ouvrir la fiche
+          </fold-dropdown-item>
           <fold-dropdown-item icon="upload" [disabled]="busy()" (selected)="push(p)">
             Pousser
-          </fold-dropdown-item>
-          <fold-dropdown-item icon="edit" (selected)="edit(p)">
-            Éditer
           </fold-dropdown-item>
           @if (p.status !== 'archived') {
             <fold-dropdown-item icon="folder" (selected)="archive(p)">

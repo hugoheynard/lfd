@@ -179,3 +179,17 @@ code {
   background: var(--fold-color-surface-hover);
   outline: none;
 }
+
+.cell-name-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-link, #2563eb);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

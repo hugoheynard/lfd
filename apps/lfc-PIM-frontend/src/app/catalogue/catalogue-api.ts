@@ -2,7 +2,8 @@ import { Injectable, inject } from '@angular/core';
 
 import { tvaTagFromPercent } from '../data/channels';
 import { LocalDb } from '../data/local-db';
-import { productSkuRoot, proposeSku, slugify } from '../data/sku';
+import { slugify } from '../data/sku';
+import { ProductHttpApi } from './product-http-api';
 
 // Types re-exportés depuis le modèle central : les pages continuent d'importer
 // `type Category` / `type Product` depuis ce fichier sans changement.
@@ -52,6 +53,8 @@ function nextId(prefix: string): string {
 @Injectable({ providedIn: 'root' })
 export class CatalogueApi {
   private readonly db = inject(LocalDb);
+  /** Domaine produit migré sur le backend Prisma ; le reste tient sur LocalDb. */
+  private readonly productsApi = inject(ProductHttpApi);
 
   async listCategories(): Promise<Category[]> {
     return structuredClone(this.db.snapshot().categories);
@@ -218,10 +221,19 @@ export class CatalogueApi {
     });
   }
 
-  // ── Produits ──────────────────────────────────────────────────────────────
+  // ── Produits (migrés sur le backend Prisma via ProductHttpApi) ───────────
+  // Le domaine produit ne passe plus par LocalDb. Le prix/poids vivent sur la
+  // déclinaison par défaut côté backend ; canaux (channelsOverride) et flags de
+  // workflow sont différés (contexte commerce, slice 2). SalesChannels reste
+  // importé pour les défauts de canaux des CATÉGORIES, toujours locales.
 
   async listProducts(): Promise<Product[]> {
-    return structuredClone(this.db.snapshot().products);
+    return this.productsApi.list();
+  }
+
+  /** Détail enrichi (éditorial compris) — pour la page d'édition produit. */
+  async getProduct(id: string): Promise<Product | null> {
+    return this.productsApi.get(id);
   }
 
   async createProduct(payload: {
@@ -236,107 +248,30 @@ export class CatalogueApi {
     handleFr?: string;
     descriptionFr?: string;
   }): Promise<{ id: string }> {
-    const name = payload.nameFr.trim();
-    if (name === '') {
+    if (payload.nameFr.trim() === '') {
       throw new CatalogueApiError('product.name.empty', 'Le nom est obligatoire.');
     }
-    const id = nextId('prd');
-
-    this.db.update((draft) => {
-      const category = draft.categories.find((c) => c.id === payload.categoryId);
-      if (category === undefined) {
-        throw new CatalogueApiError('category.not_found', 'Famille introuvable.');
-      }
-      if (category.isArchived) {
-        throw new CatalogueApiError('category.archived', 'Cette famille est archivée.');
-      }
-
-      const taken = new Set<string>();
-      for (const p of draft.products) {
-        taken.add(p.sku);
-        for (const v of p.variants) {
-          taken.add(v.sku);
-        }
-      }
-
-      const proposed =
-        payload.sku !== undefined && payload.sku.trim() !== ''
-          ? payload.sku.trim().toUpperCase()
-          : proposeSku(productSkuRoot(category.slug.fr, name), taken);
-      taken.add(proposed);
-
-      const variantSku = proposeSku(`${proposed}-1`, taken);
-
-      const handle = payload.handleFr ?? slugify(name);
-      draft.products.push({
-        id,
-        sku: proposed,
-        name: { fr: name },
-        kind: payload.kind,
-        categoryId: payload.categoryId,
-        status: 'draft',
-        // Canaux hérités de la catégorie, sauf override fourni à la création.
-        channelsOverride: payload.channelsOverride ?? null,
-        slug: { fr: handle },
-        ...(payload.priceEur === undefined ? {} : { priceEur: payload.priceEur }),
-        ...(payload.weightGrams === undefined ? {} : { weightGrams: payload.weightGrams }),
-        ...(payload.descriptionFr === undefined ? {} : { descriptionFr: payload.descriptionFr }),
-        variants: [
-          {
-            id: `${id}_v1`,
-            sku: variantSku,
-            name: { fr: name },
-            isDefault: true,
-            isDiscontinued: false,
-            allergens: payload.allergens ?? null,
-          },
-        ],
-      });
-    });
-
-    return { id };
-  }
-
-  async renameProduct(id: string, nameFr: string): Promise<void> {
-    const name = nameFr.trim();
-    this.db.update((draft) => {
-      const target = draft.products.find((p) => p.id === id);
-      if (target === undefined) {
-        throw new CatalogueApiError('product.not_found', 'Produit introuvable.');
-      }
-      target.name = { fr: name };
+    // `channelsOverride` / `handleFr` différés : les canaux relèvent du contexte
+    // commerce (slice 2) et le slug est dérivé côté backend.
+    return this.productsApi.create({
+      nameFr: payload.nameFr,
+      kind: payload.kind,
+      categoryId: payload.categoryId,
+      sku: payload.sku,
+      allergens: payload.allergens,
+      descriptionFr: payload.descriptionFr,
+      priceEur: payload.priceEur,
+      weightGrams: payload.weightGrams,
     });
   }
 
   async archiveProduct(id: string): Promise<void> {
-    this.db.update((draft) => {
-      const target = draft.products.find((p) => p.id === id);
-      if (target === undefined) {
-        throw new CatalogueApiError('product.not_found', 'Produit introuvable.');
-      }
-      target.status = 'archived';
-    });
+    await this.productsApi.archive(id);
   }
 
-  /** Suppression définitive — POC : « Réinitialiser » restaure le seed. */
+  /** Pas de suppression physique (R3 backend) : « supprimer » = archiver. */
   async deleteProduct(id: string): Promise<void> {
-    this.db.update((draft) => {
-      const index = draft.products.findIndex((p) => p.id === id);
-      if (index !== -1) {
-        draft.products.splice(index, 1);
-      }
-    });
-  }
-
-  /** Override tout-ou-rien des canaux ; `null` = revenir au défaut de la gamme. */
-  async setProductChannels(id: string, channels: SalesChannels | null): Promise<void> {
-    this.db.update((draft) => {
-      const target = draft.products.find((p) => p.id === id);
-      if (target === undefined) {
-        throw new CatalogueApiError('product.not_found', 'Produit introuvable.');
-      }
-      target.channelsOverride = channels;
-    });
+    await this.productsApi.archive(id);
   }
 
   // ── Emplacements (boutiques : modes, tables, QR click & collect) ──────────

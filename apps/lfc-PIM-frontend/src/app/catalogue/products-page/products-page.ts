@@ -6,13 +6,12 @@ import {
   signal,
 } from '@angular/core';
 
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldCardComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldDropdownComponent,
@@ -30,9 +29,7 @@ import {
 import {
   boutiquesWith,
   formatPercent,
-  generateFiches,
   resolveChannels,
-  type GeneratedFiche,
 } from '../../data/channels';
 import {
   ShopifyApi,
@@ -40,7 +37,6 @@ import {
   type SyncStatus,
 } from '../../channels/shopify-api';
 
-import { ChannelMatrix } from '../channel-matrix/channel-matrix';
 import {
   CatalogueApi,
   type Category,
@@ -68,24 +64,14 @@ const NO_CHANNELS: SalesChannels = {
   b2: { emporter: false, surPlace: false },
 };
 
-interface ChannelEdit {
-  product: Product;
-  category: Category;
-  channels: SalesChannels;
-  isInherited: boolean;
-  fiches: GeneratedFiche[];
-}
-
 @Component({
   selector: 'app-products-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
-    ChannelMatrix,
     FoldPageLayoutComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
-    FoldCardComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldBadgeComponent,
@@ -102,6 +88,7 @@ interface ChannelEdit {
 export class ProductsPage {
   private readonly api = inject(CatalogueApi);
   private readonly shopify = inject(ShopifyApi);
+  private readonly router = inject(Router);
 
   protected readonly products = signal<Product[]>([]);
   protected readonly categories = signal<Category[]>([]);
@@ -110,7 +97,6 @@ export class ProductsPage {
   protected readonly bindings = signal<ProductBinding[]>([]);
   protected readonly regimes = signal<TvaRegime[]>([]);
   protected readonly pushMessage = signal<string | null>(null);
-  protected readonly editingId = signal<string | null>(null);
   protected readonly query = signal('');
   protected readonly page = signal(1);
   protected readonly pageSize = signal(25);
@@ -215,29 +201,13 @@ export class ProductsPage {
     () => new Map(this.regimes().map((regime) => [regime.id, regime])),
   );
 
-  /** Le produit en cours d'édition de canaux, résolu + ses fiches. */
-  protected readonly channelEdit = computed<ChannelEdit | null>(() => {
-    const id = this.editingId();
-    if (id === null) {
-      return null;
-    }
-    const product = this.products().find((p) => p.id === id);
-    const category = product && this.byId().get(product.categoryId);
-    if (product === undefined || category === undefined) {
-      return null;
-    }
-    const resolved = resolveChannels(product, category);
-    return {
-      product,
-      category,
-      channels: resolved.channels,
-      isInherited: resolved.isInherited,
-      fiches: generateFiches(product, category, this.regimeById()),
-    };
-  });
-
   constructor() {
     void this.reload();
+  }
+
+  /** Un clic sur une ligne ouvre la page produit (plus d'édition dans la table). */
+  protected openProduct(product: Product): void {
+    void this.router.navigate(['/produits', product.id]);
   }
 
   /** Filtrer remet en page 1 pour ne pas rester sur une page vide. */
@@ -284,25 +254,6 @@ export class ProductsPage {
     return `${rate(emporter)} → ${rate(surPlace)}`;
   }
 
-  protected editChannels(product: Product): void {
-    this.editingId.set(product.id);
-  }
-
-  protected closeEditor(): void {
-    this.editingId.set(null);
-  }
-
-  protected async onChannelsChange(
-    product: Product,
-    channels: SalesChannels,
-  ): Promise<void> {
-    await this.run(() => this.api.setProductChannels(product.id, channels));
-  }
-
-  protected async onRevert(product: Product): Promise<void> {
-    await this.run(() => this.api.setProductChannels(product.id, null));
-  }
-
   /** Un produit précis — le bouton de la ligne. */
   protected async push(product: Product): Promise<void> {
     await this.runPush([product.id]);
@@ -325,20 +276,8 @@ export class ProductsPage {
       : '';
   }
 
-  protected async rename(product: Product, nameFr: string): Promise<void> {
-    if (nameFr.trim() === '' || nameFr === product.name.fr) {
-      return;
-    }
-    await this.run(() => this.api.renameProduct(product.id, nameFr));
-  }
-
   protected async archive(product: Product): Promise<void> {
     await this.run(() => this.api.archiveProduct(product.id));
-  }
-
-  /** « Éditer » du menu : ouvre l'éditeur de canaux du produit. */
-  protected edit(product: Product): void {
-    this.editChannels(product);
   }
 
   protected async remove(product: Product): Promise<void> {
