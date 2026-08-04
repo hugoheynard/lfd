@@ -21,7 +21,7 @@ const ENV_ALLOWLIST = [
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs', 'src/infra/database/client/**'],
+    ignores: ['eslint.config.mjs', 'src/infra/database/client/**', 'prisma/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
