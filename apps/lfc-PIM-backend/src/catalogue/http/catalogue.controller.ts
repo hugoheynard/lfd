@@ -105,6 +105,11 @@ export class CatalogueController {
     return this.products.listAll();
   }
 
+  @Get('products/:id')
+  getProduct(@Param('id') id: string) {
+    return this.products.findById(id);
+  }
+
   @Post('products')
   async createProduct(
     @Body(new ZodBody(productPayload)) body: z.infer<typeof productPayload>,
