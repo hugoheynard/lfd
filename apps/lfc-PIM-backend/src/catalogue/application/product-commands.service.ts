@@ -145,6 +145,45 @@ export class ProductCommands {
     await this.products.setKind(id, kind);
   }
 
+  /**
+   * Section « Identité » en **une** opération (nom + nature + famille) : le
+   * back-office enregistre par section, pas champ par champ. Valide la famille
+   * cible avant d'écrire quoi que ce soit.
+   */
+  async updateIdentity(
+    id: string,
+    input: {
+      nameFr: string;
+      nameEn?: string | undefined;
+      kind: ProductKind;
+      categoryId: string;
+    },
+  ): Promise<void> {
+    await this.requireProduct(id);
+    const category = await this.categories.findById(input.categoryId);
+    if (category === null) {
+      throw new CategoryNotFoundError(input.categoryId);
+    }
+    if (category.isArchived) {
+      throw new CategoryArchivedError(input.categoryId);
+    }
+    const name = localizedText('nom', input.nameFr, input.nameEn);
+    await this.products.rename(id, name, this.slugOf(name));
+    await this.products.setKind(id, input.kind);
+    await this.products.moveToCategory(id, input.categoryId);
+  }
+
+  /** Section « Tarif & logistique » d'une déclinaison : prix + poids en une opération. */
+  async updateVariantPricing(
+    productId: string,
+    variantId: string,
+    input: { priceCents: number | null; weightGrams: number | null },
+  ): Promise<void> {
+    await this.requireVariant(productId, variantId);
+    await this.products.setVariantPrice(variantId, input.priceCents);
+    await this.products.setVariantWeight(variantId, input.weightGrams);
+  }
+
   /** Reclasse le produit sous une autre famille — refuse une famille archivée. */
   async moveToCategory(id: string, categoryId: string): Promise<void> {
     await this.requireProduct(id);

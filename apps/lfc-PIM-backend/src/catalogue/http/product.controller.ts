@@ -7,6 +7,8 @@ import { ProductCommands } from '../application/product-commands.service.js';
 import { EditorialReader } from '../domain/ports/editorial-reader.js';
 import { ProductRepository } from '../domain/ports/product.repository.js';
 
+const kindEnum = z.enum(['daily', 'made_to_order', 'resale']);
+
 const nutritionShape = z
   .object({
     energyKcal: z.number().optional(),
@@ -30,7 +32,7 @@ const editorialShape = {
 const productPayload = z.object({
   nameFr: z.string().min(1),
   nameEn: z.string().optional(),
-  kind: z.enum(['daily', 'made_to_order', 'resale']),
+  kind: kindEnum,
   categoryId: z.string().min(1),
   sku: z.string().optional(),
   allergens: z.array(z.string()).optional(),
@@ -48,25 +50,17 @@ const productPayload = z.object({
     .optional(),
 });
 
-const renamePayload = z.object({
+/** Section « Identité » — enregistrée en une fois (pas champ par champ). */
+const identityPayload = z.object({
   nameFr: z.string().min(1),
   nameEn: z.string().optional(),
-});
-
-const kindPayload = z.object({
-  kind: z.enum(['daily', 'made_to_order', 'resale']),
-});
-
-const categoryRefPayload = z.object({
+  kind: kindEnum,
   categoryId: z.string().min(1),
 });
 
-/** `null` = dé-tarifer / effacer ; un entier ≥ 0 = valeur en centimes / grammes. */
-const pricePayload = z.object({
+/** Section « Tarif & logistique » d'une déclinaison. `null` = effacer. */
+const pricingPayload = z.object({
   priceCents: z.number().int().min(0).nullable(),
-});
-
-const weightPayload = z.object({
   weightGrams: z.number().int().min(0).nullable(),
 });
 
@@ -79,7 +73,8 @@ const nutritionPayload = z.object({
 });
 
 /**
- * Produits du catalogue. ⚠️ **`@Public()` temporaire** (tenant Auth0 absent) :
+ * Produits du catalogue. L'édition se fait **par section** (une requête par
+ * section, pas par champ). ⚠️ **`@Public()` temporaire** (tenant Auth0 absent) :
  * à retirer dès que `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` sont renseignés — dette
  * suivie dans `todo.md`.
  */
@@ -115,34 +110,17 @@ export class ProductController {
     return { id: await this.productCommands.create(body) };
   }
 
-  @Put(':id/name')
-  async renameProduct(
+  /** Section Identité : nom + nature + famille en une opération. */
+  @Put(':id/identity')
+  async updateIdentity(
     @Param('id') id: string,
-    @Body(new ZodBody(renamePayload)) body: z.infer<typeof renamePayload>,
+    @Body(new ZodBody(identityPayload)) body: z.infer<typeof identityPayload>,
   ) {
-    await this.productCommands.rename(id, body.nameFr, body.nameEn);
+    await this.productCommands.updateIdentity(id, body);
     return { id };
   }
 
-  @Put(':id/kind')
-  async changeProductKind(
-    @Param('id') id: string,
-    @Body(new ZodBody(kindPayload)) body: z.infer<typeof kindPayload>,
-  ) {
-    await this.productCommands.changeKind(id, body.kind);
-    return { id };
-  }
-
-  @Put(':id/category')
-  async moveProduct(
-    @Param('id') id: string,
-    @Body(new ZodBody(categoryRefPayload))
-    body: z.infer<typeof categoryRefPayload>,
-  ) {
-    await this.productCommands.moveToCategory(id, body.categoryId);
-    return { id };
-  }
-
+  /** Section Description (couche éditoriale). */
   @Put(':id/editorial')
   async editProductEditorial(
     @Param('id') id: string,
@@ -152,30 +130,18 @@ export class ProductController {
     return { id };
   }
 
-  @Put(':id/variants/:variantId/price')
-  async setVariantPrice(
+  /** Section Tarif & logistique : prix + poids de la déclinaison en une opération. */
+  @Put(':id/variants/:variantId/pricing')
+  async setVariantPricing(
     @Param('id') id: string,
     @Param('variantId') variantId: string,
-    @Body(new ZodBody(pricePayload)) body: z.infer<typeof pricePayload>,
+    @Body(new ZodBody(pricingPayload)) body: z.infer<typeof pricingPayload>,
   ) {
-    await this.productCommands.setVariantPrice(id, variantId, body.priceCents);
+    await this.productCommands.updateVariantPricing(id, variantId, body);
     return { id, variantId };
   }
 
-  @Put(':id/variants/:variantId/weight')
-  async setVariantWeight(
-    @Param('id') id: string,
-    @Param('variantId') variantId: string,
-    @Body(new ZodBody(weightPayload)) body: z.infer<typeof weightPayload>,
-  ) {
-    await this.productCommands.setVariantWeight(
-      id,
-      variantId,
-      body.weightGrams,
-    );
-    return { id, variantId };
-  }
-
+  /** Section Allergènes (fiche réglementaire de la déclinaison). */
   @Put(':id/variants/:variantId/nutrition')
   async declareVariantNutrition(
     @Param('id') id: string,

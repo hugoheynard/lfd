@@ -310,4 +310,49 @@ describe('ProductCommands — édition', () => {
       }),
     ).rejects.toBeInstanceOf(VariantNotFoundError);
   });
+
+  it('met à jour l’identité (nom + nature + famille) en une opération', async () => {
+    const { commands, products } = makeCommands();
+    await commands.updateIdentity(PRODUCT_ID, {
+      nameFr: 'Moka',
+      kind: 'daily',
+      categoryId: 'cat_active',
+    });
+    const snapshot = products.snapshot();
+    expect(snapshot?.name.fr).toBe('Moka');
+    expect(snapshot?.kind).toBe('daily');
+    expect(snapshot?.categoryId).toBe('cat_active');
+  });
+
+  it('refuse l’identité vers une famille archivée (rien n’est écrit)', async () => {
+    const { commands, products } = makeCommands();
+    await expect(
+      commands.updateIdentity(PRODUCT_ID, {
+        nameFr: 'Moka',
+        kind: 'daily',
+        categoryId: 'cat_archived',
+      }),
+    ).rejects.toBeInstanceOf(CategoryArchivedError);
+    expect(products.snapshot()?.name.fr).toBe('Café');
+  });
+
+  it('met à jour tarif + poids en une opération', async () => {
+    const { commands, products } = makeCommands();
+    await commands.updateVariantPricing(PRODUCT_ID, VARIANT_ID, {
+      priceCents: 500,
+      weightGrams: 300,
+    });
+    expect(products.snapshot()?.variants[0]?.priceCents).toBe(500);
+    expect(products.snapshot()?.variants[0]?.weightGrams).toBe(300);
+  });
+
+  it('refuse le tarif d’une déclinaison étrangère', async () => {
+    const { commands } = makeCommands();
+    await expect(
+      commands.updateVariantPricing(PRODUCT_ID, 'variant_etranger', {
+        priceCents: 100,
+        weightGrams: null,
+      }),
+    ).rejects.toBeInstanceOf(VariantNotFoundError);
+  });
 });
