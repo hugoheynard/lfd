@@ -15,6 +15,16 @@ export interface ProductRecord {
   readonly variants: readonly VariantRecord[];
 }
 
+/** Valeurs nutritionnelles pour 100 g ; chaque champ `null` = non renseigné. */
+export interface VariantNutritionView {
+  readonly mayContain: readonly string[];
+  readonly energyKcal: number | null;
+  readonly carbsG: number | null;
+  readonly fatG: number | null;
+  readonly proteinG: number | null;
+  readonly glycemicIndex: number | null;
+}
+
 export interface VariantRecord {
   readonly id: string;
   readonly sku: string;
@@ -29,6 +39,8 @@ export interface VariantRecord {
   readonly weightGrams: number | null;
   /** `null` = fiche **non renseignée** ; `[]` = « aucun allergène » déclaré. */
   readonly allergens: readonly string[] | null;
+  /** Valeurs nutritionnelles ; `null` = fiche non renseignée. */
+  readonly nutrition: VariantNutritionView | null;
 }
 
 /**

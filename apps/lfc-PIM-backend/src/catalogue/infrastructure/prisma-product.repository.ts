@@ -19,6 +19,16 @@ import {
   readStringMapColumn,
 } from './json-readers.js';
 
+interface NutritionRow {
+  allergens: unknown;
+  mayContain: unknown;
+  energyKcal: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+  proteinG: number | null;
+  glycemicIndex: number | null;
+}
+
 interface VariantRow {
   id: string;
   sku: string;
@@ -29,7 +39,7 @@ interface VariantRow {
   position: number;
   priceCents: number | null;
   weightGrams: number | null;
-  nutrition: { allergens: unknown } | null;
+  nutrition: NutritionRow | null;
 }
 
 interface ProductRow {
@@ -58,6 +68,20 @@ function toVariant(row: VariantRow): VariantRecord {
       row.nutrition === null
         ? null
         : readStringArrayColumn(row.nutrition.allergens, 'nutrition.allergens'),
+    nutrition:
+      row.nutrition === null
+        ? null
+        : {
+            mayContain: readStringArrayColumn(
+              row.nutrition.mayContain,
+              'nutrition.mayContain',
+            ),
+            energyKcal: row.nutrition.energyKcal,
+            carbsG: row.nutrition.carbsG,
+            fatG: row.nutrition.fatG,
+            proteinG: row.nutrition.proteinG,
+            glycemicIndex: row.nutrition.glycemicIndex,
+          },
   };
 }
 
@@ -86,7 +110,7 @@ export class PrismaProductRepository extends ProductRepository {
       include: {
         variants: {
           orderBy: { position: 'asc' },
-          include: { nutrition: { select: { allergens: true } } },
+          include: { nutrition: true },
         },
       },
     });
@@ -98,7 +122,7 @@ export class PrismaProductRepository extends ProductRepository {
       include: {
         variants: {
           orderBy: { position: 'asc' },
-          include: { nutrition: { select: { allergens: true } } },
+          include: { nutrition: true },
         },
       },
       orderBy: { sku: 'asc' },

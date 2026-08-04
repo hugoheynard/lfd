@@ -50,6 +50,7 @@ function seedProduct(): ProductRecord {
         priceCents: null,
         weightGrams: null,
         allergens: null,
+        nutrition: null,
       },
     ],
   };
