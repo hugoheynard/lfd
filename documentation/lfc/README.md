@@ -17,6 +17,7 @@ plan de production du labo.
 | [`todo.md`](./todo.md) | Décisions ouvertes + backlog — ce qui reste à trancher / faire |
 | [`data-model/`](./data-model/) | Le modèle de données détaillé, par couche |
 | [`projection-shopify.md`](./projection-shopify.md) | **Projection Shopify** — emporter/sur place, TVA par collection, boutiques, QR, SKU partagé |
+| [`shopify-connexion-setup.md`](./shopify-connexion-setup.md) | **Connexion Shopify (runbook)** — Dev Dashboard, client credentials, install, `.env`, pièges |
 
 ### Modèle de données
 
