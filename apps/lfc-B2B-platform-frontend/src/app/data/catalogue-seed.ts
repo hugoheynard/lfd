@@ -918,6 +918,16 @@ const OUT_OF_STOCK = new Set<string>(['VIE-003']);
 /** SKU bientôt indisponibles → jours restants (cas de test : Chausson aux pommes). */
 const SOON = new Map<string, number>([['VIE-005', 3]]);
 
+/**
+ * Colisage (PCB) par SKU : `{ step, label }`. La quantité commandée est
+ * contrainte à un multiple de `step`, avec ce minimum. Défaut = unité libre
+ * (step 1) pour tout SKU absent d'ici. **Cas de démo** : le croissant se commande
+ * par 10 — remplacer par les vrais colisages produit quand ils existeront.
+ */
+const PACK = new Map<string, { readonly step: number; readonly label: string }>([
+  ['VIE-001', { step: 10, label: 'par 10' }],
+]);
+
 /** Prix TTC en euros → "2,50 €". */
 function formatEur(value: number): string {
   return `${value.toFixed(2).replace('.', ',')} €`;
@@ -1010,15 +1020,19 @@ function toProduct(row: Row): FoldProduct {
   const [sku, name, , priceEur, weightGrams, categoryId, description] = row;
   const unit = weightGrams === null ? '/ pièce' : `/ ${weightGrams} g`;
   const soon = SOON.get(sku);
+  const pack = PACK.get(sku);
   return {
     id: sku,
     name,
+    reference: sku,
     category: categoryId,
     price: formatEur(priceEur),
+    priceValue: priceEur,
     unit,
     action: ADD,
     image: illustrationFor(name, categoryId),
     imageAlt: name,
+    ...(pack !== undefined ? { step: pack.step, minQty: pack.step, packLabel: pack.label } : {}),
     ...(OUT_OF_STOCK.has(sku) ? { outOfStock: true } : {}),
     ...(soon !== undefined ? { daysLeft: soon } : {}),
     ...(description === '' ? {} : { detail: description }),

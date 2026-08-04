@@ -126,29 +126,29 @@ numérique + `packSize`/`step` + `minQty` + `unit` + `reference`.
 
 ## Roadmap (on coche point par point)
 
-### P0 — Quantité avant ajout (fait pour de vrai B2B)
+### P0 — Quantité avant ajout, carte + order-pad (fait pour de vrai B2B)
 
-- [ ] **Enrichir `FoldProduct`** (minimum viable, sans casser l'existant) :
-      `reference` (SKU), `priceEurNumeric`, `unit` (`'piece' | 'colis' | 'kg'`),
-      `packSize`/`step`, `minQty`. Garder `price` string d'affichage en parallèle
-      le temps de migrer.
-- [ ] **Stepper de quantité** sur la carte : +/–, saisie clavier, **respect du
-      multiple (PCB)** et du **min**, clamp propre, a11y (label, `aria`,
-      focus visible).
-- [ ] **CTA « Ajouter N »** (emphasis solide) qui pousse la quantité choisie
-      dans `cart.add(id, qty)`.
-- [ ] **État « déjà N au panier »** sur la carte (le stepper reflète/édite la
-      ligne existante via `cart.setQty`), + micro-retour d'ajout.
-- [ ] **Sous-total ligne live** (prix numérique × qté) sous le stepper.
-- [ ] **Repenser `fpc-foot`** pour accueillir stepper + prix + CTA sans casser la
-      grille ni l'empilement des rubans.
-- [ ] Specs (Vitest) : clamp min/step, « Ajouter N », édition d'une ligne
-      existante, rupture (pas de stepper).
+1. [ ] **Enrichir `FoldProduct`** (minimum viable, sans casser l'existant) :
+       `reference` (SKU), `priceEurNumeric` (**HT**), `unit`
+       (`'piece' | 'colis' | 'kg'`), `packSize`/`step` (défaut 1), `minQty`
+       (défaut 1). Garder `price` string d'affichage le temps de migrer. Mapper
+       depuis le seed (`sku`, `prix€` → HT numérique).
+2. [ ] **Stepper de quantité générique** (réutilisable carte + order-pad, piloté
+       parent) : +/–, saisie clavier, **respect du multiple (`step`/PCB)** et du
+       **`minQty`**, clamp propre, a11y (label, `aria`, focus visible). Reste
+       fold-compatible (candidat `fold-ng`, zéro logique panier dedans).
+3. [ ] **Carte : CTA « Ajouter N »** (emphasis solide) → `cart.add(id, qty)` ;
+       **état « déjà N au panier »** (stepper édite la ligne via `cart.setQty`) ;
+       **sous-total ligne live** (HT × qté). **Repenser `fpc-foot`** pour loger
+       stepper + prix HT + CTA sans casser la grille ni l'empilement des rubans.
+4. [ ] **Order-pad (vue liste dense)** : toggle grille ↔ liste dans le
+       `ProductCatalogue` ; table réf, nom, PCB/unité, prix HT, **stepper + ajouter
+       par ligne**, saisie clavier de haut en bas. Partage le stepper du point 2.
+5. [ ] Specs (Vitest) : clamp `min`/`step`, « Ajouter N », édition d'une ligne
+       existante, rupture (pas de stepper), parité carte ↔ order-pad.
 
 ### P1 — Vitesse pour les récurrents
 
-- [ ] **Order pad / vue liste dense** (toggle grille ↔ liste ; table réf, nom,
-      PCB, prix, qté, ajouter par ligne, saisie clavier de haut en bas).
 - [ ] **Recherche par référence** (SKU) en plus du nom + **tri** (prix, nom,
       nouveauté).
 - [ ] **Recommander la dernière commande** (pré-remplit le panier depuis un
@@ -163,15 +163,17 @@ numérique + `packSize`/`step` + `minQty` + `unit` + `reference`.
 - [ ] **Fiche produit détaillée** (conservation, DLC, allergènes, marque,
       conditionnement).
 
-## Décisions produit à trancher (cadrent le P0)
+## Décisions produit (verrouillées 2026-08-04)
 
-1. **Colisage** — on vend **au multiple/PCB** (par 12, par carton → `step`
-   contraignant) ou à **l'unité libre** (`step = 1`) ? (Détermine le stepper et le
-   min.)
-2. **Prix affiché catalogue** — **HT** (standard B2B) ou **TTC** ? (Détermine le
-   modèle de prix et le pied de carte.)
-3. **Order pad** — on l'embarque **dès le P0** (la carte ET la liste dense
-   partagent le stepper) ou **en P1** (P0 = carte seule d'abord) ?
+1. **Colisage = `step` par produit, défaut 1.** Le modèle porte `packSize`/`step`
+   **par produit** ; défaut = unité libre (`step = 1`). On pose un PCB (par 12, par
+   carton) **uniquement** là où ça a du sens. Le stepper contraint au multiple et
+   au `minQty`.
+2. **Prix affiché = HT.** Référence catalogue en **HT** (standard B2B) ; la TVA
+   s'ajoute au checkout. Le pied de carte affiche HT.
+3. **Order pad dès le P0.** La **carte** ET la **vue liste dense** sont livrées en
+   P0 et **partagent le même stepper** (composant/quantité générique). Le P1
+   ci-dessous est allégé en conséquence (recherche réf, tri, reorder).
 
 ## Note d'archi
 
