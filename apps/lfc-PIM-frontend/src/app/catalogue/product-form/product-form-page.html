@@ -21,14 +21,12 @@
   }
 
   @if (loading()) {
-    <fold-card><p class="muted">Chargement…</p></fold-card>
+    <fold-loading message="Chargement du produit…" />
   } @else if (notFound()) {
-    <fold-card>
-      <p class="muted">Ce produit est introuvable.</p>
-      <button foldButton emphasis="soft" intent="neutral" (click)="back()">
-        Retour aux produits
-      </button>
-    </fold-card>
+    <fold-empty-state
+      title="Produit introuvable"
+      subtitle="Ce produit n'existe pas ou a été supprimé."
+    />
   } @else {
     <fold-nav-layout placement="top">
       <fold-tabs
