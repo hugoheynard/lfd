@@ -1,0 +1,33 @@
+<p class="panel-desc">Prix canonique HT et poids de l'unité vendue.</p>
+<fold-card>
+  <div class="grid">
+    <label class="field">
+      <span class="field-label">Prix (€)</span>
+      <input
+        class="native-input"
+        type="number"
+        step="0.01"
+        min="0"
+        [value]="priceEur() ?? ''"
+        (input)="priceEur.set(numberValue($event))"
+      />
+    </label>
+    <label class="field">
+      <span class="field-label">Poids (g)</span>
+      <input
+        class="native-input"
+        type="number"
+        step="1"
+        min="0"
+        [value]="weightGrams() ?? ''"
+        (input)="weightGrams.set(numberValue($event))"
+      />
+    </label>
+  </div>
+  @if (saveable()) {
+    <div class="section-footer">
+      <button foldButton size="sm" (click)="save.emit()">Enregistrer</button>
+      <span class="section-status">{{ status() }}</span>
+    </div>
+  }
+</fold-card>

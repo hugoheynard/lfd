@@ -1,0 +1,37 @@
+<p class="panel-desc">Le master ; chaque canal en dérivera ses tailles.</p>
+<fold-card class="stack">
+  <fold-callout appearance="inset" variant="info">
+    La persistance des visuels n'est pas encore branchée (stockage média à venir).
+  </fold-callout>
+  <div class="media">
+    @for (slot of media(); track $index) {
+      <div class="media-row">
+        <fold-listbox
+          [value]="slot.role"
+          (selectionChange)="set($index, 'role', $event)"
+        >
+          @for (role of roles; track role.value) {
+            <fold-option [value]="role.value">{{ role.label }}</fold-option>
+          }
+        </fold-listbox>
+        <fold-input
+          placeholder="https://…"
+          [value]="slot.url"
+          (valueChange)="set($index, 'url', $event)"
+        />
+        <button
+          foldButton
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          (click)="remove($index)"
+        >
+          Retirer
+        </button>
+      </div>
+    }
+  </div>
+  <button foldButton emphasis="outline" size="sm" (click)="add()">
+    Ajouter un visuel
+  </button>
+</fold-card>

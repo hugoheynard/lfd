@@ -1,0 +1,13 @@
+<p class="panel-desc">
+  Hérités de la famille. L'override par produit arrive avec le contexte commerce.
+</p>
+<fold-card class="stack">
+  @if (tva(); as t) {
+    <dl class="tva-list">
+      <div><dt>À emporter</dt><dd>{{ t.emporter }}</dd></div>
+      <div><dt>Sur place</dt><dd>{{ t.surPlace }}</dd></div>
+    </dl>
+  } @else {
+    <p class="muted">Choisissez une famille pour voir la TVA héritée.</p>
+  }
+</fold-card>

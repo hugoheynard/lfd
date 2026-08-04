@@ -1,0 +1,42 @@
+<p class="panel-desc">Le strict nécessaire pour exister au catalogue.</p>
+<fold-card>
+  <div class="grid">
+    <fold-input
+      label="Nom du produit"
+      required
+      [value]="name()"
+      (valueChange)="name.set($event)"
+    />
+    <fold-listbox
+      label="Nature"
+      [value]="kind()"
+      (selectionChange)="setKind($event)"
+    >
+      @for (option of kinds(); track option.value) {
+        <fold-option [value]="option.value">{{ option.label }}</fold-option>
+      }
+    </fold-listbox>
+    <fold-listbox
+      label="Famille"
+      [value]="categoryId()"
+      (selectionChange)="setCategory($event)"
+    >
+      @for (category of categories(); track category.id) {
+        <fold-option [value]="category.id">{{ category.name.fr }}</fold-option>
+      }
+    </fold-listbox>
+    <fold-input
+      label="Référence — SKU"
+      [hint]="isEdit() ? 'Figée après création.' : 'Calculée si laissée vide.'"
+      [value]="sku()"
+      [disabled]="isEdit()"
+      (valueChange)="sku.set($event)"
+    />
+  </div>
+  @if (saveable()) {
+    <div class="section-footer">
+      <button foldButton size="sm" (click)="save.emit()">Enregistrer</button>
+      <span class="section-status">{{ status() }}</span>
+    </div>
+  }
+</fold-card>

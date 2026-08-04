@@ -8,14 +8,11 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 
 import {
+  FoldBackLinkComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldCheckboxComponent,
-  FoldInputComponent,
-  FoldListboxComponent,
   FoldNavLayoutComponent,
-  FoldOptionComponent,
   FoldPageLayoutComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
@@ -37,61 +34,66 @@ import {
   type EditorialFields,
   type NutritionValues,
 } from '../product-http-api';
+import { ChannelsPanel } from './panels/channels-panel';
+import { CommunicationPanel } from './panels/communication-panel';
+import { IdentityPanel, type KindOption } from './panels/identity-panel';
+import { PricingPanel } from './panels/pricing-panel';
+import {
+  RegulatoryPanel,
+  type AllergenGroup,
+} from './panels/regulatory-panel';
+import { VisualsPanel, type MediaSlot } from './panels/visuals-panel';
 
 type SectionStatus = 'saving' | 'saved' | 'error';
 
-interface AllergenGroup {
-  readonly incoLabel: string;
-  readonly entries: readonly AllergenEntry[];
-}
-
-const KINDS: readonly { value: ProductKind; label: string }[] = [
+const KINDS: readonly KindOption[] = [
   { value: 'daily', label: 'Frais du jour' },
   { value: 'made_to_order', label: 'Sur commande' },
   { value: 'resale', label: 'Revente' },
 ];
 
-const NUTRITION_FIELDS: readonly { key: keyof NutritionValues; label: string }[] =
-  [
-    { key: 'energyKcal', label: 'Calories (kcal)' },
-    { key: 'carbsG', label: 'Glucides (g)' },
-    { key: 'fatG', label: 'Lipides (g)' },
-    { key: 'proteinG', label: 'Protéines (g)' },
-    { key: 'glycemicIndex', label: 'Indice glycémique' },
-  ];
+const EMPTY_NUTRITION: NutritionValues = {
+  energyKcal: null,
+  carbsG: null,
+  fatG: null,
+  proteinG: null,
+  glycemicIndex: null,
+};
 
-const EDITORIAL_FIELDS: readonly { key: keyof EditorialFields; label: string }[] =
-  [
-    { key: 'descriptionShort', label: 'Résumé court' },
-    { key: 'brand', label: 'Marque / gamme' },
-    { key: 'seoTitle', label: 'Titre SEO' },
-    { key: 'seoDescription', label: 'Description SEO' },
-  ];
+const EMPTY_EDITORIAL: EditorialFields = {
+  descriptionShort: '',
+  descriptionLong: '',
+  story: '',
+  pairing: '',
+  brand: '',
+  seoTitle: '',
+  seoDescription: '',
+};
 
 /**
- * Formulaire produit **unique**, paramétré par mode. Une seule page pour créer
- * et éditer : mêmes sections en onglets. Ce qui change selon le mode :
- * - **create** : champs vierges, un seul bouton « Créer le brouillon » en bas ;
- * - **edit** : on hydrate depuis le backend, et chaque section s'enregistre
- *   indépendamment (un save par section, dans la carte).
- * Canaux & TVA sont en lecture seule (hérités de la catégorie ; l'override par
- * produit relève du contexte commerce). Allergènes + nutrition = une seule fiche.
+ * Formulaire produit **unique**, orchestrateur. Paramétré par mode (présence
+ * d'un `:id`) : create (vierge, submit global) vs edit (hydraté, un save par
+ * section). Chaque panneau est un sous-composant présentationnel ; cette page
+ * détient l'état, les appels réseau et le chargement.
  */
 @Component({
   selector: 'app-product-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldPageLayoutComponent,
+    FoldBackLinkComponent,
     FoldCardComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldInputComponent,
-    FoldListboxComponent,
-    FoldOptionComponent,
-    FoldCheckboxComponent,
     FoldNavLayoutComponent,
     FoldTabsComponent,
     FoldTabPanelComponent,
+    IdentityPanel,
+    PricingPanel,
+    ChannelsPanel,
+    RegulatoryPanel,
+    CommunicationPanel,
+    VisualsPanel,
   ],
   templateUrl: './product-form-page.html',
   styleUrl: './product-form-page.scss',
@@ -104,19 +106,6 @@ export class ProductFormPage {
   private readonly reference = inject(ReferenceApi);
 
   protected readonly kinds = KINDS;
-  protected readonly nutritionFields = NUTRITION_FIELDS;
-  protected readonly editorialFields = EDITORIAL_FIELDS;
-  protected readonly scopes = [
-    { value: 'eu' as const, label: 'UE / France' },
-    { value: 'world' as const, label: 'Monde' },
-  ];
-  protected readonly mediaRoles = [
-    { value: 'hero', label: 'Principale' },
-    { value: 'gallery', label: 'Galerie' },
-    { value: 'lifestyle', label: 'Ambiance' },
-    { value: 'thumbnail', label: 'Miniature' },
-    { value: 'print', label: 'Impression' },
-  ];
   protected readonly tabs: FoldTabItem[] = [
     { key: 'identite', label: 'Identité', icon: 'grid' },
     { key: 'tarif', label: 'Tarif & logistique', icon: 'tag' },
@@ -137,10 +126,10 @@ export class ProductFormPage {
 
   protected readonly categories = signal<Category[]>([]);
   protected readonly regimes = signal<TvaRegime[]>([]);
-  protected readonly entries = signal<AllergenEntry[]>([]);
+  private readonly entries = signal<AllergenEntry[]>([]);
   protected readonly provisional = signal(false);
 
-  // Champs
+  // Champs — liés aux panneaux via des `model()` bidirectionnels.
   protected readonly name = signal('');
   protected readonly kind = signal<ProductKind>('daily');
   protected readonly categoryId = signal('');
@@ -150,33 +139,21 @@ export class ProductFormPage {
   protected readonly scope = signal<AllergenScope>('eu');
   protected readonly selected = signal<string[]>([]);
   protected readonly declaresNone = signal(false);
-  protected readonly nutrition = signal<NutritionValues>({
-    energyKcal: null,
-    carbsG: null,
-    fatG: null,
-    proteinG: null,
-    glycemicIndex: null,
-  });
-  protected readonly editorial = signal<EditorialFields>({
-    descriptionShort: '',
-    descriptionLong: '',
-    story: '',
-    pairing: '',
-    brand: '',
-    seoTitle: '',
-    seoDescription: '',
-  });
-  protected readonly media = signal<
-    { role: string; url: string; alt?: string }[]
-  >([]);
+  protected readonly nutrition = signal<NutritionValues>(EMPTY_NUTRITION);
+  protected readonly editorial = signal<EditorialFields>(EMPTY_EDITORIAL);
+  protected readonly media = signal<MediaSlot[]>([]);
 
   private readonly status = signal<Record<string, SectionStatus | undefined>>(
     {},
   );
 
-  protected readonly pageTitle = computed(() =>
-    this.isEdit() ? 'Éditer le produit' : 'Nouveau produit',
-  );
+  protected readonly pageTitle = computed(() => {
+    if (!this.isEdit()) {
+      return 'Nouveau produit';
+    }
+    const name = this.name().trim();
+    return name === '' ? 'Éditer le produit' : `Éditer le produit — ${name}`;
+  });
 
   private readonly regimeById = computed(
     () => new Map(this.regimes().map((r) => [r.id, r])),
@@ -186,7 +163,6 @@ export class ProductFormPage {
     this.categories().find((c) => c.id === this.categoryId()),
   );
 
-  /** TVA héritée de la catégorie : « Réduit 5,5 % → Intermédiaire 10 % ». */
   protected readonly categoryTva = computed(() => {
     const category = this.selectedCategory();
     if (category === undefined) {
@@ -225,10 +201,6 @@ export class ProductFormPage {
     void this.load();
   }
 
-  protected declaresSomething(): boolean {
-    return this.declaresNone() || this.selected().length > 0;
-  }
-
   protected statusText(section: string): string {
     switch (this.status()[section]) {
       case 'saving':
@@ -246,88 +218,9 @@ export class ProductFormPage {
     return this.name().trim() !== '' && this.categoryId() !== '';
   }
 
-  protected numberValue(event: Event): number | null {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement) || target.value.trim() === '') {
-      return null;
-    }
-    const parsed = Number(target.value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  protected text(event: Event): string {
-    return event.target instanceof HTMLTextAreaElement ? event.target.value : '';
-  }
-
-  protected setKind(value: string): void {
-    if (this.isKind(value)) {
-      this.kind.set(value);
-    }
-  }
-
-  protected setCategory(value: string): void {
-    if (value !== '') {
-      this.categoryId.set(value);
-    }
-  }
-
-  protected editorialValue(key: keyof EditorialFields): string {
-    return this.editorial()[key];
-  }
-
-  protected setEditorial(key: keyof EditorialFields, value: string): void {
-    this.editorial.update((current) => ({ ...current, [key]: value }));
-  }
-
-  protected nutritionValue(key: keyof NutritionValues): number | null {
-    return this.nutrition()[key];
-  }
-
-  protected setNutrition(key: keyof NutritionValues, value: number | null): void {
-    this.nutrition.update((current) => ({ ...current, [key]: value }));
-  }
-
-  protected toggle(code: string, on: boolean): void {
-    this.selected.update((current) =>
-      on ? [...current, code] : current.filter((entry) => entry !== code),
-    );
-  }
-
-  protected toggleNone(on: boolean): void {
-    this.declaresNone.set(on);
-    if (on) {
-      this.selected.set([]);
-    }
-  }
-
   protected async changeScope(scope: AllergenScope): Promise<void> {
     this.scope.set(scope);
     await this.loadReference(scope);
-  }
-
-  protected addMedia(): void {
-    this.media.update((current) => [
-      ...current,
-      { role: current.length === 0 ? 'hero' : 'gallery', url: '' },
-    ]);
-  }
-
-  protected removeMedia(index: number): void {
-    this.media.update((current) =>
-      current.filter((_, position) => position !== index),
-    );
-  }
-
-  protected setMedia(
-    index: number,
-    key: 'role' | 'url' | 'alt',
-    value: string,
-  ): void {
-    this.media.update((current) =>
-      current.map((slot, position) =>
-        position === index ? { ...slot, [key]: value } : slot,
-      ),
-    );
   }
 
   protected back(): void {
@@ -347,17 +240,17 @@ export class ProductFormPage {
       const price = this.priceEur();
       const weight = this.weightGrams();
       const description = this.editorial().descriptionShort.trim();
+      const declares = this.declaresNone() || this.selected().length > 0;
       const created = await this.api.createProduct({
         nameFr: this.name().trim(),
         kind: this.kind(),
         categoryId: this.categoryId(),
         ...(sku === '' ? {} : { sku }),
-        ...(this.declaresSomething() ? { allergens: this.selected() } : {}),
+        ...(declares ? { allergens: this.selected() } : {}),
         ...(price === null ? {} : { priceEur: price }),
         ...(weight === null ? {} : { weightGrams: weight }),
         ...(description === '' ? {} : { descriptionFr: description }),
       });
-      // On enchaîne sur l'édition : le reste (nutrition, SEO, visuels) s'y complète.
       await this.router.navigate(['/produits', created.id]);
     } catch (caught) {
       this.error.set(this.messageOf(caught));
@@ -405,10 +298,6 @@ export class ProductFormPage {
     return this.save('communication', () =>
       this.products.saveEditorial(this.productId(), this.editorial()),
     );
-  }
-
-  private isKind(value: string): value is ProductKind {
-    return value === 'daily' || value === 'made_to_order' || value === 'resale';
   }
 
   private messageOf(caught: unknown): string {

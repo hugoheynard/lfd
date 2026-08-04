@@ -1,0 +1,77 @@
+<p class="panel-desc">
+  Fiche réglementaire — allergènes obligatoires avant publication.
+</p>
+<fold-callout
+  appearance="inset"
+  [variant]="declaresSomething() ? 'success' : 'warning'"
+>
+  <fold-checkbox
+    label="Aucun allergène"
+    hint="Une affirmation explicite — différente d'un champ laissé vide."
+    [checked]="declaresNone()"
+    (checkedChange)="toggleNone($event)"
+  />
+</fold-callout>
+
+@if (!declaresNone()) {
+  <fold-card class="stack">
+    <div class="scope">
+      @for (option of scopes; track option.value) {
+        <button
+          foldButton
+          size="sm"
+          [emphasis]="scope() === option.value ? 'solid' : 'outline'"
+          (click)="scopeChange.emit(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
+    @if (provisional()) {
+      <fold-callout appearance="inset" variant="warning">
+        Les <strong>codes</strong> de ce référentiel sont provisoires.
+      </fold-callout>
+    }
+    <div class="groups">
+      @for (group of groups(); track group.incoLabel) {
+        <fieldset>
+          <legend>{{ group.incoLabel }}</legend>
+          @for (item of group.entries; track item.code) {
+            <fold-checkbox
+              size="sm"
+              [label]="item.label"
+              [checked]="selected().includes(item.code)"
+              (checkedChange)="toggle(item.code, $event)"
+            />
+          }
+        </fieldset>
+      }
+    </div>
+  </fold-card>
+}
+
+<fold-card class="stack">
+  <span class="block-label">Valeurs nutritionnelles (pour 100 g)</span>
+  <div class="grid">
+    @for (field of nutritionFields; track field.key) {
+      <label class="field">
+        <span class="field-label">{{ field.label }}</span>
+        <input
+          class="native-input"
+          type="number"
+          step="0.1"
+          min="0"
+          [value]="nutritionValue(field.key) ?? ''"
+          (input)="setNutrition(field.key, numberValue($event))"
+        />
+      </label>
+    }
+  </div>
+</fold-card>
+
+@if (saveable()) {
+  <div class="section-footer">
+    <button foldButton size="sm" (click)="save.emit()">Enregistrer la fiche</button>
+    <span class="section-status">{{ status() }}</span>
+  </div>
+}

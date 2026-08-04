@@ -1,0 +1,36 @@
+<p class="panel-desc">Textes du site et référencement.</p>
+<fold-card class="stack">
+  <div class="grid">
+    @for (field of fields; track field.key) {
+      <fold-input
+        [label]="field.label"
+        [value]="value(field.key)"
+        (valueChange)="set(field.key, $event)"
+      />
+    }
+  </div>
+  <label class="field">
+    <span class="field-label">Description longue</span>
+    <textarea
+      class="native-input native-textarea"
+      rows="4"
+      [value]="value('descriptionLong')"
+      (input)="set('descriptionLong', text($event))"
+    ></textarea>
+  </label>
+  <label class="field">
+    <span class="field-label">Récit / savoir-faire</span>
+    <textarea
+      class="native-input native-textarea"
+      rows="3"
+      [value]="value('story')"
+      (input)="set('story', text($event))"
+    ></textarea>
+  </label>
+  @if (saveable()) {
+    <div class="section-footer">
+      <button foldButton size="sm" (click)="save.emit()">Enregistrer</button>
+      <span class="section-status">{{ status() }}</span>
+    </div>
+  }
+</fold-card>
