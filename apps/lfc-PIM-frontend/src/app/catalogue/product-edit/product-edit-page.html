@@ -1,8 +1,7 @@
 <fold-page-layout icon="edit" title="Éditer le produit">
   <p description>
-    Chaque section s'édite et s'enregistre <strong>indépendamment</strong> : une
-    requête par section, pas champ par champ. Le prix et le poids portent sur la
-    déclinaison par défaut.
+    Mêmes sections que la création, en édition : on charge l'existant et
+    <strong>chaque section a son propre bouton d'enregistrement</strong>.
   </p>
 
   @if (error(); as message) {
@@ -21,118 +20,258 @@
       </button>
     </fold-card>
   } @else {
+    <fold-nav-layout placement="top">
+    <fold-tabs
+      tabNav
+      class="product-tabs"
+      [tabs]="tabs"
+      [(activeKey)]="activeTab"
+      #ref="foldTabs"
+    />
+
     <!-- 1 · Identité -->
-    <fold-page-section
-      title="Identité"
-      icon="grid"
-      description="Nom, nature et famille. La référence ne change pas."
-    >
-      <fold-card>
-        <div class="grid">
-          <label class="field">
-            <span class="field-label">Nom du produit</span>
-            <input
-              class="native-input"
-              type="text"
+    <fold-tab-panel [tabs]="ref" key="identite">
+      <fold-page-section
+        title="Identité"
+        icon="grid"
+        description="Nom, nature et famille. La référence ne change pas."
+      >
+        <fold-card>
+          <div class="grid">
+            <fold-input
+              label="Nom du produit"
+              required
               [value]="name()"
-              (input)="setName(inputValue($event))"
+              (valueChange)="name.set($event)"
             />
-          </label>
-
-          <fold-listbox
-            label="Nature"
-            [value]="kind()"
-            (selectionChange)="setKind($event)"
-          >
-            @for (option of kinds; track option.value) {
-              <fold-option [value]="option.value">{{ option.label }}</fold-option>
-            }
-          </fold-listbox>
-
-          <fold-listbox
-            label="Famille"
-            [value]="categoryId()"
-            (selectionChange)="setCategory($event)"
-          >
-            @for (category of categories(); track category.id) {
-              <fold-option [value]="category.id">{{ category.name.fr }}</fold-option>
-            }
-          </fold-listbox>
-
-          <label class="field">
-            <span class="field-label">Référence — SKU</span>
-            <input class="native-input" type="text" [value]="sku()" disabled />
-            <span class="field-hint">La référence est figée après création.</span>
-          </label>
-        </div>
-        <div class="section-footer">
-          <button foldButton size="sm" (click)="saveIdentity()">Enregistrer</button>
-          <span class="section-status">{{ statusText('identity') }}</span>
-        </div>
-      </fold-card>
-    </fold-page-section>
+            <fold-listbox
+              label="Nature"
+              [value]="kind()"
+              (selectionChange)="setKind($event)"
+            >
+              @for (option of kinds; track option.value) {
+                <fold-option [value]="option.value">{{ option.label }}</fold-option>
+              }
+            </fold-listbox>
+            <fold-listbox
+              label="Famille"
+              [value]="categoryId()"
+              (selectionChange)="setCategory($event)"
+            >
+              @for (category of categories(); track category.id) {
+                <fold-option [value]="category.id">{{ category.name.fr }}</fold-option>
+              }
+            </fold-listbox>
+            <fold-input
+              label="Référence — SKU"
+              hint="Figée après création."
+              [value]="sku()"
+              [disabled]="true"
+            />
+          </div>
+          <div class="section-footer">
+            <button foldButton size="sm" (click)="saveIdentity()">Enregistrer</button>
+            <span class="section-status">{{ statusText('identite') }}</span>
+          </div>
+        </fold-card>
+      </fold-page-section>
+    </fold-tab-panel>
 
     <!-- 2 · Tarif & logistique -->
-    <fold-page-section
-      title="Tarif & logistique"
-      icon="tag"
-      description="Prix canonique HT et poids de l'unité vendue."
-    >
-      <fold-card>
-        <div class="grid">
-          <label class="field">
-            <span class="field-label">Prix (€)</span>
-            <input
-              class="native-input"
-              type="number"
-              step="0.01"
-              min="0"
-              [value]="priceEur() ?? ''"
-              (input)="setPrice(numberValue($event))"
-            />
-          </label>
+    <fold-tab-panel [tabs]="ref" key="tarif">
+      <fold-page-section
+        title="Tarif & logistique"
+        icon="tag"
+        description="Prix canonique HT et poids de l'unité vendue."
+      >
+        <fold-card>
+          <div class="grid">
+            <label class="field">
+              <span class="field-label">Prix (€)</span>
+              <input
+                class="native-input"
+                type="number"
+                step="0.01"
+                min="0"
+                [value]="priceEur() ?? ''"
+                (input)="priceEur.set(numberValue($event))"
+              />
+            </label>
+            <label class="field">
+              <span class="field-label">Poids (g)</span>
+              <input
+                class="native-input"
+                type="number"
+                step="1"
+                min="0"
+                [value]="weightGrams() ?? ''"
+                (input)="weightGrams.set(numberValue($event))"
+              />
+            </label>
+          </div>
+          <div class="section-footer">
+            <button foldButton size="sm" (click)="savePricing()">Enregistrer</button>
+            <span class="section-status">{{ statusText('tarif') }}</span>
+          </div>
+        </fold-card>
+      </fold-page-section>
+    </fold-tab-panel>
 
-          <label class="field">
-            <span class="field-label">Poids (g)</span>
-            <input
-              class="native-input"
-              type="number"
-              step="1"
-              min="0"
-              [value]="weightGrams() ?? ''"
-              (input)="setWeight(numberValue($event))"
-            />
-          </label>
-        </div>
-        <div class="section-footer">
-          <button foldButton size="sm" (click)="savePricing()">Enregistrer</button>
-          <span class="section-status">{{ statusText('pricing') }}</span>
-        </div>
-      </fold-card>
-    </fold-page-section>
+    <!-- 3 · Allergènes -->
+    <fold-tab-panel [tabs]="ref" key="allergenes">
+      <fold-page-section
+        title="Allergènes"
+        icon="shield"
+        description="Obligation réglementaire — à déclarer avant publication."
+      >
+        <fold-callout
+          appearance="inset"
+          [variant]="declaresSomething() ? 'success' : 'warning'"
+        >
+          <fold-checkbox
+            label="Aucun allergène"
+            hint="Une affirmation explicite — différente d'un champ laissé vide."
+            [checked]="declaresNone()"
+            (checkedChange)="toggleNone($event)"
+          />
+        </fold-callout>
 
-    <!-- 3 · Description -->
-    <fold-page-section
-      title="Description"
-      icon="edit"
-      description="Le résumé affiché sur la fiche et les listes."
-    >
-      <fold-card>
-        <label class="field">
-          <span class="field-label">Description courte</span>
-          <textarea
-            class="native-input native-textarea"
-            rows="4"
-            [value]="descriptionFr()"
-            (input)="setDescription(inputValue($event))"
-          ></textarea>
-        </label>
+        @if (!declaresNone()) {
+          <fold-card class="stack">
+            <div class="scope">
+              @for (option of scopes; track option.value) {
+                <button
+                  foldButton
+                  size="sm"
+                  [emphasis]="scope() === option.value ? 'solid' : 'outline'"
+                  (click)="changeScope(option.value)"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </div>
+
+            @if (provisional()) {
+              <fold-callout appearance="inset" variant="warning">
+                Les <strong>codes</strong> de ce référentiel sont provisoires.
+              </fold-callout>
+            }
+
+            <div class="groups">
+              @for (group of groups(); track group.incoLabel) {
+                <fieldset>
+                  <legend>{{ group.incoLabel }}</legend>
+                  @for (item of group.entries; track item.code) {
+                    <fold-checkbox
+                      size="sm"
+                      [label]="item.label"
+                      [checked]="selected().includes(item.code)"
+                      (checkedChange)="toggle(item.code, $event)"
+                    />
+                  }
+                </fieldset>
+              }
+            </div>
+          </fold-card>
+        }
+
         <div class="section-footer">
-          <button foldButton size="sm" (click)="saveDescription()">Enregistrer</button>
-          <span class="section-status">{{ statusText('description') }}</span>
+          <button foldButton size="sm" (click)="saveAllergens()">Enregistrer</button>
+          <span class="section-status">{{ statusText('allergenes') }}</span>
         </div>
-      </fold-card>
-    </fold-page-section>
+      </fold-page-section>
+    </fold-tab-panel>
+
+    <!-- 4 · Communication -->
+    <fold-tab-panel [tabs]="ref" key="communication">
+      <fold-page-section
+        title="Communication"
+        icon="edit"
+        description="Textes du site et référencement."
+      >
+        <fold-card class="stack">
+          <div class="grid">
+            @for (field of editorialFields; track field.key) {
+              <fold-input
+                [label]="field.label"
+                [value]="editorialValue(field.key)"
+                (valueChange)="setEditorial(field.key, $event)"
+              />
+            }
+          </div>
+          <label class="field">
+            <span class="field-label">Description longue</span>
+            <textarea
+              class="native-input native-textarea"
+              rows="4"
+              [value]="editorialValue('descriptionLong')"
+              (input)="setEditorial('descriptionLong', text($event))"
+            ></textarea>
+          </label>
+          <label class="field">
+            <span class="field-label">Récit / savoir-faire</span>
+            <textarea
+              class="native-input native-textarea"
+              rows="3"
+              [value]="editorialValue('story')"
+              (input)="setEditorial('story', text($event))"
+            ></textarea>
+          </label>
+          <div class="section-footer">
+            <button foldButton size="sm" (click)="saveCommunication()">Enregistrer</button>
+            <span class="section-status">{{ statusText('communication') }}</span>
+          </div>
+        </fold-card>
+      </fold-page-section>
+    </fold-tab-panel>
+
+    <!-- 5 · Visuels -->
+    <fold-tab-panel [tabs]="ref" key="visuels">
+      <fold-page-section
+        title="Visuels"
+        icon="eye"
+        description="Le master ; chaque canal en dérivera ses tailles."
+      >
+        <fold-card class="stack">
+          <fold-callout appearance="inset" variant="info">
+            L'envoi de fichiers et la persistance des visuels ne sont pas encore
+            branchés — cette section arrive avec le stockage média.
+          </fold-callout>
+          <div class="media">
+            @for (slot of media(); track $index) {
+              <div class="media-row">
+                <fold-listbox
+                  [value]="slot.role"
+                  (selectionChange)="setMedia($index, 'role', $event)"
+                >
+                  @for (role of mediaRoles; track role.value) {
+                    <fold-option [value]="role.value">{{ role.label }}</fold-option>
+                  }
+                </fold-listbox>
+                <fold-input
+                  placeholder="https://…"
+                  [value]="slot.url"
+                  (valueChange)="setMedia($index, 'url', $event)"
+                />
+                <button
+                  foldButton
+                  emphasis="soft"
+                  intent="neutral"
+                  size="sm"
+                  (click)="removeMedia($index)"
+                >
+                  Retirer
+                </button>
+              </div>
+            }
+          </div>
+          <button foldButton emphasis="outline" size="sm" (click)="addMedia()">
+            Ajouter un visuel
+          </button>
+        </fold-card>
+      </fold-page-section>
+    </fold-tab-panel>
+    </fold-nav-layout>
 
     <div class="actions">
       <button foldButton emphasis="soft" intent="neutral" (click)="back()">

@@ -20,9 +20,11 @@
     </fold-callout>
   }
 
-  <!-- Onglets PIM / Shopify — le second n'apparaît que si l'intégration est
-       active (Réglages). Style souligné, fond transparent. -->
+  <!-- Un onglet par section, dans un fold-nav-layout (nav horizontale au-dessus
+       du contenu, fond transparent). -->
+  <fold-nav-layout placement="top">
   <fold-tabs
+    tabNav
     class="product-tabs"
     [tabs]="tabs()"
     [(activeKey)]="activeTab"
@@ -474,6 +476,8 @@
       </fold-page-section>
     </fold-tab-panel>
   }
+
+  </fold-nav-layout>
 
   <div class="save-bar">
     @if (!isValid()) {

@@ -40,11 +40,46 @@ interface BackendProduct {
 
 interface BackendEditorial {
   readonly descriptionShort: string | null;
+  readonly descriptionLong: string | null;
+  readonly story: string | null;
+  readonly pairing: string | null;
+  readonly brand: string | null;
+  readonly seoTitle: string | null;
+  readonly seoDescription: string | null;
 }
 
 type BackendProductDetail = BackendProduct & {
   readonly editorial: BackendEditorial | null;
 };
+
+/** Couche éditoriale à plat (FR), champs vides = chaîne vide — pour l'édition. */
+export interface EditorialFields {
+  readonly descriptionShort: string;
+  readonly descriptionLong: string;
+  readonly story: string;
+  readonly pairing: string;
+  readonly brand: string;
+  readonly seoTitle: string;
+  readonly seoDescription: string;
+}
+
+/** Détail complet pour la page d'édition : le produit mappé + l'éditorial à plat. */
+export interface ProductDetail {
+  readonly product: Product;
+  readonly editorial: EditorialFields;
+}
+
+function toEditorialFields(editorial: BackendEditorial | null): EditorialFields {
+  return {
+    descriptionShort: editorial?.descriptionShort ?? '',
+    descriptionLong: editorial?.descriptionLong ?? '',
+    story: editorial?.story ?? '',
+    pairing: editorial?.pairing ?? '',
+    brand: editorial?.brand ?? '',
+    seoTitle: editorial?.seoTitle ?? '',
+    seoDescription: editorial?.seoDescription ?? '',
+  };
+}
 
 function defaultVariant(product: BackendProduct): BackendVariant | undefined {
   return product.variants.find((variant) => variant.isDefault) ?? product.variants[0];
@@ -68,7 +103,7 @@ function toVariant(variant: BackendVariant): Variant {
  */
 export function backendToProduct(
   product: BackendProduct,
-  editorial?: BackendEditorial | null,
+  editorial?: { descriptionShort: string | null } | null,
 ): Product {
   const base = defaultVariant(product);
   const price = base?.priceCents;
@@ -128,6 +163,20 @@ export class ProductHttpApi {
     return row === null ? null : backendToProduct(row, row.editorial);
   }
 
+  /** Détail complet pour l'édition : produit mappé + éditorial à plat. */
+  async getDetail(id: string): Promise<ProductDetail | null> {
+    const row = await firstValueFrom(
+      this.http.get<BackendProductDetail | null>(this.url(`products/${id}`)),
+    );
+    if (row === null) {
+      return null;
+    }
+    return {
+      product: backendToProduct(row, row.editorial),
+      editorial: toEditorialFields(row.editorial),
+    };
+  }
+
   /**
    * Crée le produit puis, si un prix/poids est fourni, tarife sa déclinaison par
    * défaut (le backend ne les prend pas à la création). La description part dans
@@ -169,11 +218,9 @@ export class ProductHttpApi {
     return this.put(`products/${id}/variants/${variantId}/pricing`, input);
   }
 
-  /** Section Description — couche éditoriale. */
-  saveDescription(id: string, descriptionFr: string): Promise<void> {
-    return this.put(`products/${id}/editorial`, {
-      descriptionShort: descriptionFr,
-    });
+  /** Section Communication — couche éditoriale complète (une requête). */
+  saveEditorial(id: string, editorial: EditorialFields): Promise<void> {
+    return this.put(`products/${id}/editorial`, editorial);
   }
 
   setVariantAllergens(

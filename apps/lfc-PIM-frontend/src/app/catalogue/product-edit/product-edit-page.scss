@@ -68,3 +68,57 @@
   justify-content: flex-start;
   margin-top: var(--fold-space-4, 1rem);
 }
+
+.product-tabs {
+  display: block;
+  margin-bottom: var(--fold-space-4, 1rem);
+  background: transparent;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-4, 1rem);
+}
+
+.scope {
+  display: flex;
+  gap: var(--fold-space-2, 0.5rem);
+}
+
+.groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--fold-space-4, 1rem);
+
+  fieldset {
+    border: 1px solid var(--fold-color-border, #e4e4e7);
+    border-radius: var(--fold-radius-md, 0.5rem);
+    padding: var(--fold-space-3, 0.75rem);
+    display: flex;
+    flex-direction: column;
+    gap: var(--fold-space-1, 0.25rem);
+  }
+
+  legend {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--fold-color-text-muted, #71717a);
+    padding: 0 0.25rem;
+  }
+}
+
+.media {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3, 0.75rem);
+}
+
+.media-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) 1fr auto;
+  gap: var(--fold-space-2, 0.5rem);
+  align-items: end;
+}
