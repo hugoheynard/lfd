@@ -1,32 +1,56 @@
 import { DatePipe, isPlatformBrowser } from '@angular/common';
-import { ChangeDetectionStrategy, Component, PLATFORM_ID, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  PLATFORM_ID,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldCardComponent,
   FoldCheckboxComponent,
+  FoldContextCardComponent,
+  FoldFieldComponent,
+  FoldFieldListComponent,
+  FoldHeroCardComponent,
+  FoldIconComponent,
   FoldInputComponent,
-  FoldPageSectionComponent,
+  FoldSpinnerComponent,
+  FoldStatusBadgeComponent,
 } from 'fold-ng';
 
 import type { ShopifySettings } from '../../data/models';
 import { ShopifyChannelApi, type VerifyResult } from '../../channels/shopify-channel-api';
 
+/** État de connexion résumé pour le badge du hero — un ton + un mot. */
+interface ConnectionStatus {
+  readonly status: 'success' | 'info' | 'neutral';
+  readonly label: string;
+}
+
 /**
  * L'intégration **Shopify** — une des pages hébergées par le hub d'intégrations.
  * La connexion (domaine, version, activation) et la vérification passent par le
- * backend ({@link ShopifyChannelApi}) ; le jeton reste un secret d'environnement,
- * jamais saisi ici. Pensée pour vivre dans un panneau d'onglet, sans chrome de page.
+ * backend ({@link ShopifyChannelApi}) ; les **identifiants** (client credentials ou
+ * jeton legacy) restent des secrets d'environnement, jamais saisis ici. Pensée pour
+ * vivre dans un panneau d'onglet, sans chrome de page.
  */
 @Component({
   selector: 'app-shopify-integration',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe,
-    FoldPageSectionComponent,
-    FoldCardComponent,
+    FoldHeroCardComponent,
+    FoldContextCardComponent,
+    FoldFieldListComponent,
+    FoldFieldComponent,
+    FoldStatusBadgeComponent,
+    FoldIconComponent,
+    FoldSpinnerComponent,
     FoldInputComponent,
     FoldCheckboxComponent,
     FoldButtonComponent,
@@ -49,6 +73,36 @@ export class ShopifyIntegration {
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly verifying = signal(false);
+
+  /** Le badge du hero : vert connecté, bleu prêt (mode réel), gris simulation. */
+  protected readonly status = computed<ConnectionStatus>(() => {
+    if (this.verifyResult()?.connected) {
+      return { status: 'success', label: 'Connecté' };
+    }
+    return this.settings()?.mode === 'live'
+      ? { status: 'info', label: 'Prêt' }
+      : { status: 'neutral', label: 'Simulation' };
+  });
+
+  /** Titre du hero : le nom de la boutique une fois connecté, sinon la marque. */
+  protected readonly heroTitle = computed(() => {
+    const verify = this.verifyResult();
+    return verify?.connected && verify.shopName ? verify.shopName : 'Shopify';
+  });
+
+  /** Sous-titre du hero : le domaine si connecté, sinon l'état d'auth courant. */
+  protected readonly heroSubtitle = computed(() => {
+    const current = this.settings();
+    if (current === null) {
+      return 'Click & collect — le catalogue descend vers la boutique.';
+    }
+    if (this.verifyResult()?.connected) {
+      return current.shopDomain;
+    }
+    return current.mode === 'live'
+      ? 'Identifiants en place — vérifiez la connexion.'
+      : "Mode simulation — aucun appel n'atteint la boutique.";
+  });
 
   constructor() {
     // HTTP réel : uniquement dans le navigateur (jamais au rendu SSR).

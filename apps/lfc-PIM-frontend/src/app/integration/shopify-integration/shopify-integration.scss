@@ -1,29 +1,119 @@
-.stack {
+.integration {
   display: grid;
   gap: var(--fold-space-lg);
-  max-width: 40rem;
 }
 
-.token {
+/* --- Hero de statut --------------------------------------------------- */
+
+.hero {
   display: grid;
-  gap: var(--fold-space-sm);
-  max-width: 40rem;
+  gap: var(--fold-space-lg);
 }
 
-.token-head {
+.hero-head {
   display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm);
+  align-items: flex-start;
+  gap: var(--fold-space-md);
 }
 
-.token-label {
+.hero-mark {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-surface-card);
+  border: 1px solid var(--fold-color-border-subtle);
+  color: var(--fold-color-text);
+}
+
+.hero-titles {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.hero-eyebrow {
+  font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
 }
 
-.actions {
+.hero-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.2;
+  color: var(--fold-color-text);
+  overflow-wrap: anywhere;
+}
+
+.hero-sub {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Le badge de statut tient à droite, aligné sur le titre. */
+.hero-head fold-status-badge {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+/* --- Cartes de réglages ----------------------------------------------- */
+
+.cards {
+  display: grid;
+  gap: var(--fold-space-lg);
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  align-items: start;
+}
+
+.stack {
+  display: grid;
+  gap: var(--fold-space-md);
+}
+
+.card-footer {
   display: flex;
   align-items: center;
   gap: var(--fold-space-md);
+}
+
+/* --- Bloc identifiants ------------------------------------------------- */
+
+.creds {
+  display: grid;
+  gap: var(--fold-space-sm);
+}
+
+.creds-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.creds-label {
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+/* --- Divers ------------------------------------------------------------ */
+
+.loading {
+  display: grid;
+  place-items: center;
+  padding: var(--fold-space-xl) 0;
 }
 
 .muted {

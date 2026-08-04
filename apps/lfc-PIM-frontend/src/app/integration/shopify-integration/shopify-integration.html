@@ -5,93 +5,123 @@
 }
 
 @if (settings(); as current) {
-  <fold-callout appearance="inset" [variant]="current.mode === 'live' ? 'success' : 'info'">
-    @if (current.mode === 'live') {
-      <strong>Mode réel.</strong> Les envois atteignent la boutique.
-    } @else {
-      <strong>Mode simulation.</strong> Tant que le jeton (<code>SHOPIFY_ADMIN_TOKEN</code>) manque
-      ou que l'intégration n'est pas activée, l'inspection et le push tournent sur un miroir simulé
-      — aucun appel n'atteint la boutique.
-    }
-  </fold-callout>
+  <div class="integration">
+    <!-- Hero de statut — l'état de la connexion, en un coup d'œil. -->
+    <fold-hero-card accent="gradient" [accentBar]="true" padding="lg">
+      <div class="hero">
+        <div class="hero-head">
+          <span class="hero-mark"><fold-icon name="shopify" [size]="28" /></span>
+          <div class="hero-titles">
+            <span class="hero-eyebrow">Canal de vente</span>
+            <h2 class="hero-title">{{ heroTitle() }}</h2>
+            <p class="hero-sub">{{ heroSubtitle() }}</p>
+          </div>
+          <fold-status-badge [status]="status().status" [label]="status().label" />
+        </div>
 
-  <fold-page-section
-    title="Connexion"
-    icon="globe"
-    description="L'adresse de la boutique et la version d'API visées."
-  >
-    <fold-card class="stack">
-      <fold-input
-        label="Domaine de la boutique"
-        placeholder="chevallot.myshopify.com"
-        autocomplete="off"
-        [value]="draftDomain()"
-        (valueChange)="draftDomain.set($event)"
-      />
-      <fold-input
-        label="Version d'API"
-        hint="Shopify publie une version par trimestre — à relever à chaque montée."
-        autocomplete="off"
-        [value]="draftVersion()"
-        (valueChange)="draftVersion.set($event)"
-      />
-      <fold-checkbox
-        label="Intégration active"
-        hint="Sans jeton, l'intégration reste en simulation même activée."
-        [checked]="draftEnabled()"
-        (checkedChange)="draftEnabled.set($event)"
-      />
-      <div class="actions">
-        <button foldButton [disabled]="busy()" (click)="save()">Enregistrer</button>
-        @if (current.updatedAt) {
-          <small class="muted"> Modifié le {{ current.updatedAt | date: 'short' }} </small>
-        }
-      </div>
-    </fold-card>
-  </fold-page-section>
+        <fold-field-list>
+          <fold-field label="Domaine" placeholder="non renseigné">{{ current.shopDomain }}</fold-field>
+          <fold-field label="Version d'API">{{ current.apiVersion }}</fold-field>
+          <fold-field label="Mode">{{ current.mode === 'live' ? 'Réel' : 'Simulation' }}</fold-field>
+          @if (current.updatedAt) {
+            <fold-field label="Dernière modification">{{ current.updatedAt | date: 'short' }}</fold-field>
+          }
+        </fold-field-list>
 
-  <fold-page-section
-    title="Jeton d'API"
-    icon="lock"
-    description="Le secret qui autorise l'écriture chez Shopify."
-  >
-    <fold-card class="token">
-      <div class="token-head">
-        <span class="token-label">Jeton Admin</span>
-        <fold-badge
-          [content]="current.hasToken ? 'présent' : 'absent'"
-          [variant]="current.hasToken ? 'success' : 'neutral'"
-        />
+        <div class="hero-actions">
+          <button
+            foldButton
+            intent="primary"
+            [loading]="verifying()"
+            [disabled]="verifying()"
+            (click)="verify()"
+          >
+            {{ verifying() ? 'Vérification…' : 'Vérifier la connexion' }}
+          </button>
+          @if (verifyResult(); as result) {
+            <fold-callout
+              appearance="inset"
+              [variant]="result.connected ? 'success' : result.mode === 'live' ? 'alert' : 'info'"
+            >
+              {{ result.detail }}
+            </fold-callout>
+          }
+        </div>
       </div>
-      <p class="muted">
-        Un jeton Admin est un secret : il vit côté serveur, dans
-        <code>SHOPIFY_ADMIN_TOKEN</code> — jamais saisi ni affiché ici. Cet écran n'en montre que la
-        <strong>présence</strong>. Sans lui, l'intégration reste une simulation fidèle.
-      </p>
-    </fold-card>
-  </fold-page-section>
+    </fold-hero-card>
 
-  <fold-page-section
-    title="Vérification"
-    icon="shopify"
-    description="Confirme que le couple domaine + jeton parle bien à la boutique."
-  >
-    <fold-card class="stack">
-      <div class="actions">
-        <button foldButton emphasis="outline" [disabled]="verifying()" (click)="verify()">
-          {{ verifying() ? 'Vérification…' : 'Vérifier la connexion' }}
-        </button>
-      </div>
-      @if (verifyResult(); as result) {
-        <fold-callout
-          appearance="inset"
-          [variant]="result.connected ? 'success' : result.mode === 'live' ? 'alert' : 'info'"
-        >
-          {{ result.detail }}
-        </fold-callout>
-      }
-    </fold-card>
-  </fold-page-section>
+    <div class="cards">
+      <!-- Connexion — les réglages non sensibles, pilotables ici. -->
+      <fold-context-card
+        icon="globe"
+        iconTone="primary"
+        title="Connexion"
+        subtitle="L'adresse de la boutique et la version d'API visées."
+      >
+        <div class="stack">
+          <fold-input
+            label="Domaine de la boutique"
+            placeholder="ma-boutique.myshopify.com"
+            hint="Le domaine .myshopify.com permanent — jamais un domaine public."
+            autocomplete="off"
+            [value]="draftDomain()"
+            (valueChange)="draftDomain.set($event)"
+          />
+          <fold-input
+            label="Version d'API"
+            hint="Shopify publie une version par trimestre — à relever à chaque montée."
+            autocomplete="off"
+            [value]="draftVersion()"
+            (valueChange)="draftVersion.set($event)"
+          />
+          <fold-checkbox
+            label="Intégration active"
+            hint="Sans identifiants, l'intégration reste en simulation même activée."
+            [checked]="draftEnabled()"
+            (checkedChange)="draftEnabled.set($event)"
+          />
+        </div>
+        <div footer class="card-footer">
+          <button foldButton [disabled]="busy()" [loading]="busy()" (click)="save()">
+            Enregistrer
+          </button>
+          @if (current.updatedAt) {
+            <small class="muted">Modifié le {{ current.updatedAt | date: 'short' }}</small>
+          }
+        </div>
+      </fold-context-card>
+
+      <!-- Identifiants — la présence du secret, jamais sa valeur. -->
+      <fold-context-card
+        icon="lock"
+        iconTone="primary"
+        title="Identifiants d'application"
+        subtitle="Ce qui autorise l'écriture chez Shopify — côté serveur uniquement."
+      >
+        <div class="creds">
+          <div class="creds-head">
+            <span class="creds-label">Authentification</span>
+            <fold-badge
+              [content]="current.hasToken ? 'configurée' : 'absente'"
+              [variant]="current.hasToken ? 'success' : 'neutral'"
+            />
+          </div>
+          <p class="muted">
+            L'app du Dev Dashboard s'authentifie par <strong>client credentials</strong> :
+            <code>SHOPIFY_CLIENT_ID</code> + <code>SHOPIFY_CLIENT_SECRET</code>, échangés
+            server-to-server contre un jeton temporaire. Ces secrets vivent dans l'environnement du
+            backend — <strong>jamais</strong> saisis ni affichés ici ; l'écran n'en montre que la
+            <strong>présence</strong>. Une legacy custom app (jeton <code>SHOPIFY_ADMIN_TOKEN</code>)
+            reste acceptée. Sans identifiants, l'intégration reste une simulation fidèle.
+          </p>
+        </div>
+      </fold-context-card>
+    </div>
+  </div>
+} @else if (!error()) {
+  <div class="loading">
+    <fold-spinner [size]="32" label="Chargement de l'intégration…" />
+  </div>
 }
 
 @if (message(); as text) {
