@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+
+/* The table scrolls horizontally on its own on a narrow container, never the
+   page. */
+.tc-scroll {
+  overflow-x: auto;
+}
+
+.tc {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+
+.tc thead th {
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 0.75rem);
+  text-align: start;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--fold-color-text-muted);
+  border-bottom: 1px solid var(--fold-color-border);
+  white-space: nowrap;
+}
+.tc-h-price {
+  text-align: start;
+}
+.tc-h-action {
+  text-align: end;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

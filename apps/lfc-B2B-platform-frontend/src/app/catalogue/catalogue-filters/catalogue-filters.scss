@@ -1,0 +1,21 @@
+/* Filtres du catalogue — une rangée fluide qui passe à la ligne. */
+:host {
+  display: block;
+}
+
+.cf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md, 1rem);
+}
+.cf-cats {
+  flex: 1 1 16rem;
+  max-width: 22rem;
+  min-width: 0;
+}
+.cf-search {
+  flex: 1 1 16rem;
+  max-width: 24rem;
+  min-width: 0;
+}

@@ -26,8 +26,18 @@
     title="Le catalogue"
     icon="grid"
     description="Filtrez par catégorie, cherchez, ajoutez à vos favoris."
+    stack
   >
+    <fold-view-toggle
+      sectionActions
+      size="sm"
+      ariaLabel="Affichage du catalogue"
+      [options]="catalogueViewOptions"
+      [value]="cat.view()"
+      (valueChange)="cat.setView($event)"
+    />
     <app-product-catalogue
+      #cat
       [products]="products"
       [categories]="categories"
       (add)="onAdd($event)"

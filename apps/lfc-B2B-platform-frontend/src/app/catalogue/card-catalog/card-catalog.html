@@ -1,0 +1,14 @@
+<div class="product-grid">
+  @for (p of products(); track p.id) {
+    <fold-product-card
+      [product]="p"
+      [favorite]="favorites.has(p.id)"
+      [inCart]="cart.qtyOf(p.id)"
+      [priceFormat]="formatEur"
+      priceSuffix="HT"
+      (favoriteToggle)="onFav($event)"
+      (action)="add.emit($event)"
+      (notify)="notify.emit($event)"
+    />
+  }
+</div>

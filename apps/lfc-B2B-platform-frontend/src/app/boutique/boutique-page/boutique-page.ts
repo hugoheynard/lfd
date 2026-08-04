@@ -1,6 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 
-import { FoldPageLayoutComponent, FoldPageSectionComponent } from 'fold-ng';
+import {
+  FoldPageLayoutComponent,
+  FoldPageSectionComponent,
+  FoldViewToggleComponent,
+} from 'fold-ng';
+
+import { CATALOGUE_VIEW_OPTIONS } from '../../catalogue/catalogue-view';
 
 import {
   FoldBannerCarouselComponent,
@@ -49,6 +55,7 @@ function buildFeatured(): FeaturedItem[] {
   imports: [
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
+    FoldViewToggleComponent,
     FoldBannerCarouselComponent,
     ProductCatalogue,
     DiscoverBands,
@@ -63,6 +70,9 @@ export class BoutiquePage {
 
   protected readonly products = PRODUCTS;
   protected readonly categories = CATEGORIES;
+
+  /** Segments du switch cartes ↔ tableau (posé dans l'action de la section). */
+  protected readonly catalogueViewOptions = CATALOGUE_VIEW_OPTIONS;
 
   /** La bannière de marque est toujours en tête via {@link leadId}. */
   protected readonly leadBannerId = 'folie-coffee';

@@ -1,0 +1,12 @@
+:host {
+  display: block;
+}
+
+/* Grid fluide : le `min` (≈210px) fixe le nombre de colonnes — ~5 sur un
+   MacBook, moins en descendant — et `min(…, 100%)` évite tout débordement sous
+   210px (mobile = 1 colonne). Aucune média-query. */
+.product-grid {
+  display: grid;
+  gap: var(--fold-space-lg, 1.25rem);
+  grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
+}

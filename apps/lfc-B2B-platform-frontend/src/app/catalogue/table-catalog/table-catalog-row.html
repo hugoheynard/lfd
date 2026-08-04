@@ -1,0 +1,55 @@
+@let p = product();
+<td class="tcr-ref">{{ p.reference ?? p.id }}</td>
+<td class="tcr-name">
+  <span class="tcr-name-main">{{ p.name }}</span>
+  @if (isOut()) {
+    <span class="tcr-out">Rupture</span>
+  }
+</td>
+<td class="tcr-cond">{{ conditioning() }}</td>
+<td class="tcr-price">{{ p.price }}<span class="tcr-ht">HT</span></td>
+<td class="tcr-qty">
+  @if (!isOut()) {
+    <fold-number-input
+      size="sm"
+      spinner="plusminus"
+      controls="outside"
+      align="center"
+      snapToStep
+      aria-label="Quantité"
+      [min]="minQty()"
+      [step]="step()"
+      [(value)]="quantity"
+    />
+  }
+</td>
+<td class="tcr-action">
+  @if (isOut()) {
+    <button
+      foldButton
+      type="button"
+      size="sm"
+      emphasis="outline"
+      intent="neutral"
+      icon="bell"
+      (click)="notify.emit(p)"
+    >
+      Me prévenir
+    </button>
+  } @else {
+    <button
+      foldButton
+      type="button"
+      size="sm"
+      emphasis="solid"
+      intent="primary"
+      icon="plus"
+      (click)="emitAdd()"
+    >
+      Ajouter
+    </button>
+    @if (inCart(); as n) {
+      <span class="tcr-incart">✓ {{ n }}</span>
+    }
+  }
+</td>

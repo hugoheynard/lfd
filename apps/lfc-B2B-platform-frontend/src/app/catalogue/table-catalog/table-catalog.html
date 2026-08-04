@@ -1,0 +1,24 @@
+<div class="tc-scroll">
+  <table class="tc">
+    <thead>
+      <tr>
+        <th scope="col" class="tc-h-ref">Réf.</th>
+        <th scope="col" class="tc-h-name">Produit</th>
+        <th scope="col" class="tc-h-cond">Conditionnement</th>
+        <th scope="col" class="tc-h-price">Prix</th>
+        <th scope="col" class="tc-h-qty">Quantité</th>
+        <th scope="col" class="tc-h-action"><span class="sr-only">Ajouter</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (p of products(); track p.id) {
+        <tr
+          appTableCatalogRow
+          [product]="p"
+          (add)="add.emit($event)"
+          (notify)="notify.emit($event)"
+        ></tr>
+      }
+    </tbody>
+  </table>
+</div>

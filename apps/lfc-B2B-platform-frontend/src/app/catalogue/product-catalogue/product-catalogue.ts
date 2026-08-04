@@ -12,33 +12,41 @@ import {
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
-  FoldMultiselectComponent,
   FoldPaginatorComponent,
-  FoldSearchComponent,
   type FoldSelectOption,
 } from 'fold-ng';
 
-import { FoldProductCardComponent, type FoldProduct, type FoldProductOrder } from '../../../shared';
-import { type CatalogueCategory, formatEurValue } from '../../data/catalogue-seed';
-import { CartService } from '../../data/cart.service';
+import type { FoldProduct, FoldProductOrder } from '../../../shared';
+import { type CatalogueCategory } from '../../data/catalogue-seed';
 import { FavoritesService } from '../../data/favorites.service';
+import { CardCatalog } from '../card-catalog/card-catalog';
+import { CatalogueFilters } from '../catalogue-filters/catalogue-filters';
+import { type CatalogueView, toCatalogueView } from '../catalogue-view';
+import { TableCatalog } from '../table-catalog/table-catalog';
 
 /**
- * Navigateur de catalogue réutilisable : filtre catégories (multiselect),
- * recherche, favoris, pagination et grille de cartes. Piloté par ses entrées
- * (`products`/`categories`), il est posé aussi bien dans la Boutique que sur la
- * page Catalogue. Les favoris sont partagés via {@link FavoritesService}.
+ * **Orchestrateur** du catalogue : il possède l'état partagé (filtres, vue
+ * courante, pagination) et délègue l'affichage — la barre de filtres
+ * ({@link CatalogueFilters}), puis la vue **cartes** ({@link CardCatalog}) ou
+ * **tableau/order-pad** ({@link TableCatalog}). Il ne dessine plus rien lui-même.
+ *
+ * Le **switch cartes ↔ tableau** est posé par le parent dans le slot
+ * `[sectionActions]` de la `fold-page-section` (via un `fold-view-toggle` lié à
+ * `view`/`setView`) — l'orchestrateur reste la source de vérité de la vue.
+ *
+ * Pas de layout propre : posé dans une `fold-page-section` (`stack`), c'est elle
+ * qui espace filtres / vue / pagination (`:host { display: contents }`).
  */
 @Component({
   selector: 'app-product-catalogue',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldMultiselectComponent,
-    FoldSearchComponent,
+    CatalogueFilters,
+    CardCatalog,
+    TableCatalog,
     FoldButtonComponent,
     FoldPaginatorComponent,
     FoldEmptyStateComponent,
-    FoldProductCardComponent,
   ],
   templateUrl: './product-catalogue.html',
   styleUrl: './product-catalogue.scss',
@@ -50,18 +58,19 @@ export class ProductCatalogue {
   /** Paliers de taille de page ; « Voir plus » passe au cran supérieur. */
   readonly pageSizeSteps = input<readonly number[]>([12, 24, 48]);
 
-  /** Émis quand une carte est ajoutée, avec la quantité choisie. */
+  /** Émis quand une carte/ligne est ajoutée, avec la quantité choisie. */
   readonly add = output<FoldProductOrder>();
-
   /** Émis quand « Me prévenir » est cliqué sur un produit en rupture. */
   readonly notify = output<FoldProduct>();
 
   protected readonly favorites = inject(FavoritesService);
-  protected readonly cart = inject(CartService);
 
-  /** Formateur de prix passé aux cartes pour le sous-total ligne (locale-aware
-   *  côté app, la carte reste générique). */
-  protected readonly formatEur = formatEurValue;
+  /** Vue courante (cartes / tableau) — l'orchestrateur en est la source de vérité. */
+  readonly view = signal<CatalogueView>('cards');
+  /** Appliqué par le `fold-view-toggle` du parent (valeur brute → union). */
+  setView(value: string): void {
+    this.view.set(toCatalogueView(value));
+  }
 
   protected readonly categoryOptions = computed<readonly FoldSelectOption<string>[]>(() =>
     this.categories().map((c) => ({ value: c.id, label: c.label })),
@@ -70,10 +79,6 @@ export class ProductCatalogue {
   protected readonly selectedCategories = signal<string[]>([]);
   protected readonly query = signal('');
   protected readonly favoritesOnly = signal(false);
-
-  protected readonly hasFilters = computed(
-    () => this.selectedCategories().length > 0 || this.query().length > 0 || this.favoritesOnly(),
-  );
 
   protected readonly filtered = computed<readonly FoldProduct[]>(() => {
     const cats = this.selectedCategories();
@@ -128,21 +133,11 @@ export class ProductCatalogue {
     this.page.set(1);
   }
 
-  protected onFav(product: FoldProduct): void {
-    this.favorites.toggle(product.id);
-  }
-
   protected onAdd(order: FoldProductOrder): void {
     this.add.emit(order);
   }
 
   protected onNotify(product: FoldProduct): void {
     this.notify.emit(product);
-  }
-
-  protected clearFilters(): void {
-    this.selectedCategories.set([]);
-    this.query.set('');
-    this.favoritesOnly.set(false);
   }
 }

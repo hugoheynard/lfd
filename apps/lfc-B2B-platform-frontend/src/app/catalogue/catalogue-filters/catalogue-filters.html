@@ -1,0 +1,32 @@
+<div class="cf">
+  <fold-multiselect
+    class="cf-cats"
+    label="Catégories"
+    placeholder="Toutes les catégories"
+    [options]="categories()"
+    [(value)]="selectedCategories"
+  />
+  <fold-search
+    class="cf-search"
+    placeholder="Rechercher un produit…"
+    (searchChange)="query.set($event)"
+  />
+  <button
+    foldButton
+    type="button"
+    icon="heart"
+    [emphasis]="favoritesOnly() ? 'solid' : 'outline'"
+    [intent]="favoritesOnly() ? 'primary' : 'neutral'"
+    (click)="favoritesOnly.set(!favoritesOnly())"
+  >
+    Favoris
+    @if (favoritesCount() > 0) {
+      ({{ favoritesCount() }})
+    }
+  </button>
+  @if (hasFilters()) {
+    <button foldButton type="button" emphasis="soft" intent="neutral" (click)="clear()">
+      Effacer
+    </button>
+  }
+</div>
