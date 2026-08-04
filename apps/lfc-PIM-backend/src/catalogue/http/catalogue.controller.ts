@@ -6,6 +6,7 @@ import { ZodBody } from '../../shared/http/zod-body.pipe.js';
 import { CategoryCommands } from '../application/category-commands.service.js';
 import { ProductCommands } from '../application/product-commands.service.js';
 import { CategoryRepository } from '../domain/ports/category.repository.js';
+import { EditorialReader } from '../domain/ports/editorial-reader.js';
 import { ProductRepository } from '../domain/ports/product.repository.js';
 
 const categoryPayload = z.object({
@@ -112,6 +113,7 @@ export class CatalogueController {
     private readonly productCommands: ProductCommands,
     private readonly categories: CategoryRepository,
     private readonly products: ProductRepository,
+    private readonly editorials: EditorialReader,
   ) {}
 
   @Get('categories')
@@ -146,9 +148,15 @@ export class CatalogueController {
     return this.products.listAll();
   }
 
+  /** Détail complet d'un produit : le socle + sa couche éditoriale (pour l'édition). */
   @Get('products/:id')
-  getProduct(@Param('id') id: string) {
-    return this.products.findById(id);
+  async getProduct(@Param('id') id: string) {
+    const product = await this.products.findById(id);
+    if (product === null) {
+      return null;
+    }
+    const editorial = await this.editorials.findByProduct(id);
+    return { ...product, editorial };
   }
 
   @Post('products')
