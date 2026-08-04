@@ -1,6 +1,24 @@
+.product-tabs {
+  display: block;
+  margin-bottom: var(--fold-space-4, 1rem);
+  background: transparent;
+}
+
+.panel-desc {
+  margin: 0 0 var(--fold-space-3, 0.75rem);
+  color: var(--fold-color-text-muted, #71717a);
+  font-size: 0.875rem;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--fold-space-4, 1rem);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
   gap: var(--fold-space-4, 1rem);
 }
 
@@ -10,7 +28,8 @@
   gap: var(--fold-space-1, 0.25rem);
 }
 
-.field-label {
+.field-label,
+.block-label {
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--fold-color-text-muted, #555);
@@ -29,21 +48,11 @@
     outline: 2px solid var(--fold-color-focus, #2563eb);
     outline-offset: 1px;
   }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
 }
 
 .native-textarea {
   resize: vertical;
   min-height: 5rem;
-}
-
-.field-hint {
-  font-size: 0.75rem;
-  color: var(--fold-color-text-muted, #71717a);
 }
 
 .section-footer {
@@ -53,32 +62,10 @@
   margin-top: var(--fold-space-4, 1rem);
 }
 
-.section-status {
-  min-height: 1rem;
-  font-size: 0.75rem;
-  color: var(--fold-color-text-muted, #71717a);
-}
-
+.section-status,
 .muted {
+  font-size: 0.8125rem;
   color: var(--fold-color-text-muted, #71717a);
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-start;
-  margin-top: var(--fold-space-4, 1rem);
-}
-
-.product-tabs {
-  display: block;
-  margin-bottom: var(--fold-space-4, 1rem);
-  background: transparent;
-}
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-4, 1rem);
 }
 
 .scope {
@@ -110,6 +97,27 @@
   }
 }
 
+.tva-list {
+  margin: 0;
+  display: grid;
+  gap: var(--fold-space-2, 0.5rem);
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--fold-space-4, 1rem);
+  }
+
+  dt {
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--fold-color-text-muted, #71717a);
+  }
+}
+
 .media {
   display: flex;
   flex-direction: column;
@@ -121,4 +129,23 @@
   grid-template-columns: minmax(8rem, 12rem) 1fr auto;
   gap: var(--fold-space-2, 0.5rem);
   align-items: end;
+}
+
+.save-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-4, 1rem);
+  margin-top: var(--fold-space-5, 1.5rem);
+  padding-top: var(--fold-space-4, 1rem);
+  border-top: 1px solid var(--fold-color-border, #e4e4e7);
+}
+
+.save-actions {
+  display: flex;
+  gap: var(--fold-space-2, 0.5rem);
+}
+
+.actions {
+  margin-top: var(--fold-space-4, 1rem);
 }

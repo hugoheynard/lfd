@@ -11,6 +11,7 @@ interface BackendVariantLike {
   priceCents: number | null;
   weightGrams: number | null;
   allergens: readonly string[] | null;
+  nutrition: null;
 }
 
 function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
@@ -23,6 +24,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     priceCents: 450,
     weightGrams: 250,
     allergens: null,
+    nutrition: null,
     ...overrides,
   };
   return {

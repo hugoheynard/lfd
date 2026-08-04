@@ -1,7 +1,11 @@
-<fold-page-layout icon="edit" title="Éditer le produit">
+<fold-page-layout icon="edit" [title]="pageTitle()">
   <p description>
-    Mêmes sections que la création, en édition : on charge l'existant et
-    <strong>chaque section a son propre bouton d'enregistrement</strong>.
+    @if (isEdit()) {
+      Chaque section s'enregistre indépendamment (un bouton par section).
+    } @else {
+      Un nom et une catégorie suffisent pour créer le brouillon ; le reste se
+      complète ensuite à l'édition.
+    }
   </p>
 
   @if (error(); as message) {
@@ -21,21 +25,18 @@
     </fold-card>
   } @else {
     <fold-nav-layout placement="top">
-    <fold-tabs
-      tabNav
-      class="product-tabs"
-      [tabs]="tabs"
-      [(activeKey)]="activeTab"
-      #ref="foldTabs"
-    />
+      <fold-tabs
+        tabNav
+        activeStyle="fill"
+        class="product-tabs"
+        [tabs]="tabs"
+        [(activeKey)]="activeTab"
+        #ref="foldTabs"
+      />
 
-    <!-- 1 · Identité -->
-    <fold-tab-panel [tabs]="ref" key="identite">
-      <fold-page-section
-        title="Identité"
-        icon="grid"
-        description="Nom, nature et famille. La référence ne change pas."
-      >
+      <!-- Identité -->
+      <fold-tab-panel [tabs]="ref" key="identite">
+        <p class="panel-desc">Le strict nécessaire pour exister au catalogue.</p>
         <fold-card>
           <div class="grid">
             <fold-input
@@ -64,26 +65,24 @@
             </fold-listbox>
             <fold-input
               label="Référence — SKU"
-              hint="Figée après création."
+              [hint]="isEdit() ? 'Figée après création.' : 'Calculée si laissée vide.'"
               [value]="sku()"
-              [disabled]="true"
+              [disabled]="isEdit()"
+              (valueChange)="sku.set($event)"
             />
           </div>
-          <div class="section-footer">
-            <button foldButton size="sm" (click)="saveIdentity()">Enregistrer</button>
-            <span class="section-status">{{ statusText('identite') }}</span>
-          </div>
+          @if (isEdit()) {
+            <div class="section-footer">
+              <button foldButton size="sm" (click)="saveIdentity()">Enregistrer</button>
+              <span class="section-status">{{ statusText('identite') }}</span>
+            </div>
+          }
         </fold-card>
-      </fold-page-section>
-    </fold-tab-panel>
+      </fold-tab-panel>
 
-    <!-- 2 · Tarif & logistique -->
-    <fold-tab-panel [tabs]="ref" key="tarif">
-      <fold-page-section
-        title="Tarif & logistique"
-        icon="tag"
-        description="Prix canonique HT et poids de l'unité vendue."
-      >
+      <!-- Tarif & logistique -->
+      <fold-tab-panel [tabs]="ref" key="tarif">
+        <p class="panel-desc">Prix canonique HT et poids de l'unité vendue.</p>
         <fold-card>
           <div class="grid">
             <label class="field">
@@ -109,21 +108,38 @@
               />
             </label>
           </div>
-          <div class="section-footer">
-            <button foldButton size="sm" (click)="savePricing()">Enregistrer</button>
-            <span class="section-status">{{ statusText('tarif') }}</span>
-          </div>
+          @if (isEdit()) {
+            <div class="section-footer">
+              <button foldButton size="sm" (click)="savePricing()">Enregistrer</button>
+              <span class="section-status">{{ statusText('tarif') }}</span>
+            </div>
+          }
         </fold-card>
-      </fold-page-section>
-    </fold-tab-panel>
+      </fold-tab-panel>
 
-    <!-- 3 · Allergènes -->
-    <fold-tab-panel [tabs]="ref" key="allergenes">
-      <fold-page-section
-        title="Allergènes"
-        icon="shield"
-        description="Obligation réglementaire — à déclarer avant publication."
-      >
+      <!-- Canaux & TVA (lecture seule) -->
+      <fold-tab-panel [tabs]="ref" key="canaux">
+        <p class="panel-desc">
+          Hérités de la famille. L'override par produit arrive avec le contexte
+          commerce.
+        </p>
+        <fold-card class="stack">
+          @if (categoryTva(); as tva) {
+            <dl class="tva-list">
+              <div><dt>À emporter</dt><dd>{{ tva.emporter }}</dd></div>
+              <div><dt>Sur place</dt><dd>{{ tva.surPlace }}</dd></div>
+            </dl>
+          } @else {
+            <p class="muted">Choisissez une famille pour voir la TVA héritée.</p>
+          }
+        </fold-card>
+      </fold-tab-panel>
+
+      <!-- Allergènes & nutrition (une fiche) -->
+      <fold-tab-panel [tabs]="ref" key="fiche">
+        <p class="panel-desc">
+          Fiche réglementaire — allergènes obligatoires avant publication.
+        </p>
         <fold-callout
           appearance="inset"
           [variant]="declaresSomething() ? 'success' : 'warning'"
@@ -150,13 +166,11 @@
                 </button>
               }
             </div>
-
             @if (provisional()) {
               <fold-callout appearance="inset" variant="warning">
                 Les <strong>codes</strong> de ce référentiel sont provisoires.
               </fold-callout>
             }
-
             <div class="groups">
               @for (group of groups(); track group.incoLabel) {
                 <fieldset>
@@ -175,20 +189,36 @@
           </fold-card>
         }
 
-        <div class="section-footer">
-          <button foldButton size="sm" (click)="saveAllergens()">Enregistrer</button>
-          <span class="section-status">{{ statusText('allergenes') }}</span>
-        </div>
-      </fold-page-section>
-    </fold-tab-panel>
+        <fold-card class="stack">
+          <span class="block-label">Valeurs nutritionnelles (pour 100 g)</span>
+          <div class="grid">
+            @for (field of nutritionFields; track field.key) {
+              <label class="field">
+                <span class="field-label">{{ field.label }}</span>
+                <input
+                  class="native-input"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  [value]="nutritionValue(field.key) ?? ''"
+                  (input)="setNutrition(field.key, numberValue($event))"
+                />
+              </label>
+            }
+          </div>
+        </fold-card>
 
-    <!-- 4 · Communication -->
-    <fold-tab-panel [tabs]="ref" key="communication">
-      <fold-page-section
-        title="Communication"
-        icon="edit"
-        description="Textes du site et référencement."
-      >
+        @if (isEdit()) {
+          <div class="section-footer">
+            <button foldButton size="sm" (click)="saveFiche()">Enregistrer la fiche</button>
+            <span class="section-status">{{ statusText('fiche') }}</span>
+          </div>
+        }
+      </fold-tab-panel>
+
+      <!-- Communication -->
+      <fold-tab-panel [tabs]="ref" key="communication">
+        <p class="panel-desc">Textes du site et référencement.</p>
         <fold-card class="stack">
           <div class="grid">
             @for (field of editorialFields; track field.key) {
@@ -217,25 +247,22 @@
               (input)="setEditorial('story', text($event))"
             ></textarea>
           </label>
-          <div class="section-footer">
-            <button foldButton size="sm" (click)="saveCommunication()">Enregistrer</button>
-            <span class="section-status">{{ statusText('communication') }}</span>
-          </div>
+          @if (isEdit()) {
+            <div class="section-footer">
+              <button foldButton size="sm" (click)="saveCommunication()">Enregistrer</button>
+              <span class="section-status">{{ statusText('communication') }}</span>
+            </div>
+          }
         </fold-card>
-      </fold-page-section>
-    </fold-tab-panel>
+      </fold-tab-panel>
 
-    <!-- 5 · Visuels -->
-    <fold-tab-panel [tabs]="ref" key="visuels">
-      <fold-page-section
-        title="Visuels"
-        icon="eye"
-        description="Le master ; chaque canal en dérivera ses tailles."
-      >
+      <!-- Visuels -->
+      <fold-tab-panel [tabs]="ref" key="visuels">
+        <p class="panel-desc">Le master ; chaque canal en dérivera ses tailles.</p>
         <fold-card class="stack">
           <fold-callout appearance="inset" variant="info">
-            L'envoi de fichiers et la persistance des visuels ne sont pas encore
-            branchés — cette section arrive avec le stockage média.
+            La persistance des visuels n'est pas encore branchée (stockage média
+            à venir).
           </fold-callout>
           <div class="media">
             @for (slot of media(); track $index) {
@@ -269,14 +296,29 @@
             Ajouter un visuel
           </button>
         </fold-card>
-      </fold-page-section>
-    </fold-tab-panel>
+      </fold-tab-panel>
     </fold-nav-layout>
 
-    <div class="actions">
-      <button foldButton emphasis="soft" intent="neutral" (click)="back()">
-        Retour aux produits
-      </button>
-    </div>
+    @if (!isEdit()) {
+      <div class="save-bar">
+        @if (!isValid()) {
+          <small class="muted">Un nom et une catégorie suffisent.</small>
+        }
+        <div class="save-actions">
+          <button foldButton emphasis="soft" intent="neutral" (click)="back()">
+            Annuler
+          </button>
+          <button foldButton [disabled]="!isValid() || busy()" (click)="submit()">
+            Créer le brouillon
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="actions">
+        <button foldButton emphasis="soft" intent="neutral" (click)="back()">
+          Retour aux produits
+        </button>
+      </div>
+    }
   }
 </fold-page-layout>

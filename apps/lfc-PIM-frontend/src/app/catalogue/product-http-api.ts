@@ -16,6 +16,15 @@ import type {
 // euros dans `priceEur` (la distinction TTC/HT est un souci de la couche pricing,
 // différé). Canaux/flags absents du backend en slice 1 → défauts neutres.
 
+interface BackendNutrition {
+  readonly mayContain: readonly string[];
+  readonly energyKcal: number | null;
+  readonly carbsG: number | null;
+  readonly fatG: number | null;
+  readonly proteinG: number | null;
+  readonly glycemicIndex: number | null;
+}
+
 interface BackendVariant {
   readonly id: string;
   readonly sku: string;
@@ -25,7 +34,25 @@ interface BackendVariant {
   readonly priceCents: number | null;
   readonly weightGrams: number | null;
   readonly allergens: readonly string[] | null;
+  readonly nutrition: BackendNutrition | null;
 }
+
+/** Valeurs nutritionnelles pour 100 g (édition) ; `null` = non renseigné. */
+export interface NutritionValues {
+  readonly energyKcal: number | null;
+  readonly carbsG: number | null;
+  readonly fatG: number | null;
+  readonly proteinG: number | null;
+  readonly glycemicIndex: number | null;
+}
+
+const EMPTY_NUTRITION: NutritionValues = {
+  energyKcal: null,
+  carbsG: null,
+  fatG: null,
+  proteinG: null,
+  glycemicIndex: null,
+};
 
 interface BackendProduct {
   readonly id: string;
@@ -63,10 +90,26 @@ export interface EditorialFields {
   readonly seoDescription: string;
 }
 
-/** Détail complet pour la page d'édition : le produit mappé + l'éditorial à plat. */
+/** Détail complet pour la page d'édition : produit + éditorial + fiche réglementaire. */
 export interface ProductDetail {
   readonly product: Product;
   readonly editorial: EditorialFields;
+  /** Allergènes de la déclinaison par défaut ; `null` = fiche non renseignée. */
+  readonly allergens: readonly string[] | null;
+  readonly mayContain: readonly string[];
+  readonly nutrition: NutritionValues;
+}
+
+function toNutritionValues(nutrition: BackendNutrition | null): NutritionValues {
+  return nutrition === null
+    ? EMPTY_NUTRITION
+    : {
+        energyKcal: nutrition.energyKcal,
+        carbsG: nutrition.carbsG,
+        fatG: nutrition.fatG,
+        proteinG: nutrition.proteinG,
+        glycemicIndex: nutrition.glycemicIndex,
+      };
 }
 
 function toEditorialFields(editorial: BackendEditorial | null): EditorialFields {
@@ -171,9 +214,13 @@ export class ProductHttpApi {
     if (row === null) {
       return null;
     }
+    const base = defaultVariant(row);
     return {
       product: backendToProduct(row, row.editorial),
       editorial: toEditorialFields(row.editorial),
+      allergens: base?.allergens ?? null,
+      mayContain: base?.nutrition?.mayContain ?? [],
+      nutrition: toNutritionValues(base?.nutrition ?? null),
     };
   }
 
@@ -223,13 +270,32 @@ export class ProductHttpApi {
     return this.put(`products/${id}/editorial`, editorial);
   }
 
-  setVariantAllergens(
+  /**
+   * Section Fiche réglementaire — allergènes + valeurs nutritionnelles en une
+   * requête (le backend remplace la déclaration entière ; les deux vont ensemble).
+   */
+  saveNutrition(
     id: string,
     variantId: string,
-    allergens: readonly string[],
+    input: {
+      allergens: readonly string[];
+      mayContain?: readonly string[];
+      nutrition?: NutritionValues;
+    },
   ): Promise<void> {
+    // Le backend n'accepte que des nombres (optionnels) : on omet les `null`.
+    const nutrition: Record<string, number> = {};
+    if (input.nutrition !== undefined) {
+      for (const [key, value] of Object.entries(input.nutrition)) {
+        if (value !== null) {
+          nutrition[key] = value;
+        }
+      }
+    }
     return this.put(`products/${id}/variants/${variantId}/nutrition`, {
-      allergens,
+      allergens: input.allergens,
+      ...(input.mayContain === undefined ? {} : { mayContain: input.mayContain }),
+      ...(Object.keys(nutrition).length === 0 ? {} : { nutrition }),
     });
   }
 

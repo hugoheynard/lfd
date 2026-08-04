@@ -70,16 +70,16 @@ export const routes: Routes = [
     path: 'produits/nouveau',
     title: 'Nouveau produit — LFC PIM',
     loadComponent: () =>
-      import('./catalogue/create-product/create-product-page').then(
-        (m) => m.CreateProductPage,
+      import('./catalogue/product-form/product-form-page').then(
+        (m) => m.ProductFormPage,
       ),
   },
   {
     path: 'produits/:id',
     title: 'Éditer un produit — LFC PIM',
     loadComponent: () =>
-      import('./catalogue/product-edit/product-edit-page').then(
-        (m) => m.ProductEditPage,
+      import('./catalogue/product-form/product-form-page').then(
+        (m) => m.ProductFormPage,
       ),
   },
   {
