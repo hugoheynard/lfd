@@ -34,6 +34,8 @@
 .product-tabs {
   display: block;
   margin-bottom: var(--fold-space-md, 1rem);
+  // Nav horizontale par section, fond transparent (onglets soulignés).
+  background: transparent;
 }
 
 .tag-row {

@@ -155,13 +155,21 @@ export class CreateProductPage {
   protected readonly shopifyEnabled = computed(
     () => this.db.snapshot().shopify.isEnabled,
   );
-  protected readonly activeTab = signal<string>('pim');
+  protected readonly activeTab = signal<string>('identite');
   protected readonly priceEur = signal<number | null>(null);
   protected readonly weightGrams = signal<number | null>(null);
   protected readonly handle = signal('');
 
+  /** Un onglet par section (nav horizontale, fond transparent). */
   protected readonly tabs = computed<FoldTabItem[]>(() => {
-    const tabs: FoldTabItem[] = [{ key: 'pim', label: 'PIM', icon: 'edit' }];
+    const tabs: FoldTabItem[] = [
+      { key: 'identite', label: 'Identité', icon: 'grid' },
+      { key: 'canaux', label: 'Canaux & TVA', icon: 'sliders' },
+      { key: 'allergenes', label: 'Allergènes', icon: 'shield' },
+      { key: 'nutrition', label: 'Nutrition', icon: 'stats' },
+      { key: 'communication', label: 'Communication', icon: 'edit' },
+      { key: 'visuels', label: 'Visuels', icon: 'eye' },
+    ];
     if (this.shopifyEnabled()) {
       tabs.push({ key: 'shopify', label: 'Shopify', icon: 'shopify' });
     }

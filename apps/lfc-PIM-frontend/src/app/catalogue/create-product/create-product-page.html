@@ -29,7 +29,7 @@
     #ref="foldTabs"
   />
 
-  <fold-tab-panel [tabs]="ref" key="pim">
+  <fold-tab-panel [tabs]="ref" key="identite">
     <!-- 1 · Identité -->
   <fold-page-section
     title="Identité"
@@ -82,6 +82,9 @@
     </fold-card>
   </fold-page-section>
 
+  </fold-tab-panel>
+
+  <fold-tab-panel [tabs]="ref" key="canaux">
   <!-- 2 · Canaux & TVA — le cœur du produit, posé sur un backdrop bleu pâle qui
        met la section en avant. Ce qu'on coche ici définit les collections
        finales et la TVA de chacune. -->
@@ -200,6 +203,9 @@
     </div>
   </fold-page-section>
 
+  </fold-tab-panel>
+
+  <fold-tab-panel [tabs]="ref" key="allergenes">
   <!-- 3 · Allergènes — champ réglementaire, requis pour PUBLIER (le brouillon
        reste enregistrable). La section s'alarme (backdrop + bordure warning)
        tant que rien n'est déclaré, puis se calme (success) dès qu'« aucun
@@ -283,6 +289,9 @@
     }
   </fold-page-section>
 
+  </fold-tab-panel>
+
+  <fold-tab-panel [tabs]="ref" key="nutrition">
   <!-- 4 · Nutrition -->
   <fold-page-section
     title="Nutrition"
@@ -304,6 +313,9 @@
     </fold-card>
   </fold-page-section>
 
+  </fold-tab-panel>
+
+  <fold-tab-panel [tabs]="ref" key="communication">
   <!-- 5 · Communication -->
   <fold-page-section
     title="Communication"
@@ -358,6 +370,9 @@
     </fold-card>
   </fold-page-section>
 
+  </fold-tab-panel>
+
+  <fold-tab-panel [tabs]="ref" key="visuels">
   <!-- 6 · Visuels -->
   <fold-page-section
     title="Visuels"
