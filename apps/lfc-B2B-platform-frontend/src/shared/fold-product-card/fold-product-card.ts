@@ -4,12 +4,17 @@ import {
   Component,
   computed,
   input,
+  linkedSignal,
   output,
 } from '@angular/core';
-import { FoldBadgeComponent, FoldToggleIconComponent } from 'fold-ng';
+import {
+  FoldBadgeComponent,
+  FoldButtonComponent,
+  FoldNumberInputComponent,
+  FoldToggleIconComponent,
+} from 'fold-ng';
 
-import { FoldActionButtonComponent } from '../fold-action';
-import type { FoldProduct } from './fold-product.model';
+import type { FoldProduct, FoldProductOrder } from './fold-product.model';
 
 /**
  * `fold-product-card` — a product tile: a fixed-ratio visual (or an
@@ -24,7 +29,12 @@ import type { FoldProduct } from './fold-product.model';
   selector: 'fold-product-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldToggleIconComponent, FoldActionButtonComponent],
+  imports: [
+    FoldBadgeComponent,
+    FoldToggleIconComponent,
+    FoldButtonComponent,
+    FoldNumberInputComponent,
+  ],
   templateUrl: './fold-product-card.html',
   styleUrl: './fold-product-card.scss',
 })
@@ -35,8 +45,21 @@ export class FoldProductCardComponent {
   /** Whether this product is currently favourited (controlled by the parent). */
   readonly favorite = input(false);
 
-  /** Emphasis of the action button. */
-  readonly actionEmphasis = input<'solid' | 'soft' | 'outline'>('soft');
+  /** How many of this product are already in the cart (parent-owned). Drives the
+   *  "déjà N au panier" hint. `0` hides it. */
+  readonly inCart = input(0);
+
+  /** Base label of the add button; the card appends the chosen quantity
+   *  ("Ajouter 10"). */
+  readonly addLabel = input('Ajouter');
+
+  /** A suffix rendered after the unit price (e.g. "HT" in a B2B catalogue). */
+  readonly priceSuffix = input('');
+
+  /** Optional numeric-price formatter — when set (and the product carries a
+   *  numeric `priceValue`), the card shows a live line subtotal (price × qty).
+   *  Kept an input so the card never guesses currency/locale. */
+  readonly priceFormat = input<((value: number) => string) | null>(null);
 
   /**
    * Mise en avant : contour primary plus épais. Générique (le libellé « best
@@ -50,8 +73,8 @@ export class FoldProductCardComponent {
   /** Label of the notify button shown in place of the CTA when out of stock. */
   readonly notifyLabel = input('Me prévenir');
 
-  /** Fired when the card's action is activated. */
-  readonly action = output<FoldProduct>();
+  /** Fired when the card's action is activated — carries the chosen quantity. */
+  readonly action = output<FoldProductOrder>();
 
   /** Fired when the favourite heart is toggled — the parent owns the state. */
   readonly favoriteToggle = output<FoldProduct>();
@@ -74,8 +97,33 @@ export class FoldProductCardComponent {
   /** Placeholder glyph when there is no image: the product's initial. */
   readonly initial = computed(() => this.product().name.charAt(0).toUpperCase());
 
+  /** Order multiple (colisage / PCB); `1` = free unit ordering. */
+  readonly step = computed(() => this.product().step ?? 1);
+  /** Minimum orderable quantity (never below the step). */
+  readonly minQty = computed(() => Math.max(this.product().minQty ?? 1, this.step()));
+
+  /** The quantity to add — starts at the minimum, resets when the product changes. */
+  readonly quantity = linkedSignal<FoldProduct, number>({
+    source: this.product,
+    computation: () => this.minQty(),
+  });
+
+  /** Add-button text with the chosen quantity, e.g. "Ajouter 10". */
+  readonly addText = computed(() => `${this.addLabel()} ${this.quantity()}`);
+
+  /** Live line subtotal (numeric price × qty), formatted by the parent's
+   *  formatter — or `null` when there is no numeric price / no formatter. */
+  readonly lineSubtotal = computed<string | null>(() => {
+    const value = this.product().priceValue;
+    const format = this.priceFormat();
+    if (value === undefined || format === null) {
+      return null;
+    }
+    return format(value * this.quantity());
+  });
+
   onAction(): void {
-    this.action.emit(this.product());
+    this.action.emit({ product: this.product(), quantity: this.quantity() });
   }
 
   onFavorite(): void {

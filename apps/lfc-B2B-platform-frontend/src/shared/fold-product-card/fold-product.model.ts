@@ -49,3 +49,9 @@ export interface FoldProduct {
   /** Optional card action (e.g. "Ajouter", "Voir"). */
   action?: FoldAction;
 }
+
+/** A product ordered at a chosen quantity — the payload of the card's add action. */
+export interface FoldProductOrder {
+  readonly product: FoldProduct;
+  readonly quantity: number;
+}

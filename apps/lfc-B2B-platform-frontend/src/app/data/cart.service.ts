@@ -66,6 +66,11 @@ export class CartService {
 
   readonly isEmpty = computed(() => this.lines().length === 0);
 
+  /** Quantité actuellement au panier pour ce SKU (0 si absent). Réactif. */
+  qtyOf(id: string): number {
+    return this.qtys().get(id) ?? 0;
+  }
+
   add(id: string, qty = 1): void {
     this.qtys.update((m) => {
       const next = new Map(m);

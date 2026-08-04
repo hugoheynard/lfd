@@ -2,7 +2,12 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 
 import { FoldPageLayoutComponent, FoldPageSectionComponent } from 'fold-ng';
 
-import { FoldBannerCarouselComponent, type FoldBanner, type FoldProduct } from '../../../shared';
+import {
+  FoldBannerCarouselComponent,
+  type FoldBanner,
+  type FoldProduct,
+  type FoldProductOrder,
+} from '../../../shared';
 import { CATEGORIES, PRODUCTS } from '../../data/catalogue-seed';
 import { CartService } from '../../data/cart.service';
 import { FavoritesService } from '../../data/favorites.service';
@@ -83,8 +88,8 @@ export class BoutiquePage {
 
   protected readonly notifyIds = signal<readonly string[]>([]);
 
-  protected onAdd(product: FoldProduct): void {
-    this.cart.add(product.id);
+  protected onAdd(order: FoldProductOrder): void {
+    this.cart.add(order.product.id, order.quantity);
   }
 
   protected onFav(product: FoldProduct): void {

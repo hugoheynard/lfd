@@ -8,7 +8,9 @@ import {
   viewChild,
 } from '@angular/core';
 
-import { FoldProductCardComponent, type FoldProduct } from '../../../shared';
+import { FoldProductCardComponent, type FoldProduct, type FoldProductOrder } from '../../../shared';
+import { formatEurValue } from '../../data/catalogue-seed';
+import { CartService } from '../../data/cart.service';
 import { FavoritesService } from '../../data/favorites.service';
 
 /** Un produit mis en avant, avec son tag optionnel et sa mise en relief. */
@@ -36,10 +38,14 @@ export interface FeaturedItem {
 })
 export class FeaturedRail {
   protected readonly favorites = inject(FavoritesService);
+  protected readonly cart = inject(CartService);
+
+  /** Formateur de prix passé aux cartes pour le sous-total ligne. */
+  protected readonly formatEur = formatEurValue;
 
   readonly items = input.required<readonly FeaturedItem[]>();
 
-  readonly add = output<FoldProduct>();
+  readonly add = output<FoldProductOrder>();
   readonly notify = output<FoldProduct>();
 
   private readonly track = viewChild<ElementRef<HTMLElement>>('track');
@@ -48,8 +54,8 @@ export class FeaturedRail {
     this.favorites.toggle(product.id);
   }
 
-  protected onAdd(product: FoldProduct): void {
-    this.add.emit(product);
+  protected onAdd(order: FoldProductOrder): void {
+    this.add.emit(order);
   }
 
   protected onNotify(product: FoldProduct): void {

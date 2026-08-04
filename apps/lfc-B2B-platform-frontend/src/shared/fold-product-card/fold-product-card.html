@@ -37,14 +37,22 @@
     }
 
     <div class="fpc-foot">
-      @if (p.price) {
-        <span class="fpc-price">
-          {{ p.price }}
-          @if (p.unit) {
-            <span class="fpc-unit">{{ p.unit }}</span>
-          }
-        </span>
-      }
+      <div class="fpc-price-row">
+        @if (p.price) {
+          <span class="fpc-price">
+            {{ p.price }}
+            @if (priceSuffix(); as s) {
+              <span class="fpc-price-suffix">{{ s }}</span>
+            }
+            @if (p.unit) {
+              <span class="fpc-unit">{{ p.unit }}</span>
+            }
+          </span>
+        }
+        @if (p.packLabel; as pack) {
+          <span class="fpc-pack">{{ pack }}</span>
+        }
+      </div>
 
       @if (isOut()) {
         <button
@@ -54,20 +62,43 @@
           intent="neutral"
           size="sm"
           icon="bell"
-          class="fpc-action"
+          class="fpc-notify"
           (click)="onNotify()"
         >
           {{ notifyLabel() }}
         </button>
-      } @else if (p.action; as a) {
-        <fold-action-button
-          class="fpc-action"
-          [action]="a"
-          [emphasis]="actionEmphasis()"
-          intent="primary"
-          size="sm"
-          (activate)="onAction()"
-        />
+      } @else {
+        <div class="fpc-order">
+          <fold-number-input
+            class="fpc-qty"
+            spinner="plusminus"
+            aria-label="Quantité"
+            [min]="minQty()"
+            [step]="step()"
+            [(value)]="quantity"
+          />
+          <button
+            foldButton
+            type="button"
+            emphasis="solid"
+            intent="primary"
+            size="sm"
+            icon="plus"
+            class="fpc-add"
+            (click)="onAction()"
+          >
+            {{ addText() }}
+          </button>
+        </div>
+
+        @if (lineSubtotal(); as sub) {
+          <p class="fpc-subtotal">
+            Total ligne&nbsp;: <strong>{{ sub }}</strong>
+          </p>
+        }
+        @if (inCart(); as n) {
+          <p class="fpc-incart">✓ {{ n }} au panier</p>
+        }
       }
     </div>
   </div>

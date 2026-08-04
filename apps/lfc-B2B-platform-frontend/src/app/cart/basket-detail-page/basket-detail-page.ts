@@ -13,7 +13,7 @@ import {
   FoldSelectComponent,
 } from 'fold-ng';
 
-import type { FoldProduct } from '../../../shared';
+import type { FoldProductOrder } from '../../../shared';
 import { FeaturedRail, type FeaturedItem } from '../../boutique/featured-rail/featured-rail';
 import { CartService } from '../../data/cart.service';
 import { formatEurValue, PRODUCTS } from '../../data/catalogue-seed';
@@ -82,9 +82,9 @@ export class BasketDetailPage {
     return basket === null ? 0 : basketItemCount(basket);
   });
 
-  protected readonly recurrenceOptions = (
-    ['none', 'weekly', 'biweekly', 'monthly'] as const
-  ).map((value) => ({ value, label: RECURRENCE_LABELS[value] }));
+  protected readonly recurrenceOptions = (['none', 'weekly', 'biweekly', 'monthly'] as const).map(
+    (value) => ({ value, label: RECURRENCE_LABELS[value] }),
+  );
 
   /** Suggestions : produits absents du panier, tirés du catalogue. */
   protected readonly suggestions = computed<readonly FeaturedItem[]>(() => {
@@ -129,10 +129,10 @@ export class BasketDetailPage {
     }
   }
 
-  protected addProduct(product: FoldProduct): void {
+  protected addProduct(order: FoldProductOrder): void {
     const basket = this.basket();
     if (basket !== null) {
-      this.saved.addProduct(basket.id, product.id);
+      this.saved.addProduct(basket.id, order.product.id, order.quantity);
     }
   }
 

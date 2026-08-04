@@ -11,7 +11,7 @@ import {
   FoldPanelHostService,
 } from 'fold-ng';
 
-import type { FoldProduct } from '../../../shared';
+import type { FoldProduct, FoldProductOrder } from '../../../shared';
 import { FeaturedRail, type FeaturedItem } from '../../boutique/featured-rail/featured-rail';
 import { CommerceNav } from '../../commerce/commerce-nav/commerce-nav';
 import { CommerceContextService } from '../../commerce/commerce-context.service';
@@ -110,8 +110,8 @@ export class CartPage {
     this.cart.clear();
   }
 
-  protected addSuggestion(product: FoldProduct): void {
-    this.cart.add(product.id);
+  protected addSuggestion(order: FoldProductOrder): void {
+    this.cart.add(order.product.id, order.quantity);
   }
 
   /** Enregistre le panier courant comme panier réutilisable, puis ouvre la liste. */

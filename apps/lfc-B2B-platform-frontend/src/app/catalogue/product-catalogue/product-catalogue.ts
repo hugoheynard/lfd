@@ -18,8 +18,9 @@ import {
   type FoldSelectOption,
 } from 'fold-ng';
 
-import { FoldProductCardComponent, type FoldProduct } from '../../../shared';
-import type { CatalogueCategory } from '../../data/catalogue-seed';
+import { FoldProductCardComponent, type FoldProduct, type FoldProductOrder } from '../../../shared';
+import { type CatalogueCategory, formatEurValue } from '../../data/catalogue-seed';
+import { CartService } from '../../data/cart.service';
 import { FavoritesService } from '../../data/favorites.service';
 
 /**
@@ -49,13 +50,18 @@ export class ProductCatalogue {
   /** Paliers de taille de page ; « Voir plus » passe au cran supérieur. */
   readonly pageSizeSteps = input<readonly number[]>([12, 24, 48]);
 
-  /** Émis quand une carte est ajoutée (le vrai panier se branchera dessus). */
-  readonly add = output<FoldProduct>();
+  /** Émis quand une carte est ajoutée, avec la quantité choisie. */
+  readonly add = output<FoldProductOrder>();
 
   /** Émis quand « Me prévenir » est cliqué sur un produit en rupture. */
   readonly notify = output<FoldProduct>();
 
   protected readonly favorites = inject(FavoritesService);
+  protected readonly cart = inject(CartService);
+
+  /** Formateur de prix passé aux cartes pour le sous-total ligne (locale-aware
+   *  côté app, la carte reste générique). */
+  protected readonly formatEur = formatEurValue;
 
   protected readonly categoryOptions = computed<readonly FoldSelectOption<string>[]>(() =>
     this.categories().map((c) => ({ value: c.id, label: c.label })),
@@ -126,8 +132,8 @@ export class ProductCatalogue {
     this.favorites.toggle(product.id);
   }
 
-  protected onAdd(product: FoldProduct): void {
-    this.add.emit(product);
+  protected onAdd(order: FoldProductOrder): void {
+    this.add.emit(order);
   }
 
   protected onNotify(product: FoldProduct): void {
