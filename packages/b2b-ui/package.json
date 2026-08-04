@@ -22,7 +22,7 @@
   "peerDependencies": {
     "@angular/common": "^22.0.0",
     "@angular/core": "^22.0.0",
-    "fold-ng": ">=0.8.0"
+    "fold-ng": "catalog:"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",

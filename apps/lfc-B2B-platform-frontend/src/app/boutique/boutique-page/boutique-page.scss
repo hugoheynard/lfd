@@ -1,11 +1,6 @@
-/* L'hôte d'une page routée DOIT être un flex-item colonne à hauteur bornée pour
-   que `fold-page-layout` prenne sa hauteur et gère son propre scroll (cf.
-   `styles.scss` : `router-outlet ~ *`). ⚠️ Ne jamais mettre `display: block` ici :
-   la spécificité de `:host` (0,1,0) bat la règle globale (0,0,1) et CASSE le
-   scroll de la page. On réaffirme donc le layout flex explicitement. */
+/* Depuis fold-ng 0.9 le shell possède le scroll et la page coule dedans : l'hôte
+   routé est un simple bloc. (Avant 0.9, il fallait un flex-item borné ici pour
+   que `fold-page-layout` gère son propre scroll — c'est fini.) */
 :host {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
+  display: block;
 }

@@ -33,25 +33,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Le shell possède le scroll (`footerBehavior="scroll"` ⇒ `.content` est un flex
-   column en `overflow:auto`) et pose son footer in-flow en fin de contenu. Pour
-   que le footer soit RÉVÉLÉ EN SCROLLANT (sous la ligne de flottaison sur une
-   page courte, en fin de scroll sur une longue) et jamais figé au milieu, la
-   page routée **grossit pour remplir** le scrollport (pattern sticky-footer). */
+/* Scroll + footer : depuis fold-ng 0.9, le shell possède le scroll du contenu
+   par défaut, `fold-page-layout` coule dedans, et le shell fait grossir lui-même
+   le porte-page (`.content-flow { flex:1 0 auto }`) pour pousser le footer
+   `footerBehavior="scroll"` en bas d'une page courte. L'ancien duo (rendre la
+   page routée flex-grow + neutraliser `margin-top:auto` du footer avec un
+   `!important` contre une règle scopée du shell) est supprimé. Reste à donner un
+   `display:block` à l'hôte routé — un custom element Angular est inline sinon. */
 router-outlet + * {
-  display: flex;
-  flex: 1 0 auto;
-  flex-direction: column;
-  min-width: 0;
-}
-
-/* MAIS le shell colle son footer via `margin-top:auto`, et en flexbox une marge
-   auto absorbe l'espace libre AVANT `flex-grow` : la page ne grossit donc jamais,
-   le footer se retrouve collé/au milieu et le scrollport fait pile la hauteur du
-   contenu (rien à scroller — le footer devient injoignable sur une page à ras).
-   On neutralise ce `margin-top:auto` : la page (flex-grow) remplit, le footer se
-   pose juste après, sous la ligne de flottaison, et le scroll y mène. `!important`
-   pour battre la règle scopée du composant shell. */
-.footer-inflow {
-  margin-top: 0 !important;
+  display: block;
 }

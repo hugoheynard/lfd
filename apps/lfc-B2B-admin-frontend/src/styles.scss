@@ -24,13 +24,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Une page routée est projetée dans le `.content` du shell fold (flex column à
-   hauteur bornée). Son hôte est `display:block` par défaut, donc rien ne défile.
-   On fait de chaque hôte routé un flex-item qui remplit la zone ET un flex
-   column, pour que la page prenne sa hauteur et gère son propre scroll. */
+/* Depuis fold-ng 0.9, le shell possède le scroll du contenu par défaut et
+   `fold-page-layout` coule dedans (`scroll="flow"`) : l'ancien hack de scroll
+   (flex-item borné) est supprimé. Reste juste à donner un `display:block` à
+   l'hôte routé — un élément custom Angular est `display:inline` par défaut. */
 router-outlet ~ * {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
+  display: block;
 }
