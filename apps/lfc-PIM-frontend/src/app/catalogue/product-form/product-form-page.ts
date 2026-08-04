@@ -57,6 +57,15 @@ const KINDS: readonly KindOption[] = [
   { value: 'resale', label: 'Revente' },
 ];
 
+/** Sections qui s'enregistrent (donc traçables « dirty »). Canaux (lecture seule),
+ *  Visuels et Intégrations (non persistés) n'en font pas partie. */
+const SAVEABLE: readonly { key: string; label: string }[] = [
+  { key: 'identite', label: 'Identité' },
+  { key: 'tarif', label: 'Tarif & logistique' },
+  { key: 'fiche', label: 'Allergènes & nutrition' },
+  { key: 'communication', label: 'Communication' },
+];
+
 const EMPTY_NUTRITION: NutritionValues = {
   energyKcal: null,
   carbsG: null,
@@ -155,6 +164,11 @@ export class ProductFormPage {
     {},
   );
 
+  /** Empreinte par section au dernier état enregistré (baseline). */
+  private readonly baseline = signal<Record<string, string>>({});
+  /** Bannière « champs modifiés » affichée quand on tente de quitter. */
+  protected readonly leaveWarning = signal(false);
+
   protected readonly pageTitle = computed(() => {
     if (!this.isEdit()) {
       return 'Nouveau produit';
@@ -215,6 +229,25 @@ export class ProductFormPage {
     }));
   });
 
+  /** Sections modifiées depuis le dernier enregistrement (edit only). */
+  protected readonly dirtySections = computed(() => {
+    if (!this.isEdit()) {
+      return [];
+    }
+    const base = this.baseline();
+    return SAVEABLE.filter(
+      (section) =>
+        base[section.key] !== undefined &&
+        this.snapshot(section.key) !== base[section.key],
+    );
+  });
+
+  protected readonly dirtyLabel = computed(() =>
+    this.dirtySections()
+      .map((section) => section.label)
+      .join(', '),
+  );
+
   constructor() {
     void this.load();
   }
@@ -243,6 +276,76 @@ export class ProductFormPage {
 
   protected back(): void {
     void this.router.navigate(['/produits']);
+  }
+
+  /** Retour aux produits — bloqué par une bannière si des sections sont dirty. */
+  protected attemptBack(): void {
+    if (this.dirtySections().length > 0) {
+      this.leaveWarning.set(true);
+    } else {
+      this.back();
+    }
+  }
+
+  protected leaveAnyway(): void {
+    this.back();
+  }
+
+  /** Enregistre chaque section modifiée, puis quitte si tout est propre. */
+  protected async saveDirtyAndLeave(): Promise<void> {
+    for (const section of this.dirtySections()) {
+      await this.saveSection(section.key);
+    }
+    if (this.dirtySections().length === 0) {
+      this.back();
+    }
+  }
+
+  private saveSection(key: string): Promise<void> {
+    switch (key) {
+      case 'identite':
+        return this.saveIdentity();
+      case 'tarif':
+        return this.savePricing();
+      case 'fiche':
+        return this.saveFiche();
+      case 'communication':
+        return this.saveCommunication();
+      default:
+        return Promise.resolve();
+    }
+  }
+
+  /** Empreinte comparable des champs d'une section (ordre stable). */
+  private snapshot(section: string): string {
+    switch (section) {
+      case 'identite':
+        return JSON.stringify([
+          this.name().trim(),
+          this.kind(),
+          this.categoryId(),
+        ]);
+      case 'tarif':
+        return JSON.stringify([this.priceEur(), this.weightGrams()]);
+      case 'fiche':
+        return JSON.stringify([
+          this.declaresNone(),
+          [...this.selected()].sort(),
+          this.nutrition(),
+        ]);
+      case 'communication':
+        return JSON.stringify(this.editorial());
+      default:
+        return '';
+    }
+  }
+
+  private captureBaseline(): void {
+    const base: Record<string, string> = {};
+    for (const section of SAVEABLE) {
+      base[section.key] = this.snapshot(section.key);
+    }
+    this.baseline.set(base);
   }
 
   // ── Create : un seul submit ──────────────────────────────────────────────
@@ -331,6 +434,11 @@ export class ProductFormPage {
     try {
       await action();
       this.status.update((current) => ({ ...current, [section]: 'saved' }));
+      // La section est de nouveau « propre » : son baseline suit l'état enregistré.
+      this.baseline.update((base) => ({
+        ...base,
+        [section]: this.snapshot(section),
+      }));
     } catch (caught) {
       this.status.update((current) => ({ ...current, [section]: 'error' }));
       this.error.set(this.messageOf(caught));
@@ -393,6 +501,7 @@ export class ProductFormPage {
     } else {
       this.selected.set([...allergens]);
     }
+    this.captureBaseline();
   }
 
   private async loadReference(scope: AllergenScope): Promise<void> {

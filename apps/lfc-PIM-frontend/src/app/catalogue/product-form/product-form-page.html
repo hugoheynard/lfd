@@ -2,7 +2,7 @@
   <fold-back-link
     pageActions
     label="Retour aux produits"
-    routerLink="/produits"
+    (click)="attemptBack()"
   />
 
   <p description>
@@ -28,6 +28,36 @@
       subtitle="Ce produit n'existe pas ou a été supprimé."
     />
   } @else {
+    @if (leaveWarning()) {
+      <fold-callout
+        appearance="inset"
+        variant="warning"
+        role="alert"
+        class="leave-warning"
+      >
+        <div class="leave-body">
+          <span>
+            Vous avez modifié des champs de <strong>{{ dirtyLabel() }}</strong>.
+            Enregistrer avant de quitter ?
+          </span>
+          <div class="leave-actions">
+            <button foldButton size="sm" (click)="saveDirtyAndLeave()">
+              Sauvegarder
+            </button>
+            <button
+              foldButton
+              size="sm"
+              emphasis="soft"
+              intent="neutral"
+              (click)="leaveAnyway()"
+            >
+              Retour aux produits
+            </button>
+          </div>
+        </div>
+      </fold-callout>
+    }
+
     <fold-nav-layout placement="top">
       <fold-tabs
         tabNav
