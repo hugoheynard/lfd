@@ -55,12 +55,12 @@ versionnée, **introspecter la boutique**, ne pas faire confiance à une forme d
 Avec vraies options (ex. Poids 250 g / 1 kg) : `productOptions` = une entrée par nom
 d'option, `optionValues` = une par variante — forme déjà en place dans le mapper.
 
-## Invariants à verrouiller par des tests
+## Invariants verrouillés par des tests
 
-- **I1** — `buildProductSetInput` d'un produit **sans option** émet `productOptions: [Title/Default Title]` **et** chaque variante porte `optionValues: [{Title, Default Title}]`. _(garde F2+F4)_
-- **I2** — l'identifier de push est **`{ handle }`**, jamais `{ key }`. _(garde F1)_
-- **I3** — prix en **décimal texte** (`2400` → `"24.00"`), omis si non tarifé. _(garde F6)_
-- **I4** — avec vraies options : `productOptions` déclare chaque nom, `optionValues` chaque valeur par variante. _(déjà testé)_
+- ✅ **I1** — `buildProductSetInput` d'un produit **sans option** émet `productOptions: [Title/Default Title]` **et** chaque variante porte `optionValues: [{Title, Default Title}]`. _(garde F2+F4 · `product-set-input.spec`)_
+- ✅ **I2** — l'identifier de push est **`{ handle }`**, jamais `{ key }` ; le driver envoie **exactement** la sortie du mapper. _(garde F1 · `driver.spec`)_
+- ✅ **I3** — prix en **décimal texte** (`2400` → `"24.00"`), omis si non tarifé. _(garde F6 · `projection.spec` + `product-set-input.spec`)_
+- ✅ **I4** — avec vraies options : `productOptions` déclare chaque nom, `optionValues` chaque valeur par variante. _(`product-set-input.spec`)_
 
 ## Reste à vérifier live (prochains spikes)
 
