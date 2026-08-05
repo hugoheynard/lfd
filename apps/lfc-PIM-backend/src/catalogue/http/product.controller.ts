@@ -1,87 +1,31 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { z } from 'zod';
+import {
+  createProductPayloadSchema,
+  declareNutritionPayloadSchema,
+  productEditorialPayloadSchema,
+  updateProductIdentityPayloadSchema,
+  updateVariantPricingPayloadSchema,
+  type CreateProductPayload,
+  type DeclareNutritionPayload,
+  type ProductDetailView,
+  type ProductEditorialPayload,
+  type ProductView,
+  type UpdateProductIdentityPayload,
+  type UpdateVariantPricingPayload,
+} from '@lfd/pim-contracts';
 
 import { Public } from '../../infra/auth/public.decorator.js';
 import { ZodBody } from '../../shared/http/zod-body.pipe.js';
 import { ArchiveProductCommand } from '../application/archive-product.js';
 import { CreateProductCommand } from '../application/create-product.js';
 import { DeclareProductNutritionCommand } from '../application/declare-product-nutrition.js';
-import {
-  GetProductDetailQuery,
-  type ProductDetail,
-} from '../application/get-product-detail.js';
+import { GetProductDetailQuery } from '../application/get-product-detail.js';
 import { ListProductsQuery } from '../application/list-products.js';
 import { RestoreProductCommand } from '../application/restore-product.js';
 import { UpdateProductEditorialCommand } from '../application/update-product-editorial.js';
 import { UpdateProductIdentityCommand } from '../application/update-product-identity.js';
 import { UpdateVariantPricingCommand } from '../application/update-variant-pricing.js';
-import type { ProductRecord } from '../domain/ports/product.repository.js';
-
-const kindEnum = z.enum(['daily', 'made_to_order', 'resale']);
-
-const nutritionShape = z
-  .object({
-    energyKcal: z.number().optional(),
-    carbsG: z.number().optional(),
-    fatG: z.number().optional(),
-    proteinG: z.number().optional(),
-    glycemicIndex: z.number().optional(),
-  })
-  .optional();
-
-const editorialShape = {
-  descriptionShort: z.string().optional(),
-  descriptionLong: z.string().optional(),
-  story: z.string().optional(),
-  pairing: z.string().optional(),
-  brand: z.string().optional(),
-  seoTitle: z.string().optional(),
-  seoDescription: z.string().optional(),
-};
-
-const productPayload = z.object({
-  nameFr: z.string().min(1),
-  nameEn: z.string().optional(),
-  kind: kindEnum,
-  categoryId: z.string().min(1),
-  sku: z.string().optional(),
-  allergens: z.array(z.string()).optional(),
-  mayContain: z.array(z.string()).optional(),
-  nutrition: nutritionShape,
-  editorial: z.object(editorialShape).optional(),
-  media: z
-    .array(
-      z.object({
-        role: z.string(),
-        url: z.string(),
-        alt: z.string().optional(),
-      }),
-    )
-    .optional(),
-});
-
-/** Section « Identité » — enregistrée en une fois (pas champ par champ). */
-const identityPayload = z.object({
-  nameFr: z.string().min(1),
-  nameEn: z.string().optional(),
-  kind: kindEnum,
-  categoryId: z.string().min(1),
-});
-
-/** Section « Tarif & logistique » d'une déclinaison. `null` = effacer. */
-const pricingPayload = z.object({
-  priceCents: z.number().int().min(0).nullable(),
-  weightGrams: z.number().int().min(0).nullable(),
-});
-
-const editorialPayload = z.object(editorialShape);
-
-const nutritionPayload = z.object({
-  allergens: z.array(z.string()),
-  mayContain: z.array(z.string()).optional(),
-  nutrition: nutritionShape,
-});
 
 /**
  * Produits du catalogue — dispatchés sur les bus CQRS. L'édition se fait **par
@@ -97,23 +41,24 @@ export class ProductController {
   ) {}
 
   @Get()
-  listProducts(): Promise<ProductRecord[]> {
-    return this.queries.execute<ListProductsQuery, ProductRecord[]>(
+  listProducts(): Promise<ProductView[]> {
+    return this.queries.execute<ListProductsQuery, ProductView[]>(
       new ListProductsQuery(),
     );
   }
 
   /** Détail complet d'un produit : le socle + sa couche éditoriale (pour l'édition). */
   @Get(':id')
-  getProduct(@Param('id') id: string): Promise<ProductDetail | null> {
-    return this.queries.execute<GetProductDetailQuery, ProductDetail | null>(
-      new GetProductDetailQuery(id),
-    );
+  getProduct(@Param('id') id: string): Promise<ProductDetailView | null> {
+    return this.queries.execute<
+      GetProductDetailQuery,
+      ProductDetailView | null
+    >(new GetProductDetailQuery(id));
   }
 
   @Post()
   async createProduct(
-    @Body(new ZodBody(productPayload)) body: z.infer<typeof productPayload>,
+    @Body(new ZodBody(createProductPayloadSchema)) body: CreateProductPayload,
   ) {
     const id = await this.commands.execute<CreateProductCommand, string>(
       new CreateProductCommand(body),
@@ -125,7 +70,8 @@ export class ProductController {
   @Put(':id/identity')
   async updateIdentity(
     @Param('id') id: string,
-    @Body(new ZodBody(identityPayload)) body: z.infer<typeof identityPayload>,
+    @Body(new ZodBody(updateProductIdentityPayloadSchema))
+    body: UpdateProductIdentityPayload,
   ) {
     await this.commands.execute<UpdateProductIdentityCommand, void>(
       new UpdateProductIdentityCommand(id, body),
@@ -137,7 +83,8 @@ export class ProductController {
   @Put(':id/editorial')
   async editProductEditorial(
     @Param('id') id: string,
-    @Body(new ZodBody(editorialPayload)) body: z.infer<typeof editorialPayload>,
+    @Body(new ZodBody(productEditorialPayloadSchema))
+    body: ProductEditorialPayload,
   ) {
     await this.commands.execute<UpdateProductEditorialCommand, void>(
       new UpdateProductEditorialCommand(id, body),
@@ -150,7 +97,8 @@ export class ProductController {
   async setVariantPricing(
     @Param('id') id: string,
     @Param('variantId') variantId: string,
-    @Body(new ZodBody(pricingPayload)) body: z.infer<typeof pricingPayload>,
+    @Body(new ZodBody(updateVariantPricingPayloadSchema))
+    body: UpdateVariantPricingPayload,
   ) {
     await this.commands.execute<UpdateVariantPricingCommand, void>(
       new UpdateVariantPricingCommand(id, variantId, body),
@@ -163,7 +111,8 @@ export class ProductController {
   async declareVariantNutrition(
     @Param('id') id: string,
     @Param('variantId') variantId: string,
-    @Body(new ZodBody(nutritionPayload)) body: z.infer<typeof nutritionPayload>,
+    @Body(new ZodBody(declareNutritionPayloadSchema))
+    body: DeclareNutritionPayload,
   ) {
     await this.commands.execute<DeclareProductNutritionCommand, void>(
       new DeclareProductNutritionCommand(id, variantId, body),

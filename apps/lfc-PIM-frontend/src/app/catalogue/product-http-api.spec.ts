@@ -6,6 +6,8 @@ interface BackendVariantLike {
   id: string;
   sku: string;
   name: { fr: string };
+  options: Record<string, string>;
+  position: number;
   isDefault: boolean;
   isDiscontinued: boolean;
   priceCents: number | null;
@@ -19,6 +21,8 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     id: 'prd_cafe_v1',
     sku: 'CAFE-1',
     name: { fr: 'Café' },
+    options: {},
+    position: 0,
     isDefault: true,
     isDiscontinued: false,
     priceCents: 450,

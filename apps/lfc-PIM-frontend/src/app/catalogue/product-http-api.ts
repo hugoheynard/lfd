@@ -1,41 +1,20 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import type {
+  ProductDetailView,
+  ProductEditorialView,
+  ProductView,
+  VariantNutritionView,
+  VariantView,
+} from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
-import type {
-  LocalizedText,
-  Product,
-  ProductKind,
-  Variant,
-} from '../data/models';
+import type { Product, ProductKind, Variant } from '../data/models';
 
-// ── Contrat backend (lfc-PIM-backend / catalogue) ──────────────────────────
-// Formes RENDUES par l'API. Duplication assumée tant que packages/shared-types
-// n'existe pas (cf. models.ts). `priceCents` HT canonique ; le front l'expose en
-// euros dans `priceEur` (la distinction TTC/HT est un souci de la couche pricing,
-// différé). Canaux/flags absents du backend en slice 1 → défauts neutres.
-
-interface BackendNutrition {
-  readonly mayContain: readonly string[];
-  readonly energyKcal: number | null;
-  readonly carbsG: number | null;
-  readonly fatG: number | null;
-  readonly proteinG: number | null;
-  readonly glycemicIndex: number | null;
-}
-
-interface BackendVariant {
-  readonly id: string;
-  readonly sku: string;
-  readonly name: LocalizedText;
-  readonly isDefault: boolean;
-  readonly isDiscontinued: boolean;
-  readonly priceCents: number | null;
-  readonly weightGrams: number | null;
-  readonly allergens: readonly string[] | null;
-  readonly nutrition: BackendNutrition | null;
-}
+// Formes RENDUES par l'API = vues du contrat `@lfd/pim-contracts`. `priceCents`
+// HT canonique ; le front l'expose en euros dans `priceEur` (TTC/HT relève de la
+// couche pricing, différé). Canaux/flags neutralisés (contexte commerce).
 
 /** Valeurs nutritionnelles pour 100 g (édition) ; `null` = non renseigné. */
 export interface NutritionValues {
@@ -52,31 +31,6 @@ const EMPTY_NUTRITION: NutritionValues = {
   fatG: null,
   proteinG: null,
   glycemicIndex: null,
-};
-
-interface BackendProduct {
-  readonly id: string;
-  readonly sku: string;
-  readonly name: LocalizedText;
-  readonly slug: LocalizedText;
-  readonly kind: ProductKind;
-  readonly categoryId: string;
-  readonly status: Product['status'];
-  readonly variants: readonly BackendVariant[];
-}
-
-interface BackendEditorial {
-  readonly descriptionShort: string | null;
-  readonly descriptionLong: string | null;
-  readonly story: string | null;
-  readonly pairing: string | null;
-  readonly brand: string | null;
-  readonly seoTitle: string | null;
-  readonly seoDescription: string | null;
-}
-
-type BackendProductDetail = BackendProduct & {
-  readonly editorial: BackendEditorial | null;
 };
 
 /** Couche éditoriale à plat (FR), champs vides = chaîne vide — pour l'édition. */
@@ -100,7 +54,7 @@ export interface ProductDetail {
   readonly nutrition: NutritionValues;
 }
 
-function toNutritionValues(nutrition: BackendNutrition | null): NutritionValues {
+function toNutritionValues(nutrition: VariantNutritionView | null): NutritionValues {
   return nutrition === null
     ? EMPTY_NUTRITION
     : {
@@ -112,7 +66,7 @@ function toNutritionValues(nutrition: BackendNutrition | null): NutritionValues 
       };
 }
 
-function toEditorialFields(editorial: BackendEditorial | null): EditorialFields {
+function toEditorialFields(editorial: ProductEditorialView | null): EditorialFields {
   return {
     descriptionShort: editorial?.descriptionShort ?? '',
     descriptionLong: editorial?.descriptionLong ?? '',
@@ -124,11 +78,11 @@ function toEditorialFields(editorial: BackendEditorial | null): EditorialFields 
   };
 }
 
-function defaultVariant(product: BackendProduct): BackendVariant | undefined {
+function defaultVariant(product: ProductView): VariantView | undefined {
   return product.variants.find((variant) => variant.isDefault) ?? product.variants[0];
 }
 
-function toVariant(variant: BackendVariant): Variant {
+function toVariant(variant: VariantView): Variant {
   return {
     id: variant.id,
     sku: variant.sku,
@@ -145,7 +99,7 @@ function toVariant(variant: BackendVariant): Variant {
  * n'est plus porté (différé). `descriptionFr` n'existe que sur le détail enrichi.
  */
 export function backendToProduct(
-  product: BackendProduct,
+  product: ProductView,
   editorial?: { descriptionShort: string | null } | null,
 ): Product {
   const base = defaultVariant(product);
@@ -193,15 +147,13 @@ export class ProductHttpApi {
   private readonly base = inject(API_BASE_URL);
 
   async list(): Promise<Product[]> {
-    const rows = await firstValueFrom(
-      this.http.get<BackendProduct[]>(this.url('products')),
-    );
+    const rows = await firstValueFrom(this.http.get<ProductView[]>(this.url('products')));
     return rows.map((row) => backendToProduct(row));
   }
 
   async get(id: string): Promise<Product | null> {
     const row = await firstValueFrom(
-      this.http.get<BackendProductDetail | null>(this.url(`products/${id}`)),
+      this.http.get<ProductDetailView | null>(this.url(`products/${id}`)),
     );
     return row === null ? null : backendToProduct(row, row.editorial);
   }
@@ -209,7 +161,7 @@ export class ProductHttpApi {
   /** Détail complet pour l'édition : produit mappé + éditorial à plat. */
   async getDetail(id: string): Promise<ProductDetail | null> {
     const row = await firstValueFrom(
-      this.http.get<BackendProductDetail | null>(this.url(`products/${id}`)),
+      this.http.get<ProductDetailView | null>(this.url(`products/${id}`)),
     );
     if (row === null) {
       return null;
@@ -307,18 +259,14 @@ export class ProductHttpApi {
     return this.put(`products/${id}/restore`, {});
   }
 
-  private async applyInitialPricing(
-    id: string,
-    input: CreateProductInput,
-  ): Promise<void> {
+  private async applyInitialPricing(id: string, input: CreateProductInput): Promise<void> {
     const detail = await this.get(id);
     const variantId = detail?.variants.find((v) => v.isDefault)?.id;
     if (variantId === undefined) {
       return;
     }
     await this.savePricing(id, variantId, {
-      priceCents:
-        input.priceEur === undefined ? null : Math.round(input.priceEur * 100),
+      priceCents: input.priceEur === undefined ? null : Math.round(input.priceEur * 100),
       weightGrams: input.weightGrams === undefined ? null : input.weightGrams,
     });
   }

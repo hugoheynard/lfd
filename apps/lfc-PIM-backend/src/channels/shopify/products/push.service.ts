@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { PushReport, PushSummary } from '@lfd/pim-contracts';
 
 import { CatalogueReader } from '../../../catalogue/domain/ports/catalogue-reader.js';
 import type { ProductRecord } from '../../../catalogue/domain/ports/product.repository.js';
@@ -13,20 +14,6 @@ import {
   type ChannelMode,
   ShopifySettingsService,
 } from '../shared/settings.service.js';
-
-export type PushOutcome = 'pushed' | 'unchanged' | 'failed';
-
-export interface PushReport {
-  readonly productId: string;
-  readonly sku: string;
-  readonly outcome: PushOutcome;
-  readonly message: string;
-}
-
-export interface PushSummary {
-  readonly mode: 'live' | 'dry-run';
-  readonly results: readonly PushReport[];
-}
 
 @Injectable()
 export class ShopifyPushService {

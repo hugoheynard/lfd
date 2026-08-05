@@ -1,15 +1,16 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
-import { z } from 'zod';
+import {
+  pushPayloadSchema,
+  type ProductBindingView,
+  type PushPayload,
+  type PushSummary,
+} from '@lfd/pim-contracts';
 
 import { Public } from '../../../infra/auth/public.decorator.js';
 import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { ZodBody } from '../../../shared/http/zod-body.pipe.js';
 import { ShopifyInspectionService } from './inspection.service.js';
 import { ShopifyPushService } from './push.service.js';
-
-const pushPayload = z.object({
-  productIds: z.array(z.string()).optional(),
-});
 
 /**
  * Ressource **produits** : l'état de synchro (bindings) et le push (projection →
@@ -35,7 +36,7 @@ export class ShopifyProductsController {
 
   /** État de synchro par produit — alimente la colonne du tableau. */
   @Get('bindings')
-  async listBindings() {
+  async listBindings(): Promise<ProductBindingView[]> {
     const rows = await this.prisma.shopifyProductBinding.findMany();
     return rows.map((row) => ({
       productId: row.productId,
@@ -46,7 +47,9 @@ export class ShopifyProductsController {
   }
 
   @Post('push')
-  push(@Body(new ZodBody(pushPayload)) body: z.infer<typeof pushPayload>) {
+  push(
+    @Body(new ZodBody(pushPayloadSchema)) body: PushPayload,
+  ): Promise<PushSummary> {
     return this.pushService.push(body.productIds);
   }
 }

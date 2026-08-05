@@ -34,3 +34,36 @@ export type {
   EmplacementView,
   TableQrResponse,
 } from "./locations.js";
+
+export {
+  productKindSchema,
+  createProductPayloadSchema,
+  updateProductIdentityPayloadSchema,
+  updateVariantPricingPayloadSchema,
+  productEditorialPayloadSchema,
+  declareNutritionPayloadSchema,
+} from "./product.js";
+export type {
+  ProductKind,
+  ProductStatus,
+  CreateProductPayload,
+  UpdateProductIdentityPayload,
+  UpdateVariantPricingPayload,
+  ProductEditorialPayload,
+  DeclareNutritionPayload,
+  VariantNutritionView,
+  VariantView,
+  ProductView,
+  ProductEditorialView,
+  ProductDetailView,
+} from "./product.js";
+
+export { pushPayloadSchema } from "./shopify.js";
+export type {
+  PushPayload,
+  SyncStatus,
+  PushOutcome,
+  ProductBindingView,
+  PushReport,
+  PushSummary,
+} from "./shopify.js";

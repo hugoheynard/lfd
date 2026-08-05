@@ -97,27 +97,8 @@ export interface Category {
   surPlaceTvaId: string;
 }
 
-export type SyncStatus = 'never_pushed' | 'up_to_date' | 'drifted' | 'failed';
-export type PushOutcome = 'pushed' | 'unchanged' | 'failed';
-
-export interface ProductBinding {
-  productId: string;
-  syncStatus: SyncStatus;
-  lastPushedAt: string | null;
-  lastError: string | null;
-}
-
-export interface PushReport {
-  productId: string;
-  sku: string;
-  outcome: PushOutcome;
-  message: string;
-}
-
-export interface PushSummary {
-  mode: 'live' | 'dry-run';
-  results: PushReport[];
-}
+// Types de synchro Shopify (SyncStatus, PushOutcome, ProductBinding, PushReport,
+// PushSummary) migrés vers `@lfd/pim-contracts` — ré-exportés par `shopify-api`.
 
 export interface ShopifySettings {
   shopDomain: string;
