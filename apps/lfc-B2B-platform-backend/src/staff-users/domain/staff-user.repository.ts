@@ -25,6 +25,14 @@ export abstract class StaffUserRepository {
   /**
    * Supprime un user.
    * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
+   * @throws {ProtectedStaffUserError} la cible est l'admin racine (ineffaçable).
    */
   abstract remove(id: string): Promise<void>;
+
+  /**
+   * Garantit l'existence de l'**admin racine** (`BOOTSTRAP_ADMIN`) : le crée s'il
+   * manque, no-op sinon (ne clobbe pas d'éventuelles éditions). Appelé au boot —
+   * l'admin réapparaît même supprimé directement en base. Idempotent.
+   */
+  abstract ensureBootstrapAdmin(): Promise<void>;
 }

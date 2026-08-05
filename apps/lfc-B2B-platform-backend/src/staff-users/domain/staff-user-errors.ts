@@ -16,3 +16,17 @@ export class DuplicateStaffEmailError extends BusinessError {
     super("staff_user.duplicate_email", "Un utilisateur staff utilise déjà cet e-mail.");
   }
 }
+
+/**
+ * Mutation refusée : la cible est l'**admin racine** (bootstrap). Il ne peut être
+ * ni supprimé, ni rétrogradé hors du scope `admin`, ni voir son e-mail changé —
+ * sinon plus personne ne peut provisionner de comptes. Refus **métier** (409).
+ */
+export class ProtectedStaffUserError extends BusinessError {
+  constructor() {
+    super(
+      "staff_user.protected",
+      "L'administrateur racine ne peut être ni supprimé ni rétrogradé.",
+    );
+  }
+}

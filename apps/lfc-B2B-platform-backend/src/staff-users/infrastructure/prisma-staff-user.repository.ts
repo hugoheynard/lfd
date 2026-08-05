@@ -2,7 +2,12 @@ import type { StaffScope, StaffUserPayload, StaffUserView } from "@lfd/contracts
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import { DuplicateStaffEmailError, StaffUserNotFoundError } from "../domain/staff-user-errors.js";
+import { BOOTSTRAP_ADMIN, isBootstrapAdminEmail } from "../domain/bootstrap-admin.js";
+import {
+  DuplicateStaffEmailError,
+  ProtectedStaffUserError,
+  StaffUserNotFoundError,
+} from "../domain/staff-user-errors.js";
 import { StaffUserRepository } from "../domain/staff-user.repository.js";
 
 interface StaffRow {
@@ -79,21 +84,50 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
   }
 
   async update(id: string, payload: StaffUserPayload): Promise<void> {
-    const existing = await this.prisma.staffUser.findUnique({ where: { id }, select: { id: true } });
+    const existing = await this.prisma.staffUser.findUnique({
+      where: { id },
+      select: { id: true, email: true },
+    });
     if (existing === null) {
       throw new StaffUserNotFoundError(id);
     }
     const data = toData(payload);
+    // L'admin racine reste racine : e-mail figé + scope admin conservé (sinon il
+    // s'auto-exclut du provisioning ou échappe à la garde par renommage).
+    if (
+      isBootstrapAdminEmail(existing.email) &&
+      (!isBootstrapAdminEmail(data.email) || !data.scopes.includes("admin"))
+    ) {
+      throw new ProtectedStaffUserError();
+    }
     await this.assertEmailFree(data.email, id);
     await this.prisma.staffUser.update({ where: { id }, data });
   }
 
   async remove(id: string): Promise<void> {
-    const existing = await this.prisma.staffUser.findUnique({ where: { id }, select: { id: true } });
+    const existing = await this.prisma.staffUser.findUnique({
+      where: { id },
+      select: { id: true, email: true },
+    });
     if (existing === null) {
       throw new StaffUserNotFoundError(id);
     }
+    if (isBootstrapAdminEmail(existing.email)) {
+      throw new ProtectedStaffUserError();
+    }
     await this.prisma.staffUser.delete({ where: { id } });
+  }
+
+  async ensureBootstrapAdmin(): Promise<void> {
+    const data = toData(BOOTSTRAP_ADMIN);
+    const existing = await this.prisma.staffUser.findUnique({
+      where: { email: data.email },
+      select: { id: true },
+    });
+    if (existing !== null) {
+      return; // déjà présent — on ne clobbe pas d'éventuelles éditions (prénom…).
+    }
+    await this.prisma.staffUser.create({ data, select: { id: true } });
   }
 
   /** Refuse un e-mail déjà pris par un **autre** user (`exceptId` s'exclut lui-même). */
