@@ -21,6 +21,21 @@ poussée (dérive distante ⚠️), repérer un **conflit** (les deux ont bougé
 sur une fiche via un historique versionné. Le PIM reste l'autorité — la boutique n'est qu'un miroir —
 mais on cesse d'écraser en aveugle.
 
+### Appartenance TVA livrée (C1-C3) + vérifiée live
+
+**PM** — Un produit poussé **rejoint désormais sa collection de TVA** en boutique (emporter →
+`tva-5-5`), donc l'override de taux s'applique pour de vrai. Vérifié sur la boutique de dev :
+`baguette-artisane` poussé → rangé dans `tva-5-5` (la collection compte 1 produit). Le modèle est
+prêt à accueillir sur-place / B2B sans refonte.
+
+**Tech** — C1 `CatalogueReader.tvaTags` (catégorie→régime→tag, composition dans le catalogue,
+ADR-13) + registre `ACTIVE_SALES_CONTEXTS` (emporter). C2 `collectionAddProductsV2` dans
+`@lfd/shopify-admin` + `ShopifyMembershipService` (résout tag→GID via le gateway, **rapporte**
+l'absence de collection au lieu d'en créer une sans titre). C3 le push (live) range le produit
+après `productSet` ; **l'échec d'appartenance ne fait pas échouer le push** (le produit est poussé,
+on le signale). Piège observé : un produit **`unchanged`** saute la membership (elle est liée au
+push) — noté pour C4. Reste C4 (activer sur-place, handles suffixés) / C5 (B2B), purs ajouts.
+
 ### Décision : projection par **contexte de vente** (modèle à expansion TVA)
 
 **PM** — Un article peut se vendre dans plusieurs contextes à TVA différente (emporter 5,5 %,

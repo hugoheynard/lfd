@@ -115,9 +115,9 @@
   - [x] **S4** — refonte écran `publication-shopify` (orienté handle, statut ⚠️, diff par paire, pré-push, publier, historique/rollback) *(commit `edac08a`, 37 tests front ; POC LocalDb publication supprimé)*
   - [ ] **S5** *(diff → post-boucle)* — webhook `products/update` → marque `remote_drift` sans poll
 - [ ] **Appartenance TVA — projection par contexte de vente** ([`projection-sales-context.md`](./projection-sales-context.md)) :
-  - [ ] **C1** — registre de contextes (`emporter` actif) + read composé « tva tag par (article, contexte) » derrière un port (catalogue+commerce)
-  - [ ] **C2** — `collectionAddProductsV2` dans le driver live + résolveur GID + « collection absente → créer »
-  - [ ] **C3** — push : ranger le produit dans la collection `tva-*` de son contexte + tests
+  - [x] **C1** — registre `ACTIVE_SALES_CONTEXTS` + `CatalogueReader.tvaTags` (catégorie→régime→tag, ADR-13) *(commit `8a72f9e`, +3 tests)*
+  - [x] **C2** — `collectionAddProductsV2` (`@lfd/shopify-admin`) + `ShopifyMembershipService` (résout tag→GID, **rapporte** l'absence, ne crée pas) *(commits `f363dfb`/`d8e9d6f`)*
+  - [x] **C3** — push (live) range le produit dans sa collection `tva-*` ; échec non-bloquant ; **vérifié live** (baguette-artisane → tva-5-5, productCount 1) *(+5 tests)*
   - [ ] **C4** *(différé)* — activer `surPlace` : projection multi-contexte (handles suffixés) + réconciliation par contexte
   - [ ] **C5** *(futur)* — contexte `b2b` (TVA 20 %), pur ajout de config
 - [ ] ~~**Webhooks Shopify** (`products/update`)~~ → absorbé par S5 ci-dessus
