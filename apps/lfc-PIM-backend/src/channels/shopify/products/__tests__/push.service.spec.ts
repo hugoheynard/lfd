@@ -172,6 +172,30 @@ describe('ShopifyPushService — snapshots', () => {
     expect(h.bindingUpserts[0]?.create.headSnapshotId).toBeUndefined();
   });
 
+  it('en pré-push (preview), ne pousse rien et n’écrit rien', async () => {
+    const h = await build('live');
+
+    const summary = await h.service.push(['p1'], true);
+
+    expect(summary.mode).toBe('dry-run');
+    expect(summary.results[0]?.outcome).toBe('pushed');
+    expect(summary.results[0]?.message).toContain('Partirait');
+    expect(h.livePushes).toHaveLength(0);
+    expect(h.dryPushes).toHaveLength(0);
+    expect(h.recorded).toHaveLength(0);
+    expect(h.bindingUpserts).toHaveLength(0);
+  });
+
+  it('en pré-push, rapporte « déjà à jour » si l’empreinte est identique', async () => {
+    const hash = fingerprint(projectProduct(product()));
+    const h = await build('live', { lastPushedHash: hash });
+
+    const summary = await h.service.push(['p1'], true);
+
+    expect(summary.results[0]?.outcome).toBe('unchanged');
+    expect(h.bindingUpserts).toHaveLength(0);
+  });
+
   it('sur empreinte identique, ne pousse ni n’écrit de snapshot', async () => {
     const hash = fingerprint(projectProduct(product()));
     const h = await build('live', { lastPushedHash: hash });

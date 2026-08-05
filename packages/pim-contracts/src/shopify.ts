@@ -7,6 +7,12 @@ import { z } from "zod";
  */
 export const pushPayloadSchema = z.object({
   productIds: z.array(z.string()).optional(),
+  /**
+   * Pré-push **sans effet de bord** : projette et rapporte ce qui partirait, sans
+   * appeler la boutique ni écrire (binding/snapshot). L'« aperçu avant envoi »,
+   * honnête même quand le canal est en `live`.
+   */
+  dryRun: z.boolean().optional(),
 });
 export type PushPayload = z.infer<typeof pushPayloadSchema>;
 

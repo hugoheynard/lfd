@@ -32,7 +32,15 @@ export class ShopifyPushService {
     private readonly snapshots: ShopifySnapshotService,
   ) {}
 
-  async push(productIds?: readonly string[]): Promise<PushSummary> {
+  /**
+   * Pousse (ou, en `preview`, **pré-pousse sans effet de bord**). Un pré-push projette
+   * et rapporte ce qui partirait sans appeler la boutique ni rien écrire — l'aperçu
+   * reste honnête même en `live`, là où le dry-run *de mode* écrirait le binding.
+   */
+  async push(
+    productIds?: readonly string[],
+    preview = false,
+  ): Promise<PushSummary> {
     const { mode } = await this.settings.read();
     const driver = this.driverFor(mode);
     const products =
@@ -42,10 +50,44 @@ export class ShopifyPushService {
 
     const results: PushReport[] = [];
     for (const product of products) {
-      results.push(await this.pushOne(product, driver));
+      results.push(
+        preview
+          ? await this.previewOne(product)
+          : await this.pushOne(product, driver),
+      );
     }
 
-    return { mode, results };
+    // Un pré-push n'atteint jamais la boutique : le mode rapporté est `dry-run`.
+    return { mode: preview ? 'dry-run' : mode, results };
+  }
+
+  /**
+   * Ce qui partirait pour un produit — **sans effet de bord** : projette, compare à
+   * l'empreinte du dernier push, et ne touche ni réseau, ni binding, ni snapshot.
+   */
+  private async previewOne(product: ProductRecord): Promise<PushReport> {
+    const payload = projectProduct(product);
+    const hash = fingerprint(payload);
+    const existing = await this.prisma.shopifyProductBinding.findUnique({
+      where: { productId: product.id },
+      select: { lastPushedHash: true },
+    });
+
+    if (existing?.lastPushedHash === hash) {
+      return {
+        productId: product.id,
+        sku: product.sku,
+        outcome: 'unchanged',
+        message: 'Déjà à jour — rien ne partirait.',
+      };
+    }
+
+    return {
+      productId: product.id,
+      sku: product.sku,
+      outcome: 'pushed',
+      message: `Partirait : « ${payload.handle} » (${payload.status}). Aucun appel, rien écrit.`,
+    };
   }
 
   /**

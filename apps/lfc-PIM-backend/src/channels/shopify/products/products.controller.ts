@@ -56,7 +56,7 @@ export class ShopifyProductsController {
   push(
     @Body(new ZodBody(pushPayloadSchema)) body: PushPayload,
   ): Promise<PushSummary> {
-    return this.pushService.push(body.productIds);
+    return this.pushService.push(body.productIds, body.dryRun ?? false);
   }
 
   /** L'historique versionné d'un handle — la matière du retour arrière. */
