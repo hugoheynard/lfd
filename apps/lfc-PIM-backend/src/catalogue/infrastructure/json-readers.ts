@@ -1,5 +1,9 @@
 import { TechnicalError } from '../../shared/errors/app-error.js';
 import type { LocalizedText } from '../domain/value-objects/localized-text.js';
+import type {
+  BoutiqueChannels,
+  SalesChannels,
+} from '../domain/value-objects/sales-channels.js';
 
 /**
  * Lecture des colonnes `jsonb`.
@@ -61,6 +65,55 @@ export function readStringArrayColumn(value: unknown, field: string): string[] {
     }
     return entry;
   });
+}
+
+/**
+ * Lecture **défensive** de la matrice de canaux. Un mode absent retombe sur
+ * `false` — ce qui rend les lignes antérieures à la colonne lisibles (« rien
+ * n'est vendu tant que non configuré ») ; un mode présent mais non booléen est
+ * en revanche une corruption franche.
+ */
+function readBoutiqueChannels(value: unknown, field: string): BoutiqueChannels {
+  if (!isRecord(value)) {
+    throw new CorruptedRecordError(field);
+  }
+  return {
+    emporter: readModeFlag(value['emporter'], field),
+    surPlace: readModeFlag(value['surPlace'], field),
+  };
+}
+
+function readModeFlag(value: unknown, field: string): boolean {
+  if (value === undefined) {
+    return false;
+  }
+  if (typeof value !== 'boolean') {
+    throw new CorruptedRecordError(field);
+  }
+  return value;
+}
+
+export function readSalesChannelsColumn(
+  value: unknown,
+  field: string,
+): SalesChannels {
+  if (!isRecord(value)) {
+    throw new CorruptedRecordError(field);
+  }
+  return {
+    b1: readBoutiqueChannels(value['b1'] ?? {}, field),
+    b2: readBoutiqueChannels(value['b2'] ?? {}, field),
+  };
+}
+
+/** `SalesChannels` → objet JSON écrivable par Prisma (clés fixes, pas d'index signature). */
+export function salesChannelsColumn(
+  channels: SalesChannels,
+): Record<string, Record<string, boolean>> {
+  return {
+    b1: { emporter: channels.b1.emporter, surPlace: channels.b1.surPlace },
+    b2: { emporter: channels.b2.emporter, surPlace: channels.b2.surPlace },
+  };
 }
 
 /**

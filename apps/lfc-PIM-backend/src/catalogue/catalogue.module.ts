@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 
+import { CommerceModule } from '../commerce/commerce.module.js';
 import { DatabaseModule } from '../infra/database/database.module.js';
 import {
   IdGenerator,
@@ -12,6 +13,8 @@ import { CreateCategoryHandler } from './application/create-category.js';
 import { CreateProductHandler } from './application/create-product.js';
 import { ListCategoriesHandler } from './application/list-categories.js';
 import { RenameCategoryHandler } from './application/rename-category.js';
+import { SetCategoryChannelsHandler } from './application/set-category-channels.js';
+import { SetCategoryTvaHandler } from './application/set-category-tva.js';
 import { DeclareProductNutritionHandler } from './application/declare-product-nutrition.js';
 import { GetProductDetailHandler } from './application/get-product-detail.js';
 import { ListProductsHandler } from './application/list-products.js';
@@ -47,12 +50,14 @@ import {
  * fournit. Remplacer Prisma ne touche que ce fichier.
  */
 @Module({
-  imports: [DatabaseModule, CqrsModule],
+  imports: [DatabaseModule, CqrsModule, CommerceModule],
   controllers: [CategoryController, ProductController, ReferenceController],
   providers: [
     // Familles (CQRS) — un handler par cas.
     CreateCategoryHandler,
     RenameCategoryHandler,
+    SetCategoryChannelsHandler,
+    SetCategoryTvaHandler,
     ArchiveCategoryHandler,
     ListCategoriesHandler,
     // Produits (CQRS) — un handler par cas.

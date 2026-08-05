@@ -7,7 +7,13 @@ import {
   type NewCategory,
 } from '../domain/ports/category.repository.js';
 import type { LocalizedText } from '../domain/value-objects/localized-text.js';
-import { localizedColumn, readLocalizedColumn } from './json-readers.js';
+import type { SalesChannels } from '../domain/value-objects/sales-channels.js';
+import {
+  localizedColumn,
+  readLocalizedColumn,
+  readSalesChannelsColumn,
+  salesChannelsColumn,
+} from './json-readers.js';
 
 interface CategoryRow {
   id: string;
@@ -16,6 +22,9 @@ interface CategoryRow {
   parentId: string | null;
   position: number;
   isArchived: boolean;
+  channelPreset: unknown;
+  emporterTvaId: string | null;
+  surPlaceTvaId: string | null;
 }
 
 function toRecord(row: CategoryRow): CategoryRecord {
@@ -26,6 +35,12 @@ function toRecord(row: CategoryRow): CategoryRecord {
     parentId: row.parentId,
     position: row.position,
     isArchived: row.isArchived,
+    channelPreset: readSalesChannelsColumn(
+      row.channelPreset,
+      'category.channelPreset',
+    ),
+    emporterTvaId: row.emporterTvaId,
+    surPlaceTvaId: row.surPlaceTvaId,
   };
 }
 
@@ -55,6 +70,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
         slug: localizedColumn(category.slug),
         parentId: category.parentId,
         position: category.position,
+        channelPreset: salesChannelsColumn(category.channelPreset),
       },
     });
   }
@@ -74,6 +90,24 @@ export class PrismaCategoryRepository extends CategoryRepository {
     await this.prisma.category.update({
       where: { id },
       data: { isArchived: true },
+    });
+  }
+
+  async setChannels(id: string, channels: SalesChannels): Promise<void> {
+    await this.prisma.category.update({
+      where: { id },
+      data: { channelPreset: salesChannelsColumn(channels) },
+    });
+  }
+
+  async setTva(
+    id: string,
+    emporterTvaId: string | null,
+    surPlaceTvaId: string | null,
+  ): Promise<void> {
+    await this.prisma.category.update({
+      where: { id },
+      data: { emporterTvaId, surPlaceTvaId },
     });
   }
 

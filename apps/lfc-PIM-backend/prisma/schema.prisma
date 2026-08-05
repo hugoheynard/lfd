@@ -62,11 +62,25 @@ model Category {
   isArchived Boolean    @default(false) @map("is_archived")
   products   Product[]
 
+  /// Canaux de vente hérités par les produits (matrice boutiques × modes).
+  /// `{}` sur les lignes antérieures est relu comme « rien vendu » (défensif).
+  channelPreset Json @default("{}") @map("channel_preset")
+
+  /// Régimes de TVA visés par les fiches à emporter / sur place. `NULL` = non
+  /// réglé. `onDelete: Restrict` (défaut) : un régime référencé ne peut pas être
+  /// supprimé tant qu'une famille le vise.
+  emporterTvaId String?    @map("emporter_tva_id")
+  emporterTva   TvaRegime? @relation("CategoryEmporterTva", fields: [emporterTvaId], references: [id])
+  surPlaceTvaId String?    @map("sur_place_tva_id")
+  surPlaceTva   TvaRegime? @relation("CategorySurPlaceTva", fields: [surPlaceTvaId], references: [id])
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
 
   @@index([parentId])
+  @@index([emporterTvaId])
+  @@index([surPlaceTvaId])
   @@map("category")
 }
 
@@ -78,6 +92,11 @@ model TvaRegime {
   percent     Float
   /// Handle Shopify dérivé du taux (`tva-5-5`) — identité côté canal, unique.
   tag         String @unique
+
+  /// Familles qui visent ce régime — extrémités des relations portées par
+  /// `Category`. Aucune colonne ajoutée ici ; sert le mur `Restrict` à la suppression.
+  categoriesEmporter Category[] @relation("CategoryEmporterTva")
+  categoriesSurPlace Category[] @relation("CategorySurPlaceTva")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

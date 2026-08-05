@@ -4,6 +4,7 @@ import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import { IdGenerator } from '../../shared/identity/id-generator.js';
 import { CategoryRepository } from '../domain/ports/category.repository.js';
 import { localizedText } from '../domain/value-objects/localized-text.js';
+import { defaultSalesChannels } from '../domain/value-objects/sales-channels.js';
 import { requireCategory, slugOf } from './category-support.js';
 
 export interface CreateCategoryPayload {
@@ -42,6 +43,7 @@ export class CreateCategoryHandler implements ICommandHandler<
       slug: slugOf(name),
       parentId,
       position: await this.categories.nextPosition(parentId),
+      channelPreset: defaultSalesChannels(),
     });
     return id;
   }

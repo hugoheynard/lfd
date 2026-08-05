@@ -136,6 +136,11 @@ class FakeProductRepository extends ProductRepository {
   }
 }
 
+const NO_CHANNELS = {
+  b1: { emporter: false, surPlace: false },
+  b2: { emporter: false, surPlace: false },
+};
+
 class FakeCategoryRepository extends CategoryRepository {
   findById(id: string): Promise<CategoryRecord | null> {
     if (id === 'cat_active') {
@@ -146,6 +151,9 @@ class FakeCategoryRepository extends CategoryRepository {
         parentId: null,
         position: 1,
         isArchived: false,
+        channelPreset: NO_CHANNELS,
+        emporterTvaId: null,
+        surPlaceTvaId: null,
       });
     }
     if (id === 'cat_archived') {
@@ -156,6 +164,9 @@ class FakeCategoryRepository extends CategoryRepository {
         parentId: null,
         position: 2,
         isArchived: true,
+        channelPreset: NO_CHANNELS,
+        emporterTvaId: null,
+        surPlaceTvaId: null,
       });
     }
     return Promise.resolve(null);
@@ -171,6 +182,12 @@ class FakeCategoryRepository extends CategoryRepository {
     return Promise.resolve();
   }
   archive(): Promise<void> {
+    return Promise.resolve();
+  }
+  setChannels(): Promise<void> {
+    return Promise.resolve();
+  }
+  setTva(): Promise<void> {
     return Promise.resolve();
   }
   countActiveProducts(): Promise<number> {
