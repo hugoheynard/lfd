@@ -21,6 +21,13 @@ export interface SuiteAuthConfig {
   readonly domain: string;
   readonly clientId: string;
   readonly audiences: {
+    /**
+     * API « suite » (entitlements). Le shell demande CE jeton au login et lit sa
+     * claim `permissions` (`app:pim`, `app:b2b-admin`, `suite:settings`) pour
+     * dessiner le launcher. Pas forcément un backend déployé — namespace de
+     * permissions. L'enforcement réel reste sur chaque backend enfant.
+     */
+    readonly self: string;
     readonly b2b: string;
     readonly pim: string;
   };
@@ -30,6 +37,7 @@ export const SUITE_AUTH_CONFIG: SuiteAuthConfig = {
   domain: AUTH_ENV.domain,
   clientId: AUTH_ENV.clientId,
   audiences: {
+    self: AUTH_ENV.audiences.self,
     b2b: AUTH_ENV.audiences.b2b,
     pim: AUTH_ENV.audiences.pim,
   },

@@ -48,6 +48,7 @@ const read = (key) => (process.env[key] ?? fileVars[key] ?? '').trim();
 const KEYS = [
   'SUITE_AUTH0_DOMAIN',
   'SUITE_AUTH0_CLIENT_ID',
+  'SUITE_AUTH0_AUDIENCE_SELF',
   'SUITE_AUTH0_AUDIENCE_B2B',
   'SUITE_AUTH0_AUDIENCE_PIM',
 ];
@@ -71,6 +72,7 @@ const body =
   `  domain: ${JSON.stringify(values.SUITE_AUTH0_DOMAIN)},\n` +
   `  clientId: ${JSON.stringify(values.SUITE_AUTH0_CLIENT_ID)},\n` +
   '  audiences: {\n' +
+  `    self: ${JSON.stringify(values.SUITE_AUTH0_AUDIENCE_SELF)},\n` +
   `    b2b: ${JSON.stringify(values.SUITE_AUTH0_AUDIENCE_B2B)},\n` +
   `    pim: ${JSON.stringify(values.SUITE_AUTH0_AUDIENCE_PIM)},\n` +
   '  },\n' +
