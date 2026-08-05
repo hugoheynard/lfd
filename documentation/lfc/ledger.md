@@ -21,6 +21,24 @@ poussée (dérive distante ⚠️), repérer un **conflit** (les deux ont bougé
 sur une fiche via un historique versionné. Le PIM reste l'autorité — la boutique n'est qu'un miroir —
 mais on cesse d'écraser en aveugle.
 
+### Décision : projection par **contexte de vente** (modèle à expansion TVA)
+
+**PM** — Un article peut se vendre dans plusieurs contextes à TVA différente (emporter 5,5 %,
+sur place 10 %, dépannage B2B 20 %…). Décidé : on **ne code pas** le raccourci « une seule TVA
+par produit » ; on construit le modèle **expansible** où chaque contexte porte sa TVA. Aujourd'hui
+un seul contexte est actif (**emporter**) → la boutique reçoit toujours 1 produit par article, TVA
+juste ; activer sur-place ou B2B plus tard = de la config, pas une refonte. Sur-place en ligne est
+**gelé** côté métier pour l'instant.
+
+**Tech** — Nouveau doc [`projection-sales-context.md`](./projection-sales-context.md). Unité de
+projection = **(article × contexte actif)** → 1 produit Shopify + appartenance à **une** collection
+`tva-*` (override, S1/S2). Registre de contextes (`emporter` seul actif). TVA résolue en composant
+catalogue (`Category.emporterTvaId`) + commerce (`TvaRegime.tag`) derrière un port (ADR-13).
+Membership = mutation **séparée** `collectionAddProductsV2` après `productSet` (F11), collection
+créée au besoin. Le 1ᵉʳ contexte garde le **handle nu** → migration nulle sur l'existant. La
+réconciliation trois-voies (clé handle) **survit sans modification**. Slices C1-C3 = tranche
+emporter ; C4 (sur-place) / C5 (B2B) différés, purs ajouts de config.
+
 ### Test live (boutique de dev) : le moteur trois-voies validé de bout en bout
 
 **PM** — Sur la vraie boutique Shopify de dev : pré-push (aperçu), push d'un produit en DRAFT,

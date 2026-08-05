@@ -18,6 +18,7 @@ plan de production du labo.
 | [`data-model/`](./data-model/) | Le modèle de données détaillé, par couche |
 | [`projection-shopify.md`](./projection-shopify.md) | **Projection Shopify** — emporter/sur place, TVA par collection, boutiques, QR, SKU partagé |
 | [`publication-reconciliation-3way.md`](./publication-reconciliation-3way.md) | **Réconciliation à trois voies** — BASE/OURS/THEIRS, dérive boutique, diff pré-push, snapshots versionnés + rollback |
+| [`projection-sales-context.md`](./projection-sales-context.md) | **Projection par contexte de vente** — (article × contexte actif) → produit + collection `tva-*` ; modèle à expansion (emporter / sur-place / B2B), membership `collectionAddProductsV2` |
 | [`shopify-connexion-setup.md`](./shopify-connexion-setup.md) | **Connexion Shopify (runbook)** — Dev Dashboard, client credentials, install, `.env`, pièges |
 | [`shopify-e2e-strategy.md`](./shopify-e2e-strategy.md) | **Tests e2e Shopify réels (stratégie)** — dev store vs prod, harness gated, garantie par lint |
 | [`shopify-api-map.md`](./shopify-api-map.md) | **Cartographie API Shopify** — besoin PIM → scope R/W · fonction · action · statut |

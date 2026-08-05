@@ -114,6 +114,12 @@
   - [x] **S3** — projection inverse THEIRS + `GET /reconciliation`(+`:handle`) + statuts (`local_ahead`/`remote_drift`/`conflict`/`to_remove`) *(dérive locale=empreinte pleine, distante=comparable ; commits `c01273f`/`841e967`, +20 tests)*
   - [x] **S4** — refonte écran `publication-shopify` (orienté handle, statut ⚠️, diff par paire, pré-push, publier, historique/rollback) *(commit `edac08a`, 37 tests front ; POC LocalDb publication supprimé)*
   - [ ] **S5** *(diff → post-boucle)* — webhook `products/update` → marque `remote_drift` sans poll
+- [ ] **Appartenance TVA — projection par contexte de vente** ([`projection-sales-context.md`](./projection-sales-context.md)) :
+  - [ ] **C1** — registre de contextes (`emporter` actif) + read composé « tva tag par (article, contexte) » derrière un port (catalogue+commerce)
+  - [ ] **C2** — `collectionAddProductsV2` dans le driver live + résolveur GID + « collection absente → créer »
+  - [ ] **C3** — push : ranger le produit dans la collection `tva-*` de son contexte + tests
+  - [ ] **C4** *(différé)* — activer `surPlace` : projection multi-contexte (handles suffixés) + réconciliation par contexte
+  - [ ] **C5** *(futur)* — contexte `b2b` (TVA 20 %), pur ajout de config
 - [ ] ~~**Webhooks Shopify** (`products/update`)~~ → absorbé par S5 ci-dessus
 - [ ] `shopify_product_override` (titre, handle, tags saisis à la main) — à ne jamais écraser au re-push
 - [ ] Modèle de **disponibilité** côté Shopify (capacité de production ≠ stock) — le vrai point dur
