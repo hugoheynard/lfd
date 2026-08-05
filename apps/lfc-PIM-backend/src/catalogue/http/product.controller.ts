@@ -1,11 +1,22 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { z } from 'zod';
 
 import { Public } from '../../infra/auth/public.decorator.js';
 import { ZodBody } from '../../shared/http/zod-body.pipe.js';
-import { ProductCommands } from '../application/product-commands.service.js';
-import { EditorialReader } from '../domain/ports/editorial-reader.js';
-import { ProductRepository } from '../domain/ports/product.repository.js';
+import { ArchiveProductCommand } from '../application/archive-product.js';
+import { CreateProductCommand } from '../application/create-product.js';
+import { DeclareProductNutritionCommand } from '../application/declare-product-nutrition.js';
+import {
+  GetProductDetailQuery,
+  type ProductDetail,
+} from '../application/get-product-detail.js';
+import { ListProductsQuery } from '../application/list-products.js';
+import { RestoreProductCommand } from '../application/restore-product.js';
+import { UpdateProductEditorialCommand } from '../application/update-product-editorial.js';
+import { UpdateProductIdentityCommand } from '../application/update-product-identity.js';
+import { UpdateVariantPricingCommand } from '../application/update-variant-pricing.js';
+import type { ProductRecord } from '../domain/ports/product.repository.js';
 
 const kindEnum = z.enum(['daily', 'made_to_order', 'resale']);
 
@@ -73,41 +84,41 @@ const nutritionPayload = z.object({
 });
 
 /**
- * Produits du catalogue. L'édition se fait **par section** (une requête par
- * section, pas par champ). ⚠️ **`@Public()` temporaire** (tenant Auth0 absent) :
- * à retirer dès que `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` sont renseignés — dette
- * suivie dans `todo.md`.
+ * Produits du catalogue — dispatchés sur les bus CQRS. L'édition se fait **par
+ * section** (une requête par section, pas par champ). ⚠️ **`@Public()` temporaire**
+ * (tenant Auth0 absent), dette suivie dans `todo.md`.
  */
 @Public()
 @Controller('catalogue/products')
 export class ProductController {
   constructor(
-    private readonly productCommands: ProductCommands,
-    private readonly products: ProductRepository,
-    private readonly editorials: EditorialReader,
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
   ) {}
 
   @Get()
-  listProducts() {
-    return this.products.listAll();
+  listProducts(): Promise<ProductRecord[]> {
+    return this.queries.execute<ListProductsQuery, ProductRecord[]>(
+      new ListProductsQuery(),
+    );
   }
 
   /** Détail complet d'un produit : le socle + sa couche éditoriale (pour l'édition). */
   @Get(':id')
-  async getProduct(@Param('id') id: string) {
-    const product = await this.products.findById(id);
-    if (product === null) {
-      return null;
-    }
-    const editorial = await this.editorials.findByProduct(id);
-    return { ...product, editorial };
+  getProduct(@Param('id') id: string): Promise<ProductDetail | null> {
+    return this.queries.execute<GetProductDetailQuery, ProductDetail | null>(
+      new GetProductDetailQuery(id),
+    );
   }
 
   @Post()
   async createProduct(
     @Body(new ZodBody(productPayload)) body: z.infer<typeof productPayload>,
   ) {
-    return { id: await this.productCommands.create(body) };
+    const id = await this.commands.execute<CreateProductCommand, string>(
+      new CreateProductCommand(body),
+    );
+    return { id };
   }
 
   /** Section Identité : nom + nature + famille en une opération. */
@@ -116,7 +127,9 @@ export class ProductController {
     @Param('id') id: string,
     @Body(new ZodBody(identityPayload)) body: z.infer<typeof identityPayload>,
   ) {
-    await this.productCommands.updateIdentity(id, body);
+    await this.commands.execute<UpdateProductIdentityCommand, void>(
+      new UpdateProductIdentityCommand(id, body),
+    );
     return { id };
   }
 
@@ -126,7 +139,9 @@ export class ProductController {
     @Param('id') id: string,
     @Body(new ZodBody(editorialPayload)) body: z.infer<typeof editorialPayload>,
   ) {
-    await this.productCommands.updateEditorial(id, body);
+    await this.commands.execute<UpdateProductEditorialCommand, void>(
+      new UpdateProductEditorialCommand(id, body),
+    );
     return { id };
   }
 
@@ -137,7 +152,9 @@ export class ProductController {
     @Param('variantId') variantId: string,
     @Body(new ZodBody(pricingPayload)) body: z.infer<typeof pricingPayload>,
   ) {
-    await this.productCommands.updateVariantPricing(id, variantId, body);
+    await this.commands.execute<UpdateVariantPricingCommand, void>(
+      new UpdateVariantPricingCommand(id, variantId, body),
+    );
     return { id, variantId };
   }
 
@@ -148,19 +165,25 @@ export class ProductController {
     @Param('variantId') variantId: string,
     @Body(new ZodBody(nutritionPayload)) body: z.infer<typeof nutritionPayload>,
   ) {
-    await this.productCommands.declareNutrition(id, variantId, body);
+    await this.commands.execute<DeclareProductNutritionCommand, void>(
+      new DeclareProductNutritionCommand(id, variantId, body),
+    );
     return { id, variantId };
   }
 
   @Put(':id/archive')
   async archiveProduct(@Param('id') id: string) {
-    await this.productCommands.archive(id);
+    await this.commands.execute<ArchiveProductCommand, void>(
+      new ArchiveProductCommand(id),
+    );
     return { id };
   }
 
   @Put(':id/restore')
   async restoreProduct(@Param('id') id: string) {
-    await this.productCommands.restore(id);
+    await this.commands.execute<RestoreProductCommand, void>(
+      new RestoreProductCommand(id),
+    );
     return { id };
   }
 }

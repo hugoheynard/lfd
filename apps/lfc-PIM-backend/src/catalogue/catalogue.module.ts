@@ -6,13 +6,21 @@ import {
   IdGenerator,
   UuidV7Generator,
 } from '../shared/identity/id-generator.js';
+import { ArchiveProductHandler } from './application/archive-product.js';
 import {
   ArchiveCategoryHandler,
   CreateCategoryHandler,
   ListCategoriesHandler,
   RenameCategoryHandler,
 } from './application/category.handlers.js';
-import { ProductCommands } from './application/product-commands.service.js';
+import { CreateProductHandler } from './application/create-product.js';
+import { DeclareProductNutritionHandler } from './application/declare-product-nutrition.js';
+import { GetProductDetailHandler } from './application/get-product-detail.js';
+import { ListProductsHandler } from './application/list-products.js';
+import { RestoreProductHandler } from './application/restore-product.js';
+import { UpdateProductEditorialHandler } from './application/update-product-editorial.js';
+import { UpdateProductIdentityHandler } from './application/update-product-identity.js';
+import { UpdateVariantPricingHandler } from './application/update-variant-pricing.js';
 import { CatalogueReader } from './domain/ports/catalogue-reader.js';
 import { CategoryRepository } from './domain/ports/category.repository.js';
 import { EditorialReader } from './domain/ports/editorial-reader.js';
@@ -44,11 +52,21 @@ import {
   imports: [DatabaseModule, CqrsModule],
   controllers: [CategoryController, ProductController, ReferenceController],
   providers: [
+    // Familles (CQRS) — un handler par cas.
     CreateCategoryHandler,
     RenameCategoryHandler,
     ArchiveCategoryHandler,
     ListCategoriesHandler,
-    ProductCommands,
+    // Produits (CQRS) — un handler par cas.
+    CreateProductHandler,
+    UpdateProductIdentityHandler,
+    UpdateVariantPricingHandler,
+    UpdateProductEditorialHandler,
+    DeclareProductNutritionHandler,
+    ArchiveProductHandler,
+    RestoreProductHandler,
+    ListProductsHandler,
+    GetProductDetailHandler,
     { provide: IdGenerator, useClass: UuidV7Generator },
     { provide: CategoryRepository, useClass: PrismaCategoryRepository },
     { provide: ProductRepository, useClass: PrismaProductRepository },

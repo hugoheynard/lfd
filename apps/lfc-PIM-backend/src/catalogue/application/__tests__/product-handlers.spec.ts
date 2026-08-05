@@ -24,7 +24,18 @@ import type {
 } from '../../domain/value-objects/editorial.js';
 import type { LocalizedText } from '../../domain/value-objects/localized-text.js';
 import type { NutritionDeclaration } from '../../domain/value-objects/nutrition-declaration.js';
-import { ProductCommands } from '../product-commands.service.js';
+import { ArchiveProductHandler } from '../archive-product.js';
+import { ArchiveProductCommand } from '../archive-product.js';
+import { DeclareProductNutritionHandler } from '../declare-product-nutrition.js';
+import { DeclareProductNutritionCommand } from '../declare-product-nutrition.js';
+import { RestoreProductHandler } from '../restore-product.js';
+import { RestoreProductCommand } from '../restore-product.js';
+import { UpdateProductEditorialHandler } from '../update-product-editorial.js';
+import { UpdateProductEditorialCommand } from '../update-product-editorial.js';
+import { UpdateProductIdentityHandler } from '../update-product-identity.js';
+import { UpdateProductIdentityCommand } from '../update-product-identity.js';
+import { UpdateVariantPricingHandler } from '../update-variant-pricing.js';
+import { UpdateVariantPricingCommand } from '../update-variant-pricing.js';
 
 const PRODUCT_ID = 'prd_1';
 const VARIANT_ID = 'prd_1_v1';
@@ -56,11 +67,6 @@ function seedProduct(): ProductRecord {
   };
 }
 
-/**
- * Dépôt produit en mémoire — le domaine se teste sans base ni framework. Les
- * méthodes ne sont pas `async` (aucun `await`) : elles renvoient une promesse
- * déjà résolue, ce qui satisfait `require-await` sans dérogation.
- */
 class FakeProductRepository extends ProductRepository {
   constructor(private product: ProductRecord | null) {
     super();
@@ -200,160 +206,180 @@ class RecordingEditorialRepository extends EditorialRepository {
   }
 }
 
-function makeCommands(product: ProductRecord | null = seedProduct()): {
-  commands: ProductCommands;
-  products: FakeProductRepository;
-  nutrition: RecordingNutritionRepository;
-  editorials: RecordingEditorialRepository;
-} {
-  const products = new FakeProductRepository(product);
-  const nutrition = new RecordingNutritionRepository();
-  const editorials = new RecordingEditorialRepository();
-  let seq = 0;
-  const commands = new ProductCommands(
-    products,
-    new FakeCategoryRepository(),
-    nutrition,
-    editorials,
-    { next: () => `id_${(seq += 1)}` },
-    { isTaken: () => Promise.resolve(false) },
-  );
-  return { commands, products, nutrition, editorials };
-}
-
-describe('ProductCommands — édition', () => {
-  it('change le kind d’un produit existant', async () => {
-    const { commands, products } = makeCommands();
-    await commands.changeKind(PRODUCT_ID, 'daily');
-    expect(products.snapshot()?.kind).toBe('daily');
-  });
-
-  it('refuse de changer le kind d’un produit inconnu', async () => {
-    const { commands } = makeCommands();
-    await expect(
-      commands.changeKind('prd_absent', 'daily'),
-    ).rejects.toBeInstanceOf(ProductNotFoundError);
-  });
-
-  it('reclasse sous une famille active', async () => {
-    const { commands, products } = makeCommands();
-    await commands.moveToCategory(PRODUCT_ID, 'cat_active');
-    expect(products.snapshot()?.categoryId).toBe('cat_active');
-  });
-
-  it('refuse une famille inconnue', async () => {
-    const { commands } = makeCommands();
-    await expect(
-      commands.moveToCategory(PRODUCT_ID, 'cat_absent'),
-    ).rejects.toBeInstanceOf(CategoryNotFoundError);
-  });
-
-  it('refuse une famille archivée', async () => {
-    const { commands } = makeCommands();
-    await expect(
-      commands.moveToCategory(PRODUCT_ID, 'cat_archived'),
-    ).rejects.toBeInstanceOf(CategoryArchivedError);
-  });
-
-  it('tarife la déclinaison par défaut', async () => {
-    const { commands, products } = makeCommands();
-    await commands.setVariantPrice(PRODUCT_ID, VARIANT_ID, 450);
-    expect(products.snapshot()?.variants[0]?.priceCents).toBe(450);
-  });
-
-  it('dé-tarife avec null', async () => {
-    const seeded = seedProduct();
-    seeded.variants[0] = { ...seeded.variants[0]!, priceCents: 999 };
-    const { commands, products } = makeCommands(seeded);
-    await commands.setVariantPrice(PRODUCT_ID, VARIANT_ID, null);
-    expect(products.snapshot()?.variants[0]?.priceCents).toBeNull();
-  });
-
-  it('refuse de tarifer une déclinaison d’un autre produit', async () => {
-    const { commands } = makeCommands();
-    await expect(
-      commands.setVariantPrice(PRODUCT_ID, 'variant_etranger', 100),
-    ).rejects.toBeInstanceOf(VariantNotFoundError);
-  });
-
-  it('renseigne le poids de la déclinaison', async () => {
-    const { commands, products } = makeCommands();
-    await commands.setVariantWeight(PRODUCT_ID, VARIANT_ID, 250);
-    expect(products.snapshot()?.variants[0]?.weightGrams).toBe(250);
-  });
-
-  it('met à jour l’éditorial sans toucher aux médias (liste vide)', async () => {
-    const { commands, editorials } = makeCommands();
-    await commands.updateEditorial(PRODUCT_ID, {
-      descriptionShort: 'Torréfaction douce',
-    });
-    expect(editorials.calls).toHaveLength(1);
-    expect(editorials.calls[0]?.media).toEqual([]);
-    expect(editorials.calls[0]?.editorial.descriptionShort).toEqual({
-      fr: 'Torréfaction douce',
-    });
-  });
-
-  it('déclare la fiche réglementaire de la déclinaison', async () => {
-    const { commands, nutrition } = makeCommands();
-    await commands.declareNutrition(PRODUCT_ID, VARIANT_ID, {
-      allergens: ['TBD_BARLEY'],
-    });
-    expect(nutrition.calls).toHaveLength(1);
-    expect(nutrition.calls[0]?.variantId).toBe(VARIANT_ID);
-  });
-
-  it('refuse une déclaration sur une déclinaison étrangère', async () => {
-    const { commands } = makeCommands();
-    await expect(
-      commands.declareNutrition(PRODUCT_ID, 'variant_etranger', {
-        allergens: [],
+describe('UpdateProductIdentityHandler', () => {
+  it('met à jour nom + nature + famille en une opération', async () => {
+    const products = new FakeProductRepository(seedProduct());
+    await new UpdateProductIdentityHandler(
+      products,
+      new FakeCategoryRepository(),
+    ).execute(
+      new UpdateProductIdentityCommand(PRODUCT_ID, {
+        nameFr: 'Moka',
+        kind: 'daily',
+        categoryId: 'cat_active',
       }),
-    ).rejects.toBeInstanceOf(VariantNotFoundError);
-  });
-
-  it('met à jour l’identité (nom + nature + famille) en une opération', async () => {
-    const { commands, products } = makeCommands();
-    await commands.updateIdentity(PRODUCT_ID, {
-      nameFr: 'Moka',
-      kind: 'daily',
-      categoryId: 'cat_active',
-    });
+    );
     const snapshot = products.snapshot();
     expect(snapshot?.name.fr).toBe('Moka');
     expect(snapshot?.kind).toBe('daily');
     expect(snapshot?.categoryId).toBe('cat_active');
   });
 
-  it('refuse l’identité vers une famille archivée (rien n’est écrit)', async () => {
-    const { commands, products } = makeCommands();
+  it('refuse une famille archivée (rien n’est écrit)', async () => {
+    const products = new FakeProductRepository(seedProduct());
     await expect(
-      commands.updateIdentity(PRODUCT_ID, {
-        nameFr: 'Moka',
-        kind: 'daily',
-        categoryId: 'cat_archived',
-      }),
+      new UpdateProductIdentityHandler(
+        products,
+        new FakeCategoryRepository(),
+      ).execute(
+        new UpdateProductIdentityCommand(PRODUCT_ID, {
+          nameFr: 'Moka',
+          kind: 'daily',
+          categoryId: 'cat_archived',
+        }),
+      ),
     ).rejects.toBeInstanceOf(CategoryArchivedError);
     expect(products.snapshot()?.name.fr).toBe('Café');
   });
 
+  it('refuse une famille inconnue', async () => {
+    const products = new FakeProductRepository(seedProduct());
+    await expect(
+      new UpdateProductIdentityHandler(
+        products,
+        new FakeCategoryRepository(),
+      ).execute(
+        new UpdateProductIdentityCommand(PRODUCT_ID, {
+          nameFr: 'Moka',
+          kind: 'daily',
+          categoryId: 'cat_absent',
+        }),
+      ),
+    ).rejects.toBeInstanceOf(CategoryNotFoundError);
+  });
+
+  it('refuse un produit inconnu', async () => {
+    const products = new FakeProductRepository(seedProduct());
+    await expect(
+      new UpdateProductIdentityHandler(
+        products,
+        new FakeCategoryRepository(),
+      ).execute(
+        new UpdateProductIdentityCommand('prd_absent', {
+          nameFr: 'X',
+          kind: 'daily',
+          categoryId: 'cat_active',
+        }),
+      ),
+    ).rejects.toBeInstanceOf(ProductNotFoundError);
+  });
+});
+
+describe('UpdateVariantPricingHandler', () => {
   it('met à jour tarif + poids en une opération', async () => {
-    const { commands, products } = makeCommands();
-    await commands.updateVariantPricing(PRODUCT_ID, VARIANT_ID, {
-      priceCents: 500,
-      weightGrams: 300,
-    });
+    const products = new FakeProductRepository(seedProduct());
+    await new UpdateVariantPricingHandler(products).execute(
+      new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
+        priceCents: 500,
+        weightGrams: 300,
+      }),
+    );
     expect(products.snapshot()?.variants[0]?.priceCents).toBe(500);
     expect(products.snapshot()?.variants[0]?.weightGrams).toBe(300);
   });
 
-  it('refuse le tarif d’une déclinaison étrangère', async () => {
-    const { commands } = makeCommands();
-    await expect(
-      commands.updateVariantPricing(PRODUCT_ID, 'variant_etranger', {
-        priceCents: 100,
+  it('dé-tarife avec null', async () => {
+    const seeded = seedProduct();
+    seeded.variants[0] = { ...seeded.variants[0]!, priceCents: 999 };
+    const products = new FakeProductRepository(seeded);
+    await new UpdateVariantPricingHandler(products).execute(
+      new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
+        priceCents: null,
         weightGrams: null,
       }),
+    );
+    expect(products.snapshot()?.variants[0]?.priceCents).toBeNull();
+  });
+
+  it('refuse une déclinaison d’un autre produit', async () => {
+    const products = new FakeProductRepository(seedProduct());
+    await expect(
+      new UpdateVariantPricingHandler(products).execute(
+        new UpdateVariantPricingCommand(PRODUCT_ID, 'variant_etranger', {
+          priceCents: 100,
+          weightGrams: null,
+        }),
+      ),
     ).rejects.toBeInstanceOf(VariantNotFoundError);
+  });
+});
+
+describe('UpdateProductEditorialHandler', () => {
+  it('met à jour l’éditorial sans toucher aux médias (liste vide)', async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const editorials = new RecordingEditorialRepository();
+    await new UpdateProductEditorialHandler(products, editorials).execute(
+      new UpdateProductEditorialCommand(PRODUCT_ID, {
+        descriptionShort: 'Torréfaction douce',
+      }),
+    );
+    expect(editorials.calls).toHaveLength(1);
+    expect(editorials.calls[0]?.media).toEqual([]);
+    expect(editorials.calls[0]?.editorial.descriptionShort).toEqual({
+      fr: 'Torréfaction douce',
+    });
+  });
+});
+
+describe('DeclareProductNutritionHandler', () => {
+  it('déclare la fiche réglementaire de la déclinaison', async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const nutrition = new RecordingNutritionRepository();
+    await new DeclareProductNutritionHandler(products, nutrition).execute(
+      new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, {
+        allergens: ['TBD_BARLEY'],
+      }),
+    );
+    expect(nutrition.calls).toHaveLength(1);
+    expect(nutrition.calls[0]?.variantId).toBe(VARIANT_ID);
+  });
+
+  it('refuse une déclaration sur une déclinaison étrangère', async () => {
+    const products = new FakeProductRepository(seedProduct());
+    await expect(
+      new DeclareProductNutritionHandler(
+        products,
+        new RecordingNutritionRepository(),
+      ).execute(
+        new DeclareProductNutritionCommand(PRODUCT_ID, 'variant_etranger', {
+          allergens: [],
+        }),
+      ),
+    ).rejects.toBeInstanceOf(VariantNotFoundError);
+  });
+});
+
+describe('Archive / Restore product', () => {
+  it('archive puis restaure le produit', async () => {
+    const products = new FakeProductRepository(seedProduct());
+
+    await new ArchiveProductHandler(products).execute(
+      new ArchiveProductCommand(PRODUCT_ID),
+    );
+    expect(products.snapshot()?.status).toBe('archived');
+
+    await new RestoreProductHandler(products).execute(
+      new RestoreProductCommand(PRODUCT_ID),
+    );
+    expect(products.snapshot()?.status).toBe('draft');
+  });
+
+  it('refuse d’archiver un produit inconnu', async () => {
+    const products = new FakeProductRepository(seedProduct());
+    await expect(
+      new ArchiveProductHandler(products).execute(
+        new ArchiveProductCommand('prd_absent'),
+      ),
+    ).rejects.toBeInstanceOf(ProductNotFoundError);
   });
 });
