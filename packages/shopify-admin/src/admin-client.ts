@@ -174,6 +174,35 @@ export class ShopifyAdminClient {
   }
 
   /**
+   * Range des produits dans une collection **manuelle** (`collectionAddProductsV2`).
+   * Idempotent côté Shopify : ré-ajouter un produit déjà membre est sans effet. La
+   * mutation est asynchrone (renvoie un `job`) ; à volume de boulangerie on n'attend
+   * pas sa complétion — l'appartenance se matérialise dans la foulée.
+   */
+  async addProductsToCollection(
+    collectionId: string,
+    productIds: readonly string[],
+  ): Promise<void> {
+    if (productIds.length === 0) {
+      return;
+    }
+    const data = await this.graphql<{
+      collectionAddProductsV2: {
+        job: { id: string } | null;
+        userErrors: readonly UserError[];
+      };
+    }>(COLLECTION_ADD_PRODUCTS_MUTATION, { id: collectionId, productIds });
+
+    const { userErrors } = data.collectionAddProductsV2;
+    if (userErrors.length > 0) {
+      throw new ShopifyRejectedError(
+        userErrors.map((error) => error.message).join(" ; ") ||
+          `Ajout à la collection « ${collectionId} » refusé.`,
+      );
+    }
+  }
+
+  /**
    * Transport GraphQL **authentifié** vers l'API Admin — jeton, endpoint, erreurs.
    * Public pour que les adaptateurs (drivers de push) réutilisent le transport sans
    * dupliquer l'auth ; eux portent la forme de *leur* mutation, ici on ne fait que
@@ -251,6 +280,15 @@ const CREATE_COLLECTION_MUTATION = `
   mutation CreateCollection($input: CollectionInput!) {
     collectionCreate(input: $input) {
       collection { id handle title productsCount { count } }
+      userErrors { field message }
+    }
+  }
+`;
+
+const COLLECTION_ADD_PRODUCTS_MUTATION = `
+  mutation CollectionAddProducts($id: ID!, $productIds: [ID!]!) {
+    collectionAddProductsV2(id: $id, productIds: $productIds) {
+      job { id }
       userErrors { field message }
     }
   }
