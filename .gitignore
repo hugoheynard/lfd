@@ -42,8 +42,8 @@ lerna-debug.log
 !.env.example
 !.env.*.example
 
-# Config Auth0 des fronts, GÉNÉRÉE au build depuis l'env (jamais commitée).
-auth.env.generated.ts
+# Config des fronts (Auth0, URL d'API…), GÉNÉRÉE au build depuis l'env (jamais commitée).
+*.env.generated.ts
 
 # Logs
 *.log

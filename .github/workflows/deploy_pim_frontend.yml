@@ -1,0 +1,72 @@
+name: deploy_pim_frontend
+
+# Build browser-only du PIM front (lfc-PIM-frontend) → Cloudflare Pages, à chaque push
+# sur main. Pas de SSR. wrangler ne fait qu'uploader le statique déjà buildé.
+#
+# Secrets requis :
+#   CLOUDFLARE_LFC_PIM_PAGES — token « Account · Cloudflare Pages · Edit ».
+#   CLOUDFLARE_ACCOUNT_ID — account id partagé.
+# Variable PUBLIQUE (onglet Variables — pas un secret) :
+#   PIM_API_BASE_URL — URL du backend PIM (le sous-domaine gateway en prod).
+# Projet Pages `lfc-pim` (créé au 1er run).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/lfc-PIM-frontend/**"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/deploy_pim_frontend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy_pim_frontend
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy_pim_frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generate API config (public build var)
+        working-directory: apps/lfc-PIM-frontend
+        env:
+          PIM_API_BASE_URL: ${{ vars.PIM_API_BASE_URL }}
+        run: node scripts/generate-api-config.mjs
+
+      - name: Typecheck
+        run: pnpm --filter lfc-pim-frontend exec tsc --noEmit
+
+      - name: Build (static, browser-only)
+        run: pnpm --filter lfc-pim-frontend exec ng build --configuration cloudflare
+
+      - name: Ensure Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_PIM_PAGES }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm dlx wrangler pages project create lfc-pim
+          --production-branch=main || true
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_PIM_PAGES }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm dlx wrangler pages deploy
+          apps/lfc-PIM-frontend/dist/lfc-pim-frontend/browser
+          --project-name=lfc-pim
+          --branch=main
