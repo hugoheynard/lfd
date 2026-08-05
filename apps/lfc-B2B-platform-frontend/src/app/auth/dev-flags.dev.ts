@@ -4,5 +4,5 @@
  * --configuration development`). Jamais dans un build prod/cloudflare.
  */
 
-/** Bypass d'auth ACTIF en dev — reste combiné à un contrôle localhost dans `AuthFacade`. */
-export const DEV_BYPASS_AUTH = true;
+/** Bypass d'auth DÉSACTIVÉ — on bosse toujours en flow réel (vrai login Auth0, même en dev). */
+export const DEV_BYPASS_AUTH = false;
