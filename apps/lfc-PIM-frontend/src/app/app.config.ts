@@ -12,8 +12,8 @@ import { providePimIcons } from './pim-icons';
 import { SuiteEmbed } from './suite-embed/suite-embed';
 
 // App browser-only (pas de SSR — la suite est CSR). HttpClient en mode `fetch`
-// pour l'intégration Shopify (pas de polyfill xhr2) ; le reste du catalogue
-// reste sur LocalDb. Icônes custom via `providePimIcons()`.
+// (pas de polyfill xhr2) : catalogue, publication et intégrations parlent tous
+// au backend PIM. Icônes custom via `providePimIcons()`.
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),

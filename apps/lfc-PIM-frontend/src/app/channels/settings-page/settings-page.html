@@ -3,29 +3,4 @@
     Les réglages généraux du PIM. La connexion aux boutiques (Shopify et les autres canaux) vit dans
     <strong>Intégrations</strong>.
   </p>
-
-  <fold-page-section
-    title="Base de démo"
-    icon="save"
-    description="POC : le catalogue vit dans le repo, les actions dans ce navigateur."
-  >
-    <fold-card class="stack">
-      <p class="muted">
-        Le catalogue de démonstration (produits, régimes, emplacements) est embarqué dans le build
-        et vos actions restent dans ce navigateur. « Réinitialiser » revient à l'état d'origine —
-        pratique entre deux démos.
-      </p>
-      <div class="actions">
-        <button foldButton emphasis="outline" intent="danger" (click)="reset()">
-          Réinitialiser la base de démo
-        </button>
-      </div>
-    </fold-card>
-  </fold-page-section>
-
-  @if (message(); as text) {
-    <fold-callout appearance="inset" variant="info" role="status">
-      {{ text }}
-    </fold-callout>
-  }
 </fold-page-layout>
