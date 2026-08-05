@@ -222,6 +222,19 @@ enum ShopifySyncStatus {
   failed
 }
 
+/// Le mode du canal au moment d'une poussée — figé dans le snapshot pour qu'on
+/// sache *comment* il a été produit (une simulation n'est pas une poussée réelle).
+enum ShopifyChannelMode {
+  live
+  dry_run
+}
+
+/// L'issue d'une poussée telle qu'inscrite dans l'historique.
+enum ShopifyPushOutcome {
+  pushed
+  failed
+}
+
 /// Réglages de l'intégration — ligne unique.
 /// ⚠️ Aucun secret ici : le jeton d'API vit dans l'environnement (`AppConfig`).
 model ShopifySettings {
@@ -247,7 +260,38 @@ model ShopifyProductBinding {
   syncStatus        ShopifySyncStatus @default(never_pushed) @map("sync_status")
   lastError         String?           @map("last_error")
 
+  /// Le snapshot **head** = le BASE de la réconciliation (la dernière poussée réelle).
+  /// `NULL` tant que rien n'a été poussé en `live`.
+  headSnapshotId String? @map("head_snapshot_id")
+
   @@map("shopify_product_binding")
+}
+
+/// Historique **append-only** des poussées réelles d'un `handle` — l'ancêtre commun
+/// (BASE) de la réconciliation à trois voies et la matière du rollback. Voir
+/// [`publication-reconciliation-3way.md`](../../../documentation/lfc/publication-reconciliation-3way.md).
+///
+/// Contrairement aux bindings (états de synchro re-dérivables), ceci est un **journal** :
+/// le perdre efface l'historique et le retour arrière. Jamais muté après écriture — un
+/// rollback ré-écrit une **nouvelle** ligne (une copie d'une version antérieure).
+model ShopifyPushSnapshot {
+  id        String             @id @default(uuid())
+  /// L'unité de réconciliation (identité Shopify) — survit à la bascule fiche×mode.
+  handle    String             @map("handle")
+  /// Le produit PIM d'où venait la projection (peut projeter N handles à terme).
+  productId String             @map("product_id")
+  /// Numéro de version monotone par handle (1..n).
+  version   Int                @map("version")
+  hash      String             @map("hash")
+  /// `ShopifyProductPayload` rejouable tel quel — document figé, pas relationnel.
+  payload   Json               @map("payload")
+  mode      ShopifyChannelMode @map("mode")
+  outcome   ShopifyPushOutcome @map("outcome")
+  pushedAt  DateTime           @default(now()) @map("pushed_at")
+
+  @@unique([handle, version])
+  @@index([handle])
+  @@map("shopify_push_snapshot")
 }
 
 /// Ce que Shopify sait d'une **déclinaison** — l'unité réellement vendue (R4).
@@ -274,12 +318,12 @@ model NutritionDeclaration {
 
   /// Codes GS1 canoniques. `[]` = déclaration positive « aucun allergène »,
   /// à ne pas confondre avec l'absence de ligne (= non renseigné).
-  allergens   Json
-  mayContain  Json    @default("[]") @map("may_contain")
-  energyKcal  Float?  @map("energy_kcal")
-  carbsG      Float?  @map("carbs_g")
-  fatG        Float?  @map("fat_g")
-  proteinG    Float?  @map("protein_g")
+  allergens     Json
+  mayContain    Json   @default("[]") @map("may_contain")
+  energyKcal    Float? @map("energy_kcal")
+  carbsG        Float? @map("carbs_g")
+  fatG          Float? @map("fat_g")
+  proteinG      Float? @map("protein_g")
   glycemicIndex Float? @map("glycemic_index")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -322,11 +366,11 @@ model ProductEditorial {
 /// plusieurs produits. On stocke le **master** + un point focal ; les tailles
 /// dérivées sont calculées par chaque canal, jamais ressaisies.
 model MediaAsset {
-  id     String  @id
+  id     String @id
   url    String
   alt    Json
-  focalX Float?  @map("focal_x")
-  focalY Float?  @map("focal_y")
+  focalX Float? @map("focal_x")
+  focalY Float? @map("focal_y")
 
   products ProductMedia[]
 

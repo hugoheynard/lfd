@@ -1,9 +1,13 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import {
   pushPayloadSchema,
+  rollbackPayloadSchema,
   type ProductBindingView,
   type PushPayload,
+  type PushReport,
   type PushSummary,
+  type RollbackPayload,
+  type SnapshotView,
 } from '@lfd/pim-contracts';
 
 import { Public } from '../../../infra/auth/public.decorator.js';
@@ -11,6 +15,7 @@ import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { ZodBody } from '../../../shared/http/zod-body.pipe.js';
 import { ShopifyInspectionService } from './inspection.service.js';
 import { ShopifyPushService } from './push.service.js';
+import { ShopifySnapshotService } from './snapshot.service.js';
 
 /**
  * Ressource **produits** : l'état de synchro (bindings) et le push (projection →
@@ -25,6 +30,7 @@ export class ShopifyProductsController {
   constructor(
     private readonly pushService: ShopifyPushService,
     private readonly inspection: ShopifyInspectionService,
+    private readonly snapshots: ShopifySnapshotService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -51,5 +57,19 @@ export class ShopifyProductsController {
     @Body(new ZodBody(pushPayloadSchema)) body: PushPayload,
   ): Promise<PushSummary> {
     return this.pushService.push(body.productIds);
+  }
+
+  /** L'historique versionné d'un handle — la matière du retour arrière. */
+  @Get('history/:handle')
+  history(@Param('handle') handle: string): Promise<SnapshotView[]> {
+    return this.snapshots.history(handle);
+  }
+
+  /** Rejoue une version antérieure : re-pousse son payload figé (crée une version). */
+  @Post('rollback')
+  rollback(
+    @Body(new ZodBody(rollbackPayloadSchema)) body: RollbackPayload,
+  ): Promise<PushReport> {
+    return this.pushService.rollback(body.handle, body.version);
   }
 }
