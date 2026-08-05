@@ -14,7 +14,7 @@ import {
   type DesiredCollection,
   type ShopifyCollection,
   TVA_HANDLE_PREFIX,
-} from '../shared/collection-types.js';
+} from '@lfd/shopify-admin';
 
 /** Une collection désirée rapprochée de son éventuelle contrepartie distante. */
 export interface ReconcileRow {

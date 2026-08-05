@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
-import { ShopifyAdminClient } from '../shared/admin-client.js';
-import type { ShopifyProductSnapshot } from '../shared/product-snapshot.js';
+import {
+  ShopifyAdminClient,
+  type ShopifyProductSnapshot,
+} from '@lfd/shopify-admin';
 import {
   type ChannelMode,
   ShopifySettingsService,

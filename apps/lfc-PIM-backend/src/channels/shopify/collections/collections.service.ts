@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import type {
-  DesiredCollection,
-  ShopifyCollection,
-} from '../shared/collection-types.js';
+import type { DesiredCollection, ShopifyCollection } from '@lfd/shopify-admin';
 import {
   type ChannelMode,
   ShopifySettingsService,

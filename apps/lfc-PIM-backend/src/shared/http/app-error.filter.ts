@@ -1,5 +1,6 @@
 import { Catch, HttpStatus, Logger } from '@nestjs/common';
 import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
+import { ShopifyAdminError } from '@lfd/shopify-admin';
 import type { Response } from 'express';
 
 import {
@@ -13,7 +14,8 @@ import {
  *
  * C'est **le seul endroit** du système qui connaît à la fois le domaine et HTTP. Les
  * classes d'erreur, elles, n'ont aucune dépendance au transport — un cron ou un import
- * CSV lève exactement les mêmes.
+ * CSV lève exactement les mêmes. Couvre aussi les erreurs du package transport
+ * `@lfd/shopify-admin` (framework-free), rapprochées par leur même `category`/`code`.
  */
 const STATUS_BY_CATEGORY: Record<ErrorCategory, HttpStatus> = {
   domain: HttpStatus.BAD_REQUEST,
@@ -21,11 +23,13 @@ const STATUS_BY_CATEGORY: Record<ErrorCategory, HttpStatus> = {
   technical: HttpStatus.INTERNAL_SERVER_ERROR,
 };
 
-@Catch(AppError)
-export class AppErrorFilter implements ExceptionFilter<AppError> {
+@Catch(AppError, ShopifyAdminError)
+export class AppErrorFilter implements ExceptionFilter<
+  AppError | ShopifyAdminError
+> {
   private readonly logger = new Logger(AppErrorFilter.name);
 
-  catch(error: AppError, host: ArgumentsHost): void {
+  catch(error: AppError | ShopifyAdminError, host: ArgumentsHost): void {
     const status =
       error instanceof ResourceNotFoundError
         ? HttpStatus.NOT_FOUND

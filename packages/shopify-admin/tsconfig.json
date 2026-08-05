@@ -1,0 +1,18 @@
+{
+  // Transport Admin Shopify (client GraphQL + jeton) — primitive infra sans domaine. Feuille du graphe : ne dépend que de zod, dépendue
+  // par tout le monde (aucune app ne possède le contrat). Émet des déclarations
+  // pour que les consommateurs prennent leurs types depuis `dist`, tandis que
+  // `exports.types` pointe la source in-workspace (comme @lfd/storage).
+  "extends": "../../tsconfig/tsflags.backend.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+}

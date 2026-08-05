@@ -1,8 +1,7 @@
 /**
  * Instantané **lecture seule** d'un produit tel qu'il existe *aujourd'hui* sur la
- * boutique Shopify — le miroir de l'état distant, jamais une source canonique. Le PIM
- * reste autorité ; ceci sert à *voir* ce qui est déjà là (avant de pousser, pour ne
- * pas dupliquer). Forme volontairement plate : ce que le tableau d'inspection affiche.
+ * boutique Shopify — le miroir de l'état distant, jamais une source canonique.
+ * Forme volontairement plate : ce que le tableau d'inspection affiche.
  */
 export interface ShopifyProductSnapshot {
   /** GID Shopify (`gid://shopify/Product/…`). */

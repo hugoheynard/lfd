@@ -1,7 +1,6 @@
 import { Test } from '@nestjs/testing';
 
-import { ShopifyAdminClient } from '../../shared/admin-client.js';
-import { ShopifyRejectedError } from '../../shared/errors.js';
+import { ShopifyAdminClient, ShopifyRejectedError } from '@lfd/shopify-admin';
 import { LiveShopifyDriver } from '../driver.js';
 import { buildProductSetInput } from '../product-set-input.js';
 import type { ShopifyProductPayload } from '../projection.js';

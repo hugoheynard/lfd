@@ -1,17 +1,12 @@
-import { Injectable } from '@nestjs/common';
-
+import type { DesiredCollection, ShopifyCollection } from "./collection-types.js";
 import {
   ShopifyNotConfiguredError,
   ShopifyRejectedError,
   ShopifyTransportError,
-} from './errors.js';
-import type {
-  DesiredCollection,
-  ShopifyCollection,
-} from './collection-types.js';
-import type { ShopifyProductSnapshot } from './product-snapshot.js';
-import { ShopifySettingsService } from './settings.service.js';
-import { ShopifyTokenProvider } from './token-provider.js';
+} from "./errors.js";
+import type { ShopifyProductSnapshot } from "./product-snapshot.js";
+import type { ShopifyStoreSettings } from "./store-settings.js";
+import type { ShopifyTokenProvider } from "./token-provider.js";
 
 /** Ce que confirme une vérification de connexion. */
 export interface ShopifyShopIdentity {
@@ -29,7 +24,6 @@ interface UserError {
   readonly message: string;
 }
 
-/** Un nœud collection tel que renvoyé par l'API Admin. */
 interface CollectionNode {
   readonly id: string;
   readonly handle: string;
@@ -47,7 +41,6 @@ interface CollectionsPage {
   };
 }
 
-/** Un nœud produit tel que renvoyé par l'API Admin (lecture seule). */
 interface ProductNode {
   readonly id: string;
   readonly handle: string;
@@ -73,17 +66,15 @@ interface ProductsPage {
 }
 
 /**
- * Transport **réel** vers l'API Admin GraphQL de Shopify. Isolé ici pour la raison
- * annoncée par le port {@link ShopifyDriver} : c'est le seul endroit qui connaît la
- * forme des mutations et la version d'API. Le domaine de la boutique et la version
- * viennent des réglages (en base) ; le jeton vient du {@link ShopifyTokenProvider}
- * (secret d'environnement ou échange client credentials, jamais en base). Sans
- * domaine ni jeton, on refuse plutôt que d'émettre un appel bancal.
+ * Transport **réel** vers l'API Admin GraphQL de Shopify — le seul endroit qui
+ * connaît la forme des requêtes et la version d'API. Le domaine de la boutique et
+ * la version viennent du port {@link ShopifyStoreSettings} ; le jeton du
+ * {@link ShopifyTokenProvider} (secret, jamais en base). Sans domaine ni jeton,
+ * on refuse plutôt que d'émettre un appel bancal.
  */
-@Injectable()
 export class ShopifyAdminClient {
   constructor(
-    private readonly settings: ShopifySettingsService,
+    private readonly settings: ShopifyStoreSettings,
     private readonly tokens: ShopifyTokenProvider,
   ) {}
 
@@ -91,7 +82,7 @@ export class ShopifyAdminClient {
   async verify(): Promise<ShopifyShopIdentity> {
     const data = await this.graphql<{
       shop: { name: string; myshopifyDomain: string };
-    }>('query { shop { name myshopifyDomain } }');
+    }>("query { shop { name myshopifyDomain } }");
     return { name: data.shop.name, domain: data.shop.myshopifyDomain };
   }
 
@@ -101,10 +92,7 @@ export class ShopifyAdminClient {
     let cursor: string | null = null;
 
     do {
-      const page: ProductsPage = await this.graphql<ProductsPage>(
-        LIST_PRODUCTS_QUERY,
-        { cursor },
-      );
+      const page: ProductsPage = await this.graphql<ProductsPage>(LIST_PRODUCTS_QUERY, { cursor });
 
       for (const node of page.products.nodes) {
         products.push({
@@ -120,9 +108,7 @@ export class ShopifyAdminClient {
         });
       }
 
-      cursor = page.products.pageInfo.hasNextPage
-        ? page.products.pageInfo.endCursor
-        : null;
+      cursor = page.products.pageInfo.hasNextPage ? page.products.pageInfo.endCursor : null;
     } while (cursor !== null);
 
     return products;
@@ -134,13 +120,12 @@ export class ShopifyAdminClient {
     let cursor: string | null = null;
 
     do {
-      const page: CollectionsPage = await this.graphql<CollectionsPage>(
-        LIST_COLLECTIONS_QUERY,
-        { cursor },
-      );
+      const page: CollectionsPage = await this.graphql<CollectionsPage>(LIST_COLLECTIONS_QUERY, {
+        cursor,
+      });
 
       for (const node of page.collections.nodes) {
-        if (node.handle.startsWith('tva-')) {
+        if (node.handle.startsWith("tva-")) {
           collections.push({
             id: node.id,
             handle: node.handle,
@@ -150,18 +135,14 @@ export class ShopifyAdminClient {
         }
       }
 
-      cursor = page.collections.pageInfo.hasNextPage
-        ? page.collections.pageInfo.endCursor
-        : null;
+      cursor = page.collections.pageInfo.hasNextPage ? page.collections.pageInfo.endCursor : null;
     } while (cursor !== null);
 
     return collections;
   }
 
   /** Crée une collection **manuelle** vide (pas de `ruleSet`). */
-  async createCollection(
-    target: DesiredCollection,
-  ): Promise<ShopifyCollection> {
+  async createCollection(target: DesiredCollection): Promise<ShopifyCollection> {
     const data = await this.graphql<{
       collectionCreate: {
         collection: {
@@ -179,7 +160,7 @@ export class ShopifyAdminClient {
     const { collection, userErrors } = data.collectionCreate;
     if (userErrors.length > 0 || collection === null) {
       throw new ShopifyRejectedError(
-        userErrors.map((error) => error.message).join(' ; ') ||
+        userErrors.map((error) => error.message).join(" ; ") ||
           `Création refusée pour « ${target.handle} ».`,
       );
     }
@@ -194,18 +175,16 @@ export class ShopifyAdminClient {
 
   /**
    * Transport GraphQL **authentifié** vers l'API Admin — jeton, endpoint, erreurs.
-   * Public pour que les adaptateurs produits (le driver) réutilisent le transport sans
-   * dupliquer l'auth ; eux portent la forme de *leur* mutation, ici on ne fait que l'envoyer.
+   * Public pour que les adaptateurs (drivers de push) réutilisent le transport sans
+   * dupliquer l'auth ; eux portent la forme de *leur* mutation, ici on ne fait que
+   * l'envoyer.
    */
-  async graphql<T>(
-    query: string,
-    variables: Record<string, unknown> = {},
-  ): Promise<T> {
+  async graphql<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
     const { shopDomain, apiVersion } = await this.settings.read();
     const domain = shopDomain.trim();
-    if (domain === '') {
+    if (domain === "") {
       throw new ShopifyNotConfiguredError(
-        'Domaine de boutique manquant — renseignez-le dans les réglages.',
+        "Domaine de boutique manquant — renseignez-le dans les réglages.",
       );
     }
     const token = await this.tokens.accessTokenFor(domain);
@@ -214,15 +193,15 @@ export class ShopifyAdminClient {
     let response: Response;
     try {
       response = await fetch(endpoint, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': token,
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": token,
         },
         body: JSON.stringify({ query, variables }),
       });
     } catch (cause) {
-      throw new ShopifyTransportError('Boutique Shopify injoignable.', cause);
+      throw new ShopifyTransportError("Boutique Shopify injoignable.", cause);
     }
 
     if (!response.ok) {
@@ -233,12 +212,10 @@ export class ShopifyAdminClient {
 
     const body = (await response.json()) as GraphQlResponse<T>;
     if (body.errors !== undefined && body.errors.length > 0) {
-      throw new ShopifyTransportError(
-        body.errors.map((error) => error.message).join(' ; '),
-      );
+      throw new ShopifyTransportError(body.errors.map((error) => error.message).join(" ; "));
     }
     if (body.data === undefined) {
-      throw new ShopifyTransportError('Réponse Shopify sans données.');
+      throw new ShopifyTransportError("Réponse Shopify sans données.");
     }
     return body.data;
   }

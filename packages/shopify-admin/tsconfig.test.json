@@ -1,0 +1,17 @@
+{
+  // ts-jest compile les specs en CommonJS en mémoire — on surcharge l'émission
+  // NodeNext/ESM du build juste pour les tests (miroir de @lfd/storage).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "target": "ES2022",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "allowSyntheticDefaultImports": true,
+    "types": ["jest", "node"],
+    "noEmit": true
+  },
+  "include": ["src", "src/__tests__"]
+}

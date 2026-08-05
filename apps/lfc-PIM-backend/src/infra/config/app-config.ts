@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import type {
+  ShopifyCredentialsSource,
+  ShopifyOAuthCredentials,
+} from '@lfd/shopify-admin';
 
-/** Identifiants d'une app **Dev Dashboard** — échangés contre un jeton d'accès
- *  (client credentials grant). Les deux vont ensemble : l'un sans l'autre ne vaut
- *  rien, donc on ne les expose qu'en paire ou pas du tout. */
-export interface ShopifyOAuthCredentials {
-  readonly clientId: string;
-  readonly clientSecret: string;
-}
+// Le type des identifiants Shopify vit dans `@lfd/shopify-admin` (le transport).
+// Ré-exporté ici pour les consommateurs historiques de `AppConfig`.
+export type { ShopifyOAuthCredentials };
 
 /**
  * Passerelle **unique** vers l'environnement.
@@ -18,7 +18,7 @@ export interface ShopifyOAuthCredentials {
  * **substituables en test** via l'injection.
  */
 @Injectable()
-export class AppConfig {
+export class AppConfig implements ShopifyCredentialsSource {
   private readonly database: string;
   private readonly auth0DomainValue: string;
   private readonly auth0AudienceValue: string;

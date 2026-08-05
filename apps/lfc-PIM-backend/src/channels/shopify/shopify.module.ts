@@ -1,4 +1,10 @@
 import { Module } from '@nestjs/common';
+import {
+  ShopifyAdminClient,
+  ShopifyTokenProvider,
+  type ShopifyCredentialsSource,
+  type ShopifyStoreSettings,
+} from '@lfd/shopify-admin';
 
 import { CatalogueModule } from '../../catalogue/catalogue.module.js';
 import { DatabaseModule } from '../../infra/database/database.module.js';
@@ -15,12 +21,10 @@ import { ShopifyInspectionService } from './products/inspection.service.js';
 import { ShopifyProductsController } from './products/products.controller.js';
 import { ShopifyPushService } from './products/push.service.js';
 import { AppConfig } from '../../infra/config/app-config.js';
-import { ShopifyAdminClient } from './shared/admin-client.js';
 import { ShopifySettingsService } from './shared/settings.service.js';
-import {
-  SHOPIFY_CREDENTIALS_SOURCE,
-  ShopifyTokenProvider,
-} from './shared/token-provider.js';
+
+/** Jeton d'injection du port de credentials — aliasé sur `AppConfig` ci-dessous. */
+const SHOPIFY_CREDENTIALS_SOURCE = Symbol('SHOPIFY_CREDENTIALS_SOURCE');
 
 /**
  * Adaptateur de canal — il **dépend** du catalogue, jamais l'inverse.
@@ -48,12 +52,25 @@ import {
     // Les deux pilotes de push, concrets : le service choisit selon le mode des réglages.
     DryRunShopifyDriver,
     LiveShopifyDriver,
-    // Collections de TVA : transport réel + les deux passerelles (simulation / réel),
-    // le service choisissant selon le mode des réglages.
-    // Le provider de jeton lit ses identifiants via le port étroit, aliasé sur AppConfig.
+    // Transport Shopify (`@lfd/shopify-admin`) — classes **plain**, câblées par
+    // fabrique : le provider de jeton lit ses identifiants via le port étroit
+    // (aliasé sur AppConfig) ; le client Admin lit domaine/version via le port
+    // `ShopifyStoreSettings`, que `ShopifySettingsService` satisfait (Prisma).
     { provide: SHOPIFY_CREDENTIALS_SOURCE, useExisting: AppConfig },
-    ShopifyTokenProvider,
-    ShopifyAdminClient,
+    {
+      provide: ShopifyTokenProvider,
+      useFactory: (config: ShopifyCredentialsSource): ShopifyTokenProvider =>
+        new ShopifyTokenProvider(config),
+      inject: [SHOPIFY_CREDENTIALS_SOURCE],
+    },
+    {
+      provide: ShopifyAdminClient,
+      useFactory: (
+        settings: ShopifyStoreSettings,
+        tokens: ShopifyTokenProvider,
+      ): ShopifyAdminClient => new ShopifyAdminClient(settings, tokens),
+      inject: [ShopifySettingsService, ShopifyTokenProvider],
+    },
     DryRunShopifyCollectionsGateway,
     LiveShopifyCollectionsGateway,
     ShopifyCollectionsService,

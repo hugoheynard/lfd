@@ -1,7 +1,4 @@
-import type {
-  DesiredCollection,
-  ShopifyCollection,
-} from '../../shared/collection-types.js';
+import type { DesiredCollection, ShopifyCollection } from '@lfd/shopify-admin';
 import { missingCollections, reconcileCollections } from '../reconcile.js';
 
 const collection = (handle: string, productCount = 0): ShopifyCollection => ({
