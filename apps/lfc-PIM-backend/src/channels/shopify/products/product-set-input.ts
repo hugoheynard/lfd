@@ -33,6 +33,15 @@ interface ProductSetVariant {
   }[];
 }
 
+/**
+ * Option implicite de Shopify pour un produit **sans variante déclarée** : chaque
+ * variante *doit* porter au moins une `optionValue`, et `productOptions` *doit* être
+ * déclaré dès qu'on en fournit une (vérifié sur la boutique, cf.
+ * `shopify-productset-findings.md` F2/F4). On matérialise donc l'option par défaut.
+ */
+const DEFAULT_OPTION = 'Title';
+const DEFAULT_OPTION_VALUE = 'Default Title';
+
 /** Traduit un produit projeté en entrée `productSet`. */
 export function buildProductSetInput(
   payload: ShopifyProductPayload,
@@ -44,9 +53,24 @@ export function buildProductSetInput(
     status: payload.status,
   } as const;
 
-  // Aucune option → variante par défaut : on n'envoie ni productOptions ni optionValues.
+  // Aucune vraie option → l'option par défaut `Title` / `Default Title`, obligatoire.
   if (optionNames.length === 0) {
-    return { ...base, variants: payload.variants.map(variantBase) };
+    return {
+      ...base,
+      productOptions: [
+        {
+          name: DEFAULT_OPTION,
+          position: 1,
+          values: [{ name: DEFAULT_OPTION_VALUE }],
+        },
+      ],
+      variants: payload.variants.map((variant) => ({
+        ...variantBase(variant),
+        optionValues: [
+          { optionName: DEFAULT_OPTION, name: DEFAULT_OPTION_VALUE },
+        ],
+      })),
+    };
   }
 
   return {

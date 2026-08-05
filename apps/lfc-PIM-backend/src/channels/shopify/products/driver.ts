@@ -79,9 +79,9 @@ export class LiveShopifyDriver extends ShopifyDriver {
     const data = await this.client.graphql<ProductSetResponse>(
       PRODUCT_SET_MUTATION,
       {
-        identifier: {
-          key: `gid://shopify/ProductByHandle?handle=${payload.handle}`,
-        },
+        // Upsert par handle : `identifier: { handle }` crée si absent, met à jour sinon
+        // (vérifié live, cf. shopify-productset-findings.md F1/F5).
+        identifier: { handle: payload.handle },
         input: buildProductSetInput(payload),
       },
     );

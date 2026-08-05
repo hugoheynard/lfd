@@ -28,8 +28,17 @@ describe('buildProductSetInput', () => {
       }),
     );
 
-    expect(input.productOptions).toBeUndefined();
-    expect(input.variants).toEqual([{ sku: 'PATI-CROISSANT', price: '1.30' }]);
+    // Sans option, Shopify exige l'option par défaut Title + optionValues (F2/F4).
+    expect(input.productOptions).toEqual([
+      { name: 'Title', position: 1, values: [{ name: 'Default Title' }] },
+    ]);
+    expect(input.variants).toEqual([
+      {
+        sku: 'PATI-CROISSANT',
+        price: '1.30',
+        optionValues: [{ optionName: 'Title', name: 'Default Title' }],
+      },
+    ]);
     expect(input.title).toBe('Croissant');
     expect(input.handle).toBe('croissant');
     expect(input.status).toBe('ACTIVE');
@@ -44,7 +53,12 @@ describe('buildProductSetInput', () => {
       }),
     );
 
-    expect(input.variants).toEqual([{ sku: 'PATI-CROISSANT' }]);
+    expect(input.variants).toEqual([
+      {
+        sku: 'PATI-CROISSANT',
+        optionValues: [{ optionName: 'Title', name: 'Default Title' }],
+      },
+    ]);
   });
 
   it('avec options → productOptions déclarés + optionValues + prix par variante', () => {
