@@ -1,32 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import type { EmplacementView, TableView } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
 import type { Emplacement, EmplacementTable } from '../data/models';
 
-interface BackendTable {
-  readonly number: number;
-  readonly qrCreated: boolean;
-  readonly token: string | null;
-}
-
-interface BackendEmplacement {
-  readonly id: string;
-  readonly name: string;
-  readonly clickCollect: boolean;
-  readonly surPlace: boolean;
-  readonly baseUrl: string;
-  readonly tables: readonly BackendTable[];
-}
-
-function toTable(table: BackendTable): EmplacementTable {
+function toTable(table: TableView): EmplacementTable {
   return table.token === null
     ? { number: table.number, qrCreated: table.qrCreated }
     : { number: table.number, qrCreated: table.qrCreated, token: table.token };
 }
 
-function toEmplacement(row: BackendEmplacement): Emplacement {
+function toEmplacement(row: EmplacementView): Emplacement {
   return {
     id: row.id,
     name: row.name,
@@ -56,7 +42,7 @@ export class EmplacementHttpApi {
   private readonly base = inject(API_BASE_URL);
 
   async list(): Promise<Emplacement[]> {
-    const rows = await firstValueFrom(this.http.get<BackendEmplacement[]>(this.url('')));
+    const rows = await firstValueFrom(this.http.get<EmplacementView[]>(this.url('')));
     return rows.map(toEmplacement);
   }
 

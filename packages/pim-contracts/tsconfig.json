@@ -1,0 +1,18 @@
+{
+  // Contrats de fil du **PIM** (Zod → types) — SoR de la FORME des DTO échangés
+  // entre lfc-PIM-backend et lfc-PIM-frontend. Feuille du graphe : ne dépend que
+  // de zod, dépendue par les deux apps PIM (aucune ne possède le contrat). Émet
+  // des déclarations ; `exports.types` pointe la source in-workspace.
+  "extends": "../../tsconfig/tsflags.backend.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+}

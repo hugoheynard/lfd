@@ -9,7 +9,13 @@ import {
   Put,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { z } from 'zod';
+import {
+  createEmplacementPayloadSchema,
+  updateEmplacementPayloadSchema,
+  type CreateEmplacementPayload,
+  type EmplacementView,
+  type UpdateEmplacementPayload,
+} from '@lfd/pim-contracts';
 
 import { Public } from '../../infra/auth/public.decorator.js';
 import { ZodBody } from '../../shared/http/zod-body.pipe.js';
@@ -19,26 +25,6 @@ import { GenerateTableQrCommand } from '../application/generate-table-qr.js';
 import { ListEmplacementsQuery } from '../application/list-emplacements.js';
 import { RemoveTableQrCommand } from '../application/remove-table-qr.js';
 import { UpdateEmplacementCommand } from '../application/update-emplacement.js';
-import type { EmplacementRecord } from '../domain/ports/emplacement.repository.js';
-import { MAX_TABLES } from '../domain/value-objects/table.js';
-
-const tableCount = z.number().int().min(0).max(MAX_TABLES);
-
-const createPayload = z.object({
-  name: z.string().min(1),
-  clickCollect: z.boolean(),
-  surPlace: z.boolean(),
-  baseUrl: z.string(),
-  tableCount,
-});
-
-const updatePayload = z.object({
-  name: z.string().min(1).optional(),
-  clickCollect: z.boolean().optional(),
-  surPlace: z.boolean().optional(),
-  baseUrl: z.string().optional(),
-  tableCount: tableCount.optional(),
-});
 
 /**
  * Emplacements (boutiques : modes + tables + QR click & collect) — dispatchés sur
@@ -53,15 +39,16 @@ export class EmplacementController {
   ) {}
 
   @Get()
-  listEmplacements(): Promise<EmplacementRecord[]> {
-    return this.queries.execute<ListEmplacementsQuery, EmplacementRecord[]>(
+  listEmplacements(): Promise<EmplacementView[]> {
+    return this.queries.execute<ListEmplacementsQuery, EmplacementView[]>(
       new ListEmplacementsQuery(),
     );
   }
 
   @Post()
   async createEmplacement(
-    @Body(new ZodBody(createPayload)) body: z.infer<typeof createPayload>,
+    @Body(new ZodBody(createEmplacementPayloadSchema))
+    body: CreateEmplacementPayload,
   ) {
     const id = await this.commands.execute<CreateEmplacementCommand, string>(
       new CreateEmplacementCommand(body),
@@ -72,7 +59,8 @@ export class EmplacementController {
   @Put(':id')
   async updateEmplacement(
     @Param('id') id: string,
-    @Body(new ZodBody(updatePayload)) body: z.infer<typeof updatePayload>,
+    @Body(new ZodBody(updateEmplacementPayloadSchema))
+    body: UpdateEmplacementPayload,
   ) {
     await this.commands.execute<UpdateEmplacementCommand, void>(
       new UpdateEmplacementCommand(id, body),

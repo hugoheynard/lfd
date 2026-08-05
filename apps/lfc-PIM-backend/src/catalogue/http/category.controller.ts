@@ -1,6 +1,16 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { z } from 'zod';
+import {
+  createCategoryPayloadSchema,
+  renameCategoryPayloadSchema,
+  setCategoryChannelsPayloadSchema,
+  setCategoryTvaPayloadSchema,
+  type CategoryView,
+  type CreateCategoryPayload,
+  type RenameCategoryPayload,
+  type SetCategoryChannelsPayload,
+  type SetCategoryTvaPayload,
+} from '@lfd/pim-contracts';
 
 import { Public } from '../../infra/auth/public.decorator.js';
 import { ZodBody } from '../../shared/http/zod-body.pipe.js';
@@ -10,33 +20,6 @@ import { ListCategoriesQuery } from '../application/list-categories.js';
 import { RenameCategoryCommand } from '../application/rename-category.js';
 import { SetCategoryChannelsCommand } from '../application/set-category-channels.js';
 import { SetCategoryTvaCommand } from '../application/set-category-tva.js';
-import type { CategoryRecord } from '../domain/ports/category.repository.js';
-
-const categoryPayload = z.object({
-  nameFr: z.string().min(1),
-  nameEn: z.string().optional(),
-  parentId: z.string().optional(),
-});
-
-const renamePayload = z.object({
-  nameFr: z.string().min(1),
-  nameEn: z.string().optional(),
-});
-
-const boutiqueChannels = z.object({
-  emporter: z.boolean(),
-  surPlace: z.boolean(),
-});
-
-const channelsPayload = z.object({
-  b1: boutiqueChannels,
-  b2: boutiqueChannels,
-});
-
-const tvaPayload = z.object({
-  emporterTvaId: z.string().nullable(),
-  surPlaceTvaId: z.string().nullable(),
-});
 
 /**
  * Familles du catalogue — dispatchées sur les bus CQRS. ⚠️ **`@Public()`
@@ -51,15 +34,15 @@ export class CategoryController {
   ) {}
 
   @Get()
-  listCategories(): Promise<CategoryRecord[]> {
-    return this.queries.execute<ListCategoriesQuery, CategoryRecord[]>(
+  listCategories(): Promise<CategoryView[]> {
+    return this.queries.execute<ListCategoriesQuery, CategoryView[]>(
       new ListCategoriesQuery(),
     );
   }
 
   @Post()
   async createCategory(
-    @Body(new ZodBody(categoryPayload)) body: z.infer<typeof categoryPayload>,
+    @Body(new ZodBody(createCategoryPayloadSchema)) body: CreateCategoryPayload,
   ) {
     const id = await this.commands.execute<CreateCategoryCommand, string>(
       new CreateCategoryCommand(body),
@@ -70,7 +53,7 @@ export class CategoryController {
   @Put(':id/name')
   async renameCategory(
     @Param('id') id: string,
-    @Body(new ZodBody(renamePayload)) body: z.infer<typeof renamePayload>,
+    @Body(new ZodBody(renameCategoryPayloadSchema)) body: RenameCategoryPayload,
   ) {
     await this.commands.execute<RenameCategoryCommand, void>(
       new RenameCategoryCommand(id, body),
@@ -81,7 +64,8 @@ export class CategoryController {
   @Put(':id/channels')
   async setChannels(
     @Param('id') id: string,
-    @Body(new ZodBody(channelsPayload)) body: z.infer<typeof channelsPayload>,
+    @Body(new ZodBody(setCategoryChannelsPayloadSchema))
+    body: SetCategoryChannelsPayload,
   ) {
     await this.commands.execute<SetCategoryChannelsCommand, void>(
       new SetCategoryChannelsCommand(id, body),
@@ -92,7 +76,7 @@ export class CategoryController {
   @Put(':id/tva')
   async setTva(
     @Param('id') id: string,
-    @Body(new ZodBody(tvaPayload)) body: z.infer<typeof tvaPayload>,
+    @Body(new ZodBody(setCategoryTvaPayloadSchema)) body: SetCategoryTvaPayload,
   ) {
     await this.commands.execute<SetCategoryTvaCommand, void>(
       new SetCategoryTvaCommand(id, body.emporterTvaId, body.surPlaceTvaId),

@@ -8,7 +8,11 @@ import {
   Put,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { z } from 'zod';
+import {
+  tvaRegimePayloadSchema,
+  type TvaRegimePayload,
+  type TvaRegimeView,
+} from '@lfd/pim-contracts';
 
 import { Public } from '../../infra/auth/public.decorator.js';
 import { ZodBody } from '../../shared/http/zod-body.pipe.js';
@@ -16,13 +20,6 @@ import { CreateTvaRegimeCommand } from '../application/create-tva-regime.js';
 import { ListTvaRegimesQuery } from '../application/list-tva-regimes.js';
 import { RemoveTvaRegimeCommand } from '../application/remove-tva-regime.js';
 import { UpdateTvaRegimeCommand } from '../application/update-tva-regime.js';
-import type { TvaRegimeRecord } from '../domain/ports/tva-regime.repository.js';
-
-const regimePayload = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  percent: z.number().positive(),
-});
 
 /**
  * Régimes de **TVA** — référence commerciale partagée (catégories + Shopify). Le
@@ -40,15 +37,15 @@ export class TvaRegimeController {
   ) {}
 
   @Get()
-  list(): Promise<TvaRegimeRecord[]> {
-    return this.queries.execute<ListTvaRegimesQuery, TvaRegimeRecord[]>(
+  list(): Promise<TvaRegimeView[]> {
+    return this.queries.execute<ListTvaRegimesQuery, TvaRegimeView[]>(
       new ListTvaRegimesQuery(),
     );
   }
 
   @Post()
   async create(
-    @Body(new ZodBody(regimePayload)) body: z.infer<typeof regimePayload>,
+    @Body(new ZodBody(tvaRegimePayloadSchema)) body: TvaRegimePayload,
   ) {
     const id = await this.commands.execute<CreateTvaRegimeCommand, string>(
       new CreateTvaRegimeCommand(body),
@@ -59,7 +56,7 @@ export class TvaRegimeController {
   @Put(':id')
   async update(
     @Param('id') id: string,
-    @Body(new ZodBody(regimePayload)) body: z.infer<typeof regimePayload>,
+    @Body(new ZodBody(tvaRegimePayloadSchema)) body: TvaRegimePayload,
   ) {
     await this.commands.execute<UpdateTvaRegimeCommand, void>(
       new UpdateTvaRegimeCommand(id, body),

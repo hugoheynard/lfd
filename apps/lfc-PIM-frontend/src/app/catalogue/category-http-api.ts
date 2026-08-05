@@ -1,29 +1,17 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import type { CategoryView, SalesChannels } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
-import type { Category, LocalizedText, SalesChannels } from '../data/models';
+import type { Category } from '../data/models';
 
 /**
- * Forme RENDUE par le backend (`catalogue/categories`). Les références de TVA y
- * sont **nullables** (`null` = non réglé) ; le modèle front les veut en chaîne,
- * `''` faisant office de « non réglé ». Duplication assumée tant que
- * `packages/shared-types` n'existe pas.
+ * Le backend rend une `CategoryView` (contrat `@lfd/pim-contracts`) où les
+ * références de TVA sont **nullables** (`null` = non réglé) ; le modèle front les
+ * veut en chaîne, `''` faisant office de « non réglé ». D'où ce mapper.
  */
-interface BackendCategory {
-  readonly id: string;
-  readonly name: LocalizedText;
-  readonly slug: LocalizedText;
-  readonly parentId: string | null;
-  readonly position: number;
-  readonly isArchived: boolean;
-  readonly channelPreset: SalesChannels;
-  readonly emporterTvaId: string | null;
-  readonly surPlaceTvaId: string | null;
-}
-
-function toCategory(row: BackendCategory): Category {
+function toCategory(row: CategoryView): Category {
   return {
     id: row.id,
     name: row.name,
@@ -53,7 +41,7 @@ export class CategoryHttpApi {
   private readonly base = inject(API_BASE_URL);
 
   async list(): Promise<Category[]> {
-    const rows = await firstValueFrom(this.http.get<BackendCategory[]>(this.url('categories')));
+    const rows = await firstValueFrom(this.http.get<CategoryView[]>(this.url('categories')));
     return rows.map(toCategory);
   }
 

@@ -1,12 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import type { TvaRegimeView } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../../data/api';
 import type { TvaRegime } from '../../data/models';
-
-/** Forme rendue par le backend (`commerce/tva-regimes`) — identique au modèle front. */
-type BackendTvaRegime = TvaRegime;
 
 export interface TvaRegimeInput {
   readonly name: string;
@@ -25,7 +23,7 @@ export class TvaHttpApi {
   private readonly base = inject(API_BASE_URL);
 
   async list(): Promise<TvaRegime[]> {
-    const rows = await firstValueFrom(this.http.get<BackendTvaRegime[]>(this.url('')));
+    const rows = await firstValueFrom(this.http.get<TvaRegimeView[]>(this.url('')));
     return rows.map((row) => ({ ...row }));
   }
 
