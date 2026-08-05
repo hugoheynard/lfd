@@ -19,6 +19,7 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --runInBand --forceExit",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --watch --runInBand",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test:shopify:live": "NODE_OPTIONS=--experimental-vm-modules node --env-file=.env node_modules/jest/bin/jest.js -c jest.shopify-live.config.cjs --runInBand --forceExit",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

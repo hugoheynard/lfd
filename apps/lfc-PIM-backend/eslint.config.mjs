@@ -17,6 +17,9 @@ const ENV_ALLOWLIST = [
   'src/infra/config/app-config.ts',
   'src/infra/config/__tests__/app-config.spec.ts',
   'test/setup-env.ts',
+  // Support des e2e Shopify *live* : lit le flag d'activation + les identifiants
+  // pour bâtir un client réel pointé sur la dev store. Seul ce fichier lit l'env.
+  'test/shopify/live-context.ts',
 ];
 
 export default tseslint.config(
