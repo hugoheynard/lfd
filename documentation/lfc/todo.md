@@ -109,7 +109,7 @@
       `shopify-driver.ts`. Y compris : metafield allergènes, et l'`id` de déclinaison déposé côté
       Shopify comme clé de jointure
 - [ ] **Réconciliation à trois voies** ([`publication-reconciliation-3way.md`](./publication-reconciliation-3way.md)) — 5 slices :
-  - [ ] **S1** — `ShopifyPushSnapshot` (payload rejouable) + `headSnapshotId` sur binding + écriture au push + `GET /history` + `POST /rollback`
+  - [x] **S1** — `ShopifyPushSnapshot` (payload rejouable) + `headSnapshotId` sur binding + écriture au push + `GET /history` + `POST /rollback` *(29 tests, commits `623d6fa`/`be718cb`)*
   - [ ] **S2** — dry-run **réel sans effet de bord** (`pushPayloadSchema.dryRun`) + bouton pré-push
   - [ ] **S3** — projection inverse THEIRS + `GET /reconciliation`(+`:handle`) + statuts (`local_ahead`/`remote_drift`/`conflict`/`to_remove`)
   - [ ] **S4** — refonte écran `publication-shopify` (orienté handle, diff par paire, historique/rollback)
