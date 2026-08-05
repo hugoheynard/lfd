@@ -10,6 +10,12 @@ import type { SuiteAppEntry } from './suite-app';
  * « bientôt disponible » tant qu'elle n'a pas d'URL.
  */
 export const SUITE_APPS: readonly SuiteAppEntry[] = [
-  { id: 'pim', title: 'PIM', icon: 'grid', routePath: 'pim' },
-  { id: 'b2b-admin', title: 'B2B admin', icon: 'company', routePath: 'b2b-admin' },
+  { id: 'pim', title: 'PIM', icon: 'grid', routePath: 'pim', requiredPermission: 'app:pim' },
+  {
+    id: 'b2b-admin',
+    title: 'B2B admin',
+    icon: 'company',
+    routePath: 'b2b-admin',
+    requiredPermission: 'app:b2b-admin',
+  },
 ];

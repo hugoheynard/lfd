@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   FoldAppShellComponent,
@@ -39,6 +39,18 @@ export class App {
 
   /** Les apps du registre — le rail primaire EST le switcher. */
   protected readonly apps = SUITE_APPS;
+
+  /**
+   * Les apps **visibles** pour ce staff : filtrées par entitlement (claim
+   * `permissions` du jeton `api-suite`). Réactif — se remplit quand la façade a
+   * résolu les permissions. Sans `requiredPermission`, l'app est visible par tout
+   * staff. C'est de l'UX : le mur reste chaque backend enfant.
+   */
+  protected readonly visibleApps = computed(() =>
+    this.apps.filter(
+      (app) => app.requiredPermission === undefined || this.auth.hasPermission(app.requiredPermission),
+    ),
+  );
 
   /** Tiroir off-canvas ≤768px. */
   protected readonly mobileNavOpen = signal(false);

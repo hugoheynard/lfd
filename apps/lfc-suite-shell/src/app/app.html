@@ -1,5 +1,6 @@
-@if (auth.isLoading()) {
-  <!-- Auth0 résout la session : squelette neutre. -->
+@if (auth.isLoading() || (auth.isAuthenticated() && !auth.permissionsLoaded())) {
+  <!-- Auth0 résout la session PUIS ses entitlements (jeton api-suite) : on attend
+       les deux avant de peindre le launcher, sinon le rail flashe vide. -->
   <div class="app-boot" role="status" aria-label="Chargement">
     <fold-spinner />
   </div>
@@ -17,7 +18,7 @@
         <span class="rail-wordmark">Suite</span>
       </a>
 
-      @for (app of apps; track app.id) {
+      @for (app of visibleApps(); track app.id) {
         <a
           fold-menu-item
           [icon]="app.icon"
@@ -28,6 +29,8 @@
           [active]="rla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
+      } @empty {
+        <p class="rail-empty">Aucune app n'est activée pour ce compte.</p>
       }
 
       <button

@@ -18,6 +18,13 @@ export interface SuiteAppEntry {
   readonly icon: string;
   /** 1er segment de route où l'app est montée (`pim` → `/pim/**`). */
   readonly routePath: string;
+  /**
+   * Permission d'**entitlement** requise pour voir la tuile (claim `permissions`
+   * du jeton `api-suite`, ex. `app:pim`). Le launcher masque l'app si le staff ne
+   * l'a pas. C'est de l'UX : le vrai mur reste le backend enfant (RBAC + guard).
+   * `undefined` ⇒ visible par tout staff authentifié.
+   */
+  readonly requiredPermission?: string;
 }
 
 /** URL de base de l'app (env-résolue) ; `undefined` ⇒ stub. */

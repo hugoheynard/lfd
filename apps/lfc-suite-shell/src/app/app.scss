@@ -28,6 +28,12 @@
 .rail-wordmark {
   font-weight: 600;
 }
+/* Launcher vide : le staff n'a aucun entitlement d'app. */
+.rail-empty {
+  margin: var(--fold-space-md) var(--fold-space-sm);
+  font-size: 0.8125rem;
+  color: var(--fold-color-text-muted, inherit);
+}
 
 /* Porte de login unique. */
 .app-login {
