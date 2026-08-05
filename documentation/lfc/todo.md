@@ -108,7 +108,13 @@
 - [ ] **Pilote Shopify réel** — à écrire **après le spike** (boutique de dev + jeton). Ne touche que
       `shopify-driver.ts`. Y compris : metafield allergènes, et l'`id` de déclinaison déposé côté
       Shopify comme clé de jointure
-- [ ] **Webhooks Shopify** (`products/update`) → détection de dérive, régime *surveillé*
+- [ ] **Réconciliation à trois voies** ([`publication-reconciliation-3way.md`](./publication-reconciliation-3way.md)) — 5 slices :
+  - [ ] **S1** — `ShopifyPushSnapshot` (payload rejouable) + `headSnapshotId` sur binding + écriture au push + `GET /history` + `POST /rollback`
+  - [ ] **S2** — dry-run **réel sans effet de bord** (`pushPayloadSchema.dryRun`) + bouton pré-push
+  - [ ] **S3** — projection inverse THEIRS + `GET /reconciliation`(+`:handle`) + statuts (`local_ahead`/`remote_drift`/`conflict`/`to_remove`)
+  - [ ] **S4** — refonte écran `publication-shopify` (orienté handle, diff par paire, historique/rollback)
+  - [ ] **S5** *(diff → post-boucle)* — webhook `products/update` → marque `remote_drift` sans poll
+- [ ] ~~**Webhooks Shopify** (`products/update`)~~ → absorbé par S5 ci-dessus
 - [ ] `shopify_product_override` (titre, handle, tags saisis à la main) — à ne jamais écraser au re-push
 - [ ] Modèle de **disponibilité** côté Shopify (capacité de production ≠ stock) — le vrai point dur
 - [ ] Port de lecture `CatalogueReader` — les adaptateurs ne lisent **jamais** les tables du socle

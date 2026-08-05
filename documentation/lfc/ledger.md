@@ -11,6 +11,26 @@ On n'y met que ce qui mérite d'être retrouvé dans trois mois.
 
 ---
 
+## 2026-08-05
+
+### Cadrage : réconciliation de publication à trois voies (« git du catalogue »)
+
+**PM** — On fige comment publier vers Shopify **sans casse** : voir *ce qui partirait* avant
+d'envoyer (diff champ par champ), savoir si **quelqu'un a édité la boutique** depuis la dernière
+poussée (dérive distante ⚠️), repérer un **conflit** (les deux ont bougé), et **revenir en arrière**
+sur une fiche via un historique versionné. Le PIM reste l'autorité — la boutique n'est qu'un miroir —
+mais on cesse d'écraser en aveugle.
+
+**Tech** — Nouveau doc [`publication-reconciliation-3way.md`](./publication-reconciliation-3way.md).
+Modèle **BASE / OURS / THEIRS** (merge à trois voies), **clé sur le `handle`** (survit à la future
+bascule fiche×mode). Trois empreintes `fingerprint` → table de statuts (`local_ahead`, `remote_drift`,
+`conflict`, `to_remove`, `unknown≠absent`). Socle manquant : **snapshots immuables** (`ShopifyPushSnapshot`,
+payload `Json` rejouable) + pointeur `headSnapshotId` sur le binding → BASE + rollback (re-pousse, n'efface
+jamais). **Dry-run réel sans effet de bord** (aujourd'hui il écrit le binding). Piège identifié : normaliser
+THEIRS avant de comparer (projection inverse, cœur testable). Livraison en 5 slices — S1 (snapshots+rollback)
+et S2 (dry-run) tombent **sans boutique réelle** ; S3 (trois-voies) se valide dès le token posé, rejoint la
+boucle test DRAFT ([`shopify-e2e-strategy.md`](./shopify-e2e-strategy.md)).
+
 ## 2026-07-28
 
 ### Cadrage : projection Shopify emporter / sur place, TVA, boutiques
