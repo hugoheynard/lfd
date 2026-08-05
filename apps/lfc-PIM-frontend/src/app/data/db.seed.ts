@@ -1,26 +1,11 @@
-import type { ProjectedFiche } from './publication';
-
 /**
  * Le **store local résiduel du POC** — versionné dans le repo, embarqué dans le
- * build. Catalogue, familles, TVA, emplacements et bindings Shopify vivent tous
- * côté backend ; il ne reste ici que l'**état de publication simulé** (ce qu'on
- * a « poussé » et les push programmés), faute de backend de staging Shopify.
+ * build. Catalogue, familles, TVA, emplacements, bindings **et** l'état de
+ * publication Shopify (réconciliation à trois voies) vivent désormais tous côté
+ * backend. Ce store ne porte donc plus aucune donnée métier : il ne subsiste que
+ * pour le bouton « réinitialiser » des réglages, en attendant son retrait complet.
  */
-export interface DbShape {
-  /**
-   * L'**état publié** sur Shopify, par handle de fiche : ce qu'on a poussé la
-   * dernière fois. La publication rapproche la projection courante de cet état
-   * pour en tirer nouvelles / modifiées / à jour / à retirer.
-   */
-  readonly publishedFiches: Record<string, ProjectedFiche>;
-  /** Un push programmé en attente (simulation POC), ou `null`. Remplacé en bloc
-   *  (pas muté par contenu) → non `readonly`, contrairement aux collections. */
-  scheduledPush: { at: string; handles: string[] } | null;
-}
+export type DbShape = Record<string, never>;
 
-// État publié **vierge** : au premier chargement, toutes les fiches sont
-// « nouvelles » — le point de départ propre du staging (on pousse depuis là).
-export const DB_SEED: DbShape = {
-  publishedFiches: {},
-  scheduledPush: null,
-};
+// Store vide : le POC de publication a migré vers le backend (réconciliation).
+export const DB_SEED: DbShape = {};
