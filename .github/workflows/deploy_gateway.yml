@@ -1,0 +1,57 @@
+name: deploy_gateway
+
+# Déploie le Worker passerelle de la Suite LFC (gateway/) sur Cloudflare, à chaque
+# push sur main qui touche gateway/**.
+#
+# ⚠️ PHASE 4 non terminée : `PROD_ROUTES` (gateway/src/routes.ts) est VIDE → ce
+# déploiement met le Worker en ligne mais il n'est attaché à AUCUNE route de prod,
+# et router vers des backends pas encore hébergés (Phase 0) n'aurait rien à servir.
+# Le Worker devient utile quand les routes prod + les upstreams (Containers)
+# existent. On peut déjà le déployer sans risque (il ne capte aucun trafic).
+#
+# Secrets requis (Settings → Secrets and variables → Actions) :
+#   CLOUDFLARE_LFC_GATEWAY — token « Account · Workers Scripts · Edit »
+#     (+ « Zone · Workers Routes · Edit » le jour où on posera les routes prod).
+#   CLOUDFLARE_ACCOUNT_ID — l'account id partagé.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "gateway/**"
+      - ".github/workflows/deploy_gateway.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy_gateway
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy_gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm --filter lfc-suite-gateway run typecheck
+
+      # wrangler est installé dans le paquet gateway (devDep) — on l'invoque via
+      # `exec` (pas `dlx`) pour utiliser la version pinnée. Il lit le token et
+      # l'account id depuis l'environnement, et `gateway/wrangler.toml` pour le reste.
+      - name: Deploy Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_GATEWAY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm --filter lfc-suite-gateway exec wrangler deploy

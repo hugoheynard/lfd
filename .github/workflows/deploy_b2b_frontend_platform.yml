@@ -5,7 +5,7 @@ name: deploy_b2b_frontend_platform
 # SEO), so the output is plain files served straight from Pages.
 #
 # Requires two repo secrets (Settings → Secrets and variables → Actions):
-#   CLOUDFLARE_API_TOKEN_B2B_PLATFORM — token with "Account · Cloudflare Pages ·
+#   CLOUDFLARE_LFC_B2B_PLATFORM_PAGES — token with "Account · Cloudflare Pages ·
 #     Edit" (per-app name: this repo hosts several static apps, each gets its own
 #     token so they rotate/revoke independently).
 #   CLOUDFLARE_ACCOUNT_ID — the Cloudflare account id (shared across every app —
@@ -82,7 +82,7 @@ jobs:
       # manuelle dans le dashboard.
       - name: Ensure Pages project exists
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_B2B_PLATFORM }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_B2B_PLATFORM_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
           pnpm dlx wrangler pages project create lfc-b2b
@@ -94,7 +94,7 @@ jobs:
       # wrangler lit le token + l'account id depuis l'environnement.
       - name: Deploy to Cloudflare Pages
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_B2B_PLATFORM }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_B2B_PLATFORM_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
           pnpm dlx wrangler pages deploy
