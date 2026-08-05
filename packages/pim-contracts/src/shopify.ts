@@ -35,6 +35,72 @@ export interface SnapshotView {
   readonly pushedAt: string;
 }
 
+// ── Réconciliation à trois voies (BASE / OURS / THEIRS) ─────────────────────
+
+/**
+ * Statut d'un handle vu du trois-voies. `unknown` ≠ absent : la boutique est
+ * illisible (dry-run/offline), pas « à jour ». Voir
+ * `documentation/lfc/publication-reconciliation-3way.md`.
+ */
+export type ReconciliationStatus =
+  | "never_published"
+  | "up_to_date"
+  | "local_ahead"
+  | "remote_drift"
+  | "conflict"
+  | "to_remove"
+  | "unknown";
+
+/** Un champ qui diffère entre deux états (paire de la réconciliation). */
+export interface FieldDiffView {
+  readonly field: string;
+  readonly before: string;
+  readonly after: string;
+}
+
+/** Forme de comparaison d'un produit — le dénominateur commun aux trois états. */
+export interface ComparableView {
+  readonly handle: string;
+  readonly title: string;
+  readonly status: string;
+  readonly variants: readonly {
+    readonly sku: string;
+    readonly title: string;
+    readonly price: string | null;
+  }[];
+}
+
+/** Une ligne du tableau de réconciliation. */
+export interface ReconciliationRowView {
+  readonly handle: string;
+  /** `null` pour un handle sans produit courant (`to_remove`). */
+  readonly productId: string | null;
+  readonly status: ReconciliationStatus;
+  /** Nombre de champs qui partiraient (OURS vs BASE). */
+  readonly diffCount: number;
+  /** Vrai seulement pour `remote_drift`/`conflict` — pilote le pictogramme ⚠️. */
+  readonly remoteDrift: boolean;
+}
+
+/** Le tableau + le mode qui l'a produit (dry-run ⇒ colonne boutique inconnue). */
+export interface ReconciliationBoardView {
+  readonly mode: "live" | "dry-run";
+  readonly rows: readonly ReconciliationRowView[];
+}
+
+/** Détail d'un handle : les trois états + les diffs par paire. */
+export interface ReconciliationDetailView {
+  readonly handle: string;
+  readonly status: ReconciliationStatus;
+  readonly base: ComparableView | null;
+  readonly ours: ComparableView | null;
+  readonly theirs: ComparableView | null;
+  /** Ce qui partirait au prochain push. */
+  readonly oursVsBase: readonly FieldDiffView[];
+  /** Ce que la boutique a changé depuis la dernière poussée. */
+  readonly theirsVsBase: readonly FieldDiffView[];
+}
+
 export type SyncStatus = "never_pushed" | "up_to_date" | "drifted" | "failed";
 export type PushOutcome = "pushed" | "unchanged" | "failed";
 

@@ -69,4 +69,10 @@ export type {
   PushReport,
   PushSummary,
   SnapshotView,
+  ReconciliationStatus,
+  FieldDiffView,
+  ComparableView,
+  ReconciliationRowView,
+  ReconciliationBoardView,
+  ReconciliationDetailView,
 } from "./shopify.js";
