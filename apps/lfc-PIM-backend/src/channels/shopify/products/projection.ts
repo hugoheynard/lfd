@@ -13,6 +13,8 @@ export interface ShopifyVariantPayload {
   readonly sku: string;
   readonly title: string;
   readonly options: Readonly<Record<string, string>>;
+  /** Prix décimal en chaîne (`"1.30"`), comme Shopify le sérialise ; `null` = non tarifé. */
+  readonly price: string | null;
 }
 
 export interface ShopifyProductPayload {
@@ -34,6 +36,11 @@ export function projectProduct(product: ProductRecord): ShopifyProductPayload {
         sku: variant.sku,
         title: variant.name.fr,
         options: variant.options,
+        // Centimes canoniques → décimal texte que l'API Admin attend ("130" → "1.30").
+        price:
+          variant.priceCents === null
+            ? null
+            : (variant.priceCents / 100).toFixed(2),
       })),
   };
 }

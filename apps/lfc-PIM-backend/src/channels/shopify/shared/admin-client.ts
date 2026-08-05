@@ -89,7 +89,7 @@ export class ShopifyAdminClient {
 
   /** Confirme que le couple (domaine, jeton) parle bien à une boutique. */
   async verify(): Promise<ShopifyShopIdentity> {
-    const data = await this.query<{
+    const data = await this.graphql<{
       shop: { name: string; myshopifyDomain: string };
     }>('query { shop { name myshopifyDomain } }');
     return { name: data.shop.name, domain: data.shop.myshopifyDomain };
@@ -101,7 +101,7 @@ export class ShopifyAdminClient {
     let cursor: string | null = null;
 
     do {
-      const page: ProductsPage = await this.query<ProductsPage>(
+      const page: ProductsPage = await this.graphql<ProductsPage>(
         LIST_PRODUCTS_QUERY,
         { cursor },
       );
@@ -134,7 +134,7 @@ export class ShopifyAdminClient {
     let cursor: string | null = null;
 
     do {
-      const page: CollectionsPage = await this.query<CollectionsPage>(
+      const page: CollectionsPage = await this.graphql<CollectionsPage>(
         LIST_COLLECTIONS_QUERY,
         { cursor },
       );
@@ -162,7 +162,7 @@ export class ShopifyAdminClient {
   async createCollection(
     target: DesiredCollection,
   ): Promise<ShopifyCollection> {
-    const data = await this.query<{
+    const data = await this.graphql<{
       collectionCreate: {
         collection: {
           id: string;
@@ -192,7 +192,12 @@ export class ShopifyAdminClient {
     };
   }
 
-  private async query<T>(
+  /**
+   * Transport GraphQL **authentifié** vers l'API Admin — jeton, endpoint, erreurs.
+   * Public pour que les adaptateurs produits (le driver) réutilisent le transport sans
+   * dupliquer l'auth ; eux portent la forme de *leur* mutation, ici on ne fait que l'envoyer.
+   */
+  async graphql<T>(
     query: string,
     variables: Record<string, unknown> = {},
   ): Promise<T> {

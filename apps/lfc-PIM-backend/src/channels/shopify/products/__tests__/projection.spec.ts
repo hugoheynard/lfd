@@ -19,6 +19,7 @@ function product(overrides: Partial<ProductRecord> = {}): ProductRecord {
         isDefault: true,
         isDiscontinued: false,
         position: 0,
+        priceCents: 2400,
       },
     ],
     ...overrides,
@@ -33,6 +34,16 @@ describe('projection Shopify', () => {
     expect(payload.handle).toBe('tarte-aux-fraises');
     expect(payload.variants).toHaveLength(1);
     expect(payload.variants[0]?.sku).toBe('PATI-TARTE-FRAISE-6P');
+    // Centimes canoniques → décimal texte Shopify.
+    expect(payload.variants[0]?.price).toBe('24.00');
+  });
+
+  it('laisse le prix à null quand la déclinaison n’est pas tarifée', () => {
+    const untarifed = product({
+      variants: [{ ...product().variants[0]!, priceCents: null }],
+    });
+
+    expect(projectProduct(untarifed).variants[0]?.price).toBeNull();
   });
 
   // Le garde-fou qui compte : on ne met jamais un brouillon en ligne par inadvertance.

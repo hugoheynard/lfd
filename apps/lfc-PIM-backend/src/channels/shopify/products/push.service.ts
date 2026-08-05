@@ -3,9 +3,16 @@ import { Injectable } from '@nestjs/common';
 import { CatalogueReader } from '../../../catalogue/domain/ports/catalogue-reader.js';
 import type { ProductRecord } from '../../../catalogue/domain/ports/product.repository.js';
 import { PrismaService } from '../../../infra/database/prisma.service.js';
-import { ShopifyDriver } from './driver.js';
+import {
+  DryRunShopifyDriver,
+  LiveShopifyDriver,
+  type ShopifyDriver,
+} from './driver.js';
 import { fingerprint, projectProduct } from './projection.js';
-import { ShopifySettingsService } from '../shared/settings.service.js';
+import {
+  type ChannelMode,
+  ShopifySettingsService,
+} from '../shared/settings.service.js';
 
 export type PushOutcome = 'pushed' | 'unchanged' | 'failed';
 
@@ -26,12 +33,14 @@ export class ShopifyPushService {
   constructor(
     private readonly catalogue: CatalogueReader,
     private readonly settings: ShopifySettingsService,
-    private readonly driver: ShopifyDriver,
+    private readonly dryRun: DryRunShopifyDriver,
+    private readonly live: LiveShopifyDriver,
     private readonly prisma: PrismaService,
   ) {}
 
   async push(productIds?: readonly string[]): Promise<PushSummary> {
     const { mode } = await this.settings.read();
+    const driver = this.driverFor(mode);
     const products =
       productIds === undefined || productIds.length === 0
         ? await this.catalogue.publishable()
@@ -39,10 +48,15 @@ export class ShopifyPushService {
 
     const results: PushReport[] = [];
     for (const product of products) {
-      results.push(await this.pushOne(product));
+      results.push(await this.pushOne(product, driver));
     }
 
     return { mode, results };
+  }
+
+  /** Le pilote réel seulement en mode `live` ; sinon la simulation (aucun appel). */
+  private driverFor(mode: ChannelMode): ShopifyDriver {
+    return mode === 'live' ? this.live : this.dryRun;
   }
 
   /**
@@ -50,7 +64,10 @@ export class ShopifyPushService {
    * rafale parallèle se ferait étrangler. À volume de boulangerie, la lenteur est
    * invisible ; l'étranglement, non.
    */
-  private async pushOne(product: ProductRecord): Promise<PushReport> {
+  private async pushOne(
+    product: ProductRecord,
+    driver: ShopifyDriver,
+  ): Promise<PushReport> {
     const payload = projectProduct(product);
     const hash = fingerprint(payload);
 
@@ -70,7 +87,7 @@ export class ShopifyPushService {
     }
 
     try {
-      const result = await this.driver.push(payload);
+      const result = await driver.push(payload);
       await this.recordSuccess(product, hash, result.productGid);
 
       return {
@@ -78,7 +95,7 @@ export class ShopifyPushService {
         sku: product.sku,
         outcome: 'pushed',
         message:
-          this.driver.mode === 'dry-run'
+          driver.mode === 'dry-run'
             ? 'Simulé (aucun appel réseau).'
             : 'Poussé vers Shopify.',
       };

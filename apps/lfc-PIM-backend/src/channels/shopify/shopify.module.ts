@@ -10,7 +10,7 @@ import {
 } from './collections/gateway.js';
 import { ChannelController } from './connection/channel.controller.js';
 import { ShopifyConnectionService } from './connection/connection.service.js';
-import { DryRunShopifyDriver, ShopifyDriver } from './products/driver.js';
+import { DryRunShopifyDriver, LiveShopifyDriver } from './products/driver.js';
 import { ShopifyInspectionService } from './products/inspection.service.js';
 import { ShopifyProductsController } from './products/products.controller.js';
 import { ShopifyPushService } from './products/push.service.js';
@@ -45,7 +45,9 @@ import {
     ShopifySettingsService,
     ShopifyPushService,
     ShopifyInspectionService,
-    { provide: ShopifyDriver, useClass: DryRunShopifyDriver },
+    // Les deux pilotes de push, concrets : le service choisit selon le mode des réglages.
+    DryRunShopifyDriver,
+    LiveShopifyDriver,
     // Collections de TVA : transport réel + les deux passerelles (simulation / réel),
     // le service choisissant selon le mode des réglages.
     // Le provider de jeton lit ses identifiants via le port étroit, aliasé sur AppConfig.
