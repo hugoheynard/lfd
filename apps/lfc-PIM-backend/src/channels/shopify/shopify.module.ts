@@ -11,6 +11,7 @@ import {
 import { ChannelController } from './connection/channel.controller.js';
 import { ShopifyConnectionService } from './connection/connection.service.js';
 import { DryRunShopifyDriver, ShopifyDriver } from './products/driver.js';
+import { ShopifyInspectionService } from './products/inspection.service.js';
 import { ShopifyProductsController } from './products/products.controller.js';
 import { ShopifyPushService } from './products/push.service.js';
 import { AppConfig } from '../../infra/config/app-config.js';
@@ -43,6 +44,7 @@ import {
   providers: [
     ShopifySettingsService,
     ShopifyPushService,
+    ShopifyInspectionService,
     { provide: ShopifyDriver, useClass: DryRunShopifyDriver },
     // Collections de TVA : transport réel + les deux passerelles (simulation / réel),
     // le service choisissant selon le mode des réglages.

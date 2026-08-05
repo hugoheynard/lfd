@@ -15,6 +15,28 @@ export interface VerifyResult {
   readonly detail: string;
 }
 
+/** Une variante telle qu'elle existe sur la boutique (lecture seule). */
+export interface ShopifyVariantSnapshot {
+  readonly sku: string | null;
+  readonly title: string;
+  readonly price: string | null;
+}
+
+/** Un produit tel qu'il existe **aujourd'hui** sur la boutique (miroir distant). */
+export interface ShopifyProductSnapshot {
+  readonly id: string;
+  readonly handle: string;
+  readonly title: string;
+  readonly status: string;
+  readonly variants: readonly ShopifyVariantSnapshot[];
+}
+
+/** L'état actuel du catalogue de la boutique + le mode qui l'a produit. */
+export interface CatalogueInspection {
+  readonly mode: ChannelMode;
+  readonly products: readonly ShopifyProductSnapshot[];
+}
+
 export interface ShopifyCollection {
   readonly id: string;
   readonly handle: string;
@@ -77,6 +99,13 @@ export class ShopifyChannelApi {
 
   verify(): Promise<VerifyResult> {
     return firstValueFrom(this.http.post<VerifyResult>(this.url('settings/verify'), {}));
+  }
+
+  /** L'état actuel du catalogue de la boutique — lecture seule. */
+  inspectCatalogue(): Promise<CatalogueInspection> {
+    return firstValueFrom(
+      this.http.get<CatalogueInspection>(this.url('products/inspection')),
+    );
   }
 
   inspectTvaCollections(desired: readonly DesiredCollection[]): Promise<InspectResult> {

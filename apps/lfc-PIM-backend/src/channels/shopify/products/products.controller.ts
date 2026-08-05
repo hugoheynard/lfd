@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Public } from '../../../infra/auth/public.decorator.js';
 import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { ZodBody } from '../../../shared/http/zod-body.pipe.js';
+import { ShopifyInspectionService } from './inspection.service.js';
 import { ShopifyPushService } from './push.service.js';
 
 const pushPayload = z.object({
@@ -22,8 +23,15 @@ const pushPayload = z.object({
 export class ShopifyProductsController {
   constructor(
     private readonly pushService: ShopifyPushService,
+    private readonly inspection: ShopifyInspectionService,
     private readonly prisma: PrismaService,
   ) {}
+
+  /** L'état actuel du catalogue de la boutique — lecture seule (miroir distant). */
+  @Get('inspection')
+  inspect() {
+    return this.inspection.inspect();
+  }
 
   /** État de synchro par produit — alimente la colonne du tableau. */
   @Get('bindings')

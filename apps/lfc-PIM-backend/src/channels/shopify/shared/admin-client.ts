@@ -9,6 +9,7 @@ import type {
   DesiredCollection,
   ShopifyCollection,
 } from './collection-types.js';
+import type { ShopifyProductSnapshot } from './product-snapshot.js';
 import { ShopifySettingsService } from './settings.service.js';
 import { ShopifyTokenProvider } from './token-provider.js';
 
@@ -46,6 +47,31 @@ interface CollectionsPage {
   };
 }
 
+/** Un nœud produit tel que renvoyé par l'API Admin (lecture seule). */
+interface ProductNode {
+  readonly id: string;
+  readonly handle: string;
+  readonly title: string;
+  readonly status: string;
+  readonly variants: {
+    readonly nodes: readonly {
+      readonly sku: string | null;
+      readonly title: string;
+      readonly price: string | null;
+    }[];
+  };
+}
+
+interface ProductsPage {
+  readonly products: {
+    readonly nodes: readonly ProductNode[];
+    readonly pageInfo: {
+      readonly hasNextPage: boolean;
+      readonly endCursor: string | null;
+    };
+  };
+}
+
 /**
  * Transport **réel** vers l'API Admin GraphQL de Shopify. Isolé ici pour la raison
  * annoncée par le port {@link ShopifyDriver} : c'est le seul endroit qui connaît la
@@ -67,6 +93,39 @@ export class ShopifyAdminClient {
       shop: { name: string; myshopifyDomain: string };
     }>('query { shop { name myshopifyDomain } }');
     return { name: data.shop.name, domain: data.shop.myshopifyDomain };
+  }
+
+  /** L'état **actuel** du catalogue de la boutique — tous les produits, paginés. */
+  async listProducts(): Promise<ShopifyProductSnapshot[]> {
+    const products: ShopifyProductSnapshot[] = [];
+    let cursor: string | null = null;
+
+    do {
+      const page: ProductsPage = await this.query<ProductsPage>(
+        LIST_PRODUCTS_QUERY,
+        { cursor },
+      );
+
+      for (const node of page.products.nodes) {
+        products.push({
+          id: node.id,
+          handle: node.handle,
+          title: node.title,
+          status: node.status,
+          variants: node.variants.nodes.map((variant) => ({
+            sku: variant.sku,
+            title: variant.title,
+            price: variant.price,
+          })),
+        });
+      }
+
+      cursor = page.products.pageInfo.hasNextPage
+        ? page.products.pageInfo.endCursor
+        : null;
+    } while (cursor !== null);
+
+    return products;
   }
 
   /** Les collections `tva-*` présentes sur la boutique (paginées). */
@@ -179,6 +238,23 @@ export class ShopifyAdminClient {
     return body.data;
   }
 }
+
+const LIST_PRODUCTS_QUERY = `
+  query Products($cursor: String) {
+    products(first: 50, after: $cursor) {
+      nodes {
+        id
+        handle
+        title
+        status
+        variants(first: 100) {
+          nodes { sku title price }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
 
 const LIST_COLLECTIONS_QUERY = `
   query Collections($cursor: String) {

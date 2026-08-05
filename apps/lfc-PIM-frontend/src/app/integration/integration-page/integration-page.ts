@@ -10,6 +10,7 @@ import {
   type FoldTabItem,
 } from 'fold-ng';
 
+import { ShopifyCatalogue } from '../shopify-catalogue/shopify-catalogue';
 import { ShopifyIntegration } from '../shopify-integration/shopify-integration';
 
 /**
@@ -29,8 +30,10 @@ import { ShopifyIntegration } from '../shopify-integration/shopify-integration';
     FoldEmptyStateComponent,
     FoldIconComponent,
     ShopifyIntegration,
+    ShopifyCatalogue,
   ],
   templateUrl: './integration-page.html',
+  styleUrl: './integration-page.scss',
 })
 export class IntegrationPage {
   protected readonly tabs: FoldTabItem[] = [
