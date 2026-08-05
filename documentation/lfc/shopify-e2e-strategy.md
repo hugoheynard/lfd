@@ -93,9 +93,24 @@ flowchart LR
   run --> deploy[Redeploy PIM]
 ```
 
-## 5. Reste à faire (non codé)
+## 5. État
 
-- Le harness e2e gated (script `test:shopify:live`, config/glob isolé, skip-not-fail).
-- Un e2e par fonction API existante, avec cleanup pour les écritures.
-- Le gate repo `@verified-by` (couverture) + le gate d'isolation.
+**Harness livré** (2026-08-05) :
+
+- Fichiers `*.shopify-live.ts` sous `test/shopify/`, **jamais** matchés par le `testMatch`
+  unitaire (`spec|test|e2e-spec`) → invisibles pour `pnpm test` et la CI.
+- Config isolée `jest.shopify-live.config.cjs` + script **`test:shopify:live`** (charge
+  `.env`). Gated : `test/shopify/live-context.ts` (seul fichier env-allowlisté) expose
+  `liveE2eEnabled()` — `describe.skip` sans `SHOPIFY_LIVE_E2E=1` + identifiants +
+  `SHOPIFY_E2E_SHOP`. Vérifié : **skip → 0 échec**, run unitaire **n'attrape pas** le live.
+- 1er e2e : `product-push.shopify-live.ts` — create → update-in-place → **cleanup** (delete
+  en `afterAll`). Bâtit le **vrai** `LiveShopifyDriver` (donc le vrai `ShopifyTokenProvider`).
+
+**Reste à faire** :
+
+- Un e2e par fonction d'écriture restante : multi-variantes, collections
+  (`collectionCreate` / `collectionAddProductsV2`), publications — spikes déjà validés
+  (cf. [`shopify-productset-findings.md`](shopify-productset-findings.md) F10/F11).
+- Le gate repo **`@verified-by`** (couverture : toute méthode d'écriture `admin-client` a
+  son e2e) + le gate d'isolation.
 - Décider si une **dev store d'e2e dédiée** distincte de `1kkhae-8q` est créée.

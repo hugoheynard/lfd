@@ -62,9 +62,18 @@ d'option, `optionValues` = une par variante — forme déjà en place dans le ma
 - ✅ **I3** — prix en **décimal texte** (`2400` → `"24.00"`), omis si non tarifé. _(garde F6 · `projection.spec` + `product-set-input.spec`)_
 - ✅ **I4** — avec vraies options : `productOptions` déclare chaque nom, `optionValues` chaque valeur par variante. _(`product-set-input.spec`)_
 
-## Reste à vérifier live (prochains spikes)
+## Vérifié live (suite)
 
 - ✅ **Idempotence** : re-push même handle → met à jour la même fiche (F8).
-- **Multi-variantes réelles** (ex. Poids) : create + update d'un produit à 2+ déclinaisons.
-- **Collections** : `collectionCreate` + `collectionAddProductsV2` (forme à introspecter de même).
-- Ces vérifs deviendront les **e2e live gated** de [`shopify-e2e-strategy.md`](shopify-e2e-strategy.md).
+- ✅ **Multi-variantes** (option `Poids` 250 g / 1 kg) : `productOptions` + `optionValues`
+  par variante → 2 déclinaisons aux bons prix et `selectedOptions` corrects. La branche
+  « vraies options » de `buildProductSetInput` est la bonne forme. _(F10)_
+- ✅ **Collections** : `collectionCreate(input:{title,handle})` OK (forme de l'admin-client
+  confirmée) ; **`collectionAddProductsV2(id, productIds)`** range le produit et renvoie un
+  **`job` asynchrone** (`done:false`) — l'ajout n'est **pas** immédiat, à gérer comme un job.
+  `collectionDelete(input:{id})` pour le cleanup. _(F11)_
+
+## Reste à spiker
+
+- **Publications** (`publishablePublish`) quand on pilotera la présence par canal.
+- Transformer ces spikes jetables en **e2e live gated** (cf. [`shopify-e2e-strategy.md`](shopify-e2e-strategy.md)).
