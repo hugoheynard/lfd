@@ -11,6 +11,7 @@ import {
   projectProduct,
   type ShopifyProductPayload,
 } from '../projection.js';
+import { ShopifyMembershipService } from '../membership.service.js';
 import { ShopifyPushService } from '../push.service.js';
 import type { RecordSnapshotInput } from '../snapshot.service.js';
 import { ShopifySnapshotService } from '../snapshot.service.js';
@@ -49,6 +50,7 @@ interface Harness {
   livePushes: ShopifyProductPayload[];
   dryPushes: ShopifyProductPayload[];
   bindingUpserts: UpsertArg[];
+  assigns: { productGid: string; tags: readonly string[] }[];
   setLoad: (value: {
     id: string;
     version: number;
@@ -66,6 +68,7 @@ async function build(
   const livePushes: ShopifyProductPayload[] = [];
   const dryPushes: ShopifyProductPayload[] = [];
   const bindingUpserts: UpsertArg[] = [];
+  const assigns: { productGid: string; tags: readonly string[] }[] = [];
   const loadArgs: [string, number][] = [];
   let loadValue: {
     id: string;
@@ -102,7 +105,20 @@ async function build(
       ShopifyPushService,
       {
         provide: CatalogueReader,
-        useValue: { byIds: () => Promise.resolve([product()]) },
+        useValue: {
+          byIds: () => Promise.resolve([product()]),
+          tvaTags: () =>
+            Promise.resolve({ emporter: 'tva-5-5', surPlace: null }),
+        },
+      },
+      {
+        provide: ShopifyMembershipService,
+        useValue: {
+          assign: (productGid: string, tags: readonly string[]) => {
+            assigns.push({ productGid, tags });
+            return Promise.resolve({ joined: tags, missing: [] });
+          },
+        },
       },
       {
         provide: ShopifySettingsService,
@@ -142,6 +158,7 @@ async function build(
     livePushes,
     dryPushes,
     bindingUpserts,
+    assigns,
     setLoad: (value) => {
       loadValue = value;
     },
@@ -170,6 +187,24 @@ describe('ShopifyPushService — snapshots', () => {
 
     expect(h.recorded[0]?.mode).toBe('dry_run');
     expect(h.bindingUpserts[0]?.create.headSnapshotId).toBeUndefined();
+  });
+
+  it('en live, range le produit dans la collection TVA de son contexte', async () => {
+    const h = await build('live');
+
+    const summary = await h.service.push(['p1']);
+
+    expect(h.assigns[0]?.productGid).toBe('gid://shopify/Product/1');
+    expect(h.assigns[0]?.tags).toEqual(['tva-5-5']);
+    expect(summary.results[0]?.message).toContain('tva-5-5');
+  });
+
+  it('en dry-run, ne range rien (pas d’état boutique)', async () => {
+    const h = await build('dry-run');
+
+    await h.service.push(['p1']);
+
+    expect(h.assigns).toHaveLength(0);
   });
 
   it('en pré-push (preview), ne pousse rien et n’écrit rien', async () => {

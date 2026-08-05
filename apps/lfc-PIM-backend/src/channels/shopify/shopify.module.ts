@@ -18,6 +18,7 @@ import { ChannelController } from './connection/channel.controller.js';
 import { ShopifyConnectionService } from './connection/connection.service.js';
 import { DryRunShopifyDriver, LiveShopifyDriver } from './products/driver.js';
 import { ShopifyInspectionService } from './products/inspection.service.js';
+import { ShopifyMembershipService } from './products/membership.service.js';
 import { ShopifyProductsController } from './products/products.controller.js';
 import { ShopifyPushService } from './products/push.service.js';
 import { ShopifyReconciliationService } from './products/reconciliation.service.js';
@@ -52,6 +53,7 @@ const SHOPIFY_CREDENTIALS_SOURCE = Symbol('SHOPIFY_CREDENTIALS_SOURCE');
     ShopifyPushService,
     ShopifySnapshotService,
     ShopifyReconciliationService,
+    ShopifyMembershipService,
     ShopifyInspectionService,
     // Les deux pilotes de push, concrets : le service choisit selon le mode des réglages.
     DryRunShopifyDriver,

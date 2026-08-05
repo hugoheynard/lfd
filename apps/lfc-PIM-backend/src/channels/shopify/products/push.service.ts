@@ -9,7 +9,12 @@ import {
   LiveShopifyDriver,
   type ShopifyDriver,
 } from './driver.js';
+import {
+  ShopifyMembershipService,
+  type MembershipOutcome,
+} from './membership.service.js';
 import { fingerprint, projectProduct } from './projection.js';
+import { ACTIVE_SALES_CONTEXTS } from './sales-context.js';
 import { ShopifySnapshotService } from './snapshot.service.js';
 import {
   type ChannelMode,
@@ -21,6 +26,18 @@ function snapshotMode(driver: ShopifyDriver): 'live' | 'dry_run' {
   return driver.mode === 'live' ? 'live' : 'dry_run';
 }
 
+/** Note lisible sur l'appartenance TVA, ajoutée au message du rapport de push. */
+function describeMembership(outcome: MembershipOutcome): string {
+  const parts: string[] = [];
+  if (outcome.joined.length > 0) {
+    parts.push(`rangé dans ${outcome.joined.join(', ')}`);
+  }
+  if (outcome.missing.length > 0) {
+    parts.push(`⚠ collection(s) absente(s) : ${outcome.missing.join(', ')}`);
+  }
+  return parts.length > 0 ? ` — ${parts.join(' ; ')}` : '';
+}
+
 @Injectable()
 export class ShopifyPushService {
   constructor(
@@ -30,6 +47,7 @@ export class ShopifyPushService {
     private readonly live: LiveShopifyDriver,
     private readonly prisma: PrismaService,
     private readonly snapshots: ShopifySnapshotService,
+    private readonly membership: ShopifyMembershipService,
   ) {}
 
   /**
@@ -186,14 +204,22 @@ export class ShopifyPushService {
         driver.mode === 'live' ? snapshot.id : null,
       );
 
+      // L'appartenance TVA (live) : un échec ici NE fait PAS échouer le push — le
+      // produit est bien poussé, seul le rangement en collection a raté. On le dit.
+      const note = await this.membershipNote(
+        product,
+        driver,
+        result.productGid,
+      );
+
       return {
         productId: product.id,
         sku: product.sku,
         outcome: 'pushed',
         message:
-          driver.mode === 'dry-run'
+          (driver.mode === 'dry-run'
             ? 'Simulé (aucun appel réseau).'
-            : 'Poussé vers Shopify.',
+            : 'Poussé vers Shopify.') + note,
       };
     } catch (error) {
       const message =
@@ -206,6 +232,32 @@ export class ShopifyPushService {
         outcome: 'failed',
         message,
       };
+    }
+  }
+
+  /**
+   * Range le produit dans la collection `tva-*` de chaque contexte actif (live seulement),
+   * et renvoie une note pour le rapport. Ses erreurs sont **capturées ici** : le produit
+   * est déjà poussé, un rangement raté ne doit pas transformer le push en échec.
+   */
+  private async membershipNote(
+    product: ProductRecord,
+    driver: ShopifyDriver,
+    productGid: string | null,
+  ): Promise<string> {
+    if (driver.mode !== 'live' || productGid === null) {
+      return '';
+    }
+    try {
+      const tvaTags = await this.catalogue.tvaTags(product.categoryId);
+      const tags = ACTIVE_SALES_CONTEXTS.flatMap((context) => {
+        const tag = context.pick(tvaTags);
+        return tag === null ? [] : [tag];
+      });
+      return describeMembership(await this.membership.assign(productGid, tags));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'échec';
+      return ` — ⚠ appartenance TVA échouée : ${message}`;
     }
   }
 
