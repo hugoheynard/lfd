@@ -11,15 +11,17 @@ import {
 import type { LocalizedText } from '../../domain/value-objects/localized-text.js';
 import {
   ArchiveCategoryCommand,
-  CreateCategoryCommand,
-  RenameCategoryCommand,
-} from '../category.commands.js';
-import {
   ArchiveCategoryHandler,
+} from '../archive-category.js';
+import { wouldCreateCycle } from '../category-support.js';
+import {
+  CreateCategoryCommand,
   CreateCategoryHandler,
+} from '../create-category.js';
+import {
+  RenameCategoryCommand,
   RenameCategoryHandler,
-  wouldCreateCycle,
-} from '../category.handlers.js';
+} from '../rename-category.js';
 
 class InMemoryCategories extends CategoryRepository {
   readonly rows: CategoryRecord[] = [];

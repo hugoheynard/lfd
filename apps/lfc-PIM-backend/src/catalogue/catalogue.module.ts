@@ -6,14 +6,12 @@ import {
   IdGenerator,
   UuidV7Generator,
 } from '../shared/identity/id-generator.js';
+import { ArchiveCategoryHandler } from './application/archive-category.js';
 import { ArchiveProductHandler } from './application/archive-product.js';
-import {
-  ArchiveCategoryHandler,
-  CreateCategoryHandler,
-  ListCategoriesHandler,
-  RenameCategoryHandler,
-} from './application/category.handlers.js';
+import { CreateCategoryHandler } from './application/create-category.js';
 import { CreateProductHandler } from './application/create-product.js';
+import { ListCategoriesHandler } from './application/list-categories.js';
+import { RenameCategoryHandler } from './application/rename-category.js';
 import { DeclareProductNutritionHandler } from './application/declare-product-nutrition.js';
 import { GetProductDetailHandler } from './application/get-product-detail.js';
 import { ListProductsHandler } from './application/list-products.js';

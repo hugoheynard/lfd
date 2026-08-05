@@ -12,12 +12,10 @@ import { z } from 'zod';
 
 import { Public } from '../../infra/auth/public.decorator.js';
 import { ZodBody } from '../../shared/http/zod-body.pipe.js';
-import {
-  CreateTvaRegimeCommand,
-  RemoveTvaRegimeCommand,
-  UpdateTvaRegimeCommand,
-} from '../application/tva-regime.commands.js';
-import { ListTvaRegimesQuery } from '../application/tva-regime.query.js';
+import { CreateTvaRegimeCommand } from '../application/create-tva-regime.js';
+import { ListTvaRegimesQuery } from '../application/list-tva-regimes.js';
+import { RemoveTvaRegimeCommand } from '../application/remove-tva-regime.js';
+import { UpdateTvaRegimeCommand } from '../application/update-tva-regime.js';
 import type { TvaRegimeRecord } from '../domain/ports/tva-regime.repository.js';
 
 const regimePayload = z.object({

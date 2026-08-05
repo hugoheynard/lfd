@@ -4,12 +4,10 @@ import { z } from 'zod';
 
 import { Public } from '../../infra/auth/public.decorator.js';
 import { ZodBody } from '../../shared/http/zod-body.pipe.js';
-import {
-  ArchiveCategoryCommand,
-  CreateCategoryCommand,
-  RenameCategoryCommand,
-} from '../application/category.commands.js';
-import { ListCategoriesQuery } from '../application/category.query.js';
+import { ArchiveCategoryCommand } from '../application/archive-category.js';
+import { CreateCategoryCommand } from '../application/create-category.js';
+import { ListCategoriesQuery } from '../application/list-categories.js';
+import { RenameCategoryCommand } from '../application/rename-category.js';
 import type { CategoryRecord } from '../domain/ports/category.repository.js';
 
 const categoryPayload = z.object({

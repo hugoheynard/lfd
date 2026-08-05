@@ -11,15 +11,17 @@ import {
 } from '../../domain/ports/tva-regime.repository.js';
 import {
   CreateTvaRegimeCommand,
-  RemoveTvaRegimeCommand,
-  UpdateTvaRegimeCommand,
-} from '../tva-regime.commands.js';
-import {
   CreateTvaRegimeHandler,
+} from '../create-tva-regime.js';
+import {
+  RemoveTvaRegimeCommand,
   RemoveTvaRegimeHandler,
+} from '../remove-tva-regime.js';
+import { tagFor } from '../tva-support.js';
+import {
+  UpdateTvaRegimeCommand,
   UpdateTvaRegimeHandler,
-  tagFor,
-} from '../tva-regime.handlers.js';
+} from '../update-tva-regime.js';
 
 class InMemoryRepo extends TvaRegimeRepository {
   readonly rows: TvaRegimeRecord[] = [];
