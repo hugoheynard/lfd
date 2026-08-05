@@ -10,6 +10,25 @@ export const pushPayloadSchema = z.object({
 });
 export type PushPayload = z.infer<typeof pushPayloadSchema>;
 
+/** Rejeu d'un snapshot antérieur — re-pousse la version ciblée du handle. */
+export const rollbackPayloadSchema = z.object({
+  handle: z.string().min(1),
+  version: z.number().int().positive(),
+});
+export type RollbackPayload = z.infer<typeof rollbackPayloadSchema>;
+
+/** Le mode du canal figé dans un snapshot (une simulation n'est pas une poussée réelle). */
+export type ChannelMode = "live" | "dry_run";
+
+/** Une ligne d'historique de poussée — la matière du rollback. */
+export interface SnapshotView {
+  readonly version: number;
+  readonly hash: string;
+  readonly mode: ChannelMode;
+  readonly outcome: "pushed" | "failed";
+  readonly pushedAt: string;
+}
+
 export type SyncStatus = "never_pushed" | "up_to_date" | "drifted" | "failed";
 export type PushOutcome = "pushed" | "unchanged" | "failed";
 

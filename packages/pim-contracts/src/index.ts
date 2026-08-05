@@ -58,12 +58,15 @@ export type {
   ProductDetailView,
 } from "./product.js";
 
-export { pushPayloadSchema } from "./shopify.js";
+export { pushPayloadSchema, rollbackPayloadSchema } from "./shopify.js";
 export type {
   PushPayload,
+  RollbackPayload,
+  ChannelMode,
   SyncStatus,
   PushOutcome,
   ProductBindingView,
   PushReport,
   PushSummary,
+  SnapshotView,
 } from "./shopify.js";
