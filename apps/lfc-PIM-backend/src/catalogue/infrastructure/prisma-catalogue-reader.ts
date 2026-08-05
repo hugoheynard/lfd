@@ -1,19 +1,30 @@
 import { Injectable } from '@nestjs/common';
 
-import { CatalogueReader } from '../domain/ports/catalogue-reader.js';
+import { TvaRegimeRepository } from '../../commerce/domain/ports/tva-regime.repository.js';
+import {
+  CatalogueReader,
+  type CategoryTvaTags,
+} from '../domain/ports/catalogue-reader.js';
+import { CategoryRepository } from '../domain/ports/category.repository.js';
 import {
   ProductRepository,
   type ProductRecord,
 } from '../domain/ports/product.repository.js';
 
 /**
- * Implémentation du port de lecture. Elle s'appuie sur le dépôt du catalogue —
+ * Implémentation du port de lecture. Elle s'appuie sur les dépôts du catalogue —
  * c'est-à-dire qu'elle reste **à l'intérieur** du module, là où lire ces tables est
- * légitime.
+ * légitime — et compose avec le port `TvaRegimeRepository` (commerce, déjà importé par
+ * le module) pour résoudre le tag de collection d'une catégorie. L'adaptateur Shopify
+ * ne voit que le résultat (ADR-13).
  */
 @Injectable()
 export class PrismaCatalogueReader extends CatalogueReader {
-  constructor(private readonly products: ProductRepository) {
+  constructor(
+    private readonly products: ProductRepository,
+    private readonly categories: CategoryRepository,
+    private readonly regimes: TvaRegimeRepository,
+  ) {
     super();
   }
 
@@ -27,5 +38,25 @@ export class PrismaCatalogueReader extends CatalogueReader {
     const wanted = new Set(ids);
     const all = await this.products.listAll();
     return all.filter((product) => wanted.has(product.id));
+  }
+
+  async tvaTags(categoryId: string): Promise<CategoryTvaTags> {
+    const category = await this.categories.findById(categoryId);
+    if (category === null) {
+      return { emporter: null, surPlace: null };
+    }
+    return {
+      emporter: await this.tagOf(category.emporterTvaId),
+      surPlace: await this.tagOf(category.surPlaceTvaId),
+    };
+  }
+
+  /** Un id de régime → son tag `tva-*`, ou `null` si non réglé / introuvable. */
+  private async tagOf(regimeId: string | null): Promise<string | null> {
+    if (regimeId === null) {
+      return null;
+    }
+    const regime = await this.regimes.findById(regimeId);
+    return regime?.tag ?? null;
   }
 }
