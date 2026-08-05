@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 
 import {
   FoldButtonComponent,
@@ -16,12 +16,11 @@ import {
 } from 'fold-ng';
 
 import {
-  CatalogueApi,
   type Emplacement,
   type EmplacementTable,
 } from '../../catalogue/catalogue-api';
-import { LocalDb } from '../../data/local-db';
 import { slugify } from '../../data/sku';
+import { EmplacementStore } from '../emplacement-store';
 import {
   EmplacementFormPanel,
   type EmplacementPanelData,
@@ -30,11 +29,11 @@ import { QrCode } from '../qr-code/qr-code';
 import { qrSvgString } from '../qr-code/qr';
 
 /**
- * La **liste des emplacements** — une carte par boutique. Elle lit en direct
- * depuis {@link LocalDb}, donc création / édition / suppression se voient tout
- * de suite. Chaque carte porte un menu (modifier / supprimer) qui ouvre le
- * side-panel ; les réglages ne s'éditent plus en place. La gestion des QR de
- * table (générer / retirer / exporter) reste sur la carte.
+ * La **liste des emplacements** — une carte par boutique. Elle lit le
+ * {@link EmplacementStore} (backend), donc création / édition / suppression se
+ * voient tout de suite. Chaque carte porte un menu (modifier / supprimer) qui
+ * ouvre le side-panel ; les réglages ne s'éditent plus en place. La gestion des
+ * QR de table (générer / retirer / exporter) reste sur la carte.
  */
 @Component({
   selector: 'app-emplacement-list',
@@ -57,14 +56,11 @@ import { qrSvgString } from '../qr-code/qr';
   styleUrl: './emplacement-list.scss',
 })
 export class EmplacementList {
-  private readonly api = inject(CatalogueApi);
-  private readonly db = inject(LocalDb);
+  private readonly store = inject(EmplacementStore);
   private readonly panelHost = inject(FoldPanelHostService);
 
-  /** Liste réactive : suit la DB, donc les mutations du panel se voient direct. */
-  protected readonly emplacements = computed<readonly Emplacement[]>(
-    () => this.db.snapshot().emplacements,
-  );
+  /** Liste réactive : suit le store, donc les mutations du panel se voient direct. */
+  protected readonly emplacements = this.store.items;
 
   /** Erreurs des actions QR (les mutations de la boutique remontent via le panel). */
   protected readonly error = signal<string | null>(null);
@@ -101,15 +97,14 @@ export class EmplacementList {
     this.panelHost.open(EmplacementFormPanel, { data, side: 'right' });
   }
 
-  /** Génère ou **régénère** : un nouveau token → nouveau QR, l'ancien devient
-   *  caduc. Token minté à l'action (côté navigateur, jamais au rendu SSR). */
+  /** Génère ou **régénère** : le backend mint un token neuf → nouveau QR,
+   *  l'ancien devient caduc. */
   protected async generateQr(id: string, tableNumber: number): Promise<void> {
-    const token = `k${Math.random().toString(36).slice(2, 6)}`;
-    await this.run(() => this.api.generateTableQr(id, tableNumber, token));
+    await this.run(() => this.store.generateTableQr(id, tableNumber));
   }
 
   protected async removeQr(id: string, tableNumber: number): Promise<void> {
-    await this.run(() => this.api.removeTableQr(id, tableNumber));
+    await this.run(() => this.store.removeTableQr(id, tableNumber));
   }
 
   /** Export vectoriel nommé : `qr-{boutique}-table-N.svg`. */

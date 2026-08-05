@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import {
   FoldBadgeComponent,
@@ -19,8 +14,8 @@ import {
 } from 'fold-ng';
 
 import { formatPercent } from '../../../data/channels';
-import { LocalDb } from '../../../data/local-db';
 import { type TvaRegime } from '../../catalogue-api';
+import { TvaStore } from '../tva-store';
 import {
   TvaRegimeFormPanel,
   type TvaRegimePanelData,
@@ -28,9 +23,9 @@ import {
 
 /**
  * Le **tableau des régimes** de TVA (Famille A — `tva-5-5`, `tva-10`,
- * `tva-20`). Il lit la liste en direct depuis {@link LocalDb} et n'expose que
+ * `tva-20`). Il lit la liste depuis le {@link TvaStore} (backend) et n'expose que
  * l'affichage + un menu par ligne (modifier / supprimer) : toute mutation passe
- * par le side-panel, donc la liste se met à jour toute seule.
+ * par le side-panel et le store, donc la liste se met à jour toute seule.
  */
 @Component({
   selector: 'app-tva-regime-table',
@@ -49,13 +44,11 @@ import {
   styleUrl: './tva-regime-table.scss',
 })
 export class TvaRegimeTable {
-  private readonly db = inject(LocalDb);
+  private readonly store = inject(TvaStore);
   private readonly panelHost = inject(FoldPanelHostService);
 
-  /** Liste réactive : suit la DB, donc création / édition / suppression se voient direct. */
-  protected readonly regimes = computed<readonly TvaRegime[]>(
-    () => this.db.snapshot().tvaRegimes,
-  );
+  /** Liste réactive : suit le store, donc création / édition / suppression se voient direct. */
+  protected readonly regimes = this.store.items;
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'name', label: 'Nom', width: '12rem' },

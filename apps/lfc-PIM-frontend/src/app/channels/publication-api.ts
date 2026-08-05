@@ -1,5 +1,7 @@
 import { Injectable, computed, inject } from '@angular/core';
 
+import { CategoryStore } from '../catalogue/category-store';
+import { TvaStore } from '../catalogue/tva-regimes/tva-store';
 import { LocalDb } from '../data/local-db';
 import {
   buildProjection,
@@ -18,12 +20,18 @@ import {
 @Injectable({ providedIn: 'root' })
 export class PublicationApi {
   private readonly db = inject(LocalDb);
+  private readonly categories = inject(CategoryStore);
+  private readonly regimes = inject(TvaStore);
 
-  /** Le plan de publication, recalculé à chaque changement du catalogue. */
+  /**
+   * Le plan de publication, recalculé à chaque changement du catalogue. Familles
+   * et régimes viennent des stores backend ; produits et état publié du store
+   * local (produits pas encore migrés côté publication).
+   */
   readonly plan = computed<PublicationPlan>(() => {
     const s = this.db.snapshot();
     return planPublication(
-      buildProjection(s.products, s.categories, s.tvaRegimes),
+      buildProjection(s.products, this.categories.items(), this.regimes.items()),
       s.publishedFiches,
     );
   });
@@ -38,12 +46,10 @@ export class PublicationApi {
    */
   approveAndPush(handles: readonly string[]): void {
     const targets = new Set(handles);
+    const categories = this.categories.items();
+    const regimes = this.regimes.items();
     this.db.update((draft) => {
-      const current = buildProjection(
-        draft.products,
-        draft.categories,
-        draft.tvaRegimes,
-      );
+      const current = buildProjection(draft.products, categories, regimes);
       for (const handle of targets) {
         const fiche = current.get(handle);
         if (fiche) {

@@ -18,7 +18,8 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { CatalogueApi, type Emplacement } from '../../catalogue/catalogue-api';
+import { type Emplacement } from '../../catalogue/catalogue-api';
+import { EmplacementStore } from '../emplacement-store';
 
 /** Ce qu'on fait d'un emplacement existant depuis le panneau. */
 export type EmplacementPanelMode = 'edit' | 'delete';
@@ -52,7 +53,7 @@ export interface EmplacementPanelData {
   styleUrl: './emplacement-form-panel.scss',
 })
 export class EmplacementFormPanel {
-  private readonly api = inject(CatalogueApi);
+  private readonly store = inject(EmplacementStore);
   private readonly ref = inject(FoldPanelRef);
 
   /** Boutique + intention ; absent = création. */
@@ -133,7 +134,7 @@ export class EmplacementFormPanel {
   private async persist(): Promise<void> {
     const target = this.emplacement();
     if (this.isDelete() && target !== undefined) {
-      await this.api.deleteEmplacement(target.id);
+      await this.store.remove(target.id);
       return;
     }
     const name = this.draftName().trim();
@@ -148,9 +149,9 @@ export class EmplacementFormPanel {
       tableCount: this.draftTables() ?? 0,
     };
     if (target !== undefined) {
-      await this.api.updateEmplacement(target.id, payload);
+      await this.store.update(target.id, payload);
     } else {
-      await this.api.createEmplacement(payload);
+      await this.store.create(payload);
     }
   }
 

@@ -29,8 +29,8 @@ import {
   type ShopifyCollection,
 } from '../../../channels/shopify-channel-api';
 import { formatPercent } from '../../../data/channels';
-import { LocalDb } from '../../../data/local-db';
 import { type TvaRegime } from '../../catalogue-api';
+import { TvaStore } from '../tva-store';
 
 /** Une ligne d'usage : le régime local rapproché de sa collection distante. */
 interface TvaUsageRow {
@@ -55,7 +55,7 @@ interface TvaUsageView {
  * envoie les régimes voulus au backend ({@link ShopifyChannelApi}), qui inspecte
  * la boutique et pousse les collections manquantes.
  *
- * Découplée du tableau : elle relit les régimes depuis {@link LocalDb} via un
+ * Découplée du tableau : elle relit les régimes depuis le {@link TvaStore} via un
  * `effect`, donc un régime ajouté / retiré ailleurs re-déclenche l'inspection.
  */
 @Component({
@@ -77,7 +77,7 @@ interface TvaUsageView {
 })
 export class TvaRegimePlatformUsages {
   private readonly api = inject(ShopifyChannelApi);
-  private readonly db = inject(LocalDb);
+  private readonly store = inject(TvaStore);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly tabs: FoldTabItem[] = [
@@ -94,9 +94,9 @@ export class TvaRegimePlatformUsages {
   protected readonly error = signal<string | null>(null);
 
   constructor() {
-    // Ré-inspecte dès que la DB bouge (régime CRUD) — réseau, donc navigateur seul.
+    // Ré-inspecte dès que le store bouge (régime CRUD) — réseau, donc navigateur seul.
     effect(() => {
-      this.db.snapshot();
+      this.store.items();
       if (this.isBrowser) {
         void this.inspect();
       }
@@ -159,7 +159,7 @@ export class TvaRegimePlatformUsages {
   }
 
   private regimes(): readonly TvaRegime[] {
-    return this.db.snapshot().tvaRegimes;
+    return this.store.items();
   }
 
   private desired(regimes: readonly TvaRegime[]): DesiredCollection[] {

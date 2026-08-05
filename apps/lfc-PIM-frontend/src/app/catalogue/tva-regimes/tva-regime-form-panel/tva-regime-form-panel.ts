@@ -17,7 +17,8 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { CatalogueApi, type TvaRegime } from '../../catalogue-api';
+import { type TvaRegime } from '../../catalogue-api';
+import { TvaStore } from '../tva-store';
 
 /** Ce qu'on fait d'un régime existant depuis le panneau. */
 export type TvaRegimePanelMode = 'edit' | 'delete';
@@ -50,7 +51,7 @@ export interface TvaRegimePanelData {
   styleUrl: './tva-regime-form-panel.scss',
 })
 export class TvaRegimeFormPanel {
-  private readonly api = inject(CatalogueApi);
+  private readonly store = inject(TvaStore);
   private readonly ref = inject(FoldPanelRef);
 
   /** Régime + intention ; absent = création. */
@@ -131,7 +132,7 @@ export class TvaRegimeFormPanel {
   private async persist(): Promise<void> {
     const target = this.regime();
     if (this.isDelete() && target !== undefined) {
-      await this.api.deleteTvaRegime(target.id);
+      await this.store.remove(target.id);
       return;
     }
     const name = this.draftName().trim();
@@ -141,9 +142,9 @@ export class TvaRegimeFormPanel {
     }
     const payload = { name, description: this.draftDescription(), percent };
     if (target !== undefined) {
-      await this.api.updateTvaRegime(target.id, payload);
+      await this.store.update(target.id, payload);
     } else {
-      await this.api.createTvaRegime(payload);
+      await this.store.create(payload);
     }
   }
 
