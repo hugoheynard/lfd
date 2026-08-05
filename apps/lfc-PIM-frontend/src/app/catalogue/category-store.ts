@@ -21,7 +21,9 @@ export class CategoryStore {
 
   constructor() {
     if (this.isBrowser) {
-      void this.reload();
+      // Auto-load best-effort : un backend injoignable laisse la liste vide,
+      // il ne doit jamais devenir un rejet de promesse non géré.
+      void this.reload().catch(() => undefined);
     }
   }
 

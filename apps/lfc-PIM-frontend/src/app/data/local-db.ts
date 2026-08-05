@@ -16,7 +16,9 @@ import { DB_SEED, type DbShape } from './db.seed';
 //      (scheduledPush), pour le staging catalogue → Shopify.
 // v10 : familles / régimes de TVA / emplacements sortis du store local (migrés
 //       backend) ; ne restent ici que produits + état Shopify simulé.
-const STORAGE_KEY = 'lfc-pim:db:v10';
+// v11 : produits + bindings Shopify migrés backend aussi ; ne reste que l'état
+//       de publication simulé (publishedFiches + scheduledPush).
+const STORAGE_KEY = 'lfc-pim:db:v11';
 
 /**
  * La base du POC, côté navigateur. **Aucun serveur** :
