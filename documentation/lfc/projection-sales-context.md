@@ -11,6 +11,25 @@
 > (`emporter`)**, donc la boutique reçoit toujours **1 produit par article** — mais l'ajout d'un
 > 2ᵉ contexte est une ligne de config, pas une refonte.
 
+> ⚠️ **Décisions arrêtées APRÈS rédaction — à implémenter (on y revient, cf. [`todo.md`](./todo.md)).**
+> Elles **corrigent** les §2/§4/§5 ci-dessous (qui décrivent le C1 livré, à colonnes fixes) :
+>
+> 1. **Data-driven, pas en dur.** Toute dimension scalable (contextes/canaux de vente, TVA par
+>    contexte) = **donnée**, jamais colonnes fixes ni const. `sales_context` (table = registre :
+>    `key`, `label`, `handleSuffix`, `active`, `position`) + `category_context_tva` (jointure
+>    `(categoryId, contextId) → tvaRegimeId`) **remplacent** `Category.emporterTvaId`/`surPlaceTvaId`
+>    et `ACTIVE_SALES_CONTEXTS`. Les lectures deviennent des **listes** `[{contextKey, tag}]`.
+>    Ajouter un contexte (B2B) = **une ligne**, zéro code. **Une fois testé, le modèle ne bouge plus**
+>    (règle produit). Cousin à traiter pareil : `Category.channelPreset` (boutiques `b1`/`b2` en clés fixes).
+> 2. **Handle publié = write-once (SEO).** Une URL indexée est définitive : la changer = 404 + perte
+>    de ranking (Shopify ne garantit pas la 301 via `productSet`). Donc : (a) le handle est **figé au
+>    1er push** (dans le binding/snapshot) ; changer `slug.fr` d'un produit publié est **bloqué** ou
+>    routé par un **flux renommage+301**, jamais un re-push aveugle (sinon la réconciliation par handle
+>    orpheline l'ancien produit + casse le SEO) ; (b) le `handleSuffix` d'un contexte est **figé avant
+>    son 1er push** ; (c) la réconciliation distingue **renommage** de **retrait+création** via le
+>    `productId` du snapshot, pas seulement le handle. Le défaut « handle nu au 1er contexte » protège
+>    déjà l'URL emporter existante quand on active sur-place/B2B.
+
 ---
 
 ## 1. Le principe : le contexte porte la TVA, pas le produit

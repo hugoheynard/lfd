@@ -118,8 +118,10 @@
   - [x] **C1** — registre `ACTIVE_SALES_CONTEXTS` + `CatalogueReader.tvaTags` (catégorie→régime→tag, ADR-13) *(commit `8a72f9e`, +3 tests)*
   - [x] **C2** — `collectionAddProductsV2` (`@lfd/shopify-admin`) + `ShopifyMembershipService` (résout tag→GID, **rapporte** l'absence, ne crée pas) *(commits `f363dfb`/`d8e9d6f`)*
   - [x] **C3** — push (live) range le produit dans sa collection `tva-*` ; échec non-bloquant ; **vérifié live** (baguette-artisane → tva-5-5, productCount 1) *(+5 tests)*
-  - [ ] **C4** *(différé)* — activer `surPlace` : projection multi-contexte (handles suffixés) + réconciliation par contexte
-  - [ ] **C5** *(futur)* — contexte `b2b` (TVA 20 %), pur ajout de config
+  - [ ] **C0 — Refonte data-driven du modèle contextes (PRÉ-REQUIS à C4/C5, à faire AVANT)** ([`projection-sales-context.md` §addendum](./projection-sales-context.md)) : `sales_context` (table registre) + `category_context_tva` (jointure) **remplacent** `Category.emporterTvaId`/`surPlaceTvaId` + `ACTIVE_SALES_CONTEXTS` const ; lectures en listes `[{contextKey, tag}]` ; migration des données emporter/sur-place existantes. Règle : **ajouter un contexte = une ligne, zéro code** ; une fois testé, le modèle est **gelé**. Cousin : idem pour `channelPreset` (boutiques `b1`/`b2` fixes).
+  - [ ] **C0-bis — Handle publié = write-once (SEO)** : figer le handle au 1er push (binding/snapshot) ; **bloquer** le changement de `slug.fr` d'un produit publié (ou flux renommage+301) — sinon la réconciliation par handle orpheline l'ancien produit + casse le référencement ; réconciliation distingue **renommage** de **retrait+création** via `productId` ; `handleSuffix` d'un contexte figé **avant** son 1er push.
+  - [ ] **C4** *(après C0)* — activer `surPlace` : projection multi-contexte (handles suffixés) + réconciliation par contexte
+  - [ ] **C5** *(après C0)* — contexte `b2b` (TVA 20 %) = **une ligne de données** (grâce à C0)
 - [ ] ~~**Webhooks Shopify** (`products/update`)~~ → absorbé par S5 ci-dessus
 - [ ] `shopify_product_override` (titre, handle, tags saisis à la main) — à ne jamais écraser au re-push
 - [ ] Modèle de **disponibilité** côté Shopify (capacité de production ≠ stock) — le vrai point dur
