@@ -1,12 +1,23 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../infra/database/prisma.service.js';
+import { TvaRegimeInUseError } from '../domain/errors/commerce-errors.js';
 import {
   TvaRegimeRepository,
   type NewTvaRegime,
   type TvaRegimeRecord,
   type TvaRegimeUpdate,
 } from '../domain/ports/tva-regime.repository.js';
+
+/** Violation de clé étrangère Prisma — le `23503` de Postgres, vu depuis l'ORM. */
+function isForeignKeyViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2003'
+  );
+}
 
 interface TvaRegimeRow {
   id: string;
@@ -74,6 +85,13 @@ export class PrismaTvaRegimeRepository extends TvaRegimeRepository {
   }
 
   async remove(id: string): Promise<void> {
-    await this.prisma.tvaRegime.delete({ where: { id } });
+    try {
+      await this.prisma.tvaRegime.delete({ where: { id } });
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new TvaRegimeInUseError(id);
+      }
+      throw error;
+    }
   }
 }

@@ -19,3 +19,13 @@ export class TvaTagConflictError extends BusinessError {
     );
   }
 }
+
+/** Suppression refusée : une catégorie vise encore ce régime (FK `Restrict`). */
+export class TvaRegimeInUseError extends BusinessError {
+  constructor(id: string) {
+    super(
+      'commerce.tva_regime_in_use',
+      `Régime de TVA utilisé par une catégorie — réaffectez-la d'abord (${id}).`,
+    );
+  }
+}
