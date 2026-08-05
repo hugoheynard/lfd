@@ -1,9 +1,16 @@
+import { AUTH_ENV } from './auth.env.generated';
+
 /**
  * Configuration Auth0 **publique** de la Suite (shell hôte).
  *
  * Le shell possède la session : un seul login pour toute la suite d'outils
  * internes. Les valeurs ne sont pas secrètes (domain, clientId SPA, audiences)
  * — le secret du flux OIDC est le code + PKCE, jamais ces constantes.
+ *
+ * **Injectées au build**, pas en dur : les valeurs viennent de l'environnement via
+ * `scripts/generate-auth-config.mjs` → `auth.env.generated.ts` (git-ignored). Source :
+ * le `.env` du shell en **dev local**, les variables **CI / Cloudflare** en **déployé**.
+ * Voir `.env.example`.
  *
  * `audiences` : un identifiant d'API Auth0 **par backend**. Le shell détient une
  * session unique et échange un jeton par audience (`getAccessTokenSilently`
@@ -19,19 +26,12 @@ export interface SuiteAuthConfig {
   };
 }
 
-/**
- * ⚠️ `clientId` À RENSEIGNER : Auth0 → Applications → « Single Page
- * Application » dédiée à la Suite (distincte des SPA client). Autoriser les
- * origines du shell (Callback / Logout / Web Origins) :
- *   - http://localhost:7300
- *   - https://lfc-suite.pages.dev
- */
 export const SUITE_AUTH_CONFIG: SuiteAuthConfig = {
-  domain: 'dev-bjvl7ct5se266ij4.eu.auth0.com',
-  clientId: 'REPLACE_WITH_SUITE_SPA_CLIENT_ID',
+  domain: AUTH_ENV.domain,
+  clientId: AUTH_ENV.clientId,
   audiences: {
-    b2b: 'https://api.lfc-b2b-platform',
-    pim: 'https://api.lfc-pim',
+    b2b: AUTH_ENV.audiences.b2b,
+    pim: AUTH_ENV.audiences.pim,
   },
 };
 

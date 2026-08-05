@@ -3,11 +3,14 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
+    "config:auth": "node scripts/generate-auth-config.mjs",
+    "start": "pnpm config:auth && ng serve",
+    "build": "pnpm config:auth && ng build",
+    "build:cloudflare": "pnpm config:auth && ng build --configuration cloudflare",
+    "watch": "pnpm config:auth && ng build --watch --configuration development",
     "test": "ng test",
-    "dev": "node ../../dev-toolbox/ng-serve-quiet.mjs"
+    "dev": "pnpm config:auth && node ../../dev-toolbox/ng-serve-quiet.mjs",
+    "postinstall": "pnpm config:auth"
   },
   "private": true,
   "packageManager": "pnpm@10.12.1",

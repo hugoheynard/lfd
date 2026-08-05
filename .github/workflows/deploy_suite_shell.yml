@@ -1,0 +1,75 @@
+name: deploy_suite_shell
+
+# Build browser-only du shell staff (lfc-suite-shell) → Cloudflare Pages, à chaque
+# push sur main. Pas de SSR. wrangler ne fait qu'uploader le statique déjà buildé.
+#
+# Secrets requis (Settings → Secrets and variables → Actions → Secrets) :
+#   CLOUDFLARE_LFC_ADMIN_SUITE_SHELL_PAGES — token « Account · Cloudflare Pages · Edit ».
+#   CLOUDFLARE_ACCOUNT_ID — account id partagé.
+# Variables PUBLIQUES (onglet Variables — pas des secrets : config Auth0 dans le bundle) :
+#   SUITE_AUTH0_DOMAIN · SUITE_AUTH0_CLIENT_ID · SUITE_AUTH0_AUDIENCE_B2B · SUITE_AUTH0_AUDIENCE_PIM
+# Projet Pages `lfc-suite` (créé au 1er run).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/lfc-suite-shell/**"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/deploy_suite_shell.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy_suite_shell
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy_suite_shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generate Auth0 config (public build vars)
+        working-directory: apps/lfc-suite-shell
+        env:
+          SUITE_AUTH0_DOMAIN: ${{ vars.SUITE_AUTH0_DOMAIN }}
+          SUITE_AUTH0_CLIENT_ID: ${{ vars.SUITE_AUTH0_CLIENT_ID }}
+          SUITE_AUTH0_AUDIENCE_B2B: ${{ vars.SUITE_AUTH0_AUDIENCE_B2B }}
+          SUITE_AUTH0_AUDIENCE_PIM: ${{ vars.SUITE_AUTH0_AUDIENCE_PIM }}
+        run: node scripts/generate-auth-config.mjs
+
+      - name: Typecheck
+        run: pnpm --filter lfc-suite-shell exec tsc --noEmit
+
+      - name: Build (static, browser-only)
+        run: pnpm --filter lfc-suite-shell exec ng build --configuration cloudflare
+
+      - name: Ensure Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_ADMIN_SUITE_SHELL_PAGES }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm dlx wrangler pages project create lfc-suite
+          --production-branch=main || true
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_ADMIN_SUITE_SHELL_PAGES }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm dlx wrangler pages deploy
+          apps/lfc-suite-shell/dist/lfc-suite-shell/browser
+          --project-name=lfc-suite
+          --branch=main

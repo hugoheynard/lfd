@@ -66,6 +66,24 @@
                   "with": "src/app/suite/suite-config.dev.ts"
                 }
               ]
+            },
+            "cloudflare": {
+              "outputMode": "static",
+              "ssr": false,
+              "server": false,
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kB",
+                  "maximumError": "10kB"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
