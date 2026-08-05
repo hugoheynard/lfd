@@ -48,13 +48,16 @@
 | Sens | Scope | Fonction (`admin-client`) | Opération GraphQL | Action | Statut |
 | --- | --- | --- | --- | --- | --- |
 | R | `read_products` | `listProducts()` | `query products` | Lire l'état actuel du catalogue (miroir, anti-doublon) | ✅ |
-| W | `write_products` | `pushProduct()` _(proposé)_ | `mutation productSet` | Créer/mettre à jour un produit **et ses déclinaisons** (upsert par handle) | 🟡 stub dry-run |
-| W | `write_products` | `setVariantPrice()` _(proposé)_ | `productVariantsBulkUpdate` | Écrire le prix d'une déclinaison (porté par `productSet` si groupé) | ⬜ |
-| R | `read_products` | `findProductByHandle()` _(proposé)_ | `query productByHandle` | Retrouver l'ID Shopify d'un produit pour créer le **binding** (éviter le doublon) | ⬜ |
+| W | `write_products` | `LiveShopifyDriver.push()` | `mutation productSet` (upsert par handle, `synchronous: true`) | Créer/mettre à jour un produit, **ses déclinaisons et leurs prix** ; re-push = mise à jour, pas doublon | ✅ |
+| R | `read_products` | `findProductByHandle()` _(proposé)_ | `query productByHandle` | Retrouver l'ID Shopify d'un produit (l'upsert par handle le rend optionnel) | ⬜ |
 
-> Le push réel est volontairement différé (`driver.ts` = stub) : les mutations
-> Shopify sont versionnées, un spike sur dev store tranchera la forme exacte de
-> `productSet` avant d'écrire pour de vrai.
+> **Push réel livré** (2026-08-04) : `LiveShopifyDriver` porte la mutation `productSet`
+> (upsert par **handle** → idempotent, anti-doublon) ; `buildProductSetInput` est une
+> fonction pure testée (variante par défaut, multi-options, **prix** inclus quand tarifé).
+> La projection convertit les **centimes canoniques** en décimal texte (`2400` → `"24.00"`) ;
+> le prix voyage donc **avec** `productSet`, pas de mutation prix séparée. Driver sélectionné
+> par le **mode** (dry-run tant que non connecté, live sinon). Reste à **valider par un push
+> réel sur la dev store**.
 
 ---
 
