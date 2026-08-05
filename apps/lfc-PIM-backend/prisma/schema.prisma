@@ -70,6 +70,21 @@ model Category {
   @@map("category")
 }
 
+/// Régime de TVA — référence commerciale partagée (catégories + collection Shopify).
+model TvaRegime {
+  id          String @id
+  name        String
+  description String @default("")
+  percent     Float
+  /// Handle Shopify dérivé du taux (`tva-5-5`) — identité côté canal, unique.
+  tag         String @unique
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tva_regime")
+}
+
 model Product {
   id         String           @id
   sku        String           @unique
