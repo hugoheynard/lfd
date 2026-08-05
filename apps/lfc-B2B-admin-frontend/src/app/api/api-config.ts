@@ -1,11 +1,15 @@
+import { B2B_API_BASE_VALUE } from './api.env.generated';
+
 /**
  * Base de l'API B2B — version **PRODUCTION**.
  *
  * Remplacé en dev par `api-config.dev.ts` (fileReplacements, cf. angular.json) →
- * localhost. En prod, l'app admin tape le **même backend B2B** que la boutique
+ * localhost/gateway. En prod, l'app admin tape le **même backend B2B** que la boutique
  * (Invariant C), mais sur sa surface `/admin/*`.
  *
- * ⚠️ Ajuster à l'URL réelle au déploiement (origine stable `api-b2b.…` ou chemin
- * `/api/b2b` derrière la passerelle — cf. documentation/architecture-suite-gateway-scaling.md).
+ * **Injectée au build** : la valeur vient de l'environnement via
+ * `scripts/generate-api-config.mjs` → `api.env.generated.ts` (git-ignored). Source : la
+ * variable `B2B_ADMIN_API_BASE_URL` (CI/Cloudflare) en déployé, l'origine stable
+ * `api-b2b.<zone>` derrière la passerelle. Jamais un secret — juste une origine.
  */
-export const B2B_API_BASE = 'https://api-b2b.lafoliecoffee.xyz';
+export const B2B_API_BASE = B2B_API_BASE_VALUE;
