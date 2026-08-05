@@ -1,11 +1,17 @@
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 
 import { DatabaseModule } from '../infra/database/database.module.js';
 import {
   IdGenerator,
   UuidV7Generator,
 } from '../shared/identity/id-generator.js';
-import { CategoryCommands } from './application/category-commands.service.js';
+import {
+  ArchiveCategoryHandler,
+  CreateCategoryHandler,
+  ListCategoriesHandler,
+  RenameCategoryHandler,
+} from './application/category.handlers.js';
 import { ProductCommands } from './application/product-commands.service.js';
 import { CatalogueReader } from './domain/ports/catalogue-reader.js';
 import { CategoryRepository } from './domain/ports/category.repository.js';
@@ -35,10 +41,13 @@ import {
  * fournit. Remplacer Prisma ne touche que ce fichier.
  */
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, CqrsModule],
   controllers: [CategoryController, ProductController, ReferenceController],
   providers: [
-    CategoryCommands,
+    CreateCategoryHandler,
+    RenameCategoryHandler,
+    ArchiveCategoryHandler,
+    ListCategoriesHandler,
     ProductCommands,
     { provide: IdGenerator, useClass: UuidV7Generator },
     { provide: CategoryRepository, useClass: PrismaCategoryRepository },

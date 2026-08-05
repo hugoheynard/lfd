@@ -1,10 +1,16 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { z } from 'zod';
 
 import { Public } from '../../infra/auth/public.decorator.js';
 import { ZodBody } from '../../shared/http/zod-body.pipe.js';
-import { CategoryCommands } from '../application/category-commands.service.js';
-import { CategoryRepository } from '../domain/ports/category.repository.js';
+import {
+  ArchiveCategoryCommand,
+  CreateCategoryCommand,
+  RenameCategoryCommand,
+} from '../application/category.commands.js';
+import { ListCategoriesQuery } from '../application/category.query.js';
+import type { CategoryRecord } from '../domain/ports/category.repository.js';
 
 const categoryPayload = z.object({
   nameFr: z.string().min(1),
@@ -18,28 +24,32 @@ const renamePayload = z.object({
 });
 
 /**
- * Familles du catalogue. ⚠️ **`@Public()` temporaire** (tenant Auth0 absent) :
- * à retirer dès que `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` sont renseignés — dette
- * suivie dans `todo.md`.
+ * Familles du catalogue — dispatchées sur les bus CQRS. ⚠️ **`@Public()`
+ * temporaire** (tenant Auth0 absent), dette suivie dans `todo.md`.
  */
 @Public()
 @Controller('catalogue/categories')
 export class CategoryController {
   constructor(
-    private readonly categoryCommands: CategoryCommands,
-    private readonly categories: CategoryRepository,
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
   ) {}
 
   @Get()
-  listCategories() {
-    return this.categories.listAll();
+  listCategories(): Promise<CategoryRecord[]> {
+    return this.queries.execute<ListCategoriesQuery, CategoryRecord[]>(
+      new ListCategoriesQuery(),
+    );
   }
 
   @Post()
   async createCategory(
     @Body(new ZodBody(categoryPayload)) body: z.infer<typeof categoryPayload>,
   ) {
-    return { id: await this.categoryCommands.create(body) };
+    const id = await this.commands.execute<CreateCategoryCommand, string>(
+      new CreateCategoryCommand(body),
+    );
+    return { id };
   }
 
   @Put(':id/name')
@@ -47,13 +57,17 @@ export class CategoryController {
     @Param('id') id: string,
     @Body(new ZodBody(renamePayload)) body: z.infer<typeof renamePayload>,
   ) {
-    await this.categoryCommands.rename(id, body);
+    await this.commands.execute<RenameCategoryCommand, void>(
+      new RenameCategoryCommand(id, body),
+    );
     return { id };
   }
 
   @Put(':id/archive')
   async archiveCategory(@Param('id') id: string) {
-    await this.categoryCommands.archive(id);
+    await this.commands.execute<ArchiveCategoryCommand, void>(
+      new ArchiveCategoryCommand(id),
+    );
     return { id };
   }
 }
