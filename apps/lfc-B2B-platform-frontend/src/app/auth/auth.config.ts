@@ -1,3 +1,5 @@
+import { AUTH_ENV } from './auth.env.generated';
+
 /**
  * Configuration Auth0 **publique** de la plateforme B2B.
  *
@@ -6,6 +8,11 @@
  * transitent de toute façon dans l'URL `/authorize`). Le secret réel du flux
  * OIDC est le code d'autorisation à usage unique + PKCE, jamais ces constantes.
  *
+ * **Injectées au build**, pas en dur : les valeurs viennent de l'environnement via
+ * `scripts/generate-auth-config.mjs` → `auth.env.generated.ts` (git-ignored). Source :
+ * le `.env` de l'app en **dev local**, les variables **CI / Cloudflare** en **déployé**.
+ * Voir `.env.example`.
+ *
  * Correspondance backend : `audience` DOIT être identique au `AUTH0_AUDIENCE`
  * du backend (`apps/lfc-B2B-platform-backend`) — c'est l'exact-match qui fait
  * que le jeton émis pour ce front est accepté par cette API et aucune autre.
@@ -13,7 +20,7 @@
 export interface AuthConfig {
   /** Tenant Auth0 (sans `https://`). */
   readonly domain: string;
-  /** Client ID de l'**Application SPA** Auth0 (à créer côté tenant). */
+  /** Client ID de l'**Application SPA** Auth0. */
   readonly clientId: string;
   /** Identifiant de l'**API** Auth0 = `AUTH0_AUDIENCE` du backend. */
   readonly audience: string;
@@ -21,20 +28,9 @@ export interface AuthConfig {
   readonly apiBaseUrl: string;
 }
 
-/**
- * ⚠️ `clientId` À RENSEIGNER : Auth0 → Applications → Create Application →
- * « Single Page Application ». Copier le Client ID ici. Dans les réglages de
- * cette app, autoriser l'origine du front (voir `documentation/`) :
- *   - Allowed Callback URLs   : http://localhost:4200, https://lfc-b2b.pages.dev
- *   - Allowed Logout URLs     : http://localhost:4200, https://lfc-b2b.pages.dev
- *   - Allowed Web Origins     : http://localhost:4200, https://lfc-b2b.pages.dev
- */
 export const AUTH_CONFIG: AuthConfig = {
-  domain: 'dev-bjvl7ct5se266ij4.eu.auth0.com',
-  clientId: 'Qk5sMKDBKB8OD3YC3JjIzfeXXkUf00qJ',
-  // = Identifier de l'API Auth0 = AUTH0_AUDIENCE du backend (match exact).
-  audience: 'https://api.lfc-b2b-platform',
-  // Backend B2B en local (Node always-on, port 3200). L'URL de prod sera
-  // câblée quand le backend sera déployé.
-  apiBaseUrl: 'http://localhost:3200',
+  domain: AUTH_ENV.domain,
+  clientId: AUTH_ENV.clientId,
+  audience: AUTH_ENV.audience,
+  apiBaseUrl: AUTH_ENV.apiBaseUrl,
 };
