@@ -20,6 +20,7 @@ import { DryRunShopifyDriver, LiveShopifyDriver } from './products/driver.js';
 import { ShopifyInspectionService } from './products/inspection.service.js';
 import { ShopifyProductsController } from './products/products.controller.js';
 import { ShopifyPushService } from './products/push.service.js';
+import { ShopifyReconciliationService } from './products/reconciliation.service.js';
 import { ShopifySnapshotService } from './products/snapshot.service.js';
 import { AppConfig } from '../../infra/config/app-config.js';
 import { ShopifySettingsService } from './shared/settings.service.js';
@@ -50,6 +51,7 @@ const SHOPIFY_CREDENTIALS_SOURCE = Symbol('SHOPIFY_CREDENTIALS_SOURCE');
     ShopifySettingsService,
     ShopifyPushService,
     ShopifySnapshotService,
+    ShopifyReconciliationService,
     ShopifyInspectionService,
     // Les deux pilotes de push, concrets : le service choisit selon le mode des réglages.
     DryRunShopifyDriver,

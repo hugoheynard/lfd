@@ -6,6 +6,8 @@ import {
   type PushPayload,
   type PushReport,
   type PushSummary,
+  type ReconciliationBoardView,
+  type ReconciliationDetailView,
   type RollbackPayload,
   type SnapshotView,
 } from '@lfd/pim-contracts';
@@ -15,6 +17,7 @@ import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { ZodBody } from '../../../shared/http/zod-body.pipe.js';
 import { ShopifyInspectionService } from './inspection.service.js';
 import { ShopifyPushService } from './push.service.js';
+import { ShopifyReconciliationService } from './reconciliation.service.js';
 import { ShopifySnapshotService } from './snapshot.service.js';
 
 /**
@@ -31,6 +34,7 @@ export class ShopifyProductsController {
     private readonly pushService: ShopifyPushService,
     private readonly inspection: ShopifyInspectionService,
     private readonly snapshots: ShopifySnapshotService,
+    private readonly reconciliation: ShopifyReconciliationService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -57,6 +61,20 @@ export class ShopifyProductsController {
     @Body(new ZodBody(pushPayloadSchema)) body: PushPayload,
   ): Promise<PushSummary> {
     return this.pushService.push(body.productIds, body.dryRun ?? false);
+  }
+
+  /** Le tableau de réconciliation à trois voies — par handle, ce qui a bougé. */
+  @Get('reconciliation')
+  reconcile(): Promise<ReconciliationBoardView> {
+    return this.reconciliation.board();
+  }
+
+  /** Détail d'un handle : BASE/OURS/THEIRS + diffs par paire. */
+  @Get('reconciliation/:handle')
+  reconcileOne(
+    @Param('handle') handle: string,
+  ): Promise<ReconciliationDetailView> {
+    return this.reconciliation.detail(handle);
   }
 
   /** L'historique versionné d'un handle — la matière du retour arrière. */
