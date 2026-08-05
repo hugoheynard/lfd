@@ -12,6 +12,13 @@ name: deploy_b2b_frontend_platform
 #     one account, one id).
 # and a Pages project named `lfc-b2b` (create it once: `npx wrangler pages
 # project create lfc-b2b`, or the first manual `wrangler pages deploy`).
+#
+# Plus four repo VARIABLES (Settings → Secrets and variables → Actions →
+# *Variables* tab — NOT secrets: it's the SPA's PUBLIC Auth0 config, it ships in
+# the browser bundle). They feed generate-auth-config.mjs at build time:
+#   B2B_AUTH0_DOMAIN · B2B_AUTH0_CLIENT_ID · B2B_AUTH0_AUDIENCE · B2B_API_BASE_URL
+# The build runs HERE (GitHub Actions), then wrangler only UPLOADS the static
+# output — so these live in Actions, not in Cloudflare Pages env vars.
 
 on:
   push:
@@ -49,6 +56,18 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      # Injecte la config Auth0 PUBLIQUE (domain/clientId/audience/apiBaseUrl) dans
+      # `auth.env.generated.ts` depuis les *Variables* du repo — avant typecheck ET
+      # build, pour que les deux voient les vraies valeurs. Rien de secret ici.
+      - name: Generate Auth0 config (public build vars)
+        working-directory: apps/lfc-B2B-platform-frontend
+        env:
+          AUTH0_DOMAIN: ${{ vars.B2B_AUTH0_DOMAIN }}
+          AUTH0_CLIENT_ID: ${{ vars.B2B_AUTH0_CLIENT_ID }}
+          AUTH0_AUDIENCE: ${{ vars.B2B_AUTH0_AUDIENCE }}
+          API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
+        run: node scripts/generate-auth-config.mjs
 
       # Gate: a red typecheck must never reach Pages. The AOT build below also
       # type-checks the app + templates, so together they fail fast on any error.
