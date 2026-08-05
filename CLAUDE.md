@@ -125,10 +125,12 @@ ensuite. Une requête de lecture n'écrit rien, pas même un compteur. Pas d'app
 croisé entre un handler d'écriture et un handler de lecture : ils se partagent le
 domaine ou les ports, pas leurs services.
 
-L'implémentation **diverge volontairement par app** (divergence assumée, notée
-ici pour qu'elle ne soit pas « corrigée » par mégarde) :
+**Les deux backends utilisent le bus `@nestjs/cqrs`** (contrôleurs → `CommandBus`/
+`QueryBus`, jamais un service applicatif directement). Seule **l'organisation des
+fichiers diverge** — divergence assumée, notée ici pour qu'elle ne soit pas
+« corrigée » par mégarde.
 
-### B2B platform — bus `@nestjs/cqrs`
+### B2B platform — bus `@nestjs/cqrs`, fichiers command/handler séparés
 
 Une intention = une classe `Command`/`Query` + **un** handler dédié. Les
 contrôleurs n'appellent que les bus, en `execute<Command, Result>()` typé.
@@ -153,13 +155,28 @@ règles, et il montre les quatre couches, le bus, les ports côté domaine avec 
 adaptateurs Prisma, les erreurs par catégorie et les tests aux trois niveaux.
 Le lire avant d'ouvrir un nouveau contexte.
 
-### PIM — style léger, sans bus
+### PIM — bus `@nestjs/cqrs`, command + handler **colocalisés par cas**
 
-Écritures dans `application/<agrégat>-commands.service.ts` (une méthode publique
-= une intention), lectures via des readers / read-repositories
-(`infrastructure/prisma-catalogue-reader.ts`). Les mêmes règles de séparation
-s'appliquent ; seul le transport de l'intention change. **On ne migre pas le PIM
-vers le bus**, et on n'introduit pas le style léger dans le B2B.
+Le PIM utilise le **même bus**, mais **un fichier par cas** qui colocalise la classe
+`Command`/`Query` **et** son handler (au lieu des deux fichiers séparés du B2B) :
+
+```
+src/catalogue/application/
+├── create-product.ts           # CreateProductCommand + CreateProductHandler
+├── update-product-identity.ts  # …Command + …Handler
+├── list-products.ts            # ListProductsQuery + ListProductsHandler
+├── product-support.ts          # gardes/helpers PARTAGÉS par plusieurs cas
+└── __tests__/product-handlers.spec.ts
+```
+
+- **Un cas = un fichier = command (ou query) + son handler.** La logique commune à
+  plusieurs cas (gardes d'existence, dérivations pures) va dans un `*-support.ts`,
+  jamais dupliquée.
+- Un handler fait **une** chose ; s'il grossit, on extrait un helper pur, pas une
+  branche. Il dépend de ports (jamais de `PrismaService`) ; l'id est assigné par la
+  commande (R1), pas par la base.
+- **On ne migre pas le B2B** vers le style colocalisé, et on n'introduit pas les
+  fichiers séparés dans le PIM. Contextes de référence : `catalogue/` et `commerce/`.
 
 ---
 
