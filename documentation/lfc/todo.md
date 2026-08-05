@@ -112,7 +112,7 @@
   - [x] **S1** — `ShopifyPushSnapshot` (payload rejouable) + `headSnapshotId` sur binding + écriture au push + `GET /history` + `POST /rollback` *(29 tests, commits `623d6fa`/`be718cb`)*
   - [x] **S2** — dry-run **réel sans effet de bord** (`pushPayloadSchema.dryRun`, `previewOne`) *(commit `4f28738`)* ; bouton pré-push front reporté à S4
   - [x] **S3** — projection inverse THEIRS + `GET /reconciliation`(+`:handle`) + statuts (`local_ahead`/`remote_drift`/`conflict`/`to_remove`) *(dérive locale=empreinte pleine, distante=comparable ; commits `c01273f`/`841e967`, +20 tests)*
-  - [ ] **S4** — refonte écran `publication-shopify` (orienté handle, diff par paire, historique/rollback)
+  - [x] **S4** — refonte écran `publication-shopify` (orienté handle, statut ⚠️, diff par paire, pré-push, publier, historique/rollback) *(commit `edac08a`, 37 tests front ; POC LocalDb publication supprimé)*
   - [ ] **S5** *(diff → post-boucle)* — webhook `products/update` → marque `remote_drift` sans poll
 - [ ] ~~**Webhooks Shopify** (`products/update`)~~ → absorbé par S5 ci-dessus
 - [ ] `shopify_product_override` (titre, handle, tags saisis à la main) — à ne jamais écraser au re-push
