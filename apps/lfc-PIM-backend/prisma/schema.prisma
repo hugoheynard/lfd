@@ -104,6 +104,43 @@ model TvaRegime {
   @@map("tva_regime")
 }
 
+/// Un **emplacement** (boutique / point de vente) et ses modes. S'il fait « sur
+/// place », il ouvre une grille de tables click & collect (une URL + un QR par
+/// table). Contexte `locations` — aucune dépendance au catalogue.
+model Emplacement {
+  id           String  @id
+  name         String
+  /// Vente à emporter en ligne.
+  clickCollect Boolean @default(false) @map("click_collect")
+  /// Consommation sur place — ouvre les tables.
+  surPlace     Boolean @default(false) @map("sur_place")
+  /// URL de base du click & collect (`baseUrl?table=N&k=token`).
+  baseUrl      String  @default("") @map("base_url")
+
+  tables EmplacementTable[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("emplacement")
+}
+
+/// Une **table** d'un emplacement sur place. Le `number` est verrouillé (identité
+/// de l'URL) : clé primaire composite `(emplacement, number)`. Suppression en
+/// cascade avec l'emplacement.
+model EmplacementTable {
+  emplacementId String      @map("emplacement_id")
+  emplacement   Emplacement @relation(fields: [emplacementId], references: [id], onDelete: Cascade)
+  number        Int
+  qrCreated     Boolean     @default(false) @map("qr_created")
+  /// Token rotatif du QR : le régénérer invalide l'ancien code imprimé.
+  /// `NULL` = aucun QR généré.
+  token         String?
+
+  @@id([emplacementId, number])
+  @@map("emplacement_table")
+}
+
 model Product {
   id         String           @id
   sku        String           @unique
