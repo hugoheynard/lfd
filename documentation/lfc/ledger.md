@@ -21,6 +21,29 @@ poussée (dérive distante ⚠️), repérer un **conflit** (les deux ont bougé
 sur une fiche via un historique versionné. Le PIM reste l'autorité — la boutique n'est qu'un miroir —
 mais on cesse d'écraser en aveugle.
 
+### Test live (boutique de dev) : le moteur trois-voies validé de bout en bout
+
+**PM** — Sur la vraie boutique Shopify de dev : pré-push (aperçu), push d'un produit en DRAFT,
+détection de « déjà à jour », retour arrière (rollback) et historique — tout fonctionne. Un
+produit déjà présent d'un ancien essai est correctement signalé « à retirer ». Le test a aussi
+**attrapé un vrai piège** : Shopify renomme la déclinaison d'un produit à taille unique en
+« Default Title », ce qui faisait croire à tort que « quelqu'un a touché la boutique » — corrigé.
+
+**Tech** — Smoke test API sur `1kkhae-8q.myshopify.com` (mode live) : `push {dryRun}` → `push`
+(DRAFT, garde-fou par la donnée) → `reconciliation/:handle` → `history` → `rollback` (crée v2,
+n'efface pas v1). **Finding** : le dénominateur commun comparait le *titre de déclinaison*, que
+Shopify **normalise** (mono-variante → « Default Title », multi → dérivé des options) → fausse
+`remote_drift` sur chaque produit dès le push. Fix : la déclinaison comparable = **SKU + prix**
+seulement (le titre *produit* reste comparé). Test de non-régression ajouté sur le cas exact.
+
+### Cadrage : réconciliation de publication à trois voies (« git du catalogue »)
+
+**PM** — On fige comment publier vers Shopify **sans casse** : voir *ce qui partirait* avant
+d'envoyer (diff champ par champ), savoir si **quelqu'un a édité la boutique** depuis la dernière
+poussée (dérive distante ⚠️), repérer un **conflit** (les deux ont bougé), et **revenir en arrière**
+sur une fiche via un historique versionné. Le PIM reste l'autorité — la boutique n'est qu'un miroir —
+mais on cesse d'écraser en aveugle.
+
 **Tech** — Nouveau doc [`publication-reconciliation-3way.md`](./publication-reconciliation-3way.md).
 Modèle **BASE / OURS / THEIRS** (merge à trois voies), **clé sur le `handle`** (survit à la future
 bascule fiche×mode). Trois empreintes `fingerprint` → table de statuts (`local_ahead`, `remote_drift`,

@@ -24,9 +24,14 @@ export interface Comparable {
   readonly variants: readonly ComparableVariant[];
 }
 
+/**
+ * Déclinaison comparable : **SKU + prix uniquement**. Le *titre* de déclinaison est
+ * exclu à dessein — Shopify le contrôle (une mono-déclinaison devient « Default Title »,
+ * une multi-déclinaison le dérive des options). Le comparer produirait une fausse dérive
+ * distante sur chaque produit dès le premier push (vérifié live, boutique de dev).
+ */
 export interface ComparableVariant {
   readonly sku: string;
-  readonly title: string;
   readonly price: string | null;
 }
 
@@ -45,11 +50,7 @@ export function comparableFromPayload(
     title: payload.title,
     status: payload.status,
     variants: sortVariants(
-      payload.variants.map((v) => ({
-        sku: v.sku,
-        title: v.title,
-        price: v.price,
-      })),
+      payload.variants.map((v) => ({ sku: v.sku, price: v.price })),
     ),
   };
 }
@@ -63,11 +64,7 @@ export function comparableFromRemote(
     title: snapshot.title,
     status: snapshot.status,
     variants: sortVariants(
-      snapshot.variants.map((v) => ({
-        sku: v.sku ?? '',
-        title: v.title,
-        price: v.price,
-      })),
+      snapshot.variants.map((v) => ({ sku: v.sku ?? '', price: v.price })),
     ),
   };
 }
@@ -80,7 +77,7 @@ export function comparableHash(comparable: Comparable): string {
     status: comparable.status === 'ACTIVE' ? 'ACTIVE' : 'DRAFT',
     variants: comparable.variants.map((v) => ({
       sku: v.sku,
-      title: v.title,
+      title: '',
       options: {},
       price: v.price,
     })),
@@ -156,7 +153,5 @@ function push(
 }
 
 function describeVariants(variants: readonly ComparableVariant[]): string {
-  return variants
-    .map((v) => `${v.sku} — ${v.title} @ ${v.price ?? '—'}`)
-    .join(' · ');
+  return variants.map((v) => `${v.sku} @ ${v.price ?? '—'}`).join(' · ');
 }

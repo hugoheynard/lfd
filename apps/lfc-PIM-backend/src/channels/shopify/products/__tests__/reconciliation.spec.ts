@@ -66,6 +66,21 @@ describe('comparable (dénominateur commun)', () => {
     );
   });
 
+  it('un titre de déclinaison renommé par Shopify (« Default Title ») NE dérive PAS', () => {
+    // Le cas vérifié live : Shopify renomme la déclinaison d'un produit mono-variante.
+    // SKU et prix identiques ⇒ pas de dérive distante.
+    const shopifyRenamed = comparableFromRemote(
+      remote({
+        variants: [
+          { sku: 'PATI-CROISSANT', title: 'Default Title', price: '1.30' },
+        ],
+      }),
+    );
+    expect(comparableHash(shopifyRenamed)).toBe(
+      comparableHash(comparableFromPayload(payload())),
+    );
+  });
+
   it('un statut passé en DRAFT côté boutique casse l’empreinte', () => {
     expect(
       comparableHash(comparableFromRemote(remote({ status: 'DRAFT' }))),

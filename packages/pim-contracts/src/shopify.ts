@@ -58,14 +58,17 @@ export interface FieldDiffView {
   readonly after: string;
 }
 
-/** Forme de comparaison d'un produit — le dénominateur commun aux trois états. */
+/**
+ * Forme de comparaison d'un produit — le dénominateur commun aux trois états. La
+ * déclinaison se compare sur **SKU + prix** : son titre est exclu (Shopify le contrôle
+ * → « Default Title » en mono-déclinaison), sans quoi tout produit dériverait au push.
+ */
 export interface ComparableView {
   readonly handle: string;
   readonly title: string;
   readonly status: string;
   readonly variants: readonly {
     readonly sku: string;
-    readonly title: string;
     readonly price: string | null;
   }[];
 }
