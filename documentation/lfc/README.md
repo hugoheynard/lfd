@@ -20,6 +20,7 @@ plan de production du labo.
 | [`shopify-connexion-setup.md`](./shopify-connexion-setup.md) | **Connexion Shopify (runbook)** — Dev Dashboard, client credentials, install, `.env`, pièges |
 | [`shopify-e2e-strategy.md`](./shopify-e2e-strategy.md) | **Tests e2e Shopify réels (stratégie)** — dev store vs prod, harness gated, garantie par lint |
 | [`shopify-api-map.md`](./shopify-api-map.md) | **Cartographie API Shopify** — besoin PIM → scope R/W · fonction · action · statut |
+| [`shopify-productset-findings.md`](./shopify-productset-findings.md) | **Ledger productSet (vérifié live)** — forme exacte de la mutation, invariants à tester |
 | [`shopify-service-boundary.md`](./shopify-service-boundary.md) | **Frontière de service Shopify** — package vs micro-service, split connexion/domaine, déclencheur webhook |
 
 ### Modèle de données
