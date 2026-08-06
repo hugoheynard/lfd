@@ -9,6 +9,7 @@ import { PaymentsModule } from "./payments/payments.module.js";
 import { PickupAddressesModule } from "./pickup-addresses/pickup-addresses.module.js";
 import { PlatformSettingsModule } from "./platform-settings/platform-settings.module.js";
 import { StaffUsersModule } from "./staff-users/staff-users.module.js";
+import { SubscriptionsModule } from "./subscriptions/subscriptions.module.js";
 import { AuthModule } from "./infra/auth/auth.module.js";
 import { AppConfigModule } from "./infra/config/config.module.js";
 import { DatabaseModule } from "./infra/database/database.module.js";
@@ -35,6 +36,8 @@ import { DatabaseModule } from "./infra/database/database.module.js";
     // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.
     PaymentsModule,
     OrdersModule,
+    // Paniers récurrents (abonnements) — murés par le seul client connecté.
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
