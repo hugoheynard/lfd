@@ -1,0 +1,66 @@
+name: deploy_pim_backend
+
+# Déploie le backend PIM (lfc-pim-backend, NestJS) sur Cloudflare **Containers**,
+# à chaque push sur main touchant le backend PIM.
+#
+# ⚠️ PRÉREQUIS NON ENCORE DANS LE REPO (Phase 0 du scaling suite) — le workflow est
+# prêt mais le deploy échouera tant que ceci n'existe pas :
+#   1. apps/lfc-PIM-backend/wrangler.toml — un Worker + un binding Container
+#      ([[containers]]) pointant sur l'image ci-dessous.
+#   2. apps/lfc-PIM-backend/Dockerfile — image du backend Nest (prisma generate +
+#      build + `node dist/main.js`), construite par `wrangler deploy`.
+#   3. Secrets RUNTIME du Worker (pas des secrets GitHub) posés une fois via
+#      `wrangler secret put` : DATABASE_PIM_URL, Auth0, etc.
+#
+# Secrets GitHub requis (Settings → Secrets and variables → Actions) :
+#   LFC_PIM_BACKEND_WORKER — token Cloudflare « Account · Workers Scripts · Edit »
+#     (+ « Containers · Edit » pour pousser l'image).
+#   CLOUDFLARE_ACCOUNT_ID — l'account id partagé (déjà utilisé par les autres workflows).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/lfc-PIM-backend/**"
+      - "packages/**"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/deploy_pim_backend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy_pim_backend
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy_pim_backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Les types partagés doivent être buildés avant le typecheck du backend.
+      - name: Build shared packages
+        run: pnpm --filter "@lfd/contracts" build
+
+      - name: Typecheck
+        run: pnpm --filter lfc-pim-backend exec tsc --noEmit
+
+      # `wrangler deploy` lit apps/lfc-PIM-backend/wrangler.toml, construit l'image
+      # Docker (Container) et déploie le Worker. Docker est dispo sur ubuntu-latest.
+      - name: Deploy Worker + Container
+        working-directory: apps/lfc-PIM-backend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_PIM_BACKEND_WORKER }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm dlx wrangler deploy
