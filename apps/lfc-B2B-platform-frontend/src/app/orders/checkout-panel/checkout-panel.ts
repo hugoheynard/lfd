@@ -12,6 +12,7 @@ import type {
   CartAdjustment,
   DeliveryAddressView,
   FulfillmentMethod,
+  OrderPaymentIntent,
   PlaceOrderPayload,
 } from '@lfd/contracts';
 import {
@@ -23,6 +24,7 @@ import {
   FoldSelectComponent,
 } from 'fold-ng';
 
+import { StripePayment } from '../stripe-payment/stripe-payment';
 import type { Company } from '../../account/account.model';
 import { AccountService } from '../../account/account.service';
 import { formatEurValue } from '../../data/catalogue-seed';
@@ -69,6 +71,7 @@ function adjustmentCents(adjustment: CartAdjustment, subtotalCents: number): num
     FoldSelectComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
+    StripePayment,
   ],
   templateUrl: './checkout-panel.html',
   styleUrl: './checkout-panel.scss',
@@ -152,6 +155,15 @@ export class CheckoutPanel {
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly placedNumber = signal<string | null>(null);
+
+  /**
+   * Paiement en attente : présent uniquement pour une société `per_order`, après
+   * que la commande a été créée serveur. Bascule le panneau sur l'étape carte
+   * (Payment Element). `null` = pas de paiement à faire (terme différé).
+   */
+  protected readonly pendingPayment = signal<OrderPaymentIntent | null>(null);
+  /** Numéro de la commande créée, retenu le temps du paiement. */
+  private readonly pendingOrderNumber = signal('');
 
   protected readonly selectedCompany = computed<Company | null>(
     () => this.companies().find((company) => company.id === this.companyId()) ?? null,
@@ -262,15 +274,38 @@ export class CheckoutPanel {
     };
     this.orders.placeOrder(this.companyId(), payload).subscribe({
       next: (placed) => {
-        this.placedNumber.set(placed.orderNumber);
+        // La commande est créée serveur (le panier reflète l'état : on le vide).
         this.cart.clear();
         this.submitting.set(false);
+        if (placed.payment !== undefined) {
+          // Société `per_order` : on passe à l'étape carte, commande en attente.
+          this.pendingOrderNumber.set(placed.orderNumber);
+          this.pendingPayment.set(placed.payment);
+          return;
+        }
+        // Terme différé : rien à encaisser, la commande est enregistrée.
+        this.placedNumber.set(placed.orderNumber);
       },
       error: (error: unknown) => {
         this.submitting.set(false);
         this.errorMessage.set(readError(error));
       },
     });
+  }
+
+  /** Le Payment Element a confirmé le règlement : on affiche la confirmation. */
+  protected onPaid(): void {
+    this.placedNumber.set(this.pendingOrderNumber());
+    this.pendingPayment.set(null);
+  }
+
+  /**
+   * L'utilisateur revient de l'étape carte sans payer. La commande **existe déjà**
+   * (créée serveur, statut de paiement `pending`) : on ferme et on laisse la liste
+   * « Commandes » se rafraîchir — le règlement pourra se faire plus tard.
+   */
+  protected onPaymentCancelled(): void {
+    this.ref.close(true);
   }
 
   protected done(): void {

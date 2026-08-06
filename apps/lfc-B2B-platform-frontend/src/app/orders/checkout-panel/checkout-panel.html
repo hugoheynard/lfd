@@ -9,6 +9,15 @@
     <div class="foot">
       <button foldButton intent="primary" (click)="done()">Continuer</button>
     </div>
+  } @else if (pendingPayment(); as pay) {
+    <!-- Étape carte (société per_order) : la commande est créée, on encaisse. -->
+    <app-stripe-payment
+      [clientSecret]="pay.clientSecret"
+      [publishableKey]="pay.publishableKey"
+      [amountCents]="pay.amountCents"
+      (paid)="onPaid()"
+      (cancelled)="onPaymentCancelled()"
+    />
   } @else {
     <!-- Récapitulatif du panier -->
     <section class="summary">

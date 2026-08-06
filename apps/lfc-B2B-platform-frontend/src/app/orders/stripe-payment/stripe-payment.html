@@ -1,0 +1,26 @@
+<section class="pay">
+  <p class="section-label">Paiement par carte</p>
+  <p class="amount">
+    Montant à régler : <strong>{{ fmtCents(amountCents()) }}</strong>
+  </p>
+
+  @if (loading()) {
+    <p class="muted">Chargement du paiement sécurisé…</p>
+  }
+
+  <!-- Nœud de montage du Payment Element Stripe (rempli dans le navigateur). -->
+  <div #mount class="element" [class.is-hidden]="loading()"></div>
+
+  @if (error(); as message) {
+    <fold-callout variant="alert">{{ message }}</fold-callout>
+  }
+
+  <div class="foot">
+    <button foldButton emphasis="outline" intent="neutral" [disabled]="submitting()" (click)="cancel()">
+      Retour
+    </button>
+    <button foldButton intent="primary" [disabled]="loading() || submitting()" (click)="pay()">
+      {{ submitting() ? 'Paiement…' : 'Payer ' + fmtCents(amountCents()) }}
+    </button>
+  </div>
+</section>

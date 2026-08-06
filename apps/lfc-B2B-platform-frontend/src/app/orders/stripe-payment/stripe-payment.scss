@@ -1,0 +1,37 @@
+.pay {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.section-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fold-color-text-muted, inherit);
+}
+
+.amount {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted, inherit);
+  font-size: 0.875rem;
+}
+
+/* Le Payment Element (iframe Stripe) se dimensionne seul ; on lui réserve la place. */
+.element {
+  min-height: 3rem;
+}
+.element.is-hidden {
+  display: none;
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}

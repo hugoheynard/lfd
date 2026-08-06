@@ -29,6 +29,7 @@
     "@lfd/b2b-ui": "workspace:*",
     "@lfd/contracts": "workspace:*",
     "@lfd/endpoints": "workspace:*",
+    "@stripe/stripe-js": "^9.13.0",
     "express": "^5.1.0",
     "fold-ng": "catalog:",
     "rxjs": "~7.8.0",
