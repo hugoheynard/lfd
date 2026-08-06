@@ -1,18 +1,33 @@
 import {
   createSubscriptionPayloadSchema,
   occurrenceDateSchema,
+  setSubscriptionStatusPayloadSchema,
   upsertOccurrenceOverridePayloadSchema,
   type CreateSubscriptionPayload,
+  type SetSubscriptionStatusPayload,
   type SubscriptionView,
   type UpsertOccurrenceOverridePayload,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Put,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { CurrentUser } from "../../infra/auth/current-user.decorator.js";
 import type { Principal } from "../../infra/auth/principal.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { CreateSubscriptionCommand } from "../application/commands/create-subscription.command.js";
+import { DeleteSubscriptionCommand } from "../application/commands/delete-subscription.command.js";
+import { SetSubscriptionStatusCommand } from "../application/commands/set-subscription-status.command.js";
 import { UpsertOccurrenceOverrideCommand } from "../application/commands/upsert-occurrence-override.command.js";
 import type { CreatedSubscription } from "../domain/ports/subscription.repository.js";
 import { ListSubscriptionsQuery } from "../application/queries/list-subscriptions.query.js";
@@ -68,6 +83,28 @@ export class SubscriptionsController {
         occurrenceDateSchema.parse(date),
         payload,
       ),
+    );
+  }
+
+  /** Met en pause / reprend un panier récurrent. Mur = le propriétaire (sinon `404`). */
+  @Patch(":id/status")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  setStatus(
+    @CurrentUser() user: Principal,
+    @Param("id") id: string,
+    @Body(new ZodBody(setSubscriptionStatusPayloadSchema)) payload: SetSubscriptionStatusPayload,
+  ): Promise<void> {
+    return this.commands.execute<SetSubscriptionStatusCommand, void>(
+      new SetSubscriptionStatusCommand(user.userId, id, payload.status),
+    );
+  }
+
+  /** Supprime un panier récurrent. Mur = le propriétaire (sinon `404`). */
+  @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@CurrentUser() user: Principal, @Param("id") id: string): Promise<void> {
+    return this.commands.execute<DeleteSubscriptionCommand, void>(
+      new DeleteSubscriptionCommand(user.userId, id),
     );
   }
 }

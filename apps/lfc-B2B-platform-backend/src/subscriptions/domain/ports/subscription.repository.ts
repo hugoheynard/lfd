@@ -1,4 +1,9 @@
-import type { BillingAddressPayload, FulfillmentMethod, Recurrence } from "@lfd/contracts";
+import type {
+  BillingAddressPayload,
+  FulfillmentMethod,
+  Recurrence,
+  SubscriptionStatus,
+} from "@lfd/contracts";
 
 /** Une ligne du gabarit à persister (SKU + quantité). */
 export interface SubscriptionLineToPersist {
@@ -49,4 +54,8 @@ export interface OccurrenceOverrideToUpsert {
 export abstract class SubscriptionRepository {
   abstract create(subscription: SubscriptionToCreate): Promise<CreatedSubscription>;
   abstract upsertOccurrence(override: OccurrenceOverrideToUpsert): Promise<void>;
+  /** Met à jour l'état (active/paused). */
+  abstract setStatus(subscriptionId: string, status: SubscriptionStatus): Promise<void>;
+  /** Supprime le panier récurrent (lignes + dérogations en cascade). */
+  abstract remove(subscriptionId: string): Promise<void>;
 }

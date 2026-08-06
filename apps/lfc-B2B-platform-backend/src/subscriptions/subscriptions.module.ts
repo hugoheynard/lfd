@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
 import { CreateSubscriptionHandler } from "./application/commands/create-subscription.handler.js";
+import { DeleteSubscriptionHandler } from "./application/commands/delete-subscription.handler.js";
+import { SetSubscriptionStatusHandler } from "./application/commands/set-subscription-status.handler.js";
 import { UpsertOccurrenceOverrideHandler } from "./application/commands/upsert-occurrence-override.handler.js";
 import { ListSubscriptionsHandler } from "./application/queries/list-subscriptions.handler.js";
 import { SubscriptionReader } from "./domain/ports/subscription.reader.js";
@@ -20,6 +22,8 @@ import { SubscriptionsController } from "./http/subscriptions.controller.js";
   providers: [
     CreateSubscriptionHandler,
     UpsertOccurrenceOverrideHandler,
+    SetSubscriptionStatusHandler,
+    DeleteSubscriptionHandler,
     ListSubscriptionsHandler,
     { provide: SubscriptionRepository, useClass: PrismaSubscriptionRepository },
     { provide: SubscriptionReader, useClass: PrismaSubscriptionReader },

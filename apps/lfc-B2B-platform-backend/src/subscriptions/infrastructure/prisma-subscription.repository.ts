@@ -1,3 +1,4 @@
+import type { SubscriptionStatus } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../infra/database/client/client.js";
@@ -55,5 +56,13 @@ export class PrismaSubscriptionRepository extends SubscriptionRepository {
       },
       update: { skipped: override.skipped, lines, note: override.note },
     });
+  }
+
+  async setStatus(subscriptionId: string, status: SubscriptionStatus): Promise<void> {
+    await this.prisma.subscription.update({ where: { id: subscriptionId }, data: { status } });
+  }
+
+  async remove(subscriptionId: string): Promise<void> {
+    await this.prisma.subscription.delete({ where: { id: subscriptionId } });
   }
 }
