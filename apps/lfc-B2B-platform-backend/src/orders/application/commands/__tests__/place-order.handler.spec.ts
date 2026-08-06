@@ -6,6 +6,10 @@ import type {
 } from "@lfd/contracts";
 
 import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
+import {
+  PaymentGateway,
+  type CreateIntentParams,
+} from "../../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import { DeliveryAddressReader } from "../../../domain/ports/delivery-address.reader.js";
 import {
@@ -17,6 +21,7 @@ import {
 import {
   OrderGuardReader,
   type OrderCompanyStatus,
+  type OrderPaymentTerm,
   type OrderRole,
 } from "../../../domain/ports/order-guard.reader.js";
 import { OrderRepository, type OrderToPlace } from "../../../domain/ports/order.repository.js";
@@ -32,10 +37,32 @@ const CATALOG: Record<string, CatalogItem> = {
   "VIE-002": { sku: "VIE-002", name: "Pain au chocolat", unitPriceCents: 220, vatRate: 0 },
 };
 
-function guard(role: OrderRole | null, status: OrderCompanyStatus | null): OrderGuardReader {
+/**
+ * Terme par défaut **différé** (`net60`) : la plupart des tests portent sur le
+ * prix, pas le paiement — un terme différé évite de créer une intention Stripe.
+ * Les tests du paiement passent explicitement `per_order`.
+ */
+function guard(
+  role: OrderRole | null,
+  status: OrderCompanyStatus | null,
+  term: OrderPaymentTerm | null = "net60",
+): OrderGuardReader {
   return {
     roleOf: () => Promise.resolve(role),
     companyStatusOf: () => Promise.resolve(status),
+    paymentTermOf: () => Promise.resolve(term),
+  };
+}
+
+/** Passerelle de paiement doublée : capture l'appel `createIntent` (sans réseau). */
+function payments(sink: { intent: CreateIntentParams | null } = { intent: null }): PaymentGateway {
+  return {
+    createIntent: (params) => {
+      sink.intent = params;
+      return Promise.resolve({ paymentIntentId: "pi_test_1", clientSecret: "pi_test_1_secret" });
+    },
+    publishableKey: () => "pk_test_123",
+    parseWebhook: () => ({ kind: "ignored" }),
   };
 }
 
@@ -100,6 +127,8 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
       sink.placed = order;
       return Promise.resolve({ id: "order_1", orderNumber: "ORD-TEST" });
     },
+    markPaid: () => Promise.resolve(),
+    markPaymentFailed: () => Promise.resolve(),
   };
 }
 
@@ -125,6 +154,7 @@ describe("PlaceOrderHandler", () => {
       pickups(),
       zones(),
       deliveryAddrs(),
+      payments(),
     );
 
     await expect(
@@ -142,6 +172,7 @@ describe("PlaceOrderHandler", () => {
       pickups(),
       zones(),
       deliveryAddrs(),
+      payments(),
     );
 
     await expect(
@@ -159,6 +190,7 @@ describe("PlaceOrderHandler", () => {
       pickups(),
       zones(),
       deliveryAddrs(),
+      payments(),
     );
 
     // Le payload ne porte que sku+quantité ; même si un client forgeait un prix,
@@ -190,6 +222,7 @@ describe("PlaceOrderHandler", () => {
       pickups(),
       zones(),
       deliveryAddrs(),
+      payments(),
     );
 
     await handler.execute(
@@ -222,6 +255,7 @@ describe("PlaceOrderHandler", () => {
       pickups(),
       zones(),
       deliveryAddrs(),
+      payments(),
     );
 
     await expect(
@@ -241,6 +275,7 @@ describe("PlaceOrderHandler", () => {
       pickups(LABO_POINT),
       zones(),
       deliveryAddrs(),
+      payments(),
     );
 
     await handler.execute(
@@ -265,6 +300,7 @@ describe("PlaceOrderHandler", () => {
       pickups(null),
       zones(),
       deliveryAddrs(),
+      payments(),
     );
 
     await expect(
@@ -289,6 +325,7 @@ describe("PlaceOrderHandler", () => {
       pickups(point),
       zones(),
       deliveryAddrs(),
+      payments(),
     );
 
     // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
@@ -325,6 +362,7 @@ describe("PlaceOrderHandler", () => {
       pickups(),
       zones(zone),
       deliveryAddrs("73150"),
+      payments(),
     );
 
     // 2 × 200 = 400 ; frais 20 € = 2000 ; total = 2400.
@@ -336,5 +374,56 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed?.discountCents).toBe(0);
     expect(sink.placed?.deliveryFeeCents).toBe(2000);
     expect(sink.placed?.totalCents).toBe(2400);
+  });
+
+  it("en PER_ORDER, crée une intention Stripe du montant total, marque pending et renvoie le clientSecret", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CreateIntentParams | null };
+    const handler = new PlaceOrderHandler(
+      guard("member", "active", "per_order"),
+      catalog,
+      capturingRepo(sink),
+      pickups(),
+      zones(),
+      deliveryAddrs(),
+      payments(intentSink),
+    );
+
+    // 2 × 200 = 400, aucun ajustement → l'intention doit porter 400 centimes.
+    const result = await handler.execute(
+      new PlaceOrderCommand("u1", "c1", payload({ lines: [{ sku: "VIE-001", quantity: 2 }] })),
+    );
+
+    expect(intentSink.intent).toEqual({ amountCents: 400, currency: "eur", companyId: "c1" });
+    expect(sink.placed?.paymentStatus).toBe("pending");
+    expect(sink.placed?.stripePaymentIntentId).toBe("pi_test_1");
+    expect(result.payment).toEqual({
+      clientSecret: "pi_test_1_secret",
+      publishableKey: "pk_test_123",
+      amountCents: 400,
+    });
+  });
+
+  it("en terme différé (net60), ne crée AUCUNE intention et marque not_required", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CreateIntentParams | null };
+    const handler = new PlaceOrderHandler(
+      guard("member", "active", "net60"),
+      catalog,
+      capturingRepo(sink),
+      pickups(),
+      zones(),
+      deliveryAddrs(),
+      payments(intentSink),
+    );
+
+    const result = await handler.execute(
+      new PlaceOrderCommand("u1", "c1", payload({ lines: [{ sku: "VIE-001", quantity: 2 }] })),
+    );
+
+    expect(intentSink.intent).toBeNull();
+    expect(sink.placed?.paymentStatus).toBe("not_required");
+    expect(sink.placed?.stripePaymentIntentId).toBeNull();
+    expect(result.payment).toBeUndefined();
   });
 });

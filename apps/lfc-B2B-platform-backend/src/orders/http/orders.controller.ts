@@ -10,8 +10,10 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CurrentUser } from "../../infra/auth/current-user.decorator.js";
 import type { Principal } from "../../infra/auth/principal.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
-import { PlaceOrderCommand } from "../application/commands/place-order.command.js";
-import type { PlacedOrder } from "../domain/ports/order.repository.js";
+import {
+  PlaceOrderCommand,
+  type PlaceOrderResult,
+} from "../application/commands/place-order.command.js";
 import { ListCompanyOrdersQuery } from "../application/queries/list-company-orders.query.js";
 
 /**
@@ -48,9 +50,13 @@ export class OrdersController {
     @Param("companyId") companyId: string,
     @Body(new ZodBody(placeOrderPayloadSchema)) payload: PlaceOrderPayload,
   ): Promise<PlacedOrderResponse> {
-    const placed = await this.commands.execute<PlaceOrderCommand, PlacedOrder>(
+    const placed = await this.commands.execute<PlaceOrderCommand, PlaceOrderResult>(
       new PlaceOrderCommand(user.userId, companyId, payload),
     );
-    return { id: placed.id, orderNumber: placed.orderNumber };
+    // `payment` n'est présent que pour une société `per_order` (carte requise) ;
+    // on ne l'ajoute à la réponse que dans ce cas (exactOptionalPropertyTypes).
+    return placed.payment === undefined
+      ? { id: placed.id, orderNumber: placed.orderNumber }
+      : { id: placed.id, orderNumber: placed.orderNumber, payment: placed.payment };
   }
 }

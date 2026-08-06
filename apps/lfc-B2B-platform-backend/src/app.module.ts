@@ -5,6 +5,7 @@ import { AppService } from "./app.service.js";
 import { AccountModule } from "./account/account.module.js";
 import { DeliveryZonesModule } from "./delivery-zones/delivery-zones.module.js";
 import { OrdersModule } from "./orders/orders.module.js";
+import { PaymentsModule } from "./payments/payments.module.js";
 import { PickupAddressesModule } from "./pickup-addresses/pickup-addresses.module.js";
 import { PlatformSettingsModule } from "./platform-settings/platform-settings.module.js";
 import { StaffUsersModule } from "./staff-users/staff-users.module.js";
@@ -31,6 +32,8 @@ import { DatabaseModule } from "./infra/database/database.module.js";
     StaffUsersModule,
     // Contextes métier.
     AccountModule,
+    // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.
+    PaymentsModule,
     OrdersModule,
   ],
   controllers: [AppController],

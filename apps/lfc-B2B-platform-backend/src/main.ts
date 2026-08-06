@@ -8,7 +8,13 @@ import { QuietBootLogger } from "./shared/quiet-boot-logger.js";
 async function bootstrap(): Promise<void> {
   // Logger de démarrage silencieux : masque l'énumération des routes/modules
   // (bruit en watch), garde erreurs/warnings — un montage qui échoue reste loud.
-  const app = await NestFactory.create(AppModule, { logger: new QuietBootLogger() });
+  // `rawBody: true` : Express conserve le corps brut de chaque requête. Le webhook
+  // Stripe en a besoin — Stripe signe les octets exacts du payload, un JSON
+  // re-sérialisé casserait la vérification de signature.
+  const app = await NestFactory.create(AppModule, {
+    logger: new QuietBootLogger(),
+    rawBody: true,
+  });
 
   const config = app.get(AppConfig);
 

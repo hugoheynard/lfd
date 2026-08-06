@@ -5,6 +5,7 @@ import {
   type OrderLineView,
   type OrderStatus,
   type OrderView,
+  type PaymentStatus,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -27,6 +28,7 @@ interface OrderRow {
   readonly id: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
+  readonly paymentStatus: PaymentStatus;
   readonly requestedDeliveryDate: Date | null;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryAddressId: string | null;
@@ -56,6 +58,7 @@ export class PrismaOrderReader extends OrderReader {
         id: true,
         orderNumber: true,
         status: true,
+        paymentStatus: true,
         requestedDeliveryDate: true,
         fulfillmentMethod: true,
         deliveryAddressId: true,
@@ -98,6 +101,7 @@ function toOrderView(row: OrderRow): OrderView {
     id: row.id,
     orderNumber: row.orderNumber,
     status: row.status,
+    paymentStatus: row.paymentStatus,
     requestedDeliveryDate: toIsoDate(row.requestedDeliveryDate),
     fulfillmentMethod: row.fulfillmentMethod,
     deliveryAddressId: row.deliveryAddressId,

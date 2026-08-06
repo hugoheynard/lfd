@@ -2,7 +2,9 @@ import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
+import { PaymentsModule } from "../payments/payments.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
+import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
 import { DeliveryAddressReader } from "./domain/ports/delivery-address.reader.js";
@@ -26,10 +28,11 @@ import { OrdersController } from "./http/orders.controller.js";
  * résolus par un catalogue semé (jetable jusqu'au sync PIM).
  */
 @Module({
-  imports: [CqrsModule, PickupAddressesModule, DeliveryZonesModule],
+  imports: [CqrsModule, PickupAddressesModule, DeliveryZonesModule, PaymentsModule],
   controllers: [OrdersController],
   providers: [
     PlaceOrderHandler,
+    ConfirmOrderPaymentHandler,
     ListCompanyOrdersHandler,
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     { provide: ProductCatalogReader, useClass: SeededProductCatalog },

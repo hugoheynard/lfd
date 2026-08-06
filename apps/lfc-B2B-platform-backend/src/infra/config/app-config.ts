@@ -17,6 +17,7 @@ export class AppConfig {
   private readonly auth0AudienceValue: string;
   private readonly management: Auth0ManagementCredentials | null;
   private readonly storage: S3StorageConfig | null;
+  private readonly stripeValue: StripeConfig | null;
   private readonly portValue: number;
   private readonly impersonation: DevImpersonationConfig | null;
   private readonly adminAudienceValue: string | null;
@@ -29,6 +30,7 @@ export class AppConfig {
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
     this.management = optionalManagementCredentials();
     this.storage = optionalStorageConfig();
+    this.stripeValue = optionalStripeConfig();
     this.portValue = optionalPort("PORT", 3200);
     this.impersonation = optionalDevImpersonation();
     this.adminAudienceValue = optionalString("AUTH0_ADMIN_AUDIENCE");
@@ -84,6 +86,24 @@ export class AppConfig {
    */
   storageConfig(): S3StorageConfig | null {
     return this.storage;
+  }
+
+  /**
+   * Configuration **Stripe** (encaissement carte des commandes `per_order`), ou
+   * `null` si le canal n'est pas configuré.
+   *
+   * Optionnel comme le M2M et le stockage : l'API démarre sans (le reste de la
+   * plateforme — panier, commandes sur terme différé — fonctionne). C'est
+   * l'adaptateur `StripePaymentGateway` qui **refuse** explicitement de créer une
+   * intention ou de vérifier un webhook quand c'est `null`, jamais le boot.
+   *
+   * Les trois valeurs vont ensemble : la clé secrète (`sk_…`) signe les appels
+   * serveur, le secret de webhook (`whsec_…`) authentifie les événements reçus, la
+   * clé publique (`pk_…`, **non secrète**) part au navigateur pour le Payment
+   * Element.
+   */
+  stripeConfig(): StripeConfig | null {
+    return this.stripeValue;
   }
 
   /** Port d'écoute de l'API. */
@@ -158,6 +178,18 @@ export interface Auth0ManagementCredentials {
 }
 
 /**
+ * Réglages Stripe. `secretKey` et `webhookSecret` sont **secrets** (serveur only) ;
+ * `publishableKey` est publique (destinée au bundle navigateur). Le préfixe
+ * `sk_test_`/`pk_test_`/`whsec_` distingue le mode test du live — on ne le contrôle
+ * pas ici (Stripe le porte dans la clé), mais tout le module suppose le mode test.
+ */
+export interface StripeConfig {
+  readonly secretKey: string;
+  readonly webhookSecret: string;
+  readonly publishableKey: string;
+}
+
+/**
  * Les deux valeurs vont **ensemble** : n'en fournir qu'une est une erreur de
  * configuration qu'il vaut mieux voir au démarrage qu'au premier changement
  * d'e-mail, six mois plus tard.
@@ -227,6 +259,28 @@ function optionalDevImpersonation(): DevImpersonationConfig | null {
   }
   const subject = process.env["AUTH_DEV_IMPERSONATE_SUBJECT"]?.trim() ?? "";
   return { subject: subject === "" ? null : subject };
+}
+
+/**
+ * Configuration Stripe, ou `null` si non fournie. Les trois valeurs vont
+ * **ensemble** : n'en fournir qu'une (ou deux) est une erreur de configuration
+ * qu'il vaut mieux voir au démarrage qu'au premier paiement. Absentes toutes les
+ * trois ⇒ `null` (canal désactivé ; l'adaptateur refuse alors explicitement).
+ */
+function optionalStripeConfig(): StripeConfig | null {
+  const secretKey = process.env["STRIPE_SECRET_KEY"]?.trim() ?? "";
+  const webhookSecret = process.env["STRIPE_WEBHOOK_SECRET"]?.trim() ?? "";
+  const publishableKey = process.env["STRIPE_PUBLISHABLE_KEY"]?.trim() ?? "";
+
+  if (secretKey === "" && webhookSecret === "" && publishableKey === "") {
+    return null;
+  }
+  if (secretKey === "" || webhookSecret === "" || publishableKey === "") {
+    throw new Error(
+      "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET et STRIPE_PUBLISHABLE_KEY vont ensemble : renseignez les trois, ou aucune.",
+    );
+  }
+  return { secretKey, webhookSecret, publishableKey };
 }
 
 function required(name: string): string {

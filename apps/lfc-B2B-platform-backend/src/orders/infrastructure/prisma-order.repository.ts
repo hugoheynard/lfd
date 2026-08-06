@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { AddressKind, Prisma } from "../../infra/database/client/client.js";
+import { AddressKind, PaymentStatus, Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { DeliveryAddressInvalidError } from "../domain/errors/order-errors.js";
 import {
@@ -63,6 +63,8 @@ export class PrismaOrderRepository extends OrderRepository {
           discountCents: order.discountCents,
           deliveryFeeCents: order.deliveryFeeCents,
           totalCents: order.totalCents,
+          paymentStatus: order.paymentStatus,
+          stripePaymentIntentId: order.stripePaymentIntentId,
           note: order.note,
           lines: {
             create: order.lines.map((line) => ({
@@ -77,6 +79,24 @@ export class PrismaOrderRepository extends OrderRepository {
         },
         select: { id: true, orderNumber: true },
       });
+    });
+  }
+
+  async markPaid(paymentIntentId: string): Promise<void> {
+    // `updateMany` + filtre `pending` = idempotence : un webhook rejoué (déjà
+    // `paid`) ou un intent inconnu ne matche aucune ligne, l'appel est un no-op.
+    await this.prisma.order.updateMany({
+      where: { stripePaymentIntentId: paymentIntentId, paymentStatus: PaymentStatus.pending },
+      data: { paymentStatus: PaymentStatus.paid, paidAt: new Date() },
+    });
+  }
+
+  async markPaymentFailed(paymentIntentId: string): Promise<void> {
+    // Même idempotence : on ne rétrograde que ce qui était encore `pending` (un
+    // paiement déjà `paid` n'est jamais repassé à `failed`).
+    await this.prisma.order.updateMany({
+      where: { stripePaymentIntentId: paymentIntentId, paymentStatus: PaymentStatus.pending },
+      data: { paymentStatus: PaymentStatus.failed },
     });
   }
 }

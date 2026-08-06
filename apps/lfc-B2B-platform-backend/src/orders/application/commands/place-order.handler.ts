@@ -7,6 +7,7 @@ import {
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DeliveryZoneRepository } from "../../../delivery-zones/domain/delivery-zone.repository.js";
+import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
   EmptyOrderError,
@@ -14,23 +15,34 @@ import {
   UnknownSkuError,
 } from "../../domain/errors/order-errors.js";
 import { DeliveryAddressReader } from "../../domain/ports/delivery-address.reader.js";
-import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
-import {
-  OrderRepository,
-  type OrderLineToPersist,
-  type PlacedOrder,
-} from "../../domain/ports/order.repository.js";
+import { OrderGuardReader, type OrderPaymentTerm } from "../../domain/ports/order-guard.reader.js";
+import { OrderRepository, type OrderLineToPersist } from "../../domain/ports/order.repository.js";
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
 import { ensureCanOrder, ensureOrderMember } from "../../domain/services/order-access.js";
-import { PlaceOrderCommand } from "./place-order.command.js";
+import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
+
+/** Devise unique de la plateforme (montants en centimes d'euro). */
+const CURRENCY = "eur";
+
+/**
+ * Le paiement par carte au checkout n'est exigé que pour le terme `per_order` :
+ * les termes différés (mensuel, net60/90) sont facturés hors ligne. Fonction pure
+ * — la décision est testable sans infrastructure.
+ */
+function requiresCardPayment(term: OrderPaymentTerm | null, totalCents: number): boolean {
+  return term === "per_order" && totalCents > 0;
+}
 
 /**
  * Passe une commande : mur (membre) → droit de commander (entreprise activée) →
  * **ré-résolution serveur** des prix (le client n'a envoyé que sku + quantité) →
- * écriture transactionnelle. Les lignes en double sont fusionnées par SKU.
+ * écriture transactionnelle. Les lignes en double sont fusionnées par SKU. Pour
+ * une société `per_order`, une intention de paiement Stripe est créée et son
+ * `clientSecret` renvoyé au client (Payment Element) ; sinon la commande est
+ * facturée sur son terme (`not_required`).
  */
 @CommandHandler(PlaceOrderCommand)
-export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, PlacedOrder> {
+export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, PlaceOrderResult> {
   constructor(
     private readonly guard: OrderGuardReader,
     private readonly catalog: ProductCatalogReader,
@@ -38,9 +50,10 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
     private readonly deliveryAddresses: DeliveryAddressReader,
+    private readonly payments: PaymentGateway,
   ) {}
 
-  async execute(command: PlaceOrderCommand): Promise<PlacedOrder> {
+  async execute(command: PlaceOrderCommand): Promise<PlaceOrderResult> {
     const role = await this.guard.roleOf(command.actorUserId, command.companyId);
     ensureOrderMember(role, command.companyId);
 
@@ -59,7 +72,20 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     const deliveryFeeCents = await this.resolveDeliveryFee(command, acheminement, subtotalCents);
     const totalCents = Math.max(0, subtotalCents - discountCents) + deliveryFeeCents;
 
-    return this.orders.place({
+    // Le terme décide si une carte est requise. On crée l'intention Stripe AVANT
+    // la commande : ainsi une commande `pending` porte toujours son intent (pas
+    // de fenêtre orpheline) ; si Stripe échoue, aucune commande n'est créée.
+    const term = await this.guard.paymentTermOf(command.companyId);
+    const requiresCard = requiresCardPayment(term, totalCents);
+    const intent = requiresCard
+      ? await this.payments.createIntent({
+          amountCents: totalCents,
+          currency: CURRENCY,
+          companyId: command.companyId,
+        })
+      : null;
+
+    const placed = await this.orders.place({
       companyId: command.companyId,
       placedByUserId: command.actorUserId,
       fulfillmentMethod: command.payload.fulfillmentMethod,
@@ -73,8 +99,23 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       discountCents,
       deliveryFeeCents,
       totalCents,
+      paymentStatus: requiresCard ? "pending" : "not_required",
+      stripePaymentIntentId: intent?.paymentIntentId ?? null,
       lines,
     });
+
+    if (intent === null) {
+      return { id: placed.id, orderNumber: placed.orderNumber };
+    }
+    return {
+      id: placed.id,
+      orderNumber: placed.orderNumber,
+      payment: {
+        clientSecret: intent.clientSecret,
+        publishableKey: this.payments.publishableKey(),
+        amountCents: totalCents,
+      },
+    };
   }
 
   /**
