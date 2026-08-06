@@ -9,3 +9,8 @@
 export * from './fold-action';
 export * from './fold-banner-carousel';
 export * from './fold-product-card';
+// Carte produit **app-owned** (mise en page libre dans ce repo), distincte de la
+// `fold-product-card` écrite pour migrer dans `fold-ng`.
+export * from './product-card';
+// Rangée order-pad compacte (réappro dense) — app-owned.
+export * from './product-row';

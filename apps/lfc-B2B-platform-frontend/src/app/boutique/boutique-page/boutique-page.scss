@@ -4,3 +4,19 @@
 :host {
   display: block;
 }
+
+/* Hero pleine largeur (section `bleed`) : on retire l'arrondi par défaut du
+   carrousel — bord à bord, un léger radius jurerait contre les bords francs. */
+fold-banner-carousel {
+  --fold-banner-carousel-radius: 0;
+}
+
+/* Section « Découvrez » (4 tuiles catégories) — **desktop-only**. Sur mobile elle
+   passe en 1 colonne = 4 carrés pleine largeur empilés (≈ 70 % du scroll avant la
+   boutique) et fait doublon avec la bande de chips catégories des filtres. On la
+   masque donc là où elle deviendrait verticale (≤720px, son propre breakpoint). */
+@media (max-width: 720px) {
+  .discover-section {
+    display: none;
+  }
+}

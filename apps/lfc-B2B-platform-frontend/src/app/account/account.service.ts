@@ -4,6 +4,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import type { Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
+import type { CatalogueView } from '../catalogue/catalogue-view';
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { NotifyService } from '../notify.service';
@@ -11,6 +12,7 @@ import type {
   Account,
   CompanyDraft,
   ContactDraft,
+  NavPreferences,
   PaymentTerm,
   UserProfileDraft,
 } from './account.model';
@@ -46,6 +48,11 @@ export class AccountService {
 
   readonly profile = computed(() => this.state()?.profile ?? null);
   readonly companies = computed(() => this.state()?.companies ?? []);
+
+  /** Préférences d'affichage persistées ; défaut « aucun choix » avant chargement. */
+  readonly navPrefs = computed<NavPreferences>(
+    () => this.state()?.navPrefs ?? { catalogueView: null },
+  );
 
   /**
    * Vrai quand on **sait** que la personne n'a aucune entreprise — pas quand on
@@ -95,6 +102,41 @@ export class AccountService {
           this.notify.success('Profil enregistré.');
         },
         error: (error: unknown) => this.failOperation(error),
+      });
+  }
+
+  /**
+   * Persiste la vue de catalogue choisie — **optimiste et silencieuse** : on
+   * reflète le choix tout de suite (l'UI ne doit pas attendre le réseau pour une
+   * préférence d'affichage), on écrit en arrière-plan sans toast de succès. En
+   * cas d'échec on **revient** à l'état précédent et on toaste l'erreur.
+   *
+   * No-op si le compte n'est pas encore chargé ou si la vue ne change pas — évite
+   * un PATCH inutile à chaque rendu.
+   */
+  setCatalogueView(view: CatalogueView): void {
+    const current = this.state();
+    if (current === null || current.navPrefs.catalogueView === view) {
+      return;
+    }
+    this.state.set({ ...current, navPrefs: { ...current.navPrefs, catalogueView: view } });
+    this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.patch<Account>(
+            `${AUTH_CONFIG.apiBaseUrl}/me/nav-prefs`,
+            { catalogueView: view },
+            headers(token),
+          ),
+        ),
+      )
+      .subscribe({
+        next: (account) => this.state.set(account),
+        error: (error: unknown) => {
+          this.state.set(current);
+          this.notify.error(error);
+        },
       });
   }
 

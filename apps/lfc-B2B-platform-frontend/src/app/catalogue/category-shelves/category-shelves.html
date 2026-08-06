@@ -1,0 +1,37 @@
+@for (shelf of shelves(); track shelf.id) {
+  <section class="shelf">
+    <button
+      type="button"
+      class="shelf-head"
+      [attr.aria-expanded]="!isCollapsed(shelf.id)"
+      (click)="toggle(shelf.id)"
+    >
+      <span class="shelf-title">
+        {{ shelf.label }}
+        <span class="shelf-count">{{ shelf.count }}</span>
+      </span>
+      <span class="shelf-chevron" [class.is-collapsed]="isCollapsed(shelf.id)" aria-hidden="true">
+        ⌄
+      </span>
+    </button>
+
+    @if (!isCollapsed(shelf.id)) {
+      <div class="shelf-track" role="list">
+        @for (p of shelf.products; track p.id) {
+          <app-product-card
+            role="listitem"
+            class="shelf-card"
+            [product]="p"
+            [favorite]="favorites.has(p.id)"
+            [inCart]="cart.qtyOf(p.id)"
+            [priceFormat]="formatEur"
+            priceSuffix="HT"
+            (favoriteToggle)="onFav($event)"
+            (action)="add.emit($event)"
+            (notify)="notify.emit($event)"
+          />
+        }
+      </div>
+    }
+  </section>
+}

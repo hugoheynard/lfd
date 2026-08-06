@@ -1,6 +1,9 @@
 <div class="cf">
+  <!-- Catégories : multiselect (desktop) — remplacé par la bande de chips sur mobile.
+       Toute la rangée est en `sm` : même gabarit fin, aligné sur le multiselect. -->
   <fold-multiselect
     class="cf-cats"
+    size="sm"
     label="Catégories"
     placeholder="Toutes les catégories"
     [options]="categories()"
@@ -8,25 +11,61 @@
   />
   <fold-search
     class="cf-search"
+    size="sm"
     placeholder="Rechercher un produit…"
     (searchChange)="query.set($event)"
   />
   <button
     foldButton
     type="button"
+    size="sm"
     icon="heart"
     [emphasis]="favoritesOnly() ? 'solid' : 'outline'"
     [intent]="favoritesOnly() ? 'primary' : 'neutral'"
     (click)="favoritesOnly.set(!favoritesOnly())"
   >
-    Favoris
+    <span class="cf-btn-label">Favoris</span>
     @if (favoritesCount() > 0) {
       ({{ favoritesCount() }})
     }
   </button>
-  @if (hasFilters()) {
-    <button foldButton type="button" emphasis="soft" intent="neutral" (click)="clear()">
-      Effacer
+  <!-- Réinitialiser — **toujours présent** (repère stable), désactivé tant qu'aucun
+       filtre n'est actif. Icône seule sur mobile pour tenir sur la rangée. -->
+  <button
+    foldButton
+    type="button"
+    size="sm"
+    emphasis="soft"
+    intent="neutral"
+    icon="repeat"
+    class="cf-reset"
+    [disabled]="!hasFilters()"
+    (click)="clear()"
+  >
+    <span class="cf-btn-label">Réinitialiser</span>
+  </button>
+</div>
+
+<!-- Bande de catégories — **mobile** : chips en scroll horizontal (filtre natif). -->
+<div class="cf-band" role="group" aria-label="Filtrer par catégorie">
+  <button
+    type="button"
+    class="cf-chip"
+    [class.is-on]="allSelected()"
+    [attr.aria-pressed]="allSelected()"
+    (click)="selectAllCats()"
+  >
+    Toutes
+  </button>
+  @for (c of categories(); track c.value) {
+    <button
+      type="button"
+      class="cf-chip"
+      [class.is-on]="isCatOn(c.value)"
+      [attr.aria-pressed]="isCatOn(c.value)"
+      (click)="toggleCat(c.value)"
+    >
+      {{ c.label }}
     </button>
   }
 </div>

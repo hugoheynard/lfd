@@ -3,10 +3,18 @@
 }
 
 /* Grid fluide : le `min` (≈210px) fixe le nombre de colonnes — ~5 sur un
-   MacBook, moins en descendant — et `min(…, 100%)` évite tout débordement sous
-   210px (mobile = 1 colonne). Aucune média-query. */
+   MacBook, moins en descendant — et `min(…, 100%)` évite tout débordement. */
 .product-grid {
   display: grid;
   gap: var(--fold-space-lg, 1.25rem);
   grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
+}
+
+/* Mobile : 2 colonnes FIXES (sans média-query, `auto-fill` retombe à 1 colonne
+   sous ~440px) — bien plus scannable au doigt qu'une carte pleine largeur. */
+@media (max-width: 640px) {
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--fold-space-md, 1rem);
+  }
 }

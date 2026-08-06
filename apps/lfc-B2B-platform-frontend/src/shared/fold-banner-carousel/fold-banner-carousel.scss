@@ -184,9 +184,13 @@
   opacity: 1;
 }
 
-/* No hover (touch): controls stay visible so navigation is reachable. */
+/* No hover (touch / mobile) : **pas de flèches** (on navigue au swipe et aux
+   dots) — les indicateurs latéraux n'ont pas de sens au doigt. Les dots restent
+   visibles pour repérer la position et naviguer. */
 @media (hover: none) {
-  .fbc-arrow,
+  .fbc-arrow {
+    display: none;
+  }
   .fbc-dots {
     opacity: 1;
   }

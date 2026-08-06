@@ -14,6 +14,8 @@
  * formulaire.
  */
 
+import type { CatalogueView } from '../catalogue/catalogue-view';
+
 /** Où en est une entreprise dans son cycle commercial. */
 export type CompanyStatus = 'pending' | 'active' | 'suspended';
 
@@ -104,9 +106,20 @@ export interface Company {
   readonly kbis: Kbis | null;
 }
 
+/**
+ * Préférences d'affichage persistées de la personne (miroir de `NavPreferences`
+ * backend). Purement UI : suivre le client d'un appareil à l'autre. `null` sur
+ * un champ = aucun choix explicite, le front applique son défaut.
+ */
+export interface NavPreferences {
+  readonly catalogueView: CatalogueView | null;
+}
+
 export interface Account {
   readonly profile: UserProfile;
   readonly companies: readonly Company[];
+  /** Préférences d'affichage, toujours présentes (défauts `null` si jamais posées). */
+  readonly navPrefs: NavPreferences;
 }
 
 /** Ce qu'un formulaire de profil envoie. */

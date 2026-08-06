@@ -20,19 +20,21 @@ import type { FoldProduct, FoldProductOrder } from '../../../shared';
 import { type CatalogueCategory } from '../../data/catalogue-seed';
 import { FavoritesService } from '../../data/favorites.service';
 import { CardCatalog } from '../card-catalog/card-catalog';
+import { CategoryCatalog } from '../category-catalog/category-catalog';
+import { CategoryShelves } from '../category-shelves/category-shelves';
 import { CatalogueFilters } from '../catalogue-filters/catalogue-filters';
-import { type CatalogueView, toCatalogueView } from '../catalogue-view';
-import { TableCatalog } from '../table-catalog/table-catalog';
+import { type CatalogueView } from '../catalogue-view';
 
 /**
- * **Orchestrateur** du catalogue : il possède l'état partagé (filtres, vue
- * courante, pagination) et délègue l'affichage — la barre de filtres
- * ({@link CatalogueFilters}), puis la vue **cartes** ({@link CardCatalog}) ou
- * **tableau/order-pad** ({@link TableCatalog}). Il ne dessine plus rien lui-même.
+ * **Orchestrateur** du catalogue : il possède les filtres + la pagination et
+ * délègue l'affichage — la barre de filtres ({@link CatalogueFilters}), puis l'une
+ * des trois vues **au choix du client** : **grille** de cartes ({@link CardCatalog}),
+ * **rayons** par catégorie ({@link CategoryShelves}) ou **liste** order-pad
+ * ({@link CategoryCatalog}). Grille = paginée ; rayons/liste = tout le filtré.
  *
- * Le **switch cartes ↔ tableau** est posé par le parent dans le slot
- * `[sectionActions]` de la `fold-page-section` (via un `fold-view-toggle` lié à
- * `view`/`setView`) — l'orchestrateur reste la source de vérité de la vue.
+ * La **vue** est **contrôlée par la page** (input `view`) : c'est elle qui possède
+ * l'état + persiste la préférence utilisateur, et qui pose le `fold-view-toggle`
+ * dans le slot `[sectionActions]` de la `fold-page-section`.
  *
  * Pas de layout propre : posé dans une `fold-page-section` (`stack`), c'est elle
  * qui espace filtres / vue / pagination (`:host { display: contents }`).
@@ -43,7 +45,8 @@ import { TableCatalog } from '../table-catalog/table-catalog';
   imports: [
     CatalogueFilters,
     CardCatalog,
-    TableCatalog,
+    CategoryShelves,
+    CategoryCatalog,
     FoldButtonComponent,
     FoldPaginatorComponent,
     FoldEmptyStateComponent,
@@ -65,12 +68,10 @@ export class ProductCatalogue {
 
   protected readonly favorites = inject(FavoritesService);
 
-  /** Vue courante (cartes / tableau) — l'orchestrateur en est la source de vérité. */
-  readonly view = signal<CatalogueView>('cards');
-  /** Appliqué par le `fold-view-toggle` du parent (valeur brute → union). */
-  setView(value: string): void {
-    this.view.set(toCatalogueView(value));
-  }
+  /** Vue courante (grille / rayons / liste) — **contrôlée par le parent** (la page
+   *  possède l'état + la persistance de la préférence utilisateur, et le sélecteur
+   *  de vue vit dans son slot `sectionActions`). */
+  readonly view = input<CatalogueView>('cards');
 
   protected readonly categoryOptions = computed<readonly FoldSelectOption<string>[]>(() =>
     this.categories().map((c) => ({ value: c.id, label: c.label })),

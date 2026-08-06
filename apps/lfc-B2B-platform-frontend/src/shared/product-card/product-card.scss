@@ -1,0 +1,241 @@
+/* app-product-card — tokens only. Média à ratio fixe → grille régulière. */
+:host {
+  display: block;
+
+  --pc-ratio: 4 / 3;
+  --pc-radius: var(--fold-radius-lg, 14px);
+}
+
+.pc {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--pc-radius);
+  background: var(--fold-color-surface-card);
+  overflow: hidden;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+.pc:hover {
+  border-color: var(--fold-color-border-strong, var(--fold-color-primary));
+  box-shadow: var(--fold-shadow-md);
+  transform: translateY(-2px);
+}
+
+.pc.is-out {
+  border-color: var(--fold-color-alert, #c0392b);
+}
+.pc.is-out .pc-img,
+.pc.is-out .pc-placeholder {
+  filter: grayscale(0.4);
+  opacity: 0.7;
+}
+.pc.is-warn {
+  border-color: var(--fold-color-warning, #d68a00);
+}
+.pc.is-highlight {
+  border-width: 2px;
+  border-color: var(--fold-color-primary);
+  box-shadow: var(--fold-shadow-md);
+}
+
+.pc-out-ribbon,
+.pc-warn-ribbon {
+  position: absolute;
+  top: var(--fold-space-sm, 0.5rem);
+  left: var(--fold-space-sm, 0.5rem);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--fold-radius-sm, 6px);
+  color: #fff;
+  font-size: var(--fold-text-xs, 0.7rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.pc-out-ribbon {
+  background: var(--fold-color-alert, #c0392b);
+}
+.pc-warn-ribbon {
+  background: var(--fold-color-warning, #d68a00);
+}
+
+.pc-media {
+  position: relative;
+  aspect-ratio: var(--pc-ratio);
+  background: var(--fold-color-bg-rail-tertiary, var(--fold-color-surface-sunken));
+}
+.pc-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pc-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface, var(--fold-color-surface-sunken));
+}
+.pc-badge {
+  position: absolute;
+  top: var(--fold-space-sm, 0.5rem);
+  left: var(--fold-space-sm, 0.5rem);
+}
+.pc-fav {
+  position: absolute;
+  top: var(--fold-space-xs, 0.35rem);
+  right: var(--fold-space-xs, 0.35rem);
+  border-radius: var(--fold-radius-full, 999px);
+  background: var(--fold-color-glass, rgba(255, 255, 255, 0.7));
+  backdrop-filter: blur(4px);
+}
+
+.pc-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs, 0.35rem);
+  padding: var(--fold-space-md, 1rem);
+  flex: 1 1 auto;
+}
+
+/* Row du nom : nom (peut passer sur 2 lignes) + puce panier, alignés en haut. */
+.pc-name-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+.pc-name {
+  margin: 0;
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
+  min-width: 0;
+}
+/* Puce « ✓ N » au panier — pastille discrète, ne rétrécit pas. */
+.pc-incart-chip {
+  flex: none;
+  align-self: flex-start;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--fold-radius-full, 999px);
+  background: var(--fold-color-primary-surface, var(--fold-color-surface-sunken));
+  color: var(--fold-color-primary-text, var(--fold-color-primary));
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pc-detail {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.pc-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.5rem);
+  margin-top: auto;
+  padding-top: var(--fold-space-sm, 0.5rem);
+}
+
+/* Row du prix : prix à gauche, sélecteur d'unité à droite (space-between). */
+.pc-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm, 0.5rem);
+  flex-wrap: wrap;
+}
+.pc-price {
+  font-size: var(--fold-text-lg, 1.15rem);
+  font-weight: 700;
+  color: var(--fold-color-text);
+  white-space: nowrap;
+}
+.pc-price-suffix {
+  margin-inline-start: 0.2rem;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--fold-color-text-muted);
+}
+.pc-unit {
+  margin-inline-start: 0.15rem;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 500;
+  color: var(--fold-color-text-muted);
+}
+
+/* Sélecteur unité ↔ colis — segmenté compact, affiché seulement si colis (PCB). */
+.pc-mode {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-full, 999px);
+  background: var(--fold-color-surface-sunken);
+}
+.pc-mode-opt {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--fold-radius-full, 999px);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.pc-mode-opt:hover {
+  color: var(--fold-color-text);
+}
+.pc-mode-opt.is-on {
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+}
+.pc-mode-opt:focus-visible {
+  outline: 2px solid var(--fold-color-primary-border, var(--fold-color-primary));
+  outline-offset: 1px;
+}
+
+/* Row de commande : pas-à-pas (largeur fixe) + « Ajouter N » (prend le reste). */
+.pc-order {
+  display: flex;
+  align-items: stretch;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+.pc-qty {
+  flex: 0 0 auto;
+  width: 7.5rem;
+}
+.pc-add {
+  flex: 1 1 auto;
+  justify-content: center;
+  white-space: nowrap;
+}
+.pc-notify {
+  width: 100%;
+  justify-content: center;
+}
+
+.pc-subtotal {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+.pc-subtotal strong {
+  color: var(--fold-color-text);
+  font-variant-numeric: tabular-nums;
+}

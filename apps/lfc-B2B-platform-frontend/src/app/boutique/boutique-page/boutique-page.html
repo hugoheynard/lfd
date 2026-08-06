@@ -9,7 +9,7 @@
     />
   </fold-page-section>
 
-  <fold-page-section bleed>
+  <fold-page-section bleed class="discover-section">
     <app-discover-bands />
   </fold-page-section>
 
@@ -31,15 +31,16 @@
     <fold-view-toggle
       sectionActions
       size="sm"
+      activeStyle="accent"
       ariaLabel="Affichage du catalogue"
-      [options]="catalogueViewOptions"
-      [value]="cat.view()"
-      (valueChange)="cat.setView($event)"
+      [options]="catalogueViewOptions()"
+      [value]="effectiveView()"
+      (valueChange)="setCatalogueView($event)"
     />
     <app-product-catalogue
-      #cat
       [products]="products"
       [categories]="categories"
+      [view]="effectiveView()"
       (add)="onAdd($event)"
       (notify)="onNotify($event)"
     />

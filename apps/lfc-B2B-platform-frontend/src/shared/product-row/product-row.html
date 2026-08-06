@@ -1,0 +1,102 @@
+@let p = product();
+<div class="pr" [class.is-out]="isOut()">
+  <div class="pr-thumb">
+    @if (p.image) {
+      <img class="pr-img" [src]="p.image" [alt]="p.imageAlt ?? p.name" loading="lazy" />
+    } @else {
+      <span class="pr-initial" aria-hidden="true">{{ initial() }}</span>
+    }
+    <fold-toggle-icon
+      class="pr-fav"
+      icon="heart"
+      size="sm"
+      [active]="favorite()"
+      [tooltip]="favorite() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+      (toggled)="onFavorite()"
+    />
+  </div>
+
+  <div class="pr-main">
+    <div class="pr-line1">
+      <span class="pr-name">{{ p.name }}</span>
+      @if (inCart(); as n) {
+        <span class="pr-incart">✓ {{ n }}</span>
+      }
+    </div>
+    <div class="pr-line2">
+      @if (p.price) {
+        <span class="pr-price">
+          {{ p.price }}
+          @if (priceSuffix(); as s) {
+            <span class="pr-suffix">{{ s }}</span>
+          }
+          @if (p.unit) {
+            <span class="pr-unit">{{ p.unit }}</span>
+          }
+        </span>
+      }
+      @if (hasPack()) {
+        <div class="pr-mode" role="group" aria-label="Mode de commande">
+          <button
+            type="button"
+            class="pr-mode-opt"
+            [class.is-on]="!byPack()"
+            [attr.aria-pressed]="!byPack()"
+            (click)="byPack.set(false)"
+          >
+            Unité
+          </button>
+          <button
+            type="button"
+            class="pr-mode-opt"
+            [class.is-on]="byPack()"
+            [attr.aria-pressed]="byPack()"
+            (click)="byPack.set(true)"
+          >
+            {{ packOptionLabel() }}
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="pr-actions">
+    @if (isOut()) {
+      <button
+        foldButton
+        type="button"
+        emphasis="outline"
+        intent="neutral"
+        size="sm"
+        icon="bell"
+        (click)="onNotify()"
+      >
+        {{ notifyLabel() }}
+      </button>
+    } @else {
+      <fold-number-input
+        class="pr-qty"
+        spinner="plusminus"
+        controls="outside"
+        size="sm"
+        align="center"
+        snapToStep
+        aria-label="Quantité"
+        [min]="minQty()"
+        [step]="step()"
+        [(value)]="quantity"
+      />
+      <button
+        foldButton
+        type="button"
+        emphasis="solid"
+        intent="primary"
+        size="sm"
+        icon="plus"
+        class="pr-add"
+        [attr.aria-label]="addText()"
+        (click)="onAction()"
+      ></button>
+    }
+  </div>
+</div>

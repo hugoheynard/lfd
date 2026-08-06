@@ -34,6 +34,26 @@ export class CatalogueFilters {
     () => this.selectedCategories().length > 0 || this.query().length > 0 || this.favoritesOnly(),
   );
 
+  /** Aucune catégorie sélectionnée = « Toutes » (chip actif sur mobile). */
+  protected readonly allSelected = computed(() => this.selectedCategories().length === 0);
+
+  /** Cette catégorie est-elle active dans la bande mobile ? */
+  protected isCatOn(id: string): boolean {
+    return this.selectedCategories().includes(id);
+  }
+
+  /** Chip « Toutes » : vide la sélection de catégories. */
+  protected selectAllCats(): void {
+    this.selectedCategories.set([]);
+  }
+
+  /** Bascule une catégorie (bande mobile) — même modèle multi que le multiselect. */
+  protected toggleCat(id: string): void {
+    this.selectedCategories.update((cats) =>
+      cats.includes(id) ? cats.filter((c) => c !== id) : [...cats, id],
+    );
+  }
+
   protected clear(): void {
     this.selectedCategories.set([]);
     this.query.set('');

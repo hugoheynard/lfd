@@ -1,0 +1,78 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg, 1.25rem);
+}
+
+.shelf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+/* En-tête repliable : titre + compte à gauche, chevron à droite (space-between). */
+.shelf-head {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: 0.25rem 0;
+  background: transparent;
+  color: var(--fold-color-text);
+  text-align: start;
+}
+.shelf-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--fold-text-lg, 1.15rem);
+  font-weight: 700;
+}
+.shelf-count {
+  padding: 0.05rem 0.5rem;
+  border-radius: var(--fold-radius-full, 999px);
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.shelf-chevron {
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--fold-color-text-muted);
+  transition: transform 150ms ease;
+}
+.shelf-chevron.is-collapsed {
+  transform: rotate(-90deg);
+}
+
+/* Scroller horizontal, **une seule rangée** : une carte large occupe la largeur,
+   la suivante ne dépasse que d'~1/8 (indice « il y en a d'autres »). Le
+   `flex-basis` en **%** est relatif au track → peek proportionnel quelle que soit
+   la largeur. `overflow-y: hidden` évite de piéger le scroll vertical de la page. */
+.shelf-track {
+  display: flex;
+  gap: var(--fold-space-md, 1rem);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--fold-space-md, 1rem);
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--fold-space-xs, 0.35rem);
+  scrollbar-width: none;
+}
+.shelf-track::-webkit-scrollbar {
+  display: none;
+}
+/* ~84 % du track → la carte suivante ne montre que ~1/8 (plafonnée sur les grands
+   écrans pour ne pas devenir démesurée). */
+.shelf-card {
+  flex: 0 0 min(84%, 340px);
+  scroll-snap-align: start;
+  min-width: 0;
+}

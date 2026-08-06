@@ -7,29 +7,48 @@
 />
 
 @if (total() > 0) {
-  <p class="cat-count">{{ total() }} produit{{ total() > 1 ? 's' : '' }}</p>
+  @switch (view()) {
+    <!-- Rayons : scroller horizontal par catégorie (découverte), sans pagination. -->
+    @case ('shelves') {
+      <app-category-shelves
+        [products]="filtered()"
+        [categories]="categories()"
+        (add)="onAdd($event)"
+        (notify)="onNotify($event)"
+      />
+    }
+    <!-- Liste : order-pad compact par catégorie (réappro), sans pagination. -->
+    @case ('list') {
+      <app-category-catalog
+        [products]="filtered()"
+        [categories]="categories()"
+        (add)="onAdd($event)"
+        (notify)="onNotify($event)"
+      />
+    }
+    <!-- Grille : cartes paginées (défaut). -->
+    @default {
+      <p class="cat-count">{{ total() }} produit{{ total() > 1 ? 's' : '' }}</p>
 
-  @if (view() === 'cards') {
-    <app-card-catalog [products]="paged()" (add)="onAdd($event)" (notify)="onNotify($event)" />
-  } @else {
-    <app-table-catalog [products]="paged()" (add)="onAdd($event)" (notify)="onNotify($event)" />
-  }
+      <app-card-catalog [products]="paged()" (add)="onAdd($event)" (notify)="onNotify($event)" />
 
-  @if (canSeeMore()) {
-    <div class="cat-more">
-      <button foldButton type="button" emphasis="soft" intent="neutral" (click)="seeMore()">
-        Voir plus
-      </button>
-    </div>
-  }
+      @if (canSeeMore()) {
+        <div class="cat-more">
+          <button foldButton type="button" emphasis="soft" intent="neutral" (click)="seeMore()">
+            Voir plus
+          </button>
+        </div>
+      }
 
-  @if (total() > pageSize()) {
-    <fold-paginator
-      [currentPage]="page()"
-      [totalItems]="total()"
-      [pageSize]="pageSize()"
-      (pageChange)="page.set($event)"
-    />
+      @if (total() > pageSize()) {
+        <fold-paginator
+          [currentPage]="page()"
+          [totalItems]="total()"
+          [pageSize]="pageSize()"
+          (pageChange)="page.set($event)"
+        />
+      }
+    }
   }
 } @else {
   <fold-empty-state

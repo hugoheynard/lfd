@@ -32,6 +32,15 @@ interface RenderAction {
  *
  * Authored to fold conventions (signals, standalone, zoneless- and SSR-safe,
  * design tokens only) so it can move into `fold-ng` unchanged.
+ *
+ * TODO(fold-ng) — **mode « galerie » paramétrable**. Deux comportements à exposer
+ * en options, pour un usage galerie/hero défilant à l'infini sans intervention :
+ * 1. `loop`/`gallery` : la rotation tourne en continu (le cross-fade boucle déjà
+ *    via le modulo, mais le rendre un mode explicite + documenté).
+ * 2. **Pause tactile** : sur mobile, `mouseenter`/`focusin` peut poser `hovered`
+ *    sans jamais recevoir le `mouseleave` correspondant (pas de `pointerleave` au
+ *    doigt) → l'autoplay **se fige** (« bloque sur une slide »). Prévoir de ne
+ *    pauser que sur `hover: hover`/focus clavier, ou une pause tactile temporisée.
  */
 @Component({
   selector: 'fold-banner-carousel',

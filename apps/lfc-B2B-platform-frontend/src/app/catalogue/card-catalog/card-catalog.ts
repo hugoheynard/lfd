@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 
-import { FoldProductCardComponent, type FoldProduct, type FoldProductOrder } from '../../../shared';
+import { ProductCardComponent, type FoldProduct, type FoldProductOrder } from '../../../shared';
 import { formatEurValue } from '../../data/catalogue-seed';
 import { CartService } from '../../data/cart.service';
 import { FavoritesService } from '../../data/favorites.service';
@@ -13,7 +13,7 @@ import { FavoritesService } from '../../data/favorites.service';
 @Component({
   selector: 'app-card-catalog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldProductCardComponent],
+  imports: [ProductCardComponent],
   templateUrl: './card-catalog.html',
   styleUrl: './card-catalog.scss',
 })

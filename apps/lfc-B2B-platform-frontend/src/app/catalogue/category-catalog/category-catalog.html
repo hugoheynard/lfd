@@ -1,0 +1,35 @@
+@for (group of groups(); track group.id) {
+  <section class="cc-group">
+    <button
+      type="button"
+      class="cc-head"
+      [attr.aria-expanded]="!isCollapsed(group.id)"
+      (click)="toggle(group.id)"
+    >
+      <span class="cc-title">
+        {{ group.label }}
+        <span class="cc-count">{{ group.count }}</span>
+      </span>
+      <span class="cc-chevron" [class.is-collapsed]="isCollapsed(group.id)" aria-hidden="true">
+        ⌄
+      </span>
+    </button>
+
+    @if (!isCollapsed(group.id)) {
+      <div class="cc-list" role="list">
+        @for (p of group.products; track p.id) {
+          <app-product-row
+            role="listitem"
+            [product]="p"
+            [favorite]="favorites.has(p.id)"
+            [inCart]="cart.qtyOf(p.id)"
+            priceSuffix="HT"
+            (favoriteToggle)="onFav($event)"
+            (action)="add.emit($event)"
+            (notify)="notify.emit($event)"
+          />
+        }
+      </div>
+    }
+  </section>
+}

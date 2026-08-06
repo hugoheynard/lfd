@@ -14,9 +14,10 @@
   align-items: start;
 }
 
-/* Cartes plus hautes : média en portrait doux (4/5 au lieu de 4/3). */
+/* Média en 4/3 — même hauteur que les cartes des rayons du catalogue, pour une
+   « À la une » compacte (moins de scroll avant la boutique). */
 .rail-track fold-product-card {
-  --fold-product-card-ratio: 4 / 5;
+  --fold-product-card-ratio: 4 / 3;
 }
 
 /* Enveloppe d'un item : le tag se pose au-dessus de la carte. */

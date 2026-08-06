@@ -1,0 +1,134 @@
+@let p = product();
+<article
+  class="pc"
+  [class.is-out]="isOut()"
+  [class.is-warn]="warnDays() !== null"
+  [class.is-highlight]="highlight()"
+>
+  <div class="pc-media">
+    @if (p.image) {
+      <img class="pc-img" [src]="p.image" [alt]="p.imageAlt ?? p.name" loading="lazy" />
+    } @else {
+      <div class="pc-placeholder" aria-hidden="true">{{ initial() }}</div>
+    }
+
+    @if (isOut()) {
+      <span class="pc-out-ribbon">{{ outOfStockLabel() }}</span>
+    } @else if (warnDays(); as d) {
+      <span class="pc-warn-ribbon">Plus que {{ d }} jour{{ d > 1 ? 's' : '' }}</span>
+    } @else if (p.badge) {
+      <fold-badge class="pc-badge" [content]="p.badge" variant="accent" />
+    }
+
+    <fold-toggle-icon
+      class="pc-fav"
+      icon="heart"
+      size="sm"
+      [active]="favorite()"
+      [tooltip]="favorite() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+      (toggled)="onFavorite()"
+    />
+  </div>
+
+  <div class="pc-body">
+    <!-- Row du nom : nom + puce « N au panier », en space-between. -->
+    <div class="pc-name-row">
+      <h3 class="pc-name">{{ p.name }}</h3>
+      @if (inCart(); as n) {
+        <span class="pc-incart-chip">✓ {{ n }}</span>
+      }
+    </div>
+    @if (p.detail) {
+      <p class="pc-detail">{{ p.detail }}</p>
+    }
+
+    <div class="pc-foot">
+      @if (isOut()) {
+        <button
+          foldButton
+          type="button"
+          emphasis="outline"
+          intent="neutral"
+          size="sm"
+          icon="bell"
+          class="pc-notify"
+          (click)="onNotify()"
+        >
+          {{ notifyLabel() }}
+        </button>
+      } @else {
+        <!-- Row du prix : prix + sélecteur d'unité (à l'unité / par colis), space-between. -->
+        <div class="pc-price-row">
+          @if (p.price) {
+            <span class="pc-price">
+              {{ p.price }}
+              @if (priceSuffix(); as s) {
+                <span class="pc-price-suffix">{{ s }}</span>
+              }
+              @if (p.unit) {
+                <span class="pc-unit">{{ p.unit }}</span>
+              }
+            </span>
+          }
+
+          @if (hasPack()) {
+            <div class="pc-mode" role="group" aria-label="Mode de commande">
+              <button
+                type="button"
+                class="pc-mode-opt"
+                [class.is-on]="!byPack()"
+                [attr.aria-pressed]="!byPack()"
+                (click)="byPack.set(false)"
+              >
+                À l'unité
+              </button>
+              <button
+                type="button"
+                class="pc-mode-opt"
+                [class.is-on]="byPack()"
+                [attr.aria-pressed]="byPack()"
+                (click)="byPack.set(true)"
+              >
+                {{ packOptionLabel() }}
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- Row de commande : pas-à-pas + « Ajouter N ». -->
+        <div class="pc-order">
+          <fold-number-input
+            class="pc-qty"
+            spinner="plusminus"
+            controls="outside"
+            size="sm"
+            align="center"
+            snapToStep
+            aria-label="Quantité"
+            [min]="minQty()"
+            [step]="step()"
+            [(value)]="quantity"
+          />
+          <button
+            foldButton
+            type="button"
+            emphasis="solid"
+            intent="primary"
+            size="sm"
+            icon="plus"
+            class="pc-add"
+            (click)="onAction()"
+          >
+            {{ addText() }}
+          </button>
+        </div>
+
+        @if (lineSubtotal(); as sub) {
+          <p class="pc-subtotal">
+            Total ligne&nbsp;: <strong>{{ sub }}</strong>
+          </p>
+        }
+      }
+    </div>
+  </div>
+</article>

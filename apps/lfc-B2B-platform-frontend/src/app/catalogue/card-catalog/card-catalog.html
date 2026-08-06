@@ -1,6 +1,6 @@
 <div class="product-grid">
   @for (p of products(); track p.id) {
-    <fold-product-card
+    <app-product-card
       [product]="p"
       [favorite]="favorites.has(p.id)"
       [inCart]="cart.qtyOf(p.id)"
