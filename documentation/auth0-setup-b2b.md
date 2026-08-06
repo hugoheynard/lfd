@@ -152,3 +152,26 @@ rester (non utilisé).
 - **Provisioning** customer par un commercial via **Management API** (app M2M à
   créer plus tard) → `sub` stocké → `INVITED` → `ACTIVE`.
 - **Déploiement** : ajouter les origines de prod aux Allowed URLs.
+
+## 9. Gestion des users staff DEPUIS la Suite (différé — 2026-08-06)
+
+Objectif Hugo : administrer les comptes staff (créer / rôles / désactiver)
+**depuis la Suite elle-même** (Réglages → Utilisateurs), plus depuis le dashboard
+Auth0. Aujourd'hui : SoR = table locale `staff_users` (voir
+`architecture-identite-auth-tenancy.md`) ; l'identité Auth0 (`lfc-staff`) et le
+rôle `staff-suite` se posent à la main dans le dashboard. Le pont manquant =
+**Management API** (app M2M) pour créer l'utilisateur Auth0 + assigner le rôle +
+écrire la ligne `staff_users`, piloté par un écran de la Suite.
+**Après** la phase testing/review. Prérequis : bootstrap admin `dev@` (fait).
+
+## 10. Plan / tarification Auth0 — ⚠️ à vérifier avant prod
+
+Le tenant `lafoliedouce.eu` est en **TRIAL** (bandeau « features that are not in
+the Free plan »). **Gratuit** sur le plan Free et utilisé ici : RBAC (rôles +
+permissions), APIs/audiences illimitées, refresh tokens (`offline_access`),
+jusqu'à 25 000 MAU. **À VÉRIFIER** quand le trial retombe sur Free : la policy
+**« Per-app authorization » / Application Access fine-grained** (autorisation du
+SPA shell par API, §6/§ launcher) — feature récente, potentiellement
+trial/payante. Si elle disparaît, l'API repasse « toutes applis autorisées »
+(marche encore, moins granulaire). Payant hors Free : custom domain, quota M2M
+élevé, Organizations B2B.
