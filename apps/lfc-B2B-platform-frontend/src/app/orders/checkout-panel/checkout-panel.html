@@ -58,9 +58,9 @@
           {{ fulfillment.address().ligne1 }}, {{ fulfillment.address().codePostal }}
           {{ fulfillment.address().ville }}
         </p>
-      } @else if (fulfillment.defaultPickup(); as pickup) {
+      } @else if (fulfillment.selectedPickup(); as pickup) {
         <p class="recap-line">
-          Retrait au labo — {{ pickup.label || pickup.ville }}, {{ pickup.ligne1 }},
+          Retrait — {{ pickup.label || pickup.ville }}, {{ pickup.ligne1 }},
           {{ pickup.codePostal }} {{ pickup.ville }}
         </p>
       }

@@ -90,7 +90,7 @@ export class CheckoutPanel {
       fulfillmentMethod: this.fulfillment.method(),
       deliveryZoneId: courier ? this.fulfillment.zoneId() : null,
       deliveryAddress: this.fulfillment.deliveryAddressPayload(),
-      pickupAddressId: null,
+      pickupAddressId: this.fulfillment.pickupAddressId(),
       requestedDeliveryDate: this.requestedDate() === '' ? null : this.requestedDate(),
       note: this.note().trim(),
       lines: this.cart.lines().map((line) => ({ sku: line.product.id, quantity: line.qty })),

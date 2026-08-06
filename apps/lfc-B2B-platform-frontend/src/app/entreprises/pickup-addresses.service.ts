@@ -19,6 +19,9 @@ export class PickupAddressesService {
 
   private readonly _addresses = signal<readonly PickupAddressView[]>([]);
 
+  /** Tous les points de retrait (lecture seule) — pour proposer un choix. */
+  readonly addresses = this._addresses.asReadonly();
+
   /** Le point de retrait par défaut (renvoyé en tête par le backend), ou `null`. */
   readonly defaultPickup = computed<PickupAddressView | null>(
     () => this._addresses().find((a) => a.isDefault) ?? this._addresses()[0] ?? null,

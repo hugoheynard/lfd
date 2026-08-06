@@ -8,9 +8,9 @@ import {
   FoldPanelHeaderComponent,
   FoldPanelHostService,
   FoldPanelRef,
+  FoldViewToggleComponent,
+  type FoldViewToggleOption,
 } from 'fold-ng';
-
-import type { FulfillmentMethod } from '@lfd/contracts';
 
 import { formatEurValue } from '../../data/catalogue-seed';
 import { type CartLine, CartService } from '../../data/cart.service';
@@ -26,7 +26,12 @@ import { FulfillmentService } from '../../orders/fulfillment.service';
 @Component({
   selector: 'app-cart-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldButtonComponent, FoldButtonIconComponent],
+  imports: [
+    FoldPanelHeaderComponent,
+    FoldButtonComponent,
+    FoldButtonIconComponent,
+    FoldViewToggleComponent,
+  ],
   templateUrl: './cart-panel.html',
   styleUrl: './cart-panel.scss',
 })
@@ -61,14 +66,21 @@ export class CartPanel {
     return formatEurValue(cents / 100);
   }
 
-  protected setMethod(method: FulfillmentMethod): void {
-    this.fulfillment.setMethod(method);
+  /** Segments du choix d'acheminement (view-toggle en accent). */
+  protected readonly fulfilOptions: readonly FoldViewToggleOption[] = [
+    { value: 'pickup', icon: 'store', label: 'Retrait' },
+    { value: 'delivery', icon: 'truck', label: 'Coursier' },
+  ];
+
+  /** Applique le mode d'acheminement choisi (valeur brute → union). */
+  protected onMethod(value: string): void {
+    this.fulfillment.setMethod(value === 'delivery' ? 'delivery' : 'pickup');
   }
 
-  /** Répercute la zone choisie (`<select>` natif) dans le service partagé. */
-  protected onZone(event: Event): void {
+  /** Répercute le point de retrait choisi (`<select>` natif) dans le service. */
+  protected onPickup(event: Event): void {
     const el = event.target;
-    this.fulfillment.setZone(el instanceof HTMLSelectElement ? el.value : '');
+    this.fulfillment.setPickup(el instanceof HTMLSelectElement ? el.value : '');
   }
 
   /** Répercute un champ d'adresse coursier (input natif) dans le service. */

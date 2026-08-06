@@ -96,31 +96,57 @@
   border-radius: var(--fold-radius-md, 10px);
   background: var(--fold-color-surface-sunken);
 }
-// Segmenté Retrait / Coursier.
-.seg {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  padding: 2px;
-  border-radius: var(--fold-radius-md, 10px);
-  background: var(--fold-color-surface, #fff);
-  border: 1px solid var(--fold-color-border-subtle);
+// Choix Retrait / Coursier — `fold-view-toggle` (accent) en pleine largeur.
+.fulfil-toggle {
+  display: block;
 }
-.seg-btn {
+
+// Zones en pills (même langage que le sélecteur d'unité de la carte produit),
+// qui passent à la ligne quand il y en a plusieurs. Chaque pill = zone + frais.
+.zone-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs, 0.35rem);
+}
+.zone-pill {
   appearance: none;
-  border: 0;
   cursor: pointer;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--fold-radius-sm, 7px);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-full, 999px);
+  background: var(--fold-color-surface, #fff);
+  color: var(--fold-color-text);
   font: inherit;
+  font-size: var(--fold-text-sm, 0.875rem);
   font-weight: 600;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+.zone-pill .zone-fee {
+  font-weight: 700;
   color: var(--fold-color-text-muted);
-  background: transparent;
 }
-.seg-btn--on {
-  color: var(--fold-color-text-on-primary, #fff);
+.zone-pill:hover {
+  border-color: var(--fold-color-primary);
+}
+.zone-pill.is-on {
   background: var(--fold-color-primary);
+  border-color: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
 }
+.zone-pill.is-on .zone-fee {
+  color: var(--fold-color-on-primary);
+}
+.zone-pill:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 1px;
+}
+
 .fld {
   display: flex;
   flex-direction: column;

@@ -220,7 +220,12 @@
   <!-- Footer commun à toutes les pages (slot du shell). -->
   <app-site-footer footer />
 
-  <!-- Hôte unique des side-panels. -->
+  <!-- TODO(fold-ng): la bottom-sheet mobile ne se cale pas au bas de l'écran.
+       Le dock du panel-host est `position:absolute; inset:0` → il s'ancre à son
+       ancêtre positionné. Ici (hôte dans la région de contenu du shell) il suit
+       le contenu scrollable, pas le viewport ; le sortir au root le colle en haut
+       sans toucher le bas et déplace les side-panels desktop. À régler côté fold
+       (dock qui vise le cadre du shell / le viewport). -->
   <fold-panel-host />
 
   <!-- Toasts d'opération (succès/échec). -->

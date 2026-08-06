@@ -66,8 +66,12 @@ export class FulfillmentService {
   /** Adresse de livraison libre (coursier). */
   readonly address = signal<CourierAddress>(EMPTY_ADDRESS);
 
-  /** Zones connues (route publique) et point de retrait par défaut. */
+  /** Point de retrait choisi (`''` = défaut serveur). */
+  readonly pickupId = signal<string>('');
+
+  /** Zones connues (route publique) et points de retrait. */
   readonly zones = this.zonesSvc.zones;
+  readonly pickups = this.pickupsSvc.addresses;
   readonly defaultPickup = this.pickupsSvc.defaultPickup;
 
   readonly isCourier = computed(() => this.method() === 'delivery');
@@ -75,6 +79,11 @@ export class FulfillmentService {
   /** La zone sélectionnée (pour son frais), ou `null`. */
   readonly selectedZone = computed(
     () => this.zones().find((zone) => zone.id === this.zoneId()) ?? null,
+  );
+
+  /** Le point de retrait effectif : celui choisi, sinon le défaut. */
+  readonly selectedPickup = computed(
+    () => this.pickups().find((p) => p.id === this.pickupId()) ?? this.defaultPickup(),
   );
 
   /** Sous-total **HT** du panier, en centimes (le panier raisonne en euros). */
@@ -93,7 +102,7 @@ export class FulfillmentService {
             cents: adjustmentCents(zone.fee, subtotal),
           };
     }
-    const discount = this.defaultPickup()?.discount ?? null;
+    const discount = this.selectedPickup()?.discount ?? null;
     return discount === null
       ? null
       : { kind: 'discount', label: 'Remise retrait', cents: adjustmentCents(discount, subtotal) };
@@ -153,6 +162,18 @@ export class FulfillmentService {
 
   setZone(id: string): void {
     this.zoneId.set(id);
+  }
+
+  setPickup(id: string): void {
+    this.pickupId.set(id);
+  }
+
+  /** Id du point de retrait à envoyer (`null` = laisser le serveur prendre le défaut). */
+  pickupAddressId(): string | null {
+    if (this.isCourier()) {
+      return null;
+    }
+    return this.pickupId() || null;
   }
 
   /** Frais d'une zone au sous-total courant, en centimes (pour l'étiquette de choix). */
