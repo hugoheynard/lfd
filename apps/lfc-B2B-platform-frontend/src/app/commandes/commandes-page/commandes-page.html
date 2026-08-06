@@ -4,9 +4,33 @@
   <app-commerce-nav />
 
   @if (!hasCompany()) {
-    <fold-callout appearance="inset" variant="info">
-      Créez une entreprise dans « Mes entreprises » pour passer et suivre vos commandes.
-    </fold-callout>
+    <!-- Zéro friction : commandes personnelles réelles (sans entreprise). -->
+    @switch (orders.status()) {
+      @case ('loading') {
+        <div class="orders-loading" role="status" aria-label="Chargement des commandes">
+          <fold-spinner />
+        </div>
+      }
+      @case ('error') {
+        <fold-callout appearance="inset" variant="alert">
+          {{ orders.error() ?? 'Impossible de charger vos commandes.' }}
+        </fold-callout>
+      }
+      @default {
+        @if (orders.isEmpty()) {
+          <fold-empty-state
+            title="Aucune commande pour l'instant"
+            subtitle="Vos commandes passées depuis la boutique apparaîtront ici."
+          />
+        } @else {
+          <app-my-orders [orders]="orders.orders()" />
+        }
+        <fold-callout appearance="inset" variant="info">
+          Astuce : rattachez une entreprise dans « Mes entreprises » pour les relevés
+          mensuels et le paiement à terme.
+        </fold-callout>
+      }
+    }
   } @else {
     <div class="toolbar">
       <fold-view-toggle

@@ -1,0 +1,106 @@
+:host {
+  display: block;
+}
+
+.orders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+.order {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'head total'
+    'meta total';
+  gap: var(--fold-space-xs, 0.35rem) var(--fold-space-md, 1rem);
+  align-items: center;
+  padding: var(--fold-space-md, 1rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 10px);
+  background: var(--fold-color-surface, #fff);
+}
+
+.order-head {
+  grid-area: head;
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm, 0.5rem);
+  min-width: 0;
+}
+.order-number {
+  font-weight: 700;
+}
+.order-date {
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.order-meta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs, 0.35rem);
+}
+.order-fulfil {
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--fold-radius-pill, 999px);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
+  color: var(--fold-color-text);
+}
+/* État de production — accent primaire quand en cours / passée. */
+.chip--status[data-status='in_production'],
+.chip--status[data-status='confirmed'] {
+  background: color-mix(in srgb, var(--fold-color-primary) 15%, transparent);
+  color: var(--fold-color-primary);
+}
+.chip--status[data-status='fulfilled'] {
+  background: color-mix(in srgb, var(--fold-color-success, #1a7f4b) 15%, transparent);
+  color: var(--fold-color-success, #1a7f4b);
+}
+.chip--status[data-status='cancelled'] {
+  background: color-mix(in srgb, var(--fold-color-danger, #c0392b) 15%, transparent);
+  color: var(--fold-color-danger, #c0392b);
+}
+/* Règlement — vert payé, ambre en attente, rouge échoué. */
+.chip--pay[data-pay='paid'] {
+  background: color-mix(in srgb, var(--fold-color-success, #1a7f4b) 15%, transparent);
+  color: var(--fold-color-success, #1a7f4b);
+}
+.chip--pay[data-pay='pending'] {
+  background: color-mix(in srgb, var(--fold-color-warning, #b7791f) 18%, transparent);
+  color: var(--fold-color-warning, #b7791f);
+}
+.chip--pay[data-pay='failed'] {
+  background: color-mix(in srgb, var(--fold-color-danger, #c0392b) 15%, transparent);
+  color: var(--fold-color-danger, #c0392b);
+}
+
+.order-total {
+  grid-area: total;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.order-total-label {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+}
+.order-total strong {
+  font-size: var(--fold-text-lg, 1.125rem);
+}

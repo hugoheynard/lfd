@@ -3,7 +3,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import {
   FoldButtonIconComponent,
   FoldCalloutComponent,
+  FoldEmptyStateComponent,
   FoldPageLayoutComponent,
+  FoldSpinnerComponent,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
@@ -13,6 +15,8 @@ import { CommerceContextService } from '../../commerce/commerce-context.service'
 import { type BillingPeriod, groupIntoPeriods } from '../billing-periods';
 import { BillingPeriodsView } from '../billing-periods-view/billing-periods-view';
 import { downloadBon as downloadBonFile } from '../download-bon';
+import { MyOrders } from '../my-orders/my-orders';
+import { OrdersService } from '../orders.service';
 import { OrdersTable } from '../orders-table/orders-table';
 import { buildDemoOrders, type CommandeRow } from '../orders-demo-seed';
 import { buildDemoRegimeChanges, type PaymentRegimeChange } from '../payment-regime-changes';
@@ -31,7 +35,10 @@ type OrdersView = 'periods' | 'all';
  * - **Toutes les commandes** (list) : la table exhaustive, **par entreprise
  *   gérée** (composant `OrdersTable`).
  *
- * Front-only à ce stade : les lignes viennent d'un seed démo (`orders-demo-seed`).
+ * **Zéro friction** : sans entreprise, la page ne bloque plus — elle affiche les
+ * **vraies** commandes personnelles (`GET /orders/mine`, via `OrdersService`).
+ * Les relevés par période restent la vue riche des personnes rattachées à une
+ * entreprise (seed démo `orders-demo-seed` pour l'instant).
  */
 @Component({
   selector: 'app-commandes-page',
@@ -39,17 +46,26 @@ type OrdersView = 'periods' | 'all';
   imports: [
     FoldPageLayoutComponent,
     FoldCalloutComponent,
+    FoldEmptyStateComponent,
+    FoldSpinnerComponent,
     FoldViewToggleComponent,
     FoldButtonIconComponent,
     CommerceNav,
     BillingPeriodsView,
     OrdersTable,
+    MyOrders,
   ],
   templateUrl: './commandes-page.html',
   styleUrl: './commandes-page.scss',
 })
 export class CommandesPage {
   private readonly context = inject(CommerceContextService);
+  protected readonly orders = inject(OrdersService);
+
+  constructor() {
+    // Charge les commandes personnelles réelles (le mur = le client connecté).
+    this.orders.load();
+  }
 
   /** Instant de référence, figé (une lecture ⇒ un `computed` pur). */
   private readonly now = new Date();

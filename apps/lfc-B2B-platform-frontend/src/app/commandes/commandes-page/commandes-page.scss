@@ -19,3 +19,10 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+/* Chargement des commandes personnelles (zéro friction) — spinner centré. */
+.orders-loading {
+  display: grid;
+  place-items: center;
+  padding: var(--fold-space-xl, 2rem);
+}

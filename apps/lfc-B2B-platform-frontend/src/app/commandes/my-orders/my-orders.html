@@ -1,0 +1,25 @@
+<ul class="orders">
+  @for (order of orders(); track order.id) {
+    <li class="order">
+      <div class="order-head">
+        <span class="order-number">{{ order.orderNumber }}</span>
+        <span class="order-date">{{ fmtDate(order.placedAt) }}</span>
+      </div>
+
+      <div class="order-meta">
+        <span class="chip chip--status" [attr.data-status]="order.status">
+          {{ statusLabel(order.status) }}
+        </span>
+        <span class="chip chip--pay" [attr.data-pay]="order.paymentStatus">
+          {{ paymentLabel(order.paymentStatus) }}
+        </span>
+        <span class="order-fulfil">{{ fulfillmentLabel(order.fulfillmentMethod) }}</span>
+      </div>
+
+      <div class="order-total">
+        <span class="order-total-label">Total TTC</span>
+        <strong>{{ fmtCents(order.totalCents) }}</strong>
+      </div>
+    </li>
+  }
+</ul>
