@@ -39,4 +39,9 @@ export class LoginPage {
   protected signIn(): void {
     this.facade.login(this.returnTo);
   }
+
+  /** Ouvre l'onglet inscription de l'Universal Login (création de compte). */
+  protected signUp(): void {
+    this.facade.register(this.returnTo);
+  }
 }

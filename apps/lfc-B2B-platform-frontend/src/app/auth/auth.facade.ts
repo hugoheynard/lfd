@@ -114,6 +114,18 @@ export class AuthFacade {
     void this.auth0?.loginWithRedirect({ appState: { target } }).subscribe();
   }
 
+  /**
+   * Comme {@link login}, mais ouvre directement l'onglet **inscription** de
+   * l'Universal Login (`screen_hint: 'signup'`). L'ouverture réelle des créations
+   * de compte dépend de la connection Auth0 (`lfc-b2b-customers`, sign-ups
+   * activés). Le nouveau compte arrive en base au 1er `GET /me` (statut invité).
+   */
+  register(target: string): void {
+    void this.auth0
+      ?.loginWithRedirect({ appState: { target }, authorizationParams: { screen_hint: 'signup' } })
+      .subscribe();
+  }
+
   /** Déconnexion Auth0 puis retour à l'origine (le guard renverra vers /login). */
   logout(): void {
     if (!this.isBrowser) {
