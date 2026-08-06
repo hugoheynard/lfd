@@ -259,6 +259,7 @@ model User {
 
   memberships     Membership[]
   ordersPlaced    Order[]
+  subscriptions   Subscription[]
   supportRequests SupportRequest[]
 
   @@map("users")
@@ -515,6 +516,79 @@ model OrderLine {
   @@index([orderId])
   @@index([sku]) // agrégation par SKU pour le plan de prod
   @@map("order_lines")
+}
+
+// Panier récurrent (abonnement) : un GABARIT de commande qui se répète. Ne
+// déclenche pas encore de commande (planificateur différé) ; on capture
+// l'intention. Mur = `placed_by_user_id` (comme les commandes perso zéro friction).
+// `recurrence`/`status` en String (union validée au bord par zod), dates en Date.
+model Subscription {
+  id String @id @default(cuid())
+
+  placedByUserId String @map("placed_by_user_id")
+  placedBy       User   @relation(fields: [placedByUserId], references: [id])
+
+  // Traçabilité : commande d'origine (celle « transformée en panier récurrent »).
+  fromOrderId String? @map("from_order_id")
+
+  recurrence String // weekly | biweekly | monthly
+  status     String @default("active") // active | paused
+
+  startDate DateTime  @map("start_date") @db.Date
+  endDate   DateTime? @map("end_date") @db.Date // null = sans fin
+
+  // Acheminement figé (comme les commandes) : livraison = adresse libre snapshot ;
+  // retrait = id du point (ou null = défaut).
+  fulfillmentMethod       FulfillmentMethod @map("fulfillment_method")
+  deliveryAddressSnapshot Json?             @map("delivery_address_snapshot")
+  pickupAddressId         String?           @map("pickup_address_id")
+
+  note String @default("")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lines       SubscriptionLine[]
+  occurrences SubscriptionOccurrence[]
+
+  @@index([placedByUserId])
+  @@map("subscriptions")
+}
+
+model SubscriptionOccurrence {
+  id String @id @default(cuid())
+
+  subscriptionId String       @map("subscription_id")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  // L'échéance visée (« modifier cette commande uniquement »).
+  occurrenceDate DateTime @map("occurrence_date") @db.Date
+
+  // Soit on saute l'échéance, soit on remplace ses lignes pour cette date-là.
+  skipped Boolean @default(false)
+  lines   Json // [{ sku, quantity }] — remplacement (vide si sautée).
+  note    String @default("")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([subscriptionId, occurrenceDate])
+  @@index([subscriptionId])
+  @@map("subscription_occurrences")
+}
+
+model SubscriptionLine {
+  id String @id @default(cuid())
+
+  subscriptionId String       @map("subscription_id")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  // Référence catalogue PIM (String, pas une FK). Le prix est ré-résolu à l'échéance.
+  sku      String
+  quantity Int
+
+  @@index([subscriptionId])
+  @@map("subscription_lines")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
