@@ -1,39 +1,96 @@
 <ul class="orders">
   @for (order of orders(); track order.id) {
-    <li class="order">
-      <div class="order-head">
-        <span class="order-number">{{ order.orderNumber }}</span>
+    <li class="order" [class.is-open]="isExpanded(order.id)">
+      <button
+        type="button"
+        class="order-head"
+        [attr.aria-expanded]="isExpanded(order.id)"
+        (click)="toggle(order.id)"
+      >
+        <span class="order-ident">
+          <span class="order-number">{{ order.orderNumber }}</span>
+          @if (order.fromSubscriptionId) {
+            <span class="pill pill--rec">Récurrent</span>
+          }
+        </span>
         <span class="order-date">{{ fmtDate(order.placedAt) }}</span>
-      </div>
-
-      <div class="order-meta">
         <span class="chip chip--status" [attr.data-status]="order.status">
           {{ statusLabel(order.status) }}
         </span>
         <span class="chip chip--pay" [attr.data-pay]="order.paymentStatus">
           {{ paymentLabel(order.paymentStatus) }}
         </span>
-        <span class="order-fulfil">{{ fulfillmentLabel(order.fulfillmentMethod) }}</span>
-      </div>
+        <span class="order-total"><strong>{{ fmtCents(order.totalCents) }}</strong></span>
+        <span class="order-caret" aria-hidden="true">{{ isExpanded(order.id) ? '▾' : '▸' }}</span>
+      </button>
 
-      <div class="order-total">
-        <span class="order-total-label">Total TTC</span>
-        <strong>{{ fmtCents(order.totalCents) }}</strong>
-      </div>
+      @if (isExpanded(order.id)) {
+        <div class="order-body">
+          <!-- Gauche : frise d'avancement (règlement → livrée/retirée). -->
+          <ol class="timeline">
+            @for (step of timeline(order); track step.key) {
+              <li class="tl-step" [attr.data-state]="step.state">
+                <span class="tl-dot" aria-hidden="true"></span>
+                <span class="tl-label">{{ step.label }}</span>
+              </li>
+            }
+          </ol>
 
-      <div class="order-actions">
-        <button
-          foldButton
-          type="button"
-          emphasis="soft"
-          intent="neutral"
-          size="sm"
-          icon="repeat"
-          (click)="makeRecurring.emit(order)"
-        >
-          Transformer en panier récurrent
-        </button>
-      </div>
+          <!-- Droite : composition de la commande + écarts au gabarit. -->
+          <div class="composition">
+            <p class="comp-title">Composition</p>
+            <ul class="comp-lines">
+              @for (line of order.lines; track line.sku) {
+                <li class="comp-line">
+                  <span class="comp-qty">{{ line.quantity }}×</span>
+                  <span class="comp-name">{{ line.productName }}</span>
+                  @if (isAdded(order, line.sku)) {
+                    <span class="pill pill--add">+ ajout</span>
+                  }
+                </li>
+              }
+            </ul>
+
+            @if (removedLines(order).length > 0) {
+              <div class="comp-removed">
+                @for (removed of removedLines(order); track removed.name) {
+                  <span class="pill pill--rem">− {{ removed.quantity }}× {{ removed.name }}</span>
+                }
+              </div>
+            }
+
+            <div class="comp-foot">
+              <span class="order-fulfil">{{ fulfillmentLabel(order.fulfillmentMethod) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="order-actions">
+          @if (settlable(order.paymentStatus)) {
+            <button
+              foldButton
+              type="button"
+              intent="primary"
+              size="sm"
+              icon="wallet"
+              (click)="settleOrder.emit(order)"
+            >
+              Régler
+            </button>
+          }
+          <button
+            foldButton
+            type="button"
+            emphasis="soft"
+            intent="neutral"
+            size="sm"
+            icon="repeat"
+            (click)="makeRecurring.emit(order)"
+          >
+            Transformer en panier récurrent
+          </button>
+        </div>
+      }
     </li>
   }
 </ul>

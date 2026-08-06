@@ -14,6 +14,7 @@ import {
 
 import { CommerceNav } from '../../commerce/commerce-nav/commerce-nav';
 import { CommerceContextService } from '../../commerce/commerce-context.service';
+import { NotifyService } from '../../notify.service';
 import { type BillingPeriod, groupIntoPeriods } from '../billing-periods';
 import { BillingPeriodsView } from '../billing-periods-view/billing-periods-view';
 import { downloadBon as downloadBonFile } from '../download-bon';
@@ -68,6 +69,7 @@ type OrdersView = 'periods' | 'all';
 export class CommandesPage {
   private readonly context = inject(CommerceContextService);
   private readonly panelHost = inject(FoldPanelHostService);
+  private readonly notify = inject(NotifyService);
   protected readonly subscriptions = inject(SubscriptionsService);
   protected readonly orders = inject(OrdersService);
 
@@ -85,6 +87,11 @@ export class CommandesPage {
         this.subscriptions.loadMine();
       }
     });
+  }
+
+  /** Règlement d'une commande — endpoint de settle par commande à câbler (à venir). */
+  protected onSettle(order: OrderView): void {
+    this.notify.info(`Le règlement en ligne de ${order.orderNumber} arrive bientôt.`);
   }
 
   /** Ouvre le panneau « modifier cette commande » pour une échéance précise. */

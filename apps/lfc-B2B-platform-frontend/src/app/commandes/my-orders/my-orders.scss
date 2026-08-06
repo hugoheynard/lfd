@@ -12,25 +12,40 @@
 }
 
 .order {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas:
-    'head total'
-    'meta total'
-    'actions actions';
-  gap: var(--fold-space-xs, 0.35rem) var(--fold-space-md, 1rem);
-  align-items: center;
-  padding: var(--fold-space-md, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 10px);
   background: var(--fold-color-surface, #fff);
+  overflow: hidden;
+}
+.order.is-open {
+  border-color: color-mix(in srgb, var(--fold-color-primary) 40%, var(--fold-color-border));
 }
 
+/* En-tête cliquable : résumé + bascule de dépliage. */
 .order-head {
-  grid-area: head;
+  width: 100%;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--fold-space-sm, 0.5rem);
+  padding: var(--fold-space-md, 0.85rem);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.order-head:hover {
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.03));
+}
+.order-head:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: -2px;
+}
+.order-ident {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs, 0.4rem);
   min-width: 0;
 }
 .order-number {
@@ -40,17 +55,15 @@
   font-size: var(--fold-text-sm, 0.875rem);
   color: var(--fold-color-text-muted);
 }
-
-.order-meta {
-  grid-area: meta;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-xs, 0.35rem);
+.order-total {
+  margin-left: auto;
 }
-.order-fulfil {
-  font-size: var(--fold-text-sm, 0.875rem);
+.order-total strong {
+  font-size: var(--fold-text-lg, 1.125rem);
+}
+.order-caret {
   color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm, 0.875rem);
 }
 
 .chip {
@@ -62,8 +75,8 @@
   font-weight: 600;
   background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
   color: var(--fold-color-text);
+  white-space: nowrap;
 }
-/* État de production — accent primaire quand en cours / passée. */
 .chip--status[data-status='in_production'],
 .chip--status[data-status='confirmed'] {
   background: color-mix(in srgb, var(--fold-color-primary) 15%, transparent);
@@ -77,7 +90,6 @@
   background: color-mix(in srgb, var(--fold-color-danger, #c0392b) 15%, transparent);
   color: var(--fold-color-danger, #c0392b);
 }
-/* Règlement — vert payé, ambre en attente, rouge échoué. */
 .chip--pay[data-pay='paid'] {
   background: color-mix(in srgb, var(--fold-color-success, #1a7f4b) 15%, transparent);
   color: var(--fold-color-success, #1a7f4b);
@@ -91,25 +103,144 @@
   color: var(--fold-color-danger, #c0392b);
 }
 
-.order-total {
-  grid-area: total;
+/* Pills de composition — récurrent / ajout / retrait. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.45rem;
+  border-radius: var(--fold-radius-pill, 999px);
+  font-size: var(--fold-text-xs, 0.7rem);
+  font-weight: 700;
+}
+.pill--rec {
+  background: color-mix(in srgb, var(--fold-color-primary) 16%, transparent);
+  color: var(--fold-color-primary);
+}
+.pill--add {
+  background: color-mix(in srgb, var(--fold-color-success, #1a7f4b) 16%, transparent);
+  color: var(--fold-color-success, #1a7f4b);
+}
+.pill--rem {
+  background: color-mix(in srgb, var(--fold-color-danger, #c0392b) 14%, transparent);
+  color: var(--fold-color-danger, #c0392b);
+}
+
+/* Corps déplié : frise à gauche, composition à droite. */
+.order-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--fold-space-lg, 1.5rem);
+  padding: 0 var(--fold-space-md, 0.85rem) var(--fold-space-md, 0.85rem);
+  border-top: 1px solid var(--fold-color-border-subtle);
+  padding-top: var(--fold-space-md, 0.85rem);
+}
+@media (max-width: 34rem) {
+  .order-body {
+    grid-template-columns: 1fr;
+    gap: var(--fold-space-md, 1rem);
+  }
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
 }
-.order-total-label {
+.tl-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm, 0.6rem);
+  padding-bottom: var(--fold-space-sm, 0.6rem);
+  position: relative;
+}
+/* Trait vertical reliant les jalons. */
+.tl-step:not(:last-child) .tl-dot::after {
+  content: '';
+  position: absolute;
+  left: 0.28rem;
+  top: 0.75rem;
+  width: 2px;
+  height: calc(100% - 0.4rem);
+  background: var(--fold-color-border);
+}
+.tl-dot {
+  position: relative;
+  flex: 0 0 auto;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-top: 0.15rem;
+  border-radius: 50%;
+  background: var(--fold-color-border);
+}
+.tl-label {
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+  line-height: 1.2;
+}
+.tl-step[data-state='done'] .tl-dot {
+  background: var(--fold-color-success, #1a7f4b);
+}
+.tl-step[data-state='done'] .tl-label {
+  color: var(--fold-color-text);
+}
+.tl-step[data-state='current'] .tl-dot {
+  background: var(--fold-color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fold-color-primary) 22%, transparent);
+}
+.tl-step[data-state='current'] .tl-label {
+  color: var(--fold-color-text);
+  font-weight: 700;
+}
+.tl-step[data-state='cancelled'] .tl-dot {
+  background: var(--fold-color-danger, #c0392b);
+}
+
+.comp-title {
+  margin: 0 0 var(--fold-space-xs, 0.4rem);
   font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--fold-color-text-muted);
 }
-.order-total strong {
-  font-size: var(--fold-text-lg, 1.125rem);
+.comp-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.comp-line {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs, 0.4rem);
+}
+.comp-qty {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--fold-color-text-muted);
+}
+.comp-removed {
+  margin-top: var(--fold-space-xs, 0.5rem);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.comp-foot {
+  margin-top: var(--fold-space-sm, 0.6rem);
+}
+.order-fulfil {
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
 }
 
 .order-actions {
-  grid-area: actions;
   display: flex;
   justify-content: flex-end;
-  padding-top: var(--fold-space-xs, 0.35rem);
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: var(--fold-space-sm, 0.6rem) var(--fold-space-md, 0.85rem);
   border-top: 1px solid var(--fold-color-border-subtle);
 }

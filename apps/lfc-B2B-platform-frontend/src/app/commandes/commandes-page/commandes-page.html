@@ -23,7 +23,11 @@
             subtitle="Vos commandes passées depuis la boutique apparaîtront ici."
           />
         } @else {
-          <app-my-orders [orders]="orders.orders()" (makeRecurring)="openRecurring($event)" />
+          <app-my-orders
+            [orders]="orders.orders()"
+            (makeRecurring)="openRecurring($event)"
+            (settleOrder)="onSettle($event)"
+          />
         }
 
         <fold-callout appearance="inset" variant="info">
