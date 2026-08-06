@@ -12,6 +12,13 @@ export interface VerifiedToken {
   readonly subject: string;
   /** Scopes accordés (claim `scope`, séparés par des espaces). */
   readonly scopes: readonly string[];
+  /**
+   * E-mail porté par un **claim namespacé** du token (ex. ajouté par une Action
+   * Auth0), si présent. Sert **uniquement** à renseigner l'e-mail au moment du
+   * provisioning JIT d'un self-signup — jamais à autoriser. Absent = on provisionne
+   * avec un e-mail vide (renseigné plus tard via le profil).
+   */
+  readonly email?: string;
 }
 
 /**

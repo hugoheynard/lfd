@@ -34,6 +34,14 @@ export class AccessTokenVerifier {
   }
 }
 
+/**
+ * Claim **namespacé** portant l'e-mail (Auth0 strippe les claims non namespacés
+ * des access tokens). À alimenter côté Auth0 par une Action :
+ * `api.accessToken.setCustomClaim("https://lafoliedouce.eu/email", event.user.email)`.
+ * Absent = provisioning JIT avec e-mail vide (renseigné plus tard via le profil).
+ */
+const EMAIL_CLAIM = "https://lafoliedouce.eu/email";
+
 function toVerifiedToken(payload: JWTPayload): VerifiedToken {
   const subject = payload.sub;
   if (subject === undefined || subject === "") {
@@ -41,5 +49,8 @@ function toVerifiedToken(payload: JWTPayload): VerifiedToken {
   }
   const scope = payload["scope"];
   const scopes = typeof scope === "string" ? scope.split(" ").filter((entry) => entry !== "") : [];
-  return { subject, scopes };
+  const claimed = payload[EMAIL_CLAIM];
+  const email = typeof claimed === "string" && claimed !== "" ? claimed : undefined;
+  // `exactOptionalPropertyTypes` : on n'ajoute `email` que s'il est présent.
+  return email === undefined ? { subject, scopes } : { subject, scopes, email };
 }
