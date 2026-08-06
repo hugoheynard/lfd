@@ -83,3 +83,19 @@ export type {
   OrderPaymentIntent,
   PlacedOrderResponse,
 } from "./order.js";
+export {
+  recurrenceSchema,
+  subscriptionStatusSchema,
+  createSubscriptionPayloadSchema,
+  occurrenceDateSchema,
+  upsertOccurrenceOverridePayloadSchema,
+} from "./subscription.js";
+export type {
+  Recurrence,
+  SubscriptionStatus,
+  CreateSubscriptionPayload,
+  UpsertOccurrenceOverridePayload,
+  SubscriptionLineView,
+  SubscriptionView,
+  OccurrenceOverrideView,
+} from "./subscription.js";
