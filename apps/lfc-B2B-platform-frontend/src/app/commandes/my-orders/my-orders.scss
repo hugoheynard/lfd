@@ -231,10 +231,18 @@
 }
 .comp-foot {
   margin-top: var(--fold-space-sm, 0.6rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 .order-fulfil {
   font-size: var(--fold-text-sm, 0.875rem);
   color: var(--fold-color-text-muted);
+}
+.comp-addr {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  line-height: 1.35;
 }
 
 .order-actions {

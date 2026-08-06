@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 
 import type {
+  BillingAddressPayload,
   FulfillmentMethod,
   OrderStatus,
   OrderView,
@@ -100,6 +101,11 @@ export class MyOrders {
       name: productById(line.sku)?.name ?? line.sku,
       quantity: line.quantity,
     }));
+  }
+
+  /** L'adresse figée de l'acheminement : livraison (coursier) ou point de retrait. */
+  protected fulfilAddress(order: OrderView): BillingAddressPayload | null {
+    return order.fulfillmentMethod === 'delivery' ? order.deliveryAddress : order.pickupAddress;
   }
 
   protected statusLabel(status: OrderStatus): string {

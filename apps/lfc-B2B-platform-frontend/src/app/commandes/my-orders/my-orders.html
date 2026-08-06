@@ -61,6 +61,12 @@
 
             <div class="comp-foot">
               <span class="order-fulfil">{{ fulfillmentLabel(order.fulfillmentMethod) }}</span>
+              @if (fulfilAddress(order); as addr) {
+                <p class="comp-addr">
+                  {{ addr.ligne1 }}@if (addr.ligne2) {, {{ addr.ligne2 }}}<br />
+                  {{ addr.codePostal }} {{ addr.ville }}
+                </p>
+              }
             </div>
           </div>
         </div>
