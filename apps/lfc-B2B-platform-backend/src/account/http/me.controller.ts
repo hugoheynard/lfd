@@ -5,9 +5,15 @@ import { CurrentUser } from "../../infra/auth/current-user.decorator.js";
 import type { Principal } from "../../infra/auth/principal.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { UpdateMyProfileCommand } from "../application/commands/update-my-profile.command.js";
+import { UpdateNavPreferencesCommand } from "../application/commands/update-nav-preferences.command.js";
 import { GetMyAccountQuery } from "../application/queries/get-my-account.query.js";
 import type { AccountView } from "../domain/ports/account.reader.js";
-import { updateProfilePayload, type UpdateProfilePayload } from "./payloads.js";
+import {
+  updateNavPrefsPayload,
+  type UpdateNavPrefsPayload,
+  updateProfilePayload,
+  type UpdateProfilePayload,
+} from "./payloads.js";
 
 /**
  * `GET /me` · `PATCH /me/profile` — le compte de la personne connectée.
@@ -52,6 +58,22 @@ export class MeController {
         payload.email,
         payload.phone,
       ),
+    );
+    return this.queries.execute<GetMyAccountQuery, AccountView>(new GetMyAccountQuery(user.userId));
+  }
+
+  /**
+   * Enregistre une préférence d'affichage (vue du catalogue). Renvoie le compte
+   * relu, comme les autres écritures de `/me` : l'appelant garde une seule source
+   * de vérité après l'écriture.
+   */
+  @Patch("nav-prefs")
+  async updateNavPrefs(
+    @CurrentUser() user: Principal,
+    @Body(new ZodBody(updateNavPrefsPayload)) payload: UpdateNavPrefsPayload,
+  ): Promise<AccountView> {
+    await this.commands.execute<UpdateNavPreferencesCommand, void>(
+      new UpdateNavPreferencesCommand(user.userId, payload.catalogueView),
     );
     return this.queries.execute<GetMyAccountQuery, AccountView>(new GetMyAccountQuery(user.userId));
   }

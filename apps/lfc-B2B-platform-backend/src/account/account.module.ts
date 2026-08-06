@@ -24,6 +24,7 @@ import { UpdateCompanyIdentityHandler } from "./application/commands/update-comp
 import { UpdateDeliveryAddressHandler } from "./application/commands/update-delivery-address.handler.js";
 import { RequestPaymentTermHandler } from "./application/commands/request-payment-term.handler.js";
 import { UpdateMyProfileHandler } from "./application/commands/update-my-profile.handler.js";
+import { UpdateNavPreferencesHandler } from "./application/commands/update-nav-preferences.handler.js";
 import { UpdatePrimaryContactHandler } from "./application/commands/update-primary-contact.handler.js";
 import { UploadKbisHandler } from "./application/commands/upload-kbis.handler.js";
 import { DownloadKbisHandler } from "./application/queries/download-kbis.handler.js";
@@ -40,6 +41,7 @@ import { CompanyRepository } from "./domain/ports/company.repository.js";
 import { CustomerIdentityPort } from "./domain/ports/customer-identity.port.js";
 import { KbisStore } from "./domain/ports/kbis-store.js";
 import { MembershipReader } from "./domain/ports/membership.reader.js";
+import { NavPreferencesRepository } from "./domain/ports/nav-preferences.repository.js";
 import { UserProfileRepository } from "./domain/ports/user-profile.repository.js";
 import { Auth0CustomerIdentity } from "./infrastructure/auth0-customer-identity.js";
 import { PrismaAccountReader } from "./infrastructure/prisma-account.reader.js";
@@ -49,6 +51,7 @@ import { PrismaCompanyAddressRepository } from "./infrastructure/prisma-company-
 import { PrismaCompanyContactRepository } from "./infrastructure/prisma-company-contact.repository.js";
 import { PrismaCompanyRepository } from "./infrastructure/prisma-company.repository.js";
 import { PrismaMembershipReader } from "./infrastructure/prisma-membership.reader.js";
+import { PrismaNavPreferencesRepository } from "./infrastructure/prisma-nav-preferences.repository.js";
 import { PrismaUserProfileRepository } from "./infrastructure/prisma-user-profile.repository.js";
 import { PrismaSupportRequestRepository } from "./infrastructure/prisma-support-request.repository.js";
 import { S3KbisStore } from "./infrastructure/s3-kbis-store.js";
@@ -84,6 +87,7 @@ import { MeController } from "./http/me.controller.js";
   ],
   providers: [
     UpdateMyProfileHandler,
+    UpdateNavPreferencesHandler,
     CreateCompanyHandler,
     CreateCompanyByStaffHandler,
     GetMyAccountHandler,
@@ -111,6 +115,7 @@ import { MeController } from "./http/me.controller.js";
     RequestActivationSupportHandler,
     ListAllCompaniesHandler,
     { provide: UserProfileRepository, useClass: PrismaUserProfileRepository },
+    { provide: NavPreferencesRepository, useClass: PrismaNavPreferencesRepository },
     { provide: AdminCompanyReader, useClass: PrismaAdminCompanyReader },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },
     { provide: CompanyContactRepository, useClass: PrismaCompanyContactRepository },

@@ -19,6 +19,16 @@ export const updateProfilePayload = z.object({
 
 export type UpdateProfilePayload = z.infer<typeof updateProfilePayload>;
 
+/**
+ * Préférence d'affichage du catalogue. Union fermée : le front n'a que ces trois
+ * vues, et une valeur hors-liste n'aurait aucun sens à persister.
+ */
+export const updateNavPrefsPayload = z.object({
+  catalogueView: z.enum(["cards", "shelves", "list"]),
+});
+
+export type UpdateNavPrefsPayload = z.infer<typeof updateNavPrefsPayload>;
+
 export const createCompanyPayload = z.object({
   raisonSociale: z.string(),
   enseigne: z.string().default(""),

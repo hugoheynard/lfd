@@ -1,5 +1,6 @@
 import type { CompanyRole } from "../value-objects/company-role.js";
 import type { CompanyStatus } from "../value-objects/company-status.js";
+import type { NavPreferences } from "../value-objects/nav-preferences.js";
 
 /**
  * Condition de règlement (miroir de l'enum Prisma `PaymentTerm`). C'est un
@@ -75,6 +76,8 @@ export interface AccountView {
   readonly profile: ProfileView;
   /** Possiblement vide — c'est l'état qui déclenche l'empty state côté front. */
   readonly companies: readonly CompanyView[];
+  /** Préférences d'affichage persistées (vue catalogue…), toujours présentes. */
+  readonly navPrefs: NavPreferences;
 }
 
 /**

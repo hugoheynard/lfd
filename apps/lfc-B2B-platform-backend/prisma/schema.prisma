@@ -244,6 +244,12 @@ model User {
 
   status UserStatus @default(invited)
 
+  // Préférences de navigation/affichage de la personne (bag JSON, extensible).
+  // Aujourd'hui : `catalogueView` (grille/rayons/liste). Absent = pas de choix
+  // explicite → le front applique son défaut. Sac plutôt qu'une colonne par
+  // préf : ces réglages purement UI n'ont pas d'invariant et grossiront.
+  navPrefs Json? @map("nav_prefs")
+
   // Traçabilité : id du STAFF (autre db) qui a provisionné ce client.
   // Pas de FK cross-db → simple identifiant.
   invitedBy String? @map("invited_by")

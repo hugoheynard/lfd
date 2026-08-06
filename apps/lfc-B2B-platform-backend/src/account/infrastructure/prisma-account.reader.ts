@@ -7,6 +7,7 @@ import {
   type CompanyView,
   type ContactView,
 } from "../domain/ports/account.reader.js";
+import { parseNavPreferences } from "../domain/value-objects/nav-preferences.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 
 /** Une ligne de contact additionnel telle que Prisma la sélectionne. */
@@ -44,6 +45,7 @@ export class PrismaAccountReader extends AccountReader {
         lastName: true,
         email: true,
         phone: true,
+        navPrefs: true,
         memberships: {
           orderBy: { createdAt: "asc" },
           select: {
@@ -134,6 +136,7 @@ export class PrismaAccountReader extends AccountReader {
         phone: row.phone,
       },
       companies,
+      navPrefs: parseNavPreferences(row.navPrefs),
     };
   }
 }
