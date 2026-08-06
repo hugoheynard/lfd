@@ -1,11 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import type {
-  CompanyAddressesView,
-  OrderView,
-  PlaceOrderPayload,
-  PlacedOrderResponse,
-} from '@lfd/contracts';
+import type { OrderView, PlaceOrderPayload, PlacedOrderResponse } from '@lfd/contracts';
 import type { Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -29,19 +24,41 @@ export class OrdersService {
   private readonly _orders = signal<readonly OrderView[]>([]);
   readonly orders = this._orders.asReadonly();
 
-  /** Passe une commande pour une entreprise (le serveur gate sur l'activation). */
-  placeOrder(companyId: string, payload: PlaceOrderPayload): Observable<PlacedOrderResponse> {
+  /**
+   * Passe une commande — **zéro friction**. L'entreprise est optionnelle (dans le
+   * payload : `companyId` `null` = commande personnelle). Le serveur ré-résout les
+   * prix et décide si une carte est requise.
+   */
+  place(payload: PlaceOrderPayload): Observable<PlacedOrderResponse> {
     return this.auth
       .accessToken$()
       .pipe(
         switchMap((token) =>
           this.http.post<PlacedOrderResponse>(
-            `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/orders`,
+            `${AUTH_CONFIG.apiBaseUrl}/orders`,
             payload,
             headers(token),
           ),
         ),
       );
+  }
+
+  /** (Re)charge les commandes **personnelles** du client (sans entreprise). */
+  loadMine(): void {
+    this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.get<readonly OrderView[]>(
+            `${AUTH_CONFIG.apiBaseUrl}/orders/mine`,
+            headers(token),
+          ),
+        ),
+      )
+      .subscribe({
+        next: (orders) => this._orders.set(orders),
+        error: () => this._orders.set([]),
+      });
   }
 
   /** (Re)charge les commandes d'une entreprise dans l'état. */
@@ -60,20 +77,6 @@ export class OrdersService {
         next: (orders) => this._orders.set(orders),
         error: () => this._orders.set([]),
       });
-  }
-
-  /** Lit les adresses de l'entreprise — le checkout y choisit la livraison. */
-  deliveryAddresses(companyId: string): Observable<CompanyAddressesView> {
-    return this.auth
-      .accessToken$()
-      .pipe(
-        switchMap((token) =>
-          this.http.get<CompanyAddressesView>(
-            `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/addresses`,
-            headers(token),
-          ),
-        ),
-      );
   }
 }
 
