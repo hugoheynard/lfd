@@ -3,8 +3,9 @@ export interface CreateIntentParams {
   readonly amountCents: number;
   /** Code ISO minuscule, ex. `eur`. */
   readonly currency: string;
-  /** Rattachement (traçabilité côté Stripe). Le mur reste serveur. */
-  readonly companyId: string;
+  /** Rattachement (traçabilité côté Stripe), ou `null` pour une commande
+   * personnelle (sans entreprise). Le mur reste serveur. */
+  readonly companyId: string | null;
 }
 
 /** Intention créée : l'id Stripe (clé de rapprochement) et son client secret. */

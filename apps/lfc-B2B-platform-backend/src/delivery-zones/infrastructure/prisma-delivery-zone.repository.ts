@@ -78,6 +78,11 @@ export class PrismaDeliveryZoneRepository extends DeliveryZoneRepository {
     return rows.map(toView);
   }
 
+  async findById(id: string): Promise<DeliveryZoneView | null> {
+    const row = await this.prisma.deliveryZone.findUnique({ where: { id }, select: SELECT });
+    return row === null ? null : toView(row);
+  }
+
   /**
    * La zone couvrant `codePostal`, ou `null`. En cas de chevauchement, la zone au
    * **préfixe le plus long** (le plus spécifique) gagne. Les zones sont peu

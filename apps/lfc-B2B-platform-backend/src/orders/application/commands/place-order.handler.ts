@@ -1,7 +1,6 @@
 import {
   cartAdjustmentCents,
   type BillingAddressPayload,
-  type CartAdjustment,
   type PickupAddressView,
 } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
@@ -12,34 +11,40 @@ import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup
 import {
   EmptyOrderError,
   PickupNotConfiguredError,
+  UnknownDeliveryZoneError,
   UnknownSkuError,
 } from "../../domain/errors/order-errors.js";
-import { DeliveryAddressReader } from "../../domain/ports/delivery-address.reader.js";
-import { OrderGuardReader, type OrderPaymentTerm } from "../../domain/ports/order-guard.reader.js";
+import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderRepository, type OrderLineToPersist } from "../../domain/ports/order.repository.js";
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
-import { ensureCanOrder, ensureOrderMember } from "../../domain/services/order-access.js";
+import { ensureOrderMember } from "../../domain/services/order-access.js";
+import { computeVatCents } from "../../domain/services/vat.js";
 import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
 
 /** Devise unique de la plateforme (montants en centimes d'euro). */
 const CURRENCY = "eur";
 
-/**
- * Le paiement par carte au checkout n'est exigé que pour le terme `per_order` :
- * les termes différés (mensuel, net60/90) sont facturés hors ligne. Fonction pure
- * — la décision est testable sans infrastructure.
- */
-function requiresCardPayment(term: OrderPaymentTerm | null, totalCents: number): boolean {
-  return term === "per_order" && totalCents > 0;
+/** Acheminement résolu : les snapshots à figer et les deux ajustements de prix. */
+interface ResolvedFulfillment {
+  readonly deliveryZoneId: string | null;
+  readonly deliveryAddress: BillingAddressPayload | null;
+  readonly pickupAddress: BillingAddressPayload | null;
+  readonly discountCents: number;
+  readonly deliveryFeeCents: number;
 }
 
 /**
- * Passe une commande : mur (membre) → droit de commander (entreprise activée) →
- * **ré-résolution serveur** des prix (le client n'a envoyé que sku + quantité) →
- * écriture transactionnelle. Les lignes en double sont fusionnées par SKU. Pour
- * une société `per_order`, une intention de paiement Stripe est créée et son
- * `clientSecret` renvoyé au client (Payment Element) ; sinon la commande est
- * facturée sur son terme (`not_required`).
+ * Passe une commande — **zéro friction** :
+ * - mur **membre** SEULEMENT si une entreprise est visée (sinon la commande est
+ *   personnelle, murée par le seul client connecté) ;
+ * - **ré-résolution serveur** des prix (le client n'envoie que sku + quantité) et
+ *   du **frais de la zone** coursier (depuis son `id`, autorité) ;
+ * - **règlement** : carte (`per_order`) sauf pour une entreprise **active** à
+ *   terme différé (net/mensuel), auquel cas c'est facturé hors ligne (`not_required`).
+ *
+ * Pour une carte, l'intention Stripe est créée AVANT la commande : une commande
+ * `pending` porte toujours son intent (pas de fenêtre orpheline) ; si Stripe
+ * échoue, aucune commande n'est créée.
  */
 @CommandHandler(PlaceOrderCommand)
 export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, PlaceOrderResult> {
@@ -49,55 +54,56 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly orders: OrderRepository,
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
-    private readonly deliveryAddresses: DeliveryAddressReader,
     private readonly payments: PaymentGateway,
   ) {}
 
   async execute(command: PlaceOrderCommand): Promise<PlaceOrderResult> {
-    const role = await this.guard.roleOf(command.actorUserId, command.companyId);
-    ensureOrderMember(role, command.companyId);
+    const { payload } = command;
+    const { companyId } = payload;
 
-    const status = await this.guard.companyStatusOf(command.companyId);
-    ensureCanOrder(status, command.companyId);
+    // Mur : rattachée à une entreprise ⇒ il faut en être membre. Personnelle ⇒
+    // seul le client connecté la possède, rien à vérifier.
+    if (companyId !== null) {
+      const role = await this.guard.roleOf(command.actorUserId, companyId);
+      ensureOrderMember(role, companyId);
+    }
 
-    const acheminement = await this.resolveFulfillment(command);
-    const lines = this.resolveLines(command.payload.lines);
+    const lines = this.resolveLines(payload.lines);
     const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
 
-    // Prix ré-résolus serveur : la remise (retrait) et le frais (zone livraison)
-    // sont **autoritaires**, calculés ici, jamais envoyés par le client.
-    const discountCents = acheminement.discount
-      ? cartAdjustmentCents(acheminement.discount, subtotalCents)
-      : 0;
-    const deliveryFeeCents = await this.resolveDeliveryFee(command, acheminement, subtotalCents);
-    const totalCents = Math.max(0, subtotalCents - discountCents) + deliveryFeeCents;
+    const acheminement = await this.resolveFulfillment(payload, subtotalCents);
 
-    // Le terme décide si une carte est requise. On crée l'intention Stripe AVANT
-    // la commande : ainsi une commande `pending` porte toujours son intent (pas
-    // de fenêtre orpheline) ; si Stripe échoue, aucune commande n'est créée.
-    const term = await this.guard.paymentTermOf(command.companyId);
-    const requiresCard = requiresCardPayment(term, totalCents);
+    // TVA par taux (prix HT) : marchandises (remise déduite au prorata) + livraison.
+    // `totalCents` est donc le **TTC** — c'est lui qu'on encaisse (carte Stripe).
+    const vatCents = computeVatCents({
+      lines: lines.map((line) => ({ htCents: line.lineTotalCents, vatRate: line.vatRate })),
+      discountCents: acheminement.discountCents,
+      deliveryFeeCents: acheminement.deliveryFeeCents,
+    });
+    const netHtCents =
+      Math.max(0, subtotalCents - acheminement.discountCents) + acheminement.deliveryFeeCents;
+    const totalCents = netHtCents + vatCents;
+
+    const requiresCard = (await this.requiresCard(companyId)) && totalCents > 0;
     const intent = requiresCard
-      ? await this.payments.createIntent({
-          amountCents: totalCents,
-          currency: CURRENCY,
-          companyId: command.companyId,
-        })
+      ? await this.payments.createIntent({ amountCents: totalCents, currency: CURRENCY, companyId })
       : null;
 
     const placed = await this.orders.place({
-      companyId: command.companyId,
+      companyId,
       placedByUserId: command.actorUserId,
-      fulfillmentMethod: command.payload.fulfillmentMethod,
-      deliveryAddressId: acheminement.deliveryAddressId,
+      fulfillmentMethod: payload.fulfillmentMethod,
+      deliveryZoneId: acheminement.deliveryZoneId,
+      deliveryAddress: acheminement.deliveryAddress,
       pickupAddress: acheminement.pickupAddress,
-      requestedDeliveryDate: command.payload.requestedDeliveryDate
-        ? new Date(command.payload.requestedDeliveryDate)
+      requestedDeliveryDate: payload.requestedDeliveryDate
+        ? new Date(payload.requestedDeliveryDate)
         : null,
-      note: command.payload.note,
+      note: payload.note,
       subtotalCents,
-      discountCents,
-      deliveryFeeCents,
+      discountCents: acheminement.discountCents,
+      deliveryFeeCents: acheminement.deliveryFeeCents,
+      vatCents,
       totalCents,
       paymentStatus: requiresCard ? "pending" : "not_required",
       stripePaymentIntentId: intent?.paymentIntentId ?? null,
@@ -119,60 +125,61 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
   }
 
   /**
-   * Résout l'acheminement. En **retrait**, on **fige** un snapshot du point de
-   * retrait **choisi** (ou du défaut) — sinon `PickupNotConfiguredError` (aucun
-   * point) — et on remonte sa **remise**. En **livraison**, l'`addressId` du
-   * payload (le schéma garantit sa présence) ; son appartenance à l'entreprise est
-   * vérifiée dans la transaction.
+   * Une carte est requise sauf pour une entreprise **active** à terme **différé**
+   * (net/mensuel), facturée hors ligne. Sans entreprise, ou entreprise non active /
+   * `per_order` → carte.
    */
-  private async resolveFulfillment(command: PlaceOrderCommand): Promise<{
-    readonly deliveryAddressId: string | null;
-    readonly pickupAddress: BillingAddressPayload | null;
-    readonly discount: CartAdjustment | null;
-  }> {
-    if (command.payload.fulfillmentMethod === "pickup") {
-      const point = await this.pickups.resolve(command.payload.pickupAddressId);
+  private async requiresCard(companyId: string | null): Promise<boolean> {
+    if (companyId === null) {
+      return true;
+    }
+    const status = await this.guard.companyStatusOf(companyId);
+    if (status !== "active") {
+      return true;
+    }
+    const term = await this.guard.paymentTermOf(companyId);
+    return term === null || term === "per_order";
+  }
+
+  /**
+   * Résout l'acheminement et ses deux ajustements (autoritaires, jamais envoyés
+   * par le client). **Retrait** : snapshot du point (choisi ou défaut) + sa remise.
+   * **Coursier** : adresse libre figée + frais **re-résolu** depuis la zone choisie.
+   */
+  private async resolveFulfillment(
+    payload: PlaceOrderCommand["payload"],
+    subtotalCents: number,
+  ): Promise<ResolvedFulfillment> {
+    if (payload.fulfillmentMethod === "pickup") {
+      const point = await this.pickups.resolve(payload.pickupAddressId);
       if (point === null) {
         throw new PickupNotConfiguredError();
       }
       return {
-        deliveryAddressId: null,
+        deliveryZoneId: null,
+        deliveryAddress: null,
         pickupAddress: toSnapshot(point),
-        discount: point.discount,
+        discountCents: point.discount ? cartAdjustmentCents(point.discount, subtotalCents) : 0,
+        deliveryFeeCents: 0,
       };
     }
-    return {
-      deliveryAddressId: command.payload.deliveryAddressId,
-      pickupAddress: null,
-      discount: null,
-    };
-  }
 
-  /**
-   * Frais de livraison de la **zone** du code postal livré, ou `0` (retrait, pas
-   * d'adresse, ou aucune zone pour ce code postal). Le code postal est ré-lu
-   * serveur depuis l'adresse de l'entreprise (jamais envoyé par le client).
-   */
-  private async resolveDeliveryFee(
-    command: PlaceOrderCommand,
-    acheminement: { readonly deliveryAddressId: string | null },
-    subtotalCents: number,
-  ): Promise<number> {
-    if (
-      command.payload.fulfillmentMethod !== "delivery" ||
-      acheminement.deliveryAddressId === null
-    ) {
-      return 0;
+    // Coursier — le schéma garantit zone + adresse ; on garde une défense typée.
+    const zoneId = payload.deliveryZoneId;
+    if (zoneId === null || payload.deliveryAddress === null) {
+      throw new UnknownDeliveryZoneError(zoneId ?? "");
     }
-    const postalCode = await this.deliveryAddresses.postalCodeOf(
-      command.companyId,
-      acheminement.deliveryAddressId,
-    );
-    if (postalCode === null) {
-      return 0;
+    const zone = await this.zones.findById(zoneId);
+    if (zone === null) {
+      throw new UnknownDeliveryZoneError(zoneId);
     }
-    const zone = await this.zones.resolveForPostalCode(postalCode);
-    return zone === null ? 0 : cartAdjustmentCents(zone.fee, subtotalCents);
+    return {
+      deliveryZoneId: zoneId,
+      deliveryAddress: payload.deliveryAddress,
+      pickupAddress: null,
+      discountCents: 0,
+      deliveryFeeCents: cartAdjustmentCents(zone.fee, subtotalCents),
+    };
   }
 
   /**

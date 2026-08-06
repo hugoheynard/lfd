@@ -10,6 +10,12 @@ export abstract class DeliveryZoneRepository {
   abstract list(): Promise<readonly DeliveryZoneView[]>;
 
   /**
+   * La zone d'`id`, ou `null`. Sert au checkout **coursier** : le client choisit
+   * une zone, le serveur en re-résout le frais (autorité) depuis cet `id`.
+   */
+  abstract findById(id: string): Promise<DeliveryZoneView | null>;
+
+  /**
    * La zone couvrant `codePostal`, ou `null`. En cas de chevauchement, la zone au
    * **préfixe le plus long** (le plus spécifique) gagne. Sert au calcul du frais.
    */

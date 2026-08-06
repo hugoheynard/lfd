@@ -7,4 +7,10 @@ import type { OrderView } from "@lfd/contracts";
  */
 export abstract class OrderReader {
   abstract listByCompany(companyId: string): Promise<readonly OrderView[]>;
+
+  /**
+   * Les commandes **personnelles** d'un client (sans entreprise), la plus récente
+   * en tête. Mur = le seul `placedByUserId` (pas d'entreprise à vérifier).
+   */
+  abstract listPersonal(userId: string): Promise<readonly OrderView[]>;
 }

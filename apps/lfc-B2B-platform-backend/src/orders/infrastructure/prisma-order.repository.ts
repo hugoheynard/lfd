@@ -1,8 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
-import { AddressKind, PaymentStatus, Prisma } from "../../infra/database/client/client.js";
+import { PaymentStatus, Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import { DeliveryAddressInvalidError } from "../domain/errors/order-errors.js";
 import {
   OrderRepository,
   type OrderToPlace,
@@ -31,54 +30,38 @@ export class PrismaOrderRepository extends OrderRepository {
   }
 
   async place(order: OrderToPlace): Promise<PlacedOrder> {
-    return this.prisma.$transaction(async (tx) => {
-      // En **livraison**, l'adresse doit relever de CETTE entreprise (livraison,
-      // non archivée) — filtre sur (id ET companyId), jamais l'id seul. En
-      // **retrait**, aucune adresse à valider : le snapshot est déjà figé.
-      if (order.fulfillmentMethod === "delivery") {
-        const address = await tx.address.findFirst({
-          where: {
-            id: order.deliveryAddressId ?? "",
-            companyId: order.companyId,
-            kind: AddressKind.livraison,
-            archivedAt: null,
-          },
-          select: { id: true },
-        });
-        if (address === null) {
-          throw new DeliveryAddressInvalidError(order.deliveryAddressId ?? "");
-        }
-      }
-
-      return tx.order.create({
-        data: {
-          orderNumber: generateOrderNumber(),
-          companyId: order.companyId,
-          placedByUserId: order.placedByUserId,
-          requestedDeliveryDate: order.requestedDeliveryDate,
-          fulfillmentMethod: order.fulfillmentMethod,
-          deliveryAddressId: order.deliveryAddressId,
-          pickupAddress: order.pickupAddress ?? Prisma.DbNull,
-          subtotalCents: order.subtotalCents,
-          discountCents: order.discountCents,
-          deliveryFeeCents: order.deliveryFeeCents,
-          totalCents: order.totalCents,
-          paymentStatus: order.paymentStatus,
-          stripePaymentIntentId: order.stripePaymentIntentId,
-          note: order.note,
-          lines: {
-            create: order.lines.map((line) => ({
-              sku: line.sku,
-              productNameSnapshot: line.productName,
-              unitPriceCents: line.unitPriceCents,
-              vatRate: line.vatRate,
-              quantity: line.quantity,
-              lineTotalCents: line.lineTotalCents,
-            })),
-          },
+    // Coursier et retrait figent déjà leurs adresses en snapshot (zone re-résolue
+    // serveur, adresse libre côté client) : plus d'adresse d'entreprise à valider.
+    return this.prisma.order.create({
+      data: {
+        orderNumber: generateOrderNumber(),
+        companyId: order.companyId,
+        placedByUserId: order.placedByUserId,
+        requestedDeliveryDate: order.requestedDeliveryDate,
+        fulfillmentMethod: order.fulfillmentMethod,
+        deliveryZoneId: order.deliveryZoneId,
+        deliveryAddressSnapshot: order.deliveryAddress ?? Prisma.DbNull,
+        pickupAddress: order.pickupAddress ?? Prisma.DbNull,
+        subtotalCents: order.subtotalCents,
+        discountCents: order.discountCents,
+        deliveryFeeCents: order.deliveryFeeCents,
+        vatCents: order.vatCents,
+        totalCents: order.totalCents,
+        paymentStatus: order.paymentStatus,
+        stripePaymentIntentId: order.stripePaymentIntentId,
+        note: order.note,
+        lines: {
+          create: order.lines.map((line) => ({
+            sku: line.sku,
+            productNameSnapshot: line.productName,
+            unitPriceCents: line.unitPriceCents,
+            vatRate: line.vatRate,
+            quantity: line.quantity,
+            lineTotalCents: line.lineTotalCents,
+          })),
         },
-        select: { id: true, orderNumber: true },
-      });
+      },
+      select: { id: true, orderNumber: true },
     });
   }
 

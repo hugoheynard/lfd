@@ -32,18 +32,51 @@ interface OrderRow {
   readonly requestedDeliveryDate: Date | null;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryAddressId: string | null;
+  readonly deliveryAddressSnapshot: Prisma.JsonValue | null;
   readonly pickupAddress: Prisma.JsonValue | null;
   readonly note: string;
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly deliveryFeeCents: number;
+  readonly vatCents: number;
   readonly totalCents: number;
   readonly currency: string;
   readonly createdAt: Date;
   readonly lines: readonly OrderLineRow[];
 }
 
-/** Lecture des commandes d'une entreprise, la plus récente en tête. */
+/** Colonnes d'une commande à lire (partagées entreprise / personnel). */
+const ORDER_SELECT = {
+  id: true,
+  orderNumber: true,
+  status: true,
+  paymentStatus: true,
+  requestedDeliveryDate: true,
+  fulfillmentMethod: true,
+  deliveryAddressId: true,
+  deliveryAddressSnapshot: true,
+  pickupAddress: true,
+  note: true,
+  subtotalCents: true,
+  discountCents: true,
+  deliveryFeeCents: true,
+  vatCents: true,
+  totalCents: true,
+  currency: true,
+  createdAt: true,
+  lines: {
+    select: {
+      sku: true,
+      productNameSnapshot: true,
+      unitPriceCents: true,
+      vatRate: true,
+      quantity: true,
+      lineTotalCents: true,
+    },
+  },
+} as const;
+
+/** Lecture des commandes (entreprise ou personnel), la plus récente en tête. */
 @Injectable()
 export class PrismaOrderReader extends OrderReader {
   constructor(private readonly prisma: PrismaService) {
@@ -54,33 +87,17 @@ export class PrismaOrderReader extends OrderReader {
     const rows = await this.prisma.order.findMany({
       where: { companyId },
       orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        paymentStatus: true,
-        requestedDeliveryDate: true,
-        fulfillmentMethod: true,
-        deliveryAddressId: true,
-        pickupAddress: true,
-        note: true,
-        subtotalCents: true,
-        discountCents: true,
-        deliveryFeeCents: true,
-        totalCents: true,
-        currency: true,
-        createdAt: true,
-        lines: {
-          select: {
-            sku: true,
-            productNameSnapshot: true,
-            unitPriceCents: true,
-            vatRate: true,
-            quantity: true,
-            lineTotalCents: true,
-          },
-        },
-      },
+      select: ORDER_SELECT,
+    });
+    return rows.map((row) => toOrderView(row));
+  }
+
+  async listPersonal(userId: string): Promise<readonly OrderView[]> {
+    const rows = await this.prisma.order.findMany({
+      // Personnel = passée par ce client ET sans entreprise (le mur).
+      where: { placedByUserId: userId, companyId: null },
+      orderBy: { createdAt: "desc" },
+      select: ORDER_SELECT,
     });
     return rows.map((row) => toOrderView(row));
   }
@@ -91,8 +108,8 @@ function toIsoDate(date: Date | null): string | null {
   return date === null ? null : date.toISOString().slice(0, 10);
 }
 
-/** Valide le JSON de l'adresse de retrait figée, ou `null` (commande en livraison). */
-function parsePickup(value: Prisma.JsonValue | null): BillingAddressPayload | null {
+/** Valide un snapshot d'adresse postale figée (retrait ou coursier), ou `null`. */
+function parseAddress(value: Prisma.JsonValue | null): BillingAddressPayload | null {
   return value === null ? null : billingAddressPayloadSchema.parse(value);
 }
 
@@ -105,11 +122,13 @@ function toOrderView(row: OrderRow): OrderView {
     requestedDeliveryDate: toIsoDate(row.requestedDeliveryDate),
     fulfillmentMethod: row.fulfillmentMethod,
     deliveryAddressId: row.deliveryAddressId,
-    pickupAddress: parsePickup(row.pickupAddress),
+    deliveryAddress: parseAddress(row.deliveryAddressSnapshot),
+    pickupAddress: parseAddress(row.pickupAddress),
     note: row.note,
     subtotalCents: row.subtotalCents,
     discountCents: row.discountCents,
     deliveryFeeCents: row.deliveryFeeCents,
+    vatCents: row.vatCents,
     totalCents: row.totalCents,
     currency: row.currency,
     placedAt: row.createdAt.toISOString(),

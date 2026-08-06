@@ -165,3 +165,43 @@ HTTP) — dépendu des deux côtés, possédé par aucune app.
 - Chemin **tout Workers + cron** : **0 €** (Workers free + Cron Triggers gratuits).
 - Ajouter **Queues** (temps réel) : **~5 $/mois** (Workers Paid).
 - Aucune brique always-on à payer.
+
+## Commande « zéro friction » (pivot 2026-08-06)
+
+Le checkout n'est **plus adossé à une entreprise**. Objectif : commander (ex. une
+brioche) sans aucun paramétrage préalable.
+
+**Modèle**
+
+- `Order.companyId` est **nullable**. Sans entreprise, la commande n'appartient
+  qu'au **client connecté** (`placed_by_user_id` = le mur). Elle se rattache à une
+  société plus tard (voir TODO ci-dessous).
+- **Plus de gate d'activation** (`status = active` n'est plus requis pour
+  commander). C'est le **terme de règlement** qui décide du paiement :
+  - pas d'entreprise, ou entreprise **non active** / `per_order` → **carte** au
+    checkout (Stripe, `payment_status = pending`) ;
+  - entreprise **active** à terme différé (net60/90, mensuel) → **facturé hors
+    ligne** (`not_required`).
+- **Acheminement choisi en haut du panier** (`FulfillmentService`, partagé
+  panier↔checkout), il pilote le total :
+  - **Coursier** (`delivery`) : choix d'une **zone** (`delivery_zone_id`, dont le
+    serveur re-résout le **frais** — autorité) + **adresse libre figée**
+    (`delivery_address_snapshot`) ;
+  - **Retrait** (`pickup`) : point labo par défaut, **remise** figée
+    (`pickup_address`).
+
+**API** — placement unifié : `POST /orders` (entreprise **optionnelle** dans le
+corps ; mur membre appliqué seulement si une entreprise est visée).
+`GET /orders/mine` liste les commandes personnelles ; `GET /companies/:id/orders`
+reste la liste entreprise (mur membre).
+
+**Diagramme de flux** (register → login → 1re commande, ramifications) :
+artefact « LFC B2B — Flux de commande zéro friction » (Claude, 2026-08-06).
+
+### TODO — rapatriement (à faire quand une entreprise est créée)
+
+1. **Rapatrier les commandes sans entreprise** : à la création d'une société,
+   permettre de rattacher les commandes personnelles (`company_id = NULL`,
+   `placed_by_user_id = moi`) à cette société.
+2. **Facture rétroactive** : permettre de demander une facture **a posteriori**
+   pour une commande personnelle déjà réglée par carte.

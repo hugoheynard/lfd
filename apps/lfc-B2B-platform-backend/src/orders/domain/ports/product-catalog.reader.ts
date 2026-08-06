@@ -1,13 +1,13 @@
-/** Ce que le seed porte pour un SKU : nom + prix en centimes TTC. */
+/** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en centimes. */
 export interface PricedSku {
   readonly sku: string;
   readonly name: string;
   readonly unitPriceCents: number;
 }
 
-/** Un article du catalogue, tel que le checkout en a besoin. Prix en centimes TTC. */
+/** Un article du catalogue, tel que le checkout en a besoin. Prix unitaire **HT**. */
 export interface CatalogItem extends PricedSku {
-  /** Taux de TVA en %, ex. 5.5. `0` tant que le modèle canaux TVA n'est pas branché. */
+  /** Taux de TVA du **produit** en %, ex. 5.5 (alimentaire) ou 20 (non-alimentaire). */
   readonly vatRate: number;
 }
 

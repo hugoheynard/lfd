@@ -419,11 +419,13 @@ model Order {
   id          String @id @default(cuid())
   orderNumber String @unique @map("order_number") // référence humaine
 
-  // Tenancy
-  companyId String  @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id])
+  // Tenancy. `companyId` est OPTIONNEL : une commande « zéro friction » n'appartient
+  // qu'au client connecté (`placedByUserId` = LE mur sans entreprise). Elle se
+  // rattache à une société plus tard (rapatriement — cf. doc flux commande).
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id])
 
-  // Qui a passé la commande (un customer de la même company)
+  // Qui a passé la commande (le client connecté).
   placedByUserId String @map("placed_by_user_id")
   placedBy       User   @relation(fields: [placedByUserId], references: [id])
 
@@ -432,21 +434,30 @@ model Order {
   // Alimente le plan de prod (« à produire pour demain »).
   requestedDeliveryDate DateTime? @map("requested_delivery_date") @db.Date
 
-  // Acheminement. `delivery` → `deliveryAddressId` renseigné ; `pickup` → adresse
-  // de retrait FIGÉE dans `pickupAddress` (snapshot des champs postaux du labo au
-  // moment de la commande, comme les prix), `deliveryAddressId` null.
+  // Acheminement. `delivery` = **coursier** : `deliveryZoneId` (zone tarifée) +
+  // `deliveryAddressSnapshot` (adresse libre FIGÉE, comme les prix). `pickup` =
+  // **retrait** : `pickupAddress` (snapshot des champs postaux du labo). La relation
+  // `deliveryAddress` (adresse d'entreprise) reste pour l'héritage / le rapatriement.
   fulfillmentMethod FulfillmentMethod @default(delivery) @map("fulfillment_method")
+
+  deliveryZoneId String? @map("delivery_zone_id")
 
   deliveryAddressId String?  @map("delivery_address_id")
   deliveryAddress   Address? @relation("OrderDeliveryAddress", fields: [deliveryAddressId], references: [id])
 
+  // Adresse de livraison LIBRE figée (coursier sans carnet d'entreprise).
+  deliveryAddressSnapshot Json? @map("delivery_address_snapshot")
+
   pickupAddress Json? @map("pickup_address")
 
-  // Argent en centimes (snapshot au moment de la commande). `total = max(0,
-  // subtotal − discount) + deliveryFee`. Remise = point de retrait ; frais = zone.
+  // Argent en centimes (snapshot au moment de la commande). Prix marchandises
+  // **HT** ; `total` est le **TTC** encaissé = `max(0, subtotal − discount) +
+  // deliveryFee + vat`. Remise = point de retrait ; frais = zone ; TVA par taux
+  // (5,5 % alimentaire, 20 % livraison).
   subtotalCents    Int    @map("subtotal_cents")
   discountCents    Int    @default(0) @map("discount_cents")
   deliveryFeeCents Int    @default(0) @map("delivery_fee_cents")
+  vatCents         Int    @default(0) @map("vat_cents")
   totalCents       Int    @map("total_cents")
   currency         String @default("EUR")
 
@@ -466,6 +477,7 @@ model Order {
   lines OrderLine[]
 
   @@index([companyId])
+  @@index([placedByUserId])
   @@index([requestedDeliveryDate])
   @@index([status])
   @@index([paymentStatus])

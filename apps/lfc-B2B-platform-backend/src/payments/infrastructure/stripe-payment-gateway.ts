@@ -41,7 +41,7 @@ export class StripePaymentGateway extends PaymentGateway {
       // Stripe choisit les moyens de paiement activés sur le compte (carte…),
       // sans que le serveur ait à les énumérer.
       automatic_payment_methods: { enabled: true },
-      metadata: { companyId: params.companyId },
+      metadata: { companyId: params.companyId ?? "personal" },
     });
     if (intent.client_secret === null) {
       throw new PaymentGatewayUnavailableError("client_secret absent de la PaymentIntent");

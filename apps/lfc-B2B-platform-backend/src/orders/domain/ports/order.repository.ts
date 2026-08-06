@@ -12,21 +12,28 @@ export interface OrderLineToPersist {
 
 /** Une commande prête à écrire — tout est déjà résolu et calculé côté serveur. */
 export interface OrderToPlace {
-  readonly companyId: string;
+  /** Entreprise cliente, ou `null` = commande personnelle (mur = `placedByUserId`). */
+  readonly companyId: string | null;
   readonly placedByUserId: string;
-  /** Acheminement : `delivery` → `deliveryAddressId` ; `pickup` → `pickupAddress`. */
+  /** Acheminement : `delivery` = coursier (zone + adresse libre) ; `pickup` = retrait. */
   readonly fulfillmentMethod: FulfillmentMethod;
-  /** Adresse de livraison (livraison), ou `null` (retrait). */
-  readonly deliveryAddressId: string | null;
+  /** Zone de livraison choisie (coursier), ou `null` (retrait). */
+  readonly deliveryZoneId: string | null;
+  /** Adresse de livraison **libre figée** (coursier), ou `null` (retrait). */
+  readonly deliveryAddress: BillingAddressPayload | null;
   /** Adresse de retrait **figée** (retrait), ou `null` (livraison). */
   readonly pickupAddress: BillingAddressPayload | null;
   readonly requestedDeliveryDate: Date | null;
   readonly note: string;
+  /** Sous-total marchandises **HT**, en centimes. */
   readonly subtotalCents: number;
   /** Remise (retrait) déduite, en centimes. `0` si aucune. */
   readonly discountCents: number;
-  /** Frais de livraison (zone) ajouté, en centimes. `0` si aucun. */
+  /** Frais de livraison (zone) ajouté, HT, en centimes. `0` si aucun. */
   readonly deliveryFeeCents: number;
+  /** TVA totale (marchandises par taux + livraison), en centimes. */
+  readonly vatCents: number;
+  /** Total **TTC** encaissé = `max(0, subtotal − discount) + deliveryFee + vat`. */
   readonly totalCents: number;
   /** État de règlement à la création : `pending` (carte per_order) ou `not_required`. */
   readonly paymentStatus: PaymentStatus;
@@ -42,18 +49,11 @@ export interface PlacedOrder {
 }
 
 /**
- * Port d'**écriture** des commandes.
- *
- * La passation vérifie **dans la transaction** que l'adresse de livraison
- * appartient bien à l'entreprise (livraison, non archivée) avant de créer la
- * commande et ses lignes — une commande ne peut jamais pointer l'adresse d'une
- * autre entreprise.
+ * Port d'**écriture** des commandes. Coursier et retrait figent leurs adresses en
+ * **snapshot** (comme les prix) : la commande ne dépend d'aucune ligne mutable.
  */
 export abstract class OrderRepository {
-  /**
-   * Crée la commande et ses lignes en une transaction.
-   * @throws {DeliveryAddressInvalidError} l'adresse ne relève pas de l'entreprise.
-   */
+  /** Crée la commande et ses lignes en une transaction. */
   abstract place(order: OrderToPlace): Promise<PlacedOrder>;
 
   /**

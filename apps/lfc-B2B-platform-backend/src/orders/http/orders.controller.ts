@@ -4,7 +4,7 @@ import {
   placeOrderPayloadSchema,
   type PlacedOrderResponse,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { CurrentUser } from "../../infra/auth/current-user.decorator.js";
@@ -14,49 +14,47 @@ import {
   PlaceOrderCommand,
   type PlaceOrderResult,
 } from "../application/commands/place-order.command.js";
-import { ListCompanyOrdersQuery } from "../application/queries/list-company-orders.query.js";
+import { ListPersonalOrdersQuery } from "../application/queries/list-personal-orders.query.js";
 
 /**
- * Commandes d'une entreprise.
+ * Commandes du **client connecté** — **zéro friction**.
  *
- * Endpoints **murés** au niveau **membre** (l'entreprise est dans l'URL, vérifiée
- * contre les memberships du demandeur). Passer commande exige en plus que
- * l'entreprise soit **activée** (le handler s'en charge). L'`userId` vient toujours
- * du `Principal`, jamais du corps ; les prix sont ré-résolus au serveur.
+ * `POST /orders` passe une commande : l'entreprise est **optionnelle** (dans le
+ * corps). Sans entreprise, la commande n'appartient qu'au client (mur =
+ * `Principal.userId`) et se règle par carte ; avec une entreprise, le handler
+ * exige d'en être **membre** (le `companyId` du corps, jamais un rôle du corps).
+ * L'`userId` vient toujours du `Principal` ; les prix sont ré-résolus au serveur.
  */
-@Controller("companies")
+@Controller("orders")
 export class OrdersController {
   constructor(
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
 
-  /** Liste les commandes de l'entreprise (membre). */
-  @Get(":companyId/orders")
-  async list(
-    @CurrentUser() user: Principal,
-    @Param("companyId") companyId: string,
-  ): Promise<readonly OrderView[]> {
-    return this.queries.execute<ListCompanyOrdersQuery, readonly OrderView[]>(
-      new ListCompanyOrdersQuery(user.userId, companyId),
-    );
-  }
-
-  /** Passe une commande (membre + entreprise activée). */
-  @Post(":companyId/orders")
+  /** Passe une commande (personnelle, ou pour une entreprise dont on est membre). */
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   async place(
     @CurrentUser() user: Principal,
-    @Param("companyId") companyId: string,
     @Body(new ZodBody(placeOrderPayloadSchema)) payload: PlaceOrderPayload,
   ): Promise<PlacedOrderResponse> {
     const placed = await this.commands.execute<PlaceOrderCommand, PlaceOrderResult>(
-      new PlaceOrderCommand(user.userId, companyId, payload),
+      new PlaceOrderCommand(user.userId, payload),
     );
-    // `payment` n'est présent que pour une société `per_order` (carte requise) ;
-    // on ne l'ajoute à la réponse que dans ce cas (exactOptionalPropertyTypes).
+    // `payment` n'est présent que si une carte est requise (pas d'entreprise, ou
+    // entreprise non active / per_order) ; on ne l'ajoute que dans ce cas
+    // (exactOptionalPropertyTypes).
     return placed.payment === undefined
       ? { id: placed.id, orderNumber: placed.orderNumber }
       : { id: placed.id, orderNumber: placed.orderNumber, payment: placed.payment };
+  }
+
+  /** Liste les commandes **personnelles** du client (sans entreprise). */
+  @Get("mine")
+  async mine(@CurrentUser() user: Principal): Promise<readonly OrderView[]> {
+    return this.queries.execute<ListPersonalOrdersQuery, readonly OrderView[]>(
+      new ListPersonalOrdersQuery(user.userId),
+    );
   }
 }
