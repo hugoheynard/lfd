@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  effect,
-  inject,
-  signal,
-  untracked,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   FoldAppShellComponent,
@@ -13,9 +6,10 @@ import {
   FoldIconComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
+  FoldNavLauncherComponent,
+  FoldNavTileComponent,
   FoldPanelHostComponent,
   FoldPanelHostService,
-  FoldSearchComponent,
   FoldSpinnerComponent,
   FoldSurfaceDirective,
   FoldToastContainerComponent,
@@ -24,6 +18,7 @@ import {
 import { AccountService } from './account/account.service';
 import { AuthFacade } from './auth/auth.facade';
 import { CartPanel } from './cart/cart-panel/cart-panel';
+import { ContactPanel } from './contact/contact-panel/contact-panel';
 import { CartService } from './data/cart.service';
 import { FEATURE_DASHBOARD } from './feature-flags';
 import { SiteFooter } from './footer/site-footer';
@@ -40,8 +35,9 @@ import { SiteFooter } from './footer/site-footer';
     FoldIconComponent,
     FoldMenuComponent,
     FoldMenuItemComponent,
+    FoldNavLauncherComponent,
+    FoldNavTileComponent,
     FoldPanelHostComponent,
-    FoldSearchComponent,
     FoldSpinnerComponent,
     FoldSurfaceDirective,
     FoldToastContainerComponent,
@@ -78,21 +74,15 @@ export class App {
 
   /** Vrai tant qu'un panneau panier est ouvert (évite la ré-ouverture). */
   private cartOpen = false;
-  /** Nombre d'articles au tick précédent (détecte le passage vide → non-vide). */
-  private prevCartCount = 0;
 
-  constructor() {
-    // Ouverture automatique au **premier** produit ajouté (vide → non-vide).
-    effect(() => {
-      const count = this.cart.count();
-      if (this.prevCartCount === 0 && count > 0) {
-        untracked(() => this.openCart());
-      }
-      this.prevCartCount = count;
-    });
+  /** Ouvre le panneau panier (le host est mono-panneau : il remplace l'existant).
+   * Déclenché **uniquement** par le clic sur l'icône panier — ajouter un produit ne
+   * l'ouvre plus (le badge du déclencheur suffit comme retour). */
+  /** Ouvre le panneau **contact** (contact direct / prise de RDV). */
+  protected openContact(): void {
+    this.panelHost.open(ContactPanel);
   }
 
-  /** Ouvre le panneau panier (le host est mono-panneau : il remplace l'existant). */
   protected openCart(): void {
     if (this.cartOpen) {
       return;

@@ -1,0 +1,81 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg, 1.25rem);
+  padding: var(--fold-space-md, 1rem) var(--fold-space-lg, 1.5rem);
+}
+
+.cp-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+.cp-label {
+  margin: 0;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fold-color-text-muted);
+}
+
+/* Ligne de contact (tel / mail) — lien cliquable, icône + valeur. */
+.cp-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 10px);
+  color: var(--fold-color-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+.cp-row:hover {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-surface-hover, var(--fold-color-surface-sunken));
+}
+.cp-hours {
+  margin: 0.1rem 0 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.cp-text {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+/* CTA rendez-vous — bouton primary plein (lien externe). */
+.cp-book {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: 0.6rem 1rem;
+  border-radius: var(--fold-radius-md, 10px);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary, #fff);
+  text-decoration: none;
+  font-weight: 700;
+}
+.cp-book:hover {
+  filter: brightness(1.07);
+}
+
+.foot {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--fold-space-sm, 0.5rem);
+}

@@ -1,0 +1,29 @@
+<fold-panel-header title="Nous contacter" subtitle="Une question, un besoin ? On vous répond." />
+
+<div class="body">
+  <section class="cp-block">
+    <p class="cp-label">Contact direct</p>
+    <a class="cp-row" [href]="phoneHref">
+      <fold-icon name="phone" [size]="18" />
+      <span>{{ phone }}</span>
+    </a>
+    <a class="cp-row" [href]="'mailto:' + email">
+      <fold-icon name="mail" [size]="18" />
+      <span>{{ email }}</span>
+    </a>
+    <p class="cp-hours">{{ hours }}</p>
+  </section>
+
+  <section class="cp-block">
+    <p class="cp-label">Prendre rendez-vous</p>
+    <p class="cp-text">Planifiez un échange avec notre équipe, au moment qui vous arrange.</p>
+    <a class="cp-book" [href]="bookingUrl" target="_blank" rel="noopener noreferrer">
+      <fold-icon name="calendar" [size]="18" />
+      <span>Prendre rendez-vous</span>
+    </a>
+  </section>
+
+  <div class="foot">
+    <button foldButton emphasis="outline" intent="neutral" (click)="close()">Fermer</button>
+  </div>
+</div>

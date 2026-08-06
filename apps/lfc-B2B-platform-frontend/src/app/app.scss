@@ -57,10 +57,24 @@ fold-app-shell {
   color: var(--fold-color-text);
 }
 
-.app-search {
-  flex: 1 1 22rem;
-  max-width: 32rem;
+/* Wordmark temporaire (en attendant le logo/typo). Prend l'espace central,
+   pousse les actions à droite ; tronque proprement si l'espace manque. */
+.app-wordmark {
+  flex: 1 1 auto;
   min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-wordmark-pro {
+  opacity: 0.6;
+  font-weight: 500;
 }
 
 .app-header-actions {
@@ -93,16 +107,6 @@ fold-app-shell {
   display: grid;
   place-items: center;
   height: 100dvh;
-}
-
-/* Contexte de l'espace, premier élément du header. Sur le chrome navy, un
-   libellé clair légèrement estompé. */
-.app-context {
-  font-weight: 600;
-  font-size: var(--fold-text-sm, 0.9rem);
-  letter-spacing: 0.01em;
-  opacity: 0.85;
-  white-space: nowrap;
 }
 
 /* Déclencheur panier — un vrai bouton d'action : primary plein, icône + libellé
@@ -148,12 +152,6 @@ fold-app-shell {
 }
 
 @media (max-width: 768px) {
-  .app-context {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
   .cart-label {
     display: none;
   }
@@ -165,8 +163,8 @@ fold-app-shell {
   display: none;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -180,7 +178,49 @@ fold-app-shell {
     display: inline-flex;
   }
 
-  .app-search {
-    flex-basis: auto;
+  /* En-tête compact : on resserre gouttières et wordmark pour laisser « Pro »
+     s'afficher en entier à côté des actions (contact / recherche / notif / panier). */
+  .app-header {
+    gap: var(--fold-space-sm, 0.5rem);
+    padding-inline: var(--fold-space-sm, 0.6rem);
+  }
+  .app-wordmark {
+    letter-spacing: 0.02em;
+  }
+
+  /* Actions resserrées : cibles tactiles rapprochées, gouttière minimale. */
+  .app-header-actions {
+    gap: 0.1rem;
+  }
+
+  /* Panier : sur mobile, plus la grosse pilule primary (« grossière ») mais un
+     bouton-icône sobre comme le burger / la cloche, avec le compte en pastille.
+     Un poil plus petit (40px) pour dégager de la place au wordmark. */
+  .cart-trigger {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+    border-radius: var(--fold-radius-sm, 8px);
+  }
+  .cart-trigger:hover {
+    filter: none;
+    transform: none;
+    background: var(--fold-color-surface-hover, rgba(255, 255, 255, 0.12));
+  }
+  /* Compteur en pastille superposée, décalée vers la **droite** (déborde le coin
+     haut-droit de l'icône), pleine couleur primary. */
+  .cart-badge {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    min-width: 1rem;
+    height: 1rem;
+    background: var(--fold-color-primary);
+    color: var(--fold-color-on-primary, #fff);
+    border: 1px solid var(--fold-color-bg-header, transparent);
   }
 }

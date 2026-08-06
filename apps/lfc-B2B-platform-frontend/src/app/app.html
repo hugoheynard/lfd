@@ -5,19 +5,26 @@
     <fold-spinner />
   </div>
 } @else if (auth.isAuthenticated()) {
-  <fold-app-shell #shell="foldAppShell" footerBehavior="scroll" [(mobileNavOpen)]="mobileNavOpen">
+  <fold-app-shell
+    #shell="foldAppShell"
+    footerBehavior="scroll"
+    mobileNav="none"
+    [(mobileNavOpen)]="mobileNavOpen"
+  >
   <!-- Primary rail — the B2B app menu. Always expanded and NOT collapsible (no
        chevron): `[expanded]="true"` is authoritative, otherwise a non-collapsible
-       rail would boot as the icon rail. Becomes an off-canvas drawer ≤768px. -->
+       rail would boot as the icon rail. On mobile the shell renders NO drawer
+       (`mobileNav="none"`) — the rail drops out and the nav-launcher below takes
+       over (curated tile grid, cf. `mobileNavOpen`). -->
   <fold-menu railPrimary tint="primary" [expanded]="menuExpanded">
-    <a header class="rail-brand" routerLink="/" aria-label="La Folie Coffee B2B — accueil">
-      <span class="brand-mark" aria-hidden="true">B2B</span>
+    <a header class="rail-brand" routerLink="/" aria-label="La Folie Coffee — accueil">
+      <span class="brand-mark" aria-hidden="true">PRO</span>
       <span class="rail-wordmark">La Folie Coffee</span>
     </a>
 
     <a
       fold-menu-item
-      icon="grid"
+      icon="store"
       label="Boutique"
       routerLink="/boutique"
       routerLinkActive
@@ -27,7 +34,7 @@
     ></a>
     <a
       fold-menu-item
-      icon="repeat"
+      icon="basket"
       label="Mes paniers"
       routerLink="/mes-paniers"
       routerLinkActive
@@ -50,7 +57,7 @@
     }
     <a
       fold-menu-item
-      icon="contracts"
+      icon="receipt"
       label="Mes commandes"
       routerLink="/commandes"
       routerLinkActive
@@ -94,6 +101,7 @@
   <div header foldSurface="chrome" class="app-header">
     <fold-button-icon
       class="app-hamburger"
+      size="lg"
       [icon]="mobileNavOpen() ? 'close' : 'menu'"
       tooltip="Ouvrir la navigation"
       [attr.aria-expanded]="mobileNavOpen()"
@@ -101,21 +109,35 @@
       (clicked)="mobileNavOpen.set(!mobileNavOpen())"
     />
 
-    <span class="app-context">Espace professionnel</span>
-
-    <fold-search class="app-search" placeholder="Rechercher un client, une commande…" />
+    <!-- Wordmark temporaire (en attendant le logo/typo dédié). Remplace la barre
+         de recherche + le libellé de contexte. -->
+    <a class="app-wordmark" routerLink="/" aria-label="La Folie Coffee Pro — accueil">
+      La Folie Coffee <span class="app-wordmark-pro">Pro</span>
+    </a>
 
     <div class="app-header-actions">
       @if (account.displayEmail(); as email) {
         <span class="app-user" [title]="email">{{ email }}</span>
       }
+      <!-- Contact — en premier : ouvre le panneau contact direct / prise de RDV. -->
+      <fold-button-icon
+        class="app-contact"
+        size="md"
+        icon="chat"
+        tooltip="Nous contacter"
+        (clicked)="openContact()"
+      />
+      <!-- Recherche — la barre est repliée en icône (recherche globale à venir). -->
+      <fold-button-icon class="app-searchbtn" size="md" icon="search" tooltip="Rechercher" />
+      <!-- Notifications — placeholder d'en-tête (panneau à venir). -->
+      <fold-button-icon class="app-notif" size="md" icon="bell" tooltip="Notifications" />
       <button
         type="button"
         class="cart-trigger"
         (click)="openCart()"
         aria-label="Ouvrir mon panier"
       >
-        <fold-icon name="cart" [size]="19" />
+        <fold-icon name="cart" [size]="20" />
         <span class="cart-label">Mon panier</span>
         @if (cart.count() > 0) {
           <span class="cart-badge" aria-hidden="true">{{ cart.count() }}</span>
@@ -126,6 +148,74 @@
 
   <!-- Content -->
   <router-outlet />
+
+  <!-- Navigation mobile — grille de tuiles plein écran (remplace le tiroir
+       latéral, `mobileNav="none"`). Liée au même `mobileNavOpen` que le burger. -->
+  <fold-nav-launcher [(open)]="mobileNavOpen" label="Aller à">
+    <a
+      fold-nav-tile
+      variant="filled"
+      icon="store"
+      label="Boutique"
+      routerLink="/boutique"
+      routerLinkActive
+      #boutiqueTile="routerLinkActive"
+      [active]="boutiqueTile.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-nav-tile
+      variant="filled"
+      icon="basket"
+      label="Mes paniers"
+      routerLink="/mes-paniers"
+      routerLinkActive
+      #paniersTile="routerLinkActive"
+      [active]="paniersTile.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-nav-tile
+      variant="filled"
+      icon="receipt"
+      label="Mes commandes"
+      routerLink="/commandes"
+      routerLinkActive
+      #commandesTile="routerLinkActive"
+      [active]="commandesTile.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-nav-tile
+      variant="filled"
+      icon="company"
+      label="Mes entreprises"
+      routerLink="/entreprises"
+      routerLinkActive
+      #entreprisesTile="routerLinkActive"
+      [active]="entreprisesTile.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <a
+      fold-nav-tile
+      variant="filled"
+      icon="settings"
+      label="Réglages"
+      routerLink="/reglages"
+      routerLinkActive
+      #reglagesTile="routerLinkActive"
+      [active]="reglagesTile.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    <button
+      fold-nav-tile
+      variant="filled"
+      icon="logout"
+      label="Déconnexion"
+      type="button"
+      (click)="logout()"
+    ></button>
+  </fold-nav-launcher>
 
   <!-- Footer commun à toutes les pages (slot du shell). -->
   <app-site-footer footer />
