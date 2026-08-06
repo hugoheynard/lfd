@@ -67,16 +67,19 @@ export type {
 } from "./staff-user.js";
 export {
   orderStatusSchema,
+  paymentStatusSchema,
   fulfillmentMethodSchema,
   orderLineInputSchema,
   placeOrderPayloadSchema,
 } from "./order.js";
 export type {
   OrderStatus,
+  PaymentStatus,
   FulfillmentMethod,
   OrderLineInput,
   PlaceOrderPayload,
   OrderLineView,
   OrderView,
+  OrderPaymentIntent,
   PlacedOrderResponse,
 } from "./order.js";

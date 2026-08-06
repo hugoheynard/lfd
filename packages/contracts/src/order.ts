@@ -23,6 +23,21 @@ export const orderStatusSchema = z.enum([
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
 /**
+ * État du **règlement** d'une commande (aligné sur l'enum Prisma `PaymentStatus`).
+ * Découplé de {@link OrderStatus} (l'avancement de production). `not_required` =
+ * facturée sur terme (net60/90/mensuel) ; `pending` = carte en attente
+ * (`per_order`) ; `paid` = encaissée ; `failed`/`refunded` = échec / remboursée.
+ */
+export const paymentStatusSchema = z.enum([
+  "not_required",
+  "pending",
+  "paid",
+  "failed",
+  "refunded",
+]);
+export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
+
+/**
  * Mode d'**acheminement** d'une commande (aligné sur l'enum Prisma
  * `FulfillmentMethod`). `delivery` = livraison à une adresse ; `pickup` = retrait
  * au point de retrait (labo), fallback tant que la livraison n'existe pas.
@@ -83,6 +98,8 @@ export interface OrderView {
   readonly id: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
+  /** État du règlement (découplé de `status`, l'avancement de production). */
+  readonly paymentStatus: PaymentStatus;
   readonly requestedDeliveryDate: string | null;
   /** Mode d'acheminement de cette commande. */
   readonly fulfillmentMethod: FulfillmentMethod;
@@ -104,8 +121,30 @@ export interface OrderView {
   readonly lines: readonly OrderLineView[];
 }
 
-/** Réponse de passation : l'identifiant et le numéro humain de la commande. */
+/**
+ * Détails de paiement renvoyés au checkout **quand une carte est requise**
+ * (société `per_order`). Le client monte le Payment Element de Stripe avec le
+ * `clientSecret` et la `publishableKey` (toutes deux non secrètes), pour le
+ * montant `amountCents` (le total ré-résolu serveur). Absent = aucun paiement
+ * carte requis (terme différé) : la commande est déjà passée.
+ */
+export interface OrderPaymentIntent {
+  /** Client secret de la PaymentIntent Stripe — à passer au Payment Element. */
+  readonly clientSecret: string;
+  /** Clé **publique** Stripe (pk_test_… / pk_live_…) — destinée au bundle. */
+  readonly publishableKey: string;
+  /** Montant à encaisser, en centimes (le total serveur). Pour l'affichage. */
+  readonly amountCents: number;
+}
+
+/**
+ * Réponse de passation : l'identifiant et le numéro humain de la commande, plus —
+ * seulement pour les sociétés `per_order` — l'intention de paiement à régler par
+ * carte. `payment` absent = commande facturée sur terme, rien à encaisser au
+ * checkout.
+ */
 export interface PlacedOrderResponse {
   readonly id: string;
   readonly orderNumber: string;
+  readonly payment?: OrderPaymentIntent;
 }
