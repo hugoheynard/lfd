@@ -5,24 +5,19 @@ import { provideAuth0 } from '@auth0/auth0-angular';
 import { AUTH_CONFIG } from './auth.config';
 
 /**
- * Providers Auth0 — à n'inclure QUE dans la config **navigateur**
- * (`app.config.browser.ts`, importée seulement par `main.ts`).
- *
- * Pourquoi pas dans `app.config.ts` : cette config est fusionnée par
- * `app.config.server.ts` pour le pré-rendu. Or le SDK n'est pas isomorphe — le
- * constructeur d'`AuthService` lance immédiatement `checkSession()` qui lit
- * `window`. On isole donc Auth0 dans l'entrée navigateur ; côté serveur,
- * `AuthService` n'est pas fourni (l'`inject(..., { optional: true })` de la
- * façade renvoie `null`).
+ * Providers Auth0 de l'app. L'app est **browser-only** (statique sur Cloudflare
+ * Pages, pas de SSR), donc Auth0 est fourni directement dans `app.config.ts` :
+ * aucun rendu serveur à ménager, le SDK (non isomorphe, `checkSession()` lit
+ * `window`) tourne toujours au navigateur.
  *
  * On n'utilise volontairement AUCUN `inject(PLATFORM_ID)` ici : cette fonction
  * est appelée à la construction du tableau de providers, hors contexte
- * d'injection (NG0203). La garde SSR est structurelle (fichier séparé), pas
- * runtime.
+ * d'injection (NG0203).
  *
- * `redirect_uri` = `window.location.origin`, évalué à l'appel : sûr car cette
- * fonction n'est jamais chargée côté serveur. La même build sert donc
- * localhost:4200 et lfc-b2b.pages.dev — chaque origine juste listée côté Auth0.
+ * `redirect_uri` = `window.location.origin`, évalué à l'appel. La même build sert
+ * localhost/127.0.0.1:7316 et lfc-b2b.pages.dev — chaque origine juste listée
+ * côté Auth0. **Pas de SSR = le SDK capte le `?code&state` du callback dans son
+ * APP_INITIALIZER avant toute redirection de route.**
  */
 export function provideAuth(): EnvironmentProviders {
   return makeEnvironmentProviders([
