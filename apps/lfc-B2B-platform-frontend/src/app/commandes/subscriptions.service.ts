@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import type {
   CreateSubscriptionPayload,
+  SubscriptionStatus,
   SubscriptionView,
   UpsertOccurrenceOverridePayload,
 } from '@lfd/contracts';
@@ -60,6 +61,35 @@ export class SubscriptionsService {
           this.http.put<void>(
             `${AUTH_CONFIG.apiBaseUrl}/subscriptions/${subscriptionId}/occurrences/${date}`,
             payload,
+            headers(token),
+          ),
+        ),
+      );
+  }
+
+  /** Met en pause / reprend un panier récurrent. */
+  setStatus(subscriptionId: string, status: SubscriptionStatus): Observable<void> {
+    return this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.patch<void>(
+            `${AUTH_CONFIG.apiBaseUrl}/subscriptions/${subscriptionId}/status`,
+            { status },
+            headers(token),
+          ),
+        ),
+      );
+  }
+
+  /** Supprime un panier récurrent. */
+  remove(subscriptionId: string): Observable<void> {
+    return this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.delete<void>(
+            `${AUTH_CONFIG.apiBaseUrl}/subscriptions/${subscriptionId}`,
             headers(token),
           ),
         ),

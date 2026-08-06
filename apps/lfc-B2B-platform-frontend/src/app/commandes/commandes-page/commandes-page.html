@@ -84,6 +84,8 @@
       <app-subscriptions-list
         [subscriptions]="subscriptions.list()"
         (editOccurrence)="onEditOccurrence($event)"
+        (toggleStatus)="onToggleStatus($event)"
+        (remove)="onRemoveSubscription($event)"
       />
     </section>
   }

@@ -21,6 +21,9 @@
   background: var(--fold-color-surface, #fff);
 }
 
+.sub.is-paused {
+  opacity: 0.7;
+}
 .sub-head {
   display: flex;
   align-items: baseline;
@@ -28,7 +31,35 @@
   gap: var(--fold-space-sm, 0.5rem);
 }
 .sub-rhythm {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs, 0.4rem);
   font-weight: 700;
+}
+.sub-paused {
+  padding: 0.05rem 0.45rem;
+  border-radius: var(--fold-radius-pill, 999px);
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.7rem);
+  font-weight: 700;
+}
+.sub-actions {
+  margin-top: var(--fold-space-sm, 0.6rem);
+  padding-top: var(--fold-space-sm, 0.5rem);
+  border-top: 1px solid var(--fold-color-border-subtle);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+.sub-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs, 0.4rem);
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
 }
 .sub-fulfil {
   font-size: var(--fold-text-sm, 0.875rem);

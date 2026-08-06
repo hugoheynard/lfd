@@ -1,8 +1,13 @@
 <ul class="subs">
   @for (card of cards(); track card.sub.id) {
-    <li class="sub">
+    <li class="sub" [class.is-paused]="card.sub.status === 'paused'">
       <div class="sub-head">
-        <span class="sub-rhythm">{{ card.rhythm }}</span>
+        <span class="sub-rhythm">
+          {{ card.rhythm }}
+          @if (card.sub.status === 'paused') {
+            <span class="sub-paused">En pause</span>
+          }
+        </span>
         <span class="sub-fulfil">{{ card.fulfillment }}</span>
       </div>
       <p class="sub-items">{{ card.items }}</p>
@@ -37,6 +42,48 @@
           </div>
         } @empty {
           <p class="occ-none">Aucune échéance à venir.</p>
+        }
+      </div>
+
+      <div class="sub-actions">
+        <button
+          foldButton
+          type="button"
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          (click)="toggleStatus.emit(card.sub)"
+        >
+          {{ card.sub.status === 'active' ? 'Mettre en pause' : 'Reprendre' }}
+        </button>
+
+        @if (confirmingId() === card.sub.id) {
+          <span class="sub-confirm">
+            Supprimer ?
+            <button
+              foldButton
+              type="button"
+              intent="danger"
+              size="sm"
+              (click)="confirmDelete(card.sub.id)"
+            >
+              Confirmer
+            </button>
+            <button foldButton type="button" emphasis="soft" size="sm" (click)="cancelDelete()">
+              Annuler
+            </button>
+          </span>
+        } @else {
+          <button
+            foldButton
+            type="button"
+            emphasis="soft"
+            intent="danger"
+            size="sm"
+            (click)="askDelete(card.sub.id)"
+          >
+            Supprimer
+          </button>
         }
       </div>
     </li>

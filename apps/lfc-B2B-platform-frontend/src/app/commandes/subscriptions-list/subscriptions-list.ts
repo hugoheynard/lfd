@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import type { FulfillmentMethod, SubscriptionView } from '@lfd/contracts';
 import { FoldButtonComponent } from 'fold-ng';
 
@@ -64,8 +71,30 @@ interface SubscriptionCard {
 export class SubscriptionsList {
   readonly subscriptions = input.required<readonly SubscriptionView[]>();
 
-  /** Demande de modifier une occurrence précise (slice à venir). */
+  /** Demande de modifier une occurrence précise. */
   readonly editOccurrence = output<{ readonly subscriptionId: string; readonly date: string }>();
+
+  /** Bascule pause/reprise d'un abonnement (la page appelle le service). */
+  readonly toggleStatus = output<SubscriptionView>();
+
+  /** Suppression confirmée d'un abonnement (id). */
+  readonly remove = output<string>();
+
+  /** Id de l'abonnement en attente de confirmation de suppression (inline). */
+  protected readonly confirmingId = signal<string | null>(null);
+
+  protected askDelete(id: string): void {
+    this.confirmingId.set(id);
+  }
+
+  protected cancelDelete(): void {
+    this.confirmingId.set(null);
+  }
+
+  protected confirmDelete(id: string): void {
+    this.confirmingId.set(null);
+    this.remove.emit(id);
+  }
 
   protected readonly cards = computed<readonly SubscriptionCard[]>(() => {
     const today = todayIso();

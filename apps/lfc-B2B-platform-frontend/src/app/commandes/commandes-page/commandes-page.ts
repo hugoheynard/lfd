@@ -1,6 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  PLATFORM_ID,
+  signal,
+} from '@angular/core';
 
-import type { OrderView } from '@lfd/contracts';
+import type { OrderView, SubscriptionView } from '@lfd/contracts';
 import {
   FoldButtonIconComponent,
   FoldCalloutComponent,
@@ -30,6 +39,9 @@ import { buildDemoRegimeChanges, type PaymentRegimeChange } from '../payment-reg
 
 /** Délai de règlement (jours après clôture). `0` = 1er du mois suivant (front-only). */
 const MONTHLY_DUE_DAYS = 0;
+
+/** Cadence de rafraîchissement tant qu'un paiement est en attente (ms). */
+const PENDING_POLL_MS = 6000;
 
 /** Les deux représentations du carnet, choisies par le view-toggle. */
 type OrdersView = 'periods' | 'all';
@@ -70,6 +82,8 @@ export class CommandesPage {
   private readonly context = inject(CommerceContextService);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly platformId = inject(PLATFORM_ID);
   protected readonly subscriptions = inject(SubscriptionsService);
   protected readonly orders = inject(OrdersService);
 
@@ -77,6 +91,24 @@ export class CommandesPage {
     // Charge les commandes personnelles réelles + les paniers récurrents.
     this.orders.load();
     this.subscriptions.loadMine();
+    this.pollWhilePending();
+  }
+
+  /**
+   * Rafraîchit « Mes commandes » **tant qu'une commande est en attente de paiement**
+   * (carte `per_order`) : le webhook Stripe bascule `pending → paid` côté serveur,
+   * et la liste le reflète sans reload manuel. S'arrête d'elle-même une fois tout réglé.
+   */
+  private pollWhilePending(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    const handle = setInterval(() => {
+      if (this.orders.orders().some((order) => order.paymentStatus === 'pending')) {
+        this.orders.load();
+      }
+    }, PENDING_POLL_MS);
+    this.destroyRef.onDestroy(() => clearInterval(handle));
   }
 
   /** Ouvre le formulaire « transformer en panier récurrent » pour cette commande. */
@@ -92,6 +124,26 @@ export class CommandesPage {
   /** Règlement d'une commande — endpoint de settle par commande à câbler (à venir). */
   protected onSettle(order: OrderView): void {
     this.notify.info(`Le règlement en ligne de ${order.orderNumber} arrive bientôt.`);
+  }
+
+  /** Met en pause / reprend un panier récurrent, puis recharge la liste. */
+  protected onToggleStatus(sub: SubscriptionView): void {
+    const next = sub.status === 'active' ? 'paused' : 'active';
+    this.subscriptions.setStatus(sub.id, next).subscribe({
+      next: () => this.subscriptions.loadMine(),
+      error: (error: unknown) => this.notify.error(error),
+    });
+  }
+
+  /** Supprime un panier récurrent (déjà confirmé dans la liste), puis recharge. */
+  protected onRemoveSubscription(id: string): void {
+    this.subscriptions.remove(id).subscribe({
+      next: () => {
+        this.notify.success('Panier récurrent supprimé.');
+        this.subscriptions.loadMine();
+      },
+      error: (error: unknown) => this.notify.error(error),
+    });
   }
 
   /** Ouvre le panneau « modifier cette commande » pour une échéance précise. */
