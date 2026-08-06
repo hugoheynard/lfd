@@ -1,22 +1,18 @@
 name: deploy_b2b_backend
 
 # Déploie le backend B2B (lfc-b2b-platform-backend, NestJS + Prisma) sur Cloudflare
-# **Containers**, à chaque push sur main touchant le backend B2B.
+# **Containers** : build de l'image depuis la racine monorepo → push registre
+# Cloudflare → deploy du Worker. À chaque push sur main touchant le backend B2B.
 #
-# ⚠️ PRÉREQUIS NON ENCORE DANS LE REPO (Phase 0 du scaling suite) — le workflow est
-# prêt mais le deploy échouera tant que ceci n'existe pas :
-#   1. apps/lfc-B2B-platform-backend/wrangler.toml — un Worker + un binding Container
-#      ([[containers]]) pointant sur l'image ci-dessous.
-#   2. apps/lfc-B2B-platform-backend/Dockerfile — image du backend Nest (prisma
-#      generate + build + `node dist/main.js`), construite par `wrangler deploy`.
-#   3. Secrets RUNTIME du Worker (pas des secrets GitHub) posés une fois via
-#      `wrangler secret put` : DATABASE_B2B_URL, Auth0, STRIPE_SECRET_KEY,
-#      STRIPE_WEBHOOK_SECRET, etc.
+# Scaffold : wrangler.jsonc + Dockerfile + container/worker.ts. Points à valider au
+# 1er run (contexte de build, pnpm deploy, secrets runtime) : documentation/CONTAINERIZE-NOTES.md.
 #
 # Secrets GitHub requis (Settings → Secrets and variables → Actions) :
-#   LFC_B2B_BACKEND_WORKER — token Cloudflare « Account · Workers Scripts · Edit »
-#     (+ « Containers · Edit » pour pousser l'image).
-#   CLOUDFLARE_ACCOUNT_ID — l'account id partagé (déjà utilisé par les autres workflows).
+#   LFC_B2B_BACKEND_WORKER — token « Account · Workers Scripts · Edit » + « Containers · Edit ».
+#   CLOUDFLARE_ACCOUNT_ID — account id partagé (injecté dans l'image au deploy).
+#
+# Secrets RUNTIME (≠ GitHub) posés une fois via `wrangler secret put` :
+#   DATABASE_B2B_URL, Auth0, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, …
 
 on:
   push:
@@ -57,11 +53,60 @@ jobs:
       - name: Typecheck
         run: pnpm --filter lfc-b2b-platform-backend exec tsc --noEmit
 
-      # `wrangler deploy` lit apps/lfc-B2B-platform-backend/wrangler.toml, construit
-      # l'image Docker (Container) et déploie le Worker. Docker dispo sur ubuntu-latest.
-      - name: Deploy Worker + Container
+      # 1) Build l'image depuis la RACINE du monorepo (contexte complet), puis la
+      #    pousse sur le registre Cloudflare via wrangler (auth automatique).
+      - name: Build image (contexte racine)
+        run: docker build -f apps/lfc-B2B-platform-backend/Dockerfile -t lfc-b2b-backend:latest .
+
+      - name: Push image → registre Cloudflare
         working-directory: apps/lfc-B2B-platform-backend
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_B2B_BACKEND_WORKER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm dlx wrangler deploy
+        run: pnpm exec wrangler containers push lfc-b2b-backend:latest
+
+      # 2) Injecte l'account id dans l'`image` du wrangler (jamais commité), puis déploie
+      #    le Worker qui référence l'image poussée.
+      - name: Deploy Worker
+        working-directory: apps/lfc-B2B-platform-backend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_B2B_BACKEND_WORKER }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          sed -i "s/__CF_ACCOUNT_ID__/${CLOUDFLARE_ACCOUNT_ID}/" wrangler.jsonc
+          pnpm exec wrangler deploy
+
+      # 3) Auto-sync des secrets RUNTIME depuis les secrets GitHub (source unique).
+      #    Ne pousse QUE ceux renseignés (optionnels absents = feature désactivée).
+      #    Les valeurs viennent de secrets GitHub, jamais du repo. Liste = .env.example.
+      - name: Sync runtime secrets
+        working-directory: apps/lfc-B2B-platform-backend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_B2B_BACKEND_WORKER }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DATABASE_B2B_URL: ${{ secrets.DATABASE_B2B_URL }}
+          # Identifiants Auth0 = PUBLICS → GitHub VARIABLES (pas Secrets). Tenant PROD.
+          AUTH0_DOMAIN: ${{ vars.B2B_AUTH0_DOMAIN }}
+          AUTH0_AUDIENCE: ${{ vars.B2B_AUTH0_AUDIENCE }}
+          AUTH0_ADMIN_AUDIENCE: ${{ vars.AUTH0_ADMIN_AUDIENCE }}
+          AUTH0_M2M_CLIENT_ID: ${{ secrets.AUTH0_M2M_CLIENT_ID }}
+          AUTH0_M2M_CLIENT_SECRET: ${{ secrets.AUTH0_M2M_CLIENT_SECRET }}
+          STORAGE_BUCKET: ${{ secrets.STORAGE_BUCKET }}
+          STORAGE_ACCESS_KEY_ID: ${{ secrets.STORAGE_ACCESS_KEY_ID }}
+          STORAGE_SECRET_ACCESS_KEY: ${{ secrets.STORAGE_SECRET_ACCESS_KEY }}
+          STORAGE_ENDPOINT: ${{ secrets.STORAGE_ENDPOINT }}
+          STORAGE_REGION: ${{ secrets.STORAGE_REGION }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+        run: |
+          for name in DATABASE_B2B_URL AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
+                      AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET \
+                      STORAGE_BUCKET STORAGE_ACCESS_KEY_ID STORAGE_SECRET_ACCESS_KEY \
+                      STORAGE_ENDPOINT STORAGE_REGION \
+                      STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET; do
+            value="${!name}"
+            if [ -n "$value" ]; then
+              printf '%s' "$value" | pnpm exec wrangler secret put "$name"
+            fi
+          done
