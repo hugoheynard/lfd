@@ -1,0 +1,11 @@
+# Le build des images backend copie le monorepo (COPY . .) : on exclut le lourd et
+# le spécifique-plateforme pour que `pnpm install` reconstruise proprement dans l'image.
+**/node_modules
+**/dist
+**/.angular
+**/.turbo
+**/coverage
+.git
+**/*.log
+**/.env
+**/.env.*

@@ -1,0 +1,23 @@
+{
+  // Backend PIM (NestJS) en Cloudflare Container. Consommé par
+  // .github/workflows/deploy_pim_backend.yml.
+  "name": "lfc-pim-backend",
+  "main": "container/worker.ts",
+  "compatibility_date": "2025-06-01",
+
+  "containers": [
+    {
+      "class_name": "Backend",
+      // Image pré-poussée sur le registre Cloudflare (build+push CI, contexte racine).
+      // `__CF_ACCOUNT_ID__` remplacé au deploy par le secret CLOUDFLARE_ACCOUNT_ID.
+      "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfc-pim-backend:latest",
+      "max_instances": 2,
+      "instance_type": "basic"
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [{ "name": "BACKEND", "class_name": "Backend" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Backend"] }]
+}

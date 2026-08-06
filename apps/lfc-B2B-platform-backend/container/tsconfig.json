@@ -1,0 +1,14 @@
+{
+  // tsconfig ISOLÉ du Worker d'entrée (monde Cloudflare Workers), séparé du
+  // tsconfig Nest (monde Node). Sert surtout aux types éditeur ; wrangler bundle.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["worker.ts"]
+}

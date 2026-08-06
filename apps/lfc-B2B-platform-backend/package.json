@@ -48,6 +48,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/containers": "^0.3.7",
+    "@cloudflare/workers-types": "^5.20260804.1",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.28.0",
     "@nestjs/cli": "^11.0.0",
@@ -76,6 +78,7 @@
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.23.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.34.0"
+    "typescript-eslint": "^8.34.0",
+    "wrangler": "^4.118.0"
   }
 }

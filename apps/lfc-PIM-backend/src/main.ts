@@ -24,7 +24,9 @@ async function bootstrap(): Promise<void> {
   // Le port passe par AppConfig comme toute autre valeur d'environnement.
   const port = app.get(AppConfig).port();
   try {
-    await app.listen(port);
+    // `0.0.0.0` explicite : requis en container (Cloudflare) pour être joignable
+    // depuis le Worker.
+    await app.listen(port, "0.0.0.0");
   } catch (error) {
     if (isAddressInUse(error)) {
       // Cause quasi-certaine : un backend tourne déjà. On garde le port fixe (le

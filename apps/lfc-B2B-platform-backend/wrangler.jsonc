@@ -1,0 +1,27 @@
+{
+  // Backend B2B (NestJS) en Cloudflare Container, piloté par un Worker d'entrée.
+  // Consommé par .github/workflows/deploy_b2b_backend.yml (wrangler deploy).
+  "name": "lfc-b2b-backend",
+  "main": "container/worker.ts",
+  "compatibility_date": "2025-06-01",
+
+  // L'image NestJS tourne dans un container ; le Worker ne fait que router.
+  "containers": [
+    {
+      "class_name": "Backend",
+      // Image pré-poussée sur le registre Cloudflare (build+push en CI depuis la
+      // RACINE du monorepo). `__CF_ACCOUNT_ID__` est remplacé au deploy par le
+      // secret CLOUDFLARE_ACCOUNT_ID (jamais commité). Tag `latest`.
+      "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfc-b2b-backend:latest",
+      "max_instances": 2,
+      // lite (1/16 vCPU,256Mi) trop petit pour Node+Nest → basic (1/4 vCPU,1Gi).
+      // Monter à "standard-1" (1/2 vCPU,4Gi) si la RAM serre.
+      "instance_type": "basic"
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [{ "name": "BACKEND", "class_name": "Backend" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Backend"] }]
+}
