@@ -89,6 +89,7 @@ export type {
 export {
   recurrenceSchema,
   subscriptionStatusSchema,
+  setSubscriptionStatusPayloadSchema,
   createSubscriptionPayloadSchema,
   occurrenceDateSchema,
   upsertOccurrenceOverridePayloadSchema,
@@ -96,6 +97,7 @@ export {
 export type {
   Recurrence,
   SubscriptionStatus,
+  SetSubscriptionStatusPayload,
   CreateSubscriptionPayload,
   UpsertOccurrenceOverridePayload,
   SubscriptionLineView,

@@ -21,6 +21,12 @@ export type Recurrence = z.infer<typeof recurrenceSchema>;
 export const subscriptionStatusSchema = z.enum(["active", "paused"]);
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
+/** Change l'état d'un panier récurrent (mettre en pause / reprendre). */
+export const setSubscriptionStatusPayloadSchema = z.object({
+  status: subscriptionStatusSchema,
+});
+export type SetSubscriptionStatusPayload = z.infer<typeof setSubscriptionStatusPayloadSchema>;
+
 /** Une ligne du gabarit : SKU + quantité (le prix est ré-résolu à l'échéance). */
 const subscriptionLinePayloadSchema = z.object({
   sku: z.string().min(1),
