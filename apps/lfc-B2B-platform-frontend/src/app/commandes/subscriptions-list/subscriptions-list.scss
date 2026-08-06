@@ -1,0 +1,108 @@
+:host {
+  display: block;
+}
+
+.subs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md, 1rem);
+}
+
+.sub {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs, 0.35rem);
+  padding: var(--fold-space-md, 1rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 10px);
+  background: var(--fold-color-surface, #fff);
+}
+
+.sub-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+.sub-rhythm {
+  font-weight: 700;
+}
+.sub-fulfil {
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+.sub-items {
+  margin: 0;
+  color: var(--fold-color-text);
+}
+.sub-period {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+/* Aperçu des prochaines échéances — deux lignes sous l'abonnement. */
+.sub-next {
+  margin-top: var(--fold-space-xs, 0.35rem);
+  padding-top: var(--fold-space-sm, 0.5rem);
+  border-top: 1px solid var(--fold-color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs, 0.35rem);
+}
+.sub-next-label {
+  margin: 0;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fold-color-text-muted);
+}
+.occ {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+.occ.is-skipped .occ-date {
+  text-decoration: line-through;
+  color: var(--fold-color-text-muted);
+}
+.occ-date {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.occ-order {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs, 0.4rem);
+  font-weight: 600;
+}
+.occ-fulfil {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+}
+.occ-tag {
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--fold-radius-pill, 999px);
+  font-size: var(--fold-text-xs, 0.7rem);
+  font-weight: 700;
+  text-decoration: none;
+}
+.occ-tag--mod {
+  background: color-mix(in srgb, var(--fold-color-primary) 16%, transparent);
+  color: var(--fold-color-primary);
+}
+.occ-tag--skip {
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-muted);
+}
+.occ-none {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}

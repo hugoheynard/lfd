@@ -23,8 +23,9 @@
             subtitle="Vos commandes passées depuis la boutique apparaîtront ici."
           />
         } @else {
-          <app-my-orders [orders]="orders.orders()" />
+          <app-my-orders [orders]="orders.orders()" (makeRecurring)="openRecurring($event)" />
         }
+
         <fold-callout appearance="inset" variant="info">
           Astuce : rattachez une entreprise dans « Mes entreprises » pour les relevés
           mensuels et le paiement à terme.
@@ -70,5 +71,16 @@
     } @else {
       <app-orders-table [year]="year()" />
     }
+  }
+
+  <!-- Paniers récurrents : visibles quel que soit le rattachement (zéro friction desserré). -->
+  @if (subscriptions.list().length > 0) {
+    <section class="subs-section">
+      <h2 class="subs-title">Mes paniers récurrents</h2>
+      <app-subscriptions-list
+        [subscriptions]="subscriptions.list()"
+        (editOccurrence)="onEditOccurrence($event)"
+      />
+    </section>
   }
 </fold-page-layout>

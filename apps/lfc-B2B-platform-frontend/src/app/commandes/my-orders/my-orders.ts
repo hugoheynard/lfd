@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 import type { FulfillmentMethod, OrderStatus, OrderView, PaymentStatus } from '@lfd/contracts';
+import { FoldButtonComponent } from 'fold-ng';
 
 import { formatEurValue } from '../../data/catalogue-seed';
 
@@ -34,11 +35,15 @@ const FULFILLMENT_LABELS: Readonly<Record<FulfillmentMethod, string>> = {
 @Component({
   selector: 'app-my-orders',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FoldButtonComponent],
   templateUrl: './my-orders.html',
   styleUrl: './my-orders.scss',
 })
 export class MyOrders {
   readonly orders = input.required<readonly OrderView[]>();
+
+  /** « Transformer en panier récurrent » — la page ouvre le panneau avec la commande. */
+  readonly makeRecurring = output<OrderView>();
 
   protected statusLabel(status: OrderStatus): string {
     return STATUS_LABELS[status];

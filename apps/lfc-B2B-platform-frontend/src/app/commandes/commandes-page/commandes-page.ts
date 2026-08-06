@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
+import type { OrderView } from '@lfd/contracts';
 import {
   FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldPageLayoutComponent,
+  FoldPanelHostService,
   FoldSpinnerComponent,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
@@ -16,8 +18,12 @@ import { type BillingPeriod, groupIntoPeriods } from '../billing-periods';
 import { BillingPeriodsView } from '../billing-periods-view/billing-periods-view';
 import { downloadBon as downloadBonFile } from '../download-bon';
 import { MyOrders } from '../my-orders/my-orders';
+import { OccurrenceOverridePanel } from '../occurrence-override-panel/occurrence-override-panel';
 import { OrdersService } from '../orders.service';
 import { OrdersTable } from '../orders-table/orders-table';
+import { RecurringOrderPanel } from '../recurring-order-panel/recurring-order-panel';
+import { SubscriptionsList } from '../subscriptions-list/subscriptions-list';
+import { SubscriptionsService } from '../subscriptions.service';
 import { buildDemoOrders, type CommandeRow } from '../orders-demo-seed';
 import { buildDemoRegimeChanges, type PaymentRegimeChange } from '../payment-regime-changes';
 
@@ -54,17 +60,49 @@ type OrdersView = 'periods' | 'all';
     BillingPeriodsView,
     OrdersTable,
     MyOrders,
+    SubscriptionsList,
   ],
   templateUrl: './commandes-page.html',
   styleUrl: './commandes-page.scss',
 })
 export class CommandesPage {
   private readonly context = inject(CommerceContextService);
+  private readonly panelHost = inject(FoldPanelHostService);
+  protected readonly subscriptions = inject(SubscriptionsService);
   protected readonly orders = inject(OrdersService);
 
   constructor() {
-    // Charge les commandes personnelles réelles (le mur = le client connecté).
+    // Charge les commandes personnelles réelles + les paniers récurrents.
     this.orders.load();
+    this.subscriptions.loadMine();
+  }
+
+  /** Ouvre le formulaire « transformer en panier récurrent » pour cette commande. */
+  protected openRecurring(order: OrderView): void {
+    const ref = this.panelHost.open(RecurringOrderPanel, { data: order });
+    void ref.closed.then((created) => {
+      if (created === true) {
+        this.subscriptions.loadMine();
+      }
+    });
+  }
+
+  /** Ouvre le panneau « modifier cette commande » pour une échéance précise. */
+  protected onEditOccurrence(event: { subscriptionId: string; date: string }): void {
+    const subscription = this.subscriptions
+      .list()
+      .find((entry) => entry.id === event.subscriptionId);
+    if (subscription === undefined) {
+      return;
+    }
+    const ref = this.panelHost.open(OccurrenceOverridePanel, {
+      data: { subscription, date: event.date },
+    });
+    void ref.closed.then((saved) => {
+      if (saved === true) {
+        this.subscriptions.loadMine();
+      }
+    });
   }
 
   /** Instant de référence, figé (une lecture ⇒ un `computed` pur). */

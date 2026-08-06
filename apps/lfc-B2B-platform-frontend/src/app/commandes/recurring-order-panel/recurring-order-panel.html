@@ -1,0 +1,133 @@
+<fold-panel-header
+  title="Panier récurrent"
+  subtitle="Répétez cette commande automatiquement"
+/>
+
+<div class="body">
+  <p class="src">
+    Depuis la commande <strong>{{ data().orderNumber }}</strong> —
+    {{ data().lines.length }} article{{ data().lines.length > 1 ? 's' : '' }}.
+  </p>
+
+  <div class="fld">
+    <span class="fld-lbl">Rythme</span>
+    <fold-view-toggle
+      activeStyle="accent"
+      ariaLabel="Rythme de récurrence"
+      [options]="recurrenceOptions"
+      [value]="recurrence()"
+      (valueChange)="onRecurrence($event)"
+    />
+  </div>
+
+  <div class="fld-row">
+    <label class="fld">
+      <span class="fld-lbl">Première commande</span>
+      <input class="fld-ctl" type="date" [value]="startDate()" (input)="onDate('start', $event)" />
+    </label>
+    <label class="fld">
+      <span class="fld-lbl">Fin (optionnel)</span>
+      <input
+        class="fld-ctl"
+        type="date"
+        [value]="endDate()"
+        [min]="startDate()"
+        (input)="onDate('end', $event)"
+      />
+    </label>
+  </div>
+  <p class="fld-hint">Retrait / livraison le lendemain de chaque commande.</p>
+
+  <div class="fld">
+    <span class="fld-lbl">Acheminement</span>
+    <fold-view-toggle
+      activeStyle="accent"
+      ariaLabel="Mode d'acheminement"
+      [options]="fulfilOptions"
+      [value]="method()"
+      (valueChange)="onMethod($event)"
+    />
+  </div>
+
+  @if (isCourier()) {
+    <label class="fld">
+      <span class="fld-lbl">Adresse de livraison</span>
+      <input
+        class="fld-ctl"
+        type="text"
+        autocomplete="street-address"
+        placeholder="N° et rue"
+        [value]="address().ligne1"
+        (input)="onAddress('ligne1', $event)"
+      />
+    </label>
+    <label class="fld">
+      <span class="fld-lbl">Complément (optionnel)</span>
+      <input
+        class="fld-ctl"
+        type="text"
+        placeholder="Bâtiment, étage…"
+        [value]="address().ligne2"
+        (input)="onAddress('ligne2', $event)"
+      />
+    </label>
+    <div class="fld-row">
+      <label class="fld fld--cp">
+        <span class="fld-lbl">Code postal</span>
+        <input
+          class="fld-ctl"
+          type="text"
+          inputmode="numeric"
+          autocomplete="postal-code"
+          [value]="address().codePostal"
+          (input)="onAddress('codePostal', $event)"
+        />
+      </label>
+      <label class="fld fld--ville">
+        <span class="fld-lbl">Ville</span>
+        <input
+          class="fld-ctl"
+          type="text"
+          autocomplete="address-level2"
+          [value]="address().ville"
+          (input)="onAddress('ville', $event)"
+        />
+      </label>
+    </div>
+  } @else {
+    @if (pickups.addresses().length > 1) {
+      <label class="fld">
+        <span class="fld-lbl">Adresse de retrait</span>
+        <select class="fld-ctl" (change)="onPickup($event)">
+          @for (point of pickups.addresses(); track point.id) {
+            <option [value]="point.id" [selected]="point.id === pickupId()">
+              {{ point.label || point.ville }} — {{ point.ligne1 }}, {{ point.codePostal }}
+              {{ point.ville }}
+            </option>
+          }
+        </select>
+      </label>
+    } @else if (pickups.defaultPickup(); as pickup) {
+      <p class="pickup">
+        Retrait à <strong>{{ pickup.label || pickup.ville }}</strong> — {{ pickup.ligne1 }},
+        {{ pickup.codePostal }} {{ pickup.ville }}
+      </p>
+    } @else {
+      <p class="fld-hint">Aucun point de retrait n'est configuré pour l'instant.</p>
+    }
+  }
+
+  <p class="pay-note">Paiement par carte à chaque échéance.</p>
+</div>
+
+<fold-panel-footer align="between">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button
+    foldButton
+    intent="primary"
+    [disabled]="!ready() || submitting()"
+    (click)="submit()"
+  >
+    Créer le panier récurrent
+  </button>
+</fold-panel-footer>

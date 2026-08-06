@@ -1,0 +1,44 @@
+<ul class="subs">
+  @for (card of cards(); track card.sub.id) {
+    <li class="sub">
+      <div class="sub-head">
+        <span class="sub-rhythm">{{ card.rhythm }}</span>
+        <span class="sub-fulfil">{{ card.fulfillment }}</span>
+      </div>
+      <p class="sub-items">{{ card.items }}</p>
+      <p class="sub-period">{{ card.period }}</p>
+
+      <div class="sub-next">
+        <p class="sub-next-label">Mes prochaines commandes</p>
+        @for (occ of card.next; track occ.date) {
+          <div class="occ" [class.is-skipped]="occ.state === 'skipped'">
+            <span class="occ-date">
+              <span class="occ-order">
+                Commande le {{ occ.label }}
+                @if (occ.state === 'skipped') {
+                  <span class="occ-tag occ-tag--skip">Sautée</span>
+                } @else if (occ.state === 'modified') {
+                  <span class="occ-tag occ-tag--mod">Modifiée</span>
+                }
+              </span>
+              <span class="occ-fulfil">{{ card.fulfilVerb }} le {{ occ.fulfilLabel }}</span>
+            </span>
+            <button
+              foldButton
+              type="button"
+              emphasis="soft"
+              intent="neutral"
+              size="sm"
+              icon="edit"
+              (click)="editOccurrence.emit({ subscriptionId: card.sub.id, date: occ.date })"
+            >
+              Modifier
+            </button>
+          </div>
+        } @empty {
+          <p class="occ-none">Aucune échéance à venir.</p>
+        }
+      </div>
+    </li>
+  }
+</ul>

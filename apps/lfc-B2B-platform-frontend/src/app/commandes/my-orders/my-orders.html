@@ -20,6 +20,20 @@
         <span class="order-total-label">Total TTC</span>
         <strong>{{ fmtCents(order.totalCents) }}</strong>
       </div>
+
+      <div class="order-actions">
+        <button
+          foldButton
+          type="button"
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          icon="repeat"
+          (click)="makeRecurring.emit(order)"
+        >
+          Transformer en panier récurrent
+        </button>
+      </div>
     </li>
   }
 </ul>

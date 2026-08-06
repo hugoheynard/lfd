@@ -1,0 +1,64 @@
+<fold-panel-header
+  title="Modifier cette commande"
+  [subtitle]="'Échéance du ' + dateLabel()"
+/>
+
+<div class="body">
+  <div class="fld">
+    <span class="fld-lbl">Cette échéance</span>
+    <fold-view-toggle
+      activeStyle="accent"
+      ariaLabel="Commander ou sauter cette échéance"
+      [options]="modeOptions"
+      [value]="skipped() ? 'skip' : 'order'"
+      (valueChange)="onMode($event)"
+    />
+  </div>
+
+  @if (skipped()) {
+    <p class="skip-note">
+      Cette commande sera <strong>sautée</strong> — le reste de l'abonnement continue
+      normalement.
+    </p>
+  } @else {
+    <ul class="lines">
+      @for (line of lines(); track line.sku) {
+        <li class="line" [class.is-removed]="line.quantity === 0">
+          <span class="line-name">{{ line.name }}</span>
+          <div class="stepper">
+            <button
+              foldButton
+              type="button"
+              emphasis="outline"
+              intent="neutral"
+              size="sm"
+              icon="minus"
+              aria-label="Retirer un"
+              [disabled]="line.quantity === 0"
+              (click)="step(line.sku, -1)"
+            ></button>
+            <span class="qty">{{ line.quantity }}</span>
+            <button
+              foldButton
+              type="button"
+              emphasis="outline"
+              intent="neutral"
+              size="sm"
+              icon="plus"
+              aria-label="Ajouter un"
+              (click)="step(line.sku, 1)"
+            ></button>
+          </div>
+        </li>
+      }
+    </ul>
+    <p class="fld-hint">Mettez une quantité à 0 pour retirer une ligne de cette échéance.</p>
+  }
+</div>
+
+<fold-panel-footer align="between">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!ready() || submitting()" (click)="submit()">
+    Enregistrer
+  </button>
+</fold-panel-footer>

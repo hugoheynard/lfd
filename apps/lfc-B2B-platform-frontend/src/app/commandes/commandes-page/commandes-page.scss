@@ -26,3 +26,16 @@
   place-items: center;
   padding: var(--fold-space-xl, 2rem);
 }
+
+/* Section paniers récurrents (contexte perso zéro friction). */
+.subs-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.5rem);
+  margin-top: var(--fold-space-md, 1rem);
+}
+.subs-title {
+  margin: 0;
+  font-size: var(--fold-text-lg, 1.125rem);
+  font-weight: 700;
+}

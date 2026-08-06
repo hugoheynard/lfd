@@ -16,7 +16,8 @@
   grid-template-columns: 1fr auto;
   grid-template-areas:
     'head total'
-    'meta total';
+    'meta total'
+    'actions actions';
   gap: var(--fold-space-xs, 0.35rem) var(--fold-space-md, 1rem);
   align-items: center;
   padding: var(--fold-space-md, 1rem);
@@ -103,4 +104,12 @@
 }
 .order-total strong {
   font-size: var(--fold-text-lg, 1.125rem);
+}
+
+.order-actions {
+  grid-area: actions;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--fold-space-xs, 0.35rem);
+  border-top: 1px solid var(--fold-color-border-subtle);
 }
