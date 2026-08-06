@@ -1,220 +1,67 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
-import type {
-  CartAdjustment,
-  DeliveryAddressView,
-  FulfillmentMethod,
-  OrderPaymentIntent,
-  PlaceOrderPayload,
-} from '@lfd/contracts';
+import type { OrderPaymentIntent, PlaceOrderPayload } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   type FoldPanelDefaults,
   FoldPanelHeaderComponent,
   FoldPanelRef,
-  FoldSelectComponent,
 } from 'fold-ng';
 
 import { StripePayment } from '../stripe-payment/stripe-payment';
-import type { Company } from '../../account/account.model';
-import { AccountService } from '../../account/account.service';
 import { formatEurValue } from '../../data/catalogue-seed';
 import { CartService } from '../../data/cart.service';
-import { DeliveryZonesService } from '../../entreprises/delivery-zones.service';
-import { PickupAddressesService } from '../../entreprises/pickup-addresses.service';
-import { PlatformSettingsService } from '../../entreprises/platform-settings.service';
+import { FulfillmentService } from '../fulfillment.service';
 import { OrdersService } from '../orders.service';
 
-/** Un ajustement de panier affiché au checkout : remise (retrait) ou frais (zone). */
-interface CheckoutAdjustment {
-  readonly kind: 'discount' | 'fee';
-  readonly label: string;
-  readonly cents: number;
-}
-
 /**
- * Montant en centimes d'un {@link CartAdjustment} sur un sous-total — **miroir
- * local** de `cartAdjustmentCents` de `@lfd/contracts`, réimplémenté ici pour
- * garder le contrat **type-only** côté client (importer la fonction tirerait zod
- * dans le bundle). Le serveur reste l'autorité ; ceci n'est qu'un affichage.
- */
-function adjustmentCents(adjustment: CartAdjustment, subtotalCents: number): number {
-  if (adjustment.mode === 'amount') {
-    return Math.max(0, adjustment.cents);
-  }
-  return Math.max(0, Math.round((subtotalCents * adjustment.bp) / 10000));
-}
-
-/**
- * Panneau **Checkout** — dernière étape du panier : choisir l'entreprise
- * cliente et son adresse de livraison, une date souhaitée et une note, puis
- * passer commande.
+ * Panneau **Passer commande** — étape finale **zéro friction** : l'acheminement
+ * (coursier + zone + adresse, ou retrait) a déjà été choisi **en haut du panier**
+ * ({@link FulfillmentService}). Ici on ne fait que confirmer (date + note), placer
+ * la commande **sans entreprise** (elle appartient au client connecté), et — quand
+ * une carte est requise — encaisser via le Payment Element (Stripe).
  *
- * On n'envoie que `sku` + quantité : le serveur ré-résout les prix et **gate**
- * sur l'activation de l'entreprise (règlement + KBIS validés). Une entreprise non
- * activée reste sélectionnable pour préparer, mais le bouton explique le refus.
+ * On n'envoie que `sku` + quantité + acheminement : le serveur ré-résout tous les
+ * prix (autorité).
  */
 @Component({
   selector: 'app-checkout-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldPanelHeaderComponent,
-    FoldSelectComponent,
-    FoldButtonComponent,
-    FoldCalloutComponent,
-    StripePayment,
-  ],
+  imports: [FoldPanelHeaderComponent, FoldButtonComponent, FoldCalloutComponent, StripePayment],
   templateUrl: './checkout-panel.html',
   styleUrl: './checkout-panel.scss',
 })
 export class CheckoutPanel {
-  static readonly foldPanel: FoldPanelDefaults = { modal: false, surface: 'solid' };
+  static readonly foldPanel: FoldPanelDefaults = { modal: false, surface: 'solid', side: 'auto' };
 
   private readonly ref = inject(FoldPanelRef);
-  private readonly account = inject(AccountService);
   private readonly orders = inject(OrdersService);
-  private readonly settings = inject(PlatformSettingsService);
-  private readonly pickups = inject(PickupAddressesService);
-  private readonly zones = inject(DeliveryZonesService);
   protected readonly cart = inject(CartService);
+  protected readonly fulfillment = inject(FulfillmentService);
 
-  /** Ouverture depuis une page qui sait déjà quel établissement viser. */
-  readonly data = input<{ readonly companyId?: string } | undefined>(undefined);
-
-  protected readonly companies = this.account.companies;
-
-  protected readonly companyId = signal('');
-  protected readonly addresses = signal<readonly DeliveryAddressView[]>([]);
-  protected readonly addressId = signal('');
   protected readonly requestedDate = signal('');
   protected readonly note = signal('');
 
-  /** Acheminement choisi. Défaut livraison ; forcé au retrait si la livraison
-   * n'existe pas encore (config globale). */
-  protected readonly fulfillment = signal<FulfillmentMethod>('delivery');
-  /** La livraison est-elle masquée (service absent) ? Verrouille le choix. */
-  protected readonly deliveryHidden = this.settings.deliveryHidden;
-  /** Le point de retrait par défaut (labo), présélectionné, affiché en lecture seule. */
-  protected readonly defaultPickup = this.pickups.defaultPickup;
-  protected readonly isPickup = computed(() => this.fulfillment() === 'pickup');
-
-  /** Sous-total du panier, en centimes (le panier raisonne en euros). */
-  protected readonly subtotalCents = computed(() => Math.round(this.cart.totalEur() * 100));
-
-  /** L'adresse de livraison sélectionnée (pour retrouver sa zone), ou `null`. */
-  private readonly selectedAddress = computed<DeliveryAddressView | null>(
-    () => this.addresses().find((address) => address.id === this.addressId()) ?? null,
-  );
-
-  /**
-   * L'ajustement affiché : la **remise** du point de retrait (retrait), ou le
-   * **frais** de la zone du code postal livré (livraison), ou `null`. Miroir du
-   * calcul serveur (qui reste l'autorité) — juste pour montrer le prix.
-   */
-  protected readonly adjustment = computed<CheckoutAdjustment | null>(() => {
-    const subtotal = this.subtotalCents();
-    if (this.isPickup()) {
-      const discount = this.defaultPickup()?.discount ?? null;
-      return discount === null
-        ? null
-        : { kind: 'discount', label: 'Remise retrait', cents: adjustmentCents(discount, subtotal) };
-    }
-    const address = this.selectedAddress();
-    const zone = address === null ? null : this.zones.resolveForPostalCode(address.codePostal);
-    return zone === null
-      ? null
-      : {
-          kind: 'fee',
-          label: `Livraison ${zone.label || zone.postalPrefixes[0] || ''}`,
-          cents: adjustmentCents(zone.fee, subtotal),
-        };
-  });
-
-  /** Total affiché : `max(0, sous-total − remise) + frais`, en centimes. */
-  protected readonly totalCents = computed(() => {
-    const subtotal = this.subtotalCents();
-    const adjustment = this.adjustment();
-    if (adjustment === null) {
-      return subtotal;
-    }
-    return adjustment.kind === 'discount'
-      ? Math.max(0, subtotal - adjustment.cents)
-      : subtotal + adjustment.cents;
-  });
-
-  /** État de soumission : erreur backend, et numéro de commande une fois passée. */
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly placedNumber = signal<string | null>(null);
 
   /**
-   * Paiement en attente : présent uniquement pour une société `per_order`, après
-   * que la commande a été créée serveur. Bascule le panneau sur l'étape carte
-   * (Payment Element). `null` = pas de paiement à faire (terme différé).
+   * Paiement en attente : présent une fois la commande créée serveur quand une
+   * carte est requise (pas d'entreprise, ou entreprise non active / per_order).
+   * Bascule le panneau sur l'étape carte (Payment Element).
    */
   protected readonly pendingPayment = signal<OrderPaymentIntent | null>(null);
-  /** Numéro de la commande créée, retenu le temps du paiement. */
   private readonly pendingOrderNumber = signal('');
-
-  protected readonly selectedCompany = computed<Company | null>(
-    () => this.companies().find((company) => company.id === this.companyId()) ?? null,
-  );
-  protected readonly isActive = computed(() => this.selectedCompany()?.status === 'active');
-
-  /** Acheminement prêt : en retrait, un point par défaut existe ; en livraison,
-   * une adresse est choisie. */
-  protected readonly fulfillmentReady = computed(() =>
-    this.isPickup() ? this.defaultPickup() !== null : this.addressId() !== '',
-  );
 
   protected readonly canSubmit = computed(
     () =>
       !this.submitting() &&
       !this.cart.isEmpty() &&
-      this.isActive() &&
-      this.fulfillmentReady() &&
+      this.fulfillment.ready() &&
       this.placedNumber() === null,
   );
-
-  constructor() {
-    // Une seule entreprise → pré-sélectionnée (pas de choix à faire).
-    const only = this.companies();
-    if (only.length === 1 && only[0]) {
-      this.selectCompany(only[0].id);
-    }
-
-    // Établissement pré-choisi par la page appelante (contexte commerce).
-    effect(() => {
-      const preselect = this.data()?.companyId;
-      if (preselect !== undefined && preselect !== '' && this.companyId() === '') {
-        this.selectCompany(preselect);
-      }
-    });
-
-    // Livraison masquée (service absent) → le retrait est le seul acheminement.
-    effect(() => {
-      if (this.deliveryHidden()) {
-        this.fulfillment.set('pickup');
-      }
-    });
-  }
-
-  /** Change l'acheminement (verrouillé sur retrait si la livraison est masquée). */
-  protected setFulfillment(method: FulfillmentMethod): void {
-    if (this.deliveryHidden()) {
-      return;
-    }
-    this.fulfillment.set(method);
-  }
 
   protected fmt(value: number): string {
     return formatEurValue(value);
@@ -231,59 +78,35 @@ export class CheckoutPanel {
     return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.value : '';
   }
 
-  /** Libellé d'une adresse pour l'option du select. */
-  protected addressLabel(address: DeliveryAddressView): string {
-    const name = address.label === '' ? address.ville : address.label;
-    return `${name} — ${address.ligne1}, ${address.codePostal} ${address.ville}`;
-  }
-
-  /** Choisit l'entreprise et (re)charge ses adresses de livraison. */
-  protected selectCompany(id: string): void {
-    this.companyId.set(id);
-    this.addresses.set([]);
-    this.addressId.set('');
-    this.errorMessage.set(null);
-    if (id === '') {
-      return;
-    }
-    this.orders.deliveryAddresses(id).subscribe({
-      next: (view) => {
-        this.addresses.set(view.deliveries);
-        // La défaut est renvoyée en tête par le backend.
-        this.addressId.set(view.deliveries[0]?.id ?? '');
-      },
-      error: () => this.addresses.set([]),
-    });
-  }
-
   protected placeOrder(): void {
     if (!this.canSubmit()) {
       return;
     }
     this.submitting.set(true);
     this.errorMessage.set(null);
-    const pickup = this.isPickup();
+    const courier = this.fulfillment.isCourier();
     const payload: PlaceOrderPayload = {
-      fulfillmentMethod: this.fulfillment(),
-      // En retrait, on laisse le serveur résoudre le point par défaut (labo).
-      deliveryAddressId: pickup ? null : this.addressId(),
+      companyId: null,
+      fulfillmentMethod: this.fulfillment.method(),
+      deliveryZoneId: courier ? this.fulfillment.zoneId() : null,
+      deliveryAddress: this.fulfillment.deliveryAddressPayload(),
       pickupAddressId: null,
       requestedDeliveryDate: this.requestedDate() === '' ? null : this.requestedDate(),
       note: this.note().trim(),
       lines: this.cart.lines().map((line) => ({ sku: line.product.id, quantity: line.qty })),
     };
-    this.orders.placeOrder(this.companyId(), payload).subscribe({
+    this.orders.place(payload).subscribe({
       next: (placed) => {
         // La commande est créée serveur (le panier reflète l'état : on le vide).
         this.cart.clear();
         this.submitting.set(false);
         if (placed.payment !== undefined) {
-          // Société `per_order` : on passe à l'étape carte, commande en attente.
+          // Carte requise : on passe à l'étape Payment Element, commande en attente.
           this.pendingOrderNumber.set(placed.orderNumber);
           this.pendingPayment.set(placed.payment);
           return;
         }
-        // Terme différé : rien à encaisser, la commande est enregistrée.
+        // Terme différé (entreprise active) : rien à encaisser, commande enregistrée.
         this.placedNumber.set(placed.orderNumber);
       },
       error: (error: unknown) => {
@@ -301,8 +124,7 @@ export class CheckoutPanel {
 
   /**
    * L'utilisateur revient de l'étape carte sans payer. La commande **existe déjà**
-   * (créée serveur, statut de paiement `pending`) : on ferme et on laisse la liste
-   * « Commandes » se rafraîchir — le règlement pourra se faire plus tard.
+   * (créée serveur, `pending`) : on ferme, le règlement pourra se faire plus tard.
    */
   protected onPaymentCancelled(): void {
     this.ref.close(true);

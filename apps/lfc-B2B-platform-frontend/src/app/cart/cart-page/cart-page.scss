@@ -58,12 +58,24 @@
 .summary {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-md);
+  gap: var(--fold-space-sm, 0.5rem);
   padding-top: var(--fold-space-lg);
   border-top: 1px solid var(--fold-color-border-subtle);
 }
 
+/* Lignes du récapitulatif (sous-total HT, TVA par taux) — clé/valeur alignées. */
+.summary-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: var(--fold-text-sm, 0.9rem);
+}
+.summary-line--muted {
+  color: var(--fold-color-text-muted);
+}
+
 .summary-total {
+  margin-top: var(--fold-space-xs, 0.35rem);
   display: flex;
   align-items: baseline;
   justify-content: space-between;

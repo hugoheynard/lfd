@@ -86,6 +86,83 @@
   font-size: var(--fold-text-sm, 0.875rem);
 }
 
+// ── Acheminement (en haut du panier) ────────────────────────────────────────
+.fulfil {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md, 10px);
+  background: var(--fold-color-surface-sunken);
+}
+// Segmenté Retrait / Coursier.
+.seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--fold-radius-md, 10px);
+  background: var(--fold-color-surface, #fff);
+  border: 1px solid var(--fold-color-border-subtle);
+}
+.seg-btn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--fold-radius-sm, 7px);
+  font: inherit;
+  font-weight: 600;
+  color: var(--fold-color-text-muted);
+  background: transparent;
+}
+.seg-btn--on {
+  color: var(--fold-color-text-on-primary, #fff);
+  background: var(--fold-color-primary);
+}
+.fld {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.fld-lbl {
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+.fld-ctl {
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--fold-color-border, #d6d3cd);
+  border-radius: var(--fold-radius-sm, 7px);
+  background: var(--fold-color-surface, #fff);
+  color: var(--fold-color-text);
+}
+.fld-ctl:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 1px;
+}
+.fld-row {
+  display: flex;
+  gap: var(--fold-space-sm);
+}
+.fld--cp {
+  flex: 0 0 8rem;
+}
+.fld--ville {
+  flex: 1 1 auto;
+}
+.fld-hint {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+.pickup {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text);
+}
+
 .foot {
   display: flex;
   flex-direction: column;
@@ -93,13 +170,26 @@
   padding: var(--fold-space-md) var(--fold-space-lg);
   border-top: 1px solid var(--fold-color-border-subtle);
 }
-.foot-total {
+.foot-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.foot-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  font-size: var(--fold-text-md, 1rem);
+  font-size: var(--fold-text-sm, 0.9rem);
+  color: var(--fold-color-text-muted);
 }
-.foot-total strong {
+.foot-row--total {
+  margin-top: 0.25rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--fold-color-border-subtle);
+  font-size: var(--fold-text-md, 1rem);
+  color: var(--fold-color-text);
+}
+.foot-row--total strong {
   font-size: var(--fold-text-lg, 1.25rem);
 }
 .foot-actions {

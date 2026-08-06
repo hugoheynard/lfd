@@ -127,12 +127,9 @@ export class CartPage {
     void this.router.navigate(['/mes-paniers', id]);
   }
 
-  /** Ouvre le checkout, en visant l'établissement du contexte. */
+  /** Ouvre le checkout (acheminement déjà choisi au panier, commande sans entreprise).
+   * Côté hérité de `CheckoutPanel.foldPanel` (`auto` → bottom-sheet sur mobile). */
   protected checkout(): void {
-    const id = this.selected()?.id;
-    this.panelHost.open(CheckoutPanel, {
-      data: id !== undefined ? { companyId: id } : {},
-      side: 'right',
-    });
+    this.panelHost.open(CheckoutPanel);
   }
 }

@@ -1042,12 +1042,28 @@ function toProduct(row: Row): FoldProduct {
 /** Les 92 produits La Folie Coffee, copiés du PIM, en {@link FoldProduct}. */
 export const PRODUCTS: readonly FoldProduct[] = ROWS.map(toProduct);
 
-/** Prix TTC numérique par SKU — pour les totaux du panier. */
+/** Prix **HT** numérique par SKU — pour les totaux du panier. */
 const PRICE_BY_SKU = new Map<string, number>(ROWS.map((r) => [r[0], r[3]]));
 
-/** Prix unitaire TTC (€) d'un SKU ; 0 si inconnu. */
+/** Prix unitaire **HT** (€) d'un SKU ; 0 si inconnu. */
 export function priceEurOf(sku: string): number {
   return PRICE_BY_SKU.get(sku) ?? 0;
+}
+
+/**
+ * Taux de TVA du **produit** (en %) — piloté par la donnée. Catalogue alimentaire
+ * (viennoiseries, pains, pâtisseries) → **5,5 %** par défaut ; un rare SKU
+ * non-alimentaire se surcharge ci-dessous à 20 %. Miroir du catalogue serveur
+ * (autorité au checkout) : le panier n'affiche qu'un **aperçu** de la TVA.
+ */
+const DEFAULT_FOOD_VAT_RATE = 5.5;
+const VAT_RATE_OVERRIDES: Readonly<Record<string, number>> = {
+  // Ex. : 'GOO-001': 20  (non-alimentaire → taux normal)
+};
+
+/** Taux de TVA (%) d'un SKU ; 5,5 % par défaut (alimentaire). */
+export function vatRateOf(sku: string): number {
+  return VAT_RATE_OVERRIDES[sku] ?? DEFAULT_FOOD_VAT_RATE;
 }
 
 /** Produit (modèle d'affichage) par id ; `undefined` si absent. */

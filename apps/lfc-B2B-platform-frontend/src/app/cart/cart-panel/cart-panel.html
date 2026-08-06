@@ -4,6 +4,93 @@
 />
 
 <div class="body">
+  @if (!cart.isEmpty()) {
+    <section class="fulfil" aria-label="Acheminement">
+      <div class="seg" role="group" aria-label="Mode d'acheminement">
+        <button
+          type="button"
+          class="seg-btn"
+          [class.seg-btn--on]="!fulfillment.isCourier()"
+          [attr.aria-pressed]="!fulfillment.isCourier()"
+          (click)="setMethod('pickup')"
+        >
+          Retrait au labo
+        </button>
+        <button
+          type="button"
+          class="seg-btn"
+          [class.seg-btn--on]="fulfillment.isCourier()"
+          [attr.aria-pressed]="fulfillment.isCourier()"
+          (click)="setMethod('delivery')"
+        >
+          Coursier
+        </button>
+      </div>
+
+      @if (fulfillment.isCourier()) {
+        <label class="fld">
+          <span class="fld-lbl">Zone de livraison</span>
+          <select class="fld-ctl" (change)="onZone($event)">
+            <option value="" [selected]="fulfillment.zoneId() === ''">Choisir une zone…</option>
+            @for (zone of fulfillment.zones(); track zone.id) {
+              <option [value]="zone.id" [selected]="zone.id === fulfillment.zoneId()">
+                {{ zone.label || zone.postalPrefixes[0] }} —
+                {{ fmtCents(fulfillment.zoneFeeCents(zone)) }}
+              </option>
+            }
+          </select>
+        </label>
+        @if (fulfillment.zones().length === 0) {
+          <p class="fld-hint">Aucune zone de livraison n'est configurée pour l'instant.</p>
+        }
+
+        <label class="fld">
+          <span class="fld-lbl">Adresse de livraison</span>
+          <input
+            class="fld-ctl"
+            type="text"
+            autocomplete="street-address"
+            placeholder="N° et rue"
+            [value]="fulfillment.address().ligne1"
+            (input)="onAddress('ligne1', $event)"
+          />
+        </label>
+        <div class="fld-row">
+          <label class="fld fld--cp">
+            <span class="fld-lbl">Code postal</span>
+            <input
+              class="fld-ctl"
+              type="text"
+              inputmode="numeric"
+              autocomplete="postal-code"
+              [value]="fulfillment.address().codePostal"
+              (input)="onAddress('codePostal', $event)"
+            />
+          </label>
+          <label class="fld fld--ville">
+            <span class="fld-lbl">Ville</span>
+            <input
+              class="fld-ctl"
+              type="text"
+              autocomplete="address-level2"
+              [value]="fulfillment.address().ville"
+              (input)="onAddress('ville', $event)"
+            />
+          </label>
+        </div>
+      } @else {
+        @if (fulfillment.defaultPickup(); as pickup) {
+          <p class="pickup">
+            Retrait à <strong>{{ pickup.label || pickup.ville }}</strong> — {{ pickup.ligne1 }},
+            {{ pickup.codePostal }} {{ pickup.ville }}
+          </p>
+        } @else {
+          <p class="fld-hint">Aucun point de retrait n'est configuré pour l'instant.</p>
+        }
+      }
+    </section>
+  }
+
   @for (line of cart.lines(); track line.product.id) {
     <article class="line">
       @if (line.product.image) {
@@ -45,10 +132,28 @@
 </div>
 
 <footer class="foot">
-  <div class="foot-total">
-    <span>Total TTC</span>
-    <strong>{{ fmt(cart.totalEur()) }}</strong>
-  </div>
+  @if (!cart.isEmpty()) {
+    <div class="foot-breakdown">
+      <div class="foot-row">
+        <span>Sous-total HT</span>
+        <span>{{ fmt(cart.subtotalHtEur()) }}</span>
+      </div>
+      @if (fulfillment.adjustment(); as adj) {
+        <div class="foot-row">
+          <span>{{ adj.label }}</span>
+          <span>{{ adj.kind === 'discount' ? '−' : '+' }}{{ fmtCents(adj.cents) }}</span>
+        </div>
+      }
+      <div class="foot-row">
+        <span>TVA</span>
+        <span>{{ fmtCents(fulfillment.vatCents()) }}</span>
+      </div>
+      <div class="foot-row foot-row--total">
+        <span>Total TTC</span>
+        <strong>{{ fmtCents(fulfillment.totalCents()) }}</strong>
+      </div>
+    </div>
+  }
   <div class="foot-actions">
     @if (!cart.isEmpty()) {
       <button foldButton emphasis="outline" intent="neutral" (click)="clear()">Vider</button>
@@ -62,7 +167,12 @@
     >
       Voir le panier
     </button>
-    <button foldButton intent="primary" [disabled]="cart.isEmpty()" (click)="checkout()">
+    <button
+      foldButton
+      intent="primary"
+      [disabled]="cart.isEmpty() || !fulfillment.ready()"
+      (click)="checkout()"
+    >
       Valider ma commande
     </button>
   </div>

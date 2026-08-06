@@ -1,4 +1,4 @@
-<fold-panel-header title="Passer commande" subtitle="Acheminement, date et note." />
+<fold-panel-header title="Passer commande" subtitle="Confirmez et réglez." />
 
 <div class="body">
   @if (placedNumber(); as number) {
@@ -10,7 +10,7 @@
       <button foldButton intent="primary" (click)="done()">Continuer</button>
     </div>
   } @else if (pendingPayment(); as pay) {
-    <!-- Étape carte (société per_order) : la commande est créée, on encaisse. -->
+    <!-- Étape carte : la commande est créée, on encaisse. -->
     <app-stripe-payment
       [clientSecret]="pay.clientSecret"
       [publishableKey]="pay.publishableKey"
@@ -32,139 +32,63 @@
           <li class="muted">Votre panier est vide.</li>
         }
       </ul>
-      @if (adjustment(); as adj) {
-        <p class="line line-adjust">
-          <span>Sous-total</span><span>{{ fmtCents(subtotalCents()) }}</span>
-        </p>
+      <p class="line line-adjust">
+        <span>Sous-total HT</span><span>{{ fmt(cart.subtotalHtEur()) }}</span>
+      </p>
+      @if (fulfillment.adjustment(); as adj) {
         <p class="line line-adjust">
           <span>{{ adj.label }}</span>
           <span>{{ adj.kind === 'discount' ? '− ' : '+ ' }}{{ fmtCents(adj.cents) }}</span>
         </p>
       }
-      <p class="total"><span>Total</span><span>{{ fmtCents(totalCents()) }}</span></p>
+      <p class="line line-adjust">
+        <span>TVA</span><span>{{ fmtCents(fulfillment.vatCents()) }}</span>
+      </p>
+      <p class="total">
+        <span>Total TTC</span><span>{{ fmtCents(fulfillment.totalCents()) }}</span>
+      </p>
     </section>
 
-    <!-- Entreprise cliente -->
-    @if (companies().length === 0) {
-      <fold-callout variant="warning">
-        Vous n'avez pas encore d'entreprise. Créez-en une dans « Mes entreprises » pour commander.
-      </fold-callout>
-    } @else if (companies().length === 1) {
-      <div class="company-static">
-        <p class="section-label">Entreprise</p>
-        <p class="single-company">{{ selectedCompany()?.raisonSociale }}</p>
-      </div>
-    } @else {
-      <fold-select
-        label="Entreprise cliente"
-        [value]="companyId()"
-        (valueChange)="selectCompany($event)"
-      >
-        <option value="" disabled>Choisir une entreprise…</option>
-        @for (company of companies(); track company.id) {
-          <option [value]="company.id">{{ company.raisonSociale }}</option>
-        }
-      </fold-select>
-    }
-
-    <!-- Gate d'activation -->
-    @if (companyId() !== '' && !isActive()) {
-      <fold-callout variant="warning">
-        Cette entreprise n'est pas encore activée : vous pouvez préparer ce panier, mais la commande
-        ne pourra être passée qu'une fois le compte validé (conditions de règlement + KBIS).
-      </fold-callout>
-    }
-
-    <!-- Acheminement : livraison ou retrait -->
-    @if (isActive()) {
-      <div class="fulfillment">
-        <span class="section-label">Acheminement</span>
-        <div class="choices" role="radiogroup" aria-label="Acheminement">
-          <label class="choice" [class.is-disabled]="deliveryHidden()">
-            <input
-              type="radio"
-              name="fulfillment"
-              value="delivery"
-              [checked]="fulfillment() === 'delivery'"
-              [disabled]="deliveryHidden()"
-              (change)="setFulfillment('delivery')"
-            />
-            <span>Livraison</span>
-          </label>
-          <label class="choice">
-            <input
-              type="radio"
-              name="fulfillment"
-              value="pickup"
-              [checked]="fulfillment() === 'pickup'"
-              (change)="setFulfillment('pickup')"
-            />
-            <span>Retrait au laboratoire</span>
-          </label>
-        </div>
-      </div>
-
-      @if (fulfillment() === 'delivery') {
-        @if (addresses().length === 0) {
-          <fold-callout variant="info">
-            Aucune adresse de livraison pour cette entreprise. Ajoutez-en une avant de commander.
-          </fold-callout>
-        } @else {
-          <fold-select
-            label="Adresse de livraison"
-            [value]="addressId()"
-            (valueChange)="addressId.set($event)"
-          >
-            @for (address of addresses(); track address.id) {
-              <option [value]="address.id">{{ addressLabel(address) }}</option>
-            }
-          </fold-select>
-        }
-      } @else {
-        @if (defaultPickup(); as p) {
-          <div class="pickup-box">
-            <p class="section-label">Point de retrait</p>
-            <address class="addr">
-              <span class="addr-label">{{ p.label || p.ville }}</span>
-              <span>{{ p.ligne1 }}</span>
-              @if (p.ligne2) {
-                <span>{{ p.ligne2 }}</span>
-              }
-              <span>{{ p.codePostal }} {{ p.ville }}</span>
-              <span>{{ p.pays }}</span>
-            </address>
-          </div>
-        } @else {
-          <fold-callout variant="warning">
-            Aucun point de retrait configuré pour le moment. Réessayez plus tard.
-          </fold-callout>
-        }
+    <!-- Acheminement (choisi au panier, rappelé ici) -->
+    <div class="recap">
+      <p class="section-label">Acheminement</p>
+      @if (fulfillment.isCourier()) {
+        <p class="recap-line">
+          Coursier — {{ fulfillment.selectedZone()?.label }}<br />
+          {{ fulfillment.address().ligne1 }}, {{ fulfillment.address().codePostal }}
+          {{ fulfillment.address().ville }}
+        </p>
+      } @else if (fulfillment.defaultPickup(); as pickup) {
+        <p class="recap-line">
+          Retrait au labo — {{ pickup.label || pickup.ville }}, {{ pickup.ligne1 }},
+          {{ pickup.codePostal }} {{ pickup.ville }}
+        </p>
       }
+    </div>
 
-      <label class="field">
-        <span class="section-label">
-          {{ isPickup() ? 'Date de retrait souhaitée' : 'Date de livraison souhaitée' }}
-          <em>(optionnel)</em>
-        </span>
-        <input
-          class="date"
-          type="date"
-          [value]="requestedDate()"
-          (input)="requestedDate.set(inputValue($event))"
-        />
-      </label>
+    <label class="field">
+      <span class="section-label">
+        {{ fulfillment.isCourier() ? 'Date de livraison souhaitée' : 'Date de retrait souhaitée' }}
+        <em>(optionnel)</em>
+      </span>
+      <input
+        class="date"
+        type="date"
+        [value]="requestedDate()"
+        (input)="requestedDate.set(inputValue($event))"
+      />
+    </label>
 
-      <label class="field">
-        <span class="section-label">Note <em>(optionnel)</em></span>
-        <textarea
-          class="note"
-          rows="2"
-          placeholder="Consigne pour cette commande…"
-          [value]="note()"
-          (input)="note.set(inputValue($event))"
-        ></textarea>
-      </label>
-    }
+    <label class="field">
+      <span class="section-label">Note <em>(optionnel)</em></span>
+      <textarea
+        class="note"
+        rows="2"
+        placeholder="Consigne pour cette commande…"
+        [value]="note()"
+        (input)="note.set(inputValue($event))"
+      ></textarea>
+    </label>
 
     @if (errorMessage(); as message) {
       <fold-callout variant="alert">{{ message }}</fold-callout>

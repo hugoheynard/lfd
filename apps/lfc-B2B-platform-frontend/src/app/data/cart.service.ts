@@ -1,7 +1,8 @@
 import { computed, effect, Injectable, signal } from '@angular/core';
 
 import type { FoldProduct } from '../../shared';
-import { priceEurOf, productById } from './catalogue-seed';
+import { priceEurOf, productById, vatRateOf } from './catalogue-seed';
+import { goodsVatByRateCents } from './vat';
 
 /**
  * Clé de persistance — **versionnée** : si la forme stockée change un jour, on
@@ -9,12 +10,21 @@ import { priceEurOf, productById } from './catalogue-seed';
  */
 const CART_STORAGE_KEY = 'lfc-b2b-cart-v1';
 
-/** Une ligne du panier — le produit résolu, sa quantité et ses totaux. */
+/** Une ligne du panier — le produit résolu, sa quantité, son taux et ses totaux (HT). */
 export interface CartLine {
   readonly product: FoldProduct;
   readonly qty: number;
   readonly unitPriceEur: number;
+  /** Total **HT** de la ligne (prix unitaire HT × quantité). */
   readonly lineTotalEur: number;
+  /** Taux de TVA du produit (en %). */
+  readonly vatRate: number;
+}
+
+/** La TVA d'un taux donné sur le panier (aperçu — l'autorité reste le serveur). */
+export interface CartVatLine {
+  readonly rate: number;
+  readonly vatEur: number;
 }
 
 /**
@@ -53,7 +63,13 @@ export class CartService {
         continue;
       }
       const unitPriceEur = priceEurOf(id);
-      out.push({ product, qty, unitPriceEur, lineTotalEur: unitPriceEur * qty });
+      out.push({
+        product,
+        qty,
+        unitPriceEur,
+        lineTotalEur: unitPriceEur * qty,
+        vatRate: vatRateOf(id),
+      });
     }
     return out;
   });
@@ -61,8 +77,28 @@ export class CartService {
   /** Nombre total d'articles (somme des quantités). */
   readonly count = computed(() => this.lines().reduce((n, l) => n + l.qty, 0));
 
-  /** Total TTC (€). */
-  readonly totalEur = computed(() => this.lines().reduce((s, l) => s + l.lineTotalEur, 0));
+  /** Sous-total **HT** (€) — les prix catalogue sont HT. */
+  readonly subtotalHtEur = computed(() => this.lines().reduce((s, l) => s + l.lineTotalEur, 0));
+
+  /**
+   * TVA par taux (€) — regroupe les lignes par taux et applique le taux au HT du
+   * groupe. Calcul en **centimes** (arrondi par groupe), comme le serveur, pour
+   * que l'aperçu colle au montant réellement facturé au checkout.
+   */
+  readonly vatByRate = computed<readonly CartVatLine[]>(() =>
+    goodsVatByRateCents(
+      this.lines().map((line) => ({
+        htCents: Math.round(line.lineTotalEur * 100),
+        vatRate: line.vatRate,
+      })),
+    ).map((line) => ({ rate: line.rate, vatEur: line.vatCents / 100 })),
+  );
+
+  /** TVA totale (€) — somme des TVA par taux. */
+  readonly vatTotalEur = computed(() => this.vatByRate().reduce((s, v) => s + v.vatEur, 0));
+
+  /** Total **TTC** (€) = sous-total HT + TVA. */
+  readonly totalTtcEur = computed(() => this.subtotalHtEur() + this.vatTotalEur());
 
   readonly isEmpty = computed(() => this.lines().length === 0);
 

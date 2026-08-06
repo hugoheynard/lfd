@@ -48,9 +48,19 @@
     </div>
 
     <div class="summary">
+      <div class="summary-line">
+        <span>Sous-total HT</span>
+        <span>{{ fmt(cart.subtotalHtEur()) }}</span>
+      </div>
+      @for (v of cart.vatByRate(); track v.rate) {
+        <div class="summary-line summary-line--muted">
+          <span>TVA {{ v.rate }} %</span>
+          <span>{{ fmt(v.vatEur) }}</span>
+        </div>
+      }
       <div class="summary-total">
         <span>Total TTC</span>
-        <strong>{{ fmt(cart.totalEur()) }}</strong>
+        <strong>{{ fmt(cart.totalTtcEur()) }}</strong>
       </div>
 
       @if (!canLock()) {
