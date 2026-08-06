@@ -71,6 +71,7 @@ export {
   fulfillmentMethodSchema,
   orderLineInputSchema,
   placeOrderPayloadSchema,
+  recurringDeltasSchema,
 } from "./order.js";
 export type {
   OrderStatus,
@@ -82,6 +83,8 @@ export type {
   OrderView,
   OrderPaymentIntent,
   PlacedOrderResponse,
+  RecurringDeltas,
+  RecurringDeltaLine,
 } from "./order.js";
 export {
   recurrenceSchema,

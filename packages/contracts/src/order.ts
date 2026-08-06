@@ -102,6 +102,25 @@ export type PlaceOrderPayload = z.infer<typeof placeOrderPayloadSchema>;
 
 // ─── Vues de LECTURE ─────────────────────────────────────────────────────────
 
+/** Une ligne (SKU + quantité) figurant dans un écart vis-à-vis d'un gabarit récurrent. */
+const recurringDeltaLineSchema = z.object({
+  sku: z.string(),
+  quantity: z.number().int().nonnegative(),
+});
+export type RecurringDeltaLine = z.infer<typeof recurringDeltaLineSchema>;
+
+/**
+ * Écart d'une commande **issue d'un panier récurrent** vis-à-vis de son gabarit :
+ * `added` = lignes ajoutées pour cette échéance (pill « + »), `removed` = lignes
+ * retirées (pill « − »). Absent tant qu'aucune commande n'est produite par un
+ * abonnement (le planificateur les stampera).
+ */
+export const recurringDeltasSchema = z.object({
+  added: z.array(recurringDeltaLineSchema),
+  removed: z.array(recurringDeltaLineSchema),
+});
+export type RecurringDeltas = z.infer<typeof recurringDeltasSchema>;
+
 /** Une ligne de commande, telle que renvoyée (montants en centimes, snapshots). */
 export interface OrderLineView {
   readonly sku: string;
@@ -140,6 +159,10 @@ export interface OrderView {
   /** Total **TTC** = `max(0, subtotal − discount) + deliveryFee + vat`. */
   readonly totalCents: number;
   readonly currency: string;
+  /** Panier récurrent d'origine (« récurrent »), ou `null` (commande ponctuelle). */
+  readonly fromSubscriptionId: string | null;
+  /** Écarts vs le gabarit récurrent (pills +/−), ou `null` si non issue d'un abonnement. */
+  readonly recurringDeltas: RecurringDeltas | null;
   /** ISO. Passée le. */
   readonly placedAt: string;
   readonly lines: readonly OrderLineView[];
