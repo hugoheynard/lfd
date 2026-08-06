@@ -6,6 +6,8 @@ import {
   type OrderStatus,
   type OrderView,
   type PaymentStatus,
+  type RecurringDeltas,
+  recurringDeltasSchema,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -41,6 +43,8 @@ interface OrderRow {
   readonly vatCents: number;
   readonly totalCents: number;
   readonly currency: string;
+  readonly fromSubscriptionId: string | null;
+  readonly recurringDeltas: Prisma.JsonValue | null;
   readonly createdAt: Date;
   readonly lines: readonly OrderLineRow[];
 }
@@ -63,6 +67,8 @@ const ORDER_SELECT = {
   vatCents: true,
   totalCents: true,
   currency: true,
+  fromSubscriptionId: true,
+  recurringDeltas: true,
   createdAt: true,
   lines: {
     select: {
@@ -131,9 +137,16 @@ function toOrderView(row: OrderRow): OrderView {
     vatCents: row.vatCents,
     totalCents: row.totalCents,
     currency: row.currency,
+    fromSubscriptionId: row.fromSubscriptionId,
+    recurringDeltas: parseDeltas(row.recurringDeltas),
     placedAt: row.createdAt.toISOString(),
     lines: row.lines.map(toLineView),
   };
+}
+
+/** Snapshot JSON → écarts vs gabarit récurrent, ou `null`. */
+function parseDeltas(value: Prisma.JsonValue | null): RecurringDeltas | null {
+  return value === null ? null : recurringDeltasSchema.parse(value);
 }
 
 function toLineView(line: OrderLineRow): OrderLineView {

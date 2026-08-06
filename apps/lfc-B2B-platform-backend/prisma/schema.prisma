@@ -478,6 +478,12 @@ model Order {
 
   note String @default("")
 
+  // Origine récurrente : l'abonnement qui a produit cette commande (« récurrent »)
+  // et l'écart vs son gabarit pour cette échéance ({ added, removed } — pills +/−).
+  // Nuls tant que le planificateur ne génère pas de commandes depuis un abonnement.
+  fromSubscriptionId String? @map("from_subscription_id")
+  recurringDeltas    Json?   @map("recurring_deltas")
+
   createdAt DateTime @default(now()) @map("created_at") // = passée le
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -488,6 +494,7 @@ model Order {
   @@index([requestedDeliveryDate])
   @@index([status])
   @@index([paymentStatus])
+  @@index([fromSubscriptionId])
   @@map("orders")
 }
 
