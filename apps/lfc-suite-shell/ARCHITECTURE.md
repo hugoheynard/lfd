@@ -233,9 +233,10 @@ sans `/etc/hosts`). Servi via la passerelle, le shell **iframe les sous-domaines
 sous-domaine, relais de token en conditions réelles, fidèle à la prod. Les fronts
 choisissent direct vs passerelle **à l'exécution** (`isViaGateway`, `@lfd/endpoints`).
 
-Chaque launcher **attend que le shell réponde puis ouvre le navigateur** (bannière
-« ✅ Suite prête », cf. `dev-toolbox/suite-ready.mjs` ; `SUITE_NO_OPEN=1` pour ne
-pas ouvrir). Les fronts passent par `ng-serve-quiet` (table des chunks masquée) ;
+Chaque launcher **attend que le shell réponde puis affiche la bannière « ✅ Suite
+prête → URL »** (URL cliquable, cf. `dev-toolbox/suite-ready.mjs`). Il **n'ouvre
+pas** de navigateur par défaut (sinon une fenêtre à chaque relance) ; `SUITE_OPEN=1`
+pour ouvrir automatiquement. Les fronts passent par `ng-serve-quiet` (table des chunks masquée) ;
 les backends par le `QuietBootLogger` (énumération des routes masquée). Les
 launchers de **portée** (`:pim`, `:b2b`) n'allument que la brique concernée pour
 alléger la machine.

@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /**
- * Compagnon des launchers `suite:dev*` : attend que le **shell** réponde, affiche
- * une bannière « prête » et **ouvre le navigateur** — pour ne plus chercher l'URL
- * dans le flux entrelacé de turbo.
+ * Compagnon des launchers `suite:dev*` : attend que le **shell** réponde et
+ * affiche une bannière « prête » avec l'URL (cliquable dans le terminal) — pour ne
+ * plus la chercher dans le flux entrelacé de turbo.
  *
  * Lancé en tâche de fond par les scripts `suite:dev*` (`(node … &)`), il sonde
- * puis sort — sur succès (ouvre le navigateur), ou après un délai de garde.
+ * puis sort — sur succès (bannière), ou après un délai de garde.
  *
- * `SUITE_URL` surcharge l'URL (défaut le shell). `SUITE_NO_OPEN=1` affiche la
- * bannière sans ouvrir le navigateur.
+ * **N'ouvre PAS de navigateur par défaut** : chaque relance du script en ouvrait
+ * une nouvelle (spam de fenêtres). Ouverture **opt-in** via `SUITE_OPEN=1`.
+ * `SUITE_URL` surcharge l'URL (défaut le shell).
  */
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -27,9 +28,10 @@ async function ready() {
   }
 }
 
-/** Ouvre l'URL dans le navigateur par défaut (macOS / Linux / Windows). */
+/** Ouvre l'URL dans le navigateur par défaut — **opt-in** (`SUITE_OPEN=1`) pour
+ *  éviter d'ouvrir une fenêtre à chaque relance du launcher. */
 function openBrowser() {
-  if (process.env['SUITE_NO_OPEN']) {
+  if (!process.env['SUITE_OPEN']) {
     return;
   }
   const cmd =
