@@ -4,6 +4,7 @@ import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 import { AccountModule } from "./account/account.module.js";
 import { DeliveryZonesModule } from "./delivery-zones/delivery-zones.module.js";
+import { GrowthModule } from "./growth/growth.module.js";
 import { OrdersModule } from "./orders/orders.module.js";
 import { PaymentsModule } from "./payments/payments.module.js";
 import { PickupAddressesModule } from "./pickup-addresses/pickup-addresses.module.js";
@@ -46,6 +47,8 @@ import { SecurityModule } from "./infra/security/security.module.js";
     OrdersModule,
     // Paniers récurrents (abonnements) — murés par le seul client connecté.
     SubscriptionsModule,
+    // Croissance (cross-domain) : journal d'événements, consommé par les émetteurs.
+    GrowthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
