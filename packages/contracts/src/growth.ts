@@ -82,8 +82,9 @@ export interface ActivationView {
  * - `rescue` : dossier d'activation bloqué (adoption-stalled) → débloquer les pièces.
  * - `upgrade` : lead engagé (abonné, momentum porteur) → étendre le compte.
  * - `win_back` : lead qui refroidit ou dort (a commandé puis s'est tu) → reconquérir.
+ * - `nurture` : lead **cold** (démarchage sortant) actif → faire avancer le pipeline.
  */
-export type PlayType = "lock_in" | "rescue" | "upgrade" | "win_back";
+export type PlayType = "lock_in" | "rescue" | "upgrade" | "win_back" | "nurture";
 
 /**
  * Une ligne de la queue **« 5 meilleurs coups du jour »** — lue du **read-model
@@ -92,8 +93,8 @@ export type PlayType = "lock_in" | "rescue" | "upgrade" | "win_back";
  * pour rendre le score auditable côté commercial.
  */
 export interface LeadScoreView {
-  /** Sujet du lead : une personne (`user`) ou une société (`company`). */
-  readonly subjectType: "user" | "company";
+  /** Sujet : une personne (`user`), une société (`company`) ou un lead cold (`lead`). */
+  readonly subjectType: "user" | "company" | "lead";
   readonly subjectId: string;
   /** Libellé lisible (e-mail connu du journal, sinon l'identifiant). */
   readonly label: string;

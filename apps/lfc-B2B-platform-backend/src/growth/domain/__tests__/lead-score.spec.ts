@@ -203,3 +203,63 @@ describe("deriveLeadScores", () => {
     expect(lead?.computedAt).toBe(NOW.toISOString());
   });
 });
+
+import type { LeadView } from "@lfd/contracts";
+
+function coldLead(overrides: Partial<LeadView> = {}): LeadView {
+  return {
+    id: "lead_1",
+    businessName: "Traiteur Démarché",
+    contactName: "",
+    email: "",
+    phone: "",
+    siret: "",
+    status: "qualified",
+    notes: "",
+    linkedUserId: null,
+    createdAt: "2026-08-10T09:00:00.000Z",
+    lastContactedAt: "2026-08-18T09:00:00.000Z",
+    ...overrides,
+  };
+}
+
+describe("deriveLeadScores — leads cold (play nurture)", () => {
+  it("score un lead cold actif avec la play nurture (avancement × récence)", () => {
+    const [lead] = deriveLeadScores([], NOW, [coldLead()]);
+    expect(lead).toMatchObject({
+      subjectType: "lead",
+      subjectId: "lead_1",
+      play: "nurture",
+      label: "Traiteur Démarché",
+      momentum: null,
+    });
+    expect(lead?.reason).toContain("qualifié");
+    expect(lead?.score).toBeGreaterThan(0);
+  });
+
+  it("exclut les leads cold clos (converted/lost) de la queue", () => {
+    const leads = deriveLeadScores([], NOW, [
+      coldLead({ id: "l1", status: "converted" }),
+      coldLead({ id: "l2", status: "lost" }),
+    ]);
+    expect(leads).toHaveLength(0);
+  });
+
+  it("classe un lead en négociation récent au-dessus d'un lead à peine saisi", () => {
+    const leads = deriveLeadScores([], NOW, [
+      coldLead({
+        id: "hot_lead",
+        status: "negotiating",
+        lastContactedAt: "2026-08-19T09:00:00.000Z",
+      }),
+      coldLead({
+        id: "cold_lead",
+        status: "new",
+        lastContactedAt: null,
+        createdAt: "2026-07-01T09:00:00.000Z",
+      }),
+    ]);
+    expect(leads[0]?.subjectId).toBe("hot_lead");
+    expect(leads[0]?.score ?? 0).toBeGreaterThan(leads[1]?.score ?? 0);
+  });
+});

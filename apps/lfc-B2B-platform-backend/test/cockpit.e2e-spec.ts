@@ -112,4 +112,19 @@ describe("GET /admin/cockpit", () => {
     const queue = jsonBody<LeadScoreView[]>(await staff().get("/admin/cockpit").expect(200));
     expect(queue).toEqual([]);
   });
+
+  it("fait remonter un lead cold actif dans la queue avec la play nurture", async () => {
+    await ctx.prisma.lead.create({
+      data: { id: "lead_nego", businessName: "Traiteur Démarché", status: "negotiating" },
+    });
+    await recompute();
+
+    const queue = jsonBody<LeadScoreView[]>(await staff().get("/admin/cockpit").expect(200));
+    const cold = queue.find((entry) => entry.subjectId === "lead_nego");
+    expect(cold).toMatchObject({
+      subjectType: "lead",
+      play: "nurture",
+      label: "Traiteur Démarché",
+    });
+  });
 });

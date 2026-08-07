@@ -5,7 +5,7 @@ import { LeadScoreReader } from "../domain/ports/lead-score.reader.js";
 import type { LeadScoreView, MomentumTrajectory, PlayType } from "@lfd/contracts";
 
 /** Valeurs valides — narrowing défensif à la lecture (le read-model n'a pas de contrainte SQL). */
-const PLAYS: readonly PlayType[] = ["lock_in", "rescue", "upgrade", "win_back"];
+const PLAYS: readonly PlayType[] = ["lock_in", "rescue", "upgrade", "win_back", "nurture"];
 const MOMENTA: readonly MomentumTrajectory[] = ["accelerating", "stable", "cooling", "dormant"];
 
 /**
@@ -26,7 +26,7 @@ export class PrismaLeadScoreReader extends LeadScoreReader {
     });
 
     return rows.map((row) => ({
-      subjectType: row.subjectType === "company" ? "company" : "user",
+      subjectType: toSubjectType(row.subjectType),
       subjectId: row.subjectId,
       label: row.label,
       play: toPlay(row.play),
@@ -38,6 +38,14 @@ export class PrismaLeadScoreReader extends LeadScoreReader {
       computedAt: row.computedAt.toISOString(),
     }));
   }
+}
+
+/** Narrowing du sujet stocké (`user` | `company` | `lead`), défaut `user`. */
+function toSubjectType(value: string): "user" | "company" | "lead" {
+  if (value === "company" || value === "lead") {
+    return value;
+  }
+  return "user";
 }
 
 function isPlay(value: string): value is PlayType {

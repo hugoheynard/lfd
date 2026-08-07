@@ -1,9 +1,9 @@
-import type { LeadScoreView, MomentumTrajectory, PlayType } from "@lfd/contracts";
+import type { LeadScoreView, LeadStatus, MomentumTrajectory, PlayType } from "@lfd/contracts";
 
 import { ACTIVITY_TYPES } from "./activity-event.js";
 import { deriveActivations } from "./activation.js";
 import { deriveProspects } from "./prospect.js";
-import type { ActivationView, ProspectView } from "@lfd/contracts";
+import type { ActivationView, LeadView, ProspectView } from "@lfd/contracts";
 
 /**
  * **Scoring des leads** — le cœur du cockpit « 5 meilleurs coups du jour ».
@@ -42,6 +42,25 @@ const PROSPECT_WEIGHTS = {
 /** Poids d'un dossier **société** à secourir (somme = 1). Presque abouti = ROI max. */
 const RESCUE_WEIGHTS = { completion: 0.6, urgency: 0.4 } as const;
 
+/** Poids d'un lead **cold** à faire mûrir (somme = 1). Avancement prime la récence. */
+const NURTURE_WEIGHTS = { advancement: 0.6, recency: 0.4 } as const;
+
+/** Avancement d'un lead cold dans le pipeline (négo = plein pot, à peine saisi = 0). */
+const NURTURE_STAGE_SCORE: Record<string, number> = {
+  new: 0,
+  contacted: 0.4,
+  qualified: 0.7,
+  negotiating: 1,
+};
+
+/** Statuts cold **actifs** (non clos) — les seuls scorés dans la queue. */
+const ACTIVE_LEAD_STATUSES: ReadonlySet<LeadStatus> = new Set<LeadStatus>([
+  "new",
+  "contacted",
+  "qualified",
+  "negotiating",
+]);
+
 /** Récence à partir de laquelle un lead ne vaut plus rien (jours). */
 const RECENCY_HORIZON_DAYS = 60;
 /** Nombre de commandes qui sature le score de fréquence. */
@@ -68,13 +87,20 @@ const MOMENTUM_LABEL: Record<MomentumTrajectory, string> = {
 };
 
 /**
- * Dérive la queue scorée d'un flux d'événements. **Pure et déterministe**. Seuls
- * les leads **actionnables** entrent dans la queue : les prospects **hot** (une
- * play à jouer maintenant) et les dossiers d'activation **pending** (à secourir).
- * Les `mid` (inscrits sans commande) vivent dans l'onglet Prospects, pas ici.
- * Trie par score décroissant, le plus frais départageant à score égal.
+ * Dérive la queue scorée. **Pure et déterministe**. Seuls les leads **actionnables**
+ * entrent : prospects **hot** (journal), dossiers d'activation **pending** (journal),
+ * et leads **cold actifs** (agrégat de démarchage, play `nurture`). Les `mid`
+ * (inscrits sans commande) vivent dans l'onglet Prospects, pas ici. Trie par score
+ * décroissant, le plus frais départageant à score égal.
+ *
+ * Les cold viennent d'un **agrégat** (pas du journal) : on ne reconstruit jamais leur
+ * état depuis les événements — le read-model les lit à la source (`LeadReader`).
  */
-export function deriveLeadScores(events: readonly LeadEvent[], now: Date): LeadScoreView[] {
+export function deriveLeadScores(
+  events: readonly LeadEvent[],
+  now: Date,
+  coldLeads: readonly LeadView[] = [],
+): LeadScoreView[] {
   const computedAt = now.toISOString();
   const subscribers = subscriberUserIds(events);
   const userEvents = events.filter((event) => event.subjectType === "user");
@@ -89,6 +115,11 @@ export function deriveLeadScores(events: readonly LeadEvent[], now: Date): LeadS
   for (const activation of deriveActivations(companyEvents, now)) {
     if (activation.status === "pending") {
       leads.push(scoreActivation(activation, computedAt));
+    }
+  }
+  for (const cold of coldLeads) {
+    if (ACTIVE_LEAD_STATUSES.has(cold.status)) {
+      leads.push(scoreColdLead(cold, now, computedAt));
     }
   }
   return leads.sort(byScoreThenRecency);
@@ -189,6 +220,39 @@ function scoreActivation(activation: ActivationView, computedAt: string): LeadSc
     computedAt,
   };
 }
+
+/** Libellé FR d'une étape de pipeline cold, pour le `reason`. */
+const NURTURE_STAGE_LABEL: Record<string, string> = {
+  new: "à contacter",
+  contacted: "contacté",
+  qualified: "qualifié",
+  negotiating: "en négociation",
+};
+
+/** Scoring d'un lead **cold** actif → play `nurture` (avancement × récence). */
+function scoreColdLead(lead: LeadView, now: Date, computedAt: string): LeadScoreView {
+  const anchor = new Date(lead.lastContactedAt ?? lead.createdAt);
+  const recencyDays = Math.max(0, Math.floor((now.getTime() - anchor.getTime()) / DAY_MS));
+  const advancement = NURTURE_STAGE_SCORE[lead.status] ?? 0;
+  const recency = clamp01(1 - recencyDays / RECENCY_HORIZON_DAYS);
+  const score = Math.round(
+    (NURTURE_WEIGHTS.advancement * advancement + NURTURE_WEIGHTS.recency * recency) * 100,
+  );
+  return {
+    subjectType: "lead",
+    subjectId: lead.id,
+    label: lead.businessName,
+    play: "nurture",
+    score,
+    reason: `Démarchage ${NURTURE_STAGE_LABEL[lead.status] ?? lead.status} · relance depuis ${recencyDays} j`,
+    momentum: null,
+    monetaryCents: 0,
+    recencyDays,
+    computedAt,
+  };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Score décroissant ; à score égal, le plus récemment actif d'abord. */
 function byScoreThenRecency(a: LeadScoreView, b: LeadScoreView): number {

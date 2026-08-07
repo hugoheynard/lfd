@@ -19,6 +19,7 @@ const PLAY: Record<PlayType, { label: string; variant: BadgeVariant; hint: strin
   rescue: { label: 'Rescousse', variant: 'alert', hint: 'Dossier d’activation bloqué à débloquer' },
   upgrade: { label: 'Upgrade', variant: 'success', hint: 'Compte engagé à étendre' },
   win_back: { label: 'Reconquête', variant: 'info', hint: 'Lead qui refroidit à relancer' },
+  nurture: { label: 'Démarchage', variant: 'neutral', hint: 'Lead sortant à faire avancer' },
 };
 
 /**

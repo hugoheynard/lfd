@@ -1,8 +1,9 @@
-import type { LeadScoreView } from "@lfd/contracts";
+import type { LeadScoreView, LeadView } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../infra/time/fixed-clock.js";
 import type { LeadEvent } from "../../../domain/lead-score.js";
 import { LeadEventSource } from "../../../domain/ports/lead-event-source.js";
+import { LeadReader } from "../../../domain/ports/lead.reader.js";
 import { LeadScoreStore } from "../../../domain/ports/lead-score.store.js";
 import { RecomputeLeadScoresCommand } from "../recompute-lead-scores.command.js";
 import { RecomputeLeadScoresHandler } from "../recompute-lead-scores.handler.js";
@@ -16,6 +17,16 @@ class FakeEventSource extends LeadEventSource {
   }
   all(): Promise<LeadEvent[]> {
     return Promise.resolve(this.events);
+  }
+}
+
+/** Reader de leads cold doublé. */
+class FakeLeadReader extends LeadReader {
+  constructor(private readonly leads: LeadView[] = []) {
+    super();
+  }
+  list(): Promise<LeadView[]> {
+    return Promise.resolve(this.leads);
   }
 }
 
@@ -44,6 +55,7 @@ describe("RecomputeLeadScoresHandler", () => {
     const store = new CapturingStore();
     const handler = new RecomputeLeadScoresHandler(
       new FakeEventSource([ordered("u1", "2026-08-18T09:00:00.000Z", 5000)]),
+      new FakeLeadReader(),
       store,
       new FixedClock(NOW),
     );
@@ -63,6 +75,7 @@ describe("RecomputeLeadScoresHandler", () => {
     const store = new CapturingStore();
     const handler = new RecomputeLeadScoresHandler(
       new FakeEventSource([]),
+      new FakeLeadReader(),
       store,
       new FixedClock(NOW),
     );
