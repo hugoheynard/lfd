@@ -113,6 +113,37 @@ describe("deriveGrowthStats", () => {
     expect(counts).toEqual([3, 2, 2, 1, 1]);
   });
 
+  it("reconstruit le momentum du vivier (stock debout par chaleur, période par période)", () => {
+    const stats = deriveGrowthStats(
+      [
+        // mid : inscrit, jamais de commande.
+        ev("user.registered", "user", "u_mid", "2026-08-10T09:00:00.000Z"),
+        // hot : inscrit + commande perso (companyId absent).
+        ev("user.registered", "user", "u_hot", "2026-08-10T09:00:00.000Z"),
+        ev("order.placed", "user", "u_hot", "2026-08-15T09:00:00.000Z", { totalCents: 100 }),
+        // converti : hot puis SORT du vivier à sa 1re commande pour une société (08-19).
+        ev("user.registered", "user", "u_conv", "2026-08-10T09:00:00.000Z"),
+        ev("order.placed", "user", "u_conv", "2026-08-12T09:00:00.000Z", { totalCents: 100 }),
+        ev("order.placed", "user", "u_conv", "2026-08-19T09:00:00.000Z", {
+          totalCents: 100,
+          companyId: "c1",
+        }),
+        // cold : deux leads saisis ; le second est perdu le 18.
+        ev("lead.captured", "lead", "l1", "2026-08-08T09:00:00.000Z"),
+        ev("lead.captured", "lead", "l2", "2026-08-08T09:00:00.000Z"),
+        ev("lead.lost", "lead", "l2", "2026-08-18T09:00:00.000Z"),
+      ],
+      [],
+      NOW,
+    );
+    const w10 = stats.temperatureFlow.find((p) => p.weekStart === "2026-08-10");
+    // Clôture du 10 (borne 08-17) : u_hot + u_conv hot ; u_mid mid ; l1+l2 cold.
+    expect(w10).toMatchObject({ hot: 2, mid: 1, cold: 2 });
+    const w17 = stats.temperatureFlow.find((p) => p.weekStart === "2026-08-17");
+    // Clôture du 17 (borne 08-24) : u_conv a commandé pour c1 → sorti ; l2 perdu → sorti.
+    expect(w17).toMatchObject({ hot: 1, mid: 1, cold: 1 });
+  });
+
   it("calcule des cohortes de rétention par semaine d'inscription", () => {
     const stats = deriveGrowthStats(
       [

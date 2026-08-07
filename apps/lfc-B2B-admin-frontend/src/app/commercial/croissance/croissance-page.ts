@@ -6,6 +6,7 @@ import type { AccountConcentration } from '@lfd/contracts';
 
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { Lorenz } from '../../shared/lorenz/lorenz';
+import { MetricInfo } from '../../shared/metric-info/metric-info';
 import {
   acquisitionMixOption,
   acquisitionOption,
@@ -13,7 +14,7 @@ import {
   concentrationSummary,
   funnelOption,
   lifecycleSankeyOption,
-  momentumOption,
+  temperatureFlowOption,
   velocityBoxplotOption,
 } from './growth-charts';
 import { GrowthService } from './growth.service';
@@ -29,14 +30,16 @@ interface Kpi {
 
 /**
  * Onglet **Croissance** : le dashboard analytique PLG, dérivé du journal (`GET
- * /admin/growth/stats`). Tuiles KPI + courbe d'acquisition + momentum + entonnoirs
- * (cold & activation) + heatmap de cohortes de rétention. Les graphes sont rendus
- * par `<app-chart>` (ECharts), leurs options construites par des fonctions pures.
+ * /admin/growth/stats`). Tuiles KPI + acquisition + momentum du vivier (flux par
+ * chaleur) + entonnoirs (cold & activation) + cycle de vie + vélocité + mix + Lorenz
+ * + heatmap de cohortes. Graphes rendus par `<app-chart>` (ECharts) / `<app-lorenz>`
+ * (D3), options construites par des fonctions pures. Chaque carte porte une bulle
+ * d'aide (`<app-metric-info>`) décrivant sa métrique.
  */
 @Component({
   selector: 'app-croissance-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Chart, Lorenz, FoldButtonComponent],
+  imports: [Chart, Lorenz, MetricInfo, FoldButtonComponent],
   templateUrl: './croissance-page.html',
   styleUrl: './croissance-page.scss',
 })
@@ -72,9 +75,9 @@ export class CroissancePage {
     const s = this.stats();
     return s === null ? null : acquisitionOption(s.acquisition);
   });
-  protected readonly momentum = computed<ChartOption | null>(() => {
+  protected readonly temperatureFlow = computed<ChartOption | null>(() => {
     const s = this.stats();
-    return s === null ? null : momentumOption(s.momentum);
+    return s === null ? null : temperatureFlowOption(s.temperatureFlow);
   });
   protected readonly coldFunnel = computed<ChartOption | null>(() => {
     const s = this.stats();

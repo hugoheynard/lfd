@@ -5,7 +5,7 @@ import type {
   CohortRow,
   FunnelStep,
   LifecycleFlow,
-  MomentumDistribution,
+  TemperatureFlowPoint,
   VelocityMetric,
 } from '@lfd/contracts';
 import type { EChartsOption } from 'echarts';
@@ -102,27 +102,55 @@ export function sparklineOption(points: readonly AcquisitionPoint[]): EChartsOpt
   };
 }
 
-/** Distribution du momentum des prospects hot (barres horizontales colorées). */
-export function momentumOption(dist: MomentumDistribution): EChartsOption {
-  const rows = [
-    { label: 'Accélère', value: dist.accelerating, color: PALETTE.green },
-    { label: 'Stable', value: dist.stable, color: PALETTE.blue },
-    { label: 'Refroidit', value: dist.cooling, color: PALETTE.amber },
-    { label: 'Dormant', value: dist.dormant, color: PALETTE.slate },
-  ];
+/**
+ * **Momentum du vivier** : le flux de prospects par chaleur, semaine après semaine,
+ * rendu en `themeRiver` (rubans qui enflent/dégonflent). Dégradé de chaleur : chauds
+ * (rouge) → tièdes (ambre) → froids (bleu). Chaque point = le stock debout à la
+ * clôture de la semaine, pas un cumul d'événements.
+ */
+export function temperatureFlowOption(points: readonly TemperatureFlowPoint[]): EChartsOption {
+  const bands = [
+    { key: 'hot', name: 'Chauds', color: PALETTE.red },
+    { key: 'mid', name: 'Tièdes', color: PALETTE.amber },
+    { key: 'cold', name: 'Froids', color: PALETTE.blue },
+  ] as const;
+  const data: [string, number, string][] = [];
+  for (const p of points) {
+    data.push([p.weekStart, p.hot, 'Chauds']);
+    data.push([p.weekStart, p.mid, 'Tièdes']);
+    data.push([p.weekStart, p.cold, 'Froids']);
+  }
   return {
-    tooltip: { trigger: 'item' },
-    xAxis: { type: 'value', minInterval: 1 },
-    yAxis: { type: 'category', data: rows.map((r) => r.label), inverse: true },
+    color: bands.map((b) => b.color),
+    legend: { top: 0, data: [...bands.map((b) => b.name)], textStyle: { color: PALETTE.slate } },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'line' } },
+    // themeRiver a son propre axe temporel : on neutralise le cartésien du socle.
+    xAxis: { show: false },
+    yAxis: { show: false },
+    singleAxis: {
+      type: 'time',
+      top: 34,
+      bottom: 20,
+      axisLabel: { color: PALETTE.slate, formatter: dayMonth },
+      axisLine: { lineStyle: { color: PALETTE.slate } },
+    },
     series: [
       {
-        type: 'bar',
-        barWidth: '55%',
-        data: rows.map((r) => ({ value: r.value, itemStyle: { color: r.color, borderRadius: 4 } })),
-        label: { show: true, position: 'right' },
+        type: 'themeRiver',
+        emphasis: { focus: 'series' },
+        label: { show: false },
+        data,
       },
     ],
   };
+}
+
+/** Horodatage (ms) → « 17/08 » pour l'axe temporel du themeRiver. */
+function dayMonth(value: number | string): string {
+  const d = new Date(Number(value));
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${day}/${month}`;
 }
 
 /** Entonnoir (cold ou activation) à partir de marches décroissantes. */

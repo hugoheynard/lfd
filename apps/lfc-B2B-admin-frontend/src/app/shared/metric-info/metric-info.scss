@@ -1,0 +1,51 @@
+:host {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--fold-color-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+
+.trigger:hover,
+.trigger:focus-visible {
+  color: var(--fold-color-accent, #3b82f6);
+  border-color: var(--fold-color-accent, #3b82f6);
+  outline: none;
+}
+
+.bubble {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: 240px;
+  padding: 8px 10px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: 8px;
+  background: var(--fold-color-surface, #1f2937);
+  color: var(--fold-color-text, #111827);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+}

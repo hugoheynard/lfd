@@ -193,12 +193,22 @@ export interface AcquisitionPoint {
   readonly leadsCaptured: number;
 }
 
-/** Répartition des prospects hot par **trajectoire de momentum**. */
-export interface MomentumDistribution {
-  readonly accelerating: number;
-  readonly stable: number;
-  readonly cooling: number;
-  readonly dormant: number;
+/**
+ * **Momentum du vivier** — un point hebdomadaire du flux de prospects par
+ * **chaleur** : combien de personnes *tiennent* dans chaque bande (hot/mid/cold) à
+ * la clôture de la semaine. C'est un **stock debout** reconstitué période par
+ * période (les gens entrent en s'inscrivant / en étant démarchés, sortent en
+ * commandant pour une société ou en fermant le lead), pas un flux d'événements.
+ * Rendu en flux (themeRiver).
+ */
+export interface TemperatureFlowPoint {
+  readonly weekStart: string;
+  /** A commandé en perso, pas encore pour une société. */
+  readonly hot: number;
+  /** Inscrit, zéro commande. */
+  readonly mid: number;
+  /** Lead sortant actif (démarchage en cours). */
+  readonly cold: number;
 }
 
 /** Une marche d'entonnoir : le nombre atteignant cette étape (les fuites se lisent entre marches). */
@@ -223,7 +233,7 @@ export interface CohortRow {
 export interface GrowthStatsView {
   readonly kpis: GrowthKpis;
   readonly acquisition: readonly AcquisitionPoint[];
-  readonly momentum: MomentumDistribution;
+  readonly temperatureFlow: readonly TemperatureFlowPoint[];
   readonly coldFunnel: readonly FunnelStep[];
   readonly activationFunnel: readonly FunnelStep[];
   readonly cohorts: readonly CohortRow[];

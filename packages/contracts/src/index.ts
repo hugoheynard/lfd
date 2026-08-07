@@ -118,7 +118,7 @@ export type {
   CreatedLeadResponse,
   GrowthKpis,
   AcquisitionPoint,
-  MomentumDistribution,
+  TemperatureFlowPoint,
   FunnelStep,
   CohortRow,
   GrowthStatsView,

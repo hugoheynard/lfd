@@ -31,35 +31,65 @@
 
       <div class="grid">
         <article class="card wide">
-          <h2>Acquisition hebdomadaire</h2>
+          <header class="card-head">
+            <h2>Acquisition hebdomadaire</h2>
+            <app-metric-info
+              label="Acquisition hebdomadaire"
+              text="Nombre d'inscriptions, de premières commandes et de leads saisis chaque semaine. La 1re commande n'est comptée qu'une fois par personne."
+            />
+          </header>
           @if (acquisition(); as opt) {
             <app-chart [option]="opt" height="300px" />
           }
         </article>
 
-        <article class="card">
-          <h2>Momentum des prospects chauds</h2>
-          @if (momentum(); as opt) {
-            <app-chart [option]="opt" height="240px" />
+        <article class="card wide">
+          <header class="card-head">
+            <h2>Momentum du vivier — flux par chaleur</h2>
+            <app-metric-info
+              label="Momentum du vivier"
+              text="Le stock de prospects tenus dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). On entre en s'inscrivant, on sort en commandant pour une société."
+            />
+          </header>
+          @if (temperatureFlow(); as opt) {
+            <app-chart [option]="opt" height="260px" />
           }
         </article>
 
         <article class="card">
-          <h2>Entonnoir d'activation</h2>
+          <header class="card-head">
+            <h2>Entonnoir d'activation</h2>
+            <app-metric-info
+              label="Entonnoir d'activation"
+              text="De la société déclarée jusqu'à son activation, marche par marche (TVA, KBIS, facturation, livraison). Les fuites entre marches = les frictions d'onboarding."
+            />
+          </header>
           @if (activationFunnel(); as opt) {
             <app-chart [option]="opt" height="280px" />
           }
         </article>
 
         <article class="card">
-          <h2>Pipeline de démarchage</h2>
+          <header class="card-head">
+            <h2>Pipeline de démarchage</h2>
+            <app-metric-info
+              label="Pipeline de démarchage"
+              text="Progression des leads sortants dans le pipeline commercial : saisis → contactés → qualifiés → en négociation → convertis. Chaque marche compte les leads ayant atteint au moins cette étape."
+            />
+          </header>
           @if (coldFunnel(); as opt) {
             <app-chart [option]="opt" height="280px" />
           }
         </article>
 
         <article class="card wide">
-          <h2>Cycle de vie (du clic à l'activation)</h2>
+          <header class="card-head">
+            <h2>Cycle de vie (du clic à l'activation)</h2>
+            <app-metric-info
+              label="Cycle de vie"
+              text="Les flux de personnes d'une étape à la suivante — inscrit, a commandé, a déclaré une société, activé — avec les fuites à chaque transition. La largeur d'un ruban = le nombre de personnes qui passent."
+            />
+          </header>
           @if (lifecycle(); as opt) {
             <app-chart [option]="opt" height="300px" />
           } @else {
@@ -68,21 +98,39 @@
         </article>
 
         <article class="card">
-          <h2>Vélocité — délais (jours)</h2>
+          <header class="card-head">
+            <h2>Vélocité — délais (jours)</h2>
+            <app-metric-info
+              label="Vélocité"
+              text="Distribution des délais en jours : temps entre l'inscription et la 1re commande, et entre la déclaration d'une société et son activation. La boîte couvre les quartiles, le trait central la médiane."
+            />
+          </header>
           @if (velocity(); as opt) {
             <app-chart [option]="opt" height="280px" />
           }
         </article>
 
         <article class="card">
-          <h2>Mix product-led vs sales-led</h2>
+          <header class="card-head">
+            <h2>Mix product-led vs sales-led</h2>
+            <app-metric-info
+              label="Mix product-led / sales-led"
+              text="Répartition de l'acquisition par semaine selon l'origine : product-led (self-service, inscription spontanée) vs sales-led (démarchage ou création par un commercial)."
+            />
+          </header>
           @if (mix(); as opt) {
             <app-chart [option]="opt" height="280px" />
           }
         </article>
 
         <article class="card wide">
-          <h2>Concentration du volume (grands comptes)</h2>
+          <header class="card-head">
+            <h2>Concentration du volume (grands comptes)</h2>
+            <app-metric-info
+              label="Concentration du volume"
+              text="Courbe de Lorenz du volume de commandes par compte : plus la courbe s'éloigne de la diagonale d'égalité, plus quelques grands comptes concentrent le volume. Le Gini résume l'inégalité (0 = égal, 1 = tout sur un compte)."
+            />
+          </header>
           @if (concentration(); as c) {
             <p class="muted">{{ concentrationHint() }}</p>
             <app-lorenz [data]="c" height="300px" />
@@ -92,7 +140,13 @@
         </article>
 
         <article class="card wide">
-          <h2>Rétention par cohorte d'inscription</h2>
+          <header class="card-head">
+            <h2>Rétention par cohorte d'inscription</h2>
+            <app-metric-info
+              label="Rétention par cohorte"
+              text="Pour chaque semaine d'inscription (une ligne), la part de la cohorte ayant commandé k semaines plus tard. La couleur va du clair (faible rétention) au foncé (forte rétention)."
+            />
+          </header>
           @if (cohorts(); as opt) {
             <app-chart [option]="opt" height="320px" />
           } @else {

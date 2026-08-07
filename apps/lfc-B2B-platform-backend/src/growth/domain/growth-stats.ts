@@ -5,7 +5,6 @@ import type {
   GrowthKpis,
   GrowthStatsView,
   LeadView,
-  MomentumDistribution,
   ProspectView,
 } from "@lfd/contracts";
 
@@ -18,6 +17,7 @@ import {
   velocityMetrics,
 } from "./growth-stats-advanced.js";
 import { deriveProspects } from "./prospect.js";
+import { temperatureFlow } from "./temperature-flow.js";
 
 /**
  * **Stats de croissance** — la dérivation PURE derrière l'onglet Croissance et le
@@ -55,6 +55,7 @@ export function deriveGrowthStats(
 ): GrowthStatsView {
   const userEvents = events.filter((e) => e.subjectType === "user");
   const companyEvents = events.filter((e) => e.subjectType === "company");
+  const leadEvents = events.filter((e) => e.subjectType === "lead");
   const prospects = deriveProspects(userEvents, now);
   const activations = deriveActivations(companyEvents, now);
   const window = weekStarts(now, weeks);
@@ -62,7 +63,7 @@ export function deriveGrowthStats(
   return {
     kpis: kpis(prospects, activations, leads, userEvents),
     acquisition: acquisition(userEvents, window),
-    momentum: momentumDistribution(prospects),
+    temperatureFlow: temperatureFlow(userEvents, leadEvents, window),
     coldFunnel: coldFunnel(leads),
     activationFunnel: activationFunnel(activations),
     cohorts: cohorts(userEvents, window),
@@ -119,17 +120,6 @@ function acquisition(
     firstOrders: firstByWeek.get(weekStart) ?? 0,
     leadsCaptured: leads.get(weekStart) ?? 0,
   }));
-}
-
-function momentumDistribution(prospects: readonly ProspectView[]): MomentumDistribution {
-  const hot = prospects.filter((p) => p.temperature === "hot");
-  const count = (m: string): number => hot.filter((p) => p.momentum === m).length;
-  return {
-    accelerating: count("accelerating"),
-    stable: count("stable"),
-    cooling: count("cooling"),
-    dormant: count("dormant"),
-  };
 }
 
 /** Entonnoir cold : progression pipeline (marche = leads ayant atteint ≥ l'étape). */
