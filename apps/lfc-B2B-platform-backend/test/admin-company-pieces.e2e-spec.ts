@@ -94,6 +94,19 @@ describe("pièces d'activation staff (Porte B)", () => {
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.enseigne).toBe("Le Comptoir");
     expect(company.tvaIntracom).toBe("FR32812456789");
+
+    // Une pièce posée par le STAFF (Porte B) franchit aussi l'étape (câblage staff→growth).
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if ((await ctx.prisma.activityEvent.count({ where: { type: "company.step_reached" } })) > 0) {
+        break;
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    }
+    const [step] = await ctx.prisma.activityEvent.findMany({
+      where: { type: "company.step_reached" },
+    });
+    expect(step.idempotencyKey).toBe(`company.step_reached:tva:${companyId}`);
+    expect(step.payload).toMatchObject({ step: "tva" });
   });
 
   it("fixe le règlement CONVENU et solde la demande client", async () => {

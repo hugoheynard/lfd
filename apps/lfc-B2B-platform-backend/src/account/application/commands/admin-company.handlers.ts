@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
+import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { KbisStore } from "../../domain/ports/kbis-store.js";
@@ -47,7 +48,10 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
   UpdateIdentityByStaffCommand,
   void
 > {
-  constructor(private readonly companies: CompanyRepository) {}
+  constructor(
+    private readonly companies: CompanyRepository,
+    private readonly events: DomainEventPublisher,
+  ) {}
 
   async execute(command: UpdateIdentityByStaffCommand): Promise<void> {
     const company = await this.companies.load(command.companyId);
@@ -56,6 +60,11 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     }
     company.editSoftIdentity(command.payload);
     await this.companies.save(company);
+
+    // Pièce « TVA » franchie dès qu'un numéro est présent (idempotent par étape).
+    if (command.payload.tvaIntracom.trim() !== "") {
+      this.events.publish(new CompanyStepReachedEvent(command.companyId, "tva"));
+    }
   }
 }
 
@@ -81,10 +90,15 @@ export class SaveBillingAddressByStaffHandler implements ICommandHandler<
   SaveBillingAddressByStaffCommand,
   void
 > {
-  constructor(private readonly addresses: CompanyAddressRepository) {}
+  constructor(
+    private readonly addresses: CompanyAddressRepository,
+    private readonly events: DomainEventPublisher,
+  ) {}
 
   async execute(command: SaveBillingAddressByStaffCommand): Promise<void> {
     await this.addresses.saveBilling(command.companyId, command.payload);
+    // Pièce « facturation » franchie (journal idempotent par étape).
+    this.events.publish(new CompanyStepReachedEvent(command.companyId, "billing"));
   }
 }
 
@@ -93,9 +107,15 @@ export class AddDeliveryAddressByStaffHandler implements ICommandHandler<
   AddDeliveryAddressByStaffCommand,
   string
 > {
-  constructor(private readonly addresses: CompanyAddressRepository) {}
+  constructor(
+    private readonly addresses: CompanyAddressRepository,
+    private readonly events: DomainEventPublisher,
+  ) {}
 
-  execute(command: AddDeliveryAddressByStaffCommand): Promise<string> {
-    return this.addresses.addDelivery(command.companyId, command.payload);
+  async execute(command: AddDeliveryAddressByStaffCommand): Promise<string> {
+    const addressId = await this.addresses.addDelivery(command.companyId, command.payload);
+    // Pièce « livraison » franchie (journal idempotent par étape).
+    this.events.publish(new CompanyStepReachedEvent(command.companyId, "delivery"));
+    return addressId;
   }
 }
