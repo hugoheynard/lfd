@@ -23,6 +23,7 @@ export class AppConfig {
   private readonly adminAudienceValue: string | null;
   private readonly adminBypass: boolean;
   private readonly exposeDetail: boolean;
+  private readonly production: boolean;
 
   constructor() {
     this.database = required("DATABASE_B2B_URL");
@@ -35,7 +36,13 @@ export class AppConfig {
     this.impersonation = optionalDevImpersonation();
     this.adminAudienceValue = optionalString("AUTH0_ADMIN_AUDIENCE");
     this.adminBypass = optionalAdminDevBypass();
-    this.exposeDetail = (process.env["NODE_ENV"]?.trim() ?? "") !== "production";
+    this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
+    this.exposeDetail = !this.production;
+  }
+
+  /** Vrai en production (`NODE_ENV=production`). Choisit notamment l'allowlist CORS. */
+  isProduction(): boolean {
+    return this.production;
   }
 
   /**

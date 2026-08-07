@@ -26,6 +26,7 @@ export class AppConfig implements ShopifyCredentialsSource {
   private readonly shopifyToken: string | null;
   private readonly shopifyClientIdValue: string | null;
   private readonly shopifyClientSecretValue: string | null;
+  private readonly production: boolean;
 
   constructor() {
     this.database = required('DATABASE_URL');
@@ -35,6 +36,12 @@ export class AppConfig implements ShopifyCredentialsSource {
     this.shopifyToken = optional('SHOPIFY_ADMIN_TOKEN');
     this.shopifyClientIdValue = optional('SHOPIFY_CLIENT_ID');
     this.shopifyClientSecretValue = optional('SHOPIFY_CLIENT_SECRET');
+    this.production = (process.env['NODE_ENV']?.trim() ?? '') === 'production';
+  }
+
+  /** Vrai en production (`NODE_ENV=production`). Choisit notamment l'allowlist CORS. */
+  isProduction(): boolean {
+    return this.production;
   }
 
   /** URL Postgres (Docker en dev, Neon en prod — ADR-09). */

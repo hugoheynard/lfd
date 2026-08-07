@@ -10,6 +10,7 @@ import { LocationsModule } from './locations/locations.module.js';
 import { AuthModule } from './infra/auth/auth.module.js';
 import { AppConfigModule } from './infra/config/config.module.js';
 import { DatabaseModule } from './infra/database/database.module.js';
+import { SecurityModule } from './infra/security/security.module.js';
 
 @Module({
   imports: [
@@ -21,6 +22,9 @@ import { DatabaseModule } from './infra/database/database.module.js';
     // Puis notre passerelle typée : le seul accès autorisé à l'environnement.
     AppConfigModule,
     DatabaseModule,
+    // AVANT AuthModule : le ThrottlerGuard (APP_GUARD) doit s'exécuter en premier
+    // pour rejeter un flood en 429 avant tout travail d'authentification.
+    SecurityModule,
     AuthModule,
     CatalogueModule,
     CommerceModule,

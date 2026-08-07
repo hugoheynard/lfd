@@ -1,7 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AppService } from './app.service.js';
 import { Public } from './infra/auth/public.decorator.js';
 
+// Sondes de vie/liveness : frappées en boucle par les probes et le canary de
+// déploiement. Sorties du throttler (l'abus reste borné par le rate-limit edge).
+@SkipThrottle()
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}

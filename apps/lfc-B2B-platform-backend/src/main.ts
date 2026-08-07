@@ -1,9 +1,14 @@
 import { NestFactory } from "@nestjs/core";
-import { DEV_CORS_ORIGINS } from "@lfd/endpoints";
+import type { NestExpressApplication } from "@nestjs/platform-express";
+import { DEV_CORS_ORIGINS, PROD_CORS_ORIGINS } from "@lfd/endpoints";
+import helmet from "helmet";
 import { AppModule } from "./app.module.js";
 import { AppConfig } from "./infra/config/app-config.js";
 import { AppErrorFilter } from "./shared/http/app-error.filter.js";
 import { QuietBootLogger } from "./shared/quiet-boot-logger.js";
+
+/** Plafond de taille du corps JSON : borne un vecteur de déni de service (payload géant). */
+const JSON_BODY_LIMIT = "512kb";
 
 async function bootstrap(): Promise<void> {
   // Logger de démarrage silencieux : masque l'énumération des routes/modules
@@ -11,21 +16,32 @@ async function bootstrap(): Promise<void> {
   // `rawBody: true` : Express conserve le corps brut de chaque requête. Le webhook
   // Stripe en a besoin — Stripe signe les octets exacts du payload, un JSON
   // re-sérialisé casserait la vérification de signature.
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: new QuietBootLogger(),
     rawBody: true,
   });
 
   const config = app.get(AppConfig);
 
+  // En-têtes de sécurité HTTP (CSP, HSTS, nosniff, anti-clickjacking…). API JSON
+  // pure : les défauts helmet conviennent, aucun asset HTML à assouplir.
+  app.use(helmet());
+
+  // Plafonne la taille du corps JSON (anti-DoS par payload géant). Le corps brut
+  // du webhook Stripe (rawBody) reste géré — ses payloads sont petits, bien sous
+  // la limite. Les uploads KBIS passent par multer (multipart), non concernés ici.
+  app.useBodyParser("json", { limit: JSON_BODY_LIMIT });
+  app.useBodyParser("urlencoded", { limit: JSON_BODY_LIMIT, extended: true });
+
   // Traduction des catégories d'erreur en statuts — le seul point qui connaît HTTP.
   // Hors prod, le filtre joint le détail technique des 500 (le message reste neutre).
   app.useGlobalFilters(new AppErrorFilter(config.exposeErrorDetail()));
 
-  // Origines dev (front B2B + port spare) tenues dans le registre unique
-  // `@lfd/endpoints`. La prod passe par l'env.
+  // Allowlist CORS **fermée** tenue dans le registre unique `@lfd/endpoints` :
+  // origines Pages en prod, localhost en dev. Une origine hors liste (dont un
+  // site tiers) est refusée par le navigateur.
   app.enableCors({
-    origin: DEV_CORS_ORIGINS.b2b,
+    origin: config.isProduction() ? PROD_CORS_ORIGINS.b2b : DEV_CORS_ORIGINS.b2b,
   });
 
   // Le port passe par AppConfig comme toute autre valeur d'environnement.
