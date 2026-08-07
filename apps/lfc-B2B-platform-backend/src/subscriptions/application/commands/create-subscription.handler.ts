@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { Subscription } from "../../domain/entities/subscription.js";
+import { SubscriptionCreatedEvent } from "../../domain/events/subscription-created.event.js";
 import {
   type CreatedSubscription,
   SubscriptionRepository,
@@ -21,7 +23,10 @@ export class CreateSubscriptionHandler implements ICommandHandler<
   CreateSubscriptionCommand,
   CreatedSubscription
 > {
-  constructor(private readonly subscriptions: SubscriptionRepository) {}
+  constructor(
+    private readonly subscriptions: SubscriptionRepository,
+    private readonly events: DomainEventPublisher,
+  ) {}
 
   async execute(command: CreateSubscriptionCommand): Promise<CreatedSubscription> {
     const { payload } = command;
@@ -39,6 +44,11 @@ export class CreateSubscriptionHandler implements ICommandHandler<
       note: payload.note,
       lines: payload.lines.map((line) => SubscriptionLine.create(line.sku, line.quantity)),
     });
-    return this.subscriptions.create(subscription);
+    const created = await this.subscriptions.create(subscription);
+    // Signal « lead qualifié » : l'abonnement engage sur du récurrent.
+    this.events.publish(
+      new SubscriptionCreatedEvent(created.id, command.actorUserId, payload.recurrence),
+    );
+    return created;
   }
 }

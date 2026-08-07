@@ -185,3 +185,26 @@ describe("suppression", () => {
     );
   });
 });
+
+describe("émission du journal (subscription.created)", () => {
+  it("journalise subscription.created sur la personne (câblage subscriptions→growth)", async () => {
+    const id = await createSubscription();
+    const owner = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: OWNER } });
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if ((await ctx.prisma.activityEvent.count({ where: { type: "subscription.created" } })) > 0) {
+        break;
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    }
+
+    const [event] = await ctx.prisma.activityEvent.findMany({
+      where: { type: "subscription.created" },
+    });
+    expect(event.subjectType).toBe("user");
+    expect(event.subjectId).toBe(owner.id);
+    expect(event.actorType).toBe("customer");
+    expect(event.idempotencyKey).toBe(`subscription.created:${id}`);
+    expect(event.payload).toMatchObject({ subscriptionId: id, recurrence: "weekly" });
+  });
+});

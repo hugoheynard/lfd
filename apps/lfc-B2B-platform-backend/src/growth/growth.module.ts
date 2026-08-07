@@ -4,6 +4,7 @@ import { CqrsModule } from "@nestjs/cqrs";
 import { OnCompanyActivated } from "./application/handlers/on-company-activated.handler.js";
 import { OnCompanyDeclared } from "./application/handlers/on-company-declared.handler.js";
 import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js";
+import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { ActivityRecorder } from "./domain/ports/activity-recorder.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
 
@@ -23,6 +24,7 @@ import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorde
     OnOrderPlaced,
     OnCompanyDeclared,
     OnCompanyActivated,
+    OnSubscriptionCreated,
   ],
   exports: [ActivityRecorder],
 })
