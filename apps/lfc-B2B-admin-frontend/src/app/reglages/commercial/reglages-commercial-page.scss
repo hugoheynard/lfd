@@ -51,3 +51,125 @@
   color: var(--fold-color-text-secondary);
   font-size: var(--fold-text-sm);
 }
+
+/* Espace entre les deux cartes. */
+fold-card + fold-card {
+  display: block;
+  margin-top: var(--fold-space-lg, 1.5rem);
+}
+
+.market-error {
+  margin: 0 0 var(--fold-space-md);
+  color: var(--fold-color-danger, #dc2626);
+  font-size: var(--fold-text-sm);
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}
+
+.market-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--fold-space-lg, 1.5rem);
+}
+
+.market-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.market-title {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--fold-color-text-muted);
+}
+
+.market-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.market-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+}
+
+.market-cp {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.market-count {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.market-remove {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--fold-radius-md);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--fold-color-danger, #dc2626);
+    background: var(--fold-color-surface-hover, rgba(0, 0, 0, 0.05));
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.market-empty {
+  padding: 0.35rem 0.5rem;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.market-add {
+  display: flex;
+  gap: var(--fold-space-sm);
+  margin-top: 0.25rem;
+
+  .field-input {
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.market-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  margin-top: var(--fold-space-lg, 1.5rem);
+  padding-top: var(--fold-space-md);
+  border-top: 1px solid var(--fold-color-border);
+  font-size: var(--fold-text-sm);
+  flex-wrap: wrap;
+}
