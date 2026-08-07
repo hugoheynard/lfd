@@ -81,3 +81,43 @@ describe("GET /admin/leads", () => {
     expect(leads[0]).toMatchObject({ status: "new", linkedUserId: null, lastContactedAt: null });
   });
 });
+
+describe("PATCH /admin/leads/:id", () => {
+  async function captureLead(businessName: string): Promise<string> {
+    const created = jsonBody<CreatedLeadResponse>(
+      await staff().post("/admin/leads").send({ businessName }).expect(201),
+    );
+    return created.id;
+  }
+
+  it("avance un lead et journalise lead.stage_changed", async () => {
+    const id = await captureLead("Bistrot");
+    await staff().patch(`/admin/leads/${id}`).send({ status: "contacted" }).expect(204);
+
+    const row = await ctx.prisma.lead.findUnique({ where: { id } });
+    expect(row?.status).toBe("contacted");
+    expect(row?.lastContactedAt).not.toBeNull();
+    const journal = await ctx.prisma.activityEvent.count({ where: { type: "lead.stage_changed" } });
+    expect(journal).toBe(1);
+  });
+
+  it("convertit manuellement et journalise lead.converted (via manual)", async () => {
+    const id = await captureLead("Bistrot");
+    await staff().patch(`/admin/leads/${id}`).send({ status: "converted" }).expect(204);
+
+    const row = await ctx.prisma.lead.findUnique({ where: { id } });
+    expect(row?.status).toBe("converted");
+    const journal = await ctx.prisma.activityEvent.findMany({ where: { type: "lead.converted" } });
+    expect(journal).toHaveLength(1);
+  });
+
+  it("refuse un recul de pipeline (409) — l'invariant remonte", async () => {
+    const id = await captureLead("Bistrot");
+    await staff().patch(`/admin/leads/${id}`).send({ status: "negotiating" }).expect(204);
+    await staff().patch(`/admin/leads/${id}`).send({ status: "contacted" }).expect(409);
+  });
+
+  it("404 sur un lead inexistant", async () => {
+    await staff().patch("/admin/leads/lead_nope").send({ status: "contacted" }).expect(404);
+  });
+});

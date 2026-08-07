@@ -1,16 +1,29 @@
 import {
+  type AdvanceLeadStatusPayload,
+  advanceLeadStatusPayloadSchema,
   type CaptureLeadPayload,
   captureLeadPayloadSchema,
   type CreatedLeadResponse,
   type LeadView,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { CaptureLeadCommand } from "../application/commands/capture-lead.command.js";
+import { ChangeLeadStatusCommand } from "../application/commands/change-lead-status.command.js";
 import { ListLeadsQuery } from "../application/queries/list-leads.query.js";
 
 /**
@@ -41,5 +54,16 @@ export class AdminLeadsController {
       new CaptureLeadCommand(payload),
     );
     return { id };
+  }
+
+  @Patch(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changeStatus(
+    @Param("id") id: string,
+    @Body(new ZodBody(advanceLeadStatusPayloadSchema)) payload: AdvanceLeadStatusPayload,
+  ): Promise<void> {
+    await this.commands.execute<ChangeLeadStatusCommand, void>(
+      new ChangeLeadStatusCommand(id, payload.status),
+    );
   }
 }

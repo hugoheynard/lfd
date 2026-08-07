@@ -3,6 +3,7 @@ import { CqrsModule } from "@nestjs/cqrs";
 
 import { RecomputeGuard } from "../infra/auth/recompute.guard.js";
 import { CaptureLeadHandler } from "./application/commands/capture-lead.handler.js";
+import { ChangeLeadStatusHandler } from "./application/commands/change-lead-status.handler.js";
 import { RecomputeLeadScoresHandler } from "./application/commands/recompute-lead-scores.handler.js";
 import { OnCompanyActivated } from "./application/handlers/on-company-activated.handler.js";
 import { OnCompanyDeclared } from "./application/handlers/on-company-declared.handler.js";
@@ -66,6 +67,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     RecomputeGuard,
     RecomputeLeadScoresHandler,
     CaptureLeadHandler,
+    ChangeLeadStatusHandler,
     GetCockpitHandler,
     ListLeadsHandler,
     ListProspectsHandler,
