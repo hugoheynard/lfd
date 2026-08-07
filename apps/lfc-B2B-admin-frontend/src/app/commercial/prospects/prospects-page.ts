@@ -19,10 +19,11 @@ type FilterValue = 'all' | ProspectTemperature;
 /** Badge variant (fold) — accepté par `fold-badge [variant]`. */
 type BadgeVariant = 'neutral' | 'accent' | 'info' | 'warning' | 'alert' | 'success';
 
-/** Libellé + ton de chaque température. */
+/** Libellé + ton de chaque température (`cold` = lead sortant saisi). */
 const TEMPERATURE: Record<ProspectTemperature, { label: string; variant: BadgeVariant }> = {
   hot: { label: 'Chaud', variant: 'warning' },
   mid: { label: 'Tiède', variant: 'info' },
+  cold: { label: 'Froid', variant: 'neutral' },
 };
 
 /** Libellé + ton de chaque trajectoire de momentum. */

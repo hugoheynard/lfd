@@ -103,6 +103,7 @@ export type {
 
 export type {
   ProspectTemperature,
+  ProspectSource,
   MomentumTrajectory,
   ProspectView,
   ActivationStatus,
@@ -110,4 +111,10 @@ export type {
   ActivationView,
   PlayType,
   LeadScoreView,
+  LeadStatus,
+  LeadView,
+  CaptureLeadPayload,
+  AdvanceLeadStatusPayload,
+  CreatedLeadResponse,
 } from "./growth.js";
+export { captureLeadPayloadSchema, advanceLeadStatusPayloadSchema } from "./growth.js";

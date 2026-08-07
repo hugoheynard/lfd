@@ -84,10 +84,15 @@ export function deriveProspects(events: readonly ProspectEvent[], now: Date): Pr
     const lastOrderAt = orders.length > 0 ? maxDate(orders.map((order) => order.occurredAt)) : null;
     const anchor = lastOrderAt ?? firstSeenAt;
 
+    const email = latestEmail(subjectEvents);
     prospects.push({
       subjectId,
-      email: latestEmail(subjectEvents),
+      email,
       temperature: orders.length > 0 ? "hot" : "mid",
+      // hot/mid sont **entrants** (self-service) ; le cold (sortant) vient de
+      // l'agrégat `Lead`, uni à cette projection par le reader.
+      source: "inbound",
+      label: email === "" ? subjectId : email,
       momentum: momentumOf(
         orders.map((order) => order.occurredAt),
         now,
