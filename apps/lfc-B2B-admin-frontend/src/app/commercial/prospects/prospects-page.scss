@@ -63,6 +63,24 @@ h1 {
   font-size: 0.75rem;
 }
 
+/* Déclencheur du menu d'actions (lignes cold) — cf. le pattern staff-users. */
+.menu-trigger {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm, 6px);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+.menu-trigger:hover {
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
+  color: var(--fold-color-text);
+}
+
 /* Contenu projeté dans les cellules — la data-table fold porte la grille. */
 .num,
 .date {

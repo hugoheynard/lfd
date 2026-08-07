@@ -43,6 +43,11 @@ export interface ProspectView {
   readonly recencyDays: number;
   /** Libellé lisible : e-mail entrant, ou raison sociale saisie pour un cold. */
   readonly label: string;
+  /**
+   * Statut de pipeline pour un lead **cold** (permet les actions de suivi en
+   * ligne) ; `null` pour un prospect **entrant** (hot/mid), qui n'a pas d'agrégat.
+   */
+  readonly leadStatus: LeadStatus | null;
 }
 
 /** Statut d'un dossier dans le tunnel d'activation. */

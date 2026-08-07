@@ -4,19 +4,52 @@ import {
   FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDropdownComponent,
+  FoldDropdownItemComponent,
+  FoldIconComponent,
   FoldPanelHostService,
+  FoldPopoverTriggerDirective,
   FoldViewToggleComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
   type FoldViewToggleOption,
 } from 'fold-ng';
-import type { MomentumTrajectory, ProspectTemperature, ProspectView } from '@lfd/contracts';
+import type {
+  LeadStatus,
+  MomentumTrajectory,
+  ProspectTemperature,
+  ProspectView,
+} from '@lfd/contracts';
 
+import { NotifyService } from '../../notify.service';
+import { LeadsService } from '../leads.service';
 import { LeadCapturePanel } from './lead-capture-panel/lead-capture-panel';
 import { ProspectsService } from './prospects.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type FilterValue = 'all' | ProspectTemperature;
+
+/** Une action de suivi proposée sur une ligne cold. */
+interface LeadAction {
+  readonly status: Exclude<LeadStatus, 'new'>;
+  readonly label: string;
+  readonly icon: string;
+  readonly danger: boolean;
+}
+
+/** Rang des étapes actives (pour ne proposer que des transitions **avant**). */
+const ACTIVE_RANK: Record<string, number> = { new: 0, contacted: 1, qualified: 2, negotiating: 3 };
+
+/** Étapes actives franchissables + leur présentation. */
+const ADVANCE_STEPS: readonly {
+  status: Exclude<LeadStatus, 'new'>;
+  label: string;
+  icon: string;
+}[] = [
+  { status: 'contacted', label: 'Marquer contacté', icon: 'phone' },
+  { status: 'qualified', label: 'Marquer qualifié', icon: 'check' },
+  { status: 'negotiating', label: 'En négociation', icon: 'trending-up' },
+];
 
 /** Badge variant (fold) — accepté par `fold-badge [variant]`. */
 type BadgeVariant = 'neutral' | 'accent' | 'info' | 'warning' | 'alert' | 'success';
@@ -57,6 +90,10 @@ function isFilterValue(value: string): value is FilterValue {
     FoldButtonComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    FoldDropdownComponent,
+    FoldDropdownItemComponent,
+    FoldIconComponent,
+    FoldPopoverTriggerDirective,
     FoldViewToggleComponent,
   ],
   templateUrl: './prospects-page.html',
@@ -64,6 +101,8 @@ function isFilterValue(value: string): value is FilterValue {
 })
 export class ProspectsPage {
   private readonly service = inject(ProspectsService);
+  private readonly leads = inject(LeadsService);
+  private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
@@ -78,6 +117,7 @@ export class ProspectsPage {
     { key: 'totalCents', label: 'Total', width: '8rem', align: 'right' },
     { key: 'lastOrderAt', label: 'Dernière', width: '7rem', align: 'right' },
     { key: 'recencyDays', label: 'Récence', width: '6rem', align: 'right' },
+    { key: 'actions', label: '', width: '3rem' },
   ];
 
   protected readonly segments: readonly FoldViewToggleOption[] = [
@@ -127,6 +167,40 @@ export class ProspectsPage {
   protected onFilterChange(value: string): void {
     if (isFilterValue(value)) {
       this.filter.set(value);
+    }
+  }
+
+  /**
+   * Actions de suivi proposées pour une ligne cold : les étapes **en avant** (le
+   * pipeline ne recule pas) + convertir / perdre. Vide pour un prospect entrant.
+   */
+  protected actionsFor(prospect: ProspectView): readonly LeadAction[] {
+    const status = prospect.leadStatus;
+    if (prospect.source !== 'outbound' || status === null) {
+      return [];
+    }
+    const rank = ACTIVE_RANK[status] ?? 0;
+    const forward: LeadAction[] = ADVANCE_STEPS.filter(
+      (step) => (ACTIVE_RANK[step.status] ?? 0) > rank,
+    ).map((step) => ({ ...step, danger: false }));
+    return [
+      ...forward,
+      { status: 'converted', label: 'Convertir', icon: 'user-check', danger: false },
+      { status: 'lost', label: 'Marquer perdu', icon: 'x', danger: true },
+    ];
+  }
+
+  /** Applique une transition à un lead cold, puis recharge la file. */
+  protected async advance(
+    prospect: ProspectView,
+    status: Exclude<LeadStatus, 'new'>,
+  ): Promise<void> {
+    try {
+      await this.leads.changeStatus(prospect.subjectId, { status });
+      this.notify.success('Lead mis à jour.');
+      await this.load();
+    } catch (error) {
+      this.notify.error(error);
     }
   }
 

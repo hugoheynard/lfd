@@ -75,6 +75,30 @@
       <ng-template foldCell="recencyDays" let-row>
         <span class="num">{{ row.recencyDays }} j</span>
       </ng-template>
+
+      <ng-template foldCell="actions" let-row>
+        @if (actionsFor(row).length > 0) {
+          <fold-dropdown placement="bottom-end" ariaLabel="Actions du lead">
+            <button
+              foldPopoverTrigger="menu"
+              type="button"
+              class="menu-trigger"
+              aria-label="Actions du lead"
+            >
+              <fold-icon name="more-vertical" [size]="18" />
+            </button>
+            @for (action of actionsFor(row); track action.status) {
+              <fold-dropdown-item
+                [icon]="action.icon"
+                [tone]="action.danger ? 'danger' : 'default'"
+                (selected)="advance(row, action.status)"
+              >
+                {{ action.label }}
+              </fold-dropdown-item>
+            }
+          </fold-dropdown>
+        }
+      </ng-template>
     </fold-data-table>
   }
 </section>

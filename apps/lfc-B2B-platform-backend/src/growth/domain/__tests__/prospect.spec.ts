@@ -161,6 +161,7 @@ describe("coldProspectsFrom", () => {
       lastOrderAt: null,
       label: "Bistrot du Coin",
       recencyDays: 4, // 16 → 20 août
+      leadStatus: "contacted", // le statut voyage pour les actions de suivi en ligne
     });
   });
 

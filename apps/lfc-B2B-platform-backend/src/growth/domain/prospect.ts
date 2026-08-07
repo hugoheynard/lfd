@@ -107,6 +107,8 @@ export function deriveProspects(events: readonly ProspectEvent[], now: Date): Pr
       lastOrderAt: lastOrderAt?.toISOString() ?? null,
       firstSeenAt: firstSeenAt.toISOString(),
       recencyDays: Math.max(0, Math.floor((now.getTime() - anchor.getTime()) / DAY_MS)),
+      // Entrant : pas d'agrégat lead, donc pas de statut de pipeline.
+      leadStatus: null,
     });
   }
 
@@ -146,6 +148,8 @@ export function coldProspectsFrom(leads: readonly LeadView[], now: Date): Prospe
         firstSeenAt: lead.createdAt,
         recencyDays: Math.max(0, Math.floor((now.getTime() - anchor.getTime()) / DAY_MS)),
         label: lead.businessName,
+        // Le statut du lead voyage jusqu'au front → actions de suivi en ligne.
+        leadStatus: lead.status,
       };
     });
 }
