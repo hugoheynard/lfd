@@ -2,6 +2,7 @@ import { Catch, HttpException, HttpStatus, Logger } from "@nestjs/common";
 import type { ArgumentsHost, ExceptionFilter } from "@nestjs/common";
 import type { Response } from "express";
 
+import { currentRequestContext } from "../../infra/context/request-context.store.js";
 import { AppError, ResourceNotFoundError, type ErrorCategory } from "../errors/app-error.js";
 import { mapPersistenceError } from "../errors/persistence-errors.js";
 
@@ -51,7 +52,7 @@ export class AppErrorFilter implements ExceptionFilter {
     }
 
     if (exception instanceof HttpException) {
-      response.status(exception.getStatus()).json(bodyOf(exception));
+      response.status(exception.getStatus()).json({ ...bodyOf(exception), ...requestIdField() });
       return;
     }
 
@@ -64,6 +65,7 @@ export class AppErrorFilter implements ExceptionFilter {
       code: "internal.unexpected",
       message: "Une erreur technique est survenue.",
       ...this.detailOf(exception),
+      ...requestIdField(),
     });
   }
 
@@ -83,6 +85,7 @@ export class AppErrorFilter implements ExceptionFilter {
       code: error.code,
       message: technical ? "Une erreur technique est survenue." : error.message,
       ...(technical ? this.detailOf(error) : {}),
+      ...requestIdField(),
     });
   }
 
@@ -104,4 +107,14 @@ export class AppErrorFilter implements ExceptionFilter {
 function bodyOf(exception: HttpException): object {
   const payload = exception.getResponse();
   return typeof payload === "string" ? { message: payload } : payload;
+}
+
+/**
+ * Champ `requestId` (le `traceId` de la requête) à joindre à **toute** réponse
+ * d'erreur : le client peut le donner au support, qui corrèle logs et journal
+ * bout-en-bout. Absent hors requête (jamais atteint via HTTP, mais défensif).
+ */
+function requestIdField(): { requestId: string } | Record<string, never> {
+  const context = currentRequestContext();
+  return context !== null ? { requestId: context.traceId } : {};
 }

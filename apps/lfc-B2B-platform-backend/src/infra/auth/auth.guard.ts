@@ -5,6 +5,7 @@ import {
   type ExecutionContext,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import { attachActor } from "../context/request-context.store.js";
 import { AccessTokenVerifier } from "./access-token.verifier.js";
 import { CustomerUserResolver } from "./customer-user.resolver.js";
 import { DevImpersonation } from "./dev-impersonation.js";
@@ -45,6 +46,7 @@ export class AuthGuard implements CanActivate {
       request.principal = await this.resolver.resolve(
         await this.impersonation.verifiedToken(request),
       );
+      attachActor({ type: "customer", id: request.principal.userId });
       return true;
     }
 
@@ -54,6 +56,9 @@ export class AuthGuard implements CanActivate {
     }
 
     request.principal = await this.authenticate(token);
+    // Renseigne l'acteur du RequestContext (le principal est résolu) → le journal
+    // d'événements attribuera les écritures au bon `customer`.
+    attachActor({ type: "customer", id: request.principal.userId });
     return true;
   }
 

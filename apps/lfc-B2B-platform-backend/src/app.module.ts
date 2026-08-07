@@ -12,6 +12,7 @@ import { StaffUsersModule } from "./staff-users/staff-users.module.js";
 import { SubscriptionsModule } from "./subscriptions/subscriptions.module.js";
 import { AuthModule } from "./infra/auth/auth.module.js";
 import { AppConfigModule } from "./infra/config/config.module.js";
+import { ContextModule } from "./infra/context/context.module.js";
 import { DatabaseModule } from "./infra/database/database.module.js";
 import { SecurityModule } from "./infra/security/security.module.js";
 
@@ -24,6 +25,9 @@ import { SecurityModule } from "./infra/security/security.module.js";
     ConfigModule.forRoot({ isGlobal: true }),
     // Puis notre passerelle typée : le seul accès autorisé à l'environnement.
     AppConfigModule,
+    // Fondations cross-cutting (@Global) : ports Clock + IdGenerator. Tôt, car
+    // tout contexte métier en aval en dépend (temps métier, ids ULID).
+    ContextModule,
     DatabaseModule,
     // AVANT AuthModule : le ThrottlerGuard (APP_GUARD) doit s'exécuter en premier
     // pour rejeter un flood en 429 avant tout travail d'authentification.

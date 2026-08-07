@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
+import { attachActor } from "../context/request-context.store.js";
 import { AdminTokenVerifier } from "./admin-token.verifier.js";
 import type { AuthenticatedStaffRequest, StaffPrincipal } from "./staff-principal.js";
 
@@ -36,6 +37,7 @@ export class AdminAuthGuard implements CanActivate {
 
     if (this.config.adminDevBypass()) {
       request.staff = DEV_STAFF;
+      attachActor({ type: "staff", id: DEV_STAFF.subject });
       return true;
     }
 
@@ -49,6 +51,9 @@ export class AdminAuthGuard implements CanActivate {
       // On ne relaie jamais le détail interne (fuite d'information).
       throw new UnauthorizedException("Jeton staff invalide ou expiré.");
     }
+    // Acteur `staff` dans le RequestContext → les mutations back-office seront
+    // attribuées au bon sujet dans le journal d'événements.
+    attachActor({ type: "staff", id: request.staff.subject });
     return true;
   }
 }

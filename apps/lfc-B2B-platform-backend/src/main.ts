@@ -4,6 +4,7 @@ import { DEV_CORS_ORIGINS, PROD_CORS_ORIGINS } from "@lfd/endpoints";
 import helmet from "helmet";
 import { AppModule } from "./app.module.js";
 import { AppConfig } from "./infra/config/app-config.js";
+import { requestContextMiddleware } from "./infra/context/request-context.middleware.js";
 import { AppErrorFilter } from "./shared/http/app-error.filter.js";
 import { QuietBootLogger } from "./shared/quiet-boot-logger.js";
 
@@ -22,6 +23,12 @@ async function bootstrap(): Promise<void> {
   });
 
   const config = app.get(AppConfig);
+
+  // TOUT PREMIER : pose le RequestContext (instant gelé + traceId W3C) autour de
+  // chaque requête, via AsyncLocalStorage. Avant helmet et avant les guards, pour
+  // que logs, journal d'événements et filtre d'erreur voient toujours le contexte
+  // — même sur une requête qui échoue tôt. Le temps métier (`Clock`) en découle.
+  app.use(requestContextMiddleware);
 
   // En-têtes de sécurité HTTP (CSP, HSTS, nosniff, anti-clickjacking…). API JSON
   // pure : les défauts helmet conviennent, aucun asset HTML à assouplir.
