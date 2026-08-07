@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { KbisStore } from "../../domain/ports/kbis-store.js";
@@ -46,7 +47,12 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
   constructor(private readonly companies: CompanyRepository) {}
 
   async execute(command: UpdateIdentityByStaffCommand): Promise<void> {
-    await this.companies.updateIdentity(command.companyId, command.payload);
+    const company = await this.companies.load(command.companyId);
+    if (company === null) {
+      throw new CompanyNotFoundError(command.companyId);
+    }
+    company.editSoftIdentity(command.payload);
+    await this.companies.save(company);
   }
 }
 

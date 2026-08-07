@@ -2,10 +2,12 @@ import {
   CompanyAdminRequiredError,
   CompanyNotFoundError,
 } from "../../../domain/errors/account-errors.js";
+import { Company } from "../../../domain/entities/company.js";
 import { CompanyContactRepository } from "../../../domain/ports/company-contact.repository.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../../domain/ports/membership.reader.js";
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
+import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
 import { AddCompanyContactHandler } from "../add-company-contact.handler.js";
 import {
   AddCompanyContactCommand,
@@ -51,11 +53,25 @@ function contactsRecorder(recorder: Recorder): CompanyContactRepository {
   };
 }
 
+/** Une société reconstituée (l'agrégat que `load` rend au handler). */
+function sampleCompany(): Company {
+  return Company.reconstitute({
+    id: "c1",
+    raisonSociale: "PQ Marais",
+    enseigne: "",
+    formeJuridique: "SAS",
+    siret: "81245678900021",
+    tvaIntracom: "",
+    contact: ContactDetails.create(DETAILS),
+  });
+}
+
 function companiesRecorder(recorder: Recorder): CompanyRepository {
   return {
     existsBySiret: () => Promise.resolve(false),
     declareOwnedBy: () => Promise.resolve("company_new"),
-    updatePrimaryContact: () => {
+    load: () => Promise.resolve(sampleCompany()),
+    save: () => {
       recorder.writes.push("primary");
       return Promise.resolve();
     },

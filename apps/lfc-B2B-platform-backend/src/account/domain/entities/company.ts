@@ -28,6 +28,30 @@ export interface CompanyContact {
   readonly phone: PhoneNumber;
 }
 
+/** Ce qu'il faut pour **reconstituer** une société persistée (elle porte son id). */
+export interface ReconstituteCompanyInput {
+  readonly id: string;
+  readonly raisonSociale: string;
+  readonly enseigne: string;
+  readonly formeJuridique: string;
+  readonly siret: string;
+  readonly tvaIntracom: string;
+  readonly contact: CompanyContact;
+}
+
+/** État **souple** sérialisé (les seuls champs que les éditions client mutent). */
+export interface CompanySoftState {
+  readonly enseigne: string;
+  readonly tvaIntracom: string;
+  readonly contact: {
+    readonly firstName: string;
+    readonly lastName: string;
+    readonly fonction: string;
+    readonly email: string;
+    readonly phone: string;
+  };
+}
+
 /**
  * Société cliente, telle qu'un client la **déclare** depuis « Mes entreprises ».
  *
@@ -36,23 +60,25 @@ export interface CompanyContact {
  * Il n'existe pas de fabrique qui produise directement une société active — le
  * modèle refuse ainsi le raccourci « saisie donc cliente ».
  *
- * Le contact principal n'est pas saisi au formulaire : c'est le **créateur**. La
- * personne qui déclare son entreprise en est, par construction, l'interlocuteur ;
- * lui redemander son nom et son e-mail juste après les avoir renseignés dans son
- * profil serait de la double saisie. Il reste modifiable ensuite.
+ * L'identité **légale** (raison sociale, forme, SIRET) est **figée** : on ne la
+ * mute pas après déclaration. Seules l'**identité souple** (enseigne + TVA) et le
+ * **contact principal** s'éditent — par des méthodes métier, jamais par écriture
+ * de colonne. `toPersistence()` ne sérialise que ces champs mutables.
  */
 export class Company {
   private constructor(
+    private readonly identityId: string | null,
     readonly raisonSociale: string,
-    readonly enseigne: string,
+    private enseigneValue: string,
     readonly formeJuridique: string,
     readonly siret: Siret,
-    readonly tvaIntracom: string,
-    readonly contact: CompanyContact,
+    private tvaIntracomValue: string,
+    private contactValue: CompanyContact,
   ) {}
 
   static declare(identity: CompanyIdentityInput, contact: CompanyContact): Company {
     return new Company(
+      null,
       required(identity.raisonSociale, "Raison sociale"),
       optional(identity.enseigne, "Enseigne"),
       required(identity.formeJuridique, "Forme juridique"),
@@ -62,9 +88,64 @@ export class Company {
     );
   }
 
+  /** Reconstitue une société depuis la base (déjà valide — ses VOs revalident). */
+  static reconstitute(input: ReconstituteCompanyInput): Company {
+    return new Company(
+      input.id,
+      input.raisonSociale,
+      input.enseigne,
+      input.formeJuridique,
+      Siret.create(input.siret),
+      input.tvaIntracom,
+      input.contact,
+    );
+  }
+
+  get id(): string | null {
+    return this.identityId;
+  }
+
+  get enseigne(): string {
+    return this.enseigneValue;
+  }
+
+  get tvaIntracom(): string {
+    return this.tvaIntracomValue;
+  }
+
+  get contact(): CompanyContact {
+    return this.contactValue;
+  }
+
+  /** Édite l'identité **souple** (enseigne + TVA). L'identité légale reste figée. */
+  editSoftIdentity(input: { enseigne: string; tvaIntracom: string }): void {
+    this.enseigneValue = optional(input.enseigne, "Enseigne");
+    this.tvaIntracomValue = optional(input.tvaIntracom, "TVA intracommunautaire");
+  }
+
+  /** Remplace le contact **principal** (toujours présent — jamais supprimé). */
+  changePrimaryContact(contact: CompanyContact): void {
+    this.contactValue = contact;
+  }
+
   /** Enseigne effective : le nom commercial s'il existe, la raison sociale sinon. */
   displayName(): string {
-    return this.enseigne === "" ? this.raisonSociale : this.enseigne;
+    return this.enseigneValue === "" ? this.raisonSociale : this.enseigneValue;
+  }
+
+  /** Sérialise les champs **mutables** pour l'adaptateur (identité souple + contact). */
+  toPersistence(): CompanySoftState {
+    return {
+      enseigne: this.enseigneValue,
+      tvaIntracom: this.tvaIntracomValue,
+      contact: {
+        firstName: this.contactValue.firstName.value,
+        lastName: this.contactValue.lastName.value,
+        fonction: this.contactValue.fonction,
+        email: this.contactValue.email.value,
+        phone: this.contactValue.phone.value,
+      },
+    };
   }
 }
 

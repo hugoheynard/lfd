@@ -1,11 +1,16 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { UpdateCompanyIdentityCommand } from "./company-settings-commands.js";
 
-/** Édite l'identité souple (enseigne + TVA), réservé au gestionnaire. */
+/**
+ * Édite l'identité **souple** (enseigne + TVA), réservé au gestionnaire. Le mur
+ * d'abord, puis on charge l'agrégat et on le mute par sa méthode métier
+ * (`editSoftIdentity`, qui normalise et borne) — jamais une écriture de colonne.
+ */
 @CommandHandler(UpdateCompanyIdentityCommand)
 export class UpdateCompanyIdentityHandler implements ICommandHandler<
   UpdateCompanyIdentityCommand,
@@ -20,9 +25,14 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
 
-    await this.companies.updateIdentity(command.companyId, {
-      enseigne: command.payload.enseigne.trim(),
-      tvaIntracom: command.payload.tvaIntracom.trim(),
+    const company = await this.companies.load(command.companyId);
+    if (company === null) {
+      throw new CompanyNotFoundError(command.companyId);
+    }
+    company.editSoftIdentity({
+      enseigne: command.payload.enseigne,
+      tvaIntracom: command.payload.tvaIntracom,
     });
+    await this.companies.save(company);
   }
 }

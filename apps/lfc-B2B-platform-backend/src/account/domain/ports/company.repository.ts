@@ -1,17 +1,25 @@
 import type { PaymentTerm } from "../ports/account.reader.js";
 import type { Company } from "../entities/company.js";
-import type { ContactDetails } from "../value-objects/contact-details.js";
-
-/** Identité **souple** éditable : enseigne + n° de TVA. */
-export interface EditableIdentity {
-  readonly enseigne: string;
-  readonly tvaIntracom: string;
-}
 
 /** Port d'**écriture** des sociétés. */
 export abstract class CompanyRepository {
   /** Vrai si une société porte déjà ce SIRET (forme normalisée, 14 chiffres). */
   abstract existsBySiret(siret: string): Promise<boolean>;
+
+  /**
+   * Charge l'agrégat société (identité + contact principal), ou `null` s'il
+   * n'existe pas. **Sans mur** : le mur (membership/rôle) est vérifié en amont par
+   * le handler ; ici on ne fait que reconstituer l'agrégat à muter.
+   */
+  abstract load(companyId: string): Promise<Company | null>;
+
+  /**
+   * Persiste l'état **souple** d'un agrégat chargé (identité souple + contact) —
+   * il prend l'agrégat, jamais des colonnes. Le statut, les termes et le KBIS ont
+   * leurs propres transitions (méthodes ci-dessous) tant que Company ne les porte
+   * pas encore.
+   */
+  abstract save(company: Company): Promise<void>;
 
   /**
    * Enregistre une société déclarée **et** rattache son créateur comme
@@ -37,16 +45,6 @@ export abstract class CompanyRepository {
    * @returns l'identifiant de la société créée.
    */
   abstract declareUnowned(company: Company): Promise<string>;
-
-  /**
-   * Remplace le contact **principal** de l'entreprise (la carte « Admin du compte
-   * entreprise »). Contact aplati sur la société, toujours présent — on le met à
-   * jour, on ne le supprime jamais.
-   */
-  abstract updatePrimaryContact(companyId: string, details: ContactDetails): Promise<void>;
-
-  /** Édite l'identité souple (enseigne + n° de TVA). L'identité légale reste fixée. */
-  abstract updateIdentity(companyId: string, identity: EditableIdentity): Promise<void>;
 
   /**
    * Passe la société à `active` et **pose `activatedAt`** (activation commerciale

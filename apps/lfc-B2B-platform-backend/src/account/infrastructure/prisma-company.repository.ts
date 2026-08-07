@@ -3,13 +3,13 @@ import { Injectable } from "@nestjs/common";
 import { CompanyStatus, CustomerRole } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import type { PaymentTerm } from "../domain/ports/account.reader.js";
-import type { Company } from "../domain/entities/company.js";
+import { Company } from "../domain/entities/company.js";
 import {
   CompanyRepository,
   type KbisLocation,
   type KbisMetadata,
 } from "../domain/ports/company.repository.js";
-import type { ContactDetails } from "../domain/value-objects/contact-details.js";
+import { ContactDetails } from "../domain/value-objects/contact-details.js";
 
 /**
  * Alphabet de la référence humaine — **sans caractères ambigus** (ni `I`, `O`,
@@ -149,28 +149,47 @@ export class PrismaCompanyRepository extends CompanyRepository {
     return created.id;
   }
 
-  async updatePrimaryContact(companyId: string, details: ContactDetails): Promise<void> {
-    // Le mur (appartenance + rôle) est déjà vérifié en amont par le handler ; ici
-    // on écrit le contact aplati sur la société.
-    await this.prisma.company.update({
-      where: { id: companyId },
-      data: {
-        contactPrenom: details.firstName.value,
-        contactNom: details.lastName.value,
-        contactFonction: details.fonction,
-        contactEmail: details.email.value,
-        contactTelephone: details.phone.value,
-      },
+  async load(companyId: string): Promise<Company | null> {
+    const row = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (row === null) {
+      return null;
+    }
+    return Company.reconstitute({
+      id: row.id,
+      raisonSociale: row.raisonSociale,
+      enseigne: row.enseigne,
+      formeJuridique: row.formeJuridique,
+      siret: row.siret,
+      tvaIntracom: row.tvaIntracom,
+      contact: ContactDetails.create({
+        firstName: row.contactPrenom,
+        lastName: row.contactNom,
+        fonction: row.contactFonction,
+        email: row.contactEmail,
+        phone: row.contactTelephone,
+      }),
     });
   }
 
-  async updateIdentity(
-    companyId: string,
-    identity: { enseigne: string; tvaIntracom: string },
-  ): Promise<void> {
+  async save(company: Company): Promise<void> {
+    const id = company.id;
+    if (id === null) {
+      throw new Error("save() attend un agrégat déjà persisté (id manquant).");
+    }
+    // On n'écrit que les champs **mutables souples** (identité souple + contact) ;
+    // le mur (appartenance + rôle) est vérifié en amont par le handler.
+    const state = company.toPersistence();
     await this.prisma.company.update({
-      where: { id: companyId },
-      data: { enseigne: identity.enseigne, tvaIntracom: identity.tvaIntracom },
+      where: { id },
+      data: {
+        enseigne: state.enseigne,
+        tvaIntracom: state.tvaIntracom,
+        contactPrenom: state.contact.firstName,
+        contactNom: state.contact.lastName,
+        contactFonction: state.contact.fonction,
+        contactEmail: state.contact.email,
+        contactTelephone: state.contact.phone,
+      },
     });
   }
 
