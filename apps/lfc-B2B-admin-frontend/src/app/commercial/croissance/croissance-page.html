@@ -59,6 +59,39 @@
         </article>
 
         <article class="card wide">
+          <h2>Cycle de vie (du clic à l'activation)</h2>
+          @if (lifecycle(); as opt) {
+            <app-chart [option]="opt" height="300px" />
+          } @else {
+            <p class="muted">Pas encore assez de parcours pour tracer le flux.</p>
+          }
+        </article>
+
+        <article class="card">
+          <h2>Vélocité — délais (jours)</h2>
+          @if (velocity(); as opt) {
+            <app-chart [option]="opt" height="280px" />
+          }
+        </article>
+
+        <article class="card">
+          <h2>Mix product-led vs sales-led</h2>
+          @if (mix(); as opt) {
+            <app-chart [option]="opt" height="280px" />
+          }
+        </article>
+
+        <article class="card wide">
+          <h2>Concentration du volume (grands comptes)</h2>
+          @if (concentration(); as c) {
+            <p class="muted">{{ concentrationHint() }}</p>
+            <app-lorenz [data]="c" height="300px" />
+          } @else {
+            <p class="muted">Pas encore de commandes pour mesurer la concentration.</p>
+          }
+        </article>
+
+        <article class="card wide">
           <h2>Rétention par cohorte d'inscription</h2>
           @if (cohorts(); as opt) {
             <app-chart [option]="opt" height="320px" />

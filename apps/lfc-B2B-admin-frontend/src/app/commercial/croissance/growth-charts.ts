@@ -1,4 +1,13 @@
-import type { AcquisitionPoint, CohortRow, FunnelStep, MomentumDistribution } from '@lfd/contracts';
+import type {
+  AccountConcentration,
+  AcquisitionMixPoint,
+  AcquisitionPoint,
+  CohortRow,
+  FunnelStep,
+  LifecycleFlow,
+  MomentumDistribution,
+  VelocityMetric,
+} from '@lfd/contracts';
 import type { EChartsOption } from 'echarts';
 
 /**
@@ -175,4 +184,94 @@ export function cohortHeatmapOption(cohorts: readonly CohortRow[]): EChartsOptio
       },
     ],
   };
+}
+
+/** Sankey du cycle de vie : inscrit → commandé → déclaré → activé (les fuites). */
+export function lifecycleSankeyOption(flow: LifecycleFlow): EChartsOption {
+  const label = new Map(flow.nodes.map((n) => [n.key, n.label]));
+  return {
+    tooltip: { trigger: 'item', formatter: '{b} : {c}' },
+    series: [
+      {
+        type: 'sankey',
+        emphasis: { focus: 'adjacency' },
+        nodeGap: 14,
+        data: flow.nodes.map((n) => ({ name: n.label })),
+        links: flow.links.map((l) => ({
+          source: label.get(l.source) ?? l.source,
+          target: label.get(l.target) ?? l.target,
+          value: l.value,
+        })),
+        lineStyle: { color: 'gradient', opacity: 0.4 },
+        label: { color: 'inherit' },
+        itemStyle: { color: PALETTE.blue, borderColor: 'transparent' },
+      },
+    ],
+  };
+}
+
+/** Boxplots des délais (jours) : temps → 1re commande / → activation. */
+export function velocityBoxplotOption(metrics: readonly VelocityMetric[]): EChartsOption {
+  return {
+    tooltip: { trigger: 'item' },
+    xAxis: { type: 'category', data: metrics.map((m) => m.label) },
+    yAxis: { type: 'value', name: 'jours' },
+    series: [
+      {
+        type: 'boxplot',
+        itemStyle: { color: 'rgba(59,130,246,0.2)', borderColor: PALETTE.blue },
+        data: metrics.map((m) => [
+          m.quantiles.min,
+          m.quantiles.q1,
+          m.quantiles.median,
+          m.quantiles.q3,
+          m.quantiles.max,
+        ]),
+      },
+    ],
+  };
+}
+
+/** Mix d'acquisition product-led vs sales-led par semaine (aires empilées). */
+export function acquisitionMixOption(points: readonly AcquisitionMixPoint[]): EChartsOption {
+  const weeks = points.map((p) => weekLabel(p.weekStart));
+  const stack = (
+    name: string,
+    data: readonly number[],
+    color: string,
+  ): Record<string, unknown> => ({
+    name,
+    type: 'line',
+    stack: 'mix',
+    smooth: true,
+    symbol: 'none',
+    areaStyle: { color, opacity: 0.55 },
+    lineStyle: { color, width: 1 },
+    itemStyle: { color },
+    data: [...data],
+  });
+  return {
+    legend: { top: 0, textStyle: { color: PALETTE.slate } },
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: weeks, boundaryGap: false },
+    yAxis: { type: 'value', minInterval: 1 },
+    series: [
+      stack(
+        'Product-led',
+        points.map((p) => p.productLed),
+        PALETTE.green,
+      ),
+      stack(
+        'Sales-led',
+        points.map((p) => p.salesLed),
+        PALETTE.amber,
+      ),
+    ],
+  };
+}
+
+/** Libellé du niveau de concentration (Gini) pour l'annotation. */
+export function concentrationSummary(c: AccountConcentration): string {
+  const top = Math.round(c.topDecileShare * 100);
+  return `Top 10 % des comptes = ${top} % du volume · Gini ${c.gini.toFixed(2)}`;
 }

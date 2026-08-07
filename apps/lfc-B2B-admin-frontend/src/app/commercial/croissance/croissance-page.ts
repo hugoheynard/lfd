@@ -2,12 +2,19 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FoldButtonComponent } from 'fold-ng';
 import type { GrowthStatsView } from '@lfd/contracts';
 
+import type { AccountConcentration } from '@lfd/contracts';
+
 import { Chart, type ChartOption } from '../../shared/chart/chart';
+import { Lorenz } from '../../shared/lorenz/lorenz';
 import {
+  acquisitionMixOption,
   acquisitionOption,
   cohortHeatmapOption,
+  concentrationSummary,
   funnelOption,
+  lifecycleSankeyOption,
   momentumOption,
+  velocityBoxplotOption,
 } from './growth-charts';
 import { GrowthService } from './growth.service';
 
@@ -29,7 +36,7 @@ interface Kpi {
 @Component({
   selector: 'app-croissance-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Chart, FoldButtonComponent],
+  imports: [Chart, Lorenz, FoldButtonComponent],
   templateUrl: './croissance-page.html',
   styleUrl: './croissance-page.scss',
 })
@@ -80,6 +87,26 @@ export class CroissancePage {
   protected readonly cohorts = computed<ChartOption | null>(() => {
     const s = this.stats();
     return s === null || s.cohorts.length === 0 ? null : cohortHeatmapOption(s.cohorts);
+  });
+  protected readonly lifecycle = computed<ChartOption | null>(() => {
+    const s = this.stats();
+    return s === null || s.lifecycle.links.length === 0 ? null : lifecycleSankeyOption(s.lifecycle);
+  });
+  protected readonly velocity = computed<ChartOption | null>(() => {
+    const s = this.stats();
+    return s === null ? null : velocityBoxplotOption(s.velocity);
+  });
+  protected readonly mix = computed<ChartOption | null>(() => {
+    const s = this.stats();
+    return s === null ? null : acquisitionMixOption(s.acquisitionMix);
+  });
+  protected readonly concentration = computed<AccountConcentration | null>(() => {
+    const s = this.stats();
+    return s === null || s.concentration.accounts === 0 ? null : s.concentration;
+  });
+  protected readonly concentrationHint = computed<string>(() => {
+    const c = this.concentration();
+    return c === null ? '' : concentrationSummary(c);
   });
 
   constructor() {
