@@ -154,18 +154,22 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
  *
  * La liste des tables est **lue dans le catalogue Postgres** plutôt qu'écrite en
  * dur : un modèle ajouté au schéma est tronqué automatiquement, là où une liste
- * figée laisserait silencieusement fuiter des lignes d'un test à l'autre.
+ * figée laisserait silencieusement fuiter des lignes d'un test à l'autre. On
+ * balaie **les deux schémas** (`public` métier + `growth` journal) pour la même
+ * raison — sinon les événements du journal fuiteraient d'un test au suivant.
  * `_prisma_migrations` est préservée — la vider forcerait une re-migration.
  */
 async function truncateAll(prisma: PrismaService): Promise<void> {
-  const tables = await prisma.$queryRaw<{ tablename: string }[]>`
-    SELECT tablename FROM pg_tables
-    WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'
+  const tables = await prisma.$queryRaw<{ schemaname: string; tablename: string }[]>`
+    SELECT schemaname, tablename FROM pg_tables
+    WHERE schemaname IN ('public', 'growth') AND tablename <> '_prisma_migrations'
   `;
   if (tables.length === 0) {
     return;
   }
-  const quoted = tables.map(({ tablename }) => `"public"."${tablename}"`).join(", ");
+  const quoted = tables
+    .map(({ schemaname, tablename }) => `"${schemaname}"."${tablename}"`)
+    .join(", ");
   // Un seul TRUNCATE pour toutes les tables : CASCADE gère les FK sans avoir à
   // ordonner les suppressions, et RESTART IDENTITY remet les séquences à zéro.
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${quoted} RESTART IDENTITY CASCADE`);

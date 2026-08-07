@@ -37,6 +37,7 @@ generator client {
 // PrismaClient (runtime), comme le PIM.
 datasource db {
   provider = "postgresql"
+  schemas  = ["public", "growth"]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -50,6 +51,8 @@ enum PaymentTerm {
   monthly
   net60
   net90
+
+  @@schema("public")
 }
 
 /// Cycle de vie d'un compte client (établissement).
@@ -67,6 +70,8 @@ enum CompanyStatus {
   active
   suspended
   terminated
+
+  @@schema("public")
 }
 
 /// Rôle d'une personne AU SEIN d'une société donnée — porté par le `Membership`,
@@ -76,6 +81,8 @@ enum CompanyStatus {
 enum CustomerRole {
   company_admin
   member
+
+  @@schema("public")
 }
 
 /// Cycle de vie d'une identité customer (provisioning → actif).
@@ -83,12 +90,16 @@ enum UserStatus {
   invited
   active
   disabled
+
+  @@schema("public")
 }
 
 /// À quoi sert une adresse (aligné sur `AdresseKind` du front).
 enum AddressKind {
   facturation
   livraison
+
+  @@schema("public")
 }
 
 /// Mode d'une **pièce d'activation** dans la configuration globale (Réglages).
@@ -100,6 +111,8 @@ enum PieceMode {
   hidden
   optional
   required
+
+  @@schema("public")
 }
 
 /// Mode d'**acheminement** d'une commande. `delivery` = livraison à une adresse ;
@@ -108,6 +121,8 @@ enum PieceMode {
 enum FulfillmentMethod {
   delivery
   pickup
+
+  @@schema("public")
 }
 
 /// Mode d'un **ajustement de panier** (remise d'un point de retrait, frais d'une
@@ -116,6 +131,8 @@ enum FulfillmentMethod {
 enum CartAdjustmentMode {
   percent
   amount
+
+  @@schema("public")
 }
 
 /// Cycle de vie d'une commande.
@@ -126,6 +143,8 @@ enum OrderStatus {
   in_production
   fulfilled
   cancelled
+
+  @@schema("public")
 }
 
 /// État du **règlement** d'une commande. Découplé de `OrderStatus` (l'avancement
@@ -139,6 +158,8 @@ enum PaymentStatus {
   paid
   failed
   refunded
+
+  @@schema("public")
 }
 
 /// **Périmètre** d'un utilisateur staff — les domaines du back-office auxquels il
@@ -148,6 +169,8 @@ enum StaffScope {
   commercial
   comptabilite
   admin
+
+  @@schema("public")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -222,6 +245,7 @@ model Company {
 
   @@index([siret])
   @@map("companies")
+  @@schema("public")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -263,6 +287,7 @@ model User {
   supportRequests SupportRequest[]
 
   @@map("users")
+  @@schema("public")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -273,12 +298,16 @@ model User {
 enum SupportChannel {
   phone
   email
+
+  @@schema("public")
 }
 
 /// Demi-journée d'un créneau de rappel.
 enum SupportSlot {
   morning
   afternoon
+
+  @@schema("public")
 }
 
 /// Une demande de support à l'activation : le client veut être contacté par
@@ -295,8 +324,8 @@ model SupportRequest {
   requestedBy       User   @relation(fields: [requestedByUserId], references: [id])
 
   channel     SupportChannel
-  phoneNumber String  @default("") @map("phone_number")
-  asap        Boolean @default(true)
+  phoneNumber String         @default("") @map("phone_number")
+  asap        Boolean        @default(true)
 
   // Créneau daté si `asap = false`.
   scheduledDate DateTime?    @map("scheduled_date") @db.Date
@@ -309,6 +338,7 @@ model SupportRequest {
 
   @@index([companyId])
   @@map("support_requests")
+  @@schema("public")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -346,6 +376,7 @@ model Membership {
   @@unique([userId, companyId])
   @@index([companyId])
   @@map("memberships")
+  @@schema("public")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -375,6 +406,7 @@ model CompanyContact {
 
   @@index([companyId])
   @@map("company_contacts")
+  @@schema("public")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -416,6 +448,7 @@ model Address {
 
   @@index([companyId, kind])
   @@map("addresses")
+  @@schema("public")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -496,6 +529,7 @@ model Order {
   @@index([paymentStatus])
   @@index([fromSubscriptionId])
   @@map("orders")
+  @@schema("public")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -523,6 +557,7 @@ model OrderLine {
   @@index([orderId])
   @@index([sku]) // agrégation par SKU pour le plan de prod
   @@map("order_lines")
+  @@schema("public")
 }
 
 // Panier récurrent (abonnement) : un GABARIT de commande qui se répète. Ne
@@ -560,6 +595,7 @@ model Subscription {
 
   @@index([placedByUserId])
   @@map("subscriptions")
+  @@schema("public")
 }
 
 model SubscriptionOccurrence {
@@ -574,7 +610,7 @@ model SubscriptionOccurrence {
   // Soit on saute l'échéance, soit on remplace ses lignes pour cette date-là.
   skipped Boolean @default(false)
   lines   Json // [{ sku, quantity }] — remplacement (vide si sautée).
-  note    String @default("")
+  note    String  @default("")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -582,6 +618,7 @@ model SubscriptionOccurrence {
   @@unique([subscriptionId, occurrenceDate])
   @@index([subscriptionId])
   @@map("subscription_occurrences")
+  @@schema("public")
 }
 
 model SubscriptionLine {
@@ -596,6 +633,7 @@ model SubscriptionLine {
 
   @@index([subscriptionId])
   @@map("subscription_lines")
+  @@schema("public")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -622,6 +660,7 @@ model PlatformSettings {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("b2b_platform_settings")
+  @@schema("public")
 }
 
 /// Un **point de retrait** (laboratoire) — adresse **globale** (pas par entreprise),
@@ -645,12 +684,13 @@ model PickupAddress {
   // Remise appliquée au panier en cas de retrait ici. `discountMode` null =
   // aucune remise ; sinon `discountValue` = bp (percent) ou centimes (amount).
   discountMode  CartAdjustmentMode? @map("discount_mode")
-  discountValue Int?               @map("discount_value")
+  discountValue Int?                @map("discount_value")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("pickup_addresses")
+  @@schema("public")
 }
 
 /// **Zone de livraison** — un secteur de codes postaux (stations éloignées)
@@ -670,6 +710,7 @@ model DeliveryZone {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("delivery_zones")
+  @@schema("public")
 }
 
 /// Utilisateur **staff** (back-office) — l'annuaire des personnes qui opèrent la
@@ -696,6 +737,67 @@ model StaffUser {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("staff_users")
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ActivityEvent — le JOURNAL d'événements (schéma `growth`, isolé)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Journal **append-only** du module croissance : une ligne = un fait métier
+/// observé (`order.placed`, `company.declared`…). C'est de l'**event streaming**
+/// (projection analytique/audit), **PAS de l'event sourcing** : la vérité métier
+/// reste transactionnelle (schéma `public`), on ne reconstruit JAMAIS l'état
+/// depuis ce journal. Ce n'est **pas un agrégat** — de l'infrastructure, un seul
+/// invariant : l'immuabilité (jamais d'UPDATE/DELETE).
+///
+/// Volontairement dans son **propre schéma Postgres `growth`** dès maintenant :
+/// le déménagement vers un store dédié (trip-wire (b) du design) est ainsi
+/// trivial, et `growth/` ne touche jamais les tables de `public` — il ne consomme
+/// que ce contrat d'événements. Partitionnement mensuel + rétention = affaire
+/// d'une migration SQL brute ultérieure (non exprimable en Prisma déclaratif).
+model ActivityEvent {
+  /// ULID (fourni par l'`IdGenerator`, pas de `@default`) : triable par le temps
+  /// → pagination stable sur un flux append-only.
+  id String @id
+
+  /// Type de l'événement, ex. `order.placed`. Le `payload` en dépend.
+  type String
+
+  /// Le `payload` évolue → on le versionne pour lire les vieilles lignes.
+  schemaVersion Int @default(1) @map("schema_version")
+
+  /// Temps de l'ÉVÉNEMENT (métier, autorité = `Clock` backend).
+  occurredAt DateTime @map("occurred_at")
+
+  /// Temps d'INGESTION (écriture au journal) — ≠ `occurredAt` si tardif/rejoué.
+  recordedAt DateTime @default(now()) @map("recorded_at")
+
+  /// Sujet de l'événement : `user` | `company` | `lead`.
+  subjectType String @map("subject_type")
+  subjectId   String @map("subject_id")
+
+  /// Établissement rattaché — posé maintenant (nullable), rempli plus tard par
+  /// l'identity resolution (Phase 3). Indexé dès aujourd'hui.
+  establishmentId String? @map("establishment_id")
+
+  /// Nature de l'acteur : `customer` | `staff` | `system` (lu du RequestContext).
+  actorType String @map("actor_type")
+
+  /// Corrélation bout-en-bout (le `traceId` W3C de la requête).
+  traceId String @map("trace_id")
+
+  /// Anti double-comptage : une émission rejouée porte la même clé → refusée.
+  idempotencyKey String @unique @map("idempotency_key")
+
+  /// Charge utile typée par `type` (montants en CENTIMES entiers, jamais de float).
+  payload Json
+
+  @@index([subjectType, subjectId, occurredAt])
+  @@index([type, occurredAt])
+  @@index([establishmentId, occurredAt])
+  @@map("activity_events")
+  @@schema("growth")
 }
 
 // NB — Volontairement HORS de ce schéma :
