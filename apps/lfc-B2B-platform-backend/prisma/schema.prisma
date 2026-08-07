@@ -909,3 +909,33 @@ model Lead {
 // - Cart : reste côté client (localStorage) jusqu'à la validation ; seule la
 //   commande (Order) est persistée.
 // - Stock : décision « source de vérité » reportée (Shopify vs nous).
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Marché ciblé — pénétration par territoire (config commerciale staff)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Un code NAF ciblé (catégorie d'acteurs professionnels visés). Config globale
+/// staff, appliquée à toutes les zones lors du comptage via l'API entreprises.
+model MarketNafCode {
+  code      String   @id
+  label     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("market_naf_codes")
+  @@schema("growth")
+}
+
+/// Une zone ciblée (code postal) avec le nombre d'acteurs visés STOCKÉ. `addressable`
+/// = somme des comptages sur les NAF ciblés au dernier rafraîchissement ; `perNaf` =
+/// le détail par code NAF ; `fetchedAt` = null tant qu'on n'a pas redemandé l'API.
+model MarketZone {
+  codePostal  String    @id @map("code_postal")
+  addressable Int       @default(0)
+  perNaf      Json      @default("[]") @map("per_naf")
+  fetchedAt   DateTime? @map("fetched_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("market_zones")
+  @@schema("growth")
+}

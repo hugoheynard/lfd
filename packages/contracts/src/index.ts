@@ -131,5 +131,18 @@ export type {
   LorenzPoint,
   AccountConcentration,
   AcquisitionMixPoint,
+  MarketNafCode,
+  MarketZoneCount,
+  MarketZoneView,
+  MarketConfigView,
+  AddMarketZonePayload,
+  AddMarketNafPayload,
+  AdoptionZoneView,
+  MarketAdoptionView,
 } from "./growth.js";
-export { captureLeadPayloadSchema, advanceLeadStatusPayloadSchema } from "./growth.js";
+export {
+  captureLeadPayloadSchema,
+  advanceLeadStatusPayloadSchema,
+  addMarketZonePayloadSchema,
+  addMarketNafPayloadSchema,
+} from "./growth.js";

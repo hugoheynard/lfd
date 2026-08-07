@@ -313,3 +313,72 @@ export interface AcquisitionMixPoint {
   /** Conversions assistées (staff, ou lead cold converti manuellement). */
   readonly salesLed: number;
 }
+
+// ── Marché ciblé & adoption (pénétration par territoire) ──────────────────────
+
+/** Un code NAF ciblé (catégorie d'acteurs professionnels visés). */
+export interface MarketNafCode {
+  readonly code: string;
+  readonly label: string;
+}
+
+/** Le comptage renvoyé par l'API pour un code NAF dans une zone. */
+export interface MarketZoneCount {
+  readonly code: string;
+  readonly count: number;
+}
+
+/**
+ * Une **zone ciblée** (code postal) avec le nombre d'acteurs visés stocké. `addressable`
+ * = somme des comptages sur les NAF ciblés ; `fetchedAt` = dernière interrogation de
+ * l'API (`null` tant qu'on n'a pas encore redemandé).
+ */
+export interface MarketZoneView {
+  readonly codePostal: string;
+  readonly addressable: number;
+  readonly perNaf: readonly MarketZoneCount[];
+  readonly fetchedAt: string | null;
+}
+
+/** La configuration marché : zones ciblées + NAF ciblés + date du dernier rafraîchissement. */
+export interface MarketConfigView {
+  readonly zones: readonly MarketZoneView[];
+  readonly nafCodes: readonly MarketNafCode[];
+  readonly lastRefreshedAt: string | null;
+}
+
+/** Ajout d'une zone : un code postal français (5 chiffres). */
+export const addMarketZonePayloadSchema = z.object({
+  codePostal: z.string().regex(/^\d{5}$/u, "Code postal invalide (5 chiffres)"),
+});
+export type AddMarketZonePayload = z.infer<typeof addMarketZonePayloadSchema>;
+
+/** Ajout d'un code NAF ciblé (ex. `56.10A` — Restauration traditionnelle). */
+export const addMarketNafPayloadSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{2}\.?\d{0,2}[A-Z]?$/u, "Code NAF invalide (ex. 56.10A)"),
+  label: z.string().trim().min(1).max(120),
+});
+export type AddMarketNafPayload = z.infer<typeof addMarketNafPayloadSchema>;
+
+/**
+ * **Adoption** d'une zone : `penetration` (0..1) = sociétés activées / acteurs visés ;
+ * `deltaPts` = points de pourcentage gagnés **sur la période** (les activations récentes,
+ * le dénominateur étant quasi constant).
+ */
+export interface AdoptionZoneView {
+  readonly codePostal: string;
+  readonly ville: string;
+  readonly addressable: number;
+  readonly activated: number;
+  readonly penetration: number;
+  readonly deltaPts: number;
+}
+
+/** L'adoption par territoire, sur la fenêtre d'analyse. */
+export interface MarketAdoptionView {
+  readonly zones: readonly AdoptionZoneView[];
+  readonly computedAt: string;
+}
