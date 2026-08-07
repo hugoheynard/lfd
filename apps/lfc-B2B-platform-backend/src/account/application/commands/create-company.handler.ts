@@ -1,10 +1,12 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { Company } from "../../domain/entities/company.js";
 import {
   SiretAlreadyRegisteredError,
   UserProfileNotFoundError,
 } from "../../domain/errors/account-errors.js";
+import { CompanyDeclaredEvent } from "../../domain/events/company-declared.event.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { UserProfileRepository } from "../../domain/ports/user-profile.repository.js";
 import { EmailAddress } from "../../domain/value-objects/email-address.js";
@@ -23,6 +25,7 @@ export class CreateCompanyHandler implements ICommandHandler<CreateCompanyComman
   constructor(
     private readonly companies: CompanyRepository,
     private readonly profiles: UserProfileRepository,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: CreateCompanyCommand): Promise<string> {
@@ -49,6 +52,9 @@ export class CreateCompanyHandler implements ICommandHandler<CreateCompanyComman
       throw new SiretAlreadyRegisteredError(company.siret.value);
     }
 
-    return this.companies.declareOwnedBy(company, command.ownerUserId);
+    const companyId = await this.companies.declareOwnedBy(company, command.ownerUserId);
+    // Déclarée par le client lui-même : signal `self` (candidat adoption+).
+    this.events.publish(new CompanyDeclaredEvent(companyId, "self", command.ownerUserId));
+    return companyId;
   }
 }

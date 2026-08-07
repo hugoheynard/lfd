@@ -195,6 +195,27 @@ describe("POST /companies", () => {
     ]);
   });
 
+  it("journalise company.declared via `self`, acteur customer (câblage account→growth)", async () => {
+    const created = await ctx.asSub(SUB).post("/companies").send(valide).expect(201);
+    const companyId = jsonBody<CreatedCompanyResponse>(created).id;
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if ((await ctx.prisma.activityEvent.count({ where: { type: "company.declared" } })) > 0) {
+        break;
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    }
+
+    const [event] = await ctx.prisma.activityEvent.findMany({
+      where: { type: "company.declared" },
+    });
+    expect(event.subjectType).toBe("company");
+    expect(event.subjectId).toBe(companyId);
+    expect(event.actorType).toBe("customer");
+    expect(event.idempotencyKey).toBe(`company.declared:${companyId}`);
+    expect(event.payload).toMatchObject({ via: "self", ownerUserId: userId });
+  });
+
   it("la fait apparaître dans le compte du créateur, et de personne d'autre", async () => {
     const created = await ctx.asSub(SUB).post("/companies").send(valide).expect(201);
     await createUser(ctx.prisma, { auth0Sub: "auth0|voisin", email: "voisin@client.fr" });

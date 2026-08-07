@@ -1,7 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { Company } from "../../domain/entities/company.js";
 import { SiretAlreadyRegisteredError } from "../../domain/errors/account-errors.js";
+import { CompanyDeclaredEvent } from "../../domain/events/company-declared.event.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { CreateCompanyByStaffCommand } from "./create-company-by-staff.command.js";
@@ -17,7 +19,10 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
   CreateCompanyByStaffCommand,
   string
 > {
-  constructor(private readonly companies: CompanyRepository) {}
+  constructor(
+    private readonly companies: CompanyRepository,
+    private readonly events: DomainEventPublisher,
+  ) {}
 
   async execute(command: CreateCompanyByStaffCommand): Promise<string> {
     // Contact saisi par le staff : on le fait passer par le value object, qui en
@@ -29,6 +34,9 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
       throw new SiretAlreadyRegisteredError(company.siret.value);
     }
 
-    return this.companies.declareUnowned(company);
+    const companyId = await this.companies.declareUnowned(company);
+    // Déclarée par le staff (démarchage), sans propriétaire : signal `staff`.
+    this.events.publish(new CompanyDeclaredEvent(companyId, "staff", null));
+    return companyId;
   }
 }

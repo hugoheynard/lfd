@@ -1,12 +1,22 @@
+import { DomainEventPublisher } from "../../../../infra/events/domain-event-publisher.js";
 import type { Company } from "../../../domain/entities/company.js";
 import {
   InvalidEmailError,
   SiretAlreadyRegisteredError,
 } from "../../../domain/errors/account-errors.js";
+import { CompanyDeclaredEvent } from "../../../domain/events/company-declared.event.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
 import type { ContactDetailsInput } from "../../../domain/value-objects/contact-details.js";
 import { CreateCompanyByStaffCommand } from "../create-company-by-staff.command.js";
 import { CreateCompanyByStaffHandler } from "../create-company-by-staff.handler.js";
+
+/** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
+class FakeEvents extends DomainEventPublisher {
+  readonly published: object[] = [];
+  publish(event: object): void {
+    this.published.push(event);
+  }
+}
 
 interface Doubles {
   readonly handler: CreateCompanyByStaffHandler;
@@ -14,6 +24,7 @@ interface Doubles {
   readonly unowned: Company[];
   /** Vrai si une écriture **avec** propriétaire a eu lieu (ne doit jamais arriver). */
   readonly owned: { count: number };
+  readonly events: FakeEvents;
 }
 
 function doubles(options: { siretTaken?: boolean } = {}): Doubles {
@@ -37,7 +48,8 @@ function doubles(options: { siretTaken?: boolean } = {}): Doubles {
     kbisLocation: () => Promise.resolve(null),
   };
 
-  return { handler: new CreateCompanyByStaffHandler(companies), unowned, owned };
+  const events = new FakeEvents();
+  return { handler: new CreateCompanyByStaffHandler(companies, events), unowned, owned, events };
 }
 
 function command(contact: Partial<ContactDetailsInput> = {}): CreateCompanyByStaffCommand {
@@ -66,6 +78,20 @@ describe("CreateCompanyByStaffHandler", () => {
     expect(unowned).toHaveLength(1);
     // Jamais de rattachement : pas de membership à la création admin.
     expect(owned.count).toBe(0);
+  });
+
+  it("publie CompanyDeclaredEvent via `staff`, sans propriétaire", async () => {
+    const { handler, events } = doubles();
+
+    await handler.execute(command());
+
+    expect(events.published).toHaveLength(1);
+    const [event] = events.published;
+    expect(event).toBeInstanceOf(CompanyDeclaredEvent);
+    const declared = event as CompanyDeclaredEvent;
+    expect(declared.companyId).toBe("company_unowned");
+    expect(declared.via).toBe("staff");
+    expect(declared.ownerUserId).toBeNull();
   });
 
   it("porte le contact saisi par le staff, fonction incluse", async () => {

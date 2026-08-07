@@ -1,8 +1,10 @@
+import { DomainEventPublisher } from "../../../../infra/events/domain-event-publisher.js";
 import type { Company } from "../../../domain/entities/company.js";
 import {
   SiretAlreadyRegisteredError,
   UserProfileNotFoundError,
 } from "../../../domain/errors/account-errors.js";
+import { CompanyDeclaredEvent } from "../../../domain/events/company-declared.event.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
 import {
   UserProfileRepository,
@@ -19,9 +21,18 @@ const OWNER: UserProfileRecord = {
   phone: "01 42 71 08 44",
 };
 
+/** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
+class FakeEvents extends DomainEventPublisher {
+  readonly published: object[] = [];
+  publish(event: object): void {
+    this.published.push(event);
+  }
+}
+
 interface Doubles {
   readonly handler: CreateCompanyHandler;
   readonly declared: { company: Company; ownerUserId: string }[];
+  readonly events: FakeEvents;
 }
 
 function doubles(
@@ -47,7 +58,8 @@ function doubles(
     save: () => Promise.resolve(),
   };
 
-  return { handler: new CreateCompanyHandler(companies, profiles), declared };
+  const events = new FakeEvents();
+  return { handler: new CreateCompanyHandler(companies, profiles, events), declared, events };
 }
 
 function command(overrides: Partial<CreateCompanyCommand> = {}): CreateCompanyCommand {
@@ -68,6 +80,26 @@ describe("CreateCompanyHandler", () => {
     // Une commande ne renvoie pas de modèle de lecture : le client relit ensuite.
     await expect(handler.execute(command())).resolves.toBe("company_new");
     expect(declared).toHaveLength(1);
+  });
+
+  it("publie CompanyDeclaredEvent via `self` (signal adoption+)", async () => {
+    const { handler, events } = doubles();
+
+    await handler.execute(command());
+
+    expect(events.published).toHaveLength(1);
+    const [event] = events.published;
+    expect(event).toBeInstanceOf(CompanyDeclaredEvent);
+    const declared = event as CompanyDeclaredEvent;
+    expect(declared.companyId).toBe("company_new");
+    expect(declared.via).toBe("self");
+    expect(declared.ownerUserId).toBe("user_1");
+  });
+
+  it("ne publie rien si le SIRET est déjà pris (échec avant persistance)", async () => {
+    const { handler, events } = doubles({ siretTaken: true });
+    await expect(handler.execute(command())).rejects.toBeInstanceOf(SiretAlreadyRegisteredError);
+    expect(events.published).toEqual([]);
   });
 
   it("reprend le profil du créateur comme contact de la société", async () => {

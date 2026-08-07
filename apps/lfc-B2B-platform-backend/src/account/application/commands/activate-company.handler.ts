@@ -1,11 +1,13 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { Clock } from "../../../infra/time/clock.js";
 import { PlatformSettingsRepository } from "../../../platform-settings/domain/platform-settings.repository.js";
 import {
   CompanyActivationBlockedError,
   CompanyNotFoundError,
 } from "../../domain/errors/account-errors.js";
+import { CompanyActivatedEvent } from "../../domain/events/company-activated.event.js";
 import { AdminCompanyReader } from "../../domain/ports/admin-company.reader.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { missingRequiredPieces } from "../../domain/services/activation-requirements.js";
@@ -33,6 +35,7 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     private readonly reader: AdminCompanyReader,
     private readonly settings: PlatformSettingsRepository,
     private readonly clock: Clock,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: ActivateCompanyByStaffCommand): Promise<void> {
@@ -58,7 +61,11 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    company.activate(this.clock.now());
+    const activatedAt = this.clock.now();
+    company.activate(activatedAt);
     await this.companies.save(company);
+
+    // Jalon de conversion : publié après persistance de la transition.
+    this.events.publish(new CompanyActivatedEvent(command.companyId, activatedAt));
   }
 }

@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
+import { OnCompanyActivated } from "./application/handlers/on-company-activated.handler.js";
+import { OnCompanyDeclared } from "./application/handlers/on-company-declared.handler.js";
 import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js";
 import { ActivityRecorder } from "./domain/ports/activity-recorder.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
@@ -16,7 +18,12 @@ import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorde
  */
 @Module({
   imports: [CqrsModule],
-  providers: [{ provide: ActivityRecorder, useClass: PrismaActivityRecorder }, OnOrderPlaced],
+  providers: [
+    { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
+    OnOrderPlaced,
+    OnCompanyDeclared,
+    OnCompanyActivated,
+  ],
   exports: [ActivityRecorder],
 })
 export class GrowthModule {}
