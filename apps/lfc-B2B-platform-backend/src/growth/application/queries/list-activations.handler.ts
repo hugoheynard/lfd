@@ -1,6 +1,6 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import type { ActivationView } from "../../domain/activation.js";
+import type { ActivationView } from "@lfd/contracts";
 import { ActivationReader } from "../../domain/ports/activation.reader.js";
 import { ListActivationsQuery } from "./list-activations.query.js";
 

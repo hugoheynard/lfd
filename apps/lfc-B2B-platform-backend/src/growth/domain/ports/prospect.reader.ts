@@ -1,4 +1,4 @@
-import type { ProspectView } from "../prospect.js";
+import type { ProspectView } from "@lfd/contracts";
 
 /**
  * Port de lecture des **prospects** — une projection du journal, pas un agrégat

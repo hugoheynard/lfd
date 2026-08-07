@@ -1,6 +1,6 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import type { ProspectView } from "../../domain/prospect.js";
+import type { ProspectView } from "@lfd/contracts";
 import { ProspectReader } from "../../domain/ports/prospect.reader.js";
 import { ListProspectsQuery } from "./list-prospects.query.js";
 

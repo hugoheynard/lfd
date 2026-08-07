@@ -4,7 +4,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { ListActivationsQuery } from "../application/queries/list-activations.query.js";
-import type { ActivationView } from "../domain/activation.js";
+import type { ActivationView } from "@lfd/contracts";
 
 /**
  * Surface **staff** : le **tunnel d'activation** (complétion des pièces,

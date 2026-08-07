@@ -4,7 +4,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { ListProspectsQuery } from "../application/queries/list-prospects.query.js";
-import type { ProspectView } from "../domain/prospect.js";
+import type { ProspectView } from "@lfd/contracts";
 
 /**
  * Surface **staff** du module croissance : la liste des **prospects** (hot/mid),

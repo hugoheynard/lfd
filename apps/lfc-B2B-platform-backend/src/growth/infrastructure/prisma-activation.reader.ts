@@ -1,13 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
+import type { ActivationView } from "@lfd/contracts";
+
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { Clock } from "../../infra/time/clock.js";
 import { ACTIVITY_TYPES } from "../domain/activity-event.js";
-import {
-  deriveActivations,
-  type ActivationEvent,
-  type ActivationView,
-} from "../domain/activation.js";
+import { deriveActivations, type ActivationEvent } from "../domain/activation.js";
 import { ActivationReader } from "../domain/ports/activation.reader.js";
 
 /**

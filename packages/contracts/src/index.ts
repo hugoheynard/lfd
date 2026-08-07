@@ -104,3 +104,12 @@ export type {
   SubscriptionView,
   OccurrenceOverrideView,
 } from "./subscription.js";
+
+export type {
+  ProspectTemperature,
+  MomentumTrajectory,
+  ProspectView,
+  ActivationStatus,
+  ActivationStep,
+  ActivationView,
+} from "./growth.js";

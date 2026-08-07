@@ -1,17 +1,18 @@
+import type { ActivationStatus, ActivationStep, ActivationView } from "@lfd/contracts";
+
 import { ACTIVITY_TYPES } from "./activity-event.js";
 
 /**
  * Projection **Activation & frictions** — dérivée du journal, au niveau
- * **société** (sujet = company). Mesure l'avancée d'un dossier dans le tunnel :
- * quelles pièces sont franchies (complétion), depuis combien de temps il est
+ * **société** (sujet = company). La forme de sortie (`ActivationView`) est le
+ * contrat partagé `@lfd/contracts` ; ici vit la **dérivation pure** : quelles
+ * pièces sont franchies (complétion), depuis combien de temps le dossier est
  * bloqué (adoption-stalled), et s'il s'est créé **sans aucune main du staff**
  * (adoption+, product-led).
  */
-export type ActivationStatus = "pending" | "active";
 
-/** Les 4 pièces du tunnel (alignées sur `ActivationPiece` / les steps émis). */
-export const ACTIVATION_STEPS = ["tva", "kbis", "billing", "delivery"] as const;
-export type ActivationStep = (typeof ACTIVATION_STEPS)[number];
+/** Les 4 pièces du tunnel, dans l'ordre canonique (runtime, pour l'itération). */
+export const ACTIVATION_STEPS: readonly ActivationStep[] = ["tva", "kbis", "billing", "delivery"];
 
 /** Un événement du journal (sujet = société), réduit à ce que la projection lit. */
 export interface ActivationEvent {
@@ -20,25 +21,6 @@ export interface ActivationEvent {
   readonly occurredAt: Date;
   readonly actorType: string;
   readonly payload: Record<string, unknown>;
-}
-
-/** Une ligne du tunnel d'activation d'une société. */
-export interface ActivationView {
-  readonly companyId: string;
-  readonly declaredVia: "self" | "staff";
-  readonly declaredAt: string;
-  readonly status: ActivationStatus;
-  readonly activatedAt: string | null;
-  /** Pièces franchies, dans l'ordre canonique. */
-  readonly stepsReached: ActivationStep[];
-  /** Pièces encore manquantes (complément des 4). */
-  readonly stepsMissing: ActivationStep[];
-  /** Taux de complétion des pièces, 0..1. */
-  readonly completion: number;
-  /** Déclarée par le client **sans aucune interaction staff** (product-led). */
-  readonly adoptionPlus: boolean;
-  /** Jours depuis la déclaration si encore `pending` (adoption-stalled) ; `null` si active. */
-  readonly stalledDays: number | null;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;

@@ -1,22 +1,18 @@
+import type { MomentumTrajectory, ProspectView } from "@lfd/contracts";
+
 import { ACTIVITY_TYPES } from "./activity-event.js";
 
 /**
  * Projection **Prospects** — dérivée **du journal** (jamais des tables voisines).
+ * La forme de sortie (`ProspectView`) est le contrat partagé `@lfd/contracts` ;
+ * ici vit la **dérivation pure**.
  *
  * Un prospect = une **personne** qui a tenté l'expérience sans être encore cliente
- * convertie. Deux températures qui se **dérivent** (cold, saisi, viendra plus
- * tard) : **hot** = a passé commande ; **mid** = inscrit, zéro commande. La
- * température décroît avec la **récence** (jours depuis la dernière activité) —
- * un état calculé, pas gravé.
+ * convertie : **hot** = a passé commande ; **mid** = inscrit, zéro commande. La
+ * température décroît avec la **récence** — un état calculé, pas gravé. Le
+ * **momentum** (vitesse du rythme de commande, 2 fenêtres 14 j) servira du même
+ * moteur au churn côté client.
  */
-export type ProspectTemperature = "hot" | "mid";
-
-/**
- * **Momentum** — la *vitesse* du rythme de commande (pas un état gravé). Comparé
- * sur deux fenêtres glissantes de 14 jours (récente vs précédente) : le même
- * moteur servira au churn côté client. `dormant` = aucune commande récente.
- */
-export type MomentumTrajectory = "accelerating" | "stable" | "cooling" | "dormant";
 
 /** Un événement du journal, réduit à ce que la projection prospects lit. */
 export interface ProspectEvent {
@@ -24,24 +20,6 @@ export interface ProspectEvent {
   readonly subjectId: string;
   readonly occurredAt: Date;
   readonly payload: Record<string, unknown>;
-}
-
-/** Une ligne de la liste prospects (dates en ISO, montants en centimes). */
-export interface ProspectView {
-  readonly subjectId: string;
-  /** E-mail connu du journal (inscription) ; vide si la personne préexiste au journal. */
-  readonly email: string;
-  readonly temperature: ProspectTemperature;
-  /** Trajectoire du rythme de commande (14 j récents vs 14 j précédents). */
-  readonly momentum: MomentumTrajectory;
-  readonly orderCount: number;
-  readonly totalCents: number;
-  /** Dernière commande (ISO), ou `null` pour un mid (aucune commande). */
-  readonly lastOrderAt: string | null;
-  /** Première trace de la personne dans le journal (ISO). */
-  readonly firstSeenAt: string;
-  /** Jours depuis la dernière activité (dernière commande, sinon 1re trace). */
-  readonly recencyDays: number;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;

@@ -1,4 +1,4 @@
-import type { ActivationView } from "../activation.js";
+import type { ActivationView } from "@lfd/contracts";
 
 /**
  * Port de lecture du **tunnel d'activation** — projection du journal (sujet =

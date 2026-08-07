@@ -3,7 +3,9 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { Clock } from "../../infra/time/clock.js";
 import { ACTIVITY_TYPES } from "../domain/activity-event.js";
-import { deriveProspects, type ProspectEvent, type ProspectView } from "../domain/prospect.js";
+import type { ProspectView } from "@lfd/contracts";
+
+import { deriveProspects, type ProspectEvent } from "../domain/prospect.js";
 import { ProspectReader } from "../domain/ports/prospect.reader.js";
 
 /**
