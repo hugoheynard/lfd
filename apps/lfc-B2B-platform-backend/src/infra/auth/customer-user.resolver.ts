@@ -1,7 +1,9 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { UserRegisteredEvent } from "../../account/domain/events/user-registered.event.js";
 import { PrismaService } from "../database/prisma.service.js";
 import { UserStatus } from "../database/client/client.js";
 import type { CustomerRole } from "../database/client/client.js";
+import { DomainEventPublisher } from "../events/domain-event-publisher.js";
 import type { Principal, VerifiedToken } from "./principal.js";
 
 /** La personne + ses rattachements, réduits à ce que la résolution lit. */
@@ -31,7 +33,10 @@ interface ResolvedUser {
  */
 @Injectable()
 export class CustomerUserResolver {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: DomainEventPublisher,
+  ) {}
 
   /**
    * Résout le `Principal` enrichi à partir d'un jeton vérifié. Provisionne le
@@ -72,6 +77,7 @@ export class CustomerUserResolver {
    * d'`auth0Sub` ; on retombe alors sur le re-lookup.
    */
   private async provision(token: VerifiedToken): Promise<ResolvedUser> {
+    let createdHere = false;
     try {
       await this.prisma.user.create({
         data: {
@@ -80,6 +86,7 @@ export class CustomerUserResolver {
           status: UserStatus.active,
         },
       });
+      createdHere = true;
     } catch (error) {
       if (!isUniqueViolation(error)) {
         throw error;
@@ -89,6 +96,11 @@ export class CustomerUserResolver {
     if (user === null) {
       // Ne peut arriver que si la ligne disparaît entre la création et la relecture.
       throw new UnauthorizedException("Compte inconnu.");
+    }
+    // Fait de domaine, seulement si **cet** appel a créé la personne (pas la course
+    // d'unicité, où l'autre requête l'a déjà émis) : signal « lead mid » (inscrit).
+    if (createdHere) {
+      this.events.publish(new UserRegisteredEvent(user.id, user.email));
     }
     return user;
   }

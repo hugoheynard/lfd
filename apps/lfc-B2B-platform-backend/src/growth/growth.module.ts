@@ -5,6 +5,7 @@ import { OnCompanyActivated } from "./application/handlers/on-company-activated.
 import { OnCompanyDeclared } from "./application/handlers/on-company-declared.handler.js";
 import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
+import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
 import { ActivityRecorder } from "./domain/ports/activity-recorder.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
 
@@ -25,6 +26,7 @@ import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorde
     OnCompanyDeclared,
     OnCompanyActivated,
     OnSubscriptionCreated,
+    OnUserRegistered,
   ],
   exports: [ActivityRecorder],
 })

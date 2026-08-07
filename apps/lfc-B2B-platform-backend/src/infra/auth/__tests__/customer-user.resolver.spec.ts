@@ -1,8 +1,18 @@
 import { Test } from "@nestjs/testing";
+import { UserRegisteredEvent } from "../../../account/domain/events/user-registered.event.js";
 import { CustomerUserResolver } from "../customer-user.resolver.js";
 import { PrismaService } from "../../database/prisma.service.js";
 import { CustomerRole, UserStatus, type User } from "../../database/client/client.js";
+import { DomainEventPublisher } from "../../events/domain-event-publisher.js";
 import type { VerifiedToken } from "../principal.js";
+
+/** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
+class FakeEvents extends DomainEventPublisher {
+  readonly published: object[] = [];
+  publish(event: object): void {
+    this.published.push(event);
+  }
+}
 
 const token: VerifiedToken = {
   subject: "auth0|123",
@@ -65,9 +75,16 @@ function prismaDouble(
   };
 }
 
-async function resolverWith(double: PrismaDouble): Promise<CustomerUserResolver> {
+async function resolverWith(
+  double: PrismaDouble,
+  events: DomainEventPublisher = new FakeEvents(),
+): Promise<CustomerUserResolver> {
   const moduleRef = await Test.createTestingModule({
-    providers: [CustomerUserResolver, { provide: PrismaService, useValue: double.prisma }],
+    providers: [
+      CustomerUserResolver,
+      { provide: PrismaService, useValue: double.prisma },
+      { provide: DomainEventPublisher, useValue: events },
+    ],
   }).compile();
   return moduleRef.get(CustomerUserResolver);
 }
@@ -99,6 +116,13 @@ describe("CustomerUserResolver", () => {
         userId: "user_1",
         memberships: [],
       });
+    });
+
+    it("ne publie aucun événement pour un compte déjà existant", async () => {
+      const events = new FakeEvents();
+      const resolver = await resolverWith(prismaDouble([activeUser]), events);
+      await resolver.resolve(token);
+      expect(events.published).toEqual([]);
     });
 
     it("porte le rôle propre à chaque société pour une personne multi-sociétés", async () => {
@@ -150,6 +174,47 @@ describe("CustomerUserResolver", () => {
         email: "new@client.fr",
         memberships: [],
       });
+    });
+
+    it("publie UserRegisteredEvent au provisioning (signal lead mid)", async () => {
+      const provisioned: UserWithMemberships = {
+        ...activeUser,
+        id: "user_new",
+        auth0Sub: "auth0|new",
+        email: "new@client.fr",
+        memberships: [],
+      };
+      const events = new FakeEvents();
+      const resolver = await resolverWith(prismaDouble([null, provisioned]), events);
+
+      await resolver.resolve({ subject: "auth0|new", scopes: [], email: "new@client.fr" });
+
+      expect(events.published).toHaveLength(1);
+      const [event] = events.published;
+      expect(event).toBeInstanceOf(UserRegisteredEvent);
+      const registered = event as UserRegisteredEvent;
+      expect(registered.userId).toBe("user_new");
+      expect(registered.email).toBe("new@client.fr");
+    });
+
+    it("ne publie PAS sur une course d'unicité (l'autre requête l'a déjà émis)", async () => {
+      const provisioned: UserWithMemberships = {
+        ...activeUser,
+        id: "user_race",
+        auth0Sub: "auth0|race",
+        memberships: [],
+      };
+      const events = new FakeEvents();
+      const resolver = await resolverWith(
+        prismaDouble([null, provisioned], {
+          createError: Object.assign(new Error("duplicate"), { code: "P2002" }),
+        }),
+        events,
+      );
+
+      await resolver.resolve({ subject: "auth0|race", scopes: [] });
+
+      expect(events.published).toEqual([]);
     });
 
     it("provisionne avec un e-mail vide quand le token n'en porte pas", async () => {

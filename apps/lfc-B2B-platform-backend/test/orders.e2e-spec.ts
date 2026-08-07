@@ -140,6 +140,22 @@ describe("zéro friction — commande sans entreprise", () => {
     expect(provisioned.status).toBe("active");
     expect(provisioned.email).toBe("");
     expect(await ctx.prisma.order.count({ where: { placedByUserId: provisioned.id } })).toBe(1);
+
+    // Le provisioning JIT émet user.registered (câblage resolver→growth). L'acteur
+    // est `system` : la personne est provisionnée AVANT que le guard ne résolve son
+    // principal (l'identité n'est pas encore établie au premier contact).
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if ((await ctx.prisma.activityEvent.count({ where: { type: "user.registered" } })) > 0) {
+        break;
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    }
+    const [registered] = await ctx.prisma.activityEvent.findMany({
+      where: { type: "user.registered" },
+    });
+    expect(registered.subjectId).toBe(provisioned.id);
+    expect(registered.actorType).toBe("system");
+    expect(registered.idempotencyKey).toBe(`user.registered:${provisioned.id}`);
   });
 });
 
