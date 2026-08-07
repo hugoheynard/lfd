@@ -7,6 +7,7 @@ import { ChangeLeadStatusCommand } from "../src/growth/application/commands/chan
 import { RecomputeLeadScoresCommand } from "../src/growth/application/commands/recompute-lead-scores.command.js";
 import type { VerifiedToken } from "../src/infra/auth/principal.js";
 import { bootstrapHarness, SEED_STAFF, SYSTEM, type SeedHarness } from "./seed-growth/harness.js";
+import { seedActivation } from "./seed-growth/phase-activation.js";
 import { seedOrders } from "./seed-growth/phase-orders.js";
 import { persona } from "./seed-growth/personas.js";
 
@@ -24,6 +25,8 @@ import { persona } from "./seed-growth/personas.js";
 const USERS = clampInt(process.env["SEED_USERS"], 40, 1, 5000);
 /** Un tiers des personnes environ deviennent aussi une cible de démarchage cold. */
 const LEADS = Math.max(6, Math.floor(USERS / 3));
+/** ~la moitié des personnes déclarent une société (entonnoir d'activation). */
+const COMPANIES = Math.max(6, Math.floor(USERS / 2));
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ANCHOR = new Date();
@@ -36,6 +39,7 @@ async function main(): Promise<void> {
   try {
     const users = await seedUsers(harness);
     const orders = await seedOrders(harness, USERS, ANCHOR);
+    const companies = await seedActivation(harness, COMPANIES, ANCHOR);
     const leads = await seedLeads(harness);
     // Les abonnés du journal (`@EventsHandler`) sont détachés : on laisse une
     // fenêtre pour qu'ils écrivent avant de résumer.
@@ -47,7 +51,7 @@ async function main(): Promise<void> {
       ),
     );
     console.log(
-      `\n✔ seed growth : ${users} personnes, ${orders} commandes (prospects hot), ${leads} leads cold, ${scored} leads scorés (cockpit).`,
+      `\n✔ seed growth : ${users} personnes, ${orders} commandes, ${companies} sociétés (activation), ${leads} leads cold, ${scored} scorés (cockpit).`,
     );
     await summarize(harness);
     console.log("  (additif + idempotent — rejouable ; rien d'existant n'a été effacé)");
