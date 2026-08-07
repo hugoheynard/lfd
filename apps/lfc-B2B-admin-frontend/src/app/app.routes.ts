@@ -58,7 +58,19 @@ export const routes: Routes = [
     title: 'Commercial — LFC B2B admin',
     loadComponent: () => import('./commercial/commercial-page').then((m) => m.CommercialPage),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'acquisition' },
+      { path: '', pathMatch: 'full', redirectTo: 'prospects' },
+      {
+        path: 'prospects',
+        title: 'Prospects — LFC B2B admin',
+        loadComponent: () =>
+          import('./commercial/prospects/prospects-page').then((m) => m.ProspectsPage),
+      },
+      {
+        path: 'activation',
+        title: 'Activation & frictions — LFC B2B admin',
+        loadComponent: () =>
+          import('./commercial/activation/activation-page').then((m) => m.ActivationPage),
+      },
       {
         path: 'acquisition',
         title: 'Acquisition — LFC B2B admin',

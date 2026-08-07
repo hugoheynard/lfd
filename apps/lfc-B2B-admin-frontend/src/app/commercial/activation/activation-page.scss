@@ -1,0 +1,73 @@
+:host {
+  display: block;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg, 1.5rem);
+  padding: var(--fold-space-lg, 1.5rem);
+  max-width: 72rem;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md, 1rem);
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: 0.9rem;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+  padding: var(--fold-space-xl, 2.5rem);
+  color: var(--fold-color-text-muted);
+}
+
+.queues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm, 0.5rem);
+  justify-content: flex-end;
+}
+
+.filter {
+  align-self: flex-start;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.company {
+  display: block;
+  font-weight: 600;
+}
+
+.via,
+.missing {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: 0.82rem;
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}

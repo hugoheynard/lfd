@@ -1,0 +1,79 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Activation &amp; frictions</h1>
+      <p class="subtitle">
+        Où en est chaque dossier — pièces manquantes, blocages, et qui s’active seul (adoption+).
+      </p>
+    </div>
+    @if (state() === 'ready') {
+      <div class="queues">
+        @if (stalledCount() > 0) {
+          <fold-badge variant="warning" [content]="stalledCount() + ' bloqués ≥ 7 j'" />
+        }
+        @if (adoptionPlusCount() > 0) {
+          <fold-badge variant="success" [content]="adoptionPlusCount() + ' adoption+'" />
+        }
+      </div>
+    }
+  </header>
+
+  @if (state() === 'error') {
+    <div class="state">
+      <p>Impossible de charger le tunnel d’activation.</p>
+      <button foldButton (click)="load()">Réessayer</button>
+    </div>
+  } @else {
+    <fold-view-toggle
+      class="filter"
+      ariaLabel="Filtrer les dossiers par statut"
+      [options]="segments"
+      [value]="filter()"
+      (valueChange)="onFilterChange($event)"
+    />
+
+    <fold-data-table
+      caption="Tunnel d’activation"
+      hover
+      stickyFirst
+      [columns]="columns"
+      [rows]="filtered()"
+      [rowKey]="rowKey"
+      [loading]="state() === 'loading'"
+      [empty]="emptyState()"
+    >
+      <ng-template foldCell="companyId" let-row>
+        <span class="company">{{ row.companyId }}</span>
+        <span class="via"
+          >déclarée {{ row.declaredVia === 'self' ? 'par le client' : 'par le staff' }}</span
+        >
+      </ng-template>
+
+      <ng-template foldCell="status" let-row>
+        <fold-badge
+          [variant]="row.status === 'active' ? 'success' : 'warning'"
+          [content]="row.status === 'active' ? 'Actif' : 'En attente'"
+        />
+      </ng-template>
+
+      <ng-template foldCell="completion" let-row>
+        <span class="num">{{ completionLabel(row) }}</span>
+        @if (row.stepsMissing.length > 0) {
+          <span class="missing">manque {{ missingLabel(row) }}</span>
+        }
+      </ng-template>
+
+      <ng-template foldCell="adoptionPlus" let-row>
+        @if (row.adoptionPlus) {
+          <fold-badge variant="success" content="Adoption+" />
+        } @else {
+          <span class="muted">—</span>
+        }
+      </ng-template>
+
+      <ng-template foldCell="stalledDays" let-row>
+        <span class="num">{{ stalledLabel(row) }}</span>
+      </ng-template>
+    </fold-data-table>
+  }
+</section>

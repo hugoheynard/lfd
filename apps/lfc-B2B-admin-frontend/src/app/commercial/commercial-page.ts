@@ -19,6 +19,13 @@ import { FoldPageLayoutComponent, FoldViewNavComponent, type FoldViewNavItem } f
 export class CommercialPage {
   /** Onglets routés — chaque `link` est relatif à `/commercial`. */
   protected readonly tabs: FoldViewNavItem[] = [
+    { key: 'prospects', label: 'Prospects', link: 'prospects', icon: 'users' },
+    {
+      key: 'activation',
+      label: 'Activation & frictions',
+      link: 'activation',
+      icon: 'check-circle',
+    },
     { key: 'acquisition', label: 'Acquisition', link: 'acquisition', icon: 'calendar' },
   ];
 }

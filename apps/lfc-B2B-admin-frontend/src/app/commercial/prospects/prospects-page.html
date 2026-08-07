@@ -1,0 +1,74 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Prospects</h1>
+      <p class="subtitle">
+        Les restaurateurs qui ont tenté l’expérience, pas encore convertis — dérivés du journal.
+      </p>
+    </div>
+    @if (state() === 'ready') {
+      <div class="queues">
+        @if (hotCount() > 0) {
+          <fold-badge variant="warning" [content]="hotCount() + ' chauds'" />
+        }
+        @if (midCount() > 0) {
+          <fold-badge variant="info" [content]="midCount() + ' tièdes'" />
+        }
+      </div>
+    }
+  </header>
+
+  @if (state() === 'error') {
+    <div class="state">
+      <p>Impossible de charger les prospects.</p>
+      <button foldButton (click)="load()">Réessayer</button>
+    </div>
+  } @else {
+    <fold-view-toggle
+      class="filter"
+      ariaLabel="Filtrer les prospects par température"
+      [options]="segments"
+      [value]="filter()"
+      (valueChange)="onFilterChange($event)"
+    />
+
+    <fold-data-table
+      caption="Prospects (hot / mid)"
+      hover
+      stickyFirst
+      [columns]="columns"
+      [rows]="filtered()"
+      [rowKey]="rowKey"
+      [loading]="state() === 'loading'"
+      [empty]="emptyState()"
+    >
+      <ng-template foldCell="temperature" let-row>
+        <fold-badge [variant]="temperatureOf(row).variant" [content]="temperatureOf(row).label" />
+      </ng-template>
+
+      <ng-template foldCell="email" let-row>
+        <span class="prospect">{{ labelOf(row) }}</span>
+      </ng-template>
+
+      <ng-template foldCell="momentum" let-row>
+        <fold-badge [variant]="momentumOf(row).variant" [content]="momentumOf(row).label" />
+      </ng-template>
+
+      <ng-template foldCell="orderCount" let-row>
+        <span class="num">{{ row.orderCount }}</span>
+      </ng-template>
+
+      <ng-template foldCell="totalCents" let-row>
+        <span class="num">{{ euros(row.totalCents) }}</span>
+      </ng-template>
+
+      <ng-template foldCell="lastOrderAt" let-row>
+        <span class="date">{{ formatDate(row.lastOrderAt) }}</span>
+      </ng-template>
+
+      <ng-template foldCell="recencyDays" let-row>
+        <span class="num">{{ row.recencyDays }} j</span>
+      </ng-template>
+    </fold-data-table>
+  }
+</section>
