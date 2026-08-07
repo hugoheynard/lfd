@@ -1,0 +1,20 @@
+<fold-panel-header
+  title="Ajouter un lead"
+  subtitle="Démarchage sortant — la raison sociale suffit ; l’e-mail permet le rapprochement à l’inscription."
+/>
+
+<div class="body">
+  <fold-input label="Raison sociale" [(value)]="businessName" required />
+  <fold-input label="Contact" [(value)]="contactName" />
+  <fold-input label="E-mail" type="email" [(value)]="email" />
+  <fold-input label="Téléphone" [(value)]="phone" />
+  <fold-input label="SIRET" [(value)]="siret" />
+  <fold-input label="Notes" [(value)]="notes" />
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || saving()" (click)="submit()">
+    Ajouter
+  </button>
+</footer>

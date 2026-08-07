@@ -40,6 +40,12 @@ h1 {
   color: var(--fold-color-text-muted);
 }
 
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+}
+
 .queues {
   display: flex;
   flex-wrap: wrap;
@@ -49,6 +55,12 @@ h1 {
 
 .filter {
   align-self: flex-start;
+}
+
+.via {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: 0.75rem;
 }
 
 /* Contenu projeté dans les cellules — la data-table fold porte la grille. */

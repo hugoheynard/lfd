@@ -4,6 +4,7 @@ import {
   FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldPanelHostService,
   FoldViewToggleComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
@@ -11,6 +12,7 @@ import {
 } from 'fold-ng';
 import type { MomentumTrajectory, ProspectTemperature, ProspectView } from '@lfd/contracts';
 
+import { LeadCapturePanel } from './lead-capture-panel/lead-capture-panel';
 import { ProspectsService } from './prospects.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -34,18 +36,18 @@ const MOMENTUM: Record<MomentumTrajectory, { label: string; variant: BadgeVarian
   dormant: { label: 'Dormant', variant: 'neutral' },
 };
 
-const FILTER_ORDER: readonly FilterValue[] = ['all', 'hot', 'mid'];
+const FILTER_ORDER: readonly FilterValue[] = ['all', 'hot', 'mid', 'cold'];
 
 function isFilterValue(value: string): value is FilterValue {
   return (FILTER_ORDER as readonly string[]).includes(value);
 }
 
 /**
- * Onglet **Prospects** (commercial) : les personnes qui ont tenté l'expérience
- * sans être encore clientes — **dérivées du journal**, lues via `GET
- * /admin/prospects`. **hot** = a commandé, **mid** = inscrit sans commande ;
- * chacune porte son **momentum** (rythme). Un seul jeu de données, filtré par un
- * segment `fold-view-toggle` (tous / chauds / tièdes).
+ * Onglet **Prospects** (commercial) : la **file entrante unifiée**. **hot** = a
+ * commandé, **mid** = inscrit sans commande (tous deux **dérivés du journal**),
+ * **cold** = **saisi par un commercial** (démarchage sortant, agrégat `Lead`). Lue
+ * via `GET /admin/prospects`, filtrée par un segment (tous / chauds / tièdes /
+ * froids). Le bouton **Ajouter un lead** ouvre le panneau de saisie cold.
  */
 @Component({
   selector: 'app-prospects-page',
@@ -62,6 +64,7 @@ function isFilterValue(value: string): value is FilterValue {
 })
 export class ProspectsPage {
   private readonly service = inject(ProspectsService);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly prospects = signal<readonly ProspectView[]>([]);
@@ -81,10 +84,14 @@ export class ProspectsPage {
     { value: 'all', label: 'Tous' },
     { value: 'hot', label: 'Chauds' },
     { value: 'mid', label: 'Tièdes' },
+    { value: 'cold', label: 'Froids' },
   ];
 
   protected readonly hotCount = computed(
     () => this.prospects().filter((p) => p.temperature === 'hot').length,
+  );
+  protected readonly coldCount = computed(
+    () => this.prospects().filter((p) => p.temperature === 'cold').length,
   );
   protected readonly midCount = computed(
     () => this.prospects().filter((p) => p.temperature === 'mid').length,
@@ -123,17 +130,24 @@ export class ProspectsPage {
     }
   }
 
+  /** Ouvre le panneau de saisie d'un lead cold ; recharge la file si un lead a été ajouté. */
+  protected async openCapture(): Promise<void> {
+    const ref = this.panels.open<undefined, boolean>(LeadCapturePanel, {
+      data: undefined,
+      width: 'md',
+    });
+    const added = await ref.closed;
+    if (added === true) {
+      await this.load();
+    }
+  }
+
   protected temperatureOf(prospect: ProspectView): { label: string; variant: BadgeVariant } {
     return TEMPERATURE[prospect.temperature];
   }
 
   protected momentumOf(prospect: ProspectView): { label: string; variant: BadgeVariant } {
     return MOMENTUM[prospect.momentum];
-  }
-
-  /** E-mail du prospect, ou son identifiant si le journal ne le connaît pas. */
-  protected labelOf(prospect: ProspectView): string {
-    return prospect.email === '' ? prospect.subjectId : prospect.email;
   }
 
   /** Montant en euros (les centimes du contrat). */

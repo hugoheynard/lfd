@@ -3,19 +3,22 @@
     <div>
       <h1>Prospects</h1>
       <p class="subtitle">
-        Les restaurateurs qui ont tenté l’expérience, pas encore convertis — dérivés du journal.
+        La file entrante — chauds &amp; tièdes dérivés du journal, froids saisis au démarchage.
       </p>
     </div>
-    @if (state() === 'ready') {
-      <div class="queues">
-        @if (hotCount() > 0) {
-          <fold-badge variant="warning" [content]="hotCount() + ' chauds'" />
-        }
-        @if (midCount() > 0) {
-          <fold-badge variant="info" [content]="midCount() + ' tièdes'" />
-        }
-      </div>
-    }
+    <div class="head-actions">
+      @if (state() === 'ready') {
+        <div class="queues">
+          @if (hotCount() > 0) {
+            <fold-badge variant="warning" [content]="hotCount() + ' chauds'" />
+          }
+          @if (coldCount() > 0) {
+            <fold-badge variant="neutral" [content]="coldCount() + ' froids'" />
+          }
+        </div>
+      }
+      <button foldButton intent="primary" (click)="openCapture()">Ajouter un lead</button>
+    </div>
   </header>
 
   @if (state() === 'error') {
@@ -47,7 +50,10 @@
       </ng-template>
 
       <ng-template foldCell="email" let-row>
-        <span class="prospect">{{ labelOf(row) }}</span>
+        <span class="prospect">{{ row.label }}</span>
+        @if (row.source === 'outbound') {
+          <span class="via">démarchage</span>
+        }
       </ng-template>
 
       <ng-template foldCell="momentum" let-row>
