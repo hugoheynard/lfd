@@ -2,11 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { PaymentStatus, Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import {
-  OrderRepository,
-  type OrderToPlace,
-  type PlacedOrder,
-} from "../domain/ports/order.repository.js";
+import type { Order } from "../domain/entities/order.js";
+import { OrderRepository, type PlacedOrder } from "../domain/ports/order.repository.js";
 
 /**
  * Numéro humain d'une commande — `ORD-<horodatage base36>-<aléa>`. Suffisamment
@@ -29,29 +26,30 @@ export class PrismaOrderRepository extends OrderRepository {
     super();
   }
 
-  async place(order: OrderToPlace): Promise<PlacedOrder> {
-    // Coursier et retrait figent déjà leurs adresses en snapshot (zone re-résolue
-    // serveur, adresse libre côté client) : plus d'adresse d'entreprise à valider.
+  async place(order: Order): Promise<PlacedOrder> {
+    // L'agrégat a validé et calculé ; on lit son état sérialisé. Coursier et
+    // retrait ont déjà figé leurs adresses en snapshot (plus d'adresse d'entreprise).
+    const state = order.toPersistence();
     return this.prisma.order.create({
       data: {
         orderNumber: generateOrderNumber(),
-        companyId: order.companyId,
-        placedByUserId: order.placedByUserId,
-        requestedDeliveryDate: order.requestedDeliveryDate,
-        fulfillmentMethod: order.fulfillmentMethod,
-        deliveryZoneId: order.deliveryZoneId,
-        deliveryAddressSnapshot: order.deliveryAddress ?? Prisma.DbNull,
-        pickupAddress: order.pickupAddress ?? Prisma.DbNull,
-        subtotalCents: order.subtotalCents,
-        discountCents: order.discountCents,
-        deliveryFeeCents: order.deliveryFeeCents,
-        vatCents: order.vatCents,
-        totalCents: order.totalCents,
-        paymentStatus: order.paymentStatus,
-        stripePaymentIntentId: order.stripePaymentIntentId,
-        note: order.note,
+        companyId: state.companyId,
+        placedByUserId: state.placedByUserId,
+        requestedDeliveryDate: state.requestedDeliveryDate,
+        fulfillmentMethod: state.fulfillmentMethod,
+        deliveryZoneId: state.deliveryZoneId,
+        deliveryAddressSnapshot: state.deliveryAddress ?? Prisma.DbNull,
+        pickupAddress: state.pickupAddress ?? Prisma.DbNull,
+        subtotalCents: state.subtotalCents,
+        discountCents: state.discountCents,
+        deliveryFeeCents: state.deliveryFeeCents,
+        vatCents: state.vatCents,
+        totalCents: state.totalCents,
+        paymentStatus: state.paymentStatus,
+        stripePaymentIntentId: state.stripePaymentIntentId,
+        note: state.note,
         lines: {
-          create: order.lines.map((line) => ({
+          create: state.lines.map((line) => ({
             sku: line.sku,
             productNameSnapshot: line.productName,
             unitPriceCents: line.unitPriceCents,

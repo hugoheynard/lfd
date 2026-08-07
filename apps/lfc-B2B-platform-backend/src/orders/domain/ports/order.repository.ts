@@ -1,46 +1,4 @@
-import type { BillingAddressPayload, FulfillmentMethod, PaymentStatus } from "@lfd/contracts";
-
-/** Une ligne prête à persister : SKU + snapshots (nom, prix, TVA) + total. */
-export interface OrderLineToPersist {
-  readonly sku: string;
-  readonly productName: string;
-  readonly unitPriceCents: number;
-  readonly vatRate: number;
-  readonly quantity: number;
-  readonly lineTotalCents: number;
-}
-
-/** Une commande prête à écrire — tout est déjà résolu et calculé côté serveur. */
-export interface OrderToPlace {
-  /** Entreprise cliente, ou `null` = commande personnelle (mur = `placedByUserId`). */
-  readonly companyId: string | null;
-  readonly placedByUserId: string;
-  /** Acheminement : `delivery` = coursier (zone + adresse libre) ; `pickup` = retrait. */
-  readonly fulfillmentMethod: FulfillmentMethod;
-  /** Zone de livraison choisie (coursier), ou `null` (retrait). */
-  readonly deliveryZoneId: string | null;
-  /** Adresse de livraison **libre figée** (coursier), ou `null` (retrait). */
-  readonly deliveryAddress: BillingAddressPayload | null;
-  /** Adresse de retrait **figée** (retrait), ou `null` (livraison). */
-  readonly pickupAddress: BillingAddressPayload | null;
-  readonly requestedDeliveryDate: Date | null;
-  readonly note: string;
-  /** Sous-total marchandises **HT**, en centimes. */
-  readonly subtotalCents: number;
-  /** Remise (retrait) déduite, en centimes. `0` si aucune. */
-  readonly discountCents: number;
-  /** Frais de livraison (zone) ajouté, HT, en centimes. `0` si aucun. */
-  readonly deliveryFeeCents: number;
-  /** TVA totale (marchandises par taux + livraison), en centimes. */
-  readonly vatCents: number;
-  /** Total **TTC** encaissé = `max(0, subtotal − discount) + deliveryFee + vat`. */
-  readonly totalCents: number;
-  /** État de règlement à la création : `pending` (carte per_order) ou `not_required`. */
-  readonly paymentStatus: PaymentStatus;
-  /** Intention Stripe rattachée (per_order), ou `null` (terme différé / gratuit). */
-  readonly stripePaymentIntentId: string | null;
-  readonly lines: readonly OrderLineToPersist[];
-}
+import type { Order } from "../entities/order.js";
 
 /** Ce que la passation renvoie : l'id technique et le numéro humain. */
 export interface PlacedOrder {
@@ -49,24 +7,32 @@ export interface PlacedOrder {
 }
 
 /**
- * Port d'**écriture** des commandes. Coursier et retrait figent leurs adresses en
- * **snapshot** (comme les prix) : la commande ne dépend d'aucune ligne mutable.
+ * Port d'**écriture** des commandes.
+ *
+ * `place` prend l'**agrégat** (déjà validé et calculé — l'adaptateur lit son
+ * `toPersistence()`), jamais des primitives calculées par le handler.
+ *
+ * `markPaid`/`markPaymentFailed` restent des transitions **idempotentes keyées par
+ * l'intention Stripe** : la règle « seul `pending` bascule » est appliquée
+ * atomiquement en base (`where paymentStatus = pending`). C'est volontairement
+ * traité comme une **projection d'événement** (webhook rejouable), pas comme une
+ * mutation d'agrégat chargé : la load→save perdrait l'atomicité pour zéro invariant
+ * de plus. Le seul point du système où l'écriture nue est le bon outil.
  */
 export abstract class OrderRepository {
   /** Crée la commande et ses lignes en une transaction. */
-  abstract place(order: OrderToPlace): Promise<PlacedOrder>;
+  abstract place(order: Order): Promise<PlacedOrder>;
 
   /**
    * Marque **payée** la commande portant cette intention Stripe. **Idempotent** :
-   * ne touche que les commandes encore `pending` (une commande déjà `paid`, ou un
-   * intent inconnu, laisse l'appel sans effet) — Stripe peut réémettre l'événement.
+   * ne touche que les commandes encore `pending` (déjà `paid`, ou intent inconnu ⇒
+   * no-op) — Stripe peut réémettre l'événement.
    */
   abstract markPaid(paymentIntentId: string): Promise<void>;
 
   /**
    * Marque **échoué** le règlement de la commande portant cette intention. Même
-   * idempotence : ne passe à `failed` que ce qui était `pending` (un paiement
-   * déjà `paid` — course rare — n'est pas rétrogradé).
+   * idempotence : ne passe à `failed` que ce qui était `pending`.
    */
   abstract markPaymentFailed(paymentIntentId: string): Promise<void>;
 }

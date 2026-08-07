@@ -8,17 +8,17 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { DeliveryZoneRepository } from "../../../delivery-zones/domain/delivery-zone.repository.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
+import { Order } from "../../domain/entities/order.js";
 import {
-  EmptyOrderError,
   PickupNotConfiguredError,
   UnknownDeliveryZoneError,
   UnknownSkuError,
 } from "../../domain/errors/order-errors.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
-import { OrderRepository, type OrderLineToPersist } from "../../domain/ports/order.repository.js";
+import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
-import { computeVatCents } from "../../domain/services/vat.js";
+import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
 
 /** Devise unique de la plateforme (montants en centimes d'euro). */
@@ -34,17 +34,16 @@ interface ResolvedFulfillment {
 }
 
 /**
- * Passe une commande — **zéro friction** :
- * - mur **membre** SEULEMENT si une entreprise est visée (sinon la commande est
- *   personnelle, murée par le seul client connecté) ;
- * - **ré-résolution serveur** des prix (le client n'envoie que sku + quantité) et
- *   du **frais de la zone** coursier (depuis son `id`, autorité) ;
- * - **règlement** : carte (`per_order`) sauf pour une entreprise **active** à
- *   terme différé (net/mensuel), auquel cas c'est facturé hors ligne (`not_required`).
+ * Passe une commande — **zéro friction**. Le handler **orchestre** (mur, catalogue,
+ * acheminement, décision carte/différé, Stripe) ; le **calcul monétaire et les
+ * invariants** vivent dans l'agrégat `Order` :
+ * - mur **membre** SEULEMENT si une entreprise est visée (sinon personnelle) ;
+ * - **ré-résolution serveur** des prix (sku + qté) et du **frais de zone** ;
+ * - l'agrégat `draft()` calcule sous-total/TVA/total ; on décide ensuite le
+ *   règlement (`payByCard` si carte requise et total > 0, sinon `deferPayment`).
  *
- * Pour une carte, l'intention Stripe est créée AVANT la commande : une commande
- * `pending` porte toujours son intent (pas de fenêtre orpheline) ; si Stripe
- * échoue, aucune commande n'est créée.
+ * Pour une carte, l'intention Stripe est créée AVANT la persistance, dimensionnée
+ * sur `order.totalCents` : une commande `pending` porte toujours son intent.
  */
 @CommandHandler(PlaceOrderCommand)
 export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, PlaceOrderResult> {
@@ -69,46 +68,30 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     }
 
     const lines = this.resolveLines(payload.lines);
-    const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
-
+    const subtotalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
     const acheminement = await this.resolveFulfillment(payload, subtotalCents);
 
-    // TVA par taux (prix HT) : marchandises (remise déduite au prorata) + livraison.
-    // `totalCents` est donc le **TTC** — c'est lui qu'on encaisse (carte Stripe).
-    const vatCents = computeVatCents({
-      lines: lines.map((line) => ({ htCents: line.lineTotalCents, vatRate: line.vatRate })),
-      discountCents: acheminement.discountCents,
-      deliveryFeeCents: acheminement.deliveryFeeCents,
-    });
-    const netHtCents =
-      Math.max(0, subtotalCents - acheminement.discountCents) + acheminement.deliveryFeeCents;
-    const totalCents = netHtCents + vatCents;
-
-    const requiresCard = (await this.requiresCard(companyId)) && totalCents > 0;
-    const intent = requiresCard
-      ? await this.payments.createIntent({ amountCents: totalCents, currency: CURRENCY, companyId })
-      : null;
-
-    const placed = await this.orders.place({
+    // L'agrégat calcule sous-total / TVA / total (TTC) et porte les invariants.
+    const order = Order.draft({
       companyId,
       placedByUserId: command.actorUserId,
-      fulfillmentMethod: payload.fulfillmentMethod,
-      deliveryZoneId: acheminement.deliveryZoneId,
-      deliveryAddress: acheminement.deliveryAddress,
-      pickupAddress: acheminement.pickupAddress,
+      fulfillment: {
+        method: payload.fulfillmentMethod,
+        deliveryZoneId: acheminement.deliveryZoneId,
+        deliveryAddress: acheminement.deliveryAddress,
+        pickupAddress: acheminement.pickupAddress,
+      },
       requestedDeliveryDate: payload.requestedDeliveryDate
         ? new Date(payload.requestedDeliveryDate)
         : null,
       note: payload.note,
-      subtotalCents,
+      lines,
       discountCents: acheminement.discountCents,
       deliveryFeeCents: acheminement.deliveryFeeCents,
-      vatCents,
-      totalCents,
-      paymentStatus: requiresCard ? "pending" : "not_required",
-      stripePaymentIntentId: intent?.paymentIntentId ?? null,
-      lines,
     });
+
+    const intent = await this.settle(order, companyId);
+    const placed = await this.orders.place(order);
 
     if (intent === null) {
       return { id: placed.id, orderNumber: placed.orderNumber };
@@ -119,9 +102,32 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       payment: {
         clientSecret: intent.clientSecret,
         publishableKey: this.payments.publishableKey(),
-        amountCents: totalCents,
+        amountCents: order.totalCents,
       },
     };
+  }
+
+  /**
+   * Décide le règlement de l'agrégat et crée l'intention Stripe si une carte est
+   * requise (total > 0). Renvoie l'intention (pour le `clientSecret`) ou `null`
+   * (différé / gratuit). L'intention est dimensionnée sur `order.totalCents`.
+   */
+  private async settle(
+    order: Order,
+    companyId: string | null,
+  ): Promise<{ clientSecret: string } | null> {
+    const requiresCard = (await this.requiresCard(companyId)) && order.totalCents > 0;
+    if (!requiresCard) {
+      order.deferPayment();
+      return null;
+    }
+    const intent = await this.payments.createIntent({
+      amountCents: order.totalCents,
+      currency: CURRENCY,
+      companyId,
+    });
+    order.payByCard(intent.paymentIntentId);
+    return { clientSecret: intent.clientSecret };
   }
 
   /**
@@ -188,13 +194,10 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
    */
   private resolveLines(
     input: readonly { readonly sku: string; readonly quantity: number }[],
-  ): OrderLineToPersist[] {
+  ): OrderLineInput[] {
     const quantities = new Map<string, number>();
     for (const line of input) {
       quantities.set(line.sku, (quantities.get(line.sku) ?? 0) + line.quantity);
-    }
-    if (quantities.size === 0) {
-      throw new EmptyOrderError();
     }
     return [...quantities].map(([sku, quantity]) => {
       const item = this.catalog.resolve(sku);
@@ -207,7 +210,6 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
         unitPriceCents: item.unitPriceCents,
         vatRate: item.vatRate,
         quantity,
-        lineTotalCents: item.unitPriceCents * quantity,
       };
     });
   }

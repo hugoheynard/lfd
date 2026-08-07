@@ -48,3 +48,27 @@ export class UnknownDeliveryZoneError extends DomainError {
     super("orders.delivery_zone.unknown", `Zone de livraison inconnue : ${zoneId}.`);
   }
 }
+
+/** Une ligne de commande mal formée (quantité ≤ 0, prix négatif). */
+export class InvalidOrderLineError extends DomainError {
+  constructor(
+    readonly sku: string,
+    readonly reason: string,
+  ) {
+    super("orders.line.invalid", `Ligne « ${sku} » : ${reason}.`);
+  }
+}
+
+/** L'acheminement est incohérent (coursier sans zone/adresse, retrait sans point). */
+export class InvalidOrderFulfillmentError extends DomainError {
+  constructor(readonly reason: string) {
+    super("orders.fulfillment.invalid", reason);
+  }
+}
+
+/** Le règlement est incohérent avec le total (carte demandée sur un total nul). */
+export class InvalidOrderPaymentError extends DomainError {
+  constructor(readonly reason: string) {
+    super("orders.payment.invalid", reason);
+  }
+}

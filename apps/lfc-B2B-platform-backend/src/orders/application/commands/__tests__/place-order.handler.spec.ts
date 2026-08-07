@@ -23,7 +23,8 @@ import {
   type OrderPaymentTerm,
   type OrderRole,
 } from "../../../domain/ports/order-guard.reader.js";
-import { OrderRepository, type OrderToPlace } from "../../../domain/ports/order.repository.js";
+import type { OrderToPlace } from "../../../domain/entities/order.js";
+import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import {
   type CatalogItem,
   ProductCatalogReader,
@@ -128,8 +129,10 @@ const COURIER_ADDR: BillingAddressPayload = {
 /** Repo qui capture ce qu'on lui demande d'écrire, sans base. */
 function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
   return {
+    // On capture l'état sérialisé de l'agrégat : les assertions portent sur ce que
+    // la commande a réellement calculé (sous-total/TVA/total, lignes, règlement).
     place: (order) => {
-      sink.placed = order;
+      sink.placed = order.toPersistence();
       return Promise.resolve({ id: "order_1", orderNumber: "ORD-TEST" });
     },
     markPaid: () => Promise.resolve(),
