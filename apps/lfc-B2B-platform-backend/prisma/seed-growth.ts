@@ -4,8 +4,10 @@ import type { CaptureLeadPayload, LeadStatus } from "@lfd/contracts";
 
 import { CaptureLeadCommand } from "../src/growth/application/commands/capture-lead.command.js";
 import { ChangeLeadStatusCommand } from "../src/growth/application/commands/change-lead-status.command.js";
+import { RecomputeLeadScoresCommand } from "../src/growth/application/commands/recompute-lead-scores.command.js";
 import type { VerifiedToken } from "../src/infra/auth/principal.js";
 import { bootstrapHarness, SEED_STAFF, SYSTEM, type SeedHarness } from "./seed-growth/harness.js";
+import { seedOrders } from "./seed-growth/phase-orders.js";
 import { persona } from "./seed-growth/personas.js";
 
 /**
@@ -33,11 +35,20 @@ async function main(): Promise<void> {
   const harness = await bootstrapHarness();
   try {
     const users = await seedUsers(harness);
+    const orders = await seedOrders(harness, USERS, ANCHOR);
     const leads = await seedLeads(harness);
     // Les abonnés du journal (`@EventsHandler`) sont détachés : on laisse une
     // fenêtre pour qu'ils écrivent avant de résumer.
     await settle(1500);
-    console.log(`\n✔ seed growth : ${users} personnes provisionnées, ${leads} leads cold.`);
+    // Recalcule le read-model du cockpit (comme le cron) → la queue est peuplée.
+    const scored = await harness.runAt(ANCHOR, SEED_STAFF, () =>
+      harness.commands.execute<RecomputeLeadScoresCommand, number>(
+        new RecomputeLeadScoresCommand(),
+      ),
+    );
+    console.log(
+      `\n✔ seed growth : ${users} personnes, ${orders} commandes (prospects hot), ${leads} leads cold, ${scored} leads scorés (cockpit).`,
+    );
     await summarize(harness);
     console.log("  (additif + idempotent — rejouable ; rien d'existant n'a été effacé)");
   } finally {
