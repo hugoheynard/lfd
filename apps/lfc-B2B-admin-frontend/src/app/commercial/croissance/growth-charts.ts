@@ -2,6 +2,7 @@ import type {
   AccountConcentration,
   AcquisitionMixPoint,
   AcquisitionPoint,
+  AdoptionZoneView,
   CohortRow,
   FunnelStep,
   LifecycleFlow,
@@ -341,6 +342,68 @@ export function acquisitionMixOption(points: readonly AcquisitionMixPoint[]): EC
       ),
     ],
   };
+}
+
+/**
+ * **Adoption par territoire** : une barre horizontale par zone = la pénétration
+ * (sociétés activées / acteurs visés, en %), triée décroissante. L'étiquette porte le
+ * taux **et** le delta de la période (« 12 % · +3 pts »). Barre verte si la période a
+ * fait progresser la zone, bleue sinon.
+ */
+export function adoptionOption(zones: readonly AdoptionZoneView[]): EChartsOption {
+  const rows = [...zones].reverse(); // yAxis inverse : la plus forte pénétration en haut.
+  return {
+    grid: { left: 8, right: 64, top: 8, bottom: 8, containLabel: true },
+    tooltip: {
+      trigger: 'item',
+      formatter: (p): string => {
+        const z = zones[zones.length - 1 - toIndex(p)];
+        if (z === undefined) {
+          return '';
+        }
+        return `${z.codePostal} ${z.ville}<br/>${z.activated}/${z.addressable} activées · ${pct(z.penetration)} %`;
+      },
+    },
+    xAxis: { type: 'value', name: '%', min: 0 },
+    yAxis: {
+      type: 'category',
+      data: rows.map((z) => `${z.codePostal}${z.ville === '' ? '' : ' ' + z.ville}`),
+    },
+    series: [
+      {
+        type: 'bar',
+        barWidth: '55%',
+        data: rows.map((z) => ({
+          value: pct(z.penetration),
+          itemStyle: { color: z.deltaPts > 0 ? PALETTE.green : PALETTE.blue, borderRadius: 4 },
+          label: {
+            show: true,
+            position: 'right',
+            formatter: `${pct(z.penetration)} %${z.deltaPts > 0 ? ` · +${round1(z.deltaPts)} pts` : ''}`,
+          },
+        })),
+      },
+    ],
+  };
+}
+
+/** Pourcentage entier lisible d'un ratio 0..1. */
+function pct(ratio: number): number {
+  return Math.round(ratio * 100);
+}
+
+/** Arrondi à une décimale (points de pourcentage). */
+function round1(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+/** Index de data d'un param de tooltip ECharts (typé large), 0 par défaut. */
+function toIndex(param: unknown): number {
+  if (typeof param === 'object' && param !== null) {
+    const idx = (param as Record<string, unknown>)['dataIndex'];
+    return typeof idx === 'number' ? idx : 0;
+  }
+  return 0;
 }
 
 /** Libellé du niveau de concentration (Gini) pour l'annotation. */

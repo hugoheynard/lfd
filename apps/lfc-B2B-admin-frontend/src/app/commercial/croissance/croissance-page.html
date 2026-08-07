@@ -43,6 +43,24 @@
           }
         </article>
 
+        <article class="card wide">
+          <header class="card-head">
+            <h2>Adoption par territoire</h2>
+            <app-metric-info
+              label="Adoption par territoire"
+              text="Pénétration par zone = sociétés activées / acteurs professionnels visés (comptés via l'API entreprises). Barre verte si la période a fait progresser la zone ; l'étiquette porte le taux et les points gagnés sur la période. Configurez zones et NAF dans Réglages ▸ Commercial."
+            />
+          </header>
+          @if (adoption(); as opt) {
+            <app-chart [option]="opt" height="300px" />
+          } @else {
+            <p class="muted">
+              Aucune zone ciblée renseignée. Ajoutez des codes postaux et des codes NAF dans
+              Réglages ▸ Commercial, puis « Redemander les comptages ».
+            </p>
+          }
+        </article>
+
         <article class="card">
           <header class="card-head">
             <h2>Momentum du vivier — part par chaleur</h2>

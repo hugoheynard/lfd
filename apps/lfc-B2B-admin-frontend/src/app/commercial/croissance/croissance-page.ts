@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FoldButtonComponent } from 'fold-ng';
-import type { GrowthStatsView } from '@lfd/contracts';
+import type { AccountConcentration, AdoptionZoneView, GrowthStatsView } from '@lfd/contracts';
 
-import type { AccountConcentration } from '@lfd/contracts';
-
+import { MarketService } from '../market/market.service';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { Lorenz } from '../../shared/lorenz/lorenz';
 import { MetricInfo } from '../../shared/metric-info/metric-info';
 import {
   acquisitionMixOption,
   acquisitionOption,
+  adoptionOption,
   cohortHeatmapOption,
   concentrationSummary,
   funnelOption,
@@ -47,9 +47,11 @@ interface Kpi {
 })
 export class CroissancePage {
   private readonly service = inject(GrowthService);
+  private readonly market = inject(MarketService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly stats = signal<GrowthStatsView | null>(null);
+  protected readonly adoptionZones = signal<readonly AdoptionZoneView[] | null>(null);
 
   protected readonly kpis = computed<readonly Kpi[]>(() => {
     const s = this.stats();
@@ -76,6 +78,10 @@ export class CroissancePage {
   protected readonly acquisition = computed<ChartOption | null>(() => {
     const s = this.stats();
     return s === null ? null : acquisitionOption(s.acquisition);
+  });
+  protected readonly adoption = computed<ChartOption | null>(() => {
+    const zones = this.adoptionZones();
+    return zones === null || zones.length === 0 ? null : adoptionOption(zones);
   });
   protected readonly temperatureFlow = computed<ChartOption | null>(() => {
     const s = this.stats();
@@ -131,6 +137,13 @@ export class CroissancePage {
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+    // L'adoption est secondaire (dépend d'une config marché) : chargée à part, sans
+    // faire échouer le dashboard si elle est absente ou vide.
+    try {
+      this.adoptionZones.set((await this.market.adoption()).zones);
+    } catch {
+      this.adoptionZones.set(null);
     }
   }
 }
