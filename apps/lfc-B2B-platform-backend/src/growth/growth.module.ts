@@ -11,6 +11,7 @@ import { OnCompanyStepReached } from "./application/handlers/on-company-step-rea
 import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
+import { OnUserRegisteredLinkLead } from "./application/handlers/on-user-registered-link-lead.handler.js";
 import { GetCockpitHandler } from "./application/queries/get-cockpit.handler.js";
 import { ListActivationsHandler } from "./application/queries/list-activations.handler.js";
 import { ListLeadsHandler } from "./application/queries/list-leads.handler.js";
@@ -78,6 +79,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     OnCompanyStepReached,
     OnSubscriptionCreated,
     OnUserRegistered,
+    OnUserRegisteredLinkLead,
   ],
   exports: [ActivityRecorder],
 })
