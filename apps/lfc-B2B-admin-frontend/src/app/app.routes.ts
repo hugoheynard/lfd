@@ -58,7 +58,12 @@ export const routes: Routes = [
     title: 'Commercial — LFC B2B admin',
     loadComponent: () => import('./commercial/commercial-page').then((m) => m.CommercialPage),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'prospects' },
+      { path: '', pathMatch: 'full', redirectTo: 'cockpit' },
+      {
+        path: 'cockpit',
+        title: 'Tableau de bord — LFC B2B admin',
+        loadComponent: () => import('./commercial/cockpit/cockpit-page').then((m) => m.CockpitPage),
+      },
       {
         path: 'prospects',
         title: 'Prospects — LFC B2B admin',

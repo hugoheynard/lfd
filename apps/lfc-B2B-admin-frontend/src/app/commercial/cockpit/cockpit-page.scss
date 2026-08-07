@@ -1,0 +1,135 @@
+:host {
+  display: block;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg, 1.5rem);
+  padding: var(--fold-space-lg, 1.5rem);
+  max-width: 60rem;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md, 1rem);
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: 0.9rem;
+}
+
+.freshness {
+  color: var(--fold-color-text-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: var(--fold-space-xl, 2.5rem);
+  color: var(--fold-color-text-muted);
+  text-align: center;
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+  font-size: 0.85rem;
+}
+
+.queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md, 1rem);
+}
+
+.play-card {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+  padding: var(--fold-space-md, 1rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface);
+}
+
+.rank {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.05));
+  color: var(--fold-color-text-muted);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.who {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reason {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: 0.8rem;
+}
+
+.score {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.score .num {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.score .max {
+  color: var(--fold-color-text-muted);
+  font-size: 0.8rem;
+}

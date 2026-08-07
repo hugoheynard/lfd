@@ -6,8 +6,8 @@ import { FoldPageLayoutComponent, FoldViewNavComponent, type FoldViewNavItem } f
  * Page **Commercial** : le poste de travail du commercial. Toute la page est un
  * `fold-page-layout` (titre, gouttières, rythme) dont le corps porte un
  * `fold-view-nav` horizontal (barre d'onglets routés) puis le `<router-outlet>`.
- * Le premier onglet est **Acquisition** (le calendrier du pipeline d'entrée).
- * Les seuils d'alerte se règlent désormais dans **Réglages → Commercial**.
+ * Le premier onglet est le **Tableau de bord** (cockpit : les 5 meilleurs coups
+ * du jour). Les seuils d'alerte se règlent dans **Réglages → Commercial**.
  */
 @Component({
   selector: 'app-commercial-page',
@@ -19,6 +19,7 @@ import { FoldPageLayoutComponent, FoldViewNavComponent, type FoldViewNavItem } f
 export class CommercialPage {
   /** Onglets routés — chaque `link` est relatif à `/commercial`. */
   protected readonly tabs: FoldViewNavItem[] = [
+    { key: 'cockpit', label: 'Tableau de bord', link: 'cockpit', icon: 'layout-dashboard' },
     { key: 'prospects', label: 'Prospects', link: 'prospects', icon: 'users' },
     {
       key: 'activation',

@@ -1,0 +1,55 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Tableau de bord</h1>
+      <p class="subtitle">
+        Les 5 meilleurs coups du jour — la file scorée, chaque lead avec la motion à jouer.
+      </p>
+    </div>
+    @if (state() === 'ready' && computedAt(); as at) {
+      <span class="freshness">Recalculé le {{ freshnessLabel(at) }}</span>
+    }
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="state">Chargement de la file…</p>
+    }
+    @case ('error') {
+      <div class="state">
+        <p>Impossible de charger le tableau de bord.</p>
+        <button foldButton (click)="load()">Réessayer</button>
+      </div>
+    }
+    @default {
+      @if (leads().length === 0) {
+        <div class="state">
+          <p>Aucun coup à jouer pour l’instant.</p>
+          <p class="muted">
+            La file se remplira au prochain recalcul, dès qu’un lead devient actionnable.
+          </p>
+        </div>
+      } @else {
+        <ol class="queue">
+          @for (lead of leads(); track lead.subjectId; let i = $index) {
+            <li class="play-card">
+              <span class="rank">{{ i + 1 }}</span>
+              <div class="body">
+                <div class="line">
+                  <fold-badge [variant]="play(lead).variant" [content]="play(lead).label" />
+                  <span class="who">{{ lead.label }}</span>
+                </div>
+                <p class="reason">{{ lead.reason }}</p>
+                <p class="hint">{{ play(lead).hint }}</p>
+              </div>
+              <div class="score" [attr.aria-label]="'Score ' + lead.score + ' sur 100'">
+                <span class="num">{{ lead.score }}</span>
+                <span class="max">/100</span>
+              </div>
+            </li>
+          }
+        </ol>
+      }
+    }
+  }
+</section>
