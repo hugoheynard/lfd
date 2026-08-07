@@ -1,4 +1,3 @@
-import type { PaymentTerm } from "../ports/account.reader.js";
 import type { Company } from "../entities/company.js";
 
 /** Port d'**écriture** des sociétés. */
@@ -52,21 +51,6 @@ export abstract class CompanyRepository {
    * `pending`) est vérifié en amont par le handler, pas ici.
    */
   abstract markActive(companyId: string): Promise<void>;
-
-  /**
-   * Enregistre la condition de règlement **demandée** par le client (colonne
-   * `requested_payment_term`) : une demande, pas le terme convenu — que seul le
-   * staff écrit. `null` retire la demande en cours (souhait retiré).
-   */
-  abstract requestPaymentTerm(companyId: string, term: PaymentTerm | null): Promise<void>;
-
-  /**
-   * Fixe la condition de règlement **convenue** (colonne `payment_term`) —
-   * réservé au **staff** (Porte B). Écrire le terme convenu **solde** la demande
-   * en cours (`requested_payment_term` remis à `null`) : le commercial a tranché,
-   * il n'y a plus rien « en attente » à afficher côté client.
-   */
-  abstract setAgreedPaymentTerm(companyId: string, term: PaymentTerm): Promise<void>;
 
   /**
    * Enregistre les métadonnées du KBIS déposé (le fichier, lui, est dans R2), et

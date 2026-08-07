@@ -19,6 +19,8 @@ function reconstituted(): Company {
     siret: "81245678900021",
     tvaIntracom: "FR12345678901",
     contact: ContactDetails.create(CONTACT),
+    paymentTerm: "per_order",
+    requestedPaymentTerm: null,
   });
 }
 
@@ -70,7 +72,7 @@ describe("Company — reconstitution + mutations souples", () => {
     });
   });
 
-  it("une société déclarée n'a pas encore d'id (l'attribuera la base)", () => {
+  it("une société déclarée n'a pas encore d'id (l'attribuera la base) et sort en per_order", () => {
     const company = Company.declare(
       {
         raisonSociale: "Neuve",
@@ -82,5 +84,39 @@ describe("Company — reconstitution + mutations souples", () => {
       ContactDetails.create(CONTACT),
     );
     expect(company.id).toBeNull();
+    expect(company.paymentTerm).toBe("per_order");
+    expect(company.requestedPaymentTerm).toBeNull();
+  });
+});
+
+describe("Company — termes de règlement", () => {
+  it("le client demande un terme différent du convenu → demande en attente", () => {
+    const company = reconstituted(); // convenu = per_order
+    company.requestPaymentTerm("net60");
+    expect(company.requestedPaymentTerm).toBe("net60");
+    expect(company.paymentTerm).toBe("per_order"); // le client ne convient jamais
+  });
+
+  it("demander le terme déjà convenu retire la demande (rien en attente)", () => {
+    const company = reconstituted();
+    company.requestPaymentTerm("net60");
+    company.requestPaymentTerm("per_order"); // = le convenu
+    expect(company.requestedPaymentTerm).toBeNull();
+  });
+
+  it("`null` retire explicitement la demande en cours", () => {
+    const company = reconstituted();
+    company.requestPaymentTerm("net90");
+    company.requestPaymentTerm(null);
+    expect(company.requestedPaymentTerm).toBeNull();
+  });
+
+  it("le staff convient un terme : il s'applique ET solde la demande", () => {
+    const company = reconstituted();
+    company.requestPaymentTerm("net60");
+    company.agreePaymentTerm("net60");
+    const state = company.toPersistence();
+    expect(state.paymentTerm).toBe("net60");
+    expect(state.requestedPaymentTerm).toBeNull();
   });
 });

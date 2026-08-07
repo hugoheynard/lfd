@@ -1,4 +1,5 @@
 import { InvalidCompanyIdentityError } from "../errors/account-errors.js";
+import type { PaymentTerm } from "../ports/account.reader.js";
 import { EmailAddress } from "../value-objects/email-address.js";
 import { PersonName } from "../value-objects/person-name.js";
 import { PhoneNumber } from "../value-objects/phone-number.js";
@@ -37,9 +38,17 @@ export interface ReconstituteCompanyInput {
   readonly siret: string;
   readonly tvaIntracom: string;
   readonly contact: CompanyContact;
+  /** Terme **convenu** (celui qui s'applique). */
+  readonly paymentTerm: PaymentTerm;
+  /** Terme **demandé** par le client, ou `null` (aucune demande en cours). */
+  readonly requestedPaymentTerm: PaymentTerm | null;
 }
 
-/** État **souple** sérialisé (les seuls champs que les éditions client mutent). */
+/**
+ * État sérialisé pour l'adaptateur : identité souple + contact **et** les termes
+ * de règlement (convenu + demandé). Le statut / l'activation / le KBIS ont leurs
+ * propres transitions tant que `Company` ne les porte pas encore.
+ */
 export interface CompanySoftState {
   readonly enseigne: string;
   readonly tvaIntracom: string;
@@ -50,6 +59,8 @@ export interface CompanySoftState {
     readonly email: string;
     readonly phone: string;
   };
+  readonly paymentTerm: PaymentTerm;
+  readonly requestedPaymentTerm: PaymentTerm | null;
 }
 
 /**
@@ -74,6 +85,8 @@ export class Company {
     readonly siret: Siret,
     private tvaIntracomValue: string,
     private contactValue: CompanyContact,
+    private paymentTermValue: PaymentTerm,
+    private requestedPaymentTermValue: PaymentTerm | null,
   ) {}
 
   static declare(identity: CompanyIdentityInput, contact: CompanyContact): Company {
@@ -85,6 +98,9 @@ export class Company {
       Siret.create(identity.siret),
       optional(identity.tvaIntracom, "TVA intracommunautaire"),
       contact,
+      // Déclarée : règlement à la commande par défaut, aucune demande en cours.
+      "per_order",
+      null,
     );
   }
 
@@ -98,6 +114,8 @@ export class Company {
       Siret.create(input.siret),
       input.tvaIntracom,
       input.contact,
+      input.paymentTerm,
+      input.requestedPaymentTerm,
     );
   }
 
@@ -128,12 +146,39 @@ export class Company {
     this.contactValue = contact;
   }
 
+  get paymentTerm(): PaymentTerm {
+    return this.paymentTermValue;
+  }
+
+  get requestedPaymentTerm(): PaymentTerm | null {
+    return this.requestedPaymentTermValue;
+  }
+
+  /**
+   * Le client **demande** un terme de règlement (il ne le convient jamais lui-même).
+   * Demander le terme **déjà convenu** revient à retirer la demande (`null`) : il
+   * n'y a alors rien « en attente » à afficher. `null` retire aussi la demande.
+   */
+  requestPaymentTerm(term: PaymentTerm | null): void {
+    this.requestedPaymentTermValue = term === this.paymentTermValue ? null : term;
+  }
+
+  /**
+   * Le **staff** convient un terme (Porte B) : il devient le terme appliqué **et**
+   * **solde** la demande en cours (`requestedPaymentTerm` → `null`) — le commercial
+   * a tranché, il n'y a plus rien en attente.
+   */
+  agreePaymentTerm(term: PaymentTerm): void {
+    this.paymentTermValue = term;
+    this.requestedPaymentTermValue = null;
+  }
+
   /** Enseigne effective : le nom commercial s'il existe, la raison sociale sinon. */
   displayName(): string {
     return this.enseigneValue === "" ? this.raisonSociale : this.enseigneValue;
   }
 
-  /** Sérialise les champs **mutables** pour l'adaptateur (identité souple + contact). */
+  /** Sérialise les champs **mutables** pour l'adaptateur (identité souple + contact + termes). */
   toPersistence(): CompanySoftState {
     return {
       enseigne: this.enseigneValue,
@@ -145,6 +190,8 @@ export class Company {
         email: this.contactValue.email.value,
         phone: this.contactValue.phone.value,
       },
+      paymentTerm: this.paymentTermValue,
+      requestedPaymentTerm: this.requestedPaymentTermValue,
     };
   }
 }

@@ -63,6 +63,8 @@ function sampleCompany(): Company {
     siret: "81245678900021",
     tvaIntracom: "",
     contact: ContactDetails.create(DETAILS),
+    paymentTerm: "per_order",
+    requestedPaymentTerm: null,
   });
 }
 

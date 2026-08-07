@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
@@ -7,10 +8,9 @@ import { RequestPaymentTermCommand } from "./company-settings-commands.js";
 
 /**
  * Enregistre la condition de règlement **demandée** par le client, réservé au
- * gestionnaire. On n'écrit jamais le terme convenu (staff-only) : la demande
- * atterrit dans `requested_payment_term`. Le front n'affiche « en attente » que
- * si la demande diffère du convenu — demander le terme déjà en vigueur est donc
- * un no-op visible.
+ * gestionnaire. Le mur d'abord ; puis l'agrégat arbitre : `requestPaymentTerm`
+ * ne touche jamais le terme convenu (staff-only), et demander le terme déjà en
+ * vigueur retire la demande (rien « en attente »).
  */
 @CommandHandler(RequestPaymentTermCommand)
 export class RequestPaymentTermHandler implements ICommandHandler<RequestPaymentTermCommand, void> {
@@ -23,6 +23,11 @@ export class RequestPaymentTermHandler implements ICommandHandler<RequestPayment
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
 
-    await this.companies.requestPaymentTerm(command.companyId, command.paymentTerm);
+    const company = await this.companies.load(command.companyId);
+    if (company === null) {
+      throw new CompanyNotFoundError(command.companyId);
+    }
+    company.requestPaymentTerm(command.paymentTerm);
+    await this.companies.save(company);
   }
 }

@@ -64,7 +64,12 @@ export class SetAgreedPaymentTermHandler implements ICommandHandler<
   constructor(private readonly companies: CompanyRepository) {}
 
   async execute(command: SetAgreedPaymentTermCommand): Promise<void> {
-    await this.companies.setAgreedPaymentTerm(command.companyId, command.paymentTerm);
+    const company = await this.companies.load(command.companyId);
+    if (company === null) {
+      throw new CompanyNotFoundError(command.companyId);
+    }
+    company.agreePaymentTerm(command.paymentTerm);
+    await this.companies.save(company);
   }
 }
 

@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 
 import { CompanyStatus, CustomerRole } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import type { PaymentTerm } from "../domain/ports/account.reader.js";
 import { Company } from "../domain/entities/company.js";
 import {
   CompanyRepository,
@@ -168,6 +167,8 @@ export class PrismaCompanyRepository extends CompanyRepository {
         email: row.contactEmail,
         phone: row.contactTelephone,
       }),
+      paymentTerm: row.paymentTerm,
+      requestedPaymentTerm: row.requestedPaymentTerm,
     });
   }
 
@@ -176,8 +177,8 @@ export class PrismaCompanyRepository extends CompanyRepository {
     if (id === null) {
       throw new Error("save() attend un agrégat déjà persisté (id manquant).");
     }
-    // On n'écrit que les champs **mutables souples** (identité souple + contact) ;
-    // le mur (appartenance + rôle) est vérifié en amont par le handler.
+    // On écrit les champs **mutables** portés par l'agrégat (identité souple +
+    // contact + termes de règlement) ; le mur est vérifié en amont par le handler.
     const state = company.toPersistence();
     await this.prisma.company.update({
       where: { id },
@@ -189,15 +190,9 @@ export class PrismaCompanyRepository extends CompanyRepository {
         contactFonction: state.contact.fonction,
         contactEmail: state.contact.email,
         contactTelephone: state.contact.phone,
+        paymentTerm: state.paymentTerm,
+        requestedPaymentTerm: state.requestedPaymentTerm,
       },
-    });
-  }
-
-  async requestPaymentTerm(companyId: string, term: PaymentTerm | null): Promise<void> {
-    // On écrit la DEMANDE, jamais le terme convenu (staff-only).
-    await this.prisma.company.update({
-      where: { id: companyId },
-      data: { requestedPaymentTerm: term },
     });
   }
 
@@ -205,14 +200,6 @@ export class PrismaCompanyRepository extends CompanyRepository {
     await this.prisma.company.update({
       where: { id: companyId },
       data: { status: "active", activatedAt: new Date() },
-    });
-  }
-
-  async setAgreedPaymentTerm(companyId: string, term: PaymentTerm): Promise<void> {
-    // Le staff tranche : on écrit le terme convenu ET on solde la demande.
-    await this.prisma.company.update({
-      where: { id: companyId },
-      data: { paymentTerm: term, requestedPaymentTerm: null },
     });
   }
 
