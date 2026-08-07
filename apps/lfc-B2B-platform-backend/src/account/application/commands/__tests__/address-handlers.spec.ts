@@ -4,6 +4,7 @@ import type {
   DeliveryAddressPayload,
 } from "@lfd/contracts";
 
+import { DomainEventPublisher } from "../../../../infra/events/domain-event-publisher.js";
 import {
   CompanyAdminRequiredError,
   CompanyNotFoundError,
@@ -26,6 +27,18 @@ import { RemoveDeliveryAddressHandler } from "../remove-delivery-address.handler
 import { SaveBillingAddressHandler } from "../save-billing-address.handler.js";
 import { SetDefaultDeliveryAddressHandler } from "../set-default-delivery-address.handler.js";
 import { UpdateDeliveryAddressHandler } from "../update-delivery-address.handler.js";
+
+/** Publisher doublé : ignore (les étapes d'activation ne sont pas l'objet de ce spec). */
+class FakeEvents extends DomainEventPublisher {
+  publish(): void {
+    // no-op
+  }
+}
+
+/** Fabrique un publisher doublé frais. */
+function events(): DomainEventPublisher {
+  return new FakeEvents();
+}
 
 const BILLING: BillingAddressPayload = {
   label: "Siège",
@@ -103,6 +116,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
     await new SaveBillingAddressHandler(
       membershipReturning("company_admin"),
       addressesRecorder(recorder),
+      events(),
     ).execute(new SaveBillingAddressCommand("u1", "c1", BILLING));
     expect(recorder.writes).toEqual(["billing"]);
   });
@@ -110,9 +124,11 @@ describe("handlers d'adresses — les murs member / admin", () => {
   it("un non-membre reçoit 404 et rien n'est écrit", async () => {
     const recorder: Recorder = { writes: [] };
     await expect(
-      new AddDeliveryAddressHandler(membershipReturning(null), addressesRecorder(recorder)).execute(
-        new AddDeliveryAddressCommand("u1", "c1", DELIVERY),
-      ),
+      new AddDeliveryAddressHandler(
+        membershipReturning(null),
+        addressesRecorder(recorder),
+        events(),
+      ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY)),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(recorder.writes).toEqual([]);
   });
@@ -133,7 +149,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
     const admin = membershipReturning("company_admin");
     const repo = addressesRecorder(recorder);
 
-    await new AddDeliveryAddressHandler(admin, repo).execute(
+    await new AddDeliveryAddressHandler(admin, repo, events()).execute(
       new AddDeliveryAddressCommand("u1", "c1", DELIVERY),
     );
     await new UpdateDeliveryAddressHandler(admin, repo).execute(

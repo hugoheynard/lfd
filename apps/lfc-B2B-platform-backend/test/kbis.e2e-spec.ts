@@ -81,6 +81,21 @@ describe("dépôt du KBIS", () => {
     const company = await companyOf(ADMIN);
     expect(company.kbis).toMatchObject({ fileName: "extrait-kbis.pdf", certified: false });
     expect(company.kbis?.uploadedAt).toBeTruthy();
+
+    // Pièce d'activation « KBIS » journalisée (câblage ingestKbis→growth), clé
+    // par (société, étape) → idempotente sur re-dépôt.
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if ((await ctx.prisma.activityEvent.count({ where: { type: "company.step_reached" } })) > 0) {
+        break;
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    }
+    const [step] = await ctx.prisma.activityEvent.findMany({
+      where: { type: "company.step_reached" },
+    });
+    expect(step.subjectId).toBe(companyId);
+    expect(step.idempotencyKey).toBe(`company.step_reached:kbis:${companyId}`);
+    expect(step.payload).toMatchObject({ step: "kbis" });
   });
 
   it("est certifié quand le staff pose kbis_certified_at (découplé du statut)", async () => {

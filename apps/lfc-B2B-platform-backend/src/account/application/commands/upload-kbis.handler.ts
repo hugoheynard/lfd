@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { KbisStore } from "../../domain/ports/kbis-store.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
@@ -14,6 +15,7 @@ export class UploadKbisHandler implements ICommandHandler<UploadKbisCommand, voi
     private readonly memberships: MembershipReader,
     private readonly store: KbisStore,
     private readonly companies: CompanyRepository,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: UploadKbisCommand): Promise<void> {
@@ -26,6 +28,7 @@ export class UploadKbisHandler implements ICommandHandler<UploadKbisCommand, voi
       command.bytes,
       this.store,
       this.companies,
+      this.events,
     );
   }
 }

@@ -1,3 +1,5 @@
+import type { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
+import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import type { CompanyRepository } from "../../domain/ports/company.repository.js";
 import type { KbisStore } from "../../domain/ports/kbis-store.js";
 import { KbisFile } from "../../domain/value-objects/kbis-file.js";
@@ -9,7 +11,7 @@ import { KbisFile } from "../../domain/value-objects/kbis-file.js";
  *
  * Extrait pour être partagé par le chemin **client** (mur membre) et le chemin
  * **staff** (Porte B) : la séquence — et son invariant d'ordre — n'est écrite
- * qu'une fois.
+ * qu'une fois. Publie la pièce d'activation « KBIS » (journal idempotent par étape).
  */
 export async function ingestKbis(
   companyId: string,
@@ -17,6 +19,7 @@ export async function ingestKbis(
   bytes: Buffer,
   store: KbisStore,
   companies: CompanyRepository,
+  events: DomainEventPublisher,
 ): Promise<void> {
   // Le fichier se valide lui-même (PDF par ses octets, taille) avant de partir
   // au stockage : on ne range jamais un fichier douteux.
@@ -31,4 +34,6 @@ export async function ingestKbis(
     contentType: file.contentType,
     size: file.size,
   });
+
+  events.publish(new CompanyStepReachedEvent(companyId, "kbis"));
 }

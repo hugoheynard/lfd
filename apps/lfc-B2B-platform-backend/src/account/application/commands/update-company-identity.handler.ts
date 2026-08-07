@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
+import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
@@ -19,6 +21,7 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
   constructor(
     private readonly memberships: MembershipReader,
     private readonly companies: CompanyRepository,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: UpdateCompanyIdentityCommand): Promise<void> {
@@ -34,5 +37,11 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
       tvaIntracom: command.payload.tvaIntracom,
     });
     await this.companies.save(company);
+
+    // Pièce d'activation « TVA » franchie dès qu'un numéro est présent. Le journal
+    // dédoublonne par (société, étape) : seule la 1re fois compte.
+    if (command.payload.tvaIntracom.trim() !== "") {
+      this.events.publish(new CompanyStepReachedEvent(command.companyId, "tva"));
+    }
   }
 }
