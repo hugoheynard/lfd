@@ -8,7 +8,13 @@
     "resolvePackageJsonExports": true,
     "isolatedModules": true,
     "outDir": "./dist",
-    "baseUrl": "./"
+    "baseUrl": "./",
+    // Redondants avec le flag layer (tsc les hérite déjà via `extends`), mais
+    // déclarés en clair pour les transpileurs esbuild (tsx) qui ne résolvent PAS
+    // `extends` pour ces deux options : sans ça, la DI Nest par type casse sous
+    // tsx (paramtypes non émis) — cf. le seed handler-driven prisma/seed-growth.ts.
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
   },
   "include": ["src"],
   "exclude": ["dist", "node_modules", "test", "**/*.spec.ts"]

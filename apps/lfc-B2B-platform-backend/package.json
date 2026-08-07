@@ -26,7 +26,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:test:setup": "tsx test/setup-test-database.ts",
     "db:dev:setup": "tsx prisma/setup-dev-database.ts",
-    "db:dev:clone": "tsx prisma/clone-dev.ts"
+    "db:dev:clone": "tsx prisma/clone-dev.ts",
+    "seed:growth": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/seed-growth.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1097.0",
