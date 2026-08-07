@@ -7,8 +7,10 @@
  * `documentation/architecture-suite-gateway-scaling.md` : tuer le drift où le
  * même port vivait dans 2–3 fichiers.
  *
- * Périmètre = **dev uniquement**. Les URLs de prod (Pages, domaines réels) vivent
- * dans `suite-config.ts` et, à terme, les vars de la passerelle — pas ici.
+ * Périmètre = ports & topologie **dev** (le gros du fichier) **+** les origines
+ * **prod** des fronts, seules valeurs prod stables et publiques dont un backend a
+ * besoin au runtime (allowlist CORS). Le reste de la prod (API base du front,
+ * Auth0) reste injecté au build via `generate-auth-config.mjs` — pas ici.
  *
  * ⚠️ Les ports de serve dans les `angular.json` (JSON, non importable) doivent
  * rester alignés sur `DEV_PORTS` : shell→7300, pimFront→7315, b2bFront→7316,
@@ -101,8 +103,8 @@ export function isViaGateway(hostname: string): boolean {
 /**
  * Origines CORS autorisées **en dev** pour chaque backend : son front + le port
  * spare. Type `string[]` (mutable) pour rester assignable à l'option `origin`
- * de NestJS `enableCors`. En prod, les origines viennent de l'environnement
- * (Phase 3), pas de ce registre.
+ * de NestJS `enableCors`. Les origines **prod** sont dans `PROD_CORS_ORIGINS` ;
+ * le backend choisit l'un ou l'autre selon `NODE_ENV`.
  */
 export const DEV_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
   // Direct (localhost:PORT **et** 127.0.0.1:PORT — le dev-server bind 127.0.0.1)
@@ -122,6 +124,32 @@ export const DEV_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
     GATEWAY_URLS.b2bAdminFront,
     ...loopbacks(DEV_PORTS.spareFront),
   ],
+};
+
+/**
+ * Origines des fronts en **PRODUCTION** (Cloudflare Pages, alias de prod stable).
+ * Publiques et fixes → vivent ici, à côté des dev, plutôt que dans une variable
+ * d'environnement : une seule source de vérité, zéro câblage CI pour le CORS.
+ *
+ * Noms de projet Pages (cf. `.github/workflows/deploy_*_frontend*.yml`) :
+ * `lfc-b2b` (boutique), `lfc-b2b-admin` (staff), `lfc-pim`. Quand un domaine
+ * custom est branché (ex. `b2b.lafoliedouce.eu`), l'AJOUTER ici — le navigateur
+ * envoie l'`Origin` du domaine réellement visité.
+ */
+export const PROD_FRONT_ORIGINS = {
+  b2bFront: "https://lfc-b2b.pages.dev",
+  b2bAdminFront: "https://lfc-b2b-admin.pages.dev",
+  pimFront: "https://lfc-pim.pages.dev",
+} as const;
+
+/**
+ * Origines CORS autorisées **en prod** par backend. Le B2B sert DEUX fronts
+ * (boutique cliente + admin staff, Invariant C) ; le PIM un seul. Liste **fermée**
+ * → un site tiers reste refusé.
+ */
+export const PROD_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
+  pim: [PROD_FRONT_ORIGINS.pimFront],
+  b2b: [PROD_FRONT_ORIGINS.b2bFront, PROD_FRONT_ORIGINS.b2bAdminFront],
 };
 
 /**
