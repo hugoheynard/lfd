@@ -32,6 +32,15 @@ process.env["AUTH0_AUDIENCE"] ??= "https://api.test.local";
 process.env["AUTH_DEV_IMPERSONATE"] = "false";
 process.env["AUTH_ADMIN_DEV_BYPASS"] = "false";
 
+/**
+ * Jeton interne qui protège `POST /admin/recompute` (porte machine-à-machine du
+ * Cron Trigger). Posé **en dur** pour toutes les suites : sans bypass de dev, le
+ * guard exige ce jeton — l'e2e du recompute le présente en réutilisant cette
+ * constante plutôt qu'en touchant `process.env` (interdit hors de ce fichier).
+ */
+export const TEST_RECOMPUTE_TOKEN = "test-recompute-secret";
+process.env["RECOMPUTE_TOKEN"] = TEST_RECOMPUTE_TOKEN;
+
 /** URL de la base de test, une fois le défaut ci-dessus appliqué. */
 export function testDatabaseUrl(): string {
   return process.env["DATABASE_B2B_URL"] ?? DEFAULT_TEST_DATABASE_URL;

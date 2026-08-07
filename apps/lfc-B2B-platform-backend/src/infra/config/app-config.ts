@@ -22,6 +22,7 @@ export class AppConfig {
   private readonly impersonation: DevImpersonationConfig | null;
   private readonly adminAudienceValue: string | null;
   private readonly adminBypass: boolean;
+  private readonly recomputeTokenValue: string | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
 
@@ -36,6 +37,7 @@ export class AppConfig {
     this.impersonation = optionalDevImpersonation();
     this.adminAudienceValue = optionalString("AUTH0_ADMIN_AUDIENCE");
     this.adminBypass = optionalAdminDevBypass();
+    this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.exposeDetail = !this.production;
   }
@@ -156,6 +158,17 @@ export class AppConfig {
    */
   adminDevBypass(): boolean {
     return this.adminBypass || this.impersonation !== null;
+  }
+
+  /**
+   * Jeton partagé qui protège `POST /admin/recompute` (le recalcul batch du
+   * read-model `lead_score`). Le **Cloudflare Cron Trigger** le présente dans
+   * l'en-tête `x-lfc-recompute-token` ; le container le compare à cette valeur.
+   * `null` si non configuré — le guard **refuse alors tout** en prod (fail-closed),
+   * sauf sous le bypass de dev qui court-circuite la vérification.
+   */
+  recomputeToken(): string | null {
+    return this.recomputeTokenValue;
   }
 
   /**
