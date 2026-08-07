@@ -116,5 +116,11 @@ export type {
   CaptureLeadPayload,
   AdvanceLeadStatusPayload,
   CreatedLeadResponse,
+  GrowthKpis,
+  AcquisitionPoint,
+  MomentumDistribution,
+  FunnelStep,
+  CohortRow,
+  GrowthStatsView,
 } from "./growth.js";
 export { captureLeadPayloadSchema, advanceLeadStatusPayloadSchema } from "./growth.js";

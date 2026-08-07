@@ -13,11 +13,13 @@ import { OnSubscriptionCreated } from "./application/handlers/on-subscription-cr
 import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
 import { OnUserRegisteredLinkLead } from "./application/handlers/on-user-registered-link-lead.handler.js";
 import { GetCockpitHandler } from "./application/queries/get-cockpit.handler.js";
+import { GetGrowthStatsHandler } from "./application/queries/get-growth-stats.handler.js";
 import { ListActivationsHandler } from "./application/queries/list-activations.handler.js";
 import { ListLeadsHandler } from "./application/queries/list-leads.handler.js";
 import { ListProspectsHandler } from "./application/queries/list-prospects.handler.js";
 import { ActivationReader } from "./domain/ports/activation.reader.js";
 import { ActivityRecorder } from "./domain/ports/activity-recorder.js";
+import { GrowthStatsReader } from "./domain/ports/growth-stats.reader.js";
 import { LeadEventSource } from "./domain/ports/lead-event-source.js";
 import { LeadReader } from "./domain/ports/lead.reader.js";
 import { LeadRepository } from "./domain/ports/lead.repository.js";
@@ -26,11 +28,13 @@ import { LeadScoreStore } from "./domain/ports/lead-score.store.js";
 import { ProspectReader } from "./domain/ports/prospect.reader.js";
 import { AdminActivationsController } from "./http/admin-activations.controller.js";
 import { AdminCockpitController } from "./http/admin-cockpit.controller.js";
+import { AdminGrowthController } from "./http/admin-growth.controller.js";
 import { AdminLeadsController } from "./http/admin-leads.controller.js";
 import { AdminProspectsController } from "./http/admin-prospects.controller.js";
 import { AdminRecomputeController } from "./http/admin-recompute.controller.js";
 import { PrismaActivationReader } from "./infrastructure/prisma-activation.reader.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
+import { PrismaGrowthStatsReader } from "./infrastructure/prisma-growth-stats.reader.js";
 import { PrismaLeadEventSource } from "./infrastructure/prisma-lead-event-source.js";
 import { PrismaLeadReader } from "./infrastructure/prisma-lead.reader.js";
 import { PrismaLeadRepository } from "./infrastructure/prisma-lead.repository.js";
@@ -55,6 +59,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     AdminRecomputeController,
     AdminCockpitController,
     AdminLeadsController,
+    AdminGrowthController,
   ],
   providers: [
     { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
@@ -65,11 +70,13 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     { provide: LeadScoreReader, useClass: PrismaLeadScoreReader },
     { provide: LeadRepository, useClass: PrismaLeadRepository },
     { provide: LeadReader, useClass: PrismaLeadReader },
+    { provide: GrowthStatsReader, useClass: PrismaGrowthStatsReader },
     RecomputeGuard,
     RecomputeLeadScoresHandler,
     CaptureLeadHandler,
     ChangeLeadStatusHandler,
     GetCockpitHandler,
+    GetGrowthStatsHandler,
     ListLeadsHandler,
     ListProspectsHandler,
     ListActivationsHandler,

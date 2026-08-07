@@ -165,3 +165,69 @@ export type AdvanceLeadStatusPayload = z.infer<typeof advanceLeadStatusPayloadSc
 export interface CreatedLeadResponse {
   readonly id: string;
 }
+
+// ── Stats de croissance (onglet Croissance + rappel dashboard) ─────────────────
+
+/** Chiffres de tête du dashboard de croissance. Montants en centimes, taux 0..1. */
+export interface GrowthKpis {
+  /** Prospects entrants (hot + mid) + cold actifs. */
+  readonly prospects: number;
+  readonly hot: number;
+  readonly mid: number;
+  readonly cold: number;
+  /** Leads cold encore ouverts (non clos). */
+  readonly activeLeads: number;
+  readonly orders: number;
+  readonly ordersTotalCents: number;
+  readonly companiesDeclared: number;
+  readonly companiesActivated: number;
+  /** Conversion = activées / déclarées (0..1). */
+  readonly conversionRate: number;
+}
+
+/** Un point hebdomadaire de la **courbe d'acquisition**. `weekStart` = lundi ISO. */
+export interface AcquisitionPoint {
+  readonly weekStart: string;
+  readonly registrations: number;
+  readonly firstOrders: number;
+  readonly leadsCaptured: number;
+}
+
+/** Répartition des prospects hot par **trajectoire de momentum**. */
+export interface MomentumDistribution {
+  readonly accelerating: number;
+  readonly stable: number;
+  readonly cooling: number;
+  readonly dormant: number;
+}
+
+/** Une marche d'entonnoir : le nombre atteignant cette étape (les fuites se lisent entre marches). */
+export interface FunnelStep {
+  readonly key: string;
+  readonly label: string;
+  readonly count: number;
+}
+
+/**
+ * Une **cohorte de rétention** : les personnes inscrites une semaine donnée, et la
+ * part (0..1) d'entre elles ayant commandé la k-ième semaine après l'inscription
+ * (`retention[0]` = semaine d'inscription). Rendu en heatmap.
+ */
+export interface CohortRow {
+  readonly cohortWeek: string;
+  readonly size: number;
+  readonly retention: readonly number[];
+}
+
+/** Payload complet du dashboard de croissance (une seule requête). */
+export interface GrowthStatsView {
+  readonly kpis: GrowthKpis;
+  readonly acquisition: readonly AcquisitionPoint[];
+  readonly momentum: MomentumDistribution;
+  readonly coldFunnel: readonly FunnelStep[];
+  readonly activationFunnel: readonly FunnelStep[];
+  readonly cohorts: readonly CohortRow[];
+  /** Fenêtre d'analyse en semaines (ex. 13 ≈ 90 j). */
+  readonly weeks: number;
+  readonly computedAt: string;
+}
