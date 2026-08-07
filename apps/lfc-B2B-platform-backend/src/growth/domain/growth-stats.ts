@@ -11,6 +11,12 @@ import type {
 
 import { ACTIVITY_TYPES } from "./activity-event.js";
 import { deriveActivations } from "./activation.js";
+import {
+  accountConcentration,
+  acquisitionMix,
+  lifecycleFlow,
+  velocityMetrics,
+} from "./growth-stats-advanced.js";
 import { deriveProspects } from "./prospect.js";
 
 /**
@@ -60,6 +66,10 @@ export function deriveGrowthStats(
     coldFunnel: coldFunnel(leads),
     activationFunnel: activationFunnel(activations),
     cohorts: cohorts(userEvents, window),
+    lifecycle: lifecycleFlow(events),
+    velocity: velocityMetrics(events),
+    concentration: accountConcentration(userEvents),
+    acquisitionMix: acquisitionMix(events, window),
     weeks,
     computedAt: now.toISOString(),
   };
@@ -188,7 +198,7 @@ function cohortRow(
 
 // ── Helpers de bucketing hebdomadaire ──────────────────────────────────────────
 
-function weekStarts(now: Date, weeks: number): string[] {
+export function weekStarts(now: Date, weeks: number): string[] {
   const current = weekStart(now);
   const out: string[] = [];
   for (let i = weeks - 1; i >= 0; i -= 1) {
@@ -197,7 +207,7 @@ function weekStarts(now: Date, weeks: number): string[] {
   return out;
 }
 
-function weekStart(d: Date): string {
+export function weekStart(d: Date): string {
   const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   const diff = (dt.getUTCDay() + 6) % 7;
   dt.setUTCDate(dt.getUTCDate() - diff);

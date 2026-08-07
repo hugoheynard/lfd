@@ -122,5 +122,14 @@ export type {
   FunnelStep,
   CohortRow,
   GrowthStatsView,
+  FlowNode,
+  FlowLink,
+  LifecycleFlow,
+  Quantiles,
+  VelocityTrendPoint,
+  VelocityMetric,
+  LorenzPoint,
+  AccountConcentration,
+  AcquisitionMixPoint,
 } from "./growth.js";
 export { captureLeadPayloadSchema, advanceLeadStatusPayloadSchema } from "./growth.js";

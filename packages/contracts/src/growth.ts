@@ -227,7 +227,77 @@ export interface GrowthStatsView {
   readonly coldFunnel: readonly FunnelStep[];
   readonly activationFunnel: readonly FunnelStep[];
   readonly cohorts: readonly CohortRow[];
+  readonly lifecycle: LifecycleFlow;
+  readonly velocity: readonly VelocityMetric[];
+  readonly concentration: AccountConcentration;
+  readonly acquisitionMix: readonly AcquisitionMixPoint[];
   /** Fenêtre d'analyse en semaines (ex. 13 ≈ 90 j). */
   readonly weeks: number;
   readonly computedAt: string;
+}
+
+// ── v2 data viz : flux, vélocité, concentration, mix ──────────────────────────
+
+/** Nœud d'un flux (Sankey du cycle de vie). */
+export interface FlowNode {
+  readonly key: string;
+  readonly label: string;
+}
+/** Arête d'un flux : `value` personnes passent de `source` à `target`. */
+export interface FlowLink {
+  readonly source: string;
+  readonly target: string;
+  readonly value: number;
+}
+/** **Sankey du cycle de vie** : inscrit → (a commandé) → (a déclaré) → activé, avec les fuites. */
+export interface LifecycleFlow {
+  readonly nodes: readonly FlowNode[];
+  readonly links: readonly FlowLink[];
+}
+
+/** Résumé cinq-nombres d'une distribution (pour un boxplot). */
+export interface Quantiles {
+  readonly min: number;
+  readonly q1: number;
+  readonly median: number;
+  readonly q3: number;
+  readonly max: number;
+}
+/** Médiane d'un délai par semaine (tendance sous le boxplot). */
+export interface VelocityTrendPoint {
+  readonly weekStart: string;
+  readonly median: number;
+}
+/** Un **délai** (jours) : distribution + tendance de la médiane par cohorte. */
+export interface VelocityMetric {
+  readonly key: string;
+  readonly label: string;
+  readonly quantiles: Quantiles;
+  readonly count: number;
+  readonly trend: readonly VelocityTrendPoint[];
+}
+
+/** Un point de la **courbe de Lorenz** (part cumulée des comptes vs du volume, 0..1). */
+export interface LorenzPoint {
+  readonly cumAccounts: number;
+  readonly cumVolume: number;
+}
+/** **Concentration** du volume de commandes par compte (Lorenz + Gini + part du top décile). */
+export interface AccountConcentration {
+  readonly lorenz: readonly LorenzPoint[];
+  /** Indice de Gini, 0 (égalité parfaite) → 1 (un seul compte). */
+  readonly gini: number;
+  /** Part du volume détenue par les 10 % de comptes les plus gros (0..1). */
+  readonly topDecileShare: number;
+  readonly accounts: number;
+  readonly totalVolumeCents: number;
+}
+
+/** Un point du **mix d'acquisition** product-led vs sales-led par semaine. */
+export interface AcquisitionMixPoint {
+  readonly weekStart: string;
+  /** Conversions self / adoption+ (0-touch). */
+  readonly productLed: number;
+  /** Conversions assistées (staff, ou lead cold converti manuellement). */
+  readonly salesLed: number;
 }

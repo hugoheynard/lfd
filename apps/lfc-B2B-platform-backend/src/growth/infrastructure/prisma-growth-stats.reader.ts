@@ -16,6 +16,7 @@ const STATS_TYPES = [
   ACTIVITY_TYPES.companyDeclared,
   ACTIVITY_TYPES.companyStepReached,
   ACTIVITY_TYPES.companyActivated,
+  ACTIVITY_TYPES.leadConverted,
 ];
 
 /**
