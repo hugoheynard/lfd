@@ -12,11 +12,10 @@ import {
  * ou de test de charge. Substitue `StripePaymentGateway` via `overrideProvider`.
  */
 export class FakePaymentGateway extends PaymentGateway {
-  private counter = 0;
-
   createIntent(_params: CreateIntentParams): Promise<CreatedIntent> {
-    this.counter += 1;
-    const id = `pi_seed_${String(this.counter).padStart(8, "0")}`;
+    // Id **globalement unique** (le champ est UNIQUE en base) : un compteur remis à
+    // zéro à chaque run collisionnerait avec les commandes déjà semées.
+    const id = `pi_seed_${crypto.randomUUID()}`;
     return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
   }
 
