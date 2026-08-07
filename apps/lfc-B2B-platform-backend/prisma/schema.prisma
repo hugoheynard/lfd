@@ -849,6 +849,59 @@ model LeadScore {
   @@schema("growth")
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Lead — l'AGRÉGAT de démarchage (cold), schéma `growth`
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Lead **cold** : un prospect **saisi** par un commercial (sortant), avec un
+/// **état de suivi**. Contrairement à hot/mid (projections du journal, zéro
+/// invariant), le cold est un **agrégat** : le `status` suit un pipeline explicite
+/// qui **ne recule jamais** (converted/lost terminaux). Vit dans le schéma `growth`
+/// (donnée owned par le module croissance), pas dans `public`.
+///
+/// `linkedUserId` porte le **rapprochement** : quand le prospect démarché s'inscrit
+/// (match e-mail), le lead est rattaché à son compte et converti. Indexé sur
+/// `email` (clé du rapprochement) et `status` (filtrage de la file active).
+model Lead {
+  /// ULID préfixé `lead_` (fourni par l'IdGenerator).
+  id String @id
+
+  /// Raison sociale / nom de l'établissement démarché (seul champ obligatoire).
+  businessName String @map("business_name")
+
+  /// Contact chez le prospect, vide si non renseigné.
+  contactName String @default("") @map("contact_name")
+
+  /// E-mail du prospect — **clé de rapprochement** à l'inscription. Vide si inconnu.
+  email String @default("")
+
+  phone String @default("")
+
+  /// SIRET si connu (identité business), vide sinon.
+  siret String @default("")
+
+  /// Étape du pipeline : new | contacted | qualified | negotiating | converted | lost.
+  status String @default("new")
+
+  /// Notes libres du commercial.
+  notes String @default("")
+
+  /// Compte rapproché (le prospect s'est inscrit), ou null. Pas de FK dure : le
+  /// lead vit dans `growth` et ne dépend pas de la table `users` de `public`.
+  linkedUserId String? @map("linked_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Dernier contact enregistré, ou null si jamais contacté.
+  lastContactedAt DateTime? @map("last_contacted_at")
+
+  @@index([email])
+  @@index([status])
+  @@map("leads")
+  @@schema("growth")
+}
+
 // NB — Volontairement HORS de ce schéma :
 // - ProductionPlan (« qtés à produire demain ») : c'est de la donnée PRODUCTION
 //   (contexte interne/labo), pas du commerce customer-facing. Elle vit côté admin,
