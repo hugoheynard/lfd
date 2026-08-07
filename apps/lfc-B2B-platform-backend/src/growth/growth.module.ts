@@ -9,19 +9,23 @@ import { OnCompanyStepReached } from "./application/handlers/on-company-step-rea
 import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
+import { GetCockpitHandler } from "./application/queries/get-cockpit.handler.js";
 import { ListActivationsHandler } from "./application/queries/list-activations.handler.js";
 import { ListProspectsHandler } from "./application/queries/list-prospects.handler.js";
 import { ActivationReader } from "./domain/ports/activation.reader.js";
 import { ActivityRecorder } from "./domain/ports/activity-recorder.js";
 import { LeadEventSource } from "./domain/ports/lead-event-source.js";
+import { LeadScoreReader } from "./domain/ports/lead-score.reader.js";
 import { LeadScoreStore } from "./domain/ports/lead-score.store.js";
 import { ProspectReader } from "./domain/ports/prospect.reader.js";
 import { AdminActivationsController } from "./http/admin-activations.controller.js";
+import { AdminCockpitController } from "./http/admin-cockpit.controller.js";
 import { AdminProspectsController } from "./http/admin-prospects.controller.js";
 import { AdminRecomputeController } from "./http/admin-recompute.controller.js";
 import { PrismaActivationReader } from "./infrastructure/prisma-activation.reader.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
 import { PrismaLeadEventSource } from "./infrastructure/prisma-lead-event-source.js";
+import { PrismaLeadScoreReader } from "./infrastructure/prisma-lead-score.reader.js";
 import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.js";
 import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js";
 
@@ -36,15 +40,22 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
  */
 @Module({
   imports: [CqrsModule],
-  controllers: [AdminProspectsController, AdminActivationsController, AdminRecomputeController],
+  controllers: [
+    AdminProspectsController,
+    AdminActivationsController,
+    AdminRecomputeController,
+    AdminCockpitController,
+  ],
   providers: [
     { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
     { provide: ProspectReader, useClass: PrismaProspectReader },
     { provide: ActivationReader, useClass: PrismaActivationReader },
     { provide: LeadEventSource, useClass: PrismaLeadEventSource },
     { provide: LeadScoreStore, useClass: PrismaLeadScoreStore },
+    { provide: LeadScoreReader, useClass: PrismaLeadScoreReader },
     RecomputeGuard,
     RecomputeLeadScoresHandler,
+    GetCockpitHandler,
     ListProspectsHandler,
     ListActivationsHandler,
     OnOrderPlaced,

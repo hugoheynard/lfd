@@ -23,6 +23,13 @@ export const ACTIVITY_TYPES = {
   companyStepReached: "company.step_reached",
   companyActivated: "company.activated",
   subscriptionCreated: "subscription.created",
+  /**
+   * Reco **affichée** au staff dans le cockpit. Écrit en lecture (best-effort) —
+   * on **capture d'abord** pour brancher la boucle fermée en Phase 2 (chaîne
+   * `reco.shown → action → outcome`), on exploitera ensuite. Idempotent par
+   * (sujet, fenêtre de recompute) : rouvrir le cockpit ne le recompte pas.
+   */
+  recoShown: "reco.shown",
 } as const;
 
 /**
