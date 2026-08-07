@@ -7,8 +7,12 @@ import { OnCompanyStepReached } from "./application/handlers/on-company-step-rea
 import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
+import { ListProspectsHandler } from "./application/queries/list-prospects.handler.js";
 import { ActivityRecorder } from "./domain/ports/activity-recorder.js";
+import { ProspectReader } from "./domain/ports/prospect.reader.js";
+import { AdminProspectsController } from "./http/admin-prospects.controller.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
+import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js";
 
 /**
  * Module **croissance** (`growth/`) — cross-domain. Il héberge le **journal
@@ -21,8 +25,11 @@ import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorde
  */
 @Module({
   imports: [CqrsModule],
+  controllers: [AdminProspectsController],
   providers: [
     { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
+    { provide: ProspectReader, useClass: PrismaProspectReader },
+    ListProspectsHandler,
     OnOrderPlaced,
     OnCompanyDeclared,
     OnCompanyActivated,
