@@ -27,6 +27,7 @@ export class CommercialPage {
       link: 'activation',
       icon: 'check-circle',
     },
+    { key: 'croissance', label: 'Croissance', link: 'croissance', icon: 'trending-up' },
     { key: 'acquisition', label: 'Acquisition', link: 'acquisition', icon: 'calendar' },
   ];
 }

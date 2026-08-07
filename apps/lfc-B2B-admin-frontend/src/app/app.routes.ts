@@ -77,6 +77,12 @@ export const routes: Routes = [
           import('./commercial/activation/activation-page').then((m) => m.ActivationPage),
       },
       {
+        path: 'croissance',
+        title: 'Croissance — LFC B2B admin',
+        loadComponent: () =>
+          import('./commercial/croissance/croissance-page').then((m) => m.CroissancePage),
+      },
+      {
         path: 'acquisition',
         title: 'Acquisition — LFC B2B admin',
         loadComponent: () =>
