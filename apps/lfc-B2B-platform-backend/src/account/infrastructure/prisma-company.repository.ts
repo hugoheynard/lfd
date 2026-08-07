@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { CompanyStatus, CustomerRole } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
+import { IdGenerator } from "../../infra/id/id-generator.js";
+import { Clock } from "../../infra/time/clock.js";
 import { Company } from "../domain/entities/company.js";
 import {
   CompanyRepository,
@@ -12,19 +14,27 @@ import { ContactDetails } from "../domain/value-objects/contact-details.js";
 
 /**
  * Alphabet de la référence humaine — **sans caractères ambigus** (ni `I`, `O`,
- * `0`, `1`) : elle se dicte au téléphone sans confusion.
+ * `0`, `1`) : elle se dicte au téléphone sans confusion. 32 symboles, comme
+ * l'alphabet Crockford du ULID → mapping bijectif direct (cf. `deriveReference`).
  */
 const REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+/** Alphabet Crockford base32 des ULID (exclut I, L, O, U). Même longueur que ci-dessus. */
+const CROCKFORD_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
 /**
- * Tire une référence `C-XXXXXX`. L'unicité est **garantie** par la colonne
- * `@unique` ; ce tirage vise seulement à ne pas tomber dessus (32⁶ ≈ 1,07 Md de
- * combinaisons), l'index restant le juge de paix en cas de course.
+ * Dérive une référence `C-XXXXXX` d'un ULID. On prend ses 6 derniers caractères
+ * (composante aléatoire du ULID) et on les **remappe** sur l'alphabet
+ * non-ambigu : deux alphabets de 32 symboles → bijection index-à-index. Aucun
+ * `Math.random` (déterminisme + traçabilité via `IdGenerator`), et l'unicité
+ * finale reste **garantie** par la colonne `@unique`.
  */
-function drawCompanyReference(): string {
+function deriveReference(ulid: string): string {
+  const tail = ulid.slice(-6);
   let code = "";
-  for (let i = 0; i < 6; i += 1) {
-    code += REFERENCE_ALPHABET[Math.floor(Math.random() * REFERENCE_ALPHABET.length)];
+  for (const char of tail) {
+    const index = CROCKFORD_ALPHABET.indexOf(char);
+    code += index >= 0 ? REFERENCE_ALPHABET[index] : REFERENCE_ALPHABET[0];
   }
   return `C-${code}`;
 }
@@ -36,25 +46,36 @@ const REFERENCE_MAX_ATTEMPTS = 5;
  * Référence libre à la lecture — re-tire tant que la valeur est déjà prise, pour
  * éviter qu'une collision (extrêmement rare) ne fasse échouer la création avec un
  * P2002 trompeur. L'`@unique` reste la garantie finale sous course concurrente.
+ * `draw` fournit une nouvelle référence à chaque appel (ULID monotone distinct).
  */
 async function pickFreeCompanyReference(
+  draw: () => string,
   isTaken: (reference: string) => Promise<boolean>,
 ): Promise<string> {
   for (let attempt = 0; attempt < REFERENCE_MAX_ATTEMPTS; attempt += 1) {
-    const reference = drawCompanyReference();
+    const reference = draw();
     if (!(await isTaken(reference))) {
       return reference;
     }
   }
   // Extrêmement improbable : on rend quand même une valeur, l'index tranchera.
-  return drawCompanyReference();
+  return draw();
 }
 
 /** Adaptateur Prisma du port des sociétés. */
 @Injectable()
 export class PrismaCompanyRepository extends CompanyRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly clock: Clock,
+    private readonly ids: IdGenerator,
+  ) {
     super();
+  }
+
+  /** Une référence société neuve, dérivée d'un ULID frais (déterministe en test). */
+  private drawReference(): string {
+    return deriveReference(this.ids.next());
   }
 
   async existsBySiret(siret: string): Promise<boolean> {
@@ -73,13 +94,16 @@ export class PrismaCompanyRepository extends CompanyRepository {
    */
   async declareOwnedBy(company: Company, ownerUserId: string): Promise<string> {
     return this.prisma.$transaction(async (tx) => {
-      const reference = await pickFreeCompanyReference(async (candidate) => {
-        const clash = await tx.company.findUnique({
-          where: { reference: candidate },
-          select: { id: true },
-        });
-        return clash !== null;
-      });
+      const reference = await pickFreeCompanyReference(
+        this.drawReference.bind(this),
+        async (candidate) => {
+          const clash = await tx.company.findUnique({
+            where: { reference: candidate },
+            select: { id: true },
+          });
+          return clash !== null;
+        },
+      );
       const created = await tx.company.create({
         data: {
           reference,
@@ -120,13 +144,16 @@ export class PrismaCompanyRepository extends CompanyRepository {
    * tard par le client (invitation). Une seule écriture, donc pas de transaction.
    */
   async declareUnowned(company: Company): Promise<string> {
-    const reference = await pickFreeCompanyReference(async (candidate) => {
-      const clash = await this.prisma.company.findUnique({
-        where: { reference: candidate },
-        select: { id: true },
-      });
-      return clash !== null;
-    });
+    const reference = await pickFreeCompanyReference(
+      this.drawReference.bind(this),
+      async (candidate) => {
+        const clash = await this.prisma.company.findUnique({
+          where: { reference: candidate },
+          select: { id: true },
+        });
+        return clash !== null;
+      },
+    );
     const created = await this.prisma.company.create({
       data: {
         reference,
@@ -208,7 +235,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         kbisFileName: meta.fileName,
         kbisContentType: meta.contentType,
         kbisSize: meta.size,
-        kbisUploadedAt: new Date(),
+        kbisUploadedAt: this.clock.now(),
         // Nouveau fichier ⇒ certification précédente invalidée.
         kbisCertifiedAt: null,
       },

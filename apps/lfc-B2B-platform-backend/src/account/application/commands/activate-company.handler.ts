@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { Clock } from "../../../infra/time/clock.js";
 import { PlatformSettingsRepository } from "../../../platform-settings/domain/platform-settings.repository.js";
 import {
   CompanyActivationBlockedError,
@@ -31,6 +32,7 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     private readonly companies: CompanyRepository,
     private readonly reader: AdminCompanyReader,
     private readonly settings: PlatformSettingsRepository,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: ActivateCompanyByStaffCommand): Promise<void> {
@@ -49,13 +51,14 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
       );
     }
 
-    // 2) Transition via l'agrégat, qui garde l'invariant « pending ». `new Date()`
-    //    faute de port Clock — impureté localisée à l'application, l'agrégat reste pur.
+    // 2) Transition via l'agrégat, qui garde l'invariant « pending ». L'instant
+    //    d'activation vient du `Clock` (temps métier de la requête) — l'agrégat
+    //    reste pur, l'horloge est injectée.
     const company = await this.companies.load(command.companyId);
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    company.activate(new Date());
+    company.activate(this.clock.now());
     await this.companies.save(company);
   }
 }
