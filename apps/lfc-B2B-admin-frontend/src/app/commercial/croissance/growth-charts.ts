@@ -103,24 +103,25 @@ export function sparklineOption(points: readonly AcquisitionPoint[]): EChartsOpt
 }
 
 /**
- * **Momentum du vivier** : le niveau de prospects par chaleur, semaine après semaine.
- * Trois courbes **non empilées** — la hauteur d'une courbe = le volume de la bande, sa
- * **pente = la direction** (monte/descend), sans distorsion d'empilement. Dégradé de
- * chaleur : chauds (rouge), tièdes (ambre), froids (bleu). Chaque point = le stock
- * debout à la clôture de la semaine (pas un cumul d'événements). Se lit avec le
- * diagramme de transferts, qui montre *qui* bascule d'une bande à l'autre.
+ * **Momentum du vivier** : la part de prospects par chaleur, semaine après semaine, en
+ * **aires empilées** (base à 0). L'épaisseur d'une bande = sa **part** ; l'enveloppe du
+ * haut = le **volume total** du vivier. La bande chaude est en bas de la pile pour
+ * garder une base plate honnête. Dégradé de chaleur : chauds (rouge), tièdes (ambre),
+ * froids (bleu). Chaque point = le stock debout à la clôture de la semaine. La direction
+ * *par bande* (qui se réchauffe / refroidit) se lit sur le diagramme de transferts.
  */
 export function temperatureFlowOption(points: readonly TemperatureFlowPoint[]): EChartsOption {
   const weeks = points.map((p) => weekLabel(p.weekStart));
   const band = (name: string, data: readonly number[], color: string): Record<string, unknown> => ({
     name,
     type: 'line',
+    stack: 'vivier',
     smooth: true,
-    symbol: 'circle',
-    symbolSize: 5,
+    symbol: 'none',
     data: [...data],
     itemStyle: { color },
-    lineStyle: { color, width: 2 },
+    lineStyle: { color, width: 1 },
+    areaStyle: { color, opacity: 0.55 },
   });
   return {
     legend: {
@@ -131,6 +132,7 @@ export function temperatureFlowOption(points: readonly TemperatureFlowPoint[]): 
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: weeks, boundaryGap: false },
     yAxis: { type: 'value', minInterval: 1 },
+    // Ordre de pile : chauds en bas (base plate honnête) → tièdes → froids.
     series: [
       band(
         'Chauds',

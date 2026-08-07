@@ -31,7 +31,7 @@ interface Kpi {
 
 /**
  * Onglet **Croissance** : le dashboard analytique PLG, dérivé du journal (`GET
- * /admin/growth/stats`). Tuiles KPI + acquisition + momentum du vivier (niveau par
+ * /admin/growth/stats`). Tuiles KPI + acquisition + momentum du vivier (part par
  * chaleur + transferts entre bandes) + entonnoirs (cold & activation) + cycle de vie
  * + vélocité + mix + Lorenz + heatmap de cohortes. Rendus par `<app-chart>` (ECharts) /
  * `<app-lorenz>`

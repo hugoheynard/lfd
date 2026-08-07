@@ -45,10 +45,10 @@
 
         <article class="card">
           <header class="card-head">
-            <h2>Momentum du vivier — niveau par chaleur</h2>
+            <h2>Momentum du vivier — part par chaleur</h2>
             <app-metric-info
               label="Momentum du vivier"
-              text="Le nombre de prospects dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). Trois courbes indépendantes : la hauteur = le volume de la bande, la pente = sa direction (monte/descend)."
+              text="La part de prospects dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). Aires empilées : l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total du vivier. La direction par bande (qui se réchauffe/refroidit) se lit sur les transferts ci-contre."
             />
           </header>
           @if (temperatureFlow(); as opt) {
