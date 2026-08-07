@@ -800,6 +800,55 @@ model ActivityEvent {
   @@schema("growth")
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LeadScore — le READ-MODEL matérialisé du cockpit (schéma `growth`)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Read-model **matérialisé** de la queue « 5 meilleurs coups du jour » : un lead
+/// scoré (0..100) et typé par play. **Dérivé du journal** par un `derive*` pur,
+/// **recalculé par cron 3×/jour** (04h/12h/20h, heures creuses) via
+/// `POST /admin/recompute` — **jamais** temps réel, **jamais** on-read (rejouer
+/// tout le journal à chaque affichage = fondu). Le cockpit **lit ce read-model**,
+/// jamais le journal brut.
+///
+/// Ce n'est **pas un agrégat** (zéro invariant réfutable) : une **projection**
+/// intégralement remplacée à chaque recompute (`replaceAll` = wipe + insert). La
+/// clé métier est le couple (sujet-type, sujet-id) → une seule ligne par lead.
+model LeadScore {
+  /// Sujet du lead : `user` (personne) | `company` (dossier d'activation).
+  subjectType String @map("subject_type")
+  subjectId   String @map("subject_id")
+
+  /// Libellé lisible figé au recompute (e-mail connu, sinon l'identifiant).
+  label String
+
+  /// Play recommandée : `lock_in` | `rescue` | `upgrade` | `win_back`.
+  play String
+
+  /// Score de priorité, entier 0..100 (fonction pure auditable).
+  score Int
+
+  /// Justification courte du score/play, rendue telle quelle au commercial.
+  reason String
+
+  /// Trajectoire du rythme si connue (`null` pour un dossier société).
+  momentum String?
+
+  /// Total commandé rattaché au lead, en centimes.
+  monetaryCents Int @map("monetary_cents")
+
+  /// Jours depuis la dernière activité.
+  recencyDays Int @map("recency_days")
+
+  /// Instant du recompute qui a produit cette ligne (fraîcheur de la reco).
+  computedAt DateTime @map("computed_at")
+
+  @@id([subjectType, subjectId])
+  @@index([score(sort: Desc)])
+  @@map("lead_scores")
+  @@schema("growth")
+}
+
 // NB — Volontairement HORS de ce schéma :
 // - ProductionPlan (« qtés à produire demain ») : c'est de la donnée PRODUCTION
 //   (contexte interne/labo), pas du commerce customer-facing. Elle vit côté admin,
