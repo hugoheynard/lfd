@@ -11,11 +11,16 @@ import { missingRequiredPieces } from "../../domain/services/activation-requirem
 import { ActivateCompanyByStaffCommand } from "./activate-company.command.js";
 
 /**
- * Active un compte client (Porte B). Le **gate** vit ici, côté serveur : la
- * société doit être `pending` et toutes ses pièces `required` (selon la config
- * plateforme) présentes — sinon `CompanyActivationBlockedError` (409). L'état des
- * pièces est lu via la fiche staff (`AdminCompanyReader`), qui porte déjà TVA +
- * KBIS + adresses. Aucun mur membership : l'auth staff garde la route en amont.
+ * Active un compte client (Porte B). Deux responsabilités, séparées :
+ *
+ * 1. **Policy de complétude** (ici) : toutes les pièces `required` (selon la
+ *    config plateforme) doivent être présentes. Les pièces (TVA + KBIS + adresses)
+ *    croisent plusieurs tables — on les lit via la fiche staff (`AdminCompanyReader`),
+ *    c'est une règle **cross-agrégat**, hors de `Company`.
+ * 2. **Transition d'état** (l'agrégat) : `Company.activate()` porte le passage
+ *    `pending → active` et **refuse** toute société qui n'est pas `pending`.
+ *
+ * Aucun mur membership : l'auth staff garde la route en amont.
  */
 @CommandHandler(ActivateCompanyByStaffCommand)
 export class ActivateCompanyByStaffHandler implements ICommandHandler<
@@ -29,18 +34,13 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
   ) {}
 
   async execute(command: ActivateCompanyByStaffCommand): Promise<void> {
-    const company = await this.reader.byId(command.companyId);
-    if (company === null) {
+    // 1) Policy : la fiche assemble les pièces (plusieurs tables) ; on bloque si
+    //    une pièce requise manque.
+    const view = await this.reader.byId(command.companyId);
+    if (view === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    if (company.status !== "pending") {
-      throw new CompanyActivationBlockedError(
-        command.companyId,
-        [],
-        "Seul un compte en attente peut être activé.",
-      );
-    }
-    const missing = missingRequiredPieces(company, await this.settings.read());
+    const missing = missingRequiredPieces(view, await this.settings.read());
     if (missing.length > 0) {
       throw new CompanyActivationBlockedError(
         command.companyId,
@@ -48,6 +48,14 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
         `Activation impossible : pièces requises manquantes (${missing.join(", ")}).`,
       );
     }
-    await this.companies.markActive(command.companyId);
+
+    // 2) Transition via l'agrégat, qui garde l'invariant « pending ». `new Date()`
+    //    faute de port Clock — impureté localisée à l'application, l'agrégat reste pur.
+    const company = await this.companies.load(command.companyId);
+    if (company === null) {
+      throw new CompanyNotFoundError(command.companyId);
+    }
+    company.activate(new Date());
+    await this.companies.save(company);
   }
 }

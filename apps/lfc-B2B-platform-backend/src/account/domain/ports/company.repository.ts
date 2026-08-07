@@ -46,13 +46,6 @@ export abstract class CompanyRepository {
   abstract declareUnowned(company: Company): Promise<string>;
 
   /**
-   * Passe la société à `active` et **pose `activatedAt`** (activation commerciale
-   * explicite). Écriture nue : le gate (pièces requises présentes, statut
-   * `pending`) est vérifié en amont par le handler, pas ici.
-   */
-  abstract markActive(companyId: string): Promise<void>;
-
-  /**
    * Enregistre les métadonnées du KBIS déposé (le fichier, lui, est dans R2), et
    * **remet la certification à zéro** : un nouveau fichier n'est jamais certifié
    * tant que le staff ne l'a pas revalidé.

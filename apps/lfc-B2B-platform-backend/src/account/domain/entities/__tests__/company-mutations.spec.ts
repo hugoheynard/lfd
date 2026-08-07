@@ -1,4 +1,8 @@
-import { InvalidCompanyIdentityError } from "../../errors/account-errors.js";
+import {
+  CompanyActivationBlockedError,
+  InvalidCompanyIdentityError,
+} from "../../errors/account-errors.js";
+import type { CompanyStatus } from "../../value-objects/company-status.js";
 import { ContactDetails } from "../../value-objects/contact-details.js";
 import { Company } from "../company.js";
 
@@ -21,6 +25,8 @@ function reconstituted(): Company {
     contact: ContactDetails.create(CONTACT),
     paymentTerm: "per_order",
     requestedPaymentTerm: null,
+    status: "pending",
+    activatedAt: null,
   });
 }
 
@@ -118,5 +124,44 @@ describe("Company — termes de règlement", () => {
     const state = company.toPersistence();
     expect(state.paymentTerm).toBe("net60");
     expect(state.requestedPaymentTerm).toBeNull();
+  });
+});
+
+describe("Company — activation", () => {
+  function withStatus(status: CompanyStatus): Company {
+    return Company.reconstitute({
+      id: "c1",
+      raisonSociale: "PQ Marais",
+      enseigne: "",
+      formeJuridique: "SAS",
+      siret: "81245678900021",
+      tvaIntracom: "",
+      contact: ContactDetails.create(CONTACT),
+      paymentTerm: "per_order",
+      requestedPaymentTerm: null,
+      status,
+      activatedAt: null,
+    });
+  }
+
+  it("active une société pending : statut active + horodatage posé", () => {
+    const company = withStatus("pending");
+    const at = new Date("2026-08-07T09:00:00.000Z");
+    company.activate(at);
+    const state = company.toPersistence();
+    expect(state.status).toBe("active");
+    expect(state.activatedAt).toBe(at);
+  });
+
+  it("refuse d'activer une société déjà active", () => {
+    expect(() => withStatus("active").activate(new Date("2026-08-07T09:00:00.000Z"))).toThrow(
+      CompanyActivationBlockedError,
+    );
+  });
+
+  it("refuse d'activer une société suspendue ou clôturée", () => {
+    const at = new Date("2026-08-07T09:00:00.000Z");
+    expect(() => withStatus("suspended").activate(at)).toThrow(CompanyActivationBlockedError);
+    expect(() => withStatus("terminated").activate(at)).toThrow(CompanyActivationBlockedError);
   });
 });

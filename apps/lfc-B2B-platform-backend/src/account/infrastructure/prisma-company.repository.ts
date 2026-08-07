@@ -169,6 +169,8 @@ export class PrismaCompanyRepository extends CompanyRepository {
       }),
       paymentTerm: row.paymentTerm,
       requestedPaymentTerm: row.requestedPaymentTerm,
+      status: row.status,
+      activatedAt: row.activatedAt,
     });
   }
 
@@ -178,7 +180,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
       throw new Error("save() attend un agrégat déjà persisté (id manquant).");
     }
     // On écrit les champs **mutables** portés par l'agrégat (identité souple +
-    // contact + termes de règlement) ; le mur est vérifié en amont par le handler.
+    // contact + termes + statut/activation) ; le mur est vérifié en amont.
     const state = company.toPersistence();
     await this.prisma.company.update({
       where: { id },
@@ -192,14 +194,9 @@ export class PrismaCompanyRepository extends CompanyRepository {
         contactTelephone: state.contact.phone,
         paymentTerm: state.paymentTerm,
         requestedPaymentTerm: state.requestedPaymentTerm,
+        status: state.status,
+        activatedAt: state.activatedAt,
       },
-    });
-  }
-
-  async markActive(companyId: string): Promise<void> {
-    await this.prisma.company.update({
-      where: { id: companyId },
-      data: { status: "active", activatedAt: new Date() },
     });
   }
 

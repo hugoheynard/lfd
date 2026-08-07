@@ -1,5 +1,9 @@
-import { InvalidCompanyIdentityError } from "../errors/account-errors.js";
+import {
+  CompanyActivationBlockedError,
+  InvalidCompanyIdentityError,
+} from "../errors/account-errors.js";
 import type { PaymentTerm } from "../ports/account.reader.js";
+import type { CompanyStatus } from "../value-objects/company-status.js";
 import { EmailAddress } from "../value-objects/email-address.js";
 import { PersonName } from "../value-objects/person-name.js";
 import { PhoneNumber } from "../value-objects/phone-number.js";
@@ -42,12 +46,15 @@ export interface ReconstituteCompanyInput {
   readonly paymentTerm: PaymentTerm;
   /** Terme **demandé** par le client, ou `null` (aucune demande en cours). */
   readonly requestedPaymentTerm: PaymentTerm | null;
+  readonly status: CompanyStatus;
+  /** Horodatage d'activation commerciale, ou `null` (jamais activée). */
+  readonly activatedAt: Date | null;
 }
 
 /**
- * État sérialisé pour l'adaptateur : identité souple + contact **et** les termes
- * de règlement (convenu + demandé). Le statut / l'activation / le KBIS ont leurs
- * propres transitions tant que `Company` ne les porte pas encore.
+ * État sérialisé pour l'adaptateur : identité souple + contact + termes de
+ * règlement + statut/activation. Le **KBIS** garde son écriture propre (couplée
+ * au stockage objet R2), hors de cet agrégat.
  */
 export interface CompanySoftState {
   readonly enseigne: string;
@@ -61,6 +68,8 @@ export interface CompanySoftState {
   };
   readonly paymentTerm: PaymentTerm;
   readonly requestedPaymentTerm: PaymentTerm | null;
+  readonly status: CompanyStatus;
+  readonly activatedAt: Date | null;
 }
 
 /**
@@ -72,9 +81,11 @@ export interface CompanySoftState {
  * modèle refuse ainsi le raccourci « saisie donc cliente ».
  *
  * L'identité **légale** (raison sociale, forme, SIRET) est **figée** : on ne la
- * mute pas après déclaration. Seules l'**identité souple** (enseigne + TVA) et le
- * **contact principal** s'éditent — par des méthodes métier, jamais par écriture
- * de colonne. `toPersistence()` ne sérialise que ces champs mutables.
+ * mute pas après déclaration. Ce qui évolue le fait par des **méthodes métier**,
+ * jamais par écriture de colonne : identité souple (`editSoftIdentity`), contact
+ * (`changePrimaryContact`), termes de règlement (`requestPaymentTerm` /
+ * `agreePaymentTerm`), activation (`activate`). `toPersistence()` sérialise ces
+ * champs mutables ; le KBIS garde son écriture propre (couplée au stockage).
  */
 export class Company {
   private constructor(
@@ -87,6 +98,8 @@ export class Company {
     private contactValue: CompanyContact,
     private paymentTermValue: PaymentTerm,
     private requestedPaymentTermValue: PaymentTerm | null,
+    private statusValue: CompanyStatus,
+    private activatedAtValue: Date | null,
   ) {}
 
   static declare(identity: CompanyIdentityInput, contact: CompanyContact): Company {
@@ -98,8 +111,11 @@ export class Company {
       Siret.create(identity.siret),
       optional(identity.tvaIntracom, "TVA intracommunautaire"),
       contact,
-      // Déclarée : règlement à la commande par défaut, aucune demande en cours.
+      // Déclarée : règlement à la commande par défaut, aucune demande en cours,
+      // et **non validée** (pending) — l'activation est commerciale, jamais implicite.
       "per_order",
+      null,
+      "pending",
       null,
     );
   }
@@ -116,6 +132,8 @@ export class Company {
       input.contact,
       input.paymentTerm,
       input.requestedPaymentTerm,
+      input.status,
+      input.activatedAt,
     );
   }
 
@@ -173,6 +191,29 @@ export class Company {
     this.requestedPaymentTermValue = null;
   }
 
+  get status(): CompanyStatus {
+    return this.statusValue;
+  }
+
+  /**
+   * **Active** la société (activation commerciale explicite) : `pending → active`
+   * + pose l'horodatage. Ne porte QUE la transition d'état ; la **complétude des
+   * pièces** (TVA/KBIS/adresses, selon les settings) est une policy vérifiée en
+   * amont par le cas d'usage — elle croise plusieurs tables, hors de cet agrégat.
+   * Refuse toute société qui n'est pas `pending` (déjà active, suspendue, close).
+   */
+  activate(activatedAt: Date): void {
+    if (this.statusValue !== "pending") {
+      throw new CompanyActivationBlockedError(
+        this.identityId ?? "",
+        [],
+        "Seul un compte en attente peut être activé.",
+      );
+    }
+    this.statusValue = "active";
+    this.activatedAtValue = activatedAt;
+  }
+
   /** Enseigne effective : le nom commercial s'il existe, la raison sociale sinon. */
   displayName(): string {
     return this.enseigneValue === "" ? this.raisonSociale : this.enseigneValue;
@@ -192,6 +233,8 @@ export class Company {
       },
       paymentTerm: this.paymentTermValue,
       requestedPaymentTerm: this.requestedPaymentTermValue,
+      status: this.statusValue,
+      activatedAt: this.activatedAtValue,
     };
   }
 }

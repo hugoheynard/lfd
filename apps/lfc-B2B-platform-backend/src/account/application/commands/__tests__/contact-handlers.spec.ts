@@ -65,6 +65,8 @@ function sampleCompany(): Company {
     contact: ContactDetails.create(DETAILS),
     paymentTerm: "per_order",
     requestedPaymentTerm: null,
+    status: "pending",
+    activatedAt: null,
   });
 }
 
