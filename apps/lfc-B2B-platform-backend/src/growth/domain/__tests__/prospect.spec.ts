@@ -127,3 +127,67 @@ describe("deriveProspects — momentum intégré", () => {
     expect(prospect.momentum).toBe("accelerating");
   });
 });
+
+import { coldProspectsFrom, mergeProspects } from "../prospect.js";
+import type { LeadView } from "@lfd/contracts";
+
+function lead(overrides: Partial<LeadView> = {}): LeadView {
+  return {
+    id: "lead_1",
+    businessName: "Bistrot du Coin",
+    contactName: "",
+    email: "chef@bistrot.fr",
+    phone: "",
+    siret: "",
+    status: "contacted",
+    notes: "",
+    linkedUserId: null,
+    createdAt: "2026-08-10T09:00:00.000Z",
+    lastContactedAt: "2026-08-16T09:00:00.000Z",
+    ...overrides,
+  };
+}
+
+describe("coldProspectsFrom", () => {
+  it("mappe un lead actif en prospect cold (sortant, dormant, récence depuis le dernier contact)", () => {
+    const [cold] = coldProspectsFrom([lead()], NOW);
+    expect(cold).toMatchObject({
+      subjectId: "lead_1",
+      temperature: "cold",
+      source: "outbound",
+      momentum: "dormant",
+      orderCount: 0,
+      totalCents: 0,
+      lastOrderAt: null,
+      label: "Bistrot du Coin",
+      recencyDays: 4, // 16 → 20 août
+    });
+  });
+
+  it("écarte les leads clos (converted/lost) — dédup avec la projection entrante", () => {
+    const cold = coldProspectsFrom(
+      [lead({ id: "l1", status: "converted" }), lead({ id: "l2", status: "lost" })],
+      NOW,
+    );
+    expect(cold).toHaveLength(0);
+  });
+
+  it("prend la date de saisie comme ancre quand jamais contacté", () => {
+    const [cold] = coldProspectsFrom([lead({ lastContactedAt: null })], NOW);
+    expect(cold.recencyDays).toBe(10); // 10 → 20 août
+  });
+});
+
+describe("mergeProspects", () => {
+  it("unifie hot/mid entrants et cold, triés hot → mid → cold", () => {
+    const inbound = deriveProspects(
+      [
+        registered("u_mid", "2026-08-18T09:00:00.000Z"),
+        ordered("u_hot", "2026-08-19T09:00:00.000Z", 500),
+      ],
+      NOW,
+    );
+    const merged = mergeProspects(inbound, [lead()], NOW);
+    expect(merged.map((p) => p.temperature)).toEqual(["hot", "mid", "cold"]);
+  });
+});

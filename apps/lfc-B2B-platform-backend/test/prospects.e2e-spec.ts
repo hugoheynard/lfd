@@ -6,7 +6,8 @@
  * pour une société, et la route est **murée staff** (porte admin). On sème le
  * journal directement (déterministe) — l'émission, elle, est testée ailleurs.
  */
-import type { ProspectView } from "../src/growth/domain/prospect.js";
+import type { ProspectView } from "@lfd/contracts";
+
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
@@ -96,5 +97,39 @@ describe("GET /admin/prospects", () => {
       email: "mid@resto.fr",
       orderCount: 0,
     });
+  });
+
+  it("unifie les leads cold (agrégat) avec la projection entrante, hot → mid → cold", async () => {
+    await seed("order.placed", "u_hot", "2026-08-15T09:00:00.000Z", {
+      totalCents: 900,
+      companyId: null,
+    });
+    await ctx.prisma.lead.create({
+      data: {
+        id: "lead_cold",
+        businessName: "Traiteur Démarché",
+        email: "démarché@resto.fr",
+        status: "contacted",
+      },
+    });
+
+    const prospects = jsonBody<ProspectView[]>(await staff().get("/admin/prospects").expect(200));
+    const cold = prospects.find((p) => p.subjectId === "lead_cold");
+    expect(cold).toMatchObject({
+      temperature: "cold",
+      source: "outbound",
+      label: "Traiteur Démarché",
+    });
+    // Le hot entrant reste avant le cold sortant.
+    expect(prospects[0]?.temperature).toBe("hot");
+    expect(prospects.at(-1)?.temperature).toBe("cold");
+  });
+
+  it("n'affiche pas un lead clos (converted/lost) dans la file — dédup avec le journal", async () => {
+    await ctx.prisma.lead.create({
+      data: { id: "lead_won", businessName: "Converti", status: "converted" },
+    });
+    const prospects = jsonBody<ProspectView[]>(await staff().get("/admin/prospects").expect(200));
+    expect(prospects.some((p) => p.subjectId === "lead_won")).toBe(false);
   });
 });

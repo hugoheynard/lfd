@@ -1,4 +1,9 @@
-import type { MomentumTrajectory, ProspectView } from "@lfd/contracts";
+import type {
+  LeadView,
+  MomentumTrajectory,
+  ProspectTemperature,
+  ProspectView,
+} from "@lfd/contracts";
 
 import { ACTIVITY_TYPES } from "./activity-event.js";
 
@@ -108,10 +113,63 @@ export function deriveProspects(events: readonly ProspectEvent[], now: Date): Pr
   return prospects.sort(byTemperatureThenRecency);
 }
 
-/** Hot avant mid ; à température égale, le plus récemment actif d'abord. */
+/** Statuts de lead **actifs** (non clos) — les seuls qui entrent dans la file. */
+const ACTIVE_LEAD_STATUSES: ReadonlySet<string> = new Set([
+  "new",
+  "contacted",
+  "qualified",
+  "negotiating",
+]);
+
+/**
+ * Mappe les **leads cold actifs** (démarchage sortant) vers des `ProspectView`.
+ * Pure et déterministe (temps injecté). Les leads **clos** sont écartés : un
+ * `converted` réapparaît côté entrant via le journal (il s'est inscrit), un `lost`
+ * a quitté la file — c'est la **déduplication** entre l'agrégat et la projection.
+ * Un cold n'a ni commande ni rythme (`momentum` dormant), sa récence court depuis
+ * le dernier contact, sinon la saisie.
+ */
+export function coldProspectsFrom(leads: readonly LeadView[], now: Date): ProspectView[] {
+  return leads
+    .filter((lead) => ACTIVE_LEAD_STATUSES.has(lead.status))
+    .map((lead) => {
+      const anchor = new Date(lead.lastContactedAt ?? lead.createdAt);
+      return {
+        subjectId: lead.id,
+        email: lead.email,
+        temperature: "cold" as const,
+        source: "outbound" as const,
+        momentum: "dormant" as const,
+        orderCount: 0,
+        totalCents: 0,
+        lastOrderAt: null,
+        firstSeenAt: lead.createdAt,
+        recencyDays: Math.max(0, Math.floor((now.getTime() - anchor.getTime()) / DAY_MS)),
+        label: lead.businessName,
+      };
+    });
+}
+
+/**
+ * Fusionne la projection entrante (hot/mid, journal) et les leads cold (agrégat),
+ * triés ensemble : hot → mid → cold, puis par récence. C'est la **file entrante**
+ * unifiée de l'onglet Prospects.
+ */
+export function mergeProspects(
+  inbound: readonly ProspectView[],
+  leads: readonly LeadView[],
+  now: Date,
+): ProspectView[] {
+  return [...inbound, ...coldProspectsFrom(leads, now)].sort(byTemperatureThenRecency);
+}
+
+/** Rang d'affichage de la température (hot le plus chaud, cold le plus froid). */
+const TEMPERATURE_RANK: Record<ProspectTemperature, number> = { hot: 0, mid: 1, cold: 2 };
+
+/** Par température (hot→mid→cold) ; à température égale, le plus récent d'abord. */
 function byTemperatureThenRecency(a: ProspectView, b: ProspectView): number {
   if (a.temperature !== b.temperature) {
-    return a.temperature === "hot" ? -1 : 1;
+    return TEMPERATURE_RANK[a.temperature] - TEMPERATURE_RANK[b.temperature];
   }
   return a.recencyDays - b.recencyDays;
 }
