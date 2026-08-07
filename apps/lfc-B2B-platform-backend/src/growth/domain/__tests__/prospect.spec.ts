@@ -1,4 +1,4 @@
-import { deriveProspects, type ProspectEvent } from "../prospect.js";
+import { deriveProspects, momentumOf, type ProspectEvent } from "../prospect.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
 
@@ -81,5 +81,49 @@ describe("deriveProspects", () => {
       NOW,
     );
     expect(prospects.map((p) => p.subjectId)).toEqual(["hot", "mid-fresh", "mid-old"]);
+  });
+});
+
+describe("momentumOf", () => {
+  const d = (iso: string): Date => new Date(iso);
+  // NOW = 20 août. Fenêtre récente = (6 août, 20 août] ; précédente = (23 juil, 6 août].
+
+  it("accélère quand la fenêtre récente dépasse la précédente", () => {
+    const orders = [d("2026-08-10"), d("2026-08-15"), d("2026-08-01")]; // 2 récents, 1 avant
+    expect(momentumOf(orders, NOW)).toBe("accelerating");
+  });
+
+  it("refroidit quand la récente est sous la précédente", () => {
+    const orders = [d("2026-08-18"), d("2026-08-01"), d("2026-07-28")]; // 1 récent, 2 avant
+    expect(momentumOf(orders, NOW)).toBe("cooling");
+  });
+
+  it("stable à volumes égaux non nuls", () => {
+    const orders = [d("2026-08-15"), d("2026-08-02")]; // 1 récent, 1 avant
+    expect(momentumOf(orders, NOW)).toBe("stable");
+  });
+
+  it("dormant sans aucune commande récente", () => {
+    expect(momentumOf([d("2026-07-01"), d("2026-06-15")], NOW)).toBe("dormant");
+    expect(momentumOf([], NOW)).toBe("dormant");
+  });
+});
+
+describe("deriveProspects — momentum intégré", () => {
+  it("porte le momentum sur chaque prospect (mid = dormant)", () => {
+    const [prospect] = deriveProspects([registered("u_mid", "2026-08-18T09:00:00.000Z")], NOW);
+    expect(prospect.momentum).toBe("dormant");
+  });
+
+  it("un hot qui accélère est marqué accelerating", () => {
+    const [prospect] = deriveProspects(
+      [
+        ordered("u1", "2026-08-19T09:00:00.000Z", 400),
+        ordered("u1", "2026-08-17T09:00:00.000Z", 400),
+        ordered("u1", "2026-08-02T09:00:00.000Z", 400),
+      ],
+      NOW,
+    );
+    expect(prospect.momentum).toBe("accelerating");
   });
 });

@@ -11,6 +11,13 @@ import { ACTIVITY_TYPES } from "./activity-event.js";
  */
 export type ProspectTemperature = "hot" | "mid";
 
+/**
+ * **Momentum** — la *vitesse* du rythme de commande (pas un état gravé). Comparé
+ * sur deux fenêtres glissantes de 14 jours (récente vs précédente) : le même
+ * moteur servira au churn côté client. `dormant` = aucune commande récente.
+ */
+export type MomentumTrajectory = "accelerating" | "stable" | "cooling" | "dormant";
+
 /** Un événement du journal, réduit à ce que la projection prospects lit. */
 export interface ProspectEvent {
   readonly type: string;
@@ -25,6 +32,8 @@ export interface ProspectView {
   /** E-mail connu du journal (inscription) ; vide si la personne préexiste au journal. */
   readonly email: string;
   readonly temperature: ProspectTemperature;
+  /** Trajectoire du rythme de commande (14 j récents vs 14 j précédents). */
+  readonly momentum: MomentumTrajectory;
   readonly orderCount: number;
   readonly totalCents: number;
   /** Dernière commande (ISO), ou `null` pour un mid (aucune commande). */
@@ -36,6 +45,37 @@ export interface ProspectView {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MOMENTUM_WINDOW_MS = 14 * DAY_MS;
+
+/**
+ * Trajectoire du rythme, sur deux fenêtres glissantes de 14 jours ancrées à
+ * `now` (via le `Clock`). Zéro commande récente ⇒ `dormant` ; sinon la fenêtre
+ * récente comparée à la précédente donne accélère / stable / refroidit.
+ */
+export function momentumOf(orderDates: readonly Date[], now: Date): MomentumTrajectory {
+  const recentFrom = now.getTime() - MOMENTUM_WINDOW_MS;
+  const priorFrom = now.getTime() - 2 * MOMENTUM_WINDOW_MS;
+  let recent = 0;
+  let prior = 0;
+  for (const date of orderDates) {
+    const time = date.getTime();
+    if (time > recentFrom) {
+      recent += 1;
+    } else if (time > priorFrom) {
+      prior += 1;
+    }
+  }
+  if (recent === 0) {
+    return "dormant";
+  }
+  if (recent > prior) {
+    return "accelerating";
+  }
+  if (recent < prior) {
+    return "cooling";
+  }
+  return "stable";
+}
 
 /**
  * Dérive les prospects d'un flux d'événements (types `user.registered` /
@@ -70,6 +110,10 @@ export function deriveProspects(events: readonly ProspectEvent[], now: Date): Pr
       subjectId,
       email: latestEmail(subjectEvents),
       temperature: orders.length > 0 ? "hot" : "mid",
+      momentum: momentumOf(
+        orders.map((order) => order.occurredAt),
+        now,
+      ),
       orderCount: orders.length,
       totalCents: orders.reduce((sum, order) => sum + numberOrZero(order.payload["totalCents"]), 0),
       lastOrderAt: lastOrderAt?.toISOString() ?? null,
