@@ -115,6 +115,62 @@ Règles non négociables :
 - **L'environnement se lit uniquement via `AppConfig`** (`src/infra/config/`) —
   interdiction ESLint de `process.env` partout ailleurs, allowlist explicite.
 
+### 3.1 Agrégats — porter les invariants, pas les contourner
+
+Un agrégat n'est pas un sac de données : c'est le **gardien d'un invariant**. Dès
+qu'un contexte a un **état et des transitions** (un abonnement actif/en
+pause/annulé, une commande en attente→payée→livrée, une société non-validée→
+active), l'invariant se code **dans l'agrégat**, et le cycle de vie est **toujours**
+le même :
+
+```
+charger l'agrégat (repo.load → toDomain)
+   → muter par une MÉTHODE MÉTIER (aggregate.pause(), order.markPaid(), …)
+        cette méthode REFUSE la transition illégale (lève une DomainError/BusinessError)
+   → repo.save(aggregate)   (l'adaptateur lit toPersistence())
+```
+
+**Interdit — le smell « transaction script » :**
+
+- Une méthode de repo qui **écrit une colonne à partir de primitives** :
+  `repo.setStatus(id, status)`, `repo.updateIdentity(id, {...})`,
+  `repo.upsertOccurrence({...})`, `repo.markActive(id)`. Le repo devient un CRUD,
+  et l'invariant (« peut-on annuler un abonnement déjà annulé ? », « override
+  d'une échéance sur un abonnement clos ? ») se retrouve **dans le handler**, donc
+  invisible au prochain handler qui touche le même agrégat.
+- Un invariant vérifié **sur une `*.View`** (un modèle de **lecture**) puis suivi
+  d'une écriture nue. Une vue n'a pas de comportement : elle ne peut rien garantir.
+- Recalculer prix / TVA / total **dans le handler** au lieu d'une méthode de
+  l'agrégat ou d'un service de domaine appelé par lui.
+
+**Obligatoire :**
+
+- Le **port d'écriture prend et rend l'agrégat** : `save(aggregate)` /
+  `load(id): Promise<Aggregate | null>`, jamais une dizaine d'écritures ciblées.
+- L'adaptateur Prisma porte **les deux mappers** : `toDomain(row)` (rehydrate
+  l'agrégat, ses value-objects revalident) et `toPersistence()` (getters de
+  l'agrégat → ligne). Aucun type `Prisma.*` ne franchit `infrastructure/`.
+- Les **value-objects** portent la validation de forme métier (`Siret` = 14
+  chiffres, `EmailAddress`, `Money` en centimes) : immuables, auto-validés au
+  constructeur, jamais une string nue qui circule.
+- La **factory nomme l'intention** (`Company.declare()`, pas `new Company()`) et
+  refuse un état initial invalide.
+
+**Référence à suivre — puis à compléter :** `src/account/` (`Company.declare()`,
+~11 value-objects, `create-company.handler` qui construit l'agrégat et le passe
+au port). ⚠️ Il ne va aujourd'hui **au bout que sur la création** : les *updates*
+d'`account` — et **tout** `subscriptions` / `orders` — écrivent encore en CRUD
+(colonnes ciblées, invariants dans les handlers). **C'est de la dette assumée, à
+rembourser, pas un motif pour en ajouter.** Un nouveau cas de mutation sur un
+agrégat à invariants se fait par le cycle ci-dessus, pas par une écriture nue de
+plus.
+
+**Où NE PAS mettre d'agrégat :** un contexte de **config sans transition ni
+invariant** (`platform-settings`, `pickup-addresses`, `delivery-zones`,
+`staff-users`) reste un CRUD honnête sur `Payload`↔`View`. Forcer un agrégat là
+serait de la cérémonie. La question de tri : *« existe-t-il une règle qui peut
+refuser cette écriture ? »* — si oui, agrégat ; sinon, CRUD.
+
 ---
 
 ## 4. CQRS
