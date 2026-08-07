@@ -274,3 +274,39 @@ describe("retrait", () => {
     expect(await ctx.prisma.order.count({ where: { companyId } })).toBe(0);
   });
 });
+
+/** Attend l'écriture ÉVENTUELLE du journal (l'@EventsHandler n'est pas attendu par la requête). */
+async function waitForActivity(type: string): Promise<void> {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if ((await ctx.prisma.activityEvent.count({ where: { type } })) > 0) {
+      return;
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+  }
+}
+
+describe("émission du journal (order.placed)", () => {
+  it("journalise order.placed sur le client, acteur customer, à la passation", async () => {
+    const user = await createUser(ctx.prisma, { auth0Sub: MEMBER });
+    await seedPickup();
+
+    const response = await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(null)).expect(201);
+    const placed = jsonBody<PlacedOrderResponse>(response);
+
+    await waitForActivity("order.placed");
+    const events = await ctx.prisma.activityEvent.findMany({ where: { type: "order.placed" } });
+    expect(events).toHaveLength(1);
+    const [event] = events;
+    expect(event.subjectType).toBe("user");
+    expect(event.subjectId).toBe(user.id);
+    expect(event.actorType).toBe("customer"); // le middleware d'ingress a résolu le principal
+    expect(event.traceId).toMatch(/^[0-9a-f]{32}$/);
+    expect(event.idempotencyKey).toBe(`order.placed:${placed.id}`);
+    expect(event.payload).toMatchObject({
+      orderId: placed.id,
+      orderNumber: placed.orderNumber,
+      companyId: null,
+      totalCents: 633,
+    });
+  });
+});

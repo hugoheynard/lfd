@@ -6,6 +6,7 @@ import {
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DeliveryZoneRepository } from "../../../delivery-zones/domain/delivery-zone.repository.js";
+import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
 import { Order } from "../../domain/entities/order.js";
@@ -14,6 +15,7 @@ import {
   UnknownDeliveryZoneError,
   UnknownSkuError,
 } from "../../domain/errors/order-errors.js";
+import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
@@ -54,6 +56,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
     private readonly payments: PaymentGateway,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: PlaceOrderCommand): Promise<PlaceOrderResult> {
@@ -92,6 +95,19 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
 
     const intent = await this.settle(order, companyId);
     const placed = await this.orders.place(order);
+
+    // Fait de domaine, publié APRÈS persistance (on ne journalise pas une commande
+    // qui n'a pas pris). Le journal croissance écoute ; l'échec d'un abonné ne
+    // remonte pas ici (le recorder est best-effort).
+    this.events.publish(
+      new OrderPlacedEvent(
+        placed.id,
+        placed.orderNumber,
+        command.actorUserId,
+        companyId,
+        order.totalCents,
+      ),
+    );
 
     if (intent === null) {
       return { id: placed.id, orderNumber: placed.orderNumber };

@@ -14,6 +14,7 @@ import { SubscriptionsModule } from "./subscriptions/subscriptions.module.js";
 import { AuthModule } from "./infra/auth/auth.module.js";
 import { AppConfigModule } from "./infra/config/config.module.js";
 import { ContextModule } from "./infra/context/context.module.js";
+import { EventsModule } from "./infra/events/events.module.js";
 import { DatabaseModule } from "./infra/database/database.module.js";
 import { SecurityModule } from "./infra/security/security.module.js";
 
@@ -29,6 +30,9 @@ import { SecurityModule } from "./infra/security/security.module.js";
     // Fondations cross-cutting (@Global) : ports Clock + IdGenerator. Tôt, car
     // tout contexte métier en aval en dépend (temps métier, ids ULID).
     ContextModule,
+    // Publication d'événements de domaine (@Global) : bus cqrs derrière un port
+    // injectable. Les émetteurs publient, le journal croissance écoute.
+    EventsModule,
     DatabaseModule,
     // AVANT AuthModule : le ThrottlerGuard (APP_GUARD) doit s'exécuter en premier
     // pour rejeter un flood en 429 avant tout travail d'authentification.

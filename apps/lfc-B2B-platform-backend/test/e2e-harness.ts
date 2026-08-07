@@ -31,6 +31,7 @@ import request from "supertest";
 import type { App } from "supertest/types";
 
 import { AppModule } from "../src/app.module.js";
+import { requestContextMiddleware } from "../src/infra/context/request-context.middleware.js";
 import { AccessTokenVerifier } from "../src/infra/auth/access-token.verifier.js";
 import { PrismaService } from "../src/infra/database/prisma.service.js";
 import { AppErrorFilter } from "../src/shared/http/app-error.filter.js";
@@ -111,6 +112,10 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   // Typé `App` (le serveur HTTP sous-jacent) plutôt que `any` : c'est ce que
   // supertest attend, et ça évite de propager de l'`any` dans le harnais.
   const app: INestApplication<App> = moduleRef.createNestApplication();
+  // Même middleware d'ingress que `main.ts` : pose le RequestContext (instant +
+  // traceId + acteur) autour de chaque requête. Sans lui, le journal d'événements
+  // testerait une autre application (acteur toujours `system`).
+  app.use(requestContextMiddleware);
   // Même filtre global que `main.ts` : sinon les e2e verraient des 500 là où la
   // prod renvoie 400/404/409, et testeraient une autre application.
   app.useGlobalFilters(new AppErrorFilter());

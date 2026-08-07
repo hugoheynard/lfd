@@ -29,6 +29,8 @@ import {
   type CatalogItem,
   ProductCatalogReader,
 } from "../../../domain/ports/product-catalog.reader.js";
+import { DomainEventPublisher } from "../../../../infra/events/domain-event-publisher.js";
+import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
 import { PlaceOrderCommand } from "../place-order.command.js";
 import { PlaceOrderHandler } from "../place-order.handler.js";
 
@@ -52,6 +54,19 @@ function guard(
     companyStatusOf: () => Promise.resolve(status),
     paymentTermOf: () => Promise.resolve(term),
   };
+}
+
+/** Publisher d'événements doublé : capture ce qui est publié (par extension du port, sans cast). */
+class FakeEvents extends DomainEventPublisher {
+  readonly published: object[] = [];
+  publish(event: object): void {
+    this.published.push(event);
+  }
+}
+
+/** Fabrique un publisher doublé frais. */
+function events(): FakeEvents {
+  return new FakeEvents();
 }
 
 /** Passerelle de paiement doublée : capture l'appel `createIntent` (sans réseau). */
@@ -156,6 +171,31 @@ function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
 }
 
 describe("PlaceOrderHandler", () => {
+  it("publie OrderPlacedEvent après persistance (signal lead chaud)", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const published = events();
+    const handler = new PlaceOrderHandler(
+      guard(null, null),
+      catalog,
+      capturingRepo(sink),
+      pickups(LABO_POINT),
+      zones(),
+      payments(),
+      published,
+    );
+
+    await handler.execute(new PlaceOrderCommand("u1", payload()));
+
+    expect(published.published).toHaveLength(1);
+    const [event] = published.published;
+    expect(event).toBeInstanceOf(OrderPlacedEvent);
+    const placed = event as OrderPlacedEvent;
+    expect(placed.orderId).toBe("order_1");
+    expect(placed.placedByUserId).toBe("u1");
+    expect(placed.companyId).toBeNull();
+    expect(placed.totalCents).toBe(400);
+  });
+
   it("refuse un non-membre par un 404 non-divulguant quand une entreprise est visée", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
@@ -165,6 +205,7 @@ describe("PlaceOrderHandler", () => {
       pickups(LABO_POINT),
       zones(),
       payments(),
+      events(),
     );
 
     await expect(
@@ -183,6 +224,7 @@ describe("PlaceOrderHandler", () => {
       pickups(LABO_POINT),
       zones(),
       payments(intentSink),
+      events(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload()));
@@ -203,6 +245,7 @@ describe("PlaceOrderHandler", () => {
       pickups(LABO_POINT),
       zones(),
       payments(),
+      events(),
     );
 
     await handler.execute(
@@ -235,6 +278,7 @@ describe("PlaceOrderHandler", () => {
       pickups(LABO_POINT),
       zones(),
       payments(),
+      events(),
     );
 
     await handler.execute(
@@ -267,6 +311,7 @@ describe("PlaceOrderHandler", () => {
       pickups(LABO_POINT),
       zones(),
       payments(),
+      events(),
     );
 
     await expect(
@@ -289,6 +334,7 @@ describe("PlaceOrderHandler", () => {
       pickups(LABO_POINT),
       zones(),
       payments(),
+      events(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
@@ -308,6 +354,7 @@ describe("PlaceOrderHandler", () => {
       pickups(null),
       zones(),
       payments(),
+      events(),
     );
 
     await expect(
@@ -326,6 +373,7 @@ describe("PlaceOrderHandler", () => {
       pickups(point),
       zones(),
       payments(),
+      events(),
     );
 
     // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
@@ -352,6 +400,7 @@ describe("PlaceOrderHandler", () => {
       pickups(),
       zones(zone),
       payments(),
+      events(),
     );
 
     // 2 × 200 = 400 HT (TVA 0 dans ce catalogue de test) ; frais 20 € = 2000 HT
@@ -386,6 +435,7 @@ describe("PlaceOrderHandler", () => {
       pickups(),
       zones(null),
       payments(),
+      events(),
     );
 
     await expect(
@@ -414,6 +464,7 @@ describe("PlaceOrderHandler", () => {
       pickups(LABO_POINT),
       zones(),
       payments(intentSink),
+      events(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
@@ -438,6 +489,7 @@ describe("PlaceOrderHandler", () => {
       pickups(LABO_POINT),
       zones(),
       payments(intentSink),
+      events(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
@@ -458,6 +510,7 @@ describe("PlaceOrderHandler", () => {
       pickups(LABO_POINT),
       zones(),
       payments(intentSink),
+      events(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload({ companyId: "c1" })));
