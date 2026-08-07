@@ -47,11 +47,7 @@ export type { PieceMode, ActivationPiece, PlatformSettings } from "./platform-se
 export { cartAdjustmentSchema, cartAdjustmentCents } from "./cart-adjustment.js";
 export type { CartAdjustment } from "./cart-adjustment.js";
 export { pickupAddressPayloadSchema } from "./pickup.js";
-export type {
-  PickupAddressPayload,
-  PickupAddressView,
-  CreatedPickupResponse,
-} from "./pickup.js";
+export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,
@@ -112,4 +108,6 @@ export type {
   ActivationStatus,
   ActivationStep,
   ActivationView,
+  PlayType,
+  LeadScoreView,
 } from "./growth.js";
