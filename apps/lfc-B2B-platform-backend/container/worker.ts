@@ -35,6 +35,9 @@ const RUNTIME_KEYS = [
   "STRIPE_SECRET_KEY",
   "STRIPE_PUBLISHABLE_KEY",
   "STRIPE_WEBHOOK_SECRET",
+  // Jeton interne du recompute : forwardé au container (le guard le compare) ET
+  // lu ici par le handler `scheduled` (le Cron Trigger le présente à l'endpoint).
+  "RECOMPUTE_TOKEN",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];
@@ -100,6 +103,26 @@ async function isRateLimited(request: Request, env: Env): Promise<boolean> {
   return !success;
 }
 
+/**
+ * Réveille le container et déclenche le recompute batch du read-model `lead_score`.
+ * On passe par le container (pas de calcul dans le Worker) et on présente le jeton
+ * interne à `POST /admin/recompute` — que le `RecomputeGuard` compare. Sans jeton
+ * configuré, on ne tente rien (l'endpoint refuserait de toute façon, fail-closed).
+ */
+async function triggerRecompute(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  const instance = await getRandom(env.BACKEND, 2);
+  await instance.fetch(
+    new Request("https://internal/admin/recompute", {
+      method: "POST",
+      headers: { "x-lfc-recompute-token": token },
+    }),
+  );
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (await isRateLimited(request, env)) {
@@ -107,5 +130,12 @@ export default {
     }
     const instance = await getRandom(env.BACKEND, 2);
     return instance.fetch(request);
+  },
+
+  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc) : le Worker
+  // se réveille aux heures creuses et lance le recompute. `waitUntil` garde le
+  // Worker vivant jusqu'à la fin de l'appel container.
+  scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
+    ctx.waitUntil(triggerRecompute(env));
   },
 };

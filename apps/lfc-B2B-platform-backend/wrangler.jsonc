@@ -38,5 +38,19 @@
         "simple": { "limit": 300, "period": 60 }
       }
     ]
+  },
+
+  // Cron Triggers : réveillent le Worker (handler `scheduled`) qui déclenche le
+  // recompute batch du read-model `lead_score` (POST /admin/recompute vers le
+  // container, jeton RECOMPUTE_TOKEN). 3×/jour aux HEURES CREUSES — hors des pics
+  // de commande (atelier + services chefs).
+  //
+  // ⚠️ Les crons Cloudflare sont en **UTC**. On vise ~04h/12h/20h Europe/Paris ;
+  // avec le décalage saisonnier (UTC+1 hiver / UTC+2 été), 03/11/19 UTC tombe à
+  // 04/12/20 en hiver et 05/13/21 en été — une dérive d'une heure sans importance
+  // pour un batch dont la fraîcheur assumée est ≤ ~8 h. Le jeton se pose par
+  // `wrangler secret put RECOMPUTE_TOKEN` (jamais commité).
+  "triggers": {
+    "crons": ["0 3 * * *", "0 11 * * *", "0 19 * * *"]
   }
 }
