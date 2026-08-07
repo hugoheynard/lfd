@@ -1,61 +1,31 @@
-import type {
-  BillingAddressPayload,
-  FulfillmentMethod,
-  Recurrence,
-  SubscriptionStatus,
-} from "@lfd/contracts";
+import type { Subscription } from "../entities/subscription.js";
 
-/** Une ligne du gabarit à persister (SKU + quantité). */
-export interface SubscriptionLineToPersist {
-  readonly sku: string;
-  readonly quantity: number;
-}
-
-/** Un panier récurrent prêt à écrire — tout est déjà résolu côté serveur. */
-export interface SubscriptionToCreate {
-  /** Mur : le client connecté (comme une commande perso zéro friction). */
-  readonly placedByUserId: string;
-  /** Commande d'origine (traçabilité), ou `null`. */
-  readonly fromOrderId: string | null;
-  readonly recurrence: Recurrence;
-  readonly startDate: Date;
-  readonly endDate: Date | null;
-  readonly fulfillmentMethod: FulfillmentMethod;
-  /** Adresse de livraison **libre figée** (livraison), ou `null` (retrait). */
-  readonly deliveryAddress: BillingAddressPayload | null;
-  /** Point de retrait choisi (retrait), ou `null` (défaut / livraison). */
-  readonly pickupAddressId: string | null;
-  readonly note: string;
-  readonly lines: readonly SubscriptionLineToPersist[];
-}
-
-/** Ce que la création renvoie : l'id technique. */
+/** Ce que la création renvoie : l'id technique attribué par la base. */
 export interface CreatedSubscription {
   readonly id: string;
 }
 
 /**
- * Dérogation d'une échéance à écrire (« modifier cette commande uniquement »).
- * `skipped` ⇒ échéance sautée (lignes vides) ; sinon `lines` remplace le gabarit
- * pour cette date-là. L'unicité `(subscriptionId, occurrenceDate)` en fait un upsert.
- */
-export interface OccurrenceOverrideToUpsert {
-  readonly subscriptionId: string;
-  readonly occurrenceDate: Date;
-  readonly skipped: boolean;
-  readonly lines: readonly SubscriptionLineToPersist[];
-  readonly note: string;
-}
-
-/**
- * Port d'**écriture** des paniers récurrents. Séparé de la lecture (ISP) : un
- * handler de création n'a pas besoin de savoir agréger la liste.
+ * Port d'**écriture** des paniers récurrents. Séparé de la lecture (ISP).
+ *
+ * Il ne prend **jamais** des primitives : on charge l'agrégat (`load`, mur inclus),
+ * on le mute par ses méthodes métier, puis on le rend au port (`save`) — l'agrégat
+ * est l'unité de persistance, pas une colonne. `create` insère un agrégat neuf
+ * (sans id) et renvoie l'id attribué.
  */
 export abstract class SubscriptionRepository {
-  abstract create(subscription: SubscriptionToCreate): Promise<CreatedSubscription>;
-  abstract upsertOccurrence(override: OccurrenceOverrideToUpsert): Promise<void>;
-  /** Met à jour l'état (active/paused). */
-  abstract setStatus(subscriptionId: string, status: SubscriptionStatus): Promise<void>;
+  /** Insère un panier neuf et renvoie son id. */
+  abstract create(subscription: Subscription): Promise<CreatedSubscription>;
+
+  /**
+   * Charge l'agrégat **muré** (appartenant à `ownerUserId`), avec ses lignes et
+   * ses dérogations, ou `null` s'il n'existe pas / n'est pas au mur.
+   */
+  abstract load(subscriptionId: string, ownerUserId: string): Promise<Subscription | null>;
+
+  /** Persiste l'état courant d'un agrégat déjà chargé (statut + dérogations). */
+  abstract save(subscription: Subscription): Promise<void>;
+
   /** Supprime le panier récurrent (lignes + dérogations en cascade). */
   abstract remove(subscriptionId: string): Promise<void>;
 }

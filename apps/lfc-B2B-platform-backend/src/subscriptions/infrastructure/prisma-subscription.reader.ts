@@ -57,14 +57,6 @@ export class PrismaSubscriptionReader extends SubscriptionReader {
       createdAt: row.createdAt.toISOString(),
     }));
   }
-
-  async findOwner(subscriptionId: string): Promise<string | null> {
-    const row = await this.prisma.subscription.findUnique({
-      where: { id: subscriptionId },
-      select: { placedByUserId: true },
-    });
-    return row?.placedByUserId ?? null;
-  }
 }
 
 /** Ligne de dérogation persistée (JSON) : SKU + quantité. */
