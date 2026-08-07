@@ -2,28 +2,33 @@ import { Injectable } from "@nestjs/common";
 
 import { PaymentStatus, Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
+import { IdGenerator } from "../../infra/id/id-generator.js";
+import { Clock } from "../../infra/time/clock.js";
 import type { Order } from "../domain/entities/order.js";
 import { OrderRepository, type PlacedOrder } from "../domain/ports/order.repository.js";
-
-/**
- * Numéro humain d'une commande — `ORD-<horodatage base36>-<aléa>`. Suffisamment
- * unique ; la colonne `order_number` est `@unique`, un doublon échouerait plutôt
- * que de passer en silence. (Le vrai identifiant reste le `cuid`.)
- */
-function generateOrderNumber(): string {
-  const stamp = Date.now().toString(36).toUpperCase();
-  const suffix = Math.floor(Math.random() * 36 ** 4)
-    .toString(36)
-    .toUpperCase()
-    .padStart(4, "0");
-  return `ORD-${stamp}-${suffix}`;
-}
 
 /** Adaptateur Prisma des commandes. */
 @Injectable()
 export class PrismaOrderRepository extends OrderRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly clock: Clock,
+    private readonly ids: IdGenerator,
+  ) {
     super();
+  }
+
+  /**
+   * Numéro humain d'une commande — `ORD-<horodatage base36>-<suffixe ULID>`.
+   * L'horodatage vient du `Clock` (temps métier de la requête) et le suffixe des
+   * 4 derniers caractères d'un ULID (composante aléatoire, sans `Math.random`).
+   * La colonne `order_number` est `@unique` : un doublon échouerait plutôt que de
+   * passer en silence. (Le vrai identifiant reste le `cuid`.)
+   */
+  private generateOrderNumber(): string {
+    const stamp = this.clock.now().getTime().toString(36).toUpperCase();
+    const suffix = this.ids.next().slice(-4);
+    return `ORD-${stamp}-${suffix}`;
   }
 
   async place(order: Order): Promise<PlacedOrder> {
@@ -32,7 +37,7 @@ export class PrismaOrderRepository extends OrderRepository {
     const state = order.toPersistence();
     return this.prisma.order.create({
       data: {
-        orderNumber: generateOrderNumber(),
+        orderNumber: this.generateOrderNumber(),
         companyId: state.companyId,
         placedByUserId: state.placedByUserId,
         requestedDeliveryDate: state.requestedDeliveryDate,
@@ -68,7 +73,7 @@ export class PrismaOrderRepository extends OrderRepository {
     // `paid`) ou un intent inconnu ne matche aucune ligne, l'appel est un no-op.
     await this.prisma.order.updateMany({
       where: { stripePaymentIntentId: paymentIntentId, paymentStatus: PaymentStatus.pending },
-      data: { paymentStatus: PaymentStatus.paid, paidAt: new Date() },
+      data: { paymentStatus: PaymentStatus.paid, paidAt: this.clock.now() },
     });
   }
 
