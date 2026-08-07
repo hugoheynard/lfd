@@ -30,6 +30,14 @@ export const ACTIVITY_TYPES = {
    * (sujet, fenêtre de recompute) : rouvrir le cockpit ne le recompte pas.
    */
   recoShown: "reco.shown",
+  /** Lead cold **saisi** par un commercial (démarchage sortant). */
+  leadCaptured: "lead.captured",
+  /** Changement d'étape d'un lead dans le pipeline. */
+  leadStageChanged: "lead.stage_changed",
+  /** Lead **converti** (manuel après RDV, ou rapprochement à l'inscription). */
+  leadConverted: "lead.converted",
+  /** Lead **perdu** (démarchage sans suite). */
+  leadLost: "lead.lost",
 } as const;
 
 /**
