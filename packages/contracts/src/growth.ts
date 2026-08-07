@@ -234,6 +234,8 @@ export interface GrowthStatsView {
   readonly kpis: GrowthKpis;
   readonly acquisition: readonly AcquisitionPoint[];
   readonly temperatureFlow: readonly TemperatureFlowPoint[];
+  /** Transferts entre bandes de chaleur : état au début → état à la fin de la période. */
+  readonly temperatureTransitions: LifecycleFlow;
   readonly coldFunnel: readonly FunnelStep[];
   readonly activationFunnel: readonly FunnelStep[];
   readonly cohorts: readonly CohortRow[];

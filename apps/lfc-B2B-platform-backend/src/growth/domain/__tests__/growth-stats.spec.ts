@@ -144,6 +144,35 @@ describe("deriveGrowthStats", () => {
     expect(w17).toMatchObject({ hot: 1, mid: 1, cold: 1 });
   });
 
+  it("trace les transferts entre bandes (début → fin de période)", () => {
+    // Fenêtre de 4 semaines : bornes début = clôture du 2026-07-27, fin = clôture du 2026-08-17.
+    const stats = deriveGrowthStats(
+      [
+        // Tiède au début (inscrit avant), devient chaud (commande perso pendant la période).
+        ev("user.registered", "user", "u_warm", "2026-07-25T09:00:00.000Z"),
+        ev("order.placed", "user", "u_warm", "2026-08-14T09:00:00.000Z", { totalCents: 100 }),
+        // Chaud au début, converti à la fin (commande société pendant la période).
+        ev("user.registered", "user", "u_hot", "2026-07-20T09:00:00.000Z"),
+        ev("order.placed", "user", "u_hot", "2026-07-22T09:00:00.000Z", { totalCents: 100 }),
+        ev("order.placed", "user", "u_hot", "2026-08-14T09:00:00.000Z", {
+          totalCents: 100,
+          companyId: "c1",
+        }),
+        // Cold au début, perdu à la fin.
+        ev("lead.captured", "lead", "l1", "2026-07-20T09:00:00.000Z"),
+        ev("lead.lost", "lead", "l1", "2026-08-14T09:00:00.000Z"),
+      ],
+      [],
+      NOW,
+      4,
+    );
+    const link = (from: string, to: string): number | undefined =>
+      stats.temperatureTransitions.links.find((x) => x.source === from && x.target === to)?.value;
+    expect(link("from_mid", "to_hot")).toBe(1);
+    expect(link("from_hot", "to_converted")).toBe(1);
+    expect(link("from_cold", "to_lost")).toBe(1);
+  });
+
   it("calcule des cohortes de rétention par semaine d'inscription", () => {
     const stats = deriveGrowthStats(
       [

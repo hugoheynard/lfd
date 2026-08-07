@@ -103,54 +103,97 @@ export function sparklineOption(points: readonly AcquisitionPoint[]): EChartsOpt
 }
 
 /**
- * **Momentum du vivier** : le flux de prospects par chaleur, semaine après semaine,
- * rendu en `themeRiver` (rubans qui enflent/dégonflent). Dégradé de chaleur : chauds
- * (rouge) → tièdes (ambre) → froids (bleu). Chaque point = le stock debout à la
- * clôture de la semaine, pas un cumul d'événements.
+ * **Momentum du vivier** : le niveau de prospects par chaleur, semaine après semaine.
+ * Trois courbes **non empilées** — la hauteur d'une courbe = le volume de la bande, sa
+ * **pente = la direction** (monte/descend), sans distorsion d'empilement. Dégradé de
+ * chaleur : chauds (rouge), tièdes (ambre), froids (bleu). Chaque point = le stock
+ * debout à la clôture de la semaine (pas un cumul d'événements). Se lit avec le
+ * diagramme de transferts, qui montre *qui* bascule d'une bande à l'autre.
  */
 export function temperatureFlowOption(points: readonly TemperatureFlowPoint[]): EChartsOption {
-  const bands = [
-    { key: 'hot', name: 'Chauds', color: PALETTE.red },
-    { key: 'mid', name: 'Tièdes', color: PALETTE.amber },
-    { key: 'cold', name: 'Froids', color: PALETTE.blue },
-  ] as const;
-  const data: [string, number, string][] = [];
-  for (const p of points) {
-    data.push([p.weekStart, p.hot, 'Chauds']);
-    data.push([p.weekStart, p.mid, 'Tièdes']);
-    data.push([p.weekStart, p.cold, 'Froids']);
-  }
+  const weeks = points.map((p) => weekLabel(p.weekStart));
+  const band = (name: string, data: readonly number[], color: string): Record<string, unknown> => ({
+    name,
+    type: 'line',
+    smooth: true,
+    symbol: 'circle',
+    symbolSize: 5,
+    data: [...data],
+    itemStyle: { color },
+    lineStyle: { color, width: 2 },
+  });
   return {
-    color: bands.map((b) => b.color),
-    legend: { top: 0, data: [...bands.map((b) => b.name)], textStyle: { color: PALETTE.slate } },
-    tooltip: { trigger: 'axis', axisPointer: { type: 'line' } },
-    // themeRiver a son propre axe temporel : on neutralise le cartésien du socle.
-    xAxis: { show: false },
-    yAxis: { show: false },
-    singleAxis: {
-      type: 'time',
-      top: 34,
-      bottom: 20,
-      axisLabel: { color: PALETTE.slate, formatter: dayMonth },
-      axisLine: { lineStyle: { color: PALETTE.slate } },
+    legend: {
+      top: 0,
+      data: ['Chauds', 'Tièdes', 'Froids'],
+      textStyle: { color: PALETTE.slate },
     },
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: weeks, boundaryGap: false },
+    yAxis: { type: 'value', minInterval: 1 },
     series: [
-      {
-        type: 'themeRiver',
-        emphasis: { focus: 'series' },
-        label: { show: false },
-        data,
-      },
+      band(
+        'Chauds',
+        points.map((p) => p.hot),
+        PALETTE.red,
+      ),
+      band(
+        'Tièdes',
+        points.map((p) => p.mid),
+        PALETTE.amber,
+      ),
+      band(
+        'Froids',
+        points.map((p) => p.cold),
+        PALETTE.blue,
+      ),
     ],
   };
 }
 
-/** Horodatage (ms) → « 17/08 » pour l'axe temporel du themeRiver. */
-function dayMonth(value: number | string): string {
-  const d = new Date(Number(value));
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-  return `${day}/${month}`;
+/** Couleur d'un état de chaleur (les nœuds du diagramme de transferts en héritent). */
+const TEMP_COLOR: Record<string, string> = {
+  new: PALETTE.violet,
+  cold: PALETTE.blue,
+  mid: PALETTE.amber,
+  hot: PALETTE.red,
+  converted: PALETTE.green,
+  lost: PALETTE.slate,
+};
+
+/**
+ * **Transferts entre bandes** (Sankey) : l'état de chaque prospect au **début** de la
+ * période (colonne « avant », à gauche) vers son état à la **fin** (« après », à
+ * droite). Un ruban « Tiède → Chaud » = les personnes qui se sont réchauffées ; « Chaud
+ * → Froid » celles qui ont refroidi ; plus les entrées (Nouveau) et sorties
+ * (Converti / Perdu). Largeur du ruban = nombre de personnes.
+ */
+export function temperatureTransitionsOption(flow: LifecycleFlow): EChartsOption {
+  const labelByKey = new Map(flow.nodes.map((n) => [n.key, n.label]));
+  const nameOf = (key: string): string =>
+    `${labelByKey.get(key) ?? key}${key.startsWith('from_') ? ' ·avant' : ' ·après'}`;
+  const colorOf = (key: string): string => TEMP_COLOR[key.replace(/^(from_|to_)/, '')] ?? PALETTE.slate;
+  return {
+    tooltip: { trigger: 'item', formatter: '{b} : {c}' },
+    series: [
+      {
+        type: 'sankey',
+        emphasis: { focus: 'adjacency' },
+        nodeGap: 12,
+        data: flow.nodes.map((n) => ({
+          name: nameOf(n.key),
+          itemStyle: { color: colorOf(n.key), borderColor: 'transparent' },
+        })),
+        links: flow.links.map((l) => ({
+          source: nameOf(l.source),
+          target: nameOf(l.target),
+          value: l.value,
+        })),
+        lineStyle: { color: 'gradient', opacity: 0.35 },
+        label: { color: 'inherit' },
+      },
+    ],
+  };
 }
 
 /** Entonnoir (cold ou activation) à partir de marches décroissantes. */

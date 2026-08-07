@@ -15,6 +15,7 @@ import {
   funnelOption,
   lifecycleSankeyOption,
   temperatureFlowOption,
+  temperatureTransitionsOption,
   velocityBoxplotOption,
 } from './growth-charts';
 import { GrowthService } from './growth.service';
@@ -30,9 +31,10 @@ interface Kpi {
 
 /**
  * Onglet **Croissance** : le dashboard analytique PLG, dérivé du journal (`GET
- * /admin/growth/stats`). Tuiles KPI + acquisition + momentum du vivier (flux par
- * chaleur) + entonnoirs (cold & activation) + cycle de vie + vélocité + mix + Lorenz
- * + heatmap de cohortes. Graphes rendus par `<app-chart>` (ECharts) / `<app-lorenz>`
+ * /admin/growth/stats`). Tuiles KPI + acquisition + momentum du vivier (niveau par
+ * chaleur + transferts entre bandes) + entonnoirs (cold & activation) + cycle de vie
+ * + vélocité + mix + Lorenz + heatmap de cohortes. Rendus par `<app-chart>` (ECharts) /
+ * `<app-lorenz>`
  * (D3), options construites par des fonctions pures. Chaque carte porte une bulle
  * d'aide (`<app-metric-info>`) décrivant sa métrique.
  */
@@ -78,6 +80,12 @@ export class CroissancePage {
   protected readonly temperatureFlow = computed<ChartOption | null>(() => {
     const s = this.stats();
     return s === null ? null : temperatureFlowOption(s.temperatureFlow);
+  });
+  protected readonly transitions = computed<ChartOption | null>(() => {
+    const s = this.stats();
+    return s === null || s.temperatureTransitions.links.length === 0
+      ? null
+      : temperatureTransitionsOption(s.temperatureTransitions);
   });
   protected readonly coldFunnel = computed<ChartOption | null>(() => {
     const s = this.stats();

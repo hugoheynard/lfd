@@ -43,16 +43,31 @@
           }
         </article>
 
-        <article class="card wide">
+        <article class="card">
           <header class="card-head">
-            <h2>Momentum du vivier — flux par chaleur</h2>
+            <h2>Momentum du vivier — niveau par chaleur</h2>
             <app-metric-info
               label="Momentum du vivier"
-              text="Le stock de prospects tenus dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). On entre en s'inscrivant, on sort en commandant pour une société."
+              text="Le nombre de prospects dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). Trois courbes indépendantes : la hauteur = le volume de la bande, la pente = sa direction (monte/descend)."
             />
           </header>
           @if (temperatureFlow(); as opt) {
-            <app-chart [option]="opt" height="260px" />
+            <app-chart [option]="opt" height="280px" />
+          }
+        </article>
+
+        <article class="card">
+          <header class="card-head">
+            <h2>Transferts entre bandes (sur la période)</h2>
+            <app-metric-info
+              label="Transferts entre bandes"
+              text="Comment les prospects ont changé de chaleur entre le début (« avant », à gauche) et la fin (« après », à droite) de la période : qui est passé de tiède à chaud, de chaud à froid, converti, perdu, ou vient d'entrer. La largeur d'un ruban = le nombre de personnes qui ont fait ce passage."
+            />
+          </header>
+          @if (transitions(); as opt) {
+            <app-chart [option]="opt" height="280px" />
+          } @else {
+            <p class="muted">Pas encore assez de mouvements pour tracer les transferts.</p>
           }
         </article>
 

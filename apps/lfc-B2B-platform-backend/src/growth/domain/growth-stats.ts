@@ -17,7 +17,7 @@ import {
   velocityMetrics,
 } from "./growth-stats-advanced.js";
 import { deriveProspects } from "./prospect.js";
-import { temperatureFlow } from "./temperature-flow.js";
+import { temperatureFlow, temperatureTransitions } from "./temperature-flow.js";
 
 /**
  * **Stats de croissance** — la dérivation PURE derrière l'onglet Croissance et le
@@ -64,6 +64,7 @@ export function deriveGrowthStats(
     kpis: kpis(prospects, activations, leads, userEvents),
     acquisition: acquisition(userEvents, window),
     temperatureFlow: temperatureFlow(userEvents, leadEvents, window),
+    temperatureTransitions: temperatureTransitions(userEvents, leadEvents, window),
     coldFunnel: coldFunnel(leads),
     activationFunnel: activationFunnel(activations),
     cohorts: cohorts(userEvents, window),
