@@ -171,6 +171,34 @@ invariant** (`platform-settings`, `pickup-addresses`, `delivery-zones`,
 serait de la cérémonie. La question de tri : *« existe-t-il une règle qui peut
 refuser cette écriture ? »* — si oui, agrégat ; sinon, CRUD.
 
+### 3.2 Contexte de requête : temps, identifiants, traçabilité
+
+Les effets « ambiants » (temps, aléa, ids, corrélation) passent par **un contexte
+de requête unique**, jamais lus au leaf. Primitives cross-cutting en `infra/`,
+valables pour **tous** les backends.
+
+- **Un `RequestContext` par requête** — `{ now, traceId, actor }`, posé par un
+  **middleware d'ingress** dans un **AsyncLocalStorage** (CLS). Pas de provider Nest
+  `request-scoped` (coût DI). **Un seul `now` par requête**, gelé : deux `new Date()`
+  dans un même handler dériveraient de quelques ms.
+- **Port `Clock`** (`now(): Instant`, lit le contexte) — le domaine et l'application
+  dépendent de l'**abstraction** (DIP). **`new Date()` / `Date.now()` interdits hors de
+  l'adaptateur `Clock`.** `FixedClock` en test → logique temporelle déterministe.
+- **Port `IdGenerator` (ULID)** — triable par le temps. **`Math.random()` / `Date.now()`
+  interdits pour fabriquer un identifiant** (non-déterministe **et** risque de collision).
+- **Temps métier = autorité du `Clock` backend.** Un temps **propagé** (gateway
+  `x-lfc-request-time`) ne sert **qu'à l'observabilité** (latence) — **jamais** à écrire
+  du métier (dérive d'horloges + spoof).
+- **Traçabilité = W3C `traceparent`** (OpenTelemetry-ready), généré/propagé par la
+  **gateway** (même mécanisme que `x-lfc-client-ip`). Le `traceId` du contexte
+  s'auto-injecte dans les **logs structurés**, l'**enveloppe d'erreur** (`AppErrorFilter`
+  → `requestId` renvoyé au client) et, le cas échéant, le **journal d'événements**.
+
+> Ces primitives sont un **socle**, pas une option : la logique temporelle (expirations,
+> fenêtres, cohortes) est intestable sans `Clock`, et l'observabilité inexistante sans
+> `traceId`. Tout `new Date()` / `Math.random()` déjà en place est une **dette** à
+> rebrancher (cf. `Company.activate`, numéros de commande/référence).
+
 ---
 
 ## 4. CQRS
