@@ -47,11 +47,17 @@ describe("GET /me — la porte d'entrée", () => {
 });
 
 describe("GET /me — le cycle se joue en base", () => {
-  it("refuse un sub valide inconnu de notre base (pas encore provisionné)", async () => {
+  it("provisionne (JIT) un sub valide inconnu et renvoie 200 (zéro friction)", async () => {
     const response = await ctx.asSub("auth0|jamais-vu").get("/me");
 
-    expect(response.status).toBe(401);
-    expect(response.body).toMatchObject({ message: "Compte inconnu." });
+    // Zéro friction : la 1re requête d'un sub inconnu **crée** le compte (actif,
+    // sans société) plutôt que de le refuser — cf. le provisioning JIT du resolver.
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ companies: [] });
+    const provisioned = await ctx.prisma.user.findUniqueOrThrow({
+      where: { auth0Sub: "auth0|jamais-vu" },
+    });
+    expect(provisioned.status).toBe("active");
   });
 
   it("refuse un compte seulement invité (provisionné, pas activé)", async () => {
@@ -85,6 +91,8 @@ describe("GET /me — le cycle se joue en base", () => {
         phone: "01 42 71 08 44",
       },
       companies: [],
+      // Préférences de navigation (bag nav_prefs) : défaut sans choix explicite.
+      navPrefs: { catalogueView: null },
     });
   });
 
