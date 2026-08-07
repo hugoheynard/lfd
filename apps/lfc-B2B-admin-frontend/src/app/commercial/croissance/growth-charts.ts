@@ -73,6 +73,26 @@ function line(
   };
 }
 
+/** Mini-courbe (sparkline) des inscriptions — pour le rappel du dashboard. */
+export function sparklineOption(points: readonly AcquisitionPoint[]): EChartsOption {
+  return {
+    grid: { left: 2, right: 2, top: 6, bottom: 2 },
+    xAxis: { type: 'category', show: false, data: points.map((p) => p.weekStart) },
+    yAxis: { type: 'value', show: false },
+    tooltip: { trigger: 'axis' },
+    series: [
+      {
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        data: points.map((p) => p.registrations + p.firstOrders),
+        lineStyle: { color: PALETTE.blue, width: 2 },
+        areaStyle: { color: PALETTE.blue, opacity: 0.15 },
+      },
+    ],
+  };
+}
+
 /** Distribution du momentum des prospects hot (barres horizontales colorées). */
 export function momentumOption(dist: MomentumDistribution): EChartsOption {
   const rows = [

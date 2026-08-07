@@ -1,7 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FoldBadgeComponent, FoldButtonComponent } from 'fold-ng';
-import type { LeadScoreView, PlayType } from '@lfd/contracts';
+import type { GrowthStatsView, LeadScoreView, PlayType } from '@lfd/contracts';
 
+import { Chart, type ChartOption } from '../../shared/chart/chart';
+import { sparklineOption } from '../croissance/growth-charts';
+import { GrowthService } from '../croissance/growth.service';
 import { CockpitService } from './cockpit.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -33,19 +37,41 @@ const PLAY: Record<PlayType, { label: string; variant: BadgeVariant; hint: strin
 @Component({
   selector: 'app-cockpit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldButtonComponent],
+  imports: [FoldBadgeComponent, FoldButtonComponent, RouterLink, Chart],
   templateUrl: './cockpit-page.html',
   styleUrl: './cockpit-page.scss',
 })
 export class CockpitPage {
   private readonly service = inject(CockpitService);
+  private readonly growth = inject(GrowthService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly leads = signal<readonly LeadScoreView[]>([]);
+  protected readonly stats = signal<GrowthStatsView | null>(null);
 
   protected readonly computedAt = computed<string | null>(() => {
     const first = this.leads()[0];
     return first ? first.computedAt : null;
+  });
+
+  /** Rappel condensé : quelques chiffres de tête + une mini-courbe d'acquisition. */
+  protected readonly recap = computed<readonly { label: string; value: string }[]>(() => {
+    const s = this.stats();
+    if (s === null) {
+      return [];
+    }
+    const k = s.kpis;
+    return [
+      { label: 'Prospects', value: `${k.prospects}` },
+      { label: 'Chauds', value: `${k.hot}` },
+      { label: 'Commandes', value: `${k.orders}` },
+      { label: 'Conversion', value: `${Math.round(k.conversionRate * 100)} %` },
+    ];
+  });
+
+  protected readonly spark = computed<ChartOption | null>(() => {
+    const s = this.stats();
+    return s === null ? null : sparklineOption(s.acquisition);
   });
 
   constructor() {
@@ -55,10 +81,21 @@ export class CockpitPage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      this.leads.set(await this.service.list());
+      const [leads, stats] = await Promise.all([this.service.list(), this.loadStats()]);
+      this.leads.set(leads);
+      this.stats.set(stats);
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  /** Stats best-effort : un rappel absent ne doit pas casser le cockpit. */
+  private async loadStats(): Promise<GrowthStatsView | null> {
+    try {
+      return await this.growth.stats();
+    } catch {
+      return null;
     }
   }
 

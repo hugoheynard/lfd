@@ -22,6 +22,23 @@
       </div>
     }
     @default {
+      @if (stats(); as s) {
+        <a class="recap" routerLink="../croissance">
+          <div class="recap-kpis">
+            @for (kpi of recap(); track kpi.label) {
+              <div class="recap-kpi">
+                <span class="recap-value">{{ kpi.value }}</span>
+                <span class="recap-label">{{ kpi.label }}</span>
+              </div>
+            }
+          </div>
+          @if (spark(); as opt) {
+            <app-chart class="recap-spark" [option]="opt" height="52px" />
+          }
+          <span class="recap-cta">Croissance →</span>
+        </a>
+      }
+
       @if (leads().length === 0) {
         <div class="state">
           <p>Aucun coup à jouer pour l’instant.</p>
