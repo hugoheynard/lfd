@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { MarketAdoptionView, MarketConfigView } from '@lfd/contracts';
+import type { MarketAdoptionView, MarketConfigView, MarketSectorsView } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
 import { SuiteEmbed } from '../../suite-embed/suite-embed';
@@ -47,6 +47,10 @@ export class MarketService {
 
   adoption(): Promise<MarketAdoptionView> {
     return this.get<MarketAdoptionView>(`${B2B_API_BASE}/admin/growth/adoption`);
+  }
+
+  sectors(): Promise<MarketSectorsView> {
+    return this.get<MarketSectorsView>(`${B2B_API_BASE}/admin/growth/market-sectors`);
   }
 
   private async get<T>(url: string): Promise<T> {

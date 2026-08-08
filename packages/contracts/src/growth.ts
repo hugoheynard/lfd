@@ -541,6 +541,37 @@ export interface TerminationStatsView {
   readonly reactionByWeek: RecoveryReactionByWeek;
 }
 
+/**
+ * **Mouvements d'un secteur NAF dans une zone** : le pool max du secteur (addressable
+ * NAF) et combien on en tient (`active`) vs on en a perdu (`terminated`). La
+ * pénétration du secteur = `active / pool` (0 si pool inconnu).
+ */
+export interface SectorMovement {
+  readonly code: string;
+  readonly label: string;
+  /** Pool max du secteur dans la zone (acteurs visés de ce NAF). */
+  readonly pool: number;
+  readonly active: number;
+  readonly terminated: number;
+}
+
+/** Les mouvements par secteur d'une zone (barres empilées adoption / churn). */
+export interface ZoneSectorMovements {
+  readonly codePostal: string;
+  readonly ville: string;
+  readonly sectors: readonly SectorMovement[];
+}
+
+/**
+ * **Mix des types de clients par territoire** : pour chaque zone, la composition par
+ * **secteur NAF** de ce qu'on gagne (actives) vs ce qu'on perd (résiliées), à lire
+ * contre le **pool par NAF**. Répond à « dans les mouvements, quels types de clients ».
+ */
+export interface MarketSectorsView {
+  readonly zones: readonly ZoneSectorMovements[];
+  readonly computedAt: string;
+}
+
 /** L'adoption par territoire, sur la fenêtre d'analyse. */
 export interface MarketAdoptionView {
   readonly zones: readonly AdoptionZoneView[];

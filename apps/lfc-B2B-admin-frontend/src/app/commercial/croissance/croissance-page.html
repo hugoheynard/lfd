@@ -158,6 +158,27 @@
                 </p>
               }
             </article>
+
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Mix des clients par territoire (secteur NAF)</h2>
+                <app-metric-info
+                  label="Mix des clients par secteur NAF et territoire"
+                  text="Pour chaque zone, deux barres empilées à 100 % par secteur NAF : Adoption (nos sociétés actives) et Churn (nos résiliées). On lit quels TYPES de clients on gagne vs on perd — ex. « on gagne surtout des restaurants mais on perd surtout des bars ». Le pool par NAF est pris en compte : le tooltip donne la pénétration du secteur (actives ÷ pool NAF), pour ne pas surpondérer un secteur juste parce que son pool est gros. La barre du haut = adoption, celle du bas (plus claire) = churn."
+                />
+              </header>
+              @if (sectorMix(); as opt) {
+                <app-chart [option]="opt" height="360px" />
+                <app-chart-note
+                  goal="Voir, dans les mouvements de chaque territoire, quels TYPES de clients (secteur NAF) on gagne vs on perd."
+                  read="Par zone, deux barres empilées à 100 % : en haut Adoption (actives), en bas Churn (résiliées, plus clair) ; couleur = secteur NAF. Le tooltip donne le compte et la pénétration du secteur (÷ pool NAF)."
+                />
+              } @else {
+                <p class="muted">
+                  Aucune donnée de mix par secteur (config marché ou sociétés manquantes).
+                </p>
+              }
+            </article>
           </div>
         }
 

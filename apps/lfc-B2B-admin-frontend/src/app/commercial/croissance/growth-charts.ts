@@ -6,6 +6,7 @@ import type {
   CohortRow,
   FunnelStep,
   LifecycleFlow,
+  MarketSectorsView,
   PenetrationTrendPoint,
   RecoveryReactionByWeek,
   RecoveryReactionStat,
@@ -768,6 +769,76 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** Palette catégorielle des secteurs NAF (validée CVD), assignée dans l'ordre. */
+const SECTOR_PALETTE = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7'];
+
+/**
+ * **Mix des clients par territoire** : pour chaque zone, deux barres empilées à 100 %
+ * par **secteur NAF** — Adoption (nos actives) et Churn (nos résiliées) — pour lire
+ * *quels types de clients* on gagne vs on perd. Le tooltip rapporte le compte et la
+ * **pénétration du secteur** (`actives ÷ pool NAF`) pour tenir compte du pool.
+ */
+export function sectorMixOption(view: MarketSectorsView): EChartsOption {
+  const zones = view.zones;
+  const sectors = (zones[0]?.sectors ?? []).map((s) => ({ code: s.code, label: s.label }));
+  const yLabels = zones.map((z) => `${z.codePostal}${z.ville === '' ? '' : ' ' + z.ville}`);
+  const series: Record<string, unknown>[] = [];
+  sectors.forEach((sec, i) => {
+    const color = SECTOR_PALETTE[i % SECTOR_PALETTE.length] ?? PALETTE.slate;
+    series.push(sectorSeries(sec.code, sec.label, zones, color, 'adoption'));
+    series.push(sectorSeries(sec.code, sec.label, zones, color, 'churn'));
+  });
+  return {
+    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    legend: { top: 0, textStyle: { color: PALETTE.slate } },
+    tooltip: { trigger: 'item', formatter: sectorTooltip },
+    xAxis: { type: 'value', name: '% du mix', min: 0, max: 100 },
+    yAxis: { type: 'category', data: yLabels },
+    series,
+  };
+}
+
+/** Une série secteur pour un empilement (adoption/churn) : part du mix + compte + pénétration. */
+function sectorSeries(
+  code: string,
+  label: string,
+  zones: MarketSectorsView['zones'],
+  color: string,
+  stack: 'adoption' | 'churn',
+): Record<string, unknown> {
+  return {
+    name: label,
+    type: 'bar',
+    stack,
+    barMaxWidth: 26,
+    itemStyle: { color, opacity: stack === 'churn' ? 0.5 : 1 },
+    data: zones.map((z) => {
+      const s = z.sectors.find((x) => x.code === code);
+      const total = z.sectors.reduce((sum, x) => sum + (stack === 'churn' ? x.terminated : x.active), 0);
+      const n = stack === 'churn' ? (s?.terminated ?? 0) : (s?.active ?? 0);
+      const pen = s !== undefined && s.pool > 0 ? Math.round((s.active / s.pool) * 100) : 0;
+      return { value: total > 0 ? Math.round((n / total) * 100) : 0, n, pen, kind: stack };
+    }),
+  };
+}
+
+/** Tooltip d'un segment de mix : secteur, part, compte, et pénétration du secteur. */
+function sectorTooltip(param: unknown): string {
+  if (typeof param !== 'object' || param === null) {
+    return '';
+  }
+  const p = param as Record<string, unknown>;
+  const d = (typeof p['data'] === 'object' && p['data'] !== null ? p['data'] : {}) as Record<
+    string,
+    unknown
+  >;
+  const kind = d['kind'] === 'churn' ? 'Perdu' : 'Gagné';
+  const n = typeof d['n'] === 'number' ? d['n'] : 0;
+  const value = typeof d['value'] === 'number' ? d['value'] : 0;
+  const pen = typeof d['pen'] === 'number' ? d['pen'] : 0;
+  return `${String(p['seriesName'])} · ${kind}<br/>${value} % du mix · ${n} sociétés<br/>pénétration secteur ${pen} %`;
 }
 
 /** Pourcentage entier lisible d'un ratio 0..1. */
