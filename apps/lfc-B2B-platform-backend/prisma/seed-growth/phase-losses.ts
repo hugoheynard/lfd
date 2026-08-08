@@ -1,183 +1,108 @@
 import { seedCompany, validSiret } from "./phase-activation.js";
 import { type SeedHarness } from "./harness.js";
+import { buildLossPlan, type PlanPart, type RecoveredItem, WEEKS } from "./loss-plan.js";
 import { persona } from "./personas.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Espace d'index dédié aux pertes (jamais en collision avec les autres personas). */
 const LOSS_BASE = 40_000;
 
-/** Résiliations par zone : le bastion churne le plus, les autres peu. */
-const LOSSES: ReadonlyArray<{ codePostal: string; ville: string; count: number }> = [
+/**
+ * Zones où la **perte** est affichée (barre « Perte » par territoire) : comptes FIXES —
+ * les N premières résiliées y sont rattachées pour garder la perte par zone inchangée.
+ */
+const PERTE_ZONES: ReadonlyArray<{ codePostal: string; ville: string; count: number }> = [
   { codePostal: "73150", ville: "Val d'Isère", count: 22 },
   { codePostal: "73320", ville: "Tignes", count: 5 },
   { codePostal: "73700", ville: "Bourg-Saint-Maurice", count: 3 },
 ];
+/** Les résiliées EN TROP (pour le volume sunburst/taux) tombent hors marché ciblé. */
+const OFF_MARKET = { codePostal: "73000", ville: "Chambéry" };
 
-/** Une part de la distribution : (raison, sous-raison, détail optionnel, poids). */
-interface Weight {
-  readonly reason: string;
-  readonly sub: string;
-  /** 3ᵉ niveau (ex. catégorie produit sous `better_price`), vide sinon. */
-  readonly detail?: string;
-  /** Canal de rattrapage (rows `recovered` uniquement) : `auto` | `sales`. */
-  readonly via?: "auto" | "sales";
-  readonly count: number;
+/** Date d'une tentative depuis son index de semaine (WEEKS−1 = ancre, 0 = le plus ancien). */
+function weekDate(anchor: Date, week: number): Date {
+  return new Date(anchor.getTime() - (WEEKS - 1 - week) * 7 * DAY_MS);
 }
 
-/**
- * **Résiliations confirmées** — distribution VOLONTAIREMENT contrastée (ratios
- * lisibles au sunburst). Le **concurrent** domine et se détaille jusqu'à la
- * **catégorie produit** sous « Meilleur prix » (3ᵉ anneau, boissons en tête) ; la
- * cessation suit ; tarif, qualité et le reste sont minoritaires. Somme = 30 =
- * total des `terminated` ci-dessus.
- */
-const CONFIRMED: readonly Weight[] = [
-  { reason: "competitor", sub: "better_price", detail: "beverages", count: 5 },
-  { reason: "competitor", sub: "better_price", detail: "wine_spirits", count: 3 },
-  { reason: "competitor", sub: "better_price", detail: "grocery", count: 1 },
-  { reason: "competitor", sub: "better_price", detail: "fresh", count: 1 },
-  { reason: "competitor", sub: "better_offer", count: 2 },
-  { reason: "competitor", sub: "proximite", count: 2 },
-  { reason: "closure", sub: "business_closure", count: 5 },
-  { reason: "closure", sub: "relocation", count: 4 },
-  { reason: "price", sub: "delivery_cost", count: 3 },
-  { reason: "price", sub: "catalog_price", count: 1 },
-  { reason: "quality", sub: "product_quality", count: 2 },
-  { reason: "no_need", sub: "seasonal", count: 1 },
-];
-
-/**
- * **Tentatives rattrapées** — deux contrastes voulus : le taux de rattrapage DIFFÈRE
- * par catégorie (tarif très rattrapable, cessation quasi jamais) ET le **canal** de
- * rattrapage diffère (tarif surtout **auto** via un incentive plateforme ; concurrent
- * et qualité surtout **sales**, sauvés à la main par un commercial). Somme = 18.
- */
-/**
- * **Délai de réaction** (jours) entre déclaration de résiliation et action de
- * rattrapage, par catégorie — consommé dans l'ordre : le tarif se négocie **vite**
- * (+ 1 outlier qui a traîné), le concurrent demande une contre-offre (moyen), la
- * qualité doit se corriger (**lent**). Longueur = nombre de rattrapées de la catégorie.
- */
-const REACTION_DAYS: Record<string, readonly number[]> = {
-  price: [1, 1, 2, 2, 3, 3, 4, 14],
-  competitor: [3, 4, 5, 6, 7],
-  quality: [9, 11, 16],
-  no_need: [6],
-  closure: [12],
-};
-
-const RECOVERED: readonly Weight[] = [
-  { reason: "price", sub: "delivery_cost", via: "auto", count: 6 },
-  { reason: "price", sub: "delivery_cost", via: "sales", count: 2 },
-  { reason: "competitor", sub: "better_price", via: "sales", count: 4 },
-  { reason: "competitor", sub: "better_price", via: "auto", count: 1 },
-  { reason: "quality", sub: "product_quality", via: "sales", count: 3 },
-  { reason: "no_need", sub: "seasonal", via: "auto", count: 1 },
-  { reason: "closure", sub: "business_closure", via: "sales", count: 1 },
-];
-
-/** Une occurrence dépliée : raison + sous-raison + détail + canal de rattrapage. */
-interface Part {
-  readonly reason: string;
-  readonly sub: string;
-  readonly detail: string;
-  readonly via: string;
-}
-
-/** Déplie une distribution pondérée en une liste plate de (raison, sous-raison, détail, canal). */
-function flatten(dist: readonly Weight[]): readonly Part[] {
-  const out: Part[] = [];
-  for (const w of dist) {
-    for (let i = 0; i < w.count; i += 1) {
-      out.push({ reason: w.reason, sub: w.sub, detail: w.detail ?? "", via: w.via ?? "" });
+/** Zone d'une confirmée par index : les premières remplissent les zones de perte. */
+function zoneOf(index: number): { codePostal: string; ville: string } {
+  let acc = 0;
+  for (const z of PERTE_ZONES) {
+    acc += z.count;
+    if (index < acc) {
+      return { codePostal: z.codePostal, ville: z.ville };
     }
   }
-  return out;
+  return OFF_MARKET;
 }
 
 /**
- * **Calendrier des tentatives** (semaine 0 = la plus ancienne, 12 = la plus récente),
- * façonné pour une **vélocité de rattrapage croissante** : au début surtout des
- * confirmées (on subit), vers la fin de plus en plus de rattrapées (on réagit mieux).
- * Le taux hebdo passe de 0 % à ~60 %. Les longueurs valent les totaux (30 / 18).
- */
-const CONF_WEEKS: readonly number[] = [
-  0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12,
-];
-const RECOV_WEEKS: readonly number[] = [
-  2, 3, 4, 5, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 12,
-];
-
-/** Date d'une tentative depuis son index de semaine (12 = ancre, 0 = 12 semaines avant). */
-function weekDate(anchor: Date, weeks: readonly number[], index: number): Date {
-  const week = weeks[index % weeks.length] ?? 12;
-  return new Date(anchor.getTime() - (12 - week) * 7 * DAY_MS);
-}
-
-/**
- * Phase **pertes & terminaisons** : crée des sociétés **résiliées** par zone (barre
- * « Perte » de l'adoption) et enregistre les **terminaisons** avec une distribution
- * **contrastée** — sunburst raison → sous-raison aux ratios nets, et taux de
- * rattrapage variable par catégorie. Les tentatives sont **étalées dans le temps**
- * (cf. `CONF_WEEKS`/`RECOV_WEEKS`) pour une vélocité de rattrapage croissante.
- * Idempotent (SIRET + upsert). Les tentatives rattrapées ciblent des comptes actifs.
+ * Phase **pertes & terminaisons** : matérialise le {@link buildLossPlan} — sociétés
+ * **résiliées** (barre « Perte » + sunburst) et tentatives **rattrapées** (taux + délai
+ * de réaction), étalées dans le temps. Les zones de perte gardent des comptes fixes ;
+ * les résiliées en trop tombent hors marché. Idempotent (SIRET + upsert par id).
  */
 export async function seedLosses(harness: SeedHarness, anchor: Date): Promise<number> {
-  const confirmed = flatten(CONFIRMED);
+  const plan = buildLossPlan();
   let created = 0;
-  let k = 0;
-  for (const zone of LOSSES) {
-    for (let i = 0; i < zone.count; i += 1, k += 1) {
-      const siret = validSiret(LOSS_BASE + k);
-      const declaredAt = new Date(anchor.getTime() - ((k * 9) % 150) * DAY_MS);
-      // Profondeur 3 : jusqu'à l'adresse de facturation (rattache la zone) — pas besoin
-      // d'activer, on marque directement résilié.
-      if (await seedCompany(harness, zoneWho(k, zone.codePostal, zone.ville), siret, 3, declaredAt)) {
-        await harness.prisma.company.updateMany({ where: { siret }, data: { status: "terminated" } });
-        created += 1;
-      }
-      const company = await harness.prisma.company.findFirst({ where: { siret }, select: { id: true } });
-      const w = confirmed[k % confirmed.length];
-      if (company !== null && w !== undefined) {
-        await record(harness, `term_c_${k}`, company.id, w, k, "confirmed", weekDate(anchor, CONF_WEEKS, k), null);
-      }
+  for (let i = 0; i < plan.confirmed.length; i += 1) {
+    const item = plan.confirmed[i];
+    if (item !== undefined && (await seedConfirmed(harness, anchor, i, item.part, item.week))) {
+      created += 1;
     }
   }
-  await seedRecovered(harness, anchor);
+  await seedRecovered(harness, anchor, plan.recovered);
   return created;
 }
 
-/** Tentatives **rattrapées** sur des comptes actifs du bastion, distribution pondérée. */
-async function seedRecovered(harness: SeedHarness, anchor: Date): Promise<void> {
+/** Une société résiliée (profondeur 3 = adresse de facturation) + sa terminaison confirmée. */
+async function seedConfirmed(
+  harness: SeedHarness,
+  anchor: Date,
+  index: number,
+  part: PlanPart,
+  week: number,
+): Promise<boolean> {
+  const siret = validSiret(LOSS_BASE + index);
+  const zone = zoneOf(index);
+  const declaredAt = new Date(anchor.getTime() - ((index * 9) % 150) * DAY_MS);
+  let created = false;
+  if (await seedCompany(harness, zoneWho(index, zone.codePostal, zone.ville), siret, 3, declaredAt)) {
+    await harness.prisma.company.updateMany({ where: { siret }, data: { status: "terminated" } });
+    created = true;
+  }
+  const company = await harness.prisma.company.findFirst({ where: { siret }, select: { id: true } });
+  if (company !== null) {
+    await record(harness, `term_c_${index}`, company.id, part, index, "confirmed", weekDate(anchor, week), null);
+  }
+  return created;
+}
+
+/** Tentatives **rattrapées** sur des comptes actifs du bastion (délai = créé → résolu). */
+async function seedRecovered(
+  harness: SeedHarness,
+  anchor: Date,
+  recovered: readonly RecoveredItem[],
+): Promise<void> {
   const active = await harness.prisma.company.findMany({
     where: { status: "active", addresses: { some: { codePostal: "73150" } } },
     select: { id: true },
     orderBy: { id: "asc" },
-    take: 40,
+    take: 120,
   });
   if (active.length === 0) {
     return;
   }
-  const recovered = flatten(RECOVERED);
-  const seen = new Map<string, number>();
   for (let j = 0; j < recovered.length; j += 1) {
-    const w = recovered[j];
+    const item = recovered[j];
     const company = active[j % active.length];
-    if (w === undefined || company === undefined) {
+    if (item === undefined || company === undefined) {
       continue;
     }
-    const createdAt = weekDate(anchor, RECOV_WEEKS, j);
-    const resolvedAt = new Date(createdAt.getTime() + reactionDays(w.reason, seen) * DAY_MS);
-    await record(harness, `term_r_${j}`, company.id, w, j, "recovered", createdAt, resolvedAt);
+    const createdAt = weekDate(anchor, item.week);
+    const resolvedAt = new Date(createdAt.getTime() + item.delayDays * DAY_MS);
+    await record(harness, `term_r_${j}`, company.id, item.part, j, "recovered", createdAt, resolvedAt);
   }
-}
-
-/** Prochain délai de réaction (jours) de la catégorie, consommé dans l'ordre déclaré. */
-function reactionDays(reason: string, seen: Map<string, number>): number {
-  const delays = REACTION_DAYS[reason] ?? [3];
-  const n = seen.get(reason) ?? 0;
-  seen.set(reason, n + 1);
-  return delays[n % delays.length] ?? 3;
 }
 
 /** Upsert d'une terminaison (idempotent par id). `initiatedBy` alterné client/commercial. */
@@ -185,7 +110,7 @@ async function record(
   harness: SeedHarness,
   id: string,
   companyId: string,
-  part: Part,
+  part: PlanPart,
   index: number,
   outcome: "confirmed" | "recovered",
   createdAt: Date,

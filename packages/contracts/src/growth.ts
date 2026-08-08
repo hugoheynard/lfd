@@ -495,6 +495,33 @@ export interface RecoveryReactionStat {
   readonly box: BoxplotSummary;
 }
 
+/** Une case (semaine) d'une série de délai de réaction : sa boîte, ou `null` si vide. */
+export interface RecoveryReactionCell {
+  readonly weekStart: string;
+  readonly count: number;
+  readonly box: BoxplotSummary | null;
+}
+
+/**
+ * Une **série** de délai de réaction : une catégorie de départ, une boîte par semaine
+ * (alignées sur `weeks`). Rendues **groupées** côte à côte par semaine.
+ */
+export interface RecoveryReactionSeries {
+  readonly reason: TerminationReason;
+  readonly label: string;
+  readonly cells: readonly RecoveryReactionCell[];
+}
+
+/**
+ * **Délai de réaction hebdo × catégorie** : l'axe = les semaines, et pour chaque
+ * semaine les catégories sont **groupées** (une boîte chacune). On lit la vitesse par
+ * motif ET son évolution. Seules les catégories avec assez de rattrapages sont incluses.
+ */
+export interface RecoveryReactionByWeek {
+  readonly weeks: readonly string[];
+  readonly series: readonly RecoveryReactionSeries[];
+}
+
 /** Analytics de churn : raisons de résiliation + rattrapage des tentatives. */
 export interface TerminationStatsView {
   /** Sunburst des **résiliations confirmées** : raison → sous-raison. */
@@ -505,8 +532,10 @@ export interface TerminationStatsView {
   readonly recoveryByReason: readonly TerminationRecovery[];
   /** **Vélocité de rattrapage** : le taux semaine par semaine (efficacité dans le temps). */
   readonly recoveryTrend: readonly RecoveryTrendPoint[];
-  /** **Délai de réaction** (jours) par catégorie : boxplot tentative → rattrapage. */
+  /** **Délai de réaction** (jours) par catégorie, all-time : boxplot tentative → rattrapage. */
   readonly reactionByReason: readonly RecoveryReactionStat[];
+  /** **Délai de réaction hebdo × catégorie** : boîtes groupées par semaine. */
+  readonly reactionByWeek: RecoveryReactionByWeek;
 }
 
 /** L'adoption par territoire, sur la fenêtre d'analyse. */

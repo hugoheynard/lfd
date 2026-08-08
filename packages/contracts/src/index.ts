@@ -148,6 +148,9 @@ export type {
   RecoveryTrendPoint,
   BoxplotSummary,
   RecoveryReactionStat,
+  RecoveryReactionCell,
+  RecoveryReactionSeries,
+  RecoveryReactionByWeek,
   TerminationStatsView,
 } from "./growth.js";
 export {

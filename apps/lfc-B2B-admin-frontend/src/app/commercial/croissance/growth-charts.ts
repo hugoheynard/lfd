@@ -7,6 +7,7 @@ import type {
   FunnelStep,
   LifecycleFlow,
   PenetrationTrendPoint,
+  RecoveryReactionByWeek,
   RecoveryReactionStat,
   RecoveryTrendPoint,
   TemperatureFlowPoint,
@@ -679,6 +680,35 @@ export function recoveryReactionOption(stats: readonly RecoveryReactionStat[]): 
     xAxis: { type: 'category', data: stats.map((s) => s.label) },
     yAxis: { type: 'value', name: 'jours', min: 0 },
     series: [boxes, outlierPoints],
+  };
+}
+
+/**
+ * **Délai de réaction hebdo × catégorie** : l'axe X = les semaines, et pour chaque
+ * semaine les catégories sont **groupées** côte à côte (une boîte par motif, teinte du
+ * sunburst). On lit à la fois la vitesse *par motif* et son évolution semaine après
+ * semaine (les boîtes qui descendent = on réagit plus vite). Axe en jours.
+ */
+export function recoveryReactionWeeklyOption(byWeek: RecoveryReactionByWeek): EChartsOption {
+  const weeks = byWeek.weeks.map((w) => weekLabel(w));
+  const series: Record<string, unknown>[] = byWeek.series.map((s): Record<string, unknown> => {
+    const color = CHURN_COLORS[s.reason];
+    return {
+      name: s.label,
+      type: 'boxplot',
+      itemStyle: { color: hexToRgba(color, 0.18), borderColor: color, borderWidth: 2 },
+      data: s.cells.map((c) =>
+        c.box === null ? '-' : [c.box.low, c.box.q1, c.box.median, c.box.q3, c.box.high],
+      ),
+    };
+  });
+  return {
+    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    legend: { top: 0, textStyle: { color: PALETTE.slate } },
+    tooltip: { trigger: 'item' },
+    xAxis: { type: 'category', data: weeks },
+    yAxis: { type: 'value', name: 'jours', min: 0 },
+    series,
   };
 }
 

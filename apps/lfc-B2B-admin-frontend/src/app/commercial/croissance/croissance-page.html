@@ -205,6 +205,23 @@
                 </p>
               }
             </article>
+
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Délai de réaction — par semaine</h2>
+                <app-metric-info
+                  label="Délai de réaction hebdo × catégorie"
+                  text="Le même délai de réaction (jours), mais dans le temps : l'axe = les semaines, et pour chaque semaine les catégories sont groupées côte à côte (une boîte par motif, mêmes teintes que le sunburst). On lit d'un coup la vitesse par motif ET son évolution : des boîtes qui descendent semaine après semaine = on réagit de plus en plus vite. Une case reste vide si aucun rattrapage ce motif-là cette semaine."
+                />
+              </header>
+              @if (recoveryReactionWeekly(); as opt) {
+                <app-chart [option]="opt" height="320px" />
+              } @else {
+                <p class="muted">
+                  Pas encore assez de rattrapages hebdomadaires par catégorie.
+                </p>
+              }
+            </article>
           </div>
         }
 

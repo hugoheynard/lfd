@@ -134,6 +134,23 @@ describe("computeTerminationStats", () => {
     expect(computeTerminationStats(two).reactionByReason).toEqual([]);
   });
 
+  it("délai de réaction hebdo : boîtes groupées par catégorie, alignées sur les semaines", () => {
+    // Tarif : ≥ 3 rattrapages sur 2 semaines distinctes → 1 série, 2 cases.
+    const mk = (created: string, resolved: string): TerminationRow =>
+      row({ reason: "price", outcome: "recovered", createdAt: created, resolvedAt: resolved });
+    const byWeek = computeTerminationStats([
+      mk("2026-02-02T00:00:00.000Z", "2026-02-04T00:00:00.000Z"),
+      mk("2026-02-03T00:00:00.000Z", "2026-02-06T00:00:00.000Z"),
+      mk("2026-02-10T00:00:00.000Z", "2026-02-11T00:00:00.000Z"),
+    ]).reactionByWeek;
+    expect(byWeek.weeks).toHaveLength(2);
+    expect(byWeek.weeks[0]?.localeCompare(byWeek.weeks[1] ?? "")).toBeLessThan(0);
+    const price = byWeek.series.find((s) => s.reason === "price");
+    expect(price?.cells).toHaveLength(2); // aligné sur weeks
+    expect(price?.cells[0]?.count).toBe(2);
+    expect(price?.cells[1]?.count).toBe(1);
+  });
+
   it("corpus vide : global neutre, listes vides", () => {
     const view = computeTerminationStats([]);
     expect(view).toEqual({
@@ -150,6 +167,7 @@ describe("computeTerminationStats", () => {
       recoveryByReason: [],
       recoveryTrend: [],
       reactionByReason: [],
+      reactionByWeek: { weeks: [], series: [] },
     });
   });
 });

@@ -25,6 +25,7 @@ import {
   funnelOption,
   lifecycleSankeyOption,
   recoveryReactionOption,
+  recoveryReactionWeeklyOption,
   recoveryTrendOption,
   temperatureFlowOption,
   temperatureTransitionsOption,
@@ -142,6 +143,12 @@ export class CroissancePage {
     return t === null || t.reactionByReason.length === 0
       ? null
       : recoveryReactionOption(t.reactionByReason);
+  });
+  protected readonly recoveryReactionWeekly = computed<ChartOption | null>(() => {
+    const t = this.terminations();
+    return t === null || t.reactionByWeek.series.length === 0
+      ? null
+      : recoveryReactionWeeklyOption(t.reactionByWeek);
   });
   protected readonly zoneVelocity = computed<ChartOption | null>(() => {
     const trends = this.adoptionZoneTrends();

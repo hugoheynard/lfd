@@ -8,7 +8,7 @@ import type {
 } from "@lfd/contracts";
 
 import { weekStart } from "./growth-stats.js";
-import { buildRecoveryReaction } from "./recovery-reaction.js";
+import { buildRecoveryReaction, buildRecoveryReactionByWeek } from "./recovery-reaction.js";
 import {
   normalizeReason,
   REASONS,
@@ -71,6 +71,7 @@ export function computeTerminationStats(rows: readonly TerminationRow[]): Termin
     ),
     recoveryTrend: buildRecoveryTrend(rows),
     reactionByReason: buildRecoveryReaction(rows),
+    reactionByWeek: buildRecoveryReactionByWeek(rows),
   };
 }
 
