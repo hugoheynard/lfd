@@ -7,13 +7,14 @@ import { weekStart, weekStarts } from "../domain/growth-stats.js";
 import { computeMarketVolume } from "../domain/market-volume.js";
 import { MarketConfigStore } from "../domain/ports/market-config.store.js";
 import { MarketVolumeReader } from "../domain/ports/market-volume.reader.js";
+import { REVENUE_ORDER_STATUSES } from "../domain/revenue-scope.js";
 
 const WINDOW_WEEKS = 13;
 
 /**
  * Adaptateur Prisma **marché vs volume** : le marché = somme des `addressable` (config,
- * ≈ constant), le volume = **CA cumulé** (TTC) des commandes agrégé par semaine. Le CA
- * antérieur à la fenêtre sert de base d'indexation. Fenêtre alignée sur le dashboard.
+ * ≈ constant), le volume = le CA (TTC) **de la semaine** — périodique, pas cumulé, pour
+ * que la courbe puisse baisser. Fenêtre alignée sur le dashboard.
  */
 @Injectable()
 export class PrismaMarketVolumeReader extends MarketVolumeReader {
@@ -34,18 +35,17 @@ export class PrismaMarketVolumeReader extends MarketVolumeReader {
     const marketActors = config.zones.reduce((sum, z) => sum + z.addressable, 0);
 
     const orders = await this.prisma.order.findMany({
+      where: { status: { in: [...REVENUE_ORDER_STATUSES] } },
       select: { createdAt: true, totalCents: true },
     });
-    let priorCents = 0;
     const weeklyCents = new Map<string, number>();
     for (const order of orders) {
       if (order.createdAt < start) {
-        priorCents += order.totalCents;
         continue;
       }
       const w = weekStart(order.createdAt);
       weeklyCents.set(w, (weeklyCents.get(w) ?? 0) + order.totalCents);
     }
-    return computeMarketVolume(window, priorCents, weeklyCents, marketActors, now);
+    return computeMarketVolume(window, weeklyCents, marketActors, now);
   }
 }

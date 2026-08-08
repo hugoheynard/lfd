@@ -4,8 +4,10 @@ import type { OrderMetricsView } from "@lfd/contracts";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { Clock } from "../../infra/time/clock.js";
 import { dayKey, dayRange, weekStarts } from "../domain/growth-stats.js";
+import { concentrationOf } from "../domain/growth-stats-advanced.js";
 import { computeOrderMetrics, type OrderDayTally } from "../domain/order-metrics.js";
 import { OrderMetricsReader } from "../domain/ports/order-metrics.reader.js";
+import { goodsCents, REVENUE_ORDER_STATUSES } from "../domain/revenue-scope.js";
 
 const WINDOW_WEEKS = 13;
 
@@ -32,22 +34,38 @@ export class PrismaOrderMetricsReader extends OrderMetricsReader {
     const start = new Date(`${first}T00:00:00.000Z`);
 
     const orders = await this.prisma.order.findMany({
-      where: { createdAt: { gte: start } },
-      select: { createdAt: true, totalCents: true, fromSubscriptionId: true },
+      where: { createdAt: { gte: start }, status: { in: [...REVENUE_ORDER_STATUSES] } },
+      select: {
+        createdAt: true,
+        totalCents: true,
+        subtotalCents: true,
+        discountCents: true,
+        fromSubscriptionId: true,
+        companyId: true,
+        placedByUserId: true,
+      },
     });
     const byDay = new Map<string, OrderDayTally>();
+    // Volume par ACHETEUR : la société si la commande y est rattachée, sinon la
+    // personne (zéro-friction). Les deux espaces d'ids sont préfixés pour ne jamais
+    // se confondre dans la même distribution.
+    const byBuyer = new Map<string, number>();
     for (const order of orders) {
+      const buyer =
+        order.companyId !== null ? `company:${order.companyId}` : `user:${order.placedByUserId}`;
+      byBuyer.set(buyer, (byBuyer.get(buyer) ?? 0) + order.totalCents);
       const day = dayKey(order.createdAt);
       const prev = byDay.get(day);
       const recurring = order.fromSubscriptionId !== null ? order.totalCents : 0;
       byDay.set(day, {
         caCents: (prev?.caCents ?? 0) + order.totalCents,
+        caGoodsCents: (prev?.caGoodsCents ?? 0) + goodsCents(order),
         orders: (prev?.orders ?? 0) + 1,
         caRecurringCents: (prev?.caRecurringCents ?? 0) + recurring,
         caOneShotCents: (prev?.caOneShotCents ?? 0) + (order.totalCents - recurring),
       });
     }
 
-    return computeOrderMetrics(window, byDay, now);
+    return computeOrderMetrics(window, byDay, concentrationOf(byBuyer), now);
   }
 }

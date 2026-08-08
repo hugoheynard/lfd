@@ -7,6 +7,7 @@ import { dayKey, dayRange, weekStarts } from "../domain/growth-stats.js";
 import { computeSectorRevenue } from "../domain/sector-revenue.js";
 import { MarketConfigStore } from "../domain/ports/market-config.store.js";
 import { SectorRevenueReader } from "../domain/ports/sector-revenue.reader.js";
+import { REVENUE_ORDER_STATUSES } from "../domain/revenue-scope.js";
 
 const WINDOW_WEEKS = 13;
 
@@ -37,7 +38,11 @@ export class PrismaSectorRevenueReader extends SectorRevenueReader {
     const targeted = new Set(config.nafCodes.map((n) => n.code));
 
     const orders = await this.prisma.order.findMany({
-      where: { createdAt: { gte: start }, companyId: { not: null } },
+      where: {
+        createdAt: { gte: start },
+        companyId: { not: null },
+        status: { in: [...REVENUE_ORDER_STATUSES] },
+      },
       select: { createdAt: true, totalCents: true, company: { select: { nafCode: true } } },
     });
     const dailyByNaf = new Map<string, Map<string, number>>();

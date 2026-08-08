@@ -73,8 +73,12 @@ export class PrismaMarketAdoptionReader extends MarketAdoptionReader {
         activated.set(address.codePostal, zone);
         continue;
       }
-      zone.total += 1;
+      // Une société n'entre dans l'adoption que si elle porte une DATE d'activation.
+      // Avant, la barre comptait toute société `active` (même sans `activatedAt`)
+      // alors que la trajectoire n'en comptait que les datées : la barre et la courbe
+      // d'une même zone ne disaient pas la même chose. Même dénominateur des deux côtés.
       if (company.activatedAt !== null) {
+        zone.total += 1;
         activationDates.push(company.activatedAt);
         (datesByZone.get(address.codePostal) ?? setZone(datesByZone, address.codePostal)).push(
           company.activatedAt,

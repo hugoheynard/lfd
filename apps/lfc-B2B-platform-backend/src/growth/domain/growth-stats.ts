@@ -65,7 +65,7 @@ export function deriveGrowthStats(
     acquisition: acquisition(userEvents, window),
     temperatureFlow: temperatureFlow(userEvents, leadEvents, window),
     temperatureTransitions: temperatureTransitions(userEvents, leadEvents, window),
-    coldFunnel: coldFunnel(leads),
+    coldFunnel: coldFunnel(leads, leadEvents),
     activationFunnel: activationFunnel(activations),
     cohorts: cohorts(userEvents, window),
     lifecycle: lifecycleFlow(events),
@@ -123,9 +123,22 @@ function acquisition(
   }));
 }
 
-/** Entonnoir cold : progression pipeline (marche = leads ayant atteint ≥ l'étape). */
-function coldFunnel(leads: readonly LeadView[]): FunnelStep[] {
-  const rankOf = (l: LeadView): number => LEAD_RANK[l.status] ?? -1;
+/**
+ * Entonnoir cold : progression pipeline (marche = leads ayant **atteint** ≥ l'étape).
+ *
+ * Le statut courant ne suffit pas : un lead `lost` a bien traversé des étapes avant
+ * d'être perdu, et son statut n'en garde aucune trace. On reconstitue donc le **rang
+ * maximum atteint** depuis le journal (`lead.stage_changed`, un événement par étape
+ * franchie, plus `lead.converted`), qu'on combine au rang du statut courant. Sans ça
+ * les marches intermédiaires étaient sous-comptées et le taux de passage flatté.
+ */
+function coldFunnel(
+  leads: readonly LeadView[],
+  leadEvents: readonly GrowthStatsEvent[],
+): FunnelStep[] {
+  const reached = maxRankReached(leadEvents);
+  const rankOf = (l: LeadView): number =>
+    Math.max(LEAD_RANK[l.status] ?? -1, reached.get(l.id) ?? -1);
   const atLeast = (r: number): number => leads.filter((l) => rankOf(l) >= r).length;
   return [
     { key: "captured", label: "Saisis", count: leads.length },
@@ -134,6 +147,28 @@ function coldFunnel(leads: readonly LeadView[]): FunnelStep[] {
     { key: "negotiating", label: "En négociation", count: atLeast(3) },
     { key: "converted", label: "Convertis", count: atLeast(4) },
   ];
+}
+
+/** Rang de pipeline le plus avancé qu'atteste le journal, par lead. */
+function maxRankReached(leadEvents: readonly GrowthStatsEvent[]): Map<string, number> {
+  const out = new Map<string, number>();
+  const bump = (id: string, rank: number): void => {
+    out.set(id, Math.max(out.get(id) ?? -1, rank));
+  };
+  for (const e of leadEvents) {
+    if (e.type === ACTIVITY_TYPES.leadConverted) {
+      bump(e.subjectId, LEAD_RANK["converted"] ?? 4);
+      continue;
+    }
+    if (e.type !== ACTIVITY_TYPES.leadStageChanged) {
+      continue;
+    }
+    const status = e.payload["status"];
+    if (typeof status === "string") {
+      bump(e.subjectId, LEAD_RANK[status] ?? -1);
+    }
+  }
+  return out;
 }
 
 /** Entonnoir d'activation : déclaré → pièces → activé (les fuites = frictions). */

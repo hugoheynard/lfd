@@ -5,9 +5,10 @@ import { AcquisitionMetricsReader } from "../../domain/ports/acquisition-metrics
 import { GetAcquisitionMetricsQuery } from "./get-acquisition-metrics.query.js";
 
 @QueryHandler(GetAcquisitionMetricsQuery)
-export class GetAcquisitionMetricsHandler
-  implements IQueryHandler<GetAcquisitionMetricsQuery, AcquisitionMetricsView>
-{
+export class GetAcquisitionMetricsHandler implements IQueryHandler<
+  GetAcquisitionMetricsQuery,
+  AcquisitionMetricsView
+> {
   constructor(private readonly reader: AcquisitionMetricsReader) {}
 
   execute(): Promise<AcquisitionMetricsView> {

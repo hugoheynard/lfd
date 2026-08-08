@@ -164,6 +164,17 @@ export function accountConcentration(events: readonly GrowthStatsEvent[]): Accou
       );
     }
   }
+  return concentrationOf(volumeByAccount);
+}
+
+/**
+ * Courbe de Lorenz + Gini + part du décile de tête, depuis un volume **par acheteur**.
+ * Extrait pour être partagé : la concentration se calcule aussi depuis la table
+ * `orders` (source de vérité du CA), pas seulement depuis le journal.
+ */
+export function concentrationOf(
+  volumeByAccount: ReadonlyMap<string, number>,
+): AccountConcentration {
   const volumes = [...volumeByAccount.values()].sort((a, b) => a - b);
   const total = volumes.reduce((s, v) => s + v, 0);
   const accounts = volumes.length;

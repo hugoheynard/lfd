@@ -113,6 +113,27 @@ describe("deriveGrowthStats", () => {
     expect(counts).toEqual([3, 2, 2, 1, 1]);
   });
 
+  it("compte un lead PERDU dans les étapes qu'il avait franchies (via le journal)", () => {
+    // Le statut courant `lost` ne dit rien du chemin parcouru : sans le journal, ce
+    // lead disparaissait des marches « Contactés » et « Qualifiés ».
+    const stats = deriveGrowthStats(
+      [
+        ev("lead.stage_changed", "lead", "l1", "2026-08-10T09:00:00.000Z", {
+          status: "contacted",
+        }),
+        ev("lead.stage_changed", "lead", "l1", "2026-08-12T09:00:00.000Z", {
+          status: "qualified",
+        }),
+        ev("lead.lost", "lead", "l1", "2026-08-14T09:00:00.000Z"),
+      ],
+      [lead({ id: "l1", status: "lost" })],
+      NOW,
+    );
+
+    // captured=1, contacted=1, qualified=1, negotiating=0, converted=0
+    expect(stats.coldFunnel.map((s) => s.count)).toEqual([1, 1, 1, 0, 0]);
+  });
+
   it("reconstruit le momentum du vivier (stock debout par chaleur, période par période)", () => {
     const stats = deriveGrowthStats(
       [

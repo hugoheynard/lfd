@@ -18,6 +18,9 @@ const STATS_TYPES = [
   ACTIVITY_TYPES.companyActivated,
   ACTIVITY_TYPES.leadConverted,
   ACTIVITY_TYPES.leadLost,
+  // Nécessaire à l'entonnoir cold : sans lui, un lead perdu ne garde aucune trace
+  // des étapes qu'il a franchies (cf. `coldFunnel`).
+  ACTIVITY_TYPES.leadStageChanged,
 ];
 
 /**

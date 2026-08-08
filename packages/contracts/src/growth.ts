@@ -573,8 +573,9 @@ export interface MarketSectorsView {
 }
 
 /**
- * Un point **marché vs volume** : à la clôture de la semaine, la taille du marché visé
- * (acteurs, quasi-constante) et le **CA cumulé** encaissé (TTC, centimes).
+ * Un point **marché vs volume** : pour la semaine, la taille du marché visé (acteurs,
+ * quasi-constante) et le CA **de la semaine** (TTC, centimes) — périodique, pas cumulé,
+ * sinon la courbe ne pourrait que monter.
  */
 export interface MarketVolumePoint {
   readonly weekStart: string;
@@ -620,10 +621,25 @@ export interface SectorRevenueView {
  */
 export interface OrderMetricsView {
   readonly days: readonly string[];
+  /** CA **TTC encaissé** (frais de livraison et TVA inclus) — vérité de trésorerie. */
   readonly caCents: readonly number[];
+  /**
+   * CA **marchandises HT** (`subtotal − discount`) — base pilotable, hors TVA et hors
+   * frais de livraison. C'est elle qui sert au **panier moyen** : le TTC bougerait au
+   * gré des frais de port sans qu'un euro de marchandise ait changé.
+   */
+  readonly caGoodsCents: readonly number[];
   readonly orders: readonly number[];
   readonly caRecurringCents: readonly number[];
   readonly caOneShotCents: readonly number[];
+  /**
+   * **Concentration du volume par acheteur** sur la même fenêtre et la **même source**
+   * (table `orders`) que le reste du CA — et non plus depuis le journal, qui est
+   * best-effort et pouvait diverger silencieusement. L'acheteur est la société quand la
+   * commande y est rattachée, sinon la personne (commande zéro-friction) : les deux
+   * espaces d'identifiants sont préfixés pour ne jamais se confondre.
+   */
+  readonly concentration: AccountConcentration;
   readonly computedAt: string;
 }
 

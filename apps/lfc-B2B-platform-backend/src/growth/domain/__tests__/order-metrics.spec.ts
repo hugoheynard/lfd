@@ -1,10 +1,27 @@
+import type { AccountConcentration } from "@lfd/contracts";
+
 import { computeOrderMetrics, type OrderDayTally } from "../order-metrics.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
 
 function tally(over: Partial<OrderDayTally> = {}): OrderDayTally {
-  return { caCents: 0, orders: 0, caRecurringCents: 0, caOneShotCents: 0, ...over };
+  return {
+    caCents: 0,
+    caGoodsCents: 0,
+    orders: 0,
+    caRecurringCents: 0,
+    caOneShotCents: 0,
+    ...over,
+  };
 }
+
+const NO_CONCENTRATION: AccountConcentration = {
+  lorenz: [{ cumAccounts: 0, cumVolume: 0 }],
+  gini: 0,
+  topDecileShare: 0,
+  accounts: 0,
+  totalVolumeCents: 0,
+};
 
 describe("computeOrderMetrics", () => {
   it("projette les agrégats sur la fenêtre et remplit 0 pour les jours vides", () => {
@@ -14,7 +31,7 @@ describe("computeOrderMetrics", () => {
         tally({ caCents: 3000, orders: 2, caRecurringCents: 1000, caOneShotCents: 2000 }),
       ],
     ]);
-    const view = computeOrderMetrics(["2026-08-18", "2026-08-19"], byDay, NOW);
+    const view = computeOrderMetrics(["2026-08-18", "2026-08-19"], byDay, NO_CONCENTRATION, NOW);
 
     expect(view.days).toEqual(["2026-08-18", "2026-08-19"]);
     expect(view.caCents).toEqual([3000, 0]);
@@ -31,9 +48,14 @@ describe("computeOrderMetrics", () => {
         tally({ caCents: 5000, orders: 3, caRecurringCents: 3200, caOneShotCents: 1800 }),
       ],
     ]);
-    const [rec] = computeOrderMetrics(["2026-08-18"], byDay, NOW).caRecurringCents;
-    const [one] = computeOrderMetrics(["2026-08-18"], byDay, NOW).caOneShotCents;
-    const [total] = computeOrderMetrics(["2026-08-18"], byDay, NOW).caCents;
+    const [rec] = computeOrderMetrics(
+      ["2026-08-18"],
+      byDay,
+      NO_CONCENTRATION,
+      NOW,
+    ).caRecurringCents;
+    const [one] = computeOrderMetrics(["2026-08-18"], byDay, NO_CONCENTRATION, NOW).caOneShotCents;
+    const [total] = computeOrderMetrics(["2026-08-18"], byDay, NO_CONCENTRATION, NOW).caCents;
     expect((rec ?? 0) + (one ?? 0)).toBe(total);
   });
 });

@@ -27,7 +27,10 @@ export function computeAcquisitionMetrics(
   const leads = countByDay(events, ACTIVITY_TYPES.leadCaptured);
   const firstOrders = countDays(firstOrderDays(events));
   const terminations = countDays(terminationDates.map(dayKey));
-  const at = (m: ReadonlyMap<string, number>) => (day: string): number => m.get(day) ?? 0;
+  const at =
+    (m: ReadonlyMap<string, number>) =>
+    (day: string): number =>
+      m.get(day) ?? 0;
   return {
     days: [...window],
     registrations: window.map(at(registrations)),
