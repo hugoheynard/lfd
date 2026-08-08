@@ -10,6 +10,7 @@ import { bootstrapHarness, SEED_STAFF, SYSTEM, type SeedHarness } from "./seed-g
 import { seedActivation } from "./seed-growth/phase-activation.js";
 import { seedFlagship, seedSatellites } from "./seed-growth/phase-flagship.js";
 import { seedLosses } from "./seed-growth/phase-losses.js";
+import { seedRevenue } from "./seed-growth/phase-revenue.js";
 import { seedMarket } from "./seed-growth/phase-market.js";
 import { seedOrders } from "./seed-growth/phase-orders.js";
 import { persona } from "./seed-growth/personas.js";
@@ -67,6 +68,7 @@ async function main(): Promise<void> {
     const flagship = await seedFlagship(harness, ANCHOR);
     const satellites = await seedSatellites(harness, ANCHOR);
     const losses = await seedLosses(harness, ANCHOR);
+    const revenue = await seedRevenue(harness, ANCHOR);
     // Les abonnés du journal (`@EventsHandler`) sont détachés : on laisse une
     // fenêtre pour qu'ils écrivent avant de résumer.
     await settle(1500);
@@ -85,6 +87,7 @@ async function main(): Promise<void> {
     console.log(`  flagship Val d'Isère : +${flagship} sociétés activées (viser ~30 % du marché).`);
     console.log(`  satellites Tignes/Bourg : +${satellites} sociétés activées (base pour équilibrer le churn).`);
     console.log(`  pertes : +${losses} sociétés résiliées (barre « Perte » par territoire).`);
+    console.log(`  revenu historique : +${revenue} commandes datées (marché vs volume, CA par NAF).`);
     await summarize(harness);
     console.log("  (additif + idempotent — rejouable ; rien d'existant n'a été effacé)");
   } finally {
