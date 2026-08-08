@@ -170,6 +170,18 @@ Trois mesures, toutes filtrables par (NAF, CP, période) selon les règles §1.
 - **Caveat** : sensible aux petits dénominateurs (une zone à 20 acteurs visés
   bouge par à-coups) → lisser ou masquer sous un seuil d'`addressable`.
 
+> **⚠️ À REVOIR PLUS TARD — la dimension n'est pas le NAF brut, c'est une « activité
+> cible » paramétrable.** Le NAF est trop bas niveau et rigide comme axe visible. La
+> cible : un référentiel d'**activités** défini dans l'admin (data-driven, pas une
+> const) — _hôtellerie, restauration, bar, restauration collective, éducation
+> nationale, institutionnel, traiteur…_ — que le commercial (ou le client dans son
+> profil) **choisit**. Une activité **associe un ou plusieurs codes NAF** chez nous et
+> peut être **renommée** (plus clair que « 56.10A »). Le **NAF devient l'attribution
+> de repli** (dérivée du SIRET quand l'activité n'est pas renseignée), pas la
+> dimension. Donc les filtres/mesures se découpent par **activité**, le NAF reste le
+> mapping sous-jacent. Décidé le 2026-08-08 ; **non implémenté** — l'état actuel
+> (NAF direct) reste en place pour l'instant.
+
 ## 3. Les sélecteurs (filtres partagés) — cible technique
 
 - **UI** : une **barre de filtres** en tête du dashboard Croissance :
