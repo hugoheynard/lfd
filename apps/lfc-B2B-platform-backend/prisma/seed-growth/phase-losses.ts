@@ -13,11 +13,23 @@ const LOSSES: ReadonlyArray<{ codePostal: string; ville: string; count: number }
   { codePostal: "73700", ville: "Bourg-Saint-Maurice", count: 1 },
 ];
 
+/** Cycle déterministe de raisons de départ (couvre tout le référentiel). */
+const REASONS: readonly string[] = [
+  "price",
+  "competitor",
+  "closure",
+  "quality",
+  "no_need",
+  "unresponsive",
+  "other",
+];
+
 /**
- * Phase **pertes** : crée quelques sociétés **résiliées** (`terminated`) par zone,
- * pour alimenter la barre « Perte » de l'adoption par territoire. Chaque société est
- * créée par le chemin réel (activée) puis marquée résiliée en fixture (fin de
- * relation ; pas de commande dédiée dans le seed). Idempotent par SIRET.
+ * Phase **pertes & terminaisons** : crée des sociétés **résiliées** (`terminated`)
+ * par zone (barre « Perte » de l'adoption) ET enregistre les **terminaisons** —
+ * résiliations `confirmed` sur ces sociétés + une poignée de tentatives `recovered`
+ * (rattrapées) sur des comptes actifs du bastion. Alimente le camembert des raisons
+ * et le taux de rattrapage. Idempotent (SIRET + upsert des terminaisons).
  */
 export async function seedLosses(harness: SeedHarness, anchor: Date): Promise<number> {
   let created = 0;
@@ -30,9 +42,47 @@ export async function seedLosses(harness: SeedHarness, anchor: Date): Promise<nu
         await harness.prisma.company.updateMany({ where: { siret }, data: { status: "terminated" } });
         created += 1;
       }
+      const company = await harness.prisma.company.findFirst({ where: { siret }, select: { id: true } });
+      if (company !== null) {
+        await recordTermination(harness, `term_${siret}`, company.id, k, "confirmed");
+      }
     }
   }
+  await seedRecoveredAttempts(harness);
   return created;
+}
+
+/** Tentatives **rattrapées** : des comptes actifs du bastion presque perdus, sauvés. */
+async function seedRecoveredAttempts(harness: SeedHarness): Promise<void> {
+  const saved = await harness.prisma.company.findMany({
+    where: { status: "active", addresses: { some: { codePostal: "73150" } } },
+    select: { id: true },
+    orderBy: { id: "asc" },
+    take: 10,
+  });
+  let j = 0;
+  for (const company of saved) {
+    await recordTermination(harness, `term_rec_${j}`, company.id, j, "recovered");
+    j += 1;
+  }
+}
+
+/** Upsert d'une terminaison (idempotent par id). `initiatedBy` alterné client/commercial. */
+async function recordTermination(
+  harness: SeedHarness,
+  id: string,
+  companyId: string,
+  index: number,
+  outcome: "confirmed" | "recovered",
+): Promise<void> {
+  const data = {
+    id,
+    companyId,
+    reason: REASONS[index % REASONS.length],
+    initiatedBy: index % 3 === 0 ? "commercial" : "client",
+    outcome,
+  };
+  await harness.prisma.companyTermination.upsert({ where: { id }, create: data, update: {} });
 }
 
 /** Persona déterministe forcé sur une zone (nom conservé, station réécrite). */

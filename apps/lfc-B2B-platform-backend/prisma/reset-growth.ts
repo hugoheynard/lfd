@@ -61,6 +61,7 @@ async function wipe(
   const subjects = [...userIds, ...companyIds, ...leadIds];
   await prisma.activityEvent.deleteMany({ where: { subjectId: { in: subjects } } });
   await prisma.leadScore.deleteMany({ where: { subjectId: { in: subjects } } });
+  await prisma.companyTermination.deleteMany({ where: { companyId: { in: companyIds } } });
   await prisma.order.deleteMany({
     where: { OR: [{ placedByUserId: { in: userIds } }, { companyId: { in: companyIds } }] },
   });
