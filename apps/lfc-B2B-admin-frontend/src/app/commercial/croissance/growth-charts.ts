@@ -9,6 +9,7 @@ import type {
   PenetrationTrendPoint,
   TemperatureFlowPoint,
   VelocityMetric,
+  ZonePenetrationTrend,
 } from '@lfd/contracts';
 import type { EChartsOption } from 'echarts';
 
@@ -407,6 +408,36 @@ export function acquisitionMixDonutOption(points: readonly AcquisitionMixPoint[]
         ],
       },
     ],
+  };
+}
+
+/**
+ * **Vélocité par zone** (§2.4) : la part de marché **dans le temps**, une courbe par
+ * territoire. La **pente** = la vitesse de conquête : une droite qui monte = traction,
+ * qui s'aplatit = saturation. Là où l'adoption ci-dessus donne l'instantané, celle-ci
+ * montre la trajectoire. On ne trace que les zones ayant au moins une activation.
+ */
+export function zoneVelocityOption(zones: readonly ZonePenetrationTrend[]): EChartsOption {
+  const active = zones.filter((z) => z.points.some((p) => p.penetration > 0));
+  const weeks = (active[0]?.points ?? []).map((p) => weekLabel(p.weekStart));
+  const colors = [PALETTE.blue, PALETTE.green, PALETTE.amber, PALETTE.violet, PALETTE.red];
+  return {
+    legend: { top: 0, textStyle: { color: PALETTE.slate } },
+    tooltip: { trigger: 'axis', valueFormatter: (v): string => `${round1(Number(v))} %` },
+    xAxis: { type: 'category', data: weeks, boundaryGap: false },
+    yAxis: { type: 'value', axisLabel: { formatter: '{value} %' } },
+    series: active.map((zone, i): Record<string, unknown> => {
+      const color = colors[i % colors.length];
+      return {
+        name: zone.ville !== '' ? zone.ville : zone.codePostal,
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        data: zone.points.map((p) => round1(p.penetration * 100)),
+        lineStyle: { color, width: 2 },
+        itemStyle: { color },
+      };
+    }),
   };
 }
 

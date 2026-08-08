@@ -5,6 +5,7 @@ import type {
   AdoptionZoneView,
   GrowthStatsView,
   PenetrationTrendPoint,
+  ZonePenetrationTrend,
 } from '@lfd/contracts';
 
 import { MarketService } from '../market/market.service';
@@ -23,6 +24,7 @@ import {
   temperatureFlowOption,
   temperatureTransitionsOption,
   velocityBoxplotOption,
+  zoneVelocityOption,
 } from './growth-charts';
 import { GrowthService } from './growth.service';
 
@@ -59,6 +61,7 @@ export class CroissancePage {
   protected readonly stats = signal<GrowthStatsView | null>(null);
   protected readonly adoptionZones = signal<readonly AdoptionZoneView[] | null>(null);
   protected readonly adoptionTrend = signal<readonly PenetrationTrendPoint[] | null>(null);
+  protected readonly adoptionZoneTrends = signal<readonly ZonePenetrationTrend[] | null>(null);
 
   protected readonly kpis = computed<readonly Kpi[]>(() => {
     const s = this.stats();
@@ -89,6 +92,13 @@ export class CroissancePage {
   protected readonly adoption = computed<ChartOption | null>(() => {
     const zones = this.adoptionZones();
     return zones === null || zones.length === 0 ? null : adoptionOption(zones);
+  });
+  protected readonly zoneVelocity = computed<ChartOption | null>(() => {
+    const trends = this.adoptionZoneTrends();
+    if (trends === null || !trends.some((z) => z.points.some((p) => p.penetration > 0))) {
+      return null;
+    }
+    return zoneVelocityOption(trends);
   });
   protected readonly temperatureFlow = computed<ChartOption | null>(() => {
     const s = this.stats();
@@ -155,9 +165,11 @@ export class CroissancePage {
       const view = await this.market.adoption();
       this.adoptionZones.set(view.zones);
       this.adoptionTrend.set(view.trend);
+      this.adoptionZoneTrends.set(view.zoneTrends);
     } catch {
       this.adoptionZones.set(null);
       this.adoptionTrend.set(null);
+      this.adoptionZoneTrends.set(null);
     }
   }
 }

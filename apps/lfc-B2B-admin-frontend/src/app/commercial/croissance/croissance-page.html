@@ -61,6 +61,23 @@
           }
         </article>
 
+        <article class="card wide">
+          <header class="card-head">
+            <h2>Vélocité par territoire</h2>
+            <app-metric-info
+              label="Vélocité par territoire"
+              text="La part de marché dans le temps, une courbe par zone. Là où « Adoption par territoire » donne l'instantané, celle-ci montre la trajectoire : la pente = la vitesse de conquête. Une droite qui monte = traction ; qui s'aplatit = saturation ou essoufflement commercial. Seules les zones avec au moins une activation sont tracées."
+            />
+          </header>
+          @if (zoneVelocity(); as opt) {
+            <app-chart [option]="opt" height="300px" />
+          } @else {
+            <p class="muted">
+              Pas encore d'activation dans les zones ciblées pour tracer une trajectoire.
+            </p>
+          }
+        </article>
+
         <article class="card">
           <header class="card-head">
             <h2>Momentum du vivier — part par chaleur</h2>
