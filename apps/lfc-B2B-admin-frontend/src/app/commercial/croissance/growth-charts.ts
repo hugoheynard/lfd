@@ -22,6 +22,7 @@ import type {
 import type { EChartsOption } from 'echarts';
 
 import { CHURN_COLORS, CHURN_GLOBAL_COLOR } from './churn-palette';
+import { bucketSectorRevenue, type SectorGrain } from './sector-grain';
 
 /**
  * **Constructeurs d'options ECharts** (purs) du dashboard de croissance. Séparés de
@@ -899,9 +900,9 @@ function sectorTooltip(param: unknown): string {
  * mix secteurs). L'enveloppe du haut = le CA total ; l'épaisseur d'une bande = la
  * contribution du secteur. On voit quels types de clients portent la croissance du CA.
  */
-export function sectorRevenueOption(view: SectorRevenueView): EChartsOption {
-  const weeks = view.weeks.map((w) => weekLabel(w));
-  const series: Record<string, unknown>[] = view.series.map((s, i) => ({
+export function sectorRevenueOption(view: SectorRevenueView, grain: SectorGrain = 'week'): EChartsOption {
+  const bucketed = bucketSectorRevenue(view, grain);
+  const series: Record<string, unknown>[] = bucketed.series.map((s, i) => ({
     name: s.label,
     type: 'line',
     stack: 'ca',
@@ -910,7 +911,7 @@ export function sectorRevenueOption(view: SectorRevenueView): EChartsOption {
     lineStyle: { width: 1 },
     areaStyle: { opacity: 0.6 },
     itemStyle: { color: SECTOR_PALETTE[i % SECTOR_PALETTE.length] ?? PALETTE.slate },
-    data: s.weekly.map((cents) => Math.round(cents / 100)),
+    data: s.values.map((cents) => Math.round(cents / 100)),
   }));
   return {
     grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
@@ -919,7 +920,7 @@ export function sectorRevenueOption(view: SectorRevenueView): EChartsOption {
       trigger: 'axis',
       valueFormatter: (v): string => `${Number(v).toLocaleString('fr-FR')} €`,
     },
-    xAxis: { type: 'category', data: weeks, boundaryGap: false },
+    xAxis: { type: 'category', data: [...bucketed.labels], boundaryGap: false },
     yAxis: { type: 'value', name: '€' },
     series,
   };

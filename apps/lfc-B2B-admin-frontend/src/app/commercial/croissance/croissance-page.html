@@ -214,10 +214,24 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>CA par secteur NAF dans le temps</h2>
-                <app-metric-info
-                  label="CA par secteur NAF dans le temps"
-                  text="Aires empilées : le CA (TTC) ventilé par secteur NAF des sociétés clientes, semaine par semaine. L'enveloppe du haut = le CA total ; l'épaisseur d'une bande = la contribution du secteur. On voit quels TYPES de clients portent la croissance du CA. Seules les commandes rattachées à une société (donc à un NAF) comptent — les commandes zéro-friction sans société n'y figurent pas."
-                />
+                <div class="head-controls">
+                  <label class="sort-control">
+                    <span class="visually-hidden">Granularité</span>
+                    <select
+                      class="sort-select"
+                      [value]="sectorGrain()"
+                      (change)="onSectorGrain($event)"
+                    >
+                      @for (g of sectorGrains; track g.value) {
+                        <option [value]="g.value">{{ g.label }}</option>
+                      }
+                    </select>
+                  </label>
+                  <app-metric-info
+                    label="CA par secteur NAF dans le temps"
+                    text="Aires empilées : le CA (TTC) ventilé par secteur NAF des sociétés clientes, à la granularité choisie (semaine, mois, trimestre, année — les semaines sont regroupées d'après leur date de début). L'enveloppe du haut = le CA total ; l'épaisseur d'une bande = la contribution du secteur. On voit quels TYPES de clients portent la croissance du CA. Seules les commandes rattachées à une société (donc à un NAF) comptent — les commandes zéro-friction sans société n'y figurent pas."
+                  />
+                </div>
               </header>
               @if (sectorRevenueChart(); as opt) {
                 <app-chart [option]="opt" height="320px" />

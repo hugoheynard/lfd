@@ -14,6 +14,7 @@ import type {
 
 import { MarketService } from '../market/market.service';
 import { CHURN_COLORS } from './churn-palette';
+import { type SectorGrain, SECTOR_GRAINS } from './sector-grain';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { ChartNote } from '../../shared/chart-note/chart-note';
 import { Lorenz } from '../../shared/lorenz/lorenz';
@@ -176,9 +177,13 @@ export class CroissancePage {
     const view = this.marketVolume();
     return view === null || view.points.length < 2 ? null : marketVolumeOption(view);
   });
+  protected readonly sectorGrain = signal<SectorGrain>('week');
+  protected readonly sectorGrains = SECTOR_GRAINS;
   protected readonly sectorRevenueChart = computed<ChartOption | null>(() => {
     const view = this.sectorRevenue();
-    return view === null || view.series.length === 0 ? null : sectorRevenueOption(view);
+    return view === null || view.series.length === 0
+      ? null
+      : sectorRevenueOption(view, this.sectorGrain());
   });
   protected readonly zoneVelocity = computed<ChartOption | null>(() => {
     const trends = this.adoptionZoneTrends();
@@ -244,6 +249,15 @@ export class CroissancePage {
     const match = this.adoptionSorts.find((s) => s.value === value);
     if (match !== undefined) {
       this.adoptionSort.set(match.value);
+    }
+  }
+
+  /** Change la granularité temporelle du CA par secteur NAF depuis le `<select>`. */
+  protected onSectorGrain(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    const match = this.sectorGrains.find((g) => g.value === value);
+    if (match !== undefined) {
+      this.sectorGrain.set(match.value);
     }
   }
 
