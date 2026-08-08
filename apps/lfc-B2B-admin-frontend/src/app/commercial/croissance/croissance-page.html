@@ -188,6 +188,23 @@
                 </p>
               }
             </article>
+
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Délai de réaction par catégorie</h2>
+                <app-metric-info
+                  label="Délai de réaction au churn (jours)"
+                  text="Boxplot du temps, en jours, entre la déclaration de résiliation et l'action qui l'a rattrapée, une boîte par catégorie de départ (mêmes teintes que le sunburst). La boîte = la dispersion des délais (quartiles) ; la barre centrale = la médiane. Boîte basse = on sauve vite (le tarif se négocie court) ; boîte haute = motif long à sauver (la qualité demande de corriger). Les points rouges au-dessus = des sauvetages qui ont traîné (outliers). Une catégorie n'apparaît qu'avec au moins 3 rattrapages."
+                />
+              </header>
+              @if (recoveryReaction(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+              } @else {
+                <p class="muted">
+                  Pas encore assez de rattrapages par catégorie pour une distribution.
+                </p>
+              }
+            </article>
           </div>
         }
 

@@ -25,10 +25,15 @@ export class PrismaTerminationStatsReader extends TerminationStatsReader {
         outcome: true,
         recoveredVia: true,
         createdAt: true,
+        resolvedAt: true,
       },
     });
     return computeTerminationStats(
-      rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+      rows.map((r) => ({
+        ...r,
+        createdAt: r.createdAt.toISOString(),
+        resolvedAt: r.resolvedAt === null ? null : r.resolvedAt.toISOString(),
+      })),
     );
   }
 }

@@ -52,6 +52,20 @@ const CONFIRMED: readonly Weight[] = [
  * rattrapage diffère (tarif surtout **auto** via un incentive plateforme ; concurrent
  * et qualité surtout **sales**, sauvés à la main par un commercial). Somme = 18.
  */
+/**
+ * **Délai de réaction** (jours) entre déclaration de résiliation et action de
+ * rattrapage, par catégorie — consommé dans l'ordre : le tarif se négocie **vite**
+ * (+ 1 outlier qui a traîné), le concurrent demande une contre-offre (moyen), la
+ * qualité doit se corriger (**lent**). Longueur = nombre de rattrapées de la catégorie.
+ */
+const REACTION_DAYS: Record<string, readonly number[]> = {
+  price: [1, 1, 2, 2, 3, 3, 4, 14],
+  competitor: [3, 4, 5, 6, 7],
+  quality: [9, 11, 16],
+  no_need: [6],
+  closure: [12],
+};
+
 const RECOVERED: readonly Weight[] = [
   { reason: "price", sub: "delivery_cost", via: "auto", count: 6 },
   { reason: "price", sub: "delivery_cost", via: "sales", count: 2 },
@@ -125,7 +139,7 @@ export async function seedLosses(harness: SeedHarness, anchor: Date): Promise<nu
       const company = await harness.prisma.company.findFirst({ where: { siret }, select: { id: true } });
       const w = confirmed[k % confirmed.length];
       if (company !== null && w !== undefined) {
-        await record(harness, `term_c_${k}`, company.id, w, k, "confirmed", weekDate(anchor, CONF_WEEKS, k));
+        await record(harness, `term_c_${k}`, company.id, w, k, "confirmed", weekDate(anchor, CONF_WEEKS, k), null);
       }
     }
   }
@@ -145,13 +159,25 @@ async function seedRecovered(harness: SeedHarness, anchor: Date): Promise<void> 
     return;
   }
   const recovered = flatten(RECOVERED);
+  const seen = new Map<string, number>();
   for (let j = 0; j < recovered.length; j += 1) {
     const w = recovered[j];
     const company = active[j % active.length];
-    if (w !== undefined && company !== undefined) {
-      await record(harness, `term_r_${j}`, company.id, w, j, "recovered", weekDate(anchor, RECOV_WEEKS, j));
+    if (w === undefined || company === undefined) {
+      continue;
     }
+    const createdAt = weekDate(anchor, RECOV_WEEKS, j);
+    const resolvedAt = new Date(createdAt.getTime() + reactionDays(w.reason, seen) * DAY_MS);
+    await record(harness, `term_r_${j}`, company.id, w, j, "recovered", createdAt, resolvedAt);
   }
+}
+
+/** Prochain délai de réaction (jours) de la catégorie, consommé dans l'ordre déclaré. */
+function reactionDays(reason: string, seen: Map<string, number>): number {
+  const delays = REACTION_DAYS[reason] ?? [3];
+  const n = seen.get(reason) ?? 0;
+  seen.set(reason, n + 1);
+  return delays[n % delays.length] ?? 3;
 }
 
 /** Upsert d'une terminaison (idempotent par id). `initiatedBy` alterné client/commercial. */
@@ -163,6 +189,7 @@ async function record(
   index: number,
   outcome: "confirmed" | "recovered",
   createdAt: Date,
+  resolvedAt: Date | null,
 ): Promise<void> {
   const data = {
     id,
@@ -174,6 +201,7 @@ async function record(
     outcome,
     recoveredVia: outcome === "recovered" ? part.via : "",
     createdAt,
+    resolvedAt,
   };
   await harness.prisma.companyTermination.upsert({ where: { id }, create: data, update: {} });
 }

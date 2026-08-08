@@ -8,6 +8,7 @@ describe("computeTerminationStats", () => {
     detail: "",
     recoveredVia: "",
     createdAt: "2026-01-05T00:00:00.000Z",
+    resolvedAt: null,
     ...partial,
   });
   const rows: TerminationRow[] = [
@@ -101,6 +102,38 @@ describe("computeTerminationStats", () => {
     expect(computeTerminationStats(rows).recoveryTrend).toEqual([]);
   });
 
+  it("délai de réaction : boxplot par catégorie (≥ 3 rattrapages), outliers Tukey", () => {
+    const day = (n: number): string => `2026-02-${String(n).padStart(2, "0")}T00:00:00.000Z`;
+    // Tarif : 4 rattrapages à 1,1,2,2 j + un outlier à 20 j.
+    const delays = [1, 1, 2, 2, 20];
+    const rowsR = delays.map((d) =>
+      row({ reason: "price", outcome: "recovered", createdAt: day(1), resolvedAt: day(1 + d) }),
+    );
+    const stat = computeTerminationStats(rowsR).reactionByReason.find((r) => r.reason === "price");
+    expect(stat?.count).toBe(5);
+    expect(stat?.box.median).toBe(2);
+    expect(stat?.box.outliers).toContain(20);
+    expect(stat?.box.high).toBeLessThan(20); // moustache sous l'outlier
+  });
+
+  it("délai de réaction : catégorie sous 3 rattrapages exclue", () => {
+    const two = [
+      row({
+        reason: "quality",
+        outcome: "recovered",
+        createdAt: "2026-03-01T00:00:00.000Z",
+        resolvedAt: "2026-03-05T00:00:00.000Z",
+      }),
+      row({
+        reason: "quality",
+        outcome: "recovered",
+        createdAt: "2026-03-01T00:00:00.000Z",
+        resolvedAt: "2026-03-04T00:00:00.000Z",
+      }),
+    ];
+    expect(computeTerminationStats(two).reactionByReason).toEqual([]);
+  });
+
   it("corpus vide : global neutre, listes vides", () => {
     const view = computeTerminationStats([]);
     expect(view).toEqual({
@@ -116,6 +149,7 @@ describe("computeTerminationStats", () => {
       },
       recoveryByReason: [],
       recoveryTrend: [],
+      reactionByReason: [],
     });
   });
 });

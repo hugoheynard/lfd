@@ -965,6 +965,8 @@ model CompanyTermination {
   outcome     String
   /// Pour un `recovered` : `auto` (plateforme) | `sales` (commercial), vide sinon.
   recoveredVia String  @default("") @map("recovered_via")
+  /// Instant de l'action qui a rattrapé (délai de réaction), null si non rattrapée.
+  resolvedAt  DateTime? @map("resolved_at")
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([outcome, reason])

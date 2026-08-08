@@ -466,6 +466,35 @@ export interface RecoveryTrendPoint {
   readonly rate: number;
 }
 
+/**
+ * Résumé **boxplot** d'une distribution : la boîte (quartiles), les **moustaches**
+ * de Tukey (1,5·IQR) et les points **aberrants** (hors moustaches).
+ */
+export interface BoxplotSummary {
+  /** Moustache basse (plus petite valeur ≥ q1 − 1,5·IQR). */
+  readonly low: number;
+  readonly q1: number;
+  readonly median: number;
+  readonly q3: number;
+  /** Moustache haute (plus grande valeur ≤ q3 + 1,5·IQR). */
+  readonly high: number;
+  /** Valeurs hors moustaches (outliers). */
+  readonly outliers: readonly number[];
+}
+
+/**
+ * **Délai de réaction au churn** par catégorie de départ : la distribution (en jours)
+ * du temps entre la déclaration de résiliation et l'action qui l'a rattrapée. Boîte
+ * basse = on sauve vite ; outlier haut = un sauvetage qui a traîné.
+ */
+export interface RecoveryReactionStat {
+  readonly reason: TerminationReason;
+  readonly label: string;
+  readonly count: number;
+  /** Délais en jours, résumé boxplot. */
+  readonly box: BoxplotSummary;
+}
+
 /** Analytics de churn : raisons de résiliation + rattrapage des tentatives. */
 export interface TerminationStatsView {
   /** Sunburst des **résiliations confirmées** : raison → sous-raison. */
@@ -476,6 +505,8 @@ export interface TerminationStatsView {
   readonly recoveryByReason: readonly TerminationRecovery[];
   /** **Vélocité de rattrapage** : le taux semaine par semaine (efficacité dans le temps). */
   readonly recoveryTrend: readonly RecoveryTrendPoint[];
+  /** **Délai de réaction** (jours) par catégorie : boxplot tentative → rattrapage. */
+  readonly reactionByReason: readonly RecoveryReactionStat[];
 }
 
 /** L'adoption par territoire, sur la fenêtre d'analyse. */

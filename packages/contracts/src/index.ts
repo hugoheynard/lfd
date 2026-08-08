@@ -146,6 +146,8 @@ export type {
   TerminationReasonNode,
   TerminationRecovery,
   RecoveryTrendPoint,
+  BoxplotSummary,
+  RecoveryReactionStat,
   TerminationStatsView,
 } from "./growth.js";
 export {

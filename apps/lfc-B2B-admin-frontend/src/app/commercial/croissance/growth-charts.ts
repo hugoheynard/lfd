@@ -7,6 +7,7 @@ import type {
   FunnelStep,
   LifecycleFlow,
   PenetrationTrendPoint,
+  RecoveryReactionStat,
   RecoveryTrendPoint,
   TemperatureFlowPoint,
   TerminationRecovery,
@@ -643,6 +644,50 @@ function recoveryTrendTooltip(
     return '';
   }
   return `Sem. ${weekLabel(p.weekStart)}<br/>Hebdo ${pct(p.rate)} % (${p.recovered}/${p.attempts})<br/>Cumulé ${pct(cumulative[i] ?? 0)} %`;
+}
+
+/**
+ * **Délai de réaction au churn par catégorie** (boxplot) : combien de jours entre la
+ * déclaration de résiliation et l'action qui l'a rattrapée, **une boîte par motif** —
+ * mêmes teintes que le sunburst. Boîte basse = on sauve vite (le tarif se négocie) ;
+ * boîte haute = motif long à sauver (la qualité). Les **points rouges** = sauvetages
+ * qui ont traîné (outliers hauts). Axe en jours.
+ */
+export function recoveryReactionOption(stats: readonly RecoveryReactionStat[]): EChartsOption {
+  const outliers: Array<[number, number]> = [];
+  stats.forEach((s, i) => s.box.outliers.forEach((o) => outliers.push([i, o])));
+  const boxes: Record<string, unknown> = {
+    type: 'boxplot',
+    data: stats.map((s): Record<string, unknown> => {
+      const color = CHURN_COLORS[s.reason];
+      return {
+        value: [s.box.low, s.box.q1, s.box.median, s.box.q3, s.box.high],
+        itemStyle: { color: hexToRgba(color, 0.18), borderColor: color, borderWidth: 2 },
+      };
+    }),
+  };
+  const outlierPoints: Record<string, unknown> = {
+    name: 'Sauvetage qui a traîné',
+    type: 'scatter',
+    data: outliers,
+    symbolSize: 9,
+    itemStyle: { color: PALETTE.red },
+  };
+  return {
+    grid: { left: 8, right: 16, top: 12, bottom: 8, containLabel: true },
+    tooltip: { trigger: 'item' },
+    xAxis: { type: 'category', data: stats.map((s) => s.label) },
+    yAxis: { type: 'value', name: 'jours', min: 0 },
+    series: [boxes, outlierPoints],
+  };
+}
+
+/** `#rrggbb` → `rgba(r,g,b,a)` (fond translucide d'une boîte). */
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 /** Pourcentage entier lisible d'un ratio 0..1. */
