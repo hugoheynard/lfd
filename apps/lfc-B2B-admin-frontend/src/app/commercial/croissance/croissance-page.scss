@@ -109,6 +109,39 @@ h1 {
   font-weight: 600;
 }
 
+/* Contrôles à droite de l'en-tête (tri + bulle d'info). */
+.head-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs, 0.35rem);
+  flex: 0 0 auto;
+}
+
+.sort-select {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.375rem);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+  font-size: var(--fold-text-sm, 0.85rem);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: -1px;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 @media (max-width: 60rem) {
   .grid {
     grid-template-columns: 1fr;

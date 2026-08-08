@@ -89,9 +89,12 @@ export class CroissancePage {
     const s = this.stats();
     return s === null ? null : acquisitionOption(s.acquisition, this.adoptionTrend() ?? undefined);
   });
+  protected readonly adoptionSort = signal<'desc' | 'asc'>('desc');
   protected readonly adoption = computed<ChartOption | null>(() => {
     const zones = this.adoptionZones();
-    return zones === null || zones.length === 0 ? null : adoptionOption(zones);
+    return zones === null || zones.length === 0
+      ? null
+      : adoptionOption(zones, this.adoptionSort());
   });
   protected readonly zoneVelocity = computed<ChartOption | null>(() => {
     const trends = this.adoptionZoneTrends();
@@ -149,6 +152,12 @@ export class CroissancePage {
 
   constructor() {
     void this.load();
+  }
+
+  /** Change le sens de tri de l'adoption par territoire depuis le `<select>`. */
+  protected onAdoptionSort(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.adoptionSort.set(value === 'asc' ? 'asc' : 'desc');
   }
 
   protected async load(): Promise<void> {

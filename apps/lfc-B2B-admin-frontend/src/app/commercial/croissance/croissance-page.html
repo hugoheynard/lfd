@@ -46,10 +46,23 @@
         <article class="card wide">
           <header class="card-head">
             <h2>Adoption par territoire</h2>
-            <app-metric-info
-              label="Adoption par territoire"
-              text="Pénétration par zone = sociétés activées / acteurs professionnels visés (comptés via l'API entreprises). Barre verte si la période a fait progresser la zone ; l'étiquette porte le taux et les points gagnés sur la période. Configurez zones et NAF dans Réglages ▸ Commercial."
-            />
+            <div class="head-controls">
+              <label class="sort-control">
+                <span class="visually-hidden">Trier</span>
+                <select
+                  class="sort-select"
+                  [value]="adoptionSort()"
+                  (change)="onAdoptionSort($event)"
+                >
+                  <option value="desc">Décroissant</option>
+                  <option value="asc">Croissant</option>
+                </select>
+              </label>
+              <app-metric-info
+                label="Adoption par territoire"
+                text="Barre empilée sur base 100 % par zone : le segment plein = conquis (sociétés activées / acteurs visés, comptés via l'API entreprises), le segment atténué = reste à prendre. Vert si la période a fait progresser la zone ; l'étiquette porte le taux et les points gagnés. Configurez zones et NAF dans Réglages ▸ Commercial."
+              />
+            </div>
           </header>
           @if (adoption(); as opt) {
             <app-chart [option]="opt" height="300px" />

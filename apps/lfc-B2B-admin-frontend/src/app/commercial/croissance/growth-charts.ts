@@ -442,43 +442,55 @@ export function zoneVelocityOption(zones: readonly ZonePenetrationTrend[]): ECha
 }
 
 /**
- * **Adoption par territoire** : une barre horizontale par zone = la pénétration
- * (sociétés activées / acteurs visés, en %), triée décroissante. L'étiquette porte le
- * taux **et** le delta de la période (« 12 % · +3 pts »). Barre verte si la période a
- * fait progresser la zone, bleue sinon.
+ * **Adoption par territoire** : une barre horizontale **empilée sur base 100 %** par
+ * zone — le segment plein = **conquis** (pénétration), le segment atténué = **reste à
+ * prendre** (marge de progression). On lit la part de marché ET le potentiel restant.
+ * L'étiquette porte le taux **et** le delta de la période (« 12 % · +3 pts ») ; le
+ * conquis est vert s'il a progressé, bleu sinon. `direction` classe les zones.
  */
-export function adoptionOption(zones: readonly AdoptionZoneView[]): EChartsOption {
-  const rows = [...zones].reverse(); // yAxis inverse : la plus forte pénétration en haut.
+export function adoptionOption(
+  zones: readonly AdoptionZoneView[],
+  direction: 'desc' | 'asc' = 'desc',
+): EChartsOption {
+  const asc = [...zones].sort((a, b) => a.penetration - b.penetration);
+  // yAxis catégorie : data[0] en bas. Desc = plus forte pénétration en HAUT → data ascendante.
+  const rows = direction === 'desc' ? asc : [...asc].reverse();
+  const conquis = rows.map((z) => ({
+    value: pct(z.penetration),
+    itemStyle: { color: z.deltaPts > 0 ? PALETTE.green : PALETTE.blue, borderRadius: [4, 0, 0, 4] },
+    label: {
+      show: true,
+      position: 'right' as const,
+      formatter: `${pct(z.penetration)} %${z.deltaPts > 0 ? ` · +${round1(z.deltaPts)} pts` : ''}`,
+    },
+  }));
   return {
-    grid: { left: 8, right: 64, top: 8, bottom: 8, containLabel: true },
+    grid: { left: 8, right: 72, top: 8, bottom: 8, containLabel: true },
     tooltip: {
-      trigger: 'item',
-      formatter: (p): string => {
-        const z = zones[zones.length - 1 - toIndex(p)];
-        if (z === undefined) {
-          return '';
-        }
-        return `${z.codePostal} ${z.ville}<br/>${z.activated}/${z.addressable} activées · ${pct(z.penetration)} %`;
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params): string => {
+        const first = Array.isArray(params) ? params[0] : params;
+        const z = rows[toIndex(first)];
+        return z === undefined
+          ? ''
+          : `${z.codePostal} ${z.ville}<br/>${z.activated}/${z.addressable} activées · ${pct(z.penetration)} %`;
       },
     },
-    xAxis: { type: 'value', name: '%', min: 0 },
+    xAxis: { type: 'value', name: '%', min: 0, max: 100 },
     yAxis: {
       type: 'category',
       data: rows.map((z) => `${z.codePostal}${z.ville === '' ? '' : ' ' + z.ville}`),
     },
     series: [
+      { name: 'Conquis', type: 'bar', stack: 'part', barWidth: '55%', data: conquis },
       {
+        name: 'Reste à prendre',
         type: 'bar',
+        stack: 'part',
         barWidth: '55%',
-        data: rows.map((z) => ({
-          value: pct(z.penetration),
-          itemStyle: { color: z.deltaPts > 0 ? PALETTE.green : PALETTE.blue, borderRadius: 4 },
-          label: {
-            show: true,
-            position: 'right',
-            formatter: `${pct(z.penetration)} %${z.deltaPts > 0 ? ` · +${round1(z.deltaPts)} pts` : ''}`,
-          },
-        })),
+        data: rows.map((z) => 100 - pct(z.penetration)),
+        itemStyle: { color: PALETTE.slate, opacity: 0.15, borderRadius: [0, 4, 4, 0] },
       },
     ],
   };
