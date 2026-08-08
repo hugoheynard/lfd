@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FoldButtonComponent } from 'fold-ng';
-import type { AccountConcentration, AdoptionZoneView, GrowthStatsView } from '@lfd/contracts';
+import type {
+  AccountConcentration,
+  AdoptionZoneView,
+  GrowthStatsView,
+  PenetrationTrendPoint,
+} from '@lfd/contracts';
 
 import { MarketService } from '../market/market.service';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
@@ -53,6 +58,7 @@ export class CroissancePage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly stats = signal<GrowthStatsView | null>(null);
   protected readonly adoptionZones = signal<readonly AdoptionZoneView[] | null>(null);
+  protected readonly adoptionTrend = signal<readonly PenetrationTrendPoint[] | null>(null);
 
   protected readonly kpis = computed<readonly Kpi[]>(() => {
     const s = this.stats();
@@ -78,7 +84,7 @@ export class CroissancePage {
 
   protected readonly acquisition = computed<ChartOption | null>(() => {
     const s = this.stats();
-    return s === null ? null : acquisitionOption(s.acquisition);
+    return s === null ? null : acquisitionOption(s.acquisition, this.adoptionTrend() ?? undefined);
   });
   protected readonly adoption = computed<ChartOption | null>(() => {
     const zones = this.adoptionZones();
@@ -146,9 +152,12 @@ export class CroissancePage {
     // L'adoption est secondaire (dépend d'une config marché) : chargée à part, sans
     // faire échouer le dashboard si elle est absente ou vide.
     try {
-      this.adoptionZones.set((await this.market.adoption()).zones);
+      const view = await this.market.adoption();
+      this.adoptionZones.set(view.zones);
+      this.adoptionTrend.set(view.trend);
     } catch {
       this.adoptionZones.set(null);
+      this.adoptionTrend.set(null);
     }
   }
 }

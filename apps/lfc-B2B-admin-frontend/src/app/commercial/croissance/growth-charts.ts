@@ -6,6 +6,7 @@ import type {
   CohortRow,
   FunnelStep,
   LifecycleFlow,
+  PenetrationTrendPoint,
   TemperatureFlowPoint,
   VelocityMetric,
 } from '@lfd/contracts';
@@ -32,35 +33,61 @@ function weekLabel(iso: string): string {
   return `${day}/${month}`;
 }
 
-/** Courbe d'acquisition : inscriptions / 1res commandes / leads par semaine (aires empilables). */
-export function acquisitionOption(points: readonly AcquisitionPoint[]): EChartsOption {
+/**
+ * **Acquisition composée — flux devant, stock derrière** : les courbes d'acquisition
+ * hebdo (inscriptions / 1res commandes / leads, axe primaire en nombre) et, en toile
+ * de fond, la **part de marché cumulée** (axe secondaire en %, auto-échelle). On lit
+ * d'un trait l'action (acquisitions de la semaine) et son effet (la part qui monte).
+ * Sans `trend`, seul le flux est tracé.
+ */
+export function acquisitionOption(
+  points: readonly AcquisitionPoint[],
+  trend?: readonly PenetrationTrendPoint[],
+): EChartsOption {
   const weeks = points.map((p) => weekLabel(p.weekStart));
   const area = (color: string): { color: string; opacity: number } => ({ color, opacity: 0.12 });
+  const hasTrend = trend !== undefined && trend.length > 0;
+  const penByWeek = new Map((trend ?? []).map((t) => [t.weekStart, t.penetration * 100]));
+  const flux = [
+    line('Inscriptions', points.map((p) => p.registrations), PALETTE.blue, area(PALETTE.blue)),
+    line('1res commandes', points.map((p) => p.firstOrders), PALETTE.green, area(PALETTE.green)),
+    line('Leads saisis', points.map((p) => p.leadsCaptured), PALETTE.violet, area(PALETTE.violet)),
+  ];
   return {
     legend: { top: 0, textStyle: { color: PALETTE.slate } },
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: weeks, boundaryGap: false },
-    yAxis: { type: 'value', minInterval: 1 },
-    series: [
-      line(
-        'Inscriptions',
-        points.map((p) => p.registrations),
-        PALETTE.blue,
-        area(PALETTE.blue),
-      ),
-      line(
-        '1res commandes',
-        points.map((p) => p.firstOrders),
-        PALETTE.green,
-        area(PALETTE.green),
-      ),
-      line(
-        'Leads saisis',
-        points.map((p) => p.leadsCaptured),
-        PALETTE.violet,
-        area(PALETTE.violet),
-      ),
-    ],
+    yAxis: hasTrend
+      ? [
+          { type: 'value', minInterval: 1 },
+          {
+            type: 'value',
+            position: 'right',
+            axisLabel: { formatter: '{value} %', color: PALETTE.slate },
+            splitLine: { show: false },
+          },
+        ]
+      : { type: 'value', minInterval: 1 },
+    // La bande « part de marché » est poussée en PREMIER → dessinée derrière les courbes.
+    series: hasTrend
+      ? [marketShareBand(points.map((p) => penByWeek.get(p.weekStart) ?? null)), ...flux]
+      : flux,
+  };
+}
+
+/** Aire de fond « part de marché » (axe secondaire %), volontairement discrète. */
+function marketShareBand(data: readonly (number | null)[]): Record<string, unknown> {
+  return {
+    name: 'Part de marché',
+    type: 'line',
+    yAxisIndex: 1,
+    smooth: true,
+    symbol: 'none',
+    z: 1,
+    data: [...data],
+    lineStyle: { color: PALETTE.slate, width: 1, type: 'dashed', opacity: 0.6 },
+    areaStyle: { color: PALETTE.slate, opacity: 0.1 },
+    itemStyle: { color: PALETTE.slate },
   };
 }
 
