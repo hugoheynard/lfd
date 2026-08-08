@@ -192,6 +192,11 @@ model Company {
   siret          String
   tvaIntracom    String @default("") @map("tva_intracom")
 
+  // Code NAF (activité principale) résolu depuis le SIRET via l'API entreprises —
+  // vide tant qu'inconnu. Dimension d'analyse commerciale (segmenter l'acquisition
+  // par secteur) : cf. documentation/commercial-data-analytics.md.
+  nafCode String @default("") @map("naf_code")
+
   // Contact PRINCIPAL de l'entreprise (value object aplati). Semé du profil du
   // créateur ; c'est la carte « Admin du compte entreprise ». Contact unique et
   // obligatoire — les autres interlocuteurs sont des `CompanyContact` (0..N).

@@ -67,6 +67,7 @@ function sampleCompany(): Company {
     requestedPaymentTerm: null,
     status: "pending",
     activatedAt: null,
+    nafCode: "",
   });
 }
 

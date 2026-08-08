@@ -27,6 +27,7 @@ function reconstituted(): Company {
     requestedPaymentTerm: null,
     status: "pending",
     activatedAt: null,
+    nafCode: "",
   });
 }
 
@@ -141,6 +142,7 @@ describe("Company — activation", () => {
       requestedPaymentTerm: null,
       status,
       activatedAt: null,
+      nafCode: "",
     });
   }
 

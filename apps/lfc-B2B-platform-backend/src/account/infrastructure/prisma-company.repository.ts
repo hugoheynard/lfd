@@ -198,6 +198,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
       requestedPaymentTerm: row.requestedPaymentTerm,
       status: row.status,
       activatedAt: row.activatedAt,
+      nafCode: row.nafCode,
     });
   }
 
@@ -223,6 +224,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         requestedPaymentTerm: state.requestedPaymentTerm,
         status: state.status,
         activatedAt: state.activatedAt,
+        nafCode: state.nafCode,
       },
     });
   }

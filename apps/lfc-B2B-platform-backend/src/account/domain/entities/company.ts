@@ -49,6 +49,8 @@ export interface ReconstituteCompanyInput {
   readonly status: CompanyStatus;
   /** Horodatage d'activation commerciale, ou `null` (jamais activée). */
   readonly activatedAt: Date | null;
+  /** Code NAF résolu depuis le SIRET, ou vide si pas encore connu. */
+  readonly nafCode: string;
 }
 
 /**
@@ -70,6 +72,8 @@ export interface CompanySoftState {
   readonly requestedPaymentTerm: PaymentTerm | null;
   readonly status: CompanyStatus;
   readonly activatedAt: Date | null;
+  /** Code NAF résolu depuis le SIRET, ou vide si pas encore connu. */
+  readonly nafCode: string;
 }
 
 /**
@@ -100,6 +104,8 @@ export class Company {
     private requestedPaymentTermValue: PaymentTerm | null,
     private statusValue: CompanyStatus,
     private activatedAtValue: Date | null,
+    /** Code NAF résolu depuis le SIRET (via l'API entreprises) — vide tant qu'inconnu. */
+    private nafCodeValue: string,
   ) {}
 
   static declare(identity: CompanyIdentityInput, contact: CompanyContact): Company {
@@ -117,6 +123,8 @@ export class Company {
       null,
       "pending",
       null,
+      // NAF inconnu à la déclaration : résolu peu après depuis le SIRET (best-effort).
+      "",
     );
   }
 
@@ -134,6 +142,7 @@ export class Company {
       input.requestedPaymentTerm,
       input.status,
       input.activatedAt,
+      input.nafCode,
     );
   }
 
@@ -157,6 +166,19 @@ export class Company {
   editSoftIdentity(input: { enseigne: string; tvaIntracom: string }): void {
     this.enseigneValue = optional(input.enseigne, "Enseigne");
     this.tvaIntracomValue = optional(input.tvaIntracom, "TVA intracommunautaire");
+  }
+
+  get nafCode(): string {
+    return this.nafCodeValue;
+  }
+
+  /**
+   * Attribue le code NAF **résolu depuis le SIRET** (via l'API entreprises).
+   * Attribution technique, pas une saisie utilisateur : vide = « on ne sait pas »
+   * (on n'écrase pas une valeur connue par un échec de résolution — géré en amont).
+   */
+  assignNaf(naf: string): void {
+    this.nafCodeValue = optional(naf, "Code NAF");
   }
 
   /** Remplace le contact **principal** (toujours présent — jamais supprimé). */
@@ -235,6 +257,7 @@ export class Company {
       requestedPaymentTerm: this.requestedPaymentTermValue,
       status: this.statusValue,
       activatedAt: this.activatedAtValue,
+      nafCode: this.nafCodeValue,
     };
   }
 }
