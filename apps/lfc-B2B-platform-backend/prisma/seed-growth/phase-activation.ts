@@ -49,6 +49,13 @@ export async function seedActivation(
     }
     const companyId = await declare(harness, ownerId, who.businessName, siret, declaredAt);
     if (companyId !== null) {
+      // NAF posé en **fixture** depuis le persona (le seed connaît le secteur) —
+      // l'API de résolution est un fake ici (cf. harness). En prod, c'est
+      // `OnCompanyDeclaredResolveNaf` qui le renseigne depuis le SIRET.
+      await harness.prisma.company.update({
+        where: { id: companyId },
+        data: { nafCode: who.naf },
+      });
       await advancePieces(harness, ownerId, companyId, i % 6, who, declaredAt);
       created += 1;
     }
