@@ -8,7 +8,6 @@ import type {
   LifecycleFlow,
   PenetrationTrendPoint,
   TemperatureFlowPoint,
-  TerminationReasonNode,
   TerminationStatsView,
   VelocityMetric,
   ZonePenetrationTrend,
@@ -494,74 +493,6 @@ export function adoptionOption(
     series: [
       { name: 'Adoption', type: 'bar', barGap: '10%', data: adoption },
       { name: 'Perte', type: 'bar', data: perte },
-    ],
-  };
-}
-
-/**
- * 7 teintes catégorielles validées CVD (méthode dataviz), une par raison de départ,
- * dans l'ordre fixe de la taxonomie. Ne pas cycler ni réordonner (la sûreté daltonien
- * dépend de l'ordre des voisins).
- */
-const CHURN_HUES: readonly string[] = [
-  '#2a78d6',
-  '#eb6834',
-  '#1baf7a',
-  '#eda100',
-  '#e87ba4',
-  '#008300',
-  '#4a3aa7',
-];
-
-/** Éclaircit un hex vers le blanc (mix `amount` ∈ 0..1) — dérive les sous-raisons. */
-function lighten(hex: string, amount: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const mix = (c: number): number => Math.round(c + (255 - c) * amount);
-  const r = mix((n >> 16) & 255);
-  const g = mix((n >> 8) & 255);
-  const b = mix(n & 255);
-  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
-}
-
-/**
- * **Raisons de résiliation** (sunburst classique) : anneau intérieur = la catégorie
- * de départ (teinte catégorielle validée), anneau extérieur = la **sous-raison**
- * (livraison trop chère, catalogue trop cher, manque d'incentive…) en **dégradé clair
- * de la teinte parente** → hiérarchie lisible d'un coup d'œil. Séparateurs 2 px en
- * surface, label blanc sur l'anneau des catégories, encre sombre sur les sous-raisons.
- */
-export function terminationReasonsOption(reasons: readonly TerminationReasonNode[]): EChartsOption {
-  const data = reasons.map((r, i): Record<string, unknown> => {
-    const base = CHURN_HUES[i % CHURN_HUES.length] ?? PALETTE.slate;
-    const n = r.children.length;
-    return {
-      name: r.label,
-      value: r.count,
-      itemStyle: { color: base },
-      children: r.children.map((c, j) => ({
-        name: c.label,
-        value: c.count,
-        itemStyle: { color: lighten(base, n <= 1 ? 0.32 : 0.22 + (j / (n - 1)) * 0.4) },
-      })),
-    };
-  });
-  return {
-    tooltip: { trigger: 'item', formatter: '{b} : {c}' },
-    series: [
-      {
-        type: 'sunburst',
-        radius: [0, '95%'],
-        center: ['50%', '50%'],
-        nodeClick: false,
-        data,
-        itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 3 },
-        label: { minAngle: 10, overflow: 'truncate', fontSize: 11 },
-        levels: [
-          {},
-          { r0: 0, r: '46%', label: { rotate: 0, color: '#fff', fontWeight: 600 } },
-          { r0: '48%', r: '95%', label: { align: 'right', color: PALETTE.slate } },
-        ],
-      },
     ],
   };
 }

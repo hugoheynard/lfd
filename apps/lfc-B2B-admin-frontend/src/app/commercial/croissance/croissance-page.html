@@ -150,8 +150,17 @@
                   text="Sunburst des résiliations confirmées : anneau intérieur = la catégorie de départ (tarif, concurrent, cessation, qualité, plus de besoin, injoignable, autre), anneau extérieur = la sous-raison précise (livraison trop chère, catalogue trop cher, manque d'incentive…). Enregistré à la clôture du compte par le client ou le commercial. All-time."
                 />
               </header>
-              @if (terminationReasons(); as opt) {
-                <app-chart [option]="opt" height="440px" />
+              @if (terminationSunburst(); as data) {
+                <app-sunburst [data]="data" height="440px" />
+                <ul class="legend">
+                  @for (item of terminationLegend(); track item.name) {
+                    <li class="legend-item">
+                      <span class="legend-dot" [style.background]="item.color"></span>
+                      <span class="legend-name">{{ item.name }}</span>
+                      <span class="legend-count">{{ item.count }}</span>
+                    </li>
+                  }
+                </ul>
               } @else {
                 <p class="muted">Aucune résiliation enregistrée.</p>
               }

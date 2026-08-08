@@ -13,6 +13,7 @@ import { MarketService } from '../market/market.service';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { Lorenz } from '../../shared/lorenz/lorenz';
 import { MetricInfo } from '../../shared/metric-info/metric-info';
+import { Sunburst, type SunburstDatum, sunburstTopColor } from '../../shared/sunburst/sunburst';
 import {
   acquisitionMixDonutOption,
   acquisitionMixOption,
@@ -24,7 +25,6 @@ import {
   lifecycleSankeyOption,
   temperatureFlowOption,
   temperatureTransitionsOption,
-  terminationReasonsOption,
   terminationRecoveryOption,
   velocityBoxplotOption,
   zoneVelocityOption,
@@ -55,7 +55,7 @@ interface Kpi {
 @Component({
   selector: 'app-croissance-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Chart, Lorenz, MetricInfo, FoldButtonComponent],
+  imports: [Chart, Lorenz, Sunburst, MetricInfo, FoldButtonComponent],
   templateUrl: './croissance-page.html',
   styleUrl: './croissance-page.scss',
 })
@@ -111,9 +111,24 @@ export class CroissancePage {
       ? null
       : adoptionOption(zones, this.adoptionSort());
   });
-  protected readonly terminationReasons = computed<ChartOption | null>(() => {
+  protected readonly terminationSunburst = computed<readonly SunburstDatum[] | null>(() => {
     const t = this.terminations();
-    return t === null || t.reasons.length === 0 ? null : terminationReasonsOption(t.reasons);
+    if (t === null || t.reasons.length === 0) {
+      return null;
+    }
+    return t.reasons.map((r) => ({
+      name: r.label,
+      value: r.count,
+      children: r.children.map((c) => ({ name: c.label, value: c.count })),
+    }));
+  });
+  protected readonly terminationLegend = computed<
+    ReadonlyArray<{ readonly name: string; readonly color: string; readonly count: number }>
+  >(() => {
+    const t = this.terminations();
+    return t === null
+      ? []
+      : t.reasons.map((r, i) => ({ name: r.label, color: sunburstTopColor(i), count: r.count }));
   });
   protected readonly terminationRecovery = computed<ChartOption | null>(() => {
     const t = this.terminations();
