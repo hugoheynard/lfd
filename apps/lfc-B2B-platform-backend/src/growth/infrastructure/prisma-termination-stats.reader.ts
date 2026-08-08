@@ -18,7 +18,7 @@ export class PrismaTerminationStatsReader extends TerminationStatsReader {
 
   async load(): Promise<TerminationStatsView> {
     const rows = await this.prisma.companyTermination.findMany({
-      select: { reason: true, outcome: true },
+      select: { reason: true, subReason: true, outcome: true },
     });
     return computeTerminationStats(rows);
   }

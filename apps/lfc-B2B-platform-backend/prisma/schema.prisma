@@ -955,6 +955,8 @@ model CompanyTermination {
   companyId   String   @map("company_id")
   /// price | competitor | closure | quality | no_need | unresponsive | other.
   reason      String
+  /// Sous-raison précise (ex. `delivery_cost`, `catalog_price`), vide si non précisée.
+  subReason   String   @default("") @map("sub_reason")
   /// client | commercial (qui a enregistré la terminaison).
   initiatedBy String   @map("initiated_by")
   /// confirmed (résilié) | recovered (rattrapé, compte conservé).

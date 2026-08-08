@@ -413,11 +413,22 @@ export type TerminationReason =
   | "unresponsive"
   | "other";
 
-/** Une part du camembert des raisons : la catégorie, son libellé, le nombre de résiliations. */
-export interface TerminationReasonCount {
+/** Une **sous-raison** de départ (ex. « Livraison trop chère »), avec son compte. */
+export interface TerminationSubReasonCount {
+  readonly subReason: string;
+  readonly label: string;
+  readonly count: number;
+}
+
+/**
+ * Un nœud du **sunburst** des raisons : la catégorie de départ, son total de
+ * résiliations confirmées, et le détail par **sous-raison** (anneau extérieur).
+ */
+export interface TerminationReasonNode {
   readonly reason: TerminationReason;
   readonly label: string;
   readonly count: number;
+  readonly children: readonly TerminationSubReasonCount[];
 }
 
 /**
@@ -434,8 +445,8 @@ export interface TerminationRecovery {
 
 /** Analytics de churn : raisons de résiliation + rattrapage des tentatives. */
 export interface TerminationStatsView {
-  /** Camembert des **résiliations confirmées** par raison. */
-  readonly reasons: readonly TerminationReasonCount[];
+  /** Sunburst des **résiliations confirmées** : raison → sous-raison. */
+  readonly reasons: readonly TerminationReasonNode[];
   /** Rattrapage global (toutes catégories). */
   readonly recovery: TerminationRecovery;
   /** Rattrapage **par catégorie** de terminaison. */

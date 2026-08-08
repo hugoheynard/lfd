@@ -2,21 +2,23 @@ import { computeTerminationStats, type TerminationRow } from "../termination-sta
 
 describe("computeTerminationStats", () => {
   const rows: TerminationRow[] = [
-    { reason: "price", outcome: "confirmed" },
-    { reason: "price", outcome: "confirmed" },
-    { reason: "price", outcome: "recovered" }, // 3 tentatives tarif, 1 rattrapée
-    { reason: "competitor", outcome: "confirmed" },
-    { reason: "unknown_x", outcome: "confirmed" }, // raison inconnue → other
+    { reason: "price", subReason: "delivery_cost", outcome: "confirmed" },
+    { reason: "price", subReason: "catalog_price", outcome: "confirmed" },
+    { reason: "price", subReason: "delivery_cost", outcome: "recovered" }, // 3 tentatives tarif
+    { reason: "competitor", subReason: "better_price", outcome: "confirmed" },
+    { reason: "unknown_x", subReason: "", outcome: "confirmed" }, // raison inconnue → other / Non précisé
   ];
 
-  it("camembert = résiliations confirmées par raison (rattrapées exclues)", () => {
+  it("sunburst = raison → sous-raison, résiliations confirmées (rattrapées exclues)", () => {
     const view = computeTerminationStats(rows);
-    const byReason = new Map(view.reasons.map((r) => [r.reason, r.count]));
-    expect(byReason.get("price")).toBe(2);
-    expect(byReason.get("competitor")).toBe(1);
-    expect(byReason.get("other")).toBe(1);
-    // Une catégorie sans confirmation n'apparaît pas.
-    expect(view.reasons.some((r) => r.reason === "quality")).toBe(false);
+    const price = view.reasons.find((r) => r.reason === "price");
+    expect(price?.count).toBe(2); // la rattrapée n'entre pas
+    const priceSubs = new Map(price?.children.map((c) => [c.label, c.count]));
+    expect(priceSubs.get("Livraison trop chère")).toBe(1);
+    expect(priceSubs.get("Catalogue trop cher")).toBe(1);
+    // Raison inconnue → other, sous-raison vide → « Non précisé ».
+    const other = view.reasons.find((r) => r.reason === "other");
+    expect(other?.children.find((c) => c.label === "Non précisé")?.count).toBe(1);
   });
 
   it("taux de rattrapage global et par catégorie", () => {

@@ -142,7 +142,8 @@ export type {
   ZonePenetrationTrend,
   MarketAdoptionView,
   TerminationReason,
-  TerminationReasonCount,
+  TerminationSubReasonCount,
+  TerminationReasonNode,
   TerminationRecovery,
   TerminationStatsView,
 } from "./growth.js";

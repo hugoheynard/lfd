@@ -24,6 +24,17 @@ const REASONS: readonly string[] = [
   "other",
 ];
 
+/** Sous-raisons par raison (alignées sur la taxonomie du domaine). */
+const SUBS: Readonly<Record<string, readonly string[]>> = {
+  price: ["delivery_cost", "catalog_price", "no_incentive"],
+  competitor: ["better_price", "better_offer"],
+  closure: ["business_closure", "relocation"],
+  quality: ["product_quality", "service", "delivery_reliability"],
+  no_need: ["seasonal", "volume_drop"],
+  unresponsive: ["unreachable"],
+  other: ["other"],
+};
+
 /**
  * Phase **pertes & terminaisons** : crée des sociétés **résiliées** (`terminated`)
  * par zone (barre « Perte » de l'adoption) ET enregistre les **terminaisons** —
@@ -75,10 +86,13 @@ async function recordTermination(
   index: number,
   outcome: "confirmed" | "recovered",
 ): Promise<void> {
+  const reason = REASONS[index % REASONS.length];
+  const subs = SUBS[reason] ?? ["other"];
   const data = {
     id,
     companyId,
-    reason: REASONS[index % REASONS.length],
+    reason,
+    subReason: subs[index % subs.length],
     initiatedBy: index % 3 === 0 ? "commercial" : "client",
     outcome,
   };
