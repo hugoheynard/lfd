@@ -179,7 +179,11 @@
                 </p>
               }
             </article>
+          </div>
+        }
 
+        @case ('volume') {
+          <div class="grid">
             <article class="card wide">
               <header class="card-head">
                 <h2>Marché vs volume <span class="scope-tag">indice base 100</span></h2>
@@ -225,6 +229,26 @@
                 <p class="muted">
                   Pas encore de commandes rattachées à une société pour ventiler le CA par NAF.
                 </p>
+              }
+            </article>
+
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Part des grands comptes <span class="scope-tag">concentration du volume</span></h2>
+                <app-metric-info
+                  label="Concentration du volume"
+                  text="Courbe de Lorenz du volume de commandes par compte : plus la courbe s'éloigne de la diagonale d'égalité, plus quelques grands comptes concentrent le volume. Le Gini résume l'inégalité (0 = égal, 1 = tout sur un compte)."
+                />
+              </header>
+              @if (concentration(); as c) {
+                <p class="muted">{{ concentrationHint() }}</p>
+                <app-lorenz [data]="c" height="300px" />
+                <app-chart-note
+                  goal="Savoir si le volume de commandes est concentré sur quelques grands comptes."
+                  read="Courbe de Lorenz : plus elle s'éloigne de la diagonale, plus c'est concentré. Le Gini résume (0 = égal, 1 = tout sur un compte)."
+                />
+              } @else {
+                <p class="muted">Pas encore de commandes pour mesurer la concentration.</p>
               }
             </article>
           </div>
@@ -449,7 +473,7 @@
               }
             </article>
 
-            <article class="card">
+            <article class="card wide">
               <header class="card-head">
                 <h2>Vélocité — délais (jours)</h2>
                 <app-metric-info

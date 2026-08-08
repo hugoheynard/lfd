@@ -46,7 +46,7 @@ import { GrowthService } from './growth.service';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /** Onglets du dashboard, un par type de donnée. */
-type TabKey = 'acquisition' | 'marche' | 'retention' | 'vivier' | 'usage';
+type TabKey = 'acquisition' | 'marche' | 'volume' | 'retention' | 'vivier' | 'usage';
 
 /** Une tuile KPI. */
 interface Kpi {
@@ -80,6 +80,7 @@ export class CroissancePage {
   protected readonly tabs: ReadonlyArray<{ readonly key: TabKey; readonly label: string }> = [
     { key: 'acquisition', label: 'Acquisition' },
     { key: 'marche', label: 'Marché & territoire' },
+    { key: 'volume', label: 'Volume' },
     { key: 'retention', label: 'Rétention & churn' },
     { key: 'vivier', label: 'Vivier' },
     { key: 'usage', label: 'Usage webapp' },
