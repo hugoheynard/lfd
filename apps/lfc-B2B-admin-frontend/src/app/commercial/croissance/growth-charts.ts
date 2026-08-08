@@ -442,11 +442,12 @@ export function zoneVelocityOption(zones: readonly ZonePenetrationTrend[]): ECha
 }
 
 /**
- * **Adoption par territoire** : une barre horizontale **empilée sur base 100 %** par
- * zone — le segment plein = **conquis** (pénétration), le segment atténué = **reste à
- * prendre** (marge de progression). On lit la part de marché ET le potentiel restant.
- * L'étiquette porte le taux **et** le delta de la période (« 12 % · +3 pts ») ; le
- * conquis est vert s'il a progressé, bleu sinon. `direction` classe les zones.
+ * **Adoption et perte par territoire** : **deux barres horizontales par zone** sur
+ * base 100 % — **Adoption** = part de marché conquise (sociétés activées / acteurs
+ * visés ; verte si la période a progressé, bleue sinon) et **Perte** = sociétés
+ * résiliées rapportées au même marché (rouge). On compare d'un coup ce qu'on gagne et
+ * ce qu'on perd sur chaque territoire. L'étiquette d'adoption porte le taux + le delta
+ * de période (« 12 % · +3 pts »). `direction` classe les zones par pénétration.
  */
 export function adoptionOption(
   zones: readonly AdoptionZoneView[],
@@ -455,17 +456,23 @@ export function adoptionOption(
   const asc = [...zones].sort((a, b) => a.penetration - b.penetration);
   // yAxis catégorie : data[0] en bas. Desc = plus forte pénétration en HAUT → data ascendante.
   const rows = direction === 'desc' ? asc : [...asc].reverse();
-  const conquis = rows.map((z) => ({
+  const adoption = rows.map((z) => ({
     value: pct(z.penetration),
-    itemStyle: { color: z.deltaPts > 0 ? PALETTE.green : PALETTE.blue, borderRadius: [4, 0, 0, 4] },
+    itemStyle: { color: z.deltaPts > 0 ? PALETTE.green : PALETTE.blue, borderRadius: [0, 4, 4, 0] },
     label: {
       show: true,
       position: 'right' as const,
       formatter: `${pct(z.penetration)} %${z.deltaPts > 0 ? ` · +${round1(z.deltaPts)} pts` : ''}`,
     },
   }));
+  const perte = rows.map((z) => ({
+    value: pct(z.lostRate),
+    itemStyle: { color: PALETTE.red, borderRadius: [0, 4, 4, 0] },
+    label: { show: z.lost > 0, position: 'right' as const, formatter: `${pct(z.lostRate)} %` },
+  }));
   return {
-    grid: { left: 8, right: 72, top: 8, bottom: 8, containLabel: true },
+    grid: { left: 8, right: 80, top: 8, bottom: 8, containLabel: true },
+    legend: { top: 0, textStyle: { color: PALETTE.slate } },
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
@@ -474,7 +481,7 @@ export function adoptionOption(
         const z = rows[toIndex(first)];
         return z === undefined
           ? ''
-          : `${z.codePostal} ${z.ville}<br/>${z.activated}/${z.addressable} activées · ${pct(z.penetration)} %`;
+          : `${z.codePostal} ${z.ville}<br/>Adoption ${pct(z.penetration)} % (${z.activated}/${z.addressable})<br/>Perte ${pct(z.lostRate)} % (${z.lost})`;
       },
     },
     xAxis: { type: 'value', name: '%', min: 0, max: 100 },
@@ -483,15 +490,8 @@ export function adoptionOption(
       data: rows.map((z) => `${z.codePostal}${z.ville === '' ? '' : ' ' + z.ville}`),
     },
     series: [
-      { name: 'Conquis', type: 'bar', stack: 'part', barWidth: '55%', data: conquis },
-      {
-        name: 'Reste à prendre',
-        type: 'bar',
-        stack: 'part',
-        barWidth: '55%',
-        data: rows.map((z) => 100 - pct(z.penetration)),
-        itemStyle: { color: PALETTE.slate, opacity: 0.15, borderRadius: [0, 4, 4, 0] },
-      },
+      { name: 'Adoption', type: 'bar', barGap: '10%', data: adoption },
+      { name: 'Perte', type: 'bar', data: perte },
     ],
   };
 }

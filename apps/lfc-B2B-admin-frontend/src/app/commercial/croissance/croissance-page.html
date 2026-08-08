@@ -45,7 +45,7 @@
 
         <article class="card wide">
           <header class="card-head">
-            <h2>Adoption par territoire</h2>
+            <h2>Adoption et perte par territoire</h2>
             <div class="head-controls">
               <label class="sort-control">
                 <span class="visually-hidden">Trier</span>
@@ -59,8 +59,8 @@
                 </select>
               </label>
               <app-metric-info
-                label="Adoption par territoire"
-                text="Barre empilée sur base 100 % par zone : le segment plein = conquis (sociétés activées / acteurs visés, comptés via l'API entreprises), le segment atténué = reste à prendre. Vert si la période a fait progresser la zone ; l'étiquette porte le taux et les points gagnés. Configurez zones et NAF dans Réglages ▸ Commercial."
+                label="Adoption et perte par territoire"
+                text="Deux barres par zone, sur base 100 % du marché visé : Adoption = sociétés activées / acteurs visés (comptés via l'API entreprises ; verte si la période a progressé, l'étiquette porte le taux et les points gagnés) ; Perte = sociétés résiliées rapportées au même marché (rouge). On compare d'un coup ce qu'on gagne et ce qu'on perd sur chaque territoire. Configurez zones et NAF dans Réglages ▸ Commercial."
               />
             </div>
           </header>
