@@ -256,8 +256,8 @@ export class CroissancePage {
     return s === null ? null : acquisitionMixDonutOption(s.acquisitionMix);
   });
   protected readonly concentration = computed<AccountConcentration | null>(() => {
-    const s = this.stats();
-    return s === null || s.concentration.accounts === 0 ? null : s.concentration;
+    const view = this.orderMetrics();
+    return view === null || view.concentration.accounts === 0 ? null : view.concentration;
   });
   protected readonly concentrationHint = computed<string>(() => {
     const c = this.concentration();

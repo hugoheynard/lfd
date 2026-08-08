@@ -252,7 +252,7 @@
                 <h2>CA vs nombre de commandes <span class="scope-tag">indice base 100</span></h2>
                 <app-metric-info
                   label="CA vs nombre de commandes (panier moyen)"
-                  text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le CA (TTC) et le nombre de commandes. Quand le CA monte plus vite que le nombre de commandes, le PANIER MOYEN augmente — l'écart entre les deux courbes se lit directement. Le tooltip donne le CA, le nombre de commandes et le panier moyen (CA ÷ commandes) de la période. Suit la granularité du graphe CA du dessus."
+                  text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le CA MARCHANDISES HT (subtotal − remise) et le nombre de commandes. Le HT est volontaire : sur du TTC, le panier moyen monterait dès que la TVA ou les frais de livraison montent, sans qu'un euro de marchandise ait bougé. Quand le CA monte plus vite que le nombre de commandes, le PANIER MOYEN augmente — l'écart se lit directement. Base d'indexation = moyenne des 4 premières périodes non nulles (robuste à une inter-saison à zéro). Le tooltip donne le CA, le nombre de commandes et le panier moyen. Suit la granularité du graphe CA du dessus."
                 />
               </header>
               @if (caVsOrders(); as opt) {
@@ -290,7 +290,7 @@
                 <h2>Marché vs volume <span class="scope-tag">indice base 100</span></h2>
                 <app-metric-info
                   label="Marché vs volume (CA) dans le temps"
-                  text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le marché visé (nombre d'acteurs, quasi constant → ligne ~plate) et le volume = CA cumulé encaissé (TTC). L'écart entre les deux raconte la performance commerciale à marché donné. Le tooltip donne le CA en euros et le nombre d'acteurs. Le marché est un comptage figé (via l'API entreprises) ; on ne le fait pas varier tant qu'on ne redemande pas."
+                  text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le marché visé (nombre d'acteurs, quasi constant → ligne ~plate) et le volume = CA DE LA SEMAINE (TTC). Le CA est périodique, PAS cumulé : cumulé, la courbe ne pouvait que monter, même pendant un effondrement — le graphe ne pouvait jamais annoncer une mauvaise nouvelle. Base d'indexation = moyenne des 4 premières semaines non nulles. Le tooltip donne le CA en euros et le nombre d'acteurs. Le marché est un comptage figé (via l'API entreprises) ; il ne varie pas tant qu'on ne redemande pas — donc à ce jour, seule la courbe de CA bouge réellement."
                 />
               </header>
               @if (volumeVsMarket(); as opt) {
@@ -302,10 +302,15 @@
                 <div class="interp">
                   <span class="interp-title">Interprétations possibles</span>
                   <ul>
-                    <li><strong>Marché stable, CA ↑</strong> — meilleure activation commerciale (on extrait plus du même marché).</li>
-                    <li><strong>CA ↑, marché ↓</strong> — arrivée de grands comptes (moins d'acteurs, plus de volume).</li>
-                    <li><strong>CA ↓, marché ↓</strong> — problème commercial ou conjoncture défavorable.</li>
+                    <li><strong>Marché stable, CA ↑</strong> — meilleure activation commerciale : on extrait plus du même marché.</li>
+                    <li><strong>Marché stable, CA ↓</strong> — problème commercial ou conjoncture défavorable (en station, vérifier d'abord la saison).</li>
+                    <li><strong>Marché stable, CA en dents de scie</strong> — saisonnalité : à comparer à la même période de l'an dernier plutôt qu'à la semaine précédente.</li>
                   </ul>
+                  <p class="muted">
+                    Le marché est un comptage figé : il ne varie que lorsqu'on redemande
+                    les comptages dans Réglages ▸ Commercial. Les lectures « marché ↓ »
+                    ne sont donc pas observables ici tant qu'on ne l'historise pas.
+                  </p>
                 </div>
               } @else {
                 <p class="muted">Pas encore assez de semaines de commandes pour comparer.</p>

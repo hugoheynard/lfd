@@ -556,6 +556,7 @@ export function terminationRecoveryOption(view: TerminationStatsView): EChartsOp
     series: [
       recoverySeries('Rattrapage', rows, 15, 1, (r) => pct(r.rate), (r) =>
         r.attempts > 0 ? `${pct(r.rate)} % · ${r.recovered}/${r.attempts}` : '',
+        true,
       ),
       recoverySeries('Auto (plateforme)', rows, 6, 0.4, (r) =>
         channelPct(r.recoveredAuto, r.attempts), (r) =>
@@ -584,6 +585,9 @@ function channelPct(count: number, attempts: number): number {
  * portant le **canal** (barre épaisse = taux ; fines = auto/commercial). L'étiquette
  * (canal + n) porte l'encodage secondaire pour ne pas distinguer par la couleur seule.
  */
+/** En deçà, un taux de rattrapage est du bruit statistique — on le grise. */
+const MIN_RECOVERY_ATTEMPTS = 5;
+
 function recoverySeries(
   name: string,
   rows: readonly TerminationRecovery[],
@@ -591,6 +595,8 @@ function recoverySeries(
   opacity: number,
   valueOf: (r: TerminationRecovery) => number,
   labelOf: (r: TerminationRecovery) => string,
+  /** Seule la barre de taux porte l'avertissement « n trop faible ». */
+  primary = false,
 ): Record<string, unknown> {
   return {
     name,
@@ -598,17 +604,26 @@ function recoverySeries(
     barGap: '30%',
     barCategoryGap: '42%',
     barWidth,
-    data: rows.map((r) => ({
-      value: valueOf(r),
-      itemStyle: { color: recoveryColor(r), opacity, borderRadius: [0, 3, 3, 0] },
-      label: {
-        show: true,
-        position: 'right' as const,
-        fontSize: 10,
-        color: PALETTE.slate,
-        formatter: labelOf(r),
-      },
-    })),
+    data: rows.map((r) => {
+      // Effectif trop faible = bruit, pas signal : un 100 % sur 1 tentative n'est pas
+      // un succès. On grise la barre et on affiche son « n » (même règle que l'adoption).
+      const thin = r.attempts < MIN_RECOVERY_ATTEMPTS;
+      return {
+        value: valueOf(r),
+        itemStyle: {
+          color: thin ? PALETTE.slate : recoveryColor(r),
+          opacity: thin ? opacity * 0.45 : opacity,
+          borderRadius: [0, 3, 3, 0],
+        },
+        label: {
+          show: true,
+          position: 'right' as const,
+          fontSize: 10,
+          color: PALETTE.slate,
+          formatter: thin ? (primary ? `n=${r.attempts} · trop peu` : '') : labelOf(r),
+        },
+      };
+    }),
   };
 }
 
@@ -759,7 +774,10 @@ function hexToRgba(hex: string, alpha: number): string {
 export function marketVolumeOption(view: MarketVolumeView): EChartsOption {
   const pts = view.points;
   const weeks = pts.map((p) => weekLabel(p.weekStart));
-  const baseVol = pts.find((p) => p.volumeCents > 0)?.volumeCents ?? pts[0]?.volumeCents ?? 0;
+  // Base robuste : la MOYENNE des 4 premières périodes non nulles, pas la 1re valeur.
+  // En station, la 1re semaine de la fenêtre peut être une inter-saison à quasi zéro —
+  // l'indice partirait alors de rien et toutes les lectures exploseraient.
+  const baseVol = robustBase(pts.map((p) => p.volumeCents));
   const baseMkt = pts[0]?.marketActors ?? 0;
   const index = (v: number, base: number): number => (base > 0 ? Math.round((v / base) * 100) : 100);
   const euros = (cents: number): string =>
@@ -789,7 +807,7 @@ export function marketVolumeOption(view: MarketVolumeView): EChartsOption {
         itemStyle: { color: PALETTE.slate },
       },
       {
-        name: 'Volume (CA)',
+        name: 'Volume (CA de la semaine)',
         type: 'line',
         smooth: true,
         symbol: 'none',
@@ -903,6 +921,16 @@ export function sectorRevenueOption(view: SectorRevenueView, grain: SectorGrain 
   };
 }
 
+/**
+ * Base d'indexation **robuste** : moyenne des `take` premières valeurs non nulles.
+ * Indexer sur la toute première valeur est fragile en saisonnier (une inter-saison à
+ * quasi zéro ferait exploser tout l'indice). Renvoie 0 si la série est vide.
+ */
+function robustBase(values: readonly number[], take = 4): number {
+  const seed = values.filter((v) => v > 0).slice(0, take);
+  return seed.length === 0 ? 0 : seed.reduce((s, v) => s + v, 0) / seed.length;
+}
+
 /** Montant euros entier depuis des centimes, formaté fr-FR. */
 function eurosLabel(cents: number): string {
   return (cents / 100).toLocaleString('fr-FR', {
@@ -947,10 +975,12 @@ export function revenueTrendOption(view: OrderMetricsView, grain: SectorGrain = 
  */
 export function caVsOrdersOption(view: OrderMetricsView, grain: SectorGrain = 'week'): EChartsOption {
   const axis = bucketAxis(view.days, grain);
-  const ca = foldDaily(axis, view.caCents);
+  // CA **marchandises HT** : le TTC bougerait au gré de la TVA et des frais de port
+  // sans qu'un euro de marchandise ait changé — le panier moyen serait alors faux.
+  const ca = foldDaily(axis, view.caGoodsCents);
   const orders = foldDaily(axis, view.orders);
-  const baseCa = ca.find((c) => c > 0) ?? ca[0] ?? 0;
-  const baseOrders = orders.find((o) => o > 0) ?? orders[0] ?? 0;
+  const baseCa = robustBase(ca);
+  const baseOrders = robustBase(orders);
   const index = (v: number, base: number): number => (base > 0 ? Math.round((v / base) * 100) : 100);
   return {
     grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
@@ -968,7 +998,7 @@ export function caVsOrdersOption(view: OrderMetricsView, grain: SectorGrain = 'w
     yAxis: { type: 'value', name: 'indice (base 100)' },
     series: [
       {
-        name: 'CA (TTC)',
+        name: 'CA marchandises (HT)',
         type: 'line',
         smooth: true,
         symbol: 'none',
