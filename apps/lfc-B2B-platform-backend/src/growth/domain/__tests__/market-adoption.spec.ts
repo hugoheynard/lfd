@@ -15,17 +15,24 @@ describe("computeAdoption", () => {
       { codePostal: "13001", addressable: 0 }, // dénominateur inconnu.
     ];
     const activated = new Map<string, ActivatedInZone>([
-      // 75011 : 20 activées, dont 12 avant le début → +8 récentes ⇒ +4 pts.
-      ["75011", { ville: "Paris", total: 20, beforeStart: 12 }],
+      // 75011 : 20 activées, dont 12 avant le début → +8 récentes ⇒ +4 pts ; 4 perdues ⇒ 2 %.
+      ["75011", { ville: "Paris", total: 20, beforeStart: 12, lost: 4 }],
       // 69001 : 30 activées, dont 30 avant → 0 récente ⇒ +0 pt, pénétration 30 %.
-      ["69001", { ville: "Lyon", total: 30, beforeStart: 30 }],
+      ["69001", { ville: "Lyon", total: 30, beforeStart: 30, lost: 0 }],
     ]);
     const view = computeAdoption(zones, activated, [], [], NOW);
 
     // Tri : 69001 (30 %) avant 75011 (10 %) avant 13001 (0 %).
     expect(view.zones.map((z) => z.codePostal)).toEqual(["69001", "75011", "13001"]);
     const paris = view.zones.find((z) => z.codePostal === "75011");
-    expect(paris).toMatchObject({ ville: "Paris", activated: 20, penetration: 0.1, deltaPts: 4 });
+    expect(paris).toMatchObject({
+      ville: "Paris",
+      activated: 20,
+      penetration: 0.1,
+      deltaPts: 4,
+      lost: 4,
+      lostRate: 0.02,
+    });
     const lyon = view.zones.find((z) => z.codePostal === "69001");
     expect(lyon?.penetration).toBeCloseTo(0.3);
     expect(lyon?.deltaPts).toBe(0);

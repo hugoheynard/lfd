@@ -40,11 +40,13 @@ export interface ZoneTarget {
   readonly addressable: number;
 }
 
-/** Activations d'une zone : total à ce jour, part antérieure au début de la période. */
+/** Activations d'une zone : total à ce jour, part antérieure au début, et pertes. */
 export interface ActivatedInZone {
   readonly ville: string;
   readonly total: number;
   readonly beforeStart: number;
+  /** Sociétés résiliées (`terminated`) rattachées à la zone. */
+  readonly lost: number;
 }
 
 export function computeAdoption(
@@ -58,6 +60,7 @@ export function computeAdoption(
     const a = activated.get(zone.codePostal);
     const total = a?.total ?? 0;
     const before = a?.beforeStart ?? 0;
+    const lost = a?.lost ?? 0;
     const penetration = zone.addressable > 0 ? total / zone.addressable : 0;
     const deltaPts = zone.addressable > 0 ? ((total - before) / zone.addressable) * 100 : 0;
     return {
@@ -67,6 +70,8 @@ export function computeAdoption(
       activated: total,
       penetration,
       deltaPts,
+      lost,
+      lostRate: zone.addressable > 0 ? lost / zone.addressable : 0,
     };
   });
   rows.sort((x, y) => y.penetration - x.penetration || y.activated - x.activated);

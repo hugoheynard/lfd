@@ -375,6 +375,10 @@ export interface AdoptionZoneView {
   readonly activated: number;
   readonly penetration: number;
   readonly deltaPts: number;
+  /** Sociétés **résiliées** (`terminated`) rattachées à la zone : la perte. */
+  readonly lost: number;
+  /** Perte rapportée au marché visé (0..1) — comparable à `penetration`. */
+  readonly lostRate: number;
 }
 
 /**

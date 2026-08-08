@@ -42,14 +42,18 @@ export class PrismaMarketAdoptionReader extends MarketAdoptionReader {
     const targeted = new Set(config.zones.map((z) => z.codePostal));
 
     const companies = await this.prisma.company.findMany({
-      where: { status: "active", activatedAt: { not: null } },
+      where: { status: { in: ["active", "terminated"] } },
       select: {
+        status: true,
         activatedAt: true,
         addresses: { select: { codePostal: true, ville: true, kind: true, isDefault: true } },
       },
     });
 
-    const activated = new Map<string, { ville: string; total: number; beforeStart: number }>();
+    const activated = new Map<
+      string,
+      { ville: string; total: number; beforeStart: number; lost: number }
+    >();
     const activationDates: Date[] = [];
     const datesByZone = new Map<string, Date[]>();
     for (const company of companies) {
@@ -61,7 +65,14 @@ export class PrismaMarketAdoptionReader extends MarketAdoptionReader {
         ville: address.ville,
         total: 0,
         beforeStart: 0,
+        lost: 0,
       };
+      if (company.status === "terminated") {
+        // Une résiliée est une perte : comptée à part, jamais dans les activées.
+        zone.lost += 1;
+        activated.set(address.codePostal, zone);
+        continue;
+      }
       zone.total += 1;
       if (company.activatedAt !== null) {
         activationDates.push(company.activatedAt);
