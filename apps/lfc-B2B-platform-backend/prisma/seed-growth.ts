@@ -8,6 +8,7 @@ import { RecomputeLeadScoresCommand } from "../src/growth/application/commands/r
 import type { VerifiedToken } from "../src/infra/auth/principal.js";
 import { bootstrapHarness, SEED_STAFF, SYSTEM, type SeedHarness } from "./seed-growth/harness.js";
 import { seedActivation } from "./seed-growth/phase-activation.js";
+import { seedFlagship } from "./seed-growth/phase-flagship.js";
 import { seedMarket } from "./seed-growth/phase-market.js";
 import { seedOrders } from "./seed-growth/phase-orders.js";
 import { persona } from "./seed-growth/personas.js";
@@ -62,6 +63,7 @@ async function main(): Promise<void> {
     const companies = await seedActivation(harness, COMPANIES, ANCHOR);
     const leads = await seedLeads(harness);
     const refreshed = await seedMarket(harness, ANCHOR);
+    const flagship = await seedFlagship(harness, ANCHOR);
     // Les abonnés du journal (`@EventsHandler`) sont détachés : on laisse une
     // fenêtre pour qu'ils écrivent avant de résumer.
     await settle(1500);
@@ -77,6 +79,7 @@ async function main(): Promise<void> {
     console.log(
       `  marché ciblé : 3 zones Savoie + 6 NAF ${refreshed ? "(addressable rafraîchi via l'API)" : "(déjà compté / API injoignable → « Redemander » dans Réglages)"}.`,
     );
+    console.log(`  flagship Val d'Isère : +${flagship} sociétés activées (viser ~30 % du marché).`);
     await summarize(harness);
     console.log("  (additif + idempotent — rejouable ; rien d'existant n'a été effacé)");
   } finally {

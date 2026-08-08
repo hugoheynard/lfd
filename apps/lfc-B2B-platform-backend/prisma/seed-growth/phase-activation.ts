@@ -35,32 +35,45 @@ export async function seedActivation(
 ): Promise<number> {
   let created = 0;
   for (let i = 0; i < companies; i += 1) {
-    const who = persona(20_000 + i);
-    const siret = validSiret(i);
-    if ((await harness.prisma.company.findFirst({ where: { siret } })) !== null) {
-      continue; // idempotent : société déjà semée.
-    }
     // Étalé sur ~26 semaines (0..182 j) pour peupler les fenêtres 13 & 52 sem. du
     // dashboard : des activations avant ET pendant la période → un « +X pts » réel.
     const declaredAt = new Date(anchor.getTime() - ((i * 11) % 182) * DAY_MS);
-    const ownerId = await provisionOwner(harness, who, declaredAt);
-    if (ownerId === null) {
-      continue;
-    }
-    const companyId = await declare(harness, ownerId, who.businessName, siret, declaredAt);
-    if (companyId !== null) {
-      // NAF posé en **fixture** depuis le persona (le seed connaît le secteur) —
-      // l'API de résolution est un fake ici (cf. harness). En prod, c'est
-      // `OnCompanyDeclaredResolveNaf` qui le renseigne depuis le SIRET.
-      await harness.prisma.company.update({
-        where: { id: companyId },
-        data: { nafCode: who.naf },
-      });
-      await advancePieces(harness, ownerId, companyId, i % 6, who, declaredAt);
+    // Profondeur `i % 6` : entonnoir qui fuit à chaque marche (dont l'activation).
+    if (await seedCompany(harness, persona(20_000 + i), validSiret(i), i % 6, declaredAt)) {
       created += 1;
     }
   }
   return created;
+}
+
+/**
+ * Crée **une** société de démo par le chemin réel : provisionne le propriétaire,
+ * déclare (émet `company.declared`), pose le NAF en fixture (le seed connaît le
+ * secteur ; l'API est stubée — cf. harness), puis franchit les pièces jusqu'à la
+ * profondeur cible (`5` = activée). Idempotent par SIRET. Rend `true` si créée.
+ * Réutilisé par la phase « flagship » (Val d'Isère) pour viser une pénétration.
+ */
+export async function seedCompany(
+  harness: SeedHarness,
+  who: ReturnType<typeof persona>,
+  siret: string,
+  depth: number,
+  declaredAt: Date,
+): Promise<boolean> {
+  if ((await harness.prisma.company.findFirst({ where: { siret } })) !== null) {
+    return false; // idempotent : société déjà semée.
+  }
+  const ownerId = await provisionOwner(harness, who, declaredAt);
+  if (ownerId === null) {
+    return false;
+  }
+  const companyId = await declare(harness, ownerId, who.businessName, siret, declaredAt);
+  if (companyId === null) {
+    return false;
+  }
+  await harness.prisma.company.update({ where: { id: companyId }, data: { nafCode: who.naf } });
+  await advancePieces(harness, ownerId, companyId, depth, who, declaredAt);
+  return true;
 }
 
 /** Provisionne le propriétaire + remplit son profil (requis pour déclarer). */
@@ -197,7 +210,7 @@ function deliveryPayload(who: ReturnType<typeof persona>): DeliveryAddressPayloa
 }
 
 /** SIRET **valide** (14 chiffres, clé de Luhn correcte) et **injectif** par index. */
-function validSiret(seed: number): string {
+export function validSiret(seed: number): string {
   // 13 chiffres distincts par `seed` (10^12 ≤ base < 10^13), puis la clé de Luhn.
   const base = String(1_000_000_000_000 + seed);
   let sum = 0;
