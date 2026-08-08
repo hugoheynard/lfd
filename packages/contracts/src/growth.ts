@@ -627,6 +627,21 @@ export interface OrderMetricsView {
   readonly computedAt: string;
 }
 
+/**
+ * **Métriques d'acquisition & churn dans le temps** (grain le plus fin = **jour** ; le
+ * front ré-agrège). Aligné sur `days` : inscriptions, 1res commandes (comptées une fois
+ * par personne), leads saisis, et **résiliations confirmées** (churn brut) par jour. Le
+ * flux d'entrée et de sortie du parc, lus ensemble.
+ */
+export interface AcquisitionMetricsView {
+  readonly days: readonly string[];
+  readonly registrations: readonly number[];
+  readonly firstOrders: readonly number[];
+  readonly leads: readonly number[];
+  readonly terminations: readonly number[];
+  readonly computedAt: string;
+}
+
 /** L'adoption par territoire, sur la fenêtre d'analyse. */
 export interface MarketAdoptionView {
   readonly zones: readonly AdoptionZoneView[];

@@ -3,6 +3,7 @@ import { QueryBus } from "@nestjs/cqrs";
 
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
+import { GetAcquisitionMetricsQuery } from "../application/queries/get-acquisition-metrics.query.js";
 import { GetGrowthStatsQuery } from "../application/queries/get-growth-stats.query.js";
 import { GetMarketAdoptionQuery } from "../application/queries/get-market-adoption.query.js";
 import { GetMarketSectorsQuery } from "../application/queries/get-market-sectors.query.js";
@@ -11,6 +12,7 @@ import { GetOrderMetricsQuery } from "../application/queries/get-order-metrics.q
 import { GetSectorRevenueQuery } from "../application/queries/get-sector-revenue.query.js";
 import { GetTerminationStatsQuery } from "../application/queries/get-termination-stats.query.js";
 import type {
+  AcquisitionMetricsView,
   GrowthStatsView,
   MarketAdoptionView,
   MarketSectorsView,
@@ -65,6 +67,13 @@ export class AdminGrowthController {
   @Get("order-metrics")
   orderMetrics(): Promise<OrderMetricsView> {
     return this.queries.execute<GetOrderMetricsQuery, OrderMetricsView>(new GetOrderMetricsQuery());
+  }
+
+  @Get("acquisition-metrics")
+  acquisitionMetrics(): Promise<AcquisitionMetricsView> {
+    return this.queries.execute<GetAcquisitionMetricsQuery, AcquisitionMetricsView>(
+      new GetAcquisitionMetricsQuery(),
+    );
   }
 
   @Get("terminations")
