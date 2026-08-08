@@ -39,6 +39,9 @@ import { CompanyAddressRepository } from "./domain/ports/company-address.reposit
 import { CompanyContactRepository } from "./domain/ports/company-contact.repository.js";
 import { CompanyRepository } from "./domain/ports/company.repository.js";
 import { CustomerIdentityPort } from "./domain/ports/customer-identity.port.js";
+import { EstablishmentDirectory } from "./domain/ports/establishment-directory.js";
+import { OnCompanyDeclaredResolveNaf } from "./application/handlers/on-company-declared-resolve-naf.handler.js";
+import { RechercheEntreprisesEstablishmentDirectory } from "./infrastructure/recherche-entreprises-establishment.directory.js";
 import { KbisStore } from "./domain/ports/kbis-store.js";
 import { MembershipReader } from "./domain/ports/membership.reader.js";
 import { NavPreferencesRepository } from "./domain/ports/nav-preferences.repository.js";
@@ -126,6 +129,8 @@ import { MeController } from "./http/me.controller.js";
     { provide: CustomerIdentityPort, useClass: Auth0CustomerIdentity },
     { provide: KbisStore, useClass: S3KbisStore },
     { provide: SupportRequestRepository, useClass: PrismaSupportRequestRepository },
+    OnCompanyDeclaredResolveNaf,
+    { provide: EstablishmentDirectory, useClass: RechercheEntreprisesEstablishmentDirectory },
   ],
 })
 export class AccountModule {}
