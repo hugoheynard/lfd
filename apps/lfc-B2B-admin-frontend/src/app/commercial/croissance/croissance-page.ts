@@ -7,6 +7,7 @@ import type {
   MarketSectorsView,
   MarketVolumeView,
   PenetrationTrendPoint,
+  SectorRevenueView,
   TerminationStatsView,
   ZonePenetrationTrend,
 } from '@lfd/contracts';
@@ -31,6 +32,7 @@ import {
   marketVolumeOption,
   recoveryReactionOption,
   sectorMixOption,
+  sectorRevenueOption,
   recoveryReactionWeeklyOption,
   recoveryTrendOption,
   temperatureFlowOption,
@@ -88,6 +90,7 @@ export class CroissancePage {
   protected readonly adoptionZoneTrends = signal<readonly ZonePenetrationTrend[] | null>(null);
   protected readonly marketSectors = signal<MarketSectorsView | null>(null);
   protected readonly marketVolume = signal<MarketVolumeView | null>(null);
+  protected readonly sectorRevenue = signal<SectorRevenueView | null>(null);
   protected readonly terminations = signal<TerminationStatsView | null>(null);
 
   protected readonly kpis = computed<readonly Kpi[]>(() => {
@@ -171,6 +174,10 @@ export class CroissancePage {
   protected readonly volumeVsMarket = computed<ChartOption | null>(() => {
     const view = this.marketVolume();
     return view === null || view.points.length < 2 ? null : marketVolumeOption(view);
+  });
+  protected readonly sectorRevenueChart = computed<ChartOption | null>(() => {
+    const view = this.sectorRevenue();
+    return view === null || view.series.length === 0 ? null : sectorRevenueOption(view);
   });
   protected readonly zoneVelocity = computed<ChartOption | null>(() => {
     const trends = this.adoptionZoneTrends();
@@ -276,6 +283,12 @@ export class CroissancePage {
       this.marketVolume.set(await this.market.volume());
     } catch {
       this.marketVolume.set(null);
+    }
+    // CA par secteur NAF dans le temps.
+    try {
+      this.sectorRevenue.set(await this.market.sectorRevenue());
+    } catch {
+      this.sectorRevenue.set(null);
     }
   }
 }

@@ -206,6 +206,27 @@
                 <p class="muted">Pas encore assez de semaines de commandes pour comparer.</p>
               }
             </article>
+
+            <article class="card wide">
+              <header class="card-head">
+                <h2>CA par secteur NAF dans le temps</h2>
+                <app-metric-info
+                  label="CA par secteur NAF dans le temps"
+                  text="Aires empilées : le CA (TTC) ventilé par secteur NAF des sociétés clientes, semaine par semaine. L'enveloppe du haut = le CA total ; l'épaisseur d'une bande = la contribution du secteur. On voit quels TYPES de clients portent la croissance du CA. Seules les commandes rattachées à une société (donc à un NAF) comptent — les commandes zéro-friction sans société n'y figurent pas."
+                />
+              </header>
+              @if (sectorRevenueChart(); as opt) {
+                <app-chart [option]="opt" height="320px" />
+                <app-chart-note
+                  goal="Voir quels secteurs NAF portent la croissance du CA dans le temps."
+                  read="Aires empilées (une par secteur, couleur = secteur) ; le haut = le CA total, l'épaisseur d'une bande = sa part. Montants en euros au tooltip."
+                />
+              } @else {
+                <p class="muted">
+                  Pas encore de commandes rattachées à une société pour ventiler le CA par NAF.
+                </p>
+              }
+            </article>
           </div>
         }
 

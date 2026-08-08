@@ -9,6 +9,7 @@ import type {
   MarketSectorsView,
   MarketVolumeView,
   PenetrationTrendPoint,
+  SectorRevenueView,
   RecoveryReactionByWeek,
   RecoveryReactionStat,
   RecoveryTrendPoint,
@@ -891,6 +892,37 @@ function sectorTooltip(param: unknown): string {
   const value = typeof d['value'] === 'number' ? d['value'] : 0;
   const pen = typeof d['pen'] === 'number' ? d['pen'] : 0;
   return `${String(p['seriesName'])} · ${kind}<br/>${value} % du mix · ${n} sociétés<br/>pénétration secteur ${pen} %`;
+}
+
+/**
+ * **CA par secteur NAF dans le temps** : aires empilées (une par secteur, teinte du
+ * mix secteurs). L'enveloppe du haut = le CA total ; l'épaisseur d'une bande = la
+ * contribution du secteur. On voit quels types de clients portent la croissance du CA.
+ */
+export function sectorRevenueOption(view: SectorRevenueView): EChartsOption {
+  const weeks = view.weeks.map((w) => weekLabel(w));
+  const series: Record<string, unknown>[] = view.series.map((s, i) => ({
+    name: s.label,
+    type: 'line',
+    stack: 'ca',
+    smooth: true,
+    symbol: 'none',
+    lineStyle: { width: 1 },
+    areaStyle: { opacity: 0.6 },
+    itemStyle: { color: SECTOR_PALETTE[i % SECTOR_PALETTE.length] ?? PALETTE.slate },
+    data: s.weekly.map((cents) => Math.round(cents / 100)),
+  }));
+  return {
+    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    legend: { top: 0, textStyle: { color: PALETTE.slate } },
+    tooltip: {
+      trigger: 'axis',
+      valueFormatter: (v): string => `${Number(v).toLocaleString('fr-FR')} €`,
+    },
+    xAxis: { type: 'category', data: weeks, boundaryGap: false },
+    yAxis: { type: 'value', name: '€' },
+    series,
+  };
 }
 
 /** Pourcentage entier lisible d'un ratio 0..1. */

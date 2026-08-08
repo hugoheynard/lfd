@@ -7,12 +7,14 @@ import { GetGrowthStatsQuery } from "../application/queries/get-growth-stats.que
 import { GetMarketAdoptionQuery } from "../application/queries/get-market-adoption.query.js";
 import { GetMarketSectorsQuery } from "../application/queries/get-market-sectors.query.js";
 import { GetMarketVolumeQuery } from "../application/queries/get-market-volume.query.js";
+import { GetSectorRevenueQuery } from "../application/queries/get-sector-revenue.query.js";
 import { GetTerminationStatsQuery } from "../application/queries/get-termination-stats.query.js";
 import type {
   GrowthStatsView,
   MarketAdoptionView,
   MarketSectorsView,
   MarketVolumeView,
+  SectorRevenueView,
   TerminationStatsView,
 } from "@lfd/contracts";
 
@@ -49,6 +51,13 @@ export class AdminGrowthController {
   @Get("market-volume")
   marketVolume(): Promise<MarketVolumeView> {
     return this.queries.execute<GetMarketVolumeQuery, MarketVolumeView>(new GetMarketVolumeQuery());
+  }
+
+  @Get("sector-revenue")
+  sectorRevenue(): Promise<SectorRevenueView> {
+    return this.queries.execute<GetSectorRevenueQuery, SectorRevenueView>(
+      new GetSectorRevenueQuery(),
+    );
   }
 
   @Get("terminations")
