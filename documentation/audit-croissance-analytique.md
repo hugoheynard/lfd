@@ -110,34 +110,37 @@ Colonne **Faisable** : « OUI » = calculable avec les données déjà en base.
 
 ## 3. Défauts des statistiques actuelles
 
+> **État au 2026-08-08** — les points marqués ✅ **CORRIGÉ** l'ont été dans la foulée
+> de cet audit. Les autres restent ouverts, avec la raison.
+
 ### 🔴 Bugs de justesse (le graphe affiche un chiffre faux)
 
-1. **Le CA compte les commandes annulées.** `PrismaOrderMetricsReader`,
+1. ✅ **CORRIGÉ — Le CA comptait les commandes annulées.** `PrismaOrderMetricsReader`,
    `PrismaMarketVolumeReader` et `PrismaSectorRevenueReader` somment
    `orders.total_cents` **sans filtrer `status`** : les `draft` et `cancelled`
    sont comptés comme du CA. Surestimation directe, sur tous les graphes CA.
-2. **Le « panier moyen » n'est pas un panier.** `total_cents` est le **TTC frais
+2. ✅ **CORRIGÉ — Le « panier moyen » n'était pas un panier.** `total_cents` est le **TTC frais
    de port inclus**. Le panier moyen monte quand la TVA ou les frais de
    livraison montent, sans qu'un euro de marchandise ait bougé.
    `subtotal_cents − discount_cents` existe et n'est jamais utilisé.
-3. **L'entonnoir de démarchage sous-compte.** `LEAD_RANK` (`growth-stats.ts`) ne
+3. ✅ **CORRIGÉ — L'entonnoir de démarchage sous-comptait.** `LEAD_RANK` (`growth-stats.ts`) ne
    contient pas `lost` → `rankOf()` renvoie **-1**. Un lead contacté, qualifié
    puis perdu **disparaît des marches « Contactés » et « Qualifiés »**. Les
    étapes intermédiaires sont systématiquement sous-estimées, ce qui donne
    l'illusion d'un excellent taux de passage.
-4. **Adoption par territoire — barre et courbe se contredisent.** `zone.total`
+4. ✅ **CORRIGÉ — Adoption : barre et courbe se contredisaient.** `zone.total`
    compte toute société `active`, y compris sans `activated_at` ; la trajectoire
    (`zoneTrends`) ne compte que celles qui en ont une. Deux chiffres différents
    pour la même zone. En prime, une société **sans adresse** est silencieusement
    exclue des deux barres, sans compteur d'exclusion.
-5. **Concentration : population hétérogène.** `accountConcentration` groupe par
+5. ✅ **CORRIGÉ — Concentration : population hétérogène et mauvaise source.** `accountConcentration` groupe par
    `payload.companyId ?? subjectId` : les commandes zéro-friction sont comptées
    **par personne**, les autres **par société**. Le nombre de « comptes » est
    gonflé et le Gini biaisé à la hausse.
 
 ### 🟠 Graphes qui ne peuvent pas dire la vérité
 
-6. **« Marché vs volume » ne peut jamais annoncer une mauvaise nouvelle.** Il
+6. ✅ **CORRIGÉ — « Marché vs volume » ne pouvait jamais annoncer une mauvaise nouvelle.** Il
    oppose un **CA cumulé** (monotone croissant par construction) à un marché
    **constant** (`marketActors` est une valeur unique répétée sur toutes les
    semaines). L'écart se creuse **mécaniquement**, même pendant un effondrement
@@ -147,7 +150,7 @@ Colonne **Faisable** : « OUI » = calculable avec les données déjà en base.
 7. **Le taux de rattrapage est auto-flatteur.** Son dénominateur est le nombre de
    **tentatives enregistrées**. Plus les commerciaux oublient de saisir les
    départs secs, meilleur paraît le taux.
-8. **Pas de garde-fou sur les petits effectifs** pour le rattrapage par
+8. ✅ **CORRIGÉ — Pas de garde-fou sur les petits effectifs** pour le rattrapage par
    catégorie (alors que l'adoption grise bien ses `n < 10`) : une barre à 100 %
    sur 1 seule tentative s'affiche comme un succès.
 9. **L'entonnoir d'activation invente des fuites.** Une pièce configurée
@@ -173,7 +176,7 @@ Colonne **Faisable** : « OUI » = calculable avec les données déjà en base.
     sans société **et** les NAF non ciblés ; « CA dans le temps » inclut tout. Deux
     cartes « CA » dans le même onglet, avec des totaux différents et aucune mention
     de l'écart.
-14. **Indexation base 100 fragile en saisonnier.** La base est la **1re période de
+14. ✅ **CORRIGÉ — Indexation base 100 fragile en saisonnier.** La base est la **1re période de
     la fenêtre** : si c'est une inter-saison à quasi zéro, toutes les lectures
     explosent. Une base = moyenne des k premières périodes serait robuste.
 15. **KPI morts.** « Conversion = activées ÷ déclarées » est all-time cumulatif :
@@ -193,13 +196,56 @@ Colonne **Faisable** : « OUI » = calculable avec les données déjà en base.
 
 ---
 
-## 4. Ordre d'attaque conseillé
+## 4. Lot 1 — ce qui a été corrigé (2026-08-08)
 
-**Lot 1 — corriger ce qui est faux (rapide, fort impact).** Filtrer les statuts
-de commande dans les 3 readers CA (§3.1) ; exposer le CA **HT marchandises** à
-côté du TTC (§3.2, M21) ; ajouter `lost` à `LEAD_RANK` (§3.3) ; aligner le
-dénominateur d'adoption (§3.4) ; garde-fou petits effectifs sur le rattrapage
-(§3.8). Rien de tout cela ne demande une évolution du modèle.
+| # | Correctif | Où |
+|---|---|---|
+| 1 | Le CA exclut désormais `draft` et `cancelled` — périmètre partagé par les **3** lecteurs de CA | `domain/revenue-scope.ts` (`REVENUE_ORDER_STATUSES`) |
+| 2 | Nouveau **CA marchandises HT** (`subtotal − discount`), qui sert au **panier moyen** ; le TTC reste la vérité de trésorerie | `revenue-scope.ts` (`goodsCents`), `OrderMetricsView.caGoodsCents` |
+| 3 | L'entonnoir cold reconstitue le **rang maximum atteint** depuis le journal (`lead.stage_changed` + `lead.converted`) : un lead perdu compte enfin dans les étapes franchies | `growth-stats.ts` (`coldFunnel`, `maxRankReached`) + `lead.stage_changed` ajouté à `STATS_TYPES` |
+| 4 | Adoption : la barre ne compte plus que les sociétés **datées** (`activatedAt`), comme la courbe — même dénominateur des deux côtés | `prisma-market-adoption.reader.ts` |
+| 5 | Concentration recalculée depuis la table **`orders`** (même source et même fenêtre que le CA, plus le journal best-effort), acheteur = société sinon personne, **espaces d'ids préfixés** | `OrderMetricsView.concentration`, `concentrationOf()` |
+| 6 | « Marché vs volume » passe en CA **périodique** (plus cumulé) : la courbe peut enfin baisser, et les interprétations affichées redeviennent atteignables | `domain/market-volume.ts` |
+| 8 | Garde-fou **n < 5** sur le taux de rattrapage : barre grisée + « n=… trop peu » | `growth-charts.ts` (`MIN_RECOVERY_ATTEMPTS`) |
+| 14 | Base d'indexation **robuste** (moyenne des 4 premières périodes non nulles) au lieu de la 1re valeur — une inter-saison à zéro ne fait plus exploser l'indice | `growth-charts.ts` (`robustBase`) |
+
+Couverture de test : `computeAcquisitionMetrics`, `computeOrderMetrics`,
+`dayKey`/`dayRange`, et une **régression dédiée** sur l'entonnoir cold (un lead
+`lost` doit compter dans « Contactés » et « Qualifiés »). Suite backend complète :
+501 tests verts.
+
+> **Note d'exploitation** — la base de test e2e était **désynchronisée** du schéma
+> (colonne `naf_code` absente), ce qui faisait échouer 9 suites sans rapport avec
+> le code. Remise à niveau avec `prisma migrate deploy` sur `lfc_b2b_test`.
+
+### Ce qui reste ouvert, et pourquoi
+
+- **7 · taux de rattrapage auto-flatteur** — indénouable tant que le churn se
+  saisit à la main : c'est le manque M6 (churn silencieux) qui le résoudra, pas
+  un correctif de calcul.
+- **9 · entonnoir d'activation et pièces `hidden`** — demande de croiser
+  `PlatformSettings` dans la vue ; c'est un changement de sémantique du graphe,
+  à arbitrer (masquer la marche, ou l'afficher grisée « non requise »).
+- **10 · cohortes inadaptées au B2B** — refonte de la métrique (cohorte de
+  **compte** et non de personne, « retenu » = a commandé dans la période et non
+  cette semaine précise). C'est le manque M4/M5, pas un bug.
+- **11 · fenêtres incohérentes** — partiellement réduit (la concentration est
+  passée en fenêtré), mais les KPI du bandeau restent all-time. À traiter avec le
+  lot 2 quand la fenêtre deviendra configurable.
+- **12 · deux sources de vérité** — résolu pour la concentration ; le reste du
+  journal (acquisition, cohortes) reste best-effort par conception. Une carte de
+  complétude/fraîcheur du journal reste à faire.
+- **13 · totaux CA non réconciliés** — voulu (périmètres différents : « CA par
+  NAF » exclut le zéro-friction), mais il faudrait l'**afficher**. Lié à M30.
+- **16 · bucketing UTC** — le passage en Europe/Paris touche tous les découpages
+  (jour, semaine, cohortes) et mérite son propre lot avec tests de bascule
+  heure d'été / heure d'hiver.
+- **15, 17, 18** — KPI morts, biais de survivance, doublons de cartes : ce sont
+  des arbitrages produit (que garder, que retirer), pas des bugs.
+
+---
+
+## 5. Ordre d'attaque conseillé (suite)
 
 **Lot 2 — débloquer la saisonnalité.** Rendre la fenêtre configurable (elle est
 codée en dur à 13 semaines partout), puis livrer la **comparaison N vs N-1**
