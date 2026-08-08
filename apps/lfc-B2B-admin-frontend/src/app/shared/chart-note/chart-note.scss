@@ -1,31 +1,38 @@
 .chart-note {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  margin: var(--fold-space-sm, 0.5rem) 0 0;
-  padding-top: var(--fold-space-sm, 0.5rem);
-  border-top: 1px solid var(--fold-color-border);
-  font-size: var(--fold-text-sm, 0.8rem);
-  line-height: 1.45;
+  gap: 0.4rem;
+  margin: var(--fold-space-md, 0.9rem) 0 0;
+  padding-top: var(--fold-space-sm, 0.65rem);
+  border-top: 1px solid color-mix(in srgb, var(--fold-color-border) 70%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.5;
   color: var(--fold-color-text-muted);
 }
 
 .chart-note__row {
   display: grid;
-  grid-template-columns: 4.5rem 1fr;
-  gap: 0.5rem;
+  grid-template-columns: 4.75rem 1fr;
+  gap: 0.6rem;
 }
 
 dt {
   margin: 0;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  font-size: 0.68rem;
-  color: var(--fold-color-text);
-  padding-top: 0.08rem;
+  letter-spacing: 0.07em;
+  font-size: 0.65rem;
+  color: var(--fold-color-text-muted);
+  padding-top: 0.18rem;
 }
 
 dd {
   margin: 0;
+}
+
+@media (max-width: 40rem) {
+  .chart-note__row {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
 }

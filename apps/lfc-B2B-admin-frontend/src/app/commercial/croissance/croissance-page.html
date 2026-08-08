@@ -1,10 +1,17 @@
 <section class="page">
   <header class="page-head">
     <div>
+      <span class="eyebrow">Analytique commerciale</span>
       <h1>Croissance</h1>
       <p class="subtitle">
-        Acquisition, activation et rétention — dérivés du journal d'événements.
+        De l'acquisition au chiffre d'affaires : comment le parc client se construit, ce
+        qu'il rapporte, et ce qui le fait partir. Chaque carte indique son objectif et sa
+        clé de lecture.
       </p>
+    </div>
+    <div class="head-meta">
+      <span>Fenêtre d'analyse</span>
+      <strong>13 dernières semaines</strong>
     </div>
   </header>
 
@@ -46,6 +53,11 @@
 
       @switch (activeTab()) {
         @case ('acquisition') {
+          <p class="section-lead">
+            <strong>Qui entre, et par quel canal ?</strong> Le rythme des inscriptions et
+            des premières commandes, et la part qui vient du référencement (product-led)
+            plutôt que du démarchage (sales-led).
+          </p>
           <div class="grid">
             <article class="card wide">
               <header class="card-head">
@@ -101,6 +113,11 @@
         }
 
         @case ('marche') {
+          <p class="section-lead">
+            <strong>Où en est la conquête, territoire par territoire ?</strong> La part du
+            marché visé déjà cliente, la vitesse à laquelle elle progresse, et le type de
+            clients qu'on gagne ou qu'on perd dans chaque zone.
+          </p>
           <div class="grid">
             <article class="card wide">
               <header class="card-head">
@@ -183,6 +200,11 @@
         }
 
         @case ('volume') {
+          <p class="section-lead">
+            <strong>Qu'est-ce que le parc rapporte ?</strong> Le niveau et la trajectoire du
+            chiffre d'affaires, si le panier moyen progresse, quels types de commandes et de
+            secteurs le portent, et à quel point il dépend de quelques grands comptes.
+          </p>
           <div class="grid">
             <article class="card wide">
               <header class="card-head">
@@ -336,6 +358,11 @@
         }
 
         @case ('retention') {
+          <p class="section-lead">
+            <strong>Pourquoi part-on, et sait-on rattraper ?</strong> Les motifs de départ
+            du général au détail, la part des tentatives qu'on parvient à sauver, par quel
+            levier, et à quelle vitesse on réagit.
+          </p>
           <div class="grid">
             <article class="card wide">
               <header class="card-head">
@@ -441,6 +468,11 @@
         }
 
         @case ('vivier') {
+          <p class="section-lead">
+            <strong>Que vaut le pipeline ?</strong> La répartition des prospects par
+            chaleur, comment ils se réchauffent ou refroidissent, et où ils bloquent — à
+            l'onboarding comme dans le pipeline de démarchage.
+          </p>
           <div class="grid">
             <article class="card">
               <header class="card-head">
@@ -515,6 +547,11 @@
         }
 
         @case ('usage') {
+          <p class="section-lead">
+            <strong>Comment se comporte le parcours produit ?</strong> Le trajet du clic à
+            l'activation avec ses fuites, la rétention des cohortes d'inscrits, et les
+            délais clés du cycle.
+          </p>
           <div class="grid">
             <article class="card wide">
               <header class="card-head">
