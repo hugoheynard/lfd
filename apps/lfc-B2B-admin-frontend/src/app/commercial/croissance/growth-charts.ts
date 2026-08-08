@@ -35,6 +35,14 @@ const PALETTE = {
   slate: '#64748b',
 };
 
+/** Valeur résolue d'un token de thème fold (SSR-safe), avec repli — clair/sombre. */
+function themeColor(name: string, fallback: string): string {
+  if (typeof document === 'undefined') {
+    return fallback;
+  }
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
 /** « 2026-08-17 » → « 17/08 ». */
 function weekLabel(iso: string): string {
   const [, month, day] = iso.split('-');
@@ -456,16 +464,25 @@ export function zoneVelocityOption(zones: readonly ZonePenetrationTrend[]): ECha
  * ce qu'on perd sur chaque territoire. L'étiquette d'adoption porte le taux + le delta
  * de période (« 12 % · +3 pts »). `direction` classe les zones par pénétration.
  */
+/** Tri de l'adoption/perte par territoire : par adoption ou par perte, ↑ ou ↓. */
+export type AdoptionSort = 'adoption-desc' | 'adoption-asc' | 'perte-desc' | 'perte-asc';
+
 export function adoptionOption(
   zones: readonly AdoptionZoneView[],
-  direction: 'desc' | 'asc' = 'desc',
+  sort: AdoptionSort = 'adoption-desc',
 ): EChartsOption {
-  const asc = [...zones].sort((a, b) => a.penetration - b.penetration);
-  // yAxis catégorie : data[0] en bas. Desc = plus forte pénétration en HAUT → data ascendante.
-  const rows = direction === 'desc' ? asc : [...asc].reverse();
+  const key = sort.startsWith('perte')
+    ? (z: AdoptionZoneView): number => z.lostRate
+    : (z: AdoptionZoneView): number => z.penetration;
+  const asc = [...zones].sort((a, b) => key(a) - key(b));
+  // yAxis catégorie : data[0] en bas. `-desc` = plus fort en HAUT → data ascendante.
+  const rows = sort.endsWith('desc') ? asc : [...asc].reverse();
+  // Teintes sémantiques du thème : adoption = succès, perte = avertissement (légende alignée).
+  const success = themeColor('--fold-color-success', '#1a9e6a');
+  const warning = themeColor('--fold-color-warning', '#d4a017');
   const adoption = rows.map((z) => ({
     value: pct(z.penetration),
-    itemStyle: { color: z.deltaPts > 0 ? PALETTE.green : PALETTE.blue, borderRadius: [0, 4, 4, 0] },
+    itemStyle: { color: success, borderRadius: [0, 4, 4, 0] },
     label: {
       show: true,
       position: 'right' as const,
@@ -474,12 +491,19 @@ export function adoptionOption(
   }));
   const perte = rows.map((z) => ({
     value: pct(z.lostRate),
-    itemStyle: { color: PALETTE.red, borderRadius: [0, 4, 4, 0] },
+    itemStyle: { color: warning, borderRadius: [0, 4, 4, 0] },
     label: { show: z.lost > 0, position: 'right' as const, formatter: `${pct(z.lostRate)} %` },
   }));
   return {
-    grid: { left: 8, right: 80, top: 8, bottom: 8, containLabel: true },
-    legend: { top: 0, textStyle: { color: PALETTE.slate } },
+    grid: { left: 8, right: 80, top: 8, bottom: 32, containLabel: true },
+    legend: {
+      bottom: 0,
+      textStyle: { color: PALETTE.slate },
+      data: [
+        { name: 'Adoption', itemStyle: { color: success } },
+        { name: 'Perte', itemStyle: { color: warning } },
+      ],
+    },
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },

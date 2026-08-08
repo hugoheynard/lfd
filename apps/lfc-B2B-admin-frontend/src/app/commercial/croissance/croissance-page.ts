@@ -20,6 +20,7 @@ import {
   acquisitionMixDonutOption,
   acquisitionMixOption,
   acquisitionOption,
+  type AdoptionSort,
   adoptionOption,
   cohortHeatmapOption,
   concentrationSummary,
@@ -109,7 +110,13 @@ export class CroissancePage {
     const s = this.stats();
     return s === null ? null : acquisitionOption(s.acquisition, this.adoptionTrend() ?? undefined);
   });
-  protected readonly adoptionSort = signal<'desc' | 'asc'>('desc');
+  protected readonly adoptionSort = signal<AdoptionSort>('adoption-desc');
+  protected readonly adoptionSorts: ReadonlyArray<{ readonly value: AdoptionSort; readonly label: string }> = [
+    { value: 'adoption-desc', label: 'Adoption ↓' },
+    { value: 'adoption-asc', label: 'Adoption ↑' },
+    { value: 'perte-desc', label: 'Perte ↓' },
+    { value: 'perte-asc', label: 'Perte ↑' },
+  ];
   protected readonly adoption = computed<ChartOption | null>(() => {
     const zones = this.adoptionZones();
     return zones === null || zones.length === 0
@@ -209,10 +216,13 @@ export class CroissancePage {
     void this.load();
   }
 
-  /** Change le sens de tri de l'adoption par territoire depuis le `<select>`. */
+  /** Change le tri de l'adoption/perte par territoire depuis le `<select>`. */
   protected onAdoptionSort(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
-    this.adoptionSort.set(value === 'asc' ? 'asc' : 'desc');
+    const match = this.adoptionSorts.find((s) => s.value === value);
+    if (match !== undefined) {
+      this.adoptionSort.set(match.value);
+    }
   }
 
   protected async load(): Promise<void> {

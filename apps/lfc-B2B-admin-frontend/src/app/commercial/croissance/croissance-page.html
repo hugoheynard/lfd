@@ -102,7 +102,7 @@
 
         @case ('marche') {
           <div class="grid">
-            <article class="card">
+            <article class="card wide">
               <header class="card-head">
                 <h2>Adoption et perte par territoire</h2>
                 <div class="head-controls">
@@ -113,8 +113,9 @@
                       [value]="adoptionSort()"
                       (change)="onAdoptionSort($event)"
                     >
-                      <option value="desc">Décroissant</option>
-                      <option value="asc">Croissant</option>
+                      @for (opt of adoptionSorts; track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                      }
                     </select>
                   </label>
                   <app-metric-info
