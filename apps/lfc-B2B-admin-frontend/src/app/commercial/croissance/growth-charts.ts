@@ -1,5 +1,6 @@
 import type {
   AccountConcentration,
+  AcquisitionMetricsView,
   AcquisitionMixPoint,
   AcquisitionPoint,
   AdoptionZoneView,
@@ -9,7 +10,6 @@ import type {
   MarketSectorsView,
   MarketVolumeView,
   OrderMetricsView,
-  PenetrationTrendPoint,
   SectorRevenueView,
   RecoveryReactionByWeek,
   RecoveryReactionStat,
@@ -55,60 +55,36 @@ function weekLabel(iso: string): string {
 }
 
 /**
- * **Acquisition composée — flux devant, stock derrière** : les courbes d'acquisition
- * hebdo (inscriptions / 1res commandes / leads, axe primaire en nombre) et, en toile
- * de fond, la **part de marché cumulée** (axe secondaire en %, auto-échelle). On lit
- * d'un trait l'action (acquisitions de la semaine) et son effet (la part qui monte).
- * Sans `trend`, seul le flux est tracé.
+ * **Entrées et sorties du parc** : le flux d'acquisition (inscriptions, 1res commandes,
+ * leads saisis) ET le **churn** (résiliations confirmées) sur un même axe de comptage,
+ * à la granularité choisie. Les entrées portent une aire discrète, la sortie reste une
+ * ligne rouge nette : on compare d'un coup d'œil ce qui entre et ce qui sort.
  */
-export function acquisitionOption(
-  points: readonly AcquisitionPoint[],
-  trend?: readonly PenetrationTrendPoint[],
+export function acquisitionFluxOption(
+  view: AcquisitionMetricsView,
+  grain: SectorGrain = 'week',
 ): EChartsOption {
-  const weeks = points.map((p) => weekLabel(p.weekStart));
+  const axis = bucketAxis(view.days, grain);
   const area = (color: string): { color: string; opacity: number } => ({ color, opacity: 0.12 });
-  const hasTrend = trend !== undefined && trend.length > 0;
-  const penByWeek = new Map((trend ?? []).map((t) => [t.weekStart, t.penetration * 100]));
-  const flux = [
-    line('Inscriptions', points.map((p) => p.registrations), PALETTE.blue, area(PALETTE.blue)),
-    line('1res commandes', points.map((p) => p.firstOrders), PALETTE.green, area(PALETTE.green)),
-    line('Leads saisis', points.map((p) => p.leadsCaptured), PALETTE.violet, area(PALETTE.violet)),
-  ];
+  const fold = (values: readonly number[]): number[] => foldDaily(axis, values);
   return {
-    legend: { top: 0, textStyle: { color: PALETTE.slate } },
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: weeks, boundaryGap: false },
-    yAxis: hasTrend
-      ? [
-          { type: 'value', minInterval: 1 },
-          {
-            type: 'value',
-            position: 'right',
-            axisLabel: { formatter: '{value} %', color: PALETTE.slate },
-            splitLine: { show: false },
-          },
-        ]
-      : { type: 'value', minInterval: 1 },
-    // La bande « part de marché » est poussée en PREMIER → dessinée derrière les courbes.
-    series: hasTrend
-      ? [marketShareBand(points.map((p) => penByWeek.get(p.weekStart) ?? null)), ...flux]
-      : flux,
-  };
-}
-
-/** Aire de fond « part de marché » (axe secondaire %), volontairement discrète. */
-function marketShareBand(data: readonly (number | null)[]): Record<string, unknown> {
-  return {
-    name: 'Part de marché',
-    type: 'line',
-    yAxisIndex: 1,
-    smooth: true,
-    symbol: 'none',
-    z: 1,
-    data: [...data],
-    lineStyle: { color: PALETTE.slate, width: 1, type: 'dashed', opacity: 0.6 },
-    areaStyle: { color: PALETTE.slate, opacity: 0.1 },
-    itemStyle: { color: PALETTE.slate },
+    xAxis: { type: 'category', data: [...axis.labels], boundaryGap: false },
+    yAxis: { type: 'value', minInterval: 1 },
+    series: [
+      line('Inscriptions', fold(view.registrations), PALETTE.blue, area(PALETTE.blue)),
+      line('1res commandes', fold(view.firstOrders), PALETTE.green, area(PALETTE.green)),
+      line('Leads saisis', fold(view.leads), PALETTE.violet, area(PALETTE.violet)),
+      {
+        name: 'Résiliations',
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        data: fold(view.terminations),
+        lineStyle: { color: PALETTE.red, width: 2 },
+        itemStyle: { color: PALETTE.red },
+      },
+    ],
   };
 }
 

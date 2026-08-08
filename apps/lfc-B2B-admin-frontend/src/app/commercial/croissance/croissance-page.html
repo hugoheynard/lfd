@@ -61,18 +61,30 @@
           <div class="grid">
             <article class="card wide">
               <header class="card-head">
-                <h2>Acquisition hebdomadaire</h2>
-                <app-metric-info
-                  label="Acquisition hebdomadaire — flux + part de marché"
-                  text="Devant : inscriptions, premières commandes et leads saisis chaque semaine (la 1re commande n'est comptée qu'une fois par personne). Derrière, en pointillé sur l'axe de droite : la part de marché cumulée (sociétés activées / acteurs visés), qui monte au rythme des acquisitions. On lit l'action et son effet ensemble. La bande n'apparaît qu'une fois le marché ciblé configuré et compté dans Réglages ▸ Commercial."
-                />
+                <h2>Entrées et sorties du parc</h2>
+                <div class="head-controls">
+                  <label class="sort-control">
+                    <span class="visually-hidden">Granularité</span>
+                    <select class="sort-select" [value]="acqGrain()" (change)="onAcqGrain($event)">
+                      @for (g of acqGrains; track g.value) {
+                        <option [value]="g.value">{{ g.label }}</option>
+                      }
+                    </select>
+                  </label>
+                  <app-metric-info
+                    label="Entrées et sorties du parc"
+                    text="Sur un même axe de comptage, à la granularité choisie (jour, semaine, mois, trimestre, année) : ce qui ENTRE — inscriptions, premières commandes (comptées une seule fois par personne, à la date de sa toute première commande), leads saisis — et ce qui SORT : les résiliations confirmées. Les entrées portent une aire discrète, la sortie est une ligne rouge nette. Quand la ligne rouge passe au-dessus des entrées, le parc se contracte."
+                  />
+                </div>
               </header>
               @if (acquisition(); as opt) {
                 <app-chart [option]="opt" height="300px" />
                 <app-chart-note
-                  goal="Suivre le rythme d'acquisition hebdomadaire et son effet cumulé sur la part de marché."
-                  read="Barres/lignes de devant = le flux de la semaine ; la ligne pointillée à droite = la part de marché qui monte. On lit l'action et son résultat ensemble."
+                  goal="Comparer ce qui entre dans le parc et ce qui en sort, au même rythme."
+                  read="Trois courbes d'entrée (inscriptions, 1res commandes, leads) et une ligne rouge de sortie (résiliations). L'écart entre les deux = la croissance nette du parc ; la ligne rouge qui remonte vers les entrées est le signal d'alerte."
                 />
+              } @else {
+                <p class="muted">Pas encore assez d'activité pour tracer les entrées et sorties.</p>
               }
             </article>
 

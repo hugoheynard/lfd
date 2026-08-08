@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  AcquisitionMetricsView,
   MarketAdoptionView,
   MarketConfigView,
   MarketSectorsView,
@@ -70,6 +71,10 @@ export class MarketService {
 
   orderMetrics(): Promise<OrderMetricsView> {
     return this.get<OrderMetricsView>(`${B2B_API_BASE}/admin/growth/order-metrics`);
+  }
+
+  acquisitionMetrics(): Promise<AcquisitionMetricsView> {
+    return this.get<AcquisitionMetricsView>(`${B2B_API_BASE}/admin/growth/acquisition-metrics`);
   }
 
   private async get<T>(url: string): Promise<T> {

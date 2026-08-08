@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FoldButtonComponent } from 'fold-ng';
 import type {
   AccountConcentration,
+  AcquisitionMetricsView,
   AdoptionZoneView,
   GrowthStatsView,
   MarketSectorsView,
@@ -22,9 +23,9 @@ import { Lorenz } from '../../shared/lorenz/lorenz';
 import { MetricInfo } from '../../shared/metric-info/metric-info';
 import { Sunburst, type SunburstDatum } from '../../shared/sunburst/sunburst';
 import {
+  acquisitionFluxOption,
   acquisitionMixDonutOption,
   acquisitionMixOption,
-  acquisitionOption,
   type AdoptionSort,
   adoptionOption,
   caByTypeOption,
@@ -98,6 +99,7 @@ export class CroissancePage {
   protected readonly marketVolume = signal<MarketVolumeView | null>(null);
   protected readonly sectorRevenue = signal<SectorRevenueView | null>(null);
   protected readonly orderMetrics = signal<OrderMetricsView | null>(null);
+  protected readonly acquisitionMetrics = signal<AcquisitionMetricsView | null>(null);
   protected readonly terminations = signal<TerminationStatsView | null>(null);
 
   protected readonly kpis = computed<readonly Kpi[]>(() => {
@@ -122,9 +124,13 @@ export class CroissancePage {
     ];
   });
 
+  protected readonly acqGrain = signal<SectorGrain>('week');
+  protected readonly acqGrains = SECTOR_GRAINS;
   protected readonly acquisition = computed<ChartOption | null>(() => {
-    const s = this.stats();
-    return s === null ? null : acquisitionOption(s.acquisition, this.adoptionTrend() ?? undefined);
+    const view = this.acquisitionMetrics();
+    return view === null || view.days.length === 0
+      ? null
+      : acquisitionFluxOption(view, this.acqGrain());
   });
   protected readonly adoptionSort = signal<AdoptionSort>('adoption-desc');
   protected readonly adoptionSorts: ReadonlyArray<{ readonly value: AdoptionSort; readonly label: string }> = [
@@ -338,6 +344,21 @@ export class CroissancePage {
       this.orderMetrics.set(await this.market.orderMetrics());
     } catch {
       this.orderMetrics.set(null);
+    }
+    // Acquisition & churn au grain jour (entrées/sorties du parc).
+    try {
+      this.acquisitionMetrics.set(await this.market.acquisitionMetrics());
+    } catch {
+      this.acquisitionMetrics.set(null);
+    }
+  }
+
+  /** Change la granularité temporelle du graphe Entrées / sorties. */
+  protected onAcqGrain(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    const match = this.acqGrains.find((g) => g.value === value);
+    if (match !== undefined) {
+      this.acqGrain.set(match.value);
     }
   }
 }
