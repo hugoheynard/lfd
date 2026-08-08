@@ -56,7 +56,7 @@ export function sunburstColors(count: number): string[] {
   selector: 'app-sunburst',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
-  styles: [':host { display:block; width:100%; }'],
+  styles: [':host { display:block; width:100%; overflow:hidden; }'],
 })
 export class Sunburst {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -88,7 +88,8 @@ export class Sunburst {
     if (width === 0 || height === 0) {
       return;
     }
-    const radius = Math.min(width, height) / 6;
+    // Petite marge (0.94) pour que l'anneau extérieur et ses labels ne touchent pas le bord.
+    const radius = ((Math.min(width, height) / 2) * 0.94) / 3;
     const ink = getComputedStyle(el).getPropertyValue('--fold-color-text').trim() || '#0b0b0b';
 
     const tree = hierarchy<SunburstDatum>({ name: 'Résiliations', value: 0, children: this.data() })
@@ -146,7 +147,7 @@ export class Sunburst {
       .attr('dy', '0.35em')
       .attr('fill-opacity', (d) => (labelVisible(d.current) ? 1 : 0))
       .attr('transform', (d) => labelTransform(d.current, radius))
-      .text((d) => d.data.name);
+      .text((d) => truncate(d.data.name, d.depth === 1 ? 20 : 14));
 
     const parent = svg
       .append('circle')
@@ -198,9 +199,14 @@ function arcVisible(d: Rect): boolean {
   return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
 }
 
-/** Un label est visible si son arc est dans les 3 anneaux et assez grand. */
+/** Un label est visible si son arc est dans les 3 anneaux et assez large (évite les débordements). */
 function labelVisible(d: Rect): boolean {
-  return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03;
+  return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.06;
+}
+
+/** Tronque à `n` caractères avec une ellipse — les labels ne débordent pas de l'arc. */
+function truncate(s: string, n: number): string {
+  return s.length > n ? `${s.slice(0, n - 1)}…` : s;
 }
 
 /** Transform D3 : place et oriente le label le long de l'arc. */

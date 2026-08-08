@@ -6,93 +6,129 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** Espace d'index dédié aux pertes (jamais en collision avec les autres personas). */
 const LOSS_BASE = 40_000;
 
-/** Résiliations par zone : le bastion churne plus (plus de clients = plus de départs). */
+/** Résiliations par zone : le bastion churne le plus, les autres peu. */
 const LOSSES: ReadonlyArray<{ codePostal: string; ville: string; count: number }> = [
-  { codePostal: "73150", ville: "Val d'Isère", count: 12 },
-  { codePostal: "73320", ville: "Tignes", count: 2 },
-  { codePostal: "73700", ville: "Bourg-Saint-Maurice", count: 1 },
+  { codePostal: "73150", ville: "Val d'Isère", count: 22 },
+  { codePostal: "73320", ville: "Tignes", count: 5 },
+  { codePostal: "73700", ville: "Bourg-Saint-Maurice", count: 3 },
 ];
 
-/** Cycle déterministe de raisons de départ (couvre tout le référentiel). */
-const REASONS: readonly string[] = [
-  "price",
-  "competitor",
-  "closure",
-  "quality",
-  "no_need",
-  "unresponsive",
-  "other",
-];
-
-/** Sous-raisons par raison (alignées sur la taxonomie du domaine). */
-const SUBS: Readonly<Record<string, readonly string[]>> = {
-  price: ["delivery_cost", "catalog_price", "no_incentive"],
-  competitor: ["better_price", "better_offer"],
-  closure: ["business_closure", "relocation"],
-  quality: ["product_quality", "service", "delivery_reliability"],
-  no_need: ["seasonal", "volume_drop"],
-  unresponsive: ["unreachable"],
-  other: ["other"],
-};
+/** Une part de la distribution : (raison, sous-raison, poids). */
+interface Weight {
+  readonly reason: string;
+  readonly sub: string;
+  readonly count: number;
+}
 
 /**
- * Phase **pertes & terminaisons** : crée des sociétés **résiliées** (`terminated`)
- * par zone (barre « Perte » de l'adoption) ET enregistre les **terminaisons** —
- * résiliations `confirmed` sur ces sociétés + une poignée de tentatives `recovered`
- * (rattrapées) sur des comptes actifs du bastion. Alimente le camembert des raisons
- * et le taux de rattrapage. Idempotent (SIRET + upsert des terminaisons).
+ * **Résiliations confirmées** — distribution VOLONTAIREMENT contrastée (ratios
+ * lisibles au sunburst). Cessation & concurrent dominent ; le tarif suit ; qualité
+ * et le reste sont minoritaires. Somme = 30 = total des terminated ci-dessus.
+ */
+const CONFIRMED: readonly Weight[] = [
+  { reason: "closure", sub: "business_closure", count: 7 },
+  { reason: "closure", sub: "relocation", count: 5 },
+  { reason: "competitor", sub: "better_price", count: 6 },
+  { reason: "competitor", sub: "better_offer", count: 3 },
+  { reason: "price", sub: "delivery_cost", count: 3 },
+  { reason: "price", sub: "catalog_price", count: 1 },
+  { reason: "price", sub: "no_incentive", count: 1 },
+  { reason: "quality", sub: "product_quality", count: 2 },
+  { reason: "quality", sub: "service", count: 1 },
+  { reason: "no_need", sub: "seasonal", count: 1 },
+];
+
+/**
+ * **Tentatives rattrapées** — le taux de rattrapage DIFFÈRE par catégorie : tarif
+ * très rattrapable, cessation quasi jamais. Somme = 18.
+ */
+const RECOVERED: readonly Weight[] = [
+  { reason: "price", sub: "delivery_cost", count: 8 },
+  { reason: "competitor", sub: "better_price", count: 5 },
+  { reason: "quality", sub: "product_quality", count: 3 },
+  { reason: "no_need", sub: "seasonal", count: 1 },
+  { reason: "closure", sub: "business_closure", count: 1 },
+];
+
+/** Déplie une distribution pondérée en une liste plate de (raison, sous-raison). */
+function flatten(dist: readonly Weight[]): ReadonlyArray<{ reason: string; sub: string }> {
+  const out: { reason: string; sub: string }[] = [];
+  for (const w of dist) {
+    for (let i = 0; i < w.count; i += 1) {
+      out.push({ reason: w.reason, sub: w.sub });
+    }
+  }
+  return out;
+}
+
+/**
+ * Phase **pertes & terminaisons** : crée des sociétés **résiliées** par zone (barre
+ * « Perte » de l'adoption) et enregistre les **terminaisons** avec une distribution
+ * **contrastée** — sunburst raison → sous-raison aux ratios nets, et taux de
+ * rattrapage variable par catégorie. Idempotent (SIRET + upsert). Chaque résiliée
+ * porte une raison pondérée ; les tentatives rattrapées ciblent des comptes actifs.
  */
 export async function seedLosses(harness: SeedHarness, anchor: Date): Promise<number> {
+  const confirmed = flatten(CONFIRMED);
   let created = 0;
   let k = 0;
   for (const zone of LOSSES) {
     for (let i = 0; i < zone.count; i += 1, k += 1) {
       const siret = validSiret(LOSS_BASE + k);
       const declaredAt = new Date(anchor.getTime() - ((k * 9) % 150) * DAY_MS);
-      if (await seedCompany(harness, zoneWho(k, zone.codePostal, zone.ville), siret, 5, declaredAt)) {
+      // Profondeur 3 : jusqu'à l'adresse de facturation (rattache la zone) — pas besoin
+      // d'activer, on marque directement résilié.
+      if (await seedCompany(harness, zoneWho(k, zone.codePostal, zone.ville), siret, 3, declaredAt)) {
         await harness.prisma.company.updateMany({ where: { siret }, data: { status: "terminated" } });
         created += 1;
       }
       const company = await harness.prisma.company.findFirst({ where: { siret }, select: { id: true } });
-      if (company !== null) {
-        await recordTermination(harness, `term_${siret}`, company.id, k, "confirmed");
+      const w = confirmed[k % confirmed.length];
+      if (company !== null && w !== undefined) {
+        await record(harness, `term_c_${k}`, company.id, w.reason, w.sub, k, "confirmed");
       }
     }
   }
-  await seedRecoveredAttempts(harness);
+  await seedRecovered(harness);
   return created;
 }
 
-/** Tentatives **rattrapées** : des comptes actifs du bastion presque perdus, sauvés. */
-async function seedRecoveredAttempts(harness: SeedHarness): Promise<void> {
-  const saved = await harness.prisma.company.findMany({
+/** Tentatives **rattrapées** sur des comptes actifs du bastion, distribution pondérée. */
+async function seedRecovered(harness: SeedHarness): Promise<void> {
+  const active = await harness.prisma.company.findMany({
     where: { status: "active", addresses: { some: { codePostal: "73150" } } },
     select: { id: true },
     orderBy: { id: "asc" },
-    take: 10,
+    take: 40,
   });
-  let j = 0;
-  for (const company of saved) {
-    await recordTermination(harness, `term_rec_${j}`, company.id, j, "recovered");
-    j += 1;
+  if (active.length === 0) {
+    return;
+  }
+  const recovered = flatten(RECOVERED);
+  for (let j = 0; j < recovered.length; j += 1) {
+    const w = recovered[j];
+    const company = active[j % active.length];
+    if (w !== undefined && company !== undefined) {
+      await record(harness, `term_r_${j}`, company.id, w.reason, w.sub, j, "recovered");
+    }
   }
 }
 
 /** Upsert d'une terminaison (idempotent par id). `initiatedBy` alterné client/commercial. */
-async function recordTermination(
+async function record(
   harness: SeedHarness,
   id: string,
   companyId: string,
+  reason: string,
+  subReason: string,
   index: number,
   outcome: "confirmed" | "recovered",
 ): Promise<void> {
-  const reason = REASONS[index % REASONS.length];
-  const subs = SUBS[reason] ?? ["other"];
   const data = {
     id,
     companyId,
     reason,
-    subReason: subs[index % subs.length],
+    subReason,
     initiatedBy: index % 3 === 0 ? "commercial" : "client",
     outcome,
   };
