@@ -141,6 +141,10 @@ export type {
   PenetrationTrendPoint,
   ZonePenetrationTrend,
   MarketAdoptionView,
+  TerminationReason,
+  TerminationReasonCount,
+  TerminationRecovery,
+  TerminationStatsView,
 } from "./growth.js";
 export {
   captureLeadPayloadSchema,

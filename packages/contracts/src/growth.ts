@@ -403,6 +403,45 @@ export interface ZonePenetrationTrend {
   readonly points: readonly PenetrationTrendPoint[];
 }
 
+/** Catégorie de départ d'un compte (churn), enregistrée à la clôture. */
+export type TerminationReason =
+  | "price"
+  | "competitor"
+  | "closure"
+  | "quality"
+  | "no_need"
+  | "unresponsive"
+  | "other";
+
+/** Une part du camembert des raisons : la catégorie, son libellé, le nombre de résiliations. */
+export interface TerminationReasonCount {
+  readonly reason: TerminationReason;
+  readonly label: string;
+  readonly count: number;
+}
+
+/**
+ * Taux de **rattrapage** d'une catégorie (ou global) : `rate` = `recovered` /
+ * `attempts` (tentatives = rattrapées + confirmées), 0..1. `reason = "all"` = global.
+ */
+export interface TerminationRecovery {
+  readonly reason: TerminationReason | "all";
+  readonly label: string;
+  readonly attempts: number;
+  readonly recovered: number;
+  readonly rate: number;
+}
+
+/** Analytics de churn : raisons de résiliation + rattrapage des tentatives. */
+export interface TerminationStatsView {
+  /** Camembert des **résiliations confirmées** par raison. */
+  readonly reasons: readonly TerminationReasonCount[];
+  /** Rattrapage global (toutes catégories). */
+  readonly recovery: TerminationRecovery;
+  /** Rattrapage **par catégorie** de terminaison. */
+  readonly recoveryByReason: readonly TerminationRecovery[];
+}
+
 /** L'adoption par territoire, sur la fenêtre d'analyse. */
 export interface MarketAdoptionView {
   readonly zones: readonly AdoptionZoneView[];

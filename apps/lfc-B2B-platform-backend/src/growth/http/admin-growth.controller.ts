@@ -5,7 +5,8 @@ import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { GetGrowthStatsQuery } from "../application/queries/get-growth-stats.query.js";
 import { GetMarketAdoptionQuery } from "../application/queries/get-market-adoption.query.js";
-import type { GrowthStatsView, MarketAdoptionView } from "@lfd/contracts";
+import { GetTerminationStatsQuery } from "../application/queries/get-termination-stats.query.js";
+import type { GrowthStatsView, MarketAdoptionView, TerminationStatsView } from "@lfd/contracts";
 
 /**
  * Surface **staff** du dashboard de croissance (`GET /admin/growth/stats`) : KPIs,
@@ -27,6 +28,13 @@ export class AdminGrowthController {
   adoption(): Promise<MarketAdoptionView> {
     return this.queries.execute<GetMarketAdoptionQuery, MarketAdoptionView>(
       new GetMarketAdoptionQuery(),
+    );
+  }
+
+  @Get("terminations")
+  terminations(): Promise<TerminationStatsView> {
+    return this.queries.execute<GetTerminationStatsQuery, TerminationStatsView>(
+      new GetTerminationStatsQuery(),
     );
   }
 }

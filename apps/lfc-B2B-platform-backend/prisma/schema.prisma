@@ -944,3 +944,24 @@ model MarketZone {
   @@map("market_zones")
   @@schema("growth")
 }
+
+/// Une **terminaison** de compte (churn), enregistrée à la clôture par le client ou
+/// le commercial. `reason` = la catégorie de départ ; `outcome` distingue une
+/// **tentative rattrapée** (`recovered`, le compte est resté) d'une **résiliation
+/// confirmée** (`confirmed`). Sert au camembert des raisons (confirmées) et au taux
+/// de rattrapage (recovered / tentatives), global et par catégorie.
+model CompanyTermination {
+  id          String   @id
+  companyId   String   @map("company_id")
+  /// price | competitor | closure | quality | no_need | unresponsive | other.
+  reason      String
+  /// client | commercial (qui a enregistré la terminaison).
+  initiatedBy String   @map("initiated_by")
+  /// confirmed (résilié) | recovered (rattrapé, compte conservé).
+  outcome     String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([outcome, reason])
+  @@map("company_terminations")
+  @@schema("growth")
+}
