@@ -7,6 +7,7 @@ import type {
   FunnelStep,
   LifecycleFlow,
   PenetrationTrendPoint,
+  RecoveryTrendPoint,
   TemperatureFlowPoint,
   TerminationRecovery,
   TerminationStatsView,
@@ -576,6 +577,72 @@ function recoverySeries(
       },
     })),
   };
+}
+
+/**
+ * **Vélocité de rattrapage** (§ rétention) : le taux de rattrapage **semaine par
+ * semaine** (ligne neutre, taille du point ∝ nombre de tentatives = fiabilité) et le
+ * **taux cumulé** (ligne verte pointillée) qui lisse la trajectoire. La pente répond
+ * à « réagit-on de mieux en mieux au churn ? » : qui monte = réaction plus efficace.
+ * Un seul axe en % (pas de double échelle) ; le volume passe dans la taille + tooltip.
+ */
+export function recoveryTrendOption(points: readonly RecoveryTrendPoint[]): EChartsOption {
+  const weeks = points.map((p) => weekLabel(p.weekStart));
+  const cumulative = cumulativeRates(points);
+  const weekly: Record<string, unknown> = {
+    name: 'Taux hebdomadaire',
+    type: 'line',
+    data: points.map((p) => pct(p.rate)),
+    symbolSize: (_v: unknown, params: unknown): number => 8 + 2.4 * (points[toIndex(params)]?.attempts ?? 0),
+    lineStyle: { color: CHURN_GLOBAL_COLOR, width: 2 },
+    itemStyle: { color: CHURN_GLOBAL_COLOR },
+  };
+  const trend: Record<string, unknown> = {
+    name: 'Taux cumulé',
+    type: 'line',
+    smooth: true,
+    symbol: 'none',
+    data: cumulative.map((r) => pct(r)),
+    lineStyle: { color: PALETTE.green, width: 2, type: 'dashed' },
+    itemStyle: { color: PALETTE.green },
+  };
+  return {
+    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    legend: { top: 0, textStyle: { color: PALETTE.slate } },
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params): string => recoveryTrendTooltip(points, cumulative, params),
+    },
+    xAxis: { type: 'category', data: weeks, boundaryGap: false },
+    yAxis: { type: 'value', name: '%', min: 0, max: 100, axisLabel: { formatter: '{value} %' } },
+    series: [weekly, trend],
+  };
+}
+
+/** Taux de rattrapage **cumulé** semaine par semaine (lisse la trajectoire). */
+function cumulativeRates(points: readonly RecoveryTrendPoint[]): number[] {
+  let attempts = 0;
+  let recovered = 0;
+  return points.map((p) => {
+    attempts += p.attempts;
+    recovered += p.recovered;
+    return attempts > 0 ? recovered / attempts : 0;
+  });
+}
+
+/** Tooltip vélocité : semaine, taux hebdo (rattrapées/tentatives) et taux cumulé. */
+function recoveryTrendTooltip(
+  points: readonly RecoveryTrendPoint[],
+  cumulative: readonly number[],
+  params: unknown,
+): string {
+  const first = Array.isArray(params) ? params[0] : params;
+  const i = toIndex(first);
+  const p = points[i];
+  if (p === undefined) {
+    return '';
+  }
+  return `Sem. ${weekLabel(p.weekStart)}<br/>Hebdo ${pct(p.rate)} % (${p.recovered}/${p.attempts})<br/>Cumulé ${pct(cumulative[i] ?? 0)} %`;
 }
 
 /** Pourcentage entier lisible d'un ratio 0..1. */

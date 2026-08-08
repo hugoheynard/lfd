@@ -171,6 +171,23 @@
                 <p class="muted">Aucune tentative de résiliation enregistrée.</p>
               }
             </article>
+
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Vélocité de rattrapage</h2>
+                <app-metric-info
+                  label="Vélocité de rattrapage dans le temps"
+                  text="Le taux de rattrapage semaine par semaine (ligne neutre — la taille du point grandit avec le nombre de tentatives, donc sa fiabilité) et le taux cumulé (ligne verte pointillée) qui lisse la trajectoire. La question : réagit-on de mieux en mieux au churn ? Une pente qui monte = réaction plus efficace dans le temps ; qui s'aplatit ou descend = on perd du terrain sur la rétention. Le taux est rattaché à la semaine de la tentative."
+                />
+              </header>
+              @if (recoveryTrend(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+              } @else {
+                <p class="muted">
+                  Pas encore assez de semaines de tentatives pour tracer une vélocité.
+                </p>
+              }
+            </article>
           </div>
         }
 

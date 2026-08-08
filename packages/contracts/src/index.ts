@@ -145,6 +145,7 @@ export type {
   TerminationSubReasonCount,
   TerminationReasonNode,
   TerminationRecovery,
+  RecoveryTrendPoint,
   TerminationStatsView,
 } from "./growth.js";
 export {

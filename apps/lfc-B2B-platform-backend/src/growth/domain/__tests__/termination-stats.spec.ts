@@ -3,7 +3,13 @@ import { computeTerminationStats, type TerminationRow } from "../termination-sta
 describe("computeTerminationStats", () => {
   const row = (
     partial: Partial<TerminationRow> & Pick<TerminationRow, "reason" | "outcome">,
-  ): TerminationRow => ({ subReason: "", detail: "", recoveredVia: "", ...partial });
+  ): TerminationRow => ({
+    subReason: "",
+    detail: "",
+    recoveredVia: "",
+    createdAt: "2026-01-05T00:00:00.000Z",
+    ...partial,
+  });
   const rows: TerminationRow[] = [
     row({ reason: "price", subReason: "delivery_cost", outcome: "confirmed" }),
     row({ reason: "price", subReason: "catalog_price", outcome: "confirmed" }),
@@ -78,6 +84,23 @@ describe("computeTerminationStats", () => {
     expect(competitor).toMatchObject({ recoveredAuto: 0, recoveredSales: 1 });
   });
 
+  it("vélocité de rattrapage : taux par semaine de la tentative, trié chronologiquement", () => {
+    // Semaine A (plus ancienne) : 0/2 rattrapées ; semaine B : 2/2 → efficacité qui monte.
+    const week = [
+      row({ reason: "price", outcome: "confirmed", createdAt: "2026-01-05T00:00:00.000Z" }),
+      row({ reason: "price", outcome: "confirmed", createdAt: "2026-01-06T00:00:00.000Z" }),
+      row({ reason: "price", outcome: "recovered", createdAt: "2026-01-12T00:00:00.000Z" }),
+      row({ reason: "price", outcome: "recovered", createdAt: "2026-01-13T00:00:00.000Z" }),
+    ];
+    const trend = computeTerminationStats(week).recoveryTrend;
+    expect(trend.map((p) => p.rate)).toEqual([0, 1]);
+    expect(trend[0]?.weekStart.localeCompare(trend[1]?.weekStart ?? "")).toBeLessThan(0);
+  });
+
+  it("vélocité : une seule semaine ⇒ série vide (rien à tracer)", () => {
+    expect(computeTerminationStats(rows).recoveryTrend).toEqual([]);
+  });
+
   it("corpus vide : global neutre, listes vides", () => {
     const view = computeTerminationStats([]);
     expect(view).toEqual({
@@ -92,6 +115,7 @@ describe("computeTerminationStats", () => {
         rate: 0,
       },
       recoveryByReason: [],
+      recoveryTrend: [],
     });
   });
 });

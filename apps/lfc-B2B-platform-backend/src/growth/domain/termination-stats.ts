@@ -1,10 +1,13 @@
 import type {
+  RecoveryTrendPoint,
   TerminationReason,
   TerminationReasonNode,
   TerminationRecovery,
   TerminationStatsView,
   TerminationSubReasonCount,
 } from "@lfd/contracts";
+
+import { weekStart } from "./growth-stats.js";
 
 /** Ligne brute d'une terminaison (lecture). */
 export interface TerminationRow {
@@ -15,6 +18,8 @@ export interface TerminationRow {
   readonly outcome: string;
   /** Pour un `recovered` : `auto` (plateforme) | `sales` (commercial), vide sinon. */
   readonly recoveredVia: string;
+  /** Instant de la tentative (ISO) — sert à la vélocité de rattrapage. */
+  readonly createdAt: string;
 }
 
 /** Compteurs de rattrapage d'une catégorie : total + décomposition par canal. */
@@ -132,7 +137,35 @@ export function computeTerminationStats(rows: readonly TerminationRow[]): Termin
     recoveryByReason: REASONS.map((r) => recovery(r.reason, r.label, tally.get(r.reason))).filter(
       (r) => r.attempts > 0,
     ),
+    recoveryTrend: buildRecoveryTrend(rows),
   };
+}
+
+/**
+ * **Vélocité de rattrapage** : le taux (rattrapées / tentatives) par semaine de la
+ * tentative, trié chronologiquement. La pente montre si l'on réagit de mieux en
+ * mieux au churn. Une seule semaine (ou zéro) → série vide (rien à tracer).
+ */
+function buildRecoveryTrend(rows: readonly TerminationRow[]): RecoveryTrendPoint[] {
+  const byWeek = new Map<string, { attempts: number; recovered: number }>();
+  for (const row of rows) {
+    const week = weekStart(new Date(row.createdAt));
+    const bucket = byWeek.get(week) ?? { attempts: 0, recovered: 0 };
+    bucket.attempts += 1;
+    if (row.outcome === "recovered") {
+      bucket.recovered += 1;
+    }
+    byWeek.set(week, bucket);
+  }
+  const points = [...byWeek.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([weekStartIso, b]) => ({
+      weekStart: weekStartIso,
+      attempts: b.attempts,
+      recovered: b.recovered,
+      rate: b.attempts > 0 ? b.recovered / b.attempts : 0,
+    }));
+  return points.length > 1 ? points : [];
 }
 
 /** Comptabilise une ligne : +1 tentative, et si rattrapée, +1 dans le canal (auto/sales). */

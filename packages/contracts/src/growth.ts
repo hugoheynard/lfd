@@ -454,6 +454,18 @@ export interface TerminationRecovery {
   readonly rate: number;
 }
 
+/**
+ * Un point de la **vélocité de rattrapage** : à la semaine de la tentative, le taux
+ * de rattrapage (`recovered` / `attempts`). La **pente** dit si l'on réagit de mieux
+ * en mieux au churn (efficacité de réaction dans le temps).
+ */
+export interface RecoveryTrendPoint {
+  readonly weekStart: string;
+  readonly attempts: number;
+  readonly recovered: number;
+  readonly rate: number;
+}
+
 /** Analytics de churn : raisons de résiliation + rattrapage des tentatives. */
 export interface TerminationStatsView {
   /** Sunburst des **résiliations confirmées** : raison → sous-raison. */
@@ -462,6 +474,8 @@ export interface TerminationStatsView {
   readonly recovery: TerminationRecovery;
   /** Rattrapage **par catégorie** de terminaison. */
   readonly recoveryByReason: readonly TerminationRecovery[];
+  /** **Vélocité de rattrapage** : le taux semaine par semaine (efficacité dans le temps). */
+  readonly recoveryTrend: readonly RecoveryTrendPoint[];
 }
 
 /** L'adoption par territoire, sur la fenêtre d'analyse. */

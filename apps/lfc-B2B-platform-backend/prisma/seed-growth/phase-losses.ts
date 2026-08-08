@@ -82,11 +82,31 @@ function flatten(dist: readonly Weight[]): readonly Part[] {
 }
 
 /**
+ * **Calendrier des tentatives** (semaine 0 = la plus ancienne, 12 = la plus récente),
+ * façonné pour une **vélocité de rattrapage croissante** : au début surtout des
+ * confirmées (on subit), vers la fin de plus en plus de rattrapées (on réagit mieux).
+ * Le taux hebdo passe de 0 % à ~60 %. Les longueurs valent les totaux (30 / 18).
+ */
+const CONF_WEEKS: readonly number[] = [
+  0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12,
+];
+const RECOV_WEEKS: readonly number[] = [
+  2, 3, 4, 5, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 12,
+];
+
+/** Date d'une tentative depuis son index de semaine (12 = ancre, 0 = 12 semaines avant). */
+function weekDate(anchor: Date, weeks: readonly number[], index: number): Date {
+  const week = weeks[index % weeks.length] ?? 12;
+  return new Date(anchor.getTime() - (12 - week) * 7 * DAY_MS);
+}
+
+/**
  * Phase **pertes & terminaisons** : crée des sociétés **résiliées** par zone (barre
  * « Perte » de l'adoption) et enregistre les **terminaisons** avec une distribution
  * **contrastée** — sunburst raison → sous-raison aux ratios nets, et taux de
- * rattrapage variable par catégorie. Idempotent (SIRET + upsert). Chaque résiliée
- * porte une raison pondérée ; les tentatives rattrapées ciblent des comptes actifs.
+ * rattrapage variable par catégorie. Les tentatives sont **étalées dans le temps**
+ * (cf. `CONF_WEEKS`/`RECOV_WEEKS`) pour une vélocité de rattrapage croissante.
+ * Idempotent (SIRET + upsert). Les tentatives rattrapées ciblent des comptes actifs.
  */
 export async function seedLosses(harness: SeedHarness, anchor: Date): Promise<number> {
   const confirmed = flatten(CONFIRMED);
@@ -105,16 +125,16 @@ export async function seedLosses(harness: SeedHarness, anchor: Date): Promise<nu
       const company = await harness.prisma.company.findFirst({ where: { siret }, select: { id: true } });
       const w = confirmed[k % confirmed.length];
       if (company !== null && w !== undefined) {
-        await record(harness, `term_c_${k}`, company.id, w, k, "confirmed");
+        await record(harness, `term_c_${k}`, company.id, w, k, "confirmed", weekDate(anchor, CONF_WEEKS, k));
       }
     }
   }
-  await seedRecovered(harness);
+  await seedRecovered(harness, anchor);
   return created;
 }
 
 /** Tentatives **rattrapées** sur des comptes actifs du bastion, distribution pondérée. */
-async function seedRecovered(harness: SeedHarness): Promise<void> {
+async function seedRecovered(harness: SeedHarness, anchor: Date): Promise<void> {
   const active = await harness.prisma.company.findMany({
     where: { status: "active", addresses: { some: { codePostal: "73150" } } },
     select: { id: true },
@@ -129,7 +149,7 @@ async function seedRecovered(harness: SeedHarness): Promise<void> {
     const w = recovered[j];
     const company = active[j % active.length];
     if (w !== undefined && company !== undefined) {
-      await record(harness, `term_r_${j}`, company.id, w, j, "recovered");
+      await record(harness, `term_r_${j}`, company.id, w, j, "recovered", weekDate(anchor, RECOV_WEEKS, j));
     }
   }
 }
@@ -142,6 +162,7 @@ async function record(
   part: Part,
   index: number,
   outcome: "confirmed" | "recovered",
+  createdAt: Date,
 ): Promise<void> {
   const data = {
     id,
@@ -152,6 +173,7 @@ async function record(
     initiatedBy: index % 3 === 0 ? "commercial" : "client",
     outcome,
     recoveredVia: outcome === "recovered" ? part.via : "",
+    createdAt,
   };
   await harness.prisma.companyTermination.upsert({ where: { id }, create: data, update: {} });
 }

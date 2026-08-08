@@ -24,6 +24,7 @@ import {
   concentrationSummary,
   funnelOption,
   lifecycleSankeyOption,
+  recoveryTrendOption,
   temperatureFlowOption,
   temperatureTransitionsOption,
   terminationRecoveryOption,
@@ -130,6 +131,10 @@ export class CroissancePage {
   protected readonly terminationRecovery = computed<ChartOption | null>(() => {
     const t = this.terminations();
     return t === null || t.recovery.attempts === 0 ? null : terminationRecoveryOption(t);
+  });
+  protected readonly recoveryTrend = computed<ChartOption | null>(() => {
+    const t = this.terminations();
+    return t === null || t.recoveryTrend.length < 2 ? null : recoveryTrendOption(t.recoveryTrend);
   });
   protected readonly zoneVelocity = computed<ChartOption | null>(() => {
     const trends = this.adoptionZoneTrends();
