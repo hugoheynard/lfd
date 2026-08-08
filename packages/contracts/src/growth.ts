@@ -439,12 +439,18 @@ export interface TerminationReasonNode {
 /**
  * Taux de **rattrapage** d'une catégorie (ou global) : `rate` = `recovered` /
  * `attempts` (tentatives = rattrapées + confirmées), 0..1. `reason = "all"` = global.
+ * Le rattrapage se **décompose par canal** : `recoveredAuto` (plateforme, incentive
+ * automatique) + `recoveredSales` (sauvé par un commercial) = `recovered`.
  */
 export interface TerminationRecovery {
   readonly reason: TerminationReason | "all";
   readonly label: string;
   readonly attempts: number;
   readonly recovered: number;
+  /** Rattrapages **plateforme** (automatiques, sans main humaine). */
+  readonly recoveredAuto: number;
+  /** Rattrapages **commercial** (sauvés par un humain). */
+  readonly recoveredSales: number;
   readonly rate: number;
 }
 

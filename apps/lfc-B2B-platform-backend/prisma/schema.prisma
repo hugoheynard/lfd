@@ -963,6 +963,8 @@ model CompanyTermination {
   initiatedBy String   @map("initiated_by")
   /// confirmed (résilié) | recovered (rattrapé, compte conservé).
   outcome     String
+  /// Pour un `recovered` : `auto` (plateforme) | `sales` (commercial), vide sinon.
+  recoveredVia String  @default("") @map("recovered_via")
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([outcome, reason])

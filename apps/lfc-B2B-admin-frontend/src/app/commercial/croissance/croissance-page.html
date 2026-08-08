@@ -151,7 +151,7 @@
                 />
               </header>
               @if (terminationSunburst(); as data) {
-                <app-sunburst [data]="data" height="560px" />
+                <app-sunburst [data]="data" [nodeColors]="terminationColors()" height="560px" />
               } @else {
                 <p class="muted">Aucune résiliation enregistrée.</p>
               }
@@ -162,7 +162,7 @@
                 <h2>Taux de rattrapage</h2>
                 <app-metric-info
                   label="Taux de rattrapage des terminaisons"
-                  text="Part des tentatives de résiliation qui ont été rattrapées (le compte est resté), globale et par catégorie de départ. Une tentative rattrapée = un compte sauvé. L'étiquette porte le taux et le détail (rattrapées / tentatives)."
+                  text="Part des tentatives de résiliation qui ont été rattrapées (le compte est resté), globale et par catégorie de départ — mêmes teintes que le sunburst pour relier les deux cartes. Une tentative rattrapée = un compte sauvé. Sous chaque barre de taux, deux barres fines décomposent le rattrapage par canal : « auto » (plateforme, incentive automatique) et « comm. » (sauvé à la main par un commercial) — leur somme fait le taux. On lit d'un coup quelles catégories se récupèrent, et par quel levier."
                 />
               </header>
               @if (terminationRecovery(); as opt) {

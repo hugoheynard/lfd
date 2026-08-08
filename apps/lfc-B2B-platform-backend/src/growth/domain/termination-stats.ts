@@ -13,6 +13,16 @@ export interface TerminationRow {
   /** 3ᵉ niveau optionnel (ex. catégorie produit sous `better_price`). */
   readonly detail: string;
   readonly outcome: string;
+  /** Pour un `recovered` : `auto` (plateforme) | `sales` (commercial), vide sinon. */
+  readonly recoveredVia: string;
+}
+
+/** Compteurs de rattrapage d'une catégorie : total + décomposition par canal. */
+interface RecoveryTally {
+  attempts: number;
+  recovered: number;
+  auto: number;
+  sales: number;
 }
 
 /** Un nœud de la taxonomie : un code, un libellé, d'éventuels sous-niveaux. */
@@ -107,25 +117,53 @@ interface CountTree {
  * « Non précisé ». Déterministe.
  */
 export function computeTerminationStats(rows: readonly TerminationRow[]): TerminationStatsView {
-  const attempts = new Map<TerminationReason, number>();
-  const recovered = new Map<TerminationReason, number>();
+  const tally = new Map<TerminationReason, RecoveryTally>();
   const root: CountTree = { count: 0, children: new Map() };
   for (const row of rows) {
     const reason = normalizeReason(row.reason);
-    bump(attempts, reason);
-    if (row.outcome === "recovered") {
-      bump(recovered, reason);
-    } else {
+    tallyRow(tally, reason, row);
+    if (row.outcome !== "recovered") {
       insert(root, rowPath(reason, row.subReason, row.detail));
     }
   }
   return {
     reasons: buildReasons(root),
-    recovery: recovery("all", "Global", total(attempts), total(recovered)),
-    recoveryByReason: REASONS.map((r) =>
-      recovery(r.reason, r.label, attempts.get(r.reason) ?? 0, recovered.get(r.reason) ?? 0),
-    ).filter((r) => r.attempts > 0),
+    recovery: recovery("all", "Global", sumTally(tally)),
+    recoveryByReason: REASONS.map((r) => recovery(r.reason, r.label, tally.get(r.reason))).filter(
+      (r) => r.attempts > 0,
+    ),
   };
+}
+
+/** Comptabilise une ligne : +1 tentative, et si rattrapée, +1 dans le canal (auto/sales). */
+function tallyRow(
+  map: Map<TerminationReason, RecoveryTally>,
+  reason: TerminationReason,
+  row: TerminationRow,
+): void {
+  const t = map.get(reason) ?? { attempts: 0, recovered: 0, auto: 0, sales: 0 };
+  t.attempts += 1;
+  if (row.outcome === "recovered") {
+    t.recovered += 1;
+    if (row.recoveredVia === "sales") {
+      t.sales += 1;
+    } else {
+      t.auto += 1;
+    }
+  }
+  map.set(reason, t);
+}
+
+/** Agrège tous les compteurs de catégorie en un total (rattrapage global). */
+function sumTally(map: Map<TerminationReason, RecoveryTally>): RecoveryTally {
+  const all: RecoveryTally = { attempts: 0, recovered: 0, auto: 0, sales: 0 };
+  for (const t of map.values()) {
+    all.attempts += t.attempts;
+    all.recovered += t.recovered;
+    all.auto += t.auto;
+    all.sales += t.sales;
+  }
+  return all;
 }
 
 /** Chemin de codes d'une ligne, snappé sur la taxonomie (code inconnu → « »). */
@@ -200,27 +238,24 @@ function subsOf(reason: TerminationReason): readonly Sub[] {
   return TAXONOMY.find((t) => t.reason === reason)?.subs ?? [];
 }
 
+/** Construit un `TerminationRecovery` depuis un compteur (tally vide → zéros). */
 function recovery(
   reason: TerminationReason | "all",
   label: string,
-  attempts: number,
-  recovered: number,
+  tally: RecoveryTally | undefined,
 ): TerminationRecovery {
-  return { reason, label, attempts, recovered, rate: attempts > 0 ? recovered / attempts : 0 };
+  const t = tally ?? { attempts: 0, recovered: 0, auto: 0, sales: 0 };
+  return {
+    reason,
+    label,
+    attempts: t.attempts,
+    recovered: t.recovered,
+    recoveredAuto: t.auto,
+    recoveredSales: t.sales,
+    rate: t.attempts > 0 ? t.recovered / t.attempts : 0,
+  };
 }
 
 function normalizeReason(raw: string): TerminationReason {
   return KNOWN.has(raw) ? (raw as TerminationReason) : "other";
-}
-
-function bump(map: Map<TerminationReason, number>, reason: TerminationReason): void {
-  map.set(reason, (map.get(reason) ?? 0) + 1);
-}
-
-function total(map: Map<TerminationReason, number>): number {
-  let sum = 0;
-  for (const value of map.values()) {
-    sum += value;
-  }
-  return sum;
 }

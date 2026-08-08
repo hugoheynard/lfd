@@ -10,6 +10,7 @@ import type {
 } from '@lfd/contracts';
 
 import { MarketService } from '../market/market.service';
+import { CHURN_COLORS } from './churn-palette';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { Lorenz } from '../../shared/lorenz/lorenz';
 import { MetricInfo } from '../../shared/metric-info/metric-info';
@@ -117,6 +118,14 @@ export class CroissancePage {
       return null;
     }
     return t.reasons.map(toSunburst);
+  });
+  /** Couleur du sunburst par **libellé de catégorie** — même teinte que le rattrapage. */
+  protected readonly terminationColors = computed<ReadonlyMap<string, string> | null>(() => {
+    const t = this.terminations();
+    if (t === null || t.reasons.length === 0) {
+      return null;
+    }
+    return new Map(t.reasons.map((r) => [r.label, CHURN_COLORS[r.reason]]));
   });
   protected readonly terminationRecovery = computed<ChartOption | null>(() => {
     const t = this.terminations();

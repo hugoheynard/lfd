@@ -1,13 +1,39 @@
 import { computeTerminationStats, type TerminationRow } from "../termination-stats.js";
 
 describe("computeTerminationStats", () => {
+  const row = (
+    partial: Partial<TerminationRow> & Pick<TerminationRow, "reason" | "outcome">,
+  ): TerminationRow => ({ subReason: "", detail: "", recoveredVia: "", ...partial });
   const rows: TerminationRow[] = [
-    { reason: "price", subReason: "delivery_cost", detail: "", outcome: "confirmed" },
-    { reason: "price", subReason: "catalog_price", detail: "", outcome: "confirmed" },
-    { reason: "price", subReason: "delivery_cost", detail: "", outcome: "recovered" }, // 3 tentatives tarif
-    { reason: "competitor", subReason: "better_price", detail: "beverages", outcome: "confirmed" },
-    { reason: "competitor", subReason: "better_price", detail: "grocery", outcome: "confirmed" },
-    { reason: "unknown_x", subReason: "", detail: "", outcome: "confirmed" }, // raison inconnue → other / Non précisé
+    row({ reason: "price", subReason: "delivery_cost", outcome: "confirmed" }),
+    row({ reason: "price", subReason: "catalog_price", outcome: "confirmed" }),
+    // 3 tentatives tarif ; la rattrapée l'est par la plateforme (auto).
+    row({
+      reason: "price",
+      subReason: "delivery_cost",
+      outcome: "recovered",
+      recoveredVia: "auto",
+    }),
+    row({
+      reason: "competitor",
+      subReason: "better_price",
+      detail: "beverages",
+      outcome: "confirmed",
+    }),
+    row({
+      reason: "competitor",
+      subReason: "better_price",
+      detail: "grocery",
+      outcome: "confirmed",
+    }),
+    // Rattrapage concurrent sauvé à la main (sales).
+    row({
+      reason: "competitor",
+      subReason: "better_price",
+      outcome: "recovered",
+      recoveredVia: "sales",
+    }),
+    row({ reason: "unknown_x", outcome: "confirmed" }), // raison inconnue → other / Non précisé
   ];
 
   it("sunburst = raison → sous-raison, résiliations confirmées (rattrapées exclues)", () => {
@@ -35,18 +61,36 @@ describe("computeTerminationStats", () => {
 
   it("taux de rattrapage global et par catégorie", () => {
     const view = computeTerminationStats(rows);
-    expect(view.recovery).toMatchObject({ attempts: 6, recovered: 1 });
-    expect(view.recovery.rate).toBeCloseTo(1 / 6);
+    expect(view.recovery).toMatchObject({ attempts: 7, recovered: 2 });
+    expect(view.recovery.rate).toBeCloseTo(2 / 7);
     const price = view.recoveryByReason.find((r) => r.reason === "price");
     expect(price).toMatchObject({ attempts: 3, recovered: 1 });
     expect(price?.rate).toBeCloseTo(1 / 3);
+  });
+
+  it("rattrapage décomposé par canal (auto plateforme / sales commercial)", () => {
+    const view = computeTerminationStats(rows);
+    // Global : 1 rattrapage auto (tarif) + 1 sales (concurrent).
+    expect(view.recovery).toMatchObject({ recoveredAuto: 1, recoveredSales: 1 });
+    const price = view.recoveryByReason.find((r) => r.reason === "price");
+    expect(price).toMatchObject({ recoveredAuto: 1, recoveredSales: 0 });
+    const competitor = view.recoveryByReason.find((r) => r.reason === "competitor");
+    expect(competitor).toMatchObject({ recoveredAuto: 0, recoveredSales: 1 });
   });
 
   it("corpus vide : global neutre, listes vides", () => {
     const view = computeTerminationStats([]);
     expect(view).toEqual({
       reasons: [],
-      recovery: { reason: "all", label: "Global", attempts: 0, recovered: 0, rate: 0 },
+      recovery: {
+        reason: "all",
+        label: "Global",
+        attempts: 0,
+        recovered: 0,
+        recoveredAuto: 0,
+        recoveredSales: 0,
+        rate: 0,
+      },
       recoveryByReason: [],
     });
   });

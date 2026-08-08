@@ -63,6 +63,11 @@ export class Sunburst {
 
   readonly data = input.required<readonly SunburstDatum[]>();
   readonly height = input('440px');
+  /**
+   * Couleur par **nom de nœud de 1er niveau** (la couleur suit la catégorie, pas son
+   * rang). Absent → dégradé positionnel `interpolateRainbow` de l'exemple d'origine.
+   */
+  readonly nodeColors = input<ReadonlyMap<string, string> | null>(null);
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -75,6 +80,7 @@ export class Sunburst {
     });
     effect(() => {
       this.data();
+      this.nodeColors();
       if (this.host.nativeElement.clientWidth > 0) {
         this.render();
       }
@@ -116,12 +122,15 @@ export class Sunburst {
       .style('font', "11px var(--fold-font-sans, system-ui, sans-serif)");
 
     const rows = root.descendants().slice(1) as ANode[];
+    const named = this.nodeColors();
     const colorOf = (d: ANode): string => {
       let n = d;
       while (n.depth > 1 && n.parent !== null) {
         n = n.parent as ANode;
       }
-      return colors[(root.children ?? []).indexOf(n) % colors.length] ?? '#888';
+      return (
+        named?.get(n.data.name) ?? colors[(root.children ?? []).indexOf(n) % colors.length] ?? '#888'
+      );
     };
 
     const path = svg

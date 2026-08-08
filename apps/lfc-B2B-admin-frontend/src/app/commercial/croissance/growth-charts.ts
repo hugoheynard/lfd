@@ -8,11 +8,14 @@ import type {
   LifecycleFlow,
   PenetrationTrendPoint,
   TemperatureFlowPoint,
+  TerminationRecovery,
   TerminationStatsView,
   VelocityMetric,
   ZonePenetrationTrend,
 } from '@lfd/contracts';
 import type { EChartsOption } from 'echarts';
+
+import { CHURN_COLORS, CHURN_GLOBAL_COLOR } from './churn-palette';
 
 /**
  * **Constructeurs d'options ECharts** (purs) du dashboard de croissance. Séparés de
@@ -498,35 +501,80 @@ export function adoptionOption(
 }
 
 /**
- * **Taux de rattrapage** des tentatives de résiliation : barres horizontales du taux
- * (rattrapées / tentatives), **Global** en tête puis **par catégorie**. Une tentative
- * rattrapée = un compte sauvé. L'étiquette porte le taux + le détail (rattrapées/total).
+ * **Taux de rattrapage** des tentatives de résiliation : **Global** en tête puis **par
+ * catégorie** (mêmes teintes que le sunburst — la couleur suit la catégorie). Une
+ * tentative rattrapée = un compte sauvé. Sous chaque barre de taux, **deux barres
+ * fines** décomposent le rattrapage par **canal** : `auto` (plateforme, incentive
+ * automatique) et `commercial` (sauvé à la main) — chacune part des tentatives, si
+ * bien que leur somme fait le taux au-dessus. L'étiquette porte le taux + le détail.
  */
 export function terminationRecoveryOption(view: TerminationStatsView): EChartsOption {
   const rows = [view.recovery, ...view.recoveryByReason].reverse(); // Global en HAUT.
   return {
-    grid: { left: 8, right: 80, top: 8, bottom: 8, containLabel: true },
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 8, right: 104, top: 8, bottom: 8, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      valueFormatter: (v): string => `${Number(v)} %`,
+    },
     xAxis: { type: 'value', name: '%', min: 0, max: 100 },
     yAxis: { type: 'category', data: rows.map((r) => r.label) },
     series: [
-      {
-        type: 'bar',
-        barWidth: '55%',
-        data: rows.map((r) => ({
-          value: pct(r.rate),
-          itemStyle: {
-            color: r.reason === 'all' ? PALETTE.violet : PALETTE.green,
-            borderRadius: [0, 4, 4, 0],
-          },
-          label: {
-            show: true,
-            position: 'right' as const,
-            formatter: `${pct(r.rate)} % (${r.recovered}/${r.attempts})`,
-          },
-        })),
-      },
+      recoverySeries('Rattrapage', rows, 15, 1, (r) => pct(r.rate), (r) =>
+        r.attempts > 0 ? `${pct(r.rate)} % · ${r.recovered}/${r.attempts}` : '',
+      ),
+      recoverySeries('Auto (plateforme)', rows, 6, 0.4, (r) =>
+        channelPct(r.recoveredAuto, r.attempts), (r) =>
+        r.recoveredAuto > 0 ? `auto ${r.recoveredAuto}` : '',
+      ),
+      recoverySeries('Commercial', rows, 6, 0.82, (r) =>
+        channelPct(r.recoveredSales, r.attempts), (r) =>
+        r.recoveredSales > 0 ? `comm. ${r.recoveredSales}` : '',
+      ),
     ],
+  };
+}
+
+/** Couleur de catégorie du churn (global = teinte neutre), partagée avec le sunburst. */
+function recoveryColor(r: TerminationRecovery): string {
+  return r.reason === 'all' ? CHURN_GLOBAL_COLOR : CHURN_COLORS[r.reason];
+}
+
+/** Part d'un canal de rattrapage sur les tentatives, en % entier. */
+function channelPct(count: number, attempts: number): number {
+  return attempts === 0 ? 0 : Math.round((count / attempts) * 100);
+}
+
+/**
+ * Une série de barres de rattrapage : couleur par **catégorie**, largeur + opacité
+ * portant le **canal** (barre épaisse = taux ; fines = auto/commercial). L'étiquette
+ * (canal + n) porte l'encodage secondaire pour ne pas distinguer par la couleur seule.
+ */
+function recoverySeries(
+  name: string,
+  rows: readonly TerminationRecovery[],
+  barWidth: number,
+  opacity: number,
+  valueOf: (r: TerminationRecovery) => number,
+  labelOf: (r: TerminationRecovery) => string,
+): Record<string, unknown> {
+  return {
+    name,
+    type: 'bar',
+    barGap: '30%',
+    barCategoryGap: '42%',
+    barWidth,
+    data: rows.map((r) => ({
+      value: valueOf(r),
+      itemStyle: { color: recoveryColor(r), opacity, borderRadius: [0, 3, 3, 0] },
+      label: {
+        show: true,
+        position: 'right' as const,
+        fontSize: 10,
+        color: PALETTE.slate,
+        formatter: labelOf(r),
+      },
+    })),
   };
 }
 

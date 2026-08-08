@@ -19,6 +19,8 @@ interface Weight {
   readonly sub: string;
   /** 3ᵉ niveau (ex. catégorie produit sous `better_price`), vide sinon. */
   readonly detail?: string;
+  /** Canal de rattrapage (rows `recovered` uniquement) : `auto` | `sales`. */
+  readonly via?: "auto" | "sales";
   readonly count: number;
 }
 
@@ -45,30 +47,35 @@ const CONFIRMED: readonly Weight[] = [
 ];
 
 /**
- * **Tentatives rattrapées** — le taux de rattrapage DIFFÈRE par catégorie : tarif
- * très rattrapable, cessation quasi jamais. Somme = 18.
+ * **Tentatives rattrapées** — deux contrastes voulus : le taux de rattrapage DIFFÈRE
+ * par catégorie (tarif très rattrapable, cessation quasi jamais) ET le **canal** de
+ * rattrapage diffère (tarif surtout **auto** via un incentive plateforme ; concurrent
+ * et qualité surtout **sales**, sauvés à la main par un commercial). Somme = 18.
  */
 const RECOVERED: readonly Weight[] = [
-  { reason: "price", sub: "delivery_cost", count: 8 },
-  { reason: "competitor", sub: "better_price", count: 5 },
-  { reason: "quality", sub: "product_quality", count: 3 },
-  { reason: "no_need", sub: "seasonal", count: 1 },
-  { reason: "closure", sub: "business_closure", count: 1 },
+  { reason: "price", sub: "delivery_cost", via: "auto", count: 6 },
+  { reason: "price", sub: "delivery_cost", via: "sales", count: 2 },
+  { reason: "competitor", sub: "better_price", via: "sales", count: 4 },
+  { reason: "competitor", sub: "better_price", via: "auto", count: 1 },
+  { reason: "quality", sub: "product_quality", via: "sales", count: 3 },
+  { reason: "no_need", sub: "seasonal", via: "auto", count: 1 },
+  { reason: "closure", sub: "business_closure", via: "sales", count: 1 },
 ];
 
-/** Une occurrence dépliée : raison + sous-raison + détail (vide si feuille). */
+/** Une occurrence dépliée : raison + sous-raison + détail + canal de rattrapage. */
 interface Part {
   readonly reason: string;
   readonly sub: string;
   readonly detail: string;
+  readonly via: string;
 }
 
-/** Déplie une distribution pondérée en une liste plate de (raison, sous-raison, détail). */
+/** Déplie une distribution pondérée en une liste plate de (raison, sous-raison, détail, canal). */
 function flatten(dist: readonly Weight[]): readonly Part[] {
   const out: Part[] = [];
   for (const w of dist) {
     for (let i = 0; i < w.count; i += 1) {
-      out.push({ reason: w.reason, sub: w.sub, detail: w.detail ?? "" });
+      out.push({ reason: w.reason, sub: w.sub, detail: w.detail ?? "", via: w.via ?? "" });
     }
   }
   return out;
@@ -144,6 +151,7 @@ async function record(
     detail: part.detail,
     initiatedBy: index % 3 === 0 ? "commercial" : "client",
     outcome,
+    recoveredVia: outcome === "recovered" ? part.via : "",
   };
   await harness.prisma.companyTermination.upsert({ where: { id }, create: data, update: {} });
 }
