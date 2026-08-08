@@ -3,11 +3,13 @@ import type { MarketAdoptionView } from "@lfd/contracts";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { Clock } from "../../infra/time/clock.js";
-import { computeAdoption } from "../domain/market-adoption.js";
+import { weekStarts } from "../domain/growth-stats.js";
+import { computeAdoption, penetrationTrend } from "../domain/market-adoption.js";
 import { MarketAdoptionReader } from "../domain/ports/market-adoption.reader.js";
 import { MarketConfigStore } from "../domain/ports/market-config.store.js";
 
-const WINDOW_MS = 13 * 7 * 24 * 60 * 60 * 1000;
+const WINDOW_WEEKS = 13;
+const WINDOW_MS = WINDOW_WEEKS * 7 * 24 * 60 * 60 * 1000;
 
 /** Une adresse réduite à ce qui décide la zone d'une société. */
 interface AddressRow {
@@ -48,6 +50,7 @@ export class PrismaMarketAdoptionReader extends MarketAdoptionReader {
     });
 
     const activated = new Map<string, { ville: string; total: number; beforeStart: number }>();
+    const activationDates: Date[] = [];
     for (const company of companies) {
       const address = pickAddress(company.addresses);
       if (address === null || !targeted.has(address.codePostal)) {
@@ -59,8 +62,11 @@ export class PrismaMarketAdoptionReader extends MarketAdoptionReader {
         beforeStart: 0,
       };
       zone.total += 1;
-      if (company.activatedAt !== null && company.activatedAt < start) {
-        zone.beforeStart += 1;
+      if (company.activatedAt !== null) {
+        activationDates.push(company.activatedAt);
+        if (company.activatedAt < start) {
+          zone.beforeStart += 1;
+        }
       }
       activated.set(address.codePostal, zone);
     }
@@ -69,7 +75,9 @@ export class PrismaMarketAdoptionReader extends MarketAdoptionReader {
       codePostal: z.codePostal,
       addressable: z.addressable,
     }));
-    return computeAdoption(zones, activated, now);
+    const totalAddressable = zones.reduce((sum, z) => sum + z.addressable, 0);
+    const trend = penetrationTrend(weekStarts(now, WINDOW_WEEKS), activationDates, totalAddressable);
+    return computeAdoption(zones, activated, trend, now);
   }
 }
 

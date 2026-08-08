@@ -1,4 +1,9 @@
-import { type ActivatedInZone, computeAdoption, type ZoneTarget } from "../market-adoption.js";
+import {
+  type ActivatedInZone,
+  computeAdoption,
+  penetrationTrend,
+  type ZoneTarget,
+} from "../market-adoption.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
 
@@ -15,7 +20,7 @@ describe("computeAdoption", () => {
       // 69001 : 30 activées, dont 30 avant → 0 récente ⇒ +0 pt, pénétration 30 %.
       ["69001", { ville: "Lyon", total: 30, beforeStart: 30 }],
     ]);
-    const view = computeAdoption(zones, activated, NOW);
+    const view = computeAdoption(zones, activated, [], NOW);
 
     // Tri : 69001 (30 %) avant 75011 (10 %) avant 13001 (0 %).
     expect(view.zones.map((z) => z.codePostal)).toEqual(["69001", "75011", "13001"]);
@@ -30,5 +35,26 @@ describe("computeAdoption", () => {
       deltaPts: 0,
     });
     expect(view.computedAt).toBe(NOW.toISOString());
+  });
+});
+
+describe("penetrationTrend", () => {
+  const WINDOW = ["2026-08-03", "2026-08-10", "2026-08-17"];
+
+  it("cumule les activations à la clôture de chaque semaine, sur l'addressable total", () => {
+    const dates = [
+      new Date("2026-08-05T00:00:00.000Z"), // semaine 1
+      new Date("2026-08-12T00:00:00.000Z"), // semaine 2
+      new Date("2026-08-13T00:00:00.000Z"), // semaine 2
+    ];
+    const trend = penetrationTrend(WINDOW, dates, 100);
+
+    expect(trend.map((p) => p.penetration)).toEqual([0.01, 0.03, 0.03]);
+    expect(trend.map((p) => p.weekStart)).toEqual(WINDOW);
+  });
+
+  it("neutralise un addressable nul (pas de division par 0)", () => {
+    const trend = penetrationTrend(WINDOW, [new Date("2026-08-05T00:00:00.000Z")], 0);
+    expect(trend.every((p) => p.penetration === 0)).toBe(true);
   });
 });

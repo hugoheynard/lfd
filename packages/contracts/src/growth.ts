@@ -377,8 +377,21 @@ export interface AdoptionZoneView {
   readonly deltaPts: number;
 }
 
+/**
+ * Un point de la **part de marché dans le temps** : à la clôture de la semaine,
+ * la pénétration cumulée (sociétés activées à ce jour / acteurs visés, 0..1) sur
+ * l'ensemble du marché ciblé. C'est le « stock » qui monte derrière le flux
+ * d'acquisition (graphe composé, cf. commercial-data-analytics.md §2.1).
+ */
+export interface PenetrationTrendPoint {
+  readonly weekStart: string;
+  readonly penetration: number;
+}
+
 /** L'adoption par territoire, sur la fenêtre d'analyse. */
 export interface MarketAdoptionView {
   readonly zones: readonly AdoptionZoneView[];
+  /** Part de marché cumulée semaine par semaine (tout le marché ciblé). */
+  readonly trend: readonly PenetrationTrendPoint[];
   readonly computedAt: string;
 }

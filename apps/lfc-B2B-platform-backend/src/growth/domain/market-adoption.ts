@@ -1,4 +1,6 @@
-import type { MarketAdoptionView } from "@lfd/contracts";
+import type { MarketAdoptionView, PenetrationTrendPoint } from "@lfd/contracts";
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * **Adoption par territoire** — dérivation PURE de la pénétration. `penetration` =
@@ -6,6 +8,27 @@ import type { MarketAdoptionView } from "@lfd/contracts";
  * période (activations depuis le début de la fenêtre, le dénominateur étant quasi
  * constant). Déterministe (temps injecté). Trie par pénétration décroissante.
  */
+
+/**
+ * **Part de marché dans le temps** (pure) : pour chaque semaine de la fenêtre, la
+ * pénétration CUMULÉE = nombre d'activations à la clôture de la semaine / total
+ * des acteurs visés. Le dénominateur est constant sur la fenêtre (quasi-invariant),
+ * donc la courbe monte au rythme des activations. C'est le « stock » qui monte
+ * derrière le flux d'acquisition (graphe composé §2.1).
+ */
+export function penetrationTrend(
+  window: readonly string[],
+  activationDates: readonly Date[],
+  totalAddressable: number,
+): PenetrationTrendPoint[] {
+  const times = activationDates.map((d) => d.getTime()).sort((a, b) => a - b);
+  return window.map((weekStartIso) => {
+    const weekEnd = new Date(`${weekStartIso}T00:00:00.000Z`).getTime() + WEEK_MS;
+    const cumulative = times.filter((t) => t < weekEnd).length;
+    const penetration = totalAddressable > 0 ? cumulative / totalAddressable : 0;
+    return { weekStart: weekStartIso, penetration };
+  });
+}
 
 /** Cible d'une zone : son code postal et le nombre d'acteurs visés stocké. */
 export interface ZoneTarget {
@@ -23,6 +46,7 @@ export interface ActivatedInZone {
 export function computeAdoption(
   zones: readonly ZoneTarget[],
   activated: ReadonlyMap<string, ActivatedInZone>,
+  trend: readonly PenetrationTrendPoint[],
   now: Date,
 ): MarketAdoptionView {
   const rows = zones.map((zone) => {
@@ -41,5 +65,5 @@ export function computeAdoption(
     };
   });
   rows.sort((x, y) => y.penetration - x.penetration || y.activated - x.activated);
-  return { zones: rows, computedAt: now.toISOString() };
+  return { zones: rows, trend, computedAt: now.toISOString() };
 }
