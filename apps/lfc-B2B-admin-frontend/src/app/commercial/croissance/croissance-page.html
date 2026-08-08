@@ -128,7 +128,7 @@
                 <app-chart [option]="opt" height="300px" />
                 <app-chart-note
                   goal="Situer chaque territoire : part de marché conquise (adoption) et part de la base repartie (churn). Instantané cumulé à date."
-                  read="Par zone : Adoption (vert) = actives ÷ acteurs visés (le pool, en bout de ligne). Churn (rouge) = résiliées ÷ (actives + résiliées) — borné 0–100 % (rapporté au pool, il pourrait dépasser 100 % quand le marché se renouvelle). Dénominateurs différents → les deux barres ne s'additionnent pas. « +X pts » = points d'adoption gagnés sur la fenêtre (~90 j)."
+                  read="Par zone : Adoption (vert) = actives ÷ acteurs visés (le pool, en bout de ligne). Churn (rouge) = résiliées ÷ (actives + résiliées) — borné 0–100 % (rapporté au pool, il pourrait dépasser 100 % quand le marché se renouvelle). Dénominateurs différents → les deux barres ne s'additionnent pas. « +X pts » = points d'adoption gagnés sur la fenêtre (~90 j). Un churn sur une base trop faible (n < 10) est grisé et porte son « n » : c'est du bruit, pas un signal."
                 />
               } @else {
                 <p class="muted">

@@ -480,6 +480,8 @@ export function adoptionOption(
   // Teintes sémantiques du thème : adoption = succès, churn = alerte (légende alignée).
   const success = themeColor('--fold-color-success', '#1a9e6a');
   const alert = themeColor('--fold-color-danger', '#dc2626');
+  const muted = themeColor('--fold-color-text-muted', PALETTE.slate);
+  const text = themeColor('--fold-color-text', '#1f2937');
   const adoption = rows.map((z) => ({
     value: pct(z.penetration),
     itemStyle: { color: success, borderRadius: [0, 4, 4, 0] },
@@ -489,13 +491,23 @@ export function adoptionOption(
       formatter: `${pct(z.penetration)} %${z.deltaPts > 0 ? ` · +${round1(z.deltaPts)} pts` : ''}`,
     },
   }));
-  const churn = rows.map((z) => ({
-    value: pct(z.lostRate),
-    itemStyle: { color: alert, borderRadius: [0, 4, 4, 0] },
-    label: { show: z.lost > 0, position: 'right' as const, formatter: `${pct(z.lostRate)} %` },
-  }));
-  const muted = themeColor('--fold-color-text-muted', PALETTE.slate);
-  const text = themeColor('--fold-color-text', '#1f2937');
+  // Garde petit effectif : sous ce seuil de base onboardée, un taux n'a pas de valeur
+  // statistique → barre atténuée + `n` affiché pour signaler que c'est du bruit.
+  const MIN_BASE = 10;
+  const churn = rows.map((z) => {
+    const onboarded = z.activated + z.lost;
+    const thin = onboarded < MIN_BASE;
+    return {
+      value: pct(z.lostRate),
+      itemStyle: { color: alert, opacity: thin ? 0.35 : 1, borderRadius: [0, 4, 4, 0] },
+      label: {
+        show: z.lost > 0,
+        position: 'right' as const,
+        color: muted,
+        formatter: `${pct(z.lostRate)} %${thin ? ` · n=${onboarded}` : ''}`,
+      },
+    };
+  });
   return {
     grid: { left: 8, right: 108, top: 8, bottom: 32, containLabel: true },
     legend: {

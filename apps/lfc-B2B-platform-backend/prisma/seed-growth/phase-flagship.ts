@@ -14,12 +14,21 @@ const TARGET_SHARE = 0.3;
 const FLAGSHIP_BASE = 30_000;
 
 /**
+ * Zones **secondaires** : une base active crédible pour équilibrer la carte adoption
+ * (sinon elles n'ont que des résiliées → churn 100 % sur ~5 sociétés, du bruit). Comptes
+ * fixes modestes, index dédiés (hors flagship 30k et pertes 40k).
+ */
+const SATELLITES: ReadonlyArray<{ cp: string; ville: string; target: number; base: number }> = [
+  { cp: "73320", ville: "Tignes", target: 22, base: 50_000 },
+  { cp: "73700", ville: "Bourg-Saint-Maurice", target: 20, base: 51_000 },
+];
+
+/**
  * Phase **flagship** : peuple Val d'Isère jusqu'à ~30 % de pénétration, pour le
  * récit « bastion conquis ». Vise `round(30 % × addressable_73150)` sociétés
  * **activées**, adresses forcées sur Val d'Isère, dates d'activation **étalées sur
- * ~24 semaines** → la part de marché monte progressivement (courbe de la §2.1 qui
- * grimpe). Idempotent (SIRET + comptage de l'existant). À lancer APRÈS le refresh
- * marché (addressable connu) ; no-op si l'addressable est à 0.
+ * ~24 semaines** → la part de marché monte progressivement. Idempotent (SIRET +
+ * comptage de l'existant). À lancer APRÈS le refresh marché ; no-op si addressable = 0.
  */
 export async function seedFlagship(harness: SeedHarness, anchor: Date): Promise<number> {
   const store = harness.module.get(MarketConfigStore, { strict: false });
@@ -28,28 +37,47 @@ export async function seedFlagship(harness: SeedHarness, anchor: Date): Promise<
     return 0;
   }
   const target = Math.round(TARGET_SHARE * zone.addressable);
+  return seedActiveBase(harness, anchor, FLAGSHIP_CP, FLAGSHIP_VILLE, target, FLAGSHIP_BASE);
+}
+
+/**
+ * Phase **satellites** : une base active modeste sur les zones secondaires (Tignes,
+ * Bourg-Saint-Maurice) pour que l'adoption s'y voie et que le churn retombe à un
+ * niveau sain (au lieu d'un ~100 % sur 5 sociétés). Idempotent.
+ */
+export async function seedSatellites(harness: SeedHarness, anchor: Date): Promise<number> {
+  let created = 0;
+  for (const s of SATELLITES) {
+    created += await seedActiveBase(harness, anchor, s.cp, s.ville, s.target, s.base);
+  }
+  return created;
+}
+
+/** Peuple une zone de `target` sociétés ACTIVÉES (adresses forcées, dates étalées). Idempotent. */
+async function seedActiveBase(
+  harness: SeedHarness,
+  anchor: Date,
+  cp: string,
+  ville: string,
+  target: number,
+  base: number,
+): Promise<number> {
   const existing = await harness.prisma.company.count({
-    where: { status: "active", addresses: { some: { codePostal: FLAGSHIP_CP } } },
+    where: { status: "active", addresses: { some: { codePostal: cp } } },
   });
   let created = 0;
   for (let k = 0; created < target - existing && k < target * 2; k += 1) {
     const declaredAt = new Date(anchor.getTime() - ((k * 7) % 168) * DAY_MS);
-    if (await seedCompany(harness, valdisereWho(k), validSiret(FLAGSHIP_BASE + k), 5, declaredAt)) {
+    if (await seedCompany(harness, zoneWho(base + k, cp, ville), validSiret(base + k), 5, declaredAt)) {
       created += 1;
     }
   }
   return created;
 }
 
-/** Persona déterministe forcé sur Val d'Isère (nom de lieu conservé, station réécrite). */
-function valdisereWho(k: number): ReturnType<typeof persona> {
-  const base = persona(FLAGSHIP_BASE + k);
+/** Persona déterministe forcé sur une zone (nom de lieu conservé, station réécrite). */
+function zoneWho(index: number, cp: string, ville: string): ReturnType<typeof persona> {
+  const base = persona(index);
   const venue = base.businessName.split(" · ")[0];
-  return {
-    ...base,
-    businessName: `${venue} · ${FLAGSHIP_VILLE}`,
-    stationLabel: FLAGSHIP_VILLE,
-    codePostal: FLAGSHIP_CP,
-    ville: FLAGSHIP_VILLE,
-  };
+  return { ...base, businessName: `${venue} · ${ville}`, stationLabel: ville, codePostal: cp, ville };
 }
