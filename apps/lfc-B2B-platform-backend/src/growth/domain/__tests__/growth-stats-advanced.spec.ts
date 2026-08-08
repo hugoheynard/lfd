@@ -69,19 +69,21 @@ describe("accountConcentration", () => {
 });
 
 describe("acquisitionMix", () => {
-  it("sépare product-led (self/registration) et sales-led (staff/manuel) par semaine", () => {
+  it("product-led = self pur ; sales-led = staff + tout lead converti (D4)", () => {
     const now = new Date("2026-08-20T00:00:00Z");
     const window = weekStarts(now, 4);
     const mix = acquisitionMix(
       [
         ev("company.declared", "company", "c1", "2026-08-17T00:00:00Z", { via: "self" }),
         ev("company.declared", "company", "c2", "2026-08-17T00:00:00Z", { via: "staff" }),
+        // Un lead converti est sales-led même quand la conversion s'est faite à
+        // l'inscription (`via=registration`) : la personne avait été démarchée.
         ev("lead.converted", "lead", "l1", "2026-08-17T00:00:00Z", { via: "registration" }),
         ev("lead.converted", "lead", "l2", "2026-08-17T00:00:00Z", { via: "manual" }),
       ],
       window,
     );
     const week = mix.find((p) => p.weekStart === "2026-08-17");
-    expect(week).toMatchObject({ productLed: 2, salesLed: 2 });
+    expect(week).toMatchObject({ productLed: 1, salesLed: 3 });
   });
 });

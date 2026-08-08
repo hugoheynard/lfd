@@ -209,7 +209,13 @@ function giniFrom(lorenz: readonly LorenzPoint[]): number {
 
 // ── L4 · Mix product-led / sales-led ───────────────────────────────────────────
 
-/** Mix hebdo : product-led (self/adoption+/registration) vs sales-led (staff/manuel). */
+/**
+ * Mix hebdo : **product-led** (self-service pur, zéro démarchage) vs **sales-led**
+ * (staff ou lead). Un `company.declared` compte product-led s'il est `self`, sales-led
+ * si `staff`. Un `lead.converted` compte **toujours** sales-led (un lead = origine
+ * commerciale, même converti à l'inscription) — cf. décision D4 de commercial-data.
+ * La part product-led est un indicateur de la qualité du référencement (auto-découverte).
+ */
 export function acquisitionMix(
   events: readonly GrowthStatsEvent[],
   window: readonly string[],
@@ -227,7 +233,7 @@ export function acquisitionMix(
     if (e.type === ACTIVITY_TYPES.companyDeclared) {
       bump(stringOrNull(e.payload["via"]) === "staff" ? sales : product, week);
     } else if (e.type === ACTIVITY_TYPES.leadConverted) {
-      bump(stringOrNull(e.payload["via"]) === "registration" ? product : sales, week);
+      bump(sales, week);
     }
   }
   return window.map((weekStartIso) => ({
