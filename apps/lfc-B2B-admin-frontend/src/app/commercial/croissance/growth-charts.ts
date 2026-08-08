@@ -477,9 +477,9 @@ export function adoptionOption(
   const asc = [...zones].sort((a, b) => key(a) - key(b));
   // yAxis catégorie : data[0] en bas. `-desc` = plus fort en HAUT → data ascendante.
   const rows = sort.endsWith('desc') ? asc : [...asc].reverse();
-  // Teintes sémantiques du thème : adoption = succès, perte = avertissement (légende alignée).
+  // Teintes sémantiques du thème : adoption = succès, perte = alerte (légende alignée).
   const success = themeColor('--fold-color-success', '#1a9e6a');
-  const warning = themeColor('--fold-color-warning', '#d4a017');
+  const alert = themeColor('--fold-color-danger', '#dc2626');
   const adoption = rows.map((z) => ({
     value: pct(z.penetration),
     itemStyle: { color: success, borderRadius: [0, 4, 4, 0] },
@@ -491,7 +491,7 @@ export function adoptionOption(
   }));
   const perte = rows.map((z) => ({
     value: pct(z.lostRate),
-    itemStyle: { color: warning, borderRadius: [0, 4, 4, 0] },
+    itemStyle: { color: alert, borderRadius: [0, 4, 4, 0] },
     label: { show: z.lost > 0, position: 'right' as const, formatter: `${pct(z.lostRate)} %` },
   }));
   return {
@@ -501,7 +501,7 @@ export function adoptionOption(
       textStyle: { color: PALETTE.slate },
       data: [
         { name: 'Adoption', itemStyle: { color: success } },
-        { name: 'Perte', itemStyle: { color: warning } },
+        { name: 'Perte', itemStyle: { color: alert } },
       ],
     },
     tooltip: {
