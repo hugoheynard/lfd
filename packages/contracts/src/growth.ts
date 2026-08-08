@@ -592,20 +592,21 @@ export interface MarketVolumeView {
   readonly computedAt: string;
 }
 
-/** Une **série CA par secteur NAF** : le CA hebdo (centimes) d'un secteur, aligné sur `weeks`. */
+/** Une **série CA par secteur NAF** : le CA quotidien (centimes) d'un secteur, aligné sur `days`. */
 export interface SectorRevenueSeries {
   readonly code: string;
   readonly label: string;
-  readonly weekly: readonly number[];
+  readonly daily: readonly number[];
 }
 
 /**
- * **CA par secteur NAF dans le temps** : pour chaque semaine, le CA (TTC) ventilé par
- * secteur NAF des sociétés clientes. Rendu en aires empilées → on voit quels secteurs
+ * **CA par secteur NAF dans le temps** : pour chaque **jour** (grain le plus fin), le CA
+ * (TTC) ventilé par secteur NAF des sociétés clientes. Le front ré-agrège au besoin
+ * (semaine/mois/trimestre/année). Rendu en aires empilées → on voit quels secteurs
  * portent la croissance du CA. Seules les commandes rattachées à une société comptent.
  */
 export interface SectorRevenueView {
-  readonly weeks: readonly string[];
+  readonly days: readonly string[];
   readonly series: readonly SectorRevenueSeries[];
   readonly computedAt: string;
 }

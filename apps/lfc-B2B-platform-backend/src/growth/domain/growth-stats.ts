@@ -211,6 +211,23 @@ function shiftWeek(weekStartIso: string, byWeeks: number): string {
     .slice(0, 10);
 }
 
+/** Jour (UTC, « YYYY-MM-DD ») d'une date — grain le plus fin pour le bucketing. */
+export function dayKey(d: Date): string {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+    .toISOString()
+    .slice(0, 10);
+}
+
+/** Tous les jours ISO de `startIso` à `endIso` inclus, dans l'ordre chronologique. */
+export function dayRange(startIso: string, endIso: string): string[] {
+  const out: string[] = [];
+  const end = new Date(`${endIso}T00:00:00.000Z`).getTime();
+  for (let t = new Date(`${startIso}T00:00:00.000Z`).getTime(); t <= end; t += DAY_MS) {
+    out.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return out;
+}
+
 function countByWeek(
   events: readonly GrowthStatsEvent[],
   type: string,

@@ -3,7 +3,7 @@ import type { SectorRevenueView } from "@lfd/contracts";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { Clock } from "../../infra/time/clock.js";
-import { weekStart, weekStarts } from "../domain/growth-stats.js";
+import { dayKey, dayRange, weekStarts } from "../domain/growth-stats.js";
 import { computeSectorRevenue } from "../domain/sector-revenue.js";
 import { MarketConfigStore } from "../domain/ports/market-config.store.js";
 import { SectorRevenueReader } from "../domain/ports/sector-revenue.reader.js";
@@ -27,9 +27,12 @@ export class PrismaSectorRevenueReader extends SectorRevenueReader {
 
   async load(): Promise<SectorRevenueView> {
     const now = this.clock.now();
-    const window = weekStarts(now, WINDOW_WEEKS);
-    const first = window[0];
-    const start = first !== undefined ? new Date(`${first}T00:00:00.000Z`) : now;
+    // Fenêtre au grain **jour**, calée sur le premier lundi des 13 semaines : la vue
+    // hebdo par défaut reste alignée, et le front peut descendre au quotidien.
+    const weeks = weekStarts(now, WINDOW_WEEKS);
+    const first = weeks[0] ?? dayKey(now);
+    const window = dayRange(first, dayKey(now));
+    const start = new Date(`${first}T00:00:00.000Z`);
     const config = await this.store.load();
     const targeted = new Set(config.nafCodes.map((n) => n.code));
 
@@ -37,19 +40,19 @@ export class PrismaSectorRevenueReader extends SectorRevenueReader {
       where: { createdAt: { gte: start }, companyId: { not: null } },
       select: { createdAt: true, totalCents: true, company: { select: { nafCode: true } } },
     });
-    const weeklyByNaf = new Map<string, Map<string, number>>();
+    const dailyByNaf = new Map<string, Map<string, number>>();
     for (const order of orders) {
       const code = order.company?.nafCode ?? "";
       if (code === "" || !targeted.has(code)) {
         continue;
       }
-      const week = weekStart(order.createdAt);
-      const byNaf = weeklyByNaf.get(week) ?? new Map<string, number>();
+      const day = dayKey(order.createdAt);
+      const byNaf = dailyByNaf.get(day) ?? new Map<string, number>();
       byNaf.set(code, (byNaf.get(code) ?? 0) + order.totalCents);
-      weeklyByNaf.set(week, byNaf);
+      dailyByNaf.set(day, byNaf);
     }
 
     const nafLabels = new Map(config.nafCodes.map((n) => [n.code, n.label]));
-    return computeSectorRevenue(window, nafLabels, weeklyByNaf, now);
+    return computeSectorRevenue(window, nafLabels, dailyByNaf, now);
   }
 }

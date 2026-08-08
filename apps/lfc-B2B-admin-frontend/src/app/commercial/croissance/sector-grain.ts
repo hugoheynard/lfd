@@ -1,10 +1,11 @@
 import type { SectorRevenueView } from '@lfd/contracts';
 
 /** Granularité temporelle du CA par secteur NAF. */
-export type SectorGrain = 'week' | 'month' | 'quarter' | 'year';
+export type SectorGrain = 'day' | 'week' | 'month' | 'quarter' | 'year';
 
 /** Options du `<select>` de granularité (ordre du plus fin au plus large). */
 export const SECTOR_GRAINS: ReadonlyArray<{ readonly value: SectorGrain; readonly label: string }> = [
+  { value: 'day', label: 'Jour' },
   { value: 'week', label: 'Semaine' },
   { value: 'month', label: 'Mois' },
   { value: 'quarter', label: 'Trimestre' },
@@ -28,14 +29,24 @@ function weekLabel(iso: string): string {
   return `${day}/${month}`;
 }
 
-/** Clé de regroupement d'une semaine (ISO weekStart) selon la granularité. */
+/** Lundi (ISO) de la semaine d'un jour — même convention que le backend (semaine ISO). */
+function mondayOf(iso: string): string {
+  const d = new Date(`${iso}T00:00:00.000Z`);
+  const diff = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - diff);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Clé de regroupement d'un jour (ISO) selon la granularité. */
 function bucketKey(iso: string, grain: SectorGrain): string {
   const d = new Date(`${iso}T00:00:00.000Z`);
   const year = d.getUTCFullYear();
   const month = d.getUTCMonth();
   switch (grain) {
-    case 'week':
+    case 'day':
       return iso;
+    case 'week':
+      return mondayOf(iso);
     case 'month':
       return `${year}-${String(month + 1).padStart(2, '0')}`;
     case 'quarter':
@@ -48,6 +59,7 @@ function bucketKey(iso: string, grain: SectorGrain): string {
 /** Libellé d'affichage d'une clé de période. */
 function bucketLabel(key: string, grain: SectorGrain): string {
   switch (grain) {
+    case 'day':
     case 'week':
       return weekLabel(key);
     case 'month': {
@@ -64,15 +76,15 @@ function bucketLabel(key: string, grain: SectorGrain): string {
 }
 
 /**
- * Ré-agrège un `SectorRevenueView` hebdomadaire vers une granularité plus large en
- * additionnant les semaines qui tombent dans la même période (mois/trimestre/année,
- * d'après la date de début de semaine). Fonction pure ; l'axe reste chronologique
- * (l'ordre des semaines source est préservé) et les libellés sont prêts à afficher.
+ * Ré-agrège un `SectorRevenueView` **quotidien** vers la granularité choisie en
+ * additionnant les jours qui tombent dans la même période (semaine/mois/trimestre/année,
+ * d'après la date du jour ; « jour » est l'identité). Fonction pure ; l'axe reste
+ * chronologique (l'ordre des jours source est préservé) et les libellés sont prêts à afficher.
  */
 export function bucketSectorRevenue(view: SectorRevenueView, grain: SectorGrain): BucketedRevenue {
   const order: string[] = [];
   const indexOf = new Map<string, number>();
-  for (const iso of view.weeks) {
+  for (const iso of view.days) {
     const key = bucketKey(iso, grain);
     if (!indexOf.has(key)) {
       indexOf.set(key, order.length);
@@ -81,9 +93,9 @@ export function bucketSectorRevenue(view: SectorRevenueView, grain: SectorGrain)
   }
   const series = view.series.map((s) => {
     const values = new Array<number>(order.length).fill(0);
-    view.weeks.forEach((iso, i) => {
+    view.days.forEach((iso, i) => {
       const bucket = indexOf.get(bucketKey(iso, grain)) ?? 0;
-      values[bucket] = (values[bucket] ?? 0) + (s.weekly[i] ?? 0);
+      values[bucket] = (values[bucket] ?? 0) + (s.daily[i] ?? 0);
     });
     return { label: s.label, values };
   });
