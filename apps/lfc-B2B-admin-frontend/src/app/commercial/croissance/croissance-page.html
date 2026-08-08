@@ -104,7 +104,7 @@
           <div class="grid">
             <article class="card wide">
               <header class="card-head">
-                <h2>Adoption et perte par territoire <span class="scope-tag">cumulé à date</span></h2>
+                <h2>Adoption et churn par territoire <span class="scope-tag">cumulé à date</span></h2>
                 <div class="head-controls">
                   <label class="sort-control">
                     <span class="visually-hidden">Trier</span>
@@ -119,16 +119,16 @@
                     </select>
                   </label>
                   <app-metric-info
-                    label="Adoption et perte par territoire"
-                    text="Instantané CUMULÉ À DATE (all-time), pas une valeur de période. Deux barres par zone, sur base 100 % du marché visé : Adoption = sociétés activées à ce jour / acteurs visés (comptés via l'API entreprises) ; Perte = sociétés résiliées à ce jour / acteurs visés. Le « +X pts » sur l'adoption est le seul élément de période : les points de part de marché gagnés sur la fenêtre d'analyse (~90 j). On compare d'un coup ce qu'on a gagné et perdu sur chaque territoire. Configurez zones et NAF dans Réglages ▸ Commercial."
+                    label="Adoption et churn par territoire"
+                    text="Instantané CUMULÉ À DATE (all-time), deux barres par zone. — CALCUL. Adoption (pénétration) = sociétés actives ÷ acteurs visés (le pool, en bout de ligne) : la part du marché actuellement cliente. Churn = sociétés résiliées ÷ (actives + résiliées) : la part de tout ce qu'on a onboardé dans la zone qui est repartie. — BORNAGE. Le churn est rapporté à la base onboardée (actives + résiliées), PAS au pool : sinon, comme le pool est fixe et que les résiliations s'accumulent, un marché qui se renouvelle ferait dépasser 100 %. Rapporté à la base, le churn reste borné 0–100 % (part d'un tout). Les deux barres ont donc des dénominateurs différents (marché vs base onboardée) et ne s'additionnent pas. Le « +X pts » sur l'adoption = les points gagnés sur la fenêtre (~90 j). Configurez zones et NAF dans Réglages ▸ Commercial."
                   />
                 </div>
               </header>
               @if (adoption(); as opt) {
                 <app-chart [option]="opt" height="300px" />
                 <app-chart-note
-                  goal="Situer chaque territoire : part de marché conquise vs perdue, sur le marché visé. Instantané cumulé à date (all-time), pas une valeur de période."
-                  read="Par zone, sur base 100 % : Adoption (vert) = sociétés activées à ce jour ÷ acteurs visés ; Perte (rouge) = sociétés résiliées à ce jour ÷ acteurs visés. En bout de ligne : le pool disponible (acteurs visés = le dénominateur). Le « +X pts » sur l'adoption = les points gagnés sur la fenêtre d'analyse (~90 j)."
+                  goal="Situer chaque territoire : part de marché conquise (adoption) et part de la base repartie (churn). Instantané cumulé à date."
+                  read="Par zone : Adoption (vert) = actives ÷ acteurs visés (le pool, en bout de ligne). Churn (rouge) = résiliées ÷ (actives + résiliées) — borné 0–100 % (rapporté au pool, il pourrait dépasser 100 % quand le marché se renouvelle). Dénominateurs différents → les deux barres ne s'additionnent pas. « +X pts » = points d'adoption gagnés sur la fenêtre (~90 j)."
                 />
               } @else {
                 <p class="muted">

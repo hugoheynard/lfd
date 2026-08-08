@@ -114,8 +114,8 @@ export class CroissancePage {
   protected readonly adoptionSorts: ReadonlyArray<{ readonly value: AdoptionSort; readonly label: string }> = [
     { value: 'adoption-desc', label: 'Adoption ↓' },
     { value: 'adoption-asc', label: 'Adoption ↑' },
-    { value: 'perte-desc', label: 'Perte ↓' },
-    { value: 'perte-asc', label: 'Perte ↑' },
+    { value: 'churn-desc', label: 'Churn ↓' },
+    { value: 'churn-asc', label: 'Churn ↑' },
   ];
   protected readonly adoption = computed<ChartOption | null>(() => {
     const zones = this.adoptionZones();

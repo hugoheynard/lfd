@@ -71,7 +71,9 @@ export function computeAdoption(
       penetration,
       deltaPts,
       lost,
-      lostRate: zone.addressable > 0 ? lost / zone.addressable : 0,
+      // Taux de churn BORNÉ 0–1 : résiliées / (actives + résiliées) = part de la base
+      // onboardée qui est repartie. (Rapporter au pool cumulerait sans plafond.)
+      lostRate: total + lost > 0 ? lost / (total + lost) : 0,
     };
   });
   rows.sort((x, y) => y.penetration - x.penetration || y.activated - x.activated);

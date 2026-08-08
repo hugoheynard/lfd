@@ -15,7 +15,7 @@ describe("computeAdoption", () => {
       { codePostal: "13001", addressable: 0 }, // dénominateur inconnu.
     ];
     const activated = new Map<string, ActivatedInZone>([
-      // 75011 : 20 activées, dont 12 avant le début → +8 récentes ⇒ +4 pts ; 4 perdues ⇒ 2 %.
+      // 75011 : 20 actives, dont 12 avant le début → +8 récentes ⇒ +4 pts ; 4 perdues ⇒ churn 4/24.
       ["75011", { ville: "Paris", total: 20, beforeStart: 12, lost: 4 }],
       // 69001 : 30 activées, dont 30 avant → 0 récente ⇒ +0 pt, pénétration 30 %.
       ["69001", { ville: "Lyon", total: 30, beforeStart: 30, lost: 0 }],
@@ -31,8 +31,9 @@ describe("computeAdoption", () => {
       penetration: 0.1,
       deltaPts: 4,
       lost: 4,
-      lostRate: 0.02,
     });
+    // Churn BORNÉ : résiliées / (actives + résiliées) = 4 / 24, jamais > 100 %.
+    expect(paris?.lostRate).toBeCloseTo(4 / 24);
     const lyon = view.zones.find((z) => z.codePostal === "69001");
     expect(lyon?.penetration).toBeCloseTo(0.3);
     expect(lyon?.deltaPts).toBe(0);

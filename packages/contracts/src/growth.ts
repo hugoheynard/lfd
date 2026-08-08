@@ -377,7 +377,10 @@ export interface AdoptionZoneView {
   readonly deltaPts: number;
   /** Sociétés **résiliées** (`terminated`) rattachées à la zone : la perte. */
   readonly lost: number;
-  /** Perte rapportée au marché visé (0..1) — comparable à `penetration`. */
+  /**
+   * **Taux de churn** BORNÉ 0..1 : `lost / (activated + lost)` = part de la base
+   * onboardée dans la zone qui est repartie. (Rapporter au pool cumulerait sans plafond.)
+   */
   readonly lostRate: number;
 }
 

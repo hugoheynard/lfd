@@ -457,27 +457,27 @@ export function zoneVelocityOption(zones: readonly ZonePenetrationTrend[]): ECha
 }
 
 /**
- * **Adoption et perte par territoire** : **deux barres horizontales par zone** sur
- * base 100 % — **Adoption** = part de marché conquise (sociétés activées / acteurs
- * visés ; verte si la période a progressé, bleue sinon) et **Perte** = sociétés
- * résiliées rapportées au même marché (rouge). On compare d'un coup ce qu'on gagne et
- * ce qu'on perd sur chaque territoire. L'étiquette d'adoption porte le taux + le delta
- * de période (« 12 % · +3 pts »). `direction` classe les zones par pénétration.
+ * **Adoption et churn par territoire** : **deux barres horizontales par zone** —
+ * **Adoption** (vert) = pénétration = sociétés actives / acteurs visés (part de marché
+ * conquise, instantané cumulé) ; **Churn** (rouge) = résiliées / (actives + résiliées)
+ * = part de la base onboardée qui est repartie (BORNÉ 0–100 %). Bases différentes
+ * (l'adoption se rapporte au marché, le churn à la base onboardée), donc pas empilables.
+ * L'étiquette d'adoption porte le taux + le delta de période (« 12 % · +3 pts »).
  */
-/** Tri de l'adoption/perte par territoire : par adoption ou par perte, ↑ ou ↓. */
-export type AdoptionSort = 'adoption-desc' | 'adoption-asc' | 'perte-desc' | 'perte-asc';
+/** Tri par territoire : par adoption ou par churn, ↑ ou ↓. */
+export type AdoptionSort = 'adoption-desc' | 'adoption-asc' | 'churn-desc' | 'churn-asc';
 
 export function adoptionOption(
   zones: readonly AdoptionZoneView[],
   sort: AdoptionSort = 'adoption-desc',
 ): EChartsOption {
-  const key = sort.startsWith('perte')
+  const key = sort.startsWith('churn')
     ? (z: AdoptionZoneView): number => z.lostRate
     : (z: AdoptionZoneView): number => z.penetration;
   const asc = [...zones].sort((a, b) => key(a) - key(b));
   // yAxis catégorie : data[0] en bas. `-desc` = plus fort en HAUT → data ascendante.
   const rows = sort.endsWith('desc') ? asc : [...asc].reverse();
-  // Teintes sémantiques du thème : adoption = succès, perte = alerte (légende alignée).
+  // Teintes sémantiques du thème : adoption = succès, churn = alerte (légende alignée).
   const success = themeColor('--fold-color-success', '#1a9e6a');
   const alert = themeColor('--fold-color-danger', '#dc2626');
   const adoption = rows.map((z) => ({
@@ -489,7 +489,7 @@ export function adoptionOption(
       formatter: `${pct(z.penetration)} %${z.deltaPts > 0 ? ` · +${round1(z.deltaPts)} pts` : ''}`,
     },
   }));
-  const perte = rows.map((z) => ({
+  const churn = rows.map((z) => ({
     value: pct(z.lostRate),
     itemStyle: { color: alert, borderRadius: [0, 4, 4, 0] },
     label: { show: z.lost > 0, position: 'right' as const, formatter: `${pct(z.lostRate)} %` },
@@ -503,7 +503,7 @@ export function adoptionOption(
       textStyle: { color: PALETTE.slate },
       data: [
         { name: 'Adoption', itemStyle: { color: success } },
-        { name: 'Perte', itemStyle: { color: alert } },
+        { name: 'Churn', itemStyle: { color: alert } },
       ],
     },
     tooltip: {
@@ -514,7 +514,7 @@ export function adoptionOption(
         const z = rows[toIndex(first)];
         return z === undefined
           ? ''
-          : `${z.codePostal} ${z.ville}<br/>Adoption ${pct(z.penetration)} % (${z.activated}/${z.addressable})<br/>Perte ${pct(z.lostRate)} % (${z.lost})`;
+          : `${z.codePostal} ${z.ville}<br/>Adoption ${pct(z.penetration)} % (${z.activated}/${z.addressable} visés)<br/>Churn ${pct(z.lostRate)} % (${z.lost}/${z.activated + z.lost} onboardées)`;
       },
     },
     xAxis: { type: 'value', name: '%', min: 0, max: 100 },
@@ -536,7 +536,7 @@ export function adoptionOption(
     ],
     series: [
       { name: 'Adoption', type: 'bar', barGap: '10%', data: adoption },
-      { name: 'Perte', type: 'bar', data: perte },
+      { name: 'Churn', type: 'bar', data: churn },
     ],
   };
 }
