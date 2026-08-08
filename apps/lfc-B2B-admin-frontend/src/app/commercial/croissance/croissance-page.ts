@@ -5,6 +5,7 @@ import type {
   AdoptionZoneView,
   GrowthStatsView,
   PenetrationTrendPoint,
+  TerminationStatsView,
   ZonePenetrationTrend,
 } from '@lfd/contracts';
 
@@ -23,6 +24,8 @@ import {
   lifecycleSankeyOption,
   temperatureFlowOption,
   temperatureTransitionsOption,
+  terminationReasonsOption,
+  terminationRecoveryOption,
   velocityBoxplotOption,
   zoneVelocityOption,
 } from './growth-charts';
@@ -62,6 +65,7 @@ export class CroissancePage {
   protected readonly adoptionZones = signal<readonly AdoptionZoneView[] | null>(null);
   protected readonly adoptionTrend = signal<readonly PenetrationTrendPoint[] | null>(null);
   protected readonly adoptionZoneTrends = signal<readonly ZonePenetrationTrend[] | null>(null);
+  protected readonly terminations = signal<TerminationStatsView | null>(null);
 
   protected readonly kpis = computed<readonly Kpi[]>(() => {
     const s = this.stats();
@@ -95,6 +99,14 @@ export class CroissancePage {
     return zones === null || zones.length === 0
       ? null
       : adoptionOption(zones, this.adoptionSort());
+  });
+  protected readonly terminationReasons = computed<ChartOption | null>(() => {
+    const t = this.terminations();
+    return t === null || t.reasons.length === 0 ? null : terminationReasonsOption(t.reasons);
+  });
+  protected readonly terminationRecovery = computed<ChartOption | null>(() => {
+    const t = this.terminations();
+    return t === null || t.recovery.attempts === 0 ? null : terminationRecoveryOption(t);
   });
   protected readonly zoneVelocity = computed<ChartOption | null>(() => {
     const trends = this.adoptionZoneTrends();
@@ -167,6 +179,12 @@ export class CroissancePage {
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+    // Churn (secondaire) : chargé à part, sans faire échouer le dashboard.
+    try {
+      this.terminations.set(await this.service.terminations());
+    } catch {
+      this.terminations.set(null);
     }
     // L'adoption est secondaire (dépend d'une config marché) : chargée à part, sans
     // faire échouer le dashboard si elle est absente ou vide.

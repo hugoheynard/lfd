@@ -43,7 +43,20 @@
           }
         </article>
 
-        <article class="card wide">
+        <article class="card">
+          <header class="card-head">
+            <h2>Mode d'acquisition</h2>
+            <app-metric-info
+              label="Mode d'acquisition"
+              text="Part de l'acquisition auto-découverte (product-led, self-service sans démarchage) vs poussée par le commercial (sales-led : staff ou lead converti), sur toute la période. La part product-led est un indicateur direct de la qualité du référencement (SEO / agence web) — à lire avec l'acquisition hebdomadaire pour séparer « plus de trafic » de « meilleure conversion »."
+            />
+          </header>
+          @if (mixDonut(); as opt) {
+            <app-chart [option]="opt" height="300px" />
+          }
+        </article>
+
+        <article class="card">
           <header class="card-head">
             <h2>Adoption et perte par territoire</h2>
             <div class="head-controls">
@@ -71,6 +84,36 @@
               Aucune zone ciblée renseignée. Ajoutez des codes postaux et des codes NAF dans
               Réglages ▸ Commercial, puis « Redemander les comptages ».
             </p>
+          }
+        </article>
+
+        <article class="card">
+          <header class="card-head">
+            <h2>Raisons de résiliation</h2>
+            <app-metric-info
+              label="Raisons de résiliation"
+              text="Répartition des résiliations confirmées par catégorie de départ (tarif, concurrent, cessation d'activité, qualité, plus de besoin, injoignable, autre), enregistrée à la clôture du compte par le client ou le commercial. All-time."
+            />
+          </header>
+          @if (terminationReasons(); as opt) {
+            <app-chart [option]="opt" height="300px" />
+          } @else {
+            <p class="muted">Aucune résiliation enregistrée.</p>
+          }
+        </article>
+
+        <article class="card">
+          <header class="card-head">
+            <h2>Taux de rattrapage</h2>
+            <app-metric-info
+              label="Taux de rattrapage des terminaisons"
+              text="Part des tentatives de résiliation qui ont été rattrapées (le compte est resté), globale et par catégorie de départ. Une tentative rattrapée = un compte sauvé. L'étiquette porte le taux et le détail (rattrapées / tentatives)."
+            />
+          </header>
+          @if (terminationRecovery(); as opt) {
+            <app-chart [option]="opt" height="300px" />
+          } @else {
+            <p class="muted">Aucune tentative de résiliation enregistrée.</p>
           }
         </article>
 
@@ -169,19 +212,6 @@
             />
           </header>
           @if (velocity(); as opt) {
-            <app-chart [option]="opt" height="280px" />
-          }
-        </article>
-
-        <article class="card">
-          <header class="card-head">
-            <h2>Mode d'acquisition</h2>
-            <app-metric-info
-              label="Mode d'acquisition"
-              text="Part de l'acquisition auto-découverte (product-led, self-service sans démarchage) vs poussée par le commercial (sales-led : staff ou lead converti), sur toute la période. La part product-led est un indicateur direct de la qualité du référencement (SEO / agence web) — à lire avec l'acquisition hebdomadaire pour séparer « plus de trafic » de « meilleure conversion »."
-            />
-          </header>
-          @if (mixDonut(); as opt) {
             <app-chart [option]="opt" height="280px" />
           }
         </article>

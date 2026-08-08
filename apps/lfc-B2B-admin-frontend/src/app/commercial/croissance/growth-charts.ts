@@ -8,6 +8,8 @@ import type {
   LifecycleFlow,
   PenetrationTrendPoint,
   TemperatureFlowPoint,
+  TerminationReasonCount,
+  TerminationStatsView,
   VelocityMetric,
   ZonePenetrationTrend,
 } from '@lfd/contracts';
@@ -492,6 +494,76 @@ export function adoptionOption(
     series: [
       { name: 'Adoption', type: 'bar', barGap: '10%', data: adoption },
       { name: 'Perte', type: 'bar', data: perte },
+    ],
+  };
+}
+
+/** Palette cyclique pour les parts de camembert (raisons de départ). */
+const WHEEL = [
+  PALETTE.blue,
+  PALETTE.amber,
+  PALETTE.red,
+  PALETTE.violet,
+  PALETTE.green,
+  PALETTE.slate,
+  '#0ea5e9',
+];
+
+/**
+ * **Raisons de résiliation** (camembert) : la répartition des résiliations confirmées
+ * par catégorie de départ (tarif, concurrent, cessation…), enregistrée à la clôture.
+ */
+export function terminationReasonsOption(reasons: readonly TerminationReasonCount[]): EChartsOption {
+  return {
+    tooltip: { trigger: 'item', formatter: '{b} : {c} ({d} %)' },
+    legend: { bottom: 0, type: 'scroll', textStyle: { color: PALETTE.slate } },
+    series: [
+      {
+        type: 'pie',
+        radius: ['45%', '70%'],
+        center: ['50%', '44%'],
+        avoidLabelOverlap: true,
+        label: { show: false },
+        labelLine: { show: false },
+        data: reasons.map((r, i) => ({
+          value: r.count,
+          name: r.label,
+          itemStyle: { color: WHEEL[i % WHEEL.length] ?? PALETTE.slate },
+        })),
+      },
+    ],
+  };
+}
+
+/**
+ * **Taux de rattrapage** des tentatives de résiliation : barres horizontales du taux
+ * (rattrapées / tentatives), **Global** en tête puis **par catégorie**. Une tentative
+ * rattrapée = un compte sauvé. L'étiquette porte le taux + le détail (rattrapées/total).
+ */
+export function terminationRecoveryOption(view: TerminationStatsView): EChartsOption {
+  const rows = [view.recovery, ...view.recoveryByReason].reverse(); // Global en HAUT.
+  return {
+    grid: { left: 8, right: 80, top: 8, bottom: 8, containLabel: true },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    xAxis: { type: 'value', name: '%', min: 0, max: 100 },
+    yAxis: { type: 'category', data: rows.map((r) => r.label) },
+    series: [
+      {
+        type: 'bar',
+        barWidth: '55%',
+        data: rows.map((r) => ({
+          value: pct(r.rate),
+          itemStyle: {
+            color: r.reason === 'all' ? PALETTE.violet : PALETTE.green,
+            borderRadius: [0, 4, 4, 0],
+          },
+          label: {
+            show: true,
+            position: 'right' as const,
+            formatter: `${pct(r.rate)} % (${r.recovered}/${r.attempts})`,
+          },
+        })),
+      },
     ],
   };
 }
