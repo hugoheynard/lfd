@@ -23,16 +23,35 @@ import { persona } from "./seed-growth/personas.js";
  * viennent aux slices suivantes.
  */
 const USERS = clampInt(process.env["SEED_USERS"], 40, 1, 5000);
-/** Un tiers des personnes environ deviennent aussi une cible de démarchage cold. */
-const LEADS = Math.max(6, Math.floor(USERS / 3));
+/**
+ * Cohorte de démarchage **cold** aussi grande que les inscrits : l'acquisition est
+ * **majoritairement sales-led** (le commercial signe les comptes). La plupart des
+ * leads sont **convertis par le staff** (`lead.converted` via=manual → sales-led),
+ * ce qui domine le mix face aux déclarations self (product-led) de l'activation.
+ */
+const LEADS = Math.max(8, USERS * 2);
 /** ~la moitié des personnes déclarent une société (entonnoir d'activation). */
 const COMPANIES = Math.max(6, Math.floor(USERS / 2));
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ANCHOR = new Date();
 
-/** Étape de pipeline déterministe pour le lead d'index `i` (réparti). */
-const LEAD_STAGES: readonly LeadStatus[] = ["new", "contacted", "qualified", "negotiating", "lost"];
+/**
+ * Étape cible déterministe par index — **pondérée vers `converted`** (6/10) pour un
+ * mix sales-led dominant, avec une minorité perdue (2/10) et en cours (2/10).
+ */
+const LEAD_STAGES: readonly LeadStatus[] = [
+  "converted",
+  "converted",
+  "lost",
+  "converted",
+  "converted",
+  "converted",
+  "negotiating",
+  "converted",
+  "converted",
+  "lost",
+];
 
 async function main(): Promise<void> {
   const harness = await bootstrapHarness();
@@ -86,7 +105,7 @@ async function seedUsers(harness: SeedHarness): Promise<number> {
   for (let i = 0; i < USERS; i += 1) {
     const who = persona(i);
     const token: VerifiedToken = { subject: who.authSub, scopes: [], email: who.email };
-    const registeredAt = new Date(ANCHOR.getTime() - ((i * 2) % 90) * DAY_MS);
+    const registeredAt = new Date(ANCHOR.getTime() - ((i * 7) % 182) * DAY_MS);
     await harness.runAt(registeredAt, SYSTEM, () => harness.resolver.resolve(token));
     created += 1;
   }
@@ -102,7 +121,7 @@ async function seedLeads(harness: SeedHarness): Promise<number> {
     if (existing !== null) {
       continue; // idempotent : déjà semé.
     }
-    const capturedAt = new Date(ANCHOR.getTime() - ((i * 3) % 60) * DAY_MS);
+    const capturedAt = new Date(ANCHOR.getTime() - ((i * 13) % 168) * DAY_MS);
     const payload: CaptureLeadPayload = {
       businessName: who.businessName,
       contactName: who.contactName,
@@ -147,6 +166,10 @@ function stagesUpTo(target: LeadStatus): Exclude<LeadStatus, "new">[] {
   }
   if (target === "lost") {
     return ["contacted", "lost"];
+  }
+  if (target === "converted") {
+    // Signé après un cycle complet de démarchage → `lead.converted` (sales-led).
+    return ["contacted", "qualified", "negotiating", "converted"];
   }
   const order: Exclude<LeadStatus, "new" | "converted" | "lost">[] = [
     "contacted",

@@ -40,14 +40,16 @@ export async function seedActivation(
     if ((await harness.prisma.company.findFirst({ where: { siret } })) !== null) {
       continue; // idempotent : société déjà semée.
     }
-    const declaredAt = new Date(anchor.getTime() - ((i * 2) % 80) * DAY_MS);
+    // Étalé sur ~26 semaines (0..182 j) pour peupler les fenêtres 13 & 52 sem. du
+    // dashboard : des activations avant ET pendant la période → un « +X pts » réel.
+    const declaredAt = new Date(anchor.getTime() - ((i * 11) % 182) * DAY_MS);
     const ownerId = await provisionOwner(harness, who, declaredAt);
     if (ownerId === null) {
       continue;
     }
     const companyId = await declare(harness, ownerId, who.businessName, siret, declaredAt);
     if (companyId !== null) {
-      await advancePieces(harness, ownerId, companyId, i % 6, declaredAt);
+      await advancePieces(harness, ownerId, companyId, i % 6, who, declaredAt);
       created += 1;
     }
   }
@@ -107,6 +109,7 @@ async function advancePieces(
   ownerId: string,
   companyId: string,
   depth: number,
+  who: ReturnType<typeof persona>,
   from: Date,
 ): Promise<void> {
   let when = from;
@@ -135,14 +138,14 @@ async function advancePieces(
   if (depth >= 3) {
     await step(() =>
       harness.commands.execute<SaveBillingAddressCommand, void>(
-        new SaveBillingAddressCommand(ownerId, companyId, billingPayload()),
+        new SaveBillingAddressCommand(ownerId, companyId, billingPayload(who)),
       ),
     );
   }
   if (depth >= 4) {
     await step(() =>
       harness.commands.execute<AddDeliveryAddressCommand, void>(
-        new AddDeliveryAddressCommand(ownerId, companyId, deliveryPayload()),
+        new AddDeliveryAddressCommand(ownerId, companyId, deliveryPayload(who)),
       ),
     );
   }
@@ -156,24 +159,30 @@ async function advancePieces(
   }
 }
 
-function billingPayload(): BillingAddressPayload {
+/** Rue déterministe, plausible en station (pas de `random`). */
+function street(who: ReturnType<typeof persona>): string {
+  const ways = ["Front de neige", "Rue de la Poste", "Route des Pistes", "Avenue de la Gare"];
+  return `${1 + (who.index % 40)} ${ways[who.index % ways.length]}`;
+}
+
+function billingPayload(who: ReturnType<typeof persona>): BillingAddressPayload {
   return {
     label: "Siège",
-    ligne1: "1 rue du Test",
+    ligne1: street(who),
     ligne2: "",
-    codePostal: "75001",
-    ville: "Paris",
+    codePostal: who.codePostal,
+    ville: who.ville,
     pays: "France",
   };
 }
 
-function deliveryPayload(): DeliveryAddressPayload {
+function deliveryPayload(who: ReturnType<typeof persona>): DeliveryAddressPayload {
   return {
     label: "Livraison",
-    ligne1: "1 rue du Test",
+    ligne1: street(who),
     ligne2: "",
-    codePostal: "75001",
-    ville: "Paris",
+    codePostal: who.codePostal,
+    ville: who.ville,
     pays: "France",
     isDefault: true,
     specs: { note: "", slots: { mode: "everyday", slot: null }, deliveryContact: null, gps: null },
