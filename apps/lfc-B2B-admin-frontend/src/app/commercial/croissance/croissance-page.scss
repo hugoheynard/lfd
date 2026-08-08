@@ -145,6 +145,22 @@ h1 {
   font-weight: 600;
 }
 
+/* Petit tag de portée temporelle à côté d'un titre (ex. « cumulé à date »). */
+.scope-tag {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm, 0.25rem);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 /* Contrôles à droite de l'en-tête (tri + bulle d'info). */
 .head-controls {
   display: flex;

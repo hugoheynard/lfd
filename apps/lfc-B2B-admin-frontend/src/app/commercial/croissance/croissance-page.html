@@ -104,7 +104,7 @@
           <div class="grid">
             <article class="card wide">
               <header class="card-head">
-                <h2>Adoption et perte par territoire</h2>
+                <h2>Adoption et perte par territoire <span class="scope-tag">cumulé à date</span></h2>
                 <div class="head-controls">
                   <label class="sort-control">
                     <span class="visually-hidden">Trier</span>
@@ -120,15 +120,15 @@
                   </label>
                   <app-metric-info
                     label="Adoption et perte par territoire"
-                    text="Deux barres par zone, sur base 100 % du marché visé : Adoption = sociétés activées / acteurs visés (comptés via l'API entreprises ; verte si la période a progressé, l'étiquette porte le taux et les points gagnés) ; Perte = sociétés résiliées rapportées au même marché (rouge). On compare d'un coup ce qu'on gagne et ce qu'on perd sur chaque territoire. Configurez zones et NAF dans Réglages ▸ Commercial."
+                    text="Instantané CUMULÉ À DATE (all-time), pas une valeur de période. Deux barres par zone, sur base 100 % du marché visé : Adoption = sociétés activées à ce jour / acteurs visés (comptés via l'API entreprises) ; Perte = sociétés résiliées à ce jour / acteurs visés. Le « +X pts » sur l'adoption est le seul élément de période : les points de part de marché gagnés sur la fenêtre d'analyse (~90 j). On compare d'un coup ce qu'on a gagné et perdu sur chaque territoire. Configurez zones et NAF dans Réglages ▸ Commercial."
                   />
                 </div>
               </header>
               @if (adoption(); as opt) {
                 <app-chart [option]="opt" height="300px" />
                 <app-chart-note
-                  goal="Comparer, par zone, ce qu'on gagne (adoption) et ce qu'on perd (résiliations) sur le marché visé."
-                  read="Deux barres par zone sur base 100 % : verte/bleue = adoption, rouge = perte. Plus la verte est longue, plus la zone est conquise."
+                  goal="Situer chaque territoire : part de marché conquise vs perdue, sur le marché visé. Instantané cumulé à date (all-time), pas une valeur de période."
+                  read="Par zone, sur base 100 % : Adoption (vert) = sociétés activées à ce jour ÷ acteurs visés ; Perte (rouge) = sociétés résiliées à ce jour ÷ acteurs visés. Le « +X pts » sur l'adoption = les points gagnés sur la fenêtre d'analyse (~90 j)."
                 />
               } @else {
                 <p class="muted">
