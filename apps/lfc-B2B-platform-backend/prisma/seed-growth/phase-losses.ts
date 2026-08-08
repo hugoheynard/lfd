@@ -13,28 +13,34 @@ const LOSSES: ReadonlyArray<{ codePostal: string; ville: string; count: number }
   { codePostal: "73700", ville: "Bourg-Saint-Maurice", count: 3 },
 ];
 
-/** Une part de la distribution : (raison, sous-raison, poids). */
+/** Une part de la distribution : (raison, sous-raison, détail optionnel, poids). */
 interface Weight {
   readonly reason: string;
   readonly sub: string;
+  /** 3ᵉ niveau (ex. catégorie produit sous `better_price`), vide sinon. */
+  readonly detail?: string;
   readonly count: number;
 }
 
 /**
  * **Résiliations confirmées** — distribution VOLONTAIREMENT contrastée (ratios
- * lisibles au sunburst). Cessation & concurrent dominent ; le tarif suit ; qualité
- * et le reste sont minoritaires. Somme = 30 = total des terminated ci-dessus.
+ * lisibles au sunburst). Le **concurrent** domine et se détaille jusqu'à la
+ * **catégorie produit** sous « Meilleur prix » (3ᵉ anneau, boissons en tête) ; la
+ * cessation suit ; tarif, qualité et le reste sont minoritaires. Somme = 30 =
+ * total des `terminated` ci-dessus.
  */
 const CONFIRMED: readonly Weight[] = [
-  { reason: "closure", sub: "business_closure", count: 7 },
-  { reason: "closure", sub: "relocation", count: 5 },
-  { reason: "competitor", sub: "better_price", count: 6 },
-  { reason: "competitor", sub: "better_offer", count: 3 },
+  { reason: "competitor", sub: "better_price", detail: "beverages", count: 5 },
+  { reason: "competitor", sub: "better_price", detail: "wine_spirits", count: 3 },
+  { reason: "competitor", sub: "better_price", detail: "grocery", count: 1 },
+  { reason: "competitor", sub: "better_price", detail: "fresh", count: 1 },
+  { reason: "competitor", sub: "better_offer", count: 2 },
+  { reason: "competitor", sub: "proximite", count: 2 },
+  { reason: "closure", sub: "business_closure", count: 5 },
+  { reason: "closure", sub: "relocation", count: 4 },
   { reason: "price", sub: "delivery_cost", count: 3 },
   { reason: "price", sub: "catalog_price", count: 1 },
-  { reason: "price", sub: "no_incentive", count: 1 },
   { reason: "quality", sub: "product_quality", count: 2 },
-  { reason: "quality", sub: "service", count: 1 },
   { reason: "no_need", sub: "seasonal", count: 1 },
 ];
 
@@ -50,12 +56,19 @@ const RECOVERED: readonly Weight[] = [
   { reason: "closure", sub: "business_closure", count: 1 },
 ];
 
-/** Déplie une distribution pondérée en une liste plate de (raison, sous-raison). */
-function flatten(dist: readonly Weight[]): ReadonlyArray<{ reason: string; sub: string }> {
-  const out: { reason: string; sub: string }[] = [];
+/** Une occurrence dépliée : raison + sous-raison + détail (vide si feuille). */
+interface Part {
+  readonly reason: string;
+  readonly sub: string;
+  readonly detail: string;
+}
+
+/** Déplie une distribution pondérée en une liste plate de (raison, sous-raison, détail). */
+function flatten(dist: readonly Weight[]): readonly Part[] {
+  const out: Part[] = [];
   for (const w of dist) {
     for (let i = 0; i < w.count; i += 1) {
-      out.push({ reason: w.reason, sub: w.sub });
+      out.push({ reason: w.reason, sub: w.sub, detail: w.detail ?? "" });
     }
   }
   return out;
@@ -85,7 +98,7 @@ export async function seedLosses(harness: SeedHarness, anchor: Date): Promise<nu
       const company = await harness.prisma.company.findFirst({ where: { siret }, select: { id: true } });
       const w = confirmed[k % confirmed.length];
       if (company !== null && w !== undefined) {
-        await record(harness, `term_c_${k}`, company.id, w.reason, w.sub, k, "confirmed");
+        await record(harness, `term_c_${k}`, company.id, w, k, "confirmed");
       }
     }
   }
@@ -109,7 +122,7 @@ async function seedRecovered(harness: SeedHarness): Promise<void> {
     const w = recovered[j];
     const company = active[j % active.length];
     if (w !== undefined && company !== undefined) {
-      await record(harness, `term_r_${j}`, company.id, w.reason, w.sub, j, "recovered");
+      await record(harness, `term_r_${j}`, company.id, w, j, "recovered");
     }
   }
 }
@@ -119,16 +132,16 @@ async function record(
   harness: SeedHarness,
   id: string,
   companyId: string,
-  reason: string,
-  subReason: string,
+  part: Part,
   index: number,
   outcome: "confirmed" | "recovered",
 ): Promise<void> {
   const data = {
     id,
     companyId,
-    reason,
-    subReason,
+    reason: part.reason,
+    subReason: part.sub,
+    detail: part.detail,
     initiatedBy: index % 3 === 0 ? "commercial" : "client",
     outcome,
   };

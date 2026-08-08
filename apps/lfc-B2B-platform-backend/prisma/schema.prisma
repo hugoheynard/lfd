@@ -957,6 +957,8 @@ model CompanyTermination {
   reason      String
   /// Sous-raison précise (ex. `delivery_cost`, `catalog_price`), vide si non précisée.
   subReason   String   @default("") @map("sub_reason")
+  /// 3ᵉ niveau optionnel (ex. catégorie produit sous `better_price`), vide sinon.
+  detail      String   @default("") @map("detail")
   /// client | commercial (qui a enregistré la terminaison).
   initiatedBy String   @map("initiated_by")
   /// confirmed (résilié) | recovered (rattrapé, compte conservé).

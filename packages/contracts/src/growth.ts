@@ -418,6 +418,11 @@ export interface TerminationSubReasonCount {
   readonly subReason: string;
   readonly label: string;
   readonly count: number;
+  /**
+   * Détail plus fin (3ᵉ anneau du sunburst) — ex. la catégorie produit sous
+   * « Meilleur prix ailleurs ». Absent quand la sous-raison est une feuille.
+   */
+  readonly children?: readonly TerminationSubReasonCount[];
 }
 
 /**

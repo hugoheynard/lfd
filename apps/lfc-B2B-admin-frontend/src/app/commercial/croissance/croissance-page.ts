@@ -116,12 +116,7 @@ export class CroissancePage {
     if (t === null || t.reasons.length === 0) {
       return null;
     }
-    // Valeur 0 sur les catégories : `.sum()` de D3 additionne les feuilles (sous-raisons).
-    return t.reasons.map((r) => ({
-      name: r.label,
-      value: 0,
-      children: r.children.map((c) => ({ name: c.label, value: c.count })),
-    }));
+    return t.reasons.map(toSunburst);
   });
   protected readonly terminationRecovery = computed<ChartOption | null>(() => {
     const t = this.terminations();
@@ -218,6 +213,26 @@ export class CroissancePage {
       this.adoptionZoneTrends.set(null);
     }
   }
+}
+
+/** Nœud de churn labellisé (raison ou sous-raison), profondeur variable. */
+interface LabeledCount {
+  readonly label: string;
+  readonly count: number;
+  readonly children?: readonly LabeledCount[];
+}
+
+/**
+ * Convertit un nœud de churn en datum sunburst : une feuille porte sa valeur, un
+ * nœud à enfants porte 0 (D3 `.sum()` additionne les feuilles) et récurse — le 3ᵉ
+ * anneau (catégorie produit sous « Meilleur prix ») tombe naturellement.
+ */
+function toSunburst(node: LabeledCount): SunburstDatum {
+  const children = node.children ?? [];
+  if (children.length === 0) {
+    return { name: node.label, value: node.count };
+  }
+  return { name: node.label, value: 0, children: children.map(toSunburst) };
 }
 
 /** Montant en euros (centimes du contrat). */

@@ -2,11 +2,12 @@ import { computeTerminationStats, type TerminationRow } from "../termination-sta
 
 describe("computeTerminationStats", () => {
   const rows: TerminationRow[] = [
-    { reason: "price", subReason: "delivery_cost", outcome: "confirmed" },
-    { reason: "price", subReason: "catalog_price", outcome: "confirmed" },
-    { reason: "price", subReason: "delivery_cost", outcome: "recovered" }, // 3 tentatives tarif
-    { reason: "competitor", subReason: "better_price", outcome: "confirmed" },
-    { reason: "unknown_x", subReason: "", outcome: "confirmed" }, // raison inconnue → other / Non précisé
+    { reason: "price", subReason: "delivery_cost", detail: "", outcome: "confirmed" },
+    { reason: "price", subReason: "catalog_price", detail: "", outcome: "confirmed" },
+    { reason: "price", subReason: "delivery_cost", detail: "", outcome: "recovered" }, // 3 tentatives tarif
+    { reason: "competitor", subReason: "better_price", detail: "beverages", outcome: "confirmed" },
+    { reason: "competitor", subReason: "better_price", detail: "grocery", outcome: "confirmed" },
+    { reason: "unknown_x", subReason: "", detail: "", outcome: "confirmed" }, // raison inconnue → other / Non précisé
   ];
 
   it("sunburst = raison → sous-raison, résiliations confirmées (rattrapées exclues)", () => {
@@ -21,9 +22,21 @@ describe("computeTerminationStats", () => {
     expect(other?.children.find((c) => c.label === "Non précisé")?.count).toBe(1);
   });
 
+  it("3ᵉ anneau : « Meilleur prix » se détaille par catégorie produit", () => {
+    const view = computeTerminationStats(rows);
+    const competitor = view.reasons.find((r) => r.reason === "competitor");
+    expect(competitor?.count).toBe(2);
+    const betterPrice = competitor?.children.find((c) => c.subReason === "better_price");
+    expect(betterPrice?.count).toBe(2);
+    const detail = new Map(betterPrice?.children?.map((c) => [c.label, c.count]));
+    expect(detail.get("Boissons")).toBe(1);
+    expect(detail.get("Épicerie")).toBe(1);
+  });
+
   it("taux de rattrapage global et par catégorie", () => {
     const view = computeTerminationStats(rows);
-    expect(view.recovery).toMatchObject({ attempts: 5, recovered: 1, rate: 0.2 });
+    expect(view.recovery).toMatchObject({ attempts: 6, recovered: 1 });
+    expect(view.recovery.rate).toBeCloseTo(1 / 6);
     const price = view.recoveryByReason.find((r) => r.reason === "price");
     expect(price).toMatchObject({ attempts: 3, recovered: 1 });
     expect(price?.rate).toBeCloseTo(1 / 3);
