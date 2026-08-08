@@ -8,7 +8,7 @@ import type {
   LifecycleFlow,
   PenetrationTrendPoint,
   TemperatureFlowPoint,
-  TerminationReasonCount,
+  TerminationReasonNode,
   TerminationStatsView,
   VelocityMetric,
   ZonePenetrationTrend,
@@ -510,26 +510,37 @@ const WHEEL = [
 ];
 
 /**
- * **Raisons de résiliation** (camembert) : la répartition des résiliations confirmées
- * par catégorie de départ (tarif, concurrent, cessation…), enregistrée à la clôture.
+ * **Raisons de résiliation** (sunburst classique) : anneau intérieur = la catégorie
+ * de départ (tarif, concurrent, cessation…), anneau extérieur = la **sous-raison**
+ * (livraison trop chère, catalogue trop cher, manque d'incentive…). Enregistré à la
+ * clôture par le client ou le commercial. Les enfants héritent d'une teinte de leur
+ * catégorie.
  */
-export function terminationReasonsOption(reasons: readonly TerminationReasonCount[]): EChartsOption {
+export function terminationReasonsOption(reasons: readonly TerminationReasonNode[]): EChartsOption {
+  const data = reasons.map((r, i): Record<string, unknown> => {
+    const color = WHEEL[i % WHEEL.length] ?? PALETTE.slate;
+    return {
+      name: r.label,
+      value: r.count,
+      itemStyle: { color },
+      children: r.children.map((c) => ({ name: c.label, value: c.count })),
+    };
+  });
   return {
-    tooltip: { trigger: 'item', formatter: '{b} : {c} ({d} %)' },
-    legend: { bottom: 0, type: 'scroll', textStyle: { color: PALETTE.slate } },
+    tooltip: { trigger: 'item', formatter: '{b} : {c}' },
     series: [
       {
-        type: 'pie',
-        radius: ['45%', '70%'],
-        center: ['50%', '44%'],
-        avoidLabelOverlap: true,
-        label: { show: false },
-        labelLine: { show: false },
-        data: reasons.map((r, i) => ({
-          value: r.count,
-          name: r.label,
-          itemStyle: { color: WHEEL[i % WHEEL.length] ?? PALETTE.slate },
-        })),
+        type: 'sunburst',
+        radius: [0, '92%'],
+        center: ['50%', '50%'],
+        nodeClick: false,
+        data,
+        label: { minAngle: 8, color: '#fff', overflow: 'truncate' },
+        levels: [
+          {},
+          { r0: '0%', r: '48%', label: { rotate: 0 } },
+          { r0: '50%', r: '90%', label: { align: 'right' }, itemStyle: { opacity: 0.75 } },
+        ],
       },
     ],
   };
