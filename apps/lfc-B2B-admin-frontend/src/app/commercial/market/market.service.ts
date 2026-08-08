@@ -7,6 +7,7 @@ import type {
   MarketConfigView,
   MarketSectorsView,
   MarketVolumeView,
+  OrderMetricsView,
   SectorRevenueView,
 } from '@lfd/contracts';
 
@@ -65,6 +66,10 @@ export class MarketService {
 
   sectorRevenue(): Promise<SectorRevenueView> {
     return this.get<SectorRevenueView>(`${B2B_API_BASE}/admin/growth/sector-revenue`);
+  }
+
+  orderMetrics(): Promise<OrderMetricsView> {
+    return this.get<OrderMetricsView>(`${B2B_API_BASE}/admin/growth/order-metrics`);
   }
 
   private async get<T>(url: string): Promise<T> {

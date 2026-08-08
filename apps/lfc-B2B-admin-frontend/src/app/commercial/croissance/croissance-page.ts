@@ -6,6 +6,7 @@ import type {
   GrowthStatsView,
   MarketSectorsView,
   MarketVolumeView,
+  OrderMetricsView,
   PenetrationTrendPoint,
   SectorRevenueView,
   TerminationStatsView,
@@ -26,11 +27,14 @@ import {
   acquisitionOption,
   type AdoptionSort,
   adoptionOption,
+  caByTypeOption,
+  caVsOrdersOption,
   cohortHeatmapOption,
   concentrationSummary,
   funnelOption,
   lifecycleSankeyOption,
   marketVolumeOption,
+  revenueTrendOption,
   recoveryReactionOption,
   sectorMixOption,
   sectorRevenueOption,
@@ -81,7 +85,7 @@ export class CroissancePage {
   protected readonly tabs: ReadonlyArray<{ readonly key: TabKey; readonly label: string }> = [
     { key: 'acquisition', label: 'Acquisition' },
     { key: 'marche', label: 'Marché & territoire' },
-    { key: 'volume', label: 'Volume' },
+    { key: 'volume', label: 'Volume / CA' },
     { key: 'retention', label: 'Rétention & churn' },
     { key: 'vivier', label: 'Vivier' },
     { key: 'usage', label: 'Usage webapp' },
@@ -93,6 +97,7 @@ export class CroissancePage {
   protected readonly marketSectors = signal<MarketSectorsView | null>(null);
   protected readonly marketVolume = signal<MarketVolumeView | null>(null);
   protected readonly sectorRevenue = signal<SectorRevenueView | null>(null);
+  protected readonly orderMetrics = signal<OrderMetricsView | null>(null);
   protected readonly terminations = signal<TerminationStatsView | null>(null);
 
   protected readonly kpis = computed<readonly Kpi[]>(() => {
@@ -185,6 +190,20 @@ export class CroissancePage {
       ? null
       : sectorRevenueOption(view, this.sectorGrain());
   });
+  protected readonly caGrain = signal<SectorGrain>('week');
+  protected readonly caGrains = SECTOR_GRAINS;
+  protected readonly revenueTrend = computed<ChartOption | null>(() => {
+    const view = this.orderMetrics();
+    return view === null || view.days.length === 0 ? null : revenueTrendOption(view, this.caGrain());
+  });
+  protected readonly caVsOrders = computed<ChartOption | null>(() => {
+    const view = this.orderMetrics();
+    return view === null || view.days.length === 0 ? null : caVsOrdersOption(view, this.caGrain());
+  });
+  protected readonly caByType = computed<ChartOption | null>(() => {
+    const view = this.orderMetrics();
+    return view === null || view.days.length === 0 ? null : caByTypeOption(view, this.caGrain());
+  });
   protected readonly zoneVelocity = computed<ChartOption | null>(() => {
     const trends = this.adoptionZoneTrends();
     if (trends === null || !trends.some((z) => z.points.some((p) => p.penetration > 0))) {
@@ -261,6 +280,15 @@ export class CroissancePage {
     }
   }
 
+  /** Change la granularité temporelle des graphes Volume / CA depuis le `<select>`. */
+  protected onCaGrain(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    const match = this.caGrains.find((g) => g.value === value);
+    if (match !== undefined) {
+      this.caGrain.set(match.value);
+    }
+  }
+
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
@@ -304,6 +332,12 @@ export class CroissancePage {
       this.sectorRevenue.set(await this.market.sectorRevenue());
     } catch {
       this.sectorRevenue.set(null);
+    }
+    // Métriques de commande (CA, nombre, récurrent/unique) dans le temps.
+    try {
+      this.orderMetrics.set(await this.market.orderMetrics());
+    } catch {
+      this.orderMetrics.set(null);
     }
   }
 }

@@ -8,6 +8,7 @@ import type {
   LifecycleFlow,
   MarketSectorsView,
   MarketVolumeView,
+  OrderMetricsView,
   PenetrationTrendPoint,
   SectorRevenueView,
   RecoveryReactionByWeek,
@@ -22,7 +23,7 @@ import type {
 import type { EChartsOption } from 'echarts';
 
 import { CHURN_COLORS, CHURN_GLOBAL_COLOR } from './churn-palette';
-import { bucketSectorRevenue, type SectorGrain } from './sector-grain';
+import { bucketAxis, bucketSectorRevenue, foldDaily, type SectorGrain } from './sector-grain';
 
 /**
  * **Constructeurs d'options ECharts** (purs) du dashboard de croissance. Séparés de
@@ -923,6 +924,124 @@ export function sectorRevenueOption(view: SectorRevenueView, grain: SectorGrain 
     xAxis: { type: 'category', data: [...bucketed.labels], boundaryGap: false },
     yAxis: { type: 'value', name: '€' },
     series,
+  };
+}
+
+/** Montant euros entier depuis des centimes, formaté fr-FR. */
+function eurosLabel(cents: number): string {
+  return (cents / 100).toLocaleString('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  });
+}
+
+/**
+ * **Chiffre d'affaires dans le temps** : aire simple du CA (TTC) par période, à la
+ * granularité choisie. La donnée de tête de l'onglet Volume / CA — le niveau et la
+ * tendance du CA encaissé.
+ */
+export function revenueTrendOption(view: OrderMetricsView, grain: SectorGrain = 'week'): EChartsOption {
+  const axis = bucketAxis(view.days, grain);
+  const ca = foldDaily(axis, view.caCents).map((c) => Math.round(c / 100));
+  return {
+    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    tooltip: { trigger: 'axis', valueFormatter: (v): string => `${Number(v).toLocaleString('fr-FR')} €` },
+    xAxis: { type: 'category', data: [...axis.labels], boundaryGap: false },
+    yAxis: { type: 'value', name: '€' },
+    series: [
+      {
+        name: 'CA (TTC)',
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        data: ca,
+        lineStyle: { color: PALETTE.blue, width: 2 },
+        areaStyle: { color: PALETTE.blue, opacity: 0.15 },
+        itemStyle: { color: PALETTE.blue },
+      },
+    ],
+  };
+}
+
+/**
+ * **CA vs nombre de commandes** : deux courbes INDEXÉES base 100 (même axe, pas de
+ * double échelle). Le CA qui monte plus vite que le nombre de commandes = **panier
+ * moyen** en hausse ; l'écart entre les deux se lit directement. Tooltip = valeurs brutes.
+ */
+export function caVsOrdersOption(view: OrderMetricsView, grain: SectorGrain = 'week'): EChartsOption {
+  const axis = bucketAxis(view.days, grain);
+  const ca = foldDaily(axis, view.caCents);
+  const orders = foldDaily(axis, view.orders);
+  const baseCa = ca.find((c) => c > 0) ?? ca[0] ?? 0;
+  const baseOrders = orders.find((o) => o > 0) ?? orders[0] ?? 0;
+  const index = (v: number, base: number): number => (base > 0 ? Math.round((v / base) * 100) : 100);
+  return {
+    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    legend: { top: 0, textStyle: { color: PALETTE.slate } },
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params): string => {
+        const arr = Array.isArray(params) ? params : [params];
+        const i = toIndex(arr[0]);
+        const basket = (orders[i] ?? 0) > 0 ? (ca[i] ?? 0) / (orders[i] ?? 1) : 0;
+        return `${axis.labels[i] ?? ''}<br/>CA ${eurosLabel(ca[i] ?? 0)}<br/>${orders[i] ?? 0} commandes<br/>panier moyen ${eurosLabel(basket)}`;
+      },
+    },
+    xAxis: { type: 'category', data: [...axis.labels], boundaryGap: false },
+    yAxis: { type: 'value', name: 'indice (base 100)' },
+    series: [
+      {
+        name: 'CA (TTC)',
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        data: ca.map((c) => index(c, baseCa)),
+        lineStyle: { color: PALETTE.blue, width: 2 },
+        itemStyle: { color: PALETTE.blue },
+      },
+      {
+        name: 'Nombre de commandes',
+        type: 'line',
+        symbol: 'none',
+        data: orders.map((o) => index(o, baseOrders)),
+        lineStyle: { color: PALETTE.slate, width: 2, type: 'dashed' },
+        itemStyle: { color: PALETTE.slate },
+      },
+    ],
+  };
+}
+
+/**
+ * **CA par type de commande** : aires empilées € — commandes **uniques** (ponctuelles)
+ * vs **récurrentes** (issues d'un abonnement). L'enveloppe = le CA total, l'épaisseur de
+ * chaque bande = la part portée par ce type. On lit quel type de commande porte le CA.
+ */
+export function caByTypeOption(view: OrderMetricsView, grain: SectorGrain = 'week'): EChartsOption {
+  const axis = bucketAxis(view.days, grain);
+  const oneShot = foldDaily(axis, view.caOneShotCents).map((c) => Math.round(c / 100));
+  const recurring = foldDaily(axis, view.caRecurringCents).map((c) => Math.round(c / 100));
+  const band = (name: string, color: string, data: number[]): Record<string, unknown> => ({
+    name,
+    type: 'line',
+    stack: 'ca',
+    smooth: true,
+    symbol: 'none',
+    lineStyle: { width: 1, color },
+    areaStyle: { color, opacity: 0.55 },
+    itemStyle: { color },
+    data,
+  });
+  return {
+    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    legend: { top: 0, textStyle: { color: PALETTE.slate } },
+    tooltip: { trigger: 'axis', valueFormatter: (v): string => `${Number(v).toLocaleString('fr-FR')} €` },
+    xAxis: { type: 'category', data: [...axis.labels], boundaryGap: false },
+    yAxis: { type: 'value', name: '€' },
+    series: [
+      band('Commandes uniques', PALETTE.blue, oneShot),
+      band('Commandes récurrentes', PALETTE.violet, recurring),
+    ],
   };
 }
 

@@ -186,6 +186,73 @@
           <div class="grid">
             <article class="card wide">
               <header class="card-head">
+                <h2>Chiffre d'affaires dans le temps</h2>
+                <div class="head-controls">
+                  <label class="sort-control">
+                    <span class="visually-hidden">Granularité</span>
+                    <select class="sort-select" [value]="caGrain()" (change)="onCaGrain($event)">
+                      @for (g of caGrains; track g.value) {
+                        <option [value]="g.value">{{ g.label }}</option>
+                      }
+                    </select>
+                  </label>
+                  <app-metric-info
+                    label="Chiffre d'affaires dans le temps"
+                    text="Le CA (TTC) encaissé par période, à la granularité choisie (jour, semaine, mois, trimestre, année). Le jour est le grain natif ; les grains plus larges regroupent les jours. La granularité choisie ici pilote aussi les deux graphes CA suivants. Compte toutes les commandes (y compris zéro-friction sans société)."
+                  />
+                </div>
+              </header>
+              @if (revenueTrend(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Suivre le niveau et la tendance du chiffre d'affaires encaissé."
+                  read="Aire du CA (TTC) par période. Une pente qui monte = CA en croissance. Le sélecteur en haut change le grain (jour → année)."
+                />
+              } @else {
+                <p class="muted">Pas encore de commandes pour tracer le chiffre d'affaires.</p>
+              }
+            </article>
+
+            <article class="card wide">
+              <header class="card-head">
+                <h2>CA vs nombre de commandes <span class="scope-tag">indice base 100</span></h2>
+                <app-metric-info
+                  label="CA vs nombre de commandes (panier moyen)"
+                  text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le CA (TTC) et le nombre de commandes. Quand le CA monte plus vite que le nombre de commandes, le PANIER MOYEN augmente — l'écart entre les deux courbes se lit directement. Le tooltip donne le CA, le nombre de commandes et le panier moyen (CA ÷ commandes) de la période. Suit la granularité du graphe CA du dessus."
+                />
+              </header>
+              @if (caVsOrders(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Voir si le panier moyen augmente : CA qui monte plus vite que le nombre de commandes."
+                  read="Deux courbes indexées base 100 : CA (plein) et nombre de commandes (pointillé). L'écart qui se creuse vers le haut = panier moyen en hausse. Panier moyen au tooltip."
+                />
+              } @else {
+                <p class="muted">Pas encore assez de commandes pour comparer.</p>
+              }
+            </article>
+
+            <article class="card wide">
+              <header class="card-head">
+                <h2>CA par type de commande</h2>
+                <app-metric-info
+                  label="CA par type de commande (unique vs récurrent)"
+                  text="Aires empilées en euros : le CA porté par les commandes UNIQUES (ponctuelles) vs RÉCURRENTES (issues d'un abonnement). L'enveloppe du haut = le CA total ; l'épaisseur de chaque bande = la part portée par ce type. On comprend quel type de commande porte le CA — et si le récurrent prend de l'ampleur. Suit la granularité du graphe CA du haut."
+                />
+              </header>
+              @if (caByType(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Comprendre quel type de commande (unique vs récurrent) porte le CA."
+                  read="Aires empilées € : commandes uniques (bleu) et récurrentes (violet). L'enveloppe = le CA total, l'épaisseur = la part de chaque type. Une bande récurrente qui grossit = l'abonnement monte en charge."
+                />
+              } @else {
+                <p class="muted">Pas encore de commandes pour ventiler le CA par type.</p>
+              }
+            </article>
+
+            <article class="card wide">
+              <header class="card-head">
                 <h2>Marché vs volume <span class="scope-tag">indice base 100</span></h2>
                 <app-metric-info
                   label="Marché vs volume (CA) dans le temps"
@@ -501,26 +568,6 @@
                   goal="Mesurer les délais clés : inscription → 1re commande, et déclaration → activation."
                   read="Une boîte par délai (jours) ; la boîte couvre les quartiles, le trait central la médiane."
                 />
-              }
-            </article>
-
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Concentration du volume (grands comptes)</h2>
-                <app-metric-info
-                  label="Concentration du volume"
-                  text="Courbe de Lorenz du volume de commandes par compte : plus la courbe s'éloigne de la diagonale d'égalité, plus quelques grands comptes concentrent le volume. Le Gini résume l'inégalité (0 = égal, 1 = tout sur un compte)."
-                />
-              </header>
-              @if (concentration(); as c) {
-                <p class="muted">{{ concentrationHint() }}</p>
-                <app-lorenz [data]="c" height="300px" />
-                <app-chart-note
-                  goal="Savoir si le volume de commandes est concentré sur quelques grands comptes."
-                  read="Courbe de Lorenz : plus elle s'éloigne de la diagonale, plus c'est concentré. Le Gini résume (0 = égal, 1 = tout sur un compte)."
-                />
-              } @else {
-                <p class="muted">Pas encore de commandes pour mesurer la concentration.</p>
               }
             </article>
           </div>

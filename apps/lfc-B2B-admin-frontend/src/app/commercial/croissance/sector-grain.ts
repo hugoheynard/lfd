@@ -82,22 +82,39 @@ function bucketLabel(key: string, grain: SectorGrain): string {
  * chronologique (l'ordre des jours source est préservé) et les libellés sont prêts à afficher.
  */
 export function bucketSectorRevenue(view: SectorRevenueView, grain: SectorGrain): BucketedRevenue {
+  const axis = bucketAxis(view.days, grain);
+  const series = view.series.map((s) => ({ label: s.label, values: foldDaily(axis, s.daily) }));
+  return { labels: axis.labels, series };
+}
+
+/** Axe de périodes : libellés prêts à afficher + index de bucket pour chaque jour source. */
+export interface GrainAxis {
+  readonly labels: readonly string[];
+  readonly bucketOf: readonly number[];
+}
+
+/** Construit l'axe de périodes d'une suite de jours ISO à la granularité donnée. */
+export function bucketAxis(days: readonly string[], grain: SectorGrain): GrainAxis {
   const order: string[] = [];
   const indexOf = new Map<string, number>();
-  for (const iso of view.days) {
+  const bucketOf = days.map((iso) => {
     const key = bucketKey(iso, grain);
-    if (!indexOf.has(key)) {
-      indexOf.set(key, order.length);
+    let idx = indexOf.get(key);
+    if (idx === undefined) {
+      idx = order.length;
+      indexOf.set(key, idx);
       order.push(key);
     }
-  }
-  const series = view.series.map((s) => {
-    const values = new Array<number>(order.length).fill(0);
-    view.days.forEach((iso, i) => {
-      const bucket = indexOf.get(bucketKey(iso, grain)) ?? 0;
-      values[bucket] = (values[bucket] ?? 0) + (s.daily[i] ?? 0);
-    });
-    return { label: s.label, values };
+    return idx;
   });
-  return { labels: order.map((k) => bucketLabel(k, grain)), series };
+  return { labels: order.map((k) => bucketLabel(k, grain)), bucketOf };
+}
+
+/** Somme une série quotidienne dans les buckets de l'axe (aligné sur `bucketOf`). */
+export function foldDaily(axis: GrainAxis, daily: readonly number[]): number[] {
+  const values = new Array<number>(axis.labels.length).fill(0);
+  axis.bucketOf.forEach((bucket, i) => {
+    values[bucket] = (values[bucket] ?? 0) + (daily[i] ?? 0);
+  });
+  return values;
 }
