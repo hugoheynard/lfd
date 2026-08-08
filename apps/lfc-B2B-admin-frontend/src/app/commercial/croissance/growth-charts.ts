@@ -345,6 +345,45 @@ export function acquisitionMixOption(points: readonly AcquisitionMixPoint[]): EC
 }
 
 /**
+ * **Mode d'acquisition** — donut product-led vs sales-led **sur toute la période**
+ * (somme des semaines). La part product-led = l'auto-découverte (self-service sans
+ * démarchage), un indicateur de la qualité du référencement. Le centre affiche cette
+ * part en %.
+ */
+export function acquisitionMixDonutOption(points: readonly AcquisitionMixPoint[]): EChartsOption {
+  const product = points.reduce((sum, p) => sum + p.productLed, 0);
+  const sales = points.reduce((sum, p) => sum + p.salesLed, 0);
+  const total = product + sales;
+  const productPct = total === 0 ? 0 : Math.round((product / total) * 100);
+  return {
+    tooltip: { trigger: 'item', formatter: '{b} : {c} ({d} %)' },
+    legend: { bottom: 0, textStyle: { color: PALETTE.slate } },
+    series: [
+      {
+        type: 'pie',
+        radius: ['52%', '74%'],
+        center: ['50%', '46%'],
+        avoidLabelOverlap: false,
+        label: {
+          show: true,
+          position: 'center',
+          formatter: `${productPct} %\nproduct-led`,
+          color: PALETTE.slate,
+          fontSize: 18,
+          fontWeight: 600,
+          lineHeight: 20,
+        },
+        labelLine: { show: false },
+        data: [
+          { value: product, name: 'Product-led', itemStyle: { color: PALETTE.green } },
+          { value: sales, name: 'Sales-led', itemStyle: { color: PALETTE.amber } },
+        ],
+      },
+    ],
+  };
+}
+
+/**
  * **Adoption par territoire** : une barre horizontale par zone = la pénétration
  * (sociétés activées / acteurs visés, en %), triée décroissante. L'étiquette porte le
  * taux **et** le delta de la période (« 12 % · +3 pts »). Barre verte si la période a

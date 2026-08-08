@@ -145,10 +145,23 @@
 
         <article class="card">
           <header class="card-head">
-            <h2>Mix product-led vs sales-led</h2>
+            <h2>Mode d'acquisition</h2>
             <app-metric-info
-              label="Mix product-led / sales-led"
-              text="Répartition de l'acquisition par semaine selon l'origine : product-led (self-service, inscription spontanée) vs sales-led (démarchage ou création par un commercial)."
+              label="Mode d'acquisition"
+              text="Part de l'acquisition auto-découverte (product-led, self-service sans démarchage) vs poussée par le commercial (sales-led : staff ou lead converti), sur toute la période. La part product-led est un indicateur direct de la qualité du référencement (SEO / agence web) — à lire avec l'acquisition hebdomadaire pour séparer « plus de trafic » de « meilleure conversion »."
+            />
+          </header>
+          @if (mixDonut(); as opt) {
+            <app-chart [option]="opt" height="280px" />
+          }
+        </article>
+
+        <article class="card">
+          <header class="card-head">
+            <h2>Mode d'acquisition — par semaine</h2>
+            <app-metric-info
+              label="Mix product-led / sales-led dans le temps"
+              text="La même répartition product-led / sales-led, semaine par semaine (aires empilées) : montre si le canal organique gagne ou perd du terrain au fil du temps."
             />
           </header>
           @if (mix(); as opt) {

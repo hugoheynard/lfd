@@ -7,6 +7,7 @@ import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { Lorenz } from '../../shared/lorenz/lorenz';
 import { MetricInfo } from '../../shared/metric-info/metric-info';
 import {
+  acquisitionMixDonutOption,
   acquisitionMixOption,
   acquisitionOption,
   adoptionOption,
@@ -116,6 +117,10 @@ export class CroissancePage {
   protected readonly mix = computed<ChartOption | null>(() => {
     const s = this.stats();
     return s === null ? null : acquisitionMixOption(s.acquisitionMix);
+  });
+  protected readonly mixDonut = computed<ChartOption | null>(() => {
+    const s = this.stats();
+    return s === null ? null : acquisitionMixDonutOption(s.acquisitionMix);
   });
   protected readonly concentration = computed<AccountConcentration | null>(() => {
     const s = this.stats();
