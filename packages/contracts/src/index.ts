@@ -139,6 +139,7 @@ export type {
   AddMarketNafPayload,
   AdoptionZoneView,
   PenetrationTrendPoint,
+  ZonePenetrationTrend,
   MarketAdoptionView,
 } from "./growth.js";
 export {

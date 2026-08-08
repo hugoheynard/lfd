@@ -20,7 +20,7 @@ describe("computeAdoption", () => {
       // 69001 : 30 activées, dont 30 avant → 0 récente ⇒ +0 pt, pénétration 30 %.
       ["69001", { ville: "Lyon", total: 30, beforeStart: 30 }],
     ]);
-    const view = computeAdoption(zones, activated, [], NOW);
+    const view = computeAdoption(zones, activated, [], [], NOW);
 
     // Tri : 69001 (30 %) avant 75011 (10 %) avant 13001 (0 %).
     expect(view.zones.map((z) => z.codePostal)).toEqual(["69001", "75011", "13001"]);

@@ -51,6 +51,7 @@ export class PrismaMarketAdoptionReader extends MarketAdoptionReader {
 
     const activated = new Map<string, { ville: string; total: number; beforeStart: number }>();
     const activationDates: Date[] = [];
+    const datesByZone = new Map<string, Date[]>();
     for (const company of companies) {
       const address = pickAddress(company.addresses);
       if (address === null || !targeted.has(address.codePostal)) {
@@ -64,6 +65,9 @@ export class PrismaMarketAdoptionReader extends MarketAdoptionReader {
       zone.total += 1;
       if (company.activatedAt !== null) {
         activationDates.push(company.activatedAt);
+        (datesByZone.get(address.codePostal) ?? setZone(datesByZone, address.codePostal)).push(
+          company.activatedAt,
+        );
         if (company.activatedAt < start) {
           zone.beforeStart += 1;
         }
@@ -76,9 +80,22 @@ export class PrismaMarketAdoptionReader extends MarketAdoptionReader {
       addressable: z.addressable,
     }));
     const totalAddressable = zones.reduce((sum, z) => sum + z.addressable, 0);
-    const trend = penetrationTrend(weekStarts(now, WINDOW_WEEKS), activationDates, totalAddressable);
-    return computeAdoption(zones, activated, trend, now);
+    const window = weekStarts(now, WINDOW_WEEKS);
+    const trend = penetrationTrend(window, activationDates, totalAddressable);
+    const zoneTrends = config.zones.map((z) => ({
+      codePostal: z.codePostal,
+      ville: activated.get(z.codePostal)?.ville ?? "",
+      points: penetrationTrend(window, datesByZone.get(z.codePostal) ?? [], z.addressable),
+    }));
+    return computeAdoption(zones, activated, trend, zoneTrends, now);
   }
+}
+
+/** Crée (et mémorise) la liste de dates d'une zone encore absente de la map. */
+function setZone(map: Map<string, Date[]>, codePostal: string): Date[] {
+  const list: Date[] = [];
+  map.set(codePostal, list);
+  return list;
 }
 
 /** Adresse représentative d'une société : facturation, sinon défaut, sinon première. */

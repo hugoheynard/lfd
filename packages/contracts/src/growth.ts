@@ -388,10 +388,23 @@ export interface PenetrationTrendPoint {
   readonly penetration: number;
 }
 
+/**
+ * La **trajectoire d'une zone** : sa part de marché cumulée semaine par semaine.
+ * La **pente** = la vélocité de conquête du territoire (§2.4). Une pente qui monte
+ * = traction ; qui s'aplatit = saturation ou essoufflement.
+ */
+export interface ZonePenetrationTrend {
+  readonly codePostal: string;
+  readonly ville: string;
+  readonly points: readonly PenetrationTrendPoint[];
+}
+
 /** L'adoption par territoire, sur la fenêtre d'analyse. */
 export interface MarketAdoptionView {
   readonly zones: readonly AdoptionZoneView[];
   /** Part de marché cumulée semaine par semaine (tout le marché ciblé). */
   readonly trend: readonly PenetrationTrendPoint[];
+  /** La même trajectoire, mais **par zone** (une courbe par territoire) — vélocité §2.4. */
+  readonly zoneTrends: readonly ZonePenetrationTrend[];
   readonly computedAt: string;
 }

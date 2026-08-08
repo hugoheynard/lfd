@@ -1,4 +1,8 @@
-import type { MarketAdoptionView, PenetrationTrendPoint } from "@lfd/contracts";
+import type {
+  MarketAdoptionView,
+  PenetrationTrendPoint,
+  ZonePenetrationTrend,
+} from "@lfd/contracts";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -47,6 +51,7 @@ export function computeAdoption(
   zones: readonly ZoneTarget[],
   activated: ReadonlyMap<string, ActivatedInZone>,
   trend: readonly PenetrationTrendPoint[],
+  zoneTrends: readonly ZonePenetrationTrend[],
   now: Date,
 ): MarketAdoptionView {
   const rows = zones.map((zone) => {
@@ -65,5 +70,5 @@ export function computeAdoption(
     };
   });
   rows.sort((x, y) => y.penetration - x.penetration || y.activated - x.activated);
-  return { zones: rows, trend, computedAt: now.toISOString() };
+  return { zones: rows, trend, zoneTrends, computedAt: now.toISOString() };
 }
