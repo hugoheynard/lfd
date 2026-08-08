@@ -12,6 +12,7 @@ import type {
 import { MarketService } from '../market/market.service';
 import { CHURN_COLORS } from './churn-palette';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
+import { ChartNote } from '../../shared/chart-note/chart-note';
 import { Lorenz } from '../../shared/lorenz/lorenz';
 import { MetricInfo } from '../../shared/metric-info/metric-info';
 import { Sunburst, type SunburstDatum } from '../../shared/sunburst/sunburst';
@@ -59,7 +60,7 @@ interface Kpi {
 @Component({
   selector: 'app-croissance-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Chart, Lorenz, Sunburst, MetricInfo, FoldButtonComponent],
+  imports: [Chart, ChartNote, Lorenz, Sunburst, MetricInfo, FoldButtonComponent],
   templateUrl: './croissance-page.html',
   styleUrl: './croissance-page.scss',
 })

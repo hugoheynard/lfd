@@ -57,6 +57,10 @@
               </header>
               @if (acquisition(); as opt) {
                 <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Suivre le rythme d'acquisition hebdomadaire et son effet cumulé sur la part de marché."
+                  read="Barres/lignes de devant = le flux de la semaine ; la ligne pointillée à droite = la part de marché qui monte. On lit l'action et son résultat ensemble."
+                />
               }
             </article>
 
@@ -70,6 +74,10 @@
               </header>
               @if (mixDonut(); as opt) {
                 <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Mesurer la part d'acquisition qui vient du référencement (product-led) vs du démarchage (sales-led)."
+                  read="Plus la part product-led est grosse, meilleur est le SEO / l'auto-découverte. Le centre affiche le % product-led."
+                />
               }
             </article>
 
@@ -83,6 +91,10 @@
               </header>
               @if (mix(); as opt) {
                 <app-chart [option]="opt" height="280px" />
+                <app-chart-note
+                  goal="Voir si le canal organique gagne ou perd du terrain dans le temps."
+                  read="Aires empilées product-led / sales-led semaine par semaine ; une bande verte qui grossit = l'organique progresse."
+                />
               }
             </article>
           </div>
@@ -113,6 +125,10 @@
               </header>
               @if (adoption(); as opt) {
                 <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Comparer, par zone, ce qu'on gagne (adoption) et ce qu'on perd (résiliations) sur le marché visé."
+                  read="Deux barres par zone sur base 100 % : verte/bleue = adoption, rouge = perte. Plus la verte est longue, plus la zone est conquise."
+                />
               } @else {
                 <p class="muted">
                   Aucune zone ciblée renseignée. Ajoutez des codes postaux et des codes NAF dans
@@ -131,6 +147,10 @@
               </header>
               @if (zoneVelocity(); as opt) {
                 <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Voir la trajectoire de conquête de chaque zone dans le temps."
+                  read="Une courbe par zone ; la pente = la vitesse. Qui monte = traction, qui s'aplatit = saturation ou essoufflement."
+                />
               } @else {
                 <p class="muted">
                   Pas encore d'activation dans les zones ciblées pour tracer une trajectoire.
@@ -152,6 +172,10 @@
               </header>
               @if (terminationSunburst(); as data) {
                 <app-sunburst [data]="data" [nodeColors]="terminationColors()" height="560px" />
+                <app-chart-note
+                  goal="Comprendre pourquoi les comptes partent, du motif général au détail produit."
+                  read="Anneau intérieur = catégorie, extérieurs = sous-raison puis détail ; clic pour zoomer, centre pour revenir. Plus l'arc est large, plus le motif pèse."
+                />
               } @else {
                 <p class="muted">Aucune résiliation enregistrée.</p>
               }
@@ -167,6 +191,10 @@
               </header>
               @if (terminationRecovery(); as opt) {
                 <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Savoir quelle part des tentatives de départ on arrive à sauver, et par quel levier."
+                  read="Une barre de taux par catégorie (couleur = motif) ; les deux barres fines dessous = auto (plateforme) vs commercial. Plus la barre est longue, mieux on récupère."
+                />
               } @else {
                 <p class="muted">Aucune tentative de résiliation enregistrée.</p>
               }
@@ -182,6 +210,10 @@
               </header>
               @if (recoveryTrend(); as opt) {
                 <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Savoir si on réagit de mieux en mieux au churn au fil du temps."
+                  read="Ligne hebdo (point plus gros = plus fiable) + ligne cumulée pointillée. Une pente qui monte = réaction plus efficace."
+                />
               } @else {
                 <p class="muted">
                   Pas encore assez de semaines de tentatives pour tracer une vélocité.
@@ -199,6 +231,10 @@
               </header>
               @if (recoveryReaction(); as opt) {
                 <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Savoir à quelle vitesse on sauve un compte, selon le motif de départ."
+                  read="Une boîte par motif (jours) ; barre centrale = médiane. Boîte basse = on sauve vite ; points rouges = sauvetages qui ont traîné."
+                />
               } @else {
                 <p class="muted">
                   Pas encore assez de rattrapages par catégorie pour une distribution.
@@ -216,6 +252,10 @@
               </header>
               @if (recoveryReactionWeekly(); as opt) {
                 <app-chart [option]="opt" height="320px" />
+                <app-chart-note
+                  goal="Voir la vitesse de réaction par motif ET son évolution dans le temps."
+                  read="Chaque semaine, une boîte par motif côte à côte (couleur = motif). Des boîtes qui descendent = on réagit de plus en plus vite ; case vide = aucun rattrapage ce motif-là."
+                />
               } @else {
                 <p class="muted">
                   Pas encore assez de rattrapages hebdomadaires par catégorie.
@@ -237,6 +277,10 @@
               </header>
               @if (temperatureFlow(); as opt) {
                 <app-chart [option]="opt" height="280px" />
+                <app-chart-note
+                  goal="Voir comment se répartit le vivier de prospects par chaleur au fil des semaines."
+                  read="Aires empilées chauds / tièdes / froids ; l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total."
+                />
               }
             </article>
 
@@ -250,6 +294,10 @@
               </header>
               @if (transitions(); as opt) {
                 <app-chart [option]="opt" height="280px" />
+                <app-chart-note
+                  goal="Voir comment les prospects changent de chaleur entre le début et la fin de la période."
+                  read="Rubans du « avant » (gauche) vers « après » (droite) ; la largeur = le nombre de personnes qui font ce passage."
+                />
               } @else {
                 <p class="muted">Pas encore assez de mouvements pour tracer les transferts.</p>
               }
@@ -265,6 +313,10 @@
               </header>
               @if (activationFunnel(); as opt) {
                 <app-chart [option]="opt" height="280px" />
+                <app-chart-note
+                  goal="Repérer où les sociétés déclarées bloquent avant d'être activées."
+                  read="Chaque marche = les sociétés ayant franchi cette pièce ; les fuites entre marches = les frictions d'onboarding."
+                />
               }
             </article>
 
@@ -278,6 +330,10 @@
               </header>
               @if (coldFunnel(); as opt) {
                 <app-chart [option]="opt" height="280px" />
+                <app-chart-note
+                  goal="Suivre la progression des leads sortants dans le pipeline commercial."
+                  read="Chaque marche compte les leads ayant atteint au moins cette étape (saisis → contactés → … → convertis)."
+                />
               }
             </article>
           </div>
@@ -295,6 +351,10 @@
               </header>
               @if (lifecycle(); as opt) {
                 <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Suivre le parcours des personnes du clic à l'activation, avec les pertes à chaque étape."
+                  read="Rubans d'une étape à la suivante ; la largeur = le nombre de personnes qui passent, les fuites = ceux qui décrochent."
+                />
               } @else {
                 <p class="muted">Pas encore assez de parcours pour tracer le flux.</p>
               }
@@ -310,6 +370,10 @@
               </header>
               @if (cohorts(); as opt) {
                 <app-chart [option]="opt" height="320px" />
+                <app-chart-note
+                  goal="Voir si les nouvelles cohortes d'inscrits reviennent commander dans le temps."
+                  read="Une ligne par semaine d'inscription ; la couleur fonce avec la part qui recommande k semaines après l'inscription."
+                />
               } @else {
                 <p class="muted">Pas encore assez de cohortes pour une heatmap.</p>
               }
@@ -325,6 +389,10 @@
               </header>
               @if (velocity(); as opt) {
                 <app-chart [option]="opt" height="280px" />
+                <app-chart-note
+                  goal="Mesurer les délais clés : inscription → 1re commande, et déclaration → activation."
+                  read="Une boîte par délai (jours) ; la boîte couvre les quartiles, le trait central la médiane."
+                />
               }
             </article>
 
@@ -339,6 +407,10 @@
               @if (concentration(); as c) {
                 <p class="muted">{{ concentrationHint() }}</p>
                 <app-lorenz [data]="c" height="300px" />
+                <app-chart-note
+                  goal="Savoir si le volume de commandes est concentré sur quelques grands comptes."
+                  read="Courbe de Lorenz : plus elle s'éloigne de la diagonale, plus c'est concentré. Le Gini résume (0 = égal, 1 = tout sur un compte)."
+                />
               } @else {
                 <p class="muted">Pas encore de commandes pour mesurer la concentration.</p>
               }
