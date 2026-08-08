@@ -148,6 +148,7 @@ export type {
   MarketVolumeView,
   SectorRevenueSeries,
   SectorRevenueView,
+  OrderMetricsView,
   TerminationReason,
   TerminationSubReasonCount,
   TerminationReasonNode,

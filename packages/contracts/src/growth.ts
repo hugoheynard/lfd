@@ -611,6 +611,22 @@ export interface SectorRevenueView {
   readonly computedAt: string;
 }
 
+/**
+ * **Métriques de commande dans le temps** (grain le plus fin = **jour** ; le front
+ * ré-agrège). Pour chaque jour, aligné sur `days` : le CA total (TTC, centimes), le
+ * **nombre de commandes** (→ panier moyen = CA ÷ commandes) et la répartition du CA
+ * entre commandes **récurrentes** (issues d'un abonnement) et **uniques** (ponctuelles).
+ * Compte TOUTES les commandes de la fenêtre (y compris zéro-friction sans société).
+ */
+export interface OrderMetricsView {
+  readonly days: readonly string[];
+  readonly caCents: readonly number[];
+  readonly orders: readonly number[];
+  readonly caRecurringCents: readonly number[];
+  readonly caOneShotCents: readonly number[];
+  readonly computedAt: string;
+}
+
 /** L'adoption par territoire, sur la fenêtre d'analyse. */
 export interface MarketAdoptionView {
   readonly zones: readonly AdoptionZoneView[];

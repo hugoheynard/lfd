@@ -7,6 +7,7 @@ import { GetGrowthStatsQuery } from "../application/queries/get-growth-stats.que
 import { GetMarketAdoptionQuery } from "../application/queries/get-market-adoption.query.js";
 import { GetMarketSectorsQuery } from "../application/queries/get-market-sectors.query.js";
 import { GetMarketVolumeQuery } from "../application/queries/get-market-volume.query.js";
+import { GetOrderMetricsQuery } from "../application/queries/get-order-metrics.query.js";
 import { GetSectorRevenueQuery } from "../application/queries/get-sector-revenue.query.js";
 import { GetTerminationStatsQuery } from "../application/queries/get-termination-stats.query.js";
 import type {
@@ -14,6 +15,7 @@ import type {
   MarketAdoptionView,
   MarketSectorsView,
   MarketVolumeView,
+  OrderMetricsView,
   SectorRevenueView,
   TerminationStatsView,
 } from "@lfd/contracts";
@@ -58,6 +60,11 @@ export class AdminGrowthController {
     return this.queries.execute<GetSectorRevenueQuery, SectorRevenueView>(
       new GetSectorRevenueQuery(),
     );
+  }
+
+  @Get("order-metrics")
+  orderMetrics(): Promise<OrderMetricsView> {
+    return this.queries.execute<GetOrderMetricsQuery, OrderMetricsView>(new GetOrderMetricsQuery());
   }
 
   @Get("terminations")
