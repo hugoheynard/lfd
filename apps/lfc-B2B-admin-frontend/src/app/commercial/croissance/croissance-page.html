@@ -29,237 +29,272 @@
         }
       </div>
 
-      <div class="grid">
-        <article class="card wide">
-          <header class="card-head">
-            <h2>Acquisition hebdomadaire</h2>
-            <app-metric-info
-              label="Acquisition hebdomadaire — flux + part de marché"
-              text="Devant : inscriptions, premières commandes et leads saisis chaque semaine (la 1re commande n'est comptée qu'une fois par personne). Derrière, en pointillé sur l'axe de droite : la part de marché cumulée (sociétés activées / acteurs visés), qui monte au rythme des acquisitions. On lit l'action et son effet ensemble. La bande n'apparaît qu'une fois le marché ciblé configuré et compté dans Réglages ▸ Commercial."
-            />
-          </header>
-          @if (acquisition(); as opt) {
-            <app-chart [option]="opt" height="300px" />
-          }
-        </article>
+      <nav class="tabs" role="tablist" aria-label="Types de données">
+        @for (tab of tabs; track tab.key) {
+          <button
+            type="button"
+            role="tab"
+            class="tab"
+            [class.tab--active]="activeTab() === tab.key"
+            [attr.aria-selected]="activeTab() === tab.key"
+            (click)="activeTab.set(tab.key)"
+          >
+            {{ tab.label }}
+          </button>
+        }
+      </nav>
 
-        <article class="card">
-          <header class="card-head">
-            <h2>Mode d'acquisition</h2>
-            <app-metric-info
-              label="Mode d'acquisition"
-              text="Part de l'acquisition auto-découverte (product-led, self-service sans démarchage) vs poussée par le commercial (sales-led : staff ou lead converti), sur toute la période. La part product-led est un indicateur direct de la qualité du référencement (SEO / agence web) — à lire avec l'acquisition hebdomadaire pour séparer « plus de trafic » de « meilleure conversion »."
-            />
-          </header>
-          @if (mixDonut(); as opt) {
-            <app-chart [option]="opt" height="300px" />
-          }
-        </article>
+      @switch (activeTab()) {
+        @case ('acquisition') {
+          <div class="grid">
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Acquisition hebdomadaire</h2>
+                <app-metric-info
+                  label="Acquisition hebdomadaire — flux + part de marché"
+                  text="Devant : inscriptions, premières commandes et leads saisis chaque semaine (la 1re commande n'est comptée qu'une fois par personne). Derrière, en pointillé sur l'axe de droite : la part de marché cumulée (sociétés activées / acteurs visés), qui monte au rythme des acquisitions. On lit l'action et son effet ensemble. La bande n'apparaît qu'une fois le marché ciblé configuré et compté dans Réglages ▸ Commercial."
+                />
+              </header>
+              @if (acquisition(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+              }
+            </article>
 
-        <article class="card">
-          <header class="card-head">
-            <h2>Adoption et perte par territoire</h2>
-            <div class="head-controls">
-              <label class="sort-control">
-                <span class="visually-hidden">Trier</span>
-                <select
-                  class="sort-select"
-                  [value]="adoptionSort()"
-                  (change)="onAdoptionSort($event)"
-                >
-                  <option value="desc">Décroissant</option>
-                  <option value="asc">Croissant</option>
-                </select>
-              </label>
-              <app-metric-info
-                label="Adoption et perte par territoire"
-                text="Deux barres par zone, sur base 100 % du marché visé : Adoption = sociétés activées / acteurs visés (comptés via l'API entreprises ; verte si la période a progressé, l'étiquette porte le taux et les points gagnés) ; Perte = sociétés résiliées rapportées au même marché (rouge). On compare d'un coup ce qu'on gagne et ce qu'on perd sur chaque territoire. Configurez zones et NAF dans Réglages ▸ Commercial."
-              />
-            </div>
-          </header>
-          @if (adoption(); as opt) {
-            <app-chart [option]="opt" height="300px" />
-          } @else {
-            <p class="muted">
-              Aucune zone ciblée renseignée. Ajoutez des codes postaux et des codes NAF dans
-              Réglages ▸ Commercial, puis « Redemander les comptages ».
-            </p>
-          }
-        </article>
+            <article class="card">
+              <header class="card-head">
+                <h2>Mode d'acquisition</h2>
+                <app-metric-info
+                  label="Mode d'acquisition"
+                  text="Part de l'acquisition auto-découverte (product-led, self-service sans démarchage) vs poussée par le commercial (sales-led : staff ou lead converti), sur toute la période. La part product-led est un indicateur direct de la qualité du référencement (SEO / agence web) — à lire avec l'acquisition hebdomadaire pour séparer « plus de trafic » de « meilleure conversion »."
+                />
+              </header>
+              @if (mixDonut(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+              }
+            </article>
 
-        <article class="card">
-          <header class="card-head">
-            <h2>Raisons de résiliation</h2>
-            <app-metric-info
-              label="Raisons de résiliation"
-              text="Sunburst des résiliations confirmées : anneau intérieur = la catégorie de départ (tarif, concurrent, cessation, qualité, plus de besoin, injoignable, autre), anneau extérieur = la sous-raison précise (livraison trop chère, catalogue trop cher, manque d'incentive…). Enregistré à la clôture du compte par le client ou le commercial. All-time."
-            />
-          </header>
-          @if (terminationReasons(); as opt) {
-            <app-chart [option]="opt" height="300px" />
-          } @else {
-            <p class="muted">Aucune résiliation enregistrée.</p>
-          }
-        </article>
+            <article class="card">
+              <header class="card-head">
+                <h2>Mode d'acquisition — par semaine</h2>
+                <app-metric-info
+                  label="Mix product-led / sales-led dans le temps"
+                  text="La même répartition product-led / sales-led, semaine par semaine (aires empilées) : montre si le canal organique gagne ou perd du terrain au fil du temps."
+                />
+              </header>
+              @if (mix(); as opt) {
+                <app-chart [option]="opt" height="280px" />
+              }
+            </article>
+          </div>
+        }
 
-        <article class="card">
-          <header class="card-head">
-            <h2>Taux de rattrapage</h2>
-            <app-metric-info
-              label="Taux de rattrapage des terminaisons"
-              text="Part des tentatives de résiliation qui ont été rattrapées (le compte est resté), globale et par catégorie de départ. Une tentative rattrapée = un compte sauvé. L'étiquette porte le taux et le détail (rattrapées / tentatives)."
-            />
-          </header>
-          @if (terminationRecovery(); as opt) {
-            <app-chart [option]="opt" height="300px" />
-          } @else {
-            <p class="muted">Aucune tentative de résiliation enregistrée.</p>
-          }
-        </article>
+        @case ('marche') {
+          <div class="grid">
+            <article class="card">
+              <header class="card-head">
+                <h2>Adoption et perte par territoire</h2>
+                <div class="head-controls">
+                  <label class="sort-control">
+                    <span class="visually-hidden">Trier</span>
+                    <select
+                      class="sort-select"
+                      [value]="adoptionSort()"
+                      (change)="onAdoptionSort($event)"
+                    >
+                      <option value="desc">Décroissant</option>
+                      <option value="asc">Croissant</option>
+                    </select>
+                  </label>
+                  <app-metric-info
+                    label="Adoption et perte par territoire"
+                    text="Deux barres par zone, sur base 100 % du marché visé : Adoption = sociétés activées / acteurs visés (comptés via l'API entreprises ; verte si la période a progressé, l'étiquette porte le taux et les points gagnés) ; Perte = sociétés résiliées rapportées au même marché (rouge). On compare d'un coup ce qu'on gagne et ce qu'on perd sur chaque territoire. Configurez zones et NAF dans Réglages ▸ Commercial."
+                  />
+                </div>
+              </header>
+              @if (adoption(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+              } @else {
+                <p class="muted">
+                  Aucune zone ciblée renseignée. Ajoutez des codes postaux et des codes NAF dans
+                  Réglages ▸ Commercial, puis « Redemander les comptages ».
+                </p>
+              }
+            </article>
 
-        <article class="card wide">
-          <header class="card-head">
-            <h2>Vélocité par territoire</h2>
-            <app-metric-info
-              label="Vélocité par territoire"
-              text="La part de marché dans le temps, une courbe par zone. Là où « Adoption par territoire » donne l'instantané, celle-ci montre la trajectoire : la pente = la vitesse de conquête. Une droite qui monte = traction ; qui s'aplatit = saturation ou essoufflement commercial. Seules les zones avec au moins une activation sont tracées."
-            />
-          </header>
-          @if (zoneVelocity(); as opt) {
-            <app-chart [option]="opt" height="300px" />
-          } @else {
-            <p class="muted">
-              Pas encore d'activation dans les zones ciblées pour tracer une trajectoire.
-            </p>
-          }
-        </article>
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Vélocité par territoire</h2>
+                <app-metric-info
+                  label="Vélocité par territoire"
+                  text="La part de marché dans le temps, une courbe par zone. Là où « Adoption par territoire » donne l'instantané, celle-ci montre la trajectoire : la pente = la vitesse de conquête. Une droite qui monte = traction ; qui s'aplatit = saturation ou essoufflement commercial. Seules les zones avec au moins une activation sont tracées."
+                />
+              </header>
+              @if (zoneVelocity(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+              } @else {
+                <p class="muted">
+                  Pas encore d'activation dans les zones ciblées pour tracer une trajectoire.
+                </p>
+              }
+            </article>
+          </div>
+        }
 
-        <article class="card">
-          <header class="card-head">
-            <h2>Momentum du vivier — part par chaleur</h2>
-            <app-metric-info
-              label="Momentum du vivier"
-              text="La part de prospects dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). Aires empilées : l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total du vivier. La direction par bande (qui se réchauffe/refroidit) se lit sur les transferts ci-contre."
-            />
-          </header>
-          @if (temperatureFlow(); as opt) {
-            <app-chart [option]="opt" height="280px" />
-          }
-        </article>
+        @case ('retention') {
+          <div class="grid">
+            <article class="card">
+              <header class="card-head">
+                <h2>Raisons de résiliation</h2>
+                <app-metric-info
+                  label="Raisons de résiliation"
+                  text="Sunburst des résiliations confirmées : anneau intérieur = la catégorie de départ (tarif, concurrent, cessation, qualité, plus de besoin, injoignable, autre), anneau extérieur = la sous-raison précise (livraison trop chère, catalogue trop cher, manque d'incentive…). Enregistré à la clôture du compte par le client ou le commercial. All-time."
+                />
+              </header>
+              @if (terminationReasons(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+              } @else {
+                <p class="muted">Aucune résiliation enregistrée.</p>
+              }
+            </article>
 
-        <article class="card">
-          <header class="card-head">
-            <h2>Transferts entre bandes (sur la période)</h2>
-            <app-metric-info
-              label="Transferts entre bandes"
-              text="Comment les prospects ont changé de chaleur entre le début (« avant », à gauche) et la fin (« après », à droite) de la période : qui est passé de tiède à chaud, de chaud à froid, converti, perdu, ou vient d'entrer. La largeur d'un ruban = le nombre de personnes qui ont fait ce passage."
-            />
-          </header>
-          @if (transitions(); as opt) {
-            <app-chart [option]="opt" height="280px" />
-          } @else {
-            <p class="muted">Pas encore assez de mouvements pour tracer les transferts.</p>
-          }
-        </article>
+            <article class="card">
+              <header class="card-head">
+                <h2>Taux de rattrapage</h2>
+                <app-metric-info
+                  label="Taux de rattrapage des terminaisons"
+                  text="Part des tentatives de résiliation qui ont été rattrapées (le compte est resté), globale et par catégorie de départ. Une tentative rattrapée = un compte sauvé. L'étiquette porte le taux et le détail (rattrapées / tentatives)."
+                />
+              </header>
+              @if (terminationRecovery(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+              } @else {
+                <p class="muted">Aucune tentative de résiliation enregistrée.</p>
+              }
+            </article>
+          </div>
+        }
 
-        <article class="card">
-          <header class="card-head">
-            <h2>Entonnoir d'activation</h2>
-            <app-metric-info
-              label="Entonnoir d'activation"
-              text="De la société déclarée jusqu'à son activation, marche par marche (TVA, KBIS, facturation, livraison). Les fuites entre marches = les frictions d'onboarding."
-            />
-          </header>
-          @if (activationFunnel(); as opt) {
-            <app-chart [option]="opt" height="280px" />
-          }
-        </article>
+        @case ('vivier') {
+          <div class="grid">
+            <article class="card">
+              <header class="card-head">
+                <h2>Momentum du vivier — part par chaleur</h2>
+                <app-metric-info
+                  label="Momentum du vivier"
+                  text="La part de prospects dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). Aires empilées : l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total du vivier. La direction par bande (qui se réchauffe/refroidit) se lit sur les transferts ci-contre."
+                />
+              </header>
+              @if (temperatureFlow(); as opt) {
+                <app-chart [option]="opt" height="280px" />
+              }
+            </article>
 
-        <article class="card">
-          <header class="card-head">
-            <h2>Pipeline de démarchage</h2>
-            <app-metric-info
-              label="Pipeline de démarchage"
-              text="Progression des leads sortants dans le pipeline commercial : saisis → contactés → qualifiés → en négociation → convertis. Chaque marche compte les leads ayant atteint au moins cette étape."
-            />
-          </header>
-          @if (coldFunnel(); as opt) {
-            <app-chart [option]="opt" height="280px" />
-          }
-        </article>
+            <article class="card">
+              <header class="card-head">
+                <h2>Transferts entre bandes (sur la période)</h2>
+                <app-metric-info
+                  label="Transferts entre bandes"
+                  text="Comment les prospects ont changé de chaleur entre le début (« avant », à gauche) et la fin (« après », à droite) de la période : qui est passé de tiède à chaud, de chaud à froid, converti, perdu, ou vient d'entrer. La largeur d'un ruban = le nombre de personnes qui ont fait ce passage."
+                />
+              </header>
+              @if (transitions(); as opt) {
+                <app-chart [option]="opt" height="280px" />
+              } @else {
+                <p class="muted">Pas encore assez de mouvements pour tracer les transferts.</p>
+              }
+            </article>
 
-        <article class="card wide">
-          <header class="card-head">
-            <h2>Cycle de vie (du clic à l'activation)</h2>
-            <app-metric-info
-              label="Cycle de vie"
-              text="Les flux de personnes d'une étape à la suivante — inscrit, a commandé, a déclaré une société, activé — avec les fuites à chaque transition. La largeur d'un ruban = le nombre de personnes qui passent."
-            />
-          </header>
-          @if (lifecycle(); as opt) {
-            <app-chart [option]="opt" height="300px" />
-          } @else {
-            <p class="muted">Pas encore assez de parcours pour tracer le flux.</p>
-          }
-        </article>
+            <article class="card">
+              <header class="card-head">
+                <h2>Entonnoir d'activation</h2>
+                <app-metric-info
+                  label="Entonnoir d'activation"
+                  text="De la société déclarée jusqu'à son activation, marche par marche (TVA, KBIS, facturation, livraison). Les fuites entre marches = les frictions d'onboarding."
+                />
+              </header>
+              @if (activationFunnel(); as opt) {
+                <app-chart [option]="opt" height="280px" />
+              }
+            </article>
 
-        <article class="card">
-          <header class="card-head">
-            <h2>Vélocité — délais (jours)</h2>
-            <app-metric-info
-              label="Vélocité"
-              text="Distribution des délais en jours : temps entre l'inscription et la 1re commande, et entre la déclaration d'une société et son activation. La boîte couvre les quartiles, le trait central la médiane."
-            />
-          </header>
-          @if (velocity(); as opt) {
-            <app-chart [option]="opt" height="280px" />
-          }
-        </article>
+            <article class="card">
+              <header class="card-head">
+                <h2>Pipeline de démarchage</h2>
+                <app-metric-info
+                  label="Pipeline de démarchage"
+                  text="Progression des leads sortants dans le pipeline commercial : saisis → contactés → qualifiés → en négociation → convertis. Chaque marche compte les leads ayant atteint au moins cette étape."
+                />
+              </header>
+              @if (coldFunnel(); as opt) {
+                <app-chart [option]="opt" height="280px" />
+              }
+            </article>
+          </div>
+        }
 
-        <article class="card">
-          <header class="card-head">
-            <h2>Mode d'acquisition — par semaine</h2>
-            <app-metric-info
-              label="Mix product-led / sales-led dans le temps"
-              text="La même répartition product-led / sales-led, semaine par semaine (aires empilées) : montre si le canal organique gagne ou perd du terrain au fil du temps."
-            />
-          </header>
-          @if (mix(); as opt) {
-            <app-chart [option]="opt" height="280px" />
-          }
-        </article>
+        @case ('usage') {
+          <div class="grid">
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Cycle de vie (du clic à l'activation)</h2>
+                <app-metric-info
+                  label="Cycle de vie"
+                  text="Les flux de personnes d'une étape à la suivante — inscrit, a commandé, a déclaré une société, activé — avec les fuites à chaque transition. La largeur d'un ruban = le nombre de personnes qui passent."
+                />
+              </header>
+              @if (lifecycle(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+              } @else {
+                <p class="muted">Pas encore assez de parcours pour tracer le flux.</p>
+              }
+            </article>
 
-        <article class="card wide">
-          <header class="card-head">
-            <h2>Concentration du volume (grands comptes)</h2>
-            <app-metric-info
-              label="Concentration du volume"
-              text="Courbe de Lorenz du volume de commandes par compte : plus la courbe s'éloigne de la diagonale d'égalité, plus quelques grands comptes concentrent le volume. Le Gini résume l'inégalité (0 = égal, 1 = tout sur un compte)."
-            />
-          </header>
-          @if (concentration(); as c) {
-            <p class="muted">{{ concentrationHint() }}</p>
-            <app-lorenz [data]="c" height="300px" />
-          } @else {
-            <p class="muted">Pas encore de commandes pour mesurer la concentration.</p>
-          }
-        </article>
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Rétention par cohorte d'inscription</h2>
+                <app-metric-info
+                  label="Rétention par cohorte"
+                  text="Pour chaque semaine d'inscription (une ligne), la part de la cohorte ayant commandé k semaines plus tard. La couleur va du clair (faible rétention) au foncé (forte rétention)."
+                />
+              </header>
+              @if (cohorts(); as opt) {
+                <app-chart [option]="opt" height="320px" />
+              } @else {
+                <p class="muted">Pas encore assez de cohortes pour une heatmap.</p>
+              }
+            </article>
 
-        <article class="card wide">
-          <header class="card-head">
-            <h2>Rétention par cohorte d'inscription</h2>
-            <app-metric-info
-              label="Rétention par cohorte"
-              text="Pour chaque semaine d'inscription (une ligne), la part de la cohorte ayant commandé k semaines plus tard. La couleur va du clair (faible rétention) au foncé (forte rétention)."
-            />
-          </header>
-          @if (cohorts(); as opt) {
-            <app-chart [option]="opt" height="320px" />
-          } @else {
-            <p class="muted">Pas encore assez de cohortes pour une heatmap.</p>
-          }
-        </article>
-      </div>
+            <article class="card">
+              <header class="card-head">
+                <h2>Vélocité — délais (jours)</h2>
+                <app-metric-info
+                  label="Vélocité"
+                  text="Distribution des délais en jours : temps entre l'inscription et la 1re commande, et entre la déclaration d'une société et son activation. La boîte couvre les quartiles, le trait central la médiane."
+                />
+              </header>
+              @if (velocity(); as opt) {
+                <app-chart [option]="opt" height="280px" />
+              }
+            </article>
+
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Concentration du volume (grands comptes)</h2>
+                <app-metric-info
+                  label="Concentration du volume"
+                  text="Courbe de Lorenz du volume de commandes par compte : plus la courbe s'éloigne de la diagonale d'égalité, plus quelques grands comptes concentrent le volume. Le Gini résume l'inégalité (0 = égal, 1 = tout sur un compte)."
+                />
+              </header>
+              @if (concentration(); as c) {
+                <p class="muted">{{ concentrationHint() }}</p>
+                <app-lorenz [data]="c" height="300px" />
+              } @else {
+                <p class="muted">Pas encore de commandes pour mesurer la concentration.</p>
+              }
+            </article>
+          </div>
+        }
+      }
     }
   }
 </section>

@@ -33,6 +33,9 @@ import { GrowthService } from './growth.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
+/** Onglets du dashboard, un par type de donnée. */
+type TabKey = 'acquisition' | 'marche' | 'retention' | 'vivier' | 'usage';
+
 /** Une tuile KPI. */
 interface Kpi {
   readonly label: string;
@@ -61,6 +64,14 @@ export class CroissancePage {
   private readonly market = inject(MarketService);
 
   protected readonly state = signal<LoadState>('loading');
+  protected readonly activeTab = signal<TabKey>('acquisition');
+  protected readonly tabs: ReadonlyArray<{ readonly key: TabKey; readonly label: string }> = [
+    { key: 'acquisition', label: 'Acquisition' },
+    { key: 'marche', label: 'Marché & territoire' },
+    { key: 'retention', label: 'Rétention & churn' },
+    { key: 'vivier', label: 'Vivier' },
+    { key: 'usage', label: 'Usage webapp' },
+  ];
   protected readonly stats = signal<GrowthStatsView | null>(null);
   protected readonly adoptionZones = signal<readonly AdoptionZoneView[] | null>(null);
   protected readonly adoptionTrend = signal<readonly PenetrationTrendPoint[] | null>(null);

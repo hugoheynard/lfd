@@ -94,6 +94,42 @@ h1 {
   grid-column: 1 / -1;
 }
 
+/* Barre d'onglets : sépare les types de donnée. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0.9rem;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--fold-color-text);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: -2px;
+    border-radius: var(--fold-radius-sm, 0.25rem);
+  }
+}
+
+.tab--active {
+  color: var(--fold-color-primary);
+  border-bottom-color: var(--fold-color-primary);
+}
+
 /* En-tête de carte : titre à gauche, bulle d'info à droite. */
 .card-head {
   display: flex;
