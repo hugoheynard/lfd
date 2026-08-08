@@ -142,7 +142,7 @@
 
         @case ('retention') {
           <div class="grid">
-            <article class="card">
+            <article class="card wide">
               <header class="card-head">
                 <h2>Raisons de résiliation</h2>
                 <app-metric-info
@@ -151,13 +151,13 @@
                 />
               </header>
               @if (terminationReasons(); as opt) {
-                <app-chart [option]="opt" height="300px" />
+                <app-chart [option]="opt" height="440px" />
               } @else {
                 <p class="muted">Aucune résiliation enregistrée.</p>
               }
             </article>
 
-            <article class="card">
+            <article class="card wide">
               <header class="card-head">
                 <h2>Taux de rattrapage</h2>
                 <app-metric-info
