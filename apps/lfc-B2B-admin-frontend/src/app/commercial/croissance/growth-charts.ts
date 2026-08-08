@@ -494,8 +494,10 @@ export function adoptionOption(
     itemStyle: { color: alert, borderRadius: [0, 4, 4, 0] },
     label: { show: z.lost > 0, position: 'right' as const, formatter: `${pct(z.lostRate)} %` },
   }));
+  const muted = themeColor('--fold-color-text-muted', PALETTE.slate);
+  const text = themeColor('--fold-color-text', '#1f2937');
   return {
-    grid: { left: 8, right: 80, top: 8, bottom: 32, containLabel: true },
+    grid: { left: 8, right: 108, top: 8, bottom: 32, containLabel: true },
     legend: {
       bottom: 0,
       textStyle: { color: PALETTE.slate },
@@ -516,10 +518,22 @@ export function adoptionOption(
       },
     },
     xAxis: { type: 'value', name: '%', min: 0, max: 100 },
-    yAxis: {
-      type: 'category',
-      data: rows.map((z) => `${z.codePostal}${z.ville === '' ? '' : ' ' + z.ville}`),
-    },
+    yAxis: [
+      {
+        type: 'category',
+        data: rows.map((z) => `${z.codePostal}${z.ville === '' ? '' : ' ' + z.ville}`),
+        axisLabel: { color: text },
+      },
+      // Second axe à DROITE : le pool disponible (acteurs visés) en bout de ligne.
+      {
+        type: 'category',
+        position: 'right',
+        data: rows.map((z) => `${z.addressable} visés`),
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: muted, fontSize: 11 },
+      },
+    ],
     series: [
       { name: 'Adoption', type: 'bar', barGap: '10%', data: adoption },
       { name: 'Perte', type: 'bar', data: perte },
