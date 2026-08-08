@@ -13,7 +13,7 @@ import { MarketService } from '../market/market.service';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { Lorenz } from '../../shared/lorenz/lorenz';
 import { MetricInfo } from '../../shared/metric-info/metric-info';
-import { Sunburst, type SunburstDatum, sunburstTopColor } from '../../shared/sunburst/sunburst';
+import { Sunburst, type SunburstDatum, sunburstColors } from '../../shared/sunburst/sunburst';
 import {
   acquisitionMixDonutOption,
   acquisitionMixOption,
@@ -116,9 +116,10 @@ export class CroissancePage {
     if (t === null || t.reasons.length === 0) {
       return null;
     }
+    // Valeur 0 sur les catégories : `.sum()` de D3 additionne les feuilles (sous-raisons).
     return t.reasons.map((r) => ({
       name: r.label,
-      value: r.count,
+      value: 0,
       children: r.children.map((c) => ({ name: c.label, value: c.count })),
     }));
   });
@@ -126,9 +127,11 @@ export class CroissancePage {
     ReadonlyArray<{ readonly name: string; readonly color: string; readonly count: number }>
   >(() => {
     const t = this.terminations();
-    return t === null
-      ? []
-      : t.reasons.map((r, i) => ({ name: r.label, color: sunburstTopColor(i), count: r.count }));
+    if (t === null) {
+      return [];
+    }
+    const colors = sunburstColors(t.reasons.length);
+    return t.reasons.map((r, i) => ({ name: r.label, color: colors[i] ?? '#888', count: r.count }));
   });
   protected readonly terminationRecovery = computed<ChartOption | null>(() => {
     const t = this.terminations();

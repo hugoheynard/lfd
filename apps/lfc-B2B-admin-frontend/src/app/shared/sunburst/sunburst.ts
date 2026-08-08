@@ -8,7 +8,16 @@ import {
   inject,
   input,
 } from '@angular/core';
-import { arc, hierarchy, type HierarchyRectangularNode, partition, select } from 'd3';
+import {
+  arc,
+  hierarchy,
+  type HierarchyRectangularNode,
+  interpolate,
+  interpolateRainbow,
+  partition,
+  quantize,
+  select,
+} from 'd3';
 
 /** Un nœud du sunburst : un nom, une valeur (feuilles), d'éventuels enfants. */
 export interface SunburstDatum {
@@ -17,39 +26,31 @@ export interface SunburstDatum {
   readonly children?: readonly SunburstDatum[];
 }
 
+/** Rectangle polaire (angles + rayons normalisés) — l'état animable d'un arc. */
+interface Rect {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}
+
+type ANode = HierarchyRectangularNode<SunburstDatum> & { current: Rect; target?: Rect };
+
 /**
- * 7 teintes catégorielles validées CVD (méthode dataviz), une par branche de 1er
- * niveau — ordre fixe, jamais cyclé/réordonné (la sûreté daltonien en dépend).
+ * Couleurs des branches de 1er niveau — `interpolateRainbow` quantifié (n+1 pour
+ * éviter le repli), comme l'exemple Observable `@d3/sunburst/2`. Réutilisé par la
+ * légende hors composant pour garder la correspondance couleur ↔ catégorie.
  */
-const HUES: readonly string[] = [
-  '#2a78d6',
-  '#eb6834',
-  '#1baf7a',
-  '#eda100',
-  '#e87ba4',
-  '#008300',
-  '#4a3aa7',
-];
-
-/** Éclaircit un hex vers le blanc (mix `amount` ∈ 0..1). */
-function lighten(hex: string, amount: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const mix = (c: number): number => Math.round(c + (255 - c) * amount);
-  return `#${((1 << 24) | (mix((n >> 16) & 255) << 16) | (mix((n >> 8) & 255) << 8) | mix(n & 255)).toString(16).slice(1)}`;
+export function sunburstColors(count: number): string[] {
+  return quantize(interpolateRainbow, count + 1);
 }
-
-/** Couleur d'une branche de 1er niveau (par index), pour une légende hors composant. */
-export function sunburstTopColor(index: number): string {
-  return HUES[index % HUES.length] ?? '#64748b';
-}
-
-type Node = HierarchyRectangularNode<SunburstDatum>;
 
 /**
- * **Sunburst** rendu en **D3** (comme la courbe de Lorenz) — un rendu « chic » : arcs
- * avec padding + coins arrondis, dégradé par profondeur (les sous-branches héritent
- * d'une teinte plus claire de leur catégorie), labels **radiaux courbés** sur les
- * arcs assez larges, traits fins. Impératif (SVG hors change detection), thème-aware.
+ * **Sunburst zoomable** en **D3**, port fidèle de l'exemple `@d3/sunburst/2` : trois
+ * anneaux visibles à la fois, **clic sur un arc = zoom** (transitions animées des
+ * arcs et labels), **clic au centre = dézoom**. Couleurs `interpolateRainbow` par
+ * catégorie, arcs translucides (0.6 branches / 0.4 feuilles), labels radiaux.
+ * Impératif (SVG hors change detection), comme la courbe de Lorenz.
  */
 @Component({
   selector: 'app-sunburst',
@@ -87,30 +88,23 @@ export class Sunburst {
     if (width === 0 || height === 0) {
       return;
     }
-    const surface = getComputedStyle(el).getPropertyValue('--fold-color-surface-card').trim();
-    const gap = surface === '' ? '#ffffff' : surface;
-    const radius = Math.min(width, height) / 2;
+    const radius = Math.min(width, height) / 6;
+    const ink = getComputedStyle(el).getPropertyValue('--fold-color-text').trim() || '#0b0b0b';
 
-    const root = hierarchy<SunburstDatum>({ name: '', value: 0, children: this.data() })
-      .sum((d) => (d.children && d.children.length > 0 ? 0 : d.value))
+    const tree = hierarchy<SunburstDatum>({ name: 'Résiliations', value: 0, children: this.data() })
+      .sum((d) => d.value)
       .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
-    partition<SunburstDatum>().size([2 * Math.PI, radius])(root);
-    const nodes = (root.descendants() as Node[]).filter((d) => d.depth > 0);
-    const tops = (root.children ?? []) as Node[];
+    const root = partition<SunburstDatum>().size([2 * Math.PI, tree.height + 1])(tree) as ANode;
+    root.each((d) => ((d as ANode).current = { x0: d.x0, x1: d.x1, y0: d.y0, y1: d.y1 }));
+    const colors = sunburstColors((root.children ?? []).length);
 
-    // Rayons par profondeur : petit trou central + anneau catégories + anneau sous-raisons.
-    const ring = (depth: number): [number, number] =>
-      depth === 1 ? [radius * 0.32, radius * 0.62] : [radius * 0.64, radius * 0.98];
-    const midR = (d: Node): number => (ring(d.depth)[0] + ring(d.depth)[1]) / 2;
-
-    const arcGen = arc<Node>()
+    const arcGen = arc<Rect>()
       .startAngle((d) => d.x0)
       .endAngle((d) => d.x1)
-      .padAngle((d) => Math.min((d.x1 - d.x0) / 2, 0.008))
-      .padRadius(radius)
-      .innerRadius((d) => ring(d.depth)[0])
-      .outerRadius((d) => ring(d.depth)[1])
-      .cornerRadius(3);
+      .padAngle((d) => Math.min((d.x1 - d.x0) / 2, 0.005))
+      .padRadius(radius * 1.5)
+      .innerRadius((d) => d.y0 * radius)
+      .outerRadius((d) => Math.max(d.y0 * radius, d.y1 * radius - 1));
 
     select(el).selectAll('svg').remove();
     const svg = select(el)
@@ -118,55 +112,100 @@ export class Sunburst {
       .attr('width', width)
       .attr('height', height)
       .attr('viewBox', `${-width / 2} ${-height / 2} ${width} ${height}`)
-      .style('font', "12px var(--fold-font-sans, system-ui, sans-serif)");
+      .style('font', "11px var(--fold-font-sans, system-ui, sans-serif)");
 
-    svg
+    const rows = root.descendants().slice(1) as ANode[];
+    const colorOf = (d: ANode): string => {
+      let n = d;
+      while (n.depth > 1 && n.parent !== null) {
+        n = n.parent as ANode;
+      }
+      return colors[(root.children ?? []).indexOf(n) % colors.length] ?? '#888';
+    };
+
+    const path = svg
       .append('g')
-      .selectAll('path')
-      .data(nodes)
+      .selectAll<SVGPathElement, ANode>('path')
+      .data(rows)
       .join('path')
-      .attr('d', arcGen)
-      .attr('fill', (d) => colorOf(d, tops))
-      .attr('stroke', gap)
-      .attr('stroke-width', 2)
-      .attr('stroke-linejoin', 'round')
-      .append('title')
-      .text((d) => `${d.data.name} : ${d.value ?? 0}`);
+      .attr('fill', colorOf)
+      .attr('fill-opacity', (d) => (arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0))
+      .attr('pointer-events', (d) => (arcVisible(d.current) ? 'auto' : 'none'))
+      .attr('d', (d) => arcGen(d.current));
+    path.append('title').text((d) => `${d.data.name} : ${d.value ?? 0}`);
 
-    svg
+    const label = svg
       .append('g')
       .attr('pointer-events', 'none')
       .attr('text-anchor', 'middle')
-      .selectAll('text')
-      .data(nodes.filter((d) => (d.x1 - d.x0) * midR(d) > 34))
+      .attr('fill', ink)
+      .style('user-select', 'none')
+      .selectAll<SVGTextElement, ANode>('text')
+      .data(rows)
       .join('text')
-      .attr('transform', (d) => labelTransform(d, midR(d)))
-      .attr('dy', '0.32em')
-      .attr('fill', (d) => (d.depth === 1 ? '#ffffff' : '#334155'))
-      .attr('font-weight', (d) => (d.depth === 1 ? 600 : 400))
-      .attr('font-size', (d) => (d.depth === 1 ? 12 : 11))
+      .attr('dy', '0.35em')
+      .attr('fill-opacity', (d) => (labelVisible(d.current) ? 1 : 0))
+      .attr('transform', (d) => labelTransform(d.current, radius))
       .text((d) => d.data.name);
+
+    const parent = svg
+      .append('circle')
+      .datum(root)
+      .attr('r', radius)
+      .attr('fill', 'none')
+      .attr('pointer-events', 'all')
+      .style('cursor', 'pointer');
+
+    const clicked = (_event: unknown, p: ANode): void => {
+      parent.datum((p.parent ?? root) as ANode);
+      root.each(
+        (d) =>
+          ((d as ANode).target = {
+            x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+            x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+            y0: Math.max(0, d.y0 - p.depth),
+            y1: Math.max(0, d.y1 - p.depth),
+          }),
+      );
+      // Transitions par sélection (même durée) : le partage d'instance bute sur le
+      // typage d3 croisé, et l'effet visuel est identique sur 750 ms.
+      path
+        .transition()
+        .duration(750)
+        .tween('data', (d) => {
+          const i = interpolate(d.current, d.target ?? d.current);
+          return (time) => (d.current = i(time));
+        })
+        .attr('fill-opacity', (d) =>
+          arcVisible(d.target ?? d.current) ? (d.children ? 0.6 : 0.4) : 0,
+        )
+        .attr('pointer-events', (d) => (arcVisible(d.target ?? d.current) ? 'auto' : 'none'))
+        .attrTween('d', (d) => () => arcGen(d.current) ?? '');
+      label
+        .transition()
+        .duration(750)
+        .attr('fill-opacity', (d) => (labelVisible(d.target ?? d.current) ? 1 : 0))
+        .attrTween('transform', (d) => () => labelTransform(d.current, radius));
+    };
+
+    parent.on('click', clicked);
+    path.filter((d) => Boolean(d.children)).style('cursor', 'pointer').on('click', clicked);
   }
 }
 
-/** Teinte d'un nœud : catégorie de 1er niveau, enfants en dégradé clair par rang. */
-function colorOf(d: Node, tops: readonly Node[]): string {
-  let top = d;
-  while (top.depth > 1 && top.parent !== null) {
-    top = top.parent as Node;
-  }
-  const base = HUES[tops.indexOf(top) % HUES.length] ?? '#64748b';
-  if (d.depth === 1) {
-    return base;
-  }
-  const sibs = (d.parent?.children ?? []) as Node[];
-  const j = Math.max(0, sibs.indexOf(d));
-  const n = sibs.length;
-  return lighten(base, n <= 1 ? 0.3 : 0.2 + (j / (n - 1)) * 0.34);
+/** Un arc est visible s'il est dans les 3 anneaux courants (hors racine). */
+function arcVisible(d: Rect): boolean {
+  return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
 }
 
-/** Transform D3 classique : place et oriente le label le long de l'arc. */
-function labelTransform(d: Node, r: number): string {
-  const angle = (((d.x0 + d.x1) / 2) * 180) / Math.PI - 90;
-  return `rotate(${angle}) translate(${r},0) rotate(${angle < 90 ? 0 : 180})`;
+/** Un label est visible si son arc est dans les 3 anneaux et assez grand. */
+function labelVisible(d: Rect): boolean {
+  return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03;
+}
+
+/** Transform D3 : place et oriente le label le long de l'arc. */
+function labelTransform(d: Rect, radius: number): string {
+  const x = (((d.x0 + d.x1) / 2) * 180) / Math.PI;
+  const y = ((d.y0 + d.y1) / 2) * radius;
+  return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
 }
