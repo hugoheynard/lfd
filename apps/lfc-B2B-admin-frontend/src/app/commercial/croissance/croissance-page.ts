@@ -13,7 +13,7 @@ import { MarketService } from '../market/market.service';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { Lorenz } from '../../shared/lorenz/lorenz';
 import { MetricInfo } from '../../shared/metric-info/metric-info';
-import { Sunburst, type SunburstDatum, sunburstColors } from '../../shared/sunburst/sunburst';
+import { Sunburst, type SunburstDatum } from '../../shared/sunburst/sunburst';
 import {
   acquisitionMixDonutOption,
   acquisitionMixOption,
@@ -122,16 +122,6 @@ export class CroissancePage {
       value: 0,
       children: r.children.map((c) => ({ name: c.label, value: c.count })),
     }));
-  });
-  protected readonly terminationLegend = computed<
-    ReadonlyArray<{ readonly name: string; readonly color: string; readonly count: number }>
-  >(() => {
-    const t = this.terminations();
-    if (t === null) {
-      return [];
-    }
-    const colors = sunburstColors(t.reasons.length);
-    return t.reasons.map((r, i) => ({ name: r.label, color: colors[i] ?? '#888', count: r.count }));
   });
   protected readonly terminationRecovery = computed<ChartOption | null>(() => {
     const t = this.terminations();

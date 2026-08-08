@@ -151,16 +151,7 @@
                 />
               </header>
               @if (terminationSunburst(); as data) {
-                <app-sunburst [data]="data" height="440px" />
-                <ul class="legend">
-                  @for (item of terminationLegend(); track item.name) {
-                    <li class="legend-item">
-                      <span class="legend-dot" [style.background]="item.color"></span>
-                      <span class="legend-name">{{ item.name }}</span>
-                      <span class="legend-count">{{ item.count }}</span>
-                    </li>
-                  }
-                </ul>
+                <app-sunburst [data]="data" height="560px" />
               } @else {
                 <p class="muted">Aucune résiliation enregistrée.</p>
               }
