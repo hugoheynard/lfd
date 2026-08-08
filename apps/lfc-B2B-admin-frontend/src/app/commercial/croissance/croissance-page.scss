@@ -185,6 +185,39 @@ h1 {
   }
 }
 
+/* Bloc « interprétations possibles » sous un graphe. */
+.interp {
+  margin-top: var(--fold-space-sm, 0.5rem);
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 0.75rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface-card);
+}
+
+.interp-title {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--fold-color-text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.interp ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: var(--fold-text-sm, 0.85rem);
+  color: var(--fold-color-text-muted);
+}
+
+.interp strong {
+  color: var(--fold-color-text);
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -7,6 +7,7 @@ import type {
   FunnelStep,
   LifecycleFlow,
   MarketSectorsView,
+  MarketVolumeView,
   PenetrationTrendPoint,
   RecoveryReactionByWeek,
   RecoveryReactionStat,
@@ -769,6 +770,57 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
+ * **Marché vs volume** dans le temps, **indexé base 100** (même axe, pas de double
+ * échelle) : la taille du marché visé (≈ plate) et le CA cumulé. L'écart entre les
+ * deux courbes = la performance commerciale à marché donné. Le tooltip donne le CA €.
+ */
+export function marketVolumeOption(view: MarketVolumeView): EChartsOption {
+  const pts = view.points;
+  const weeks = pts.map((p) => weekLabel(p.weekStart));
+  const baseVol = pts.find((p) => p.volumeCents > 0)?.volumeCents ?? pts[0]?.volumeCents ?? 0;
+  const baseMkt = pts[0]?.marketActors ?? 0;
+  const index = (v: number, base: number): number => (base > 0 ? Math.round((v / base) * 100) : 100);
+  const euros = (cents: number): string =>
+    (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+  return {
+    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    legend: { top: 0, textStyle: { color: PALETTE.slate } },
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params): string => {
+        const arr = Array.isArray(params) ? params : [params];
+        const p = pts[toIndex(arr[0])];
+        return p === undefined
+          ? ''
+          : `${weekLabel(p.weekStart)}<br/>Marché ${p.marketActors} acteurs<br/>CA ${euros(p.volumeCents)}`;
+      },
+    },
+    xAxis: { type: 'category', data: weeks, boundaryGap: false },
+    yAxis: { type: 'value', name: 'indice (base 100)' },
+    series: [
+      {
+        name: 'Marché (acteurs visés)',
+        type: 'line',
+        symbol: 'none',
+        data: pts.map((p) => index(p.marketActors, baseMkt)),
+        lineStyle: { color: PALETTE.slate, width: 2, type: 'dashed' },
+        itemStyle: { color: PALETTE.slate },
+      },
+      {
+        name: 'Volume (CA)',
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        data: pts.map((p) => index(p.volumeCents, baseVol)),
+        lineStyle: { color: PALETTE.blue, width: 2 },
+        areaStyle: { color: PALETTE.blue, opacity: 0.12 },
+        itemStyle: { color: PALETTE.blue },
+      },
+    ],
+  };
 }
 
 /** Palette catégorielle des secteurs NAF (validée CVD), assignée dans l'ordre. */

@@ -572,6 +572,26 @@ export interface MarketSectorsView {
   readonly computedAt: string;
 }
 
+/**
+ * Un point **marché vs volume** : à la clôture de la semaine, la taille du marché visé
+ * (acteurs, quasi-constante) et le **CA cumulé** encaissé (TTC, centimes).
+ */
+export interface MarketVolumePoint {
+  readonly weekStart: string;
+  readonly marketActors: number;
+  readonly volumeCents: number;
+}
+
+/**
+ * **Marché vs volume** dans le temps : compare l'évolution du marché visé (≈ plat) et
+ * du CA. À marché stable, un CA qui monte = meilleure activation commerciale (on
+ * extrait plus du même marché). Les deux courbes sont indexées base 100 côté front.
+ */
+export interface MarketVolumeView {
+  readonly points: readonly MarketVolumePoint[];
+  readonly computedAt: string;
+}
+
 /** L'adoption par territoire, sur la fenêtre d'analyse. */
 export interface MarketAdoptionView {
   readonly zones: readonly AdoptionZoneView[];

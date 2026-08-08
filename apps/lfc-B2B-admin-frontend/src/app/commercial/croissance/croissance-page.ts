@@ -5,6 +5,7 @@ import type {
   AdoptionZoneView,
   GrowthStatsView,
   MarketSectorsView,
+  MarketVolumeView,
   PenetrationTrendPoint,
   TerminationStatsView,
   ZonePenetrationTrend,
@@ -27,6 +28,7 @@ import {
   concentrationSummary,
   funnelOption,
   lifecycleSankeyOption,
+  marketVolumeOption,
   recoveryReactionOption,
   sectorMixOption,
   recoveryReactionWeeklyOption,
@@ -85,6 +87,7 @@ export class CroissancePage {
   protected readonly adoptionTrend = signal<readonly PenetrationTrendPoint[] | null>(null);
   protected readonly adoptionZoneTrends = signal<readonly ZonePenetrationTrend[] | null>(null);
   protected readonly marketSectors = signal<MarketSectorsView | null>(null);
+  protected readonly marketVolume = signal<MarketVolumeView | null>(null);
   protected readonly terminations = signal<TerminationStatsView | null>(null);
 
   protected readonly kpis = computed<readonly Kpi[]>(() => {
@@ -164,6 +167,10 @@ export class CroissancePage {
   protected readonly sectorMix = computed<ChartOption | null>(() => {
     const view = this.marketSectors();
     return view === null || view.zones.length === 0 ? null : sectorMixOption(view);
+  });
+  protected readonly volumeVsMarket = computed<ChartOption | null>(() => {
+    const view = this.marketVolume();
+    return view === null || view.points.length < 2 ? null : marketVolumeOption(view);
   });
   protected readonly zoneVelocity = computed<ChartOption | null>(() => {
     const trends = this.adoptionZoneTrends();
@@ -263,6 +270,12 @@ export class CroissancePage {
       this.marketSectors.set(await this.market.sectors());
     } catch {
       this.marketSectors.set(null);
+    }
+    // Marché vs volume (CA) dans le temps.
+    try {
+      this.marketVolume.set(await this.market.volume());
+    } catch {
+      this.marketVolume.set(null);
     }
   }
 }

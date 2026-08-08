@@ -144,6 +144,8 @@ export type {
   SectorMovement,
   ZoneSectorMovements,
   MarketSectorsView,
+  MarketVolumePoint,
+  MarketVolumeView,
   TerminationReason,
   TerminationSubReasonCount,
   TerminationReasonNode,

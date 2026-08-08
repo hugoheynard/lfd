@@ -179,6 +179,33 @@
                 </p>
               }
             </article>
+
+            <article class="card wide">
+              <header class="card-head">
+                <h2>Marché vs volume <span class="scope-tag">indice base 100</span></h2>
+                <app-metric-info
+                  label="Marché vs volume (CA) dans le temps"
+                  text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le marché visé (nombre d'acteurs, quasi constant → ligne ~plate) et le volume = CA cumulé encaissé (TTC). L'écart entre les deux raconte la performance commerciale à marché donné. Le tooltip donne le CA en euros et le nombre d'acteurs. Le marché est un comptage figé (via l'API entreprises) ; on ne le fait pas varier tant qu'on ne redemande pas."
+                />
+              </header>
+              @if (volumeVsMarket(); as opt) {
+                <app-chart [option]="opt" height="300px" />
+                <app-chart-note
+                  goal="Comparer l'évolution du marché visé et du CA pour juger l'activation commerciale à marché donné."
+                  read="Deux courbes indexées base 100 : marché (pointillé, ~plat) et CA cumulé (plein). L'écart qui se creuse = on extrait de plus en plus du même marché."
+                />
+                <div class="interp">
+                  <span class="interp-title">Interprétations possibles</span>
+                  <ul>
+                    <li><strong>Marché stable, CA ↑</strong> — meilleure activation commerciale (on extrait plus du même marché).</li>
+                    <li><strong>CA ↑, marché ↓</strong> — arrivée de grands comptes (moins d'acteurs, plus de volume).</li>
+                    <li><strong>CA ↓, marché ↓</strong> — problème commercial ou conjoncture défavorable.</li>
+                  </ul>
+                </div>
+              } @else {
+                <p class="muted">Pas encore assez de semaines de commandes pour comparer.</p>
+              }
+            </article>
           </div>
         }
 
