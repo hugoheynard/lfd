@@ -38,7 +38,33 @@ export const ACTIVITY_TYPES = {
   leadConverted: "lead.converted",
   /** Lead **perdu** (démarchage sans suite). */
   leadLost: "lead.lost",
+  /** Rendez-vous **réservé** par le client sur un créneau ouvert. */
+  appointmentRequested: "appointment.requested",
+  /** Rendez-vous **confirmé** par le commercial (ou posé directement par lui). */
+  appointmentConfirmed: "appointment.confirmed",
+  /** Rendez-vous **annulé**, par l'une ou l'autre partie (porte un motif). */
+  appointmentCancelled: "appointment.cancelled",
+  /**
+   * Rendez-vous **honoré**. Avec `appointment.no_show`, c'est le premier
+   * `outcome` réel de la chaîne `reco.shown → action → outcome` (Phase 2) : la
+   * boucle fermée se boucle ici sans travail supplémentaire.
+   */
+  appointmentHonored: "appointment.honored",
+  /** Rendez-vous **manqué** (le client ne s'est pas présenté). */
+  appointmentNoShow: "appointment.no_show",
+  /** Demande de contact **déposée** par le client (chemin non daté). */
+  supportRequested: "support.requested",
+  /** Demande de contact **traitée** par le staff — c'est ce qui la sort de la file. */
+  supportHandled: "support.handled",
 } as const;
+
+/** L'événement à journaliser pour chaque transition de rendez-vous. */
+export const APPOINTMENT_TRANSITION_TYPES: Record<string, string> = {
+  confirmed: ACTIVITY_TYPES.appointmentConfirmed,
+  cancelled: ACTIVITY_TYPES.appointmentCancelled,
+  honored: ACTIVITY_TYPES.appointmentHonored,
+  no_show: ACTIVITY_TYPES.appointmentNoShow,
+};
 
 /**
  * Ce qu'un **émetteur** fournit pour journaliser un fait. Le reste (id ULID,
