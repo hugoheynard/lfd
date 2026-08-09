@@ -1,11 +1,30 @@
-/* Le rendez-vous en cours coiffe la liste, détaché du rail par une respiration. */
-.ct-current {
-  margin-bottom: var(--fold-space-md);
-}
-
 .ct-empty {
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
   font-style: italic;
+}
+
+/* La frise : un fait par ligne, son auteur en dessous, sa conséquence mise en
+   valeur — c'est elle qu'on cherche en la parcourant. */
+.ct-title {
+  display: block;
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.ct-actor {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+}
+
+.ct-outcome {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--fold-color-success-text, var(--fold-color-success));
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 550;
 }

@@ -356,6 +356,30 @@ non depuis ce que le calendrier lui aurait passé en mémoire — sans quoi un l
 direct n'afficherait rien. Le segment de route arrive dans un `input()` grâce à
 `withComponentInputBinding`.
 
+**Deux colonnes** (`fold-aside-layout`) : le **dossier client** au centre —
+identité, chiffres, commandes, actions de compte — et, dans le **rail collant**,
+ce qui donne son contexte à la lecture :
+
+1. la **carte du rendez-vous en cours**, titrée par son **motif** (« Récurrence »)
+   et sous-titrée par le message du client (« changement de rythme du panier
+   hebdo »), avec ses actions. Elle tient le rail parce qu'elle est le point de
+   départ de tout ce qu'on regarde, pas une section qu'on dépasse en descendant ;
+2. l'**historique commercial** juste dessous — le repère d'abord, ce qui l'a
+   précédé ensuite.
+
+L'historique n'est pas un déversement du journal. Il est **filtré** aux
+interactions entre le client et nous (`COMMERCIAL_TIMELINE_TYPES`), et chaque
+rendez-vous **abouti** porte ce qu'il a produit : « honoré → compte activé 3 j
+après ». Un rendez-vous ne vaut pas par lui-même, il vaut par ce qui a suivi.
+
+L'attribution (`commercialTimeline`, pure et testée) est volontairement stricte :
+le **premier** jalon qui suit — pas le plus flatteur, sinon l'historique dit ce
+qu'on a envie d'entendre —, rien avant le rendez-vous, rien au-delà de 45 jours,
+et rien sur un rendez-vous annulé.
+
+Chaque ligne se lit sur trois niveaux : le **fait**, **qui** l'a provoqué, ce
+qu'il a **produit**. Une phrase à rallonge ne se parcourt pas.
+
 ### 5.3 Onglet Acquisition — les rendez-vous deviennent réels
 
 Le calendrier existant gagne une **quatrième source** (`rdv`), et cette fois

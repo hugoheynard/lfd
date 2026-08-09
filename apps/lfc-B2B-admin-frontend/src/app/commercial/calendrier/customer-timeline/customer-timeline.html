@@ -7,16 +7,21 @@
     subtitle="Ce qui s'est joué, et ce que ça a produit."
   />
 
-  <!-- Le rendez-vous en cours ouvre la liste : c'est le repère à partir duquel
-       tout le reste se lit, et il n'est pas encore un fait accompli. -->
-  @if (current(); as rdv) {
-    <fold-callout appearance="inset" variant="info" class="ct-current">
-      <strong>En cours</strong> — {{ rdv.day }} à {{ rdv.time }}
-    </fold-callout>
-  }
-
   @if (nodes().length > 0) {
-    <fold-timeline [nodes]="nodes()" orientation="vertical" ariaLabel="Historique du compte" />
+    <fold-timeline [nodes]="nodes()" orientation="vertical" ariaLabel="Historique du compte">
+      <!-- Trois niveaux de lecture : le fait, qui l'a provoqué, ce qu'il a
+           produit. Une phrase à rallonge ne se lit pas d'un coup d'œil. -->
+      <ng-template #node let-n>
+        @let row = byKey().get(n.key);
+        <span class="ct-title">{{ n.label }}</span>
+        @if (row) {
+          <span class="ct-actor">{{ row.actor }}</span>
+          @if (row.outcome) {
+            <span class="ct-outcome">→ {{ row.outcome }}</span>
+          }
+        }
+      </ng-template>
+    </fold-timeline>
   } @else {
     <p class="ct-empty">Aucune interaction enregistrée.</p>
   }

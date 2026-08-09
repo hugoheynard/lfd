@@ -12,27 +12,31 @@
          (« depuis quand ? », « qui a annulé ? »), donc il reste sous les yeux
          pendant qu'on descend la fiche. -->
     <fold-aside-layout asideRightLabel="Historique commercial">
-      <!-- La DEMANDE d'abord : on décroche pour un motif, pas pour un dossier. -->
-      <fold-card class="rv-card">
+      <!-- La demande vit dans le RAIL, en tête : c'est le contexte permanent de
+           la lecture, pas une section qu'on dépasse en descendant la fiche. -->
+      <fold-card asideRight class="rv-card">
+        <!-- Le MOTIF fait le titre : c'est lui qui dit s'il faut préparer un
+             devis ou sortir un dossier avant de décrocher. Le message du client
+             le précise juste dessous. -->
         <fold-element-title
           cardHeader
           variant="title"
           icon="planning"
-          [title]="rdv.time + ' → ' + rdv.endTime"
-          [subtitle]="statusLabel()"
+          eyebrow="Rendez-vous en cours"
+          [title]="purposeLabel()"
+          [subtitle]="rdv.message === '' ? statusLabel() : rdv.message"
         />
 
+        <p class="rv-when">
+          {{ rdv.day }} · {{ rdv.time }} → {{ rdv.endTime }} · {{ channelLabel() }}
+        </p>
+
         <dl class="ap-facts">
+          <dt>État</dt>
+          <dd>{{ statusLabel() }}</dd>
+
           <dt>Contact</dt>
           <dd>{{ rdv.contactName || '—' }}</dd>
-
-          <!-- Le motif d'abord : c'est lui qui dit s'il faut préparer un devis ou
-           sortir un dossier avant de décrocher. -->
-          <dt>Motif</dt>
-          <dd>{{ purposeLabel() }}</dd>
-
-          <dt>Canal</dt>
-          <dd>{{ channelLabel() }}</dd>
 
           @if (rdv.contactPhone !== '') {
             <dt>Téléphone</dt>
@@ -47,17 +51,7 @@
               <a [href]="'mailto:' + rdv.contactEmail">{{ rdv.contactEmail }}</a>
             </dd>
           }
-
-          <dt>Horaire</dt>
-          <dd>{{ rdv.time }} → {{ rdv.endTime }}</dd>
         </dl>
-
-        @if (rdv.message !== '') {
-          <section class="ap-message">
-            <h3 class="ap-subtitle">Message</h3>
-            <p>{{ rdv.message }}</p>
-          </section>
-        }
 
         @if (rdv.cancelReason !== '') {
           <p class="ap-cancelled">Annulé — {{ rdv.cancelReason }}</p>
@@ -115,7 +109,7 @@
         <app-customer-sheet [sheet]="sheet" (changed)="reloadSheet()" />
       }
       @if (sheet(); as sheet) {
-        <app-customer-timeline asideRight [entries]="sheet.timeline" [current]="appointment()" />
+        <app-customer-timeline asideRight [entries]="sheet.timeline" />
       }
     </fold-aside-layout>
   } @else {

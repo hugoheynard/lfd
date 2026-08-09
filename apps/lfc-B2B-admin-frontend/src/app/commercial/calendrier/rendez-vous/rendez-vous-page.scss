@@ -5,7 +5,15 @@
 }
 
 .rv-card {
-  margin-bottom: var(--fold-space-lg);
+  margin-bottom: var(--fold-space-md);
+}
+
+/* Quand a lieu le rendez-vous — juste sous le motif, avant le détail. */
+.rv-when {
+  margin: 0 0 var(--fold-space-md);
+  color: var(--fold-color-text-secondary, var(--fold-color-text));
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .ap-facts {

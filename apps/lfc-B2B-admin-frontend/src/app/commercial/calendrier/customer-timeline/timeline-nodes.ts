@@ -49,34 +49,62 @@ const OUTCOME: Record<string, string> = {
   'subscription.created': 'panier récurrent créé',
 };
 
-/** « Rendez-vous honoré · Équipe → compte activé 3 j après ». */
-function labelOf(entry: CustomerTimelineEntry, known: string | undefined): string {
-  const base = `${known ?? entry.type} · ${ACTOR[entry.actorType] ?? entry.actorType}`;
+/**
+ * Une ligne d'historique, **découpée** : le fait, qui l'a provoqué, ce qu'il a
+ * produit. Trois informations sur trois niveaux de lecture plutôt qu'une phrase
+ * à rallonge — c'est ce qui rend une frise lisible d'un coup d'œil.
+ */
+export interface TimelineRow {
+  readonly key: string;
+  readonly title: string;
+  readonly icon: string;
+  readonly date: Date;
+  /** Qui a agi — « Client », « Équipe », « Automatique ». */
+  readonly actor: string;
+  /** Ce que l'interaction a produit, déjà mis en mots ; `null` si rien. */
+  readonly outcome: string | null;
+}
+
+/** Ce qu'a produit une interaction, en une formule courte. */
+function outcomeOf(entry: CustomerTimelineEntry): string | null {
   const outcome = entry.outcome;
   if (outcome === null) {
-    return base;
+    return null;
   }
   const what = OUTCOME[outcome.type] ?? outcome.type;
-  const delay = outcome.days === 0 ? 'le jour même' : `${outcome.days} j après`;
-  return `${base} → ${what} ${delay}`;
+  return outcome.days === 0 ? `${what} le jour même` : `${what} ${outcome.days} j après`;
+}
+
+/** Le journal découpé en lignes lisibles. */
+export function timelineRows(entries: readonly CustomerTimelineEntry[]): TimelineRow[] {
+  return entries.map((entry) => {
+    const known = KNOWN[entry.type];
+    return {
+      key: entry.id,
+      title: known?.label ?? entry.type,
+      icon: known?.icon ?? 'clock',
+      date: new Date(entry.occurredAt),
+      actor: ACTOR[entry.actorType] ?? entry.actorType,
+      outcome: outcomeOf(entry),
+    };
+  });
 }
 
 /**
- * Traduit le journal en nœuds de `fold-timeline`.
+ * Les nœuds que `fold-timeline` attend. Le `label` reste le **fait seul** : le
+ * détail (acteur, conséquence) est rendu par le template projeté, qui retrouve
+ * sa ligne par la clé.
  *
  * Un type **inconnu** n'est pas masqué : il garde son nom technique. Une trace
  * qu'on ne sait pas nommer reste une trace — la cacher ferait mentir la
  * chronologie, et c'est précisément ce qu'on vient y chercher.
  */
-export function timelineNodes(entries: readonly CustomerTimelineEntry[]): FoldTimelineNode[] {
-  return entries.map((entry) => {
-    const known = KNOWN[entry.type];
-    return {
-      key: entry.id,
-      id: null,
-      label: labelOf(entry, known?.label),
-      icon: known?.icon ?? 'clock',
-      date: new Date(entry.occurredAt),
-    };
-  });
+export function nodesOf(rows: readonly TimelineRow[]): FoldTimelineNode[] {
+  return rows.map((row) => ({
+    key: row.key,
+    id: null,
+    label: row.title,
+    icon: row.icon,
+    date: row.date,
+  }));
 }
