@@ -158,7 +158,7 @@ charger l'agrégat (repo.load → toDomain)
 
 **Référence à suivre — puis à compléter :** `src/account/` (`Company.declare()`,
 ~11 value-objects, `create-company.handler` qui construit l'agrégat et le passe
-au port). ⚠️ Il ne va aujourd'hui **au bout que sur la création** : les *updates*
+au port). ⚠️ Il ne va aujourd'hui **au bout que sur la création** : les _updates_
 d'`account` — et **tout** `subscriptions` / `orders` — écrivent encore en CRUD
 (colonnes ciblées, invariants dans les handlers). **C'est de la dette assumée, à
 rembourser, pas un motif pour en ajouter.** Un nouveau cas de mutation sur un
@@ -168,8 +168,8 @@ plus.
 **Où NE PAS mettre d'agrégat :** un contexte de **config sans transition ni
 invariant** (`platform-settings`, `pickup-addresses`, `delivery-zones`,
 `staff-users`) reste un CRUD honnête sur `Payload`↔`View`. Forcer un agrégat là
-serait de la cérémonie. La question de tri : *« existe-t-il une règle qui peut
-refuser cette écriture ? »* — si oui, agrégat ; sinon, CRUD.
+serait de la cérémonie. La question de tri : _« existe-t-il une règle qui peut
+refuser cette écriture ? »_ — si oui, agrégat ; sinon, CRUD.
 
 ### 3.2 Contexte de requête : temps, identifiants, traçabilité
 
@@ -391,7 +391,7 @@ contre la solution astucieuse.
 
 > Le reste du contrat de déploiement (origine stable devant le fan-out, backends
 > stateless, passerelle, CI self-bootstrap) vit dans
-> [`documentation/architecture-suite-gateway-scaling.md`](documentation/architecture-suite-gateway-scaling.md).
+> [`documentation/suite/architecture-suite-gateway-scaling.md`](documentation/suite/architecture-suite-gateway-scaling.md).
 
 ---
 
@@ -429,7 +429,12 @@ d'appel qui compte).
 
 ### Documentation
 
-- Docs d'architecture et décisions → `documentation/` (racine).
+- **L'index fait foi** : [`documentation/README.md`](documentation/README.md) liste
+  tous les docs, par projet, avec leur **état réel** (implémenté / partiel /
+  doc-first). Un doc créé sans sa ligne d'index est un doc que personne ne
+  retrouvera.
+- Docs d'architecture et décisions → `documentation/<projet>/` — `b2b/`,
+  `pim/`, `suite/`. La racine ne porte que l'index et le plan de release courant.
 - TODO / roadmaps / inventaires de dette → `documentation/todos/`.
 - Un doc technique **ship dans le même commit que le code** qu'il décrit, ou dans
   un commit `docs:` immédiatement suivant. Jamais de doc obsolète : si un
