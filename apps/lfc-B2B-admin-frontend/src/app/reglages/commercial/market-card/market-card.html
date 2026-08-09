@@ -1,13 +1,10 @@
 <fold-card>
-  <header class="sec-head">
-    <span class="sec-eyebrow">Territoire</span>
-    <h2 class="sec-title">Définition des marchés</h2>
-    <p class="sec-lede">
-      Les zones et les catégories d'acteurs que l'on vise. Leur comptage est le
-      <strong>dénominateur</strong> de la part de marché du dashboard Croissance — sans lui, une
-      pénétration ne veut rien dire.
-    </p>
-  </header>
+  <fold-element-title
+    variant="title"
+    icon="map-pin"
+    title="Définition des marchés"
+    subtitle="Le comptage de ces zones est le dénominateur de votre part de marché."
+  />
 
   @if (error()) {
     <p class="sec-error">
@@ -40,7 +37,7 @@
   <div class="mk-cols">
     <!-- Zones ciblées -->
     <section class="mk-block">
-      <h3 class="sec-sub">Zones · codes postaux</h3>
+      <fold-element-title variant="bar" title="Zones · codes postaux" [level]="3" />
       <ul class="mk-list">
         @for (zone of config()?.zones ?? []; track zone.codePostal) {
           <li class="mk-row">
@@ -68,22 +65,15 @@
         }
       </ul>
       <div class="mk-add">
-        <input
-          #cp
-          type="text"
-          inputmode="numeric"
-          maxlength="5"
+        <fold-input
+          class="mk-add-field"
           placeholder="75011"
-          class="sec-input"
           [disabled]="busy()"
-          (keyup.enter)="addZone(cp.value); cp.value = ''"
+          [value]="newZone()"
+          (valueChange)="newZone.set($event)"
+          (keyup.enter)="addZone()"
         />
-        <button
-          foldButton
-          emphasis="outline"
-          [disabled]="busy()"
-          (click)="addZone(cp.value); cp.value = ''"
-        >
+        <button foldButton emphasis="outline" [disabled]="busy()" (click)="addZone()">
           Ajouter
         </button>
       </div>
@@ -91,7 +81,7 @@
 
     <!-- NAF ciblés -->
     <section class="mk-block">
-      <h3 class="sec-sub">Catégories · codes NAF</h3>
+      <fold-element-title variant="bar" title="Catégories · codes NAF" [level]="3" />
       <ul class="mk-list">
         @for (naf of config()?.nafCodes ?? []; track naf.code) {
           <li class="mk-row">
@@ -111,27 +101,23 @@
           <li class="sec-empty">Aucune catégorie ciblée.</li>
         }
       </ul>
-      <div class="mk-add mk-add--naf">
-        <input
-          #nafCode
-          type="text"
+      <div class="mk-add">
+        <fold-input
+          class="mk-naf-code"
           placeholder="56.10A"
-          class="sec-input mk-naf-code"
           [disabled]="busy()"
+          [value]="newNafCode()"
+          (valueChange)="newNafCode.set($event)"
         />
-        <input
-          #nafLabel
-          type="text"
+        <fold-input
+          class="mk-add-field"
           placeholder="Restauration traditionnelle"
-          class="sec-input"
           [disabled]="busy()"
+          [value]="newNafLabel()"
+          (valueChange)="newNafLabel.set($event)"
+          (keyup.enter)="addNaf()"
         />
-        <button
-          foldButton
-          emphasis="outline"
-          [disabled]="busy()"
-          (click)="addNaf(nafCode.value, nafLabel.value); nafCode.value = ''; nafLabel.value = ''"
-        >
+        <button foldButton emphasis="outline" [disabled]="busy()" (click)="addNaf()">
           Ajouter
         </button>
       </div>

@@ -1,0 +1,25 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    icon="eye"
+    title="Ce que le client voit"
+    subtitle="Les 14 prochains jours, lus par la même route que lui."
+  />
+
+  <div class="pv-list" foldScrollRegion>
+    @for (day of days(); track day.day) {
+      <div class="pv-day">
+        <span class="pv-date sec-num">{{ day.day }}</span>
+        <div class="pv-times">
+          @for (time of day.times; track time) {
+            <span class="pv-slot sec-num">{{ time }}</span>
+          }
+        </div>
+      </div>
+    } @empty {
+      <p class="sec-empty">
+        Aucun créneau ouvert sur les 14 prochains jours. Déclarez une plage, puis enregistrez.
+      </p>
+    }
+  </div>
+</fold-card>

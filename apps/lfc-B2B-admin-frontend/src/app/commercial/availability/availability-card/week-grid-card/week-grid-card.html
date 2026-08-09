@@ -1,0 +1,71 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    icon="calendar"
+    title="Semaine type"
+    subtitle="Les plages où vous acceptez des rendez-vous. Les créneaux en sont dérivés."
+  />
+
+  <div class="wk-grid">
+    @for (day of weekDays; track day.index) {
+      <section class="wk-day" [class.wk-day--off]="rangesOf(day.index).length === 0">
+        <header class="wk-day-head">
+          <fold-element-title variant="bar" [title]="day.label" [level]="3" />
+          @if (rangesOf(day.index).length > 0) {
+            <div class="wk-day-actions">
+              <button
+                type="button"
+                class="sec-link"
+                title="Appliquer ces plages du lundi au vendredi"
+                (click)="copyToWeekdays(day.index)"
+              >
+                Copier
+              </button>
+              <button type="button" class="sec-link" (click)="clearDay(day.index)">Vider</button>
+            </div>
+          }
+        </header>
+
+        <ul class="wk-ranges">
+          @for (range of rangesOf(day.index); track $index) {
+            <li class="wk-range">
+              <fold-time
+                class="wk-time"
+                size="sm"
+                aria-label="Début"
+                [value]="range.startTime"
+                (valueChange)="setStart(day.index, $index, $event)"
+              />
+              <span class="wk-dash">–</span>
+              <fold-time
+                class="wk-time"
+                size="sm"
+                aria-label="Fin"
+                [value]="range.endTime"
+                (valueChange)="setEnd(day.index, $index, $event)"
+              />
+              <button
+                type="button"
+                class="sec-remove"
+                (click)="removeRange(day.index, $index)"
+                aria-label="Retirer la plage"
+              >
+                ×
+              </button>
+            </li>
+          } @empty {
+            <li class="wk-closed">Fermé</li>
+          }
+        </ul>
+
+        <button type="button" class="wk-add" (click)="addRange(day.index)">
+          + Ajouter une plage
+        </button>
+      </section>
+    }
+  </div>
+
+  @if (invalid) {
+    <p class="sec-warn">Une plage se termine avant de commencer : elle ne sera pas enregistrée.</p>
+  }
+</fold-card>

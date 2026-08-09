@@ -1,6 +1,11 @@
+:host {
+  display: block;
+}
+
 /* ── Le chiffre de tête ──────────────────────────────────────────────────── */
 
 .mk-total {
+  margin-top: var(--fold-space-lg, 1.5rem);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -50,6 +55,7 @@
 /* ── Les deux colonnes ───────────────────────────────────────────────────── */
 
 .mk-cols {
+  margin-top: var(--fold-space-xl, 2rem);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   gap: 0 var(--fold-space-xl, 2rem);
@@ -99,12 +105,13 @@
 
 .mk-add {
   display: flex;
+  align-items: flex-end;
   gap: var(--fold-space-sm);
+}
 
-  .sec-input {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
+.mk-add-field {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .mk-naf-code {

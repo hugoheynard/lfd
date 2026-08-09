@@ -1,0 +1,56 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    icon="settings"
+    title="Règles de réservation"
+    subtitle="Les bornes que vous posez autour de votre grille."
+  />
+
+  <div class="bp-fields">
+    <fold-number-input
+      label="Durée d'un rendez-vous"
+      hint="C'est aussi le pas de découpe de vos plages."
+      [min]="5"
+      [max]="240"
+      [step]="5"
+      [value]="policy().slotMinutes"
+      (valueChange)="setSlotMinutes($event)"
+    />
+
+    <fold-number-input
+      label="Délai de prévenance"
+      hint="Rien de réservable dans les heures qui viennent."
+      [min]="0"
+      [max]="720"
+      [value]="policy().leadTimeHours"
+      (valueChange)="setLeadTime($event)"
+    />
+
+    <fold-number-input
+      label="Horizon de réservation"
+      hint="Au-delà, on ne prend pas encore de rendez-vous."
+      [min]="1"
+      [max]="365"
+      [value]="policy().horizonDays"
+      (valueChange)="setHorizon($event)"
+    />
+
+    <div class="bp-channels">
+      <fold-element-title variant="bar" title="Canaux proposés" [level]="3" />
+      <div class="sec-chips">
+        @for (channel of channels; track channel.key) {
+          <button
+            type="button"
+            class="sec-chip"
+            [class.sec-chip--on]="isChannelOn(channel.key)"
+            [attr.aria-pressed]="isChannelOn(channel.key)"
+            (click)="toggleChannel(channel.key)"
+          >
+            {{ channel.label }}
+          </button>
+        }
+      </div>
+      <span class="sec-hint">Au moins un canal reste toujours actif.</span>
+    </div>
+  </div>
+</fold-card>

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { FoldCardComponent } from 'fold-ng';
+import { FoldCardComponent, FoldElementTitleComponent, FoldNumberInputComponent } from 'fold-ng';
 
 import { AcquisitionSettingsService } from '../../../commercial/settings/acquisition-settings.service';
 
@@ -15,10 +15,19 @@ import { AcquisitionSettingsService } from '../../../commercial/settings/acquisi
 @Component({
   selector: 'app-alerts-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent],
+  imports: [FoldCardComponent, FoldElementTitleComponent, FoldNumberInputComponent],
   templateUrl: './alerts-card.html',
   styleUrl: './alerts-card.scss',
 })
 export class AlertsCard {
   protected readonly settings = inject(AcquisitionSettingsService);
+
+  /** `fold-number-input` rend `null` quand le champ est vidé : un seuil vaut ≥ 1. */
+  protected setWarn(value: number | null): void {
+    this.settings.setWarnDays(value ?? 1);
+  }
+
+  protected setAlert(value: number | null): void {
+    this.settings.setAlertDays(value ?? 1);
+  }
 }

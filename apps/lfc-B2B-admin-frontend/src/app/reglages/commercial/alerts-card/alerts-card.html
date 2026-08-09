@@ -1,12 +1,10 @@
 <fold-card>
-  <header class="sec-head">
-    <span class="sec-eyebrow">Acquisition</span>
-    <h2 class="sec-title">Réglage des alertes</h2>
-    <p class="sec-lede">
-      La couleur d'un dossier en attente d'activation monte avec le nombre de jours sans traitement.
-      Ces deux seuils pilotent le calendrier d'acquisition.
-    </p>
-  </header>
+  <fold-element-title
+    variant="title"
+    icon="bell"
+    title="Réglage des alertes"
+    subtitle="La couleur d'un dossier en attente monte avec les jours sans traitement."
+  />
 
   <!-- L'échelle, montrée plutôt que décrite. -->
   <div class="al-scale" aria-hidden="true">
@@ -26,38 +24,22 @@
     </span>
   </div>
 
-  <div class="sec-fields">
-    <label class="sec-field">
-      <span class="sec-label">Avertissement (ambre)</span>
-      <span class="sec-control">
-        <input
-          #warn
-          type="number"
-          min="1"
-          inputmode="numeric"
-          class="sec-input al-input"
-          [value]="settings.warnDays()"
-          (change)="settings.setWarnDays(+warn.value)"
-        />
-        <span class="sec-suffix">jours d'attente</span>
-      </span>
-    </label>
+  <div class="al-fields">
+    <fold-number-input
+      label="Avertissement (ambre)"
+      hint="Jours d'attente avant que le dossier passe en ambre."
+      [min]="1"
+      [value]="settings.warnDays()"
+      (valueChange)="setWarn($event)"
+    />
 
-    <label class="sec-field">
-      <span class="sec-label">Alerte (rouge)</span>
-      <span class="sec-control">
-        <input
-          #alert
-          type="number"
-          [min]="settings.warnDays()"
-          inputmode="numeric"
-          class="sec-input al-input"
-          [value]="settings.alertDays()"
-          (change)="settings.setAlertDays(+alert.value)"
-        />
-        <span class="sec-suffix">jours d'attente</span>
-      </span>
-    </label>
+    <fold-number-input
+      label="Alerte (rouge)"
+      hint="Jamais avant le seuil d'avertissement."
+      [min]="settings.warnDays()"
+      [value]="settings.alertDays()"
+      (valueChange)="setAlert($event)"
+    />
   </div>
 
   <p class="sec-hint al-scope">

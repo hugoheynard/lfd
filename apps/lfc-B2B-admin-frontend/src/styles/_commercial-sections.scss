@@ -1,134 +1,17 @@
 /**
- * Socle visuel des **sections de réglages commerciaux** — importé par les trois
- * cartes (prise de RDV, marchés, alertes) pour qu'elles se ressemblent sans se
- * copier.
+ * Le **reliquat** partagé par les sections commerciales.
  *
- * Le parti pris « premium » tient en trois choses, et pas en effets :
- * - une **hiérarchie de titres** stable (surtitre discret → titre → chapô) ;
- * - un **rythme d'espacement** unique, toujours pris aux tokens fold ;
- * - des **chiffres tabulaires** partout où des nombres s'alignent, et des
- *   filets fins plutôt que des boîtes empilées.
+ * Ce fichier portait aussi les en-têtes de section, les champs et leurs
+ * libellés : `fold-element-title`, `fold-input`, `fold-number-input`,
+ * `fold-time` et `fold-date` font tout ça mieux, avec le focus, les hints et les
+ * états d'erreur en prime. Ce qui reste ici est ce que fold **ne** couvre pas —
+ * et rien d'autre, pour qu'on n'ait jamais à se demander lequel des deux fait foi.
+ *
+ * Chargé une seule fois depuis `styles.scss` : en `@use` par composant, Sass
+ * l'inlinait dans chaque feuille scopée.
  */
 
-/* ── En-têtes ────────────────────────────────────────────────────────────── */
-
-.sec-head {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: var(--fold-space-lg, 1.5rem);
-}
-
-.sec-eyebrow {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs, 0.75rem);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.sec-title {
-  margin: 0;
-  font-size: var(--fold-text-xl, 1.35rem);
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
-  text-wrap: balance;
-}
-
-.sec-lede {
-  max-width: 62ch;
-  margin: 0;
-  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
-  font-size: var(--fold-text-sm);
-  line-height: 1.55;
-}
-
-/* Sous-titre interne : un filet fin plutôt qu'une nouvelle boîte. */
-.sec-sub {
-  display: flex;
-  align-items: baseline;
-  gap: var(--fold-space-sm);
-  margin: var(--fold-space-xl, 2rem) 0 var(--fold-space-md);
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs, 0.75rem);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-
-  &::after {
-    content: '';
-    flex: 1 1 auto;
-    height: 1px;
-    background: var(--fold-color-border);
-  }
-}
-
-/* ── Champs ──────────────────────────────────────────────────────────────── */
-
-.sec-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: var(--fold-space-md) var(--fold-space-lg, 1.5rem);
-}
-
-.sec-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  min-width: 0;
-}
-
-.sec-label {
-  color: var(--fold-color-text);
-  font-size: var(--fold-text-sm);
-  font-weight: 550;
-}
-
-.sec-control {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm);
-}
-
-.sec-input {
-  min-width: 0;
-  padding: 0.5rem 0.65rem;
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-card);
-  color: var(--fold-color-text);
-  font: inherit;
-  font-variant-numeric: tabular-nums;
-  transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease;
-
-  &:hover:not(:disabled) {
-    border-color: var(--fold-color-border-strong, var(--fold-color-border));
-  }
-
-  &:focus-visible {
-    border-color: var(--fold-color-primary);
-    outline: none;
-    box-shadow: 0 0 0 3px var(--fold-color-primary-soft, rgba(0, 0, 0, 0.06));
-  }
-}
-
-.sec-suffix {
-  flex: 0 0 auto;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
-}
-
-.sec-hint {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs, 0.75rem);
-  line-height: 1.45;
-}
-
-/* ── Pastilles à bascule ─────────────────────────────────────────────────── */
-
+/* Pastilles à bascule — fold n'a pas d'équivalent « chip sélectionnable ». */
 .sec-chips {
   display: flex;
   flex-wrap: wrap;
@@ -162,30 +45,14 @@
   font-weight: 550;
 }
 
-/* ── Actions & messages ──────────────────────────────────────────────────── */
-
-.sec-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--fold-space-md);
-  margin-top: var(--fold-space-xl, 2rem);
-  padding-top: var(--fold-space-md);
-  border-top: 1px solid var(--fold-color-border);
-}
-
-.sec-note {
-  margin-right: auto;
+/* La ligne d'aide sous un groupe qui n'est pas un champ fold (les pastilles). */
+.sec-hint {
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-xs, 0.75rem);
+  line-height: 1.45;
 }
 
-.sec-saved {
-  color: var(--fold-color-success, var(--fold-color-text-muted));
-  font-size: var(--fold-text-sm);
-  font-weight: 550;
-}
-
+/* Messages en ligne — un filet coloré plutôt qu'un encadré de plus. */
 .sec-error,
 .sec-warn {
   margin: 0 0 var(--fold-space-md);
@@ -201,12 +68,19 @@
   border-left-color: var(--fold-color-warning, #d97706);
 }
 
+.sec-saved {
+  color: var(--fold-color-success, var(--fold-color-text-muted));
+  font-size: var(--fold-text-sm);
+  font-weight: 550;
+}
+
 .sec-empty {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
   font-style: italic;
 }
 
+/* Actions discrètes en ligne : « Copier », « Vider », « Réessayer ». */
 .sec-link {
   padding: 0;
   border: 0;
@@ -254,6 +128,7 @@
   color: var(--fold-color-text-muted);
 }
 
+/* Des chiffres qui s'alignent en colonne — dates, heures, comptages. */
 .sec-num {
   font-variant-numeric: tabular-nums;
 }

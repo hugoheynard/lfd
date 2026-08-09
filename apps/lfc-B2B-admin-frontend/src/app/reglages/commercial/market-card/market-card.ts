@@ -1,6 +1,11 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FoldButtonComponent, FoldCardComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCardComponent,
+  FoldElementTitleComponent,
+  FoldInputComponent,
+} from 'fold-ng';
 import type { MarketConfigView } from '@lfd/contracts';
 
 import { MarketService } from '../../../commercial/market/market.service';
@@ -20,7 +25,14 @@ const POSTAL_CODE = /^\d{5}$/u;
 @Component({
   selector: 'app-market-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldButtonComponent, DatePipe, DecimalPipe],
+  imports: [
+    FoldCardComponent,
+    FoldElementTitleComponent,
+    FoldInputComponent,
+    FoldButtonComponent,
+    DatePipe,
+    DecimalPipe,
+  ],
   templateUrl: './market-card.html',
   styleUrl: './market-card.scss',
 })
@@ -40,6 +52,11 @@ export class MarketCard {
   protected readonly pendingCounts = computed(
     () => (this.config()?.zones ?? []).filter((zone) => zone.fetchedAt === null).length,
   );
+
+  /** Les saisies d'ajout — locales à la carte, elles n'appellent qu'au clic. */
+  protected readonly newZone = signal('');
+  protected readonly newNafCode = signal('');
+  protected readonly newNafLabel = signal('');
 
   constructor() {
     void this.reload();
@@ -67,25 +84,28 @@ export class MarketCard {
     }
   }
 
-  protected async addZone(codePostal: string): Promise<void> {
-    const cp = codePostal.trim();
+  protected async addZone(): Promise<void> {
+    const cp = this.newZone().trim();
     if (!POSTAL_CODE.test(cp)) {
       return;
     }
     await this.run(() => this.market.addZone(cp));
+    this.newZone.set('');
   }
 
   protected async removeZone(codePostal: string): Promise<void> {
     await this.run(() => this.market.removeZone(codePostal));
   }
 
-  protected async addNaf(code: string, label: string): Promise<void> {
-    const c = code.trim();
-    const l = label.trim();
-    if (c === '' || l === '') {
+  protected async addNaf(): Promise<void> {
+    const code = this.newNafCode().trim();
+    const label = this.newNafLabel().trim();
+    if (code === '' || label === '') {
       return;
     }
-    await this.run(() => this.market.addNaf(c, l));
+    await this.run(() => this.market.addNaf(code, label));
+    this.newNafCode.set('');
+    this.newNafLabel.set('');
   }
 
   protected async removeNaf(code: string): Promise<void> {

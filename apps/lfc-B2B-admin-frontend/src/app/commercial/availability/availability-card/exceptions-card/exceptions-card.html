@@ -1,0 +1,52 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    icon="alert-triangle"
+    title="Fermetures et ouvertures exceptionnelles"
+    subtitle="Les écarts datés à votre semaine type."
+  />
+
+  <ul class="ex-list">
+    @for (exception of exceptions(); track $index) {
+      <li class="ex-row">
+        <span class="ex-kind" [class.ex-kind--open]="exception.kind === 'open'">
+          {{ exception.kind === 'open' ? 'Ouvert' : 'Fermé' }}
+        </span>
+        <span class="ex-day sec-num">{{ exception.day }}</span>
+        @if (exception.startTime !== null && exception.endTime !== null) {
+          <span class="ex-time sec-num">{{ exception.startTime }}–{{ exception.endTime }}</span>
+        } @else {
+          <span class="ex-time sec-muted">toute la journée</span>
+        }
+        <span class="ex-reason sec-muted">{{ exception.reason }}</span>
+        <button
+          type="button"
+          class="sec-remove"
+          (click)="remove($index)"
+          aria-label="Retirer l'exception"
+        >
+          ×
+        </button>
+      </li>
+    } @empty {
+      <li class="sec-empty">Aucune exception.</li>
+    }
+  </ul>
+
+  <div class="ex-add">
+    <fold-date class="ex-add-day" label="Jour" [value]="day()" (valueChange)="day.set($event)" />
+    <fold-select class="ex-add-kind" label="Type" [value]="kind()" (valueChange)="onKind($event)">
+      <option value="closed">Fermeture</option>
+      <option value="open">Ouverture exceptionnelle</option>
+    </fold-select>
+    <fold-input
+      class="ex-add-reason"
+      label="Motif"
+      optional
+      placeholder="Congés, salon…"
+      [value]="reason()"
+      (valueChange)="reason.set($event)"
+    />
+    <button foldButton emphasis="outline" [disabled]="!canAdd()" (click)="add()">Ajouter</button>
+  </div>
+</fold-card>

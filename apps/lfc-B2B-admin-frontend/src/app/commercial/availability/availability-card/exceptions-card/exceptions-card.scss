@@ -1,0 +1,74 @@
+:host {
+  display: block;
+}
+
+.ex-list {
+  display: flex;
+  flex-direction: column;
+  margin: var(--fold-space-lg, 1.5rem) 0 var(--fold-space-md);
+  padding: 0;
+  list-style: none;
+}
+
+.ex-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: 0.45rem 0.15rem;
+  border-bottom: 1px solid var(--fold-color-border);
+  font-size: var(--fold-text-sm);
+}
+
+.ex-kind {
+  flex: 0 0 auto;
+  min-width: 4.2rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-danger, #dc2626);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 550;
+  text-align: center;
+}
+
+.ex-kind--open {
+  color: var(--fold-color-success, #16a34a);
+}
+
+.ex-day {
+  flex: 0 0 auto;
+  min-width: 6rem;
+  font-weight: 550;
+}
+
+.ex-time {
+  flex: 0 0 auto;
+  min-width: 7rem;
+}
+
+.ex-reason {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* La ligne d'ajout : les champs respirent, le bouton reste au ras du bas. */
+.ex-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.ex-add-day {
+  flex: 0 0 11rem;
+}
+
+.ex-add-kind {
+  flex: 0 0 14rem;
+}
+
+.ex-add-reason {
+  flex: 1 1 14rem;
+  min-width: 0;
+}

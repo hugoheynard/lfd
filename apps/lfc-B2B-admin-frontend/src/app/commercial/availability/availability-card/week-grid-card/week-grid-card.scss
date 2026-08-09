@@ -1,0 +1,96 @@
+:host {
+  display: block;
+}
+
+.wk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--fold-space-sm);
+  margin-top: var(--fold-space-lg, 1.5rem);
+}
+
+.wk-day {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+
+  &:hover {
+    border-color: var(--fold-color-border-strong, var(--fold-color-border));
+  }
+}
+
+/* Une journée fermée s'efface : l'œil doit tomber sur ce qui est ouvert. */
+.wk-day--off {
+  background: var(--fold-color-surface-sunken, transparent);
+}
+
+.wk-day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-xs);
+  min-height: 1.5rem;
+}
+
+.wk-day-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.wk-ranges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wk-range {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.wk-time {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.wk-dash {
+  flex: 0 0 auto;
+  color: var(--fold-color-text-muted);
+}
+
+.wk-closed {
+  padding: 0.25rem 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.wk-add {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-primary);
+  font: inherit;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 550;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
+.sec-warn {
+  margin-top: var(--fold-space-md);
+}
