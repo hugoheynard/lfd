@@ -1,0 +1,85 @@
+.sp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Le titre et le compte sur une ligne : on sait ce qu'on regarde et combien il y
+   en a avant de commencer à faire défiler. */
+.sp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.sp-title {
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+}
+
+.sp-count {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.sp-day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Le jour porte la lecture : capitale en tête, jamais une date brute. */
+.sp-day-label {
+  margin: 0;
+  color: var(--fold-color-text-secondary, var(--fold-color-text));
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+}
+
+/* Une grille d'heures plutôt qu'une ligne qui déborde : les colonnes s'alignent
+   d'un jour à l'autre, et l'œil compare les disponibilités verticalement. */
+.sp-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+  gap: var(--fold-space-xs, 0.35rem);
+}
+
+.sp-time {
+  padding: 0.5rem 0.25rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+
+  &:hover:not(.sp-time--on) {
+    border-color: var(--fold-color-primary-border, var(--fold-color-primary));
+    background: var(--fold-color-surface-hover, rgba(0, 0, 0, 0.04));
+  }
+}
+
+.sp-time--on {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary, #fff);
+  font-weight: 600;
+}
+
+.sp-empty {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}

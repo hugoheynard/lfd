@@ -1,0 +1,40 @@
+<div class="sp">
+  <div class="sp-head">
+    <span class="sp-title">Choisissez un créneau</span>
+    <span class="sp-count">{{ count() }} {{ count() > 1 ? 'créneaux' : 'créneau' }}</span>
+  </div>
+
+  <!-- Le filtre n'apparaît que si les deux demi-journées existent : sinon il ne
+       pourrait que vider l'écran. -->
+  @if (showFilter()) {
+    <fold-choice-row
+      class="sp-filter"
+      layout="chips"
+      ariaLabel="Filtrer par demi-journée"
+      [options]="periods"
+      [activeKey]="period()"
+      (selected)="onPeriod($event)"
+    />
+  }
+
+  @for (day of days(); track day.day) {
+    <section class="sp-day">
+      <h4 class="sp-day-label">{{ day.label }}</h4>
+      <div class="sp-times">
+        @for (slot of day.slots; track slot.startAt) {
+          <button
+            type="button"
+            class="sp-time"
+            [class.sp-time--on]="chosen() === slot.startAt"
+            [attr.aria-pressed]="chosen() === slot.startAt"
+            (click)="chosen.set(slot.startAt)"
+          >
+            {{ slot.time }}
+          </button>
+        }
+      </div>
+    </section>
+  } @empty {
+    <p class="sp-empty">Aucun créneau sur cette demi-journée. Essayez l'autre.</p>
+  }
+</div>

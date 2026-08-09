@@ -27,16 +27,26 @@
       <button foldButton intent="primary" (click)="close()">Fermer</button>
     </div>
   } @else {
+    <!-- Le motif d'abord, et pour les TROIS chemins : « de quoi s'agit-il ? » est
+         la même question qu'on réserve, qu'on demande un rappel ou qu'on écrive.
+         C'est aussi lui qui fera l'objet du mail. -->
+    <fold-listbox
+      label="Quel est l'objet de votre demande ?"
+      [options]="purposes"
+      [value]="purpose()"
+      (valueChange)="onPurpose($event)"
+    />
+
     <!-- Hors contexte d'entreprise, seule la réservation est possible : les deux
          chemins de repli passent par une demande de support, qui est murée. -->
     @if (!bookingOnly()) {
       <fold-select
-        label="Comment souhaitez-vous être contacté ?"
+        label="Comment souhaitez-vous que ça se passe ?"
         [value]="channel()"
         (valueChange)="onChannel($event)"
       >
-        <option value="phone">Être rappelé par téléphone</option>
-        <option value="email">Échanger par e-mail</option>
+        <option value="phone">Je veux être rappelé</option>
+        <option value="email">Je préfère échanger par e-mail</option>
       </fold-select>
 
       @if (isPhone()) {
@@ -58,18 +68,27 @@
           />
         }
 
-        <!-- On ne propose de choisir un créneau que s'il y en a. -->
+        <!-- On ne propose de choisir un créneau que s'il y en a. Et « au plus
+             vite » dit CE QU'IL VAUT : sans repère, personne ne sait s'il sera
+             rappelé dans l'heure ou la semaine prochaine. -->
         @if (canBook()) {
           <fold-checkbox
             label="Au plus vite"
-            hint="décochez pour choisir un créneau"
+            [hint]="
+              soonest()
+                ? 'Nous vous rappelons dès que possible — au plus tôt ' +
+                  soonest() +
+                  '. Décochez pour choisir vous-même.'
+                : 'Décochez pour choisir un créneau.'
+            "
             [checked]="asap()"
             (checkedChange)="asap.set($event)"
           />
         }
       } @else {
         <fold-callout appearance="inset" variant="info">
-          Nous vous répondrons à <strong>{{ profileEmail() }}</strong
+          Nous répondrons à <strong>{{ profileEmail() }}</strong
+          >, en objet : <strong>{{ purposeLabel() }}</strong
           >.
         </fold-callout>
       }
@@ -90,31 +109,23 @@
         </fold-select>
       }
 
-      <p class="field-label">Choisissez un créneau</p>
-      <div class="slots" foldScrollRegion>
-        @for (group of slotsByDay(); track group.day) {
-          <div class="slot-day">
-            <span class="slot-date">{{ group.day }}</span>
-            <div class="slot-times">
-              @for (slot of group.slots; track slot.startAt) {
-                <button
-                  type="button"
-                  class="slot-chip"
-                  [class.slot-chip--on]="chosenSlot() === slot.startAt"
-                  [attr.aria-pressed]="chosenSlot() === slot.startAt"
-                  (click)="chooseSlot(slot.startAt)"
-                >
-                  {{ slot.time }}
-                </button>
-              }
-            </div>
-          </div>
-        }
-      </div>
+      <app-slot-picker
+        [slots]="openSlots()"
+        [today]="today"
+        [tomorrow]="tomorrow"
+        [(chosen)]="chosenSlot"
+      />
     }
 
     <label class="field">
-      <span class="field-label">Message <em>(optionnel)</em></span>
+      <span class="field-label">
+        Message
+        @if (needsDetail()) {
+          <em>(à préciser)</em>
+        } @else {
+          <em>(optionnel)</em>
+        }
+      </span>
       <textarea
         class="note"
         rows="3"

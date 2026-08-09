@@ -3,9 +3,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import type {
   ActivationSupportPayload,
   AppointmentChannel,
+  AppointmentPurpose,
   Slot,
   SupportChannel,
 } from '@lfd/contracts';
+import { APPOINTMENT_PURPOSES, purposeChoice, purposeShort } from '@lfd/b2b-ui/appointment';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -13,13 +15,22 @@ import {
   FoldInputComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
+  FoldListboxComponent,
   FoldScrollRegionDirective,
   FoldSelectComponent,
+  type FoldSelectOption,
 } from 'fold-ng';
 
 import { AccountService } from '../../account/account.service';
 import { AppointmentsService } from '../appointments.service';
+import { SlotPicker } from '../slot-picker/slot-picker';
+import { soonestLabel } from '../slot-picker/slots-model';
 import { SupportService } from '../support.service';
+
+/** Les motifs proposés, au format attendu par `fold-listbox`. */
+const PURPOSE_OPTIONS: readonly FoldSelectOption<AppointmentPurpose>[] = APPOINTMENT_PURPOSES.map(
+  (purpose) => ({ value: purpose, label: purposeChoice(purpose) }),
+);
 
 /**
  * Charge d'ouverture : l'entreprise concernée, ou `null`.
@@ -56,6 +67,8 @@ const SLOT_WINDOW_DAYS = 21;
   imports: [
     FoldPanelHeaderComponent,
     FoldSelectComponent,
+    FoldListboxComponent,
+    SlotPicker,
     FoldCheckboxComponent,
     FoldInputComponent,
     FoldCalloutComponent,
@@ -77,6 +90,15 @@ export class ActivationSupportPanel {
   protected readonly profilePhone = computed(() => this.profile()?.phone.trim() ?? '');
   protected readonly profileEmail = computed(() => this.profile()?.email ?? '');
   protected readonly hasProfilePhone = computed(() => this.profilePhone() !== '');
+
+  /**
+   * Le **motif**, commun aux trois chemins : la question « de quoi s'agit-il ? »
+   * ne change pas selon qu'on réserve, qu'on demande un rappel ou qu'on écrit.
+   */
+  protected readonly purposes = PURPOSE_OPTIONS;
+  protected readonly purpose = signal<AppointmentPurpose>('discover');
+  /** Le motif en version courte — c'est lui qui fera l'objet de l'e-mail. */
+  protected readonly purposeLabel = computed(() => purposeShort(this.purpose()));
 
   protected readonly channel = signal<SupportChannel>('phone');
   protected readonly useOtherNumber = signal(false);
@@ -119,19 +141,19 @@ export class ActivationSupportPanel {
    */
   protected readonly nothingToOffer = computed(() => this.bookingOnly() && !this.canBook());
 
-  /** Les créneaux groupés par jour — ce que l'écran rend. */
-  protected readonly slotsByDay = computed(() => {
-    const byDay = new Map<string, Slot[]>();
-    for (const slot of this.slots()) {
-      const bucket = byDay.get(slot.day);
-      if (bucket === undefined) {
-        byDay.set(slot.day, [slot]);
-      } else {
-        bucket.push(slot);
-      }
-    }
-    return [...byDay.entries()].map(([day, slots]) => ({ day, slots }));
-  });
+  protected readonly openSlots = computed(() => this.slots());
+  protected readonly today = isoDay(0);
+  protected readonly tomorrow = isoDay(1);
+
+  /**
+   * Le **premier créneau ouvert**, écrit en toutes lettres. C'est ce qui rend
+   * « au plus vite » honnête : sans repère, personne ne sait s'il sera rappelé
+   * dans l'heure ou la semaine prochaine. `null` quand il n'y a rien à
+   * promettre — et on ne promet alors rien.
+   */
+  protected readonly soonest = computed(() =>
+    soonestLabel(this.slots(), this.today, this.tomorrow),
+  );
   /** Saisie d'un numéro : soit pas de numéro au profil, soit « un autre numéro ». */
   protected readonly showCustomPhone = computed(
     () => !this.hasProfilePhone() || this.useOtherNumber(),
@@ -142,8 +164,13 @@ export class ActivationSupportPanel {
       : this.customPhone().trim(),
   );
 
+  /** « Autre demande » exige une précision — même règle que le contrat. */
+  protected readonly needsDetail = computed(
+    () => this.purpose() === 'other' && this.message().trim() === '',
+  );
+
   protected readonly canSubmit = computed(() => {
-    if (this.submitting() || this.placed()) {
+    if (this.submitting() || this.placed() || this.needsDetail()) {
       return false;
     }
     if (!this.isPhone()) {
@@ -194,6 +221,12 @@ export class ActivationSupportPanel {
     }
   }
 
+  protected onPurpose(value: AppointmentPurpose | null): void {
+    if (value !== null) {
+      this.purpose.set(value);
+    }
+  }
+
   protected onChannel(value: string): void {
     this.channel.set(value === 'email' ? 'email' : 'phone');
   }
@@ -224,6 +257,7 @@ export class ActivationSupportPanel {
     const phone = this.isPhone();
     const payload: ActivationSupportPayload = {
       channel: this.channel(),
+      purpose: this.purpose(),
       phoneNumber: phone ? this.resolvedPhone() : '',
       asap: true,
       scheduledDate: null,
@@ -252,6 +286,7 @@ export class ActivationSupportPanel {
       .book({
         startAt: this.chosenSlot(),
         channel: this.meetingChannel(),
+        purpose: this.purpose(),
         companyId,
         contactName: '',
         contactPhone: this.resolvedPhone(),
