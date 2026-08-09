@@ -34,7 +34,14 @@
       </div>
     }
     @default {
-      <!-- Les épinglés en premier : ce sont les comptes qu'on a DÉCIDÉ de suivre,
+      <!-- LA donnée du tableau de bord : l'allure du mois contre le mois
+           précédent. C'est la seule lecture qui réponde en une seconde à la
+           question que se posent le commercial ET le patron. -->
+      @if (orderMetrics(); as metrics) {
+        <app-revenue-pace [metrics]="metrics" [today]="now()" />
+      }
+
+      <!-- Les épinglés ensuite : ce sont les comptes qu'on a DÉCIDÉ de suivre,
            donc le seul bloc que le commercial a lui-même composé. -->
       @if (pinnedCompanies().length > 0) {
         <section class="ck-block">

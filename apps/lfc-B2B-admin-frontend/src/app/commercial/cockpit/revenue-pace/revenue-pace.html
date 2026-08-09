@@ -1,0 +1,11 @@
+<div class="rp">
+  <div class="rp-figure">
+    <p class="rp-eyebrow">Chiffre d'affaires du mois</p>
+    <p class="rp-total">{{ total() }}</p>
+    <p class="rp-compare" [attr.data-direction]="direction()">{{ comparison() }}</p>
+  </div>
+
+  @if (option(); as chartOption) {
+    <app-chart class="rp-chart" [option]="chartOption" height="150px" />
+  }
+</div>

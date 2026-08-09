@@ -13,7 +13,12 @@ import {
   foldToday,
   type FoldCalendarDate,
 } from 'fold-ng';
-import type { AppointmentView, GrowthStatsView, LeadScoreView } from '@lfd/contracts';
+import type {
+  AppointmentView,
+  GrowthStatsView,
+  LeadScoreView,
+  OrderMetricsView,
+} from '@lfd/contracts';
 import type { SupportRequestView } from '@lfd/contracts';
 
 import type { AdminCompany } from '../../comptes-clients/admin-company';
@@ -29,6 +34,7 @@ import { CockpitService } from './cockpit.service';
 import { PinnedAccounts } from './pinned-accounts/pinned-accounts';
 import { PinnedAccountsStore } from './pinned-store';
 import { PlayQueue } from './play-queue/play-queue';
+import { RevenuePaceCard } from './revenue-pace/revenue-pace';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -65,6 +71,7 @@ interface Kpi {
     FoldCalendarDayComponent,
     PinnedAccounts,
     PlayQueue,
+    RevenuePaceCard,
     RouterLink,
     SupportQueue,
   ],
@@ -84,11 +91,14 @@ export class CockpitPage {
   protected readonly leads = signal<readonly LeadScoreView[]>([]);
   protected readonly stats = signal<GrowthStatsView | null>(null);
   protected readonly requests = signal<readonly SupportRequestView[]>([]);
+  protected readonly orderMetrics = signal<OrderMetricsView | null>(null);
   private readonly appointments = signal<readonly AppointmentView[]>([]);
   private readonly companies = signal<readonly AdminCompany[]>([]);
 
   /** Le jour courant, posé au 1er rendu navigateur — `undefined` en SSR. */
   protected readonly today = signal<FoldCalendarDate | undefined>(undefined);
+  /** Le même instant, en `Date` — ce dont l'allure du mois a besoin. */
+  protected readonly now = signal<Date | undefined>(undefined);
 
   /** Les rendez-vous projetés — vides tant que `today` n'est pas posé (donc en SSR). */
   protected readonly events = computed<readonly AppointmentEvent[]>(() =>
@@ -135,7 +145,10 @@ export class CockpitPage {
   );
 
   constructor() {
-    afterNextRender(() => this.today.set(foldToday()));
+    afterNextRender(() => {
+      this.today.set(foldToday());
+      this.now.set(new Date());
+    });
     void this.load();
   }
 
@@ -152,6 +165,7 @@ export class CockpitPage {
     // de bord, dont la file scorée est le cœur.
     await Promise.all([
       this.loadInto(this.stats, () => this.growth.stats(), null),
+      this.loadInto(this.orderMetrics, () => this.growth.orderMetrics(), null),
       this.loadInto(this.requests, () => this.supportApi.list(), []),
       this.loadInto(this.appointments, () => this.dayAppointments(), []),
       this.loadInto(this.companies, () => this.companiesApi.list(), []),
