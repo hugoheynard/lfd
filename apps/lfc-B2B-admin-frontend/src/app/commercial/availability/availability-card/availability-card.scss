@@ -180,9 +180,12 @@
 
 /* ── Aperçu ──────────────────────────────────────────────────────────────── */
 
+/* Borné en hauteur ; le scroll lui-même vient de `[foldScrollRegion]` — on
+   n'écrit pas d'`overflow` à la main. */
 .av-preview {
   display: flex;
   flex-direction: column;
+  max-height: 22rem;
 }
 
 .av-preview-day {

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FoldButtonComponent, FoldCardComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldCardComponent, FoldScrollRegionDirective } from 'fold-ng';
 import type { AppointmentChannel, ExceptionKind, Slot } from '@lfd/contracts';
 
 import { AvailabilityService } from '../availability.service';
@@ -49,11 +49,16 @@ interface PreviewDay {
  *
  * Tous les gestes sur la grille passent par les fonctions pures d'
  * `availability-draft.ts` : ce composant charge, rend, et enregistre.
+ *
+ * L'aperçu est borné par `[foldScrollRegion]` plutôt que par un `overflow`
+ * maison : la directive pose les trois pièges d'un coup (`overflow`,
+ * `min-height: 0`, `overscroll-behavior`) et **s'enregistre auprès du shell**,
+ * qui peut alors le geler quand un panneau s'ouvre par-dessus.
  */
 @Component({
   selector: 'app-availability-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldButtonComponent],
+  imports: [FoldCardComponent, FoldButtonComponent, FoldScrollRegionDirective],
   templateUrl: './availability-card.html',
   styleUrl: './availability-card.scss',
 })

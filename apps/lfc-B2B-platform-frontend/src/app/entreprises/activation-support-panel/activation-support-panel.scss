@@ -5,9 +5,12 @@
   height: 100%;
 }
 
+/* Le corps du panneau scrolle par `[foldScrollRegion]` : la directive pose
+   `overflow`, `min-height: 0` et l'`overscroll-behavior` — ce dernier évite que
+   la molette, arrivée en bout de panneau, se mette à faire défiler la page
+   derrière. */
 .body {
   flex: 1 1 auto;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
@@ -80,12 +83,14 @@
 
 /* ── Choix d'un créneau réel ─────────────────────────────────────────────── */
 
+/* Borné en hauteur ; le scroll vient de `[foldScrollRegion]`, qui pose aussi
+   `min-height: 0` et l'`overscroll-behavior` — et qui se laisse geler par le
+   panneau quand un autre s'ouvre par-dessus. */
 .slots {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);
   max-height: 18rem;
-  overflow-y: auto;
 }
 
 .slot-day {

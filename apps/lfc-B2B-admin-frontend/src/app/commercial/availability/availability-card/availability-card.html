@@ -230,7 +230,7 @@
   <!-- ── Aperçu : la même route que le client ────────────────────────────── -->
   <h3 class="sec-sub">Ce que le client voit · 14 prochains jours</h3>
 
-  <div class="av-preview">
+  <div class="av-preview" foldScrollRegion>
     @for (day of preview(); track day.day) {
       <div class="av-preview-day">
         <span class="av-preview-date sec-num">{{ day.day }}</span>

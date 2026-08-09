@@ -3,7 +3,7 @@
   subtitle="Notre équipe commerciale vous accompagne."
 />
 
-<div class="body">
+<div class="body" foldScrollRegion>
   @if (placed()) {
     <fold-callout variant="success">
       @if (booked()) {
@@ -91,7 +91,7 @@
       }
 
       <p class="field-label">Choisissez un créneau</p>
-      <div class="slots">
+      <div class="slots" foldScrollRegion>
         @for (group of slotsByDay(); track group.day) {
           <div class="slot-day">
             <span class="slot-date">{{ group.day }}</span>

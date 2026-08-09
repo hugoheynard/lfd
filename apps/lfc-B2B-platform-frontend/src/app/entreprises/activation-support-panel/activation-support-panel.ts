@@ -13,6 +13,7 @@ import {
   FoldInputComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
+  FoldScrollRegionDirective,
   FoldSelectComponent,
 } from 'fold-ng';
 
@@ -59,6 +60,7 @@ const SLOT_WINDOW_DAYS = 21;
     FoldInputComponent,
     FoldCalloutComponent,
     FoldButtonComponent,
+    FoldScrollRegionDirective,
   ],
   templateUrl: './activation-support-panel.html',
   styleUrl: './activation-support-panel.scss',
