@@ -1,4 +1,8 @@
-import type { AvailabilityConfigPayload, BookingPolicy } from "@lfd/contracts";
+import type {
+  AvailabilityConfigPayload,
+  AvailabilityExceptionPayload,
+  BookingPolicy,
+} from "@lfd/contracts";
 
 import type { AvailabilityConfig } from "../availability.js";
 
@@ -28,4 +32,15 @@ export abstract class AvailabilityStore {
    * celles-là ne doit pas pouvoir en écraser une autre au passage.
    */
   abstract savePolicy(policy: BookingPolicy): Promise<AvailabilityConfig>;
+
+  /**
+   * Remplace **les seules exceptions**, sans toucher aux règles ni à la politique.
+   *
+   * Même raison que `savePolicy` : l'écran des fermetures n'a pas à renvoyer la
+   * grille pour dater un congé. Le remplacement reste **atomique** — une liste à
+   * moitié écrite laisserait l'agenda ouvert un jour qu'on venait de fermer.
+   */
+  abstract saveExceptions(
+    exceptions: readonly AvailabilityExceptionPayload[],
+  ): Promise<AvailabilityConfig>;
 }

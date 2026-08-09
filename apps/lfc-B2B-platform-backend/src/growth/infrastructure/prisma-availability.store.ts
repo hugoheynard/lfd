@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import {
   bookingPolicySchema,
   type AvailabilityConfigPayload,
+  type AvailabilityExceptionPayload,
   type AvailabilityExceptionView,
   type AvailabilityRuleView,
   type BookingPolicy,
@@ -57,14 +58,7 @@ export class PrismaAvailabilityStore extends AvailabilityStore {
         data: config.rules.map((rule) => ({ id: `avrule_${this.ids.next()}`, ...rule })),
       }),
       this.prisma.availabilityException.createMany({
-        data: config.exceptions.map((exception) => ({
-          id: `avexc_${this.ids.next()}`,
-          day: dayToDate(exception.day),
-          kind: exception.kind,
-          startTime: exception.startTime,
-          endTime: exception.endTime,
-          reason: exception.reason,
-        })),
+        data: config.exceptions.map((exception) => this.toExceptionRow(exception)),
       }),
       this.prisma.bookingPolicySettings.upsert({
         where: { id: POLICY_ID },
@@ -82,6 +76,37 @@ export class PrismaAvailabilityStore extends AvailabilityStore {
       update: policy,
     });
     return this.load();
+  }
+
+  async saveExceptions(
+    exceptions: readonly AvailabilityExceptionPayload[],
+  ): Promise<AvailabilityConfig> {
+    await this.prisma.$transaction([
+      this.prisma.availabilityException.deleteMany({}),
+      this.prisma.availabilityException.createMany({
+        data: exceptions.map((exception) => this.toExceptionRow(exception)),
+      }),
+    ]);
+    return this.load();
+  }
+
+  /** Une exception vers sa ligne — le jour perd son fuseau, le reste est copié. */
+  private toExceptionRow(exception: AvailabilityExceptionPayload): {
+    id: string;
+    day: Date;
+    kind: string;
+    startTime: string | null;
+    endTime: string | null;
+    reason: string;
+  } {
+    return {
+      id: `avexc_${this.ids.next()}`,
+      day: dayToDate(exception.day),
+      kind: exception.kind,
+      startTime: exception.startTime,
+      endTime: exception.endTime,
+      reason: exception.reason,
+    };
   }
 }
 

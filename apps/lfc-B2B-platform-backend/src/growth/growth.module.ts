@@ -4,6 +4,7 @@ import { CqrsModule } from "@nestjs/cqrs";
 import { RecomputeGuard } from "../infra/auth/recompute.guard.js";
 import { BookAppointmentHandler } from "./application/commands/book-appointment.handler.js";
 import { CancelOwnAppointmentHandler } from "./application/commands/cancel-own-appointment.handler.js";
+import { SaveAvailabilityExceptionsHandler } from "./application/commands/save-availability-exceptions.handler.js";
 import { SaveAvailabilityHandler } from "./application/commands/save-availability.handler.js";
 import { SaveBookingPolicyHandler } from "./application/commands/save-booking-policy.handler.js";
 import { ScheduleAppointmentHandler } from "./application/commands/schedule-appointment.handler.js";
@@ -172,6 +173,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     OnSupportRequested,
     OnSupportHandled,
     SaveAvailabilityHandler,
+    SaveAvailabilityExceptionsHandler,
     SaveBookingPolicyHandler,
     GetAvailabilityHandler,
     GetSlotsHandler,

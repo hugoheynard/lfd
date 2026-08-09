@@ -421,6 +421,72 @@ describe("la surface staff", () => {
     expect(await ctx.prisma.availabilityRule.count()).toBe(1);
   });
 
+  it("enregistre les SEULES exceptions sans toucher à la grille ni aux règles", async () => {
+    await declareAvailability({
+      rules: [{ weekday: 2, startTime: "09:00", endTime: "12:00" }],
+      exceptions: [
+        { day: "2026-12-25", kind: "closed", startTime: null, endTime: null, reason: "Noël" },
+      ],
+      policy: { slotMinutes: 60, leadTimeHours: 2, horizonDays: 90, channels: ["visio"] },
+    });
+
+    const response = await staff()
+      .put("/admin/availability/exceptions")
+      .send({
+        exceptions: [
+          { day: "2027-01-02", kind: "closed", startTime: null, endTime: null, reason: "Congés" },
+          {
+            day: "2027-01-09",
+            kind: "open",
+            startTime: "09:00",
+            endTime: "12:00",
+            reason: "Salon",
+          },
+        ],
+      })
+      .expect(200);
+
+    const saved = jsonBody<AvailabilityConfigView>(response);
+    expect(saved.exceptions.map((exception) => exception.day)).toEqual([
+      "2027-01-02",
+      "2027-01-09",
+    ]);
+    // Le point de la route : la grille et les règles sont intactes.
+    expect(saved.rules).toHaveLength(1);
+    expect(saved.rules[0]).toMatchObject({ weekday: 2, startTime: "09:00", endTime: "12:00" });
+    expect(saved.policy).toMatchObject({ slotMinutes: 60, channels: ["visio"] });
+  });
+
+  it("vide les exceptions quand la liste envoyée est vide", async () => {
+    await declareAvailability({
+      rules: [{ weekday: 2, startTime: "09:00", endTime: "12:00" }],
+      exceptions: [
+        { day: "2026-12-25", kind: "closed", startTime: null, endTime: null, reason: "Noël" },
+      ],
+      policy: OPEN_CONFIG.policy,
+    });
+
+    const response = await staff()
+      .put("/admin/availability/exceptions")
+      .send({ exceptions: [] })
+      .expect(200);
+
+    expect(jsonBody<AvailabilityConfigView>(response).exceptions).toEqual([]);
+    expect(await ctx.prisma.availabilityException.count()).toBe(0);
+    expect(await ctx.prisma.availabilityRule.count()).toBe(1);
+  });
+
+  it("refuse une ouverture ponctuelle sans bornes (400)", async () => {
+    await staff()
+      .put("/admin/availability/exceptions")
+      .send({
+        exceptions: [
+          { day: "2027-01-09", kind: "open", startTime: null, endTime: null, reason: "Salon" },
+        ],
+      })
+      .expect(400);
+  });
+
   it("refuse une politique sans aucun canal (400)", async () => {
     await staff()
       .put("/admin/availability/policy")

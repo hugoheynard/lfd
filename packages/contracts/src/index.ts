@@ -46,6 +46,7 @@ export type {
 export {
   availabilityRulePayloadSchema,
   availabilityExceptionPayloadSchema,
+  availabilityExceptionsPayloadSchema,
   exceptionKindSchema,
   bookingPolicySchema,
   availabilityConfigPayloadSchema,
@@ -62,6 +63,7 @@ export type {
   AvailabilityRuleView,
   ExceptionKind,
   AvailabilityExceptionPayload,
+  AvailabilityExceptionsPayload,
   AvailabilityExceptionView,
   AppointmentChannel,
   BookingPolicy,

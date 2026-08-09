@@ -1,12 +1,14 @@
 import {
   appointmentTransitionPayloadSchema,
   availabilityConfigPayloadSchema,
+  availabilityExceptionsPayloadSchema,
   bookingPolicySchema,
   staffBookAppointmentPayloadSchema,
   type AppointmentTransitionPayload,
   type AppointmentView,
   type AvailabilityConfigPayload,
   type AvailabilityConfigView,
+  type AvailabilityExceptionsPayload,
   type BookingPolicy,
   type CreatedAppointmentResponse,
   type SlotsView,
@@ -30,6 +32,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
+import { SaveAvailabilityExceptionsCommand } from "../application/commands/save-availability-exceptions.command.js";
 import { SaveAvailabilityCommand } from "../application/commands/save-availability.command.js";
 import { SaveBookingPolicyCommand } from "../application/commands/save-booking-policy.command.js";
 import { ScheduleAppointmentCommand } from "../application/commands/schedule-appointment.command.js";
@@ -83,6 +86,19 @@ export class AdminAppointmentsController {
   ): Promise<AvailabilityConfigView> {
     return this.commands.execute<SaveBookingPolicyCommand, AvailabilityConfigView>(
       new SaveBookingPolicyCommand(policy),
+    );
+  }
+
+  /**
+   * Écriture des **seules exceptions**. Même raison que la politique : dater un
+   * congé ne doit pas renvoyer la grille, et ne peut donc pas l'écraser.
+   */
+  @Put("availability/exceptions")
+  saveExceptions(
+    @Body(new ZodBody(availabilityExceptionsPayloadSchema)) payload: AvailabilityExceptionsPayload,
+  ): Promise<AvailabilityConfigView> {
+    return this.commands.execute<SaveAvailabilityExceptionsCommand, AvailabilityConfigView>(
+      new SaveAvailabilityExceptionsCommand(payload.exceptions),
     );
   }
 

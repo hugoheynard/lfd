@@ -110,6 +110,20 @@ export interface AvailabilityExceptionView extends AvailabilityExceptionPayload 
   readonly id: string;
 }
 
+/**
+ * Écriture des **seules exceptions**. Comme la politique, elles s'enregistrent
+ * sans rouvrir la grille : l'écran qui les édite n'a pas à renvoyer des règles
+ * qu'il a chargées il y a dix minutes, et ne peut donc pas les écraser.
+ *
+ * La liste part **entière**, et non exception par exception : elle se lit et
+ * s'édite comme un tout, et un `PUT` idempotent évite d'inventer un CRUD à trois
+ * verbes pour une poignée de lignes datées.
+ */
+export const availabilityExceptionsPayloadSchema = z.object({
+  exceptions: z.array(availabilityExceptionPayloadSchema).default([]),
+});
+export type AvailabilityExceptionsPayload = z.infer<typeof availabilityExceptionsPayloadSchema>;
+
 /** Canal d'un rendez-vous : au téléphone, en visio, ou sur place. */
 export const appointmentChannelSchema = z.enum(["phone", "visio", "onsite"]);
 export type AppointmentChannel = z.infer<typeof appointmentChannelSchema>;
@@ -194,12 +208,7 @@ export const appointmentSubjectTypeSchema = z.enum(["company", "lead", "user"]);
 export type AppointmentSubjectType = z.infer<typeof appointmentSubjectTypeSchema>;
 
 /** Transitions **déclenchables** : `requested` n'en est pas une (c'est l'entrée). */
-export const appointmentTransitionSchema = z.enum([
-  "confirmed",
-  "honored",
-  "no_show",
-  "cancelled",
-]);
+export const appointmentTransitionSchema = z.enum(["confirmed", "honored", "no_show", "cancelled"]);
 export type AppointmentTransition = z.infer<typeof appointmentTransitionSchema>;
 
 /** Réservation **client** : il choisit un créneau, un canal, et se décrit. */
