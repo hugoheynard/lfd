@@ -317,6 +317,29 @@ et un message posé là où le bouton vient de s'effacer n'aurait nulle part où
 tenir. Seul un échec de **chargement** reste à l'écran, là où il n'y a rien à
 montrer et où le « Réessayer » doit rester atteignable.
 
+### 5.1 bis Les deux jeux de test
+
+Deux personas semés, pour regarder la fiche sans avoir à fabriquer un compte à la
+main à chaque fois :
+
+```bash
+pnpm --filter lfc-b2b-platform-backend run db:seed:fiche
+```
+
+| Persona                    | Ce qu'il montre                                                                                      | RDV du jour |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- | ----------- |
+| **TestFicheClientEtablit** | Compte installé : actif depuis >1 an, 3 commandes, 2 paniers récurrents, tendance 30 j **en hausse** | **16 h**    |
+| **TestClientInscription**  | Inscription bloquée tôt : `pending`, aucune pièce, aucune commande                                   | **17 h**    |
+
+Le script est **rejouable** : il efface d'abord _ses_ données (identifiants fixes
+préfixés `seed-fiche`) avant de les recréer. C'est ce qui garantit qu'un re-seed
+redonne un rendez-vous à 16 h **du jour** — et non un doublon, que l'index unique
+du créneau refuserait. Il ne vide aucune table et ne touche à rien d'autre.
+
+La tendance monte parce que **deux** commandes tombent dans les 30 derniers jours
+contre **une** dans les 30 précédents : c'est le cas qu'on veut voir à l'écran, et
+il ne s'obtient pas avec trois commandes posées le même jour.
+
 ### 5.2 Onglet Acquisition — les rendez-vous deviennent réels
 
 Le calendrier existant gagne une **quatrième source** (`rdv`), et cette fois
