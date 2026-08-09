@@ -64,6 +64,30 @@ chemins **non datés** (canal e-mail, rappel au plus vite) ; le nouvel
 > qu'on a aujourd'hui — c'est précisément ce qui a produit un objet sans
 > invariant, jamais clos, et une bande de calendrier qui ne veut rien dire.
 
+### 2.2 bis Le **motif** est commun aux trois chemins
+
+« De quoi s'agit-il ? » est la même question qu'on réserve un créneau, qu'on
+demande un rappel ou qu'on écrive. Le motif est donc porté par **`Appointment`
+et `SupportRequest`**, avec le même vocabulaire fermé :
+
+`discover` · `quote` · `order` · `recurring` · `billing` · `other`
+
+Fermé et non libre, pour trois raisons : la file du commercial se lit d'un coup
+d'œil, un rendez-vous se prépare avant de décrocher, et l'e-mail de R6 aura un
+objet utile sans qu'on ait à le deviner. Le message libre reste à côté, pour le
+détail.
+
+Un seul invariant, à la frontière (Zod) et partagé par les trois chemins :
+**`other` exige un message**. Un motif fourre-tout sans un mot d'explication ne
+dit rien de plus que pas de motif du tout.
+
+Les libellés vivent dans `@lfd/b2b-ui/appointment`, pas dans le contrat : le
+contrat porte le vocabulaire, pas la façon de l'écrire à l'écran. Deux
+formulations par motif — l'une à la première personne pour le formulaire
+(« Découvrir l'offre et les tarifs »), l'autre en deux mots pour une file
+(« Découverte ») — parce qu'une seule obligerait l'un des deux écrans à mal
+parler.
+
 ### 2.3 Le rendez-vous n'est **pas muré par la société**
 
 `SupportRequest` porte un `company_id` obligatoire : un prospect froid, qui n'a
@@ -327,19 +351,24 @@ de prévenance : c'est lui qui décide de son agenda.
 Le panneau existant ([`activation-support-panel`](../apps/lfc-B2B-platform-frontend/src/app/entreprises/activation-support-panel/activation-support-panel.ts))
 garde sa structure, mais le bloc « créneau » change de nature :
 
-| Aujourd'hui                                               | Demain                                                      |
-| --------------------------------------------------------- | ----------------------------------------------------------- |
-| `<input type="date">` libre + `<select>` matin/après-midi | Liste des **créneaux réellement ouverts**, groupés par jour |
-| Le client propose, personne ne répond                     | Le client **réserve**, il a un rendez-vous                  |
-| Aucune vérification                                       | Créneau revalidé serveur (409 si pris entre-temps)          |
+| Aujourd'hui                                               | Demain                                                           |
+| --------------------------------------------------------- | ---------------------------------------------------------------- |
+| `<input type="date">` libre + `<select>` matin/après-midi | Liste des **créneaux réellement ouverts**, groupés par jour      |
+| Une date brute par section (`2026-08-14`)                 | « Aujourd'hui » · « Demain » · « jeudi 14 août »                 |
+| Aucun tri possible dans une longue liste                  | Filtre **matin / après-midi**, affiché s'il sert à quelque chose |
+| Le client propose, personne ne répond                     | Le client **réserve**, il a un rendez-vous                       |
+| Aucune vérification                                       | Créneau revalidé serveur (409 si pris entre-temps)               |
 
 Les deux autres chemins restent, et c'est important — tout le monde ne veut pas
 choisir une case :
 
-- **« Au plus vite »** → pré-sélectionne le premier créneau disponible, modifiable.
-  Si aucune disponibilité n'est ouverte, retombe sur une `SupportRequest` (« on
-  vous rappelle »), qui reste utile.
-- **« Par e-mail »** → `SupportRequest`, pas de créneau. Inchangé.
+- **« Je veux être rappelé »** → `SupportRequest`. Le libellé annonce ce qu'on
+  obtient, et la case « au plus vite » **dit ce qu'elle vaut** : « au plus tôt
+  demain à 09:00 », dérivé du premier créneau réellement ouvert. Sans ce repère,
+  personne ne sait s'il sera rappelé dans l'heure ou la semaine prochaine — et
+  quand il n'y a rien à promettre, on ne promet rien.
+- **« Je préfère échanger par e-mail »** → `SupportRequest`, pas de créneau. Le
+  **motif en devient l'objet**, annoncé à l'écran avant l'envoi.
 
 ### 6.2 Après la réservation
 
@@ -425,15 +454,15 @@ recompute) : le rappel J-1 peut s'y greffer sans nouvelle infra.
 
 ## 8. Découpe
 
-| Tranche                          | Contenu                                                                                                                                                                         | Fini quand                                                        |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| **R1 · Domaine** ✅              | Contrats (`AvailabilityRule`, `AvailabilityException`, `BookingPolicy`, `Slot`, `AppointmentView`), `slotsFor` pur + les 8 tests du §4, agrégat `Appointment` + machine à états | **52 tests**, zéro I/O dans les specs                             |
-| **R2 · Persistance** ✅          | 4 tables + migration (dont l'**index unique partiel** en SQL brut), ports + adaptateurs Prisma, et les deux surfaces HTTP                                                       | **21 e2e**, dont la course concurrente → une 201, une 409         |
+| Tranche                          | Contenu                                                                                                                                                                                                | Fini quand                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| **R1 · Domaine** ✅              | Contrats (`AvailabilityRule`, `AvailabilityException`, `BookingPolicy`, `Slot`, `AppointmentView`), `slotsFor` pur + les 8 tests du §4, agrégat `Appointment` + machine à états                        | **52 tests**, zéro I/O dans les specs                                             |
+| **R2 · Persistance** ✅          | 4 tables + migration (dont l'**index unique partiel** en SQL brut), ports + adaptateurs Prisma, et les deux surfaces HTTP                                                                              | **21 e2e**, dont la course concurrente → une 201, une 409                         |
 | **R3 · Admin disponibilités** ✅ | Grille hebdo, politique, exceptions et **aperçu 14 jours** dans Réglages ▸ Commercial ; une carte par bloc, **une écriture par carte** ; logique pure (`availability-draft.ts`, `exceptions-model.ts`) | **29 tests** front + **6 e2e** d'isolation, l'aperçu passe par la route du client |
-| **R4 · Réservation client** ✅   | Le panneau choisit un créneau **réel** ; les chemins « au plus vite » et « e-mail » restent ; rendez-vous à venir listés et annulables                                          | un client réserve, annule, re-réserve                             |
-| **R5 · Suivi staff** ✅          | 4ᵉ flux du calendrier Acquisition, posé à l'heure réelle, vue **semaine** par défaut, side-panel d'actions (`openCompany` n'est plus un no-op)                                  | **8 tests**, un RDV se confirme et se clôt                        |
-| **R6 · Notifications** ⏳        | Confirmation client, alerte staff, rappel J-1 (greffé au cron)                                                                                                                  | plus personne n'a besoin d'ouvrir l'onglet — **dépend du mailer** |
-| **R7 · Reprise** ✅              | `SupportRequest` : clôture (`handled_at`), file staff, journal `support.requested`/`handled`, et bascule du chemin « créneau » vers `Appointment`                               | **8 e2e**, la release §3.3 n'est plus vraie                       |
+| **R4 · Réservation client** ✅   | Le panneau choisit un créneau **réel** ; les chemins « au plus vite » et « e-mail » restent ; rendez-vous à venir listés et annulables                                                                 | un client réserve, annule, re-réserve                                             |
+| **R5 · Suivi staff** ✅          | 4ᵉ flux du calendrier Acquisition, posé à l'heure réelle, vue **semaine** par défaut, side-panel d'actions (`openCompany` n'est plus un no-op)                                                         | **8 tests**, un RDV se confirme et se clôt                                        |
+| **R6 · Notifications** ⏳        | Confirmation client, alerte staff, rappel J-1 (greffé au cron)                                                                                                                                         | plus personne n'a besoin d'ouvrir l'onglet — **dépend du mailer**                 |
+| **R7 · Reprise** ✅              | `SupportRequest` : clôture (`handled_at`), file staff, journal `support.requested`/`handled`, et bascule du chemin « créneau » vers `Appointment`                                                      | **8 e2e**, la release §3.3 n'est plus vraie                                       |
 
 R1 et R2 d'abord, dans cet ordre : le reste n'est que des surfaces au-dessus.
 R7 peut se faire en parallèle de R3/R4 — c'est la dette existante, indépendante.

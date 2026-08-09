@@ -18,6 +18,7 @@ function appointment(overrides: Partial<AppointmentView> = {}): AppointmentView 
     endTime: '09:30',
     status: 'requested',
     channel: 'phone',
+    purpose: 'discover',
     subjectType: 'company',
     subjectId: 'cmp_1',
     contactName: 'Camille Roy',

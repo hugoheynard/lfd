@@ -9,6 +9,11 @@
       <dt>Contact</dt>
       <dd>{{ rdv.contactName || '—' }}</dd>
 
+      <!-- Le motif d'abord : c'est lui qui dit s'il faut préparer un devis ou
+           sortir un dossier avant de décrocher. -->
+      <dt>Motif</dt>
+      <dd>{{ purposeLabel() }}</dd>
+
       <dt>Canal</dt>
       <dd>{{ channelLabel() }}</dd>
 

@@ -6,6 +6,7 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 import type { AppointmentTransition, AppointmentView } from '@lfd/contracts';
+import { purposeShort } from '@lfd/b2b-ui/appointment';
 
 import { NotifyService } from '../../../notify.service';
 import { AvailabilityService } from '../../availability/availability.service';
@@ -61,6 +62,12 @@ export class AppointmentPanel {
   protected readonly pending = signal<Action | null>(null);
 
   protected readonly appointment = computed(() => this.data()?.appointment ?? null);
+
+  /** Le motif, en version courte — le vocabulaire est partagé avec le client. */
+  protected readonly purposeLabel = computed(() => {
+    const rdv = this.appointment();
+    return rdv === null ? '—' : purposeShort(rdv.purpose);
+  });
 
   protected readonly channelLabel = computed(() => {
     const channel = this.appointment()?.channel ?? '';
