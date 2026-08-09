@@ -11,17 +11,21 @@
   [draft]="draft()"
   [baseline]="persisted()?.policy ?? null"
   (changed)="onChanged($event)"
-  (persisted)="onPersisted($event)"
+  (persisted)="onPolicyPersisted($event)"
 />
 
-<app-exceptions-card [draft]="draft()" (changed)="onChanged($event)" />
+<app-exceptions-card
+  [draft]="draft()"
+  [baseline]="persisted()?.exceptions ?? null"
+  (changed)="onChanged($event)"
+  (persisted)="onExceptionsPersisted($event)"
+/>
 
-<!-- La semaine type et les exceptions s'enregistrent ensemble : elles décrivent
-     la même grille, et une moitié sans l'autre ouvrirait des créneaux non voulus.
-     Les règles, elles, ont leur propre bouton — elles ne touchent pas la grille. -->
+<!-- Ce bouton n'écrit plus que la semaine type : les règles et les fermetures
+     ont chacune le leur, et ce qu'elles éditent ne part pas d'ici. -->
 <div class="av-save">
   <button foldButton [disabled]="saving()" (click)="save()">
-    {{ saving() ? 'Enregistrement…' : 'Enregistrer la grille' }}
+    {{ saving() ? 'Enregistrement…' : 'Enregistrer la semaine type' }}
   </button>
 </div>
 

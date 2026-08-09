@@ -9,6 +9,7 @@ import {
   draftFrom,
   editRange,
   emptyDraft,
+  gridPayload,
   hasInvalidRange,
   removeException,
   removeRange,
@@ -180,5 +181,48 @@ describe('toPayload', () => {
 
   it("rend une grille vide quand rien n'est déclaré", () => {
     expect(toPayload(base()).rules).toEqual([]);
+  });
+});
+
+describe('gridPayload', () => {
+  const persisted: AvailabilityConfigView = {
+    rules: [],
+    exceptions: [
+      {
+        id: 'avexc_1',
+        day: '2026-12-25',
+        kind: 'closed',
+        startTime: null,
+        endTime: null,
+        reason: 'Noël',
+      },
+    ],
+    policy: { ...POLICY, slotMinutes: 60 },
+  };
+
+  it('envoie les règles du BROUILLON', () => {
+    const draft = addRange(base(), 1, { startTime: '09:00', endTime: '12:00' });
+    expect(gridPayload(draft, persisted).rules).toEqual([
+      { weekday: 1, startTime: '09:00', endTime: '12:00' },
+    ]);
+  });
+
+  it("n'emporte PAS des exceptions ni une politique éditées ailleurs sans être enregistrées", () => {
+    // Les deux tranches ont leur propre bouton : ce qui part ici est ce que le
+    // serveur détient déjà, jamais un édit que personne n'a validé.
+    let draft = addException(base(), {
+      day: '2027-01-02',
+      kind: 'closed',
+      startTime: null,
+      endTime: null,
+      reason: 'Congés jamais enregistrés',
+    });
+    draft = withPolicy(draft, { slotMinutes: 15 });
+
+    const payload = gridPayload(draft, persisted);
+    expect(payload.exceptions).toEqual([
+      { day: '2026-12-25', kind: 'closed', startTime: null, endTime: null, reason: 'Noël' },
+    ]);
+    expect(payload.policy.slotMinutes).toBe(60);
   });
 });

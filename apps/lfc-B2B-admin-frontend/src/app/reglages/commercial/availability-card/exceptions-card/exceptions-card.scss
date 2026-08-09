@@ -1,11 +1,7 @@
-:host {
-  display: block;
-}
-
 .ex-list {
   display: flex;
   flex-direction: column;
-  margin: var(--fold-space-lg, 1.5rem) 0 var(--fold-space-md);
+  margin: 0 0 var(--fold-space-lg, 1.5rem);
   padding: 0;
   list-style: none;
 }
@@ -60,15 +56,47 @@
   gap: var(--fold-space-sm);
 }
 
-.ex-add-day {
-  flex: 0 0 11rem;
+/* Jour + type : une seule et même phrase, donc une seule ligne — y compris en
+   étroit, où le reste des champs passe dessous. */
+.ex-add-when {
+  display: flex;
+  flex: 1 1 22rem;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+  min-width: 0;
 }
 
-.ex-add-kind {
-  flex: 0 0 14rem;
+.ex-add-day {
+  flex: 0 0 10.5rem;
+}
+
+/* Un segment fold n'a pas de libellé propre : on lui donne celui des champs
+   voisins, à la même graisse et au même rythme, pour que la ligne s'aligne. */
+.ex-add-choice {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.ex-lab {
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: 550;
+  line-height: 1.2;
+}
+
+.ex-add-period {
+  flex: 0 1 18rem;
 }
 
 .ex-add-reason {
   flex: 1 1 14rem;
   min-width: 0;
+}
+
+.ex-actions {
+  display: flex;
+  justify-content: flex-end;
 }

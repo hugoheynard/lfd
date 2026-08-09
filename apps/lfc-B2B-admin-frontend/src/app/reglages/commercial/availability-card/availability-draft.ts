@@ -2,6 +2,7 @@ import type {
   AvailabilityConfigPayload,
   AvailabilityConfigView,
   AvailabilityExceptionPayload,
+  AvailabilityExceptionView,
   AvailabilityRulePayload,
   BookingPolicy,
 } from '@lfd/contracts';
@@ -157,6 +158,36 @@ export function toPayload(draft: AvailabilityDraft): AvailabilityConfigPayload {
     }
   });
   return { rules, exceptions: [...draft.exceptions], policy: draft.policy };
+}
+
+/**
+ * Le bloc à envoyer pour enregistrer **la seule grille**.
+ *
+ * Les règles viennent du brouillon ; les exceptions et la politique de ce que le
+ * **serveur** détient. Ces deux tranches ont leur propre bouton : les emporter
+ * ici écrirait des édits que personne n'a validés, et « Enregistrer la grille »
+ * ne dirait plus la vérité.
+ */
+export function gridPayload(
+  draft: AvailabilityDraft,
+  persisted: AvailabilityConfigView,
+): AvailabilityConfigPayload {
+  return {
+    ...toPayload(draft),
+    exceptions: persisted.exceptions.map(toExceptionPayload),
+    policy: persisted.policy,
+  };
+}
+
+/** Une exception rendue par l'API, réduite à ce que l'API attend en écriture. */
+function toExceptionPayload(exception: AvailabilityExceptionView): AvailabilityExceptionPayload {
+  return {
+    day: exception.day,
+    kind: exception.kind,
+    startTime: exception.startTime,
+    endTime: exception.endTime,
+    reason: exception.reason,
+  };
 }
 
 /** Y a-t-il au moins une plage incohérente ? (pour le dire avant d'enregistrer) */

@@ -6,7 +6,7 @@ import { AvailabilityService } from '../../../commercial/availability/availabili
 import { NotifyService } from '../../../notify.service';
 import type { AvailabilityConfigView } from '@lfd/contracts';
 
-import { draftFrom, emptyDraft, toPayload, type AvailabilityDraft } from './availability-draft';
+import { draftFrom, emptyDraft, gridPayload, type AvailabilityDraft } from './availability-draft';
 import { BookingPolicyCard } from './booking-policy-card/booking-policy-card';
 import { ExceptionsCard } from './exceptions-card/exceptions-card';
 import { SlotsPreviewCard, type PreviewDay } from './slots-preview-card/slots-preview-card';
@@ -89,24 +89,37 @@ export class AvailabilityCard {
   }
 
   /**
-   * Une carte a enregistré **sa** tranche. On réaligne le brouillon sur ce que le
-   * serveur a écrit — les édits en cours des autres cartes sont conservés, seule
-   * la tranche enregistrée est rafraîchie — et on recharge l'aperçu, que ces
-   * bornes changent.
+   * Les règles viennent d'être écrites. On réaligne **cette seule tranche** du
+   * brouillon : le serveur a pu normaliser ce qu'on lui a envoyé, et sans ça la
+   * carte se croirait modifiée à jamais. Les édits en cours des autres cartes,
+   * eux, ne sont pas touchés — chacune enregistre quand elle le décide.
    */
-  protected async onPersisted(config: AvailabilityConfigView): Promise<void> {
+  protected async onPolicyPersisted(config: AvailabilityConfigView): Promise<void> {
     this.persisted.set(config);
     this.draft.update((draft) => ({ ...draft, policy: config.policy }));
     await this.refreshPreview();
   }
 
+  /** Idem pour les exceptions, qui ont elles aussi leur propre bouton. */
+  protected async onExceptionsPersisted(config: AvailabilityConfigView): Promise<void> {
+    this.persisted.set(config);
+    this.draft.update((draft) => ({ ...draft, exceptions: draftFrom(config).exceptions }));
+    await this.refreshPreview();
+  }
+
   protected async save(): Promise<void> {
+    const persisted = this.persisted();
+    if (persisted === null) {
+      return;
+    }
     this.saving.set(true);
     try {
-      // On rejoue ce que le SERVEUR a enregistré, pas ce qu'on croit avoir envoyé.
-      const config = await this.service.save(toPayload(this.draft()));
+      // On n'envoie que la GRILLE — les deux autres tranches partent telles
+      // qu'elles sont en base. On rejoue ensuite ce que le serveur a écrit, pas
+      // ce qu'on croit avoir envoyé, et sur cette seule tranche.
+      const config = await this.service.save(gridPayload(this.draft(), persisted));
       this.persisted.set(config);
-      this.draft.set(draftFrom(config));
+      this.draft.update((draft) => ({ ...draft, week: draftFrom(config).week }));
       this.notify.success('Grille de disponibilité enregistrée.');
       await this.refreshPreview();
     } catch (error) {

@@ -6,6 +6,7 @@ import type {
   AppointmentView,
   AvailabilityConfigPayload,
   AvailabilityConfigView,
+  AvailabilityExceptionPayload,
   BookingPolicy,
   CreatedAppointmentResponse,
   SlotsView,
@@ -48,6 +49,18 @@ export class AvailabilityService {
    */
   savePolicy(policy: BookingPolicy): Promise<AvailabilityConfigView> {
     return this.request<AvailabilityConfigView>('PUT', `${this.base}/availability/policy`, policy);
+  }
+
+  /**
+   * Écrit **les seules exceptions**. Même raison que la politique : dater un
+   * congé ne renvoie pas la grille, et ne peut donc pas l'écraser.
+   */
+  saveExceptions(
+    exceptions: readonly AvailabilityExceptionPayload[],
+  ): Promise<AvailabilityConfigView> {
+    return this.request<AvailabilityConfigView>('PUT', `${this.base}/availability/exceptions`, {
+      exceptions,
+    });
   }
 
   /** L'aperçu des créneaux ouverts entre deux jours locaux (`AAAA-MM-JJ`). */

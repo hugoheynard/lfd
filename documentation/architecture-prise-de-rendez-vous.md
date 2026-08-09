@@ -255,10 +255,41 @@ au client (téléphone / visio / sur place). Stocké avec le reste dans
 d'acquisition actuels (release P1-8).
 
 **c) Exceptions.** Fermetures (congés, jour férié) et ouvertures ponctuelles
-(un samedi de salon). Saisie à la date, avec un motif libre.
+(un samedi de salon). Saisie à la date, avec un motif libre. La **portée** se
+prend au segment — matin / après-midi / journée — plutôt qu'en tapant deux
+heures : « je ferme vendredi après-midi » est le geste réel. Une fermeture sur la
+journée entière n'a pas de bornes (c'est ce que le serveur attend pour retirer le
+jour) ; une ouverture ponctuelle en a toujours, le contrat les exige.
+
+La liste ne montre que l'**à-venir, aujourd'hui compris** : un congé de l'an
+dernier ne dit plus rien de l'agenda et noierait les lignes qui comptent. Il
+n'est pas supprimé pour autant — chaque ligne garde son index d'origine, et c'est
+lui qui sert à la retirer, jamais la position à l'écran.
 
 Sous les trois : un **aperçu des 14 prochains jours** rendu par la _même_ fonction
 `slotsFor` que le client. On voit immédiatement ce qu'on vient d'ouvrir.
+
+**Trois écritures isolées, pas une.** Chaque bloc a son bouton et sa route :
+
+| Bloc         | Route                                | Écrit                    |
+| ------------ | ------------------------------------ | ------------------------ |
+| Semaine type | `PUT /admin/availability`            | les règles hebdomadaires |
+| Règles       | `PUT /admin/availability/policy`     | la politique seule       |
+| Exceptions   | `PUT /admin/availability/exceptions` | les exceptions seules    |
+
+La raison est la même pour les trois : régler une durée ou dater un congé ne doit
+pas renvoyer une grille chargée il y a dix minutes, et donc ne peut pas
+l'écraser. Le **brouillon** reste partagé (les créneaux dépendent des trois) ;
+c'est l'**écriture** qui est cloisonnée. Ce que « Enregistrer la semaine type »
+envoie, ce sont les règles du brouillon et, pour les deux autres tranches, ce que
+le serveur détient déjà — c'est tout le rôle de `gridPayload`.
+
+Le pied de chaque carte n'apparaît qu'une fois quelque chose de **modifié**,
+mesuré contre ce que le serveur détient — un brouillon seul ne peut pas le dire.
+Succès comme échec partent en **toast** : une fois enregistré le pied disparaît,
+et un message posé là où le bouton vient de s'effacer n'aurait nulle part où
+tenir. Seul un échec de **chargement** reste à l'écran, là où il n'y a rien à
+montrer et où le « Réessayer » doit rester atteignable.
 
 ### 5.2 Onglet Acquisition — les rendez-vous deviennent réels
 
@@ -396,7 +427,7 @@ recompute) : le rappel J-1 peut s'y greffer sans nouvelle infra.
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | **R1 · Domaine** ✅              | Contrats (`AvailabilityRule`, `AvailabilityException`, `BookingPolicy`, `Slot`, `AppointmentView`), `slotsFor` pur + les 8 tests du §4, agrégat `Appointment` + machine à états | **52 tests**, zéro I/O dans les specs                             |
 | **R2 · Persistance** ✅          | 4 tables + migration (dont l'**index unique partiel** en SQL brut), ports + adaptateurs Prisma, et les deux surfaces HTTP                                                       | **21 e2e**, dont la course concurrente → une 201, une 409         |
-| **R3 · Admin disponibilités** ✅ | Grille hebdo, politique, exceptions et **aperçu 14 jours** dans Réglages ▸ Commercial ; toute la logique dans `availability-draft.ts` (pur)                                     | **15 tests**, l'aperçu passe par la route du client               |
+| **R3 · Admin disponibilités** ✅ | Grille hebdo, politique, exceptions et **aperçu 14 jours** dans Réglages ▸ Commercial ; une carte par bloc, **une écriture par carte** ; logique pure (`availability-draft.ts`, `exceptions-model.ts`) | **29 tests** front + **6 e2e** d'isolation, l'aperçu passe par la route du client |
 | **R4 · Réservation client** ✅   | Le panneau choisit un créneau **réel** ; les chemins « au plus vite » et « e-mail » restent ; rendez-vous à venir listés et annulables                                          | un client réserve, annule, re-réserve                             |
 | **R5 · Suivi staff** ✅          | 4ᵉ flux du calendrier Acquisition, posé à l'heure réelle, vue **semaine** par défaut, side-panel d'actions (`openCompany` n'est plus un no-op)                                  | **8 tests**, un RDV se confirme et se clôt                        |
 | **R6 · Notifications** ⏳        | Confirmation client, alerte staff, rappel J-1 (greffé au cron)                                                                                                                  | plus personne n'a besoin d'ouvrir l'onglet — **dépend du mailer** |

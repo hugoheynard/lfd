@@ -1,44 +1,75 @@
-<fold-card>
+<fold-card separators="footer">
   <fold-element-title
+    cardHeader
     variant="title"
-    icon="alert-triangle"
+    icon="planning"
     title="Fermetures et ouvertures exceptionnelles"
     subtitle="Les écarts datés à votre semaine type."
   />
 
+  <!-- Seulement l'à-venir, aujourd'hui compris : un congé de l'an dernier ne dit
+       plus rien de l'agenda. Il reste enregistré, il n'est simplement plus listé. -->
   <ul class="ex-list">
-    @for (exception of exceptions(); track $index) {
+    @for (row of upcoming(); track row.index) {
       <li class="ex-row">
-        <span class="ex-kind" [class.ex-kind--open]="exception.kind === 'open'">
-          {{ exception.kind === 'open' ? 'Ouvert' : 'Fermé' }}
+        <span class="ex-kind" [class.ex-kind--open]="row.exception.kind === 'open'">
+          {{ row.exception.kind === 'open' ? 'Ouvert' : 'Fermé' }}
         </span>
-        <span class="ex-day sec-num">{{ exception.day }}</span>
-        @if (exception.startTime !== null && exception.endTime !== null) {
-          <span class="ex-time sec-num">{{ exception.startTime }}–{{ exception.endTime }}</span>
+        <span class="ex-day sec-num">{{ row.exception.day }}</span>
+        @if (row.exception.startTime !== null && row.exception.endTime !== null) {
+          <span class="ex-time sec-num">
+            {{ row.exception.startTime }}–{{ row.exception.endTime }}
+          </span>
         } @else {
           <span class="ex-time sec-muted">toute la journée</span>
         }
-        <span class="ex-reason sec-muted">{{ exception.reason }}</span>
+        <span class="ex-reason sec-muted">{{ row.exception.reason }}</span>
         <button
           type="button"
           class="sec-remove"
-          (click)="remove($index)"
+          (click)="remove(row.index)"
           aria-label="Retirer l'exception"
         >
           ×
         </button>
       </li>
     } @empty {
-      <li class="sec-empty">Aucune exception.</li>
+      <li class="sec-empty">Aucune fermeture à venir.</li>
     }
   </ul>
 
   <div class="ex-add">
-    <fold-date class="ex-add-day" label="Jour" [value]="day()" (valueChange)="day.set($event)" />
-    <fold-select class="ex-add-kind" label="Type" [value]="kind()" (valueChange)="onKind($event)">
-      <option value="closed">Fermeture</option>
-      <option value="open">Ouverture exceptionnelle</option>
-    </fold-select>
+    <!-- Jour et type restent côte à côte, y compris en étroit : ce sont les deux
+         moitiés d'une même phrase (« le 14, je ferme »). -->
+    <div class="ex-add-when">
+      <fold-date
+        class="ex-add-day"
+        label="Jour"
+        [min]="today"
+        [value]="day()"
+        (valueChange)="day.set($event)"
+      />
+      <div class="ex-add-choice">
+        <span class="ex-lab">Type</span>
+        <fold-choice-row
+          ariaLabel="Nature de l'exception"
+          [options]="kinds"
+          [activeKey]="kind()"
+          (selected)="onKind($event)"
+        />
+      </div>
+    </div>
+
+    <div class="ex-add-choice ex-add-period">
+      <span class="ex-lab">Portée</span>
+      <fold-choice-row
+        ariaLabel="Portée dans la journée"
+        [options]="periods"
+        [activeKey]="period()"
+        (selected)="onPeriod($event)"
+      />
+    </div>
+
     <fold-input
       class="ex-add-reason"
       label="Motif"
@@ -47,6 +78,19 @@
       [value]="reason()"
       (valueChange)="reason.set($event)"
     />
-    <button foldButton emphasis="outline" [disabled]="!canAdd()" (click)="add()">Ajouter</button>
+
+    <button foldButton emphasis="outline" icon="plus" [disabled]="!canAdd()" (click)="add()">
+      Ajouter
+    </button>
   </div>
+
+  <!-- Ajouter ou retirer ne fait que modifier le brouillon ; c'est ce pied qui
+       écrit, et il ne paraît qu'une fois qu'il y a quelque chose à écrire. -->
+  @if (dirty()) {
+    <div cardFooter class="ex-actions">
+      <button foldButton emphasis="outline" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Enregistrement…' : 'Enregistrer les fermetures' }}
+      </button>
+    </div>
+  }
 </fold-card>
