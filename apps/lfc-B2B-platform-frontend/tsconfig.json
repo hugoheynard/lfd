@@ -17,6 +17,7 @@
     // named X » quand on ajoute un export au package. `@lfd/endpoints` (un seul
     // fichier, zéro import externe) comme `@lfd/b2b-ui` : un subpath par domaine.
     "paths": {
+      "@lfd/b2b-ui/appointment": ["../../packages/b2b-ui/src/appointment/index.ts"],
       "@lfd/b2b-ui/company": ["../../packages/b2b-ui/src/company/index.ts"],
       "@lfd/endpoints": ["../../packages/endpoints/src/index.ts"]
     }
