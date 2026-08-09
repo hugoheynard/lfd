@@ -53,27 +53,19 @@
       />
     </div>
 
-    <div class="bp-field bp-field--channels">
-      <div class="bp-channels-head">
-        <fold-element-title variant="bar" title="Canaux proposés" [level]="3" />
-        <app-metric-info
-          label="À quoi servent les canaux"
-          text="Les formats de rendez-vous que le client peut choisir. Il en faut au moins un actif, sinon plus rien n'est réservable."
-        />
-      </div>
-      <div class="sec-chips">
-        @for (channel of channels; track channel.key) {
-          <button
-            type="button"
-            class="sec-chip"
-            [class.sec-chip--on]="isChannelOn(channel.key)"
-            [attr.aria-pressed]="isChannelOn(channel.key)"
-            (click)="toggleChannel(channel.key)"
-          >
-            {{ channel.label }}
-          </button>
-        }
-      </div>
+    <div class="bp-field">
+      <app-metric-info
+        class="bp-info"
+        label="À quoi servent les canaux"
+        text="Les formats de rendez-vous que le client peut choisir. Il en faut au moins un actif, sinon plus rien n'est réservable."
+      />
+      <fold-multiselect
+        label="Canaux proposés"
+        placeholder="Choisir…"
+        [options]="channels"
+        [value]="policy().channels"
+        (valueChange)="setChannels($event)"
+      />
     </div>
   </div>
 </fold-card>

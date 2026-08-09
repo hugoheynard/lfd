@@ -1,16 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { FoldCardComponent, FoldElementTitleComponent, FoldNumberInputComponent } from 'fold-ng';
+import {
+  FoldCardComponent,
+  FoldElementTitleComponent,
+  FoldMultiselectComponent,
+  FoldNumberInputComponent,
+  type FoldSelectOption,
+} from 'fold-ng';
 import type { AppointmentChannel } from '@lfd/contracts';
 
 import { MetricInfo } from '../../../../shared/metric-info/metric-info';
 
 import { withPolicy, type AvailabilityDraft } from '../availability-draft';
 
-/** Les canaux proposables, avec leur libellé. */
-const CHANNELS: readonly { key: AppointmentChannel; label: string }[] = [
-  { key: 'phone', label: 'Téléphone' },
-  { key: 'visio', label: 'Visio' },
-  { key: 'onsite', label: 'Sur place' },
+/** Les canaux proposables, au format attendu par `fold-multiselect`. */
+const CHANNELS: readonly FoldSelectOption<AppointmentChannel>[] = [
+  { value: 'phone', label: 'Téléphone' },
+  { value: 'visio', label: 'Visio' },
+  { value: 'onsite', label: 'Sur place' },
 ];
 
 /**
@@ -28,7 +34,13 @@ const CHANNELS: readonly { key: AppointmentChannel; label: string }[] = [
 @Component({
   selector: 'app-booking-policy-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldElementTitleComponent, FoldNumberInputComponent, MetricInfo],
+  imports: [
+    FoldCardComponent,
+    FoldElementTitleComponent,
+    FoldNumberInputComponent,
+    FoldMultiselectComponent,
+    MetricInfo,
+  ],
   templateUrl: './booking-policy-card.html',
   styleUrl: './booking-policy-card.scss',
 })
@@ -51,20 +63,16 @@ export class BookingPolicyCard {
     this.changed.emit(withPolicy(this.draft(), { horizonDays: atLeast(value, 1) }));
   }
 
-  /** Bascule un canal — on refuse de tous les décocher, sinon plus rien n'est réservable. */
-  protected toggleChannel(channel: AppointmentChannel): void {
-    const current = this.policy().channels;
-    const next = current.includes(channel)
-      ? current.filter((c) => c !== channel)
-      : [...current, channel];
-    if (next.length === 0) {
+  /**
+   * Applique la sélection de canaux. Une sélection **vide** est refusée : sans
+   * aucun canal, plus rien n'est réservable — on garde donc l'état précédent
+   * plutôt que d'enregistrer une configuration qui ferme l'agenda en silence.
+   */
+  protected setChannels(channels: readonly AppointmentChannel[]): void {
+    if (channels.length === 0) {
       return;
     }
-    this.changed.emit(withPolicy(this.draft(), { channels: next }));
-  }
-
-  protected isChannelOn(channel: AppointmentChannel): boolean {
-    return this.policy().channels.includes(channel);
+    this.changed.emit(withPolicy(this.draft(), { channels: [...channels] }));
   }
 }
 

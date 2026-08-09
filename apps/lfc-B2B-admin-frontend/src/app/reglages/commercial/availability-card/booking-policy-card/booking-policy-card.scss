@@ -22,17 +22,3 @@
   top: 0;
   right: 0;
 }
-
-.bp-field--channels {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-/* Ici le libellé nous appartient : la bulle tient dans la ligne, sans ancrage. */
-.bp-channels-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-}

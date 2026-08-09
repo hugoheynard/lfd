@@ -1,56 +1,16 @@
 /**
  * Le **reliquat** partagé par les sections commerciales.
  *
- * Ce fichier portait aussi les en-têtes de section, les champs et leurs
- * libellés : `fold-element-title`, `fold-input`, `fold-number-input`,
- * `fold-time` et `fold-date` font tout ça mieux, avec le focus, les hints et les
- * états d'erreur en prime. Ce qui reste ici est ce que fold **ne** couvre pas —
- * et rien d'autre, pour qu'on n'ait jamais à se demander lequel des deux fait foi.
+ * Ce fichier portait aussi les en-têtes de section, les champs, leurs libellés
+ * et des pastilles à bascule : `fold-element-title`, `fold-input`,
+ * `fold-number-input`, `fold-time`, `fold-date` et `fold-multiselect` font tout
+ * ça mieux, avec le focus, les hints, le clavier et les états d'erreur en prime.
+ * Ce qui reste ici est ce que fold **ne** couvre pas — et rien d'autre, pour
+ * qu'on n'ait jamais à se demander lequel des deux fait foi.
  *
  * Chargé une seule fois depuis `styles.scss` : en `@use` par composant, Sass
  * l'inlinait dans chaque feuille scopée.
  */
-
-/* Pastilles à bascule — fold n'a pas d'équivalent « chip sélectionnable ». */
-.sec-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.sec-chip {
-  padding: 0.3rem 0.75rem;
-  border: 1px solid var(--fold-color-border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--fold-color-text-muted);
-  font: inherit;
-  font-size: var(--fold-text-sm);
-  cursor: pointer;
-  transition:
-    border-color 120ms ease,
-    background 120ms ease,
-    color 120ms ease;
-
-  &:hover {
-    border-color: var(--fold-color-border-strong, var(--fold-color-border));
-    color: var(--fold-color-text);
-  }
-}
-
-.sec-chip--on {
-  border-color: var(--fold-color-primary);
-  background: var(--fold-color-primary-soft, var(--fold-color-surface-card));
-  color: var(--fold-color-primary);
-  font-weight: 550;
-}
-
-/* La ligne d'aide sous un groupe qui n'est pas un champ fold (les pastilles). */
-.sec-hint {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs, 0.75rem);
-  line-height: 1.45;
-}
 
 /* Messages en ligne — un filet coloré plutôt qu'un encadré de plus. */
 .sec-error,
