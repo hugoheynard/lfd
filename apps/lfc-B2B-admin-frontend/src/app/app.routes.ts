@@ -9,9 +9,36 @@ export const routes: Routes = [
       import('./comptes-clients/comptes-clients-page').then((m) => m.ComptesClientsPage),
   },
   {
+    // Un compte se regarde de quatre façons qui n'ont pas les mêmes lecteurs :
+    // le tableau de bord (avant d'appeler), les informations (pour corriger),
+    // les commandes, et les données brutes. Une coquille, quatre vues routées —
+    // l'en-tête et l'épingle appartiennent à la coquille.
     path: 'comptes-clients/:id',
-    title: 'Fiche client — LFC B2B admin',
-    loadComponent: () => import('./fiche-client/fiche-client-page').then((m) => m.FicheClientPage),
+    title: 'Compte client — LFC B2B admin',
+    loadComponent: () =>
+      import('./fiche-client/fiche-client-shell').then((m) => m.FicheClientShell),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./fiche-client/dashboard/dashboard-page').then((m) => m.ClientDashboardPage),
+      },
+      {
+        path: 'informations',
+        loadComponent: () =>
+          import('./fiche-client/informations/informations-page').then((m) => m.InformationsPage),
+      },
+      {
+        path: 'commandes',
+        loadComponent: () =>
+          import('./fiche-client/commandes/commandes-page').then((m) => m.ClientCommandesPage),
+      },
+      {
+        path: 'data',
+        loadComponent: () => import('./fiche-client/data/data-page').then((m) => m.ClientDataPage),
+      },
+    ],
   },
   {
     path: 'reglages',

@@ -8,7 +8,7 @@ import type {
   PickupAddressView,
   PlatformSettings,
 } from '@lfd/contracts';
-import { FoldButtonComponent, FoldPageLayoutComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldButtonComponent, FoldPanelHostService } from 'fold-ng';
 import {
   CompanyActivationChecklist,
   CompanyAddressesCard,
@@ -20,16 +20,15 @@ import {
   type CompanyIdentityView,
 } from '@lfd/b2b-ui/company';
 
-import type { AdminCompanyDetail } from '../comptes-clients/admin-company';
-import { AdminCompaniesService } from '../comptes-clients/admin-companies.service';
-import { PinnedAccountsStore, MAX_PINNED } from '../commercial/cockpit/pinned-store';
-import { NotifyService } from '../notify.service';
-import { PickupAddressesService } from '../reglages/retraits-livraisons/pickup-addresses.service';
-import { PlatformSettingsService } from '../reglages/platform-settings.service';
-import { toContactCards, toIdentityView } from './admin-company-view';
-import { AdminAdressePanel } from './panels/adresse-panel/adresse-panel';
-import { AdminIdentitePanel } from './panels/identite-panel/identite-panel';
-import { AdminReglementPanel } from './panels/reglement-panel/reglement-panel';
+import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
+import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
+import { NotifyService } from '../../notify.service';
+import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
+import { PlatformSettingsService } from '../../reglages/platform-settings.service';
+import { toContactCards, toIdentityView } from '../admin-company-view';
+import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
+import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
+import { AdminReglementPanel } from '../panels/reglement-panel/reglement-panel';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
 type StepKey = 'tva' | 'kbis' | 'billing' | 'delivery' | 'payment';
@@ -51,10 +50,9 @@ interface Step {
  * correspondant. À la fermeture d'un panneau, la fiche se recharge.
  */
 @Component({
-  selector: 'app-fiche-client',
+  selector: 'app-informations-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldPageLayoutComponent,
     FoldButtonComponent,
     CompanyReferenceCard,
     CompanyIdentityCard,
@@ -62,10 +60,10 @@ interface Step {
     CompanyAddressesCard,
     CompanyActivationChecklist,
   ],
-  templateUrl: './fiche-client-page.html',
-  styleUrl: './fiche-client-page.scss',
+  templateUrl: './informations-page.html',
+  styleUrl: './informations-page.scss',
 })
-export class FicheClientPage {
+export class InformationsPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly service = inject(AdminCompaniesService);
@@ -73,7 +71,6 @@ export class FicheClientPage {
   private readonly notify = inject(NotifyService);
   private readonly settingsService = inject(PlatformSettingsService);
   private readonly pickupsService = inject(PickupAddressesService);
-  private readonly pins = inject(PinnedAccountsStore);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly company = signal<AdminCompanyDetail | null>(null);
@@ -292,31 +289,6 @@ export class FicheClientPage {
   }
 
   /** Retour à la liste des comptes clients. */
-  /** Ce compte est-il suivi depuis le tableau de bord ? */
-  protected isPinned(): boolean {
-    const id = this.company()?.id;
-    return id !== undefined && this.pins.isPinned(id);
-  }
-
-  /**
-   * Épingle ou retire. Un refus (limite atteinte) se DIT — un clic sans effet
-   * ni explication est le meilleur moyen de faire croire à une panne.
-   */
-  protected togglePin(): void {
-    const company = this.company();
-    if (company === null) {
-      return;
-    }
-    const wasPinned = this.pins.isPinned(company.id);
-    if (!this.pins.toggle(company.id)) {
-      this.notify.error(`Maximum ${MAX_PINNED} comptes épinglés — retirez-en un d'abord.`);
-      return;
-    }
-    this.notify.success(
-      wasPinned ? 'Compte retiré du suivi.' : 'Compte épinglé au tableau de bord.',
-    );
-  }
-
   protected back(): void {
     void this.router.navigate(['/comptes-clients']);
   }

@@ -1,0 +1,75 @@
+.dt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md, 1rem);
+  max-width: 52rem;
+}
+
+.dt-h2 {
+  margin: 0;
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 700;
+}
+
+.dt-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--fold-space-sm, 0.75rem);
+  margin: 0;
+}
+
+.dt-fact dt {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+}
+
+.dt-fact dd {
+  margin: 0.1rem 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fold-text-sm, 0.875rem);
+  word-break: break-all;
+}
+
+.dt-journal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Une ligne par événement, monospace : on vient ici lire une trace, pas un récit. */
+.dt-entry {
+  display: grid;
+  grid-template-columns: minmax(10rem, auto) minmax(7rem, auto) 1fr;
+  gap: var(--fold-space-sm, 0.75rem);
+  padding: 0.35rem var(--fold-space-sm, 0.75rem);
+  border-radius: var(--fold-radius-sm, 0.25rem);
+  font-size: var(--fold-text-xs, 0.75rem);
+}
+
+.dt-entry:nth-child(odd) {
+  background: var(--fold-color-surface-subtle, transparent);
+}
+
+.dt-type {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.dt-when {
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dt-actor {
+  color: var(--fold-color-text-muted);
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-sm, 0.5rem);
+  color: var(--fold-color-text-muted);
+}

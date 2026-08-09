@@ -1,0 +1,65 @@
+.cmd {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md, 1rem);
+  max-width: 52rem;
+}
+
+.cmd-h2 {
+  margin: 0;
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 700;
+}
+
+.cmd-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs, 0.35rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cmd-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) minmax(6rem, 1fr) auto minmax(5rem, auto);
+  align-items: center;
+  gap: var(--fold-space-sm, 0.75rem);
+  padding: var(--fold-space-sm, 0.6rem) var(--fold-space-md, 1rem);
+  border: 1px solid var(--fold-color-border-subtle, var(--fold-color-border));
+  border-radius: var(--fold-radius-md, 0.5rem);
+}
+
+.cmd-number {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.cmd-date {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+
+.cmd-total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.cmd-count {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.cmd-count strong {
+  font-size: var(--fold-text-lg, 1.125rem);
+  color: var(--fold-color-text);
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-sm, 0.5rem);
+  color: var(--fold-color-text-muted);
+}

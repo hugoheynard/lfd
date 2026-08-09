@@ -5,7 +5,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideRouter, withComponentInputBinding, withRouterConfig } from '@angular/router';
 import { provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
@@ -20,7 +20,16 @@ export const appConfig: ApplicationConfig = {
     // du composant, sans passer par `ActivatedRoute`. C'est ce qui permet à une
     // page de détail de se charger depuis son ADRESSE, donc de survivre à un
     // rafraîchissement et à un lien partagé.
-    provideRouter(routes, withComponentInputBinding()),
+    provideRouter(
+      routes,
+      withComponentInputBinding(),
+      // Sans ça, un enfant de `comptes-clients/:id` ne verrait PAS le paramètre
+      // du parent : `withComponentInputBinding` lit la route du composant, et
+      // les paramètres ne descendent pas par défaut. Les quatre vues d'un compte
+      // échoueraient à l'exécution sur un `input.required` non fourni — invisible
+      // au build, visible au premier clic.
+      withRouterConfig({ paramsInheritanceStrategy: 'always' }),
+    ),
     provideHttpClient(withFetch()),
     // Toasts d'opération (succès/échec). Durées par défaut de fold : succès bref,
     // erreur **sticky** (à fermer, pas à rater).

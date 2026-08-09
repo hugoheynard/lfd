@@ -1,0 +1,45 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Chargement des commandes…" />
+  }
+  @case ('error') {
+    <div class="state">
+      <p>Impossible de charger les commandes.</p>
+      <button foldButton (click)="load()">Réessayer</button>
+    </div>
+  }
+  @default {
+    <section class="cmd">
+      <h2 class="cmd-h2">Dernières commandes</h2>
+
+      @if (rows().length === 0) {
+        <fold-empty-state title="Aucune commande" subtitle="Ce compte n'a encore rien commandé." />
+      } @else {
+        <ul class="cmd-list">
+          @for (row of rows(); track row.order.id) {
+            <li class="cmd-row">
+              <span class="cmd-number">{{ row.order.orderNumber }}</span>
+              <span class="cmd-date">{{ row.placedAt }}</span>
+              <fold-badge size="sm" variant="neutral" [content]="row.order.status" />
+              <span class="cmd-total">{{ row.total }}</span>
+            </li>
+          }
+        </ul>
+      }
+
+      <h2 class="cmd-h2">Paniers récurrents</h2>
+      <p class="cmd-count">
+        <strong>{{ recurringCount() }}</strong>
+        {{ recurringCount() > 1 ? 'paniers actifs' : 'panier actif' }}
+      </p>
+
+      <!-- Ce que cette page ne peut PAS montrer, dit plutôt que tu : une page qui
+           tait ses trous se fait croire complète. -->
+      <fold-callout variant="info" title="Vue partielle">
+        La liste est plafonnée aux dernières commandes, et les paniers récurrents ne sont comptés
+        que globalement : il n'existe pas encore de route d'administration qui liste toutes les
+        commandes ni le détail des paniers d'un compte.
+      </fold-callout>
+    </section>
+  }
+}

@@ -1,0 +1,30 @@
+<fold-page-layout icon="company" [title]="title()">
+  <button pageActions foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="back()">
+    Retour
+  </button>
+
+  <!-- L'épingle vit dans l'en-tête du compte, pas dans une vue : on décide de
+       suivre un client, pas une de ses pages. -->
+  <button
+    pageActions
+    foldButton
+    size="sm"
+    icon="star"
+    [emphasis]="isPinned() ? 'solid' : 'outline'"
+    (click)="togglePin()"
+  >
+    {{ isPinned() ? 'Épinglé' : 'Épingler' }}
+  </button>
+
+  <fold-nav-layout placement="side" [foldAt]="1100">
+    <fold-view-nav
+      tabNav
+      [items]="tabs"
+      size="comfortable"
+      activeStyle="underline"
+      background="transparent"
+    />
+
+    <router-outlet />
+  </fold-nav-layout>
+</fold-page-layout>
