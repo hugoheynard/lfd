@@ -70,7 +70,7 @@ chemins **non datés** (canal e-mail, rappel au plus vite) ; le nouvel
 demande un rappel ou qu'on écrive. Le motif est donc porté par **`Appointment`
 et `SupportRequest`**, avec le même vocabulaire fermé :
 
-`discover` · `quote` · `order` · `recurring` · `billing` · `other`
+`discover` · `quote` · `order` · `recurring` · `billing` · `account` · `other`
 
 Fermé et non libre, pour trois raisons : la file du commercial se lit d'un coup
 d'œil, un rendez-vous se prépare avant de décrocher, et l'e-mail de R6 aura un
@@ -87,6 +87,55 @@ formulations par motif — l'une à la première personne pour le formulaire
 (« Découvrir l'offre et les tarifs »), l'autre en deux mots pour une file
 (« Découverte ») — parce qu'une seule obligerait l'un des deux écrans à mal
 parler.
+
+### 2.2 ter La liste officielle des **types de demande**, et ce qu'on y rattache
+
+Le motif seul dit la famille, pas ce qu'on veut faire : « un panier récurrent »
+recouvre aussi bien le créer que changer sa fréquence ou sauter une échéance —
+trois conversations différentes. D'où un **second niveau**, le **sujet**
+(`RequestTopic`), et un troisième apport qui est le vrai gain : chaque sujet
+déclare **sur quoi il porte**.
+
+Le contrat vit dans `packages/contracts/src/request-topic.ts`. Les sujets sont
+préfixés par leur famille (`recurring.frequency`), pour se lire tels quels dans
+un journal.
+
+| Famille     | Sujets                                       | Porte sur               |
+| ----------- | -------------------------------------------- | ----------------------- |
+| `discover`  | `offer` · `pricing` · `delivery`             | —                       |
+| `quote`     | `new` · `followup`                           | —                       |
+| `order`     | `status` · `change` · `issue` · `cancel`     | une **commande**        |
+| `recurring` | `create`                                     | —                       |
+| `recurring` | `frequency` · `content` · `pause` · `cancel` | un **panier récurrent** |
+| `recurring` | `occurrence`                                 | une **échéance**        |
+| `billing`   | `invoice` · `payment`                        | une **commande**        |
+| `billing`   | `terms`                                      | —                       |
+| `account`   | `activation` · `users` · `addresses`         | —                       |
+| `other`     | `request`                                    | —                       |
+
+**Ce qu'on peut associer automatiquement**, et jusqu'où :
+
+- **filtrer** — `offerableTopics(famille, candidats)` retire les sujets dont
+  l'objet n'existe pas chez ce client. « Changer la fréquence » n'est pas proposé
+  à qui n'a aucun panier récurrent : le proposer donnerait un formulaire qui ne
+  mène nulle part ;
+- **rattacher** — `autoAttach(sujet, candidats)` pré-sélectionne **uniquement**
+  s'il n'y a **qu'un seul** candidat du bon type. Avec deux paniers, on ne
+  devine pas : se tromper une fois sur deux, et l'écrire dans la fiche du
+  commercial, coûte plus cher que de poser la question ;
+- **ce qu'on ne fait pas** — deviner le sujet depuis le message libre. Un motif
+  faux est pire qu'un motif absent.
+
+Deux règles de cohérence, à la frontière et partagées par les trois chemins
+(`classificationIssue`) : le sujet doit **appartenir** au motif, et l'objet
+désigné doit être du **type que le sujet attend**. Le sujet lui-même reste
+**facultatif** — la famille suffit à router une demande, et exiger un sous-motif
+ferait abandonner des formulaires.
+
+Les libellés des sujets vivent avec ceux des familles, dans
+`@lfd/b2b-ui/appointment` — un seul par sujet cette fois : à ce niveau de
+précision, « Changer la fréquence » se lit aussi bien dans un formulaire que
+dans une file.
 
 ### 2.3 Le rendez-vous n'est **pas muré par la société**
 

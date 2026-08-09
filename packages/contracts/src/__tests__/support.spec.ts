@@ -9,13 +9,17 @@ function dateOffset(days: number): string {
 
 describe("contrat de la demande de support à l'activation", () => {
   it("accepte un e-mail nu (ni numéro ni créneau)", () => {
-    const result = activationSupportPayloadSchema.safeParse({ channel: "email" });
+    const result = activationSupportPayloadSchema.safeParse({
+      channel: "email",
+      purpose: "discover",
+    });
     expect(result.success).toBe(true);
   });
 
   it("refuse un e-mail qui porte un créneau", () => {
     const result = activationSupportPayloadSchema.safeParse({
       channel: "email",
+      purpose: "discover",
       scheduledDate: dateOffset(2),
       slot: "morning",
     });
@@ -25,6 +29,7 @@ describe("contrat de la demande de support à l'activation", () => {
   it("accepte un rappel « au plus vite » avec un numéro", () => {
     const result = activationSupportPayloadSchema.safeParse({
       channel: "phone",
+      purpose: "discover",
       phoneNumber: "0102030405",
       asap: true,
     });
@@ -32,13 +37,18 @@ describe("contrat de la demande de support à l'activation", () => {
   });
 
   it("refuse un rappel sans numéro", () => {
-    const result = activationSupportPayloadSchema.safeParse({ channel: "phone", asap: true });
+    const result = activationSupportPayloadSchema.safeParse({
+      channel: "phone",
+      purpose: "discover",
+      asap: true,
+    });
     expect(result.success).toBe(false);
   });
 
   it("refuse « au plus vite » assorti d'un créneau daté", () => {
     const result = activationSupportPayloadSchema.safeParse({
       channel: "phone",
+      purpose: "discover",
       phoneNumber: "0102030405",
       asap: true,
       scheduledDate: dateOffset(2),
@@ -50,6 +60,7 @@ describe("contrat de la demande de support à l'activation", () => {
   it("accepte un rappel programmé (date future + créneau)", () => {
     const result = activationSupportPayloadSchema.safeParse({
       channel: "phone",
+      purpose: "discover",
       phoneNumber: "0102030405",
       asap: false,
       scheduledDate: dateOffset(3),
@@ -61,6 +72,7 @@ describe("contrat de la demande de support à l'activation", () => {
   it("refuse un rappel programmé sans date ou sans créneau", () => {
     const noDate = activationSupportPayloadSchema.safeParse({
       channel: "phone",
+      purpose: "discover",
       phoneNumber: "0102030405",
       asap: false,
       slot: "morning",
@@ -71,6 +83,7 @@ describe("contrat de la demande de support à l'activation", () => {
   it("refuse une date impossible malgré le bon format (2026-13-40)", () => {
     const result = activationSupportPayloadSchema.safeParse({
       channel: "phone",
+      purpose: "discover",
       phoneNumber: "0102030405",
       asap: false,
       scheduledDate: "2026-13-40",
@@ -82,6 +95,7 @@ describe("contrat de la demande de support à l'activation", () => {
   it("refuse une date de rappel dans le passé", () => {
     const result = activationSupportPayloadSchema.safeParse({
       channel: "phone",
+      purpose: "discover",
       phoneNumber: "0102030405",
       asap: false,
       scheduledDate: dateOffset(-1),
@@ -93,12 +107,14 @@ describe("contrat de la demande de support à l'activation", () => {
   it("borne le message et le numéro", () => {
     const longMessage = activationSupportPayloadSchema.safeParse({
       channel: "email",
+      purpose: "discover",
       message: "x".repeat(2001),
     });
     expect(longMessage.success).toBe(false);
 
     const longPhone = activationSupportPayloadSchema.safeParse({
       channel: "phone",
+      purpose: "discover",
       phoneNumber: "0".repeat(31),
       asap: true,
     });

@@ -408,13 +408,7 @@ export interface ZonePenetrationTrend {
 
 /** Catégorie de départ d'un compte (churn), enregistrée à la clôture. */
 export type TerminationReason =
-  | "price"
-  | "competitor"
-  | "closure"
-  | "quality"
-  | "no_need"
-  | "unresponsive"
-  | "other";
+  "price" | "competitor" | "closure" | "quality" | "no_need" | "unresponsive" | "other";
 
 /** Une **sous-raison** de départ (ex. « Livraison trop chère »), avec son compte. */
 export interface TerminationSubReasonCount {

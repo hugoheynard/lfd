@@ -20,8 +20,11 @@ const PURPOSES: Readonly<Record<AppointmentPurpose, PurposeCopy>> = {
   discover: { choice: "Découvrir l'offre et les tarifs", short: "Découverte" },
   quote: { choice: "Demander un devis", short: "Devis" },
   order: { choice: "Une commande en cours", short: "Commande" },
-  recurring: { choice: "Mettre en place une commande récurrente", short: "Récurrence" },
+  // Famille, et non action : le détail (créer, changer la fréquence, sauter une
+  // échéance) est porté par le **sujet**, cf. `topic-labels`.
+  recurring: { choice: "Un panier récurrent", short: "Récurrence" },
   billing: { choice: "Facturation ou paiement", short: "Facturation" },
+  account: { choice: "Mon compte et mon entreprise", short: "Compte" },
   other: { choice: "Autre demande", short: "Autre" },
 };
 
@@ -32,6 +35,7 @@ export const APPOINTMENT_PURPOSES: readonly AppointmentPurpose[] = [
   "order",
   "recurring",
   "billing",
+  "account",
   "other",
 ];
 

@@ -17,7 +17,12 @@ import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js"
 /** Charge de création/édition d'une zone : préfixes de code postal, libellé, frais. */
 export const deliveryZonePayloadSchema = z.object({
   postalPrefixes: z
-    .array(z.string().trim().regex(/^\d{2,5}$/u, "2 à 5 chiffres"))
+    .array(
+      z
+        .string()
+        .trim()
+        .regex(/^\d{2,5}$/u, "2 à 5 chiffres"),
+    )
     .min(1, "au moins un code postal"),
   label: z.string().trim().max(120).default(""),
   fee: cartAdjustmentSchema,
@@ -43,10 +48,7 @@ export interface CreatedDeliveryZoneResponse {
  * si aucun. Sert à départager les zones (le préfixe le plus long, donc le plus
  * spécifique, gagne).
  */
-export function longestMatchingPrefix(
-  prefixes: readonly string[],
-  codePostal: string,
-): number {
+export function longestMatchingPrefix(prefixes: readonly string[], codePostal: string): number {
   let best = -1;
   for (const prefix of prefixes) {
     if (codePostal.startsWith(prefix) && prefix.length > best) {

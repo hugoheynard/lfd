@@ -55,10 +55,10 @@ export const createSubscriptionPayloadSchema = z
     (payload) => payload.fulfillmentMethod !== "delivery" || payload.deliveryAddress !== null,
     { message: "adresse de livraison requise", path: ["deliveryAddress"] },
   )
-  .refine(
-    (payload) => payload.endDate === null || payload.endDate >= payload.startDate,
-    { message: "la date de fin doit suivre la date de début", path: ["endDate"] },
-  );
+  .refine((payload) => payload.endDate === null || payload.endDate >= payload.startDate, {
+    message: "la date de fin doit suivre la date de début",
+    path: ["endDate"],
+  });
 export type CreateSubscriptionPayload = z.infer<typeof createSubscriptionPayloadSchema>;
 
 /** `AAAA-MM-JJ` — la date d'une échéance visée par une dérogation. */

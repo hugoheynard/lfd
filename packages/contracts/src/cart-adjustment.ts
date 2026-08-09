@@ -21,10 +21,7 @@ export type CartAdjustment = z.infer<typeof cartAdjustmentSchema>;
 
 /** Applique un ajustement à un sous-total (centimes) → le montant en centimes
  *  (arrondi au centime le plus proche pour un pourcentage). Jamais négatif. */
-export function cartAdjustmentCents(
-  adjustment: CartAdjustment,
-  subtotalCents: number,
-): number {
+export function cartAdjustmentCents(adjustment: CartAdjustment, subtotalCents: number): number {
   if (adjustment.mode === "amount") {
     return Math.max(0, adjustment.cents);
   }

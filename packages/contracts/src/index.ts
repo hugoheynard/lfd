@@ -84,6 +84,26 @@ export type {
   CreatedAppointmentResponse,
 } from "./appointment.js";
 export {
+  attachableKindSchema,
+  requestTopicSchema,
+  requestSubjectSchema,
+  requestFamilySchema,
+  REQUEST_TOPICS,
+  familyOf,
+  attachmentOf,
+  topicsOf,
+  classificationIssue,
+  autoAttach,
+  offerableTopics,
+} from "./request-topic.js";
+export type {
+  AttachableKind,
+  RequestTopic,
+  RequestSubject,
+  RequestClassification,
+  ClassificationIssue,
+} from "./request-topic.js";
+export {
   pieceModeSchema,
   activationPieceSchema,
   platformSettingsSchema,
