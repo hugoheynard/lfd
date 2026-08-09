@@ -1,0 +1,19 @@
+{
+  // Transport e-mail transactionnel (Resend) — primitive infra sans domaine :
+  // le paquet ignore les gabarits, qui sont fournis par l'app en paramètre de
+  // type. Feuille du graphe. Émet ses déclarations pour que les consommateurs
+  // prennent leurs types depuis `dist`, tandis que `exports.types` pointe la
+  // source in-workspace (comme @lfd/shopify-admin).
+  "extends": "../../tsconfig/tsflags.backend.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+}

@@ -15,6 +15,9 @@ const ENV_MSG =
  */
 const ENV_ALLOWLIST = [
   'src/infra/config/app-config.ts',
+  // Les lecteurs, extraits d'app-config pour qu'il repasse sous 300 lignes.
+  // Même discipline, même dossier — mais listé à la main, comme le reste.
+  'src/infra/config/env-readers.ts',
   'src/infra/config/__tests__/app-config.spec.ts',
   'test/setup-env.ts',
 ];
