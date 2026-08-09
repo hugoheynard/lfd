@@ -114,7 +114,7 @@ export class CalendrierPage {
   protected async openEvent(event: CalendarEvent): Promise<void> {
     const appointment = this.appointments().find((a) => `appt:${a.id}` === event.id);
     if (appointment !== undefined) {
-      await this.router.navigate(['/commercial/calendrier', appointment.id]);
+      await this.router.navigate(['/rendez-vous', appointment.id]);
     }
   }
 }

@@ -142,6 +142,35 @@ export class RendezVousPage {
     return rdv !== null && rdv.subjectType === 'company' ? rdv.subjectId : null;
   });
 
+  /**
+   * Le titre de la page : « RDV 09/08/2026 — Boulangerie Roy ». La société n'y
+   * figure que si on la connaît — un tiret suivi du vide serait pire que rien.
+   */
+  protected readonly pageTitle = computed(() => {
+    const rdv = this.appointment();
+    if (rdv === null) {
+      return 'Rendez-vous';
+    }
+    const company = this.sheet();
+    const who = company === null ? '' : ` — ${company.enseigne || company.raisonSociale}`;
+    return `RDV ${rdv.day}${who}`;
+  });
+
+  /**
+   * Ce qu'on relit juste avant de décrocher : qui appelle, pourquoi, et ce qu'il
+   * a écrit. Assemblé ici plutôt que dans le template — trois cas de vide à
+   * gérer, et une phrase à trous se relit mal en HTML.
+   */
+  protected readonly pageDescription = computed(() => {
+    const rdv = this.appointment();
+    if (rdv === null) {
+      return '';
+    }
+    const parts = [rdv.contactName, purposeShort(rdv.purpose)].filter((part) => part !== '');
+    const head = parts.join(' · ');
+    return rdv.message === '' ? head : `${head} — « ${rdv.message} »`;
+  });
+
   /** L'état, en clair — il porte l'en-tête de la carte. */
   protected readonly statusLabel = computed(
     () => STATUS_LABEL[this.appointment()?.status ?? ''] ?? '',

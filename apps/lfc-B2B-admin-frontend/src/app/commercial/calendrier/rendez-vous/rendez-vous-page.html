@@ -1,5 +1,11 @@
-<fold-page-layout icon="calendar" [title]="'Rendez-vous du ' + (appointment()?.day ?? '')">
-  <fold-back-link pageBack routerLink="/commercial/calendrier" label="Retour au calendrier" />
+<fold-page-layout icon="planning" [title]="pageTitle()">
+  <!-- La description dit à QUI on parle et de QUOI : le contact, le motif, et le
+       message qu'il a laissé. C'est ce qu'on relit juste avant de décrocher. -->
+  <p description>{{ pageDescription() }}</p>
+
+  <!-- Le retour est une ACTION explicite : la page vit hors du shell à onglets,
+       rien d'autre ne ramène au calendrier. -->
+  <fold-back-link pageActions routerLink="/commercial/calendrier" label="Retour au calendrier" />
 
   @if (state() === 'missing') {
     <fold-empty-state

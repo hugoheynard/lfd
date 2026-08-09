@@ -356,6 +356,18 @@ non depuis ce que le calendrier lui aurait passé en mémoire — sans quoi un l
 direct n'afficherait rien. Le segment de route arrive dans un `input()` grâce à
 `withComponentInputBinding`.
 
+Elle vit **hors du shell à onglets** de « Commercial » (`/rendez-vous/:id`, et
+non `/commercial/…`) : on y **travaille** un rendez-vous, on n'y navigue pas
+entre des vues. Des onglets à côté du dossier inviteraient à en sortir, et
+voleraient la largeur au rail d'historique. Le retour se fait par un lien
+explicite (`fold-back-link` dans les actions de page), pas par un onglet resté
+allumé.
+
+L'en-tête porte ce qu'on relit juste avant de décrocher : le **titre** « RDV
+09/08/2026 — Boulangerie Roy » (la société n'y figure que si on la connaît), la
+**description** « Camille Roy · Récurrence — « changement de rythme du panier
+hebdo » ».
+
 **Deux colonnes** (`fold-aside-layout`) : le **dossier client** au centre —
 identité, chiffres, commandes, actions de compte — et, dans le **rail collant**,
 ce qui donne son contexte à la lecture :

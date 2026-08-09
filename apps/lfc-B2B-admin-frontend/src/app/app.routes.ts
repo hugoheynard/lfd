@@ -88,16 +88,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./commercial/calendrier/calendrier-page').then((m) => m.CalendrierPage),
       },
-      {
-        // La fiche d'un rendez-vous est une PAGE : elle a une adresse, se
-        // rafraîchit, et se garde ouverte dans un onglet pendant l'appel.
-        path: 'calendrier/:appointmentId',
-        title: 'Rendez-vous — LFC B2B admin',
-        loadComponent: () =>
-          import('./commercial/calendrier/rendez-vous/rendez-vous-page').then(
-            (m) => m.RendezVousPage,
-          ),
-      },
     ],
+  },
+  {
+    // PLEINE PAGE, hors du shell à onglets de « Commercial » : on y travaille un
+    // rendez-vous, pas on y navigue entre des vues. Les onglets à côté du dossier
+    // inviteraient à en sortir, et voleraient la largeur au rail d'historique.
+    // Le retour se fait par un lien explicite, pas par un onglet resté allumé.
+    path: 'rendez-vous/:appointmentId',
+    title: 'Rendez-vous — LFC B2B admin',
+    loadComponent: () =>
+      import('./commercial/calendrier/rendez-vous/rendez-vous-page').then((m) => m.RendezVousPage),
   },
 ];
