@@ -1,5 +1,4 @@
 :host {
-  position: relative;
   display: inline-flex;
   flex: 0 0 auto;
 }
@@ -20,32 +19,25 @@
   font-weight: 700;
   line-height: 1;
   cursor: help;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
 .trigger:hover,
 .trigger:focus-visible {
-  color: var(--fold-color-accent, #3b82f6);
-  border-color: var(--fold-color-accent, #3b82f6);
-  outline: none;
+  border-color: var(--fold-color-primary);
+  color: var(--fold-color-primary);
 }
 
+/* Le placement, l'élévation et la couche viennent de `fold-popover` ; il ne
+   reste ici que la mise en forme du texte. */
 .bubble {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 20;
-  width: max-content;
-  max-width: 240px;
-  padding: 8px 10px;
-  border: 1px solid var(--fold-color-border);
-  border-radius: 8px;
-  background: var(--fold-color-surface, #1f2937);
-  color: var(--fold-color-text, #111827);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-  font-size: 12px;
+  max-width: 17rem;
+  padding: 0.55rem 0.7rem;
+  font-size: var(--fold-text-xs, 0.75rem);
   font-weight: 400;
-  font-style: normal;
-  line-height: 1.4;
+  line-height: 1.45;
   text-align: left;
   white-space: normal;
 }
