@@ -40,6 +40,7 @@ export class ScheduleAppointmentHandler implements ICommandHandler<
         startAt,
         durationMinutes: config.policy.slotMinutes,
         channel: payload.channel,
+        purpose: payload.purpose,
         subjectType: payload.subjectType,
         subjectId: payload.subjectId,
         contactName: payload.contactName,

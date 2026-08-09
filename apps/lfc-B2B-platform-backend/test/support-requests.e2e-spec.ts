@@ -44,6 +44,7 @@ function staff(): ReturnType<E2eContext["http"]> {
 /** Une demande de rappel « au plus vite », le chemin non daté. */
 const CALL_BACK: ActivationSupportPayload = {
   channel: "phone",
+  purpose: "discover",
   phoneNumber: "0600000000",
   asap: true,
   scheduledDate: null,
@@ -87,6 +88,7 @@ describe("la file staff", () => {
     expect(jsonBody<SupportRequestView[]>(list)[0]).toMatchObject({
       companyId,
       channel: "phone",
+      purpose: "discover",
       phoneNumber: "0600000000",
       asap: true,
       message: "Besoin d'aide sur le KBIS",
@@ -104,6 +106,28 @@ describe("la file staff", () => {
 
     const all = await staff().get("/admin/support-requests?all=true").expect(200);
     expect(jsonBody<SupportRequestView[]>(all)).toHaveLength(1);
+  });
+});
+
+describe("le motif", () => {
+  it("accompagne la demande jusqu'à la file staff — l'objet de l'échange", async () => {
+    const companyId = await seed();
+    await ctx
+      .asSub(MEMBER)
+      .post(`/companies/${companyId}/support/activation`)
+      .send({ ...CALL_BACK, purpose: "billing" })
+      .expect(201);
+    const response = await staff().get("/admin/support-requests").expect(200);
+    expect(jsonBody<SupportRequestView[]>(response)[0]?.purpose).toBe("billing");
+  });
+
+  it("refuse « autre demande » sans un mot d'explication (400)", async () => {
+    const companyId = await seed();
+    await ctx
+      .asSub(MEMBER)
+      .post(`/companies/${companyId}/support/activation`)
+      .send({ ...CALL_BACK, purpose: "other", message: "" })
+      .expect(400);
   });
 });
 

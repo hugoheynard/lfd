@@ -5,6 +5,10 @@
   "private": true,
   "sideEffects": false,
   "exports": {
+    "./appointment": {
+      "types": "./src/appointment/index.ts",
+      "default": "./src/appointment/index.ts"
+    },
     "./company": {
       "types": "./src/company/index.ts",
       "default": "./src/company/index.ts"

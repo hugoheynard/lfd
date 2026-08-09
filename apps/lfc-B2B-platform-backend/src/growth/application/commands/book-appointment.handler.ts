@@ -42,6 +42,7 @@ export class BookAppointmentHandler implements ICommandHandler<BookAppointmentCo
         startAt,
         durationMinutes: config.policy.slotMinutes,
         channel: payload.channel,
+        purpose: payload.purpose,
         subjectType: subject.type,
         subjectId: subject.id,
         contactName: payload.contactName,

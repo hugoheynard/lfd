@@ -124,6 +124,35 @@ export const availabilityExceptionsPayloadSchema = z.object({
 });
 export type AvailabilityExceptionsPayload = z.infer<typeof availabilityExceptionsPayloadSchema>;
 
+/**
+ * **Motif** de la prise de contact — de quoi on va parler.
+ *
+ * Fermé et non libre : c'est ce qui rend la file du commercial lisible d'un coup
+ * d'œil, permet de préparer un rendez-vous avant de décrocher, et donnera plus
+ * tard un objet d'e-mail utile. Le message libre reste à côté pour le détail.
+ *
+ * Il porte les **trois** chemins de contact — rendez-vous daté, rappel au plus
+ * vite, e-mail — parce que la question « de quoi s'agit-il ? » est la même dans
+ * les trois cas ; seule la façon d'y répondre change.
+ */
+export const appointmentPurposeSchema = z.enum([
+  "discover",
+  "quote",
+  "order",
+  "recurring",
+  "billing",
+  "other",
+]);
+export type AppointmentPurpose = z.infer<typeof appointmentPurposeSchema>;
+
+/**
+ * « Autre demande » **exige** une précision : un motif fourre-tout sans message
+ * ne dit rien de plus que pas de motif du tout. Partagé par les trois chemins.
+ */
+export function purposeNeedsMessage(purpose: AppointmentPurpose, message: string): boolean {
+  return purpose === "other" && message.trim() === "";
+}
+
 /** Canal d'un rendez-vous : au téléphone, en visio, ou sur place. */
 export const appointmentChannelSchema = z.enum(["phone", "visio", "onsite"]);
 export type AppointmentChannel = z.infer<typeof appointmentChannelSchema>;
@@ -212,32 +241,55 @@ export const appointmentTransitionSchema = z.enum(["confirmed", "honored", "no_s
 export type AppointmentTransition = z.infer<typeof appointmentTransitionSchema>;
 
 /** Réservation **client** : il choisit un créneau, un canal, et se décrit. */
-export const bookAppointmentPayloadSchema = z.object({
-  startAt: z.string().datetime({ message: "instant ISO attendu" }),
-  channel: appointmentChannelSchema,
-  /** Société concernée si le client en a une ; sinon le rendez-vous porte sur lui. */
-  companyId: z.string().trim().min(1).nullable().default(null),
-  contactName: z.string().trim().max(NAME_MAX).default(""),
-  contactPhone: z.string().trim().max(PHONE_MAX).default(""),
-  message: z.string().max(MESSAGE_MAX, "message trop long (2000 caractères max)").default(""),
-});
+export const bookAppointmentPayloadSchema = z
+  .object({
+    startAt: z.string().datetime({ message: "instant ISO attendu" }),
+    channel: appointmentChannelSchema,
+    purpose: appointmentPurposeSchema,
+    /** Société concernée si le client en a une ; sinon le rendez-vous porte sur lui. */
+    companyId: z.string().trim().min(1).nullable().default(null),
+    contactName: z.string().trim().max(NAME_MAX).default(""),
+    contactPhone: z.string().trim().max(PHONE_MAX).default(""),
+    message: z.string().max(MESSAGE_MAX, "message trop long (2000 caractères max)").default(""),
+  })
+  .superRefine(ensurePurposeDetailed);
 export type BookAppointmentPayload = z.infer<typeof bookAppointmentPayloadSchema>;
+
+/**
+ * Le garde partagé par les trois chemins : « autre demande » sans un mot
+ * d'explication est un motif qui n'en est pas un.
+ */
+function ensurePurposeDetailed(
+  value: { purpose: AppointmentPurpose; message: string },
+  ctx: z.RefinementCtx,
+): void {
+  if (purposeNeedsMessage(value.purpose, value.message)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["message"],
+      message: "précisez votre demande",
+    });
+  }
+}
 
 /**
  * Pose d'un rendez-vous **par le staff** : il vient d'avoir le prospect au
  * téléphone. Il choisit le sujet lui-même (y compris un lead cold) et n'est pas
  * soumis au délai de prévenance — c'est son agenda.
  */
-export const staffBookAppointmentPayloadSchema = z.object({
-  startAt: z.string().datetime({ message: "instant ISO attendu" }),
-  channel: appointmentChannelSchema,
-  subjectType: appointmentSubjectTypeSchema,
-  subjectId: z.string().trim().min(1, "sujet obligatoire"),
-  contactName: z.string().trim().max(NAME_MAX).default(""),
-  contactEmail: z.string().trim().max(NAME_MAX).default(""),
-  contactPhone: z.string().trim().max(PHONE_MAX).default(""),
-  message: z.string().max(MESSAGE_MAX, "message trop long (2000 caractères max)").default(""),
-});
+export const staffBookAppointmentPayloadSchema = z
+  .object({
+    startAt: z.string().datetime({ message: "instant ISO attendu" }),
+    channel: appointmentChannelSchema,
+    purpose: appointmentPurposeSchema,
+    subjectType: appointmentSubjectTypeSchema,
+    subjectId: z.string().trim().min(1, "sujet obligatoire"),
+    contactName: z.string().trim().max(NAME_MAX).default(""),
+    contactEmail: z.string().trim().max(NAME_MAX).default(""),
+    contactPhone: z.string().trim().max(PHONE_MAX).default(""),
+    message: z.string().max(MESSAGE_MAX, "message trop long (2000 caractères max)").default(""),
+  })
+  .superRefine(ensurePurposeDetailed);
 export type StaffBookAppointmentPayload = z.infer<typeof staffBookAppointmentPayloadSchema>;
 
 /** Changement d'état par le staff. Une annulation exige un motif. */
@@ -274,6 +326,8 @@ export interface AppointmentView {
   readonly endTime: string;
   readonly status: AppointmentStatus;
   readonly channel: AppointmentChannel;
+  /** De quoi il s'agit — voir {@link appointmentPurposeSchema}. */
+  readonly purpose: AppointmentPurpose;
   readonly subjectType: AppointmentSubjectType;
   readonly subjectId: string;
   readonly contactName: string;

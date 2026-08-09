@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+import { appointmentPurposeSchema, purposeNeedsMessage } from "./appointment.js";
+import type { AppointmentPurpose } from "./appointment.js";
+
 /**
  * Contrat de fil d'une **demande de support à l'activation** : le client demande
  * à être contacté par l'équipe commerciale, par téléphone (avec un créneau) ou
@@ -35,9 +38,7 @@ function isRealCalendarDate(value: string): boolean {
   const { year, month, day } = partsOf(value);
   const date = new Date(Date.UTC(year, month - 1, day));
   return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   );
 }
 
@@ -63,6 +64,12 @@ function isTodayOrLater(value: string): boolean {
 export const activationSupportPayloadSchema = z
   .object({
     channel: supportChannelSchema,
+    /**
+     * Le **motif**, partagé avec la prise de rendez-vous : la question « de quoi
+     * s'agit-il ? » est la même dans les trois chemins. Sur un contact par
+     * e-mail, c'est lui qui en fera l'**objet**.
+     */
+    purpose: appointmentPurposeSchema,
     phoneNumber: z.string().trim().max(PHONE_MAX, "numéro de téléphone trop long").default(""),
     asap: z.boolean().default(true),
     scheduledDate: z
@@ -74,6 +81,11 @@ export const activationSupportPayloadSchema = z
     message: z.string().max(MESSAGE_MAX, "message trop long (2000 caractères max)").default(""),
   })
   .superRefine((value, ctx) => {
+    // « Autre demande » sans un mot d'explication n'est pas un motif.
+    if (purposeNeedsMessage(value.purpose, value.message)) {
+      ctx.addIssue({ code: "custom", path: ["message"], message: "précisez votre demande" });
+    }
+
     // Un e-mail ne porte ni numéro ni créneau : on répond à l'adresse du compte.
     if (value.channel === "email") {
       if (value.scheduledDate !== null || value.slot !== null) {
@@ -141,6 +153,8 @@ export interface SupportRequestView {
   readonly companyId: string;
   readonly requestedByUserId: string;
   readonly channel: SupportChannel;
+  /** De quoi il s'agit — l'objet de l'échange, commun aux trois chemins. */
+  readonly purpose: AppointmentPurpose;
   readonly phoneNumber: string;
   readonly asap: boolean;
   /** Jour souhaité (`AAAA-MM-JJ`) pour les demandes antérieures aux rendez-vous. */

@@ -12,6 +12,7 @@ const VIEW_SELECT = {
   endAt: true,
   status: true,
   channel: true,
+  purpose: true,
   subjectType: true,
   subjectId: true,
   contactName: true,

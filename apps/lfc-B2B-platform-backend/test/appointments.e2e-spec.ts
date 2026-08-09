@@ -150,7 +150,7 @@ describe("les créneaux", () => {
     await ctx
       .asSub(OWNER)
       .post("/appointments")
-      .send({ startAt, channel: "phone", companyId: null })
+      .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     const { from, to } = window();
     const response = await ctx
@@ -169,7 +169,13 @@ describe("la réservation", () => {
     const created = await ctx
       .asSub(OWNER)
       .post("/appointments")
-      .send({ startAt, channel: "visio", companyId: null, message: "besoin d'aide" })
+      .send({
+        startAt,
+        channel: "visio",
+        purpose: "discover",
+        companyId: null,
+        message: "besoin d'aide",
+      })
       .expect(201);
     const { id } = jsonBody<CreatedAppointmentResponse>(created);
     expect(id).toMatch(/^appt_/u);
@@ -186,6 +192,42 @@ describe("la réservation", () => {
     });
   });
 
+  it("porte le MOTIF, et le rend au staff comme au client", async () => {
+    await seedAccounts();
+    await declareAvailability();
+    const startAt = await firstSlot();
+    await ctx
+      .asSub(OWNER)
+      .post("/appointments")
+      .send({ startAt, channel: "phone", purpose: "quote", companyId: null })
+      .expect(201);
+    const mine = await ctx.asSub(OWNER).get("/appointments/mine").expect(200);
+    expect(jsonBody<AppointmentView[]>(mine)[0]?.purpose).toBe("quote");
+  });
+
+  it("refuse « autre demande » sans un mot d'explication (400)", async () => {
+    await seedAccounts();
+    await declareAvailability();
+    const startAt = await firstSlot();
+    // Un motif fourre-tout sans message ne dit rien de plus que pas de motif.
+    await ctx
+      .asSub(OWNER)
+      .post("/appointments")
+      .send({ startAt, channel: "phone", purpose: "other", companyId: null })
+      .expect(400);
+    await ctx
+      .asSub(OWNER)
+      .post("/appointments")
+      .send({
+        startAt,
+        channel: "phone",
+        purpose: "other",
+        companyId: null,
+        message: "une question de logistique",
+      })
+      .expect(201);
+  });
+
   it("rattache le rendez-vous à la société quand le client en désigne une", async () => {
     const companyId = await seedAccounts();
     await declareAvailability();
@@ -193,7 +235,7 @@ describe("la réservation", () => {
     await ctx
       .asSub(OWNER)
       .post("/appointments")
-      .send({ startAt, channel: "phone", companyId })
+      .send({ startAt, channel: "phone", purpose: "discover", companyId })
       .expect(201);
     const mine = await ctx.asSub(OWNER).get("/appointments/mine").expect(200);
     expect(jsonBody<AppointmentView[]>(mine)[0]).toMatchObject({
@@ -209,7 +251,7 @@ describe("la réservation", () => {
     await ctx
       .asSub(STRANGER)
       .post("/appointments")
-      .send({ startAt, channel: "phone", companyId })
+      .send({ startAt, channel: "phone", purpose: "discover", companyId })
       .expect(404);
     expect(await ctx.prisma.appointment.count()).toBe(0);
   });
@@ -223,7 +265,7 @@ describe("la réservation", () => {
     await ctx
       .asSub(OWNER)
       .post("/appointments")
-      .send({ startAt: invented, channel: "phone", companyId: null })
+      .send({ startAt: invented, channel: "phone", purpose: "discover", companyId: null })
       .expect(409);
     expect(await ctx.prisma.appointment.count()).toBe(0);
   });
@@ -244,7 +286,7 @@ describe("la réservation", () => {
     await ctx
       .asSub(OWNER)
       .post("/appointments")
-      .send({ startAt, channel: "phone", companyId: null })
+      .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(409);
   });
 
@@ -252,7 +294,11 @@ describe("la réservation", () => {
     await seedAccounts();
     await declareAvailability();
     const startAt = await firstSlot();
-    await ctx.http().post("/appointments").send({ startAt, channel: "phone" }).expect(401);
+    await ctx
+      .http()
+      .post("/appointments")
+      .send({ startAt, channel: "phone", purpose: "discover" })
+      .expect(401);
   });
 });
 
@@ -262,7 +308,10 @@ describe("l'exclusivité du créneau", () => {
     await declareAvailability();
     const startAt = await firstSlot();
     const book = (sub: string): Promise<{ status: number }> =>
-      ctx.asSub(sub).post("/appointments").send({ startAt, channel: "phone", companyId: null });
+      ctx
+        .asSub(sub)
+        .post("/appointments")
+        .send({ startAt, channel: "phone", purpose: "discover", companyId: null });
 
     // Lancées ensemble : elles passent toutes deux la revalidation applicative
     // avant qu'aucune n'ait écrit. Seul l'index unique partiel les départage.
@@ -279,7 +328,7 @@ describe("l'exclusivité du créneau", () => {
     const created = await ctx
       .asSub(OWNER)
       .post("/appointments")
-      .send({ startAt, channel: "phone", companyId: null })
+      .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     const { id } = jsonBody<CreatedAppointmentResponse>(created);
 
@@ -292,7 +341,7 @@ describe("l'exclusivité du créneau", () => {
     await ctx
       .asSub(STRANGER)
       .post("/appointments")
-      .send({ startAt, channel: "phone", companyId: null })
+      .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     expect(await ctx.prisma.appointment.count()).toBe(2);
   });
@@ -306,7 +355,7 @@ describe("l'annulation par le client", () => {
     const created = await ctx
       .asSub(OWNER)
       .post("/appointments")
-      .send({ startAt, channel: "phone", companyId: null })
+      .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     const { id } = jsonBody<CreatedAppointmentResponse>(created);
 
@@ -322,7 +371,7 @@ describe("l'annulation par le client", () => {
     const created = await ctx
       .asSub(OWNER)
       .post("/appointments")
-      .send({ startAt, channel: "phone", companyId: null })
+      .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     const { id } = jsonBody<CreatedAppointmentResponse>(created);
 
@@ -337,7 +386,7 @@ describe("l'annulation par le client", () => {
     const created = await ctx
       .asSub(OWNER)
       .post("/appointments")
-      .send({ startAt, channel: "phone", companyId: null })
+      .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     const { id } = jsonBody<CreatedAppointmentResponse>(created);
 
@@ -502,6 +551,7 @@ describe("la surface staff", () => {
       .send({
         startAt,
         channel: "phone",
+        purpose: "discover",
         subjectType: "lead",
         subjectId: "lead_123",
         contactName: "Camille",
@@ -525,7 +575,13 @@ describe("la surface staff", () => {
     const startAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
     const created = await staff()
       .post("/admin/appointments")
-      .send({ startAt, channel: "phone", subjectType: "lead", subjectId: "lead_1" })
+      .send({
+        startAt,
+        channel: "phone",
+        purpose: "discover",
+        subjectType: "lead",
+        subjectId: "lead_1",
+      })
       .expect(201);
     const { id } = jsonBody<CreatedAppointmentResponse>(created);
 

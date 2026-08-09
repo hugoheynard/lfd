@@ -329,6 +329,8 @@ model SupportRequest {
   requestedBy       User   @relation(fields: [requestedByUserId], references: [id])
 
   channel     SupportChannel
+  /// Motif — même vocabulaire que les rendez-vous ; objet du mail si `channel = email`.
+  purpose     String         @default("other")
   phoneNumber String         @default("") @map("phone_number")
   asap        Boolean        @default(true)
 
@@ -1071,6 +1073,9 @@ model Appointment {
 
   /// phone | visio | onsite.
   channel String
+
+  /// Motif — discover | quote | order | recurring | billing | other.
+  purpose String @default("other")
 
   /// company | lead | user.
   subjectType String @map("subject_type")

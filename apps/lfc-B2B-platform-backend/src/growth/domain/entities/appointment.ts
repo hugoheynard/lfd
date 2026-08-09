@@ -1,5 +1,6 @@
 import type {
   AppointmentChannel,
+  AppointmentPurpose,
   AppointmentStatus,
   AppointmentSubjectType,
   AppointmentTransition,
@@ -42,6 +43,8 @@ export interface BookAppointmentInput {
   readonly startAt: Date;
   readonly durationMinutes: number;
   readonly channel: AppointmentChannel;
+  /** De quoi on va parler — porté par le rendez-vous, pas déduit du message. */
+  readonly purpose: AppointmentPurpose;
   readonly subjectType: AppointmentSubjectType;
   readonly subjectId: string;
   readonly contactName: string;
@@ -59,6 +62,7 @@ export interface ReconstituteAppointmentInput {
   readonly endAt: Date;
   readonly status: AppointmentStatus;
   readonly channel: AppointmentChannel;
+  readonly purpose: AppointmentPurpose;
   readonly subjectType: AppointmentSubjectType;
   readonly subjectId: string;
   readonly contactName: string;
@@ -77,6 +81,7 @@ export class Appointment {
     readonly endAt: Date,
     private statusValue: AppointmentStatus,
     readonly channel: AppointmentChannel,
+    readonly purpose: AppointmentPurpose,
     readonly subjectType: AppointmentSubjectType,
     readonly subjectId: string,
     readonly contactName: string,
@@ -116,6 +121,7 @@ export class Appointment {
       addMinutes(input.startAt, input.durationMinutes),
       status,
       input.channel,
+      input.purpose,
       input.subjectType,
       requiredText(input.subjectId, "Sujet"),
       cleanText(input.contactName, NAME_MAX),
@@ -135,6 +141,7 @@ export class Appointment {
       input.endAt,
       input.status,
       input.channel,
+      input.purpose,
       input.subjectType,
       input.subjectId,
       input.contactName,

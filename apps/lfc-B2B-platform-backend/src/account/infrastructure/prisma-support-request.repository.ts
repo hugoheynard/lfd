@@ -1,4 +1,10 @@
-import type { ActivationSupportPayload, SupportRequestView, SupportSlot } from "@lfd/contracts";
+import { appointmentPurposeSchema } from "@lfd/contracts";
+import type {
+  ActivationSupportPayload,
+  AppointmentPurpose,
+  SupportRequestView,
+  SupportSlot,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
@@ -29,6 +35,7 @@ export class PrismaSupportRequestRepository extends SupportRequestRepository {
         companyId,
         requestedByUserId,
         channel: request.channel,
+        purpose: request.purpose,
         phoneNumber: request.phoneNumber,
         asap: request.asap,
         scheduledDate: request.scheduledDate === null ? null : new Date(request.scheduledDate),
@@ -68,12 +75,26 @@ export class PrismaSupportRequestRepository extends SupportRequestRepository {
   }
 }
 
+/**
+ * Le motif relu de la base. Colonne texte (pas d'enum Postgres) : on **renarrow**
+ * par le schéma du contrat plutôt que de faire confiance à la ligne — un `as`
+ * mensonger se propagerait jusqu'au front. Un motif inconnu retombe sur « autre ».
+ *
+ * Passe par le schéma et non par le vocabulaire de `growth` : les deux contextes
+ * partagent le contrat, pas leurs adaptateurs.
+ */
+function toPurpose(value: string): AppointmentPurpose {
+  const parsed = appointmentPurposeSchema.safeParse(value);
+  return parsed.success ? parsed.data : "other";
+}
+
 /** Une ligne `support_requests` vers la vue plate rendue au staff. */
 function toView(row: {
   id: string;
   companyId: string;
   requestedByUserId: string;
   channel: string;
+  purpose: string;
   phoneNumber: string;
   asap: boolean;
   scheduledDate: Date | null;
@@ -87,6 +108,7 @@ function toView(row: {
     companyId: row.companyId,
     requestedByUserId: row.requestedByUserId,
     channel: row.channel === "email" ? "email" : "phone",
+    purpose: toPurpose(row.purpose),
     phoneNumber: row.phoneNumber,
     asap: row.asap,
     // Colonne DATE : on garde le jour tel quel, sans passer par un fuseau qui

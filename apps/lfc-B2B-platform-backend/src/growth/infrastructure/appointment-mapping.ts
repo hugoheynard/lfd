@@ -1,5 +1,6 @@
 import type {
   AppointmentChannel,
+  AppointmentPurpose,
   AppointmentStatus,
   AppointmentSubjectType,
   AppointmentView,
@@ -32,6 +33,14 @@ export const ACTIVE_APPOINTMENT_STATUSES: readonly AppointmentStatus[] = [
 ];
 
 const CHANNELS: readonly AppointmentChannel[] = ["phone", "visio", "onsite"];
+const PURPOSES: readonly AppointmentPurpose[] = [
+  "discover",
+  "quote",
+  "order",
+  "recurring",
+  "billing",
+  "other",
+];
 const SUBJECT_TYPES: readonly AppointmentSubjectType[] = ["company", "lead", "user"];
 
 /** Forme d'une ligne `appointments` lue par Prisma (colonnes projetées). */
@@ -41,6 +50,7 @@ export interface AppointmentRow {
   readonly endAt: Date;
   readonly status: string;
   readonly channel: string;
+  readonly purpose: string;
   readonly subjectType: string;
   readonly subjectId: string;
   readonly contactName: string;
@@ -60,6 +70,10 @@ function isChannel(value: string): value is AppointmentChannel {
   return (CHANNELS as readonly string[]).includes(value);
 }
 
+function isPurpose(value: string): value is AppointmentPurpose {
+  return (PURPOSES as readonly string[]).includes(value);
+}
+
 function isSubjectType(value: string): value is AppointmentSubjectType {
   return (SUBJECT_TYPES as readonly string[]).includes(value);
 }
@@ -70,6 +84,11 @@ export function toAppointmentStatus(value: string): AppointmentStatus {
 
 export function toAppointmentChannel(value: string): AppointmentChannel {
   return isChannel(value) ? value : "phone";
+}
+
+/** Un motif inconnu retombe sur « autre » — jamais un `as` mensonger. */
+export function toAppointmentPurpose(value: string): AppointmentPurpose {
+  return isPurpose(value) ? value : "other";
 }
 
 export function toSubjectType(value: string): AppointmentSubjectType {
@@ -84,6 +103,7 @@ export function rowToAppointment(row: AppointmentRow): Appointment {
     endAt: row.endAt,
     status: toAppointmentStatus(row.status),
     channel: toAppointmentChannel(row.channel),
+    purpose: toAppointmentPurpose(row.purpose),
     subjectType: toSubjectType(row.subjectType),
     subjectId: row.subjectId,
     contactName: row.contactName,
@@ -114,6 +134,7 @@ export function rowToAppointmentView(row: AppointmentRow): AppointmentView {
     endTime: localEnd.time,
     status: toAppointmentStatus(row.status),
     channel: toAppointmentChannel(row.channel),
+    purpose: toAppointmentPurpose(row.purpose),
     subjectType: toSubjectType(row.subjectType),
     subjectId: row.subjectId,
     contactName: row.contactName,
