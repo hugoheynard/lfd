@@ -374,8 +374,25 @@ Ouvert depuis l'en-tête (« Nous contacter »), l'appelant ne **sait pas** de q
 entreprise il s'agit — ce qui n'est pas la même chose que « aucune ». Le panneau
 la résout donc depuis le compte : une seule société, on la prend sans poser de
 question dont on connaît la réponse ; plusieurs, on demande laquelle ; aucune,
-seul le rendez-vous reste, et il porte sur la personne. Sans cette résolution,
-les deux chemins de repli disparaissaient purement et simplement de l'en-tête.
+la demande porte sur la seule personne.
+
+**Aucun des trois chemins n'exige une entreprise** (décision du 2026-08-09).
+`SupportRequest.company_id` est devenu nullable et la route s'est unifiée en
+`POST /support/activation`, portée par la personne, la société passant dans le
+corps : la mettre dans l'URL la rendait obligatoire par construction. Le mur
+(être membre) ne se vérifie donc **que si** le client désigne une société —
+même forme que la commande sans entreprise, et même raison : un prospect qui n'a
+rien déclaré est exactement la population qu'on cherche à capter, or le mur le
+renvoyait dans le vide.
+
+Deux conséquences à ne pas manquer :
+
+- la règle « une seule demande ouverte à la fois » se borne **par personne**
+  quand il n'y a pas de société — sinon un prospect en déposerait autant qu'il a
+  de clics ;
+- l'entrée de journal suit la demande : sujet `company` s'il y en a une, `user`
+  sinon. Un prospect sans entreprise laisse donc une trace sur lui, et non
+  aucune trace du tout.
 
 ### 6.2 Après la réservation
 

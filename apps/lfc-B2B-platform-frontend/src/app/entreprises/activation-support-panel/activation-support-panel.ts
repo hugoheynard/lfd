@@ -38,8 +38,7 @@ const PURPOSE_OPTIONS: readonly FoldSelectOption<AppointmentPurpose>[] = APPOINT
  * `null` = l'appelant **ne sait pas** de quelle entreprise il s'agit (l'icône
  * contact de l'en-tête). Ce n'est pas « aucune entreprise » : le panneau la
  * **résout** alors depuis le compte — une seule société, on la prend ; plusieurs,
- * on demande laquelle ; aucune, seul le rendez-vous reste (il porte sur la
- * personne, là où `SupportRequest` est muré par la société).
+ * on demande laquelle ; aucune, la demande porte sur la seule personne.
  */
 export interface SupportPanelData {
   readonly companyId: string | null;
@@ -61,6 +60,10 @@ const SLOT_WINDOW_DAYS = 21;
  * Le choix « prendre rendez-vous » n'est proposé **que si des créneaux existent** :
  * offrir un calendrier vide serait pire que ne rien offrir. Quand le commercial
  * n'a rien déclaré, le panneau retombe naturellement sur les deux autres chemins.
+ *
+ * **Aucun des trois ne dépend d'une entreprise.** Ni le rendez-vous ni la demande
+ * de contact n'en exigent : un prospect qui n'a rien déclaré est exactement la
+ * population qu'on cherche à capter, et le mur le renvoyait dans le vide.
  */
 @Component({
   selector: 'app-activation-support-panel',
@@ -160,25 +163,8 @@ export class ActivationSupportPanel {
     () => this.data()?.companyId == null && this.companies().length > 1,
   );
 
-  /**
-   * **Aucune** entreprise au compte : les deux chemins de repli n'ont nulle part
-   * où se poser, seule la réservation reste — elle portera sur la personne.
-   */
-  protected readonly bookingOnly = computed(
-    () => this.data()?.companyId == null && this.companies().length === 0,
-  );
-
   /** Le client est en train de réserver un créneau (et non de demander un rappel). */
-  protected readonly isBooking = computed(
-    () => this.canBook() && (this.bookingOnly() || (this.isPhone() && !this.asap())),
-  );
-
-  /**
-   * Rien à proposer : ni créneau ouvert, ni société sur laquelle déposer une
-   * demande. On le dit, et on renvoie vers le contact direct — plutôt qu'un
-   * formulaire qui n'aboutirait nulle part.
-   */
-  protected readonly nothingToOffer = computed(() => this.bookingOnly() && !this.canBook());
+  protected readonly isBooking = computed(() => this.canBook() && this.isPhone() && !this.asap());
 
   protected readonly openSlots = computed(() => this.slots());
   protected readonly today = isoDay(0);
@@ -215,12 +201,8 @@ export class ActivationSupportPanel {
     if (!this.isPhone()) {
       return true;
     }
-    if (this.bookingOnly()) {
-      return this.chosenSlot() !== '';
-    }
-    // Une demande de rappel ou d'e-mail se dépose SUR une société : tant qu'on
-    // n'a pas tranché laquelle, il n'y a rien à envoyer.
-    if (this.targetCompanyId() === null) {
+    // Plusieurs sociétés au compte et aucune choisie : on ne devine pas laquelle.
+    if (this.needsCompanyChoice() && this.targetCompanyId() === null) {
       return false;
     }
     if (this.resolvedPhone() === '') {
@@ -297,14 +279,9 @@ export class ActivationSupportPanel {
       this.bookSlot(companyId);
       return;
     }
-    // Les chemins de repli exigent une société : ils passent par SupportRequest,
-    // qui est muré. `canSubmit` l'a déjà garanti ; ce garde re-narrow le type.
-    if (companyId === null) {
-      this.submitting.set(false);
-      return;
-    }
     const phone = this.isPhone();
     const payload: ActivationSupportPayload = {
+      companyId,
       channel: this.channel(),
       purpose: this.purpose(),
       phoneNumber: phone ? this.resolvedPhone() : '',
@@ -313,7 +290,7 @@ export class ActivationSupportPanel {
       slot: null,
       message: this.message().trim(),
     };
-    this.support.requestActivation(companyId, payload).subscribe({
+    this.support.requestActivation(payload).subscribe({
       next: () => {
         this.placed.set(true);
         this.submitting.set(false);

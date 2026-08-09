@@ -21,16 +21,18 @@ export class SupportService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
 
-  requestActivation(
-    companyId: string,
-    payload: ActivationSupportPayload,
-  ): Observable<SupportRequestResponse> {
+  /**
+   * Route **unique**, portée par la personne : la société est dans le corps et
+   * peut valoir `null` — un prospect qui n'a pas encore déclaré d'entreprise
+   * doit pouvoir demander un rappel.
+   */
+  requestActivation(payload: ActivationSupportPayload): Observable<SupportRequestResponse> {
     return this.auth
       .accessToken$()
       .pipe(
         switchMap((token) =>
           this.http.post<SupportRequestResponse>(
-            `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/support/activation`,
+            `${AUTH_CONFIG.apiBaseUrl}/support/activation`,
             payload,
             { headers: { Authorization: `Bearer ${token}` } },
           ),

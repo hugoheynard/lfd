@@ -16,16 +16,6 @@
     <div class="foot">
       <button foldButton intent="primary" (click)="close()">Fermer</button>
     </div>
-  } @else if (nothingToOffer()) {
-    <!-- Ni créneau ouvert, ni société : on le dit plutôt que de montrer un
-         formulaire qui n'aboutirait nulle part. -->
-    <fold-callout appearance="inset" variant="info">
-      Aucun créneau n'est ouvert pour le moment. Joignez-nous directement — nos coordonnées sont
-      dans le panneau « Nous contacter ».
-    </fold-callout>
-    <div class="foot">
-      <button foldButton intent="primary" (click)="close()">Fermer</button>
-    </div>
   } @else {
     <!-- Le motif d'abord, et pour les TROIS chemins : « de quoi s'agit-il ? » est
          la même question qu'on réserve, qu'on demande un rappel ou qu'on écrive.
@@ -37,80 +27,72 @@
       (valueChange)="onPurpose($event)"
     />
 
-    <!-- Sans AUCUNE entreprise au compte, seule la réservation est possible : les
-         deux chemins de repli passent par une demande de support, qui est murée.
-         On le DIT plutôt que de les faire disparaître en silence — un chemin
-         absent sans explication se lit comme un bug, pas comme une règle. -->
-    @if (bookingOnly()) {
-      <fold-callout appearance="inset" variant="info">
-        Le rappel et l'échange par e-mail se rattachent à une entreprise, et vous n'en avez pas
-        encore déclaré. Prenez rendez-vous ci-dessous — nous vous appelons au créneau choisi.
-      </fold-callout>
-    } @else {
-      <!-- La question n'est posée que si elle a plusieurs réponses : avec une
-           seule société, on connaît déjà la sienne. -->
-      @if (needsCompanyChoice()) {
-        <fold-listbox
-          label="Pour quelle entreprise ?"
-          placeholder="Choisir…"
-          [options]="companyOptions()"
-          [value]="targetCompanyId()"
-          (valueChange)="onCompany($event)"
+    <!-- La question n'est posée que si elle a plusieurs réponses : avec une
+         seule société on connaît déjà la sienne, avec aucune la demande porte
+         simplement sur la personne. -->
+    @if (needsCompanyChoice()) {
+      <fold-listbox
+        label="Pour quelle entreprise ?"
+        placeholder="Choisir…"
+        [options]="companyOptions()"
+        [value]="targetCompanyId()"
+        (valueChange)="onCompany($event)"
+      />
+    }
+
+    <!-- Les trois chemins sont TOUJOURS ouverts : aucun n'exige une entreprise. -->
+
+    <fold-select
+      label="Comment souhaitez-vous que ça se passe ?"
+      [value]="channel()"
+      (valueChange)="onChannel($event)"
+    >
+      <option value="phone">Je veux être rappelé</option>
+      <option value="email">Je préfère échanger par e-mail</option>
+    </fold-select>
+
+    @if (isPhone()) {
+      @if (hasProfilePhone()) {
+        <p class="field-label">Numéro de rappel</p>
+        <p class="current-phone">{{ useOtherNumber() ? 'Autre numéro' : profilePhone() }}</p>
+        <fold-checkbox
+          label="Utiliser un autre numéro"
+          [checked]="useOtherNumber()"
+          (checkedChange)="useOtherNumber.set($event)"
+        />
+      }
+      @if (showCustomPhone()) {
+        <fold-input
+          label="Numéro de téléphone"
+          placeholder="06 12 34 56 78"
+          [value]="customPhone()"
+          (valueChange)="customPhone.set($event)"
         />
       }
 
-      <fold-select
-        label="Comment souhaitez-vous que ça se passe ?"
-        [value]="channel()"
-        (valueChange)="onChannel($event)"
-      >
-        <option value="phone">Je veux être rappelé</option>
-        <option value="email">Je préfère échanger par e-mail</option>
-      </fold-select>
-
-      @if (isPhone()) {
-        @if (hasProfilePhone()) {
-          <p class="field-label">Numéro de rappel</p>
-          <p class="current-phone">{{ useOtherNumber() ? 'Autre numéro' : profilePhone() }}</p>
-          <fold-checkbox
-            label="Utiliser un autre numéro"
-            [checked]="useOtherNumber()"
-            (checkedChange)="useOtherNumber.set($event)"
-          />
-        }
-        @if (showCustomPhone()) {
-          <fold-input
-            label="Numéro de téléphone"
-            placeholder="06 12 34 56 78"
-            [value]="customPhone()"
-            (valueChange)="customPhone.set($event)"
-          />
-        }
-
-        <!-- On ne propose de choisir un créneau que s'il y en a. Et « au plus
-             vite » dit CE QU'IL VAUT : sans repère, personne ne sait s'il sera
-             rappelé dans l'heure ou la semaine prochaine. -->
-        @if (canBook()) {
-          <fold-checkbox
-            label="Au plus vite"
-            [hint]="
-              soonest()
-                ? 'Nous vous rappelons dès que possible — au plus tôt ' +
-                  soonest() +
-                  '. Décochez pour choisir vous-même.'
-                : 'Décochez pour choisir un créneau.'
-            "
-            [checked]="asap()"
-            (checkedChange)="asap.set($event)"
-          />
-        }
-      } @else {
-        <fold-callout appearance="inset" variant="info">
-          Nous répondrons à <strong>{{ profileEmail() }}</strong
-          >, en objet : <strong>{{ purposeLabel() }}</strong
-          >.
-        </fold-callout>
+      <!-- On ne propose de choisir un créneau que s'il y en a. Et « au plus
+           vite » dit CE QU'IL VAUT : sans repère, personne ne sait s'il sera
+           rappelé dans l'heure ou la semaine prochaine. -->
+      @if (canBook()) {
+        <fold-checkbox
+          label="Au plus vite"
+          [hint]="
+            soonest()
+              ? 'Nous vous rappelons dès que possible — au plus tôt ' +
+                soonest() +
+                '. Décochez pour choisir vous-même.'
+              : 'Décochez pour choisir un créneau.'
+          "
+          [checked]="asap()"
+          (checkedChange)="asap.set($event)"
+        />
       }
+    } @else {
+      <fold-callout appearance="inset" variant="info">
+        Nous répondrons à <strong>{{ profileEmail() }}</strong
+        >, en objet : <strong>{{ purposeLabel() }}</strong
+        >.
+      </fold-callout>
     }
 
     @if (isBooking()) {
