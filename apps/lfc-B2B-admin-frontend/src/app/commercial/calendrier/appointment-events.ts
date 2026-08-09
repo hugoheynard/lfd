@@ -2,7 +2,7 @@ import type { FoldCalendarEvent, FoldCalendarSource, FoldCalendarTone } from 'fo
 import type { AppointmentStatus, AppointmentView } from '@lfd/contracts';
 
 /**
- * Projection **pure** des rendez-vous sur le calendrier d'acquisition.
+ * Projection **pure** des rendez-vous sur le calendrier du commercial.
  *
  * Différence de nature avec les bandes d'inscription/attente : un rendez-vous est
  * **daté et horodaté**. Il porte donc `startTime`/`endTime`, ce qui le place sur

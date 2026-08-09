@@ -28,6 +28,6 @@ export class CommercialPage {
       icon: 'check-circle',
     },
     { key: 'croissance', label: 'Croissance', link: 'croissance', icon: 'trending-up' },
-    { key: 'acquisition', label: 'Acquisition', link: 'acquisition', icon: 'calendar' },
+    { key: 'calendrier', label: 'Calendrier', link: 'calendrier', icon: 'calendar' },
   ];
 }

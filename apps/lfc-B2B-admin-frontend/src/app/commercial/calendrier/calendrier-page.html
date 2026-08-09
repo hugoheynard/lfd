@@ -1,20 +1,23 @@
-<section class="acq">
-  <div class="acq-bar">
+<section class="cal">
+  <div class="cal-bar">
+    <!-- Un seul flux : pas de chips. Filtrer une liste qui n'a qu'une source ne
+         peut que la vider. -->
     <fold-calendar-toolbar [(date)]="date" [(view)]="view" [today]="today()" [views]="views" />
-    <fold-calendar-source-filter [sources]="sources" [events]="events()" [(active)]="active" />
   </div>
 
   @if (state() === 'error') {
-    <p class="acq-error" role="alert">Serveur injoignable — le backend B2B est-il démarré ?</p>
+    <p class="cal-error" role="alert">
+      Les rendez-vous n'ont pas pu être chargés — le backend B2B est-il démarré ?
+    </p>
   }
 
-  <div class="acq-body">
-    <div class="acq-cal">
+  <div class="cal-body">
+    <div class="cal-grid">
       @switch (view()) {
         @case ('week') {
           <fold-calendar-week
             [date]="date()"
-            [events]="visibleEvents()"
+            [events]="events()"
             [today]="today()"
             (eventClick)="openEvent($event)"
           />
@@ -22,7 +25,7 @@
         @case ('day') {
           <fold-calendar-day
             [date]="date()"
-            [events]="visibleEvents()"
+            [events]="events()"
             [today]="today()"
             (eventClick)="openEvent($event)"
           />
@@ -30,7 +33,7 @@
         @default {
           <fold-calendar-month
             [(month)]="date"
-            [events]="visibleEvents()"
+            [events]="events()"
             [today]="today()"
             maxLanes="4"
             (eventClick)="openEvent($event)"
@@ -39,10 +42,10 @@
       }
     </div>
 
-    <aside class="acq-aside">
+    <aside class="cal-aside">
       <fold-calendar-agenda
         [from]="today() ?? date()"
-        [events]="visibleEvents()"
+        [events]="events()"
         [(mode)]="agendaMode"
         [(collapsed)]="agendaCollapsed"
         (eventClick)="openEvent($event)"

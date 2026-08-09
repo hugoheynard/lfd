@@ -3,14 +3,14 @@
   container-type: inline-size;
 }
 
-.acq {
+.cal {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg);
 }
 
 // Toolbar à gauche, chips de flux à droite ; empile sous les petites largeurs.
-.acq-bar {
+.cal-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -19,18 +19,18 @@
 }
 
 // Le calendrier prend la place, le rail « à traiter » se cale à droite.
-.acq-body {
+.cal-body {
   display: flex;
   align-items: flex-start;
   gap: var(--fold-space-lg);
 }
 
-.acq-cal {
+.cal-grid {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.acq-aside {
+.cal-aside {
   flex: 0 0 auto;
   position: sticky;
   top: var(--fold-space-lg);
@@ -38,17 +38,17 @@
 
 // Sous 900px le rail passe sous le calendrier plutôt que de l'écraser.
 @container (max-width: 900px) {
-  .acq-body {
+  .cal-body {
     flex-direction: column;
   }
 
-  .acq-aside {
+  .cal-aside {
     position: static;
     align-self: stretch;
   }
 }
 
-.acq-error {
+.cal-error {
   margin: 0;
   padding: var(--fold-space-md);
   border: 1px solid var(--fold-color-alert-border);

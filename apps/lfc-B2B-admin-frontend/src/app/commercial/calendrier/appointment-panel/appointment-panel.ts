@@ -10,6 +10,7 @@ import { purposeShort } from '@lfd/b2b-ui/appointment';
 
 import { NotifyService } from '../../../notify.service';
 import { AvailabilityService } from '../../availability/availability.service';
+import { CustomerSheet } from '../customer-sheet/customer-sheet';
 
 /** Charge d'ouverture : le rendez-vous cliqué dans le calendrier. */
 export interface AppointmentPanelData {
@@ -31,8 +32,14 @@ const CHANNEL_LABEL: Record<string, string> = {
 };
 
 /**
- * Panneau d'un **rendez-vous** : son détail (contact, canal, message, sujet) et
- * les actions du commercial — confirmer, honoré, absent, annuler.
+ * Panneau d'un **rendez-vous** : la demande (motif, contact, canal, message), les
+ * actions du commercial — confirmer, honoré, absent, annuler — et, quand le
+ * rendez-vous porte sur une **société**, sa fiche commerciale complète.
+ *
+ * La demande d'abord, le client ensuite : on décroche pour un motif, pas pour un
+ * dossier. La fiche répond à la question suivante — « à qui je parle, et que
+ * pèse ce compte ». Un rendez-vous sur un lead ou une personne n'en a pas : il
+ * n'y a pas encore de compte à décrire, et on ne montre pas une carte vide.
  *
  * Les actions proposées dépendent de l'état : un rendez-vous clos n'en offre
  * aucune, et « honoré / absent » n'apparaissent qu'une fois l'heure passée —
@@ -43,7 +50,7 @@ const CHANNEL_LABEL: Record<string, string> = {
 @Component({
   selector: 'app-appointment-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldButtonComponent],
+  imports: [FoldPanelHeaderComponent, FoldButtonComponent, CustomerSheet],
   templateUrl: './appointment-panel.html',
   styleUrl: './appointment-panel.scss',
 })
@@ -67,6 +74,15 @@ export class AppointmentPanel {
   protected readonly purposeLabel = computed(() => {
     const rdv = this.appointment();
     return rdv === null ? '—' : purposeShort(rdv.purpose);
+  });
+
+  /**
+   * La société du rendez-vous, ou `null`. C'est elle qui décide si la fiche
+   * commerciale a lieu d'être — un lead n'a pas encore de compte.
+   */
+  protected readonly companyId = computed(() => {
+    const rdv = this.appointment();
+    return rdv !== null && rdv.subjectType === 'company' ? rdv.subjectId : null;
   });
 
   protected readonly channelLabel = computed(() => {
