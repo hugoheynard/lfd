@@ -40,6 +40,14 @@ export class PrismaAppointmentReader extends AppointmentReader {
     return rows.map(rowToAppointmentView);
   }
 
+  async byId(appointmentId: string): Promise<AppointmentView | null> {
+    const row = await this.prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      select: VIEW_SELECT,
+    });
+    return row === null ? null : rowToAppointmentView(row);
+  }
+
   async listUpcomingFor(
     subjectType: string,
     subjectIds: readonly string[],

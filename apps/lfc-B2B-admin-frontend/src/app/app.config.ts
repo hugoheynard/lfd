@@ -5,7 +5,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
@@ -16,7 +16,11 @@ import { SuiteEmbed } from './suite-embed/suite-embed';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
+    // `withComponentInputBinding` : un segment de route arrive dans un `input()`
+    // du composant, sans passer par `ActivatedRoute`. C'est ce qui permet à une
+    // page de détail de se charger depuis son ADRESSE, donc de survivre à un
+    // rafraîchissement et à un lien partagé.
+    provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withFetch()),
     // Toasts d'opération (succès/échec). Durées par défaut de fold : succès bref,
     // erreur **sticky** (à fermer, pas à rater).

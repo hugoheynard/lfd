@@ -28,6 +28,7 @@ import {
   OnSupportHandled,
   OnSupportRequested,
 } from "./application/handlers/on-support-activity.handler.js";
+import { GetAppointmentHandler } from "./application/queries/get-appointment.handler.js";
 import { GetAvailabilityHandler } from "./application/queries/get-availability.handler.js";
 import { GetCockpitHandler } from "./application/queries/get-cockpit.handler.js";
 import { GetSlotsHandler } from "./application/queries/get-slots.handler.js";
@@ -175,6 +176,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     SaveAvailabilityHandler,
     SaveAvailabilityExceptionsHandler,
     SaveBookingPolicyHandler,
+    GetAppointmentHandler,
     GetAvailabilityHandler,
     GetSlotsHandler,
     BookAppointmentHandler,

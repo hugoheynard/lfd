@@ -1,0 +1,113 @@
+<fold-page-layout icon="calendar" [title]="'Rendez-vous du ' + (appointment()?.day ?? '')">
+  <fold-back-link pageBack routerLink="/commercial/calendrier" label="Retour au calendrier" />
+
+  @if (state() === 'missing') {
+    <fold-empty-state
+      title="Rendez-vous introuvable"
+      subtitle="Il a peut-être été supprimé, ou le lien est erroné."
+    />
+  } @else if (appointment(); as rdv) {
+    <!-- La DEMANDE d'abord : on décroche pour un motif, pas pour un dossier. -->
+    <fold-card class="rv-card">
+      <fold-element-title
+        cardHeader
+        variant="title"
+        icon="planning"
+        [title]="rdv.time + ' → ' + rdv.endTime"
+        [subtitle]="statusLabel()"
+      />
+
+      <dl class="ap-facts">
+        <dt>Contact</dt>
+        <dd>{{ rdv.contactName || '—' }}</dd>
+
+        <!-- Le motif d'abord : c'est lui qui dit s'il faut préparer un devis ou
+           sortir un dossier avant de décrocher. -->
+        <dt>Motif</dt>
+        <dd>{{ purposeLabel() }}</dd>
+
+        <dt>Canal</dt>
+        <dd>{{ channelLabel() }}</dd>
+
+        @if (rdv.contactPhone !== '') {
+          <dt>Téléphone</dt>
+          <dd>
+            <a [href]="'tel:' + rdv.contactPhone">{{ rdv.contactPhone }}</a>
+          </dd>
+        }
+
+        @if (rdv.contactEmail !== '') {
+          <dt>E-mail</dt>
+          <dd>
+            <a [href]="'mailto:' + rdv.contactEmail">{{ rdv.contactEmail }}</a>
+          </dd>
+        }
+
+        <dt>Horaire</dt>
+        <dd>{{ rdv.time }} → {{ rdv.endTime }}</dd>
+      </dl>
+
+      @if (rdv.message !== '') {
+        <section class="ap-message">
+          <h3 class="ap-subtitle">Message</h3>
+          <p>{{ rdv.message }}</p>
+        </section>
+      }
+
+      @if (rdv.cancelReason !== '') {
+        <p class="ap-cancelled">Annulé — {{ rdv.cancelReason }}</p>
+      }
+
+      @if (pending(); as action) {
+        <section cardFooter class="ap-reason">
+          <label class="ap-reason-label" for="ap-reason-input">
+            Motif de l'annulation (obligatoire)
+          </label>
+          <input
+            #reasonInput
+            id="ap-reason-input"
+            type="text"
+            class="ap-reason-input"
+            [value]="reason()"
+            (input)="setReason(reasonInput.value)"
+          />
+          <div class="ap-reason-actions">
+            <button foldButton emphasis="outline" intent="neutral" (click)="cancelReason()">
+              Revenir
+            </button>
+            <button
+              foldButton
+              intent="danger"
+              [disabled]="busy() || reason().trim() === ''"
+              (click)="confirmReason()"
+            >
+              {{ action.label }}
+            </button>
+          </div>
+        </section>
+      } @else if (actions().length > 0) {
+        <div cardFooter class="ap-actions">
+          @for (action of actions(); track action.status) {
+            <button
+              foldButton
+              [emphasis]="action.needsReason ? 'outline' : 'solid'"
+              [intent]="action.needsReason ? 'danger' : 'primary'"
+              [disabled]="busy()"
+              (click)="start(action)"
+            >
+              {{ action.label }}
+            </button>
+          }
+        </div>
+      }
+    </fold-card>
+
+    <!-- La fiche du client, sous la demande. Absente sur un lead — il n'y a pas
+         encore de compte à décrire. -->
+    @if (companyId(); as companyId) {
+      <app-customer-sheet [companyId]="companyId" />
+    }
+  } @else {
+    <fold-loading message="Chargement du rendez-vous…" />
+  }
+</fold-page-layout>

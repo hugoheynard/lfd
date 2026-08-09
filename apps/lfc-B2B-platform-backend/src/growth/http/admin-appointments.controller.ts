@@ -37,6 +37,7 @@ import { SaveAvailabilityCommand } from "../application/commands/save-availabili
 import { SaveBookingPolicyCommand } from "../application/commands/save-booking-policy.command.js";
 import { ScheduleAppointmentCommand } from "../application/commands/schedule-appointment.command.js";
 import { TransitionAppointmentCommand } from "../application/commands/transition-appointment.command.js";
+import { GetAppointmentQuery } from "../application/queries/get-appointment.query.js";
 import { GetAvailabilityQuery } from "../application/queries/get-availability.query.js";
 import { GetSlotsQuery } from "../application/queries/get-slots.query.js";
 import { ListAppointmentsQuery } from "../application/queries/list-appointments.query.js";
@@ -116,6 +117,12 @@ export class AdminAppointmentsController {
     return this.queries.execute<ListAppointmentsQuery, readonly AppointmentView[]>(
       new ListAppointmentsQuery(from, to),
     );
+  }
+
+  /** **Un** rendez-vous, pour sa page dédiée (lien direct, rafraîchissement). */
+  @Get("appointments/:id")
+  byId(@Param("id") id: string): Promise<AppointmentView> {
+    return this.queries.execute<GetAppointmentQuery, AppointmentView>(new GetAppointmentQuery(id));
   }
 
   @Post("appointments")

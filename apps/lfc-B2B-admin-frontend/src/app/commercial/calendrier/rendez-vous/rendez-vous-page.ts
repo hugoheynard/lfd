@@ -1,9 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+import { RouterLink } from '@angular/router';
+import {
+  FoldBackLinkComponent,
   FoldButtonComponent,
-  FoldPanelHeaderComponent,
-  FoldPanelRef,
-  type FoldPanelDefaults,
+  FoldCardComponent,
+  FoldElementTitleComponent,
+  FoldPageLayoutComponent,
+  FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
 } from 'fold-ng';
 import type { AppointmentTransition, AppointmentView } from '@lfd/contracts';
 import { purposeShort } from '@lfd/b2b-ui/appointment';
@@ -11,11 +23,6 @@ import { purposeShort } from '@lfd/b2b-ui/appointment';
 import { NotifyService } from '../../../notify.service';
 import { AvailabilityService } from '../../availability/availability.service';
 import { CustomerSheet } from '../customer-sheet/customer-sheet';
-
-/** Charge d'ouverture : le rendez-vous cliqué dans le calendrier. */
-export interface AppointmentPanelData {
-  readonly appointment: AppointmentView;
-}
 
 /** Une action proposée, avec ce qu'elle exige. */
 interface Action {
@@ -25,6 +32,14 @@ interface Action {
   readonly needsReason: boolean;
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  requested: 'Demandé — à confirmer',
+  confirmed: 'Confirmé',
+  honored: 'Honoré',
+  no_show: 'Client absent',
+  cancelled: 'Annulé',
+};
+
 const CHANNEL_LABEL: Record<string, string> = {
   phone: 'Téléphone',
   visio: 'Visio',
@@ -32,43 +47,71 @@ const CHANNEL_LABEL: Record<string, string> = {
 };
 
 /**
- * Panneau d'un **rendez-vous** : la demande (motif, contact, canal, message), les
- * actions du commercial — confirmer, honoré, absent, annuler — et, quand le
- * rendez-vous porte sur une **société**, sa fiche commerciale complète.
+ * Page **d'un rendez-vous** : la demande (motif, contact, canal, message), les
+ * actions du commercial — confirmer, honoré, absent, annuler — et, quand il porte
+ * sur une **société**, sa fiche commerciale complète.
+ *
+ * Une page et non un panneau : c'est ici qu'on **travaille** un rendez-vous, avec
+ * la fiche du client sous les yeux. Un tiroir оblige à choisir entre l'agenda et
+ * le dossier, et ne se partage pas — une page a une adresse, se rafraîchit, se
+ * garde ouverte dans un onglet pendant l'appel.
+ *
+ * Elle se charge donc **par son identifiant**, pas depuis ce que le calendrier
+ * lui aurait passé : un lien direct doit fonctionner.
  *
  * La demande d'abord, le client ensuite : on décroche pour un motif, pas pour un
- * dossier. La fiche répond à la question suivante — « à qui je parle, et que
- * pèse ce compte ». Un rendez-vous sur un lead ou une personne n'en a pas : il
- * n'y a pas encore de compte à décrire, et on ne montre pas une carte vide.
- *
- * Les actions proposées dépendent de l'état : un rendez-vous clos n'en offre
- * aucune, et « honoré / absent » n'apparaissent qu'une fois l'heure passée —
- * c'est le domaine qui refuserait sinon, autant ne pas les montrer.
- *
- * Ferme avec `true` quand quelque chose a changé, pour que la page recharge.
+ * dossier. Un rendez-vous sur un lead ou une personne n'a pas de fiche — il n'y a
+ * pas encore de compte à décrire, et on ne montre pas une carte vide.
  */
 @Component({
-  selector: 'app-appointment-panel',
+  selector: 'app-rendez-vous-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldButtonComponent, CustomerSheet],
-  templateUrl: './appointment-panel.html',
-  styleUrl: './appointment-panel.scss',
+  imports: [
+    RouterLink,
+    FoldPageLayoutComponent,
+    FoldBackLinkComponent,
+    FoldCardComponent,
+    FoldElementTitleComponent,
+    FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
+    FoldButtonComponent,
+    CustomerSheet,
+  ],
+  templateUrl: './rendez-vous-page.html',
+  styleUrl: './rendez-vous-page.scss',
 })
-export class AppointmentPanel {
-  static readonly foldPanel: FoldPanelDefaults = { modal: false, surface: 'solid', side: 'auto' };
-
+export class RendezVousPage {
   private readonly service = inject(AvailabilityService);
   private readonly notify = inject(NotifyService);
-  private readonly ref = inject(FoldPanelRef<boolean>);
 
-  readonly data = input<AppointmentPanelData | undefined>(undefined);
+  /** Lié au segment de route (`withComponentInputBinding`). */
+  readonly appointmentId = input.required<string>();
+
+  protected readonly state = signal<'loading' | 'ready' | 'missing'>('loading');
 
   protected readonly busy = signal(false);
   protected readonly reason = signal('');
   /** L'action qui attend son motif ; `null` quand aucune n'est en cours de saisie. */
   protected readonly pending = signal<Action | null>(null);
 
-  protected readonly appointment = computed(() => this.data()?.appointment ?? null);
+  protected readonly appointment = signal<AppointmentView | null>(null);
+
+  constructor() {
+    effect(() => {
+      void this.load(this.appointmentId());
+    });
+  }
+
+  /** Charge le rendez-vous. Introuvable = un état de page, pas un toast fugace. */
+  protected async load(appointmentId: string): Promise<void> {
+    this.state.set('loading');
+    try {
+      this.appointment.set(await this.service.byId(appointmentId));
+      this.state.set('ready');
+    } catch {
+      this.state.set('missing');
+    }
+  }
 
   /** Le motif, en version courte — le vocabulaire est partagé avec le client. */
   protected readonly purposeLabel = computed(() => {
@@ -84,6 +127,11 @@ export class AppointmentPanel {
     const rdv = this.appointment();
     return rdv !== null && rdv.subjectType === 'company' ? rdv.subjectId : null;
   });
+
+  /** L'état, en clair — il porte l'en-tête de la carte. */
+  protected readonly statusLabel = computed(
+    () => STATUS_LABEL[this.appointment()?.status ?? ''] ?? '',
+  );
 
   protected readonly channelLabel = computed(() => {
     const channel = this.appointment()?.channel ?? '';
@@ -136,10 +184,6 @@ export class AppointmentPanel {
     this.reason.set(value);
   }
 
-  protected close(): void {
-    this.ref.close(false);
-  }
-
   private async apply(action: Action, reason: string): Promise<void> {
     const appointment = this.appointment();
     if (appointment === null || this.busy()) {
@@ -149,7 +193,11 @@ export class AppointmentPanel {
     try {
       await this.service.transition(appointment.id, { status: action.status, reason });
       this.notify.success(`Rendez-vous : ${action.label.toLowerCase()}.`);
-      this.ref.close(true);
+      // On relit plutôt que de patcher en mémoire : l'état affiché est alors
+      // celui du serveur, actions disponibles comprises.
+      this.pending.set(null);
+      this.reason.set('');
+      await this.load(appointment.id);
     } catch {
       this.notify.error("L'action a échoué. Réessayez.");
     } finally {

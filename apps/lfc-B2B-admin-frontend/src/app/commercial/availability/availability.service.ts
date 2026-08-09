@@ -75,6 +75,11 @@ export class AvailabilityService {
     return this.request<readonly AppointmentView[]>('GET', `${this.base}/appointments?${query}`);
   }
 
+  /** **Un** rendez-vous, pour sa page dédiée — un lien direct doit fonctionner. */
+  byId(appointmentId: string): Promise<AppointmentView> {
+    return this.request<AppointmentView>('GET', `${this.base}/appointments/${appointmentId}`);
+  }
+
   schedule(payload: StaffBookAppointmentPayload): Promise<CreatedAppointmentResponse> {
     return this.request<CreatedAppointmentResponse>('POST', `${this.base}/appointments`, payload);
   }

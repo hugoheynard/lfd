@@ -1,8 +1,11 @@
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-lg);
-  padding: var(--fold-space-lg);
+/* Les cartes de la page respirent au rythme de la page, pas de marges posées
+   carte par carte. */
+:host {
+  display: block;
+}
+
+.rv-card {
+  margin-bottom: var(--fold-space-lg);
 }
 
 .ap-facts {
@@ -40,12 +43,6 @@
   font-style: italic;
 }
 
-.ap-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
-}
-
 .ap-closed {
   margin: 0;
   color: var(--fold-color-text-muted);
@@ -74,7 +71,7 @@
 }
 
 .ap-reason-actions,
-.foot {
+.ap-actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--fold-space-sm);

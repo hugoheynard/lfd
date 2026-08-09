@@ -84,9 +84,19 @@ export const routes: Routes = [
       },
       {
         path: 'calendrier',
-        title: 'Acquisition — LFC B2B admin',
+        title: 'Calendrier — LFC B2B admin',
         loadComponent: () =>
           import('./commercial/calendrier/calendrier-page').then((m) => m.CalendrierPage),
+      },
+      {
+        // La fiche d'un rendez-vous est une PAGE : elle a une adresse, se
+        // rafraîchit, et se garde ouverte dans un onglet pendant l'appel.
+        path: 'calendrier/:appointmentId',
+        title: 'Rendez-vous — LFC B2B admin',
+        loadComponent: () =>
+          import('./commercial/calendrier/rendez-vous/rendez-vous-page').then(
+            (m) => m.RendezVousPage,
+          ),
       },
     ],
   },

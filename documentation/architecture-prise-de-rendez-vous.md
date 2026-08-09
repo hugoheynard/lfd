@@ -340,7 +340,23 @@ La tendance monte parce que **deux** commandes tombent dans les 30 derniers jour
 contre **une** dans les 30 précédents : c'est le cas qu'on veut voir à l'écran, et
 il ne s'obtient pas avec trois commandes posées le même jour.
 
-### 5.2 Onglet Acquisition — les rendez-vous deviennent réels
+### 5.2 Calendrier, et la PAGE d'un rendez-vous
+
+La page **Calendrier** ne trace que des rendez-vous (cf. §5.1 bis). Cliquer l'un
+d'eux **navigue** vers `/commercial/calendrier/:appointmentId` — une page, pas un
+tiroir.
+
+Le choix compte : c'est là qu'on **travaille** un rendez-vous, la fiche du client
+sous les yeux. Un panneau oblige à choisir entre l'agenda et le dossier, ne se
+partage pas, et disparaît au rafraîchissement. Une page a une adresse : elle se
+garde ouverte dans un onglet pendant l'appel, se recharge, s'envoie.
+
+Elle se charge donc **par son identifiant** (`GET /admin/appointments/:id`), et
+non depuis ce que le calendrier lui aurait passé en mémoire — sans quoi un lien
+direct n'afficherait rien. Le segment de route arrive dans un `input()` grâce à
+`withComponentInputBinding`.
+
+### 5.3 Onglet Acquisition — les rendez-vous deviennent réels
 
 Le calendrier existant gagne une **quatrième source** (`rdv`), et cette fois
 c'est un vrai événement :

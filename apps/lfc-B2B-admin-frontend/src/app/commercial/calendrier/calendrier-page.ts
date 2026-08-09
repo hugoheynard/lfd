@@ -6,8 +6,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import {
-  FoldPanelHostService,
   FoldCalendarAgendaComponent,
   FoldCalendarDayComponent,
   FoldCalendarMonthComponent,
@@ -23,7 +23,6 @@ import type { AppointmentView } from '@lfd/contracts';
 
 import { AvailabilityService } from '../availability/availability.service';
 import { buildAppointmentEvents } from './appointment-events';
-import { AppointmentPanel, type AppointmentPanelData } from './appointment-panel/appointment-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -70,7 +69,7 @@ type CalendarEvent = FoldCalendarEvent<AppointmentView>;
 })
 export class CalendrierPage {
   private readonly appointmentsApi = inject(AvailabilityService);
-  private readonly panels = inject(FoldPanelHostService);
+  private readonly router = inject(Router);
 
   /** Le jour courant, posé au 1er rendu navigateur — `undefined` en SSR. */
   protected readonly today = signal<FoldCalendarDate | undefined>(undefined);
@@ -107,18 +106,15 @@ export class CalendrierPage {
     }
   }
 
-  /** Ouvre la **fiche commerciale** du rendez-vous cliqué. */
+  /**
+   * Ouvre la **page** du rendez-vous cliqué. Une page et non un tiroir : c'est là
+   * qu'on travaille, avec la fiche du client sous les yeux — et elle se partage,
+   * se rafraîchit, se garde ouverte pendant l'appel.
+   */
   protected async openEvent(event: CalendarEvent): Promise<void> {
     const appointment = this.appointments().find((a) => `appt:${a.id}` === event.id);
-    if (appointment === undefined) {
-      return;
-    }
-    const ref = this.panels.open<AppointmentPanelData, boolean>(AppointmentPanel, {
-      data: { appointment },
-      width: 'md',
-    });
-    if ((await ref.closed) === true) {
-      await this.load();
+    if (appointment !== undefined) {
+      await this.router.navigate(['/commercial/calendrier', appointment.id]);
     }
   }
 }
