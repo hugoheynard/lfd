@@ -1,0 +1,38 @@
+@if (cards().length === 0) {
+  <fold-empty-state
+    title="Aucun compte épinglé"
+    subtitle="Épinglez un client depuis sa fiche pour le garder ici, sous les yeux."
+    icon="star"
+  />
+} @else {
+  <ul class="pa-grid">
+    @for (card of cards(); track card.company.id) {
+      <li>
+        <a class="pa-card" [routerLink]="['/comptes-clients', card.company.id]">
+          <span class="pa-top">
+            <fold-badge [variant]="card.variant" [content]="card.status" size="sm" />
+            <button
+              type="button"
+              class="pa-unpin"
+              [attr.aria-label]="'Retirer ' + card.company.raisonSociale + ' des épinglés'"
+              (click)="unpin($event, card.company.id)"
+            >
+              <fold-icon name="close" size="xs" />
+            </button>
+          </span>
+
+          <span class="pa-name">{{ card.company.raisonSociale }}</span>
+          <span class="pa-ref">{{ card.company.reference }}</span>
+
+          <!-- Le seul signal qui appelle une action depuis une carte épinglée. -->
+          @if (card.company.hasOpenSupportRequest) {
+            <span class="pa-flag">
+              <fold-icon name="bell" size="xs" />
+              Demande de rappel ouverte
+            </span>
+          }
+        </a>
+      </li>
+    }
+  </ul>
+}

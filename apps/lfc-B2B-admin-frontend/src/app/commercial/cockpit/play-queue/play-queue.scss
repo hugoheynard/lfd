@@ -1,0 +1,152 @@
+:host {
+  display: block;
+}
+
+.pq-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.5rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: play;
+}
+
+/* Une barre de ton sur le bord d'attaque : le play se lit avant le nom, ce qui
+   est l'ordre dans lequel on décide d'appeler ou pas. */
+.pq-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+  padding: var(--fold-space-md, 1rem);
+  padding-inline-start: calc(var(--fold-space-md, 1rem) + 3px);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface-card, var(--fold-color-surface));
+  overflow: hidden;
+  transition:
+    border-color var(--fold-motion-fast, 0.15s),
+    box-shadow var(--fold-motion-fast, 0.15s);
+}
+
+.pq-row::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 3px;
+  background: var(--pq-tone, var(--fold-color-border));
+}
+
+.pq-row:hover {
+  border-color: var(--fold-color-border);
+  box-shadow: var(--fold-shadow-sm);
+}
+
+/* Le ton par play — une seule table, ici, plutôt qu'une classe par cas. */
+.pq-row[data-play='lock_in'] {
+  --pq-tone: var(--fold-color-warning);
+}
+.pq-row[data-play='rescue'] {
+  --pq-tone: var(--fold-color-alert);
+}
+.pq-row[data-play='upgrade'] {
+  --pq-tone: var(--fold-color-success);
+}
+.pq-row[data-play='win_back'] {
+  --pq-tone: var(--fold-color-info);
+}
+.pq-row[data-play='nurture'] {
+  --pq-tone: var(--fold-color-border);
+}
+
+.pq-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: var(--fold-radius-round, 50%);
+  background: var(--fold-color-surface-sunken, var(--fold-color-surface-subtle));
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pq-body {
+  min-inline-size: 0;
+}
+
+.pq-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.pq-who {
+  font-weight: 650;
+}
+
+.pq-reason {
+  margin: 0.2rem 0 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  line-height: 1.45;
+}
+
+.pq-hint {
+  margin: 0.1rem 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+}
+
+.pq-score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  inline-size: 4rem;
+}
+
+.pq-num {
+  font-size: var(--fold-text-xl, 1.25rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.pq-gauge {
+  inline-size: 100%;
+  block-size: 3px;
+  border-radius: var(--fold-radius-pill, 999px);
+  background: var(--fold-color-surface-sunken, var(--fold-color-border));
+  overflow: hidden;
+}
+
+.pq-gauge-fill {
+  display: block;
+  block-size: 100%;
+  border-radius: inherit;
+  background: var(--pq-tone, var(--fold-color-primary));
+}
+
+@media (max-width: 40rem) {
+  .pq-row {
+    grid-template-columns: auto 1fr;
+  }
+
+  .pq-score {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    inline-size: 100%;
+  }
+
+  .pq-gauge {
+    inline-size: auto;
+    flex: 1;
+  }
+}

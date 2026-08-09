@@ -1,72 +1,95 @@
-<section class="page">
-  <header class="page-head">
-    <div>
+<section class="ck">
+  <!-- L'en-tête porte les chiffres de tête : on n'ouvre pas un onglet pour
+       savoir combien de prospects on a. -->
+  <header class="ck-hero">
+    <div class="ck-hero-text">
+      <p class="ck-eyebrow">Commercial</p>
       <h1>Tableau de bord</h1>
-      <p class="subtitle">
-        Les 5 meilleurs coups du jour — la file scorée, chaque lead avec la motion à jouer.
-      </p>
+      <p class="ck-sub">La journée, ceux qui attendent, et les coups à jouer.</p>
     </div>
-    @if (state() === 'ready' && computedAt(); as at) {
-      <span class="freshness">Recalculé le {{ freshnessLabel(at) }}</span>
+
+    @if (kpis().length > 0) {
+      <a class="ck-kpis" routerLink="../croissance" aria-label="Voir la croissance en détail">
+        @for (kpi of kpis(); track kpi.label) {
+          <span class="ck-kpi">
+            <span class="ck-kpi-value">{{ kpi.value }}</span>
+            <span class="ck-kpi-label">{{ kpi.label }}</span>
+          </span>
+        }
+        @if (spark(); as option) {
+          <app-chart class="ck-spark" [option]="option" height="44px" />
+        }
+      </a>
     }
   </header>
 
   @switch (state()) {
     @case ('loading') {
-      <p class="state">Chargement de la file…</p>
+      <p class="ck-state">Chargement…</p>
     }
     @case ('error') {
-      <div class="state">
+      <div class="ck-state">
         <p>Impossible de charger le tableau de bord.</p>
         <button foldButton (click)="load()">Réessayer</button>
       </div>
     }
     @default {
-      @if (stats(); as s) {
-        <a class="recap" routerLink="../croissance">
-          <div class="recap-kpis">
-            @for (kpi of recap(); track kpi.label) {
-              <div class="recap-kpi">
-                <span class="recap-value">{{ kpi.value }}</span>
-                <span class="recap-label">{{ kpi.label }}</span>
-              </div>
-            }
-          </div>
-          @if (spark(); as opt) {
-            <app-chart class="recap-spark" [option]="opt" height="52px" />
-          }
-          <span class="recap-cta">Croissance →</span>
-        </a>
+      <!-- Les épinglés en premier : ce sont les comptes qu'on a DÉCIDÉ de suivre,
+           donc le seul bloc que le commercial a lui-même composé. -->
+      @if (pinnedCompanies().length > 0) {
+        <section class="ck-block">
+          <h2 class="ck-h2">Comptes suivis</h2>
+          <app-pinned-accounts [companies]="pinnedCompanies()" (unpinned)="unpin($event)" />
+        </section>
       }
 
-      @if (leads().length === 0) {
-        <div class="state">
-          <p>Aucun coup à jouer pour l’instant.</p>
-          <p class="muted">
-            La file se remplira au prochain recalcul, dès qu’un lead devient actionnable.
-          </p>
-        </div>
-      } @else {
-        <ol class="queue">
-          @for (lead of leads(); track lead.subjectId; let i = $index) {
-            <li class="play-card">
-              <span class="rank">{{ i + 1 }}</span>
-              <div class="body">
-                <div class="line">
-                  <fold-badge [variant]="play(lead).variant" [content]="play(lead).label" />
-                  <span class="who">{{ lead.label }}</span>
-                </div>
-                <p class="reason">{{ lead.reason }}</p>
-                <p class="hint">{{ play(lead).hint }}</p>
-              </div>
-              <div class="score" [attr.aria-label]="'Score ' + lead.score + ' sur 100'">
-                <span class="num">{{ lead.score }}</span>
-                <span class="max">/100</span>
-              </div>
-            </li>
-          }
-        </ol>
-      }
+      <div class="ck-columns">
+        <section class="ck-main ck-block">
+          <div class="ck-h2-row">
+            <h2 class="ck-h2">Les coups du jour</h2>
+            @if (computedAt(); as at) {
+              <span class="ck-fresh">Recalculé le {{ freshnessLabel(at) }}</span>
+            }
+          </div>
+          <app-play-queue [leads]="leads()" />
+        </section>
+
+        <aside class="ck-rail">
+          <!-- Ce qui a une heure passe avant ce qui n'en a pas. -->
+          <section class="ck-block">
+            <div class="ck-h2-row">
+              <h2 class="ck-h2">
+                Aujourd'hui
+                @if (todayCount() > 0) {
+                  <span class="ck-count ck-count--neutral">{{ todayCount() }}</span>
+                }
+              </h2>
+              <a class="ck-link" routerLink="../calendrier">Calendrier →</a>
+            </div>
+            @if (today(); as day) {
+              <fold-calendar-day
+                class="ck-day"
+                [date]="day"
+                [events]="events()"
+                [today]="day"
+                (eventClick)="openEvent($event)"
+              >
+                <a empty routerLink="../calendrier">Ouvrir le calendrier</a>
+              </fold-calendar-day>
+            }
+          </section>
+
+          <section class="ck-block">
+            <div class="ck-h2-row">
+              <h2 class="ck-h2">À rappeler</h2>
+              @if (requests().length > 0) {
+                <span class="ck-count">{{ requests().length }}</span>
+              }
+            </div>
+            <app-support-queue [requests]="requests()" (handled)="handleRequest($event)" />
+          </section>
+        </aside>
+      </div>
     }
   }
 </section>

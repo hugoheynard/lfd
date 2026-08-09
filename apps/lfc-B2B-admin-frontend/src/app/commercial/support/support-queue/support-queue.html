@@ -1,0 +1,48 @@
+@if (rows().length === 0) {
+  <fold-empty-state
+    title="Personne n'attend"
+    subtitle="Aucune demande de rappel ouverte."
+    icon="check"
+  />
+} @else {
+  <ul class="sq-list">
+    @for (row of rows(); track row.request.id) {
+      <li class="sq-row" [class.is-late]="row.late">
+        <!-- Le motif d'abord : c'est lui qui dit s'il faut préparer un dossier
+             avant de décrocher. -->
+        <div class="sq-head">
+          <span class="sq-purpose">{{ row.purpose }}</span>
+          <span class="sq-waiting" [class.is-late]="row.late">
+            @if (row.late) {
+              <fold-icon name="warning" size="xs" />
+            }
+            {{ row.waiting }}
+          </span>
+        </div>
+
+        <p class="sq-availability">{{ row.availability }}</p>
+
+        @if (row.request.phoneNumber !== '') {
+          <a class="sq-phone" [href]="'tel:' + row.request.phoneNumber">
+            {{ row.request.phoneNumber }}
+          </a>
+        }
+
+        @if (row.request.message !== '') {
+          <p class="sq-message">« {{ row.request.message }} »</p>
+        }
+
+        <button
+          foldButton
+          variant="ghost"
+          size="sm"
+          class="sq-action"
+          [disabled]="isPending(row.request.id)"
+          (click)="markHandled(row.request.id)"
+        >
+          {{ isPending(row.request.id) ? 'Clôture…' : 'Marquer traitée' }}
+        </button>
+      </li>
+    }
+  </ul>
+}

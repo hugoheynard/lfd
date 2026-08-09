@@ -22,6 +22,7 @@ import {
 
 import type { AdminCompanyDetail } from '../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../comptes-clients/admin-companies.service';
+import { PinnedAccountsStore, MAX_PINNED } from '../commercial/cockpit/pinned-store';
 import { NotifyService } from '../notify.service';
 import { PickupAddressesService } from '../reglages/retraits-livraisons/pickup-addresses.service';
 import { PlatformSettingsService } from '../reglages/platform-settings.service';
@@ -72,6 +73,7 @@ export class FicheClientPage {
   private readonly notify = inject(NotifyService);
   private readonly settingsService = inject(PlatformSettingsService);
   private readonly pickupsService = inject(PickupAddressesService);
+  private readonly pins = inject(PinnedAccountsStore);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly company = signal<AdminCompanyDetail | null>(null);
@@ -290,6 +292,31 @@ export class FicheClientPage {
   }
 
   /** Retour à la liste des comptes clients. */
+  /** Ce compte est-il suivi depuis le tableau de bord ? */
+  protected isPinned(): boolean {
+    const id = this.company()?.id;
+    return id !== undefined && this.pins.isPinned(id);
+  }
+
+  /**
+   * Épingle ou retire. Un refus (limite atteinte) se DIT — un clic sans effet
+   * ni explication est le meilleur moyen de faire croire à une panne.
+   */
+  protected togglePin(): void {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    const wasPinned = this.pins.isPinned(company.id);
+    if (!this.pins.toggle(company.id)) {
+      this.notify.error(`Maximum ${MAX_PINNED} comptes épinglés — retirez-en un d'abord.`);
+      return;
+    }
+    this.notify.success(
+      wasPinned ? 'Compte retiré du suivi.' : 'Compte épinglé au tableau de bord.',
+    );
+  }
+
   protected back(): void {
     void this.router.navigate(['/comptes-clients']);
   }

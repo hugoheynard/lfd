@@ -1,0 +1,93 @@
+:host {
+  display: block;
+}
+
+.sq-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.5rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Chaque demande est une carte discrète : c'est une file d'attente, pas une
+   liste d'articles — le poids visuel doit rester sur le bouton d'action. */
+.sq-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: var(--fold-space-sm, 0.75rem);
+  border: 1px solid var(--fold-color-border-subtle, var(--fold-color-border));
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface-subtle, transparent);
+}
+
+/* Le retard est la SEULE urgence de cette file : il prend le seul accent fort. */
+.sq-row.is-late {
+  border-color: var(--fold-color-warning-border, var(--fold-color-warning));
+  background: var(--fold-color-warning-surface, transparent);
+}
+
+.sq-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+.sq-purpose {
+  font-weight: 650;
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+
+.sq-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sq-waiting.is-late {
+  color: var(--fold-color-warning-text, var(--fold-color-warning));
+  font-weight: 650;
+}
+
+.sq-availability {
+  margin: 0;
+  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
+  font-size: var(--fold-text-xs, 0.75rem);
+}
+
+.sq-phone {
+  color: inherit;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  border-bottom: 1px solid var(--fold-color-border);
+  align-self: flex-start;
+}
+
+.sq-phone:hover {
+  border-bottom-color: currentcolor;
+}
+
+/* Le message est cité, pas paraphrasé : ce sont les mots du client. */
+.sq-message {
+  margin: 0.25rem 0 0;
+  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
+  font-size: var(--fold-text-xs, 0.75rem);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sq-action {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+}

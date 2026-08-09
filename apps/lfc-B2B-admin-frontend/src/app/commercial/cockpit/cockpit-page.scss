@@ -4,187 +4,204 @@
   overflow-y: auto;
 }
 
-.page {
+.ck {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg, 1.5rem);
   padding: var(--fold-space-lg, 1.5rem);
-  max-width: 60rem;
+  max-width: 82rem;
 }
 
-.page-head {
+/* ── En-tête ─────────────────────────────────────────────────────────────── */
+
+.ck-hero {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: var(--fold-space-md, 1rem);
+  gap: var(--fold-space-lg, 1.5rem);
+  flex-wrap: wrap;
+}
+
+.ck-eyebrow {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 h1 {
-  margin: 0;
-  font-size: 1.4rem;
+  margin: 0.15rem 0 0;
+  font-size: 1.75rem;
   font-weight: 700;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
-.subtitle {
+.ck-sub {
   margin: 0.25rem 0 0;
   color: var(--fold-color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--fold-text-sm, 0.875rem);
 }
 
-.freshness {
-  color: var(--fold-color-text-muted);
-  font-size: 0.8rem;
-  white-space: nowrap;
-}
-
-/* Rappel condensé du dashboard de croissance (lien vers l'onglet Croissance). */
-.recap {
+/* Les chiffres de tête : une seule rangée, séparée par des filets, qui mène à
+   l'onglet Croissance. Un tableau de bord doit répondre avant de renvoyer. */
+.ck-kpis {
   display: flex;
   align-items: center;
   gap: var(--fold-space-lg, 1.5rem);
-  padding: var(--fold-space-md, 1rem);
+  padding: var(--fold-space-md, 1rem) var(--fold-space-lg, 1.5rem);
   border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface);
-  text-decoration: none;
+  border-radius: var(--fold-radius-lg, 0.75rem);
+  background: var(--fold-color-surface-card, var(--fold-color-surface));
   color: inherit;
-  transition: border-color 0.15s;
+  text-decoration: none;
+  transition:
+    border-color var(--fold-motion-fast, 0.15s),
+    box-shadow var(--fold-motion-fast, 0.15s);
 }
 
-.recap:hover {
-  border-color: var(--fold-color-accent, #3b82f6);
+.ck-kpis:hover {
+  border-color: var(--fold-color-primary-border, var(--fold-color-primary));
+  box-shadow: var(--fold-shadow-sm);
 }
 
-.recap-kpis {
-  display: flex;
-  gap: var(--fold-space-lg, 1.5rem);
-  flex-wrap: wrap;
-}
-
-.recap-kpi {
+.ck-kpi {
   display: flex;
   flex-direction: column;
-}
-
-.recap-value {
-  font-size: 1.4rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.recap-label {
-  color: var(--fold-color-text-muted);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.recap-spark {
-  flex: 1 1 auto;
-  min-width: 6rem;
-  max-width: 22rem;
-}
-
-.recap-cta {
-  color: var(--fold-color-accent, #3b82f6);
-  font-weight: 600;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--fold-space-sm, 0.5rem);
-  padding: var(--fold-space-xl, 2.5rem);
-  color: var(--fold-color-text-muted);
-  text-align: center;
-}
-
-.muted {
-  color: var(--fold-color-text-muted);
-  font-size: 0.85rem;
-}
-
-.queue {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-md, 1rem);
-}
-
-.play-card {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-md, 1rem);
-  padding: var(--fold-space-md, 1rem);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface);
-}
-
-.rank {
-  flex: none;
-  width: 2rem;
-  height: 2rem;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.05));
-  color: var(--fold-color-text-muted);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.body {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.line {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm, 0.5rem);
-  flex-wrap: wrap;
-}
-
-.who {
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.reason {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.hint {
-  margin: 0;
-  color: var(--fold-color-text-muted);
-  font-size: 0.8rem;
-}
-
-.score {
-  flex: none;
-  display: flex;
-  align-items: baseline;
   gap: 0.1rem;
-  font-variant-numeric: tabular-nums;
+  padding-inline-end: var(--fold-space-lg, 1.5rem);
+  border-inline-end: 1px solid var(--fold-color-border-subtle, var(--fold-color-border));
 }
 
-.score .num {
+.ck-kpi:last-of-type {
+  padding-inline-end: 0;
+  border-inline-end: 0;
+}
+
+.ck-kpi-value {
   font-size: 1.5rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
 
-.score .max {
+.ck-kpi-label {
   color: var(--fold-color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--fold-text-xs, 0.75rem);
+}
+
+.ck-spark {
+  inline-size: 8rem;
+}
+
+/* ── Structure ───────────────────────────────────────────────────────────── */
+
+.ck-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22rem;
+  gap: var(--fold-space-lg, 1.5rem);
+  align-items: start;
+}
+
+.ck-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.75rem);
+}
+
+.ck-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg, 1.5rem);
+  /* Le rail reste sous les yeux pendant qu'on descend la file des coups. */
+  position: sticky;
+  top: var(--fold-space-lg, 1.5rem);
+}
+
+.ck-h2-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+.ck-h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs, 0.35rem);
+  margin: 0;
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ck-fresh,
+.ck-link {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  white-space: nowrap;
+}
+
+.ck-link {
+  text-decoration: none;
+}
+
+.ck-link:hover {
+  color: var(--fold-color-text);
+}
+
+.ck-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 1.35rem;
+  padding: 0 0.35rem;
+  border-radius: var(--fold-radius-pill, 999px);
+  background: var(--fold-color-warning-surface, var(--fold-color-surface-subtle));
+  color: var(--fold-color-warning-text, var(--fold-color-text));
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Le compte des rendez-vous n'est pas une alerte : il informe, il n'appelle pas.
+   Seule la file « à rappeler » garde le ton d'avertissement. */
+.ck-count--neutral {
+  background: var(--fold-color-surface-sunken, var(--fold-color-surface-subtle));
+  color: var(--fold-color-text-muted);
+}
+
+.ck-day {
+  /* Le calendrier du rail est une lecture, pas un plan de travail : on borne sa
+     hauteur et on le laisse défiler seul plutôt que d'allonger la page. */
+  display: block;
+  max-block-size: 26rem;
+  overflow-y: auto;
+}
+
+.ck-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-sm, 0.5rem);
+  color: var(--fold-color-text-muted);
+}
+
+/* ── Étroit ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 68rem) {
+  .ck-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ck-rail {
+    position: static;
+  }
+
+  .ck-kpis {
+    inline-size: 100%;
+    overflow-x: auto;
+  }
 }

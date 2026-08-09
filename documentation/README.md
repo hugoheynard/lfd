@@ -79,6 +79,7 @@ Chaque ligne porte l'**état réel du code**, pas l'intention :
 | ------------------------------------------------------------------------------ | ---- | -------------------------------------------------------------------------------------------------------------------------- |
 | [`todos/todo-commercial-acquisition.md`](todos/todo-commercial-acquisition.md) | 🟡   | Le TODO technique de l'espace commercial.                                                                                  |
 | [`todos/todo-qualite-tests.md`](todos/todo-qualite-tests.md)                   | 🟡   | Ce que la CI **ne** couvre pas : specs non typecheckées, zéro ESLint dans les 4 apps Angular, tests Shopify live exclus.   |
+| [`todos/todo-tableau-de-bord.md`](todos/todo-tableau-de-bord.md)               | 🟡   | Choisir les blocs affichés (pas fait) ; épingles en `localStorage` tant que l'identité staff n'existe pas.                 |
 | [`todos/todo-notifications.md`](todos/todo-notifications.md)                   | 🟡   | Le transport e-mail est branché ; **aucun e-mail ne part encore** — points d'appel, boîte de l'équipe, domaine à vérifier. |
 | [`todos/todo-types-de-demande.md`](todos/todo-types-de-demande.md)             | 🟡   | Câblage de la taxonomie des demandes (contrat posé, persistance et UI à faire).                                            |
 

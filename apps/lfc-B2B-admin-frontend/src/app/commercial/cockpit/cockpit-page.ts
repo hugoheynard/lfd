@@ -1,66 +1,121 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { FoldBadgeComponent, FoldButtonComponent } from 'fold-ng';
-import type { GrowthStatsView, LeadScoreView, PlayType } from '@lfd/contracts';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import {
+  FoldButtonComponent,
+  FoldCalendarDayComponent,
+  foldToday,
+  type FoldCalendarDate,
+} from 'fold-ng';
+import type { AppointmentView, GrowthStatsView, LeadScoreView } from '@lfd/contracts';
+import type { SupportRequestView } from '@lfd/contracts';
 
+import type { AdminCompany } from '../../comptes-clients/admin-company';
+import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
+import { AvailabilityService } from '../availability/availability.service';
+import { buildAppointmentEvents, type AppointmentEvent } from '../calendrier/appointment-events';
 import { sparklineOption } from '../croissance/growth-charts';
 import { GrowthService } from '../croissance/growth.service';
+import { SupportService } from '../support/support.service';
+import { SupportQueue } from '../support/support-queue/support-queue';
 import { CockpitService } from './cockpit.service';
+import { PinnedAccounts } from './pinned-accounts/pinned-accounts';
+import { PinnedAccountsStore } from './pinned-store';
+import { PlayQueue } from './play-queue/play-queue';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** Badge variant (fold) — accepté par `fold-badge [variant]`. */
-type BadgeVariant = 'neutral' | 'accent' | 'info' | 'warning' | 'alert' | 'success';
-
-/** Libellé + ton de chaque play (la motion commerciale à jouer). */
-const PLAY: Record<PlayType, { label: string; variant: BadgeVariant; hint: string }> = {
-  lock_in: {
-    label: 'Verrouiller',
-    variant: 'warning',
-    hint: 'Prospect chaud à convertir en abonné',
-  },
-  rescue: { label: 'Rescousse', variant: 'alert', hint: 'Dossier d’activation bloqué à débloquer' },
-  upgrade: { label: 'Upgrade', variant: 'success', hint: 'Compte engagé à étendre' },
-  win_back: { label: 'Reconquête', variant: 'info', hint: 'Lead qui refroidit à relancer' },
-  nurture: { label: 'Démarchage', variant: 'neutral', hint: 'Lead sortant à faire avancer' },
-};
+/** Une tuile de l'en-tête : un chiffre, ce qu'il compte. */
+interface Kpi {
+  readonly label: string;
+  readonly value: string;
+}
 
 /**
- * Onglet **Tableau de bord** (cockpit) : la queue **« 5 meilleurs coups du jour »**,
- * lue du read-model matérialisé (`GET /admin/cockpit`, recalculé par cron). Chaque
- * coup est **typé par play** (verrouiller / rescousse / upgrade / reconquête),
- * **scoré** (0..100) et justifié par un `reason` lisible — le score n'est pas une
- * boîte noire. L'ordre vient du serveur (score décroissant) ; afficher journalise
- * `reco.shown`.
+ * **Tableau de bord commercial** — ce qu'il faut avoir sous les yeux en arrivant :
+ * la journée, les gens qui attendent, et les coups à jouer.
+ *
+ * Trois blocs, dans l'ordre où on s'en sert :
+ * - **la journée** — les rendez-vous du jour, en calendrier, cliquables. C'est ce
+ *   qui a une heure : ça passe avant ce qui n'en a pas ;
+ * - **à rappeler** — les demandes de contact ouvertes, avec le bouton qui les
+ *   clôt. Cette file existait côté API depuis la reprise du `SupportRequest` et
+ *   n'avait aucun écran : une demande tombait dans un trou ;
+ * - **les coups du jour** — la file scorée, inchangée dans son fond.
+ *
+ * Les **comptes épinglés** ouvrent la page : ce sont les clients qu'on suit de
+ * près, et on veut voir leur état avant de décider de sa journée.
+ *
+ * `today` est posé **après le premier rendu** (navigateur) : fold n'a pas
+ * d'horloge et un SSR ne doit pas en inventer une, sinon l'hydratation diverge.
  */
 @Component({
   selector: 'app-cockpit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldButtonComponent, RouterLink, Chart],
+  imports: [
+    Chart,
+    FoldButtonComponent,
+    FoldCalendarDayComponent,
+    PinnedAccounts,
+    PlayQueue,
+    RouterLink,
+    SupportQueue,
+  ],
   templateUrl: './cockpit-page.html',
   styleUrl: './cockpit-page.scss',
 })
 export class CockpitPage {
-  private readonly service = inject(CockpitService);
+  private readonly cockpit = inject(CockpitService);
   private readonly growth = inject(GrowthService);
+  private readonly appointmentsApi = inject(AvailabilityService);
+  private readonly supportApi = inject(SupportService);
+  private readonly companiesApi = inject(AdminCompaniesService);
+  private readonly pins = inject(PinnedAccountsStore);
+  private readonly router = inject(Router);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly leads = signal<readonly LeadScoreView[]>([]);
   protected readonly stats = signal<GrowthStatsView | null>(null);
+  protected readonly requests = signal<readonly SupportRequestView[]>([]);
+  private readonly appointments = signal<readonly AppointmentView[]>([]);
+  private readonly companies = signal<readonly AdminCompany[]>([]);
 
-  protected readonly computedAt = computed<string | null>(() => {
-    const first = this.leads()[0];
-    return first ? first.computedAt : null;
+  /** Le jour courant, posé au 1er rendu navigateur — `undefined` en SSR. */
+  protected readonly today = signal<FoldCalendarDate | undefined>(undefined);
+
+  /** Les rendez-vous projetés — vides tant que `today` n'est pas posé (donc en SSR). */
+  protected readonly events = computed<readonly AppointmentEvent[]>(() =>
+    this.today() === undefined ? [] : buildAppointmentEvents(this.appointments()),
+  );
+
+  /** Combien de rendez-vous aujourd'hui — le chiffre qui titre le rail. */
+  protected readonly todayCount = computed<number>(() => {
+    const day = this.today();
+    return day === undefined ? 0 : this.events().filter((event) => event.start === day).length;
   });
 
-  /** Rappel condensé : quelques chiffres de tête + une mini-courbe d'acquisition. */
-  protected readonly recap = computed<readonly { label: string; value: string }[]>(() => {
-    const s = this.stats();
-    if (s === null) {
+  /** Les épinglés, dans l'ordre des épingles — pas dans celui de la liste serveur. */
+  protected readonly pinnedCompanies = computed<readonly AdminCompany[]>(() => {
+    const byId = new Map(this.companies().map((company) => [company.id, company]));
+    return this.pins
+      .pinned()
+      .map((id) => byId.get(id))
+      .filter((company): company is AdminCompany => company !== undefined);
+  });
+
+  protected readonly kpis = computed<readonly Kpi[]>(() => {
+    const stats = this.stats();
+    if (stats === null) {
       return [];
     }
-    const k = s.kpis;
+    const k = stats.kpis;
     return [
       { label: 'Prospects', value: `${k.prospects}` },
       { label: 'Chauds', value: `${k.hot}` },
@@ -70,40 +125,60 @@ export class CockpitPage {
   });
 
   protected readonly spark = computed<ChartOption | null>(() => {
-    const s = this.stats();
-    return s === null ? null : sparklineOption(s.acquisition);
+    const stats = this.stats();
+    return stats === null ? null : sparklineOption(stats.acquisition);
   });
 
+  /** Fraîcheur du read-model scoré — il vient d'un cron, pas du temps réel. */
+  protected readonly computedAt = computed<string | null>(
+    () => this.leads()[0]?.computedAt ?? null,
+  );
+
   constructor() {
+    afterNextRender(() => this.today.set(foldToday()));
     void this.load();
   }
 
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      const [leads, stats] = await Promise.all([this.service.list(), this.loadStats()]);
-      this.leads.set(leads);
-      this.stats.set(stats);
+      this.leads.set(await this.cockpit.list());
       this.state.set('ready');
     } catch {
       this.state.set('error');
+      return;
     }
+    // Le reste est **accessoire** : un rail vide ne doit pas casser le tableau
+    // de bord, dont la file scorée est le cœur.
+    await Promise.all([
+      this.loadInto(this.stats, () => this.growth.stats(), null),
+      this.loadInto(this.requests, () => this.supportApi.list(), []),
+      this.loadInto(this.appointments, () => this.dayAppointments(), []),
+      this.loadInto(this.companies, () => this.companiesApi.list(), []),
+    ]);
   }
 
-  /** Stats best-effort : un rappel absent ne doit pas casser le cockpit. */
-  private async loadStats(): Promise<GrowthStatsView | null> {
+  /** Clôt une demande, puis la retire de la file — optimiste, rechargé ensuite. */
+  protected async handleRequest(id: string): Promise<void> {
     try {
-      return await this.growth.stats();
-    } catch {
-      return null;
+      await this.supportApi.handle(id);
+    } finally {
+      this.requests.set(await this.safe(() => this.supportApi.list(), this.requests()));
     }
   }
 
-  protected play(lead: LeadScoreView): { label: string; variant: BadgeVariant; hint: string } {
-    return PLAY[lead.play];
+  protected unpin(companyId: string): void {
+    this.pins.toggle(companyId);
   }
 
-  /** Fraîcheur du read-model, formatée (date + heure courtes). */
+  /** Ouvre la page du rendez-vous : c'est là qu'on travaille, pas dans le rail. */
+  protected async openEvent(event: AppointmentEvent): Promise<void> {
+    const appointment = this.appointments().find((a) => `appt:${a.id}` === event.id);
+    if (appointment !== undefined) {
+      await this.router.navigate(['/rendez-vous', appointment.id]);
+    }
+  }
+
   protected freshnessLabel(iso: string): string {
     return new Date(iso).toLocaleString('fr-FR', {
       day: '2-digit',
@@ -111,5 +186,30 @@ export class CockpitPage {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  /** Les rendez-vous d'aujourd'hui, bornés à la journée — le rail n'en montre pas plus. */
+  private dayAppointments(): Promise<readonly AppointmentView[]> {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    return this.appointmentsApi.appointments(start.toISOString(), end.toISOString());
+  }
+
+  /** Charge dans un signal, en retombant sur une valeur sûre plutôt qu'en cassant. */
+  private async loadInto<T>(
+    target: { set: (value: T) => void },
+    read: () => Promise<T>,
+    fallback: T,
+  ): Promise<void> {
+    target.set(await this.safe(read, fallback));
+  }
+
+  private async safe<T>(read: () => Promise<T>, fallback: T): Promise<T> {
+    try {
+      return await read();
+    } catch {
+      return fallback;
+    }
   }
 }

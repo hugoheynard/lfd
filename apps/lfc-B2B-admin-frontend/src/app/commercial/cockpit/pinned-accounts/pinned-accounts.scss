@@ -1,0 +1,107 @@
+:host {
+  display: block;
+}
+
+.pa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: var(--fold-space-sm, 0.75rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pa-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  height: 100%;
+  padding: var(--fold-space-sm, 0.75rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface-card, var(--fold-color-surface));
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--fold-motion-fast, 0.15s),
+    transform var(--fold-motion-fast, 0.15s),
+    box-shadow var(--fold-motion-fast, 0.15s);
+}
+
+.pa-card:hover {
+  border-color: var(--fold-color-primary-border, var(--fold-color-primary));
+  box-shadow: var(--fold-shadow-sm);
+  transform: translateY(-1px);
+}
+
+.pa-card:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+.pa-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-xs, 0.25rem);
+  margin-bottom: 0.35rem;
+}
+
+/* L'épingle ne se retire qu'au survol de la carte : au repos, une grille de
+   croix ferait lire « supprimer » avant « client ». */
+.pa-unpin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem;
+  border: 0;
+  border-radius: var(--fold-radius-sm, 0.25rem);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--fold-motion-fast, 0.15s);
+}
+
+.pa-card:hover .pa-unpin,
+.pa-unpin:focus-visible {
+  opacity: 1;
+}
+
+.pa-unpin:hover {
+  background: var(--fold-color-surface-hover);
+  color: var(--fold-color-text);
+}
+
+.pa-name {
+  font-weight: 650;
+  line-height: 1.25;
+  /* Deux lignes au plus : au-delà, la grille se déforme au premier nom long. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pa-ref {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.pa-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+  color: var(--fold-color-warning-text, var(--fold-color-warning));
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+}
+
+/* Sans survol (tactile), l'épingle reste visible — sinon elle est inatteignable. */
+@media (hover: none) {
+  .pa-unpin {
+    opacity: 1;
+  }
+}

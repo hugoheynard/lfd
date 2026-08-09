@@ -1,0 +1,32 @@
+@if (rows().length === 0) {
+  <fold-empty-state
+    title="Aucun coup à jouer"
+    subtitle="La file se remplira au prochain recalcul, dès qu'un lead devient actionnable."
+    icon="planning"
+  />
+} @else {
+  <ol class="pq-list">
+    @for (row of rows(); track row.lead.subjectId) {
+      <li class="pq-row" [attr.data-play]="row.lead.play">
+        <span class="pq-rank" aria-hidden="true">{{ row.rank }}</span>
+
+        <div class="pq-body">
+          <div class="pq-head">
+            <span class="pq-who">{{ row.lead.label }}</span>
+            <fold-badge [variant]="row.variant" [content]="row.label" size="sm" />
+          </div>
+          <p class="pq-reason">{{ row.lead.reason }}</p>
+          <p class="pq-hint">{{ row.hint }}</p>
+        </div>
+
+        <div class="pq-score" [attr.aria-label]="'Score ' + row.lead.score + ' sur 100'">
+          <span class="pq-num">{{ row.lead.score }}</span>
+          <!-- La jauge fait le travail que le nombre ne fait pas : comparer. -->
+          <span class="pq-gauge" aria-hidden="true">
+            <span class="pq-gauge-fill" [style.inline-size.%]="row.lead.score"></span>
+          </span>
+        </div>
+      </li>
+    }
+  </ol>
+}

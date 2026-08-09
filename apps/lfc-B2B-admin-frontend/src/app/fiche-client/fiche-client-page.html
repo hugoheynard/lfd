@@ -3,6 +3,19 @@
     Retour
   </button>
 
+  <!-- L'épingle vit ici et non sur le tableau de bord : on décide de suivre un
+       compte quand on a sa fiche sous les yeux, pas depuis une grille. -->
+  <button
+    pageActions
+    foldButton
+    size="sm"
+    icon="star"
+    [emphasis]="isPinned() ? 'solid' : 'outline'"
+    (click)="togglePin()"
+  >
+    {{ isPinned() ? 'Épinglé' : 'Épingler' }}
+  </button>
+
   @if (isPending()) {
     <button
       pageActions
