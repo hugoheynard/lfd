@@ -75,10 +75,11 @@ Chaque ligne porte l'**état réel du code**, pas l'intention :
 
 ## TODO et dette
 
-| Doc                                                                            | État | De quoi ça parle                                                                |
-| ------------------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------- |
-| [`todos/todo-commercial-acquisition.md`](todos/todo-commercial-acquisition.md) | 🟡   | Le TODO technique de l'espace commercial.                                       |
-| [`todos/todo-types-de-demande.md`](todos/todo-types-de-demande.md)             | 🟡   | Câblage de la taxonomie des demandes (contrat posé, persistance et UI à faire). |
+| Doc                                                                            | État | De quoi ça parle                                                                                                           |
+| ------------------------------------------------------------------------------ | ---- | -------------------------------------------------------------------------------------------------------------------------- |
+| [`todos/todo-commercial-acquisition.md`](todos/todo-commercial-acquisition.md) | 🟡   | Le TODO technique de l'espace commercial.                                                                                  |
+| [`todos/todo-notifications.md`](todos/todo-notifications.md)                   | 🟡   | Le transport e-mail est branché ; **aucun e-mail ne part encore** — points d'appel, boîte de l'équipe, domaine à vérifier. |
+| [`todos/todo-types-de-demande.md`](todos/todo-types-de-demande.md)             | 🟡   | Câblage de la taxonomie des demandes (contrat posé, persistance et UI à faire).                                            |
 
 ## Ailleurs dans le dépôt
 
