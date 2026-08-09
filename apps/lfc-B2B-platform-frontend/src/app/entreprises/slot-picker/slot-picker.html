@@ -17,9 +17,20 @@
     />
   }
 
+  <!-- Un jour ouvert à la fois : sur trois semaines, tout déplier fait défiler
+       une page entière pour choisir une heure. Le compte en en-tête permet de
+       viser un jour sans avoir à l'ouvrir. -->
   @for (day of days(); track day.day) {
-    <section class="sp-day">
-      <h4 class="sp-day-label">{{ day.label }}</h4>
+    <fold-disclosure
+      class="sp-day"
+      [open]="openDay() === day.day"
+      (openChange)="setOpen(day.day, $event)"
+    >
+      <span summary class="sp-day-summary">
+        <span class="sp-day-label">{{ day.label }}</span>
+        <fold-badge variant="neutral" [content]="availability(day.slots.length)" />
+      </span>
+
       <div class="sp-times">
         @for (slot of day.slots; track slot.startAt) {
           <button
@@ -33,7 +44,7 @@
           </button>
         }
       </div>
-    </section>
+    </fold-disclosure>
   } @empty {
     <p class="sp-empty">Aucun créneau sur cette demi-journée. Essayez l'autre.</p>
   }
