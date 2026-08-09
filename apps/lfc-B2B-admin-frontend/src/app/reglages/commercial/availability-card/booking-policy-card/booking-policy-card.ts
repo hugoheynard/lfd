@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { FoldCardComponent, FoldElementTitleComponent, FoldNumberInputComponent } from 'fold-ng';
 import type { AppointmentChannel } from '@lfd/contracts';
 
-import { withPolicy, type AvailabilityDraft } from '../../availability-draft';
+import { MetricInfo } from '../../../../shared/metric-info/metric-info';
+
+import { withPolicy, type AvailabilityDraft } from '../availability-draft';
 
 /** Les canaux proposables, avec leur libellé. */
 const CHANNELS: readonly { key: AppointmentChannel; label: string }[] = [
@@ -17,11 +19,16 @@ const CHANNELS: readonly { key: AppointmentChannel; label: string }[] = [
  *
  * Ces quatre réglages bornent ce que `slotsFor` rend réservable — ce sont eux,
  * pas la grille, qui décident qu'un créneau ouvert reste hors d'atteinte.
+ *
+ * Chaque libellé porte son **unité** entre parenthèses, et une bulle d'aide en
+ * fin de ligne dit ce que le réglage change réellement. Ces explications ne
+ * tiennent pas en un `hint` d'une ligne : « 30 minutes » ne dit pas que c'est
+ * aussi le pas de découpe des plages, ni que la prévenance borne l'annulation.
  */
 @Component({
   selector: 'app-booking-policy-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldElementTitleComponent, FoldNumberInputComponent],
+  imports: [FoldCardComponent, FoldElementTitleComponent, FoldNumberInputComponent, MetricInfo],
   templateUrl: './booking-policy-card.html',
   styleUrl: './booking-policy-card.scss',
 })

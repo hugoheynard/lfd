@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 import type { Slot } from '@lfd/contracts';
 
-import { AvailabilityService } from '../availability.service';
-import { draftFrom, emptyDraft, toPayload, type AvailabilityDraft } from '../availability-draft';
+import { AvailabilityService } from '../../../commercial/availability/availability.service';
+import { draftFrom, emptyDraft, toPayload, type AvailabilityDraft } from './availability-draft';
 import { BookingPolicyCard } from './booking-policy-card/booking-policy-card';
 import { ExceptionsCard } from './exceptions-card/exceptions-card';
 import { SlotsPreviewCard, type PreviewDay } from './slots-preview-card/slots-preview-card';

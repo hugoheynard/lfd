@@ -1,0 +1,79 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    icon="settings"
+    title="Règles de réservation"
+    subtitle="Les bornes que vous posez autour de votre grille."
+  />
+
+  <div class="bp-fields">
+    <div class="bp-field">
+      <app-metric-info
+        class="bp-info"
+        label="À quoi sert la durée d'un rendez-vous"
+        text="La durée de chaque rendez-vous, et donc le pas de découpe de vos plages : une plage 09:00–12:00 en 30 minutes ouvre six créneaux."
+      />
+      <fold-number-input
+        label="Durée d'un rendez-vous (minutes)"
+        [min]="5"
+        [max]="240"
+        [step]="5"
+        [value]="policy().slotMinutes"
+        (valueChange)="setSlotMinutes($event)"
+      />
+    </div>
+
+    <div class="bp-field">
+      <app-metric-info
+        class="bp-info"
+        label="À quoi sert le délai de prévenance"
+        text="Le temps qu'il vous faut pour vous organiser : rien n'est réservable dans les heures qui viennent. C'est aussi la limite au-delà de laquelle le client ne peut plus annuler seul."
+      />
+      <fold-number-input
+        label="Délai de prévenance (heures)"
+        [min]="0"
+        [max]="720"
+        [value]="policy().leadTimeHours"
+        (valueChange)="setLeadTime($event)"
+      />
+    </div>
+
+    <div class="bp-field">
+      <app-metric-info
+        class="bp-info"
+        label="À quoi sert l'horizon de réservation"
+        text="Jusqu'où on ouvre l'agenda. Au-delà, le client ne voit aucun créneau — utile pour ne pas s'engager sur un planning qui n'existe pas encore."
+      />
+      <fold-number-input
+        label="Horizon de réservation (jours)"
+        [min]="1"
+        [max]="365"
+        [value]="policy().horizonDays"
+        (valueChange)="setHorizon($event)"
+      />
+    </div>
+
+    <div class="bp-field bp-field--channels">
+      <div class="bp-channels-head">
+        <fold-element-title variant="bar" title="Canaux proposés" [level]="3" />
+        <app-metric-info
+          label="À quoi servent les canaux"
+          text="Les formats de rendez-vous que le client peut choisir. Il en faut au moins un actif, sinon plus rien n'est réservable."
+        />
+      </div>
+      <div class="sec-chips">
+        @for (channel of channels; track channel.key) {
+          <button
+            type="button"
+            class="sec-chip"
+            [class.sec-chip--on]="isChannelOn(channel.key)"
+            [attr.aria-pressed]="isChannelOn(channel.key)"
+            (click)="toggleChannel(channel.key)"
+          >
+            {{ channel.label }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</fold-card>

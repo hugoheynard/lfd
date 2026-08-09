@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+.bp-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--fold-space-lg, 1.5rem);
+  margin-top: var(--fold-space-lg, 1.5rem);
+  align-items: start;
+}
+
+/* La bulle se pose en bout de la ligne de libellé — celui-ci est rendu par
+   `fold-number-input`, donc on l'ancre au coin plutôt que de l'y injecter. */
+.bp-field {
+  position: relative;
+  min-width: 0;
+}
+
+.bp-info {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.bp-field--channels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Ici le libellé nous appartient : la bulle tient dans la ligne, sans ancrage. */
+.bp-channels-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}

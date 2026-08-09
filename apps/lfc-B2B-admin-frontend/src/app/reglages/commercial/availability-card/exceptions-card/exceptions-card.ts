@@ -9,7 +9,7 @@ import {
 } from 'fold-ng';
 import type { ExceptionKind } from '@lfd/contracts';
 
-import { addException, removeException, type AvailabilityDraft } from '../../availability-draft';
+import { addException, removeException, type AvailabilityDraft } from '../availability-draft';
 
 /** Bornes proposées pour une ouverture ponctuelle — la matinée ouvrée. */
 const OPEN_DEFAULT = { startTime: '09:00', endTime: '12:00' };

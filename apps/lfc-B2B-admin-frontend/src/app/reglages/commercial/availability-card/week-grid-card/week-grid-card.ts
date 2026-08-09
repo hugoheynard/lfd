@@ -11,7 +11,7 @@ import {
   WEEK_DAYS,
   type AvailabilityDraft,
   type DraftRange,
-} from '../../availability-draft';
+} from '../availability-draft';
 
 /**
  * Carte **Semaine type** : les plages où le commercial accepte des rendez-vous,

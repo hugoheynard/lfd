@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FoldViewNavComponent, type FoldViewNavItem } from 'fold-ng';
 
-import { AvailabilityCard } from '../../commercial/availability/availability-card/availability-card';
+import { AvailabilityCard } from './availability-card/availability-card';
 import { AlertsCard } from './alerts-card/alerts-card';
 import { MarketCard } from './market-card/market-card';
 
