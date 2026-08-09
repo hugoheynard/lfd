@@ -1,48 +1,15 @@
 :host {
   display: block;
-  height: 100%;
-  overflow-y: auto;
 }
 
+/* Ni gouttière ni défilement propres : la vue vit DANS `fold-page-layout`, qui
+   possède déjà les deux. Les redoubler créait la marge que tout le monde
+   voyait sans savoir d'où elle venait. */
 .ck {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg, 1.5rem);
-  padding: var(--fold-space-lg, 1.5rem);
   max-width: 82rem;
-}
-
-/* ── En-tête ─────────────────────────────────────────────────────────────── */
-
-.ck-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--fold-space-lg, 1.5rem);
-  flex-wrap: wrap;
-}
-
-.ck-eyebrow {
-  margin: 0;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs, 0.75rem);
-  font-weight: 650;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-h1 {
-  margin: 0.15rem 0 0;
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  text-wrap: balance;
-}
-
-.ck-sub {
-  margin: 0.25rem 0 0;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm, 0.875rem);
 }
 
 /* Les chiffres de tête : une seule rangée, séparée par des filets, qui mène à

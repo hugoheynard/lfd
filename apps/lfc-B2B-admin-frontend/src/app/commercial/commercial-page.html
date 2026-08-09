@@ -1,5 +1,16 @@
-<fold-page-layout icon="calendar" title="Commercial">
-  <fold-view-nav [items]="tabs" direction="horizontal" size="comfortable" activeStyle="fill" />
+<fold-page-layout [icon]="current().icon" [title]="current().label">
+  <p description>{{ current().description }}</p>
+
+  <!-- Un SOULIGNÉ, pas une pastille pleine : ces onglets changent de vue, ils ne
+       filtrent pas une liste. Une pastille pleine dit « sélection active » et
+       entre en concurrence visuelle avec les filtres des vues elles-mêmes. -->
+  <fold-view-nav
+    class="views"
+    [items]="tabs"
+    direction="horizontal"
+    size="compact"
+    activeStyle="underline"
+  />
 
   <router-outlet />
 </fold-page-layout>

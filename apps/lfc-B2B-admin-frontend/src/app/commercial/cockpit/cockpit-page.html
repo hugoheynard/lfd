@@ -1,27 +1,20 @@
 <section class="ck">
-  <!-- L'en-tête porte les chiffres de tête : on n'ouvre pas un onglet pour
-       savoir combien de prospects on a. -->
-  <header class="ck-hero">
-    <div class="ck-hero-text">
-      <p class="ck-eyebrow">Commercial</p>
-      <h1>Tableau de bord</h1>
-      <p class="ck-sub">La journée, ceux qui attendent, et les coups à jouer.</p>
-    </div>
-
-    @if (kpis().length > 0) {
-      <a class="ck-kpis" routerLink="../croissance" aria-label="Voir la croissance en détail">
-        @for (kpi of kpis(); track kpi.label) {
-          <span class="ck-kpi">
-            <span class="ck-kpi-value">{{ kpi.value }}</span>
-            <span class="ck-kpi-label">{{ kpi.label }}</span>
-          </span>
-        }
-        @if (spark(); as option) {
-          <app-chart class="ck-spark" [option]="option" height="44px" />
-        }
-      </a>
-    }
-  </header>
+  <!-- Plus de titre ici : il est porté par le shell, sous l'onglet actif. Ne
+       restent que les chiffres de tête — on n'ouvre pas un onglet pour savoir
+       combien de prospects on a. -->
+  @if (kpis().length > 0) {
+    <a class="ck-kpis" routerLink="../croissance" aria-label="Voir la croissance en détail">
+      @for (kpi of kpis(); track kpi.label) {
+        <span class="ck-kpi">
+          <span class="ck-kpi-value">{{ kpi.value }}</span>
+          <span class="ck-kpi-label">{{ kpi.label }}</span>
+        </span>
+      }
+      @if (spark(); as option) {
+        <app-chart class="ck-spark" [option]="option" height="44px" />
+      }
+    </a>
+  }
 
   @switch (state()) {
     @case ('loading') {

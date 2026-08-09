@@ -1,26 +1,19 @@
 <section class="page">
-  <header class="page-head">
-    <div>
-      <h1>Prospects</h1>
-      <p class="subtitle">
-        Le parcours entier, d'un nom sur une liste à un compte qui commande — froid, tiède, chaud,
-        puis l'activation du dossier.
-      </p>
-    </div>
-    <div class="head-actions">
-      @if (state() === 'ready') {
-        <div class="queues">
-          @if (hotCount() > 0) {
-            <fold-badge variant="warning" [content]="hotCount() + ' chauds'" />
-          }
-          @if (coldCount() > 0) {
-            <fold-badge variant="neutral" [content]="coldCount() + ' froids'" />
-          }
-        </div>
-      }
-      <button foldButton intent="primary" (click)="openCapture()">Ajouter un lead</button>
-    </div>
-  </header>
+  <!-- Le titre est porté par le shell : ne restent ici que les compteurs et
+       l'action. -->
+  <div class="page-actions">
+    @if (state() === 'ready') {
+      <div class="queues">
+        @if (hotCount() > 0) {
+          <fold-badge variant="warning" [content]="hotCount() + ' chauds'" />
+        }
+        @if (coldCount() > 0) {
+          <fold-badge variant="neutral" [content]="coldCount() + ' froids'" />
+        }
+      </div>
+    }
+    <button foldButton intent="primary" (click)="openCapture()">Ajouter un lead</button>
+  </div>
 
   <!-- Deux moments d'un MÊME parcours : on change d'étage, pas de sujet. -->
   <fold-view-toggle

@@ -14,46 +14,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg, 1.5rem);
-  padding: var(--fold-space-lg, 1.5rem) var(--fold-space-lg, 1.5rem) var(--fold-space-xl, 2.5rem);
   max-width: 84rem;
 }
 
 /* ── Masthead : la page se présente comme un rapport, pas comme un écran ── */
-.page-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--fold-space-md, 1rem);
-  flex-wrap: wrap;
-  padding-bottom: var(--fold-space-md, 1rem);
-  border-bottom: 1px solid var(--growth-hairline);
-}
-
-.eyebrow {
-  display: block;
-  margin-bottom: 0.3rem;
-  color: var(--fold-color-primary);
-  font-size: var(--growth-eyebrow);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-}
-
-h1 {
-  margin: 0;
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
-.subtitle {
-  margin: 0.4rem 0 0;
-  max-width: 46rem;
-  color: var(--fold-color-text-muted);
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
 
 .head-meta {
   display: flex;
@@ -345,10 +309,16 @@ h1 {
   .grid {
     grid-template-columns: 1fr;
   }
-  .page-head {
-    align-items: flex-start;
-  }
   .head-meta {
     text-align: left;
   }
+}
+
+/* Les actions de la vue, alignées à droite sous l'en-tête du shell. */
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm, 0.75rem);
+  flex-wrap: wrap;
 }
