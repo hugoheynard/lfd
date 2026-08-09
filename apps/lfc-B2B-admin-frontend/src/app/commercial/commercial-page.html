@@ -1,16 +1,23 @@
 <fold-page-layout [icon]="current().icon" [title]="current().label">
   <p description>{{ current().description }}</p>
 
-  <!-- Un SOULIGNÉ, pas une pastille pleine : ces onglets changent de vue, ils ne
-       filtrent pas une liste. Une pastille pleine dit « sélection active » et
-       entre en concurrence visuelle avec les filtres des vues elles-mêmes. -->
-  <fold-view-nav
-    class="views"
-    [items]="tabs"
-    direction="horizontal"
-    size="compact"
-    activeStyle="underline"
-  />
+  <!-- Rail à GAUCHE, comme Réglages : la navigation de page se lit en colonne,
+       et surtout elle cesse de pousser le contenu vers le bas — c'est de la
+       largeur qu'on a, pas de la hauteur.
 
-  <router-outlet />
+       `foldAt` est plus haut qu'ailleurs (1100 contre 896) parce que le tableau
+       de bord porte DÉJÀ un rail à droite : sous cette largeur, trois colonnes
+       s'écraseraient. Le seuil se mesure sur la largeur du LAYOUT, pas du
+       viewport — donc juste en iframe dans la suite. -->
+  <fold-nav-layout placement="side" [foldAt]="1100">
+    <fold-view-nav
+      tabNav
+      [items]="tabs"
+      size="comfortable"
+      activeStyle="underline"
+      background="transparent"
+    />
+
+    <router-outlet />
+  </fold-nav-layout>
 </fold-page-layout>

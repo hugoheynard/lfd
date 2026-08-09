@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import {
+  FoldNavLayoutComponent,
   FoldPageLayoutComponent,
   FoldViewNavComponent,
   type FoldIconName,
@@ -64,7 +65,10 @@ const TABS: CommercialTab[] = [
 
 /**
  * Le **poste de travail commercial** : un `fold-page-layout` dont l'en-tête suit
- * la vue affichée, une barre d'onglets, et le corps de la vue.
+ * la vue affichée, un `fold-nav-layout` en **rail latéral**, et le corps de la
+ * vue. Même coquille que Réglages — c'est le rail qui replie sa barre à
+ * l'horizontale quand la place manque, sur sa propre largeur et non celle du
+ * viewport, donc juste en iframe dans la suite.
  *
  * L'en-tête appartient au **shell**, et c'est le point : chaque vue affichait son
  * propre `<h1>` sous un onglet qui portait déjà son nom, et sous un titre de page
@@ -77,7 +81,7 @@ const TABS: CommercialTab[] = [
 @Component({
   selector: 'app-commercial-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, FoldPageLayoutComponent, FoldViewNavComponent],
+  imports: [RouterOutlet, FoldPageLayoutComponent, FoldNavLayoutComponent, FoldViewNavComponent],
   templateUrl: './commercial-page.html',
   styleUrl: './commercial-page.scss',
 })

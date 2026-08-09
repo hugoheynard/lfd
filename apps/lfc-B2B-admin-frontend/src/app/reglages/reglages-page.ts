@@ -29,14 +29,18 @@ import {
   templateUrl: './reglages-page.html',
 })
 export class ReglagesPage {
-  /** Onglets routés — chaque `link` est relatif à `/reglages`. */
+  /**
+   * Onglets routés — chaque `link` est relatif à `/reglages`. Icônes prises dans
+   * le catalogue **fold** : `FoldIconName` accepte n'importe quelle chaîne, donc
+   * un nom emprunté ailleurs compile et n'affiche rien.
+   */
   protected readonly tabs: FoldViewNavItem[] = [
-    { key: 'activation', label: 'Activation client', link: 'activation', icon: 'check-circle' },
+    { key: 'activation', label: 'Activation client', link: 'activation', icon: 'completed' },
     {
       key: 'retraits-livraisons',
       label: 'Retraits & livraisons',
       link: 'retraits-livraisons',
-      icon: 'package',
+      icon: 'briefcase',
     },
     { key: 'commercial', label: 'Commercial', link: 'commercial', icon: 'bell' },
     { key: 'utilisateurs', label: 'Utilisateurs', link: 'utilisateurs', icon: 'user' },

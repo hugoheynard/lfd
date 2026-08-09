@@ -158,7 +158,10 @@
 
 /* ── Étroit ──────────────────────────────────────────────────────────────── */
 
-@media (max-width: 68rem) {
+/* Le rail de droite se replie AVANT que celui de gauche ne se déplie (le
+   nav-layout bascule à 1100 px) : sans ça, les deux rails se disputeraient la
+   largeur du centre pendant une bande de tailles. */
+@media (max-width: 78rem) {
   .ck-columns {
     grid-template-columns: minmax(0, 1fr);
   }
