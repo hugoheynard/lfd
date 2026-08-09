@@ -39,6 +39,41 @@ export {
 } from "./support.js";
 export type { SupportChannel, SupportSlot, ActivationSupportPayload } from "./support.js";
 export {
+  availabilityRulePayloadSchema,
+  availabilityExceptionPayloadSchema,
+  exceptionKindSchema,
+  bookingPolicySchema,
+  availabilityConfigPayloadSchema,
+  appointmentChannelSchema,
+  appointmentStatusSchema,
+  appointmentSubjectTypeSchema,
+  appointmentTransitionSchema,
+  bookAppointmentPayloadSchema,
+  staffBookAppointmentPayloadSchema,
+  appointmentTransitionPayloadSchema,
+} from "./appointment.js";
+export type {
+  AvailabilityRulePayload,
+  AvailabilityRuleView,
+  ExceptionKind,
+  AvailabilityExceptionPayload,
+  AvailabilityExceptionView,
+  AppointmentChannel,
+  BookingPolicy,
+  AvailabilityConfigPayload,
+  AvailabilityConfigView,
+  Slot,
+  SlotsView,
+  AppointmentStatus,
+  AppointmentSubjectType,
+  AppointmentTransition,
+  BookAppointmentPayload,
+  StaffBookAppointmentPayload,
+  AppointmentTransitionPayload,
+  AppointmentView,
+  CreatedAppointmentResponse,
+} from "./appointment.js";
+export {
   pieceModeSchema,
   activationPieceSchema,
   platformSettingsSchema,
