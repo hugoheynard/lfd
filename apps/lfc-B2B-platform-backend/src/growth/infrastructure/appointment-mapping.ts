@@ -104,12 +104,14 @@ export function rowToAppointment(row: AppointmentRow): Appointment {
  */
 export function rowToAppointmentView(row: AppointmentRow): AppointmentView {
   const local = instantToLocal(row.startAt);
+  const localEnd = instantToLocal(row.endAt);
   return {
     id: row.id,
     startAt: row.startAt.toISOString(),
     endAt: row.endAt.toISOString(),
     day: local.day,
     time: local.time,
+    endTime: localEnd.time,
     status: toAppointmentStatus(row.status),
     channel: toAppointmentChannel(row.channel),
     subjectType: toSubjectType(row.subjectType),

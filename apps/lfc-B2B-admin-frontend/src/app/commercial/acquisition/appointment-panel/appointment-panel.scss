@@ -1,0 +1,81 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+}
+
+.ap-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: 0;
+
+  dt {
+    color: var(--fold-color-text-muted);
+    font-size: var(--fold-text-sm);
+  }
+
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.ap-subtitle {
+  margin: 0 0 var(--fold-space-xs);
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+}
+
+.ap-message p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.ap-cancelled {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  font-style: italic;
+}
+
+.ap-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.ap-closed {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.ap-reason {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.ap-reason-label {
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: 500;
+}
+
+.ap-reason-input {
+  padding: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+}
+
+.ap-reason-actions,
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}

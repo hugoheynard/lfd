@@ -16,7 +16,7 @@
             [date]="date()"
             [events]="visibleEvents()"
             [today]="today()"
-            (eventClick)="openCompany($event)"
+            (eventClick)="openEvent($event)"
           />
         }
         @case ('day') {
@@ -24,7 +24,7 @@
             [date]="date()"
             [events]="visibleEvents()"
             [today]="today()"
-            (eventClick)="openCompany($event)"
+            (eventClick)="openEvent($event)"
           />
         }
         @default {
@@ -33,7 +33,7 @@
             [events]="visibleEvents()"
             [today]="today()"
             maxLanes="4"
-            (eventClick)="openCompany($event)"
+            (eventClick)="openEvent($event)"
           />
         }
       }
@@ -45,7 +45,7 @@
         [events]="visibleEvents()"
         [(mode)]="agendaMode"
         [(collapsed)]="agendaCollapsed"
-        (eventClick)="openCompany($event)"
+        (eventClick)="openEvent($event)"
       />
     </aside>
   </div>

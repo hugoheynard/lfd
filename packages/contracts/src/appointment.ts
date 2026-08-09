@@ -257,6 +257,12 @@ export interface AppointmentView {
   readonly day: string;
   /** Heure locale (Europe/Paris) de début. */
   readonly time: string;
+  /**
+   * Heure locale de **fin**. Portée par la vue plutôt que dérivée côté front :
+   * la durée n'y est pas connue, et refaire la conversion de fuseau dans le
+   * navigateur est exactement ce que la lecture pré-calculée évite.
+   */
+  readonly endTime: string;
   readonly status: AppointmentStatus;
   readonly channel: AppointmentChannel;
   readonly subjectType: AppointmentSubjectType;
