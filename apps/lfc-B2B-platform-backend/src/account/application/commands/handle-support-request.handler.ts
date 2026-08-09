@@ -24,10 +24,17 @@ export class HandleSupportRequestHandler implements ICommandHandler<
 
   async execute(command: HandleSupportRequestCommand): Promise<void> {
     const handledAt = this.clock.now();
-    const companyId = await this.support.markHandled(command.supportRequestId, handledAt);
-    if (companyId === null) {
+    const handled = await this.support.markHandled(command.supportRequestId, handledAt);
+    if (handled === null) {
       throw new SupportRequestNotFoundError(command.supportRequestId);
     }
-    this.events.publish(new SupportHandledEvent(command.supportRequestId, companyId, handledAt));
+    this.events.publish(
+      new SupportHandledEvent(
+        command.supportRequestId,
+        handled.companyId,
+        handled.requestedByUserId,
+        handledAt,
+      ),
+    );
   }
 }

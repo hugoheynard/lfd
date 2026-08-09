@@ -63,6 +63,12 @@ function isTodayOrLater(value: string): boolean {
  */
 export const activationSupportPayloadSchema = z
   .object({
+    /**
+     * Société concernée, **ou `null`**. Un prospect qui n'a pas encore déclaré
+     * d'entreprise doit pouvoir demander à être rappelé : c'est exactement la
+     * population qu'on cherche à capter. La demande porte alors sur la personne.
+     */
+    companyId: z.string().trim().min(1).nullable().default(null),
     channel: supportChannelSchema,
     /**
      * Le **motif**, partagé avec la prise de rendez-vous : la question « de quoi
@@ -150,7 +156,8 @@ export type ActivationSupportPayload = z.infer<typeof activationSupportPayloadSc
  */
 export interface SupportRequestView {
   readonly id: string;
-  readonly companyId: string;
+  /** Société concernée, ou `null` si la demande porte sur la seule personne. */
+  readonly companyId: string | null;
   readonly requestedByUserId: string;
   readonly channel: SupportChannel;
   /** De quoi il s'agit — l'objet de l'échange, commun aux trois chemins. */

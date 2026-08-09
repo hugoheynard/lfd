@@ -10,7 +10,21 @@ import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
  * clôture. Les deux ensemble donnent le **délai de traitement** — la seule
  * mesure qui dise si la file est vraiment tenue, et qu'on ne pourrait pas
  * reconstituer après coup.
+ *
+ * Le **sujet** suit la demande : la société quand il y en a une, la personne
+ * sinon — même règle que pour un rendez-vous. Un prospect sans entreprise laisse
+ * donc une trace sur lui, et non aucune trace du tout.
  */
+
+/** Sur quoi porte l'entrée de journal : la société, ou à défaut la personne. */
+function subjectOf(
+  companyId: string | null,
+  userId: string,
+): { subjectType: "company" | "user"; subjectId: string } {
+  return companyId === null
+    ? { subjectType: "user", subjectId: userId }
+    : { subjectType: "company", subjectId: companyId };
+}
 @EventsHandler(SupportRequestedEvent)
 export class OnSupportRequested implements IEventHandler<SupportRequestedEvent> {
   constructor(private readonly recorder: ActivityRecorder) {}
@@ -18,8 +32,7 @@ export class OnSupportRequested implements IEventHandler<SupportRequestedEvent> 
   async handle(event: SupportRequestedEvent): Promise<void> {
     await this.recorder.record({
       type: ACTIVITY_TYPES.supportRequested,
-      subjectType: "company",
-      subjectId: event.companyId,
+      ...subjectOf(event.companyId, event.requestedByUserId),
       occurredAt: event.requestedAt,
       idempotencyKey: `${ACTIVITY_TYPES.supportRequested}:${event.supportRequestId}`,
       payload: { supportRequestId: event.supportRequestId, channel: event.channel },
@@ -34,8 +47,7 @@ export class OnSupportHandled implements IEventHandler<SupportHandledEvent> {
   async handle(event: SupportHandledEvent): Promise<void> {
     await this.recorder.record({
       type: ACTIVITY_TYPES.supportHandled,
-      subjectType: "company",
-      subjectId: event.companyId,
+      ...subjectOf(event.companyId, event.requestedByUserId),
       occurredAt: event.handledAt,
       idempotencyKey: `${ACTIVITY_TYPES.supportHandled}:${event.supportRequestId}`,
       payload: { supportRequestId: event.supportRequestId },

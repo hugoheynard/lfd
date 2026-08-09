@@ -65,7 +65,7 @@ import { AdminCompaniesController } from "./http/admin-companies.controller.js";
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
 import { CompaniesController } from "./http/companies.controller.js";
 import { AdminSupportController } from "./http/admin-support.controller.js";
-import { CompanySupportController } from "./http/company-support.controller.js";
+import { SupportController } from "./http/support.controller.js";
 import { CompanyAddressesController } from "./http/company-addresses.controller.js";
 import { CompanyContactsController } from "./http/company-contacts.controller.js";
 import { CompanyKbisController } from "./http/company-kbis.controller.js";
@@ -87,7 +87,7 @@ import { MeController } from "./http/me.controller.js";
     CompanyContactsController,
     CompanyKbisController,
     CompanyAddressesController,
-    CompanySupportController,
+    SupportController,
     AdminSupportController,
     AdminCompaniesController,
     AdminCompanyPiecesController,

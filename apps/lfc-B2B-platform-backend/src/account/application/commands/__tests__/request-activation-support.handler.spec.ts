@@ -15,7 +15,9 @@ import { RequestActivationSupportCommand } from "../request-activation-support.c
 import { RequestActivationSupportHandler } from "../request-activation-support.handler.js";
 
 const PAYLOAD: ActivationSupportPayload = {
+  companyId: "company_1",
   channel: "email",
+  purpose: "discover",
   phoneNumber: "",
   asap: true,
   scheduledDate: null,
@@ -37,7 +39,7 @@ function supportRepo(hasOpen: boolean, recorder?: { recorded: number }): Support
       return Promise.resolve("support_1");
     },
     list: () => Promise.resolve([]),
-    markHandled: () => Promise.resolve("company_1"),
+    markHandled: () => Promise.resolve({ companyId: "company_1", requestedByUserId: "user_1" }),
   } satisfies SupportRequestRepository;
 }
 
@@ -59,16 +61,14 @@ describe("RequestActivationSupportHandler", () => {
       CLOCK,
     );
 
-    const id = await handler.execute(
-      new RequestActivationSupportCommand("user_1", "company_1", PAYLOAD),
-    );
+    const id = await handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD));
 
     expect(id).toBe("support_1");
     expect(recorder.recorded).toBe(1);
     // Le journal capte le dépôt : c'est lui qui, avec la clôture, donnera le
     // délai de traitement de la file.
     expect(published).toEqual([
-      new SupportRequestedEvent("support_1", "company_1", "email", CLOCK.now()),
+      new SupportRequestedEvent("support_1", "company_1", "user_1", "email", CLOCK.now()),
     ]);
   });
 
@@ -82,7 +82,7 @@ describe("RequestActivationSupportHandler", () => {
     );
 
     await expect(
-      handler.execute(new RequestActivationSupportCommand("user_1", "company_1", PAYLOAD)),
+      handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD)),
     ).rejects.toBeInstanceOf(OpenSupportRequestExistsError);
     expect(recorder.recorded).toBe(0);
   });
@@ -91,7 +91,32 @@ describe("RequestActivationSupportHandler", () => {
     const handler = new RequestActivationSupportHandler(memberships(null), supportRepo(false));
 
     await expect(
-      handler.execute(new RequestActivationSupportCommand("user_x", "company_1", PAYLOAD)),
+      handler.execute(new RequestActivationSupportCommand("user_x", PAYLOAD)),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
+  });
+
+  it("n'interroge AUCUN mur quand la demande ne désigne pas de société", async () => {
+    // Le prospect sans entreprise déclarée ne peut pas être « membre » de quoi
+    // que ce soit : consulter les memberships ici le bloquerait pour toujours.
+    const memberships = {
+      roleOf: () => Promise.reject(new Error("le mur ne doit pas être interrogé")),
+    } satisfies MembershipReader;
+    const published: unknown[] = [];
+    const handler = new RequestActivationSupportHandler(
+      memberships,
+      supportRepo(false),
+      eventBus(published),
+      CLOCK,
+    );
+
+    const id = await handler.execute(
+      new RequestActivationSupportCommand("user_1", { ...PAYLOAD, companyId: null }),
+    );
+
+    expect(id).toBe("support_1");
+    // Le journal porte alors sur la PERSONNE — le sujet suit la demande.
+    expect(published).toEqual([
+      new SupportRequestedEvent("support_1", null, "user_1", "email", CLOCK.now()),
+    ]);
   });
 });

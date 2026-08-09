@@ -5,7 +5,9 @@
 export class SupportRequestedEvent {
   constructor(
     readonly supportRequestId: string,
-    readonly companyId: string,
+    /** Société concernée, ou `null` — la demande porte alors sur la personne. */
+    readonly companyId: string | null,
+    readonly requestedByUserId: string,
     readonly channel: string,
     /** Instant de la demande (temps métier, issu du `Clock`). */
     readonly requestedAt: Date,

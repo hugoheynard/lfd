@@ -6,7 +6,9 @@
 export class SupportHandledEvent {
   constructor(
     readonly supportRequestId: string,
-    readonly companyId: string,
+    /** Société concernée, ou `null` — la demande portait alors sur la personne. */
+    readonly companyId: string | null,
+    readonly requestedByUserId: string,
     /** Instant du traitement (temps métier, issu du `Clock`). */
     readonly handledAt: Date,
   ) {}

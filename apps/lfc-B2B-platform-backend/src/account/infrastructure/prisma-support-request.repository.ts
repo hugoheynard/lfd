@@ -8,7 +8,11 @@ import type {
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import { SupportRequestRepository } from "../domain/ports/support-request.repository.js";
+import {
+  SupportRequestRepository,
+  type HandledSupportRequest,
+  type SupportRequestScope,
+} from "../domain/ports/support-request.repository.js";
 
 /** Adaptateur Prisma des demandes de support. */
 @Injectable()
@@ -17,22 +21,23 @@ export class PrismaSupportRequestRepository extends SupportRequestRepository {
     super();
   }
 
-  async hasOpenRequest(companyId: string): Promise<boolean> {
+  async hasOpenRequest(scope: SupportRequestScope): Promise<boolean> {
+    // Sans société, la portée est la PERSONNE : c'est elle qu'on borne, sinon un
+    // prospect sans entreprise déposerait autant de rappels qu'il a de clics.
     const open = await this.prisma.supportRequest.findFirst({
-      where: { companyId, handledAt: null },
+      where:
+        scope.companyId === null
+          ? { companyId: null, requestedByUserId: scope.requestedByUserId, handledAt: null }
+          : { companyId: scope.companyId, handledAt: null },
       select: { id: true },
     });
     return open !== null;
   }
 
-  async record(
-    companyId: string,
-    requestedByUserId: string,
-    request: ActivationSupportPayload,
-  ): Promise<string> {
+  async record(requestedByUserId: string, request: ActivationSupportPayload): Promise<string> {
     const created = await this.prisma.supportRequest.create({
       data: {
-        companyId,
+        companyId: request.companyId,
         requestedByUserId,
         channel: request.channel,
         purpose: request.purpose,
@@ -55,10 +60,13 @@ export class PrismaSupportRequestRepository extends SupportRequestRepository {
     return rows.map(toView);
   }
 
-  async markHandled(supportRequestId: string, handledAt: Date): Promise<string | null> {
+  async markHandled(
+    supportRequestId: string,
+    handledAt: Date,
+  ): Promise<HandledSupportRequest | null> {
     const row = await this.prisma.supportRequest.findUnique({
       where: { id: supportRequestId },
-      select: { companyId: true, handledAt: true },
+      select: { companyId: true, requestedByUserId: true, handledAt: true },
     });
     if (row === null) {
       return null;
@@ -71,7 +79,7 @@ export class PrismaSupportRequestRepository extends SupportRequestRepository {
         data: { handledAt },
       });
     }
-    return row.companyId;
+    return { companyId: row.companyId, requestedByUserId: row.requestedByUserId };
   }
 }
 
@@ -91,7 +99,7 @@ function toPurpose(value: string): AppointmentPurpose {
 /** Une ligne `support_requests` vers la vue plate rendue au staff. */
 function toView(row: {
   id: string;
-  companyId: string;
+  companyId: string | null;
   requestedByUserId: string;
   channel: string;
   purpose: string;

@@ -65,8 +65,8 @@ async function seed(): Promise<string> {
 async function request(companyId: string): Promise<string> {
   await ctx
     .asSub(MEMBER)
-    .post(`/companies/${companyId}/support/activation`)
-    .send(CALL_BACK)
+    .post("/support/activation")
+    .send({ ...CALL_BACK, companyId })
     .expect(201);
   const list = await staff().get("/admin/support-requests").expect(200);
   const first = jsonBody<SupportRequestView[]>(list)[0];
@@ -109,13 +109,57 @@ describe("la file staff", () => {
   });
 });
 
+describe("sans entreprise", () => {
+  it("accepte une demande de rappel d'un prospect qui n'a rien déclaré", async () => {
+    // La population qu'on cherche à capter : elle ne doit pas buter sur un mur.
+    await createUser(ctx.prisma, { auth0Sub: STRANGER });
+    await ctx
+      .asSub(STRANGER)
+      .post("/support/activation")
+      .send({ ...CALL_BACK, companyId: null })
+      .expect(201);
+
+    const list = await staff().get("/admin/support-requests").expect(200);
+    expect(jsonBody<SupportRequestView[]>(list)[0]).toMatchObject({
+      companyId: null,
+      channel: "phone",
+    });
+  });
+
+  it("borne alors la file par PERSONNE, pas par société", async () => {
+    await createUser(ctx.prisma, { auth0Sub: STRANGER });
+    const payload = { ...CALL_BACK, companyId: null };
+    await ctx.asSub(STRANGER).post("/support/activation").send(payload).expect(201);
+    // Sans ce garde, un prospect déposerait autant de rappels qu'il a de clics.
+    await ctx.asSub(STRANGER).post("/support/activation").send(payload).expect(409);
+  });
+
+  it("ne verrouille PAS deux personnes l'une par l'autre", async () => {
+    await createUser(ctx.prisma, { auth0Sub: STRANGER });
+    const other = "auth0|other";
+    await createUser(ctx.prisma, { auth0Sub: other });
+    const payload = { ...CALL_BACK, companyId: null };
+    await ctx.asSub(STRANGER).post("/support/activation").send(payload).expect(201);
+    await ctx.asSub(other).post("/support/activation").send(payload).expect(201);
+  });
+
+  it("refuse une société dont on n'est pas membre (le mur tient toujours)", async () => {
+    const companyId = await seed();
+    await ctx
+      .asSub(STRANGER)
+      .post("/support/activation")
+      .send({ ...CALL_BACK, companyId })
+      .expect(404);
+  });
+});
+
 describe("le motif", () => {
   it("accompagne la demande jusqu'à la file staff — l'objet de l'échange", async () => {
     const companyId = await seed();
     await ctx
       .asSub(MEMBER)
-      .post(`/companies/${companyId}/support/activation`)
-      .send({ ...CALL_BACK, purpose: "billing" })
+      .post("/support/activation")
+      .send({ ...CALL_BACK, companyId, purpose: "billing" })
       .expect(201);
     const response = await staff().get("/admin/support-requests").expect(200);
     expect(jsonBody<SupportRequestView[]>(response)[0]?.purpose).toBe("billing");
@@ -125,8 +169,8 @@ describe("le motif", () => {
     const companyId = await seed();
     await ctx
       .asSub(MEMBER)
-      .post(`/companies/${companyId}/support/activation`)
-      .send({ ...CALL_BACK, purpose: "other", message: "" })
+      .post("/support/activation")
+      .send({ ...CALL_BACK, companyId, purpose: "other", message: "" })
       .expect(400);
   });
 });
@@ -151,8 +195,8 @@ describe("la clôture", () => {
     // Tant que la première est ouverte, la seconde est refusée (409).
     await ctx
       .asSub(MEMBER)
-      .post(`/companies/${companyId}/support/activation`)
-      .send(CALL_BACK)
+      .post("/support/activation")
+      .send({ ...CALL_BACK, companyId })
       .expect(409);
 
     await staff().post(`/admin/support-requests/${id}/handle`).expect(204);
@@ -160,8 +204,8 @@ describe("la clôture", () => {
     // Une fois traitée, le client redevient libre de redemander.
     await ctx
       .asSub(MEMBER)
-      .post(`/companies/${companyId}/support/activation`)
-      .send(CALL_BACK)
+      .post("/support/activation")
+      .send({ ...CALL_BACK, companyId })
       .expect(201);
     expect(await ctx.prisma.supportRequest.count()).toBe(2);
   });
@@ -193,8 +237,8 @@ describe("le mur client", () => {
     const companyId = await seed();
     await ctx
       .asSub(STRANGER)
-      .post(`/companies/${companyId}/support/activation`)
-      .send(CALL_BACK)
+      .post("/support/activation")
+      .send({ ...CALL_BACK, companyId })
       .expect(404);
     expect(await ctx.prisma.supportRequest.count()).toBe(0);
   });

@@ -322,8 +322,10 @@ enum SupportSlot {
 model SupportRequest {
   id String @id @default(cuid())
 
-  companyId String  @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// Société concernée, ou NULL : un prospect sans entreprise déclarée doit
+  /// pouvoir demander un rappel — la demande porte alors sur la personne.
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   requestedByUserId String @map("requested_by_user_id")
   requestedBy       User   @relation(fields: [requestedByUserId], references: [id])
@@ -344,6 +346,7 @@ model SupportRequest {
   createdAt DateTime  @default(now()) @map("created_at")
 
   @@index([companyId])
+  @@index([requestedByUserId])
   @@map("support_requests")
   @@schema("public")
 }
