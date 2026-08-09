@@ -55,6 +55,77 @@ export interface CustomerStats {
   readonly trend: CustomerSpendTrend;
 }
 
+/**
+ * Une **interaction** avec le compte, telle que le journal l'a enregistrée.
+ *
+ * Le journal en est la source — on le **lit**, on ne tient pas un second
+ * historique à côté, qui divergerait le jour où l'un des deux oublie un
+ * événement. Mais on ne le déverse pas non plus : il est **filtré** aux
+ * interactions commerciales (cf. `COMMERCIAL_TIMELINE_TYPES`). Une trace
+ * technique — une reco affichée, une étape franchie — n'apprend rien avant un
+ * appel et noie ce qui compte.
+ */
+export interface CustomerTimelineEntry {
+  readonly id: string;
+  /** Type du journal, ex. `order.placed` — c'est l'écran qui le met en mots. */
+  readonly type: string;
+  /** Instant **métier** de l'événement (ISO UTC), pas son ingestion. */
+  readonly occurredAt: string;
+  /** Qui l'a provoqué : `customer` · `staff` · `system`. */
+  readonly actorType: string;
+  /**
+   * Ce que l'interaction a **produit**, quand elle a produit quelque chose.
+   *
+   * C'est tout l'intérêt d'un historique commercial : un rendez-vous n'a pas de
+   * valeur en soi, il en a par ce qui a suivi — un compte activé, une première
+   * commande, un panier récurrent. On rattache donc au rendez-vous le premier
+   * jalon survenu dans les jours qui suivent, avec son délai.
+   *
+   * `null` quand rien n'a suivi : c'est une information, pas un trou.
+   */
+  readonly outcome: TimelineOutcome | null;
+}
+
+/** Le jalon qui a suivi une interaction, et combien de jours après. */
+export interface TimelineOutcome {
+  /** Type du jalon (`company.activated`, `order.placed`, `subscription.created`). */
+  readonly type: string;
+  readonly days: number;
+}
+
+/**
+ * Les types qui font un historique **commercial** : ce qui s'est joué entre eux
+ * et nous. Le reste du journal (recos, étapes techniques) sert au scoring, pas à
+ * préparer un appel.
+ */
+export const COMMERCIAL_TIMELINE_TYPES: readonly string[] = [
+  "user.registered",
+  "company.declared",
+  "company.activated",
+  "order.placed",
+  "subscription.created",
+  "appointment.requested",
+  "appointment.confirmed",
+  "appointment.cancelled",
+  "appointment.honored",
+  "appointment.no_show",
+  "support.requested",
+  "support.handled",
+  "lead.captured",
+  "lead.converted",
+  "lead.lost",
+];
+
+/**
+ * Les jalons qui **valent** comme conséquence d'un rendez-vous : le compte
+ * s'ouvre, il commande, il s'engage dans la durée. Trois faits, pas une opinion.
+ */
+export const TIMELINE_OUTCOME_TYPES: readonly string[] = [
+  "company.activated",
+  "order.placed",
+  "subscription.created",
+];
+
 /** La fiche complète rendue au commercial. */
 export interface CustomerSheetView {
   readonly companyId: string;
@@ -72,6 +143,8 @@ export interface CustomerSheetView {
   readonly contactPhone: string;
   readonly stats: CustomerStats;
   readonly recentOrders: readonly CustomerOrderLine[];
+  /** L'historique d'interaction, du plus récent au plus ancien. */
+  readonly timeline: readonly CustomerTimelineEntry[];
 }
 
 /**

@@ -1,134 +1,129 @@
-@if (failed()) {
-  <fold-callout variant="alert">
-    La fiche client n'a pas pu être chargée.
-    <button type="button" class="sec-link" (click)="load(companyId())">Réessayer</button>
-  </fold-callout>
-} @else if (sheet(); as sheet) {
-  <!-- QUI est en face. L'établissement d'abord : c'est le nom qu'on prononce. -->
+<!-- La fiche est descendue par la page : ce composant rend et agit, il ne
+     charge pas. -->
+@let view = sheet();
+
+<!-- QUI est en face. L'établissement d'abord : c'est le nom qu'on prononce. -->
+<fold-card class="cs-card">
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="company"
+    [title]="displayName()"
+    [subtitle]="view.raisonSociale"
+  />
+
+  <dl class="cs-facts">
+    <dt>État</dt>
+    <dd><fold-badge [variant]="statusTone()" [content]="statusLabel()" /></dd>
+
+    <dt>Catégorie</dt>
+    <dd>{{ view.nafCode === '' ? 'Non renseignée' : view.nafCode }}</dd>
+
+    <dt>Inscrit depuis</dt>
+    <dd>{{ age() }}</dd>
+
+    <dt>Référence</dt>
+    <dd class="cs-num">{{ view.reference }}</dd>
+
+    <dt>Contact</dt>
+    <dd>
+      {{ view.contactName }}
+      @if (view.contactEmail !== '') {
+        · <a [href]="'mailto:' + view.contactEmail">{{ view.contactEmail }}</a>
+      }
+      @if (view.contactPhone !== '') {
+        · <a [href]="'tel:' + view.contactPhone">{{ view.contactPhone }}</a>
+      }
+    </dd>
+  </dl>
+</fold-card>
+
+<!-- COMBIEN il pèse. Quatre chiffres, pas cinq : au-delà on ne les lit plus. -->
+<fold-card class="cs-card">
+  <fold-element-title cardHeader variant="title" icon="stats" title="Le compte en chiffres" />
+
+  <div class="cs-kpis">
+    <div class="cs-kpi">
+      <span class="cs-kpi-label">Total dépensé</span>
+      <span class="cs-kpi-value cs-num">{{ euros(view.stats.totalSpentCents) }}</span>
+      @if (trend(); as trend) {
+        <span class="cs-kpi-trend" [attr.data-tone]="trend.tone">{{ trend.label }}</span>
+      }
+    </div>
+
+    <div class="cs-kpi">
+      <span class="cs-kpi-label">Commandes</span>
+      <span class="cs-kpi-value cs-num">{{ view.stats.ordersCount }}</span>
+    </div>
+
+    <div class="cs-kpi">
+      <span class="cs-kpi-label">Paniers récurrents</span>
+      <span class="cs-kpi-value cs-num">{{ view.stats.recurringBasketsCount }}</span>
+    </div>
+
+    <div class="cs-kpi">
+      <span class="cs-kpi-label">Panier moyen</span>
+      <span class="cs-kpi-value cs-num">{{ euros(view.stats.averageTicketCents) }}</span>
+    </div>
+  </div>
+</fold-card>
+
+<!-- QUOI il a commandé : de quoi ouvrir la conversation. -->
+<fold-card class="cs-card">
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="contracts"
+    title="Dernières commandes"
+    subtitle="Les plus récentes d'abord."
+  />
+
+  <ul class="cs-orders">
+    @for (order of view.recentOrders; track order.id) {
+      <li class="cs-order">
+        <span class="cs-order-ref cs-num">{{ order.orderNumber }}</span>
+        <span class="cs-order-date cs-num">{{ order.placedAt | date: 'dd/MM/yyyy' }}</span>
+        <span class="cs-order-status">{{ order.status }}</span>
+        <span class="cs-order-total cs-num">{{ euros(order.totalCents) }}</span>
+      </li>
+    } @empty {
+      <li class="cs-empty">Aucune commande à ce jour.</li>
+    }
+  </ul>
+</fold-card>
+
+<!-- Les gestes qui ENGAGENT, en bas et derrière une confirmation : suspendre ou
+     résilier un compte ne se fait pas en passant. -->
+@if (canSuspend() || canReactivate() || canTerminate()) {
   <fold-card class="cs-card">
-    <fold-element-title
-      cardHeader
-      variant="title"
-      icon="company"
-      [title]="displayName()"
-      [subtitle]="sheet.raisonSociale"
-    />
+    <fold-element-title cardHeader variant="title" icon="settings" title="État du compte" />
 
-    <dl class="cs-facts">
-      <dt>État</dt>
-      <dd><fold-badge [variant]="statusTone()" [content]="statusLabel()" /></dd>
-
-      <dt>Catégorie</dt>
-      <dd>{{ sheet.nafCode === '' ? 'Non renseignée' : sheet.nafCode }}</dd>
-
-      <dt>Inscrit depuis</dt>
-      <dd>{{ age() }}</dd>
-
-      <dt>Référence</dt>
-      <dd class="cs-num">{{ sheet.reference }}</dd>
-
-      <dt>Contact</dt>
-      <dd>
-        {{ sheet.contactName }}
-        @if (sheet.contactEmail !== '') {
-          · <a [href]="'mailto:' + sheet.contactEmail">{{ sheet.contactEmail }}</a>
-        }
-        @if (sheet.contactPhone !== '') {
-          · <a [href]="'tel:' + sheet.contactPhone">{{ sheet.contactPhone }}</a>
-        }
-      </dd>
-    </dl>
-  </fold-card>
-
-  <!-- COMBIEN il pèse. Quatre chiffres, pas cinq : au-delà on ne les lit plus. -->
-  <fold-card class="cs-card">
-    <fold-element-title cardHeader variant="title" icon="stats" title="Le compte en chiffres" />
-
-    <div class="cs-kpis">
-      <div class="cs-kpi">
-        <span class="cs-kpi-label">Total dépensé</span>
-        <span class="cs-kpi-value cs-num">{{ euros(sheet.stats.totalSpentCents) }}</span>
-        @if (trend(); as trend) {
-          <span class="cs-kpi-trend" [attr.data-tone]="trend.tone">{{ trend.label }}</span>
-        }
-      </div>
-
-      <div class="cs-kpi">
-        <span class="cs-kpi-label">Commandes</span>
-        <span class="cs-kpi-value cs-num">{{ sheet.stats.ordersCount }}</span>
-      </div>
-
-      <div class="cs-kpi">
-        <span class="cs-kpi-label">Paniers récurrents</span>
-        <span class="cs-kpi-value cs-num">{{ sheet.stats.recurringBasketsCount }}</span>
-      </div>
-
-      <div class="cs-kpi">
-        <span class="cs-kpi-label">Panier moyen</span>
-        <span class="cs-kpi-value cs-num">{{ euros(sheet.stats.averageTicketCents) }}</span>
-      </div>
+    <div class="cs-actions">
+      @if (canReactivate()) {
+        <button
+          foldButton
+          emphasis="outline"
+          [disabled]="busy()"
+          (click)="changeStatus('reactivate', '')"
+        >
+          Réactiver le compte
+        </button>
+      }
+      @if (canSuspend()) {
+        <fold-inline-confirm
+          label="Mettre en pause"
+          confirmLabel="Confirmer la pause"
+          (confirmed)="changeStatus('suspend', 'Suspendu depuis la fiche commerciale')"
+        />
+      }
+      @if (canTerminate()) {
+        <fold-inline-confirm
+          label="Résilier le compte"
+          confirmLabel="Confirmer la résiliation"
+          tone="danger"
+          (confirmed)="changeStatus('terminate', 'Résilié depuis la fiche commerciale')"
+        />
+      }
     </div>
   </fold-card>
-
-  <!-- QUOI il a commandé : de quoi ouvrir la conversation. -->
-  <fold-card class="cs-card">
-    <fold-element-title
-      cardHeader
-      variant="title"
-      icon="contracts"
-      title="Dernières commandes"
-      subtitle="Les plus récentes d'abord."
-    />
-
-    <ul class="cs-orders">
-      @for (order of sheet.recentOrders; track order.id) {
-        <li class="cs-order">
-          <span class="cs-order-ref cs-num">{{ order.orderNumber }}</span>
-          <span class="cs-order-date cs-num">{{ order.placedAt | date: 'dd/MM/yyyy' }}</span>
-          <span class="cs-order-status">{{ order.status }}</span>
-          <span class="cs-order-total cs-num">{{ euros(order.totalCents) }}</span>
-        </li>
-      } @empty {
-        <li class="cs-empty">Aucune commande à ce jour.</li>
-      }
-    </ul>
-  </fold-card>
-
-  <!-- Les gestes qui ENGAGENT, en bas et derrière une confirmation : suspendre ou
-       résilier un compte ne se fait pas en passant. -->
-  @if (canSuspend() || canReactivate() || canTerminate()) {
-    <fold-card class="cs-card">
-      <fold-element-title cardHeader variant="title" icon="settings" title="État du compte" />
-
-      <div class="cs-actions">
-        @if (canReactivate()) {
-          <button
-            foldButton
-            emphasis="outline"
-            [disabled]="busy()"
-            (click)="changeStatus('reactivate', '')"
-          >
-            Réactiver le compte
-          </button>
-        }
-        @if (canSuspend()) {
-          <fold-inline-confirm
-            label="Mettre en pause"
-            confirmLabel="Confirmer la pause"
-            (confirmed)="changeStatus('suspend', 'Suspendu depuis la fiche commerciale')"
-          />
-        }
-        @if (canTerminate()) {
-          <fold-inline-confirm
-            label="Résilier le compte"
-            confirmLabel="Confirmer la résiliation"
-            tone="danger"
-            (confirmed)="changeStatus('terminate', 'Résilié depuis la fiche commerciale')"
-          />
-        }
-      </div>
-    </fold-card>
-  }
-} @else {
-  <p class="cs-loading">Chargement de la fiche…</p>
 }

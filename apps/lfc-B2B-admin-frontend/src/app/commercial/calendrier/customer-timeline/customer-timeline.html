@@ -1,0 +1,23 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="timeline"
+    title="Historique commercial"
+    subtitle="Ce qui s'est joué, et ce que ça a produit."
+  />
+
+  <!-- Le rendez-vous en cours ouvre la liste : c'est le repère à partir duquel
+       tout le reste se lit, et il n'est pas encore un fait accompli. -->
+  @if (current(); as rdv) {
+    <fold-callout appearance="inset" variant="info" class="ct-current">
+      <strong>En cours</strong> — {{ rdv.day }} à {{ rdv.time }}
+    </fold-callout>
+  }
+
+  @if (nodes().length > 0) {
+    <fold-timeline [nodes]="nodes()" orientation="vertical" ariaLabel="Historique du compte" />
+  } @else {
+    <p class="ct-empty">Aucune interaction enregistrée.</p>
+  }
+</fold-card>

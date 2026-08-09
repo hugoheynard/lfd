@@ -13,16 +13,19 @@ import {
   FoldButtonComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
+  FoldAsideLayoutComponent,
   FoldPageLayoutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
-import type { AppointmentTransition, AppointmentView } from '@lfd/contracts';
+import type { AppointmentTransition, AppointmentView, CustomerSheetView } from '@lfd/contracts';
 import { purposeShort } from '@lfd/b2b-ui/appointment';
 
 import { NotifyService } from '../../../notify.service';
 import { AvailabilityService } from '../../availability/availability.service';
 import { CustomerSheet } from '../customer-sheet/customer-sheet';
+import { CustomerSheetService } from '../customer-sheet/customer-sheet.service';
+import { CustomerTimeline } from '../customer-timeline/customer-timeline';
 
 /** Une action proposée, avec ce qu'elle exige. */
 interface Action {
@@ -68,6 +71,7 @@ const CHANNEL_LABEL: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
+    FoldAsideLayoutComponent,
     FoldPageLayoutComponent,
     FoldBackLinkComponent,
     FoldCardComponent,
@@ -76,12 +80,14 @@ const CHANNEL_LABEL: Record<string, string> = {
     FoldLoadingStateComponent,
     FoldButtonComponent,
     CustomerSheet,
+    CustomerTimeline,
   ],
   templateUrl: './rendez-vous-page.html',
   styleUrl: './rendez-vous-page.scss',
 })
 export class RendezVousPage {
   private readonly service = inject(AvailabilityService);
+  private readonly sheets = inject(CustomerSheetService);
   private readonly notify = inject(NotifyService);
 
   /** Lié au segment de route (`withComponentInputBinding`). */
@@ -95,6 +101,12 @@ export class RendezVousPage {
   protected readonly pending = signal<Action | null>(null);
 
   protected readonly appointment = signal<AppointmentView | null>(null);
+  /**
+   * La fiche du client. Chargée **ici** et non par la carte : le rail
+   * d'historique s'en sert aussi, et deux composants qui appelleraient la même
+   * route feraient deux requêtes pour un seul écran.
+   */
+  protected readonly sheet = signal<CustomerSheetView | null>(null);
 
   constructor() {
     effect(() => {
@@ -106,8 +118,10 @@ export class RendezVousPage {
   protected async load(appointmentId: string): Promise<void> {
     this.state.set('loading');
     try {
-      this.appointment.set(await this.service.byId(appointmentId));
+      const appointment = await this.service.byId(appointmentId);
+      this.appointment.set(appointment);
       this.state.set('ready');
+      await this.loadSheet(appointment);
     } catch {
       this.state.set('missing');
     }
@@ -157,6 +171,27 @@ export class RendezVousPage {
     }
     return actions;
   });
+
+  /**
+   * La fiche, quand le rendez-vous porte sur une **société**. Son échec ne
+   * bascule pas la page : le rendez-vous reste lisible et actionnable sans elle.
+   */
+  protected async loadSheet(appointment: AppointmentView | null): Promise<void> {
+    if (appointment === null || appointment.subjectType !== 'company') {
+      this.sheet.set(null);
+      return;
+    }
+    try {
+      this.sheet.set(await this.sheets.sheet(appointment.subjectId));
+    } catch {
+      this.sheet.set(null);
+    }
+  }
+
+  /** L'état du compte a changé : on relit la fiche, pas le rendez-vous. */
+  protected async reloadSheet(): Promise<void> {
+    await this.loadSheet(this.appointment());
+  }
 
   /** Lance une action, ou ouvre d'abord la saisie du motif. */
   protected start(action: Action): void {

@@ -214,6 +214,8 @@ export {
   addMarketNafPayloadSchema,
 } from "./growth.js";
 export {
+  COMMERCIAL_TIMELINE_TYPES,
+  TIMELINE_OUTCOME_TYPES,
   companyStatusSchema,
   companyStatusActionSchema,
   companyStatusPayloadSchema,
@@ -226,4 +228,6 @@ export type {
   CustomerSheetView,
   CustomerSpendTrend,
   CustomerStats,
+  CustomerTimelineEntry,
+  TimelineOutcome,
 } from "./customer-sheet.js";

@@ -3,15 +3,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldInlineConfirmComponent,
@@ -46,8 +45,10 @@ const STATUS_TONE: Record<string, 'neutral' | 'success' | 'warning' | 'alert'> =
  * engagent — suspendre, résilier — sont en bas, derrière une confirmation en
  * ligne : ce ne sont pas des gestes qu'on fait en passant.
  *
- * Le composant ne connaît qu'un `companyId` : c'est lui qui charge, pour que le
- * panneau qui l'héberge n'ait pas à savoir ce qu'est une fiche.
+ * Il ne **charge rien** : la page lui descend la fiche déjà lue, parce que le
+ * rail d'historique s'en sert aussi — deux composants qui appelleraient la même
+ * route feraient deux requêtes pour un seul écran. Il **agit**, en revanche, et
+ * prévient (`changed`) pour que la page relise ce que le serveur détient.
  */
 @Component({
   selector: 'app-customer-sheet',
@@ -58,7 +59,6 @@ const STATUS_TONE: Record<string, 'neutral' | 'success' | 'warning' | 'alert'> =
     FoldElementTitleComponent,
     FoldBadgeComponent,
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldInlineConfirmComponent,
   ],
   templateUrl: './customer-sheet.html',
@@ -68,76 +68,48 @@ export class CustomerSheet {
   private readonly service = inject(CustomerSheetService);
   private readonly notify = inject(NotifyService);
 
-  readonly companyId = input.required<string>();
+  readonly sheet = input.required<CustomerSheetView>();
+  /** L'état du compte a changé : la page relit. */
+  readonly changed = output<void>();
 
-  protected readonly sheet = signal<CustomerSheetView | null>(null);
-  protected readonly failed = signal(false);
   protected readonly busy = signal(false);
 
   /** Posé une fois : une fiche ne doit pas changer d'ancienneté pendant qu'on la lit. */
   private readonly now = new Date();
 
-  protected readonly statusLabel = computed(() => STATUS_LABEL[this.sheet()?.status ?? ''] ?? '—');
-  protected readonly statusTone = computed(
-    () => STATUS_TONE[this.sheet()?.status ?? ''] ?? 'neutral',
-  );
+  protected readonly statusLabel = computed(() => STATUS_LABEL[this.sheet().status] ?? '—');
+  protected readonly statusTone = computed(() => STATUS_TONE[this.sheet().status] ?? 'neutral');
 
   /** L'établissement : l'enseigne si elle existe, la raison sociale sinon. */
   protected readonly displayName = computed(() => {
     const sheet = this.sheet();
-    if (sheet === null) {
-      return '';
-    }
     return sheet.enseigne === '' ? sheet.raisonSociale : sheet.enseigne;
   });
 
-  protected readonly age = computed(() => {
-    const sheet = this.sheet();
-    return sheet === null ? '' : membershipAge(sheet.createdAt, this.now);
-  });
+  protected readonly age = computed(() => membershipAge(this.sheet().createdAt, this.now));
 
   protected readonly trend = computed(() => {
-    const sheet = this.sheet();
-    return sheet === null
-      ? null
-      : { label: trendLabel(sheet.stats.trend), tone: trendTone(sheet.stats.trend) };
+    const trend = this.sheet().stats.trend;
+    return { label: trendLabel(trend), tone: trendTone(trend) };
   });
 
   /** Un compte actif se suspend ; un suspendu se réactive ; un résilié ne bouge plus. */
-  protected readonly canSuspend = computed(() => this.sheet()?.status === 'active');
-  protected readonly canReactivate = computed(() => this.sheet()?.status === 'suspended');
+  protected readonly canSuspend = computed(() => this.sheet().status === 'active');
+  protected readonly canReactivate = computed(() => this.sheet().status === 'suspended');
   protected readonly canTerminate = computed(
-    () => this.sheet()?.status === 'active' || this.sheet()?.status === 'suspended',
+    () => this.sheet().status === 'active' || this.sheet().status === 'suspended',
   );
-
-  constructor() {
-    effect(() => {
-      void this.load(this.companyId());
-    });
-  }
 
   protected euros(cents: number): string {
     return euros(cents);
   }
 
-  protected async load(companyId: string): Promise<void> {
-    this.failed.set(false);
-    try {
-      this.sheet.set(await this.service.sheet(companyId));
-    } catch {
-      // Un échec de chargement reste À L'ÉCRAN : il n'y a rien à montrer, et le
-      // « Réessayer » doit rester atteignable.
-      this.failed.set(true);
-    }
-  }
-
   /** Suspend, réactive ou résilie — et relit la fiche pour afficher l'état réel. */
   protected async changeStatus(action: CompanyStatusAction, reason: string): Promise<void> {
-    const companyId = this.companyId();
     this.busy.set(true);
     try {
-      await this.service.changeStatus(companyId, { action, reason });
-      await this.load(companyId);
+      await this.service.changeStatus(this.sheet().companyId, { action, reason });
+      this.changed.emit();
       this.notify.success(DONE_LABEL[action]);
     } catch (error) {
       this.notify.error(error, "L'état du compte n'a pas pu être changé.");

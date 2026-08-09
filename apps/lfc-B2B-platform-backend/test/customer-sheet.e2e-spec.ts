@@ -141,6 +141,50 @@ describe("la fiche client", () => {
     expect(view.recentOrders).toHaveLength(2);
   });
 
+  it("remonte l'historique d'interaction depuis le JOURNAL, du plus récent au plus ancien", async () => {
+    const { companyId } = await seed();
+    const record = async (type: string, minutesAgo: number): Promise<void> => {
+      await ctx.prisma.activityEvent.create({
+        data: {
+          id: `evt_${type}_${minutesAgo}`,
+          type,
+          occurredAt: new Date(Date.now() - minutesAgo * 60 * 1000),
+          subjectType: "company",
+          subjectId: companyId,
+          actorType: "staff",
+          traceId: "trace-e2e",
+          idempotencyKey: `${type}:${minutesAgo}`,
+          payload: {},
+        },
+      });
+    };
+    await record("company.declared", 120);
+    await record("order.placed", 10);
+
+    const view = await sheet(companyId);
+    expect(view.timeline.map((entry) => entry.type)).toEqual(["order.placed", "company.declared"]);
+    expect(view.timeline[0]?.actorType).toBe("staff");
+  });
+
+  it("n'emporte PAS le journal d'une autre société", async () => {
+    const { companyId } = await seed();
+    const other = await createCompany(ctx.prisma, { status: "active" });
+    await ctx.prisma.activityEvent.create({
+      data: {
+        id: "evt_autre",
+        type: "order.placed",
+        occurredAt: new Date(),
+        subjectType: "company",
+        subjectId: other.id,
+        actorType: "customer",
+        traceId: "trace-e2e",
+        idempotencyKey: "autre:1",
+        payload: {},
+      },
+    });
+    expect((await sheet(companyId)).timeline).toEqual([]);
+  });
+
   it("ne compte aucun panier récurrent quand il n'y en a pas", async () => {
     const { companyId } = await seed();
     expect((await sheet(companyId)).stats.recurringBasketsCount).toBe(0);
