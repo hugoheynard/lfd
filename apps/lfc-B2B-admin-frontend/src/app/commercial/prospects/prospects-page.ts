@@ -24,6 +24,10 @@ import type {
 import { NotifyService } from '../../notify.service';
 import { LeadsService } from '../leads.service';
 import { LeadCapturePanel } from './lead-capture-panel/lead-capture-panel';
+import { Chart, type ChartOption } from '../../shared/chart/chart';
+import { funnelOption } from '../croissance/growth-charts';
+import { GrowthService } from '../croissance/growth.service';
+import { ActivationTable } from './activation/activation-table';
 import { ProspectsService } from './prospects.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -95,6 +99,8 @@ function isFilterValue(value: string): value is FilterValue {
     FoldIconComponent,
     FoldPopoverTriggerDirective,
     FoldViewToggleComponent,
+    ActivationTable,
+    Chart,
   ],
   templateUrl: './prospects-page.html',
   styleUrl: './prospects-page.scss',
@@ -104,10 +110,26 @@ export class ProspectsPage {
   private readonly leads = inject(LeadsService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly growth = inject(GrowthService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly prospects = signal<readonly ProspectView[]>([]);
   protected readonly filter = signal<FilterValue>('all');
+
+  /**
+   * L'**étage** du parcours qu'on regarde : le vivier (avant compte) ou
+   * l'activation (compte créé, pas encore actif). Deux moments d'un même
+   * parcours, pas deux sujets — d'où une seule page.
+   */
+  protected readonly stage = signal<'vivier' | 'activation'>('vivier');
+  protected readonly stages: readonly FoldViewToggleOption[] = [
+    { value: 'vivier', label: 'Le vivier' },
+    { value: 'activation', label: "L'activation" },
+  ];
+
+  /** L'entonnoir de l'étage affiché — c'est là qu'on voit OÙ ça se perd. */
+  protected readonly funnel = signal<ChartOption | null>(null);
+  private readonly funnels = signal<{ cold: ChartOption; activation: ChartOption } | null>(null);
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'temperature', label: '', width: '5rem' },
@@ -152,6 +174,7 @@ export class ProspectsPage {
 
   constructor() {
     void this.load();
+    void this.loadFunnels();
   }
 
   protected async load(): Promise<void> {
@@ -161,6 +184,37 @@ export class ProspectsPage {
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  protected onStageChange(value: string): void {
+    if (value !== 'vivier' && value !== 'activation') {
+      return;
+    }
+    this.stage.set(value);
+    this.applyFunnel();
+  }
+
+  /** L'entonnoir suit l'étage : le vivier montre le froid, l'activation le tunnel. */
+  private applyFunnel(): void {
+    const both = this.funnels();
+    if (both === null) {
+      return;
+    }
+    this.funnel.set(this.stage() === 'vivier' ? both.cold : both.activation);
+  }
+
+  /** Best-effort : un entonnoir absent ne doit pas priver de la liste. */
+  private async loadFunnels(): Promise<void> {
+    try {
+      const stats = await this.growth.stats();
+      this.funnels.set({
+        cold: funnelOption(stats.coldFunnel, '#64748b'),
+        activation: funnelOption(stats.activationFunnel, '#3b82f6'),
+      });
+      this.applyFunnel();
+    } catch {
+      this.funnels.set(null);
     }
   }
 

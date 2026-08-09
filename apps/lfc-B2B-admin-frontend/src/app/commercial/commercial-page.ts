@@ -18,16 +18,16 @@ import { FoldPageLayoutComponent, FoldViewNavComponent, type FoldViewNavItem } f
 })
 export class CommercialPage {
   /** Onglets routés — chaque `link` est relatif à `/commercial`. */
+  // Les icônes viennent du catalogue FOLD (86 noms). Quatre d'entre elles
+  // portaient des noms lucide (`layout-dashboard`, `users`, `check-circle`,
+  // `trending-up`) : `FoldIconName` accepte n'importe quelle chaîne, donc elles
+  // compilaient et ne s'affichaient pas.
   protected readonly tabs: FoldViewNavItem[] = [
-    { key: 'cockpit', label: 'Tableau de bord', link: 'cockpit', icon: 'layout-dashboard' },
-    { key: 'prospects', label: 'Prospects', link: 'prospects', icon: 'users' },
-    {
-      key: 'activation',
-      label: 'Activation & frictions',
-      link: 'activation',
-      icon: 'check-circle',
-    },
-    { key: 'croissance', label: 'Croissance', link: 'croissance', icon: 'trending-up' },
+    { key: 'cockpit', label: 'Tableau de bord', link: 'cockpit', icon: 'grid' },
+    // « Activation & frictions » a fusionné ici : ce n'était pas un second sujet
+    // mais le second étage du même parcours (cf. la bascule dans la page).
+    { key: 'prospects', label: 'Prospects', link: 'prospects', icon: 'team' },
+    { key: 'croissance', label: 'Croissance', link: 'croissance', icon: 'stats' },
     { key: 'calendrier', label: 'Calendrier', link: 'calendrier', icon: 'calendar' },
   ];
 }

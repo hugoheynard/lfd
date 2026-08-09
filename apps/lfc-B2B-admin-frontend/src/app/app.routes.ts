@@ -70,12 +70,9 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./commercial/prospects/prospects-page').then((m) => m.ProspectsPage),
       },
-      {
-        path: 'activation',
-        title: 'Activation & frictions — LFC B2B admin',
-        loadComponent: () =>
-          import('./commercial/activation/activation-page').then((m) => m.ActivationPage),
-      },
+      // L'onglet a fusionné dans Prospects : on redirige plutôt que de rendre un
+      // lien partagé caduc.
+      { path: 'activation', pathMatch: 'full', redirectTo: 'prospects' },
       {
         path: 'croissance',
         title: 'Croissance — LFC B2B admin',

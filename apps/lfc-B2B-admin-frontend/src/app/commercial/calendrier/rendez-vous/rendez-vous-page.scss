@@ -1,13 +1,3 @@
-/* Les cartes de la page respirent au rythme de la page, pas de marges posées
-   carte par carte. */
-:host {
-  display: block;
-}
-
-.rv-card {
-  margin-bottom: var(--fold-space-md);
-}
-
 /* Quand a lieu le rendez-vous — juste sous le motif, avant le détail. */
 .rv-when {
   margin: 0 0 var(--fold-space-md);

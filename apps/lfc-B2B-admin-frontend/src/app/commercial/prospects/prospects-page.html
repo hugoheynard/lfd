@@ -3,7 +3,8 @@
     <div>
       <h1>Prospects</h1>
       <p class="subtitle">
-        La file entrante — chauds &amp; tièdes dérivés du journal, froids saisis au démarchage.
+        Le parcours entier, d'un nom sur une liste à un compte qui commande — froid, tiède, chaud,
+        puis l'activation du dossier.
       </p>
     </div>
     <div class="head-actions">
@@ -21,7 +22,24 @@
     </div>
   </header>
 
-  @if (state() === 'error') {
+  <!-- Deux moments d'un MÊME parcours : on change d'étage, pas de sujet. -->
+  <fold-view-toggle
+    class="stage"
+    ariaLabel="Étage du parcours"
+    [options]="stages"
+    [value]="stage()"
+    (valueChange)="onStageChange($event)"
+  />
+
+  <!-- L'entonnoir de l'étage : la seule vue qui dise OÙ ça se perd, plutôt que
+       combien il en reste. -->
+  @if (funnel(); as option) {
+    <app-chart class="funnel" [option]="option" height="180px" />
+  }
+
+  @if (stage() === 'activation') {
+    <app-activation-table />
+  } @else if (state() === 'error') {
     <div class="state">
       <p>Impossible de charger les prospects.</p>
       <button foldButton (click)="load()">Réessayer</button>

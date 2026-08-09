@@ -4,8 +4,8 @@ import { firstValueFrom } from 'rxjs';
 
 import type { ActivationView } from '@lfd/contracts';
 
-import { B2B_API_BASE } from '../../api/api-config';
-import { SuiteEmbed } from '../../suite-embed/suite-embed';
+import { B2B_API_BASE } from '../../../api/api-config';
+import { SuiteEmbed } from '../../../suite-embed/suite-embed';
 
 /** Audience du token staff demandé au shell (surface `/admin/*`). */
 const STAFF_AUDIENCE = 'b2b-admin';

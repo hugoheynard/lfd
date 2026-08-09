@@ -31,14 +31,21 @@ const STEP_LABELS: Record<string, string> = {
 };
 
 /**
- * Onglet **Activation & frictions** (commercial) : le tunnel des dossiers,
- * **dérivé du journal** (`GET /admin/activations`). Chaque société montre sa
- * **complétion** de pièces, si elle est **adoption+** (0-touch, product-led), et
- * depuis combien de jours elle est **bloquée** (adoption-stalled). Filtré par
- * statut ; les `pending` d'abord, les plus anciennement bloqués en tête (tri serveur).
+ * Le **tunnel d'activation** — les dossiers déjà inscrits, avec leurs pièces
+ * manquantes et leurs blocages. Dérivé du journal (`GET /admin/activations`).
+ *
+ * C'était un onglet ; c'est devenu **le second étage de Prospects**. La raison
+ * est qu'il n'y avait jamais eu deux sujets : froid → tiède → chaud → inscrit →
+ * activé est un seul parcours, et le couper en deux écrans obligeait le
+ * commercial à deviner de quel côté chercher quelqu'un. Il porte donc sa propre
+ * barre de filtres, mais plus son en-tête de page.
+ *
+ * Chaque société montre sa **complétion** de pièces, si elle s'est activée seule
+ * (**adoption+**, product-led), et depuis combien de jours elle est **bloquée**.
+ * Les `pending` d'abord, les plus anciennement bloqués en tête (tri serveur).
  */
 @Component({
-  selector: 'app-activation-page',
+  selector: 'app-activation-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBadgeComponent,
@@ -47,10 +54,10 @@ const STEP_LABELS: Record<string, string> = {
     FoldDataTableCellDirective,
     FoldViewToggleComponent,
   ],
-  templateUrl: './activation-page.html',
-  styleUrl: './activation-page.scss',
+  templateUrl: './activation-table.html',
+  styleUrl: './activation-table.scss',
 })
-export class ActivationPage {
+export class ActivationTable {
   private readonly service = inject(ActivationsService);
 
   protected readonly state = signal<LoadState>('loading');

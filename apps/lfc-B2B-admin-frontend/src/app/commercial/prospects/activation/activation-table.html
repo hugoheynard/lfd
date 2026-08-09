@@ -1,22 +1,16 @@
-<section class="page">
-  <header class="page-head">
-    <div>
-      <h1>Activation &amp; frictions</h1>
-      <p class="subtitle">
-        Où en est chaque dossier — pièces manquantes, blocages, et qui s’active seul (adoption+).
-      </p>
+<div class="act">
+  <!-- Les deux seules files qui appellent une action : ce qui bloque, et ce qui
+       s'est activé tout seul (à ne surtout pas rappeler). -->
+  @if (state() === 'ready' && (stalledCount() > 0 || adoptionPlusCount() > 0)) {
+    <div class="act-queues">
+      @if (stalledCount() > 0) {
+        <fold-badge variant="warning" [content]="stalledCount() + ' bloqués ≥ 7 j'" />
+      }
+      @if (adoptionPlusCount() > 0) {
+        <fold-badge variant="success" [content]="adoptionPlusCount() + ' adoption+'" />
+      }
     </div>
-    @if (state() === 'ready') {
-      <div class="queues">
-        @if (stalledCount() > 0) {
-          <fold-badge variant="warning" [content]="stalledCount() + ' bloqués ≥ 7 j'" />
-        }
-        @if (adoptionPlusCount() > 0) {
-          <fold-badge variant="success" [content]="adoptionPlusCount() + ' adoption+'" />
-        }
-      </div>
-    }
-  </header>
+  }
 
   @if (state() === 'error') {
     <div class="state">
@@ -76,4 +70,4 @@
       </ng-template>
     </fold-data-table>
   }
-</section>
+</div>
