@@ -39,7 +39,14 @@
       @if (pinnedCompanies().length > 0) {
         <section class="ck-block">
           <h2 class="ck-h2">Comptes suivis</h2>
-          <app-pinned-accounts [companies]="pinnedCompanies()" (unpinned)="unpin($event)" />
+          <app-pinned-accounts
+            [companies]="pinnedCompanies()"
+            [accounts]="accounts()"
+            [sheets]="sheets()"
+            (unpinned)="unpin($event)"
+            (metricAdded)="addMetric($event)"
+            (metricRemoved)="removeMetric($event)"
+          />
         </section>
       }
 

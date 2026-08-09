@@ -22,6 +22,7 @@ import type {
 import type { SupportRequestView } from '@lfd/contracts';
 
 import type { AdminCompany } from '../../comptes-clients/admin-company';
+import { NotifyService } from '../../notify.service';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { AvailabilityService } from '../availability/availability.service';
@@ -31,8 +32,9 @@ import { GrowthService } from '../croissance/growth.service';
 import { SupportService } from '../support/support.service';
 import { SupportQueue } from '../support/support-queue/support-queue';
 import { CockpitService } from './cockpit.service';
-import { PinnedAccounts } from './pinned-accounts/pinned-accounts';
-import { PinnedAccountsStore } from './pinned-store';
+import { PinnedAccounts, type SheetsById } from './pinned-accounts/pinned-accounts';
+import { PinnedAccountsStore, MAX_METRICS } from './pinned-store';
+import { CustomerSheetService } from '../calendrier/customer-sheet/customer-sheet.service';
 import { PlayQueue } from './play-queue/play-queue';
 import { RevenuePaceCard } from './revenue-pace/revenue-pace';
 
@@ -85,6 +87,8 @@ export class CockpitPage {
   private readonly supportApi = inject(SupportService);
   private readonly companiesApi = inject(AdminCompaniesService);
   private readonly pins = inject(PinnedAccountsStore);
+  private readonly sheetsApi = inject(CustomerSheetService);
+  private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
 
   protected readonly state = signal<LoadState>('loading');
@@ -94,6 +98,8 @@ export class CockpitPage {
   protected readonly orderMetrics = signal<OrderMetricsView | null>(null);
   private readonly appointments = signal<readonly AppointmentView[]>([]);
   private readonly companies = signal<readonly AdminCompany[]>([]);
+  /** Les fiches des comptes suivis QUI demandent un indicateur — pas les autres. */
+  protected readonly sheets = signal<SheetsById>(new Map());
 
   /** Le jour courant, posé au 1er rendu navigateur — `undefined` en SSR. */
   protected readonly today = signal<FoldCalendarDate | undefined>(undefined);
@@ -116,7 +122,7 @@ export class CockpitPage {
     const byId = new Map(this.companies().map((company) => [company.id, company]));
     return this.pins
       .pinned()
-      .map((id) => byId.get(id))
+      .map((account) => byId.get(account.companyId))
       .filter((company): company is AdminCompany => company !== undefined);
   });
 
@@ -169,6 +175,7 @@ export class CockpitPage {
       this.loadInto(this.requests, () => this.supportApi.list(), []),
       this.loadInto(this.appointments, () => this.dayAppointments(), []),
       this.loadInto(this.companies, () => this.companiesApi.list(), []),
+      this.loadSheets(),
     ]);
   }
 
@@ -181,8 +188,47 @@ export class CockpitPage {
     }
   }
 
+  protected readonly accounts = computed(() => this.pins.pinned());
+
   protected unpin(companyId: string): void {
     this.pins.toggle(companyId);
+    void this.loadSheets();
+  }
+
+  /** Ajoute un indicateur, et charge la fiche si c'est le premier de la carte. */
+  protected async addMetric(request: { companyId: string; metric: string }): Promise<void> {
+    if (!this.pins.addMetric(request.companyId, request.metric)) {
+      this.notify.error(`Maximum ${MAX_METRICS} indicateurs par carte — retirez-en un d'abord.`);
+      return;
+    }
+    await this.loadSheets();
+  }
+
+  protected removeMetric(request: { companyId: string; metric: string }): void {
+    this.pins.removeMetric(request.companyId, request.metric);
+  }
+
+  /**
+   * Les fiches des seuls comptes qui affichent un indicateur. Une carte sans
+   * indicateur ne coûte donc aucune requête — et il y en a au plus six.
+   */
+  private async loadSheets(): Promise<void> {
+    const wanted = this.pins.pinned().filter((account) => account.metrics.length > 0);
+    const loaded = new Map(this.sheets());
+    const missing = wanted.filter((account) => !loaded.has(account.companyId));
+    const fetched = await Promise.all(
+      missing.map((account) =>
+        this.safe(() => this.sheetsApi.sheet(account.companyId), null).then(
+          (sheet) => [account.companyId, sheet] as const,
+        ),
+      ),
+    );
+    for (const [companyId, sheet] of fetched) {
+      if (sheet !== null) {
+        loaded.set(companyId, sheet);
+      }
+    }
+    this.sheets.set(loaded);
   }
 
   /** Ouvre la page du rendez-vous : c'est là qu'on travaille, pas dans le rail. */

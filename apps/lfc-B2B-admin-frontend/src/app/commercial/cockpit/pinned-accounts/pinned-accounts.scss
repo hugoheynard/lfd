@@ -49,7 +49,7 @@
 
 /* L'épingle ne se retire qu'au survol de la carte : au repos, une grille de
    croix ferait lire « supprimer » avant « client ». */
-.pa-unpin {
+.pa-icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -63,12 +63,12 @@
   transition: opacity var(--fold-motion-fast, 0.15s);
 }
 
-.pa-card:hover .pa-unpin,
-.pa-unpin:focus-visible {
+.pa-card:hover .pa-icon-button,
+.pa-icon-button:focus-visible {
   opacity: 1;
 }
 
-.pa-unpin:hover {
+.pa-icon-button:hover {
   background: var(--fold-color-surface-hover);
   color: var(--fold-color-text);
 }
@@ -101,7 +101,84 @@
 
 /* Sans survol (tactile), l'épingle reste visible — sinon elle est inatteignable. */
 @media (hover: none) {
-  .pa-unpin {
+  .pa-icon-button {
     opacity: 1;
   }
+}
+
+/* ── Les indicateurs choisis ─────────────────────────────────────────────── */
+
+.pa-metrics {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+  flex-wrap: wrap;
+  margin-block-start: auto;
+  padding-block-start: var(--fold-space-sm, 0.6rem);
+}
+
+/* Séparés par de l'espace, pas par des filets : quatre valeurs au plus, et une
+   carte n'est pas un tableau. */
+.pa-metric {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.pa-metric-value {
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+/* Seule une tendance porte une couleur — le reste est un chiffre, pas un signal. */
+.pa-metric-value[data-tone='up'] {
+  color: var(--fold-color-success-text, var(--fold-color-success));
+}
+
+.pa-metric-value[data-tone='down'] {
+  color: var(--fold-color-warning-text, var(--fold-color-warning));
+}
+
+.pa-metric-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  line-height: 1.2;
+}
+
+/* La croix se pose SUR le coin de l'indicateur : lui réserver une colonne
+   déformerait la rangée au survol. */
+.pa-metric-remove {
+  position: absolute;
+  inset-block-start: -0.4rem;
+  inset-inline-end: -0.55rem;
+}
+
+.pa-metric-loading {
+  color: var(--fold-color-text-faded, var(--fold-color-text-muted));
+  font-size: var(--fold-text-xs, 0.75rem);
+}
+
+.pa-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-sm, 0.25rem);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+  transition:
+    border-color var(--fold-motion-fast, 0.15s),
+    color var(--fold-motion-fast, 0.15s);
+}
+
+.pa-add:hover {
+  border-color: var(--fold-color-primary);
+  border-style: solid;
+  color: var(--fold-color-primary);
 }

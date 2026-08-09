@@ -13,7 +13,7 @@
             <fold-badge [variant]="card.variant" [content]="card.status" size="sm" />
             <button
               type="button"
-              class="pa-unpin"
+              class="pa-icon-button"
               [attr.aria-label]="'Retirer ' + card.company.raisonSociale + ' des épinglés'"
               (click)="unpin($event, card.company.id)"
             >
@@ -31,6 +31,50 @@
               Demande de rappel ouverte
             </span>
           }
+
+          <!-- Les indicateurs choisis pour CE compte. On ne suit pas deux clients
+               pour la même raison : le choix est par carte. -->
+          <span class="pa-metrics">
+            @for (metric of card.metrics; track metric.key) {
+              <span class="pa-metric">
+                <span class="pa-metric-value" [attr.data-tone]="metric.tone">
+                  {{ metric.value }}
+                </span>
+                <span class="pa-metric-label">{{ metric.label }}</span>
+                <button
+                  type="button"
+                  class="pa-icon-button pa-metric-remove"
+                  [attr.aria-label]="'Retirer ' + metric.label"
+                  (click)="removeMetric($event, card.company.id, metric.key)"
+                >
+                  <fold-icon name="close" size="xs" />
+                </button>
+              </span>
+            }
+
+            @if (card.loading) {
+              <span class="pa-metric-loading">Chargement…</span>
+            }
+
+            @if (card.addable.length > 0) {
+              <fold-dropdown placement="bottom-start" ariaLabel="Ajouter un indicateur">
+                <button
+                  foldPopoverTrigger="menu"
+                  type="button"
+                  class="pa-add"
+                  aria-label="Ajouter un indicateur"
+                  (click)="$event.preventDefault(); $event.stopPropagation()"
+                >
+                  <fold-icon name="plus" size="xs" />
+                </button>
+                @for (metric of card.addable; track metric.key) {
+                  <fold-dropdown-item (selected)="addMetric(card.company.id, metric.key)">
+                    {{ metric.label }}
+                  </fold-dropdown-item>
+                }
+              </fold-dropdown>
+            }
+          </span>
         </a>
       </li>
     }
