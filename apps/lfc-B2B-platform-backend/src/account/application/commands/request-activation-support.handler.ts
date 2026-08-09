@@ -1,4 +1,7 @@
-import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
+
+import { Clock } from "../../../infra/time/clock.js";
+import { SupportRequestedEvent } from "../../domain/events/support-requested.event.js";
 
 import { OpenSupportRequestExistsError } from "../../domain/errors/account-errors.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
@@ -15,6 +18,8 @@ export class RequestActivationSupportHandler implements ICommandHandler<
   constructor(
     private readonly memberships: MembershipReader,
     private readonly support: SupportRequestRepository,
+    private readonly events: EventBus,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: RequestActivationSupportCommand): Promise<string> {
@@ -27,6 +32,12 @@ export class RequestActivationSupportHandler implements ICommandHandler<
       throw new OpenSupportRequestExistsError(command.companyId);
     }
 
-    return this.support.record(command.companyId, command.actorUserId, command.payload);
+    const id = await this.support.record(command.companyId, command.actorUserId, command.payload);
+    // Publié APRÈS l'écriture : le journal est une projection, jamais une
+    // condition de la transaction métier.
+    this.events.publish(
+      new SupportRequestedEvent(id, command.companyId, command.payload.channel, this.clock.now()),
+    );
+    return id;
   }
 }

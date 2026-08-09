@@ -16,7 +16,9 @@ import { CreateCompanyByStaffHandler } from "./application/commands/create-compa
 import { CreateCompanyHandler } from "./application/commands/create-company.handler.js";
 import { RemoveCompanyContactHandler } from "./application/commands/remove-company-contact.handler.js";
 import { RemoveDeliveryAddressHandler } from "./application/commands/remove-delivery-address.handler.js";
+import { HandleSupportRequestHandler } from "./application/commands/handle-support-request.handler.js";
 import { RequestActivationSupportHandler } from "./application/commands/request-activation-support.handler.js";
+import { ListSupportRequestsHandler } from "./application/queries/list-support-requests.handler.js";
 import { SaveBillingAddressHandler } from "./application/commands/save-billing-address.handler.js";
 import { SetDefaultDeliveryAddressHandler } from "./application/commands/set-default-delivery-address.handler.js";
 import { UpdateCompanyContactHandler } from "./application/commands/update-company-contact.handler.js";
@@ -62,6 +64,7 @@ import { SupportRequestRepository } from "./domain/ports/support-request.reposit
 import { AdminCompaniesController } from "./http/admin-companies.controller.js";
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
 import { CompaniesController } from "./http/companies.controller.js";
+import { AdminSupportController } from "./http/admin-support.controller.js";
 import { CompanySupportController } from "./http/company-support.controller.js";
 import { CompanyAddressesController } from "./http/company-addresses.controller.js";
 import { CompanyContactsController } from "./http/company-contacts.controller.js";
@@ -85,6 +88,7 @@ import { MeController } from "./http/me.controller.js";
     CompanyKbisController,
     CompanyAddressesController,
     CompanySupportController,
+    AdminSupportController,
     AdminCompaniesController,
     AdminCompanyPiecesController,
   ],
@@ -116,6 +120,8 @@ import { MeController } from "./http/me.controller.js";
     SaveBillingAddressByStaffHandler,
     AddDeliveryAddressByStaffHandler,
     RequestActivationSupportHandler,
+    HandleSupportRequestHandler,
+    ListSupportRequestsHandler,
     ListAllCompaniesHandler,
     { provide: UserProfileRepository, useClass: PrismaUserProfileRepository },
     { provide: NavPreferencesRepository, useClass: PrismaNavPreferencesRepository },

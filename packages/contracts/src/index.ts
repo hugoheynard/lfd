@@ -37,7 +37,12 @@ export {
   supportSlotSchema,
   activationSupportPayloadSchema,
 } from "./support.js";
-export type { SupportChannel, SupportSlot, ActivationSupportPayload } from "./support.js";
+export type {
+  SupportChannel,
+  SupportSlot,
+  ActivationSupportPayload,
+  SupportRequestView,
+} from "./support.js";
 export {
   availabilityRulePayloadSchema,
   availabilityExceptionPayloadSchema,

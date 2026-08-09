@@ -129,3 +129,25 @@ export const activationSupportPayloadSchema = z
     }
   });
 export type ActivationSupportPayload = z.infer<typeof activationSupportPayloadSchema>;
+
+/**
+ * Une demande de contact **telle que la voit le staff**. Elle porte enfin ce que
+ * le client avait rempli : son canal, son numéro, sa disponibilité et son
+ * message — jusqu'ici la surface admin n'exposait qu'un booléen
+ * `hasOpenSupportRequest`, et le formulaire n'était lu par personne.
+ */
+export interface SupportRequestView {
+  readonly id: string;
+  readonly companyId: string;
+  readonly requestedByUserId: string;
+  readonly channel: SupportChannel;
+  readonly phoneNumber: string;
+  readonly asap: boolean;
+  /** Jour souhaité (`AAAA-MM-JJ`) pour les demandes antérieures aux rendez-vous. */
+  readonly scheduledDate: string | null;
+  readonly slot: SupportSlot | null;
+  readonly message: string;
+  /** Instant du traitement (ISO) — `null` tant que la demande est **ouverte**. */
+  readonly handledAt: string | null;
+  readonly createdAt: string;
+}
