@@ -25,6 +25,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* La pile de jours est BORNÉE : le scroll vient de `[foldScrollRegion]`, qui
+   pose aussi `min-height: 0` et l'`overscroll-behavior` — la molette arrivée en
+   bout ne se met donc pas à faire défiler le panneau derrière. Sans cette borne,
+   la liste pousse le reste du formulaire hors de l'écran. */
+.sp-days {
+  display: flex;
+  flex-direction: column;
+  max-height: 20rem;
+}
+
 /* Les jours sont empilés sans marge propre : c'est le `gap` de `.sp` qui les
    espace, et un filet les sépare pour qu'un accordéon replié se lise comme une
    ligne de liste. */
@@ -93,4 +103,23 @@
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
+}
+
+/* « Voir les 12 autres dates » — discret : c'est une issue de secours, pas
+   l'action principale de l'écran. */
+.sp-more {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-primary);
+  font: inherit;
+  font-size: var(--fold-text-sm);
+  font-weight: 550;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 }

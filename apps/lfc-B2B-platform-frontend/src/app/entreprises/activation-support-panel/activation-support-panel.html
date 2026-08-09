@@ -38,8 +38,15 @@
     />
 
     <!-- Sans AUCUNE entreprise au compte, seule la réservation est possible : les
-         deux chemins de repli passent par une demande de support, qui est murée. -->
-    @if (!bookingOnly()) {
+         deux chemins de repli passent par une demande de support, qui est murée.
+         On le DIT plutôt que de les faire disparaître en silence — un chemin
+         absent sans explication se lit comme un bug, pas comme une règle. -->
+    @if (bookingOnly()) {
+      <fold-callout appearance="inset" variant="info">
+        Le rappel et l'échange par e-mail se rattachent à une entreprise, et vous n'en avez pas
+        encore déclaré. Prenez rendez-vous ci-dessous — nous vous appelons au créneau choisi.
+      </fold-callout>
+    } @else {
       <!-- La question n'est posée que si elle a plusieurs réponses : avec une
            seule société, on connaît déjà la sienne. -->
       @if (needsCompanyChoice()) {

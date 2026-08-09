@@ -3,6 +3,7 @@ import {
   FoldBadgeComponent,
   FoldChoiceRowComponent,
   FoldDisclosureComponent,
+  FoldScrollRegionDirective,
   type FoldChoiceOption,
 } from 'fold-ng';
 import type { Slot } from '@lfd/contracts';
@@ -11,6 +12,16 @@ import { groupSlots, periodOf, type SlotPeriod } from './slots-model';
 
 /** Sentinelle : « le client a tout replié », par opposition à « il n'a rien choisi ». */
 const NONE = '';
+
+/**
+ * Combien de jours on montre d'emblée.
+ *
+ * L'agenda est ouvert sur trois semaines, mais dérouler vingt journées libres
+ * ne donne pas l'image d'une équipe disponible — plutôt celle d'une équipe que
+ * personne n'appelle. Cinq dates suffisent à choisir ; le reste est à un clic
+ * pour qui cherche vraiment plus loin.
+ */
+const FIRST_DAYS = 5;
 
 /** Le filtre de demi-journée, proposé seulement s'il sert à quelque chose. */
 const PERIODS: readonly FoldChoiceOption[] = [
@@ -34,7 +45,12 @@ const PERIODS: readonly FoldChoiceOption[] = [
  *   disponibilité, tout déplier fait défiler une page entière pour choisir une
  *   heure ; le compte porté par chaque en-tête permet de viser un jour sans
  *   l'ouvrir. Le premier est ouvert d'office : un écran entièrement replié
- *   demanderait un clic avant de montrer quoi que ce soit.
+ *   demanderait un clic avant de montrer quoi que ce soit ;
+ * - on n'en montre que **les cinq premières dates**, et la liste est **bornée en
+ *   hauteur**. Un agenda déroulé sur trois semaines pousse le reste du
+ *   formulaire — motif, message, bouton d'envoi — hors de l'écran, et donne
+ *   l'image d'une équipe que personne n'appelle plutôt que d'une équipe
+ *   disponible.
  *
  * Le composant ne charge rien et ne réserve rien : il reçoit des créneaux et
  * rend celui qu'on choisit. C'est le panneau qui parle au serveur.
@@ -42,7 +58,12 @@ const PERIODS: readonly FoldChoiceOption[] = [
 @Component({
   selector: 'app-slot-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldChoiceRowComponent, FoldDisclosureComponent, FoldBadgeComponent],
+  imports: [
+    FoldChoiceRowComponent,
+    FoldDisclosureComponent,
+    FoldBadgeComponent,
+    FoldScrollRegionDirective,
+  ],
   templateUrl: './slot-picker.html',
   styleUrl: './slot-picker.scss',
 })
@@ -72,6 +93,17 @@ export class SlotPicker {
     this.days().reduce((total, day) => total + day.slots.length, 0),
   );
 
+  /** A-t-on déplié la liste au-delà des premières dates ? */
+  protected readonly expanded = signal(false);
+
+  /** Les jours réellement rendus — les cinq premiers, ou tous si on a déplié. */
+  protected readonly visibleDays = computed(() =>
+    this.expanded() ? this.days() : this.days().slice(0, FIRST_DAYS),
+  );
+
+  /** Combien de dates restent cachées — `0` quand il n'y a rien de plus. */
+  protected readonly hiddenDays = computed(() => this.days().length - this.visibleDays().length);
+
   /**
    * Le jour que le client a déplié. `null` tant qu'il n'a rien touché — c'est ce
    * qui laisse le composant ouvrir le premier sans jamais contredire un choix.
@@ -80,7 +112,7 @@ export class SlotPicker {
 
   /** Le jour effectivement ouvert : le sien, ou le premier par défaut. */
   protected readonly openDay = computed(() => {
-    const days = this.days();
+    const days = this.visibleDays();
     const picked = this.picked();
     if (picked === null) {
       return days[0]?.day ?? NONE;

@@ -17,35 +17,44 @@
     />
   }
 
-  <!-- Un jour ouvert à la fois : sur trois semaines, tout déplier fait défiler
-       une page entière pour choisir une heure. Le compte en en-tête permet de
-       viser un jour sans avoir à l'ouvrir. -->
-  @for (day of days(); track day.day) {
-    <fold-disclosure
-      class="sp-day"
-      [open]="openDay() === day.day"
-      (openChange)="setOpen(day.day, $event)"
-    >
-      <span summary class="sp-day-summary">
-        <span class="sp-day-label">{{ day.label }}</span>
-        <fold-badge variant="neutral" [content]="availability(day.slots.length)" />
-      </span>
+  <!-- Un jour ouvert à la fois, et la liste bornée en hauteur : sur trois
+       semaines, tout dérouler pousserait le motif, le message et le bouton
+       d'envoi hors de l'écran. Le compte en en-tête permet de viser un jour
+       sans avoir à l'ouvrir. -->
+  <div class="sp-days" foldScrollRegion>
+    @for (day of visibleDays(); track day.day) {
+      <fold-disclosure
+        class="sp-day"
+        [open]="openDay() === day.day"
+        (openChange)="setOpen(day.day, $event)"
+      >
+        <span summary class="sp-day-summary">
+          <span class="sp-day-label">{{ day.label }}</span>
+          <fold-badge variant="neutral" [content]="availability(day.slots.length)" />
+        </span>
 
-      <div class="sp-times">
-        @for (slot of day.slots; track slot.startAt) {
-          <button
-            type="button"
-            class="sp-time"
-            [class.sp-time--on]="chosen() === slot.startAt"
-            [attr.aria-pressed]="chosen() === slot.startAt"
-            (click)="chosen.set(slot.startAt)"
-          >
-            {{ slot.time }}
-          </button>
-        }
-      </div>
-    </fold-disclosure>
-  } @empty {
-    <p class="sp-empty">Aucun créneau sur cette demi-journée. Essayez l'autre.</p>
+        <div class="sp-times">
+          @for (slot of day.slots; track slot.startAt) {
+            <button
+              type="button"
+              class="sp-time"
+              [class.sp-time--on]="chosen() === slot.startAt"
+              [attr.aria-pressed]="chosen() === slot.startAt"
+              (click)="chosen.set(slot.startAt)"
+            >
+              {{ slot.time }}
+            </button>
+          }
+        </div>
+      </fold-disclosure>
+    } @empty {
+      <p class="sp-empty">Aucun créneau sur cette demi-journée. Essayez l'autre.</p>
+    }
+  </div>
+
+  @if (hiddenDays() > 0) {
+    <button type="button" class="sp-more" (click)="expanded.set(true)">
+      Voir {{ hiddenDays() > 1 ? 'les ' + hiddenDays() + ' autres dates' : "l'autre date" }}
+    </button>
   }
 </div>
