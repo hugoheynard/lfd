@@ -62,3 +62,14 @@ export class AppointmentNotFoundError extends ResourceNotFoundError {
     super("growth.appointment.not_found", `Rendez-vous « ${appointmentId} » introuvable.`);
   }
 }
+
+/**
+ * Le demandeur n'est pas rattaché à la société visée. **404 non-divulguant**,
+ * pas 403 : on ne confirme pas l'existence d'une société à quelqu'un qui n'en
+ * est pas membre (même convention que `ensureCompanyMember` côté compte).
+ */
+export class AppointmentSubjectNotFoundError extends ResourceNotFoundError {
+  constructor(readonly companyId: string) {
+    super("growth.appointment.subject_not_found", `Société « ${companyId} » introuvable.`);
+  }
+}

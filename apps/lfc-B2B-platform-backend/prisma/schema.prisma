@@ -951,25 +951,176 @@ model MarketZone {
 /// confirmée** (`confirmed`). Sert au camembert des raisons (confirmées) et au taux
 /// de rattrapage (recovered / tentatives), global et par catégorie.
 model CompanyTermination {
-  id          String   @id
-  companyId   String   @map("company_id")
+  id           String    @id
+  companyId    String    @map("company_id")
   /// price | competitor | closure | quality | no_need | unresponsive | other.
-  reason      String
+  reason       String
   /// Sous-raison précise (ex. `delivery_cost`, `catalog_price`), vide si non précisée.
-  subReason   String   @default("") @map("sub_reason")
+  subReason    String    @default("") @map("sub_reason")
   /// 3ᵉ niveau optionnel (ex. catégorie produit sous `better_price`), vide sinon.
-  detail      String   @default("") @map("detail")
+  detail       String    @default("") @map("detail")
   /// client | commercial (qui a enregistré la terminaison).
-  initiatedBy String   @map("initiated_by")
+  initiatedBy  String    @map("initiated_by")
   /// confirmed (résilié) | recovered (rattrapé, compte conservé).
-  outcome     String
+  outcome      String
   /// Pour un `recovered` : `auto` (plateforme) | `sales` (commercial), vide sinon.
-  recoveredVia String  @default("") @map("recovered_via")
+  recoveredVia String    @default("") @map("recovered_via")
   /// Instant de l'action qui a rattrapé (délai de réaction), null si non rattrapée.
-  resolvedAt  DateTime? @map("resolved_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  resolvedAt   DateTime? @map("resolved_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
 
   @@index([outcome, reason])
   @@map("company_terminations")
+  @@schema("growth")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Prise de rendez-vous — disponibilité déclarée + rendez-vous, schéma `growth`
+// Doc : documentation/architecture-prise-de-rendez-vous.md
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Règle hebdomadaire** de disponibilité commerciale : « le mardi, 09:00–12:00 ».
+///
+/// Une règle n'est PAS une liste de créneaux : les créneaux en sont **dérivés au
+/// calcul** (`slotsFor`). Deux conséquences voulues — changer un horaire est un
+/// `UPDATE` sur une ligne (pas une régénération), et il n'existe aucun créneau
+/// persisté qui puisse diverger de l'horaire réel.
+///
+/// Les heures sont en **heure locale d'Europe/Paris** (`HH:MM`) : c'est ce que le
+/// commercial saisit et pense, et la résolution en instant se fait au calcul —
+/// donc le changement d'heure ne décale rien.
+///
+/// Pas de `staff_user_id` : la v1 porte **un agenda d'équipe**. L'identité staff
+/// n'est pas dans le jeton aujourd'hui, une colonne qu'on ne saurait pas remplir
+/// serait une dette. Extension prévue : la colonne nullable (null = équipe).
+model AvailabilityRule {
+  /// ULID préfixé `avrule_`.
+  id String @id
+
+  /// Jour de la semaine, convention `Date.getDay()` : 0 = dimanche … 6 = samedi.
+  weekday Int
+
+  /// Bornes locales `HH:MM`, `start` strictement avant `end` (garanti au contrat).
+  startTime String @map("start_time")
+  endTime   String @map("end_time")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([weekday])
+  @@map("availability_rules")
+  @@schema("growth")
+}
+
+/// **Exception** datée à la grille hebdomadaire : une fermeture (congés, férié) ou
+/// une ouverture ponctuelle (un samedi de salon). Sans bornes, une fermeture ferme
+/// la journée entière.
+model AvailabilityException {
+  /// ULID préfixé `avexc_`.
+  id String @id
+
+  /// Jour concerné, `AAAA-MM-JJ` en heure locale — un jour de calendrier, pas un
+  /// instant : stocké en `DATE` pour qu'aucun fuseau ne puisse le décaler.
+  day DateTime @db.Date
+
+  /// `closed` (fermeture) | `open` (ouverture hors grille).
+  kind String
+
+  /// Bornes locales `HH:MM`, ou null pour une fermeture de journée entière.
+  startTime String? @map("start_time")
+  endTime   String? @map("end_time")
+
+  /// Motif libre, affiché au commercial (« congés », « salon »).
+  reason String @default("")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([day])
+  @@map("availability_exceptions")
+  @@schema("growth")
+}
+
+/// Un **rendez-vous** commercial posé sur un créneau.
+///
+/// `status` suit une machine à états à terminaux **définitifs** (`honored`,
+/// `no_show`, `cancelled`) : reprogrammer, c'est annuler puis créer, avec
+/// `rescheduled_from_id` pour garder le fil.
+///
+/// ⚠️ L'**exclusivité du créneau** ne tient pas en code applicatif (deux requêtes
+/// concurrentes passeraient la même vérification avant qu'une seule n'écrive).
+/// Elle est garantie par un **index unique partiel** posé en SQL brut dans la
+/// migration — Prisma ne sait pas modéliser un index conditionnel :
+///     CREATE UNIQUE INDEX appointments_slot_unique
+///       ON growth.appointments (start_at) WHERE status <> 'cancelled';
+/// Un rendez-vous annulé libère donc son créneau ; un rendez-vous actif le
+/// verrouille. La violation se traduit en 409, jamais en 500.
+///
+/// Le **sujet est discriminé et non muré par la société** : un prospect froid
+/// (`lead`) ou une personne sans société (`user`) doit pouvoir être reçu — c'est
+/// justement la population qu'on cherche à capter. Pas de FK dure pour la même
+/// raison que `Lead.linked_user_id` : `growth` ne dépend pas des tables de `public`.
+model Appointment {
+  /// ULID préfixé `appt_`.
+  id String @id
+
+  /// Bornes du rendez-vous, en **UTC** (la vérité ; la lecture locale se dérive).
+  startAt DateTime @map("start_at")
+  endAt   DateTime @map("end_at")
+
+  /// requested | confirmed | honored | no_show | cancelled.
+  status String @default("requested")
+
+  /// phone | visio | onsite.
+  channel String
+
+  /// company | lead | user.
+  subjectType String @map("subject_type")
+  subjectId   String @map("subject_id")
+
+  contactName  String @default("") @map("contact_name")
+  contactEmail String @default("") @map("contact_email")
+  contactPhone String @default("") @map("contact_phone")
+
+  /// Message libre du demandeur.
+  message String @default("")
+
+  /// Motif d'annulation — exigé par l'agrégat quand on annule, vide sinon.
+  cancelReason String @default("") @map("cancel_reason")
+
+  /// Rendez-vous d'origine si celui-ci le reprogramme, null sinon.
+  rescheduledFromId String? @map("rescheduled_from_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([startAt])
+  @@index([status])
+  @@index([subjectType, subjectId])
+  @@map("appointments")
+  @@schema("growth")
+}
+
+/// **Politique de réservation** — les bornes que le commercial pose autour de sa
+/// grille. Singleton (une constante fixe en `id` garantit l'unicité), et rangée
+/// dans `growth` plutôt que dans `b2b_platform_settings` : `growth` ne doit
+/// dépendre d'aucune table de `public`, c'est ce qui rend son extraction possible
+/// le jour venu.
+model BookingPolicySettings {
+  id String @id
+
+  /// Durée d'un rendez-vous, en minutes — aussi le pas de découpe des plages.
+  slotMinutes Int @default(30) @map("slot_minutes")
+
+  /// On ne réserve pas dans les N heures qui viennent (délai de prévenance).
+  leadTimeHours Int @default(24) @map("lead_time_hours")
+
+  /// On ne réserve pas au-delà de N jours (horizon).
+  horizonDays Int @default(30) @map("horizon_days")
+
+  /// Canaux proposés au client : phone | visio | onsite (au moins un).
+  channels String[] @default(["phone"])
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("booking_policy_settings")
   @@schema("growth")
 }

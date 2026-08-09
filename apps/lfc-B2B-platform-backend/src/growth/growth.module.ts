@@ -2,6 +2,11 @@ import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
 import { RecomputeGuard } from "../infra/auth/recompute.guard.js";
+import { BookAppointmentHandler } from "./application/commands/book-appointment.handler.js";
+import { CancelOwnAppointmentHandler } from "./application/commands/cancel-own-appointment.handler.js";
+import { SaveAvailabilityHandler } from "./application/commands/save-availability.handler.js";
+import { ScheduleAppointmentHandler } from "./application/commands/schedule-appointment.handler.js";
+import { TransitionAppointmentHandler } from "./application/commands/transition-appointment.handler.js";
 import { AddMarketNafHandler } from "./application/commands/add-market-naf.handler.js";
 import { AddMarketZoneHandler } from "./application/commands/add-market-zone.handler.js";
 import { CaptureLeadHandler } from "./application/commands/capture-lead.handler.js";
@@ -17,7 +22,11 @@ import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
 import { OnUserRegisteredLinkLead } from "./application/handlers/on-user-registered-link-lead.handler.js";
+import { GetAvailabilityHandler } from "./application/queries/get-availability.handler.js";
 import { GetCockpitHandler } from "./application/queries/get-cockpit.handler.js";
+import { GetSlotsHandler } from "./application/queries/get-slots.handler.js";
+import { ListAppointmentsHandler } from "./application/queries/list-appointments.handler.js";
+import { ListMyAppointmentsHandler } from "./application/queries/list-my-appointments.handler.js";
 import { GetGrowthStatsHandler } from "./application/queries/get-growth-stats.handler.js";
 import { GetMarketAdoptionHandler } from "./application/queries/get-market-adoption.handler.js";
 import { GetMarketConfigHandler } from "./application/queries/get-market-config.handler.js";
@@ -31,6 +40,9 @@ import { ListActivationsHandler } from "./application/queries/list-activations.h
 import { ListLeadsHandler } from "./application/queries/list-leads.handler.js";
 import { ListProspectsHandler } from "./application/queries/list-prospects.handler.js";
 import { ActivationReader } from "./domain/ports/activation.reader.js";
+import { AppointmentReader } from "./domain/ports/appointment.reader.js";
+import { AppointmentRepository } from "./domain/ports/appointment.repository.js";
+import { AvailabilityStore } from "./domain/ports/availability.store.js";
 import { ActivityRecorder } from "./domain/ports/activity-recorder.js";
 import { GrowthStatsReader } from "./domain/ports/growth-stats.reader.js";
 import { MarketAdoptionReader } from "./domain/ports/market-adoption.reader.js";
@@ -49,6 +61,8 @@ import { LeadScoreReader } from "./domain/ports/lead-score.reader.js";
 import { LeadScoreStore } from "./domain/ports/lead-score.store.js";
 import { ProspectReader } from "./domain/ports/prospect.reader.js";
 import { AdminActivationsController } from "./http/admin-activations.controller.js";
+import { AdminAppointmentsController } from "./http/admin-appointments.controller.js";
+import { AppointmentsController } from "./http/appointments.controller.js";
 import { AdminCockpitController } from "./http/admin-cockpit.controller.js";
 import { AdminGrowthController } from "./http/admin-growth.controller.js";
 import { AdminLeadsController } from "./http/admin-leads.controller.js";
@@ -57,6 +71,9 @@ import { AdminProspectsController } from "./http/admin-prospects.controller.js";
 import { AdminRecomputeController } from "./http/admin-recompute.controller.js";
 import { PrismaActivationReader } from "./infrastructure/prisma-activation.reader.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
+import { PrismaAppointmentReader } from "./infrastructure/prisma-appointment.reader.js";
+import { PrismaAppointmentRepository } from "./infrastructure/prisma-appointment.repository.js";
+import { PrismaAvailabilityStore } from "./infrastructure/prisma-availability.store.js";
 import { PrismaGrowthStatsReader } from "./infrastructure/prisma-growth-stats.reader.js";
 import { PrismaLeadEventSource } from "./infrastructure/prisma-lead-event-source.js";
 import { PrismaMarketAdoptionReader } from "./infrastructure/prisma-market-adoption.reader.js";
@@ -93,6 +110,8 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     AdminLeadsController,
     AdminGrowthController,
     AdminMarketController,
+    AdminAppointmentsController,
+    AppointmentsController,
   ],
   providers: [
     { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
@@ -113,6 +132,9 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     { provide: AcquisitionMetricsReader, useClass: PrismaAcquisitionMetricsReader },
     { provide: SectorRevenueReader, useClass: PrismaSectorRevenueReader },
     { provide: TerminationStatsReader, useClass: PrismaTerminationStatsReader },
+    { provide: AvailabilityStore, useClass: PrismaAvailabilityStore },
+    { provide: AppointmentRepository, useClass: PrismaAppointmentRepository },
+    { provide: AppointmentReader, useClass: PrismaAppointmentReader },
     RecomputeGuard,
     RecomputeLeadScoresHandler,
     CaptureLeadHandler,
@@ -142,6 +164,15 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     OnSubscriptionCreated,
     OnUserRegistered,
     OnUserRegisteredLinkLead,
+    SaveAvailabilityHandler,
+    GetAvailabilityHandler,
+    GetSlotsHandler,
+    BookAppointmentHandler,
+    ScheduleAppointmentHandler,
+    TransitionAppointmentHandler,
+    CancelOwnAppointmentHandler,
+    ListAppointmentsHandler,
+    ListMyAppointmentsHandler,
   ],
   exports: [ActivityRecorder],
 })
