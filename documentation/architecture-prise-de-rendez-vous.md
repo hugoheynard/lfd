@@ -370,6 +370,13 @@ choisir une case :
 - **« Je préfère échanger par e-mail »** → `SupportRequest`, pas de créneau. Le
   **motif en devient l'objet**, annoncé à l'écran avant l'envoi.
 
+Ouvert depuis l'en-tête (« Nous contacter »), l'appelant ne **sait pas** de quelle
+entreprise il s'agit — ce qui n'est pas la même chose que « aucune ». Le panneau
+la résout donc depuis le compte : une seule société, on la prend sans poser de
+question dont on connaît la réponse ; plusieurs, on demande laquelle ; aucune,
+seul le rendez-vous reste, et il porte sur la personne. Sans cette résolution,
+les deux chemins de repli disparaissaient purement et simplement de l'en-tête.
+
 ### 6.2 Après la réservation
 
 - Écran de confirmation avec la date, l'heure, le canal, et **comment annuler**.

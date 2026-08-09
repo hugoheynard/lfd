@@ -35,10 +35,11 @@ const PURPOSE_OPTIONS: readonly FoldSelectOption<AppointmentPurpose>[] = APPOINT
 /**
  * Charge d'ouverture : l'entreprise concernée, ou `null`.
  *
- * `null` = le panneau est ouvert **hors contexte d'entreprise** (l'icône contact
- * de l'en-tête). Seule la **prise de rendez-vous** reste alors possible : les
- * deux chemins de repli passent par `SupportRequest`, qui est muré par la
- * société. Le rendez-vous, lui, ne l'est pas — il portera sur la personne.
+ * `null` = l'appelant **ne sait pas** de quelle entreprise il s'agit (l'icône
+ * contact de l'en-tête). Ce n'est pas « aucune entreprise » : le panneau la
+ * **résout** alors depuis le compte — une seule société, on la prend ; plusieurs,
+ * on demande laquelle ; aucune, seul le rendez-vous reste (il porte sur la
+ * personne, là où `SupportRequest` est muré par la société).
  */
 export interface SupportPanelData {
   readonly companyId: string | null;
@@ -87,6 +88,7 @@ export class ActivationSupportPanel {
   readonly data = input<SupportPanelData | undefined>(undefined);
 
   private readonly profile = this.account.profile;
+  private readonly companies = this.account.companies;
   protected readonly profilePhone = computed(() => this.profile()?.phone.trim() ?? '');
   protected readonly profileEmail = computed(() => this.profile()?.email ?? '');
   protected readonly hasProfilePhone = computed(() => this.profilePhone() !== '');
@@ -126,8 +128,45 @@ export class ActivationSupportPanel {
   /** Y a-t-il quelque chose à réserver ? Sinon on ne propose pas le choix. */
   protected readonly canBook = computed(() => this.slots().length > 0);
 
-  /** Hors contexte d'entreprise : seule la réservation d'un créneau est offerte. */
-  protected readonly bookingOnly = computed(() => this.data()?.companyId == null);
+  /** La société choisie quand la personne en a plusieurs et qu'on lui demande. */
+  private readonly pickedCompany = signal<string | null>(null);
+
+  /** Les entreprises entre lesquelles choisir, au format `fold-listbox`. */
+  protected readonly companyOptions = computed<readonly FoldSelectOption<string>[]>(() =>
+    this.companies().map((company) => ({ value: company.id, label: company.raisonSociale })),
+  );
+
+  /**
+   * La société sur laquelle déposer la demande : celle que l'appelant impose,
+   * celle qu'on vient de choisir, ou **la seule** que la personne possède —
+   * lui demander de la désigner quand il n'y en a qu'une serait une question
+   * dont on connaît déjà la réponse.
+   */
+  protected readonly targetCompanyId = computed<string | null>(() => {
+    const given = this.data()?.companyId ?? null;
+    if (given !== null) {
+      return given;
+    }
+    const picked = this.pickedCompany();
+    if (picked !== null) {
+      return picked;
+    }
+    const list = this.companies();
+    return list.length === 1 ? (list[0]?.id ?? null) : null;
+  });
+
+  /** On ne pose la question que si elle a plusieurs réponses possibles. */
+  protected readonly needsCompanyChoice = computed(
+    () => this.data()?.companyId == null && this.companies().length > 1,
+  );
+
+  /**
+   * **Aucune** entreprise au compte : les deux chemins de repli n'ont nulle part
+   * où se poser, seule la réservation reste — elle portera sur la personne.
+   */
+  protected readonly bookingOnly = computed(
+    () => this.data()?.companyId == null && this.companies().length === 0,
+  );
 
   /** Le client est en train de réserver un créneau (et non de demander un rappel). */
   protected readonly isBooking = computed(
@@ -179,6 +218,11 @@ export class ActivationSupportPanel {
     if (this.bookingOnly()) {
       return this.chosenSlot() !== '';
     }
+    // Une demande de rappel ou d'e-mail se dépose SUR une société : tant qu'on
+    // n'a pas tranché laquelle, il n'y a rien à envoyer.
+    if (this.targetCompanyId() === null) {
+      return false;
+    }
     if (this.resolvedPhone() === '') {
       return false;
     }
@@ -221,6 +265,10 @@ export class ActivationSupportPanel {
     }
   }
 
+  protected onCompany(value: string | null): void {
+    this.pickedCompany.set(value);
+  }
+
   protected onPurpose(value: AppointmentPurpose | null): void {
     if (value !== null) {
       this.purpose.set(value);
@@ -242,15 +290,16 @@ export class ActivationSupportPanel {
     if (!this.canSubmit() || data === undefined) {
       return;
     }
+    const companyId = this.targetCompanyId();
     this.submitting.set(true);
     this.errorMessage.set(null);
     if (this.isBooking()) {
-      this.bookSlot(data.companyId);
+      this.bookSlot(companyId);
       return;
     }
     // Les chemins de repli exigent une société : ils passent par SupportRequest,
-    // qui est muré. Sans société, `bookingOnly` les a déjà rendus inaccessibles.
-    if (data.companyId === null) {
+    // qui est muré. `canSubmit` l'a déjà garanti ; ce garde re-narrow le type.
+    if (companyId === null) {
       this.submitting.set(false);
       return;
     }
@@ -264,7 +313,7 @@ export class ActivationSupportPanel {
       slot: null,
       message: this.message().trim(),
     };
-    this.support.requestActivation(data.companyId, payload).subscribe({
+    this.support.requestActivation(companyId, payload).subscribe({
       next: () => {
         this.placed.set(true);
         this.submitting.set(false);
