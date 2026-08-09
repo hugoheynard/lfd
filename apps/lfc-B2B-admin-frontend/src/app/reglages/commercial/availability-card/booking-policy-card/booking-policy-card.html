@@ -68,4 +68,17 @@
       />
     </div>
   </div>
+
+  @if (failed()) {
+    <p class="sec-error">L'enregistrement des règles a échoué. Réessayez.</p>
+  }
+
+  <div class="bp-actions">
+    @if (saved()) {
+      <span class="sec-saved">Enregistré.</span>
+    }
+    <button foldButton emphasis="outline" [disabled]="saving()" (click)="save()">
+      {{ saving() ? 'Enregistrement…' : 'Enregistrer les règles' }}
+    </button>
+  </div>
 </fold-card>

@@ -7,18 +7,23 @@
 
 <app-week-grid-card [draft]="draft()" (changed)="onChanged($event)" />
 
-<app-booking-policy-card [draft]="draft()" (changed)="onChanged($event)" />
+<app-booking-policy-card
+  [draft]="draft()"
+  (changed)="onChanged($event)"
+  (persisted)="onPersisted($event)"
+/>
 
 <app-exceptions-card [draft]="draft()" (changed)="onChanged($event)" />
 
-<!-- Une barre d'action, pas une carte : les trois cartes ci-dessus s'enregistrent
-     ensemble, en un seul appel. -->
+<!-- La semaine type et les exceptions s'enregistrent ensemble : elles décrivent
+     la même grille, et une moitié sans l'autre ouvrirait des créneaux non voulus.
+     Les règles, elles, ont leur propre bouton — elles ne touchent pas la grille. -->
 <div class="av-save">
   @if (saved()) {
     <span class="sec-saved">Enregistré.</span>
   }
   <button foldButton [disabled]="saving()" (click)="save()">
-    {{ saving() ? 'Enregistrement…' : 'Enregistrer les disponibilités' }}
+    {{ saving() ? 'Enregistrement…' : 'Enregistrer la grille' }}
   </button>
 </div>
 

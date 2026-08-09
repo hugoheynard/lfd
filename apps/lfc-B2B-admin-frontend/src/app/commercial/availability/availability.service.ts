@@ -6,6 +6,7 @@ import type {
   AppointmentView,
   AvailabilityConfigPayload,
   AvailabilityConfigView,
+  BookingPolicy,
   CreatedAppointmentResponse,
   SlotsView,
   StaffBookAppointmentPayload,
@@ -38,6 +39,15 @@ export class AvailabilityService {
 
   save(payload: AvailabilityConfigPayload): Promise<AvailabilityConfigView> {
     return this.request<AvailabilityConfigView>('PUT', `${this.base}/availability`, payload);
+  }
+
+  /**
+   * Écrit **la seule politique**. Route distincte du bloc : régler une durée ne
+   * doit pas renvoyer une grille chargée il y a dix minutes, et donc ne peut pas
+   * l'écraser.
+   */
+  savePolicy(policy: BookingPolicy): Promise<AvailabilityConfigView> {
+    return this.request<AvailabilityConfigView>('PUT', `${this.base}/availability/policy`, policy);
   }
 
   /** L'aperçu des créneaux ouverts entre deux jours locaux (`AAAA-MM-JJ`). */

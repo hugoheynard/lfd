@@ -74,6 +74,15 @@ export class PrismaAvailabilityStore extends AvailabilityStore {
     ]);
     return this.load();
   }
+
+  async savePolicy(policy: BookingPolicy): Promise<AvailabilityConfig> {
+    await this.prisma.bookingPolicySettings.upsert({
+      where: { id: POLICY_ID },
+      create: { id: POLICY_ID, ...policy },
+      update: policy,
+    });
+    return this.load();
+  }
 }
 
 /** Le jour local `AAAA-MM-JJ` vers la colonne `DATE` (midi UTC, hors DST). */

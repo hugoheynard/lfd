@@ -1,13 +1,23 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import {
+  FoldButtonComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldMultiselectComponent,
   FoldNumberInputComponent,
   type FoldSelectOption,
 } from 'fold-ng';
-import type { AppointmentChannel } from '@lfd/contracts';
+import type { AppointmentChannel, AvailabilityConfigView } from '@lfd/contracts';
 
+import { AvailabilityService } from '../../../../commercial/availability/availability.service';
 import { MetricInfo } from '../../../../shared/metric-info/metric-info';
 
 import { withPolicy, type AvailabilityDraft } from '../availability-draft';
@@ -30,6 +40,13 @@ const CHANNELS: readonly FoldSelectOption<AppointmentChannel>[] = [
  * fin de ligne dit ce que le réglage change réellement. Ces explications ne
  * tiennent pas en un `hint` d'une ligne : « 30 minutes » ne dit pas que c'est
  * aussi le pas de découpe des plages, ni que la prévenance borne l'annulation.
+ *
+ * **Elle enregistre elle-même**, sur une route qui n'écrit que la politique.
+ * Régler une durée ne renvoie donc pas la grille — et ne peut pas l'écraser avec
+ * un état chargé il y a dix minutes, ni emporter au passage des plages que le
+ * commercial était en train d'éditer sans avoir décidé de les enregistrer.
+ * Le brouillon reste partagé (les créneaux dépendent des deux) ; c'est
+ * l'**écriture** qui est isolée.
  */
 @Component({
   selector: 'app-booking-policy-card',
@@ -39,28 +56,54 @@ const CHANNELS: readonly FoldSelectOption<AppointmentChannel>[] = [
     FoldElementTitleComponent,
     FoldNumberInputComponent,
     FoldMultiselectComponent,
+    FoldButtonComponent,
     MetricInfo,
   ],
   templateUrl: './booking-policy-card.html',
   styleUrl: './booking-policy-card.scss',
 })
 export class BookingPolicyCard {
+  private readonly service = inject(AvailabilityService);
+
   readonly draft = input.required<AvailabilityDraft>();
   readonly changed = output<AvailabilityDraft>();
+  /** Enregistré : le parent rafraîchit l'aperçu, que la politique vient de changer. */
+  readonly persisted = output<AvailabilityConfigView>();
 
   protected readonly channels = CHANNELS;
   protected readonly policy = computed(() => this.draft().policy);
 
+  protected readonly saving = signal(false);
+  protected readonly saved = signal(false);
+  protected readonly failed = signal(false);
+
+  async save(): Promise<void> {
+    this.saving.set(true);
+    this.saved.set(false);
+    this.failed.set(false);
+    try {
+      const config = await this.service.savePolicy(this.policy());
+      this.saved.set(true);
+      // On remonte ce que le SERVEUR a enregistré : le parent réaligne le
+      // brouillon et recharge l'aperçu, qui dépend de ces bornes.
+      this.persisted.emit(config);
+    } catch {
+      this.failed.set(true);
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
   protected setSlotMinutes(value: number | null): void {
-    this.changed.emit(withPolicy(this.draft(), { slotMinutes: atLeast(value, 5) }));
+    this.edit(withPolicy(this.draft(), { slotMinutes: atLeast(value, 5) }));
   }
 
   protected setLeadTime(value: number | null): void {
-    this.changed.emit(withPolicy(this.draft(), { leadTimeHours: atLeast(value, 0) }));
+    this.edit(withPolicy(this.draft(), { leadTimeHours: atLeast(value, 0) }));
   }
 
   protected setHorizon(value: number | null): void {
-    this.changed.emit(withPolicy(this.draft(), { horizonDays: atLeast(value, 1) }));
+    this.edit(withPolicy(this.draft(), { horizonDays: atLeast(value, 1) }));
   }
 
   /**
@@ -72,7 +115,13 @@ export class BookingPolicyCard {
     if (channels.length === 0) {
       return;
     }
-    this.changed.emit(withPolicy(this.draft(), { channels: [...channels] }));
+    this.edit(withPolicy(this.draft(), { channels: [...channels] }));
+  }
+
+  /** Applique une édition et retire l'indicateur « enregistré », devenu faux. */
+  private edit(draft: AvailabilityDraft): void {
+    this.saved.set(false);
+    this.changed.emit(draft);
   }
 }
 

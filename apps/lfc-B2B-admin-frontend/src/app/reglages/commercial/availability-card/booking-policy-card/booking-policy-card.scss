@@ -1,7 +1,3 @@
-:host {
-  display: block;
-}
-
 .bp-fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
@@ -21,4 +17,14 @@
   position: absolute;
   top: 0;
   right: 0;
+}
+
+.bp-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-md);
+  margin-top: var(--fold-space-lg, 1.5rem);
+  padding-top: var(--fold-space-md);
+  border-top: 1px solid var(--fold-color-border);
 }

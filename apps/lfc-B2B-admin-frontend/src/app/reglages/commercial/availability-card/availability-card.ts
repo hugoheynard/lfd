@@ -3,6 +3,8 @@ import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 import type { Slot } from '@lfd/contracts';
 
 import { AvailabilityService } from '../../../commercial/availability/availability.service';
+import type { AvailabilityConfigView } from '@lfd/contracts';
+
 import { draftFrom, emptyDraft, toPayload, type AvailabilityDraft } from './availability-draft';
 import { BookingPolicyCard } from './booking-policy-card/booking-policy-card';
 import { ExceptionsCard } from './exceptions-card/exceptions-card';
@@ -77,6 +79,17 @@ export class AvailabilityCard {
   protected onChanged(draft: AvailabilityDraft): void {
     this.draft.set(draft);
     this.saved.set(false);
+  }
+
+  /**
+   * Une carte a enregistré **sa** tranche. On réaligne le brouillon sur ce que le
+   * serveur a écrit — les édits en cours des autres cartes sont conservés, seule
+   * la tranche enregistrée est rafraîchie — et on recharge l'aperçu, que ces
+   * bornes changent.
+   */
+  protected async onPersisted(config: AvailabilityConfigView): Promise<void> {
+    this.draft.update((draft) => ({ ...draft, policy: config.policy }));
+    await this.refreshPreview();
   }
 
   protected async save(): Promise<void> {

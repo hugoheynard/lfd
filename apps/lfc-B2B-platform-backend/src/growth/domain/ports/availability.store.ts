@@ -1,4 +1,4 @@
-import type { AvailabilityConfigPayload } from "@lfd/contracts";
+import type { AvailabilityConfigPayload, BookingPolicy } from "@lfd/contracts";
 
 import type { AvailabilityConfig } from "../availability.js";
 
@@ -19,4 +19,13 @@ export abstract class AvailabilityStore {
    * configuration relue, pour que l'appelant réponde ce qui est réellement en base.
    */
   abstract replace(config: AvailabilityConfigPayload): Promise<AvailabilityConfig>;
+
+  /**
+   * Écrit **la seule politique**, sans toucher aux règles ni aux exceptions.
+   *
+   * Surface distincte de `replace` et non un `replace` partiel : les bornes de
+   * réservation se règlent sans rouvrir la grille, et un écran qui n'édite que
+   * celles-là ne doit pas pouvoir en écraser une autre au passage.
+   */
+  abstract savePolicy(policy: BookingPolicy): Promise<AvailabilityConfig>;
 }

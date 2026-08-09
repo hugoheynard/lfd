@@ -5,6 +5,7 @@ import { RecomputeGuard } from "../infra/auth/recompute.guard.js";
 import { BookAppointmentHandler } from "./application/commands/book-appointment.handler.js";
 import { CancelOwnAppointmentHandler } from "./application/commands/cancel-own-appointment.handler.js";
 import { SaveAvailabilityHandler } from "./application/commands/save-availability.handler.js";
+import { SaveBookingPolicyHandler } from "./application/commands/save-booking-policy.handler.js";
 import { ScheduleAppointmentHandler } from "./application/commands/schedule-appointment.handler.js";
 import { TransitionAppointmentHandler } from "./application/commands/transition-appointment.handler.js";
 import { AddMarketNafHandler } from "./application/commands/add-market-naf.handler.js";
@@ -171,6 +172,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     OnSupportRequested,
     OnSupportHandled,
     SaveAvailabilityHandler,
+    SaveBookingPolicyHandler,
     GetAvailabilityHandler,
     GetSlotsHandler,
     BookAppointmentHandler,

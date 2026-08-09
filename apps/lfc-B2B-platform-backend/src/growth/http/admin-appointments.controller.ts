@@ -1,11 +1,13 @@
 import {
   appointmentTransitionPayloadSchema,
   availabilityConfigPayloadSchema,
+  bookingPolicySchema,
   staffBookAppointmentPayloadSchema,
   type AppointmentTransitionPayload,
   type AppointmentView,
   type AvailabilityConfigPayload,
   type AvailabilityConfigView,
+  type BookingPolicy,
   type CreatedAppointmentResponse,
   type SlotsView,
   type StaffBookAppointmentPayload,
@@ -29,6 +31,7 @@ import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { SaveAvailabilityCommand } from "../application/commands/save-availability.command.js";
+import { SaveBookingPolicyCommand } from "../application/commands/save-booking-policy.command.js";
 import { ScheduleAppointmentCommand } from "../application/commands/schedule-appointment.command.js";
 import { TransitionAppointmentCommand } from "../application/commands/transition-appointment.command.js";
 import { GetAvailabilityQuery } from "../application/queries/get-availability.query.js";
@@ -66,6 +69,20 @@ export class AdminAppointmentsController {
   ): Promise<AvailabilityConfigView> {
     return this.commands.execute<SaveAvailabilityCommand, AvailabilityConfigView>(
       new SaveAvailabilityCommand(payload),
+    );
+  }
+
+  /**
+   * Écriture de **la seule politique**. Route distincte du bloc : l'écran des
+   * règles n'a pas à renvoyer la grille pour régler une durée, et ne peut donc
+   * pas l'écraser avec un état qu'il aurait chargé il y a dix minutes.
+   */
+  @Put("availability/policy")
+  savePolicy(
+    @Body(new ZodBody(bookingPolicySchema)) policy: BookingPolicy,
+  ): Promise<AvailabilityConfigView> {
+    return this.commands.execute<SaveBookingPolicyCommand, AvailabilityConfigView>(
+      new SaveBookingPolicyCommand(policy),
     );
   }
 

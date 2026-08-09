@@ -393,6 +393,41 @@ describe("la surface staff", () => {
     expect(await ctx.prisma.availabilityRule.count()).toBe(1);
   });
 
+  it("enregistre la SEULE politique sans toucher à la grille ni aux exceptions", async () => {
+    await declareAvailability({
+      rules: [{ weekday: 2, startTime: "09:00", endTime: "12:00" }],
+      exceptions: [
+        { day: "2026-12-25", kind: "closed", startTime: null, endTime: null, reason: "Noël" },
+      ],
+      policy: { slotMinutes: 30, leadTimeHours: 24, horizonDays: 30, channels: ["phone"] },
+    });
+
+    const response = await staff()
+      .put("/admin/availability/policy")
+      .send({ slotMinutes: 60, leadTimeHours: 2, horizonDays: 90, channels: ["visio", "onsite"] })
+      .expect(200);
+
+    const saved = jsonBody<AvailabilityConfigView>(response);
+    expect(saved.policy).toEqual({
+      slotMinutes: 60,
+      leadTimeHours: 2,
+      horizonDays: 90,
+      channels: ["visio", "onsite"],
+    });
+    // Le point de la route : la grille et les exceptions sont intactes.
+    expect(saved.rules).toHaveLength(1);
+    expect(saved.rules[0]).toMatchObject({ weekday: 2, startTime: "09:00", endTime: "12:00" });
+    expect(saved.exceptions[0]).toMatchObject({ day: "2026-12-25", reason: "Noël" });
+    expect(await ctx.prisma.availabilityRule.count()).toBe(1);
+  });
+
+  it("refuse une politique sans aucun canal (400)", async () => {
+    await staff()
+      .put("/admin/availability/policy")
+      .send({ slotMinutes: 30, leadTimeHours: 24, horizonDays: 30, channels: [] })
+      .expect(400);
+  });
+
   it("pose un rendez-vous directement confirmé, y compris sur un lead sans société", async () => {
     await declareAvailability();
     const startAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
