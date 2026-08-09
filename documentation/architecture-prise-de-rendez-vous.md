@@ -394,8 +394,8 @@ recompute) : le rappel J-1 peut s'y greffer sans nouvelle infra.
 
 | Tranche                       | Contenu                                                                                                                                                                         | Fini quand                                                 |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **R1 · Domaine**              | Contrats (`AvailabilityRule`, `AvailabilityException`, `BookingPolicy`, `Slot`, `AppointmentView`), `slotsFor` pur + les 8 tests du §4, agrégat `Appointment` + machine à états | `pnpm test` vert, zéro I/O dans les specs                  |
-| **R2 · Persistance**          | 3 tables + migration (dont l'**index unique partiel** en SQL brut), ports + adaptateurs Prisma                                                                                  | e2e : deux réservations concurrentes → une 201, une 409    |
+| **R1 · Domaine** ✅           | Contrats (`AvailabilityRule`, `AvailabilityException`, `BookingPolicy`, `Slot`, `AppointmentView`), `slotsFor` pur + les 8 tests du §4, agrégat `Appointment` + machine à états | **52 tests**, zéro I/O dans les specs                      |
+| **R2 · Persistance** ✅       | 4 tables + migration (dont l'**index unique partiel** en SQL brut), ports + adaptateurs Prisma, et les deux surfaces HTTP                                                       | **21 e2e**, dont la course concurrente → une 201, une 409  |
 | **R3 · Admin disponibilités** | `GET/PUT /admin/availability` (règles, exceptions, politique) + la sous-page Réglages → Commercial avec l'aperçu 14 jours                                                       | le commercial ouvre une plage, elle apparaît dans l'aperçu |
 | **R4 · Réservation client**   | `GET /appointments/slots`, `POST /appointments`, `DELETE /appointments/:id` + le panneau client                                                                                 | un client réserve, annule, re-réserve                      |
 | **R5 · Suivi staff**          | `GET /admin/appointments`, transitions `PATCH`, calendrier Acquisition en vue semaine + side-panel d'actions                                                                    | un RDV se confirme, se clôt en honoré/absent               |
@@ -404,6 +404,17 @@ recompute) : le rappel J-1 peut s'y greffer sans nouvelle infra.
 
 R1 et R2 d'abord, dans cet ordre : le reste n'est que des surfaces au-dessus.
 R7 peut se faire en parallèle de R3/R4 — c'est la dette existante, indépendante.
+
+> **Écart assumé sur R2.** Les endpoints des deux surfaces (client et staff) ont
+> été livrés **avec** la persistance plutôt qu'avec les écrans : sans eux, les
+> e2e n'auraient rien pu prouver du chemin réel — or c'est précisément la course
+> au créneau et la libération à l'annulation qu'on voulait démontrer sur un vrai
+> Postgres. R3 à R5 ne portent donc plus que les **écrans**.
+>
+> Une table de plus que prévu : `booking_policy_settings`. La politique devait
+> aller dans `b2b_platform_settings`, mais cette table vit dans `public` — l'y
+> mettre aurait fait dépendre `growth` d'une table voisine, exactement ce que le
+> §0.9 de la todo-tech interdit.
 
 ---
 
