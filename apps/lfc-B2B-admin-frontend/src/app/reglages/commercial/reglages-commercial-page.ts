@@ -3,11 +3,14 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FoldButtonComponent, FoldCardComponent } from 'fold-ng';
 import type { MarketConfigView } from '@lfd/contracts';
 
+import { AvailabilityCard } from '../../commercial/availability/availability-card/availability-card';
 import { MarketService } from '../../commercial/market/market.service';
 import { AcquisitionSettingsService } from '../../commercial/settings/acquisition-settings.service';
 
 /**
- * Sous-page **Commercial** des Réglages (staff). Deux cartes :
+ * Sous-page **Commercial** des Réglages (staff). Trois cartes :
+ * - **Disponibilités** : la grille hebdomadaire des rendez-vous, sa politique et
+ *   ses exceptions, avec l'aperçu de ce que le client verra (carte dédiée).
  * - **Alertes acquisition** : seuils ambre/rouge du calendrier (localStorage).
  * - **Marché ciblé** : zones (codes postaux) + codes NAF visés, avec le nombre
  *   d'acteurs *stocké* et un bouton **Redemander** qui réinterroge l'API entreprises.
@@ -16,7 +19,7 @@ import { AcquisitionSettingsService } from '../../commercial/settings/acquisitio
 @Component({
   selector: 'app-reglages-commercial-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldButtonComponent, DatePipe],
+  imports: [FoldCardComponent, FoldButtonComponent, DatePipe, AvailabilityCard],
   templateUrl: './reglages-commercial-page.html',
   styleUrl: './reglages-commercial-page.scss',
 })

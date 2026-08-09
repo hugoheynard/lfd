@@ -1,3 +1,5 @@
+<app-availability-card />
+
 <fold-card>
   <h2 class="section-title">Alertes acquisition</h2>
   <p class="section-desc">
@@ -43,10 +45,10 @@
 <fold-card>
   <h2 class="section-title">Marché ciblé</h2>
   <p class="section-desc">
-    Les zones (codes postaux) et les catégories d'acteurs (codes NAF) que l'on vise. On
-    interroge l'API publique des entreprises pour compter les acteurs de chaque zone —
-    le dénominateur de l'adoption par territoire du dashboard Croissance. « Redemander »
-    réinterroge et met à jour les comptages stockés.
+    Les zones (codes postaux) et les catégories d'acteurs (codes NAF) que l'on vise. On interroge
+    l'API publique des entreprises pour compter les acteurs de chaque zone — le dénominateur de
+    l'adoption par territoire du dashboard Croissance. « Redemander » réinterroge et met à jour les
+    comptages stockés.
   </p>
 
   @if (error()) {
@@ -123,13 +125,7 @@
         }
       </ul>
       <div class="market-add market-add--naf">
-        <input
-          #nafCode
-          type="text"
-          placeholder="56.10A"
-          class="field-input"
-          [disabled]="busy()"
-        />
+        <input #nafCode type="text" placeholder="56.10A" class="field-input" [disabled]="busy()" />
         <input
           #nafLabel
           type="text"

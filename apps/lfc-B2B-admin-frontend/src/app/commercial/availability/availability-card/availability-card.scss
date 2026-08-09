@@ -1,0 +1,302 @@
+.section-title {
+  margin: 0 0 var(--fold-space-xs);
+  font-size: var(--fold-text-lg, 1.125rem);
+}
+
+.section-desc {
+  margin: 0 0 var(--fold-space-md);
+  color: var(--fold-color-text-muted);
+}
+
+.av-subtitle {
+  margin: var(--fold-space-lg) 0 var(--fold-space-sm);
+  font-size: var(--fold-text-md, 1rem);
+}
+
+.av-error,
+.av-warn {
+  margin: 0 0 var(--fold-space-md);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-alert-soft, var(--fold-color-surface-card));
+  color: var(--fold-color-text-alert, var(--fold-color-text));
+  font-size: var(--fold-text-sm);
+}
+
+.av-warn {
+  background: var(--fold-color-surface-warning-soft, var(--fold-color-surface-card));
+  color: var(--fold-color-text-warning, var(--fold-color-text));
+}
+
+/* ── Grille hebdomadaire ─────────────────────────────────────────────────── */
+
+.av-week {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--fold-space-sm);
+}
+
+.av-day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+}
+
+.av-day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-xs);
+  min-height: 1.5rem;
+}
+
+.av-day-label {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+}
+
+.av-day-actions {
+  display: flex;
+  gap: var(--fold-space-xs);
+}
+
+.av-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--fold-color-text);
+  }
+}
+
+.av-ranges {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.av-range {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+/* Une plage incohérente se voit AVANT d'enregistrer, pas après le refus. */
+.av-range--invalid .av-time {
+  border-color: var(--fold-color-border-alert, var(--fold-color-border));
+}
+
+.av-time {
+  width: 100%;
+  min-width: 0;
+}
+
+.av-dash {
+  color: var(--fold-color-text-muted);
+}
+
+.av-closed,
+.av-empty {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  font-style: italic;
+}
+
+.av-add {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-accent, var(--fold-color-text));
+  font-size: var(--fold-text-xs, 0.75rem);
+  cursor: pointer;
+}
+
+.av-remove {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: var(--fold-radius-sm);
+  background: none;
+  color: var(--fold-color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--fold-color-surface-hover, transparent);
+    color: var(--fold-color-text);
+  }
+}
+
+/* ── Champs & canaux ─────────────────────────────────────────────────────── */
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.field-label {
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: 500;
+}
+
+.field-control {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.field-input {
+  padding: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+}
+
+.field-suffix {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.av-channels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin-top: var(--fold-space-md);
+}
+
+.av-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.av-chip {
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill, 999px);
+  background: none;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  font-size: var(--fold-text-sm);
+  cursor: pointer;
+}
+
+.av-chip--on {
+  border-color: var(--fold-color-border-accent, var(--fold-color-border));
+  background: var(--fold-color-surface-accent-soft, var(--fold-color-surface-card));
+  color: var(--fold-color-text-accent, var(--fold-color-text));
+}
+
+/* ── Exceptions ──────────────────────────────────────────────────────────── */
+
+.av-exceptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0 0 var(--fold-space-sm);
+  padding: 0;
+  list-style: none;
+}
+
+.av-exception {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+}
+
+.av-exc-kind {
+  flex: 0 0 auto;
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-alert-soft, var(--fold-color-surface-card));
+  color: var(--fold-color-text-alert, var(--fold-color-text));
+  font-size: var(--fold-text-xs, 0.75rem);
+}
+
+.av-exc-kind--open {
+  background: var(--fold-color-surface-success-soft, var(--fold-color-surface-card));
+  color: var(--fold-color-text-success, var(--fold-color-text));
+}
+
+.av-exc-day {
+  font-variant-numeric: tabular-nums;
+}
+
+.av-exc-reason {
+  flex: 1 1 auto;
+}
+
+.av-exc-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+/* ── Enregistrement & aperçu ─────────────────────────────────────────────── */
+
+.av-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  margin-top: var(--fold-space-lg);
+}
+
+.av-saved {
+  color: var(--fold-color-text-success, var(--fold-color-text-muted));
+  font-size: var(--fold-text-sm);
+}
+
+.av-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.av-preview-day {
+  display: flex;
+  gap: var(--fold-space-md);
+  font-size: var(--fold-text-sm);
+}
+
+.av-preview-date {
+  flex: 0 0 6rem;
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.av-preview-times {
+  flex: 1 1 auto;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}

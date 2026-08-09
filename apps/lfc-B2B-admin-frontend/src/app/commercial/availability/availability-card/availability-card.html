@@ -1,0 +1,228 @@
+<fold-card>
+  <h2 class="section-title">Disponibilités</h2>
+  <p class="section-desc">
+    Les plages où vous acceptez des rendez-vous. Les créneaux proposés au client en sont
+    <strong>dérivés</strong> — pas besoin de les gérer un par un. L'aperçu en bas montre ce que le
+    client verra, exactement.
+  </p>
+
+  @if (state() === 'error') {
+    <p class="av-error">
+      Le chargement ou l'enregistrement a échoué.
+      <button type="button" class="av-link" (click)="load()">Réessayer</button>
+    </p>
+  }
+
+  <!-- Grille hebdomadaire -->
+  <div class="av-week">
+    @for (day of weekDays; track day.index) {
+      <section class="av-day">
+        <header class="av-day-head">
+          <h3 class="av-day-label">{{ day.label }}</h3>
+          <div class="av-day-actions">
+            @if (rangesOf(day.index).length > 0) {
+              <button
+                type="button"
+                class="av-link"
+                title="Appliquer ces plages du lundi au vendredi"
+                (click)="copyToWeekdays(day.index)"
+              >
+                Copier sur la semaine
+              </button>
+              <button type="button" class="av-link" (click)="clearDay(day.index)">Vider</button>
+            }
+          </div>
+        </header>
+
+        <ul class="av-ranges">
+          @for (range of rangesOf(day.index); track $index) {
+            <li class="av-range" [class.av-range--invalid]="range.startTime >= range.endTime">
+              <input
+                #start
+                type="time"
+                class="field-input av-time"
+                [value]="range.startTime"
+                (change)="setStart(day.index, $index, start.value)"
+                aria-label="Début"
+              />
+              <span class="av-dash">→</span>
+              <input
+                #end
+                type="time"
+                class="field-input av-time"
+                [value]="range.endTime"
+                (change)="setEnd(day.index, $index, end.value)"
+                aria-label="Fin"
+              />
+              <button
+                type="button"
+                class="av-remove"
+                (click)="removeRange(day.index, $index)"
+                aria-label="Retirer la plage"
+              >
+                ×
+              </button>
+            </li>
+          } @empty {
+            <li class="av-closed">Fermé</li>
+          }
+        </ul>
+
+        <button type="button" class="av-add" (click)="addRange(day.index)">
+          + Ajouter une plage
+        </button>
+      </section>
+    }
+  </div>
+
+  @if (invalid()) {
+    <p class="av-warn">Une plage se termine avant de commencer : elle ne sera pas enregistrée.</p>
+  }
+
+  <!-- Politique de réservation -->
+  <h3 class="av-subtitle">Règles de réservation</h3>
+  <div class="fields">
+    <label class="field">
+      <span class="field-label">Durée d'un rendez-vous</span>
+      <span class="field-control">
+        <input
+          type="number"
+          min="5"
+          max="240"
+          step="5"
+          inputmode="numeric"
+          class="field-input"
+          #slotMinutes
+          [value]="policy().slotMinutes"
+          (change)="setSlotMinutes(slotMinutes.value)"
+        />
+        <span class="field-suffix">minutes</span>
+      </span>
+    </label>
+
+    <label class="field">
+      <span class="field-label">Pas de réservation dans les</span>
+      <span class="field-control">
+        <input
+          type="number"
+          min="0"
+          max="720"
+          inputmode="numeric"
+          class="field-input"
+          #leadTime
+          [value]="policy().leadTimeHours"
+          (change)="setLeadTime(leadTime.value)"
+        />
+        <span class="field-suffix">heures qui viennent</span>
+      </span>
+    </label>
+
+    <label class="field">
+      <span class="field-label">Réservable jusqu'à</span>
+      <span class="field-control">
+        <input
+          type="number"
+          min="1"
+          max="365"
+          inputmode="numeric"
+          class="field-input"
+          #horizon
+          [value]="policy().horizonDays"
+          (change)="setHorizon(horizon.value)"
+        />
+        <span class="field-suffix">jours à l'avance</span>
+      </span>
+    </label>
+  </div>
+
+  <div class="av-channels">
+    <span class="field-label">Canaux proposés</span>
+    <div class="av-chips">
+      @for (channel of channels; track channel.key) {
+        <button
+          type="button"
+          class="av-chip"
+          [class.av-chip--on]="isChannelOn(channel.key)"
+          [attr.aria-pressed]="isChannelOn(channel.key)"
+          (click)="toggleChannel(channel.key)"
+        >
+          {{ channel.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Exceptions datées -->
+  <h3 class="av-subtitle">Fermetures et ouvertures exceptionnelles</h3>
+  <ul class="av-exceptions">
+    @for (exception of exceptions(); track $index) {
+      <li class="av-exception">
+        <span class="av-exc-kind" [class.av-exc-kind--open]="exception.kind === 'open'">
+          {{ exception.kind === 'open' ? 'Ouvert' : 'Fermé' }}
+        </span>
+        <span class="av-exc-day">{{ exception.day }}</span>
+        @if (exception.startTime !== null && exception.endTime !== null) {
+          <span class="av-exc-time">{{ exception.startTime }} → {{ exception.endTime }}</span>
+        } @else {
+          <span class="av-exc-time muted">toute la journée</span>
+        }
+        <span class="av-exc-reason muted">{{ exception.reason }}</span>
+        <button
+          type="button"
+          class="av-remove"
+          (click)="removeException($index)"
+          aria-label="Retirer l'exception"
+        >
+          ×
+        </button>
+      </li>
+    } @empty {
+      <li class="av-empty">Aucune exception.</li>
+    }
+  </ul>
+
+  <div class="av-exc-add">
+    <input #excDay type="date" class="field-input" aria-label="Jour" />
+    <select #excKind class="field-input" aria-label="Type">
+      <option value="closed">Fermeture</option>
+      <option value="open">Ouverture exceptionnelle</option>
+    </select>
+    <input #excReason type="text" class="field-input" placeholder="Motif (congés, salon…)" />
+    <button
+      foldButton
+      emphasis="outline"
+      (click)="
+        addException(excDay.value, excKind.value, excReason.value);
+        excDay.value = '';
+        excReason.value = ''
+      "
+    >
+      Ajouter
+    </button>
+  </div>
+
+  <!-- Enregistrement -->
+  <div class="av-footer">
+    @if (saved()) {
+      <span class="av-saved">Enregistré.</span>
+    }
+    <button foldButton [disabled]="saving()" (click)="save()">
+      {{ saving() ? 'Enregistrement…' : 'Enregistrer les disponibilités' }}
+    </button>
+  </div>
+
+  <!-- Aperçu : la même route que le client -->
+  <h3 class="av-subtitle">Ce que le client voit — 14 prochains jours</h3>
+  <div class="av-preview">
+    @for (day of preview(); track day.day) {
+      <div class="av-preview-day">
+        <span class="av-preview-date">{{ day.day }}</span>
+        <span class="av-preview-times">{{ day.times.join(' · ') }}</span>
+      </div>
+    } @empty {
+      <p class="av-empty">
+        Aucun créneau ouvert sur les 14 prochains jours. Déclarez une plage, puis enregistrez.
+      </p>
+    }
+  </div>
+</fold-card>
