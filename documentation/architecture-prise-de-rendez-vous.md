@@ -392,15 +392,15 @@ recompute) : le rappel J-1 peut s'y greffer sans nouvelle infra.
 
 ## 8. Découpe
 
-| Tranche                       | Contenu                                                                                                                                                                         | Fini quand                                                 |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **R1 · Domaine** ✅           | Contrats (`AvailabilityRule`, `AvailabilityException`, `BookingPolicy`, `Slot`, `AppointmentView`), `slotsFor` pur + les 8 tests du §4, agrégat `Appointment` + machine à états | **52 tests**, zéro I/O dans les specs                      |
-| **R2 · Persistance** ✅       | 4 tables + migration (dont l'**index unique partiel** en SQL brut), ports + adaptateurs Prisma, et les deux surfaces HTTP                                                       | **21 e2e**, dont la course concurrente → une 201, une 409  |
-| **R3 · Admin disponibilités** | `GET/PUT /admin/availability` (règles, exceptions, politique) + la sous-page Réglages → Commercial avec l'aperçu 14 jours                                                       | le commercial ouvre une plage, elle apparaît dans l'aperçu |
-| **R4 · Réservation client**   | `GET /appointments/slots`, `POST /appointments`, `DELETE /appointments/:id` + le panneau client                                                                                 | un client réserve, annule, re-réserve                      |
-| **R5 · Suivi staff**          | `GET /admin/appointments`, transitions `PATCH`, calendrier Acquisition en vue semaine + side-panel d'actions                                                                    | un RDV se confirme, se clôt en honoré/absent               |
-| **R6 · Notifications**        | Confirmation client, alerte staff, rappel J-1 (greffé au cron)                                                                                                                  | plus personne n'a besoin d'ouvrir l'onglet                 |
-| **R7 · Reprise**              | `SupportRequest` : clôture (`handled_at`) + file staff, et bascule du chemin « créneau » vers `Appointment`                                                                     | la release §3.3 n'est plus vraie                           |
+| Tranche                          | Contenu                                                                                                                                                                         | Fini quand                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **R1 · Domaine** ✅              | Contrats (`AvailabilityRule`, `AvailabilityException`, `BookingPolicy`, `Slot`, `AppointmentView`), `slotsFor` pur + les 8 tests du §4, agrégat `Appointment` + machine à états | **52 tests**, zéro I/O dans les specs                             |
+| **R2 · Persistance** ✅          | 4 tables + migration (dont l'**index unique partiel** en SQL brut), ports + adaptateurs Prisma, et les deux surfaces HTTP                                                       | **21 e2e**, dont la course concurrente → une 201, une 409         |
+| **R3 · Admin disponibilités** ✅ | Grille hebdo, politique, exceptions et **aperçu 14 jours** dans Réglages ▸ Commercial ; toute la logique dans `availability-draft.ts` (pur)                                     | **15 tests**, l'aperçu passe par la route du client               |
+| **R4 · Réservation client** ✅   | Le panneau choisit un créneau **réel** ; les chemins « au plus vite » et « e-mail » restent ; rendez-vous à venir listés et annulables                                          | un client réserve, annule, re-réserve                             |
+| **R5 · Suivi staff** ✅          | 4ᵉ flux du calendrier Acquisition, posé à l'heure réelle, vue **semaine** par défaut, side-panel d'actions (`openCompany` n'est plus un no-op)                                  | **8 tests**, un RDV se confirme et se clôt                        |
+| **R6 · Notifications** ⏳        | Confirmation client, alerte staff, rappel J-1 (greffé au cron)                                                                                                                  | plus personne n'a besoin d'ouvrir l'onglet — **dépend du mailer** |
+| **R7 · Reprise** ✅              | `SupportRequest` : clôture (`handled_at`), file staff, journal `support.requested`/`handled`, et bascule du chemin « créneau » vers `Appointment`                               | **8 e2e**, la release §3.3 n'est plus vraie                       |
 
 R1 et R2 d'abord, dans cet ordre : le reste n'est que des surfaces au-dessus.
 R7 peut se faire en parallèle de R3/R4 — c'est la dette existante, indépendante.
@@ -416,16 +416,30 @@ R7 peut se faire en parallèle de R3/R4 — c'est la dette existante, indépenda
 > mettre aurait fait dépendre `growth` d'une table voisine, exactement ce que le
 > §0.9 de la todo-tech interdit.
 
+> **Ce que R4 a laissé en place.** Le contrat `SupportRequest` garde ses champs
+> `scheduledDate` / `slot`, mais **le client n'en écrit plus** : le chemin daté
+> passe désormais par `Appointment`. Les colonnes restent pour relire l'historique
+> des demandes déposées avant la bascule. On les retirera quand cet historique
+> n'aura plus d'intérêt — pas avant, sinon on perd des données qu'on ne saurait
+> pas reconstituer.
+
 ---
 
 ## 9. Critères de sortie
 
-- [ ] Le commercial déclare ses horaires en moins d'une minute, et voit l'effet.
-- [ ] Le client ne voit **que** des créneaux réellement réservables.
-- [ ] Deux clients simultanés sur le même créneau : un seul l'obtient, l'autre a
-      un message clair (pas un 500).
-- [ ] Un rendez-vous se clôt (honoré / absent / annulé) et sort de la file.
-- [ ] Le client peut annuler jusqu'au délai de prévenance sans écrire à personne.
-- [ ] Un rendez-vous notifie les deux parties sans intervention humaine.
-- [ ] Le changement d'heure ne décale aucun créneau (test au `FixedClock`).
-- [ ] Un prospect **sans société** peut se voir poser un rendez-vous par le staff.
+- [x] Le commercial déclare ses horaires en moins d'une minute, et voit l'effet.
+- [x] Le client ne voit **que** des créneaux réellement réservables.
+- [x] Deux clients simultanés sur le même créneau : un seul l'obtient, l'autre a
+      un message clair (pas un 500). — _e2e concurrent, `appointments.e2e-spec.ts`_
+- [x] Un rendez-vous se clôt (honoré / absent / annulé) et sort de la file.
+- [x] Le client peut annuler jusqu'au délai de prévenance sans écrire à personne.
+- [ ] Un rendez-vous notifie les deux parties sans intervention humaine. — **R6**,
+      bloqué sur l'infra mailer (Lot 2 de la release).
+- [x] Le changement d'heure ne décale aucun créneau — _`paris-time.spec.ts`,
+      y compris l'heure inexistante de mars et l'heure ambiguë d'octobre_.
+- [x] Un prospect **sans société** peut se voir poser un rendez-vous par le staff.
+
+**Un seul critère reste ouvert, et il ne dépend pas de cette tranche** : la
+notification. Tant qu'elle manque, le dispositif fonctionne mais suppose qu'un
+humain ouvre l'onglet — c'est la dernière chose qui sépare la prise de
+rendez-vous d'un outil autonome.

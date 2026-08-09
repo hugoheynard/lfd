@@ -157,13 +157,13 @@ flux client → staff de toute l'acquisition est le seul sans test d'intégratio
 
 ### P0 — la release n'a pas de sens sans
 
-| #        | Constat                                                                   | Preuve                                                              |
-| -------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| **P0-1** | `handled_at` jamais écrit → file jamais purgée, client verrouillé         | §3.3                                                                |
-| **P0-2** | Créneau / canal / numéro / message non exposés au staff                   | `prisma-admin-company.reader.ts:34`                                 |
-| **P0-3** | **Aucune notification** — pas une seule dépendance mailer dans le backend | `package.json` : 0 occurrence `nodemailer\|resend\|sendgrid\|brevo` |
-| **P0-4** | Le calendrier ne mène nulle part (`openCompany` = no-op)                  | `acquisition-page.ts`                                               |
-| **P0-5** | Zéro e2e sur le flux support/RDV                                          | `test/`                                                             |
+| #           | Constat                                                                   | Preuve                                                              |
+| ----------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **P0-1**    | `handled_at` jamais écrit → file jamais purgée, client verrouillé         | §3.3                                                                |
+| **P0-2**    | Créneau / canal / numéro / message non exposés au staff                   | `prisma-admin-company.reader.ts:34`                                 |
+| **P0-3** 🔴 | **Aucune notification** — pas une seule dépendance mailer dans le backend | `package.json` : 0 occurrence `nodemailer\|resend\|sendgrid\|brevo` |
+| **P0-4**    | Le calendrier ne mène nulle part (`openCompany` = no-op)                  | `acquisition-page.ts`                                               |
+| **P0-5**    | Zéro e2e sur le flux support/RDV                                          | `test/`                                                             |
 
 Sur **P0-3** : le schéma Prisma le documente lui-même (« notification e-mail
 viendra avec l'infra mailer »). Aujourd'hui, une demande de rappel ne déclenche
