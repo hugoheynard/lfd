@@ -15,9 +15,10 @@ import {
   FoldNumberInputComponent,
   type FoldSelectOption,
 } from 'fold-ng';
-import type { AppointmentChannel, AvailabilityConfigView } from '@lfd/contracts';
+import type { AppointmentChannel, AvailabilityConfigView, BookingPolicy } from '@lfd/contracts';
 
 import { AvailabilityService } from '../../../../commercial/availability/availability.service';
+import { NotifyService } from '../../../../notify.service';
 import { MetricInfo } from '../../../../shared/metric-info/metric-info';
 
 import { withPolicy, type AvailabilityDraft } from '../availability-draft';
@@ -64,8 +65,15 @@ const CHANNELS: readonly FoldSelectOption<AppointmentChannel>[] = [
 })
 export class BookingPolicyCard {
   private readonly service = inject(AvailabilityService);
+  private readonly notify = inject(NotifyService);
 
   readonly draft = input.required<AvailabilityDraft>();
+  /**
+   * La politique **telle qu'elle est en base**. Sert de référence au « modifié » :
+   * sans elle, la carte ne pourrait que deviner, et proposerait d'enregistrer un
+   * état identique à celui du serveur.
+   */
+  readonly baseline = input<BookingPolicy | null>(null);
   readonly changed = output<AvailabilityDraft>();
   /** Enregistré : le parent rafraîchit l'aperçu, que la politique vient de changer. */
   readonly persisted = output<AvailabilityConfigView>();
@@ -74,21 +82,32 @@ export class BookingPolicyCard {
   protected readonly policy = computed(() => this.draft().policy);
 
   protected readonly saving = signal(false);
-  protected readonly saved = signal(false);
-  protected readonly failed = signal(false);
 
+  /**
+   * Y a-t-il quelque chose à enregistrer ? Les actions n'apparaissent qu'alors :
+   * un bouton toujours visible sur un formulaire intact invite à un appel qui
+   * n'écrirait rien, et noie celui qui compte quand il compte.
+   */
+  protected readonly dirty = computed(() => {
+    const baseline = this.baseline();
+    return baseline !== null && !samePolicy(this.policy(), baseline);
+  });
+
+  /**
+   * Le résultat part en **toast**, pas en ligne dans la carte : une fois
+   * enregistré, le pied disparaît (plus rien n'est modifié) — un message qui
+   * s'affiche là où le bouton vient de s'effacer n'a nulle part où tenir.
+   */
   async save(): Promise<void> {
     this.saving.set(true);
-    this.saved.set(false);
-    this.failed.set(false);
     try {
       const config = await this.service.savePolicy(this.policy());
-      this.saved.set(true);
       // On remonte ce que le SERVEUR a enregistré : le parent réaligne le
       // brouillon et recharge l'aperçu, qui dépend de ces bornes.
       this.persisted.emit(config);
-    } catch {
-      this.failed.set(true);
+      this.notify.success('Règles de réservation enregistrées.');
+    } catch (error) {
+      this.notify.error(error, "L'enregistrement des règles a échoué.");
     } finally {
       this.saving.set(false);
     }
@@ -118,11 +137,24 @@ export class BookingPolicyCard {
     this.edit(withPolicy(this.draft(), { channels: [...channels] }));
   }
 
-  /** Applique une édition et retire l'indicateur « enregistré », devenu faux. */
   private edit(draft: AvailabilityDraft): void {
-    this.saved.set(false);
     this.changed.emit(draft);
   }
+}
+
+/**
+ * Deux politiques disent-elles la même chose ? Les canaux se comparent **en
+ * ensemble** : `fold-multiselect` rend l'ordre de sélection, et un simple
+ * réordonnancement n'est pas une modification.
+ */
+function samePolicy(a: BookingPolicy, b: BookingPolicy): boolean {
+  return (
+    a.slotMinutes === b.slotMinutes &&
+    a.leadTimeHours === b.leadTimeHours &&
+    a.horizonDays === b.horizonDays &&
+    a.channels.length === b.channels.length &&
+    a.channels.every((channel) => b.channels.includes(channel))
+  );
 }
 
 /** Un entier ≥ `min` — `fold-number-input` rend `null` quand le champ est vidé. */

@@ -3,6 +3,7 @@ import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 import type { Slot } from '@lfd/contracts';
 
 import { AvailabilityService } from '../../../commercial/availability/availability.service';
+import { NotifyService } from '../../../notify.service';
 import type { AvailabilityConfigView } from '@lfd/contracts';
 
 import { draftFrom, emptyDraft, toPayload, type AvailabilityDraft } from './availability-draft';
@@ -51,14 +52,19 @@ const FALLBACK_POLICY = {
 })
 export class AvailabilityCard {
   private readonly service = inject(AvailabilityService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly saving = signal(false);
-  protected readonly saved = signal(false);
   protected readonly draft = signal<AvailabilityDraft>(
     emptyDraft({ ...FALLBACK_POLICY, channels: ['phone'] }),
   );
   protected readonly preview = signal<readonly PreviewDay[]>([]);
+  /**
+   * Ce que le **serveur** détient. Sert de référence aux cartes pour savoir si
+   * elles ont quelque chose à enregistrer — un brouillon seul ne peut pas le dire.
+   */
+  protected readonly persisted = signal<AvailabilityConfigView | null>(null);
 
   constructor() {
     void this.load();
@@ -67,7 +73,9 @@ export class AvailabilityCard {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      this.draft.set(draftFrom(await this.service.config()));
+      const config = await this.service.config();
+      this.persisted.set(config);
+      this.draft.set(draftFrom(config));
       this.state.set('ready');
       await this.refreshPreview();
     } catch {
@@ -75,10 +83,9 @@ export class AvailabilityCard {
     }
   }
 
-  /** Une carte a transformé le brouillon : on l'adopte et on invalide « enregistré ». */
+  /** Une carte a transformé le brouillon : on l'adopte. */
   protected onChanged(draft: AvailabilityDraft): void {
     this.draft.set(draft);
-    this.saved.set(false);
   }
 
   /**
@@ -88,20 +95,25 @@ export class AvailabilityCard {
    * bornes changent.
    */
   protected async onPersisted(config: AvailabilityConfigView): Promise<void> {
+    this.persisted.set(config);
     this.draft.update((draft) => ({ ...draft, policy: config.policy }));
     await this.refreshPreview();
   }
 
   protected async save(): Promise<void> {
     this.saving.set(true);
-    this.saved.set(false);
     try {
       // On rejoue ce que le SERVEUR a enregistré, pas ce qu'on croit avoir envoyé.
-      this.draft.set(draftFrom(await this.service.save(toPayload(this.draft()))));
-      this.saved.set(true);
+      const config = await this.service.save(toPayload(this.draft()));
+      this.persisted.set(config);
+      this.draft.set(draftFrom(config));
+      this.notify.success('Grille de disponibilité enregistrée.');
       await this.refreshPreview();
-    } catch {
-      this.state.set('error');
+    } catch (error) {
+      // Un échec d'écriture est un toast : l'écran garde ses données et sa
+      // saisie. Seul un échec de CHARGEMENT bascule l'état — là, il n'y a rien
+      // à montrer, et le message doit rester à l'écran avec le « Réessayer ».
+      this.notify.error(error, "L'enregistrement de la grille a échoué.");
     } finally {
       this.saving.set(false);
     }

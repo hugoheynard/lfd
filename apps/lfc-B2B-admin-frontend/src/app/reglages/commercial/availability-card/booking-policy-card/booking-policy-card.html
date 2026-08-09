@@ -1,5 +1,6 @@
-<fold-card>
+<fold-card separators="footer">
   <fold-element-title
+    cardHeader
     variant="title"
     icon="settings"
     title="Règles de réservation"
@@ -69,16 +70,13 @@
     </div>
   </div>
 
-  @if (failed()) {
-    <p class="sec-error">L'enregistrement des règles a échoué. Réessayez.</p>
+  <!-- Le pied n'apparaît qu'une fois quelque chose modifié : un bouton toujours
+       là inviterait à un appel qui n'écrirait rien. Le résultat part en toast. -->
+  @if (dirty()) {
+    <div cardFooter class="bp-actions">
+      <button foldButton emphasis="outline" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Enregistrement…' : 'Enregistrer les règles' }}
+      </button>
+    </div>
   }
-
-  <div class="bp-actions">
-    @if (saved()) {
-      <span class="sec-saved">Enregistré.</span>
-    }
-    <button foldButton emphasis="outline" [disabled]="saving()" (click)="save()">
-      {{ saving() ? 'Enregistrement…' : 'Enregistrer les règles' }}
-    </button>
-  </div>
 </fold-card>

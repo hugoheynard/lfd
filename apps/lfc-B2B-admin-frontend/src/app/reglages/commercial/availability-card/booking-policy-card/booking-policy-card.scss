@@ -2,7 +2,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   gap: var(--fold-space-lg, 1.5rem);
-  margin-top: var(--fold-space-lg, 1.5rem);
   align-items: start;
 }
 
@@ -19,12 +18,11 @@
   right: 0;
 }
 
+/* Le filet et le rythme du pied viennent de `fold-card separators="footer"` ;
+   il ne reste que l'alignement. */
 .bp-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: var(--fold-space-md);
-  margin-top: var(--fold-space-lg, 1.5rem);
-  padding-top: var(--fold-space-md);
-  border-top: 1px solid var(--fold-color-border);
 }
