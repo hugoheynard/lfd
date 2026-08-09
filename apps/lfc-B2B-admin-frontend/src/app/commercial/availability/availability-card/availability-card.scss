@@ -1,48 +1,40 @@
-.section-title {
-  margin: 0 0 var(--fold-space-xs);
-  font-size: var(--fold-text-lg, 1.125rem);
-}
-
-.section-desc {
-  margin: 0 0 var(--fold-space-md);
-  color: var(--fold-color-text-muted);
-}
-
-.av-subtitle {
-  margin: var(--fold-space-lg) 0 var(--fold-space-sm);
-  font-size: var(--fold-text-md, 1rem);
-}
-
-.av-error,
-.av-warn {
-  margin: 0 0 var(--fold-space-md);
-  padding: var(--fold-space-sm) var(--fold-space-md);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-alert-soft, var(--fold-color-surface-card));
-  color: var(--fold-color-text-alert, var(--fold-color-text));
-  font-size: var(--fold-text-sm);
-}
-
-.av-warn {
-  background: var(--fold-color-surface-warning-soft, var(--fold-color-surface-card));
-  color: var(--fold-color-text-warning, var(--fold-color-text));
+/* Le premier sous-titre suit l'en-tête : pas de double respiration. */
+.av-first {
+  margin-top: 0;
 }
 
 /* ── Grille hebdomadaire ─────────────────────────────────────────────────── */
 
 .av-week {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   gap: var(--fold-space-sm);
 }
 
 .av-day {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-xs);
-  padding: var(--fold-space-sm);
+  gap: 0.4rem;
+  padding: 0.75rem;
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md);
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+
+  &:hover {
+    border-color: var(--fold-color-border-strong, var(--fold-color-border));
+  }
+}
+
+/* Une journée fermée s'efface : l'œil doit tomber sur ce qui est ouvert. */
+.av-day--off {
+  background: var(--fold-color-surface-sunken, transparent);
+
+  .av-day-label {
+    color: var(--fold-color-text-muted);
+    font-weight: 500;
+  }
 }
 
 .av-day-head {
@@ -61,27 +53,13 @@
 
 .av-day-actions {
   display: flex;
-  gap: var(--fold-space-xs);
-}
-
-.av-link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs, 0.75rem);
-  text-decoration: underline;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--fold-color-text);
-  }
+  gap: 0.6rem;
 }
 
 .av-ranges {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-xs);
+  gap: 0.35rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -90,28 +68,34 @@
 .av-range {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-xs);
+  gap: 0.3rem;
 }
 
 /* Une plage incohérente se voit AVANT d'enregistrer, pas après le refus. */
 .av-range--invalid .av-time {
-  border-color: var(--fold-color-border-alert, var(--fold-color-border));
+  border-color: var(--fold-color-danger, #dc2626);
 }
 
 .av-time {
   width: 100%;
   min-width: 0;
+  padding: 0.35rem 0.45rem;
+  font-size: var(--fold-text-sm);
+}
+
+.av-num {
+  width: 6rem;
 }
 
 .av-dash {
+  flex: 0 0 auto;
   color: var(--fold-color-text-muted);
 }
 
-.av-closed,
-.av-empty {
+.av-closed {
+  padding: 0.25rem 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
-  font-style: italic;
 }
 
 .av-add {
@@ -119,97 +103,16 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--fold-color-text-accent, var(--fold-color-text));
+  color: var(--fold-color-primary);
+  font: inherit;
   font-size: var(--fold-text-xs, 0.75rem);
-  cursor: pointer;
-}
-
-.av-remove {
-  flex: 0 0 auto;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 0;
-  border-radius: var(--fold-radius-sm);
-  background: none;
-  color: var(--fold-color-text-muted);
-  font-size: 1rem;
-  line-height: 1;
+  font-weight: 550;
   cursor: pointer;
 
   &:hover {
-    background: var(--fold-color-surface-hover, transparent);
-    color: var(--fold-color-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
-}
-
-/* ── Champs & canaux ─────────────────────────────────────────────────────── */
-
-.fields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-md);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-}
-
-.field-label {
-  color: var(--fold-color-text);
-  font-size: var(--fold-text-sm);
-  font-weight: 500;
-}
-
-.field-control {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm);
-}
-
-.field-input {
-  padding: var(--fold-space-sm);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-card);
-  color: var(--fold-color-text);
-  font: inherit;
-}
-
-.field-suffix {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
-}
-
-.av-channels {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-  margin-top: var(--fold-space-md);
-}
-
-.av-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs);
-}
-
-.av-chip {
-  padding: var(--fold-space-xs) var(--fold-space-sm);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-pill, 999px);
-  background: none;
-  color: var(--fold-color-text-muted);
-  font: inherit;
-  font-size: var(--fold-text-sm);
-  cursor: pointer;
-}
-
-.av-chip--on {
-  border-color: var(--fold-color-border-accent, var(--fold-color-border));
-  background: var(--fold-color-surface-accent-soft, var(--fold-color-surface-card));
-  color: var(--fold-color-text-accent, var(--fold-color-text));
 }
 
 /* ── Exceptions ──────────────────────────────────────────────────────────── */
@@ -217,8 +120,7 @@
 .av-exceptions {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-xs);
-  margin: 0 0 var(--fold-space-sm);
+  margin: 0 0 var(--fold-space-md);
   padding: 0;
   list-style: none;
 }
@@ -227,29 +129,42 @@
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);
+  padding: 0.45rem 0.15rem;
+  border-bottom: 1px solid var(--fold-color-border);
   font-size: var(--fold-text-sm);
 }
 
 .av-exc-kind {
   flex: 0 0 auto;
-  padding: 0 var(--fold-space-xs);
-  border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface-alert-soft, var(--fold-color-surface-card));
-  color: var(--fold-color-text-alert, var(--fold-color-text));
+  min-width: 4.2rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-danger, #dc2626);
   font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 550;
+  text-align: center;
 }
 
 .av-exc-kind--open {
-  background: var(--fold-color-surface-success-soft, var(--fold-color-surface-card));
-  color: var(--fold-color-text-success, var(--fold-color-text));
+  color: var(--fold-color-success, #16a34a);
 }
 
 .av-exc-day {
-  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+  min-width: 6rem;
+  font-weight: 550;
+}
+
+.av-exc-time {
+  flex: 0 0 auto;
+  min-width: 7rem;
 }
 
 .av-exc-reason {
   flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .av-exc-add {
@@ -258,45 +173,44 @@
   gap: var(--fold-space-sm);
 }
 
-/* ── Enregistrement & aperçu ─────────────────────────────────────────────── */
-
-.av-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--fold-space-sm);
-  margin-top: var(--fold-space-lg);
+.av-exc-motif {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
-.av-saved {
-  color: var(--fold-color-text-success, var(--fold-color-text-muted));
-  font-size: var(--fold-text-sm);
-}
+/* ── Aperçu ──────────────────────────────────────────────────────────────── */
 
 .av-preview {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-xs);
 }
 
 .av-preview-day {
   display: flex;
   gap: var(--fold-space-md);
-  font-size: var(--fold-text-sm);
+  padding: 0.5rem 0.15rem;
+  border-bottom: 1px solid var(--fold-color-border);
 }
 
 .av-preview-date {
-  flex: 0 0 6rem;
+  flex: 0 0 6.5rem;
   color: var(--fold-color-text-muted);
-  font-variant-numeric: tabular-nums;
+  font-size: var(--fold-text-sm);
 }
 
 .av-preview-times {
+  display: flex;
   flex: 1 1 auto;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  min-width: 0;
 }
 
-.muted {
-  color: var(--fold-color-text-muted);
+/* Chaque créneau est une pastille : on compte l'offre d'un coup d'œil. */
+.av-slot {
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm, 6px);
+  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
+  font-size: var(--fold-text-xs, 0.75rem);
 }

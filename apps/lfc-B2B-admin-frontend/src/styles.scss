@@ -1,3 +1,8 @@
+/* Socle visuel des sections de réglages commerciaux (`.sec-*`). Chargé ici, une
+   seule fois : en `@use` depuis chaque composant, Sass l'inlinait dans les trois
+   feuilles scopées — mêmes règles, trois fois le poids. */
+@use 'styles/commercial-sections';
+
 /* fold-ng design tokens : liés depuis index.html (`fold-tokens/index.css`, copié
    en asset depuis node_modules/fold-ng/tokens), PAS via un `@import` Sass — le
    builder ne les inline pas et laisserait un import nu qui 404. */

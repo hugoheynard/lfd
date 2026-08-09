@@ -1,0 +1,46 @@
+.al-input {
+  width: 6rem;
+}
+
+/* L'échelle des tons : on la montre, on ne la décrit pas. */
+.al-scale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-lg, 1.5rem);
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+}
+
+.al-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.al-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--fold-color-text-muted);
+}
+
+.al-step--warn .al-dot {
+  background: var(--fold-color-warning, #d97706);
+}
+
+.al-step--alert .al-dot {
+  background: var(--fold-color-danger, #dc2626);
+}
+
+.al-arrow {
+  color: var(--fold-color-text-muted);
+}
+
+.al-scope {
+  margin: var(--fold-space-md) 0 0;
+}

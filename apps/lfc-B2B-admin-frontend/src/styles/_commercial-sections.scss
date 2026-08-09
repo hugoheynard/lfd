@@ -1,0 +1,259 @@
+/**
+ * Socle visuel des **sections de réglages commerciaux** — importé par les trois
+ * cartes (prise de RDV, marchés, alertes) pour qu'elles se ressemblent sans se
+ * copier.
+ *
+ * Le parti pris « premium » tient en trois choses, et pas en effets :
+ * - une **hiérarchie de titres** stable (surtitre discret → titre → chapô) ;
+ * - un **rythme d'espacement** unique, toujours pris aux tokens fold ;
+ * - des **chiffres tabulaires** partout où des nombres s'alignent, et des
+ *   filets fins plutôt que des boîtes empilées.
+ */
+
+/* ── En-têtes ────────────────────────────────────────────────────────────── */
+
+.sec-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: var(--fold-space-lg, 1.5rem);
+}
+
+.sec-eyebrow {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sec-title {
+  margin: 0;
+  font-size: var(--fold-text-xl, 1.35rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.sec-lede {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
+  font-size: var(--fold-text-sm);
+  line-height: 1.55;
+}
+
+/* Sous-titre interne : un filet fin plutôt qu'une nouvelle boîte. */
+.sec-sub {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  margin: var(--fold-space-xl, 2rem) 0 var(--fold-space-md);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  &::after {
+    content: '';
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--fold-color-border);
+  }
+}
+
+/* ── Champs ──────────────────────────────────────────────────────────────── */
+
+.sec-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--fold-space-md) var(--fold-space-lg, 1.5rem);
+}
+
+.sec-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.sec-label {
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: 550;
+}
+
+.sec-control {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.sec-input {
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+
+  &:hover:not(:disabled) {
+    border-color: var(--fold-color-border-strong, var(--fold-color-border));
+  }
+
+  &:focus-visible {
+    border-color: var(--fold-color-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--fold-color-primary-soft, rgba(0, 0, 0, 0.06));
+  }
+}
+
+.sec-suffix {
+  flex: 0 0 auto;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.sec-hint {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  line-height: 1.45;
+}
+
+/* ── Pastilles à bascule ─────────────────────────────────────────────────── */
+
+.sec-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.sec-chip {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  font-size: var(--fold-text-sm);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
+
+  &:hover {
+    border-color: var(--fold-color-border-strong, var(--fold-color-border));
+    color: var(--fold-color-text);
+  }
+}
+
+.sec-chip--on {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary-soft, var(--fold-color-surface-card));
+  color: var(--fold-color-primary);
+  font-weight: 550;
+}
+
+/* ── Actions & messages ──────────────────────────────────────────────────── */
+
+.sec-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-md);
+  margin-top: var(--fold-space-xl, 2rem);
+  padding-top: var(--fold-space-md);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.sec-note {
+  margin-right: auto;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.sec-saved {
+  color: var(--fold-color-success, var(--fold-color-text-muted));
+  font-size: var(--fold-text-sm);
+  font-weight: 550;
+}
+
+.sec-error,
+.sec-warn {
+  margin: 0 0 var(--fold-space-md);
+  padding: 0.6rem 0.85rem;
+  border-left: 3px solid var(--fold-color-danger, #dc2626);
+  border-radius: var(--fold-radius-sm, 6px);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+}
+
+.sec-warn {
+  border-left-color: var(--fold-color-warning, #d97706);
+}
+
+.sec-empty {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  font-style: italic;
+}
+
+.sec-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  font-size: var(--fold-text-xs, 0.75rem);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--fold-color-text);
+  }
+}
+
+.sec-remove {
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fold-radius-md);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+
+  &:hover:not(:disabled) {
+    background: var(--fold-color-surface-hover, rgba(0, 0, 0, 0.05));
+    color: var(--fold-color-danger, #dc2626);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.sec-muted {
+  color: var(--fold-color-text-muted);
+}
+
+.sec-num {
+  font-variant-numeric: tabular-nums;
+}

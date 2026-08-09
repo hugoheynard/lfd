@@ -1,0 +1,112 @@
+/* ── Le chiffre de tête ──────────────────────────────────────────────────── */
+
+.mk-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md) var(--fold-space-lg, 1.5rem);
+  padding: var(--fold-space-md) var(--fold-space-lg, 1.5rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken, transparent);
+}
+
+.mk-total-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.mk-total-value {
+  font-size: clamp(1.75rem, 1.2rem + 1.4vw, 2.4rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.mk-total-unit {
+  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
+  font-size: var(--fold-text-sm);
+}
+
+.mk-total-meta {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+}
+
+.mk-pending {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-warning, #d97706);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 550;
+}
+
+/* ── Les deux colonnes ───────────────────────────────────────────────────── */
+
+.mk-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 0 var(--fold-space-xl, 2rem);
+}
+
+.mk-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Des lignes séparées par un filet, plutôt que des boîtes empilées. */
+.mk-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 var(--fold-space-md);
+  padding: 0;
+  list-style: none;
+}
+
+.mk-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: 0.45rem 0.15rem;
+  border-bottom: 1px solid var(--fold-color-border);
+  transition: background 120ms ease;
+
+  &:hover {
+    background: var(--fold-color-surface-hover, transparent);
+  }
+}
+
+.mk-key {
+  flex: 0 0 auto;
+  min-width: 4.5rem;
+  font-weight: 600;
+}
+
+.mk-count {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--fold-color-text-secondary, var(--fold-color-text-muted));
+  font-size: var(--fold-text-sm);
+  overflow-wrap: anywhere;
+}
+
+.mk-add {
+  display: flex;
+  gap: var(--fold-space-sm);
+
+  .sec-input {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.mk-naf-code {
+  flex: 0 0 7rem;
+}

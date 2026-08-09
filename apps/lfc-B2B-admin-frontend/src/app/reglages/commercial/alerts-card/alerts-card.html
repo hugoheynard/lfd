@@ -1,0 +1,66 @@
+<fold-card>
+  <header class="sec-head">
+    <span class="sec-eyebrow">Acquisition</span>
+    <h2 class="sec-title">Réglage des alertes</h2>
+    <p class="sec-lede">
+      La couleur d'un dossier en attente d'activation monte avec le nombre de jours sans traitement.
+      Ces deux seuils pilotent le calendrier d'acquisition.
+    </p>
+  </header>
+
+  <!-- L'échelle, montrée plutôt que décrite. -->
+  <div class="al-scale" aria-hidden="true">
+    <span class="al-step al-step--neutral">
+      <span class="al-dot"></span>
+      Récent
+    </span>
+    <span class="al-arrow">→</span>
+    <span class="al-step al-step--warn">
+      <span class="al-dot"></span>
+      Dès {{ settings.warnDays() }} j
+    </span>
+    <span class="al-arrow">→</span>
+    <span class="al-step al-step--alert">
+      <span class="al-dot"></span>
+      Dès {{ settings.alertDays() }} j
+    </span>
+  </div>
+
+  <div class="sec-fields">
+    <label class="sec-field">
+      <span class="sec-label">Avertissement (ambre)</span>
+      <span class="sec-control">
+        <input
+          #warn
+          type="number"
+          min="1"
+          inputmode="numeric"
+          class="sec-input al-input"
+          [value]="settings.warnDays()"
+          (change)="settings.setWarnDays(+warn.value)"
+        />
+        <span class="sec-suffix">jours d'attente</span>
+      </span>
+    </label>
+
+    <label class="sec-field">
+      <span class="sec-label">Alerte (rouge)</span>
+      <span class="sec-control">
+        <input
+          #alert
+          type="number"
+          [min]="settings.warnDays()"
+          inputmode="numeric"
+          class="sec-input al-input"
+          [value]="settings.alertDays()"
+          (change)="settings.setAlertDays(+alert.value)"
+        />
+        <span class="sec-suffix">jours d'attente</span>
+      </span>
+    </label>
+  </div>
+
+  <p class="sec-hint al-scope">
+    Enregistré sur ce navigateur — ces seuils ne sont pas encore partagés avec le reste de l'équipe.
+  </p>
+</fold-card>

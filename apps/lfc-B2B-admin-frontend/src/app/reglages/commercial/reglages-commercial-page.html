@@ -1,159 +1,25 @@
-<app-availability-card />
+<div class="rc">
+  <fold-view-nav
+    class="rc-nav"
+    [items]="sections"
+    [(activeKey)]="section"
+    direction="horizontal"
+    size="comfortable"
+    activeStyle="fill"
+    background="transparent"
+  />
 
-<fold-card>
-  <h2 class="section-title">Alertes acquisition</h2>
-  <p class="section-desc">
-    La couleur d'un créneau en attente d'activation monte avec le nombre de jours sans traitement :
-    neutre, puis ambre, puis rouge. Ces seuils pilotent le calendrier d'acquisition du commercial.
-  </p>
-
-  <div class="fields">
-    <label class="field">
-      <span class="field-label">Avertissement (ambre) à partir de</span>
-      <span class="field-control">
-        <input
-          #warn
-          type="number"
-          min="1"
-          inputmode="numeric"
-          class="field-input"
-          [value]="settings.warnDays()"
-          (change)="settings.setWarnDays(+warn.value)"
-        />
-        <span class="field-suffix">jours</span>
-      </span>
-    </label>
-
-    <label class="field">
-      <span class="field-label">Alerte (rouge) à partir de</span>
-      <span class="field-control">
-        <input
-          #alert
-          type="number"
-          [min]="settings.warnDays()"
-          inputmode="numeric"
-          class="field-input"
-          [value]="settings.alertDays()"
-          (change)="settings.setAlertDays(+alert.value)"
-        />
-        <span class="field-suffix">jours</span>
-      </span>
-    </label>
-  </div>
-</fold-card>
-
-<fold-card>
-  <h2 class="section-title">Marché ciblé</h2>
-  <p class="section-desc">
-    Les zones (codes postaux) et les catégories d'acteurs (codes NAF) que l'on vise. On interroge
-    l'API publique des entreprises pour compter les acteurs de chaque zone — le dénominateur de
-    l'adoption par territoire du dashboard Croissance. « Redemander » réinterroge et met à jour les
-    comptages stockés.
-  </p>
-
-  @if (error()) {
-    <p class="market-error">Une action a échoué. Réessayez.</p>
-  }
-
-  <div class="market-cols">
-    <!-- Zones ciblées -->
-    <section class="market-block">
-      <h3 class="market-title">Zones (codes postaux)</h3>
-      <ul class="market-list">
-        @for (zone of config()?.zones ?? []; track zone.codePostal) {
-          <li class="market-row">
-            <span class="market-cp">{{ zone.codePostal }}</span>
-            <span class="market-count">
-              @if (zone.fetchedAt === null) {
-                <em class="muted">à redemander</em>
-              } @else {
-                <strong>{{ zone.addressable }}</strong> acteurs
-                <span class="muted">· {{ zone.fetchedAt | date: 'dd/MM/yy' }}</span>
-              }
-            </span>
-            <button
-              type="button"
-              class="market-remove"
-              [disabled]="busy()"
-              (click)="removeZone(zone.codePostal)"
-              aria-label="Retirer la zone"
-            >
-              ×
-            </button>
-          </li>
-        } @empty {
-          <li class="market-empty">Aucune zone ciblée.</li>
-        }
-      </ul>
-      <div class="market-add">
-        <input
-          #cp
-          type="text"
-          inputmode="numeric"
-          maxlength="5"
-          placeholder="75011"
-          class="field-input"
-          [disabled]="busy()"
-          (keyup.enter)="addZone(cp.value); cp.value = ''"
-        />
-        <button foldButton [disabled]="busy()" (click)="addZone(cp.value); cp.value = ''">
-          Ajouter
-        </button>
-      </div>
-    </section>
-
-    <!-- NAF ciblés -->
-    <section class="market-block">
-      <h3 class="market-title">Catégories (codes NAF)</h3>
-      <ul class="market-list">
-        @for (naf of config()?.nafCodes ?? []; track naf.code) {
-          <li class="market-row">
-            <span class="market-cp">{{ naf.code }}</span>
-            <span class="market-count">{{ naf.label }}</span>
-            <button
-              type="button"
-              class="market-remove"
-              [disabled]="busy()"
-              (click)="removeNaf(naf.code)"
-              aria-label="Retirer le code NAF"
-            >
-              ×
-            </button>
-          </li>
-        } @empty {
-          <li class="market-empty">Aucun code NAF ciblé.</li>
-        }
-      </ul>
-      <div class="market-add market-add--naf">
-        <input #nafCode type="text" placeholder="56.10A" class="field-input" [disabled]="busy()" />
-        <input
-          #nafLabel
-          type="text"
-          placeholder="Restauration traditionnelle"
-          class="field-input"
-          [disabled]="busy()"
-        />
-        <button
-          foldButton
-          [disabled]="busy()"
-          (click)="addNaf(nafCode.value, nafLabel.value); nafCode.value = ''; nafLabel.value = ''"
-        >
-          Ajouter
-        </button>
-      </div>
-    </section>
-  </div>
-
-  <div class="market-footer">
-    <span class="muted">
-      @if (config()?.lastRefreshedAt; as at) {
-        Dernier rafraîchissement : {{ at | date: 'dd/MM/yyyy HH:mm' }}
-      } @else {
-        Jamais rafraîchi.
+  <div class="rc-body">
+    @switch (section()) {
+      @case ('marches') {
+        <app-market-card />
       }
-    </span>
-    <button foldButton [disabled]="busy()" (click)="refresh()">
-      {{ busy() ? 'Interrogation…' : 'Redemander les comptages' }}
-    </button>
+      @case ('alertes') {
+        <app-alerts-card />
+      }
+      @default {
+        <app-availability-card />
+      }
+    }
   </div>
-</fold-card>
+</div>

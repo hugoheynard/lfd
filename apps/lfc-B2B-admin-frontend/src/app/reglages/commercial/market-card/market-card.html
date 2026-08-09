@@ -1,0 +1,140 @@
+<fold-card>
+  <header class="sec-head">
+    <span class="sec-eyebrow">Territoire</span>
+    <h2 class="sec-title">Définition des marchés</h2>
+    <p class="sec-lede">
+      Les zones et les catégories d'acteurs que l'on vise. Leur comptage est le
+      <strong>dénominateur</strong> de la part de marché du dashboard Croissance — sans lui, une
+      pénétration ne veut rien dire.
+    </p>
+  </header>
+
+  @if (error()) {
+    <p class="sec-error">
+      Une action a échoué.
+      <button type="button" class="sec-link" (click)="reload()">Recharger</button>
+    </p>
+  }
+
+  <!-- Le chiffre qui compte, en tête. -->
+  <div class="mk-total">
+    <div class="mk-total-figure">
+      <span class="mk-total-value sec-num">{{ addressable() | number: '1.0-0' }}</span>
+      <span class="mk-total-unit">acteurs adressables</span>
+    </div>
+    <div class="mk-total-meta">
+      @if (config()?.lastRefreshedAt; as at) {
+        <span class="sec-muted">Compté le {{ at | date: 'dd/MM/yyyy à HH:mm' }}</span>
+      } @else {
+        <span class="sec-muted">Jamais compté.</span>
+      }
+      @if (pendingCounts() > 0) {
+        <span class="mk-pending">{{ pendingCounts() }} zone(s) à compter</span>
+      }
+    </div>
+    <button foldButton emphasis="outline" [disabled]="busy()" (click)="refresh()">
+      {{ busy() ? 'Interrogation…' : 'Recompter' }}
+    </button>
+  </div>
+
+  <div class="mk-cols">
+    <!-- Zones ciblées -->
+    <section class="mk-block">
+      <h3 class="sec-sub">Zones · codes postaux</h3>
+      <ul class="mk-list">
+        @for (zone of config()?.zones ?? []; track zone.codePostal) {
+          <li class="mk-row">
+            <span class="mk-key sec-num">{{ zone.codePostal }}</span>
+            <span class="mk-count">
+              @if (zone.fetchedAt === null) {
+                <em class="sec-muted">à compter</em>
+              } @else {
+                <strong class="sec-num">{{ zone.addressable | number: '1.0-0' }}</strong>
+                <span class="sec-muted"> acteurs</span>
+              }
+            </span>
+            <button
+              type="button"
+              class="sec-remove"
+              [disabled]="busy()"
+              (click)="removeZone(zone.codePostal)"
+              [attr.aria-label]="'Retirer la zone ' + zone.codePostal"
+            >
+              ×
+            </button>
+          </li>
+        } @empty {
+          <li class="sec-empty">Aucune zone ciblée.</li>
+        }
+      </ul>
+      <div class="mk-add">
+        <input
+          #cp
+          type="text"
+          inputmode="numeric"
+          maxlength="5"
+          placeholder="75011"
+          class="sec-input"
+          [disabled]="busy()"
+          (keyup.enter)="addZone(cp.value); cp.value = ''"
+        />
+        <button
+          foldButton
+          emphasis="outline"
+          [disabled]="busy()"
+          (click)="addZone(cp.value); cp.value = ''"
+        >
+          Ajouter
+        </button>
+      </div>
+    </section>
+
+    <!-- NAF ciblés -->
+    <section class="mk-block">
+      <h3 class="sec-sub">Catégories · codes NAF</h3>
+      <ul class="mk-list">
+        @for (naf of config()?.nafCodes ?? []; track naf.code) {
+          <li class="mk-row">
+            <span class="mk-key sec-num">{{ naf.code }}</span>
+            <span class="mk-count">{{ naf.label }}</span>
+            <button
+              type="button"
+              class="sec-remove"
+              [disabled]="busy()"
+              (click)="removeNaf(naf.code)"
+              [attr.aria-label]="'Retirer le code ' + naf.code"
+            >
+              ×
+            </button>
+          </li>
+        } @empty {
+          <li class="sec-empty">Aucune catégorie ciblée.</li>
+        }
+      </ul>
+      <div class="mk-add mk-add--naf">
+        <input
+          #nafCode
+          type="text"
+          placeholder="56.10A"
+          class="sec-input mk-naf-code"
+          [disabled]="busy()"
+        />
+        <input
+          #nafLabel
+          type="text"
+          placeholder="Restauration traditionnelle"
+          class="sec-input"
+          [disabled]="busy()"
+        />
+        <button
+          foldButton
+          emphasis="outline"
+          [disabled]="busy()"
+          (click)="addNaf(nafCode.value, nafLabel.value); nafCode.value = ''; nafLabel.value = ''"
+        >
+          Ajouter
+        </button>
+      </div>
+    </section>
+  </div>
+</fold-card>

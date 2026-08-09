@@ -1,88 +1,41 @@
-import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FoldButtonComponent, FoldCardComponent } from 'fold-ng';
-import type { MarketConfigView } from '@lfd/contracts';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { FoldViewNavComponent, type FoldViewNavItem } from 'fold-ng';
 
 import { AvailabilityCard } from '../../commercial/availability/availability-card/availability-card';
-import { MarketService } from '../../commercial/market/market.service';
-import { AcquisitionSettingsService } from '../../commercial/settings/acquisition-settings.service';
+import { AlertsCard } from './alerts-card/alerts-card';
+import { MarketCard } from './market-card/market-card';
+
+/** Les trois sections, dans l'ordre où le commercial les rencontre. */
+type SectionKey = 'rdv' | 'marches' | 'alertes';
 
 /**
- * Sous-page **Commercial** des Réglages (staff). Trois cartes :
- * - **Disponibilités** : la grille hebdomadaire des rendez-vous, sa politique et
- *   ses exceptions, avec l'aperçu de ce que le client verra (carte dédiée).
- * - **Alertes acquisition** : seuils ambre/rouge du calendrier (localStorage).
- * - **Marché ciblé** : zones (codes postaux) + codes NAF visés, avec le nombre
- *   d'acteurs *stocké* et un bouton **Redemander** qui réinterroge l'API entreprises.
- *   Ce dénominateur alimente l'adoption par territoire du dashboard Croissance.
+ * Sous-page **Commercial** des Réglages (staff). Trois sections, présentées par
+ * une **barre horizontale** plutôt qu'empilées en trois cartes : elles n'ont
+ * rien à voir l'une avec l'autre, et les faire défiler ensemble obligeait à
+ * traverser une grille hebdomadaire entière pour atteindre deux champs.
+ *
+ * Onglets **non routés** (`[(activeKey)]`) : ce sont des vues d'un même écran de
+ * réglages, pas des destinations qu'on partage par URL. Le rail routé des
+ * Réglages reste le niveau au-dessus.
+ *
+ * - **Prise de rendez-vous** — la grille de disponibilité, sa politique, ses
+ *   exceptions, et l'aperçu de ce que le client verra.
+ * - **Définition des marchés** — zones et codes NAF visés, avec leur comptage.
+ * - **Réglage des alertes** — les seuils de couleur du calendrier d'acquisition.
  */
 @Component({
   selector: 'app-reglages-commercial-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldButtonComponent, DatePipe, AvailabilityCard],
+  imports: [FoldViewNavComponent, AvailabilityCard, MarketCard, AlertsCard],
   templateUrl: './reglages-commercial-page.html',
   styleUrl: './reglages-commercial-page.scss',
 })
 export class ReglagesCommercialPage {
-  protected readonly settings = inject(AcquisitionSettingsService);
-  private readonly market = inject(MarketService);
+  protected readonly section = signal<string>('rdv');
 
-  protected readonly config = signal<MarketConfigView | null>(null);
-  protected readonly busy = signal(false);
-  protected readonly error = signal(false);
-
-  constructor() {
-    void this.reload();
-  }
-
-  private async reload(): Promise<void> {
-    this.error.set(false);
-    try {
-      this.config.set(await this.market.config());
-    } catch {
-      this.error.set(true);
-    }
-  }
-
-  /** Enveloppe une mutation : verrouille l'UI, applique la config renvoyée, gère l'échec. */
-  private async run(mutation: () => Promise<MarketConfigView>): Promise<void> {
-    this.busy.set(true);
-    this.error.set(false);
-    try {
-      this.config.set(await mutation());
-    } catch {
-      this.error.set(true);
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  protected async addZone(codePostal: string): Promise<void> {
-    const cp = codePostal.trim();
-    if (!/^\d{5}$/u.test(cp)) {
-      return;
-    }
-    await this.run(() => this.market.addZone(cp));
-  }
-
-  protected async removeZone(codePostal: string): Promise<void> {
-    await this.run(() => this.market.removeZone(codePostal));
-  }
-
-  protected async addNaf(code: string, label: string): Promise<void> {
-    const c = code.trim();
-    const l = label.trim();
-    if (c === '' || l === '') {
-      return;
-    }
-    await this.run(() => this.market.addNaf(c, l));
-  }
-
-  protected async removeNaf(code: string): Promise<void> {
-    await this.run(() => this.market.removeNaf(code));
-  }
-
-  protected async refresh(): Promise<void> {
-    await this.run(() => this.market.refresh());
-  }
+  protected readonly sections: FoldViewNavItem[] = [
+    { key: 'rdv' satisfies SectionKey, label: 'Prise de rendez-vous', icon: 'calendar' },
+    { key: 'marches' satisfies SectionKey, label: 'Définition des marchés', icon: 'map-pin' },
+    { key: 'alertes' satisfies SectionKey, label: 'Réglage des alertes', icon: 'bell' },
+  ];
 }
