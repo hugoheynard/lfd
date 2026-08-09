@@ -190,6 +190,29 @@ function toExceptionPayload(exception: AvailabilityExceptionView): AvailabilityE
   };
 }
 
+/**
+ * Deux jeux de règles disent-ils la même chose ? Comparé sur les règles
+ * **envoyables** (`toPayload` a déjà écarté les plages incohérentes) : si ce
+ * qu'on enverrait est ce qui est déjà en base, il n'y a rien à enregistrer.
+ */
+export function sameRules(
+  a: readonly AvailabilityRulePayload[],
+  b: readonly AvailabilityRulePayload[],
+): boolean {
+  return (
+    a.length === b.length &&
+    a.every((rule, index) => {
+      const other = b[index];
+      return (
+        other !== undefined &&
+        rule.weekday === other.weekday &&
+        rule.startTime === other.startTime &&
+        rule.endTime === other.endTime
+      );
+    })
+  );
+}
+
 /** Y a-t-il au moins une plage incohérente ? (pour le dire avant d'enregistrer) */
 export function hasInvalidRange(draft: AvailabilityDraft): boolean {
   return draft.week.some((ranges) => ranges.some((r) => r.startTime >= r.endTime));

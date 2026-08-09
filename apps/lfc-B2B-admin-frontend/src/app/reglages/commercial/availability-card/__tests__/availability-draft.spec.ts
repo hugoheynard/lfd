@@ -1,4 +1,8 @@
-import type { AvailabilityConfigView, BookingPolicy } from '@lfd/contracts';
+import type {
+  AvailabilityConfigView,
+  AvailabilityRulePayload,
+  BookingPolicy,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -13,6 +17,7 @@ import {
   hasInvalidRange,
   removeException,
   removeRange,
+  sameRules,
   toPayload,
   withPolicy,
   type AvailabilityDraft,
@@ -33,6 +38,15 @@ const POLICY: BookingPolicy = {
 
 function base(): AvailabilityDraft {
   return emptyDraft(POLICY);
+}
+
+/** Un brouillon dont la semaine porte exactement ces règles. */
+function draftOf(rules: readonly AvailabilityRulePayload[]): AvailabilityDraft {
+  return draftFrom({
+    rules: rules.map((rule, index) => ({ id: `r${index}`, ...rule })),
+    exceptions: [],
+    policy: POLICY,
+  });
 }
 
 describe('emptyDraft', () => {
@@ -181,6 +195,28 @@ describe('toPayload', () => {
 
   it("rend une grille vide quand rien n'est déclaré", () => {
     expect(toPayload(base()).rules).toEqual([]);
+  });
+});
+
+describe('sameRules', () => {
+  const rules = [{ weekday: 1, startTime: '09:00', endTime: '12:00' }];
+
+  it('reconnaît une grille identique à celle du serveur', () => {
+    expect(sameRules(rules, rules)).toBe(true);
+  });
+
+  it('voit une borne déplacée, une plage ajoutée, un jour changé', () => {
+    expect(sameRules(rules, [{ ...rules[0]!, endTime: '13:00' }])).toBe(false);
+    expect(sameRules(rules, [...rules, { weekday: 3, startTime: '09:00', endTime: '10:00' }])).toBe(
+      false,
+    );
+    expect(sameRules(rules, [{ ...rules[0]!, weekday: 2 }])).toBe(false);
+  });
+
+  it("ne voit RIEN dans une plage incohérente : toPayload l'écarte, rien ne partirait", () => {
+    // C'est ce qui garde le pied de carte caché tant qu'il n'y a rien à écrire.
+    const draft = addRange(draftOf(rules), 3, { startTime: '17:00', endTime: '15:00' });
+    expect(sameRules(toPayload(draft).rules, rules)).toBe(true);
   });
 });
 

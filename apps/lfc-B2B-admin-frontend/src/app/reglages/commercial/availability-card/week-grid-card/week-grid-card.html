@@ -1,5 +1,6 @@
-<fold-card>
+<fold-card separators="footer">
   <fold-element-title
+    cardHeader
     variant="title"
     icon="calendar"
     title="Semaine type"
@@ -67,5 +68,15 @@
 
   @if (invalid) {
     <p class="sec-warn">Une plage se termine avant de commencer : elle ne sera pas enregistrée.</p>
+  }
+
+  <!-- Le pied n'apparaît qu'une fois la grille différente de ce qui est en base.
+       Il n'écrit que les règles ; les fermetures et les bornes ont le leur. -->
+  @if (dirty()) {
+    <div cardFooter class="wk-actions">
+      <button foldButton emphasis="outline" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Enregistrement…' : 'Enregistrer la semaine type' }}
+      </button>
+    </div>
   }
 </fold-card>

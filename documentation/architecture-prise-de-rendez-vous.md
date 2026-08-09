@@ -280,9 +280,11 @@ Sous les trois : un **aperçu des 14 prochains jours** rendu par la _même_ fonc
 La raison est la même pour les trois : régler une durée ou dater un congé ne doit
 pas renvoyer une grille chargée il y a dix minutes, et donc ne peut pas
 l'écraser. Le **brouillon** reste partagé (les créneaux dépendent des trois) ;
-c'est l'**écriture** qui est cloisonnée. Ce que « Enregistrer la semaine type »
-envoie, ce sont les règles du brouillon et, pour les deux autres tranches, ce que
-le serveur détient déjà — c'est tout le rôle de `gridPayload`.
+c'est l'**écriture** qui est cloisonnée. Ce que la semaine type envoie, ce sont
+ses règles et, pour les deux autres tranches, ce que le serveur détient déjà —
+c'est tout le rôle de `gridPayload`. L'orchestrateur, lui, n'écrit plus rien : il
+tient le brouillon, descend la vérité serveur, et réaligne la tranche qu'une
+carte vient d'écrire.
 
 Le pied de chaque carte n'apparaît qu'une fois quelque chose de **modifié**,
 mesuré contre ce que le serveur détient — un brouillon seul ne peut pas le dire.

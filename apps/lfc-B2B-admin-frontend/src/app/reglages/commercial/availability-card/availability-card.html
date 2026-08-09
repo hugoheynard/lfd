@@ -1,11 +1,16 @@
 @if (state() === 'error') {
   <fold-callout variant="alert">
-    Le chargement ou l'enregistrement a échoué.
+    Le chargement des disponibilités a échoué.
     <button type="button" class="sec-link" (click)="load()">Réessayer</button>
   </fold-callout>
 }
 
-<app-week-grid-card [draft]="draft()" (changed)="onChanged($event)" />
+<app-week-grid-card
+  [draft]="draft()"
+  [persistedConfig]="persisted()"
+  (changed)="onChanged($event)"
+  (persisted)="onWeekPersisted($event)"
+/>
 
 <app-booking-policy-card
   [draft]="draft()"
@@ -20,13 +25,5 @@
   (changed)="onChanged($event)"
   (persisted)="onExceptionsPersisted($event)"
 />
-
-<!-- Ce bouton n'écrit plus que la semaine type : les règles et les fermetures
-     ont chacune le leur, et ce qu'elles éditent ne part pas d'ici. -->
-<div class="av-save">
-  <button foldButton [disabled]="saving()" (click)="save()">
-    {{ saving() ? 'Enregistrement…' : 'Enregistrer la semaine type' }}
-  </button>
-</div>
 
 <app-slots-preview-card [days]="preview()" />

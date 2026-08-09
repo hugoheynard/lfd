@@ -1,12 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
+import { FoldCalloutComponent } from 'fold-ng';
 import type { Slot } from '@lfd/contracts';
 
 import { AvailabilityService } from '../../../commercial/availability/availability.service';
-import { NotifyService } from '../../../notify.service';
 import type { AvailabilityConfigView } from '@lfd/contracts';
 
-import { draftFrom, emptyDraft, gridPayload, type AvailabilityDraft } from './availability-draft';
+import { draftFrom, emptyDraft, type AvailabilityDraft } from './availability-draft';
 import { BookingPolicyCard } from './booking-policy-card/booking-policy-card';
 import { ExceptionsCard } from './exceptions-card/exceptions-card';
 import { SlotsPreviewCard, type PreviewDay } from './slots-preview-card/slots-preview-card';
@@ -29,9 +28,11 @@ const FALLBACK_POLICY = {
  * Section **Prise de rendez-vous** — l'**orchestrateur** des quatre cartes :
  * semaine type, règles, exceptions, aperçu.
  *
- * Il ne rend rien lui-même : il tient le **brouillon** (une seule source de
- * vérité, que les trois cartes d'édition transforment par les fonctions pures
- * d'`availability-draft`), enregistre en bloc, et rafraîchit l'aperçu.
+ * Il ne rend rien lui-même, et **n'écrit rien** : il tient le **brouillon** (une
+ * seule source de vérité, que les trois cartes d'édition transforment par les
+ * fonctions pures d'`availability-draft`), descend ce que le serveur détient
+ * pour qu'elles sachent si elles ont quelque chose à enregistrer, réaligne la
+ * tranche que l'une vient d'écrire, et rafraîchit l'aperçu.
  *
  * Quatre cartes plutôt qu'une : l'espacement vient alors du rythme de la page,
  * et chacune se lit — et se teste — pour ce qu'elle est.
@@ -40,7 +41,6 @@ const FALLBACK_POLICY = {
   selector: 'app-availability-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldButtonComponent,
     FoldCalloutComponent,
     WeekGridCard,
     BookingPolicyCard,
@@ -52,10 +52,8 @@ const FALLBACK_POLICY = {
 })
 export class AvailabilityCard {
   private readonly service = inject(AvailabilityService);
-  private readonly notify = inject(NotifyService);
 
   protected readonly state = signal<LoadState>('loading');
-  protected readonly saving = signal(false);
   protected readonly draft = signal<AvailabilityDraft>(
     emptyDraft({ ...FALLBACK_POLICY, channels: ['phone'] }),
   );
@@ -89,47 +87,27 @@ export class AvailabilityCard {
   }
 
   /**
-   * Les règles viennent d'être écrites. On réaligne **cette seule tranche** du
+   * Une carte a écrit **sa** tranche. On réaligne cette seule tranche du
    * brouillon : le serveur a pu normaliser ce qu'on lui a envoyé, et sans ça la
-   * carte se croirait modifiée à jamais. Les édits en cours des autres cartes,
-   * eux, ne sont pas touchés — chacune enregistre quand elle le décide.
+   * carte se croirait modifiée à jamais. Les édits en cours des deux autres, eux,
+   * ne sont pas touchés — chacune enregistre quand elle le décide.
    */
+  protected async onWeekPersisted(config: AvailabilityConfigView): Promise<void> {
+    this.persisted.set(config);
+    this.draft.update((draft) => ({ ...draft, week: draftFrom(config).week }));
+    await this.refreshPreview();
+  }
+
   protected async onPolicyPersisted(config: AvailabilityConfigView): Promise<void> {
     this.persisted.set(config);
     this.draft.update((draft) => ({ ...draft, policy: config.policy }));
     await this.refreshPreview();
   }
 
-  /** Idem pour les exceptions, qui ont elles aussi leur propre bouton. */
   protected async onExceptionsPersisted(config: AvailabilityConfigView): Promise<void> {
     this.persisted.set(config);
     this.draft.update((draft) => ({ ...draft, exceptions: draftFrom(config).exceptions }));
     await this.refreshPreview();
-  }
-
-  protected async save(): Promise<void> {
-    const persisted = this.persisted();
-    if (persisted === null) {
-      return;
-    }
-    this.saving.set(true);
-    try {
-      // On n'envoie que la GRILLE — les deux autres tranches partent telles
-      // qu'elles sont en base. On rejoue ensuite ce que le serveur a écrit, pas
-      // ce qu'on croit avoir envoyé, et sur cette seule tranche.
-      const config = await this.service.save(gridPayload(this.draft(), persisted));
-      this.persisted.set(config);
-      this.draft.update((draft) => ({ ...draft, week: draftFrom(config).week }));
-      this.notify.success('Grille de disponibilité enregistrée.');
-      await this.refreshPreview();
-    } catch (error) {
-      // Un échec d'écriture est un toast : l'écran garde ses données et sa
-      // saisie. Seul un échec de CHARGEMENT bascule l'état — là, il n'y a rien
-      // à montrer, et le message doit rester à l'écran avec le « Réessayer ».
-      this.notify.error(error, "L'enregistrement de la grille a échoué.");
-    } finally {
-      this.saving.set(false);
-    }
   }
 
   /** Recharge l'aperçu depuis la route partagée avec le client. */
