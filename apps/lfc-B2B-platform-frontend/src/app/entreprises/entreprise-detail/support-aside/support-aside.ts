@@ -8,7 +8,10 @@ import {
 import type { AppointmentView } from '@lfd/contracts';
 
 import type { Company } from '../../../account/account.model';
-import { ActivationSupportPanel } from '../../activation-support-panel/activation-support-panel';
+import {
+  ActivationSupportPanel,
+  type SupportPanelData,
+} from '../../activation-support-panel/activation-support-panel';
 import { AppointmentsService } from '../../appointments.service';
 
 /**
@@ -52,7 +55,7 @@ export class SupportAside {
 
   /** Ouvre le panneau de prise de rdv, pré-rempli (profil connecté côté panneau). */
   protected async openSupport(): Promise<void> {
-    const ref = this.panelHost.open<{ companyId: string }, boolean>(ActivationSupportPanel, {
+    const ref = this.panelHost.open<SupportPanelData, boolean>(ActivationSupportPanel, {
       data: { companyId: this.company().id },
       side: 'right',
     });

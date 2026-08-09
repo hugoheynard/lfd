@@ -56,18 +56,22 @@
   color: var(--fold-color-text-muted);
 }
 
-/* CTA rendez-vous — bouton primary plein (lien externe). */
+/* CTA rendez-vous — bouton primary plein. C'est bien un `<button>` : il ouvre
+   le panneau de réservation, il ne navigue nulle part. */
 .cp-book {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--fold-space-sm, 0.5rem);
+  width: 100%;
   padding: 0.6rem 1rem;
+  border: 0;
   border-radius: var(--fold-radius-md, 10px);
   background: var(--fold-color-primary);
   color: var(--fold-color-on-primary, #fff);
-  text-decoration: none;
+  font: inherit;
   font-weight: 700;
+  cursor: pointer;
 }
 .cp-book:hover {
   filter: brightness(1.07);

@@ -20,9 +20,16 @@ import { AccountService } from '../../account/account.service';
 import { AppointmentsService } from '../appointments.service';
 import { SupportService } from '../support.service';
 
-/** Charge d'ouverture : l'entreprise concernée. */
+/**
+ * Charge d'ouverture : l'entreprise concernée, ou `null`.
+ *
+ * `null` = le panneau est ouvert **hors contexte d'entreprise** (l'icône contact
+ * de l'en-tête). Seule la **prise de rendez-vous** reste alors possible : les
+ * deux chemins de repli passent par `SupportRequest`, qui est muré par la
+ * société. Le rendez-vous, lui, ne l'est pas — il portera sur la personne.
+ */
 export interface SupportPanelData {
-  readonly companyId: string;
+  readonly companyId: string | null;
 }
 
 /** Combien de jours de créneaux on demande — deux semaines suffisent à choisir. */
@@ -94,8 +101,21 @@ export class ActivationSupportPanel {
   protected readonly isPhone = computed(() => this.channel() === 'phone');
   /** Y a-t-il quelque chose à réserver ? Sinon on ne propose pas le choix. */
   protected readonly canBook = computed(() => this.slots().length > 0);
+
+  /** Hors contexte d'entreprise : seule la réservation d'un créneau est offerte. */
+  protected readonly bookingOnly = computed(() => this.data()?.companyId == null);
+
   /** Le client est en train de réserver un créneau (et non de demander un rappel). */
-  protected readonly isBooking = computed(() => this.isPhone() && !this.asap() && this.canBook());
+  protected readonly isBooking = computed(
+    () => this.canBook() && (this.bookingOnly() || (this.isPhone() && !this.asap())),
+  );
+
+  /**
+   * Rien à proposer : ni créneau ouvert, ni société sur laquelle déposer une
+   * demande. On le dit, et on renvoie vers le contact direct — plutôt qu'un
+   * formulaire qui n'aboutirait nulle part.
+   */
+  protected readonly nothingToOffer = computed(() => this.bookingOnly() && !this.canBook());
 
   /** Les créneaux groupés par jour — ce que l'écran rend. */
   protected readonly slotsByDay = computed(() => {
@@ -126,6 +146,9 @@ export class ActivationSupportPanel {
     }
     if (!this.isPhone()) {
       return true;
+    }
+    if (this.bookingOnly()) {
+      return this.chosenSlot() !== '';
     }
     if (this.resolvedPhone() === '') {
       return false;
@@ -190,6 +213,12 @@ export class ActivationSupportPanel {
       this.bookSlot(data.companyId);
       return;
     }
+    // Les chemins de repli exigent une société : ils passent par SupportRequest,
+    // qui est muré. Sans société, `bookingOnly` les a déjà rendus inaccessibles.
+    if (data.companyId === null) {
+      this.submitting.set(false);
+      return;
+    }
     const phone = this.isPhone();
     const payload: ActivationSupportPayload = {
       channel: this.channel(),
@@ -216,7 +245,7 @@ export class ActivationSupportPanel {
    * prendre : on recharge les créneaux et on le dit, plutôt que d'afficher une
    * erreur générique devant une liste devenue fausse.
    */
-  private bookSlot(companyId: string): void {
+  private bookSlot(companyId: string | null): void {
     this.appointments
       .book({
         startAt: this.chosenSlot(),

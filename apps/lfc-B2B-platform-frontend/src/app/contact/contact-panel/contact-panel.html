@@ -16,11 +16,11 @@
 
   <section class="cp-block">
     <p class="cp-label">Prendre rendez-vous</p>
-    <p class="cp-text">Planifiez un échange avec notre équipe, au moment qui vous arrange.</p>
-    <a class="cp-book" [href]="bookingUrl" target="_blank" rel="noopener noreferrer">
+    <p class="cp-text">Choisissez un créneau parmi nos disponibilités réelles.</p>
+    <button type="button" class="cp-book" (click)="book()">
       <fold-icon name="calendar" [size]="18" />
       <span>Prendre rendez-vous</span>
-    </a>
+    </button>
   </section>
 
   <div class="foot">
