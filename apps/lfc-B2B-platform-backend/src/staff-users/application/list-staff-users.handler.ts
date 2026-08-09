@@ -6,9 +6,10 @@ import { ListStaffUsersQuery } from "./list-staff-users.query.js";
 
 /** Sert la liste des users staff (triés par nom). Lecture pure. */
 @QueryHandler(ListStaffUsersQuery)
-export class ListStaffUsersHandler
-  implements IQueryHandler<ListStaffUsersQuery, readonly StaffUserView[]>
-{
+export class ListStaffUsersHandler implements IQueryHandler<
+  ListStaffUsersQuery,
+  readonly StaffUserView[]
+> {
   constructor(private readonly staff: StaffUserRepository) {}
 
   execute(): Promise<readonly StaffUserView[]> {

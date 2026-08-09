@@ -1,0 +1,161 @@
+name: CI
+
+# La porte de qualité — la seule chose qui tourne AVANT un déploiement.
+#
+# Jusqu'ici le dépôt n'avait que des workflows de déploiement : ils faisaient un
+# `tsc --noEmit` puis poussaient l'image. Aucun lint, aucun test, sur aucune app,
+# et rien du tout sur les Pull Requests. Conséquence observée le 2026-08-09 : les
+# tests de `@lfd/contracts` étaient rouges sur `dev` depuis plusieurs jours sans
+# que rien ne le signale — aucune commande d'app ne les exécute.
+#
+# Trois jobs qui tournent en parallèle, et un `ci-gate` qui les agrège : c'est
+# LUI qu'on met en statut requis sur la branche, pas les trois — ainsi ajouter un
+# job plus tard ne demande pas de retoucher les réglages du dépôt.
+#
+# Ce que cette CI ne couvre PAS, et pourquoi (cf. documentation/todos/todo-qualite-tests.md) :
+#   · les 4 apps Angular n'ont **aucune configuration ESLint** — il n'y a rien à
+#     lancer. Elles sont couvertes par le typecheck, les tests et le build ;
+#   · le typecheck des **specs** (`tsconfig.test.json`) est rouge sur les deux
+#     backends (mocks devenus obsolètes). L'ajouter ici ferait une CI rouge dès
+#     le premier jour, donc inutile : c'est une tranche de nettoyage à part.
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+concurrency:
+  # Une PR qui reçoit trois commits d'affilée n'occupe pas trois runners.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "10.12.1"
+
+jobs:
+  # ── Les paquets partagés ────────────────────────────────────────────────────
+  # En premier et à part : c'est le trou qu'aucune commande d'app ne couvrait.
+  packages:
+    name: Paquets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets
+        run: pnpm --filter "./packages/**" build
+      - name: Lint
+        run: pnpm --filter "./packages/**" lint:ci
+      - name: Tests
+        run: pnpm --filter "./packages/**" test
+
+  # ── Le backend B2B ──────────────────────────────────────────────────────────
+  # Ses tests e2e frappent un vrai Postgres : le harnais attend le port 5433 et
+  # crée lui-même la base `lfc_b2b_test` (`db:test:setup`, idempotent).
+  b2b-backend:
+    name: Backend B2B
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lfc
+          POSTGRES_PASSWORD: lfc
+          POSTGRES_DB: lfc_b2b_dev
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U lfc"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets dont dépend le backend
+        run: pnpm --filter "./packages/**" build
+      - name: Typecheck
+        run: pnpm --filter lfc-b2b-platform-backend exec tsc --noEmit
+      - name: Lint
+        run: pnpm --filter lfc-b2b-platform-backend lint:ci
+      - name: Préparer la base de test
+        run: pnpm --filter lfc-b2b-platform-backend run db:test:setup
+      - name: Tests (unitaires + e2e)
+        run: pnpm --filter lfc-b2b-platform-backend test
+
+  # ── Les fronts et le PIM ────────────────────────────────────────────────────
+  # Le build de production est le seul endroit qui exerce la compilation AOT des
+  # templates : un typecheck vert ne dit rien d'un binding cassé dans un .html.
+  fronts-et-pim:
+    name: Fronts + PIM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets
+        run: pnpm --filter "./packages/**" build
+
+      - name: Typecheck des fronts
+        run: |
+          pnpm --filter lfc-b2b-admin-frontend exec tsc --noEmit
+          pnpm --filter lfc-b2b-platform-frontend exec tsc --noEmit
+          pnpm --filter lfc-pim-frontend exec tsc --noEmit
+          pnpm --filter lfc-suite-shell exec tsc --noEmit
+      - name: Tests des fronts
+        run: |
+          pnpm --filter lfc-b2b-admin-frontend test
+          pnpm --filter lfc-b2b-platform-frontend test
+          pnpm --filter lfc-pim-frontend test
+      - name: Build de production (compilation AOT)
+        run: |
+          pnpm --filter lfc-b2b-admin-frontend build
+          pnpm --filter lfc-b2b-platform-frontend build
+
+      - name: PIM backend — typecheck, lint, tests
+        run: |
+          pnpm --filter lfc-pim-backend exec tsc --noEmit
+          pnpm --filter lfc-pim-backend lint:ci
+          pnpm --filter lfc-pim-backend test
+
+  # ── La porte ────────────────────────────────────────────────────────────────
+  # Le SEUL statut à exiger sur la branche. `always()` + le test explicite sur
+  # `result` est ce qui fait qu'un job annulé ou sauté ne passe pas pour un
+  # succès — un `needs` seul laisserait filer un `skipped`.
+  ci-gate:
+    name: ci-gate
+    runs-on: ubuntu-latest
+    needs: [packages, b2b-backend, fronts-et-pim]
+    if: always()
+    steps:
+      - name: Vérifier que tout est vert
+        run: |
+          echo "packages      : ${{ needs.packages.result }}"
+          echo "b2b-backend   : ${{ needs.b2b-backend.result }}"
+          echo "fronts-et-pim : ${{ needs.fronts-et-pim.result }}"
+          if [ "${{ needs.packages.result }}" != "success" ] \
+            || [ "${{ needs.b2b-backend.result }}" != "success" ] \
+            || [ "${{ needs.fronts-et-pim.result }}" != "success" ]; then
+            echo "::error::Un job de la CI n'est pas au vert."
+            exit 1
+          fi

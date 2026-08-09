@@ -9,9 +9,9 @@ import type {
   GpsPoint,
   SlotByDay,
   Weekday,
-} from "@lfd/contracts";
+} from '@lfd/contracts';
 
-import { WEEKDAYS } from "./delivery-format";
+import { WEEKDAYS } from './delivery-format';
 
 /**
  * Brouillon de saisie d'une **adresse** (facturation ou livraison), partagé par
@@ -50,7 +50,7 @@ export interface DraftDay {
 }
 export type DraftDays = Readonly<Record<Weekday, DraftDay>>;
 
-const BLANK_DAY: DraftDay = { start: "", end: "" };
+const BLANK_DAY: DraftDay = { start: '', end: '' };
 
 /** Sept jours vierges. */
 export const BLANK_DAYS: DraftDays = {
@@ -65,24 +65,24 @@ export const BLANK_DAYS: DraftDays = {
 
 /** Brouillon vide (adresse neuve). `pays` prérempli, cas courant. */
 export const EMPTY_ADDRESS_DRAFT: AddressDraft = {
-  label: "",
-  ligne1: "",
-  ligne2: "",
-  codePostal: "",
-  ville: "",
-  pays: "France",
+  label: '',
+  ligne1: '',
+  ligne2: '',
+  codePostal: '',
+  ville: '',
+  pays: 'France',
   isDefault: false,
-  note: "",
+  note: '',
   sameEveryDay: true,
-  everyStart: "",
-  everyEnd: "",
+  everyStart: '',
+  everyEnd: '',
   days: BLANK_DAYS,
   noContact: false,
-  contactPrenom: "",
-  contactNom: "",
-  contactTel: "",
-  gpsLat: "",
-  gpsLng: "",
+  contactPrenom: '',
+  contactNom: '',
+  contactTel: '',
+  gpsLat: '',
+  gpsLng: '',
 };
 
 /** Préremplit un brouillon depuis une facturation existante (champs postaux). */
@@ -100,17 +100,17 @@ export function deliveryDraftFrom(view: DeliveryAddressView): AddressDraft {
     note: view.specs.note,
     ...slotsDraft(view.specs.slots),
     noContact: contact === null,
-    contactPrenom: contact?.prenom ?? "",
-    contactNom: contact?.nom ?? "",
-    contactTel: contact?.telephone ?? "",
-    gpsLat: view.specs.gps === null ? "" : String(view.specs.gps.lat),
-    gpsLng: view.specs.gps === null ? "" : String(view.specs.gps.lng),
+    contactPrenom: contact?.prenom ?? '',
+    contactNom: contact?.nom ?? '',
+    contactTel: contact?.telephone ?? '',
+    gpsLat: view.specs.gps === null ? '' : String(view.specs.gps.lat),
+    gpsLng: view.specs.gps === null ? '' : String(view.specs.gps.lng),
   };
 }
 
 function postalOf(
   view: BillingAddressView,
-): Pick<AddressDraft, "label" | "ligne1" | "ligne2" | "codePostal" | "ville" | "pays"> {
+): Pick<AddressDraft, 'label' | 'ligne1' | 'ligne2' | 'codePostal' | 'ville' | 'pays'> {
   return {
     label: view.label,
     ligne1: view.ligne1,
@@ -123,16 +123,16 @@ function postalOf(
 
 function slotsDraft(
   slots: DeliverySlots,
-): Pick<AddressDraft, "sameEveryDay" | "everyStart" | "everyEnd" | "days"> {
-  if (slots.mode === "everyday") {
+): Pick<AddressDraft, 'sameEveryDay' | 'everyStart' | 'everyEnd' | 'days'> {
+  if (slots.mode === 'everyday') {
     return {
       sameEveryDay: true,
-      everyStart: slots.slot?.start ?? "",
-      everyEnd: slots.slot?.end ?? "",
+      everyStart: slots.slot?.start ?? '',
+      everyEnd: slots.slot?.end ?? '',
       days: BLANK_DAYS,
     };
   }
-  return { sameEveryDay: false, everyStart: "", everyEnd: "", days: fromSlotByDay(slots.byDay) };
+  return { sameEveryDay: false, everyStart: '', everyEnd: '', days: fromSlotByDay(slots.byDay) };
 }
 
 /** Projette les créneaux stockés vers les brouillons de formulaire. */
@@ -152,68 +152,68 @@ export function fromSlotByDay(byDay: SlotByDay): DraftDays {
 
 /** Vrai créneau : début et fin renseignés, fin après le début. Sinon `null`. */
 export function toSlot(start: string, end: string): DeliverySlot | null {
-  return start !== "" && end !== "" && start < end ? { start, end } : null;
+  return start !== '' && end !== '' && start < end ? { start, end } : null;
 }
 
 /** Un créneau *invalide* : entamé mais incomplet, ou fin ≤ début. */
 export function isBadSlot(start: string, end: string): boolean {
-  const touched = start !== "" || end !== "";
-  return touched && !(start !== "" && end !== "" && start < end);
+  const touched = start !== '' || end !== '';
+  return touched && !(start !== '' && end !== '' && start < end);
 }
 
 /** Message d'erreur créneaux (`''` si valide), selon le mode. */
 export function slotIssueOf(draft: AddressDraft): string {
   if (draft.sameEveryDay) {
     return isBadSlot(draft.everyStart, draft.everyEnd)
-      ? "Renseignez une heure de début ET de fin, la fin après le début."
-      : "";
+      ? 'Renseignez une heure de début ET de fin, la fin après le début.'
+      : '';
   }
   return WEEKDAYS.some((w) => isBadSlot(draft.days[w.value].start, draft.days[w.value].end))
-    ? "Chaque créneau renseigné doit avoir un début et une fin valides."
-    : "";
+    ? 'Chaque créneau renseigné doit avoir un début et une fin valides.'
+    : '';
 }
 
 /** Message d'erreur contact (`''` si valide) : les trois champs, sauf « pas de contact ». */
 export function contactIssueOf(draft: AddressDraft): string {
   if (draft.noContact) {
-    return "";
+    return '';
   }
   const complete =
-    draft.contactPrenom.trim() !== "" &&
-    draft.contactNom.trim() !== "" &&
-    draft.contactTel.trim() !== "";
-  return complete ? "" : "Renseignez prénom, nom et téléphone, ou cochez « pas de contact ».";
+    draft.contactPrenom.trim() !== '' &&
+    draft.contactNom.trim() !== '' &&
+    draft.contactTel.trim() !== '';
+  return complete ? '' : 'Renseignez prénom, nom et téléphone, ou cochez « pas de contact ».';
 }
 
 /** Message d'erreur GPS (`''` si valide) : deux coordonnées, ou aucune, en bornes. */
 export function gpsIssueOf(draft: AddressDraft): string {
   const lat = draft.gpsLat.trim();
   const lng = draft.gpsLng.trim();
-  if (lat === "" && lng === "") {
-    return "";
+  if (lat === '' && lng === '') {
+    return '';
   }
-  if (lat === "" || lng === "") {
-    return "Renseignez la latitude ET la longitude, ou laissez les deux vides.";
+  if (lat === '' || lng === '') {
+    return 'Renseignez la latitude ET la longitude, ou laissez les deux vides.';
   }
   const nlat = Number(lat);
   const nlng = Number(lng);
   const inRange =
     Number.isFinite(nlat) && Number.isFinite(nlng) && Math.abs(nlat) <= 90 && Math.abs(nlng) <= 180;
-  return inRange ? "" : "Coordonnées hors limites (latitude ±90, longitude ±180).";
+  return inRange ? '' : 'Coordonnées hors limites (latitude ±90, longitude ±180).';
 }
 
 /** Contrôle de forme : postal requis, plus les consignes pour une livraison. */
-export function isAddressValid(draft: AddressDraft, kind: "facturation" | "livraison"): boolean {
+export function isAddressValid(draft: AddressDraft, kind: 'facturation' | 'livraison'): boolean {
   const postalOk =
-    draft.ligne1.trim() !== "" && draft.codePostal.trim() !== "" && draft.ville.trim() !== "";
-  if (kind === "facturation") {
+    draft.ligne1.trim() !== '' && draft.codePostal.trim() !== '' && draft.ville.trim() !== '';
+  if (kind === 'facturation') {
     return postalOk;
   }
   return (
     postalOk &&
-    slotIssueOf(draft) === "" &&
-    contactIssueOf(draft) === "" &&
-    gpsIssueOf(draft) === ""
+    slotIssueOf(draft) === '' &&
+    contactIssueOf(draft) === '' &&
+    gpsIssueOf(draft) === ''
   );
 }
 
@@ -257,7 +257,7 @@ function buildContact(draft: AddressDraft): DeliveryContact | null {
 function buildGps(draft: AddressDraft): GpsPoint | null {
   const lat = draft.gpsLat.trim();
   const lng = draft.gpsLng.trim();
-  if (lat === "" || lng === "") {
+  if (lat === '' || lng === '') {
     return null;
   }
   return { lat: Number(lat), lng: Number(lng) };
@@ -265,7 +265,7 @@ function buildGps(draft: AddressDraft): GpsPoint | null {
 
 function buildSlots(draft: AddressDraft): DeliverySlots {
   if (draft.sameEveryDay) {
-    return { mode: "everyday", slot: toSlot(draft.everyStart, draft.everyEnd) };
+    return { mode: 'everyday', slot: toSlot(draft.everyStart, draft.everyEnd) };
   }
   const d = draft.days;
   const byDay: SlotByDay = {
@@ -277,5 +277,5 @@ function buildSlots(draft: AddressDraft): DeliverySlots {
     sat: toSlot(d.sat.start, d.sat.end),
     sun: toSlot(d.sun.start, d.sun.end),
   };
-  return { mode: "perDay", byDay };
+  return { mode: 'perDay', byDay };
 }

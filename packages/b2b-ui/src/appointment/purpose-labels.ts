@@ -1,4 +1,4 @@
-import type { AppointmentPurpose } from "@lfd/contracts";
+import type { AppointmentPurpose } from '@lfd/contracts';
 
 /**
  * Les **libellés des motifs**, partagés entre l'app client (qui les propose) et
@@ -17,26 +17,26 @@ interface PurposeCopy {
 }
 
 const PURPOSES: Readonly<Record<AppointmentPurpose, PurposeCopy>> = {
-  discover: { choice: "Découvrir l'offre et les tarifs", short: "Découverte" },
-  quote: { choice: "Demander un devis", short: "Devis" },
-  order: { choice: "Une commande en cours", short: "Commande" },
+  discover: { choice: "Découvrir l'offre et les tarifs", short: 'Découverte' },
+  quote: { choice: 'Demander un devis', short: 'Devis' },
+  order: { choice: 'Une commande en cours', short: 'Commande' },
   // Famille, et non action : le détail (créer, changer la fréquence, sauter une
   // échéance) est porté par le **sujet**, cf. `topic-labels`.
-  recurring: { choice: "Un panier récurrent", short: "Récurrence" },
-  billing: { choice: "Facturation ou paiement", short: "Facturation" },
-  account: { choice: "Mon compte et mon entreprise", short: "Compte" },
-  other: { choice: "Autre demande", short: "Autre" },
+  recurring: { choice: 'Un panier récurrent', short: 'Récurrence' },
+  billing: { choice: 'Facturation ou paiement', short: 'Facturation' },
+  account: { choice: 'Mon compte et mon entreprise', short: 'Compte' },
+  other: { choice: 'Autre demande', short: 'Autre' },
 };
 
 /** Les motifs dans l'ordre où on les propose — du plus fréquent au fourre-tout. */
 export const APPOINTMENT_PURPOSES: readonly AppointmentPurpose[] = [
-  "discover",
-  "quote",
-  "order",
-  "recurring",
-  "billing",
-  "account",
-  "other",
+  'discover',
+  'quote',
+  'order',
+  'recurring',
+  'billing',
+  'account',
+  'other',
 ];
 
 /** Le libellé long, tel que le client le choisit. */

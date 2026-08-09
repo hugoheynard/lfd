@@ -148,10 +148,12 @@ elles font mal :
 
 - **Les workflows se déclenchent sur `main`**, le travail vit sur `dev` : chaque
   jalon passe par une fusion `dev → main`. À faire la **veille**, pas le matin.
-- **Aucune CI ne garde cette fusion** (P0-6). D'ici mercredi, le minimum est un
-  workflow `ci.yml` sur les Pull Requests et sur `main` : `tsc --noEmit`, `lint`
-  et `test` pour les trois apps **et** les paquets. Une heure de mise en place,
-  et c'est ce qui empêche de découvrir un test rouge après le déploiement.
+- **La CI existe depuis le 2026-08-09** : `.github/workflows/ci.yml` garde les
+  Pull Requests, `main` et `dev` — lint, typecheck, tests (dont les e2e du
+  backend sur un vrai Postgres) et build AOT des deux fronts B2B. Mettre
+  **`ci-gate`** en statut requis sur `main` dans les réglages du dépôt : sans
+  ça, la CI informe mais n'empêche rien. Ce qu'elle ne couvre volontairement pas
+  est écrit dans [`todos/todo-qualite-tests.md`](todos/todo-qualite-tests.md).
 - Les migrations Prisma s'appliquent sur la base de production **avant** la
   bascule de l'image.
 - Prévoir le retour arrière : la version précédente reste déployable, et on sait

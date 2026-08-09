@@ -15,6 +15,7 @@
     "dev:watch": "tsc -b tsconfig.json --watch",
     "build": "tsc -b tsconfig.json",
     "lint": "eslint src",
+    "lint:ci": "eslint src",
     "clean": "rm -rf dist"
   },
   "devDependencies": {

@@ -132,7 +132,10 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
 
   /** Refuse un e-mail déjà pris par un **autre** user (`exceptId` s'exclut lui-même). */
   private async assertEmailFree(email: string, exceptId: string | null): Promise<void> {
-    const owner = await this.prisma.staffUser.findUnique({ where: { email }, select: { id: true } });
+    const owner = await this.prisma.staffUser.findUnique({
+      where: { email },
+      select: { id: true },
+    });
     if (owner !== null && owner.id !== exceptId) {
       throw new DuplicateStaffEmailError(email);
     }

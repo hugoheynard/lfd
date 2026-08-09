@@ -12,9 +12,6 @@ interface Row {
   readonly email: string;
 }
 
-interface FindArgs {
-  readonly where: { readonly id?: string; readonly email?: string };
-}
 interface CreateArgs {
   readonly data: { readonly email: string };
 }
@@ -32,7 +29,7 @@ function fakePrisma(row: Row | null): {
   const created: string[] = [];
   const prisma = {
     staffUser: {
-      findUnique: (_args: FindArgs): Promise<Row | null> => Promise.resolve(row),
+      findUnique: (): Promise<Row | null> => Promise.resolve(row),
       delete: (args: DeleteArgs): Promise<Row> => {
         deleted.push(args.where.id);
         return Promise.resolve(row ?? { id: args.where.id, email: "" });
