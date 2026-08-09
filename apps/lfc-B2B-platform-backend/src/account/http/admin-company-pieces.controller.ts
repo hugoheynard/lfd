@@ -1,6 +1,8 @@
 import {
   type BillingAddressPayload,
   billingAddressPayloadSchema,
+  type CompanyStatusPayload,
+  companyStatusPayloadSchema,
   type CreatedAddressResponse,
   type DeliveryAddressPayload,
   deliveryAddressPayloadSchema,
@@ -28,6 +30,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
+import { ChangeCompanyStatusCommand } from "../application/commands/change-company-status.command.js";
 import { ActivateCompanyByStaffCommand } from "../application/commands/activate-company.command.js";
 import {
   AddDeliveryAddressByStaffCommand,
@@ -125,6 +128,23 @@ export class AdminCompanyPiecesController {
    * en attente et ses pièces `required` présentes, sinon `409`
    * (`CompanyActivationBlockedError`).
    */
+  /**
+   * Suspend, réactive ou résilie un compte — les gestes de fin de vie de la
+   * relation, tenus depuis la fiche commerciale. Une seule route à trois
+   * actions plutôt que trois verbes : c'est la MÊME décision (« où en est ce
+   * compte »), et un motif l'accompagne.
+   */
+  @Patch(":companyId/status")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changeStatus(
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(companyStatusPayloadSchema)) payload: CompanyStatusPayload,
+  ): Promise<void> {
+    await this.commands.execute<ChangeCompanyStatusCommand, void>(
+      new ChangeCompanyStatusCommand(companyId, payload.action, payload.reason),
+    );
+  }
+
   @Post(":companyId/activate")
   @HttpCode(HttpStatus.NO_CONTENT)
   async activate(@Param("companyId") companyId: string): Promise<void> {

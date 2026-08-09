@@ -213,3 +213,17 @@ export {
   addMarketZonePayloadSchema,
   addMarketNafPayloadSchema,
 } from "./growth.js";
+export {
+  companyStatusSchema,
+  companyStatusActionSchema,
+  companyStatusPayloadSchema,
+} from "./customer-sheet.js";
+export type {
+  CompanyStatus,
+  CompanyStatusAction,
+  CompanyStatusPayload,
+  CustomerOrderLine,
+  CustomerSheetView,
+  CustomerSpendTrend,
+  CustomerStats,
+} from "./customer-sheet.js";

@@ -116,6 +116,21 @@ export class CompanyNotFoundError extends ResourceNotFoundError {
  * mais l'état courant l'interdit. `missing` liste les pièces à compléter (vide si
  * le refus tient au statut).
  */
+/**
+ * Transition d'état refusée : suspendre un compte jamais activé, réactiver un
+ * compte qui ne l'est pas, résilier deux fois. On dit **d'où** on venait — sans
+ * ça, le message ne permet pas de comprendre ce qu'il fallait faire.
+ */
+export class CompanyStatusTransitionError extends BusinessError {
+  constructor(
+    readonly companyId: string,
+    readonly from: string,
+    message: string,
+  ) {
+    super("account.company.status_transition", message);
+  }
+}
+
 export class CompanyActivationBlockedError extends BusinessError {
   constructor(
     readonly companyId: string,

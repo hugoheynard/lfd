@@ -15,7 +15,9 @@ import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { CreateCompanyByStaffCommand } from "../application/commands/create-company-by-staff.command.js";
 import { GetCompanyForStaffQuery } from "../application/queries/get-company-for-staff.query.js";
+import { GetCustomerSheetQuery } from "../application/queries/get-customer-sheet.query.js";
 import { ListAllCompaniesQuery } from "../application/queries/list-all-companies.query.js";
+import type { CustomerSheetView } from "@lfd/contracts";
 import type {
   AdminCompanyDetailView,
   AdminCompanyView,
@@ -53,6 +55,18 @@ export class AdminCompaniesController {
    * TVA et les adresses complètes — de quoi refléter l'état d'activation et le
    * compléter (Porte B). `404` si l'id n'existe pas (le handler lève).
    */
+  /**
+   * La **fiche commerciale** d'un compte : qui il est, ce qu'il pèse, ce qu'il a
+   * commandé. Route distincte de la fiche staff (`GET :companyId`) : celle-ci
+   * agrège des chiffres et se lit pendant un appel, celle-là décrit un dossier.
+   */
+  @Get(":companyId/customer-sheet")
+  customerSheet(@Param("companyId") companyId: string): Promise<CustomerSheetView> {
+    return this.queries.execute<GetCustomerSheetQuery, CustomerSheetView>(
+      new GetCustomerSheetQuery(companyId),
+    );
+  }
+
   @Get(":companyId")
   getOne(@Param("companyId") companyId: string): Promise<AdminCompanyDetailView> {
     return this.queries.execute<GetCompanyForStaffQuery, AdminCompanyDetailView>(

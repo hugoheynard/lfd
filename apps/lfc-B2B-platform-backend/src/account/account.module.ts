@@ -66,6 +66,10 @@ import { AdminCompanyPiecesController } from "./http/admin-company-pieces.contro
 import { CompaniesController } from "./http/companies.controller.js";
 import { AdminSupportController } from "./http/admin-support.controller.js";
 import { SupportController } from "./http/support.controller.js";
+import { ChangeCompanyStatusHandler } from "./application/commands/change-company-status.handler.js";
+import { GetCustomerSheetHandler } from "./application/queries/get-customer-sheet.handler.js";
+import { CustomerSheetReader } from "./domain/ports/customer-sheet.reader.js";
+import { PrismaCustomerSheetReader } from "./infrastructure/prisma-customer-sheet.reader.js";
 import { CompanyAddressesController } from "./http/company-addresses.controller.js";
 import { CompanyContactsController } from "./http/company-contacts.controller.js";
 import { CompanyKbisController } from "./http/company-kbis.controller.js";
@@ -114,6 +118,8 @@ import { MeController } from "./http/me.controller.js";
     UpdateCompanyIdentityHandler,
     RequestPaymentTermHandler,
     ActivateCompanyByStaffHandler,
+    ChangeCompanyStatusHandler,
+    GetCustomerSheetHandler,
     UploadKbisByStaffHandler,
     UpdateIdentityByStaffHandler,
     SetAgreedPaymentTermHandler,
@@ -126,6 +132,7 @@ import { MeController } from "./http/me.controller.js";
     { provide: UserProfileRepository, useClass: PrismaUserProfileRepository },
     { provide: NavPreferencesRepository, useClass: PrismaNavPreferencesRepository },
     { provide: AdminCompanyReader, useClass: PrismaAdminCompanyReader },
+    { provide: CustomerSheetReader, useClass: PrismaCustomerSheetReader },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },
     { provide: CompanyContactRepository, useClass: PrismaCompanyContactRepository },
     { provide: CompanyAddressRepository, useClass: PrismaCompanyAddressRepository },

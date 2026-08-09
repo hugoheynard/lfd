@@ -1,5 +1,6 @@
 import {
   CompanyActivationBlockedError,
+  CompanyStatusTransitionError,
   InvalidCompanyIdentityError,
 } from "../errors/account-errors.js";
 import type { PaymentTerm } from "../ports/account.reader.js";
@@ -234,6 +235,41 @@ export class Company {
     }
     this.statusValue = "active";
     this.activatedAtValue = activatedAt;
+  }
+
+  /**
+   * **Suspend** le compte : il existe encore, il n'achète plus. Seul un compte
+   * `active` se suspend — suspendre ce qui n'a jamais été ouvert ne veut rien
+   * dire, et suspendre un compte résilié le rouvrirait à moitié.
+   */
+  suspend(): void {
+    this.requireStatus("active", "Seul un compte actif peut être suspendu.");
+    this.statusValue = "suspended";
+  }
+
+  /** **Réactive** un compte suspendu. Rien d'autre ne se réactive. */
+  reactivate(): void {
+    this.requireStatus("suspended", "Seul un compte suspendu peut être réactivé.");
+    this.statusValue = "active";
+  }
+
+  /**
+   * **Résilie** le compte — état **terminal**. Ni un compte déjà résilié ni un
+   * compte jamais activé ne s'y prêtent : on ne clôt que ce qui a été ouvert, et
+   * une résiliation ne se défait pas. Reprendre la relation, c'est rouvrir un
+   * compte, pas ressusciter celui-là.
+   */
+  terminate(): void {
+    if (this.statusValue !== "active" && this.statusValue !== "suspended") {
+      throw new CompanyStatusTransitionError(this.identityId ?? "", this.statusValue, "terminated");
+    }
+    this.statusValue = "terminated";
+  }
+
+  private requireStatus(expected: CompanyStatus, message: string): void {
+    if (this.statusValue !== expected) {
+      throw new CompanyStatusTransitionError(this.identityId ?? "", this.statusValue, message);
+    }
   }
 
   /** Enseigne effective : le nom commercial s'il existe, la raison sociale sinon. */
