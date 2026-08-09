@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import {
+  FoldNavLayoutComponent,
   FoldPageLayoutComponent,
   FoldViewNavComponent,
   type FoldViewNavItem,
@@ -8,9 +9,12 @@ import {
 
 /**
  * Page **Réglages** (staff) — coquille de navigation. Un `fold-page-layout`
- * (titre, gouttières, rythme) dont le corps porte un `fold-view-nav` **vertical,
- * souligné, confortable, fond transparent** (le 3ᵉ rail : app → workspace → vues
- * en page) puis le `<router-outlet>`. Chaque onglet est une sous-page routée :
+ * (titre, gouttières, rythme) dont le corps est un `fold-nav-layout` en rail
+ * latéral : c'est LUI qui replie la barre à l'horizontale quand la place manque,
+ * sur sa propre largeur et non celle du viewport — donc juste, y compris en
+ * iframe dans la suite. Le `fold-view-nav` projeté (souligné, confortable, fond
+ * transparent — le 3ᵉ rail : app → workspace → vues en page) lit cet état par DI
+ * et bascule son orientation seul. Chaque onglet est une sous-page routée :
  *
  * - **Activation client** — config des pièces d'activation (masquée / optionnelle
  *   / requise), globale à la plateforme.
@@ -21,9 +25,8 @@ import {
 @Component({
   selector: 'app-reglages-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, FoldPageLayoutComponent, FoldViewNavComponent],
+  imports: [RouterOutlet, FoldPageLayoutComponent, FoldNavLayoutComponent, FoldViewNavComponent],
   templateUrl: './reglages-page.html',
-  styleUrl: './reglages-page.scss',
 })
 export class ReglagesPage {
   /** Onglets routés — chaque `link` est relatif à `/reglages`. */

@@ -1,16 +1,18 @@
 <fold-page-layout icon="settings" title="Réglages">
-  <div class="reglages-split">
+  <!-- `placement="side"` : rail à gauche, qui se replie DE LUI-MÊME en barre
+       horizontale sous 56rem — et se replie sur la largeur du layout, pas sur
+       celle du viewport, donc l'intégration en iframe de la suite est juste.
+       Le view-nav garde `direction="auto"` : il lit le layout par DI et bascule
+       vertical ↔ horizontal tout seul. -->
+  <fold-nav-layout placement="side" [foldAt]="896">
     <fold-view-nav
-      class="reglages-nav"
+      tabNav
       [items]="tabs"
-      direction="vertical"
       size="comfortable"
       activeStyle="underline"
       background="transparent"
     />
 
-    <div class="reglages-content">
-      <router-outlet />
-    </div>
-  </div>
+    <router-outlet />
+  </fold-nav-layout>
 </fold-page-layout>
