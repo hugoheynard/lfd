@@ -24,7 +24,12 @@ export interface PaymentTermPanelData {
 @Component({
   selector: 'app-payment-term-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldSelectComponent, FoldCalloutComponent, FoldButtonComponent],
+  imports: [
+    FoldPanelHeaderComponent,
+    FoldSelectComponent,
+    FoldCalloutComponent,
+    FoldButtonComponent,
+  ],
   templateUrl: './payment-term-panel.html',
   styleUrl: './payment-term-panel.scss',
 })

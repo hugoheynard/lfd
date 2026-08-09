@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 
-import type { ActivationSupportPayload, SupportChannel, SupportSlot } from '@lfd/contracts';
+import type {
+  ActivationSupportPayload,
+  AppointmentChannel,
+  Slot,
+  SupportChannel,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -12,6 +17,7 @@ import {
 } from 'fold-ng';
 
 import { AccountService } from '../../account/account.service';
+import { AppointmentsService } from '../appointments.service';
 import { SupportService } from '../support.service';
 
 /** Charge d'ouverture : l'entreprise concernée. */
@@ -19,10 +25,22 @@ export interface SupportPanelData {
   readonly companyId: string;
 }
 
+/** Combien de jours de créneaux on demande — deux semaines suffisent à choisir. */
+const SLOT_WINDOW_DAYS = 21;
+
 /**
- * Panneau **Demande de support à l'activation** — le client demande à être
- * contacté par l'équipe commerciale : rappel téléphonique (à son numéro ou un
- * autre, au plus vite ou sur un créneau daté) ou échange par e-mail.
+ * Panneau **Demande de support à l'activation** — trois chemins vers l'équipe
+ * commerciale, du plus engageant au plus léger :
+ *
+ * 1. **Prendre rendez-vous** — le client choisit un créneau **réellement ouvert**
+ *    (`GET /appointments/slots`) et le réserve. Il repart avec un rendez-vous,
+ *    pas avec une demande en attente.
+ * 2. **Être rappelé au plus vite** — aucune date : c'est une `SupportRequest`.
+ * 3. **Par e-mail** — idem, sans numéro ni créneau.
+ *
+ * Le choix « prendre rendez-vous » n'est proposé **que si des créneaux existent** :
+ * offrir un calendrier vide serait pire que ne rien offrir. Quand le commercial
+ * n'a rien déclaré, le panneau retombe naturellement sur les deux autres chemins.
  */
 @Component({
   selector: 'app-activation-support-panel',
@@ -41,6 +59,7 @@ export interface SupportPanelData {
 export class ActivationSupportPanel {
   private readonly account = inject(AccountService);
   private readonly support = inject(SupportService);
+  private readonly appointments = inject(AppointmentsService);
   private readonly ref = inject(FoldPanelRef);
 
   readonly data = input<SupportPanelData | undefined>(undefined);
@@ -54,16 +73,43 @@ export class ActivationSupportPanel {
   protected readonly useOtherNumber = signal(false);
   protected readonly customPhone = signal('');
   protected readonly asap = signal(true);
-  protected readonly scheduledDate = signal('');
-  protected readonly slot = signal<SupportSlot>('morning');
   protected readonly message = signal('');
+
+  /** Les créneaux ouverts, chargés à l'ouverture du panneau. */
+  private readonly slots = signal<readonly Slot[]>([]);
+  /** Les canaux que le commercial propose (téléphone, visio, sur place). */
+  protected readonly meetingChannels = signal<readonly AppointmentChannel[]>([]);
+  /** Le créneau retenu (`startAt` ISO), vide tant qu'on n'a rien choisi. */
+  protected readonly chosenSlot = signal('');
+  /** Le canal du rendez-vous, parmi ceux que le commercial propose. */
+  protected readonly meetingChannel = signal<AppointmentChannel>('phone');
 
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   /** Une fois la demande envoyée : on montre la confirmation. */
   protected readonly placed = signal(false);
+  /** La confirmation diffère : un rendez-vous est pris, une demande est en attente. */
+  protected readonly booked = signal(false);
 
   protected readonly isPhone = computed(() => this.channel() === 'phone');
+  /** Y a-t-il quelque chose à réserver ? Sinon on ne propose pas le choix. */
+  protected readonly canBook = computed(() => this.slots().length > 0);
+  /** Le client est en train de réserver un créneau (et non de demander un rappel). */
+  protected readonly isBooking = computed(() => this.isPhone() && !this.asap() && this.canBook());
+
+  /** Les créneaux groupés par jour — ce que l'écran rend. */
+  protected readonly slotsByDay = computed(() => {
+    const byDay = new Map<string, Slot[]>();
+    for (const slot of this.slots()) {
+      const bucket = byDay.get(slot.day);
+      if (bucket === undefined) {
+        byDay.set(slot.day, [slot]);
+      } else {
+        bucket.push(slot);
+      }
+    }
+    return [...byDay.entries()].map(([day, slots]) => ({ day, slots }));
+  });
   /** Saisie d'un numéro : soit pas de numéro au profil, soit « un autre numéro ». */
   protected readonly showCustomPhone = computed(
     () => !this.hasProfilePhone() || this.useOtherNumber(),
@@ -84,15 +130,47 @@ export class ActivationSupportPanel {
     if (this.resolvedPhone() === '') {
       return false;
     }
-    return this.asap() || this.scheduledDate() !== '';
+    return this.asap() || this.chosenSlot() !== '';
   });
+
+  constructor() {
+    void this.loadSlots();
+  }
+
+  /**
+   * Charge les créneaux. En cas d'échec on ne bloque pas le panneau : les deux
+   * chemins non datés restent ouverts, et le client peut quand même joindre
+   * l'équipe — c'est tout l'intérêt de les avoir gardés.
+   */
+  private loadSlots(): void {
+    const from = isoDay(0);
+    const to = isoDay(SLOT_WINDOW_DAYS);
+    this.appointments.slots(from, to).subscribe({
+      next: (view) => {
+        this.slots.set(view.slots);
+        this.meetingChannels.set(view.channels);
+        const first = view.channels[0];
+        if (first !== undefined) {
+          this.meetingChannel.set(first);
+        }
+      },
+      error: () => this.slots.set([]),
+    });
+  }
+
+  protected chooseSlot(startAt: string): void {
+    this.chosenSlot.set(startAt);
+  }
+
+  protected onMeetingChannel(value: string): void {
+    const channel = this.meetingChannels().find((c) => c === value);
+    if (channel !== undefined) {
+      this.meetingChannel.set(channel);
+    }
+  }
 
   protected onChannel(value: string): void {
     this.channel.set(value === 'email' ? 'email' : 'phone');
-  }
-
-  protected onSlot(value: string): void {
-    this.slot.set(value === 'afternoon' ? 'afternoon' : 'morning');
   }
 
   /** Lit la valeur d'un `<input>` / `<textarea>` natif sans caster en `any`. */
@@ -108,13 +186,17 @@ export class ActivationSupportPanel {
     }
     this.submitting.set(true);
     this.errorMessage.set(null);
+    if (this.isBooking()) {
+      this.bookSlot(data.companyId);
+      return;
+    }
     const phone = this.isPhone();
     const payload: ActivationSupportPayload = {
       channel: this.channel(),
       phoneNumber: phone ? this.resolvedPhone() : '',
-      asap: phone ? this.asap() : true,
-      scheduledDate: phone && !this.asap() ? this.scheduledDate() : null,
-      slot: phone && !this.asap() ? this.slot() : null,
+      asap: true,
+      scheduledDate: null,
+      slot: null,
       message: this.message().trim(),
     };
     this.support.requestActivation(data.companyId, payload).subscribe({
@@ -129,7 +211,42 @@ export class ActivationSupportPanel {
     });
   }
 
+  /**
+   * Réserve le créneau retenu. Un **409** signifie que quelqu'un vient de le
+   * prendre : on recharge les créneaux et on le dit, plutôt que d'afficher une
+   * erreur générique devant une liste devenue fausse.
+   */
+  private bookSlot(companyId: string): void {
+    this.appointments
+      .book({
+        startAt: this.chosenSlot(),
+        channel: this.meetingChannel(),
+        companyId,
+        contactName: '',
+        contactPhone: this.resolvedPhone(),
+        message: this.message().trim(),
+      })
+      .subscribe({
+        next: () => {
+          this.booked.set(true);
+          this.placed.set(true);
+          this.submitting.set(false);
+        },
+        error: () => {
+          this.submitting.set(false);
+          this.chosenSlot.set('');
+          this.loadSlots();
+          this.errorMessage.set("Ce créneau vient d'être réservé. Choisissez-en un autre.");
+        },
+      });
+  }
+
   protected close(): void {
     this.ref.close(this.placed());
   }
+}
+
+/** Le jour local dans `offset` jours, au format `AAAA-MM-JJ`. */
+function isoDay(offset: number): string {
+  return new Date(Date.now() + offset * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }

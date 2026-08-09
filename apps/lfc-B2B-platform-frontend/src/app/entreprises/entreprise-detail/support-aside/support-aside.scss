@@ -30,3 +30,53 @@
 .support button {
   align-self: stretch;
 }
+
+.rdv {
+  margin-top: var(--fold-space-md);
+  padding-top: var(--fold-space-md);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.rdv-title {
+  margin: 0 0 var(--fold-space-xs);
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+}
+
+.rdv-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rdv-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+}
+
+.rdv-when {
+  font-variant-numeric: tabular-nums;
+}
+
+.rdv-cancel {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  font-size: var(--fold-text-xs, 0.75rem);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.rdv-error {
+  margin: var(--fold-space-xs) 0 0;
+  color: var(--fold-color-text-alert, var(--fold-color-text-muted));
+  font-size: var(--fold-text-xs, 0.75rem);
+}

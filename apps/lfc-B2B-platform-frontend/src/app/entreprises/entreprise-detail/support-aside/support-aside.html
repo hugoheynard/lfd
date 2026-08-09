@@ -24,4 +24,28 @@
       Prendre rendez-vous
     </button>
   }
+
+  @if (upcoming().length > 0) {
+    <section class="rdv">
+      <p class="rdv-title">Vos rendez-vous</p>
+      <ul class="rdv-list">
+        @for (rdv of upcoming(); track rdv.id) {
+          <li class="rdv-row">
+            <span class="rdv-when">{{ rdv.day }} · {{ rdv.time }}</span>
+            <button
+              type="button"
+              class="rdv-cancel"
+              [disabled]="cancelling() === rdv.id"
+              (click)="cancel(rdv)"
+            >
+              {{ cancelling() === rdv.id ? 'Annulation…' : 'Annuler' }}
+            </button>
+          </li>
+        }
+      </ul>
+      @if (cancelError()) {
+        <p class="rdv-error">Trop tard pour annuler en ligne — appelez-nous, on s'en occupe.</p>
+      }
+    </section>
+  }
 </fold-card>

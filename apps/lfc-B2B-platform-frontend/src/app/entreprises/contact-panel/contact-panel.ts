@@ -1,9 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import {
-  FoldButtonComponent,
-  FoldPanelHeaderComponent,
-  FoldPanelRef,
-} from 'fold-ng';
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+import { FoldButtonComponent, FoldPanelHeaderComponent, FoldPanelRef } from 'fold-ng';
 import {
   ContactFields,
   EMPTY_COMPANY_CONTACT_DRAFT,
@@ -21,8 +25,7 @@ import { AccountService } from '../../account/account.service';
  * - `additional` avec un `contactId` — un contact existant à remplacer.
  */
 export type ContactTarget =
-  | { readonly kind: 'primary' }
-  | { readonly kind: 'additional'; readonly contactId: string | null };
+  { readonly kind: 'primary' } | { readonly kind: 'additional'; readonly contactId: string | null };
 
 /** Charge d'ouverture du panneau. */
 export interface ContactPanelData {

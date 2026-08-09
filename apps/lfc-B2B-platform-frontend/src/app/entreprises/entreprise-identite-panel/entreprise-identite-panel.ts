@@ -1,6 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 
-import { FoldButtonComponent, FoldInputComponent, FoldPanelHeaderComponent, FoldPanelRef } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldInputComponent,
+  FoldPanelHeaderComponent,
+  FoldPanelRef,
+} from 'fold-ng';
 
 import { AccountService } from '../../account/account.service';
 

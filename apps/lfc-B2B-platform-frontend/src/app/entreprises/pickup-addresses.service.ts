@@ -35,9 +35,7 @@ export class PickupAddressesService {
     try {
       this._addresses.set(
         await firstValueFrom(
-          this.http.get<readonly PickupAddressView[]>(
-            `${AUTH_CONFIG.apiBaseUrl}/pickup-addresses`,
-          ),
+          this.http.get<readonly PickupAddressView[]>(`${AUTH_CONFIG.apiBaseUrl}/pickup-addresses`),
         ),
       );
     } catch {

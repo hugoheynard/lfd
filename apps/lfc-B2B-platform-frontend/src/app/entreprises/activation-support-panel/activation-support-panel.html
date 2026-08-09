@@ -6,13 +6,22 @@
 <div class="body">
   @if (placed()) {
     <fold-callout variant="success">
-      Votre demande est enregistrée. Notre équipe commerciale vous recontacte au plus vite.
+      @if (booked()) {
+        Votre rendez-vous est confirmé. Vous le retrouverez dans votre espace, et vous pouvez
+        l'annuler jusqu'à la veille.
+      } @else {
+        Votre demande est enregistrée. Notre équipe commerciale vous recontacte au plus vite.
+      }
     </fold-callout>
     <div class="foot">
       <button foldButton intent="primary" (click)="close()">Fermer</button>
     </div>
   } @else {
-    <fold-select label="Comment souhaitez-vous être contacté ?" [value]="channel()" (valueChange)="onChannel($event)">
+    <fold-select
+      label="Comment souhaitez-vous être contacté ?"
+      [value]="channel()"
+      (valueChange)="onChannel($event)"
+    >
       <option value="phone">Être rappelé par téléphone</option>
       <option value="email">Échanger par e-mail</option>
     </fold-select>
@@ -39,28 +48,59 @@
         />
       }
 
-      <!-- Disponibilité -->
-      <fold-checkbox
-        label="Au plus vite"
-        hint="décochez pour choisir un créneau"
-        [checked]="asap()"
-        (checkedChange)="asap.set($event)"
-      />
-      @if (!asap()) {
-        <div class="slot-row">
-          <label class="field">
-            <span class="field-label">Date souhaitée</span>
-            <input class="date" type="date" [value]="scheduledDate()" (input)="scheduledDate.set(inputValue($event))" />
-          </label>
-          <fold-select class="half" label="Moment" [value]="slot()" (valueChange)="onSlot($event)">
-            <option value="morning">Matin</option>
-            <option value="afternoon">Après-midi</option>
+      <!-- Disponibilité : on ne propose de choisir que s'il y a quoi choisir. -->
+      @if (canBook()) {
+        <fold-checkbox
+          label="Au plus vite"
+          hint="décochez pour choisir un créneau"
+          [checked]="asap()"
+          (checkedChange)="asap.set($event)"
+        />
+      }
+
+      @if (isBooking()) {
+        @if (meetingChannels().length > 1) {
+          <fold-select
+            label="Format du rendez-vous"
+            [value]="meetingChannel()"
+            (valueChange)="onMeetingChannel($event)"
+          >
+            @for (channel of meetingChannels(); track channel) {
+              <option [value]="channel">
+                {{
+                  channel === 'phone' ? 'Téléphone' : channel === 'visio' ? 'Visio' : 'Sur place'
+                }}
+              </option>
+            }
           </fold-select>
+        }
+
+        <p class="field-label">Choisissez un créneau</p>
+        <div class="slots">
+          @for (group of slotsByDay(); track group.day) {
+            <div class="slot-day">
+              <span class="slot-date">{{ group.day }}</span>
+              <div class="slot-times">
+                @for (slot of group.slots; track slot.startAt) {
+                  <button
+                    type="button"
+                    class="slot-chip"
+                    [class.slot-chip--on]="chosenSlot() === slot.startAt"
+                    [attr.aria-pressed]="chosenSlot() === slot.startAt"
+                    (click)="chooseSlot(slot.startAt)"
+                  >
+                    {{ slot.time }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
         </div>
       }
     } @else {
       <fold-callout appearance="inset" variant="info">
-        Nous vous répondrons à <strong>{{ profileEmail() }}</strong>.
+        Nous vous répondrons à <strong>{{ profileEmail() }}</strong
+        >.
       </fold-callout>
     }
 
@@ -82,7 +122,13 @@
     <div class="foot">
       <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
       <button foldButton intent="primary" [disabled]="!canSubmit()" (click)="submit()">
-        {{ submitting() ? 'Envoi…' : 'Envoyer la demande' }}
+        @if (submitting()) {
+          Envoi…
+        } @else if (isBooking()) {
+          Réserver ce créneau
+        } @else {
+          Envoyer la demande
+        }
       </button>
     </div>
   }
