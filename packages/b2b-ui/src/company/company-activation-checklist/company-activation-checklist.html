@@ -12,7 +12,9 @@
       <li class="step">
         <div class="step-text">
           <fold-icon name="check-circle" [size]="16" />
-          <span><strong>{{ step.title }}</strong> — {{ step.detail }}</span>
+          <span
+            ><strong>{{ step.title }}</strong> — {{ step.detail }}</span
+          >
         </div>
 
         @if (step.kind === 'file') {

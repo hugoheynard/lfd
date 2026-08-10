@@ -4,14 +4,7 @@
   description="Le contact principal de l'entreprise, et vos interlocuteurs."
 >
   @if (canManage()) {
-    <button
-      sectionActions
-      foldButton
-      emphasis="outline"
-      size="sm"
-      icon="plus"
-      (click)="add.emit()"
-    >
+    <button sectionActions foldButton emphasis="outline" size="sm" icon="plus" (click)="add.emit()">
       Ajouter un contact
     </button>
   }
@@ -82,7 +75,14 @@
           <fold-callout variant="info">
             Ce contact n'a pas d'espace utilisateur : seul son e-mail sera utilisé pour les
             notifications et l'envoi de documents.
-            <button actions foldButton emphasis="soft" size="sm" icon="user" (click)="onInvite(card)">
+            <button
+              actions
+              foldButton
+              emphasis="soft"
+              size="sm"
+              icon="user"
+              (click)="onInvite(card)"
+            >
               Inviter
             </button>
           </fold-callout>

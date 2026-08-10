@@ -1,6 +1,13 @@
 <fold-page-section title="Facturation" icon="calendar" [description]="description()">
   @if (canManage()) {
-    <button sectionActions foldButton emphasis="outline" size="sm" icon="edit" (click)="action.emit()">
+    <button
+      sectionActions
+      foldButton
+      emphasis="outline"
+      size="sm"
+      icon="edit"
+      (click)="action.emit()"
+    >
       {{ actionLabel() }}
     </button>
   }
@@ -14,7 +21,8 @@
 
     @if (pendingLabel(); as pending) {
       <fold-callout appearance="inset" variant="info">
-        Demande en attente : <strong>{{ pending }}</strong>.
+        Demande en attente : <strong>{{ pending }}</strong
+        >.
         @if (pendingNote(); as pendingNote) {
           {{ pendingNote }}
         }
