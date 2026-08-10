@@ -93,25 +93,9 @@
           </p>
         }
 
-        <!-- L'acheminement et la note décrivent la commande, pas son argent :
-             ils restent au centre, sous ce qu'elle contient. -->
-        <section class="od-block">
-          <h3 class="od-h3">Acheminement</h3>
-          <p class="od-method">{{ fulfillment() }}</p>
-          @if (address(); as addr) {
-            <address class="od-addr">
-              {{ addr.ligne1 }}
-              @if (addr.ligne2) {
-                <br />{{ addr.ligne2 }}
-              }
-              <br />
-              {{ addr.codePostal }} {{ addr.ville }}
-            </address>
-          } @else {
-            <p class="od-muted">Adresse non renseignée.</p>
-          }
-        </section>
-
+        <!-- La note reste au centre : c'est une consigne sur le contenu, elle se
+             lit avec les lignes. L'acheminement, lui, est passé au rail — il
+             commande le bon de livraison juste en dessous. -->
         @if (o.note) {
           <section class="od-block">
             <h3 class="od-h3">Note</h3>
@@ -139,6 +123,27 @@
         <div class="od-actions">
           <ng-content select="[actions]" />
         </div>
+
+        <!-- L'acheminement précède les documents parce qu'il les COMMANDE : le
+             bon de livraison qu'on télécharge dessous porte cette adresse et ce
+             mode. Les lire dans cet ordre évite d'imprimer un bon pour une
+             livraison qu'on croyait être un retrait. -->
+        <section class="od-card">
+          <h3 class="od-h3">Acheminement</h3>
+          <p class="od-method">{{ fulfillment() }}</p>
+          @if (address(); as addr) {
+            <address class="od-addr">
+              {{ addr.ligne1 }}
+              @if (addr.ligne2) {
+                <br />{{ addr.ligne2 }}
+              }
+              <br />
+              {{ addr.codePostal }} {{ addr.ville }}
+            </address>
+          } @else {
+            <p class="od-muted">Adresse non renseignée.</p>
+          }
+        </section>
 
         @if (documents().length > 0) {
           <section class="od-card">
