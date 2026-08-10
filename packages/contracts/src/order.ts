@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { billingAddressPayloadSchema, type BillingAddressPayload } from "./address.js";
+import type { CartAdjustment } from "./cart-adjustment.js";
 
 /**
  * Contrat de fil des **commandes** B2B.
@@ -152,6 +153,15 @@ export interface OrderView {
   readonly subtotalCents: number;
   /** Remise (retrait) déduite du sous-total, en centimes. `0` si aucune. */
   readonly discountCents: number;
+  /**
+   * **Ce qui a produit** `discountCents`, figé à la commande : le taux ou le
+   * montant de la remise du point de retrait. Sans lui, une facture ne peut dire
+   * que « Remise 70,68 € » — jamais « Retrait au labo −20 % ». Le déduire d'une
+   * division mentirait dès qu'il s'agit d'une remise en euros, ou dès qu'un
+   * arrondi décale le rapport. `null` = aucune remise (ou commande antérieure au
+   * snapshot).
+   */
+  readonly discountAdjustment: CartAdjustment | null;
   /** Frais de livraison (zone) ajouté, HT, en centimes. `0` si aucun. */
   readonly deliveryFeeCents: number;
   /** TVA totale (marchandises par taux + livraison), en centimes. */

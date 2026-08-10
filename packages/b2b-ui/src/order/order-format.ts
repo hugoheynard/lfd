@@ -1,4 +1,4 @@
-import type { FulfillmentMethod, OrderStatus, PaymentStatus } from '@lfd/contracts';
+import type { CartAdjustment, FulfillmentMethod, OrderStatus, PaymentStatus } from '@lfd/contracts';
 import type { FoldBadgeVariant } from 'fold-ng';
 
 /**
@@ -84,6 +84,22 @@ export function formatCents(cents: number): string {
 /** Un taux de TVA `0.055` → « 5,5 % ». */
 export function formatVatRate(rate: number): string {
   return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(rate * 100)} %`;
+}
+
+/**
+ * Un ajustement → sa **forme**, telle qu'elle a été convenue : « −20 % » pour un
+ * taux, « −15,00 € » pour un montant fixe. Rendre le taux plutôt que de le
+ * recalculer depuis le montant est ce qui distingue une remise nommée d'un
+ * chiffre orphelin — et une division ferait dire « −19,99 % » au premier arrondi.
+ */
+export function formatAdjustment(adjustment: CartAdjustment): string {
+  if (adjustment.mode === 'amount') {
+    return `−${formatCents(adjustment.cents)}`;
+  }
+  const percent = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(
+    adjustment.bp / 100,
+  );
+  return `−${percent} %`;
 }
 
 /** ISO (instant ou `YYYY-MM-DD`) → « 6 août 2026 ». */

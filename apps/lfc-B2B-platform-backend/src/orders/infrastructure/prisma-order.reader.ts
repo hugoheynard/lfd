@@ -1,6 +1,8 @@
 import {
   type BillingAddressPayload,
   billingAddressPayloadSchema,
+  type CartAdjustment,
+  cartAdjustmentSchema,
   type FulfillmentMethod,
   type OrderLineView,
   type OrderStatus,
@@ -39,6 +41,7 @@ interface OrderRow {
   readonly note: string;
   readonly subtotalCents: number;
   readonly discountCents: number;
+  readonly discountAdjustment: Prisma.JsonValue | null;
   readonly deliveryFeeCents: number;
   readonly vatCents: number;
   readonly totalCents: number;
@@ -63,6 +66,7 @@ const ORDER_SELECT = {
   note: true,
   subtotalCents: true,
   discountCents: true,
+  discountAdjustment: true,
   deliveryFeeCents: true,
   vatCents: true,
   totalCents: true,
@@ -148,6 +152,7 @@ function toOrderView(row: OrderRow): OrderView {
     note: row.note,
     subtotalCents: row.subtotalCents,
     discountCents: row.discountCents,
+    discountAdjustment: parseAdjustment(row.discountAdjustment),
     deliveryFeeCents: row.deliveryFeeCents,
     vatCents: row.vatCents,
     totalCents: row.totalCents,
@@ -157,6 +162,15 @@ function toOrderView(row: OrderRow): OrderView {
     placedAt: row.createdAt.toISOString(),
     lines: row.lines.map(toLineView),
   };
+}
+
+/**
+ * Snapshot JSON → l'ajustement figé de la remise, ou `null`. Validé et non casté :
+ * les commandes antérieures à la colonne n'en portent pas, et un JSON d'une autre
+ * forme ne doit pas remonter en vue.
+ */
+function parseAdjustment(value: Prisma.JsonValue | null): CartAdjustment | null {
+  return value === null ? null : cartAdjustmentSchema.parse(value);
 }
 
 /** Snapshot JSON → écarts vs gabarit récurrent, ou `null`. */

@@ -9,6 +9,7 @@ import {
 } from 'fold-ng';
 
 import {
+  formatAdjustment,
   formatCents,
   formatOrderDate,
   formatVatRate,
@@ -38,6 +39,16 @@ export interface OrderDocument {
   readonly unavailable?: string;
 }
 
+/**
+ * D'où vient la remise. Une seule source aujourd'hui — le point de retrait — et
+ * son nom est déjà figé dans le snapshot d'adresse : on ne le redemande pas au
+ * serveur, et il reste juste même si le point est renommé ou supprimé après coup.
+ */
+function discountLabel(order: OrderView): string {
+  const point = order.fulfillmentMethod === 'pickup' ? order.pickupAddress : null;
+  return point === null || point.label === '' ? 'Remise' : `Retrait — ${point.label}`;
+}
+
 /** Une ligne retirée du gabarit récurrent, prête à afficher. */
 interface RemovedLine {
   readonly sku: string;
@@ -45,11 +56,13 @@ interface RemovedLine {
   readonly quantity: number;
 }
 
-/** Une ligne du récapitulatif de montants (le pied du tableau). */
+/** Une ligne du récapitulatif de montants, dans le rail droit. */
 interface TotalRow {
   readonly key: string;
   readonly label: string;
   readonly value: string;
+  /** Second niveau sous le libellé — le taux d'une remise, par exemple. */
+  readonly hint?: string;
   /** Le total TTC — mis en avant, et lui seul. */
   readonly strong: boolean;
 }
@@ -137,9 +150,13 @@ export class OrderDetail {
       },
     ];
     if (order.discountCents > 0) {
+      // La remise se NOMME : d'où elle vient, à quel taux, pour combien. « Remise
+      // 70,68 € » toute seule oblige à ouvrir les réglages pour comprendre.
+      const adjustment = order.discountAdjustment;
       rows.push({
         key: 'discount',
-        label: 'Remise',
+        label: discountLabel(order),
+        ...(adjustment === null ? {} : { hint: formatAdjustment(adjustment) }),
         value: `− ${formatCents(order.discountCents)}`,
         strong: false,
       });

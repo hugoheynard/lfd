@@ -1,4 +1,10 @@
-import type { BillingAddressPayload, FulfillmentMethod, PaymentStatus } from "@lfd/contracts";
+import {
+  cartAdjustmentCents,
+  type BillingAddressPayload,
+  type CartAdjustment,
+  type FulfillmentMethod,
+  type PaymentStatus,
+} from "@lfd/contracts";
 
 import {
   EmptyOrderError,
@@ -30,6 +36,8 @@ export interface DraftOrderInput {
   readonly lines: readonly OrderLineInput[];
   /** Remise (retrait) déjà résolue, HT, en centimes. */
   readonly discountCents: number;
+  /** L'ajustement qui l'a produite (taux ou montant), ou `null` si aucune. */
+  readonly discountAdjustment: CartAdjustment | null;
   /** Frais de livraison (zone) déjà résolu, HT, en centimes. */
   readonly deliveryFeeCents: number;
 }
@@ -46,12 +54,31 @@ export interface OrderToPlace {
   readonly note: string;
   readonly subtotalCents: number;
   readonly discountCents: number;
+  readonly discountAdjustment: CartAdjustment | null;
   readonly deliveryFeeCents: number;
   readonly vatCents: number;
   readonly totalCents: number;
   readonly paymentStatus: PaymentStatus;
   readonly stripePaymentIntentId: string | null;
   readonly lines: readonly OrderLineSnapshot[];
+}
+
+/**
+ * L'ajustement figé doit **reproduire** le montant retenu. Sans ce contrôle, une
+ * commande pourrait porter « −20 % » à côté d'une remise de 12 € : le libellé et
+ * le chiffre se contrediraient sur la facture, et rien ne dirait lequel ment.
+ *
+ * @throws {InvalidOrderPaymentError} le libellé ne correspond pas au montant.
+ */
+function ensureDiscountMatches(input: DraftOrderInput, subtotalCents: number): void {
+  if (input.discountAdjustment === null) {
+    return;
+  }
+  if (cartAdjustmentCents(input.discountAdjustment, subtotalCents) !== input.discountCents) {
+    throw new InvalidOrderPaymentError(
+      "La remise retenue ne correspond pas à l'ajustement appliqué.",
+    );
+  }
 }
 
 /** Décision de règlement : indécise (`null`), carte (intent), ou différée. */
@@ -76,6 +103,7 @@ export class Order {
     private readonly note: string,
     private readonly lines: readonly OrderLine[],
     private readonly discountCents: number,
+    private readonly discountAdjustment: CartAdjustment | null,
     private readonly deliveryFeeCents: number,
     private readonly subtotalCentsValue: number,
     private readonly vatCentsValue: number,
@@ -98,6 +126,7 @@ export class Order {
       discountCents: input.discountCents,
       deliveryFeeCents: input.deliveryFeeCents,
     });
+    ensureDiscountMatches(input, subtotalCents);
     const totalCents =
       Math.max(0, subtotalCents - input.discountCents) + input.deliveryFeeCents + vatCents;
     return new Order(
@@ -108,6 +137,7 @@ export class Order {
       input.note,
       lines,
       input.discountCents,
+      input.discountAdjustment,
       input.deliveryFeeCents,
       subtotalCents,
       vatCents,
@@ -149,6 +179,7 @@ export class Order {
       note: this.note,
       subtotalCents: this.subtotalCentsValue,
       discountCents: this.discountCents,
+      discountAdjustment: this.discountAdjustment,
       deliveryFeeCents: this.deliveryFeeCents,
       vatCents: this.vatCentsValue,
       totalCents: this.totalCentsValue,

@@ -13,6 +13,7 @@ export {
   paymentStatusLabel,
   paymentStatusVariant,
   fulfillmentLabel,
+  formatAdjustment,
   formatCents,
   formatVatRate,
   formatOrderDate,

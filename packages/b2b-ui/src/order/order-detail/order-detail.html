@@ -55,9 +55,12 @@
       <section class="od-lines" aria-labelledby="od-lines-title">
         <h3 class="od-h3" id="od-lines-title">Composition</h3>
 
+        <!-- Le SKU ouvre la ligne : c'est par lui qu'on retrouve un article au
+             téléphone, au four ou au PIM — pas par son nom commercial. -->
         <table class="od-table">
           <thead>
             <tr>
+              <th scope="col" class="od-col-sku">SKU</th>
               <th scope="col" class="od-col-qty">Qté</th>
               <th scope="col">Article</th>
               <th scope="col" class="od-col-num">PU HT</th>
@@ -68,10 +71,10 @@
           <tbody>
             @for (line of o.lines; track line.sku) {
               <tr>
+                <td class="od-col-sku">{{ line.sku }}</td>
                 <td class="od-col-qty">{{ line.quantity }}</td>
                 <td>
                   <span class="od-line-name">{{ line.productName }}</span>
-                  <span class="od-sku">{{ line.sku }}</span>
                   @if (isAdded(line)) {
                     <span class="od-pill od-pill--add">ajout</span>
                   }
@@ -110,7 +113,12 @@
           <dl class="od-totals">
             @for (row of totals(); track row.key) {
               <div class="od-total-row" [class.is-strong]="row.strong">
-                <dt>{{ row.label }}</dt>
+                <dt>
+                  {{ row.label }}
+                  @if (row.hint) {
+                    <span class="od-total-hint">{{ row.hint }}</span>
+                  }
+                </dt>
                 <dd>{{ row.value }}</dd>
               </div>
             }

@@ -506,6 +506,9 @@ model Order {
   // (5,5 % alimentaire, 20 % livraison).
   subtotalCents    Int    @map("subtotal_cents")
   discountCents    Int    @default(0) @map("discount_cents")
+  // L'ajustement (%, ou € fixe) qui a PRODUIT `discountCents`, figé comme les
+  // prix : sans lui un document ne peut nommer la remise, seulement la chiffrer.
+  discountAdjustment Json? @map("discount_adjustment")
   deliveryFeeCents Int    @default(0) @map("delivery_fee_cents")
   vatCents         Int    @default(0) @map("vat_cents")
   totalCents       Int    @map("total_cents")

@@ -1,6 +1,7 @@
 import {
   cartAdjustmentCents,
   type BillingAddressPayload,
+  type CartAdjustment,
   type PickupAddressView,
 } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
@@ -32,6 +33,8 @@ interface ResolvedFulfillment {
   readonly deliveryAddress: BillingAddressPayload | null;
   readonly pickupAddress: BillingAddressPayload | null;
   readonly discountCents: number;
+  /** L'ajustement figé qui l'a produite (taux/montant du point), ou `null`. */
+  readonly discountAdjustment: CartAdjustment | null;
   readonly deliveryFeeCents: number;
 }
 
@@ -90,6 +93,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       note: payload.note,
       lines,
       discountCents: acheminement.discountCents,
+      discountAdjustment: acheminement.discountAdjustment,
       deliveryFeeCents: acheminement.deliveryFeeCents,
     });
 
@@ -182,6 +186,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
         deliveryAddress: null,
         pickupAddress: toSnapshot(point),
         discountCents: point.discount ? cartAdjustmentCents(point.discount, subtotalCents) : 0,
+        discountAdjustment: point.discount,
         deliveryFeeCents: 0,
       };
     }
@@ -200,6 +205,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       deliveryAddress: payload.deliveryAddress,
       pickupAddress: null,
       discountCents: 0,
+      // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
+      discountAdjustment: null,
       deliveryFeeCents: cartAdjustmentCents(zone.fee, subtotalCents),
     };
   }

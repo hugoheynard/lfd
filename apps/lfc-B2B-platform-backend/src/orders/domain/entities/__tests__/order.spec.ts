@@ -39,6 +39,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     note: "",
     lines: [food(2)],
     discountCents: 0,
+    discountAdjustment: null,
     deliveryFeeCents: 0,
     ...over,
   };
@@ -104,6 +105,42 @@ describe("Order.draft — calcul monétaire", () => {
     expect(() => Order.draft(draftInput({ deliveryFeeCents: -1 }))).toThrow(
       InvalidOrderPaymentError,
     );
+  });
+
+  it("fige l'ajustement qui a produit la remise", () => {
+    // 400 HT, -20 % → 80. Le taux part en persistance À CÔTÉ du montant : c'est
+    // lui qui permettra d'écrire « Retrait −20 % » et pas juste « Remise 0,80 € ».
+    const state = deferred({
+      lines: [food(2, 200, 0)],
+      discountCents: 80,
+      discountAdjustment: { mode: "percent", bp: 2000 },
+    });
+
+    expect(state.discountAdjustment).toEqual({ mode: "percent", bp: 2000 });
+  });
+
+  it("refuse un ajustement qui NE REPRODUIT PAS le montant retenu", () => {
+    // Sans ce refus, une commande porterait « −20 % » à côté d'une remise de
+    // 0,12 € : le libellé et le chiffre se contrediraient sur la facture.
+    expect(() =>
+      Order.draft(
+        draftInput({
+          lines: [food(2, 200, 0)],
+          discountCents: 12,
+          discountAdjustment: { mode: "percent", bp: 2000 },
+        }),
+      ),
+    ).toThrow(InvalidOrderPaymentError);
+  });
+
+  it("accepte une remise en euros fixes, elle aussi vérifiée", () => {
+    const state = deferred({
+      lines: [food(2, 200, 0)],
+      discountCents: 150,
+      discountAdjustment: { mode: "amount", cents: 150 },
+    });
+
+    expect(state.discountAdjustment).toEqual({ mode: "amount", cents: 150 });
   });
 });
 

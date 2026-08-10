@@ -184,13 +184,14 @@ fold-aside-layout {
   font-weight: 600;
 }
 
-/* Le SKU est là pour la conversation (« la référence VIE-001 »), pas pour la
-   lecture : discret, mais présent des deux côtés du téléphone. */
-.od-sku {
-  margin-inline-start: var(--fold-space-xs);
+/* Le SKU a sa colonne : c'est une clé, elle se lit en colonne alignée, pas en
+   suffixe d'un nom. Discret en couleur, mais à sa place. */
+.od-col-sku {
+  width: 5.5rem;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .od-muted {
@@ -230,6 +231,16 @@ fold-aside-layout {
 }
 
 .od-total-row dd {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Le taux, sous le nom de la remise : c'est ce qui rend le montant vérifiable
+   sans quitter la page. */
+.od-total-hint {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
   font-variant-numeric: tabular-nums;
 }
 
