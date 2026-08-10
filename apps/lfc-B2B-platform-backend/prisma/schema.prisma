@@ -706,6 +706,40 @@ model PickupAddress {
   @@schema("public")
 }
 
+/// **Heure limite de commande** — une RÈGLE par ligne, jamais une colonne de
+/// réglage. Ouvrir un second labo ou décaler le dimanche doit être de la saisie,
+/// pas une migration.
+///
+/// `pickupAddressId` null = règle par défaut de la plateforme ; `weekday` null =
+/// tous les jours. La plus spécifique gagne (`resolveOrderCutoff`, côté contrat).
+/// La limite se compte en `daysBefore` + `time` depuis la date d'ACHEMINEMENT
+/// demandée : « 18 h » seul serait ambigu.
+model OrderCutoff {
+  id String @id @default(cuid())
+
+  pickupAddressId String? @map("pickup_address_id")
+
+  /// `mon`…`sun` — le même {@link Weekday} que les créneaux de livraison. Deux
+  /// représentations du jour dans un seul contrat finiraient décalées d'une unité.
+  /// Null = tous les jours.
+  weekday String?
+
+  daysBefore Int    @default(1) @map("days_before")
+  /// `HH:MM` en heure LOCALE du laboratoire, pas un instant UTC.
+  time       String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Une seule règle par couple (point, jour) : deux règles concurrentes rendraient
+  // la résolution dépendante de l'ordre de lecture. Postgres traite chaque NULL
+  // comme distinct, d'où les index partiels ci-dessous pour couvrir les défauts.
+  @@unique([pickupAddressId, weekday])
+  @@index([pickupAddressId])
+  @@map("order_cutoffs")
+  @@schema("public")
+}
+
 /// **Zone de livraison** — un secteur de codes postaux (stations éloignées)
 /// portant un frais de livraison HT ajouté au panier quand la commande est livrée
 /// vers ce secteur. `postalPrefixes` = préfixes couverts (`73150` exact, `731` =

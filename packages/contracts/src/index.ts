@@ -113,6 +113,18 @@ export { cartAdjustmentSchema, cartAdjustmentCents } from "./cart-adjustment.js"
 export type { CartAdjustment } from "./cart-adjustment.js";
 export { pickupAddressPayloadSchema } from "./pickup.js";
 export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
+export {
+  clockTimeSchema,
+  orderCutoffPayloadSchema,
+  orderCutoffInstant,
+  resolveOrderCutoff,
+  weekdayOfDate,
+} from "./order-cutoff.js";
+export type {
+  CreatedOrderCutoffResponse,
+  OrderCutoffPayload,
+  OrderCutoffView,
+} from "./order-cutoff.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,
