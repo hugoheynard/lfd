@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import {
   FoldButtonComponent,
@@ -61,7 +69,13 @@ export class FicheClientShell {
   });
 
   constructor() {
-    void this.loadName();
+    // Un `input` de route n'est **pas encore lié** dans le constructeur : le lire
+    // ici lève NG0950, que le `catch` de `loadName` avalait — l'en-tête restait
+    // sur « Compte client » sans que rien ne le signale. L'effet attend la
+    // liaison, et rejoue si on passe d'un compte à un autre.
+    effect(() => {
+      void this.loadName(this.id());
+    });
   }
 
   protected isPinned(): boolean {
@@ -88,9 +102,9 @@ export class FicheClientShell {
   }
 
   /** Le nom seul : l'en-tête n'a besoin de rien d'autre, les vues chargent le reste. */
-  private async loadName(): Promise<void> {
+  private async loadName(id: string): Promise<void> {
     try {
-      const company = await this.companies.getById(this.id());
+      const company = await this.companies.getById(id);
       this.raisonSociale.set(company?.raisonSociale ?? '');
     } catch {
       this.raisonSociale.set('');

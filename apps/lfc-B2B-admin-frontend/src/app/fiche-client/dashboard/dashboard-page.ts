@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { FoldButtonComponent, FoldLoadingStateComponent } from 'fold-ng';
 import type { CustomerSheetView } from '@lfd/contracts';
 
@@ -31,13 +31,19 @@ export class ClientDashboardPage {
   protected readonly sheet = signal<CustomerSheetView | null>(null);
 
   constructor() {
-    void this.load();
+    // Un `input` de route n'est **pas encore lié** dans le constructeur : le lire
+    // ici lève NG0950, et le `catch` en dessous transformait la panne en écran
+    // d'erreur muet. L'effet attend la liaison — et rejoue tout seul quand on
+    // passe d'un compte à l'autre sans quitter la page (le composant est réutilisé).
+    effect(() => {
+      void this.load(this.id());
+    });
   }
 
-  protected async load(): Promise<void> {
+  protected async load(id: string = this.id()): Promise<void> {
     this.state.set('loading');
     try {
-      this.sheet.set(await this.api.sheet(this.id()));
+      this.sheet.set(await this.api.sheet(id));
       this.state.set('ready');
     } catch {
       this.state.set('error');
