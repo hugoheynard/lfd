@@ -1,3 +1,25 @@
 :host {
   display: block;
 }
+
+/* La nav et la vue forment UN bloc : l'écart entre les deux est plus serré que
+   le rythme de page, sinon les pastilles pleines flottent au-dessus du vide au
+   lieu de coiffer la première carte. */
+.fc-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+/* Accrochée en haut : une fiche client est longue (informations, journal), et
+   changer d'onglet ne doit pas demander de remonter. */
+.fc-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: block;
+  min-width: 0;
+  padding-block: var(--fold-space-xs);
+  background: var(--fold-color-surface);
+}

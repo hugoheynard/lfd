@@ -16,15 +16,19 @@
     {{ isPinned() ? 'Épinglé' : 'Épingler' }}
   </button>
 
-  <fold-nav-layout placement="side" [foldAt]="1100">
+  <!-- Barre horizontale en `fill`, accolée à la première carte de la vue —
+       même composition que Réglages → Commercial. Voir le SCSS pour pourquoi
+       l'écart est serré plutôt qu'au rythme de page. -->
+  <div class="fc-shell">
     <fold-view-nav
-      tabNav
+      class="fc-tabs"
       [items]="tabs"
+      direction="horizontal"
       size="comfortable"
-      activeStyle="underline"
+      activeStyle="fill"
       background="transparent"
     />
 
     <router-outlet />
-  </fold-nav-layout>
+  </div>
 </fold-page-layout>

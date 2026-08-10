@@ -1,23 +1,24 @@
 <fold-page-layout [icon]="current().icon" [title]="current().label">
   <p description>{{ current().description }}</p>
 
-  <!-- Rail à GAUCHE, comme Réglages : la navigation de page se lit en colonne,
-       et surtout elle cesse de pousser le contenu vers le bas — c'est de la
-       largeur qu'on a, pas de la hauteur.
+  <!-- Barre horizontale en `fill`, comme Réglages → Commercial : les pastilles
+       pleines se posent DIRECTEMENT sur la première carte de la vue. C'est ce
+       contact qui fait tenir la composition — un rail latéral ou une barre
+       soulignée laissaient un blanc entre la nav et le contenu, et la page
+       repartait de zéro sous le menu.
 
-       `foldAt` est plus haut qu'ailleurs (1100 contre 896) parce que le tableau
-       de bord porte DÉJÀ un rail à droite : sous cette largeur, trois colonnes
-       s'écraseraient. Le seuil se mesure sur la largeur du LAYOUT, pas du
-       viewport — donc juste en iframe dans la suite. -->
-  <fold-nav-layout placement="side" [foldAt]="1100">
+       D'où le `gap` serré ci-dessous plutôt que le rythme de page : la nav
+       n'est pas un bloc de plus, elle appartient au bloc qui suit. -->
+  <div class="cm-shell">
     <fold-view-nav
-      tabNav
+      class="cm-tabs"
       [items]="tabs"
+      direction="horizontal"
       size="comfortable"
-      activeStyle="underline"
+      activeStyle="fill"
       background="transparent"
     />
 
     <router-outlet />
-  </fold-nav-layout>
+  </div>
 </fold-page-layout>

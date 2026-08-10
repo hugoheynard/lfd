@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { Router, RouterOutlet } from '@angular/router';
 import {
   FoldButtonComponent,
-  FoldNavLayoutComponent,
   FoldPageLayoutComponent,
   FoldViewNavComponent,
   type FoldViewNavItem,
@@ -34,13 +33,7 @@ import { AdminCompaniesService } from '../comptes-clients/admin-companies.servic
 @Component({
   selector: 'app-fiche-client-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterOutlet,
-    FoldButtonComponent,
-    FoldNavLayoutComponent,
-    FoldPageLayoutComponent,
-    FoldViewNavComponent,
-  ],
+  imports: [RouterOutlet, FoldButtonComponent, FoldPageLayoutComponent, FoldViewNavComponent],
   templateUrl: './fiche-client-shell.html',
   styleUrl: './fiche-client-shell.scss',
 })
