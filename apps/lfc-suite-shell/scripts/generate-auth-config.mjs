@@ -50,6 +50,7 @@ const KEYS = [
   'SUITE_AUTH0_CLIENT_ID',
   'SUITE_AUTH0_AUDIENCE_SELF',
   'SUITE_AUTH0_AUDIENCE_B2B',
+  'SUITE_AUTH0_AUDIENCE_B2B_ADMIN',
   'SUITE_AUTH0_AUDIENCE_PIM',
 ];
 const values = Object.fromEntries(KEYS.map((key) => [key, read(key)]));
@@ -74,6 +75,7 @@ const body =
   '  audiences: {\n' +
   `    self: ${JSON.stringify(values.SUITE_AUTH0_AUDIENCE_SELF)},\n` +
   `    b2b: ${JSON.stringify(values.SUITE_AUTH0_AUDIENCE_B2B)},\n` +
+  `    b2bAdmin: ${JSON.stringify(values.SUITE_AUTH0_AUDIENCE_B2B_ADMIN)},\n` +
   `    pim: ${JSON.stringify(values.SUITE_AUTH0_AUDIENCE_PIM)},\n` +
   '  },\n' +
   '} as const;\n';

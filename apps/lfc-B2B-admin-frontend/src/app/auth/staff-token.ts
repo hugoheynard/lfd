@@ -4,12 +4,19 @@ import { SuiteEmbed } from '../suite-embed/suite-embed';
 import { StaffAuth } from './staff-auth';
 
 /**
- * Clé d'audience réclamée au shell. C'est bien `b2b` : le shell indexe ses
- * audiences par **backend adressé** (`self`, `b2b`, `pim`), et la surface staff
- * du backend B2B est servie par ce même backend. Une clé hors de ce jeu est
- * rejetée par le bridge, qui rend alors `token: null` — silencieusement.
+ * Clé d'audience réclamée au shell.
+ *
+ * `b2bAdmin`, pas `b2b` : le backend B2B est un seul service mais expose **deux
+ * surfaces**, et Auth0 leur donne deux APIs distinctes. Demander `b2b`
+ * rapporterait un jeton d'audience *client*, que `/admin/*` refuse — et qu'il
+ * ne devrait jamais accepter, sans quoi tout client de la boutique entrerait
+ * dans le back-office.
+ *
+ * Une clé hors du jeu connu du shell (`self`, `b2b`, `b2bAdmin`, `pim`) est
+ * rejetée par le bridge, qui rend alors `token: null` — **silencieusement**.
+ * C'est exactement ce qui se passait avec l'ancienne valeur `'b2b-admin'`.
  */
-const SUITE_AUDIENCE = 'b2b';
+const SUITE_AUDIENCE = 'b2bAdmin';
 
 /**
  * D'où vient le **jeton staff** — la question tranchée UNE fois.

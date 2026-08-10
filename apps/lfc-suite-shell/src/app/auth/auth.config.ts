@@ -1,4 +1,4 @@
-import { AUTH_ENV } from './auth.env.generated';
+import { AUTH_ENV } from "./auth.env.generated";
 
 /**
  * Configuration Auth0 **publique** de la Suite (shell hôte).
@@ -28,7 +28,19 @@ export interface SuiteAuthConfig {
      * permissions. L'enforcement réel reste sur chaque backend enfant.
      */
     readonly self: string;
+    /** Backend B2B, surface **client** (son `AUTH0_AUDIENCE`). */
     readonly b2b: string;
+    /**
+     * Backend B2B, surface **staff** (son `AUTH0_ADMIN_AUDIENCE`) — audience
+     * distincte de `b2b`, bien que servie par le MÊME backend.
+     *
+     * Une API Auth0 n'est pas une adresse : son identifiant est une chaîne
+     * opaque, jamais résolue ni appelée. Deux APIs peuvent donc désigner un seul
+     * service, et c'est ce qui sépare ici les deux publics. Les confondre ferait
+     * accepter par `/admin/*` le jeton de n'importe quel client de la boutique —
+     * le vérificateur staff ne contrôle que l'émetteur et l'audience.
+     */
+    readonly b2bAdmin: string;
     readonly pim: string;
   };
 }
@@ -39,6 +51,7 @@ export const SUITE_AUTH_CONFIG: SuiteAuthConfig = {
   audiences: {
     self: AUTH_ENV.audiences.self,
     b2b: AUTH_ENV.audiences.b2b,
+    b2bAdmin: AUTH_ENV.audiences.b2bAdmin,
     pim: AUTH_ENV.audiences.pim,
   },
 };
