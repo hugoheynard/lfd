@@ -12,5 +12,8 @@
     "noEmit": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules"]
+  // Les specs sont type-checkées par ts-jest via `tsconfig.test.json` (qui
+  // étend celui-ci et ajoute les types jest) — les inclure ici ferait échouer
+  // ce filet sur `describe`/`expect`.
+  "exclude": ["node_modules", "**/*.spec.ts", "**/__tests__/**"]
 }

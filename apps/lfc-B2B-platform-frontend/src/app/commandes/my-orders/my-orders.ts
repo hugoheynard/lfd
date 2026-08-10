@@ -8,7 +8,7 @@ import type {
   PaymentStatus,
 } from '@lfd/contracts';
 import { RouterLink } from '@angular/router';
-import { FoldButtonComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldTimelineComponent, type FoldTimelineNode } from 'fold-ng';
 import {
   buildTimeline,
   canSettle,
@@ -16,7 +16,7 @@ import {
   fulfillmentLabel as sharedFulfillmentLabel,
   orderStatusLabel,
   paymentStatusLabel,
-  type TimelineStep,
+  toTimelineNodes,
 } from '@lfd/b2b-ui/order';
 
 import { productById } from '../../data/catalogue-seed';
@@ -37,7 +37,7 @@ interface RemovedLine {
 @Component({
   selector: 'app-my-orders',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, RouterLink],
+  imports: [FoldButtonComponent, FoldTimelineComponent, RouterLink],
   templateUrl: './my-orders.html',
   styleUrl: './my-orders.scss',
 })
@@ -69,8 +69,9 @@ export class MyOrders {
     });
   }
 
-  protected timeline(order: OrderView): readonly TimelineStep[] {
-    return buildTimeline(order);
+  /** La frise de cette commande, en nœuds `fold-timeline` (rail vertical). */
+  protected timeline(order: OrderView): readonly FoldTimelineNode[] {
+    return toTimelineNodes(buildTimeline(order));
   }
 
   protected settlable(status: PaymentStatus): boolean {

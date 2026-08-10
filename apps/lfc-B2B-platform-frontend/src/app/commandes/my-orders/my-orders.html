@@ -28,15 +28,19 @@
 
       @if (isExpanded(order.id)) {
         <div class="order-body">
-          <!-- Gauche : frise d'avancement (règlement → livrée/retirée). -->
-          <ol class="timeline">
-            @for (step of timeline(order); track step.key) {
-              <li class="tl-step" [attr.data-state]="step.state">
-                <span class="tl-dot" aria-hidden="true"></span>
-                <span class="tl-label">{{ step.label }}</span>
-              </li>
-            }
-          </ol>
+          <!-- Gauche : frise d'avancement — même modèle que la page de détail
+               (règlement, puis production selon l'acheminement). -->
+          <fold-timeline
+            class="timeline"
+            orientation="vertical"
+            ariaLabel="Avancement de la commande"
+            datePlacement="hidden"
+            [nodes]="timeline(order)"
+          >
+            <ng-template #node let-n>
+              <span class="tl-label" [attr.data-state]="n.state">{{ n.label }}</span>
+            </ng-template>
+          </fold-timeline>
 
           <!-- Droite : composition de la commande + écarts au gabarit. -->
           <div class="composition">

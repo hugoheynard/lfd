@@ -9,5 +9,5 @@ export {
   formatVatRate,
   formatOrderDate,
 } from './order-format';
-export { buildTimeline, canSettle } from './order-timeline';
+export { buildTimeline, canSettle, toTimelineNodes } from './order-timeline';
 export type { StepState, TimelineStep } from './order-timeline';

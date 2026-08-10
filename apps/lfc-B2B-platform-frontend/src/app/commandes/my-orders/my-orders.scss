@@ -141,60 +141,30 @@
   }
 }
 
+/* Le rail appartient à `fold-timeline` : ne reste que la zone de libellé, la
+   seule qu'il délègue, et les deux nuances qu'il ne porte pas (échec, jalon non
+   suivi). Les règles sont les mêmes que sur la page de détail. */
 .timeline {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
-.tl-step {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--fold-space-sm, 0.6rem);
-  padding-bottom: var(--fold-space-sm, 0.6rem);
-  position: relative;
-}
-/* Trait vertical reliant les jalons. */
-.tl-step:not(:last-child) .tl-dot::after {
-  content: '';
-  position: absolute;
-  left: 0.28rem;
-  top: 0.75rem;
-  width: 2px;
-  height: calc(100% - 0.4rem);
-  background: var(--fold-color-border);
-}
-.tl-dot {
-  position: relative;
-  flex: 0 0 auto;
-  width: 0.65rem;
-  height: 0.65rem;
-  margin-top: 0.15rem;
-  border-radius: 50%;
-  background: var(--fold-color-border);
-}
+
 .tl-label {
   font-size: var(--fold-text-sm, 0.875rem);
-  color: var(--fold-color-text-muted);
   line-height: 1.2;
 }
-.tl-step[data-state='done'] .tl-dot {
-  background: var(--fold-color-success, #1a7f4b);
-}
-.tl-step[data-state='done'] .tl-label {
-  color: var(--fold-color-text);
-}
-.tl-step[data-state='current'] .tl-dot {
-  background: var(--fold-color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fold-color-primary) 22%, transparent);
-}
-.tl-step[data-state='current'] .tl-label {
-  color: var(--fold-color-text);
+.tl-label[data-state='current'] {
   font-weight: 700;
 }
-.tl-step[data-state='cancelled'] .tl-dot {
-  background: var(--fold-color-danger, #c0392b);
+.tl-label[data-state='upcoming'] {
+  color: var(--fold-color-text-muted);
+}
+.tl-label[data-state='failed'] {
+  color: var(--fold-color-alert);
+  font-weight: 700;
+}
+.tl-label[data-state='untracked'] {
+  color: var(--fold-color-text-muted);
+  opacity: 0.7;
 }
 
 .comp-title {

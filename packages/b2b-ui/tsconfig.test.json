@@ -1,0 +1,16 @@
+{
+  // ts-jest compile les specs en CommonJS en mémoire — on surcharge le module
+  // `preserve` de la lib juste pour les tests (miroir de @lfd/contracts).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "allowSyntheticDefaultImports": true,
+    "types": ["jest", "node"],
+    "noEmit": true
+  },
+  "include": ["src"]
+}

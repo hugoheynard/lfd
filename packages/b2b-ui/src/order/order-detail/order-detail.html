@@ -26,15 +26,21 @@
     </p>
   </header>
 
-  <!-- Frise d'avancement : règlement, puis production jusqu'à la remise. -->
-  <ol class="od-track">
-    @for (step of steps(); track step.key) {
-    <li class="od-step" [attr.data-state]="step.state">
-      <span class="od-dot" aria-hidden="true"></span>
-      <span class="od-step-label">{{ step.label }}</span>
-    </li>
-    }
-  </ol>
+  <!-- Frise d'avancement : règlement d'abord (le régime décide s'il bloque),
+       puis production jusqu'à la remise — dont les jalons dépendent de
+       l'acheminement. Le rail est `fold-timeline` ; seule la zone de libellé est
+       projetée, pour teinter l'échec et griser ce qui n'est pas encore suivi. -->
+  <fold-timeline
+    class="od-track"
+    orientation="horizontal"
+    ariaLabel="Avancement de la commande"
+    datePlacement="hidden"
+    [nodes]="nodes()"
+  >
+    <ng-template #node let-n>
+      <span class="od-node" [attr.data-state]="n.state">{{ n.label }}</span>
+    </ng-template>
+  </fold-timeline>
 
   <div class="od-grid">
     <section class="od-lines" aria-labelledby="od-lines-title">

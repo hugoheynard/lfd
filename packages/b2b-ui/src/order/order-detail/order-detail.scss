@@ -76,92 +76,37 @@
 
 /* ── Frise ──────────────────────────────────────────────────────────────── */
 
-/* Horizontale sur une page de détail (la place est là), verticale dès qu'elle
-   ne tient plus : cinq libellés côte à côte deviennent illisibles avant même
-   d'atteindre le mobile. */
+/* Le rail, les points, la barre de progression et le repli en vertical
+   appartiennent à `fold-timeline`. Il ne reste ici que la zone de libellé, la
+   seule que le composant délègue — et les deux nuances qu'il ne sait pas porter :
+   l'échec (aucun ton par nœud) et le jalon que rien ne suit encore. */
 .od-track {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: var(--fold-space-xs);
+  display: block;
 }
 
-.od-step {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding-top: 0.1rem;
-}
-
-/* Le trait qui relie deux jalons part du point et s'arrête au suivant. */
-.od-step:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  inset-inline-start: 0.75rem;
-  top: 0.4rem;
-  width: calc(100% - 0.75rem);
-  height: 2px;
-  background: var(--fold-color-border);
-}
-
-.od-dot {
-  position: relative;
-  z-index: 1;
-  width: 0.8rem;
-  height: 0.8rem;
-  border-radius: 50%;
-  background: var(--fold-color-border);
-}
-
-.od-step-label {
+.od-node {
   font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
   line-height: 1.25;
 }
 
-.od-step[data-state='done'] .od-dot {
-  background: var(--fold-color-success);
-}
-.od-step[data-state='done'] .od-step-label {
-  color: var(--fold-color-text);
-}
-.od-step[data-state='current'] .od-dot {
-  background: var(--fold-color-primary);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fold-color-primary) 20%, transparent);
-}
-.od-step[data-state='current'] .od-step-label {
-  color: var(--fold-color-text);
+.od-node[data-state='current'] {
   font-weight: 700;
 }
-.od-step[data-state='cancelled'] .od-dot {
-  background: var(--fold-color-alert);
+
+.od-node[data-state='upcoming'] {
+  color: var(--fold-color-text-muted);
 }
 
-@media (max-width: 48rem) {
-  .od-track {
-    grid-auto-flow: row;
-    gap: 0;
-  }
-  .od-step {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: var(--fold-space-sm);
-    padding-bottom: var(--fold-space-sm);
-  }
-  .od-step:not(:last-child)::after {
-    inset-inline-start: 0.35rem;
-    top: 0.9rem;
-    width: 2px;
-    height: calc(100% - 0.6rem);
-  }
-  .od-dot {
-    margin-top: 0.15rem;
-    flex: 0 0 auto;
-  }
+.od-node[data-state='failed'] {
+  color: var(--fold-color-alert);
+  font-weight: 700;
+}
+
+/* Un jalon réel du parcours, mais qu'aucune colonne ne suit : affiché en
+   retrait, parce qu'on montre le chemin sans savoir où on en est dessus. */
+.od-node[data-state='untracked'] {
+  color: var(--fold-color-text-muted);
+  opacity: 0.7;
 }
 
 /* ── Corps ──────────────────────────────────────────────────────────────── */

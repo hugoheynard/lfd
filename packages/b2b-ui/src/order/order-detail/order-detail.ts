@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { BillingAddressPayload, OrderLineView, OrderView } from '@lfd/contracts';
-import { FoldBadgeComponent } from 'fold-ng';
+import { FoldBadgeComponent, FoldTimelineComponent, type FoldTimelineNode } from 'fold-ng';
 
 import {
   formatCents,
@@ -12,7 +12,7 @@ import {
   paymentStatusLabel,
   paymentStatusVariant,
 } from '../order-format';
-import { buildTimeline, type TimelineStep } from '../order-timeline';
+import { buildTimeline, toTimelineNodes } from '../order-timeline';
 
 /** Une ligne retirée du gabarit récurrent, prête à afficher. */
 interface RemovedLine {
@@ -47,7 +47,7 @@ interface TotalRow {
 @Component({
   selector: 'lfd-order-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent],
+  imports: [FoldBadgeComponent, FoldTimelineComponent],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.scss',
 })
@@ -62,7 +62,15 @@ export class OrderDetail {
    */
   readonly nameBySku = input<ReadonlyMap<string, string>>(new Map());
 
-  protected readonly steps = computed<readonly TimelineStep[]>(() => buildTimeline(this.order()));
+  /**
+   * La frise, en nœuds `fold-timeline`. Le rail, les points, la barre de
+   * progression et le libellé de progression appartiennent au composant fold ;
+   * on ne lui projette que la zone de libellé, pour teinter l'échec et mettre en
+   * retrait les jalons que rien ne suit encore.
+   */
+  protected readonly nodes = computed<readonly FoldTimelineNode[]>(() =>
+    toTimelineNodes(buildTimeline(this.order())),
+  );
 
   protected readonly statusLabel = computed(() => orderStatusLabel(this.order().status));
   protected readonly statusVariant = computed(() => orderStatusVariant(this.order().status));
