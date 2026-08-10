@@ -3,6 +3,8 @@ import type { OrderView } from "@lfd/contracts";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import { OrderGuardReader, type OrderRole } from "../../../domain/ports/order-guard.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
+import { GetAdminOrderQuery } from "../get-admin-order.query.js";
 import { GetOrderHandler } from "../get-order.handler.js";
 import { GetOrderQuery } from "../get-order.query.js";
 
@@ -13,6 +15,7 @@ function reader(owned: OwnedOrder | null): OrderReader {
   return {
     listByCompany: () => Promise.resolve([]),
     listPersonal: () => Promise.resolve([]),
+    listForAdmin: () => Promise.resolve([]),
     findById: () => Promise.resolve(owned),
   };
 }
@@ -81,6 +84,28 @@ describe("GetOrderHandler", () => {
     const handler = new GetOrderHandler(guard(null), reader(null));
 
     await expect(handler.execute(new GetOrderQuery("usr_1", "ord_x"))).rejects.toBeInstanceOf(
+      OrderNotFoundError,
+    );
+  });
+});
+
+describe("GetAdminOrderHandler", () => {
+  it("rend la commande sans demander de rôle : le staff n'est ni client ni membre", async () => {
+    const handler = new GetAdminOrderHandler(reader(ofCompany("cmp_1")));
+
+    await expect(handler.execute(new GetAdminOrderQuery("ord_1"))).resolves.toBe(VIEW);
+  });
+
+  it("rend aussi une commande personnelle, qu'aucun mur d'entreprise ne couvre", async () => {
+    const handler = new GetAdminOrderHandler(reader(personal("usr_1")));
+
+    await expect(handler.execute(new GetAdminOrderQuery("ord_1"))).resolves.toBe(VIEW);
+  });
+
+  it("lève le même 404 sur une commande inexistante", async () => {
+    const handler = new GetAdminOrderHandler(reader(null));
+
+    await expect(handler.execute(new GetAdminOrderQuery("ord_x"))).rejects.toBeInstanceOf(
       OrderNotFoundError,
     );
   });

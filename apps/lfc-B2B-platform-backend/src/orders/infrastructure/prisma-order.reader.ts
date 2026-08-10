@@ -1,4 +1,6 @@
 import {
+  type AdminOrderRow,
+  type AdminOrdersQuery,
   type BillingAddressPayload,
   billingAddressPayloadSchema,
   type CartAdjustment,
@@ -112,6 +114,36 @@ export class PrismaOrderReader extends OrderReader {
     return rows.map((row) => toOrderView(row));
   }
 
+  /**
+   * La liste staff. Une seule requête, avec les deux jointures qui nomment le
+   * client : la société si elle existe, la personne sinon. Les résoudre côté
+   * écran aurait voulu dire N appels pour une liste de N lignes.
+   */
+  async listForAdmin(query: AdminOrdersQuery): Promise<readonly AdminOrderRow[]> {
+    const rows = await this.prisma.order.findMany({
+      where: {
+        ...(query.companyId === undefined ? {} : { companyId: query.companyId }),
+        ...(query.status === undefined ? {} : { status: query.status }),
+      },
+      orderBy: { createdAt: "desc" },
+      take: query.limit,
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        paymentStatus: true,
+        fulfillmentMethod: true,
+        totalCents: true,
+        companyId: true,
+        fromSubscriptionId: true,
+        createdAt: true,
+        company: { select: { raisonSociale: true } },
+        placedBy: { select: { email: true, firstName: true, lastName: true } },
+      },
+    });
+    return rows.map(toAdminRow);
+  }
+
   async findById(orderId: string): Promise<OwnedOrder | null> {
     const row = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -126,6 +158,53 @@ export class PrismaOrderReader extends OrderReader {
       placedByUserId: row.placedByUserId,
     };
   }
+}
+
+/** Ce que Prisma rend pour la liste staff (les deux jointures incluses). */
+interface AdminRow {
+  readonly id: string;
+  readonly orderNumber: string;
+  readonly status: OrderStatus;
+  readonly paymentStatus: PaymentStatus;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly totalCents: number;
+  readonly companyId: string | null;
+  readonly fromSubscriptionId: string | null;
+  readonly createdAt: Date;
+  readonly company: { readonly raisonSociale: string } | null;
+  readonly placedBy: {
+    readonly email: string;
+    readonly firstName: string;
+    readonly lastName: string;
+  };
+}
+
+function toAdminRow(row: AdminRow): AdminOrderRow {
+  return {
+    id: row.id,
+    orderNumber: row.orderNumber,
+    placedAt: row.createdAt.toISOString(),
+    status: row.status,
+    paymentStatus: row.paymentStatus,
+    fulfillmentMethod: row.fulfillmentMethod,
+    totalCents: row.totalCents,
+    customerLabel: customerLabelOf(row),
+    companyId: row.companyId,
+    fromSubscription: row.fromSubscriptionId !== null,
+  };
+}
+
+/**
+ * Qui a commandé, en clair. La société prime quand il y en a une ; sinon la
+ * personne, par son nom si on le connaît et par son e-mail sinon — jamais un
+ * identifiant technique, qui ne dit rien au téléphone.
+ */
+function customerLabelOf(row: AdminRow): string {
+  if (row.company !== null && row.company.raisonSociale !== "") {
+    return row.company.raisonSociale;
+  }
+  const fullName = `${row.placedBy.firstName} ${row.placedBy.lastName}`.trim();
+  return fullName === "" ? row.placedBy.email : fullName;
 }
 
 /** Une date `@db.Date` → `YYYY-MM-DD`, ou `null`. */

@@ -6,7 +6,9 @@ import { PaymentsModule } from "../payments/payments.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
+import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
+import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
 import { ListPersonalOrdersHandler } from "./application/queries/list-personal-orders.handler.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
@@ -18,6 +20,7 @@ import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { SeededProductCatalog } from "./infrastructure/seeded-product-catalog.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
+import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
 
 /**
@@ -30,13 +33,15 @@ import { OrdersController } from "./http/orders.controller.js";
  */
 @Module({
   imports: [CqrsModule, PickupAddressesModule, DeliveryZonesModule, PaymentsModule],
-  controllers: [OrdersController, CompanyOrdersController],
+  controllers: [OrdersController, CompanyOrdersController, AdminOrdersController],
   providers: [
     PlaceOrderHandler,
     ConfirmOrderPaymentHandler,
     ListCompanyOrdersHandler,
     ListPersonalOrdersHandler,
     GetOrderHandler,
+    GetAdminOrderHandler,
+    ListAdminOrdersHandler,
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     { provide: ProductCatalogReader, useClass: SeededProductCatalog },
     { provide: OrderRepository, useClass: PrismaOrderRepository },

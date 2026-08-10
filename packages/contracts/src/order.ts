@@ -205,3 +205,45 @@ export interface PlacedOrderResponse {
   readonly orderNumber: string;
   readonly payment?: OrderPaymentIntent;
 }
+
+// ─── Surface ADMIN (staff) ───────────────────────────────────────────────────
+
+/**
+ * Une commande dans la liste **staff**. Volontairement distincte d'`OrderView` :
+ * un commercial parcourt des dizaines de lignes, il lui faut **qui a commandé**
+ * — que la vue client n'a aucune raison de porter, le client se connaissant — et
+ * pas les lignes d'articles, qu'il ne lit qu'après avoir ouvert.
+ */
+export interface AdminOrderRow {
+  readonly id: string;
+  readonly orderNumber: string;
+  /** ISO. Passée le. */
+  readonly placedAt: string;
+  readonly status: OrderStatus;
+  readonly paymentStatus: PaymentStatus;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly totalCents: number;
+  /**
+   * Qui a commandé, en clair : la raison sociale, ou la personne quand la
+   * commande est **zéro friction** (sans entreprise). Résolu au serveur — c'est
+   * une jointure, pas une affaire d'écran.
+   */
+  readonly customerLabel: string;
+  /** `null` = commande personnelle, sans entreprise. */
+  readonly companyId: string | null;
+  /** Issue d'un panier récurrent — un rythme, pas un achat isolé. */
+  readonly fromSubscription: boolean;
+}
+
+/**
+ * Filtres de la liste staff. `limit` est **borné** : une liste d'administration
+ * sans plafond finit par ramener toute la table le jour où le catalogue marche.
+ */
+export const adminOrdersQuerySchema = z.object({
+  /** Restreint à une entreprise. Absent = toutes, entreprises et personnelles. */
+  companyId: z.string().trim().min(1).optional(),
+  /** Restreint à un état d'avancement. */
+  status: orderStatusSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+export type AdminOrdersQuery = z.infer<typeof adminOrdersQuerySchema>;

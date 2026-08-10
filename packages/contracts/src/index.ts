@@ -113,6 +113,8 @@ export { cartAdjustmentSchema, cartAdjustmentCents } from "./cart-adjustment.js"
 export type { CartAdjustment } from "./cart-adjustment.js";
 export { pickupAddressPayloadSchema } from "./pickup.js";
 export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
+export { adminOrdersQuerySchema } from "./order.js";
+export type { AdminOrderRow, AdminOrdersQuery } from "./order.js";
 export {
   clockTimeSchema,
   orderCutoffPayloadSchema,

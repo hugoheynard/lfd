@@ -1,4 +1,4 @@
-import type { OrderView } from "@lfd/contracts";
+import type { AdminOrderRow, AdminOrdersQuery, OrderView } from "@lfd/contracts";
 
 /**
  * Une commande **avec de quoi la murer** : la vue, plus les deux colonnes qui
@@ -34,4 +34,12 @@ export abstract class OrderReader {
    * si elle n'existe pas.
    */
   abstract findById(orderId: string): Promise<OwnedOrder | null>;
+
+  /**
+   * Les commandes vues du **staff**, la plus récente en tête : toutes celles que
+   * les filtres laissent passer, entreprises **et** personnelles. Aucun mur ici —
+   * c'est la porte staff du contrôleur qui décide, et un commercial qui ne
+   * verrait que les commandes d'entreprise raterait tout le zéro friction.
+   */
+  abstract listForAdmin(query: AdminOrdersQuery): Promise<readonly AdminOrderRow[]>;
 }
