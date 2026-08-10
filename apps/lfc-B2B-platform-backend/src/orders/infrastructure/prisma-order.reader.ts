@@ -17,7 +17,7 @@ import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import { OrderReader, type OwnedOrder } from "../domain/ports/order.reader.js";
+import { OrderReader, type HandoverOrder, type OwnedOrder } from "../domain/ports/order.reader.js";
 
 /** Une ligne de commande telle que Prisma la sélectionne. */
 interface OrderLineRow {
@@ -50,6 +50,8 @@ interface OrderRow {
   readonly currency: string;
   readonly fromSubscriptionId: string | null;
   readonly recurringDeltas: Prisma.JsonValue | null;
+  readonly handoverToken: string | null;
+  readonly handedOverAt: Date | null;
   readonly createdAt: Date;
   readonly lines: readonly OrderLineRow[];
 }
@@ -75,6 +77,8 @@ const ORDER_SELECT = {
   currency: true,
   fromSubscriptionId: true,
   recurringDeltas: true,
+  handoverToken: true,
+  handedOverAt: true,
   createdAt: true,
   lines: {
     select: {
@@ -158,6 +162,60 @@ export class PrismaOrderReader extends OrderReader {
       placedByUserId: row.placedByUserId,
     };
   }
+
+  async findByHandoverToken(token: string): Promise<HandoverOrder | null> {
+    const row = await this.prisma.order.findUnique({
+      where: { handoverToken: token },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        fulfillmentMethod: true,
+        requestedDeliveryDate: true,
+        pickupAddress: true,
+        handedOverAt: true,
+        handedOverBy: true,
+        createdAt: true,
+        companyId: true,
+        company: { select: { raisonSociale: true } },
+        placedBy: { select: { email: true, firstName: true, lastName: true } },
+        lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+      },
+    });
+    if (row === null) {
+      return null;
+    }
+    return {
+      orderId: row.id,
+      orderNumber: row.orderNumber,
+      customerLabel: customerLabelOf(row),
+      placedAt: row.createdAt,
+      requestedDeliveryDate: row.requestedDeliveryDate,
+      pickupLabel: pickupLabelOf(row.pickupAddress),
+      status: row.status,
+      fulfillmentMethod: row.fulfillmentMethod,
+      handedOverAt: row.handedOverAt,
+      handedOverBy: row.handedOverBy,
+      lines: row.lines.map((line) => ({
+        sku: line.sku,
+        productName: line.productNameSnapshot,
+        quantity: line.quantity,
+      })),
+    };
+  }
+}
+
+/**
+ * Le nom du point de retrait figé à la commande. Le snapshot est validé plutôt
+ * que casté — une commande antérieure au point de retrait n'en porte pas, et un
+ * JSON d'une autre forme ne doit pas remonter en vue.
+ */
+function pickupLabelOf(value: Prisma.JsonValue | null): string | null {
+  const address = parseAddress(value);
+  if (address === null || address.label === "") {
+    return null;
+  }
+  return address.label;
 }
 
 /** Ce que Prisma rend pour la liste staff (les deux jointures incluses). */
@@ -194,12 +252,22 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
   };
 }
 
+/** Les deux jointures qui suffisent à nommer un client — rien de plus. */
+interface NameableRow {
+  readonly company: { readonly raisonSociale: string } | null;
+  readonly placedBy: {
+    readonly email: string;
+    readonly firstName: string;
+    readonly lastName: string;
+  };
+}
+
 /**
  * Qui a commandé, en clair. La société prime quand il y en a une ; sinon la
  * personne, par son nom si on le connaît et par son e-mail sinon — jamais un
- * identifiant technique, qui ne dit rien au téléphone.
+ * identifiant technique, qui ne dit rien au téléphone ni au comptoir.
  */
-function customerLabelOf(row: AdminRow): string {
+function customerLabelOf(row: NameableRow): string {
   if (row.company !== null && row.company.raisonSociale !== "") {
     return row.company.raisonSociale;
   }
@@ -240,6 +308,8 @@ function toOrderView(row: OrderRow): OrderView {
     recurringDeltas: parseDeltas(row.recurringDeltas),
     placedAt: row.createdAt.toISOString(),
     lines: row.lines.map(toLineView),
+    handoverToken: row.handoverToken,
+    handedOverAt: row.handedOverAt === null ? null : row.handedOverAt.toISOString(),
   };
 }
 

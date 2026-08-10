@@ -1,11 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
-import { PaymentStatus, Prisma } from "../../infra/database/client/client.js";
+import { OrderStatus, PaymentStatus, Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { IdGenerator } from "../../infra/id/id-generator.js";
+import { SecretGenerator } from "../../infra/secret/secret-generator.js";
 import { Clock } from "../../infra/time/clock.js";
 import type { Order } from "../domain/entities/order.js";
 import { OrderRepository, type PlacedOrder } from "../domain/ports/order.repository.js";
+import { issuesHandoverToken } from "../domain/services/handover.js";
 
 /** Adaptateur Prisma des commandes. */
 @Injectable()
@@ -14,6 +16,7 @@ export class PrismaOrderRepository extends OrderRepository {
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
+    private readonly secrets: SecretGenerator,
   ) {
     super();
   }
@@ -38,6 +41,11 @@ export class PrismaOrderRepository extends OrderRepository {
     return this.prisma.order.create({
       data: {
         orderNumber: this.generateOrderNumber(),
+        // Le jeton de remise naît ici, au même endroit et pour la même raison que
+        // le numéro : c'est une valeur générée à l'écriture, que l'agrégat n'a
+        // aucun moyen de produire sans dépendre d'une source d'aléa. Seul le
+        // retrait en reçoit un — cf. `issuesHandoverToken`.
+        handoverToken: issuesHandoverToken(state.fulfillmentMethod) ? this.secrets.next() : null,
         companyId: state.companyId,
         placedByUserId: state.placedByUserId,
         requestedDeliveryDate: state.requestedDeliveryDate,
@@ -85,5 +93,16 @@ export class PrismaOrderRepository extends OrderRepository {
       where: { stripePaymentIntentId: paymentIntentId, paymentStatus: PaymentStatus.pending },
       data: { paymentStatus: PaymentStatus.failed },
     });
+  }
+
+  async markHandedOver(token: string, at: Date, by: string): Promise<boolean> {
+    // `handedOverAt: null` dans le WHERE : c'est la base qui arbitre, donc deux
+    // scans simultanés du même QR produisent exactement une remise. La règle
+    // métier, elle, a déjà été appliquée par l'appelant sur l'état lu.
+    const { count } = await this.prisma.order.updateMany({
+      where: { handoverToken: token, handedOverAt: null },
+      data: { handedOverAt: at, handedOverBy: by, status: OrderStatus.fulfilled },
+    });
+    return count === 1;
   }
 }

@@ -14,6 +14,7 @@ function recordingRepo(sink: { paid: string[]; failed: string[] }): OrderReposit
       sink.failed.push(id);
       return Promise.resolve();
     },
+    markHandedOver: () => Promise.reject(new Error("non utilisé")),
   };
 }
 

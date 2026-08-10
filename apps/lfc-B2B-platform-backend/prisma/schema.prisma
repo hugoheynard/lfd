@@ -530,6 +530,17 @@ model Order {
   fromSubscriptionId String? @map("from_subscription_id")
   recurringDeltas    Json?   @map("recurring_deltas")
 
+  // Remise en main propre (retrait au labo). `handoverToken` est un secret
+  // ALÉATOIRE, pas le numéro de commande : celui-ci est imprimé sur le bon de
+  // livraison, donc public, donc sans valeur de preuve. Émis à la passation pour
+  // les seules commandes `pickup`. `@unique` = c'est la clé de lecture du scan.
+  // Les deux autres colonnes SONT l'attestation : quand, et par qui (le claim
+  // `sub` du jeton staff, figé — un annuaire réécrit ne doit pas réécrire une
+  // preuve, et le `sub` reste résolvable même après un changement de nom).
+  handoverToken String?   @unique @map("handover_token")
+  handedOverAt  DateTime? @map("handed_over_at")
+  handedOverBy  String?   @map("handed_over_by")
+
   createdAt DateTime @default(now()) @map("created_at") // = passée le
   updatedAt DateTime @updatedAt @map("updated_at")
 

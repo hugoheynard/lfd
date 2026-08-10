@@ -4,9 +4,11 @@ import { CqrsModule } from "@nestjs/cqrs";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
 import { PaymentsModule } from "../payments/payments.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
+import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
+import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
 import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
@@ -20,6 +22,7 @@ import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { SeededProductCatalog } from "./infrastructure/seeded-product-catalog.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
+import { AdminHandoverController } from "./http/admin-handover.controller.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
 
@@ -33,7 +36,12 @@ import { OrdersController } from "./http/orders.controller.js";
  */
 @Module({
   imports: [CqrsModule, PickupAddressesModule, DeliveryZonesModule, PaymentsModule],
-  controllers: [OrdersController, CompanyOrdersController, AdminOrdersController],
+  controllers: [
+    OrdersController,
+    CompanyOrdersController,
+    AdminOrdersController,
+    AdminHandoverController,
+  ],
   providers: [
     PlaceOrderHandler,
     ConfirmOrderPaymentHandler,
@@ -42,6 +50,8 @@ import { OrdersController } from "./http/orders.controller.js";
     GetOrderHandler,
     GetAdminOrderHandler,
     ListAdminOrdersHandler,
+    GetHandoverHandler,
+    ConfirmHandoverHandler,
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     { provide: ProductCatalogReader, useClass: SeededProductCatalog },
     { provide: OrderRepository, useClass: PrismaOrderRepository },

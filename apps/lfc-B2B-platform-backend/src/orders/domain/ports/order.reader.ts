@@ -1,4 +1,11 @@
-import type { AdminOrderRow, AdminOrdersQuery, OrderView } from "@lfd/contracts";
+import type {
+  AdminOrderRow,
+  AdminOrdersQuery,
+  FulfillmentMethod,
+  OrderHandoverLine,
+  OrderStatus,
+  OrderView,
+} from "@lfd/contracts";
 
 /**
  * Une commande **avec de quoi la murer** : la vue, plus les deux colonnes qui
@@ -42,4 +49,36 @@ export abstract class OrderReader {
    * verrait que les commandes d'entreprise raterait tout le zéro friction.
    */
   abstract listForAdmin(query: AdminOrdersQuery): Promise<readonly AdminOrderRow[]>;
+
+  /**
+   * La commande derrière un **jeton de remise**, ou `null` si le jeton n'est
+   * attribué à aucune. Aucune règle appliquée ici : le port rend l'état, c'est
+   * `handoverBlocker` qui dit si la remise est possible — une seule voix pour
+   * une seule règle.
+   */
+  abstract findByHandoverToken(token: string): Promise<HandoverOrder | null>;
+}
+
+/**
+ * Ce qu'il faut savoir d'une commande **au comptoir** : de quoi la nommer, de
+ * quoi la recompter, et de quoi juger si on peut la remettre.
+ *
+ * Aucun montant — celui qui remet un colis coche des articles ; faire apparaître
+ * un prix négocié devant la personne qui attend n'aide personne. Même raison que
+ * sur le bon de livraison.
+ */
+export interface HandoverOrder {
+  readonly orderId: string;
+  readonly orderNumber: string;
+  /** La raison sociale, ou la personne quand la commande est sans entreprise. */
+  readonly customerLabel: string;
+  readonly placedAt: Date;
+  readonly requestedDeliveryDate: Date | null;
+  /** Nom du point de retrait figé à la commande, ou `null` s'il n'en portait pas. */
+  readonly pickupLabel: string | null;
+  readonly status: OrderStatus;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly handedOverAt: Date | null;
+  readonly handedOverBy: string | null;
+  readonly lines: readonly OrderHandoverLine[];
 }

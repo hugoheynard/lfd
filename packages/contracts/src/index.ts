@@ -161,6 +161,7 @@ export type {
   RecurringDeltas,
   RecurringDeltaLine,
 } from "./order.js";
+export type { OrderHandoverLine, OrderHandoverView } from "./order-handover.js";
 export {
   recurrenceSchema,
   subscriptionStatusSchema,

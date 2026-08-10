@@ -83,3 +83,27 @@ export class InvalidOrderPaymentError extends DomainError {
     super("orders.payment.invalid", reason);
   }
 }
+
+/**
+ * Le jeton de remise scanné ne correspond à aucune commande — **404** comme
+ * partout : un jeton inconnu et un jeton qui n'a jamais existé doivent être
+ * indiscernables, sans quoi essayer des chaînes au hasard finirait par dire
+ * lesquelles sont attribuées.
+ */
+export class HandoverTokenNotFoundError extends ResourceNotFoundError {
+  constructor() {
+    super("orders.handover.not_found", "Ce code de retrait ne correspond à aucune commande.");
+  }
+}
+
+/**
+ * La commande existe mais son état interdit la remise (annulée, déjà remise, en
+ * livraison). Refus **métier** (409) : la demande est bien formée, c'est l'état
+ * du monde qui s'y oppose. Le message vient de `handoverBlocker` — il sera lu
+ * tel quel par la personne au comptoir, d'où le refus d'un code générique.
+ */
+export class HandoverRefusedError extends BusinessError {
+  constructor(readonly reason: string) {
+    super("orders.handover.refused", reason);
+  }
+}

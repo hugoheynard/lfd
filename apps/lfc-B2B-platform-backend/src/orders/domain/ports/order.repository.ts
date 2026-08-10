@@ -35,4 +35,17 @@ export abstract class OrderRepository {
    * idempotence : ne passe à `failed` que ce qui était `pending`.
    */
   abstract markPaymentFailed(paymentIntentId: string): Promise<void>;
+
+  /**
+   * Grave la **remise en main propre** : horodatage, auteur, et passage à
+   * `fulfilled`. Rend `false` si la commande était **déjà remise**.
+   *
+   * L'appelant a déjà appliqué la règle (`handoverBlocker`) sur un état lu juste
+   * avant ; ce booléen ne la rejoue pas, il ferme la **course** entre deux
+   * comptoirs qui scanneraient le même QR dans la même seconde. La condition
+   * `handedOverAt = null` est évaluée par la base, donc exactement une des deux
+   * écritures gagne — garantie qu'un `SELECT` puis `UPDATE` applicatif ne peut
+   * pas donner.
+   */
+  abstract markHandedOver(token: string, at: Date, by: string): Promise<boolean>;
 }

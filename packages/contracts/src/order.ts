@@ -176,6 +176,18 @@ export interface OrderView {
   /** ISO. Passée le. */
   readonly placedAt: string;
   readonly lines: readonly OrderLineView[];
+  /**
+   * Le **jeton de remise** — ce que le QR du client encode, et rien d'autre.
+   * Émis à la passation pour les seules commandes en **retrait** ; `null` en
+   * coursier (il n'y a pas de comptoir) et sur les commandes antérieures.
+   *
+   * Il descend jusqu'au client parce que c'est lui qui doit le présenter. Ça n'en
+   * fait pas une faille : le jeton n'ouvre qu'une porte **staff**, qui exige une
+   * session admin. Le connaître ne permet pas d'attester sa propre remise.
+   */
+  readonly handoverToken: string | null;
+  /** ISO de la remise en main propre, ou `null` — la commande attend encore. */
+  readonly handedOverAt: string | null;
 }
 
 /**
