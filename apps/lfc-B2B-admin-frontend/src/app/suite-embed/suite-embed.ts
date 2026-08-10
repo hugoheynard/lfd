@@ -10,6 +10,8 @@ import {
   type HostMessage,
 } from '@lfd/suite-embed';
 
+import { isEmbedded } from './hosted';
+
 /** Délai max d'attente d'un token relayé par le shell. */
 const TOKEN_TIMEOUT_MS = 10_000;
 
@@ -98,7 +100,7 @@ export class SuiteEmbed {
   }
 
   private detectHosted(): boolean {
-    return this.win !== null && this.win.self !== this.win.top;
+    return isEmbedded(this.win);
   }
 
   /** Origine du shell depuis `?suiteHost=` ; null si absente/invalide. */

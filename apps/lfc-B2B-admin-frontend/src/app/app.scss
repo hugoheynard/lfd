@@ -8,6 +8,25 @@ fold-app-shell {
   height: 100%;
 }
 
+/* Écran d'attente pendant la résolution de session — volontairement nu. */
+.boot {
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+
+/* L'identité connectée, au-dessus de la déconnexion. Tronquée : une adresse
+   longue ne doit pas élargir le rail. */
+.rail-who {
+  margin: 0 0 var(--fold-space-xs);
+  padding-inline: var(--fold-space-sm);
+  overflow: hidden;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Rail brand : une pastille carrée "B2B" + le mot "Admin" à côté (masqué quand
    le rail est replié). */
 .rail-brand {

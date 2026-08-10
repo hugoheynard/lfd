@@ -1,0 +1,17 @@
+<main class="login">
+  <section class="login-card" aria-labelledby="login-title">
+    <span class="login-mark" aria-hidden="true">B2B</span>
+
+    <h1 class="login-title" id="login-title">Back-office B2B</h1>
+    <p class="login-lead">
+      Cet espace est réservé à l'équipe La Folie Coffee. La connexion passe par le compte
+      professionnel.
+    </p>
+
+    <button foldButton icon="login" class="login-cta" (click)="login()">Se connecter</button>
+
+    <!-- Dit à qui s'adresser plutôt que de laisser un échec sans issue : un
+         commercial qui n'a pas d'accès ne peut RIEN faire depuis cet écran. -->
+    <p class="login-help">Pas encore d'accès ? Demande-le à l'administrateur de la suite.</p>
+  </section>
+</main>

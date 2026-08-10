@@ -1,73 +1,86 @@
-<fold-app-shell
-  #shell="foldAppShell"
-  [headerHeight]="0"
-  [(mobileNavOpen)]="mobileNavOpen"
->
-  <!-- Rail primaire — le menu de l'app. Déployé par défaut, repliable. Devient un
-       tiroir off-canvas ≤768px. Embarqué : `secondary` (2ᵉ rail sous le switcher). -->
-  <fold-menu
-    railPrimary
-    collapsible
-    tint="primary"
-    [level]="hosted ? 'secondary' : 'primary'"
-    [(expanded)]="menuExpanded"
-  >
-    <a header class="rail-brand" routerLink="/" aria-label="LFC B2B admin — accueil">
-      <span class="brand-mark" aria-hidden="true">B2B</span>
-      @if (menuExpanded()) {
-        <span class="rail-wordmark">Admin</span>
+@if (resolving()) {
+  <!-- Session en cours de résolution. Ni porte ni coquille : afficher l'une puis
+       l'autre ferait clignoter un écran de connexion à quelqu'un de déjà connecté. -->
+  <div class="boot">
+    <fold-spinner label="Vérification de la session…" />
+  </div>
+} @else if (locked()) {
+  <app-staff-login />
+} @else {
+  <fold-app-shell #shell="foldAppShell" [headerHeight]="0" [(mobileNavOpen)]="mobileNavOpen">
+    <!-- Rail primaire — le menu de l'app. Déployé par défaut, repliable. Devient un
+         tiroir off-canvas ≤768px. Embarqué : `secondary` (2ᵉ rail sous le switcher). -->
+    <fold-menu
+      railPrimary
+      collapsible
+      tint="primary"
+      [level]="hosted ? 'secondary' : 'primary'"
+      [(expanded)]="menuExpanded"
+    >
+      <a header class="rail-brand" routerLink="/" aria-label="LFC B2B admin — accueil">
+        <span class="brand-mark" aria-hidden="true">B2B</span>
+        @if (menuExpanded()) {
+          <span class="rail-wordmark">Admin</span>
+        }
+      </a>
+
+      <a
+        fold-menu-item
+        icon="company"
+        label="Comptes clients"
+        routerLink="/comptes-clients"
+        routerLinkActive
+        #comptesRla="routerLinkActive"
+        [active]="comptesRla.isActive"
+        (click)="mobileNavOpen.set(false)"
+      ></a>
+
+      <a
+        fold-menu-item
+        icon="calendar"
+        label="Commercial"
+        routerLink="/commercial"
+        routerLinkActive
+        #commercialRla="routerLinkActive"
+        [active]="commercialRla.isActive"
+        (click)="mobileNavOpen.set(false)"
+      ></a>
+
+      <a
+        fold-menu-item
+        icon="settings"
+        label="Réglages"
+        routerLink="/reglages"
+        routerLinkActive
+        #reglagesRla="routerLinkActive"
+        [active]="reglagesRla.isActive"
+        (click)="mobileNavOpen.set(false)"
+      ></a>
+
+      <!-- QUI est connecté, quand la session est celle de cette app. Embarqué,
+           l'identité appartient au shell et s'affiche là-haut : la répéter ici
+           laisserait croire à deux sessions distinctes. -->
+      @if (menuExpanded() && email(); as who) {
+        <p footer class="rail-who" [title]="who">{{ who }}</p>
       }
-    </a>
 
-    <a
-      fold-menu-item
-      icon="company"
-      label="Comptes clients"
-      routerLink="/comptes-clients"
-      routerLinkActive
-      #comptesRla="routerLinkActive"
-      [active]="comptesRla.isActive"
-      (click)="mobileNavOpen.set(false)"
-    ></a>
+      <button
+        footer
+        fold-menu-item
+        icon="logout"
+        label="Déconnexion"
+        type="button"
+        (click)="logout()"
+      ></button>
+    </fold-menu>
 
-    <a
-      fold-menu-item
-      icon="calendar"
-      label="Commercial"
-      routerLink="/commercial"
-      routerLinkActive
-      #commercialRla="routerLinkActive"
-      [active]="commercialRla.isActive"
-      (click)="mobileNavOpen.set(false)"
-    ></a>
+    <!-- Contenu routé -->
+    <router-outlet />
 
-    <a
-      fold-menu-item
-      icon="settings"
-      label="Réglages"
-      routerLink="/reglages"
-      routerLinkActive
-      #reglagesRla="routerLinkActive"
-      [active]="reglagesRla.isActive"
-      (click)="mobileNavOpen.set(false)"
-    ></a>
+    <!-- Hôte unique des side-panels (fiche compte à venir). -->
+    <fold-panel-host />
 
-    <button
-      footer
-      fold-menu-item
-      icon="logout"
-      label="Déconnexion"
-      type="button"
-      (click)="logout()"
-    ></button>
-  </fold-menu>
-
-  <!-- Contenu routé -->
-  <router-outlet />
-
-  <!-- Hôte unique des side-panels (fiche compte à venir). -->
-  <fold-panel-host />
-
-  <!-- Toasts d'opération (succès/échec). -->
-  <fold-toast-container />
-</fold-app-shell>
+    <!-- Toasts d'opération (succès/échec). -->
+    <fold-toast-container />
+  </fold-app-shell>
+}
