@@ -4,7 +4,7 @@ import {
   placeOrderPayloadSchema,
   type PlacedOrderResponse,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { CurrentUser } from "../../infra/auth/current-user.decorator.js";
@@ -14,6 +14,7 @@ import {
   PlaceOrderCommand,
   type PlaceOrderResult,
 } from "../application/commands/place-order.command.js";
+import { GetOrderQuery } from "../application/queries/get-order.query.js";
 import { ListPersonalOrdersQuery } from "../application/queries/list-personal-orders.query.js";
 
 /**
@@ -56,5 +57,18 @@ export class OrdersController {
     return this.queries.execute<ListPersonalOrdersQuery, readonly OrderView[]>(
       new ListPersonalOrdersQuery(user.userId),
     );
+  }
+
+  /**
+   * Une commande, si le demandeur a le droit de la voir : la sienne (personnelle),
+   * ou celle d'une entreprise dont il est membre. Sinon **404**, sans distinguer
+   * l'inexistante de l'interdite.
+   *
+   * Déclarée **après** `mine` : Nest apparie dans l'ordre de déclaration, et
+   * `:id` avalerait sinon le mot `mine`.
+   */
+  @Get(":id")
+  async one(@CurrentUser() user: Principal, @Param("id") id: string): Promise<OrderView> {
+    return this.queries.execute<GetOrderQuery, OrderView>(new GetOrderQuery(user.userId, id));
   }
 }

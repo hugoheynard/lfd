@@ -6,6 +6,7 @@ import { PaymentsModule } from "../payments/payments.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
+import { GetOrderHandler } from "./application/queries/get-order.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
 import { ListPersonalOrdersHandler } from "./application/queries/list-personal-orders.handler.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
@@ -35,6 +36,7 @@ import { OrdersController } from "./http/orders.controller.js";
     ConfirmOrderPaymentHandler,
     ListCompanyOrdersHandler,
     ListPersonalOrdersHandler,
+    GetOrderHandler,
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     { provide: ProductCatalogReader, useClass: SeededProductCatalog },
     { provide: OrderRepository, useClass: PrismaOrderRepository },

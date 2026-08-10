@@ -14,6 +14,17 @@ export class OrderCompanyNotFoundError extends ResourceNotFoundError {
   }
 }
 
+/**
+ * La commande visée n'existe pas — **ou** le demandeur n'a pas à la voir. Un seul
+ * et même 404 dans les deux cas : distinguer « inexistante » de « pas à vous »
+ * confirmerait à un curieux qu'un numéro de commande est bien attribué.
+ */
+export class OrderNotFoundError extends ResourceNotFoundError {
+  constructor(readonly orderId: string) {
+    super("orders.not_found", "Commande introuvable.");
+  }
+}
+
 /** Une commande sans ligne n'a pas de sens (le schéma l'interdit déjà ; défense). */
 export class EmptyOrderError extends DomainError {
   constructor() {

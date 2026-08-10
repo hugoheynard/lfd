@@ -13,7 +13,7 @@ import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import { OrderReader } from "../domain/ports/order.reader.js";
+import { OrderReader, type OwnedOrder } from "../domain/ports/order.reader.js";
 
 /** Une ligne de commande telle que Prisma la sélectionne. */
 interface OrderLineRow {
@@ -106,6 +106,21 @@ export class PrismaOrderReader extends OrderReader {
       select: ORDER_SELECT,
     });
     return rows.map((row) => toOrderView(row));
+  }
+
+  async findById(orderId: string): Promise<OwnedOrder | null> {
+    const row = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { ...ORDER_SELECT, companyId: true, placedByUserId: true },
+    });
+    if (row === null) {
+      return null;
+    }
+    return {
+      view: toOrderView(row),
+      companyId: row.companyId,
+      placedByUserId: row.placedByUserId,
+    };
   }
 }
 
