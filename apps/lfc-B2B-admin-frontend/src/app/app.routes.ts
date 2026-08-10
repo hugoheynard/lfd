@@ -9,6 +9,15 @@ export const routes: Routes = [
       import('./comptes-clients/comptes-clients-page').then((m) => m.ComptesClientsPage),
   },
   {
+    // Le détail d'une commande vit HORS de la fiche client : une commande « zéro
+    // friction » n'a pas d'entreprise, donc pas de fiche où la loger. Une route
+    // de premier niveau les couvre toutes les deux.
+    path: 'commandes/:id',
+    title: 'Commande — LFC B2B admin',
+    loadComponent: () =>
+      import('./commandes/commande-page/commande-page').then((m) => m.AdminCommandePage),
+  },
+  {
     // Un compte se regarde de quatre façons qui n'ont pas les mêmes lecteurs :
     // le tableau de bord (avant d'appeler), les informations (pour corriger),
     // les commandes, et les données brutes. Une coquille, quatre vues routées —

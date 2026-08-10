@@ -10,21 +10,35 @@
   }
   @default {
     <section class="cmd">
-      <h2 class="cmd-h2">Dernières commandes</h2>
+      <h2 class="cmd-h2">Commandes</h2>
 
       @if (rows().length === 0) {
         <fold-empty-state title="Aucune commande" subtitle="Ce compte n'a encore rien commandé." />
       } @else {
         <ul class="cmd-list">
-          @for (row of rows(); track row.order.id) {
+          @for (row of rows(); track row.id) {
             <li class="cmd-row">
-              <span class="cmd-number">{{ row.order.orderNumber }}</span>
-              <span class="cmd-date">{{ row.placedAt }}</span>
-              <fold-badge size="sm" variant="neutral" [content]="row.order.status" />
-              <span class="cmd-total">{{ row.total }}</span>
+              <a class="cmd-open" [routerLink]="['/commandes', row.id]">
+                <span class="cmd-number">{{ row.orderNumber }}</span>
+                @if (row.fromSubscription) {
+                  <span class="cmd-pill">Récurrent</span>
+                }
+              </a>
+              <span class="cmd-date">{{ date(row) }}</span>
+              <fold-badge size="sm" [variant]="statusTone(row)" [content]="status(row)" />
+              <fold-badge size="sm" [variant]="paymentTone(row)" [content]="payment(row)" />
+              <span class="cmd-total">{{ total(row) }}</span>
             </li>
           }
         </ul>
+
+        @if (maybeTruncated()) {
+          <!-- Une liste plafonnée qui se tait passe pour exhaustive. -->
+          <p class="cmd-note">
+            Les 50 commandes les plus récentes. La pagination viendra avec l'écran global des
+            commandes.
+          </p>
+        }
       }
 
       <h2 class="cmd-h2">Paniers récurrents</h2>
@@ -33,12 +47,9 @@
         {{ recurringCount() > 1 ? 'paniers actifs' : 'panier actif' }}
       </p>
 
-      <!-- Ce que cette page ne peut PAS montrer, dit plutôt que tu : une page qui
-           tait ses trous se fait croire complète. -->
       <fold-callout variant="info" title="Vue partielle">
-        La liste est plafonnée aux dernières commandes, et les paniers récurrents ne sont comptés
-        que globalement : il n'existe pas encore de route d'administration qui liste toutes les
-        commandes ni le détail des paniers d'un compte.
+        Les paniers récurrents ne sont comptés que globalement : il n'existe pas encore de route
+        d'administration qui liste le détail des paniers d'un compte.
       </fold-callout>
     </section>
   }

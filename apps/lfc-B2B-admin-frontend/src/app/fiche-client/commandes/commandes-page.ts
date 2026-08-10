@@ -7,6 +7,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -14,31 +15,34 @@ import {
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
-import type { CustomerOrderLine, CustomerSheetView } from '@lfd/contracts';
+import type { AdminOrderRow, CustomerSheetView } from '@lfd/contracts';
+import {
+  formatCents,
+  formatOrderDate,
+  orderStatusLabel,
+  orderStatusVariant,
+  paymentStatusLabel,
+  paymentStatusVariant,
+} from '@lfd/b2b-ui/order';
 
 import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
-import { euros } from '../../commercial/calendrier/customer-sheet/customer-format';
+import { AdminOrdersService } from '../../commandes/orders.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** Une commande, prête à lire. */
-interface OrderRow {
-  readonly order: CustomerOrderLine;
-  readonly placedAt: string;
-  readonly total: string;
-}
+/** Combien de commandes on ramène d'un coup — au-delà, il faudra paginer. */
+const PAGE_SIZE = 50;
 
 /**
  * **Commandes** d'un compte : ce qu'il a acheté, et à quel rythme.
  *
- * Deux limites, dites à l'écran plutôt que tues : la liste est **plafonnée aux
- * dernières commandes** (c'est ce que la fiche commerciale calcule), et les
- * **paniers récurrents ne sont montrés qu'en nombre** — il n'existe aucune route
- * `/admin` qui les liste, pas plus qu'une route qui liste toutes les commandes.
+ * La liste vient désormais de `GET /admin/orders?companyId=…` — la vraie route
+ * staff, pas les quelques dernières commandes que la fiche commerciale calculait
+ * pour son résumé. Chaque ligne s'ouvre sur le détail, qui est **l'écran du
+ * client** : au téléphone, les deux doivent lire la même chose.
  *
- * C'est la même lacune que celle relevée à l'audit (aucune surface admin sur la
- * commande) : cette page en montre la moitié disponible aujourd'hui, et le dira
- * tant que l'autre moitié n'existe pas.
+ * Une limite demeure, dite à l'écran : les **paniers récurrents ne sont comptés
+ * que globalement**, faute de route `/admin` qui les liste.
  */
 @Component({
   selector: 'app-client-commandes-page',
@@ -49,6 +53,7 @@ interface OrderRow {
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    RouterLink,
   ],
   templateUrl: './commandes-page.html',
   styleUrl: './commandes-page.scss',
@@ -56,32 +61,23 @@ interface OrderRow {
 export class ClientCommandesPage {
   readonly id = input.required<string>();
 
-  private readonly api = inject(CustomerSheetService);
+  private readonly sheets = inject(CustomerSheetService);
+  private readonly orders = inject(AdminOrdersService);
 
   protected readonly state = signal<LoadState>('loading');
-  protected readonly sheet = signal<CustomerSheetView | null>(null);
-
-  protected readonly rows = computed<readonly OrderRow[]>(() =>
-    (this.sheet()?.recentOrders ?? []).map((order) => ({
-      order,
-      placedAt: new Date(order.placedAt).toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
-      total: euros(order.totalCents),
-    })),
-  );
+  protected readonly rows = signal<readonly AdminOrderRow[]>([]);
+  private readonly sheet = signal<CustomerSheetView | null>(null);
 
   protected readonly recurringCount = computed<number>(
     () => this.sheet()?.stats.recurringBasketsCount ?? 0,
   );
 
+  /** Vrai quand la page est pleine : au-delà, il manque peut-être des commandes. */
+  protected readonly maybeTruncated = computed(() => this.rows().length === PAGE_SIZE);
+
   constructor() {
-    // Un `input` de route n'est **pas encore lié** dans le constructeur : le lire
-    // ici lève NG0950, et le `catch` en dessous transformait la panne en écran
-    // d'erreur muet. L'effet attend la liaison — et rejoue tout seul quand on
-    // passe d'un compte à l'autre sans quitter la page (le composant est réutilisé).
+    // Un `input` de route n'est pas encore lié dans le constructeur, et il change
+    // quand on passe d'un compte à l'autre sans quitter la page.
     effect(() => {
       void this.load(this.id());
     });
@@ -90,10 +86,42 @@ export class ClientCommandesPage {
   protected async load(id: string = this.id()): Promise<void> {
     this.state.set('loading');
     try {
-      this.sheet.set(await this.api.sheet(id));
+      // Les deux appels sont indépendants : la liste vient de la route commandes,
+      // le compte de paniers de la fiche commerciale. Les enchaîner aurait doublé
+      // l'attente sans rien apporter.
+      const [rows, sheet] = await Promise.all([
+        this.orders.list({ companyId: id, limit: PAGE_SIZE }),
+        this.sheets.sheet(id),
+      ]);
+      this.rows.set(rows);
+      this.sheet.set(sheet);
       this.state.set('ready');
     } catch {
       this.state.set('error');
     }
+  }
+
+  protected date(row: AdminOrderRow): string {
+    return formatOrderDate(row.placedAt);
+  }
+
+  protected total(row: AdminOrderRow): string {
+    return formatCents(row.totalCents);
+  }
+
+  protected status(row: AdminOrderRow): string {
+    return orderStatusLabel(row.status);
+  }
+
+  protected statusTone(row: AdminOrderRow): ReturnType<typeof orderStatusVariant> {
+    return orderStatusVariant(row.status);
+  }
+
+  protected payment(row: AdminOrderRow): string {
+    return paymentStatusLabel(row.paymentStatus);
+  }
+
+  protected paymentTone(row: AdminOrderRow): ReturnType<typeof paymentStatusVariant> {
+    return paymentStatusVariant(row.paymentStatus);
   }
 }

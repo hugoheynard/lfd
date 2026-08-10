@@ -1,0 +1,37 @@
+<fold-page-layout icon="list" [title]="order()?.orderNumber ?? 'Commande'">
+  <button
+    pageActions
+    foldButton
+    emphasis="outline"
+    intent="neutral"
+    size="sm"
+    icon="chevron-left"
+    (click)="back()"
+  >
+    Comptes clients
+  </button>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement de la commande…" />
+    }
+    @case ('error') {
+      <div class="state">
+        <p>Impossible de charger cette commande.</p>
+        <button foldButton (click)="load()">Réessayer</button>
+      </div>
+    }
+    @default {
+      @if (order(); as o) {
+        <lfd-order-detail [order]="o" [documents]="documents()" (documentAsked)="onDocument()">
+          <!-- Le rail d'actions reste vide, et se dit : un écran sans bouton
+               laisse croire à un oubli, une phrase dit que c'est une décision. -->
+          <fold-callout actions variant="info">
+            Aucune action staff sur une commande passée : elle est un fait daté. Les corrections
+            passeront par des avenants.
+          </fold-callout>
+        </lfd-order-detail>
+      }
+    }
+  }
+</fold-page-layout>
