@@ -19,7 +19,12 @@ import {
   paymentStatusLabel,
   paymentStatusVariant,
 } from '../order-format';
-import { buildTimeline, toTimelineNodes } from '../order-timeline';
+import {
+  buildTimeline,
+  toTimelineNodes,
+  type OrderAudience,
+  type TimelineStep,
+} from '../order-timeline';
 
 /**
  * Un document rattaché à une commande (bon de livraison, facture…).
@@ -92,6 +97,16 @@ export class OrderDetail {
   readonly order = input.required<OrderView>();
 
   /**
+   * À qui s'adresse la page. Le parcours est le même des deux côtés ; seul le
+   * **niveau de détail** de la frise change — le staff voit ce que chaque jalon
+   * veut dire dans l'atelier, le client voit l'étape.
+   *
+   * Défaut `client` : c'est le public le plus large, et l'oubli du réglage doit
+   * pencher vers le moins de détail, pas vers le plus.
+   */
+  readonly audience = input<OrderAudience>('client');
+
+  /**
    * Noms de produits par SKU, pour les lignes **retirées** d'une échéance
    * récurrente. Elles ne portent qu'un SKU (elles ne figurent pas dans la
    * commande), donc rien d'autre ne peut les nommer. À défaut, le SKU s'affiche
@@ -116,9 +131,31 @@ export class OrderDetail {
    * on ne lui projette que la zone de libellé, pour teinter l'échec et mettre en
    * retrait les jalons que rien ne suit encore.
    */
-  protected readonly nodes = computed<readonly FoldTimelineNode[]>(() =>
-    toTimelineNodes(buildTimeline(this.order())),
+  protected readonly steps = computed<readonly TimelineStep[]>(() =>
+    buildTimeline(this.order(), this.audience()),
   );
+
+  protected readonly nodes = computed<readonly FoldTimelineNode[]>(() =>
+    toTimelineNodes(this.steps()),
+  );
+
+  /**
+   * Le détail d'un jalon, par clé. Le gabarit projeté ne reçoit qu'un
+   * `FoldTimelineNode` — un type de fold, qu'on n'étend pas avec nos champs.
+   * On le rejoint donc par sa clé, ce qui garde le contrat de fold intact.
+   */
+  private readonly detailByKey = computed<ReadonlyMap<string, string>>(
+    () =>
+      new Map(
+        this.steps()
+          .filter((step): step is TimelineStep & { detail: string } => step.detail !== null)
+          .map((step) => [step.key, step.detail]),
+      ),
+  );
+
+  protected detailOf(key: string): string | null {
+    return this.detailByKey().get(key) ?? null;
+  }
 
   protected readonly statusLabel = computed(() => orderStatusLabel(this.order().status));
   protected readonly statusVariant = computed(() => orderStatusVariant(this.order().status));

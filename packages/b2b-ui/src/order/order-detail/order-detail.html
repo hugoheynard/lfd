@@ -40,14 +40,23 @@
         <h3 class="od-h3">Avancement</h3>
         <!-- Rail vertical ici : en colonne étroite, un stepper horizontal
              écraserait cinq à six libellés côte à côte. -->
+        <!-- `datePlacement="below"` : l'instant réel, ou l'échéance attendue à
+             défaut, sous le libellé. C'est fold qui la place ; on ne fournit que
+             le texte déjà formaté (cf. `toTimelineNodes`). -->
         <fold-timeline
           orientation="vertical"
           ariaLabel="Avancement de la commande"
-          datePlacement="hidden"
+          datePlacement="below"
           [nodes]="nodes()"
         >
           <ng-template #node let-n>
             <span class="od-node" [attr.data-state]="n.state">{{ n.label }}</span>
+            <!-- Le sens opérationnel du jalon — staff seulement. Une ligne de
+                 plus côté commercial vaut mieux que deux vocabulaires de part et
+                 d'autre du téléphone. -->
+            @if (detailOf(n.key); as detail) {
+              <span class="od-node-detail">{{ detail }}</span>
+            }
           </ng-template>
         </fold-timeline>
       </div>

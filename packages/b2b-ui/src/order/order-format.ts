@@ -110,3 +110,24 @@ export function formatOrderDate(iso: string): string {
     year: 'numeric',
   });
 }
+
+/**
+ * ISO → « 6 août ». Sans l'année, pour la frise : elle couvre des jours, jamais
+ * des années, et répéter « 2026 » à chaque jalon vole la place à l'heure.
+ */
+export function formatOrderDay(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+/**
+ * ISO → « 6 août, 14:32 ». L'**heure** est ce qui distingue une commande passée
+ * juste avant l'heure limite d'une commande passée juste après — c'est-à-dire
+ * celle qui entre dans le plan du soir de celle qu'il faudra arbitrer. Sur une
+ * frise de production, c'est la précision utile.
+ */
+export function formatOrderInstant(iso: string): string {
+  const at = new Date(iso);
+  const day = at.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const time = at.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return `${day}, ${time}`;
+}

@@ -29,10 +29,13 @@
   min-width: 0;
 }
 
+/* Le numéro est une référence qu'on lit à voix haute au téléphone : chiffres à
+   chasse fixe pour qu'il se déchiffre groupe par groupe, sans se relire. */
 .od-number {
   margin: 0;
   font-size: var(--fold-text-xl);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
@@ -85,8 +88,26 @@
 }
 
 .od-node {
+  display: block;
   font-size: var(--fold-text-sm);
   line-height: 1.25;
+}
+
+/* Le sens opérationnel d'un jalon (staff). En retrait volontaire : c'est une
+   glose, pas un second titre — le libellé reste ce qu'on lit en diagonale. */
+.od-node-detail {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  line-height: 1.3;
+}
+
+/* Un jalon franchi garde son détail lisible ; un jalon à venir l'estompe avec
+   lui, sans quoi la glose brillerait plus que l'étape qu'elle décrit. */
+.od-node[data-state='upcoming'] + .od-node-detail,
+.od-node[data-state='untracked'] + .od-node-detail {
+  opacity: 0.7;
 }
 
 .od-node[data-state='current'] {

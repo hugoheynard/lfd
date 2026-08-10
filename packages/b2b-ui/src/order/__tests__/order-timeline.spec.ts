@@ -2,13 +2,20 @@ import type { FulfillmentMethod, OrderStatus, OrderView, PaymentStatus } from '@
 
 import { buildTimeline, canSettle, toTimelineNodes, type TimelineStep } from '../order-timeline';
 
-/** Une commande réduite aux trois champs dont la frise dépend. */
+/** Une commande réduite aux champs dont la frise dépend. */
 function order(
   status: OrderStatus,
   paymentStatus: PaymentStatus,
   fulfillmentMethod: FulfillmentMethod = 'pickup',
+  requestedDeliveryDate: string | null = '2026-08-12',
 ): OrderView {
-  return { status, paymentStatus, fulfillmentMethod } as OrderView;
+  return {
+    status,
+    paymentStatus,
+    fulfillmentMethod,
+    requestedDeliveryDate,
+    placedAt: '2026-08-10T12:32:00.000Z',
+  } as OrderView;
 }
 
 const keys = (steps: readonly TimelineStep[]): readonly string[] => steps.map((s) => s.key);
@@ -190,6 +197,66 @@ describe('toTimelineNodes', () => {
     const nodes = toTimelineNodes(buildTimeline(order('placed', 'paid')));
 
     expect(nodes.filter((n) => n.clickable !== false)).toEqual([]);
+  });
+});
+
+describe('buildTimeline — public', () => {
+  it('le client ne voit aucun détail d’atelier', () => {
+    const steps = buildTimeline(order('confirmed', 'paid'));
+
+    expect(steps.filter((s) => s.detail !== null)).toEqual([]);
+  });
+
+  it('le staff lit ce que « confirmée » veut dire côté production', () => {
+    const steps = buildTimeline(order('confirmed', 'paid'), 'staff');
+
+    expect(steps.find((s) => s.key === 'confirmed')?.detail).toBe('ajoutée au compte à produire');
+  });
+
+  it('les deux publics voient EXACTEMENT les mêmes étapes, dans le même état', () => {
+    const client = buildTimeline(order('in_production', 'paid', 'delivery'));
+    const staff = buildTimeline(order('in_production', 'paid', 'delivery'), 'staff');
+
+    expect(staff.map((s) => [s.key, s.state])).toEqual(client.map((s) => [s.key, s.state]));
+  });
+});
+
+describe('buildTimeline — dates', () => {
+  it('horodate la réception : c’est la seule transition que la base connaisse', () => {
+    const steps = buildTimeline(order('placed', 'paid'));
+
+    expect(steps.find((s) => s.key === 'placed')?.at).toBe('10 août, 14:32');
+  });
+
+  it('n’invente aucun instant pour les transitions non horodatées', () => {
+    const steps = buildTimeline(order('fulfilled', 'paid'));
+    const invented = steps.filter((s) => s.key !== 'placed' && s.at !== null);
+
+    expect(invented).toEqual([]);
+  });
+
+  it('annonce l’échéance du retrait tant qu’il n’a pas eu lieu', () => {
+    const steps = buildTimeline(order('in_production', 'paid', 'pickup'));
+
+    expect(steps.find((s) => s.key === 'ready')?.expectedAt).toBe('prévu le 12 août');
+  });
+
+  it('retire l’échéance une fois l’étape franchie — une attente passée est fausse', () => {
+    const steps = buildTimeline(order('fulfilled', 'paid', 'delivery'));
+
+    expect(steps.find((s) => s.key === 'fulfilled')?.expectedAt).toBeNull();
+  });
+
+  it('reste muet quand aucune date d’acheminement n’a été demandée', () => {
+    const steps = buildTimeline(order('placed', 'paid', 'pickup', null));
+
+    expect(steps.filter((s) => s.expectedAt !== null)).toEqual([]);
+  });
+
+  it('le fait chasse l’attente : un nœud ne porte jamais les deux', () => {
+    const nodes = toTimelineNodes(buildTimeline(order('placed', 'paid')));
+
+    expect(nodes.find((n) => n.key === 'placed')?.displayDate).toBe('10 août, 14:32');
   });
 });
 

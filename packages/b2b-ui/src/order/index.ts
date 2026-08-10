@@ -17,6 +17,8 @@ export {
   formatCents,
   formatVatRate,
   formatOrderDate,
+  formatOrderDay,
+  formatOrderInstant,
 } from './order-format';
 export { buildTimeline, canSettle, toTimelineNodes } from './order-timeline';
-export type { StepState, TimelineStep } from './order-timeline';
+export type { OrderAudience, StepState, TimelineStep } from './order-timeline';

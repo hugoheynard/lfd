@@ -23,7 +23,16 @@
     }
     @default {
       @if (order(); as o) {
-        <lfd-order-detail [order]="o" [documents]="documents()" (documentAsked)="onDocument()">
+        <!-- `audience="staff"` : les mêmes étapes que chez le client, mais
+             chacune dit ce qu'elle veut dire dans l'atelier. Au téléphone, le
+             commercial a l'écran du client sous les yeux, augmenté — jamais un
+             autre écran. -->
+        <lfd-order-detail
+          audience="staff"
+          [order]="o"
+          [documents]="documents()"
+          (documentAsked)="onDocument()"
+        >
           <!-- Le rail d'actions reste vide, et se dit : un écran sans bouton
                laisse croire à un oubli, une phrase dit que c'est une décision. -->
           <fold-callout actions variant="info">
