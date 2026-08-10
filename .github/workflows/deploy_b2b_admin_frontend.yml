@@ -6,8 +6,14 @@ name: deploy_b2b_admin_frontend
 # Secrets requis :
 #   CLOUDFLARE_LFC_B2B_ADMIN_PAGES — token « Account · Cloudflare Pages · Edit ».
 #   CLOUDFLARE_ACCOUNT_ID — account id partagé.
-# Variable PUBLIQUE (onglet Variables — pas un secret) :
+# Variables PUBLIQUES (onglet Variables — jamais des secrets : elles finissent dans
+# le bundle navigateur, et c'est prévu) :
 #   B2B_ADMIN_API_BASE_URL — URL du backend B2B (le sous-domaine gateway en prod).
+#   B2B_ADMIN_AUTH0_DOMAIN · B2B_ADMIN_AUTH0_CLIENT_ID · B2B_ADMIN_AUTH0_AUDIENCE
+#     — connexion staff quand l'app tourne HORS du shell. Sous le shell, la suite
+#       possède la session et ces trois valeurs ne servent pas.
+#     ⚠️ _AUDIENCE = l'AUTH0_ADMIN_AUDIENCE du backend (surface staff), jamais son
+#       AUTH0_AUDIENCE (surface client).
 # Projet Pages `lfc-b2b-admin` (créé au 1er run).
 
 on:
@@ -46,6 +52,14 @@ jobs:
         env:
           B2B_ADMIN_API_BASE_URL: ${{ vars.B2B_ADMIN_API_BASE_URL }}
         run: node scripts/generate-api-config.mjs
+
+      - name: Generate Auth0 config (public build vars)
+        working-directory: apps/lfc-B2B-admin-frontend
+        env:
+          B2B_ADMIN_AUTH0_DOMAIN: ${{ vars.B2B_ADMIN_AUTH0_DOMAIN }}
+          B2B_ADMIN_AUTH0_CLIENT_ID: ${{ vars.B2B_ADMIN_AUTH0_CLIENT_ID }}
+          B2B_ADMIN_AUTH0_AUDIENCE: ${{ vars.B2B_ADMIN_AUTH0_AUDIENCE }}
+        run: node scripts/generate-auth-config.mjs
 
       - name: Typecheck
         run: pnpm --filter lfc-b2b-admin-frontend exec tsc --noEmit
