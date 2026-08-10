@@ -71,20 +71,26 @@ créé ──┤
 `refused` est **terminal** : on ne renégocie pas un avenant, on en dépose un
 autre. C'est ce qui garde chaque décision de production datée et attribuable.
 
-### ⚠️ Prérequis absent : l'heure limite n'existe pas
+### ✅ L'heure limite existe — table `order_cutoffs`
 
-Vérifié le 2026-08-10 — **aucun `cutoff` nulle part** : ni dans
-`platform-settings`, ni sur un point de retrait, ni sur une zone. Toute cette
-branche repose sur un réglage à créer.
+Elle manquait au moment d'écrire ce document ; elle a été livrée le même jour.
+**Une règle par ligne**, jamais une colonne de réglage : ouvrir un second labo
+ou décaler le dimanche est de la saisie.
 
-Deux questions à trancher avant de coder l'avenant, parce qu'elles changent où
-vit le champ :
+Les deux questions que ce document posait sont tranchées :
 
-- **Globale ou par point de retrait ?** Un labo qui enfourne à 4 h et un autre à
-  6 h n'ont pas la même limite.
-- **Par rapport à quoi ?** L'heure limite se compte sur la date d'**acheminement
-  demandée**, pas sur celle du dépôt : commander mardi pour jeudi ne se juge pas
-  à l'heure de mardi.
+- **portée** — par **point de retrait**, avec une règle **par défaut** (point
+  `null`) pour ce qu'aucune règle précise ne vise. La plus spécifique gagne,
+  via `resolveOrderCutoff` (fonction pure du contrat, testée) ;
+- **référence** — `daysBefore` + `time` comptés depuis la date d'**acheminement
+  demandée**, jamais depuis celle du dépôt.
+
+Le jour réutilise le `Weekday` (`mon`…`sun`) des créneaux de livraison. Aucune
+règle ⇒ aucune limite : une plateforme non configurée n'invente pas de refus.
+
+Saisie dans **Réglages → Retraits & livraisons**. Reste à **consommer** ces
+règles : le checkout ne les applique pas encore, et c'est l'avenant qui en sera
+le premier lecteur.
 
 ### Le règlement suit le régime, et il attend la production
 
