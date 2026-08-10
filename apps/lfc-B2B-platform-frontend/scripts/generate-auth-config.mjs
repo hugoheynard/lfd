@@ -46,7 +46,7 @@ const fileVars = existsSync(envPath)
 // process.env (CI/shell) gagne sur le fichier .env.
 const read = (key) => (process.env[key] ?? fileVars[key] ?? '').trim();
 
-const KEYS = ['AUTH0_DOMAIN', 'AUTH0_CLIENT_ID', 'AUTH0_AUDIENCE', 'API_BASE_URL'];
+const KEYS = ['AUTH0_DOMAIN', 'AUTH0_CLIENT_ID', 'AUTH0_AUDIENCE', 'API_BASE_URL', 'ADMIN_BASE_URL'];
 const values = Object.fromEntries(KEYS.map((key) => [key, read(key)]));
 
 const missing = KEYS.filter((key) => values[key] === '');
@@ -68,6 +68,7 @@ const body =
   `  clientId: ${JSON.stringify(values.AUTH0_CLIENT_ID)},\n` +
   `  audience: ${JSON.stringify(values.AUTH0_AUDIENCE)},\n` +
   `  apiBaseUrl: ${JSON.stringify(values.API_BASE_URL)},\n` +
+  `  adminBaseUrl: ${JSON.stringify(values.ADMIN_BASE_URL)},\n` +
   '} as const;\n';
 
 mkdirSync(dirname(outPath), { recursive: true });

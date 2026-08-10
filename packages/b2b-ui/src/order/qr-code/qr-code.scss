@@ -1,0 +1,21 @@
+:host {
+  display: block;
+}
+
+/* Noir sur blanc EN DUR, hors jetons de thème : un QR n'est pas un élément de
+   design, c'est un capteur optique. Le teinter ou l'inverser en thème sombre
+   ferait échouer des scans — un lecteur cherche du foncé sur du clair. */
+.qr {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--fold-radius-sm, 0.4rem);
+}
+
+.qr-bg {
+  fill: #fff;
+}
+
+.qr-mod {
+  fill: #14181f;
+}

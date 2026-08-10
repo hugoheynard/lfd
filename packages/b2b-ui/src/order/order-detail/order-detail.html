@@ -117,6 +117,33 @@
       </section>
 
       <div asideRight class="od-side">
+        <!-- Le code de retrait passe DEVANT les montants : c'est la seule chose
+             qu'on vient chercher sur cette page debout devant un comptoir, le
+             téléphone déjà à la main. Le reste se lit assis.
+             Il ne paraît que sur un retrait non encore remis (`showQr`) — sur
+             une livraison, ou une commande déjà retirée, rien ne s'affiche. -->
+        @if (showQr()) {
+          <section class="od-card">
+            <h3 class="od-h3">Code de retrait</h3>
+            <lfd-qr-code
+              class="od-qr"
+              [value]="handoverUrl() ?? ''"
+              label="Code de retrait à présenter au comptoir"
+            />
+            <p class="od-handover-hint">
+              À présenter au labo. C'est le scan de l'équipe qui atteste la remise.
+            </p>
+          </section>
+        } @else if (handedOverAt(); as at) {
+          <section class="od-card">
+            <h3 class="od-h3">Retrait</h3>
+            <p class="od-handover-done">
+              <fold-icon name="check" size="sm" aria-hidden="true" />
+              Retirée le {{ at }}
+            </p>
+          </section>
+        }
+
         <section class="od-card">
           <h3 class="od-h3">Montants</h3>
           <dl class="od-totals">

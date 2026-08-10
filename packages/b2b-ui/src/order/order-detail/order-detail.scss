@@ -288,6 +288,35 @@ fold-aside-layout {
   background: var(--fold-color-surface-card);
 }
 
+/* Le code de retrait. Le QR est bridé à 12rem : plus large, il n'est pas mieux
+   scanné (un lecteur cherche des modules nets, pas une grande surface) et il
+   pousserait le reste du rail hors de l'écran sur un téléphone. */
+.od-qr {
+  max-width: 12rem;
+  margin: 0 auto;
+  /* Cadre clair AUTOUR du code, jamais dessus : le blanc du QR doit toucher un
+     fond neutre pour que la zone de silence joue son rôle en thème sombre. */
+  padding: var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  background: #fff;
+}
+
+.od-handover-hint {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-xs);
+  line-height: 1.45;
+  color: var(--fold-color-text-muted);
+  text-align: center;
+}
+
+.od-handover-done {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  font-weight: 600;
+}
+
 .od-method {
   margin: 0;
   font-weight: 600;

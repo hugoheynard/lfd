@@ -20,6 +20,7 @@ import {
   FoldSpinnerComponent,
 } from 'fold-ng';
 
+import { AUTH_CONFIG } from '../../auth/auth.config';
 import { PRODUCTS } from '../../data/catalogue-seed';
 import { downloadText } from '../download-text';
 import { NotifyService } from '../../notify.service';
@@ -72,6 +73,25 @@ export class CommandePage {
 
   /** Le titre de page : le numéro dès qu'on l'a, un mot générique avant. */
   protected readonly heading = computed<string>(() => this.order()?.orderNumber ?? 'Commande');
+
+  /**
+   * L'URL que le **QR de retrait** encode, ou `null` pour n'afficher aucun code.
+   *
+   * Elle pointe vers l'app **admin** : c'est le staff qui scanne, avec l'appareil
+   * photo natif de son téléphone. Le client, lui, ne fait que présenter l'écran.
+   *
+   * `null` dans deux cas, et le second compte autant que le premier : pas de
+   * jeton (commande en livraison, ou passée avant cette fonctionnalité), et
+   * **origine admin non configurée** — mieux vaut aucun code qu'un code qui
+   * ouvre le vide devant un client au comptoir.
+   */
+  protected readonly handoverUrl = computed<string | null>(() => {
+    const token = this.order()?.handoverToken ?? null;
+    if (token === null || AUTH_CONFIG.adminBaseUrl === '') {
+      return null;
+    }
+    return `${AUTH_CONFIG.adminBaseUrl}/retrait/${encodeURIComponent(token)}`;
+  });
 
   /** Ce que la commande propose au téléchargement — règle partagée avec le staff. */
   protected readonly documents = computed<readonly OrderDocument[]>(() => {

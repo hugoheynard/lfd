@@ -13,6 +13,7 @@ import {
   formatAdjustment,
   formatCents,
   formatOrderDate,
+  formatOrderInstant,
   formatVatRate,
   fulfillmentLabel,
   orderStatusLabel,
@@ -26,6 +27,7 @@ import {
   type OrderAudience,
   type TimelineStep,
 } from '../order-timeline';
+import { QrCode } from '../qr-code/qr-code';
 
 /**
  * Un document rattaché à une commande (bon de livraison, facture…).
@@ -95,7 +97,13 @@ interface TotalRow {
 @Component({
   selector: 'lfd-order-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldAsideLayoutComponent, FoldBadgeComponent, FoldIconComponent, FoldTimelineComponent],
+  imports: [
+    FoldAsideLayoutComponent,
+    FoldBadgeComponent,
+    FoldIconComponent,
+    FoldTimelineComponent,
+    QrCode,
+  ],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.scss',
 })
@@ -130,6 +138,30 @@ export class OrderDetail {
 
   /** Un document a été demandé — la `key` de l'entrée cliquée. */
   readonly documentAsked = output<string>();
+
+  /**
+   * L'URL que le **QR de retrait** encode, ou `null` pour ne rien afficher.
+   *
+   * Construite par l'app, pas ici : elle pointe vers l'app **admin** (c'est le
+   * staff qui scanne), et seule l'app connaît l'origine de ses voisines. Le
+   * composant sait dessiner un QR, il n'a pas à savoir où vit le back-office.
+   */
+  readonly handoverUrl = input<string | null>(null);
+
+  /**
+   * Le QR ne s'affiche que s'il **sert** : une commande déjà retirée n'a plus
+   * rien à faire scanner, et l'afficher quand même ferait présenter au comptoir
+   * un code que le staff verra refusé. La confirmation prend alors sa place.
+   */
+  protected readonly showQr = computed(
+    () => this.handoverUrl() !== null && this.order().handedOverAt === null,
+  );
+
+  /** « Retirée le 12 août, 09:14 », ou `null` tant que la remise n'a pas eu lieu. */
+  protected readonly handedOverAt = computed<string | null>(() => {
+    const at = this.order().handedOverAt;
+    return at === null ? null : formatOrderInstant(at);
+  });
 
   /**
    * La frise, en nœuds `fold-timeline`. Le rail, les points, la barre de

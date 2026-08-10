@@ -28,6 +28,7 @@
     "@lfd/endpoints": "workspace:*",
     "@stripe/stripe-js": "^9.13.0",
     "fold-ng": "catalog:",
+    "qrcode-generator": "^2.0.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

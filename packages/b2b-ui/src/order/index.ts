@@ -22,3 +22,6 @@ export {
 } from './order-format';
 export { buildTimeline, canSettle, toTimelineNodes } from './order-timeline';
 export type { OrderAudience, StepState, TimelineStep } from './order-timeline';
+export { QrCode } from './qr-code/qr-code';
+export { qrMatrix } from './qr-code/qr';
+export type { QrMatrix } from './qr-code/qr';

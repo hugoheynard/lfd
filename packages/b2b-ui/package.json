@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@lfd/contracts": "workspace:*",
+    "qrcode-generator": "^2.0.4",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {

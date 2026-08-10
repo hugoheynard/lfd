@@ -26,6 +26,16 @@ export interface AuthConfig {
   readonly audience: string;
   /** Base URL de l'API B2B appelée avec le jeton (ex. `GET /me`). */
   readonly apiBaseUrl: string;
+  /**
+   * Origine de l'app **admin**, sans barre finale — la seule chose que cette
+   * app sache de sa voisine.
+   *
+   * Elle sert à fabriquer l'URL qu'un **QR de retrait** encode : le client
+   * l'affiche, mais c'est le staff qui la scanne, donc elle pointe vers le
+   * back-office. Vide ⇒ aucun QR n'est affiché, plutôt qu'un code qui ne mènerait
+   * nulle part une fois scanné devant un client.
+   */
+  readonly adminBaseUrl: string;
 }
 
 export const AUTH_CONFIG: AuthConfig = {
@@ -33,4 +43,5 @@ export const AUTH_CONFIG: AuthConfig = {
   clientId: AUTH_ENV.clientId,
   audience: AUTH_ENV.audience,
   apiBaseUrl: AUTH_ENV.apiBaseUrl,
+  adminBaseUrl: AUTH_ENV.adminBaseUrl,
 };
