@@ -5,6 +5,7 @@ import {
   FoldBadgeComponent,
   FoldIconComponent,
   FoldTimelineComponent,
+  type FoldIconName,
   type FoldTimelineNode,
 } from 'fold-ng';
 
@@ -38,6 +39,11 @@ export interface OrderDocument {
   /** Ce que l'app reçoit sur `documentAsked` — à elle de savoir quoi en faire. */
   readonly key: string;
   readonly label: string;
+  /**
+   * Le glyphe de la pièce. Une facture et un bon de livraison ne se cherchent
+   * pas de la même façon dans une liste : la forme aide avant le mot.
+   */
+  readonly icon?: FoldIconName;
   /** Précision sous le lien (« généré depuis la commande »). */
   readonly hint?: string;
   /** Renseigné = pas de lien, et cette phrase explique pourquoi. */

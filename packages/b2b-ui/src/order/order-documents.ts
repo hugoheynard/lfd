@@ -37,6 +37,7 @@ export function orderDocuments(order: OrderView): readonly OrderDocument[] {
     {
       key: ORDER_DOC_DELIVERY_NOTE,
       label: 'Bon de livraison',
+      icon: 'contracts',
       ...(settled
         ? { hint: 'Généré depuis la commande.' }
         : { unavailable: 'Disponible une fois la commande passée.' }),
@@ -44,6 +45,7 @@ export function orderDocuments(order: OrderView): readonly OrderDocument[] {
     {
       key: ORDER_DOC_INVOICE,
       label: 'Facture',
+      icon: 'receipt',
       unavailable: 'Émise après facturation — pas encore disponible.',
     },
   ];

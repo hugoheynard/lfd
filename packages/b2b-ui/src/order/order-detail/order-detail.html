@@ -166,22 +166,41 @@
           <section class="od-card">
             <h3 class="od-h3">Documents</h3>
             <ul class="od-docs">
+              <!-- Disponible ou non, une pièce garde la MÊME grille : glyphe,
+                   nom, marque de droite, motif dessous. Deux structures
+                   différentes ne s'alignaient pas, et la liste tremblait d'une
+                   ligne à l'autre. Seule la marque de droite change — bouton de
+                   téléchargement d'un côté, mention d'indisponibilité de
+                   l'autre. -->
               @for (doc of documents(); track doc.key) {
                 <li class="od-doc">
                   @if (doc.unavailable) {
                     <!-- Un document qu'on n'a pas se DIT, avec sa raison. Un lien
                          mort ou un bouton inerte enverrait chercher un fichier
                          qui n'existe pas. -->
-                    <span class="od-doc-name">{{ doc.label }}</span>
-                    <span class="od-doc-why">{{ doc.unavailable }}</span>
+                    <div class="od-doc-row">
+                      <span class="od-doc-glyph" aria-hidden="true">
+                        <fold-icon [name]="doc.icon ?? 'contracts'" size="sm" />
+                      </span>
+                      <span class="od-doc-name">{{ doc.label }}</span>
+                      <span class="od-doc-tag">indisponible</span>
+                      <span class="od-doc-why">{{ doc.unavailable }}</span>
+                    </div>
                   } @else {
-                    <button type="button" class="od-doc-link" (click)="documentAsked.emit(doc.key)">
-                      <fold-icon name="download" size="sm" />
-                      <span>{{ doc.label }}</span>
+                    <button
+                      type="button"
+                      class="od-doc-row od-doc-row--action"
+                      (click)="documentAsked.emit(doc.key)"
+                    >
+                      <span class="od-doc-glyph" aria-hidden="true">
+                        <fold-icon [name]="doc.icon ?? 'contracts'" size="sm" />
+                      </span>
+                      <span class="od-doc-name">{{ doc.label }}</span>
+                      <fold-icon class="od-doc-go" name="download" size="sm" />
+                      @if (doc.hint) {
+                        <span class="od-doc-why">{{ doc.hint }}</span>
+                      }
                     </button>
-                    @if (doc.hint) {
-                      <span class="od-doc-why">{{ doc.hint }}</span>
-                    }
                   }
                 </li>
               }
