@@ -48,6 +48,78 @@ colonne. C'est `commande + Σ avenants`, et c'est au **serveur** de le dire.
 
 ---
 
+## Le cycle de vie d'un avenant
+
+_Décidé le 2026-08-10._
+
+### Ce qui déclenche une validation : l'heure limite de commande
+
+Avant l'heure limite, un avenant entre dans la production du jour comme
+n'importe quelle commande : il est **accepté d'office**. Après, il demande à la
+production de se prononcer — un four qui tourne ne se réorganise pas sur
+promesse.
+
+```
+                     avant l'heure limite ──────────► accepted
+créé ──┤
+                     après l'heure limite ──────────► pending_production
+                                                          │
+                                            la prod ──────┼──► accepted
+                                                          └──► refused
+```
+
+`refused` est **terminal** : on ne renégocie pas un avenant, on en dépose un
+autre. C'est ce qui garde chaque décision de production datée et attribuable.
+
+### ⚠️ Prérequis absent : l'heure limite n'existe pas
+
+Vérifié le 2026-08-10 — **aucun `cutoff` nulle part** : ni dans
+`platform-settings`, ni sur un point de retrait, ni sur une zone. Toute cette
+branche repose sur un réglage à créer.
+
+Deux questions à trancher avant de coder l'avenant, parce qu'elles changent où
+vit le champ :
+
+- **Globale ou par point de retrait ?** Un labo qui enfourne à 4 h et un autre à
+  6 h n'ont pas la même limite.
+- **Par rapport à quoi ?** L'heure limite se compte sur la date d'**acheminement
+  demandée**, pas sur celle du dépôt : commander mardi pour jeudi ne se juge pas
+  à l'heure de mardi.
+
+### Le règlement suit le régime, et il attend la production
+
+| Régime du client                      | Ce qui se passe à l'acceptation                    |
+| ------------------------------------- | -------------------------------------------------- |
+| Terme différé (mensuel, net60, net90) | Rien à encaisser — l'avenant tombe sur la facture. |
+| À la commande / compte non activé     | Un règlement est exigé, **et seulement là**.       |
+
+**L'intention de paiement se crée à l'acceptation, jamais au dépôt.** On ne
+retient pas la carte d'un client pour un ajout que la production refusera
+peut-être — et une intention créée puis abandonnée laisse une trace chez Stripe
+qu'il faudrait ensuite nettoyer.
+
+D'où un état de règlement qui commence **indécis** : `paymentStatus: null` tant
+que la production n'a pas répondu. C'est un troisième cas, distinct de
+`not_required` (facturé au terme) — les confondre ferait passer un avenant en
+attente pour un avenant déjà couvert.
+
+### Ce que le client reçoit
+
+À l'acceptation d'un avenant **à régler** :
+
+1. un **e-mail** « votre ajout de commande a été accepté » ;
+2. un lien vers la **vue de l'avenant** — ses lignes, sa TVA, son total ;
+3. le **règlement**, présenté comme une **sous-facture** rattachée à la commande
+   d'origine : son propre montant, son propre reçu, mais le numéro de la commande
+   mère en évidence. Le client ne doit jamais avoir à deviner à quoi se rapporte
+   un débit de 14,80 €.
+
+**Ajout au périmètre décidé** : un **refus se notifie aussi**. Un client qui a
+demandé deux baguettes la veille et n'entend plus rien rappellera — et il aura
+raison. Même canal, message inverse, sans lien de paiement.
+
+---
+
 ## Ce que l'UI a le droit de faire
 
 **Aucun calcul d'argent. Aucun.** Ni TVA, ni total de ligne, ni net d'avenants,
@@ -136,8 +208,11 @@ valeur qui ne change jamais indépendamment de la commande.
 
 ## Ce que ce document ne tranche pas
 
-- **Le droit de créer un avenant** selon l'avancement (un retrait après
-  `fulfilled` ? un ajout après `in_production` ?) — à décider avec la production.
+- **La portée de l'heure limite** (globale ou par point de retrait) et sa
+  référence (date d'acheminement, pas date de dépôt) — cf. le prérequis absent.
+- **Le droit de créer un `removal` ou un `credit`** selon l'avancement : la règle
+  ci-dessus tranche le cas de l'ajout ; retirer une ligne après `in_production`
+  ou créditer après `fulfilled` restent ouverts.
 - **La facture** : elle agrégera commande + avenants d'une période. Sa
   numérotation n'existe pas (cf. l'encart Documents, qui l'annonce indisponible).
 - **Le remboursement Stripe** d'un avoir sur commande réglée par carte.
