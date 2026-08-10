@@ -68,11 +68,12 @@ Chaque ligne porte l'**état réel du code**, pas l'intention :
 
 ## Suite — le shell, la passerelle, l'exploitation
 
-| Doc                                                                                          | État | De quoi ça parle                                              |
-| -------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------- |
-| [`suite/architecture-suite-gateway-scaling.md`](suite/architecture-suite-gateway-scaling.md) | 🟡   | Passerelle Cloudflare, sous-domaines, backends conteneurisés. |
-| [`suite/architecture-ops-ecosystem-health.md`](suite/architecture-ops-ecosystem-health.md)   | 📐   | L'app OPS « Ecosystem Health ». Rien n'est codé.              |
-| [`suite/CONTAINERIZE-NOTES.md`](suite/CONTAINERIZE-NOTES.md)                                 | 🟡   | Notes de conteneurisation.                                    |
+| Doc                                                                                          | État | De quoi ça parle                                                                                                                                                     |
+| -------------------------------------------------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`suite/architecture-suite-gateway-scaling.md`](suite/architecture-suite-gateway-scaling.md) | 🟡   | Passerelle Cloudflare, sous-domaines, backends conteneurisés.                                                                                                        |
+| [`suite/architecture-iam-access.md`](suite/architecture-iam-access.md)                       | 📐   | **IAM (« Access »)** : les personnes de la suite et leurs droits. Auth0 n'authentifie plus que ; les droits passent en base. Absorbe `staff_users`. Rien n'est codé. |
+| [`suite/architecture-ops-ecosystem-health.md`](suite/architecture-ops-ecosystem-health.md)   | 📐   | L'app OPS « Ecosystem Health ». Rien n'est codé.                                                                                                                     |
+| [`suite/CONTAINERIZE-NOTES.md`](suite/CONTAINERIZE-NOTES.md)                                 | 🟡   | Notes de conteneurisation.                                                                                                                                           |
 
 ## TODO et dette
 
