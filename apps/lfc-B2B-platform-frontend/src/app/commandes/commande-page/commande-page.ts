@@ -3,7 +3,15 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs/operators';
 import type { OrderView } from '@lfd/contracts';
-import { canSettle, OrderDetail } from '@lfd/b2b-ui/order';
+import {
+  canSettle,
+  deliveryNoteFileName,
+  ORDER_DOC_DELIVERY_NOTE,
+  OrderDetail,
+  orderDocuments,
+  renderDeliveryNote,
+  type OrderDocument,
+} from '@lfd/b2b-ui/order';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -13,6 +21,7 @@ import {
 } from 'fold-ng';
 
 import { PRODUCTS } from '../../data/catalogue-seed';
+import { downloadText } from '../download-text';
 import { NotifyService } from '../../notify.service';
 import { OrdersService } from '../orders.service';
 import { RecurringOrderPanel } from '../recurring-order-panel/recurring-order-panel';
@@ -64,6 +73,12 @@ export class CommandePage {
   /** Le titre de page : le numéro dès qu'on l'a, un mot générique avant. */
   protected readonly heading = computed<string>(() => this.order()?.orderNumber ?? 'Commande');
 
+  /** Ce que la commande propose au téléchargement — règle partagée avec le staff. */
+  protected readonly documents = computed<readonly OrderDocument[]>(() => {
+    const order = this.order();
+    return order === null ? [] : orderDocuments(order);
+  });
+
   constructor() {
     void this.load();
   }
@@ -92,6 +107,19 @@ export class CommandePage {
   /** Ouvre « transformer en panier récurrent » avec cette commande. */
   protected makeRecurring(order: OrderView): void {
     this.panelHost.open(RecurringOrderPanel, { data: order });
+  }
+
+  /**
+   * Un document demandé. Seul le bon de livraison est produit ici : il se
+   * fabrique depuis la commande. La facture n'atteint jamais ce point — la lib
+   * la rend indisponible tant qu'aucune numérotation n'existe côté serveur.
+   */
+  protected onDocument(key: string): void {
+    const order = this.order();
+    if (order === null || key !== ORDER_DOC_DELIVERY_NOTE) {
+      return;
+    }
+    downloadText(deliveryNoteFileName(order), renderDeliveryNote(order));
   }
 
   protected async back(): Promise<void> {

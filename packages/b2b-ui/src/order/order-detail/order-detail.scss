@@ -109,19 +109,18 @@
   opacity: 0.7;
 }
 
-/* ── Corps ──────────────────────────────────────────────────────────────── */
+/* ── Corps ─────────────────────────────────────────────────────────────── */
 
-.od-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 18rem;
-  gap: var(--fold-space-lg);
-  align-items: start;
-}
+/* Les trois colonnes, leur repli et l'adhérence des rails appartiennent à
+   `fold-aside-layout` — on ne redéclare rien ici. Il ne reste que le contenu.
 
-@media (max-width: 56rem) {
-  .od-grid {
-    grid-template-columns: 1fr;
-  }
+   Le layout pose ses propres gouttières ; la page est DÉJÀ dans un
+   `fold-page-layout` qui en a. On annule donc son padding vertical, sans quoi
+   les deux s'ajoutent et le bandeau se retrouve loin de la frise. */
+fold-aside-layout {
+  --fold-aside-layout-pad: 0;
+  --fold-aside-layout-rail-width: 15rem;
+  --fold-aside-layout-side-width: 18rem;
 }
 
 .od-h3 {
@@ -131,6 +130,21 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--fold-color-text-muted);
+}
+
+/* La colonne centrale : composition, puis ce qui décrit la commande. */
+.od-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  min-width: 0;
+}
+
+/* Un bloc du centre (acheminement, note) : séparé d'un filet, pas d'une carte —
+   trois cartes empilées au centre feraient concurrence au rail droit. */
+.od-block {
+  padding-top: var(--fold-space-md);
+  border-top: 1px solid var(--fold-color-border-subtle);
 }
 
 .od-table {
@@ -197,9 +211,7 @@
 }
 
 .od-totals {
-  margin: var(--fold-space-md) 0 0;
-  margin-inline-start: auto;
-  width: min(20rem, 100%);
+  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -268,6 +280,60 @@
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xs);
+}
+
+/* ── Documents ──────────────────────────────────────────────────────────── */
+
+.od-docs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.od-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.od-doc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: var(--fold-color-primary);
+  text-align: start;
+  cursor: pointer;
+}
+
+.od-doc-link:hover span {
+  text-decoration: underline;
+}
+
+.od-doc-link:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+  border-radius: var(--fold-radius-xs);
+}
+
+/* Un document indisponible garde son nom lisible : c'est le motif juste en
+   dessous qui porte l'information, pas un grisé qui ferait croire à un bug. */
+.od-doc-name {
+  font-weight: 600;
+}
+
+.od-doc-why {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  line-height: 1.35;
 }
 
 /* ── Pastilles ──────────────────────────────────────────────────────────── */

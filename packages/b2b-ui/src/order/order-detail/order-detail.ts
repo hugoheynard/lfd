@@ -1,6 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { BillingAddressPayload, OrderLineView, OrderView } from '@lfd/contracts';
-import { FoldBadgeComponent, FoldTimelineComponent, type FoldTimelineNode } from 'fold-ng';
+import {
+  FoldAsideLayoutComponent,
+  FoldBadgeComponent,
+  FoldIconComponent,
+  FoldTimelineComponent,
+  type FoldTimelineNode,
+} from 'fold-ng';
 
 import {
   formatCents,
@@ -13,6 +19,24 @@ import {
   paymentStatusVariant,
 } from '../order-format';
 import { buildTimeline, toTimelineNodes } from '../order-timeline';
+
+/**
+ * Un document rattaché à une commande (bon de livraison, facture…).
+ *
+ * L'**indisponibilité est un cas de premier ordre**, pas une absence : une
+ * facture qui n'est pas encore émise doit se voir, avec sa raison. La masquer
+ * ferait chercher ailleurs un document qui n'existe pas encore, et un bouton
+ * inerte ne dirait pas pourquoi.
+ */
+export interface OrderDocument {
+  /** Ce que l'app reçoit sur `documentAsked` — à elle de savoir quoi en faire. */
+  readonly key: string;
+  readonly label: string;
+  /** Précision sous le lien (« généré depuis la commande »). */
+  readonly hint?: string;
+  /** Renseigné = pas de lien, et cette phrase explique pourquoi. */
+  readonly unavailable?: string;
+}
 
 /** Une ligne retirée du gabarit récurrent, prête à afficher. */
 interface RemovedLine {
@@ -47,7 +71,7 @@ interface TotalRow {
 @Component({
   selector: 'lfd-order-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldTimelineComponent],
+  imports: [FoldAsideLayoutComponent, FoldBadgeComponent, FoldIconComponent, FoldTimelineComponent],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.scss',
 })
@@ -61,6 +85,17 @@ export class OrderDetail {
    * tel quel — laid mais vrai, ce qui vaut mieux qu'une ligne muette.
    */
   readonly nameBySku = input<ReadonlyMap<string, string>>(new Map());
+
+  /**
+   * Les documents de la commande. **L'app décide** de la liste et de ce qui est
+   * disponible : côté client on ne propose pas les mêmes pièces qu'au staff, et
+   * seule l'app sait ce qui existe réellement derrière (un fichier stocké, un
+   * document généré, ou rien encore).
+   */
+  readonly documents = input<readonly OrderDocument[]>([]);
+
+  /** Un document a été demandé — la `key` de l'entrée cliquée. */
+  readonly documentAsked = output<string>();
 
   /**
    * La frise, en nœuds `fold-timeline`. Le rail, les points, la barre de
@@ -87,9 +122,9 @@ export class OrderDetail {
   });
 
   /**
-   * Le récapitulatif des montants. Remise et livraison ne sont **rendues que si
-   * elles existent** : une ligne « Remise 0,00 € » invite à chercher une remise
-   * qu'on n'a pas eue.
+   * Le récapitulatif des montants, dans le rail droit. Remise et livraison ne
+   * sont **rendues que si elles existent** : une ligne « Remise 0,00 € » invite
+   * à chercher une remise qu'on n'a pas eue.
    */
   protected readonly totals = computed<readonly TotalRow[]>(() => {
     const order = this.order();

@@ -22,7 +22,12 @@
     }
     @default {
       @if (order(); as o) {
-        <lfd-order-detail [order]="o" [nameBySku]="nameBySku">
+        <lfd-order-detail
+          [order]="o"
+          [nameBySku]="nameBySku"
+          [documents]="documents()"
+          (documentAsked)="onDocument($event)"
+        >
           <ng-container actions>
             @if (settlable(o)) {
               <button foldButton intent="primary" icon="wallet" (click)="settle(o)">Régler</button>

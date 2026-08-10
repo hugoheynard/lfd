@@ -28,23 +28,30 @@
       </p>
     </header>
 
-    <!-- Frise d'avancement : règlement d'abord (le régime décide s'il bloque),
-       puis production jusqu'à la remise — dont les jalons dépendent de
-       l'acheminement. Le rail est `fold-timeline` ; seule la zone de libellé est
-       projetée, pour teinter l'échec et griser ce qui n'est pas encore suivi. -->
-    <fold-timeline
-      class="od-track"
-      orientation="horizontal"
-      ariaLabel="Avancement de la commande"
-      datePlacement="hidden"
-      [nodes]="nodes()"
-    >
-      <ng-template #node let-n>
-        <span class="od-node" [attr.data-state]="n.state">{{ n.label }}</span>
-      </ng-template>
-    </fold-timeline>
+    <!-- Trois colonnes, une question chacune : où ça en est (gauche), ce qu'il y
+         a dedans (centre), combien et qu'en faire (droite). Les rails collent au
+         défilement — sur une commande à cinquante lignes, le total et les actions
+         ne doivent pas disparaître en haut de page.
 
-    <div class="od-grid">
+         Pas de `stackLeftFirst` : replié, la composition passe devant la frise.
+         Le rail est un compagnon, pas une navigation. -->
+    <fold-aside-layout asideLeftLabel="Avancement" asideRightLabel="Montants et documents">
+      <div asideLeft>
+        <h3 class="od-h3">Avancement</h3>
+        <!-- Rail vertical ici : en colonne étroite, un stepper horizontal
+             écraserait cinq à six libellés côte à côte. -->
+        <fold-timeline
+          orientation="vertical"
+          ariaLabel="Avancement de la commande"
+          datePlacement="hidden"
+          [nodes]="nodes()"
+        >
+          <ng-template #node let-n>
+            <span class="od-node" [attr.data-state]="n.state">{{ n.label }}</span>
+          </ng-template>
+        </fold-timeline>
+      </div>
+
       <section class="od-lines" aria-labelledby="od-lines-title">
         <h3 class="od-h3" id="od-lines-title">Composition</h3>
 
@@ -86,18 +93,9 @@
           </p>
         }
 
-        <dl class="od-totals">
-          @for (row of totals(); track row.key) {
-            <div class="od-total-row" [class.is-strong]="row.strong">
-              <dt>{{ row.label }}</dt>
-              <dd>{{ row.value }}</dd>
-            </div>
-          }
-        </dl>
-      </section>
-
-      <aside class="od-side">
-        <section class="od-card">
+        <!-- L'acheminement et la note décrivent la commande, pas son argent :
+             ils restent au centre, sous ce qu'elle contient. -->
+        <section class="od-block">
           <h3 class="od-h3">Acheminement</h3>
           <p class="od-method">{{ fulfillment() }}</p>
           @if (address(); as addr) {
@@ -115,18 +113,60 @@
         </section>
 
         @if (o.note) {
-          <section class="od-card">
+          <section class="od-block">
             <h3 class="od-h3">Note</h3>
             <p class="od-note">{{ o.note }}</p>
           </section>
         }
+      </section>
+
+      <div asideRight class="od-side">
+        <section class="od-card">
+          <h3 class="od-h3">Montants</h3>
+          <dl class="od-totals">
+            @for (row of totals(); track row.key) {
+              <div class="od-total-row" [class.is-strong]="row.strong">
+                <dt>{{ row.label }}</dt>
+                <dd>{{ row.value }}</dd>
+              </div>
+            }
+          </dl>
+        </section>
 
         <!-- Les actions n'ont rien de commun entre client et commercial : elles
-             sont projetées par l'app, pas décidées ici. -->
+             sont projetées par l'app, pas décidées ici. Juste sous le total,
+             parce qu'on décide de régler après avoir vu combien. -->
         <div class="od-actions">
           <ng-content select="[actions]" />
         </div>
-      </aside>
-    </div>
+
+        @if (documents().length > 0) {
+          <section class="od-card">
+            <h3 class="od-h3">Documents</h3>
+            <ul class="od-docs">
+              @for (doc of documents(); track doc.key) {
+                <li class="od-doc">
+                  @if (doc.unavailable) {
+                    <!-- Un document qu'on n'a pas se DIT, avec sa raison. Un lien
+                         mort ou un bouton inerte enverrait chercher un fichier
+                         qui n'existe pas. -->
+                    <span class="od-doc-name">{{ doc.label }}</span>
+                    <span class="od-doc-why">{{ doc.unavailable }}</span>
+                  } @else {
+                    <button type="button" class="od-doc-link" (click)="documentAsked.emit(doc.key)">
+                      <fold-icon name="download" size="sm" />
+                      <span>{{ doc.label }}</span>
+                    </button>
+                    @if (doc.hint) {
+                      <span class="od-doc-why">{{ doc.hint }}</span>
+                    }
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+    </fold-aside-layout>
   </article>
 }
