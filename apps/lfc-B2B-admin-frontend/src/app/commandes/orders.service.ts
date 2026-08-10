@@ -5,10 +5,6 @@ import { firstValueFrom } from 'rxjs';
 import type { AdminOrderRow, AdminOrdersQuery, OrderView } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
-import { SuiteEmbed } from '../suite-embed/suite-embed';
-
-/** Audience du token staff (surface `/admin/*`). */
-const STAFF_AUDIENCE = 'b2b-admin';
 
 /**
  * Les **commandes vues du staff**. Une surface à part de celle du client : ces
@@ -21,7 +17,6 @@ const STAFF_AUDIENCE = 'b2b-admin';
 @Injectable({ providedIn: 'root' })
 export class AdminOrdersService {
   private readonly http = inject(HttpClient);
-  private readonly embed = inject(SuiteEmbed);
 
   /** Les commandes, la plus récente en tête. Filtres optionnels. */
   async list(filters: Partial<AdminOrdersQuery> = {}): Promise<readonly AdminOrderRow[]> {
@@ -39,7 +34,6 @@ export class AdminOrdersService {
     return firstValueFrom(
       this.http.get<readonly AdminOrderRow[]>(
         `${B2B_API_BASE}/admin/orders${query === '' ? '' : `?${query}`}`,
-        await this.staffOptions(),
       ),
     );
   }
@@ -47,15 +41,7 @@ export class AdminOrdersService {
   /** Une commande, dans la même vue que celle du client — délibérément. */
   async byId(id: string): Promise<OrderView> {
     return firstValueFrom(
-      this.http.get<OrderView>(
-        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}`,
-        await this.staffOptions(),
-      ),
+      this.http.get<OrderView>(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}`),
     );
-  }
-
-  private async staffOptions(): Promise<{ headers: Record<string, string> }> {
-    const token = await this.embed.requestToken(STAFF_AUDIENCE);
-    return { headers: token === null ? {} : { Authorization: `Bearer ${token}` } };
   }
 }

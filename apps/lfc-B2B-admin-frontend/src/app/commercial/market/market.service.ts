@@ -13,10 +13,6 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
-import { SuiteEmbed } from '../../suite-embed/suite-embed';
-
-/** Audience du token staff (surface `/admin/*`). */
-const STAFF_AUDIENCE = 'b2b-admin';
 
 /**
  * Transport de la **config marché** (Réglages ▸ Commercial) et de l'**adoption par
@@ -26,7 +22,6 @@ const STAFF_AUDIENCE = 'b2b-admin';
 @Injectable({ providedIn: 'root' })
 export class MarketService {
   private readonly http = inject(HttpClient);
-  private readonly embed = inject(SuiteEmbed);
   private readonly base = `${B2B_API_BASE}/admin/commercial/market`;
 
   config(): Promise<MarketConfigView> {
@@ -78,22 +73,14 @@ export class MarketService {
   }
 
   private async get<T>(url: string): Promise<T> {
-    const headers = await this.authHeaders();
-    return firstValueFrom(this.http.get<T>(url, { headers }));
+    return firstValueFrom(this.http.get<T>(url));
   }
 
   private async post<T>(url: string, body: unknown): Promise<T> {
-    const headers = await this.authHeaders();
-    return firstValueFrom(this.http.post<T>(url, body, { headers }));
+    return firstValueFrom(this.http.post<T>(url, body));
   }
 
   private async delete<T>(url: string): Promise<T> {
-    const headers = await this.authHeaders();
-    return firstValueFrom(this.http.delete<T>(url, { headers }));
-  }
-
-  private async authHeaders(): Promise<Record<string, string>> {
-    const token = await this.embed.requestToken(STAFF_AUDIENCE);
-    return token === null ? {} : { Authorization: `Bearer ${token}` };
+    return firstValueFrom(this.http.delete<T>(url));
   }
 }

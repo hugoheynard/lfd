@@ -9,10 +9,6 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
-import { SuiteEmbed } from '../../suite-embed/suite-embed';
-
-/** Audience du token staff (surface `/admin/*`). */
-const STAFF_AUDIENCE = 'b2b-admin';
 
 /**
  * Points de retrait (laboratoires) — adresses **globales** d'acheminement. La
@@ -23,7 +19,6 @@ const STAFF_AUDIENCE = 'b2b-admin';
 @Injectable({ providedIn: 'root' })
 export class PickupAddressesService {
   private readonly http = inject(HttpClient);
-  private readonly embed = inject(SuiteEmbed);
 
   /** Liste les points de retrait (le défaut en tête). Route publique. */
   list(): Promise<readonly PickupAddressView[]> {
@@ -35,49 +30,26 @@ export class PickupAddressesService {
   /** Crée un point de retrait (staff). */
   async create(payload: PickupAddressPayload): Promise<CreatedPickupResponse> {
     return firstValueFrom(
-      this.http.post<CreatedPickupResponse>(
-        `${B2B_API_BASE}/admin/pickup-addresses`,
-        payload,
-        await this.staffOptions(),
-      ),
+      this.http.post<CreatedPickupResponse>(`${B2B_API_BASE}/admin/pickup-addresses`, payload),
     );
   }
 
   /** Édite un point de retrait (staff). */
   async update(id: string, payload: PickupAddressPayload): Promise<void> {
     await firstValueFrom(
-      this.http.patch<void>(
-        `${B2B_API_BASE}/admin/pickup-addresses/${id}`,
-        payload,
-        await this.staffOptions(),
-      ),
+      this.http.patch<void>(`${B2B_API_BASE}/admin/pickup-addresses/${id}`, payload),
     );
   }
 
   /** Supprime un point de retrait (staff ; le backend refuse le dernier). */
   async remove(id: string): Promise<void> {
-    await firstValueFrom(
-      this.http.delete<void>(
-        `${B2B_API_BASE}/admin/pickup-addresses/${id}`,
-        await this.staffOptions(),
-      ),
-    );
+    await firstValueFrom(this.http.delete<void>(`${B2B_API_BASE}/admin/pickup-addresses/${id}`));
   }
 
   /** Désigne un point comme défaut (staff). */
   async setDefault(id: string): Promise<void> {
     await firstValueFrom(
-      this.http.patch<void>(
-        `${B2B_API_BASE}/admin/pickup-addresses/${id}/default`,
-        {},
-        await this.staffOptions(),
-      ),
+      this.http.patch<void>(`${B2B_API_BASE}/admin/pickup-addresses/${id}/default`, {}),
     );
-  }
-
-  /** En-tête `Authorization` staff, ou vide si le token est indisponible. */
-  private async staffOptions(): Promise<{ headers: Record<string, string> }> {
-    const token = await this.embed.requestToken(STAFF_AUDIENCE);
-    return { headers: token === null ? {} : { Authorization: `Bearer ${token}` } };
   }
 }

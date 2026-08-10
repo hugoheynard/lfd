@@ -5,10 +5,6 @@ import { firstValueFrom } from 'rxjs';
 import type { GrowthStatsView, OrderMetricsView, TerminationStatsView } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
-import { SuiteEmbed } from '../../suite-embed/suite-embed';
-
-/** Audience du token staff (surface `/admin/*`). */
-const STAFF_AUDIENCE = 'b2b-admin';
 
 /**
  * Lecture du **dashboard de croissance** — `GET /admin/growth/stats` (KPIs, courbe
@@ -18,7 +14,6 @@ const STAFF_AUDIENCE = 'b2b-admin';
 @Injectable({ providedIn: 'root' })
 export class GrowthService {
   private readonly http = inject(HttpClient);
-  private readonly embed = inject(SuiteEmbed);
 
   async stats(): Promise<GrowthStatsView> {
     return this.get<GrowthStatsView>('stats');
@@ -34,12 +29,7 @@ export class GrowthService {
     return this.get<TerminationStatsView>('terminations');
   }
 
-  private async get<T>(path: string): Promise<T> {
-    const token = await this.embed.requestToken(STAFF_AUDIENCE);
-    return firstValueFrom(
-      this.http.get<T>(`${B2B_API_BASE}/admin/growth/${path}`, {
-        headers: token === null ? {} : { Authorization: `Bearer ${token}` },
-      }),
-    );
+  private get<T>(path: string): Promise<T> {
+    return firstValueFrom(this.http.get<T>(`${B2B_API_BASE}/admin/growth/${path}`));
   }
 }

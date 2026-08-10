@@ -4,7 +4,6 @@ import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { B2B_API_BASE } from '../../api/api-config';
-import { SuiteEmbed } from '../../suite-embed/suite-embed';
 import { AdminCompaniesService } from '../admin-companies.service';
 import type { AdminCompany, AdminCompanyDetail } from '../admin-company';
 
@@ -34,25 +33,21 @@ const company: AdminCompany = {
 
 const URL = `${B2B_API_BASE}/admin/companies`;
 
-/** Laisse résoudre le `await requestToken()` avant que la requête HTTP parte. */
+/**
+ * Laisse tourner la micro-tâche avant d'inspecter la requête. Le service part
+ * désormais sans attendre de jeton — c'est `staffAuthInterceptor` qui l'attache,
+ * et il est testé pour lui-même — mais les méthodes restent asynchrones.
+ */
 function flush(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-function setup(token: string | null): {
+function setup(): {
   service: AdminCompaniesService;
   http: HttpTestingController;
 } {
   TestBed.configureTestingModule({
-    providers: [
-      provideHttpClient(),
-      provideHttpClientTesting(),
-      AdminCompaniesService,
-      {
-        provide: SuiteEmbed,
-        useValue: { requestToken: (): Promise<string | null> => Promise.resolve(token) },
-      },
-    ],
+    providers: [provideHttpClient(), provideHttpClientTesting(), AdminCompaniesService],
   });
   return {
     service: TestBed.inject(AdminCompaniesService),
@@ -66,7 +61,7 @@ describe('AdminCompaniesService', () => {
   });
 
   it('GET /admin/companies et renvoie la liste', async () => {
-    const { service, http } = setup(null);
+    const { service, http } = setup();
     const promise = service.list();
     await flush();
 
@@ -77,35 +72,13 @@ describe('AdminCompaniesService', () => {
     await expect(promise).resolves.toEqual([company]);
   });
 
-  it('attache le token staff en en-tête Authorization quand il est fourni', async () => {
-    const { service, http } = setup('tok-staff');
-    const promise = service.list();
-    await flush();
-
-    const req = http.expectOne(URL);
-    expect(req.request.headers.get('Authorization')).toBe('Bearer tok-staff');
-    req.flush([]);
-    await promise;
-  });
-
-  it("n'envoie aucun Authorization quand le token est null (dev/bypass)", async () => {
-    const { service, http } = setup(null);
-    const promise = service.list();
-    await flush();
-
-    const req = http.expectOne(URL);
-    expect(req.request.headers.has('Authorization')).toBe(false);
-    req.flush([]);
-    await promise;
-  });
-
   it('GET /admin/companies/:id renvoie la fiche détail', async () => {
     const detail: AdminCompanyDetail = {
       ...company,
       vatNumberRequired: true,
       addresses: { billing: null, deliveries: [] },
     };
-    const { service, http } = setup(null);
+    const { service, http } = setup();
     const promise = service.getById('company_1');
     await flush();
 
@@ -117,7 +90,7 @@ describe('AdminCompaniesService', () => {
   });
 
   it('getById renvoie undefined sur 404 (société inconnue)', async () => {
-    const { service, http } = setup(null);
+    const { service, http } = setup();
     const promise = service.getById('company_absente');
     await flush();
 
@@ -127,7 +100,7 @@ describe('AdminCompaniesService', () => {
   });
 
   it('setPaymentTerm PATCH le terme convenu', async () => {
-    const { service, http } = setup(null);
+    const { service, http } = setup();
     const promise = service.setPaymentTerm('company_1', 'net90');
     await flush();
 

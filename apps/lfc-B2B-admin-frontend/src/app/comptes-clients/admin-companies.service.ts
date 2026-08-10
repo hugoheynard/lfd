@@ -10,20 +10,14 @@ import type {
 import type { CompanyContactDraft, CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
 import { B2B_API_BASE } from '../api/api-config';
-import { SuiteEmbed } from '../suite-embed/suite-embed';
 import type { AdminCompany, AdminCompanyDetail, PaymentTerm } from './admin-company';
-
-/** Audience du token staff demandé au shell (surface `/admin/*`). */
-const STAFF_AUDIENCE = 'b2b-admin';
 
 /**
  * Accès à la surface **admin** du backend B2B.
  *
- * Auth : on demande au shell un token pour l'audience staff (Invariant C — jamais
- * le token client). Embarqué en prod, le shell le relaie ; standalone ou en dev
- * (bypass backend), `requestToken` rend `null` → aucun en-tête, et le backend en
- * bypass laisse passer. Le jour où l'audience staff existe côté shell, la même
- * ligne fournit le vrai token.
+ * Auth : rien ici. Le jeton staff (Invariant C — jamais le token client) est
+ * attaché par `staffAuthInterceptor`, qui sait seul d'où il vient : du shell
+ * quand l'app est embarquée, de sa propre session Auth0 sinon.
  *
  * Les **mutations** (Porte B) complètent une société à la place du client — elles
  * n'ont pas de mur membership côté backend (le staff n'est membre de rien), la
@@ -33,13 +27,10 @@ const STAFF_AUDIENCE = 'b2b-admin';
 @Injectable({ providedIn: 'root' })
 export class AdminCompaniesService {
   private readonly http = inject(HttpClient);
-  private readonly embed = inject(SuiteEmbed);
 
   async list(): Promise<readonly AdminCompany[]> {
     return firstValueFrom(
-      this.http.get<readonly AdminCompany[]>(`${B2B_API_BASE}/admin/companies`, {
-        headers: await this.authHeaders(),
-      }),
+      this.http.get<readonly AdminCompany[]>(`${B2B_API_BASE}/admin/companies`),
     );
   }
 
@@ -47,9 +38,7 @@ export class AdminCompaniesService {
   async getById(id: string): Promise<AdminCompanyDetail | undefined> {
     try {
       return await firstValueFrom(
-        this.http.get<AdminCompanyDetail>(`${B2B_API_BASE}/admin/companies/${id}`, {
-          headers: await this.authHeaders(),
-        }),
+        this.http.get<AdminCompanyDetail>(`${B2B_API_BASE}/admin/companies/${id}`),
       );
     } catch (error) {
       if (isNotFound(error)) {
@@ -69,11 +58,7 @@ export class AdminCompaniesService {
     readonly contact: CompanyContactDraft;
   }): Promise<AdminCompany> {
     const body = { ...input.identity, primaryContact: input.contact };
-    return firstValueFrom(
-      this.http.post<AdminCompany>(`${B2B_API_BASE}/admin/companies`, body, {
-        headers: await this.authHeaders(),
-      }),
-    );
+    return firstValueFrom(this.http.post<AdminCompany>(`${B2B_API_BASE}/admin/companies`, body));
   }
 
   /** Dépose (ou remplace) le KBIS — multipart. */
@@ -81,29 +66,23 @@ export class AdminCompaniesService {
     const body = new FormData();
     body.append('file', file);
     await firstValueFrom(
-      this.http.put<void>(`${B2B_API_BASE}/admin/companies/${companyId}/kbis`, body, {
-        headers: await this.authHeaders(),
-      }),
+      this.http.put<void>(`${B2B_API_BASE}/admin/companies/${companyId}/kbis`, body),
     );
   }
 
   /** Édite l'identité souple (enseigne + n° de TVA). */
   async updateIdentity(companyId: string, payload: UpdateIdentityPayload): Promise<void> {
     await firstValueFrom(
-      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/identity`, payload, {
-        headers: await this.authHeaders(),
-      }),
+      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/identity`, payload),
     );
   }
 
   /** Fixe la condition de règlement **convenue** (solde la demande client). */
   async setPaymentTerm(companyId: string, paymentTerm: PaymentTerm): Promise<void> {
     await firstValueFrom(
-      this.http.patch<void>(
-        `${B2B_API_BASE}/admin/companies/${companyId}/payment-term`,
-        { paymentTerm },
-        { headers: await this.authHeaders() },
-      ),
+      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/payment-term`, {
+        paymentTerm,
+      }),
     );
   }
 
@@ -113,7 +92,6 @@ export class AdminCompaniesService {
       this.http.patch<void>(
         `${B2B_API_BASE}/admin/companies/${companyId}/billing-address`,
         payload,
-        { headers: await this.authHeaders() },
       ),
     );
   }
@@ -121,9 +99,7 @@ export class AdminCompaniesService {
   /** Active le compte (`pending → active`). Le gate (pièces requises) est serveur. */
   async activate(companyId: string): Promise<void> {
     await firstValueFrom(
-      this.http.post<void>(`${B2B_API_BASE}/admin/companies/${companyId}/activate`, null, {
-        headers: await this.authHeaders(),
-      }),
+      this.http.post<void>(`${B2B_API_BASE}/admin/companies/${companyId}/activate`, null),
     );
   }
 
@@ -133,15 +109,8 @@ export class AdminCompaniesService {
       this.http.post<{ readonly id: string }>(
         `${B2B_API_BASE}/admin/companies/${companyId}/delivery-addresses`,
         payload,
-        { headers: await this.authHeaders() },
       ),
     );
-  }
-
-  /** En-tête `Authorization` staff, ou vide en dev/standalone (bypass backend). */
-  private async authHeaders(): Promise<Record<string, string>> {
-    const token = await this.embed.requestToken(STAFF_AUDIENCE);
-    return token === null ? {} : { Authorization: `Bearer ${token}` };
   }
 }
 

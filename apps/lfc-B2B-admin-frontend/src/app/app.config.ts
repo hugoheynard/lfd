@@ -4,12 +4,13 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding, withRouterConfig } from '@angular/router';
 import { provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
 import { provideStaffAuth } from './auth/auth.providers';
+import { staffAuthInterceptor } from './auth/staff-auth.interceptor';
 import { SuiteEmbed } from './suite-embed/suite-embed';
 
 // App browser-only (pas de SSR — la suite est CSR). HttpClient en mode `fetch`
@@ -31,7 +32,9 @@ export const appConfig: ApplicationConfig = {
       // au build, visible au premier clic.
       withRouterConfig({ paramsInheritanceStrategy: 'always' }),
     ),
-    provideHttpClient(withFetch()),
+    // Un seul point d'attache du jeton staff, pour que treize services n'aient
+    // pas à s'en souvenir chacun (sept l'avaient oublié). Cf. `staff-auth.interceptor.ts`.
+    provideHttpClient(withFetch(), withInterceptors([staffAuthInterceptor])),
     // Session Auth0 **propre à cette app**, fournie uniquement quand elle tourne
     // hors du shell (sinon la suite authentifie, et une iframe tierce ne peut de
     // toute façon pas rejouer `checkSession`). Cf. `auth.providers.ts`.
