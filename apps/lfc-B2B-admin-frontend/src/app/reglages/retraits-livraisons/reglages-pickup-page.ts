@@ -15,6 +15,7 @@ import {
 
 import { NotifyService } from '../../notify.service';
 import { formatAdjustment } from './cart-adjustment-format';
+import { CutoffsSection } from './cutoffs-section/cutoffs-section';
 import { DeliveryZonesSection } from './delivery-zones-section/delivery-zones-section';
 import { PickupAddressesService } from './pickup-addresses.service';
 import { PickupPanel, type PickupPanelData } from './pickup-panel/pickup-panel';
@@ -41,6 +42,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldDropdownItemComponent,
     FoldInlineConfirmComponent,
     FoldPopoverTriggerDirective,
+    CutoffsSection,
     DeliveryZonesSection,
   ],
   templateUrl: './reglages-pickup-page.html',

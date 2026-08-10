@@ -1,0 +1,86 @@
+<fold-card>
+  <div class="head">
+    <div class="head-text">
+      <h2 class="section-title">Heures limites de commande</h2>
+      <p class="section-desc">
+        Jusqu'à quand un client peut commander pour un acheminement donné. Une
+        <strong>règle par ligne</strong> : la plus précise l'emporte — un point de retrait pour un
+        jour précis passe avant le point tous jours, qui passe avant le défaut.
+      </p>
+    </div>
+    <button foldButton size="sm" icon="plus" (click)="add()">Ajouter une règle</button>
+  </div>
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="state">Chargement…</p>
+    }
+    @case ('error') {
+      <div class="state">
+        <p>Impossible de charger les heures limites.</p>
+        <button foldButton (click)="load()">Réessayer</button>
+      </div>
+    }
+    @default {
+      @if (rules().length === 0) {
+        <!-- Aucune règle = aucune limite. Ce n'est pas une page vide, c'est un
+             état de la plateforme, et il vaut mieux le dire. -->
+        <fold-empty-state
+          icon="clock"
+          title="Aucune heure limite"
+          description="Tant qu'aucune règle n'existe, une commande est acceptée quelle que soit l'heure."
+        />
+      } @else {
+        @if (hasNoDefault()) {
+          <fold-callout variant="warning">
+            Aucune règle par défaut : tout point de retrait qui n'a pas la sienne accepte les
+            commandes sans limite d'heure.
+          </fold-callout>
+        }
+
+        <ul class="rules">
+          @for (rule of rules(); track rule.id) {
+            <li class="rule">
+              <div class="rule-main">
+                <span class="rule-scope">
+                  {{ scope(rule) }}
+                  @if (rule.pickupAddressId === null) {
+                    <fold-badge content="Défaut" variant="neutral" />
+                  }
+                </span>
+                <span class="rule-day">{{ day(rule) }}</span>
+              </div>
+
+              <span class="rule-when">{{ sentence(rule) }}</span>
+
+              <div class="rule-actions">
+                @if (pendingRemoval() === rule.id) {
+                  <fold-inline-confirm
+                    message="Supprimer cette règle ?"
+                    confirmLabel="Supprimer"
+                    (confirmed)="remove(rule)"
+                    (cancelled)="cancelRemove()"
+                  />
+                } @else {
+                  <button foldButton emphasis="soft" size="sm" icon="edit" (click)="edit(rule)">
+                    Modifier
+                  </button>
+                  <button
+                    foldButton
+                    emphasis="soft"
+                    intent="danger"
+                    size="sm"
+                    icon="bin"
+                    (click)="askRemove(rule)"
+                  >
+                    Supprimer
+                  </button>
+                }
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</fold-card>

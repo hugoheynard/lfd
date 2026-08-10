@@ -1,0 +1,58 @@
+<fold-panel-header [title]="heading()" />
+
+<div class="body">
+  <fold-select
+    label="S'applique à"
+    hint="« Tous les points » sert de défaut : elle couvre ce qu'aucune règle plus précise ne vise."
+    [value]="pickupAddressId() ?? any"
+    (valueChange)="onScope($event)"
+  >
+    <option [value]="any">Tous les points (défaut)</option>
+    @for (point of points(); track point.id) {
+      <option [value]="point.id">{{ point.label || point.ville }}</option>
+    }
+  </fold-select>
+
+  <fold-select
+    label="Jour d'acheminement visé"
+    [value]="weekday() ?? any"
+    (valueChange)="onWeekday($event)"
+  >
+    <option [value]="any">Tous les jours</option>
+    @for (day of weekdays; track day.value) {
+      <option [value]="day.value">{{ day.label }}</option>
+    }
+  </fold-select>
+
+  <fold-select
+    label="La limite tombe"
+    [value]="daysBefore().toString()"
+    (valueChange)="onDaysBefore($event)"
+  >
+    @for (choice of daysBeforeChoices; track choice.value) {
+      <option [value]="choice.value">{{ choice.label }}</option>
+    }
+  </fold-select>
+
+  <!-- `<input type="time">` en natif : Signal Forms ne couvre pas les dates et
+       heures, et le contrôle du navigateur est meilleur que tout masque maison. -->
+  <label class="time">
+    <span class="time-label">À quelle heure</span>
+    <input type="time" [value]="time()" (change)="onTime($event)" required />
+  </label>
+
+  @if (!timeIsValid()) {
+    <fold-callout variant="alert">Renseignez une heure au format HH:MM.</fold-callout>
+  }
+
+  <!-- Une règle se relit en une phrase avant d'être enregistrée : c'est là qu'on
+       voit qu'on a écrit « le jour même » en pensant « la veille ». -->
+  <fold-callout variant="info">{{ recap() }}</fold-callout>
+</div>
+
+<div class="actions">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" (click)="submit()">
+    {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+  </button>
+</div>

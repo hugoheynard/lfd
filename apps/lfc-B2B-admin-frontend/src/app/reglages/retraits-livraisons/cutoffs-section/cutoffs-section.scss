@@ -1,0 +1,89 @@
+:host {
+  display: block;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  margin-bottom: var(--fold-space-md);
+}
+
+.head-text {
+  min-width: 0;
+}
+
+.section-title {
+  margin: 0 0 0.15rem;
+  font-size: var(--fold-text-md);
+  font-weight: 700;
+}
+
+.section-desc {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  line-height: 1.45;
+}
+
+.state {
+  color: var(--fold-color-text-muted);
+}
+
+.rules {
+  list-style: none;
+  margin: var(--fold-space-md) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Une règle par rang, séparée d'un filet : la liste se lit dans l'ordre où les
+   règles s'appliquent, du plus précis au plus général. */
+.rule {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.rule-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.rule-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  font-weight: 600;
+}
+
+.rule-day {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.rule-when {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rule-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+@media (max-width: 44rem) {
+  .rule {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}
