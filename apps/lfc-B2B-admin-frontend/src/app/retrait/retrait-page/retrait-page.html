@@ -1,0 +1,84 @@
+<!-- Pas de `fold-page-layout` ici, volontairement : cet écran s'ouvre depuis un
+     appareil photo, pas depuis la navigation. Il n'a ni fil d'Ariane à porter ni
+     retour à proposer — juste une commande à remettre. -->
+<section class="rt">
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture du code…" />
+    }
+    @case ('error') {
+      <div class="rt-empty">
+        <p class="rt-empty-title">Code illisible</p>
+        <p class="rt-empty-why">{{ error() }}</p>
+        <button foldButton emphasis="outline" icon="reload" (click)="load()">Réessayer</button>
+      </div>
+    }
+    @default {
+      @if (handover(); as h) {
+        <header class="rt-head">
+          <p class="rt-customer">{{ h.customerLabel }}</p>
+          <h1 class="rt-number">{{ h.orderNumber }}</h1>
+          <p class="rt-when">
+            Commandée le {{ fmtDate(h.placedAt) }}
+            @if (h.requestedDeliveryDate) {
+              · retrait souhaité le {{ fmtDate(h.requestedDeliveryDate) }}
+            }
+            @if (h.pickupLabel) {
+              · {{ h.pickupLabel }}
+            }
+          </p>
+        </header>
+
+        <!-- Le total en tête de liste : c'est le chiffre qu'on recompte à voix
+             haute avant de tendre le sac. Aucun montant sur cet écran — on coche
+             des articles, on ne facture pas. -->
+        <section class="rt-lines" aria-label="Contenu de la commande">
+          <p class="rt-count">{{ h.totalUnits }} articles</p>
+          <ul class="rt-list">
+            @for (line of h.lines; track line.sku) {
+              <li class="rt-line">
+                <span class="rt-qty">{{ line.quantity }}</span>
+                <span class="rt-name">{{ line.productName }}</span>
+                <span class="rt-sku">{{ line.sku }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+
+        @if (justConfirmed()) {
+          <fold-callout variant="success" class="rt-verdict">
+            Remise enregistrée{{ handedOverAt() ? ' — ' + handedOverAt() : '' }}.
+          </fold-callout>
+        } @else if (h.blockedReason; as reason) {
+          <!-- Le refus vient du serveur, en clair, et s'affiche tel quel : c'est
+               la phrase que la personne au comptoir va prononcer. -->
+          <fold-callout variant="warning" class="rt-verdict">
+            {{ reason }}
+            @if (handedOverAt(); as at) {
+              <br />Remise le {{ at }}.
+            }
+          </fold-callout>
+        }
+
+        @if (canConfirm()) {
+          <!-- Un seul bouton, pleine largeur, en bas : le pouce y arrive sans
+               regarder. Il se désarme pendant l'appel — un double tap au comptoir
+               n'est pas une hypothèse d'école. -->
+          <button
+            foldButton
+            class="rt-confirm"
+            intent="primary"
+            size="lg"
+            icon="check"
+            [disabled]="confirming()"
+            (click)="confirm()"
+          >
+            {{ confirming() ? 'Enregistrement…' : 'Confirmer la remise' }}
+          </button>
+        }
+
+        <a class="rt-more" [routerLink]="['/commandes', h.orderId]">Ouvrir la fiche complète</a>
+      }
+    }
+  }
+</section>

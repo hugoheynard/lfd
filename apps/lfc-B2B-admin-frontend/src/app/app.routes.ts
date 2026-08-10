@@ -18,6 +18,15 @@ export const routes: Routes = [
       import('./commandes/commande-page/commande-page').then((m) => m.AdminCommandePage),
   },
   {
+    // La cible d'un QR de retrait. Route de premier niveau et courte : elle est
+    // encodée dans un code-barres, et parfois dictée au téléphone le jour où une
+    // caméra refuse de lire. Chaque caractère de plus densifie les modules, donc
+    // fragilise le scan — ce n'est pas de la coquetterie d'URL.
+    path: 'retrait/:token',
+    title: 'Retrait — LFC B2B admin',
+    loadComponent: () => import('./retrait/retrait-page/retrait-page').then((m) => m.RetraitPage),
+  },
+  {
     // Un compte se regarde de quatre façons qui n'ont pas les mêmes lecteurs :
     // le tableau de bord (avant d'appeler), les informations (pour corriger),
     // les commandes, et les données brutes. Une coquille, quatre vues routées —

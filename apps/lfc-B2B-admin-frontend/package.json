@@ -32,6 +32,7 @@
     "d3-sankey": "^0.12.3",
     "echarts": "^6.1.0",
     "fold-ng": "catalog:",
+    "qrcode-generator": "^2.0.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

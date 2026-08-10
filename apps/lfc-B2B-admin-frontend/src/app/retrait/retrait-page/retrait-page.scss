@@ -1,0 +1,119 @@
+/* Écran de comptoir : lu debout, à une main, souvent sur un téléphone tenu à
+   bout de bras. Tout est plus gros qu'ailleurs dans l'app, et rien ne dépasse
+   d'une colonne — un balayage horizontal au moment de tendre un sac est perdu. */
+.rt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: var(--fold-space-lg) var(--fold-space-md);
+}
+
+.rt-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xs, 0.25rem);
+}
+
+/* Le client AVANT le numéro : au comptoir on reconnaît une personne, pas une
+   référence. Le numéro sert ensuite, quand il faut parler au téléphone. */
+.rt-customer {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+  color: var(--fold-color-text-muted);
+}
+
+.rt-number {
+  margin: 0;
+  font-size: var(--fold-text-2xl, 1.75rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.rt-when {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: 1.45;
+  color: var(--fold-color-text-muted);
+}
+
+.rt-count {
+  margin: 0 0 var(--fold-space-sm);
+  font-size: var(--fold-text-lg, 1.125rem);
+  font-weight: 700;
+}
+
+.rt-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rt-line {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) 0;
+}
+
+.rt-line + .rt-line {
+  border-top: 1px solid var(--fold-color-border);
+}
+
+/* La quantité en tête et en chiffres tabulaires : on lit une colonne de nombres
+   alignés, on ne cherche pas un chiffre au milieu d'une phrase. */
+.rt-qty {
+  font-size: var(--fold-text-lg, 1.125rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rt-name {
+  min-width: 0;
+}
+
+.rt-sku {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.rt-verdict {
+  display: block;
+}
+
+/* Pleine largeur : la cible la plus grande possible pour un pouce, et une seule
+   — il n'y a rien d'autre à faire sur cet écran. */
+.rt-confirm {
+  width: 100%;
+}
+
+.rt-more {
+  align-self: center;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.rt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-xl) 0;
+  text-align: center;
+}
+
+.rt-empty-title {
+  margin: 0;
+  font-size: var(--fold-text-lg, 1.125rem);
+  font-weight: 700;
+}
+
+.rt-empty-why {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}

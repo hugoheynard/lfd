@@ -12,4 +12,11 @@ import { B2B_API_BASE_VALUE } from './api.env.generated';
  * variable `B2B_ADMIN_API_BASE_URL` (CI/Cloudflare) en déployé, l'origine stable
  * `api-b2b.<zone>` derrière la passerelle. Jamais un secret — juste une origine.
  */
-export const B2B_API_BASE = B2B_API_BASE_VALUE;
+// Annotée `string` À DESSEIN. Sans annotation, TypeScript infère le type
+// LITTÉRAL de la valeur générée : dans un build à origine renseignée,
+// `B2B_API_BASE === ''` devient une comparaison « sans recouvrement », donc une
+// erreur de compilation — et c'est le garde-fou de l'intercepteur, celui qui
+// empêche d'attacher un jeton quand aucune origine n'est configurée, qui saute.
+// Le type doit décrire ce que la constante PEUT valoir selon l'environnement,
+// pas ce qu'elle vaut dans ce build-ci.
+export const B2B_API_BASE: string = B2B_API_BASE_VALUE;
