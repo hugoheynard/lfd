@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
 import type { OrderView } from '@lfd/contracts';
+import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
@@ -34,6 +35,24 @@ export class OrdersService {
 
   /** Vrai quand on **sait** qu'il n'y a aucune commande (pas avant la réponse). */
   readonly isEmpty = computed(() => this._status() === 'ready' && this.state().length === 0);
+
+  /**
+   * Une commande par identifiant (`GET /orders/:id`), pour la page de détail.
+   *
+   * **Pas** une lecture dans la liste déjà chargée : un lien direct ou un
+   * rafraîchissement n'a pas de liste, et une commande d'entreprise n'y figure
+   * de toute façon pas — c'est le serveur qui décide si on a le droit de la
+   * voir. L'état de page (chargement, erreur) appartient à l'écran, pas au
+   * service : deux détails ouverts ne partagent rien.
+   */
+  async byId(id: string): Promise<OrderView> {
+    const token = await firstValueFrom(this.auth.accessToken$());
+    return firstValueFrom(
+      this.http.get<OrderView>(`${AUTH_CONFIG.apiBaseUrl}/orders/${encodeURIComponent(id)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    );
+  }
 
   /** (Re)charge les commandes personnelles. Idempotent : relance depuis l'écran. */
   load(): void {

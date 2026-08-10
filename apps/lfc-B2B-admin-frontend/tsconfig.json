@@ -19,6 +19,7 @@
     "paths": {
       "@lfd/b2b-ui/appointment": ["../../packages/b2b-ui/src/appointment/index.ts"],
       "@lfd/b2b-ui/company": ["../../packages/b2b-ui/src/company/index.ts"],
+      "@lfd/b2b-ui/order": ["../../packages/b2b-ui/src/order/index.ts"],
       "@lfd/endpoints": ["../../packages/endpoints/src/index.ts"]
     }
   },

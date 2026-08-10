@@ -20,7 +20,9 @@
         <span class="chip chip--pay" [attr.data-pay]="order.paymentStatus">
           {{ paymentLabel(order.paymentStatus) }}
         </span>
-        <span class="order-total"><strong>{{ fmtCents(order.totalCents) }}</strong></span>
+        <span class="order-total"
+          ><strong>{{ fmtCents(order.totalCents) }}</strong></span
+        >
         <span class="order-caret" aria-hidden="true">{{ isExpanded(order.id) ? '▾' : '▸' }}</span>
       </button>
 
@@ -63,7 +65,11 @@
               <span class="order-fulfil">{{ fulfillmentLabel(order.fulfillmentMethod) }}</span>
               @if (fulfilAddress(order); as addr) {
                 <p class="comp-addr">
-                  {{ addr.ligne1 }}@if (addr.ligne2) {, {{ addr.ligne2 }}}<br />
+                  {{ addr.ligne1 }}
+                  @if (addr.ligne2) {
+                    , {{ addr.ligne2 }}
+                  }
+                  <br />
                   {{ addr.codePostal }} {{ addr.ville }}
                 </p>
               }
@@ -72,6 +78,7 @@
         </div>
 
         <div class="order-actions">
+          <a class="order-open" [routerLink]="['/commandes', order.id]">Ouvrir la commande →</a>
           @if (settlable(order.paymentStatus)) {
             <button
               foldButton

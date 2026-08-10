@@ -1,0 +1,354 @@
+:host {
+  display: block;
+}
+
+.od {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* ── Bandeau ────────────────────────────────────────────────────────────── */
+
+/* Grille en deux colonnes : l'identité et l'état à gauche, le montant calé à
+   droite. Le montant est la seule chose qu'on cherche parfois sans rien lire
+   d'autre — il a donc sa place fixe, pas un rang dans un flux. */
+.od-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--fold-space-xs) var(--fold-space-lg);
+  padding-bottom: var(--fold-space-md);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.od-ident {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.od-number {
+  margin: 0;
+  font-size: var(--fold-text-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.od-when {
+  grid-column: 1;
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.od-badges {
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  margin-top: var(--fold-space-xs);
+}
+
+.od-total {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.od-total-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.od-total-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  letter-spacing: 0.06em;
+}
+
+/* ── Frise ──────────────────────────────────────────────────────────────── */
+
+/* Horizontale sur une page de détail (la place est là), verticale dès qu'elle
+   ne tient plus : cinq libellés côte à côte deviennent illisibles avant même
+   d'atteindre le mobile. */
+.od-track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--fold-space-xs);
+}
+
+.od-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.1rem;
+}
+
+/* Le trait qui relie deux jalons part du point et s'arrête au suivant. */
+.od-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0.75rem;
+  top: 0.4rem;
+  width: calc(100% - 0.75rem);
+  height: 2px;
+  background: var(--fold-color-border);
+}
+
+.od-dot {
+  position: relative;
+  z-index: 1;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--fold-color-border);
+}
+
+.od-step-label {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+  line-height: 1.25;
+}
+
+.od-step[data-state='done'] .od-dot {
+  background: var(--fold-color-success);
+}
+.od-step[data-state='done'] .od-step-label {
+  color: var(--fold-color-text);
+}
+.od-step[data-state='current'] .od-dot {
+  background: var(--fold-color-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fold-color-primary) 20%, transparent);
+}
+.od-step[data-state='current'] .od-step-label {
+  color: var(--fold-color-text);
+  font-weight: 700;
+}
+.od-step[data-state='cancelled'] .od-dot {
+  background: var(--fold-color-alert);
+}
+
+@media (max-width: 48rem) {
+  .od-track {
+    grid-auto-flow: row;
+    gap: 0;
+  }
+  .od-step {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--fold-space-sm);
+    padding-bottom: var(--fold-space-sm);
+  }
+  .od-step:not(:last-child)::after {
+    inset-inline-start: 0.35rem;
+    top: 0.9rem;
+    width: 2px;
+    height: calc(100% - 0.6rem);
+  }
+  .od-dot {
+    margin-top: 0.15rem;
+    flex: 0 0 auto;
+  }
+}
+
+/* ── Corps ──────────────────────────────────────────────────────────────── */
+
+.od-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18rem;
+  gap: var(--fold-space-lg);
+  align-items: start;
+}
+
+@media (max-width: 56rem) {
+  .od-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.od-h3 {
+  margin: 0 0 var(--fold-space-sm);
+  font-size: var(--fold-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fold-color-text-muted);
+}
+
+.od-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fold-text-sm);
+}
+
+.od-table th {
+  padding: 0 0 var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border);
+  font-size: var(--fold-text-xs);
+  font-weight: 600;
+  text-align: start;
+  color: var(--fold-color-text-muted);
+}
+
+.od-table td {
+  padding: var(--fold-space-sm) 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+  vertical-align: baseline;
+}
+
+.od-col-qty {
+  width: 3rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.od-col-num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.od-line-name {
+  font-weight: 600;
+}
+
+/* Le SKU est là pour la conversation (« la référence VIE-001 »), pas pour la
+   lecture : discret, mais présent des deux côtés du téléphone. */
+.od-sku {
+  margin-inline-start: var(--fold-space-xs);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.od-muted {
+  color: var(--fold-color-text-muted);
+}
+
+.od-removed {
+  margin: var(--fold-space-sm) 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.od-removed-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.od-totals {
+  margin: var(--fold-space-md) 0 0;
+  margin-inline-start: auto;
+  width: min(20rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.od-total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  font-size: var(--fold-text-sm);
+}
+
+.od-total-row dt,
+.od-total-row dd {
+  margin: 0;
+}
+
+.od-total-row dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.od-total-row.is-strong {
+  margin-top: 0.3rem;
+  padding-top: var(--fold-space-xs);
+  border-top: 1px solid var(--fold-color-border);
+  font-size: var(--fold-text-md);
+  font-weight: 700;
+}
+
+/* ── Rail latéral ───────────────────────────────────────────────────────── */
+
+.od-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.od-card {
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+}
+
+.od-method {
+  margin: 0;
+  font-weight: 600;
+}
+
+.od-addr {
+  margin: var(--fold-space-xs) 0 0;
+  font-style: normal;
+  font-size: var(--fold-text-sm);
+  line-height: 1.4;
+  color: var(--fold-color-text-muted);
+}
+
+.od-note {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.od-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* ── Pastilles ──────────────────────────────────────────────────────────── */
+
+.od-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.45rem;
+  border-radius: var(--fold-radius-pill);
+  font-size: var(--fold-text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.od-pill--rec {
+  background: color-mix(in srgb, var(--fold-color-primary) 16%, transparent);
+  color: var(--fold-color-primary);
+}
+
+.od-pill--add {
+  margin-inline-start: var(--fold-space-xs);
+  background: color-mix(in srgb, var(--fold-color-success) 16%, transparent);
+  color: var(--fold-color-success);
+}
+
+.od-pill--rem {
+  background: color-mix(in srgb, var(--fold-color-alert) 14%, transparent);
+  color: var(--fold-color-alert);
+}

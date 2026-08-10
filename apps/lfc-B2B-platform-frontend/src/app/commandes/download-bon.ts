@@ -1,5 +1,5 @@
 import { formatEurValue } from '../data/catalogue-seed';
-import { orderStatusLabel } from './order-status';
+import { orderStatusLabel } from '@lfd/b2b-ui/order';
 import type { CommandeRow } from './orders-demo-seed';
 
 /**

@@ -245,6 +245,20 @@
   line-height: 1.35;
 }
 
+/* Le lien vers la page de détail est calé à GAUCHE, face aux actions : c'est
+   une navigation, pas une action sur la commande. */
+.order-open {
+  margin-inline-end: auto;
+  align-self: center;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-primary);
+  text-decoration: none;
+}
+.order-open:hover {
+  text-decoration: underline;
+}
+
 .order-actions {
   display: flex;
   justify-content: flex-end;

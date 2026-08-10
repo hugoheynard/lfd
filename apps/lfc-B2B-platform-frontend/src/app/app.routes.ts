@@ -61,6 +61,13 @@ export const routes: Routes = [
       import('./commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
   },
   {
+    path: 'commandes/:id',
+    title: 'Commande — La Folie Coffee B2B',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./commandes/commande-page/commande-page').then((m) => m.CommandePage),
+  },
+  {
     path: 'entreprises',
     title: 'Mes entreprises — La Folie Coffee B2B',
     canActivate: [authenticatedGuard],

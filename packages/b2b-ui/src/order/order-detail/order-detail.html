@@ -1,0 +1,120 @@
+@if (order(); as o) {
+<article class="od">
+  <!-- Bandeau : qui, quand, où ça en est, combien. Les quatre réponses qu'on
+         cherche avant de lire quoi que ce soit d'autre. -->
+  <header class="od-head">
+    <div class="od-ident">
+      <h2 class="od-number">{{ o.orderNumber }}</h2>
+      @if (o.fromSubscriptionId) {
+      <span class="od-pill od-pill--rec">Panier récurrent</span>
+      }
+    </div>
+
+    <p class="od-when">
+      Passée le {{ fmtDate(o.placedAt) }} @if (o.requestedDeliveryDate) { · souhaitée le {{
+      fmtDate(o.requestedDeliveryDate) }} }
+    </p>
+
+    <div class="od-badges">
+      <fold-badge [variant]="statusVariant()" [content]="statusLabel()" />
+      <fold-badge [variant]="paymentVariant()" [content]="paymentLabel()" />
+    </div>
+
+    <p class="od-total">
+      <span class="od-total-value">{{ fmtCents(o.totalCents) }}</span>
+      <span class="od-total-label">TTC</span>
+    </p>
+  </header>
+
+  <!-- Frise d'avancement : règlement, puis production jusqu'à la remise. -->
+  <ol class="od-track">
+    @for (step of steps(); track step.key) {
+    <li class="od-step" [attr.data-state]="step.state">
+      <span class="od-dot" aria-hidden="true"></span>
+      <span class="od-step-label">{{ step.label }}</span>
+    </li>
+    }
+  </ol>
+
+  <div class="od-grid">
+    <section class="od-lines" aria-labelledby="od-lines-title">
+      <h3 class="od-h3" id="od-lines-title">Composition</h3>
+
+      <table class="od-table">
+        <thead>
+          <tr>
+            <th scope="col" class="od-col-qty">Qté</th>
+            <th scope="col">Article</th>
+            <th scope="col" class="od-col-num">PU HT</th>
+            <th scope="col" class="od-col-num">TVA</th>
+            <th scope="col" class="od-col-num">Total HT</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of o.lines; track line.sku) {
+          <tr>
+            <td class="od-col-qty">{{ line.quantity }}</td>
+            <td>
+              <span class="od-line-name">{{ line.productName }}</span>
+              <span class="od-sku">{{ line.sku }}</span>
+              @if (isAdded(line)) {
+              <span class="od-pill od-pill--add">ajout</span>
+              }
+            </td>
+            <td class="od-col-num">{{ fmtCents(line.unitPriceCents) }}</td>
+            <td class="od-col-num od-muted">{{ fmtVat(line.vatRate) }}</td>
+            <td class="od-col-num">{{ fmtCents(line.lineTotalCents) }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (removed().length > 0) {
+      <p class="od-removed">
+        <span class="od-removed-label">Retiré du gabarit :</span>
+        @for (line of removed(); track line.sku) {
+        <span class="od-pill od-pill--rem">− {{ line.quantity }}× {{ line.name }}</span>
+        }
+      </p>
+      }
+
+      <dl class="od-totals">
+        @for (row of totals(); track row.key) {
+        <div class="od-total-row" [class.is-strong]="row.strong">
+          <dt>{{ row.label }}</dt>
+          <dd>{{ row.value }}</dd>
+        </div>
+        }
+      </dl>
+    </section>
+
+    <aside class="od-side">
+      <section class="od-card">
+        <h3 class="od-h3">Acheminement</h3>
+        <p class="od-method">{{ fulfillment() }}</p>
+        @if (address(); as addr) {
+        <address class="od-addr">
+          {{ addr.ligne1 }}@if (addr.ligne2) {<br />{{ addr.ligne2 }}}<br />
+          {{ addr.codePostal }} {{ addr.ville }}
+        </address>
+        } @else {
+        <p class="od-muted">Adresse non renseignée.</p>
+        }
+      </section>
+
+      @if (o.note) {
+      <section class="od-card">
+        <h3 class="od-h3">Note</h3>
+        <p class="od-note">{{ o.note }}</p>
+      </section>
+      }
+
+      <!-- Les actions n'ont rien de commun entre client et commercial : elles
+             sont projetées par l'app, pas décidées ici. -->
+      <div class="od-actions">
+        <ng-content select="[actions]" />
+      </div>
+    </aside>
+  </div>
+</article>
+}

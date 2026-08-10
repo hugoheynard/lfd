@@ -7,32 +7,19 @@ import type {
   OrderView,
   PaymentStatus,
 } from '@lfd/contracts';
+import { RouterLink } from '@angular/router';
 import { FoldButtonComponent } from 'fold-ng';
+import {
+  buildTimeline,
+  canSettle,
+  formatCents,
+  fulfillmentLabel as sharedFulfillmentLabel,
+  orderStatusLabel,
+  paymentStatusLabel,
+  type TimelineStep,
+} from '@lfd/b2b-ui/order';
 
-import { formatEurValue, productById } from '../../data/catalogue-seed';
-import { buildTimeline, canSettle, type TimelineStep } from './order-timeline';
-
-const STATUS_LABELS: Readonly<Record<OrderStatus, string>> = {
-  draft: 'Brouillon',
-  placed: 'Passée',
-  confirmed: 'Confirmée',
-  in_production: 'En production',
-  fulfilled: 'Livrée',
-  cancelled: 'Annulée',
-};
-
-const PAYMENT_LABELS: Readonly<Record<PaymentStatus, string>> = {
-  not_required: 'À facturer',
-  pending: 'Paiement en attente',
-  paid: 'Payée',
-  failed: 'Paiement échoué',
-  refunded: 'Remboursée',
-};
-
-const FULFILLMENT_LABELS: Readonly<Record<FulfillmentMethod, string>> = {
-  delivery: 'Coursier',
-  pickup: 'Retrait au labo',
-};
+import { productById } from '../../data/catalogue-seed';
 
 /** Une ligne retirée du gabarit récurrent (nom résolu depuis le catalogue). */
 interface RemovedLine {
@@ -50,7 +37,7 @@ interface RemovedLine {
 @Component({
   selector: 'app-my-orders',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent],
+  imports: [FoldButtonComponent, RouterLink],
   templateUrl: './my-orders.html',
   styleUrl: './my-orders.scss',
 })
@@ -109,20 +96,20 @@ export class MyOrders {
   }
 
   protected statusLabel(status: OrderStatus): string {
-    return STATUS_LABELS[status];
+    return orderStatusLabel(status);
   }
 
   protected paymentLabel(status: PaymentStatus): string {
-    return PAYMENT_LABELS[status];
+    return paymentStatusLabel(status);
   }
 
   protected fulfillmentLabel(method: FulfillmentMethod): string {
-    return FULFILLMENT_LABELS[method];
+    return sharedFulfillmentLabel(method);
   }
 
   /** Montant TTC (centimes) → « 6,33 € ». */
   protected fmtCents(cents: number): string {
-    return formatEurValue(cents / 100);
+    return formatCents(cents);
   }
 
   /** ISO → date courte fr (« 6 août 2026 »). */

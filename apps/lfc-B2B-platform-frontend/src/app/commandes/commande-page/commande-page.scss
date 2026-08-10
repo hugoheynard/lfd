@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+/* Chargement et erreur : un bloc centré et sobre, pas une carte — la page n'a
+   pas encore de contenu à encadrer. */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  color: var(--fold-color-text-muted);
+}

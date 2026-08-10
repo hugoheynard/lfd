@@ -13,7 +13,7 @@ import { companyDisplayName, paymentTermLabel, type Company } from '../../accoun
 import { CommerceContextService } from '../../commerce/commerce-context.service';
 import { formatEurValue } from '../../data/catalogue-seed';
 import { downloadBon as downloadBonFile } from '../download-bon';
-import { orderStatusLabel, orderStatusVariant } from '../order-status';
+import { orderStatusLabel, orderStatusVariant } from '@lfd/b2b-ui/order';
 import { buildDemoOrders, type CommandeRow } from '../orders-demo-seed';
 
 /** Une entreprise gérée et ses commandes — un bloc de la vue « Toutes les commandes ». */

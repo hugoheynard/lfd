@@ -12,6 +12,10 @@
     "./company": {
       "types": "./src/company/index.ts",
       "default": "./src/company/index.ts"
+    },
+    "./order": {
+      "types": "./src/order/index.ts",
+      "default": "./src/order/index.ts"
     }
   },
   "scripts": {

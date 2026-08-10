@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { FoldBadgeComponent, type FoldBadgeVariant, FoldButtonIconComponent } from 'fold-ng';
 
 import { formatEurValue } from '../../data/catalogue-seed';
-import { orderStatusLabel, orderStatusVariant } from '../order-status';
+import { orderStatusLabel, orderStatusVariant } from '@lfd/b2b-ui/order';
 import type { CommandeRow as Order } from '../orders-demo-seed';
 
 /**

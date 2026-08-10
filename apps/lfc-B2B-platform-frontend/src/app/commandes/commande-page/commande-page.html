@@ -1,0 +1,44 @@
+<fold-page-layout icon="list" [title]="heading()">
+  <button
+    pageActions
+    foldButton
+    emphasis="outline"
+    intent="neutral"
+    icon="chevron-left"
+    (click)="back()"
+  >
+    Mes commandes
+  </button>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-spinner label="Chargement de la commande…" />
+    }
+    @case ('error') {
+      <div class="state">
+        <p>{{ error() }}</p>
+        <button foldButton (click)="load()">Réessayer</button>
+      </div>
+    }
+    @default {
+      @if (order(); as o) {
+        <lfd-order-detail [order]="o" [nameBySku]="nameBySku">
+          <ng-container actions>
+            @if (settlable(o)) {
+              <button foldButton intent="primary" icon="wallet" (click)="settle(o)">Régler</button>
+            }
+            <button
+              foldButton
+              emphasis="soft"
+              intent="neutral"
+              icon="repeat"
+              (click)="makeRecurring(o)"
+            >
+              Transformer en panier récurrent
+            </button>
+          </ng-container>
+        </lfd-order-detail>
+      }
+    }
+  }
+</fold-page-layout>

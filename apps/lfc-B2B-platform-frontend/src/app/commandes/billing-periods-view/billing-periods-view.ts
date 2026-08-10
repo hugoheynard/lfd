@@ -13,7 +13,7 @@ import { CommandSingle } from '../command-single/command-single';
 import { formatEurValue } from '../../data/catalogue-seed';
 import type { BillingPeriod, PeriodStatus } from '../billing-periods';
 import { buildMonthlyLedger, type LedgerRow } from '../monthly-ledger';
-import { orderStatusVariant } from '../order-status';
+import { orderStatusVariant } from '@lfd/b2b-ui/order';
 import type { CommandeRow } from '../orders-demo-seed';
 import type { PaymentRegimeChange } from '../payment-regime-changes';
 
