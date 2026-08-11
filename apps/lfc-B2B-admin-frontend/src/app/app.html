@@ -57,6 +57,11 @@
         (click)="mobileNavOpen.set(false)"
       ></a>
 
+      <!-- La cloche d'équipe. Dans le rail plutôt qu'en en-tête : cette coquille
+           n'en a pas (`headerHeight` 0), et une notification finit toujours par
+           une navigation — sa place est avec les autres liens. -->
+      <app-notification-bell />
+
       <!-- QUI est connecté, quand la session est celle de cette app. Embarqué,
            l'identité appartient au shell et s'affiche là-haut : la répéter ici
            laisserait croire à deux sessions distinctes. -->

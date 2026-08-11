@@ -11,6 +11,7 @@ import {
 
 import { StaffAuth } from './auth/staff-auth';
 import { StaffLoginPage } from './auth/staff-login/staff-login';
+import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
 import { SuiteEmbed } from './suite-embed/suite-embed';
 
 /**
@@ -42,6 +43,7 @@ import { SuiteEmbed } from './suite-embed/suite-embed';
     FoldPanelHostComponent,
     FoldSpinnerComponent,
     FoldToastContainerComponent,
+    NotificationBell,
     StaffLoginPage,
   ],
   templateUrl: './app.html',

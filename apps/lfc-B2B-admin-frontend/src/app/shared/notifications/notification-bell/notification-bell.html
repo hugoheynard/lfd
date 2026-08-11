@@ -1,0 +1,55 @@
+<fold-popover
+  placement="right-end"
+  [fallbackPlacements]="['right-start', 'bottom-start']"
+  [open]="open()"
+  (openChange)="toggled($event)"
+>
+  <button
+    fold-menu-item
+    foldPopoverTrigger
+    type="button"
+    icon="bell"
+    label="Notifications"
+    [badge]="unread()"
+    badgeTone="alert"
+  ></button>
+
+  <div foldPopoverPanel class="nb-panel">
+    <header class="nb-head">
+      <h3 class="nb-title">Notifications</h3>
+      @if (unread() > 0) {
+        <button foldButton emphasis="outline" size="sm" (click)="markAllRead()">
+          Tout marquer comme lu
+        </button>
+      }
+    </header>
+
+    @if (failed()) {
+      <p class="nb-error">
+        Le fil n'a pas pu être chargé.
+        <button type="button" class="nb-retry" (click)="refresh()">Réessayer</button>
+      </p>
+    }
+
+    @if (items().length === 0 && !failed()) {
+      <p class="nb-empty">Rien à signaler.</p>
+    }
+
+    <ul class="nb-list">
+      @for (item of items(); track item.id) {
+        <li>
+          <a
+            class="nb-item"
+            [class.nb-item--unread]="item.readAt === null"
+            [routerLink]="item.link"
+            (click)="follow(item)"
+          >
+            <span class="nb-subject">{{ item.subject }}</span>
+            <span class="nb-body">{{ item.body }}</span>
+            <span class="nb-when">{{ when(item.occurredAt) }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+  </div>
+</fold-popover>

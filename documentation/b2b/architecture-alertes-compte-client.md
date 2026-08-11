@@ -392,23 +392,32 @@ Trois conséquences sur le modèle :
 
 ## 9. Les tranches
 
-| #     | Contenu                                                                                          | Dépend de |
-| ----- | ------------------------------------------------------------------------------------------------ | --------- |
-| **A** | ✅ Contrats Zod + Prisma + réglages **globaux** (CRUD backend + section Réglages)                | —         |
-| **B** | Détecteurs purs + évaluation sur `order.placed` + journal + onglet Alertes (liste, acquittement) | A         |
-| **C** | ✅ Dérogations par compte (backend + rappel/désactiver/modifier sur la fiche)                    | —         |
-| **D** | Canaux staff : e-mail + **socle de notification** (table, endpoints, cloche du back-office)      | B         |
-| **E** | Garde-fou client : `POST /orders/preflight` + confirmation de commande                           | B         |
+| #     | Contenu                                                                                             | Dépend de |
+| ----- | --------------------------------------------------------------------------------------------------- | --------- |
+| **A** | ✅ Contrats Zod + Prisma + réglages **globaux** (CRUD backend + section Réglages)                   | —         |
+| **B** | ✅ Détecteurs purs + évaluation sur `order.placed` + journal + onglet Alertes (liste, acquittement) | A         |
+| **C** | ✅ Dérogations par compte (backend + rappel/désactiver/modifier sur la fiche)                       | —         |
+| **D** | ✅ Canaux staff : e-mail + **socle de notification** (table, endpoints, cloche du back-office)      | B         |
+| **E** | Garde-fou client : `POST /orders/preflight` + confirmation de commande                              | B         |
 
 B et C ont finalement été inversées : la dérogation était le cœur de la demande,
-et elle ne dépendait de rien d'autre que du réglage global. Reste que **rien ne
-détecte encore** — B est ce qui rendra ces règles vérifiables.
+et elle ne dépendait de rien d'autre que du réglage global. B a suivi, et c'est
+elle qui rend ces règles vérifiables : sans détecteur, un réglage n'est qu'une
+intention.
 
-**La tranche D construit un socle, pas un canal.** Le back-office n'a aucune
+**La tranche D a construit un socle, pas un canal.** Le back-office n'a aucune
 notion de notification staff ; on la crée ici, et les alertes en sont le premier
 consommateur. Deuxième consommateur immédiat : J2 (« RDV pris », « demande de
 contact déposée »), qui attendait exactement ça — la cloche doit donc être
 **générique** (un sujet, un lien, un état lu/non-lu), pas une cloche à alertes.
+
+La cloche vit dans le **rail** du back-office (`app-notification-bell`) : cette
+coquille n'a pas d'en-tête, et une notification finit toujours par une
+navigation — sa place est avec les autres liens. Elle relance toutes les 60 s et
+à l'ouverture ; un échec de relance ne produit **aucun toast** (un message par
+minute parce que le réseau est tombé serait pire que le silence), il se lit dans
+le panneau. Marquer lu est **optimiste**, et le geste est celui de l'équipe : le
+fil est commun, `readBy` dit seulement qui s'en est chargé.
 
 ---
 

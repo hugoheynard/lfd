@@ -1,0 +1,97 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* La surface, le rayon et l'ombre appartiennent à `fold-popover` — les
+   redéclarer ici ferait deux cartes empilées. On ne pose que la mesure. */
+.nb-panel {
+  display: grid;
+  gap: var(--fold-space-sm);
+  width: min(360px, calc(100vw - 2rem));
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding: var(--fold-space-md);
+}
+
+.nb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.nb-title {
+  margin: 0;
+  font-size: var(--fold-text-md);
+}
+
+.nb-empty,
+.nb-error {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.nb-error {
+  color: var(--fold-color-alert-text);
+}
+
+.nb-retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.nb-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nb-item {
+  display: grid;
+  gap: 0.15rem;
+  padding: var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
+.nb-item:hover,
+.nb-item:focus-visible {
+  background: var(--fold-color-surface-hover);
+}
+
+/* Non lue : le liseré porte l'état, pas seulement la graisse — la couleur seule
+   ne suffirait pas. */
+.nb-item--unread {
+  border-left: 3px solid var(--fold-color-warning);
+}
+
+.nb-subject {
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+}
+
+.nb-item--unread .nb-subject::after {
+  content: ' •';
+  color: var(--fold-color-warning);
+}
+
+.nb-body {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.nb-when {
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
