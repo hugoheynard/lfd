@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 import { AccountModule } from "./account/account.module.js";
+import { AlertsModule } from "./alerts/alerts.module.js";
 import { DeliveryZonesModule } from "./delivery-zones/delivery-zones.module.js";
 import { GrowthModule } from "./growth/growth.module.js";
 import { OrdersModule } from "./orders/orders.module.js";
@@ -57,6 +58,9 @@ import { SecurityModule } from "./infra/security/security.module.js";
     SubscriptionsModule,
     // Croissance (cross-domain) : journal d'événements, consommé par les émetteurs.
     GrowthModule,
+    // Alertes de compte client : surveille un compte DÉJÀ client (produit inédit,
+    // écart à sa propre moyenne). Après Orders : il écoute `order.placed`.
+    AlertsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

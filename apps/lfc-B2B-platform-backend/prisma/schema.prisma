@@ -1180,3 +1180,36 @@ model BookingPolicySettings {
   @@map("booking_policy_settings")
   @@schema("growth")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Alertes de compte client — cf. documentation/b2b/architecture-alertes-compte-client.md
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Le réglage **global** d'un type d'alerte : une ligne par type, valable pour
+/// tous les comptes tant qu'aucune dérogation ne l'écrase.
+///
+/// `kind` est la clé, et il est en **String** (union validée au bord par Zod),
+/// pas en enum Prisma : ajouter un type de détection ne doit pas coûter une
+/// migration. `params` est discriminé par ce même `kind` côté contrat —
+/// `thresholdPercent` n'a aucun sens pour « produit jamais pris ».
+///
+/// Une ligne **absente** = le type n'a jamais été touché : le lecteur retombe
+/// alors sur les défauts déclarés dans `ALERT_KINDS`. C'est pour ça que
+/// `updated_at` sert de « jamais réglé » à l'écran plutôt qu'une date inventée.
+model AlertRuleSetting {
+  kind String @id
+
+  enabled Boolean @default(true)
+
+  /// Paramètres du détecteur, forme dictée par `kind` (union discriminée Zod).
+  params Json
+
+  /// Canaux : { staffInApp, staffEmail, customerVisible }. Le journal du compte,
+  /// lui, est inconditionnel — ces trois-là sont ce qu'on fait EN PLUS.
+  delivery Json
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("alert_rule_settings")
+  @@schema("public")
+}
