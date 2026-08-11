@@ -1,11 +1,17 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { FoldLoadingStateComponent } from 'fold-ng';
-import type { AccountAlertOverride, AccountAlertRuleView, AlertKind } from '@lfd/contracts';
+import type {
+  AccountAlertOverride,
+  AccountAlertRuleView,
+  AccountAlertView,
+  AlertKind,
+} from '@lfd/contracts';
 
 import { NotifyService } from '../../notify.service';
 
 import { AccountAlertRulesService } from './account-alert-rules.service';
 import { AccountAlertCard } from './account-alert-card/account-alert-card';
+import { AlertJournal } from './alert-journal/alert-journal';
 
 /**
  * Onglet **Alertes** d'un compte : ce que la plateforme surveille chez lui, et ce
@@ -23,7 +29,7 @@ import { AccountAlertCard } from './account-alert-card/account-alert-card';
 @Component({
   selector: 'app-client-alertes-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldLoadingStateComponent, AccountAlertCard],
+  imports: [FoldLoadingStateComponent, AccountAlertCard, AlertJournal],
   templateUrl: './alertes-page.html',
   styleUrl: './alertes-page.scss',
 })
@@ -35,6 +41,9 @@ export class ClientAlertesPage {
   private readonly notify = inject(NotifyService);
 
   protected readonly rules = signal<AccountAlertRuleView[]>([]);
+  protected readonly alerts = signal<AccountAlertView[]>([]);
+  /** L'alerte en cours d'acquittement — une seule à la fois, pas la page. */
+  protected readonly acknowledging = signal<string | null>(null);
   protected readonly loading = signal(true);
   protected readonly failed = signal(false);
   /** Le type en cours d'écriture : une règle s'enregistre seule, pas la page. */
@@ -52,7 +61,15 @@ export class ClientAlertesPage {
     this.loading.set(true);
     this.failed.set(false);
     try {
-      this.rules.set(await this.service.list(companyId));
+      // Les deux ensemble : l'écran ne sert à rien à moitié — des règles sans
+      // journal ne disent pas ce qu'elles ont produit, et l'inverse ne dit pas
+      // pourquoi.
+      const [rules, alerts] = await Promise.all([
+        this.service.list(companyId),
+        this.service.listAlerts(companyId),
+      ]);
+      this.rules.set(rules);
+      this.alerts.set(alerts);
     } catch {
       this.failed.set(true);
     } finally {
@@ -89,6 +106,22 @@ export class ClientAlertesPage {
       this.notify.error(error, "La dérogation n'a pas pu être enregistrée.");
     } finally {
       this.saving.set(null);
+    }
+  }
+
+  /**
+   * Acquitte, puis **relit** le journal. Le serveur date l'acquittement et retient
+   * le premier : recomposer la ligne ici la ferait diverger de ce qui est écrit.
+   */
+  protected async acknowledge(alertId: string): Promise<void> {
+    this.acknowledging.set(alertId);
+    try {
+      await this.service.acknowledge(alertId);
+      this.alerts.set(await this.service.listAlerts(this.id()));
+    } catch (error) {
+      this.notify.error(error, "L'alerte n'a pas pu être acquittée.");
+    } finally {
+      this.acknowledging.set(null);
     }
   }
 }

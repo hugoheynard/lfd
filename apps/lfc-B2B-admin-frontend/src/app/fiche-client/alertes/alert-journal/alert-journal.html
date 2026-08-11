@@ -1,0 +1,63 @@
+<section class="aj">
+  <fold-element-title
+    variant="title"
+    icon="list"
+    title="Ce qui s'est déclenché"
+    subtitle="Les alertes en attente d'abord — le reste est de la mémoire, pas une file."
+  />
+
+  @if (alerts().length === 0) {
+    <p class="sec-hint">
+      Aucune alerte sur ce compte. Les règles ci-dessus s'évaluent à chaque commande.
+    </p>
+  }
+
+  @for (alert of pending(); track alert.id) {
+    <fold-card class="aj-card aj-card--pending">
+      <header class="aj-head">
+        <div>
+          <h4 class="aj-title">{{ title(alert) }}</h4>
+          <p class="aj-meta">Commande {{ alert.orderNumber }} · {{ when(alert.occurredAt) }}</p>
+        </div>
+        <button
+          foldButton
+          emphasis="outline"
+          size="sm"
+          [disabled]="busy() === alert.id"
+          (click)="acknowledge.emit(alert.id)"
+        >
+          {{ busy() === alert.id ? 'Enregistrement…' : "J'ai vu" }}
+        </button>
+      </header>
+
+      <!-- Un constat par ligne concernée : c'est le cap de bruit rendu visible. -->
+      <ul class="aj-findings">
+        @for (finding of alert.findings; track finding.sku) {
+          <li>{{ finding.message }}</li>
+        }
+      </ul>
+    </fold-card>
+  }
+
+  @if (handled().length > 0) {
+    <h4 class="aj-section">Déjà vues</h4>
+    @for (alert of handled(); track alert.id) {
+      <fold-card class="aj-card">
+        <header class="aj-head">
+          <div>
+            <h4 class="aj-title">{{ title(alert) }}</h4>
+            <p class="aj-meta">
+              Commande {{ alert.orderNumber }} · {{ when(alert.occurredAt) }} · vue le
+              {{ when(alert.acknowledgedAt ?? alert.occurredAt) }}
+            </p>
+          </div>
+        </header>
+        <ul class="aj-findings">
+          @for (finding of alert.findings; track finding.sku) {
+            <li>{{ finding.message }}</li>
+          }
+        </ul>
+      </fold-card>
+    }
+  }
+</section>

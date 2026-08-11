@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { AccountAlertOverride, AccountAlertRuleView, AlertKind } from '@lfd/contracts';
+import type {
+  AccountAlertOverride,
+  AccountAlertRuleView,
+  AccountAlertView,
+  AlertKind,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
 
@@ -29,6 +34,19 @@ export class AccountAlertRulesService {
   /** Revenir au réglage global : on **supprime** la dérogation, on n'en écrit pas une neutre. */
   async clearOverride(companyId: string, kind: AlertKind): Promise<void> {
     await firstValueFrom(this.http.delete<void>(`${this.base(companyId)}/${kind}`));
+  }
+
+  /** Le journal du compte, du plus récent au plus ancien. */
+  listAlerts(companyId: string): Promise<AccountAlertView[]> {
+    return firstValueFrom(
+      this.http.get<AccountAlertView[]>(`${B2B_API_BASE}/admin/companies/${companyId}/alerts`),
+    );
+  }
+
+  async acknowledge(alertId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${B2B_API_BASE}/admin/alerts/${alertId}/acknowledge`, null),
+    );
   }
 
   private base(companyId: string): string {

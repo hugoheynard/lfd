@@ -21,4 +21,10 @@
       />
     }
   </div>
+
+  <app-alert-journal
+    [alerts]="alerts()"
+    [busy]="acknowledging()"
+    (acknowledge)="acknowledge($event)"
+  />
 }
