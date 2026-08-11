@@ -7,11 +7,7 @@
       [value]="store.name()"
       (valueChange)="store.name.set($event)"
     />
-    <fold-listbox
-      label="Nature"
-      [value]="store.kind()"
-      (selectionChange)="store.setKind($event)"
-    >
+    <fold-listbox label="Nature" [value]="store.kind()" (selectionChange)="store.setKind($event)">
       @for (option of store.kinds; track option.value) {
         <fold-option [value]="option.value">{{ option.label }}</fold-option>
       }
@@ -27,9 +23,7 @@
     </fold-listbox>
     <fold-input
       label="Référence — SKU"
-      [hint]="
-        store.isEdit() ? 'Figée après création.' : 'Calculée si laissée vide.'
-      "
+      [hint]="store.isEdit() ? 'Figée après création.' : 'Calculée si laissée vide.'"
       [value]="store.sku()"
       [disabled]="store.isEdit()"
       (valueChange)="store.sku.set($event)"
@@ -37,9 +31,7 @@
   </div>
   @if (store.isEdit()) {
     <div class="section-footer">
-      <button foldButton size="sm" (click)="store.saveIdentity()">
-        Enregistrer
-      </button>
+      <button foldButton size="sm" (click)="store.saveIdentity()">Enregistrer</button>
       <span class="section-status">{{ store.statusText('identite') }}</span>
     </div>
   }

@@ -83,7 +83,7 @@ describe('CompanyContactsSection', () => {
 
     expect(cards).toHaveLength(2);
     // Première carte = l'admin (le contact principal).
-    expect(cards[0]?.textContent).toContain('Admin du compte entreprise');
+    expect(cards[0]?.textContent).toContain('Détenteur du compte');
     expect(cards[0]?.querySelector('fold-badge')).not.toBeNull();
     expect(cards[0]?.textContent).toContain('Vous');
   });

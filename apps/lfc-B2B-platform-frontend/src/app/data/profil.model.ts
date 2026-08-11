@@ -69,7 +69,11 @@ export interface Adresse {
 export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
 /** Jours ouvrés dans l'ordre d'affichage, avec libellés long et court. */
-export const WEEKDAYS: readonly { readonly value: Weekday; readonly label: string; readonly short: string }[] = [
+export const WEEKDAYS: readonly {
+  readonly value: Weekday;
+  readonly label: string;
+  readonly short: string;
+}[] = [
   { value: 'mon', label: 'Lundi', short: 'Lun' },
   { value: 'tue', label: 'Mardi', short: 'Mar' },
   { value: 'wed', label: 'Mercredi', short: 'Mer' },

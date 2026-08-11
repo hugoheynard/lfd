@@ -10,11 +10,7 @@ import type {
 } from '../../data/models';
 import { CatalogueApi } from '../catalogue-api';
 import { ReferenceApi } from '../reference-api';
-import {
-  ProductHttpApi,
-  type EditorialFields,
-  type NutritionValues,
-} from '../product-http-api';
+import { ProductHttpApi, type EditorialFields, type NutritionValues } from '../product-http-api';
 
 // ── Types de vue partagés par la page et les panneaux ──────────────────────
 
@@ -130,9 +126,7 @@ export class ProductFormStore {
 
   private readonly productId = signal('');
   private readonly variantId = signal('');
-  private readonly statusMap = signal<
-    Partial<Record<FormSection, SectionStatus>>
-  >({});
+  private readonly statusMap = signal<Partial<Record<FormSection, SectionStatus>>>({});
   private readonly baseline = signal<Partial<Record<FormSection, string>>>({});
 
   readonly pageTitle = computed(() => {
@@ -143,9 +137,7 @@ export class ProductFormStore {
     return name === '' ? 'Éditer le produit' : `Éditer le produit — ${name}`;
   });
 
-  private readonly regimeById = computed(
-    () => new Map(this.regimes().map((r) => [r.id, r])),
-  );
+  private readonly regimeById = computed(() => new Map(this.regimes().map((r) => [r.id, r])));
 
   private readonly selectedCategory = computed<Category | undefined>(() =>
     this.categories().find((c) => c.id === this.categoryId()),
@@ -158,9 +150,7 @@ export class ProductFormStore {
     }
     const tva = (id: string): string => {
       const regime = this.regimeById().get(id);
-      return regime === undefined
-        ? '—'
-        : `${regime.name} · ${formatPercent(regime.percent)}`;
+      return regime === undefined ? '—' : `${regime.name} · ${formatPercent(regime.percent)}`;
     };
     return {
       categoryName: category.name.fr,
@@ -199,8 +189,7 @@ export class ProductFormStore {
     const base = this.baseline();
     return SAVEABLE.filter(
       (section) =>
-        base[section.key] !== undefined &&
-        this.snapshot(section.key) !== base[section.key],
+        base[section.key] !== undefined && this.snapshot(section.key) !== base[section.key],
     );
   });
 
@@ -270,16 +259,12 @@ export class ProductFormStore {
   }
 
   removeMedia(index: number): void {
-    this.media.update((current) =>
-      current.filter((_, position) => position !== index),
-    );
+    this.media.update((current) => current.filter((_, position) => position !== index));
   }
 
   setMedia(index: number, key: 'role' | 'url' | 'alt', value: string): void {
     this.media.update((current) =>
-      current.map((slot, position) =>
-        position === index ? { ...slot, [key]: value } : slot,
-      ),
+      current.map((slot, position) => (position === index ? { ...slot, [key]: value } : slot)),
     );
   }
 
@@ -412,10 +397,7 @@ export class ProductFormStore {
     }
   }
 
-  private async save(
-    section: FormSection,
-    action: () => Promise<void>,
-  ): Promise<void> {
+  private async save(section: FormSection, action: () => Promise<void>): Promise<void> {
     this.statusMap.update((current) => ({ ...current, [section]: 'saving' }));
     this.error.set(null);
     try {
@@ -434,19 +416,11 @@ export class ProductFormStore {
   private snapshot(section: FormSection): string {
     switch (section) {
       case 'identite':
-        return JSON.stringify([
-          this.name().trim(),
-          this.kind(),
-          this.categoryId(),
-        ]);
+        return JSON.stringify([this.name().trim(), this.kind(), this.categoryId()]);
       case 'tarif':
         return JSON.stringify([this.priceEur(), this.weightGrams()]);
       case 'fiche':
-        return JSON.stringify([
-          this.declaresNone(),
-          [...this.selected()].sort(),
-          this.nutrition(),
-        ]);
+        return JSON.stringify([this.declaresNone(), [...this.selected()].sort(), this.nutrition()]);
       case 'communication':
         return JSON.stringify(this.editorial());
     }
@@ -475,8 +449,7 @@ export class ProductFormStore {
     this.weightGrams.set(product.weightGrams ?? null);
     this.editorial.set(detail.editorial);
     this.nutrition.set(detail.nutrition);
-    const variant =
-      product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
+    const variant = product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
     this.variantId.set(variant?.id ?? '');
     const allergens = detail.allergens;
     if (allergens === null) {

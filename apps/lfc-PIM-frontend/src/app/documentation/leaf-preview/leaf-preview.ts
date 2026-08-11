@@ -1,18 +1,8 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
 import { FoldDisclosureComponent } from 'fold-ng';
 
-import {
-  CatalogueApi,
-  type Category,
-  type Product,
-} from '../../catalogue/catalogue-api';
+import { CatalogueApi, type Category, type Product } from '../../catalogue/catalogue-api';
 
 interface MenuGroup {
   readonly category: Category;

@@ -1,10 +1,7 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import {
-  type CatalogueInspection,
-  ShopifyChannelApi,
-} from '../../channels/shopify-channel-api';
+import { type CatalogueInspection, ShopifyChannelApi } from '../../channels/shopify-channel-api';
 import { ShopifyCatalogue } from './shopify-catalogue';
 
 /** Fake du canal — pas de HTTP, une inspection explicite. */
@@ -16,9 +13,7 @@ class FakeChannelApi {
   }
 }
 
-async function render(
-  result: CatalogueInspection,
-): Promise<ComponentFixture<ShopifyCatalogue>> {
+async function render(result: CatalogueInspection): Promise<ComponentFixture<ShopifyCatalogue>> {
   TestBed.configureTestingModule({
     providers: [{ provide: ShopifyChannelApi, useValue: new FakeChannelApi(result) }],
   });

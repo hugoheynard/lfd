@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -24,12 +18,7 @@ import {
 
 import { boutiquesWith, formatPercent } from '../../data/channels';
 import { ChannelMatrix } from '../channel-matrix/channel-matrix';
-import {
-  CatalogueApi,
-  type Category,
-  type SalesChannels,
-  type TvaRegime,
-} from '../catalogue-api';
+import { CatalogueApi, type Category, type SalesChannels, type TvaRegime } from '../catalogue-api';
 
 /**
  * Catégories (= familles = gammes). Chaque catégorie porte les **défauts de
@@ -108,9 +97,7 @@ export class CategoriesPage {
     if (category.parentId === null) {
       return '—';
     }
-    const parent = this.categories().find(
-      (item) => item.id === category.parentId,
-    );
+    const parent = this.categories().find((item) => item.id === category.parentId);
     return parent?.name.fr ?? '—';
   }
 
@@ -145,31 +132,16 @@ export class CategoriesPage {
     this.editingId.set(null);
   }
 
-  protected async onPreset(
-    category: Category,
-    channels: SalesChannels,
-  ): Promise<void> {
-    await this.run(() =>
-      this.api.setCategoryChannelPreset(category.id, channels),
-    );
+  protected async onPreset(category: Category, channels: SalesChannels): Promise<void> {
+    await this.run(() => this.api.setCategoryChannelPreset(category.id, channels));
   }
 
-  protected async onEmporterTva(
-    category: Category,
-    regimeId: string,
-  ): Promise<void> {
-    await this.run(() =>
-      this.api.setCategoryTva(category.id, regimeId, category.surPlaceTvaId),
-    );
+  protected async onEmporterTva(category: Category, regimeId: string): Promise<void> {
+    await this.run(() => this.api.setCategoryTva(category.id, regimeId, category.surPlaceTvaId));
   }
 
-  protected async onSurPlaceTva(
-    category: Category,
-    regimeId: string,
-  ): Promise<void> {
-    await this.run(() =>
-      this.api.setCategoryTva(category.id, category.emporterTvaId, regimeId),
-    );
+  protected async onSurPlaceTva(category: Category, regimeId: string): Promise<void> {
+    await this.run(() => this.api.setCategoryTva(category.id, category.emporterTvaId, regimeId));
   }
 
   protected inputValue(event: Event): string {
@@ -184,9 +156,7 @@ export class CategoriesPage {
     }
     const parentId = this.draftParent();
     await this.run(async () => {
-      await this.api.createCategory(
-        parentId === '' ? { nameFr } : { nameFr, parentId },
-      );
+      await this.api.createCategory(parentId === '' ? { nameFr } : { nameFr, parentId });
       this.draftName.set('');
     });
   }
@@ -209,9 +179,7 @@ export class CategoriesPage {
       await action();
       await this.reload();
     } catch (caught) {
-      this.error.set(
-        caught instanceof Error ? caught.message : 'Erreur inattendue.',
-      );
+      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
     } finally {
       this.busy.set(false);
     }
@@ -226,9 +194,7 @@ export class CategoriesPage {
       this.categories.set(categories);
       this.regimes.set(regimes);
     } catch (caught) {
-      this.error.set(
-        caught instanceof Error ? caught.message : 'Erreur inattendue.',
-      );
+      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
     }
   }
 }

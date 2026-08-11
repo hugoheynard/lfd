@@ -252,7 +252,10 @@ describe("POST /companies", () => {
   it("refuse une déclaration sans ENSEIGNE — le nom d'usage", async () => {
     // La raison sociale, elle, peut manquer : un compte s'ouvre avant que les
     // papiers soient sur la table.
-    const response = await ctx.asSub(SUB).post("/companies").send({ ...valide, enseigne: "  " });
+    const response = await ctx
+      .asSub(SUB)
+      .post("/companies")
+      .send({ ...valide, enseigne: "  " });
 
     expect(response.status).toBe(400);
   });

@@ -13,7 +13,20 @@ const PRODUCT_WORD_LENGTH = 6;
 
 /** Mots vides français : ils remplissent la référence sans rien lui apprendre. */
 const STOP_WORDS = new Set([
-  'A', 'AU', 'AUX', 'D', 'DE', 'DES', 'DU', 'EN', 'ET', 'L', 'LA', 'LE', 'LES', 'SUR',
+  'A',
+  'AU',
+  'AUX',
+  'D',
+  'DE',
+  'DES',
+  'DU',
+  'EN',
+  'ET',
+  'L',
+  'LA',
+  'LE',
+  'LES',
+  'SUR',
 ]);
 
 /** Majuscules, sans accents, segments alphanumériques séparés par des tirets. */

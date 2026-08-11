@@ -274,7 +274,8 @@ function asBasket(value: unknown): SavedBasket | null {
     ? (v['recurrence'] as Recurrence)
     : 'none';
   const nextDate = typeof v['nextDate'] === 'string' ? v['nextDate'] : null;
-  const usageCount = typeof v['usageCount'] === 'number' && v['usageCount'] >= 0 ? v['usageCount'] : 0;
+  const usageCount =
+    typeof v['usageCount'] === 'number' && v['usageCount'] >= 0 ? v['usageCount'] : 0;
   return {
     id: v['id'],
     companyId: v['companyId'],

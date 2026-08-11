@@ -1,0 +1,117 @@
+<fold-page-section
+  title="Accès à l'espace"
+  icon="user"
+  description="Les personnes qui se connectent et commandent pour cette société."
+>
+  @if (!inviting()) {
+    <button
+      sectionActions
+      foldButton
+      emphasis="outline"
+      size="sm"
+      icon="plus"
+      (click)="inviting.set(true)"
+    >
+      Ouvrir un accès
+    </button>
+  }
+
+  <fold-card class="ac">
+    @if (loading()) {
+      <p class="ac-muted">Chargement…</p>
+    } @else if (failed()) {
+      <fold-callout appearance="inset" variant="warning">
+        Impossible de lire les accès de ce compte.
+        <button foldButton emphasis="outline" size="sm" (click)="load()">Réessayer</button>
+      </fold-callout>
+    } @else if (empty()) {
+      <!-- Le cas qui doit sauter aux yeux : le dossier existe, mais personne ne
+           peut s'y connecter. C'est exactement l'état d'un compte ouvert sans
+           que le fournisseur d'identité soit joignable. -->
+      <fold-callout appearance="inset" variant="warning">
+        <strong>Personne n'accède encore à cet espace.</strong> Le client ne peut ni se connecter,
+        ni commander tant qu'un accès ne lui est pas ouvert.
+        @if (canOpenHolder()) {
+          <!-- Son adresse est déjà sur la fiche : la redemander serait absurde,
+               le commercial vient de la saisir. -->
+          <button
+            foldButton
+            intent="warning"
+            size="sm"
+            [disabled]="busy()"
+            (click)="openHolderAccess()"
+          >
+            Ouvrir l'accès de {{ holderEmail() }}
+          </button>
+        }
+      </fold-callout>
+    } @else {
+      <ul class="ac-list">
+        @for (member of members(); track member.userId) {
+          <li class="ac-row">
+            <span class="ac-who">
+              <span class="ac-name">{{ nameOf(member) }}</span>
+              <span class="ac-mail">{{ member.email }}</span>
+              <span class="ac-role">{{ roleLabel(member) }}</span>
+            </span>
+
+            <span class="ac-state">
+              @if (member.status === 'active') {
+                <fold-badge variant="success" [content]="statusLabel(member)" />
+              } @else if (member.status === 'invited') {
+                <fold-badge variant="warning" [content]="statusLabel(member)" />
+                <!-- Même appel que l'invitation : l'API est idempotente sur
+                     l'adresse. Deux boutons pour un geste, ce serait deux
+                     façons de se tromper. -->
+                <button
+                  foldButton
+                  emphasis="outline"
+                  size="sm"
+                  [disabled]="busy()"
+                  (click)="resend(member)"
+                >
+                  Renvoyer le lien
+                </button>
+              } @else {
+                <fold-badge variant="neutral" [content]="statusLabel(member)" />
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (inviting()) {
+      <div class="ac-form">
+        <fold-input
+          label="E-mail"
+          type="email"
+          required
+          hint="c'est par là qu'il recevra son lien de mot de passe"
+          [value]="email()"
+          (valueChange)="email.set($event)"
+        />
+        <div class="ac-row-fields">
+          <fold-input
+            label="Prénom"
+            optional
+            [value]="firstName()"
+            (valueChange)="firstName.set($event)"
+          />
+          <fold-input
+            label="Nom"
+            optional
+            [value]="lastName()"
+            (valueChange)="lastName.set($event)"
+          />
+        </div>
+        <div class="ac-actions">
+          <button foldButton emphasis="outline" intent="neutral" (click)="reset()">Annuler</button>
+          <button foldButton intent="primary" [disabled]="!canInvite()" (click)="inviteNew()">
+            Envoyer le lien
+          </button>
+        </div>
+      </div>
+    }
+  </fold-card>
+</fold-page-section>

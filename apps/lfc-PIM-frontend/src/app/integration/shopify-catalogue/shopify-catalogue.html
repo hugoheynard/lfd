@@ -7,8 +7,8 @@
   @switch (state()) {
     @case ('idle') {
       <p class="muted">
-        Interroge la boutique pour voir son catalogue actuel — utile avant de pousser,
-        pour repérer ce qui existe déjà et éviter les doublons.
+        Interroge la boutique pour voir son catalogue actuel — utile avant de pousser, pour repérer
+        ce qui existe déjà et éviter les doublons.
       </p>
     }
     @case ('loading') {
@@ -24,8 +24,8 @@
     @case ('loaded') {
       @if (mode() === 'dry-run') {
         <fold-callout appearance="inset" variant="info">
-          <strong>Mode simulation.</strong> Connecte la boutique (bouton « Vérifier la
-          connexion » plus haut) pour lire son catalogue réel.
+          <strong>Mode simulation.</strong> Connecte la boutique (bouton « Vérifier la connexion »
+          plus haut) pour lire son catalogue réel.
         </fold-callout>
       } @else {
         <fold-data-table
@@ -45,10 +45,7 @@
           </ng-template>
 
           <ng-template foldCell="status" let-p>
-            <fold-badge
-              [content]="statusLabel(p.status)"
-              [variant]="statusVariant(p.status)"
-            />
+            <fold-badge [content]="statusLabel(p.status)" [variant]="statusVariant(p.status)" />
           </ng-template>
 
           <ng-template foldCell="variants" let-p>

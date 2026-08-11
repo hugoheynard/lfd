@@ -1,11 +1,7 @@
-<p class="panel-desc">
-  Fiche réglementaire — allergènes obligatoires avant publication.
-</p>
+<p class="panel-desc">Fiche réglementaire — allergènes obligatoires avant publication.</p>
 <fold-callout
   appearance="inset"
-  [variant]="
-    store.declaresNone() || store.selected().length > 0 ? 'success' : 'warning'
-  "
+  [variant]="store.declaresNone() || store.selected().length > 0 ? 'success' : 'warning'"
 >
   <fold-checkbox
     label="Aucun allergène"
@@ -73,9 +69,7 @@
 
 @if (store.isEdit()) {
   <div class="section-footer">
-    <button foldButton size="sm" (click)="store.saveFiche()">
-      Enregistrer la fiche
-    </button>
+    <button foldButton size="sm" (click)="store.saveFiche()">Enregistrer la fiche</button>
     <span class="section-status">{{ store.statusText('fiche') }}</span>
   </div>
 }

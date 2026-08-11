@@ -1,10 +1,10 @@
-import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideHttpClient, withFetch } from '@angular/common/http';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from "@angular/core";
+import { provideHttpClient, withFetch } from "@angular/common/http";
+import { provideRouter, withComponentInputBinding } from "@angular/router";
 
-import { routes } from './app.routes';
-import { provideSuiteAuth } from './auth/auth.providers';
-import { DEV_BYPASS_AUTH } from './auth/dev-flags';
+import { routes } from "./app.routes";
+import { provideSuiteAuth } from "./auth/auth.providers";
+import { DEV_BYPASS_AUTH } from "./auth/dev-flags";
 
 /**
  * Config de l'app hôte. Browser-only (pas de SSR), donc Auth0 est fourni

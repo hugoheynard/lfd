@@ -1,17 +1,17 @@
-import { DOCUMENT, Location } from '@angular/common';
-import { inject, Injectable } from '@angular/core';
+import { DOCUMENT, Location } from "@angular/common";
+import { inject, Injectable } from "@angular/core";
 
-import { AuthFacade } from '../auth/auth.facade';
-import { SUITE_AUTH_CONFIG, type SuiteAudience } from '../auth/auth.config';
-import { SUITE_APPS } from './suite-registry';
-import { appUrlFor, SUITE_ALLOWED_ORIGINS } from './suite-app';
-import type { SuiteAppEntry } from './suite-app';
+import { AuthFacade } from "../auth/auth.facade";
+import { SUITE_AUTH_CONFIG, type SuiteAudience } from "../auth/auth.config";
+import { SUITE_APPS } from "./suite-registry";
+import { appUrlFor, SUITE_ALLOWED_ORIGINS } from "./suite-app";
+import type { SuiteAppEntry } from "./suite-app";
 import {
   isEmbedMessage,
   SUITE_CHANNEL,
   type EmbedMessage,
   type HostMessage,
-} from '@lfd/suite-embed';
+} from "@lfd/suite-embed";
 
 /** Une frame embarquée connue (établie via un message entrant). */
 interface KnownFrame {
@@ -33,7 +33,7 @@ interface KnownFrame {
  * dans l'URL parent (`route`), et navigation descendante (`notifyNavigate`, pour
  * le back/forward du parent) — sans jamais recharger l'iframe.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class SuiteBridge {
   private readonly document = inject(DOCUMENT);
   private readonly location = inject(Location);
@@ -57,7 +57,7 @@ export class SuiteBridge {
     if (!win) {
       return;
     }
-    win.addEventListener('message', (event: MessageEvent) => {
+    win.addEventListener("message", (event: MessageEvent) => {
       void this.onMessage(event);
     });
   }
@@ -71,7 +71,7 @@ export class SuiteBridge {
     if (!frame) {
       return;
     }
-    this.post(frame, { channel: SUITE_CHANNEL, kind: 'navigate', path });
+    this.post(frame, { channel: SUITE_CHANNEL, kind: "navigate", path });
   }
 
   private async onMessage(event: MessageEvent): Promise<void> {
@@ -81,7 +81,7 @@ export class SuiteBridge {
     }
     const app = this.appByOrigin.get(event.origin);
     const source = event.source;
-    if (!app || !source || !('postMessage' in source)) {
+    if (!app || !source || !("postMessage" in source)) {
       return;
     }
     const frame: KnownFrame = { win: source as WindowProxy, origin: event.origin, app };
@@ -89,12 +89,12 @@ export class SuiteBridge {
 
     const message = event.data as EmbedMessage;
     switch (message.kind) {
-      case 'hello':
+      case "hello":
         return; // établissement seul (frame mémorisée ci-dessus).
-      case 'route':
+      case "route":
         this.reflectRoute(app, message.path);
         return;
-      case 'token-request':
+      case "token-request":
         await this.replyToken(frame, message.requestId, message.audience);
         return;
     }
@@ -102,7 +102,7 @@ export class SuiteBridge {
 
   /** Reflète le chemin interne de l'app dans l'URL parent (sans nav router). */
   private reflectRoute(app: SuiteAppEntry, rawPath: string): void {
-    const clean = rawPath.replace(/^\/+/, '');
+    const clean = rawPath.replace(/^\/+/, "");
     const url = clean ? `/${app.routePath}/${clean}` : `/${app.routePath}`;
     this.location.replaceState(url);
   }
@@ -110,7 +110,7 @@ export class SuiteBridge {
   /** Répond à une demande de token. Audience inconnue ⇒ `null`. */
   private async replyToken(frame: KnownFrame, requestId: string, audience: string): Promise<void> {
     const token = await this.resolveToken(audience);
-    this.post(frame, { channel: SUITE_CHANNEL, kind: 'token', requestId, token });
+    this.post(frame, { channel: SUITE_CHANNEL, kind: "token", requestId, token });
   }
 
   private async resolveToken(audience: string): Promise<string | null> {

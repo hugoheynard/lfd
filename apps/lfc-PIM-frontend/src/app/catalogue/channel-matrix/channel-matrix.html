@@ -5,13 +5,7 @@
         <fold-badge content="Hérité de la gamme" variant="neutral" />
       } @else {
         <fold-badge content="Personnalisé" variant="warning" />
-        <button
-          foldButton
-          emphasis="soft"
-          intent="neutral"
-          size="sm"
-          (click)="revert.emit()"
-        >
+        <button foldButton emphasis="soft" intent="neutral" size="sm" (click)="revert.emit()">
           Revenir au défaut de la gamme
         </button>
       }

@@ -30,9 +30,7 @@ export function qrMatrix(data: string): QrMatrix {
 /** SVG autonome (noir sur blanc) prêt à l'export/impression. */
 export function qrSvgString(data: string): string {
   const { dim, dark } = qrMatrix(data);
-  const modules = dark
-    .map((m) => `<rect x="${m.x}" y="${m.y}" width="1" height="1"/>`)
-    .join('');
+  const modules = dark.map((m) => `<rect x="${m.x}" y="${m.y}" width="1" height="1"/>`).join('');
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dim} ${dim}" ` +
     `shape-rendering="crispEdges">` +

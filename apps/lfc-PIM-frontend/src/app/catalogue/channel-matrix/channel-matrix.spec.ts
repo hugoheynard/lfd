@@ -28,8 +28,7 @@ describe('ChannelMatrix', () => {
     let reverted = false;
     fixture.componentInstance.revert.subscribe(() => (reverted = true));
 
-    const button: HTMLButtonElement | null =
-      fixture.nativeElement.querySelector('button');
+    const button: HTMLButtonElement | null = fixture.nativeElement.querySelector('button');
     expect(button?.textContent).toContain('Revenir au défaut');
 
     button?.click();

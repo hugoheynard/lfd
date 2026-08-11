@@ -1,4 +1,4 @@
-import { SUITE_APP_URLS } from './suite-config';
+import { SUITE_APP_URLS } from "./suite-config";
 
 /**
  * Entrée du **registre** d'apps, statique et possédée par le shell.

@@ -1,15 +1,12 @@
 <fold-page-layout icon="grid" title="Produits">
   <p description>
-    La référence est <strong>proposée</strong> si on la laisse vide — modifiable
-    ensuite. Chaque produit naît avec sa déclinaison par défaut et hérite des
-    canaux de sa gamme.
+    La référence est <strong>proposée</strong> si on la laisse vide — modifiable ensuite. Chaque
+    produit naît avec sa déclinaison par défaut et hérite des canaux de sa gamme.
   </p>
 
   <div pageActions>
     @if (categories().length > 0) {
-      <button foldButton emphasis="outline" routerLink="/produits/nouveau">
-        Créer un produit
-      </button>
+      <button foldButton emphasis="outline" routerLink="/produits/nouveau">Créer un produit</button>
     }
     @if (products().length > 0) {
       <button
@@ -63,11 +60,7 @@
       />
 
       <!-- Actions groupées sur la sélection (batch). -->
-      <fold-dropdown
-        class="batch"
-        ariaLabel="Actions groupées"
-        placement="bottom-end"
-      >
+      <fold-dropdown class="batch" ariaLabel="Actions groupées" placement="bottom-end">
         <button
           foldPopoverTrigger
           foldButton
@@ -88,12 +81,8 @@
         </fold-dropdown-item>
       </fold-dropdown>
 
-      <fold-badge
-        [content]="catalogueStatus().label"
-        [variant]="catalogueStatus().variant"
-      />
+      <fold-badge [content]="catalogueStatus().label" [variant]="catalogueStatus().variant" />
     </div>
-
 
     <ng-template foldCell="sku" let-p>
       <code>{{ p.sku }}</code>
@@ -113,16 +102,10 @@
     <ng-template foldCell="channels" let-p>
       <span class="chan-pills">
         @if (rowEmporter(p).length > 0) {
-          <fold-badge
-            [content]="'Emporter ' + rowEmporter(p).join(' · ')"
-            variant="accent"
-          />
+          <fold-badge [content]="'Emporter ' + rowEmporter(p).join(' · ')" variant="accent" />
         }
         @if (rowSurPlace(p).length > 0) {
-          <fold-badge
-            [content]="'Salle ' + rowSurPlace(p).join(' · ')"
-            variant="info"
-          />
+          <fold-badge [content]="'Salle ' + rowSurPlace(p).join(' · ')" variant="info" />
         }
         @if (rowEmporter(p).length === 0 && rowSurPlace(p).length === 0) {
           <span class="muted">aucun</span>
@@ -144,12 +127,7 @@
     <ng-template foldCell="actions" let-p>
       <div class="row-actions">
         <fold-dropdown ariaLabel="Actions du produit" placement="bottom-end">
-          <button
-            foldPopoverTrigger
-            type="button"
-            class="kebab"
-            aria-label="Actions"
-          >
+          <button foldPopoverTrigger type="button" class="kebab" aria-label="Actions">
             <fold-icon name="kebab" />
           </button>
 

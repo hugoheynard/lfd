@@ -11,6 +11,5 @@ export interface HasPendingChanges {
  * bannière) ; `true` pour laisser partir. Intercepte back-link, bouton
  * navigateur et navigations router — là où un `(click)` ne le peut pas.
  */
-export const pendingChangesGuard: CanDeactivateFn<HasPendingChanges> = (
-  component,
-) => component.canLeave();
+export const pendingChangesGuard: CanDeactivateFn<HasPendingChanges> = (component) =>
+  component.canLeave();

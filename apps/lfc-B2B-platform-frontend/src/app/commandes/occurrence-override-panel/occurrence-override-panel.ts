@@ -112,10 +112,9 @@ export class OccurrenceOverridePanel {
       prefilled = true;
       const existing = subscription.overrides.find((override) => override.date === date);
       this.skipped.set(existing?.skipped ?? false);
-      const source = existing !== undefined && !existing.skipped ? existing.lines : subscription.lines;
-      this.quantities.set(
-        Object.fromEntries(source.map((line) => [line.sku, line.quantity])),
-      );
+      const source =
+        existing !== undefined && !existing.skipped ? existing.lines : subscription.lines;
+      this.quantities.set(Object.fromEntries(source.map((line) => [line.sku, line.quantity])));
     });
   }
 

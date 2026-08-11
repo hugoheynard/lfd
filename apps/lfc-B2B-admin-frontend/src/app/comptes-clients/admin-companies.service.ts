@@ -4,8 +4,11 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   BillingAddressPayload,
+  CompanyMemberInvitedView,
+  CompanyMemberView,
   CustomerLookupView,
   DeliveryAddressPayload,
+  InviteCompanyMemberPayload,
   UpdateIdentityPayload,
 } from '@lfd/contracts';
 import type { CompanyContactDraft, CompanyIdentityDraft } from '@lfd/b2b-ui/company';
@@ -93,6 +96,72 @@ export class AdminCompaniesService {
       this.http.get<CustomerLookupView | null>(`${B2B_API_BASE}/admin/customers/by-email`, {
         params: { email },
       }),
+    );
+  }
+
+  /** Les personnes qui **accèdent** à l'espace de cette société. */
+  async listMembers(companyId: string): Promise<readonly CompanyMemberView[]> {
+    return firstValueFrom(
+      this.http.get<readonly CompanyMemberView[]>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/members`,
+      ),
+    );
+  }
+
+  /**
+   * Ouvre un accès — au détenteur, ou à un collègue.
+   *
+   * **Idempotent sur l'adresse** : ré-inviter quelqu'un ne crée pas de doublon,
+   * ça lui renvoie un lien. C'est ce qui fait que « Renvoyer le lien » et
+   * « Inviter » sont le même appel.
+   */
+  async inviteMember(
+    companyId: string,
+    payload: InviteCompanyMemberPayload,
+  ): Promise<CompanyMemberInvitedView> {
+    return firstValueFrom(
+      this.http.post<CompanyMemberInvitedView>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/members`,
+        payload,
+      ),
+    );
+  }
+
+  /** Édite le **détenteur** du compte (contact principal, aplati sur la société). */
+  async updatePrimaryContact(companyId: string, payload: CompanyContactDraft): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/contact`, payload),
+    );
+  }
+
+  /** Ajoute un interlocuteur additionnel au carnet d'adresses. */
+  async addContact(companyId: string, payload: CompanyContactDraft): Promise<void> {
+    await firstValueFrom(
+      this.http.post<{ readonly id: string }>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/contacts`,
+        payload,
+      ),
+    );
+  }
+
+  /** Remplace un interlocuteur additionnel. */
+  async updateContact(
+    companyId: string,
+    contactId: string,
+    payload: CompanyContactDraft,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/contacts/${contactId}`,
+        payload,
+      ),
+    );
+  }
+
+  /** Retire un interlocuteur additionnel. */
+  async removeContact(companyId: string, contactId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${B2B_API_BASE}/admin/companies/${companyId}/contacts/${contactId}`),
     );
   }
 

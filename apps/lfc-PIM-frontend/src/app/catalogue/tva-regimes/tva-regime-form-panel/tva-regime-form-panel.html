@@ -10,12 +10,13 @@
   @if (isDelete()) {
     <!-- Zone dangereuse : confirmation en retapant le nom du régime. -->
     <fold-callout appearance="inset" variant="alert">
-      <strong>Zone dangereuse.</strong> Vous êtes sur le point de supprimer
-      «&nbsp;{{ regime()?.name }}&nbsp;» (<code>{{ regime()?.tag }}</code>). À la
-      prochaine synchronisation, les <strong>plateformes qui utilisent ce taux</strong>
+      <strong>Zone dangereuse.</strong> Vous êtes sur le point de supprimer «&nbsp;{{
+        regime()?.name
+      }}&nbsp;» (<code>{{ regime()?.tag }}</code
+      >). À la prochaine synchronisation, les <strong>plateformes qui utilisent ce taux</strong>
       (Shopify, et les futurs canaux) seront affectées&nbsp;: la collection
-      <code>{{ regime()?.tag }}</code> et les fiches qui s'y rattachent perdent
-      leur référence de taxe.
+      <code>{{ regime()?.tag }}</code> et les fiches qui s'y rattachent perdent leur référence de
+      taxe.
     </fold-callout>
 
     <fold-input
@@ -49,9 +50,7 @@
 </div>
 
 <footer class="foot">
-  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">
-    Annuler
-  </button>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
   <button
     foldButton
     [intent]="isDelete() ? 'danger' : 'primary'"

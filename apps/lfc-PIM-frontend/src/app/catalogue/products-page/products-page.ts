@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
 import { Router, RouterLink } from '@angular/router';
 
@@ -26,16 +20,8 @@ import {
   type FoldTableTone,
 } from 'fold-ng';
 
-import {
-  boutiquesWith,
-  formatPercent,
-  resolveChannels,
-} from '../../data/channels';
-import {
-  ShopifyApi,
-  type ProductBinding,
-  type SyncStatus,
-} from '../../channels/shopify-api';
+import { boutiquesWith, formatPercent, resolveChannels } from '../../data/channels';
+import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
 
 import {
   CatalogueApi,
@@ -104,9 +90,7 @@ export class ProductsPage {
   /** Sélection multi-lignes (clés = ids produit) pour les actions groupées. */
   protected readonly selection = signal<ReadonlySet<string | number>>(new Set());
   protected readonly selectedCount = computed(() => this.selection().size);
-  private readonly selectedIds = computed(() =>
-    [...this.selection()].map((key) => String(key)),
-  );
+  private readonly selectedIds = computed(() => [...this.selection()].map((key) => String(key)));
 
   /** Filtre du tableau : par nom ou par référence. */
   protected readonly visibleProducts = computed<Product[]>(() => {
@@ -116,8 +100,7 @@ export class ProductsPage {
       return products;
     }
     return products.filter(
-      (p) =>
-        p.name.fr.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
+      (p) => p.name.fr.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
     );
   });
 
@@ -126,9 +109,7 @@ export class ProductsPage {
     Math.max(1, Math.ceil(this.visibleProducts().length / this.pageSize())),
   );
 
-  protected readonly currentPage = computed(() =>
-    Math.min(this.page(), this.pageCount()),
-  );
+  protected readonly currentPage = computed(() => Math.min(this.page(), this.pageCount()));
 
   protected readonly pagedProducts = computed<Product[]>(() => {
     const start = (this.currentPage() - 1) * this.pageSize();
@@ -270,8 +251,7 @@ export class ProductsPage {
 
   protected inputValue(event: Event): string {
     const target = event.target;
-    return target instanceof HTMLInputElement ||
-      target instanceof HTMLSelectElement
+    return target instanceof HTMLInputElement || target instanceof HTMLSelectElement
       ? target.value
       : '';
   }
@@ -317,9 +297,7 @@ export class ProductsPage {
       await this.reload();
       this.selection.set(new Set());
     } catch (caught) {
-      this.error.set(
-        caught instanceof Error ? caught.message : 'Erreur inattendue.',
-      );
+      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
     } finally {
       this.busy.set(false);
     }
@@ -339,14 +317,11 @@ export class ProductsPage {
     try {
       const summary = await this.shopify.push(productIds);
       const pushed = summary.results.filter((r) => r.outcome === 'pushed').length;
-      const unchanged = summary.results.filter(
-        (r) => r.outcome === 'unchanged',
-      ).length;
+      const unchanged = summary.results.filter((r) => r.outcome === 'unchanged').length;
       const failed = summary.results.filter((r) => r.outcome === 'failed').length;
 
       // Le mode est rappelé à chaque fois : sans ça on croirait pousser pour de vrai.
-      const prefix =
-        summary.mode === 'dry-run' ? 'Simulation — ' : 'Envoi réel — ';
+      const prefix = summary.mode === 'dry-run' ? 'Simulation — ' : 'Envoi réel — ';
       this.pushMessage.set(
         `${prefix}${pushed} poussé(s), ${unchanged} inchangé(s), ${failed} en échec.`,
       );
@@ -365,9 +340,7 @@ export class ProductsPage {
       await action();
       await this.reload();
     } catch (caught) {
-      this.error.set(
-        caught instanceof Error ? caught.message : 'Erreur inattendue.',
-      );
+      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
     } finally {
       this.busy.set(false);
     }
@@ -386,9 +359,7 @@ export class ProductsPage {
       this.regimes.set(regimes);
       this.categories.set(categories.filter((category) => !category.isArchived));
     } catch (caught) {
-      this.error.set(
-        caught instanceof Error ? caught.message : 'Erreur inattendue.',
-      );
+      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
     }
   }
 }

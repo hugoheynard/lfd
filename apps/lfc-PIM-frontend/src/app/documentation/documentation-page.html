@@ -4,28 +4,22 @@
     <strong>collections Shopify</strong>. À parcourir onglet par onglet.
   </p>
 
-  <fold-tabs
-    [tabs]="tabs"
-    [(activeKey)]="active"
-    #ref="foldTabs"
-  />
+  <fold-tabs [tabs]="tabs" [(activeKey)]="active" #ref="foldTabs" />
 
   <!-- 1 · Vue d'ensemble -->
   <fold-tab-panel [tabs]="ref" key="overview">
     <div class="doc-stack">
       <fold-callout appearance="inset" variant="info">
-        <strong>POC front-only.</strong> Les données vivent dans un
-        <em>seed</em> versionné dans le repo, surchargé par le
-        <code>localStorage</code> du navigateur. Aucun back pour l'instant — la
-        démo tourne depuis n'importe quel poste.
+        <strong>POC front-only.</strong> Les données vivent dans un <em>seed</em> versionné dans le
+        repo, surchargé par le <code>localStorage</code> du navigateur. Aucun back pour l'instant —
+        la démo tourne depuis n'importe quel poste.
       </fold-callout>
 
       <fold-card class="doc-card">
         <p>
-          Le PIM est la <strong>source de vérité</strong> du catalogue. On y
-          décrit les catégories, les régimes de TVA et les produits ; le système
-          en <strong>dérive</strong> les collections finales, prêtes à être
-          poussées vers Shopify.
+          Le PIM est la <strong>source de vérité</strong> du catalogue. On y décrit les catégories,
+          les régimes de TVA et les produits ; le système en <strong>dérive</strong> les collections
+          finales, prêtes à être poussées vers Shopify.
         </p>
         <app-system-diagram />
       </fold-card>
@@ -44,8 +38,8 @@
           subtitle="Un taux nommé"
         />
         <p>
-          « Réduit · 5,5 % », « Normal · 20 % »… Chaque régime est une donnée
-          éditable, et correspond à <strong>une collection</strong> côté TVA.
+          « Réduit · 5,5 % », « Normal · 20 % »… Chaque régime est une donnée éditable, et
+          correspond à <strong>une collection</strong> côté TVA.
         </p>
       </fold-card>
 
@@ -58,9 +52,8 @@
           subtitle="= famille = gamme"
         />
         <p>
-          Porte les <strong>défauts de canaux</strong> (par boutique × à
-          emporter / sur place) et <strong>deux régimes de TVA</strong>. Côté
-          Shopify, elle devient une collection.
+          Porte les <strong>défauts de canaux</strong> (par boutique × à emporter / sur place) et
+          <strong>deux régimes de TVA</strong>. Côté Shopify, elle devient une collection.
         </p>
       </fold-card>
 
@@ -74,8 +67,7 @@
         />
         <p>
           Reprend les canaux et la TVA de sa catégorie. On peut
-          <strong>override</strong> les canaux, en <em>tout-ou-rien</em>, pour ce
-          produit précis.
+          <strong>override</strong> les canaux, en <em>tout-ou-rien</em>, pour ce produit précis.
         </p>
       </fold-card>
 
@@ -88,8 +80,8 @@
           subtitle="le résultat visible"
         />
         <p>
-          Ce que voit le client : un rayon en ligne. Générée automatiquement à
-          partir des canaux actifs — jamais saisie à la main.
+          Ce que voit le client : un rayon en ligne. Générée automatiquement à partir des canaux
+          actifs — jamais saisie à la main.
         </p>
       </fold-card>
     </div>
@@ -100,19 +92,27 @@
     <div class="doc-stack">
       <fold-card class="doc-card">
         <p>
-          Trois <strong>calques</strong> se composent, <strong>dans cet ordre</strong>,
-          pour produire ce que voit chaque <strong>vitrine</strong> : la TVA
-          d'abord, puis la disponibilité sur les canaux, puis le rendu utilisateur.
+          Trois <strong>calques</strong> se composent, <strong>dans cet ordre</strong>, pour
+          produire ce que voit chaque <strong>vitrine</strong> : la TVA d'abord, puis la
+          disponibilité sur les canaux, puis le rendu utilisateur.
         </p>
         <app-flow-diagram />
       </fold-card>
 
       <fold-card>
         <ol class="doc-steps">
-          <li><strong>① TVA</strong> — le régime fiscal, hérité par canal (à emporter ≠ sur place).</li>
-          <li><strong>② Disponibilité</strong> — sur quels canaux le produit est vendu (boutique × mode).</li>
+          <li>
+            <strong>① TVA</strong> — le régime fiscal, hérité par canal (à emporter ≠ sur place).
+          </li>
+          <li>
+            <strong>② Disponibilité</strong> — sur quels canaux le produit est vendu (boutique ×
+            mode).
+          </li>
           <li><strong>③ Display user</strong> — le rendu final, propre à chaque vitrine.</li>
-          <li>La composition des trois calques donne l'<strong>output d'une vitrine</strong> (click &amp; collect public, sur place QR…).</li>
+          <li>
+            La composition des trois calques donne l'<strong>output d'une vitrine</strong> (click
+            &amp; collect public, sur place QR…).
+          </li>
         </ol>
       </fold-card>
 
@@ -126,8 +126,8 @@
         />
         <p>
           Une feuille n'est pas abstraite : c'est ce que voit le client. Ici, la
-          <strong>disponibilité</strong> d'une table — catégories dépliables,
-          produits dedans (données live du catalogue).
+          <strong>disponibilité</strong> d'une table — catégories dépliables, produits dedans
+          (données live du catalogue).
         </p>
         <app-leaf-preview />
       </fold-card>
@@ -140,24 +140,26 @@
       <fold-card>
         <fold-element-title variant="title" icon="lock" title="Famille TVA" subtitle="invisible" />
         <p>
-          Technique : elle regroupe les fiches par taux pour la compta et
-          l'export. <strong>Jamais montrée</strong> au client.
+          Technique : elle regroupe les fiches par taux pour la compta et l'export.
+          <strong>Jamais montrée</strong> au client.
         </p>
       </fold-card>
 
       <fold-card>
-        <fold-element-title variant="title" icon="globe" title="Click &amp; collect public" subtitle="le site" />
-        <p>
-          Le catalogue en ligne, rayons publics — la vente à emporter commandée
-          depuis le site.
-        </p>
+        <fold-element-title
+          variant="title"
+          icon="globe"
+          title="Click &amp; collect public"
+          subtitle="le site"
+        />
+        <p>Le catalogue en ligne, rayons publics — la vente à emporter commandée depuis le site.</p>
       </fold-card>
 
       <fold-card>
         <fold-element-title variant="title" icon="label" title="Sur place" subtitle="QR table" />
         <p>
-          Click &amp; collect <strong>immédiat</strong>, commandé depuis une URL
-          custom liée au QR code d'une table.
+          Click &amp; collect <strong>immédiat</strong>, commandé depuis une URL custom liée au QR
+          code d'une table.
         </p>
       </fold-card>
     </div>
@@ -167,10 +169,9 @@
   <fold-tab-panel [tabs]="ref" key="emplacements">
     <div class="doc-stack">
       <fold-callout appearance="inset" variant="info">
-        <strong>Une boutique = un emplacement.</strong> Il porte ses
-        <em>modes de vente</em> ; le sur place ouvre les tables, et chaque table
-        devient un point de commande click & collect avec son QR.
-        Gérés dans <strong>Emplacements</strong> (menu).
+        <strong>Une boutique = un emplacement.</strong> Il porte ses <em>modes de vente</em> ; le
+        sur place ouvre les tables, et chaque table devient un point de commande click & collect
+        avec son QR. Gérés dans <strong>Emplacements</strong> (menu).
       </fold-callout>
 
       <div class="doc-grid">
@@ -183,9 +184,8 @@
             subtitle="click & collect · sur place"
           />
           <p>
-            Chaque emplacement active ses canaux. <strong>Click & collect</strong>
-            = commande en ligne ; <strong>sur place</strong> = consommation à
-            table (et ouvre les tables).
+            Chaque emplacement active ses canaux. <strong>Click & collect</strong> = commande en
+            ligne ; <strong>sur place</strong> = consommation à table (et ouvre les tables).
           </p>
         </fold-card>
 
@@ -198,9 +198,9 @@
             subtitle="le sur place les ouvre"
           />
           <p>
-            Le <strong>nombre de tables</strong> génère une section click & collect
-            par table. Chaque table a un <strong>numéro</strong> — verrouillé, car
-            il fait l'identité de son URL.
+            Le <strong>nombre de tables</strong> génère une section click & collect par table.
+            Chaque table a un <strong>numéro</strong> — verrouillé, car il fait l'identité de son
+            URL.
           </p>
         </fold-card>
 
@@ -213,17 +213,17 @@
             subtitle="une commande par table"
           />
           <p>
-            L'URL dérive de la base : <code>…/commander?table=N</code>, le
-            paramètre <code>table</code> figé sur la table. Un
-            <strong>QR</strong> par table ; tant qu'il n'est pas généré, pas de QR.
+            L'URL dérive de la base : <code>…/commander?table=N</code>, le paramètre
+            <code>table</code> figé sur la table. Un <strong>QR</strong> par table ; tant qu'il
+            n'est pas généré, pas de QR.
           </p>
         </fold-card>
       </div>
 
       <fold-callout appearance="inset" variant="success">
         <strong>QR réel & scannable.</strong> Chaque QR encode l'URL de sa table
-        (<code>…?table=N</code>) via <code>qrcode-generator</code>, rendu en SVG
-        noir sur blanc. L'état « généré / non généré » pilote son affichage.
+        (<code>…?table=N</code>) via <code>qrcode-generator</code>, rendu en SVG noir sur blanc.
+        L'état « généré / non généré » pilote son affichage.
       </fold-callout>
     </div>
   </fold-tab-panel>
@@ -232,17 +232,16 @@
   <fold-tab-panel [tabs]="ref" key="shopify">
     <div class="doc-stack">
       <fold-callout appearance="inset" variant="info">
-        <strong>Push idempotent, SEO-safe.</strong> Une fois une collection ou un
-        produit créé, on ne le <em>recrée</em> jamais : on le
-        <strong>met à jour par id</strong>. Le <code>handle</code> Shopify —
-        donc l'URL, donc le référencement — reste intact.
+        <strong>Push idempotent, SEO-safe.</strong> Une fois une collection ou un produit créé, on
+        ne le <em>recrée</em> jamais : on le <strong>met à jour par id</strong>. Le
+        <code>handle</code> Shopify — donc l'URL, donc le référencement — reste intact.
       </fold-callout>
 
       <fold-card class="doc-card">
         <p>
-          Le <code>handle</code> est calculé <strong>une seule fois</strong>, à la
-          création. Modifier le contenu (titre, textes, images, prix) ne le change
-          pas. Le push suit donc un <strong>upsert</strong> piloté par le binding.
+          Le <code>handle</code> est calculé <strong>une seule fois</strong>, à la création.
+          Modifier le contenu (titre, textes, images, prix) ne le change pas. Le push suit donc un
+          <strong>upsert</strong> piloté par le binding.
         </p>
         <app-upsert-diagram />
       </fold-card>
@@ -258,8 +257,8 @@
           />
           <p>
             La table de correspondance <strong>id + handle</strong>. Elle décide
-            <em>create</em> (première fois) vs <em>update</em> (ensuite), et garde
-            le lien vers la bonne ressource Shopify.
+            <em>create</em> (première fois) vs <em>update</em> (ensuite), et garde le lien vers la
+            bonne ressource Shopify.
           </p>
         </fold-card>
 
@@ -273,8 +272,7 @@
           />
           <p>
             Une empreinte du dernier contenu poussé. Inchangée → on
-            <strong>saute</strong> l'appel. Moins d'écritures, pas de churn
-            inutile côté Shopify.
+            <strong>saute</strong> l'appel. Moins d'écritures, pas de churn inutile côté Shopify.
           </p>
         </fold-card>
 
@@ -288,18 +286,17 @@
           />
           <p>
             Si un handle doit vraiment changer, on pose une
-            <strong>redirection 301</strong> pour ne pas perdre le jus SEO. Par
-            défaut : on ne touche pas au handle.
+            <strong>redirection 301</strong> pour ne pas perdre le jus SEO. Par défaut : on ne
+            touche pas au handle.
           </p>
         </fold-card>
       </div>
 
       <fold-callout appearance="inset" variant="warning">
-        <strong>Config manuelle, une seule fois.</strong> Les
-        <em>tax overrides</em> ne sont pas pleinement pilotables par API : le PIM
-        crée les collections TVA programmatiquement, mais le mapping
-        <strong>collection → taux</strong> se règle à la main dans l'admin
-        (Réglages → Taxes et droits de douane). Config initiale, stable ensuite.
+        <strong>Config manuelle, une seule fois.</strong> Les <em>tax overrides</em> ne sont pas
+        pleinement pilotables par API : le PIM crée les collections TVA programmatiquement, mais le
+        mapping <strong>collection → taux</strong> se règle à la main dans l'admin (Réglages → Taxes
+        et droits de douane). Config initiale, stable ensuite.
         <a
           href="https://help.shopify.com/fr/manual/taxes/tax-overrides"
           target="_blank"

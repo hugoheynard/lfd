@@ -7,11 +7,7 @@
    `--lfd-backdrop-navi` : lavis bleu pâle de l'accent de marque, posé derrière
    une section pour la mettre en avant sans l'inverser. */
 :root {
-  --lfd-backdrop-navi: color-mix(
-    in srgb,
-    var(--fold-color-primary) 5%,
-    var(--fold-color-bg-page)
-  );
+  --lfd-backdrop-navi: color-mix(in srgb, var(--fold-color-primary) 5%, var(--fold-color-bg-page));
 }
 
 * {
@@ -27,7 +23,12 @@ body {
 body {
   background: var(--fold-color-bg-page);
   color: var(--fold-color-text);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

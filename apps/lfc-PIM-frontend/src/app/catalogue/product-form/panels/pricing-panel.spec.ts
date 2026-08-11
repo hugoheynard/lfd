@@ -18,14 +18,10 @@ describe('PricingPanel', () => {
     store.isEdit.set(true);
     const fixture = TestBed.createComponent(PricingPanel);
     fixture.detectChanges();
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.section-footer'),
-    ).not.toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.section-footer')).not.toBeNull();
 
     store.isEdit.set(false);
     fixture.detectChanges();
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.section-footer'),
-    ).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.section-footer')).toBeNull();
   });
 });

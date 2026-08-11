@@ -79,9 +79,7 @@ describe('backendToProduct', () => {
   });
 
   it('mappe les déclinaisons (allergènes copiés)', () => {
-    const product = backendToProduct(
-      backendProduct({ allergens: ['TBD_BARLEY'] }),
-    );
+    const product = backendToProduct(backendProduct({ allergens: ['TBD_BARLEY'] }));
     expect(product.variants).toHaveLength(1);
     expect(product.variants[0]?.allergens).toEqual(['TBD_BARLEY']);
     expect(product.variants[0]?.isDefault).toBe(true);

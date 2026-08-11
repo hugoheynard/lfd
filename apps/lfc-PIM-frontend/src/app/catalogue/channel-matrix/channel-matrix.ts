@@ -1,10 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
-import {
-  FoldBadgeComponent,
-  FoldButtonComponent,
-  FoldCheckboxComponent,
-} from 'fold-ng';
+import { FoldBadgeComponent, FoldButtonComponent, FoldCheckboxComponent } from 'fold-ng';
 
 import { BOUTIQUE_LABEL } from '../../data/boutiques';
 import type { SalesChannels } from '../../data/models';
@@ -35,11 +31,7 @@ export class ChannelMatrix {
 
   protected readonly boutiques = BOUTIQUE_LABEL;
 
-  protected setCell(
-    boutique: 'b1' | 'b2',
-    mode: 'emporter' | 'surPlace',
-    value: boolean,
-  ): void {
+  protected setCell(boutique: 'b1' | 'b2', mode: 'emporter' | 'surPlace', value: boolean): void {
     const current = this.channels();
     this.channelsChange.emit({
       ...current,

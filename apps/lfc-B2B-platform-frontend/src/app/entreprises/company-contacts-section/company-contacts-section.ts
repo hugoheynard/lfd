@@ -43,7 +43,7 @@ export class CompanyContactsSection {
       contactId: company.primaryContact.id,
       firstName: company.primaryContact.firstName,
       lastName: company.primaryContact.lastName,
-      role: 'Admin du compte entreprise',
+      role: 'Détenteur du compte',
       fonction: company.primaryContact.fonction,
       email: company.primaryContact.email,
       phone: company.primaryContact.phone,

@@ -1,4 +1,4 @@
-import { DOCUMENT, Location } from '@angular/common';
+import { DOCUMENT, Location } from "@angular/common";
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,18 +9,18 @@ import {
   input,
   type OnInit,
   signal,
-} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DomSanitizer } from '@angular/platform-browser';
-import type { SafeResourceUrl } from '@angular/platform-browser';
-import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs';
-import { FoldButtonComponent, FoldSpinnerComponent } from 'fold-ng';
+} from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { DomSanitizer } from "@angular/platform-browser";
+import type { SafeResourceUrl } from "@angular/platform-browser";
+import { NavigationEnd, Router } from "@angular/router";
+import { filter } from "rxjs";
+import { FoldButtonComponent, FoldSpinnerComponent } from "fold-ng";
 
-import { appUrlFor } from '../suite-app';
-import { SuiteBridge } from '../suite-bridge';
+import { appUrlFor } from "../suite-app";
+import { SuiteBridge } from "../suite-bridge";
 
-type FrameStatus = 'probing' | 'ready' | 'error';
+type FrameStatus = "probing" | "ready" | "error";
 
 /**
  * Cadre d'une app hostée : une `<iframe>` plein content vers l'app, **durcie** :
@@ -36,16 +36,16 @@ type FrameStatus = 'probing' | 'ready' | 'error';
  * `appId`/`routePath`/`appTitle` sont liés depuis les `data` de la route.
  */
 @Component({
-  selector: 'app-app-frame',
+  selector: "app-app-frame",
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldButtonComponent, FoldSpinnerComponent],
-  templateUrl: './app-frame.html',
-  styleUrl: './app-frame.scss',
+  templateUrl: "./app-frame.html",
+  styleUrl: "./app-frame.scss",
 })
 export class AppFrame implements OnInit {
   readonly appId = input.required<string>();
   readonly routePath = input.required<string>();
-  readonly appTitle = input<string>('');
+  readonly appTitle = input<string>("");
 
   private readonly document = inject(DOCUMENT);
   private readonly location = inject(Location);
@@ -54,7 +54,7 @@ export class AppFrame implements OnInit {
   private readonly bridge = inject(SuiteBridge);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly status = signal<FrameStatus>('probing');
+  protected readonly status = signal<FrameStatus>("probing");
   /** Incrémenté par « Recharger » → force une nouvelle URL d'iframe. */
   private readonly reloadNonce = signal(0);
   /** Génération de sonde : une nouvelle sonde invalide la précédente (annule ses retries). */
@@ -65,13 +65,13 @@ export class AppFrame implements OnInit {
   private static readonly PROBE_DELAY_MS = 500;
   /** Sous-chemin figé au montage (deep-link) ; fixé en `ngOnInit` (les inputs
    *  requis ne sont pas disponibles dans un initialiseur de champ). */
-  private initialPath = '';
+  private initialPath = "";
 
   protected readonly baseUrl = computed(() => appUrlFor(this.appId()));
 
   protected readonly safeSrc = computed<SafeResourceUrl | null>(() => {
     const base = this.baseUrl();
-    if (base === undefined || this.status() !== 'ready') {
+    if (base === undefined || this.status() !== "ready") {
       return null;
     }
     return this.sanitizer.bypassSecurityTrustResourceUrl(this.buildUrl(base));
@@ -113,17 +113,17 @@ export class AppFrame implements OnInit {
     const generation = ++this.probeGeneration;
     const base = this.baseUrl();
     if (base === undefined) {
-      this.status.set('error');
+      this.status.set("error");
       return;
     }
-    this.status.set('probing');
+    this.status.set("probing");
     for (let attempt = 1; attempt <= AppFrame.PROBE_ATTEMPTS; attempt++) {
       if (generation !== this.probeGeneration) {
         return;
       }
       try {
-        await fetch(base, { mode: 'no-cors', cache: 'no-store' });
-        this.status.set('ready');
+        await fetch(base, { mode: "no-cors", cache: "no-store" });
+        this.status.set("ready");
         return;
       } catch {
         if (attempt < AppFrame.PROBE_ATTEMPTS) {
@@ -132,25 +132,25 @@ export class AppFrame implements OnInit {
       }
     }
     if (generation === this.probeGeneration) {
-      this.status.set('error');
+      this.status.set("error");
     }
   }
 
   /** URL de l'iframe : base + sous-chemin (deep-link) + origine du shell (handshake). */
   private buildUrl(base: string): string {
-    const host = this.document.defaultView?.location.origin ?? '';
-    const path = this.initialPath ? `/${this.initialPath}` : '';
+    const host = this.document.defaultView?.location.origin ?? "";
+    const path = this.initialPath ? `/${this.initialPath}` : "";
     const params = new URLSearchParams({ suiteHost: host });
     return `${base}${path}?${params.toString()}`;
   }
 
   /** Sous-chemin de l'URL parent, relatif au `routePath` de l'app. */
   private currentSubPath(): string {
-    const full = this.location.path().split('?')[0] ?? '';
+    const full = this.location.path().split("?")[0] ?? "";
     const prefix = `/${this.routePath()}`;
     if (!full.startsWith(prefix)) {
-      return '';
+      return "";
     }
-    return full.slice(prefix.length).replace(/^\/+/, '');
+    return full.slice(prefix.length).replace(/^\/+/, "");
   }
 }

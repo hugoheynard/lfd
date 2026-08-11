@@ -1,7 +1,4 @@
-<fold-panel-header
-  title="Panier récurrent"
-  subtitle="Répétez cette commande automatiquement"
-/>
+<fold-panel-header title="Panier récurrent" subtitle="Répétez cette commande automatiquement" />
 
 <div class="body">
   <p class="src">
@@ -122,12 +119,7 @@
 
 <fold-panel-footer align="between">
   <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
-  <button
-    foldButton
-    intent="primary"
-    [disabled]="!ready() || submitting()"
-    (click)="submit()"
-  >
+  <button foldButton intent="primary" [disabled]="!ready() || submitting()" (click)="submit()">
     Créer le panier récurrent
   </button>
 </fold-panel-footer>

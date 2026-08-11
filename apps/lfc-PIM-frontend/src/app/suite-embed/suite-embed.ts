@@ -49,7 +49,9 @@ export class SuiteEmbed {
     this.send({ channel: SUITE_CHANNEL, kind: 'hello' });
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe(() => this.send({ channel: SUITE_CHANNEL, kind: 'route', path: this.currentPath() }));
+      .subscribe(() =>
+        this.send({ channel: SUITE_CHANNEL, kind: 'route', path: this.currentPath() }),
+      );
   }
 
   /** Access token pour `audience` via le shell ; `null` si hors contexte / timeout. */

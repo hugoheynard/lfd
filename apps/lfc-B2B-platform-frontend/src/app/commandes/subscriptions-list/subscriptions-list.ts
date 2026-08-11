@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { FulfillmentMethod, SubscriptionView } from '@lfd/contracts';
 import { FoldButtonComponent } from 'fold-ng';
 

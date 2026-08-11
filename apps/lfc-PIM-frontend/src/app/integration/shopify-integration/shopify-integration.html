@@ -20,11 +20,17 @@
         </div>
 
         <fold-field-list>
-          <fold-field label="Domaine" placeholder="non renseigné">{{ current.shopDomain }}</fold-field>
+          <fold-field label="Domaine" placeholder="non renseigné">{{
+            current.shopDomain
+          }}</fold-field>
           <fold-field label="Version d'API">{{ current.apiVersion }}</fold-field>
-          <fold-field label="Mode">{{ current.mode === 'live' ? 'Réel' : 'Simulation' }}</fold-field>
+          <fold-field label="Mode">{{
+            current.mode === 'live' ? 'Réel' : 'Simulation'
+          }}</fold-field>
           @if (current.updatedAt) {
-            <fold-field label="Dernière modification">{{ current.updatedAt | date: 'short' }}</fold-field>
+            <fold-field label="Dernière modification">{{
+              current.updatedAt | date: 'short'
+            }}</fold-field>
           }
         </fold-field-list>
 
@@ -111,8 +117,9 @@
             <code>SHOPIFY_CLIENT_ID</code> + <code>SHOPIFY_CLIENT_SECRET</code>, échangés
             server-to-server contre un jeton temporaire. Ces secrets vivent dans l'environnement du
             backend — <strong>jamais</strong> saisis ni affichés ici ; l'écran n'en montre que la
-            <strong>présence</strong>. Une legacy custom app (jeton <code>SHOPIFY_ADMIN_TOKEN</code>)
-            reste acceptée. Sans identifiants, l'intégration reste une simulation fidèle.
+            <strong>présence</strong>. Une legacy custom app (jeton
+            <code>SHOPIFY_ADMIN_TOKEN</code>) reste acceptée. Sans identifiants, l'intégration reste
+            une simulation fidèle.
           </p>
         </div>
       </fold-context-card>

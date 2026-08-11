@@ -82,6 +82,24 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
   readonly vatNumberRequired: boolean;
   /** Facturation (ou `null`) + livraisons non archivées, la défaut en tête. */
   readonly addresses: CompanyAddressesView;
+  /**
+   * Les interlocuteurs **additionnels** — le carnet d'adresses de la société.
+   *
+   * Sur la fiche seulement, pas dans la liste : c'est un détail de dossier, et
+   * une liste reste scannable. Distincts des **membres** (qui se connectent) :
+   * un contact est quelqu'un qu'on appelle.
+   */
+  readonly contacts: readonly AdminContactView[];
+}
+
+/** Un interlocuteur additionnel, tel que la fiche l'affiche. */
+export interface AdminContactView {
+  readonly id: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly fonction: string;
+  readonly email: string;
+  readonly phone: string;
 }
 
 /**

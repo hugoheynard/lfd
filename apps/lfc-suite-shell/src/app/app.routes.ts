@@ -1,10 +1,10 @@
-import type { Route, Routes } from '@angular/router';
+import type { Route, Routes } from "@angular/router";
 
-import { SUITE_APPS } from './suite/suite-registry';
-import { appUrlFor } from './suite/suite-app';
-import type { SuiteAppEntry } from './suite/suite-app';
-import { AppFrame } from './suite/app-frame/app-frame';
-import { AppUnavailable } from './suite/app-unavailable/app-unavailable';
+import { SUITE_APPS } from "./suite/suite-registry";
+import { appUrlFor } from "./suite/suite-app";
+import type { SuiteAppEntry } from "./suite/suite-app";
+import { AppFrame } from "./suite/app-frame/app-frame";
+import { AppUnavailable } from "./suite/app-unavailable/app-unavailable";
 
 /**
  * Routing de 1er niveau : une branche par app du registre, montée sous son
@@ -21,22 +21,22 @@ function branchFor(app: SuiteAppEntry): Route {
     return {
       path: app.routePath,
       loadComponent: () => Promise.resolve(AppUnavailable),
-      data: { reason: 'stub', appTitle: app.title },
+      data: { reason: "stub", appTitle: app.title },
     };
   }
   return {
     path: app.routePath,
-    children: [{ path: '**', loadComponent: () => Promise.resolve(AppFrame), data }],
+    children: [{ path: "**", loadComponent: () => Promise.resolve(AppFrame), data }],
   };
 }
 
 const [firstApp] = SUITE_APPS;
 if (!firstApp) {
-  throw new Error('SUITE_APPS doit déclarer au moins une app.');
+  throw new Error("SUITE_APPS doit déclarer au moins une app.");
 }
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: firstApp.routePath },
+  { path: "", pathMatch: "full", redirectTo: firstApp.routePath },
   ...SUITE_APPS.map(branchFor),
-  { path: '**', redirectTo: firstApp.routePath },
+  { path: "**", redirectTo: firstApp.routePath },
 ];

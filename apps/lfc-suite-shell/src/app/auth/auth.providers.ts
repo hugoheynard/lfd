@@ -1,8 +1,8 @@
-import { makeEnvironmentProviders } from '@angular/core';
-import type { EnvironmentProviders } from '@angular/core';
-import { provideAuth0 } from '@auth0/auth0-angular';
+import { makeEnvironmentProviders } from "@angular/core";
+import type { EnvironmentProviders } from "@angular/core";
+import { provideAuth0 } from "@auth0/auth0-angular";
 
-import { SUITE_AUTH_CONFIG } from './auth.config';
+import { SUITE_AUTH_CONFIG } from "./auth.config";
 
 /**
  * Providers Auth0 du shell. Le shell est browser-only (pas de SSR), donc pas de
@@ -29,11 +29,11 @@ export function provideSuiteAuth(): EnvironmentProviders {
       domain: SUITE_AUTH_CONFIG.domain,
       clientId: SUITE_AUTH_CONFIG.clientId,
       useRefreshTokens: true,
-      cacheLocation: 'localstorage',
+      cacheLocation: "localstorage",
       authorizationParams: {
         redirect_uri: window.location.origin,
         audience: SUITE_AUTH_CONFIG.audiences.self,
-        scope: 'openid profile email offline_access',
+        scope: "openid profile email offline_access",
       },
     }),
   ]);

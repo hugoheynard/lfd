@@ -18,9 +18,7 @@ describe('IdentityPanel', () => {
     store.isEdit.set(true);
     const fixture = TestBed.createComponent(IdentityPanel);
     fixture.detectChanges();
-    const button = (fixture.nativeElement as HTMLElement).querySelector(
-      '.section-footer button',
-    );
+    const button = (fixture.nativeElement as HTMLElement).querySelector('.section-footer button');
     expect(button?.textContent).toContain('Enregistrer');
   });
 
@@ -29,9 +27,7 @@ describe('IdentityPanel', () => {
     store.isEdit.set(false);
     const fixture = TestBed.createComponent(IdentityPanel);
     fixture.detectChanges();
-    const footer = (fixture.nativeElement as HTMLElement).querySelector(
-      '.section-footer',
-    );
+    const footer = (fixture.nativeElement as HTMLElement).querySelector('.section-footer');
     expect(footer).toBeNull();
   });
 });

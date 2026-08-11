@@ -8,6 +8,7 @@ import {
 import {
   STATUS_LABELS,
   type AdminCompany,
+  type AdminCompanyDetail,
   type CompanyStatus,
 } from '../comptes-clients/admin-company';
 
@@ -41,22 +42,36 @@ export function toIdentityView(company: AdminCompany): CompanyIdentityView {
 }
 
 /**
- * Le contact principal de la société, en carte **lecture seule**. L'admin ne
- * lit (pour l'instant) que ce contact ; `isYou` est toujours faux — le staff
- * n'est pas un interlocuteur de la société.
+ * Le **détenteur du compte**, en carte.
+ *
+ * « Contact principal » et « détenteur » désignaient la même personne sous deux
+ * noms : celui qu'on rappelle est celui qui se connecte. La carte porte
+ * désormais le rôle réel. `isYou` reste faux — le staff n'est pas un
+ * interlocuteur de la société ; la pastille « Vous » n'a de sens que côté
+ * client, où elle distingue le lecteur des autres.
  */
-export function toContactCards(company: AdminCompany): CompanyContactCardView[] {
-  return [
-    {
-      contactId: company.primaryContact.id,
-      firstName: company.primaryContact.firstName,
-      lastName: company.primaryContact.lastName,
-      role: 'Contact principal',
-      fonction: company.primaryContact.fonction,
-      email: company.primaryContact.email,
-      phone: company.primaryContact.phone,
-      isPrimary: true,
-      isYou: false,
-    },
-  ];
+export function toContactCards(company: AdminCompanyDetail): CompanyContactCardView[] {
+  const primary: CompanyContactCardView = {
+    contactId: company.primaryContact.id,
+    firstName: company.primaryContact.firstName,
+    lastName: company.primaryContact.lastName,
+    role: 'Détenteur du compte',
+    fonction: company.primaryContact.fonction,
+    email: company.primaryContact.email,
+    phone: company.primaryContact.phone,
+    isPrimary: true,
+    isYou: false,
+  };
+  const others = company.contacts.map<CompanyContactCardView>((contact) => ({
+    contactId: contact.id,
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+    role: contact.fonction === '' ? 'Contact' : contact.fonction,
+    fonction: contact.fonction,
+    email: contact.email,
+    phone: contact.phone,
+    isPrimary: false,
+    isYou: false,
+  }));
+  return [primary, ...others];
 }

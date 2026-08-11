@@ -1,0 +1,15 @@
+<fold-panel-header
+  [title]="title()"
+  subtitle="Seule l'adresse est nécessaire — le reste se complète."
+/>
+
+<div class="body">
+  <lfd-contact-fields [value]="draft()" (valueChange)="draft.set($event)" />
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || submitting()" (click)="submit()">
+    Enregistrer
+  </button>
+</footer>

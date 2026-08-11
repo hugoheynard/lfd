@@ -1,10 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import {
-  FoldButtonComponent,
-  FoldCardComponent,
-  FoldInputComponent,
-} from 'fold-ng';
+import { FoldButtonComponent, FoldCardComponent, FoldInputComponent } from 'fold-ng';
 
 import type { EditorialFields } from '../../product-http-api';
 import { ProductFormStore } from '../product-form-store';

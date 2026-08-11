@@ -121,9 +121,7 @@ export class TvaRegimeFormPanel {
       await this.persist();
       this.ref.close(true);
     } catch (caught) {
-      this.error.set(
-        caught instanceof Error ? caught.message : 'Erreur inattendue.',
-      );
+      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
     } finally {
       this.busy.set(false);
     }

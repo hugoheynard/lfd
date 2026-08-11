@@ -80,7 +80,11 @@ export class AccountService {
     this._status.set('loading');
     this.auth
       .accessToken$()
-      .pipe(switchMap((token) => this.http.get<Account>(`${AUTH_CONFIG.apiBaseUrl}/me`, headers(token))))
+      .pipe(
+        switchMap((token) =>
+          this.http.get<Account>(`${AUTH_CONFIG.apiBaseUrl}/me`, headers(token)),
+        ),
+      )
       .subscribe({
         next: (account) => this.ready(account),
         error: (error: unknown) => {
@@ -95,7 +99,11 @@ export class AccountService {
     this._status.set('loading');
     this.auth
       .accessToken$()
-      .pipe(switchMap((token) => this.http.patch<Account>(`${AUTH_CONFIG.apiBaseUrl}/me/profile`, draft, headers(token))))
+      .pipe(
+        switchMap((token) =>
+          this.http.patch<Account>(`${AUTH_CONFIG.apiBaseUrl}/me/profile`, draft, headers(token)),
+        ),
+      )
       .subscribe({
         next: (account) => {
           this.ready(account);
@@ -181,7 +189,11 @@ export class AccountService {
   updatePrimaryContact(companyId: string, draft: ContactDraft, onDone?: () => void): void {
     this.mutate(
       (token) =>
-        this.http.patch(`${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contact`, draft, headers(token)),
+        this.http.patch(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contact`,
+          draft,
+          headers(token),
+        ),
       'Contact enregistré.',
       onDone,
     );
@@ -190,7 +202,11 @@ export class AccountService {
   addContact(companyId: string, draft: ContactDraft, onDone?: () => void): void {
     this.mutate(
       (token) =>
-        this.http.post(`${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts`, draft, headers(token)),
+        this.http.post(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts`,
+          draft,
+          headers(token),
+        ),
       'Contact ajouté.',
       onDone,
     );
@@ -231,7 +247,11 @@ export class AccountService {
     form.append('file', file, file.name);
     this.mutate(
       (token) =>
-        this.http.put(`${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/kbis`, form, headers(token)),
+        this.http.put(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/kbis`,
+          form,
+          headers(token),
+        ),
       'KBIS déposé.',
       onDone,
     );

@@ -29,9 +29,7 @@
   </label>
   @if (store.isEdit()) {
     <div class="section-footer">
-      <button foldButton size="sm" (click)="store.saveCommunication()">
-        Enregistrer
-      </button>
+      <button foldButton size="sm" (click)="store.saveCommunication()">Enregistrer</button>
       <span class="section-status">{{ store.statusText('communication') }}</span>
     </div>
   }

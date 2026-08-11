@@ -80,7 +80,10 @@
             <span class="fld-lbl">Adresse de retrait</span>
             <select class="fld-ctl" (change)="onPickup($event)">
               @for (point of fulfillment.pickups(); track point.id) {
-                <option [value]="point.id" [selected]="point.id === fulfillment.selectedPickup()?.id">
+                <option
+                  [value]="point.id"
+                  [selected]="point.id === fulfillment.selectedPickup()?.id"
+                >
                   {{ point.label || point.ville }} — {{ point.ligne1 }}, {{ point.codePostal }}
                   {{ point.ville }}
                 </option>

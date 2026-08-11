@@ -30,6 +30,7 @@ function complete(overrides: Partial<AdminCompanyDetail> = {}): AdminCompanyDeta
     hasOpenSupportRequest: false,
     createdAt: '2026-08-01T00:00:00.000Z',
     vatNumberRequired: true,
+    contacts: [],
     addresses: {
       billing: { id: 'adr_1' } as AdminCompanyDetail['addresses']['billing'],
       deliveries: [{ id: 'adr_2' } as AdminCompanyDetail['addresses']['deliveries'][number]],

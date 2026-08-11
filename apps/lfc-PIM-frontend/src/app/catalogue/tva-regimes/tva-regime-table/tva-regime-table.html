@@ -13,7 +13,9 @@
     </span>
   </div>
 
-  <ng-template foldCell="name" let-r><strong>{{ r.name }}</strong></ng-template>
+  <ng-template foldCell="name" let-r
+    ><strong>{{ r.name }}</strong></ng-template
+  >
 
   <ng-template foldCell="description" let-r>
     <span class="muted">{{ r.description || '—' }}</span>
@@ -23,7 +25,9 @@
     <fold-badge [content]="format(r.percent)" variant="accent" />
   </ng-template>
 
-  <ng-template foldCell="tag" let-r><code>{{ r.tag }}</code></ng-template>
+  <ng-template foldCell="tag" let-r
+    ><code>{{ r.tag }}</code></ng-template
+  >
 
   <ng-template foldCell="actions" let-r>
     <fold-dropdown ariaLabel="Actions du régime" placement="bottom-end">
@@ -37,9 +41,7 @@
       >
         <fold-icon name="more-vertical" size="sm" />
       </button>
-      <fold-dropdown-item icon="edit" (selected)="openEdit(r)">
-        Modifier
-      </fold-dropdown-item>
+      <fold-dropdown-item icon="edit" (selected)="openEdit(r)"> Modifier </fold-dropdown-item>
       <fold-dropdown-item icon="bin" tone="danger" (selected)="openDelete(r)">
         Supprimer
       </fold-dropdown-item>

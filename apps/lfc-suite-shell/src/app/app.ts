@@ -1,16 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from "@angular/core";
+import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import {
   FoldAppShellComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
   FoldPanelHostComponent,
   FoldSpinnerComponent,
-} from 'fold-ng';
+} from "fold-ng";
 
-import { AuthFacade } from './auth/auth.facade';
-import { SuiteBridge } from './suite/suite-bridge';
-import { SUITE_APPS } from './suite/suite-registry';
+import { AuthFacade } from "./auth/auth.facade";
+import { SuiteBridge } from "./suite/suite-bridge";
+import { SUITE_APPS } from "./suite/suite-registry";
 
 /**
  * Le **shell hôte** de la suite : mince par conception (login + rail switcher +
@@ -19,7 +19,7 @@ import { SUITE_APPS } from './suite/suite-registry';
  * content avec sa propre chrome.
  */
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterOutlet,
@@ -31,8 +31,8 @@ import { SUITE_APPS } from './suite/suite-registry';
     FoldPanelHostComponent,
     FoldSpinnerComponent,
   ],
-  templateUrl: './app.html',
-  styleUrl: './app.scss',
+  templateUrl: "./app.html",
+  styleUrl: "./app.scss",
 })
 export class App {
   protected readonly auth = inject(AuthFacade);
@@ -48,7 +48,8 @@ export class App {
    */
   protected readonly visibleApps = computed(() =>
     this.apps.filter(
-      (app) => app.requiredPermission === undefined || this.auth.hasPermission(app.requiredPermission),
+      (app) =>
+        app.requiredPermission === undefined || this.auth.hasPermission(app.requiredPermission),
     ),
   );
 

@@ -1,62 +1,62 @@
 @if (auth.isLoading() || (auth.isAuthenticated() && !auth.permissionsLoaded())) {
-  <!-- Auth0 résout la session PUIS ses entitlements (jeton api-suite) : on attend
+<!-- Auth0 résout la session PUIS ses entitlements (jeton api-suite) : on attend
        les deux avant de peindre le launcher, sinon le rail flashe vide. -->
-  <div class="app-boot" role="status" aria-label="Chargement">
-    <fold-spinner />
-  </div>
+<div class="app-boot" role="status" aria-label="Chargement">
+  <fold-spinner />
+</div>
 } @else if (auth.isAuthenticated()) {
-  <fold-app-shell
-    #shell="foldAppShell"
-    scroll="stage"
-    [headerHeight]="0"
-    [(mobileNavOpen)]="mobileNavOpen"
-  >
-    <!-- Rail primaire = LE switcher d'apps de la suite. -->
-    <fold-menu railPrimary tint="primary" [expanded]="true">
-      <a header class="rail-brand" routerLink="/" aria-label="La Folie Coffee — Suite">
-        <span class="brand-mark" aria-hidden="true">LFC</span>
-        <span class="rail-wordmark">Suite</span>
-      </a>
-
-      @for (app of visibleApps(); track app.id) {
-        <a
-          fold-menu-item
-          [icon]="app.icon"
-          [label]="app.title"
-          [routerLink]="[app.routePath]"
-          routerLinkActive
-          #rla="routerLinkActive"
-          [active]="rla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      } @empty {
-        <p class="rail-empty">Aucune app n'est activée pour ce compte.</p>
-      }
-
-      <button
-        footer
-        fold-menu-item
-        icon="logout"
-        label="Déconnexion"
-        type="button"
-        (click)="auth.logout()"
-      ></button>
-    </fold-menu>
-
-    <!-- Pas de header : l'app hostée (iframe) a le sien. -->
-    <router-outlet />
-
-    <!-- Hôte unique des side-panels du shell. -->
-    <fold-panel-host />
-  </fold-app-shell>
-} @else {
-  <!-- Non authentifié : porte de login unique de la suite. -->
-  <div class="app-login">
-    <div class="login-card">
+<fold-app-shell
+  #shell="foldAppShell"
+  scroll="stage"
+  [headerHeight]="0"
+  [(mobileNavOpen)]="mobileNavOpen"
+>
+  <!-- Rail primaire = LE switcher d'apps de la suite. -->
+  <fold-menu railPrimary tint="primary" [expanded]="true">
+    <a header class="rail-brand" routerLink="/" aria-label="La Folie Coffee — Suite">
       <span class="brand-mark" aria-hidden="true">LFC</span>
-      <h1>La Folie Coffee — Suite</h1>
-      <p>Outillage interne. Connectez-vous pour accéder aux apps.</p>
-      <button type="button" class="login-btn" (click)="auth.login()">Se connecter</button>
-    </div>
+      <span class="rail-wordmark">Suite</span>
+    </a>
+
+    @for (app of visibleApps(); track app.id) {
+    <a
+      fold-menu-item
+      [icon]="app.icon"
+      [label]="app.title"
+      [routerLink]="[app.routePath]"
+      routerLinkActive
+      #rla="routerLinkActive"
+      [active]="rla.isActive"
+      (click)="mobileNavOpen.set(false)"
+    ></a>
+    } @empty {
+    <p class="rail-empty">Aucune app n'est activée pour ce compte.</p>
+    }
+
+    <button
+      footer
+      fold-menu-item
+      icon="logout"
+      label="Déconnexion"
+      type="button"
+      (click)="auth.logout()"
+    ></button>
+  </fold-menu>
+
+  <!-- Pas de header : l'app hostée (iframe) a le sien. -->
+  <router-outlet />
+
+  <!-- Hôte unique des side-panels du shell. -->
+  <fold-panel-host />
+</fold-app-shell>
+} @else {
+<!-- Non authentifié : porte de login unique de la suite. -->
+<div class="app-login">
+  <div class="login-card">
+    <span class="brand-mark" aria-hidden="true">LFC</span>
+    <h1>La Folie Coffee — Suite</h1>
+    <p>Outillage interne. Connectez-vous pour accéder aux apps.</p>
+    <button type="button" class="login-btn" (click)="auth.login()">Se connecter</button>
   </div>
+</div>
 }

@@ -1,4 +1,4 @@
-import { DEV_URLS, GATEWAY_URLS, isViaGateway } from '@lfd/endpoints';
+import { DEV_URLS, GATEWAY_URLS, isViaGateway } from "@lfd/endpoints";
 
 /**
  * URLs des apps hostées — version **DEV**. Substituée à `suite-config.ts` par la
@@ -10,10 +10,10 @@ import { DEV_URLS, GATEWAY_URLS, isViaGateway } from '@lfd/endpoints';
  * prod B. En direct (`localhost:7300`), il iframe les `localhost:PORT`. Les ports
  * comme les sous-domaines viennent du registre unique `@lfd/endpoints`.
  */
-const viaGateway = typeof window !== 'undefined' && isViaGateway(window.location.hostname);
+const viaGateway = typeof window !== "undefined" && isViaGateway(window.location.hostname);
 const urls = viaGateway ? GATEWAY_URLS : DEV_URLS;
 
 export const SUITE_APP_URLS: Readonly<Record<string, string>> = {
   pim: urls.pimFront,
-  'b2b-admin': urls.b2bAdminFront,
+  "b2b-admin": urls.b2bAdminFront,
 };

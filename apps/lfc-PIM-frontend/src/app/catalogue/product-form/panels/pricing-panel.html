@@ -26,9 +26,7 @@
   </div>
   @if (store.isEdit()) {
     <div class="section-footer">
-      <button foldButton size="sm" (click)="store.savePricing()">
-        Enregistrer
-      </button>
+      <button foldButton size="sm" (click)="store.savePricing()">Enregistrer</button>
       <span class="section-status">{{ store.statusText('tarif') }}</span>
     </div>
   }

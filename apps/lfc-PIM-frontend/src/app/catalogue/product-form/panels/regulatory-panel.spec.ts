@@ -27,9 +27,7 @@ describe('RegulatoryPanel', () => {
     store.isEdit.set(true);
     const fixture = TestBed.createComponent(RegulatoryPanel);
     fixture.detectChanges();
-    const button = (fixture.nativeElement as HTMLElement).querySelector(
-      '.section-footer button',
-    );
+    const button = (fixture.nativeElement as HTMLElement).querySelector('.section-footer button');
     expect(button?.textContent).toContain('Enregistrer');
   });
 });

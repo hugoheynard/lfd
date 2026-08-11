@@ -78,6 +78,7 @@ describe('AdminCompaniesService', () => {
       ...company,
       vatNumberRequired: true,
       addresses: { billing: null, deliveries: [] },
+      contacts: [],
     };
     const { service, http } = setup();
     const promise = service.getById('company_1');

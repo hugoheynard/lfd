@@ -62,8 +62,7 @@ export class ShopifyCatalogue {
     subtitle: 'La boutique ne contient aucun produit pour le moment.',
   };
 
-  protected readonly rowKey = (product: ShopifyProductSnapshot): string =>
-    product.id;
+  protected readonly rowKey = (product: ShopifyProductSnapshot): string => product.id;
 
   protected async load(): Promise<void> {
     this.state.set('loading');
@@ -74,9 +73,7 @@ export class ShopifyCatalogue {
       this.products.set(result.products);
       this.state.set('loaded');
     } catch {
-      this.error.set(
-        'Backend PIM injoignable — démarrez lfc-PIM-backend (port 3100).',
-      );
+      this.error.set('Backend PIM injoignable — démarrez lfc-PIM-backend (port 3100).');
       this.state.set('error');
     }
   }

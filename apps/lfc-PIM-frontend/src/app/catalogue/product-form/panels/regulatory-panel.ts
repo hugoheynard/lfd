@@ -17,25 +17,19 @@ const SCOPES: readonly { value: AllergenScope; label: string }[] = [
   { value: 'world', label: 'Monde' },
 ];
 
-const NUTRITION_FIELDS: readonly { key: keyof NutritionValues; label: string }[] =
-  [
-    { key: 'energyKcal', label: 'Calories (kcal)' },
-    { key: 'carbsG', label: 'Glucides (g)' },
-    { key: 'fatG', label: 'Lipides (g)' },
-    { key: 'proteinG', label: 'Protéines (g)' },
-    { key: 'glycemicIndex', label: 'Indice glycémique' },
-  ];
+const NUTRITION_FIELDS: readonly { key: keyof NutritionValues; label: string }[] = [
+  { key: 'energyKcal', label: 'Calories (kcal)' },
+  { key: 'carbsG', label: 'Glucides (g)' },
+  { key: 'fatG', label: 'Lipides (g)' },
+  { key: 'proteinG', label: 'Protéines (g)' },
+  { key: 'glycemicIndex', label: 'Indice glycémique' },
+];
 
 /** Panneau Allergènes & nutrition — **une** fiche réglementaire (un seul save). */
 @Component({
   selector: 'app-regulatory-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldCardComponent,
-    FoldButtonComponent,
-    FoldCalloutComponent,
-    FoldCheckboxComponent,
-  ],
+  imports: [FoldCardComponent, FoldButtonComponent, FoldCalloutComponent, FoldCheckboxComponent],
   templateUrl: './regulatory-panel.html',
   styleUrl: './panel.scss',
 })

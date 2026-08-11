@@ -15,10 +15,7 @@ import {
   FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
-import {
-  type Emplacement,
-  type EmplacementTable,
-} from '../../catalogue/catalogue-api';
+import { type Emplacement, type EmplacementTable } from '../../catalogue/catalogue-api';
 import { slugify } from '../../data/sku';
 import { EmplacementStore } from '../emplacement-store';
 import {

@@ -1,7 +1,4 @@
-<fold-panel-header
-  title="Modifier cette commande"
-  [subtitle]="'Échéance du ' + dateLabel()"
-/>
+<fold-panel-header title="Modifier cette commande" [subtitle]="'Échéance du ' + dateLabel()" />
 
 <div class="body">
   <div class="fld">
@@ -17,8 +14,7 @@
 
   @if (skipped()) {
     <p class="skip-note">
-      Cette commande sera <strong>sautée</strong> — le reste de l'abonnement continue
-      normalement.
+      Cette commande sera <strong>sautée</strong> — le reste de l'abonnement continue normalement.
     </p>
   } @else {
     <ul class="lines">

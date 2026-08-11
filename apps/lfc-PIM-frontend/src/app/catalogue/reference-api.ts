@@ -1,16 +1,8 @@
 import { Injectable } from '@angular/core';
 
-export type {
-  AllergenEntry,
-  AllergenReference,
-  AllergenScope,
-} from '../data/models';
+export type { AllergenEntry, AllergenReference, AllergenScope } from '../data/models';
 
-import type {
-  AllergenEntry,
-  AllergenReference,
-  AllergenScope,
-} from '../data/models';
+import type { AllergenEntry, AllergenReference, AllergenScope } from '../data/models';
 
 interface Mapping {
   code: string;

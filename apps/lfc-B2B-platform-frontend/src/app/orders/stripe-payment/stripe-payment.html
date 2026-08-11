@@ -16,7 +16,13 @@
   }
 
   <div class="foot">
-    <button foldButton emphasis="outline" intent="neutral" [disabled]="submitting()" (click)="cancel()">
+    <button
+      foldButton
+      emphasis="outline"
+      intent="neutral"
+      [disabled]="submitting()"
+      (click)="cancel()"
+    >
       Retour
     </button>
     <button foldButton intent="primary" [disabled]="loading() || submitting()" (click)="pay()">

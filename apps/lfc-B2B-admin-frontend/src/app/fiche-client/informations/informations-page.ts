@@ -23,10 +23,12 @@ import {
   CompanyIdentityCard,
   CompanyIdentityFields,
   CompanyReferenceCard,
+  EMPTY_COMPANY_CONTACT_DRAFT,
   EMPTY_COMPANY_IDENTITY_DRAFT,
   isCompanyIdentityOpenable,
   type CompanyActivationStep,
   type CompanyContactCardView,
+  type CompanyContactDraft,
   type CompanyIdentityDraft,
   type CompanyIdentityView,
 } from '@lfd/b2b-ui/company';
@@ -43,9 +45,11 @@ import {
   missingRequiredPieces,
   type ActivationStep,
 } from './activation-steps';
+import { AccesSection } from '../acces-section/acces-section';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
+import { AdminContactPanel, type AdminContactTarget } from '../panels/contact-panel/contact-panel';
 import { AdminReglementPanel } from '../panels/reglement-panel/reglement-panel';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
@@ -83,6 +87,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
     CompanyIdentityCard,
     CompanyIdentityFields,
     HolderPicker,
+    AccesSection,
     CompanyContactsCard,
     CompanyAddressesCard,
     CompanyActivationChecklist,
@@ -331,10 +336,86 @@ export class InformationsPage {
     }
   }
 
+  /**
+   * Ouvre le panneau de contact — le détenteur, un nouveau, ou un existant.
+   *
+   * `null` = le détenteur : la carte n'a pas d'identifiant pour lui, il vit
+   * aplati sur la société.
+   */
+  protected editContact(contactId: string | null): void {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    const closed = this.panels.open(AdminContactPanel, {
+      data: { companyId: company.id, ...contactTargetOf(company, contactId) },
+      side: 'right',
+    }).closed;
+    void closed.then(() => this.load());
+  }
+
+  /** Retire un interlocuteur additionnel (confirmé dans la carte). */
+  protected async removeContact(contactId: string): Promise<void> {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    try {
+      await this.service.removeContact(company.id, contactId);
+      this.notify.success('Contact retiré.');
+      await this.load();
+    } catch (error) {
+      this.notify.error(error);
+    }
+  }
+
   /** Retour à la liste des comptes clients. */
   protected back(): void {
     void this.router.navigate(['/comptes-clients']);
   }
+}
+
+/**
+ * La cible du panneau, et de quoi la préremplir.
+ *
+ * Le détenteur n'a pas d'identifiant de contact (il vit aplati sur la société) :
+ * c'est ce qui distingue les deux cas, pas un drapeau à part.
+ */
+function contactTargetOf(
+  company: AdminCompanyDetail,
+  contactId: string | null,
+): { target: AdminContactTarget; initial: CompanyContactDraft } {
+  if (contactId === null) {
+    return {
+      target: { kind: 'additional', contactId: null },
+      initial: EMPTY_COMPANY_CONTACT_DRAFT,
+    };
+  }
+  if (contactId === company.primaryContact.id) {
+    return { target: { kind: 'primary' }, initial: toDraft(company.primaryContact) };
+  }
+  const contact = company.contacts.find((row) => row.id === contactId);
+  return {
+    target: { kind: 'additional', contactId },
+    initial: contact === undefined ? EMPTY_COMPANY_CONTACT_DRAFT : toDraft(contact),
+  };
+}
+
+/** Coordonnées → brouillon de saisie (mêmes champs, autre forme). */
+function toDraft(contact: {
+  firstName: string;
+  lastName: string;
+  fonction: string;
+  email: string;
+  phone: string;
+}): CompanyContactDraft {
+  return {
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+    fonction: contact.fonction,
+    email: contact.email,
+    phone: contact.phone,
+  };
 }
 
 /**

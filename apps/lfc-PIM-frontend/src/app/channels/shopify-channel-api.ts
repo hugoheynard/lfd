@@ -103,9 +103,7 @@ export class ShopifyChannelApi {
 
   /** L'état actuel du catalogue de la boutique — lecture seule. */
   inspectCatalogue(): Promise<CatalogueInspection> {
-    return firstValueFrom(
-      this.http.get<CatalogueInspection>(this.url('products/inspection')),
-    );
+    return firstValueFrom(this.http.get<CatalogueInspection>(this.url('products/inspection')));
   }
 
   inspectTvaCollections(desired: readonly DesiredCollection[]): Promise<InspectResult> {

@@ -68,6 +68,18 @@ export interface AdminCompany {
 export interface AdminCompanyDetail extends AdminCompany {
   readonly vatNumberRequired: boolean;
   readonly addresses: CompanyAddressesView;
+  /** Les interlocuteurs additionnels — le carnet d'adresses de la société. */
+  readonly contacts: readonly AdminContact[];
+}
+
+/** Un interlocuteur additionnel : quelqu'un qu'on appelle, pas qui se connecte. */
+export interface AdminContact {
+  readonly id: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly fonction: string;
+  readonly email: string;
+  readonly phone: string;
 }
 
 /** Libellé FR d'un statut de société. */

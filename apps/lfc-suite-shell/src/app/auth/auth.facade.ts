@@ -1,13 +1,13 @@
-import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { firstValueFrom } from 'rxjs';
-import { AuthService } from '@auth0/auth0-angular';
+import { computed, effect, inject, Injectable, signal } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { firstValueFrom } from "rxjs";
+import { AuthService } from "@auth0/auth0-angular";
 
-import { SUITE_AUTH_CONFIG, type SuiteAudience } from './auth.config';
-import { DEV_BYPASS_AUTH } from './dev-flags';
+import { SUITE_AUTH_CONFIG, type SuiteAudience } from "./auth.config";
+import { DEV_BYPASS_AUTH } from "./dev-flags";
 
 /** Jeton factice rendu en bypass de dev (aucun backend réel n'est appelé). */
-const DEV_TOKEN = 'dev-token';
+const DEV_TOKEN = "dev-token";
 
 /**
  * Lit la claim `permissions` d'un access token JWT — **sans** vérifier la
@@ -16,17 +16,17 @@ const DEV_TOKEN = 'dev-token';
  * `[]` (aucun entitlement, donc aucune tuile — fail-closed côté UX).
  */
 function readPermissions(jwt: string): readonly string[] {
-  const payloadPart = jwt.split('.')[1];
+  const payloadPart = jwt.split(".")[1];
   if (payloadPart === undefined) {
     return [];
   }
   try {
-    const b64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
-    const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4));
+    const b64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = b64.length % 4 === 0 ? "" : "=".repeat(4 - (b64.length % 4));
     const bytes = Uint8Array.from(atob(b64 + pad), (c) => c.charCodeAt(0));
     const payload: unknown = JSON.parse(new TextDecoder().decode(bytes));
     const perms = (payload as { permissions?: unknown }).permissions;
-    return Array.isArray(perms) ? perms.filter((p): p is string => typeof p === 'string') : [];
+    return Array.isArray(perms) ? perms.filter((p): p is string => typeof p === "string") : [];
   } catch {
     return [];
   }
@@ -44,7 +44,7 @@ function readPermissions(jwt: string): readonly string[] {
  * En bypass de dev, Auth0 n'est pas fourni (`inject(..., optional)` = null) :
  * authentifié d'office, jeton factice.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class AuthFacade {
   private readonly auth = inject(AuthService, { optional: true });
 
@@ -90,7 +90,7 @@ export class AuthFacade {
 
   private async loadPermissions(): Promise<void> {
     try {
-      this.perms.set(readPermissions(await this.getToken('self')));
+      this.perms.set(readPermissions(await this.getToken("self")));
     } catch {
       this.perms.set([]);
     } finally {

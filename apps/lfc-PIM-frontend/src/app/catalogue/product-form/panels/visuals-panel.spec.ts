@@ -17,9 +17,9 @@ describe('VisualsPanel', () => {
     const store = setup();
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
-    const add = [
-      ...(fixture.nativeElement as HTMLElement).querySelectorAll('button'),
-    ].find((b) => b.textContent?.includes('Ajouter'));
+    const add = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Ajouter'),
+    );
     (add as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(store.media()).toHaveLength(1);
@@ -31,9 +31,9 @@ describe('VisualsPanel', () => {
     store.media.set([{ role: 'hero', url: '' }]);
     const fixture = TestBed.createComponent(VisualsPanel);
     fixture.detectChanges();
-    const remove = [
-      ...(fixture.nativeElement as HTMLElement).querySelectorAll('button'),
-    ].find((b) => b.textContent?.includes('Retirer'));
+    const remove = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (b) => b.textContent?.includes('Retirer'),
+    );
     (remove as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(store.media()).toHaveLength(0);

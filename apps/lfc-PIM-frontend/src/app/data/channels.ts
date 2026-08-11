@@ -1,18 +1,9 @@
 import { BOUTIQUE_LABEL } from './boutiques';
-import type {
-  BoutiqueChannels,
-  Category,
-  Product,
-  SalesChannels,
-  TvaRegime,
-} from './models';
+import type { BoutiqueChannels, Category, Product, SalesChannels, TvaRegime } from './models';
 import { slugify } from './sku';
 
 /** Libellés des boutiques qui proposent un mode donné (à emporter / sur place). */
-export function boutiquesWith(
-  channels: SalesChannels,
-  mode: keyof BoutiqueChannels,
-): string[] {
+export function boutiquesWith(channels: SalesChannels, mode: keyof BoutiqueChannels): string[] {
   const result: string[] = [];
   if (channels.b1[mode]) {
     result.push(BOUTIQUE_LABEL.b1);
@@ -40,10 +31,7 @@ export interface ResolvedChannels {
 }
 
 /** Canaux effectifs d'un produit : son override, sinon le défaut de sa gamme. */
-export function resolveChannels(
-  product: Product,
-  category: Category,
-): ResolvedChannels {
+export function resolveChannels(product: Product, category: Category): ResolvedChannels {
   if (product.channelsOverride === null) {
     return { channels: category.channelPreset, isInherited: true };
   }

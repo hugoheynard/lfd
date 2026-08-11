@@ -1,24 +1,17 @@
-@switch (status()) {
-  @case ('ready') {
-    <iframe
-      class="frame"
-      [src]="safeSrc()"
-      [title]="appTitle()"
-      referrerpolicy="no-referrer"
-    ></iframe>
-  }
-  @case ('probing') {
-    <div class="frame-state" role="status" aria-label="Chargement de l'app">
-      <fold-spinner />
-    </div>
-  }
-  @case ('error') {
-    <div class="frame-state">
-      <div class="frame-error" role="alert">
-        <strong>{{ appTitle() }} est injoignable</strong>
-        <p>Impossible de contacter l'app pour le moment. Vérifie qu'elle est démarrée, puis recharge.</p>
-        <button foldButton intent="primary" type="button" (click)="reload()">Recharger</button>
-      </div>
-    </div>
-  }
-}
+@switch (status()) { @case ('ready') {
+<iframe class="frame" [src]="safeSrc()" [title]="appTitle()" referrerpolicy="no-referrer"></iframe>
+} @case ('probing') {
+<div class="frame-state" role="status" aria-label="Chargement de l'app">
+  <fold-spinner />
+</div>
+} @case ('error') {
+<div class="frame-state">
+  <div class="frame-error" role="alert">
+    <strong>{{ appTitle() }} est injoignable</strong>
+    <p>
+      Impossible de contacter l'app pour le moment. Vérifie qu'elle est démarrée, puis recharge.
+    </p>
+    <button foldButton intent="primary" type="button" (click)="reload()">Recharger</button>
+  </div>
+</div>
+} }

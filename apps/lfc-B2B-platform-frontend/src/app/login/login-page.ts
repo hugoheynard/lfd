@@ -25,8 +25,7 @@ export class LoginPage {
   protected readonly facade = inject(AuthFacade);
 
   /** Route à rejoindre après connexion (deep-link préservé par le guard). */
-  private readonly returnTo =
-    this.route.snapshot.queryParamMap.get('returnTo') ?? '/';
+  private readonly returnTo = this.route.snapshot.queryParamMap.get('returnTo') ?? '/';
 
   constructor() {
     effect(() => {

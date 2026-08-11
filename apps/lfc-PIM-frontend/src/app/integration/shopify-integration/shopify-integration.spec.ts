@@ -42,9 +42,7 @@ async function render(
   verifyResult: VerifyResult,
 ): Promise<ComponentFixture<ShopifyIntegration>> {
   TestBed.configureTestingModule({
-    providers: [
-      { provide: ShopifyChannelApi, useValue: new FakeChannelApi(view, verifyResult) },
-    ],
+    providers: [{ provide: ShopifyChannelApi, useValue: new FakeChannelApi(view, verifyResult) }],
   });
   const fixture = TestBed.createComponent(ShopifyIntegration);
   fixture.detectChanges();

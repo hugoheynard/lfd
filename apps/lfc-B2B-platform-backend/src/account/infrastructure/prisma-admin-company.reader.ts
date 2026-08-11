@@ -88,11 +88,26 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     }
     // Les adresses passent par le reader dédié : la projection (créneaux
     // discriminés, défaut en tête, archivées exclues) n'est écrite qu'une fois.
-    const addresses = await this.addresses.read(companyId);
+    const [addresses, contacts] = await Promise.all([
+      this.addresses.read(companyId),
+      this.prisma.companyContact.findMany({
+        where: { companyId },
+        select: { id: true, prenom: true, nom: true, fonction: true, email: true, telephone: true },
+        orderBy: { createdAt: "asc" },
+      }),
+    ]);
     return {
       ...toView(row),
       vatNumberRequired: requiresVatNumber(row.formeJuridique),
       addresses,
+      contacts: contacts.map((contact) => ({
+        id: contact.id,
+        firstName: contact.prenom,
+        lastName: contact.nom,
+        fonction: contact.fonction,
+        email: contact.email,
+        phone: contact.telephone,
+      })),
     };
   }
 }

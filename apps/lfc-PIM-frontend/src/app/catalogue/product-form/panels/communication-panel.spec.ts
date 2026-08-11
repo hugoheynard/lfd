@@ -27,9 +27,7 @@ describe('CommunicationPanel', () => {
     store.editorial.update((e) => ({ ...e, descriptionLong: 'Torréfaction' }));
     const fixture = TestBed.createComponent(CommunicationPanel);
     fixture.detectChanges();
-    const textarea = (fixture.nativeElement as HTMLElement).querySelector(
-      'textarea',
-    );
+    const textarea = (fixture.nativeElement as HTMLElement).querySelector('textarea');
     expect(textarea?.value).toBe('Torréfaction');
   });
 });
