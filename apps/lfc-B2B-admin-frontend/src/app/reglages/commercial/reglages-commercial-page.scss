@@ -13,3 +13,10 @@
 .rc-body {
   min-width: 0;
 }
+
+/* Deux jeux de règles distincts sous le même onglet : ils s'empilent, ils ne se
+   mélangent pas — chacun garde sa carte et son titre. */
+.rc-stack {
+  display: grid;
+  gap: var(--fold-space-lg);
+}

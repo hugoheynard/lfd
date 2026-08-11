@@ -1,0 +1,12 @@
+:host {
+  display: block;
+}
+
+.ac-scope {
+  margin: 0 0 var(--fold-space-lg);
+}
+
+.ac-rules {
+  display: grid;
+  gap: var(--fold-space-md);
+}

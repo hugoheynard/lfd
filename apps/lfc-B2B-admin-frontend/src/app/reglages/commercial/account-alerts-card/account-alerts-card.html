@@ -1,0 +1,32 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    icon="bell"
+    title="Alertes compte client"
+    subtitle="Ce que la plateforme remarque dans les commandes d'un client déjà actif."
+  />
+
+  <p class="ac-scope sec-hint">
+    Ces règles valent pour <strong>tous</strong> les comptes. Un compte peut y déroger depuis sa
+    fiche, onglet Alertes — la dérogation y est rappelée en clair.
+  </p>
+
+  @if (loading()) {
+    <fold-loading message="Chargement des règles…" />
+  } @else if (failed()) {
+    <p class="sec-error">
+      Les règles n'ont pas pu être chargées.
+      <button type="button" class="sec-link" (click)="load()">Réessayer</button>
+    </p>
+  } @else {
+    <div class="ac-rules">
+      @for (rule of rules(); track rule.kind) {
+        <app-alert-rule-row
+          [rule]="rule"
+          [busy]="saving() === rule.kind"
+          (save)="saveRule($event)"
+        />
+      }
+    </div>
+  }
+</fold-card>

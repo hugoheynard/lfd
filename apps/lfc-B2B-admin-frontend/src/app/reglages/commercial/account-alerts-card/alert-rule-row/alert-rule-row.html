@@ -1,0 +1,163 @@
+<article class="ar-rule" [class.ar-rule--off]="!draft().enabled">
+  <header class="ar-head">
+    <fold-element-title
+      variant="bar"
+      [icon]="labels().icon"
+      [title]="labels().title"
+      [subtitle]="labels().subtitle"
+      [level]="3"
+    />
+    <div class="ar-head-side">
+      <fold-info [text]="labels().why" label="À quoi sert cette règle" />
+      <fold-checkbox
+        label="Activée"
+        [checked]="draft().enabled"
+        [disabled]="busy()"
+        (checkedChange)="setEnabled($event)"
+      />
+    </div>
+  </header>
+
+  @if (draft().enabled) {
+    <div class="ar-params">
+      @if (firstOrderMinimum(); as minimum) {
+        <fold-number-input
+          label="À partir de la Nᵉ commande"
+          hint="Sur la toute première commande, tout est nouveau : la règle se tait avant ce rang."
+          [min]="1"
+          [value]="minimum"
+          [disabled]="busy()"
+          (valueChange)="setFirstOrderMinimum($event)"
+        />
+      }
+
+      @if (drift(); as params) {
+        <fold-number-input
+          label="Écart déclencheur (%)"
+          hint="En dessous, c'est du bruit de commande."
+          [min]="5"
+          [value]="params.thresholdPercent"
+          [disabled]="busy()"
+          (valueChange)="setDriftNumber('thresholdPercent', $event)"
+        />
+        <fold-select
+          label="Sens surveillé"
+          [value]="params.direction"
+          [disabled]="busy()"
+          (valueChange)="setDirection($event)"
+        >
+          @for (option of directions; track option.value) {
+            <fold-option [value]="option.value">{{ option.label }}</fold-option>
+          }
+        </fold-select>
+        <fold-number-input
+          label="Moyenne sur N commandes"
+          hint="Les N dernières commandes qui contiennent ce produit."
+          [min]="2"
+          [value]="params.baselineOrders"
+          [disabled]="busy()"
+          (valueChange)="setDriftNumber('baselineOrders', $event)"
+        />
+        <fold-number-input
+          label="Minimum pour une moyenne"
+          hint="En dessous, la règle se tait plutôt que de comparer à trop peu."
+          [min]="1"
+          [max]="params.baselineOrders"
+          [value]="params.minBaselineOrders"
+          [disabled]="busy()"
+          (valueChange)="setDriftNumber('minBaselineOrders', $event)"
+        />
+        <fold-number-input
+          label="Quantité plancher"
+          hint="2 → 4 est un +100 % qui n'intéresse personne."
+          [min]="1"
+          [value]="params.minQuantity"
+          [disabled]="busy()"
+          (valueChange)="setDriftNumber('minQuantity', $event)"
+        />
+      }
+      @if (outlier(); as params) {
+        <fold-number-input
+          label="Écart déclencheur (%)"
+          hint="Haut par défaut : on cherche une aberration, pas une variation."
+          [min]="50"
+          [value]="params.thresholdPercent"
+          [disabled]="busy()"
+          (valueChange)="setOutlierNumber('thresholdPercent', $event)"
+        />
+        <fold-number-input
+          label="Norme mesurée sur (jours)"
+          hint="La fenêtre sur laquelle on regarde ce qu'on commande de ce produit."
+          [min]="7"
+          [value]="params.windowDays"
+          [disabled]="busy()"
+          (valueChange)="setOutlierNumber('windowDays', $event)"
+        />
+        <fold-number-input
+          label="Lignes minimum"
+          hint="Sous ce nombre de lignes observées, il n'y a pas de norme à invoquer."
+          [min]="3"
+          [value]="params.minSampleLines"
+          [disabled]="busy()"
+          (valueChange)="setOutlierNumber('minSampleLines', $event)"
+        />
+        <fold-checkbox
+          label="Seulement sans historique du compte"
+          [checked]="params.onlyWithoutAccountBaseline"
+          [disabled]="busy()"
+          (checkedChange)="setOutlierScope($event)"
+        />
+      }
+    </div>
+
+    @if (outlier(); as params) {
+      @if (!params.onlyWithoutAccountBaseline) {
+        <p class="ar-warn">
+          Décoché, ce type se déclenche <strong>aussi</strong> sur les comptes qui ont déjà leur
+          propre moyenne — laquelle est plus fine. Vous risquez deux alertes pour un même écart.
+        </p>
+      }
+    }
+
+    <div class="ar-channels">
+      <p class="ar-channels-title">
+        Prévenir
+        <fold-info
+          text="Une alerte est toujours inscrite au dossier du compte. Ces cases ne décident que de ce qu'on fait EN PLUS."
+          label="Ce que ces cases changent"
+        />
+      </p>
+      <fold-checkbox
+        [label]="deliveryLabels.staffInApp"
+        [checked]="draft().delivery.staffInApp"
+        [disabled]="busy()"
+        (checkedChange)="setChannel('staffInApp', $event)"
+      />
+      <fold-checkbox
+        [label]="deliveryLabels.staffEmail"
+        [checked]="draft().delivery.staffEmail"
+        [disabled]="busy()"
+        (checkedChange)="setChannel('staffEmail', $event)"
+      />
+      @if (customerShowable()) {
+        <fold-checkbox
+          [label]="deliveryLabels.customerVisible"
+          [checked]="draft().delivery.customerVisible"
+          [disabled]="busy()"
+          (checkedChange)="setChannel('customerVisible', $event)"
+        />
+      }
+    </div>
+  }
+
+  <!-- Rien à enregistrer, rien à afficher : un bouton sur un formulaire intact
+       invite à un appel qui n'écrirait rien. -->
+  @if (dirty()) {
+    <footer class="ar-actions">
+      <button foldButton emphasis="outline" [disabled]="busy()" (click)="reset()">Annuler</button>
+      <button foldButton [disabled]="busy()" (click)="submit()">
+        {{ busy() ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+    </footer>
+  }
+</article>

@@ -17,7 +17,11 @@ import { z } from "zod";
  */
 
 /** Les types de détection connus. Ajouter une valeur = écrire son détecteur. */
-export const alertKindSchema = z.enum(["product.first_order", "product.quantity_drift"]);
+export const alertKindSchema = z.enum([
+  "product.first_order",
+  "product.quantity_drift",
+  "product.quantity_outlier",
+]);
 export type AlertKind = z.infer<typeof alertKindSchema>;
 
 /**
@@ -84,14 +88,44 @@ export const quantityDriftParamsSchema = z
     path: ["minBaselineOrders"],
   });
 
+/**
+ * `product.quantity_outlier` — une quantité **aberrante pour ce produit**,
+ * mesurée sur l'ensemble des comptes.
+ *
+ * C'est le pendant de `quantity_drift` pour le cas où celle-ci est structurellement
+ * aveugle : une **première commande** n'a aucun historique de compte, donc aucune
+ * moyenne à laquelle se comparer — et c'est précisément là qu'une faute de frappe
+ * (5 kg tapés 500) passe sans que rien ne bronche. On change alors de référence :
+ * ce n'est plus « ce que ce client prend d'habitude » mais « ce qu'on prend
+ * habituellement de ce produit ».
+ *
+ * `onlyWithoutAccountBaseline` (vrai par défaut) évite que les deux règles se
+ * déclenchent ensemble : tant que le compte a sa propre moyenne, c'est elle qui
+ * fait autorité — elle est plus fine. La norme produit prend le relais quand elle
+ * manque.
+ */
+export const quantityOutlierParamsSchema = z.object({
+  kind: z.literal("product.quantity_outlier"),
+  /** Écart à la norme du produit. Haut par défaut : on cherche une aberration. */
+  thresholdPercent: z.number().int().min(50).max(5000),
+  /** Fenêtre sur laquelle la norme du produit se mesure, en jours. */
+  windowDays: z.number().int().min(7).max(730),
+  /** Sous ce nombre de lignes observées, il n'y a pas de « norme » à invoquer. */
+  minSampleLines: z.number().int().min(3).max(1000),
+  /** Ne surveiller que les comptes sans moyenne à eux (première commande, etc.). */
+  onlyWithoutAccountBaseline: z.boolean(),
+});
+
 /** Les paramètres d'une règle, discriminés par le type qu'ils configurent. */
 export const alertParamsSchema = z.discriminatedUnion("kind", [
   firstOrderParamsSchema,
   quantityDriftParamsSchema,
+  quantityOutlierParamsSchema,
 ]);
 export type AlertParams = z.infer<typeof alertParamsSchema>;
 export type FirstOrderParams = z.infer<typeof firstOrderParamsSchema>;
 export type QuantityDriftParams = z.infer<typeof quantityDriftParamsSchema>;
+export type QuantityOutlierParams = z.infer<typeof quantityOutlierParamsSchema>;
 
 /**
  * Une **règle** : un type activé ou non, ses paramètres, ses canaux. Le type
@@ -141,6 +175,23 @@ export const ALERT_KINDS: Readonly<Record<AlertKind, AlertKindDefinition>> = {
         minQuantity: 3,
       },
       delivery: { staffInApp: true, staffEmail: false, customerVisible: false },
+    },
+  },
+  "product.quantity_outlier": {
+    customerShowable: true,
+    defaults: {
+      enabled: true,
+      params: {
+        kind: "product.quantity_outlier",
+        thresholdPercent: 400,
+        windowDays: 180,
+        minSampleLines: 20,
+        onlyWithoutAccountBaseline: true,
+      },
+      // Le seul type coché « client » par défaut : c'est un garde-fou de saisie,
+      // et il sert surtout au moment où personne côté staff ne peut le rattraper
+      // — la toute première commande d'un compte qu'on ne connaît pas encore.
+      delivery: { staffInApp: true, staffEmail: false, customerVisible: true },
     },
   },
 };

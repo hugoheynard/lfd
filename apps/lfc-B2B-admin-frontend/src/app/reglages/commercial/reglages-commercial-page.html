@@ -1,21 +1,24 @@
 <fold-view-nav
-        [items]="sections"
-        [(activeKey)]="section"
-        direction="horizontal"
-        size="comfortable"
-        activeStyle="fill"
-        background="transparent"
+  [items]="sections"
+  [(activeKey)]="section"
+  direction="horizontal"
+  size="comfortable"
+  activeStyle="fill"
+  background="transparent"
 />
 <!--TODO : une fois fold view nav sticky, mettre en place sticky nav-->
 
 @switch (section()) {
-    @case ('marches') {
-        <app-market-card />
-    }
-    @case ('alertes') {
-        <app-alerts-card />
-    }
-    @default {
-        <app-availability-card />
-    }
+  @case ('marches') {
+    <app-market-card />
+  }
+  @case ('alertes') {
+    <div class="rc-stack">
+      <app-account-alerts-card />
+      <app-activation-alerts-card />
+    </div>
+  }
+  @default {
+    <app-availability-card />
+  }
 }

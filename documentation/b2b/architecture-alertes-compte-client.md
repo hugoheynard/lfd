@@ -15,13 +15,13 @@ paramétrée globalement, évaluée à chaque commande, dérogeable compte par c
 
 ## 1. Le vocabulaire
 
-| Terme                    | Ce que c'est                                                                                   |
-| ------------------------ | ---------------------------------------------------------------------------------------------- |
-| **Type d'alerte** (kind) | Un **détecteur** — du code. `product.first_order`, `product.quantity_drift`. Ouvert au code.   |
-| **Règle globale**        | Un type + ses paramètres + ses canaux, valables pour **tous** les comptes. Une ligne par type. |
-| **Dérogation de compte** | Ce qu'un compte fait de cette règle : l'ignorer, ou en porter une version à lui.               |
-| **Règle effective**      | `dérogation ?? règle globale`. C'est elle qu'on évalue, et elle seule.                         |
-| **Alerte** (déclenchée)  | Un fait daté : « le 11/08, sur la commande LFC-1042, 12 baguettes contre 4,3 en moyenne ».     |
+| Terme                    | Ce que c'est                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------- |
+| **Type d'alerte** (kind) | Un **détecteur** — du code : `first_order`, `quantity_drift`, `quantity_outlier`. Ouvert au code. |
+| **Règle globale**        | Un type + ses paramètres + ses canaux, valables pour **tous** les comptes. Une ligne par type.    |
+| **Dérogation de compte** | Ce qu'un compte fait de cette règle : l'ignorer, ou en porter une version à lui.                  |
+| **Règle effective**      | `dérogation ?? règle globale`. C'est elle qu'on évalue, et elle seule.                            |
+| **Alerte** (déclenchée)  | Un fait daté : « le 11/08, sur la commande LFC-1042, 12 baguettes contre 4,3 en moyenne ».        |
 
 La distinction qui porte tout le modèle : un **type** est du code (un détecteur
 a besoin d'un algorithme), une **règle** est de la donnée (seuils, canaux, on/off).
@@ -30,7 +30,7 @@ dans un `switch` (OCP). Ajouter un seuil = écrire une ligne.
 
 ---
 
-## 2. Les deux types du premier lot
+## 2. Les trois types du premier lot
 
 ### `product.first_order` — un produit jamais pris
 
@@ -58,11 +58,35 @@ compte.
 toutes. Un SKU absent d'une commande **n'est pas** un « 0 commandé » : sinon
 chaque commande lèverait une alerte de chute pour tout le catalogue non commandé.
 
-> **Conséquence assumée : cette règle ne détecte pas un arrêt.** Un client qui
+### `product.quantity_outlier` — une quantité aberrante **pour le produit**
+
+Le pendant de la précédente là où elle est structurellement aveugle : une
+**première commande** n'a aucun historique de compte, donc aucune moyenne à
+laquelle se comparer — et c'est précisément là qu'un 5 tapé 500 passe sans que
+rien ne bronche. On change alors de référence : non plus « ce que ce client prend
+d'habitude », mais **« ce qu'on prend habituellement de ce produit »**, tous
+comptes confondus.
+
+| Paramètre                    | Défaut | Pourquoi                                                                             |
+| ---------------------------- | ------ | ------------------------------------------------------------------------------------ |
+| `thresholdPercent`           | `400`  | Haut : on cherche une **aberration**, pas une variation.                             |
+| `windowDays`                 | `180`  | La fenêtre sur laquelle la norme du produit se mesure.                               |
+| `minSampleLines`             | `20`   | Sous ce nombre de lignes observées, il n'y a pas de « norme » à invoquer.            |
+| `onlyWithoutAccountBaseline` | `true` | Le compte a sa propre moyenne ? Elle est plus fine, elle fait autorité — on se tait. |
+
+Ce dernier paramètre est ce qui empêche les deux règles de crier ensemble pour un
+même écart. Décoché, l'écran de réglages le dit là où on le décoche.
+
+C'est **le seul type coché « client » par défaut** : c'est un garde-fou de
+saisie, et il sert surtout au moment où personne côté staff ne peut le rattraper
+— la toute première commande d'un compte qu'on ne connaît pas encore.
+
+> **Conséquence assumée : `quantity_drift` ne détecte pas un arrêt.** Un client qui
 > cesse complètement un produit n'a plus de ligne, donc plus d'écart. C'est un
-> **troisième type** (`product.dropped` — silence de N jours sur un SKU habituel),
-> évalué par le temps et non par une commande. Hors lot 1, noté ici pour qu'on ne
-> croie pas la chute couverte.
+> **quatrième type** (`product.dropped` — silence de N jours sur un SKU habituel),
+> évalué **par le temps** et non par une commande : il n'y a pas de commande sur
+> laquelle l'accrocher. Hors lot 1, noté ici pour qu'on ne croie pas la chute
+> couverte.
 
 ---
 
@@ -263,17 +287,23 @@ Deux blocs :
 Une pastille sur la ligne d'un compte qui a des alertes non acquittées. Sans ça,
 la feature n'existe que pour qui pense à ouvrir la fiche.
 
-### Plateforme client → **à la confirmation de commande** (tranché)
+### Plateforme client → **un callout d'une ligne sous la ligne concernée** (tranché)
 
-`customerVisible` s'affiche **au moment de commander**, sur l'écran de
-confirmation, pas après coup dans « Mes commandes » : à ce moment-là le client
-peut encore corriger, alors qu'après la commande est partie en production.
+`customerVisible` s'affiche **au moment de commander**, pas après coup dans « Mes
+commandes » : à ce moment-là le client peut encore corriger, alors qu'après la
+commande est partie en production.
+
+La forme est un **`fold-callout` d'une ligne, juste sous la ligne de panier
+concernée** — pas une modale, pas une étape de confirmation à franchir. La
+distinction n'est pas cosmétique : une alerte qui **bloque** transforme un
+service en contrôle, et sera cliquée sans être lue dès la deuxième fois. Sous la
+ligne, elle est là où le regard est déjà, elle désigne sans ambiguïté **quelle**
+ligne est en cause, et elle s'ignore sans friction quand la quantité est voulue.
 
 C'est donc un **garde-fou de saisie**, pas un rapport de surveillance, et le mot
 doit le dire :
 
-> « Vous prenez habituellement **4 kg** de ce produit ; cette commande en porte
-> **12**. C'est bien voulu ? » — puis _Continuer_ / _Corriger ma commande_.
+> « Habituellement **4 kg** — cette commande en porte **12**. »
 
 Trois conséquences sur le modèle :
 
@@ -284,7 +314,8 @@ Trois conséquences sur le modèle :
 - **Il faut une évaluation AVANT la passation**, en plus de celle qui suit
   `OrderPlacedEvent` : une lecture pure sur le panier (`POST /orders/preflight`),
   qui ne persiste rien et ne notifie personne. Les détecteurs sont purs, donc
-  c'est le même code appelé deux fois — pas une seconde implémentation.
+  c'est le même code appelé deux fois — pas une seconde implémentation. Elle rend
+  les alertes **par SKU**, puisque l'affichage se rattache à une ligne.
 - **`product.first_order` ne se montre jamais au client.** « Vous n'aviez jamais
   pris ce produit » n'est pas une erreur de saisie possible, c'est une évidence.
   Chaque type déclare s'il est **montrable au client** ; la case n'apparaît en
@@ -320,8 +351,7 @@ contact déposée »), qui attendait exactement ça — la cloche doit donc êtr
 2. ✅ **Affichage client** — à la **confirmation de commande** (§8), comme un
    garde-fou de saisie. Implique `customerMessage` par type et une évaluation
    pré-passation.
-3. ⏳ **Rétro-évaluation** — à l'activation d'une règle, rejoue-t-on l'historique
-   pour peupler le journal, ou la règle ne vaut-elle que pour l'avenir ? Défaut
-   appliqué **faute de décision contraire** : **l'avenir seulement** (une
-   rétro-évaluation produit d'un coup des centaines d'alertes que personne
-   n'acquittera).
+3. ✅ **Rétro-évaluation** — **l'avenir seulement**. Activer une règle ne rejoue
+   pas l'historique : ça produirait d'un coup des centaines d'alertes que
+   personne n'acquitterait, et la première chose qu'on ferait serait de les
+   effacer en masse — ce qui apprend à ignorer la liste.

@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FoldViewNavComponent, type FoldViewNavItem } from 'fold-ng';
 
 import { AvailabilityCard } from './availability-card/availability-card';
-import { AlertsCard } from './alerts-card/alerts-card';
+import { AccountAlertsCard } from './account-alerts-card/account-alerts-card';
+import { ActivationAlertsCard } from './activation-alerts-card/activation-alerts-card';
 import { MarketCard } from './market-card/market-card';
 
 /** Les trois sections, dans l'ordre où le commercial les rencontre. */
@@ -21,12 +22,20 @@ type SectionKey = 'rdv' | 'marches' | 'alertes';
  * - **Prise de rendez-vous** — la grille de disponibilité, sa politique, ses
  *   exceptions, et l'aperçu de ce que le client verra.
  * - **Définition des marchés** — zones et codes NAF visés, avec leur comptage.
- * - **Réglage des alertes** — les seuils de couleur du calendrier d'acquisition.
+ * - **Alertes** — deux jeux de règles que le mot « alerte » réunissait à tort :
+ *   les seuils de couleur du calendrier d'acquisition (un dossier qu'on n'a pas
+ *   encore traité) et les alertes de compte client (un client qu'on a déjà).
  */
 @Component({
   selector: 'app-reglages-commercial-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldViewNavComponent, AvailabilityCard, MarketCard, AlertsCard],
+  imports: [
+    FoldViewNavComponent,
+    AvailabilityCard,
+    MarketCard,
+    ActivationAlertsCard,
+    AccountAlertsCard,
+  ],
   templateUrl: './reglages-commercial-page.html',
   styleUrl: './reglages-commercial-page.scss',
 })
@@ -36,6 +45,6 @@ export class ReglagesCommercialPage {
   protected readonly sections: FoldViewNavItem[] = [
     { key: 'rdv' satisfies SectionKey, label: 'Prise de rendez-vous', icon: 'calendar' },
     { key: 'marches' satisfies SectionKey, label: 'Définition des marchés', icon: 'map-pin' },
-    { key: 'alertes' satisfies SectionKey, label: 'Réglage des alertes', icon: 'bell' },
+    { key: 'alertes' satisfies SectionKey, label: 'Alertes', icon: 'bell' },
   ];
 }

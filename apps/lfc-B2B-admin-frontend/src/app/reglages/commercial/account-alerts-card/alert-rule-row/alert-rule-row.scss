@@ -1,0 +1,73 @@
+:host {
+  display: block;
+}
+
+.ar-rule {
+  display: grid;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+}
+
+/* Une règle éteinte reste lisible mais recule : elle ne surveille rien. */
+.ar-rule--off {
+  background: var(--fold-color-surface-sunken, transparent);
+}
+
+.ar-rule--off .ar-head {
+  opacity: 0.7;
+}
+
+.ar-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.ar-head-side {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.ar-params {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--fold-space-md);
+  align-items: start;
+}
+
+.ar-channels {
+  display: grid;
+  gap: var(--fold-space-sm);
+  justify-items: start;
+}
+
+.ar-channels-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs, 0.35rem);
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.ar-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+/* Un réglage qui se retournera contre lui : on le dit là où il se coche. */
+.ar-warn {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--fold-color-warning, #d97706);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-sunken, transparent);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
