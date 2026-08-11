@@ -67,7 +67,10 @@ describe('activationSteps', () => {
   it("réclame l'identité légale d'un compte ouvert sans papiers", () => {
     // Elle n'est pas configurable : sans SIRET, il n'y a rien à facturer. Elle
     // ouvre donc la liste, avant les pièces.
-    const steps = activationSteps(complete({ siret: '', formeJuridique: '' }), ALL_REQUIRED);
+    const steps = activationSteps(
+      complete({ raisonSociale: '', siret: '', formeJuridique: '' }),
+      ALL_REQUIRED,
+    );
     expect(steps.map((s) => s.key)).toEqual(['legal', 'payment']);
   });
 

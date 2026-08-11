@@ -15,6 +15,8 @@ import {
   type FoldViewNavItem,
 } from 'fold-ng';
 
+import { companyDisplayName } from '@lfd/contracts';
+
 import { PinnedAccountsStore, MAX_PINNED } from '../commercial/cockpit/pinned-store';
 import { NotifyService } from '../notify.service';
 import { AdminCompaniesService } from '../comptes-clients/admin-companies.service';
@@ -56,7 +58,8 @@ export class FicheClientShell {
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
 
-  protected readonly raisonSociale = signal<string>('');
+  /** Le nom d'usage de la société — enseigne, à défaut raison sociale. */
+  protected readonly name = signal<string>('');
 
   protected readonly tabs: FoldViewNavItem[] = [
     { key: 'dashboard', label: 'Tableau de bord', link: 'dashboard', icon: 'grid' },
@@ -67,7 +70,7 @@ export class FicheClientShell {
   ];
 
   protected readonly title = computed<string>(() => {
-    const name = this.raisonSociale();
+    const name = this.name();
     return name === '' ? 'Compte client' : name;
   });
 
@@ -108,9 +111,9 @@ export class FicheClientShell {
   private async loadName(id: string): Promise<void> {
     try {
       const company = await this.companies.getById(id);
-      this.raisonSociale.set(company?.raisonSociale ?? '');
+      this.name.set(company === undefined ? '' : companyDisplayName(company));
     } catch {
-      this.raisonSociale.set('');
+      this.name.set('');
     }
   }
 }

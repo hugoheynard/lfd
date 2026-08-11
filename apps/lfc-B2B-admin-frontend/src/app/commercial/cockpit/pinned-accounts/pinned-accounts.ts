@@ -1,3 +1,4 @@
+import { companyDisplayName } from '@lfd/contracts';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
@@ -78,6 +79,9 @@ export type SheetsById = ReadonlyMap<string, CustomerSheetView>;
   styleUrl: './pinned-accounts.scss',
 })
 export class PinnedAccounts {
+  /** Le nom d'usage d'une société — enseigne, à défaut raison sociale. */
+  protected readonly displayName = companyDisplayName;
+
   readonly companies = input.required<readonly AdminCompany[]>();
   /** Les épingles, avec les indicateurs choisis. */
   readonly accounts = input.required<readonly PinnedAccount[]>();

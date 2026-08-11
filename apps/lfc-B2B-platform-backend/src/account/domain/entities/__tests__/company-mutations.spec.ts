@@ -83,7 +83,7 @@ describe("Company — reconstitution + mutations souples", () => {
     const company = Company.declare(
       {
         raisonSociale: "Neuve",
-        enseigne: "",
+        enseigne: "Le Pain Quotidien",
         formeJuridique: "SARL",
         siret: "81245678900021",
         tvaIntracom: "",
@@ -133,7 +133,7 @@ describe("Company — activation", () => {
     return Company.reconstitute({
       id: "c1",
       raisonSociale: "PQ Marais",
-      enseigne: "",
+      enseigne: "Le Pain Quotidien",
       formeJuridique: "SAS",
       siret: "81245678900021",
       tvaIntracom: "",

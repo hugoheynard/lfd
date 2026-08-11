@@ -214,6 +214,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
       where: { id },
       data: {
         enseigne: state.enseigne,
+        raisonSociale: state.raisonSociale,
         formeJuridique: state.formeJuridique,
         siret: state.siret,
         tvaIntracom: state.tvaIntracom,

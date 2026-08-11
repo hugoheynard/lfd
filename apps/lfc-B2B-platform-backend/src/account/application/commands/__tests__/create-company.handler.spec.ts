@@ -66,7 +66,7 @@ function command(overrides: Partial<CreateCompanyCommand> = {}): CreateCompanyCo
   return new CreateCompanyCommand(
     overrides.ownerUserId ?? "user_1",
     overrides.raisonSociale ?? "Boulangerie du Marais SAS",
-    overrides.enseigne ?? "",
+    overrides.enseigne ?? "Le Pain Quotidien",
     overrides.formeJuridique ?? "SAS",
     overrides.siret ?? "812 456 789 00021",
     overrides.tvaIntracom ?? "",

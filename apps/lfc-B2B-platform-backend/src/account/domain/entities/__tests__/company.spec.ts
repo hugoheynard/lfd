@@ -34,17 +34,24 @@ describe("Company.declare", () => {
     expect(company.siret.value).toBe("81245678900021");
   });
 
-  it("n'exige que la raison sociale : il faut bien appeler la société par un nom", () => {
-    expect(() => Company.declare({ ...identity, raisonSociale: "   " }, contact)).toThrow(
+  it("n'exige que l'ENSEIGNE — le nom d'usage, pas celui du greffe", () => {
+    // C'est le nom que le commercial a en tête et que le client donne au
+    // téléphone. La raison sociale est une donnée d'identification officielle :
+    // elle arrive avec le SIRET.
+    expect(() => Company.declare({ ...identity, enseigne: "   " }, contact)).toThrow(
       InvalidCompanyIdentityError,
     );
+    expect(Company.declare({ ...identity, raisonSociale: "" }, contact).raisonSociale).toBe("");
   });
 
   it("s'ouvre SANS papiers — le commercial est chez le client, pas au greffe", () => {
     // Exiger 14 chiffres et une forme juridique au moment où l'on est devant le
     // client, c'est renvoyer le commercial dans sa voiture. Le compte se crée,
     // les papiers suivent.
-    const company = Company.declare({ ...identity, formeJuridique: "", siret: "" }, contact);
+    const company = Company.declare(
+      { ...identity, raisonSociale: "", formeJuridique: "", siret: "" },
+      contact,
+    );
 
     expect(company.siret).toBeNull();
     expect(company.siretDigits).toBe("");
@@ -54,7 +61,10 @@ describe("Company.declare", () => {
   it("refuse d'ACTIVER un compte sans identité légale", () => {
     // On ouvre sans papiers ; on ne devient pas client sans. Sans SIRET, rien à
     // facturer.
-    const company = Company.declare({ ...identity, formeJuridique: "", siret: "" }, contact);
+    const company = Company.declare(
+      { ...identity, raisonSociale: "", formeJuridique: "", siret: "" },
+      contact,
+    );
 
     expect(() => {
       company.activate(new Date("2026-08-11T10:00:00.000Z"));
@@ -64,13 +74,22 @@ describe("Company.declare", () => {
   it("complète un trou, mais ne réécrit jamais un SIRET déjà posé", () => {
     // Changer un SIRET ferait d'une société une autre, sous la même référence
     // client et avec son historique de commandes.
-    const company = Company.declare({ ...identity, formeJuridique: "", siret: "" }, contact);
+    const company = Company.declare(
+      { ...identity, raisonSociale: "", formeJuridique: "", siret: "" },
+      contact,
+    );
 
-    company.completeLegalIdentity({ formeJuridique: "SARL", siret: "812 456 789 00021" });
+    company.completeLegalIdentity({
+      raisonSociale: "Boulangerie du Marais SAS",
+      formeJuridique: "SARL",
+      siret: "812 456 789 00021",
+    });
+    expect(company.raisonSociale).toBe("Boulangerie du Marais SAS");
     expect(company.formeJuridique).toBe("SARL");
     expect(company.siretDigits).toBe("81245678900021");
 
-    company.completeLegalIdentity({ formeJuridique: "SAS", siret: "" });
+    company.completeLegalIdentity({ raisonSociale: "Autre SAS", formeJuridique: "SAS", siret: "" });
+    expect(company.raisonSociale).toBe("Boulangerie du Marais SAS");
     expect(company.formeJuridique).toBe("SARL");
   });
 
@@ -80,19 +99,33 @@ describe("Company.declare", () => {
     expect(() => Company.declare({ ...identity, siret: "11111111111111" }, contact)).toThrow();
   });
 
-  it("accepte une enseigne et une TVA absentes", () => {
-    // Tous les clients ne sont pas assujettis, et beaucoup n'ont pas de nom
-    // commercial distinct : les exiger bloquerait des déclarations légitimes.
-    const company = Company.declare({ ...identity, enseigne: "", tvaIntracom: "" }, contact);
+  it("accepte une TVA absente", () => {
+    // Tous les clients ne sont pas assujettis : l'exiger bloquerait des
+    // déclarations parfaitement légitimes.
+    const company = Company.declare({ ...identity, tvaIntracom: "" }, contact);
 
-    expect(company.enseigne).toBe("");
     expect(company.tvaIntracom).toBe("");
   });
 
-  it("retombe sur la raison sociale quand il n'y a pas d'enseigne", () => {
-    expect(Company.declare({ ...identity, enseigne: "" }, contact).displayName()).toBe(
-      "Boulangerie du Marais SAS",
-    );
+  it("retombe sur la raison sociale d'une société déjà en base sans enseigne", () => {
+    // `reconstitute` ne revalide pas : les sociétés déclarées avant que
+    // l'enseigne devienne le nom exigé n'en ont pas forcément une.
+    const legacy = Company.reconstitute({
+      id: "cmp_1",
+      raisonSociale: "Boulangerie du Marais SAS",
+      enseigne: "",
+      formeJuridique: "SAS",
+      siret: "812 456 789 00021",
+      tvaIntracom: "",
+      contact,
+      paymentTerm: "per_order",
+      requestedPaymentTerm: null,
+      status: "pending",
+      activatedAt: null,
+      nafCode: "",
+    });
+
+    expect(legacy.displayName()).toBe("Boulangerie du Marais SAS");
     expect(Company.declare(identity, contact).displayName()).toBe("Le Pain Quotidien du Marais");
   });
 

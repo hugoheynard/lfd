@@ -23,6 +23,7 @@ import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-co
 import type { PortfolioMetricsView } from '@lfd/contracts';
 
 import { matchesCompanySearch } from './company-search';
+import { companyDisplayName } from '@lfd/contracts';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -212,6 +213,13 @@ export class ComptesClientsPage {
       subtitle: 'Change de filtre pour voir les autres.',
     };
   });
+
+  /**
+   * Le nom sous lequel une société se reconnaît — son enseigne, à défaut sa
+   * raison sociale. C'est ce que le commercial cherche des yeux ; la
+   * dénomination du greffe ne lui dit rien.
+   */
+  protected readonly displayName = companyDisplayName;
 
   /** Identité stable d'une ligne pour la data-table. */
   protected readonly rowKey = (company: AdminCompany): string => company.id;

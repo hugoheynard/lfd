@@ -17,7 +17,8 @@ export interface ActivationStep {
 const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
   legal: {
     title: 'Identité légale',
-    detail: 'Forme juridique et SIRET manquent — le compte ne peut pas être activé sans eux.',
+    detail:
+      'Raison sociale, forme juridique ou SIRET manquent — le compte ne peut pas être activé sans eux.',
     cta: "Compléter l'identité",
   },
   tva: {
@@ -72,10 +73,9 @@ export function activationSteps(
   }
   // L'identité légale n'est pas une pièce configurable : sans SIRET, il n'y a
   // rien à facturer. Elle ouvre donc la liste, et ne se désactive pas.
-  const legal: ActivationStep[] =
-    company !== null && company.siret.trim() !== '' && company.formeJuridique.trim() !== ''
-      ? []
-      : [{ key: 'legal' as const, ...STEP_TEXTS.legal }];
+  const legal: ActivationStep[] = hasLegalIdentity(company)
+    ? []
+    : [{ key: 'legal' as const, ...STEP_TEXTS.legal }];
 
   const steps = PIECES.filter(
     (piece) => settings[piece] !== 'hidden' && !isPieceDone(company, piece),
@@ -119,4 +119,19 @@ function isPieceDone(company: AdminCompanyDetail | null, piece: ActivationPiece)
     case 'delivery':
       return company.addresses.deliveries.length > 0;
   }
+}
+
+/**
+ * L'identité **du greffe** est-elle au complet ? Elle n'est pas une pièce
+ * configurable : sans elle, il n'y a rien à facturer, et le serveur refuse
+ * d'activer. L'enseigne n'en fait pas partie — c'est le nom d'usage, exigé dès
+ * l'ouverture.
+ */
+export function hasLegalIdentity(company: AdminCompanyDetail | null): boolean {
+  return (
+    company !== null &&
+    company.raisonSociale.trim() !== '' &&
+    company.formeJuridique.trim() !== '' &&
+    company.siret.trim() !== ''
+  );
 }

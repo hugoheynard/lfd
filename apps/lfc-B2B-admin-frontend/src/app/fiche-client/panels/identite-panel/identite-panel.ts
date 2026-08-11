@@ -24,6 +24,7 @@ export interface AdminIdentitePanelData {
   readonly enseigne: string;
   readonly tvaIntracom: string;
   /** Vide quand le compte a été ouvert sans papiers — le panneau les réclame alors. */
+  readonly raisonSociale: string;
   readonly formeJuridique: string;
   readonly siret: string;
 }
@@ -54,14 +55,20 @@ export class AdminIdentitePanel {
 
   protected readonly enseigne = signal('');
   protected readonly tvaIntracom = signal('');
+  protected readonly raisonSociale = signal('');
   protected readonly formeJuridique = signal('');
   protected readonly siret = signal('');
   protected readonly submitting = signal(false);
 
   /** Le compte a-t-il été ouvert sans ses papiers ? */
-  protected readonly legalMissing = computed(
-    () => this.data().formeJuridique.trim() === '' || this.data().siret.trim() === '',
-  );
+  protected readonly legalMissing = computed(() => {
+    const data = this.data();
+    return (
+      data.raisonSociale.trim() === '' ||
+      data.formeJuridique.trim() === '' ||
+      data.siret.trim() === ''
+    );
+  });
 
   constructor() {
     // Préremplit à l'ouverture ; `data` est fixé et ne change plus.
@@ -80,6 +87,7 @@ export class AdminIdentitePanel {
       await this.service.updateIdentity(this.data().companyId, {
         enseigne: this.enseigne().trim(),
         tvaIntracom: this.tvaIntracom().trim(),
+        raisonSociale: this.raisonSociale().trim(),
         formeJuridique: this.formeJuridique().trim(),
         siret: this.siret().trim(),
       });

@@ -1,16 +1,24 @@
-<fold-input
-  label="Raison sociale"
-  hint="la dénomination légale, telle qu'elle figure au registre"
-  required
-  [value]="value().raisonSociale"
-  (valueChange)="setRaisonSociale($event)"
-/>
+<!-- L'ENSEIGNE d'abord : c'est le nom sur la devanture, celui que le commercial
+     a en tête et que le client donne au téléphone. La raison sociale est une
+     donnée de greffe — elle appartient au bloc légal, avec le SIRET. -->
 <fold-input
   label="Enseigne"
-  hint="nom commercial, s'il diffère de la raison sociale"
-  optional
+  hint="le nom sous lequel l'établissement est connu"
+  required
   [value]="value().enseigne"
   (valueChange)="setEnseigne($event)"
+/>
+<fold-input
+  label="Raison sociale"
+  [hint]="
+    legalDeferred()
+      ? 'la dénomination au registre — à compléter avec le SIRET'
+      : 'la dénomination légale, telle qu\'elle figure au registre'
+  "
+  [required]="!legalDeferred()"
+  [optional]="legalDeferred()"
+  [value]="value().raisonSociale"
+  (valueChange)="setRaisonSociale($event)"
 />
 
 <div class="row">

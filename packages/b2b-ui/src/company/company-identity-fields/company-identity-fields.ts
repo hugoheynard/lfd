@@ -21,8 +21,9 @@ export class CompanyIdentityFields {
   readonly value = model.required<CompanyIdentityDraft>();
 
   /**
-   * **Différer** l'identité légale : forme juridique et SIRET passent de requis à
-   * facultatifs.
+   * **Différer** l'identité légale : raison sociale, forme juridique et SIRET
+   * passent de requis à facultatifs. L'enseigne, elle, reste exigée — c'est le
+   * nom de la société pour tout le monde sauf le greffe.
    *
    * Le cas est celui du commercial chez son client, qui ouvre le compte devant
    * lui : les papiers sont au bureau. Exiger 14 chiffres à cet instant, c'est

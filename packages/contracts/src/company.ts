@@ -24,6 +24,7 @@ export const updateIdentityPayloadSchema = z.object({
    * ensuite. Un champ déjà renseigné est ignoré côté serveur : on comble un
    * trou, on ne réécrit pas un SIRET.
    */
+  raisonSociale: z.string().default(""),
   formeJuridique: z.string().default(""),
   siret: z.string().default(""),
 });
@@ -37,3 +38,24 @@ export const updatePaymentTermPayloadSchema = z.object({
   paymentTerm: paymentTermSchema,
 });
 export type UpdatePaymentTermPayload = z.infer<typeof updatePaymentTermPayloadSchema>;
+
+/**
+ * Le nom sous lequel une société **se reconnaît** : son enseigne, et à défaut sa
+ * raison sociale.
+ *
+ * Les deux ne servent pas au même usage. L'enseigne est ce qui est écrit sur la
+ * devanture, ce que le commercial a en tête et ce que le client dit au
+ * téléphone ; la raison sociale est une donnée de greffe, qui n'apparaît que sur
+ * les documents légaux. Un écran qui affiche la seconde là où l'humain attend la
+ * première oblige à traduire mentalement à chaque ligne.
+ *
+ * C'est aussi ce qui permet d'ouvrir un compte sans les papiers : l'enseigne
+ * suffit à nommer la société, la raison sociale arrive avec le SIRET.
+ */
+export function companyDisplayName(company: {
+  readonly raisonSociale: string;
+  readonly enseigne: string;
+}): string {
+  const enseigne = company.enseigne.trim();
+  return enseigne === "" ? company.raisonSociale : enseigne;
+}

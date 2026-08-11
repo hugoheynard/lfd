@@ -30,6 +30,7 @@ function haystack(company: AdminCompany): string[] {
   const owner = company.owner;
   return [
     normalise(company.raisonSociale),
+    normalise(company.enseigne),
     // L'enseigne est le nom SOUS LEQUEL le client se présente au téléphone ;
     // la raison sociale est celle qui est écrite sur les papiers. Chercher l'un
     // sans l'autre, c'est rater la moitié des appels.

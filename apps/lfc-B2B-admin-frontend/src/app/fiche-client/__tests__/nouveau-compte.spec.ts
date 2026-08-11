@@ -86,10 +86,10 @@ async function setup(
 /** Remplit le bloc d'ouverture avec le minimum exigé. */
 function fill(page: InformationsPage): void {
   page['identityDraft'].set({
-    raisonSociale: '  La Folie Douce  ',
-    enseigne: '',
-    formeJuridique: 'SAS',
-    siret: '12345678901234',
+    raisonSociale: '',
+    enseigne: '  Le Comptoir  ',
+    formeJuridique: '',
+    siret: '',
     tvaIntracom: '',
   });
   page['holder'].set({
@@ -134,12 +134,13 @@ describe('InformationsPage — ouverture d’un compte', () => {
     const { page } = await setup();
     expect(page['canCreate']()).toBe(false);
 
-    // Ni forme juridique ni SIRET : le commercial est chez le client, qui n'a
-    // pas ses papiers sous la main. Ce qui bloque ici bloque une saisie faite
-    // devant le client, donc un compte qui ne sera jamais ouvert.
+    // L'ENSEIGNE suffit : ni raison sociale, ni forme juridique, ni SIRET. Le
+    // commercial est chez le client, qui n'a pas ses papiers sous la main — et
+    // ce qui bloque ici bloque une saisie faite devant lui, donc un compte qui
+    // ne sera jamais ouvert.
     page['identityDraft'].set({
-      raisonSociale: 'La Folie Douce',
-      enseigne: '',
+      raisonSociale: '',
+      enseigne: 'Le Comptoir',
       formeJuridique: '',
       siret: '',
       tvaIntracom: '',
@@ -164,10 +165,10 @@ describe('InformationsPage — ouverture d’un compte', () => {
 
     expect(create).toHaveBeenCalledWith({
       identity: {
-        raisonSociale: 'La Folie Douce',
-        enseigne: '',
-        formeJuridique: 'SAS',
-        siret: '12345678901234',
+        raisonSociale: '',
+        enseigne: 'Le Comptoir',
+        formeJuridique: '',
+        siret: '',
         tvaIntracom: '',
       },
       contact: {
@@ -193,7 +194,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
     expect(navigate).not.toHaveBeenCalled();
     // Refaire la saisie après un refus serait une punition pour une erreur qui
     // n'est pas celle du commercial.
-    expect(page['identityDraft']().raisonSociale).toBe('  La Folie Douce  ');
+    expect(page['identityDraft']().enseigne).toBe('  Le Comptoir  ');
     expect(page['creating']()).toBe(false);
   });
 });

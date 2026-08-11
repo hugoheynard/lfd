@@ -85,7 +85,7 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
 function command(contact: Partial<ContactDetailsInput> = {}): CreateCompanyByStaffCommand {
   return new CreateCompanyByStaffCommand(
     "Café des Halles SAS",
-    "",
+    "Café des Halles",
     "SAS",
     "812 456 789 00021",
     "",

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
-import { FoldButtonComponent, FoldLoadingStateComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent } from 'fold-ng';
 import type { CustomerSheetView } from '@lfd/contracts';
 
 import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
@@ -19,7 +19,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'app-client-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CustomerSheet, FoldButtonComponent, FoldLoadingStateComponent],
+  imports: [CustomerSheet, FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent],
   templateUrl: './dashboard-page.html',
 })
 export class ClientDashboardPage {

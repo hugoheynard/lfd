@@ -9,7 +9,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     id: "company_1",
     reference: "C-1",
     raisonSociale: "Café",
-    enseigne: "",
+    enseigne: "Le Pain Quotidien",
     formeJuridique: "SAS",
     siret: "12345678901234",
     tvaIntracom: "",

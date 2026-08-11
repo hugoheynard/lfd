@@ -23,6 +23,12 @@
       Ce compte a été ouvert sans ses papiers. Sans eux, il ne pourra pas être activé.
     </p>
     <fold-input
+      label="Raison sociale"
+      hint="la dénomination au registre du commerce"
+      [value]="raisonSociale()"
+      (valueChange)="raisonSociale.set($event)"
+    />
+    <fold-input
       label="Forme juridique"
       placeholder="SAS, SARL, EI…"
       [value]="formeJuridique()"

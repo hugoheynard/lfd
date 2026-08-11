@@ -27,6 +27,7 @@ export type {
   CreatedAddressResponse,
 } from "./address.js";
 export {
+  companyDisplayName,
   paymentTermSchema,
   updateIdentityPayloadSchema,
   updatePaymentTermPayloadSchema,

@@ -18,7 +18,7 @@ function reconstituted(): Company {
   return Company.reconstitute({
     id: "company_1",
     raisonSociale: "Le Génépi",
-    enseigne: "",
+    enseigne: "Le Pain Quotidien",
     formeJuridique: "SAS",
     siret: "81245678900021",
     tvaIntracom: "",

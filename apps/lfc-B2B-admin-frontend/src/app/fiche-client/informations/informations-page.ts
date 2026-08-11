@@ -11,6 +11,8 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
   FoldPageSectionComponent,
   FoldPanelHostService,
 } from 'fold-ng';
@@ -35,7 +37,12 @@ import { NotifyService } from '../../notify.service';
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
 import { PlatformSettingsService } from '../../reglages/platform-settings.service';
 import { toContactCards, toIdentityView } from '../admin-company-view';
-import { activationSteps, missingRequiredPieces, type ActivationStep } from './activation-steps';
+import {
+  activationSteps,
+  hasLegalIdentity,
+  missingRequiredPieces,
+  type ActivationStep,
+} from './activation-steps';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
@@ -69,6 +76,8 @@ type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
     FoldPageSectionComponent,
     CompanyReferenceCard,
     CompanyIdentityCard,
@@ -171,8 +180,9 @@ export class InformationsPage {
     if (company === null || !this.isPending()) {
       return false;
     }
-    const legalComplete = company.siret.trim() !== '' && company.formeJuridique.trim() !== '';
-    return legalComplete && missingRequiredPieces(company, this.settings()).length === 0;
+    return (
+      hasLegalIdentity(company) && missingRequiredPieces(company, this.settings()).length === 0
+    );
   });
 
   constructor() {
@@ -278,6 +288,7 @@ export class InformationsPage {
           companyId: company.id,
           enseigne: company.enseigne,
           tvaIntracom: company.tvaIntracom,
+          raisonSociale: company.raisonSociale,
           formeJuridique: company.formeJuridique,
           siret: company.siret,
         },

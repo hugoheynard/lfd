@@ -42,15 +42,19 @@ export const EMPTY_COMPANY_CONTACT_DRAFT: CompanyContactDraft = {
 };
 
 /**
- * De quoi **ouvrir** une société : son nom, et rien d'autre.
+ * De quoi **ouvrir** une société : son **enseigne**, et rien d'autre.
  *
- * Forme juridique et SIRET n'en font pas partie — un compte se crée souvent chez
- * le client, qui n'a pas ses papiers sous la main. Les exiger à cet instant, ce
- * serait renvoyer le commercial dans sa voiture, et le compte ne serait jamais
- * ouvert. Ils se complètent ensuite, et l'activation les exige (côté serveur).
+ * L'enseigne, pas la raison sociale : c'est le nom sur la devanture, celui que
+ * le commercial a en tête et que le client donne au téléphone. La raison
+ * sociale est une donnée d'identification officielle — elle arrive avec le
+ * SIRET, quand les papiers sont sur la table.
+ *
+ * Les exiger à l'ouverture, ce serait renvoyer dans sa voiture le commercial
+ * qui crée le compte devant son client, et le compte ne serait jamais ouvert.
+ * Ils se complètent ensuite, et l'activation les exige (côté serveur).
  */
 export function isCompanyIdentityOpenable(draft: CompanyIdentityDraft): boolean {
-  return draft.raisonSociale.trim() !== '';
+  return draft.enseigne.trim() !== '';
 }
 
 /** Identité **complète** : champs requis présents + SIRET à 14 chiffres. */

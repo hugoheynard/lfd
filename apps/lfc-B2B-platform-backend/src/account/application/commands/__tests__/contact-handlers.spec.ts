@@ -58,7 +58,7 @@ function sampleCompany(): Company {
   return Company.reconstitute({
     id: "c1",
     raisonSociale: "PQ Marais",
-    enseigne: "",
+    enseigne: "Le Pain Quotidien",
     formeJuridique: "SAS",
     siret: "81245678900021",
     tvaIntracom: "",

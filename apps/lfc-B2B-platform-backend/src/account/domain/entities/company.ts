@@ -15,7 +15,7 @@ const TEXT_MAX_LENGTH = 160;
 /** Identité légale déclarée au formulaire « Créer une entreprise ». */
 export interface CompanyIdentityInput {
   readonly raisonSociale: string;
-  /** Nom commercial si différent — vide = identique à la raison sociale. */
+  /** Le nom d'usage — c'est LUI qu'on exige, pas la raison sociale. */
   readonly enseigne: string;
   /** SAS, SARL, EI… */
   readonly formeJuridique: string;
@@ -67,6 +67,7 @@ export interface CompanySoftState {
    * n'est pour autant pas « souple » — l'agrégat refuse de la réécrire une fois
    * posée (cf. `completeLegalIdentity`).
    */
+  readonly raisonSociale: string;
   readonly formeJuridique: string;
   readonly siret: string;
   readonly tvaIntracom: string;
@@ -103,7 +104,7 @@ export interface CompanySoftState {
 export class Company {
   private constructor(
     private readonly identityId: string | null,
-    readonly raisonSociale: string,
+    private raisonSocialeValue: string,
     private enseigneValue: string,
     private formeJuridiqueValue: string,
     private siretValue: Siret | null,
@@ -120,8 +121,11 @@ export class Company {
   static declare(identity: CompanyIdentityInput, contact: CompanyContact): Company {
     return new Company(
       null,
-      required(identity.raisonSociale, "Raison sociale"),
-      optional(identity.enseigne, "Enseigne"),
+      // L'ENSEIGNE est ce qu'on exige : c'est le nom que le commercial a en
+      // tête et que le client donne au téléphone. La raison sociale est une
+      // donnée de greffe — elle arrive avec le SIRET, pas avant.
+      optional(identity.raisonSociale, "Raison sociale"),
+      required(identity.enseigne, "Enseigne"),
       // Forme juridique et SIRET sont FACULTATIFS à l'ouverture : le compte se
       // crée souvent chez le client, qui n'a pas ses papiers sous la main. Ils
       // se complètent ensuite, et l'activation les exige (cf. `activate`).
@@ -162,6 +166,10 @@ export class Company {
     return this.identityId;
   }
 
+  get raisonSociale(): string {
+    return this.raisonSocialeValue;
+  }
+
   get enseigne(): string {
     return this.enseigneValue;
   }
@@ -182,7 +190,9 @@ export class Company {
 
   /** Vrai quand forme juridique **et** SIRET sont là : de quoi facturer. */
   get hasLegalIdentity(): boolean {
-    return this.formeJuridiqueValue !== "" && this.siretValue !== null;
+    return (
+      this.raisonSocialeValue !== "" && this.formeJuridiqueValue !== "" && this.siretValue !== null
+    );
   }
 
   /**
@@ -194,7 +204,14 @@ export class Company {
    * de commandes. Corriger une faute de frappe est une opération à part, qui
    * devra s'assumer comme telle.
    */
-  completeLegalIdentity(input: { formeJuridique: string; siret: string }): void {
+  completeLegalIdentity(input: {
+    raisonSociale: string;
+    formeJuridique: string;
+    siret: string;
+  }): void {
+    if (this.raisonSocialeValue === "") {
+      this.raisonSocialeValue = optional(input.raisonSociale, "Raison sociale");
+    }
     if (this.formeJuridiqueValue === "") {
       this.formeJuridiqueValue = optional(input.formeJuridique, "Forme juridique");
     }
@@ -280,7 +297,7 @@ export class Company {
       throw new CompanyActivationBlockedError(
         this.identityId ?? "",
         ["identite_legale"],
-        "Forme juridique et SIRET sont nécessaires pour activer un compte.",
+        "Raison sociale, forme juridique et SIRET sont nécessaires pour activer un compte.",
       );
     }
     if (this.statusValue !== "pending") {
@@ -329,15 +346,20 @@ export class Company {
     }
   }
 
-  /** Enseigne effective : le nom commercial s'il existe, la raison sociale sinon. */
+  /**
+   * Le nom sous lequel elle se reconnaît : l'enseigne, à défaut la raison
+   * sociale. C'est ce qu'affichent les écrans — la raison sociale, elle, ne sert
+   * qu'aux documents légaux.
+   */
   displayName(): string {
-    return this.enseigneValue === "" ? this.raisonSociale : this.enseigneValue;
+    return this.enseigneValue === "" ? this.raisonSocialeValue : this.enseigneValue;
   }
 
   /** Sérialise les champs **mutables** pour l'adaptateur (identité souple + contact + termes). */
   toPersistence(): CompanySoftState {
     return {
       enseigne: this.enseigneValue,
+      raisonSociale: this.raisonSocialeValue,
       formeJuridique: this.formeJuridiqueValue,
       siret: this.siretDigits,
       tvaIntracom: this.tvaIntracomValue,

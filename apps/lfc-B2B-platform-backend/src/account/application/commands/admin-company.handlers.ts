@@ -62,6 +62,7 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     // Complète ce qui manquait à l'ouverture. Sans SIRET, pas d'activation
     // possible : ce serait un compte ouvert pour rien.
     company.completeLegalIdentity({
+      raisonSociale: command.payload.raisonSociale,
       formeJuridique: command.payload.formeJuridique,
       siret: command.payload.siret,
     });

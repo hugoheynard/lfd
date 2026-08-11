@@ -77,7 +77,7 @@
 
       <ng-template foldCell="raisonSociale" let-row>
         <span class="raison">
-          {{ row.raisonSociale }}
+          {{ displayName(row) }}
           <!-- La pastille mène DIRECTEMENT à l'onglet Alertes : sans ça, la
                seule chose actionnable de la ligne demanderait deux clics et de
                savoir où regarder. -->
@@ -91,8 +91,11 @@
             </a>
           }
         </span>
-        @if (row.enseigne) {
-          <span class="enseigne">{{ row.enseigne }}</span>
+        <!-- En second : la dénomination du greffe, quand elle diffère du nom
+             d'usage. Elle sert à retrouver un dossier, pas à reconnaître un
+             client. -->
+        @if (row.raisonSociale && row.raisonSociale !== displayName(row)) {
+          <span class="enseigne">{{ row.raisonSociale }}</span>
         }
       </ng-template>
 
