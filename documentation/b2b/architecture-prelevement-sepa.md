@@ -13,8 +13,10 @@
 > (carte au checkout vs terme différé) et
 > [`architecture-cycle-de-vie-commande.md`](architecture-cycle-de-vie-commande.md).
 >
-> **Statut : 📐 doc-first — rien n'est codé.** Les points marqués ⚠️ sont à
-> confirmer dans la documentation Stripe à jour **avant** la première ligne.
+> **Statut : 🚧 tranche 2 livrée (2026-08-11).** L'enregistrement d'un mandat
+> depuis le back-office fonctionne de bout en bout ; le **prélèvement** lui-même
+> (tranches 3 et 4) n'existe pas encore. Les points ⚠️ restants sont signalés
+> tranche par tranche au §7.
 
 ---
 
@@ -39,6 +41,17 @@ Trois manques :
 ## 1. Trois décisions
 
 ### A. L'instrument est distinct du terme
+
+> **Révisé le 2026-08-11.** Entre-temps, `PaymentTerm` a disparu au profit de
+> **crédits cumulatifs** (`grantedTerms`) : payer à la commande est le socle de
+> tout le monde, et ce qui s'accorde, ce sont des délais. La confusion que cette
+> décision voulait défaire n'existe donc plus au même endroit — un client au
+> mensuel peut toujours régler une commande par carte.
+>
+> L'énumération `PaymentInstrument` ci-dessous **n'a pas été codée**, et ne le
+> sera pas telle quelle : l'instrument se lit du mandat. Un mandat actif → on
+> prélève ; pas de mandat → l'encaissement se fait hors système. Une colonne de
+> plus serait une seconde source de vérité à tenir d'accord avec la première.
 
 `PaymentTerm` répond à **quand** c'est dû. Un nouveau `PaymentInstrument` répond
 à **comment** on encaisse :
@@ -65,6 +78,11 @@ saisit dans l'**IBAN Element** de Stripe (iframe Stripe.js) posé dans la fiche
 client du back-office ; nous ne recevons qu'un identifiant de moyen de paiement.
 
 Ce qu'on stocke, et rien d'autre :
+
+> **Livré tel quel** — table `payment_mandates`, cf. migration
+> `20260811200000_mandat_prelevement`. Une nuance : `stripe_customer_id` vit sur
+> le mandat comme prévu, et le client Stripe est **réutilisé** d'un mandat au
+> suivant pour la même société (sinon l'historique se fragmente côté Stripe).
 
 | Champ                  | Exemple      | À quoi ça sert                           |
 | ---------------------- | ------------ | ---------------------------------------- |
@@ -209,14 +227,38 @@ Ces points sont donnés de mémoire et doivent être vérifiés dans la doc à j
 
 ## 7. Découpage
 
-| Tranche | Contenu                                                                                    |
-| ------- | ------------------------------------------------------------------------------------------ |
-| **0**   | Démarche Stripe : migration du portefeuille + réponses aux 4 points du §6.                 |
-| **1**   | `PaymentInstrument` (contrat + Prisma + fiche) — sans SEPA : rend le modèle honnête.       |
-| **2**   | Agrégat `PaymentMandate`, port `MandateGateway`, enregistrement depuis le back-office.     |
-| **3**   | `processing` / `disputed` + webhooks + alertes staff. **La tranche qui protège l'argent.** |
-| **4**   | Prélèvement des commandes au terme, puis pré-notification des échéances récurrentes.       |
+| Tranche | Contenu                                                                                    | État                     |
+| ------- | ------------------------------------------------------------------------------------------ | ------------------------ |
+| **0**   | Démarche Stripe : migration du portefeuille + réponses aux 4 points du §6.                 | ⚠️ à engager             |
+| **1**   | `PaymentInstrument` (contrat + Prisma + fiche).                                            | ❌ abandonnée (cf. §1.A) |
+| **2**   | Agrégat `PaymentMandate`, port `MandateGateway`, enregistrement depuis le back-office.     | ✅ livrée                |
+| **3**   | `processing` / `disputed` + webhooks + alertes staff. **La tranche qui protège l'argent.** | ⬜ à faire               |
+| **4**   | Prélèvement des commandes au terme, puis pré-notification des échéances récurrentes.       | ⬜ à faire               |
 
-La tranche 1 vaut d'être faite même si le SEPA glisse : elle sépare deux notions
-que le code confond aujourd'hui, et cette confusion se paiera à chaque évolution
-du règlement.
+**Ce que la tranche 2 permet, et ce qu'elle ne permet pas.** Un mandat peut être
+enregistré, prouvé, révoqué et remplacé ; la fiche dit honnêtement lequel de ces
+états tient. **Aucun euro ne part encore par prélèvement** : rien ne consomme le
+mandat, et les échéances restent réclamées à la main. C'est volontaire —
+encaisser sans la tranche 3 reviendrait à découvrir les impayés par le relevé
+bancaire.
+
+**Ce qu'il reste de plus urgent**, dans l'ordre : la démarche §0 auprès de Stripe
+(sans elle, la reprise du portefeuille impose une re-signature de toute la
+clientèle), puis la tranche 3.
+
+## 8. Ce qui a été vérifié chez Stripe
+
+Avant d'écrire la tranche 2, deux des quatre points du §6 ont été confirmés dans
+la documentation à jour :
+
+- **L'acceptation hors ligne existe** :
+  `mandate_data[customer_acceptance][type] = offline`, avec `accepted_at`. C'est
+  précisément le chemin prévu pour une clientèle dont les mandats sont sur
+  papier — c'est ce que fait `StripeMandateGateway`.
+- **L'IBAN Element reste la voie de saisie** : le navigateur crée le moyen de
+  paiement, le serveur confirme un SetupIntent `off_session` avec ce moyen. Le
+  backend ne voit jamais l'IBAN.
+
+Les points **3** (procédure de migration du portefeuille) et **4** (délais réels
+et fenêtres de contestation, SEPA Core vs B2B) restent ouverts : ce sont des
+démarches, pas du code.
