@@ -9,6 +9,11 @@ packages:
 # so a minor can carry a breaking change; we adopt new versions deliberately.
 catalog:
   fold-ng: 0.10.0
+  # Le navigateur des tests e2e front. Épinglé ici pour que toutes les apps qui
+  # en prendront soient sur LA MÊME version : Playwright télécharge des binaires
+  # de navigateur liés à sa version, et deux versions dans le dépôt en
+  # téléchargeraient deux jeux.
+  "@playwright/test": 1.62.1
 
 onlyBuiltDependencies:
   - esbuild

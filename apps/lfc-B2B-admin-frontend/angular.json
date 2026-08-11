@@ -30,7 +30,9 @@
                 "output": "fold-tokens"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {
@@ -76,6 +78,21 @@
                   "maximumError": "8kB"
                 }
               ]
+            },
+            "e2e": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/app/api/api-config.ts",
+                  "with": "src/app/api/api-config.dev.ts"
+                },
+                {
+                  "replace": "src/app/auth/auth.env.generated.ts",
+                  "with": "src/app/auth/auth.env.e2e.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -92,6 +109,9 @@
             },
             "development": {
               "buildTarget": "lfc-b2b-admin-frontend:build:development"
+            },
+            "e2e": {
+              "buildTarget": "lfc-b2b-admin-frontend:build:e2e"
             }
           },
           "defaultConfiguration": "development"

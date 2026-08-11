@@ -24,3 +24,8 @@ yarn-error.log
 # Misc
 .DS_Store
 Thumbs.db
+
+# Playwright (tests e2e navigateur) — artefacts de run, jamais versionnés.
+/test-results
+/playwright-report
+/blob-report

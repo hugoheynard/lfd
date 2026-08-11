@@ -12,7 +12,9 @@
     "test:watch": "ng test --watch",
     "dev": "pnpm config:api && pnpm config:auth && node ../../dev-toolbox/ng-serve-quiet.mjs",
     "postinstall": "pnpm config:api && pnpm config:auth",
-    "config:auth": "node scripts/generate-auth-config.mjs"
+    "config:auth": "node scripts/generate-auth-config.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "private": true,
   "packageManager": "pnpm@10.12.1",
@@ -42,6 +44,7 @@
     "@angular/build": "^22.0.7",
     "@angular/cli": "^22.0.7",
     "@angular/compiler-cli": "^22.0.7",
+    "@playwright/test": "catalog:",
     "@types/d3": "^7.4.3",
     "@types/d3-sankey": "^0.12.5",
     "@types/node": "^26.1.0",
