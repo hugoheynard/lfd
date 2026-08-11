@@ -33,6 +33,7 @@ const activeUser: UserWithMemberships = {
   lastName: "Client",
   phone: "01 02 03 04 05",
   status: UserStatus.active,
+  emailVerified: false,
   invitedBy: null,
   createdAt: new Date(0),
   updatedAt: new Date(0),
@@ -43,11 +44,19 @@ const activeUser: UserWithMemberships = {
  *  `create` capture ses `data` et peut échouer (course d'unicité). */
 interface PrismaDouble {
   readonly createCalls: { auth0Sub: string; email: string; status: UserStatus }[];
+  readonly updateCalls: {
+    where: { id: string };
+    data: { status?: UserStatus; emailVerified?: boolean };
+  }[];
   readonly prisma: {
     user: {
       findUnique: () => Promise<UserWithMemberships | null>;
       create: (args: {
         data: { auth0Sub: string; email: string; status: UserStatus };
+      }) => Promise<unknown>;
+      update: (args: {
+        where: { id: string };
+        data: { status?: UserStatus; emailVerified?: boolean };
       }) => Promise<unknown>;
     };
   };
@@ -59,8 +68,10 @@ function prismaDouble(
 ): PrismaDouble {
   let index = 0;
   const createCalls: PrismaDouble["createCalls"] = [];
+  const updateCalls: PrismaDouble["updateCalls"] = [];
   return {
     createCalls,
+    updateCalls,
     prisma: {
       user: {
         findUnique: () => Promise.resolve(results[Math.min(index++, results.length - 1)] ?? null),
@@ -69,6 +80,10 @@ function prismaDouble(
           return options.createError === undefined
             ? Promise.resolve({})
             : Promise.reject(options.createError);
+        },
+        update: (args) => {
+          updateCalls.push(args);
+          return Promise.resolve({});
         },
       },
     },
@@ -103,11 +118,51 @@ describe("CustomerUserResolver", () => {
       });
     });
 
-    it("rejette un compte non actif (invited / disabled) sans le réactiver", async () => {
-      const double = prismaDouble([{ ...activeUser, status: UserStatus.invited }]);
+    it("rejette un compte DÉSACTIVÉ", async () => {
+      // `disabled` est une décision prise sur la personne : rien dans un token
+      // ne la renverse.
+      const double = prismaDouble([{ ...activeUser, status: UserStatus.disabled }]);
       const resolver = await resolverWith(double);
       await expect(resolver.resolve(token)).rejects.toThrow("Compte non actif.");
-      expect(double.createCalls).toHaveLength(0);
+      expect(double.updateCalls).toHaveLength(0);
+    });
+
+    it("ACTIVE l'invité qui se connecte pour la première fois", async () => {
+      // Un compte provisionné par le staff n'a reçu qu'un lien de mot de passe :
+      // présenter un token prouve qu'il l'a suivi. Le laisser `invited`
+      // maintiendrait dehors le client à qui le commercial vient d'ouvrir
+      // l'accès — pour toujours.
+      const double = prismaDouble([{ ...activeUser, status: UserStatus.invited }]);
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve(token)).resolves.toMatchObject({ userId: "user_1" });
+
+      expect(double.updateCalls).toEqual([
+        { where: { id: "user_1" }, data: { status: UserStatus.active } },
+      ]);
+    });
+
+    it("recopie l'e-mail vérifié quand le token le prouve", async () => {
+      const double = prismaDouble([activeUser]);
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve({ ...token, emailVerified: true });
+
+      expect(double.updateCalls).toEqual([
+        { where: { id: "user_1" }, data: { emailVerified: true } },
+      ]);
+    });
+
+    it("n'écrit RIEN quand le token ne dit rien de l'e-mail", async () => {
+      // Un claim absent dit « on ne sait pas », pas « non vérifié » : le
+      // traiter comme un `false` effacerait une vérification acquise dès qu'un
+      // token est émis sans l'Action qui pose le claim.
+      const double = prismaDouble([{ ...activeUser, emailVerified: true }]);
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve(token);
+
+      expect(double.updateCalls).toEqual([]);
     });
 
     it("authentifie une personne sans aucune société (compte tout juste créé)", async () => {

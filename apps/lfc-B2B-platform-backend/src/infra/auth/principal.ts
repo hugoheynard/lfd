@@ -19,6 +19,15 @@ export interface VerifiedToken {
    * avec un e-mail vide (renseigné plus tard via le profil).
    */
   readonly email?: string;
+  /**
+   * L'adresse a-t-elle été **prouvée** chez le fournisseur, si le claim est là.
+   *
+   * `undefined` n'est pas `false` : un claim absent dit « le token n'en sait
+   * rien », et on ne recopie alors rien. Prendre l'absence pour un « non
+   * vérifié » effacerait une vérification acquise dès qu'un token est émis sans
+   * l'Action qui pose le claim.
+   */
+  readonly emailVerified?: boolean;
 }
 
 /**

@@ -11,7 +11,14 @@ interface ResolvedUser {
   readonly id: string;
   readonly email: string;
   readonly status: UserStatus;
+  readonly emailVerified: boolean;
   readonly memberships: { readonly companyId: string; readonly role: CustomerRole }[];
+}
+
+/** Ce qu'une connexion **prouve**, et qu'il faut donc recopier en base. */
+interface ProvenFacts {
+  status?: UserStatus;
+  emailVerified?: boolean;
 }
 
 /**
@@ -28,8 +35,11 @@ interface ResolvedUser {
  * fraîchement inscrit ne pourrait ni voir `/me` ni commander. Le mur d'accès reste
  * la **connexion Auth0** (seuls ces clients obtiennent un token) et la tenancy
  * `company_id` sur ce qui est muré ; ce n'est pas l'existence d'une ligne locale.
- * Un compte **existant mais non `active`** (invité par le staff, désactivé) reste
- * refusé : le provisioning ne crée que l'absent, il ne réactive jamais.
+ * **Première connexion d'un invité.** Un compte `invited` a été provisionné par
+ * le staff et n'a reçu qu'un lien de création de mot de passe ; présenter un
+ * token prouve qu'il l'a suivi. On le passe donc `active` à cette occasion —
+ * sinon le client à qui le commercial vient d'ouvrir un accès resterait dehors
+ * pour toujours. `disabled` reste refusé : c'est une décision, pas une attente.
  */
 @Injectable()
 export class CustomerUserResolver {
@@ -40,15 +50,16 @@ export class CustomerUserResolver {
 
   /**
    * Résout le `Principal` enrichi à partir d'un jeton vérifié. Provisionne le
-   * self-signup absent (JIT).
-   * @throws UnauthorizedException si le compte (existant) n'est pas actif.
+   * self-signup absent (JIT), active l'invité qui se connecte pour la 1re fois.
+   * @throws UnauthorizedException si le compte est désactivé.
    */
   async resolve(token: VerifiedToken): Promise<Principal> {
     const user = (await this.findBySub(token.subject)) ?? (await this.provision(token));
 
-    if (user.status !== UserStatus.active) {
+    if (user.status === UserStatus.disabled) {
       throw new UnauthorizedException("Compte non actif.");
     }
+    await this.record(user, token);
 
     // `subject` vient du token ; `userId`/`email`/`memberships` de la BASE (autorité).
     return {
@@ -58,6 +69,29 @@ export class CustomerUserResolver {
       memberships: user.memberships,
       scopes: token.scopes,
     };
+  }
+
+  /**
+   * Recopie ce que **cette connexion** vient de prouver : l'invité devient
+   * actif, et l'adresse devient vérifiée si le token le dit.
+   *
+   * Écrit seulement si quelque chose change — une requête d'écriture par appel
+   * authentifié serait un coût permanent pour un fait qui ne bouge qu'une fois.
+   * Un claim absent ne fait **rien** : « on ne sait pas » n'efface pas une
+   * vérification déjà acquise.
+   */
+  private async record(user: ResolvedUser, token: VerifiedToken): Promise<void> {
+    const facts: ProvenFacts = {};
+    if (user.status === UserStatus.invited) {
+      facts.status = UserStatus.active;
+    }
+    if (token.emailVerified === true && !user.emailVerified) {
+      facts.emailVerified = true;
+    }
+    if (Object.keys(facts).length === 0) {
+      return;
+    }
+    await this.prisma.user.update({ where: { id: user.id }, data: facts });
   }
 
   /** La personne d'`auth0Sub`, rattachements inclus, ou `null`. */

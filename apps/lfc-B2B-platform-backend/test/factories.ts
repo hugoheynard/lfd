@@ -36,6 +36,8 @@ export interface UserSeed {
   readonly lastName?: string;
   readonly phone?: string;
   readonly status?: UserStatus;
+  /** L'adresse a-t-elle été prouvée chez le fournisseur d'identité ? */
+  readonly emailVerified?: boolean;
 }
 
 /**
@@ -79,6 +81,7 @@ export function createUser(prisma: PrismaService, seed: UserSeed): Promise<User>
       lastName: seed.lastName ?? "Durand",
       phone: seed.phone ?? "",
       status: seed.status ?? UserStatus.active,
+      emailVerified: seed.emailVerified ?? false,
     },
   });
 }

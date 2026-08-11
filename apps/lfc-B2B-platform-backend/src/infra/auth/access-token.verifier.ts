@@ -42,6 +42,16 @@ export class AccessTokenVerifier {
  */
 const EMAIL_CLAIM = "https://lafoliedouce.eu/email";
 
+/**
+ * Claim **namespacé** disant si l'adresse a été prouvée — même Action Auth0 :
+ * `api.accessToken.setCustomClaim("https://lafoliedouce.eu/email_verified", event.user.email_verified)`.
+ *
+ * Absent = le token n'en dit rien, et on ne recopie rien. C'est la différence
+ * entre « pas encore vérifié » et « on ne sait pas » : seule la seconde autorise
+ * à laisser la base telle quelle.
+ */
+const EMAIL_VERIFIED_CLAIM = "https://lafoliedouce.eu/email_verified";
+
 function toVerifiedToken(payload: JWTPayload): VerifiedToken {
   const subject = payload.sub;
   if (subject === undefined || subject === "") {
@@ -51,6 +61,13 @@ function toVerifiedToken(payload: JWTPayload): VerifiedToken {
   const scopes = typeof scope === "string" ? scope.split(" ").filter((entry) => entry !== "") : [];
   const claimed = payload[EMAIL_CLAIM];
   const email = typeof claimed === "string" && claimed !== "" ? claimed : undefined;
-  // `exactOptionalPropertyTypes` : on n'ajoute `email` que s'il est présent.
-  return email === undefined ? { subject, scopes } : { subject, scopes, email };
+  const verified = payload[EMAIL_VERIFIED_CLAIM];
+  // `exactOptionalPropertyTypes` : un claim absent ne devient pas une propriété
+  // à `undefined`, sinon « on ne sait pas » se lirait comme « non ».
+  return {
+    subject,
+    scopes,
+    ...(email === undefined ? {} : { email }),
+    ...(typeof verified === "boolean" ? { emailVerified: verified } : {}),
+  };
 }

@@ -60,13 +60,31 @@ describe("GET /me — le cycle se joue en base", () => {
     expect(provisioned.status).toBe("active");
   });
 
-  it("refuse un compte seulement invité (provisionné, pas activé)", async () => {
+  it("ACTIVE l'invité à sa première requête authentifiée", async () => {
+    // Un compte `invited` a été provisionné par le staff et n'a reçu qu'un lien
+    // de création de mot de passe : présenter un jeton prouve qu'il l'a suivi.
+    // Le refuser laisserait dehors, pour toujours, le client à qui le commercial
+    // vient d'ouvrir l'accès.
     await createUser(ctx.prisma, { auth0Sub: SUB, status: UserStatus.invited });
+
+    const response = await ctx.asSub(SUB).get("/me");
+
+    expect(response.status).toBe(200);
+    const activated = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: SUB } });
+    expect(activated.status).toBe("active");
+  });
+
+  it("refuse un compte DÉSACTIVÉ, et ne le réactive pas", async () => {
+    // `disabled` est une décision prise sur la personne : rien dans un jeton ne
+    // la renverse.
+    await createUser(ctx.prisma, { auth0Sub: SUB, status: UserStatus.disabled });
 
     const response = await ctx.asSub(SUB).get("/me");
 
     expect(response.status).toBe(401);
     expect(response.body).toMatchObject({ message: "Compte non actif." });
+    const untouched = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: SUB } });
+    expect(untouched.status).toBe("disabled");
   });
 
   it("renvoie le profil lu en base pour un compte actif", async () => {
