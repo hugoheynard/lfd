@@ -10,6 +10,7 @@ import {
   type AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
+import { projectContacts } from "./company-contacts.projection.js";
 
 /** Colonnes lues pour une vue admin — partagées par la liste et la fiche. */
 const COMPANY_SELECT = {
@@ -88,26 +89,38 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     }
     // Les adresses passent par le reader dédié : la projection (créneaux
     // discriminés, défaut en tête, archivées exclues) n'est écrite qu'une fois.
-    const [addresses, contacts] = await Promise.all([
+    // Les accès sont lus À PART puis rapprochés par l'adresse : un contact du
+    // carnet n'a pas de lien de base vers un compte, et c'est l'e-mail qui les
+    // relie — la même clé humaine que le commercial a sous les yeux.
+    const [addresses, book, access] = await Promise.all([
       this.addresses.read(companyId),
       this.prisma.companyContact.findMany({
         where: { companyId },
-        select: { id: true, prenom: true, nom: true, fonction: true, email: true, telephone: true },
+        select: {
+          id: true,
+          prenom: true,
+          nom: true,
+          fonction: true,
+          email: true,
+          telephone: true,
+          role: true,
+        },
         orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.membership.findMany({
+        where: { companyId },
+        select: { user: { select: { email: true, status: true, emailVerified: true } } },
       }),
     ]);
     return {
       ...toView(row),
       vatNumberRequired: requiresVatNumber(row.formeJuridique),
       addresses,
-      contacts: contacts.map((contact) => ({
-        id: contact.id,
-        firstName: contact.prenom,
-        lastName: contact.nom,
-        fonction: contact.fonction,
-        email: contact.email,
-        phone: contact.telephone,
-      })),
+      contacts: projectContacts(
+        row,
+        book,
+        access.map((membership) => membership.user),
+      ),
     };
   }
 }

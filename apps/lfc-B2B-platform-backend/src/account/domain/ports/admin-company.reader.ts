@@ -1,4 +1,4 @@
-import type { CompanyAddressesView } from "@lfd/contracts";
+import type { CompanyAddressesView, CompanyContactView } from "@lfd/contracts";
 
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import type { ContactView, KbisView, PaymentTerm } from "./account.reader.js";
@@ -83,23 +83,17 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
   /** Facturation (ou `null`) + livraisons non archivées, la défaut en tête. */
   readonly addresses: CompanyAddressesView;
   /**
-   * Les interlocuteurs **additionnels** — le carnet d'adresses de la société.
+   * **Tous** les interlocuteurs de la société — le détenteur d'abord
+   * (`contactId: null`, il vit aplati sur l'agrégat), puis le carnet d'adresses.
    *
-   * Sur la fiche seulement, pas dans la liste : c'est un détail de dossier, et
-   * une liste reste scannable. Distincts des **membres** (qui se connectent) :
-   * un contact est quelqu'un qu'on appelle.
+   * Une seule liste, et non « les contacts » d'un côté et « les accès » de
+   * l'autre : une personne rattachée est une chose, et savoir si elle peut se
+   * connecter est un **état** de cette personne. Deux listes dupliqueraient les
+   * mêmes gens, et on finirait par se demander laquelle fait foi.
+   *
+   * Sur la fiche seulement, pas dans la liste : une liste reste scannable.
    */
-  readonly contacts: readonly AdminContactView[];
-}
-
-/** Un interlocuteur additionnel, tel que la fiche l'affiche. */
-export interface AdminContactView {
-  readonly id: string;
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly fonction: string;
-  readonly email: string;
-  readonly phone: string;
+  readonly contacts: readonly CompanyContactView[];
 }
 
 /**
