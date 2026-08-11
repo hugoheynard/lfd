@@ -17,12 +17,15 @@ import {
 import {
   ALERT_KINDS,
   type AlertDelivery,
+  type AlertParams,
   type AlertRule,
   type AlertRuleView,
   type AlertThresholdTier,
   type DriftDirection,
+  type FirstOrderParams,
   type QuantityDriftParams,
   type QuantityOutlierParams,
+  type SubscriptionChangedParams,
 } from '@lfd/contracts';
 
 import { ALERT_KIND_LABELS, DELIVERY_LABELS } from '../alert-kind-labels';
@@ -36,20 +39,17 @@ const DIRECTIONS: readonly { readonly value: DriftDirection; readonly label: str
 ];
 
 /**
- * **Une règle d'alerte** dans l'écran de réglages : ce qu'elle surveille, ses
+ * **Une règle d'alerte** dans un écran de réglages : ce qu'elle surveille, ses
  * seuils, et qui elle prévient.
  *
- * L'édition se fait sur un **brouillon local** et ne part qu'au clic : ces
- * seuils se règlent par tâtonnement (« 50 %, non, plutôt 80 »), et enregistrer à
- * chaque frappe enverrait une salve d'écritures dont les états intermédiaires
- * n'ont jamais été voulus. Le pied d'action n'apparaît donc que si quelque chose
- * a bougé — un bouton toujours visible sur un formulaire intact invite à un
- * appel qui n'écrirait rien.
+ * L'édition se fait sur un **brouillon local** et ne part qu'au clic : ces seuils
+ * se règlent par tâtonnement (« 50 %, non, plutôt 80 »), et enregistrer à chaque
+ * frappe enverrait une salve d'écritures dont les états intermédiaires n'ont
+ * jamais été voulus.
  *
- * La case « afficher au client » n'existe que pour les types qui **peuvent** se
- * montrer (`customerShowable`) : « vous n'aviez jamais pris ce produit » n'est
- * pas une erreur de saisie possible, le dire à quelqu'un qui vient de choisir ce
- * produit ne l'aide en rien.
+ * La case « afficher au client » n'existe que pour les types `customerShowable`
+ * — et le **serveur le refuse** aussi, depuis qu'on a constaté que l'invariant ne
+ * tenait qu'ici.
  */
 @Component({
   selector: 'app-alert-rule-row',
@@ -74,10 +74,8 @@ export class AlertRuleRow {
    *
    * Vrai dans les Réglages, où la rangée EST la règle. Faux sur la fiche d'un
    * compte, où l'activation vit au niveau de la carte : deux interrupteurs pour
-   * la même chose au même écran, c'est un de trop, et celui qu'on ne regarde pas
-   * finit par contredire l'autre. Sans interrupteur, les paramètres restent
-   * visibles même règle éteinte — c'est la carte qui décide de l'allumage, la
-   * rangée ne sert qu'à régler.
+   * la même chose au même écran, c'est celui qu'on ne regarde pas qui finit par
+   * contredire l'autre.
    */
   readonly showEnabled = input(true);
   readonly save = output<AlertRule>();
@@ -99,47 +97,17 @@ export class AlertRuleRow {
     }),
   });
 
-  /** Les paramètres se montrent si la règle tourne — ou si l'allumage n'est pas ici. */
   protected readonly showParams = computed(() => this.draft().enabled || !this.showEnabled());
-
   protected readonly labels = computed(() => ALERT_KIND_LABELS[this.rule().kind]);
   protected readonly customerShowable = computed(
     () => ALERT_KINDS[this.rule().kind].customerShowable,
   );
 
-  /** Les paramètres du type « écart », ou `null` — c'est ce qui narre le template. */
-  protected readonly drift = computed<QuantityDriftParams | null>(() => {
-    const params = this.draft().params;
-    return params.kind === 'product.quantity_drift' ? params : null;
-  });
-
-  /** Les paramètres du type « aberration produit », ou `null`. */
-  protected readonly outlier = computed<QuantityOutlierParams | null>(() => {
-    const params = this.draft().params;
-    return params.kind === 'product.quantity_outlier' ? params : null;
-  });
-
-  /**
-   * L'échelle de seuils du type courant, ou `null`. Deux types en portent une —
-   * l'écart au compte et l'aberration produit — et l'éditeur est le même : seule
-   * change la **référence** sur laquelle le palier se choisit, que
-   * `baselineLabel` nomme.
-   */
-  protected readonly tiers = computed<readonly AlertThresholdTier[] | null>(() => {
-    const params = this.draft().params;
-    return params.kind === 'product.first_order' ? null : params.tiers;
-  });
-
-  protected readonly baselineLabel = computed(() =>
-    this.draft().params.kind === 'product.quantity_drift'
-      ? 'sa moyenne pour ce produit'
-      : 'la norme du produit',
-  );
-
-  protected readonly firstOrderMinimum = computed<number | null>(() => {
-    const params = this.draft().params;
-    return params.kind === 'product.first_order' ? params.minPreviousOrders : null;
-  });
+  /** Les paramètres du type courant, narrés pour le template. */
+  protected readonly firstOrder = computed(() => paramsOf(this.draft(), 'product.first_order'));
+  protected readonly drift = computed(() => paramsOf(this.draft(), 'product.quantity_drift'));
+  protected readonly outlier = computed(() => paramsOf(this.draft(), 'product.quantity_outlier'));
+  protected readonly subscription = computed(() => paramsOf(this.draft(), 'subscription.changed'));
 
   protected readonly dirty = computed(() => {
     const view = this.rule();
@@ -159,53 +127,23 @@ export class AlertRuleRow {
     this.draft.update((rule) => ({ ...rule, delivery: { ...rule.delivery, [channel]: on } }));
   }
 
-  /** `fold-number-input` rend `null` quand le champ est vidé : on garde le plancher. */
-  protected setFirstOrderMinimum(value: number | null): void {
-    this.draft.update((rule) =>
-      rule.params.kind === 'product.first_order'
-        ? { ...rule, params: { ...rule.params, minPreviousOrders: atLeast(value, 1) } }
-        : rule,
-    );
+  /** Écrit un champ numérique du type courant. `null` = champ vidé → plancher. */
+  protected setNumber(field: NumericField, value: number | null, floor: number): void {
+    this.patch((params) => ({ ...params, [field]: atLeast(value, floor) }));
   }
 
-  protected setDriftNumber(field: DriftNumberField, value: number | null): void {
-    this.draft.update((rule) =>
-      rule.params.kind === 'product.quantity_drift'
-        ? { ...rule, params: clampDrift({ ...rule.params, [field]: atLeast(value, 1) }) }
-        : rule,
-    );
-  }
-
-  protected setOutlierNumber(field: OutlierNumberField, value: number | null): void {
-    this.draft.update((rule) =>
-      rule.params.kind === 'product.quantity_outlier'
-        ? { ...rule, params: { ...rule.params, [field]: atLeast(value, 1) } }
-        : rule,
-    );
-  }
-
-  protected setTiers(tiers: AlertThresholdTier[]): void {
-    this.draft.update((rule) =>
-      rule.params.kind === 'product.first_order'
-        ? rule
-        : { ...rule, params: { ...rule.params, tiers } },
-    );
-  }
-
-  protected setOutlierScope(onlyWithoutAccountBaseline: boolean): void {
-    this.draft.update((rule) =>
-      rule.params.kind === 'product.quantity_outlier'
-        ? { ...rule, params: { ...rule.params, onlyWithoutAccountBaseline } }
-        : rule,
-    );
+  protected setBoolean(field: BooleanField, on: boolean): void {
+    this.patch((params) => ({ ...params, [field]: on }));
   }
 
   protected setDirection(direction: string): void {
-    this.draft.update((rule) =>
-      rule.params.kind === 'product.quantity_drift' && isDirection(direction)
-        ? { ...rule, params: { ...rule.params, direction } }
-        : rule,
-    );
+    if (isDirection(direction)) {
+      this.patch((params) => ({ ...params, direction }));
+    }
+  }
+
+  protected setTiers(field: TierField, tiers: AlertThresholdTier[]): void {
+    this.patch((params) => ({ ...params, [field]: tiers }));
   }
 
   protected submit(): void {
@@ -216,13 +154,31 @@ export class AlertRuleRow {
     const view = this.rule();
     this.draft.set({ enabled: view.enabled, params: view.params, delivery: view.delivery });
   }
+
+  /**
+   * Applique une retouche aux paramètres, puis **re-borne** ce qui dépend d'un
+   * autre champ. Un seul point de passage : sans lui, chaque champ devait se
+   * souvenir des invariants de ses voisins.
+   */
+  private patch(edit: (params: AlertParams) => AlertParams): void {
+    this.draft.update((rule) => ({ ...rule, params: reconciled(edit(rule.params)) }));
+  }
 }
 
-/** Les champs numériques du type « écart » — nommés pour éviter un `switch`. */
-type DriftNumberField = 'baselineOrders' | 'minBaselineOrders';
+type NumericField =
+  'minPreviousOrders' | 'baselineOrders' | 'minBaselineOrders' | 'windowDays' | 'minSampleLines';
+type BooleanField =
+  'onlyWithoutAccountBaseline' | 'watchQuantities' | 'watchRecurrence' | 'watchFulfillment';
+type TierField = 'riseTiers' | 'dropTiers';
 
-/** Idem pour le type « aberration produit ». */
-type OutlierNumberField = 'windowDays' | 'minSampleLines';
+/** Les paramètres si le type courant est celui demandé, sinon `null`. */
+function paramsOf(rule: AlertRule, kind: 'product.first_order'): FirstOrderParams | null;
+function paramsOf(rule: AlertRule, kind: 'product.quantity_drift'): QuantityDriftParams | null;
+function paramsOf(rule: AlertRule, kind: 'product.quantity_outlier'): QuantityOutlierParams | null;
+function paramsOf(rule: AlertRule, kind: 'subscription.changed'): SubscriptionChangedParams | null;
+function paramsOf(rule: AlertRule, kind: AlertParams['kind']): AlertParams | null {
+  return rule.params.kind === kind ? rule.params : null;
+}
 
 function atLeast(value: number | null, min: number): number {
   return value !== null && Number.isFinite(value) ? Math.max(min, Math.trunc(value)) : min;
@@ -230,10 +186,13 @@ function atLeast(value: number | null, min: number): number {
 
 /**
  * Le serveur refuse `minBaselineOrders > baselineOrders`. On le tient **ici**
- * plutôt que de laisser partir une requête qui reviendra en 400 : la règle est
- * la même, mais l'écran n'a aucune raison de la faire découvrir par un échec.
+ * plutôt que de laisser partir une requête qui reviendra en 400 : la règle est la
+ * même, mais l'écran n'a aucune raison de la faire découvrir par un échec.
  */
-function clampDrift(params: QuantityDriftParams): QuantityDriftParams {
+function reconciled(params: AlertParams): AlertParams {
+  if (params.kind !== 'product.quantity_drift') {
+    return params;
+  }
   return {
     ...params,
     minBaselineOrders: Math.min(params.minBaselineOrders, params.baselineOrders),

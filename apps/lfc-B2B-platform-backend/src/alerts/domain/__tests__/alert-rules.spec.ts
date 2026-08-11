@@ -19,20 +19,23 @@ describe("resolveGlobalRules", () => {
       kind: "product.first_order",
       ...ALERT_KINDS["product.first_order"].defaults,
       updatedAt: null,
+      degraded: false,
     });
   });
 
   it("préfère la ligne stockée aux défauts, et date la vue", () => {
     const stored: StoredAlertRule = {
       kind: "product.quantity_drift",
+      readable: true,
       enabled: false,
       params: {
         kind: "product.quantity_drift",
-        thresholdPercent: 120,
+        riseTiers: [{ upToQuantity: null, thresholdPercent: 120 }],
+        dropTiers: [{ upToQuantity: null, thresholdPercent: 60 }],
         direction: "up",
         baselineOrders: 10,
         minBaselineOrders: 4,
-        minQuantity: 5,
+        windowDays: 90,
       },
       delivery: { staffInApp: false, staffEmail: true, customerVisible: true },
       updatedAt: AT,
@@ -43,15 +46,17 @@ describe("resolveGlobalRules", () => {
     expect(drift).toEqual({
       kind: "product.quantity_drift",
       enabled: false,
-      params: stored.params,
-      delivery: stored.delivery,
+      params: stored.readable ? stored.params : null,
+      delivery: stored.readable ? stored.delivery : null,
       updatedAt: AT.toISOString(),
+      degraded: false,
     });
   });
 
   it("ne laisse pas une ligne stockée déplacer l'ordre d'affichage", () => {
     const stored: StoredAlertRule = {
       kind: "product.quantity_drift",
+      readable: true,
       enabled: true,
       params: ALERT_KINDS["product.quantity_drift"].defaults.params,
       delivery: ALERT_KINDS["product.quantity_drift"].defaults.delivery,
@@ -60,5 +65,41 @@ describe("resolveGlobalRules", () => {
 
     // L'ordre vient de l'énuméré, pas de ce que la base rend en premier.
     expect(resolveGlobalRules([stored]).map((r) => r.kind)).toEqual([...ALERT_KIND_ORDER]);
+  });
+});
+
+/**
+ * Régression : une ligne illisible était silencieusement ignorée, donc son type
+ * repartait aux défauts — `customerVisible` compris. Un message client coupé
+ * pouvait ainsi revenir tout seul.
+ */
+describe("règle illisible", () => {
+  const UNREADABLE: StoredAlertRule = {
+    kind: "product.quantity_drift",
+    readable: false,
+    updatedAt: AT,
+  };
+
+  it("l'avoue au lieu de faire comme si de rien n'était", () => {
+    const drift = resolveGlobalRules([UNREADABLE]).find((r) => r.kind === "product.quantity_drift");
+
+    expect(drift?.degraded).toBe(true);
+    expect(drift?.updatedAt).toBe(AT.toISOString());
+  });
+
+  it("ne parle JAMAIS au client en repli", () => {
+    const drift = resolveGlobalRules([UNREADABLE]).find((r) => r.kind === "product.quantity_drift");
+
+    // Du bruit côté staff est réparable ; un message qui réapparaît chez un
+    // client sans que personne l'ait décidé ne l'est pas.
+    expect(drift?.delivery.customerVisible).toBe(false);
+  });
+
+  it("laisse les autres types intacts", () => {
+    const others = resolveGlobalRules([UNREADABLE]).filter(
+      (r) => r.kind !== "product.quantity_drift",
+    );
+
+    expect(others.every((r) => !r.degraded)).toBe(true);
   });
 });

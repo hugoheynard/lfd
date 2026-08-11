@@ -5,7 +5,7 @@ import {
   type AlertKind,
   type AlertRule,
 } from "@lfd/contracts";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import type { StoredAlertRule } from "../domain/alert-rules.js";
@@ -32,13 +32,24 @@ interface AlertRuleRow {
  */
 @Injectable()
 export class PrismaAlertRulesStore extends AlertRulesStore {
+  private readonly logger = new Logger(PrismaAlertRulesStore.name);
+
   constructor(private readonly prisma: PrismaService) {
     super();
   }
 
   async readAll(): Promise<StoredAlertRule[]> {
     const rows = await this.prisma.alertRuleSetting.findMany();
-    return rows.map((row) => toDomain(row)).filter(isReadable);
+    const parsed = rows.map((row) => toDomain(row));
+    parsed.forEach((rule, index) => {
+      if (rule === null || !rule.readable) {
+        // Une ligne illisible se DIT. La première version la laissait tomber en
+        // silence, si bien qu'un réglage coupé pouvait revenir aux défauts sans
+        // que rien ne l'indique — ni log, ni écran.
+        this.logger.warn(`Réglage d'alerte illisible : ${rows[index]?.kind ?? "?"}`);
+      }
+    });
+    return parsed.filter(isKnown);
   }
 
   async save(kind: AlertKind, rule: AlertRule): Promise<void> {
@@ -55,25 +66,33 @@ export class PrismaAlertRulesStore extends AlertRulesStore {
   }
 }
 
-function isReadable(rule: StoredAlertRule | null): rule is StoredAlertRule {
+function isKnown(rule: StoredAlertRule | null): rule is StoredAlertRule {
   return rule !== null;
 }
 
-/** `null` = ligne illisible : le type retombera sur ses défauts. */
+/**
+ * Relit une ligne contre le contrat courant.
+ *
+ * Un `kind` inconnu rend `null` : la ligne ne désigne **aucun** type existant,
+ * elle n'a donc rien à dégrader — le lecteur parcourt les types connus, il ne la
+ * cherchera jamais. Tout le reste remonte en `readable: false` **avec son type**,
+ * pour que l'écran puisse dire lequel est illisible.
+ */
 function toDomain(row: AlertRuleRow): StoredAlertRule | null {
   const kind = alertKindSchema.safeParse(row.kind);
-  const params = alertParamsSchema.safeParse(row.params);
-  const delivery = alertDeliverySchema.safeParse(row.delivery);
-  if (!kind.success || !params.success || !delivery.success) {
+  if (!kind.success) {
     return null;
   }
+  const params = alertParamsSchema.safeParse(row.params);
+  const delivery = alertDeliverySchema.safeParse(row.delivery);
   // Une ligne dont le `kind` interne aurait dérivé de sa clé est corrompue : la
   // clé fait foi, on refuse plutôt que de servir les réglages d'un autre type.
-  if (params.data.kind !== kind.data) {
-    return null;
+  if (!params.success || !delivery.success || params.data.kind !== kind.data) {
+    return { kind: kind.data, readable: false, updatedAt: row.updatedAt };
   }
   return {
     kind: kind.data,
+    readable: true,
     enabled: row.enabled,
     params: params.data,
     delivery: delivery.data,

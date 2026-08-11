@@ -1,6 +1,6 @@
 <div class="tt-field">
   <p class="tt-title">
-    Écart déclencheur, par palier de {{ baselineLabel() }}
+    {{ scaleLabel() }} déclenchante, par palier de {{ baselineLabel() }}
     <fold-info
       text="Le seuil descend quand la référence monte : ×5 sur un produit pris à l'unité n'est pas un incident, +30 % sur un produit pris par 100 en est un."
       label="Pourquoi des paliers"
@@ -21,6 +21,7 @@
         label="Alerter au-delà de (%)"
         size="sm"
         [min]="5"
+        [max]="maxPercent()"
         [value]="tier.thresholdPercent"
         [disabled]="disabled()"
         (valueChange)="setPercent($index, $event)"
@@ -46,6 +47,7 @@
         label="Alerter au-delà de (%)"
         size="sm"
         [min]="5"
+        [max]="maxPercent()"
         [value]="last.thresholdPercent"
         [disabled]="disabled()"
         (valueChange)="setPercent(tiers().length - 1, $event)"

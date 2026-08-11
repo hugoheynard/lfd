@@ -20,16 +20,24 @@
     </div>
   </header>
 
+  @if (rule().degraded) {
+    <p class="ar-warn">
+      Le réglage enregistré n'a <strong>pas pu être relu</strong> — ce sont les valeurs par défaut
+      qui s'affichent, et l'affichage client est coupé par précaution. Enregistrez pour repartir sur
+      une base propre.
+    </p>
+  }
+
   @if (showParams()) {
     <div class="ar-params">
-      @if (firstOrderMinimum(); as minimum) {
+      @if (firstOrder(); as params) {
         <fold-number-input
-          label="À partir de la Nᵉ commande"
-          hint="Sur la toute première commande, tout est nouveau : la règle se tait avant ce rang."
+          label="Commandes antérieures requises"
+          hint="À 1, la règle se tait sur la toute première commande — où tout est nouveau — et parle dès la deuxième."
           [min]="1"
-          [value]="minimum"
+          [value]="params.minPreviousOrders"
           [disabled]="busy()"
-          (valueChange)="setFirstOrderMinimum($event)"
+          (valueChange)="setNumber('minPreviousOrders', $event, 1)"
         />
       }
 
@@ -40,9 +48,6 @@
           [disabled]="busy()"
           (valueChange)="setDirection($event)"
         >
-          <!-- `fold-select` enveloppe un <select> NATIF : il projette de vraies
-               <option>. `fold-option` appartient à `fold-listbox`, et l'employer
-               ici casse le rendu de toute la carte. -->
           @for (option of directions; track option.value) {
             <option [value]="option.value">{{ option.label }}</option>
           }
@@ -53,7 +58,7 @@
           [min]="2"
           [value]="params.baselineOrders"
           [disabled]="busy()"
-          (valueChange)="setDriftNumber('baselineOrders', $event)"
+          (valueChange)="setNumber('baselineOrders', $event, 2)"
         />
         <fold-number-input
           label="Minimum pour une moyenne"
@@ -62,17 +67,26 @@
           [max]="params.baselineOrders"
           [value]="params.minBaselineOrders"
           [disabled]="busy()"
-          (valueChange)="setDriftNumber('minBaselineOrders', $event)"
+          (valueChange)="setNumber('minBaselineOrders', $event, 1)"
+        />
+        <fold-number-input
+          label="Ancienneté maximale (jours)"
+          hint="Au-delà, une commande ne dit plus rien des habitudes actuelles."
+          [min]="30"
+          [value]="params.windowDays"
+          [disabled]="busy()"
+          (valueChange)="setNumber('windowDays', $event, 30)"
         />
       }
+
       @if (outlier(); as params) {
         <fold-number-input
-          label="Norme mesurée sur (jours)"
+          label="Médiane mesurée sur (jours)"
           hint="La fenêtre sur laquelle on regarde ce qu'on commande de ce produit."
           [min]="7"
           [value]="params.windowDays"
           [disabled]="busy()"
-          (valueChange)="setOutlierNumber('windowDays', $event)"
+          (valueChange)="setNumber('windowDays', $event, 7)"
         />
         <fold-number-input
           label="Lignes minimum"
@@ -80,33 +94,70 @@
           [min]="3"
           [value]="params.minSampleLines"
           [disabled]="busy()"
-          (valueChange)="setOutlierNumber('minSampleLines', $event)"
+          (valueChange)="setNumber('minSampleLines', $event, 3)"
         />
         <fold-checkbox
           label="Seulement sans historique du compte"
           [checked]="params.onlyWithoutAccountBaseline"
           [disabled]="busy()"
-          (checkedChange)="setOutlierScope($event)"
+          (checkedChange)="setBoolean('onlyWithoutAccountBaseline', $event)"
+        />
+      }
+
+      @if (subscription(); as params) {
+        <fold-checkbox
+          label="Quantités"
+          [checked]="params.watchQuantities"
+          [disabled]="busy()"
+          (checkedChange)="setBoolean('watchQuantities', $event)"
+        />
+        <fold-checkbox
+          label="Fréquence"
+          [checked]="params.watchRecurrence"
+          [disabled]="busy()"
+          (checkedChange)="setBoolean('watchRecurrence', $event)"
+        />
+        <fold-checkbox
+          label="Acheminement"
+          [checked]="params.watchFulfillment"
+          [disabled]="busy()"
+          (checkedChange)="setBoolean('watchFulfillment', $event)"
         />
       }
     </div>
 
-    @if (tiers(); as scale) {
-      <app-threshold-tiers-field
-        [tiers]="scale"
-        [baselineLabel]="baselineLabel()"
-        [disabled]="busy()"
-        (tiersChange)="setTiers($event)"
-      />
+    <!-- Deux échelles quand les deux sens sont surveillés : une baisse est bornée
+         à 100 %, elle ne peut pas partager le barème d'une hausse. -->
+    @if (drift(); as params) {
+      @if (params.direction !== 'down') {
+        <app-threshold-tiers-field
+          scaleLabel="Hausse"
+          baselineLabel="sa moyenne pour ce produit"
+          [tiers]="params.riseTiers"
+          [disabled]="busy()"
+          (tiersChange)="setTiers('riseTiers', $event)"
+        />
+      }
+      @if (params.direction !== 'up') {
+        <app-threshold-tiers-field
+          scaleLabel="Baisse"
+          baselineLabel="sa moyenne pour ce produit"
+          [maxPercent]="99"
+          [tiers]="params.dropTiers"
+          [disabled]="busy()"
+          (tiersChange)="setTiers('dropTiers', $event)"
+        />
+      }
     }
 
     @if (outlier(); as params) {
-      @if (!params.onlyWithoutAccountBaseline) {
-        <p class="ar-warn">
-          Décoché, ce type se déclenche <strong>aussi</strong> sur les comptes qui ont déjà leur
-          propre moyenne — laquelle est plus fine. Vous risquez deux alertes pour un même écart.
-        </p>
-      }
+      <app-threshold-tiers-field
+        scaleLabel="Hausse"
+        baselineLabel="la médiane du produit"
+        [tiers]="params.riseTiers"
+        [disabled]="busy()"
+        (tiersChange)="setTiers('riseTiers', $event)"
+      />
     }
 
     <div class="ar-channels">

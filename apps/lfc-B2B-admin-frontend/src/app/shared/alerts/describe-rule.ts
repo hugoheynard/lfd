@@ -2,7 +2,7 @@ import type { AlertDelivery, AlertRule, AlertThresholdTier } from '@lfd/contract
 
 /**
  * Une règle **résumée en quelques lignes lisibles** — ce que la fiche d'un compte
- * rappelle du réglage global.
+ * rappelle du réglage global, et ce qu'elle affiche du réglage propre au compte.
  *
  * Le rappel est la raison d'être de cet écran : sans lui, on lirait « ce compte
  * déroge » sans savoir à quoi. Purement présentationnel — aucune décision ne se
@@ -14,22 +14,30 @@ export function describeRule(rule: AlertRule): string[] {
 
 function describeParams(rule: AlertRule): string[] {
   const params = rule.params;
-  if (params.kind === 'product.first_order') {
-    return [`À partir de la ${params.minPreviousOrders + 1}ᵉ commande du compte`];
+  switch (params.kind) {
+    case 'product.first_order':
+      return [`À partir de la ${params.minPreviousOrders + 1}ᵉ commande du compte`];
+    case 'product.quantity_drift':
+      return [
+        `${DIRECTIONS[params.direction]}, sur sa moyenne des ${params.baselineOrders} dernières commandes du produit (au moins ${params.minBaselineOrders}, sur ${params.windowDays} jours)`,
+        `Hausse — ${describeTiers(params.riseTiers)}`,
+        // La baisse n'est montrée que si elle est surveillée : afficher un
+        // barème inopérant ferait croire à une surveillance qui n'existe pas.
+        ...(params.direction === 'up' ? [] : [`Baisse — ${describeTiers(params.dropTiers)}`]),
+      ];
+    case 'product.quantity_outlier':
+      return [
+        `Médiane du produit sur ${params.windowDays} jours, au moins ${params.minSampleLines} lignes observées`,
+        params.onlyWithoutAccountBaseline
+          ? 'Seulement quand le compte n’a pas encore sa propre moyenne'
+          : 'Y compris quand le compte a déjà sa propre moyenne',
+        `Hausse — ${describeTiers(params.riseTiers)}`,
+      ];
+    default:
+      return [
+        describeWatched(params.watchQuantities, params.watchRecurrence, params.watchFulfillment),
+      ];
   }
-  if (params.kind === 'product.quantity_drift') {
-    return [
-      `${DIRECTIONS[params.direction]}, sur sa moyenne des ${params.baselineOrders} dernières commandes du produit (au moins ${params.minBaselineOrders})`,
-      describeTiers(params.tiers),
-    ];
-  }
-  return [
-    `Norme du produit sur ${params.windowDays} jours, au moins ${params.minSampleLines} lignes observées`,
-    params.onlyWithoutAccountBaseline
-      ? 'Seulement quand le compte n’a pas encore sa propre moyenne'
-      : 'Y compris quand le compte a déjà sa propre moyenne',
-    describeTiers(params.tiers),
-  ];
 }
 
 const DIRECTIONS = {
@@ -47,6 +55,15 @@ function describeTiers(tiers: readonly AlertThresholdTier[]): string {
         : `jusqu’à ${tier.upToQuantity} : ${tier.thresholdPercent} %`,
     )
     .join(' · ');
+}
+
+function describeWatched(quantities: boolean, recurrence: boolean, fulfillment: boolean): string {
+  const facets = [
+    quantities ? 'quantités' : null,
+    recurrence ? 'fréquence' : null,
+    fulfillment ? 'acheminement' : null,
+  ].filter((facet): facet is string => facet !== null);
+  return `Surveille : ${facets.join(', ')}`;
 }
 
 /**

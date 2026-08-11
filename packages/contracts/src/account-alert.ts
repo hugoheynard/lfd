@@ -21,6 +21,7 @@ export const alertKindSchema = z.enum([
   "product.first_order",
   "product.quantity_drift",
   "product.quantity_outlier",
+  "subscription.changed",
 ]);
 export type AlertKind = z.infer<typeof alertKindSchema>;
 
@@ -36,8 +37,9 @@ export const alertDeliverySchema = z.object({
   /** « Me prévenir → e-mail » : la boîte de l'équipe. */
   staffEmail: z.boolean(),
   /**
-   * « Afficher l'alerte chez le client » — à la **confirmation de commande**,
-   * comme un garde-fou de saisie. N'a de sens que sur un type `customerShowable`.
+   * « Afficher l'alerte chez le client » — un callout d'une ligne sous la ligne
+   * de panier concernée, comme un garde-fou de saisie. N'a de sens que sur un
+   * type `customerShowable`, et `alertRuleSchema` **le refuse** ailleurs.
    */
   customerVisible: z.boolean(),
 });
@@ -48,66 +50,91 @@ export const driftDirectionSchema = z.enum(["up", "down", "both"]);
 export type DriftDirection = z.infer<typeof driftDirectionSchema>;
 
 /**
- * Un **palier de seuil** : jusqu'à quelle norme il s'applique, et quel écart y
- * déclenche.
+ * Un **palier de seuil** : jusqu'à quelle référence il s'applique, et quel écart
+ * y déclenche.
  *
  * Un pourcentage unique ne peut pas convenir aux deux bouts du catalogue. Sur un
  * produit qu'on prend à l'unité, passer de 1 à 5 (+400 %) n'a rien d'anormal ;
  * sur un produit qu'on prend par 100, +30 % fait déjà 30 unités de trop. Le seuil
- * doit donc **descendre quand la norme monte**, et c'est une donnée, pas une
+ * doit donc **descendre quand la référence monte**, et c'est une donnée, pas une
  * formule cachée : on veut pouvoir la lire et la corriger à l'écran.
  */
-export const alertThresholdTierSchema = z.object({
-  /** Borne **haute** de la norme couverte par ce palier. `null` = « au-delà ». */
-  upToQuantity: z.number().int().min(1).max(1_000_000).nullable(),
-  thresholdPercent: z.number().int().min(5).max(5000),
-});
-export type AlertThresholdTier = z.infer<typeof alertThresholdTierSchema>;
+function tierSchema(maxPercent: number) {
+  return z.object({
+    /** Borne **haute** de la référence couverte par ce palier. `null` = « au-delà ». */
+    upToQuantity: z.number().int().min(1).max(1_000_000).nullable(),
+    thresholdPercent: z.number().int().min(5).max(maxPercent),
+  });
+}
 
 /** Paliers ordonnés, le dernier — et lui seul — ouvert vers le haut. */
-export const alertThresholdTiersSchema = z
-  .array(alertThresholdTierSchema)
-  .min(1)
-  .superRefine((tiers, ctx) => {
-    tiers.forEach((tier, index) => {
-      const isLast = index === tiers.length - 1;
-      if (tier.upToQuantity === null && !isLast) {
+function tiersSchema(maxPercent: number) {
+  return z
+    .array(tierSchema(maxPercent))
+    .min(1)
+    .superRefine((tiers, ctx) => {
+      tiers.forEach((tier, index) => {
+        if (tier.upToQuantity === null && index !== tiers.length - 1) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Seul le dernier palier peut être ouvert vers le haut",
+            path: [index, "upToQuantity"],
+          });
+        }
+        const previous = tiers[index - 1]?.upToQuantity;
+        if (
+          tier.upToQuantity !== null &&
+          previous !== null &&
+          previous !== undefined &&
+          tier.upToQuantity <= previous
+        ) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Les paliers doivent être strictement croissants",
+            path: [index, "upToQuantity"],
+          });
+        }
+      });
+      if (tiers[tiers.length - 1]?.upToQuantity !== null) {
         ctx.addIssue({
           code: "custom",
-          message: "Seul le dernier palier peut être ouvert vers le haut",
-          path: [index, "upToQuantity"],
-        });
-      }
-      const previous = tiers[index - 1]?.upToQuantity;
-      if (
-        tier.upToQuantity !== null &&
-        previous !== null &&
-        previous !== undefined &&
-        tier.upToQuantity <= previous
-      ) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Les paliers doivent être strictement croissants",
-          path: [index, "upToQuantity"],
+          message: "Le dernier palier doit couvrir « au-delà »",
+          path: [tiers.length - 1, "upToQuantity"],
         });
       }
     });
-    if (tiers[tiers.length - 1]?.upToQuantity !== null) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Le dernier palier doit couvrir « au-delà »",
-        path: [tiers.length - 1, "upToQuantity"],
-      });
-    }
-  });
+}
+
+/** L'échelle d'une **hausse** — non bornée : passer de 1 à 50, c'est +4900 %. */
+export const riseTiersSchema = tiersSchema(5000);
+
+/**
+ * L'échelle d'une **baisse** — bornée à 99 %, et c'est tout le point.
+ *
+ * Une baisse ne peut pas dépasser 100 % par définition, et elle ne peut même pas
+ * l'atteindre : un SKU absent d'une commande n'est **pas** un « 0 commandé »
+ * (sinon chaque commande alerterait sur tout le catalogue non commandé). La
+ * baisse maximale observable vaut donc `(référence − 1) / référence`.
+ *
+ * Réutiliser l'échelle de hausse pour la baisse — ce que faisait la première
+ * version — rendait la baisse **structurellement indétectable** partout où le
+ * seuil dépassait 100 % : avec un palier à 200 %, un client passant de 8 à 1 ne
+ * déclenchait rien, alors que l'écran annonçait « hausse et baisse ».
+ *
+ * ⚠️ Conséquence irréductible : une référence de **1 n'a aucune baisse
+ * détectable**. On ne commande pas moins que 1 sans disparaître de la commande.
+ */
+export const dropTiersSchema = tiersSchema(99);
+
+export type AlertThresholdTier = z.infer<ReturnType<typeof tierSchema>>;
 
 /**
  * `product.first_order` — un SKU absent de **toutes** les commandes antérieures
  * du compte.
  *
- * `minPreviousOrders` existe pour une raison précise : sur la **toute première**
- * commande d'un compte, *tout* est nouveau. Sans plancher, une commande de 20
- * lignes produit 20 alertes, donc zéro signal.
+ * `minPreviousOrders` est un nombre de commandes **antérieures** requises : à 1,
+ * la règle se tait sur la toute première commande (où *tout* est nouveau) et
+ * parle à partir de la deuxième.
  */
 export const firstOrderParamsSchema = z.object({
   kind: z.literal("product.first_order"),
@@ -119,25 +146,30 @@ export const firstOrderParamsSchema = z.object({
  * compte.
  *
  * ⚠️ La moyenne se calcule sur les commandes qui **contiennent** le SKU, pas sur
- * toutes : un SKU absent n'est pas un « 0 commandé », sinon chaque commande
- * lèverait une alerte de chute pour tout le catalogue non commandé. Corollaire
- * assumé : **cette règle ne détecte pas un arrêt** de produit — il y faudra un
- * type piloté par le temps.
+ * toutes. Corollaire assumé : **cette règle ne détecte pas un arrêt** de produit
+ * — il y faudra un type piloté par le temps.
  */
 export const quantityDriftParamsSchema = z
   .object({
     kind: z.literal("product.quantity_drift"),
     /**
-     * L'écart déclencheur **par palier**, indexé sur la moyenne **de ce compte
-     * pour ce SKU** — la référence la plus fine dont on dispose. Elle sait, elle,
-     * que ce client-là prend ce produit-là à l'unité ou par palettes.
+     * Les deux échelles, indexées sur la moyenne **de ce compte pour ce SKU** —
+     * la référence la plus fine dont on dispose. Elle sait, elle, que ce
+     * client-là prend ce produit-là à l'unité ou par palettes.
      */
-    tiers: alertThresholdTiersSchema,
+    riseTiers: riseTiersSchema,
+    dropTiers: dropTiersSchema,
     direction: driftDirectionSchema,
     /** Les N dernières commandes contenant le SKU, la commande courante exclue. */
     baselineOrders: z.number().int().min(2).max(50),
     /** En dessous, « la moyenne » n'en est pas une : la règle se tait. */
     minBaselineOrders: z.number().int().min(1).max(50),
+    /**
+     * Au-delà, une commande est trop vieille pour dire quoi que ce soit des
+     * habitudes actuelles. Sans cette borne, six commandes étalées sur trois ans
+     * pesaient autant que six commandes du mois dernier.
+     */
+    windowDays: z.number().int().min(30).max(1825),
   })
   .refine((p) => p.minBaselineOrders <= p.baselineOrders, {
     message: "minBaselineOrders ne peut pas dépasser baselineOrders",
@@ -148,27 +180,22 @@ export const quantityDriftParamsSchema = z
  * `product.quantity_outlier` — une quantité **aberrante pour ce produit**,
  * mesurée sur l'ensemble des comptes.
  *
- * C'est le pendant de `quantity_drift` pour le cas où celle-ci est structurellement
- * aveugle : une **première commande** n'a aucun historique de compte, donc aucune
- * moyenne à laquelle se comparer — et c'est précisément là qu'une faute de frappe
- * (5 kg tapés 500) passe sans que rien ne bronche. On change alors de référence :
- * ce n'est plus « ce que ce client prend d'habitude » mais « ce qu'on prend
- * habituellement de ce produit ».
+ * Le pendant de `quantity_drift` là où celle-ci est structurellement aveugle :
+ * une **première commande** n'a aucun historique de compte, et c'est précisément
+ * là qu'un 5 tapé 500 passe sans que rien ne bronche.
  *
- * `onlyWithoutAccountBaseline` (vrai par défaut) évite que les deux règles se
- * déclenchent ensemble : tant que le compte a sa propre moyenne, c'est elle qui
- * fait autorité — elle est plus fine. La norme produit prend le relais quand elle
- * manque.
+ * **Hausse seulement, et pas de réglage pour en changer** : sur une première
+ * commande, prendre moins que la norme du marché n'est pas un incident, c'est un
+ * essai. Une baisse n'y veut rien dire.
+ *
+ * La référence est la **médiane** des quantités observées, jamais la moyenne :
+ * une moyenne se fait déplacer par l'aberration qu'on cherche, donc une faute de
+ * frappe passée une fois éteindrait la détection des suivantes.
  */
 export const quantityOutlierParamsSchema = z.object({
   kind: z.literal("product.quantity_outlier"),
-  /**
-   * L'écart déclencheur **par palier de norme** — le palier se choisit sur la
-   * norme du produit, pas sur la quantité commandée : c'est la norme qui dit si
-   * on est sur un produit à l'unité ou sur un produit à la centaine.
-   */
-  tiers: alertThresholdTiersSchema,
-  /** Fenêtre sur laquelle la norme du produit se mesure, en jours. */
+  riseTiers: riseTiersSchema,
+  /** Fenêtre sur laquelle la médiane du produit se mesure, en jours. */
   windowDays: z.number().int().min(7).max(730),
   /** Sous ce nombre de lignes observées, il n'y a pas de « norme » à invoquer. */
   minSampleLines: z.number().int().min(3).max(1000),
@@ -177,9 +204,46 @@ export const quantityOutlierParamsSchema = z.object({
 });
 
 /**
- * Le palier qui s'applique à une norme donnée. Les paliers étant ordonnés et le
- * dernier ouvert, il y en a toujours un — mais un tableau vide est possible en
- * TypeScript, donc l'appelant reçoit `null` plutôt qu'une valeur inventée.
+ * `subscription.changed` — un **panier récurrent** vient d'être modifié.
+ *
+ * Le seul type dont le fait générateur n'est **pas** une commande : il écoute la
+ * modification d'un abonnement. Un panier récurrent est un engagement de volume ;
+ * le voir bouger vaut un appel, qu'il monte ou qu'il descende.
+ *
+ * Chaque facette se coche à part parce qu'elles ne disent pas la même chose : une
+ * quantité qui change touche le chiffre, une fréquence qui s'espace annonce
+ * souvent un départ, un acheminement qui change est logistique avant d'être
+ * commercial.
+ */
+export const subscriptionChangedParamsSchema = z
+  .object({
+    kind: z.literal("subscription.changed"),
+    watchQuantities: z.boolean(),
+    watchRecurrence: z.boolean(),
+    watchFulfillment: z.boolean(),
+  })
+  .refine((p) => p.watchQuantities || p.watchRecurrence || p.watchFulfillment, {
+    message: "Au moins une facette doit être surveillée, sinon la règle ne détecte rien",
+    path: ["watchQuantities"],
+  });
+
+/** Les paramètres d'une règle, discriminés par le type qu'ils configurent. */
+export const alertParamsSchema = z.discriminatedUnion("kind", [
+  firstOrderParamsSchema,
+  quantityDriftParamsSchema,
+  quantityOutlierParamsSchema,
+  subscriptionChangedParamsSchema,
+]);
+export type AlertParams = z.infer<typeof alertParamsSchema>;
+export type FirstOrderParams = z.infer<typeof firstOrderParamsSchema>;
+export type QuantityDriftParams = z.infer<typeof quantityDriftParamsSchema>;
+export type QuantityOutlierParams = z.infer<typeof quantityOutlierParamsSchema>;
+export type SubscriptionChangedParams = z.infer<typeof subscriptionChangedParamsSchema>;
+
+/**
+ * Le palier qui s'applique à une référence donnée. Les paliers étant ordonnés et
+ * le dernier ouvert, il y en a toujours un — mais un tableau vide reste possible
+ * en TypeScript, donc l'appelant reçoit `null` plutôt qu'une valeur inventée.
  */
 export function thresholdForBaseline(
   tiers: readonly AlertThresholdTier[],
@@ -187,177 +251,4 @@ export function thresholdForBaseline(
 ): number | null {
   const tier = tiers.find((t) => t.upToQuantity === null || baseline <= t.upToQuantity);
   return tier?.thresholdPercent ?? null;
-}
-
-/** Les paramètres d'une règle, discriminés par le type qu'ils configurent. */
-export const alertParamsSchema = z.discriminatedUnion("kind", [
-  firstOrderParamsSchema,
-  quantityDriftParamsSchema,
-  quantityOutlierParamsSchema,
-]);
-export type AlertParams = z.infer<typeof alertParamsSchema>;
-export type FirstOrderParams = z.infer<typeof firstOrderParamsSchema>;
-export type QuantityDriftParams = z.infer<typeof quantityDriftParamsSchema>;
-export type QuantityOutlierParams = z.infer<typeof quantityOutlierParamsSchema>;
-
-/**
- * Une **règle** : un type activé ou non, ses paramètres, ses canaux. Le type
- * n'est **pas** répété hors des paramètres — il y est déjà le discriminant, et
- * deux copies d'une même information finissent par diverger.
- */
-export const alertRuleSchema = z.object({
-  enabled: z.boolean(),
-  params: alertParamsSchema,
-  delivery: alertDeliverySchema,
-});
-export type AlertRule = z.infer<typeof alertRuleSchema>;
-
-/** Ce qu'un type déclare de lui-même — du code, pas de la configuration. */
-export interface AlertKindDefinition {
-  /**
-   * Ce type peut-il se montrer au client ? « Vous n'aviez jamais pris ce
-   * produit » n'est pas une erreur de saisie possible : le dire à quelqu'un qui
-   * vient de choisir ce produit ne l'aide en rien. La case « afficher chez le
-   * client » n'apparaît que pour les types qui le sont.
-   */
-  readonly customerShowable: boolean;
-  /** Le réglage livré au premier démarrage, avant toute intervention du staff. */
-  readonly defaults: AlertRule;
-}
-
-/** La table des types. L'ordre d'affichage vient de l'énuméré, pas d'ici. */
-export const ALERT_KINDS: Readonly<Record<AlertKind, AlertKindDefinition>> = {
-  "product.first_order": {
-    customerShowable: false,
-    defaults: {
-      enabled: true,
-      params: { kind: "product.first_order", minPreviousOrders: 1 },
-      delivery: { staffInApp: true, staffEmail: false, customerVisible: false },
-    },
-  },
-  "product.quantity_drift": {
-    customerShowable: true,
-    defaults: {
-      enabled: true,
-      params: {
-        kind: "product.quantity_drift",
-        // Plus serrés que ceux de l'aberration produit : la moyenne du compte
-        // pour CE SKU est une référence bien plus fine qu'une norme catalogue,
-        // donc un même écart y est bien plus significatif.
-        tiers: [
-          { upToQuantity: 2, thresholdPercent: 200 },
-          { upToQuantity: 10, thresholdPercent: 100 },
-          { upToQuantity: 50, thresholdPercent: 50 },
-          { upToQuantity: null, thresholdPercent: 25 },
-        ],
-        direction: "both",
-        baselineOrders: 6,
-        minBaselineOrders: 3,
-      },
-      delivery: { staffInApp: true, staffEmail: false, customerVisible: false },
-    },
-  },
-  "product.quantity_outlier": {
-    customerShowable: true,
-    defaults: {
-      enabled: true,
-      params: {
-        kind: "product.quantity_outlier",
-        // Le seuil descend quand la norme monte : ×5 sur un produit pris à
-        // l'unité n'est pas un incident, +30 % sur un produit pris par 100 en
-        // est un.
-        tiers: [
-          { upToQuantity: 2, thresholdPercent: 400 },
-          { upToQuantity: 10, thresholdPercent: 200 },
-          { upToQuantity: 50, thresholdPercent: 80 },
-          { upToQuantity: null, thresholdPercent: 30 },
-        ],
-        windowDays: 180,
-        minSampleLines: 20,
-        onlyWithoutAccountBaseline: true,
-      },
-      // Le seul type coché « client » par défaut : c'est un garde-fou de saisie,
-      // et il sert surtout au moment où personne côté staff ne peut le rattraper
-      // — la toute première commande d'un compte qu'on ne connaît pas encore.
-      delivery: { staffInApp: true, staffEmail: false, customerVisible: true },
-    },
-  },
-};
-
-/** Les types dans l'ordre où le staff les rencontre. */
-export const ALERT_KIND_ORDER: readonly AlertKind[] = alertKindSchema.options;
-
-/**
- * Une règle telle que le serveur la rend : la règle, plus la date de dernière
- * écriture (l'écran dit « jamais touché » plutôt que d'inventer une valeur).
- */
-export interface AlertRuleView extends AlertRule {
-  readonly kind: AlertKind;
-  /** ISO, ou `null` tant que le réglage est celui livré par défaut. */
-  readonly updatedAt: string | null;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Dérogation par compte
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Ce qu'un compte fait d'une règle globale. **Pas de ligne du tout** quand il la
- * suit : l'absence est l'état par défaut, et elle se lit sans ambiguïté.
- *
- * - `off` — ce type ne s'évalue pas sur ce compte ;
- * - `custom` — le compte porte **sa propre règle, complète**.
- *
- * Le mode `custom` copie l'intégralité de la règle, jamais un diff. Un override
- * partiel obligerait à répondre « que devient le champ à moitié dérogé quand le
- * global change ? », et il n'y a pas de bonne réponse. Tout-ou-rien : soit le
- * compte suit, soit il a sa règle, et on peut toujours dire laquelle il applique.
- */
-export const accountAlertOverrideSchema = z
-  .discriminatedUnion("mode", [
-    z.object({ kind: alertKindSchema, mode: z.literal("off") }),
-    z.object({ kind: alertKindSchema, mode: z.literal("custom"), rule: alertRuleSchema }),
-  ])
-  .refine((o) => o.mode === "off" || o.rule.params.kind === o.kind, {
-    message: "La règle dérogée ne porte pas le type qu'elle prétend déroger",
-    path: ["rule"],
-  });
-export type AccountAlertOverride = z.infer<typeof accountAlertOverrideSchema>;
-export type AccountAlertOverrideMode = AccountAlertOverride["mode"];
-
-/**
- * Une règle **vue depuis un compte** : ce que dit le global, ce que le compte en
- * fait, et ce qui s'applique réellement.
- *
- * Les trois voyagent **ensemble**, et `effective` est calculé **par le serveur**.
- * Le front n'implémente pas `dérogation ?? global` : deux implémentations de la
- * même résolution finiraient par diverger, et c'est l'affichage qui aurait tort
- * sans que rien ne le signale.
- */
-export interface AccountAlertRuleView {
-  readonly kind: AlertKind;
-  /** Le réglage de la plateforme, rappelé tel quel — même quand on y déroge. */
-  readonly global: AlertRule;
-  /** `null` = ce compte suit le global. */
-  readonly override: AccountAlertOverride | null;
-  /** Ce qui sera réellement évalué sur ce compte. */
-  readonly effective: AlertRule;
-}
-
-/**
- * Ce qui s'applique à un compte pour un type donné (pur, **une seule
- * implémentation**, côté serveur).
- *
- * `off` n'efface pas la règle : il l'éteint. On garde donc ses paramètres, ce qui
- * permet de les réafficher quand le staff la rallume, et de dire « désactivée »
- * plutôt que « vide ».
- */
-export function effectiveAlertRule(
-  global: AlertRule,
-  override: AccountAlertOverride | null,
-): AlertRule {
-  if (override === null) {
-    return global;
-  }
-  return override.mode === "off" ? { ...global, enabled: false } : override.rule;
 }

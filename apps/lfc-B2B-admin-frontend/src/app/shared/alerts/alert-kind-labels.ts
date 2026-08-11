@@ -33,6 +33,13 @@ export const ALERT_KIND_LABELS: Readonly<Record<AlertKind, AlertKindLabel>> = {
     why: "Le filet de sécurité de la PREMIÈRE commande : sans historique du compte, la règle d'écart est aveugle, et c'est justement là qu'un 5 tapé 500 passe sans que personne ne le voie.",
     icon: 'warning',
   },
+  'subscription.changed': {
+    title: 'Panier récurrent modifié',
+    subtitle:
+      'Un client vient de changer son panier récurrent — contenu, fréquence ou acheminement.',
+    why: "Un panier récurrent est un engagement de volume : le voir bouger vaut un appel. Une fréquence qui s'espace annonce souvent un départ, bien avant que le chiffre ne le montre.",
+    icon: 'reload',
+  },
 };
 
 /** Les canaux, dans l'ordre où on les coche. */

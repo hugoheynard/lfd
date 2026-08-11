@@ -35,6 +35,14 @@ export class ThresholdTiersField {
    * parle ne se règle pas.
    */
   readonly baselineLabel = input('la norme');
+  /** « Hausse » / « Baisse » — deux échelles cohabitent sur le même écran. */
+  readonly scaleLabel = input('Écart');
+  /**
+   * Le plafond du seuil. 99 pour une **baisse** : elle ne peut pas dépasser
+   * 100 % et n'atteint même jamais ce plafond, donc laisser saisir 200 %
+   * fabriquerait une surveillance qui ne se déclenche jamais.
+   */
+  readonly maxPercent = input(5000);
   readonly disabled = input(false);
   readonly tiersChange = output<AlertThresholdTier[]>();
 
@@ -65,8 +73,10 @@ export class ThresholdTiersField {
   protected addTier(): void {
     const tiers = this.tiers();
     const previous = tiers[tiers.length - 2]?.upToQuantity ?? 0;
+    // Borné : le schéma refuse au-delà d'un million, et un palier inséré
+    // au-dessus produirait un 400 au moment d'enregistrer.
     const inserted: AlertThresholdTier = {
-      upToQuantity: previous + 10,
+      upToQuantity: Math.min(1_000_000, previous + 10),
       thresholdPercent: this.open()?.thresholdPercent ?? 50,
     };
     this.emit([...tiers.slice(0, -1), inserted, ...tiers.slice(-1)]);

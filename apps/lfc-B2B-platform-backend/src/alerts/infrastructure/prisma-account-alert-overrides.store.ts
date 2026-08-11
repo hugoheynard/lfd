@@ -5,11 +5,11 @@ import {
   type AccountAlertOverride,
   type AlertKind,
 } from "@lfd/contracts";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { Prisma } from "../../infra/database/client/client.js";
-
 import { PrismaService } from "../../infra/database/prisma.service.js";
+import type { StoredOverride } from "../domain/account-alert-rules.js";
 import { AccountAlertOverridesStore } from "../domain/ports/account-alert-overrides.store.js";
 
 /** Une ligne `account_alert_overrides`, vue d'ici seulement. */
@@ -19,24 +19,35 @@ interface OverrideRow {
   readonly enabled: boolean | null;
   readonly params: unknown;
   readonly delivery: unknown;
+  readonly updatedAt: Date;
 }
 
 /**
  * Lecture/écriture des dérogations d'un compte.
  *
- * Comme pour les réglages globaux, le mapper **écarte** une ligne qu'il ne sait
- * plus relire : le compte retombe alors sur le réglage global — le comportement
- * le moins surprenant, et le seul qui ne laisse pas un écran inaccessible.
+ * Une ligne illisible remonte en `readable: false` **avec sa date** au lieu
+ * d'être avalée : le domaine la traite alors comme un `off`, parce qu'on sait au
+ * moins une chose de ce compte — il avait explicitement refusé le global.
  */
 @Injectable()
 export class PrismaAccountAlertOverridesStore extends AccountAlertOverridesStore {
+  private readonly logger = new Logger(PrismaAccountAlertOverridesStore.name);
+
   constructor(private readonly prisma: PrismaService) {
     super();
   }
 
-  async readForCompany(companyId: string): Promise<AccountAlertOverride[]> {
+  async readForCompany(companyId: string): Promise<StoredOverride[]> {
     const rows = await this.prisma.accountAlertOverride.findMany({ where: { companyId } });
-    return rows.map((row) => toDomain(row)).filter(isReadable);
+    const parsed = rows.map((row) => toDomain(row));
+    parsed.forEach((stored, index) => {
+      if (stored !== null && !stored.readable) {
+        this.logger.warn(
+          `Dérogation d'alerte illisible, traitée comme désactivée : ${companyId} / ${rows[index]?.kind ?? "?"}`,
+        );
+      }
+    });
+    return parsed.filter(isKnown);
   }
 
   async save(companyId: string, override: AccountAlertOverride): Promise<void> {
@@ -70,30 +81,34 @@ export class PrismaAccountAlertOverridesStore extends AccountAlertOverridesStore
   }
 }
 
-function isReadable(override: AccountAlertOverride | null): override is AccountAlertOverride {
-  return override !== null;
+function isKnown(stored: StoredOverride | null): stored is StoredOverride {
+  return stored !== null;
 }
 
-/** `null` = ligne illisible : le compte retombera sur le réglage global. */
-function toDomain(row: OverrideRow): AccountAlertOverride | null {
+/** `null` = type inconnu : la ligne ne désigne rien qu'on sache traiter. */
+function toDomain(row: OverrideRow): StoredOverride | null {
   const kind = alertKindSchema.safeParse(row.kind);
   if (!kind.success) {
     return null;
   }
   if (row.mode === "off") {
-    return { kind: kind.data, mode: "off" };
+    return { readable: true, override: { kind: kind.data, mode: "off" }, updatedAt: row.updatedAt };
   }
   const params = alertParamsSchema.safeParse(row.params);
   const delivery = alertDeliverySchema.safeParse(row.delivery);
   if (row.mode !== "custom" || !params.success || !delivery.success) {
-    return null;
+    return { readable: false, kind: kind.data, updatedAt: row.updatedAt };
   }
   if (params.data.kind !== kind.data) {
-    return null;
+    return { readable: false, kind: kind.data, updatedAt: row.updatedAt };
   }
   return {
-    kind: kind.data,
-    mode: "custom",
-    rule: { enabled: row.enabled ?? true, params: params.data, delivery: delivery.data },
+    readable: true,
+    override: {
+      kind: kind.data,
+      mode: "custom",
+      rule: { enabled: row.enabled ?? true, params: params.data, delivery: delivery.data },
+    },
+    updatedAt: row.updatedAt,
   };
 }

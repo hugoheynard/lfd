@@ -98,7 +98,7 @@ export class AccountAlertCard {
    */
   protected readonly editable = computed<AlertRuleView>(() => {
     const view = this.rule();
-    return { kind: view.kind, ...view.effective, updatedAt: null };
+    return { kind: view.kind, ...view.effective, updatedAt: null, degraded: view.degraded };
   });
 
   protected startEditing(): void {
