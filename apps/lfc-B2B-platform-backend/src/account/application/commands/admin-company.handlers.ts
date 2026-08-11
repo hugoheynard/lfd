@@ -9,7 +9,7 @@ import { KbisStore } from "../../domain/ports/kbis-store.js";
 import {
   AddDeliveryAddressByStaffCommand,
   SaveBillingAddressByStaffCommand,
-  SetAgreedPaymentTermCommand,
+  GrantTermsCommand,
   UpdateIdentityByStaffCommand,
   UploadKbisByStaffCommand,
 } from "./admin-company-commands.js";
@@ -75,19 +75,16 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
   }
 }
 
-@CommandHandler(SetAgreedPaymentTermCommand)
-export class SetAgreedPaymentTermHandler implements ICommandHandler<
-  SetAgreedPaymentTermCommand,
-  void
-> {
+@CommandHandler(GrantTermsCommand)
+export class GrantTermsHandler implements ICommandHandler<GrantTermsCommand, void> {
   constructor(private readonly companies: CompanyRepository) {}
 
-  async execute(command: SetAgreedPaymentTermCommand): Promise<void> {
+  async execute(command: GrantTermsCommand): Promise<void> {
     const company = await this.companies.load(command.companyId);
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    company.agreePaymentTerm(command.paymentTerm);
+    company.grantTerms(command.grantedTerms);
     await this.companies.save(company);
   }
 }

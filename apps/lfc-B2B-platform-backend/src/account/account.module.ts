@@ -7,7 +7,7 @@ import { AddCompanyContactHandler } from "./application/commands/add-company-con
 import {
   AddDeliveryAddressByStaffHandler,
   SaveBillingAddressByStaffHandler,
-  SetAgreedPaymentTermHandler,
+  GrantTermsHandler,
   UpdateIdentityByStaffHandler,
   UploadKbisByStaffHandler,
 } from "./application/commands/admin-company.handlers.js";
@@ -161,7 +161,7 @@ import { MeController } from "./http/me.controller.js";
     GetCustomerSheetHandler,
     UploadKbisByStaffHandler,
     UpdateIdentityByStaffHandler,
-    SetAgreedPaymentTermHandler,
+    GrantTermsHandler,
     SaveBillingAddressByStaffHandler,
     AddDeliveryAddressByStaffHandler,
     RequestActivationSupportHandler,

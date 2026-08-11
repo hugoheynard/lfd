@@ -27,7 +27,7 @@ export class RequestPaymentTermHandler implements ICommandHandler<RequestPayment
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    company.requestPaymentTerm(command.paymentTerm);
+    company.requestTerm(command.term);
     await this.companies.save(company);
   }
 }

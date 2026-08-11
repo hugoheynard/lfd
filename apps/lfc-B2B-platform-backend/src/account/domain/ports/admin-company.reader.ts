@@ -1,7 +1,9 @@
 import type { CompanyAddressesView, CompanyContactView } from "@lfd/contracts";
 
 import type { CompanyStatus } from "../value-objects/company-status.js";
-import type { ContactView, KbisView, PaymentTerm } from "./account.reader.js";
+import type { DeferredTerm } from "@lfd/contracts";
+
+import type { ContactView, KbisView } from "./account.reader.js";
 
 /**
  * Une société vue **par le staff** (app admin), en lecture cross-tenant.
@@ -45,9 +47,9 @@ export interface AdminCompanyView {
   readonly tvaIntracom: string;
   readonly status: CompanyStatus;
   /** Condition de règlement **convenue** (écrite par le staff). */
-  readonly paymentTerm: PaymentTerm;
+  readonly grantedTerms: readonly DeferredTerm[];
   /** Terme **demandé** par le client, en attente ; `null` = aucune demande. */
-  readonly requestedPaymentTerm: PaymentTerm | null;
+  readonly requestedTerm: DeferredTerm | null;
   /** Contact principal — le futur interlocuteur du commercial. */
   readonly primaryContact: ContactView;
   /** Qui administre l'espace côté client, ou `null` si personne encore. */

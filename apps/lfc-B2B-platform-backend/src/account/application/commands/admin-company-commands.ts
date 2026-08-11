@@ -4,7 +4,7 @@ import type {
   UpdateIdentityPayload,
 } from "@lfd/contracts";
 
-import type { PaymentTerm } from "../../domain/ports/account.reader.js";
+import type { DeferredTerm } from "@lfd/contracts";
 
 /**
  * Commandes **staff** (Porte B) : le commercial complète une société **à la
@@ -38,10 +38,10 @@ export class UpdateIdentityByStaffCommand {
  * Fixe la condition de règlement **convenue** — l'acte proprement staff : le
  * client ne peut que *demander*, seul le commercial *convient*.
  */
-export class SetAgreedPaymentTermCommand {
+export class GrantTermsCommand {
   constructor(
     readonly companyId: string,
-    readonly paymentTerm: PaymentTerm,
+    readonly grantedTerms: readonly DeferredTerm[],
   ) {}
 }
 

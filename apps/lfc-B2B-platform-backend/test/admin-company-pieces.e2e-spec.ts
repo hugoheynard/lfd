@@ -11,7 +11,7 @@
  */
 import { KbisStore } from "../src/account/domain/ports/kbis-store.js";
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { AddressKind, CompanyStatus, PaymentTerm } from "../src/infra/database/client/client.js";
+import { AddressKind, CompanyStatus, DeferredTerm } from "../src/infra/database/client/client.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
@@ -113,17 +113,19 @@ describe("pièces d'activation staff (Porte B)", () => {
     // Le client a demandé net60 ; le staff convient net90 → convenu écrit, demande soldée.
     await ctx.prisma.company.update({
       where: { id: companyId },
-      data: { requestedPaymentTerm: PaymentTerm.net60 },
+      data: { requestedTerm: DeferredTerm.net60 },
     });
 
     await staff()
-      .patch(`/admin/companies/${companyId}/payment-term`)
-      .send({ paymentTerm: "net90" })
+      .patch(`/admin/companies/${companyId}/granted-terms`)
+      .send({ grantedTerms: ["monthly", "net90"] })
       .expect(204);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
-    expect(company.paymentTerm).toBe(PaymentTerm.net90);
-    expect(company.requestedPaymentTerm).toBeNull();
+    // Cumulatifs : accorder n'est pas remplacer, et payer à la commande reste
+    // possible de toute façon.
+    expect(company.grantedTerms).toEqual([DeferredTerm.monthly, DeferredTerm.net90]);
+    expect(company.requestedTerm).toBeNull();
   });
 
   it("enregistre l'adresse de facturation", async () => {

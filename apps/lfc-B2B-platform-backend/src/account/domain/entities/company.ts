@@ -3,7 +3,7 @@ import {
   CompanyStatusTransitionError,
   InvalidCompanyIdentityError,
 } from "../errors/account-errors.js";
-import type { PaymentTerm } from "../ports/account.reader.js";
+import type { DeferredTerm } from "@lfd/contracts";
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import { EmailAddress } from "../value-objects/email-address.js";
 import { PersonName } from "../value-objects/person-name.js";
@@ -44,9 +44,9 @@ export interface ReconstituteCompanyInput {
   readonly tvaIntracom: string;
   readonly contact: CompanyContact;
   /** Terme **convenu** (celui qui s'applique). */
-  readonly paymentTerm: PaymentTerm;
+  readonly grantedTerms: readonly DeferredTerm[];
   /** Terme **demandé** par le client, ou `null` (aucune demande en cours). */
-  readonly requestedPaymentTerm: PaymentTerm | null;
+  readonly requestedTerm: DeferredTerm | null;
   readonly status: CompanyStatus;
   /** Horodatage d'activation commerciale, ou `null` (jamais activée). */
   readonly activatedAt: Date | null;
@@ -78,8 +78,8 @@ export interface CompanySoftState {
     readonly email: string;
     readonly phone: string;
   };
-  readonly paymentTerm: PaymentTerm;
-  readonly requestedPaymentTerm: PaymentTerm | null;
+  readonly grantedTerms: readonly DeferredTerm[];
+  readonly requestedTerm: DeferredTerm | null;
   readonly status: CompanyStatus;
   readonly activatedAt: Date | null;
   /** Code NAF résolu depuis le SIRET, ou vide si pas encore connu. */
@@ -97,8 +97,8 @@ export interface CompanySoftState {
  * L'identité **légale** (raison sociale, forme, SIRET) est **figée** : on ne la
  * mute pas après déclaration. Ce qui évolue le fait par des **méthodes métier**,
  * jamais par écriture de colonne : identité souple (`editSoftIdentity`), contact
- * (`changePrimaryContact`), termes de règlement (`requestPaymentTerm` /
- * `agreePaymentTerm`), activation (`activate`). `toPersistence()` sérialise ces
+ * (`changePrimaryContact`), crédits de règlement (`requestTerm` / `grantTerms`),
+ * activation (`activate`). `toPersistence()` sérialise ces
  * champs mutables ; le KBIS garde son écriture propre (couplée au stockage).
  */
 export class Company {
@@ -110,8 +110,8 @@ export class Company {
     private siretValue: Siret | null,
     private tvaIntracomValue: string,
     private contactValue: CompanyContact,
-    private paymentTermValue: PaymentTerm,
-    private requestedPaymentTermValue: PaymentTerm | null,
+    private grantedTermsValue: readonly DeferredTerm[],
+    private requestedTermValue: DeferredTerm | null,
     private statusValue: CompanyStatus,
     private activatedAtValue: Date | null,
     /** Code NAF résolu depuis le SIRET (via l'API entreprises) — vide tant qu'inconnu. */
@@ -133,9 +133,9 @@ export class Company {
       Siret.createOptional(identity.siret),
       optional(identity.tvaIntracom, "TVA intracommunautaire"),
       contact,
-      // Déclarée : règlement à la commande par défaut, aucune demande en cours,
+      // Déclarée : aucun crédit accordé (elle paie à la commande), aucune demande,
       // et **non validée** (pending) — l'activation est commerciale, jamais implicite.
-      "per_order",
+      [],
       null,
       "pending",
       null,
@@ -154,8 +154,8 @@ export class Company {
       Siret.createOptional(input.siret),
       input.tvaIntracom,
       input.contact,
-      input.paymentTerm,
-      input.requestedPaymentTerm,
+      input.grantedTerms,
+      input.requestedTerm,
       input.status,
       input.activatedAt,
       input.nafCode,
@@ -252,31 +252,48 @@ export class Company {
     this.contactValue = contact;
   }
 
-  get paymentTerm(): PaymentTerm {
-    return this.paymentTermValue;
+  /** Les crédits accordés — vide veut dire « paie à la commande », comme tout le monde. */
+  get grantedTerms(): readonly DeferredTerm[] {
+    return this.grantedTermsValue;
   }
 
-  get requestedPaymentTerm(): PaymentTerm | null {
-    return this.requestedPaymentTermValue;
-  }
-
-  /**
-   * Le client **demande** un terme de règlement (il ne le convient jamais lui-même).
-   * Demander le terme **déjà convenu** revient à retirer la demande (`null`) : il
-   * n'y a alors rien « en attente » à afficher. `null` retire aussi la demande.
-   */
-  requestPaymentTerm(term: PaymentTerm | null): void {
-    this.requestedPaymentTermValue = term === this.paymentTermValue ? null : term;
+  get requestedTerm(): DeferredTerm | null {
+    return this.requestedTermValue;
   }
 
   /**
-   * Le **staff** convient un terme (Porte B) : il devient le terme appliqué **et**
-   * **solde** la demande en cours (`requestedPaymentTerm` → `null`) — le commercial
-   * a tranché, il n'y a plus rien en attente.
+   * Cette société règle-t-elle **au compte** ?
+   *
+   * Dès qu'un crédit est accordé, c'est le régime négocié, donc le défaut. Le
+   * client garde la possibilité de payer une commande ponctuelle par carte —
+   * mais c'est lui qui le demande, commande par commande.
    */
-  agreePaymentTerm(term: PaymentTerm): void {
-    this.paymentTermValue = term;
-    this.requestedPaymentTermValue = null;
+  settlesOnAccount(): boolean {
+    return this.grantedTermsValue.length > 0;
+  }
+
+  /**
+   * Le client **demande** un crédit (il ne se l'accorde jamais lui-même).
+   * Demander un terme **déjà accordé** revient à retirer la demande : il n'y a
+   * alors rien « en attente » à afficher.
+   */
+  requestTerm(term: DeferredTerm | null): void {
+    const alreadyGranted = term !== null && this.grantedTermsValue.includes(term);
+    this.requestedTermValue = alreadyGranted ? null : term;
+  }
+
+  /**
+   * Le **staff** accorde l'ensemble des crédits (Porte B) et **solde** la
+   * demande en cours — il a tranché, il n'y a plus rien en attente.
+   *
+   * On reçoit l'ensemble complet plutôt qu'un ajout : l'écran montre des
+   * interrupteurs, et deux clics rapides ne doivent pas laisser la fiche et la
+   * base en désaccord. Les doublons sont écartés — accorder deux fois le même
+   * crédit n'a pas de sens.
+   */
+  grantTerms(terms: readonly DeferredTerm[]): void {
+    this.grantedTermsValue = [...new Set(terms)];
+    this.requestedTermValue = null;
   }
 
   get status(): CompanyStatus {
@@ -383,8 +400,8 @@ export class Company {
         email: this.contactValue.email.value,
         phone: this.contactValue.phone.value,
       },
-      paymentTerm: this.paymentTermValue,
-      requestedPaymentTerm: this.requestedPaymentTermValue,
+      grantedTerms: this.grantedTermsValue,
+      requestedTerm: this.requestedTermValue,
       status: this.statusValue,
       activatedAt: this.activatedAtValue,
       nafCode: this.nafCodeValue,

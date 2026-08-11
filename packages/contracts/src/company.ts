@@ -6,9 +6,42 @@ import { z } from "zod";
  * **souhaitée**.
  */
 
-/** Condition de règlement (aligné sur l'enum Prisma `PaymentTerm`). */
-export const paymentTermSchema = z.enum(["per_order", "monthly", "net60", "net90"]);
-export type PaymentTerm = z.infer<typeof paymentTermSchema>;
+/**
+ * Les moyens de règlement sont **cumulatifs**, pas exclusifs.
+ *
+ * Payer **à la commande** est toujours possible : c'est le socle, offert à tout
+ * le monde, et ce n'est pas une condition de règlement — c'est l'absence de
+ * crédit. Un `DeferredTerm` est un crédit qu'on **accorde** : la société règle
+ * plus tard, et le commercial le débloque société par société.
+ *
+ * Les modéliser comme une seule valeur (`per_order | monthly | …`) faisait du
+ * déblocage un remplacement : accorder le mensuel retirait la carte. Or un
+ * client au mensuel doit pouvoir régler une commande ponctuelle à part.
+ */
+export const deferredTermSchema = z.enum(["monthly", "net60", "net90"]);
+export type DeferredTerm = z.infer<typeof deferredTermSchema>;
+
+/**
+ * La **seule** traduction des termes, partagée par les deux frontends — mêmes
+ * raisons que pour les rôles : les valeurs vivent en anglais, le français ne
+ * vit qu'à l'écran.
+ */
+export const DEFERRED_TERM_LABELS: Readonly<Record<DeferredTerm, string>> = {
+  monthly: "Mensuel",
+  net60: "60 jours",
+  net90: "90 jours",
+};
+
+/**
+ * Comment une commande se règle **en fait**.
+ *
+ * `account` = portée au compte, facturée au terme accordé ; `card` = payée tout
+ * de suite. Quand un terme est accordé, `account` est le **défaut** — c'est le
+ * régime négocié —, et le client garde la possibilité de régler une commande
+ * ponctuelle par carte.
+ */
+export const settlementSchema = z.enum(["account", "card"]);
+export type Settlement = z.infer<typeof settlementSchema>;
 
 /**
  * Édition de l'identité **souple** : l'enseigne (nom commercial) et le n° de TVA
@@ -31,13 +64,25 @@ export const updateIdentityPayloadSchema = z.object({
 export type UpdateIdentityPayload = z.infer<typeof updateIdentityPayloadSchema>;
 
 /**
- * Condition de règlement **souhaitée** par le client. C'est une demande : le
- * commercial la valide à l'activation. On enregistre le choix, pas un droit acquis.
+ * Terme **souhaité** par le client. C'est une demande : le commercial l'accorde
+ * ou non. On enregistre le choix, pas un droit acquis.
  */
 export const updatePaymentTermPayloadSchema = z.object({
-  paymentTerm: paymentTermSchema,
+  paymentTerm: deferredTermSchema,
 });
 export type UpdatePaymentTermPayload = z.infer<typeof updatePaymentTermPayloadSchema>;
+
+/**
+ * Ce que le staff **accorde** à une société : la liste des termes débloqués.
+ *
+ * Une liste et non un ajout/retrait : l'écran montre des interrupteurs, et
+ * envoyer l'état complet évite qu'un double clic laisse la fiche et la base en
+ * désaccord.
+ */
+export const grantTermsPayloadSchema = z.object({
+  grantedTerms: z.array(deferredTermSchema),
+});
+export type GrantTermsPayload = z.infer<typeof grantTermsPayloadSchema>;
 
 /**
  * Le nom sous lequel une société **se reconnaît** : son enseigne, et à défaut sa

@@ -4,7 +4,6 @@ import { PrismaService } from "../../infra/database/prisma.service.js";
 import {
   OrderGuardReader,
   type OrderCompanyStatus,
-  type OrderPaymentTerm,
   type OrderRole,
 } from "../domain/ports/order-guard.reader.js";
 
@@ -31,11 +30,12 @@ export class PrismaOrderGuardReader extends OrderGuardReader {
     return company?.status ?? null;
   }
 
-  async paymentTermOf(companyId: string): Promise<OrderPaymentTerm | null> {
+  async settlesOnAccount(companyId: string): Promise<boolean> {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
-      select: { paymentTerm: true },
+      select: { grantedTerms: true },
     });
-    return company?.paymentTerm ?? null;
+    // Aucun crédit accordé — ou société inconnue : on encaisse tout de suite.
+    return (company?.grantedTerms.length ?? 0) > 0;
   }
 }

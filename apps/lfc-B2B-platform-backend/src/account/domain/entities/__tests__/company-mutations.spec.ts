@@ -23,8 +23,8 @@ function reconstituted(): Company {
     siret: "81245678900021",
     tvaIntracom: "FR12345678901",
     contact: ContactDetails.create(CONTACT),
-    paymentTerm: "per_order",
-    requestedPaymentTerm: null,
+    grantedTerms: [],
+    requestedTerm: null,
     status: "pending",
     activatedAt: null,
     nafCode: "",
@@ -79,7 +79,7 @@ describe("Company — reconstitution + mutations souples", () => {
     });
   });
 
-  it("une société déclarée n'a pas encore d'id (l'attribuera la base) et sort en per_order", () => {
+  it("une société déclarée n'a pas encore d'id (l'attribuera la base) ni aucun crédit", () => {
     const company = Company.declare(
       {
         raisonSociale: "Neuve",
@@ -91,40 +91,78 @@ describe("Company — reconstitution + mutations souples", () => {
       ContactDetails.create(CONTACT),
     );
     expect(company.id).toBeNull();
-    expect(company.paymentTerm).toBe("per_order");
-    expect(company.requestedPaymentTerm).toBeNull();
+    // Aucun crédit accordé : elle paie à la commande, comme tout le monde.
+    expect(company.grantedTerms).toEqual([]);
+    expect(company.settlesOnAccount()).toBe(false);
+    expect(company.requestedTerm).toBeNull();
   });
 });
 
-describe("Company — termes de règlement", () => {
-  it("le client demande un terme différent du convenu → demande en attente", () => {
-    const company = reconstituted(); // convenu = per_order
-    company.requestPaymentTerm("net60");
-    expect(company.requestedPaymentTerm).toBe("net60");
-    expect(company.paymentTerm).toBe("per_order"); // le client ne convient jamais
+describe("Company — crédits de règlement", () => {
+  it("le client DEMANDE un crédit, il ne se l'accorde pas", () => {
+    const company = reconstituted(); // aucun crédit accordé
+
+    company.requestTerm("net60");
+
+    expect(company.requestedTerm).toBe("net60");
+    expect(company.grantedTerms).toEqual([]);
   });
 
-  it("demander le terme déjà convenu retire la demande (rien en attente)", () => {
+  it("demander un crédit DÉJÀ accordé retire la demande (rien en attente)", () => {
     const company = reconstituted();
-    company.requestPaymentTerm("net60");
-    company.requestPaymentTerm("per_order"); // = le convenu
-    expect(company.requestedPaymentTerm).toBeNull();
+    company.grantTerms(["net60"]);
+
+    company.requestTerm("net60");
+
+    expect(company.requestedTerm).toBeNull();
   });
 
   it("`null` retire explicitement la demande en cours", () => {
     const company = reconstituted();
-    company.requestPaymentTerm("net90");
-    company.requestPaymentTerm(null);
-    expect(company.requestedPaymentTerm).toBeNull();
+    company.requestTerm("net90");
+
+    company.requestTerm(null);
+
+    expect(company.requestedTerm).toBeNull();
   });
 
-  it("le staff convient un terme : il s'applique ET solde la demande", () => {
+  it("les crédits sont CUMULATIFS, et payer à la commande reste possible", () => {
+    // C'est tout l'intérêt : accorder le mensuel ajoute une possibilité, il
+    // n'en retire aucune.
     const company = reconstituted();
-    company.requestPaymentTerm("net60");
-    company.agreePaymentTerm("net60");
+
+    company.grantTerms(["monthly", "net60"]);
+
+    expect(company.grantedTerms).toEqual(["monthly", "net60"]);
+    expect(company.settlesOnAccount()).toBe(true);
+  });
+
+  it("accorder solde la demande en cours", () => {
+    const company = reconstituted();
+    company.requestTerm("net60");
+
+    company.grantTerms(["net60"]);
+
     const state = company.toPersistence();
-    expect(state.paymentTerm).toBe("net60");
-    expect(state.requestedPaymentTerm).toBeNull();
+    expect(state.grantedTerms).toEqual(["net60"]);
+    expect(state.requestedTerm).toBeNull();
+  });
+
+  it("n'accorde jamais deux fois le même crédit", () => {
+    const company = reconstituted();
+
+    company.grantTerms(["monthly", "monthly"]);
+
+    expect(company.grantedTerms).toEqual(["monthly"]);
+  });
+
+  it("retirer tous les crédits ramène au paiement à la commande", () => {
+    const company = reconstituted();
+    company.grantTerms(["monthly"]);
+
+    company.grantTerms([]);
+
+    expect(company.settlesOnAccount()).toBe(false);
   });
 });
 
@@ -138,8 +176,8 @@ describe("Company — activation", () => {
       siret: "81245678900021",
       tvaIntracom: "",
       contact: ContactDetails.create(CONTACT),
-      paymentTerm: "per_order",
-      requestedPaymentTerm: null,
+      grantedTerms: [],
+      requestedTerm: null,
       status,
       activatedAt: null,
       nafCode: "",

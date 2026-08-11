@@ -8,8 +8,8 @@ import {
   deliveryAddressPayloadSchema,
   type UpdateIdentityPayload,
   updateIdentityPayloadSchema,
-  type UpdatePaymentTermPayload,
-  updatePaymentTermPayloadSchema,
+  type GrantTermsPayload,
+  grantTermsPayloadSchema,
 } from "@lfd/contracts";
 import {
   Body,
@@ -35,7 +35,7 @@ import { ActivateCompanyByStaffCommand } from "../application/commands/activate-
 import {
   AddDeliveryAddressByStaffCommand,
   SaveBillingAddressByStaffCommand,
-  SetAgreedPaymentTermCommand,
+  GrantTermsCommand,
   UpdateIdentityByStaffCommand,
   UploadKbisByStaffCommand,
 } from "../application/commands/admin-company-commands.js";
@@ -96,18 +96,22 @@ export class AdminCompanyPiecesController {
   }
 
   /**
-   * Fixe la condition de règlement **convenue** (staff-only). Contrairement au
-   * client — qui ne peut que *demander* (`requested_payment_term`) — le staff
-   * écrit le terme réel et solde la demande.
+   * **Accorde** les crédits de règlement (staff-only) : payer à la commande
+   * reste toujours possible, ceci s'y ajoute.
+   *
+   * Le client, lui, ne peut que *demander* — accorder un délai est un acte
+   * commercial. On reçoit l'ensemble complet plutôt qu'un ajout : l'écran
+   * montre des interrupteurs, et deux clics rapides ne doivent pas laisser la
+   * fiche et la base en désaccord.
    */
-  @Patch(":companyId/payment-term")
+  @Patch(":companyId/granted-terms")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async setPaymentTerm(
+  async grantTerms(
     @Param("companyId") companyId: string,
-    @Body(new ZodBody(updatePaymentTermPayloadSchema)) payload: UpdatePaymentTermPayload,
+    @Body(new ZodBody(grantTermsPayloadSchema)) payload: GrantTermsPayload,
   ): Promise<void> {
-    await this.commands.execute<SetAgreedPaymentTermCommand, void>(
-      new SetAgreedPaymentTermCommand(companyId, payload.paymentTerm),
+    await this.commands.execute<GrantTermsCommand, void>(
+      new GrantTermsCommand(companyId, payload.grantedTerms),
     );
   }
 

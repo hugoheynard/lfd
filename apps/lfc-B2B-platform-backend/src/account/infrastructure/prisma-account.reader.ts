@@ -62,8 +62,8 @@ export class PrismaAccountReader extends AccountReader {
                 siret: true,
                 tvaIntracom: true,
                 status: true,
-                paymentTerm: true,
-                requestedPaymentTerm: true,
+                grantedTerms: true,
+                requestedTerm: true,
                 kbisFileName: true,
                 kbisUploadedAt: true,
                 kbisCertifiedAt: true,
@@ -105,8 +105,8 @@ export class PrismaAccountReader extends AccountReader {
       tvaIntracom: company.tvaIntracom,
       vatNumberRequired: requiresVatNumber(company.formeJuridique),
       status: company.status,
-      paymentTerm: company.paymentTerm,
-      requestedPaymentTerm: company.requestedPaymentTerm,
+      grantedTerms: company.grantedTerms,
+      requestedTerm: company.requestedTerm,
       role,
       // Le contact principal EST le détenteur : son rôle n'est pas choisi, il
       // est constaté — d'où `null` ici plutôt qu'une valeur à maintenir.

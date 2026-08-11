@@ -19,8 +19,8 @@ const detail: AdminCompanyDetailView = {
   siret: "12345678901234",
   tvaIntracom: "",
   status: "pending",
-  paymentTerm: "per_order",
-  requestedPaymentTerm: null,
+  grantedTerms: [],
+  requestedTerm: null,
   primaryContact: {
     id: null,
     firstName: "Léa",

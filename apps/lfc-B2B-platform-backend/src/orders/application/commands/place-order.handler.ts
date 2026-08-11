@@ -151,9 +151,11 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
   }
 
   /**
-   * Une carte est requise sauf pour une entreprise **active** à terme **différé**
-   * (net/mensuel), facturée hors ligne. Sans entreprise, ou entreprise non active /
-   * `per_order` → carte.
+   * Une carte est requise, sauf pour une entreprise **active** à qui un crédit a
+   * été accordé — sa commande part alors au compte, facturée au terme.
+   *
+   * Sans entreprise, ou entreprise non activée : carte. Le crédit se négocie
+   * avec une société cliente, pas avec un panier.
    */
   private async requiresCard(companyId: string | null): Promise<boolean> {
     if (companyId === null) {
@@ -163,8 +165,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     if (status !== "active") {
       return true;
     }
-    const term = await this.guard.paymentTermOf(companyId);
-    return term === null || term === "per_order";
+    return !(await this.guard.settlesOnAccount(companyId));
   }
 
   /**

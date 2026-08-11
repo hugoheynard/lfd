@@ -28,11 +28,20 @@ export type {
 } from "./address.js";
 export {
   companyDisplayName,
-  paymentTermSchema,
+  deferredTermSchema,
+  settlementSchema,
+  grantTermsPayloadSchema,
+  DEFERRED_TERM_LABELS,
   updateIdentityPayloadSchema,
   updatePaymentTermPayloadSchema,
 } from "./company.js";
-export type { PaymentTerm, UpdateIdentityPayload, UpdatePaymentTermPayload } from "./company.js";
+export type {
+  DeferredTerm,
+  Settlement,
+  GrantTermsPayload,
+  UpdateIdentityPayload,
+  UpdatePaymentTermPayload,
+} from "./company.js";
 export {
   companyMemberRoleSchema,
   assignableRoleSchema,

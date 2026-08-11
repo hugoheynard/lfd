@@ -4,9 +4,6 @@ export type OrderRole = "owner" | "admin" | "orders" | "billing";
 /** Cycle de vie de l'entreprise (miroir de `CompanyStatus` Prisma). */
 export type OrderCompanyStatus = "pending" | "active" | "suspended" | "terminated";
 
-/** Terme de règlement convenu (miroir de `PaymentTerm` Prisma). */
-export type OrderPaymentTerm = "per_order" | "monthly" | "net60" | "net90";
-
 /**
  * Port de **lecture** des garde-fous d'une commande : le rôle du demandeur dans
  * l'entreprise (mur de tenancy), le statut d'activation (droit de commander) et le
@@ -21,9 +18,11 @@ export abstract class OrderGuardReader {
   abstract companyStatusOf(companyId: string): Promise<OrderCompanyStatus | null>;
 
   /**
-   * Terme de règlement convenu de l'entreprise, ou `null` si elle n'existe pas.
-   * `per_order` ⇒ carte exigée au checkout ; les termes différés ⇒ facturé hors
-   * ligne (`not_required`).
+   * Cette société règle-t-elle **au compte** ? (Faux si elle n'existe pas.)
+   *
+   * Vrai dès qu'un crédit lui est accordé : c'est alors le régime négocié, donc
+   * le défaut. Payer à la commande reste possible — mais c'est le client qui le
+   * demande, commande par commande, et ça ne se lit pas ici.
    */
-  abstract paymentTermOf(companyId: string): Promise<OrderPaymentTerm | null>;
+  abstract settlesOnAccount(companyId: string): Promise<boolean>;
 }

@@ -44,10 +44,12 @@ datasource db {
 // Énumérations
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Conditions de paiement accordées au client (échéance de règlement).
-/// Valeurs alignées sur le front (`PaymentTerm` dans profil.model.ts).
-enum PaymentTerm {
-  per_order
+/// Les crédits qu'on ACCORDE : régler plus tard, et sous quel délai.
+///
+/// Payer à la commande n'y figure pas — ce n'est pas un terme, c'est l'absence
+/// de crédit, et c'est offert à tout le monde. Les mettre dans la même
+/// énumération faisait du déblocage un remplacement.
+enum DeferredTerm {
   monthly
   net60
   net90
@@ -216,13 +218,13 @@ model Company {
   // Facturation (un seul champ pour l'instant → sur Company ; extraire un
   // BillingProfile le jour où ça grossit : plafond crédit, email de facturation…).
   //
-  // `paymentTerm` = le terme **convenu** (celui qui s'applique). Écrit
-  // **uniquement par le staff** : le client ne le mute jamais en direct. Une
-  // évolution souhaitée par le client atterrit dans `requestedPaymentTerm` (une
-  // demande, promue plus tard par le commercial), `null` = aucune demande en
-  // cours. Deux colonnes pour ne pas confondre « souhaité » et « convenu ».
-  paymentTerm          PaymentTerm  @default(per_order) @map("payment_term")
-  requestedPaymentTerm PaymentTerm? @map("requested_payment_term")
+  // `grantedTerms` = les crédits ACCORDÉS, cumulatifs et possiblement vides.
+  // Vide = la société paie à la commande, ce que tout le monde peut faire de
+  // toute façon. Écrit **uniquement par le staff** : le client ne s'accorde pas
+  // un délai de règlement. Sa demande atterrit dans `requestedTerm` (`null` =
+  // aucune), pour ne pas confondre « souhaité » et « accordé ».
+  grantedTerms  DeferredTerm[] @map("granted_terms")
+  requestedTerm DeferredTerm?  @map("requested_term")
 
   // Défaut `pending` : une société n'est jamais cliente parce qu'elle a été
   // saisie — elle le devient par une activation commerciale explicite.

@@ -1,14 +1,16 @@
+import type { DeferredTerm } from "@lfd/contracts";
 import type { CompanyRole } from "../value-objects/company-role.js";
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import type { NavPreferences } from "../value-objects/nav-preferences.js";
 
 /**
- * Condition de règlement (miroir de l'enum Prisma `PaymentTerm`). C'est un
+ * Les crédits **accordés** (miroir de l'enum Prisma `DeferredTerm`). C'est un
  * réglage **toujours présent** de l'entreprise — jamais absent —, défaut « à la
  * commande » (`per_order`). Le terme **convenu** n'est écrit que par le staff ;
  * le client exprime un souhait via une **demande** (cf. `requestedPaymentTerm`).
  */
-export type PaymentTerm = "per_order" | "monthly" | "net60" | "net90";
+// Le type vit dans les contrats : les deux frontends le lisent aussi.
+export type { DeferredTerm } from "@lfd/contracts";
 
 /** Le profil de la personne, tel que l'écran « Mon profil » l'affiche. */
 export interface ProfileView {
@@ -64,9 +66,9 @@ export interface CompanyView {
   readonly vatNumberRequired: boolean;
   readonly status: CompanyStatus;
   /** Condition de règlement **convenue**, toujours présente (défaut « à la commande »). */
-  readonly paymentTerm: PaymentTerm;
+  readonly grantedTerms: readonly DeferredTerm[];
   /** Terme **demandé** par le client, en attente de validation staff ; `null` = aucune demande. */
-  readonly requestedPaymentTerm: PaymentTerm | null;
+  readonly requestedTerm: DeferredTerm | null;
   /** Rôle de la personne dans CETTE société. */
   readonly role: CompanyRole;
   /** Contact **principal** (carte « Admin du compte entreprise »), toujours présent. */

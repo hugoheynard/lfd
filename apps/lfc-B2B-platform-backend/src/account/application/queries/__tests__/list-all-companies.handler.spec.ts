@@ -13,7 +13,7 @@ const view: AdminCompanyView = {
   siret: "12345678901234",
   tvaIntracom: "FR12345678901",
   status: "pending",
-  paymentTerm: "per_order",
+  grantedTerms: [],
   requestedPaymentTerm: "monthly",
   primaryContact: {
     id: null,

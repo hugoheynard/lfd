@@ -20,7 +20,6 @@ import {
 import {
   OrderGuardReader,
   type OrderCompanyStatus,
-  type OrderPaymentTerm,
   type OrderRole,
 } from "../../../domain/ports/order-guard.reader.js";
 import type { OrderToPlace } from "../../../domain/entities/order.js";
@@ -40,19 +39,19 @@ const CATALOG: Record<string, CatalogItem> = {
 };
 
 /**
- * Garde doublée. Le terme par défaut est **différé** (`net60`) : la plupart des
+ * Garde doublée. Le règlement **au compte** est le défaut : la plupart des
  * tests de prix visent une entreprise active, ce qui évite une intention Stripe.
- * Les tests de paiement forcent `per_order` ou un statut non actif.
+ * Les tests de paiement forcent l'absence de crédit, ou un statut non actif.
  */
 function guard(
   role: OrderRole | null,
   status: OrderCompanyStatus | null,
-  term: OrderPaymentTerm | null = "net60",
+  onAccount = true,
 ): OrderGuardReader {
   return {
     roleOf: () => Promise.resolve(role),
     companyStatusOf: () => Promise.resolve(status),
-    paymentTermOf: () => Promise.resolve(term),
+    settlesOnAccount: () => Promise.resolve(onAccount),
   };
 }
 
@@ -239,7 +238,7 @@ describe("PlaceOrderHandler", () => {
   it("résout les prix au SERVEUR — le prix du client est ignoré", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", "net60"),
+      guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(LABO_POINT),
@@ -272,7 +271,7 @@ describe("PlaceOrderHandler", () => {
   it("fusionne les lignes en double par SKU", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", "net60"),
+      guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(LABO_POINT),
@@ -305,7 +304,7 @@ describe("PlaceOrderHandler", () => {
   it("refuse un SKU inconnu du catalogue (400), sans rien écrire", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", "net60"),
+      guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(LABO_POINT),
@@ -328,7 +327,7 @@ describe("PlaceOrderHandler", () => {
   it("en RETRAIT, fige l'adresse du point et n'attache ni zone ni adresse de livraison", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", "net60"),
+      guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(LABO_POINT),
@@ -348,7 +347,7 @@ describe("PlaceOrderHandler", () => {
   it("refuse le RETRAIT quand aucun point de retrait n'est configuré (409)", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", "net60"),
+      guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(null),
@@ -367,7 +366,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const point: PickupAddressView = { ...LABO_POINT, discount: { mode: "percent", bp: 2000 } };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", "net60"),
+      guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(point),
@@ -394,7 +393,7 @@ describe("PlaceOrderHandler", () => {
       fee: { mode: "amount", cents: 2000 },
     };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", "net60"),
+      guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(),
@@ -429,7 +428,7 @@ describe("PlaceOrderHandler", () => {
   it("refuse le COURSIER vers une zone inconnue (400), sans rien écrire", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", "net60"),
+      guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(),
@@ -458,7 +457,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", "per_order"),
+      guard("member", "active", false),
       catalog,
       capturingRepo(sink),
       pickups(LABO_POINT),
@@ -483,7 +482,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", "net60"),
+      guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(LABO_POINT),
@@ -504,7 +503,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "pending", "net60"),
+      guard("member", "pending"),
       catalog,
       capturingRepo(sink),
       pickups(LABO_POINT),

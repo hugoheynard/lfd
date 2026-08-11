@@ -1,4 +1,4 @@
-import type { PaymentTerm, UpdateIdentityPayload } from "@lfd/contracts";
+import type { DeferredTerm, UpdateIdentityPayload } from "@lfd/contracts";
 
 /**
  * Réglages d'entreprise éditables pendant l'onboarding. `actorUserId` accompagne
@@ -23,6 +23,6 @@ export class RequestPaymentTermCommand {
   constructor(
     readonly actorUserId: string,
     readonly companyId: string,
-    readonly paymentTerm: PaymentTerm,
+    readonly term: DeferredTerm,
   ) {}
 }
