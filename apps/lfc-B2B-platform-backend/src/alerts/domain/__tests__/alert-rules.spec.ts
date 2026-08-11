@@ -19,6 +19,7 @@ describe("resolveGlobalRules", () => {
       kind: "product.first_order",
       ...ALERT_KINDS["product.first_order"].defaults,
       updatedAt: null,
+      updatedBy: null,
       degraded: false,
     });
   });
@@ -27,6 +28,7 @@ describe("resolveGlobalRules", () => {
     const stored: StoredAlertRule = {
       kind: "product.quantity_drift",
       readable: true,
+      updatedBy: "staff|hugo",
       enabled: false,
       params: {
         kind: "product.quantity_drift",
@@ -49,6 +51,7 @@ describe("resolveGlobalRules", () => {
       params: stored.readable ? stored.params : null,
       delivery: stored.readable ? stored.delivery : null,
       updatedAt: AT.toISOString(),
+      updatedBy: "staff|hugo",
       degraded: false,
     });
   });
@@ -57,6 +60,7 @@ describe("resolveGlobalRules", () => {
     const stored: StoredAlertRule = {
       kind: "product.quantity_drift",
       readable: true,
+      updatedBy: null,
       enabled: true,
       params: ALERT_KINDS["product.quantity_drift"].defaults.params,
       delivery: ALERT_KINDS["product.quantity_drift"].defaults.delivery,
@@ -78,6 +82,7 @@ describe("règle illisible", () => {
     kind: "product.quantity_drift",
     readable: false,
     updatedAt: AT,
+    updatedBy: null,
   };
 
   it("l'avoue au lieu de faire comme si de rien n'était", () => {

@@ -5,5 +5,7 @@ export class SaveAccountAlertOverrideCommand {
   constructor(
     readonly companyId: string,
     readonly override: AccountAlertOverride,
+    /** Le `sub` du staff qui déroge — « qui a coupé les alertes ici ? ». */
+    readonly staffSub: string,
   ) {}
 }

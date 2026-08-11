@@ -94,3 +94,19 @@
   gap: var(--fold-space-sm);
   margin-top: var(--fold-space-lg);
 }
+
+.ac-origin {
+  margin: var(--fold-space-sm) 0 0;
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+/* Une dérogation qui a raté une évolution de la plateforme : ça se voit. */
+.ac-moved {
+  margin: var(--fold-space-sm) 0 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--fold-color-warning, #d97706);
+  border-radius: var(--fold-radius-sm);
+  font-size: var(--fold-text-sm);
+}

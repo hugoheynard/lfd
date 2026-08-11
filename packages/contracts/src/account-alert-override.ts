@@ -48,6 +48,8 @@ export interface AccountAlertRuleView {
   readonly globalUpdatedAt: string | null;
   /** Dernière écriture de la **dérogation** (ISO), ou `null` s'il n'y en a pas. */
   readonly overrideUpdatedAt: string | null;
+  /** Qui a posé cette dérogation (`sub` staff), ou `null`. */
+  readonly overrideUpdatedBy: string | null;
   /**
    * Le global a bougé **après** la dérogation. C'est le prix du tout-ou-rien :
    * un compte dérogé ne suit plus les évolutions de la plateforme, et sans ce

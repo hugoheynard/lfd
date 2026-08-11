@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import {
   FoldButtonComponent,
@@ -36,6 +37,7 @@ type AccountRuleState = 'inherited' | 'off' | 'custom';
   selector: 'app-account-alert-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DatePipe,
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldCheckboxComponent,
@@ -92,13 +94,38 @@ export class AccountAlertCard {
   protected readonly enabledHere = computed(() => this.rule().effective.enabled);
 
   /**
+   * La provenance d'une dérogation : quand, et par qui.
+   *
+   * « Qui a coupé les alertes sur ce compte » est LA question qu'on posera dans
+   * six mois. Sans cette ligne, la réponse n'existe nulle part.
+   */
+  protected readonly overrideOrigin = computed<string | null>(() => {
+    const view = this.rule();
+    if (view.overrideUpdatedAt === null) {
+      return null;
+    }
+    const when = new Date(view.overrideUpdatedAt).toLocaleDateString('fr-FR');
+    return view.overrideUpdatedBy === null
+      ? `Posée le ${when}`
+      : `Posée le ${when} par ${view.overrideUpdatedBy}`;
+  });
+
+  /**
    * Ce que l'éditeur ouvre : **l'effectif**, pas le global. Modifier une règle
    * déjà dérogée doit repartir de ce que le compte applique, sinon le premier
    * clic écraserait silencieusement le réglage propre au compte.
    */
   protected readonly editable = computed<AlertRuleView>(() => {
     const view = this.rule();
-    return { kind: view.kind, ...view.effective, updatedAt: null, degraded: view.degraded };
+    return {
+      kind: view.kind,
+      ...view.effective,
+      // L'éditeur ne montre ni date ni auteur : la carte les porte déjà, et les
+      // répéter dans le formulaire laisserait croire qu'ils s'éditent.
+      updatedAt: null,
+      updatedBy: null,
+      degraded: view.degraded,
+    };
   });
 
   protected startEditing(): void {

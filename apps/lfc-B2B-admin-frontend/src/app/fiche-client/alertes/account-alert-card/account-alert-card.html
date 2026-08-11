@@ -34,6 +34,20 @@
     }
   </p>
 
+  @if (overrideOrigin(); as origin) {
+    <p class="ac-origin">{{ origin }}</p>
+  }
+
+  <!-- Le prix du tout-ou-rien : un compte dérogé ne suit plus les évolutions de
+       la plateforme, et rien d'autre ne le dirait — on ne remarque pas une
+       alerte qui n'arrive pas. -->
+  @if (rule().globalMovedSince) {
+    <p class="ac-moved">
+      ⚠️ Le réglage de la plateforme a changé <strong>après</strong> cette dérogation. Ce compte
+      n'en a pas bénéficié.
+    </p>
+  }
+
   <!-- Ce que le compte applique et ce que dit la plateforme, résumés dans le
        MÊME format, l'un sous l'autre : deux textes comparables se lisent d'un
        coup d'œil, deux formats différents ne se comparent pas. Le rappel du
@@ -68,6 +82,11 @@
       </ul>
       @if (!rule().global.enabled) {
         <p class="ac-note">Cette règle est éteinte pour toute la plateforme.</p>
+      }
+      @if (rule().globalUpdatedAt; as at) {
+        <p class="ac-note">Réglée le {{ at | date: 'dd/MM/yyyy' }}.</p>
+      } @else {
+        <p class="ac-note">Jamais réglée — valeurs livrées par défaut.</p>
       }
     </section>
   </div>

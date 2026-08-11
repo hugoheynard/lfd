@@ -17,8 +17,18 @@ import {
  * silencieusement sous surveillance.
  */
 export type StoredOverride =
-  | { readonly readable: true; readonly override: AccountAlertOverride; readonly updatedAt: Date }
-  | { readonly readable: false; readonly kind: AlertKind; readonly updatedAt: Date };
+  | {
+      readonly readable: true;
+      readonly override: AccountAlertOverride;
+      readonly updatedAt: Date;
+      readonly updatedBy: string | null;
+    }
+  | {
+      readonly readable: false;
+      readonly kind: AlertKind;
+      readonly updatedAt: Date;
+      readonly updatedBy: string | null;
+    };
 
 /**
  * Les règles **vues depuis un compte** : pour chaque type, ce que dit le global,
@@ -53,6 +63,7 @@ function toAccountView(
     effective: effectiveAlertRule(global, override),
     globalUpdatedAt: view.updatedAt,
     overrideUpdatedAt: stored?.updatedAt.toISOString() ?? null,
+    overrideUpdatedBy: stored?.updatedBy ?? null,
     // Le prix du tout-ou-rien : un compte dérogé ne suit plus les évolutions de
     // la plateforme. Sans ce drapeau, personne ne s'en apercevrait avant des
     // mois — on ne remarque pas une alerte qui n'arrive pas.

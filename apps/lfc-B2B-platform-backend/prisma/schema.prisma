@@ -1221,6 +1221,9 @@ model AlertRuleSetting {
   delivery Json
 
   updatedAt DateTime @updatedAt @map("updated_at")
+  /// Le `sub` du staff qui a écrit ce réglage. Un identifiant, pas un nom : il
+  /// reste résolvable après un changement de nom.
+  updatedBy String? @map("updated_by")
 
   @@map("alert_rule_settings")
   @@schema("public")
@@ -1248,6 +1251,9 @@ model AccountAlertOverride {
   delivery Json?
 
   updatedAt DateTime @updatedAt @map("updated_at")
+  /// Le `sub` du staff qui a posé cette dérogation — « qui a coupé les alertes
+  /// sur ce compte » doit rester répondable dans six mois.
+  updatedBy String? @map("updated_by")
 
   @@id([companyId, kind])
   @@index([companyId])

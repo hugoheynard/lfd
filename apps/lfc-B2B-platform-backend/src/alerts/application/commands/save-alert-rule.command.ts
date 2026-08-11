@@ -6,5 +6,9 @@ import type { AlertRule } from "@lfd/contracts";
  * déjà dans `rule`, et deux copies finiraient par diverger.
  */
 export class SaveAlertRuleCommand {
-  constructor(readonly rule: AlertRule) {}
+  constructor(
+    readonly rule: AlertRule,
+    /** Le `sub` du staff qui écrit — figé pour que la trace reste répondable. */
+    readonly staffSub: string,
+  ) {}
 }

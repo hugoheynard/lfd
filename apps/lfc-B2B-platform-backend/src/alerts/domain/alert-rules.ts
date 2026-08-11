@@ -25,11 +25,13 @@ export type StoredAlertRule =
       readonly params: AlertParams;
       readonly delivery: AlertDelivery;
       readonly updatedAt: Date;
+      readonly updatedBy: string | null;
     }
   | {
       readonly kind: AlertKind;
       readonly readable: false;
       readonly updatedAt: Date;
+      readonly updatedBy: string | null;
     };
 
 /**
@@ -51,13 +53,20 @@ export function resolveGlobalRules(stored: readonly StoredAlertRule[]): AlertRul
 
 function toView(kind: AlertKind, row: StoredAlertRule | undefined): AlertRuleView {
   if (row === undefined) {
-    return { kind, ...ALERT_KINDS[kind].defaults, updatedAt: null, degraded: false };
+    return {
+      kind,
+      ...ALERT_KINDS[kind].defaults,
+      updatedAt: null,
+      updatedBy: null,
+      degraded: false,
+    };
   }
   if (!row.readable) {
     return {
       kind,
       ...silenced(ALERT_KINDS[kind].defaults),
       updatedAt: row.updatedAt.toISOString(),
+      updatedBy: row.updatedBy,
       degraded: true,
     };
   }
@@ -67,6 +76,7 @@ function toView(kind: AlertKind, row: StoredAlertRule | undefined): AlertRuleVie
     params: row.params,
     delivery: row.delivery,
     updatedAt: row.updatedAt.toISOString(),
+    updatedBy: row.updatedBy,
     degraded: false,
   };
 }

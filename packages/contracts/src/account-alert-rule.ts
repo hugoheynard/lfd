@@ -163,6 +163,12 @@ export interface AlertRuleView extends AlertRule {
   /** ISO, ou `null` tant que le réglage est celui livré par défaut. */
   readonly updatedAt: string | null;
   /**
+   * Le `sub` du staff qui a écrit ce réglage, ou `null` — jamais touché, ou
+   * écrit avant qu'on sache le dire. Un identifiant, pas un nom : il reste
+   * résolvable après un changement de nom.
+   */
+  readonly updatedBy: string | null;
+  /**
    * Le réglage stocké était illisible (type retiré, forme changée) : ce qui est
    * rendu ici, ce sont les **défauts**. L'écran doit le dire — la première
    * version avalait le cas, et un réglage client volontairement coupé pouvait

@@ -13,6 +13,6 @@ export class SaveAlertRuleHandler implements ICommandHandler<SaveAlertRuleComman
   constructor(private readonly store: AlertRulesStore) {}
 
   async execute(command: SaveAlertRuleCommand): Promise<void> {
-    await this.store.save(command.rule.params.kind, command.rule);
+    await this.store.save(command.rule.params.kind, command.rule, command.staffSub);
   }
 }

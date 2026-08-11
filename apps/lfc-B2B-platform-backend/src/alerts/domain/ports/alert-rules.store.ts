@@ -14,6 +14,9 @@ import type { StoredAlertRule } from "../alert-rules.js";
 export abstract class AlertRulesStore {
   abstract readAll(): Promise<StoredAlertRule[]>;
 
-  /** Écrit (ou remplace) le réglage d'un type. La clé est le type lui-même. */
-  abstract save(kind: AlertKind, rule: AlertRule): Promise<void>;
+  /**
+   * Écrit (ou remplace) le réglage d'un type, **attribué à son auteur**. La clé
+   * est le type lui-même.
+   */
+  abstract save(kind: AlertKind, rule: AlertRule, staffSub: string): Promise<void>;
 }

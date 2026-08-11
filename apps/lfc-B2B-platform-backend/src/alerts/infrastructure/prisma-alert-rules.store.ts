@@ -18,6 +18,7 @@ interface AlertRuleRow {
   readonly params: unknown;
   readonly delivery: unknown;
   readonly updatedAt: Date;
+  readonly updatedBy: string | null;
 }
 
 /**
@@ -52,11 +53,12 @@ export class PrismaAlertRulesStore extends AlertRulesStore {
     return parsed.filter(isKnown);
   }
 
-  async save(kind: AlertKind, rule: AlertRule): Promise<void> {
+  async save(kind: AlertKind, rule: AlertRule, staffSub: string): Promise<void> {
     const values = {
       enabled: rule.enabled,
       params: rule.params,
       delivery: rule.delivery,
+      updatedBy: staffSub,
     };
     await this.prisma.alertRuleSetting.upsert({
       where: { kind },
@@ -88,7 +90,12 @@ function toDomain(row: AlertRuleRow): StoredAlertRule | null {
   // Une ligne dont le `kind` interne aurait dérivé de sa clé est corrompue : la
   // clé fait foi, on refuse plutôt que de servir les réglages d'un autre type.
   if (!params.success || !delivery.success || params.data.kind !== kind.data) {
-    return { kind: kind.data, readable: false, updatedAt: row.updatedAt };
+    return {
+      kind: kind.data,
+      readable: false,
+      updatedAt: row.updatedAt,
+      updatedBy: row.updatedBy,
+    };
   }
   return {
     kind: kind.data,
@@ -97,5 +104,6 @@ function toDomain(row: AlertRuleRow): StoredAlertRule | null {
     params: params.data,
     delivery: delivery.data,
     updatedAt: row.updatedAt,
+    updatedBy: row.updatedBy,
   };
 }

@@ -32,7 +32,7 @@ const AT = new Date("2026-08-11T09:00:00.000Z");
 
 /** Une dérogation lisible, telle que le store la rend. */
 function stored(override: AccountAlertOverride, updatedAt = AT): StoredOverride {
-  return { readable: true, override, updatedAt };
+  return { readable: true, override, updatedAt, updatedBy: "staff|hugo" };
 }
 
 describe("resolveAccountRules", () => {
@@ -93,7 +93,12 @@ describe("dérogation illisible", () => {
    * réglage global ». On sait au moins qu'il avait refusé ce global.
    */
   it("se comporte comme un `off` et l'avoue", () => {
-    const broken: StoredOverride = { readable: false, kind: DRIFT, updatedAt: AT };
+    const broken: StoredOverride = {
+      readable: false,
+      kind: DRIFT,
+      updatedAt: AT,
+      updatedBy: null,
+    };
 
     const drift = resolveAccountRules(GLOBALS, [broken]).find((row) => row.kind === DRIFT);
 
@@ -131,5 +136,21 @@ describe("dérive du réglage global", () => {
     );
 
     expect(drift?.globalMovedSince).toBe(false);
+  });
+});
+
+describe("l'auteur d'une dérogation", () => {
+  it("voyage avec elle — « qui a coupé les alertes ici ? » doit rester répondable", () => {
+    const drift = resolveAccountRules(GLOBALS, [stored(OWN_RULE)]).find(
+      (row) => row.kind === DRIFT,
+    );
+
+    expect(drift?.overrideUpdatedBy).toBe("staff|hugo");
+  });
+
+  it("reste null quand le compte suit le réglage global", () => {
+    const [first] = resolveAccountRules(GLOBALS, []);
+
+    expect(first.overrideUpdatedBy).toBeNull();
   });
 });

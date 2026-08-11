@@ -4,6 +4,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
+import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { AcknowledgeAlertCommand } from "../application/commands/acknowledge-alert.command.js";
 import { ListAccountAlertsQuery } from "../application/queries/list-account-alerts.query.js";
 
@@ -11,10 +12,9 @@ import { ListAccountAlertsQuery } from "../application/queries/list-account-aler
  * Le **journal d'alertes** d'un compte (fiche client, onglet Alertes) et son
  * acquittement.
  *
- * ⚠️ L'acquitteur est pour l'instant une constante : le login staff n'est pas
- * encore branché sur Auth0, donc aucun `sub` réel ne traverse la requête. Écrire
- * un identifiant honnêtement faux vaut mieux que d'en inventer un vrai — il sera
- * remplacé quand la porte staff existera (cf. TODO staff #150).
+ * L'acquitteur est le `sub` posé par l'`AdminAuthGuard` — un identifiant, pas un
+ * nom, pour que « qui a vu cette alerte » reste répondable après un changement
+ * de nom ou de rôle.
  */
 @Controller("admin")
 @Public()
@@ -34,12 +34,12 @@ export class AdminAccountAlertsController {
 
   @Post("alerts/:alertId/acknowledge")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async acknowledge(@Param("alertId") alertId: string): Promise<void> {
+  async acknowledge(
+    @Param("alertId") alertId: string,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
     await this.commands.execute<AcknowledgeAlertCommand, void>(
-      new AcknowledgeAlertCommand(alertId, UNRESOLVED_STAFF),
+      new AcknowledgeAlertCommand(alertId, staffSub),
     );
   }
 }
-
-/** Marqueur explicite tant que l'identité staff n'est pas disponible. */
-const UNRESOLVED_STAFF = "staff:unresolved";

@@ -20,6 +20,7 @@ interface OverrideRow {
   readonly params: unknown;
   readonly delivery: unknown;
   readonly updatedAt: Date;
+  readonly updatedBy: string | null;
 }
 
 /**
@@ -50,19 +51,26 @@ export class PrismaAccountAlertOverridesStore extends AccountAlertOverridesStore
     return parsed.filter(isKnown);
   }
 
-  async save(companyId: string, override: AccountAlertOverride): Promise<void> {
+  async save(companyId: string, override: AccountAlertOverride, staffSub: string): Promise<void> {
     // `Prisma.DbNull` et non `null` : sur une colonne Json nullable, `null` est
     // ambigu (le littéral JSON `null` ou l'absence de valeur ?), et Prisma refuse
     // de trancher à notre place. Ici c'est bien l'absence — une règle éteinte n'a
     // rien à régler.
     const values =
       override.mode === "off"
-        ? { mode: "off", enabled: null, params: Prisma.DbNull, delivery: Prisma.DbNull }
+        ? {
+            mode: "off",
+            enabled: null,
+            params: Prisma.DbNull,
+            delivery: Prisma.DbNull,
+            updatedBy: staffSub,
+          }
         : {
             mode: "custom",
             enabled: override.rule.enabled,
             params: override.rule.params,
             delivery: override.rule.delivery,
+            updatedBy: staffSub,
           };
     await this.prisma.accountAlertOverride.upsert({
       where: { companyId_kind: { companyId, kind: override.kind } },
@@ -92,15 +100,26 @@ function toDomain(row: OverrideRow): StoredOverride | null {
     return null;
   }
   if (row.mode === "off") {
-    return { readable: true, override: { kind: kind.data, mode: "off" }, updatedAt: row.updatedAt };
+    return {
+      readable: true,
+      override: { kind: kind.data, mode: "off" },
+      updatedAt: row.updatedAt,
+      updatedBy: row.updatedBy,
+    };
   }
   const params = alertParamsSchema.safeParse(row.params);
   const delivery = alertDeliverySchema.safeParse(row.delivery);
+  const unreadable = {
+    readable: false,
+    kind: kind.data,
+    updatedAt: row.updatedAt,
+    updatedBy: row.updatedBy,
+  } as const;
   if (row.mode !== "custom" || !params.success || !delivery.success) {
-    return { readable: false, kind: kind.data, updatedAt: row.updatedAt };
+    return unreadable;
   }
   if (params.data.kind !== kind.data) {
-    return { readable: false, kind: kind.data, updatedAt: row.updatedAt };
+    return unreadable;
   }
   return {
     readable: true,
@@ -110,5 +129,6 @@ function toDomain(row: OverrideRow): StoredOverride | null {
       rule: { enabled: row.enabled ?? true, params: params.data, delivery: delivery.data },
     },
     updatedAt: row.updatedAt,
+    updatedBy: row.updatedBy,
   };
 }

@@ -4,6 +4,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
+import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { SaveAlertRuleCommand } from "../application/commands/save-alert-rule.command.js";
 import { ListAlertRulesQuery } from "../application/queries/list-alert-rules.query.js";
@@ -33,7 +34,12 @@ export class AdminAlertRulesController {
 
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async save(@Body(new ZodBody(alertRuleSchema)) rule: AlertRule): Promise<void> {
-    await this.commands.execute<SaveAlertRuleCommand, void>(new SaveAlertRuleCommand(rule));
+  async save(
+    @Body(new ZodBody(alertRuleSchema)) rule: AlertRule,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
+    await this.commands.execute<SaveAlertRuleCommand, void>(
+      new SaveAlertRuleCommand(rule, staffSub),
+    );
   }
 }
