@@ -164,13 +164,20 @@ export class GrantAccountAccess extends AccountAccessGranter {
   }
 
   /**
-   * Envoie, et rend si c'est parti. Ne relance **jamais** : l'accès est déjà
-   * acquis, et l'échec du canal est une information, pas une raison de défaire.
+   * Envoie, et rend si c'est **vraiment** parti. Ne relance jamais : l'accès est
+   * déjà acquis, et l'échec du canal est une information, pas une raison de
+   * défaire.
+   *
+   * Sans clé de fournisseur, le mailer tourne « à blanc » — il rend le gabarit,
+   * le journalise, et n'envoie rien. Il résout donc sans erreur, et répondre
+   * `true` ferait annoncer « lien envoyé » à un commercial dont le client
+   * n'attendra jamais rien. On le laisse rendre le gabarit (une erreur de
+   * gabarit doit se voir en local), et on dit la vérité sur l'envoi.
    */
   private async send(to: string, deliver: () => Promise<void>): Promise<boolean> {
     try {
       await deliver();
-      return true;
+      return this.mailer.enabled;
     } catch (error) {
       this.logger.error(`E-mail d'accès non envoyé à ${to}`, error);
       return false;

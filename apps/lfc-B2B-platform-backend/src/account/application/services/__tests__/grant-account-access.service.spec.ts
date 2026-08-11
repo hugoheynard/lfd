@@ -96,13 +96,18 @@ interface SentMail {
   readonly carriesPasswordLink: boolean;
 }
 
-/** Mailer doublé — capture les envois, ou refuse pour simuler un canal en panne. */
-function fakeMailer(failing = false): {
+/**
+ * Mailer doublé — capture les envois, refuse pour simuler un canal en panne, ou
+ * tourne **à blanc** (`enabled: false`) comme lorsqu'aucune clé n'est configurée.
+ */
+function fakeMailer(options: { readonly failing?: boolean; readonly enabled?: boolean } = {}): {
   readonly mailer: B2bMailer;
   readonly sent: SentMail[];
 } {
+  const { failing = false, enabled = true } = options;
   const sent: SentMail[] = [];
   const mailer: B2bMailer = {
+    enabled,
     send: (args): Promise<void> => {
       if (failing) {
         return Promise.reject(new Error("canal indisponible"));
@@ -259,11 +264,28 @@ describe("GrantAccountAccess — les refus", () => {
     // travail du commercial. On le signale, il renverra le lien — et ce renvoi
     // portera vraiment un lien.
     const members = new FakeMembers();
-    const { mailer } = fakeMailer(true);
+    const { mailer } = fakeMailer({ failing: true });
 
     const granted = await granter(members, mailer).service.grant(INPUT);
 
     expect(granted.mailSent).toBe(false);
     expect(members.attached).toHaveLength(1);
+  });
+});
+
+describe("GrantAccountAccess — un canal à blanc ne ment pas", () => {
+  it("ne dit PAS « envoyé » quand aucun fournisseur n'est branché", async () => {
+    // Sans clé, le mailer rend le gabarit, le journalise et n'envoie rien : il
+    // résout donc sans erreur. Répondre « envoyé » ferait attendre au client un
+    // e-mail que personne n'a posté.
+    const members = new FakeMembers();
+    const { mailer, sent } = fakeMailer({ enabled: false });
+
+    const granted = await granter(members, mailer).service.grant(INPUT);
+
+    expect(granted.mailSent).toBe(false);
+    // Le gabarit est quand même rendu : une erreur de gabarit doit se voir en
+    // local, pas le jour où la clé arrive.
+    expect(sent[0]?.template).toBe("customer.access-opened");
   });
 });

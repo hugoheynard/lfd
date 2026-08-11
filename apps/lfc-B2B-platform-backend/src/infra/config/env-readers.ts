@@ -148,8 +148,13 @@ export function optionalPort(name: string, fallback: number): number {
 }
 
 /**
- * Réglages e-mail. Aucune n'est obligatoire : sans `RESEND_API_KEY`, le mailer
- * part à blanc — on ne bloque pas un démarrage local pour un canal sortant.
+ * Réglages e-mail. Aucune n'est obligatoire : sans clé, le mailer part à blanc —
+ * on ne bloque pas un démarrage local pour un canal sortant.
+ *
+ * La clé se nomme `RESEND_MAILER_B2B_API_KEY` : le compte Resend sert plusieurs
+ * applications, et un nom générique laisserait croire qu'il n'y en a qu'une.
+ * `RESEND_API_KEY` reste accepté pour ne pas éteindre le canal d'un
+ * environnement déjà déployé le jour du renommage.
  *
  * L'adresse d'expédition, elle, a un **défaut** : un envoi sans expéditeur est
  * refusé par le fournisseur, et faire échouer le démarrage pour ça punirait le
@@ -157,7 +162,7 @@ export function optionalPort(name: string, fallback: number): number {
  */
 export function optionalMailerConfig(): MailerConfig {
   return {
-    apiKey: optionalString("RESEND_API_KEY"),
+    apiKey: optionalString("RESEND_MAILER_B2B_API_KEY") ?? optionalString("RESEND_API_KEY"),
     fromAddress: optionalString("MAILER_FROM_ADDRESS") ?? DEFAULT_FROM_ADDRESS,
     replyTo: optionalString("MAILER_REPLY_TO"),
     staffInbox: optionalString("MAILER_STAFF_INBOX"),
