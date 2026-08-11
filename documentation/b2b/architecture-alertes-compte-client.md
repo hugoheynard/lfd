@@ -1,0 +1,299 @@
+# Alertes de compte client
+
+**État : 📐 doc-first — rien n'est codé.**
+
+Ce que le commercial n'a aujourd'hui aucun moyen d'apprendre : qu'un client
+vient de commander un produit qu'il n'avait jamais pris, ou qu'il en a pris
+trois fois moins que d'habitude. L'information est dans les commandes ; personne
+ne la regarde, parce que la regarder suppose de comparer une commande à
+l'historique du compte — à la main, compte par compte.
+
+Une **alerte de compte client** est cette comparaison, automatisée : une règle
+paramétrée globalement, évaluée à chaque commande, dérogeable compte par compte.
+
+---
+
+## 1. Le vocabulaire
+
+| Terme                    | Ce que c'est                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------------- |
+| **Type d'alerte** (kind) | Un **détecteur** — du code. `product.first_order`, `product.quantity_drift`. Ouvert au code.   |
+| **Règle globale**        | Un type + ses paramètres + ses canaux, valables pour **tous** les comptes. Une ligne par type. |
+| **Dérogation de compte** | Ce qu'un compte fait de cette règle : l'ignorer, ou en porter une version à lui.               |
+| **Règle effective**      | `dérogation ?? règle globale`. C'est elle qu'on évalue, et elle seule.                         |
+| **Alerte** (déclenchée)  | Un fait daté : « le 11/08, sur la commande LFC-1042, 12 baguettes contre 4,3 en moyenne ».     |
+
+La distinction qui porte tout le modèle : un **type** est du code (un détecteur
+a besoin d'un algorithme), une **règle** est de la donnée (seuils, canaux, on/off).
+Ajouter un type de détection = ajouter un fichier détecteur, jamais une branche
+dans un `switch` (OCP). Ajouter un seuil = écrire une ligne.
+
+---
+
+## 2. Les deux types du premier lot
+
+### `product.first_order` — un produit jamais pris
+
+Une ligne de commande dont le SKU n'apparaît dans **aucune** commande antérieure
+du compte.
+
+| Paramètre           | Défaut | Pourquoi                                                                                                    |
+| ------------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
+| `minPreviousOrders` | `1`    | Sur la **toute première** commande d'un compte, _tout_ est nouveau : 20 lignes = 20 alertes, donc 0 signal. |
+
+### `product.quantity_drift` — un écart à sa propre moyenne
+
+La quantité d'un SKU s'écarte de plus de `thresholdPercent` de sa moyenne sur ce
+compte.
+
+| Paramètre           | Défaut | Pourquoi                                                                                                    |
+| ------------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
+| `thresholdPercent`  | `50`   | Écart relatif. En dessous, c'est du bruit de commande.                                                      |
+| `direction`         | `both` | `up` \| `down` \| `both` — on veut savoir qu'il monte (opportunité) **et** qu'il baisse (signal de départ). |
+| `baselineOrders`    | `6`    | Les N dernières commandes **contenant ce SKU**, la commande courante exclue.                                |
+| `minBaselineOrders` | `3`    | En dessous, « la moyenne » n'est pas une moyenne — la règle se tait plutôt que de mentir.                   |
+| `minQuantity`       | `3`    | Plancher anti-bruit : 2 → 4 est un +100 % qui n'intéresse personne.                                         |
+
+**La moyenne se calcule sur les commandes qui contiennent le SKU**, pas sur
+toutes. Un SKU absent d'une commande **n'est pas** un « 0 commandé » : sinon
+chaque commande lèverait une alerte de chute pour tout le catalogue non commandé.
+
+> **Conséquence assumée : cette règle ne détecte pas un arrêt.** Un client qui
+> cesse complètement un produit n'a plus de ligne, donc plus d'écart. C'est un
+> **troisième type** (`product.dropped` — silence de N jours sur un SKU habituel),
+> évalué par le temps et non par une commande. Hors lot 1, noté ici pour qu'on ne
+> croie pas la chute couverte.
+
+---
+
+## 3. Portée : le sujet d'une alerte est la **société**
+
+Une alerte se lit sur une fiche client, donc son sujet est une `Company`.
+
+**Une commande « zéro friction » (`companyId = null`) ne produit aucune alerte.**
+Elle n'appartient à aucun compte ; il n'y a ni historique auquel la comparer ni
+fiche où l'afficher. Le jour où le rapatriement d'une commande vers une société
+existe (cf. `architecture-flux-commande-zero-friction.md`), la question se
+reposera — rétro-évaluer ou non. Aujourd'hui : silence, explicitement.
+
+---
+
+## 4. La dérogation est **tout-ou-rien**
+
+Par (compte × type), trois états — et **pas de ligne du tout** quand le compte
+suit le réglage global :
+
+```
+inherited   (aucune ligne)   → la règle globale, telle quelle
+off         (ligne, mode=off) → ce type ne s'évalue pas sur ce compte
+custom      (ligne, mode=custom) → params + canaux COMPLETS, propres au compte
+```
+
+Le mode `custom` copie **l'intégralité** des paramètres, pas un diff. C'est le
+même choix que l'héritage gamme → produit du PIM, pour la même raison : un
+override partiel oblige à répondre « que se passe-t-il quand le global change un
+champ que le compte avait à moitié dérogé ? », et il n'y a pas de bonne réponse.
+Tout-ou-rien : soit le compte suit, soit il a sa propre règle, et on peut
+toujours dire laquelle il applique.
+
+**La résolution vit côté serveur, une seule fois.** Le front n'implémente pas
+`dérogation ?? global` : l'API de la fiche rend les trois choses ensemble
+(`global`, `override`, `effective`), et l'écran les affiche. Deux
+implémentations de la même résolution finiraient par diverger, et c'est
+l'affichage qui aurait tort sans qu'on le voie.
+
+---
+
+## 5. Les canaux
+
+Une alerte atterrit **toujours** dans le journal d'alertes du compte — c'est ce
+qui rend l'onglet Alertes utile. Les canaux sont ce qu'on fait **en plus** :
+
+```ts
+delivery: {
+  staffInApp: boolean; // « Me prévenir → notifications »
+  staffEmail: boolean; // « Me prévenir → e-mail »
+  customerVisible: boolean; // « Afficher l'alerte chez le client »
+}
+```
+
+- **`staffEmail`** — un template de plus dans `infra/mailer/mail-templates.ts`.
+  Le socle existe (`staff.appointment-booked` et `staff.support-requested` le
+  prouvent).
+- **`staffInApp`** — ⚠️ **ce socle n'existe pas.** Il n'y a pas de notion de
+  notification staff dans le back-office : ni table, ni endpoint, ni cloche. La
+  tâche J2 « notification à l'équipe » la réclamait déjà pour les rendez-vous.
+  C'est une **tranche à part**, dont les alertes seront le premier consommateur —
+  pas un détail de cette feature. En attendant : le badge « alertes non
+  acquittées » sur l'onglet et sur la ligne du compte tient lieu de signal.
+- **`customerVisible`** — voir §8, décision ouverte.
+
+Pas d'invariant « au moins un canal » : une règle sans canal reste utile, elle
+alimente le journal sans réveiller personne.
+
+---
+
+## 6. L'évaluation
+
+```mermaid
+flowchart LR
+  A[OrderPlacedEvent] --> B{companyId ?}
+  B -- null --> Z[rien]
+  B -- société --> C[règles effectives du compte]
+  C --> D[historique par SKU<br/>AccountOrderHistoryReader]
+  D --> E[détecteurs purs<br/>kind → AlertDraft&#91;&#93;]
+  E --> F[persister<br/>clé idempotente]
+  F --> G[canaux : e-mail / in-app / client]
+```
+
+- **Déclencheur** : `OrderPlacedEvent`, qui existe et est déjà écouté par
+  `growth/`. Un nouveau contexte `alerts/` s'y abonne à son tour.
+- **Les détecteurs sont purs** : `(context, params) => AlertDraft[]`. Testables
+  sans Nest, sans base, sans horloge — c'est là que vit toute la logique.
+- **Un registre** `kind → détecteur` remplace le `switch`. Nouveau type = nouveau
+  fichier + une entrée.
+- **Idempotence** : clé déterministe `${kind}:${orderId}:${sku}`, `@unique`, comme
+  le fait déjà `ActivityRecorder`. Un événement rejoué n'invente pas de doublon.
+- **Le message est figé au déclenchement** (« 12 contre 4,3 en moyenne »), pas
+  recalculé à l'affichage : la moyenne d'aujourd'hui ne doit pas réécrire ce
+  qu'on a constaté en mars.
+- **Synchrone dans le handler d'événement** au volume actuel. Si l'évaluation
+  devient coûteuse (plus de types, historiques longs), elle passe en file — la
+  frontière est déjà au bon endroit pour ça.
+
+### Découpage DDD
+
+Nouveau bounded context `src/alerts/` (langage propre : règle, dérogation,
+détecteur, alerte — ce n'est ni de l'acquisition ni de la commande) :
+
+```
+src/alerts/
+├── domain/
+│   ├── entities/account-alert.ts          # new → acknowledged (une transition)
+│   ├── value-objects/alert-delivery.ts    # les 3 canaux
+│   ├── detectors/first-order.ts           # purs
+│   ├── detectors/quantity-drift.ts
+│   ├── detectors/registry.ts
+│   ├── rules/resolve-effective-rules.ts   # dérogation ?? global (pur)
+│   └── ports/{alert-rules.store,account-alert.repository,order-history.reader}.ts
+├── application/{commands,queries,handlers}/
+├── infrastructure/prisma-*.ts
+└── http/{admin-alert-rules,admin-account-alerts}.controller.ts
+```
+
+Les réglages globaux et les dérogations sont de la **config sans transition** :
+CRUD honnête `Payload ↔ View`, validation dans les value-objects (§3.1 du
+CLAUDE.md). Seule l'alerte déclenchée porte une transition, donc une entité.
+
+`alerts/` ne lit **jamais** les tables `orders` directement : un port
+`AccountOrderHistoryReader` déclaré dans son domaine, implémenté en Prisma dans
+son infrastructure — exactement ce que fait déjà `prisma-order-metrics.reader`
+côté `growth/`.
+
+---
+
+## 7. Persistance
+
+```prisma
+model AlertRuleSetting {          // réglage GLOBAL, une ligne par type
+  kind      String   @id          // product.first_order | product.quantity_drift
+  enabled   Boolean  @default(true)
+  params    Json                  // validé par le schéma Zod du type
+  delivery  Json                  // { staffInApp, staffEmail, customerVisible }
+  updatedAt DateTime @updatedAt
+}
+
+model AccountAlertOverride {      // dérogation, SEULEMENT si dérogation
+  companyId String
+  kind      String
+  mode      String                // off | custom
+  params    Json?                 // complet si custom, null si off
+  delivery  Json?
+  @@id([companyId, kind])
+}
+
+model AccountAlert {              // le fait déclenché
+  id             String   @id     // ULID
+  companyId      String
+  kind           String
+  orderId        String
+  sku            String
+  idempotencyKey String   @unique // kind:orderId:sku
+  occurredAt     DateTime
+  payload        Json             // quantité, moyenne, écart, nom produit figés
+  acknowledgedAt DateTime?
+  acknowledgedBy String?          // sub staff
+  @@index([companyId, occurredAt])
+  @@index([companyId, acknowledgedAt])
+}
+```
+
+`kind` en `String` (union validée au bord par Zod), pas en enum Prisma : ajouter
+un type ne doit pas coûter une migration.
+
+---
+
+## 8. Les surfaces
+
+### Réglages → Commercial → « Alertes »
+
+⚠️ **Collision de noms à traiter.** La section `alertes` existe déjà et porte les
+seuils de couleur du calendrier d'acquisition (`alerts-card`, persistés en
+`localStorage` — dette P1-8). Ce n'est **pas** la même chose.
+
+Proposition : la section devient **« Alertes »** et porte deux cartes —
+_Alertes d'activation_ (l'existante, inchangée) et _Alertes compte client_ (la
+nouvelle). Une carte par type de règle : on/off, ses paramètres, ses trois cases
+de canaux.
+
+### Fiche client → 5ᵉ onglet « Alertes »
+
+Deux blocs :
+
+1. **Les règles, rappelées.** Pour chaque type : ce que dit le réglage global,
+   ce que ce compte applique, et deux actions — _Désactiver sur ce compte_ /
+   _Modifier sur ce compte_. Quand le compte déroge : un _Revenir au réglage
+   global_, et l'écran dit **en clair** qu'il déroge (une dérogation invisible
+   est un piège pour le prochain commercial).
+2. **Ce qui s'est déclenché.** Le journal du compte, acquittable.
+
+### Liste des comptes clients
+
+Une pastille sur la ligne d'un compte qui a des alertes non acquittées. Sans ça,
+la feature n'existe que pour qui pense à ouvrir la fiche.
+
+### Plateforme client — ouvert
+
+`customerVisible` suppose deux choses non tranchées : **quel message** (le texte
+staff « écart de 180 % vs la moyenne » ne se montre pas à un client) et **où**
+(confirmation de commande ? « Mes commandes » ?). Question de fond au passage :
+dire à un client qu'on surveille ses variations de volume peut se lire comme
+attentionné ou comme intrusif, selon le mot. Le drapeau est prévu dans le modèle
+dès le lot 1 ; l'affichage attend cette décision.
+
+---
+
+## 9. Les tranches
+
+| #     | Contenu                                                                                          | Dépend de |
+| ----- | ------------------------------------------------------------------------------------------------ | --------- |
+| **A** | Contrats Zod + Prisma + réglages **globaux** (CRUD backend + section Réglages)                   | —         |
+| **B** | Détecteurs purs + évaluation sur `order.placed` + journal + onglet Alertes (liste, acquittement) | A         |
+| **C** | Dérogations par compte (backend + rappel/désactiver/modifier sur la fiche)                       | B         |
+| **D** | Canaux : e-mail staff (immédiat) ; **cloche in-app = socle séparé**, alertes = 1ᵉʳ consommateur  | B         |
+| **E** | Affichage client — bloqué par la décision §8                                                     | B + §8    |
+
+B avant C, même si la dérogation est ce qui a motivé la demande : une règle qu'on
+peut désactiver mais qui ne détecte rien ne se vérifie pas.
+
+---
+
+## 10. Décisions ouvertes
+
+1. **Affichage client** (§8) — quel message, où, et faut-il le faire.
+2. **Cloche staff in-app** (§5) — socle à construire dans la foulée, ou e-mail
+   seul pour le lot 1.
+3. **Rétro-évaluation** — à l'activation d'une règle, rejoue-t-on l'historique
+   pour peupler le journal, ou la règle ne vaut-elle que pour l'avenir ? Défaut
+   proposé : **l'avenir seulement** (une rétro-évaluation produit d'un coup des
+   centaines d'alertes que personne n'acquittera).
