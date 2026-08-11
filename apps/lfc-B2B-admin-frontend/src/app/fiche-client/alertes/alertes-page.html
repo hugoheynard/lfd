@@ -1,0 +1,24 @@
+<p class="al-intro sec-hint">
+  Les règles ci-dessous sont celles de la plateforme. Ce compte peut les suivre, en désactiver une,
+  ou porter la sienne — le réglage global reste rappelé dans tous les cas.
+</p>
+
+@if (loading()) {
+  <fold-loading message="Chargement des règles…" />
+} @else if (failed()) {
+  <p class="sec-error">
+    Les règles n'ont pas pu être chargées.
+    <button type="button" class="sec-link" (click)="load(id())">Réessayer</button>
+  </p>
+} @else {
+  <div class="al-list">
+    @for (rule of rules(); track rule.kind) {
+      <app-account-alert-card
+        [rule]="rule"
+        [busy]="saving() === rule.kind"
+        (override)="applyOverride($event)"
+        (revert)="revert(rule.kind)"
+      />
+    }
+  </div>
+}

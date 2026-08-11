@@ -251,6 +251,9 @@ model Company {
   @@index([siret])
   @@map("companies")
   @@schema("public")
+
+  /// Dérogations de ce compte aux règles d'alerte globales (cf. alerts/).
+  alertOverrides AccountAlertOverride[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1211,5 +1214,34 @@ model AlertRuleSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("alert_rule_settings")
+  @@schema("public")
+}
+
+/// La **dérogation d'un compte** à une règle globale. Une ligne **seulement si**
+/// le compte déroge : l'absence signifie « suit le réglage global », ce qui se
+/// lit sans ambiguïté et n'oblige pas à semer une ligne par (compte × type).
+///
+/// `mode` = `off` (le type ne s'évalue pas ici) ou `custom` (le compte porte sa
+/// propre règle). En `custom`, `params`/`delivery` sont **complets** — jamais un
+/// diff : un override partiel obligerait à arbitrer ce que devient un champ à
+/// moitié dérogé quand le global change, et il n'y a pas de bonne réponse.
+model AccountAlertOverride {
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  kind String
+
+  mode String
+
+  /// Nuls en mode `off` : il n'y a rien à régler quand la règle est éteinte.
+  enabled  Boolean?
+  params   Json?
+  delivery Json?
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([companyId, kind])
+  @@index([companyId])
+  @@map("account_alert_overrides")
   @@schema("public")
 }

@@ -119,6 +119,8 @@ export {
   alertThresholdTierSchema,
   alertThresholdTiersSchema,
   thresholdForBaseline,
+  accountAlertOverrideSchema,
+  effectiveAlertRule,
   alertParamsSchema,
   alertRuleSchema,
   ALERT_KINDS,
@@ -136,6 +138,9 @@ export type {
   AlertRule,
   AlertKindDefinition,
   AlertRuleView,
+  AccountAlertOverride,
+  AccountAlertOverrideMode,
+  AccountAlertRuleView,
 } from "./account-alert.js";
 export { cartAdjustmentSchema, cartAdjustmentCents } from "./cart-adjustment.js";
 export type { CartAdjustment } from "./cart-adjustment.js";

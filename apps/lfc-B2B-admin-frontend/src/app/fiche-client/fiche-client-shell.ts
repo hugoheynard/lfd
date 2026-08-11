@@ -24,7 +24,7 @@ import { AdminCompaniesService } from '../comptes-clients/admin-companies.servic
  * et les actions qui valent partout (retour, épingle), un rail de vues, et la
  * vue courante.
  *
- * Quatre vues, parce qu'un compte se regarde de quatre façons qui n'ont pas les
+ * Cinq vues, parce qu'un compte se regarde de cinq façons qui n'ont pas les
  * mêmes lecteurs :
  *
  * - **Tableau de bord** — ce que le commercial regarde avant d'appeler : les
@@ -33,6 +33,8 @@ import { AdminCompaniesService } from '../comptes-clients/admin-companies.servic
  * - **Informations** — l'état civil du compte : pièces d'activation, identité,
  *   contacts, adresses. Ce qu'on ouvre pour *corriger* quelque chose ;
  * - **Commandes** — ce qu'il a acheté, et à quel rythme ;
+ * - **Alertes** — ce que la plateforme surveille chez lui, et ce que ce compte
+ *   fait de chaque règle (la suivre, l'éteindre, ou porter la sienne) ;
  * - **Données** — ce que le système sait de lui, journal compris.
  *
  * Le nom de la société est chargé **ici**, une fois : chaque vue le réclamerait
@@ -60,6 +62,7 @@ export class FicheClientShell {
     { key: 'dashboard', label: 'Tableau de bord', link: 'dashboard', icon: 'grid' },
     { key: 'informations', label: 'Informations', link: 'informations', icon: 'company' },
     { key: 'commandes', label: 'Commandes', link: 'commandes', icon: 'list' },
+    { key: 'alertes', label: 'Alertes', link: 'alertes', icon: 'bell' },
     { key: 'data', label: 'Données', link: 'data', icon: 'stats' },
   ];
 

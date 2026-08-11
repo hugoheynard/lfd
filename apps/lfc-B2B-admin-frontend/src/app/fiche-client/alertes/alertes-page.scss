@@ -1,0 +1,12 @@
+:host {
+  display: block;
+}
+
+.al-intro {
+  margin: 0 0 var(--fold-space-lg);
+}
+
+.al-list {
+  display: grid;
+  gap: var(--fold-space-lg);
+}

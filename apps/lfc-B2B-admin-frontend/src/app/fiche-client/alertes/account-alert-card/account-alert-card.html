@@ -1,0 +1,64 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    [icon]="labels().icon"
+    [title]="labels().title"
+    [subtitle]="labels().subtitle"
+  />
+
+  <!-- L'état, dit en clair. Une dérogation invisible est un piège pour le
+       prochain commercial qui s'étonnera de ne pas voir passer d'alerte. -->
+  <p class="ac-state" [attr.data-state]="state()">
+    @switch (state()) {
+      @case ('off') {
+        <strong>Désactivée sur ce compte.</strong> La plateforme surveille cette règle partout
+        ailleurs.
+      }
+      @case ('custom') {
+        <strong>Réglée pour ce compte.</strong> Ce compte n’applique pas le réglage de la
+        plateforme.
+      }
+      @default {
+        Ce compte suit le réglage de la plateforme.
+      }
+    }
+  </p>
+
+  <!-- Le rappel du global : toujours affiché, y compris — surtout — quand le
+       compte y déroge. Sinon on lit « déroge » sans savoir à quoi. -->
+  <section class="ac-global">
+    <h4 class="ac-global-title">Réglage de la plateforme</h4>
+    <ul class="ac-lines">
+      @for (line of globalLines(); track line) {
+        <li>{{ line }}</li>
+      }
+    </ul>
+    @if (!rule().global.enabled) {
+      <p class="ac-note">Cette règle est éteinte pour toute la plateforme.</p>
+    }
+  </section>
+
+  @if (editing()) {
+    <section class="ac-editor">
+      <h4 class="ac-global-title">Réglage propre à ce compte</h4>
+      <app-alert-rule-row [rule]="editable()" [busy]="busy()" (save)="saveHere($event)" />
+      <button foldButton emphasis="outline" size="sm" (click)="cancelEditing()">Fermer</button>
+    </section>
+  } @else {
+    <footer class="ac-actions">
+      @if (state() === 'inherited') {
+        <button foldButton emphasis="outline" [disabled]="busy()" (click)="disableHere()">
+          Désactiver sur ce compte
+        </button>
+      }
+      <button foldButton emphasis="outline" [disabled]="busy()" (click)="startEditing()">
+        Modifier sur ce compte
+      </button>
+      @if (state() !== 'inherited') {
+        <button foldButton [disabled]="busy()" (click)="revertToGlobal()">
+          Revenir au réglage global
+        </button>
+      }
+    </footer>
+  }
+</fold-card>

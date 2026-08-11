@@ -27,10 +27,11 @@ export const routes: Routes = [
     loadComponent: () => import('./retrait/retrait-page/retrait-page').then((m) => m.RetraitPage),
   },
   {
-    // Un compte se regarde de quatre façons qui n'ont pas les mêmes lecteurs :
-    // le tableau de bord (avant d'appeler), les informations (pour corriger),
-    // les commandes, et les données brutes. Une coquille, quatre vues routées —
-    // l'en-tête et l'épingle appartiennent à la coquille.
+    // Un compte se regarde de cinq façons qui n'ont pas les mêmes lecteurs : le
+    // tableau de bord (avant d'appeler), les informations (pour corriger), les
+    // commandes, les alertes qu'on surveille chez lui, et les données brutes.
+    // Une coquille, cinq vues routées — l'en-tête et l'épingle appartiennent à
+    // la coquille.
     path: 'comptes-clients/:id',
     title: 'Compte client — LFC B2B admin',
     loadComponent: () =>
@@ -51,6 +52,11 @@ export const routes: Routes = [
         path: 'commandes',
         loadComponent: () =>
           import('./fiche-client/commandes/commandes-page').then((m) => m.ClientCommandesPage),
+      },
+      {
+        path: 'alertes',
+        loadComponent: () =>
+          import('./fiche-client/alertes/alertes-page').then((m) => m.ClientAlertesPage),
       },
       {
         path: 'data',

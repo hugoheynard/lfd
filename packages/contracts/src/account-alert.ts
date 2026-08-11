@@ -296,3 +296,68 @@ export interface AlertRuleView extends AlertRule {
   /** ISO, ou `null` tant que le réglage est celui livré par défaut. */
   readonly updatedAt: string | null;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dérogation par compte
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Ce qu'un compte fait d'une règle globale. **Pas de ligne du tout** quand il la
+ * suit : l'absence est l'état par défaut, et elle se lit sans ambiguïté.
+ *
+ * - `off` — ce type ne s'évalue pas sur ce compte ;
+ * - `custom` — le compte porte **sa propre règle, complète**.
+ *
+ * Le mode `custom` copie l'intégralité de la règle, jamais un diff. Un override
+ * partiel obligerait à répondre « que devient le champ à moitié dérogé quand le
+ * global change ? », et il n'y a pas de bonne réponse. Tout-ou-rien : soit le
+ * compte suit, soit il a sa règle, et on peut toujours dire laquelle il applique.
+ */
+export const accountAlertOverrideSchema = z
+  .discriminatedUnion("mode", [
+    z.object({ kind: alertKindSchema, mode: z.literal("off") }),
+    z.object({ kind: alertKindSchema, mode: z.literal("custom"), rule: alertRuleSchema }),
+  ])
+  .refine((o) => o.mode === "off" || o.rule.params.kind === o.kind, {
+    message: "La règle dérogée ne porte pas le type qu'elle prétend déroger",
+    path: ["rule"],
+  });
+export type AccountAlertOverride = z.infer<typeof accountAlertOverrideSchema>;
+export type AccountAlertOverrideMode = AccountAlertOverride["mode"];
+
+/**
+ * Une règle **vue depuis un compte** : ce que dit le global, ce que le compte en
+ * fait, et ce qui s'applique réellement.
+ *
+ * Les trois voyagent **ensemble**, et `effective` est calculé **par le serveur**.
+ * Le front n'implémente pas `dérogation ?? global` : deux implémentations de la
+ * même résolution finiraient par diverger, et c'est l'affichage qui aurait tort
+ * sans que rien ne le signale.
+ */
+export interface AccountAlertRuleView {
+  readonly kind: AlertKind;
+  /** Le réglage de la plateforme, rappelé tel quel — même quand on y déroge. */
+  readonly global: AlertRule;
+  /** `null` = ce compte suit le global. */
+  readonly override: AccountAlertOverride | null;
+  /** Ce qui sera réellement évalué sur ce compte. */
+  readonly effective: AlertRule;
+}
+
+/**
+ * Ce qui s'applique à un compte pour un type donné (pur, **une seule
+ * implémentation**, côté serveur).
+ *
+ * `off` n'efface pas la règle : il l'éteint. On garde donc ses paramètres, ce qui
+ * permet de les réafficher quand le staff la rallume, et de dire « désactivée »
+ * plutôt que « vide ».
+ */
+export function effectiveAlertRule(
+  global: AlertRule,
+  override: AccountAlertOverride | null,
+): AlertRule {
+  if (override === null) {
+    return global;
+  }
+  return override.mode === "off" ? { ...global, enabled: false } : override.rule;
+}

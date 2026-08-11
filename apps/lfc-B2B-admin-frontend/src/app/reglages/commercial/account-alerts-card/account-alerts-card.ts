@@ -5,7 +5,7 @@ import type { AlertRule, AlertRuleView } from '@lfd/contracts';
 import { NotifyService } from '../../../notify.service';
 
 import { AlertRulesService } from './alert-rules.service';
-import { AlertRuleRow } from './alert-rule-row/alert-rule-row';
+import { AlertRuleRow } from '../../../shared/alerts/alert-rule-row/alert-rule-row';
 
 /**
  * Section **Alertes compte client** : ce que la plateforme surveille chez tous

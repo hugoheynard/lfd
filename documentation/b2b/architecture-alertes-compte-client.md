@@ -167,6 +167,16 @@ toujours dire laquelle il applique.
 implémentations de la même résolution finiraient par diverger, et c'est
 l'affichage qui aurait tort sans qu'on le voie.
 
+**`off` éteint, il n'efface pas.** Une règle désactivée sur un compte garde les
+paramètres du global : c'est ce qui permet de dire « désactivée » plutôt que
+« vide », et de la rallumer telle qu'elle était. `custom`, lui, fige sa propre
+copie — c'est toute la différence entre « ce compte se retire » et « ce compte a
+sa règle ».
+
+**Revenir au global, c'est SUPPRIMER la ligne** (`DELETE`), pas écrire un mode
+« hérité ». L'absence _est_ l'héritage ; lui donner une seconde représentation
+écrite créerait deux façons de dire la même chose, dont une seule serait vraie.
+
 ---
 
 ## 5. Les canaux
@@ -368,14 +378,15 @@ Trois conséquences sur le modèle :
 
 | #     | Contenu                                                                                          | Dépend de |
 | ----- | ------------------------------------------------------------------------------------------------ | --------- |
-| **A** | Contrats Zod + Prisma + réglages **globaux** (CRUD backend + section Réglages)                   | —         |
+| **A** | ✅ Contrats Zod + Prisma + réglages **globaux** (CRUD backend + section Réglages)                | —         |
 | **B** | Détecteurs purs + évaluation sur `order.placed` + journal + onglet Alertes (liste, acquittement) | A         |
-| **C** | Dérogations par compte (backend + rappel/désactiver/modifier sur la fiche)                       | B         |
+| **C** | ✅ Dérogations par compte (backend + rappel/désactiver/modifier sur la fiche)                    | —         |
 | **D** | Canaux staff : e-mail + **socle de notification** (table, endpoints, cloche du back-office)      | B         |
 | **E** | Garde-fou client : `POST /orders/preflight` + confirmation de commande                           | B         |
 
-B avant C, même si la dérogation est ce qui a motivé la demande : une règle qu'on
-peut désactiver mais qui ne détecte rien ne se vérifie pas.
+B et C ont finalement été inversées : la dérogation était le cœur de la demande,
+et elle ne dépendait de rien d'autre que du réglage global. Reste que **rien ne
+détecte encore** — B est ce qui rendra ces règles vérifiables.
 
 **La tranche D construit un socle, pas un canal.** Le back-office n'a aucune
 notion de notification staff ; on la crée ici, et les alertes en sont le premier
