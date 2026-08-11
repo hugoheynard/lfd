@@ -85,3 +85,17 @@ export const PAYMENT_TERM_LABELS: Readonly<Record<PaymentTerm, string>> = {
   net60: '60 jours',
   net90: '90 jours',
 };
+
+/**
+ * Ce qu'une **ouverture de compte** rapporte (`POST /admin/companies`).
+ *
+ * Trois faits que l'écran ne peut pas déduire seul : le détenteur a-t-il un
+ * accès, l'adresse appartenait-elle déjà à un client, et l'e-mail est-il parti.
+ * Sans eux, le message affiché serait une supposition.
+ */
+export interface CompanyOpened {
+  readonly id: string;
+  readonly accessOpened: boolean;
+  readonly attachedToExisting: boolean;
+  readonly mailSent: boolean;
+}

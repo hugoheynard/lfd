@@ -4,13 +4,14 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   BillingAddressPayload,
+  CustomerLookupView,
   DeliveryAddressPayload,
   UpdateIdentityPayload,
 } from '@lfd/contracts';
 import type { CompanyContactDraft, CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
 import { B2B_API_BASE } from '../api/api-config';
-import type { AdminCompany, AdminCompanyDetail, PaymentTerm } from './admin-company';
+import type { AdminCompany, AdminCompanyDetail, CompanyOpened, PaymentTerm } from './admin-company';
 
 /**
  * Accès à la surface **admin** du backend B2B.
@@ -49,16 +50,35 @@ export class AdminCompaniesService {
   }
 
   /**
-   * Crée un compte client (identité + contact principal). Le staff saisit tout :
-   * il n'y a pas de profil créateur d'où dériver le contact, contrairement au
+   * Ouvre un compte client (identité + **détenteur**). Le staff saisit tout : il
+   * n'y a pas de profil créateur d'où dériver le contact, contrairement au
    * self-signup client.
+   *
+   * La réponse dit ce qui est arrivé à l'**accès** — le serveur seul le sait :
+   * l'adresse appartenait-elle déjà à un client, et l'e-mail est-il parti.
    */
   async create(input: {
     readonly identity: CompanyIdentityDraft;
     readonly contact: CompanyContactDraft;
-  }): Promise<AdminCompany> {
+  }): Promise<CompanyOpened> {
     const body = { ...input.identity, primaryContact: input.contact };
-    return firstValueFrom(this.http.post<AdminCompany>(`${B2B_API_BASE}/admin/companies`, body));
+    return firstValueFrom(this.http.post<CompanyOpened>(`${B2B_API_BASE}/admin/companies`, body));
+  }
+
+  /**
+   * Ce qu'on sait déjà de la personne portant cette adresse, `null` si elle nous
+   * est inconnue — le cas le plus fréquent, et pas une erreur.
+   *
+   * Se lit **avant** d'enregistrer : un même client peut détenir plusieurs
+   * établissements, et le commercial doit s'en apercevoir pendant qu'il a encore
+   * le client au téléphone, pas après lui avoir ouvert un second espace.
+   */
+  async findCustomerByEmail(email: string): Promise<CustomerLookupView | null> {
+    return firstValueFrom(
+      this.http.get<CustomerLookupView | null>(`${B2B_API_BASE}/admin/customers/by-email`, {
+        params: { email },
+      }),
+    );
   }
 
   /** Dépose (ou remplace) le KBIS — multipart. */

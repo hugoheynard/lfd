@@ -1,7 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
   BillingAddressView,
+  CustomerLookupView,
   DeliveryAddressView,
   DeliveryContact,
   PickupAddressView,
@@ -33,7 +41,7 @@ import {
   type CompanyIdentityView,
 } from '@lfd/b2b-ui/company';
 
-import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
+import type { AdminCompanyDetail, CompanyOpened } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
@@ -45,6 +53,9 @@ import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
 import { AdminReglementPanel } from '../panels/reglement-panel/reglement-panel';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
+
+/** Le temps laissé au commercial pour finir de taper avant d'interroger l'API. */
+const LOOKUP_DEBOUNCE_MS = 400;
 
 /**
  * Fiche **détail** d'un compte client (staff) — reflète l'**état d'activation**
@@ -115,6 +126,20 @@ export class InformationsPage {
     () =>
       isCompanyIdentityValid(this.identityDraft()) && isCompanyContactValid(this.contactDraft()),
   );
+
+  /**
+   * Le client **déjà connu** derrière l'adresse saisie, `null` sinon.
+   *
+   * Cherché pendant la frappe plutôt qu'au moment d'enregistrer : le commercial
+   * doit apprendre qu'il a affaire à un client existant **pendant** qu'il l'a au
+   * téléphone — après coup, il lui aurait déjà annoncé un nouvel espace.
+   */
+  protected readonly knownCustomer = signal<CustomerLookupView | null>(null);
+
+  /** Les sociétés qu'il détient déjà, énumérées — pas comptées : on les nomme. */
+  protected readonly knownCompanyNames = computed(() =>
+    (this.knownCustomer()?.companies ?? []).map((company) => company.raisonSociale).join(', '),
+  );
   /** Config plateforme (modes des pièces) — filtre la synthèse et le gate. */
   protected readonly settings = signal<PlatformSettings | null>(null);
   /** Le point de retrait par défaut, reflété quand la livraison est masquée. */
@@ -163,6 +188,35 @@ export class InformationsPage {
 
   constructor() {
     void this.load();
+
+    // Reconnaissance du détenteur, pendant la frappe. Débouncée : une requête
+    // par caractère saisi transformerait un champ e-mail en robinet.
+    effect((onCleanup) => {
+      const email = this.contactDraft().email.trim();
+      if (!this.draft() || email === '') {
+        this.knownCustomer.set(null);
+        return;
+      }
+      const timer = setTimeout(() => {
+        void this.lookupHolder(email);
+      }, LOOKUP_DEBOUNCE_MS);
+      onCleanup(() => {
+        clearTimeout(timer);
+      });
+    });
+  }
+
+  /**
+   * Cherche le détenteur, **en silence** si ça échoue : cette lecture est une
+   * aide à la saisie, pas la saisie. Un toast d'erreur ici ferait passer une
+   * commodité pour une panne, alors que l'enregistrement, lui, marchera.
+   */
+  private async lookupHolder(email: string): Promise<void> {
+    try {
+      this.knownCustomer.set(await this.service.findCustomerByEmail(email));
+    } catch {
+      this.knownCustomer.set(null);
+    }
   }
 
   protected async load(): Promise<void> {
@@ -206,7 +260,7 @@ export class InformationsPage {
         identity: trimIdentity(identity),
         contact: trimContact(contact),
       });
-      this.notify.success('Compte ouvert — le dossier peut être complété.');
+      this.notify.success(openingMessage(created));
       // `replaceUrl` : revenir en arrière doit ramener à la liste, pas à un
       // formulaire déjà envoyé qu'un second clic dupliquerait.
       await this.router.navigate(['/comptes-clients', created.id, 'informations'], {
@@ -297,6 +351,26 @@ export class InformationsPage {
   protected back(): void {
     void this.router.navigate(['/comptes-clients']);
   }
+}
+
+/**
+ * Ce qu'on annonce au commercial après l'ouverture — il a encore le client au
+ * téléphone, et ce qu'il va lui dire dépend entièrement de ces trois faits.
+ *
+ * Le cas muet (`mailSent` faux) est le plus important à ne pas arrondir : le
+ * compte existe, mais **personne n'a rien reçu**. Un « c'est envoyé ! » de
+ * politesse ferait attendre un e-mail qui n'arrivera pas.
+ */
+function openingMessage(opened: CompanyOpened): string {
+  if (!opened.accessOpened) {
+    return "Compte ouvert, mais l'accès du client n'a pas pu être créé — à reprendre depuis sa fiche.";
+  }
+  const access = opened.attachedToExisting
+    ? 'La société a rejoint son espace existant'
+    : 'Son accès a été créé';
+  return opened.mailSent
+    ? `Compte ouvert. ${access}, l'e-mail est parti.`
+    : `Compte ouvert. ${access}, mais l'e-mail n'est pas parti — prévenez le client.`;
 }
 
 /**

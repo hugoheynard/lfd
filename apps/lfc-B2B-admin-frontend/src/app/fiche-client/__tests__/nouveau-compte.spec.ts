@@ -1,14 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import type { PickupAddressView, PlatformSettings } from '@lfd/contracts';
+import type { CustomerLookupView, PickupAddressView, PlatformSettings } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AdminCompany } from '../../comptes-clients/admin-company';
+import type { CompanyOpened } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
 import { PlatformSettingsService } from '../../reglages/platform-settings.service';
 import { InformationsPage } from '../informations/informations-page';
+
+/** Le débounce de la reconnaissance, tel que la page le tient. */
+const LOOKUP_DEBOUNCE_MS = 400;
 
 /** Toutes les pièces exigées : le cas le plus bavard pour la synthèse. */
 const SETTINGS: PlatformSettings = {
@@ -18,7 +21,12 @@ const SETTINGS: PlatformSettings = {
   delivery: 'required',
 };
 
-const CREATED = { id: 'cmp_1' } as AdminCompany;
+const CREATED: CompanyOpened = {
+  id: 'cmp_1',
+  accessOpened: true,
+  attachedToExisting: false,
+  mailSent: true,
+};
 
 interface Harness {
   readonly page: InformationsPage;
@@ -31,14 +39,20 @@ interface Harness {
  * Monte la page **sans identifiant de route** — c'est ce qui la met en mode
  * ouverture, exactement comme la route `/comptes-clients/nouveau`.
  */
-async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Harness> {
+async function setup(
+  create = vi.fn(() => Promise.resolve(CREATED)),
+  findCustomerByEmail: () => Promise<CustomerLookupView | null> = () => Promise.resolve(null),
+): Promise<Harness> {
   const errors: unknown[] = [];
   TestBed.configureTestingModule({
     providers: [
       provideRouter([{ path: '**', children: [] }]),
       {
         provide: AdminCompaniesService,
-        useValue: { create } satisfies Pick<AdminCompaniesService, 'create'>,
+        useValue: {
+          create,
+          findCustomerByEmail,
+        } satisfies Pick<AdminCompaniesService, 'create' | 'findCustomerByEmail'>,
       },
       {
         provide: PlatformSettingsService,
@@ -94,6 +108,9 @@ describe('InformationsPage — ouverture d’un compte', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     vi.restoreAllMocks();
+    // La reconnaissance est débouncée : sans horloge fictive, chaque test
+    // attendrait 400 ms de vrai temps pour observer une requête.
+    vi.useFakeTimers();
   });
 
   it("ne conclut pas à « introuvable » quand il n'y a pas d'identifiant", async () => {
@@ -157,6 +174,45 @@ describe('InformationsPage — ouverture d’un compte', () => {
     expect(navigate).toHaveBeenCalledWith(['/comptes-clients', 'cmp_1', 'informations'], {
       replaceUrl: true,
     });
+  });
+
+  it('reconnaît un client déjà connu et NOMME ses sociétés', async () => {
+    // Le second établissement d'un restaurateur. Le commercial doit l'apprendre
+    // pendant qu'il a le client au téléphone, pas après lui avoir annoncé un
+    // nouvel espace.
+    const known: CustomerLookupView = {
+      userId: 'user_1',
+      email: 'jean@exemple.fr',
+      firstName: 'Jean',
+      lastName: 'Dupont',
+      phone: '',
+      status: 'active',
+      companies: [
+        { id: 'cmp_a', raisonSociale: 'Le Comptoir' },
+        { id: 'cmp_b', raisonSociale: 'La Cave' },
+      ],
+    };
+    const { page } = await setup(undefined, () => Promise.resolve(known));
+
+    fill(page);
+    await vi.advanceTimersByTimeAsync(LOOKUP_DEBOUNCE_MS);
+
+    expect(page['knownCustomer']()).toEqual(known);
+    expect(page['knownCompanyNames']()).toBe('Le Comptoir, La Cave');
+  });
+
+  it('reste muette quand la reconnaissance échoue', async () => {
+    // Cette lecture est une commodité, pas la saisie : un toast d'erreur ferait
+    // croire à une panne alors que l'enregistrement, lui, marchera.
+    const { page, errors } = await setup(undefined, () =>
+      Promise.reject(new Error('service indisponible')),
+    );
+
+    fill(page);
+    await vi.advanceTimersByTimeAsync(LOOKUP_DEBOUNCE_MS);
+
+    expect(page['knownCustomer']()).toBeNull();
+    expect(errors).toEqual([]);
   });
 
   it('garde la saisie à l’écran quand l’ouverture échoue', async () => {
