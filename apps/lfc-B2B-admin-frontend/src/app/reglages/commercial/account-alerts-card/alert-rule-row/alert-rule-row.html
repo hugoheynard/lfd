@@ -46,8 +46,11 @@
           [disabled]="busy()"
           (valueChange)="setDirection($event)"
         >
+          <!-- `fold-select` enveloppe un <select> NATIF : il projette de vraies
+               <option>. `fold-option` appartient à `fold-listbox`, et l'employer
+               ici casse le rendu de toute la carte. -->
           @for (option of directions; track option.value) {
-            <fold-option [value]="option.value">{{ option.label }}</fold-option>
+            <option [value]="option.value">{{ option.label }}</option>
           }
         </fold-select>
         <fold-number-input
@@ -78,14 +81,6 @@
       }
       @if (outlier(); as params) {
         <fold-number-input
-          label="Écart déclencheur (%)"
-          hint="Haut par défaut : on cherche une aberration, pas une variation."
-          [min]="50"
-          [value]="params.thresholdPercent"
-          [disabled]="busy()"
-          (valueChange)="setOutlierNumber('thresholdPercent', $event)"
-        />
-        <fold-number-input
           label="Norme mesurée sur (jours)"
           hint="La fenêtre sur laquelle on regarde ce qu'on commande de ce produit."
           [min]="7"
@@ -111,6 +106,11 @@
     </div>
 
     @if (outlier(); as params) {
+      <app-threshold-tiers-field
+        [tiers]="params.tiers"
+        [disabled]="busy()"
+        (tiersChange)="setTiers($event)"
+      />
       @if (!params.onlyWithoutAccountBaseline) {
         <p class="ar-warn">
           Décoché, ce type se déclenche <strong>aussi</strong> sur les comptes qui ont déjà leur

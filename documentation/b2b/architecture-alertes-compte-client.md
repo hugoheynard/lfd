@@ -67,12 +67,43 @@ rien ne bronche. On change alors de référence : non plus « ce que ce client p
 d'habitude », mais **« ce qu'on prend habituellement de ce produit »**, tous
 comptes confondus.
 
-| Paramètre                    | Défaut | Pourquoi                                                                             |
-| ---------------------------- | ------ | ------------------------------------------------------------------------------------ |
-| `thresholdPercent`           | `400`  | Haut : on cherche une **aberration**, pas une variation.                             |
-| `windowDays`                 | `180`  | La fenêtre sur laquelle la norme du produit se mesure.                               |
-| `minSampleLines`             | `20`   | Sous ce nombre de lignes observées, il n'y a pas de « norme » à invoquer.            |
-| `onlyWithoutAccountBaseline` | `true` | Le compte a sa propre moyenne ? Elle est plus fine, elle fait autorité — on se tait. |
+| Paramètre                    | Défaut                 | Pourquoi                                                                             |
+| ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------ |
+| `tiers`                      | 4 paliers (ci-dessous) | Le seuil **descend quand la norme monte** — voir juste après.                        |
+| `windowDays`                 | `180`                  | La fenêtre sur laquelle la norme du produit se mesure.                               |
+| `minSampleLines`             | `20`                   | Sous ce nombre de lignes observées, il n'y a pas de « norme » à invoquer.            |
+| `onlyWithoutAccountBaseline` | `true`                 | Le compte a sa propre moyenne ? Elle est plus fine, elle fait autorité — on se tait. |
+
+#### Le seuil est une **échelle**, pas un nombre
+
+Un pourcentage unique ne peut pas couvrir les deux bouts du catalogue. Sur un
+produit qu'on prend à l'unité, passer de 1 à 5 (+400 %) n'a rien d'anormal ; sur
+un produit qu'on prend par 100, +30 % fait déjà trente unités de trop. Le seuil
+doit donc **baisser à mesure que la norme monte**.
+
+C'est de la **donnée**, pas une formule cachée — on veut pouvoir la lire et la
+corriger à l'écran, et elle se règle par tâtonnement une fois qu'on voit ce que
+les alertes disent vraiment :
+
+| Norme du produit | Écart déclencheur |
+| ---------------- | ----------------- |
+| jusqu'à 2        | 400 %             |
+| jusqu'à 10       | 200 %             |
+| jusqu'à 50       | 80 %              |
+| au-delà          | 30 %              |
+
+Le palier se choisit sur la **norme du produit**, pas sur la quantité commandée :
+c'est la norme qui dit si l'on est sur un produit à l'unité ou à la centaine.
+
+Deux invariants tenus par le contrat (`alertThresholdTiersSchema`) : les bornes
+sont **strictement croissantes**, et le **dernier palier est ouvert**. Sans ce
+dernier, une norme au-dessus du plus haut seuil ne serait couverte par rien — et
+la règle se tairait précisément sur les plus gros volumes, ceux qui coûtent.
+
+> **Candidat au même traitement : `quantity_drift`.** Le problème y est le même —
+> ±50 % ne veut pas dire la même chose à 1 et à 100 — mais son `minQuantity`
+> l'atténue déjà. On y passera à l'échelle **quand les alertes réelles le
+> montreront**, pas avant.
 
 Ce dernier paramètre est ce qui empêche les deux règles de crier ensemble pour un
 même écart. Décoché, l'écran de réglages le dit là où on le décoche.

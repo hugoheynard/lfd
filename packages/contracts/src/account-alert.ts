@@ -104,10 +104,68 @@ export const quantityDriftParamsSchema = z
  * fait autorité — elle est plus fine. La norme produit prend le relais quand elle
  * manque.
  */
+/**
+ * Un **palier de seuil** : jusqu'à quelle norme il s'applique, et quel écart y
+ * déclenche.
+ *
+ * Un pourcentage unique ne peut pas convenir aux deux bouts du catalogue. Sur un
+ * produit qu'on prend à l'unité, passer de 1 à 5 (+400 %) n'a rien d'anormal ;
+ * sur un produit qu'on prend par 100, +30 % fait déjà 30 unités de trop. Le seuil
+ * doit donc **descendre quand la norme monte**, et c'est une donnée, pas une
+ * formule cachée : on veut pouvoir la lire et la corriger à l'écran.
+ */
+export const alertThresholdTierSchema = z.object({
+  /** Borne **haute** de la norme couverte par ce palier. `null` = « au-delà ». */
+  upToQuantity: z.number().int().min(1).max(1_000_000).nullable(),
+  thresholdPercent: z.number().int().min(5).max(5000),
+});
+export type AlertThresholdTier = z.infer<typeof alertThresholdTierSchema>;
+
+/** Paliers ordonnés, le dernier — et lui seul — ouvert vers le haut. */
+export const alertThresholdTiersSchema = z
+  .array(alertThresholdTierSchema)
+  .min(1)
+  .superRefine((tiers, ctx) => {
+    tiers.forEach((tier, index) => {
+      const isLast = index === tiers.length - 1;
+      if (tier.upToQuantity === null && !isLast) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Seul le dernier palier peut être ouvert vers le haut",
+          path: [index, "upToQuantity"],
+        });
+      }
+      const previous = tiers[index - 1]?.upToQuantity;
+      if (
+        tier.upToQuantity !== null &&
+        previous !== null &&
+        previous !== undefined &&
+        tier.upToQuantity <= previous
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Les paliers doivent être strictement croissants",
+          path: [index, "upToQuantity"],
+        });
+      }
+    });
+    if (tiers[tiers.length - 1]?.upToQuantity !== null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Le dernier palier doit couvrir « au-delà »",
+        path: [tiers.length - 1, "upToQuantity"],
+      });
+    }
+  });
+
 export const quantityOutlierParamsSchema = z.object({
   kind: z.literal("product.quantity_outlier"),
-  /** Écart à la norme du produit. Haut par défaut : on cherche une aberration. */
-  thresholdPercent: z.number().int().min(50).max(5000),
+  /**
+   * L'écart déclencheur **par palier de norme** — le palier se choisit sur la
+   * norme du produit, pas sur la quantité commandée : c'est la norme qui dit si
+   * on est sur un produit à l'unité ou sur un produit à la centaine.
+   */
+  tiers: alertThresholdTiersSchema,
   /** Fenêtre sur laquelle la norme du produit se mesure, en jours. */
   windowDays: z.number().int().min(7).max(730),
   /** Sous ce nombre de lignes observées, il n'y a pas de « norme » à invoquer. */
@@ -115,6 +173,19 @@ export const quantityOutlierParamsSchema = z.object({
   /** Ne surveiller que les comptes sans moyenne à eux (première commande, etc.). */
   onlyWithoutAccountBaseline: z.boolean(),
 });
+
+/**
+ * Le palier qui s'applique à une norme donnée. Les paliers étant ordonnés et le
+ * dernier ouvert, il y en a toujours un — mais un tableau vide est possible en
+ * TypeScript, donc l'appelant reçoit `null` plutôt qu'une valeur inventée.
+ */
+export function thresholdForBaseline(
+  tiers: readonly AlertThresholdTier[],
+  baseline: number,
+): number | null {
+  const tier = tiers.find((t) => t.upToQuantity === null || baseline <= t.upToQuantity);
+  return tier?.thresholdPercent ?? null;
+}
 
 /** Les paramètres d'une règle, discriminés par le type qu'ils configurent. */
 export const alertParamsSchema = z.discriminatedUnion("kind", [
@@ -183,7 +254,15 @@ export const ALERT_KINDS: Readonly<Record<AlertKind, AlertKindDefinition>> = {
       enabled: true,
       params: {
         kind: "product.quantity_outlier",
-        thresholdPercent: 400,
+        // Le seuil descend quand la norme monte : ×5 sur un produit pris à
+        // l'unité n'est pas un incident, +30 % sur un produit pris par 100 en
+        // est un.
+        tiers: [
+          { upToQuantity: 2, thresholdPercent: 400 },
+          { upToQuantity: 10, thresholdPercent: 200 },
+          { upToQuantity: 50, thresholdPercent: 80 },
+          { upToQuantity: null, thresholdPercent: 30 },
+        ],
         windowDays: 180,
         minSampleLines: 20,
         onlyWithoutAccountBaseline: true,

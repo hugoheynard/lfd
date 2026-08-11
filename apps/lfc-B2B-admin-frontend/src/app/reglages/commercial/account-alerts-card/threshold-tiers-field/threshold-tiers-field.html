@@ -1,0 +1,59 @@
+<div class="tt-field">
+  <p class="tt-title">
+    Écart déclencheur, par palier
+    <fold-info
+      text="Le seuil descend quand la norme monte : ×5 sur un produit pris à l'unité n'est pas un incident, +30 % sur un produit pris par 100 en est un."
+      label="Pourquoi des paliers"
+    />
+  </p>
+
+  @for (tier of bounded(); track $index) {
+    <div class="tt-row">
+      <fold-number-input
+        label="Jusqu'à (quantité habituelle)"
+        size="sm"
+        [min]="1"
+        [value]="tier.upToQuantity"
+        [disabled]="disabled()"
+        (valueChange)="setBound($index, $event)"
+      />
+      <fold-number-input
+        label="Alerter au-delà de (%)"
+        size="sm"
+        [min]="5"
+        [value]="tier.thresholdPercent"
+        [disabled]="disabled()"
+        (valueChange)="setPercent($index, $event)"
+      />
+      <button
+        type="button"
+        class="tt-remove"
+        [disabled]="disabled()"
+        [attr.aria-label]="'Retirer le palier jusqu’à ' + tier.upToQuantity"
+        (click)="removeTier($index)"
+      >
+        ×
+      </button>
+    </div>
+  }
+
+  <!-- Le palier ouvert ne se supprime pas : sans lui, les plus gros volumes ne
+       seraient couverts par aucun seuil, donc jamais surveillés. -->
+  @if (open(); as last) {
+    <div class="tt-row tt-row--open">
+      <span class="tt-open-label">Au-delà</span>
+      <fold-number-input
+        label="Alerter au-delà de (%)"
+        size="sm"
+        [min]="5"
+        [value]="last.thresholdPercent"
+        [disabled]="disabled()"
+        (valueChange)="setPercent(tiers().length - 1, $event)"
+      />
+    </div>
+  }
+
+  <button foldButton emphasis="outline" size="sm" [disabled]="disabled()" (click)="addTier()">
+    Ajouter un palier
+  </button>
+</div>

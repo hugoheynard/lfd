@@ -13,19 +13,20 @@ import {
   FoldInfoComponent,
   FoldNumberInputComponent,
   FoldSelectComponent,
-  FoldOptionComponent,
 } from 'fold-ng';
 import {
   ALERT_KINDS,
   type AlertDelivery,
   type AlertRule,
   type AlertRuleView,
+  type AlertThresholdTier,
   type DriftDirection,
   type QuantityDriftParams,
   type QuantityOutlierParams,
 } from '@lfd/contracts';
 
 import { ALERT_KIND_LABELS, DELIVERY_LABELS } from '../alert-kind-labels';
+import { ThresholdTiersField } from '../threshold-tiers-field/threshold-tiers-field';
 
 /** Les sens d'écart proposés, dans l'ordre où on les lit. */
 const DIRECTIONS: readonly { readonly value: DriftDirection; readonly label: string }[] = [
@@ -57,10 +58,10 @@ const DIRECTIONS: readonly { readonly value: DriftDirection; readonly label: str
     FoldElementTitleComponent,
     FoldNumberInputComponent,
     FoldSelectComponent,
-    FoldOptionComponent,
     FoldCheckboxComponent,
     FoldButtonComponent,
     FoldInfoComponent,
+    ThresholdTiersField,
   ],
   templateUrl: './alert-rule-row.html',
   styleUrl: './alert-rule-row.scss',
@@ -152,6 +153,14 @@ export class AlertRuleRow {
     );
   }
 
+  protected setTiers(tiers: AlertThresholdTier[]): void {
+    this.draft.update((rule) =>
+      rule.params.kind === 'product.quantity_outlier'
+        ? { ...rule, params: { ...rule.params, tiers } }
+        : rule,
+    );
+  }
+
   protected setOutlierScope(onlyWithoutAccountBaseline: boolean): void {
     this.draft.update((rule) =>
       rule.params.kind === 'product.quantity_outlier'
@@ -182,7 +191,7 @@ export class AlertRuleRow {
 type DriftNumberField = 'thresholdPercent' | 'baselineOrders' | 'minBaselineOrders' | 'minQuantity';
 
 /** Idem pour le type « aberration produit ». */
-type OutlierNumberField = 'thresholdPercent' | 'windowDays' | 'minSampleLines';
+type OutlierNumberField = 'windowDays' | 'minSampleLines';
 
 function atLeast(value: number | null, min: number): number {
   return value !== null && Number.isFinite(value) ? Math.max(min, Math.trunc(value)) : min;

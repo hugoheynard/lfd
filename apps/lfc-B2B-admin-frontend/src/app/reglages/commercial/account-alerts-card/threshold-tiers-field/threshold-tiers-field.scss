@@ -1,0 +1,53 @@
+:host {
+  display: block;
+}
+
+.tt-field {
+  display: grid;
+  gap: var(--fold-space-sm);
+  justify-items: start;
+}
+
+.tt-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs, 0.35rem);
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.tt-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 12rem) minmax(9rem, 12rem) auto;
+  align-items: end;
+  gap: var(--fold-space-sm);
+  width: 100%;
+}
+
+/* Le palier ouvert n'a pas de borne à saisir : un libellé prend sa place, aligné
+   sur la colonne des bornes pour que l'échelle se lise en descendant. */
+.tt-row--open {
+  grid-template-columns: minmax(9rem, 12rem) minmax(9rem, 12rem);
+}
+
+.tt-open-label {
+  padding-bottom: 0.55rem;
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.tt-remove {
+  padding: 0 0.5rem 0.5rem;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tt-remove:hover:not(:disabled) {
+  color: var(--fold-color-danger, #dc2626);
+}
