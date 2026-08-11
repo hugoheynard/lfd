@@ -58,12 +58,18 @@ export class AccountAlertsCard {
    * moment réel de l'écriture.
    */
   protected async saveRule(rule: AlertRule): Promise<void> {
-    this.saving.set(rule.params.kind);
+    const kind = rule.params.kind;
+    this.saving.set(kind);
     try {
-      await this.service.save(rule);
+      const seen = this.rules().find((view) => view.kind === kind)?.updatedAt ?? null;
+      await this.service.save(rule, seen);
       this.rules.set(await this.service.list());
       this.notify.success('Règle d’alerte enregistrée.');
     } catch (error) {
+      // Un refus de concurrence n'est pas une panne : on RECHARGE pour montrer
+      // ce qui a été écrit entre-temps, sinon l'écran continuerait d'afficher un
+      // état que plus personne ne partage.
+      this.rules.set(await this.service.list().catch(() => this.rules()));
       this.notify.error(error, "L'enregistrement de la règle a échoué.");
     } finally {
       this.saving.set(null);

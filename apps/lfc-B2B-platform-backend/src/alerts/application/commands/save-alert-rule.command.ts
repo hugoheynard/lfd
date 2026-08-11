@@ -10,5 +10,7 @@ export class SaveAlertRuleCommand {
     readonly rule: AlertRule,
     /** Le `sub` du staff qui écrit — figé pour que la trace reste répondable. */
     readonly staffSub: string,
+    /** La version que l'appelant avait sous les yeux (`null` = jamais réglé). */
+    readonly expectedUpdatedAt: Date | null,
   ) {}
 }

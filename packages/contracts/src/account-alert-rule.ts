@@ -176,3 +176,18 @@ export interface AlertRuleView extends AlertRule {
    */
   readonly degraded: boolean;
 }
+
+/**
+ * Ce qu'on envoie pour régler un type : la règle, **et la version qu'on avait
+ * sous les yeux**.
+ *
+ * `expectedUpdatedAt` est la date lue avant d'éditer (`null` si le type n'avait
+ * jamais été réglé). Le serveur refuse l'écriture si la ligne a bougé depuis :
+ * sans ça, deux commerciaux sur le même écran s'écrasent en silence, et le
+ * second n'apprend jamais que son changement a disparu.
+ */
+export const saveAlertRulePayloadSchema = z.object({
+  rule: alertRuleSchema,
+  expectedUpdatedAt: z.string().datetime().nullable(),
+});
+export type SaveAlertRulePayload = z.infer<typeof saveAlertRulePayloadSchema>;

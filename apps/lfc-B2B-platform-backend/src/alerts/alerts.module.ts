@@ -14,6 +14,7 @@ import { ListAlertRulesHandler } from "./application/queries/list-alert-rules.ha
 import { AccountAlertOverridesStore } from "./domain/ports/account-alert-overrides.store.js";
 import { AccountAlertRepository } from "./domain/ports/account-alert.repository.js";
 import { AlertRulesStore } from "./domain/ports/alert-rules.store.js";
+import { AlertCompanyReader } from "./domain/ports/company.reader.js";
 import { EvaluatedOrderReader } from "./domain/ports/evaluated-order.reader.js";
 import {
   AccountOrderHistoryReader,
@@ -26,6 +27,7 @@ import { AdminAlertRulesController } from "./http/admin-alert-rules.controller.j
 import { AdminRecomputeNormsController } from "./http/admin-recompute-norms.controller.js";
 import { PrismaAccountAlertOverridesStore } from "./infrastructure/prisma-account-alert-overrides.store.js";
 import { PrismaAccountAlertRepository } from "./infrastructure/prisma-account-alert.repository.js";
+import { PrismaAlertCompanyReader } from "./infrastructure/prisma-alert-company.reader.js";
 import { PrismaAlertRulesStore } from "./infrastructure/prisma-alert-rules.store.js";
 import { PrismaEvaluatedOrderReader } from "./infrastructure/prisma-evaluated-order.reader.js";
 import {
@@ -59,6 +61,7 @@ import { PrismaProductNormStore } from "./infrastructure/prisma-product-norm.sto
     { provide: AlertRulesStore, useClass: PrismaAlertRulesStore },
     { provide: AccountAlertOverridesStore, useClass: PrismaAccountAlertOverridesStore },
     { provide: AccountAlertRepository, useClass: PrismaAccountAlertRepository },
+    { provide: AlertCompanyReader, useClass: PrismaAlertCompanyReader },
     { provide: EvaluatedOrderReader, useClass: PrismaEvaluatedOrderReader },
     { provide: AccountOrderHistoryReader, useClass: PrismaAccountOrderHistoryReader },
     { provide: ProductNormReader, useClass: PrismaProductNormReader },

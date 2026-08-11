@@ -133,8 +133,18 @@ export type {
   QuantityOutlierParams,
   SubscriptionChangedParams,
 } from "./account-alert.js";
-export { alertRuleSchema, ALERT_KINDS, ALERT_KIND_ORDER } from "./account-alert-rule.js";
-export type { AlertRule, AlertKindDefinition, AlertRuleView } from "./account-alert-rule.js";
+export {
+  alertRuleSchema,
+  saveAlertRulePayloadSchema,
+  ALERT_KINDS,
+  ALERT_KIND_ORDER,
+} from "./account-alert-rule.js";
+export type {
+  AlertRule,
+  AlertKindDefinition,
+  AlertRuleView,
+  SaveAlertRulePayload,
+} from "./account-alert-rule.js";
 export type { AlertFinding, AccountAlertView } from "./account-alert-finding.js";
 export {
   accountAlertOverrideSchema,

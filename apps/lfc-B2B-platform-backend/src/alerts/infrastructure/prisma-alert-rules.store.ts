@@ -53,18 +53,36 @@ export class PrismaAlertRulesStore extends AlertRulesStore {
     return parsed.filter(isKnown);
   }
 
-  async save(kind: AlertKind, rule: AlertRule, staffSub: string): Promise<void> {
+  async save(input: {
+    readonly kind: AlertKind;
+    readonly rule: AlertRule;
+    readonly staffSub: string;
+    readonly expectedUpdatedAt: Date | null;
+  }): Promise<boolean> {
     const values = {
-      enabled: rule.enabled,
-      params: rule.params,
-      delivery: rule.delivery,
-      updatedBy: staffSub,
+      enabled: input.rule.enabled,
+      params: input.rule.params,
+      delivery: input.rule.delivery,
+      updatedBy: input.staffSub,
     };
-    await this.prisma.alertRuleSetting.upsert({
-      where: { kind },
-      create: { kind, ...values },
-      update: values,
+    if (input.expectedUpdatedAt === null) {
+      // L'appelant croyait le type jamais réglé. `createMany` + `skipDuplicates`
+      // plutôt qu'un `create` qui lèverait : une ligne apparue entre-temps n'est
+      // pas une panne, c'est la course qu'on cherchait justement à détecter.
+      const created = await this.prisma.alertRuleSetting.createMany({
+        data: [{ kind: input.kind, ...values }],
+        skipDuplicates: true,
+      });
+      return created.count === 1;
+    }
+    // `updateMany` porte la version dans son `where` : zéro ligne touchée = la
+    // ligne a bougé. Un `update` ciblé ne saurait pas faire la différence entre
+    // « absente » et « modifiée ».
+    const written = await this.prisma.alertRuleSetting.updateMany({
+      where: { kind: input.kind, updatedAt: input.expectedUpdatedAt },
+      data: values,
     });
+    return written.count === 1;
   }
 }
 

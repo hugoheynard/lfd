@@ -24,7 +24,15 @@ export class AlertRulesService {
     return firstValueFrom(this.http.get<AlertRuleView[]>(`${B2B_API_BASE}/admin/alert-rules`));
   }
 
-  async save(rule: AlertRule): Promise<void> {
-    await firstValueFrom(this.http.put<void>(`${B2B_API_BASE}/admin/alert-rules`, rule));
+  /**
+   * Enregistre un réglage **en annonçant la version qu'on avait sous les yeux**.
+   *
+   * Le serveur refuse (409) si la ligne a bougé depuis : deux commerciaux sur cet
+   * écran ne doivent pas s'écraser en silence, et le perdant doit l'apprendre.
+   */
+  async save(rule: AlertRule, expectedUpdatedAt: string | null): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/alert-rules`, { rule, expectedUpdatedAt }),
+    );
   }
 }

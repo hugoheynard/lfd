@@ -1,4 +1,8 @@
-import { type AlertRule, type AlertRuleView, alertRuleSchema } from "@lfd/contracts";
+import {
+  type AlertRuleView,
+  type SaveAlertRulePayload,
+  saveAlertRulePayloadSchema,
+} from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Put, UseGuards } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
@@ -17,6 +21,9 @@ import { ListAlertRulesQuery } from "../application/queries/list-alert-rules.que
  * Une seule route d'écriture, **sans le type dans l'URL** : le type est le
  * discriminant des paramètres, donc déjà dans le corps. Le mettre aussi dans le
  * chemin créerait un désaccord possible entre les deux, qu'il faudrait arbitrer.
+ *
+ * La charge porte la **version lue** (`expectedUpdatedAt`) : deux commerciaux sur
+ * cet écran ne doivent pas s'écraser en silence. Un 409 dit lequel a perdu.
  */
 @Controller("admin/alert-rules")
 @Public()
@@ -35,11 +42,15 @@ export class AdminAlertRulesController {
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
   async save(
-    @Body(new ZodBody(alertRuleSchema)) rule: AlertRule,
+    @Body(new ZodBody(saveAlertRulePayloadSchema)) payload: SaveAlertRulePayload,
     @StaffSub() staffSub: string,
   ): Promise<void> {
     await this.commands.execute<SaveAlertRuleCommand, void>(
-      new SaveAlertRuleCommand(rule, staffSub),
+      new SaveAlertRuleCommand(
+        payload.rule,
+        staffSub,
+        payload.expectedUpdatedAt === null ? null : new Date(payload.expectedUpdatedAt),
+      ),
     );
   }
 }

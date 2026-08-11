@@ -2,8 +2,10 @@ import { sameAlertRule } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { resolveGlobalRules } from "../../domain/alert-rules.js";
+import { CompanyNotFoundForAlertsError } from "../../domain/errors/alert-errors.js";
 import { AccountAlertOverridesStore } from "../../domain/ports/account-alert-overrides.store.js";
 import { AlertRulesStore } from "../../domain/ports/alert-rules.store.js";
+import { AlertCompanyReader } from "../../domain/ports/company.reader.js";
 import { SaveAccountAlertOverrideCommand } from "./save-account-alert-override.command.js";
 
 /**
@@ -26,9 +28,15 @@ export class SaveAccountAlertOverrideHandler implements ICommandHandler<
   constructor(
     private readonly overrides: AccountAlertOverridesStore,
     private readonly rules: AlertRulesStore,
+    private readonly companies: AlertCompanyReader,
   ) {}
 
   async execute(command: SaveAccountAlertOverrideCommand): Promise<void> {
+    // Sans ce contrôle, un identifiant inconnu remontait une violation de clé
+    // étrangère — donc un 500 pour une erreur d'appelant ordinaire.
+    if (!(await this.companies.exists(command.companyId))) {
+      throw new CompanyNotFoundForAlertsError(command.companyId);
+    }
     if (await this.redundant(command)) {
       await this.overrides.clear(command.companyId, command.override.kind);
       return;

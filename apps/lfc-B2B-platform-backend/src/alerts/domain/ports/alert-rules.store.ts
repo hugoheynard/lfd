@@ -15,8 +15,18 @@ export abstract class AlertRulesStore {
   abstract readAll(): Promise<StoredAlertRule[]>;
 
   /**
-   * Écrit (ou remplace) le réglage d'un type, **attribué à son auteur**. La clé
-   * est le type lui-même.
+   * Écrit le réglage d'un type, **attribué à son auteur** et **conditionné à la
+   * version lue**.
+   *
+   * `expectedUpdatedAt` est la date que l'appelant avait sous les yeux (`null`
+   * si le type n'avait jamais été réglé). Rend `false` quand la ligne a bougé
+   * depuis : c'est la base qui arbitre, pas un « existe-t-il déjà ? » applicatif
+   * que deux écritures concurrentes gagneraient toutes les deux.
    */
-  abstract save(kind: AlertKind, rule: AlertRule, staffSub: string): Promise<void>;
+  abstract save(input: {
+    readonly kind: AlertKind;
+    readonly rule: AlertRule;
+    readonly staffSub: string;
+    readonly expectedUpdatedAt: Date | null;
+  }): Promise<boolean>;
 }

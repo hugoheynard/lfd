@@ -213,3 +213,94 @@ describe("la norme catalogue", () => {
     expect(norm?.sampleLines).toBe(3);
   });
 });
+
+describe("les réglages globaux", () => {
+  /** La règle telle que le serveur la rend, avec sa version. */
+  async function readRule(kind: string) {
+    const rules = jsonBody<{ kind: string; updatedAt: string | null }[]>(
+      await staff().get("/admin/alert-rules").expect(200),
+    );
+    return rules.find((rule) => rule.kind === kind);
+  }
+
+  const DRIFT_RULE = {
+    enabled: true,
+    params: {
+      kind: "product.quantity_drift",
+      riseTiers: [{ upToQuantity: null, thresholdPercent: 150 }],
+      dropTiers: [{ upToQuantity: null, thresholdPercent: 40 }],
+      direction: "both",
+      baselineOrders: 6,
+      minBaselineOrders: 3,
+      windowDays: 365,
+    },
+    delivery: { staffInApp: true, staffEmail: false, customerVisible: false },
+  };
+
+  it("écrit quand la version annoncée est la bonne", async () => {
+    await staff()
+      .put("/admin/alert-rules")
+      .send({ rule: DRIFT_RULE, expectedUpdatedAt: null })
+      .expect(204);
+
+    const written = await readRule("product.quantity_drift");
+    expect(written?.updatedAt).not.toBeNull();
+  });
+
+  /**
+   * Régression : sans version, deux commerciaux sur l'écran Réglages s'écrasaient
+   * en silence — le second gagnait, et le premier n'apprenait jamais que son
+   * changement avait disparu.
+   */
+  it("refuse une écriture fondée sur une version périmée", async () => {
+    await staff()
+      .put("/admin/alert-rules")
+      .send({ rule: DRIFT_RULE, expectedUpdatedAt: null })
+      .expect(204);
+
+    // Le second croit encore que le type n'a jamais été réglé.
+    await staff()
+      .put("/admin/alert-rules")
+      .send({ rule: DRIFT_RULE, expectedUpdatedAt: null })
+      .expect(409);
+  });
+
+  it("accepte une seconde écriture qui annonce la version courante", async () => {
+    await staff()
+      .put("/admin/alert-rules")
+      .send({ rule: DRIFT_RULE, expectedUpdatedAt: null })
+      .expect(204);
+    const current = await readRule("product.quantity_drift");
+
+    await staff()
+      .put("/admin/alert-rules")
+      .send({ rule: DRIFT_RULE, expectedUpdatedAt: current?.updatedAt })
+      .expect(204);
+  });
+});
+
+describe("les dérogations d'un compte inconnu", () => {
+  const OFF = { kind: "product.first_order", mode: "off" };
+
+  /**
+   * Régression : écrire sur un identifiant inconnu remontait une violation de
+   * clé étrangère, donc un 500 — une erreur d'appelant ordinaire réveillait
+   * l'astreinte.
+   */
+  it("répondent 404, pas 500", async () => {
+    await staff().put("/admin/companies/inconnue/alert-rules").send(OFF).expect(404);
+  });
+
+  it("valent aussi pour l'effacement", async () => {
+    await staff().delete("/admin/companies/inconnue/alert-rules/product.first_order").expect(404);
+  });
+
+  it("laissent passer un compte qui existe", async () => {
+    const companyId = await seed();
+
+    await staff().put(`/admin/companies/${companyId}/alert-rules`).send(OFF).expect(204);
+    await staff()
+      .delete(`/admin/companies/${companyId}/alert-rules/product.first_order`)
+      .expect(204);
+  });
+});
