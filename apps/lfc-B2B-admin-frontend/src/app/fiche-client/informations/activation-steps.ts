@@ -135,3 +135,15 @@ export function hasLegalIdentity(company: AdminCompanyDetail | null): boolean {
     company.siret.trim() !== ''
   );
 }
+
+/**
+ * Y a-t-il **quelqu'un à appeler** ? Au moins un interlocuteur avec un numéro.
+ *
+ * Ce n'est pas une pièce administrative, c'est la condition d'une livraison :
+ * activer une société qu'on ne peut pas joindre, c'est envoyer un camion devant
+ * une porte fermée sans pouvoir prévenir. Le serveur refuse ; l'écran doit dire
+ * la même chose que lui, jamais mieux.
+ */
+export function isReachable(company: AdminCompanyDetail | null): boolean {
+  return company !== null && company.contacts.some((contact) => contact.phone.trim() !== '');
+}

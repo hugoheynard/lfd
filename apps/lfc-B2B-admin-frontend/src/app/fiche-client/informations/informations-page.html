@@ -50,6 +50,26 @@
           <lfd-company-reference-card [reference]="c.reference" label="Référence client" />
         }
 
+        <!-- Le geste qui clôt le dossier. Il ne vit que sur un compte en
+             attente, et dit POURQUOI il ne part pas — un bouton grisé muet est
+             une impasse : on ne sait pas quoi corriger. -->
+        @if (isPending()) {
+          <div class="activate">
+            <button
+              foldButton
+              intent="primary"
+              icon="check"
+              [disabled]="!canActivate()"
+              (click)="activate()"
+            >
+              Activer le compte
+            </button>
+            @if (blockedReason(); as reason) {
+              <p class="activate-why">{{ reason }}</p>
+            }
+          </div>
+        }
+
         @if (draft()) {
           <fold-page-section
             title="Identité légale"

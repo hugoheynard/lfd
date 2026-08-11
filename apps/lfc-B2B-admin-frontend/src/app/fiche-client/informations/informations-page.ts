@@ -43,6 +43,7 @@ import { toContactCards, toIdentityView } from '../admin-company-view';
 import {
   activationSteps,
   hasLegalIdentity,
+  isReachable,
   missingRequiredPieces,
   type ActivationStep,
 } from './activation-steps';
@@ -187,8 +188,29 @@ export class InformationsPage {
       return false;
     }
     return (
-      hasLegalIdentity(company) && missingRequiredPieces(company, this.settings()).length === 0
+      hasLegalIdentity(company) &&
+      isReachable(company) &&
+      missingRequiredPieces(company, this.settings()).length === 0
     );
+  });
+
+  /**
+   * Pourquoi le bouton ne peut pas partir — dit en clair plutôt que grisé sans
+   * explication. Un bouton désactivé muet est une impasse : le commercial ne
+   * sait pas quoi corriger, et finit par appeler le support.
+   */
+  protected readonly blockedReason = computed(() => {
+    const company = this.company();
+    if (company === null || this.canActivate()) {
+      return '';
+    }
+    if (!hasLegalIdentity(company)) {
+      return "Raison sociale, forme juridique et SIRET sont nécessaires : sans eux, il n'y a rien à facturer.";
+    }
+    if (!isReachable(company)) {
+      return 'Aucun interlocuteur joignable : renseignez au moins un numéro de téléphone.';
+    }
+    return 'Il reste des pièces à réunir.';
   });
 
   constructor() {
