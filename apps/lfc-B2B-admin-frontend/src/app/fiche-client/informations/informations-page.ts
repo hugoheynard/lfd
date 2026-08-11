@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import type {
   BillingAddressView,
   CompanyContactView,
+  CompanyMemberInvitedView,
   DeliveryAddressView,
   DeliveryContact,
   PickupAddressView,
@@ -423,11 +424,7 @@ export class InformationsPage {
       });
       // Le sort de l'envoi n'est pas arrondi : un « c'est envoyé ! » de
       // politesse ferait attendre un e-mail qui n'arrivera jamais.
-      this.notify.success(
-        result.mailSent
-          ? `Lien envoyé à ${result.member.email}.`
-          : `Accès ouvert pour ${result.member.email}, mais l'e-mail n'est pas parti — prévenez le client.`,
-      );
+      this.notify.success(accessMessage(result));
       await this.load();
     } catch (error) {
       this.notify.error(error);
@@ -547,4 +544,24 @@ function knownContactsOf(company: AdminCompanyDetail): readonly DeliveryContact[
     return [];
   }
   return [{ prenom: c.firstName, nom: c.lastName, telephone: c.phone }];
+}
+
+/**
+ * Ce qu'on annonce après avoir ouvert un accès — au mot près.
+ *
+ * Trois issues, trois phrases : « lien envoyé » à qui doit poser un mot de
+ * passe, « rattachée » à qui en a déjà un. Les confondre ferait attendre un
+ * e-mail à celui qui n'en recevra pas, ou chercher un lien à celui qui n'en a
+ * pas besoin. Et le canal muet se dit, toujours.
+ */
+function accessMessage(result: CompanyMemberInvitedView): string {
+  const who = result.member.email;
+  if (result.outcome === 'attached') {
+    return result.mailSent
+      ? `La société a rejoint l'espace de ${who}, il en est prévenu.`
+      : `La société a rejoint l'espace de ${who}, mais l'e-mail n'est pas parti.`;
+  }
+  return result.mailSent
+    ? `Lien de mot de passe envoyé à ${who}.`
+    : `Accès ouvert pour ${who}, mais l'e-mail n'est pas parti — prévenez le client.`;
 }

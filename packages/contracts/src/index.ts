@@ -56,6 +56,7 @@ export type {
   InviteCompanyMemberPayload,
   AccountHolderPayload,
   CustomerLookupView,
+  CustomerSearchView,
   CustomerCompanyRef,
 } from "./company-member.js";
 export {

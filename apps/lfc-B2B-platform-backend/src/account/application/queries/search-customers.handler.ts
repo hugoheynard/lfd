@@ -1,4 +1,4 @@
-import type { CustomerLookupView } from "@lfd/contracts";
+import type { CustomerSearchView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { CompanyMemberReader } from "../../domain/ports/company-member.repository.js";
@@ -16,15 +16,20 @@ const MAX_RESULTS = 8;
 @QueryHandler(SearchCustomersQuery)
 export class SearchCustomersHandler implements IQueryHandler<
   SearchCustomersQuery,
-  readonly CustomerLookupView[]
+  CustomerSearchView
 > {
   constructor(private readonly members: CompanyMemberReader) {}
 
-  async execute(query: SearchCustomersQuery): Promise<readonly CustomerLookupView[]> {
+  async execute(query: SearchCustomersQuery): Promise<CustomerSearchView> {
     const term = query.term.trim();
     if (term.length < MIN_TERM_LENGTH) {
-      return [];
+      return { results: [], truncated: false };
     }
-    return await this.members.searchCustomers(term, MAX_RESULTS);
+    // On en demande **un de plus** que ce qu'on rend : c'est la seule façon de
+    // savoir qu'il en reste, et donc de le dire. Couper en silence ferait
+    // conclure au commercial que son client n'existe pas — et il lui ouvrirait
+    // un second espace.
+    const found = await this.members.searchCustomers(term, MAX_RESULTS + 1);
+    return { results: found.slice(0, MAX_RESULTS), truncated: found.length > MAX_RESULTS };
   }
 }

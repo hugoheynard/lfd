@@ -170,6 +170,20 @@ export interface CustomerLookupView {
   readonly companies: readonly CustomerCompanyRef[];
 }
 
+/**
+ * Le résultat d'une recherche de client — **et si elle a coupé**.
+ *
+ * Une liste tronquée en silence est pire qu'une liste vide : le commercial qui
+ * ne voit pas son client en conclut qu'il n'existe pas, et lui ouvre un second
+ * espace. C'est exactement le doublon que cette recherche existe pour éviter,
+ * fabriqué par la recherche elle-même.
+ */
+export interface CustomerSearchView {
+  readonly results: readonly CustomerLookupView[];
+  /** Vrai s'il existe d'autres correspondances non rendues. */
+  readonly truncated: boolean;
+}
+
 /** Une société connue d'un client, réduite à ce qu'un écran en affiche. */
 export interface CustomerCompanyRef {
   readonly id: string;

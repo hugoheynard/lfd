@@ -65,6 +65,18 @@ export class HolderPicker {
   protected readonly term = signal('');
   protected readonly results = signal<readonly CustomerLookupView[]>([]);
   protected readonly searching = signal(false);
+  /** D'autres clients correspondent, au-delà de ce que la liste montre. */
+  protected readonly truncated = signal(false);
+
+  /**
+   * Numéro de la dernière recherche lancée.
+   *
+   * Le debounce annule le *minuteur*, jamais la requête **déjà partie** : « va »
+   * puis « vasseur » peuvent revenir dans cet ordre-là ou dans l'autre. Sans ce
+   * compteur, la réponse la plus lente gagne, et la liste montre les résultats
+   * d'un terme que le commercial a fini d'effacer.
+   */
+  private latestSearch = 0;
 
   /** Le client retenu dans les résultats — la société rejoindra son espace. */
   protected readonly chosen = signal<CustomerLookupView | null>(null);
@@ -90,6 +102,7 @@ export class HolderPicker {
       const term = this.term().trim();
       if (term.length < MIN_TERM_LENGTH) {
         this.results.set([]);
+        this.truncated.set(false);
         return;
       }
       this.searching.set(true);
@@ -174,12 +187,24 @@ export class HolderPicker {
    * un nouveau détenteur.
    */
   private async search(term: string): Promise<void> {
+    this.latestSearch += 1;
+    const ticket = this.latestSearch;
     try {
-      this.results.set(await this.service.searchCustomers(term));
+      const found = await this.service.searchCustomers(term);
+      if (ticket !== this.latestSearch) {
+        // Une recherche plus récente est partie depuis : celle-ci n'a plus rien
+        // à dire, et écraserait une réponse plus juste.
+        return;
+      }
+      this.results.set(found.results);
+      this.truncated.set(found.truncated);
     } catch {
       this.results.set([]);
+      this.truncated.set(false);
     } finally {
-      this.searching.set(false);
+      if (ticket === this.latestSearch) {
+        this.searching.set(false);
+      }
     }
   }
 }

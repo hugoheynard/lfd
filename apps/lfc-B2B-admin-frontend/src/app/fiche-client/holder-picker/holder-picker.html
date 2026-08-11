@@ -60,6 +60,12 @@
        existe déjà, et lui donnerait deux espaces pour une seule adresse. -->
   <fold-search size="sm" placeholder="Nom ou e-mail du client…" (searchChange)="term.set($event)" />
 
+  @if (truncated()) {
+    <!-- Le dire, sinon le commercial conclut que son client n'existe pas et lui
+         ouvre un second espace — le doublon que cette recherche évite. -->
+    <p class="hp-more">D'autres clients correspondent : précisez le nom ou l'adresse.</p>
+  }
+
   @if (results().length > 0) {
     <ul class="hp-results">
       @for (customer of results(); track customer.userId) {

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import type { CustomerLookupView } from '@lfd/contracts';
+import type { CustomerLookupView, CustomerSearchView } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
@@ -29,9 +29,11 @@ interface Harness {
   readonly flush: () => void;
 }
 
-function setup(results: readonly CustomerLookupView[] | Error = []): Harness {
+function setup(results: readonly CustomerLookupView[] | Error = [], truncated = false): Harness {
   const search = vi.fn(() =>
-    results instanceof Error ? Promise.reject(results) : Promise.resolve(results),
+    results instanceof Error
+      ? Promise.reject(results)
+      : Promise.resolve({ results, truncated } satisfies CustomerSearchView),
   );
   TestBed.configureTestingModule({
     providers: [
@@ -160,5 +162,39 @@ describe('HolderPicker', () => {
     flush();
 
     expect(emitted.at(-1)).toBeNull();
+  });
+});
+
+describe('HolderPicker — une recherche qui ne ment pas', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    vi.useFakeTimers();
+  });
+
+  it("DIT que d'autres clients correspondent", async () => {
+    // Sans ça, le commercial conclut que son client n'existe pas et lui ouvre
+    // un second espace — le doublon que cette recherche évite.
+    const { picker, flush } = setup([JEAN], true);
+
+    picker['term'].set('dupont');
+    flush();
+    await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS);
+
+    expect(picker['truncated']()).toBe(true);
+  });
+
+  it('ignore une réponse DÉPASSÉE par une recherche plus récente', async () => {
+    // Le débounce annule le minuteur, jamais la requête déjà partie : sans
+    // garde d'ordre, la plus lente gagne et la liste montre les résultats d'un
+    // terme déjà effacé.
+    const { picker } = setup([JEAN]);
+    const search = picker['search'].bind(picker) as (term: string) => Promise<void>;
+
+    const stale = search('va');
+    const fresh = search('vasseur');
+    await Promise.all([stale, fresh]);
+
+    // Deux appels, un seul état : celui de la dernière recherche lancée.
+    expect(picker['results']()).toEqual([JEAN]);
   });
 });

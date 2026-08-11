@@ -7,6 +7,7 @@ import type {
   CompanyMemberInvitedView,
   CompanyMemberView,
   CustomerLookupView,
+  CustomerSearchView,
   DeliveryAddressPayload,
   InviteCompanyMemberPayload,
   UpdateIdentityPayload,
@@ -75,9 +76,9 @@ export class AdminCompaniesService {
    * interlocuteur, rarement l'orthographe de son adresse — et c'est ce qui lui
    * permet de rattacher la société à un espace existant.
    */
-  async searchCustomers(term: string): Promise<readonly CustomerLookupView[]> {
+  async searchCustomers(term: string): Promise<CustomerSearchView> {
     return firstValueFrom(
-      this.http.get<readonly CustomerLookupView[]>(`${B2B_API_BASE}/admin/customers`, {
+      this.http.get<CustomerSearchView>(`${B2B_API_BASE}/admin/customers`, {
         params: { q: term },
       }),
     );

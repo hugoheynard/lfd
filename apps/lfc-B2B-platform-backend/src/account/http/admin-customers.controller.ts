@@ -1,4 +1,4 @@
-import type { CustomerLookupView } from "@lfd/contracts";
+import type { CustomerLookupView, CustomerSearchView } from "@lfd/contracts";
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
@@ -31,8 +31,8 @@ export class AdminCustomersController {
    * second.
    */
   @Get()
-  search(@Query("q") term?: string): Promise<readonly CustomerLookupView[]> {
-    return this.queries.execute<SearchCustomersQuery, readonly CustomerLookupView[]>(
+  search(@Query("q") term?: string): Promise<CustomerSearchView> {
+    return this.queries.execute<SearchCustomersQuery, CustomerSearchView>(
       new SearchCustomersQuery(term ?? ""),
     );
   }

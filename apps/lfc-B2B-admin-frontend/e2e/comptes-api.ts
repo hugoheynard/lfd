@@ -36,6 +36,8 @@ export class ComptesApiDouble {
   accessOpens = true;
   /** L'e-mail part-il vraiment ? Un « non » doit être DIT, pas arrondi. */
   mailSent = true;
+  /** D'autres clients correspondent-ils, au-delà de ce que la liste rend ? */
+  truncated = false;
 
   readonly created: unknown[] = [];
   readonly invites: InviteCall[] = [];
@@ -65,7 +67,8 @@ export class ComptesApiDouble {
     const method = route.request().method();
 
     if (pathname.endsWith('/admin/customers')) {
-      return json(route, this.search(new URL(route.request().url()).searchParams.get('q') ?? ''));
+      const term = new URL(route.request().url()).searchParams.get('q') ?? '';
+      return json(route, { results: this.search(term), truncated: this.truncated });
     }
     if (pathname.endsWith('/admin/customers/by-email')) {
       return json(route, null);
@@ -138,6 +141,7 @@ export class ComptesApiDouble {
       status: 201,
       contentType: 'application/json',
       body: JSON.stringify({
+        outcome: 'identity_created',
         member: {
           userId: 'user-1',
           email: payload.email,
