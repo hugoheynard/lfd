@@ -27,6 +27,17 @@ export type {
   CreatedAddressResponse,
 } from "./address.js";
 export {
+  mandateStatusSchema,
+  registerMandatePayloadSchema,
+  MANDATE_STATUS_LABELS,
+} from "./payment-mandate.js";
+export type {
+  MandateStatus,
+  PaymentMandateView,
+  RegisterMandatePayload,
+  MandateSectionView,
+} from "./payment-mandate.js";
+export {
   companyDisplayName,
   deferredTermSchema,
   settlementSchema,

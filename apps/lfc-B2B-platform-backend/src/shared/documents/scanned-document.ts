@@ -1,12 +1,12 @@
-import { InvalidKbisFileError } from "../errors/account-errors.js";
+import { InvalidScannedDocumentError } from "../errors/storage-errors.js";
 
-/** Taille maximale d'un KBIS. Un extrait fait quelques pages — 10 Mo est large. */
-export const KBIS_MAX_BYTES = 10 * 1024 * 1024;
+/** Taille maximale d'une pièce. Un extrait ou un mandat fait quelques pages — 10 Mo est large. */
+export const SCANNED_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
 
 /**
  * Un format accepté, reconnu à ses **octets de tête**.
  *
- * La photo est là comme secours : le commercial est chez son client, l'extrait
+ * La photo est là comme secours : le commercial est chez son client, la pièce
  * est sur le comptoir et le scanner est au bureau. Refuser l'image ferait
  * repartir sans la pièce — et une pièce qu'on remet à plus tard est une pièce
  * qu'on ne revoit pas.
@@ -44,7 +44,8 @@ const ACCEPTED_FORMATS: readonly AcceptedFormat[] = [
 ];
 
 /**
- * La pièce déposée comme **extrait KBIS**, validée.
+ * Une **pièce numérisée** déposée par un humain — extrait KBIS, mandat signé —,
+ * validée.
  *
  * `create()` est le seul constructeur : un fichier non conforme n'existe pas en
  * mémoire. La vérité du format vient des **octets**, jamais du `Content-Type`
@@ -52,29 +53,31 @@ const ACCEPTED_FORMATS: readonly AcceptedFormat[] = [
  * `application/pdf` serait sinon accepté. Le `contentType` exposé est donc
  * toujours déduit du contenu, et c'est lui qu'on servira au téléchargement.
  */
-export class KbisFile {
+export class ScannedDocument {
   private constructor(
     readonly fileName: string,
     readonly bytes: Buffer,
     readonly contentType: string,
   ) {}
 
-  static create(fileName: string, bytes: Buffer): KbisFile {
+  static create(fileName: string, bytes: Buffer): ScannedDocument {
     const name = fileName.trim();
     if (name === "") {
-      throw new InvalidKbisFileError("nom de fichier manquant.");
+      throw new InvalidScannedDocumentError("nom de fichier manquant.");
     }
     if (bytes.length === 0) {
-      throw new InvalidKbisFileError("fichier vide.");
+      throw new InvalidScannedDocumentError("fichier vide.");
     }
-    if (bytes.length > KBIS_MAX_BYTES) {
-      throw new InvalidKbisFileError(`taille maximale ${KBIS_MAX_BYTES / (1024 * 1024)} Mo.`);
+    if (bytes.length > SCANNED_DOCUMENT_MAX_BYTES) {
+      throw new InvalidScannedDocumentError(
+        `taille maximale ${SCANNED_DOCUMENT_MAX_BYTES / (1024 * 1024)} Mo.`,
+      );
     }
     const format = ACCEPTED_FORMATS.find((candidate) => candidate.matches(bytes));
     if (format === undefined) {
-      throw new InvalidKbisFileError("un PDF ou une photo (JPEG, PNG, HEIC) est attendu.");
+      throw new InvalidScannedDocumentError("un PDF ou une photo (JPEG, PNG, HEIC) est attendu.");
     }
-    return new KbisFile(name, bytes, format.contentType);
+    return new ScannedDocument(name, bytes, format.contentType);
   }
 
   get size(): number {

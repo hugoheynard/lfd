@@ -256,6 +256,13 @@ model Company {
   addresses       Address[]
   orders          Order[]
   supportRequests SupportRequest[]
+  mandates        PaymentMandate[]
+
+  /// Dérogations de ce compte aux règles d'alerte globales (cf. alerts/).
+  alertOverrides AccountAlertOverride[]
+
+  /// Alertes déclenchées sur ce compte (cf. alerts/).
+  alerts AccountAlert[]
 
   // Unicité du SIRET : index PARTIEL (`siret <> ''`), donc invisible du schéma
   // Prisma — il vit dans la migration `20260811160000_unicite_siret_et_interlocuteur`.
@@ -264,12 +271,6 @@ model Company {
   @@index([siret])
   @@map("companies")
   @@schema("public")
-
-  /// Dérogations de ce compte aux règles d'alerte globales (cf. alerts/).
-  alertOverrides AccountAlertOverride[]
-
-  /// Alertes déclenchées sur ce compte (cf. alerts/).
-  alerts AccountAlert[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -424,6 +425,80 @@ model Membership {
 /// aucun accès. Inviter un collègue à se connecter est un autre flux (membership).
 ///
 /// Wallé par `company_id` comme tout ce qui appartient à un client.
+/// État d'un **mandat de prélèvement SEPA**. `active` seul autorise un
+/// prélèvement ; `revoked` est notre geste (retrait du client, ou remplacement),
+/// `failed` vient de la banque. Un mandat ne s'efface jamais, il se date.
+enum MandateStatus {
+  pending
+  active
+  revoked
+  failed
+
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PaymentMandate — l'autorisation de prélever, PAS les coordonnées bancaires
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Un **mandat de prélèvement SEPA** rattaché à une société.
+///
+/// Agrégat à part, et non des colonnes sur `Company` : un mandat a un cycle de
+/// vie propre (accepté, révoqué, remplacé) et on veut en garder l'historique —
+/// pouvoir répondre, deux ans plus tard, « sur quelle autorisation avez-vous
+/// prélevé le 12 mars ? ». Un mandat révoqué reste donc en base, daté.
+///
+/// **Aucune coordonnée bancaire ici.** L'IBAN est saisi dans l'iframe Stripe et
+/// ne traverse jamais ce backend : on ne garde que des identifiants Stripe, la
+/// référence opposable (RUM) et de quoi *reconnaître* le compte (4 derniers
+/// chiffres, code banque). Ce qu'on achète à Stripe, c'est précisément de ne pas
+/// détenir la donnée bancaire.
+model PaymentMandate {
+  id String @id @default(cuid())
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Rattachement Stripe. Le `customerId` est réutilisé d'un mandat au suivant
+  // pour la même société : un client Stripe par société, pas par autorisation.
+  stripeCustomerId String @map("stripe_customer_id")
+  paymentMethodId  String @map("payment_method_id")
+
+  // Référence opposable du mandat (RUM), rendue par Stripe. C'est elle qu'on
+  // dicte en contestation — pas l'id technique.
+  reference String
+
+  // De quoi reconnaître le compte à l'écran, et rien de plus : ces trois champs
+  // ne suffisent à débiter personne.
+  last4    String @default("")
+  bankCode String @default("") @map("bank_code")
+  country  String @default("")
+
+  status MandateStatus @default(pending)
+
+  // Date du consentement **déclaré** — celle du mandat papier déjà signé, donc
+  // souvent bien antérieure à la saisie (reprise de portefeuille).
+  acceptedAt DateTime  @map("accepted_at")
+  revokedAt  DateTime? @map("revoked_at")
+
+  // Le **mandat signé scanné** : la seule pièce qui prouve le consentement (le
+  // RIB ne prouve rien). Rangé dans le stockage objet comme le KBIS ; ici, sa
+  // clé et son nom. `null` = mandat sans filet, et la fiche doit le dire.
+  proofStorageKey String? @map("proof_storage_key")
+  proofFileName   String? @map("proof_file_name")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Un seul mandat ACTIF par société : index PARTIEL (`status = 'active'`), donc
+  // invisible du schéma Prisma — il vit dans la migration
+  // `20260811200000_mandat_prelevement`. Les mandats révoqués s'empilent sans
+  // se gêner ; c'est tout l'intérêt de garder l'historique.
+  @@index([companyId, status])
+  @@map("payment_mandates")
+  @@schema("public")
+}
+
 model CompanyContact {
   id String @id @default(cuid())
 
@@ -538,15 +613,15 @@ model Order {
   // **HT** ; `total` est le **TTC** encaissé = `max(0, subtotal − discount) +
   // deliveryFee + vat`. Remise = point de retrait ; frais = zone ; TVA par taux
   // (5,5 % alimentaire, 20 % livraison).
-  subtotalCents    Int    @map("subtotal_cents")
-  discountCents    Int    @default(0) @map("discount_cents")
+  subtotalCents      Int    @map("subtotal_cents")
+  discountCents      Int    @default(0) @map("discount_cents")
   // L'ajustement (%, ou € fixe) qui a PRODUIT `discountCents`, figé comme les
   // prix : sans lui un document ne peut nommer la remise, seulement la chiffrer.
-  discountAdjustment Json? @map("discount_adjustment")
-  deliveryFeeCents Int    @default(0) @map("delivery_fee_cents")
-  vatCents         Int    @default(0) @map("vat_cents")
-  totalCents       Int    @map("total_cents")
-  currency         String @default("EUR")
+  discountAdjustment Json?  @map("discount_adjustment")
+  deliveryFeeCents   Int    @default(0) @map("delivery_fee_cents")
+  vatCents           Int    @default(0) @map("vat_cents")
+  totalCents         Int    @map("total_cents")
+  currency           String @default("EUR")
 
   // Règlement. `paymentStatus` est fixé à la passation d'après le terme de la
   // société (cf. enum PaymentStatus). `stripePaymentIntentId` relie la commande
@@ -1251,7 +1326,7 @@ model AlertRuleSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
   /// Le `sub` du staff qui a écrit ce réglage. Un identifiant, pas un nom : il
   /// reste résolvable après un changement de nom.
-  updatedBy String? @map("updated_by")
+  updatedBy String?  @map("updated_by")
 
   @@map("alert_rule_settings")
   @@schema("public")
@@ -1281,7 +1356,7 @@ model AccountAlertOverride {
   updatedAt DateTime @updatedAt @map("updated_at")
   /// Le `sub` du staff qui a posé cette dérogation — « qui a coupé les alertes
   /// sur ce compte » doit rester répondable dans six mois.
-  updatedBy String? @map("updated_by")
+  updatedBy String?  @map("updated_by")
 
   @@id([companyId, kind])
   @@index([companyId])
@@ -1307,7 +1382,7 @@ model AccountAlert {
 
   kind String
 
-  orderId String @map("order_id")
+  orderId     String @map("order_id")
   /// Référence humaine figée — c'est elle qu'on dicte au téléphone.
   orderNumber String @map("order_number")
 
@@ -1323,7 +1398,7 @@ model AccountAlert {
 
   acknowledgedAt DateTime? @map("acknowledged_at")
   /// Le `sub` staff qui a acquitté — figé, résolvable même après un changement de nom.
-  acknowledgedBy String? @map("acknowledged_by")
+  acknowledgedBy String?   @map("acknowledged_by")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -1383,9 +1458,9 @@ model StaffNotification {
 
   subject String
   /// Une ligne, pas un rapport : la cloche annonce, l'écran cible explique.
-  body String
+  body    String
   /// Route interne à ouvrir (ex. `/comptes-clients/xxx/alertes`).
-  link String
+  link    String
 
   /// Anti-doublon : un fait rejoué ne sonne pas deux fois.
   idempotencyKey String @unique @map("idempotency_key")
@@ -1395,7 +1470,7 @@ model StaffNotification {
 
   readAt DateTime? @map("read_at")
   /// Le `sub` staff qui l'a lue — un identifiant, pas un nom.
-  readBy String? @map("read_by")
+  readBy String?   @map("read_by")
 
   createdAt DateTime @default(now()) @map("created_at")
 

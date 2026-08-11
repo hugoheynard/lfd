@@ -2,7 +2,7 @@ import type { DomainEventPublisher } from "../../../infra/events/domain-event-pu
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import type { CompanyRepository } from "../../domain/ports/company.repository.js";
 import type { DocumentStore } from "../../../infra/storage/document-store.js";
-import { KbisFile } from "../../domain/value-objects/kbis-file.js";
+import { ScannedDocument } from "../../../shared/documents/scanned-document.js";
 
 /**
  * Dépose un KBIS : **valide** le fichier, le **range** dans le stockage objet,
@@ -23,7 +23,7 @@ export async function ingestKbis(
 ): Promise<void> {
   // Le fichier se valide lui-même (PDF par ses octets, taille) avant de partir
   // au stockage : on ne range jamais un fichier douteux.
-  const file = KbisFile.create(fileName, bytes);
+  const file = ScannedDocument.create(fileName, bytes);
 
   // Ranger d'abord, écrire les métadonnées ensuite : si le stockage échoue, la
   // base ne pointe pas vers un fichier absent.
