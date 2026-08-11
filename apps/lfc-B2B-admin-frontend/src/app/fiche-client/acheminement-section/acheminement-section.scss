@@ -27,30 +27,8 @@
   font-size: var(--fold-text-sm);
 }
 
-.field {
-  display: grid;
-  gap: var(--fold-space-2xs);
+.destination {
+  display: block;
   margin-top: var(--fold-space-md);
   max-width: 28rem;
-}
-
-.field-label {
-  font-size: var(--fold-text-sm);
-  font-weight: 600;
-}
-
-/* Select natif : le DS n'en fournit pas d'équivalent ici, et un `<select>`
-   reste le contrôle que le clavier et le mobile connaissent le mieux. */
-.native {
-  padding: var(--fold-space-sm) var(--fold-space-md);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface);
-  color: var(--fold-color-text);
-  font: inherit;
-}
-
-.native:focus-visible {
-  outline: 2px solid var(--fold-color-accent);
-  outline-offset: 1px;
 }

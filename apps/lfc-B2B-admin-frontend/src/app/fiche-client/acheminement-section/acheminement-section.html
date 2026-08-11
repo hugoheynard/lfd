@@ -50,19 +50,17 @@
         }
       </fold-callout>
     } @else {
-      <label class="field">
-        <span class="field-label">
-          {{ method() === 'pickup' ? 'Point de retrait préféré' : 'Adresse de livraison préférée' }}
-        </span>
-        <select class="native" [value]="destinationId()" (change)="chooseDestination($event)">
-          <!-- « Celle par défaut » suit le défaut du moment : désigner nommément
-               le défaut d'aujourd'hui figerait la préférence le jour où il change. -->
-          <option value="">Celle par défaut</option>
-          @for (option of options(); track option.id) {
-            <option [value]="option.id">{{ option.label }}</option>
-          }
-        </select>
-      </label>
+      <!-- « Celle par défaut » est la première option, pas un placeholder : suivre
+           le défaut du moment est un choix, et le plus fréquent. Désigner
+           nommément le défaut d'aujourd'hui figerait la préférence le jour où
+           il change. -->
+      <fold-listbox
+        class="destination"
+        [label]="destinationLabel()"
+        [options]="options()"
+        [value]="destinationId()"
+        (selectionChange)="chooseDestination($event)"
+      />
     }
   </fold-card>
 </fold-page-section>

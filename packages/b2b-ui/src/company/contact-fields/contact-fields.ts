@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
 import { assignableRoleSchema, COMPANY_ROLE_LABELS, type AssignableRole } from '@lfd/contracts';
-import { FoldInputComponent, FoldSelectComponent } from 'fold-ng';
+import { FoldInputComponent, FoldListboxComponent, type FoldSelectOption } from 'fold-ng';
 
 import type { CompanyContactDraft } from '../company-form.model';
 
 /** Les rôles proposés, dans l'ordre du contrat — `owner` en est absent. */
-const ASSIGNABLE_ROLES: readonly { readonly value: AssignableRole; readonly label: string }[] =
+const ASSIGNABLE_ROLES: readonly FoldSelectOption<AssignableRole>[] =
   assignableRoleSchema.options.map((value) => ({ value, label: COMPANY_ROLE_LABELS[value] }));
 
 /**
@@ -17,7 +17,7 @@ const ASSIGNABLE_ROLES: readonly { readonly value: AssignableRole; readonly labe
 @Component({
   selector: 'lfd-contact-fields',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldInputComponent, FoldSelectComponent],
+  imports: [FoldInputComponent, FoldListboxComponent],
   templateUrl: './contact-fields.html',
   styleUrl: './contact-fields.scss',
 })
@@ -50,9 +50,13 @@ export class ContactFields {
     this.value.update((draft) => ({ ...draft, phone }));
   }
 
-  /** Le `<select>` rend des chaînes ; seul un rôle attribuable est retenu. */
-  protected setRole(raw: string): void {
-    const parsed = assignableRoleSchema.safeParse(raw);
+  /**
+   * Le listbox rend le rôle déjà typé, mais le brouillon accepte aussi `''`
+   * (rien choisi) : c'est ce qui rend l'union possible ici. On revalide donc au
+   * schéma — c'est lui qui dit ce qu'est un rôle attribuable, pas ce composant.
+   */
+  protected setRole(chosen: AssignableRole | ''): void {
+    const parsed = assignableRoleSchema.safeParse(chosen);
     this.value.update((draft) => ({ ...draft, role: parsed.success ? parsed.data : '' }));
   }
 }

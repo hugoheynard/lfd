@@ -11,17 +11,14 @@
 />
 
 @if (withRole()) {
-  <fold-select
+  <fold-listbox
     label="Rôle dans la société"
     required
+    placeholder="À choisir"
+    [options]="roles"
     [value]="value().role"
-    (valueChange)="setRole($event)"
-  >
-    <option value="" disabled>À choisir</option>
-    @for (role of roles; track role.value) {
-      <option [value]="role.value">{{ role.label }}</option>
-    }
-  </fold-select>
+    (selectionChange)="setRole($event)"
+  />
 }
 
 <div class="row">

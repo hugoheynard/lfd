@@ -9,14 +9,17 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldListboxComponent,
   FoldPageSectionComponent,
+  type FoldSelectOption,
 } from 'fold-ng';
 
-/** Ce que l'écran propose comme destination, quelle que soit la méthode. */
-interface DestinationOption {
-  readonly id: string;
-  readonly label: string;
-}
+/**
+ * La destination « aucune en particulier ». Chaîne vide plutôt que `null` : le
+ * listbox traite `null` comme « rien de choisi » et retomberait sur son
+ * placeholder, alors que suivre le défaut EST un choix — et le plus fréquent.
+ */
+const DEFAULT_DESTINATION = '';
 
 /**
  * Section **Préférences d'acheminement** d'une fiche client (staff).
@@ -34,7 +37,13 @@ interface DestinationOption {
 @Component({
   selector: 'app-acheminement-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPageSectionComponent, FoldCardComponent, FoldCalloutComponent, FoldButtonComponent],
+  imports: [
+    FoldPageSectionComponent,
+    FoldCardComponent,
+    FoldCalloutComponent,
+    FoldButtonComponent,
+    FoldListboxComponent,
+  ],
   templateUrl: './acheminement-section.html',
   styleUrl: './acheminement-section.scss',
 })
@@ -53,33 +62,44 @@ export class AcheminementSection {
   /** La méthode retenue, ou `null` tant que rien n'est posé. */
   protected readonly method = computed<FulfillmentMethod | null>(() => this.preference().method);
 
-  /** Les destinations proposées pour la méthode courante. */
-  protected readonly options = computed<readonly DestinationOption[]>(() => {
+  /** Les destinations nommées, pour la méthode courante. */
+  private readonly named = computed<readonly FoldSelectOption<string>[]>(() => {
     if (this.method() === 'pickup') {
       return this.pickups().map((point) => ({
-        id: point.id,
+        value: point.id,
         label: point.isDefault ? `${point.label} (défaut)` : point.label,
       }));
     }
     return this.deliveries().map((address) => ({
-      id: address.id,
+      value: address.id,
       label: address.isDefault ? `${address.label} (défaut)` : address.label,
     }));
   });
 
-  /** La destination retenue ; `''` = « celle par défaut ». */
+  /** Ce que le listbox propose : suivre le défaut, puis les destinations nommées. */
+  protected readonly options = computed<readonly FoldSelectOption<string>[]>(() => [
+    { value: DEFAULT_DESTINATION, label: 'Celle par défaut' },
+    ...this.named(),
+  ]);
+
+  /** Le libellé du champ change avec la méthode — le mot juste, pas un générique. */
+  protected readonly destinationLabel = computed(() =>
+    this.method() === 'pickup' ? 'Point de retrait préféré' : 'Adresse de livraison préférée',
+  );
+
+  /** La destination retenue ; chaîne vide = « celle par défaut ». */
   protected readonly destinationId = computed(() => {
     const preference = this.preference();
     return (
       (preference.method === 'pickup'
         ? preference.pickupAddressId
-        : preference.deliveryAddressId) ?? ''
+        : preference.deliveryAddressId) ?? DEFAULT_DESTINATION
     );
   });
 
   /** Rien à choisir : la méthode est posée mais aucune destination n'existe. */
   protected readonly noDestination = computed(
-    () => this.method() !== null && this.options().length === 0,
+    () => this.method() !== null && this.named().length === 0,
   );
 
   /** Pose (ou change) la méthode ; la destination repart du défaut. */
@@ -90,14 +110,13 @@ export class AcheminementSection {
     this.preferenceChange.emit({ method, pickupAddressId: null, deliveryAddressId: null });
   }
 
-  /** Choisit la destination ; `''` (vide) = « celle par défaut ». */
-  protected chooseDestination(event: Event): void {
+  /** Choisit la destination ; la chaîne vide vaut « celle par défaut ». */
+  protected chooseDestination(chosen: string): void {
     const method = this.method();
     if (method === null) {
       return;
     }
-    const raw = (event.target as HTMLSelectElement).value;
-    const id = raw === '' ? null : raw;
+    const id = chosen === DEFAULT_DESTINATION ? null : chosen;
     this.preferenceChange.emit({
       method,
       pickupAddressId: method === 'pickup' ? id : null,

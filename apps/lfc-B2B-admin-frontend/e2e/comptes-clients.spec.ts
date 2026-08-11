@@ -117,6 +117,15 @@ test.describe("l'accès est un état du contact, rattrapable", () => {
   });
 });
 
+/** Le déclencheur du listbox « Rôle dans la société ». */
+function roleField(page: Page): ReturnType<Page['getByRole']> {
+  return page
+    .locator('fold-listbox')
+    .filter({ hasText: 'Rôle dans la société' })
+    .getByRole('button')
+    .first();
+}
+
 test.describe('ajouter un interlocuteur', () => {
   test("exige le RÔLE, et l'e-mail seul suffit pour le reste", async ({ page }) => {
     const api = new ComptesApiDouble();
@@ -131,7 +140,11 @@ test.describe('ajouter un interlocuteur', () => {
     // Sans rôle, on ne saurait pas quoi lui ouvrir plus tard.
     await expect(enregistrer).toBeDisabled();
 
-    await page.getByLabel('Rôle dans la société').selectOption('billing');
+    // Le rôle se choisit dans un listbox du DS : on ouvre, on clique la ligne.
+    // Le déclencheur est un bouton dont le nom accessible est la valeur affichée
+    // — on passe donc par le champ, repéré à son libellé.
+    await roleField(page).click();
+    await page.getByRole('option', { name: 'Facturation' }).click();
     await expect(enregistrer).toBeEnabled();
     await enregistrer.click();
 
@@ -146,9 +159,12 @@ test.describe('ajouter un interlocuteur', () => {
     await fiche(page, api);
 
     await page.getByRole('button', { name: 'Ajouter un contact' }).click();
-    const roles = page.getByLabel('Rôle dans la société').locator('option');
+    await roleField(page).click();
 
-    await expect(roles.filter({ hasText: 'Détenteur du compte' })).toHaveCount(0);
+    // Les rôles sont là — mais pas celui-là : une société a un détenteur, un
+    // seul, et il n'est pas attribuable depuis ce formulaire.
+    await expect(page.getByRole('option', { name: 'Facturation' })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Détenteur du compte' })).toHaveCount(0);
   });
 });
 

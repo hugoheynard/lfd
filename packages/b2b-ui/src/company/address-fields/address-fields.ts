@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import type { DeliveryContact, Weekday } from '@lfd/contracts';
-import { FoldCheckboxComponent, FoldInputComponent, FoldSelectComponent } from 'fold-ng';
+import {
+  FoldCheckboxComponent,
+  FoldInputComponent,
+  FoldListboxComponent,
+  type FoldSelectOption,
+} from 'fold-ng';
 
 import { formatDeliveryContact, WEEKDAYS } from '../delivery-format';
 import { contactIssueOf, gpsIssueOf, slotIssueOf, type AddressDraft } from '../address-form.model';
@@ -16,7 +21,7 @@ import { contactIssueOf, gpsIssueOf, slotIssueOf, type AddressDraft } from '../a
 @Component({
   selector: 'lfd-address-fields',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldInputComponent, FoldCheckboxComponent, FoldSelectComponent],
+  imports: [FoldInputComponent, FoldCheckboxComponent, FoldListboxComponent],
   templateUrl: './address-fields.html',
   styleUrl: './address-fields.scss',
 })
@@ -62,9 +67,21 @@ export class AddressFields {
     }));
   }
 
+  /**
+   * Les contacts connus, proposés au listbox. La **position** sert de valeur :
+   * deux personnes peuvent porter le même nom, et rien d'autre ici ne les
+   * distingue — ces contacts viennent de la fiche, pas d'une table à identité.
+   */
+  protected readonly knownContactOptions = computed<readonly FoldSelectOption<number>[]>(() =>
+    this.knownContacts().map((contact, index) => ({
+      value: index,
+      label: this.contactLabel(contact),
+    })),
+  );
+
   /** « Reprendre un contact connu » : recopie ses champs et lève « pas de contact ». */
-  protected onPickContact(index: string): void {
-    const picked = this.knownContacts()[Number(index)];
+  protected onPickContact(index: number): void {
+    const picked = this.knownContacts()[index];
     if (picked === undefined) {
       return;
     }

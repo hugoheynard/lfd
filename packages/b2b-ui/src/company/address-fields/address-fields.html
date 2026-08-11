@@ -127,17 +127,16 @@
 
     @if (!value().noContact) {
       @if (knownContacts().length > 0) {
-        <fold-select
+        <!-- Raccourci de saisie, pas un champ : la valeur reste vide après le
+             choix, parce que ce qui compte est ce qu'il a REMPLI en dessous. -->
+        <fold-listbox
           label="Reprendre un contact connu"
           optional
           placeholder="Choisir un contact…"
-          [value]="''"
-          (valueChange)="onPickContact($event)"
-        >
-          @for (c of knownContacts(); track $index) {
-            <option [value]="$index">{{ contactLabel(c) }}</option>
-          }
-        </fold-select>
+          [options]="knownContactOptions()"
+          [value]="null"
+          (selectionChange)="onPickContact($event)"
+        />
       }
 
       <div class="row">

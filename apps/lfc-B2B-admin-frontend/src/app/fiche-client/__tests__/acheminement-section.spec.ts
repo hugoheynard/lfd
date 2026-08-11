@@ -76,16 +76,22 @@ describe("section Préférences d'acheminement", () => {
     const { host } = render({});
 
     expect(host.textContent).toContain('Aucune préférence');
-    expect(host.querySelector('select')).toBeNull();
+    expect(host.querySelector('fold-listbox')).toBeNull();
   });
 
   it('propose de choisir un point de retrait une fois la méthode posée', () => {
-    const { host } = render({
+    // Les options d'un listbox vivent dans un popup ouvert à la demande : on
+    // éprouve donc ce qu'il OFFRE, pas ce qui est peint avant qu'on l'ouvre.
+    const { host, section } = render({
       preference: { method: 'pickup', pickupAddressId: null, deliveryAddressId: null },
     });
 
-    const labels = [...host.querySelectorAll('option')].map((o) => o.textContent?.trim());
-    expect(labels).toEqual(['Celle par défaut', 'Labo Bastille (défaut)', 'Labo Nation']);
+    expect(host.querySelector('fold-listbox')).not.toBeNull();
+    expect(section['options']().map((o) => o.label)).toEqual([
+      'Celle par défaut',
+      'Labo Bastille (défaut)',
+      'Labo Nation',
+    ]);
   });
 
   it('offre « celle par défaut » plutôt que de figer le défaut du jour', () => {
@@ -99,12 +105,15 @@ describe("section Préférences d'acheminement", () => {
   });
 
   it('bascule vers les adresses de la SOCIÉTÉ en livraison', () => {
-    const { host } = render({
+    const { section } = render({
       preference: { method: 'delivery', pickupAddressId: null, deliveryAddressId: 'addr_2' },
     });
 
-    const labels = [...host.querySelectorAll('option')].map((o) => o.textContent?.trim());
-    expect(labels).toEqual(['Celle par défaut', 'Boutique (défaut)', 'Entrepôt']);
+    expect(section['options']().map((o) => o.label)).toEqual([
+      'Celle par défaut',
+      'Boutique (défaut)',
+      'Entrepôt',
+    ]);
   });
 
   it('repart du défaut quand la méthode change', () => {
