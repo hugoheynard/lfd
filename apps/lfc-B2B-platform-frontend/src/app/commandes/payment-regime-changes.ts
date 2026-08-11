@@ -1,4 +1,4 @@
-import type { PaymentTerm } from '../account/account.model';
+import type { SettlementMean } from '../account/account.model';
 
 /**
  * Un **changement de régime de règlement** dans la frise : la société demande à
@@ -8,8 +8,8 @@ import type { PaymentTerm } from '../account/account.model';
  */
 export interface PaymentRegimeChange {
   readonly id: string;
-  readonly from: PaymentTerm;
-  readonly to: PaymentTerm;
+  readonly from: SettlementMean;
+  readonly to: SettlementMean;
   /** Date de la demande (ISO). */
   readonly requestedAt: string;
   /** Date d'acceptation (ISO), ou `null` tant que la demande est en attente. */

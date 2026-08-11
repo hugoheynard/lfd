@@ -8,6 +8,7 @@ import type {
   DeliveryContact,
   PickupAddressView,
   PieceMode,
+  DeferredTerm,
   PlatformSettings,
 } from '@lfd/contracts';
 import {
@@ -54,7 +55,6 @@ import { PaiementSection } from '../paiement-section/paiement-section';
 import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
 import { AdminContactPanel, type AdminContactTarget } from '../panels/contact-panel/contact-panel';
-import { AdminReglementPanel } from '../panels/reglement-panel/reglement-panel';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
 
@@ -350,12 +350,6 @@ export class InformationsPage {
         side: 'right',
       }).closed;
     }
-    if (key === 'payment') {
-      return this.panels.open(AdminReglementPanel, {
-        data: { companyId: company.id, current: company.paymentTerm },
-        side: 'right',
-      }).closed;
-    }
     return null;
   }
 
@@ -439,6 +433,24 @@ export class InformationsPage {
       this.notify.error(error);
     } finally {
       this.granting.set(false);
+    }
+  }
+
+  /**
+   * Accorde (ou retire) les crédits de règlement — l'ensemble complet part au
+   * serveur, et la fiche se recharge sur ce qu'il a écrit.
+   */
+  protected async grantTerms(terms: readonly DeferredTerm[]): Promise<void> {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    try {
+      await this.service.grantTerms(company.id, terms);
+      this.notify.success('Moyens de paiement mis à jour.');
+      await this.load();
+    } catch (error) {
+      this.notify.error(error);
     }
   }
 

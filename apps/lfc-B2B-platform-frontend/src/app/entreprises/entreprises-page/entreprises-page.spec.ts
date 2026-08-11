@@ -25,8 +25,8 @@ function company(id: string, raisonSociale: string, enseigne = ''): Company {
     tvaIntracom: '',
     vatNumberRequired: true,
     status: 'pending',
-    paymentTerm: 'per_order',
-    requestedPaymentTerm: null,
+    grantedTerms: [],
+    requestedTerm: null,
     role: 'company_admin',
     primaryContact: {
       id: null,

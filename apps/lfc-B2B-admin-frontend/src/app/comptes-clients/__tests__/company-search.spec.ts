@@ -13,8 +13,8 @@ function company(overrides: Partial<AdminCompany> = {}): AdminCompany {
     siret: '81234567800019',
     tvaIntracom: '',
     status: 'active',
-    paymentTerm: 'per_order',
-    requestedPaymentTerm: null,
+    grantedTerms: [],
+    requestedTerm: null,
     primaryContact: {
       id: null,
       firstName: 'Claire',

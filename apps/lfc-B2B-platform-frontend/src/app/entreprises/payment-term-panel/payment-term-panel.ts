@@ -1,3 +1,4 @@
+import type { DeferredTerm } from '@lfd/contracts';
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 
 import {
@@ -9,12 +10,13 @@ import {
 } from 'fold-ng';
 
 import { AccountService } from '../../account/account.service';
-import { type PaymentTerm, PAYMENT_TERMS } from '../../account/account.model';
+import { SETTLEMENT_OPTIONS } from '../../account/account.model';
 
 /** Charge d'ouverture : l'entreprise visée et sa condition actuelle. */
 export interface PaymentTermPanelData {
   readonly companyId: string;
-  readonly current: PaymentTerm;
+  /** Les crédits **déjà accordés** — inutile de redemander ce qu'on a. */
+  readonly granted: readonly DeferredTerm[];
 }
 
 /**
@@ -38,22 +40,25 @@ export class PaymentTermPanel {
   private readonly ref = inject(FoldPanelRef);
 
   readonly data = input<PaymentTermPanelData | undefined>(undefined);
-  protected readonly terms = PAYMENT_TERMS;
+  protected readonly terms = SETTLEMENT_OPTIONS;
 
-  protected readonly term = signal<PaymentTerm>('per_order');
+  protected readonly term = signal<DeferredTerm>('monthly');
   protected readonly saving = signal(false);
 
   constructor() {
     effect(() => {
       const data = this.data();
       if (data !== undefined) {
-        this.term.set(data.current);
+        // Le premier crédit non encore accordé : demander ce qu'on a déjà
+        // n'aurait aucun sens.
+        const open = SETTLEMENT_OPTIONS.find((option) => !data.granted.includes(option.value));
+        this.term.set(open?.value ?? 'monthly');
       }
     });
   }
 
   protected onChange(value: string): void {
-    const match = PAYMENT_TERMS.find((option) => option.value === value);
+    const match = SETTLEMENT_OPTIONS.find((option) => option.value === value);
     if (match !== undefined) {
       this.term.set(match.value);
     }
@@ -65,7 +70,7 @@ export class PaymentTermPanel {
       return;
     }
     this.saving.set(true);
-    this.account.requestPaymentTerm(data.companyId, this.term(), () => this.ref.close(true));
+    this.account.requestSettlementMean(data.companyId, this.term(), () => this.ref.close(true));
   }
 
   protected cancel(): void {

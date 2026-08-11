@@ -4,10 +4,9 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   BillingAddressPayload,
+  DeferredTerm,
   CompanyMemberInvitedView,
   CompanyMemberView,
-  CustomerLookupView,
-  CustomerSearchView,
   DeliveryAddressPayload,
   InviteCompanyMemberPayload,
   UpdateIdentityPayload,
@@ -15,7 +14,7 @@ import type {
 import type { CompanyContactDraft, CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
 import { B2B_API_BASE } from '../api/api-config';
-import type { AdminCompany, AdminCompanyDetail, CompanyOpened, PaymentTerm } from './admin-company';
+import type { AdminCompany, AdminCompanyDetail, CompanyOpened } from './admin-company';
 
 /**
  * Accès à la surface **admin** du backend B2B.
@@ -67,37 +66,6 @@ export class AdminCompaniesService {
   }): Promise<CompanyOpened> {
     const body = { ...input.identity, primaryContact: input.contact };
     return firstValueFrom(this.http.post<CompanyOpened>(`${B2B_API_BASE}/admin/companies`, body));
-  }
-
-  /**
-   * Les clients dont le nom ou l'adresse **contient** le terme cherché.
-   *
-   * Chercher plutôt que saisir : le commercial connaît le nom de son
-   * interlocuteur, rarement l'orthographe de son adresse — et c'est ce qui lui
-   * permet de rattacher la société à un espace existant.
-   */
-  async searchCustomers(term: string): Promise<CustomerSearchView> {
-    return firstValueFrom(
-      this.http.get<CustomerSearchView>(`${B2B_API_BASE}/admin/customers`, {
-        params: { q: term },
-      }),
-    );
-  }
-
-  /**
-   * Ce qu'on sait déjà de la personne portant cette adresse, `null` si elle nous
-   * est inconnue — le cas le plus fréquent, et pas une erreur.
-   *
-   * Se lit **avant** d'enregistrer : un même client peut détenir plusieurs
-   * établissements, et le commercial doit s'en apercevoir pendant qu'il a encore
-   * le client au téléphone, pas après lui avoir ouvert un second espace.
-   */
-  async findCustomerByEmail(email: string): Promise<CustomerLookupView | null> {
-    return firstValueFrom(
-      this.http.get<CustomerLookupView | null>(`${B2B_API_BASE}/admin/customers/by-email`, {
-        params: { email },
-      }),
-    );
   }
 
   /** Les personnes qui **accèdent** à l'espace de cette société. */
@@ -183,10 +151,10 @@ export class AdminCompaniesService {
   }
 
   /** Fixe la condition de règlement **convenue** (solde la demande client). */
-  async setPaymentTerm(companyId: string, paymentTerm: PaymentTerm): Promise<void> {
+  async grantTerms(companyId: string, grantedTerms: readonly DeferredTerm[]): Promise<void> {
     await firstValueFrom(
-      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/payment-term`, {
-        paymentTerm,
+      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/granted-terms`, {
+        grantedTerms,
       }),
     );
   }

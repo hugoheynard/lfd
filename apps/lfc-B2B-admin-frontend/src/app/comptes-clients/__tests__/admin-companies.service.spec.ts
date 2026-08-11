@@ -16,8 +16,8 @@ const company: AdminCompany = {
   siret: '12345678901234',
   tvaIntracom: 'FR12345678901',
   status: 'pending',
-  paymentTerm: 'per_order',
-  requestedPaymentTerm: null,
+  grantedTerms: [],
+  requestedTerm: null,
   primaryContact: {
     id: null,
     firstName: 'Léa',
@@ -101,14 +101,14 @@ describe('AdminCompaniesService', () => {
     await expect(promise).resolves.toBeUndefined();
   });
 
-  it('setPaymentTerm PATCH le terme convenu', async () => {
+  it('grantTerms PATCH l’ensemble complet des crédits accordés', async () => {
     const { service, http } = setup();
-    const promise = service.setPaymentTerm('company_1', 'net90');
+    const promise = service.grantTerms('company_1', ['monthly', 'net90']);
     await flush();
 
-    const req = http.expectOne(`${URL}/company_1/payment-term`);
+    const req = http.expectOne(`${URL}/company_1/granted-terms`);
     expect(req.request.method).toBe('PATCH');
-    expect(req.request.body).toEqual({ paymentTerm: 'net90' });
+    expect(req.request.body).toEqual({ grantedTerms: ['monthly', 'net90'] });
     req.flush(null);
     await promise;
   });

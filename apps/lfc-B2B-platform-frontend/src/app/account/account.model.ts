@@ -1,3 +1,5 @@
+import { DEFERRED_TERM_LABELS, type DeferredTerm } from '@lfd/contracts';
+
 import type { AssignableRole, CompanyMemberRole } from '@lfd/contracts';
 
 /**
@@ -25,31 +27,33 @@ export type CompanyStatus = 'pending' | 'active' | 'suspended';
 export type CompanyRole = 'company_admin' | 'member';
 
 /**
- * Condition de règlement (mode de facturation). **Toujours présente** — défaut
- * « à la commande » (`per_order`) — et **validée par le commercial** : côté
- * client, on l'affiche, on ne l'édite pas librement.
+ * Un moyen de règlement **tel qu'un écran le nomme** : payer à la commande, ou
+ * l'un des crédits accordés.
+ *
+ * Payer à la commande n'est pas un crédit — c'est le socle, offert à tout le
+ * monde, et il ne s'accorde ni ne se retire. Il n'apparaît donc pas dans
+ * `DeferredTerm` côté serveur ; ici on le nomme parce qu'un écran doit bien
+ * l'afficher.
  */
-export type PaymentTerm = 'per_order' | 'monthly' | 'net60' | 'net90';
+export type SettlementMean = 'per_order' | DeferredTerm;
 
-const PAYMENT_TERM_LABELS: Readonly<Record<PaymentTerm, string>> = {
+const SETTLEMENT_LABELS: Readonly<Record<SettlementMean, string>> = {
   per_order: 'À la commande',
-  monthly: 'Mensuel — relevé de fin de mois',
-  net60: 'À 60 jours',
-  net90: 'À 90 jours',
+  ...DEFERRED_TERM_LABELS,
 };
 
-/** Libellé lisible d'une condition de règlement. */
-export function paymentTermLabel(term: PaymentTerm): string {
-  return PAYMENT_TERM_LABELS[term];
+/** Libellé lisible d'un moyen de règlement. */
+export function settlementLabel(mean: SettlementMean): string {
+  return SETTLEMENT_LABELS[mean];
 }
 
-/** Conditions de règlement dans l'ordre d'affichage (options de sélecteur). */
-export const PAYMENT_TERMS: readonly { readonly value: PaymentTerm; readonly label: string }[] = [
-  { value: 'per_order', label: PAYMENT_TERM_LABELS.per_order },
-  { value: 'monthly', label: PAYMENT_TERM_LABELS.monthly },
-  { value: 'net60', label: PAYMENT_TERM_LABELS.net60 },
-  { value: 'net90', label: PAYMENT_TERM_LABELS.net90 },
-];
+/**
+ * Ce dont une société dispose, en une phrase : le socle, plus les crédits qui
+ * lui ont été accordés. Ils s'ajoutent — le premier ne disparaît jamais.
+ */
+export function settlementSummary(grantedTerms: readonly DeferredTerm[]): string {
+  return ['per_order' as const, ...grantedTerms].map(settlementLabel).join(' · ');
+}
 
 /** Le profil de la personne connectée. */
 export interface UserProfile {
@@ -101,9 +105,9 @@ export interface Company {
   readonly vatNumberRequired: boolean;
   readonly status: CompanyStatus;
   /** Condition de règlement **convenue**, toujours présente (défaut « à la commande »). */
-  readonly paymentTerm: PaymentTerm;
+  readonly grantedTerms: readonly DeferredTerm[];
   /** Terme **demandé** en attente de validation staff ; `null` = aucune demande. */
-  readonly requestedPaymentTerm: PaymentTerm | null;
+  readonly requestedTerm: DeferredTerm | null;
   readonly role: CompanyRole;
   /** Contact principal (carte « Admin du compte entreprise »), toujours présent. */
   readonly primaryContact: Contact;
@@ -184,3 +188,12 @@ export function companyRoleLabel(role: CompanyRole): string {
 export function companyDisplayName(company: Company): string {
   return company.enseigne === '' ? company.raisonSociale : company.enseigne;
 }
+
+/** Les crédits qu'un client peut **demander** — le socle n'a pas à être demandé. */
+export const SETTLEMENT_OPTIONS: readonly {
+  readonly value: DeferredTerm;
+  readonly label: string;
+}[] = (['monthly', 'net60', 'net90'] as const).map((value) => ({
+  value,
+  label: DEFERRED_TERM_LABELS[value],
+}));

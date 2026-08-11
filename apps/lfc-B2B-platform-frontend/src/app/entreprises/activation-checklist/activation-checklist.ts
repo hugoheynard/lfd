@@ -144,7 +144,7 @@ export class ActivationChecklist {
       this.panelHost.open(AdressePanel, { data, side: 'right' });
     } else if (key === 'payment') {
       this.panelHost.open(PaymentTermPanel, {
-        data: { companyId: company.id, current: company.paymentTerm },
+        data: { companyId: company.id, granted: company.grantedTerms },
         side: 'right',
       });
     }

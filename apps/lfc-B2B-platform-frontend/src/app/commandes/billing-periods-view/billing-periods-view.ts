@@ -7,7 +7,7 @@ import {
   FoldElementTitleComponent,
 } from 'fold-ng';
 
-import { paymentTermLabel } from '../../account/account.model';
+import { settlementLabel } from '../../account/account.model';
 import { CommandPeriodCard } from '../command-period-card/command-period-card';
 import { CommandSingle } from '../command-single/command-single';
 import { formatEurValue } from '../../data/catalogue-seed';
@@ -74,7 +74,7 @@ export class BillingPeriodsView {
   }
 
   protected readonly statusVariant = orderStatusVariant;
-  protected readonly termLabel = paymentTermLabel;
+  protected readonly termLabel = settlementLabel;
 
   protected fmt(value: number): string {
     return formatEurValue(value);

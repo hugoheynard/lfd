@@ -1,6 +1,36 @@
-/* La carte porte déjà son espacement ; rien à ajouter tant que la section n'a
-   qu'une liste et ses callouts. Le fichier existe pour que le styleUrl du
-   composant ne pointe pas dans le vide le jour où le mandat arrive. */
 :host {
   display: block;
+}
+
+/* Un moyen par ligne : ce qu'il est à gauche, où il en est à droite. */
+.pm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+}
+
+.pm-row + .pm-row {
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.pm-what {
+  display: grid;
+  gap: 2px;
+}
+
+.pm-label {
+  font-weight: 600;
+}
+
+.pm-note {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.pm-state {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
 }

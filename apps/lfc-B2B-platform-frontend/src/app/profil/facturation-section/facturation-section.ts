@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { FoldPanelHostService } from 'fold-ng';
 import { CompanyBillingCard } from '@lfd/b2b-ui/company';
 
-import { type Company, paymentTermLabel } from '../../account/account.model';
+import { type Company, settlementSummary, settlementLabel } from '../../account/account.model';
 import { PaymentTermPanel } from '../../entreprises/payment-term-panel/payment-term-panel';
 
 /**
@@ -24,15 +24,15 @@ export class FacturationSection {
 
   readonly company = input.required<Company>();
 
-  protected readonly termLabel = computed(() => paymentTermLabel(this.company().paymentTerm));
+  protected readonly termLabel = computed(() => settlementSummary(this.company().grantedTerms));
   protected readonly canManage = computed(() => this.company().role === 'company_admin');
 
   /** Une demande n'est « en attente » que si elle diffère réellement du convenu. */
   protected readonly pendingLabel = computed<string | null>(() => {
     const company = this.company();
-    const requested = company.requestedPaymentTerm;
-    return requested !== null && requested !== company.paymentTerm
-      ? paymentTermLabel(requested)
+    const requested = company.requestedTerm;
+    return requested !== null && !company.grantedTerms.includes(requested)
+      ? settlementLabel(requested)
       : null;
   });
 
@@ -40,7 +40,7 @@ export class FacturationSection {
   protected demander(): void {
     const company = this.company();
     this.panelHost.open(PaymentTermPanel, {
-      data: { companyId: company.id, current: company.paymentTerm },
+      data: { companyId: company.id, granted: company.grantedTerms },
       side: 'right',
     });
   }

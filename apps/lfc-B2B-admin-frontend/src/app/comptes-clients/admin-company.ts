@@ -1,4 +1,4 @@
-import type { CompanyAddressesView, CompanyContactView } from '@lfd/contracts';
+import type { CompanyAddressesView, CompanyContactView, DeferredTerm } from '@lfd/contracts';
 
 /**
  * Vue **front** d'une société renvoyée par `GET /admin/companies` (miroir de
@@ -7,7 +7,8 @@ import type { CompanyAddressesView, CompanyContactView } from '@lfd/contracts';
  */
 export type CompanyStatus = 'pending' | 'active' | 'suspended' | 'terminated';
 
-export type PaymentTerm = 'per_order' | 'monthly' | 'net60' | 'net90';
+// Les crédits accordés vivent dans les contrats : les deux frontends les lisent.
+export type { DeferredTerm } from '@lfd/contracts';
 
 export interface PrimaryContact {
   readonly id: string | null;
@@ -45,8 +46,13 @@ export interface AdminCompany {
   readonly siret: string;
   readonly tvaIntracom: string;
   readonly status: CompanyStatus;
-  readonly paymentTerm: PaymentTerm;
-  readonly requestedPaymentTerm: PaymentTerm | null;
+  /**
+   * Les crédits **accordés**, cumulatifs et possiblement vides. Vide = la
+   * société paie à la commande, ce que tout le monde peut faire.
+   */
+  readonly grantedTerms: readonly DeferredTerm[];
+  /** Le crédit **demandé** par le client, en attente ; `null` = aucune demande. */
+  readonly requestedTerm: DeferredTerm | null;
   readonly primaryContact: PrimaryContact;
   readonly owner: CompanyOwner | null;
   readonly kbis: Kbis | null;
@@ -84,12 +90,6 @@ export const STATUS_LABELS: Readonly<Record<CompanyStatus, string>> = {
 };
 
 /** Libellé FR d'une condition de règlement. */
-export const PAYMENT_TERM_LABELS: Readonly<Record<PaymentTerm, string>> = {
-  per_order: 'À la commande',
-  monthly: 'Mensuel',
-  net60: '60 jours',
-  net90: '90 jours',
-};
 
 /**
  * Ce qu'une **ouverture de compte** rapporte (`POST /admin/companies`).

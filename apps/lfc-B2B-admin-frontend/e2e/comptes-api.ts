@@ -197,8 +197,9 @@ export class ComptesApiDouble {
       siret: '81245678900021',
       tvaIntracom: '',
       status: 'pending',
-      paymentTerm: 'per_order',
-      requestedPaymentTerm: null,
+      // Aucun crédit accordé : la société paie à la commande, comme tout le monde.
+      grantedTerms: [],
+      requestedTerm: null,
       primaryContact: {
         id: null,
         role: null,

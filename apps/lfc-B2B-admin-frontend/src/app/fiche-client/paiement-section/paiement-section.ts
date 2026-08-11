@@ -1,42 +1,33 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { DEFERRED_TERM_LABELS, deferredTermSchema, type DeferredTerm } from '@lfd/contracts';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldFieldComponent,
-  FoldFieldListComponent,
   FoldPageSectionComponent,
 } from 'fold-ng';
 
-import { PAYMENT_TERM_LABELS, type PaymentTerm } from '../../comptes-clients/admin-company';
-
-/**
- * Comment on encaisse, **déduit du terme** tant qu'aucun instrument n'est
- * enregistré.
- *
- * C'est aujourd'hui une déduction et non une donnée : `per_order` veut dire à la
- * fois « dû à la commande » et « payé par carte ». Cette confusion est
- * documentée (`architecture-prelevement-sepa.md` §1.A) et sera levée par un
- * `PaymentInstrument` propre ; en attendant, l'écran dit ce qui se passe
- * réellement plutôt que d'inventer un champ.
- */
-const COLLECTION: Readonly<Record<PaymentTerm, string>> = {
-  per_order: 'Carte bancaire, au moment de la commande',
-  monthly: 'Facturé au terme — encaissement hors plateforme',
-  net60: 'Facturé au terme — encaissement hors plateforme',
-  net90: 'Facturé au terme — encaissement hors plateforme',
-};
+/** Une ligne de la section : un moyen de règlement, et où il en est. */
+interface PaymentMeanRow {
+  readonly term: DeferredTerm;
+  readonly label: string;
+  readonly granted: boolean;
+  /** Le client l'a demandé et il n'est pas encore accordé. */
+  readonly requested: boolean;
+}
 
 /**
  * Section **Moyens de paiement** d'une fiche client (staff).
  *
- * Elle répond à deux questions que le commercial se pose avant de promettre
- * quoi que ce soit : **quand** ce client paie, et **comment** on est encaissé.
+ * Les moyens sont **cumulatifs**. Payer à la commande n'est pas un réglage :
+ * c'est le socle, offert à tout le monde, et il ne se retire pas. Ce qui
+ * s'accorde, ce sont des **crédits** — régler plus tard —, et les accorder
+ * n'enlève rien : un client au mensuel doit pouvoir régler une commande
+ * ponctuelle à part.
  *
- * Le prélèvement SEPA y est annoncé comme **indisponible**, et c'est délibéré :
- * la fiche est l'endroit où un commercial vérifie avant de s'engager devant son
- * client. Taire une capacité absente laisserait promettre un prélèvement qui
- * n'existe pas ; l'afficher « à venir » sans rien derrière reviendrait au même.
+ * Dès qu'un crédit est accordé, il devient le **défaut** à l'encaissement :
+ * c'est le régime négocié.
  */
 @Component({
   selector: 'app-paiement-section',
@@ -45,34 +36,42 @@ const COLLECTION: Readonly<Record<PaymentTerm, string>> = {
     FoldPageSectionComponent,
     FoldCardComponent,
     FoldCalloutComponent,
-    FoldFieldListComponent,
-    FoldFieldComponent,
+    FoldBadgeComponent,
     FoldButtonComponent,
   ],
   templateUrl: './paiement-section.html',
   styleUrl: './paiement-section.scss',
 })
 export class PaiementSection {
-  /** Le terme **convenu** — celui qui fait foi. */
-  readonly term = input.required<PaymentTerm>();
-  /** Le terme **demandé** par le client, en attente d'arbitrage ; `null` = aucun. */
-  readonly requestedTerm = input<PaymentTerm | null>(null);
+  /** Les crédits accordés — vide veut dire « paie à la commande », comme tout le monde. */
+  readonly grantedTerms = input.required<readonly DeferredTerm[]>();
+  /** Le crédit **demandé** par le client, en attente d'arbitrage ; `null` = aucun. */
+  readonly requestedTerm = input<DeferredTerm | null>(null);
+  /** Un mandat de prélèvement est-il enregistré ? (Pas encore possible, cf. §SEPA.) */
+  readonly hasMandate = input(false);
 
-  /** Ouvrir le panneau de condition de règlement. */
-  readonly editTerm = output<void>();
+  /** Le staff change l'ensemble complet des crédits accordés. */
+  readonly grantedTermsChange = output<readonly DeferredTerm[]>();
 
-  protected readonly termLabel = computed(() => PAYMENT_TERM_LABELS[this.term()]);
-  protected readonly collection = computed(() => COLLECTION[this.term()]);
-
-  /**
-   * La demande du client, quand elle diffère de ce qui est convenu.
-   *
-   * Une demande **identique** au terme en place n'est pas une demande en
-   * attente : la montrer ferait croire à un arbitrage à rendre alors qu'il l'a
-   * déjà été.
-   */
-  protected readonly pendingRequest = computed(() => {
-    const requested = this.requestedTerm();
-    return requested === null || requested === this.term() ? null : PAYMENT_TERM_LABELS[requested];
+  protected readonly rows = computed<readonly PaymentMeanRow[]>(() => {
+    const granted = this.grantedTerms();
+    return deferredTermSchema.options.map((term) => ({
+      term,
+      label: DEFERRED_TERM_LABELS[term],
+      granted: granted.includes(term),
+      requested: this.requestedTerm() === term && !granted.includes(term),
+    }));
   });
+
+  /** Un crédit accordé signifie « facturé puis encaissé », donc un mandat à avoir. */
+  protected readonly settlesOnAccount = computed(() => this.grantedTerms().length > 0);
+
+  /** Accorde ou retire un crédit — l'ensemble complet part au serveur. */
+  protected toggle(term: DeferredTerm): void {
+    const granted = this.grantedTerms();
+    const next = granted.includes(term)
+      ? granted.filter((candidate) => candidate !== term)
+      : [...granted, term];
+    this.grantedTermsChange.emit(next);
+  }
 }

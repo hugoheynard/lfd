@@ -15,8 +15,8 @@ function company(over: Partial<AdminCompany> = {}): AdminCompany {
     siret: '81245678900021',
     tvaIntracom: '',
     status: 'pending',
-    paymentTerm: 'per_order',
-    requestedPaymentTerm: null,
+    grantedTerms: [],
+    requestedTerm: null,
     primaryContact: {
       id: null,
       firstName: 'Camille',

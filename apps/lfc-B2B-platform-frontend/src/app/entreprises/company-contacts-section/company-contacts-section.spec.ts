@@ -27,8 +27,8 @@ function company(over: Partial<Company> = {}): Company {
     tvaIntracom: '',
     vatNumberRequired: true,
     status: 'active',
-    paymentTerm: 'per_order',
-    requestedPaymentTerm: null,
+    grantedTerms: [],
+    requestedTerm: null,
     role: 'company_admin',
     primaryContact: {
       id: null,

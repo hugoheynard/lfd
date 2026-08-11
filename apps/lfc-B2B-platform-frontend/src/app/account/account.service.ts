@@ -13,7 +13,7 @@ import type {
   CompanyDraft,
   ContactDraft,
   NavPreferences,
-  PaymentTerm,
+  SettlementMean,
   UserProfileDraft,
 } from './account.model';
 
@@ -173,7 +173,7 @@ export class AccountService {
     );
   }
 
-  requestPaymentTerm(companyId: string, paymentTerm: PaymentTerm, onDone?: () => void): void {
+  requestSettlementMean(companyId: string, paymentTerm: SettlementMean, onDone?: () => void): void {
     this.mutate(
       (token) =>
         this.http.patch(

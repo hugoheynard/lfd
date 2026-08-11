@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import type { CustomerLookupView, PickupAddressView, PlatformSettings } from '@lfd/contracts';
+import type { PickupAddressView, PlatformSettings } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { CompanyOpened } from '../../comptes-clients/admin-company';
@@ -35,10 +35,7 @@ interface Harness {
  * Monte la page **sans identifiant de route** — c'est ce qui la met en mode
  * ouverture, exactement comme la route `/comptes-clients/nouveau`.
  */
-async function setup(
-  create = vi.fn(() => Promise.resolve(CREATED)),
-  findCustomerByEmail: () => Promise<CustomerLookupView | null> = () => Promise.resolve(null),
-): Promise<Harness> {
+async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Harness> {
   const errors: unknown[] = [];
   TestBed.configureTestingModule({
     providers: [
@@ -47,8 +44,7 @@ async function setup(
         provide: AdminCompaniesService,
         useValue: {
           create,
-          findCustomerByEmail,
-        } satisfies Pick<AdminCompaniesService, 'create' | 'findCustomerByEmail'>,
+        } satisfies Pick<AdminCompaniesService, 'create'>,
       },
       {
         provide: PlatformSettingsService,

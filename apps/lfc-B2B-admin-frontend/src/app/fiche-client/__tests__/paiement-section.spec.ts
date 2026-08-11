@@ -1,15 +1,31 @@
 import { TestBed } from '@angular/core/testing';
+import type { DeferredTerm } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { PaymentTerm } from '../../comptes-clients/admin-company';
 import { PaiementSection } from '../paiement-section/paiement-section';
 
-function render(term: PaymentTerm, requested: PaymentTerm | null = null): HTMLElement {
+interface Rendered {
+  readonly host: HTMLElement;
+  /** Ce que la section a demandé d'accorder, à chaque bascule. */
+  readonly granted: (readonly DeferredTerm[])[];
+  readonly section: PaiementSection;
+}
+
+function render(
+  grantedTerms: readonly DeferredTerm[] = [],
+  requestedTerm: DeferredTerm | null = null,
+): Rendered {
   const fixture = TestBed.createComponent(PaiementSection);
-  fixture.componentRef.setInput('term', term);
-  fixture.componentRef.setInput('requestedTerm', requested);
+  fixture.componentRef.setInput('grantedTerms', grantedTerms);
+  fixture.componentRef.setInput('requestedTerm', requestedTerm);
+  const granted: (readonly DeferredTerm[])[] = [];
+  fixture.componentInstance.grantedTermsChange.subscribe((terms) => granted.push(terms));
   fixture.detectChanges();
-  return fixture.nativeElement as HTMLElement;
+  return {
+    host: fixture.nativeElement as HTMLElement,
+    granted,
+    section: fixture.componentInstance,
+  };
 }
 
 describe('section Moyens de paiement', () => {
@@ -17,31 +33,54 @@ describe('section Moyens de paiement', () => {
     TestBed.resetTestingModule();
   });
 
-  it("dit COMMENT on encaisse, pas seulement quand c'est dû", () => {
-    // Deux questions distinctes que le terme confond aujourd'hui : le
-    // commercial a besoin des deux avant de s'engager.
-    expect(render('per_order').textContent).toContain('Carte bancaire');
-    expect(render('net60').textContent).toContain('hors plateforme');
+  it('montre le paiement à la commande comme TOUJOURS actif', () => {
+    // Ce n'est pas un réglage : c'est le socle. Le montrer évite de croire
+    // qu'il faut activer quelque chose pour pouvoir vendre.
+    const { host } = render([]);
+
+    expect(host.textContent).toContain('À la commande');
+    expect(host.textContent).toContain('Toujours actif');
   });
 
-  it('signale une demande de terme en attente', () => {
-    const host = render('per_order', 'net60');
+  it('AJOUTE un crédit sans retirer les autres', () => {
+    // Tout l'intérêt du cumul : débloquer le mensuel n'enlève rien.
+    const { granted, section } = render(['net60']);
 
-    expect(host.textContent).toContain('Le client demande');
-    expect(host.textContent).toContain('60 jours');
+    section['toggle']('monthly');
+
+    expect(granted.at(-1)).toEqual(['net60', 'monthly']);
   });
 
-  it('ne signale RIEN quand la demande a déjà été accordée', () => {
-    // Une demande identique au terme en place n'est pas en attente : la montrer
-    // ferait croire à un arbitrage à rendre alors qu'il l'a déjà été.
-    const host = render('net60', 'net60');
+  it('retire un crédit déjà accordé', () => {
+    const { granted, section } = render(['monthly', 'net60']);
 
-    expect(host.textContent).not.toContain('Le client demande');
+    section['toggle']('monthly');
+
+    expect(granted.at(-1)).toEqual(['net60']);
   });
 
-  it("annonce que le prélèvement SEPA n'existe pas", () => {
-    // La fiche est l'endroit où l'on vérifie AVANT de promettre. Taire une
-    // capacité absente laisserait l'engager auprès du client.
-    expect(render('monthly').textContent).toContain("n'est pas disponible");
+  it('signale un crédit demandé par le client et pas encore accordé', () => {
+    const { host } = render([], 'monthly');
+
+    expect(host.textContent).toContain('Demandé par le client');
+  });
+
+  it('ne le signale plus une fois accordé', () => {
+    const { host } = render(['monthly'], 'monthly');
+
+    expect(host.textContent).not.toContain('Demandé par le client');
+  });
+
+  it("réclame un mandat dès qu'on facture au terme", () => {
+    // Ce qu'on facture, il faut savoir l'encaisser — dit sans bloquer la vente.
+    const { host } = render(['monthly']);
+
+    expect(host.textContent).toContain('Aucun mandat de prélèvement');
+  });
+
+  it('ne réclame rien tant que tout se paie à la commande', () => {
+    const { host } = render([]);
+
+    expect(host.textContent).not.toContain('Aucun mandat');
   });
 });

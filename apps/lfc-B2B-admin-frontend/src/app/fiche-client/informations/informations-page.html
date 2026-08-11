@@ -155,9 +155,9 @@
                dossier constitué, et c'est là que le mandat SEPA se branchera. -->
           @if (company(); as c) {
             <app-paiement-section
-              [term]="c.paymentTerm"
-              [requestedTerm]="c.requestedPaymentTerm"
-              (editTerm)="act('payment')"
+              [grantedTerms]="c.grantedTerms"
+              [requestedTerm]="c.requestedTerm"
+              (grantedTermsChange)="grantTerms($event)"
             />
           }
         }

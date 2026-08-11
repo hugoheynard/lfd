@@ -1,42 +1,57 @@
 <fold-page-section
   title="Moyens de paiement"
   icon="wallet"
-  description="Quand ce client paie, et comment on est encaissé."
+  description="Ce que ce client peut utiliser pour régler. Ils s'ajoutent, ils ne se remplacent pas."
 >
-  <button
-    sectionActions
-    foldButton
-    emphasis="outline"
-    size="sm"
-    icon="edit"
-    (click)="editTerm.emit()"
-  >
-    Modifier la condition
-  </button>
-
   <fold-card>
-    <fold-field-list>
-      <fold-field label="Condition de règlement">{{ termLabel() }}</fold-field>
-      <fold-field label="Encaissement">{{ collection() }}</fold-field>
-    </fold-field-list>
+    <!-- Le socle : il ne se règle pas, il ne se retire pas. Le montrer évite de
+         croire qu'il faut « activer » quelque chose pour vendre. -->
+    <div class="pm-row">
+      <div class="pm-what">
+        <span class="pm-label">À la commande</span>
+        <span class="pm-note">Carte bancaire au moment de commander.</span>
+      </div>
+      <fold-badge content="Toujours actif" variant="success" />
+    </div>
 
-    <!-- Une demande du client en attente d'arbitrage : c'est une décision à
-         prendre, pas une information de plus. -->
-    @if (pendingRequest(); as requested) {
-      <fold-callout variant="warning">
-        Le client demande <strong>{{ requested }}</strong> — arbitrage à rendre.
-        <button actions foldButton emphasis="soft" size="sm" (click)="editTerm.emit()">
-          Trancher
-        </button>
-      </fold-callout>
+    @for (row of rows(); track row.term) {
+      <div class="pm-row">
+        <div class="pm-what">
+          <span class="pm-label">{{ row.label }}</span>
+          <span class="pm-note">
+            @if (row.granted) {
+              Porté au compte par défaut ; le client peut régler une commande à part.
+            } @else {
+              Crédit non accordé.
+            }
+          </span>
+        </div>
+
+        <div class="pm-state">
+          @if (row.requested) {
+            <fold-badge content="Demandé par le client" variant="warning" />
+          }
+          <button
+            foldButton
+            size="sm"
+            [emphasis]="row.granted ? 'outline' : 'soft'"
+            [intent]="row.granted ? 'neutral' : 'primary'"
+            (click)="toggle(row.term)"
+          >
+            {{ row.granted ? 'Retirer' : 'Débloquer' }}
+          </button>
+        </div>
+      </div>
     }
 
-    <!-- Dit tel quel : la fiche est l'endroit où le commercial vérifie AVANT de
-         s'engager devant son client. Un « bientôt disponible » se promettrait
-         aussi vite qu'une capacité réelle. -->
-    <fold-callout variant="info">
-      <strong>Le prélèvement SEPA n'est pas disponible.</strong> Aucun mandat ne peut être
-      enregistré aujourd'hui, et aucune société n'est prélevée : ne l'engagez pas auprès du client.
-    </fold-callout>
+    <!-- Ce qu'on facture, il faut savoir l'encaisser. Dit sans bloquer la
+         vente : le commercial débloque devant son client, le mandat suit. -->
+    @if (settlesOnAccount() && !hasMandate()) {
+      <fold-callout variant="warning">
+        <strong>Aucun mandat de prélèvement.</strong> Ce client est facturé au terme, mais rien ne
+        permet encore de l'encaisser automatiquement — l'enregistrement du mandat SEPA n'est pas
+        disponible (voir la note de conception).
+      </fold-callout>
+    }
   </fold-card>
 </fold-page-section>
