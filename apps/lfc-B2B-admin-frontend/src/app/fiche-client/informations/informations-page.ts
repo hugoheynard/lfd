@@ -48,6 +48,7 @@ import {
   type ActivationStep,
 } from './activation-steps';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
+import { PaiementSection } from '../paiement-section/paiement-section';
 import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
 import { AdminContactPanel, type AdminContactTarget } from '../panels/contact-panel/contact-panel';
@@ -91,6 +92,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
     CompanyContactsCard,
     CompanyAddressesCard,
     CompanyActivationChecklist,
+    PaiementSection,
   ],
   templateUrl: './informations-page.html',
   styleUrl: './informations-page.scss',

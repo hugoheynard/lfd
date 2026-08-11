@@ -1,0 +1,42 @@
+<fold-page-section
+  title="Moyens de paiement"
+  icon="wallet"
+  description="Quand ce client paie, et comment on est encaissé."
+>
+  <button
+    sectionActions
+    foldButton
+    emphasis="outline"
+    size="sm"
+    icon="edit"
+    (click)="editTerm.emit()"
+  >
+    Modifier la condition
+  </button>
+
+  <fold-card>
+    <fold-field-list>
+      <fold-field label="Condition de règlement">{{ termLabel() }}</fold-field>
+      <fold-field label="Encaissement">{{ collection() }}</fold-field>
+    </fold-field-list>
+
+    <!-- Une demande du client en attente d'arbitrage : c'est une décision à
+         prendre, pas une information de plus. -->
+    @if (pendingRequest(); as requested) {
+      <fold-callout variant="warning">
+        Le client demande <strong>{{ requested }}</strong> — arbitrage à rendre.
+        <button actions foldButton emphasis="soft" size="sm" (click)="editTerm.emit()">
+          Trancher
+        </button>
+      </fold-callout>
+    }
+
+    <!-- Dit tel quel : la fiche est l'endroit où le commercial vérifie AVANT de
+         s'engager devant son client. Un « bientôt disponible » se promettrait
+         aussi vite qu'une capacité réelle. -->
+    <fold-callout variant="info">
+      <strong>Le prélèvement SEPA n'est pas disponible.</strong> Aucun mandat ne peut être
+      enregistré aujourd'hui, et aucune société n'est prélevée : ne l'engagez pas auprès du client.
+    </fold-callout>
+  </fold-card>
+</fold-page-section>

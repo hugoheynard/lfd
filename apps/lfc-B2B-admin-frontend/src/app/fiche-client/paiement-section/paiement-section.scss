@@ -1,0 +1,6 @@
+/* La carte porte déjà son espacement ; rien à ajouter tant que la section n'a
+   qu'une liste et ses callouts. Le fichier existe pour que le styleUrl du
+   composant ne pointe pas dans le vide le jour où le mandat arrive. */
+:host {
+  display: block;
+}

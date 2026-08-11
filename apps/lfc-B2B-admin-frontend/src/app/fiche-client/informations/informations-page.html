@@ -149,6 +149,16 @@
             [showPickup]="deliveryHidden()"
             [pickup]="defaultPickup()"
           />
+
+          <!-- En bas de fiche : c'est ce qu'on regarde en dernier, une fois le
+               dossier constitué, et c'est là que le mandat SEPA se branchera. -->
+          @if (company(); as c) {
+            <app-paiement-section
+              [term]="c.paymentTerm"
+              [requestedTerm]="c.requestedPaymentTerm"
+              (editTerm)="act('payment')"
+            />
+          }
         }
       </div>
     }
