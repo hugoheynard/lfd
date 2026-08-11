@@ -46,6 +46,23 @@ export class AccountAlertCard {
   protected readonly labels = computed(() => ALERT_KIND_LABELS[this.rule().kind]);
   protected readonly globalLines = computed(() => describeRule(this.rule().global));
 
+  /**
+   * Le réglage propre au compte, résumé **comme celui de la plateforme** — même
+   * format, même vocabulaire, l'un sous l'autre.
+   *
+   * Sans ça, lire ce qu'un compte dérogé applique réellement obligeait à ouvrir
+   * l'éditeur, c'est-à-dire à entrer en mode modification pour une simple
+   * lecture. Deux résumés comparables se lisent d'un coup d'œil ; deux formats
+   * différents ne se comparent pas.
+   *
+   * `null` en mode `off` : l'effectif y est le global éteint, donc le même texte
+   * — l'afficher deux fois n'apprendrait rien, la ligne d'état le dit déjà.
+   */
+  protected readonly accountLines = computed<string[] | null>(() => {
+    const view = this.rule();
+    return view.override?.mode === 'custom' ? describeRule(view.effective) : null;
+  });
+
   protected readonly state = computed<AccountRuleState>(() => {
     const override = this.rule().override;
     return override === null ? 'inherited' : override.mode;

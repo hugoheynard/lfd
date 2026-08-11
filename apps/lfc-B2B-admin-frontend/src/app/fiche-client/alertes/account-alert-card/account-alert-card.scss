@@ -21,15 +21,39 @@
   border-left-color: var(--fold-color-warning, #d97706);
 }
 
-.ac-global,
+/* Les deux résumés côte à côte quand la place le permet, empilés sinon : c'est
+   la COMPARAISON qui est utile, pas chacun pris séparément. */
+.ac-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: var(--fold-space-lg);
+  margin-top: var(--fold-space-lg);
+}
+
 .ac-editor {
   margin-top: var(--fold-space-lg);
 }
 
-.ac-global-title {
+.ac-block-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
   margin: 0 0 var(--fold-space-sm);
   font-size: var(--fold-text-sm);
   font-weight: 600;
+}
+
+/* Le global reste lisible mais recule quand il ne s'applique pas ici. */
+.ac-block-aside {
+  font-weight: 400;
+  color: var(--fold-color-text-muted);
+}
+
+/* Ce qui s'applique vraiment porte le liseré ; le rappel n'en a pas besoin. */
+.ac-block--own {
+  padding-left: var(--fold-space-md);
+  border-left: 2px solid var(--fold-color-warning, #d97706);
 }
 
 .ac-lines {

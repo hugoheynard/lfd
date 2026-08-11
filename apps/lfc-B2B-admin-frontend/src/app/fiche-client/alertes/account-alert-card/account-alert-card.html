@@ -24,23 +24,47 @@
     }
   </p>
 
-  <!-- Le rappel du global : toujours affiché, y compris — surtout — quand le
-       compte y déroge. Sinon on lit « déroge » sans savoir à quoi. -->
-  <section class="ac-global">
-    <h4 class="ac-global-title">Réglage de la plateforme</h4>
-    <ul class="ac-lines">
-      @for (line of globalLines(); track line) {
-        <li>{{ line }}</li>
-      }
-    </ul>
-    @if (!rule().global.enabled) {
-      <p class="ac-note">Cette règle est éteinte pour toute la plateforme.</p>
+  <!-- Ce que le compte applique et ce que dit la plateforme, résumés dans le
+       MÊME format, l'un sous l'autre : deux textes comparables se lisent d'un
+       coup d'œil, deux formats différents ne se comparent pas. Le rappel du
+       global reste affiché y compris — surtout — quand le compte y déroge :
+       sinon on lit « déroge » sans savoir à quoi. -->
+  <div class="ac-settings">
+    @if (accountLines(); as lines) {
+      <section class="ac-block ac-block--own">
+        <h4 class="ac-block-title">Réglage de ce compte</h4>
+        <ul class="ac-lines">
+          @for (line of lines; track line) {
+            <li>{{ line }}</li>
+          }
+        </ul>
+        @if (!rule().effective.enabled) {
+          <p class="ac-note">Ce réglage est enregistré, mais la règle est éteinte ici.</p>
+        }
+      </section>
     }
-  </section>
+
+    <section class="ac-block">
+      <h4 class="ac-block-title">
+        Réglage de la plateforme
+        @if (state() !== 'inherited') {
+          <span class="ac-block-aside">— non appliqué ici</span>
+        }
+      </h4>
+      <ul class="ac-lines">
+        @for (line of globalLines(); track line) {
+          <li>{{ line }}</li>
+        }
+      </ul>
+      @if (!rule().global.enabled) {
+        <p class="ac-note">Cette règle est éteinte pour toute la plateforme.</p>
+      }
+    </section>
+  </div>
 
   @if (editing()) {
     <section class="ac-editor">
-      <h4 class="ac-global-title">Réglage propre à ce compte</h4>
+      <h4 class="ac-block-title">Modifier le réglage de ce compte</h4>
       <app-alert-rule-row [rule]="editable()" [busy]="busy()" (save)="saveHere($event)" />
       <button foldButton emphasis="outline" size="sm" (click)="cancelEditing()">Fermer</button>
     </section>
