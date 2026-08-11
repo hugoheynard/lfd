@@ -123,10 +123,11 @@ delivery: {
 - **`staffInApp`** — ⚠️ **ce socle n'existe pas.** Il n'y a pas de notion de
   notification staff dans le back-office : ni table, ni endpoint, ni cloche. La
   tâche J2 « notification à l'équipe » la réclamait déjà pour les rendez-vous.
-  C'est une **tranche à part**, dont les alertes seront le premier consommateur —
-  pas un détail de cette feature. En attendant : le badge « alertes non
-  acquittées » sur l'onglet et sur la ligne du compte tient lieu de signal.
-- **`customerVisible`** — voir §8, décision ouverte.
+  **Décidé : on le construit** (tranche D), en socle **générique** — un sujet, un
+  lien, un état lu/non-lu — dont les alertes sont le premier consommateur et J2
+  le second. Pas une cloche à alertes.
+- **`customerVisible`** — la case n'existe que pour les types **montrables au
+  client** (§8). Un type déclare ce trait ; `product.first_order` ne l'est pas.
 
 Pas d'invariant « au moins un canal » : une règle sans canal reste utile, elle
 alimente le journal sans réveiller personne.
@@ -262,14 +263,32 @@ Deux blocs :
 Une pastille sur la ligne d'un compte qui a des alertes non acquittées. Sans ça,
 la feature n'existe que pour qui pense à ouvrir la fiche.
 
-### Plateforme client — ouvert
+### Plateforme client → **à la confirmation de commande** (tranché)
 
-`customerVisible` suppose deux choses non tranchées : **quel message** (le texte
-staff « écart de 180 % vs la moyenne » ne se montre pas à un client) et **où**
-(confirmation de commande ? « Mes commandes » ?). Question de fond au passage :
-dire à un client qu'on surveille ses variations de volume peut se lire comme
-attentionné ou comme intrusif, selon le mot. Le drapeau est prévu dans le modèle
-dès le lot 1 ; l'affichage attend cette décision.
+`customerVisible` s'affiche **au moment de commander**, sur l'écran de
+confirmation, pas après coup dans « Mes commandes » : à ce moment-là le client
+peut encore corriger, alors qu'après la commande est partie en production.
+
+C'est donc un **garde-fou de saisie**, pas un rapport de surveillance, et le mot
+doit le dire :
+
+> « Vous prenez habituellement **4 kg** de ce produit ; cette commande en porte
+> **12**. C'est bien voulu ? » — puis _Continuer_ / _Corriger ma commande_.
+
+Trois conséquences sur le modèle :
+
+- **Le message client est écrit par le type**, à côté du message staff. Un
+  détecteur rend donc **deux** formulations : `staffMessage` (« écart +180 % vs
+  moyenne 4,3 sur 6 commandes ») et `customerMessage` (la question ci-dessus).
+  Sans ça on montrerait le vocabulaire interne à un client.
+- **Il faut une évaluation AVANT la passation**, en plus de celle qui suit
+  `OrderPlacedEvent` : une lecture pure sur le panier (`POST /orders/preflight`),
+  qui ne persiste rien et ne notifie personne. Les détecteurs sont purs, donc
+  c'est le même code appelé deux fois — pas une seconde implémentation.
+- **`product.first_order` ne se montre jamais au client.** « Vous n'aviez jamais
+  pris ce produit » n'est pas une erreur de saisie possible, c'est une évidence.
+  Chaque type déclare s'il est **montrable au client** ; la case n'apparaît en
+  Réglages que pour ceux qui le sont.
 
 ---
 
@@ -280,20 +299,29 @@ dès le lot 1 ; l'affichage attend cette décision.
 | **A** | Contrats Zod + Prisma + réglages **globaux** (CRUD backend + section Réglages)                   | —         |
 | **B** | Détecteurs purs + évaluation sur `order.placed` + journal + onglet Alertes (liste, acquittement) | A         |
 | **C** | Dérogations par compte (backend + rappel/désactiver/modifier sur la fiche)                       | B         |
-| **D** | Canaux : e-mail staff (immédiat) ; **cloche in-app = socle séparé**, alertes = 1ᵉʳ consommateur  | B         |
-| **E** | Affichage client — bloqué par la décision §8                                                     | B + §8    |
+| **D** | Canaux staff : e-mail + **socle de notification** (table, endpoints, cloche du back-office)      | B         |
+| **E** | Garde-fou client : `POST /orders/preflight` + confirmation de commande                           | B         |
 
 B avant C, même si la dérogation est ce qui a motivé la demande : une règle qu'on
 peut désactiver mais qui ne détecte rien ne se vérifie pas.
 
+**La tranche D construit un socle, pas un canal.** Le back-office n'a aucune
+notion de notification staff ; on la crée ici, et les alertes en sont le premier
+consommateur. Deuxième consommateur immédiat : J2 (« RDV pris », « demande de
+contact déposée »), qui attendait exactement ça — la cloche doit donc être
+**générique** (un sujet, un lien, un état lu/non-lu), pas une cloche à alertes.
+
 ---
 
-## 10. Décisions ouvertes
+## 10. Décisions
 
-1. **Affichage client** (§8) — quel message, où, et faut-il le faire.
-2. **Cloche staff in-app** (§5) — socle à construire dans la foulée, ou e-mail
-   seul pour le lot 1.
-3. **Rétro-évaluation** — à l'activation d'une règle, rejoue-t-on l'historique
+1. ✅ **Cloche staff in-app** — construite dans la foulée (tranche D), en socle
+   générique réutilisé par J2.
+2. ✅ **Affichage client** — à la **confirmation de commande** (§8), comme un
+   garde-fou de saisie. Implique `customerMessage` par type et une évaluation
+   pré-passation.
+3. ⏳ **Rétro-évaluation** — à l'activation d'une règle, rejoue-t-on l'historique
    pour peupler le journal, ou la règle ne vaut-elle que pour l'avenir ? Défaut
-   proposé : **l'avenir seulement** (une rétro-évaluation produit d'un coup des
-   centaines d'alertes que personne n'acquittera).
+   appliqué **faute de décision contraire** : **l'avenir seulement** (une
+   rétro-évaluation produit d'un coup des centaines d'alertes que personne
+   n'acquittera).
