@@ -11,9 +11,11 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
+import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { CreateCompanyByStaffCommand } from "../application/commands/create-company-by-staff.command.js";
+import type { CompanyOpened } from "../application/commands/create-company-by-staff.handler.js";
 import { GetCompanyForStaffQuery } from "../application/queries/get-company-for-staff.query.js";
 import { GetCustomerSheetQuery } from "../application/queries/get-customer-sheet.query.js";
 import { ListAllCompaniesQuery } from "../application/queries/list-all-companies.query.js";
@@ -22,7 +24,6 @@ import type {
   AdminCompanyDetailView,
   AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
-import { type CreatedCompanyResponse } from "./companies.controller.js";
 import { adminCreateCompanyPayload, type AdminCreateCompanyPayload } from "./payloads.js";
 
 /**
@@ -75,17 +76,22 @@ export class AdminCompaniesController {
   }
 
   /**
-   * Crée un compte client (Porte B — « le commercial provisionne »). La société
-   * naît `pending`, **sans propriétaire** : le contact principal est saisi par le
-   * staff, et le rattachement d'un client se fera par invitation (à venir).
-   * Renvoie l'`id`, de quoi router vers la fiche.
+   * Ouvre un compte client (Porte B — « le commercial provisionne »).
+   *
+   * La société naît `pending`, et son **détenteur** — le contact principal, qui
+   * est la même personne — est rattaché dans la foulée : identité provisionnée
+   * et lien de mot de passe s'il est nouveau, simple rattachement s'il est déjà
+   * client. La réponse dit lequel des deux, et si l'e-mail est parti : l'écran
+   * ne peut pas le deviner, et le commercial doit pouvoir l'annoncer au client
+   * qu'il a encore au téléphone.
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
+    @StaffSub() staffSub: string,
     @Body(new ZodBody(adminCreateCompanyPayload)) payload: AdminCreateCompanyPayload,
-  ): Promise<CreatedCompanyResponse> {
-    const id = await this.commands.execute<CreateCompanyByStaffCommand, string>(
+  ): Promise<CompanyOpened> {
+    return await this.commands.execute<CreateCompanyByStaffCommand, CompanyOpened>(
       new CreateCompanyByStaffCommand(
         payload.raisonSociale,
         payload.enseigne,
@@ -93,8 +99,8 @@ export class AdminCompaniesController {
         payload.siret,
         payload.tvaIntracom,
         payload.primaryContact,
+        staffSub,
       ),
     );
-    return { id };
   }
 }

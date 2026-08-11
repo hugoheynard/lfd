@@ -1,128 +1,143 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { randomBytes } from "node:crypto";
+
+import { Injectable } from "@nestjs/common";
 
 import { AppConfig } from "../../infra/config/app-config.js";
 import { IdentityProviderUnavailableError } from "../domain/errors/account-errors.js";
-import { CustomerIdentityPort } from "../domain/ports/customer-identity.port.js";
+import {
+  CustomerIdentityPort,
+  type IdentityToProvision,
+  type ProvisionedIdentity,
+} from "../domain/ports/customer-identity.port.js";
+import { Auth0ManagementClient, CONFLICT } from "./auth0-management.client.js";
 
-/** Marge de sécurité avant expiration du jeton M2M, pour ne pas l'utiliser à la seconde près. */
-const TOKEN_EXPIRY_MARGIN_SECONDS = 60;
+/**
+ * Durée de vie du lien de mot de passe : **7 jours**.
+ *
+ * Assez long pour survivre à une semaine de congés ou à un e-mail lu tard ;
+ * assez court pour qu'un lien oublié dans une boîte partagée finisse par ne plus
+ * rien ouvrir. Le renvoyer coûte un clic au commercial.
+ */
+const PASSWORD_TICKET_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 /**
  * Adaptateur **Management API Auth0** du port d'identité.
  *
- * Deux étapes : obtenir un jeton `client_credentials` (mis en cache jusqu'à son
- * expiration — un aller-retour par changement d'e-mail serait du gâchis), puis
- * `PATCH /api/v2/users/{sub}`.
- *
- * Le nouvel e-mail repart **non vérifié**, avec un e-mail de vérification
- * déclenché par Auth0 : sans cela, n'importe qui pourrait s'attribuer une adresse
- * qu'il ne contrôle pas, et l'e-mail est ici un facteur d'authentification.
- *
- * ⚠️ **Prérequis côté tenant** (à faire une fois, dans le dashboard) : une
- * application **Machine to Machine** autorisée sur l'API
- * `https://<domain>/api/v2/` avec les scopes `read:users` et `update:users`, dont
- * l'id et le secret alimentent `AUTH0_M2M_CLIENT_ID` / `AUTH0_M2M_CLIENT_SECRET`.
- * Sans cela le reste de l'API fonctionne normalement, seul le changement d'e-mail
- * est refusé — explicitement, cf. `assertConfigured`.
+ * Le changement d'e-mail repart **non vérifié**, avec un e-mail de vérification
+ * déclenché par Auth0 : sans cela, n'importe qui pourrait s'attribuer une
+ * adresse qu'il ne contrôle pas, et l'e-mail est ici un facteur
+ * d'authentification.
  */
 @Injectable()
 export class Auth0CustomerIdentity extends CustomerIdentityPort {
-  private readonly logger = new Logger(Auth0CustomerIdentity.name);
-  private cachedToken: { value: string; expiresAtMs: number } | null = null;
-
-  constructor(private readonly config: AppConfig) {
+  constructor(
+    private readonly api: Auth0ManagementClient,
+    private readonly config: AppConfig,
+  ) {
     super();
   }
 
   async changeEmail(subject: string, email: string): Promise<void> {
-    const token = await this.managementToken();
-    const response = await fetch(
-      `https://${this.config.auth0Domain()}/api/v2/users/${encodeURIComponent(subject)}`,
-      {
-        method: "PATCH",
-        headers: {
-          authorization: `Bearer ${token}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ email, email_verified: false, verify_email: true }),
-      },
-    );
-
-    if (!response.ok) {
-      // Le corps de réponse Auth0 peut contenir des détails de tenant : on le
-      // trace, on ne le renvoie pas au client.
-      this.logger.error(
-        `PATCH users a échoué (${String(response.status)}) : ${await response.text()}`,
-      );
-      throw new IdentityProviderUnavailableError(
-        "La mise à jour de l'adresse e-mail auprès du fournisseur d'identité a échoué.",
-      );
-    }
+    await this.api.call("PATCH", `/api/v2/users/${encodeURIComponent(subject)}`, {
+      email,
+      email_verified: false,
+      verify_email: true,
+    });
   }
 
-  /** Jeton M2M valide, depuis le cache ou fraîchement demandé. */
-  private async managementToken(): Promise<string> {
-    const credentials = this.assertConfigured();
-
-    const cached = this.cachedToken;
-    if (cached !== null && cached.expiresAtMs > Date.now()) {
-      return cached.value;
-    }
-
-    const domain = this.config.auth0Domain();
-    const response = await fetch(`https://${domain}/oauth/token`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        grant_type: "client_credentials",
-        client_id: credentials.clientId,
-        client_secret: credentials.clientSecret,
-        audience: `https://${domain}/api/v2/`,
-      }),
-    });
-
-    if (!response.ok) {
-      this.logger.error(`Jeton M2M refusé (${String(response.status)})`);
+  async provision(input: IdentityToProvision): Promise<ProvisionedIdentity> {
+    const subject = (await this.createUser(input)) ?? (await this.findSubjectByEmail(input.email));
+    if (subject === null) {
+      // Auth0 a dit « déjà pris » puis « je ne trouve rien » : deux réponses
+      // incompatibles. Mieux vaut s'arrêter que provisionner un doublon.
       throw new IdentityProviderUnavailableError(
-        "Impossible d'obtenir un jeton auprès du fournisseur d'identité.",
+        "Cette adresse est déjà connue du fournisseur d'identité, mais son compte est introuvable.",
       );
     }
-
-    const payload = parseTokenPayload(await response.json());
-    this.cachedToken = {
-      value: payload.accessToken,
-      expiresAtMs: Date.now() + (payload.expiresInSeconds - TOKEN_EXPIRY_MARGIN_SECONDS) * 1000,
-    };
-    return payload.accessToken;
+    return { subject, passwordSetupUrl: await this.passwordTicket(subject) };
   }
 
   /**
-   * Refuse **clairement** plutôt que d'échouer sur un `401` obscur quand le canal
-   * n'est pas configuré : le message dit quoi créer.
+   * Crée l'utilisateur ; rend `null` si l'adresse est **déjà prise** (409).
+   *
+   * Le mot de passe posé ici est jeté : il n'est ni conservé, ni transmis, ni
+   * utilisable — il n'existe que parce qu'Auth0 en exige un à la création. Le
+   * vrai mot de passe sera choisi par la personne, via le lien.
    */
-  private assertConfigured(): { clientId: string; clientSecret: string } {
-    const credentials = this.config.auth0ManagementCredentials();
-    if (credentials === null) {
+  private async createUser(input: IdentityToProvision): Promise<string | null> {
+    const created = await this.api.call("POST", "/api/v2/users", {
+      connection: this.config.auth0DatabaseConnection(),
+      email: input.email,
+      password: throwawayPassword(),
+      given_name: input.firstName,
+      family_name: input.lastName,
+      name: `${input.firstName} ${input.lastName}`.trim(),
+      email_verified: false,
+      verify_email: false,
+    });
+    return created === CONFLICT ? null : readUserId(created);
+  }
+
+  /** Le `sub` derrière une adresse, `null` si le fournisseur n'en connaît aucune. */
+  private async findSubjectByEmail(email: string): Promise<string | null> {
+    const found = await this.api.call(
+      "GET",
+      `/api/v2/users-by-email?email=${encodeURIComponent(email.toLowerCase())}`,
+    );
+    if (!Array.isArray(found) || found.length === 0) {
+      return null;
+    }
+    return readUserId(found[0]);
+  }
+
+  /**
+   * Un lien de création de mot de passe.
+   *
+   * `mark_email_as_verified` : suivre ce lien **prouve** l'accès à la boîte, ce
+   * qui est exactement ce qu'un e-mail de vérification demanderait ensuite. En
+   * envoyer un second serait redondant, et le premier réflexe du client serait
+   * de le prendre pour un doublon suspect.
+   */
+  private async passwordTicket(subject: string): Promise<string> {
+    const ticket = await this.api.call("POST", "/api/v2/tickets/password-change", {
+      user_id: subject,
+      ttl_sec: PASSWORD_TICKET_TTL_SECONDS,
+      mark_email_as_verified: true,
+      ...resultUrl(this.config.clientBaseUrl()),
+    });
+    const url = readString(ticket, "ticket");
+    if (url === null) {
       throw new IdentityProviderUnavailableError(
-        "Le changement d'adresse e-mail n'est pas disponible : l'application M2M Auth0 " +
-          "(AUTH0_M2M_CLIENT_ID / AUTH0_M2M_CLIENT_SECRET) n'est pas configurée.",
+        "Le fournisseur d'identité n'a pas rendu de lien de création de mot de passe.",
       );
     }
-    return credentials;
+    return url;
   }
 }
 
-/** Réponse `/oauth/token`, validée : elle vient du réseau, donc de `unknown`. */
-function parseTokenPayload(raw: unknown): { accessToken: string; expiresInSeconds: number } {
-  if (typeof raw !== "object" || raw === null) {
-    throw new IdentityProviderUnavailableError("Réponse de jeton illisible.");
-  }
-  const record: Record<string, unknown> = { ...raw };
-  const accessToken = record["access_token"];
-  const expiresIn = record["expires_in"];
+/** Où atterrir après avoir posé son mot de passe — omis si on ne sait pas. */
+function resultUrl(clientBaseUrl: string | null): Readonly<Record<string, string>> {
+  return clientBaseUrl === null ? {} : { result_url: `${clientBaseUrl}/login` };
+}
 
-  if (typeof accessToken !== "string" || accessToken === "" || typeof expiresIn !== "number") {
-    throw new IdentityProviderUnavailableError("Réponse de jeton inattendue.");
+/**
+ * Un mot de passe aléatoire assez fort pour passer n'importe quelle politique de
+ * tenant : 32 octets en base64url, plus un caractère de chaque classe exigée.
+ */
+function throwawayPassword(): string {
+  return `Aa1!${randomBytes(32).toString("base64url")}`;
+}
+
+/** `user_id` d'un objet utilisateur Auth0, ou `null` si la forme surprend. */
+function readUserId(raw: unknown): string | null {
+  return readString(raw, "user_id");
+}
+
+/** Une propriété chaîne non vide d'un objet venu du réseau. */
+function readString(raw: unknown, key: string): string | null {
+  if (typeof raw !== "object" || raw === null) {
+    return null;
   }
-  return { accessToken, expiresInSeconds: expiresIn };
+  const value: unknown = { ...raw }[key];
+  return typeof value === "string" && value !== "" ? value : null;
 }

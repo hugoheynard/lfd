@@ -33,6 +33,22 @@ export {
 } from "./company.js";
 export type { PaymentTerm, UpdateIdentityPayload, UpdatePaymentTermPayload } from "./company.js";
 export {
+  companyMemberRoleSchema,
+  companyMemberStatusSchema,
+  inviteCompanyMemberPayloadSchema,
+  accountHolderPayloadSchema,
+} from "./company-member.js";
+export type {
+  CompanyMemberRole,
+  CompanyMemberStatus,
+  CompanyMemberView,
+  CompanyMemberInvitedView,
+  InviteCompanyMemberPayload,
+  AccountHolderPayload,
+  CustomerLookupView,
+  CustomerCompanyRef,
+} from "./company-member.js";
+export {
   supportChannelSchema,
   supportSlotSchema,
   activationSupportPayloadSchema,

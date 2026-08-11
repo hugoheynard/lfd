@@ -22,11 +22,16 @@ import {
  * au démarrage** (fail-fast plutôt qu'un `undefined` qui se propage), et
  * **substituables en test** via l'injection.
  */
+/** Le nom qu'Auth0 donne à la connexion base de données d'un tenant neuf. */
+const DEFAULT_AUTH0_DB_CONNECTION = "Username-Password-Authentication";
+
 @Injectable()
 export class AppConfig {
   private readonly database: string;
   private readonly auth0DomainValue: string;
   private readonly auth0AudienceValue: string;
+  private readonly auth0ConnectionValue: string;
+  private readonly clientBaseUrlValue: string | null;
   private readonly management: Auth0ManagementCredentials | null;
   private readonly storage: S3StorageConfig | null;
   private readonly stripeValue: StripeConfig | null;
@@ -44,6 +49,9 @@ export class AppConfig {
     this.database = required("DATABASE_B2B_URL");
     this.auth0DomainValue = required("AUTH0_DOMAIN");
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
+    this.auth0ConnectionValue =
+      optionalString("AUTH0_DB_CONNECTION") ?? DEFAULT_AUTH0_DB_CONNECTION;
+    this.clientBaseUrlValue = optionalString("CLIENT_BASE_URL");
     this.management = optionalManagementCredentials();
     this.storage = optionalStorageConfig();
     this.stripeValue = optionalStripeConfig();
@@ -96,6 +104,25 @@ export class AppConfig {
   /** Identifier de l'API déclarée dans Auth0. */
   auth0Audience(): string {
     return this.auth0AudienceValue;
+  }
+
+  /**
+   * Nom de la **connexion base de données** Auth0 où naissent les identités
+   * client. Un défaut plutôt qu'un réglage obligatoire : c'est le nom que tout
+   * tenant Auth0 porte dès sa création, et l'exiger ferait échouer le boot en
+   * dev et en CI pour une valeur que personne ne change.
+   */
+  auth0DatabaseConnection(): string {
+    return this.auth0ConnectionValue;
+  }
+
+  /**
+   * Racine publique de l'espace **client**, pour les liens des e-mails qui lui
+   * sont adressés. Optionnelle comme celle du back-office : sans elle on omet la
+   * destination de retour, plutôt que d'inventer une URL qui ne mène nulle part.
+   */
+  clientBaseUrl(): string | null {
+    return this.clientBaseUrlValue;
   }
 
   /**

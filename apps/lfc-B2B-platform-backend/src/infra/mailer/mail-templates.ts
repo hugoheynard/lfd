@@ -43,6 +43,32 @@ export interface B2bMails {
     /** Lien direct vers l'onglet Alertes du compte. */
     readonly accountUrl: string;
   };
+  /**
+   * Un accès à l'espace vient d'être ouvert. Destinataire : **le client**.
+   *
+   * Le premier e-mail de cette carte qui ne s'adresse pas à l'équipe — et le
+   * seul endroit du système où le lien de création de mot de passe a le droit
+   * d'apparaître. Ce lien vaut prise de contrôle du compte : sa seule
+   * destination légitime est la boîte de la personne concernée.
+   */
+  "customer.access-opened": {
+    readonly firstName: string;
+    readonly companyName: string;
+    /** Le lien à usage unique, à durée de vie limitée. */
+    readonly passwordSetupUrl: string;
+  };
+  /**
+   * Une société de plus est apparue dans un espace existant. Destinataire : **le
+   * client**.
+   *
+   * Pas de lien de mot de passe ici : la personne en a déjà un. Ce qu'elle doit
+   * apprendre, c'est qu'un second établissement s'est ajouté à son espace — sans
+   * quoi elle le découvrirait par surprise à sa prochaine commande.
+   */
+  "customer.company-attached": {
+    readonly firstName: string;
+    readonly companyName: string;
+  };
   /** Un client demande à être rappelé ou écrit. Destinataire : la boîte de l'équipe. */
   "staff.support-requested": {
     readonly contactName: string;
@@ -76,6 +102,32 @@ export const B2B_MAIL_TEMPLATES: TemplateRegistry<B2bMails> = {
         data.findings.join("\n"),
       ),
       cta: { label: "Ouvrir le compte", url: data.accountUrl },
+    }),
+  }),
+  "customer.access-opened": (data) => ({
+    subject: sanitiseSubject(`Votre accès à l'espace pro ${data.companyName}`),
+    html: renderLayout({
+      title: `Bienvenue${data.firstName === "" ? "" : `, ${data.firstName}`}`,
+      body:
+        `Un accès à l'espace professionnel de ${data.companyName} vient d'être ouvert à votre nom ` +
+        "par l'équipe La Folie Douce.\n\n" +
+        "Il ne reste qu'à choisir votre mot de passe. Le lien ci-dessous est valable 7 jours ; " +
+        "passé ce délai, demandez-nous simplement de vous en renvoyer un.",
+      cta: { label: "Choisir mon mot de passe", url: data.passwordSetupUrl },
+      footer:
+        "Vous n'attendiez pas cet e-mail ? Ignorez-le : sans mot de passe choisi, aucun accès n'est ouvert.",
+    }),
+  }),
+  "customer.company-attached": (data) => ({
+    subject: sanitiseSubject(`${data.companyName} a été ajoutée à votre espace pro`),
+    html: renderLayout({
+      title: `Bonjour${data.firstName === "" ? "" : `, ${data.firstName}`}`,
+      body:
+        `L'établissement ${data.companyName} vient d'être rattaché à votre espace professionnel ` +
+        "par l'équipe La Folie Douce.\n\n" +
+        "Vous le retrouverez à votre prochaine connexion, avec vos identifiants habituels — " +
+        "rien de nouveau à créer.",
+      footer: "Vous n'attendiez pas ce rattachement ? Répondez à cet e-mail, nous le retirerons.",
     }),
   }),
   "staff.appointment-booked": (data) => ({

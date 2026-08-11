@@ -7,6 +7,11 @@ import {
 import { CompanyDeclaredEvent } from "../../../domain/events/company-declared.event.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
 import type { ContactDetailsInput } from "../../../domain/value-objects/contact-details.js";
+import {
+  AccountAccessGranter,
+  type AccessGranted,
+  type AccessToGrant,
+} from "../../services/grant-account-access.service.js";
 import { CreateCompanyByStaffCommand } from "../create-company-by-staff.command.js";
 import { CreateCompanyByStaffHandler } from "../create-company-by-staff.handler.js";
 
@@ -18,8 +23,24 @@ class FakeEvents extends DomainEventPublisher {
   }
 }
 
+/** Accès doublé : capture la demande, ou échoue pour simuler un canal absent. */
+class FakeAccess extends AccountAccessGranter {
+  readonly granted: AccessToGrant[] = [];
+  constructor(private readonly outcome: AccessGranted | Error) {
+    super();
+  }
+
+  grant(input: AccessToGrant): Promise<AccessGranted> {
+    this.granted.push(input);
+    return this.outcome instanceof Error
+      ? Promise.reject(this.outcome)
+      : Promise.resolve(this.outcome);
+  }
+}
+
 interface Doubles {
   readonly handler: CreateCompanyByStaffHandler;
+  readonly access: FakeAccess;
   /** Les sociétés passées à `declareUnowned` (donc créées sans propriétaire). */
   readonly unowned: Company[];
   /** Vrai si une écriture **avec** propriétaire a eu lieu (ne doit jamais arriver). */
@@ -27,7 +48,7 @@ interface Doubles {
   readonly events: FakeEvents;
 }
 
-function doubles(options: { siretTaken?: boolean } = {}): Doubles {
+function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error } = {}): Doubles {
   const unowned: Company[] = [];
   const owned = { count: 0 };
 
@@ -49,7 +70,16 @@ function doubles(options: { siretTaken?: boolean } = {}): Doubles {
   };
 
   const events = new FakeEvents();
-  return { handler: new CreateCompanyByStaffHandler(companies, events), unowned, owned, events };
+  const access = new FakeAccess(
+    options.access ?? { userId: "user_1", identityCreated: true, mailSent: true },
+  );
+  return {
+    handler: new CreateCompanyByStaffHandler(companies, access, events),
+    access,
+    unowned,
+    owned,
+    events,
+  };
 }
 
 function command(contact: Partial<ContactDetailsInput> = {}): CreateCompanyByStaffCommand {
@@ -67,6 +97,7 @@ function command(contact: Partial<ContactDetailsInput> = {}): CreateCompanyBySta
       phone: "",
       ...contact,
     },
+    "staff-sub",
   );
 }
 
@@ -74,7 +105,7 @@ describe("CreateCompanyByStaffHandler", () => {
   it("crée la société SANS propriétaire et retourne son seul identifiant", async () => {
     const { handler, unowned, owned } = doubles();
 
-    await expect(handler.execute(command())).resolves.toBe("company_unowned");
+    await expect(handler.execute(command())).resolves.toMatchObject({ id: "company_unowned" });
     expect(unowned).toHaveLength(1);
     // Jamais de rattachement : pas de membership à la création admin.
     expect(owned.count).toBe(0);

@@ -41,6 +41,15 @@ import { CompanyAddressRepository } from "./domain/ports/company-address.reposit
 import { CompanyContactRepository } from "./domain/ports/company-contact.repository.js";
 import { CompanyRepository } from "./domain/ports/company.repository.js";
 import { CustomerIdentityPort } from "./domain/ports/customer-identity.port.js";
+import {
+  CompanyMemberReader,
+  CompanyMemberRepository,
+} from "./domain/ports/company-member.repository.js";
+import {
+  AccountAccessGranter,
+  GrantAccountAccess,
+} from "./application/services/grant-account-access.service.js";
+import { FindCustomerByEmailHandler } from "./application/queries/find-customer-by-email.handler.js";
 import { EstablishmentDirectory } from "./domain/ports/establishment-directory.js";
 import { OnCompanyDeclaredResolveNaf } from "./application/handlers/on-company-declared-resolve-naf.handler.js";
 import { RechercheEntreprisesEstablishmentDirectory } from "./infrastructure/recherche-entreprises-establishment.directory.js";
@@ -49,6 +58,11 @@ import { MembershipReader } from "./domain/ports/membership.reader.js";
 import { NavPreferencesRepository } from "./domain/ports/nav-preferences.repository.js";
 import { UserProfileRepository } from "./domain/ports/user-profile.repository.js";
 import { Auth0CustomerIdentity } from "./infrastructure/auth0-customer-identity.js";
+import { Auth0ManagementClient } from "./infrastructure/auth0-management.client.js";
+import {
+  PrismaCompanyMemberReader,
+  PrismaCompanyMemberRepository,
+} from "./infrastructure/prisma-company-member.repository.js";
 import { PrismaAccountReader } from "./infrastructure/prisma-account.reader.js";
 import { PrismaAdminCompanyReader } from "./infrastructure/prisma-admin-company.reader.js";
 import { PrismaCompanyAddressReader } from "./infrastructure/prisma-company-address.reader.js";
@@ -62,6 +76,7 @@ import { PrismaSupportRequestRepository } from "./infrastructure/prisma-support-
 import { S3KbisStore } from "./infrastructure/s3-kbis-store.js";
 import { SupportRequestRepository } from "./domain/ports/support-request.repository.js";
 import { AdminCompaniesController } from "./http/admin-companies.controller.js";
+import { AdminCustomersController } from "./http/admin-customers.controller.js";
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
 import { CompaniesController } from "./http/companies.controller.js";
 import { AdminSupportController } from "./http/admin-support.controller.js";
@@ -94,6 +109,7 @@ import { MeController } from "./http/me.controller.js";
     SupportController,
     AdminSupportController,
     AdminCompaniesController,
+    AdminCustomersController,
     AdminCompanyPiecesController,
   ],
   providers: [
@@ -101,6 +117,11 @@ import { MeController } from "./http/me.controller.js";
     UpdateNavPreferencesHandler,
     CreateCompanyHandler,
     CreateCompanyByStaffHandler,
+    FindCustomerByEmailHandler,
+    { provide: AccountAccessGranter, useClass: GrantAccountAccess },
+    Auth0ManagementClient,
+    { provide: CompanyMemberReader, useClass: PrismaCompanyMemberReader },
+    { provide: CompanyMemberRepository, useClass: PrismaCompanyMemberRepository },
     GetMyAccountHandler,
     UpdatePrimaryContactHandler,
     AddCompanyContactHandler,
