@@ -120,6 +120,7 @@
             [identity]="id"
             [canManage]="true"
             [canManageKbis]="true"
+            [kbisRequired]="kbisRequired()"
             [canAccessKbis]="false"
             (edit)="act('tva')"
             (kbisSelected)="onFile({ key: 'kbis', file: $event })"

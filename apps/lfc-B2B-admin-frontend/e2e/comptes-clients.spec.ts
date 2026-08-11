@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { COMPANY_ID, ComptesApiDouble, knownCustomer } from './comptes-api';
+import { COMPANY_ID, ComptesApiDouble } from './comptes-api';
 
 /**
  * **Ouvrir un compte client**, éprouvé dans un vrai navigateur.
@@ -30,9 +30,9 @@ function carte(page: Page, email: string) {
   return page.locator('fold-card', { hasText: email });
 }
 
-/** Le champ de recherche du détenteur — par son rôle, pas par son hôte. */
-function recherche(page: Page) {
-  return page.getByRole('textbox', { name: 'Nom ou e-mail du client…' });
+/** Le champ qui désigne le détenteur : son adresse, et rien d'autre. */
+function adresseDetenteur(page: Page) {
+  return page.getByLabel('E-mail du détenteur');
 }
 
 test.describe('ouvrir un compte devant le client', () => {
@@ -43,9 +43,7 @@ test.describe('ouvrir un compte devant le client', () => {
     const api = new ComptesApiDouble();
     await ouverture(page, api);
 
-    await recherche(page).fill('jean@comptoir.fr');
-    await page.getByRole('button', { name: 'Créer ce détenteur' }).click();
-    await page.getByLabel('E-mail').fill('jean@comptoir.fr');
+    await adresseDetenteur(page).fill('jean@comptoir.fr');
     await page.getByRole('button', { name: 'Ouvrir le compte' }).click();
 
     await expect.poll(() => api.created.length).toBe(1);
@@ -54,23 +52,20 @@ test.describe('ouvrir un compte devant le client', () => {
     await expect(page).toHaveURL(new RegExp(`${COMPANY_ID}/informations`));
   });
 
-  test('rattache la société au client DÉJÀ connu plutôt que de lui refaire un compte', async ({
-    page,
-  }) => {
-    // Deux identités pour une seule boîte e-mail, ce serait deux mots de passe
-    // et deux espaces là où il en veut un.
-    const api = new ComptesApiDouble();
-    api.customers.push(knownCustomer('claire@vasseur.fr'));
-    await ouverture(page, api);
-
-    await recherche(page).fill('Vasseur');
-    // La recherche est debouncée : c'est le résultat qu'on attend, pas un délai.
-    await page.getByText('claire@vasseur.fr').click();
-    await expect(page.getByText('Vasseur Traiteur SARL')).toBeVisible();
-
+  test("ne LAISSE PAS voir qu'une adresse est déjà cliente", async ({ page }) => {
+    // Le cœur de la règle de confidentialité : dire « elle a déjà un espace »
+    // apprendrait au commercial que ce comptable travaille avec un autre de nos
+    // clients. L'écran doit donc être identique dans les deux cas.
+    const connu = new ComptesApiDouble();
+    connu.knownEmails.push('claire@vasseur.fr');
+    await ouverture(page, connu);
+    await adresseDetenteur(page).fill('claire@vasseur.fr');
     await page.getByRole('button', { name: 'Ouvrir le compte' }).click();
+    const messageConnu = await page.locator('fold-toast').first().textContent();
 
-    await expect(page.getByText('rejoint son espace existant')).toBeVisible();
+    await expect.poll(() => connu.created.length).toBe(1);
+    expect(messageConnu).not.toContain('existant');
+    expect(messageConnu).not.toContain('Vasseur');
   });
 
   test("DIT que l'e-mail n'est pas parti au lieu de l'arrondir", async ({ page }) => {
@@ -80,9 +75,7 @@ test.describe('ouvrir un compte devant le client', () => {
     api.mailSent = false;
     await ouverture(page, api);
 
-    await recherche(page).fill('jean@comptoir.fr');
-    await page.getByRole('button', { name: 'Créer ce détenteur' }).click();
-    await page.getByLabel('E-mail').fill('jean@comptoir.fr');
+    await adresseDetenteur(page).fill('jean@comptoir.fr');
     await page.getByRole('button', { name: 'Ouvrir le compte' }).click();
 
     await expect(page.getByText("l'e-mail n'est pas parti")).toBeVisible();

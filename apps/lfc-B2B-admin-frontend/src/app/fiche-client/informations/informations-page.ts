@@ -144,6 +144,14 @@ export class InformationsPage {
   /** Le point de retrait par défaut, reflété quand la livraison est masquée. */
   protected readonly defaultPickup = signal<PickupAddressView | null>(null);
 
+  /**
+   * Le KBIS est-il **exigé** pour activer ce compte ? La carte d'identité ne
+   * peut pas le savoir seule : cela dépend de la configuration de la
+   * plateforme, et un rappel qui se trompe d'exigence fait réclamer une pièce
+   * facultative au client.
+   */
+  protected readonly kbisRequired = computed(() => this.settings()?.kbis === 'required');
+
   /** La livraison est-elle masquée (service absent) ? Cache la carte livraison. */
   protected readonly deliveryHidden = computed(() => this.settings()?.delivery === 'hidden');
 
@@ -515,12 +523,9 @@ function openingMessage(opened: CompanyOpened): string {
   if (!opened.accessOpened) {
     return "Compte ouvert, mais l'accès du client n'a pas pu être créé — à reprendre depuis sa fiche.";
   }
-  const access = opened.attachedToExisting
-    ? 'La société a rejoint son espace existant'
-    : 'Son accès a été créé';
   return opened.mailSent
-    ? `Compte ouvert. ${access}, l'e-mail est parti.`
-    : `Compte ouvert. ${access}, mais l'e-mail n'est pas parti — prévenez le client.`;
+    ? "Compte ouvert, l'accès du détenteur est en route."
+    : "Compte ouvert, mais l'e-mail n'est pas parti — prévenez le client.";
 }
 
 /**
@@ -547,21 +552,20 @@ function knownContactsOf(company: AdminCompanyDetail): readonly DeliveryContact[
 }
 
 /**
- * Ce qu'on annonce après avoir ouvert un accès — au mot près.
+ * Ce qu'on annonce après avoir ouvert un accès.
  *
- * Trois issues, trois phrases : « lien envoyé » à qui doit poser un mot de
- * passe, « rattachée » à qui en a déjà un. Les confondre ferait attendre un
- * e-mail à celui qui n'en recevra pas, ou chercher un lien à celui qui n'en a
- * pas besoin. Et le canal muet se dit, toujours.
+ * **Une seule phrase**, que la personne ait déjà un compte ou non. Distinguer
+ * les deux cas apprendrait au commercial que l'adresse qu'il vient de saisir
+ * est déjà connue de la plateforme — donc que cette personne travaille avec un
+ * autre de nos clients. Ce n'est ni à lui ni au client qu'il sert de l'
+ * apprendre ; l'intéressé, lui, le lit dans son e-mail.
+ *
+ * Le sort de l'envoi, en revanche, se dit toujours : il parle de NOTRE canal,
+ * pas de la personne.
  */
 function accessMessage(result: CompanyMemberInvitedView): string {
   const who = result.member.email;
-  if (result.outcome === 'attached') {
-    return result.mailSent
-      ? `La société a rejoint l'espace de ${who}, il en est prévenu.`
-      : `La société a rejoint l'espace de ${who}, mais l'e-mail n'est pas parti.`;
-  }
   return result.mailSent
-    ? `Lien de mot de passe envoyé à ${who}.`
+    ? `C'est envoyé à ${who}.`
     : `Accès ouvert pour ${who}, mais l'e-mail n'est pas parti — prévenez le client.`;
 }

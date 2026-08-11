@@ -39,8 +39,6 @@ export {
   contactAccessSchema,
   COMPANY_ROLE_LABELS,
   companyMemberStatusSchema,
-  accessOutcomeSchema,
-  carriesPasswordLink,
   inviteCompanyMemberPayloadSchema,
   accountHolderPayloadSchema,
 } from "./company-member.js";
@@ -50,7 +48,6 @@ export type {
   ContactAccess,
   CompanyContactView,
   CompanyMemberStatus,
-  AccessOutcome,
   CompanyMemberView,
   CompanyMemberInvitedView,
   InviteCompanyMemberPayload,

@@ -30,60 +30,33 @@ export interface MemberToCreate {
 }
 
 /**
+ * Une personne que nous connaissons déjà, **et où elle en est**.
+ *
+ * Le `status` est le champ qui compte : `invited` veut dire que l'identité
+ * existe mais que **personne n'a jamais posé de mot de passe** dessus. Ne rendre
+ * qu'un identifiant ferait passer cette personne pour une cliente installée, et
+ * lui vaudrait un e-mail lui demandant d'utiliser des identifiants qu'elle n'a
+ * pas.
+ *
+ * `firstName` vient de SON profil, jamais de ce qu'un commercial a tapé : son
+ * nom lui appartient, et celui qui la note « Claire Vasser » ne doit pas la
+ * renommer dans l'e-mail qu'elle reçoit.
+ */
+export interface KnownAccount {
+  readonly userId: string;
+  /** `sub` du fournisseur d'identité — de quoi lui ré-émettre un lien. */
+  readonly subject: string;
+  readonly firstName: string;
+  readonly status: MemberStatus;
+}
+
+/**
  * **Lecture** des accès d'une société. Séparé de l'écriture (ISP) : l'écran qui
  * liste n'a aucun besoin de pouvoir provisionner, et le handler qui provisionne
  * n'a aucun besoin de savoir agréger une liste.
  */
 export abstract class CompanyMemberReader {
   abstract listOf(companyId: string): Promise<readonly CompanyMemberRecord[]>;
-
-  /**
-   * Ce qu'on sait déjà de la personne portant cette adresse, `null` si elle nous
-   * est inconnue.
-   *
-   * Sert **avant** d'ouvrir un compte : une même personne peut détenir plusieurs
-   * sociétés (un second établissement, deux enseignes), et lui refabriquer une
-   * identité lui donnerait deux mots de passe pour une seule boîte e-mail. Les
-   * sociétés déjà détenues remontent avec, parce que c'est ce que le commercial
-   * a besoin de voir pour reconnaître son interlocuteur.
-   */
-  abstract findCustomerByEmail(email: string): Promise<CustomerRecord | null>;
-
-  /**
-   * Les clients dont le nom ou l'adresse **contient** le terme cherché.
-   *
-   * Une recherche, pas une correspondance exacte : le commercial connaît le nom
-   * de son interlocuteur, rarement l'orthographe exacte de son adresse. Le
-   * résultat est borné (`limit`) — au-delà, la liste ne s'écrème plus à l'œil et
-   * il vaut mieux affiner la recherche.
-   */
-  abstract searchCustomers(term: string, limit: number): Promise<readonly CustomerRecord[]>;
-}
-
-/** Une personne connue, et les sociétés auxquelles elle est rattachée. */
-export interface CustomerRecord {
-  readonly userId: string;
-  readonly email: string;
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly phone: string;
-  readonly status: MemberStatus;
-  readonly companies: readonly { readonly id: string; readonly raisonSociale: string }[];
-}
-
-/**
- * Une personne que nous connaissons déjà, **et où elle en est**.
- *
- * Le `status` est le champ qui compte : `invited` veut dire que l'identité
- * existe mais que **personne n'a jamais posé de mot de passe** dessus. Ne rendre
- * qu'un identifiant ferait passer cette personne pour un client installé, et lui
- * vaudrait un e-mail lui demandant d'utiliser des identifiants qu'elle n'a pas.
- */
-export interface KnownAccount {
-  readonly userId: string;
-  /** `sub` du fournisseur d'identité — de quoi lui ré-émettre un lien. */
-  readonly subject: string;
-  readonly status: MemberStatus;
 }
 
 /** **Écriture** des accès : ouvrir une identité, la rattacher, la retrouver. */

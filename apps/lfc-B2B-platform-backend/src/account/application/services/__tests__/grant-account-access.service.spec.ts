@@ -94,6 +94,8 @@ interface SentMail {
   readonly to: string;
   readonly template: string;
   readonly carriesPasswordLink: boolean;
+  /** Le prénom réellement écrit dans le corps — le sien, jamais celui saisi. */
+  readonly greeting: unknown;
 }
 
 /**
@@ -116,6 +118,7 @@ function fakeMailer(options: { readonly failing?: boolean; readonly enabled?: bo
         to: args.to,
         template: args.template,
         carriesPasswordLink: "passwordSetupUrl" in args.data,
+        greeting: args.data.firstName,
       });
       return Promise.resolve();
     },
@@ -125,7 +128,7 @@ function fakeMailer(options: { readonly failing?: boolean; readonly enabled?: bo
 
 /** Une personne connue, dans l'état voulu. */
 function account(status: MemberStatus, userId = "user_known"): KnownAccount {
-  return { userId, subject: "auth0|known", status };
+  return { userId, subject: "auth0|known", firstName: "Claire", status };
 }
 
 const INPUT: AccessToGrant = {
@@ -287,5 +290,18 @@ describe("GrantAccountAccess — un canal à blanc ne ment pas", () => {
     // Le gabarit est quand même rendu : une erreur de gabarit doit se voir en
     // local, pas le jour où la clé arrive.
     expect(sent[0]?.template).toBe("customer.access-opened");
+  });
+});
+
+describe("GrantAccountAccess — le nom d'une personne lui appartient", () => {
+  it("écrit à SON prénom, pas à celui tapé par le commercial", async () => {
+    // Le commercial qui note « Camille » ne doit pas renommer une cliente qui
+    // s'appelle Claire dans l'e-mail qu'elle reçoit.
+    const members = new FakeMembers({ account: account("active") });
+    const { mailer, sent } = fakeMailer();
+
+    await granter(members, mailer).service.grant(INPUT);
+
+    expect(sent[0]?.greeting).toBe("Claire");
   });
 });

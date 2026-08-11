@@ -21,7 +21,6 @@ const SETTINGS: PlatformSettings = {
 const CREATED: CompanyOpened = {
   id: 'cmp_1',
   accessOpened: true,
-  attachedToExisting: false,
   mailSent: true,
 };
 
@@ -97,7 +96,6 @@ function fill(page: InformationsPage): void {
     lastName: 'Dupont',
     email: 'jean@exemple.fr',
     phone: '',
-    existing: null,
   });
 }
 
@@ -153,7 +151,6 @@ describe('InformationsPage — ouverture d’un compte', () => {
       lastName: '',
       email: 'jean@exemple.fr',
       phone: '',
-      existing: null,
     });
     expect(page['canCreate']()).toBe(true);
   });

@@ -1,98 +1,26 @@
-@if (chosen(); as customer) {
-  <!-- Retenu : on montre ce qu'on a compris, et on laisse revenir en arrière.
-       Un choix qu'on ne peut pas défaire se prend mal. -->
-  <fold-callout variant="success">
-    <div class="hp-chosen">
-      <span>
-        <strong>{{ customer.firstName }} {{ customer.lastName }}</strong>
-        — {{ customer.email }}
-        @if (customer.companies.length > 0) {
-          <br />
-          La société rejoindra son espace, aux côtés de
-          <strong>{{ companiesOf(customer) }}</strong
-          >. Il gardera ses identifiants.
-        } @else {
-          <br />
-          La société rejoindra son espace existant.
-        }
-      </span>
-      <button foldButton emphasis="outline" size="sm" (click)="reset()">Changer</button>
-    </div>
-  </fold-callout>
-} @else if (creating()) {
-  <div class="hp-new">
-    <fold-input
-      label="E-mail"
-      type="email"
-      required
-      hint="c'est par là qu'il recevra son lien de mot de passe"
-      [value]="draftEmail()"
-      (valueChange)="draftEmail.set($event)"
-    />
-    <div class="hp-row">
-      <fold-input
-        label="Prénom"
-        optional
-        [value]="draftFirstName()"
-        (valueChange)="draftFirstName.set($event)"
-      />
-      <fold-input
-        label="Nom"
-        optional
-        [value]="draftLastName()"
-        (valueChange)="draftLastName.set($event)"
-      />
-    </div>
-    <fold-input
-      label="Téléphone"
-      type="tel"
-      optional
-      [value]="draftPhone()"
-      (valueChange)="draftPhone.set($event)"
-    />
+<!-- L'adresse d'abord, et elle suffit : c'est par elle que le détenteur
+     recevra son mot de passe, et c'est elle qui dit au serveur s'il a déjà un
+     espace. Aucune recherche : la liste des sociétés d'une personne ne regarde
+     ni le commercial ni le client qu'il est en train de servir. -->
+<fold-input
+  label="E-mail du détenteur"
+  type="email"
+  required
+  hint="c'est par là qu'il recevra son lien de mot de passe"
+  [value]="email()"
+  (valueChange)="email.set($event)"
+/>
 
-    <button class="hp-back" foldButton emphasis="outline" size="sm" (click)="reset()">
-      Chercher un client existant
-    </button>
-  </div>
-} @else {
-  <!-- On CHERCHE d'abord. Un formulaire vide inviterait à recréer quelqu'un qui
-       existe déjà, et lui donnerait deux espaces pour une seule adresse. -->
-  <fold-search size="sm" placeholder="Nom ou e-mail du client…" (searchChange)="term.set($event)" />
+<div class="hp-row">
+  <fold-input label="Prénom" optional [value]="firstName()" (valueChange)="firstName.set($event)" />
+  <fold-input label="Nom" optional [value]="lastName()" (valueChange)="lastName.set($event)" />
+</div>
 
-  @if (truncated()) {
-    <!-- Le dire, sinon le commercial conclut que son client n'existe pas et lui
-         ouvre un second espace — le doublon que cette recherche évite. -->
-    <p class="hp-more">D'autres clients correspondent : précisez le nom ou l'adresse.</p>
-  }
-
-  @if (results().length > 0) {
-    <ul class="hp-results">
-      @for (customer of results(); track customer.userId) {
-        <li>
-          <button type="button" class="hp-result" (click)="choose(customer)">
-            <span class="hp-name">{{ customer.firstName }} {{ customer.lastName }}</span>
-            <span class="hp-mail">{{ customer.email }}</span>
-            @if (customer.companies.length > 0) {
-              <span class="hp-companies">{{ companiesOf(customer) }}</span>
-            }
-          </button>
-        </li>
-      }
-    </ul>
-  }
-
-  @if (empty()) {
-    <div class="hp-empty">
-      <p>Aucun client ne correspond à « {{ term() }} ».</p>
-      <button foldButton intent="primary" size="sm" icon="plus" (click)="startCreating()">
-        Créer ce détenteur
-      </button>
-    </div>
-  } @else if (!searched()) {
-    <p class="hp-hint">
-      Cherchez-le d'abord : s'il est déjà client, la société rejoindra son espace au lieu de lui en
-      ouvrir un second.
-    </p>
-  }
-}
+<fold-input
+  label="Téléphone"
+  type="tel"
+  optional
+  hint="au moins un numéro joignable sera nécessaire pour activer le compte"
+  [value]="phone()"
+  (valueChange)="phone.set($event)"
+/>

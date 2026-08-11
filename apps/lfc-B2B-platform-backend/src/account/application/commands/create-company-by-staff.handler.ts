@@ -23,8 +23,6 @@ export interface CompanyOpened {
   readonly id: string;
   /** Faux si le canal d'identité est indisponible : la société existe, l'accès non. */
   readonly accessOpened: boolean;
-  /** Vrai si la société a rejoint l'espace d'un client **déjà** connu. */
-  readonly attachedToExisting: boolean;
   readonly mailSent: boolean;
 }
 
@@ -101,17 +99,13 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
         role: "owner",
         invitedBy: command.invitedBy,
       });
-      return {
-        accessOpened: true,
-        // Seul le client **actif** rejoint un espace existant. Celui qui n'avait
-        // jamais posé de mot de passe vient d'en recevoir le lien : le dire
-        // « rattaché » ferait croire au commercial qu'il n'a rien à attendre.
-        attachedToExisting: granted.outcome === "attached",
-        mailSent: granted.mailSent,
-      };
+      // On ne dit PAS si la personne était déjà connue : ce serait apprendre au
+      // commercial que cette adresse travaille avec un autre de nos clients.
+      // L'issue reste au serveur, où elle choisit l'e-mail qui part.
+      return { accessOpened: true, mailSent: granted.mailSent };
     } catch (error) {
       this.logger.error(`Accès non ouvert pour la société ${companyId}`, error);
-      return { accessOpened: false, attachedToExisting: false, mailSent: false };
+      return { accessOpened: false, mailSent: false };
     }
   }
 }

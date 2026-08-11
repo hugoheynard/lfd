@@ -1,91 +1,11 @@
 :host {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-md);
-}
-
-.hp-chosen {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--fold-space-md);
-}
-
-.hp-new,
-.hp-empty {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-md);
-}
-
-.hp-row {
-  display: flex;
-  gap: var(--fold-space-md);
-}
-
-.hp-row > * {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-/* Un retour en arrière ne se met pas au même niveau que l'action principale :
-   il est aligné à gauche, seul, et ne prend pas toute la largeur. */
-.hp-back {
-  align-self: flex-start;
-}
-
-.hp-results {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* Une ligne de résultat est un BOUTON : elle se clique en entier, et le clavier
-   la trouve sans qu'on ait à recoudre un `tabindex`. */
-.hp-result {
   display: grid;
-  gap: 0.1rem;
-  width: 100%;
-  padding: var(--fold-space-sm) var(--fold-space-md);
-  border: 1px solid var(--fold-color-border-subtle);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-card);
-  text-align: start;
-  cursor: pointer;
+  gap: var(--fold-space-md);
 }
 
-.hp-result:hover {
-  border-color: var(--fold-color-border);
-  background: var(--fold-color-surface-sunken);
-}
-
-.hp-name {
-  font-weight: 600;
-}
-
-.hp-mail,
-.hp-companies {
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-}
-
-.hp-hint,
-.hp-empty p {
-  margin: 0;
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
-}
-
-.hp-empty {
-  align-items: flex-start;
-}
-
-/* La liste a coupé : un fait, pas une alerte — on garde le ton du reste. */
-.hp-more {
-  margin: 0;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
+/* Prénom et nom sur une ligne : deux champs facultatifs qui vont ensemble. */
+.hp-row {
+  display: grid;
+  gap: var(--fold-space-md);
+  grid-template-columns: 1fr 1fr;
 }

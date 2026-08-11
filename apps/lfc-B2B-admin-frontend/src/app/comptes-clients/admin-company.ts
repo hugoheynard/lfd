@@ -101,6 +101,5 @@ export const PAYMENT_TERM_LABELS: Readonly<Record<PaymentTerm, string>> = {
 export interface CompanyOpened {
   readonly id: string;
   readonly accessOpened: boolean;
-  readonly attachedToExisting: boolean;
   readonly mailSent: boolean;
 }

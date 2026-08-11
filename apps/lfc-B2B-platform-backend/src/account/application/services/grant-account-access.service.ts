@@ -1,5 +1,4 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import type { AccessOutcome } from "@lfd/contracts";
 
 import { MAILER, type B2bMailer } from "../../../infra/mailer/mailer.module.js";
 import { AccountDisabledError } from "../../domain/errors/account-errors.js";
@@ -9,6 +8,7 @@ import {
 } from "../../domain/ports/company-member.repository.js";
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
 import { ensureNoRivalOwner } from "../../domain/services/company-access.js";
+import type { AccessOutcome } from "../../domain/value-objects/access-outcome.js";
 import type { CompanyRole } from "../../domain/value-objects/company-role.js";
 
 /** Qui rattacher, à quelle société, avec quel rôle. */
@@ -28,7 +28,10 @@ export interface AccessToGrant {
 /** Ce qui s'est réellement passé — dit sans arrondir. */
 export interface AccessGranted {
   readonly userId: string;
-  /** Laquelle des trois situations : cf. `AccessOutcome` dans les contrats. */
+  /**
+   * Laquelle des trois situations. **Reste au serveur** : elle choisit l'e-mail
+   * qui part, elle ne remonte pas à l'écran (cf. `AccessOutcome`).
+   */
   readonly outcome: AccessOutcome;
   /** Faux si l'e-mail n'est pas parti : le staff doit l'apprendre tout de suite. */
   readonly mailSent: boolean;
@@ -119,7 +122,12 @@ export class GrantAccountAccess extends AccountAccessGranter {
   private async reissueLink(known: KnownAccount, input: AccessToGrant): Promise<AccessGranted> {
     const url = await this.identity.issuePasswordLink(known.subject);
     await this.attach(known.userId, input);
-    return this.deliverLink(known.userId, "link_reissued", url, input);
+    // Son prénom à ELLE : celui qu'un commercial vient de taper n'a pas à la
+    // renommer dans l'e-mail qu'elle reçoit.
+    return this.deliverLink(known.userId, "link_reissued", url, {
+      ...input,
+      firstName: known.firstName,
+    });
   }
 
   /** Cliente active : une société de plus dans son espace, pas un second compte. */
@@ -129,7 +137,8 @@ export class GrantAccountAccess extends AccountAccessGranter {
       this.mailer.send({
         to: input.email,
         template: "customer.company-attached",
-        data: { firstName: input.firstName, companyName: input.companyName },
+        // Son prénom à ELLE, pas celui saisi par le commercial.
+        data: { firstName: known.firstName, companyName: input.companyName },
       }),
     );
     return { userId: known.userId, outcome: "attached", mailSent };

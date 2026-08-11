@@ -1,5 +1,5 @@
 import type { Page, Route } from '@playwright/test';
-import type { CompanyContactView, CustomerLookupView, PlatformSettings } from '@lfd/contracts';
+import type { CompanyContactView, PlatformSettings } from '@lfd/contracts';
 
 /** La société sur laquelle portent les tests d'ouverture de compte. */
 export const COMPANY_ID = 'company-cpt';
@@ -30,14 +30,12 @@ export interface ContactCall {
  * qui ne part pas, l'activation d'un compte qu'on ne peut pas appeler.
  */
 export class ComptesApiDouble {
-  /** Les clients déjà connus, que la recherche de détenteur remonte. */
-  readonly customers: CustomerLookupView[] = [];
+  /** Les adresses déjà connues de la plateforme — invisibles depuis l'écran. */
+  readonly knownEmails: string[] = [];
   /** L'ouverture d'accès réussit-elle à la création ? (Non = pas de M2M.) */
   accessOpens = true;
   /** L'e-mail part-il vraiment ? Un « non » doit être DIT, pas arrondi. */
   mailSent = true;
-  /** D'autres clients correspondent-ils, au-delà de ce que la liste rend ? */
-  truncated = false;
 
   readonly created: unknown[] = [];
   readonly invites: InviteCall[] = [];
@@ -66,13 +64,6 @@ export class ComptesApiDouble {
     const { pathname } = new URL(route.request().url());
     const method = route.request().method();
 
-    if (pathname.endsWith('/admin/customers')) {
-      const term = new URL(route.request().url()).searchParams.get('q') ?? '';
-      return json(route, { results: this.search(term), truncated: this.truncated });
-    }
-    if (pathname.endsWith('/admin/customers/by-email')) {
-      return json(route, null);
-    }
     if (pathname.endsWith('/admin/companies') && method === 'POST') {
       return this.open(route);
     }
@@ -96,21 +87,11 @@ export class ComptesApiDouble {
     return json(route, pathname.endsWith('/pending') ? {} : []);
   }
 
-  private search(term: string): readonly CustomerLookupView[] {
-    const needle = term.trim().toLowerCase();
-    if (needle.length < 2) {
-      return [];
-    }
-    return this.customers.filter((customer) =>
-      `${customer.firstName} ${customer.lastName} ${customer.email}`.toLowerCase().includes(needle),
-    );
-  }
-
   private async open(route: Route): Promise<void> {
     const body = route.request().postDataJSON() as { primaryContact: { email: string } };
     this.created.push(body);
     const email = body.primaryContact.email;
-    const known = this.customers.some((customer) => customer.email === email);
+    const known = this.knownEmails.includes(email);
     this.contacts = [{ ...holder(), email }];
     if (this.accessOpens) {
       this.contacts = [{ ...this.contacts[0]!, access: known ? 'active' : 'invited' }];
@@ -121,7 +102,6 @@ export class ComptesApiDouble {
       body: JSON.stringify({
         id: COMPANY_ID,
         accessOpened: this.accessOpens,
-        attachedToExisting: known,
         mailSent: this.accessOpens && this.mailSent,
       }),
     });
@@ -251,19 +231,6 @@ function holder(): CompanyContactView {
     role: 'owner',
     access: 'none',
     emailVerified: false,
-  };
-}
-
-/** Un client déjà connu, pour le cas « il a déjà une entité commerciale ». */
-export function knownCustomer(email: string): CustomerLookupView {
-  return {
-    userId: 'user-known',
-    email,
-    firstName: 'Claire',
-    lastName: 'Vasseur',
-    phone: '06 11 22 33 44',
-    status: 'active',
-    companies: [{ id: 'c-autre', raisonSociale: 'Vasseur Traiteur SARL' }],
   };
 }
 

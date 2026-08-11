@@ -50,8 +50,6 @@ import {
   GrantAccountAccess,
 } from "./application/services/grant-account-access.service.js";
 import { CompanyContactBook } from "./application/services/company-contact-book.service.js";
-import { FindCustomerByEmailHandler } from "./application/queries/find-customer-by-email.handler.js";
-import { SearchCustomersHandler } from "./application/queries/search-customers.handler.js";
 import { ListCompanyMembersHandler } from "./application/queries/list-company-members.handler.js";
 import { InviteCompanyMemberHandler } from "./application/commands/invite-company-member.handler.js";
 import {
@@ -86,7 +84,6 @@ import { PrismaSupportRequestRepository } from "./infrastructure/prisma-support-
 import { S3KbisStore } from "./infrastructure/s3-kbis-store.js";
 import { SupportRequestRepository } from "./domain/ports/support-request.repository.js";
 import { AdminCompaniesController } from "./http/admin-companies.controller.js";
-import { AdminCustomersController } from "./http/admin-customers.controller.js";
 import { AdminCompanyMembersController } from "./http/admin-company-members.controller.js";
 import { AdminCompanyContactsController } from "./http/admin-company-contacts.controller.js";
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
@@ -121,7 +118,6 @@ import { MeController } from "./http/me.controller.js";
     SupportController,
     AdminSupportController,
     AdminCompaniesController,
-    AdminCustomersController,
     AdminCompanyMembersController,
     AdminCompanyContactsController,
     AdminCompanyPiecesController,
@@ -131,8 +127,6 @@ import { MeController } from "./http/me.controller.js";
     UpdateNavPreferencesHandler,
     CreateCompanyHandler,
     CreateCompanyByStaffHandler,
-    FindCustomerByEmailHandler,
-    SearchCustomersHandler,
     ListCompanyMembersHandler,
     InviteCompanyMemberHandler,
     UpdatePrimaryContactByStaffHandler,

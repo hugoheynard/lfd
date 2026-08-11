@@ -56,6 +56,6 @@ export class InviteCompanyMemberHandler implements ICommandHandler<
       // Rattaché puis introuvable : deux réponses incompatibles de la même base.
       throw new CompanyNotFoundError(command.companyId);
     }
-    return { member: toMemberView(member), outcome: granted.outcome, mailSent: granted.mailSent };
+    return { member: toMemberView(member), mailSent: granted.mailSent };
   }
 }

@@ -191,29 +191,6 @@ export interface CustomerCompanyRef {
 }
 
 /**
- * Ce qui s'est **réellement** passé quand on a ouvert un accès.
- *
- * Trois issues, et non un booléen « déjà connu / pas connu » : le cas du milieu
- * est celui qu'un booléen faisait disparaître. Quelqu'un que nous connaissons
- * déjà peut n'avoir **jamais posé de mot de passe** — c'est l'état de tout
- * compte provisionné par un commercial dont l'e-mail n'est pas parti. Le
- * confondre avec un client actif, c'est lui écrire « retrouvez-le avec vos
- * identifiants habituels » alors qu'il n'en a aucun.
- *
- * - `identity_created` — identité neuve chez le fournisseur, lien envoyé ;
- * - `link_reissued` — personne connue mais **sans mot de passe** : nouveau lien ;
- * - `attached` — client actif : une société de plus dans son espace, sans lien.
- */
-export const accessOutcomeSchema = z.enum(["identity_created", "link_reissued", "attached"]);
-
-export type AccessOutcome = z.infer<typeof accessOutcomeSchema>;
-
-/** L'issue a-t-elle envoyé un **lien de mot de passe** ? */
-export function carriesPasswordLink(outcome: AccessOutcome): boolean {
-  return outcome !== "attached";
-}
-
-/**
  * Le résultat d'une invitation.
  *
  * `mailSent` dit la vérité sur le canal : quand le mailer n'est pas configuré ou
@@ -227,6 +204,5 @@ export function carriesPasswordLink(outcome: AccessOutcome): boolean {
  */
 export interface CompanyMemberInvitedView {
   readonly member: CompanyMemberView;
-  readonly outcome: AccessOutcome;
   readonly mailSent: boolean;
 }
