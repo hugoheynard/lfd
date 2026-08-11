@@ -46,6 +46,11 @@ export class ComptesApiDouble {
   activeMandate = false;
   /** Les crédits de règlement accordés — pilote la zone de danger. */
   grantedTerms: string[] = [];
+  /** Les adresses de livraison de la société — vide par défaut. */
+  deliveries: unknown[] = [];
+  /** Les corrections d'adresse reçues : `[addressId, charge]`. */
+  readonly updatedDeliveries: [string, unknown][] = [];
+
   /** La préférence d'acheminement, relue par la fiche après chaque réglage. */
   preference: {
     method: string | null;
@@ -82,6 +87,11 @@ export class ComptesApiDouble {
     }
     if (pathname.endsWith(`/admin/companies/${COMPANY_ID}/contacts`)) {
       return this.addContact(route);
+    }
+    if (pathname.includes(`/admin/companies/${COMPANY_ID}/delivery-addresses/`)) {
+      const addressId = pathname.split('/').pop() ?? '';
+      this.updatedDeliveries.push([addressId, route.request().postDataJSON()]);
+      return route.fulfill({ status: 204, body: '' });
     }
     if (pathname.endsWith(`/admin/companies/${COMPANY_ID}/fulfillment-preference`)) {
       this.preference = route.request().postDataJSON() as ComptesApiDouble['preference'];
@@ -262,7 +272,7 @@ export class ComptesApiDouble {
       hasOpenSupportRequest: false,
       createdAt: '2026-08-11T09:00:00.000Z',
       vatNumberRequired: false,
-      addresses: { billing: null, deliveries: [] },
+      addresses: { billing: null, deliveries: this.deliveries },
       contacts: this.contacts,
     };
   }

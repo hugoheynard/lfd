@@ -74,3 +74,34 @@ export class PreferFulfillmentByStaffCommand {
     readonly preference: FulfillmentPreferencePayload,
   ) {}
 }
+
+/**
+ * Remplace une adresse de livraison **à la place du client**.
+ *
+ * Le pendant staff de `UpdateDeliveryAddressCommand`. Le commercial corrige un
+ * code d'accès, un créneau ou un contact au téléphone — obliger le client à le
+ * faire lui-même, c'est une livraison ratée en attendant qu'il s'y mette.
+ */
+export class UpdateDeliveryAddressByStaffCommand {
+  constructor(
+    readonly companyId: string,
+    readonly addressId: string,
+    readonly payload: DeliveryAddressPayload,
+  ) {}
+}
+
+/** Archive une adresse de livraison (jamais de suppression physique). */
+export class RemoveDeliveryAddressByStaffCommand {
+  constructor(
+    readonly companyId: string,
+    readonly addressId: string,
+  ) {}
+}
+
+/** Désigne l'adresse de livraison par défaut. */
+export class SetDefaultDeliveryByStaffCommand {
+  constructor(
+    readonly companyId: string,
+    readonly addressId: string,
+  ) {}
+}

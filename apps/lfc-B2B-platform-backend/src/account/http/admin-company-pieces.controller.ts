@@ -18,6 +18,7 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
+  Delete,
   Param,
   Patch,
   Post,
@@ -39,6 +40,9 @@ import {
   SaveBillingAddressByStaffCommand,
   GrantTermsCommand,
   PreferFulfillmentByStaffCommand,
+  RemoveDeliveryAddressByStaffCommand,
+  SetDefaultDeliveryByStaffCommand,
+  UpdateDeliveryAddressByStaffCommand,
   UpdateIdentityByStaffCommand,
   UploadKbisByStaffCommand,
 } from "../application/commands/admin-company-commands.js";
@@ -190,5 +194,48 @@ export class AdminCompanyPiecesController {
       new AddDeliveryAddressByStaffCommand(companyId, payload),
     );
     return { id };
+  }
+
+  /**
+   * Corrige une adresse de livraison **déjà posée**.
+   *
+   * Sans elle, le commercial ne pouvait qu'en *ajouter* une : un code d'accès
+   * changé se réglait en créant un doublon, ou en demandant au client de le
+   * faire — c'est-à-dire en attendant.
+   */
+  @Patch(":companyId/delivery-addresses/:addressId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateDelivery(
+    @Param("companyId") companyId: string,
+    @Param("addressId") addressId: string,
+    @Body(new ZodBody(deliveryAddressPayloadSchema)) payload: DeliveryAddressPayload,
+  ): Promise<void> {
+    await this.commands.execute<UpdateDeliveryAddressByStaffCommand, void>(
+      new UpdateDeliveryAddressByStaffCommand(companyId, addressId, payload),
+    );
+  }
+
+  /** Désigne l'adresse de livraison par défaut. */
+  @Patch(":companyId/delivery-addresses/:addressId/default")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setDefaultDelivery(
+    @Param("companyId") companyId: string,
+    @Param("addressId") addressId: string,
+  ): Promise<void> {
+    await this.commands.execute<SetDefaultDeliveryByStaffCommand, void>(
+      new SetDefaultDeliveryByStaffCommand(companyId, addressId),
+    );
+  }
+
+  /** Archive une adresse de livraison — jamais de suppression physique. */
+  @Delete(":companyId/delivery-addresses/:addressId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeDelivery(
+    @Param("companyId") companyId: string,
+    @Param("addressId") addressId: string,
+  ): Promise<void> {
+    await this.commands.execute<RemoveDeliveryAddressByStaffCommand, void>(
+      new RemoveDeliveryAddressByStaffCommand(companyId, addressId),
+    );
   }
 }

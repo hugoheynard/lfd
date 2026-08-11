@@ -13,6 +13,9 @@ import { DocumentStore } from "../../../infra/storage/document-store.js";
 import {
   AddDeliveryAddressByStaffCommand,
   PreferFulfillmentByStaffCommand,
+  RemoveDeliveryAddressByStaffCommand,
+  SetDefaultDeliveryByStaffCommand,
+  UpdateDeliveryAddressByStaffCommand,
   SaveBillingAddressByStaffCommand,
   GrantTermsCommand,
   UpdateIdentityByStaffCommand,
@@ -168,5 +171,51 @@ export class PreferFulfillmentByStaffHandler implements ICommandHandler<
     if (!deliveries.some((address) => address.id === wanted)) {
       throw new CompanyAddressNotFoundError(wanted);
     }
+  }
+}
+
+/**
+ * Gestes staff sur une adresse de livraison **déjà posée** : la corriger, la
+ * désigner par défaut, l'archiver.
+ *
+ * Aucun mur membership — l'auth staff garde la route, comme pour les autres
+ * pièces. Le mur qui reste est celui du **rattachement** : chaque méthode du
+ * port porte le `companyId`, et l'implémentation filtre sur (`id` ET
+ * `companyId`). Une adresse d'une autre société n'est donc pas touchée, elle est
+ * déclarée introuvable.
+ */
+@CommandHandler(UpdateDeliveryAddressByStaffCommand)
+export class UpdateDeliveryAddressByStaffHandler implements ICommandHandler<
+  UpdateDeliveryAddressByStaffCommand,
+  void
+> {
+  constructor(private readonly addresses: CompanyAddressRepository) {}
+
+  async execute(command: UpdateDeliveryAddressByStaffCommand): Promise<void> {
+    await this.addresses.updateDelivery(command.companyId, command.addressId, command.payload);
+  }
+}
+
+@CommandHandler(SetDefaultDeliveryByStaffCommand)
+export class SetDefaultDeliveryByStaffHandler implements ICommandHandler<
+  SetDefaultDeliveryByStaffCommand,
+  void
+> {
+  constructor(private readonly addresses: CompanyAddressRepository) {}
+
+  async execute(command: SetDefaultDeliveryByStaffCommand): Promise<void> {
+    await this.addresses.setDefaultDelivery(command.companyId, command.addressId);
+  }
+}
+
+@CommandHandler(RemoveDeliveryAddressByStaffCommand)
+export class RemoveDeliveryAddressByStaffHandler implements ICommandHandler<
+  RemoveDeliveryAddressByStaffCommand,
+  void
+> {
+  constructor(private readonly addresses: CompanyAddressRepository) {}
+
+  async execute(command: RemoveDeliveryAddressByStaffCommand): Promise<void> {
+    await this.addresses.archiveDelivery(command.companyId, command.addressId);
   }
 }

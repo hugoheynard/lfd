@@ -499,6 +499,66 @@ export class InformationsPage {
     }
   }
 
+  /**
+   * Corrige une adresse de livraison existante — le même panneau que la
+   * création, prérempli.
+   *
+   * Ces trois gestes existaient sur la carte partagée et n'étaient branchés à
+   * rien côté staff : les boutons s'affichaient, se cliquaient, et ne faisaient
+   * rien. Une action qui ne répond pas est pire qu'une action absente — on la
+   * réessaie, puis on croit l'application cassée.
+   */
+  protected editDelivery(address: DeliveryAddressView): void {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    const closed = this.panels.open(AdminAdressePanel, {
+      data: {
+        companyId: company.id,
+        kind: 'livraison',
+        knownContacts: knownContactsOf(company),
+        delivery: address,
+      },
+      side: 'right',
+    }).closed;
+    void closed.then(() => this.load());
+  }
+
+  /** Désigne l'adresse de livraison par défaut. */
+  protected async setDefaultDelivery(address: DeliveryAddressView): Promise<void> {
+    await this.mutateDelivery(
+      (companyId) => this.service.setDefaultDelivery(companyId, address.id),
+      'Adresse par défaut mise à jour.',
+    );
+  }
+
+  /** Archive une adresse de livraison (confirmée dans la carte). */
+  protected async removeDelivery(address: DeliveryAddressView): Promise<void> {
+    await this.mutateDelivery(
+      (companyId) => this.service.removeDelivery(companyId, address.id),
+      'Adresse de livraison retirée.',
+    );
+  }
+
+  /** Mute une adresse, annonce, recharge — le trio des deux gestes ci-dessus. */
+  private async mutateDelivery(
+    mutate: (companyId: string) => Promise<void>,
+    done: string,
+  ): Promise<void> {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    try {
+      await mutate(company.id);
+      this.notify.success(done);
+      await this.load();
+    } catch (error) {
+      this.notify.error(error);
+    }
+  }
+
   /** Retire un interlocuteur additionnel (confirmé dans la carte). */
   protected async removeContact(contactId: string): Promise<void> {
     const company = this.company();

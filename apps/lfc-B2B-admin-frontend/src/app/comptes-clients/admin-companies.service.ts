@@ -145,6 +145,44 @@ export class AdminCompaniesService {
   }
 
   /**
+   * Corrige une adresse de livraison **déjà posée**.
+   *
+   * Sans elle, le staff ne pouvait qu'en *ajouter* une : un code d'accès changé
+   * se réglait en créant un doublon, ou en attendant que le client s'en occupe.
+   */
+  async updateDelivery(
+    companyId: string,
+    addressId: string,
+    payload: DeliveryAddressPayload,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/delivery-addresses/${addressId}`,
+        payload,
+      ),
+    );
+  }
+
+  /** Désigne l'adresse de livraison par défaut. */
+  async setDefaultDelivery(companyId: string, addressId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/delivery-addresses/${addressId}/default`,
+        {},
+      ),
+    );
+  }
+
+  /** Archive une adresse de livraison — jamais de suppression physique. */
+  async removeDelivery(companyId: string, addressId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/delivery-addresses/${addressId}`,
+      ),
+    );
+  }
+
+  /**
    * Pose la **préférence d'acheminement**. Elle ne conditionne rien : c'est un
    * défaut offert au panier, que le client peut écarter.
    */

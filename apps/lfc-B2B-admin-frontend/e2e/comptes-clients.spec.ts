@@ -250,3 +250,48 @@ test.describe("préférence d'acheminement", () => {
     expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThan(2);
   });
 });
+
+test.describe('corriger une adresse de livraison', () => {
+  test('ouvre le panneau PRÉREMPLI et enregistre la correction', async ({ page }) => {
+    // Le bouton « Modifier » de la carte existait mais n'était branché à rien
+    // côté staff : il s'affichait, se cliquait, et ne faisait rien. Une action
+    // qui ne répond pas est pire qu'une action absente.
+    const api = new ComptesApiDouble();
+    api.deliveries = [
+      {
+        id: 'addr_1',
+        label: 'Boutique',
+        ligne1: '4 rue du Marché',
+        ligne2: '',
+        codePostal: '75011',
+        ville: 'Paris',
+        pays: 'France',
+        isDefault: true,
+        specs: {
+          note: '',
+          slots: { mode: 'everyday', slot: { start: '08:00', end: '11:00' } },
+          deliveryContact: { prenom: 'Léa', nom: 'Martin', telephone: '0600000000' },
+          gps: null,
+        },
+      },
+    ];
+    await fiche(page, api);
+
+    await page.getByRole('button', { name: "Actions de l'adresse" }).click();
+    // `visible` : les menus fermés des autres lignes restent dans le DOM, et
+    // « Modifier » y figure aussi — seul celui qu'on vient d'ouvrir est cliquable.
+    await page.getByRole('menuitem', { name: 'Modifier' }).filter({ visible: true }).click();
+
+    // Prérempli : un formulaire vide obligerait à tout retaper pour changer un
+    // code d'accès, et ce qui se retape se perd.
+    await expect(page.getByText('Modifier l’adresse de livraison')).toBeVisible();
+    const nom = page.getByLabel("Nom de l'adresse");
+    await expect(nom).toHaveValue('Boutique');
+
+    await nom.fill('Boutique (rue du Marché)');
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+
+    await expect.poll(() => api.updatedDeliveries.length).toBe(1);
+    expect(api.updatedDeliveries[0]?.[0]).toBe('addr_1');
+  });
+});
