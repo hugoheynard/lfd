@@ -125,7 +125,9 @@ test.describe('ajouter un interlocuteur', () => {
     await page.getByRole('button', { name: 'Ajouter un contact' }).click();
     await page.getByLabel('E-mail').fill('lea@comptoir.fr');
 
-    const enregistrer = page.getByRole('button', { name: 'Enregistrer' });
+    // `exact` : la fiche porte aussi « Enregistrer un mandat », et un nom
+    // partiel attraperait les deux.
+    const enregistrer = page.getByRole('button', { name: 'Enregistrer', exact: true });
     // Sans rôle, on ne saurait pas quoi lui ouvrir plus tard.
     await expect(enregistrer).toBeDisabled();
 
@@ -169,5 +171,39 @@ test.describe("activer un compte qu'on peut appeler", () => {
     await activer.click();
 
     await expect.poll(() => api.activations).toBe(1);
+  });
+});
+
+test.describe('retirer un moyen de paiement', () => {
+  test('exige de taper le mot exact, et ne le propose PAS ailleurs', async ({ page }) => {
+    // Retirer un crédit se répare mal et se découvre au pire moment : à la
+    // commande suivante. Le geste vit donc en zone de danger, à distance des
+    // boutons ordinaires, et derrière une saisie.
+    const api = new ComptesApiDouble();
+    api.grantedTerms = ['monthly'];
+    await fiche(page, api);
+
+    const zone = page.locator('fold-danger-zone');
+    await expect(zone).toBeVisible();
+
+    // Nulle part ailleurs sur la fiche on ne peut retirer ce crédit.
+    await expect(page.getByRole('button', { name: 'Retirer' })).toHaveCount(1);
+
+    await zone.getByRole('button', { name: 'Retirer' }).click();
+    const confirmer = zone.getByRole('button', { name: 'Retirer', exact: true }).last();
+
+    // Tant que le mot n'est pas tapé, la confirmation reste hors d'atteinte.
+    await expect(confirmer).toBeDisabled();
+    await zone.getByRole('textbox').fill('Mensuel');
+    await expect(confirmer).toBeEnabled();
+  });
+
+  test("ne montre AUCUNE zone de danger quand il n'y a rien à retirer", async ({ page }) => {
+    // Une section « dangereuse » toujours affichée cesse d'être lue.
+    const api = new ComptesApiDouble();
+    await fiche(page, api);
+
+    await expect(page.getByText('Moyens de paiement')).toBeVisible();
+    await expect(page.locator('fold-danger-zone')).toHaveCount(0);
   });
 });

@@ -1,0 +1,71 @@
+<fold-panel-header
+  title="Enregistrer un mandat"
+  subtitle="Prélèvement SEPA — à partir du mandat signé par le client."
+/>
+
+<div class="body">
+  <p class="target">
+    Compte débité : <strong>{{ data().companyName }}</strong>
+  </p>
+
+  <!-- Ce que le commercial affirme en enregistrant. Dit avant la saisie, pas
+       après : c'est la condition de l'acceptation hors ligne. -->
+  <fold-callout variant="info">
+    Vous déclarez détenir le <strong>mandat signé</strong> de ce client. Déposez-en le scan juste
+    après — en cas de contestation, c'est cette pièce qui répond.
+  </fold-callout>
+
+  <label class="field">
+    <span class="label">Titulaire du compte</span>
+    <input
+      class="native"
+      type="text"
+      autocomplete="off"
+      placeholder="Nom tel qu'il figure sur le RIB"
+      [value]="holderName()"
+      (input)="holderName.set($any($event.target).value)"
+    />
+  </label>
+
+  <label class="field">
+    <span class="label">E-mail du titulaire</span>
+    <input
+      class="native"
+      type="email"
+      autocomplete="off"
+      [value]="holderEmail()"
+      (input)="holderEmail.set($any($event.target).value)"
+    />
+    <span class="hint">Stripe y enverra la pré-notification avant chaque prélèvement.</span>
+  </label>
+
+  <label class="field">
+    <span class="label">IBAN</span>
+    <!-- Iframe Stripe : l'IBAN n'entre jamais dans le DOM de cette application. -->
+    <div class="iban-mount" #iban></div>
+    <span class="hint">Saisi directement chez Stripe — nous n'en conservons rien.</span>
+  </label>
+
+  <label class="field">
+    <span class="label">Date de signature du mandat</span>
+    <input
+      class="native"
+      type="date"
+      [max]="maxDate"
+      [value]="acceptedAt()"
+      (change)="acceptedAt.set($any($event.target).value)"
+    />
+    <span class="hint">Celle du papier, souvent bien antérieure à aujourd'hui.</span>
+  </label>
+
+  @if (error(); as message) {
+    <fold-callout variant="alert">{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit()" (click)="submit()">
+    {{ submitting() ? 'Enregistrement…' : 'Enregistrer le mandat' }}
+  </button>
+</footer>

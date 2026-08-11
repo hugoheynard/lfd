@@ -31,27 +31,146 @@
           @if (row.requested) {
             <fold-badge content="Demandé par le client" variant="warning" />
           }
-          <button
-            foldButton
-            size="sm"
-            [emphasis]="row.granted ? 'outline' : 'soft'"
-            [intent]="row.granted ? 'neutral' : 'primary'"
-            (click)="toggle(row.term)"
-          >
-            {{ row.granted ? 'Retirer' : 'Débloquer' }}
-          </button>
+          @if (row.granted) {
+            <!-- Accordé, on ne montre plus qu'un état : le retrait vit en zone
+                 de danger, plus bas. Un bouton « Retirer » à côté d'un bouton
+                 « Débloquer » invite au clic de trop. -->
+            <fold-badge content="Accordé" variant="success" />
+          } @else {
+            <button
+              foldButton
+              size="sm"
+              emphasis="soft"
+              intent="primary"
+              (click)="toggle(row.term)"
+            >
+              Débloquer
+            </button>
+          }
         </div>
       </div>
     }
-
-    <!-- Ce qu'on facture, il faut savoir l'encaisser. Dit sans bloquer la
-         vente : le commercial débloque devant son client, le mandat suit. -->
-    @if (settlesOnAccount() && !hasMandate()) {
-      <fold-callout variant="warning">
-        <strong>Aucun mandat de prélèvement.</strong> Ce client est facturé au terme, mais rien ne
-        permet encore de l'encaisser automatiquement — l'enregistrement du mandat SEPA n'est pas
-        disponible (voir la note de conception).
-      </fold-callout>
-    }
   </fold-card>
+
+  <!-- Le mandat : comment on encaisse ce qu'on a accordé. Séparé des crédits
+       parce que ce n'est pas un moyen de plus offert au client, c'est
+       l'instrument qui rend les autres encaissables. -->
+  @if (companyId(); as id) {
+    <fold-card>
+      @if (mandate(); as m) {
+        <div class="pm-row">
+          <div class="pm-what">
+            <span class="pm-label">Prélèvement SEPA — ••••{{ m.last4 }}</span>
+            <span class="pm-note">
+              Mandat {{ m.reference }}, signé le {{ m.acceptedAt | date: 'dd/MM/yyyy' }}
+              @if (m.revokedAt) {
+                · révoqué le {{ m.revokedAt | date: 'dd/MM/yyyy' }}
+              }
+            </span>
+          </div>
+          <div class="pm-state">
+            <fold-badge [content]="statusLabel()" [variant]="debitable() ? 'success' : 'neutral'" />
+            @if (!debitable()) {
+              <button
+                foldButton
+                size="sm"
+                intent="primary"
+                emphasis="soft"
+                [disabled]="busy()"
+                (click)="openMandatePanel()"
+              >
+                Enregistrer un mandat
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- La pièce qui prouve le consentement. Le RIB ne prouve rien : il
+             donne des coordonnées, pas une autorisation. -->
+        <div class="pm-row">
+          <div class="pm-what">
+            <span class="pm-label">Mandat signé</span>
+            <span class="pm-note">
+              {{ m.hasProof ? m.proofFileName : 'Aucun scan déposé.' }}
+            </span>
+          </div>
+          <div class="pm-state">
+            @if (m.hasProof) {
+              <fold-badge content="Déposé" variant="success" />
+            }
+            <label class="proof-pick">
+              <input type="file" accept="application/pdf,image/*" (change)="uploadProof($event)" />
+              <span>{{ m.hasProof ? 'Remplacer' : 'Déposer le scan' }}</span>
+            </label>
+          </div>
+        </div>
+
+        @if (unproven()) {
+          <fold-callout variant="warning">
+            <strong>Mandat sans pièce justificative.</strong> Nous prélevons sur une acceptation
+            déclarée hors ligne : en contestation, c'est le scan du mandat signé qui répond. Sans
+            lui, la somme est remboursable sur simple demande du client.
+          </fold-callout>
+        }
+      } @else {
+        <div class="pm-row">
+          <div class="pm-what">
+            <span class="pm-label">Prélèvement SEPA</span>
+            <span class="pm-note">Aucun mandat enregistré.</span>
+          </div>
+          <button
+            foldButton
+            size="sm"
+            intent="primary"
+            emphasis="soft"
+            [disabled]="busy()"
+            (click)="openMandatePanel()"
+          >
+            Enregistrer un mandat
+          </button>
+        </div>
+      }
+
+      <!-- Ce qu'on facture, il faut savoir l'encaisser. Dit sans bloquer la
+           vente : le commercial débloque devant son client, le mandat suit. -->
+      @if (settlesOnAccount() && !debitable()) {
+        <fold-callout variant="warning">
+          <strong>Rien pour encaisser.</strong> Ce client est facturé au terme, mais aucun mandat
+          actif ne permet de le prélever — les échéances devront être réclamées à la main.
+        </fold-callout>
+      }
+    </fold-card>
+  }
+
+  <!-- Zone de danger : tout ce qui RETIRE quelque chose au client, rassemblé et
+       à distance des gestes ordinaires. Chaque action y demande le mot exact —
+       retirer un crédit ou une autorisation de prélever se répare mal, et se
+       découvre au pire moment : à la commande suivante, ou à l'échéance. -->
+  @if (dangerous().length > 0) {
+    <fold-danger-zone appearance="section" title="Zone de danger">
+      <p class="danger-lede">
+        Ces retraits prennent effet immédiatement pour le client. Tapez le mot demandé pour
+        confirmer.
+      </p>
+
+      @for (action of dangerous(); track action.key) {
+        <div class="pm-row">
+          <div class="pm-what">
+            <span class="pm-label">{{ action.label }}</span>
+            <span class="pm-note">{{ action.consequence }}</span>
+          </div>
+          <fold-inline-confirm
+            intent="danger"
+            [match]="action.match"
+            [message]="action.question"
+            [loading]="busy()"
+            [labels]="{ confirm: 'Retirer' }"
+            (confirmed)="runDanger(action.key)"
+          >
+            <button foldButton size="sm" emphasis="outline" intent="danger">Retirer</button>
+          </fold-inline-confirm>
+        </div>
+      }
+    </fold-danger-zone>
+  }
 </fold-page-section>

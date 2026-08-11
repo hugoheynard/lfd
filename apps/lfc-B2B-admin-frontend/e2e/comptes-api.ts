@@ -42,6 +42,10 @@ export class ComptesApiDouble {
   readonly addedContacts: ContactCall[] = [];
   /** Le nombre d'activations acceptées (204). */
   activations = 0;
+  /** La société a-t-elle un mandat de prélèvement actif ? */
+  activeMandate = false;
+  /** Les crédits de règlement accordés — pilote la zone de danger. */
+  grantedTerms: string[] = [];
 
   private contacts: CompanyContactView[] = [holder()];
 
@@ -73,6 +77,9 @@ export class ComptesApiDouble {
     if (pathname.endsWith(`/admin/companies/${COMPANY_ID}/contacts`)) {
       return this.addContact(route);
     }
+    if (pathname.endsWith(`/admin/companies/${COMPANY_ID}/mandate`)) {
+      return this.mandate(route, method);
+    }
     if (pathname.endsWith(`/admin/companies/${COMPANY_ID}/activate`)) {
       return this.activate(route);
     }
@@ -85,6 +92,35 @@ export class ComptesApiDouble {
     // Le reste : une collection vide. Ces écrans en portent d'autres qui n'ont
     // rien à dire ici, et un 404 les mettrait en erreur pour rien.
     return json(route, pathname.endsWith('/pending') ? {} : []);
+  }
+
+  /**
+   * Le mandat de prélèvement. La clé Stripe est celle d'un compte de test qui
+   * n'existe pas : ces tests n'ouvrent jamais l'iframe, ils vérifient ce que
+   * l'écran dit et ce qu'il exige avant d'agir.
+   */
+  private async mandate(route: Route, method: string): Promise<void> {
+    if (method === 'DELETE') {
+      this.activeMandate = false;
+      return route.fulfill({ status: 204, body: '' });
+    }
+    return json(route, {
+      mandate: this.activeMandate
+        ? {
+            id: 'mdt_1',
+            reference: 'RUM-E2E',
+            status: 'active',
+            last4: '3000',
+            bankCode: 'BNPA',
+            country: 'FR',
+            acceptedAt: '2024-03-12T00:00:00.000Z',
+            revokedAt: null,
+            hasProof: false,
+            proofFileName: '',
+          }
+        : null,
+      publishableKey: 'pk_test_e2e',
+    });
   }
 
   private async open(route: Route): Promise<void> {
@@ -197,8 +233,8 @@ export class ComptesApiDouble {
       siret: '81245678900021',
       tvaIntracom: '',
       status: 'pending',
-      // Aucun crédit accordé : la société paie à la commande, comme tout le monde.
-      grantedTerms: [],
+      // Vide par défaut : la société paie à la commande, comme tout le monde.
+      grantedTerms: this.grantedTerms,
       requestedTerm: null,
       primaryContact: {
         id: null,

@@ -34,3 +34,33 @@
   align-items: center;
   gap: var(--fold-space-sm);
 }
+
+/* Déclencheur de dépôt : un `<input type=file>` est inhabillable, on garde donc
+   le label comme bouton et on masque l'input sans le sortir du flux clavier. */
+.proof-pick {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: var(--fold-space-2xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  font-size: var(--fold-text-sm);
+}
+
+.proof-pick input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.proof-pick:focus-within {
+  outline: 2px solid var(--fold-color-accent);
+  outline-offset: 1px;
+}
+
+.danger-lede {
+  margin: 0 0 var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

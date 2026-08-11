@@ -1,0 +1,72 @@
+// Header figé, corps scrollable, pied collé — commun aux panneaux de la fiche.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.target {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.field {
+  display: grid;
+  gap: var(--fold-space-2xs);
+}
+
+.label {
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+}
+
+.hint {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+// Champs natifs plutôt que `fold-input` : l'un est une iframe Stripe, les
+// autres doivent lui ressembler trait pour trait. Un champ maison à côté d'un
+// champ Stripe se voit immédiatement, et la couture décrédibilise la saisie
+// bancaire — c'est exactement là qu'il ne faut pas hésiter.
+.native,
+.iban-mount {
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface);
+  color: var(--fold-color-text);
+  font: inherit;
+  min-height: 2.75rem;
+}
+
+.native:focus-visible {
+  outline: 2px solid var(--fold-color-accent);
+  outline-offset: 1px;
+}
+
+// L'iframe se centre elle-même dans la hauteur qu'on lui donne.
+.iban-mount {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
