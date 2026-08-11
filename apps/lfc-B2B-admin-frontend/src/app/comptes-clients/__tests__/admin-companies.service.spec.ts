@@ -79,6 +79,7 @@ describe('AdminCompaniesService', () => {
       vatNumberRequired: true,
       addresses: { billing: null, deliveries: [] },
       contacts: [],
+      fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
     };
     const { service, http } = setup();
     const promise = service.getById('company_1');

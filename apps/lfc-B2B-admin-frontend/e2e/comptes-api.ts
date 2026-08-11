@@ -235,6 +235,8 @@ export class ComptesApiDouble {
       status: 'pending',
       // Vide par défaut : la société paie à la commande, comme tout le monde.
       grantedTerms: this.grantedTerms,
+      // Aucune préférence d'acheminement : l'état de départ de toute société.
+      fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
       requestedTerm: null,
       primaryContact: {
         id: null,

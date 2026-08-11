@@ -1,0 +1,56 @@
+:host {
+  display: block;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+}
+
+.choice-label {
+  font-weight: 600;
+}
+
+.choice-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  flex-wrap: wrap;
+}
+
+.none {
+  margin: var(--fold-space-sm) 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.field {
+  display: grid;
+  gap: var(--fold-space-2xs);
+  margin-top: var(--fold-space-md);
+  max-width: 28rem;
+}
+
+.field-label {
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+}
+
+/* Select natif : le DS n'en fournit pas d'équivalent ici, et un `<select>`
+   reste le contrôle que le clavier et le mobile connaissent le mieux. */
+.native {
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface);
+  color: var(--fold-color-text);
+  font: inherit;
+}
+
+.native:focus-visible {
+  outline: 2px solid var(--fold-color-accent);
+  outline-offset: 1px;
+}

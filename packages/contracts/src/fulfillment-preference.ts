@@ -19,7 +19,12 @@ import { fulfillmentMethodSchema, type FulfillmentMethod } from "./order.js";
  * continuerait de désigner l'ancienne, sans que personne ne s'en aperçoive.
  */
 export const fulfillmentPreferencePayloadSchema = z.object({
-  method: fulfillmentMethodSchema,
+  /**
+   * `null` **retire** la préférence : le client rechoisit à chaque commande. Un
+   * endpoint séparé pour l'effacer coûterait une route de plus pour dire la même
+   * chose — « voici la préférence, et elle est vide » se dit très bien ici.
+   */
+  method: fulfillmentMethodSchema.nullable(),
   /** Point de retrait préféré ; `null` = celui par défaut de la plateforme. */
   pickupAddressId: z.string().trim().min(1).nullable().default(null),
   /** Adresse de livraison préférée ; `null` = celle par défaut de la société. */

@@ -1,4 +1,9 @@
-import type { CompanyAddressesView, CompanyContactView, DeferredTerm } from '@lfd/contracts';
+import type {
+  FulfillmentPreferenceView,
+  CompanyAddressesView,
+  CompanyContactView,
+  DeferredTerm,
+} from '@lfd/contracts';
 
 /**
  * Vue **front** d'une société renvoyée par `GET /admin/companies` (miroir de
@@ -79,6 +84,12 @@ export interface AdminCompanyDetail extends AdminCompany {
    * le carnet. L'accès y est un **état** de la personne, pas une seconde liste.
    */
   readonly contacts: readonly CompanyContactView[];
+  /**
+   * Comment ce client est servi **d'habitude** — le point de départ de ses
+   * commandes. `method: null` = aucune préférence posée, ce qui n'est pas
+   * « retrait » : c'est l'état de tout le portefeuille existant.
+   */
+  readonly fulfillmentPreference: FulfillmentPreferenceView;
 }
 
 /** Libellé FR d'un statut de société. */

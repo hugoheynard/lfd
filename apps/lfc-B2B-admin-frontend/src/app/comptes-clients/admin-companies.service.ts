@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   BillingAddressPayload,
+  FulfillmentPreferencePayload,
   DeferredTerm,
   CompanyMemberInvitedView,
   CompanyMemberView,
@@ -140,6 +141,19 @@ export class AdminCompaniesService {
     body.append('file', file);
     await firstValueFrom(
       this.http.put<void>(`${B2B_API_BASE}/admin/companies/${companyId}/kbis`, body),
+    );
+  }
+
+  /**
+   * Pose la **préférence d'acheminement**. Elle ne conditionne rien : c'est un
+   * défaut offert au panier, que le client peut écarter.
+   */
+  async preferFulfillment(companyId: string, payload: FulfillmentPreferencePayload): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/fulfillment-preference`,
+        payload,
+      ),
     );
   }
 

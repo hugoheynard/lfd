@@ -28,6 +28,7 @@ function complete(overrides: Partial<AdminCompanyDetail> = {}): AdminCompanyDeta
     owner: null,
     kbis: { fileName: 'kbis.pdf', uploadedAt: '2026-08-01T00:00:00.000Z', certified: true },
     hasOpenSupportRequest: false,
+    fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
     createdAt: '2026-08-01T00:00:00.000Z',
     vatNumberRequired: true,
     contacts: [],

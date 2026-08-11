@@ -131,8 +131,20 @@
             [pickup]="defaultPickup()"
           />
 
+          @if (company(); as c) {
+            <!-- Où va la marchandise, d'habitude. Après les adresses : on ne
+                 choisit une préférence qu'une fois qu'il y a de quoi choisir. -->
+            <app-acheminement-section
+              [preference]="c.fulfillmentPreference"
+              [pickups]="pickups()"
+              [deliveries]="deliveries()"
+              [deliveryOffered]="!deliveryHidden()"
+              (preferenceChange)="preferFulfillment($event)"
+            />
+          }
+
           <!-- En bas de fiche : c'est ce qu'on regarde en dernier, une fois le
-               dossier constitué, et c'est là que le mandat SEPA se branchera. -->
+               dossier constitué, et c'est là que vit le mandat SEPA. -->
           @if (company(); as c) {
             <app-paiement-section
               [companyId]="c.id"

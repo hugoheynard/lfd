@@ -9,6 +9,7 @@ import type {
   PickupAddressView,
   PieceMode,
   DeferredTerm,
+  FulfillmentPreferenceView,
   PlatformSettings,
 } from '@lfd/contracts';
 import {
@@ -53,6 +54,7 @@ import {
 } from './activation-steps';
 import { ActivationAside } from '../activation-aside/activation-aside';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
+import { AcheminementSection } from '../acheminement-section/acheminement-section';
 import { PaiementSection } from '../paiement-section/paiement-section';
 import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
@@ -98,6 +100,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
     CompanyAddressesCard,
     CompanyActivationChecklist,
     ActivationAside,
+    AcheminementSection,
     PaiementSection,
   ],
   templateUrl: './informations-page.html',
@@ -146,8 +149,12 @@ export class InformationsPage {
 
   /** Config plateforme (modes des pièces) — filtre la synthèse et le gate. */
   protected readonly settings = signal<PlatformSettings | null>(null);
-  /** Le point de retrait par défaut, reflété quand la livraison est masquée. */
-  protected readonly defaultPickup = signal<PickupAddressView | null>(null);
+  /** Les points de retrait de la plateforme (le défaut en tête). */
+  protected readonly pickups = signal<readonly PickupAddressView[]>([]);
+  /** Le point par défaut, reflété quand la livraison est masquée. */
+  protected readonly defaultPickup = computed(
+    () => this.pickups().find((point) => point.isDefault) ?? this.pickups()[0] ?? null,
+  );
 
   /**
    * Le KBIS est-il **exigé** pour activer ce compte ? La carte d'identité ne
@@ -250,7 +257,7 @@ export class InformationsPage {
       }
       this.company.set(company ?? null);
       this.settings.set(settings);
-      this.defaultPickup.set(pickups.find((p) => p.isDefault) ?? pickups[0] ?? null);
+      this.pickups.set(pickups);
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -452,6 +459,25 @@ export class InformationsPage {
     try {
       await this.service.grantTerms(company.id, terms);
       this.notify.success('Moyens de paiement mis à jour.');
+      await this.load();
+    } catch (error) {
+      this.notify.error(error);
+    }
+  }
+
+  /**
+   * Pose (ou retire) la préférence d'acheminement. Enregistrée à chaque clic,
+   * comme les crédits de règlement : la section n'a pas de bouton « Enregistrer »
+   * parce qu'elle n'a pas de brouillon — chaque choix EST la nouvelle valeur.
+   */
+  protected async preferFulfillment(preference: FulfillmentPreferenceView): Promise<void> {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    try {
+      await this.service.preferFulfillment(company.id, preference);
+      this.notify.success("Préférence d'acheminement enregistrée.");
       await this.load();
     } catch (error) {
       this.notify.error(error);
