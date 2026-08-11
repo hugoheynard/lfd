@@ -252,16 +252,3 @@ export class IdentityProviderUnavailableError extends TechnicalError {
     super("account.identity_provider.unavailable", reason, cause);
   }
 }
-
-/**
- * Le stockage objet (R2) n'est pas configuré, ou a échoué.
- *
- * Technique et non métier : le client n'a rien fait de mal. Sans bucket
- * configuré (`STORAGE_*` absents), dépôt et téléchargement du KBIS sont
- * indisponibles ; le reste de l'app fonctionne.
- */
-export class KbisStorageUnavailableError extends TechnicalError {
-  constructor(reason: string, cause?: unknown) {
-    super("account.kbis.storage_unavailable", reason, cause);
-  }
-}

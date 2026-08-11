@@ -5,7 +5,7 @@ import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
-import { KbisStore } from "../../domain/ports/kbis-store.js";
+import { DocumentStore } from "../../../infra/storage/document-store.js";
 import {
   AddDeliveryAddressByStaffCommand,
   SaveBillingAddressByStaffCommand,
@@ -26,7 +26,7 @@ import { ingestKbis } from "./ingest-kbis.js";
 @CommandHandler(UploadKbisByStaffCommand)
 export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisByStaffCommand, void> {
   constructor(
-    private readonly store: KbisStore,
+    private readonly store: DocumentStore,
     private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
   ) {}

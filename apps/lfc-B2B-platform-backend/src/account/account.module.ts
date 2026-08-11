@@ -61,7 +61,6 @@ import {
 import { EstablishmentDirectory } from "./domain/ports/establishment-directory.js";
 import { OnCompanyDeclaredResolveNaf } from "./application/handlers/on-company-declared-resolve-naf.handler.js";
 import { RechercheEntreprisesEstablishmentDirectory } from "./infrastructure/recherche-entreprises-establishment.directory.js";
-import { KbisStore } from "./domain/ports/kbis-store.js";
 import { MembershipReader } from "./domain/ports/membership.reader.js";
 import { NavPreferencesRepository } from "./domain/ports/nav-preferences.repository.js";
 import { UserProfileRepository } from "./domain/ports/user-profile.repository.js";
@@ -81,7 +80,6 @@ import { PrismaMembershipReader } from "./infrastructure/prisma-membership.reade
 import { PrismaNavPreferencesRepository } from "./infrastructure/prisma-nav-preferences.repository.js";
 import { PrismaUserProfileRepository } from "./infrastructure/prisma-user-profile.repository.js";
 import { PrismaSupportRequestRepository } from "./infrastructure/prisma-support-request.repository.js";
-import { S3KbisStore } from "./infrastructure/s3-kbis-store.js";
 import { SupportRequestRepository } from "./domain/ports/support-request.repository.js";
 import { AdminCompaniesController } from "./http/admin-companies.controller.js";
 import { AdminCompanyMembersController } from "./http/admin-company-members.controller.js";
@@ -179,7 +177,6 @@ import { MeController } from "./http/me.controller.js";
     { provide: MembershipReader, useClass: PrismaMembershipReader },
     { provide: AccountReader, useClass: PrismaAccountReader },
     { provide: CustomerIdentityPort, useClass: Auth0CustomerIdentity },
-    { provide: KbisStore, useClass: S3KbisStore },
     { provide: SupportRequestRepository, useClass: PrismaSupportRequestRepository },
     OnCompanyDeclaredResolveNaf,
     { provide: EstablishmentDirectory, useClass: RechercheEntreprisesEstablishmentDirectory },

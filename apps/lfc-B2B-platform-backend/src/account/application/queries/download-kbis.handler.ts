@@ -2,7 +2,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { KbisNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
-import { KbisStore } from "../../domain/ports/kbis-store.js";
+import { DocumentStore } from "../../../infra/storage/document-store.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyMember } from "../../domain/services/company-access.js";
 import { DownloadKbisQuery, type KbisDownload } from "./download-kbis.query.js";
@@ -19,7 +19,7 @@ export class DownloadKbisHandler implements IQueryHandler<DownloadKbisQuery, Kbi
   constructor(
     private readonly memberships: MembershipReader,
     private readonly companies: CompanyRepository,
-    private readonly store: KbisStore,
+    private readonly store: DocumentStore,
   ) {}
 
   async execute(query: DownloadKbisQuery): Promise<KbisDownload> {

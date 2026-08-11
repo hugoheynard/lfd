@@ -6,8 +6,7 @@
  * frontière sortante, pas ce qu'un e2e éprouve. Tout le reste est réel : le mur
  * via `memberships`, les métadonnées en base, le contrat HTTP.
  */
-import { KbisStore } from "../src/account/domain/ports/kbis-store.js";
-import type { KbisFile } from "../src/account/domain/value-objects/kbis-file.js";
+import { DocumentStore, type StoredDocument } from "../src/infra/storage/document-store.js";
 import { CompanyStatus, CustomerRole } from "../src/infra/database/client/client.js";
 import type { AccountView } from "../src/account/domain/ports/account.reader.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -17,12 +16,11 @@ const ADMIN = "auth0|admin";
 const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
 
 /** Magasin objet en mémoire — clé → octets. */
-class FakeKbisStore extends KbisStore {
+class FakeDocumentStore extends DocumentStore {
   readonly saved = new Map<string, Buffer>();
 
-  save(companyId: string, file: KbisFile): Promise<string> {
-    const key = `companies/${companyId}/kbis.pdf`;
-    this.saved.set(key, file.bytes);
+  save(key: string, document: StoredDocument): Promise<string> {
+    this.saved.set(key, document.bytes);
     return Promise.resolve(key);
   }
 
@@ -36,12 +34,12 @@ class FakeKbisStore extends KbisStore {
 }
 
 let ctx: E2eContext;
-let store: FakeKbisStore;
+let store: FakeDocumentStore;
 let companyId: string;
 
 beforeAll(async () => {
-  store = new FakeKbisStore();
-  ctx = await bootstrapE2e({ overrides: [{ token: KbisStore, value: store }] });
+  store = new FakeDocumentStore();
+  ctx = await bootstrapE2e({ overrides: [{ token: DocumentStore, value: store }] });
 });
 
 afterAll(async () => {

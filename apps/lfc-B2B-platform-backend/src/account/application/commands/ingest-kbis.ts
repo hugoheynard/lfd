@@ -1,7 +1,7 @@
 import type { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import type { CompanyRepository } from "../../domain/ports/company.repository.js";
-import type { KbisStore } from "../../domain/ports/kbis-store.js";
+import type { DocumentStore } from "../../../infra/storage/document-store.js";
 import { KbisFile } from "../../domain/value-objects/kbis-file.js";
 
 /**
@@ -17,7 +17,7 @@ export async function ingestKbis(
   companyId: string,
   fileName: string,
   bytes: Buffer,
-  store: KbisStore,
+  store: DocumentStore,
   companies: CompanyRepository,
   events: DomainEventPublisher,
 ): Promise<void> {
@@ -27,7 +27,10 @@ export async function ingestKbis(
 
   // Ranger d'abord, écrire les métadonnées ensuite : si le stockage échoue, la
   // base ne pointe pas vers un fichier absent.
-  const storageKey = await store.save(companyId, file);
+  const storageKey = await store.save(kbisKeyFor(companyId), {
+    bytes: file.bytes,
+    contentType: file.contentType,
+  });
   await companies.saveKbisMetadata(companyId, {
     storageKey,
     fileName: file.fileName,
@@ -36,4 +39,14 @@ export async function ingestKbis(
   });
 
   events.publish(new CompanyStepReachedEvent(companyId, "kbis"));
+}
+
+/**
+ * Clé de stockage du KBIS — ancrée sur l'entreprise, **jamais** sur une entrée
+ * client : le mur de tenancy est dans le chemin, et un remplacement écrase à la
+ * même clé. Sans extension, depuis que la pièce peut être une photo autant qu'un
+ * PDF (le type réel est déduit des octets et gardé en base).
+ */
+function kbisKeyFor(companyId: string): string {
+  return `companies/${companyId}/kbis`;
 }

@@ -9,7 +9,7 @@ import {
   type KbisMetadata,
 } from "../../../domain/ports/company.repository.js";
 import { DomainEventPublisher } from "../../../../infra/events/domain-event-publisher.js";
-import { KbisStore } from "../../../domain/ports/kbis-store.js";
+import { DocumentStore } from "../../../../infra/storage/document-store.js";
 import { MembershipReader } from "../../../domain/ports/membership.reader.js";
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
 import { DownloadKbisQuery } from "../../queries/download-kbis.query.js";
@@ -31,10 +31,10 @@ describe("UploadKbisHandler", () => {
 
   function doubles(role: CompanyRole | null): Doubles {
     const saved: Doubles["saved"] = { key: "", meta: null };
-    const store: KbisStore = {
-      save: (companyId: string) => {
-        saved.key = `companies/${companyId}/kbis.pdf`;
-        return Promise.resolve(saved.key);
+    const store: DocumentStore = {
+      save: (key: string) => {
+        saved.key = key;
+        return Promise.resolve(key);
       },
       read: () => Promise.resolve(Buffer.alloc(0)),
     };
@@ -99,7 +99,7 @@ describe("DownloadKbisHandler", () => {
     location: KbisLocation | null,
     bytes = PDF,
   ): DownloadKbisHandler {
-    const store: KbisStore = {
+    const store: DocumentStore = {
       save: () => Promise.resolve("k"),
       read: () => Promise.resolve(bytes),
     };

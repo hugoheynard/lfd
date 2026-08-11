@@ -7,9 +7,9 @@
  * passent **sans aucun membership** (le staff n'est membre de rien), écrivent la
  * vraie ligne SQL, et — pour le règlement — que fixer le terme convenu **solde**
  * la demande client. Deux frontières doublées : le verifier **staff**
- * (`AdminTokenVerifier`) et le **stockage objet** (`KbisStore`) ; le reste est réel.
+ * (`AdminTokenVerifier`) et le **stockage objet** (`DocumentStore`) ; le reste est réel.
  */
-import { KbisStore } from "../src/account/domain/ports/kbis-store.js";
+import { DocumentStore } from "../src/infra/storage/document-store.js";
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
 import { AddressKind, CompanyStatus, DeferredTerm } from "../src/infra/database/client/client.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
@@ -24,9 +24,9 @@ const stubAdminVerifier = {
 };
 
 /** Magasin objet en mémoire — le KBIS ne part pas vers R2 en test. */
-class FakeKbisStore extends KbisStore {
-  save(companyId: string): Promise<string> {
-    return Promise.resolve(`companies/${companyId}/kbis.pdf`);
+class FakeDocumentStore extends DocumentStore {
+  save(key: string): Promise<string> {
+    return Promise.resolve(key);
   }
   read(): Promise<Buffer> {
     return Promise.reject(new Error("non utilisé ici"));
@@ -40,7 +40,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: KbisStore, value: new FakeKbisStore() },
+      { token: DocumentStore, value: new FakeDocumentStore() },
     ],
   });
 });
