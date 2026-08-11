@@ -1,14 +1,20 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import type { AccessOutcome } from "@lfd/contracts";
 
 import { MAILER, type B2bMailer } from "../../../infra/mailer/mailer.module.js";
-import { CompanyMemberRepository } from "../../domain/ports/company-member.repository.js";
+import { AccountDisabledError } from "../../domain/errors/account-errors.js";
+import {
+  CompanyMemberRepository,
+  type KnownAccount,
+} from "../../domain/ports/company-member.repository.js";
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
+import { ensureNoRivalOwner } from "../../domain/services/company-access.js";
 import type { CompanyRole } from "../../domain/value-objects/company-role.js";
 
 /** Qui rattacher, à quelle société, avec quel rôle. */
 export interface AccessToGrant {
   readonly companyId: string;
-  /** Le nom de la société, pour l'e-mail — pas pour décider quoi que ce soit. */
+  /** Le nom d'usage de la société, pour l'e-mail — pas pour décider. */
   readonly companyName: string;
   readonly email: string;
   readonly firstName: string;
@@ -22,8 +28,8 @@ export interface AccessToGrant {
 /** Ce qui s'est réellement passé — dit sans arrondir. */
 export interface AccessGranted {
   readonly userId: string;
-  /** Vrai si une identité a été **créée** ; faux si on a rattaché un client connu. */
-  readonly identityCreated: boolean;
+  /** Laquelle des trois situations : cf. `AccessOutcome` dans les contrats. */
+  readonly outcome: AccessOutcome;
   /** Faux si l'e-mail n'est pas parti : le staff doit l'apprendre tout de suite. */
   readonly mailSent: boolean;
 }
@@ -42,22 +48,22 @@ export abstract class AccountAccessGranter {
 /**
  * Ouvre un **accès** à l'espace d'une société.
  *
- * Deux chemins derrière un seul geste, et c'est tout l'intérêt du service :
+ * Trois situations derrière un seul geste, et c'est tout l'intérêt du service —
+ * l'appelant ne peut pas les distinguer au moment où il saisit une adresse :
  *
- * - **personne inconnue** → une identité est provisionnée chez le fournisseur,
- *   et un lien de création de mot de passe part vers sa boîte ;
- * - **client déjà connu** (un second établissement, une autre enseigne) → on
- *   **rattache** la société à son compte existant. Lui refabriquer une identité
- *   lui donnerait deux mots de passe pour une seule adresse, et deux espaces là
- *   où il en veut un.
+ * - **personne inconnue** → identité provisionnée, lien de mot de passe envoyé ;
+ * - **connue mais sans mot de passe** (`invited`) → **nouveau lien**. C'est
+ *   l'état de tout compte ouvert pendant que l'e-mail ne partait pas ; le
+ *   traiter comme un client installé lui écrirait « utilisez vos identifiants
+ *   habituels » alors qu'il n'en a jamais eu ;
+ * - **cliente active** → on **rattache** la société à son espace existant. Lui
+ *   refabriquer une identité lui donnerait deux mots de passe pour une seule
+ *   adresse.
  *
- * L'appelant n'a pas à savoir dans lequel il est — c'est justement ce qu'il ne
- * peut pas deviner au moment où il saisit une adresse.
- *
- * **Un e-mail qui ne part pas ne défait pas l'accès.** Le rattachement est déjà
- * en base ; l'annuler pour un canal indisponible ferait perdre le travail du
+ * **Un e-mail qui ne part pas ne défait pas l'accès.** Le rattachement est en
+ * base ; l'annuler pour un canal indisponible ferait perdre le travail du
  * commercial. On le dit (`mailSent`), on le journalise, et on continue — le
- * renvoi est un clic.
+ * renvoi est un clic, et il renvoie vraiment quelque chose.
  */
 @Injectable()
 export class GrantAccountAccess extends AccountAccessGranter {
@@ -72,8 +78,18 @@ export class GrantAccountAccess extends AccountAccessGranter {
   }
 
   async grant(input: AccessToGrant): Promise<AccessGranted> {
-    const known = await this.members.findUserIdByEmail(input.email);
-    return known === null ? this.openNewAccess(input) : this.attachToKnown(known, input);
+    const known = await this.members.findAccountByEmail(input.email);
+    if (known === null) {
+      return this.openNewAccess(input);
+    }
+    if (known.status === "disabled") {
+      // Une désactivation est une décision : un clic sur « ouvrir l'accès » ne
+      // la renverse pas au passage.
+      throw new AccountDisabledError(input.email);
+    }
+    return known.status === "invited"
+      ? this.reissueLink(known, input)
+      : this.attachToActive(known, input);
   }
 
   /** Personne inconnue : identité neuve + lien de mot de passe. */
@@ -91,28 +107,24 @@ export class GrantAccountAccess extends AccountAccessGranter {
       phone: input.phone,
       invitedBy: input.invitedBy,
     });
-    await this.members.attach(userId, input.companyId, input.role);
-
-    const mailSent = await this.send(input.email, () =>
-      this.mailer.send({
-        to: input.email,
-        template: "customer.access-opened",
-        data: {
-          firstName: input.firstName,
-          companyName: input.companyName,
-          passwordSetupUrl: provisioned.passwordSetupUrl,
-        },
-      }),
-    );
-    return { userId, identityCreated: true, mailSent };
+    await this.attach(userId, input);
+    return this.deliverLink(userId, "identity_created", provisioned.passwordSetupUrl, input);
   }
 
-  /** Client connu : une société de plus dans son espace, pas un second compte. */
-  private async attachToKnown(userId: string, input: AccessToGrant): Promise<AccessGranted> {
-    const existing = await this.members.findMember(userId, input.companyId);
-    if (existing === null) {
-      await this.members.attach(userId, input.companyId, input.role);
-    }
+  /**
+   * Connue, mais elle n'a **jamais** posé de mot de passe : on lui en émet un
+   * nouveau lien. Un lien est à usage unique et daté — on n'en retrouve pas un,
+   * on en fabrique un.
+   */
+  private async reissueLink(known: KnownAccount, input: AccessToGrant): Promise<AccessGranted> {
+    const url = await this.identity.issuePasswordLink(known.subject);
+    await this.attach(known.userId, input);
+    return this.deliverLink(known.userId, "link_reissued", url, input);
+  }
+
+  /** Cliente active : une société de plus dans son espace, pas un second compte. */
+  private async attachToActive(known: KnownAccount, input: AccessToGrant): Promise<AccessGranted> {
+    await this.attach(known.userId, input);
     const mailSent = await this.send(input.email, () =>
       this.mailer.send({
         to: input.email,
@@ -120,7 +132,35 @@ export class GrantAccountAccess extends AccountAccessGranter {
         data: { firstName: input.firstName, companyName: input.companyName },
       }),
     );
-    return { userId, identityCreated: false, mailSent };
+    return { userId: known.userId, outcome: "attached", mailSent };
+  }
+
+  /** Rattache (ou aligne le rôle), après avoir écarté un second détenteur. */
+  private async attach(userId: string, input: AccessToGrant): Promise<void> {
+    const owner = await this.members.findOwner(input.companyId);
+    ensureNoRivalOwner(input.companyId, input.role, owner?.userId ?? null, userId);
+    await this.members.attach(userId, input.companyId, input.role);
+  }
+
+  /** Envoie le lien de mot de passe, et rend l'issue telle qu'elle est. */
+  private async deliverLink(
+    userId: string,
+    outcome: AccessOutcome,
+    passwordSetupUrl: string,
+    input: AccessToGrant,
+  ): Promise<AccessGranted> {
+    const mailSent = await this.send(input.email, () =>
+      this.mailer.send({
+        to: input.email,
+        template: "customer.access-opened",
+        data: {
+          firstName: input.firstName,
+          companyName: input.companyName,
+          passwordSetupUrl,
+        },
+      }),
+    );
+    return { userId, outcome, mailSent };
   }
 
   /**

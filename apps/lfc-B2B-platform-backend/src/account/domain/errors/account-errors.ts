@@ -187,6 +187,56 @@ export class CompanyAdminRequiredError extends AuthorizationError {
   }
 }
 
+/**
+ * On a demandé un accès pour une personne **désactivée**.
+ *
+ * `disabled` est une décision prise sur quelqu'un ; ouvrir un accès ne doit pas
+ * la renverser au passage, discrètement, parce qu'un commercial a cliqué sur un
+ * bouton d'invitation. Réactiver quelqu'un est un geste à part, qui n'existe pas
+ * encore — le refus le dit plutôt que de faire semblant.
+ */
+export class AccountDisabledError extends BusinessError {
+  constructor(readonly email: string) {
+    super(
+      "account.access.account_disabled",
+      "Ce compte est désactivé : son accès ne peut pas être rouvert ici.",
+    );
+  }
+}
+
+/**
+ * La société a déjà un **détenteur**, et ce n'est pas la personne visée.
+ *
+ * Le rôle `owner` se constate — c'est celui dont l'adresse a ouvert le compte —
+ * donc il ne s'ajoute pas. Un second détenteur ferait deux personnes également
+ * légitimes à parler au nom de la société, sans qu'aucune règle ne dise laquelle
+ * prime. Transférer la détention est un autre geste, qui n'existe pas encore.
+ */
+export class CompanyAlreadyHasOwnerError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.company.already_has_owner",
+      "Cette société a déjà un détenteur : un second ne peut pas être ajouté.",
+    );
+  }
+}
+
+/**
+ * Cette adresse est **déjà** interlocutrice de la société.
+ *
+ * Une personne, une adresse, un rôle : deux lignes pour la même boîte e-mail
+ * donneraient deux rôles à la même personne, et l'accès ouvert depuis l'une
+ * contredirait celui affiché sur l'autre.
+ */
+export class ContactAlreadyExistsError extends BusinessError {
+  constructor(readonly email: string) {
+    super(
+      "account.company.contact_already_exists",
+      "Cette adresse est déjà celle d'un interlocuteur de cette société.",
+    );
+  }
+}
+
 // ─── Panne technique (500) ───────────────────────────────────────────────────
 
 /**

@@ -1,4 +1,8 @@
-import { CompanyAdminRequiredError, CompanyNotFoundError } from "../errors/account-errors.js";
+import {
+  CompanyAlreadyHasOwnerError,
+  CompanyAdminRequiredError,
+  CompanyNotFoundError,
+} from "../errors/account-errors.js";
 import type { CompanyRole } from "../value-objects/company-role.js";
 
 /**
@@ -42,4 +46,25 @@ export function ensureCompanyMember(role: CompanyRole | null, companyId: string)
   if (role === null) {
     throw new CompanyNotFoundError(companyId);
   }
+}
+
+/**
+ * Vérifie qu'ouvrir un accès `owner` ne fabrique pas un **second** détenteur.
+ *
+ * Rendre la règle explicite ici plutôt que dans l'adaptateur : c'est une règle
+ * de la société, pas une contrainte de table — et elle doit se lire au même
+ * endroit que « qui peut gérer quoi ».
+ *
+ * @throws {CompanyAlreadyHasOwnerError} un autre détenteur existe déjà.
+ */
+export function ensureNoRivalOwner(
+  companyId: string,
+  role: CompanyRole,
+  currentOwnerUserId: string | null,
+  candidateUserId: string,
+): void {
+  if (role !== "owner" || currentOwnerUserId === null || currentOwnerUserId === candidateUserId) {
+    return;
+  }
+  throw new CompanyAlreadyHasOwnerError(companyId);
 }

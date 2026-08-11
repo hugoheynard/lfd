@@ -5,6 +5,7 @@ import {
   CompanyMemberReader,
   CompanyMemberRepository,
   type CompanyMemberRecord,
+  type KnownAccount,
   type CustomerRecord,
   type MemberToCreate,
 } from "../domain/ports/company-member.repository.js";
@@ -87,12 +88,15 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
     super();
   }
 
-  async findUserIdByEmail(email: string): Promise<string | null> {
+  async findAccountByEmail(email: string): Promise<KnownAccount | null> {
     const user = await this.prisma.user.findFirst({
       where: { email: { equals: email, mode: "insensitive" } },
-      select: { id: true },
+      select: { id: true, auth0Sub: true, status: true },
     });
-    return user?.id ?? null;
+    // L'adresse ne se compare jamais telle quelle : `Jean@X.fr` et `jean@x.fr`
+    // sont la même boîte, et deux identités pour une boîte, c'est deux mots de
+    // passe pour une seule personne.
+    return user === null ? null : { userId: user.id, subject: user.auth0Sub, status: user.status };
   }
 
   async createInvited(input: MemberToCreate): Promise<string> {
@@ -114,8 +118,35 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
     return user.id;
   }
 
+  async findOwner(companyId: string): Promise<KnownAccount | null> {
+    const owner = await this.prisma.membership.findFirst({
+      where: { companyId, role: "owner" },
+      // Le plus ancien fait foi : c'est celui qui a ouvert l'espace.
+      orderBy: { createdAt: "asc" },
+      select: { user: { select: { id: true, auth0Sub: true, status: true } } },
+    });
+    return owner === null
+      ? null
+      : { userId: owner.user.id, subject: owner.user.auth0Sub, status: owner.user.status };
+  }
+
+  async alignRole(userId: string, companyId: string, role: CompanyRole): Promise<void> {
+    // `updateMany` : sans rattachement, il n'y a rien à aligner, et c'est un cas
+    // normal (un interlocuteur sans accès). Un `update` lèverait pour un
+    // non-événement.
+    await this.prisma.membership.updateMany({ where: { userId, companyId }, data: { role } });
+  }
+
   async attach(userId: string, companyId: string, role: CompanyRole): Promise<void> {
-    await this.prisma.membership.create({ data: { userId, companyId, role } });
+    // `upsert` et non `create` : ré-ouvrir l'accès de quelqu'un est le geste
+    // courant (son lien s'est perdu). Échouer sur un doublon en ferait une
+    // impasse, et ignorer le rôle demandé afficherait un rôle à l'écran en en
+    // appliquant un autre.
+    await this.prisma.membership.upsert({
+      where: { userId_companyId: { userId, companyId } },
+      create: { userId, companyId, role },
+      update: { role },
+    });
   }
 
   async findMember(userId: string, companyId: string): Promise<CompanyMemberRecord | null> {

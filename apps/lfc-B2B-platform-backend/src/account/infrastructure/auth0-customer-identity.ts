@@ -54,7 +54,18 @@ export class Auth0CustomerIdentity extends CustomerIdentityPort {
         "Cette adresse est déjà connue du fournisseur d'identité, mais son compte est introuvable.",
       );
     }
-    return { subject, passwordSetupUrl: await this.passwordTicket(subject) };
+    return { subject, passwordSetupUrl: await this.issuePasswordLink(subject) };
+  }
+
+  /**
+   * Un **nouveau** lien pour une identité qui existe déjà.
+   *
+   * Le précédent n'est pas récupérable — un ticket est à usage unique et daté —
+   * et c'est très bien ainsi : émettre le second invalide de fait la copie qui
+   * traînait dans une boîte partagée.
+   */
+  async issuePasswordLink(subject: string): Promise<string> {
+    return await this.passwordTicket(subject);
   }
 
   /**
@@ -78,16 +89,26 @@ export class Auth0CustomerIdentity extends CustomerIdentityPort {
     return created === CONFLICT ? null : readUserId(created);
   }
 
-  /** Le `sub` derrière une adresse, `null` si le fournisseur n'en connaît aucune. */
+  /**
+   * Le `sub` derrière une adresse, `null` si le fournisseur n'en connaît aucune.
+   *
+   * On retient l'identité de **notre connexion base de données**, pas la
+   * première venue : une même adresse peut porter plusieurs identités (une
+   * connexion sociale, par exemple), et un lien de mot de passe n'a de sens que
+   * sur une connexion à mot de passe. Émettre un ticket sur une identité Google
+   * produirait un lien que le client ne pourrait pas suivre.
+   */
   private async findSubjectByEmail(email: string): Promise<string | null> {
     const found = await this.api.call(
       "GET",
       `/api/v2/users-by-email?email=${encodeURIComponent(email.toLowerCase())}`,
     );
-    if (!Array.isArray(found) || found.length === 0) {
+    if (!Array.isArray(found)) {
       return null;
     }
-    return readUserId(found[0]);
+    const connection = this.config.auth0DatabaseConnection();
+    const ours = found.filter((user) => usesConnection(user, connection));
+    return ours.length === 0 ? null : readUserId(ours[0]);
   }
 
   /**
@@ -128,6 +149,23 @@ function throwawayPassword(): string {
   return `Aa1!${randomBytes(32).toString("base64url")}`;
 }
 
+/**
+ * Cet utilisateur Auth0 a-t-il une identité sur **cette** connexion ?
+ *
+ * Forme lue de façon défensive : elle vient du réseau, et une réponse qui
+ * surprend doit exclure l'utilisateur plutôt que de le retenir à tort.
+ */
+function usesConnection(raw: unknown, connection: string): boolean {
+  if (typeof raw !== "object" || raw === null) {
+    return false;
+  }
+  const identities: unknown = readProperty(raw, "identities");
+  if (!Array.isArray(identities)) {
+    return false;
+  }
+  return identities.some((identity) => readString(identity, "connection") === connection);
+}
+
 /** `user_id` d'un objet utilisateur Auth0, ou `null` si la forme surprend. */
 function readUserId(raw: unknown): string | null {
   return readString(raw, "user_id");
@@ -135,9 +173,15 @@ function readUserId(raw: unknown): string | null {
 
 /** Une propriété chaîne non vide d'un objet venu du réseau. */
 function readString(raw: unknown, key: string): string | null {
-  if (typeof raw !== "object" || raw === null) {
-    return null;
-  }
-  const value: unknown = { ...raw }[key];
+  const value = readProperty(raw, key);
   return typeof value === "string" && value !== "" ? value : null;
+}
+
+/** Une propriété quelconque d'un objet venu du réseau — `undefined` sinon. */
+function readProperty(raw: unknown, key: string): unknown {
+  if (typeof raw !== "object" || raw === null) {
+    return undefined;
+  }
+  const record: Record<string, unknown> = { ...raw };
+  return record[key];
 }

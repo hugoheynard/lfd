@@ -57,4 +57,17 @@ export abstract class CustomerIdentityPort {
    * @throws {IdentityProviderUnavailableError} canal non configuré ou en échec.
    */
   abstract provision(input: IdentityToProvision): Promise<ProvisionedIdentity>;
+
+  /**
+   * Ré-émet un lien de mot de passe pour une identité **déjà ouverte**.
+   *
+   * C'est ce que « renvoyer le lien » veut dire, et il n'y a pas d'autre façon
+   * de le faire : un lien est à usage unique et daté, on ne le retrouve pas, on
+   * en fabrique un nouveau. Sans cette opération, renvoyer se réduirait à
+   * ré-écrire un e-mail sans rien dedans.
+   *
+   * @param subject `sub` du fournisseur — l'identité visée.
+   * @throws {IdentityProviderUnavailableError} canal non configuré ou en échec.
+   */
+  abstract issuePasswordLink(subject: string): Promise<string>;
 }

@@ -76,18 +76,22 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     // Déclarée par le staff (démarchage) : signal `staff`.
     this.events.publish(new CompanyDeclaredEvent(companyId, "staff", null));
 
-    return { id: companyId, ...(await this.openAccess(command, companyId)) };
+    return { id: companyId, ...(await this.openAccess(command, company, companyId)) };
   }
 
   /** Rattache le détenteur, ou dit pourquoi il n'a pas pu l'être. */
   private async openAccess(
     command: CreateCompanyByStaffCommand,
+    company: Company,
     companyId: string,
   ): Promise<Omit<CompanyOpened, "id">> {
     try {
       const granted = await this.access.grant({
         companyId,
-        companyName: command.raisonSociale,
+        // Le nom d'USAGE : la raison sociale est facultative à l'ouverture (les
+        // papiers arrivent après), et un e-mail intitulé « Votre accès à
+        // l'espace pro  » n'aide personne.
+        companyName: company.displayName(),
         email: command.contact.email,
         firstName: command.contact.firstName,
         lastName: command.contact.lastName,
@@ -99,7 +103,10 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
       });
       return {
         accessOpened: true,
-        attachedToExisting: !granted.identityCreated,
+        // Seul le client **actif** rejoint un espace existant. Celui qui n'avait
+        // jamais posé de mot de passe vient d'en recevoir le lien : le dire
+        // « rattaché » ferait croire au commercial qu'il n'a rien à attendre.
+        attachedToExisting: granted.outcome === "attached",
         mailSent: granted.mailSent,
       };
     } catch (error) {
