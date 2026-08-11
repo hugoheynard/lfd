@@ -15,9 +15,12 @@
           }
         </div>
       }
-      <button foldButton intent="primary" size="sm" icon="plus" (click)="openCreate()">
+      <!-- Une PAGE, pas un tiroir : on ouvre un compte pendant un appel, on y
+           revient, on le garde à l'écran — un tiroir se ferme au premier clic à
+           côté et emporte la saisie. -->
+      <a foldButton intent="primary" size="sm" icon="plus" routerLink="/comptes-clients/nouveau">
         Créer un compte
-      </button>
+      </a>
     </div>
   </header>
 

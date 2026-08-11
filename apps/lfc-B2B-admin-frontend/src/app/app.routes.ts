@@ -9,6 +9,16 @@ export const routes: Routes = [
       import('./comptes-clients/comptes-clients-page').then((m) => m.ComptesClientsPage),
   },
   {
+    // AVANT `comptes-clients/:id` : sans cela « nouveau » serait lu comme un
+    // identifiant de société, et la page afficherait « Société introuvable ».
+    path: 'comptes-clients/nouveau',
+    title: 'Nouveau compte client — LFC B2B admin',
+    loadComponent: () =>
+      import('./comptes-clients/nouveau-compte/nouveau-compte-page').then(
+        (m) => m.NouveauComptePage,
+      ),
+  },
+  {
     // Le détail d'une commande vit HORS de la fiche client : une commande « zéro
     // friction » n'a pas d'entreprise, donc pas de fiche où la loger. Une route
     // de premier niveau les couvre toutes les deux.

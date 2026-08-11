@@ -6,7 +6,6 @@ import {
   FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
-  FoldPanelHostService,
   FoldSearchComponent,
   FoldStatusBadgeComponent,
   FoldViewToggleComponent,
@@ -24,7 +23,6 @@ import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-co
 import type { PortfolioMetricsView } from '@lfd/contracts';
 
 import { matchesCompanySearch } from './company-search';
-import { CreerComptePanel } from './creer-compte-panel/creer-compte-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -94,7 +92,6 @@ export class ComptesClientsPage {
   private readonly service = inject(AdminCompaniesService);
   private readonly alerts = inject(PendingAlertsService);
   private readonly portfolio = inject(PortfolioMetricsService);
-  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly companies = signal<readonly AdminCompany[]>([]);
@@ -221,11 +218,6 @@ export class ComptesClientsPage {
 
   constructor() {
     void this.load();
-  }
-
-  /** Ouvre le panneau de création d'un compte client. */
-  protected openCreate(): void {
-    this.panels.open(CreerComptePanel, { width: 'md' });
   }
 
   protected async load(): Promise<void> {

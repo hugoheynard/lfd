@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { PortfolioMetricsView } from '@lfd/contracts';
@@ -49,6 +50,9 @@ async function setup(
 ): Promise<ComptesClientsPage> {
   TestBed.configureTestingModule({
     providers: [
+      // L'en-tête porte un `routerLink` vers la page de création : sans routeur,
+      // le rendu du gabarit échoue avant la première assertion.
+      provideRouter([{ path: '**', children: [] }]),
       {
         provide: AdminCompaniesService,
         useValue: { list: (): Promise<readonly AdminCompany[]> => Promise.resolve(companies) },
