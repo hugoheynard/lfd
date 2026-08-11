@@ -9,7 +9,7 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import { companyDisplayName, settlementLabel, type Company } from '../../account/account.model';
+import { companyDisplayName, settlementSummary, type Company } from '../../account/account.model';
 import { CommerceContextService } from '../../commerce/commerce-context.service';
 import { formatEurValue } from '../../data/catalogue-seed';
 import { downloadBon as downloadBonFile } from '../download-bon';
@@ -81,7 +81,7 @@ export class OrdersTable {
   protected readonly statusLabel = orderStatusLabel;
   protected readonly statusVariant = orderStatusVariant;
   protected readonly companyName = companyDisplayName;
-  protected readonly termLabel = settlementLabel;
+  protected readonly termsLabel = settlementSummary;
 
   protected fmt(value: number): string {
     return formatEurValue(value);
