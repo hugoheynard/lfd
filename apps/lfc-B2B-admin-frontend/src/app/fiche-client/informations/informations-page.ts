@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
   BillingAddressView,
+  CompanyContactView,
   DeliveryAddressView,
   DeliveryContact,
   PickupAddressView,
@@ -45,7 +46,6 @@ import {
   missingRequiredPieces,
   type ActivationStep,
 } from './activation-steps';
-import { AccesSection } from '../acces-section/acces-section';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
@@ -87,7 +87,6 @@ type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
     CompanyIdentityCard,
     CompanyIdentityFields,
     HolderPicker,
-    AccesSection,
     CompanyContactsCard,
     CompanyAddressesCard,
     CompanyActivationChecklist,
@@ -122,6 +121,8 @@ export class InformationsPage {
   /** Le détenteur retenu — trouvé parmi les clients, ou à inscrire. */
   protected readonly holder = signal<HolderChoice | null>(null);
   protected readonly creating = signal(false);
+  /** Une ouverture d'accès est en cours — empêche le double envoi. */
+  protected readonly granting = signal(false);
 
   /**
    * Un nom de société et quelqu'un à qui l'ouvrir : c'est tout.
@@ -244,6 +245,9 @@ export class InformationsPage {
           fonction: '',
           email: holder.email,
           phone: holder.phone,
+          // Le détenteur ne choisit pas son rôle, il l'EST — le serveur pose
+          // `owner` à l'ouverture.
+          role: '',
         },
       });
       this.notify.success(openingMessage(created));
@@ -343,15 +347,69 @@ export class InformationsPage {
    * aplati sur la société.
    */
   protected editContact(contactId: string | null): void {
+    this.openContactPanel(contactId, false);
+  }
+
+  /** Ajoute un interlocuteur au carnet — un contact neuf, pas le détenteur. */
+  protected addContact(): void {
+    this.openContactPanel(null, true);
+  }
+
+  private openContactPanel(contactId: string | null, isNew: boolean): void {
     const company = this.company();
     if (company === null) {
       return;
     }
     const closed = this.panels.open(AdminContactPanel, {
-      data: { companyId: company.id, ...contactTargetOf(company, contactId) },
+      data: { companyId: company.id, ...contactTargetOf(company, contactId, isNew) },
       side: 'right',
     }).closed;
     void closed.then(() => this.load());
+  }
+
+  /**
+   * Ouvre l'accès d'un interlocuteur — ou lui **renvoie** son lien : c'est le
+   * même appel, l'API étant idempotente sur l'adresse. Deux boutons pour un
+   * geste, ce serait deux façons de se tromper.
+   *
+   * C'est aussi le rattrapage du compte ouvert pendant que le fournisseur
+   * d'identité était injoignable : le détenteur est là, sans accès, et son
+   * adresse est déjà sur la fiche.
+   */
+  protected async openAccess(contactId: string | null): Promise<void> {
+    const company = this.company();
+    const contact = company?.contacts.find((row) => row.contactId === contactId);
+    if (company === null || contact === undefined || this.granting()) {
+      return;
+    }
+    if (contact.role === null) {
+      // Sans rôle, on ne saurait pas quoi lui ouvrir. Le dire vaut mieux que
+      // choisir à sa place un rôle qu'on ne saurait plus distinguer d'un vrai.
+      this.notify.info("Précisez d'abord son rôle dans la société.");
+      return;
+    }
+    this.granting.set(true);
+    try {
+      const result = await this.service.inviteMember(company.id, {
+        email: contact.email,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        phone: contact.phone,
+        role: contact.role,
+      });
+      // Le sort de l'envoi n'est pas arrondi : un « c'est envoyé ! » de
+      // politesse ferait attendre un e-mail qui n'arrivera jamais.
+      this.notify.success(
+        result.mailSent
+          ? `Lien envoyé à ${result.member.email}.`
+          : `Accès ouvert pour ${result.member.email}, mais l'e-mail n'est pas parti — prévenez le client.`,
+      );
+      await this.load();
+    } catch (error) {
+      this.notify.error(error);
+    } finally {
+      this.granting.set(false);
+    }
   }
 
   /** Retire un interlocuteur additionnel (confirmé dans la carte). */
@@ -384,37 +442,43 @@ export class InformationsPage {
 function contactTargetOf(
   company: AdminCompanyDetail,
   contactId: string | null,
+  isNew: boolean,
 ): { target: AdminContactTarget; initial: CompanyContactDraft } {
-  if (contactId === null) {
+  if (isNew) {
     return {
       target: { kind: 'additional', contactId: null },
       initial: EMPTY_COMPANY_CONTACT_DRAFT,
     };
   }
-  if (contactId === company.primaryContact.id) {
-    return { target: { kind: 'primary' }, initial: toDraft(company.primaryContact) };
+  const contact = company.contacts.find((row) => row.contactId === contactId);
+  if (contact === undefined) {
+    return {
+      target: { kind: 'additional', contactId: null },
+      initial: EMPTY_COMPANY_CONTACT_DRAFT,
+    };
   }
-  const contact = company.contacts.find((row) => row.id === contactId);
+  // Le détenteur n'a pas d'identifiant de contact — c'est ce qui le distingue,
+  // pas un drapeau à part.
   return {
-    target: { kind: 'additional', contactId },
-    initial: contact === undefined ? EMPTY_COMPANY_CONTACT_DRAFT : toDraft(contact),
+    target: contactId === null ? { kind: 'primary' } : { kind: 'additional', contactId },
+    initial: toDraft(contact),
   };
 }
 
-/** Coordonnées → brouillon de saisie (mêmes champs, autre forme). */
-function toDraft(contact: {
-  firstName: string;
-  lastName: string;
-  fonction: string;
-  email: string;
-  phone: string;
-}): CompanyContactDraft {
+/**
+ * Coordonnées → brouillon de saisie.
+ *
+ * `owner` ne redescend pas dans le brouillon : c'est un rôle constaté, absent
+ * des choix, et le formulaire du détenteur ne demande pas de rôle.
+ */
+function toDraft(contact: CompanyContactView): CompanyContactDraft {
   return {
     firstName: contact.firstName,
     lastName: contact.lastName,
     fonction: contact.fonction,
     email: contact.email,
     phone: contact.phone,
+    role: contact.role === null || contact.role === 'owner' ? '' : contact.role,
   };
 }
 

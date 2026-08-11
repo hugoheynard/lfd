@@ -11,6 +11,8 @@ import { FoldButtonComponent, FoldPanelHeaderComponent, FoldPanelRef } from 'fol
 import {
   ContactFields,
   EMPTY_COMPANY_CONTACT_DRAFT,
+  isAdditionalContactValid,
+  isCompanyContactValid,
   type CompanyContactDraft,
 } from '@lfd/b2b-ui/company';
 
@@ -69,11 +71,17 @@ export class AdminContactPanel {
     return target.contactId === null ? 'Nouveau contact' : 'Modifier le contact';
   });
 
+  /** Le détenteur n'a pas de rôle à choisir : le sien est constaté. */
+  protected readonly withRole = computed(() => this.data().target.kind === 'additional');
+
   /**
-   * Seule l'adresse est exigée : c'est par elle qu'on joint quelqu'un. Le nom
-   * est un confort, et l'exiger bloquerait une saisie faite au téléphone.
+   * Seule l'adresse est exigée — c'est par elle qu'on joint quelqu'un, et le nom
+   * est un confort qu'exiger bloquerait une saisie faite au téléphone. Un
+   * contact du carnet doit en plus dire ce qu'il fait.
    */
-  protected readonly canSubmit = computed(() => this.draft().email.trim() !== '');
+  protected readonly canSubmit = computed(() =>
+    this.withRole() ? isAdditionalContactValid(this.draft()) : isCompanyContactValid(this.draft()),
+  );
 
   constructor() {
     // Préremplit à l'ouverture ; `data` est fixé et ne change plus.
@@ -125,5 +133,6 @@ function trim(draft: CompanyContactDraft): CompanyContactDraft {
     fonction: draft.fonction.trim(),
     email: draft.email.trim(),
     phone: draft.phone.trim(),
+    role: draft.role,
   };
 }

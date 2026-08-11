@@ -1,4 +1,4 @@
-import type { CompanyAddressesView } from '@lfd/contracts';
+import type { CompanyAddressesView, CompanyContactView } from '@lfd/contracts';
 
 /**
  * Vue **front** d'une société renvoyée par `GET /admin/companies` (miroir de
@@ -68,18 +68,11 @@ export interface AdminCompany {
 export interface AdminCompanyDetail extends AdminCompany {
   readonly vatNumberRequired: boolean;
   readonly addresses: CompanyAddressesView;
-  /** Les interlocuteurs additionnels — le carnet d'adresses de la société. */
-  readonly contacts: readonly AdminContact[];
-}
-
-/** Un interlocuteur additionnel : quelqu'un qu'on appelle, pas qui se connecte. */
-export interface AdminContact {
-  readonly id: string;
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly fonction: string;
-  readonly email: string;
-  readonly phone: string;
+  /**
+   * **Tous** les interlocuteurs — le détenteur en tête (`contactId: null`), puis
+   * le carnet. L'accès y est un **état** de la personne, pas une seconde liste.
+   */
+  readonly contacts: readonly CompanyContactView[];
 }
 
 /** Libellé FR d'un statut de société. */

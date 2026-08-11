@@ -1,3 +1,4 @@
+import { COMPANY_ROLE_LABELS, type CompanyMemberRole } from '@lfd/contracts';
 import {
   formatSiret,
   type CompanyBadgeTone,
@@ -42,36 +43,36 @@ export function toIdentityView(company: AdminCompany): CompanyIdentityView {
 }
 
 /**
- * Le **détenteur du compte**, en carte.
+ * Les interlocuteurs de la société, en cartes — **détenteur compris**.
  *
- * « Contact principal » et « détenteur » désignaient la même personne sous deux
- * noms : celui qu'on rappelle est celui qui se connecte. La carte porte
- * désormais le rôle réel. `isYou` reste faux — le staff n'est pas un
- * interlocuteur de la société ; la pastille « Vous » n'a de sens que côté
- * client, où elle distingue le lecteur des autres.
+ * Une seule liste, parce que la fiche en rend une seule : l'accès n'est pas une
+ * catégorie de personnes, c'est un état de chacune. `isYou` reste faux — le
+ * staff n'est pas un interlocuteur de la société ; la pastille « Vous » n'a de
+ * sens que côté client, où elle distingue le lecteur des autres.
  */
 export function toContactCards(company: AdminCompanyDetail): CompanyContactCardView[] {
-  const primary: CompanyContactCardView = {
-    contactId: company.primaryContact.id,
-    firstName: company.primaryContact.firstName,
-    lastName: company.primaryContact.lastName,
-    role: 'Détenteur du compte',
-    fonction: company.primaryContact.fonction,
-    email: company.primaryContact.email,
-    phone: company.primaryContact.phone,
-    isPrimary: true,
-    isYou: false,
-  };
-  const others = company.contacts.map<CompanyContactCardView>((contact) => ({
-    contactId: contact.id,
+  return company.contacts.map((contact) => ({
+    contactId: contact.contactId,
     firstName: contact.firstName,
     lastName: contact.lastName,
-    role: contact.fonction === '' ? 'Contact' : contact.fonction,
+    role: roleLabel(contact.role),
     fonction: contact.fonction,
     email: contact.email,
     phone: contact.phone,
-    isPrimary: false,
+    // Le détenteur n'a pas d'identifiant de contact : il vit aplati sur la
+    // société, et ne se supprime donc pas comme une ligne du carnet.
+    isPrimary: contact.contactId === null,
     isYou: false,
+    access: contact.access,
+    emailVerified: contact.emailVerified,
   }));
-  return [primary, ...others];
+}
+
+/**
+ * Le rôle en clair. `null` se dit **« à préciser »** et non « Contact » : c'est
+ * une donnée qui manque, pas une catégorie — et l'afficher comme un rôle
+ * ordinaire la rendrait invisible à celui qui doit la compléter.
+ */
+function roleLabel(role: CompanyMemberRole | null): string {
+  return role === null ? 'Rôle à préciser' : COMPANY_ROLE_LABELS[role];
 }

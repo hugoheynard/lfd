@@ -107,23 +107,16 @@
         }
 
         @if (!draft()) {
-          @if (company(); as loaded) {
-            <app-acces-section
-              [companyId]="loaded.id"
-              [holderEmail]="loaded.primaryContact.email"
-              [holderFirstName]="loaded.primaryContact.firstName"
-              [holderLastName]="loaded.primaryContact.lastName"
-            />
-          }
-
-          <!-- Éditable, comme côté client : le commercial complète le dossier à
-               la place du client, c'est tout le sens de la Porte B. -->
+          <!-- UNE carte : les interlocuteurs, détenteur compris, chacun portant
+               l'état de son accès. Éditable comme côté client — le commercial
+               complète le dossier à la place du client, c'est la Porte B. -->
           <lfd-company-contacts-card
             [contacts]="contacts()"
             [canManage]="true"
-            (add)="editContact(null)"
+            (add)="addContact()"
             (editContact)="editContact($event)"
             (removeContact)="removeContact($event)"
+            (inviteContact)="openAccess($event)"
           />
 
           <lfd-company-addresses-card

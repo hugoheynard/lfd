@@ -140,6 +140,7 @@ function toView(company: CompanyRow): AdminCompanyView {
     requestedPaymentTerm: company.requestedPaymentTerm,
     primaryContact: {
       id: null,
+      role: null,
       firstName: company.contactPrenom,
       lastName: company.contactNom,
       fonction: company.contactFonction,

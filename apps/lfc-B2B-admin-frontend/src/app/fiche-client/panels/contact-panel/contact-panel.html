@@ -4,7 +4,7 @@
 />
 
 <div class="body">
-  <lfd-contact-fields [value]="draft()" (valueChange)="draft.set($event)" />
+  <lfd-contact-fields [value]="draft()" (valueChange)="draft.set($event)" [withRole]="withRole()" />
 </div>
 
 <footer class="foot">

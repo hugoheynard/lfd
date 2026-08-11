@@ -1,3 +1,4 @@
+import type { CompanyContactView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import type { AdminCompany, CompanyStatus } from '../../comptes-clients/admin-company';
@@ -47,17 +48,32 @@ describe('admin-company-view', () => {
     expect(tone('terminated')).toBe('neutral');
   });
 
-  /** Une fiche détail à partir de la société de liste — contacts additionnels au choix. */
-  function detail(contacts: AdminCompanyDetail['contacts'] = []): AdminCompanyDetail {
+  /**
+   * Une fiche détail — la liste d'interlocuteurs porte le **détenteur** en tête
+   * (le serveur la projette ainsi), puis le carnet.
+   */
+  const HOLDER: CompanyContactView = {
+    contactId: null,
+    firstName: 'Camille',
+    lastName: 'Rousseau',
+    fonction: 'Gérante',
+    email: 'gerant@halles.fr',
+    phone: '',
+    role: 'owner',
+    access: 'none',
+    emailVerified: false,
+  };
+
+  function detail(book: readonly CompanyContactView[] = []): AdminCompanyDetail {
     return {
       ...company(),
       vatNumberRequired: false,
       addresses: { billing: null, deliveries: [] },
-      contacts,
+      contacts: [HOLDER, ...book],
     };
   }
 
-  it('nomme le contact principal par son rôle réel : détenteur du compte', () => {
+  it('nomme le détenteur par son rôle réel', () => {
     // « Contact principal » et « détenteur » désignaient la même personne sous
     // deux noms ; celui qu'on rappelle est celui qui se connecte.
     const cards = toContactCards(detail());
@@ -73,24 +89,38 @@ describe('admin-company-view', () => {
     expect(toContactCards(detail())[0]?.isYou).toBe(false);
   });
 
-  it('ajoute les interlocuteurs additionnels après le détenteur', () => {
+  it("porte l'état d'accès de chaque interlocuteur", () => {
+    // L'accès n'est pas une seconde liste : c'est un état de la personne.
     const cards = toContactCards(
       detail([
         {
-          id: 'ct_1',
+          contactId: 'ct_1',
           firstName: 'Léa',
           lastName: 'Martin',
           fonction: 'Réception',
           email: 'lea@exemple.fr',
           phone: '',
+          role: 'orders',
+          access: 'invited',
+          emailVerified: true,
         },
       ]),
     );
 
     expect(cards).toHaveLength(2);
-    expect(cards[1]?.isPrimary).toBe(false);
-    // La fonction sert de rôle quand elle est là — c'est ce qui distingue deux
-    // interlocuteurs d'une même société.
-    expect(cards[1]?.role).toBe('Réception');
+    expect(cards[1]).toMatchObject({
+      isPrimary: false,
+      role: 'Commandes',
+      access: 'invited',
+      emailVerified: true,
+    });
+  });
+
+  it("dit « à préciser » plutôt que d'inventer un rôle", () => {
+    // Un rôle deviné devient indistinguable d'un vrai, et personne ne sait
+    // plus qu'il restait à remplir.
+    const cards = toContactCards(detail([{ ...HOLDER, contactId: 'ct_2', role: null }]));
+
+    expect(cards[1]?.role).toBe('Rôle à préciser');
   });
 });

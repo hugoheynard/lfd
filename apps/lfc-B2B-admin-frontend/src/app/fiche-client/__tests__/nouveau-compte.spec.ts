@@ -175,6 +175,8 @@ describe('InformationsPage — ouverture d’un compte', () => {
         firstName: 'Jean',
         lastName: 'Dupont',
         fonction: '',
+        // Le détenteur ne choisit pas son rôle : le serveur pose `owner`.
+        role: '',
         email: 'jean@exemple.fr',
         phone: '',
       },
