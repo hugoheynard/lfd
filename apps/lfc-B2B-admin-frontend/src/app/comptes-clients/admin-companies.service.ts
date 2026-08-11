@@ -66,6 +66,21 @@ export class AdminCompaniesService {
   }
 
   /**
+   * Les clients dont le nom ou l'adresse **contient** le terme cherché.
+   *
+   * Chercher plutôt que saisir : le commercial connaît le nom de son
+   * interlocuteur, rarement l'orthographe de son adresse — et c'est ce qui lui
+   * permet de rattacher la société à un espace existant.
+   */
+  async searchCustomers(term: string): Promise<readonly CustomerLookupView[]> {
+    return firstValueFrom(
+      this.http.get<readonly CustomerLookupView[]>(`${B2B_API_BASE}/admin/customers`, {
+        params: { q: term },
+      }),
+    );
+  }
+
+  /**
    * Ce qu'on sait déjà de la personne portant cette adresse, `null` si elle nous
    * est inconnue — le cas le plus fréquent, et pas une erreur.
    *

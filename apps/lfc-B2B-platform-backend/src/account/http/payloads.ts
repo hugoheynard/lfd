@@ -29,11 +29,17 @@ export const updateNavPrefsPayload = z.object({
 
 export type UpdateNavPrefsPayload = z.infer<typeof updateNavPrefsPayload>;
 
+/**
+ * Seule la raison sociale est exigée : il faut bien appeler la société par un
+ * nom. Forme juridique et SIRET sont **facultatifs à l'ouverture** — un compte
+ * se crée souvent chez le client, qui n'a pas ses papiers sous la main — et se
+ * complètent ensuite. L'activation, elle, les exige (invariant de l'agrégat).
+ */
 export const createCompanyPayload = z.object({
   raisonSociale: z.string(),
   enseigne: z.string().default(""),
-  formeJuridique: z.string(),
-  siret: z.string(),
+  formeJuridique: z.string().default(""),
+  siret: z.string().default(""),
   tvaIntracom: z.string().default(""),
 });
 

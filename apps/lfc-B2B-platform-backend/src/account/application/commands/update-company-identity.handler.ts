@@ -36,6 +36,12 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
       enseigne: command.payload.enseigne,
       tvaIntracom: command.payload.tvaIntracom,
     });
+    // Complète ce qui manquait à l'ouverture. Sans SIRET, pas d'activation
+    // possible : ce serait un compte ouvert pour rien.
+    company.completeLegalIdentity({
+      formeJuridique: command.payload.formeJuridique,
+      siret: command.payload.siret,
+    });
     await this.companies.save(company);
 
     // Pièce d'activation « TVA » franchie dès qu'un numéro est présent. Le journal

@@ -1,4 +1,7 @@
-import { InvalidCompanyIdentityError } from "../../errors/account-errors.js";
+import {
+  CompanyActivationBlockedError,
+  InvalidCompanyIdentityError,
+} from "../../errors/account-errors.js";
 import { EmailAddress } from "../../value-objects/email-address.js";
 import { PersonName } from "../../value-objects/person-name.js";
 import { PhoneNumber } from "../../value-objects/phone-number.js";
@@ -31,13 +34,50 @@ describe("Company.declare", () => {
     expect(company.siret.value).toBe("81245678900021");
   });
 
-  it("exige la raison sociale et la forme juridique", () => {
+  it("n'exige que la raison sociale : il faut bien appeler la société par un nom", () => {
     expect(() => Company.declare({ ...identity, raisonSociale: "   " }, contact)).toThrow(
       InvalidCompanyIdentityError,
     );
-    expect(() => Company.declare({ ...identity, formeJuridique: "" }, contact)).toThrow(
-      InvalidCompanyIdentityError,
-    );
+  });
+
+  it("s'ouvre SANS papiers — le commercial est chez le client, pas au greffe", () => {
+    // Exiger 14 chiffres et une forme juridique au moment où l'on est devant le
+    // client, c'est renvoyer le commercial dans sa voiture. Le compte se crée,
+    // les papiers suivent.
+    const company = Company.declare({ ...identity, formeJuridique: "", siret: "" }, contact);
+
+    expect(company.siret).toBeNull();
+    expect(company.siretDigits).toBe("");
+    expect(company.hasLegalIdentity).toBe(false);
+  });
+
+  it("refuse d'ACTIVER un compte sans identité légale", () => {
+    // On ouvre sans papiers ; on ne devient pas client sans. Sans SIRET, rien à
+    // facturer.
+    const company = Company.declare({ ...identity, formeJuridique: "", siret: "" }, contact);
+
+    expect(() => {
+      company.activate(new Date("2026-08-11T10:00:00.000Z"));
+    }).toThrow(CompanyActivationBlockedError);
+  });
+
+  it("complète un trou, mais ne réécrit jamais un SIRET déjà posé", () => {
+    // Changer un SIRET ferait d'une société une autre, sous la même référence
+    // client et avec son historique de commandes.
+    const company = Company.declare({ ...identity, formeJuridique: "", siret: "" }, contact);
+
+    company.completeLegalIdentity({ formeJuridique: "SARL", siret: "812 456 789 00021" });
+    expect(company.formeJuridique).toBe("SARL");
+    expect(company.siretDigits).toBe("81245678900021");
+
+    company.completeLegalIdentity({ formeJuridique: "SAS", siret: "" });
+    expect(company.formeJuridique).toBe("SARL");
+  });
+
+  it("refuse toujours un SIRET SAISI mais faux", () => {
+    // Facultatif ne veut pas dire libre : mieux vaut rien qu'un numéro qu'on
+    // croirait bon.
+    expect(() => Company.declare({ ...identity, siret: "11111111111111" }, contact)).toThrow();
   });
 
   it("accepte une enseigne et une TVA absentes", () => {

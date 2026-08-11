@@ -64,8 +64,12 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     // tient les règles (prénom/nom présents, e-mail valide, fonction bornée).
     const company = Company.declare(command, ContactDetails.create(command.contact));
 
-    if (await this.companies.existsBySiret(company.siret.value)) {
-      throw new SiretAlreadyRegisteredError(company.siret.value);
+    // Le contrôle d'unicité ne vaut que si on a un SIRET : sans lui, il n'y a
+    // rien à dédupliquer, et comparer des chaînes vides ferait de la deuxième
+    // société sans papiers un doublon de la première.
+    const siret = company.siret;
+    if (siret !== null && (await this.companies.existsBySiret(siret.value))) {
+      throw new SiretAlreadyRegisteredError(siret.value);
     }
 
     const companyId = await this.companies.declareUnowned(company);

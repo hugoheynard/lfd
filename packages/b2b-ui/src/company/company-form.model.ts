@@ -41,7 +41,19 @@ export const EMPTY_COMPANY_CONTACT_DRAFT: CompanyContactDraft = {
   phone: '',
 };
 
-/** Contrôle de forme de l'identité : champs requis présents + SIRET à 14 chiffres. */
+/**
+ * De quoi **ouvrir** une société : son nom, et rien d'autre.
+ *
+ * Forme juridique et SIRET n'en font pas partie — un compte se crée souvent chez
+ * le client, qui n'a pas ses papiers sous la main. Les exiger à cet instant, ce
+ * serait renvoyer le commercial dans sa voiture, et le compte ne serait jamais
+ * ouvert. Ils se complètent ensuite, et l'activation les exige (côté serveur).
+ */
+export function isCompanyIdentityOpenable(draft: CompanyIdentityDraft): boolean {
+  return draft.raisonSociale.trim() !== '';
+}
+
+/** Identité **complète** : champs requis présents + SIRET à 14 chiffres. */
 export function isCompanyIdentityValid(draft: CompanyIdentityDraft): boolean {
   return (
     draft.raisonSociale.trim() !== '' &&

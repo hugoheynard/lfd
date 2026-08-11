@@ -22,3 +22,9 @@
   padding: var(--fold-space-md) var(--fold-space-lg);
   border-top: 1px solid var(--fold-color-border-subtle);
 }
+
+.legal-note {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

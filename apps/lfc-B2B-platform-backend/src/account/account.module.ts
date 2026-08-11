@@ -50,6 +50,7 @@ import {
   GrantAccountAccess,
 } from "./application/services/grant-account-access.service.js";
 import { FindCustomerByEmailHandler } from "./application/queries/find-customer-by-email.handler.js";
+import { SearchCustomersHandler } from "./application/queries/search-customers.handler.js";
 import { EstablishmentDirectory } from "./domain/ports/establishment-directory.js";
 import { OnCompanyDeclaredResolveNaf } from "./application/handlers/on-company-declared-resolve-naf.handler.js";
 import { RechercheEntreprisesEstablishmentDirectory } from "./infrastructure/recherche-entreprises-establishment.directory.js";
@@ -118,6 +119,7 @@ import { MeController } from "./http/me.controller.js";
     CreateCompanyHandler,
     CreateCompanyByStaffHandler,
     FindCustomerByEmailHandler,
+    SearchCustomersHandler,
     { provide: AccountAccessGranter, useClass: GrantAccountAccess },
     Auth0ManagementClient,
     { provide: CompanyMemberReader, useClass: PrismaCompanyMemberReader },

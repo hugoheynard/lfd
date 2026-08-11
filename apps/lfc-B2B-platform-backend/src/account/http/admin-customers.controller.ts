@@ -5,6 +5,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { FindCustomerByEmailQuery } from "../application/queries/find-customer-by-email.query.js";
+import { SearchCustomersQuery } from "../application/queries/search-customers.query.js";
 
 /**
  * Les **personnes** côté staff — distinct de `admin/companies`, qui parle de
@@ -20,6 +21,21 @@ import { FindCustomerByEmailQuery } from "../application/queries/find-customer-b
 @UseGuards(AdminAuthGuard)
 export class AdminCustomersController {
   constructor(private readonly queries: QueryBus) {}
+
+  /**
+   * Les clients dont le nom ou l'adresse **contient** le terme cherché.
+   *
+   * Le commercial connaît le nom de son interlocuteur, rarement l'orthographe de
+   * son adresse : chercher est ce qui lui permet de le retrouver, donc de
+   * rattacher la nouvelle société à son espace au lieu de lui en ouvrir un
+   * second.
+   */
+  @Get()
+  search(@Query("q") term?: string): Promise<readonly CustomerLookupView[]> {
+    return this.queries.execute<SearchCustomersQuery, readonly CustomerLookupView[]>(
+      new SearchCustomersQuery(term ?? ""),
+    );
+  }
 
   /**
    * Ce qu'on sait déjà de la personne portant cette adresse — `null` si elle nous

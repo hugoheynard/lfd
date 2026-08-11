@@ -19,6 +19,20 @@ const MEMBER_SELECT = {
   },
 } as const;
 
+/** Une personne, avec les sociétés qu'elle détient — la forme que les écrans lisent. */
+const CUSTOMER_SELECT = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  phone: true,
+  status: true,
+  memberships: {
+    select: { company: { select: { id: true, raisonSociale: true } } },
+    orderBy: { createdAt: "asc" },
+  },
+} as const;
+
 /** Adaptateur Prisma de la **lecture** des accès. */
 @Injectable()
 export class PrismaCompanyMemberReader extends CompanyMemberReader {
@@ -37,36 +51,32 @@ export class PrismaCompanyMemberReader extends CompanyMemberReader {
     return rows.map(toMemberRecord);
   }
 
+  async searchCustomers(term: string, limit: number): Promise<readonly CustomerRecord[]> {
+    const users = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { email: { contains: term, mode: "insensitive" } },
+          { firstName: { contains: term, mode: "insensitive" } },
+          { lastName: { contains: term, mode: "insensitive" } },
+        ],
+      },
+      select: CUSTOMER_SELECT,
+      // Par nom : c'est ainsi que le commercial parcourt la liste, et l'ordre
+      // d'insertion ne veut rien dire pour lui.
+      orderBy: [{ lastName: "asc" }, { email: "asc" }],
+      take: limit,
+    });
+    return users.map(toCustomerRecord);
+  }
+
   async findCustomerByEmail(email: string): Promise<CustomerRecord | null> {
     const user = await this.prisma.user.findFirst({
       // Insensible à la casse : personne ne retape son adresse à l'identique, et
       // « Jean.Dupont@… » ne doit pas ouvrir un second compte.
       where: { email: { equals: email, mode: "insensitive" } },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        status: true,
-        memberships: {
-          select: { company: { select: { id: true, raisonSociale: true } } },
-          orderBy: { createdAt: "asc" },
-        },
-      },
+      select: CUSTOMER_SELECT,
     });
-    if (user === null) {
-      return null;
-    }
-    return {
-      userId: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phone: user.phone,
-      status: user.status,
-      companies: user.memberships.map((membership) => membership.company),
-    };
+    return user === null ? null : toCustomerRecord(user);
   }
 }
 
@@ -115,6 +125,27 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
     });
     return membership === null ? null : toMemberRecord(membership);
   }
+}
+
+/** Ligne Prisma → client de domaine (aplatit les rattachements en sociétés). */
+function toCustomerRecord(row: {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  status: "invited" | "active" | "disabled";
+  memberships: { company: { id: string; raisonSociale: string } }[];
+}): CustomerRecord {
+  return {
+    userId: row.id,
+    email: row.email,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    phone: row.phone,
+    status: row.status,
+    companies: row.memberships.map((membership) => membership.company),
+  };
 }
 
 /** Ligne Prisma → enregistrement de domaine (aplatit la personne). */

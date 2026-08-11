@@ -18,7 +18,8 @@
     class="forme"
     label="Forme juridique"
     placeholder="SAS, SARL, EI…"
-    required
+    [required]="!legalDeferred()"
+    [optional]="legalDeferred()"
     [value]="value().formeJuridique"
     (valueChange)="setFormeJuridique($event)"
   />
@@ -26,8 +27,13 @@
     class="siret"
     label="SIRET"
     placeholder="812 456 789 00021"
-    hint="14 chiffres — la clé de contrôle est vérifiée"
-    required
+    [hint]="
+      legalDeferred()
+        ? 'à compléter plus tard si vous ne l’avez pas — la clé de contrôle est vérifiée'
+        : '14 chiffres — la clé de contrôle est vérifiée'
+    "
+    [required]="!legalDeferred()"
+    [optional]="legalDeferred()"
     [value]="value().siret"
     (valueChange)="setSiret($event)"
   />

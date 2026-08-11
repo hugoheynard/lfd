@@ -10,9 +10,6 @@ import { PickupAddressesService } from '../../reglages/retraits-livraisons/picku
 import { PlatformSettingsService } from '../../reglages/platform-settings.service';
 import { InformationsPage } from '../informations/informations-page';
 
-/** Le débounce de la reconnaissance, tel que la page le tient. */
-const LOOKUP_DEBOUNCE_MS = 400;
-
 /** Toutes les pièces exigées : le cas le plus bavard pour la synthèse. */
 const SETTINGS: PlatformSettings = {
   tva: 'required',
@@ -95,12 +92,12 @@ function fill(page: InformationsPage): void {
     siret: '12345678901234',
     tvaIntracom: '',
   });
-  page['contactDraft'].set({
+  page['holder'].set({
     firstName: 'Jean',
     lastName: 'Dupont',
-    fonction: '',
-    email: ' jean@exemple.fr ',
+    email: 'jean@exemple.fr',
     phone: '',
+    existing: null,
   });
 }
 
@@ -108,9 +105,6 @@ describe('InformationsPage — ouverture d’un compte', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     vi.restoreAllMocks();
-    // La reconnaissance est débouncée : sans horloge fictive, chaque test
-    // attendrait 400 ms de vrai temps pour observer une requête.
-    vi.useFakeTimers();
   });
 
   it("ne conclut pas à « introuvable » quand il n'y a pas d'identifiant", async () => {
@@ -124,6 +118,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
   it('montre la synthèse COMPLÈTE, comme sur une fiche où rien n’est fait', async () => {
     const { page } = await setup();
     expect(page['libSteps']().map((step) => step.key)).toEqual([
+      'legal',
       'tva',
       'kbis',
       'billing',
@@ -135,19 +130,31 @@ describe('InformationsPage — ouverture d’un compte', () => {
     expect(page['canActivate']()).toBe(false);
   });
 
-  it("n'ouvre rien tant que l'identité et le contact ne sont pas là", async () => {
+  it("n'exige qu'un nom de société et un détenteur — PAS les papiers", async () => {
     const { page } = await setup();
     expect(page['canCreate']()).toBe(false);
 
-    // L'identité seule ne suffit pas : sans interlocuteur, personne à rappeler.
+    // Ni forme juridique ni SIRET : le commercial est chez le client, qui n'a
+    // pas ses papiers sous la main. Ce qui bloque ici bloque une saisie faite
+    // devant le client, donc un compte qui ne sera jamais ouvert.
     page['identityDraft'].set({
       raisonSociale: 'La Folie Douce',
       enseigne: '',
-      formeJuridique: 'SAS',
-      siret: '12345678901234',
+      formeJuridique: '',
+      siret: '',
       tvaIntracom: '',
     });
+    // Le nom seul ne suffit pas : sans détenteur, personne à qui ouvrir l'accès.
     expect(page['canCreate']()).toBe(false);
+
+    page['holder'].set({
+      firstName: '',
+      lastName: '',
+      email: 'jean@exemple.fr',
+      phone: '',
+      existing: null,
+    });
+    expect(page['canCreate']()).toBe(true);
   });
 
   it('ouvre le compte, rogne la saisie, et enchaîne sur sa fiche', async () => {
@@ -174,45 +181,6 @@ describe('InformationsPage — ouverture d’un compte', () => {
     expect(navigate).toHaveBeenCalledWith(['/comptes-clients', 'cmp_1', 'informations'], {
       replaceUrl: true,
     });
-  });
-
-  it('reconnaît un client déjà connu et NOMME ses sociétés', async () => {
-    // Le second établissement d'un restaurateur. Le commercial doit l'apprendre
-    // pendant qu'il a le client au téléphone, pas après lui avoir annoncé un
-    // nouvel espace.
-    const known: CustomerLookupView = {
-      userId: 'user_1',
-      email: 'jean@exemple.fr',
-      firstName: 'Jean',
-      lastName: 'Dupont',
-      phone: '',
-      status: 'active',
-      companies: [
-        { id: 'cmp_a', raisonSociale: 'Le Comptoir' },
-        { id: 'cmp_b', raisonSociale: 'La Cave' },
-      ],
-    };
-    const { page } = await setup(undefined, () => Promise.resolve(known));
-
-    fill(page);
-    await vi.advanceTimersByTimeAsync(LOOKUP_DEBOUNCE_MS);
-
-    expect(page['knownCustomer']()).toEqual(known);
-    expect(page['knownCompanyNames']()).toBe('Le Comptoir, La Cave');
-  });
-
-  it('reste muette quand la reconnaissance échoue', async () => {
-    // Cette lecture est une commodité, pas la saisie : un toast d'erreur ferait
-    // croire à une panne alors que l'enregistrement, lui, marchera.
-    const { page, errors } = await setup(undefined, () =>
-      Promise.reject(new Error('service indisponible')),
-    );
-
-    fill(page);
-    await vi.advanceTimersByTimeAsync(LOOKUP_DEBOUNCE_MS);
-
-    expect(page['knownCustomer']()).toBeNull();
-    expect(errors).toEqual([]);
   });
 
   it('garde la saisie à l’écran quand l’ouverture échoue', async () => {

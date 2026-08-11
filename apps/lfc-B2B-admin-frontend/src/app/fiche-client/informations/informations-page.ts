@@ -1,15 +1,7 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
   BillingAddressView,
-  CustomerLookupView,
   DeliveryAddressView,
   DeliveryContact,
   PickupAddressView,
@@ -29,14 +21,10 @@ import {
   CompanyIdentityCard,
   CompanyIdentityFields,
   CompanyReferenceCard,
-  ContactFields,
-  EMPTY_COMPANY_CONTACT_DRAFT,
   EMPTY_COMPANY_IDENTITY_DRAFT,
-  isCompanyContactValid,
-  isCompanyIdentityValid,
+  isCompanyIdentityOpenable,
   type CompanyActivationStep,
   type CompanyContactCardView,
-  type CompanyContactDraft,
   type CompanyIdentityDraft,
   type CompanyIdentityView,
 } from '@lfd/b2b-ui/company';
@@ -48,14 +36,12 @@ import { PickupAddressesService } from '../../reglages/retraits-livraisons/picku
 import { PlatformSettingsService } from '../../reglages/platform-settings.service';
 import { toContactCards, toIdentityView } from '../admin-company-view';
 import { activationSteps, missingRequiredPieces, type ActivationStep } from './activation-steps';
+import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
 import { AdminReglementPanel } from '../panels/reglement-panel/reglement-panel';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
-
-/** Le temps laissé au commercial pour finir de taper avant d'interroger l'API. */
-const LOOKUP_DEBOUNCE_MS = 400;
 
 /**
  * Fiche **détail** d'un compte client (staff) — reflète l'**état d'activation**
@@ -87,7 +73,7 @@ const LOOKUP_DEBOUNCE_MS = 400;
     CompanyReferenceCard,
     CompanyIdentityCard,
     CompanyIdentityFields,
-    ContactFields,
+    HolderPicker,
     CompanyContactsCard,
     CompanyAddressesCard,
     CompanyActivationChecklist,
@@ -119,27 +105,21 @@ export class InformationsPage {
 
   /** Saisie d'ouverture — le strict nécessaire pour que la société existe. */
   protected readonly identityDraft = signal<CompanyIdentityDraft>(EMPTY_COMPANY_IDENTITY_DRAFT);
-  protected readonly contactDraft = signal<CompanyContactDraft>(EMPTY_COMPANY_CONTACT_DRAFT);
+  /** Le détenteur retenu — trouvé parmi les clients, ou à inscrire. */
+  protected readonly holder = signal<HolderChoice | null>(null);
   protected readonly creating = signal(false);
 
-  protected readonly canCreate = computed(
-    () =>
-      isCompanyIdentityValid(this.identityDraft()) && isCompanyContactValid(this.contactDraft()),
-  );
-
   /**
-   * Le client **déjà connu** derrière l'adresse saisie, `null` sinon.
+   * Un nom de société et quelqu'un à qui l'ouvrir : c'est tout.
    *
-   * Cherché pendant la frappe plutôt qu'au moment d'enregistrer : le commercial
-   * doit apprendre qu'il a affaire à un client existant **pendant** qu'il l'a au
-   * téléphone — après coup, il lui aurait déjà annoncé un nouvel espace.
+   * Papiers et adresses viendront après. Ce qui bloque ici bloque une saisie
+   * faite devant le client, et un formulaire qui refuse de partir devant le
+   * client est un compte qui ne sera jamais ouvert.
    */
-  protected readonly knownCustomer = signal<CustomerLookupView | null>(null);
-
-  /** Les sociétés qu'il détient déjà, énumérées — pas comptées : on les nomme. */
-  protected readonly knownCompanyNames = computed(() =>
-    (this.knownCustomer()?.companies ?? []).map((company) => company.raisonSociale).join(', '),
+  protected readonly canCreate = computed(
+    () => isCompanyIdentityOpenable(this.identityDraft()) && this.holder() !== null,
   );
+
   /** Config plateforme (modes des pièces) — filtre la synthèse et le gate. */
   protected readonly settings = signal<PlatformSettings | null>(null);
   /** Le point de retrait par défaut, reflété quand la livraison est masquée. */
@@ -181,42 +161,22 @@ export class InformationsPage {
   /** Le compte est-il en attente d'activation ? (Le CTA n'a de sens que là.) */
   protected readonly isPending = computed(() => this.company()?.status === 'pending');
 
-  /** Le compte peut-il être activé ? (pending + aucune pièce requise manquante.) */
-  protected readonly canActivate = computed(
-    () => this.isPending() && missingRequiredPieces(this.company(), this.settings()).length === 0,
-  );
+  /**
+   * Le compte peut-il être activé ? Le bouton doit dire la même chose que le
+   * serveur : en attente, pièces requises réunies, **et** identité légale
+   * complète — sans SIRET il n'y a rien à facturer, et le serveur refuse.
+   */
+  protected readonly canActivate = computed(() => {
+    const company = this.company();
+    if (company === null || !this.isPending()) {
+      return false;
+    }
+    const legalComplete = company.siret.trim() !== '' && company.formeJuridique.trim() !== '';
+    return legalComplete && missingRequiredPieces(company, this.settings()).length === 0;
+  });
 
   constructor() {
     void this.load();
-
-    // Reconnaissance du détenteur, pendant la frappe. Débouncée : une requête
-    // par caractère saisi transformerait un champ e-mail en robinet.
-    effect((onCleanup) => {
-      const email = this.contactDraft().email.trim();
-      if (!this.draft() || email === '') {
-        this.knownCustomer.set(null);
-        return;
-      }
-      const timer = setTimeout(() => {
-        void this.lookupHolder(email);
-      }, LOOKUP_DEBOUNCE_MS);
-      onCleanup(() => {
-        clearTimeout(timer);
-      });
-    });
-  }
-
-  /**
-   * Cherche le détenteur, **en silence** si ça échoue : cette lecture est une
-   * aide à la saisie, pas la saisie. Un toast d'erreur ici ferait passer une
-   * commodité pour une panne, alors que l'enregistrement, lui, marchera.
-   */
-  private async lookupHolder(email: string): Promise<void> {
-    try {
-      this.knownCustomer.set(await this.service.findCustomerByEmail(email));
-    } catch {
-      this.knownCustomer.set(null);
-    }
   }
 
   protected async load(): Promise<void> {
@@ -254,11 +214,22 @@ export class InformationsPage {
     }
     this.creating.set(true);
     const identity = this.identityDraft();
-    const contact = this.contactDraft();
+    const holder = this.holder();
+    if (holder === null) {
+      return;
+    }
     try {
       const created = await this.service.create({
         identity: trimIdentity(identity),
-        contact: trimContact(contact),
+        // Le détenteur EST le contact principal de la société : celui qu'on
+        // rappelle est celui qui commande.
+        contact: {
+          firstName: holder.firstName,
+          lastName: holder.lastName,
+          fonction: '',
+          email: holder.email,
+          phone: holder.phone,
+        },
       });
       this.notify.success(openingMessage(created));
       // `replaceUrl` : revenir en arrière doit ramener à la liste, pas à un
@@ -301,12 +272,14 @@ export class InformationsPage {
   }
 
   private openFor(key: string, company: AdminCompanyDetail): Promise<unknown> | null {
-    if (key === 'tva') {
+    if (key === 'tva' || key === 'legal') {
       return this.panels.open(AdminIdentitePanel, {
         data: {
           companyId: company.id,
           enseigne: company.enseigne,
           tvaIntracom: company.tvaIntracom,
+          formeJuridique: company.formeJuridique,
+          siret: company.siret,
         },
         side: 'right',
       }).closed;
@@ -384,17 +357,6 @@ function trimIdentity(draft: CompanyIdentityDraft): CompanyIdentityDraft {
     formeJuridique: draft.formeJuridique.trim(),
     siret: draft.siret.trim(),
     tvaIntracom: draft.tvaIntracom.trim(),
-  };
-}
-
-/** Idem pour le contact — l'e-mail surtout, qui sert de clé humaine. */
-function trimContact(draft: CompanyContactDraft): CompanyContactDraft {
-  return {
-    firstName: draft.firstName.trim(),
-    lastName: draft.lastName.trim(),
-    fonction: draft.fonction.trim(),
-    email: draft.email.trim(),
-    phone: draft.phone.trim(),
   };
 }
 

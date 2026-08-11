@@ -50,6 +50,7 @@
           >
             <fold-card class="form">
               <lfd-company-identity-fields
+                [legalDeferred]="true"
                 [value]="identityDraft()"
                 (valueChange)="identityDraft.set($event)"
               />
@@ -62,26 +63,7 @@
             description="Celui que l'on rappelle est celui qui commande : il recevra l'accès à l'espace."
           >
             <fold-card class="form">
-              <lfd-contact-fields
-                [value]="contactDraft()"
-                (valueChange)="contactDraft.set($event)"
-              />
-
-              @if (knownCustomer(); as known) {
-                <!-- Reconnu PENDANT la saisie : après coup, le commercial aurait
-                     déjà annoncé un nouvel espace à quelqu'un qui en a un. -->
-                <fold-callout appearance="inset" variant="info">
-                  <strong>{{ known.firstName }} {{ known.lastName }}</strong> est déjà client.
-                  @if (known.companies.length > 0) {
-                    Cette société rejoindra son espace, aux côtés de
-                    <strong>{{ knownCompanyNames() }}</strong
-                    >.
-                  } @else {
-                    Cette société rejoindra son espace existant.
-                  }
-                  Il gardera ses identifiants — aucun second mot de passe ne lui sera demandé.
-                </fold-callout>
-              }
+              <app-holder-picker (holderChange)="holder.set($event)" />
             </fold-card>
           </fold-page-section>
 

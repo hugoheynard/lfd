@@ -33,6 +33,21 @@ export class Siret {
     return new Siret(digits);
   }
 
+  /**
+   * Le SIRET **quand on l'a**, `null` quand on ne l'a pas encore.
+   *
+   * Une société existe avant que ses papiers soient sur la table : un commercial
+   * ouvre le compte chez son client, et le SIRET arrivera par e-mail le
+   * lendemain. Exiger 14 chiffres à cet instant, c'est renvoyer le commercial
+   * dans sa voiture — et le compte ne sera jamais ouvert.
+   *
+   * Vide vaut donc « pas encore », pas « invalide ». Ce qui EST saisi reste
+   * vérifié comme avant : mieux vaut rien qu'un SIRET faux, qu'on croirait bon.
+   */
+  static createOptional(raw: string): Siret | null {
+    return raw.trim() === "" ? null : Siret.create(raw);
+  }
+
   /** Forme lisible par groupes : `812 456 789 00021`. */
   formatted(): string {
     return `${this.value.slice(0, 3)} ${this.value.slice(3, 6)} ${this.value.slice(6, 9)} ${this.value.slice(9)}`;

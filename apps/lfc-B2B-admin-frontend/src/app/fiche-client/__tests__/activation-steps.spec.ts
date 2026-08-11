@@ -43,6 +43,7 @@ describe('activationSteps', () => {
     // C'est le mode ouverture : le commercial doit voir dès maintenant ce qu'il
     // aura à demander, pas le découvrir pièce par pièce.
     expect(activationSteps(null, ALL_REQUIRED).map((s) => s.key)).toEqual([
+      'legal',
       'tva',
       'kbis',
       'billing',
@@ -61,6 +62,13 @@ describe('activationSteps', () => {
       delivery: 'hidden',
     });
     expect(steps.map((s) => s.key)).toEqual(['billing', 'payment']);
+  });
+
+  it("réclame l'identité légale d'un compte ouvert sans papiers", () => {
+    // Elle n'est pas configurable : sans SIRET, il n'y a rien à facturer. Elle
+    // ouvre donc la liste, avant les pièces.
+    const steps = activationSteps(complete({ siret: '', formeJuridique: '' }), ALL_REQUIRED);
+    expect(steps.map((s) => s.key)).toEqual(['legal', 'payment']);
   });
 
   it('ne réclame pas de TVA à un non-assujetti', () => {

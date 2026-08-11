@@ -48,6 +48,16 @@ export abstract class CompanyMemberReader {
    * a besoin de voir pour reconnaître son interlocuteur.
    */
   abstract findCustomerByEmail(email: string): Promise<CustomerRecord | null>;
+
+  /**
+   * Les clients dont le nom ou l'adresse **contient** le terme cherché.
+   *
+   * Une recherche, pas une correspondance exacte : le commercial connaît le nom
+   * de son interlocuteur, rarement l'orthographe exacte de son adresse. Le
+   * résultat est borné (`limit`) — au-delà, la liste ne s'écrème plus à l'œil et
+   * il vaut mieux affiner la recherche.
+   */
+  abstract searchCustomers(term: string, limit: number): Promise<readonly CustomerRecord[]>;
 }
 
 /** Une personne connue, et les sociétés auxquelles elle est rattachée. */

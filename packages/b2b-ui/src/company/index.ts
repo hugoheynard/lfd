@@ -19,6 +19,7 @@ export {
   EMPTY_COMPANY_IDENTITY_DRAFT,
   EMPTY_COMPANY_CONTACT_DRAFT,
   isCompanyIdentityValid,
+  isCompanyIdentityOpenable,
   isCompanyContactValid,
 } from './company-form.model';
 export type { CompanyIdentityDraft, CompanyContactDraft } from './company-form.model';

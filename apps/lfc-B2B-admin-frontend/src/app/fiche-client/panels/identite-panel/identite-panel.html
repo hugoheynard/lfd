@@ -15,6 +15,27 @@
     [value]="tvaIntracom()"
     (valueChange)="tvaIntracom.set($event)"
   />
+
+  @if (legalMissing()) {
+    <!-- Réclamés seulement quand ils manquent : posés, ils sont figés, et un
+         champ qu'on ne peut pas changer n'a rien à faire dans un formulaire. -->
+    <p class="legal-note">
+      Ce compte a été ouvert sans ses papiers. Sans eux, il ne pourra pas être activé.
+    </p>
+    <fold-input
+      label="Forme juridique"
+      placeholder="SAS, SARL, EI…"
+      [value]="formeJuridique()"
+      (valueChange)="formeJuridique.set($event)"
+    />
+    <fold-input
+      label="SIRET"
+      placeholder="812 456 789 00021"
+      hint="14 chiffres — la clé de contrôle est vérifiée"
+      [value]="siret()"
+      (valueChange)="siret.set($event)"
+    />
+  }
 </div>
 
 <footer class="foot">

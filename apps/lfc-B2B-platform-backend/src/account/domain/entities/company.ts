@@ -61,6 +61,14 @@ export interface ReconstituteCompanyInput {
  */
 export interface CompanySoftState {
   readonly enseigne: string;
+  /**
+   * L'identité légale figure ici **parce qu'elle peut désormais être complétée**
+   * après coup : un compte s'ouvre sans papiers, et ils arrivent ensuite. Elle
+   * n'est pour autant pas « souple » — l'agrégat refuse de la réécrire une fois
+   * posée (cf. `completeLegalIdentity`).
+   */
+  readonly formeJuridique: string;
+  readonly siret: string;
   readonly tvaIntracom: string;
   readonly contact: {
     readonly firstName: string;
@@ -97,8 +105,8 @@ export class Company {
     private readonly identityId: string | null,
     readonly raisonSociale: string,
     private enseigneValue: string,
-    readonly formeJuridique: string,
-    readonly siret: Siret,
+    private formeJuridiqueValue: string,
+    private siretValue: Siret | null,
     private tvaIntracomValue: string,
     private contactValue: CompanyContact,
     private paymentTermValue: PaymentTerm,
@@ -114,8 +122,11 @@ export class Company {
       null,
       required(identity.raisonSociale, "Raison sociale"),
       optional(identity.enseigne, "Enseigne"),
-      required(identity.formeJuridique, "Forme juridique"),
-      Siret.create(identity.siret),
+      // Forme juridique et SIRET sont FACULTATIFS à l'ouverture : le compte se
+      // crée souvent chez le client, qui n'a pas ses papiers sous la main. Ils
+      // se complètent ensuite, et l'activation les exige (cf. `activate`).
+      optional(identity.formeJuridique, "Forme juridique"),
+      Siret.createOptional(identity.siret),
       optional(identity.tvaIntracom, "TVA intracommunautaire"),
       contact,
       // Déclarée : règlement à la commande par défaut, aucune demande en cours,
@@ -136,7 +147,7 @@ export class Company {
       input.raisonSociale,
       input.enseigne,
       input.formeJuridique,
-      Siret.create(input.siret),
+      Siret.createOptional(input.siret),
       input.tvaIntracom,
       input.contact,
       input.paymentTerm,
@@ -153,6 +164,43 @@ export class Company {
 
   get enseigne(): string {
     return this.enseigneValue;
+  }
+
+  get formeJuridique(): string {
+    return this.formeJuridiqueValue;
+  }
+
+  /** Le SIRET, ou `null` tant qu'on ne l'a pas. */
+  get siret(): Siret | null {
+    return this.siretValue;
+  }
+
+  /** Les 14 chiffres, ou la chaîne vide — la forme que la persistance attend. */
+  get siretDigits(): string {
+    return this.siretValue?.value ?? "";
+  }
+
+  /** Vrai quand forme juridique **et** SIRET sont là : de quoi facturer. */
+  get hasLegalIdentity(): boolean {
+    return this.formeJuridiqueValue !== "" && this.siretValue !== null;
+  }
+
+  /**
+   * **Complète** l'identité légale laissée en suspens à l'ouverture.
+   *
+   * On comble un trou, on ne réécrit pas : un champ déjà renseigné est ignoré,
+   * silencieusement. Le SIRET identifie un établissement — le changer ferait
+   * d'une société une autre, sous la même référence client, avec son historique
+   * de commandes. Corriger une faute de frappe est une opération à part, qui
+   * devra s'assumer comme telle.
+   */
+  completeLegalIdentity(input: { formeJuridique: string; siret: string }): void {
+    if (this.formeJuridiqueValue === "") {
+      this.formeJuridiqueValue = optional(input.formeJuridique, "Forme juridique");
+    }
+    if (this.siretValue === null) {
+      this.siretValue = Siret.createOptional(input.siret);
+    }
   }
 
   get tvaIntracom(): string {
@@ -226,6 +274,15 @@ export class Company {
    * Refuse toute société qui n'est pas `pending` (déjà active, suspendue, close).
    */
   activate(activatedAt: Date): void {
+    // L'identité légale, elle, EST de cet agrégat — et sans elle on ne peut pas
+    // facturer. Un compte s'ouvre sans papiers ; il ne devient pas client sans.
+    if (!this.hasLegalIdentity) {
+      throw new CompanyActivationBlockedError(
+        this.identityId ?? "",
+        ["identite_legale"],
+        "Forme juridique et SIRET sont nécessaires pour activer un compte.",
+      );
+    }
     if (this.statusValue !== "pending") {
       throw new CompanyActivationBlockedError(
         this.identityId ?? "",
@@ -281,6 +338,8 @@ export class Company {
   toPersistence(): CompanySoftState {
     return {
       enseigne: this.enseigneValue,
+      formeJuridique: this.formeJuridiqueValue,
+      siret: this.siretDigits,
       tvaIntracom: this.tvaIntracomValue,
       contact: {
         firstName: this.contactValue.firstName.value,

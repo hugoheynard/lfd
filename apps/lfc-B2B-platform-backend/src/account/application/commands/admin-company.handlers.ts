@@ -59,6 +59,12 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
       throw new CompanyNotFoundError(command.companyId);
     }
     company.editSoftIdentity(command.payload);
+    // Complète ce qui manquait à l'ouverture. Sans SIRET, pas d'activation
+    // possible : ce serait un compte ouvert pour rien.
+    company.completeLegalIdentity({
+      formeJuridique: command.payload.formeJuridique,
+      siret: command.payload.siret,
+    });
     await this.companies.save(company);
 
     // Pièce « TVA » franchie dès qu'un numéro est présent (idempotent par étape).

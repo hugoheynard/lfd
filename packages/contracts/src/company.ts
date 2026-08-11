@@ -18,6 +18,14 @@ export type PaymentTerm = z.infer<typeof paymentTermSchema>;
 export const updateIdentityPayloadSchema = z.object({
   enseigne: z.string().default(""),
   tvaIntracom: z.string().default(""),
+  /**
+   * Identité légale — envoyée seulement quand elle **manque** : un compte peut
+   * s'ouvrir sans papiers (le commercial est chez le client), et ils arrivent
+   * ensuite. Un champ déjà renseigné est ignoré côté serveur : on comble un
+   * trou, on ne réécrit pas un SIRET.
+   */
+  formeJuridique: z.string().default(""),
+  siret: z.string().default(""),
 });
 export type UpdateIdentityPayload = z.infer<typeof updateIdentityPayloadSchema>;
 

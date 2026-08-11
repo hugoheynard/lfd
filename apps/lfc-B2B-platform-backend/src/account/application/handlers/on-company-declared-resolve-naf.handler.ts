@@ -23,7 +23,13 @@ export class OnCompanyDeclaredResolveNaf implements IEventHandler<CompanyDeclare
     if (company === null) {
       return;
     }
-    const naf = await this.directory.resolveNaf(company.siret.value);
+    const siret = company.siret;
+    if (siret === null) {
+      // Pas de SIRET, pas de NAF à résoudre : le compte a été ouvert sans
+      // papiers, et la résolution se refera quand ils arriveront.
+      return;
+    }
+    const naf = await this.directory.resolveNaf(siret.value);
     if (naf === null) {
       return;
     }

@@ -3,7 +3,7 @@ import type { ActivationPiece, PlatformSettings } from '@lfd/contracts';
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 
 /** Les pièces d'un dossier, plus la condition de règlement qui n'en est pas une. */
-export type StepKey = ActivationPiece | 'payment';
+export type StepKey = ActivationPiece | 'legal' | 'payment';
 
 /** Une étape restante, telle que la fiche la présente. */
 export interface ActivationStep {
@@ -15,6 +15,11 @@ export interface ActivationStep {
 
 /** Le texte de chaque étape — écrit une fois, qu'elle soit due ou faite. */
 const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
+  legal: {
+    title: 'Identité légale',
+    detail: 'Forme juridique et SIRET manquent — le compte ne peut pas être activé sans eux.',
+    cta: "Compléter l'identité",
+  },
   tva: {
     title: 'Numéro de TVA',
     detail: 'La forme juridique impose un numéro de TVA intracommunautaire.',
@@ -65,6 +70,13 @@ export function activationSteps(
   if (settings === null) {
     return [];
   }
+  // L'identité légale n'est pas une pièce configurable : sans SIRET, il n'y a
+  // rien à facturer. Elle ouvre donc la liste, et ne se désactive pas.
+  const legal: ActivationStep[] =
+    company !== null && company.siret.trim() !== '' && company.formeJuridique.trim() !== ''
+      ? []
+      : [{ key: 'legal' as const, ...STEP_TEXTS.legal }];
+
   const steps = PIECES.filter(
     (piece) => settings[piece] !== 'hidden' && !isPieceDone(company, piece),
   ).map((piece) => ({ key: piece, ...STEP_TEXTS[piece] }));
@@ -72,7 +84,7 @@ export function activationSteps(
   // La condition de règlement n'est pas une pièce : elle ne « manque » jamais
   // (il y en a toujours une par défaut), elle se CONFIRME. Elle reste donc en
   // fin de liste, toujours.
-  return [...steps, { key: 'payment' as const, ...STEP_TEXTS.payment }];
+  return [...legal, ...steps, { key: 'payment' as const, ...STEP_TEXTS.payment }];
 }
 
 /**
