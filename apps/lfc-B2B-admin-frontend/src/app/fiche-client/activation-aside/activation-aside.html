@@ -1,0 +1,47 @@
+<fold-card class="activation">
+  @if (pending()) {
+    <p class="kicker">
+      <fold-icon name="check" [size]="15" />
+      Activation du compte
+    </p>
+
+    @if (canActivate()) {
+      <p class="lede">
+        Toutes les pièces sont réunies. Activer ouvre la commande à ce client — il pourra passer sa
+        première commande dans la foulée.
+      </p>
+    } @else {
+      <p class="lede">
+        Ce compte est <strong>en attente</strong> : le client ne peut pas encore commander.
+        Complétez ce qui manque, l'activation se débloquera d'elle-même.
+      </p>
+      @if (remaining() > 0) {
+        <p class="count">{{ remainingLabel() }}</p>
+      }
+    }
+
+    <button
+      foldButton
+      intent="primary"
+      icon="check"
+      [disabled]="!canActivate()"
+      (click)="activate.emit()"
+    >
+      Activer le compte
+    </button>
+
+    <!-- Un bouton grisé muet est une impasse : on ne sait pas quoi corriger. -->
+    @if (blockedReason(); as reason) {
+      <p class="why">{{ reason }}</p>
+    }
+  } @else {
+    <p class="kicker">
+      <fold-icon name="check" [size]="15" />
+      Compte actif
+    </p>
+    <p class="lede">
+      Ce client peut commander. Les pièces restent modifiables : compléter un dossier actif ne le
+      remet pas en attente.
+    </p>
+  }
+</fold-card>

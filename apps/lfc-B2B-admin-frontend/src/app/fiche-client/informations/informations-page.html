@@ -24,7 +24,7 @@
       </fold-empty-state>
     }
     @case ('ready') {
-      <div class="fiche">
+      <fold-aside-layout class="fiche" asideRightLabel="Activation">
         <!-- La MÊME synthèse qu'une fiche existante : à l'ouverture, tout est
              encore dû. Le commercial qui a le client au téléphone sait ainsi
              quelles pièces réclamer maintenant, plutôt que de les découvrir
@@ -48,26 +48,6 @@
 
         @if (company(); as c) {
           <lfd-company-reference-card [reference]="c.reference" label="Référence client" />
-        }
-
-        <!-- Le geste qui clôt le dossier. Il ne vit que sur un compte en
-             attente, et dit POURQUOI il ne part pas — un bouton grisé muet est
-             une impasse : on ne sait pas quoi corriger. -->
-        @if (isPending()) {
-          <div class="activate">
-            <button
-              foldButton
-              intent="primary"
-              icon="check"
-              [disabled]="!canActivate()"
-              (click)="activate()"
-            >
-              Activer le compte
-            </button>
-            @if (blockedReason(); as reason) {
-              <p class="activate-why">{{ reason }}</p>
-            }
-          </div>
         }
 
         @if (draft()) {
@@ -164,7 +144,20 @@
             />
           }
         }
-      </div>
+        <!-- Le geste qui clôt le dossier, épinglé : il se perdait au fil d'une
+             fiche qui s'allonge. Pendant staff du rail « assistance » côté
+             client — chaque camp a son geste au même endroit. -->
+        @if (!draft()) {
+          <app-activation-aside
+            asideRight
+            [pending]="isPending()"
+            [canActivate]="canActivate()"
+            [blockedReason]="blockedReason()"
+            [remaining]="libSteps().length"
+            (activate)="activate()"
+          />
+        }
+      </fold-aside-layout>
     }
   }
 </section>

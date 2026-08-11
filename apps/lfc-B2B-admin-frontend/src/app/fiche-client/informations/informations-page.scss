@@ -1,7 +1,7 @@
+/* La mise en page (centre + rail droit collant, écarts) vit dans
+   fold-aside-layout ; on ne règle ici que le rythme vertical du centre. */
 .fiche {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-lg);
+  --fold-aside-layout-gap: var(--fold-space-lg);
 }
 
 /* Les fragments de champs partagés arrivent nus (ils ne portent pas leur propre
@@ -15,18 +15,4 @@
 .open-actions {
   display: flex;
   justify-content: flex-end;
-}
-
-/* L'action de clôture : le bouton, et la raison de son refus juste dessous. */
-.activate {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-md);
-  flex-wrap: wrap;
-}
-
-.activate-why {
-  margin: 0;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
 }

@@ -12,6 +12,7 @@ import type {
   PlatformSettings,
 } from '@lfd/contracts';
 import {
+  FoldAsideLayoutComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -50,6 +51,7 @@ import {
   missingRequiredPieces,
   type ActivationStep,
 } from './activation-steps';
+import { ActivationAside } from '../activation-aside/activation-aside';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { PaiementSection } from '../paiement-section/paiement-section';
 import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
@@ -81,6 +83,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
   selector: 'app-informations-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldAsideLayoutComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -94,6 +97,7 @@ type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
     CompanyContactsCard,
     CompanyAddressesCard,
     CompanyActivationChecklist,
+    ActivationAside,
     PaiementSection,
   ],
   templateUrl: './informations-page.html',
