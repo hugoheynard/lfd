@@ -32,6 +32,12 @@ export interface AlertEvaluationContext {
 /** Une ligne de la commande évaluée. */
 export interface EvaluatedLine {
   readonly sku: string;
+  /**
+   * Le nom figé porté par la ligne de commande — ou le **SKU**, lors d'un
+   * contrôle de panier : la commande n'existe pas encore, donc aucun nom n'a été
+   * figé. Sans conséquence sur ce que voit le client : le message client ne
+   * nomme pas le produit (le callout se pose sous la ligne, qui le nomme déjà).
+   */
   readonly productName: string;
   readonly quantity: number;
 }

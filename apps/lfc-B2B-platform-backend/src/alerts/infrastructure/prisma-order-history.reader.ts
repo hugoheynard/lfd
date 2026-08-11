@@ -30,7 +30,7 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
 
   async read(input: {
     readonly companyId: string;
-    readonly excludeOrderId: string;
+    readonly excludeOrderId: string | null;
     readonly skus: readonly string[];
     readonly windowDays: number;
     readonly maxOrdersPerSku: number;
@@ -40,7 +40,8 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
     const walled = {
       companyId: input.companyId,
       status: { in: [...COUNTED_STATUSES] },
-      id: { not: input.excludeOrderId },
+      // Pas de commande à exclure lors d'un contrôle de panier : rien n'est écrit.
+      ...(input.excludeOrderId === null ? {} : { id: { not: input.excludeOrderId } }),
     };
 
     const [recent, ever, previousOrderCount] = await Promise.all([

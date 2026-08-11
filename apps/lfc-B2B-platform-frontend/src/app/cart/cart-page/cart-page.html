@@ -10,40 +10,52 @@
   } @else {
     <div class="lines">
       @for (line of lines(); track line.product.id) {
-        <article class="line">
-          @if (line.product.image) {
-            <img class="line-img" [src]="line.product.image" [alt]="line.product.imageAlt ?? ''" />
-          } @else {
-            <div class="line-img line-img--ph" aria-hidden="true">
-              {{ line.product.name.charAt(0) }}
+        <div class="line-group">
+          <article class="line">
+            @if (line.product.image) {
+              <img
+                class="line-img"
+                [src]="line.product.image"
+                [alt]="line.product.imageAlt ?? ''"
+              />
+            } @else {
+              <div class="line-img line-img--ph" aria-hidden="true">
+                {{ line.product.name.charAt(0) }}
+              </div>
+            }
+
+            <div class="line-main">
+              <p class="line-name">{{ line.product.name }}</p>
+              <p class="line-unit">{{ fmt(line.unitPriceEur) }} {{ line.product.unit }}</p>
             </div>
+
+            <fold-number-input
+              class="line-qty"
+              [value]="line.qty"
+              [min]="1"
+              [step]="1"
+              [integer]="true"
+              size="sm"
+              (valueChange)="onQty(line, $event)"
+            />
+
+            <span class="line-total">{{ fmt(line.lineTotalEur) }}</span>
+
+            <fold-button-icon
+              icon="bin"
+              size="sm"
+              tone="critical"
+              tooltip="Retirer du panier"
+              (clicked)="remove(line)"
+            />
+          </article>
+
+          <!-- Le garde-fou de saisie : sous la ligne, là où le regard est déjà,
+               et sans rien bloquer. Une quantité voulue s'ignore sans friction. -->
+          @if (warnings().get(line.product.id); as warning) {
+            <fold-callout appearance="inset" variant="warning">{{ warning }}</fold-callout>
           }
-
-          <div class="line-main">
-            <p class="line-name">{{ line.product.name }}</p>
-            <p class="line-unit">{{ fmt(line.unitPriceEur) }} {{ line.product.unit }}</p>
-          </div>
-
-          <fold-number-input
-            class="line-qty"
-            [value]="line.qty"
-            [min]="1"
-            [step]="1"
-            [integer]="true"
-            size="sm"
-            (valueChange)="onQty(line, $event)"
-          />
-
-          <span class="line-total">{{ fmt(line.lineTotalEur) }}</span>
-
-          <fold-button-icon
-            icon="bin"
-            size="sm"
-            tone="critical"
-            tooltip="Retirer du panier"
-            (clicked)="remove(line)"
-          />
-        </article>
+        </div>
       }
     </div>
 

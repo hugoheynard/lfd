@@ -4,6 +4,14 @@
   gap: var(--fold-space-sm);
 }
 
+/* La ligne et son éventuel avertissement font un bloc : le callout doit rester
+   collé à SA ligne, pas flotter entre deux. */
+.line-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .line {
   display: flex;
   align-items: center;

@@ -7,7 +7,7 @@
  * exclues, commande courante exclue), et que la médiane sort de `percentile_cont`
  * et non d'un tri en mémoire.
  */
-import type { AccountAlertView } from "@lfd/contracts";
+import { ALERT_KINDS, type AccountAlertView, type OrderPreflightView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
 import { CustomerRole, type CompanyStatus } from "../src/infra/database/client/client.js";
@@ -386,5 +386,103 @@ describe("la cloche du back-office", () => {
 
     // Le SKU a déjà été commandé : aucune alerte, donc aucune notification.
     expect(summary.unread).toBe(0);
+  });
+});
+
+describe("le garde-fou du panier", () => {
+  /** Coche « afficher au client » sur l'écart à la moyenne — il ne l'est pas par défaut. */
+  async function showDriftToCustomer(): Promise<void> {
+    const defaults = ALERT_KINDS["product.quantity_drift"].defaults;
+    await staff()
+      .put("/admin/alert-rules")
+      .send({
+        rule: { ...defaults, delivery: { ...defaults.delivery, customerVisible: true } },
+        expectedUpdatedAt: null,
+      })
+      .expect(204);
+  }
+
+  /** Construit une habitude : trois commandes du même SKU, même quantité. */
+  async function habit(companyId: string, quantity: number): Promise<void> {
+    await order(companyId, quantity);
+    await order(companyId, quantity);
+    await order(companyId, quantity);
+  }
+
+  function preflight(body: unknown): ReturnType<ReturnType<E2eContext["asSub"]>["post"]> {
+    return ctx.asSub(CLIENT).post("/orders/preflight").send(body);
+  }
+
+  it("prévient sous la ligne quand la quantité s'écarte de l'habitude", async () => {
+    const companyId = await seed();
+    await showDriftToCustomer();
+    await habit(companyId, 4);
+
+    const view = jsonBody<OrderPreflightView>(
+      await preflight({ companyId, lines: [{ sku: SKU, quantity: 12 }] }).expect(200),
+    );
+
+    expect(view.warnings).toHaveLength(1);
+    expect(view.warnings[0]?.sku).toBe(SKU);
+    // La phrase est celle du client : sa référence, puis ce que ce panier porte.
+    expect(view.warnings[0]?.message).toContain("Habituellement 4");
+    expect(view.warnings[0]?.message).toContain("12");
+    expect(view.warnings[0]?.message).not.toContain("%");
+  });
+
+  it("n'écrit rien au journal — c'est une lecture", async () => {
+    const companyId = await seed();
+    await showDriftToCustomer();
+    await habit(companyId, 4);
+
+    await preflight({ companyId, lines: [{ sku: SKU, quantity: 12 }] }).expect(200);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // Les alertes du journal ne viennent que des commandes passées, jamais du
+    // contrôle : sinon ajuster une quantité dix fois écrirait dix alertes.
+    const journal = await alertsOf(companyId);
+    expect(journal.filter((alert) => alert.kind === "product.quantity_drift")).toHaveLength(0);
+  });
+
+  it("se tait quand la règle n'est pas cochée « client »", async () => {
+    const companyId = await seed();
+    await habit(companyId, 4);
+
+    const view = jsonBody<OrderPreflightView>(
+      await preflight({ companyId, lines: [{ sku: SKU, quantity: 12 }] }).expect(200),
+    );
+
+    expect(view.warnings).toHaveLength(0);
+  });
+
+  it("ne montre pas l'habitude d'un compte dont on n'est pas membre", async () => {
+    const companyId = await seed();
+    await showDriftToCustomer();
+    await habit(companyId, 4);
+    // Un autre client connecté, étranger à ce compte : il ne doit rien apprendre
+    // des volumes d'achat de celui-là.
+    await createUser(ctx.prisma, { auth0Sub: "auth0|autre" });
+
+    const view = jsonBody<OrderPreflightView>(
+      await ctx
+        .asSub("auth0|autre")
+        .post("/orders/preflight")
+        .send({ companyId, lines: [{ sku: SKU, quantity: 12 }] })
+        .expect(200),
+    );
+
+    expect(view.warnings).toHaveLength(0);
+  });
+
+  it("répond vide, sans erreur, pour une commande sans société", async () => {
+    await showDriftToCustomer();
+
+    const view = jsonBody<OrderPreflightView>(
+      await preflight({ companyId: null, lines: [{ sku: SKU, quantity: 12 }] }).expect(200),
+    );
+
+    // Zéro friction : aucun compte, donc aucun historique. Ce n'est pas une
+    // erreur — l'écran n'a rien à afficher, c'est tout.
+    expect(view.warnings).toHaveLength(0);
   });
 });

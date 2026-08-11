@@ -1,6 +1,8 @@
 # Alertes de compte client
 
-**État : 📐 doc-first — rien n'est codé.**
+**État : livré — tranches A à E.** Ce document reste la référence du _pourquoi_ ;
+les écarts entre ce qui était prévu ici et ce qui a été construit sont signalés
+en place.
 
 Ce que le commercial n'a aujourd'hui aucun moyen d'apprendre : qu'un client
 vient de commander un produit qu'il n'avait jamais pris, ou qu'il en a pris
@@ -374,15 +376,47 @@ doit le dire :
 
 Trois conséquences sur le modèle :
 
-- **Le message client est écrit par le type**, à côté du message staff. Un
-  détecteur rend donc **deux** formulations : `staffMessage` (« écart +180 % vs
-  moyenne 4,3 sur 6 commandes ») et `customerMessage` (la question ci-dessus).
-  Sans ça on montrerait le vocabulaire interne à un client.
+- **Le message client ne réutilise jamais celui du staff** (« écart +180 % vs
+  moyenne 4,3 sur 6 commandes » est du vocabulaire de commercial).
+
+  > **Écart avec ce qui était prévu ici.** Il était écrit qu'un détecteur rendrait
+  > **deux** formulations. À la construction, une seule est écrite par le
+  > détecteur ; la phrase client est **rendue** à partir du constat structuré
+  > (quantité, référence) par `customerWarnings`, dans le domaine. Deux raisons :
+  > le constat porte déjà tout ce qu'il faut pour l'écrire, et surtout une
+  > formulation client figée dans le journal serait du poids mort — le journal
+  > est staff, personne n'y lira jamais cette phrase. Le figeage garde son sens
+  > là où il en a un : le message **staff**, lui, reste figé au déclenchement.
+
 - **Il faut une évaluation AVANT la passation**, en plus de celle qui suit
   `OrderPlacedEvent` : une lecture pure sur le panier (`POST /orders/preflight`),
   qui ne persiste rien et ne notifie personne. Les détecteurs sont purs, donc
   c'est le même code appelé deux fois — pas une seconde implémentation. Elle rend
   les alertes **par SKU**, puisque l'affichage se rattache à une ligne.
+
+  Ce que la construction a ajouté :
+
+  - **La moitié commune est extraite** (`EvaluateBasket` : règles effectives +
+    historique + détecteurs). C'était le **deuxième** usage réel, donc le moment
+    d'extraire. Deux copies auraient fini par ne plus appliquer les mêmes seuils,
+    et c'est le client qui aurait vu la différence — « rien à signaler » avant,
+    une alerte au journal après.
+  - **Le `companyId` du corps est muré.** Ce que la route renvoie — « habituellement
+    4 » — est l'habitude d'achat d'un compte : sans vérifier l'appartenance, tout
+    client connecté pourrait sonder celle d'un concurrent en essayant des
+    identifiants. Non membre, société non active, pas de société, rien de coché
+    « client » : **réponse vide**, jamais une erreur. Le panier n'est pas invalide.
+  - **Le contrôleur vit dans `alerts/`**, malgré son URL sous `/orders` : faire
+    appeler `alerts` par `orders` inverserait la dépendance qu'on tient depuis le
+    début. Une URL n'est pas une frontière de module.
+  - **Aucun nom de produit n'est résolu** : la commande n'existe pas encore, donc
+    aucun nom n'a été figé — et le message client ne nomme pas le produit, le
+    callout étant posé sous la ligne qui le nomme déjà.
+  - **Côté écran**, le contrôle est **débounçé** (500 ms) et son échec est
+    **silencieux**. Un stepper qu'on tient enfoncé émet une valeur par pression ;
+    et afficher « le contrôle a échoué » sous une ligne inquiéterait sur un panier
+    parfaitement valide, sans appeler la moindre action.
+
 - **`product.first_order` ne se montre jamais au client.** « Vous n'aviez jamais
   pris ce produit » n'est pas une erreur de saisie possible, c'est une évidence.
   Chaque type déclare s'il est **montrable au client** ; la case n'apparaît en

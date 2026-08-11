@@ -24,8 +24,12 @@ export interface AccountOrderHistory {
 export abstract class AccountOrderHistoryReader {
   abstract read(input: {
     readonly companyId: string;
-    /** La commande évaluée — exclue de son propre historique. */
-    readonly excludeOrderId: string;
+    /**
+     * La commande évaluée — exclue de son propre historique. `null` quand il n'y
+     * a pas encore de commande : le contrôle de panier compare un panier à
+     * l'historique complet, puisque rien n'y a été écrit.
+     */
+    readonly excludeOrderId: string | null;
     readonly skus: readonly string[];
     /** Fenêtre de récence, en jours (celle de la règle de dérive). */
     readonly windowDays: number;

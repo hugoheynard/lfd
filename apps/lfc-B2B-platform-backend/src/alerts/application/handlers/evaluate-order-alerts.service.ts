@@ -1,28 +1,18 @@
-import type { AlertKind, AlertRule } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../infra/time/clock.js";
-import { activeRulesFor, resolveAccountRules } from "../../domain/account-alert-rules.js";
-import { resolveGlobalRules } from "../../domain/alert-rules.js";
-import { evaluateOrder } from "../../domain/evaluate-order.js";
-import { AccountAlertOverridesStore } from "../../domain/ports/account-alert-overrides.store.js";
 import { AccountAlertRepository } from "../../domain/ports/account-alert.repository.js";
-import { AlertRulesStore } from "../../domain/ports/alert-rules.store.js";
-import {
-  AccountOrderHistoryReader,
-  ProductNormReader,
-} from "../../domain/ports/order-history.reader.js";
-import { EvaluatedOrderReader } from "../../domain/ports/evaluated-order.reader.js";
 import { AlertChannels } from "../../domain/ports/alert-channels.js";
+import { EvaluatedOrderReader } from "../../domain/ports/evaluated-order.reader.js";
+import { EvaluateBasket } from "./evaluate-basket.service.js";
 
 /**
- * Évalue une commande contre les règles effectives de son compte, et inscrit ce
- * qui se déclenche au journal.
+ * Évalue une commande **passée** contre les règles effectives de son compte, et
+ * inscrit ce qui se déclenche au journal.
  *
- * Orchestration seule : les seuils vivent dans les détecteurs (purs), la
- * résolution des règles dans le domaine, les filtres d'historique dans
- * l'adaptateur. Ce service ne fait que **relier** — c'est ce qui le garde court
- * et testable à ports mockés.
+ * L'évaluation elle-même — résolution des règles, historique, détecteurs — vit
+ * dans `EvaluateBasket`, partagée avec le contrôle de panier. Ce service porte ce
+ * qui n'appartient qu'à la commande passée : le journal, et les canaux.
  *
  * Deux portes en tête, dans cet ordre : pas de société → rien à surveiller ;
  * société non active → personne pour agir sur l'alerte.
@@ -30,11 +20,8 @@ import { AlertChannels } from "../../domain/ports/alert-channels.js";
 @Injectable()
 export class EvaluateOrderAlerts {
   constructor(
-    private readonly rules: AlertRulesStore,
-    private readonly overrides: AccountAlertOverridesStore,
     private readonly orders: EvaluatedOrderReader,
-    private readonly history: AccountOrderHistoryReader,
-    private readonly norms: ProductNormReader,
+    private readonly basket: EvaluateBasket,
     private readonly journal: AccountAlertRepository,
     private readonly channels: AlertChannels,
     private readonly clock: Clock,
@@ -49,35 +36,18 @@ export class EvaluateOrderAlerts {
       return;
     }
 
-    const effective = activeRulesFor(
-      resolveAccountRules(
-        resolveGlobalRules(await this.rules.readAll()),
-        await this.overrides.readForCompany(order.companyId),
-      ),
-    );
-    if (effective.size === 0) {
-      return;
-    }
-
     const now = this.clock.now();
-    const skus = order.lines.map((line) => line.sku);
-    const [history, norms] = await Promise.all([
-      this.history.read({
-        companyId: order.companyId,
-        excludeOrderId: order.id,
-        skus,
-        windowDays: widestWindow(effective),
-        maxOrdersPerSku: MAX_BASELINE_ORDERS,
-        now,
-      }),
-      this.norms.read(skus),
-    ]);
-
-    const drafts = evaluateOrder({ lines: order.lines, norms, ...history }, effective);
+    const companyId = order.companyId;
+    const { drafts, rules } = await this.basket.evaluate({
+      companyId,
+      lines: order.lines,
+      excludeOrderId: order.id,
+      now,
+    });
     if (drafts.length === 0) {
       return;
     }
-    const companyId = order.companyId;
+
     // Le journal D'ABORD : il est inconditionnel, et c'est lui qui fait foi. Les
     // canaux ne sont que ce qu'on fait en plus — un e-mail perdu ne doit pas
     // emporter la trace.
@@ -90,7 +60,7 @@ export class EvaluateOrderAlerts {
         occurredAt: now,
       })),
     );
-    await this.channels.dispatch(drafts, effective, {
+    await this.channels.dispatch(drafts, rules, {
       companyId,
       companyName: order.companyName,
       orderNumber: order.orderNumber,
@@ -98,29 +68,3 @@ export class EvaluateOrderAlerts {
     });
   }
 }
-
-/**
- * Le plafond du contrat (`baselineOrders` ≤ 50). On lit large **une fois** plutôt
- * qu'au plus juste par règle : chaque détecteur retaille ensuite ce qui le
- * concerne, et une seule lecture sert toutes les règles.
- */
-const MAX_BASELINE_ORDERS = 50;
-
-/**
- * La fenêtre la plus large demandée par une règle active — on lit **une** fois
- * pour toutes les règles, et chacune retaille ensuite ce qui la concerne.
- *
- * Tous les types n'ont pas de fenêtre (`first_order` regarde tout l'historique) :
- * on prend le maximum de celles qui en déclarent une.
- */
-function widestWindow(rules: ReadonlyMap<AlertKind, AlertRule>): number {
-  let widest = MIN_WINDOW_DAYS;
-  for (const rule of rules.values()) {
-    if ("windowDays" in rule.params) {
-      widest = Math.max(widest, rule.params.windowDays);
-    }
-  }
-  return widest;
-}
-
-const MIN_WINDOW_DAYS = 30;

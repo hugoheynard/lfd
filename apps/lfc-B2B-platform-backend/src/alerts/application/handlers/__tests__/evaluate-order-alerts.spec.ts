@@ -9,6 +9,7 @@ import type { EvaluatedOrder } from "../../../domain/ports/evaluated-order.reade
 import type { AccountOrderHistory } from "../../../domain/ports/order-history.reader.js";
 import type { AlertDraft } from "../../../domain/evaluate-order.js";
 import type { AlertChannels } from "../../../domain/ports/alert-channels.js";
+import { EvaluateBasket } from "../evaluate-basket.service.js";
 import { EvaluateOrderAlerts } from "../evaluate-order-alerts.service.js";
 
 const NOW = new Date("2026-08-11T09:00:00.000Z");
@@ -33,17 +34,20 @@ function build(overrides: {
   const recorded: AlertToRecord[] = [];
   const readCalls: unknown[] = [];
   const dispatched: AlertDraft[] = [];
-  const service = new EvaluateOrderAlerts(
+  // L'évaluation (règles + historique + détecteurs) vit dans `EvaluateBasket` :
+  // on la construit pour de vrai avec les mêmes doubles, plutôt que de la
+  // doubler elle-même — c'est elle qui décide de la fenêtre et du nombre de
+  // lectures, et ce sont ces décisions-là que ces tests vérifient.
+  const basket = new EvaluateBasket(
     {
       readAll: () => Promise.resolve([...(overrides.stored ?? [])]),
-      save: () => Promise.resolve(),
+      save: () => Promise.resolve(true),
     },
     {
       readForCompany: () => Promise.resolve([...(overrides.accountOverrides ?? [])]),
       save: () => Promise.resolve(),
       clear: () => Promise.resolve(),
     },
-    { read: () => Promise.resolve(overrides.order === undefined ? ORDER : overrides.order) },
     {
       read: (input) => {
         readCalls.push(input);
@@ -56,6 +60,10 @@ function build(overrides: {
       },
     },
     { read: () => Promise.resolve(new Map() as AlertEvaluationContext["norms"]) },
+  );
+  const service = new EvaluateOrderAlerts(
+    { read: () => Promise.resolve(overrides.order === undefined ? ORDER : overrides.order) },
+    basket,
     {
       record: (alerts) => {
         recorded.push(...alerts);

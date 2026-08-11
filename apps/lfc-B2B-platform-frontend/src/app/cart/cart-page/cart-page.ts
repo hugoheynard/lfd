@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 
 import {
@@ -19,9 +26,20 @@ import { formatEurValue, PRODUCTS, productById } from '../../data/catalogue-seed
 import { CartService, type CartLine } from '../../data/cart.service';
 import { SavedBasketsService } from '../../data/saved-baskets.service';
 import { CheckoutPanel } from '../../orders/checkout-panel/checkout-panel';
+import { OrderPreflightService } from '../../orders/preflight.service';
 
 /** Combien de suggestions au maximum dans le carrousel. */
 const MAX_SUGGESTIONS = 8;
+
+/**
+ * Le temps qu'on laisse au client avant de contrôler son panier.
+ *
+ * Un stepper qu'on tient enfoncé émet une valeur par pression : sans ce délai,
+ * passer de 2 à 12 déclencherait dix contrôles, et l'avant-dernier pourrait
+ * répondre après le dernier — donc afficher un avertissement sur une quantité
+ * qui n'est plus à l'écran.
+ */
+const PREFLIGHT_DEBOUNCE_MS = 500;
 
 /**
  * Page **Panier** — le panier actif en pleine page (et non plus seulement le
@@ -50,10 +68,54 @@ export class CartPage {
   private readonly saved = inject(SavedBasketsService);
   private readonly context = inject(CommerceContextService);
   private readonly panelHost = inject(FoldPanelHostService);
+  private readonly preflight = inject(OrderPreflightService);
   private readonly router = inject(Router);
 
   protected readonly lines = this.cart.lines;
   protected readonly selected = this.context.selected;
+
+  /**
+   * Ce que la plateforme a à dire sur ce panier, **par SKU** — l'avertissement
+   * se colle sous la ligne concernée, donc il se range par elle.
+   */
+  protected readonly warnings = signal<ReadonlyMap<string, string>>(new Map());
+
+  constructor() {
+    // Le panier change (quantité, ligne retirée, établissement) → on recontrôle.
+    // Le nettoyage annule le contrôle en attente : c'est ce qui garantit qu'une
+    // réponse tardive ne peut pas parler d'un panier qui n'existe plus.
+    effect((onCleanup) => {
+      const company = this.selected();
+      const lines = this.cart.lines().map((line) => ({ sku: line.product.id, quantity: line.qty }));
+      if (company === null || lines.length === 0) {
+        this.warnings.set(new Map());
+        return;
+      }
+      const timer = setTimeout(
+        () => void this.checkBasket(company.id, lines),
+        PREFLIGHT_DEBOUNCE_MS,
+      );
+      onCleanup(() => clearTimeout(timer));
+    });
+  }
+
+  /**
+   * Un contrôle qui échoue ne dit **rien**. Un garde-fou est un service rendu,
+   * pas une obligation : afficher « le contrôle a échoué » sous une ligne de
+   * panier inquiéterait sur un panier parfaitement valide, et n'appellerait
+   * aucune action de la part du client.
+   */
+  private async checkBasket(
+    companyId: string,
+    lines: readonly { sku: string; quantity: number }[],
+  ): Promise<void> {
+    try {
+      const view = await this.preflight.check({ companyId, lines: [...lines] });
+      this.warnings.set(new Map(view.warnings.map((warning) => [warning.sku, warning.message])));
+    } catch {
+      this.warnings.set(new Map());
+    }
+  }
 
   /** On ne peut verrouiller/commander qu'avec un établissement et un panier non vide. */
   protected readonly canLock = computed(() => !this.cart.isEmpty() && this.selected() !== null);

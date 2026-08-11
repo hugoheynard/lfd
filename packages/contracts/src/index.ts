@@ -146,6 +146,12 @@ export type {
   SaveAlertRulePayload,
 } from "./account-alert-rule.js";
 export type { AlertFinding, AccountAlertView } from "./account-alert-finding.js";
+export { orderPreflightPayloadSchema, orderPreflightLineSchema } from "./order-preflight.js";
+export type {
+  OrderPreflightPayload,
+  OrderPreflightWarning,
+  OrderPreflightView,
+} from "./order-preflight.js";
 export type { StaffNotificationView, StaffNotificationsSummary } from "./staff-notification.js";
 export {
   accountAlertOverrideSchema,

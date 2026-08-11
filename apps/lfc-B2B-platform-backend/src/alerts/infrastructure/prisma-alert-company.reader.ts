@@ -17,4 +17,17 @@ export class PrismaAlertCompanyReader extends AlertCompanyReader {
     });
     return row !== null;
   }
+
+  /**
+   * Une seule requête pour les deux conditions : l'appartenance est portée par
+   * `memberships`, et le statut par la société — les demander séparément
+   * ouvrirait une fenêtre où l'une est vraie et l'autre plus.
+   */
+  async isActiveMember(userId: string, companyId: string): Promise<boolean> {
+    const row = await this.prisma.membership.findUnique({
+      where: { userId_companyId: { userId, companyId } },
+      select: { company: { select: { status: true } } },
+    });
+    return row?.company.status === "active";
+  }
 }
