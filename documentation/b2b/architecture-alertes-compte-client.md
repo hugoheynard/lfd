@@ -46,13 +46,23 @@ du compte.
 La quantité d'un SKU s'écarte de plus de `thresholdPercent` de sa moyenne sur ce
 compte.
 
-| Paramètre           | Défaut | Pourquoi                                                                                                    |
-| ------------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
-| `thresholdPercent`  | `50`   | Écart relatif. En dessous, c'est du bruit de commande.                                                      |
-| `direction`         | `both` | `up` \| `down` \| `both` — on veut savoir qu'il monte (opportunité) **et** qu'il baisse (signal de départ). |
-| `baselineOrders`    | `6`    | Les N dernières commandes **contenant ce SKU**, la commande courante exclue.                                |
-| `minBaselineOrders` | `3`    | En dessous, « la moyenne » n'est pas une moyenne — la règle se tait plutôt que de mentir.                   |
-| `minQuantity`       | `3`    | Plancher anti-bruit : 2 → 4 est un +100 % qui n'intéresse personne.                                         |
+| Paramètre           | Défaut          | Pourquoi                                                                                                    |
+| ------------------- | --------------- | ----------------------------------------------------------------------------------------------------------- |
+| `tiers`             | 200/100/50/25 % | L'écart déclencheur **par palier**, indexé sur la moyenne de ce compte pour ce SKU (§2.1).                  |
+| `direction`         | `both`          | `up` \| `down` \| `both` — on veut savoir qu'il monte (opportunité) **et** qu'il baisse (signal de départ). |
+| `baselineOrders`    | `6`             | Les N dernières commandes **contenant ce SKU**, la commande courante exclue.                                |
+| `minBaselineOrders` | `3`             | En dessous, « la moyenne » n'est pas une moyenne — la règle se tait plutôt que de mentir.                   |
+
+La **moyenne de ce compte pour ce SKU est la référence la plus adaptable dont on
+dispose** : elle sait, elle, que ce client-là prend ce produit-là à l'unité ou par
+palettes, là où une norme catalogue ne connaît qu'une moyenne d'usages qui n'ont
+rien à voir. C'est pour ça qu'elle a la priorité dès qu'elle existe, et que ses
+paliers sont **plus serrés** que ceux de l'aberration produit : à référence plus
+fine, même écart plus significatif.
+
+> Un ancien `minQuantity` (plancher plat sur la quantité) a disparu : les paliers
+> font le même travail, mais **par échelle** au lieu d'un seuil unique. Deux
+> boutons pour un seul métier, c'est un de trop.
 
 **La moyenne se calcule sur les commandes qui contiennent le SKU**, pas sur
 toutes. Un SKU absent d'une commande **n'est pas** un « 0 commandé » : sinon
@@ -74,7 +84,7 @@ comptes confondus.
 | `minSampleLines`             | `20`                   | Sous ce nombre de lignes observées, il n'y a pas de « norme » à invoquer.            |
 | `onlyWithoutAccountBaseline` | `true`                 | Le compte a sa propre moyenne ? Elle est plus fine, elle fait autorité — on se tait. |
 
-#### Le seuil est une **échelle**, pas un nombre
+### 2.1 Le seuil est une **échelle**, pas un nombre — pour les deux règles
 
 Un pourcentage unique ne peut pas couvrir les deux bouts du catalogue. Sur un
 produit qu'on prend à l'unité, passer de 1 à 5 (+400 %) n'a rien d'anormal ; sur
@@ -85,25 +95,25 @@ C'est de la **donnée**, pas une formule cachée — on veut pouvoir la lire et 
 corriger à l'écran, et elle se règle par tâtonnement une fois qu'on voit ce que
 les alertes disent vraiment :
 
-| Norme du produit | Écart déclencheur |
-| ---------------- | ----------------- |
-| jusqu'à 2        | 400 %             |
-| jusqu'à 10       | 200 %             |
-| jusqu'à 50       | 80 %              |
-| au-delà          | 30 %              |
+| Référence  | `quantity_drift`<br/>(sa moyenne pour ce SKU) | `quantity_outlier`<br/>(la norme du produit) |
+| ---------- | --------------------------------------------- | -------------------------------------------- |
+| jusqu'à 2  | 200 %                                         | 400 %                                        |
+| jusqu'à 10 | 100 %                                         | 200 %                                        |
+| jusqu'à 50 | 50 %                                          | 80 %                                         |
+| au-delà    | 25 %                                          | 30 %                                         |
 
-Le palier se choisit sur la **norme du produit**, pas sur la quantité commandée :
-c'est la norme qui dit si l'on est sur un produit à l'unité ou à la centaine.
+Le palier se choisit sur la **référence**, jamais sur la quantité commandée :
+c'est la référence qui dit si l'on est sur un usage à l'unité ou à la centaine.
+Et les deux colonnes ne sont pas les mêmes parce que les deux références ne se
+valent pas — voir §2.
 
 Deux invariants tenus par le contrat (`alertThresholdTiersSchema`) : les bornes
 sont **strictement croissantes**, et le **dernier palier est ouvert**. Sans ce
 dernier, une norme au-dessus du plus haut seuil ne serait couverte par rien — et
 la règle se tairait précisément sur les plus gros volumes, ceux qui coûtent.
 
-> **Candidat au même traitement : `quantity_drift`.** Le problème y est le même —
-> ±50 % ne veut pas dire la même chose à 1 et à 100 — mais son `minQuantity`
-> l'atténue déjà. On y passera à l'échelle **quand les alertes réelles le
-> montreront**, pas avant.
+Les deux invariants et l'éditeur d'échelle sont **partagés** — c'est le second
+usage réel qui les a justifiés, pas une symétrie décidée d'avance.
 
 Ce dernier paramètre est ce qui empêche les deux règles de crier ensemble pour un
 même écart. Décoché, l'écran de réglages le dit là où on le décoche.

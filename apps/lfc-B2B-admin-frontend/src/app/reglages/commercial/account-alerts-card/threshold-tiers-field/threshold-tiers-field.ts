@@ -6,6 +6,10 @@ import type { AlertThresholdTier } from '@lfd/contracts';
  * L'échelle des **paliers de seuil** : « jusqu'à N habituellement commandés,
  * alerter au-delà de X % d'écart ».
  *
+ * Servie par les **deux** types qui comparent une quantité à une référence.
+ * Seule la référence change — la moyenne du compte pour ce SKU, ou la norme du
+ * produit tous comptes confondus — et c'est `baselineLabel` qui la nomme.
+ *
  * Un pourcentage unique ne peut pas couvrir les deux bouts du catalogue : ×5 sur
  * un produit pris à l'unité n'est pas un incident, +30 % sur un produit pris par
  * 100 en est un. L'échelle rend ça **réglable et lisible**, au lieu de le cacher
@@ -24,6 +28,13 @@ import type { AlertThresholdTier } from '@lfd/contracts';
 })
 export class ThresholdTiersField {
   readonly tiers = input.required<readonly AlertThresholdTier[]>();
+  /**
+   * Comment s'appelle la référence sur laquelle le palier se choisit — « sa
+   * moyenne pour ce produit » ou « la norme du produit ». L'éditeur est le même,
+   * la référence ne l'est pas, et une échelle dont on ne sait pas de quoi elle
+   * parle ne se règle pas.
+   */
+  readonly baselineLabel = input('la norme');
   readonly disabled = input(false);
   readonly tiersChange = output<AlertThresholdTier[]>();
 

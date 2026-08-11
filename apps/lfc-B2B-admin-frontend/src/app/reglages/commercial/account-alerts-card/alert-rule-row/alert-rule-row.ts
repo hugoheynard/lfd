@@ -105,6 +105,23 @@ export class AlertRuleRow {
     return params.kind === 'product.quantity_outlier' ? params : null;
   });
 
+  /**
+   * L'échelle de seuils du type courant, ou `null`. Deux types en portent une —
+   * l'écart au compte et l'aberration produit — et l'éditeur est le même : seule
+   * change la **référence** sur laquelle le palier se choisit, que
+   * `baselineLabel` nomme.
+   */
+  protected readonly tiers = computed<readonly AlertThresholdTier[] | null>(() => {
+    const params = this.draft().params;
+    return params.kind === 'product.first_order' ? null : params.tiers;
+  });
+
+  protected readonly baselineLabel = computed(() =>
+    this.draft().params.kind === 'product.quantity_drift'
+      ? 'sa moyenne pour ce produit'
+      : 'la norme du produit',
+  );
+
   protected readonly firstOrderMinimum = computed<number | null>(() => {
     const params = this.draft().params;
     return params.kind === 'product.first_order' ? params.minPreviousOrders : null;
@@ -155,9 +172,9 @@ export class AlertRuleRow {
 
   protected setTiers(tiers: AlertThresholdTier[]): void {
     this.draft.update((rule) =>
-      rule.params.kind === 'product.quantity_outlier'
-        ? { ...rule, params: { ...rule.params, tiers } }
-        : rule,
+      rule.params.kind === 'product.first_order'
+        ? rule
+        : { ...rule, params: { ...rule.params, tiers } },
     );
   }
 
@@ -188,7 +205,7 @@ export class AlertRuleRow {
 }
 
 /** Les champs numériques du type « écart » — nommés pour éviter un `switch`. */
-type DriftNumberField = 'thresholdPercent' | 'baselineOrders' | 'minBaselineOrders' | 'minQuantity';
+type DriftNumberField = 'baselineOrders' | 'minBaselineOrders';
 
 /** Idem pour le type « aberration produit ». */
 type OutlierNumberField = 'windowDays' | 'minSampleLines';

@@ -11,9 +11,9 @@ import { z } from "zod";
  * canaux, on/off). Ajouter un type coûte un fichier de détecteur ; ajouter un
  * seuil coûte une ligne en base.
  *
- * Les **paramètres sont une union discriminée par le type** : `thresholdPercent`
- * n'a aucun sens pour « produit jamais pris », et un objet fourre-tout aurait
- * laissé les deux détecteurs lire des champs qui ne les concernent pas.
+ * Les **paramètres sont une union discriminée par le type** : une échelle de
+ * seuils n'a aucun sens pour « produit jamais pris », et un objet fourre-tout
+ * aurait laissé chaque détecteur lire des champs qui ne le concernent pas.
  */
 
 /** Les types de détection connus. Ajouter une valeur = écrire son détecteur. */
@@ -47,63 +47,6 @@ export type AlertDelivery = z.infer<typeof alertDeliverySchema>;
 export const driftDirectionSchema = z.enum(["up", "down", "both"]);
 export type DriftDirection = z.infer<typeof driftDirectionSchema>;
 
-/**
- * `product.first_order` — un SKU absent de **toutes** les commandes antérieures
- * du compte.
- *
- * `minPreviousOrders` existe pour une raison précise : sur la **toute première**
- * commande d'un compte, *tout* est nouveau. Sans plancher, une commande de 20
- * lignes produit 20 alertes, donc zéro signal.
- */
-export const firstOrderParamsSchema = z.object({
-  kind: z.literal("product.first_order"),
-  minPreviousOrders: z.number().int().min(1).max(20),
-});
-
-/**
- * `product.quantity_drift` — la quantité d'un SKU s'écarte de sa moyenne sur ce
- * compte.
- *
- * ⚠️ La moyenne se calcule sur les commandes qui **contiennent** le SKU, pas sur
- * toutes : un SKU absent n'est pas un « 0 commandé », sinon chaque commande
- * lèverait une alerte de chute pour tout le catalogue non commandé. Corollaire
- * assumé : **cette règle ne détecte pas un arrêt** de produit — il y faudra un
- * type piloté par le temps.
- */
-export const quantityDriftParamsSchema = z
-  .object({
-    kind: z.literal("product.quantity_drift"),
-    /** Écart relatif déclencheur, en %. En dessous, c'est du bruit de commande. */
-    thresholdPercent: z.number().int().min(5).max(1000),
-    direction: driftDirectionSchema,
-    /** Les N dernières commandes contenant le SKU, la commande courante exclue. */
-    baselineOrders: z.number().int().min(2).max(50),
-    /** En dessous, « la moyenne » n'en est pas une : la règle se tait. */
-    minBaselineOrders: z.number().int().min(1).max(50),
-    /** Plancher anti-bruit : 2 → 4 est un +100 % qui n'intéresse personne. */
-    minQuantity: z.number().int().min(1).max(10_000),
-  })
-  .refine((p) => p.minBaselineOrders <= p.baselineOrders, {
-    message: "minBaselineOrders ne peut pas dépasser baselineOrders",
-    path: ["minBaselineOrders"],
-  });
-
-/**
- * `product.quantity_outlier` — une quantité **aberrante pour ce produit**,
- * mesurée sur l'ensemble des comptes.
- *
- * C'est le pendant de `quantity_drift` pour le cas où celle-ci est structurellement
- * aveugle : une **première commande** n'a aucun historique de compte, donc aucune
- * moyenne à laquelle se comparer — et c'est précisément là qu'une faute de frappe
- * (5 kg tapés 500) passe sans que rien ne bronche. On change alors de référence :
- * ce n'est plus « ce que ce client prend d'habitude » mais « ce qu'on prend
- * habituellement de ce produit ».
- *
- * `onlyWithoutAccountBaseline` (vrai par défaut) évite que les deux règles se
- * déclenchent ensemble : tant que le compte a sa propre moyenne, c'est elle qui
- * fait autorité — elle est plus fine. La norme produit prend le relais quand elle
- * manque.
- */
 /**
  * Un **palier de seuil** : jusqu'à quelle norme il s'applique, et quel écart y
  * déclenche.
@@ -158,6 +101,65 @@ export const alertThresholdTiersSchema = z
     }
   });
 
+/**
+ * `product.first_order` — un SKU absent de **toutes** les commandes antérieures
+ * du compte.
+ *
+ * `minPreviousOrders` existe pour une raison précise : sur la **toute première**
+ * commande d'un compte, *tout* est nouveau. Sans plancher, une commande de 20
+ * lignes produit 20 alertes, donc zéro signal.
+ */
+export const firstOrderParamsSchema = z.object({
+  kind: z.literal("product.first_order"),
+  minPreviousOrders: z.number().int().min(1).max(20),
+});
+
+/**
+ * `product.quantity_drift` — la quantité d'un SKU s'écarte de sa moyenne sur ce
+ * compte.
+ *
+ * ⚠️ La moyenne se calcule sur les commandes qui **contiennent** le SKU, pas sur
+ * toutes : un SKU absent n'est pas un « 0 commandé », sinon chaque commande
+ * lèverait une alerte de chute pour tout le catalogue non commandé. Corollaire
+ * assumé : **cette règle ne détecte pas un arrêt** de produit — il y faudra un
+ * type piloté par le temps.
+ */
+export const quantityDriftParamsSchema = z
+  .object({
+    kind: z.literal("product.quantity_drift"),
+    /**
+     * L'écart déclencheur **par palier**, indexé sur la moyenne **de ce compte
+     * pour ce SKU** — la référence la plus fine dont on dispose. Elle sait, elle,
+     * que ce client-là prend ce produit-là à l'unité ou par palettes.
+     */
+    tiers: alertThresholdTiersSchema,
+    direction: driftDirectionSchema,
+    /** Les N dernières commandes contenant le SKU, la commande courante exclue. */
+    baselineOrders: z.number().int().min(2).max(50),
+    /** En dessous, « la moyenne » n'en est pas une : la règle se tait. */
+    minBaselineOrders: z.number().int().min(1).max(50),
+  })
+  .refine((p) => p.minBaselineOrders <= p.baselineOrders, {
+    message: "minBaselineOrders ne peut pas dépasser baselineOrders",
+    path: ["minBaselineOrders"],
+  });
+
+/**
+ * `product.quantity_outlier` — une quantité **aberrante pour ce produit**,
+ * mesurée sur l'ensemble des comptes.
+ *
+ * C'est le pendant de `quantity_drift` pour le cas où celle-ci est structurellement
+ * aveugle : une **première commande** n'a aucun historique de compte, donc aucune
+ * moyenne à laquelle se comparer — et c'est précisément là qu'une faute de frappe
+ * (5 kg tapés 500) passe sans que rien ne bronche. On change alors de référence :
+ * ce n'est plus « ce que ce client prend d'habitude » mais « ce qu'on prend
+ * habituellement de ce produit ».
+ *
+ * `onlyWithoutAccountBaseline` (vrai par défaut) évite que les deux règles se
+ * déclenchent ensemble : tant que le compte a sa propre moyenne, c'est elle qui
+ * fait autorité — elle est plus fine. La norme produit prend le relais quand elle
+ * manque.
+ */
 export const quantityOutlierParamsSchema = z.object({
   kind: z.literal("product.quantity_outlier"),
   /**
@@ -239,11 +241,18 @@ export const ALERT_KINDS: Readonly<Record<AlertKind, AlertKindDefinition>> = {
       enabled: true,
       params: {
         kind: "product.quantity_drift",
-        thresholdPercent: 50,
+        // Plus serrés que ceux de l'aberration produit : la moyenne du compte
+        // pour CE SKU est une référence bien plus fine qu'une norme catalogue,
+        // donc un même écart y est bien plus significatif.
+        tiers: [
+          { upToQuantity: 2, thresholdPercent: 200 },
+          { upToQuantity: 10, thresholdPercent: 100 },
+          { upToQuantity: 50, thresholdPercent: 50 },
+          { upToQuantity: null, thresholdPercent: 25 },
+        ],
         direction: "both",
         baselineOrders: 6,
         minBaselineOrders: 3,
-        minQuantity: 3,
       },
       delivery: { staffInApp: true, staffEmail: false, customerVisible: false },
     },

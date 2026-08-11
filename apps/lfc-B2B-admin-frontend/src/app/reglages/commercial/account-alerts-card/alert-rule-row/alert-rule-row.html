@@ -32,14 +32,6 @@
       }
 
       @if (drift(); as params) {
-        <fold-number-input
-          label="Écart déclencheur (%)"
-          hint="En dessous, c'est du bruit de commande."
-          [min]="5"
-          [value]="params.thresholdPercent"
-          [disabled]="busy()"
-          (valueChange)="setDriftNumber('thresholdPercent', $event)"
-        />
         <fold-select
           label="Sens surveillé"
           [value]="params.direction"
@@ -70,14 +62,6 @@
           [disabled]="busy()"
           (valueChange)="setDriftNumber('minBaselineOrders', $event)"
         />
-        <fold-number-input
-          label="Quantité plancher"
-          hint="2 → 4 est un +100 % qui n'intéresse personne."
-          [min]="1"
-          [value]="params.minQuantity"
-          [disabled]="busy()"
-          (valueChange)="setDriftNumber('minQuantity', $event)"
-        />
       }
       @if (outlier(); as params) {
         <fold-number-input
@@ -105,12 +89,16 @@
       }
     </div>
 
-    @if (outlier(); as params) {
+    @if (tiers(); as scale) {
       <app-threshold-tiers-field
-        [tiers]="params.tiers"
+        [tiers]="scale"
+        [baselineLabel]="baselineLabel()"
         [disabled]="busy()"
         (tiersChange)="setTiers($event)"
       />
+    }
+
+    @if (outlier(); as params) {
       @if (!params.onlyWithoutAccountBaseline) {
         <p class="ar-warn">
           Décoché, ce type se déclenche <strong>aussi</strong> sur les comptes qui ont déjà leur

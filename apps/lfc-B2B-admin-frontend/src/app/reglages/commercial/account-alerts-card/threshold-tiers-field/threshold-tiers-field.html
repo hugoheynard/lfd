@@ -1,8 +1,8 @@
 <div class="tt-field">
   <p class="tt-title">
-    Écart déclencheur, par palier
+    Écart déclencheur, par palier de {{ baselineLabel() }}
     <fold-info
-      text="Le seuil descend quand la norme monte : ×5 sur un produit pris à l'unité n'est pas un incident, +30 % sur un produit pris par 100 en est un."
+      text="Le seuil descend quand la référence monte : ×5 sur un produit pris à l'unité n'est pas un incident, +30 % sur un produit pris par 100 en est un."
       label="Pourquoi des paliers"
     />
   </p>
@@ -10,7 +10,7 @@
   @for (tier of bounded(); track $index) {
     <div class="tt-row">
       <fold-number-input
-        label="Jusqu'à (quantité habituelle)"
+        label="Jusqu'à (quantité)"
         size="sm"
         [min]="1"
         [value]="tier.upToQuantity"
