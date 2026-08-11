@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
 import type { PortfolioMetricsView } from '@lfd/contracts';
@@ -20,7 +19,7 @@ import type { PortfolioMetricsView } from '@lfd/contracts';
 @Component({
   selector: 'app-portfolio-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent, RouterLink],
+  imports: [FoldIconComponent],
   templateUrl: './portfolio-bar.html',
   styleUrl: './portfolio-bar.scss',
 })

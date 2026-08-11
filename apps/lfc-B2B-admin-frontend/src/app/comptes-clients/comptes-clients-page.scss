@@ -4,47 +4,63 @@
   overflow-y: auto;
 }
 
+/* Un rythme vertical unique : c'est l'écart CONSTANT entre les blocs qui fait
+   qu'un écran paraît tenu, bien plus que n'importe quel effet. */
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-lg, 1.5rem);
-  padding: var(--fold-space-lg, 1.5rem);
-  max-width: 72rem;
+  gap: var(--fold-space-xl);
+  padding: var(--fold-space-xl) var(--fold-space-lg) var(--fold-space-2xl);
+  max-width: 78rem;
 }
 
-// La référence ouvre la fiche détail.
+// La référence ouvre la fiche détail. Chiffres tabulaires : une colonne de
+// références qui ne s'aligne pas se lit comme du texte, pas comme une clé.
 .ref-link {
   color: var(--fold-color-primary);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   text-decoration: none;
 }
 .ref-link:hover {
   text-decoration: underline;
 }
 
+/* L'en-tête se termine par un filet plutôt que par du vide : la page a un
+   sommet net, et la barre de mesures commence visiblement après lui. */
 .page-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--fold-space-md, 1rem);
+  gap: var(--fold-space-lg);
+  padding-bottom: var(--fold-space-lg);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
 }
 
+/* Les files au-dessus de l'action, pour ne pas lui disputer la ligne. */
 .head-right {
   display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm, 0.5rem);
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
 }
 
 h1 {
   margin: 0;
-  font-size: 1.4rem;
+  /* Un cran au-dessus du reste, et un chouïa resserré : un grand titre à
+     interlettrage normal paraît lâche. */
+  font-size: 1.75rem;
   font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
 .subtitle {
-  margin: 0.25rem 0 0;
+  margin: var(--fold-space-xs) 0 0;
+  max-width: 46ch;
   color: var(--fold-color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--fold-text-sm);
+  line-height: 1.45;
 }
 
 .state {
@@ -99,22 +115,33 @@ h1 {
 }
 
 /* Le filtre par statut et la recherche répondent à deux questions différentes :
-   ils partagent la ligne, pas le rôle. */
+   ils partagent la ligne, pas le rôle.
+   Posée sur une surface creuse, la barre d'outils se lit comme le bandeau DE la
+   table plutôt que comme deux contrôles qui flottent au-dessus d'elle. */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-surface-sunken);
 }
 
 .toolbar .search {
-  flex: 1 1 16rem;
-  max-width: 26rem;
+  flex: 0 1 22rem;
 }
 
 .result-count {
-  margin: var(--fold-space-sm) 0 0;
+  margin: calc(-1 * var(--fold-space-md)) 0 0;
+}
+
+/* Le paginator termine le bloc de table : collé à elle, pas flottant au milieu
+   du rythme de la page. */
+.pager {
+  margin-top: calc(-1 * var(--fold-space-md));
 }
 
 .owner-none {

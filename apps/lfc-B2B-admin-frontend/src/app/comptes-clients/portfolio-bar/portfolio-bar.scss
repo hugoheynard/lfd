@@ -2,58 +2,103 @@
   display: block;
 }
 
+/**
+ * UNE surface, pas trois cartes.
+ *
+ * Les trois chiffres sont trois vues d'un même sujet — l'état du portefeuille.
+ * Trois boîtes bordées les font lire comme trois sujets sans rapport ; une
+ * surface continue avec des séparateurs fins les rend comme ce qu'ils sont, et
+ * c'est ce qui fait la différence entre un tableau de bord et un empilement de
+ * widgets.
+ */
 .pb {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: var(--fold-space-md);
-}
-
-.pb-tile {
-  padding: var(--fold-space-md);
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   border: 1px solid var(--fold-color-border-subtle);
-  border-radius: var(--fold-radius-md);
+  border-radius: var(--fold-radius-lg);
   background: var(--fold-color-surface-card);
+  box-shadow: var(--fold-shadow-sm);
+  overflow: hidden;
 }
 
-/* Ce qui demande une action porte le liseré ; le reste est de la mesure. */
-.pb-tile--alert {
-  border-left: 3px solid var(--fold-color-alert);
+/* Trois rangées : intitulé, mesure, note. Les notes s'alignent ainsi d'une
+   tuile à l'autre même quand la mesure du milieu est plus haute. */
+.pb-tile {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: var(--fold-space-lg);
 }
 
+/* Le séparateur est un filet, pas une bordure de carte : il sépare sans
+   découper. Il saute sur la première colonne de chaque ligne du grid. */
+.pb-tile + .pb-tile::before {
+  content: '';
+  position: absolute;
+  inset-block: var(--fold-space-md);
+  inset-inline-start: 0;
+  width: 1px;
+  background: var(--fold-color-border-subtle);
+}
+
+/* Pas de liseré en plus : le NOMBRE est déjà rouge, et deux marqueurs pour le
+   même fait ne le rendent pas plus urgent — ils encombrent. La classe reste
+   portée par le gabarit, elle sert d'ancre si un état plus fort devait exister. */
+
+/* Petites capitales espacées : un intitulé de mesure ne se lit pas comme une
+   phrase, il s'identifie d'un coup d'œil. */
 .pb-label {
   margin: 0;
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
   color: var(--fold-color-text-muted);
 }
 
 .pb-value {
-  margin: 0.15rem 0 0;
-  font-size: 1.7rem;
+  margin: var(--fold-space-sm) 0 0;
+  font-size: 2rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .pb-note {
-  margin: 0.2rem 0 0;
+  margin: var(--fold-space-sm) 0 0;
   font-size: var(--fold-text-xs);
+  line-height: 1.4;
   color: var(--fold-color-text-muted);
 }
 
 .pb-pulse {
   display: flex;
-  align-items: baseline;
-  gap: var(--fold-space-md);
-  margin-top: 0.15rem;
+  align-items: flex-start;
+  gap: var(--fold-space-lg);
+  margin-top: var(--fold-space-sm);
 }
 
 .pb-pulse-part {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pb-pulse-value {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 1.3rem;
+  gap: 0.2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.pb-pulse-caption {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+  white-space: nowrap;
 }
 
 /* La couleur ne porte JAMAIS seule : chaque part a son icône et son intitulé. */
@@ -67,6 +112,7 @@
   color: var(--fold-color-alert-text);
 }
 
-.pb-link {
-  color: inherit;
+/* Le « +3 » de la note reprend le vert, en petit : c'est le même fait. */
+.pb-note .pb-up {
+  font-weight: 700;
 }

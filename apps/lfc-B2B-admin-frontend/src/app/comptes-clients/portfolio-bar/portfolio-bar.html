@@ -7,37 +7,50 @@
            c'est beaucoup. -->
       <p class="pb-note">
         @if (m.activatedLast30d > 0) {
-          <span class="pb-up">+{{ m.activatedLast30d }}</span> sur 30 jours
+          <span class="pb-up">+{{ m.activatedLast30d }}</span> entrés sur 30 jours
         } @else {
           Aucune entrée sur 30 jours
         }
       </p>
     </article>
 
-    <article class="pb-tile pb-tile--pulse">
+    <article class="pb-tile">
       <p class="pb-label">Pouls du portefeuille</p>
+      <!-- Chaque part porte son intitulé EN CLAIR. Une couleur et une icône de
+           14 px n'apprennent rien à qui n'a pas déjà la légende en tête, et une
+           infobulle au survol n'est pas un libellé. -->
       <div class="pb-pulse">
-        <span class="pb-pulse-part pb-up" title="Comptes en croissance">
-          <fold-icon name="chevron-up" [size]="14" />{{ m.pulse.growing }}
+        <span class="pb-pulse-part">
+          <span class="pb-pulse-value pb-up">
+            <fold-icon name="chevron-up" [size]="14" />{{ m.pulse.growing }}
+          </span>
+          <span class="pb-pulse-caption">en hausse</span>
         </span>
-        <span class="pb-pulse-part pb-flat" title="Comptes stables">
-          <fold-icon name="minus" [size]="14" />{{ m.pulse.flat }}
+        <span class="pb-pulse-part">
+          <span class="pb-pulse-value pb-flat">
+            <fold-icon name="minus" [size]="14" />{{ m.pulse.flat }}
+          </span>
+          <span class="pb-pulse-caption">stables</span>
         </span>
-        <span class="pb-pulse-part pb-down" title="Comptes en baisse">
-          <fold-icon name="chevron-down" [size]="14" />{{ m.pulse.shrinking }}
+        <span class="pb-pulse-part">
+          <span class="pb-pulse-value pb-down">
+            <fold-icon name="chevron-down" [size]="14" />{{ m.pulse.shrinking }}
+          </span>
+          <span class="pb-pulse-caption">en baisse</span>
         </span>
       </div>
       <p class="pb-note">
-        Sur 30 jours, {{ measured() }} compte{{ measured() > 1 ? 's' : '' }} ayant commandé
+        30 jours contre les 30 précédents · {{ measured() }} compte{{ measured() > 1 ? 's' : '' }}
+        ayant commandé
       </p>
     </article>
 
-    <article class="pb-tile" [class.pb-tile--alert]="m.failedPayments > 0">
+    <article class="pb-tile">
       <p class="pb-label">Encaissements en échec</p>
-      <p class="pb-value">{{ m.failedPayments }}</p>
+      <p class="pb-value" [class.pb-down]="m.failedPayments > 0">{{ m.failedPayments }}</p>
       <p class="pb-note">
         @if (m.failedPayments > 0) {
-          <a routerLink="/commandes" class="pb-link">La commande est passée, l’argent non</a>
+          Commandes passées, argent non encaissé — à relancer
         } @else {
           Rien à relancer
         }
