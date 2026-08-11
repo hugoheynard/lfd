@@ -10,7 +10,12 @@ import {
   UpdateCompanyContactCommand,
   UpdatePrimaryContactCommand,
 } from "../application/commands/contact-commands.js";
-import { contactPayload, type ContactPayload } from "./payloads.js";
+import {
+  additionalContactPayload,
+  contactPayload,
+  type AdditionalContactPayload,
+  type ContactPayload,
+} from "./payloads.js";
 
 /** Ce que l'ajout d'un contact renvoie : son identifiant. */
 export interface CreatedContactResponse {
@@ -48,10 +53,10 @@ export class CompanyContactsController {
   async addContact(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
-    @Body(new ZodBody(contactPayload)) payload: ContactPayload,
+    @Body(new ZodBody(additionalContactPayload)) payload: AdditionalContactPayload,
   ): Promise<CreatedContactResponse> {
     const id = await this.commands.execute<AddCompanyContactCommand, string>(
-      new AddCompanyContactCommand(user.userId, companyId, payload),
+      new AddCompanyContactCommand(user.userId, companyId, payload, payload.role),
     );
     return { id };
   }
@@ -62,10 +67,10 @@ export class CompanyContactsController {
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
     @Param("contactId") contactId: string,
-    @Body(new ZodBody(contactPayload)) payload: ContactPayload,
+    @Body(new ZodBody(additionalContactPayload)) payload: AdditionalContactPayload,
   ): Promise<void> {
     await this.commands.execute<UpdateCompanyContactCommand, void>(
-      new UpdateCompanyContactCommand(user.userId, companyId, contactId, payload),
+      new UpdateCompanyContactCommand(user.userId, companyId, contactId, payload, payload.role),
     );
   }
 

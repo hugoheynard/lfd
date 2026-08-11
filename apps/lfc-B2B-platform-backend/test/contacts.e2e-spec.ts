@@ -19,6 +19,9 @@ const CONTACT = {
   fonction: "Responsable achats",
   email: "achats@pqmarais.fr",
   phone: "06 12 88 54 30",
+  // Le rôle est exigé à la création : noter un interlocuteur sans dire ce qu'il
+  // fait produit une ligne dont personne ne saura quoi faire six mois plus tard.
+  role: "orders",
 };
 
 let ctx: E2eContext;

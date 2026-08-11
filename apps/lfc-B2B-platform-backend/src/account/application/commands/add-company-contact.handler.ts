@@ -18,6 +18,10 @@ export class AddCompanyContactHandler implements ICommandHandler<AddCompanyConta
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
 
-    return this.contacts.add(command.companyId, ContactDetails.create(command.details));
+    return this.contacts.add(
+      command.companyId,
+      ContactDetails.create(command.details),
+      command.role,
+    );
   }
 }

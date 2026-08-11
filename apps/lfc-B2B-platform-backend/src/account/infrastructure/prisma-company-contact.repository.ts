@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { CompanyContactNotFoundError } from "../domain/errors/account-errors.js";
 import { CompanyContactRepository } from "../domain/ports/company-contact.repository.js";
+import type { AssignableRole } from "../domain/value-objects/company-role.js";
 import type { ContactDetails } from "../domain/value-objects/contact-details.js";
 
 /** Adaptateur Prisma des contacts additionnels. */
@@ -12,22 +13,27 @@ export class PrismaCompanyContactRepository extends CompanyContactRepository {
     super();
   }
 
-  async add(companyId: string, details: ContactDetails): Promise<string> {
+  async add(companyId: string, details: ContactDetails, role: AssignableRole): Promise<string> {
     const created = await this.prisma.companyContact.create({
-      data: { companyId, ...toRow(details) },
+      data: { companyId, ...toRow(details), role },
       select: { id: true },
     });
     return created.id;
   }
 
-  async update(companyId: string, contactId: string, details: ContactDetails): Promise<void> {
+  async update(
+    companyId: string,
+    contactId: string,
+    details: ContactDetails,
+    role: AssignableRole,
+  ): Promise<void> {
     // `updateMany` avec le mur DANS le `where` (id ET companyId) : une même
     // requête vérifie l'appartenance et écrit. `count === 0` distingue « pas à
     // cette entreprise » d'une écriture faite — un `update` sur l'id seul aurait
     // laissé modifier le contact d'une autre entreprise.
     const { count } = await this.prisma.companyContact.updateMany({
       where: { id: contactId, companyId },
-      data: toRow(details),
+      data: { ...toRow(details), role },
     });
     if (count === 0) {
       throw new CompanyContactNotFoundError(contactId);

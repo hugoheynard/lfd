@@ -1,3 +1,4 @@
+import type { AssignableRole } from "../../domain/value-objects/company-role.js";
 import type { ContactDetailsInput } from "../../domain/value-objects/contact-details.js";
 
 /**
@@ -20,6 +21,7 @@ export class AddContactByStaffCommand {
   constructor(
     readonly companyId: string,
     readonly details: ContactDetailsInput,
+    readonly role: AssignableRole,
   ) {}
 }
 
@@ -28,6 +30,7 @@ export class UpdateContactByStaffCommand {
     readonly companyId: string,
     readonly contactId: string,
     readonly details: ContactDetailsInput,
+    readonly role: AssignableRole,
   ) {}
 }
 

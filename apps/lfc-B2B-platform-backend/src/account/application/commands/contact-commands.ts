@@ -1,3 +1,4 @@
+import type { AssignableRole } from "../../domain/value-objects/company-role.js";
 import type { ContactDetailsInput } from "../../domain/value-objects/contact-details.js";
 
 /**
@@ -20,12 +21,13 @@ export class UpdatePrimaryContactCommand {
   ) {}
 }
 
-/** Ajoute un contact additionnel. */
+/** Ajoute un contact additionnel — son rôle avec, jamais après coup. */
 export class AddCompanyContactCommand {
   constructor(
     readonly actorUserId: string,
     readonly companyId: string,
     readonly details: ContactDetailsInput,
+    readonly role: AssignableRole,
   ) {}
 }
 
@@ -36,6 +38,7 @@ export class UpdateCompanyContactCommand {
     readonly companyId: string,
     readonly contactId: string,
     readonly details: ContactDetailsInput,
+    readonly role: AssignableRole,
   ) {}
 }
 

@@ -40,7 +40,11 @@ export class AddContactByStaffHandler implements ICommandHandler<AddContactBySta
   constructor(private readonly contacts: CompanyContactRepository) {}
 
   async execute(command: AddContactByStaffCommand): Promise<string> {
-    return await this.contacts.add(command.companyId, ContactDetails.create(command.details));
+    return await this.contacts.add(
+      command.companyId,
+      ContactDetails.create(command.details),
+      command.role,
+    );
   }
 }
 
@@ -56,6 +60,7 @@ export class UpdateContactByStaffHandler implements ICommandHandler<
       command.companyId,
       command.contactId,
       ContactDetails.create(command.details),
+      command.role,
     );
   }
 }

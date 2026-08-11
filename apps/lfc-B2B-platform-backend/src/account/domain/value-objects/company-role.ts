@@ -14,3 +14,11 @@
  * `CompanyStatus` pour le garde-fou de parité).
  */
 export type CompanyRole = "owner" | "admin" | "orders" | "billing";
+
+/**
+ * Les rôles qu'on **attribue**. `owner` en est exclu par le type, pas par une
+ * vérification : le détenteur n'est pas choisi, il est constaté — c'est celui
+ * dont l'adresse a ouvert le compte. Rendre l'erreur impossible à écrire vaut
+ * mieux que la rejeter à l'exécution.
+ */
+export type AssignableRole = Exclude<CompanyRole, "owner">;

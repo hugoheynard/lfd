@@ -1,3 +1,4 @@
+import { assignableRoleSchema } from "@lfd/contracts";
 import { z } from "zod";
 
 /**
@@ -59,6 +60,20 @@ export const contactPayload = z.object({
 });
 
 export type ContactPayload = z.infer<typeof contactPayload>;
+
+/**
+ * Un contact **additionnel** : les mêmes coordonnées, plus ce que la personne
+ * fait pour la société.
+ *
+ * Le rôle est obligatoire ici et absent du contact principal, parce que celui-ci
+ * est le **détenteur** — son rôle est `owner` par construction, et l'offrir au
+ * choix laisserait croire qu'une société peut en avoir deux, ou zéro.
+ */
+export const additionalContactPayload = contactPayload.extend({
+  role: assignableRoleSchema,
+});
+
+export type AdditionalContactPayload = z.infer<typeof additionalContactPayload>;
 
 /**
  * Création d'un compte **depuis l'admin** : l'identité de la société **et** son

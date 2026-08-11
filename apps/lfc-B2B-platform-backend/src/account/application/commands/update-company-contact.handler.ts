@@ -27,6 +27,7 @@ export class UpdateCompanyContactHandler implements ICommandHandler<
       command.companyId,
       command.contactId,
       ContactDetails.create(command.details),
+      command.role,
     );
   }
 }

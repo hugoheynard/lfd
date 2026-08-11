@@ -21,7 +21,12 @@ import {
   UpdatePrimaryContactByStaffCommand,
 } from "../application/commands/admin-contact-commands.js";
 import type { CreatedContactResponse } from "./company-contacts.controller.js";
-import { contactPayload, type ContactPayload } from "./payloads.js";
+import {
+  additionalContactPayload,
+  contactPayload,
+  type AdditionalContactPayload,
+  type ContactPayload,
+} from "./payloads.js";
 
 /**
  * Contacts d'une société, **côté staff** (Porte B).
@@ -52,10 +57,10 @@ export class AdminCompanyContactsController {
   @HttpCode(HttpStatus.CREATED)
   async add(
     @Param("companyId") companyId: string,
-    @Body(new ZodBody(contactPayload)) payload: ContactPayload,
+    @Body(new ZodBody(additionalContactPayload)) payload: AdditionalContactPayload,
   ): Promise<CreatedContactResponse> {
     const id = await this.commands.execute<AddContactByStaffCommand, string>(
-      new AddContactByStaffCommand(companyId, payload),
+      new AddContactByStaffCommand(companyId, payload, payload.role),
     );
     return { id };
   }
@@ -64,10 +69,10 @@ export class AdminCompanyContactsController {
   async update(
     @Param("companyId") companyId: string,
     @Param("contactId") contactId: string,
-    @Body(new ZodBody(contactPayload)) payload: ContactPayload,
+    @Body(new ZodBody(additionalContactPayload)) payload: AdditionalContactPayload,
   ): Promise<void> {
     await this.commands.execute<UpdateContactByStaffCommand, void>(
-      new UpdateContactByStaffCommand(companyId, contactId, payload),
+      new UpdateContactByStaffCommand(companyId, contactId, payload, payload.role),
     );
   }
 
