@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { PendingAlertsService } from '../../shared/alerts/pending-alerts.service';
 import { AdminCompaniesService } from '../admin-companies.service';
 import type { AdminCompany, CompanyStatus } from '../admin-company';
 import { ComptesClientsPage } from '../comptes-clients-page';
@@ -39,12 +40,19 @@ const COMPANIES: readonly AdminCompany[] = [
 ];
 
 /** Instancie la page avec un service qui renvoie `companies`, load() résolu. */
-async function setup(companies: readonly AdminCompany[] = COMPANIES): Promise<ComptesClientsPage> {
+async function setup(
+  companies: readonly AdminCompany[] = COMPANIES,
+  counts: Promise<Readonly<Record<string, number>>> = Promise.resolve({}),
+): Promise<ComptesClientsPage> {
   TestBed.configureTestingModule({
     providers: [
       {
         provide: AdminCompaniesService,
         useValue: { list: (): Promise<readonly AdminCompany[]> => Promise.resolve(companies) },
+      },
+      {
+        provide: PendingAlertsService,
+        useValue: { counts: () => counts } satisfies Pick<PendingAlertsService, 'counts'>,
       },
     ],
   });
@@ -106,6 +114,24 @@ describe('ComptesClientsPage', () => {
     page['onFilterChange']('active');
     page['onFilterChange']('bogus');
     expect(page['filter']()).toBe('active');
+  });
+
+  it('porte la pastille sur les seuls comptes qui ont des alertes en attente', async () => {
+    const page = await setup(COMPANIES, Promise.resolve({ '3': 2 }));
+
+    expect(page['pendingAlertsOf'](makeCompany('3', 'active'))).toBe(2);
+    // L'absence vaut zéro : le serveur n'envoie pas une ligne par compte pour
+    // dire « rien ».
+    expect(page['pendingAlertsOf'](makeCompany('1', 'pending'))).toBe(0);
+  });
+
+  it('affiche la liste même si le compte des alertes échoue', async () => {
+    // La pastille est un rappel, pas la liste. La faire tomber avec elle
+    // priverait le commercial de son écran de travail pour une décoration.
+    const page = await setup(COMPANIES, Promise.reject(new Error('hors service')));
+
+    expect(page['state']()).toBe('ready');
+    expect(page['pendingAlertsOf'](makeCompany('3', 'active'))).toBe(0);
   });
 
   it("contextualise l'état vide au segment actif", async () => {

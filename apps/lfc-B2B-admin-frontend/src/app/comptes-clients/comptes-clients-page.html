@@ -69,7 +69,21 @@
       </ng-template>
 
       <ng-template foldCell="raisonSociale" let-row>
-        <span class="raison">{{ row.raisonSociale }}</span>
+        <span class="raison">
+          {{ row.raisonSociale }}
+          <!-- La pastille mène DIRECTEMENT à l'onglet Alertes : sans ça, la
+               seule chose actionnable de la ligne demanderait deux clics et de
+               savoir où regarder. -->
+          @if (pendingAlertsOf(row); as pending) {
+            <a
+              class="alert-pill"
+              [routerLink]="['/comptes-clients', row.id, 'alertes']"
+              [title]="pending + ' alerte' + (pending > 1 ? 's' : '') + ' en attente'"
+            >
+              <fold-badge variant="warning" [content]="pending + ' à voir'" />
+            </a>
+          }
+        </span>
         @if (row.enseigne) {
           <span class="enseigne">{{ row.enseigne }}</span>
         }

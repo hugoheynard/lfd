@@ -78,8 +78,12 @@ h1 {
   white-space: nowrap;
 }
 
+/* `inline-flex` pour porter la pastille d'alertes à côté du nom ; l'enseigne,
+   elle, reste `block` et passe donc bien à la ligne. */
 .raison {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
   font-weight: 600;
 }
 
@@ -115,4 +119,8 @@ h1 {
 
 .owner-none {
   color: var(--fold-color-text-muted);
+}
+
+.alert-pill {
+  text-decoration: none;
 }

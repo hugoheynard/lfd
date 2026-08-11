@@ -351,10 +351,20 @@ Deux blocs :
    est un piège pour le prochain commercial).
 2. **Ce qui s'est déclenché.** Le journal du compte, acquittable.
 
-### Liste des comptes clients
+### Liste des comptes clients ✅
 
 Une pastille sur la ligne d'un compte qui a des alertes non acquittées. Sans ça,
 la feature n'existe que pour qui pense à ouvrir la fiche.
+
+Elle **mène directement à l'onglet Alertes** : la seule chose actionnable de la
+ligne ne doit pas demander deux clics et de savoir où regarder.
+
+Une lecture agrégée (`GET /admin/alerts/pending`), pas une par ligne — la liste
+est cross-tenant. Les comptes sans alerte en attente **ne figurent pas** dans la
+réponse : l'absence vaut zéro, et la charge reste proportionnelle à ce qui
+demande une action, pas au nombre de clients. Si ce compteur échoue, la liste
+s'affiche quand même : la pastille est un rappel, et faire tomber l'écran de
+travail du commercial pour une décoration serait un mauvais échange.
 
 ### Plateforme client → **un callout d'une ligne sous la ligne concernée** (tranché)
 

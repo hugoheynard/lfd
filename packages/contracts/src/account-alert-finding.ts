@@ -43,3 +43,13 @@ export interface AccountAlertView {
   /** Le `sub` staff qui l'a acquittée, ou `null`. */
   readonly acknowledgedBy: string | null;
 }
+
+/**
+ * Le nombre d'alertes **non acquittées** par société — la pastille de la liste
+ * des comptes.
+ *
+ * Un objet, pas une `Map` : ça traverse le fil. Les sociétés sans alerte en
+ * attente n'y figurent **pas** — un zéro n'a rien à transporter, et la liste des
+ * comptes est cross-tenant, donc potentiellement longue.
+ */
+export type PendingAlertCounts = Readonly<Record<string, number>>;

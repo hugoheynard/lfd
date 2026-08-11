@@ -10,6 +10,7 @@ import { DispatchAlertChannels } from "./application/handlers/dispatch-alert-cha
 import { EvaluateBasket } from "./application/handlers/evaluate-basket.service.js";
 import { EvaluateOrderAlerts } from "./application/handlers/evaluate-order-alerts.service.js";
 import { OnOrderPlacedEvaluateAlerts } from "./application/handlers/on-order-placed.handler.js";
+import { CountPendingAlertsHandler } from "./application/queries/count-pending-alerts.handler.js";
 import { GetAccountAlertRulesHandler } from "./application/queries/get-account-alert-rules.handler.js";
 import { ListAccountAlertsHandler } from "./application/queries/list-account-alerts.handler.js";
 import { ListAlertRulesHandler } from "./application/queries/list-alert-rules.handler.js";
@@ -82,6 +83,7 @@ import { PrismaProductNormStore } from "./infrastructure/prisma-product-norm.sto
     SaveAccountAlertOverrideHandler,
     ClearAccountAlertOverrideHandler,
     ListAccountAlertsHandler,
+    CountPendingAlertsHandler,
     AcknowledgeAlertHandler,
     RecomputeProductNormsHandler,
     PreflightOrderAlertsHandler,

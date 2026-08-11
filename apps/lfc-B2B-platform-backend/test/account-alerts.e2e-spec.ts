@@ -7,7 +7,12 @@
  * exclues, commande courante exclue), et que la médiane sort de `percentile_cont`
  * et non d'un tri en mémoire.
  */
-import { ALERT_KINDS, type AccountAlertView, type OrderPreflightView } from "@lfd/contracts";
+import {
+  ALERT_KINDS,
+  type AccountAlertView,
+  type OrderPreflightView,
+  type PendingAlertCounts,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
 import { CustomerRole, type CompanyStatus } from "../src/infra/database/client/client.js";
@@ -484,5 +489,47 @@ describe("le garde-fou du panier", () => {
     // Zéro friction : aucun compte, donc aucun historique. Ce n'est pas une
     // erreur — l'écran n'a rien à afficher, c'est tout.
     expect(view.warnings).toHaveLength(0);
+  });
+});
+
+describe("la pastille de la liste des comptes", () => {
+  async function pendingCounts(): Promise<PendingAlertCounts> {
+    return jsonBody<PendingAlertCounts>(await staff().get("/admin/alerts/pending").expect(200));
+  }
+
+  it("compte les alertes en attente par société", async () => {
+    const companyId = await seed();
+    await order(companyId, 3);
+    await orderSku(companyId, "VIE-002", 2);
+    await eventually(
+      () => alertsOf(companyId),
+      (found) => found.length > 0,
+    );
+
+    expect((await pendingCounts())[companyId]).toBe(1);
+  });
+
+  it("ne porte aucune ligne pour un compte sans alerte en attente", async () => {
+    const companyId = await seed();
+    await order(companyId, 3);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // L'absence vaut zéro : une ligne par compte pour dire « rien » ferait
+    // grossir la réponse avec le nombre de clients, pas avec le travail à faire.
+    expect(await pendingCounts()).not.toHaveProperty(companyId);
+  });
+
+  it("retombe à zéro dès que l'alerte est acquittée", async () => {
+    const companyId = await seed();
+    await order(companyId, 3);
+    await orderSku(companyId, "VIE-002", 2);
+    const alerts = await eventually(
+      () => alertsOf(companyId),
+      (found) => found.length > 0,
+    );
+
+    await staff().post(`/admin/alerts/${alerts[0]?.id}/acknowledge`).expect(204);
+
+    expect(await pendingCounts()).not.toHaveProperty(companyId);
   });
 });

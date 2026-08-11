@@ -14,6 +14,7 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
+import { PendingAlertsService } from '../shared/alerts/pending-alerts.service';
 import { AdminCompaniesService } from './admin-companies.service';
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-company';
 import { matchesCompanySearch } from './company-search';
@@ -68,6 +69,7 @@ function isFilterValue(value: string): value is FilterValue {
 })
 export class ComptesClientsPage {
   private readonly service = inject(AdminCompaniesService);
+  private readonly alerts = inject(PendingAlertsService);
   private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
@@ -75,6 +77,13 @@ export class ComptesClientsPage {
   protected readonly filter = signal<FilterValue>('all');
   /** Le terme cherché — société, SIRET, ou propriétaire de l'espace. */
   protected readonly search = signal('');
+  /**
+   * Les alertes qui attendent, par société. Vide tant qu'on ne sait pas — et
+   * vide aussi si la lecture échoue : la pastille est un **rappel**, pas la
+   * liste. La faire échouer avec elle priverait le commercial de son écran de
+   * travail pour une décoration.
+   */
+  protected readonly pendingAlerts = signal<Readonly<Record<string, number>>>({});
 
   /** Colonnes de la data-table — chaque `key` a son `<ng-template foldCell>`. */
   protected readonly columns: readonly FoldTableColumn[] = [
@@ -168,12 +177,21 @@ export class ComptesClientsPage {
 
   protected async load(): Promise<void> {
     this.state.set('loading');
+    // Les deux lectures partent ENSEMBLE : la seconde ne dépend pas de la
+    // première, et les enchaîner doublerait l'attente avant le premier pixel.
+    const alerts = this.alerts.counts().catch(() => ({}));
     try {
       this.companies.set(await this.service.list());
       this.state.set('ready');
     } catch {
       this.state.set('error');
     }
+    this.pendingAlerts.set(await alerts);
+  }
+
+  /** Combien d'alertes attendent sur ce compte — `0` s'il n'y en a aucune. */
+  protected pendingAlertsOf(company: AdminCompany): number {
+    return this.pendingAlerts()[company.id] ?? 0;
   }
 
   /** Applique le segment choisi (ignore une valeur inconnue). */
