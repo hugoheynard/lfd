@@ -71,10 +71,17 @@ export class AdminIdentitePanel {
   });
 
   constructor() {
-    // Préremplit à l'ouverture ; `data` est fixé et ne change plus.
+    // Préremplit à l'ouverture — **tous** les champs, y compris ceux du greffe.
+    // Ne semer que l'enseigne et la TVA affichait des champs vides devant des
+    // valeurs déjà enregistrées : le commercial croyait n'avoir rien saisi, et
+    // renvoyait des chaînes vides pour ce qui existait déjà.
     effect(() => {
-      this.enseigne.set(this.data().enseigne);
-      this.tvaIntracom.set(this.data().tvaIntracom);
+      const data = this.data();
+      this.enseigne.set(data.enseigne);
+      this.tvaIntracom.set(data.tvaIntracom);
+      this.raisonSociale.set(data.raisonSociale);
+      this.formeJuridique.set(data.formeJuridique);
+      this.siret.set(data.siret);
     });
   }
 

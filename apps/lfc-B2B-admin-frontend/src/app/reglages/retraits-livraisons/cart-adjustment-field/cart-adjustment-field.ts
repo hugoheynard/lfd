@@ -52,9 +52,7 @@ export class CartAdjustmentField {
         return;
       }
       this.mode.set(initial.mode);
-      this.amount.set(
-        initial.mode === 'percent' ? initial.bp / 100 : initial.cents / 100,
-      );
+      this.amount.set(initial.mode === 'percent' ? initial.bp / 100 : initial.cents / 100);
     });
   }
 

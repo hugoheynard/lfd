@@ -82,7 +82,11 @@ export class ZonePanel {
 
   /** Les préfixes valides (dédupliqués) — payload + gate de soumission. */
   protected readonly prefixes = computed(() => [
-    ...new Set(this.rows().filter(isRowValid).map((row) => row.value.trim())),
+    ...new Set(
+      this.rows()
+        .filter(isRowValid)
+        .map((row) => row.value.trim()),
+    ),
   ]);
 
   protected readonly isCreate = computed(() => (this.data()?.zone ?? null) === null);

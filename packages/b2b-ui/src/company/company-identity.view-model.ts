@@ -28,6 +28,16 @@ export interface CompanyIdentityView {
   readonly tvaIntracom: string;
   /** TVA requise par la forme juridique mais absente → zone à compléter. */
   readonly tvaMissing: boolean;
+  /**
+   * Les pièces d'**identité légale** qui manquent, nommées (« raison sociale »,
+   * « SIRET »…). Vide quand rien ne manque.
+   *
+   * Nommées et non comptées : « il manque 2 champs » oblige à chercher
+   * lesquels, et un rappel qui fait chercher ne rappelle rien. C'est le même
+   * inventaire que la synthèse du haut de page — répété là où l'on corrige,
+   * parce qu'entre les deux il y a tout l'écran.
+   */
+  readonly missingLegal: readonly string[];
   readonly statusLabel: string;
   readonly statusTone: CompanyBadgeTone;
   /**

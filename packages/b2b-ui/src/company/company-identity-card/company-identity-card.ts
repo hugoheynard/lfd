@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import {
   FoldBadgeComponent,
@@ -57,6 +57,12 @@ export class CompanyIdentityCard {
   /** Message d'erreur d'une action KBIS, ou `null`. */
   readonly error = input<string | null>(null);
   /** Texte de la zone de dépôt quand aucun KBIS n'est présent (formulation par app). */
+  /**
+   * Le KBIS est-il **exigé** pour activer ce compte ? La carte ne peut pas le
+   * savoir : cela dépend de la configuration de la plateforme, qui vit ailleurs.
+   */
+  readonly kbisRequired = input(false);
+
   readonly kbisEmptyHint = input(
     "L'activation du compte passe par la réception de l'extrait KBIS (format PDF).",
   );
@@ -71,6 +77,21 @@ export class CompanyIdentityCard {
   readonly downloadKbis = output<void>();
 
   /** Émet le fichier choisi puis réinitialise l'input (re-dépôt du même nom). */
+  /**
+   * Cet appareil a-t-il une caméra à portée ? Un pointeur **grossier** est le
+   * signal honnête d'un téléphone ou d'une tablette.
+   *
+   * On ne montre pas « Prendre en photo » sur un poste fixe : le bouton y
+   * ouvrirait le même sélecteur de fichiers que l'autre, et deux boutons pour
+   * un geste, c'est deux façons de se tromper. Lu une fois, à la construction —
+   * un commercial ne change pas d'appareil en cours de saisie — et gardé pour
+   * le rendu serveur, où `matchMedia` n'existe pas.
+   */
+  protected readonly handheld = isHandheld();
+
+  /** Ce qui manque à l'identité légale, en une phrase lisible. */
+  protected readonly missingLegalLabel = computed(() => this.identity().missingLegal.join(', '));
+
   protected onKbisSelected(event: Event): void {
     const el = event.target as HTMLInputElement;
     const file = el.files?.[0];
@@ -79,4 +100,18 @@ export class CompanyIdentityCard {
       this.kbisSelected.emit(file);
     }
   }
+}
+
+/**
+ * Sommes-nous sur un appareil qu'on tient en main ?
+ *
+ * `matchMedia` manque au rendu serveur comme à l'environnement de test : dans
+ * le doute on répond **non**, et le bouton photo n'apparaît pas. Une capacité
+ * qu'on ne peut pas constater ne se suppose pas.
+ */
+function isHandheld(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+  return window.matchMedia('(pointer: coarse)').matches;
 }

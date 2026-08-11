@@ -4,13 +4,14 @@ import type { SectorRevenueView } from '@lfd/contracts';
 export type SectorGrain = 'day' | 'week' | 'month' | 'quarter' | 'year';
 
 /** Options du `<select>` de granularité (ordre du plus fin au plus large). */
-export const SECTOR_GRAINS: ReadonlyArray<{ readonly value: SectorGrain; readonly label: string }> = [
-  { value: 'day', label: 'Jour' },
-  { value: 'week', label: 'Semaine' },
-  { value: 'month', label: 'Mois' },
-  { value: 'quarter', label: 'Trimestre' },
-  { value: 'year', label: 'Année' },
-];
+export const SECTOR_GRAINS: ReadonlyArray<{ readonly value: SectorGrain; readonly label: string }> =
+  [
+    { value: 'day', label: 'Jour' },
+    { value: 'week', label: 'Semaine' },
+    { value: 'month', label: 'Mois' },
+    { value: 'quarter', label: 'Trimestre' },
+    { value: 'year', label: 'Année' },
+  ];
 
 /** Séries ré-agrégées sur un axe de périodes (labels prêts à l'affichage). */
 export interface BucketedRevenue {
@@ -19,8 +20,18 @@ export interface BucketedRevenue {
 }
 
 const MONTHS = [
-  'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
-  'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
+  'janv.',
+  'févr.',
+  'mars',
+  'avr.',
+  'mai',
+  'juin',
+  'juil.',
+  'août',
+  'sept.',
+  'oct.',
+  'nov.',
+  'déc.',
 ];
 
 /** « 2026-08-17 » → « 17/08 ». */

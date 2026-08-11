@@ -199,7 +199,8 @@ export function temperatureTransitionsOption(flow: LifecycleFlow): EChartsOption
   const labelByKey = new Map(flow.nodes.map((n) => [n.key, n.label]));
   const nameOf = (key: string): string =>
     `${labelByKey.get(key) ?? key}${key.startsWith('from_') ? ' ·avant' : ' ·après'}`;
-  const colorOf = (key: string): string => TEMP_COLOR[key.replace(/^(from_|to_)/, '')] ?? PALETTE.slate;
+  const colorOf = (key: string): string =>
+    TEMP_COLOR[key.replace(/^(from_|to_)/, '')] ?? PALETTE.slate;
   return {
     tooltip: { trigger: 'item', formatter: '{b} : {c}' },
     series: [
@@ -554,17 +555,30 @@ export function terminationRecoveryOption(view: TerminationStatsView): EChartsOp
     xAxis: { type: 'value', name: '%', min: 0, max: 100 },
     yAxis: { type: 'category', data: rows.map((r) => r.label) },
     series: [
-      recoverySeries('Rattrapage', rows, 15, 1, (r) => pct(r.rate), (r) =>
-        r.attempts > 0 ? `${pct(r.rate)} % · ${r.recovered}/${r.attempts}` : '',
+      recoverySeries(
+        'Rattrapage',
+        rows,
+        15,
+        1,
+        (r) => pct(r.rate),
+        (r) => (r.attempts > 0 ? `${pct(r.rate)} % · ${r.recovered}/${r.attempts}` : ''),
         true,
       ),
-      recoverySeries('Auto (plateforme)', rows, 6, 0.4, (r) =>
-        channelPct(r.recoveredAuto, r.attempts), (r) =>
-        r.recoveredAuto > 0 ? `auto ${r.recoveredAuto}` : '',
+      recoverySeries(
+        'Auto (plateforme)',
+        rows,
+        6,
+        0.4,
+        (r) => channelPct(r.recoveredAuto, r.attempts),
+        (r) => (r.recoveredAuto > 0 ? `auto ${r.recoveredAuto}` : ''),
       ),
-      recoverySeries('Commercial', rows, 6, 0.82, (r) =>
-        channelPct(r.recoveredSales, r.attempts), (r) =>
-        r.recoveredSales > 0 ? `comm. ${r.recoveredSales}` : '',
+      recoverySeries(
+        'Commercial',
+        rows,
+        6,
+        0.82,
+        (r) => channelPct(r.recoveredSales, r.attempts),
+        (r) => (r.recoveredSales > 0 ? `comm. ${r.recoveredSales}` : ''),
       ),
     ],
   };
@@ -641,7 +655,8 @@ export function recoveryTrendOption(points: readonly RecoveryTrendPoint[]): ECha
     name: 'Taux hebdomadaire',
     type: 'line',
     data: points.map((p) => pct(p.rate)),
-    symbolSize: (_v: unknown, params: unknown): number => 8 + 2.4 * (points[toIndex(params)]?.attempts ?? 0),
+    symbolSize: (_v: unknown, params: unknown): number =>
+      8 + 2.4 * (points[toIndex(params)]?.attempts ?? 0),
     lineStyle: { color: CHURN_GLOBAL_COLOR, width: 2 },
     itemStyle: { color: CHURN_GLOBAL_COLOR },
   };
@@ -779,9 +794,14 @@ export function marketVolumeOption(view: MarketVolumeView): EChartsOption {
   // l'indice partirait alors de rien et toutes les lectures exploseraient.
   const baseVol = robustBase(pts.map((p) => p.volumeCents));
   const baseMkt = pts[0]?.marketActors ?? 0;
-  const index = (v: number, base: number): number => (base > 0 ? Math.round((v / base) * 100) : 100);
+  const index = (v: number, base: number): number =>
+    base > 0 ? Math.round((v / base) * 100) : 100;
   const euros = (cents: number): string =>
-    (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+    (cents / 100).toLocaleString('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      maximumFractionDigits: 0,
+    });
   return {
     grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
     legend: { top: 0, textStyle: { color: PALETTE.slate } },
@@ -821,7 +841,15 @@ export function marketVolumeOption(view: MarketVolumeView): EChartsOption {
 }
 
 /** Palette catégorielle des secteurs NAF (validée CVD), assignée dans l'ordre. */
-const SECTOR_PALETTE = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7'];
+const SECTOR_PALETTE = [
+  '#2a78d6',
+  '#eb6834',
+  '#1baf7a',
+  '#eda100',
+  '#e87ba4',
+  '#008300',
+  '#4a3aa7',
+];
 
 /**
  * **Mix des clients par territoire** : pour chaque zone, deux barres empilées à 100 %
@@ -865,7 +893,10 @@ function sectorSeries(
     itemStyle: { color, opacity: stack === 'churn' ? 0.5 : 1 },
     data: zones.map((z) => {
       const s = z.sectors.find((x) => x.code === code);
-      const total = z.sectors.reduce((sum, x) => sum + (stack === 'churn' ? x.terminated : x.active), 0);
+      const total = z.sectors.reduce(
+        (sum, x) => sum + (stack === 'churn' ? x.terminated : x.active),
+        0,
+      );
       const n = stack === 'churn' ? (s?.terminated ?? 0) : (s?.active ?? 0);
       const pen = s !== undefined && s.pool > 0 ? Math.round((s.active / s.pool) * 100) : 0;
       return { value: total > 0 ? Math.round((n / total) * 100) : 0, n, pen, kind: stack };
@@ -895,7 +926,10 @@ function sectorTooltip(param: unknown): string {
  * mix secteurs). L'enveloppe du haut = le CA total ; l'épaisseur d'une bande = la
  * contribution du secteur. On voit quels types de clients portent la croissance du CA.
  */
-export function sectorRevenueOption(view: SectorRevenueView, grain: SectorGrain = 'week'): EChartsOption {
+export function sectorRevenueOption(
+  view: SectorRevenueView,
+  grain: SectorGrain = 'week',
+): EChartsOption {
   const bucketed = bucketSectorRevenue(view, grain);
   const series: Record<string, unknown>[] = bucketed.series.map((s, i) => ({
     name: s.label,
@@ -945,12 +979,18 @@ function eurosLabel(cents: number): string {
  * granularité choisie. La donnée de tête de l'onglet Volume / CA — le niveau et la
  * tendance du CA encaissé.
  */
-export function revenueTrendOption(view: OrderMetricsView, grain: SectorGrain = 'week'): EChartsOption {
+export function revenueTrendOption(
+  view: OrderMetricsView,
+  grain: SectorGrain = 'week',
+): EChartsOption {
   const axis = bucketAxis(view.days, grain);
   const ca = foldDaily(axis, view.caCents).map((c) => Math.round(c / 100));
   return {
     grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
-    tooltip: { trigger: 'axis', valueFormatter: (v): string => `${Number(v).toLocaleString('fr-FR')} €` },
+    tooltip: {
+      trigger: 'axis',
+      valueFormatter: (v): string => `${Number(v).toLocaleString('fr-FR')} €`,
+    },
     xAxis: { type: 'category', data: [...axis.labels], boundaryGap: false },
     yAxis: { type: 'value', name: '€' },
     series: [
@@ -973,7 +1013,10 @@ export function revenueTrendOption(view: OrderMetricsView, grain: SectorGrain = 
  * double échelle). Le CA qui monte plus vite que le nombre de commandes = **panier
  * moyen** en hausse ; l'écart entre les deux se lit directement. Tooltip = valeurs brutes.
  */
-export function caVsOrdersOption(view: OrderMetricsView, grain: SectorGrain = 'week'): EChartsOption {
+export function caVsOrdersOption(
+  view: OrderMetricsView,
+  grain: SectorGrain = 'week',
+): EChartsOption {
   const axis = bucketAxis(view.days, grain);
   // CA **marchandises HT** : le TTC bougerait au gré de la TVA et des frais de port
   // sans qu'un euro de marchandise ait changé — le panier moyen serait alors faux.
@@ -981,7 +1024,8 @@ export function caVsOrdersOption(view: OrderMetricsView, grain: SectorGrain = 'w
   const orders = foldDaily(axis, view.orders);
   const baseCa = robustBase(ca);
   const baseOrders = robustBase(orders);
-  const index = (v: number, base: number): number => (base > 0 ? Math.round((v / base) * 100) : 100);
+  const index = (v: number, base: number): number =>
+    base > 0 ? Math.round((v / base) * 100) : 100;
   return {
     grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
     legend: { top: 0, textStyle: { color: PALETTE.slate } },
@@ -1041,7 +1085,10 @@ export function caByTypeOption(view: OrderMetricsView, grain: SectorGrain = 'wee
   return {
     grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
     legend: { top: 0, textStyle: { color: PALETTE.slate } },
-    tooltip: { trigger: 'axis', valueFormatter: (v): string => `${Number(v).toLocaleString('fr-FR')} €` },
+    tooltip: {
+      trigger: 'axis',
+      valueFormatter: (v): string => `${Number(v).toLocaleString('fr-FR')} €`,
+    },
     xAxis: { type: 'category', data: [...axis.labels], boundaryGap: false },
     yAxis: { type: 'value', name: '€' },
     series: [

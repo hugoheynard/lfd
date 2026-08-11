@@ -119,7 +119,7 @@ export class Sunburst {
       .attr('width', width)
       .attr('height', height)
       .attr('viewBox', `${-width / 2} ${-height / 2} ${width} ${height}`)
-      .style('font', "11px var(--fold-font-sans, system-ui, sans-serif)");
+      .style('font', '11px var(--fold-font-sans, system-ui, sans-serif)');
 
     const rows = root.descendants().slice(1) as ANode[];
     const named = this.nodeColors();
@@ -129,7 +129,9 @@ export class Sunburst {
         n = n.parent as ANode;
       }
       return (
-        named?.get(n.data.name) ?? colors[(root.children ?? []).indexOf(n) % colors.length] ?? '#888'
+        named?.get(n.data.name) ??
+        colors[(root.children ?? []).indexOf(n) % colors.length] ??
+        '#888'
       );
     };
 
@@ -199,7 +201,10 @@ export class Sunburst {
     };
 
     parent.on('click', clicked);
-    path.filter((d) => Boolean(d.children)).style('cursor', 'pointer').on('click', clicked);
+    path
+      .filter((d) => Boolean(d.children))
+      .style('cursor', 'pointer')
+      .on('click', clicked);
   }
 }
 

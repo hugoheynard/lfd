@@ -34,6 +34,28 @@
       </fold-field>
     </fold-field-list>
 
+    <!-- Le rappel de ce qui manque, là où on le corrige. La synthèse du haut de
+         page le dit déjà — mais entre les deux il y a tout l'écran, et un
+         commercial qui descend jusqu'ici a déjà oublié la liste. -->
+    @if (id.missingLegal.length > 0) {
+      <fold-callout variant="warning">
+        Identité incomplète : il manque <strong>{{ missingLegalLabel() }}</strong
+        >. Le compte ne peut pas être activé sans — il n'y aurait rien à facturer.
+        @if (canManage()) {
+          <button
+            actions
+            foldButton
+            intent="warning"
+            emphasis="soft"
+            size="sm"
+            (click)="edit.emit()"
+          >
+            Compléter
+          </button>
+        }
+      </fold-callout>
+    }
+
     @if (id.tvaMissing) {
       <fold-callout variant="warning">
         Votre forme juridique nécessite un numéro de TVA intracommunautaire.
@@ -50,7 +72,19 @@
     <input
       #kbisInput
       type="file"
-      accept="application/pdf,.pdf"
+      accept="application/pdf,image/*"
+      hidden
+      [disabled]="busy()"
+      (change)="onKbisSelected($event)"
+    />
+
+    <!-- `capture` ouvre l'appareil photo au lieu du sélecteur : une entrée à
+         part, sinon on retirerait le choix du fichier à ceux qui ont le PDF. -->
+    <input
+      #kbisCamera
+      type="file"
+      accept="image/*"
+      capture="environment"
       hidden
       [disabled]="busy()"
       (change)="onKbisSelected($event)"
@@ -85,6 +119,13 @@
       <fold-callout variant="alert" announce>{{ message }}</fold-callout>
     }
 
+    @if (kbisRequired() && !id.kbis) {
+      <fold-callout variant="warning">
+        L'extrait KBIS est <strong>exigé</strong> pour activer ce compte. Un PDF ou une photo
+        lisible font l'affaire.
+      </fold-callout>
+    }
+
     @if (id.kbis; as k) {
       <div class="kbis-file">
         <div class="kbis-meta">
@@ -115,17 +156,35 @@
         <p class="kbis-drop-title">Aucun KBIS déposé</p>
         <p class="kbis-drop-sub">{{ kbisEmptyHint() }}</p>
         @if (canManageKbis()) {
-          <button
-            foldButton
-            intent="warning"
-            emphasis="solid"
-            size="sm"
-            icon="plus"
-            [disabled]="busy()"
-            (click)="kbisInput.click()"
-          >
-            {{ busy() ? 'Dépôt…' : 'Déposer le KBIS' }}
-          </button>
+          <div class="kbis-drop-actions">
+            <button
+              foldButton
+              intent="warning"
+              emphasis="solid"
+              size="sm"
+              icon="plus"
+              [disabled]="busy()"
+              (click)="kbisInput.click()"
+            >
+              {{ busy() ? 'Dépôt…' : 'Déposer le KBIS' }}
+            </button>
+            <!-- Secours : l'extrait est sur le comptoir et le scanner au bureau.
+                 Sur un poste fixe le bouton n'apparaît pas — il y ouvrirait le
+                 même sélecteur de fichiers, et ce serait deux façons de faire
+                 un seul geste. -->
+            @if (handheld) {
+              <button
+                foldButton
+                emphasis="outline"
+                size="sm"
+                icon="eye"
+                [disabled]="busy()"
+                (click)="kbisCamera.click()"
+              >
+                Prendre en photo
+              </button>
+            }
+          </div>
         }
       </div>
     }

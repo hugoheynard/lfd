@@ -94,3 +94,11 @@
   font-size: var(--fold-text-sm, 0.875rem);
   color: var(--fold-color-text-muted);
 }
+
+/* Déposer ou photographier : deux chemins vers la même pièce. */
+.kbis-drop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  justify-content: center;
+}

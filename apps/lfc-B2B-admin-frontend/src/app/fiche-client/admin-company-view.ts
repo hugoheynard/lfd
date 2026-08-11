@@ -35,6 +35,9 @@ export function toIdentityView(company: AdminCompany): CompanyIdentityView {
     siret: formatSiret(company.siret),
     tvaIntracom: company.tvaIntracom,
     tvaMissing: false,
+    // Ce qui manque au greffe — la même liste que la synthèse du haut de page,
+    // répétée là où on la corrige.
+    missingLegal: missingLegalOf(company),
     statusLabel: STATUS_LABELS[company.status],
     statusTone: STATUS_TONE[company.status],
     roleLabel: null,
@@ -75,4 +78,19 @@ export function toContactCards(company: AdminCompanyDetail): CompanyContactCardV
  */
 function roleLabel(role: CompanyMemberRole | null): string {
   return role === null ? 'Rôle à préciser' : COMPANY_ROLE_LABELS[role];
+}
+
+/** Les pièces d'identité légale absentes, nommées pour être lues. */
+function missingLegalOf(company: AdminCompany): readonly string[] {
+  const missing: string[] = [];
+  if (company.raisonSociale.trim() === '') {
+    missing.push('la raison sociale');
+  }
+  if (company.formeJuridique.trim() === '') {
+    missing.push('la forme juridique');
+  }
+  if (company.siret.trim() === '') {
+    missing.push('le SIRET');
+  }
+  return missing;
 }

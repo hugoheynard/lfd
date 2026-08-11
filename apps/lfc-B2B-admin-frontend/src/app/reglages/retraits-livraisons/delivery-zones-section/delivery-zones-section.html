@@ -14,8 +14,8 @@
         <div class="head-text">
           <h2 class="section-title">Zones de livraison</h2>
           <p class="section-desc">
-            Un <strong>frais de livraison</strong> ajouté au panier pour un code postal éloigné
-            (Val d'Isère, Tignes…), en % ou en €. Sans zone, la livraison n'ajoute aucun frais.
+            Un <strong>frais de livraison</strong> ajouté au panier pour un code postal éloigné (Val
+            d'Isère, Tignes…), en % ou en €. Sans zone, la livraison n'ajoute aucun frais.
           </p>
         </div>
         <button foldButton size="sm" icon="plus" (click)="add()">Ajouter une zone</button>
@@ -42,7 +42,9 @@
                 >
                   <fold-icon name="more-vertical" [size]="18" />
                 </button>
-                <fold-dropdown-item icon="edit" (selected)="edit(zone)">Modifier</fold-dropdown-item>
+                <fold-dropdown-item icon="edit" (selected)="edit(zone)"
+                  >Modifier</fold-dropdown-item
+                >
                 <fold-dropdown-item icon="bin" tone="danger" (selected)="askRemove(zone)">
                   Supprimer
                 </fold-dropdown-item>
