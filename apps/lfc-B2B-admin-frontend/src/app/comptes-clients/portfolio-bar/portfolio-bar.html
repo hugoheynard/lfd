@@ -1,0 +1,47 @@
+@if (metrics(); as m) {
+  <section class="pb" aria-label="État du portefeuille">
+    <article class="pb-tile">
+      <p class="pb-label">Comptes actifs</p>
+      <p class="pb-value">{{ m.activeCompanies }}</p>
+      <!-- La croissance se lit par rapport au stock : « +3 » seul ne dit pas si
+           c'est beaucoup. -->
+      <p class="pb-note">
+        @if (m.activatedLast30d > 0) {
+          <span class="pb-up">+{{ m.activatedLast30d }}</span> sur 30 jours
+        } @else {
+          Aucune entrée sur 30 jours
+        }
+      </p>
+    </article>
+
+    <article class="pb-tile pb-tile--pulse">
+      <p class="pb-label">Pouls du portefeuille</p>
+      <div class="pb-pulse">
+        <span class="pb-pulse-part pb-up" title="Comptes en croissance">
+          <fold-icon name="chevron-up" [size]="14" />{{ m.pulse.growing }}
+        </span>
+        <span class="pb-pulse-part pb-flat" title="Comptes stables">
+          <fold-icon name="minus" [size]="14" />{{ m.pulse.flat }}
+        </span>
+        <span class="pb-pulse-part pb-down" title="Comptes en baisse">
+          <fold-icon name="chevron-down" [size]="14" />{{ m.pulse.shrinking }}
+        </span>
+      </div>
+      <p class="pb-note">
+        Sur 30 jours, {{ measured() }} compte{{ measured() > 1 ? 's' : '' }} ayant commandé
+      </p>
+    </article>
+
+    <article class="pb-tile" [class.pb-tile--alert]="m.failedPayments > 0">
+      <p class="pb-label">Encaissements en échec</p>
+      <p class="pb-value">{{ m.failedPayments }}</p>
+      <p class="pb-note">
+        @if (m.failedPayments > 0) {
+          <a routerLink="/commandes" class="pb-link">La commande est passée, l’argent non</a>
+        } @else {
+          Rien à relancer
+        }
+      </p>
+    </article>
+  </section>
+}

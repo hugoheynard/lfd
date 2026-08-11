@@ -1,0 +1,72 @@
+:host {
+  display: block;
+}
+
+.pb {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--fold-space-md);
+}
+
+.pb-tile {
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+}
+
+/* Ce qui demande une action porte le liseré ; le reste est de la mesure. */
+.pb-tile--alert {
+  border-left: 3px solid var(--fold-color-alert);
+}
+
+.pb-label {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.pb-value {
+  margin: 0.15rem 0 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.pb-note {
+  margin: 0.2rem 0 0;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.pb-pulse {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-md);
+  margin-top: 0.15rem;
+}
+
+.pb-pulse-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La couleur ne porte JAMAIS seule : chaque part a son icône et son intitulé. */
+.pb-up {
+  color: var(--fold-color-success-text);
+}
+.pb-flat {
+  color: var(--fold-color-text-muted);
+}
+.pb-down {
+  color: var(--fold-color-alert-text);
+}
+
+.pb-link {
+  color: inherit;
+}

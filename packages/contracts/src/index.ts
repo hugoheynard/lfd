@@ -287,6 +287,8 @@ export type {
   SectorRevenueSeries,
   SectorRevenueView,
   OrderMetricsView,
+  PortfolioPulse,
+  PortfolioMetricsView,
   AcquisitionMetricsView,
   TerminationReason,
   TerminationSubReasonCount,

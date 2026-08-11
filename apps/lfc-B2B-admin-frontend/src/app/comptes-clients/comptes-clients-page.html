@@ -21,6 +21,10 @@
     </div>
   </header>
 
+  @if (state() === 'ready') {
+    <app-portfolio-bar [metrics]="metrics()" />
+  }
+
   @if (state() === 'error') {
     <div class="state">
       <p>Impossible de charger les comptes clients.</p>
@@ -43,7 +47,7 @@
         class="search"
         size="sm"
         placeholder="Société, SIRET, propriétaire de l’espace…"
-        (searchChange)="search.set($event)"
+        (searchChange)="onSearchChange($event)"
       />
     </div>
 
@@ -59,7 +63,7 @@
       hover
       stickyFirst
       [columns]="columns"
-      [rows]="filtered()"
+      [rows]="paged()"
       [rowKey]="rowKey"
       [loading]="state() === 'loading'"
       [empty]="emptyState()"
@@ -122,5 +126,20 @@
         <span class="date">{{ formatDate(row.createdAt) }}</span>
       </ng-template>
     </fold-data-table>
+
+    <!-- Contrôlé de bout en bout : la tranche vient de `paged()`, et le
+         paginator ne compte QUE ce que le filtre a laissé passer. -->
+    @if (filtered().length > pageSize()) {
+      <fold-paginator
+        class="pager"
+        [currentPage]="clampedPage()"
+        [pageSize]="pageSize()"
+        [totalItems]="filtered().length"
+        [pageSizeOptions]="pageSizes"
+        [labels]="paginatorLabels"
+        (pageChange)="page.set($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      />
+    }
   }
 </section>

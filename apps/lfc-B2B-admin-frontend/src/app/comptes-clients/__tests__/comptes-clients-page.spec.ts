@@ -1,7 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import type { PortfolioMetricsView } from '@lfd/contracts';
+
 import { PendingAlertsService } from '../../shared/alerts/pending-alerts.service';
+import { PortfolioMetricsService } from '../portfolio-metrics.service';
 import { AdminCompaniesService } from '../admin-companies.service';
 import type { AdminCompany, CompanyStatus } from '../admin-company';
 import { ComptesClientsPage } from '../comptes-clients-page';
@@ -49,6 +52,12 @@ async function setup(
       {
         provide: AdminCompaniesService,
         useValue: { list: (): Promise<readonly AdminCompany[]> => Promise.resolve(companies) },
+      },
+      {
+        provide: PortfolioMetricsService,
+        useValue: {
+          load: (): Promise<PortfolioMetricsView> => Promise.reject(new Error('hors service')),
+        } satisfies Pick<PortfolioMetricsService, 'load'>,
       },
       {
         provide: PendingAlertsService,
@@ -132,6 +141,22 @@ describe('ComptesClientsPage', () => {
 
     expect(page['state']()).toBe('ready');
     expect(page['pendingAlertsOf'](makeCompany('3', 'active'))).toBe(0);
+  });
+
+  it('ne montre que la page courante, et rembobine quand on filtre', async () => {
+    const page = await setup(COMPANIES);
+    page['pageSize'].set(2);
+
+    expect(page['paged']().map((c) => c.id)).toEqual(['1', '2']);
+
+    page['page'].set(3);
+    expect(page['paged']().map((c) => c.id)).toEqual(['5']);
+
+    // Filtrer réduit la liste sous la page courante : sans recalage, l'écran
+    // afficherait une page vide alors que le contenu est plus haut.
+    page['onFilterChange']('active');
+    expect(page['clampedPage']()).toBe(1);
+    expect(page['paged']()).toHaveLength(1);
   });
 
   it("contextualise l'état vide au segment actif", async () => {

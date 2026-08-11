@@ -41,6 +41,7 @@ import { GetMarketSectorsHandler } from "./application/queries/get-market-sector
 import { GetAcquisitionMetricsHandler } from "./application/queries/get-acquisition-metrics.handler.js";
 import { GetMarketVolumeHandler } from "./application/queries/get-market-volume.handler.js";
 import { GetOrderMetricsHandler } from "./application/queries/get-order-metrics.handler.js";
+import { GetPortfolioMetricsHandler } from "./application/queries/get-portfolio-metrics.handler.js";
 import { GetSectorRevenueHandler } from "./application/queries/get-sector-revenue.handler.js";
 import { GetTerminationStatsHandler } from "./application/queries/get-termination-stats.handler.js";
 import { ListActivationsHandler } from "./application/queries/list-activations.handler.js";
@@ -58,6 +59,7 @@ import { MarketSectorsReader } from "./domain/ports/market-sectors.reader.js";
 import { AcquisitionMetricsReader } from "./domain/ports/acquisition-metrics.reader.js";
 import { MarketVolumeReader } from "./domain/ports/market-volume.reader.js";
 import { OrderMetricsReader } from "./domain/ports/order-metrics.reader.js";
+import { PortfolioMetricsReader } from "./domain/ports/portfolio-metrics.reader.js";
 import { SectorRevenueReader } from "./domain/ports/sector-revenue.reader.js";
 import { TerminationStatsReader } from "./domain/ports/termination-stats.reader.js";
 import { MarketDirectory } from "./domain/ports/market-directory.js";
@@ -89,6 +91,7 @@ import { PrismaMarketSectorsReader } from "./infrastructure/prisma-market-sector
 import { PrismaAcquisitionMetricsReader } from "./infrastructure/prisma-acquisition-metrics.reader.js";
 import { PrismaMarketVolumeReader } from "./infrastructure/prisma-market-volume.reader.js";
 import { PrismaOrderMetricsReader } from "./infrastructure/prisma-order-metrics.reader.js";
+import { PrismaPortfolioMetricsReader } from "./infrastructure/prisma-portfolio-metrics.reader.js";
 import { PrismaSectorRevenueReader } from "./infrastructure/prisma-sector-revenue.reader.js";
 import { PrismaTerminationStatsReader } from "./infrastructure/prisma-termination-stats.reader.js";
 import { RechercheEntreprisesDirectory } from "./infrastructure/recherche-entreprises.directory.js";
@@ -136,6 +139,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     { provide: MarketSectorsReader, useClass: PrismaMarketSectorsReader },
     { provide: MarketVolumeReader, useClass: PrismaMarketVolumeReader },
     { provide: OrderMetricsReader, useClass: PrismaOrderMetricsReader },
+    { provide: PortfolioMetricsReader, useClass: PrismaPortfolioMetricsReader },
     { provide: AcquisitionMetricsReader, useClass: PrismaAcquisitionMetricsReader },
     { provide: SectorRevenueReader, useClass: PrismaSectorRevenueReader },
     { provide: TerminationStatsReader, useClass: PrismaTerminationStatsReader },
@@ -153,6 +157,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     GetMarketSectorsHandler,
     GetMarketVolumeHandler,
     GetOrderMetricsHandler,
+    GetPortfolioMetricsHandler,
     GetAcquisitionMetricsHandler,
     GetSectorRevenueHandler,
     GetTerminationStatsHandler,

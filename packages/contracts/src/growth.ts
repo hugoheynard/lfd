@@ -661,3 +661,40 @@ export interface MarketAdoptionView {
   readonly zoneTrends: readonly ZonePenetrationTrend[];
   readonly computedAt: string;
 }
+
+/**
+ * Le **pouls du portefeuille** : chaque compte comparé à **lui-même**, 30 jours
+ * contre les 30 précédents.
+ *
+ * Trois nombres plutôt qu'une flèche globale : un portefeuille peut afficher un
+ * CA en hausse et pourtant perdre la moitié de ses comptes, si un gros client
+ * masque les autres. Ce découpage dit **où est le travail commercial**, pas
+ * seulement si le mois a été bon.
+ *
+ * Les comptes sans le moindre euro sur les deux fenêtres n'y figurent pas : ils
+ * ne sont pas « stables », ils sont absents — et les compter comme stables
+ * gonflerait la colonne du milieu de tous les dormants.
+ */
+export interface PortfolioPulse {
+  readonly growing: number;
+  readonly flat: number;
+  readonly shrinking: number;
+}
+
+/**
+ * La barre de tête de l'écran **Comptes clients** : l'état du portefeuille en
+ * quatre chiffres, avant la liste.
+ */
+export interface PortfolioMetricsView {
+  /** Comptes en statut `active` — le portefeuille réellement servi. */
+  readonly activeCompanies: number;
+  /** Combien y sont entrés sur 30 jours (date d'activation, pas de création). */
+  readonly activatedLast30d: number;
+  readonly pulse: PortfolioPulse;
+  /**
+   * Encaissements **en échec** restant à traiter — la commande est passée,
+   * l'argent n'est pas rentré. Compte des commandes, pas des sociétés : deux
+   * échecs sur le même compte sont deux relances.
+   */
+  readonly failedPayments: number;
+}

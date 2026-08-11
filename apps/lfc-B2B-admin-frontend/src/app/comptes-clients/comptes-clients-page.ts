@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import {
   FoldBadgeComponent,
+  FoldPaginatorComponent,
   FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
@@ -9,18 +10,38 @@ import {
   FoldSearchComponent,
   FoldStatusBadgeComponent,
   FoldViewToggleComponent,
+  type FoldPaginatorLabels,
   type FoldTableColumn,
   type FoldTableEmpty,
   type FoldViewToggleOption,
 } from 'fold-ng';
 
 import { PendingAlertsService } from '../shared/alerts/pending-alerts.service';
+import { PortfolioBar } from './portfolio-bar/portfolio-bar';
+import { PortfolioMetricsService } from './portfolio-metrics.service';
 import { AdminCompaniesService } from './admin-companies.service';
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-company';
+import type { PortfolioMetricsView } from '@lfd/contracts';
+
 import { matchesCompanySearch } from './company-search';
 import { CreerComptePanel } from './creer-compte-panel/creer-compte-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/** Combien de comptes par page par défaut — la première option du sélecteur. */
+const PAGE_SIZES: readonly number[] = [25, 50, 100];
+
+/** Le paginator parle anglais par défaut ; cet écran, non. */
+const PAGINATOR_LABELS: FoldPaginatorLabels = {
+  pageSize: 'Comptes par page',
+  perPage: 'par page',
+  nav: 'Pagination des comptes',
+  previous: 'Page précédente',
+  next: 'Page suivante',
+  empty: 'Aucun compte',
+  page: (page) => `Page ${page}`,
+  range: (start, end, total) => `${start}–${end} sur ${total}`,
+};
 
 /** Valeur du filtre : un statut, ou `all` pour la vue d'ensemble. */
 type FilterValue = 'all' | CompanyStatus;
@@ -62,6 +83,8 @@ function isFilterValue(value: string): value is FilterValue {
     FoldSearchComponent,
     FoldStatusBadgeComponent,
     FoldViewToggleComponent,
+    FoldPaginatorComponent,
+    PortfolioBar,
     RouterLink,
   ],
   templateUrl: './comptes-clients-page.html',
@@ -70,6 +93,7 @@ function isFilterValue(value: string): value is FilterValue {
 export class ComptesClientsPage {
   private readonly service = inject(AdminCompaniesService);
   private readonly alerts = inject(PendingAlertsService);
+  private readonly portfolio = inject(PortfolioMetricsService);
   private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
@@ -84,6 +108,13 @@ export class ComptesClientsPage {
    * travail pour une décoration.
    */
   protected readonly pendingAlerts = signal<Readonly<Record<string, number>>>({});
+  /** L'état du portefeuille — `null` tant qu'on ne sait pas, et si la lecture échoue. */
+  protected readonly metrics = signal<PortfolioMetricsView | null>(null);
+
+  protected readonly paginatorLabels = PAGINATOR_LABELS;
+  protected readonly pageSizes = PAGE_SIZES;
+  protected readonly page = signal(1);
+  protected readonly pageSize = signal(PAGE_SIZES[0] ?? 25);
 
   /** Colonnes de la data-table — chaque `key` a son `<ng-template foldCell>`. */
   protected readonly columns: readonly FoldTableColumn[] = [
@@ -141,6 +172,28 @@ export class ComptesClientsPage {
       : byStatus.filter((company) => matchesCompanySearch(company, term));
   });
 
+  /**
+   * La tranche affichée. La pagination porte sur le résultat **filtré** : le
+   * paginator doit compter ce que l'écran montre, sinon « 1–25 sur 340 » se lit
+   * sur une liste qui en contient douze.
+   */
+  protected readonly paged = computed<readonly AdminCompany[]>(() => {
+    const rows = this.filtered();
+    const size = this.pageSize();
+    const start = (this.clampedPage() - 1) * size;
+    return rows.slice(start, start + size);
+  });
+
+  /**
+   * La page réellement rendue. Filtrer réduit la liste sous la page courante :
+   * sans ce recalage, on se retrouverait devant une page vide, sans comprendre
+   * que le contenu est plus haut.
+   */
+  protected readonly clampedPage = computed(() => {
+    const pages = Math.max(1, Math.ceil(this.filtered().length / this.pageSize()));
+    return Math.min(this.page(), pages);
+  });
+
   /** Y a-t-il une recherche en cours ? Décide de l'état vide et du compteur. */
   protected readonly searching = computed(() => this.search() !== '');
 
@@ -180,6 +233,9 @@ export class ComptesClientsPage {
     // Les deux lectures partent ENSEMBLE : la seconde ne dépend pas de la
     // première, et les enchaîner doublerait l'attente avant le premier pixel.
     const alerts = this.alerts.counts().catch(() => ({}));
+    // Comme la pastille : la barre de tête est une lecture de contexte, pas la
+    // liste. Son échec ne doit pas emporter l'écran de travail.
+    const metrics = this.portfolio.load().catch(() => null);
     try {
       this.companies.set(await this.service.list());
       this.state.set('ready');
@@ -187,6 +243,7 @@ export class ComptesClientsPage {
       this.state.set('error');
     }
     this.pendingAlerts.set(await alerts);
+    this.metrics.set(await metrics);
   }
 
   /** Combien d'alertes attendent sur ce compte — `0` s'il n'y en a aucune. */
@@ -198,7 +255,19 @@ export class ComptesClientsPage {
   protected onFilterChange(value: string): void {
     if (isFilterValue(value)) {
       this.filter.set(value);
+      this.page.set(1);
     }
+  }
+
+  /** Chercher, c'est repartir du début : la page 3 d'un autre résultat n'a pas de sens. */
+  protected onSearchChange(term: string): void {
+    this.search.set(term);
+    this.page.set(1);
+  }
+
+  protected onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.page.set(1);
   }
 
   /** Libellé FR du statut d'une société. */

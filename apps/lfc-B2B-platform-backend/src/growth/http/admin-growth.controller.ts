@@ -9,6 +9,7 @@ import { GetMarketAdoptionQuery } from "../application/queries/get-market-adopti
 import { GetMarketSectorsQuery } from "../application/queries/get-market-sectors.query.js";
 import { GetMarketVolumeQuery } from "../application/queries/get-market-volume.query.js";
 import { GetOrderMetricsQuery } from "../application/queries/get-order-metrics.query.js";
+import { GetPortfolioMetricsQuery } from "../application/queries/get-portfolio-metrics.query.js";
 import { GetSectorRevenueQuery } from "../application/queries/get-sector-revenue.query.js";
 import { GetTerminationStatsQuery } from "../application/queries/get-termination-stats.query.js";
 import type {
@@ -18,6 +19,7 @@ import type {
   MarketSectorsView,
   MarketVolumeView,
   OrderMetricsView,
+  PortfolioMetricsView,
   SectorRevenueView,
   TerminationStatsView,
 } from "@lfd/contracts";
@@ -32,6 +34,18 @@ import type {
 @UseGuards(AdminAuthGuard)
 export class AdminGrowthController {
   constructor(private readonly queries: QueryBus) {}
+
+  /**
+   * L'état du **portefeuille** — la barre de tête des Comptes clients. Servie
+   * ici plutôt que par `account/` : elle lit les commandes, et le dossier client
+   * n'a pas à en connaître l'existence.
+   */
+  @Get("portfolio")
+  portfolio(): Promise<PortfolioMetricsView> {
+    return this.queries.execute<GetPortfolioMetricsQuery, PortfolioMetricsView>(
+      new GetPortfolioMetricsQuery(),
+    );
+  }
 
   @Get("stats")
   stats(): Promise<GrowthStatsView> {
