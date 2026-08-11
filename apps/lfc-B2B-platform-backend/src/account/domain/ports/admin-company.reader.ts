@@ -16,6 +16,24 @@ import type { ContactView, KbisView, PaymentTerm } from "./account.reader.js";
  * Les adresses détaillées et l'obligation de TVA relèvent de la **fiche**
  * ({@link AdminCompanyDetailView}), pas de la liste — une liste reste scannable.
  */
+/**
+ * Le **propriétaire de l'espace** : la personne qui administre la société sur la
+ * plateforme (membership `company_admin`).
+ *
+ * À ne pas confondre avec le **contact principal**, qui vit aplati sur la société
+ * et n'est qu'un interlocuteur — il n'a pas forcément de compte, et la personne
+ * qui a ouvert l'espace n'est pas forcément celle qu'on appelle pour une
+ * livraison. Le commercial cherche parfois l'un, parfois l'autre.
+ *
+ * `null` tant que personne n'administre l'espace : un dossier créé par le staff
+ * (Porte B) n'a pas encore de client rattaché.
+ */
+export interface CompanyOwnerView {
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+}
+
 export interface AdminCompanyView {
   readonly id: string;
   /** Référence humaine courte (`C-XXXXXX`), dictable au téléphone. */
@@ -32,6 +50,8 @@ export interface AdminCompanyView {
   readonly requestedPaymentTerm: PaymentTerm | null;
   /** Contact principal — le futur interlocuteur du commercial. */
   readonly primaryContact: ContactView;
+  /** Qui administre l'espace côté client, ou `null` si personne encore. */
+  readonly owner: CompanyOwnerView | null;
   /** KBIS déposé, ou `null`. `certified` = validé par le staff. */
   readonly kbis: KbisView | null;
   /**

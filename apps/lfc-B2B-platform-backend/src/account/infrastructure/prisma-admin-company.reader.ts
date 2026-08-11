@@ -39,6 +39,16 @@ const COMPANY_SELECT = {
     select: { id: true },
     take: 1,
   },
+  // Le propriétaire de l'espace : la personne qui l'administre. `take: 1` — une
+  // société n'en a qu'un en pratique, et la liste n'a pas à charger l'annuaire
+  // complet des membres pour afficher un nom. Le plus ancien fait foi : c'est
+  // celui qui a ouvert l'espace.
+  memberships: {
+    where: { role: "company_admin" },
+    orderBy: { createdAt: "asc" },
+    select: { user: { select: { firstName: true, lastName: true, email: true } } },
+    take: 1,
+  },
 } satisfies Prisma.CompanySelect;
 
 type CompanyRow = Prisma.CompanyGetPayload<{ select: typeof COMPANY_SELECT }>;
@@ -116,6 +126,7 @@ function toView(company: CompanyRow): AdminCompanyView {
             certified: company.kbisCertifiedAt !== null,
           }
         : null,
+    owner: company.memberships[0]?.user ?? null,
     hasOpenSupportRequest: company.supportRequests.length > 0,
     createdAt: company.createdAt.toISOString(),
   };

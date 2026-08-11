@@ -6,6 +6,7 @@ import {
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldPanelHostService,
+  FoldSearchComponent,
   FoldStatusBadgeComponent,
   FoldViewToggleComponent,
   type FoldTableColumn,
@@ -15,6 +16,7 @@ import {
 
 import { AdminCompaniesService } from './admin-companies.service';
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-company';
+import { matchesCompanySearch } from './company-search';
 import { CreerComptePanel } from './creer-compte-panel/creer-compte-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -56,6 +58,7 @@ function isFilterValue(value: string): value is FilterValue {
     FoldButtonComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    FoldSearchComponent,
     FoldStatusBadgeComponent,
     FoldViewToggleComponent,
     RouterLink,
@@ -70,6 +73,8 @@ export class ComptesClientsPage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly companies = signal<readonly AdminCompany[]>([]);
   protected readonly filter = signal<FilterValue>('all');
+  /** Le terme cherché — société, SIRET, ou propriétaire de l'espace. */
+  protected readonly search = signal('');
 
   /** Colonnes de la data-table — chaque `key` a son `<ng-template foldCell>`. */
   protected readonly columns: readonly FoldTableColumn[] = [
@@ -78,6 +83,7 @@ export class ComptesClientsPage {
     { key: 'siret', label: 'SIRET', width: '11rem' },
     { key: 'status', label: 'Statut', width: '8rem' },
     { key: 'contact', label: 'Contact' },
+    { key: 'owner', label: 'Espace client' },
     { key: 'createdAt', label: 'Créé le', width: '7rem', align: 'right' },
   ];
 
@@ -108,15 +114,35 @@ export class ComptesClientsPage {
     () => this.companies().filter((c) => this.isAssistance(c)).length,
   );
 
-  /** Sociétés du statut sélectionné (ou toutes). */
+  /**
+   * Sociétés du statut sélectionné **et** répondant à la recherche.
+   *
+   * La recherche s'applique APRÈS le statut, pas à sa place : les deux répondent
+   * à des questions différentes (« où en est ce dossier ? » vs « où est ce
+   * client ? »), et les fusionner ferait disparaître des résultats sans qu'on
+   * comprenne pourquoi. Le compteur de résultats le dit quand la recherche mord.
+   */
   protected readonly filtered = computed<readonly AdminCompany[]>(() => {
     const current = this.filter();
+    const term = this.search();
     const all = this.companies();
-    return current === 'all' ? all : all.filter((company) => company.status === current);
+    const byStatus = current === 'all' ? all : all.filter((company) => company.status === current);
+    return term === ''
+      ? byStatus
+      : byStatus.filter((company) => matchesCompanySearch(company, term));
   });
 
-  /** Message d'état vide, contextualisé au segment actif. */
+  /** Y a-t-il une recherche en cours ? Décide de l'état vide et du compteur. */
+  protected readonly searching = computed(() => this.search() !== '');
+
+  /** Message d'état vide, contextualisé au segment actif — ou à la recherche. */
   protected readonly emptyState = computed<FoldTableEmpty>(() => {
+    if (this.searching()) {
+      return {
+        title: `Aucun résultat pour « ${this.search()} »`,
+        subtitle: 'La recherche porte sur la société, le SIRET et le propriétaire de l’espace.',
+      };
+    }
     const current = this.filter();
     if (current === 'all') {
       return { title: 'Aucune société', subtitle: 'Aucun compte client pour le moment.' };
@@ -160,6 +186,16 @@ export class ComptesClientsPage {
   /** Libellé FR du statut d'une société. */
   protected statusLabel(company: AdminCompany): string {
     return STATUS_LABELS[company.status];
+  }
+
+  /** Nom lisible du propriétaire de l'espace, ou `null` s'il n'y en a pas. */
+  protected ownerName(company: AdminCompany): string | null {
+    const owner = company.owner;
+    if (owner === null) {
+      return null;
+    }
+    const full = `${owner.firstName} ${owner.lastName}`.trim();
+    return full === '' ? owner.email : full;
   }
 
   /** Nom lisible du contact principal, ou `—` si vide. */

@@ -24,6 +24,7 @@ function makeCompany(
     requestedPaymentTerm: null,
     primaryContact: { id: null, firstName: 'A', lastName: 'B', fonction: '', email: '', phone: '' },
     kbis: null,
+    owner: null,
     hasOpenSupportRequest,
     createdAt: '2026-07-30T10:00:00.000Z',
   };

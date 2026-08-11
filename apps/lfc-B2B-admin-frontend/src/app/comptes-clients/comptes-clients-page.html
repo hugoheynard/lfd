@@ -27,13 +27,32 @@
       <button foldButton (click)="load()">Réessayer</button>
     </div>
   } @else {
-    <fold-view-toggle
-      class="filter"
-      ariaLabel="Filtrer les comptes par statut"
-      [options]="segments"
-      [value]="filter()"
-      (valueChange)="onFilterChange($event)"
-    />
+    <div class="toolbar">
+      <fold-view-toggle
+        class="filter"
+        ariaLabel="Filtrer les comptes par statut"
+        [options]="segments"
+        [value]="filter()"
+        (valueChange)="onFilterChange($event)"
+      />
+
+      <!-- Trois chemins d'arrivée : le nom en tête, un SIRET lu sur un document,
+           ou la personne qui administre l'espace au téléphone. Un seul champ,
+           pour ne pas avoir à savoir d'avance dans lequel on cherche. -->
+      <fold-search
+        class="search"
+        size="sm"
+        placeholder="Société, SIRET, propriétaire de l’espace…"
+        (searchChange)="search.set($event)"
+      />
+    </div>
+
+    @if (searching() && state() === 'ready') {
+      <p class="result-count sec-hint">
+        {{ filtered().length }} résultat{{ filtered().length > 1 ? 's' : '' }} pour «
+        {{ search() }} »
+      </p>
+    }
 
     <fold-data-table
       caption="Comptes clients B2B"
@@ -72,6 +91,16 @@
         <span class="contact">{{ contactName(row) }}</span>
         @if (row.primaryContact.email) {
           <span class="contact-email">{{ row.primaryContact.email }}</span>
+        }
+      </ng-template>
+
+      <!-- Le propriétaire est CHERCHABLE : il doit donc être visible, sinon une
+           ligne remonterait sans qu'on voie pourquoi elle correspond. -->
+      <ng-template foldCell="owner" let-row>
+        @if (ownerName(row); as name) {
+          <span class="contact">{{ name }}</span>
+        } @else {
+          <span class="owner-none">Aucun</span>
         }
       </ng-template>
 

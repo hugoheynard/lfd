@@ -93,3 +93,26 @@ h1 {
 .contact {
   display: block;
 }
+
+/* Le filtre par statut et la recherche répondent à deux questions différentes :
+   ils partagent la ligne, pas le rôle. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.toolbar .search {
+  flex: 1 1 16rem;
+  max-width: 26rem;
+}
+
+.result-count {
+  margin: var(--fold-space-sm) 0 0;
+}
+
+.owner-none {
+  color: var(--fold-color-text-muted);
+}

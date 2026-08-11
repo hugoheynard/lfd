@@ -24,6 +24,7 @@ function company(over: Partial<AdminCompany> = {}): AdminCompany {
       phone: '',
     },
     kbis: null,
+    owner: null,
     hasOpenSupportRequest: false,
     createdAt: '2026-07-30T10:00:00.000Z',
     ...over,

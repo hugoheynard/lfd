@@ -18,6 +18,18 @@ export interface PrimaryContact {
   readonly phone: string;
 }
 
+/**
+ * Le **propriétaire de l'espace** : la personne qui administre la société sur la
+ * plateforme. Distinct du contact principal — celui-ci est un interlocuteur, qui
+ * n'a pas forcément de compte, et n'est pas forcément celui qui a ouvert
+ * l'espace. `null` tant que personne ne l'administre (dossier créé par le staff).
+ */
+export interface CompanyOwner {
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+}
+
 export interface Kbis {
   readonly fileName: string;
   readonly uploadedAt: string;
@@ -36,6 +48,7 @@ export interface AdminCompany {
   readonly paymentTerm: PaymentTerm;
   readonly requestedPaymentTerm: PaymentTerm | null;
   readonly primaryContact: PrimaryContact;
+  readonly owner: CompanyOwner | null;
   readonly kbis: Kbis | null;
   /**
    * Une demande de support **ouverte** est rattachée à la société. Distingue,
