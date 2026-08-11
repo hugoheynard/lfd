@@ -207,3 +207,30 @@ test.describe('retirer un moyen de paiement', () => {
     await expect(page.locator('fold-danger-zone')).toHaveCount(0);
   });
 });
+
+test.describe("préférence d'acheminement", () => {
+  test('enregistre le réglage SANS renvoyer le commercial en haut de page', async ({ page }) => {
+    // Recharger la fiche en la remplaçant par un « Chargement… » la démonte, et
+    // la position de lecture est perdue : le commercial se retrouvait au sommet,
+    // à chercher où il en était.
+    //
+    // On mesure la position À L'ÉCRAN de la section plutôt qu'un `scrollY` : la
+    // page défile dans le shell, pas dans la fenêtre, et un test qui interroge
+    // le mauvais conteneur ne prouve rien.
+    const api = new ComptesApiDouble();
+    await fiche(page, api);
+
+    const section = page.getByText("Préférences d'acheminement");
+    await section.scrollIntoViewIfNeeded();
+    const before = await section.boundingBox();
+
+    await page.getByRole('button', { name: 'Retrait', exact: true }).click();
+
+    await expect.poll(() => api.preference.method).toBe('pickup');
+    // La section est toujours là — la fiche n'a pas été démontée…
+    await expect(section).toBeVisible();
+    // …et elle n'a pas bougé sous les yeux du commercial.
+    const after = await section.boundingBox();
+    expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThan(2);
+  });
+});

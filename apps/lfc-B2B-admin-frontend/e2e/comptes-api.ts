@@ -46,6 +46,12 @@ export class ComptesApiDouble {
   activeMandate = false;
   /** Les crédits de règlement accordés — pilote la zone de danger. */
   grantedTerms: string[] = [];
+  /** La préférence d'acheminement, relue par la fiche après chaque réglage. */
+  preference: {
+    method: string | null;
+    pickupAddressId: string | null;
+    deliveryAddressId: string | null;
+  } = { method: null, pickupAddressId: null, deliveryAddressId: null };
 
   private contacts: CompanyContactView[] = [holder()];
 
@@ -76,6 +82,10 @@ export class ComptesApiDouble {
     }
     if (pathname.endsWith(`/admin/companies/${COMPANY_ID}/contacts`)) {
       return this.addContact(route);
+    }
+    if (pathname.endsWith(`/admin/companies/${COMPANY_ID}/fulfillment-preference`)) {
+      this.preference = route.request().postDataJSON() as ComptesApiDouble['preference'];
+      return route.fulfill({ status: 204, body: '' });
     }
     if (pathname.endsWith(`/admin/companies/${COMPANY_ID}/mandate`)) {
       return this.mandate(route, method);
@@ -235,8 +245,8 @@ export class ComptesApiDouble {
       status: 'pending',
       // Vide par défaut : la société paie à la commande, comme tout le monde.
       grantedTerms: this.grantedTerms,
-      // Aucune préférence d'acheminement : l'état de départ de toute société.
-      fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
+      // Relue telle qu'elle a été posée : la fiche doit refléter le réglage.
+      fulfillmentPreference: this.preference,
       requestedTerm: null,
       primaryContact: {
         id: null,

@@ -240,9 +240,24 @@ export class InformationsPage {
     void this.load();
   }
 
+  /**
+   * (Re)charge la fiche.
+   *
+   * L'écran de chargement n'apparaît qu'au **premier** passage. Après une
+   * mutation, la fiche est déjà à l'écran : la remplacer par un « Chargement… »
+   * la démonte, et le navigateur — n'ayant plus de contenu à tenir — **remonte
+   * en haut de page**. Le commercial qui vient de régler l'acheminement se
+   * retrouvait alors au sommet de la fiche, à chercher où il en était.
+   *
+   * On garde donc l'affichage courant pendant le rechargement : quelques
+   * centaines de millisecondes où l'écran montre l'état d'avant, ce qui est très
+   * préférable à un écran vide et une position perdue.
+   */
   protected async load(): Promise<void> {
     const id = this.companyId();
-    this.state.set('loading');
+    if (this.state() !== 'ready') {
+      this.state.set('loading');
+    }
     try {
       const [company, settings, pickups] = await Promise.all([
         id === null ? Promise.resolve(undefined) : this.service.getById(id),
