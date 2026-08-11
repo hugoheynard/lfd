@@ -143,6 +143,22 @@ reposera — rétro-évaluer ou non. Aujourd'hui : silence, explicitement.
 
 ---
 
+## 3.1 Ce qui compte dans l'historique (tranché)
+
+Toute moyenne suppose qu'on sache **ce qu'on compte**. Ces réponses ne sont pas
+des détails d'implémentation : chacune déplace les chiffres, donc les alertes.
+
+| Question                                           | Décision                                        | Pourquoi                                                                                                                                                                                                                                                                                                                |
+| -------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deux lignes du même SKU dans une commande ?        | **Impossible** — index unique `(order_id, sku)` | `place-order` fusionnait déjà ; la contrainte rend la règle structurelle. Sans elle, « la quantité commandée » dépend de la façon dont le panier a été saisi.                                                                                                                                                           |
+| Commandes **annulées** ?                           | **Hors** moyenne                                | Une commande annulée n'a jamais été un achat. La compter ferait baisser une moyenne sans qu'aucun volume n'ait bougé.                                                                                                                                                                                                   |
+| Commandes issues d'un **abonnement** ?             | **Dedans**                                      | C'est du volume réel, et à LFC c'est même le volume principal. Les exclure viderait la moyenne de sa substance. La contrepartie est connue : un panier récurrent stabilise la moyenne, donc une commande manuelle ressort plus vite — c'est **voulu**, un écart sur un client régulier vaut justement qu'on le regarde. |
+| Commandes **zéro friction** (`companyId = null`) ? | **Aucune alerte, et hors historique**           | Elles n'appartiennent à aucun compte : ni sujet où loger l'alerte, ni historique auquel les rattacher.                                                                                                                                                                                                                  |
+| Quels comptes évalue-t-on ?                        | Les sociétés **actives** seulement              | Un dossier en attente, suspendu ou résilié n'a pas d'habitudes à comparer, et personne pour agir dessus.                                                                                                                                                                                                                |
+| Norme d'un produit : moyenne ou médiane ?          | **Médiane**                                     | Une moyenne se fait déplacer par l'aberration qu'on cherche : une faute de frappe à 500 passée une fois éteindrait la détection des suivantes.                                                                                                                                                                          |
+
+---
+
 ## 4. La dérogation est **tout-ou-rien**
 
 Par (compte × type), trois états — et **pas de ligne du tout** quand le compte

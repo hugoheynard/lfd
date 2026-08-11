@@ -581,6 +581,12 @@ model OrderLine {
   quantity       Int
   lineTotalCents Int @map("line_total_cents")
 
+  // Un SKU n'apparaît qu'UNE fois par commande. `place-order` fusionne déjà les
+  // quantités du panier ; la contrainte rend la règle structurelle plutôt que
+  // conventionnelle. C'est aussi ce qui rend une moyenne par SKU calculable sans
+  // question : deux lignes du même produit dans une commande, et « la quantité
+  // commandée » n'aurait plus de définition unique.
+  @@unique([orderId, sku])
   @@index([orderId])
   @@index([sku]) // agrégation par SKU pour le plan de prod
   @@map("order_lines")

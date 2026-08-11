@@ -326,3 +326,60 @@ describe("émission du journal (order.placed)", () => {
     });
   });
 });
+
+describe("un SKU n'apparaît qu'une fois par commande", () => {
+  /**
+   * Régression : rien n'interdisait deux lignes du même produit dans une
+   * commande. « La quantité commandée d'un produit » n'avait alors pas de
+   * définition unique, et toute moyenne par SKU dépendait de la façon dont le
+   * panier avait été saisi. `place-order` fusionne, et l'index unique
+   * `(order_id, sku)` rend la règle structurelle — c'est le vrai SQL qui le
+   * prouve, pas le handler.
+   */
+  it("fusionne deux lignes du même SKU en une seule, quantités sommées", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+
+    const response = await ctx
+      .asSub(ADMIN)
+      .post("/orders")
+      .send({
+        ...pickupOrder(companyId),
+        lines: [
+          { sku: "VIE-001", quantity: 2 },
+          { sku: "VIE-001", quantity: 5 },
+        ],
+      })
+      .expect(201);
+
+    const placed = jsonBody<PlacedOrderResponse>(response);
+    const lines = await ctx.prisma.orderLine.findMany({ where: { orderId: placed.id } });
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0]?.quantity).toBe(7);
+  });
+
+  it("la base refuse le doublon, même écrit par un chemin qui contournerait le handler", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+    const placed = jsonBody<PlacedOrderResponse>(
+      await ctx.asSub(ADMIN).post("/orders").send(pickupOrder(companyId)).expect(201),
+    );
+    const existing = await ctx.prisma.orderLine.findFirstOrThrow({ where: { orderId: placed.id } });
+
+    // L'invariant est dans le schéma, pas seulement dans le code applicatif :
+    // un import, un seed ou un futur handler ne peuvent pas le contourner.
+    await expect(
+      ctx.prisma.orderLine.create({
+        data: {
+          orderId: placed.id,
+          sku: existing.sku,
+          productNameSnapshot: existing.productNameSnapshot,
+          unitPriceCents: existing.unitPriceCents,
+          quantity: 1,
+          lineTotalCents: existing.unitPriceCents,
+        },
+      }),
+    ).rejects.toThrow();
+  });
+});
