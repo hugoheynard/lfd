@@ -254,6 +254,9 @@ model Company {
 
   /// Dérogations de ce compte aux règles d'alerte globales (cf. alerts/).
   alertOverrides AccountAlertOverride[]
+
+  /// Alertes déclenchées sur ce compte (cf. alerts/).
+  alerts AccountAlert[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1249,5 +1252,79 @@ model AccountAlertOverride {
   @@id([companyId, kind])
   @@index([companyId])
   @@map("account_alert_overrides")
+  @@schema("public")
+}
+
+/// Une **alerte déclenchée** : un type, une commande, et les lignes concernées.
+///
+/// Une ligne par (type × commande), **pas par produit** : un client qui élargit
+/// sa gamme sur quinze références produirait quinze alertes, et la première vraie
+/// utilisation noierait la liste. Le bruit est ainsi borné par construction.
+///
+/// `findings` est un **snapshot figé** (quantité, référence, écart, message) : la
+/// moyenne d'aujourd'hui ne doit pas réécrire ce qu'on a constaté en mars. Une
+/// alerte est un fait daté, pas une requête rejouée à l'affichage.
+model AccountAlert {
+  /// ULID (fourni par l'`IdGenerator`) : triable par le temps.
+  id String @id
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  kind String
+
+  orderId String @map("order_id")
+  /// Référence humaine figée — c'est elle qu'on dicte au téléphone.
+  orderNumber String @map("order_number")
+
+  /// Anti-doublon : `kind:orderId`. Ne porte PAS les seuils — réévaluer après un
+  /// ajustement de réglage ne doit pas repeupler l'historique.
+  idempotencyKey String @unique @map("idempotency_key")
+
+  /// Temps de l'ÉVÉNEMENT (autorité = `Clock`), distinct de l'écriture.
+  occurredAt DateTime @map("occurred_at")
+
+  /// Les constats, figés : [{ sku, productName, quantity, baseline, deviationPercent, message }].
+  findings Json
+
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  /// Le `sub` staff qui a acquitté — figé, résolvable même après un changement de nom.
+  acknowledgedBy String? @map("acknowledged_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([companyId, occurredAt])
+  @@index([companyId, acknowledgedAt])
+  @@map("account_alerts")
+  @@schema("public")
+}
+
+/// La **norme d'un produit** : ce qu'on en commande habituellement, tous comptes
+/// confondus. Read-model **matérialisé**, recalculé par cron.
+///
+/// Pas calculable à la volée : un agrégat cross-comptes sur six mois, par SKU, à
+/// chaque commande, c'est la requête qui met une base à genoux le jour où
+/// l'historique grossit. Même patron que `LeadScore`.
+///
+/// `medianQuantity` et non une moyenne : une moyenne se fait déplacer par
+/// l'aberration qu'on cherche, donc une faute de frappe passée une fois
+/// éteindrait la détection des suivantes.
+model ProductNorm {
+  /// Référence catalogue (SKU du PIM) — String, pas une FK (autre db).
+  sku String @id
+
+  /// Médiane des quantités observées sur la fenêtre. Décimal : la médiane d'un
+  /// échantillon pair tombe entre deux entiers.
+  medianQuantity Decimal @map("median_quantity") @db.Decimal(12, 2)
+
+  /// Nombre de lignes observées — sous un plancher, il n'y a pas de « norme ».
+  sampleLines Int @map("sample_lines")
+
+  /// La fenêtre sur laquelle cette norme a été mesurée, en jours.
+  windowDays Int @map("window_days")
+
+  computedAt DateTime @map("computed_at")
+
+  @@map("product_norms")
   @@schema("public")
 }
