@@ -27,10 +27,24 @@ describe("ContactDetails", () => {
     expect(ContactDetails.create({ ...input, fonction: "  " }).fonction).toBe("");
   });
 
+  it("accepte un interlocuteur dont on ne connaît que l'adresse", () => {
+    // Le commercial note l'e-mail au comptoir : c'est lui qui identifie la
+    // personne et par lui qu'elle recevra son accès. Le nom se complète après.
+    const contact = ContactDetails.create({ ...input, firstName: "", lastName: "" });
+
+    expect(contact.firstName.value).toBe("");
+    expect(contact.lastName.value).toBe("");
+  });
+
   it("propage les refus des value objects sous-jacents", () => {
-    expect(() => ContactDetails.create({ ...input, lastName: "" })).toThrow(InvalidPersonNameError);
+    // L'adresse, elle, reste obligatoire et vérifiée : sans elle, il n'y a
+    // personne à joindre.
     expect(() => ContactDetails.create({ ...input, email: "pas-un-email" })).toThrow(
       InvalidEmailError,
+    );
+    // Facultatif ne veut pas dire libre : la borne de longueur tient.
+    expect(() => ContactDetails.create({ ...input, lastName: "x".repeat(200) })).toThrow(
+      InvalidPersonNameError,
     );
   });
 

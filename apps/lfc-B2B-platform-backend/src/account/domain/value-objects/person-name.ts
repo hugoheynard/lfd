@@ -29,6 +29,26 @@ export class PersonName {
     return new PersonName(trimmed);
   }
 
+  /**
+   * Le nom **quand on l'a**, vide sinon.
+   *
+   * Une personne peut entrer dans le système sans qu'on connaisse son nom : le
+   * commercial qui ouvre un compte devant son client note son adresse — c'est
+   * elle qui l'identifie et par elle qu'il recevra son mot de passe. Exiger le
+   * prénom à cet instant bloque une saisie faite au comptoir, pour une donnée
+   * de confort.
+   *
+   * La borne de longueur, elle, tient toujours : facultatif ne veut pas dire
+   * libre.
+   */
+  static optional(raw: string, field: string): PersonName {
+    const trimmed = raw.trim().replace(/\s+/gu, " ");
+    if (trimmed.length > PERSON_NAME_MAX_LENGTH) {
+      throw new InvalidPersonNameError(field, `au plus ${PERSON_NAME_MAX_LENGTH} caractères`);
+    }
+    return new PersonName(trimmed);
+  }
+
   toString(): string {
     return this.value;
   }

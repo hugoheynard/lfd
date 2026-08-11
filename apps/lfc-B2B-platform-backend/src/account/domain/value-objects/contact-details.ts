@@ -37,8 +37,12 @@ export class ContactDetails {
 
   static create(input: ContactDetailsInput): ContactDetails {
     return new ContactDetails(
-      PersonName.create(input.firstName, "Prénom"),
-      PersonName.create(input.lastName, "Nom"),
+      // Prénom et nom sont FACULTATIFS : ce qui identifie un interlocuteur,
+      // c'est son adresse — c'est par elle qu'on le joint et qu'il reçoit son
+      // accès. Les exiger bloquerait une saisie faite au comptoir pour une
+      // donnée de confort, qui se complète en deux clics plus tard.
+      PersonName.optional(input.firstName, "Prénom"),
+      PersonName.optional(input.lastName, "Nom"),
       fonction(input.fonction),
       EmailAddress.create(input.email),
       PhoneNumber.create(input.phone),
