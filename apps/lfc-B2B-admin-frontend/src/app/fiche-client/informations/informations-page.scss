@@ -4,6 +4,19 @@
   gap: var(--fold-space-lg);
 }
 
+/* Les fragments de champs partagés arrivent nus (ils ne portent pas leur propre
+   espacement) : c'est la carte qui donne le rythme vertical. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.open-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .state {
   display: flex;
   flex-direction: column;

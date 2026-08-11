@@ -14,9 +14,7 @@ export const routes: Routes = [
     path: 'comptes-clients/nouveau',
     title: 'Nouveau compte client — LFC B2B admin',
     loadComponent: () =>
-      import('./comptes-clients/nouveau-compte/nouveau-compte-page').then(
-        (m) => m.NouveauComptePage,
-      ),
+      import('./fiche-client/nouveau-compte-shell').then((m) => m.NouveauCompteShell),
   },
   {
     // Le détail d'une commande vit HORS de la fiche client : une commande « zéro

@@ -1,22 +1,35 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
-  ActivationPiece,
   BillingAddressView,
   DeliveryAddressView,
   DeliveryContact,
   PickupAddressView,
   PlatformSettings,
 } from '@lfd/contracts';
-import { FoldButtonComponent, FoldPanelHostService } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldCardComponent,
+  FoldPageSectionComponent,
+  FoldPanelHostService,
+} from 'fold-ng';
 import {
   CompanyActivationChecklist,
   CompanyAddressesCard,
   CompanyContactsCard,
   CompanyIdentityCard,
+  CompanyIdentityFields,
   CompanyReferenceCard,
+  ContactFields,
+  EMPTY_COMPANY_CONTACT_DRAFT,
+  EMPTY_COMPANY_IDENTITY_DRAFT,
+  isCompanyContactValid,
+  isCompanyIdentityValid,
   type CompanyActivationStep,
   type CompanyContactCardView,
+  type CompanyContactDraft,
+  type CompanyIdentityDraft,
   type CompanyIdentityView,
 } from '@lfd/b2b-ui/company';
 
@@ -26,20 +39,12 @@ import { NotifyService } from '../../notify.service';
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
 import { PlatformSettingsService } from '../../reglages/platform-settings.service';
 import { toContactCards, toIdentityView } from '../admin-company-view';
+import { activationSteps, missingRequiredPieces, type ActivationStep } from './activation-steps';
 import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
 import { AdminReglementPanel } from '../panels/reglement-panel/reglement-panel';
 
 type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
-type StepKey = 'tva' | 'kbis' | 'billing' | 'delivery' | 'payment';
-
-/** Une étape d'activation restante, telle que la fiche la calcule. */
-interface Step {
-  readonly key: StepKey;
-  readonly title: string;
-  readonly detail: string;
-  readonly cta: string;
-}
 
 /**
  * Fiche **détail** d'un compte client (staff) — reflète l'**état d'activation**
@@ -48,14 +53,30 @@ interface Step {
  * (identité, contacts, **adresses**), calcule les **pièces manquantes** et les
  * présente en **synthèse** (checklist) : chaque raccourci ouvre le panneau staff
  * correspondant. À la fermeture d'un panneau, la fiche se recharge.
+ *
+ * **Deux états, une seule page.** Sans identifiant de route, c'est un compte
+ * qu'on est en train d'**ouvrir** : les mêmes sections, la même synthèse — vides.
+ * Ouvrir un compte et le compléter ne sont pas deux écrans, c'est le même
+ * travail à deux instants, et une page jumelle finirait par diverger de sa
+ * sœur au premier champ ajouté d'un seul côté.
+ *
+ * L'identité y est un **formulaire** plutôt qu'une carte à panneau, seule
+ * différence irréductible : un panneau modifie une société, et il n'y en a pas
+ * encore. Une fois enregistrée, la page devient la fiche **sans navigation
+ * visible** — le commercial reste là où il en était.
  */
 @Component({
   selector: 'app-informations-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldCardComponent,
+    FoldPageSectionComponent,
     CompanyReferenceCard,
     CompanyIdentityCard,
+    CompanyIdentityFields,
+    ContactFields,
     CompanyContactsCard,
     CompanyAddressesCard,
     CompanyActivationChecklist,
@@ -72,8 +93,28 @@ export class InformationsPage {
   private readonly settingsService = inject(PlatformSettingsService);
   private readonly pickupsService = inject(PickupAddressesService);
 
+  /**
+   * L'identifiant de la société, `null` quand on est en train de l'ouvrir. Lu au
+   * `snapshot` : la route ne change pas sous la page, sauf à la création — et là
+   * on recharge nous-mêmes.
+   */
+  protected readonly companyId = signal<string | null>(this.route.snapshot.paramMap.get('id'));
+
+  /** Mode **ouverture** : la société n'existe pas encore. */
+  protected readonly draft = computed(() => this.companyId() === null);
+
   protected readonly state = signal<LoadState>('loading');
   protected readonly company = signal<AdminCompanyDetail | null>(null);
+
+  /** Saisie d'ouverture — le strict nécessaire pour que la société existe. */
+  protected readonly identityDraft = signal<CompanyIdentityDraft>(EMPTY_COMPANY_IDENTITY_DRAFT);
+  protected readonly contactDraft = signal<CompanyContactDraft>(EMPTY_COMPANY_CONTACT_DRAFT);
+  protected readonly creating = signal(false);
+
+  protected readonly canCreate = computed(
+    () =>
+      isCompanyIdentityValid(this.identityDraft()) && isCompanyContactValid(this.contactDraft()),
+  );
   /** Config plateforme (modes des pièces) — filtre la synthèse et le gate. */
   protected readonly settings = signal<PlatformSettings | null>(null);
   /** Le point de retrait par défaut, reflété quand la livraison est masquée. */
@@ -97,59 +138,10 @@ export class InformationsPage {
     () => this.company()?.addresses.deliveries ?? [],
   );
 
-  /**
-   * Les pièces restantes à compléter (les faites disparaissent). Une pièce
-   * `hidden` (config) est retirée de la synthèse — on ne demande pas ce qui
-   * n'existe pas (ex. livraison sans service).
-   */
-  private readonly steps = computed<readonly Step[]>(() => {
-    const company = this.company();
-    const settings = this.settings();
-    if (company === null || settings === null) {
-      return [];
-    }
-    const visible = (piece: ActivationPiece): boolean => settings[piece] !== 'hidden';
-    const steps: Step[] = [];
-    if (visible('tva') && company.vatNumberRequired && company.tvaIntracom.trim() === '') {
-      steps.push({
-        key: 'tva',
-        title: 'Numéro de TVA',
-        detail: 'La forme juridique impose un numéro de TVA intracommunautaire.',
-        cta: 'Renseigner la TVA',
-      });
-    }
-    if (visible('kbis') && company.kbis === null) {
-      steps.push({
-        key: 'kbis',
-        title: 'Extrait KBIS',
-        detail: "Déposez l'extrait KBIS reçu du client.",
-        cta: 'Déposer le KBIS',
-      });
-    }
-    if (visible('billing') && company.addresses.billing === null) {
-      steps.push({
-        key: 'billing',
-        title: 'Adresse de facturation',
-        detail: 'Renseignez l’adresse de facturation.',
-        cta: 'Ajouter la facturation',
-      });
-    }
-    if (visible('delivery') && company.addresses.deliveries.length === 0) {
-      steps.push({
-        key: 'delivery',
-        title: 'Adresse de livraison',
-        detail: 'Ajoutez au moins un point de livraison.',
-        cta: 'Ajouter une livraison',
-      });
-    }
-    steps.push({
-      key: 'payment',
-      title: 'Condition de règlement',
-      detail: 'Fixez la condition de règlement convenue.',
-      cta: 'Fixer la condition',
-    });
-    return steps;
-  });
+  /** Ce qu'il reste à compléter — sans société, c'est **tout** (mode ouverture). */
+  private readonly steps = computed<readonly ActivationStep[]>(() =>
+    activationSteps(this.company(), this.settings()),
+  );
 
   /** Étapes projetées vers le view-model de la lib (ajout du `kind` d'UI). */
   protected readonly libSteps = computed<readonly CompanyActivationStep[]>(() =>
@@ -157,31 +149,16 @@ export class InformationsPage {
   );
 
   /** Vrai quand il ne reste que la condition de règlement (les pièces sont là). */
-  protected readonly ready = computed(() => this.steps().every((step) => step.key === 'payment'));
+  protected readonly ready = computed(
+    () => !this.draft() && this.steps().every((step) => step.key === 'payment'),
+  );
 
   /** Le compte est-il en attente d'activation ? (Le CTA n'a de sens que là.) */
   protected readonly isPending = computed(() => this.company()?.status === 'pending');
 
-  /** Pièces `required` encore manquantes (applicables) — miroir du gate serveur. */
-  private readonly missingRequired = computed<readonly ActivationPiece[]>(() => {
-    const company = this.company();
-    const settings = this.settings();
-    if (company === null || settings === null) {
-      return [];
-    }
-    const present: Record<ActivationPiece, boolean> = {
-      tva: !company.vatNumberRequired || company.tvaIntracom.trim() !== '',
-      kbis: company.kbis !== null,
-      billing: company.addresses.billing !== null,
-      delivery: company.addresses.deliveries.length > 0,
-    };
-    const pieces: ActivationPiece[] = ['tva', 'kbis', 'billing', 'delivery'];
-    return pieces.filter((piece) => settings[piece] === 'required' && !present[piece]);
-  });
-
   /** Le compte peut-il être activé ? (pending + aucune pièce requise manquante.) */
   protected readonly canActivate = computed(
-    () => this.isPending() && this.missingRequired().length === 0,
+    () => this.isPending() && missingRequiredPieces(this.company(), this.settings()).length === 0,
   );
 
   constructor() {
@@ -189,28 +166,56 @@ export class InformationsPage {
   }
 
   protected async load(): Promise<void> {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id === null) {
-      this.state.set('notfound');
-      return;
-    }
+    const id = this.companyId();
     this.state.set('loading');
     try {
       const [company, settings, pickups] = await Promise.all([
-        this.service.getById(id),
+        id === null ? Promise.resolve(undefined) : this.service.getById(id),
         this.settingsService.get(),
         this.pickupsService.list().catch(() => [] as readonly PickupAddressView[]),
       ]);
-      if (company === undefined) {
+      // Un compte qu'on ouvre n'a pas d'id : l'absence est ATTENDUE, elle ne
+      // vaut pas « introuvable ».
+      if (company === undefined && id !== null) {
         this.state.set('notfound');
         return;
       }
-      this.company.set(company);
+      this.company.set(company ?? null);
       this.settings.set(settings);
       this.defaultPickup.set(pickups.find((p) => p.isDefault) ?? pickups[0] ?? null);
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  /**
+   * Ouvre le compte à partir du bloc d'identité, puis **reste sur la page** :
+   * l'URL passe à celle de la fiche, les sections en attente s'allument, et le
+   * commercial continue là où il en était. Rien à rouvrir, rien à retrouver.
+   */
+  protected async createAccount(): Promise<void> {
+    if (!this.canCreate() || this.creating()) {
+      return;
+    }
+    this.creating.set(true);
+    const identity = this.identityDraft();
+    const contact = this.contactDraft();
+    try {
+      const created = await this.service.create({
+        identity: trimIdentity(identity),
+        contact: trimContact(contact),
+      });
+      this.notify.success('Compte ouvert — le dossier peut être complété.');
+      // `replaceUrl` : revenir en arrière doit ramener à la liste, pas à un
+      // formulaire déjà envoyé qu'un second clic dupliquerait.
+      await this.router.navigate(['/comptes-clients', created.id, 'informations'], {
+        replaceUrl: true,
+      });
+    } catch (error) {
+      this.notify.error(error);
+    } finally {
+      this.creating.set(false);
     }
   }
 
@@ -292,6 +297,31 @@ export class InformationsPage {
   protected back(): void {
     void this.router.navigate(['/comptes-clients']);
   }
+}
+
+/**
+ * Rogne l'identité avant l'envoi : un espace de copier-coller ne doit pas
+ * devenir une raison sociale qui ne ressort d'aucune recherche.
+ */
+function trimIdentity(draft: CompanyIdentityDraft): CompanyIdentityDraft {
+  return {
+    raisonSociale: draft.raisonSociale.trim(),
+    enseigne: draft.enseigne.trim(),
+    formeJuridique: draft.formeJuridique.trim(),
+    siret: draft.siret.trim(),
+    tvaIntracom: draft.tvaIntracom.trim(),
+  };
+}
+
+/** Idem pour le contact — l'e-mail surtout, qui sert de clé humaine. */
+function trimContact(draft: CompanyContactDraft): CompanyContactDraft {
+  return {
+    firstName: draft.firstName.trim(),
+    lastName: draft.lastName.trim(),
+    fonction: draft.fonction.trim(),
+    email: draft.email.trim(),
+    phone: draft.phone.trim(),
+  };
 }
 
 /** Le contact principal, projeté en contact de livraison connu (préremplissage). */

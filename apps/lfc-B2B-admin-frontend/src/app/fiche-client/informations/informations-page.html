@@ -16,31 +16,89 @@
       </div>
     }
     @case ('ready') {
-      @if (company(); as c) {
-        <div class="fiche">
-          <lfd-company-activation-checklist
-            [steps]="libSteps()"
-            [ready]="ready()"
-            readyNote="Toutes les pièces sont réunies — le compte peut être activé."
-            (stepAction)="act($event)"
-            (fileSelected)="onFile($event)"
-          >
-            <p intro>
+      <div class="fiche">
+        <!-- La MÊME synthèse qu'une fiche existante : à l'ouverture, tout est
+             encore dû. Le commercial qui a le client au téléphone sait ainsi
+             quelles pièces réclamer maintenant, plutôt que de les découvrir
+             une par une plus tard. -->
+        <lfd-company-activation-checklist
+          [steps]="libSteps()"
+          [ready]="ready()"
+          readyNote="Toutes les pièces sont réunies — le compte peut être activé."
+          (stepAction)="act($event)"
+          (fileSelected)="onFile($event)"
+        >
+          <p intro>
+            @if (draft()) {
+              Enregistrez l'identité ci-dessous pour ouvrir le compte : les pièces deviendront alors
+              complétables, une par une.
+            } @else {
               Complétez les pièces manquantes pour activer ce compte, à la place du client.
-            </p>
-          </lfd-company-activation-checklist>
+            }
+          </p>
+        </lfd-company-activation-checklist>
 
+        @if (company(); as c) {
           <lfd-company-reference-card [reference]="c.reference" label="Référence client" />
+        }
 
-          @if (identity(); as id) {
-            <lfd-company-identity-card
-              [identity]="id"
-              [canManage]="false"
-              [canManageKbis]="false"
-              [canAccessKbis]="false"
-            />
-          }
+        @if (draft()) {
+          <fold-page-section
+            title="Identité légale"
+            icon="company"
+            description="Telle qu'elle figure au registre du commerce."
+          >
+            <fold-card class="form">
+              <lfd-company-identity-fields
+                [value]="identityDraft()"
+                (valueChange)="identityDraft.set($event)"
+              />
+            </fold-card>
+          </fold-page-section>
 
+          <fold-page-section
+            title="Contact principal"
+            icon="user"
+            description="L'interlocuteur de la société — celui que l'on rappelle."
+          >
+            <fold-card class="form">
+              <lfd-contact-fields
+                [value]="contactDraft()"
+                (valueChange)="contactDraft.set($event)"
+              />
+            </fold-card>
+          </fold-page-section>
+
+          <div class="open-actions">
+            <button
+              foldButton
+              intent="primary"
+              icon="check"
+              [disabled]="!canCreate() || creating()"
+              (click)="createAccount()"
+            >
+              Ouvrir le compte
+            </button>
+          </div>
+
+          <!-- Les sections qui suivent sont MONTRÉES, pas cachées : elles disent
+               ce qui reste à faire. Les masquer donnerait l'illusion d'un
+               dossier terminé au moment où il commence. -->
+          <fold-callout variant="info">
+            Adresses, KBIS, règlement et accès du client s'enregistrent
+            <strong>section par section</strong>, dès que le compte est ouvert. Vous pourrez vous
+            interrompre et reprendre : ce qui est enregistré est enregistré.
+          </fold-callout>
+        } @else if (identity(); as id) {
+          <lfd-company-identity-card
+            [identity]="id"
+            [canManage]="false"
+            [canManageKbis]="false"
+            [canAccessKbis]="false"
+          />
+        }
+
+        @if (!draft()) {
           <lfd-company-contacts-card [contacts]="contacts()" [canManage]="false" />
 
           <lfd-company-addresses-card
@@ -51,8 +109,8 @@
             [showPickup]="deliveryHidden()"
             [pickup]="defaultPickup()"
           />
-        </div>
-      }
+        }
+      </div>
     }
   }
 </section>
