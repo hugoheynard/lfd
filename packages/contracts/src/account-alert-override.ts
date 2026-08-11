@@ -114,11 +114,14 @@ function stable(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map((item) => stable(item)).join(",")}]`;
   }
-  if (typeof value === "object" && value !== null) {
-    const entries = Object.entries(value as Record<string, unknown>).sort(([x], [y]) =>
-      x.localeCompare(y),
-    );
+  if (isRecord(value)) {
+    const entries = Object.entries(value).sort(([x], [y]) => x.localeCompare(y));
     return `{${entries.map(([key, item]) => `${key}:${stable(item)}`).join(",")}}`;
   }
   return JSON.stringify(value) ?? "null";
+}
+
+/** Garde de type plutôt qu'assertion : on vérifie, on n'affirme pas. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
