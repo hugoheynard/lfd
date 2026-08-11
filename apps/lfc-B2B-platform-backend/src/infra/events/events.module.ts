@@ -1,6 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
+import { BackgroundWork } from "./background-work.js";
 import { CqrsDomainEventPublisher } from "./cqrs-domain-event-publisher.js";
 import { DomainEventPublisher } from "./domain-event-publisher.js";
 
@@ -13,7 +14,10 @@ import { DomainEventPublisher } from "./domain-event-publisher.js";
 @Global()
 @Module({
   imports: [CqrsModule],
-  providers: [{ provide: DomainEventPublisher, useClass: CqrsDomainEventPublisher }],
-  exports: [DomainEventPublisher],
+  providers: [
+    { provide: DomainEventPublisher, useClass: CqrsDomainEventPublisher },
+    BackgroundWork,
+  ],
+  exports: [DomainEventPublisher, BackgroundWork],
 })
 export class EventsModule {}

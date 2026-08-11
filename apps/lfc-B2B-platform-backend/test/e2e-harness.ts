@@ -33,6 +33,7 @@ import type { App } from "supertest/types";
 import { AppModule } from "../src/app.module.js";
 import { requestContextMiddleware } from "../src/infra/context/request-context.middleware.js";
 import { AccessTokenVerifier } from "../src/infra/auth/access-token.verifier.js";
+import { BackgroundWork } from "../src/infra/events/background-work.js";
 import { PrismaService } from "../src/infra/database/prisma.service.js";
 import { AppErrorFilter } from "../src/shared/http/app-error.filter.js";
 import type { VerifiedToken } from "../src/infra/auth/principal.js";
@@ -122,6 +123,7 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   await app.init();
 
   const prisma = app.get(PrismaService);
+  const background = app.get(BackgroundWork);
   await assertDatabaseReady(prisma);
 
   const server = (): request.Agent => request.agent(app.getHttpServer());
@@ -131,7 +133,14 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
     prisma,
     http: server,
     asSub: (sub) => server().set("Authorization", `Bearer ${sub}`),
-    reset: () => truncateAll(prisma),
+    // On **draine avant de vider**. Une évaluation lancée sur `order.placed`
+    // tourne hors de la requête HTTP : sans cette attente, elle peut écrire
+    // APRÈS le `TRUNCATE`, et son alerte réapparaît alors dans le test suivant —
+    // un échec qui accuse le mauvais test, une fois sur sept.
+    reset: async () => {
+      await background.whenIdle();
+      await truncateAll(prisma);
+    },
     close: () => app.close(),
   };
 }
