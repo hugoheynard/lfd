@@ -137,7 +137,8 @@ async function seedCompany(
       reference: persona.reference,
       raisonSociale: persona.raisonSociale,
       formeJuridique: "SAS",
-      siret: "00000000000000",
+      // SIRET inconnu = chaîne vide (l'ouverture sans papiers est le cas normal).
+      siret: "",
       nafCode: company.nafCode,
       contactPrenom: "Camille",
       contactNom: "Roy",

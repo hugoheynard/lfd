@@ -49,6 +49,7 @@ import {
   AccountAccessGranter,
   GrantAccountAccess,
 } from "./application/services/grant-account-access.service.js";
+import { CompanyContactBook } from "./application/services/company-contact-book.service.js";
 import { FindCustomerByEmailHandler } from "./application/queries/find-customer-by-email.handler.js";
 import { SearchCustomersHandler } from "./application/queries/search-customers.handler.js";
 import { ListCompanyMembersHandler } from "./application/queries/list-company-members.handler.js";
@@ -139,6 +140,9 @@ import { MeController } from "./http/me.controller.js";
     UpdateContactByStaffHandler,
     RemoveContactByStaffHandler,
     { provide: AccountAccessGranter, useClass: GrantAccountAccess },
+    // Le carnet d'interlocuteurs : ses deux règles (une adresse, un rôle) valent
+    // pour les deux portes, elles ne vivent donc pas dans les handlers.
+    CompanyContactBook,
     Auth0ManagementClient,
     { provide: CompanyMemberReader, useClass: PrismaCompanyMemberReader },
     { provide: CompanyMemberRepository, useClass: PrismaCompanyMemberRepository },

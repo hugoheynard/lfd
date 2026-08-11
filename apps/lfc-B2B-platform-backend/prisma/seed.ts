@@ -65,7 +65,8 @@ async function main(): Promise<void> {
       reference: "C-DEV001",
       raisonSociale: COMPANY_NAME,
       formeJuridique: "SAS",
-      siret: "00000000000000",
+      // SIRET inconnu = chaîne vide (l'ouverture sans papiers est le cas normal).
+      siret: "",
       contactPrenom: "Hugo",
       contactNom: "Heynard",
       contactEmail: EMAIL,

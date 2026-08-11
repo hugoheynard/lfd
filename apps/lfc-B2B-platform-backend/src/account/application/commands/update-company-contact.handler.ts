@@ -1,6 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { CompanyContactRepository } from "../../domain/ports/company-contact.repository.js";
+import { CompanyContactBook } from "../services/company-contact-book.service.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
@@ -14,7 +14,7 @@ export class UpdateCompanyContactHandler implements ICommandHandler<
 > {
   constructor(
     private readonly memberships: MembershipReader,
-    private readonly contacts: CompanyContactRepository,
+    private readonly book: CompanyContactBook,
   ) {}
 
   async execute(command: UpdateCompanyContactCommand): Promise<void> {
@@ -23,7 +23,7 @@ export class UpdateCompanyContactHandler implements ICommandHandler<
 
     // Le repository filtre sur (id ET companyId) : un contact d'une autre
     // entreprise est traité comme absent, jamais modifié.
-    await this.contacts.update(
+    await this.book.replace(
       command.companyId,
       command.contactId,
       ContactDetails.create(command.details),

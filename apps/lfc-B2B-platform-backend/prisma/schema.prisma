@@ -255,6 +255,10 @@ model Company {
   orders          Order[]
   supportRequests SupportRequest[]
 
+  // Unicité du SIRET : index PARTIEL (`siret <> ''`), donc invisible du schéma
+  // Prisma — il vit dans la migration `20260811160000_unicite_siret_et_interlocuteur`.
+  // Le SIRET est facultatif à l'ouverture ; les chaînes vides sont des absences,
+  // pas des doublons.
   @@index([siret])
   @@map("companies")
   @@schema("public")
@@ -439,6 +443,9 @@ model CompanyContact {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  // Une adresse = un interlocuteur par société. Index unique sur
+  // (company_id, lower(email)), posé en SQL dans la même migration : Prisma ne
+  // sait pas exprimer d'index sur expression.
   @@index([companyId])
   @@map("company_contacts")
   @@schema("public")

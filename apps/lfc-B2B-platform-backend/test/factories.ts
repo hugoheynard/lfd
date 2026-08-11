@@ -19,6 +19,7 @@ import {
   type Membership,
   type User,
 } from "../src/infra/database/client/client.js";
+import { Siret } from "../src/account/domain/value-objects/siret.js";
 import type { PrismaService } from "../src/infra/database/prisma.service.js";
 
 /** Ce qu'un test peut vouloir imposer sur une société. */
@@ -55,7 +56,9 @@ export function createCompany(prisma: PrismaService, seed: CompanySeed = {}): Pr
       reference: `C-T${referenceSeq.toString().padStart(5, "0")}`,
       raisonSociale: seed.raisonSociale ?? "Café de Test SAS",
       formeJuridique: "SAS",
-      siret: seed.siret ?? "12345678900015",
+      // SIRET distinct par appel : la base en garantit désormais l'unicité, et
+      // deux sociétés témoins d'un même test sont deux vraies sociétés.
+      siret: seed.siret ?? nextValidSiret(),
       contactPrenom: "Camille",
       contactNom: "Durand",
       contactEmail: "camille@test.fr",
@@ -94,4 +97,37 @@ export function attachTo(
   role: CustomerRole = CustomerRole.orders,
 ): Promise<Membership> {
   return prisma.membership.create({ data: { userId, companyId, role } });
+}
+
+/**
+ * Un SIRET **distinct et valide** pour chaque société témoin.
+ *
+ * Distinct parce que la base en exige l'unicité ; valide parce que le domaine
+ * en vérifie la clé de contrôle dès qu'il relit la société — une donnée de test
+ * que le domaine refuserait est une donnée que la production ne verra jamais,
+ * et le test ne prouverait alors rien.
+ *
+ * La clé n'est pas recalculée ici : on la **demande au value object**, en
+ * essayant les dix chiffres possibles. Dupliquer la règle de Luhn dans les
+ * tests, ce serait la maintenir à deux endroits — et la voir diverger.
+ */
+function nextValidSiret(): string {
+  const base = `1234${referenceSeq.toString().padStart(9, "0")}`;
+  for (let key = 0; key <= 9; key += 1) {
+    const candidate = `${base}${key.toString()}`;
+    if (isAcceptedByDomain(candidate)) {
+      return candidate;
+    }
+  }
+  throw new Error(`Aucune clé de contrôle valide pour ${base} — la règle a changé.`);
+}
+
+/** Le domaine accepte-t-il ce SIRET ? Seule autorité en la matière. */
+function isAcceptedByDomain(candidate: string): boolean {
+  try {
+    Siret.createOptional(candidate);
+    return true;
+  } catch {
+    return false;
+  }
 }

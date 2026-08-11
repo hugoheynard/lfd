@@ -4,6 +4,7 @@ import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyContactRepository } from "../../domain/ports/company-contact.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
+import { CompanyContactBook } from "../services/company-contact-book.service.js";
 import {
   AddContactByStaffCommand,
   RemoveContactByStaffCommand,
@@ -37,10 +38,10 @@ export class UpdatePrimaryContactByStaffHandler implements ICommandHandler<
 /** Ajoute un interlocuteur **additionnel** — un carnet d'adresses, pas un accès. */
 @CommandHandler(AddContactByStaffCommand)
 export class AddContactByStaffHandler implements ICommandHandler<AddContactByStaffCommand, string> {
-  constructor(private readonly contacts: CompanyContactRepository) {}
+  constructor(private readonly book: CompanyContactBook) {}
 
   async execute(command: AddContactByStaffCommand): Promise<string> {
-    return await this.contacts.add(
+    return await this.book.add(
       command.companyId,
       ContactDetails.create(command.details),
       command.role,
@@ -53,10 +54,10 @@ export class UpdateContactByStaffHandler implements ICommandHandler<
   UpdateContactByStaffCommand,
   void
 > {
-  constructor(private readonly contacts: CompanyContactRepository) {}
+  constructor(private readonly book: CompanyContactBook) {}
 
   async execute(command: UpdateContactByStaffCommand): Promise<void> {
-    await this.contacts.update(
+    await this.book.replace(
       command.companyId,
       command.contactId,
       ContactDetails.create(command.details),

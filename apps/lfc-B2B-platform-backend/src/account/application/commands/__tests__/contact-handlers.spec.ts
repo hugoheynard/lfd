@@ -4,10 +4,12 @@ import {
 } from "../../../domain/errors/account-errors.js";
 import { Company } from "../../../domain/entities/company.js";
 import { CompanyContactRepository } from "../../../domain/ports/company-contact.repository.js";
+import { CompanyMemberRepository } from "../../../domain/ports/company-member.repository.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../../domain/ports/membership.reader.js";
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
 import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
+import { CompanyContactBook } from "../../services/company-contact-book.service.js";
 import { AddCompanyContactHandler } from "../add-company-contact.handler.js";
 import {
   AddCompanyContactCommand,
@@ -19,7 +21,17 @@ import { RemoveCompanyContactHandler } from "../remove-company-contact.handler.j
 import { UpdateCompanyContactHandler } from "../update-company-contact.handler.js";
 import { UpdatePrimaryContactHandler } from "../update-primary-contact.handler.js";
 
+/** Un interlocuteur du carnet — distinct du détenteur de la société témoin. */
 const DETAILS = {
+  firstName: "Karim",
+  lastName: "Benali",
+  fonction: "",
+  email: "achats@pqmarais.fr",
+  phone: "",
+};
+
+/** Le détenteur de la société témoin, aplati sur elle. */
+const HOLDER = {
   firstName: "Camille",
   lastName: "Rousseau",
   fonction: "",
@@ -34,6 +46,34 @@ interface Recorder {
 
 function membershipReturning(role: CompanyRole | null): MembershipReader {
   return { roleOf: () => Promise.resolve(role) };
+}
+
+/**
+ * Le carnet, monté sur des ports doublés.
+ *
+ * Les handlers ne parlent plus au dépôt directement : ses deux règles (une
+ * adresse, un rôle) valent des deux côtés du comptoir, elles vivent donc dans
+ * le carnet. Le test garde la même question — le mur a-t-il laissé passer ? —
+ * en observant ce qui a été écrit.
+ */
+function bookRecorder(recorder: Recorder): CompanyContactBook {
+  return new CompanyContactBook(
+    companiesRecorder(recorder),
+    contactsRecorder(recorder),
+    membersStub(),
+  );
+}
+
+/** Aucun accès ouvert : le carnet n'a alors aucun rôle à aligner. */
+function membersStub(): CompanyMemberRepository {
+  return {
+    findAccountByEmail: () => Promise.resolve(null),
+    findOwner: () => Promise.resolve(null),
+    createInvited: () => Promise.resolve("user_new"),
+    attach: () => Promise.resolve(),
+    alignRole: () => Promise.resolve(),
+    findMember: () => Promise.resolve(null),
+  };
 }
 
 function contactsRecorder(recorder: Recorder): CompanyContactRepository {
@@ -62,7 +102,7 @@ function sampleCompany(): Company {
     formeJuridique: "SAS",
     siret: "81245678900021",
     tvaIntracom: "",
-    contact: ContactDetails.create(DETAILS),
+    contact: ContactDetails.create(HOLDER),
     paymentTerm: "per_order",
     requestedPaymentTerm: null,
     status: "pending",
@@ -104,10 +144,7 @@ describe("handlers de contacts — le mur owner/admin", () => {
 
   it("un non-membre reçoit 404 et rien n'est écrit", async () => {
     const recorder: Recorder = { writes: [] };
-    const handler = new AddCompanyContactHandler(
-      membershipReturning(null),
-      contactsRecorder(recorder),
-    );
+    const handler = new AddCompanyContactHandler(membershipReturning(null), bookRecorder(recorder));
 
     await expect(
       handler.execute(new AddCompanyContactCommand("u1", "c1", DETAILS)),
@@ -119,7 +156,7 @@ describe("handlers de contacts — le mur owner/admin", () => {
     const recorder: Recorder = { writes: [] };
     const handler = new UpdateCompanyContactHandler(
       membershipReturning("member"),
-      contactsRecorder(recorder),
+      bookRecorder(recorder),
     );
 
     await expect(
@@ -131,15 +168,15 @@ describe("handlers de contacts — le mur owner/admin", () => {
   it("le gestionnaire ajoute, modifie et retire un contact", async () => {
     const recorder: Recorder = { writes: [] };
     const admin = membershipReturning("owner");
-    const contacts = contactsRecorder(recorder);
+    const book = bookRecorder(recorder);
 
-    await new AddCompanyContactHandler(admin, contacts).execute(
+    await new AddCompanyContactHandler(admin, book).execute(
       new AddCompanyContactCommand("u1", "c1", DETAILS),
     );
-    await new UpdateCompanyContactHandler(admin, contacts).execute(
+    await new UpdateCompanyContactHandler(admin, book).execute(
       new UpdateCompanyContactCommand("u1", "c1", "ct1", DETAILS),
     );
-    await new RemoveCompanyContactHandler(admin, contacts).execute(
+    await new RemoveCompanyContactHandler(admin, contactsRecorder(recorder)).execute(
       new RemoveCompanyContactCommand("u1", "c1", "ct1"),
     );
 

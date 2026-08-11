@@ -85,9 +85,13 @@ async function main(): Promise<void> {
       `  marché ciblé : 3 zones Savoie + 6 NAF ${refreshed ? "(addressable rafraîchi via l'API)" : "(déjà compté / API injoignable → « Redemander » dans Réglages)"}.`,
     );
     console.log(`  flagship Val d'Isère : +${flagship} sociétés activées (viser ~30 % du marché).`);
-    console.log(`  satellites Tignes/Bourg : +${satellites} sociétés activées (base pour équilibrer le churn).`);
+    console.log(
+      `  satellites Tignes/Bourg : +${satellites} sociétés activées (base pour équilibrer le churn).`,
+    );
     console.log(`  pertes : +${losses} sociétés résiliées (barre « Perte » par territoire).`);
-    console.log(`  revenu historique : +${revenue} commandes datées (marché vs volume, CA par NAF).`);
+    console.log(
+      `  revenu historique : +${revenue} commandes datées (marché vs volume, CA par NAF).`,
+    );
     await summarize(harness);
     console.log("  (additif + idempotent — rejouable ; rien d'existant n'a été effacé)");
   } finally {

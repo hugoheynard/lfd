@@ -162,6 +162,52 @@ describe("le rôle d'un contact est exigé à la frontière", () => {
     expect(row.role).toBe(CustomerRole.billing);
   });
 
+  it("REFUSE deux fois la même adresse dans le carnet", async () => {
+    // Une personne, une adresse, un rôle : deux lignes donneraient deux rôles à
+    // la même personne, et l'accès ouvert depuis l'une contredirait l'autre.
+    // Tenu par la base — deux commerciaux simultanés passeraient une simple
+    // vérification applicative.
+    await staff().post(`/admin/companies/${companyId}/contacts`).send(KARIM).expect(201);
+
+    const response = await staff()
+      .post(`/admin/companies/${companyId}/contacts`)
+      .send({ ...KARIM, firstName: "Karim (bis)" });
+
+    expect(response.status).toBe(409);
+  });
+
+  it("REFUSE d'ajouter le détenteur au carnet", async () => {
+    // Il y figure déjà, en tête de la fiche.
+    const response = await staff()
+      .post(`/admin/companies/${companyId}/contacts`)
+      .send({ ...KARIM, email: "camille@test.fr" });
+
+    expect(response.status).toBe(409);
+  });
+
+  it("aligne les DROITS RÉELS sur le rôle affiché", async () => {
+    // Le rôle affiché est celui du contact ; les droits vivent sur le
+    // rattachement. Les laisser diverger, c'est montrer « Commandes » à
+    // quelqu'un qui administre l'espace.
+    const created = await staff()
+      .post(`/admin/companies/${companyId}/contacts`)
+      .send(KARIM)
+      .expect(201);
+    const contactId = jsonBody<{ readonly id: string }>(created).id;
+    const karim = await createUser(ctx.prisma, { auth0Sub: "auth0|karim", email: KARIM.email });
+    await attachTo(ctx.prisma, karim.id, companyId, CustomerRole.orders);
+
+    await staff()
+      .patch(`/admin/companies/${companyId}/contacts/${contactId}`)
+      .send({ ...KARIM, role: "admin" })
+      .expect(200);
+
+    const membership = await ctx.prisma.membership.findFirstOrThrow({
+      where: { userId: karim.id, companyId },
+    });
+    expect(membership.role).toBe(CustomerRole.admin);
+  });
+
   it("laisse le rôle à `null` sur un contact d'avant les rôles", async () => {
     // « À préciser » à l'écran. Le deviner propagerait une valeur inventée
     // qu'on ne saurait plus distinguer d'une vraie.

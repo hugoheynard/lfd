@@ -5,6 +5,7 @@ import { PrismaService } from "../../infra/database/prisma.service.js";
 import { IdGenerator } from "../../infra/id/id-generator.js";
 import { Clock } from "../../infra/time/clock.js";
 import { Company } from "../domain/entities/company.js";
+import { SiretAlreadyRegisteredError } from "../domain/errors/account-errors.js";
 import {
   CompanyRepository,
   type KbisLocation,
@@ -155,25 +156,34 @@ export class PrismaCompanyRepository extends CompanyRepository {
         return clash !== null;
       },
     );
-    const created = await this.prisma.company.create({
-      data: {
-        reference,
-        raisonSociale: company.raisonSociale,
-        enseigne: company.enseigne,
-        formeJuridique: company.formeJuridique,
-        siret: company.siretDigits,
-        tvaIntracom: company.tvaIntracom,
-        contactPrenom: company.contact.firstName.value,
-        contactNom: company.contact.lastName.value,
-        contactFonction: company.contact.fonction,
-        contactEmail: company.contact.email.value,
-        contactTelephone: company.contact.phone.value,
-        // Déclarée, pas cliente : l'activation reste commerciale.
-        status: CompanyStatus.pending,
-      },
-      select: { id: true },
-    });
-    return created.id;
+    // L'unicité du SIRET est tenue par un index PARTIEL en base ; la
+    // vérification applicative en amont ne fait que donner un beau message. Deux
+    // commerciaux qui ouvrent le même client à la même seconde la passent tous
+    // les deux — c'est ici que le second est arrêté, et il doit l'être dans la
+    // langue du métier, pas par un code Prisma.
+    try {
+      const created = await this.prisma.company.create({
+        data: {
+          reference,
+          raisonSociale: company.raisonSociale,
+          enseigne: company.enseigne,
+          formeJuridique: company.formeJuridique,
+          siret: company.siretDigits,
+          tvaIntracom: company.tvaIntracom,
+          contactPrenom: company.contact.firstName.value,
+          contactNom: company.contact.lastName.value,
+          contactFonction: company.contact.fonction,
+          contactEmail: company.contact.email.value,
+          contactTelephone: company.contact.phone.value,
+          // Déclarée, pas cliente : l'activation reste commerciale.
+          status: CompanyStatus.pending,
+        },
+        select: { id: true },
+      });
+      return created.id;
+    } catch (error) {
+      throw translateSiretClash(error, company.siretDigits);
+    }
   }
 
   async load(companyId: string): Promise<Company | null> {
@@ -267,4 +277,36 @@ export class PrismaCompanyRepository extends CompanyRepository {
       contentType: row.kbisContentType,
     };
   }
+}
+
+/**
+ * Traduit la violation d'unicité du SIRET en refus **métier**.
+ *
+ * L'adaptateur est le seul endroit qui connaisse à la fois le nom de l'index et
+ * le vocabulaire du domaine : laisser remonter un `P2002` obligerait la couche
+ * au-dessus à savoir comment la base est indexée. Toute autre erreur repart
+ * telle quelle — on ne déguise pas une panne en conflit.
+ */
+function translateSiretClash(error: unknown, siret: string): unknown {
+  if (readField(error, "code") !== "P2002") {
+    return error;
+  }
+  const target = readField(readField(error, "meta"), "target");
+  return mentionsSiret(target) ? new SiretAlreadyRegisteredError(siret) : error;
+}
+
+/**
+ * L'index violé est-il celui du SIRET ? Prisma nomme sa cible tantôt par une
+ * chaîne (index posé en SQL), tantôt par une liste de champs.
+ */
+function mentionsSiret(target: unknown): boolean {
+  if (typeof target === "string") {
+    return target.includes("siret");
+  }
+  return Array.isArray(target) && target.some((field) => String(field).includes("siret"));
+}
+
+/** Une propriété d'un objet d'erreur — sans assertion, et sans supposer sa forme. */
+function readField(source: unknown, key: string): unknown {
+  return typeof source === "object" && source !== null ? Reflect.get(source, key) : undefined;
 }

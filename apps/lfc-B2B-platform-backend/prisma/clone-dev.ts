@@ -51,17 +51,25 @@ async function main(): Promise<void> {
   const target = makeClient(targetUrl);
   try {
     // Lecture des scalaires (pas de relations) — l'ordre de lecture est libre.
-    const [companies, users, memberships, contacts, addresses, supportRequests, orders, orderLines] =
-      await Promise.all([
-        source.company.findMany(),
-        source.user.findMany(),
-        source.membership.findMany(),
-        source.companyContact.findMany(),
-        source.address.findMany(),
-        source.supportRequest.findMany(),
-        source.order.findMany(),
-        source.orderLine.findMany(),
-      ]);
+    const [
+      companies,
+      users,
+      memberships,
+      contacts,
+      addresses,
+      supportRequests,
+      orders,
+      orderLines,
+    ] = await Promise.all([
+      source.company.findMany(),
+      source.user.findMany(),
+      source.membership.findMany(),
+      source.companyContact.findMany(),
+      source.address.findMany(),
+      source.supportRequest.findMany(),
+      source.order.findMany(),
+      source.orderLine.findMany(),
+    ]);
 
     // Purge de la cible en ordre FK INVERSE (enfants d'abord).
     await target.orderLine.deleteMany();
