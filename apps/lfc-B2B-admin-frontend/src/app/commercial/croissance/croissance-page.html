@@ -63,7 +63,7 @@
                       }
                     </select>
                   </label>
-                  <app-metric-info
+                  <fold-info
                     label="Entrées et sorties du parc"
                     text="Sur un même axe de comptage, à la granularité choisie (jour, semaine, mois, trimestre, année) : ce qui ENTRE — inscriptions, premières commandes (comptées une seule fois par personne, à la date de sa toute première commande), leads saisis — et ce qui SORT : les résiliations confirmées. Les entrées portent une aire discrète, la sortie est une ligne rouge nette. Quand la ligne rouge passe au-dessus des entrées, le parc se contracte."
                   />
@@ -83,7 +83,7 @@
             <article class="card">
               <header class="card-head">
                 <h2>Mode d'acquisition</h2>
-                <app-metric-info
+                <fold-info
                   label="Mode d'acquisition"
                   text="Part de l'acquisition auto-découverte (product-led, self-service sans démarchage) vs poussée par le commercial (sales-led : staff ou lead converti), sur toute la période. La part product-led est un indicateur direct de la qualité du référencement (SEO / agence web) — à lire avec l'acquisition hebdomadaire pour séparer « plus de trafic » de « meilleure conversion »."
                 />
@@ -100,7 +100,7 @@
             <article class="card">
               <header class="card-head">
                 <h2>Mode d'acquisition — par semaine</h2>
-                <app-metric-info
+                <fold-info
                   label="Mix product-led / sales-led dans le temps"
                   text="La même répartition product-led / sales-led, semaine par semaine (aires empilées) : montre si le canal organique gagne ou perd du terrain au fil du temps."
                 />
@@ -141,7 +141,7 @@
                       }
                     </select>
                   </label>
-                  <app-metric-info
+                  <fold-info
                     label="Adoption et churn par territoire"
                     text="Instantané CUMULÉ À DATE (all-time), deux barres par zone. — CALCUL. Adoption (pénétration) = sociétés actives ÷ acteurs visés (le pool, en bout de ligne) : la part du marché actuellement cliente. Churn = sociétés résiliées ÷ (actives + résiliées) : la part de tout ce qu'on a onboardé dans la zone qui est repartie. — BORNAGE. Le churn est rapporté à la base onboardée (actives + résiliées), PAS au pool : sinon, comme le pool est fixe et que les résiliations s'accumulent, un marché qui se renouvelle ferait dépasser 100 %. Rapporté à la base, le churn reste borné 0–100 % (part d'un tout). Les deux barres ont donc des dénominateurs différents (marché vs base onboardée) et ne s'additionnent pas. Le « +X pts » sur l'adoption = les points gagnés sur la fenêtre (~90 j). Configurez zones et NAF dans Réglages ▸ Commercial."
                   />
@@ -164,7 +164,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Vélocité par territoire</h2>
-                <app-metric-info
+                <fold-info
                   label="Vélocité par territoire"
                   text="La part de marché dans le temps, une courbe par zone. Là où « Adoption par territoire » donne l'instantané, celle-ci montre la trajectoire : la pente = la vitesse de conquête. Une droite qui monte = traction ; qui s'aplatit = saturation ou essoufflement commercial. Seules les zones avec au moins une activation sont tracées."
                 />
@@ -185,7 +185,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Mix des clients par territoire (secteur NAF)</h2>
-                <app-metric-info
+                <fold-info
                   label="Mix des clients par secteur NAF et territoire"
                   text="Pour chaque zone, deux barres empilées à 100 % par secteur NAF : Adoption (nos sociétés actives) et Churn (nos résiliées). On lit quels TYPES de clients on gagne vs on perd — ex. « on gagne surtout des restaurants mais on perd surtout des bars ». Le pool par NAF est pris en compte : le tooltip donne la pénétration du secteur (actives ÷ pool NAF), pour ne pas surpondérer un secteur juste parce que son pool est gros. La barre du haut = adoption, celle du bas (plus claire) = churn."
                 />
@@ -224,7 +224,7 @@
                       }
                     </select>
                   </label>
-                  <app-metric-info
+                  <fold-info
                     label="Chiffre d'affaires dans le temps"
                     text="Le CA (TTC) encaissé par période, à la granularité choisie (jour, semaine, mois, trimestre, année). Le jour est le grain natif ; les grains plus larges regroupent les jours. La granularité choisie ici pilote aussi les deux graphes CA suivants. Compte toutes les commandes (y compris zéro-friction sans société)."
                   />
@@ -244,7 +244,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>CA vs nombre de commandes <span class="scope-tag">indice base 100</span></h2>
-                <app-metric-info
+                <fold-info
                   label="CA vs nombre de commandes (panier moyen)"
                   text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le CA MARCHANDISES HT (subtotal − remise) et le nombre de commandes. Le HT est volontaire : sur du TTC, le panier moyen monterait dès que la TVA ou les frais de livraison montent, sans qu'un euro de marchandise ait bougé. Quand le CA monte plus vite que le nombre de commandes, le PANIER MOYEN augmente — l'écart se lit directement. Base d'indexation = moyenne des 4 premières périodes non nulles (robuste à une inter-saison à zéro). Le tooltip donne le CA, le nombre de commandes et le panier moyen. Suit la granularité du graphe CA du dessus."
                 />
@@ -263,7 +263,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>CA par type de commande</h2>
-                <app-metric-info
+                <fold-info
                   label="CA par type de commande (unique vs récurrent)"
                   text="Aires empilées en euros : le CA porté par les commandes UNIQUES (ponctuelles) vs RÉCURRENTES (issues d'un abonnement). L'enveloppe du haut = le CA total ; l'épaisseur de chaque bande = la part portée par ce type. On comprend quel type de commande porte le CA — et si le récurrent prend de l'ampleur. Suit la granularité du graphe CA du haut."
                 />
@@ -282,7 +282,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Marché vs volume <span class="scope-tag">indice base 100</span></h2>
-                <app-metric-info
+                <fold-info
                   label="Marché vs volume (CA) dans le temps"
                   text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le marché visé (nombre d'acteurs, quasi constant → ligne ~plate) et le volume = CA DE LA SEMAINE (TTC). Le CA est périodique, PAS cumulé : cumulé, la courbe ne pouvait que monter, même pendant un effondrement — le graphe ne pouvait jamais annoncer une mauvaise nouvelle. Base d'indexation = moyenne des 4 premières semaines non nulles. Le tooltip donne le CA en euros et le nombre d'acteurs. Le marché est un comptage figé (via l'API entreprises) ; il ne varie pas tant qu'on ne redemande pas — donc à ce jour, seule la courbe de CA bouge réellement."
                 />
@@ -336,7 +336,7 @@
                       }
                     </select>
                   </label>
-                  <app-metric-info
+                  <fold-info
                     label="CA par secteur NAF dans le temps"
                     text="Aires empilées : le CA (TTC) ventilé par secteur NAF des sociétés clientes, à la granularité choisie (jour, semaine, mois, trimestre, année). Le jour est le grain natif ; les grains plus larges regroupent les jours d'après leur date. L'enveloppe du haut = le CA total ; l'épaisseur d'une bande = la contribution du secteur. On voit quels TYPES de clients portent la croissance du CA. Seules les commandes rattachées à une société (donc à un NAF) comptent — les commandes zéro-friction sans société n'y figurent pas."
                   />
@@ -360,7 +360,7 @@
                 <h2>
                   Part des grands comptes <span class="scope-tag">concentration du volume</span>
                 </h2>
-                <app-metric-info
+                <fold-info
                   label="Concentration du volume"
                   text="Courbe de Lorenz du volume de commandes par compte : plus la courbe s'éloigne de la diagonale d'égalité, plus quelques grands comptes concentrent le volume. Le Gini résume l'inégalité (0 = égal, 1 = tout sur un compte)."
                 />
@@ -389,7 +389,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Raisons de résiliation</h2>
-                <app-metric-info
+                <fold-info
                   label="Raisons de résiliation"
                   text="Sunburst zoomable des résiliations confirmées : anneau intérieur = la catégorie de départ (tarif, concurrent, cessation, qualité, plus de besoin, injoignable, autre), anneau du milieu = la sous-raison précise (meilleur prix ailleurs, concurrent de proximité, livraison trop chère, déménagement…), et pour « Meilleur prix ailleurs » un 3ᵉ anneau détaille la catégorie produit concernée (boissons, vins & spiritueux, épicerie, frais). Cliquez une catégorie pour zoomer, le centre pour revenir. Enregistré à la clôture du compte par le client ou le commercial. All-time."
                 />
@@ -408,7 +408,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Taux de rattrapage</h2>
-                <app-metric-info
+                <fold-info
                   label="Taux de rattrapage des terminaisons"
                   text="Part des tentatives de résiliation qui ont été rattrapées (le compte est resté), globale et par catégorie de départ — mêmes teintes que le sunburst pour relier les deux cartes. Une tentative rattrapée = un compte sauvé. Sous chaque barre de taux, deux barres fines décomposent le rattrapage par canal : « auto » (plateforme, incentive automatique) et « comm. » (sauvé à la main par un commercial) — leur somme fait le taux. On lit d'un coup quelles catégories se récupèrent, et par quel levier."
                 />
@@ -427,7 +427,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Vélocité de rattrapage</h2>
-                <app-metric-info
+                <fold-info
                   label="Vélocité de rattrapage dans le temps"
                   text="Le taux de rattrapage semaine par semaine (ligne neutre — la taille du point grandit avec le nombre de tentatives, donc sa fiabilité) et le taux cumulé (ligne verte pointillée) qui lisse la trajectoire. La question : réagit-on de mieux en mieux au churn ? Une pente qui monte = réaction plus efficace dans le temps ; qui s'aplatit ou descend = on perd du terrain sur la rétention. Le taux est rattaché à la semaine de la tentative."
                 />
@@ -448,7 +448,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Délai de réaction par catégorie</h2>
-                <app-metric-info
+                <fold-info
                   label="Délai de réaction au churn (jours)"
                   text="Boxplot du temps, en jours, entre la déclaration de résiliation et l'action qui l'a rattrapée, une boîte par catégorie de départ (mêmes teintes que le sunburst). La boîte = la dispersion des délais (quartiles) ; la barre centrale = la médiane. Boîte basse = on sauve vite (le tarif se négocie court) ; boîte haute = motif long à sauver (la qualité demande de corriger). Les points rouges au-dessus = des sauvetages qui ont traîné (outliers). Une catégorie n'apparaît qu'avec au moins 3 rattrapages."
                 />
@@ -469,7 +469,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Délai de réaction — par semaine</h2>
-                <app-metric-info
+                <fold-info
                   label="Délai de réaction hebdo × catégorie"
                   text="Le même délai de réaction (jours), mais dans le temps : l'axe = les semaines, et pour chaque semaine les catégories sont groupées côte à côte (une boîte par motif, mêmes teintes que le sunburst). On lit d'un coup la vitesse par motif ET son évolution : des boîtes qui descendent semaine après semaine = on réagit de plus en plus vite. Une case reste vide si aucun rattrapage ce motif-là cette semaine."
                 />
@@ -497,7 +497,7 @@
             <article class="card">
               <header class="card-head">
                 <h2>Momentum du vivier — part par chaleur</h2>
-                <app-metric-info
+                <fold-info
                   label="Momentum du vivier"
                   text="La part de prospects dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). Aires empilées : l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total du vivier. La direction par bande (qui se réchauffe/refroidit) se lit sur les transferts ci-contre."
                 />
@@ -514,7 +514,7 @@
             <article class="card">
               <header class="card-head">
                 <h2>Transferts entre bandes (sur la période)</h2>
-                <app-metric-info
+                <fold-info
                   label="Transferts entre bandes"
                   text="Comment les prospects ont changé de chaleur entre le début (« avant », à gauche) et la fin (« après », à droite) de la période : qui est passé de tiède à chaud, de chaud à froid, converti, perdu, ou vient d'entrer. La largeur d'un ruban = le nombre de personnes qui ont fait ce passage."
                 />
@@ -533,7 +533,7 @@
             <article class="card">
               <header class="card-head">
                 <h2>Entonnoir d'activation</h2>
-                <app-metric-info
+                <fold-info
                   label="Entonnoir d'activation"
                   text="De la société déclarée jusqu'à son activation, marche par marche (TVA, KBIS, facturation, livraison). Les fuites entre marches = les frictions d'onboarding."
                 />
@@ -550,7 +550,7 @@
             <article class="card">
               <header class="card-head">
                 <h2>Pipeline de démarchage</h2>
-                <app-metric-info
+                <fold-info
                   label="Pipeline de démarchage"
                   text="Progression des leads sortants dans le pipeline commercial : saisis → contactés → qualifiés → en négociation → convertis. Chaque marche compte les leads ayant atteint au moins cette étape."
                 />
@@ -576,7 +576,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Cycle de vie (du clic à l'activation)</h2>
-                <app-metric-info
+                <fold-info
                   label="Cycle de vie"
                   text="Les flux de personnes d'une étape à la suivante — inscrit, a commandé, a déclaré une société, activé — avec les fuites à chaque transition. La largeur d'un ruban = le nombre de personnes qui passent."
                 />
@@ -595,7 +595,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Rétention par cohorte d'inscription</h2>
-                <app-metric-info
+                <fold-info
                   label="Rétention par cohorte"
                   text="Pour chaque semaine d'inscription (une ligne), la part de la cohorte ayant commandé k semaines plus tard. La couleur va du clair (faible rétention) au foncé (forte rétention)."
                 />
@@ -614,7 +614,7 @@
             <article class="card wide">
               <header class="card-head">
                 <h2>Vélocité — délais (jours)</h2>
-                <app-metric-info
+                <fold-info
                   label="Vélocité"
                   text="Distribution des délais en jours : temps entre l'inscription et la 1re commande, et entre la déclaration d'une société et son activation. La boîte couvre les quartiles, le trait central la médiane."
                 />

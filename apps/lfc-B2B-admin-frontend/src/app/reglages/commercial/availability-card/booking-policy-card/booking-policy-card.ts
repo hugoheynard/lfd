@@ -11,6 +11,7 @@ import {
   FoldButtonComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
+  FoldInfoComponent,
   FoldMultiselectComponent,
   FoldNumberInputComponent,
   type FoldSelectOption,
@@ -19,7 +20,6 @@ import type { AppointmentChannel, AvailabilityConfigView, BookingPolicy } from '
 
 import { AvailabilityService } from '../../../../commercial/availability/availability.service';
 import { NotifyService } from '../../../../notify.service';
-import { MetricInfo } from '../../../../shared/metric-info/metric-info';
 
 import { withPolicy, type AvailabilityDraft } from '../availability-draft';
 
@@ -58,7 +58,7 @@ const CHANNELS: readonly FoldSelectOption<AppointmentChannel>[] = [
     FoldNumberInputComponent,
     FoldMultiselectComponent,
     FoldButtonComponent,
-    MetricInfo,
+    FoldInfoComponent,
   ],
   templateUrl: './booking-policy-card.html',
   styleUrl: './booking-policy-card.scss',

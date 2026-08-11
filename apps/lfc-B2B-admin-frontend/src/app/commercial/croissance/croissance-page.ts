@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FoldButtonComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldInfoComponent } from 'fold-ng';
 import type {
   AccountConcentration,
   AcquisitionMetricsView,
@@ -20,7 +20,6 @@ import { type SectorGrain, SECTOR_GRAINS } from './sector-grain';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { ChartNote } from '../../shared/chart-note/chart-note';
 import { Lorenz } from '../../shared/lorenz/lorenz';
-import { MetricInfo } from '../../shared/metric-info/metric-info';
 import { Sunburst, type SunburstDatum } from '../../shared/sunburst/sunburst';
 import {
   acquisitionFluxOption,
@@ -68,12 +67,12 @@ interface Kpi {
  * + vélocité + mix + Lorenz + heatmap de cohortes. Rendus par `<app-chart>` (ECharts) /
  * `<app-lorenz>`
  * (D3), options construites par des fonctions pures. Chaque carte porte une bulle
- * d'aide (`<app-metric-info>`) décrivant sa métrique.
+ * d'aide (`<fold-info>`) décrivant sa métrique.
  */
 @Component({
   selector: 'app-croissance-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Chart, ChartNote, Lorenz, Sunburst, MetricInfo, FoldButtonComponent],
+  imports: [Chart, ChartNote, Lorenz, Sunburst, FoldInfoComponent, FoldButtonComponent],
   templateUrl: './croissance-page.html',
   styleUrl: './croissance-page.scss',
 })
@@ -133,7 +132,10 @@ export class CroissancePage {
       : acquisitionFluxOption(view, this.acqGrain());
   });
   protected readonly adoptionSort = signal<AdoptionSort>('adoption-desc');
-  protected readonly adoptionSorts: ReadonlyArray<{ readonly value: AdoptionSort; readonly label: string }> = [
+  protected readonly adoptionSorts: ReadonlyArray<{
+    readonly value: AdoptionSort;
+    readonly label: string;
+  }> = [
     { value: 'adoption-desc', label: 'Adoption ↓' },
     { value: 'adoption-asc', label: 'Adoption ↑' },
     { value: 'churn-desc', label: 'Churn ↓' },
@@ -141,9 +143,7 @@ export class CroissancePage {
   ];
   protected readonly adoption = computed<ChartOption | null>(() => {
     const zones = this.adoptionZones();
-    return zones === null || zones.length === 0
-      ? null
-      : adoptionOption(zones, this.adoptionSort());
+    return zones === null || zones.length === 0 ? null : adoptionOption(zones, this.adoptionSort());
   });
   protected readonly terminationSunburst = computed<readonly SunburstDatum[] | null>(() => {
     const t = this.terminations();
@@ -200,7 +200,9 @@ export class CroissancePage {
   protected readonly caGrains = SECTOR_GRAINS;
   protected readonly revenueTrend = computed<ChartOption | null>(() => {
     const view = this.orderMetrics();
-    return view === null || view.days.length === 0 ? null : revenueTrendOption(view, this.caGrain());
+    return view === null || view.days.length === 0
+      ? null
+      : revenueTrendOption(view, this.caGrain());
   });
   protected readonly caVsOrders = computed<ChartOption | null>(() => {
     const view = this.orderMetrics();
