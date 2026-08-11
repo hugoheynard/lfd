@@ -50,3 +50,27 @@
   background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
   color: var(--fold-color-text);
 }
+
+/* Les deux faits d'un accès : le compte existe, l'adresse est prouvée.
+   Acquis en `success`, en attente en muet — la couleur seule ne porte rien,
+   le libellé dit l'état en toutes lettres. */
+.ticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.tick.is-done {
+  color: var(--fold-color-success-text);
+}

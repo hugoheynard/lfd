@@ -7,6 +7,7 @@ import {
   type CompanyView,
   type ContactView,
 } from "../domain/ports/account.reader.js";
+import type { CustomerRole } from "../../infra/database/client/client.js";
 import { parseNavPreferences } from "../domain/value-objects/nav-preferences.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 
@@ -18,6 +19,7 @@ interface ContactRow {
   readonly fonction: string;
   readonly email: string;
   readonly telephone: string;
+  readonly role: CustomerRole | null;
 }
 
 /**
@@ -80,6 +82,7 @@ export class PrismaAccountReader extends AccountReader {
                     fonction: true,
                     email: true,
                     telephone: true,
+                    role: true,
                   },
                 },
               },
@@ -105,8 +108,11 @@ export class PrismaAccountReader extends AccountReader {
       paymentTerm: company.paymentTerm,
       requestedPaymentTerm: company.requestedPaymentTerm,
       role,
+      // Le contact principal EST le détenteur : son rôle n'est pas choisi, il
+      // est constaté — d'où `null` ici plutôt qu'une valeur à maintenir.
       primaryContact: {
         id: null,
+        role: null,
         firstName: company.contactPrenom,
         lastName: company.contactNom,
         fonction: company.contactFonction,
@@ -150,5 +156,6 @@ function toContactView(row: ContactRow): ContactView {
     fonction: row.fonction,
     email: row.email,
     phone: row.telephone,
+    role: row.role,
   };
 }

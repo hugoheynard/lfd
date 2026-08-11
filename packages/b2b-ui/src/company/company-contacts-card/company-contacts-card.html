@@ -70,11 +70,13 @@
           </fold-inline-confirm>
         }
 
-        <!-- Contact additionnel : pas d'espace utilisateur, joignable par e-mail. -->
-        @if (!card.isPrimary) {
+        <!-- L'accès est un ÉTAT de la personne, pas une seconde liste. Deux
+             faits, deux ticks : le compte existe-t-il, et l'adresse a-t-elle
+             été prouvée. -->
+        @if (card.access === 'none') {
           <fold-callout variant="info">
-            Ce contact n'a pas d'espace utilisateur : seul son e-mail sera utilisé pour les
-            notifications et l'envoi de documents.
+            Cette personne n'a pas d'accès à l'espace : seul son e-mail sert aux notifications et à
+            l'envoi de documents.
             <button
               actions
               foldButton
@@ -83,9 +85,41 @@
               icon="user"
               (click)="onInvite(card)"
             >
-              Inviter
+              Créer l'accès
             </button>
           </fold-callout>
+        } @else if (card.access !== null) {
+          <!-- `null` = cette vue ne sait rien de l'accès. Le laisser tomber dans
+               ce bloc afficherait « Compte créé » sur la foi de rien. -->
+          <ul class="ticks">
+            <li class="tick is-done">
+              <fold-icon name="check" [size]="16" />
+              Compte créé
+            </li>
+            <li class="tick" [class.is-done]="card.emailVerified">
+              <fold-icon [name]="card.emailVerified ? 'check' : 'clock'" [size]="16" />
+              {{ card.emailVerified ? 'E-mail validé' : 'E-mail pas encore validé' }}
+            </li>
+          </ul>
+
+          @if (card.access === 'invited') {
+            <fold-callout variant="warning">
+              Le lien est parti, le mot de passe n'est pas encore choisi.
+              <!-- Renvoyer et inviter sont le MÊME appel : l'API est idempotente
+                   sur l'adresse. Deux boutons pour un geste, ce serait deux
+                   façons de se tromper. -->
+              <button
+                actions
+                foldButton
+                emphasis="soft"
+                size="sm"
+                icon="mail"
+                (click)="onInvite(card)"
+              >
+                Renvoyer le lien
+              </button>
+            </fold-callout>
+          }
         }
       </fold-card>
     }

@@ -57,8 +57,11 @@ export class CompanyContactsCard {
   readonly editContact = output<string | null>();
   /** Supprimer un contact additionnel (confirmé). */
   readonly removeContact = output<string>();
-  /** Inviter un contact additionnel à créer son espace. */
-  readonly inviteContact = output<string>();
+  /**
+   * Ouvrir l'accès de cet interlocuteur — ou lui **renvoyer** son lien, c'est le
+   * même geste. `null` = le détenteur, qui n'a pas d'identifiant de contact.
+   */
+  readonly inviteContact = output<string | null>();
 
   /** Carte dont la confirmation de suppression est ouverte (état UI local). */
   protected readonly confirmingId = signal<string | null>(null);
@@ -79,10 +82,14 @@ export class CompanyContactsCard {
     this.removeContact.emit(card.contactId);
   }
 
-  /** Émet l'intention d'invitation (jamais sur le principal). */
+  /**
+   * Émet l'intention d'ouvrir (ou de renvoyer) un accès — **détenteur compris**.
+   *
+   * C'est justement le compte ouvert pendant que le fournisseur d'identité était
+   * injoignable qu'il faut pouvoir rattraper : son détenteur est là, sans accès,
+   * et son adresse est déjà sur la fiche.
+   */
   protected onInvite(card: CompanyContactCardView): void {
-    if (card.contactId !== null) {
-      this.inviteContact.emit(card.contactId);
-    }
+    this.inviteContact.emit(card.contactId);
   }
 }

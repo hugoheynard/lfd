@@ -5,6 +5,8 @@
  * duplique pas ici, on ne vérifie que la présence et le gabarit.
  */
 
+import type { AssignableRole } from '@lfd/contracts';
+
 /** Identité légale saisissable d'une société. */
 export interface CompanyIdentityDraft {
   readonly raisonSociale: string;
@@ -14,13 +16,23 @@ export interface CompanyIdentityDraft {
   readonly tvaIntracom: string;
 }
 
-/** Coordonnées saisissables d'un interlocuteur. */
+/**
+ * Coordonnées saisissables d'un interlocuteur.
+ *
+ * `role` est ce que la personne fait pour la société — vide tant qu'il n'a pas
+ * été choisi. `owner` n'y figure jamais : le détenteur n'est pas attribué, il
+ * est constaté. Le champ reste présent pour le détenteur (que le formulaire
+ * n'affiche pas), qui garde simplement une valeur vide : le brouillon est le
+ * même objet des deux côtés, et deux brouillons divergeraient au premier champ
+ * ajouté d'un seul.
+ */
 export interface CompanyContactDraft {
   readonly firstName: string;
   readonly lastName: string;
   readonly fonction: string;
   readonly email: string;
   readonly phone: string;
+  readonly role: AssignableRole | '';
 }
 
 /** Brouillon d'identité vide (pour ouvrir un formulaire de création). */
@@ -39,6 +51,7 @@ export const EMPTY_COMPANY_CONTACT_DRAFT: CompanyContactDraft = {
   fonction: '',
   email: '',
   phone: '',
+  role: '',
 };
 
 /**
@@ -66,7 +79,23 @@ export function isCompanyIdentityValid(draft: CompanyIdentityDraft): boolean {
   );
 }
 
-/** Contrôle de forme d'un contact : prénom, nom et e-mail présents. */
+/**
+ * Contrôle de forme d'un interlocuteur : **l'adresse seule** est exigée.
+ *
+ * C'est par elle qu'on joint quelqu'un et qu'il recevrait un accès ; le nom est
+ * un confort. L'exiger bloquerait une saisie faite au téléphone pour une donnée
+ * qui se complète en deux clics plus tard.
+ */
 export function isCompanyContactValid(draft: CompanyContactDraft): boolean {
-  return draft.firstName.trim() !== '' && draft.lastName.trim() !== '' && draft.email.trim() !== '';
+  return draft.email.trim() !== '';
+}
+
+/**
+ * Un contact **du carnet** : l'adresse, et ce que la personne fait.
+ *
+ * Le rôle manque au contrôle du détenteur ({@link isCompanyContactValid}) parce
+ * que le sien est constaté, pas choisi.
+ */
+export function isAdditionalContactValid(draft: CompanyContactDraft): boolean {
+  return isCompanyContactValid(draft) && draft.role !== '';
 }

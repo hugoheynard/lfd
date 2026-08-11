@@ -1,3 +1,5 @@
+import type { AssignableRole, CompanyMemberRole } from '@lfd/contracts';
+
 /**
  * Le **compte** tel que le backend le renvoie sur `GET /me` — miroir de
  * `AccountView` (`src/account/domain/ports/account.reader.ts`).
@@ -69,6 +71,11 @@ export interface Contact {
   readonly fonction: string;
   readonly email: string;
   readonly phone: string;
+  /**
+   * Ce que la personne fait dans la société. `null` pour le contact principal
+   * (son rôle est constaté, pas choisi) et sur les contacts d'avant les rôles.
+   */
+  readonly role: CompanyMemberRole | null;
 }
 
 /** Le KBIS déposé, tel que la section Identité l'affiche. */
@@ -131,8 +138,16 @@ export type CompanyDraft = Pick<
   'raisonSociale' | 'enseigne' | 'formeJuridique' | 'siret' | 'tvaIntracom'
 >;
 
-/** Ce qu'un formulaire de contact envoie (principal comme additionnel). */
-export type ContactDraft = Pick<Contact, 'firstName' | 'lastName' | 'fonction' | 'email' | 'phone'>;
+/**
+ * Ce qu'un formulaire de contact envoie.
+ *
+ * Le rôle est vide tant qu'il n'est pas choisi, et `owner` n'y figure jamais :
+ * le détenteur n'est pas attribué, il est constaté.
+ */
+export type ContactDraft = Pick<
+  Contact,
+  'firstName' | 'lastName' | 'fonction' | 'email' | 'phone'
+> & { readonly role: AssignableRole | '' };
 
 /** Un contact vierge — préremplissage d'un ajout. */
 export const EMPTY_CONTACT: ContactDraft = {
@@ -141,6 +156,7 @@ export const EMPTY_CONTACT: ContactDraft = {
   fonction: '',
   email: '',
   phone: '',
+  role: '',
 };
 
 /** Libellés d'état, pour les badges. */

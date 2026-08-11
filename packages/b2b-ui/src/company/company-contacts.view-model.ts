@@ -1,3 +1,5 @@
+import type { ContactAccess } from '@lfd/contracts';
+
 /**
  * Une carte de contact prête à afficher — vue **neutre** dérivée du contact et
  * de son emploi. L'app mappe son modèle (contact principal aplati + additionnels)
@@ -17,4 +19,14 @@ export interface CompanyContactCardView {
   readonly isPrimary: boolean;
   /** C'est la personne connectée : carte accentuée + badge « Vous ». */
   readonly isYou: boolean;
+  /**
+   * Où en est son **accès** à l'espace — `null` quand la vue ne le sait pas.
+   *
+   * `null` n'est pas `'none'` : côté client, la liste des contacts ne porte
+   * aucune information d'accès, et afficher « pas d'accès » serait une
+   * affirmation que cet écran ne peut pas soutenir.
+   */
+  readonly access: ContactAccess | null;
+  /** L'adresse a-t-elle été prouvée ? Sans objet quand `access` est `null`. */
+  readonly emailVerified: boolean;
 }

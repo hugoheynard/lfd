@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { COMPANY_ROLE_LABELS } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { CompanyContactsCard, type CompanyContactCardView } from '@lfd/b2b-ui/company';
 
@@ -49,17 +50,23 @@ export class CompanyContactsSection {
       phone: company.primaryContact.phone,
       isPrimary: true,
       isYou: myEmail !== null && company.primaryContact.email === myEmail,
+      // Cet écran ne sait rien des accès des autres : `null` plutôt qu'un
+      // « pas d'accès » que la vue ne peut pas soutenir.
+      access: null,
+      emailVerified: false,
     };
     const others = company.contacts.map<CompanyContactCardView>((contact) => ({
       contactId: contact.id,
       firstName: contact.firstName,
       lastName: contact.lastName,
-      role: contact.fonction === '' ? 'Contact' : contact.fonction,
+      role: contact.role === null ? 'Rôle à préciser' : COMPANY_ROLE_LABELS[contact.role],
       fonction: contact.fonction,
       email: contact.email,
       phone: contact.phone,
       isPrimary: false,
       isYou: myEmail !== null && contact.email === myEmail,
+      access: null,
+      emailVerified: false,
     }));
     return [primary, ...others];
   });
@@ -107,7 +114,7 @@ export class CompanyContactsSection {
    * backend. L'intention est là pour cadrer l'UX ; l'action sera branchée quand
    * l'endpoint d'invitation existera.
    */
-  protected onInvite(_contactId: string): void {
+  protected onInvite(_contactId: string | null): void {
     // TODO(invitation) : POST /companies/:id/invitations — flux à construire.
   }
 

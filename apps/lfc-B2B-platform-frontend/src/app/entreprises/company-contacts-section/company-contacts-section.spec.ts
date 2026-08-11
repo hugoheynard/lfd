@@ -13,7 +13,7 @@ import { CompanyContactsSection } from './company-contacts-section';
  * non-gestionnaire, et le « Supprimer » réservé aux contacts additionnels.
  */
 function contact(email: string, firstName = 'Jean', lastName = 'Client'): Contact {
-  return { id: `ct_${email}`, firstName, lastName, fonction: '', email, phone: '' };
+  return { id: `ct_${email}`, firstName, lastName, fonction: '', email, phone: '', role: 'orders' };
 }
 
 function company(over: Partial<Company> = {}): Company {
@@ -37,6 +37,7 @@ function company(over: Partial<Company> = {}): Company {
       fonction: '',
       email: 'gerant@pqmarais.fr',
       phone: '',
+      role: null,
     },
     contacts: [],
     kbis: null,
@@ -120,15 +121,17 @@ describe('CompanyContactsSection', () => {
     expect(cards[1]?.querySelectorAll('fold-dropdown-item')).toHaveLength(2);
   });
 
-  it('signale que les contacts additionnels n’ont pas d’espace utilisateur, avec « Inviter »', () => {
+  it("n'affirme RIEN sur l'accès des interlocuteurs", () => {
+    // Cette vue ne connaît pas les accès : `/me` ne les porte pas. Elle
+    // annonçait pourtant « pas d'espace utilisateur » avec un bouton
+    // « Inviter » qui n'appelait rien — une affirmation invérifiable doublée
+    // d'une promesse non tenue. Tant que le flux d'invitation côté client
+    // n'existe pas, la carte se tait.
     const host = render(company({ contacts: [contact('achats@pqmarais.fr')] }));
     const cards = host.querySelectorAll('fold-card');
 
-    // Le principal (une personne, un compte) : pas de callout. L'additionnel : oui.
-    expect(cards[0]?.querySelector('fold-callout')).toBeNull();
-    expect(cards[1]?.querySelector('fold-callout')).not.toBeNull();
-    expect(cards[1]?.textContent).toContain("pas d'espace utilisateur");
-    expect(cards[1]?.textContent).toContain('Inviter');
+    expect(cards[1]?.textContent).not.toContain("pas d'espace utilisateur");
+    expect(cards[1]?.textContent).not.toContain('Compte créé');
   });
 
   it('n’ouvre AUCUNE confirmation de suppression d’office (ni sur « Vous »)', () => {

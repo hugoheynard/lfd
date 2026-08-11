@@ -1,11 +1,37 @@
+<!-- L'adresse d'abord : c'est par elle qu'on joint la personne, et c'est le
+     seul champ exigé. Le nom vient ensuite, facultatif — l'imposer bloquerait
+     une saisie faite au téléphone. -->
+<fold-input
+  label="E-mail"
+  type="email"
+  required
+  hint="c'est par là qu'un accès lui serait envoyé"
+  [value]="value().email"
+  (valueChange)="setEmail($event)"
+/>
+
+@if (withRole()) {
+  <fold-select
+    label="Rôle dans la société"
+    required
+    [value]="value().role"
+    (valueChange)="setRole($event)"
+  >
+    <option value="" disabled>À choisir</option>
+    @for (role of roles; track role.value) {
+      <option [value]="role.value">{{ role.label }}</option>
+    }
+  </fold-select>
+}
+
 <div class="row">
   <fold-input
     label="Prénom"
-    required
+    optional
     [value]="value().firstName"
     (valueChange)="setFirstName($event)"
   />
-  <fold-input label="Nom" required [value]="value().lastName" (valueChange)="setLastName($event)" />
+  <fold-input label="Nom" optional [value]="value().lastName" (valueChange)="setLastName($event)" />
 </div>
 
 <fold-input
@@ -14,13 +40,6 @@
   optional
   [value]="value().fonction"
   (valueChange)="setFonction($event)"
-/>
-<fold-input
-  label="E-mail"
-  type="email"
-  required
-  [value]="value().email"
-  (valueChange)="setEmail($event)"
 />
 <fold-input
   label="Téléphone"

@@ -35,6 +35,7 @@ function company(id: string, raisonSociale: string, enseigne = ''): Company {
       fonction: '',
       email: 'camille@test.fr',
       phone: '',
+      role: null,
     },
     contacts: [],
     kbis: null,

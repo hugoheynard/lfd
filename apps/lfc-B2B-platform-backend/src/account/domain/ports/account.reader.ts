@@ -29,6 +29,12 @@ export interface ContactView {
   readonly fonction: string;
   readonly email: string;
   readonly phone: string;
+  /**
+   * Ce que la personne fait dans la société. `null` pour le contact
+   * **principal** — son rôle est `owner` par construction — et sur les contacts
+   * d'avant les rôles, où il reste « à préciser » plutôt que deviné.
+   */
+  readonly role: CompanyRole | null;
 }
 
 /** Le KBIS déposé, tel que la section Identité l'affiche. `null` = aucun déposé. */

@@ -11,6 +11,7 @@ import { FoldButtonComponent, FoldPanelHeaderComponent, FoldPanelRef } from 'fol
 import {
   ContactFields,
   EMPTY_COMPANY_CONTACT_DRAFT,
+  isAdditionalContactValid,
   isCompanyContactValid,
   type CompanyContactDraft,
 } from '@lfd/b2b-ui/company';
@@ -69,7 +70,12 @@ export class ContactPanel {
     return target?.contactId ? 'Modifier le contact' : 'Ajouter un contact';
   });
 
-  protected readonly canSubmit = computed(() => isCompanyContactValid(this.draft()));
+  /** Le contact principal est le détenteur : son rôle est constaté, pas choisi. */
+  protected readonly withRole = computed(() => this.data()?.target.kind === 'additional');
+
+  protected readonly canSubmit = computed(() =>
+    this.withRole() ? isAdditionalContactValid(this.draft()) : isCompanyContactValid(this.draft()),
+  );
 
   constructor() {
     // L'input est fixé à l'ouverture ; on sème les champs une fois.
@@ -82,6 +88,7 @@ export class ContactPanel {
           fonction: initial.fonction,
           email: initial.email,
           phone: initial.phone,
+          role: initial.role,
         });
       }
     });
@@ -99,6 +106,7 @@ export class ContactPanel {
       fonction: current.fonction.trim(),
       email: current.email.trim(),
       phone: current.phone.trim(),
+      role: current.role,
     };
     const close = (): void => this.ref.close();
 
@@ -124,5 +132,8 @@ export function contactToDraft(contact: Contact): ContactDraft {
     fonction: contact.fonction,
     email: contact.email,
     phone: contact.phone,
+    // `owner` n'est pas proposé : le formulaire du détenteur ne demande pas de
+    // rôle, et le rendre modifiable laisserait croire qu'il se transfère ici.
+    role: contact.role === null || contact.role === 'owner' ? '' : contact.role,
   };
 }
