@@ -6,6 +6,8 @@ export interface EvaluatedOrder {
   readonly orderNumber: string;
   /** `null` pour une commande zéro friction — elle ne produit aucune alerte. */
   readonly companyId: string | null;
+  /** Raison sociale, lue avec la commande : la cloche et l'e-mail la nomment. */
+  readonly companyName: string;
   /**
    * La société est-elle **active** ? Lu ici plutôt que déduit ailleurs : un
    * dossier en attente, suspendu ou résilié n'a pas d'habitudes à comparer, et

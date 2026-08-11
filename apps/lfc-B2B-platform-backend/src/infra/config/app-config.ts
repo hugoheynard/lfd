@@ -36,6 +36,7 @@ export class AppConfig {
   private readonly adminAudienceValue: string | null;
   private readonly adminBypass: boolean;
   private readonly recomputeTokenValue: string | null;
+  private readonly adminBaseUrlValue: string | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
 
@@ -52,8 +53,20 @@ export class AppConfig {
     this.adminAudienceValue = optionalString("AUTH0_ADMIN_AUDIENCE");
     this.adminBypass = optionalAdminDevBypass();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
+    this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.exposeDetail = !this.production;
+  }
+
+  /**
+   * Racine publique du back-office, pour les liens des e-mails internes.
+   *
+   * **Optionnelle** : sans elle, un e-mail part sans bouton plutôt qu'avec un
+   * lien cassé. Inventer une URL par défaut donnerait un bouton qui ne mène
+   * nulle part, ce qui est pire que pas de bouton.
+   */
+  adminBaseUrl(): string | null {
+    return this.adminBaseUrlValue;
   }
 
   /** Vrai en production (`NODE_ENV=production`). Choisit notamment l'allowlist CORS. */

@@ -6,6 +6,7 @@ import { ClearAccountAlertOverrideHandler } from "./application/commands/clear-a
 import { RecomputeProductNormsHandler } from "./application/commands/recompute-product-norms.handler.js";
 import { SaveAccountAlertOverrideHandler } from "./application/commands/save-account-alert-override.handler.js";
 import { SaveAlertRuleHandler } from "./application/commands/save-alert-rule.handler.js";
+import { DispatchAlertChannels } from "./application/handlers/dispatch-alert-channels.service.js";
 import { EvaluateOrderAlerts } from "./application/handlers/evaluate-order-alerts.service.js";
 import { OnOrderPlacedEvaluateAlerts } from "./application/handlers/on-order-placed.handler.js";
 import { GetAccountAlertRulesHandler } from "./application/queries/get-account-alert-rules.handler.js";
@@ -13,6 +14,7 @@ import { ListAccountAlertsHandler } from "./application/queries/list-account-ale
 import { ListAlertRulesHandler } from "./application/queries/list-alert-rules.handler.js";
 import { AccountAlertOverridesStore } from "./domain/ports/account-alert-overrides.store.js";
 import { AccountAlertRepository } from "./domain/ports/account-alert.repository.js";
+import { AlertChannels } from "./domain/ports/alert-channels.js";
 import { AlertRulesStore } from "./domain/ports/alert-rules.store.js";
 import { AlertCompanyReader } from "./domain/ports/company.reader.js";
 import { EvaluatedOrderReader } from "./domain/ports/evaluated-order.reader.js";
@@ -67,6 +69,7 @@ import { PrismaProductNormStore } from "./infrastructure/prisma-product-norm.sto
     { provide: ProductNormReader, useClass: PrismaProductNormReader },
     { provide: ProductNormStore, useClass: PrismaProductNormStore },
     EvaluateOrderAlerts,
+    { provide: AlertChannels, useClass: DispatchAlertChannels },
     OnOrderPlacedEvaluateAlerts,
     ListAlertRulesHandler,
     SaveAlertRuleHandler,

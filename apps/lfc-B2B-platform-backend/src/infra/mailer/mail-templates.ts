@@ -26,6 +26,23 @@ export interface B2bMails {
     /** Lien direct vers la page du rendez-vous dans le back-office. */
     readonly appointmentUrl: string;
   };
+  /**
+   * Une alerte s'est déclenchée sur un compte. Destinataire : la boîte de
+   * l'équipe.
+   *
+   * Le corps porte les **constats figés**, pas de quoi les recalculer : un
+   * e-mail est une photo, et la moyenne d'aujourd'hui ne doit pas réécrire ce
+   * qu'on a constaté hier.
+   */
+  "staff.account-alert": {
+    readonly companyName: string;
+    readonly ruleLabel: string;
+    readonly orderNumber: string;
+    /** Un constat par ligne concernée, déjà mis en forme. */
+    readonly findings: readonly string[];
+    /** Lien direct vers l'onglet Alertes du compte. */
+    readonly accountUrl: string;
+  };
   /** Un client demande à être rappelé ou écrit. Destinataire : la boîte de l'équipe. */
   "staff.support-requested": {
     readonly contactName: string;
@@ -47,6 +64,20 @@ function detailsBody(details: readonly (readonly [string, string])[], message: s
 }
 
 export const B2B_MAIL_TEMPLATES: TemplateRegistry<B2bMails> = {
+  "staff.account-alert": (data) => ({
+    subject: sanitiseSubject(`Alerte — ${data.companyName} · ${data.ruleLabel}`),
+    html: renderLayout({
+      title: `${data.ruleLabel} sur ${data.companyName}`,
+      body: detailsBody(
+        [
+          ["Compte", data.companyName],
+          ["Commande", data.orderNumber],
+        ],
+        data.findings.join("\n"),
+      ),
+      cta: { label: "Ouvrir le compte", url: data.accountUrl },
+    }),
+  }),
   "staff.appointment-booked": (data) => ({
     subject: sanitiseSubject(`Nouveau rendez-vous — ${data.contactName} · ${data.when}`),
     html: renderLayout({

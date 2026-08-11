@@ -7,6 +7,8 @@ import type { AlertEvaluationContext } from "../../../domain/detectors/context.j
 import type { AlertToRecord } from "../../../domain/ports/account-alert.repository.js";
 import type { EvaluatedOrder } from "../../../domain/ports/evaluated-order.reader.js";
 import type { AccountOrderHistory } from "../../../domain/ports/order-history.reader.js";
+import type { AlertDraft } from "../../../domain/evaluate-order.js";
+import type { AlertChannels } from "../../../domain/ports/alert-channels.js";
 import { EvaluateOrderAlerts } from "../evaluate-order-alerts.service.js";
 
 const NOW = new Date("2026-08-11T09:00:00.000Z");
@@ -16,6 +18,7 @@ const ORDER: EvaluatedOrder = {
   id: "order_1",
   orderNumber: "LFC-1042",
   companyId: "company_1",
+  companyName: "Boulangerie Périn",
   companyActive: true,
   lines: [{ sku: SKU, productName: "Viennoiserie", quantity: 10 }],
 };
@@ -29,6 +32,7 @@ function build(overrides: {
 }) {
   const recorded: AlertToRecord[] = [];
   const readCalls: unknown[] = [];
+  const dispatched: AlertDraft[] = [];
   const service = new EvaluateOrderAlerts(
     {
       readAll: () => Promise.resolve([...(overrides.stored ?? [])]),
@@ -61,9 +65,17 @@ function build(overrides: {
       acknowledge: () => Promise.resolve(),
       countUnacknowledged: () => Promise.resolve(new Map()),
     },
+    // Un port se double sans assertion : `satisfies` prouve la compatibilité, et
+    // le jour où le port change, ce double cesse de compiler.
+    {
+      dispatch: (drafts: readonly AlertDraft[]) => {
+        dispatched.push(...drafts);
+        return Promise.resolve();
+      },
+    } satisfies AlertChannels,
     { now: () => NOW } satisfies Clock,
   );
-  return { service, recorded, readCalls };
+  return { service, recorded, readCalls, dispatched };
 }
 
 describe("EvaluateOrderAlerts", () => {
@@ -156,5 +168,28 @@ describe("EvaluateOrderAlerts", () => {
 
     expect(recorded).toHaveLength(0);
     expect(readCalls).toHaveLength(0);
+  });
+});
+
+describe("les canaux", () => {
+  it("ne sont sollicités que pour ce qui s'est réellement déclenché", async () => {
+    const { service, dispatched } = build({});
+
+    await service.evaluate("order_1");
+
+    expect(dispatched).toHaveLength(1);
+  });
+
+  it("ne sont pas sollicités quand rien ne se déclenche", async () => {
+    // Le journal fait foi ; les canaux ne sont que ce qu'on fait en plus. Sans
+    // alerte, il n'y a rien à annoncer — et surtout pas un e-mail vide.
+    const { service, dispatched, recorded } = build({
+      history: { everOrdered: new Set([SKU]) },
+    });
+
+    await service.evaluate("order_1");
+
+    expect(recorded).toHaveLength(0);
+    expect(dispatched).toHaveLength(0);
   });
 });

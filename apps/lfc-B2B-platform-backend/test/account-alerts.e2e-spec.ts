@@ -81,6 +81,15 @@ async function seed(status: CompanyStatus = "active"): Promise<string> {
   return company.id;
 }
 
+/** Passe une commande retrait d'un SKU donné. */
+async function orderSku(companyId: string, sku: string, quantity: number): Promise<void> {
+  await ctx
+    .asSub(CLIENT)
+    .post("/orders")
+    .send({ companyId, fulfillmentMethod: "pickup", note: "", lines: [{ sku, quantity }] })
+    .expect(201);
+}
+
 /** Passe une commande retrait pour cette société. */
 async function order(companyId: string, quantity: number): Promise<void> {
   await ctx
@@ -98,6 +107,26 @@ async function order(companyId: string, quantity: number): Promise<void> {
 /** Requête authentifiée en **staff** (le verifier doublé accepte le jeton). */
 function staff(): ReturnType<E2eContext["asSub"]> {
   return ctx.asSub("staff-e2e");
+}
+
+/**
+ * Attend qu'une condition devienne vraie.
+ *
+ * L'évaluation est déclenchée par `order.placed` sur le bus d'événements : le
+ * handler n'est **pas attendu** par la requête HTTP, donc la commande répond
+ * avant que l'alerte ne soit écrite. Sonder est la seule façon honnête de
+ * tester ce chemin — et c'est aussi ce qui rappelle qu'un consommateur ne doit
+ * jamais compter sur l'ordre.
+ */
+async function eventually<T>(read: () => Promise<T>, until: (value: T) => boolean): Promise<T> {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const value = await read();
+    if (until(value)) {
+      return value;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error("La condition attendue n'est jamais survenue.");
 }
 
 async function alertsOf(companyId: string): Promise<AccountAlertView[]> {
@@ -119,11 +148,27 @@ describe("une commande déclenche l'évaluation", () => {
     const companyId = await seed();
     await order(companyId, 3);
 
-    // Deuxième commande : le SKU a déjà été pris, donc rien sur celui-là.
+    // Un produit INÉDIT sur la deuxième commande : c'est le cas qui doit parler.
+    await orderSku(companyId, "VIE-002", 2);
+
+    const alerts = await eventually(
+      () => alertsOf(companyId),
+      (found) => found.length > 0,
+    );
+    expect(alerts[0]?.kind).toBe("product.first_order");
+    expect(alerts[0]?.findings[0]?.sku).toBe("VIE-002");
+  });
+
+  it("ne signale pas un produit déjà commandé", async () => {
+    const companyId = await seed();
     await order(companyId, 3);
 
-    const alerts = await alertsOf(companyId);
-    expect(alerts.filter((alert) => alert.kind === "product.first_order")).toHaveLength(0);
+    await order(companyId, 3);
+
+    // Rien à attendre ici : on vérifie une ABSENCE, donc on laisse le temps au
+    // handler de tourner avant de conclure.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(await alertsOf(companyId)).toHaveLength(0);
   });
 
   it("n'alerte pas une société qui n'est pas active", async () => {
@@ -302,5 +347,44 @@ describe("les dérogations d'un compte inconnu", () => {
     await staff()
       .delete(`/admin/companies/${companyId}/alert-rules/product.first_order`)
       .expect(204);
+  });
+});
+
+describe("la cloche du back-office", () => {
+  it("sonne quand une alerte se déclenche, et se marque lue", async () => {
+    const companyId = await seed();
+    await order(companyId, 3);
+    // Deuxième commande, produit inédit : une alerte, donc une notification.
+    await orderSku(companyId, "VIE-002", 2);
+
+    const before = await eventually(
+      async () =>
+        jsonBody<{ unread: number; notifications: { id: string }[] }>(
+          await staff().get("/admin/notifications").expect(200),
+        ),
+      (summary) => summary.unread > 0,
+    );
+    expect(before.unread).toBe(1);
+
+    await staff().post(`/admin/notifications/${before.notifications[0]?.id}/read`).expect(204);
+
+    const after = jsonBody<{ unread: number }>(
+      await staff().get("/admin/notifications").expect(200),
+    );
+    expect(after.unread).toBe(0);
+  });
+
+  it("ne sonne pas deux fois pour le même fait", async () => {
+    const companyId = await seed();
+    await order(companyId, 3);
+    await order(companyId, 3);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const summary = jsonBody<{ unread: number }>(
+      await staff().get("/admin/notifications").expect(200),
+    );
+
+    // Le SKU a déjà été commandé : aucune alerte, donc aucune notification.
+    expect(summary.unread).toBe(0);
   });
 });

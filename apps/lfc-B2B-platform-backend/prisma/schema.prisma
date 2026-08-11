@@ -1334,3 +1334,44 @@ model ProductNorm {
   @@map("product_norms")
   @@schema("public")
 }
+
+/// Une **notification staff** — la cloche du back-office.
+///
+/// Socle **générique** : un sujet, une ligne, un lien, un état lu/non-lu. Les
+/// alertes de compte en sont le premier consommateur, les rendez-vous et les
+/// demandes de contact (J2) le seront ensuite. Une cloche taillée pour les
+/// alertes aurait été à refaire au deuxième usage.
+///
+/// **Commune à l'équipe**, pas par personne : à cette taille d'équipe, « me
+/// prévenir » veut dire prévenir la boîte, et une notification traitée par l'un
+/// n'a pas à rester en attente chez les autres. `readBy` dit qui s'en est chargé.
+model StaffNotification {
+  /// ULID (fourni par l'`IdGenerator`) : triable par le temps.
+  id String @id
+
+  /// Nature du fait, ex. `alert.account`. Le `payload` n'existe pas : ce qu'il
+  /// faut afficher est déjà figé dans `subject` / `body` / `link`.
+  kind String
+
+  subject String
+  /// Une ligne, pas un rapport : la cloche annonce, l'écran cible explique.
+  body String
+  /// Route interne à ouvrir (ex. `/comptes-clients/xxx/alertes`).
+  link String
+
+  /// Anti-doublon : un fait rejoué ne sonne pas deux fois.
+  idempotencyKey String @unique @map("idempotency_key")
+
+  /// Temps du FAIT (autorité = `Clock`), distinct de l'écriture.
+  occurredAt DateTime @map("occurred_at")
+
+  readAt DateTime? @map("read_at")
+  /// Le `sub` staff qui l'a lue — un identifiant, pas un nom.
+  readBy String? @map("read_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([readAt, occurredAt])
+  @@map("staff_notifications")
+  @@schema("public")
+}

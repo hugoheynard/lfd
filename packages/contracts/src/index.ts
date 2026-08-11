@@ -146,6 +146,7 @@ export type {
   SaveAlertRulePayload,
 } from "./account-alert-rule.js";
 export type { AlertFinding, AccountAlertView } from "./account-alert-finding.js";
+export type { StaffNotificationView, StaffNotificationsSummary } from "./staff-notification.js";
 export {
   accountAlertOverrideSchema,
   effectiveAlertRule,

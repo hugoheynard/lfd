@@ -11,6 +11,7 @@ import { PaymentsModule } from "./payments/payments.module.js";
 import { OrderCutoffsModule } from "./order-cutoffs/order-cutoffs.module.js";
 import { PickupAddressesModule } from "./pickup-addresses/pickup-addresses.module.js";
 import { PlatformSettingsModule } from "./platform-settings/platform-settings.module.js";
+import { StaffNotificationsModule } from "./staff-notifications/staff-notifications.module.js";
 import { StaffUsersModule } from "./staff-users/staff-users.module.js";
 import { SubscriptionsModule } from "./subscriptions/subscriptions.module.js";
 import { AuthModule } from "./infra/auth/auth.module.js";
@@ -49,6 +50,9 @@ import { SecurityModule } from "./infra/security/security.module.js";
     DeliveryZonesModule,
     // Annuaire back-office (isolé, source de vérité locale).
     StaffUsersModule,
+    // Cloche du back-office (@Global) : socle générique dont les alertes sont le
+    // premier consommateur, J2 (RDV, demandes de contact) le second.
+    StaffNotificationsModule,
     // Contextes métier.
     AccountModule,
     // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.

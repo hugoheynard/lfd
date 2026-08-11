@@ -13,6 +13,7 @@ import {
   ProductNormReader,
 } from "../../domain/ports/order-history.reader.js";
 import { EvaluatedOrderReader } from "../../domain/ports/evaluated-order.reader.js";
+import { AlertChannels } from "../../domain/ports/alert-channels.js";
 
 /**
  * Évalue une commande contre les règles effectives de son compte, et inscrit ce
@@ -35,6 +36,7 @@ export class EvaluateOrderAlerts {
     private readonly history: AccountOrderHistoryReader,
     private readonly norms: ProductNormReader,
     private readonly journal: AccountAlertRepository,
+    private readonly channels: AlertChannels,
     private readonly clock: Clock,
   ) {}
 
@@ -72,15 +74,28 @@ export class EvaluateOrderAlerts {
     ]);
 
     const drafts = evaluateOrder({ lines: order.lines, norms, ...history }, effective);
+    if (drafts.length === 0) {
+      return;
+    }
+    const companyId = order.companyId;
+    // Le journal D'ABORD : il est inconditionnel, et c'est lui qui fait foi. Les
+    // canaux ne sont que ce qu'on fait en plus — un e-mail perdu ne doit pas
+    // emporter la trace.
     await this.journal.record(
       drafts.map((draft) => ({
         ...draft,
-        companyId: order.companyId ?? "",
+        companyId,
         orderId: order.id,
         orderNumber: order.orderNumber,
         occurredAt: now,
       })),
     );
+    await this.channels.dispatch(drafts, effective, {
+      companyId,
+      companyName: order.companyName,
+      orderNumber: order.orderNumber,
+      occurredAt: now,
+    });
   }
 }
 
