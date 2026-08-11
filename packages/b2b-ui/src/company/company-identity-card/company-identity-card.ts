@@ -11,6 +11,8 @@ import {
   FoldPageSectionComponent,
 } from 'fold-ng';
 
+import type { PieceMode } from '@lfd/contracts';
+
 import type { CompanyIdentityView } from '../company-identity.view-model';
 
 /**
@@ -58,10 +60,14 @@ export class CompanyIdentityCard {
   readonly error = input<string | null>(null);
   /** Texte de la zone de dépôt quand aucun KBIS n'est présent (formulation par app). */
   /**
-   * Le KBIS est-il **exigé** pour activer ce compte ? La carte ne peut pas le
-   * savoir : cela dépend de la configuration de la plateforme, qui vit ailleurs.
+   * Ce que la plateforme attend du KBIS — `hidden`, `optional` ou `required`.
+   *
+   * La carte ne peut pas le deviner : cela dépend d'une configuration qui vit
+   * ailleurs. Le rappel suit la **synthèse du haut de page**, qui liste aussi
+   * les pièces facultatives : ne parler que des pièces exigées laisserait la
+   * carte muette sur une pièce que la synthèse réclame trois écrans plus haut.
    */
-  readonly kbisRequired = input(false);
+  readonly kbisRequirement = input<PieceMode>('optional');
 
   readonly kbisEmptyHint = input(
     "L'activation du compte passe par la réception de l'extrait KBIS (format PDF).",

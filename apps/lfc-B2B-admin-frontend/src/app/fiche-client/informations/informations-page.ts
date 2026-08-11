@@ -7,6 +7,7 @@ import type {
   DeliveryAddressView,
   DeliveryContact,
   PickupAddressView,
+  PieceMode,
   PlatformSettings,
 } from '@lfd/contracts';
 import {
@@ -150,7 +151,7 @@ export class InformationsPage {
    * plateforme, et un rappel qui se trompe d'exigence fait réclamer une pièce
    * facultative au client.
    */
-  protected readonly kbisRequired = computed(() => this.settings()?.kbis === 'required');
+  protected readonly kbisRequirement = computed<PieceMode>(() => this.settings()?.kbis ?? 'hidden');
 
   /** La livraison est-elle masquée (service absent) ? Cache la carte livraison. */
   protected readonly deliveryHidden = computed(() => this.settings()?.delivery === 'hidden');

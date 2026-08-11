@@ -119,10 +119,15 @@
       <fold-callout variant="alert" announce>{{ message }}</fold-callout>
     }
 
-    @if (kbisRequired() && !id.kbis) {
-      <fold-callout variant="warning">
-        L'extrait KBIS est <strong>exigé</strong> pour activer ce compte. Un PDF ou une photo
-        lisible font l'affaire.
+    @if (kbisRequirement() !== 'hidden' && !id.kbis) {
+      <fold-callout [variant]="kbisRequirement() === 'required' ? 'warning' : 'info'">
+        @if (kbisRequirement() === 'required') {
+          L'extrait KBIS est <strong>exigé</strong> pour activer ce compte.
+        } @else {
+          L'extrait KBIS <strong>manque encore</strong> — il n'empêche pas l'activation, mais la
+          synthèse le réclamera tant qu'il n'est pas là.
+        }
+        Un PDF ou une photo lisible font l'affaire.
       </fold-callout>
     }
 
