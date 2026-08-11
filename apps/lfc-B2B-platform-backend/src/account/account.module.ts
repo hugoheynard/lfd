@@ -8,6 +8,7 @@ import {
   AddDeliveryAddressByStaffHandler,
   SaveBillingAddressByStaffHandler,
   GrantTermsHandler,
+  PreferFulfillmentByStaffHandler,
   UpdateIdentityByStaffHandler,
   UploadKbisByStaffHandler,
 } from "./application/commands/admin-company.handlers.js";
@@ -160,6 +161,7 @@ import { MeController } from "./http/me.controller.js";
     UploadKbisByStaffHandler,
     UpdateIdentityByStaffHandler,
     GrantTermsHandler,
+    PreferFulfillmentByStaffHandler,
     SaveBillingAddressByStaffHandler,
     AddDeliveryAddressByStaffHandler,
     RequestActivationSupportHandler,

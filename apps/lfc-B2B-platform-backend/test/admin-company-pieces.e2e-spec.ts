@@ -208,3 +208,89 @@ describe("activation d'un compte (gate serveur)", () => {
     expect(response.status).toBe(409);
   });
 });
+
+describe("préférence d'acheminement", () => {
+  it("retient le point de retrait préféré", async () => {
+    const pickup = await ctx.prisma.pickupAddress.create({
+      data: {
+        label: "Labo Bastille",
+        ligne1: "3 rue de la Roquette",
+        codePostal: "75011",
+        ville: "Paris",
+        pays: "France",
+      },
+      select: { id: true },
+    });
+
+    await staff()
+      .patch(`/admin/companies/${companyId}/fulfillment-preference`)
+      .send({ method: "pickup", pickupAddressId: pickup.id })
+      .expect(204);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.preferredFulfillmentMethod).toBe("pickup");
+    expect(company.preferredPickupAddressId).toBe(pickup.id);
+  });
+
+  it("REFUSE l'adresse d'une AUTRE société", async () => {
+    // Sans ce contrôle, un identifiant recopié ferait pointer la préférence d'un
+    // client sur l'adresse d'un autre — la commande partirait chez le voisin.
+    const other = await createCompany(ctx.prisma, { siret: "" });
+    const foreign = await ctx.prisma.address.create({
+      data: {
+        companyId: other.id,
+        kind: AddressKind.livraison,
+        label: "Chez le voisin",
+        ligne1: "1 rue Ailleurs",
+        codePostal: "75001",
+        ville: "Paris",
+        pays: "France",
+      },
+      select: { id: true },
+    });
+
+    await staff()
+      .patch(`/admin/companies/${companyId}/fulfillment-preference`)
+      .send({ method: "delivery", deliveryAddressId: foreign.id })
+      .expect(404);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.preferredFulfillmentMethod).toBeNull();
+  });
+
+  it("accepte une méthode sans adresse — « le défaut du moment »", async () => {
+    await staff()
+      .patch(`/admin/companies/${companyId}/fulfillment-preference`)
+      .send({ method: "delivery" })
+      .expect(204);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.preferredFulfillmentMethod).toBe("delivery");
+    expect(company.preferredDeliveryAddressId).toBeNull();
+  });
+
+  it("fait RETOMBER la préférence sur le défaut quand le point de retrait disparaît", async () => {
+    // `SET NULL` plutôt que `RESTRICT` : supprimer un labo ne doit pas être
+    // interdit parce qu'une société le préfère, ni laisser un pointeur mort.
+    const pickup = await ctx.prisma.pickupAddress.create({
+      data: {
+        label: "Labo éphémère",
+        ligne1: "9 rue Passagère",
+        codePostal: "75011",
+        ville: "Paris",
+        pays: "France",
+      },
+      select: { id: true },
+    });
+    await staff()
+      .patch(`/admin/companies/${companyId}/fulfillment-preference`)
+      .send({ method: "pickup", pickupAddressId: pickup.id })
+      .expect(204);
+
+    await ctx.prisma.pickupAddress.delete({ where: { id: pickup.id } });
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.preferredFulfillmentMethod).toBe("pickup");
+    expect(company.preferredPickupAddressId).toBeNull();
+  });
+});

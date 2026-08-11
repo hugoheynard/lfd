@@ -244,6 +244,26 @@ model Company {
   kbisUploadedAt  DateTime? @map("kbis_uploaded_at")
   kbisCertifiedAt DateTime? @map("kbis_certified_at")
 
+  // Préférence d'ACHEMINEMENT : comment ce client est servi d'habitude. Ce n'est
+  // pas une contrainte — la commande s'ouvre dessus, le client peut en changer
+  // au panier. `null` = aucune préférence posée, ce qui n'est PAS « retrait » :
+  // c'est l'état de tout le portefeuille existant, et il doit rester lisible.
+  //
+  // Les deux pointeurs sont facultatifs même quand la méthode est posée : `null`
+  // renvoie au DÉFAUT du moment (celui de la plateforme pour le retrait, celui
+  // de la société pour la livraison). Pointer explicitement sur l'adresse par
+  // défaut la figerait — le jour où elle change, la préférence désignerait
+  // encore l'ancienne. Les deux FK sont en `SetNull` : supprimer un point de
+  // retrait ou archiver une adresse fait retomber la préférence sur le défaut,
+  // jamais sur un pointeur mort.
+  preferredFulfillmentMethod FulfillmentMethod? @map("preferred_fulfillment_method")
+
+  preferredPickupAddressId String?        @map("preferred_pickup_address_id")
+  preferredPickupAddress   PickupAddress? @relation(fields: [preferredPickupAddressId], references: [id], onDelete: SetNull)
+
+  preferredDeliveryAddressId String?  @map("preferred_delivery_address_id")
+  preferredDeliveryAddress   Address? @relation("PreferredDelivery", fields: [preferredDeliveryAddressId], references: [id], onDelete: SetNull)
+
   // Posé au passage `pending → active` par l'activation commerciale explicite
   // (ancre d'ancienneté commerciale, distincte de `createdAt`). `null` = jamais activé.
   activatedAt DateTime? @map("activated_at")
@@ -538,6 +558,9 @@ model Address {
   companyId String  @map("company_id")
   company   Company @relation(fields: [companyId], references: [id])
 
+  /// Sociétés qui ont fait de cette adresse leur livraison préférée.
+  preferredBy Company[] @relation("PreferredDelivery")
+
   kind  AddressKind
   label String // « Siège », « Boutique Bastille »…
 
@@ -827,6 +850,9 @@ model PickupAddress {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Sociétés qui ont fait de ce point leur retrait préféré (cf. Company).
+  preferredBy Company[]
 
   @@map("pickup_addresses")
   @@schema("public")

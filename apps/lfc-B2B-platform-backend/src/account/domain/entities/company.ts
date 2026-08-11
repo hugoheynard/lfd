@@ -3,7 +3,8 @@ import {
   CompanyStatusTransitionError,
   InvalidCompanyIdentityError,
 } from "../errors/account-errors.js";
-import type { DeferredTerm } from "@lfd/contracts";
+import { NO_FULFILLMENT_PREFERENCE } from "@lfd/contracts";
+import type { DeferredTerm, FulfillmentPreferenceView } from "@lfd/contracts";
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import { EmailAddress } from "../value-objects/email-address.js";
 import { PersonName } from "../value-objects/person-name.js";
@@ -52,6 +53,11 @@ export interface ReconstituteCompanyInput {
   readonly activatedAt: Date | null;
   /** Code NAF résolu depuis le SIRET, ou vide si pas encore connu. */
   readonly nafCode: string;
+  /**
+   * Préférence d'acheminement, **facultative** : une société lue sans elle n'en
+   * a simplement pas — ce qui est l'état de tout le portefeuille existant.
+   */
+  readonly fulfillmentPreference?: FulfillmentPreferenceView;
 }
 
 /**
@@ -84,6 +90,8 @@ export interface CompanySoftState {
   readonly activatedAt: Date | null;
   /** Code NAF résolu depuis le SIRET, ou vide si pas encore connu. */
   readonly nafCode: string;
+  /** Comment ce client est servi d'habitude — un défaut, jamais une contrainte. */
+  readonly fulfillmentPreference: FulfillmentPreferenceView;
 }
 
 /**
@@ -112,6 +120,7 @@ export class Company {
     private contactValue: CompanyContact,
     private grantedTermsValue: readonly DeferredTerm[],
     private requestedTermValue: DeferredTerm | null,
+    private preferenceValue: FulfillmentPreferenceView,
     private statusValue: CompanyStatus,
     private activatedAtValue: Date | null,
     /** Code NAF résolu depuis le SIRET (via l'API entreprises) — vide tant qu'inconnu. */
@@ -134,9 +143,11 @@ export class Company {
       optional(identity.tvaIntracom, "TVA intracommunautaire"),
       contact,
       // Déclarée : aucun crédit accordé (elle paie à la commande), aucune demande,
-      // et **non validée** (pending) — l'activation est commerciale, jamais implicite.
+      // aucune préférence d'acheminement, et **non validée** (pending) —
+      // l'activation est commerciale, jamais implicite.
       [],
       null,
+      NO_FULFILLMENT_PREFERENCE,
       "pending",
       null,
       // NAF inconnu à la déclaration : résolu peu après depuis le SIRET (best-effort).
@@ -156,6 +167,7 @@ export class Company {
       input.contact,
       input.grantedTerms,
       input.requestedTerm,
+      input.fulfillmentPreference ?? NO_FULFILLMENT_PREFERENCE,
       input.status,
       input.activatedAt,
       input.nafCode,
@@ -296,6 +308,31 @@ export class Company {
     this.requestedTermValue = null;
   }
 
+  /** Comment ce client est servi d'habitude. */
+  get fulfillmentPreference(): FulfillmentPreferenceView {
+    return this.preferenceValue;
+  }
+
+  /**
+   * Pose la **préférence d'acheminement** — un point de départ pour la commande,
+   * pas une contrainte : le client peut toujours en changer au panier.
+   *
+   * L'invariant tenu ici : le pointeur qui ne concerne pas la méthode choisie est
+   * **effacé**. Garder l'adresse de livraison d'un client passé au retrait la
+   * ferait ressurgir des mois plus tard, au moment où quelqu'un rebasculerait la
+   * méthode — avec une adresse que plus personne n'a validée entre-temps.
+   *
+   * Les deux pointeurs restent facultatifs : `null` veut dire « le défaut du
+   * moment », et c'est plus juste que de figer l'adresse par défaut actuelle.
+   */
+  preferFulfillment(preference: FulfillmentPreferenceView): void {
+    this.preferenceValue = {
+      method: preference.method,
+      pickupAddressId: preference.method === "pickup" ? preference.pickupAddressId : null,
+      deliveryAddressId: preference.method === "delivery" ? preference.deliveryAddressId : null,
+    };
+  }
+
   get status(): CompanyStatus {
     return this.statusValue;
   }
@@ -402,6 +439,7 @@ export class Company {
       },
       grantedTerms: this.grantedTermsValue,
       requestedTerm: this.requestedTermValue,
+      fulfillmentPreference: this.preferenceValue,
       status: this.statusValue,
       activatedAt: this.activatedAtValue,
       nafCode: this.nafCodeValue,

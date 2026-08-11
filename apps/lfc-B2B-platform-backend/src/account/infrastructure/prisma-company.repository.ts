@@ -210,6 +210,11 @@ export class PrismaCompanyRepository extends CompanyRepository {
       status: row.status,
       activatedAt: row.activatedAt,
       nafCode: row.nafCode,
+      fulfillmentPreference: {
+        method: row.preferredFulfillmentMethod,
+        pickupAddressId: row.preferredPickupAddressId,
+        deliveryAddressId: row.preferredDeliveryAddressId,
+      },
     });
   }
 
@@ -239,6 +244,9 @@ export class PrismaCompanyRepository extends CompanyRepository {
         status: state.status,
         activatedAt: state.activatedAt,
         nafCode: state.nafCode,
+        preferredFulfillmentMethod: state.fulfillmentPreference.method,
+        preferredPickupAddressId: state.fulfillmentPreference.pickupAddressId,
+        preferredDeliveryAddressId: state.fulfillmentPreference.deliveryAddressId,
       },
     });
   }

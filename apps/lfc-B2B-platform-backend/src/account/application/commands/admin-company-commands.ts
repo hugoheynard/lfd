@@ -4,7 +4,7 @@ import type {
   UpdateIdentityPayload,
 } from "@lfd/contracts";
 
-import type { DeferredTerm } from "@lfd/contracts";
+import type { DeferredTerm, FulfillmentPreferencePayload } from "@lfd/contracts";
 
 /**
  * Commandes **staff** (Porte B) : le commercial complète une société **à la
@@ -58,5 +58,19 @@ export class AddDeliveryAddressByStaffCommand {
   constructor(
     readonly companyId: string,
     readonly payload: DeliveryAddressPayload,
+  ) {}
+}
+
+/**
+ * Pose la **préférence d'acheminement** de la société : comment ce client est
+ * servi d'habitude.
+ *
+ * Geste staff comme les autres pièces — mais qui, lui, ne conditionne rien :
+ * c'est un défaut offert à la commande, que le client peut écarter au panier.
+ */
+export class PreferFulfillmentByStaffCommand {
+  constructor(
+    readonly companyId: string,
+    readonly preference: FulfillmentPreferencePayload,
   ) {}
 }

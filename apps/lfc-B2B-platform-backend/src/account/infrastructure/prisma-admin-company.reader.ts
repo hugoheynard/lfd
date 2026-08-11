@@ -33,6 +33,11 @@ const COMPANY_SELECT = {
   contactEmail: true,
   contactTelephone: true,
   createdAt: true,
+  // Préférence d'acheminement : lue sur la fiche seulement, mais si peu coûteuse
+  // (trois colonnes, aucune jointure) qu'un second select ne se justifierait pas.
+  preferredFulfillmentMethod: true,
+  preferredPickupAddressId: true,
+  preferredDeliveryAddressId: true,
   // Une seule demande ouverte suffit à lever le drapeau ; `take: 1` évite
   // de charger l'historique juste pour un booléen.
   supportRequests: {
@@ -121,6 +126,11 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
         book,
         access.map((membership) => membership.user),
       ),
+      fulfillmentPreference: {
+        method: row.preferredFulfillmentMethod,
+        pickupAddressId: row.preferredPickupAddressId,
+        deliveryAddressId: row.preferredDeliveryAddressId,
+      },
     };
   }
 }

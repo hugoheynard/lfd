@@ -10,6 +10,8 @@ import {
   updateIdentityPayloadSchema,
   type GrantTermsPayload,
   grantTermsPayloadSchema,
+  type FulfillmentPreferencePayload,
+  fulfillmentPreferencePayloadSchema,
 } from "@lfd/contracts";
 import {
   Body,
@@ -36,6 +38,7 @@ import {
   AddDeliveryAddressByStaffCommand,
   SaveBillingAddressByStaffCommand,
   GrantTermsCommand,
+  PreferFulfillmentByStaffCommand,
   UpdateIdentityByStaffCommand,
   UploadKbisByStaffCommand,
 } from "../application/commands/admin-company-commands.js";
@@ -112,6 +115,25 @@ export class AdminCompanyPiecesController {
   ): Promise<void> {
     await this.commands.execute<GrantTermsCommand, void>(
       new GrantTermsCommand(companyId, payload.grantedTerms),
+    );
+  }
+
+  /**
+   * Pose la **préférence d'acheminement** : comment ce client est servi
+   * d'habitude.
+   *
+   * Elle ne conditionne rien — la commande s'ouvre dessus, et le client peut en
+   * changer au panier. C'est ce qui la distingue des autres pièces : celles-là
+   * bloquent l'activation, celle-ci fait gagner des clics.
+   */
+  @Patch(":companyId/fulfillment-preference")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async preferFulfillment(
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(fulfillmentPreferencePayloadSchema)) payload: FulfillmentPreferencePayload,
+  ): Promise<void> {
+    await this.commands.execute<PreferFulfillmentByStaffCommand, void>(
+      new PreferFulfillmentByStaffCommand(companyId, payload),
     );
   }
 

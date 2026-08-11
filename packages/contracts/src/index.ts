@@ -38,6 +38,14 @@ export type {
   MandateSectionView,
 } from "./payment-mandate.js";
 export {
+  fulfillmentPreferencePayloadSchema,
+  NO_FULFILLMENT_PREFERENCE,
+} from "./fulfillment-preference.js";
+export type {
+  FulfillmentPreferencePayload,
+  FulfillmentPreferenceView,
+} from "./fulfillment-preference.js";
+export {
   companyDisplayName,
   deferredTermSchema,
   settlementSchema,
