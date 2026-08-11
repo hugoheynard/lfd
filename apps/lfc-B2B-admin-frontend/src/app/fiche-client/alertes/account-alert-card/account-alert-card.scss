@@ -4,6 +4,14 @@
 
 /* L'état colore la carte : « suit le global » est le cas ordinaire et reste
    neutre ; une dérogation doit se voir depuis l'autre bout de la page. */
+.ac-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
 .ac-state {
   margin: var(--fold-space-md) 0 0;
   padding: 0.6rem 0.8rem;

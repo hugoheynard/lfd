@@ -1,4 +1,4 @@
-<article class="ar-rule" [class.ar-rule--off]="!draft().enabled">
+<article class="ar-rule" [class.ar-rule--off]="showEnabled() && !draft().enabled">
   <header class="ar-head">
     <fold-element-title
       variant="bar"
@@ -9,16 +9,18 @@
     />
     <div class="ar-head-side">
       <fold-info [text]="labels().why" label="À quoi sert cette règle" />
-      <fold-checkbox
-        label="Activée"
-        [checked]="draft().enabled"
-        [disabled]="busy()"
-        (checkedChange)="setEnabled($event)"
-      />
+      @if (showEnabled()) {
+        <fold-checkbox
+          label="Activée"
+          [checked]="draft().enabled"
+          [disabled]="busy()"
+          (checkedChange)="setEnabled($event)"
+        />
+      }
     </div>
   </header>
 
-  @if (draft().enabled) {
+  @if (showParams()) {
     <div class="ar-params">
       @if (firstOrderMinimum(); as minimum) {
         <fold-number-input

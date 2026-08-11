@@ -69,6 +69,17 @@ const DIRECTIONS: readonly { readonly value: DriftDirection; readonly label: str
 export class AlertRuleRow {
   readonly rule = input.required<AlertRuleView>();
   readonly busy = input(false);
+  /**
+   * La rangée porte-t-elle son propre interrupteur ?
+   *
+   * Vrai dans les Réglages, où la rangée EST la règle. Faux sur la fiche d'un
+   * compte, où l'activation vit au niveau de la carte : deux interrupteurs pour
+   * la même chose au même écran, c'est un de trop, et celui qu'on ne regarde pas
+   * finit par contredire l'autre. Sans interrupteur, les paramètres restent
+   * visibles même règle éteinte — c'est la carte qui décide de l'allumage, la
+   * rangée ne sert qu'à régler.
+   */
+  readonly showEnabled = input(true);
   readonly save = output<AlertRule>();
 
   protected readonly directions = DIRECTIONS;
@@ -87,6 +98,9 @@ export class AlertRuleRow {
       delivery: view.delivery,
     }),
   });
+
+  /** Les paramètres se montrent si la règle tourne — ou si l'allumage n'est pas ici. */
+  protected readonly showParams = computed(() => this.draft().enabled || !this.showEnabled());
 
   protected readonly labels = computed(() => ALERT_KIND_LABELS[this.rule().kind]);
   protected readonly customerShowable = computed(

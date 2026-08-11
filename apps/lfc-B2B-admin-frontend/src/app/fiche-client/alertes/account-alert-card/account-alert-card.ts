@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { FoldButtonComponent, FoldCardComponent, FoldElementTitleComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCardComponent,
+  FoldCheckboxComponent,
+  FoldElementTitleComponent,
+} from 'fold-ng';
 import type {
   AccountAlertOverride,
   AccountAlertRuleView,
@@ -30,7 +35,13 @@ type AccountRuleState = 'inherited' | 'off' | 'custom';
 @Component({
   selector: 'app-account-alert-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldElementTitleComponent, FoldButtonComponent, AlertRuleRow],
+  imports: [
+    FoldCardComponent,
+    FoldElementTitleComponent,
+    FoldCheckboxComponent,
+    FoldButtonComponent,
+    AlertRuleRow,
+  ],
   templateUrl: './account-alert-card.html',
   styleUrl: './account-alert-card.scss',
 })
@@ -63,10 +74,22 @@ export class AccountAlertCard {
     return view.override?.mode === 'custom' ? describeRule(view.effective) : null;
   });
 
+  /**
+   * L'état **tel que l'écran doit le dire** — dérivé de ce qui s'applique, pas
+   * de la façon dont c'est stocké. Un `custom` éteint et un `off` sont deux
+   * représentations de la même chose pour qui lit la fiche : la règle ne tourne
+   * pas ici.
+   */
   protected readonly state = computed<AccountRuleState>(() => {
-    const override = this.rule().override;
-    return override === null ? 'inherited' : override.mode;
+    const view = this.rule();
+    if (view.override === null) {
+      return 'inherited';
+    }
+    return view.effective.enabled ? 'custom' : 'off';
   });
+
+  /** Ce qui tourne réellement sur ce compte — l'état du bouton. */
+  protected readonly enabledHere = computed(() => this.rule().effective.enabled);
 
   /**
    * Ce que l'éditeur ouvre : **l'effectif**, pas le global. Modifier une règle
@@ -86,9 +109,47 @@ export class AccountAlertCard {
     this.editing.set(false);
   }
 
-  /** Désactiver ne fige pas les paramètres : c'est un `off`, pas une copie éteinte. */
-  protected disableHere(): void {
-    this.override.emit({ kind: this.rule().kind, mode: 'off' });
+  /**
+   * Allumer / éteindre la règle **sur ce compte**, quel que soit l'état courant.
+   *
+   * L'activation et le réglage sont deux axes indépendants : « cette règle
+   * tourne-t-elle ici ? » et « avec quels seuils ? ». Les mélanger avait produit
+   * un bouton *Désactiver* qui disparaissait dès qu'un compte portait sa propre
+   * règle — il fallait alors ouvrir l'éditeur et décocher une case au fond d'un
+   * formulaire pour faire ce qu'un interrupteur fait en un clic.
+   *
+   * On choisit la **plus petite représentation** qui dit la vérité :
+   *
+   * - un compte qui porte sa règle garde ses seuils, on ne touche qu'à `enabled`
+   *   — sinon l'éteindre effacerait un réglage qu'on a pris la peine de faire ;
+   * - éteindre sans règle propre, c'est `off` : rien à figer ;
+   * - rallumer quand la plateforme est déjà allumée, c'est **revenir au global**
+   *   plutôt que d'inscrire une dérogation qui ne déroge de rien ;
+   * - rallumer quand la plateforme est éteinte suppose bien une dérogation : le
+   *   compte veut cette règle que les autres n'ont pas. Elle part des paramètres
+   *   du global, seuls disponibles.
+   */
+  protected toggleHere(on: boolean): void {
+    const view = this.rule();
+    const own = view.override?.mode === 'custom' ? view.override.rule : null;
+
+    if (own !== null) {
+      this.override.emit({ kind: view.kind, mode: 'custom', rule: { ...own, enabled: on } });
+      return;
+    }
+    if (!on) {
+      this.override.emit({ kind: view.kind, mode: 'off' });
+      return;
+    }
+    if (view.global.enabled) {
+      this.revert.emit();
+      return;
+    }
+    this.override.emit({
+      kind: view.kind,
+      mode: 'custom',
+      rule: { ...view.global, enabled: true },
+    });
   }
 
   protected saveHere(rule: AlertRule): void {

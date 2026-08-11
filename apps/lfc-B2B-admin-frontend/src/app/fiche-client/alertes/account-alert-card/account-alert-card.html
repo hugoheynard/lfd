@@ -1,10 +1,20 @@
 <fold-card>
-  <fold-element-title
-    variant="title"
-    [icon]="labels().icon"
-    [title]="labels().title"
-    [subtitle]="labels().subtitle"
-  />
+  <header class="ac-head">
+    <fold-element-title
+      variant="title"
+      [icon]="labels().icon"
+      [title]="labels().title"
+      [subtitle]="labels().subtitle"
+    />
+    <!-- Activation et réglage sont deux axes : l'interrupteur marche dans les
+         trois états, y compris quand ce compte porte sa propre règle. -->
+    <fold-checkbox
+      label="Activée sur ce compte"
+      [checked]="enabledHere()"
+      [disabled]="busy()"
+      (checkedChange)="toggleHere($event)"
+    />
+  </header>
 
   <!-- L'état, dit en clair. Une dérogation invisible est un piège pour le
        prochain commercial qui s'étonnera de ne pas voir passer d'alerte. -->
@@ -65,16 +75,16 @@
   @if (editing()) {
     <section class="ac-editor">
       <h4 class="ac-block-title">Modifier le réglage de ce compte</h4>
-      <app-alert-rule-row [rule]="editable()" [busy]="busy()" (save)="saveHere($event)" />
+      <app-alert-rule-row
+        [rule]="editable()"
+        [busy]="busy()"
+        [showEnabled]="false"
+        (save)="saveHere($event)"
+      />
       <button foldButton emphasis="outline" size="sm" (click)="cancelEditing()">Fermer</button>
     </section>
   } @else {
     <footer class="ac-actions">
-      @if (state() === 'inherited') {
-        <button foldButton emphasis="outline" [disabled]="busy()" (click)="disableHere()">
-          Désactiver sur ce compte
-        </button>
-      }
       <button foldButton emphasis="outline" [disabled]="busy()" (click)="startEditing()">
         Modifier sur ce compte
       </button>
