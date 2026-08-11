@@ -174,7 +174,9 @@ describe("activation d'un compte (gate serveur)", () => {
     // par défaut ⇒ non requis. L'activation doit passer.
     await ctx.prisma.company.update({
       where: { id: companyId },
-      data: { tvaIntracom: "FR32812456789" },
+      // Un numéro joignable : sans lui, l'agrégat refuse d'activer — un livreur
+      // qui cherche une porte doit pouvoir appeler quelqu'un.
+      data: { tvaIntracom: "FR32812456789", contactTelephone: "01 42 71 08 44" },
     });
     await ctx.prisma.address.create({
       data: {

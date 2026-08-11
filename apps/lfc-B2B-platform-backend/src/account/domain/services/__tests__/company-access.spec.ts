@@ -3,7 +3,7 @@ import { ensureCompanyAdmin } from "../company-access.js";
 
 describe("ensureCompanyAdmin", () => {
   it("laisse passer un gestionnaire", () => {
-    expect(() => ensureCompanyAdmin("company_admin", "company_1")).not.toThrow();
+    expect(() => ensureCompanyAdmin("owner", "company_1")).not.toThrow();
   });
 
   it("cache l'entreprise à un non-membre (404, pas 403)", () => {

@@ -72,7 +72,7 @@ beforeEach(async () => {
 async function seed(status: CompanyStatus = "active"): Promise<string> {
   const user = await createUser(ctx.prisma, { auth0Sub: CLIENT });
   const company = await createCompany(ctx.prisma, { status });
-  await attachTo(ctx.prisma, user.id, company.id, CustomerRole.company_admin);
+  await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
   await ctx.prisma.pickupAddress.create({
     data: {
       label: "Labo",

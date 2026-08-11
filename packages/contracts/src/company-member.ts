@@ -1,27 +1,55 @@
 import { z } from "zod";
 
 /**
- * Les **personnes qui accèdent à l'espace** d'une société — à ne pas confondre
- * avec ses `CompanyContact`, qui sont un carnet d'adresses.
+ * Les **interlocuteurs** d'une société, et l'accès que certains d'entre eux ont
+ * à son espace.
  *
- * Un contact est quelqu'un qu'on appelle ; un membre est quelqu'un qui se
- * connecte, commande, et voit les prix négociés. Les deux listes se recoupent
- * souvent sans jamais se confondre : donner un accès est une décision, pas la
- * conséquence d'avoir noté un numéro de téléphone.
+ * Une seule notion, pas deux : le responsable réception qui prend les livraisons
+ * et le gérant qui commande sont tous deux des interlocuteurs — l'un a un accès,
+ * l'autre non. En faire deux listes dupliquerait les mêmes gens et laisserait se
+ * demander laquelle fait foi. Donner un accès reste pour autant une **décision**
+ * explicite, pas la conséquence d'avoir noté un numéro de téléphone.
  */
 
 /**
- * Ce qu'une personne peut faire **dans cette société-là**.
+ * Ce qu'une personne fait **dans cette société-là**.
  *
- * - `company_admin` — administre l'espace : membres, adresses, identité ;
- * - `member` — commande, et rien d'autre.
+ * - `owner` — le détenteur : celui dont l'adresse a ouvert le compte ;
+ * - `admin` — administre l'espace : interlocuteurs, adresses, identité ;
+ * - `orders` — passe les commandes ;
+ * - `billing` — suit les règlements et les factures.
  *
  * Le rôle appartient au rattachement, pas à la personne : on peut administrer
- * une société et n'être que membre d'une autre.
+ * une société et n'être que « commandes » dans une autre.
  */
-export const companyMemberRoleSchema = z.enum(["company_admin", "member"]);
+export const companyMemberRoleSchema = z.enum(["owner", "admin", "orders", "billing"]);
 
 export type CompanyMemberRole = z.infer<typeof companyMemberRoleSchema>;
+
+/**
+ * Les rôles qu'on **attribue**. `owner` en est absent, et ce n'est pas un oubli :
+ * le détenteur n'est pas choisi, il est constaté — c'est celui dont l'adresse a
+ * servi à ouvrir le compte. Le proposer dans un menu laisserait croire qu'on
+ * peut en avoir deux, ou zéro.
+ */
+export const assignableRoleSchema = companyMemberRoleSchema.exclude(["owner"]);
+
+export type AssignableRole = z.infer<typeof assignableRoleSchema>;
+
+/**
+ * La **seule** traduction des rôles, partagée par les deux frontends.
+ *
+ * Les valeurs vivent en anglais (base, API, code) et le français n'existe qu'à
+ * l'écran : une valeur persistée dans la langue de l'interface se retrouve tôt
+ * ou tard comparée à une chaîne traduite ailleurs, et c'est un bug qu'on ne voit
+ * qu'en production. Un seul point de passage, donc — pas un `switch` par écran.
+ */
+export const COMPANY_ROLE_LABELS: Readonly<Record<CompanyMemberRole, string>> = {
+  owner: "Détenteur du compte",
+  admin: "Administrateur",
+  orders: "Commandes",
+  billing: "Facturation",
+};
 
 /**
  * Où en est l'accès.
@@ -34,6 +62,44 @@ export type CompanyMemberRole = z.infer<typeof companyMemberRoleSchema>;
 export const companyMemberStatusSchema = z.enum(["invited", "active", "disabled"]);
 
 export type CompanyMemberStatus = z.infer<typeof companyMemberStatusSchema>;
+
+/**
+ * Où en est l'**accès** d'un interlocuteur — l'état que la fiche affiche en
+ * ticks.
+ *
+ * `none` est le cas le plus fréquent et parfaitement légitime : le responsable
+ * réception qui prend les livraisons n'a aucune raison de se connecter. Ce n'est
+ * donc pas un manque à corriger, c'est une situation à montrer telle quelle.
+ */
+export const contactAccessSchema = z.enum(["none", "invited", "active"]);
+
+export type ContactAccess = z.infer<typeof contactAccessSchema>;
+
+/**
+ * Un interlocuteur d'une société — avec, s'il en a un, l'état de son **accès**.
+ *
+ * Une seule liste et non deux : une personne rattachée à une société est une
+ * chose, et savoir si elle peut se connecter est un **état** de cette personne.
+ * Deux listes dupliqueraient les mêmes gens, et on finirait par se demander
+ * laquelle fait foi.
+ */
+export interface CompanyContactView {
+  /** `null` pour le détenteur : il vit aplati sur la société, pas dans le carnet. */
+  readonly contactId: string | null;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly fonction: string;
+  readonly email: string;
+  readonly phone: string;
+  /** `null` sur les contacts d'avant les rôles — « à préciser », jamais deviné. */
+  readonly role: CompanyMemberRole | null;
+  readonly access: ContactAccess;
+  /**
+   * L'adresse a-t-elle été **prouvée** ? Faux tant qu'on ne l'a pas vérifié —
+   * on ne présume pas d'un fait qui vit chez le fournisseur d'identité.
+   */
+  readonly emailVerified: boolean;
+}
 
 /** Une personne rattachée à une société, telle que les écrans la lisent. */
 export interface CompanyMemberView {

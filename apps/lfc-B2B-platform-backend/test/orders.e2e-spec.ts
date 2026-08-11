@@ -67,8 +67,8 @@ async function seedCompany(status: CompanyStatus): Promise<string> {
   const member = await createUser(ctx.prisma, { auth0Sub: MEMBER });
   await createUser(ctx.prisma, { auth0Sub: STRANGER });
   const company = await createCompany(ctx.prisma, { status });
-  await attachTo(ctx.prisma, admin.id, company.id, CustomerRole.company_admin);
-  await attachTo(ctx.prisma, member.id, company.id, CustomerRole.member);
+  await attachTo(ctx.prisma, admin.id, company.id, CustomerRole.owner);
+  await attachTo(ctx.prisma, member.id, company.id, CustomerRole.orders);
   return company.id;
 }
 

@@ -133,15 +133,15 @@ describe("GET /me — mes entreprises", () => {
       raisonSociale: "Torréfaction B SARL",
       siret: "98765432100023",
     });
-    await attachTo(ctx.prisma, user.id, premiere.id, CustomerRole.company_admin);
-    await attachTo(ctx.prisma, user.id, seconde.id, CustomerRole.member);
+    await attachTo(ctx.prisma, user.id, premiere.id, CustomerRole.owner);
+    await attachTo(ctx.prisma, user.id, seconde.id, CustomerRole.orders);
 
     const response = await ctx.asSub(SUB).get("/me").expect(200);
 
     // Gestionnaire ici, membre là : le rôle appartient au rattachement.
     expect(jsonBody<AccountView>(response).companies).toEqual([
-      expect.objectContaining({ id: premiere.id, role: "company_admin" }),
-      expect.objectContaining({ id: seconde.id, role: "member" }),
+      expect.objectContaining({ id: premiere.id, role: "owner" }),
+      expect.objectContaining({ id: seconde.id, role: "orders" }),
     ]);
   });
 

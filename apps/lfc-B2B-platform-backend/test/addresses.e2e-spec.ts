@@ -60,8 +60,8 @@ beforeEach(async () => {
   await createUser(ctx.prisma, { auth0Sub: STRANGER });
   const company = await createCompany(ctx.prisma, { raisonSociale: "Boulangerie du Marais SAS" });
   companyId = company.id;
-  await attachTo(ctx.prisma, admin.id, companyId, CustomerRole.company_admin);
-  await attachTo(ctx.prisma, member.id, companyId, CustomerRole.member);
+  await attachTo(ctx.prisma, admin.id, companyId, CustomerRole.owner);
+  await attachTo(ctx.prisma, member.id, companyId, CustomerRole.orders);
 });
 
 /** Les adresses de l'entreprise vues par un sub donné. */

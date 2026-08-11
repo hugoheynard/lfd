@@ -44,7 +44,7 @@ function staff(): ReturnType<E2eContext["http"]> {
 async function seed(): Promise<{ companyId: string; userId: string }> {
   const owner = await createUser(ctx.prisma, { auth0Sub: OWNER });
   const company = await createCompany(ctx.prisma, { status: "active" });
-  await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.company_admin);
+  await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.owner);
   return { companyId: company.id, userId: owner.id };
 }
 

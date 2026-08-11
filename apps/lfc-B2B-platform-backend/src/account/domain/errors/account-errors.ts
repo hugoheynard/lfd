@@ -173,7 +173,8 @@ export class CompanyAddressNotFoundError extends ResourceNotFoundError {
 
 /**
  * Le demandeur est bien membre de l'entreprise, mais n'en est pas le
- * gestionnaire. Gérer les contacts est réservé au `company_admin` — révéler que
+ * gestionnaire. Gérer les contacts est réservé au détenteur et aux `admin` —
+ * révéler que
  * l'entreprise existe est ici acceptable (il en est membre), d'où le 403 plutôt
  * qu'un 404.
  */

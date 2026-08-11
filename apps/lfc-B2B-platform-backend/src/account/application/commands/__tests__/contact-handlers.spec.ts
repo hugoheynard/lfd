@@ -90,11 +90,11 @@ function companiesRecorder(recorder: Recorder): CompanyRepository {
  * agir. On vérifie les deux refus (non-membre, simple membre) et le passage du
  * gestionnaire, en s'assurant qu'un refus n'a **rien écrit**.
  */
-describe("handlers de contacts — le mur company_admin", () => {
+describe("handlers de contacts — le mur owner/admin", () => {
   it("le gestionnaire édite le contact principal ; un refus n'écrit rien", async () => {
     const recorder: Recorder = { writes: [] };
     const handler = new UpdatePrimaryContactHandler(
-      membershipReturning("company_admin"),
+      membershipReturning("owner"),
       companiesRecorder(recorder),
     );
 
@@ -130,7 +130,7 @@ describe("handlers de contacts — le mur company_admin", () => {
 
   it("le gestionnaire ajoute, modifie et retire un contact", async () => {
     const recorder: Recorder = { writes: [] };
-    const admin = membershipReturning("company_admin");
+    const admin = membershipReturning("owner");
     const contacts = contactsRecorder(recorder);
 
     await new AddCompanyContactHandler(admin, contacts).execute(

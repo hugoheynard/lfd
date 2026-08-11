@@ -18,7 +18,7 @@ import type { ContactView, KbisView, PaymentTerm } from "./account.reader.js";
  */
 /**
  * Le **propriétaire de l'espace** : la personne qui administre la société sur la
- * plateforme (membership `company_admin`).
+ * plateforme (membership `owner`).
  *
  * À ne pas confondre avec le **contact principal**, qui vit aplati sur la société
  * et n'est qu'un interlocuteur — il n'a pas forcément de compte, et la personne

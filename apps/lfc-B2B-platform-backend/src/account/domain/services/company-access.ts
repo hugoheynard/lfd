@@ -26,7 +26,7 @@ export function ensureCompanyAdmin(role: CompanyRole | null, companyId: string):
   if (role === null) {
     throw new CompanyNotFoundError(companyId);
   }
-  if (role !== "company_admin") {
+  if (role !== "owner" && role !== "admin") {
     throw new CompanyAdminRequiredError(companyId);
   }
 }

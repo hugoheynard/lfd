@@ -90,7 +90,7 @@ async function seedTwoOrders(): Promise<{ companyId: string }> {
     status: CompanyStatus.active,
   });
   const member = await createUser(ctx.prisma, { auth0Sub: MEMBER });
-  await attachTo(ctx.prisma, member.id, company.id, CustomerRole.company_admin);
+  await attachTo(ctx.prisma, member.id, company.id, CustomerRole.owner);
   await createUser(ctx.prisma, {
     auth0Sub: SOLO,
     email: "solo@exemple.fr",
@@ -178,7 +178,7 @@ describe("GET /admin/orders/:id", () => {
     await seedPickup();
     const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
     const member = await createUser(ctx.prisma, { auth0Sub: MEMBER });
-    await attachTo(ctx.prisma, member.id, company.id, CustomerRole.company_admin);
+    await attachTo(ctx.prisma, member.id, company.id, CustomerRole.owner);
     const placed = jsonBody<PlacedOrderResponse>(
       await ctx
         .asSub(MEMBER)

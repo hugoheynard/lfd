@@ -1,5 +1,5 @@
 /** Rôle du demandeur dans l'entreprise visée (miroir de `CustomerRole` Prisma). */
-export type OrderRole = "company_admin" | "member";
+export type OrderRole = "owner" | "admin" | "orders" | "billing";
 
 /** Cycle de vie de l'entreprise (miroir de `CompanyStatus` Prisma). */
 export type OrderCompanyStatus = "pending" | "active" | "suspended" | "terminated";

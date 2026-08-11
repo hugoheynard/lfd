@@ -149,10 +149,21 @@ describe("Company — activation", () => {
   it("active une société pending : statut active + horodatage posé", () => {
     const company = withStatus("pending");
     const at = new Date("2026-08-07T09:00:00.000Z");
-    company.activate(at);
+    company.activate(at, true);
     const state = company.toPersistence();
     expect(state.status).toBe("active");
     expect(state.activatedAt).toBe(at);
+  });
+
+  it("REFUSE d'activer quand personne n'est joignable", () => {
+    // Un livreur qui cherche une porte doit pouvoir appeler quelqu'un ; un
+    // compte actif sans aucun numéro, c'est une commande qui repart au dépôt.
+    const company = withStatus("pending");
+
+    expect(() => {
+      company.activate(new Date("2026-08-07T09:00:00.000Z"), false);
+    }).toThrow(CompanyActivationBlockedError);
+    expect(company.toPersistence().status).toBe("pending");
   });
 
   it("refuse d'activer une société déjà active", () => {

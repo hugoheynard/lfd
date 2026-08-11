@@ -57,7 +57,7 @@ describe("UploadKbisHandler", () => {
   }
 
   it("range le fichier PUIS écrit les métadonnées, pour le gestionnaire", async () => {
-    const { handler, saved } = doubles("company_admin");
+    const { handler, saved } = doubles("owner");
 
     await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF));
 
@@ -84,7 +84,7 @@ describe("UploadKbisHandler", () => {
   });
 
   it("rejette un fichier non-PDF avant tout stockage", async () => {
-    const { handler, saved } = doubles("company_admin");
+    const { handler, saved } = doubles("owner");
 
     await expect(
       handler.execute(new UploadKbisCommand("u1", "c1", "faux.pdf", Buffer.from("nope"))),
@@ -132,7 +132,7 @@ describe("DownloadKbisHandler", () => {
 
   it("404 quand aucun KBIS n'a été déposé", async () => {
     await expect(
-      handlerFor("company_admin", null).execute(new DownloadKbisQuery("u1", "c1")),
+      handlerFor("owner", null).execute(new DownloadKbisQuery("u1", "c1")),
     ).rejects.toBeInstanceOf(KbisNotFoundError);
   });
 });

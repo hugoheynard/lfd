@@ -78,9 +78,16 @@ enum CompanyStatus {
 /// donc variable d'une société à l'autre pour la même personne.
 /// `company_admin` = gère les users/commandes de cette société (le
 /// « gestionnaire », rôle du créateur) ; `member` = passe des commandes.
+/// Ce qu'une personne peut faire **dans cette société-là**.
+///
+/// `owner` n'est pas attribué, il est CONSTATÉ : c'est le détenteur, celui dont
+/// l'adresse a servi à ouvrir le compte. Le proposer dans un menu laisserait
+/// croire qu'on peut en avoir deux, ou zéro.
 enum CustomerRole {
-  company_admin
-  member
+  owner
+  admin
+  orders
+  billing
 
   @@schema("public")
 }
@@ -279,6 +286,12 @@ model User {
 
   status UserStatus @default(invited)
 
+  // L'adresse a-t-elle été PROUVÉE ? Fait qui vit chez le fournisseur d'identité
+  // (Auth0) : on le recopie ici plutôt que de l'interroger à chaque affichage —
+  // une fiche client ne doit pas dépendre d'un aller-retour réseau externe.
+  // Rafraîchi à la connexion et quand on émet un lien de mot de passe.
+  emailVerified Boolean @default(false) @map("email_verified")
+
   // Préférences de navigation/affichage de la personne (bag JSON, extensible).
   // Aujourd'hui : `catalogueView` (grille/rayons/liste). Absent = pas de choix
   // explicite → le front applique son défaut. Sac plutôt qu'une colonne par
@@ -383,7 +396,7 @@ model Membership {
   companyId String  @map("company_id")
   company   Company @relation(fields: [companyId], references: [id])
 
-  role CustomerRole @default(member)
+  role CustomerRole
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -416,6 +429,12 @@ model CompanyContact {
   fonction  String @default("")
   email     String
   telephone String @default("")
+
+  // Ce que cette personne fait pour la société. NULL sur les contacts créés
+  // avant que le rôle existe : « à préciser » à l'écran. Le deviner (« sûrement
+  // commandes ») propagerait une valeur inventée qu'on ne saurait plus
+  // distinguer d'une vraie.
+  role CustomerRole?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

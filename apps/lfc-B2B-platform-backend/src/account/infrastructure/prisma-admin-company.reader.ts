@@ -44,7 +44,7 @@ const COMPANY_SELECT = {
   // complet des membres pour afficher un nom. Le plus ancien fait foi : c'est
   // celui qui a ouvert l'espace.
   memberships: {
-    where: { role: "company_admin" },
+    where: { role: "owner" },
     orderBy: { createdAt: "asc" },
     select: { user: { select: { firstName: true, lastName: true, email: true } } },
     take: 1,

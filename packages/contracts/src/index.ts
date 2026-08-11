@@ -35,12 +35,18 @@ export {
 export type { PaymentTerm, UpdateIdentityPayload, UpdatePaymentTermPayload } from "./company.js";
 export {
   companyMemberRoleSchema,
+  assignableRoleSchema,
+  contactAccessSchema,
+  COMPANY_ROLE_LABELS,
   companyMemberStatusSchema,
   inviteCompanyMemberPayloadSchema,
   accountHolderPayloadSchema,
 } from "./company-member.js";
 export type {
   CompanyMemberRole,
+  AssignableRole,
+  ContactAccess,
+  CompanyContactView,
   CompanyMemberStatus,
   CompanyMemberView,
   CompanyMemberInvitedView,

@@ -53,7 +53,7 @@ class FakeMembers extends CompanyMemberRepository {
             firstName: "Camille",
             lastName: "Rousseau",
             phone: "",
-            role: "company_admin",
+            role: "owner",
             status: "active",
             joinedAt: new Date("2026-01-01T00:00:00.000Z"),
           }
@@ -115,7 +115,7 @@ const INPUT: AccessToGrant = {
   firstName: "Camille",
   lastName: "Rousseau",
   phone: "0600000000",
-  role: "company_admin",
+  role: "owner",
   invitedBy: "staff-sub",
 };
 
@@ -129,9 +129,7 @@ describe("GrantAccountAccess", () => {
 
     expect(granted).toEqual({ userId: "user_new", identityCreated: true, mailSent: true });
     expect(identity.provisioned).toHaveLength(1);
-    expect(members.attached).toEqual([
-      { userId: "user_new", companyId: "cmp_1", role: "company_admin" },
-    ]);
+    expect(members.attached).toEqual([{ userId: "user_new", companyId: "cmp_1", role: "owner" }]);
     expect(sent[0]?.template).toBe("customer.access-opened");
     expect(sent[0]?.carriesPasswordLink).toBe(true);
   });
@@ -148,9 +146,7 @@ describe("GrantAccountAccess", () => {
     expect(granted).toEqual({ userId: "user_known", identityCreated: false, mailSent: true });
     expect(identity.provisioned).toEqual([]);
     expect(members.created).toEqual([]);
-    expect(members.attached).toEqual([
-      { userId: "user_known", companyId: "cmp_1", role: "company_admin" },
-    ]);
+    expect(members.attached).toEqual([{ userId: "user_known", companyId: "cmp_1", role: "owner" }]);
     // Pas de lien de mot de passe : il en a déjà un.
     expect(sent[0]?.template).toBe("customer.company-attached");
     expect(sent[0]?.carriesPasswordLink).toBe(false);

@@ -36,7 +36,7 @@ const activeUser: UserWithMemberships = {
   invitedBy: null,
   createdAt: new Date(0),
   updatedAt: new Date(0),
-  memberships: [{ companyId: "company_1", role: CustomerRole.member }],
+  memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
 };
 
 /** Double Prisma : `findUnique` renvoie la séquence donnée (dernière valeur figée),
@@ -98,7 +98,7 @@ describe("CustomerUserResolver", () => {
         subject: "auth0|123",
         userId: "user_1",
         email: "jean@client.fr",
-        memberships: [{ companyId: "company_1", role: CustomerRole.member }],
+        memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
         scopes: ["read:orders"],
       });
     });
@@ -131,16 +131,16 @@ describe("CustomerUserResolver", () => {
           {
             ...activeUser,
             memberships: [
-              { companyId: "company_1", role: CustomerRole.company_admin },
-              { companyId: "company_2", role: CustomerRole.member },
+              { companyId: "company_1", role: CustomerRole.owner },
+              { companyId: "company_2", role: CustomerRole.orders },
             ],
           },
         ]),
       );
       await expect(resolver.resolve(token)).resolves.toMatchObject({
         memberships: [
-          { companyId: "company_1", role: CustomerRole.company_admin },
-          { companyId: "company_2", role: CustomerRole.member },
+          { companyId: "company_1", role: CustomerRole.owner },
+          { companyId: "company_2", role: CustomerRole.orders },
         ],
       });
     });

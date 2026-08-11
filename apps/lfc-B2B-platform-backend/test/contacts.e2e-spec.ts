@@ -42,7 +42,7 @@ beforeEach(async () => {
   });
   const company = await createCompany(ctx.prisma, { raisonSociale: "Boulangerie du Marais SAS" });
   companyId = company.id;
-  await attachTo(ctx.prisma, admin.id, companyId, CustomerRole.company_admin);
+  await attachTo(ctx.prisma, admin.id, companyId, CustomerRole.owner);
 });
 
 /** L'entreprise `companyId` telle que `/me` la renvoie pour un sub donné. */
@@ -114,7 +114,7 @@ describe("contacts additionnels — CRUD par le gestionnaire", () => {
 describe("le mur", () => {
   it("refuse un simple membre (403)", async () => {
     const membre = await createUser(ctx.prisma, { auth0Sub: "auth0|membre" });
-    await attachTo(ctx.prisma, membre.id, companyId, CustomerRole.member);
+    await attachTo(ctx.prisma, membre.id, companyId, CustomerRole.orders);
 
     const response = await ctx
       .asSub("auth0|membre")
@@ -144,7 +144,7 @@ describe("le mur", () => {
       raisonSociale: "Torréfaction B SARL",
       siret: "98765432100023",
     });
-    await attachTo(ctx.prisma, autre.id, autreCompany.id, CustomerRole.company_admin);
+    await attachTo(ctx.prisma, autre.id, autreCompany.id, CustomerRole.owner);
 
     const response = await ctx
       .asSub("auth0|autre-gerant")

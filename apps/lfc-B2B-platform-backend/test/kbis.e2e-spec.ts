@@ -57,7 +57,7 @@ beforeEach(async () => {
     status: CompanyStatus.pending,
   });
   companyId = company.id;
-  await attachTo(ctx.prisma, admin.id, companyId, CustomerRole.company_admin);
+  await attachTo(ctx.prisma, admin.id, companyId, CustomerRole.owner);
 });
 
 /** L'entreprise `companyId` dans le `/me` d'un sub. */
@@ -128,7 +128,7 @@ describe("dépôt du KBIS", () => {
 
   it("refuse un simple membre (403) et un non-membre (404)", async () => {
     const membre = await createUser(ctx.prisma, { auth0Sub: "auth0|membre" });
-    await attachTo(ctx.prisma, membre.id, companyId, CustomerRole.member);
+    await attachTo(ctx.prisma, membre.id, companyId, CustomerRole.orders);
     await createUser(ctx.prisma, { auth0Sub: "auth0|etranger" });
 
     const asMember = await ctx
@@ -156,7 +156,7 @@ describe("téléchargement du KBIS", () => {
 
   it("sert le fichier à un simple membre, en pièce jointe", async () => {
     const membre = await createUser(ctx.prisma, { auth0Sub: "auth0|membre" });
-    await attachTo(ctx.prisma, membre.id, companyId, CustomerRole.member);
+    await attachTo(ctx.prisma, membre.id, companyId, CustomerRole.orders);
 
     const response = await ctx
       .asSub("auth0|membre")
@@ -183,7 +183,7 @@ describe("téléchargement du KBIS", () => {
       raisonSociale: "Torréfaction B SARL",
       siret: "98765432100023",
     });
-    await attachTo(ctx.prisma, autre.id, autreCompany.id, CustomerRole.company_admin);
+    await attachTo(ctx.prisma, autre.id, autreCompany.id, CustomerRole.owner);
 
     await ctx.asSub("auth0|autre").get(`/companies/${companyId}/kbis`).expect(404);
   });

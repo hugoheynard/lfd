@@ -88,7 +88,7 @@ export function attachTo(
   prisma: PrismaService,
   userId: string,
   companyId: string,
-  role: CustomerRole = CustomerRole.member,
+  role: CustomerRole = CustomerRole.orders,
 ): Promise<Membership> {
   return prisma.membership.create({ data: { userId, companyId, role } });
 }

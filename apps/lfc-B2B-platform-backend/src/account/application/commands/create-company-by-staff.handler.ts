@@ -92,8 +92,9 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
         firstName: command.contact.firstName,
         lastName: command.contact.lastName,
         phone: command.contact.phone,
-        // Détenteur : il administre son espace, c'est le sens du rattachement.
-        role: "company_admin",
+        // DÉTENTEUR : celui dont l'adresse ouvre le compte. Ce rôle ne
+        // s'attribue pas — il se constate, ici et nulle part ailleurs.
+        role: "owner",
         invitedBy: command.invitedBy,
       });
       return {

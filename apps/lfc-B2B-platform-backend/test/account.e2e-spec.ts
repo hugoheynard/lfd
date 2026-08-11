@@ -190,9 +190,7 @@ describe("POST /companies", () => {
     expect(company.siret).toBe("81245678900021");
     // Le contact de la société est repris du profil du créateur, sans double saisie.
     expect(company).toMatchObject({ contactPrenom: "Camille", contactNom: "Rousseau" });
-    expect(company.memberships).toEqual([
-      expect.objectContaining({ userId, role: "company_admin" }),
-    ]);
+    expect(company.memberships).toEqual([expect.objectContaining({ userId, role: "owner" })]);
   });
 
   it("journalise company.declared via `self`, acteur customer (câblage account→growth)", async () => {
@@ -226,7 +224,7 @@ describe("POST /companies", () => {
     expect(jsonBody<AccountView>(mine).companies).toEqual([
       expect.objectContaining({
         id: jsonBody<CreatedCompanyResponse>(created).id,
-        role: "company_admin",
+        role: "owner",
       }),
     ]);
     expect(jsonBody<AccountView>(voisin).companies).toEqual([]);

@@ -290,7 +290,20 @@ export class Company {
    * amont par le cas d'usage — elle croise plusieurs tables, hors de cet agrégat.
    * Refuse toute société qui n'est pas `pending` (déjà active, suspendue, close).
    */
-  activate(activatedAt: Date): void {
+  activate(activatedAt: Date, reachable: boolean): void {
+    // **Un numéro pour la livraison.** Le livreur qui cherche une porte a besoin
+    // d'appeler quelqu'un ; un compte actif sans aucun numéro joignable, c'est
+    // une commande qui repart au dépôt. « Au moins un interlocuteur », et pas
+    // « le détenteur » : c'est souvent le responsable réception qui a le numéro
+    // utile, et exiger celui du gérant bloquerait un dossier complet par
+    // ailleurs.
+    if (!reachable) {
+      throw new CompanyActivationBlockedError(
+        this.identityId ?? "",
+        ["telephone"],
+        "Aucun numéro de téléphone : un livreur doit pouvoir joindre quelqu'un.",
+      );
+    }
     // L'identité légale, elle, EST de cet agrégat — et sans elle on ne peut pas
     // facturer. Un compte s'ouvre sans papiers ; il ne devient pas client sans.
     if (!this.hasLegalIdentity) {

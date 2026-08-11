@@ -106,7 +106,7 @@ function readerRecorder(recorder: Recorder): CompanyAddressReader {
 }
 
 /**
- * Écritures d'adresses : mur `company_admin` (non-membre → 404, membre → 403,
+ * Écritures d'adresses : mur `owner`/`admin` (non-membre → 404, membre → 403,
  * gestionnaire → agit). Lecture : mur `member` (un simple membre lit, un
  * non-membre reçoit 404). Un refus ne doit **rien** toucher.
  */
@@ -114,7 +114,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
   it("le gestionnaire enregistre la facturation", async () => {
     const recorder: Recorder = { writes: [] };
     await new SaveBillingAddressHandler(
-      membershipReturning("company_admin"),
+      membershipReturning("owner"),
       addressesRecorder(recorder),
       events(),
     ).execute(new SaveBillingAddressCommand("u1", "c1", BILLING));
@@ -146,7 +146,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
 
   it("le gestionnaire ajoute, modifie, définit le défaut et archive", async () => {
     const recorder: Recorder = { writes: [] };
-    const admin = membershipReturning("company_admin");
+    const admin = membershipReturning("owner");
     const repo = addressesRecorder(recorder);
 
     await new AddDeliveryAddressHandler(admin, repo, events()).execute(

@@ -8,7 +8,10 @@ import {
   CompanyNotFoundError,
 } from "../../domain/errors/account-errors.js";
 import { CompanyActivatedEvent } from "../../domain/events/company-activated.event.js";
-import { AdminCompanyReader } from "../../domain/ports/admin-company.reader.js";
+import {
+  AdminCompanyReader,
+  type AdminCompanyDetailView,
+} from "../../domain/ports/admin-company.reader.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { missingRequiredPieces } from "../../domain/services/activation-requirements.js";
 import { ActivateCompanyByStaffCommand } from "./activate-company.command.js";
@@ -62,10 +65,25 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
       throw new CompanyNotFoundError(command.companyId);
     }
     const activatedAt = this.clock.now();
-    company.activate(activatedAt);
+    // Joignabilité : le détenteur, ou n'importe lequel de ses interlocuteurs.
+    // C'est souvent le responsable réception qui a le numéro utile — exiger
+    // celui du gérant bloquerait un dossier complet par ailleurs.
+    company.activate(activatedAt, isReachable(view));
     await this.companies.save(company);
 
     // Jalon de conversion : publié après persistance de la transition.
     this.events.publish(new CompanyActivatedEvent(command.companyId, activatedAt));
   }
+}
+
+/**
+ * Un numéro **quelque part** : sur le détenteur, ou sur n'importe lequel de ses
+ * interlocuteurs. Un livreur qui cherche une porte doit pouvoir appeler
+ * quelqu'un ; peu importe qui, tant que ça décroche.
+ */
+function isReachable(view: AdminCompanyDetailView): boolean {
+  return (
+    view.primaryContact.phone.trim() !== "" ||
+    view.contacts.some((contact) => contact.phone.trim() !== "")
+  );
 }

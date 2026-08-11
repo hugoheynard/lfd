@@ -127,8 +127,9 @@ export class PrismaCompanyRepository extends CompanyRepository {
         data: {
           userId: ownerUserId,
           companyId: created.id,
-          // Le créateur est le gestionnaire de sa société.
-          role: CustomerRole.company_admin,
+          // Le créateur EST le détenteur de sa société : le rôle se constate,
+          // il ne s'attribue pas.
+          role: CustomerRole.owner,
         },
       });
 
