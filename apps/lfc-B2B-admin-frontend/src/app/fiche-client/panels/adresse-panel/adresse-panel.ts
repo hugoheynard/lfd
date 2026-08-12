@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 
-import type { DeliveryAddressView, DeliveryContact } from '@lfd/contracts';
+import type { BillingAddressView, DeliveryAddressView, DeliveryContact } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   type FoldPanelDefaults,
@@ -17,6 +17,7 @@ import {
 } from 'fold-ng';
 import {
   AddressFields,
+  billingDraftFrom,
   deliveryDraftFrom,
   EMPTY_ADDRESS_DRAFT,
   isAddressValid,
@@ -41,6 +42,14 @@ export interface AdminAdressePanelData {
    * seul côté.
    */
   readonly delivery?: DeliveryAddressView;
+  /**
+   * L'adresse de **facturation** à corriger ; absente, on en pose une.
+   *
+   * Elle manquait, et le panneau s'ouvrait donc vide sur une adresse déjà
+   * renseignée : corriger un numéro de rue obligeait à retaper les six champs,
+   * et ce qu'on retape sous la dictée, on le fausse.
+   */
+  readonly billing?: BillingAddressView | undefined;
 }
 
 /**
@@ -88,7 +97,9 @@ export class AdminAdressePanel {
 
   protected readonly heading = computed(() => {
     if (this.kind() === 'facturation') {
-      return 'Adresse de facturation';
+      return this.data().billing === undefined
+        ? 'Adresse de facturation'
+        : 'Modifier l’adresse de facturation';
     }
     return this.editing() === undefined
       ? 'Nouvelle adresse de livraison'
@@ -99,10 +110,17 @@ export class AdminAdressePanel {
   constructor() {
     // Préremplir depuis l'adresse à corriger : un formulaire vide obligerait à
     // tout retaper pour changer un code d'accès, et ce qui se retape se perd.
+    // Les DEUX natures se préremplissent — la facturation ne le faisait pas, et
+    // « Modifier » ouvrait donc un formulaire vierge sur une adresse existante.
     effect(() => {
-      const existing = this.editing();
-      if (existing !== undefined) {
-        this.draft.set(deliveryDraftFrom(existing));
+      const delivery = this.editing();
+      if (delivery !== undefined) {
+        this.draft.set(deliveryDraftFrom(delivery));
+        return;
+      }
+      const billing = this.data().billing;
+      if (billing !== undefined) {
+        this.draft.set(billingDraftFrom(billing));
       }
     });
   }
