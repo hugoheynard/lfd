@@ -76,3 +76,21 @@ export class AdminOverrideRefusedError extends BusinessError {
     );
   }
 }
+
+/**
+ * Dérogation refusée : elle **ouvrirait l'annuaire** à quelqu'un que son rôle n'y
+ * autorise pas.
+ *
+ * Accorder des droits est le seul geste qui permet de s'en accorder : une
+ * personne qui obtient `staff:write` par dérogation peut s'attribuer le rôle
+ * `admin` dans la foulée, et le modèle n'a plus de sommet. L'annuaire s'ouvre
+ * **par le rôle**, jamais par un delta. Refus **métier** (409).
+ */
+export class StaffGrantByOverrideError extends BusinessError {
+  constructor() {
+    super(
+      "staff_user.staff_grant_by_override",
+      "L'accès aux utilisateurs ne s'accorde que par le rôle administrateur.",
+    );
+  }
+}

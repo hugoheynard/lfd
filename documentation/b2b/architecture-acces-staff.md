@@ -123,6 +123,13 @@ mesure, et on se retrouve à six rôles pour cinq personnes.
 négocier avec le rôle — sinon la seule façon de restreindre quelqu'un est de le
 rétrograder entièrement, ce qui lui retire dix capacités pour en enlever une.
 
+**Une dérogation n'ouvre JAMAIS `staff`.** C'est la seule ressource qu'un delta
+ne peut pas accorder : obtenir `staff:write` par écart, c'est pouvoir s'attribuer
+`admin` dans la foulée, et le modèle n'a plus de sommet. L'annuaire s'ouvre par
+le **rôle**, jamais par un écart — et se ferme par le rôle aussi, puisqu'un
+administrateur ne peut pas non plus s'en voir privé (§6.4). Trouvé en passe
+adversariale : rien ne l'interdisait au départ.
+
 ### La formule
 
 ```
@@ -208,8 +215,10 @@ parfaitement, et enfermer tout le monde à l'extérieur. Quatre garde-fous, tous
    pas : il protège une ligne, pas la propriété.
 3. **On ne retire pas son propre `admin`.** Le pied dans le plat le plus courant,
    et le seul qu'on ne peut pas réparer soi-même.
-4. **Une dérogation ne peut pas refuser `staff:write` à un admin.** Sinon le
-   delta contourne l'invariant 2 par la porte de derrière.
+4. **Une dérogation ne touche pas à `staff`** — ni pour l'ouvrir à qui son rôle
+   ne l'ouvre pas (ce serait une escalade : `staff:write` permet de s'attribuer
+   `admin`), ni pour le refuser à un administrateur (ce serait contourner
+   l'invariant 2 par la porte de derrière). Les deux sens sont gardés.
 
 Ces quatre règles se testent sans base et sans HTTP. Elles sont la première
 chose à écrire après la formule, et la dernière qu'on touchera.

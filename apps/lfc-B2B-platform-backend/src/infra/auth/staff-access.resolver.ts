@@ -104,8 +104,10 @@ export class StaffAccessResolver {
     if (bySub !== null || principal.email === undefined) {
       return bySub;
     }
+    // Trimée autant que minusculée : une clé e-mail se normalise en entier, et
+    // un espace parasite dans un claim rendrait la personne introuvable.
     return this.prisma.staffUser.findUnique({
-      where: { email: principal.email.toLowerCase() },
+      where: { email: principal.email.trim().toLowerCase() },
       select: STAFF_SELECT,
     });
   }

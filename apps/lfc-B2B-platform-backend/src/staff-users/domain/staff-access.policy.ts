@@ -11,6 +11,7 @@ import {
   LastStaffAdminError,
   ProtectedStaffUserError,
   SelfDemotionError,
+  StaffGrantByOverrideError,
 } from "./staff-user-errors.js";
 
 /**
@@ -127,10 +128,23 @@ function assertRootAdminIntact(target: StaffMutationTarget, intent: StaffMutatio
 }
 
 /**
- * Une dérogation ne prive jamais un administrateur de `staff:write` — c'est le
- * seul droit qui permet d'en désigner un autre, donc la seule porte de sortie.
+ * Deux règles sur les dérogations, et elles gardent la même chose par les deux
+ * bouts : **l'annuaire ne s'ouvre ni ne se ferme par un delta**.
+ *
+ * - Une dérogation ne l'**ouvre** pas à qui son rôle ne l'ouvre pas : obtenir
+ *   `staff:write` par écart, c'est pouvoir s'attribuer `admin` dans la foulée,
+ *   et le modèle n'a plus de sommet.
+ * - Elle ne le **ferme** pas à un administrateur : ce serait contourner « il
+ *   reste au moins un admin » par la porte de derrière — l'admin serait là, mais
+ *   privé du seul droit qui permet d'en désigner un autre.
  */
 function assertOverridesAllowed(intent: StaffMutationIntent): void {
+  const opensDirectory = intent.overrides.some(
+    (override) => override.resource === "staff" && override.effect === "allow",
+  );
+  if (opensDirectory) {
+    throw new StaffGrantByOverrideError();
+  }
   if (intent.role !== "admin") {
     return;
   }

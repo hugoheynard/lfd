@@ -256,3 +256,72 @@ describe("annuaire staff — suspendre et réintégrer", () => {
     expect(response.status).toBe(400);
   });
 });
+
+describe("annuaire staff — les bords, jusqu'à la base", () => {
+  it("refuse (409) une dérogation qui ouvrirait l'annuaire", async () => {
+    // Le chemin d'escalade complet, éprouvé sur la vraie route : un support à
+    // qui l'on accorde `staff:write` pourrait ensuite s'attribuer `admin`.
+    const id = await create({ email: "two@lfc.test", firstName: "Bea", role: "support" });
+
+    const response = await staff()
+      .patch(`/admin/staff-users/${id}`)
+      .send(
+        user({
+          email: "two@lfc.test",
+          firstName: "Bea",
+          role: "support",
+          overrides: [{ resource: "staff", action: "write", effect: "allow" }],
+        }),
+      );
+
+    expect(response.status).toBe(409);
+  });
+
+  it("n'écrit qu'une ligne quand deux dérogations se contredisent, et c'est le refus", async () => {
+    // La base ne peut en stocker qu'une : sans normalisation en amont, on
+    // validerait un état et on en écrirait un autre.
+    const id = await create({
+      email: "two@lfc.test",
+      firstName: "Bea",
+      role: "support",
+      overrides: [
+        { resource: "orders", action: "write", effect: "allow" },
+        { resource: "orders", action: "write", effect: "deny" },
+      ],
+    });
+
+    const rows = await list();
+    const created = rows.find((row) => row.id === id);
+
+    expect(created?.overrides).toHaveLength(1);
+    expect(created?.permissions).not.toContain("orders:write");
+  });
+
+  it("normalise l'e-mail avant de conclure au doublon, espaces compris", async () => {
+    await create({ email: "one@lfc.test" });
+
+    const response = await staff()
+      .post("/admin/staff-users")
+      .send(user({ email: "  ONE@lfc.TEST  ", firstName: "Bea" }));
+
+    expect(response.status).toBe(409);
+  });
+
+  it("refuse un rôle qui n'est pas au catalogue (400)", async () => {
+    const response = await staff()
+      .post("/admin/staff-users")
+      .send(user({ role: "super-admin" }));
+
+    expect(response.status).toBe(400);
+  });
+
+  it("refuse une dérogation sur une ressource inconnue (400)", async () => {
+    // Le catalogue est fermé : une ressource inventée ne doit pas atterrir en
+    // base, où plus rien ne saurait la lire.
+    const response = await staff()
+      .post("/admin/staff-users")
+      .send(user({ overrides: [{ resource: "facturation", action: "read", effect: "allow" }] }));
+
+    expect(response.status).toBe(400);
+  });
+});

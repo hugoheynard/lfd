@@ -52,8 +52,14 @@ export class StaffAccessGuard implements CanActivate {
 
     // On calcule l'exigence AVANT de résoudre : une surface mal montée doit être
     // refusée même si la personne aurait tous les droits.
-    const reflexive = this.isReflexive(context);
-    const required = reflexive ? null : this.requiredPermission(context, request.method);
+    //
+    // Une permission déclarée explicitement l'emporte sur le caractère réflexif :
+    // sinon `@RequirePermission` posée sur `/admin/me` serait ignorée en silence,
+    // et on croirait avoir restreint une route qui ne l'est pas.
+    const explicit = this.declaredPermission(context);
+    const required =
+      explicit ??
+      (this.isReflexive(context) ? null : this.resourcePermission(context, request.method));
 
     const access = await this.resolver.resolve(principal);
     if (access === null) {
@@ -78,15 +84,16 @@ export class StaffAccessGuard implements CanActivate {
     );
   }
 
-  /** La permission exigée : celle que la route déclare, sinon celle du verbe. */
-  private requiredPermission(context: ExecutionContext, method: string): StaffPermission {
-    const explicit = this.reflector.getAllAndOverride<StaffPermission | undefined>(
-      ADMIN_PERMISSION_KEY,
-      [context.getHandler(), context.getClass()],
-    );
-    if (explicit !== undefined) {
-      return explicit;
-    }
+  /** La permission que la route déclare explicitement, s'il y en a une. */
+  private declaredPermission(context: ExecutionContext): StaffPermission | undefined {
+    return this.reflector.getAllAndOverride<StaffPermission | undefined>(ADMIN_PERMISSION_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+  }
+
+  /** À défaut de déclaration : la ressource de la surface, et le verbe pour l'action. */
+  private resourcePermission(context: ExecutionContext, method: string): StaffPermission {
     const resource = this.reflector.getAllAndOverride<StaffResource | undefined>(
       ADMIN_RESOURCE_KEY,
       [context.getHandler(), context.getClass()],

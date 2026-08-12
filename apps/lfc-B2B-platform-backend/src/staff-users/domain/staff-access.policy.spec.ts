@@ -11,6 +11,7 @@ import {
   LastStaffAdminError,
   ProtectedStaffUserError,
   SelfDemotionError,
+  StaffGrantByOverrideError,
 } from "./staff-user-errors.js";
 
 /** Un administrateur ordinaire, avec un collègue admin derrière lui. */
@@ -166,5 +167,63 @@ describe("les mutations sans danger", () => {
 
     expect(() => assertStatusChangeAllowed(alone, "invited")).not.toThrow();
     expect(() => assertStatusChangeAllowed(alone, "active")).not.toThrow();
+  });
+});
+
+describe("les bords de la politique", () => {
+  it("REFUSE qu'une dérogation ouvre l'annuaire à un non-admin", () => {
+    // L'escalade : `support` + `allow staff:write` peut administrer l'annuaire,
+    // donc s'attribuer le rôle `admin` dans la foulée. Le modèle n'aurait plus
+    // de sommet.
+    const target = admin({ role: "support" });
+    const grant: StaffOverride = { resource: "staff", action: "write", effect: "allow" };
+
+    expect(() => assertEditAllowed(target, intent("support", { overrides: [grant] }))).toThrow(
+      StaffGrantByOverrideError,
+    );
+  });
+
+  it("refuse aussi l'ouverture en LECTURE seule", () => {
+    // Lire l'annuaire, c'est déjà connaître qui peut quoi — et le refus doit
+    // porter sur la ressource, pas sur une action choisie au cas par cas.
+    const grant: StaffOverride = { resource: "staff", action: "read", effect: "allow" };
+
+    expect(() =>
+      assertEditAllowed(
+        admin({ role: "commercial" }),
+        intent("commercial", { overrides: [grant] }),
+      ),
+    ).toThrow(StaffGrantByOverrideError);
+  });
+
+  it("laisse RETIRER l'annuaire à un non-admin — c'est sans danger", () => {
+    // Le refus d'un droit qu'on n'a pas ne change rien ; l'interdire ferait
+    // échouer un enregistrement pour rien.
+    const deny: StaffOverride = { resource: "staff", action: "write", effect: "deny" };
+
+    expect(() =>
+      assertEditAllowed(admin({ role: "support" }), intent("support", { overrides: [deny] })),
+    ).not.toThrow();
+  });
+
+  it("accepte la racine renommée à la casse près", () => {
+    // « Non renommable » veut dire « pas une autre adresse », pas « pas une
+    // autre graphie » : les clés e-mail sont normalisées partout ailleurs.
+    const root = admin({ isRoot: true, email: "racine@lafoliedouce.com" });
+
+    expect(() =>
+      assertEditAllowed(root, intent("admin", { email: "  Racine@LaFolieDouce.com " })),
+    ).not.toThrow();
+  });
+
+  it("ne se laisse pas désarmer par une dérogation vide", () => {
+    expect(() => assertEditAllowed(admin(), intent("admin", { overrides: [] }))).not.toThrow();
+  });
+
+  it("compte la suspension comme une perte d'accès, l'invitation non", () => {
+    const alone = admin({ otherLivingAdmins: 0 });
+
+    expect(() => assertStatusChangeAllowed(alone, "suspended")).toThrow(LastStaffAdminError);
+    expect(() => assertStatusChangeAllowed(alone, "pending")).not.toThrow();
   });
 });
