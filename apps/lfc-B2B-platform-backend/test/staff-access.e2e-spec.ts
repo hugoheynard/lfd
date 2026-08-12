@@ -8,7 +8,7 @@
  * `documentation/b2b/architecture-acces-staff.md`.
  */
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 
 /** Le comptable : il écrit les commandes, ne touche ni aux réglages ni à l'annuaire. */
 const ACCOUNTANT_SUB = "staff-comptable";
@@ -107,6 +107,53 @@ describe("le mur staff — /admin/me", () => {
 
   it("ne répond pas à un inconnu", async () => {
     await ctx.asSub(STRANGER_SUB).get("/admin/me").expect(403);
+  });
+});
+
+describe("le mur staff — une décision mord tout de suite", () => {
+  it("ferme l'accès dès la suspension, sans attendre l'expiration du cache", async () => {
+    // Le cœur du problème : la résolution garde un cache de 30 s. Sans oubli
+    // explicite au moment de la mutation, la personne suspendue continuerait
+    // d'entrer pendant une demi-minute — et c'est justement la demi-minute où
+    // on suspend dans l'urgence.
+    //
+    // La lecture qui précède est indispensable : elle **remplit** le cache. Sans
+    // elle, le test passerait même sans invalidation, faute de rien à oublier.
+    await accountant().get("/admin/orders").expect(200);
+
+    const target = await ctx.prisma.staffUser.findUniqueOrThrow({
+      where: { email: ACCOUNTANT_EMAIL },
+    });
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .patch(`/admin/staff-users/${target.id}/status`)
+      .send({ status: "suspended" })
+      .expect(204);
+
+    await accountant().get("/admin/orders").expect(403);
+  });
+
+  it("applique un changement de rôle sans délai", async () => {
+    // Même mécanique dans l'autre sens : ouvrir doit être aussi immédiat que
+    // fermer, sinon on croit la mutation perdue et on la refait.
+    await accountant().get("/admin/cockpit").expect(403);
+
+    const target = await ctx.prisma.staffUser.findUniqueOrThrow({
+      where: { email: ACCOUNTANT_EMAIL },
+    });
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .patch(`/admin/staff-users/${target.id}`)
+      .send({
+        firstName: "Colette",
+        lastName: "Bréal",
+        email: ACCOUNTANT_EMAIL,
+        role: "commercial",
+        overrides: [],
+      })
+      .expect(204);
+
+    await accountant().get("/admin/cockpit").expect(200);
   });
 });
 

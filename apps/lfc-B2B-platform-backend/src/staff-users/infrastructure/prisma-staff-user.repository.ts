@@ -16,6 +16,7 @@ import { PrismaService } from "../../infra/database/prisma.service.js";
 import { Clock } from "../../infra/time/clock.js";
 import { isInvitationExpired } from "../../shared/invitation/invitation-expiry.js";
 import { bootstrapAdmin } from "../domain/bootstrap-admin.js";
+import { StaffAccessCache } from "../domain/staff-access-cache.port.js";
 import {
   assertEditAllowed,
   assertRemovalAllowed,
@@ -23,10 +24,7 @@ import {
   type StaffMutationTarget,
 } from "../domain/staff-access.policy.js";
 import { DuplicateStaffEmailError, StaffUserNotFoundError } from "../domain/staff-user-errors.js";
-import {
-  StaffUserRepository,
-  type StaffIdentityFacts,
-} from "../domain/staff-user.repository.js";
+import { StaffUserRepository, type StaffIdentityFacts } from "../domain/staff-user.repository.js";
 
 interface OverrideRow {
   readonly resource: StaffOverride["resource"];
@@ -110,6 +108,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
     private readonly clock: Clock,
+    private readonly cache: StaffAccessCache,
   ) {
     super();
   }
@@ -167,18 +166,24 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
         data: { ...data, overrides: { create: overrideRows(overrides, actorSub) } },
       }),
     ]);
+    this.cache.forgetAll();
   }
 
   async remove(id: string, actorSub: string): Promise<void> {
     const target = await this.loadTarget(id, actorSub);
     assertRemovalAllowed(target);
     await this.prisma.staffUser.delete({ where: { id } });
+    this.cache.forgetAll();
   }
 
   async setStatus(id: string, change: StaffStatusChange, actorSub: string): Promise<void> {
     const target = await this.loadTarget(id, actorSub);
     assertStatusChangeAllowed(target, change.status);
     await this.prisma.staffUser.update({ where: { id }, data: { status: change.status } });
+    // Le geste le plus urgent de tous : sans cet oubli, une suspension mettrait
+    // jusqu'à trente secondes à mordre. C'est ici, juste après l'écriture, que
+    // la décision doit devenir vraie.
+    this.cache.forgetAll();
   }
 
   async identityOf(id: string): Promise<StaffIdentityFacts> {
@@ -217,6 +222,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
         ...(current.status === "active" ? {} : { status: "invited" as const }),
       },
     });
+    this.cache.forgetAll();
   }
 
   async ensureBootstrapAdmin(): Promise<void> {

@@ -189,7 +189,7 @@ describe("StaffAccessResolver — le cache", () => {
     const resolver = await buildResolver(prisma, new MovableClock(NOW));
 
     await resolver.resolve(TOKEN);
-    resolver.forget();
+    resolver.forgetAll();
     await resolver.resolve(TOKEN);
 
     expect(lookups).toHaveLength(2);

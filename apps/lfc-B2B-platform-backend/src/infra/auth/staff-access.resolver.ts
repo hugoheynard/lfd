@@ -78,8 +78,12 @@ export class StaffAccessResolver {
     return access;
   }
 
-  /** Oublie ce qu'on savait — appelé quand l'annuaire change sous nos pieds. */
-  forget(): void {
+  /**
+   * Oublie ce qu'on savait — appelé par l'annuaire **au moment exact** où il
+   * change, plutôt qu'en attendant l'expiration. C'est ce qui fait qu'une
+   * suspension mord tout de suite au lieu de mordre dans trente secondes.
+   */
+  forgetAll(): void {
     this.cache.clear();
   }
 

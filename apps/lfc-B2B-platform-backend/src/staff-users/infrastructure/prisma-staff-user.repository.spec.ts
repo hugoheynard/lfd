@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 
 import { AppConfig } from "../../infra/config/app-config.js";
 import { Clock } from "../../infra/time/clock.js";
+import { StaffAccessCache } from "../domain/staff-access-cache.port.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL as BOOTSTRAP_ADMIN_EMAIL } from "../domain/bootstrap-admin.js";
 import {
@@ -81,6 +82,9 @@ async function buildRepo(prisma: object): Promise<StaffUserRepository> {
       // Horloge figée : la vue calcule la péremption d'invitation, et un test
       // qui lit l'heure du système finit par échouer un jour précis.
       { provide: Clock, useValue: { now: (): Date => new Date("2026-08-12T12:00:00.000Z") } },
+      // Le cache d'accès : ici on ne mesure que le fait d'oublier, pas l'oubli
+      // lui-même — c'est la suite e2e qui prouve qu'une suspension mord.
+      { provide: StaffAccessCache, useValue: { forgetAll: (): void => undefined } },
       { provide: StaffUserRepository, useClass: PrismaStaffUserRepository },
     ],
   }).compile();

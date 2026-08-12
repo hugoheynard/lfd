@@ -5,10 +5,7 @@ import { Clock } from "../../infra/time/clock.js";
 import { MAILER, type B2bMailer } from "../../infra/mailer/mailer.module.js";
 import { StaffIdentityPort } from "../domain/staff-identity.port.js";
 import { SuspendedStaffInviteError } from "../domain/staff-user-errors.js";
-import {
-  StaffUserRepository,
-  type StaffIdentityFacts,
-} from "../domain/staff-user.repository.js";
+import { StaffUserRepository, type StaffIdentityFacts } from "../domain/staff-user.repository.js";
 import { InviteStaffUserCommand } from "./staff-user.commands.js";
 
 /**

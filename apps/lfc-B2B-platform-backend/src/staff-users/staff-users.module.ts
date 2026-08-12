@@ -12,6 +12,8 @@ import {
   SetStaffStatusHandler,
   UpdateStaffUserHandler,
 } from "./application/staff-user.handlers.js";
+import { StaffAccessResolver } from "../infra/auth/staff-access.resolver.js";
+import { StaffAccessCache } from "./domain/staff-access-cache.port.js";
 import { StaffIdentityPort } from "./domain/staff-identity.port.js";
 import { StaffUserRepository } from "./domain/staff-user.repository.js";
 import { Auth0StaffIdentity } from "./infrastructure/auth0-staff-identity.js";
@@ -34,6 +36,9 @@ import { PrismaStaffUserRepository } from "./infrastructure/prisma-staff-user.re
   controllers: [AdminStaffUsersController, AdminMeController],
   providers: [
     { provide: StaffUserRepository, useClass: PrismaStaffUserRepository },
+    // Le resolver EST le cache : il n'y en a qu'un, et l'annuaire ne le connaît
+    // que par ce port étroit — il ne sait ni sa clé, ni sa durée de vie.
+    { provide: StaffAccessCache, useExisting: StaffAccessResolver },
     ListStaffUsersHandler,
     GetStaffMeHandler,
     CreateStaffUserHandler,

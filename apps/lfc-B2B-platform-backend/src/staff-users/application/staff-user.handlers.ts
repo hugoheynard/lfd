@@ -2,10 +2,7 @@ import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { StaffIdentityPort } from "../domain/staff-identity.port.js";
-import {
-  StaffUserRepository,
-  type StaffIdentityFacts,
-} from "../domain/staff-user.repository.js";
+import { StaffUserRepository, type StaffIdentityFacts } from "../domain/staff-user.repository.js";
 import { SetStaffStatusCommand } from "./set-staff-status.command.js";
 import {
   CreateStaffUserCommand,

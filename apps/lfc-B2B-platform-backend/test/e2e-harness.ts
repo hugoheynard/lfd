@@ -158,7 +158,7 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       await seedE2eStaff(prisma);
       // La résolution d'accès garde un cache court par `sub` : sans cet oubli,
       // le test suivant travaillerait avec l'id d'une fiche qu'on vient d'effacer.
-      app.get(StaffAccessResolver).forget();
+      app.get(StaffAccessResolver).forgetAll();
       await resetStorage();
     },
     close: () => app.close(),
