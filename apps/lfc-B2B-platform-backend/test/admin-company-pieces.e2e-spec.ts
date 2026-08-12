@@ -319,7 +319,11 @@ describe("certification du KBIS", () => {
     const response = await staff().get(`/admin/companies/${companyId}/kbis`).expect(200);
 
     expect(response.headers["content-disposition"]).toContain("k.pdf");
-    expect(response.body.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+    // `response.body` est bien un Buffer (réponse binaire), mais supertest le
+    // type `any` : on le nomme avant de le lire plutôt que d'enchaîner des
+    // appels sur une valeur dont le compilateur ne sait rien.
+    const served = response.body as Buffer;
+    expect(served.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 
   it("répond 404 quand il n'y a aucun extrait à servir", async () => {

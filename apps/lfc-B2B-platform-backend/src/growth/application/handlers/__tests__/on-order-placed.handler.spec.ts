@@ -24,7 +24,8 @@ describe("OnOrderPlaced", () => {
     const recorder = new RecordingRecorder();
     const handler = new OnOrderPlaced(recorder, work);
 
-    await handler.handle(new OrderPlacedEvent("order_9", "ORD-9", "user_7", "company_3", 4200));
+    handler.handle(new OrderPlacedEvent("order_9", "ORD-9", "user_7", "company_3", 4200));
+    await work.whenIdle();
 
     expect(recorder.records).toHaveLength(1);
     expect(recorder.records[0]).toEqual({

@@ -35,8 +35,9 @@ describe("OnCompanyStepReached", () => {
   it("distingue deux étapes de la même société par la clé", async () => {
     const recorder = new RecordingRecorder();
     const handler = new OnCompanyStepReached(recorder, work);
-    await handler.handle(new CompanyStepReachedEvent("company_2", "tva"));
-    await handler.handle(new CompanyStepReachedEvent("company_2", "billing"));
+    handler.handle(new CompanyStepReachedEvent("company_2", "tva"));
+    handler.handle(new CompanyStepReachedEvent("company_2", "billing"));
+    await work.whenIdle();
 
     expect(recorder.records.map((r) => r.idempotencyKey)).toEqual([
       "company.step_reached:tva:company_2",
