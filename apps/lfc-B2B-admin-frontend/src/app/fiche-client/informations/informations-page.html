@@ -1,5 +1,5 @@
 <section class="infos">
-  @switch (state()) {
+  @switch (fiche.state()) {
     @case ('loading') {
       <fold-loading message="Chargement de la fiche…" />
     }
@@ -12,7 +12,7 @@
         title="Impossible de charger la fiche"
         subtitle="La lecture a échoué — le dossier, lui, est intact."
       >
-        <button foldButton (click)="load()">Réessayer</button>
+        <button foldButton (click)="fiche.reload()">Réessayer</button>
       </fold-empty-state>
     }
     @case ('notfound') {
@@ -30,14 +30,14 @@
              quelles pièces réclamer maintenant, plutôt que de les découvrir
              une par une plus tard. -->
         <lfd-company-activation-checklist
-          [steps]="libSteps()"
-          [ready]="ready()"
+          [steps]="fiche.libSteps()"
+          [ready]="fiche.ready()"
           readyNote="Toutes les pièces sont réunies — le compte peut être activé."
-          (stepAction)="act($event)"
+          (stepAction)="fiche.openStep($event)"
           (fileSelected)="onFile($event)"
         >
           <p intro>
-            @if (draft()) {
+            @if (fiche.draft()) {
               Enregistrez l'identité ci-dessous pour ouvrir le compte : les pièces deviendront alors
               complétables, une par une.
             } @else {
@@ -46,11 +46,11 @@
           </p>
         </lfd-company-activation-checklist>
 
-        @if (company(); as c) {
+        @if (fiche.company(); as c) {
           <lfd-company-reference-card [reference]="c.reference" label="Référence client" />
         }
 
-        @if (draft()) {
+        @if (fiche.draft()) {
           <fold-page-section
             title="Identité légale"
             icon="company"
@@ -80,7 +80,7 @@
               foldButton
               intent="primary"
               icon="check"
-              [disabled]="!canCreate() || creating()"
+              [disabled]="!canCreate() || fiche.creating()"
               (click)="createAccount()"
             >
               Ouvrir le compte
@@ -95,81 +95,87 @@
             <strong>section par section</strong>, dès que le compte est ouvert. Vous pourrez vous
             interrompre et reprendre : ce qui est enregistré est enregistré.
           </fold-callout>
-        } @else if (identity(); as id) {
+        } @else if (fiche.identity(); as id) {
           <lfd-company-identity-card
             [identity]="id"
             [canManage]="true"
             [canManageKbis]="true"
-            [kbisRequirement]="kbisRequirement()"
+            [kbisRequirement]="fiche.kbisRequirement()"
             [canAccessKbis]="false"
-            (edit)="act('tva')"
+            (edit)="fiche.openStep('tva')"
             (kbisSelected)="onFile({ key: 'kbis', file: $event })"
           />
         }
 
-        @if (!draft()) {
+        @if (!fiche.draft()) {
           <!-- UNE carte : les interlocuteurs, détenteur compris, chacun portant
                l'état de son accès. Éditable comme côté client — le commercial
                complète le dossier à la place du client, c'est la Porte B. -->
           <lfd-company-contacts-card
-            [contacts]="contacts()"
+            [contacts]="fiche.contacts()"
             [canManage]="true"
-            (add)="addContact()"
-            (editContact)="editContact($event)"
-            (removeContact)="removeContact($event)"
-            (inviteContact)="openAccess($event)"
+            (add)="fiche.addContact()"
+            (editContact)="fiche.editContact($event)"
+            (removeContact)="fiche.removeContact($event)"
+            (inviteContact)="fiche.openAccess($event)"
           />
 
           <lfd-company-addresses-card
-            [billing]="billing()"
-            [deliveries]="deliveries()"
+            [billing]="fiche.billing()"
+            [deliveries]="fiche.deliveries()"
             [canManage]="true"
-            (editBilling)="act('billing')"
-            (addDelivery)="act('delivery')"
-            (editDelivery)="editDelivery($event)"
-            (setDefault)="setDefaultDelivery($event)"
-            (remove)="removeDelivery($event)"
-            [showDeliveries]="!deliveryHidden()"
-            [showPickup]="deliveryHidden()"
-            [pickup]="defaultPickup()"
+            (editBilling)="fiche.openStep('billing')"
+            (addDelivery)="fiche.addDelivery()"
+            (editDelivery)="fiche.editDelivery($event)"
+            (setDefault)="fiche.setDefaultDelivery($event)"
+            (remove)="fiche.removeDelivery($event)"
+            [showDeliveries]="!fiche.deliveryHidden()"
+            [showPickup]="fiche.deliveryHidden()"
+            [pickup]="fiche.defaultPickup()"
           />
 
-          @if (company(); as c) {
+          @if (fiche.company(); as c) {
             <!-- Où va la marchandise, d'habitude. Après les adresses : on ne
-                 choisit une préférence qu'une fois qu'il y a de quoi choisir. -->
-            <app-acheminement-section
+                 choisit une préférence qu'une fois qu'il y a de quoi choisir.
+                 Voix staff : la carte est partagée avec l'app client, elle ne
+                 sait pas qui la regarde — les phrases qui changent de camp
+                 entrent par ses `input()`. -->
+            <lfd-company-fulfillment-card
               [preference]="c.fulfillmentPreference"
-              [pickups]="pickups()"
-              [deliveries]="deliveries()"
-              [deliveryOffered]="!deliveryHidden()"
-              (preferenceChange)="preferFulfillment($event)"
+              [pickups]="fiche.pickups()"
+              [deliveries]="fiche.deliveries()"
+              [deliveryOffered]="!fiche.deliveryHidden()"
+              description="Comment ce client est servi d'habitude. C'est le point de départ de ses commandes — il pourra en changer au panier."
+              noPreferenceHint="Aucune préférence : ce client choisit son acheminement à chaque commande, comme aujourd'hui."
+              noDeliveryHint="Cette société n'a pas encore d'adresse de livraison. Ajoutez-en une pour pouvoir en choisir une par défaut."
+              (preferenceChange)="fiche.preferFulfillment($event)"
             />
           }
 
           <!-- En bas de fiche : c'est ce qu'on regarde en dernier, une fois le
                dossier constitué, et c'est là que vit le mandat SEPA. -->
-          @if (company(); as c) {
+          @if (fiche.company(); as c) {
             <app-paiement-section
               [companyId]="c.id"
               [companyName]="c.raisonSociale"
               [holderEmail]="c.primaryContact.email"
               [grantedTerms]="c.grantedTerms"
               [requestedTerm]="c.requestedTerm"
-              (grantedTermsChange)="grantTerms($event)"
+              (grantedTermsChange)="fiche.grantTerms($event)"
             />
           }
         }
         <!-- Le geste qui clôt le dossier, épinglé : il se perdait au fil d'une
              fiche qui s'allonge. Pendant staff du rail « assistance » côté
              client — chaque camp a son geste au même endroit. -->
-        @if (!draft()) {
+        @if (!fiche.draft()) {
           <app-activation-aside
             asideRight
-            [pending]="isPending()"
-            [canActivate]="canActivate()"
-            [blockedReason]="blockedReason()"
-            [remaining]="libSteps().length"
-            (activate)="activate()"
+            [pending]="fiche.isPending()"
+            [canActivate]="fiche.canActivate()"
+            [blockedReason]="fiche.blockedReason()"
+            [remaining]="fiche.libSteps().length"
+            (activate)="fiche.activate()"
           />
         }
       </fold-aside-layout>

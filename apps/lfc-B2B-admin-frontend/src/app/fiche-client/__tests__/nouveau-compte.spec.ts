@@ -8,6 +8,7 @@ import { AdminCompaniesService } from '../../comptes-clients/admin-companies.ser
 import { NotifyService } from '../../notify.service';
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
 import { PlatformSettingsService } from '../../reglages/platform-settings.service';
+import { FicheClientFacade } from '../informations/fiche-client.facade';
 import { InformationsPage } from '../informations/informations-page';
 
 /** Toutes les pièces exigées : le cas le plus bavard pour la synthèse. */
@@ -26,6 +27,8 @@ const CREATED: CompanyOpened = {
 
 interface Harness {
   readonly page: InformationsPage;
+  /** La façade : ce que la page lit et déclenche. */
+  readonly fiche: FicheClientFacade;
   readonly create: ReturnType<typeof vi.fn>;
   readonly navigate: ReturnType<typeof vi.fn>;
   readonly errors: unknown[];
@@ -70,12 +73,16 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
       },
     ],
   });
-  const page = TestBed.createComponent(InformationsPage).componentInstance;
+  const fixture = TestBed.createComponent(InformationsPage);
+  const page = fixture.componentInstance;
+  // La page ne porte plus que sa saisie ; tout ce qu'elle lit vient de sa
+  // façade, qu'on interroge donc directement.
+  const fiche = fixture.debugElement.injector.get(FicheClientFacade);
   const navigate = vi.fn(() => Promise.resolve(true));
   vi.spyOn(TestBed.inject(Router), 'navigate').mockImplementation(navigate);
   await Promise.resolve();
   await Promise.resolve();
-  return { page, create, navigate, errors };
+  return { page, fiche, create, navigate, errors };
 }
 
 /** Remplit le bloc d'ouverture avec le minimum exigé. */
@@ -102,16 +109,16 @@ describe('InformationsPage — ouverture d’un compte', () => {
   });
 
   it("ne conclut pas à « introuvable » quand il n'y a pas d'identifiant", async () => {
-    const { page } = await setup();
+    const { fiche } = await setup();
     // L'absence d'id est ATTENDUE ici : c'est un compte qu'on ouvre, pas un
     // compte manquant.
-    expect(page['draft']()).toBe(true);
-    expect(page['state']()).toBe('ready');
+    expect(fiche.draft()).toBe(true);
+    expect(fiche.state()).toBe('ready');
   });
 
   it('montre la synthèse COMPLÈTE, comme sur une fiche où rien n’est fait', async () => {
-    const { page } = await setup();
-    expect(page['libSteps']().map((step) => step.key)).toEqual([
+    const { fiche } = await setup();
+    expect(fiche.libSteps().map((step) => step.key)).toEqual([
       'legal',
       'tva',
       'kbis',
@@ -120,8 +127,8 @@ describe('InformationsPage — ouverture d’un compte', () => {
       'payment',
     ]);
     // Rien n'est réuni : le compte ne peut pas être activé.
-    expect(page['ready']()).toBe(false);
-    expect(page['canActivate']()).toBe(false);
+    expect(fiche.ready()).toBe(false);
+    expect(fiche.canActivate()).toBe(false);
   });
 
   it("n'exige qu'un nom de société et un détenteur — PAS les papiers", async () => {
@@ -181,7 +188,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
 
   it('garde la saisie à l’écran quand l’ouverture échoue', async () => {
     const boom = new Error('SIRET déjà connu');
-    const { page, navigate, errors } = await setup(vi.fn(() => Promise.reject(boom)));
+    const { page, fiche, navigate, errors } = await setup(vi.fn(() => Promise.reject(boom)));
     fill(page);
     await page['createAccount']();
 
@@ -190,6 +197,6 @@ describe('InformationsPage — ouverture d’un compte', () => {
     // Refaire la saisie après un refus serait une punition pour une erreur qui
     // n'est pas celle du commercial.
     expect(page['identityDraft']().enseigne).toBe('  Le Comptoir  ');
-    expect(page['creating']()).toBe(false);
+    expect(fiche.creating()).toBe(false);
   });
 });
