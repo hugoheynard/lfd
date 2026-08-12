@@ -2,6 +2,7 @@ import { UserRegisteredEvent } from "../../../../account/domain/events/user-regi
 import type { RecordActivityInput } from "../../../domain/activity-event.js";
 import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { OnUserRegistered } from "../on-user-registered.handler.js";
+import { BackgroundWork } from "../../../../infra/events/background-work.js";
 
 /** Recorder doublé : capture les entrées (extension du port, sans cast). */
 class RecordingRecorder extends ActivityRecorder {
@@ -13,9 +14,12 @@ class RecordingRecorder extends ActivityRecorder {
 }
 
 describe("OnUserRegistered", () => {
+  const work = new BackgroundWork();
+
   it("journalise user.registered sur la personne, clé déterministe, e-mail en payload", async () => {
     const recorder = new RecordingRecorder();
-    await new OnUserRegistered(recorder).handle(new UserRegisteredEvent("user_8", "chef@resto.fr"));
+    new OnUserRegistered(recorder, work).handle(new UserRegisteredEvent("user_8", "chef@resto.fr"));
+    await work.whenIdle();
 
     expect(recorder.records[0]).toEqual({
       type: "user.registered",

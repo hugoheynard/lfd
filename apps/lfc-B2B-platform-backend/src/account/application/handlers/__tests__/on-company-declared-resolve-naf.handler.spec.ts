@@ -4,6 +4,7 @@ import { EstablishmentDirectory } from "../../../domain/ports/establishment-dire
 import { CompanyRepository, type KbisLocation } from "../../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
 import { OnCompanyDeclaredResolveNaf } from "../on-company-declared-resolve-naf.handler.js";
+import { BackgroundWork } from "../../../../infra/events/background-work.js";
 
 const CONTACT = {
   firstName: "Marie",
@@ -79,29 +80,34 @@ class FakeDirectory extends EstablishmentDirectory {
 const EVENT = new CompanyDeclaredEvent("company_1", "self", "user_1");
 
 describe("OnCompanyDeclaredResolveNaf", () => {
+  const work = new BackgroundWork();
+
   it("résout le NAF depuis le SIRET et le persiste sur la société", async () => {
     const repo = new FakeCompanyRepository(reconstituted());
-    const handler = new OnCompanyDeclaredResolveNaf(repo, new FakeDirectory("56.10A"));
+    const handler = new OnCompanyDeclaredResolveNaf(repo, new FakeDirectory("56.10A"), work);
 
-    await handler.handle(EVENT);
+    handler.handle(EVENT);
+    await work.whenIdle();
 
     expect(repo.saved?.nafCode).toBe("56.10A");
   });
 
   it("ne touche à rien si le SIRET est introuvable (best-effort)", async () => {
     const repo = new FakeCompanyRepository(reconstituted());
-    const handler = new OnCompanyDeclaredResolveNaf(repo, new FakeDirectory(null));
+    const handler = new OnCompanyDeclaredResolveNaf(repo, new FakeDirectory(null), work);
 
-    await handler.handle(EVENT);
+    handler.handle(EVENT);
+    await work.whenIdle();
 
     expect(repo.saved).toBeNull();
   });
 
   it("no-op si la société n'existe pas", async () => {
     const repo = new FakeCompanyRepository(null);
-    const handler = new OnCompanyDeclaredResolveNaf(repo, new FakeDirectory("56.10A"));
+    const handler = new OnCompanyDeclaredResolveNaf(repo, new FakeDirectory("56.10A"), work);
 
-    await handler.handle(EVENT);
+    handler.handle(EVENT);
+    await work.whenIdle();
 
     expect(repo.saved).toBeNull();
   });

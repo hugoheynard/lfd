@@ -2,6 +2,7 @@ import { CompanyStepReachedEvent } from "../../../../account/domain/events/compa
 import type { RecordActivityInput } from "../../../domain/activity-event.js";
 import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { OnCompanyStepReached } from "../on-company-step-reached.handler.js";
+import { BackgroundWork } from "../../../../infra/events/background-work.js";
 
 /** Recorder doublé : capture les entrées (extension du port, sans cast). */
 class RecordingRecorder extends ActivityRecorder {
@@ -13,11 +14,14 @@ class RecordingRecorder extends ActivityRecorder {
 }
 
 describe("OnCompanyStepReached", () => {
+  const work = new BackgroundWork();
+
   it("journalise company.step_reached avec une clé PAR (société, étape)", async () => {
     const recorder = new RecordingRecorder();
-    await new OnCompanyStepReached(recorder).handle(
+    new OnCompanyStepReached(recorder, work).handle(
       new CompanyStepReachedEvent("company_2", "kbis"),
     );
+    await work.whenIdle();
 
     expect(recorder.records[0]).toEqual({
       type: "company.step_reached",
@@ -30,7 +34,7 @@ describe("OnCompanyStepReached", () => {
 
   it("distingue deux étapes de la même société par la clé", async () => {
     const recorder = new RecordingRecorder();
-    const handler = new OnCompanyStepReached(recorder);
+    const handler = new OnCompanyStepReached(recorder, work);
     await handler.handle(new CompanyStepReachedEvent("company_2", "tva"));
     await handler.handle(new CompanyStepReachedEvent("company_2", "billing"));
 

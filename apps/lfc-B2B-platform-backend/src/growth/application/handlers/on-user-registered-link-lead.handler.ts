@@ -4,6 +4,7 @@ import { UserRegisteredEvent } from "../../../account/domain/events/user-registe
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
 import { LeadRepository } from "../../domain/ports/lead.repository.js";
+import { BackgroundWork } from "../../../infra/events/background-work.js";
 
 /**
  * **Rapprochement automatique** : quand une personne s'inscrit, si un **lead cold
@@ -20,9 +21,16 @@ export class OnUserRegisteredLinkLead implements IEventHandler<UserRegisteredEve
   constructor(
     private readonly leads: LeadRepository,
     private readonly recorder: ActivityRecorder,
+    private readonly work: BackgroundWork,
   ) {}
 
-  async handle(event: UserRegisteredEvent): Promise<void> {
+  handle(event: UserRegisteredEvent): void {
+    // **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
+    // inscription, personne — ni la prod, ni un test — ne sait quand il a fini.
+    void this.work.track(this.run(event), "on-user-registered-link-lead");
+  }
+
+  private async run(event: UserRegisteredEvent): Promise<void> {
     if (event.email === "") {
       return;
     }

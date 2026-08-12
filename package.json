@@ -21,6 +21,7 @@
     "lfc-suite:dev:watch": "turbo run dev --filter=lfc-pim-frontend --filter=lfc-pim-backend",
     "lint": "turbo run lint",
     "lint:no-direct-env": "node dev-toolbox/gates/no-direct-env.mjs",
+    "lint:events-tracked": "node dev-toolbox/gates/events-tracked.mjs",
     "test": "turbo run test",
     "clean": "turbo run clean"
   },

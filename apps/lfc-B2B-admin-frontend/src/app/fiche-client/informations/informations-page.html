@@ -29,27 +29,35 @@
              pour ouvrir, les pièces d'activation ensuite. Montrer le dossier
              complet devant un formulaire vide faisait passer pour bloquant ce
              qui ne l'est pas — et un compte s'ouvre précisément sans papiers. -->
-        <lfd-company-activation-checklist
-          [steps]="checklistSteps()"
-          [ready]="checklistReady()"
-          [readyNote]="readyNote()"
-          (stepAction)="fiche.openStep($event)"
-          (fileSelected)="onFile($event)"
-        >
-          <p intro>
-            @if (fiche.draft()) {
-              Pour <strong>ouvrir</strong> le compte : le nom d'usage et le détenteur. KBIS et
-              adresses se réclameront ensuite, section par section.
-            } @else if (fiche.status() === 'pending') {
-              Complétez les pièces manquantes pour activer ce compte, à la place du client.
-            } @else {
-              <!-- Un compte déjà actif ne se « complète pas pour être activé » :
-                   le dire lui ferait croire qu'il a perdu son accès. -->
-              Ce dossier est incomplet. Le compte reste actif : complétez-le pour que sa facturation
-              et ses livraisons soient justes.
-            }
-          </p>
-        </lfd-company-activation-checklist>
+        <!-- Un compte actif dont le dossier est complet n'a **rien** à dire :
+             l'encart entier disparaît. Le garder pour annoncer « le dossier est
+             complet » dans un bandeau d'avertissement, c'est du bruit — et il
+             se contredisait lui-même, l'intro annonçant un dossier incomplet
+             sous une phrase disant l'inverse. -->
+        @if (showChecklist()) {
+          <lfd-company-activation-checklist
+            [steps]="checklistSteps()"
+            [ready]="checklistReady()"
+            [readyNote]="readyNote()"
+            (stepAction)="fiche.openStep($event)"
+            (fileSelected)="onFile($event)"
+          >
+            <p intro>
+              @if (fiche.draft()) {
+                Pour <strong>ouvrir</strong> le compte : le nom d'usage et le détenteur. KBIS et
+                adresses se réclameront ensuite, section par section.
+              } @else if (fiche.status() === 'pending') {
+                Complétez les pièces manquantes pour activer ce compte, à la place du client.
+              } @else {
+                <!-- Un compte déjà actif ne se « complète pas pour être activé » :
+                   le dire lui ferait croire qu'il a perdu son accès. Cette
+                   branche ne s'affiche que s'il manque vraiment quelque chose. -->
+                Ce dossier est incomplet. Le compte reste actif : complétez-le pour que sa
+                facturation et ses livraisons soient justes.
+              }
+            </p>
+          </lfd-company-activation-checklist>
+        }
 
         @if (fiche.company(); as c) {
           <lfd-company-reference-card [reference]="c.reference" label="Référence client" />

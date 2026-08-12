@@ -2,6 +2,7 @@ import { CompanyActivatedEvent } from "../../../../account/domain/events/company
 import type { RecordActivityInput } from "../../../domain/activity-event.js";
 import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { OnCompanyActivated } from "../on-company-activated.handler.js";
+import { BackgroundWork } from "../../../../infra/events/background-work.js";
 
 /** Recorder doublé : capture les entrées (extension du port, sans cast). */
 class RecordingRecorder extends ActivityRecorder {
@@ -13,13 +14,16 @@ class RecordingRecorder extends ActivityRecorder {
 }
 
 describe("OnCompanyActivated", () => {
+  const work = new BackgroundWork();
+
   it("journalise company.activated avec occurredAt = l'instant d'activation métier", async () => {
     const activatedAt = new Date("2026-08-07T09:30:00.000Z");
     const recorder = new RecordingRecorder();
 
-    await new OnCompanyActivated(recorder).handle(
+    new OnCompanyActivated(recorder, work).handle(
       new CompanyActivatedEvent("company_3", activatedAt),
     );
+    await work.whenIdle();
 
     expect(recorder.records[0]).toEqual({
       type: "company.activated",

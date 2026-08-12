@@ -3,6 +3,7 @@ import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 import { CompanyActivatedEvent } from "../../../account/domain/events/company-activated.event.js";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
+import { BackgroundWork } from "../../../infra/events/background-work.js";
 
 /**
  * Abonné du journal : `company.activated` → une ligne d'activité sur la société.
@@ -11,9 +12,18 @@ import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
  */
 @EventsHandler(CompanyActivatedEvent)
 export class OnCompanyActivated implements IEventHandler<CompanyActivatedEvent> {
-  constructor(private readonly recorder: ActivityRecorder) {}
+  constructor(
+    private readonly recorder: ActivityRecorder,
+    private readonly work: BackgroundWork,
+  ) {}
 
-  async handle(event: CompanyActivatedEvent): Promise<void> {
+  handle(event: CompanyActivatedEvent): void {
+    // **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
+    // inscription, personne — ni la prod, ni un test — ne sait quand il a fini.
+    void this.work.track(this.run(event), "on-company-activated");
+  }
+
+  private async run(event: CompanyActivatedEvent): Promise<void> {
     await this.recorder.record({
       type: ACTIVITY_TYPES.companyActivated,
       subjectType: "company",

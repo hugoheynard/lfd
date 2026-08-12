@@ -2,6 +2,7 @@ import { SubscriptionCreatedEvent } from "../../../../subscriptions/domain/event
 import type { RecordActivityInput } from "../../../domain/activity-event.js";
 import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { OnSubscriptionCreated } from "../on-subscription-created.handler.js";
+import { BackgroundWork } from "../../../../infra/events/background-work.js";
 
 /** Recorder doublé : capture les entrées (extension du port, sans cast). */
 class RecordingRecorder extends ActivityRecorder {
@@ -13,11 +14,14 @@ class RecordingRecorder extends ActivityRecorder {
 }
 
 describe("OnSubscriptionCreated", () => {
+  const work = new BackgroundWork();
+
   it("journalise subscription.created sur la personne, clé par abonnement", async () => {
     const recorder = new RecordingRecorder();
-    await new OnSubscriptionCreated(recorder).handle(
+    new OnSubscriptionCreated(recorder, work).handle(
       new SubscriptionCreatedEvent("sub_7", "user_4", "weekly"),
     );
+    await work.whenIdle();
 
     expect(recorder.records[0]).toEqual({
       type: "subscription.created",

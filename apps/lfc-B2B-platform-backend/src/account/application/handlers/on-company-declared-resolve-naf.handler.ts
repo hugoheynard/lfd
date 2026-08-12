@@ -3,6 +3,7 @@ import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 import { CompanyDeclaredEvent } from "../../domain/events/company-declared.event.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { EstablishmentDirectory } from "../../domain/ports/establishment-directory.js";
+import { BackgroundWork } from "../../../infra/events/background-work.js";
 
 /**
  * Abonné : `company.declared` → **résout le code NAF** de la société depuis son
@@ -16,9 +17,16 @@ export class OnCompanyDeclaredResolveNaf implements IEventHandler<CompanyDeclare
   constructor(
     private readonly companies: CompanyRepository,
     private readonly directory: EstablishmentDirectory,
+    private readonly work: BackgroundWork,
   ) {}
 
-  async handle(event: CompanyDeclaredEvent): Promise<void> {
+  handle(event: CompanyDeclaredEvent): void {
+    // **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
+    // inscription, personne — ni la prod, ni un test — ne sait quand il a fini.
+    void this.work.track(this.run(event), "on-company-declared-resolve-naf");
+  }
+
+  private async run(event: CompanyDeclaredEvent): Promise<void> {
     const company = await this.companies.load(event.companyId);
     if (company === null) {
       return;

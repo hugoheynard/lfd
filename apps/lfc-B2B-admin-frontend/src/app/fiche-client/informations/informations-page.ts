@@ -124,6 +124,19 @@ export class InformationsPage {
   );
 
   /**
+   * L'encart a-t-il quelque chose à dire ?
+   *
+   * Sur un compte **actif dont rien ne manque**, non : annoncer « le dossier est
+   * complet » dans un bandeau d'avertissement est du bruit, et l'écran se
+   * contredisait — l'intro déclarait le dossier incomplet juste au-dessus de la
+   * phrase disant l'inverse. Sur un brouillon et sur un compte en attente, il
+   * parle toujours : il y a un geste à obtenir.
+   */
+  protected readonly showChecklist = computed(
+    () => this.fiche.draft() || this.fiche.status() === 'pending' || !this.fiche.ready(),
+  );
+
+  /**
    * La phrase du « tout est bon », qui doit rester vraie dans les trois
    * situations : avant l'ouverture, sur un compte en attente, sur un compte
    * déjà actif — à qui promettre une activation n'a aucun sens.

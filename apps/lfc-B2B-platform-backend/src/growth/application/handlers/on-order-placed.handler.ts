@@ -3,6 +3,7 @@ import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 import { OrderPlacedEvent } from "../../../orders/domain/events/order-placed.event.js";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
+import { BackgroundWork } from "../../../infra/events/background-work.js";
 
 /**
  * Abonné du journal : `order.placed` → une ligne d'activité (sujet = la personne
@@ -13,9 +14,18 @@ import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
  */
 @EventsHandler(OrderPlacedEvent)
 export class OnOrderPlaced implements IEventHandler<OrderPlacedEvent> {
-  constructor(private readonly recorder: ActivityRecorder) {}
+  constructor(
+    private readonly recorder: ActivityRecorder,
+    private readonly work: BackgroundWork,
+  ) {}
 
-  async handle(event: OrderPlacedEvent): Promise<void> {
+  handle(event: OrderPlacedEvent): void {
+    // **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
+    // inscription, personne — ni la prod, ni un test — ne sait quand il a fini.
+    void this.work.track(this.run(event), "on-order-placed");
+  }
+
+  private async run(event: OrderPlacedEvent): Promise<void> {
     await this.recorder.record({
       type: ACTIVITY_TYPES.orderPlaced,
       subjectType: "user",

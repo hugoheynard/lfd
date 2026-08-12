@@ -4,6 +4,7 @@ import { Lead } from "../../../domain/entities/lead.js";
 import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { LeadRepository } from "../../../domain/ports/lead.repository.js";
 import { OnUserRegisteredLinkLead } from "../on-user-registered-link-lead.handler.js";
+import { BackgroundWork } from "../../../../infra/events/background-work.js";
 
 function openLead(email: string): Lead {
   return Lead.reconstitute({
@@ -49,12 +50,15 @@ class CapturingRecorder extends ActivityRecorder {
 }
 
 describe("OnUserRegisteredLinkLead", () => {
+  const work = new BackgroundWork();
+
   it("rattache et convertit le lead ouvert au même e-mail, et journalise via=registration", async () => {
     const repo = new FakeRepo(openLead("marie@bistrot.fr"));
     const recorder = new CapturingRecorder();
-    const handler = new OnUserRegisteredLinkLead(repo, recorder);
+    const handler = new OnUserRegisteredLinkLead(repo, recorder, work);
 
-    await handler.handle(new UserRegisteredEvent("user_42", "marie@bistrot.fr"));
+    handler.handle(new UserRegisteredEvent("user_42", "marie@bistrot.fr"));
+    await work.whenIdle();
 
     expect(repo.saved?.status).toBe("converted");
     expect(repo.saved?.linkedUserId).toBe("user_42");
@@ -68,9 +72,10 @@ describe("OnUserRegisteredLinkLead", () => {
   it("ne fait rien quand aucun lead ne correspond", async () => {
     const repo = new FakeRepo(null);
     const recorder = new CapturingRecorder();
-    const handler = new OnUserRegisteredLinkLead(repo, recorder);
+    const handler = new OnUserRegisteredLinkLead(repo, recorder, work);
 
-    await handler.handle(new UserRegisteredEvent("user_42", "inconnu@resto.fr"));
+    handler.handle(new UserRegisteredEvent("user_42", "inconnu@resto.fr"));
+    await work.whenIdle();
 
     expect(repo.saved).toBeNull();
     expect(recorder.records).toHaveLength(0);
@@ -79,9 +84,10 @@ describe("OnUserRegisteredLinkLead", () => {
   it("ignore une inscription sans e-mail (pas de clé de rapprochement)", async () => {
     const repo = new FakeRepo(openLead("marie@bistrot.fr"));
     const recorder = new CapturingRecorder();
-    const handler = new OnUserRegisteredLinkLead(repo, recorder);
+    const handler = new OnUserRegisteredLinkLead(repo, recorder, work);
 
-    await handler.handle(new UserRegisteredEvent("user_42", ""));
+    handler.handle(new UserRegisteredEvent("user_42", ""));
+    await work.whenIdle();
 
     expect(repo.saved).toBeNull();
     expect(recorder.records).toHaveLength(0);

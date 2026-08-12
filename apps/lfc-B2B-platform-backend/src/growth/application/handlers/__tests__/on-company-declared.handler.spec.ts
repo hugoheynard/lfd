@@ -2,6 +2,7 @@ import { CompanyDeclaredEvent } from "../../../../account/domain/events/company-
 import type { RecordActivityInput } from "../../../domain/activity-event.js";
 import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { OnCompanyDeclared } from "../on-company-declared.handler.js";
+import { BackgroundWork } from "../../../../infra/events/background-work.js";
 
 /** Recorder doublé : capture les entrées (extension du port, sans cast). */
 class RecordingRecorder extends ActivityRecorder {
@@ -13,11 +14,14 @@ class RecordingRecorder extends ActivityRecorder {
 }
 
 describe("OnCompanyDeclared", () => {
+  const work = new BackgroundWork();
+
   it("journalise company.declared sur la société, canal `self`, clé déterministe", async () => {
     const recorder = new RecordingRecorder();
-    await new OnCompanyDeclared(recorder).handle(
+    new OnCompanyDeclared(recorder, work).handle(
       new CompanyDeclaredEvent("company_5", "self", "user_2"),
     );
+    await work.whenIdle();
 
     expect(recorder.records[0]).toEqual({
       type: "company.declared",
@@ -30,9 +34,10 @@ describe("OnCompanyDeclared", () => {
 
   it("porte le canal `staff` et un propriétaire nul", async () => {
     const recorder = new RecordingRecorder();
-    await new OnCompanyDeclared(recorder).handle(
+    new OnCompanyDeclared(recorder, work).handle(
       new CompanyDeclaredEvent("company_9", "staff", null),
     );
+    await work.whenIdle();
     expect(recorder.records[0]?.payload).toEqual({ via: "staff", ownerUserId: null });
   });
 });

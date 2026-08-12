@@ -4,6 +4,7 @@ import { SupportHandledEvent } from "../../../account/domain/events/support-hand
 import { SupportRequestedEvent } from "../../../account/domain/events/support-requested.event.js";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
+import { BackgroundWork } from "../../../infra/events/background-work.js";
 
 /**
  * Abonnés du journal pour les **demandes de contact** : leur dépôt et leur
@@ -27,9 +28,18 @@ function subjectOf(
 }
 @EventsHandler(SupportRequestedEvent)
 export class OnSupportRequested implements IEventHandler<SupportRequestedEvent> {
-  constructor(private readonly recorder: ActivityRecorder) {}
+  constructor(
+    private readonly recorder: ActivityRecorder,
+    private readonly work: BackgroundWork,
+  ) {}
 
-  async handle(event: SupportRequestedEvent): Promise<void> {
+  handle(event: SupportRequestedEvent): void {
+    // **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
+    // inscription, personne — ni la prod, ni un test — ne sait quand il a fini.
+    void this.work.track(this.run(event), "on-support-activity");
+  }
+
+  private async run(event: SupportRequestedEvent): Promise<void> {
     await this.recorder.record({
       type: ACTIVITY_TYPES.supportRequested,
       ...subjectOf(event.companyId, event.requestedByUserId),
@@ -42,9 +52,18 @@ export class OnSupportRequested implements IEventHandler<SupportRequestedEvent> 
 
 @EventsHandler(SupportHandledEvent)
 export class OnSupportHandled implements IEventHandler<SupportHandledEvent> {
-  constructor(private readonly recorder: ActivityRecorder) {}
+  constructor(
+    private readonly recorder: ActivityRecorder,
+    private readonly work: BackgroundWork,
+  ) {}
 
-  async handle(event: SupportHandledEvent): Promise<void> {
+  handle(event: SupportHandledEvent): void {
+    // **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
+    // inscription, personne — ni la prod, ni un test — ne sait quand il a fini.
+    void this.work.track(this.run(event), "on-support-activity");
+  }
+
+  private async run(event: SupportHandledEvent): Promise<void> {
     await this.recorder.record({
       type: ACTIVITY_TYPES.supportHandled,
       ...subjectOf(event.companyId, event.requestedByUserId),

@@ -6,6 +6,7 @@ import {
 } from "../../../account/domain/events/kbis-certification.event.js";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
+import { BackgroundWork } from "../../../infra/events/background-work.js";
 
 /**
  * Abonnés du journal pour la **vérification du KBIS** — le geste qui ouvre (ou
@@ -19,9 +20,18 @@ import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
  */
 @EventsHandler(KbisCertifiedEvent)
 export class OnKbisCertified implements IEventHandler<KbisCertifiedEvent> {
-  constructor(private readonly recorder: ActivityRecorder) {}
+  constructor(
+    private readonly recorder: ActivityRecorder,
+    private readonly work: BackgroundWork,
+  ) {}
 
-  async handle(event: KbisCertifiedEvent): Promise<void> {
+  handle(event: KbisCertifiedEvent): void {
+    // **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
+    // inscription, personne — ni la prod, ni un test — ne sait quand il a fini.
+    void this.work.track(this.run(event), "on-kbis-certification");
+  }
+
+  private async run(event: KbisCertifiedEvent): Promise<void> {
     await this.recorder.record({
       type: ACTIVITY_TYPES.kbisCertified,
       subjectType: "company",
@@ -35,9 +45,18 @@ export class OnKbisCertified implements IEventHandler<KbisCertifiedEvent> {
 
 @EventsHandler(KbisCertificationRevokedEvent)
 export class OnKbisCertificationRevoked implements IEventHandler<KbisCertificationRevokedEvent> {
-  constructor(private readonly recorder: ActivityRecorder) {}
+  constructor(
+    private readonly recorder: ActivityRecorder,
+    private readonly work: BackgroundWork,
+  ) {}
 
-  async handle(event: KbisCertificationRevokedEvent): Promise<void> {
+  handle(event: KbisCertificationRevokedEvent): void {
+    // **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
+    // inscription, personne — ni la prod, ni un test — ne sait quand il a fini.
+    void this.work.track(this.run(event), "on-kbis-revoked");
+  }
+
+  private async run(event: KbisCertificationRevokedEvent): Promise<void> {
     await this.recorder.record({
       type: ACTIVITY_TYPES.kbisRevoked,
       subjectType: "company",
