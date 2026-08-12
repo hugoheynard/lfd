@@ -22,14 +22,18 @@
 />
 
 <div class="row">
-  <fold-input
+  <!-- Une LISTE, pas un champ libre : c'est la forme juridique qui décide de
+       l'assujettissement à la TVA, et une saisie hors catalogue tombait du
+       mauvais côté sans que personne le voie. -->
+  <fold-listbox
     class="forme"
     label="Forme juridique"
-    placeholder="SAS, SARL, EI…"
+    placeholder="À choisir"
     [required]="!legalDeferred()"
     [optional]="legalDeferred()"
+    [options]="legalForms"
     [value]="value().formeJuridique"
-    (valueChange)="setFormeJuridique($event)"
+    (selectionChange)="setFormeJuridique($event)"
   />
   <fold-input
     class="siret"
@@ -47,9 +51,17 @@
   />
 </div>
 
+<!-- Le caractère obligatoire suit la forme choisie : on ne le devine plus, on
+     le lit dans le catalogue. -->
 <fold-input
   label="TVA intracommunautaire"
-  hint="obligatoire si la forme juridique y est assujettie"
+  [hint]="
+    vatRequired()
+      ? 'obligatoire pour cette forme juridique'
+      : 'facultatif pour cette forme — franchise en base'
+  "
+  [required]="vatRequired() && !legalDeferred()"
+  [optional]="!vatRequired()"
   [value]="value().tvaIntracom"
   (valueChange)="setTvaIntracom($event)"
 />

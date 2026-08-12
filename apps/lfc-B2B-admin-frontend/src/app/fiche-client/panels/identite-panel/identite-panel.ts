@@ -9,11 +9,19 @@ import {
 } from '@angular/core';
 
 import {
+  LEGAL_FORM_OPTIONS,
+  legalFormRequiresVat,
+  toLegalForm,
+  type LegalForm,
+} from '@lfd/contracts';
+import {
   FoldButtonComponent,
   FoldInputComponent,
+  FoldListboxComponent,
   type FoldPanelDefaults,
   FoldPanelHeaderComponent,
   FoldPanelRef,
+  type FoldSelectOption,
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
@@ -43,7 +51,12 @@ export interface AdminIdentitePanelData {
 @Component({
   selector: 'app-admin-identite-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldInputComponent, FoldButtonComponent],
+  imports: [
+    FoldPanelHeaderComponent,
+    FoldInputComponent,
+    FoldListboxComponent,
+    FoldButtonComponent,
+  ],
   templateUrl: './identite-panel.html',
   styleUrl: './identite-panel.scss',
 })
@@ -72,7 +85,26 @@ export class AdminIdentitePanel {
   protected readonly siret = signal('');
   protected readonly submitting = signal(false);
 
-  /** Le compte a-t-il été ouvert sans ses papiers ? */
+  /** Les formes du catalogue — la liste vient du contrat, pas de l'écran. */
+  protected readonly legalForms: readonly FoldSelectOption<LegalForm>[] = LEGAL_FORM_OPTIONS.map(
+    (option) => ({ value: option.value, label: option.label }),
+  );
+
+  /**
+   * La TVA est-elle obligatoire pour la forme choisie ? Sans forme reconnue on
+   * répond OUI — le même défaut prudent que le serveur : inviter à renseigner
+   * plutôt que laisser manquer en silence.
+   */
+  protected readonly vatRequired = computed(() => {
+    const form = toLegalForm(this.formeJuridique());
+    return form === null ? true : legalFormRequiresVat(form);
+  });
+
+  /**
+   * Le compte a-t-il été ouvert sans ses papiers ? Ne commande plus l'affichage
+   * des champs — ils sont TOUS là, toujours — seulement le mot qui rappelle que
+   * l'activation restera bloquée tant qu'ils manquent.
+   */
   protected readonly legalMissing = computed(() => {
     const data = this.data();
     return (

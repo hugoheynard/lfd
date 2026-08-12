@@ -1,5 +1,11 @@
-import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
-import { FoldInputComponent } from 'fold-ng';
+import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import {
+  LEGAL_FORM_OPTIONS,
+  legalFormRequiresVat,
+  toLegalForm,
+  type LegalForm,
+} from '@lfd/contracts';
+import { FoldInputComponent, FoldListboxComponent, type FoldSelectOption } from 'fold-ng';
 
 import type { CompanyIdentityDraft } from '../company-form.model';
 
@@ -12,13 +18,29 @@ import type { CompanyIdentityDraft } from '../company-form.model';
 @Component({
   selector: 'lfd-company-identity-fields',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldInputComponent],
+  imports: [FoldInputComponent, FoldListboxComponent],
   templateUrl: './company-identity-fields.html',
   styleUrl: './company-identity-fields.scss',
 })
 export class CompanyIdentityFields {
   /** Brouillon d'identité (two-way). */
   readonly value = model.required<CompanyIdentityDraft>();
+
+  /** Les formes du catalogue — la liste vient du contrat, pas de l'écran. */
+  protected readonly legalForms: readonly FoldSelectOption<LegalForm>[] = LEGAL_FORM_OPTIONS.map(
+    (option) => ({ value: option.value, label: option.label }),
+  );
+
+  /**
+   * La TVA est-elle obligatoire pour la forme choisie ? Tant qu'aucune n'est
+   * choisie, on répond OUI : mieux vaut inviter à renseigner un numéro que le
+   * laisser manquer en silence pour une société assujettie — le même défaut
+   * prudent que côté serveur.
+   */
+  protected readonly vatRequired = computed(() => {
+    const form = toLegalForm(this.value().formeJuridique);
+    return form === null ? true : legalFormRequiresVat(form);
+  });
 
   /**
    * **Différer** l'identité légale : raison sociale, forme juridique et SIRET

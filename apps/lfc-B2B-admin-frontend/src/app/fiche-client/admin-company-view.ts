@@ -8,7 +8,6 @@ import {
 
 import {
   STATUS_LABELS,
-  type AdminCompany,
   type AdminCompanyDetail,
   type CompanyStatus,
 } from '../comptes-clients/admin-company';
@@ -22,19 +21,24 @@ const STATUS_TONE: Readonly<Record<CompanyStatus, CompanyBadgeTone>> = {
 };
 
 /**
- * Projette une `AdminCompany` (vue staff, cross-tenant) vers le view-model neutre
- * d'identité de `@lfd/b2b-ui/company`. Deux différences avec le client, portées
- * par les données (jamais par un `isAdmin`) : le staff n'est pas membre → aucun
- * badge de rôle ; pas de `vatNumberRequired` → on ne signale pas la TVA manquante.
+ * Projette une `AdminCompanyDetail` (vue staff, cross-tenant) vers le view-model
+ * neutre d'identité de `@lfd/b2b-ui/company`. La seule différence avec le
+ * client est portée par les données, jamais par un `isAdmin` : le staff n'est
+ * pas membre de la société → aucun badge de rôle.
+ *
+ * Le **détail** et non la liste : c'est lui qui porte `vatNumberRequired`, et
+ * sans lui la fiche taisait une TVA manquante. Un compte réclamait son SIRET
+ * dans un bandeau et gardait le silence sur le numéro de TVA que sa forme
+ * juridique impose — deux pièces d'activation, une seule annoncée.
  */
-export function toIdentityView(company: AdminCompany): CompanyIdentityView {
+export function toIdentityView(company: AdminCompanyDetail): CompanyIdentityView {
   return {
     raisonSociale: company.raisonSociale,
     enseigne: company.enseigne,
     formeJuridique: company.formeJuridique,
     siret: formatSiret(company.siret),
     tvaIntracom: company.tvaIntracom,
-    tvaMissing: false,
+    tvaMissing: company.vatNumberRequired && company.tvaIntracom.trim() === '',
     // Ce qui manque au greffe — la même liste que la synthèse du haut de page,
     // répétée là où on la corrige.
     missingLegal: missingLegalOf(company),
@@ -81,7 +85,7 @@ function roleLabel(role: CompanyMemberRole | null): string {
 }
 
 /** Les pièces d'identité légale absentes, nommées pour être lues. */
-function missingLegalOf(company: AdminCompany): readonly string[] {
+function missingLegalOf(company: AdminCompanyDetail): readonly string[] {
   const missing: string[] = [];
   if (company.raisonSociale.trim() === '') {
     missing.push('la raison sociale');

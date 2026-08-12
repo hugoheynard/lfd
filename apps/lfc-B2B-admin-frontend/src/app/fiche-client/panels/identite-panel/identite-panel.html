@@ -1,4 +1,4 @@
-<fold-panel-header title="Identité" subtitle="Enseigne et n° de TVA — modifiables." />
+<fold-panel-header title="Identité" subtitle="Tout est corrigeable — y compris le greffe." />
 
 <div class="body">
   <fold-input
@@ -8,40 +8,50 @@
     [value]="enseigne()"
     (valueChange)="enseigne.set($event)"
   />
-  <fold-input
-    label="N° de TVA intracommunautaire"
-    placeholder="FR12345678901"
-    optional
-    [value]="tvaIntracom()"
-    (valueChange)="tvaIntracom.set($event)"
-  />
 
   @if (legalMissing()) {
-    <!-- Réclamés seulement quand ils manquent : posés, ils sont figés, et un
-         champ qu'on ne peut pas changer n'a rien à faire dans un formulaire. -->
     <p class="legal-note">
       Ce compte a été ouvert sans ses papiers. Sans eux, il ne pourra pas être activé.
     </p>
-    <fold-input
-      label="Raison sociale"
-      hint="la dénomination au registre du commerce"
-      [value]="raisonSociale()"
-      (valueChange)="raisonSociale.set($event)"
-    />
-    <fold-input
-      label="Forme juridique"
-      placeholder="SAS, SARL, EI…"
-      [value]="formeJuridique()"
-      (valueChange)="formeJuridique.set($event)"
-    />
-    <fold-input
-      label="SIRET"
-      placeholder="812 456 789 00021"
-      hint="14 chiffres — la clé de contrôle est vérifiée"
-      [value]="siret()"
-      (valueChange)="siret.set($event)"
-    />
   }
+
+  <!-- Le greffe est éditable en TOUT temps : une faute de frappe saisie au
+       comptoir restait gravée, et le compte portait une identité fausse sans
+       recours. C'est le back-office — c'est ici qu'on répare. -->
+  <fold-input
+    label="Raison sociale"
+    hint="la dénomination au registre du commerce"
+    [value]="raisonSociale()"
+    (valueChange)="raisonSociale.set($event)"
+  />
+  <!-- Une liste, pas un champ libre : c'est elle qui décide de la TVA. -->
+  <fold-listbox
+    label="Forme juridique"
+    placeholder="À choisir"
+    [options]="legalForms"
+    [value]="formeJuridique()"
+    (selectionChange)="formeJuridique.set($event)"
+  />
+  <fold-input
+    label="SIRET"
+    placeholder="812 456 789 00021"
+    hint="14 chiffres — la clé de contrôle est vérifiée"
+    [value]="siret()"
+    (valueChange)="siret.set($event)"
+  />
+
+  <fold-input
+    label="N° de TVA intracommunautaire"
+    placeholder="FR12345678901"
+    [hint]="
+      vatRequired()
+        ? 'obligatoire pour cette forme juridique'
+        : 'facultatif pour cette forme — franchise en base'
+    "
+    [optional]="!vatRequired()"
+    [value]="tvaIntracom()"
+    (valueChange)="tvaIntracom.set($event)"
+  />
 </div>
 
 <footer class="foot">
