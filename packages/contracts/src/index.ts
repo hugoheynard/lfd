@@ -62,6 +62,14 @@ export type {
   UpdatePaymentTermPayload,
 } from "./company.js";
 export {
+  legalFormSchema,
+  legalFormRequiresVat,
+  toLegalForm,
+  LEGAL_FORM_LABELS,
+  LEGAL_FORM_OPTIONS,
+} from "./legal-form.js";
+export type { LegalForm, LegalFormOption } from "./legal-form.js";
+export {
   companyMemberRoleSchema,
   assignableRoleSchema,
   contactAccessSchema,
