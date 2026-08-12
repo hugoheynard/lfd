@@ -10,6 +10,7 @@ import {
 import { Router, RouterOutlet } from '@angular/router';
 import {
   FoldButtonComponent,
+  FoldNavLayoutComponent,
   FoldPageLayoutComponent,
   FoldViewNavComponent,
   type FoldViewNavItem,
@@ -46,7 +47,13 @@ import { narrowViewport } from '../shared/viewport/narrow-viewport';
 @Component({
   selector: 'app-fiche-client-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, FoldButtonComponent, FoldPageLayoutComponent, FoldViewNavComponent],
+  imports: [
+    RouterOutlet,
+    FoldButtonComponent,
+    FoldNavLayoutComponent,
+    FoldPageLayoutComponent,
+    FoldViewNavComponent,
+  ],
   templateUrl: './fiche-client-shell.html',
   styleUrl: './fiche-client-shell.scss',
 })

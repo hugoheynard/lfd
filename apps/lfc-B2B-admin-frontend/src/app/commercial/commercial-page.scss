@@ -2,16 +2,6 @@
   display: block;
 }
 
-/* La nav et la vue forment UN bloc : l'écart entre les deux est plus serré que
-   le rythme de page, sinon les pastilles pleines flottent au-dessus du vide au
-   lieu de coiffer la première carte. */
-.cm-shell {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
-  min-width: 0;
-}
-
 /* Elle reste accrochée en haut : les vues sont longues (file d'appels,
    calendrier), et changer d'onglet ne doit pas demander de remonter. L'opacité
    qui empêche le contenu de défiler dessous vient de la barre elle-même

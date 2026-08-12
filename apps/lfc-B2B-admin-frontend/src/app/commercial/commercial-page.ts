@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import {
+  FoldNavLayoutComponent,
   FoldPageLayoutComponent,
   FoldViewNavComponent,
   type FoldIconName,
@@ -83,7 +84,7 @@ const TABS: CommercialTab[] = [
 @Component({
   selector: 'app-commercial-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, FoldPageLayoutComponent, FoldViewNavComponent],
+  imports: [RouterOutlet, FoldNavLayoutComponent, FoldPageLayoutComponent, FoldViewNavComponent],
   templateUrl: './commercial-page.html',
   styleUrl: './commercial-page.scss',
 })

@@ -9,8 +9,9 @@
 
        D'où le `gap` serré ci-dessous plutôt que le rythme de page : la nav
        n'est pas un bloc de plus, elle appartient au bloc qui suit. -->
-  <div class="cm-shell">
+  <fold-nav-layout>
     <fold-view-nav
+      tabNav
       class="cm-tabs"
       [items]="tabs"
       direction="horizontal"
@@ -21,5 +22,5 @@
     />
 
     <router-outlet />
-  </div>
+  </fold-nav-layout>
 </fold-page-layout>

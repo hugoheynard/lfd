@@ -16,20 +16,22 @@
     {{ isPinned() ? 'Épinglé' : 'Épingler' }}
   </button>
 
-  <!-- Barre horizontale en `fill`, accolée à la première carte de la vue —
-       même composition que Réglages → Commercial. Voir le SCSS pour pourquoi
-       l'écart est serré plutôt qu'au rythme de page. -->
-  <div class="fc-shell">
+  <!-- `fold-nav-layout`, et non un div à nous : c'est LUI qui tient l'écart
+       nav↔contenu et qui neutralise la gouttière de page sous la barre, pour
+       que les cartes s'alignent sur le menu qui les nomme. Refaire cette
+       composition à la main, c'était réécrire ces règles — et les rater. -->
+  <fold-nav-layout>
     <fold-view-nav
+      tabNav
       class="fc-tabs"
       [items]="tabs"
       direction="horizontal"
       size="comfortable"
       [collapsed]="navCollapsed()"
       activeStyle="fill"
-      background="transparent"
+      background="surface"
     />
 
     <router-outlet />
-  </div>
+  </fold-nav-layout>
 </fold-page-layout>
