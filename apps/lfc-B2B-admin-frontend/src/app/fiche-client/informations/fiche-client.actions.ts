@@ -36,23 +36,30 @@ export class FicheClientActions {
    * Ouvre le compte. Rend l'identifiant créé, ou `null` si rien n'a été écrit —
    * l'appelant en tire la navigation, cette classe ne navigue pas.
    */
-  async openAccount(identity: CompanyIdentityDraft, holder: HolderChoice): Promise<string | null> {
+  async openAccount(
+    identity: CompanyIdentityDraft,
+    holder: HolderChoice | null,
+  ): Promise<string | null> {
     this.creating.set(true);
     try {
       const created = await this.service.create({
         identity: trimIdentity(identity),
         // Le détenteur EST le contact principal de la société : celui qu'on
-        // rappelle est celui qui commande.
-        contact: {
-          firstName: holder.firstName,
-          lastName: holder.lastName,
-          fonction: '',
-          email: holder.email,
-          phone: holder.phone,
-          // Le détenteur ne choisit pas son rôle, il l'EST — le serveur pose
-          // `owner` à l'ouverture.
-          role: '',
-        },
+        // rappelle est celui qui commande. Absent, la société s'ouvre sur son
+        // seul nom d'usage et il se rattachera depuis la fiche.
+        contact:
+          holder === null
+            ? undefined
+            : {
+                firstName: holder.firstName,
+                lastName: holder.lastName,
+                fonction: '',
+                email: holder.email,
+                phone: holder.phone,
+                // Le détenteur ne choisit pas son rôle, il l'EST — le serveur
+                // pose `owner` à l'ouverture.
+                role: '',
+              },
       });
       this.notify.success(openingMessage(created));
       return created.id;
@@ -175,6 +182,40 @@ export class FicheClientActions {
     }
   }
 
+  /**
+   * Rattache le **détenteur** d'un compte ouvert sans lui — l'autre moitié de
+   * « on ouvre avec l'enseigne seule ».
+   *
+   * Le même verrou que l'ouverture d'accès (`granting`) : c'en est une, et un
+   * double envoi provisionnerait deux fois la même adresse.
+   */
+  async attachHolder(company: AdminCompanyDetail, holder: HolderChoice): Promise<boolean> {
+    if (this.granting()) {
+      return false;
+    }
+    this.granting.set(true);
+    try {
+      const result = await this.service.attachHolder(company.id, {
+        email: holder.email,
+        firstName: holder.firstName,
+        lastName: holder.lastName,
+        fonction: '',
+        phone: holder.phone,
+      });
+      this.notify.success(
+        result.mailSent
+          ? `Détenteur rattaché, l'accès est en route vers ${holder.email}.`
+          : `Détenteur rattaché, mais l'e-mail n'est pas parti — prévenez le client.`,
+      );
+      return true;
+    } catch (error) {
+      this.notify.error(error);
+      return false;
+    } finally {
+      this.granting.set(false);
+    }
+  }
+
   /** Mute, annonce, et dit si ça a tenu — le trio commun à tous les gestes. */
   private async run(mutate: () => Promise<void>, done: string): Promise<boolean> {
     try {
@@ -190,13 +231,18 @@ export class FicheClientActions {
 
 /**
  * Ce qu'on annonce au commercial après l'ouverture — il a encore le client au
- * téléphone, et ce qu'il va lui dire dépend entièrement de ces trois faits.
+ * téléphone, et ce qu'il va lui dire dépend entièrement de ce qui suit.
  *
  * Le cas muet (`mailSent` faux) est le plus important à ne pas arrondir : le
- * compte existe, mais **personne n'a rien reçu**.
+ * compte existe, mais **personne n'a rien reçu**. Et « pas de détenteur » n'est
+ * pas un incident : annoncer une panne à qui vient de choisir d'attendre l'usera
+ * jusqu'à ce qu'il n'écoute plus les vraies.
  */
 export function openingMessage(opened: CompanyOpened): string {
-  if (!opened.accessOpened) {
+  if (opened.holder === 'deferred') {
+    return 'Compte ouvert. Rattachez le détenteur dès que vous aurez son adresse.';
+  }
+  if (opened.holder === 'failed') {
     return "Compte ouvert, mais l'accès du client n'a pas pu être créé — à reprendre depuis sa fiche.";
   }
   return opened.mailSent

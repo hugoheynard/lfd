@@ -94,16 +94,18 @@ export class InformationsPage {
   /** La confirmation de retrait de vérification est-elle ouverte ? */
   protected readonly confirmingRevoke = signal(false);
 
-  /** Le détenteur retenu, à qui l'accès sera ouvert. */
+  /**
+   * Le détenteur retenu, à qui l'accès sera ouvert — `null` est **légitime** :
+   * le commercial n'a parfois que l'enseigne, et l'adresse arrive plus tard.
+   */
   protected readonly holder = signal<HolderChoice | null>(null);
 
-  protected readonly canCreate = computed(() =>
-    this.fiche.canOpen(this.identityDraft(), this.holder()),
-  );
+  protected readonly canCreate = computed(() => this.fiche.canOpen(this.identityDraft()));
 
   /**
-   * La synthèse dit ce qui bloque **maintenant** : avant l'ouverture, les deux
-   * minimums (nom d'usage, détenteur) ; après, les pièces d'activation.
+   * La synthèse dit ce qui bloque **maintenant** : avant l'ouverture, le seul
+   * minimum (le nom d'usage) ; après, ce que le serveur oppose à l'activation —
+   * détenteur compris.
    *
    * Elle réclamait la liste complète devant un formulaire vide — KBIS, adresses,
    * règlement — donnant l'impression qu'il fallait tout réunir pour ouvrir, alors
@@ -111,7 +113,7 @@ export class InformationsPage {
    */
   protected readonly checklistSteps = computed<readonly CompanyActivationStep[]>(() =>
     this.fiche.draft()
-      ? openingSteps(this.identityDraft(), this.holder() !== null).map((step) => ({
+      ? openingSteps(this.identityDraft()).map((step) => ({
           ...step,
           kind: 'action' as const,
         }))
@@ -189,11 +191,12 @@ export class InformationsPage {
    * est déjà la bonne, et une navigation la remonterait en haut.
    */
   protected async createAccount(): Promise<void> {
-    const holder = this.holder();
-    if (!this.canCreate() || this.fiche.creating() || holder === null) {
+    if (!this.canCreate() || this.fiche.creating()) {
       return;
     }
-    const id = await this.fiche.openAccount(this.identityDraft(), holder);
+    // Le détenteur peut manquer : c'est l'ouverture « au téléphone », et il se
+    // rattachera depuis la fiche dès que le commercial aura son adresse.
+    const id = await this.fiche.openAccount(this.identityDraft(), this.holder());
     if (id !== null) {
       void this.router.navigate(['/comptes-clients', id, 'informations'], { replaceUrl: true });
     }

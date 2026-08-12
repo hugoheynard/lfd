@@ -1,0 +1,15 @@
+<fold-panel-header
+  title="Détenteur du compte"
+  subtitle="La personne qui commande, et qui recevra l’accès à l’espace."
+/>
+
+<div class="body">
+  <app-holder-picker (holderChange)="holder.set($event)" />
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="holder() === null" (click)="submit()">
+    Rattacher
+  </button>
+</footer>

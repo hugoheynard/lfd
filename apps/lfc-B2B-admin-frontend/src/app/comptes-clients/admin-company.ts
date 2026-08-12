@@ -138,6 +138,7 @@ export interface ActivationGate {
 /** Ce qui empêche d'activer — un code, la phrase est à l'écran. */
 export type ActivationBlocker =
   | 'identite_legale'
+  | 'detenteur'
   | 'telephone'
   | 'tva'
   | 'kbis_absent'
@@ -172,14 +173,28 @@ export const STATUS_LABELS: Readonly<Record<CompanyStatus, string>> = {
 /** Libellé FR d'une condition de règlement. */
 
 /**
+ * Ce qu'il est advenu du **détenteur** à l'ouverture.
+ *
+ * `deferred` (aucune adresse saisie) et `failed` (le canal d'identité n'a pas
+ * répondu) laissent tous deux le compte sans accès, mais l'un est un choix et
+ * l'autre une panne : les confondre ferait annoncer un incident au client alors
+ * que le commercial a simplement remis le rattachement à demain.
+ */
+export type HolderOutcome = 'attached' | 'deferred' | 'failed';
+
+/**
  * Ce qu'une **ouverture de compte** rapporte (`POST /admin/companies`).
  *
- * Trois faits que l'écran ne peut pas déduire seul : le détenteur a-t-il un
- * accès, l'adresse appartenait-elle déjà à un client, et l'e-mail est-il parti.
- * Sans eux, le message affiché serait une supposition.
+ * Deux faits que l'écran ne peut pas déduire seul : le sort du détenteur, et si
+ * l'e-mail est parti. Sans eux, le message affiché serait une supposition.
  */
 export interface CompanyOpened {
   readonly id: string;
-  readonly accessOpened: boolean;
+  readonly holder: HolderOutcome;
+  readonly mailSent: boolean;
+}
+
+/** Ce que le **rattachement** d'un détenteur rapporte (`POST …/holder`). */
+export interface HolderAttached {
   readonly mailSent: boolean;
 }

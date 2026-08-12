@@ -21,7 +21,7 @@ const SETTINGS: PlatformSettings = {
 
 const CREATED: CompanyOpened = {
   id: 'cmp_1',
-  accessOpened: true,
+  holder: 'attached',
   mailSent: true,
 };
 
@@ -120,19 +120,19 @@ describe('InformationsPage — ouverture d’un compte', () => {
     // Réclamer KBIS, adresses et règlement devant un formulaire vide faisait
     // passer pour bloquant ce qui ne l'est pas : un compte s'ouvre sans papiers.
     const { page, fiche } = await setup();
-    expect(page['checklistSteps']().map((step) => step.key)).toEqual(['enseigne', 'holder']);
+    expect(page['checklistSteps']().map((step) => step.key)).toEqual(['enseigne']);
 
     // Rien n'est réuni : le compte ne peut évidemment pas être activé.
     expect(fiche.canActivate()).toBe(false);
   });
 
-  it("n'exige qu'un nom de société et un détenteur — PAS les papiers", async () => {
+  it("n'exige QUE le nom d'usage — ni papiers, ni détenteur", async () => {
     const { page } = await setup();
     expect(page['canCreate']()).toBe(false);
 
-    // L'ENSEIGNE suffit : ni raison sociale, ni forme juridique, ni SIRET. Le
-    // commercial est chez le client, qui n'a pas ses papiers sous la main — et
-    // ce qui bloque ici bloque une saisie faite devant lui, donc un compte qui
+    // L'ENSEIGNE suffit : ni raison sociale, ni forme juridique, ni SIRET, ni
+    // adresse du gérant. Le commercial est au téléphone avec le client — et ce
+    // qui bloque ici bloque une saisie faite pendant l'appel, donc un compte qui
     // ne sera jamais ouvert.
     page['identityDraft'].set({
       raisonSociale: '',
@@ -141,16 +141,34 @@ describe('InformationsPage — ouverture d’un compte', () => {
       siret: '',
       tvaIntracom: '',
     });
-    // Le nom seul ne suffit pas : sans détenteur, personne à qui ouvrir l'accès.
-    expect(page['canCreate']()).toBe(false);
 
-    page['holder'].set({
-      firstName: '',
-      lastName: '',
-      email: 'jean@exemple.fr',
-      phone: '',
-    });
     expect(page['canCreate']()).toBe(true);
+  });
+
+  it('ouvre sans détenteur, et n’envoie alors AUCUN contact', async () => {
+    // Le serveur distingue « pas de détenteur » d'un contact aux champs vides :
+    // lui poster une coquille ferait échouer la validation de l'adresse.
+    const { page, create } = await setup();
+    page['identityDraft'].set({
+      raisonSociale: '',
+      enseigne: 'Le Comptoir',
+      formeJuridique: '',
+      siret: '',
+      tvaIntracom: '',
+    });
+
+    await page['createAccount']();
+
+    expect(create).toHaveBeenCalledWith({
+      identity: {
+        raisonSociale: '',
+        enseigne: 'Le Comptoir',
+        formeJuridique: '',
+        siret: '',
+        tvaIntracom: '',
+      },
+      contact: undefined,
+    });
   });
 
   it('ouvre le compte, rogne la saisie, et enchaîne sur sa fiche', async () => {

@@ -130,24 +130,19 @@ describe("ce qu'il faut pour OUVRIR n'est pas ce qu'il faut pour ACTIVER", () =>
     tvaIntracom: '',
   };
 
-  it('ne réclame que le nom d’usage et le détenteur', () => {
-    // Un compte s'ouvre SANS papiers — c'est tout l'intérêt du parcours au
-    // comptoir. Réclamer KBIS et adresses ici ferait renoncer à ouvrir.
-    expect(openingSteps(EMPTY, false).map((step) => step.key)).toEqual(['enseigne', 'holder']);
+  it('ne réclame QUE le nom d’usage', () => {
+    // Un compte s'ouvre SANS papiers ET sans détenteur — c'est tout l'intérêt du
+    // parcours au comptoir. Réclamer KBIS, adresses ou l'adresse du gérant ici
+    // ferait renoncer à ouvrir pendant que le client est au téléphone.
+    expect(openingSteps(EMPTY).map((step) => step.key)).toEqual(['enseigne']);
   });
 
-  it('ne propose AUCUN geste : les champs sont déjà à l’écran', () => {
+  it('ne propose AUCUN geste : le champ est déjà à l’écran', () => {
     // Un bouton qui ne mène nulle part est pire qu'une absence de bouton.
-    expect(openingSteps(EMPTY, false).every((step) => step.cta === '')).toBe(true);
+    expect(openingSteps(EMPTY).every((step) => step.cta === '')).toBe(true);
   });
 
-  it('se vide dès que le minimum est saisi', () => {
-    expect(openingSteps({ ...EMPTY, enseigne: 'Chez Milo' }, true)).toEqual([]);
-  });
-
-  it('ne retient QUE ce qui manque encore', () => {
-    expect(openingSteps({ ...EMPTY, enseigne: 'Chez Milo' }, false).map((s) => s.key)).toEqual([
-      'holder',
-    ]);
+  it('se vide dès que le nom d’usage est saisi, détenteur ou pas', () => {
+    expect(openingSteps({ ...EMPTY, enseigne: 'Chez Milo' })).toEqual([]);
   });
 });

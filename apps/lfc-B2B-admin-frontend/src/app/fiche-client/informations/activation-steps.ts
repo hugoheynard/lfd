@@ -38,8 +38,9 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
   },
   holder: {
     title: 'Détenteur du compte',
-    detail: "La personne qui commande et qui recevra l'accès à l'espace.",
-    cta: '',
+    detail:
+      "La personne qui commande et qui recevra l'accès à l'espace. Son adresse suffit : si elle est déjà cliente, cette société rejoindra l'espace qu'elle a.",
+    cta: 'Rattacher le détenteur',
   },
   legal: {
     title: 'Identité légale',
@@ -88,6 +89,8 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
 const BLOCKER_SENTENCES: Readonly<Record<ActivationBlocker, string>> = {
   identite_legale:
     "Raison sociale, forme juridique et SIRET sont nécessaires : sans eux, il n'y a rien à facturer.",
+  detenteur:
+    "Aucun détenteur rattaché : personne ne pourrait se connecter à cet espace. Renseignez l'adresse de la personne qui commande.",
   telephone: 'Aucun interlocuteur joignable : renseignez au moins un numéro de téléphone.',
   tva: 'Le numéro de TVA intracommunautaire manque.',
   kbis_absent: "L'extrait KBIS n'a pas encore été déposé.",
@@ -98,30 +101,27 @@ const BLOCKER_SENTENCES: Readonly<Record<ActivationBlocker, string>> = {
 };
 
 /**
- * Ce qu'il manque pour **OUVRIR** — deux champs, pas douze.
+ * Ce qu'il manque pour **OUVRIR** — un champ, pas douze.
  *
- * Un compte s'ouvre avec un nom d'usage et quelqu'un à qui parler ; papiers,
- * adresses et règlement viennent après, et l'agrégat les accepte plus tard
- * (`declare()` n'exige que l'enseigne). Réclamer la liste d'activation complète
- * devant un formulaire vide fait passer pour bloquant ce qui ne l'est pas — et
- * le commercial qui a le client au téléphone renonce à ouvrir « en attendant les
- * papiers », alors que c'est exactement ce que le modèle permet.
+ * Un compte s'ouvre avec un nom d'usage, et rien d'autre : papiers, adresses,
+ * règlement et **détenteur** viennent après (`declare()` n'exige que
+ * l'enseigne). Réclamer la liste d'activation complète devant un formulaire
+ * vide fait passer pour bloquant ce qui ne l'est pas — et le commercial qui a le
+ * client au téléphone renonce à ouvrir « en attendant », alors que c'est
+ * exactement ce que le modèle permet.
  *
- * Les étapes n'ont **aucun geste** : les champs qui les satisfont sont à
- * l'écran, juste dessous.
+ * Le détenteur n'y figure plus : il se saisit ici quand on l'a, et se rattache
+ * depuis la fiche quand on ne l'a pas encore. Il redevient exigible à
+ * l'**activation** — c'est le serveur qui le dit alors (`detenteur`).
+ *
+ * L'étape n'a **aucun geste** : le champ qui la satisfait est à l'écran, juste
+ * dessous.
  */
-export function openingSteps(
-  identity: CompanyIdentityDraft,
-  holderChosen: boolean,
-): readonly ActivationStep[] {
-  const missing: StepKey[] = [];
-  if (identity.enseigne.trim() === '') {
-    missing.push('enseigne');
+export function openingSteps(identity: CompanyIdentityDraft): readonly ActivationStep[] {
+  if (identity.enseigne.trim() !== '') {
+    return [];
   }
-  if (!holderChosen) {
-    missing.push('holder');
-  }
-  return missing.map((key) => ({ key, ...STEP_TEXTS[key] }));
+  return [{ key: 'enseigne', ...STEP_TEXTS.enseigne }];
 }
 
 /**
@@ -141,6 +141,12 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
     ? [{ key: 'legal' as const, ...STEP_TEXTS.legal }]
     : [];
 
+  // Le détenteur non plus n'est pas une pièce configurable : un compte actif
+  // sans personne à qui ouvrir l'espace est un compte dont la porte est murée.
+  const holder: ActivationStep[] = company.gate.blocking.includes('detenteur')
+    ? [{ key: 'holder' as const, ...STEP_TEXTS.holder }]
+    : [];
+
   // Le KBIS déposé mais non vérifié n'appelle pas « déposer » : le fichier est
   // là. Réclamer un dépôt devant une pièce présente envoie chercher ce qui est
   // sous les yeux — c'est le manque le moins devinable du dossier.
@@ -156,7 +162,7 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
   // la commande est le socle, offert à tous — et son bouton n'ouvrait rien. Une
   // ligne d'avertissement permanente, sur une exigence qui n'existe pas, avec un
   // geste qui ne fait rien : elle apprenait à ignorer l'encart entier.
-  return [...legal, ...pieces];
+  return [...legal, ...holder, ...pieces];
 }
 
 /**

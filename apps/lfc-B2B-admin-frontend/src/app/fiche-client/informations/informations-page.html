@@ -78,10 +78,13 @@
             </fold-card>
           </fold-page-section>
 
+          <!-- FACULTATIF à l'ouverture : le commercial n'a parfois que le nom de
+               la maison au téléphone. Le dire ici évite qu'il renonce à ouvrir
+               « en attendant d'avoir l'adresse du gérant ». -->
           <fold-page-section
             title="Détenteur du compte"
             icon="user"
-            description="Celui que l'on rappelle est celui qui commande : il recevra l'accès à l'espace."
+            description="Celui que l'on rappelle est celui qui commande : il recevra l'accès à l'espace. Vous pourrez aussi le rattacher plus tard, depuis la fiche."
           >
             <fold-card class="form">
               <app-holder-picker (holderChange)="holder.set($event)" />

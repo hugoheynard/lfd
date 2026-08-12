@@ -6,7 +6,9 @@ import { EMPTY_COMPANY_CONTACT_DRAFT, type CompanyContactDraft } from '@lfd/b2b-
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { AdminAdressePanel } from '../panels/adresse-panel/adresse-panel';
 import { AdminContactPanel, type AdminContactTarget } from '../panels/contact-panel/contact-panel';
+import { AdminDetenteurPanel } from '../panels/detenteur-panel/detenteur-panel';
 import { AdminIdentitePanel } from '../panels/identite-panel/identite-panel';
+import type { HolderChoice } from '../holder-picker/holder-picker';
 
 /**
  * Quel panneau ouvrir, et avec quelle charge.
@@ -43,13 +45,31 @@ export class FicheClientPanels {
     }
     if (key === 'billing') {
       return this.panels.open(AdminAdressePanel, {
-        data: { companyId: company.id, kind: 'facturation' },
+        data: {
+          companyId: company.id,
+          kind: 'facturation',
+          // La même entrée sert à poser l'adresse et à la corriger : sans ce
+          // préremplissage, « Modifier » s'ouvrait vide et faisait retaper six
+          // champs pour en changer un.
+          billing: company.addresses.billing ?? undefined,
+        },
       }).closed;
     }
     if (key === 'delivery') {
       return this.openNewDelivery(company);
     }
     return null;
+  }
+
+  /**
+   * Le **détenteur** d'un compte ouvert sans lui. Rend la saisie retenue, ou
+   * `null` si le panneau a été fermé sans rien poser.
+   */
+  async openHolder(company: AdminCompanyDetail): Promise<HolderChoice | null> {
+    const closed: unknown = await this.panels.open(AdminDetenteurPanel, {
+      data: { companyId: company.id },
+    }).closed;
+    return isHolderChoice(closed) ? closed : null;
   }
 
   /** Une adresse de livraison à créer. */
@@ -91,6 +111,17 @@ export class FicheClientPanels {
       data: { companyId: company.id, ...contactTargetOf(company, contactId, isNew) },
     }).closed;
   }
+}
+
+/**
+ * Ce qu'un panneau a rendu est-il un détenteur ?
+ *
+ * `closed` porte `unknown` — un panneau peut se fermer sur n'importe quoi, y
+ * compris sur rien. On regarde donc la forme plutôt que de l'affirmer : une
+ * assertion ferait passer une fermeture par la croix pour une saisie.
+ */
+function isHolderChoice(value: unknown): value is HolderChoice {
+  return typeof value === 'object' && value !== null && 'email' in value;
 }
 
 /** La cible du panneau de contact, et de quoi la préremplir. */

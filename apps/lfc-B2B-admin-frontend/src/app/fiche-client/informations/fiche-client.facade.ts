@@ -73,12 +73,17 @@ export class FicheClientFacade {
   // ── Ouverture d'un compte ───────────────────────────────────────────────
 
   /**
-   * Un nom de société et quelqu'un à qui l'ouvrir : c'est tout. Papiers et
-   * adresses viendront après — ce qui bloque ici bloque une saisie faite devant
-   * le client.
+   * Un nom de société : c'est tout. Papiers, adresses et **détenteur** viennent
+   * après — ce qui bloque ici bloque une saisie faite devant le client, et le
+   * commercial n'a souvent au téléphone que le nom de la maison.
    */
-  canOpen(identity: CompanyIdentityDraft, holder: HolderChoice | null): boolean {
-    return isCompanyIdentityOpenable(identity) && holder !== null;
+  canOpen(identity: CompanyIdentityDraft): boolean {
+    return isCompanyIdentityOpenable(identity);
+  }
+
+  /** Rattache le détenteur d'un compte ouvert sans lui, puis relit la fiche. */
+  attachHolder(holder: HolderChoice): Promise<void> {
+    return this.mutate((company) => this.actions.attachHolder(company, holder));
   }
 
   /**
@@ -86,7 +91,10 @@ export class FicheClientFacade {
    * formulaire, les sections en attente s'allument, le commercial continue là où
    * il en était. Rend l'identifiant créé pour que l'appelant règle l'URL.
    */
-  async openAccount(identity: CompanyIdentityDraft, holder: HolderChoice): Promise<string | null> {
+  async openAccount(
+    identity: CompanyIdentityDraft,
+    holder: HolderChoice | null,
+  ): Promise<string | null> {
     const id = await this.actions.openAccount(identity, holder);
     if (id !== null) {
       this.store.adopt(id);
@@ -154,7 +162,26 @@ export class FicheClientFacade {
       void this.certifyKbis();
       return;
     }
+    // Le détenteur n'est pas un panneau « qu'on referme » : ce qu'il rend est la
+    // saisie, et c'est la fiche qui l'envoie. D'où ce chemin propre plutôt qu'un
+    // rechargement aveugle à la fermeture.
+    if (key === 'holder') {
+      void this.pickHolder();
+      return;
+    }
     this.afterPanel((company) => this.panels.openStep(key, company));
+  }
+
+  /** Demande le détenteur, puis le rattache — annuler ne fait rien. */
+  private async pickHolder(): Promise<void> {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    const holder = await this.panels.openHolder(company);
+    if (holder !== null) {
+      await this.attachHolder(holder);
+    }
   }
 
   /** Ajoute une adresse de livraison. */

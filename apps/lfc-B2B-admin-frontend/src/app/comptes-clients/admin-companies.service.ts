@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  AccountHolderPayload,
   BillingAddressPayload,
   FulfillmentPreferencePayload,
   DeferredTerm,
@@ -15,7 +16,12 @@ import type {
 import type { CompanyContactDraft, CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
 import { B2B_API_BASE } from '../api/api-config';
-import type { AdminCompany, AdminCompanyDetail, CompanyOpened } from './admin-company';
+import type {
+  AdminCompany,
+  AdminCompanyDetail,
+  CompanyOpened,
+  HolderAttached,
+} from './admin-company';
 
 /**
  * Accès à la surface **admin** du backend B2B.
@@ -54,19 +60,39 @@ export class AdminCompaniesService {
   }
 
   /**
-   * Ouvre un compte client (identité + **détenteur**). Le staff saisit tout : il
-   * n'y a pas de profil créateur d'où dériver le contact, contrairement au
-   * self-signup client.
+   * Ouvre un compte client : son identité, et son **détenteur s'il est déjà
+   * connu**. Le staff saisit tout — il n'y a pas de profil créateur d'où dériver
+   * le contact, contrairement au self-signup client.
+   *
+   * `contact` absent ouvre le compte sur sa seule enseigne : le commercial a le
+   * client au téléphone et n'a pas encore l'adresse du gérant. Le détenteur se
+   * rattache ensuite par {@link attachHolder}.
    *
    * La réponse dit ce qui est arrivé à l'**accès** — le serveur seul le sait :
    * l'adresse appartenait-elle déjà à un client, et l'e-mail est-il parti.
    */
   async create(input: {
     readonly identity: CompanyIdentityDraft;
-    readonly contact: CompanyContactDraft;
+    readonly contact?: CompanyContactDraft | undefined;
   }): Promise<CompanyOpened> {
     const body = { ...input.identity, primaryContact: input.contact };
     return firstValueFrom(this.http.post<CompanyOpened>(`${B2B_API_BASE}/admin/companies`, body));
+  }
+
+  /**
+   * Rattache le **détenteur** d'un compte ouvert sans lui.
+   *
+   * Distinct d'`inviteMember` : celui-ci ouvre un accès à quelqu'un de plus,
+   * celui-là **désigne** la personne du compte. Le serveur reconnaît l'adresse
+   * si elle a déjà un espace chez nous, et la société vient l'y rejoindre.
+   */
+  async attachHolder(companyId: string, payload: AccountHolderPayload): Promise<HolderAttached> {
+    return firstValueFrom(
+      this.http.post<HolderAttached>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/holder`,
+        payload,
+      ),
+    );
   }
 
   /** Les personnes qui **accèdent** à l'espace de cette société. */
