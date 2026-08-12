@@ -101,50 +101,12 @@
   display: block;
 }
 
-// Zones en pills (même langage que le sélecteur d'unité de la carte produit),
-// qui passent à la ligne quand il y en a plusieurs. Chaque pill = zone + frais.
-.zone-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs, 0.35rem);
-}
-.zone-pill {
-  appearance: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-full, 999px);
-  background: var(--fold-color-surface, #fff);
-  color: var(--fold-color-text);
-  font: inherit;
+// Le secteur desservi — une **conséquence** du code postal livré, pas un choix :
+// il se lit, il ne se clique pas.
+.zone {
+  margin: 0;
   font-size: var(--fold-text-sm, 0.875rem);
-  font-weight: 600;
-  transition:
-    background-color 120ms ease,
-    color 120ms ease,
-    border-color 120ms ease;
-}
-.zone-pill .zone-fee {
-  font-weight: 700;
-  color: var(--fold-color-text-muted);
-}
-.zone-pill:hover {
-  border-color: var(--fold-color-primary);
-}
-.zone-pill.is-on {
-  background: var(--fold-color-primary);
-  border-color: var(--fold-color-primary);
-  color: var(--fold-color-on-primary);
-}
-.zone-pill.is-on .zone-fee {
-  color: var(--fold-color-on-primary);
-}
-.zone-pill:focus-visible {
-  outline: 2px solid var(--fold-color-primary);
-  outline-offset: 1px;
+  color: var(--fold-color-text);
 }
 
 .fld {
@@ -182,6 +144,10 @@
   margin: 0;
   font-size: var(--fold-text-sm, 0.875rem);
   color: var(--fold-color-text-muted);
+}
+// Le seul avertissement de cette section : « on ne dessert pas ce code postal ».
+.fld-hint--warn {
+  color: var(--fold-color-warning-text, var(--fold-color-text));
 }
 .pickup {
   margin: 0;

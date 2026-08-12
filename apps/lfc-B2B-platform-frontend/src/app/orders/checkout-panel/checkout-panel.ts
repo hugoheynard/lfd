@@ -84,11 +84,10 @@ export class CheckoutPanel {
     }
     this.submitting.set(true);
     this.errorMessage.set(null);
-    const courier = this.fulfillment.isCourier();
     const payload: PlaceOrderPayload = {
       companyId: null,
       fulfillmentMethod: this.fulfillment.method(),
-      deliveryZoneId: courier ? this.fulfillment.zoneId() : null,
+      // Aucune zone n'est envoyée : le serveur la déduit du code postal livré.
       deliveryAddress: this.fulfillment.deliveryAddressPayload(),
       pickupAddressId: this.fulfillment.pickupAddressId(),
       requestedDeliveryDate: this.requestedDate() === '' ? null : this.requestedDate(),

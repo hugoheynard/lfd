@@ -1,24 +1,23 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
 
-import type {
-  BillingAddressPayload,
-  CartAdjustment,
-  DeliveryZoneView,
-  FulfillmentMethod,
-} from '@lfd/contracts';
+import type { BillingAddressPayload, CartAdjustment, FulfillmentMethod } from '@lfd/contracts';
 
 import { CartService } from '../data/cart.service';
 import { computeVatCents } from '../data/vat';
+import { AddressesService } from '../entreprises/addresses.service';
 import { DeliveryZonesService } from '../entreprises/delivery-zones.service';
 import { PickupAddressesService } from '../entreprises/pickup-addresses.service';
+import { PlatformSettingsService } from '../entreprises/platform-settings.service';
+import { CommerceContextService } from '../commerce/commerce-context.service';
+import {
+  courierFrom,
+  EMPTY_ADDRESS,
+  NEW_ADDRESS,
+  preferredChoice,
+  type CourierAddress,
+} from './fulfillment-choice';
 
-/** Adresse de livraison libre saisie au panier (coursier). */
-export interface CourierAddress {
-  readonly ligne1: string;
-  readonly ligne2: string;
-  readonly codePostal: string;
-  readonly ville: string;
-}
+export type { CourierAddress } from './fulfillment-choice';
 
 /** Un ajustement de panier : remise (retrait) ou frais (zone coursier). */
 export interface FulfillmentAdjustment {
@@ -26,8 +25,6 @@ export interface FulfillmentAdjustment {
   readonly label: string;
   readonly cents: number;
 }
-
-const EMPTY_ADDRESS: CourierAddress = { ligne1: '', ligne2: '', codePostal: '', ville: '' };
 
 /**
  * Montant en centimes d'un {@link CartAdjustment} — **miroir local** de
@@ -45,45 +42,84 @@ function adjustmentCents(adjustment: CartAdjustment, subtotalCents: number): num
  * Choix d'**acheminement** — **partagé** entre le haut du panier (où on choisit) et
  * le checkout (où on confirme). Zéro friction : aucune entreprise requise.
  *
- * - **Coursier** (`delivery`) : on choisit une **zone** (le frais s'affiche) et on
- *   saisit une **adresse libre**. Le frais entre dans le total.
- * - **Retrait** (`pickup`) : point de retrait par défaut (labo) ; sa **remise**
- *   s'affiche et sort du total.
+ * - **Coursier** (`delivery`) : on livre soit **une adresse de la société**, soit
+ *   une adresse **saisie à la volée**. La **zone** n'est pas un choix : elle se
+ *   déduit du code postal livré, et son frais entre dans le total.
+ * - **Retrait** (`pickup`) : point de retrait (celui par défaut, ou un autre) ;
+ *   sa **remise** s'affiche et sort du total.
+ *
+ * Le panier **s'ouvre sur la préférence** de la société sélectionnée — un point de
+ * départ, jamais une contrainte : le premier geste du client la supplante pour la
+ * durée du panier, sans rien réécrire côté serveur.
  *
  * Le total ci-dessous n'est qu'un **affichage** : le serveur le ré-résout à la
- * passation (prix + frais de zone re-résolus depuis leurs `id`).
+ * passation (prix, frais de zone re-déduit du code postal).
  */
 @Injectable({ providedIn: 'root' })
 export class FulfillmentService {
   private readonly zonesSvc = inject(DeliveryZonesService);
   private readonly pickupsSvc = inject(PickupAddressesService);
+  private readonly addressesSvc = inject(AddressesService);
+  private readonly settings = inject(PlatformSettingsService);
+  private readonly context = inject(CommerceContextService);
   private readonly cart = inject(CartService);
 
   /** Acheminement choisi. Défaut **retrait** : aucun extra requis (friction nulle). */
   readonly method = signal<FulfillmentMethod>('pickup');
-  /** Zone de livraison choisie (coursier). */
-  readonly zoneId = signal<string>('');
-  /** Adresse de livraison libre (coursier). */
-  readonly address = signal<CourierAddress>(EMPTY_ADDRESS);
-
   /** Point de retrait choisi (`''` = défaut serveur). */
   readonly pickupId = signal<string>('');
+  /** Adresse livrée choisie : id d'une adresse de la société, ou {@link NEW_ADDRESS}. */
+  readonly addressId = signal<string>(NEW_ADDRESS);
+
+  /** L'adresse **saisie à la volée** — vivante même quand une autre est choisie. */
+  private readonly draft = signal<CourierAddress>(EMPTY_ADDRESS);
+
+  /**
+   * Le client a-t-il touché à l'acheminement de ce panier ? Tant que non, la
+   * préférence de sa société s'applique ; après, plus jamais — recaler l'écran
+   * sous ses doigts serait pire que de ne rien proposer.
+   */
+  private readonly touched = signal(false);
 
   /** Zones connues (route publique) et points de retrait. */
-  readonly zones = this.zonesSvc.zones;
   readonly pickups = this.pickupsSvc.addresses;
   readonly defaultPickup = this.pickupsSvc.defaultPickup;
 
+  /** La livraison est-elle un service ouvert ? Sinon, seul le retrait a un sens. */
+  readonly deliveryOffered = computed(() => !this.settings.deliveryHidden());
+
+  /**
+   * Les adresses de la société sélectionnée. Réservées aux comptes **actifs** :
+   * un dossier en attente n'a pas encore de carnet servi par nos tournées.
+   */
+  readonly companyAddresses = computed(() => {
+    const company = this.context.selected();
+    if (company === null || company.status !== 'active') {
+      return [];
+    }
+    return this.addressesSvc.view()?.deliveries ?? [];
+  });
+
   readonly isCourier = computed(() => this.method() === 'delivery');
 
-  /** La zone sélectionnée (pour son frais), ou `null`. */
-  readonly selectedZone = computed(
-    () => this.zones().find((zone) => zone.id === this.zoneId()) ?? null,
+  /** L'adresse livrée : celle du carnet si une est choisie, la saisie sinon. */
+  readonly address = computed<CourierAddress>(() => {
+    const chosen = this.companyAddresses().find((address) => address.id === this.addressId());
+    return chosen === undefined ? this.draft() : courierFrom(chosen);
+  });
+
+  /**
+   * La zone de l'adresse livrée. **Déduite**, jamais choisie : un secteur est une
+   * propriété du code postal (exact ou par préfixe), pas une option de commande.
+   * Le serveur applique la même règle à la passation.
+   */
+  readonly selectedZone = computed(() =>
+    this.zonesSvc.resolveForPostalCode(this.address().codePostal.trim()),
   );
 
   /** Le point de retrait effectif : celui choisi, sinon le défaut. */
   readonly selectedPickup = computed(
-    () => this.pickups().find((p) => p.id === this.pickupId()) ?? this.defaultPickup(),
+    () => this.pickups().find((point) => point.id === this.pickupId()) ?? this.defaultPickup(),
   );
 
   /** Sous-total **HT** du panier, en centimes (le panier raisonne en euros). */
@@ -139,7 +175,7 @@ export class FulfillmentService {
   /** Total **TTC** affiché : `netHT + TVA`, en centimes. C'est le montant encaissé. */
   readonly totalCents = computed(() => this.netHtCents() + this.vatCents());
 
-  /** L'adresse coursier a ses champs requis (ligne1, code postal, ville). */
+  /** L'adresse livrée a ses champs requis (rue, code postal, ville). */
   readonly addressValid = computed(() => {
     const address = this.address();
     return (
@@ -149,23 +185,70 @@ export class FulfillmentService {
     );
   });
 
-  /** Acheminement prêt à commander : coursier (zone + adresse) ou retrait (point existant). */
+  /**
+   * Prêt à commander : en coursier il faut une adresse **complète et desservie**
+   * (sans zone, le serveur refuserait la commande — autant le dire avant) ; en
+   * retrait, un point de retrait existant.
+   */
   readonly ready = computed(() =>
     this.isCourier()
-      ? this.selectedZone() !== null && this.addressValid()
+      ? this.addressValid() && this.selectedZone() !== null
       : this.defaultPickup() !== null,
   );
 
+  /**
+   * Vrai quand l'adresse est complète mais qu'**aucune zone ne la dessert** —
+   * l'unique cas où le panier doit expliquer, plutôt que griser un bouton sans
+   * raison visible.
+   */
+  readonly outOfRange = computed(
+    () => this.isCourier() && this.addressValid() && this.selectedZone() === null,
+  );
+
+  constructor() {
+    // Le carnet de la société sélectionnée, chargé dès qu'elle est active.
+    effect(() => {
+      const company = this.context.selected();
+      if (company !== null && company.status === 'active') {
+        this.addressesSvc.loadFor(company.id);
+      }
+    });
+
+    // La préférence de la société devient la position de départ du panier —
+    // tant que le client n'a rien choisi lui-même.
+    effect(() => {
+      const company = this.context.selected();
+      if (company === null || this.touched()) {
+        return;
+      }
+      const choice = preferredChoice(
+        company.fulfillmentPreference,
+        this.companyAddresses(),
+        this.deliveryOffered(),
+      );
+      if (choice === null) {
+        return;
+      }
+      this.method.set(choice.method);
+      this.pickupId.set(choice.pickupId);
+      this.addressId.set(choice.addressId);
+    });
+  }
+
   setMethod(method: FulfillmentMethod): void {
+    this.touched.set(true);
     this.method.set(method);
   }
 
-  setZone(id: string): void {
-    this.zoneId.set(id);
+  setPickup(id: string): void {
+    this.touched.set(true);
+    this.pickupId.set(id);
   }
 
-  setPickup(id: string): void {
-    this.pickupId.set(id);
+  /** Choisit l'adresse livrée : une du carnet, ou {@link NEW_ADDRESS} (saisie). */
+  setAddress(id: string): void {
+    this.touched.set(true);
+    this.addressId.set(id);
   }
 
   /** Id du point de retrait à envoyer (`null` = laisser le serveur prendre le défaut). */
@@ -176,16 +259,13 @@ export class FulfillmentService {
     return this.pickupId() || null;
   }
 
-  /** Frais d'une zone au sous-total courant, en centimes (pour l'étiquette de choix). */
-  zoneFeeCents(zone: DeliveryZoneView): number {
-    return adjustmentCents(zone.fee, this.subtotalCents());
-  }
-
+  /** Modifie l'adresse **saisie à la volée** (les champs ne s'ouvrent que sur elle). */
   patchAddress(patch: Partial<CourierAddress>): void {
-    this.address.update((address) => ({ ...address, ...patch }));
+    this.touched.set(true);
+    this.draft.update((address) => ({ ...address, ...patch }));
   }
 
-  /** L'adresse coursier figée pour le fil (label/pays par défaut), ou `null` en retrait. */
+  /** L'adresse livrée figée pour le fil (label/pays par défaut), ou `null` en retrait. */
   deliveryAddressPayload(): BillingAddressPayload | null {
     if (!this.isCourier()) {
       return null;

@@ -21,7 +21,7 @@ flowchart TD
   Add --> Cart[["Panier"]]
 
   Cart --> Ful{"Acheminement<br/>(en haut du panier)"}
-  Ful -->|Coursier| Zone["Choix de zone → frais affiché<br/>+ adresse de livraison libre (requise)"]
+  Ful -->|Coursier| Zone["Adresse livrée : carnet de la société<br/>ou saisie à la volée<br/>→ zone DÉDUITE du code postal → frais"]
   Ful -->|Retrait au labo| Pickup["Point labo<br/>remise affichée"]
   Zone --> TotalD["Total = sous-total + frais"]
   Pickup --> TotalP["Total = sous-total − remise"]
@@ -54,6 +54,31 @@ flowchart TD
 | **Paiement carte** | Sans entreprise, ou entreprise en `per_order` / non activée → carte au checkout (Stripe, mode test). C'est le chemin de la brioche.                                                                |
 | **Terme différé**  | Entreprise **active** avec un terme négocié (net60/90, mensuel) → pas de carte, facturé hors ligne (`payment_status = not_required`).                                                              |
 | **Après-coup**     | Quand l'entreprise est créée plus tard, on relie l'historique personnel à la société et on émet les factures manquantes (TODO).                                                                    |
+
+## Le panier s'ouvre sur la préférence, la zone se déduit
+
+Deux règles complètent le pivot, posées le **2026-08-12** :
+
+1. **Point de départ, pas contrainte.** Le panier s'ouvre sur la _préférence
+   d'acheminement_ de la société sélectionnée (retrait à tel point, livraison à
+   telle adresse — cf. `FulfillmentPreferenceView`). Le premier geste du client
+   la supplante pour la durée du panier ; rien n'est réécrit côté serveur. Un
+   pointeur `null` dans la préférence veut dire « la défaut **du moment** » : il
+   se résout sur le carnet d'aujourd'hui, jamais sur celui du jour où la
+   préférence a été posée.
+2. **La zone n'est plus un choix.** Le client choisit une **adresse** — l'une de
+   celles de sa société (compte **actif**), ou une adresse saisie à la volée — et
+   le **code postal** décide du secteur (exact ou par préfixe, le plus long
+   gagne). Le serveur applique la même règle à la passation via
+   `DeliveryZoneRepository.resolveForPostalCode`, et `deliveryZoneId` a disparu
+   de `placeOrderPayloadSchema`.
+
+   Le motif est un trou refermé : tant que le client annonçait sa zone, il
+   pouvait annoncer la moins chère avec une adresse ailleurs — le serveur
+   re-résolvait bien le _frais_, mais depuis la zone _qu'on lui donnait_. Un
+   secteur non couvert est désormais un **refus** (409
+   `orders.delivery_zone.not_served`) et non une livraison à 0 € : c'est un
+   secteur dont la tournée n'a pas de coût connu.
 
 ## Provisioning local JIT (prérequis auth)
 

@@ -16,80 +16,74 @@
       />
 
       @if (fulfillment.isCourier()) {
-        <div class="fld">
-          <span class="fld-lbl">Zone de livraison</span>
-          @if (fulfillment.zones().length === 0) {
-            <p class="fld-hint">Aucune zone de livraison n'est configurée pour l'instant.</p>
-          } @else {
-            <!-- Zones en pills (façon sélecteur d'unité) : une pill par zone + son frais. -->
-            <div class="zone-pills" role="group" aria-label="Zone de livraison">
-              @for (zone of fulfillment.zones(); track zone.id) {
-                <button
-                  type="button"
-                  class="zone-pill"
-                  [class.is-on]="zone.id === fulfillment.zoneId()"
-                  [attr.aria-pressed]="zone.id === fulfillment.zoneId()"
-                  (click)="fulfillment.setZone(zone.id)"
-                >
-                  {{ zone.label || zone.postalPrefixes[0] }}
-                  <span class="zone-fee">{{ fmtCents(fulfillment.zoneFeeCents(zone)) }}</span>
-                </button>
-              }
-            </div>
-          }
-        </div>
+        <!-- Le carnet de la société d'abord (un compte actif), la saisie ensuite. -->
+        <fold-listbox
+          class="fld"
+          label="Adresse de livraison"
+          [options]="addressOptions()"
+          [value]="fulfillment.addressId()"
+          (selectionChange)="fulfillment.setAddress($event)"
+        />
 
-        <label class="fld">
-          <span class="fld-lbl">Adresse de livraison</span>
-          <input
-            class="fld-ctl"
-            type="text"
-            autocomplete="street-address"
-            placeholder="N° et rue"
-            [value]="fulfillment.address().ligne1"
-            (input)="onAddress('ligne1', $event)"
-          />
-        </label>
-        <div class="fld-row">
-          <label class="fld fld--cp">
-            <span class="fld-lbl">Code postal</span>
+        @if (fulfillment.addressId() === NEW_ADDRESS) {
+          <label class="fld">
+            <span class="fld-lbl">Rue</span>
             <input
               class="fld-ctl"
               type="text"
-              inputmode="numeric"
-              autocomplete="postal-code"
-              [value]="fulfillment.address().codePostal"
-              (input)="onAddress('codePostal', $event)"
+              autocomplete="street-address"
+              placeholder="N° et rue"
+              [value]="fulfillment.address().ligne1"
+              (input)="onAddress('ligne1', $event)"
             />
           </label>
-          <label class="fld fld--ville">
-            <span class="fld-lbl">Ville</span>
-            <input
-              class="fld-ctl"
-              type="text"
-              autocomplete="address-level2"
-              [value]="fulfillment.address().ville"
-              (input)="onAddress('ville', $event)"
-            />
-          </label>
-        </div>
+          <div class="fld-row">
+            <label class="fld fld--cp">
+              <span class="fld-lbl">Code postal</span>
+              <input
+                class="fld-ctl"
+                type="text"
+                inputmode="numeric"
+                autocomplete="postal-code"
+                [value]="fulfillment.address().codePostal"
+                (input)="onAddress('codePostal', $event)"
+              />
+            </label>
+            <label class="fld fld--ville">
+              <span class="fld-lbl">Ville</span>
+              <input
+                class="fld-ctl"
+                type="text"
+                autocomplete="address-level2"
+                [value]="fulfillment.address().ville"
+                (input)="onAddress('ville', $event)"
+              />
+            </label>
+          </div>
+        }
+
+        <!-- La zone n'est pas un choix : elle découle du code postal livré. -->
+        @if (fulfillment.selectedZone(); as zone) {
+          <p class="zone">
+            Secteur <strong>{{ zone.label || zone.postalPrefixes[0] }}</strong> — livraison
+            {{ fmtCents(fulfillment.adjustment()?.cents ?? 0) }}
+          </p>
+        } @else if (fulfillment.outOfRange()) {
+          <p class="fld-hint fld-hint--warn">
+            Nous ne livrons pas encore le {{ fulfillment.address().codePostal }}. Choisissez le
+            retrait, ou contactez-nous.
+          </p>
+        }
       } @else {
         @if (fulfillment.pickups().length > 1) {
           <!-- Plusieurs points : le client choisit son adresse de retrait. -->
-          <label class="fld">
-            <span class="fld-lbl">Adresse de retrait</span>
-            <select class="fld-ctl" (change)="onPickup($event)">
-              @for (point of fulfillment.pickups(); track point.id) {
-                <option
-                  [value]="point.id"
-                  [selected]="point.id === fulfillment.selectedPickup()?.id"
-                >
-                  {{ point.label || point.ville }} — {{ point.ligne1 }}, {{ point.codePostal }}
-                  {{ point.ville }}
-                </option>
-              }
-            </select>
-          </label>
+          <fold-listbox
+            class="fld"
+            label="Adresse de retrait"
+            [options]="pickupOptions()"
+            [value]="fulfillment.selectedPickup()?.id ?? ''"
+            (selectionChange)="fulfillment.setPickup($event)"
+          />
         } @else if (fulfillment.defaultPickup(); as pickup) {
           <!-- Une seule adresse : on l'affiche, rien à choisir. -->
           <p class="pickup">

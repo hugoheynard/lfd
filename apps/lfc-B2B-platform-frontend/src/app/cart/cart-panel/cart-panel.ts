@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 import {
   FoldButtonComponent,
   FoldButtonIconComponent,
+  FoldListboxComponent,
   type FoldPanelDefaults,
   FoldPanelHeaderComponent,
   FoldPanelHostService,
@@ -15,6 +16,7 @@ import {
 import { formatEurValue } from '../../data/catalogue-seed';
 import { type CartLine, CartService } from '../../data/cart.service';
 import { CheckoutPanel } from '../../orders/checkout-panel/checkout-panel';
+import { addressOptions, NEW_ADDRESS, pickupLabel } from '../../orders/fulfillment-choice';
 import { FulfillmentService } from '../../orders/fulfillment.service';
 
 /**
@@ -31,6 +33,7 @@ import { FulfillmentService } from '../../orders/fulfillment.service';
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldViewToggleComponent,
+    FoldListboxComponent,
   ],
   templateUrl: './cart-panel.html',
   styleUrl: './cart-panel.scss',
@@ -72,15 +75,22 @@ export class CartPanel {
     { value: 'delivery', icon: 'truck', label: 'Coursier' },
   ];
 
+  /** Le choix « une autre adresse » — le template en dépend pour ouvrir la saisie. */
+  protected readonly NEW_ADDRESS = NEW_ADDRESS;
+
+  /** Les adresses proposées : le carnet de la société, puis la saisie à la volée. */
+  protected readonly addressOptions = computed(() =>
+    addressOptions(this.fulfillment.companyAddresses()),
+  );
+
+  /** Les points de retrait proposés, quand il y en a plus d'un. */
+  protected readonly pickupOptions = computed(() =>
+    this.fulfillment.pickups().map((point) => ({ value: point.id, label: pickupLabel(point) })),
+  );
+
   /** Applique le mode d'acheminement choisi (valeur brute → union). */
   protected onMethod(value: string): void {
     this.fulfillment.setMethod(value === 'delivery' ? 'delivery' : 'pickup');
-  }
-
-  /** Répercute le point de retrait choisi (`<select>` natif) dans le service. */
-  protected onPickup(event: Event): void {
-    const el = event.target;
-    this.fulfillment.setPickup(el instanceof HTMLSelectElement ? el.value : '');
   }
 
   /** Répercute un champ d'adresse coursier (input natif) dans le service. */
