@@ -7,7 +7,7 @@ Décisions figées avant d'écrire le schéma. Contexte : LaFolieDouce B2B, ~20 
 > pièges rencontrés) : [`auth0-setup-b2b.md`](auth0-setup-b2b.md) — runbook daté.
 >
 > **Onboarding & provisioning** (comment un client entre : self-signup + porte
-> commerciale, états, activation) : [`architecture-onboarding-provisioning-b2b.md`](architecture-onboarding-provisioning-b2b.md).
+> commerciale, états, activation) : [`architecture-compte-client-cycle-de-vie.md`](architecture-compte-client-cycle-de-vie.md).
 
 ## 1. Principe de frontière
 

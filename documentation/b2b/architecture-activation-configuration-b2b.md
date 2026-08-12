@@ -9,7 +9,7 @@
 > une pièce nouvellement requise sont _avertis_, jamais bloqués).
 >
 > Décidé le **2026-08-03**. Prérequis lus :
-> [`architecture-onboarding-provisioning-b2b.md`](architecture-onboarding-provisioning-b2b.md)
+> [`architecture-compte-client-cycle-de-vie.md`](architecture-compte-client-cycle-de-vie.md)
 > (deux portes, dossier `pending` validé côté commercial) et la fiche client admin
 > livrée (synthèse d'activation + mutations staff Porte B).
 >
