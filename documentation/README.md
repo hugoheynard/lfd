@@ -56,6 +56,7 @@ Chaque ligne porte l'**état réel du code**, pas l'intention :
 | [`b2b/release-acquisition-commerciale.md`](b2b/release-acquisition-commerciale.md)                     | 🟡   | Le cadre de la release commerciale (lots). Précédé par le plan courant.                                                                                                                                                                         |
 | [`b2b/b2b_backend_deploy.md`](b2b/b2b_backend_deploy.md)                                               | 🟡   | Déploiement du backend (Cloudflare Containers). Scaffold non validé par un build Docker réel.                                                                                                                                                   |
 | [`b2b/architecture-feature-flags.md`](b2b/architecture-feature-flags.md)                               | 📐   | **Feature flags** : catalogue dans le code, écarts en base, valeur par environnement. Page Tech. Seul le menu est livré.                                                                                                                        |
+| [`b2b/architecture-acces-staff.md`](b2b/architecture-acces-staff.md)                                   | 📐   | **Qui peut quoi dans le back-office** : rôles, permissions `ressource:action`, dérogation par personne, invitation. Recense le trou actuel — **les `scopes` staff ne sont lus nulle part**. Modèle construit dans le B2B, couture vers IAM.     |
 
 ## PIM — le référentiel produit
 

@@ -3,6 +3,13 @@
 **État : 📐 doc-first.** Rien n'est codé. Ce document fixe le modèle et les
 frontières avant qu'un écran ne fige la mauvaise réponse.
 
+> **Décision du 2026-08-12 — la cible reste, le calendrier bouge.** Le modèle
+> d'accès staff se construit **d'abord dans le backend B2B**, pas dans un backend
+> IAM dédié : voir [`../b2b/architecture-acces-staff.md`](../b2b/architecture-acces-staff.md).
+> La couture de sortie est un point unique (`GET /admin/me`) dont la forme est
+> déjà celle prévue ici, si bien que la migration décrite en « Ordre de mise en
+> œuvre » reste valable telle quelle — elle change de moment, pas de nature.
+
 - **Sigle** (code, dossiers, identifiants) : `iam`
 - **Nom** (écrans, tuile, Auth0) : **Access**
 
