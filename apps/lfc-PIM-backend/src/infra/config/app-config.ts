@@ -107,6 +107,27 @@ export class AppConfig implements ShopifyCredentialsSource {
   }
 }
 
+/**
+ * Les fichiers d'environnement à charger, **du plus fort au plus faible**.
+ *
+ * `.env` (gitignoré) porte ce qui est propre à la machine et ce qui est secret.
+ * `.env.development` (versionné) porte les coordonnées de l'infra **dockerisée**
+ * — port et base du conteneur : rien qui n'engage, et tout ce qu'il fallait
+ * recopier à la main avant que l'app démarre.
+ *
+ * L'ordre est celui de `@nestjs/config` : une variable déjà posée dans
+ * l'environnement réel gagne sur les deux fichiers, et `.env` gagne sur les
+ * défauts — le dépôt ne peut pas écraser ta configuration.
+ *
+ * Hors développement, les défauts ne sont **pas** chargés : en production une
+ * variable manquante doit faire échouer le démarrage, pas retomber en silence
+ * sur un `localhost` qui n'existe pas.
+ */
+export function envFilePaths(): string[] {
+  const production = (process.env['NODE_ENV']?.trim() ?? '') === 'production';
+  return production ? ['.env'] : ['.env', '.env.development'];
+}
+
 function optional(name: string): string | null {
   const value = process.env[name];
   return value === undefined || value.trim() === '' ? null : value;

@@ -16,6 +16,27 @@ import type {
  * mois plus tard, en production, au premier usage.
  */
 
+/**
+ * Les fichiers d'environnement à charger, **du plus fort au plus faible**.
+ *
+ * `.env` (gitignoré) porte ce qui est propre à la machine et ce qui est secret.
+ * `.env.development` (versionné) porte les coordonnées de l'infra **dockerisée**
+ * — ports, base, bucket, identifiants du conteneur : rien qui n'engage, et tout
+ * ce qu'il fallait jusqu'ici recopier à la main avant que l'app démarre.
+ *
+ * L'ordre compte, et il est celui de `@nestjs/config` : une variable déjà posée
+ * dans l'environnement réel gagne sur les deux fichiers, et `.env` gagne sur les
+ * défauts. On ne peut donc pas se faire écraser sa configuration par le dépôt.
+ *
+ * Hors développement, les défauts ne sont **pas** chargés : en production une
+ * variable manquante doit faire échouer le démarrage, pas retomber en silence
+ * sur un `localhost` qui n'existe pas.
+ */
+export function envFilePaths(): string[] {
+  const production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
+  return production ? [".env"] : [".env", ".env.development"];
+}
+
 export function optionalManagementCredentials(): Auth0ManagementCredentials | null {
   const clientId = process.env["AUTH0_M2M_CLIENT_ID"]?.trim() ?? "";
   const clientSecret = process.env["AUTH0_M2M_CLIENT_SECRET"]?.trim() ?? "";

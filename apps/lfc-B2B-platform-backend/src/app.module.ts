@@ -16,6 +16,7 @@ import { StaffUsersModule } from "./staff-users/staff-users.module.js";
 import { SubscriptionsModule } from "./subscriptions/subscriptions.module.js";
 import { AuthModule } from "./infra/auth/auth.module.js";
 import { AppConfigModule } from "./infra/config/config.module.js";
+import { envFilePaths } from "./infra/config/env-readers.js";
 import { ContextModule } from "./infra/context/context.module.js";
 import { EventsModule } from "./infra/events/events.module.js";
 import { MailerModule } from "./infra/mailer/mailer.module.js";
@@ -24,11 +25,13 @@ import { SecurityModule } from "./infra/security/security.module.js";
 
 @Module({
   imports: [
-    // En premier : charge `.env` dans process.env AVANT que les providers
-    // d'infra (DB, Auth) ne lisent leur configuration à l'instanciation.
-    // `prisma.config.ts` ne charge dotenv que pour la CLI Prisma — le runtime
-    // de l'app a besoin de son propre chargement.
-    ConfigModule.forRoot({ isGlobal: true }),
+    // En premier : charge les fichiers d'environnement dans process.env AVANT
+    // que les providers d'infra (DB, Auth) ne lisent leur configuration à
+    // l'instanciation. `prisma.config.ts` ne charge dotenv que pour la CLI
+    // Prisma — le runtime de l'app a besoin de son propre chargement.
+    // Deux fichiers en développement : `.env` (secrets, machine) par-dessus
+    // `.env.development` (coordonnées de l'infra dockerisée) — cf. envFilePaths.
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: envFilePaths() }),
     // Puis notre passerelle typée : le seul accès autorisé à l'environnement.
     AppConfigModule,
     // Fondations cross-cutting (@Global) : ports Clock + IdGenerator. Tôt, car

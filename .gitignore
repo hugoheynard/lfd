@@ -41,6 +41,11 @@ lerna-debug.log
 .env.*
 !.env.example
 !.env.*.example
+# … et les coordonnées de l'infra DOCKERISÉE de dev (ports, base, bucket,
+# identifiants de conteneur), qui ne sont pas des secrets : elles sont les mêmes
+# sur toutes les machines. Chargé UNIQUEMENT hors production, et toujours dominé
+# par `.env` (cf. `envFilePaths`).
+!.env.development
 
 # Config des fronts (Auth0, URL d'API…), GÉNÉRÉE au build depuis l'env (jamais commitée).
 *.env.generated.ts
