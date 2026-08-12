@@ -10,8 +10,8 @@ catalogs:
       specifier: 1.62.1
       version: 1.62.1
     fold-ng:
-      specifier: 0.10.2
-      version: 0.10.2
+      specifier: 0.10.3
+      version: 0.10.3
 
 importers:
 
@@ -79,7 +79,7 @@ importers:
         version: 6.1.0
       fold-ng:
         specifier: 'catalog:'
-        version: 0.10.2(23553fd80d79d2b2eb5b918b860c03ad)
+        version: 0.10.3(23553fd80d79d2b2eb5b918b860c03ad)
       qrcode-generator:
         specifier: ^2.0.4
         version: 2.0.4
@@ -330,7 +330,7 @@ importers:
         version: 9.13.0
       fold-ng:
         specifier: 'catalog:'
-        version: 0.10.2(23553fd80d79d2b2eb5b918b860c03ad)
+        version: 0.10.3(23553fd80d79d2b2eb5b918b860c03ad)
       qrcode-generator:
         specifier: ^2.0.4
         version: 2.0.4
@@ -545,7 +545,7 @@ importers:
         version: link:../../packages/suite-embed
       fold-ng:
         specifier: 'catalog:'
-        version: 0.10.2(23553fd80d79d2b2eb5b918b860c03ad)
+        version: 0.10.3(23553fd80d79d2b2eb5b918b860c03ad)
       qrcode-generator:
         specifier: ^2.0.4
         version: 2.0.4
@@ -618,7 +618,7 @@ importers:
         version: link:../../packages/suite-embed
       fold-ng:
         specifier: 'catalog:'
-        version: 0.10.2(23553fd80d79d2b2eb5b918b860c03ad)
+        version: 0.10.3(23553fd80d79d2b2eb5b918b860c03ad)
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -704,7 +704,7 @@ importers:
         version: link:../contracts
       fold-ng:
         specifier: 'catalog:'
-        version: 0.10.2(23553fd80d79d2b2eb5b918b860c03ad)
+        version: 0.10.3(23553fd80d79d2b2eb5b918b860c03ad)
       qrcode-generator:
         specifier: ^2.0.4
         version: 2.0.4
@@ -5049,8 +5049,8 @@ packages:
   flatted@3.4.2:
     resolution: {integrity: sha512-PjDse7RzhcPkIJwy5t7KPWQSZ9cAbzQXcafsetQoD7sOJRQlGikNbx7yZp2OotDnJyrDcbyRq3Ttb18iYOqkxA==}
 
-  fold-ng@0.10.2:
-    resolution: {integrity: sha512-Umvj07qjHM4/J50brT1TwBMnRuNsz0YPyaBpOiz02Ev+V5PZIuA/MBrbQI1eckq06qxJX4qnPKP/7HJ1P4JMaw==}
+  fold-ng@0.10.3:
+    resolution: {integrity: sha512-I8TCKEEGhnqJipSini4ECpISlE601JSipRyErIxH4cmr4/j2e+wn1gTlmySd6VYQcJi0rGCUOE6J8I+4yTD3jg==}
     peerDependencies:
       '@angular/common': ^22
       '@angular/core': ^22
@@ -11628,7 +11628,7 @@ snapshots:
 
   flatted@3.4.2: {}
 
-  fold-ng@0.10.2(23553fd80d79d2b2eb5b918b860c03ad):
+  fold-ng@0.10.3(23553fd80d79d2b2eb5b918b860c03ad):
     dependencies:
       '@angular/common': 22.0.7(@angular/core@22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2))(rxjs@7.8.2)
       '@angular/core': 22.0.7(@angular/compiler@22.0.7)(rxjs@7.8.2)
