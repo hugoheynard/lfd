@@ -11,7 +11,6 @@ import type { ActivationBlocker, AdminCompanyDetail } from '../../comptes-client
 export type StepKey =
   | ActivationPiece
   | 'legal'
-  | 'payment'
   | 'enseigne'
   | 'holder'
   /**
@@ -74,11 +73,6 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
     detail: 'Ajoutez au moins un point de livraison.',
     cta: 'Ajouter une livraison',
   },
-  payment: {
-    title: 'Condition de règlement',
-    detail: 'Fixez la condition de règlement convenue.',
-    cta: 'Fixer la condition',
-  },
 };
 
 /**
@@ -101,17 +95,6 @@ const BLOCKER_SENTENCES: Readonly<Record<ActivationBlocker, string>> = {
     "L'extrait KBIS est déposé mais pas encore vérifié : ouvrez-le, comparez-le à l'identité, puis confirmez.",
   facturation: "L'adresse de facturation manque.",
   livraison: 'Aucune adresse de livraison enregistrée.',
-};
-
-/** Quelle pièce porte quel empêchement — pour ouvrir la liste sur le bon geste. */
-const BLOCKER_STEPS: Readonly<Record<ActivationBlocker, StepKey>> = {
-  identite_legale: 'legal',
-  telephone: 'legal',
-  tva: 'tva',
-  kbis_absent: 'kbis',
-  kbis_non_verifie: 'kbis_verify',
-  facturation: 'billing',
-  livraison: 'delivery',
 };
 
 /**
@@ -169,10 +152,11 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
       return { key, ...STEP_TEXTS[key] };
     });
 
-  // La condition de règlement n'est pas une pièce : elle ne « manque » jamais
-  // (il y en a toujours une par défaut), elle se CONFIRME. Elle reste donc en
-  // fin de liste, toujours.
-  return [...legal, ...pieces, { key: 'payment' as const, ...STEP_TEXTS.payment }];
+  // **Pas de « condition de règlement » ici.** Elle ne manque jamais — payer à
+  // la commande est le socle, offert à tous — et son bouton n'ouvrait rien. Une
+  // ligne d'avertissement permanente, sur une exigence qui n'existe pas, avec un
+  // geste qui ne fait rien : elle apprenait à ignorer l'encart entier.
+  return [...legal, ...pieces];
 }
 
 /**
@@ -183,9 +167,4 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
 export function blockedReason(company: AdminCompanyDetail | null): string {
   const first = company?.gate.blocking[0];
   return first === undefined ? '' : BLOCKER_SENTENCES[first];
-}
-
-/** L'étape sur laquelle ouvrir quand on clique « pourquoi ça bloque ». */
-export function stepForBlocker(blocker: ActivationBlocker): StepKey {
-  return BLOCKER_STEPS[blocker];
 }

@@ -27,16 +27,13 @@ function withGate(gate: Partial<ActivationGate>): AdminCompanyDetail {
 }
 
 describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => {
-  it('liste les pièces que le serveur dit non faites, la condition de règlement en fin', () => {
+  it('liste les pièces que le serveur dit non faites, et RIEN d’autre', () => {
+    // Pas de « condition de règlement » : elle ne manque jamais (payer à la
+    // commande est le socle) et son bouton n'ouvrait rien. Une ligne permanente
+    // avec un geste mort apprend à ignorer l'encart entier.
     const steps = activationSteps(withGate({}));
 
-    expect(steps.map((step) => step.key)).toEqual([
-      'tva',
-      'kbis',
-      'billing',
-      'delivery',
-      'payment',
-    ]);
+    expect(steps.map((step) => step.key)).toEqual(['tva', 'kbis', 'billing', 'delivery']);
   });
 
   it('tait une pièce faite, et une pièce masquée en réglages', () => {
@@ -52,7 +49,7 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
     );
 
     // `optional` reste demandée — « pas bloquante » n'est pas « pas demandée ».
-    expect(steps.map((step) => step.key)).toEqual(['billing', 'delivery', 'payment']);
+    expect(steps.map((step) => step.key)).toEqual(['billing', 'delivery']);
   });
 
   it("ouvre la liste sur l'identité légale quand le serveur la signale", () => {
@@ -99,6 +96,23 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
 
     expect(kbis?.key).toBe('kbis');
     expect(kbis?.cta).toBe('Déposer le KBIS');
+  });
+
+  it('ne propose JAMAIS de « fixer la condition de règlement »', () => {
+    // Elle ne manque jamais, et son bouton n'ouvrait aucun panneau. Le test
+    // existe pour que la ligne ne revienne pas par habitude.
+    const complet = activationSteps(
+      withGate({
+        checklist: [
+          { piece: 'tva', mode: 'required', done: true },
+          { piece: 'kbis', mode: 'required', done: true },
+          { piece: 'billing', mode: 'required', done: true },
+          { piece: 'delivery', mode: 'required', done: true },
+        ],
+      }),
+    );
+
+    expect(complet).toEqual([]);
   });
 
   it('se tait quand rien ne bloque', () => {

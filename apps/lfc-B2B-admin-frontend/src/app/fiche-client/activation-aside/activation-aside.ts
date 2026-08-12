@@ -38,7 +38,12 @@ export class ActivationAside {
   readonly canActivate = input.required<boolean>();
   /** Ce qui bloque, en une phrase ; vide quand rien ne bloque. */
   readonly blockedReason = input('');
-  /** Combien de pièces restent à réunir — 0 quand le dossier est complet. */
+  /**
+   * Combien d'**empêchements** le serveur oppose — pas combien de lignes sont
+   * affichées. Il comptait les étapes de la liste, condition de règlement
+   * comprise : il n'atteignait donc jamais zéro, et annonçait « 1 pièce
+   * manquante » devant un dossier dont seul le téléphone manquait.
+   */
   readonly remaining = input(0);
   /** Qui a ouvert le compte, et quand — `null` tant qu'il ne l'a jamais été. */
   readonly activation = input<ActivationTrace | null>(null);
@@ -60,10 +65,13 @@ export class ActivationAside {
    */
   protected readonly liftsByItself = computed(() => this.suspensionCause() === 'kbis_revoked');
 
-  /** « 3 pièces manquantes » — le décompte fait plus pression qu'une liste. */
+  /**
+   * « 3 points à régler » — le décompte fait plus pression qu'une liste. « Pièce »
+   * serait faux : un numéro de téléphone manquant n'est pas une pièce du dossier.
+   */
   protected readonly remainingLabel = computed(() => {
     const count = this.remaining();
-    return count === 1 ? '1 pièce manquante' : `${count} pièces manquantes`;
+    return count === 1 ? '1 point à régler' : `${count} points à régler`;
   });
 
   /**

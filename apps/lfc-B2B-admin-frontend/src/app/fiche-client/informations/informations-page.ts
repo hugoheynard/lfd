@@ -23,6 +23,7 @@ import {
   type CompanyIdentityDraft,
 } from '@lfd/b2b-ui/company';
 
+import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { ActivationAside } from '../activation-aside/activation-aside';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { PaiementSection } from '../paiement-section/paiement-section';
@@ -85,6 +86,8 @@ export class InformationsPage {
 
   /** Tout ce que la page lit et déclenche. */
   protected readonly fiche = inject(FicheClientFacade);
+  /** Lecture directe du fichier : ce n'est pas une mutation, elle ne passe pas par la façade. */
+  private readonly companies = inject(AdminCompaniesService);
 
   /** Saisie d'ouverture — le strict nécessaire pour que la société existe. */
   protected readonly identityDraft = signal<CompanyIdentityDraft>(EMPTY_COMPANY_IDENTITY_DRAFT);
@@ -115,10 +118,24 @@ export class InformationsPage {
       : this.fiche.libSteps(),
   );
 
-  /** Prêt = « on peut ouvrir » sur un brouillon, « on peut activer » ensuite. */
+  /** Prêt = « on peut ouvrir » sur un brouillon, « rien ne bloque » ensuite. */
   protected readonly checklistReady = computed(() =>
     this.fiche.draft() ? this.canCreate() : this.fiche.ready(),
   );
+
+  /**
+   * La phrase du « tout est bon », qui doit rester vraie dans les trois
+   * situations : avant l'ouverture, sur un compte en attente, sur un compte
+   * déjà actif — à qui promettre une activation n'a aucun sens.
+   */
+  protected readonly readyNote = computed(() => {
+    if (this.fiche.draft()) {
+      return 'Le minimum est là — vous pouvez ouvrir le compte.';
+    }
+    return this.fiche.status() === 'pending'
+      ? 'Toutes les pièces sont réunies — le compte peut être activé.'
+      : 'Le dossier est complet.';
+  });
 
   /**
    * « par Camille Rousseau (commercial), le 12/08/2026 » — ou rien du tout.
@@ -167,6 +184,41 @@ export class InformationsPage {
     if (id !== null) {
       void this.router.navigate(['/comptes-clients', id, 'informations'], { replaceUrl: true });
     }
+  }
+
+  /**
+   * Ouvre l'extrait dans un onglet — le geste qui donne son sens au bouton
+   * « J'ai vérifié cet extrait ». On lit d'abord, on certifie ensuite.
+   */
+  protected viewKbis(): void {
+    void this.withKbis((url) => window.open(url, '_blank', 'noopener'));
+  }
+
+  /** Enregistre l'extrait sous son nom. */
+  protected downloadKbis(): void {
+    const fileName = this.fiche.company()?.kbis?.fileName ?? 'kbis.pdf';
+    void this.withKbis((url) => {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+    });
+  }
+
+  /**
+   * Récupère le blob authentifié, puis en fait quelque chose. L'`objectURL` est
+   * révoqué après un délai : assez pour que l'onglet l'ait chargé, sans garder
+   * la référence indéfiniment.
+   */
+  private async withKbis(use: (objectUrl: string) => void): Promise<void> {
+    const company = this.fiche.company();
+    if (company === null) {
+      return;
+    }
+    const blob = await this.companies.fetchKbis(company.id);
+    const url = URL.createObjectURL(blob);
+    use(url);
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
   /** Dépôt du KBIS depuis la synthèse (la seule étape qui prend un fichier). */

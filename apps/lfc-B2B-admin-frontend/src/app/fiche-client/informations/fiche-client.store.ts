@@ -100,10 +100,16 @@ export class FicheClientStore {
     this.steps().map((step) => ({ ...step, kind: step.key === 'kbis' ? 'file' : 'action' })),
   );
 
-  /** Vrai quand il ne reste que la condition de règlement (les pièces sont là). */
-  readonly ready = computed(
-    () => !this.draft() && this.steps().every((step) => step.key === 'payment'),
-  );
+  /**
+   * Le dossier est-il **complet** ? C'est le verdict serveur, pas un décompte
+   * de pièces : il annonçait « toutes les pièces sont réunies — le compte peut
+   * être activé » à côté d'un bouton grisé, parce qu'il ignorait l'identité
+   * légale et la joignabilité. Rien ne bloque = rien ne bloque.
+   */
+  readonly ready = computed(() => !this.draft() && this.company()?.gate.blocking.length === 0);
+
+  /** Combien d'empêchements le serveur oppose — 0 quand le dossier est complet. */
+  readonly blockingCount = computed(() => this.company()?.gate.blocking.length ?? 0);
 
   /** Le compte est-il en attente d'activation ? (Le CTA n'a de sens que là.) */
   readonly isPending = computed(() => this.company()?.status === 'pending');

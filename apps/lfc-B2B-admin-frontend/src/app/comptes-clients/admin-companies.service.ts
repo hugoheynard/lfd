@@ -145,6 +145,18 @@ export class AdminCompaniesService {
   }
 
   /**
+   * Récupère l'extrait en **blob** — l'endpoint est authentifié, un `<a href>`
+   * ne porterait pas le jeton. L'appelant décide de l'ouvrir ou de l'enregistrer.
+   */
+  fetchKbis(companyId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${B2B_API_BASE}/admin/companies/${companyId}/kbis`, {
+        responseType: 'blob',
+      }),
+    );
+  }
+
+  /**
    * **Certifie** le KBIS : un agent a ouvert l'extrait et l'a confronté à
    * l'identité enregistrée. C'est ce geste qui débloque l'activation — le dépôt
    * seul ne prouve rien. Le serveur refuse (404) s'il n'y a rien à certifier, et

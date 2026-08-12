@@ -56,14 +56,14 @@ describe('rail Activation du compte', () => {
 
     expect(button.disabled).toBe(true);
     expect(host.textContent).toContain('Aucun interlocuteur joignable');
-    expect(host.textContent).toContain('2 pièces manquantes');
+    expect(host.textContent).toContain('2 points à régler');
   });
 
-  it('accorde le singulier quand il ne reste qu’une pièce', () => {
+  it('accorde le singulier quand il ne reste qu’un point', () => {
     const { host } = render({ status: 'pending', remaining: 1 });
 
-    expect(host.textContent).toContain('1 pièce manquante');
-    expect(host.textContent).not.toContain('1 pièces');
+    expect(host.textContent).toContain('1 point à régler');
+    expect(host.textContent).not.toContain('1 points');
   });
 
   it('active en un clic quand le dossier est complet', () => {

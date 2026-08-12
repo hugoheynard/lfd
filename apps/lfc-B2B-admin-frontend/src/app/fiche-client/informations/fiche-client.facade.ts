@@ -1,4 +1,4 @@
-import { computed, inject, Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import type { DeferredTerm, DeliveryAddressView, FulfillmentPreferenceView } from '@lfd/contracts';
 import { isCompanyIdentityOpenable, type CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
@@ -47,6 +47,7 @@ export class FicheClientFacade {
   readonly isPending = this.store.isPending;
   /** Les quatre états du compte — le rail droit les distingue tous. */
   readonly status = this.store.status;
+  readonly blockingCount = this.store.blockingCount;
   readonly canActivate = this.store.canActivate;
   readonly blockedReason = this.store.blockedReason;
 
@@ -55,7 +56,8 @@ export class FicheClientFacade {
   readonly granting = this.actions.granting;
 
   /** Combien de pièces restent à réunir — le rail d'activation le dit. */
-  readonly remaining = computed(() => this.libSteps().length);
+  /** Ce qui empêche d'activer — et non le nombre de lignes affichées. */
+  readonly remaining = this.store.blockingCount;
 
   /** Démarre la fiche sur l'identifiant de route (`null` = ouverture). */
   async start(companyId: string | null): Promise<void> {

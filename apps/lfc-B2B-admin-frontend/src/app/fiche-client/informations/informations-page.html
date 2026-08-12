@@ -32,20 +32,21 @@
         <lfd-company-activation-checklist
           [steps]="checklistSteps()"
           [ready]="checklistReady()"
-          [readyNote]="
-            fiche.draft()
-              ? 'Le minimum est là — vous pouvez ouvrir le compte.'
-              : 'Toutes les pièces sont réunies — le compte peut être activé.'
-          "
+          [readyNote]="readyNote()"
           (stepAction)="fiche.openStep($event)"
           (fileSelected)="onFile($event)"
         >
           <p intro>
             @if (fiche.draft()) {
-              Pour <strong>ouvrir</strong> le compte : le nom d'usage et le détenteur. KBIS,
-              adresses et règlement se réclameront ensuite, section par section.
-            } @else {
+              Pour <strong>ouvrir</strong> le compte : le nom d'usage et le détenteur. KBIS et
+              adresses se réclameront ensuite, section par section.
+            } @else if (fiche.status() === 'pending') {
               Complétez les pièces manquantes pour activer ce compte, à la place du client.
+            } @else {
+              <!-- Un compte déjà actif ne se « complète pas pour être activé » :
+                   le dire lui ferait croire qu'il a perdu son accès. -->
+              Ce dossier est incomplet. Le compte reste actif : complétez-le pour que sa facturation
+              et ses livraisons soient justes.
             }
           </p>
         </lfd-company-activation-checklist>
@@ -105,9 +106,11 @@
             [canManage]="true"
             [canManageKbis]="true"
             [kbisRequirement]="fiche.kbisRequirement()"
-            [canAccessKbis]="false"
+            [canAccessKbis]="true"
             (edit)="fiche.openStep('tva')"
             (kbisSelected)="onFile({ key: 'kbis', file: $event })"
+            (viewKbis)="viewKbis()"
+            (downloadKbis)="downloadKbis()"
           >
             <!-- La certification est un geste STAFF : elle vit avec la pièce
                  qu'elle concerne, pas dans une carte voisine. Ce qu'elle
@@ -223,7 +226,7 @@
             [status]="fiche.status()"
             [canActivate]="fiche.canActivate()"
             [blockedReason]="fiche.blockedReason()"
-            [remaining]="fiche.libSteps().length"
+            [remaining]="fiche.blockingCount()"
             [activation]="fiche.company()?.activation ?? null"
             [suspensionCause]="fiche.company()?.suspensionCause ?? null"
             (activate)="fiche.activate()"
