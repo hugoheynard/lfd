@@ -77,7 +77,7 @@
            tient dans le libellé plutôt que dans un sous-titre — il n'aurait pas
            mérité une seconde ligne, mais il mérite d'être là : c'est le seul
            chiffre de l'écran que le filtre fait bouger. -->
-      <fold-element-title foldToolbar variant="bar" icon="company" [title]="tableTitle()" />
+      <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
 
       <ng-template foldCell="reference" let-row>
         <a class="ref-link" [routerLink]="['/comptes-clients', row.id]">{{ row.reference }}</a>
