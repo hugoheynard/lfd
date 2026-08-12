@@ -13,8 +13,8 @@ import { B2B_API_BASE } from '../../api/api-config';
 
 /**
  * Annuaire **staff** (back-office) — CRUD entièrement staff-gated (aucune surface
- * publique). Miroir de PickupAddressesService pour le token staff. Source de
- * vérité locale : pas d'Auth0 pour l'instant.
+ * publique). Source de vérité **locale** : c'est cette table qui décide des
+ * accès, Auth0 ne dit que « qui es-tu ».
  */
 @Injectable({ providedIn: 'root' })
 export class StaffUsersService {
@@ -46,6 +46,18 @@ export class StaffUsersService {
   async setStatus(id: string, change: StaffStatusChange): Promise<void> {
     await firstValueFrom(
       this.http.patch<void>(`${B2B_API_BASE}/admin/staff-users/${id}/status`, change),
+    );
+  }
+
+  /**
+   * Invite une personne, ou lui **renvoie** un lien : c'est le même appel. Le
+   * serveur sait déjà lequel des deux s'applique, selon qu'une identité existe.
+   * L'écran n'a pas à le deviner — il se tromperait dès qu'un second onglet est
+   * ouvert sur la même fiche.
+   */
+  async invite(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${B2B_API_BASE}/admin/staff-users/${id}/invitation`, {}),
     );
   }
 

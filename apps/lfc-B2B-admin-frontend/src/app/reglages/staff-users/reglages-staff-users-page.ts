@@ -27,10 +27,9 @@ type LoadState = 'loading' | 'ready' | 'error';
 /**
  * Sous-page **Utilisateurs** des Réglages (staff) — l'annuaire du back-office
  * dans une `fold-data-table` : identité, **rôle**, état de la connexion, plus les
- * actions par ligne (éditer / supprimer). La saisie passe par `StaffUserPanel`
- * (side-panel) ; ici on liste, on ouvre le panneau et on recharge.
- *
- * L'invitation (ouvrir un vrai compte) reste à câbler.
+ * actions par ligne (éditer / inviter / suspendre / supprimer). La saisie passe
+ * par `StaffUserPanel` (side-panel) ; ici on liste, on ouvre le panneau et on
+ * recharge.
  */
 @Component({
   selector: 'app-reglages-staff-users-page',
@@ -99,12 +98,42 @@ export class ReglagesStaffUsersPage {
     return STAFF_ROLE_LABELS[user.role];
   }
 
+  /**
+   * Une invitation périmée se dit **explicitement**. « Invitée » sur un lien
+   * mort enverrait attendre une réponse qui ne viendra pas — et le geste utile
+   * (renvoyer) resterait invisible.
+   */
   protected statusLabel(user: StaffUserView): string {
-    return STAFF_STATUS_LABELS[user.status];
+    return user.invitationExpired ? 'Invitation expirée' : STAFF_STATUS_LABELS[user.status];
   }
 
   protected statusVariant(user: StaffUserView): 'neutral' | 'success' | 'warning' {
-    return STATUS_VARIANT[user.status];
+    return user.invitationExpired ? 'warning' : STATUS_VARIANT[user.status];
+  }
+
+  /** Jamais invitée ⇒ « Inviter » ; déjà invitée ou entrée ⇒ « Renvoyer ». */
+  protected inviteLabel(user: StaffUserView): string {
+    return user.invitedAt === null ? "Inviter à créer son compte" : 'Renvoyer le lien';
+  }
+
+  /**
+   * On n'invite pas une personne suspendue : le lien rouvrirait la porte que la
+   * suspension a fermée. Le serveur refuse de toute façon — cacher l'entrée
+   * évite d'offrir un bouton qui ne peut que produire une erreur.
+   */
+  protected canInvite(user: StaffUserView): boolean {
+    return user.status !== 'suspended';
+  }
+
+  /** Invite, ou renvoie un lien : même geste, même appel. */
+  protected async invite(user: StaffUserView): Promise<void> {
+    try {
+      await this.service.invite(user.id);
+      this.notify.success(`Lien envoyé à ${user.email}.`);
+      await this.load();
+    } catch (error) {
+      this.notify.error(error);
+    }
   }
 
   protected add(): void {

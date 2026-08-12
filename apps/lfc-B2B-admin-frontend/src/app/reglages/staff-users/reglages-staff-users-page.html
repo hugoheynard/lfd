@@ -9,8 +9,8 @@
       <div class="head-text">
         <h2 class="section-title">Utilisateurs</h2>
         <p class="section-desc">
-          Les personnes qui opèrent la suite et le rôle de chacune. L'invitation à créer un compte
-          n'est pas encore branchée : une fiche décrit un accès, elle ne l'ouvre pas.
+          Les personnes qui opèrent la suite et le rôle de chacune. Créer une fiche n'ouvre aucun
+          accès : c'est l'invitation qui envoie le lien, et lui seul permet d'entrer.
         </p>
       </div>
       <button *appCan="'staff:write'" foldButton size="sm" icon="plus" (click)="add()">
@@ -73,6 +73,11 @@
               <fold-icon name="more-vertical" [size]="18" />
             </button>
             <fold-dropdown-item icon="edit" (selected)="edit(row)">Modifier</fold-dropdown-item>
+            @if (canInvite(row)) {
+              <fold-dropdown-item icon="mail" (selected)="invite(row)">
+                {{ inviteLabel(row) }}
+              </fold-dropdown-item>
+            }
             <fold-dropdown-item
               [icon]="isSuspended(row) ? 'check' : 'lock'"
               (selected)="toggleSuspension(row)"
