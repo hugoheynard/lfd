@@ -1,9 +1,14 @@
 import type { ActivationPiece, PlatformSettings } from '@lfd/contracts';
+import type { CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 
-/** Les pièces d'un dossier, plus la condition de règlement qui n'en est pas une. */
-export type StepKey = ActivationPiece | 'legal' | 'payment';
+/**
+ * Les pièces d'un dossier, plus la condition de règlement qui n'en est pas une,
+ * plus les deux **minimums d'ouverture** (`enseigne`, `holder`) — qui ne sont ni
+ * l'une ni l'autre : ils précèdent l'existence du compte.
+ */
+export type StepKey = ActivationPiece | 'legal' | 'payment' | 'enseigne' | 'holder';
 
 /** Une étape restante, telle que la fiche la présente. */
 export interface ActivationStep {
@@ -15,6 +20,16 @@ export interface ActivationStep {
 
 /** Le texte de chaque étape — écrit une fois, qu'elle soit due ou faite. */
 const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
+  enseigne: {
+    title: "Nom d'usage",
+    detail: "Le nom sous lequel le client se reconnaît — c'est le seul champ exigé pour ouvrir.",
+    cta: '',
+  },
+  holder: {
+    title: 'Détenteur du compte',
+    detail: "La personne qui commande et qui recevra l'accès à l'espace.",
+    cta: '',
+  },
   legal: {
     title: 'Identité légale',
     detail:
@@ -64,6 +79,33 @@ const PIECES: readonly ActivationPiece[] = ['tva', 'kbis', 'billing', 'delivery'
  * `settings` à `null` — réglage illisible — rend une liste vide plutôt que de
  * réclamer des pièces peut-être désactivées.
  */
+/**
+ * Ce qu'il manque pour **OUVRIR** — deux champs, pas douze.
+ *
+ * Un compte s'ouvre avec un nom d'usage et quelqu'un à qui parler ; papiers,
+ * adresses et règlement viennent après, et l'agrégat les accepte plus tard
+ * (`declare()` n'exige que l'enseigne). Réclamer la liste d'activation complète
+ * devant un formulaire vide fait passer pour bloquant ce qui ne l'est pas — et
+ * le commercial qui a le client au téléphone renonce à ouvrir « en attendant les
+ * papiers », alors que c'est exactement ce que le modèle permet.
+ *
+ * Les étapes n'ont **aucun geste** : les champs qui les satisfont sont à
+ * l'écran, juste dessous.
+ */
+export function openingSteps(
+  identity: CompanyIdentityDraft,
+  holderChosen: boolean,
+): readonly ActivationStep[] {
+  const missing: StepKey[] = [];
+  if (identity.enseigne.trim() === '') {
+    missing.push('enseigne');
+  }
+  if (!holderChosen) {
+    missing.push('holder');
+  }
+  return missing.map((key) => ({ key, ...STEP_TEXTS[key] }));
+}
+
 export function activationSteps(
   company: AdminCompanyDetail | null,
   settings: PlatformSettings | null,

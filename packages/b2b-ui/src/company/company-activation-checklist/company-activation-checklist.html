@@ -17,7 +17,9 @@
           >
         </div>
 
-        @if (step.kind === 'file') {
+        @if (step.cta === '') {
+          <!-- Rien : l'étape se lit, elle ne se clique pas. -->
+        } @else if (step.kind === 'file') {
           <input
             #fileInput
             type="file"

@@ -9,6 +9,11 @@ export interface CompanyActivationStep {
   readonly key: string;
   readonly title: string;
   readonly detail: string;
+  /**
+   * Le libellé du geste, ou **vide** quand l'étape n'en offre aucun : le champ
+   * qui la satisfait est déjà à l'écran (formulaire d'ouverture). Un bouton qui
+   * ne mène nulle part est pire qu'une absence de bouton.
+   */
   readonly cta: string;
   readonly kind: 'action' | 'file';
 }

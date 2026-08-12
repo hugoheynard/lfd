@@ -19,6 +19,7 @@ import {
   CompanyIdentityFields,
   CompanyReferenceCard,
   EMPTY_COMPANY_IDENTITY_DRAFT,
+  type CompanyActivationStep,
   type CompanyIdentityDraft,
 } from '@lfd/b2b-ui/company';
 
@@ -29,6 +30,7 @@ import { FicheClientActions } from './fiche-client.actions';
 import { FicheClientFacade } from './fiche-client.facade';
 import { FicheClientPanels } from './fiche-client.panels';
 import { FicheClientStore } from './fiche-client.store';
+import { openingSteps } from './activation-steps';
 
 /**
  * Fiche **détail** d'un compte client (staff) — reflète l'**état d'activation**
@@ -94,6 +96,28 @@ export class InformationsPage {
 
   protected readonly canCreate = computed(() =>
     this.fiche.canOpen(this.identityDraft(), this.holder()),
+  );
+
+  /**
+   * La synthèse dit ce qui bloque **maintenant** : avant l'ouverture, les deux
+   * minimums (nom d'usage, détenteur) ; après, les pièces d'activation.
+   *
+   * Elle réclamait la liste complète devant un formulaire vide — KBIS, adresses,
+   * règlement — donnant l'impression qu'il fallait tout réunir pour ouvrir, alors
+   * qu'un compte s'ouvre justement sans papiers et se complète ensuite.
+   */
+  protected readonly checklistSteps = computed<readonly CompanyActivationStep[]>(() =>
+    this.fiche.draft()
+      ? openingSteps(this.identityDraft(), this.holder() !== null).map((step) => ({
+          ...step,
+          kind: 'action' as const,
+        }))
+      : this.fiche.libSteps(),
+  );
+
+  /** Prêt = « on peut ouvrir » sur un brouillon, « on peut activer » ensuite. */
+  protected readonly checklistReady = computed(() =>
+    this.fiche.draft() ? this.canCreate() : this.fiche.ready(),
   );
 
   /**

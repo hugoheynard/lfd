@@ -2,7 +2,11 @@ import type { PlatformSettings } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
-import { activationSteps, missingRequiredPieces } from '../informations/activation-steps';
+import {
+  activationSteps,
+  missingRequiredPieces,
+  openingSteps,
+} from '../informations/activation-steps';
 
 const ALL_REQUIRED: PlatformSettings = {
   tva: 'required',
@@ -137,5 +141,36 @@ describe('le KBIS ne compte que VÉRIFIÉ (même règle que le serveur)', () => 
 
   it('vérifié ⇒ la pièce est acquise', () => {
     expect(missingRequiredPieces(complete(), ALL_REQUIRED)).not.toContain('kbis');
+  });
+});
+
+describe("ce qu'il faut pour OUVRIR n'est pas ce qu'il faut pour ACTIVER", () => {
+  const EMPTY = {
+    raisonSociale: '',
+    enseigne: '',
+    formeJuridique: '',
+    siret: '',
+    tvaIntracom: '',
+  };
+
+  it('ne réclame que le nom d’usage et le détenteur', () => {
+    // Un compte s'ouvre SANS papiers — c'est tout l'intérêt du parcours au
+    // comptoir. Réclamer KBIS et adresses ici ferait renoncer à ouvrir.
+    expect(openingSteps(EMPTY, false).map((step) => step.key)).toEqual(['enseigne', 'holder']);
+  });
+
+  it('ne propose AUCUN geste : les champs sont déjà à l’écran', () => {
+    // Un bouton qui ne mène nulle part est pire qu'une absence de bouton.
+    expect(openingSteps(EMPTY, false).every((step) => step.cta === '')).toBe(true);
+  });
+
+  it('se vide dès que le minimum est saisi', () => {
+    expect(openingSteps({ ...EMPTY, enseigne: 'Chez Milo' }, true)).toEqual([]);
+  });
+
+  it('ne retient QUE ce qui manque encore', () => {
+    expect(openingSteps({ ...EMPTY, enseigne: 'Chez Milo' }, false).map((s) => s.key)).toEqual([
+      'holder',
+    ]);
   });
 });

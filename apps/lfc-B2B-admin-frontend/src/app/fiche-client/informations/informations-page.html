@@ -25,21 +25,25 @@
     }
     @case ('ready') {
       <fold-aside-layout class="fiche" asideRightLabel="Activation">
-        <!-- La MÊME synthèse qu'une fiche existante : à l'ouverture, tout est
-             encore dû. Le commercial qui a le client au téléphone sait ainsi
-             quelles pièces réclamer maintenant, plutôt que de les découvrir
-             une par une plus tard. -->
+        <!-- La synthèse ne réclame que ce qui bloque À CE MOMENT : deux champs
+             pour ouvrir, les pièces d'activation ensuite. Montrer le dossier
+             complet devant un formulaire vide faisait passer pour bloquant ce
+             qui ne l'est pas — et un compte s'ouvre précisément sans papiers. -->
         <lfd-company-activation-checklist
-          [steps]="fiche.libSteps()"
-          [ready]="fiche.ready()"
-          readyNote="Toutes les pièces sont réunies — le compte peut être activé."
+          [steps]="checklistSteps()"
+          [ready]="checklistReady()"
+          [readyNote]="
+            fiche.draft()
+              ? 'Le minimum est là — vous pouvez ouvrir le compte.'
+              : 'Toutes les pièces sont réunies — le compte peut être activé.'
+          "
           (stepAction)="fiche.openStep($event)"
           (fileSelected)="onFile($event)"
         >
           <p intro>
             @if (fiche.draft()) {
-              Enregistrez l'identité ci-dessous pour ouvrir le compte : les pièces deviendront alors
-              complétables, une par une.
+              Pour <strong>ouvrir</strong> le compte : le nom d'usage et le détenteur. KBIS,
+              adresses et règlement se réclameront ensuite, section par section.
             } @else {
               Complétez les pièces manquantes pour activer ce compte, à la place du client.
             }
