@@ -111,3 +111,16 @@
   gap: var(--fold-space-sm);
   justify-content: center;
 }
+
+// L'avertissement de remplacement : deux phrases et deux gestes, alignés sur le
+// rythme de la carte. Il vit sous la ligne du fichier, là où le bouton l'a ouvert.
+.kbis-replace p {
+  margin: 0 0 var(--fold-space-xs);
+}
+
+.kbis-replace-actions {
+  display: flex;
+  gap: var(--fold-space-xs);
+  flex-wrap: wrap;
+  margin-top: var(--fold-space-xs);
+}

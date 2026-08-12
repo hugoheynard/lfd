@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import {
   FoldBadgeComponent,
@@ -97,6 +97,26 @@ export class CompanyIdentityCard {
 
   /** Ce qui manque à l'identité légale, en une phrase lisible. */
   protected readonly missingLegalLabel = computed(() => this.identity().missingLegal.join(', '));
+
+  /**
+   * L'avertissement de remplacement est-il ouvert ?
+   *
+   * Il ne s'affiche QUE pour un extrait déjà déposé — c'est là que remplacer a
+   * une conséquence : la vérification tombe, et avec elle le régime mensuel.
+   * Ouvrir le sélecteur de fichier d'abord et prévenir ensuite serait inutile :
+   * une fois le fichier choisi, la certification est déjà perdue côté serveur.
+   */
+  protected readonly replacing = signal(false);
+
+  protected askReplace(): void {
+    this.replacing.set(true);
+  }
+
+  /** Le geste est assumé : on ouvre le sélecteur et on referme l'avertissement. */
+  protected confirmReplace(input: HTMLInputElement): void {
+    this.replacing.set(false);
+    input.click();
+  }
 
   protected onKbisSelected(event: Event): void {
     const el = event.target as HTMLInputElement;

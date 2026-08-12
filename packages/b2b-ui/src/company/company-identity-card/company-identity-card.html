@@ -108,12 +108,39 @@
           size="sm"
           icon="plus"
           [disabled]="busy()"
-          (click)="kbisInput.click()"
+          (click)="askReplace()"
         >
           Remplacer
         </button>
       }
     </div>
+
+    <!-- Remplacer un extrait VÉRIFIÉ annule la vérification : c'est la règle du
+         serveur (un nouveau fichier n'hérite jamais de la parole donnée sur le
+         précédent). La conséquence se dit AVANT le sélecteur de fichier, pas
+         après coup dans un toast — une fois le fichier déposé, il est trop tard
+         pour changer d'avis. -->
+    @if (replacing()) {
+      <fold-callout variant="info" class="kbis-replace">
+        <p>
+          Ce nouvel extrait <strong>ne sera pas vérifié</strong> : il faudra le confronter à
+          l'identité et le confirmer, comme le précédent.
+        </p>
+        <p>
+          Entre-temps, le compte n'est plus couvert par une vérification —
+          <strong>le régime mensuel n'est pas disponible</strong> tant que le nouvel extrait n'a pas
+          été vérifié.
+        </p>
+        <div class="kbis-replace-actions">
+          <button foldButton size="sm" (click)="confirmReplace(kbisInput)">
+            Choisir le nouvel extrait
+          </button>
+          <button foldButton emphasis="outline" size="sm" (click)="replacing.set(false)">
+            Annuler
+          </button>
+        </div>
+      </fold-callout>
+    }
 
     @if (error(); as message) {
       <fold-callout variant="alert" announce>{{ message }}</fold-callout>
