@@ -57,6 +57,7 @@ Chaque ligne porte l'**état réel du code**, pas l'intention :
 | [`b2b/audit-catalogue-boutique-b2b.md`](b2b/audit-catalogue-boutique-b2b.md)                           | 🟡   | Le catalogue vu de la boutique. **Il est encore semé en dur des deux côtés.**                                                                                                                   |
 | [`b2b/release-acquisition-commerciale.md`](b2b/release-acquisition-commerciale.md)                     | 🟡   | Le cadre de la release commerciale (lots). Précédé par le plan courant.                                                                                                                         |
 | [`b2b/b2b_backend_deploy.md`](b2b/b2b_backend_deploy.md)                                               | 🟡   | Déploiement du backend (Cloudflare Containers). Scaffold non validé par un build Docker réel.                                                                                                   |
+| [`b2b/architecture-feature-flags.md`](b2b/architecture-feature-flags.md)                               | 📐   | **Feature flags** : catalogue dans le code, écarts en base, valeur par environnement. Page Tech. Seul le menu est livré.                                                                        |
 
 ## PIM — le référentiel produit
 
