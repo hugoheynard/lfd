@@ -48,6 +48,8 @@ export class ComptesApiDouble {
   grantedTerms: string[] = [];
   /** Les adresses de livraison de la société — vide par défaut. */
   deliveries: unknown[] = [];
+  /** Les comptes de la LISTE (`GET /admin/companies`) — vide par défaut. */
+  listed: unknown[] = [];
   /** Les corrections d'adresse reçues : `[addressId, charge]`. */
   readonly updatedDeliveries: [string, unknown][] = [];
 
@@ -82,6 +84,9 @@ export class ComptesApiDouble {
     if (pathname.endsWith('/admin/companies') && method === 'POST') {
       return this.open(route);
     }
+    if (pathname.endsWith('/admin/companies') && method === 'GET') {
+      return json(route, this.listed);
+    }
     if (pathname.endsWith(`/admin/companies/${COMPANY_ID}/members`)) {
       return method === 'POST' ? this.invite(route) : json(route, []);
     }
@@ -108,6 +113,13 @@ export class ComptesApiDouble {
     }
     if (pathname.endsWith('/admin/notifications')) {
       return json(route, { unread: 0, notifications: [] });
+    }
+    // La barre de portefeuille lit `pulse.growing` sans détour : servie par le
+    // fourre-tout `[]`, elle jetait — et l'erreur emportait le rendu de TOUTE la
+    // page, table comprise. Un double doit répondre la forme, pas une valeur
+    // vide qui n'existe nulle part côté serveur.
+    if (pathname.endsWith('/admin/growth/portfolio')) {
+      return json(route, PORTFOLIO);
     }
     // Le reste : une collection vide. Ces écrans en portent d'autres qui n'ont
     // rien à dire ici, et un 404 les mettrait en erreur pour rien.
@@ -278,6 +290,41 @@ export class ComptesApiDouble {
   }
 }
 
+/**
+ * Une ligne de la **liste** des comptes — juste ce que la liste consomme. Les
+ * champs manquants côté fiche n'ont rien à faire ici : la liste et le détail
+ * sont deux vues, et les confondre ferait passer un test sur des données que
+ * l'écran ne reçoit jamais.
+ */
+export function listedCompany(over: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: COMPANY_ID,
+    reference: 'C-CPT01',
+    raisonSociale: 'Le Comptoir SAS',
+    enseigne: 'Le Comptoir',
+    formeJuridique: 'SAS',
+    siret: '81245678900021',
+    tvaIntracom: '',
+    status: 'active',
+    grantedTerms: [],
+    requestedTerm: null,
+    primaryContact: {
+      id: null,
+      role: null,
+      firstName: 'Jean',
+      lastName: 'Moreau',
+      fonction: '',
+      email: 'jean@comptoir.fr',
+      phone: '',
+    },
+    owner: null,
+    kbis: null,
+    hasOpenSupportRequest: false,
+    createdAt: '2026-08-11T09:00:00.000Z',
+    ...over,
+  };
+}
+
 /** Le détenteur d'un compte tout juste ouvert : connu, sans accès. */
 function holder(): CompanyContactView {
   return {
@@ -292,6 +339,14 @@ function holder(): CompanyContactView {
     emailVerified: false,
   };
 }
+
+/** L'état du portefeuille, dans sa forme complète (`PortfolioMetricsView`). */
+const PORTFOLIO = {
+  activeCompanies: 12,
+  activatedLast30d: 3,
+  pulse: { growing: 4, flat: 6, shrinking: 2 },
+  failedPayments: 0,
+};
 
 /** Toutes les pièces facultatives : le scénario porte sur l'accès, pas sur elles. */
 const SETTINGS: PlatformSettings = {

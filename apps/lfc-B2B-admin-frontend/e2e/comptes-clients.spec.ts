@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { COMPANY_ID, ComptesApiDouble } from './comptes-api';
+import { COMPANY_ID, ComptesApiDouble, listedCompany } from './comptes-api';
 
 /**
  * **Ouvrir un compte client**, éprouvé dans un vrai navigateur.
@@ -293,5 +293,41 @@ test.describe('corriger une adresse de livraison', () => {
 
     await expect.poll(() => api.updatedDeliveries.length).toBe(1);
     expect(api.updatedDeliveries[0]?.[0]).toBe('addr_1');
+  });
+});
+
+test.describe('la liste au téléphone', () => {
+  // 390×844 : un iPhone récent. Le seuil de bascule de la table est à 768px —
+  // on éprouve donc bien la vue étroite, pas une table un peu serrée.
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('remplace la table par des CARTES, jamais un tableau à faire défiler', async ({ page }) => {
+    // Sept colonnes sur 390 px, c'est un défilement horizontal — donc des
+    // colonnes qu'on ne voit pas, et un nom qu'on perd en cherchant le statut.
+    const api = new ComptesApiDouble();
+    api.listed = [listedCompany()];
+    await api.install(page);
+    await page.goto('/comptes-clients');
+
+    // On lit DANS la carte : la table reste dans le DOM (fold la masque en CSS),
+    // donc un `getByText` global trouverait les deux et ne prouverait rien.
+    const carte = page.locator('a.rc');
+    await expect(carte).toContainText('Le Comptoir');
+    await expect(carte).toContainText('C-CPT01');
+    await expect(page.locator('table')).toBeHidden();
+  });
+
+  test('la carte ENTIÈRE mène à la fiche, pas seulement le nom', async ({ page }) => {
+    // Au pouce, on tape la carte : un lien posé sur le seul nom demanderait de
+    // viser une ligne de texte.
+    const api = new ComptesApiDouble();
+    api.listed = [listedCompany()];
+    await api.install(page);
+    await page.goto('/comptes-clients');
+
+    const carte = page.locator('a.rc');
+    await expect(carte).toHaveAttribute('href', `/comptes-clients/${COMPANY_ID}`);
+    const boite = await carte.boundingBox();
+    expect(boite?.width ?? 0).toBeGreaterThan(300);
   });
 });

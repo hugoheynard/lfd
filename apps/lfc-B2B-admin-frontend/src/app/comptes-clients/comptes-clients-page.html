@@ -67,9 +67,13 @@
       </p>
     }
 
+    <!-- `mobileLayout="custom"` : sous 768px la table cède la place aux cartes
+         ci-dessous. `auto-cards` empilerait les sept colonnes en paires
+         libellé/valeur — sept lignes par compte, et le nom perdu au milieu. -->
     <fold-data-table
       caption="Comptes clients B2B"
       toolbarSurface="accent"
+      mobileLayout="custom"
       hover
       stickyFirst
       [columns]="columns"
@@ -144,6 +148,58 @@
 
       <ng-template foldCell="createdAt" let-row>
         <span class="date">{{ formatDate(row.createdAt) }}</span>
+      </ng-template>
+
+      <!-- La carte mobile. Elle ne rejoue PAS les sept colonnes : elle garde ce
+           qui sert à reconnaître un compte au téléphone — le nom, son état, de
+           quoi le dicter (référence, SIRET), et qui décroche. La date d'entrée
+           part : sur mobile on cherche un client, on n'audite pas un portefeuille.
+
+           La carte entière est le lien vers la fiche — une cible de la largeur
+           du pouce, là où un `<a>` sur le seul nom demanderait de viser. -->
+      <ng-template foldRowCard let-row>
+        <a class="rc" [routerLink]="['/comptes-clients', row.id]">
+          <span class="rc-head">
+            <span class="rc-name">{{ displayName(row) }}</span>
+            @if (isAssistance(row)) {
+              <fold-badge variant="info" content="Assistance" />
+            } @else {
+              <fold-status-badge [status]="row.status" [label]="statusLabel(row)" />
+            }
+          </span>
+
+          @if (row.raisonSociale && row.raisonSociale !== displayName(row)) {
+            <span class="rc-legal">{{ row.raisonSociale }}</span>
+          }
+
+          <span class="rc-ids">
+            <span class="rc-ref">{{ row.reference }}</span>
+            @if (row.siret) {
+              <span class="rc-siret">{{ row.siret }}</span>
+            }
+          </span>
+
+          @if (contactName(row); as name) {
+            <span class="rc-contact">
+              {{ name }}
+              @if (row.primaryContact.email) {
+                <span class="rc-email">{{ row.primaryContact.email }}</span>
+              }
+            </span>
+          }
+        </a>
+
+        <!-- Hors du lien : deux destinations dans une même ancre feraient un
+             lien imbriqué, que le HTML interdit et que le clavier ne sait pas
+             parcourir. -->
+        @if (pendingAlertsOf(row); as pending) {
+          <a class="rc-alerts" [routerLink]="['/comptes-clients', row.id, 'alertes']">
+            <fold-badge
+              variant="warning"
+              [content]="pending + ' alerte' + (pending > 1 ? 's' : '') + ' à voir'"
+            />
+          </a>
+        }
       </ng-template>
     </fold-data-table>
 

@@ -146,6 +146,79 @@ fold-element-title[foldToolbar] {
   min-width: 0;
 }
 
+/* ── Carte mobile (`mobileLayout="custom"`) ──
+   Une carte = un compte. Le lien porte toute la surface, pas seulement le nom :
+   au pouce, on tape la carte, on ne vise pas une ligne de texte. */
+.rc {
+  display: grid;
+  gap: 0.2rem;
+  padding: var(--fold-space-md);
+  color: inherit;
+  text-decoration: none;
+}
+
+.rc:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: -2px;
+  border-radius: var(--fold-radius-md);
+}
+
+/* Le nom et l'état sur la même ligne : c'est le couple qu'on lit en premier,
+   et le badge reste à droite même quand le nom passe à la ligne. */
+.rc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.rc-name {
+  min-width: 0;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.rc-legal {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+/* Ce qui se dicte au téléphone — chiffres alignés, encre secondaire. */
+.rc-ids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--fold-space-sm);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-secondary);
+}
+
+.rc-ref {
+  font-weight: 700;
+}
+
+.rc-contact {
+  display: grid;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.rc-email {
+  overflow: hidden;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La pastille d'alertes vit HORS du lien de fiche (pas de lien imbriqué) : elle
+   reprend donc sa propre marge, sous la carte. */
+.rc-alerts {
+  display: block;
+  padding: 0 var(--fold-space-md) var(--fold-space-md);
+  text-decoration: none;
+}
+
 /* Le paginator termine le bloc de table : collé à elle, pas flottant au milieu
    du rythme de la page. */
 .pager {
