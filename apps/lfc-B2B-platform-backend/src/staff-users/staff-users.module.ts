@@ -2,6 +2,7 @@ import { Logger, Module, type OnModuleInit } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
 import { AppConfig } from "../infra/config/app-config.js";
+import { StartupReport } from "../infra/startup/startup-report.service.js";
 import { GetStaffMeHandler } from "./application/get-staff-me.handler.js";
 import { InviteStaffUserHandler } from "./application/invite-staff-user.handler.js";
 import { ListStaffUsersHandler } from "./application/list-staff-users.handler.js";
@@ -63,7 +64,10 @@ import { PrismaStaffUserRepository } from "./infrastructure/prisma-staff-user.re
 export class StaffUsersModule implements OnModuleInit {
   private readonly logger = new Logger(StaffUsersModule.name);
 
-  constructor(private readonly staff: StaffUserRepository) {}
+  constructor(
+    private readonly staff: StaffUserRepository,
+    private readonly startup: StartupReport,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     try {
@@ -72,6 +76,18 @@ export class StaffUsersModule implements OnModuleInit {
       // On ne bloque PAS le boot : la garde anti-suppression + le prochain boot
       // ré-assurent l'admin racine. Un souci transitoire (db) ne tue pas l'API.
       this.logger.error("ensureBootstrapAdmin a échoué", error);
+      // Mais on ne le garde pas pour nous non plus. Sans cette ligne, l'échec le
+      // plus courant — une migration non appliquée — se manifeste plus tard par
+      // un « Aucun accès » sur le compte administrateur, ce qui n'oriente vers
+      // rien. Constaté le 2026-08-12, en production.
+      this.startup.report({
+        capability: "Porte de secours (admin racine)",
+        setting: "BOOTSTRAP_ADMIN_EMAIL",
+        consequence:
+          "l'admin racine n'a pas pu être semé — cause la plus fréquente : une migration " +
+          "non appliquée. Symptôme visible : « Aucun accès » à la connexion",
+        severity: "blocking",
+      });
     }
   }
 }
