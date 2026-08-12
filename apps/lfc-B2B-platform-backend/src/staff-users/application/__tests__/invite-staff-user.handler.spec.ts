@@ -66,9 +66,16 @@ function harness(row: StaffInvitationTarget, identityFails = false): Harness {
       return Promise.resolve("https://lien/renvoi");
     },
   };
+  // Le `send` du port est générique sur la clé de gabarit : sans annoter ici, le
+  // paramètre arrive en union de tous les gabarits et `data` n'a plus de forme.
+  // On déclare celui qu'on attend — un envoi d'un autre gabarit ne compilerait
+  // pas, ce qui est exactement le garde qu'on veut.
   const mailer: Pick<Deps[3], "enabled" | "send"> = {
     enabled: true,
-    send: (args): Promise<void> => {
+    send: (args: {
+      readonly to: string;
+      readonly data: { readonly passwordSetupUrl: string };
+    }): Promise<void> => {
       mails.push({ to: args.to, url: args.data.passwordSetupUrl });
       return Promise.resolve();
     },
@@ -76,9 +83,9 @@ function harness(row: StaffInvitationTarget, identityFails = false): Harness {
 
   const handler = new InviteStaffUserHandler(
     staff as Deps[0],
-    identities as StaffIdentityPort,
+    identities,
     { now: (): Date => NOW },
-    mailer as Deps[3],
+    mailer,
   );
   return { handler, provisioned, relinked, marked, mails };
 }

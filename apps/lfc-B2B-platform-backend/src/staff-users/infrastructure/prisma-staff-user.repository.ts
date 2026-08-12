@@ -80,9 +80,7 @@ function toView(row: StaffRow, now: Date): StaffUserView {
     // entrée, la personne n'a plus de lien à réclamer, et un « invitation
     // expirée » sur un compte actif serait une alarme mensongère.
     invitationExpired:
-      row.status === "invited" &&
-      row.invitedAt !== null &&
-      isInvitationExpired(row.invitedAt, now),
+      row.status === "invited" && row.invitedAt !== null && isInvitationExpired(row.invitedAt, now),
     overrides,
     permissions: resolveStaffPermissions(row.role, overrides),
   };
@@ -186,7 +184,14 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
   async forInvitation(id: string): Promise<StaffInvitationTarget> {
     const row = await this.prisma.staffUser.findUnique({
       where: { id },
-      select: { id: true, email: true, firstName: true, lastName: true, auth0Id: true, status: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        auth0Id: true,
+        status: true,
+      },
     });
     if (row === null) {
       throw new StaffUserNotFoundError(id);

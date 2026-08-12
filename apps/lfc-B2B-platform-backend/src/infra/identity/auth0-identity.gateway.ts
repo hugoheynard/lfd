@@ -120,10 +120,7 @@ export class Auth0IdentityGateway {
    * utilisable — il n'existe que parce qu'Auth0 en exige un à la création. Le
    * vrai mot de passe sera choisi par la personne, via le lien.
    */
-  private async createUser(
-    connection: string,
-    input: IdentityToProvision,
-  ): Promise<string | null> {
+  private async createUser(connection: string, input: IdentityToProvision): Promise<string | null> {
     const created = await this.api.call("POST", "/api/v2/users", {
       connection,
       email: input.email,

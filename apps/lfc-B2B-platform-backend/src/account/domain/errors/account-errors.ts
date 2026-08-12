@@ -255,4 +255,3 @@ export class ContactAlreadyExistsError extends BusinessError {
 }
 
 // ─── Panne technique (500) ───────────────────────────────────────────────────
-
