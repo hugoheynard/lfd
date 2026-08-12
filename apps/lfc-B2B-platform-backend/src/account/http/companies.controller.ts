@@ -3,6 +3,8 @@ import {
   updateIdentityPayloadSchema,
   type UpdatePaymentTermPayload,
   updatePaymentTermPayloadSchema,
+  fulfillmentPreferencePayloadSchema,
+  type FulfillmentPreferencePayload,
 } from "@lfd/contracts";
 import { Body, Controller, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
@@ -11,6 +13,7 @@ import { CurrentUser } from "../../infra/auth/current-user.decorator.js";
 import type { Principal } from "../../infra/auth/principal.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import {
+  PreferFulfillmentCommand,
   RequestPaymentTermCommand,
   UpdateCompanyIdentityCommand,
 } from "../application/commands/company-settings-commands.js";
@@ -64,6 +67,24 @@ export class CompaniesController {
   ): Promise<void> {
     await this.commands.execute<UpdateCompanyIdentityCommand, void>(
       new UpdateCompanyIdentityCommand(user.userId, companyId, payload),
+    );
+  }
+
+  /**
+   * Pose la **préférence d'acheminement** — gestionnaire.
+   *
+   * Le client la règle lui-même : contrairement aux crédits de règlement, ce
+   * n'est pas une faveur à demander, c'est lui qui sait où il veut être servi.
+   */
+  @Patch(":companyId/fulfillment-preference")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async preferFulfillment(
+    @CurrentUser() user: Principal,
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(fulfillmentPreferencePayloadSchema)) payload: FulfillmentPreferencePayload,
+  ): Promise<void> {
+    await this.commands.execute<PreferFulfillmentCommand, void>(
+      new PreferFulfillmentCommand(user.userId, companyId, payload),
     );
   }
 

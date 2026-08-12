@@ -1,6 +1,6 @@
 import { DEFERRED_TERM_LABELS, type DeferredTerm } from '@lfd/contracts';
 
-import type { AssignableRole, CompanyMemberRole } from '@lfd/contracts';
+import type { FulfillmentPreferenceView, AssignableRole, CompanyMemberRole } from '@lfd/contracts';
 
 /**
  * Le **compte** tel que le backend le renvoie sur `GET /me` — miroir de
@@ -115,6 +115,12 @@ export interface Company {
   readonly contacts: readonly Contact[];
   /** KBIS déposé, ou `null` si l'entreprise n'en a pas encore fourni. */
   readonly kbis: Kbis | null;
+  /**
+   * Comment cette société est servie **d'habitude** — le point de départ de ses
+   * commandes. `method: null` = rien n'est posé : le panier demandera, comme
+   * aujourd'hui.
+   */
+  readonly fulfillmentPreference: FulfillmentPreferenceView;
 }
 
 /**

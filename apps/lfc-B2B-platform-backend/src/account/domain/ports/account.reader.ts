@@ -1,4 +1,4 @@
-import type { DeferredTerm } from "@lfd/contracts";
+import type { DeferredTerm, FulfillmentPreferenceView } from "@lfd/contracts";
 import type { CompanyRole } from "../value-objects/company-role.js";
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import type { NavPreferences } from "../value-objects/nav-preferences.js";
@@ -77,6 +77,12 @@ export interface CompanyView {
   readonly contacts: readonly ContactView[];
   /** KBIS déposé, ou `null` si l'entreprise n'en a pas encore fourni. */
   readonly kbis: KbisView | null;
+  /**
+   * Comment cette société est servie **d'habitude** — le point de départ de ses
+   * commandes, jamais une contrainte. `method: null` = rien n'a été posé, ce qui
+   * n'est pas « retrait » : le panier rechoisira comme aujourd'hui.
+   */
+  readonly fulfillmentPreference: FulfillmentPreferenceView;
 }
 
 /** Ce que `GET /me` renvoie : qui je suis, et quelles entreprises sont les miennes. */

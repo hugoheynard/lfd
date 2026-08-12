@@ -245,3 +245,65 @@ describe("livraison — défaut, tri, archivage", () => {
     expect(leaked).toBe(0);
   });
 });
+
+describe("préférence d'acheminement (côté client)", () => {
+  it("le gestionnaire la pose, et /me la relit", async () => {
+    // Elle n'est pas une faveur à demander au staff : c'est le client qui sait
+    // où il veut être servi.
+    await ctx
+      .asSub(ADMIN)
+      .patch(`/companies/${companyId}/fulfillment-preference`)
+      .send({ method: "pickup" })
+      .expect(204);
+
+    const me = jsonBody<{ companies: { fulfillmentPreference: { method: string | null } }[] }>(
+      await ctx.asSub(ADMIN).get("/me").expect(200),
+    );
+    expect(me.companies[0]?.fulfillmentPreference.method).toBe("pickup");
+  });
+
+  it("dit « aucune préférence » tant que rien n'a été posé", async () => {
+    // `null` n'est pas « retrait » : c'est l'état de tout le portefeuille, et
+    // le panier doit continuer de demander.
+    const me = jsonBody<{ companies: { fulfillmentPreference: { method: string | null } }[] }>(
+      await ctx.asSub(ADMIN).get("/me").expect(200),
+    );
+    expect(me.companies[0]?.fulfillmentPreference.method).toBeNull();
+  });
+
+  it("REFUSE un simple membre (403) et un non-membre (404)", async () => {
+    // Le mur du client n'est pas celui du staff : ici c'est le rôle qui tranche.
+    await ctx
+      .asSub(MEMBER)
+      .patch(`/companies/${companyId}/fulfillment-preference`)
+      .send({ method: "pickup" })
+      .expect(403);
+    await ctx
+      .asSub(STRANGER)
+      .patch(`/companies/${companyId}/fulfillment-preference`)
+      .send({ method: "pickup" })
+      .expect(404);
+  });
+
+  it("REFUSE l'adresse d'une autre société", async () => {
+    const other = await createCompany(ctx.prisma, { siret: "" });
+    const foreign = await ctx.prisma.address.create({
+      data: {
+        companyId: other.id,
+        kind: "livraison",
+        label: "Chez le voisin",
+        ligne1: "1 rue Ailleurs",
+        codePostal: "75001",
+        ville: "Paris",
+        pays: "France",
+      },
+      select: { id: true },
+    });
+
+    await ctx
+      .asSub(ADMIN)
+      .patch(`/companies/${companyId}/fulfillment-preference`)
+      .send({ method: "delivery", deliveryAddressId: foreign.id })
+      .expect(404);
+  });
+});

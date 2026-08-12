@@ -15,6 +15,7 @@ import {
   UpdateIdentityByStaffHandler,
   UploadKbisByStaffHandler,
 } from "./application/commands/admin-company.handlers.js";
+import { PreferFulfillmentHandler } from "./application/commands/prefer-fulfillment.handler.js";
 import { AddDeliveryAddressHandler } from "./application/commands/add-delivery-address.handler.js";
 import { CreateCompanyByStaffHandler } from "./application/commands/create-company-by-staff.handler.js";
 import { CreateCompanyHandler } from "./application/commands/create-company.handler.js";
@@ -158,6 +159,7 @@ import { MeController } from "./http/me.controller.js";
     GetCompanyForStaffHandler,
     UpdateCompanyIdentityHandler,
     RequestPaymentTermHandler,
+    PreferFulfillmentHandler,
     ActivateCompanyByStaffHandler,
     ChangeCompanyStatusHandler,
     GetCustomerSheetHandler,

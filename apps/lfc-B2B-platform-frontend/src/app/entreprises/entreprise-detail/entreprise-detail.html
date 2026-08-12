@@ -9,6 +9,10 @@
 
   <app-adresses-section [company]="company()" />
 
+  <!-- Après les adresses : on ne choisit une préférence qu'une fois qu'il y a
+       de quoi choisir. -->
+  <app-acheminement-section [company]="company()" />
+
   <app-facturation-section [company]="company()" />
 
   <app-support-aside asideRight [company]="company()" />

@@ -64,6 +64,9 @@ export class PrismaAccountReader extends AccountReader {
                 status: true,
                 grantedTerms: true,
                 requestedTerm: true,
+                preferredFulfillmentMethod: true,
+                preferredPickupAddressId: true,
+                preferredDeliveryAddressId: true,
                 kbisFileName: true,
                 kbisUploadedAt: true,
                 kbisCertifiedAt: true,
@@ -107,6 +110,11 @@ export class PrismaAccountReader extends AccountReader {
       status: company.status,
       grantedTerms: company.grantedTerms,
       requestedTerm: company.requestedTerm,
+      fulfillmentPreference: {
+        method: company.preferredFulfillmentMethod,
+        pickupAddressId: company.preferredPickupAddressId,
+        deliveryAddressId: company.preferredDeliveryAddressId,
+      },
       role,
       // Le contact principal EST le détenteur : son rôle n'est pas choisi, il
       // est constaté — d'où `null` ici plutôt qu'une valeur à maintenir.

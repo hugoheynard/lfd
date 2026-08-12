@@ -41,6 +41,7 @@ function company(over: Partial<Company> = {}): Company {
     },
     contacts: [],
     kbis: null,
+    fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
     ...over,
   };
 }

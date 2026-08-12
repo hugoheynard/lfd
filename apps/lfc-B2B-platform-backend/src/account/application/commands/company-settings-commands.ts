@@ -1,4 +1,8 @@
-import type { DeferredTerm, UpdateIdentityPayload } from "@lfd/contracts";
+import type {
+  DeferredTerm,
+  FulfillmentPreferencePayload,
+  UpdateIdentityPayload,
+} from "@lfd/contracts";
 
 /**
  * Réglages d'entreprise éditables pendant l'onboarding. `actorUserId` accompagne
@@ -24,5 +28,20 @@ export class RequestPaymentTermCommand {
     readonly actorUserId: string,
     readonly companyId: string,
     readonly term: DeferredTerm,
+  ) {}
+}
+
+/**
+ * Pose la **préférence d'acheminement** de sa propre société.
+ *
+ * Contrairement aux crédits de règlement, ce n'est pas une faveur à demander au
+ * staff : c'est le client qui sait où il veut être servi. Il la règle donc
+ * lui-même — et le panier s'ouvrira dessus sans jamais l'y enfermer.
+ */
+export class PreferFulfillmentCommand {
+  constructor(
+    readonly actorUserId: string,
+    readonly companyId: string,
+    readonly preference: FulfillmentPreferencePayload,
   ) {}
 }

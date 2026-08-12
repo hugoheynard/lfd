@@ -8,6 +8,7 @@ import { ActivationChecklist } from '../activation-checklist/activation-checklis
 import { CompanyContactsSection } from '../company-contacts-section/company-contacts-section';
 import { EntrepriseIdentite } from '../entreprise-identite/entreprise-identite';
 import { ReferenceCard } from '../reference-card/reference-card';
+import { AcheminementSection } from '../acheminement-section/acheminement-section';
 import { SupportAside } from './support-aside/support-aside';
 
 /**
@@ -20,6 +21,7 @@ import { SupportAside } from './support-aside/support-aside';
   selector: 'app-entreprise-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AcheminementSection,
     FoldAsideLayoutComponent,
     ReferenceCard,
     ActivationChecklist,

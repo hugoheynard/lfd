@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import type { FulfillmentPreferenceView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import type { Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
@@ -182,6 +183,29 @@ export class AccountService {
           headers(token),
         ),
       'Demande de règlement enregistrée.',
+      onDone,
+    );
+  }
+
+  /**
+   * Pose (ou retire) la **préférence d'acheminement** de sa société.
+   *
+   * Contrairement au délai de règlement, ce n'est pas une demande adressée au
+   * commercial : c'est le client qui sait où il veut être servi.
+   */
+  preferFulfillment(
+    companyId: string,
+    preference: FulfillmentPreferenceView,
+    onDone?: () => void,
+  ): void {
+    this.mutate(
+      (token) =>
+        this.http.patch(
+          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/fulfillment-preference`,
+          preference,
+          headers(token),
+        ),
+      "Préférence d'acheminement enregistrée.",
       onDone,
     );
   }
