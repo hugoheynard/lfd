@@ -69,7 +69,13 @@ describe("missingRequiredPieces", () => {
   it("renvoie [] quand toutes les pièces required sont présentes", () => {
     const complete = detail({
       tvaIntracom: "FR123",
-      kbis: { fileName: "k.pdf", uploadedAt: "2026-07-30T10:00:00.000Z", certified: false },
+      kbis: {
+        fileName: "k.pdf",
+        uploadedAt: "2026-07-30T10:00:00.000Z",
+        certified: true,
+        certifiedAt: "2026-07-31T09:00:00.000Z",
+        certifiedBy: { sub: "staff|1", name: "Camille Rousseau", role: "commercial" },
+      },
       addresses: {
         billing: {
           label: "",
@@ -100,5 +106,28 @@ describe("missingRequiredPieces", () => {
       },
     });
     expect(missingRequiredPieces(complete, allRequired)).toEqual([]);
+  });
+});
+
+describe("le KBIS ne compte que CERTIFIÉ", () => {
+  /** Un extrait déposé mais que personne n'a ouvert. */
+  const deposited = {
+    fileName: "k.pdf",
+    uploadedAt: "2026-07-30T10:00:00.000Z",
+    certified: false,
+    certifiedAt: null,
+    certifiedBy: null,
+  };
+
+  it("un KBIS déposé mais non certifié reste MANQUANT", () => {
+    // C'est tout l'objet de la pièce : elle garantit que l'identité saisie a été
+    // confrontée à un document officiel. Un PDF non ouvert ne garantit rien —
+    // n'importe quel fichier passerait la porte.
+    expect(missingRequiredPieces(detail({ kbis: deposited }), allRequired)).toContain("kbis");
+  });
+
+  it("certifié ⇒ la pièce est acquise", () => {
+    const certified = { ...deposited, certified: true, certifiedAt: "2026-07-31T09:00:00.000Z" };
+    expect(missingRequiredPieces(detail({ kbis: certified }), allRequired)).not.toContain("kbis");
   });
 });

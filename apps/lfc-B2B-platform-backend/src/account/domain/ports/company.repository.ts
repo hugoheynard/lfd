@@ -58,6 +58,30 @@ export abstract class CompanyRepository {
    * `contentType` sont des détails infra, absents de la vue `/me`.
    */
   abstract kbisLocation(companyId: string): Promise<KbisLocation | null>;
+
+  /**
+   * Pose — ou retire (`null`) — la **certification** du KBIS déposé.
+   *
+   * Certifier n'est pas une donnée saisie : c'est un agent qui a ouvert
+   * l'extrait, l'a comparé à ce qui est enregistré, et engage sa parole. D'où la
+   * trace jointe, et d'où le retrait possible : un clic de trop doit pouvoir se
+   * défaire, sinon personne n'osera cliquer.
+   */
+  abstract saveKbisCertification(
+    companyId: string,
+    certification: KbisCertification | null,
+  ): Promise<void>;
+}
+
+/** Qui a certifié, et quand. Le nom et le titre sont figés à cet instant. */
+export interface KbisCertification {
+  readonly at: Date;
+  /** Le `sub` du token staff — l'identifiant qui survit à un changement de nom. */
+  readonly bySub: string;
+  /** Instantané du nom d'usage, vide si le `sub` n'est dans aucune fiche. */
+  readonly byName: string;
+  /** Instantané du périmètre, vide de même. */
+  readonly byRole: string;
 }
 
 /** Métadonnées d'un KBIS déposé (le fichier vit dans le stockage objet). */

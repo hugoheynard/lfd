@@ -18,6 +18,9 @@ import { createCompany } from "./factories.js";
 
 const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
 
+/** L'unique ligne de config plateforme (cf. `PrismaPlatformSettingsRepository`). */
+const PLATFORM_SETTINGS_ID = "singleton";
+
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -280,5 +283,96 @@ describe("préférence d'acheminement", () => {
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.preferredFulfillmentMethod).toBe("pickup");
     expect(company.preferredPickupAddressId).toBeNull();
+  });
+});
+
+describe("certification du KBIS", () => {
+  it("refuse de certifier ce qui n'a pas été déposé (404), rien n'est écrit", async () => {
+    // Le clic n'existe que s'il y a un document à ouvrir. Certifier à blanc
+    // produirait un compte activable dont personne n'a jamais vu l'extrait.
+    const response = await staff().post(`/admin/companies/${companyId}/kbis/certification`);
+    expect(response.status).toBe(404);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.kbisCertifiedAt).toBeNull();
+  });
+
+  it("certifie un extrait déposé, et GARDE qui l'a fait", async () => {
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k.pdf")
+      .expect(204);
+    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.kbisCertifiedAt).not.toBeNull();
+    expect(company.kbisCertifiedBySub).toBe("staff-e2e");
+  });
+
+  it("un NOUVEAU dépôt décertifie — la trace ne survit pas au fichier qu'elle visait", async () => {
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k.pdf")
+      .expect(204);
+    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k2.pdf")
+      .expect(204);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.kbisCertifiedAt).toBeNull();
+    expect(company.kbisCertifiedBySub).toBeNull();
+  });
+
+  it("se retire — un clic de trop doit pouvoir se défaire", async () => {
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k.pdf")
+      .expect(204);
+    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+
+    await staff().delete(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.kbisCertifiedAt).toBeNull();
+  });
+
+  it("KBIS requis : DÉPOSÉ ne suffit pas, il faut CERTIFIÉ pour activer", async () => {
+    // La porte d'activation lit la certification, pas la présence du fichier.
+    await ctx.prisma.platformSettings.upsert({
+      where: { id: PLATFORM_SETTINGS_ID },
+      create: { id: PLATFORM_SETTINGS_ID, kbisMode: "required" },
+      update: { kbisMode: "required" },
+    });
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { tvaIntracom: "FR32812456789", contactTelephone: "01 42 71 08 44" },
+    });
+    await ctx.prisma.address.create({
+      data: {
+        companyId,
+        kind: AddressKind.facturation,
+        label: "Siège",
+        ligne1: "18 rue des Archives",
+        codePostal: "75004",
+        ville: "Paris",
+        pays: "France",
+      },
+    });
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k.pdf")
+      .expect(204);
+
+    const refused = await staff().post(`/admin/companies/${companyId}/activate`);
+    expect(refused.status).toBe(409);
+
+    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+    await staff().post(`/admin/companies/${companyId}/activate`).expect(204);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.status).toBe(CompanyStatus.active);
   });
 });

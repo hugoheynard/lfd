@@ -27,6 +27,9 @@ const COMPANY_SELECT = {
   kbisFileName: true,
   kbisUploadedAt: true,
   kbisCertifiedAt: true,
+  kbisCertifiedBySub: true,
+  kbisCertifiedByName: true,
+  kbisCertifiedByRole: true,
   contactPrenom: true,
   contactNom: true,
   contactFonction: true,
@@ -163,6 +166,17 @@ function toView(company: CompanyRow): AdminCompanyView {
             fileName: company.kbisFileName,
             uploadedAt: company.kbisUploadedAt.toISOString(),
             certified: company.kbisCertifiedAt !== null,
+            certifiedAt: company.kbisCertifiedAt?.toISOString() ?? null,
+            // La trace n'existe que si la certification existe : un nom sans
+            // date ne voudrait rien dire.
+            certifiedBy:
+              company.kbisCertifiedAt === null
+                ? null
+                : {
+                    sub: company.kbisCertifiedBySub ?? "",
+                    name: company.kbisCertifiedByName ?? "",
+                    role: company.kbisCertifiedByRole ?? "",
+                  },
           }
         : null,
     owner: company.memberships[0]?.user ?? null,

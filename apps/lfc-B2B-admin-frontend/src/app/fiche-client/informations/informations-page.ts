@@ -91,6 +91,28 @@ export class InformationsPage {
     this.fiche.canOpen(this.identityDraft(), this.holder()),
   );
 
+  /**
+   * « par Camille Rousseau (commercial), le 12/08/2026 » — ou rien du tout.
+   *
+   * Une trace incomplète vaut mieux qu'une trace inventée : quand l'annuaire ne
+   * connaît pas l'agent, on n'affiche pas son identifiant technique au milieu
+   * d'une phrase, on se contente de la date. Le `sub` reste en base pour qui
+   * enquête.
+   */
+  protected readonly certifiedBy = computed(() => {
+    const kbis = this.fiche.company()?.kbis;
+    if (kbis === null || kbis === undefined || kbis.certifiedAt === null) {
+      return '';
+    }
+    const date = new Date(kbis.certifiedAt).toLocaleDateString('fr-FR');
+    const agent = kbis.certifiedBy?.name ?? '';
+    if (agent === '') {
+      return ` le ${date}`;
+    }
+    const role = kbis.certifiedBy?.role ?? '';
+    return role === '' ? ` par ${agent}, le ${date}` : ` par ${agent} (${role}), le ${date}`;
+  });
+
   constructor() {
     // Lu au `snapshot` : la route ne change pas sous la page, sauf à la
     // création — et là c'est nous qui la réglons.

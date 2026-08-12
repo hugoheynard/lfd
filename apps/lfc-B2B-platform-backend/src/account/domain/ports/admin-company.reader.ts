@@ -58,8 +58,8 @@ export interface AdminCompanyView {
   readonly primaryContact: ContactView;
   /** Qui administre l'espace côté client, ou `null` si personne encore. */
   readonly owner: CompanyOwnerView | null;
-  /** KBIS déposé, ou `null`. `certified` = validé par le staff. */
-  readonly kbis: KbisView | null;
+  /** KBIS déposé, ou `null`. Vue **staff** : elle porte aussi qui a certifié. */
+  readonly kbis: AdminKbisView | null;
   /**
    * Une demande de support **ouverte** (`handled_at = null`) est rattachée à la
    * société. Orthogonal au `status` : distingue, parmi les `pending`, celles où
@@ -123,4 +123,29 @@ export abstract class AdminCompanyReader {
    * id. Cross-tenant comme {@link listAll} — l'auth staff est le seul mur.
    */
   abstract byId(companyId: string): Promise<AdminCompanyDetailView | null>;
+}
+
+/**
+ * Le KBIS vu du back-office : la vue client, plus la **trace** de certification.
+ *
+ * Elle ne remonte qu'ici. Le client a besoin de savoir que sa pièce est validée ;
+ * savoir quel agent l'a validée, et à quel titre, regarde l'équipe — c'est de
+ * l'audit interne, pas de l'information client.
+ */
+export interface AdminKbisView extends KbisView {
+  /** ISO, ou `null` si le KBIS n'a pas (ou plus) été certifié. */
+  readonly certifiedAt: string | null;
+  /** Qui a certifié, tel que figé ce jour-là. `null` si non certifié. */
+  readonly certifiedBy: CertifierView | null;
+}
+
+/**
+ * L'agent qui a engagé sa parole. `name` et `role` peuvent être **vides** quand
+ * le `sub` n'était rattaché à aucune fiche de l'annuaire : on montre alors
+ * l'identifiant brut plutôt qu'un nom inventé.
+ */
+export interface CertifierView {
+  readonly sub: string;
+  readonly name: string;
+  readonly role: string;
 }

@@ -74,6 +74,22 @@ export class FicheClientActions {
     return this.run(() => this.service.uploadKbis(company.id, file), 'KBIS déposé.');
   }
 
+  /**
+   * **Certifie** le KBIS déposé. Ce n'est pas une case qu'on coche : c'est la
+   * garantie que l'identité du compte a été confrontée à un document officiel.
+   */
+  certifyKbis(company: AdminCompanyDetail): Promise<boolean> {
+    return this.run(() => this.service.certifyKbis(company.id), 'KBIS certifié.');
+  }
+
+  /** Retire la certification (erreur de manipulation, extrait périmé). */
+  revokeKbisCertification(company: AdminCompanyDetail): Promise<boolean> {
+    return this.run(
+      () => this.service.revokeKbisCertification(company.id),
+      'Certification retirée.',
+    );
+  }
+
   /** Accorde (ou retire) les crédits de règlement — l'ensemble complet part. */
   grantTerms(company: AdminCompanyDetail, terms: readonly DeferredTerm[]): Promise<boolean> {
     return this.run(

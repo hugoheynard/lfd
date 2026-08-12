@@ -15,7 +15,12 @@ export function missingRequiredPieces(
   const present: Record<ActivationPiece, boolean> = {
     // Non assujetti ⇒ la TVA n'est jamais « manquante » (rien à exiger).
     tva: !company.vatNumberRequired || company.tvaIntracom.trim() !== "",
-    kbis: company.kbis !== null,
+    // **Certifié**, et non « déposé ». Le KBIS n'est pas une case à cocher :
+    // c'est la pièce sur laquelle repose l'exactitude de tout le reste (raison
+    // sociale, forme juridique, SIRET). Se contenter de sa présence reviendrait
+    // à activer sur la foi d'un PDF que personne n'a ouvert — n'importe quel
+    // fichier vaudrait alors garantie.
+    kbis: company.kbis?.certified === true,
     billing: company.addresses.billing !== null,
     delivery: company.addresses.deliveries.length > 0,
   };

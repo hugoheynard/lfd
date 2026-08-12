@@ -81,6 +81,12 @@ import { PrismaCompanyAddressReader } from "./infrastructure/prisma-company-addr
 import { PrismaCompanyAddressRepository } from "./infrastructure/prisma-company-address.repository.js";
 import { PrismaCompanyContactRepository } from "./infrastructure/prisma-company-contact.repository.js";
 import { PrismaCompanyRepository } from "./infrastructure/prisma-company.repository.js";
+import { PrismaStaffDirectory } from "./infrastructure/prisma-staff-directory.js";
+import { StaffDirectory } from "./domain/ports/staff-directory.js";
+import {
+  CertifyKbisHandler,
+  RevokeKbisCertificationHandler,
+} from "./application/commands/certify-kbis.handler.js";
 import { PrismaMembershipReader } from "./infrastructure/prisma-membership.reader.js";
 import { PrismaNavPreferencesRepository } from "./infrastructure/prisma-nav-preferences.repository.js";
 import { PrismaUserProfileRepository } from "./infrastructure/prisma-user-profile.repository.js";
@@ -164,6 +170,8 @@ import { MeController } from "./http/me.controller.js";
     ChangeCompanyStatusHandler,
     GetCustomerSheetHandler,
     UploadKbisByStaffHandler,
+    CertifyKbisHandler,
+    RevokeKbisCertificationHandler,
     UpdateIdentityByStaffHandler,
     GrantTermsHandler,
     PreferFulfillmentByStaffHandler,
@@ -181,6 +189,7 @@ import { MeController } from "./http/me.controller.js";
     { provide: AdminCompanyReader, useClass: PrismaAdminCompanyReader },
     { provide: CustomerSheetReader, useClass: PrismaCustomerSheetReader },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },
+    { provide: StaffDirectory, useClass: PrismaStaffDirectory },
     { provide: CompanyContactRepository, useClass: PrismaCompanyContactRepository },
     { provide: CompanyAddressRepository, useClass: PrismaCompanyAddressRepository },
     { provide: CompanyAddressReader, useClass: PrismaCompanyAddressReader },

@@ -101,6 +101,16 @@ export class FicheClientFacade {
     return this.mutate((company) => this.actions.uploadKbis(company, file));
   }
 
+  /** Certifie le KBIS — le geste qui débloque l'activation. */
+  certifyKbis(): Promise<void> {
+    return this.mutate((company) => this.actions.certifyKbis(company));
+  }
+
+  /** Retire la certification posée par erreur. */
+  revokeKbisCertification(): Promise<void> {
+    return this.mutate((company) => this.actions.revokeKbisCertification(company));
+  }
+
   grantTerms(terms: readonly DeferredTerm[]): Promise<void> {
     return this.mutate((company) => this.actions.grantTerms(company, terms));
   }

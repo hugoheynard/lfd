@@ -31,10 +31,15 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
+import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { ChangeCompanyStatusCommand } from "../application/commands/change-company-status.command.js";
 import { ActivateCompanyByStaffCommand } from "../application/commands/activate-company.command.js";
+import {
+  CertifyKbisCommand,
+  RevokeKbisCertificationCommand,
+} from "../application/commands/certify-kbis.command.js";
 import {
   AddDeliveryAddressByStaffCommand,
   SaveBillingAddressByStaffCommand,
@@ -87,6 +92,31 @@ export class AdminCompanyPiecesController {
     }
     await this.commands.execute<UploadKbisByStaffCommand, void>(
       new UploadKbisByStaffCommand(companyId, file.originalname, file.buffer),
+    );
+  }
+
+  /**
+   * **Certifie** le KBIS déposé : un agent a ouvert l'extrait et l'a comparé à
+   * l'identité enregistrée. C'est ce geste, pas le dépôt, qui débloque
+   * l'activation — et il est tracé (qui, à quel titre, quand).
+   */
+  @Post(":companyId/kbis/certification")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async certifyKbis(
+    @Param("companyId") companyId: string,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
+    await this.commands.execute<CertifyKbisCommand, void>(
+      new CertifyKbisCommand(companyId, staffSub),
+    );
+  }
+
+  /** Retire la certification — un clic de trop doit pouvoir se défaire. */
+  @Delete(":companyId/kbis/certification")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeKbisCertification(@Param("companyId") companyId: string): Promise<void> {
+    await this.commands.execute<RevokeKbisCertificationCommand, void>(
+      new RevokeKbisCertificationCommand(companyId),
     );
   }
 

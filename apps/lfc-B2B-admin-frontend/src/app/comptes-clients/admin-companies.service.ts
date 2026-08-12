@@ -145,6 +145,25 @@ export class AdminCompaniesService {
   }
 
   /**
+   * **Certifie** le KBIS : un agent a ouvert l'extrait et l'a confronté à
+   * l'identité enregistrée. C'est ce geste qui débloque l'activation — le dépôt
+   * seul ne prouve rien. Le serveur refuse (404) s'il n'y a rien à certifier, et
+   * garde qui a certifié.
+   */
+  async certifyKbis(companyId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${B2B_API_BASE}/admin/companies/${companyId}/kbis/certification`, {}),
+    );
+  }
+
+  /** Retire la certification — un clic de trop doit pouvoir se défaire. */
+  async revokeKbisCertification(companyId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${B2B_API_BASE}/admin/companies/${companyId}/kbis/certification`),
+    );
+  }
+
+  /**
    * Corrige une adresse de livraison **déjà posée**.
    *
    * Sans elle, le staff ne pouvait qu'en *ajouter* une : un code d'accès changé

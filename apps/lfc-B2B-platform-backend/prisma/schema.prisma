@@ -244,6 +244,16 @@ model Company {
   kbisUploadedAt  DateTime? @map("kbis_uploaded_at")
   kbisCertifiedAt DateTime? @map("kbis_certified_at")
 
+  // QUI a certifié. Le `sub` du token staff est l'identifiant qui reste
+  // résolvable après un changement de nom ; le nom et le périmètre sont un
+  // INSTANTANÉ de ce qui était vrai ce jour-là. C'est l'objet même d'une trace
+  // d'audit : « qui a engagé sa parole, à quel titre, à cette date » — pas « qui
+  // porte ce rôle aujourd'hui ». Nuls quand le sub n'est rattaché à aucune fiche
+  // de l'annuaire staff (compte non provisionné) : on n'invente pas un nom.
+  kbisCertifiedBySub  String? @map("kbis_certified_by_sub")
+  kbisCertifiedByName String? @map("kbis_certified_by_name")
+  kbisCertifiedByRole String? @map("kbis_certified_by_role")
+
   // Préférence d'ACHEMINEMENT : comment ce client est servi d'habitude. Ce n'est
   // pas une contrainte — la commande s'ouvre dessus, le client peut en changer
   // au panier. `null` = aucune préférence posée, ce qui n'est PAS « retrait » :

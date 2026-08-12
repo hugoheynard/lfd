@@ -40,6 +40,21 @@ export interface Kbis {
   readonly fileName: string;
   readonly uploadedAt: string;
   readonly certified: boolean;
+  /** ISO, ou `null` tant que personne n'a certifié. */
+  readonly certifiedAt: string | null;
+  /**
+   * Qui a certifié, figé au moment de l'acte. `null` si non certifié. Le nom et
+   * le titre peuvent être vides : le `sub` n'était alors rattaché à aucune fiche
+   * de l'annuaire, et on préfère l'identifiant brut à un nom inventé.
+   */
+  readonly certifiedBy: Certifier | null;
+}
+
+/** L'agent qui a engagé sa parole sur l'extrait. */
+export interface Certifier {
+  readonly sub: string;
+  readonly name: string;
+  readonly role: string;
 }
 
 export interface AdminCompany {

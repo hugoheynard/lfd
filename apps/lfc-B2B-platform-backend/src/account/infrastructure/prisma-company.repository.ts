@@ -8,6 +8,7 @@ import { Company } from "../domain/entities/company.js";
 import { SiretAlreadyRegisteredError } from "../domain/errors/account-errors.js";
 import {
   CompanyRepository,
+  type KbisCertification,
   type KbisLocation,
   type KbisMetadata,
 } from "../domain/ports/company.repository.js";
@@ -260,8 +261,30 @@ export class PrismaCompanyRepository extends CompanyRepository {
         kbisContentType: meta.contentType,
         kbisSize: meta.size,
         kbisUploadedAt: this.clock.now(),
-        // Nouveau fichier ⇒ certification précédente invalidée.
+        // Nouveau fichier ⇒ certification précédente invalidée, trace comprise :
+        // laisser le nom d'un agent sur un extrait qu'il n'a jamais vu ferait
+        // mentir la trace.
         kbisCertifiedAt: null,
+        kbisCertifiedBySub: null,
+        kbisCertifiedByName: null,
+        kbisCertifiedByRole: null,
+      },
+    });
+  }
+
+  async saveKbisCertification(
+    companyId: string,
+    certification: KbisCertification | null,
+  ): Promise<void> {
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        kbisCertifiedAt: certification?.at ?? null,
+        kbisCertifiedBySub: certification?.bySub ?? null,
+        // Chaîne vide ⇒ `null` en base : « aucun nom connu » est une absence,
+        // pas un nom vide — et la lecture n'a ainsi qu'un seul cas à traiter.
+        kbisCertifiedByName: blankToNull(certification?.byName),
+        kbisCertifiedByRole: blankToNull(certification?.byRole),
       },
     });
   }
@@ -317,4 +340,9 @@ function mentionsSiret(target: unknown): boolean {
 /** Une propriété d'un objet d'erreur — sans assertion, et sans supposer sa forme. */
 function readField(source: unknown, key: string): unknown {
   return typeof source === "object" && source !== null ? Reflect.get(source, key) : undefined;
+}
+
+/** Une chaîne vide n'est pas une valeur : c'est une absence. */
+function blankToNull(value: string | undefined): string | null {
+  return value === undefined || value.trim() === "" ? null : value;
 }

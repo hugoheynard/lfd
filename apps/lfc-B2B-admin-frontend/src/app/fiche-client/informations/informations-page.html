@@ -105,6 +105,36 @@
             (edit)="fiche.openStep('tva')"
             (kbisSelected)="onFile({ key: 'kbis', file: $event })"
           />
+
+          <!-- La certification est un geste STAFF : elle ne vit pas dans la
+               carte partagée avec le client. Ce qu'elle affirme n'est pas « un
+               fichier existe » mais « quelqu'un l'a ouvert et l'a confronté à
+               l'identité saisie » — c'est cela qui débloque l'activation. -->
+          @if (fiche.company()?.kbis; as kbis) {
+            <fold-callout [variant]="kbis.certified ? 'success' : 'warning'">
+              @if (kbis.certified) {
+                <p class="kbis-trace">
+                  Extrait certifié{{ certifiedBy() }}.
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    size="sm"
+                    (click)="fiche.revokeKbisCertification()"
+                  >
+                    Retirer la certification
+                  </button>
+                </p>
+              } @else {
+                <p class="kbis-trace">
+                  Extrait déposé, <strong>pas encore vérifié</strong> — le compte ne pourra pas être
+                  activé tant que personne ne l'a confronté à l'identité ci-dessus.
+                  <button foldButton emphasis="solid" size="sm" (click)="fiche.certifyKbis()">
+                    J'ai vérifié cet extrait
+                  </button>
+                </p>
+              }
+            </fold-callout>
+          }
         }
 
         @if (!fiche.draft()) {
