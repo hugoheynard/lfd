@@ -213,7 +213,6 @@ export class PaiementSection {
         holderEmail: this.holderEmail(),
         publishableKey: this.publishableKey(),
       },
-      side: 'right',
     }).closed;
     void closed.then(() => this.load(id));
   }

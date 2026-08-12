@@ -39,13 +39,11 @@ export class FicheClientPanels {
           formeJuridique: company.formeJuridique,
           siret: company.siret,
         },
-        side: 'right',
       }).closed;
     }
     if (key === 'billing') {
       return this.panels.open(AdminAdressePanel, {
         data: { companyId: company.id, kind: 'facturation' },
-        side: 'right',
       }).closed;
     }
     if (key === 'delivery') {
@@ -62,7 +60,6 @@ export class FicheClientPanels {
         kind: 'livraison',
         knownContacts: knownContactsOf(company),
       },
-      side: 'right',
     }).closed;
   }
 
@@ -75,7 +72,6 @@ export class FicheClientPanels {
         knownContacts: knownContactsOf(company),
         delivery: address,
       },
-      side: 'right',
     }).closed;
   }
 
@@ -93,7 +89,6 @@ export class FicheClientPanels {
   ): Promise<unknown> {
     return this.panels.open(AdminContactPanel, {
       data: { companyId: company.id, ...contactTargetOf(company, contactId, isNew) },
-      side: 'right',
     }).closed;
   }
 }

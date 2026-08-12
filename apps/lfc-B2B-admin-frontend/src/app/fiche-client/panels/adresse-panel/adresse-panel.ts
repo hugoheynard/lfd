@@ -9,7 +9,12 @@ import {
 } from '@angular/core';
 
 import type { DeliveryAddressView, DeliveryContact } from '@lfd/contracts';
-import { FoldButtonComponent, FoldPanelHeaderComponent, FoldPanelRef } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  type FoldPanelDefaults,
+  FoldPanelHeaderComponent,
+  FoldPanelRef,
+} from 'fold-ng';
 import {
   AddressFields,
   deliveryDraftFrom,
@@ -54,6 +59,17 @@ export interface AdminAdressePanelData {
   styleUrl: './adresse-panel.scss',
 })
 export class AdminAdressePanel {
+  /**
+   * Nature du panneau : tiroir latéral au large, **bottom-sheet** sur étroit
+   * (`side: 'auto'`). Un tiroir de 490 px sur un téléphone, c'est un plein
+   * écran qui feint d'être un côté ; la feuille par le bas dit ce qu'elle est
+   * et laisse le pouce à portée du pied de panneau.
+   *
+   * Déclaré ICI : le côté appartient à la nature du panneau, pas au geste qui
+   * l'ouvre — six call-sites répétant `side` finissent par diverger.
+   */
+  static readonly foldPanel: FoldPanelDefaults = { side: 'auto' };
+
   private readonly service = inject(AdminCompaniesService);
   private readonly ref = inject(FoldPanelRef);
   private readonly notify = inject(NotifyService);
