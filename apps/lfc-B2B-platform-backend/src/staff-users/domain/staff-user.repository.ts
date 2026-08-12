@@ -71,11 +71,17 @@ export abstract class StaffUserRepository {
   abstract ensureBootstrapAdmin(): Promise<void>;
 
   /**
-   * Ce qu'il faut savoir d'une fiche pour l'inviter — et rien d'autre.
+   * Ce qu'une fiche dit de son **identité de connexion** — et rien d'autre.
+   *
+   * Deux gestes s'en servent, et c'est pourquoi elle ne s'appelle pas
+   * « forInvitation » : inviter a besoin de savoir s'il faut créer ou ré-émettre,
+   * et éditer a besoin de savoir si l'adresse a changé sur une identité déjà
+   * liée. Un nom qui n'énonce qu'un seul de ses usagers finit par empêcher le
+   * second.
    *
    * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
    */
-  abstract forInvitation(id: string): Promise<StaffInvitationTarget>;
+  abstract identityOf(id: string): Promise<StaffIdentityFacts>;
 
   /**
    * Constate l'invitation : la fiche passe `invited`, la date est posée, et
@@ -89,8 +95,8 @@ export abstract class StaffUserRepository {
   abstract markInvited(id: string, subject: string, invitedAt: Date): Promise<void>;
 }
 
-/** L'état d'une fiche au moment où on veut l'inviter. */
-export interface StaffInvitationTarget {
+/** L'état d'une fiche du point de vue du fournisseur d'identité. */
+export interface StaffIdentityFacts {
   readonly id: string;
   readonly email: string;
   readonly firstName: string;

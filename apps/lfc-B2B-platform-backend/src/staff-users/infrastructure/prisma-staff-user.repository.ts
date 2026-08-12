@@ -25,7 +25,7 @@ import {
 import { DuplicateStaffEmailError, StaffUserNotFoundError } from "../domain/staff-user-errors.js";
 import {
   StaffUserRepository,
-  type StaffInvitationTarget,
+  type StaffIdentityFacts,
 } from "../domain/staff-user.repository.js";
 
 interface OverrideRow {
@@ -181,7 +181,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     await this.prisma.staffUser.update({ where: { id }, data: { status: change.status } });
   }
 
-  async forInvitation(id: string): Promise<StaffInvitationTarget> {
+  async identityOf(id: string): Promise<StaffIdentityFacts> {
     const row = await this.prisma.staffUser.findUnique({
       where: { id },
       select: {

@@ -38,6 +38,11 @@ export class DevStaffIdentity extends StaffIdentityPort {
     this.logger.warn(`[dev] lien de mot de passe staff factice pour ${subject}`);
     return Promise.resolve(devPasswordUrl(subject));
   }
+
+  changeEmail(subject: string, email: string): Promise<void> {
+    this.logger.warn(`[dev] changement d'adresse staff non propagé : ${subject} → ${email}`);
+    return Promise.resolve();
+  }
 }
 
 /** Déterministe, et **préfixé staff** : le double d'un client n'est pas le sien. */

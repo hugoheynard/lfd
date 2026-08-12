@@ -8,15 +8,17 @@ export type { IdentityToProvision, ProvisionedIdentity };
 /**
  * Port vers le fournisseur d'identité, **vu par l'annuaire staff**.
  *
- * Deux gestes, et pas un de plus : ouvrir une identité, ré-émettre un lien.
- * Le port client en déclare un troisième — propager un changement d'adresse —
- * qui n'a pas d'équivalent ici : l'e-mail d'un membre de l'équipe change par
- * l'annuaire, et rien n'est encore câblé vers Auth0. Déclarer ce geste
- * l'annoncerait comme disponible ; le taire dit la vérité.
+ * Trois gestes : ouvrir une identité, ré-émettre un lien, propager un
+ * changement d'adresse — et pas un de plus.
  *
- * C'est aussi ce qui interdit au contexte staff de dépendre du contexte
- * `account` : ils partagent la **mécanique** (`Auth0IdentityGateway`), pas leurs
- * contrats.
+ * Le troisième a longtemps manqué, et son absence produisait exactement l'état
+ * que le port client qualifie de pire : renommer quelqu'un dans l'annuaire le
+ * laissait se connecter avec son ANCIENNE adresse, pendant que l'écran en
+ * affichait une autre. La liaison par `sub` évitait la perte d'accès ; elle
+ * n'évitait pas le mensonge.
+ *
+ * C'est ce qui interdit au contexte staff de dépendre du contexte `account` :
+ * ils partagent la **mécanique** (`Auth0IdentityGateway`), pas leurs contrats.
  */
 export abstract class StaffIdentityPort {
   /**
@@ -39,4 +41,19 @@ export abstract class StaffIdentityPort {
    * @throws {IdentityProviderUnavailableError} canal non configuré ou en échec.
    */
   abstract issuePasswordLink(subject: string): Promise<string>;
+
+  /**
+   * Propage une nouvelle adresse au fournisseur d'identité.
+   *
+   * L'adresse repart **non vérifiée**, avec l'e-mail de vérification d'Auth0 :
+   * sans cela, un administrateur pourrait attribuer à un collègue une adresse
+   * que celui-ci ne contrôle pas — et l'e-mail est ici un facteur
+   * d'authentification, pas une simple coordonnée.
+   *
+   * @param subject `sub` de l'identité visée. L'appelant ne doit appeler ce
+   *   geste que pour une fiche **déjà liée** : sans identité ouverte, il n'y a
+   *   rien à propager, et rien à réparer non plus.
+   * @throws {IdentityProviderUnavailableError} canal non configuré ou en échec.
+   */
+  abstract changeEmail(subject: string, email: string): Promise<void>;
 }

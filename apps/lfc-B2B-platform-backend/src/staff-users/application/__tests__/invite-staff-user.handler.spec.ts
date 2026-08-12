@@ -2,13 +2,13 @@ import type { StaffStatus } from "@lfd/contracts";
 
 import { StaffIdentityPort } from "../../domain/staff-identity.port.js";
 import { SuspendedStaffInviteError } from "../../domain/staff-user-errors.js";
-import type { StaffInvitationTarget } from "../../domain/staff-user.repository.js";
+import type { StaffIdentityFacts } from "../../domain/staff-user.repository.js";
 import { InviteStaffUserCommand } from "../staff-user.commands.js";
 import { InviteStaffUserHandler } from "../invite-staff-user.handler.js";
 
 const NOW = new Date("2026-08-12T12:00:00.000Z");
 
-function target(overrides: Partial<StaffInvitationTarget> = {}): StaffInvitationTarget {
+function target(overrides: Partial<StaffIdentityFacts> = {}): StaffIdentityFacts {
   return {
     id: "s1",
     email: "sophie@lfc.test",
@@ -37,14 +37,14 @@ class IdentityDown extends Error {
   }
 }
 
-function harness(row: StaffInvitationTarget, identityFails = false): Harness {
+function harness(row: StaffIdentityFacts, identityFails = false): Harness {
   const provisioned: string[] = [];
   const relinked: string[] = [];
   const marked: { id: string; subject: string; at: Date }[] = [];
   const mails: { to: string; url: string }[] = [];
 
-  const staff: Pick<Deps[0], "forInvitation" | "markInvited"> = {
-    forInvitation: (): Promise<StaffInvitationTarget> => Promise.resolve(row),
+  const staff: Pick<Deps[0], "identityOf" | "markInvited"> = {
+    identityOf: (): Promise<StaffIdentityFacts> => Promise.resolve(row),
     markInvited: (id: string, subject: string, at: Date): Promise<void> => {
       marked.push({ id, subject, at });
       return Promise.resolve();

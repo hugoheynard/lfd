@@ -7,7 +7,7 @@ import { StaffIdentityPort } from "../domain/staff-identity.port.js";
 import { SuspendedStaffInviteError } from "../domain/staff-user-errors.js";
 import {
   StaffUserRepository,
-  type StaffInvitationTarget,
+  type StaffIdentityFacts,
 } from "../domain/staff-user.repository.js";
 import { InviteStaffUserCommand } from "./staff-user.commands.js";
 
@@ -35,7 +35,7 @@ export class InviteStaffUserHandler implements ICommandHandler<InviteStaffUserCo
   ) {}
 
   async execute(command: InviteStaffUserCommand): Promise<void> {
-    const target = await this.staff.forInvitation(command.id);
+    const target = await this.staff.identityOf(command.id);
     if (target.status === "suspended") {
       throw new SuspendedStaffInviteError();
     }
@@ -60,7 +60,7 @@ export class InviteStaffUserHandler implements ICommandHandler<InviteStaffUserCo
    * surtout un aller-retour réseau inutile sur le cas courant du renvoi.
    */
   private async openAccess(
-    target: StaffInvitationTarget,
+    target: StaffIdentityFacts,
   ): Promise<{ subject: string; passwordSetupUrl: string }> {
     if (target.auth0Id !== null) {
       return {

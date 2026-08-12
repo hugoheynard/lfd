@@ -35,6 +35,10 @@ export class Auth0StaffIdentity extends StaffIdentityPort {
     return this.identities.issuePasswordLink(subject, this.backOffice());
   }
 
+  changeEmail(subject: string, email: string): Promise<void> {
+    return this.identities.changeEmail(subject, email);
+  }
+
   /** Où atterrir une fois le mot de passe posé — omis si on ne sait pas. */
   private backOffice(): string | undefined {
     return this.config.adminBaseUrl() ?? undefined;
