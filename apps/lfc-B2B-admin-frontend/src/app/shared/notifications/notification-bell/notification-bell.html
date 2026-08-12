@@ -1,18 +1,15 @@
 <fold-popover
-  placement="right-end"
-  [fallbackPlacements]="['right-start', 'bottom-start']"
+  placement="bottom-end"
+  [fallbackPlacements]="['bottom-start', 'top-end']"
   [open]="open()"
   (openChange)="toggled($event)"
 >
-  <button
-    fold-menu-item
-    foldPopoverTrigger
-    type="button"
-    icon="bell"
-    label="Notifications"
-    [badge]="unread()"
-    badgeTone="alert"
-  ></button>
+  <button foldPopoverTrigger type="button" class="nb-trigger" [attr.aria-label]="triggerLabel()">
+    <fold-icon name="bell" [size]="20" />
+    @if (unread() > 0) {
+      <span class="nb-count" aria-hidden="true">{{ unread() }}</span>
+    }
+  </button>
 
   <div foldPopoverPanel class="nb-panel">
     <header class="nb-head">

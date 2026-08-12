@@ -1,6 +1,50 @@
 :host {
-  display: block;
-  width: 100%;
+  display: inline-flex;
+}
+
+/* Le déclencheur d'en-tête : une cible tactile carrée, la pastille du compte
+   accrochée au coin. Pas de `fold-button-icon` — il ne porte pas de badge, et
+   un compteur qui n'apparaîtrait qu'à l'ouverture ne serait pas un compteur. */
+.nb-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fold-radius-md, 8px);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.nb-trigger:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.nb-trigger:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Le compte, en pastille sur l'icône. Rouge d'alerte plutôt que teinte de
+   marque : sur l'entête navy, un badge primaire se fondrait dans le fond. */
+.nb-count {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.28rem;
+  border-radius: var(--fold-radius-pill, 999px);
+  background: var(--fold-color-alert, #d64545);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 /* La surface, le rayon et l'ombre appartiennent à `fold-popover` — les

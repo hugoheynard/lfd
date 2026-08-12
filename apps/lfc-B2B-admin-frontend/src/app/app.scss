@@ -8,6 +8,78 @@ fold-app-shell {
   height: 100%;
 }
 
+/* ── En-tête ──
+   Surface `chrome` (via `foldSurface`) : le thème remappe l'encre en clair ; on
+   peint le fond avec le token d'entête — navy ici, la bonne nuance ailleurs. */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md, 1rem);
+  height: 100%;
+  padding-inline: var(--fold-space-md, 1rem);
+  background: var(--fold-color-bg-header);
+  color: var(--fold-color-text);
+}
+
+/* Le burger n'existe QUE sous 768px : au-dessus le rail est là, et un second
+   chemin vers le même menu n'ajouterait qu'une question. */
+.app-hamburger {
+  display: none;
+}
+
+.app-wordmark {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-wordmark-admin {
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  margin-inline-start: auto;
+}
+
+/* L'adresse du staff connecté. Tronquée : elle cède la place à la cloche. */
+.app-user {
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fold-text-sm, 0.9rem);
+  opacity: 0.85;
+}
+
+@media (max-width: 768px) {
+  .app-hamburger {
+    display: inline-flex;
+  }
+
+  .app-header {
+    gap: var(--fold-space-sm, 0.5rem);
+    padding-inline: var(--fold-space-sm, 0.6rem);
+  }
+
+  /* L'adresse s'efface avant tout le reste : c'est le seul élément de l'en-tête
+     qu'on ne clique jamais. */
+  .app-user {
+    display: none;
+  }
+}
+
 /* Écran d'attente pendant la résolution de session — volontairement nu. */
 .boot {
   display: grid;

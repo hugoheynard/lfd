@@ -2,10 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   FoldAppShellComponent,
+  FoldButtonIconComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
+  FoldNavLauncherComponent,
+  FoldNavTileComponent,
   FoldPanelHostComponent,
   FoldSpinnerComponent,
+  FoldSurfaceDirective,
   FoldToastContainerComponent,
 } from 'fold-ng';
 
@@ -38,10 +42,14 @@ import { SuiteEmbed } from './suite-embed/suite-embed';
     RouterLink,
     RouterLinkActive,
     FoldAppShellComponent,
+    FoldButtonIconComponent,
     FoldMenuComponent,
     FoldMenuItemComponent,
+    FoldNavLauncherComponent,
+    FoldNavTileComponent,
     FoldPanelHostComponent,
     FoldSpinnerComponent,
+    FoldSurfaceDirective,
     FoldToastContainerComponent,
     NotificationBell,
     StaffLoginPage,
@@ -52,7 +60,11 @@ import { SuiteEmbed } from './suite-embed/suite-embed';
 export class App {
   /** Rail primaire : déployé par défaut, repliable via le chevron intégré. */
   protected readonly menuExpanded = signal<boolean | undefined>(true);
-  /** Tiroir off-canvas ≤768px. */
+  /**
+   * Navigation mobile ≤768px. Le shell ne rend aucun tiroir
+   * (`mobileNav="none"`) : ce drapeau ouvre la grille de tuiles, et le burger
+   * de l'en-tête le bascule.
+   */
   protected readonly mobileNavOpen = signal(false);
 
   private readonly auth = inject(StaffAuth);

@@ -7,9 +7,11 @@
 } @else if (locked()) {
   <app-staff-login />
 } @else {
-  <fold-app-shell #shell="foldAppShell" [headerHeight]="0" [(mobileNavOpen)]="mobileNavOpen">
-    <!-- Rail primaire — le menu de l'app. Déployé par défaut, repliable. Devient un
-         tiroir off-canvas ≤768px. Embarqué : `secondary` (2ᵉ rail sous le switcher). -->
+  <!-- `mobileNav="none"` : sous 768px le shell ne rend AUCUN tiroir — le rail
+       s'efface et le lanceur de tuiles, plus bas, prend le relais. -->
+  <fold-app-shell #shell="foldAppShell" mobileNav="none" [(mobileNavOpen)]="mobileNavOpen">
+    <!-- Rail primaire — le menu de l'app. Déployé par défaut, repliable.
+         Embarqué : `secondary` (2ᵉ rail sous le switcher). -->
     <fold-menu
       railPrimary
       collapsible
@@ -57,11 +59,6 @@
         (click)="mobileNavOpen.set(false)"
       ></a>
 
-      <!-- La cloche d'équipe. Dans le rail plutôt qu'en en-tête : cette coquille
-           n'en a pas (`headerHeight` 0), et une notification finit toujours par
-           une navigation — sa place est avec les autres liens. -->
-      <app-notification-bell />
-
       <!-- QUI est connecté, quand la session est celle de cette app. Embarqué,
            l'identité appartient au shell et s'affiche là-haut : la répéter ici
            laisserait croire à deux sessions distinctes. -->
@@ -79,8 +76,81 @@
       ></button>
     </fold-menu>
 
+    <!-- En-tête. Il n'existe que pour ce qui n'est PAS de la navigation : ouvrir
+         le menu mobile, et la cloche d'équipe. Le menu, lui, reste dans le rail —
+         un lien n'a pas à exister à deux endroits sur le même écran. -->
+    <div header foldSurface="chrome" class="app-header">
+      <fold-button-icon
+        class="app-hamburger"
+        size="lg"
+        [icon]="mobileNavOpen() ? 'close' : 'menu'"
+        tooltip="Ouvrir la navigation"
+        [attr.aria-expanded]="mobileNavOpen()"
+        (clicked)="mobileNavOpen.set(!mobileNavOpen())"
+      />
+
+      <a class="app-wordmark" routerLink="/" aria-label="LFC B2B admin — accueil">
+        LFC <span class="app-wordmark-admin">Admin</span>
+      </a>
+
+      <div class="app-header-actions">
+        <!-- Embarqué, l'identité appartient au shell de la suite : la répéter ici
+             laisserait croire à deux sessions distinctes. -->
+        @if (!hosted && email(); as who) {
+          <span class="app-user" [title]="who">{{ who }}</span>
+        }
+        <app-notification-bell />
+      </div>
+    </div>
+
     <!-- Contenu routé -->
     <router-outlet />
+
+    <!-- Navigation mobile — grille de tuiles plein écran (le shell ne rend pas de
+         tiroir, `mobileNav="none"`). Même `mobileNavOpen` que le burger. -->
+    <fold-nav-launcher [(open)]="mobileNavOpen" label="Aller à">
+      <a
+        fold-nav-tile
+        variant="filled"
+        icon="company"
+        label="Comptes clients"
+        routerLink="/comptes-clients"
+        routerLinkActive
+        #comptesTile="routerLinkActive"
+        [active]="comptesTile.isActive"
+        (click)="mobileNavOpen.set(false)"
+      ></a>
+      <a
+        fold-nav-tile
+        variant="filled"
+        icon="calendar"
+        label="Commercial"
+        routerLink="/commercial"
+        routerLinkActive
+        #commercialTile="routerLinkActive"
+        [active]="commercialTile.isActive"
+        (click)="mobileNavOpen.set(false)"
+      ></a>
+      <a
+        fold-nav-tile
+        variant="filled"
+        icon="settings"
+        label="Réglages"
+        routerLink="/reglages"
+        routerLinkActive
+        #reglagesTile="routerLinkActive"
+        [active]="reglagesTile.isActive"
+        (click)="mobileNavOpen.set(false)"
+      ></a>
+      <button
+        fold-nav-tile
+        variant="filled"
+        icon="logout"
+        label="Déconnexion"
+        type="button"
+        (click)="logout()"
+      ></button>
+    </fold-nav-launcher>
 
     <!-- Hôte unique des side-panels (fiche compte à venir). -->
     <fold-panel-host />

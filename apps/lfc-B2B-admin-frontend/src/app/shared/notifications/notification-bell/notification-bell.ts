@@ -1,8 +1,15 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   FoldButtonComponent,
-  FoldMenuItemComponent,
+  FoldIconComponent,
   FoldPopoverComponent,
   FoldPopoverTriggerDirective,
 } from 'fold-ng';
@@ -15,8 +22,8 @@ import { StaffNotificationsService } from '../staff-notifications.service';
 const POLL_MS = 60_000;
 
 /**
- * La **cloche** du rail : un compteur, et un panneau qui rappelle ce qui vient
- * d'arriver.
+ * La **cloche** de l'en-tête : un compteur, et un panneau qui rappelle ce qui
+ * vient d'arriver.
  *
  * Elle **annonce, elle n'explique pas**. Chaque ligne est un lien vers l'écran
  * qui porte le détail — rejouer l'alerte ici obligerait à maintenir deux
@@ -32,7 +39,7 @@ const POLL_MS = 60_000;
   imports: [
     RouterLink,
     FoldButtonComponent,
-    FoldMenuItemComponent,
+    FoldIconComponent,
     FoldPopoverComponent,
     FoldPopoverTriggerDirective,
   ],
@@ -46,6 +53,15 @@ export class NotificationBell {
   protected readonly items = signal<readonly StaffNotificationView[]>([]);
   protected readonly unread = signal(0);
   protected readonly failed = signal(false);
+
+  /**
+   * Le nom accessible de la cloche **porte le compte** : la pastille est
+   * `aria-hidden` (décorative), donc sans ça un lecteur d'écran annoncerait
+   * « Notifications » à l'identique qu'il y en ait zéro ou douze.
+   */
+  protected readonly triggerLabel = computed(() =>
+    this.unread() === 0 ? 'Notifications' : `Notifications — ${this.unread()} non lues`,
+  );
 
   constructor() {
     void this.refresh();
