@@ -104,7 +104,50 @@
             [canAccessKbis]="false"
             (edit)="fiche.openStep('tva')"
             (kbisSelected)="onFile({ key: 'kbis', file: $event })"
-          />
+          >
+            <!-- La certification est un geste STAFF : elle vit avec la pièce
+                 qu'elle concerne, pas dans une carte voisine. Ce qu'elle
+                 affirme n'est pas « un fichier existe » mais « quelqu'un l'a
+                 ouvert et l'a confronté à l'identité saisie ». -->
+            @if (fiche.company()?.kbis; as kbis) {
+              <div kbisFooter class="kbis-certif">
+                @if (kbis.certified) {
+                  <p class="kbis-certif-state">Extrait vérifié{{ certifiedBy() }}.</p>
+                  <!-- Retirer la vérification SUSPEND le compte : la confirmation
+                       le dit, parce qu'un bouton qui coupe l'accès d'un client ne
+                       doit pas se cliquer par réflexe. -->
+                  @if (confirmingRevoke()) {
+                    <fold-inline-confirm
+                      [open]="true"
+                      intent="danger"
+                      message="Retirer la vérification suspend le compte : il ne pourra plus commander tant qu'un extrait n'aura pas été vérifié à nouveau."
+                      (confirmed)="revokeCertification()"
+                      (cancelled)="confirmingRevoke.set(false)"
+                    >
+                      <span hidden></span>
+                    </fold-inline-confirm>
+                  } @else {
+                    <button
+                      foldButton
+                      emphasis="outline"
+                      intent="danger"
+                      size="sm"
+                      (click)="confirmingRevoke.set(true)"
+                    >
+                      Retirer la vérification
+                    </button>
+                  }
+                } @else {
+                  <p class="kbis-certif-state">
+                    Déposé, <strong>pas encore vérifié</strong> — le compte ne peut pas être activé.
+                  </p>
+                  <button foldButton emphasis="solid" size="sm" (click)="fiche.certifyKbis()">
+                    J'ai vérifié cet extrait
+                  </button>
+                }
+              </div>
+            }
+          </lfd-company-identity-card>
 
           <!-- La certification est un geste STAFF : elle ne vit pas dans la
                carte partagée avec le client. Ce qu'elle affirme n'est pas « un

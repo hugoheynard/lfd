@@ -4,6 +4,7 @@ import {
   FoldAsideLayoutComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldInlineConfirmComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
@@ -57,6 +58,7 @@ import { FicheClientStore } from './fiche-client.store';
     FoldAsideLayoutComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldInlineConfirmComponent,
     FoldCardComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
@@ -84,6 +86,9 @@ export class InformationsPage {
 
   /** Saisie d'ouverture — le strict nécessaire pour que la société existe. */
   protected readonly identityDraft = signal<CompanyIdentityDraft>(EMPTY_COMPANY_IDENTITY_DRAFT);
+  /** La confirmation de retrait de vérification est-elle ouverte ? */
+  protected readonly confirmingRevoke = signal(false);
+
   /** Le détenteur retenu, à qui l'accès sera ouvert. */
   protected readonly holder = signal<HolderChoice | null>(null);
 
@@ -99,6 +104,12 @@ export class InformationsPage {
    * d'une phrase, on se contente de la date. Le `sub` reste en base pour qui
    * enquête.
    */
+  /** Retire la vérification, puis referme la confirmation. */
+  protected async revokeCertification(): Promise<void> {
+    await this.fiche.revokeKbisCertification();
+    this.confirmingRevoke.set(false);
+  }
+
   protected readonly certifiedBy = computed(() => {
     const kbis = this.fiche.company()?.kbis;
     if (kbis === null || kbis === undefined || kbis.certifiedAt === null) {

@@ -155,6 +155,12 @@
           </div>
         }
       </div>
+
+      <!-- Ce que le porteur de la carte a le droit d'ajouter SOUS le fichier :
+           côté staff, la certification. La carte n'en sait rien — elle réserve
+           la place, au bon endroit, pour que l'action vive avec la pièce
+           qu'elle concerne plutôt que dans une carte voisine. -->
+      <ng-content select="[kbisFooter]" />
     } @else {
       <div class="kbis-drop">
         <fold-icon name="upload" [size]="30" />

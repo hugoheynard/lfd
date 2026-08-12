@@ -16,3 +16,20 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* La vérification du KBIS, projetée SOUS le fichier dans la carte d'identité.
+   `space-between` : l'état à gauche, l'action à droite — l'œil lit ce qui est,
+   puis ce qu'il peut faire, sans que le bouton colle au texte. */
+.kbis-certif {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+  margin-top: var(--fold-space-sm);
+}
+
+.kbis-certif-state {
+  margin: 0;
+  color: var(--fold-color-text-secondary);
+}

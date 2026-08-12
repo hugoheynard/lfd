@@ -1,7 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../infra/time/clock.js";
-import { KbisNotFoundError } from "../../domain/errors/account-errors.js";
+import { CompanyNotFoundError, KbisNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { StaffDirectory } from "../../domain/ports/staff-directory.js";
 import { CertifyKbisCommand, RevokeKbisCertificationCommand } from "./certify-kbis.command.js";
@@ -44,15 +44,34 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
   }
 }
 
-/** Retire la certification. Idempotent : décertifier ce qui ne l'est pas ne fait rien. */
+/**
+ * Retire la certification — **et suspend le compte s'il était actif**.
+ *
+ * Ce n'est pas un effet de bord discret, c'est la même règle lue dans l'autre
+ * sens : un compte est activable parce que son identité a été vérifiée. Retirer
+ * la vérification et laisser le compte commander reviendrait à faire de la
+ * certification une formalité d'entrée qu'on peut retirer sans conséquence.
+ *
+ * La suspension passe par l'agrégat (`suspend()`), qui sait d'où l'on a le droit
+ * de venir : un compte `pending` ou déjà suspendu n'est pas touché.
+ * Idempotent : décertifier ce qui ne l'est pas ne fait rien.
+ */
 @CommandHandler(RevokeKbisCertificationCommand)
-export class RevokeKbisCertificationHandler implements ICommandHandler<
-  RevokeKbisCertificationCommand,
-  void
-> {
+export class RevokeKbisCertificationHandler
+  implements ICommandHandler<RevokeKbisCertificationCommand, void>
+{
   constructor(private readonly companies: CompanyRepository) {}
 
   async execute(command: RevokeKbisCertificationCommand): Promise<void> {
+    const company = await this.companies.load(command.companyId);
+    if (company === null) {
+      throw new CompanyNotFoundError(command.companyId);
+    }
     await this.companies.saveKbisCertification(command.companyId, null);
+
+    if (company.status === "active") {
+      company.suspend();
+      await this.companies.save(company);
+    }
   }
 }
