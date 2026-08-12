@@ -146,15 +146,15 @@
       <fold-callout variant="alert" announce>{{ message }}</fold-callout>
     }
 
+    <!-- La carte CONSTATE, elle ne juge pas : ce qu'un extrait manquant empêche
+         appartient au verdict d'activation, et la synthèse le dit déjà. Cette
+         phrase l'énonçait une seconde fois — « il n'empêche pas l'activation,
+         mais la synthèse le réclamera » — et une règle écrite à deux endroits
+         finit toujours par se contredire. Le TON, lui, reste informé par le
+         réglage : exigé se voit en avertissement, attendu en information. -->
     @if (kbisRequirement() !== 'hidden' && !id.kbis) {
       <fold-callout [variant]="kbisRequirement() === 'required' ? 'warning' : 'info'">
-        @if (kbisRequirement() === 'required') {
-          L'extrait KBIS est <strong>exigé</strong> pour activer ce compte.
-        } @else {
-          L'extrait KBIS <strong>manque encore</strong> — il n'empêche pas l'activation, mais la
-          synthèse le réclamera tant qu'il n'est pas là.
-        }
-        Un PDF ou une photo lisible font l'affaire.
+        Aucun extrait KBIS n'a encore été déposé. Un PDF ou une photo lisible font l'affaire.
       </fold-callout>
     }
 
