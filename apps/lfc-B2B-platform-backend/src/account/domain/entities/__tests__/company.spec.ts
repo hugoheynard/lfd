@@ -1,6 +1,7 @@
 import {
   CompanyActivationBlockedError,
   CompanyAlreadyHasOwnerError,
+  CompanyHasNoHolderError,
   InvalidCompanyIdentityError,
 } from "../../errors/account-errors.js";
 import { EmailAddress } from "../../value-objects/email-address.js";
@@ -178,6 +179,16 @@ describe("Company.attachHolder", () => {
     const company = Company.declare(identity, contact);
 
     expect(() => company.attachHolder(contact)).toThrow(CompanyAlreadyHasOwnerError);
+  });
+
+  it("REFUSE de créer un détenteur par « modification »", () => {
+    // Corriger des coordonnées et DÉSIGNER la personne du compte ne sont pas le
+    // même acte : le second ouvre un accès, celui-ci ne le fait pas. Sans ce
+    // refus, « modifier le détenteur » posait un nom en fiche sans donner la clé
+    // de l'espace — un détenteur affiché, incapable d'entrer.
+    const company = Company.declare(identity, null);
+
+    expect(() => company.changePrimaryContact(contact)).toThrow(CompanyHasNoHolderError);
   });
 
   it("bloque l'activation tant que personne n'est rattaché", () => {

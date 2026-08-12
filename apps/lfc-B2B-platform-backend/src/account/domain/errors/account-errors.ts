@@ -222,6 +222,24 @@ export class CompanyAlreadyHasOwnerError extends BusinessError {
 }
 
 /**
+ * On a voulu **modifier** un détenteur qui n'existe pas encore.
+ *
+ * Corriger les coordonnées de quelqu'un et **désigner** la personne du compte ne
+ * sont pas le même acte : le second ouvre un accès. Laisser « modifier » créer le
+ * détenteur donnait deux chemins vers un même état — dont un qui posait un nom en
+ * fiche sans donner la clé de l'espace, et laissait un compte affichant un
+ * détenteur incapable de se connecter.
+ */
+export class CompanyHasNoHolderError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.company.no_holder",
+      "Cette société n'a pas encore de détenteur : rattachez-le plutôt que de le modifier.",
+    );
+  }
+}
+
+/**
  * Cette adresse est **déjà** interlocutrice de la société.
  *
  * Une personne, une adresse, un rôle : deux lignes pour la même boîte e-mail

@@ -1,6 +1,7 @@
 import {
   CompanyActivationBlockedError,
   CompanyAlreadyHasOwnerError,
+  CompanyHasNoHolderError,
   CompanyStatusTransitionError,
   InvalidCompanyIdentityError,
 } from "../errors/account-errors.js";
@@ -335,6 +336,13 @@ export class Company {
 
   /** Remplace le contact **principal** (toujours présent — jamais supprimé). */
   changePrimaryContact(contact: CompanyContact): void {
+    // On **corrige** un détenteur, on ne le crée pas : le désigner ouvre un
+    // accès, et ce geste-là ne le fait pas. Sans ce refus, « modifier le
+    // détenteur » sur une société qui n'en a pas posait un nom en fiche sans
+    // donner la clé de l'espace — un détenteur affiché, incapable d'entrer.
+    if (this.contactValue === null) {
+      throw new CompanyHasNoHolderError(this.identityId ?? "");
+    }
     this.contactValue = contact;
   }
 
