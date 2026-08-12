@@ -28,6 +28,12 @@ interface Fact {
   readonly value: string;
 }
 
+/**
+ * Le **repli** quand on ne sait pas qui : la nature de l'acteur, qui reste
+ * vraie. Les événements journalisés depuis la trace nominative portent un nom ;
+ * les anciens, non — et « un membre du staff » vaut mieux qu'un nom inventé ou
+ * qu'un `sub` technique au milieu d'une phrase.
+ */
 const ACTOR_LABEL: Record<string, string> = {
   customer: 'le client',
   staff: 'un membre du staff',
@@ -88,7 +94,12 @@ export class ClientDataPage {
         hour: '2-digit',
         minute: '2-digit',
       }),
-      actor: ACTOR_LABEL[entry.actorType] ?? entry.actorType,
+      // Le nom d'abord — c'est ce qu'on cherche quand on ouvre un journal :
+      // à qui parler de cette ligne.
+      actor:
+        entry.actorName === ''
+          ? (ACTOR_LABEL[entry.actorType] ?? entry.actorType)
+          : entry.actorName,
     })),
   );
 

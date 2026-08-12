@@ -32,6 +32,8 @@ export interface RawTimelineEntry {
   readonly type: string;
   readonly occurredAt: Date;
   readonly actorType: string;
+  /** Nom figé de l'acteur, `null` quand on ne l'a pas su (ou pas encore gardé). */
+  readonly actorName?: string | null;
 }
 
 /**
@@ -50,6 +52,7 @@ export function commercialTimeline(entries: readonly RawTimelineEntry[]): Custom
     type: entry.type,
     occurredAt: entry.occurredAt.toISOString(),
     actorType: entry.actorType,
+    actorName: entry.actorName ?? "",
     outcome: outcomeOf(entry, chronological),
   }));
   return withOutcome.reverse();

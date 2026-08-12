@@ -80,6 +80,12 @@ import { AdminProspectsController } from "./http/admin-prospects.controller.js";
 import { AdminRecomputeController } from "./http/admin-recompute.controller.js";
 import { PrismaActivationReader } from "./infrastructure/prisma-activation.reader.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
+import { PrismaActorNamer } from "./infrastructure/prisma-actor-namer.js";
+import {
+  OnKbisCertificationRevoked,
+  OnKbisCertified,
+} from "./application/handlers/on-kbis-certification.handler.js";
+import { ActorNamer } from "./domain/ports/actor-namer.js";
 import { PrismaAppointmentReader } from "./infrastructure/prisma-appointment.reader.js";
 import { PrismaAppointmentRepository } from "./infrastructure/prisma-appointment.repository.js";
 import { PrismaAvailabilityStore } from "./infrastructure/prisma-availability.store.js";
@@ -125,6 +131,9 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
   ],
   providers: [
     { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
+    { provide: ActorNamer, useClass: PrismaActorNamer },
+    OnKbisCertified,
+    OnKbisCertificationRevoked,
     { provide: ProspectReader, useClass: PrismaProspectReader },
     { provide: ActivationReader, useClass: PrismaActivationReader },
     { provide: LeadEventSource, useClass: PrismaLeadEventSource },

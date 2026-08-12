@@ -74,6 +74,13 @@ export interface CustomerTimelineEntry {
   /** Qui l'a provoqué : `customer` · `staff` · `system`. */
   readonly actorType: string;
   /**
+   * **Qui**, nommément — instantané figé au moment de l'acte. Vide pour les
+   * événements antérieurs à cette trace, pour le système, et quand l'annuaire
+   * ne connaissait pas l'acteur : l'écran retombe alors sur la nature (« un
+   * membre du staff »), qui reste vraie, plutôt que d'inventer un nom.
+   */
+  readonly actorName: string;
+  /**
    * Ce que l'interaction a **produit**, quand elle a produit quelque chose.
    *
    * C'est tout l'intérêt d'un historique commercial : un rendez-vous n'a pas de
@@ -102,6 +109,12 @@ export const COMMERCIAL_TIMELINE_TYPES: readonly string[] = [
   "user.registered",
   "company.declared",
   "company.activated",
+  // La vérification du KBIS est une DÉCISION, pas une trace technique : elle
+  // ouvre (ou referme) la porte d'activation, et l'état courant n'en garde rien
+  // une fois retirée. Sans elle dans l'historique, une suspension devient
+  // inexplicable le lendemain.
+  "company.kbis_certified",
+  "company.kbis_revoked",
   "order.placed",
   "subscription.created",
   "appointment.requested",
@@ -122,6 +135,12 @@ export const COMMERCIAL_TIMELINE_TYPES: readonly string[] = [
  */
 export const TIMELINE_OUTCOME_TYPES: readonly string[] = [
   "company.activated",
+  // La vérification du KBIS est une DÉCISION, pas une trace technique : elle
+  // ouvre (ou referme) la porte d'activation, et l'état courant n'en garde rien
+  // une fois retirée. Sans elle dans l'historique, une suspension devient
+  // inexplicable le lendemain.
+  "company.kbis_certified",
+  "company.kbis_revoked",
   "order.placed",
   "subscription.created",
 ];

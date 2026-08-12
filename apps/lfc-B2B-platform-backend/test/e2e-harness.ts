@@ -79,6 +79,13 @@ export interface E2eContext {
   readonly http: () => request.Agent;
   /** Requête HTTP authentifiée en tant que `sub` (le jeton EST le `sub`). */
   readonly asSub: (sub: string) => request.Agent;
+  /**
+   * Attend que le travail lancé **hors requête** soit fini (abonnés du journal,
+   * évaluation d'alertes). À appeler avant de relire ce que l'API a provoqué
+   * indirectement : sans ça, on lit une table que le handler n'a pas encore
+   * écrite, et le test échoue une fois sur deux — pour de mauvaises raisons.
+   */
+  readonly drain: () => Promise<void>;
   /** Vide toutes les tables métier. À appeler entre les tests. */
   readonly reset: () => Promise<void>;
   readonly close: () => Promise<void>;
@@ -143,6 +150,7 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
     // un échec qui accuse le mauvais test, une fois sur sept.
     // Le bucket est vidé avec les tables, et pour la même raison : une pièce
     // laissée par un test serait visible du suivant.
+    drain: () => background.whenIdle(),
     reset: async () => {
       await background.whenIdle();
       await truncateAll(prisma);

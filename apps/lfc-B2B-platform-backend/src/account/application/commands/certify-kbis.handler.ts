@@ -2,6 +2,11 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../infra/time/clock.js";
 import { CompanyNotFoundError, KbisNotFoundError } from "../../domain/errors/account-errors.js";
+import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
+import {
+  KbisCertificationRevokedEvent,
+  KbisCertifiedEvent,
+} from "../../domain/events/kbis-certification.event.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { StaffDirectory } from "../../domain/ports/staff-directory.js";
 import { CertifyKbisCommand, RevokeKbisCertificationCommand } from "./certify-kbis.command.js";
@@ -26,6 +31,7 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
     private readonly companies: CompanyRepository,
     private readonly staff: StaffDirectory,
     private readonly clock: Clock,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   async execute(command: CertifyKbisCommand): Promise<void> {
@@ -35,14 +41,18 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
     }
 
     const agent = await this.staff.identify(command.staffSub);
+    const at = this.clock.now();
     await this.companies.saveKbisCertification(command.companyId, {
-      at: this.clock.now(),
+      at,
       bySub: command.staffSub,
       byName: agent?.name ?? "",
       byRole: agent?.role ?? "",
     });
 
     await this.liftKbisSuspension(command.companyId);
+    // Au journal : l'état courant dira « vérifié », mais pas QUAND ni par qui
+    // le jour où la vérification sera retirée. L'historique, lui, garde tout.
+    this.events.publish(new KbisCertifiedEvent(command.companyId, at));
   }
 
   /**
@@ -87,7 +97,11 @@ export class RevokeKbisCertificationHandler implements ICommandHandler<
   RevokeKbisCertificationCommand,
   void
 > {
-  constructor(private readonly companies: CompanyRepository) {}
+  constructor(
+    private readonly companies: CompanyRepository,
+    private readonly clock: Clock,
+    private readonly events: DomainEventPublisher,
+  ) {}
 
   async execute(command: RevokeKbisCertificationCommand): Promise<void> {
     const company = await this.companies.load(command.companyId);
@@ -96,9 +110,15 @@ export class RevokeKbisCertificationHandler implements ICommandHandler<
     }
     await this.companies.saveKbisCertification(command.companyId, null);
 
-    if (company.status === "active") {
+    const suspended = company.status === "active";
+    if (suspended) {
       company.suspend("kbis_revoked");
       await this.companies.save(company);
     }
+    // Sans cette ligne, une suspension serait INEXPLICABLE le lendemain : l'état
+    // courant redevient « déposé, pas vérifié », comme si rien ne s'était passé.
+    this.events.publish(
+      new KbisCertificationRevokedEvent(command.companyId, this.clock.now(), suspended),
+    );
   }
 }

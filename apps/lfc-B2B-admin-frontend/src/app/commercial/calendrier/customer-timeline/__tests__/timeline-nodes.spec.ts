@@ -9,6 +9,7 @@ function entry(type: string, actorType = 'customer'): CustomerTimelineEntry {
     type,
     occurredAt: '2026-08-09T12:00:00.000Z',
     actorType,
+    actorName: '',
     outcome: null,
   };
 }

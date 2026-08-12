@@ -414,6 +414,46 @@ describe("certification du KBIS", () => {
     expect(company.suspensionCause).toBe("staff");
   });
 
+  it("écrit la vérification ET son retrait au JOURNAL", async () => {
+    // L'état courant ne garde rien d'une certification retirée : la fiche
+    // redevient « déposé, pas vérifié ». Sans ces lignes, la suspension qui
+    // suit est inexplicable le lendemain.
+    await activatedCompany();
+    await staff().delete(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+    // Les abonnés du journal tournent HORS de la requête HTTP — on attend qu'ils
+    // aient écrit plutôt que de lire une table qu'ils n'ont pas encore touchée.
+    const journal = await eventuallyKbisJournal();
+    expect(journal.map((entry) => entry.type)).toEqual([
+      "company.kbis_certified",
+      "company.kbis_revoked",
+    ]);
+    // Nominatif : « un membre du staff » n'engage personne.
+    expect(journal[0]?.actorId).toBe("staff-e2e");
+    expect(journal[1]?.payload).toMatchObject({ suspended: true });
+  });
+
+  /**
+   * Les deux lignes de journal, dès qu'elles sont là. Le `EventBus` publie hors
+   * de la requête HTTP : lire une seule fois ferait échouer le test au rythme de
+   * la machine, pas à celui du code.
+   */
+  async function eventuallyKbisJournal(): Promise<
+    { type: string; actorId: string | null; payload: unknown }[]
+  > {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const rows = await ctx.prisma.activityEvent.findMany({
+        where: { subjectId: companyId, type: { startsWith: "company.kbis_" } },
+        orderBy: { occurredAt: "asc" },
+        select: { type: true, actorId: true, payload: true },
+      });
+      if (rows.length >= 2) {
+        return rows;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    throw new Error("le journal n'a jamais reçu les deux lignes KBIS");
+  }
+
   /** Un compte actif, pièces réunies et extrait vérifié — le point de départ. */
   async function activatedCompany(): Promise<void> {
     await ctx.prisma.platformSettings.upsert({

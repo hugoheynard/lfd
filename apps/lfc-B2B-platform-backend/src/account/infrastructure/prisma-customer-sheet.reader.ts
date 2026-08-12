@@ -71,7 +71,13 @@ export class PrismaCustomerSheetReader extends CustomerSheetReader {
           },
           orderBy: { occurredAt: "desc" },
           take: TIMELINE_ENTRIES,
-          select: { id: true, type: true, occurredAt: true, actorType: true },
+          select: {
+            id: true,
+            type: true,
+            occurredAt: true,
+            actorType: true,
+            actorName: true,
+          },
         }),
       ]);
 

@@ -8,6 +8,7 @@ import { IdGenerator } from "../../infra/id/id-generator.js";
 import { Clock } from "../../infra/time/clock.js";
 import { buildActivityEventRow, type RecordActivityInput } from "../domain/activity-event.js";
 import { ActivityRecorder } from "../domain/ports/activity-recorder.js";
+import { ActorNamer } from "../domain/ports/actor-namer.js";
 
 /**
  * Adaptateur Prisma du journal — écrit dans `growth.activity_events`.
@@ -29,17 +30,24 @@ export class PrismaActivityRecorder extends ActivityRecorder {
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
+    private readonly actors: ActorNamer,
   ) {
     super();
   }
 
   async record(input: RecordActivityInput): Promise<void> {
     const context = currentRequestContext();
+    const actorType = context?.actor.type ?? "system";
+    const actorId = context?.actor.id ?? null;
     const row = buildActivityEventRow(input, {
       id: this.ids.next(),
       now: this.clock.now(),
       traceId: context?.traceId ?? newTraceId(),
-      actorType: context?.actor.type ?? "system",
+      actorType,
+      actorId,
+      // Figé ici, pas résolu à la lecture : le journal doit dire qui a agi ce
+      // jour-là, pas qui porte ce nom aujourd'hui.
+      actorName: await this.nameOrNull(actorType, actorId),
     });
     try {
       await this.prisma.activityEvent.create({
@@ -51,6 +59,22 @@ export class PrismaActivityRecorder extends ActivityRecorder {
       }
       // Best-effort : un échec d'append ne casse JAMAIS la transaction métier.
       this.logger.warn(`activity_event non journalisé (${input.type}) : ${messageOf(error)}`);
+    }
+  }
+
+  /**
+   * Le nom, ou rien. L'annuaire est **best-effort comme le reste du journal** :
+   * une panne de résolution ne doit pas empêcher d'écrire le fait lui-même —
+   * un événement sans nom vaut infiniment mieux qu'un événement perdu.
+   */
+  private async nameOrNull(
+    type: "customer" | "staff" | "system",
+    id: string | null,
+  ): Promise<string | null> {
+    try {
+      return await this.actors.nameOf(type, id);
+    } catch {
+      return null;
     }
   }
 }

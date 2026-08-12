@@ -1021,6 +1021,15 @@ model ActivityEvent {
   /// Nature de l'acteur : `customer` | `staff` | `system` (lu du RequestContext).
   actorType String @map("actor_type")
 
+  /// QUI, précisément. `actor_id` est le `sub` staff ou l'id client (nul pour
+  /// `system`) ; `actor_name` est un INSTANTANÉ du nom au moment de l'acte —
+  /// figé, comme toute trace, parce qu'un journal doit dire ce qui était vrai ce
+  /// jour-là. Nuls pour les événements antérieurs à cette trace, et quand
+  /// l'annuaire ne connaît pas l'acteur : le journal affiche alors sa nature
+  /// (« un membre du staff »), et n'invente pas un nom.
+  actorId   String? @map("actor_id")
+  actorName String? @map("actor_name")
+
   /// Corrélation bout-en-bout (le `traceId` W3C de la requête).
   traceId String @map("trace_id")
 

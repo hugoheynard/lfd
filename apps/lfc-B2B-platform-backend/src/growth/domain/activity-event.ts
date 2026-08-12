@@ -22,6 +22,10 @@ export const ACTIVITY_TYPES = {
   companyDeclared: "company.declared",
   companyStepReached: "company.step_reached",
   companyActivated: "company.activated",
+  /** Extrait KBIS **vérifié** par un agent — la porte d'activation s'ouvre. */
+  kbisCertified: "company.kbis_certified",
+  /** Vérification **retirée** — et accès coupé si le compte était actif. */
+  kbisRevoked: "company.kbis_revoked",
   subscriptionCreated: "subscription.created",
   /**
    * Reco **affichée** au staff dans le cockpit. Écrit en lecture (best-effort) —
@@ -94,6 +98,15 @@ export interface ResolvedActivityContext {
   readonly now: Date;
   readonly traceId: string;
   readonly actorType: ActivityActorType;
+  /** Le `sub` staff ou l'id client — `null` pour `system` (cron, boot). */
+  readonly actorId: string | null;
+  /**
+   * Instantané du nom au moment de l'acte, `null` quand l'annuaire ne connaît
+   * pas l'acteur. Figé et non résolu à la lecture : un journal dit ce qui était
+   * vrai ce jour-là, et l'annuaire staff vit d'ailleurs dans une autre base —
+   * le rejoindre à chaque affichage coûterait une requête par ligne.
+   */
+  readonly actorName: string | null;
 }
 
 /** Ligne de journal prête à persister (avant l'écriture Prisma). */
@@ -106,6 +119,8 @@ export interface ActivityEventRow {
   readonly subjectId: string;
   readonly establishmentId: string | null;
   readonly actorType: ActivityActorType;
+  readonly actorId: string | null;
+  readonly actorName: string | null;
   readonly traceId: string;
   readonly idempotencyKey: string;
   readonly payload: Record<string, unknown>;
@@ -128,6 +143,8 @@ export function buildActivityEventRow(
     subjectType: input.subjectType,
     subjectId: input.subjectId,
     establishmentId: input.establishmentId ?? null,
+    actorId: context.actorId,
+    actorName: context.actorName,
     actorType: context.actorType,
     traceId: context.traceId,
     idempotencyKey: input.idempotencyKey,

@@ -13,6 +13,8 @@ const KNOWN: Record<string, { label: string; icon: string }> = {
   'company.declared': { label: 'Entreprise déclarée', icon: 'company' },
   'company.step_reached': { label: 'Étape d’activation franchie', icon: 'check' },
   'company.activated': { label: 'Compte activé', icon: 'check-circle' },
+  'company.kbis_certified': { label: 'Extrait KBIS vérifié', icon: 'check-circle' },
+  'company.kbis_revoked': { label: 'Vérification du KBIS retirée', icon: 'alert' },
   'order.placed': { label: 'Commande passée', icon: 'contracts' },
   'subscription.created': { label: 'Panier récurrent créé', icon: 'reload' },
   'appointment.requested': { label: 'Rendez-vous demandé', icon: 'calendar' },
