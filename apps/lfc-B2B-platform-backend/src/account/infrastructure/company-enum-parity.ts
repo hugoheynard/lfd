@@ -1,9 +1,11 @@
 import type {
   CompanyStatus as PrismaCompanyStatus,
   CustomerRole as PrismaCustomerRole,
+  SuspensionCause as PrismaSuspensionCause,
 } from "../../infra/database/client/client.js";
 import type { CompanyRole } from "../domain/value-objects/company-role.js";
 import type { CompanyStatus } from "../domain/value-objects/company-status.js";
+import type { SuspensionCause } from "../domain/value-objects/suspension-cause.js";
 
 /**
  * Garde-fou de **compilation** entre les unions du domaine et les enums Postgres.
@@ -33,3 +35,6 @@ export type CompanyStatusParity = Assert<Equals<CompanyStatus, `${PrismaCompanyS
 
 /** Casse si `CompanyRole` (domaine) et l'enum Postgres divergent. */
 export type CompanyRoleParity = Assert<Equals<CompanyRole, `${PrismaCustomerRole}`>>;
+
+/** Casse si `SuspensionCause` (domaine) et l'enum Postgres divergent. */
+export type SuspensionCauseParity = Assert<Equals<SuspensionCause, `${PrismaSuspensionCause}`>>;

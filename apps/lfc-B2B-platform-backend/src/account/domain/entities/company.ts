@@ -6,6 +6,8 @@ import {
 import { NO_FULFILLMENT_PREFERENCE } from "@lfd/contracts";
 import type { DeferredTerm, FulfillmentPreferenceView } from "@lfd/contracts";
 import type { CompanyStatus } from "../value-objects/company-status.js";
+import type { StaffTrace } from "../value-objects/staff-trace.js";
+import type { SuspensionCause } from "../value-objects/suspension-cause.js";
 import { EmailAddress } from "../value-objects/email-address.js";
 import { PersonName } from "../value-objects/person-name.js";
 import { PhoneNumber } from "../value-objects/phone-number.js";
@@ -51,6 +53,10 @@ export interface ReconstituteCompanyInput {
   readonly status: CompanyStatus;
   /** Horodatage d'activation commerciale, ou `null` (jamais activée). */
   readonly activatedAt: Date | null;
+  /** Qui a activé, à quel titre — `null` pour les activations antérieures à la trace. */
+  readonly activatedBy: StaffTrace | null;
+  /** Ce qui a coupé l'accès — `null` hors suspension (cf. {@link SuspensionCause}). */
+  readonly suspensionCause: SuspensionCause | null;
   /** Code NAF résolu depuis le SIRET, ou vide si pas encore connu. */
   readonly nafCode: string;
   /**
@@ -88,6 +94,8 @@ export interface CompanySoftState {
   readonly requestedTerm: DeferredTerm | null;
   readonly status: CompanyStatus;
   readonly activatedAt: Date | null;
+  readonly activatedBy: StaffTrace | null;
+  readonly suspensionCause: SuspensionCause | null;
   /** Code NAF résolu depuis le SIRET, ou vide si pas encore connu. */
   readonly nafCode: string;
   /** Comment ce client est servi d'habitude — un défaut, jamais une contrainte. */
@@ -123,6 +131,8 @@ export class Company {
     private preferenceValue: FulfillmentPreferenceView,
     private statusValue: CompanyStatus,
     private activatedAtValue: Date | null,
+    private activatedByValue: StaffTrace | null,
+    private suspensionCauseValue: SuspensionCause | null,
     /** Code NAF résolu depuis le SIRET (via l'API entreprises) — vide tant qu'inconnu. */
     private nafCodeValue: string,
   ) {}
@@ -150,6 +160,8 @@ export class Company {
       NO_FULFILLMENT_PREFERENCE,
       "pending",
       null,
+      null,
+      null,
       // NAF inconnu à la déclaration : résolu peu après depuis le SIRET (best-effort).
       "",
     );
@@ -170,6 +182,8 @@ export class Company {
       input.fulfillmentPreference ?? NO_FULFILLMENT_PREFERENCE,
       input.status,
       input.activatedAt,
+      input.activatedBy,
+      input.suspensionCause,
       input.nafCode,
     );
   }
@@ -367,6 +381,11 @@ export class Company {
     return this.statusValue;
   }
 
+  /** Ce qui a coupé l'accès — `null` hors suspension. */
+  get suspensionCause(): SuspensionCause | null {
+    return this.suspensionCauseValue;
+  }
+
   /**
    * **Active** la société (activation commerciale explicite) : `pending → active`
    * + pose l'horodatage. Ne porte QUE la transition d'état ; la **complétude des
@@ -374,7 +393,7 @@ export class Company {
    * amont par le cas d'usage — elle croise plusieurs tables, hors de cet agrégat.
    * Refuse toute société qui n'est pas `pending` (déjà active, suspendue, close).
    */
-  activate(activatedAt: Date, reachable: boolean): void {
+  activate(activatedAt: Date, reachable: boolean, by: StaffTrace): void {
     // **Un numéro pour la livraison.** Le livreur qui cherche une porte a besoin
     // d'appeler quelqu'un ; un compte actif sans aucun numéro joignable, c'est
     // une commande qui repart au dépôt. « Au moins un interlocuteur », et pas
@@ -406,6 +425,7 @@ export class Company {
     }
     this.statusValue = "active";
     this.activatedAtValue = activatedAt;
+    this.activatedByValue = by;
   }
 
   /**
@@ -413,15 +433,22 @@ export class Company {
    * `active` se suspend — suspendre ce qui n'a jamais été ouvert ne veut rien
    * dire, et suspendre un compte résilié le rouvrirait à moitié.
    */
-  suspend(): void {
+  suspend(cause: SuspensionCause): void {
     this.requireStatus("active", "Seul un compte actif peut être suspendu.");
     this.statusValue = "suspended";
+    this.suspensionCauseValue = cause;
   }
 
-  /** **Réactive** un compte suspendu. Rien d'autre ne se réactive. */
+  /**
+   * **Réactive** un compte suspendu. Rien d'autre ne se réactive — et la cause
+   * tombe avec la suspension : un compte actif ne traîne pas le motif de la
+   * dernière coupure, sans quoi la prochaine reprise automatique s'appuierait sur
+   * une raison périmée.
+   */
   reactivate(): void {
     this.requireStatus("suspended", "Seul un compte suspendu peut être réactivé.");
     this.statusValue = "active";
+    this.suspensionCauseValue = null;
   }
 
   /**
@@ -472,6 +499,8 @@ export class Company {
       fulfillmentPreference: this.preferenceValue,
       status: this.statusValue,
       activatedAt: this.activatedAtValue,
+      activatedBy: this.activatedByValue,
+      suspensionCause: this.suspensionCauseValue,
       nafCode: this.nafCodeValue,
     };
   }

@@ -374,5 +374,73 @@ describe("certification du KBIS", () => {
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.status).toBe(CompanyStatus.active);
+    // Ouvrir la commande à un client est un ENGAGEMENT : il se signe.
+    expect(company.activatedAt).not.toBeNull();
+    expect(company.activatedBySub).toBe("staff-e2e");
   });
+
+  it("retirer la vérification suspend, la re-vérifier REND l'accès", async () => {
+    // Le cycle complet, et sa symétrie : ce qui coupe automatiquement doit
+    // rendre automatiquement. Un second clic « Réactiver » n'ajouterait aucune
+    // décision — la décision était de vérifier l'extrait — mais ajouterait une
+    // occasion de l'oublier, et le client resterait bloqué sur un dossier
+    // complet.
+    await activatedCompany();
+
+    await staff().delete(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+    const suspended = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(suspended.status).toBe(CompanyStatus.suspended);
+    expect(suspended.suspensionCause).toBe("kbis_revoked");
+
+    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+    const revived = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(revived.status).toBe(CompanyStatus.active);
+    expect(revived.suspensionCause).toBeNull();
+  });
+
+  it("ne rouvre PAS un compte suspendu par décision humaine", async () => {
+    // Le mur : certifier un document ne lève pas un recouvrement. Sans la cause,
+    // vérifier un KBIS rouvrirait le robinet d'un client en litige.
+    await activatedCompany();
+    await staff()
+      .patch(`/admin/companies/${companyId}/status`)
+      .send({ action: "suspend", reason: "Impayé sur la facture d'août" })
+      .expect(204);
+
+    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.status).toBe(CompanyStatus.suspended);
+    expect(company.suspensionCause).toBe("staff");
+  });
+
+  /** Un compte actif, pièces réunies et extrait vérifié — le point de départ. */
+  async function activatedCompany(): Promise<void> {
+    await ctx.prisma.platformSettings.upsert({
+      where: { id: PLATFORM_SETTINGS_ID },
+      create: { id: PLATFORM_SETTINGS_ID, kbisMode: "required" },
+      update: { kbisMode: "required" },
+    });
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { tvaIntracom: "FR32812456789", contactTelephone: "01 42 71 08 44" },
+    });
+    await ctx.prisma.address.create({
+      data: {
+        companyId,
+        kind: AddressKind.facturation,
+        label: "Siège",
+        ligne1: "18 rue des Archives",
+        codePostal: "75004",
+        ville: "Paris",
+        pays: "France",
+      },
+    });
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k.pdf")
+      .expect(204);
+    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+    await staff().post(`/admin/companies/${companyId}/activate`).expect(204);
+  }
 });

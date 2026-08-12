@@ -81,6 +81,18 @@ export interface AdminCompanyView {
  */
 export interface AdminCompanyDetailView extends AdminCompanyView {
   /**
+   * Quand le compte a été ouvert, et par qui. `null` tant qu'il ne l'a jamais
+   * été ; `by` à `null` pour les activations antérieures à la trace — on affiche
+   * alors la date seule plutôt qu'un auteur inventé.
+   */
+  readonly activation: ActivationTraceView | null;
+  /**
+   * Ce qui a coupé l'accès, `null` hors suspension. L'écran en a besoin pour ne
+   * pas proposer « Réactiver » là où la reprise est automatique (re-vérifier
+   * l'extrait suffit) — et pour dire, dans l'autre cas, ce qu'il faut lever.
+   */
+  readonly suspensionCause: "staff" | "kbis_revoked" | null;
+  /**
    * La forme juridique impose-t-elle un n° de TVA intracommunautaire ? Dérivé
    * côté serveur (comme pour le client), pour que la fiche signale la TVA
    * manquante sans redémontrer la règle côté front.
@@ -136,16 +148,24 @@ export interface AdminKbisView extends KbisView {
   /** ISO, ou `null` si le KBIS n'a pas (ou plus) été certifié. */
   readonly certifiedAt: string | null;
   /** Qui a certifié, tel que figé ce jour-là. `null` si non certifié. */
-  readonly certifiedBy: CertifierView | null;
+  readonly certifiedBy: StaffActorView | null;
 }
 
 /**
- * L'agent qui a engagé sa parole. `name` et `role` peuvent être **vides** quand
- * le `sub` n'était rattaché à aucune fiche de l'annuaire : on montre alors
- * l'identifiant brut plutôt qu'un nom inventé.
+ * L'agent qui a engagé sa parole — sur un extrait vérifié comme sur un compte
+ * ouvert. `name` et `role` peuvent être **vides** quand le `sub` n'était
+ * rattaché à aucune fiche de l'annuaire : on montre alors l'identifiant brut
+ * plutôt qu'un nom inventé.
  */
-export interface CertifierView {
+export interface StaffActorView {
   readonly sub: string;
   readonly name: string;
   readonly role: string;
+}
+
+/** L'ouverture du compte, datée et signée. */
+export interface ActivationTraceView {
+  /** ISO. */
+  readonly at: string;
+  readonly by: StaffActorView | null;
 }

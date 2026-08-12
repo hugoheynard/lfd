@@ -207,9 +207,12 @@ export class AdminCompanyPiecesController {
 
   @Post(":companyId/activate")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async activate(@Param("companyId") companyId: string): Promise<void> {
+  async activate(
+    @Param("companyId") companyId: string,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
     await this.commands.execute<ActivateCompanyByStaffCommand, void>(
-      new ActivateCompanyByStaffCommand(companyId),
+      new ActivateCompanyByStaffCommand(companyId, staffSub),
     );
   }
 

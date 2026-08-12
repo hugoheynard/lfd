@@ -36,6 +36,11 @@ const COMPANY_SELECT = {
   contactEmail: true,
   contactTelephone: true,
   createdAt: true,
+  activatedAt: true,
+  activatedBySub: true,
+  activatedByName: true,
+  activatedByRole: true,
+  suspensionCause: true,
   // Préférence d'acheminement : lue sur la fiche seulement, mais si peu coûteuse
   // (trois colonnes, aucune jointure) qu'un second select ne se justifierait pas.
   preferredFulfillmentMethod: true,
@@ -129,6 +134,21 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
         book,
         access.map((membership) => membership.user),
       ),
+      activation:
+        row.activatedAt === null
+          ? null
+          : {
+              at: row.activatedAt.toISOString(),
+              by:
+                row.activatedBySub === null
+                  ? null
+                  : {
+                      sub: row.activatedBySub,
+                      name: row.activatedByName ?? "",
+                      role: row.activatedByRole ?? "",
+                    },
+            },
+      suspensionCause: row.suspensionCause,
       fulfillmentPreference: {
         method: row.preferredFulfillmentMethod,
         pickupAddressId: row.preferredPickupAddressId,

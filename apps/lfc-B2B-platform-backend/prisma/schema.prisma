@@ -67,6 +67,16 @@ enum DeferredTerm {
 /// `suspended` ≠ `terminated` : `suspended` coupe l'accès **temporairement**
 /// (impayé, litige) et se lève ; `terminated` acte la **fin de la relation
 /// commerciale** — définitif du point de vue métier, l'historique est conservé.
+/// Ce qui a coupé l'accès — cf. `Company.suspensionCause`.
+enum SuspensionCause {
+  /// Décision humaine (impayé, litige) : seul un humain la lève.
+  staff
+  /// Conséquence du retrait de la vérification du KBIS : se lève à la re-vérification.
+  kbis_revoked
+
+  @@schema("public")
+}
+
 enum CompanyStatus {
   pending
   active
@@ -230,6 +240,15 @@ model Company {
   // saisie — elle le devient par une activation commerciale explicite.
   status CompanyStatus @default(pending)
 
+  // POURQUOI le compte est suspendu. Ce n'est pas de la décoration : la reprise
+  // automatique en dépend. Une suspension déclenchée par le retrait de la
+  // vérification du KBIS se lève d'elle-même quand un extrait est vérifié à
+  // nouveau — c'est la même règle lue à l'endroit. Une suspension décidée par le
+  // staff (impayé, litige) ne se lève JAMAIS toute seule : sans cette colonne,
+  // certifier un KBIS rouvrirait le robinet d'un client en recouvrement.
+  // `null` hors suspension.
+  suspensionCause SuspensionCause? @map("suspension_cause")
+
   // KBIS — l'extrait déposé par le client, demandé pour la validation. Le fichier
   // vit dans le stockage objet (R2) ; on ne garde ici que ses métadonnées et sa
   // CLÉ de stockage. Tous null = aucun KBIS déposé. La **certification** est
@@ -277,6 +296,15 @@ model Company {
   // Posé au passage `pending → active` par l'activation commerciale explicite
   // (ancre d'ancienneté commerciale, distincte de `createdAt`). `null` = jamais activé.
   activatedAt DateTime? @map("activated_at")
+
+  // QUI a activé, à quel titre — même patron que la certification du KBIS, et
+  // pour la même raison : ouvrir la commande à un client est un ENGAGEMENT, pas
+  // un changement de colonne. Le `sub` survit aux changements de nom ; le nom et
+  // le périmètre sont un instantané de ce qui était vrai ce jour-là. Nuls pour
+  // les comptes activés avant cette trace, et pour un sub hors annuaire staff.
+  activatedBySub  String? @map("activated_by_sub")
+  activatedByName String? @map("activated_by_name")
+  activatedByRole String? @map("activated_by_role")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

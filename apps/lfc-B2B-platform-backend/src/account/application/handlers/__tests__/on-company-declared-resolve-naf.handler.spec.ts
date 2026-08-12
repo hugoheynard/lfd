@@ -27,6 +27,8 @@ function reconstituted(): Company {
     requestedTerm: null,
     status: "pending",
     activatedAt: null,
+    activatedBy: null,
+    suspensionCause: null,
     nafCode: "",
   });
 }

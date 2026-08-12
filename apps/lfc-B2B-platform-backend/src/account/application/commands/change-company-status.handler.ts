@@ -35,7 +35,8 @@ export class ChangeCompanyStatusHandler implements ICommandHandler<
 /** Une action de fiche vers la méthode d'agrégat qui la porte. */
 function apply(company: Company, action: ChangeCompanyStatusCommand["action"]): void {
   if (action === "suspend") {
-    company.suspend();
+    // Décision humaine : elle ne se lèvera pas toute seule (cf. SuspensionCause).
+    company.suspend("staff");
     return;
   }
   if (action === "reactivate") {

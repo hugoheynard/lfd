@@ -22,6 +22,8 @@ function sampleCompany(): Company {
     requestedTerm: null,
     status: "active",
     activatedAt: null,
+    activatedBy: null,
+    suspensionCause: null,
     nafCode: "",
   });
 }

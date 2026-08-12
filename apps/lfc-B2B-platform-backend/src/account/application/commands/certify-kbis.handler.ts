@@ -41,6 +41,29 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
       byName: agent?.name ?? "",
       byRole: agent?.role ?? "",
     });
+
+    await this.liftKbisSuspension(command.companyId);
+  }
+
+  /**
+   * **Relève** la suspension que le retrait de vérification avait provoquée.
+   *
+   * La symétrie est le point : si couper l'accès est automatique, le rendre doit
+   * l'être aussi. Faire cliquer une seconde fois « Réactiver » n'ajouterait
+   * aucune décision — la décision était de vérifier l'extrait — mais ajouterait
+   * une occasion de l'oublier, et un client resterait bloqué sur un dossier
+   * complet.
+   *
+   * `kbis_revoked` **seulement** : une suspension décidée par un humain (impayé,
+   * litige) ne se lève pas parce qu'un document a été validé.
+   */
+  private async liftKbisSuspension(companyId: string): Promise<void> {
+    const company = await this.companies.load(companyId);
+    if (company === null || company.suspensionCause !== "kbis_revoked") {
+      return;
+    }
+    company.reactivate();
+    await this.companies.save(company);
   }
 }
 
@@ -55,11 +78,15 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
  * La suspension passe par l'agrégat (`suspend()`), qui sait d'où l'on a le droit
  * de venir : un compte `pending` ou déjà suspendu n'est pas touché.
  * Idempotent : décertifier ce qui ne l'est pas ne fait rien.
+ *
+ * Elle porte sa **cause** (`kbis_revoked`), et c'est elle qui rend la reprise
+ * automatique possible sans rouvrir par erreur un compte suspendu pour impayé.
  */
 @CommandHandler(RevokeKbisCertificationCommand)
-export class RevokeKbisCertificationHandler
-  implements ICommandHandler<RevokeKbisCertificationCommand, void>
-{
+export class RevokeKbisCertificationHandler implements ICommandHandler<
+  RevokeKbisCertificationCommand,
+  void
+> {
   constructor(private readonly companies: CompanyRepository) {}
 
   async execute(command: RevokeKbisCertificationCommand): Promise<void> {
@@ -70,7 +97,7 @@ export class RevokeKbisCertificationHandler
     await this.companies.saveKbisCertification(command.companyId, null);
 
     if (company.status === "active") {
-      company.suspend();
+      company.suspend("kbis_revoked");
       await this.companies.save(company);
     }
   }

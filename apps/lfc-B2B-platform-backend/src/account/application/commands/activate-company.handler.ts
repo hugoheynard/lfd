@@ -13,6 +13,7 @@ import {
   type AdminCompanyDetailView,
 } from "../../domain/ports/admin-company.reader.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { StaffDirectory } from "../../domain/ports/staff-directory.js";
 import { missingRequiredPieces } from "../../domain/services/activation-requirements.js";
 import { ActivateCompanyByStaffCommand } from "./activate-company.command.js";
 
@@ -39,6 +40,7 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     private readonly settings: PlatformSettingsRepository,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
+    private readonly staff: StaffDirectory,
   ) {}
 
   async execute(command: ActivateCompanyByStaffCommand): Promise<void> {
@@ -68,7 +70,14 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     // Joignabilité : le détenteur, ou n'importe lequel de ses interlocuteurs.
     // C'est souvent le responsable réception qui a le numéro utile — exiger
     // celui du gérant bloquerait un dossier complet par ailleurs.
-    company.activate(activatedAt, isReachable(view));
+    // La trace suit le même patron que la certification du KBIS : le `sub`
+    // toujours, le nom et le titre quand l'annuaire les connaît, figés ici.
+    const agent = await this.staff.identify(command.staffSub);
+    company.activate(activatedAt, isReachable(view), {
+      sub: command.staffSub,
+      name: agent?.name ?? "",
+      role: agent?.role ?? "",
+    });
     await this.companies.save(company);
 
     // Jalon de conversion : publié après persistance de la transition.

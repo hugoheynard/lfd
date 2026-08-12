@@ -210,6 +210,17 @@ export class PrismaCompanyRepository extends CompanyRepository {
       requestedTerm: row.requestedTerm,
       status: row.status,
       activatedAt: row.activatedAt,
+      // Trace absente ⇒ `null` entier, jamais un objet à champs vides : « on ne
+      // sait pas qui » et « quelqu'un sans nom » ne disent pas la même chose.
+      activatedBy:
+        row.activatedBySub === null
+          ? null
+          : {
+              sub: row.activatedBySub,
+              name: row.activatedByName ?? "",
+              role: row.activatedByRole ?? "",
+            },
+      suspensionCause: row.suspensionCause,
       nafCode: row.nafCode,
       fulfillmentPreference: {
         method: row.preferredFulfillmentMethod,
@@ -244,6 +255,10 @@ export class PrismaCompanyRepository extends CompanyRepository {
         requestedTerm: state.requestedTerm,
         status: state.status,
         activatedAt: state.activatedAt,
+        activatedBySub: state.activatedBy?.sub ?? null,
+        activatedByName: state.activatedBy?.name ?? null,
+        activatedByRole: state.activatedBy?.role ?? null,
+        suspensionCause: state.suspensionCause,
         nafCode: state.nafCode,
         preferredFulfillmentMethod: state.fulfillmentPreference.method,
         preferredPickupAddressId: state.fulfillmentPreference.pickupAddressId,

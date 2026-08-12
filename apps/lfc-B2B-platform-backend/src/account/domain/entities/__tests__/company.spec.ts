@@ -23,6 +23,8 @@ const identity: CompanyIdentityInput = {
   tvaIntracom: "FR32812456789",
 };
 
+const AGENT = { sub: "auth0|staff", name: "Camille Rousseau", role: "commercial" };
+
 describe("Company.declare", () => {
   it("normalise les textes et le SIRET", () => {
     const company = Company.declare(
@@ -67,7 +69,7 @@ describe("Company.declare", () => {
     );
 
     expect(() => {
-      company.activate(new Date("2026-08-11T10:00:00.000Z"));
+      company.activate(new Date("2026-08-11T10:00:00.000Z"), true, AGENT);
     }).toThrow(CompanyActivationBlockedError);
   });
 
@@ -135,6 +137,10 @@ describe("Company.declare", () => {
       requestedTerm: null,
       status: "pending",
       activatedAt: null,
+      activatedBy: null,
+      suspensionCause: null,
+      activatedBy: null,
+      suspensionCause: null,
       nafCode: "",
     });
 

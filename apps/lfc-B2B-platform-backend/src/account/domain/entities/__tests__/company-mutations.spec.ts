@@ -27,9 +27,13 @@ function reconstituted(): Company {
     requestedTerm: null,
     status: "pending",
     activatedAt: null,
+    activatedBy: null,
+    suspensionCause: null,
     nafCode: "",
   });
 }
+
+const AGENT = { sub: "auth0|staff", name: "Camille Rousseau", role: "commercial" };
 
 describe("Company — reconstitution + mutations souples", () => {
   it("reconstitue une société avec son id et sérialise ses champs mutables", () => {
@@ -180,6 +184,10 @@ describe("Company — activation", () => {
       requestedTerm: null,
       status,
       activatedAt: null,
+      activatedBy: null,
+      suspensionCause: null,
+      activatedBy: null,
+      suspensionCause: null,
       nafCode: "",
     });
   }
@@ -187,7 +195,7 @@ describe("Company — activation", () => {
   it("active une société pending : statut active + horodatage posé", () => {
     const company = withStatus("pending");
     const at = new Date("2026-08-07T09:00:00.000Z");
-    company.activate(at, true);
+    company.activate(at, true, AGENT);
     const state = company.toPersistence();
     expect(state.status).toBe("active");
     expect(state.activatedAt).toBe(at);
@@ -199,20 +207,49 @@ describe("Company — activation", () => {
     const company = withStatus("pending");
 
     expect(() => {
-      company.activate(new Date("2026-08-07T09:00:00.000Z"), false);
+      company.activate(new Date("2026-08-07T09:00:00.000Z"), false, AGENT);
     }).toThrow(CompanyActivationBlockedError);
     expect(company.toPersistence().status).toBe("pending");
   });
 
   it("refuse d'activer une société déjà active", () => {
-    expect(() => withStatus("active").activate(new Date("2026-08-07T09:00:00.000Z"))).toThrow(
-      CompanyActivationBlockedError,
-    );
+    expect(() =>
+      withStatus("active").activate(new Date("2026-08-07T09:00:00.000Z"), true, AGENT),
+    ).toThrow(CompanyActivationBlockedError);
   });
 
   it("refuse d'activer une société suspendue ou clôturée", () => {
     const at = new Date("2026-08-07T09:00:00.000Z");
-    expect(() => withStatus("suspended").activate(at)).toThrow(CompanyActivationBlockedError);
-    expect(() => withStatus("terminated").activate(at)).toThrow(CompanyActivationBlockedError);
+    expect(() => withStatus("suspended").activate(at, true, AGENT)).toThrow(
+      CompanyActivationBlockedError,
+    );
+    expect(() => withStatus("terminated").activate(at, true, AGENT)).toThrow(
+      CompanyActivationBlockedError,
+    );
+  });
+  it("garde la cause, et l'efface à la réactivation", () => {
+    // Un compte redevenu actif ne traîne pas le motif de la dernière coupure :
+    // la prochaine reprise automatique s'appuierait sur une raison périmée.
+    const company = withStatus("active");
+    company.suspend("kbis_revoked");
+    expect(company.suspensionCause).toBe("kbis_revoked");
+
+    company.reactivate();
+    expect(company.status).toBe("active");
+    expect(company.suspensionCause).toBeNull();
+  });
+
+  it("distingue la décision humaine de la conséquence automatique", () => {
+    const humaine = withStatus("active");
+    humaine.suspend("staff");
+    expect(humaine.suspensionCause).toBe("staff");
+  });
+
+  it("fige QUI a activé, à quel titre", () => {
+    // Ouvrir la commande à un client est un engagement : il se signe. Le nom et
+    // le titre sont un instantané, pas une jointure relue plus tard.
+    const company = withStatus("pending");
+    company.activate(new Date("2026-08-12T09:00:00.000Z"), true, AGENT);
+    expect(company.toPersistence().activatedBy).toEqual(AGENT);
   });
 });
