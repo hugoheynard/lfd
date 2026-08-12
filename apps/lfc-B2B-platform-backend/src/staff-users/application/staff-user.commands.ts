@@ -29,3 +29,15 @@ export class RemoveStaffUserCommand {
     readonly actorSub: string,
   ) {}
 }
+
+/**
+ * Invite une personne, ou lui **renvoie** un lien : c'est le même geste, et le
+ * serveur sait déjà lequel des deux s'applique. Deux commandes obligeraient
+ * l'écran à deviner, et il se tromperait au premier second onglet ouvert.
+ */
+export class InviteStaffUserCommand {
+  constructor(
+    readonly id: string,
+    readonly actorSub: string,
+  ) {}
+}

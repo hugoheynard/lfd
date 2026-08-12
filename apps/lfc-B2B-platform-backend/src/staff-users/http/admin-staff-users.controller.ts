@@ -26,6 +26,7 @@ import { ListStaffUsersQuery } from "../application/list-staff-users.query.js";
 import { SetStaffStatusCommand } from "../application/set-staff-status.command.js";
 import {
   CreateStaffUserCommand,
+  InviteStaffUserCommand,
   RemoveStaffUserCommand,
   UpdateStaffUserCommand,
 } from "../application/staff-user.commands.js";
@@ -87,6 +88,27 @@ export class AdminStaffUsersController {
   ): Promise<void> {
     await this.commands.execute<SetStaffStatusCommand, void>(
       new SetStaffStatusCommand(id, change, actorSub),
+    );
+  }
+
+  /**
+   * Inviter, ou **renvoyer** un lien : un seul geste, un seul endpoint. Le
+   * serveur sait déjà lequel des deux s'applique ; faire choisir l'écran
+   * l'exposerait à se tromper dès qu'un second onglet est ouvert.
+   *
+   * `POST` et non `PATCH` : ce n'est pas la fiche qu'on modifie, c'est un lien
+   * qu'on **émet**. Volontairement non idempotent — chaque appel frappe un
+   * ticket neuf et tue le précédent, ce qui est exactement ce qu'on veut quand
+   * une boîte partagée a vu passer le lien.
+   *
+   * Le verbe suffit à exiger `staff:write` (surface réflexive) : inviter
+   * quelqu'un dans le back-office est un geste d'administrateur.
+   */
+  @Post(":id/invitation")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async invite(@Param("id") id: string, @StaffSub() actorSub: string): Promise<void> {
+    await this.commands.execute<InviteStaffUserCommand, void>(
+      new InviteStaffUserCommand(id, actorSub),
     );
   }
 

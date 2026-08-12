@@ -27,12 +27,20 @@ import {
 /** Le nom qu'Auth0 donne à la connexion base de données d'un tenant neuf. */
 const DEFAULT_AUTH0_DB_CONNECTION = "Username-Password-Authentication";
 
+/**
+ * La connexion où naissent les identités **de l'équipe**. Valeur constatée dans
+ * le tenant, pas devinée : elle existe, et c'est elle qui sépare l'équipe des
+ * clients chez le fournisseur d'identité.
+ */
+const DEFAULT_AUTH0_STAFF_CONNECTION = "lfc-staff";
+
 @Injectable()
 export class AppConfig {
   private readonly database: string;
   private readonly auth0DomainValue: string;
   private readonly auth0AudienceValue: string;
   private readonly auth0ConnectionValue: string;
+  private readonly auth0StaffConnectionValue: string;
   private readonly clientBaseUrlValue: string | null;
   private readonly management: Auth0ManagementCredentials | null;
   private readonly storage: S3StorageConfig | null;
@@ -54,6 +62,8 @@ export class AppConfig {
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
     this.auth0ConnectionValue =
       optionalString("AUTH0_DB_CONNECTION") ?? DEFAULT_AUTH0_DB_CONNECTION;
+    this.auth0StaffConnectionValue =
+      optionalString("AUTH0_STAFF_CONNECTION") ?? DEFAULT_AUTH0_STAFF_CONNECTION;
     this.clientBaseUrlValue = optionalString("CLIENT_BASE_URL");
     this.management = optionalManagementCredentials();
     this.storage = optionalStorageConfig();
@@ -120,6 +130,20 @@ export class AppConfig {
    */
   auth0DatabaseConnection(): string {
     return this.auth0ConnectionValue;
+  }
+
+  /**
+   * Nom de la connexion Auth0 où naissent les identités **de l'équipe**
+   * (`AUTH0_STAFF_CONNECTION`).
+   *
+   * Distincte de la connexion client, et c'est tout l'intérêt : un client ne
+   * peut pas s'authentifier contre une surface interne, et ce refus arrive
+   * avant le moindre code applicatif. Une même adresse présente des deux côtés
+   * donne **deux identités**, avec deux `sub` — voulu : deux rôles, deux
+   * sessions.
+   */
+  auth0StaffConnection(): string {
+    return this.auth0StaffConnectionValue;
   }
 
   /**

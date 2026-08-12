@@ -1,5 +1,6 @@
 import type {
   StaffMeView,
+  StaffStatus,
   StaffStatusChange,
   StaffUserPayload,
   StaffUserView,
@@ -68,4 +69,33 @@ export abstract class StaffUserRepository {
    * l'admin réapparaît même supprimé directement en base. Idempotent.
    */
   abstract ensureBootstrapAdmin(): Promise<void>;
+
+  /**
+   * Ce qu'il faut savoir d'une fiche pour l'inviter — et rien d'autre.
+   *
+   * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
+   */
+  abstract forInvitation(id: string): Promise<StaffInvitationTarget>;
+
+  /**
+   * Constate l'invitation : la fiche passe `invited`, la date est posée, et
+   * l'identité fraîchement ouverte est liée.
+   *
+   * **N'écrase pas un `active`** : ré-envoyer un lien à quelqu'un qui est déjà
+   * entré ne doit pas lui retirer son accès pour le remettre en attente. Le
+   * geste reste utile — il sert à qui a perdu son mot de passe — mais il ne
+   * change pas l'état.
+   */
+  abstract markInvited(id: string, subject: string, invitedAt: Date): Promise<void>;
+}
+
+/** L'état d'une fiche au moment où on veut l'inviter. */
+export interface StaffInvitationTarget {
+  readonly id: string;
+  readonly email: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  /** `null` tant qu'aucune identité n'a été ouverte : il faudra la créer. */
+  readonly auth0Id: string | null;
+  readonly status: StaffStatus;
 }

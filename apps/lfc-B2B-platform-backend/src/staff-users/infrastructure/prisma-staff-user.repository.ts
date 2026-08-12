@@ -23,7 +23,10 @@ import {
   type StaffMutationTarget,
 } from "../domain/staff-access.policy.js";
 import { DuplicateStaffEmailError, StaffUserNotFoundError } from "../domain/staff-user-errors.js";
-import { StaffUserRepository } from "../domain/staff-user.repository.js";
+import {
+  StaffUserRepository,
+  type StaffInvitationTarget,
+} from "../domain/staff-user.repository.js";
 
 interface OverrideRow {
   readonly resource: StaffOverride["resource"];
@@ -178,6 +181,37 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     const target = await this.loadTarget(id, actorSub);
     assertStatusChangeAllowed(target, change.status);
     await this.prisma.staffUser.update({ where: { id }, data: { status: change.status } });
+  }
+
+  async forInvitation(id: string): Promise<StaffInvitationTarget> {
+    const row = await this.prisma.staffUser.findUnique({
+      where: { id },
+      select: { id: true, email: true, firstName: true, lastName: true, auth0Id: true, status: true },
+    });
+    if (row === null) {
+      throw new StaffUserNotFoundError(id);
+    }
+    return row;
+  }
+
+  async markInvited(id: string, subject: string, invitedAt: Date): Promise<void> {
+    const current = await this.prisma.staffUser.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+    if (current === null) {
+      throw new StaffUserNotFoundError(id);
+    }
+    await this.prisma.staffUser.update({
+      where: { id },
+      data: {
+        auth0Id: subject,
+        invitedAt,
+        // Renvoyer un lien à quelqu'un déjà entré ne le remet pas en attente :
+        // il n'a rien perdu, il a juste oublié son mot de passe.
+        ...(current.status === "active" ? {} : { status: "invited" as const }),
+      },
+    });
   }
 
   async ensureBootstrapAdmin(): Promise<void> {

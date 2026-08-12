@@ -94,3 +94,20 @@ export class StaffGrantByOverrideError extends BusinessError {
     );
   }
 }
+
+/**
+ * On n'invite pas quelqu'un qu'on vient de suspendre.
+ *
+ * Le geste paraît anodin — un lien de mot de passe — mais il rouvrirait la
+ * porte que la suspension a fermée : suivre le lien, c'est entrer, et l'entrée
+ * fait passer la fiche en `active`. Réintégrer d'abord, inviter ensuite : deux
+ * décisions, dans cet ordre. Refus **métier** (409).
+ */
+export class SuspendedStaffInviteError extends BusinessError {
+  constructor() {
+    super(
+      "staff_user.suspended_invite",
+      "Cette personne est suspendue : réintégrez-la avant de l'inviter.",
+    );
+  }
+}

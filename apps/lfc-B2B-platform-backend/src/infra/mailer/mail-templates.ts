@@ -69,6 +69,20 @@ export interface B2bMails {
     readonly firstName: string;
     readonly companyName: string;
   };
+  /**
+   * Un accès au **back-office** vient d'être ouvert. Destinataire : **le membre
+   * de l'équipe**.
+   *
+   * Le second endroit du système — avec `customer.access-opened` — où un lien de
+   * mot de passe a le droit d'apparaître, et pour la même raison : sa seule
+   * destination légitime est la boîte de la personne concernée. Qui lit ce lien
+   * devient elle.
+   */
+  "staff.invited": {
+    readonly firstName: string;
+    /** Le lien à usage unique, à durée de vie limitée. */
+    readonly passwordSetupUrl: string;
+  };
   /** Un client demande à être rappelé ou écrit. Destinataire : la boîte de l'équipe. */
   "staff.support-requested": {
     readonly contactName: string;
@@ -113,6 +127,19 @@ export const B2B_MAIL_TEMPLATES: TemplateRegistry<B2bMails> = {
         "par l'équipe La Folie Douce.\n\n" +
         "Il ne reste qu'à choisir votre mot de passe. Le lien ci-dessous est valable 7 jours ; " +
         "passé ce délai, demandez-nous simplement de vous en renvoyer un.",
+      cta: { label: "Choisir mon mot de passe", url: data.passwordSetupUrl },
+      footer:
+        "Vous n'attendiez pas cet e-mail ? Ignorez-le : sans mot de passe choisi, aucun accès n'est ouvert.",
+    }),
+  }),
+  "staff.invited": (data) => ({
+    subject: sanitiseSubject("Votre accès au back-office La Folie Douce"),
+    html: renderLayout({
+      title: `Bienvenue dans l'équipe${data.firstName === "" ? "" : `, ${data.firstName}`}`,
+      body:
+        "Un accès au back-office vient d'être ouvert à votre nom.\n\n" +
+        "Il ne reste qu'à choisir votre mot de passe. Le lien ci-dessous est valable 7 jours ; " +
+        "passé ce délai, demandez à un administrateur de vous en renvoyer un.",
       cta: { label: "Choisir mon mot de passe", url: data.passwordSetupUrl },
       footer:
         "Vous n'attendiez pas cet e-mail ? Ignorez-le : sans mot de passe choisi, aucun accès n'est ouvert.",
