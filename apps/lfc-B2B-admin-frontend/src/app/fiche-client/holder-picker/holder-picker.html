@@ -5,7 +5,8 @@
 <fold-input
   label="E-mail du détenteur"
   type="email"
-  required
+  [required]="emailRequired()"
+  [optional]="!emailRequired()"
   hint="c'est par là qu'il recevra son lien de mot de passe"
   [value]="email()"
   (valueChange)="email.set($event)"

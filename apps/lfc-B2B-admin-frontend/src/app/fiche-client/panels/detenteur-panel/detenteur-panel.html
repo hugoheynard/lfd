@@ -4,7 +4,8 @@
 />
 
 <div class="body">
-  <app-holder-picker (holderChange)="holder.set($event)" />
+  <!-- Ici l'adresse EST le geste : sans elle il n'y a rien à rattacher. -->
+  <app-holder-picker [emailRequired]="true" (holderChange)="holder.set($event)" />
 </div>
 
 <footer class="foot">

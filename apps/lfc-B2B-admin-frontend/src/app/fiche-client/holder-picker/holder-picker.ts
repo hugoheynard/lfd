@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   effect,
+  input,
   output,
   signal,
 } from '@angular/core';
@@ -43,6 +44,17 @@ export interface HolderChoice {
   styleUrl: './holder-picker.scss',
 })
 export class HolderPicker {
+  /**
+   * L'adresse est-elle **exigée ici** ?
+   *
+   * Le même formulaire sert deux moments qui n'ont pas la même exigence : à
+   * l'**ouverture** le détenteur est facultatif (le commercial n'a souvent que
+   * l'enseigne au téléphone), au **rattachement** il est tout l'objet du geste.
+   * L'étoile était posée en dur, et réclamait donc à la création un champ qu'on
+   * venait justement de rendre optionnel.
+   */
+  readonly emailRequired = input(false);
+
   /** Le détenteur retenu, `null` tant qu'aucune adresse n'est saisie. */
   readonly holderChange = output<HolderChoice | null>();
 
