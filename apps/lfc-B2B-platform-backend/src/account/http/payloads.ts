@@ -31,13 +31,22 @@ export const updateNavPrefsPayload = z.object({
 export type UpdateNavPrefsPayload = z.infer<typeof updateNavPrefsPayload>;
 
 /**
- * Seule la raison sociale est exigée : il faut bien appeler la société par un
- * nom. Forme juridique et SIRET sont **facultatifs à l'ouverture** — un compte
- * se crée souvent chez le client, qui n'a pas ses papiers sous la main — et se
- * complètent ensuite. L'activation, elle, les exige (invariant de l'agrégat).
+ * Aucun champ n'est exigé **ici** : c'est l'agrégat qui tient le minimum, et il
+ * demande l'**enseigne** — le nom d'usage, celui que le client donne au
+ * téléphone. La raison sociale, elle, est une donnée de greffe : elle arrive
+ * avec le SIRET, pas avant.
+ *
+ * Ce schéma l'exigeait, et `POST /admin/companies { enseigne }` — l'ouverture au
+ * téléphone que le domaine autorise — se faisait refuser par la frontière. Une
+ * règle de nom tenue à deux endroits finit toujours par se contredire ; elle
+ * n'est plus tenue qu'une fois, et pas ici.
+ *
+ * Forme juridique et SIRET restent **facultatifs à l'ouverture** — un compte se
+ * crée souvent chez le client, qui n'a pas ses papiers sous la main — et se
+ * complètent ensuite. L'activation, elle, les exige.
  */
 export const createCompanyPayload = z.object({
-  raisonSociale: z.string(),
+  raisonSociale: z.string().default(""),
   enseigne: z.string().default(""),
   formeJuridique: z.string().default(""),
   siret: z.string().default(""),
@@ -76,11 +85,18 @@ export const additionalContactPayload = contactPayload.extend({
 export type AdditionalContactPayload = z.infer<typeof additionalContactPayload>;
 
 /**
- * Création d'un compte **depuis l'admin** : l'identité de la société **et** son
- * contact principal (le staff n'a pas de profil créateur d'où le dériver).
+ * Création d'un compte **depuis l'admin** : l'identité de la société, et son
+ * contact principal **s'il est déjà connu** (le staff n'a pas de profil créateur
+ * d'où le dériver).
+ *
+ * Le contact est **facultatif** parce que l'ouverture l'est : le commercial a le
+ * client au téléphone, et n'a souvent que l'enseigne. Rattacher le détenteur est
+ * un geste à part (`POST :companyId/holder`), qui peut viser quelqu'un ayant
+ * déjà un espace chez nous — c'est le serveur qui reconnaît l'adresse, pas le
+ * commercial.
  */
 export const adminCreateCompanyPayload = createCompanyPayload.extend({
-  primaryContact: contactPayload,
+  primaryContact: contactPayload.optional(),
 });
 
 export type AdminCreateCompanyPayload = z.infer<typeof adminCreateCompanyPayload>;

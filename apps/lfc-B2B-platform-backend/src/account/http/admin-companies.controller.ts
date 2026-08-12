@@ -14,6 +14,8 @@ import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
+import { AttachAccountHolderCommand } from "../application/commands/attach-account-holder.command.js";
+import type { HolderAttached } from "../application/commands/attach-account-holder.handler.js";
 import { CreateCompanyByStaffCommand } from "../application/commands/create-company-by-staff.command.js";
 import type { CompanyOpened } from "../application/commands/create-company-by-staff.handler.js";
 import { GetCompanyForStaffQuery } from "../application/queries/get-company-for-staff.query.js";
@@ -24,6 +26,7 @@ import type {
   AdminCompanyFicheView,
   AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
+import { accountHolderPayloadSchema, type AccountHolderPayload } from "@lfd/contracts";
 import { adminCreateCompanyPayload, type AdminCreateCompanyPayload } from "./payloads.js";
 
 /**
@@ -78,10 +81,13 @@ export class AdminCompaniesController {
   /**
    * Ouvre un compte client (Porte B — « le commercial provisionne »).
    *
-   * La société naît `pending`, et son **détenteur** — le contact principal, qui
-   * est la même personne — est rattaché dans la foulée : identité provisionnée
-   * et lien de mot de passe s'il est nouveau, simple rattachement s'il est déjà
-   * client. La réponse dit lequel des deux, et si l'e-mail est parti : l'écran
+   * La société naît `pending`. Son **détenteur** — le contact principal, qui est
+   * la même personne — est rattaché dans la foulée **s'il est déjà connu** :
+   * identité provisionnée et lien de mot de passe s'il est nouveau, simple
+   * rattachement s'il est déjà client. Sinon le compte s'ouvre sur sa seule
+   * enseigne, et le détenteur arrive par `POST :companyId/holder`.
+   *
+   * La réponse dit laquelle des trois issues, et si l'e-mail est parti : l'écran
    * ne peut pas le deviner, et le commercial doit pouvoir l'annoncer au client
    * qu'il a encore au téléphone.
    */
@@ -98,9 +104,31 @@ export class AdminCompaniesController {
         payload.formeJuridique,
         payload.siret,
         payload.tvaIntracom,
-        payload.primaryContact,
+        payload.primaryContact ?? null,
         staffSub,
       ),
+    );
+  }
+
+  /**
+   * Rattache le **détenteur** d'un compte ouvert sans lui.
+   *
+   * Route distincte de `members` : celle-ci ne se contente pas d'ouvrir un
+   * accès, elle **désigne** la personne du compte — le contact principal de la
+   * fiche et le détenteur de l'espace sont la même, et c'est ce que ce geste
+   * pose. Ouvrir un accès à un collègue reste `POST :companyId/members`.
+   *
+   * `409` si un détenteur est déjà là : en changer est une autre décision.
+   */
+  @Post(":companyId/holder")
+  @HttpCode(HttpStatus.CREATED)
+  attachHolder(
+    @StaffSub() staffSub: string,
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(accountHolderPayloadSchema)) payload: AccountHolderPayload,
+  ): Promise<HolderAttached> {
+    return this.commands.execute<AttachAccountHolderCommand, HolderAttached>(
+      new AttachAccountHolderCommand(companyId, payload, staffSub),
     );
   }
 }

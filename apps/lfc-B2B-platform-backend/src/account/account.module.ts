@@ -17,6 +17,7 @@ import {
 } from "./application/commands/admin-company.handlers.js";
 import { PreferFulfillmentHandler } from "./application/commands/prefer-fulfillment.handler.js";
 import { AddDeliveryAddressHandler } from "./application/commands/add-delivery-address.handler.js";
+import { AttachAccountHolderHandler } from "./application/commands/attach-account-holder.handler.js";
 import { CreateCompanyByStaffHandler } from "./application/commands/create-company-by-staff.handler.js";
 import { CreateCompanyHandler } from "./application/commands/create-company.handler.js";
 import { RemoveCompanyContactHandler } from "./application/commands/remove-company-contact.handler.js";
@@ -137,6 +138,7 @@ import { MeController } from "./http/me.controller.js";
     UpdateNavPreferencesHandler,
     CreateCompanyHandler,
     CreateCompanyByStaffHandler,
+    AttachAccountHolderHandler,
     ListCompanyMembersHandler,
     InviteCompanyMemberHandler,
     UpdatePrimaryContactByStaffHandler,

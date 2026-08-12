@@ -11,18 +11,27 @@ import { AccountAccessGranter } from "../services/grant-account-access.service.j
 import { CreateCompanyByStaffCommand } from "./create-company-by-staff.command.js";
 
 /**
+ * Ce qu'il est advenu du **détenteur** à l'ouverture — trois issues, pas deux
+ * booléens.
+ *
+ * `deferred` (aucune adresse saisie) et `failed` (le canal d'identité n'a pas
+ * répondu) sont l'un un choix et l'autre une panne : les confondre sous un
+ * « accès non ouvert » ferait annoncer un incident là où le commercial a
+ * simplement remis le rattachement à plus tard.
+ */
+export type HolderOutcome = "attached" | "deferred" | "failed";
+
+/**
  * Ce qu'une ouverture de compte rapporte : l'identifiant, et **ce qui est
  * réellement arrivé à l'accès**.
  *
- * Pas un modèle de lecture (le front relit la fiche ensuite) — trois faits que
- * lui seul ne peut pas déduire : le compte a-t-il un détenteur, était-ce un
- * client déjà connu, et l'e-mail est-il parti. Sans eux, l'écran devrait
- * inventer un message.
+ * Pas un modèle de lecture (le front relit la fiche ensuite) — deux faits que
+ * lui seul ne peut pas déduire : le sort du détenteur, et si l'e-mail est parti.
+ * Sans eux, l'écran devrait inventer un message.
  */
 export interface CompanyOpened {
   readonly id: string;
-  /** Faux si le canal d'identité est indisponible : la société existe, l'accès non. */
-  readonly accessOpened: boolean;
+  readonly holder: HolderOutcome;
   readonly mailSent: boolean;
 }
 
@@ -59,8 +68,10 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
 
   async execute(command: CreateCompanyByStaffCommand): Promise<CompanyOpened> {
     // Contact saisi par le staff : on le fait passer par le value object, qui en
-    // tient les règles (prénom/nom présents, e-mail valide, fonction bornée).
-    const company = Company.declare(command, ContactDetails.create(command.contact));
+    // tient les règles (e-mail valide, fonction bornée). Absent, c'est `null` —
+    // pas un contact aux champs vides (cf. `CompanyContact`).
+    const contact = command.contact === null ? null : ContactDetails.create(command.contact);
+    const company = Company.declare(command, contact);
 
     // Le contrôle d'unicité ne vaut que si on a un SIRET : sans lui, il n'y a
     // rien à dédupliquer, et comparer des chaînes vides ferait de la deuxième
@@ -77,12 +88,19 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     return { id: companyId, ...(await this.openAccess(command, company, companyId)) };
   }
 
-  /** Rattache le détenteur, ou dit pourquoi il n'a pas pu l'être. */
+  /** Rattache le détenteur, ou dit pourquoi il ne l'a pas été. */
   private async openAccess(
     command: CreateCompanyByStaffCommand,
     company: Company,
     companyId: string,
   ): Promise<Omit<CompanyOpened, "id">> {
+    const contact = command.contact;
+    if (contact === null) {
+      // Pas d'adresse, donc rien à tenter : le dossier existe, le détenteur
+      // viendra. Ce n'est pas un échec, et l'écran ne doit pas le dire comme
+      // tel.
+      return { holder: "deferred", mailSent: false };
+    }
     try {
       const granted = await this.access.grant({
         companyId,
@@ -90,10 +108,10 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
         // papiers arrivent après), et un e-mail intitulé « Votre accès à
         // l'espace pro  » n'aide personne.
         companyName: company.displayName(),
-        email: command.contact.email,
-        firstName: command.contact.firstName,
-        lastName: command.contact.lastName,
-        phone: command.contact.phone,
+        email: contact.email,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        phone: contact.phone,
         // DÉTENTEUR : celui dont l'adresse ouvre le compte. Ce rôle ne
         // s'attribue pas — il se constate, ici et nulle part ailleurs.
         role: "owner",
@@ -102,10 +120,10 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
       // On ne dit PAS si la personne était déjà connue : ce serait apprendre au
       // commercial que cette adresse travaille avec un autre de nos clients.
       // L'issue reste au serveur, où elle choisit l'e-mail qui part.
-      return { accessOpened: true, mailSent: granted.mailSent };
+      return { holder: "attached", mailSent: granted.mailSent };
     } catch (error) {
       this.logger.error(`Accès non ouvert pour la société ${companyId}`, error);
-      return { accessOpened: false, mailSent: false };
+      return { holder: "failed", mailSent: false };
     }
   }
 }

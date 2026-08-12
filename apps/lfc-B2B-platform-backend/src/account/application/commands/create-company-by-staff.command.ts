@@ -10,6 +10,11 @@ import type { ContactDetailsInput } from "../../domain/value-objects/contact-det
  * celui qui commande. Il peut déjà avoir un compte chez nous ; c'est au handler
  * de s'en apercevoir, pas au commercial de le savoir d'avance.
  *
+ * `null` est un cas **normal** : au téléphone, le commercial n'a souvent que
+ * l'enseigne, et l'adresse du gérant arrive le lendemain. Exiger le détenteur
+ * pour ouvrir ferait perdre l'appel — alors que le dossier se complète ensuite
+ * (`AttachAccountHolderCommand`), et que l'activation, elle, l'exigera.
+ *
  * `invitedBy` est le `sub` du staff : une **trace**, pas une autorisation (la
  * porte est le guard).
  */
@@ -20,7 +25,8 @@ export class CreateCompanyByStaffCommand {
     readonly formeJuridique: string,
     readonly siret: string,
     readonly tvaIntracom: string,
-    readonly contact: ContactDetailsInput,
+    /** Le détenteur, ou `null` : il sera rattaché plus tard, par son adresse. */
+    readonly contact: ContactDetailsInput | null,
     readonly invitedBy: string,
   ) {}
 }

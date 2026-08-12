@@ -82,6 +82,11 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
   };
 }
 
+/** La même commande, **sans** détenteur : l'ouverture sur la seule enseigne. */
+function commandWithoutHolder(): CreateCompanyByStaffCommand {
+  return new CreateCompanyByStaffCommand("", "Café des Halles", "", "", "", null, "staff-sub");
+}
+
 function command(contact: Partial<ContactDetailsInput> = {}): CreateCompanyByStaffCommand {
   return new CreateCompanyByStaffCommand(
     "Café des Halles SAS",
@@ -130,8 +135,8 @@ describe("CreateCompanyByStaffHandler", () => {
 
     await handler.execute(command());
 
-    expect(unowned[0]?.contact.email.value).toBe("camille@halles.fr");
-    expect(unowned[0]?.contact.fonction).toBe("Gérante");
+    expect(unowned[0]?.contact?.email.value).toBe("camille@halles.fr");
+    expect(unowned[0]?.contact?.fonction).toBe("Gérante");
   });
 
   it("refuse un SIRET déjà enregistré, sans rien créer", async () => {
@@ -146,5 +151,31 @@ describe("CreateCompanyByStaffHandler", () => {
 
     await expect(handler.execute(command({ email: "" }))).rejects.toBeInstanceOf(InvalidEmailError);
     expect(unowned).toEqual([]);
+  });
+
+  it("ouvre le compte sur la SEULE enseigne, sans détenteur", async () => {
+    // Le commercial a le client au téléphone et n'a que le nom de la maison :
+    // exiger une adresse ici ferait perdre l'appel, alors que le rattachement
+    // se fait très bien le lendemain.
+    const { handler, unowned, access } = doubles();
+
+    await expect(handler.execute(commandWithoutHolder())).resolves.toEqual({
+      id: "company_unowned",
+      holder: "deferred",
+      mailSent: false,
+    });
+    expect(unowned[0]?.contact).toBeNull();
+    // RIEN n'est tenté auprès du fournisseur d'identité : il n'y a pas
+    // d'adresse, donc pas d'accès à ouvrir — et surtout pas d'incident à
+    // annoncer.
+    expect(access.granted).toEqual([]);
+  });
+
+  it("distingue « pas de détenteur » d'un canal d'identité en panne", async () => {
+    // Les deux laissent le compte sans accès, mais l'un est un choix et l'autre
+    // une panne : les confondre ferait annoncer un incident au client.
+    const { handler } = doubles({ access: new Error("canal indisponible") });
+
+    await expect(handler.execute(command())).resolves.toMatchObject({ holder: "failed" });
   });
 });
