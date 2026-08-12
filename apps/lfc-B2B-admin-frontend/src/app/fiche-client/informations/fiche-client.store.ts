@@ -140,6 +140,11 @@ export class FicheClientStore {
     if (!isReachable(company)) {
       return 'Aucun interlocuteur joignable : renseignez au moins un numéro de téléphone.';
     }
+    // Le cas le plus fréquent et le moins devinable : la pièce est là, elle
+    // n'a simplement pas été vérifiée. Le dire évite de chercher ce qui manque.
+    if (missingRequiredPieces(company, this.settings()).includes('kbis') && company.kbis !== null) {
+      return "L'extrait KBIS est déposé mais pas encore vérifié : ouvrez-le, comparez-le à l'identité, puis confirmez.";
+    }
     return 'Il reste des pièces à réunir.';
   });
 

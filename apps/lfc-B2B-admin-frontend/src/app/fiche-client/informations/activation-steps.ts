@@ -27,8 +27,8 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
     cta: 'Renseigner la TVA',
   },
   kbis: {
-    title: 'Extrait KBIS',
-    detail: "Déposez l'extrait KBIS reçu du client.",
+    title: 'Extrait KBIS vérifié',
+    detail: "Déposez l'extrait reçu du client, puis confirmez l'avoir vérifié.",
     cta: 'Déposer le KBIS',
   },
   billing: {
@@ -113,7 +113,11 @@ function isPieceDone(company: AdminCompanyDetail | null, piece: ActivationPiece)
       // Non assujetti : la pièce n'a pas lieu d'être, donc elle ne manque pas.
       return !company.vatNumberRequired || company.tvaIntracom.trim() !== '';
     case 'kbis':
-      return company.kbis !== null;
+      // **Vérifié**, pas « déposé » — la même règle que la porte serveur. La
+      // lire autrement ici allumerait « Activer le compte » sur un extrait que
+      // personne n'a ouvert, et le serveur répondrait 409 : un bouton qui
+      // promet ce que le serveur refuse est pire qu'un bouton grisé.
+      return company.kbis?.certified === true;
     case 'billing':
       return company.addresses.billing !== null;
     case 'delivery':

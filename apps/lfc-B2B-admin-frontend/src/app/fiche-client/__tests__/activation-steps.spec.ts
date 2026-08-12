@@ -112,3 +112,28 @@ describe('missingRequiredPieces', () => {
     expect(missingRequiredPieces(company, { ...ALL_REQUIRED, kbis: 'optional' })).toEqual([]);
   });
 });
+
+describe('le KBIS ne compte que VÉRIFIÉ (même règle que le serveur)', () => {
+  /** Déposé, mais que personne n'a ouvert. */
+  const deposited = {
+    fileName: 'kbis.pdf',
+    uploadedAt: '2026-08-01T00:00:00.000Z',
+    certified: false,
+    certifiedAt: null,
+    certifiedBy: null,
+  };
+
+  it('un extrait déposé mais non vérifié laisse la pièce MANQUANTE', () => {
+    // Sinon l'écran allumerait « Activer le compte » et le serveur répondrait
+    // 409 : un bouton qui promet ce que le serveur refuse est pire qu'un
+    // bouton grisé.
+    expect(missingRequiredPieces(complete({ kbis: deposited }), ALL_REQUIRED)).toContain('kbis');
+    expect(
+      activationSteps(complete({ kbis: deposited }), ALL_REQUIRED).map((s) => s.key),
+    ).toContain('kbis');
+  });
+
+  it('vérifié ⇒ la pièce est acquise', () => {
+    expect(missingRequiredPieces(complete(), ALL_REQUIRED)).not.toContain('kbis');
+  });
+});
