@@ -110,7 +110,10 @@
         @if (!hosted && email(); as who) {
           <span class="app-user" [title]="who">{{ who }}</span>
         }
-        <app-notification-bell />
+        <!-- La cloche interroge `/admin/notifications` : sans ce garde, elle
+             partirait en boucle pour qui n'a pas le périmètre, et n'afficherait
+             qu'une erreur silencieuse. -->
+        <app-notification-bell *appCan="'support:read'" />
       </div>
     </div>
 

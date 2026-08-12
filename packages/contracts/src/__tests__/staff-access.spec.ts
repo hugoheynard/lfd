@@ -1,5 +1,6 @@
 import {
   ALL_STAFF_PERMISSIONS,
+  dedupeStaffOverrides,
   hasStaffPermission,
   resolveStaffPermissions,
   ROLE_GRANTS,
@@ -136,3 +137,43 @@ describe("le catalogue", () => {
 function byCatalogueOrder(left: StaffPermission, right: StaffPermission): number {
   return ALL_STAFF_PERMISSIONS.indexOf(left) - ALL_STAFF_PERMISSIONS.indexOf(right);
 }
+
+describe("dedupeStaffOverrides", () => {
+  const allow = (resource: StaffOverride["resource"]): StaffOverride => ({
+    resource,
+    action: "write",
+    effect: "allow",
+  });
+  const deny = (resource: StaffOverride["resource"]): StaffOverride => ({
+    resource,
+    action: "write",
+    effect: "deny",
+  });
+
+  it("ne garde qu'une ligne par permission", () => {
+    // La base ne peut en stocker qu'une (contrainte d'unicité) : si on n'arbitre
+    // pas ici, on valide un état et on en écrit un autre.
+    expect(dedupeStaffOverrides([allow("orders"), deny("orders")])).toHaveLength(1);
+  });
+
+  it("fait gagner le refus, quel que soit l'ordre d'arrivée", () => {
+    expect(dedupeStaffOverrides([allow("orders"), deny("orders")])[0]?.effect).toBe("deny");
+    expect(dedupeStaffOverrides([deny("orders"), allow("orders")])[0]?.effect).toBe("deny");
+  });
+
+  it("donne le même effectif que la formule, sur la liste brute comme sur la réduite", () => {
+    // C'est LA propriété qui compte : normaliser ne doit rien changer au
+    // résultat, sinon on aurait déplacé le problème au lieu de le fermer.
+    const raw = [allow("orders"), deny("orders"), allow("growth")];
+
+    expect(resolveStaffPermissions("support", dedupeStaffOverrides(raw))).toEqual(
+      resolveStaffPermissions("support", raw),
+    );
+  });
+
+  it("laisse tranquilles des permissions distinctes", () => {
+    const distinct = [allow("orders"), allow("growth")];
+
+    expect(dedupeStaffOverrides(distinct)).toHaveLength(2);
+  });
+});

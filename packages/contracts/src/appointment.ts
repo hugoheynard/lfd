@@ -350,3 +350,16 @@ export interface AppointmentView {
 export interface CreatedAppointmentResponse {
   readonly id: string;
 }
+
+/**
+ * Fenêtre de lecture d'un agenda staff (`?from=&to=`), en dates ISO.
+ *
+ * **Obligatoires** : sans elles, la requête partait avec `undefined` jusqu'à
+ * Postgres, qui la refusait — un `500` opaque là où l'appelant s'est simplement
+ * trompé d'URL. Un `400` dit ce qui manque.
+ */
+export const appointmentRangeQuerySchema = z.object({
+  from: z.string().trim().min(1, "date de début requise"),
+  to: z.string().trim().min(1, "date de fin requise"),
+});
+export type AppointmentRangeQuery = z.infer<typeof appointmentRangeQuerySchema>;

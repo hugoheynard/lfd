@@ -119,6 +119,7 @@ export {
   bookAppointmentPayloadSchema,
   staffBookAppointmentPayloadSchema,
   appointmentTransitionPayloadSchema,
+  appointmentRangeQuerySchema,
 } from "./appointment.js";
 export type {
   AvailabilityRulePayload,
@@ -140,6 +141,7 @@ export type {
   BookAppointmentPayload,
   StaffBookAppointmentPayload,
   AppointmentTransitionPayload,
+  AppointmentRangeQuery,
   AppointmentView,
   CreatedAppointmentResponse,
 } from "./appointment.js";
@@ -260,6 +262,7 @@ export {
   staffPermission,
   resolveStaffPermissions,
   hasStaffPermission,
+  dedupeStaffOverrides,
   ROLE_GRANTS,
   ALL_STAFF_PERMISSIONS,
   STAFF_ROLE_LABELS,

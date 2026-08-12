@@ -1,4 +1,5 @@
 import {
+  dedupeStaffOverrides,
   resolveStaffPermissions,
   type StaffMeView,
   type StaffStatusChange,
@@ -125,9 +126,10 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
 
   async create(payload: StaffUserPayload, actorSub: string): Promise<string> {
     const data = identityColumns(payload);
+    const overrides = dedupeStaffOverrides(payload.overrides);
     await this.assertEmailFree(data.email, null);
     const created = await this.prisma.staffUser.create({
-      data: { ...data, overrides: { create: overrideRows(payload.overrides, actorSub) } },
+      data: { ...data, overrides: { create: overrideRows(overrides, actorSub) } },
       select: { id: true },
     });
     return created.id;
@@ -136,11 +138,10 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
   async update(id: string, payload: StaffUserPayload, actorSub: string): Promise<void> {
     const target = await this.loadTarget(id, actorSub);
     const data = identityColumns(payload);
-    assertEditAllowed(target, {
-      email: data.email,
-      role: data.role,
-      overrides: payload.overrides,
-    });
+    // Normalisé AVANT de valider : on refuse ou on accepte exactement l'état
+    // qu'on s'apprête à écrire, jamais un autre.
+    const overrides = dedupeStaffOverrides(payload.overrides);
+    assertEditAllowed(target, { email: data.email, role: data.role, overrides });
     await this.assertEmailFree(data.email, id);
     // Les dérogations se remplacent en bloc : le formulaire décrit un état, pas
     // une suite d'ajouts, et un delta partiel laisserait des lignes fantômes.
@@ -148,7 +149,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
       this.prisma.staffPermissionOverride.deleteMany({ where: { staffUserId: id } }),
       this.prisma.staffUser.update({
         where: { id },
-        data: { ...data, overrides: { create: overrideRows(payload.overrides, actorSub) } },
+        data: { ...data, overrides: { create: overrideRows(overrides, actorSub) } },
       }),
     ]);
   }
@@ -218,11 +219,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
   }
 }
 
-/** Lignes de dérogation, dédoublonnées et attribuées à leur auteur. */
+/** Lignes de dérogation, attribuées à leur auteur. Déjà dédoublonnées en amont. */
 function overrideRows(overrides: readonly StaffOverride[], grantedBy: string) {
-  const byPermission = new Map<string, StaffOverride>();
-  for (const override of overrides) {
-    byPermission.set(`${override.resource}:${override.action}`, override);
-  }
-  return [...byPermission.values()].map((override) => ({ ...override, grantedBy }));
+  return overrides.map((override) => ({ ...override, grantedBy }));
 }

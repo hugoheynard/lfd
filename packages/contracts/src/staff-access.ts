@@ -161,6 +161,31 @@ export const staffOverrideSchema = z.object({
 });
 export type StaffOverride = z.infer<typeof staffOverrideSchema>;
 
+/**
+ * Réduit une liste de dérogations à **au plus une par permission**, le refus
+ * l'emportant sur l'autorisation.
+ *
+ * Sans ça, deux règles divergent : la base ne peut stocker qu'une ligne par
+ * couple (contrainte d'unicité), donc « la dernière gagne », tandis que
+ * {@link resolveStaffPermissions} fait gagner le refus. On validerait alors un
+ * état, et on en écrirait un autre. Normaliser **une fois**, au goulot, évite
+ * d'avoir à choisir laquelle des deux lectures est la vraie.
+ */
+export function dedupeStaffOverrides(
+  overrides: readonly StaffOverride[],
+): readonly StaffOverride[] {
+  const byPermission = new Map<StaffPermission, StaffOverride>();
+  for (const override of overrides) {
+    const key = staffPermission(override.resource, override.action);
+    const kept = byPermission.get(key);
+    // Le refus l'emporte, quel que soit l'ordre d'arrivée.
+    if (kept === undefined || override.effect === "deny") {
+      byPermission.set(key, override);
+    }
+  }
+  return [...byPermission.values()];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // La résolution
 // ─────────────────────────────────────────────────────────────────────────────

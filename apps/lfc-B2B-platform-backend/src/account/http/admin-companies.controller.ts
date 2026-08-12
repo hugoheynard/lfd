@@ -23,9 +23,9 @@ import { adminCreateCompanyPayload, type AdminCreateCompanyPayload } from "./pay
  * Surface **admin** (staff) : la **liste** des comptes clients et leur
  * **création** pour l'onglet commercial.
  *
- * `@Public()` **désarme** le guard client global (le staff n'a pas de token
- * client) ; `@UseGuards(AdminAuthGuard)` **réarme** avec la porte staff (audience
- * dédiée, ou bypass de dev), puis `@AdminSurface` vérifie le périmètre. Invariant C :
+ * `@AdminSurface` monte les trois choses ensemble : le guard client global est
+ * désarmé (le staff n'a pas de token client), la porte staff est réarmée
+ * (audience dédiée, ou bypass de dev), puis le périmètre est vérifié. Invariant C :
  * un seul backend B2B, deux publics, la confiance vient du JWT et de l.annuaire.
  */
 @Controller("admin/companies")

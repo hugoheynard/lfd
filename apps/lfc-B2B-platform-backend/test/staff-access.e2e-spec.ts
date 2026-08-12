@@ -128,3 +128,43 @@ describe("le mur staff — la dérogation, en vrai", () => {
     await accountant().get("/admin/cockpit").expect(200);
   });
 });
+
+/**
+ * Le balayage : **aucune** surface admin ne répond à quelqu'un que l'annuaire
+ * ignore. Une par ressource, parce que c'est le mappage qui peut se tromper —
+ * un contrôleur rangé sous la mauvaise ressource ouvrirait une porte au mauvais
+ * métier, et le guard n'aurait aucun moyen de s'en apercevoir.
+ */
+describe("le mur staff — le balayage des huit ressources", () => {
+  const SURFACES: readonly { readonly resource: string; readonly path: string }[] = [
+    { resource: "companies", path: "/admin/companies" },
+    { resource: "orders", path: "/admin/orders" },
+    { resource: "growth", path: "/admin/cockpit" },
+    { resource: "appointments", path: "/admin/appointments?from=2026-08-01&to=2026-08-31" },
+    { resource: "support", path: "/admin/support-requests" },
+    { resource: "settings", path: "/admin/order-cutoffs" },
+    { resource: "staff", path: "/admin/staff-users" },
+    { resource: "me", path: "/admin/me" },
+  ];
+
+  it.each(SURFACES)("refuse $resource à un inconnu", async ({ path }) => {
+    const response = await ctx.asSub(STRANGER_SUB).get(path);
+
+    // 403, jamais 200 — et jamais 404 non plus : une route qui n'existe pas
+    // ferait passer ce test sans rien prouver.
+    expect(response.status).toBe(403);
+  });
+
+  it.each(SURFACES)("ouvre $resource à un administrateur", async ({ path }) => {
+    // Le pendant indispensable : sans lui, une faute de frappe dans le chemin
+    // rendrait le test précédent vert pour la mauvaise raison.
+    await ctx.prisma.staffUser.update({
+      where: { email: ACCOUNTANT_EMAIL },
+      data: { role: "admin" },
+    });
+
+    const response = await accountant().get(path);
+
+    expect(response.status).toBe(200);
+  });
+});

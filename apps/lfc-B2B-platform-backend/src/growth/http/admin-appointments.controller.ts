@@ -1,10 +1,12 @@
 import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
+  appointmentRangeQuerySchema,
   appointmentTransitionPayloadSchema,
   availabilityConfigPayloadSchema,
   availabilityExceptionsPayloadSchema,
   bookingPolicySchema,
   staffBookAppointmentPayloadSchema,
+  type AppointmentRangeQuery,
   type AppointmentTransitionPayload,
   type AppointmentView,
   type AvailabilityConfigPayload,
@@ -29,7 +31,7 @@ import {
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { ZodBody } from "../../shared/http/zod-body.pipe.js";
+import { ZodBody, ZodQuery } from "../../shared/http/zod-body.pipe.js";
 import { SaveAvailabilityExceptionsCommand } from "../application/commands/save-availability-exceptions.command.js";
 import { SaveAvailabilityCommand } from "../application/commands/save-availability.command.js";
 import { SaveBookingPolicyCommand } from "../application/commands/save-booking-policy.command.js";
@@ -104,14 +106,18 @@ export class AdminAppointmentsController {
    * garantit que le commercial voit exactement ce qu'il vient d'ouvrir.
    */
   @Get("availability/slots")
-  slots(@Query("from") from: string, @Query("to") to: string): Promise<SlotsView> {
-    return this.queries.execute<GetSlotsQuery, SlotsView>(new GetSlotsQuery(from, to));
+  slots(
+    @Query(new ZodQuery(appointmentRangeQuerySchema)) range: AppointmentRangeQuery,
+  ): Promise<SlotsView> {
+    return this.queries.execute<GetSlotsQuery, SlotsView>(new GetSlotsQuery(range.from, range.to));
   }
 
   @Get("appointments")
-  list(@Query("from") from: string, @Query("to") to: string): Promise<readonly AppointmentView[]> {
+  list(
+    @Query(new ZodQuery(appointmentRangeQuerySchema)) range: AppointmentRangeQuery,
+  ): Promise<readonly AppointmentView[]> {
     return this.queries.execute<ListAppointmentsQuery, readonly AppointmentView[]>(
-      new ListAppointmentsQuery(from, to),
+      new ListAppointmentsQuery(range.from, range.to),
     );
   }
 

@@ -23,6 +23,7 @@ import {
 import { PermissionsStore } from './auth/permissions.store';
 import { StaffAuth } from './auth/staff-auth';
 import { StaffLoginPage } from './auth/staff-login/staff-login';
+import { CanDirective } from './shared/can/can.directive';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
 import { SuiteEmbed } from './suite-embed/suite-embed';
 
@@ -61,6 +62,7 @@ import { SuiteEmbed } from './suite-embed/suite-embed';
     FoldToastContainerComponent,
     NotificationBell,
     StaffLoginPage,
+    CanDirective,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
