@@ -18,7 +18,14 @@ import { z } from "zod";
  * déblocage un remplacement : accorder le mensuel retirait la carte. Or un
  * client au mensuel doit pouvoir régler une commande ponctuelle à part.
  */
-export const deferredTermSchema = z.enum(["monthly", "net60", "net90"]);
+/**
+ * **Un seul terme aujourd'hui : le mensuel.** 60 et 90 jours ont été retirés —
+ * ils n'étaient adossés à aucune mécanique (ni facture, ni échéance, ni
+ * prélèvement) et promettaient donc un crédit que l'application ne savait pas
+ * recouvrer. Le jour où d'autres termes reviendront, ils viendront de la DONNÉE
+ * (une page de réglages facturation), pas d'une constante gravée ici.
+ */
+export const deferredTermSchema = z.enum(["monthly"]);
 export type DeferredTerm = z.infer<typeof deferredTermSchema>;
 
 /**
@@ -28,8 +35,6 @@ export type DeferredTerm = z.infer<typeof deferredTermSchema>;
  */
 export const DEFERRED_TERM_LABELS: Readonly<Record<DeferredTerm, string>> = {
   monthly: "Mensuel",
-  net60: "60 jours",
-  net90: "90 jours",
 };
 
 /**

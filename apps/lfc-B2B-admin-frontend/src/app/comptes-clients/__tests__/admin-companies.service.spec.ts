@@ -107,12 +107,12 @@ describe('AdminCompaniesService', () => {
 
   it('grantTerms PATCH l’ensemble complet des crédits accordés', async () => {
     const { service, http } = setup();
-    const promise = service.grantTerms('company_1', ['monthly', 'net90']);
+    const promise = service.grantTerms('company_1', ['monthly', 'monthly']);
     await flush();
 
     const req = http.expectOne(`${URL}/company_1/granted-terms`);
     expect(req.request.method).toBe('PATCH');
-    expect(req.request.body).toEqual({ grantedTerms: ['monthly', 'net90'] });
+    expect(req.request.body).toEqual({ grantedTerms: ['monthly', 'monthly'] });
     req.flush(null);
     await promise;
   });

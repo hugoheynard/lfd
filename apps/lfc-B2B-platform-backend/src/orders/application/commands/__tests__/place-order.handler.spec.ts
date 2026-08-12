@@ -489,7 +489,7 @@ describe("PlaceOrderHandler", () => {
     });
   });
 
-  it("en terme différé (net60) sur entreprise active, ne crée AUCUNE intention et marque not_required", async () => {
+  it("en terme différé (mensuel) sur entreprise active, ne crée AUCUNE intention et marque not_required", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(

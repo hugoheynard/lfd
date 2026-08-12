@@ -51,8 +51,6 @@ datasource db {
 /// énumération faisait du déblocage un remplacement.
 enum DeferredTerm {
   monthly
-  net60
-  net90
 
   @@schema("public")
 }
@@ -170,7 +168,7 @@ enum OrderStatus {
 /// de production) : une commande peut être `placed` et déjà `paid`, ou `placed`
 /// et `not_required` (facturée sur terme). Décidé par le `paymentTerm` de la
 /// société : `per_order` → `pending` puis `paid` (carte Stripe) ; les termes
-/// différés (`monthly`/`net60`/`net90`) → `not_required` (encaissée hors ligne).
+/// différés (`monthly`) → `not_required` (encaissée hors ligne).
 enum PaymentStatus {
   not_required
   pending

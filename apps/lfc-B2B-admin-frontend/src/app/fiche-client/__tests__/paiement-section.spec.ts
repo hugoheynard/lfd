@@ -83,13 +83,22 @@ describe('section Moyens de paiement — le socle et les crédits', () => {
     expect(host.textContent).toContain('Toujours actif');
   });
 
-  it('AJOUTE un crédit sans retirer les autres', () => {
-    // Tout l'intérêt du cumul : débloquer le mensuel n'enlève rien.
-    const { granted, section } = render({ grantedTerms: ['net60'] });
+  it('ACCORDE le mensuel sans toucher au socle', () => {
+    // Le paiement à la commande n'est pas un réglage : il reste offert quoi
+    // qu'on accorde. Accorder ajoute une possibilité, il n'en retire aucune.
+    const { granted, section } = render({});
 
     section['toggle']('monthly');
 
-    expect(granted.at(-1)).toEqual(['net60', 'monthly']);
+    expect(granted.at(-1)).toEqual(['monthly']);
+  });
+
+  it('RETIRE le crédit quand on le rebascule', () => {
+    const { granted, section } = render({ grantedTerms: ['monthly'] });
+
+    section['toggle']('monthly');
+
+    expect(granted.at(-1)).toEqual([]);
   });
 
   it('signale un crédit demandé par le client et pas encore accordé', () => {

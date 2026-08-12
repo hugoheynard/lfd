@@ -106,24 +106,24 @@ describe("Company — crédits de règlement", () => {
   it("le client DEMANDE un crédit, il ne se l'accorde pas", () => {
     const company = reconstituted(); // aucun crédit accordé
 
-    company.requestTerm("net60");
+    company.requestTerm("monthly");
 
-    expect(company.requestedTerm).toBe("net60");
+    expect(company.requestedTerm).toBe("monthly");
     expect(company.grantedTerms).toEqual([]);
   });
 
   it("demander un crédit DÉJÀ accordé retire la demande (rien en attente)", () => {
     const company = reconstituted();
-    company.grantTerms(["net60"]);
+    company.grantTerms(["monthly"]);
 
-    company.requestTerm("net60");
+    company.requestTerm("monthly");
 
     expect(company.requestedTerm).toBeNull();
   });
 
   it("`null` retire explicitement la demande en cours", () => {
     const company = reconstituted();
-    company.requestTerm("net90");
+    company.requestTerm("monthly");
 
     company.requestTerm(null);
 
@@ -135,20 +135,20 @@ describe("Company — crédits de règlement", () => {
     // n'en retire aucune.
     const company = reconstituted();
 
-    company.grantTerms(["monthly", "net60"]);
+    company.grantTerms(["monthly"]);
 
-    expect(company.grantedTerms).toEqual(["monthly", "net60"]);
+    expect(company.grantedTerms).toEqual(["monthly"]);
     expect(company.settlesOnAccount()).toBe(true);
   });
 
   it("accorder solde la demande en cours", () => {
     const company = reconstituted();
-    company.requestTerm("net60");
+    company.requestTerm("monthly");
 
-    company.grantTerms(["net60"]);
+    company.grantTerms(["monthly"]);
 
     const state = company.toPersistence();
-    expect(state.grantedTerms).toEqual(["net60"]);
+    expect(state.grantedTerms).toEqual(["monthly"]);
     expect(state.requestedTerm).toBeNull();
   });
 

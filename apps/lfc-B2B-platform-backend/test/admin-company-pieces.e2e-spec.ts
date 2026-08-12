@@ -101,22 +101,33 @@ describe("pièces d'activation staff (Porte B)", () => {
   });
 
   it("fixe le règlement CONVENU et solde la demande client", async () => {
-    // Le client a demandé net60 ; le staff convient net90 → convenu écrit, demande soldée.
+    // Le client a demandé le mensuel ; le staff l'accorde → convenu écrit,
+    // demande soldée (il a tranché, il n'y a plus rien « en attente »).
     await ctx.prisma.company.update({
       where: { id: companyId },
-      data: { requestedTerm: DeferredTerm.net60 },
+      data: { requestedTerm: DeferredTerm.monthly },
     });
 
     await staff()
       .patch(`/admin/companies/${companyId}/granted-terms`)
-      .send({ grantedTerms: ["monthly", "net90"] })
+      .send({ grantedTerms: ["monthly"] })
       .expect(204);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
-    // Cumulatifs : accorder n'est pas remplacer, et payer à la commande reste
+    // Cumulatif : accorder n'est pas remplacer, et payer à la commande reste
     // possible de toute façon.
-    expect(company.grantedTerms).toEqual([DeferredTerm.monthly, DeferredTerm.net90]);
+    expect(company.grantedTerms).toEqual([DeferredTerm.monthly]);
     expect(company.requestedTerm).toBeNull();
+  });
+
+  it("REFUSE un terme qui n'existe plus (60 / 90 jours)", async () => {
+    // Le contrat est la porte : un terme retiré du modèle ne doit pas pouvoir
+    // rentrer par l'API, sans quoi la base porterait un crédit que plus rien ne
+    // sait recouvrer.
+    await staff()
+      .patch(`/admin/companies/${companyId}/granted-terms`)
+      .send({ grantedTerms: ["net60"] })
+      .expect(400);
   });
 
   it("enregistre l'adresse de facturation", async () => {

@@ -2,7 +2,7 @@ import type { SettlementMean } from '../account/account.model';
 
 /**
  * Un **changement de régime de règlement** dans la frise : la société demande à
- * passer d'un terme à un autre (`per_order` → `monthly`, `monthly` → `net60`…).
+ * passer d'un terme à un autre (`per_order` → `monthly`).
  * La pastille porte la **date de la demande** ; l'acceptation la place **entre
  * deux mois** (le mois à partir duquel le nouveau régime s'applique).
  */
@@ -24,9 +24,9 @@ function monthKey(date: Date): string {
 }
 
 /**
- * Jeu de changements **démo** (front-only) : une bascule `per_order → monthly`
- * déjà acceptée (le mois courant), et une demande `monthly → net60` en attente
- * (le mois prochain). À remplacer par l'historique réel des demandes de terme.
+ * Jeu de changements **démo** (front-only) : une demande `per_order → monthly`
+ * en attente (le mois prochain), et une bascule déjà acceptée (le mois courant).
+ * À remplacer par l'historique réel des demandes de terme.
  */
 export function buildDemoRegimeChanges(now: Date): readonly PaymentRegimeChange[] {
   const year = now.getUTCFullYear();
@@ -36,8 +36,8 @@ export function buildDemoRegimeChanges(now: Date): readonly PaymentRegimeChange[
   return [
     {
       id: 'regime_demo_pending',
-      from: 'monthly',
-      to: 'net60',
+      from: 'per_order',
+      to: 'monthly',
       requestedAt: at(year, month, 24),
       acceptedAt: null,
       effectiveKey: monthKey(new Date(Date.UTC(year, month + 1, 1))),

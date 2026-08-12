@@ -7,15 +7,18 @@
  * se teste (`[empty]="!value"`) et se réécrit sans cérémonie.
  */
 
-/** Conditions de paiement accordées au client (échéance de règlement). */
-export type PaymentTerm = 'per_order' | 'monthly' | 'net60' | 'net90';
+/**
+ * Conditions de paiement accordées au client. `per_order` n'est pas un terme :
+ * c'est l'absence de crédit, le socle offert à tout le monde. 60 et 90 jours ont
+ * été retirés — ils promettaient un crédit qu'aucune mécanique ne savait
+ * recouvrer (cf. `deferredTermSchema`).
+ */
+export type PaymentTerm = 'per_order' | 'monthly';
 
 /** Libellés lisibles, dans l'ordre d'affichage du sélecteur. */
 export const PAYMENT_TERMS: readonly { readonly value: PaymentTerm; readonly label: string }[] = [
   { value: 'per_order', label: 'À la commande' },
   { value: 'monthly', label: 'Mensuel — relevé de fin de mois' },
-  { value: 'net60', label: 'À 60 jours' },
-  { value: 'net90', label: 'À 90 jours' },
 ];
 
 /** Résout le libellé d'une condition de paiement (fallback = la valeur brute). */

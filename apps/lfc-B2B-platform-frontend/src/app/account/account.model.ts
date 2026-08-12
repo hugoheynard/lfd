@@ -199,7 +199,7 @@ export function companyDisplayName(company: Company): string {
 export const SETTLEMENT_OPTIONS: readonly {
   readonly value: DeferredTerm;
   readonly label: string;
-}[] = (['monthly', 'net60', 'net90'] as const).map((value) => ({
+}[] = (['monthly'] as const).map((value) => ({
   value,
   label: DEFERRED_TERM_LABELS[value],
 }));
