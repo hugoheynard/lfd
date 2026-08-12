@@ -34,6 +34,7 @@ import { UpdateMyProfileHandler } from "./application/commands/update-my-profile
 import { UpdateNavPreferencesHandler } from "./application/commands/update-nav-preferences.handler.js";
 import { UpdatePrimaryContactHandler } from "./application/commands/update-primary-contact.handler.js";
 import { UploadKbisHandler } from "./application/commands/upload-kbis.handler.js";
+import { DownloadKbisForStaffHandler } from "./application/queries/download-kbis-for-staff.handler.js";
 import { DownloadKbisHandler } from "./application/queries/download-kbis.handler.js";
 import { GetMyAccountHandler } from "./application/queries/get-my-account.handler.js";
 import { GetCompanyForStaffHandler } from "./application/queries/get-company-for-staff.handler.js";
@@ -156,6 +157,7 @@ import { MeController } from "./http/me.controller.js";
     RemoveCompanyContactHandler,
     UploadKbisHandler,
     DownloadKbisHandler,
+    DownloadKbisForStaffHandler,
     SaveBillingAddressHandler,
     AddDeliveryAddressHandler,
     UpdateDeliveryAddressHandler,

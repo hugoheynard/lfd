@@ -16,6 +16,7 @@ import {
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Delete,
@@ -23,12 +24,16 @@ import {
   Patch,
   Post,
   Put,
+  Res,
+  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { CommandBus } from "@nestjs/cqrs";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
+import type { Response } from "express";
 
 import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
@@ -40,6 +45,8 @@ import {
   CertifyKbisCommand,
   RevokeKbisCertificationCommand,
 } from "../application/commands/certify-kbis.command.js";
+import { DownloadKbisForStaffQuery } from "../application/queries/download-kbis-for-staff.query.js";
+import { type KbisDownload } from "../application/queries/download-kbis.query.js";
 import {
   AddDeliveryAddressByStaffCommand,
   SaveBillingAddressByStaffCommand,
@@ -77,7 +84,36 @@ interface UploadedFilePart {
 @Public()
 @UseGuards(AdminAuthGuard)
 export class AdminCompanyPiecesController {
-  constructor(private readonly commands: CommandBus) {}
+  constructor(
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
+  ) {}
+
+  /**
+   * Sert l'extrait au staff, pour qu'il puisse **le lire avant de le certifier**.
+   *
+   * Sans cette route, « J'ai vérifié cet extrait » était un clic à l'aveugle :
+   * la fiche staff masquait Voir/Télécharger faute d'endpoint, et la garantie
+   * sur laquelle repose l'activation ne reposait sur rien.
+   *
+   * `Content-Disposition: attachment` avec un nom **assaini** — jamais le nom
+   * brut du client dans un en-tête ; le front en fait un blob de toute façon.
+   */
+  @Get(":companyId/kbis")
+  async downloadKbis(
+    @Param("companyId") companyId: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const kbis = await this.queries.execute<DownloadKbisForStaffQuery, KbisDownload>(
+      new DownloadKbisForStaffQuery(companyId),
+    );
+    res.setHeader("Content-Type", kbis.contentType);
+    res.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(kbis.fileName, "kbis.pdf")),
+    );
+    return new StreamableFile(kbis.bytes);
+  }
 
   /** Dépose (ou remplace) le KBIS. Multipart `file` ; le domaine valide le PDF. */
   @Put(":companyId/kbis")

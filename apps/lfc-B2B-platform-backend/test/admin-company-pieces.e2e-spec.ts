@@ -308,6 +308,24 @@ describe("certification du KBIS", () => {
     expect(company.kbisCertifiedAt).toBeNull();
   });
 
+  it("SERT l'extrait au staff — sans quoi certifier serait un clic à l'aveugle", async () => {
+    // La garantie d'activation repose sur « un agent a lu ce document ». Encore
+    // faut-il qu'il puisse l'ouvrir depuis la fiche.
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k.pdf")
+      .expect(204);
+
+    const response = await staff().get(`/admin/companies/${companyId}/kbis`).expect(200);
+
+    expect(response.headers["content-disposition"]).toContain("k.pdf");
+    expect(response.body.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+  });
+
+  it("répond 404 quand il n'y a aucun extrait à servir", async () => {
+    await staff().get(`/admin/companies/${companyId}/kbis`).expect(404);
+  });
+
   it("certifie un extrait déposé, et GARDE qui l'a fait", async () => {
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
