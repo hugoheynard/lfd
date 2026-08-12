@@ -12,9 +12,9 @@ import {
 } from "../../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
+  NoDeliveryZoneForPostalCodeError,
   OrderCompanyNotFoundError,
   PickupNotConfiguredError,
-  UnknownDeliveryZoneError,
   UnknownSkuError,
 } from "../../../domain/errors/order-errors.js";
 import {
@@ -96,12 +96,22 @@ function pickups(resolved: PickupAddressView | null = null): PickupAddressReposi
   };
 }
 
-/** Zones doublées : seule la zone **trouvée par id** (checkout coursier) varie. */
+/**
+ * Zones doublées. `resolveForPostalCode` **applique la vraie règle** (un préfixe
+ * doit couvrir le code postal) : un double qui renverrait la zone quel que soit
+ * le code postal laisserait passer précisément ce qu'on veut interdire — un frais
+ * servi par une zone qui ne dessert pas l'adresse livrée.
+ */
 function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
   return {
     list: () => Promise.resolve(found === null ? [] : [found]),
     findById: () => Promise.resolve(found),
-    resolveForPostalCode: () => Promise.resolve(found),
+    resolveForPostalCode: (codePostal) =>
+      Promise.resolve(
+        found !== null && found.postalPrefixes.some((prefix) => codePostal.startsWith(prefix))
+          ? found
+          : null,
+      ),
     create: () => Promise.resolve("zone_1"),
     update: () => Promise.resolve(),
     remove: () => Promise.resolve(),
@@ -130,7 +140,15 @@ const LABO_SNAPSHOT: BillingAddressPayload = {
   pays: "France",
 };
 
-/** Adresse de livraison libre (coursier). */
+/** La seule zone du maillage de test : elle ne dessert que la Tarentaise. */
+const TARENTAISE: DeliveryZoneView = {
+  id: "z1",
+  postalPrefixes: ["73150"],
+  label: "Val d'Isère",
+  fee: { mode: "amount", cents: 2000 },
+};
+
+/** Adresse livrée (coursier) — dans la zone ci-dessus. */
 const COURIER_ADDR: BillingAddressPayload = {
   label: "",
   ligne1: "12 rue du Test",
@@ -159,7 +177,6 @@ function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
   return {
     companyId: null,
     fulfillmentMethod: "pickup",
-    deliveryZoneId: null,
     deliveryAddress: null,
     pickupAddressId: null,
     requestedDeliveryDate: null,
@@ -384,20 +401,14 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed?.totalCents).toBe(320);
   });
 
-  it("en COURSIER, fige l'adresse libre et ajoute le frais de la zone choisie", async () => {
+  it("en COURSIER, fige l'adresse livrée et déduit le frais de SON code postal", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const zone: DeliveryZoneView = {
-      id: "z1",
-      postalPrefixes: ["73150"],
-      label: "Val d'Isère",
-      fee: { mode: "amount", cents: 2000 },
-    };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(),
-      zones(zone),
+      zones(TARENTAISE),
       payments(),
       events(),
     );
@@ -410,7 +421,6 @@ describe("PlaceOrderHandler", () => {
         payload({
           companyId: "c1",
           fulfillmentMethod: "delivery",
-          deliveryZoneId: "z1",
           deliveryAddress: COURIER_ADDR,
         }),
       ),
@@ -425,14 +435,16 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed?.totalCents).toBe(2800);
   });
 
-  it("refuse le COURSIER vers une zone inconnue (400), sans rien écrire", async () => {
+  it("refuse le COURSIER vers un code postal qu'AUCUNE zone ne dessert, sans rien écrire", async () => {
+    // Un secteur non couvert n'est pas un secteur gratuit : c'est un secteur où
+    // la tournée n'a pas de coût connu. On refuse plutôt que de livrer à 0 €.
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
       catalog,
       capturingRepo(sink),
       pickups(),
-      zones(null),
+      zones(TARENTAISE),
       payments(),
       events(),
     );
@@ -444,12 +456,11 @@ describe("PlaceOrderHandler", () => {
           payload({
             companyId: "c1",
             fulfillmentMethod: "delivery",
-            deliveryZoneId: "ghost",
-            deliveryAddress: COURIER_ADDR,
+            deliveryAddress: { ...COURIER_ADDR, codePostal: "75002", ville: "Paris" },
           }),
         ),
       ),
-    ).rejects.toBeInstanceOf(UnknownDeliveryZoneError);
+    ).rejects.toBeInstanceOf(NoDeliveryZoneForPostalCodeError);
     expect(sink.placed).toBeNull();
   });
 

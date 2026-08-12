@@ -12,8 +12,9 @@ import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
 import { Order } from "../../domain/entities/order.js";
 import {
+  InvalidOrderFulfillmentError,
+  NoDeliveryZoneForPostalCodeError,
   PickupNotConfiguredError,
-  UnknownDeliveryZoneError,
   UnknownSkuError,
 } from "../../domain/errors/order-errors.js";
 import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
@@ -171,7 +172,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
   /**
    * Résout l'acheminement et ses deux ajustements (autoritaires, jamais envoyés
    * par le client). **Retrait** : snapshot du point (choisi ou défaut) + sa remise.
-   * **Coursier** : adresse libre figée + frais **re-résolu** depuis la zone choisie.
+   * **Coursier** : adresse livrée figée + zone **déduite de son code postal**,
+   * dont on tire le frais.
    */
   private async resolveFulfillment(
     payload: PlaceOrderCommand["payload"],
@@ -192,18 +194,20 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       };
     }
 
-    // Coursier — le schéma garantit zone + adresse ; on garde une défense typée.
-    const zoneId = payload.deliveryZoneId;
-    if (zoneId === null || payload.deliveryAddress === null) {
-      throw new UnknownDeliveryZoneError(zoneId ?? "");
+    // Coursier — le schéma garantit l'adresse ; on garde une défense typée.
+    const address = payload.deliveryAddress;
+    if (address === null) {
+      throw new InvalidOrderFulfillmentError("Adresse de livraison requise en coursier.");
     }
-    const zone = await this.zones.findById(zoneId);
+    // La zone se DÉDUIT du code postal livré : c'est une propriété de l'adresse,
+    // pas un choix. Personne ne peut donc annoncer un secteur moins cher que le sien.
+    const zone = await this.zones.resolveForPostalCode(address.codePostal);
     if (zone === null) {
-      throw new UnknownDeliveryZoneError(zoneId);
+      throw new NoDeliveryZoneForPostalCodeError(address.codePostal);
     }
     return {
-      deliveryZoneId: zoneId,
-      deliveryAddress: payload.deliveryAddress,
+      deliveryZoneId: zone.id,
+      deliveryAddress: address,
       pickupAddress: null,
       discountCents: 0,
       // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.

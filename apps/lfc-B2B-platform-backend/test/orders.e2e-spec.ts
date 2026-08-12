@@ -216,17 +216,17 @@ describe("checkout → Order", () => {
     expect(await ctx.prisma.order.count({ where: { companyId } })).toBe(0);
   });
 
-  it("en COURSIER, fige l'adresse libre et ajoute le frais de la zone (re-résolu serveur)", async () => {
+  it("en COURSIER, fige l'adresse livrée et déduit le frais de son code postal", async () => {
     await createUser(ctx.prisma, { auth0Sub: MEMBER });
     const zoneId = await seedZone();
 
+    // Aucune zone n'est envoyée : le serveur la déduit du code postal livré.
     const response = await ctx
       .asSub(MEMBER)
       .post(`/orders`)
       .send({
         companyId: null,
         fulfillmentMethod: "delivery",
-        deliveryZoneId: zoneId,
         deliveryAddress: COURIER_ADDR,
         note: "",
         lines: [{ sku: "VIE-001", quantity: 2 }],
@@ -246,6 +246,27 @@ describe("checkout → Order", () => {
     expect(stored.deliveryFeeCents).toBe(2000);
     expect(stored.vatCents).toBe(422);
     expect(stored.totalCents).toBe(2822);
+  });
+
+  it("REFUSE le coursier vers un code postal qu'aucune zone ne dessert", async () => {
+    // Le maillage ne couvre que 73150. Livrer ailleurs à frais nul serait une
+    // tournée dont personne ne connaît le coût.
+    await createUser(ctx.prisma, { auth0Sub: MEMBER });
+    await seedZone();
+
+    await ctx
+      .asSub(MEMBER)
+      .post(`/orders`)
+      .send({
+        companyId: null,
+        fulfillmentMethod: "delivery",
+        deliveryAddress: { ...COURIER_ADDR, codePostal: "75002", ville: "Paris" },
+        note: "",
+        lines: [{ sku: "VIE-001", quantity: 2 }],
+      })
+      .expect(409);
+
+    expect(await ctx.prisma.order.count()).toBe(0);
   });
 });
 

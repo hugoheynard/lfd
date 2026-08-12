@@ -6,11 +6,12 @@ import type { CartAdjustment } from "./cart-adjustment.js";
 /**
  * Contrat de fil des **commandes** B2B.
  *
- * Le client n'envoie que ce qu'il **décide** : l'acheminement (coursier + zone +
- * adresse libre, ou retrait au labo), une date souhaitée, une note, et des lignes
+ * Le client n'envoie que ce qu'il **décide** : l'acheminement (coursier vers une
+ * adresse, ou retrait au labo), une date souhaitée, une note, et des lignes
  * `{sku, quantité}`. Il n'envoie **jamais** de prix : le serveur les ré-résout
- * depuis le catalogue et **re-résout le frais de la zone** depuis son `id`
- * (autorité). Les montants apparaissent donc seulement dans les vues de **lecture**.
+ * depuis le catalogue, et **déduit la zone** (donc le frais) du code postal de
+ * l'adresse livrée. Les montants apparaissent donc seulement dans les vues de
+ * **lecture**.
  *
  * **Zéro friction** : `companyId` est **optionnel**. Sans entreprise, la commande
  * appartient au client connecté et se règle par carte (`per_order`). Avec une
@@ -64,10 +65,16 @@ export type OrderLineInput = z.infer<typeof orderLineInputSchema>;
  * côté client (le serveur refuse un panier vide de toute façon).
  *
  * `companyId` est **optionnel** : `null` = commande personnelle (le client
- * connecté). En **coursier** (`delivery`), le client choisit une **zone**
- * (`deliveryZoneId`, dont le serveur re-résout le frais) et saisit une **adresse
- * de livraison libre** (`deliveryAddress`) ; les deux sont requises. En **retrait**
- * (`pickup`), `pickupAddressId` `null` = le point par défaut (labo, résolu serveur).
+ * connecté). En **coursier** (`delivery`), le client fournit l'**adresse livrée**
+ * (`deliveryAddress`) — l'une de celles de sa société, ou une adresse saisie à la
+ * volée. En **retrait** (`pickup`), `pickupAddressId` `null` = le point par défaut
+ * (labo, résolu serveur).
+ *
+ * **La zone n'est pas envoyée** : elle se **déduit** du code postal de l'adresse
+ * livrée (`resolveForPostalCode` — code exact ou préfixe de secteur, le plus long
+ * gagne). La laisser au client rendait le frais négociable : il suffisait
+ * d'annoncer la zone la moins chère avec une adresse ailleurs. Un secteur est une
+ * propriété de l'adresse, pas une option de commande.
  */
 export const placeOrderPayloadSchema = z
   .object({
@@ -75,9 +82,7 @@ export const placeOrderPayloadSchema = z
     companyId: z.string().trim().min(1).nullable().default(null),
     /** Mode d'acheminement. Défaut `pickup` (aucun extra requis). */
     fulfillmentMethod: fulfillmentMethodSchema.default("pickup"),
-    /** Zone de livraison choisie (coursier) — le serveur en re-résout le frais. */
-    deliveryZoneId: z.string().trim().nullable().default(null),
-    /** Adresse de livraison libre (coursier) — requise si `delivery`. */
+    /** Adresse livrée (coursier) — requise si `delivery` ; sa zone est déduite. */
     deliveryAddress: billingAddressPayloadSchema.nullable().default(null),
     /** Point de retrait choisi si `pickup` ; `null` = le point par défaut (serveur). */
     pickupAddressId: z.string().trim().nullable().default(null),
@@ -89,12 +94,6 @@ export const placeOrderPayloadSchema = z
     note: z.string().default(""),
     lines: z.array(orderLineInputSchema).min(1, "au moins une ligne"),
   })
-  .refine(
-    (payload) =>
-      payload.fulfillmentMethod !== "delivery" ||
-      (payload.deliveryZoneId !== null && payload.deliveryZoneId.length > 0),
-    { message: "zone de livraison requise", path: ["deliveryZoneId"] },
-  )
   .refine(
     (payload) => payload.fulfillmentMethod !== "delivery" || payload.deliveryAddress !== null,
     { message: "adresse de livraison requise", path: ["deliveryAddress"] },

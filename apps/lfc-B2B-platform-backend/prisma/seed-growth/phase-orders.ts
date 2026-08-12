@@ -48,7 +48,6 @@ async function placeOne(harness: SeedHarness, userId: string, i: number, at: Dat
   const payload: PlaceOrderPayload = {
     companyId: null,
     fulfillmentMethod: "pickup",
-    deliveryZoneId: null,
     deliveryAddress: null,
     pickupAddressId: null,
     requestedDeliveryDate: null,

@@ -60,6 +60,23 @@ export class UnknownDeliveryZoneError extends DomainError {
   }
 }
 
+/**
+ * Aucune zone ne couvre le code postal de l'adresse livrée. Refus **métier**
+ * (409) : la demande est bien formée, c'est le maillage des zones qui ne dessert
+ * pas ce secteur.
+ *
+ * On refuse plutôt que de livrer à frais nul : un secteur non couvert n'est pas
+ * un secteur gratuit, c'est un secteur où la tournée n'a pas de coût connu.
+ */
+export class NoDeliveryZoneForPostalCodeError extends BusinessError {
+  constructor(readonly codePostal: string) {
+    super(
+      "orders.delivery_zone.not_served",
+      `Aucune zone de livraison ne dessert le code postal ${codePostal}. Choisissez le retrait, ou contactez-nous.`,
+    );
+  }
+}
+
 /** Une ligne de commande mal formée (quantité ≤ 0, prix négatif). */
 export class InvalidOrderLineError extends DomainError {
   constructor(
