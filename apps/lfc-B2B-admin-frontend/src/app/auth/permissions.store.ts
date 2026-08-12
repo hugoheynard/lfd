@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { hasStaffPermission, type StaffMeView, type StaffPermission } from '@lfd/contracts';
+import type { StaffMeView, StaffPermission } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -50,7 +50,12 @@ export class PermissionsStore {
    * une action qu'on n'a pas encore le droit d'offrir.
    */
   can(permission: StaffPermission): boolean {
-    return hasStaffPermission(this.permissions(), permission);
+    // `includes` plutôt que l'aide du contrat : celle-ci est une valeur, donc
+    // l'importer ici tirerait zod et TOUS les schémas dans le bundle initial —
+    // +280 ko sur le chemin eager, pour un test d'appartenance. Les contrats
+    // restent **type-only** côté front ; la règle qui compte (combiner rôle et
+    // dérogations) a déjà été appliquée par le serveur.
+    return this.permissions().includes(permission);
   }
 
   /** Charge une fois. Les appels concurrents partagent la même lecture. */
