@@ -13,12 +13,21 @@
   gap: var(--fold-space-md);
 }
 
+/* En-tête de la pièce, sur fond ACCENT : l'extrait KBIS n'est pas une section
+   parmi d'autres dans la fiche — c'est celle dont dépend l'activation. Le fond
+   la désigne au premier coup d'œil, sans ajouter un mot. Les marges négatives
+   la font affleurer les bords de la carte, sinon le fond flotterait au milieu
+   d'une gouttière blanche. */
 .kbis-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--fold-space-sm);
+  margin: calc(var(--fold-space-md) * -1) calc(var(--fold-space-md) * -1) 0;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  background: var(--fold-color-bg-accent-subtle, var(--fold-color-bg-rail-tertiary));
+  border-radius: var(--fold-radius-md, 10px) var(--fold-radius-md, 10px) 0 0;
 }
 
 .kbis-title {

@@ -139,19 +139,28 @@
           <span class="kbis-date">Déposé le {{ k.uploadedAt | date: 'dd/MM/yyyy' }}</span>
         </div>
         @if (canAccessKbis()) {
+          <!-- Deux icônes en fin de ligne : le nom du fichier dit déjà de quoi
+               il s'agit, les libellés ne répétaient que l'évident et poussaient
+               la ligne à passer sur deux niveaux. Le titre reste accessible. -->
           <div class="kbis-actions">
-            <button foldButton emphasis="outline" size="sm" icon="grid" (click)="viewKbis.emit()">
-              Voir
-            </button>
+            <button
+              foldButton
+              emphasis="outline"
+              size="sm"
+              icon="grid"
+              title="Voir l'extrait"
+              aria-label="Voir l'extrait"
+              (click)="viewKbis.emit()"
+            ></button>
             <button
               foldButton
               emphasis="soft"
               size="sm"
-              icon="contracts"
+              icon="download"
+              title="Télécharger l'extrait"
+              aria-label="Télécharger l'extrait"
               (click)="downloadKbis.emit()"
-            >
-              Télécharger
-            </button>
+            ></button>
           </div>
         }
       </div>
