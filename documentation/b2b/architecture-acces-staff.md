@@ -1,9 +1,10 @@
 # Accès staff — rôles, permissions et invitations du back-office
 
-**État : 🟡 le modèle tourne.** Tranches 1 à 5 livrées le 2026-08-12 : catalogue,
-schéma, **le mur** (toute surface `/admin/*` exige une fiche connue et le bon
-périmètre), le socle front qui cache ce qu'on ne peut pas exercer, et l'écran
-d'administration. Restent **l'invitation** et la preuve (§11, tranches 6 et 7).
+**État : 🟡 le modèle tourne, l'invitation aussi.** Tranches 1 à 6 livrées le
+2026-08-12 : catalogue, schéma, **le mur** (toute surface `/admin/*` exige une
+fiche connue et le bon périmètre), le socle front qui cache ce qu'on ne peut pas
+exercer, l'écran d'administration, et l'invitation d'un membre de l'équipe.
+Reste la **preuve** (§11, tranche 7) : le parcours réel de bout en bout.
 
 Il répond à une seule question : **qui, dans l'équipe, peut faire quoi dans le
 back-office** — et comment on garde la certitude de pouvoir toujours entrer.
@@ -345,19 +346,47 @@ connectée, et l'invitation ne boucle pas.
 
 ## 10. L'invitation
 
-Créer une fiche et ouvrir un compte sont deux gestes ; **le bouton « Inviter »
-les coud**. Mécanique identique à celle du détenteur client, déjà en place :
-création de l'utilisateur Auth0, **ticket de mot de passe** (scope M2M
-`create:user_tickets` — celui qu'on oublie), e-mail porteur du lien.
+**Livrée le 2026-08-12.** Créer une fiche et ouvrir un compte sont deux gestes ;
+`POST /admin/staff-users/:id/invitation` les coud.
 
-**Validité : 14 jours.** La règle est déjà écrite et testée pour les détenteurs
-clients (`invitation-expiry.ts`). C'est donc son **deuxième usage réel** — le
-moment prévu pour l'extraire vers un emplacement partagé plutôt que de la
-copier. Une règle d'expiration dupliquée est une règle qui divergera.
+**Un seul endpoint pour inviter et pour renvoyer.** Le serveur sait déjà lequel
+des deux s'applique, selon qu'une identité existe (`auth0Id`). Deux routes
+auraient obligé l'écran à deviner, et il se serait trompé au premier second
+onglet ouvert sur la même fiche. `POST` et non `PATCH` : ce n'est pas la fiche
+qu'on modifie, c'est un lien qu'on **émet** — volontairement non idempotent,
+puisque chaque appel tue le précédent.
 
-**L'écran dit la vérité entre deux balayages** : `expired` se calcule à la
-lecture, comme côté client. Le lien est de toute façon périmé chez le
-fournisseur — on cesse simplement de l'ignorer.
+**La connexion Auth0 est le vrai mur.** L'identité staff naît sur
+`AUTH0_STAFF_CONNECTION` (défaut `lfc-staff`), distincte de la connexion client.
+Un client ne peut donc pas s'authentifier contre une surface interne, et ce
+refus arrive **avant** le moindre code applicatif — un mur structurel bat
+toujours un mur logiciel. Corollaire assumé : une même adresse des deux côtés
+donne deux identités, deux `sub`, deux sessions.
+
+La mécanique elle-même (`Auth0IdentityGateway`, dans `infra/identity/`) est
+**partagée avec le client, la connexion étant un paramètre**. Les deux contextes
+partagent la mécanique, jamais leurs contrats : `StaffIdentityPort` ne déclare
+que les deux gestes qu'il utilise, là où le port client en expose un troisième.
+
+**Deux refus explicites**, plutôt que des surprises :
+
+- **une personne suspendue ne s'invite pas** — suivre le lien vaut entrée, et
+  l'entrée réactive la fiche : on rouvrirait la porte que la suspension vient de
+  fermer. Réintégrer d'abord, inviter ensuite ;
+- **un renvoi à quelqu'un déjà entré ne le remet pas en attente** — il n'a rien
+  perdu, il a juste oublié son mot de passe.
+
+**Le lien est frappé avant toute écriture.** L'ordre inverse laisserait une fiche
+annonçant une invitation que personne n'a reçue.
+
+**Validité : 14 jours.** La règle vit dans `shared/invitation/invitation-expiry.ts`,
+extraite du contexte `account` à son **deuxième usage réel**. Une invitation
+périmée doit l'être partout le même jour, ou « périmée » ne veut plus rien dire.
+
+**L'écran dit la vérité entre deux balayages** : `invitationExpired` se calcule à
+la lecture, **côté serveur**. Le nombre de jours est une règle, pas une constante
+d'affichage : écrit dans le front, il divergerait au premier changement, et
+l'écran annoncerait un accès encore ouvert que le serveur a cessé d'honorer.
 
 ---
 
@@ -368,12 +397,12 @@ fournisseur — on cesse simplement de l'ignorer.
 | 1 ✅ | **Contrat et catalogue** | `@lfd/contracts` : `StaffRole`, `StaffPermission`, `ROLE_GRANTS`, `StaffMeView`, payload étendu. `resolveStaffPermissions()` pure + tests.                                          | nul       |
 | 2 ✅ | **Domaine et schéma**    | Migration Prisma (`phone`, `jobTitle`, `role`, `status`, `staff_permission_overrides`), reprise des `scopes` en rôles, `staff-access.policy.ts` portant les 4 invariants du §6.     | faible    |
 | 3 ✅ | **Le mur**               | `StaffAccessResolver` (liaison `auth0Id` constatée, cache 30 s), `StaffAccessGuard`, `@AdminSurface` sur les **24** surfaces `/admin/*`, `GET /admin/me`, suite e2e `staff-access`. | **élevé** |
-| 4    | **Socle front**          | `PermissionsStore`, `permissionGuard`, `*canWrite`, menu filtré.                                                                                                                    | moyen     |
-| 5    | **Écran Utilisateurs**   | Identité complète, sélecteur de rôle, grille de dérogations, suspension.                                                                                                            | faible    |
-| 6    | **Invitation**           | Extraction de la règle d'expiration, ticket Auth0, e-mail, `invited → active` constaté.                                                                                             | moyen     |
+| 4 ✅ | **Socle front**          | `PermissionsStore`, `permissionGuard`, `*canWrite`, menu filtré.                                                                                                                    | moyen     |
+| 5 ✅ | **Écran Utilisateurs**   | Identité complète, sélecteur de rôle, grille de dérogations, suspension.                                                                                                            | faible    |
+| 6 ✅ | **Invitation**           | Règle d'expiration extraite dans `shared/`, mécanique Auth0 paramétrée par connexion, `invited_at`, `POST …/invitation`, e-mail `staff.invited`, entrée d'écran.                    | moyen     |
 | 7    | **Preuve**               | e2e : un vrai `403` par rôle, et le test « on ne peut pas se verrouiller dehors ».                                                                                                  | nul       |
 
-**Ordre** : 1 → 2 → **3 et 4 sans écart** → 5 → 6 → 7. Les cinq premières sont faites.
+**Ordre** : 1 → 2 → **3 et 4 sans écart** → 5 → 6 → 7. Les six premières sont faites.
 
 Les tranches 1 et 2 ne cassent rien et peuvent partir immédiatement. **La 3 est
 le seul moment où la bêta peut tomber** : c'est elle qui transforme « tout le
@@ -403,12 +432,26 @@ La 4 suit immédiatement, sinon l'écran offre des boutons qui rendent `403`.
 
 ## 13. À vérifier avant la production
 
-- [ ] **Audience staff Auth0 provisionnée** — sans elle, `/admin/*` refuse tout,
-      indépendamment de ce modèle.
-- [ ] **Action Auth0 posant `email` sur le jeton staff** — sinon aucun
-      rapprochement, donc aucune invitation qui boucle (§9).
-- [ ] **App M2M avec `create:user_tickets`** — sinon le bouton « Inviter » rend
-      un 500 (§10).
+- [x] **Audience staff Auth0 provisionnée** — `https://api-b2b.lafoliedouce.eu/admin`.
+      Sans elle, `/admin/*` refuse tout, indépendamment de ce modèle.
+- [x] **Action Auth0 posant l'e-mail sur le jeton staff** — `add-email-claim`,
+      déployée et testée le 2026-08-12. Le claim est **namespacé**
+      (`https://lafoliedouce.eu/email`) : Auth0 retire silencieusement un claim
+      nu d'un access token, et un désaccord de nom ne lève rien — la personne
+      prend un `403` inexplicable. Les deux bouts sont figés par un test
+      (`auth0-claims.spec.ts`), le seul garde possible quand l'autre moitié du
+      contrat vit hors du dépôt. Sinon aucun rapprochement, donc aucune
+      invitation qui boucle (§9).
+- [x] **App M2M avec `create:user_tickets`** — créée le 2026-08-12 avec
+      exactement 4 permissions (`read:users`, `create:users`, `update:users`,
+      `create:user_tickets`). Pas `delete:users` : on ne donne pas à un service
+      le droit d'effacer des identités. Sinon « Inviter » rend un refus explicite.
+- [ ] **`AUTH0_M2M_CLIENT_SECRET` posé côté serveur** — le seul élément que le
+      code refuse de deviner. Sans lui, l'adaptateur refuse **clairement**
+      (message disant quoi créer) plutôt que d'échouer sur un `401` obscur.
+- [ ] **La connexion `lfc-staff` n'est activée que sur les applications
+      internes** — c'est le mur structurel du §10, et il ne vaut que si la
+      connexion client reste hors du back-office.
 - [ ] **Clé Resend + domaine vérifié** — sinon l'invitation part dans le vide,
       silencieusement.
 - [ ] **`BOOTSTRAP_ADMIN_EMAIL` pointe une vraie boîte** que quelqu'un relève, et
@@ -418,3 +461,9 @@ La 4 suit immédiatement, sinon l'écran offre des boutons qui rendent `403`.
       la ligne racine rouvre la porte.
 - [ ] **Le bypass de dev résout vers l'admin racine** (§7) — vérifié en local
       _avant_ de déployer la tranche 3.
+- [ ] **Les migrations sont appliquées avant le premier boot.** Constaté le
+      2026-08-12 : `ensureBootstrapAdmin` échoue sur une colonne manquante,
+      l'échec est **attrapé et journalisé** pour ne pas tuer l'API — et le
+      symptôme visible devient « Aucun accès » pour l'admin racine, ce qui
+      n'oriente vers rien. À reprendre en tranche 7 : un boot incapable de semer
+      l'admin racine ne devrait pas passer inaperçu.
