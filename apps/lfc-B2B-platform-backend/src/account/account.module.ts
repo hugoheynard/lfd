@@ -71,7 +71,9 @@ import { RechercheEntreprisesEstablishmentDirectory } from "./infrastructure/rec
 import { MembershipReader } from "./domain/ports/membership.reader.js";
 import { NavPreferencesRepository } from "./domain/ports/nav-preferences.repository.js";
 import { UserProfileRepository } from "./domain/ports/user-profile.repository.js";
+import { AppConfig } from "../infra/config/app-config.js";
 import { Auth0CustomerIdentity } from "./infrastructure/auth0-customer-identity.js";
+import { DevCustomerIdentity } from "./infrastructure/dev-customer-identity.js";
 import { Auth0ManagementClient } from "./infrastructure/auth0-management.client.js";
 import {
   PrismaCompanyMemberReader,
@@ -199,7 +201,25 @@ import { MeController } from "./http/me.controller.js";
     { provide: CompanyAddressReader, useClass: PrismaCompanyAddressReader },
     { provide: MembershipReader, useClass: PrismaMembershipReader },
     { provide: AccountReader, useClass: PrismaAccountReader },
-    { provide: CustomerIdentityPort, useClass: Auth0CustomerIdentity },
+    {
+      // Le fournisseur d'identité **réel**, sauf en développement sans M2M — là
+      // où l'alternative est un parcours détenteur totalement injouable. Deux
+      // conditions, et pas une : en production sans M2M, l'adaptateur Auth0 reste
+      // en place et refuse clairement, plutôt que de fabriquer des identités
+      // fantômes chez un vrai client (fail-closed).
+      provide: CustomerIdentityPort,
+      inject: [AppConfig, Auth0CustomerIdentity, DevCustomerIdentity],
+      useFactory: (
+        config: AppConfig,
+        auth0: Auth0CustomerIdentity,
+        dev: DevCustomerIdentity,
+      ): CustomerIdentityPort => {
+        const configured = config.auth0ManagementCredentials() !== null;
+        return configured || config.isProduction() ? auth0 : dev;
+      },
+    },
+    Auth0CustomerIdentity,
+    DevCustomerIdentity,
     { provide: SupportRequestRepository, useClass: PrismaSupportRequestRepository },
     OnCompanyDeclaredResolveNaf,
     { provide: EstablishmentDirectory, useClass: RechercheEntreprisesEstablishmentDirectory },
