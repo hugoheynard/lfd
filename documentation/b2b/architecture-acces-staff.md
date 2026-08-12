@@ -1,10 +1,13 @@
 # Accès staff — rôles, permissions et invitations du back-office
 
-**État : 🟡 le modèle tourne, l'invitation aussi.** Tranches 1 à 6 livrées le
-2026-08-12 : catalogue, schéma, **le mur** (toute surface `/admin/*` exige une
-fiche connue et le bon périmètre), le socle front qui cache ce qu'on ne peut pas
-exercer, l'écran d'administration, et l'invitation d'un membre de l'équipe.
-Reste la **preuve** (§11, tranche 7) : le parcours réel de bout en bout.
+**État : 🟢 le modèle est en place et prouvé.** Les sept tranches sont livrées
+le 2026-08-12 : catalogue, schéma, **le mur** (toute surface `/admin/*` exige une
+fiche connue et le bon périmètre), le socle front, l'écran d'administration,
+l'invitation, et la preuve — 65 cas e2e à travers les vraies routes.
+
+**Un seul chaînon n'est pas prouvé par une machine** : le parcours Auth0 réel,
+de la connexion d'une vraie personne jusqu'à son périmètre. Il demande un
+navigateur et une identité ; le protocole est au §13.
 
 Il répond à une seule question : **qui, dans l'équipe, peut faire quoi dans le
 back-office** — et comment on garde la certitude de pouvoir toujours entrer.
@@ -400,9 +403,19 @@ l'écran annoncerait un accès encore ouvert que le serveur a cessé d'honorer.
 | 4 ✅ | **Socle front**          | `PermissionsStore`, `permissionGuard`, `*canWrite`, menu filtré.                                                                                                                    | moyen     |
 | 5 ✅ | **Écran Utilisateurs**   | Identité complète, sélecteur de rôle, grille de dérogations, suspension.                                                                                                            | faible    |
 | 6 ✅ | **Invitation**           | Règle d'expiration extraite dans `shared/`, mécanique Auth0 paramétrée par connexion, `invited_at`, `POST …/invitation`, e-mail `staff.invited`, entrée d'écran.                    | moyen     |
-| 7    | **Preuve**               | e2e : un vrai `403` par rôle, et le test « on ne peut pas se verrouiller dehors ».                                                                                                  | nul       |
+| 7 ✅ | **Preuve**               | 3 suites e2e (65 cas) : matrice rôle × surface dérivée de `ROLE_GRANTS`, porte de secours traversée par HTTP, parcours d'invitation. Reste le chaînon Auth0 réel, manuel (§13).      | nul       |
 
-**Ordre** : 1 → 2 → **3 et 4 sans écart** → 5 → 6 → 7. Les six premières sont faites.
+**Ordre** : 1 → 2 → **3 et 4 sans écart** → 5 → 6 → 7. **Toutes faites.**
+
+### Ce que les tests ne peuvent pas atteindre — et pourquoi on l'écrit
+
+`LastStaffAdminError` est **inatteignable par HTTP**, et ce n'est pas un défaut :
+pour appeler la route il faut `staff:write`, donc être `admin` ; le compte des
+« autres administrateurs vivants » vaut alors toujours au moins 1, et
+l'auto-rétrogradation tombe d'abord. La garde reste la ceinture du jour où un
+script ou une reprise de données appellera le repository directement — et c'est
+**là** qu'elle est éprouvée, pas en HTTP. Écrire ce cas au niveau route aurait
+produit un test vert pour une autre raison que celle annoncée.
 
 Les tranches 1 et 2 ne cassent rien et peuvent partir immédiatement. **La 3 est
 le seul moment où la bêta peut tomber** : c'est elle qui transforme « tout le
@@ -461,6 +474,32 @@ La 4 suit immédiatement, sinon l'écran offre des boutons qui rendent `403`.
       la ligne racine rouvre la porte.
 - [ ] **Le bypass de dev résout vers l'admin racine** (§7) — vérifié en local
       _avant_ de déployer la tranche 3.
+
+### Le parcours réel, à faire à la main une fois
+
+Les 65 cas e2e prouvent tout ce qui vit **en deçà du jeton**. Ce qu'ils ne
+peuvent pas prouver, c'est qu'un vrai jeton, frappé par le vrai tenant, porte
+bien ce que le code attend : cela demande un navigateur et une identité. Les
+doubles de test rendent toujours le bon `sub` ; Auth0, lui, ne le fera que si
+l'Action, l'audience et la connexion s'accordent — trois réglages hors du dépôt.
+
+À faire **une fois**, après le déploiement, dans cet ordre :
+
+1. **Se connecter** au back-office avec `dev@lafoliedouce.com`. Attendu : on
+   entre, aucun écran « Aucun accès ».
+2. **Vérifier la liaison** : la fiche racine porte désormais un `auth0_id` et
+   son statut est passé à `active`. C'est la preuve que le claim namespacé est
+   arrivé et que le rapprochement par e-mail a eu lieu — le défaut corrigé le
+   2026-08-12 se serait vu ici, et nulle part ailleurs.
+3. **Inviter un collègue** depuis Réglages → Utilisateurs. Attendu : la fiche
+   passe « Invitée », et l'e-mail arrive **dans une vraie boîte**.
+4. **Suivre le lien**, poser un mot de passe, se connecter. Attendu : la fiche
+   passe « Active », et l'écran ne montre que ce que son rôle autorise.
+5. **Vérifier un refus réel** : demander une page hors de son périmètre et
+   constater le `403` — pas un écran vide, pas une erreur muette.
+
+Tant que ce parcours n'a pas été fait une fois, la chaîne d'identité est
+**supposée**, pas constatée.
 - [ ] **Les migrations sont appliquées avant le premier boot.** Constaté le
       2026-08-12 : `ensureBootstrapAdmin` échoue sur une colonne manquante,
       l'échec est **attrapé** pour ne pas tuer l'API — et le symptôme visible
