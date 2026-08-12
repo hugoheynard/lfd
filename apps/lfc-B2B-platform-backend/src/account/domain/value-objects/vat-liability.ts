@@ -1,44 +1,30 @@
+import { legalFormRequiresVat, toLegalForm } from "@lfd/contracts";
+
 /**
  * Règle **domaine** : une forme juridique impose-t-elle un numéro de TVA
  * intracommunautaire ?
  *
- * Décision (Hugo) : on **dérive de la forme juridique** plutôt que de capter un
- * régime fiscal explicite. Les **sociétés** (SAS, SARL, SA…) sont assujetties ;
- * les **entreprises individuelles / micro / auto-entrepreneurs** ne le sont pas
- * par défaut (franchise en base). Approximation assumée — on affinera avec un
- * vrai régime fiscal si un cas déborde.
+ * La table forme → assujettissement vit dans `@lfd/contracts`
+ * (`legalFormRequiresVat`) : c'est un fait partagé, que les deux frontends
+ * doivent connaître pour proposer la bonne liste et réclamer le bon champ. Ce
+ * module n'en est que le point d'entrée côté serveur, et il ajoute la seule
+ * chose qui appartient au serveur : quoi faire d'une saisie **hors catalogue**.
  *
- * Le backend est le **seul** propriétaire de cette règle ; il expose un booléen
- * (`vatNumberRequired`) dans la vue `/me`, le front ne la duplique pas.
+ * Avant, la règle était une comparaison de chaînes contre une liste de
+ * marqueurs (`"micro"`, `"auto entrepreneur"`…). Elle ratait tout ce qui n'était
+ * pas écrit exactement ainsi : « auto entreprise » tombait du côté assujetti,
+ * et l'écran réclamait une TVA à quelqu'un qui n'en a pas.
  */
-
-/** Formes NON assujetties par défaut (franchise en base) — tout le reste l'est. */
-const NON_LIABLE_MARKERS = [
-  "micro",
-  "micro-entreprise",
-  "auto-entrepreneur",
-  "auto entrepreneur",
-  "autoentrepreneur",
-  "ei", // entreprise individuelle
-  "entreprise individuelle",
-  "eirl",
-];
-
-/** Minuscule + espaces normalisés ; les marqueurs sont ASCII, pas d'accent à retirer. */
-function normalise(formeJuridique: string): string {
-  return formeJuridique.trim().replace(/\s+/gu, " ").toLowerCase();
-}
 
 /**
  * `true` si la forme juridique impose un numéro de TVA intracommunautaire.
  *
- * Inconnu ⇒ `true` : mieux vaut **inviter** à renseigner la TVA (l'onboarding le
- * signalera) que la laisser manquer en silence pour une société assujettie.
+ * Hors catalogue ⇒ `true` : mieux vaut **inviter** à renseigner la TVA (l'écran
+ * le signalera) que la laisser manquer en silence pour une société assujettie.
+ * C'est le défaut prudent, et il ne concerne plus que le stock ancien — une
+ * saisie neuve passe par la liste fermée.
  */
 export function requiresVatNumber(formeJuridique: string): boolean {
-  const value = normalise(formeJuridique);
-  if (value === "") {
-    return true;
-  }
-  return !NON_LIABLE_MARKERS.includes(value);
+  const form = toLegalForm(formeJuridique);
+  return form === null ? true : legalFormRequiresVat(form);
 }

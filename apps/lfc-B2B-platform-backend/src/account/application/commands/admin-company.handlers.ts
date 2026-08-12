@@ -67,9 +67,10 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
       throw new CompanyNotFoundError(command.companyId);
     }
     company.editSoftIdentity(command.payload);
-    // Complète ce qui manquait à l'ouverture. Sans SIRET, pas d'activation
-    // possible : ce serait un compte ouvert pour rien.
-    company.completeLegalIdentity({
+    // Le back-office **corrige** là où le client ne fait que compléter : une
+    // faute de frappe saisie au comptoir restait gravée, et le compte portait
+    // une identité fausse sans recours. Un champ vide ne réécrit rien.
+    company.correctLegalIdentity({
       raisonSociale: command.payload.raisonSociale,
       formeJuridique: command.payload.formeJuridique,
       siret: command.payload.siret,

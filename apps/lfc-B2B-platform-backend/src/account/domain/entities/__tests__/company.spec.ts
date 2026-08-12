@@ -93,6 +93,19 @@ describe("Company.declare", () => {
     expect(company.formeJuridique).toBe("SARL");
   });
 
+  it("CORRIGE ce que compléter refusait de toucher", () => {
+    // L'opération que `completeLegalIdentity` annonçait sans la fournir : au
+    // comptoir, une faute de frappe restait gravée sans recours.
+    const company = Company.declare({ ...identity, formeJuridique: "SARL" }, contact);
+
+    company.correctLegalIdentity({ raisonSociale: "", formeJuridique: "SAS", siret: "" });
+
+    expect(company.formeJuridique).toBe("SAS");
+    // Un champ vide ne réécrit rien : corriger la forme n'efface pas le reste.
+    expect(company.raisonSociale).toBe(identity.raisonSociale);
+    expect(company.siretDigits).toBe("81245678900021");
+  });
+
   it("refuse toujours un SIRET SAISI mais faux", () => {
     // Facultatif ne veut pas dire libre : mieux vaut rien qu'un numéro qu'on
     // croirait bon.

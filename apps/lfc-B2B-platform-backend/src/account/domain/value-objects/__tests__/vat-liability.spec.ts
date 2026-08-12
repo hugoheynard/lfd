@@ -29,4 +29,15 @@ describe("requiresVatNumber — TVA dérivée de la forme juridique", () => {
     expect(requiresVatNumber("")).toBe(true);
     expect(requiresVatNumber("forme exotique")).toBe(true);
   });
+
+  it("reconnaît les graphies que la comparaison de chaînes ratait", () => {
+    // Le cas constaté : « auto entreprise » ne figurait dans aucun marqueur, donc
+    // l'écran réclamait un numéro de TVA à un auto-entrepreneur. Le catalogue
+    // rattache les graphies au lieu de les comparer mot à mot.
+    expect(requiresVatNumber("auto entreprise")).toBe(false);
+    expect(requiresVatNumber("Auto-Entreprise")).toBe(false);
+    expect(requiresVatNumber("S.A.S.")).toBe(true);
+    // Une association n'est pas assujettie par défaut — elle manquait aussi.
+    expect(requiresVatNumber("association")).toBe(false);
+  });
 });

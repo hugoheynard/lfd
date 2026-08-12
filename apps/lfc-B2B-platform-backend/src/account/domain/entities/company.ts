@@ -232,6 +232,36 @@ export class Company {
     }
   }
 
+  /**
+   * **Corrige** l'identité légale — l'opération que `completeLegalIdentity`
+   * annonçait sans la fournir.
+   *
+   * Elle réécrit, y compris le SIRET, et c'est assumé : une faute de frappe
+   * saisie au comptoir restait gravée, et le compte portait une identité fausse
+   * pour toujours. Ce que le commentaire d'à côté protège — « changer le SIRET
+   * fait d'une société une autre » — reste vrai ; c'est pourquoi ceci n'est PAS
+   * offert au client sur sa propre société, seulement au back-office, où
+   * l'on sait ce qu'on répare et où le geste laisse une trace.
+   *
+   * Un champ **vide** ne réécrit rien : corriger la forme juridique ne doit pas
+   * effacer un SIRET qu'on n'a pas retapé.
+   */
+  correctLegalIdentity(input: {
+    raisonSociale: string;
+    formeJuridique: string;
+    siret: string;
+  }): void {
+    if (input.raisonSociale.trim() !== "") {
+      this.raisonSocialeValue = optional(input.raisonSociale, "Raison sociale");
+    }
+    if (input.formeJuridique.trim() !== "") {
+      this.formeJuridiqueValue = optional(input.formeJuridique, "Forme juridique");
+    }
+    if (input.siret.trim() !== "") {
+      this.siretValue = Siret.createOptional(input.siret);
+    }
+  }
+
   get tvaIntracom(): string {
     return this.tvaIntracomValue;
   }
