@@ -3,7 +3,6 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
-  TechnicalError,
 } from "../../../shared/errors/app-error.js";
 
 // ─── Données mal formées : le modèle se protège lui-même (400) ───────────────
@@ -257,16 +256,3 @@ export class ContactAlreadyExistsError extends BusinessError {
 
 // ─── Panne technique (500) ───────────────────────────────────────────────────
 
-/**
- * La propagation de l'e-mail vers Auth0 a échoué (ou n'est pas configurée).
- *
- * C'est **volontairement** une erreur technique et non un refus métier : le
- * client n'a rien fait de mal, et on refuse d'écrire l'e-mail chez nous s'il ne
- * peut pas l'être chez le fournisseur d'identité — sinon on connecterait
- * l'utilisateur avec une adresse et on lui en afficherait une autre.
- */
-export class IdentityProviderUnavailableError extends TechnicalError {
-  constructor(reason: string, cause?: unknown) {
-    super("account.identity_provider.unavailable", reason, cause);
-  }
-}

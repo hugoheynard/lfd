@@ -74,7 +74,6 @@ import { UserProfileRepository } from "./domain/ports/user-profile.repository.js
 import { AppConfig } from "../infra/config/app-config.js";
 import { Auth0CustomerIdentity } from "./infrastructure/auth0-customer-identity.js";
 import { DevCustomerIdentity } from "./infrastructure/dev-customer-identity.js";
-import { Auth0ManagementClient } from "./infrastructure/auth0-management.client.js";
 import {
   PrismaCompanyMemberReader,
   PrismaCompanyMemberRepository,
@@ -151,7 +150,6 @@ import { MeController } from "./http/me.controller.js";
     // Le carnet d'interlocuteurs : ses deux règles (une adresse, un rôle) valent
     // pour les deux portes, elles ne vivent donc pas dans les handlers.
     CompanyContactBook,
-    Auth0ManagementClient,
     { provide: CompanyMemberReader, useClass: PrismaCompanyMemberReader },
     { provide: CompanyMemberRepository, useClass: PrismaCompanyMemberRepository },
     GetMyAccountHandler,

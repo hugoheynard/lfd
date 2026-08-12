@@ -10,26 +10,15 @@
  * Port dans le domaine, adaptateur dans `infrastructure/` : le handler ne sait
  * pas qu'il existe une Management API, un jeton M2M ou un `PATCH /api/v2/users`.
  */
-/** Qui provisionner : le strict nécessaire pour ouvrir une identité. */
-export interface IdentityToProvision {
-  readonly email: string;
-  readonly firstName: string;
-  readonly lastName: string;
-}
+import type {
+  IdentityToProvision,
+  ProvisionedIdentity,
+} from "../../../shared/identity/provisioned-identity.js";
 
-/** Une identité de connexion, et par où son détenteur pose son mot de passe. */
-export interface ProvisionedIdentity {
-  /** Le `sub` du fournisseur — notre clé de jointure vers la personne. */
-  readonly subject: string;
-  /**
-   * L'URL, à durée de vie limitée, où la personne **choisit** son mot de passe.
-   *
-   * Elle vaut prise de contrôle du compte. Sa seule destination légitime est un
-   * e-mail adressé à la personne elle-même : ni journal, ni réponse HTTP, ni
-   * écran du staff — qui lit ce lien devient le client.
-   */
-  readonly passwordSetupUrl: string;
-}
+// Ré-exportés pour que les appelants du port n'aient pas à connaître deux
+// chemins : la **forme** est partagée avec le contexte staff, le **contrat**
+// reste celui-ci.
+export type { IdentityToProvision, ProvisionedIdentity };
 
 export abstract class CustomerIdentityPort {
   /**

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { AppConfig } from "../../infra/config/app-config.js";
-import { IdentityProviderUnavailableError } from "../domain/errors/account-errors.js";
+import { IdentityProviderUnavailableError } from "../../shared/errors/identity-errors.js";
 
 /** Marge avant expiration du jeton M2M, pour ne pas l'utiliser à la seconde près. */
 const TOKEN_EXPIRY_MARGIN_SECONDS = 60;
