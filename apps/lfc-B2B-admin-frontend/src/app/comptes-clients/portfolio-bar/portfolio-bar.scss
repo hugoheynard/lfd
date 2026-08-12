@@ -116,3 +116,39 @@
 .pb-note .pb-up {
   font-weight: 700;
 }
+
+/**
+ * Mobile — la même barre, à sa juste taille.
+ *
+ * Empilées, les trois tuiles pleine hauteur repoussaient la table sous la ligne
+ * de flottaison : on tombait sur un tableau de bord alors qu'on venait chercher
+ * une liste. Tous les chiffres restent — c'est leur encombrement qui cède, pas
+ * leur nombre.
+ */
+@media (max-width: 640px) {
+  .pb-tile {
+    padding: var(--fold-space-md);
+  }
+
+  /* Empilées, le filet doit courir EN HAUT de la tuile, pas sur son flanc : un
+     trait vertical entre deux blocs superposés ne sépare rien. */
+  .pb-tile + .pb-tile::before {
+    inset-block: auto;
+    inset-block-start: 0;
+    inset-inline: var(--fold-space-md);
+    width: auto;
+    height: 1px;
+  }
+
+  .pb-value {
+    font-size: 1.5rem;
+  }
+
+  .pb-pulse {
+    gap: var(--fold-space-md);
+  }
+
+  .pb-pulse-value {
+    font-size: 1.15rem;
+  }
+}

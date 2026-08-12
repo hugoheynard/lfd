@@ -63,6 +63,7 @@
 
     <fold-data-table
       caption="Comptes clients B2B"
+      toolbarSurface="accent"
       hover
       stickyFirst
       [columns]="columns"
@@ -71,6 +72,18 @@
       [loading]="state() === 'loading'"
       [empty]="emptyState()"
     >
+      <!-- La barre de titre de la table, projetée dans sa surface accent : la
+           table se nomme elle-même, et son sous-titre dit combien de lignes on
+           regarde — le seul chiffre que le filtre fait bouger, et qu'on cherche
+           des yeux avant de lire la première ligne. -->
+      <fold-element-title
+        foldToolbar
+        variant="title"
+        icon="company"
+        title="Comptes clients"
+        [subtitle]="tableSubtitle()"
+      />
+
       <ng-template foldCell="reference" let-row>
         <a class="ref-link" [routerLink]="['/comptes-clients', row.id]">{{ row.reference }}</a>
       </ng-template>

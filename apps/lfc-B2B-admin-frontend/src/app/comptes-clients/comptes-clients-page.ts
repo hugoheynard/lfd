@@ -6,6 +6,7 @@ import {
   FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldElementTitleComponent,
   FoldSearchComponent,
   FoldStatusBadgeComponent,
   FoldViewToggleComponent,
@@ -79,6 +80,7 @@ function isFilterValue(value: string): value is FilterValue {
     FoldButtonComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    FoldElementTitleComponent,
     FoldSearchComponent,
     FoldStatusBadgeComponent,
     FoldViewToggleComponent,
@@ -194,6 +196,17 @@ export class ComptesClientsPage {
 
   /** Y a-t-il une recherche en cours ? Décide de l'état vide et du compteur. */
   protected readonly searching = computed(() => this.search() !== '');
+
+  /**
+   * Ce que le titre de la table annonce : combien de comptes on regarde **après
+   * filtre**. C'est le seul chiffre de l'écran que le segment actif fait bouger,
+   * et celui qu'on cherche des yeux — pas le total, qui ne dirait rien du tri
+   * en cours.
+   */
+  protected readonly tableSubtitle = computed(() => {
+    const count = this.filtered().length;
+    return count === 1 ? '1 compte' : `${count} comptes`;
+  });
 
   /** Message d'état vide, contextualisé au segment actif — ou à la recherche. */
   protected readonly emptyState = computed<FoldTableEmpty>(() => {

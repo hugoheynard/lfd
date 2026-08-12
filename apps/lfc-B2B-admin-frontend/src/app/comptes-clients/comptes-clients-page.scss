@@ -138,6 +138,14 @@ h1 {
   margin: calc(-1 * var(--fold-space-md)) 0 0;
 }
 
+/* Le titre est projeté DANS la barre accent de la table : il en prend toute la
+   largeur, et son encre est déjà inversée par `[data-surface="accent"]`. */
+fold-element-title[foldToolbar] {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Le paginator termine le bloc de table : collé à elle, pas flottant au milieu
    du rythme de la page. */
 .pager {

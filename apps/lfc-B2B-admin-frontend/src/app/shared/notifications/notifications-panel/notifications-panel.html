@@ -1,0 +1,39 @@
+<fold-panel-header title="Notifications" [subtitle]="subtitle()" />
+
+<div class="np-body">
+  @if (store.unread() > 0) {
+    <div class="np-actions">
+      <button foldButton emphasis="outline" size="sm" (click)="store.markAllRead()">
+        Tout marquer comme lu
+      </button>
+    </div>
+  }
+
+  @if (store.failed()) {
+    <p class="np-error">
+      Le fil n'a pas pu être chargé.
+      <button type="button" class="np-retry" (click)="store.refresh()">Réessayer</button>
+    </p>
+  }
+
+  <ul class="np-list">
+    @for (item of store.items(); track item.id) {
+      <li>
+        <a
+          class="np-item"
+          [class.np-item--unread]="item.readAt === null"
+          [routerLink]="item.link"
+          (click)="follow(item)"
+        >
+          <span class="np-subject">{{ item.subject }}</span>
+          <span class="np-text">{{ item.body }}</span>
+          <span class="np-when">{{ when(item.occurredAt) }}</span>
+        </a>
+      </li>
+    } @empty {
+      @if (!store.failed()) {
+        <li class="np-empty">Rien à signaler.</li>
+      }
+    }
+  </ul>
+</div>

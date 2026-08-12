@@ -1,52 +1,6 @@
-<fold-popover
-  placement="bottom-end"
-  [fallbackPlacements]="['bottom-start', 'top-end']"
-  [open]="open()"
-  (openChange)="toggled($event)"
->
-  <button foldPopoverTrigger type="button" class="nb-trigger" [attr.aria-label]="triggerLabel()">
-    <fold-icon name="bell" [size]="20" />
-    @if (unread() > 0) {
-      <span class="nb-count" aria-hidden="true">{{ unread() }}</span>
-    }
-  </button>
-
-  <div foldPopoverPanel class="nb-panel">
-    <header class="nb-head">
-      <h3 class="nb-title">Notifications</h3>
-      @if (unread() > 0) {
-        <button foldButton emphasis="outline" size="sm" (click)="markAllRead()">
-          Tout marquer comme lu
-        </button>
-      }
-    </header>
-
-    @if (failed()) {
-      <p class="nb-error">
-        Le fil n'a pas pu être chargé.
-        <button type="button" class="nb-retry" (click)="refresh()">Réessayer</button>
-      </p>
-    }
-
-    @if (items().length === 0 && !failed()) {
-      <p class="nb-empty">Rien à signaler.</p>
-    }
-
-    <ul class="nb-list">
-      @for (item of items(); track item.id) {
-        <li>
-          <a
-            class="nb-item"
-            [class.nb-item--unread]="item.readAt === null"
-            [routerLink]="item.link"
-            (click)="follow(item)"
-          >
-            <span class="nb-subject">{{ item.subject }}</span>
-            <span class="nb-body">{{ item.body }}</span>
-            <span class="nb-when">{{ when(item.occurredAt) }}</span>
-          </a>
-        </li>
-      }
-    </ul>
-  </div>
-</fold-popover>
+<button type="button" class="nb-trigger" [attr.aria-label]="triggerLabel()" (click)="openPanel()">
+  <fold-icon name="bell" [size]="20" />
+  @if (unread() > 0) {
+    <span class="nb-count" aria-hidden="true">{{ unread() }}</span>
+  }
+</button>
