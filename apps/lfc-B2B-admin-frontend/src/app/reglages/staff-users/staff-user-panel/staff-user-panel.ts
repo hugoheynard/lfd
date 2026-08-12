@@ -7,17 +7,17 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type { StaffScope, StaffUserPayload, StaffUserView } from '@lfd/contracts';
+import type { StaffOverride, StaffRole, StaffUserPayload, StaffUserView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldInputComponent,
-  FoldMultiselectComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
+  FoldSelectComponent,
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
-import { SCOPE_OPTIONS } from '../staff-scopes';
+import { ROLE_OPTIONS, toStaffRole } from '../staff-roles';
 import { StaffUsersService } from '../staff-users.service';
 
 /** Charge d'ouverture du panneau : le user à éditer, ou `null` pour en créer un. */
@@ -30,19 +30,18 @@ const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+$/u;
 
 /**
  * Panneau **Utilisateur staff** — crée ou édite une personne du back-office :
- * identité (prénom, nom, e-mail) + **périmètre** (multiselect). Container mince :
- * il seede des signaux depuis `data`, valide de forme, puis enchaîne la
+ * identité (prénom, nom, e-mail, téléphone, fonction) + **rôle**. Container
+ * mince : il seede des signaux depuis `data`, valide de forme, puis enchaîne la
  * sauvegarde et ferme avec un résultat vrai (la page recharge la liste).
+ *
+ * Les **dérogations** au rôle sont transportées telles quelles à l'édition : ce
+ * formulaire ne les montre pas encore, et un formulaire qui n'affiche pas une
+ * donnée n'a pas le droit de l'effacer.
  */
 @Component({
   selector: 'app-staff-user-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldPanelHeaderComponent,
-    FoldButtonComponent,
-    FoldInputComponent,
-    FoldMultiselectComponent,
-  ],
+  imports: [FoldPanelHeaderComponent, FoldButtonComponent, FoldInputComponent, FoldSelectComponent],
   templateUrl: './staff-user-panel.html',
   styleUrl: './staff-user-panel.scss',
 })
@@ -53,13 +52,18 @@ export class StaffUserPanel {
 
   readonly data = input<StaffUserPanelData | undefined>(undefined);
 
-  protected readonly scopeOptions = SCOPE_OPTIONS;
+  protected readonly roleOptions = ROLE_OPTIONS;
 
   protected readonly firstName = signal('');
   protected readonly lastName = signal('');
   protected readonly email = signal('');
-  protected readonly scopes = signal<StaffScope[]>([]);
+  protected readonly phone = signal('');
+  protected readonly jobTitle = signal('');
+  protected readonly role = signal<StaffRole>('commercial');
   protected readonly saving = signal(false);
+
+  /** Les écarts au rôle, transportés sans être montrés (voir l'en-tête de classe). */
+  private readonly overrides = signal<readonly StaffOverride[]>([]);
 
   protected readonly isCreate = computed(() => (this.data()?.user ?? null) === null);
   protected readonly heading = computed(() =>
@@ -82,8 +86,19 @@ export class StaffUserPanel {
       this.firstName.set(user.firstName);
       this.lastName.set(user.lastName);
       this.email.set(user.email);
-      this.scopes.set([...user.scopes]);
+      this.phone.set(user.phone);
+      this.jobTitle.set(user.jobTitle);
+      this.role.set(user.role);
+      this.overrides.set(user.overrides);
     });
+  }
+
+  /** Le `<select>` natif ne rend qu'une chaîne : on ne garde que ce qui est un rôle. */
+  protected setRole(value: string): void {
+    const role = toStaffRole(value);
+    if (role !== null) {
+      this.role.set(role);
+    }
   }
 
   protected async submit(): Promise<void> {
@@ -96,7 +111,10 @@ export class StaffUserPanel {
       firstName: this.firstName().trim(),
       lastName: this.lastName().trim(),
       email: this.email().trim(),
-      scopes: this.scopes(),
+      phone: this.phone().trim(),
+      jobTitle: this.jobTitle().trim(),
+      role: this.role(),
+      overrides: [...this.overrides()],
     };
     try {
       if (user === null) {

@@ -12,7 +12,11 @@ export const BOOTSTRAP_ADMIN_EMAIL = "dev@lafoliedouce.com";
  * sans lui, personne ne peut créer de comptes. Il est :
  * - **semé au boot** s'il manque (`ensureBootstrapAdmin`) — réapparaît même si on
  *   l'a supprimé en base ;
- * - **ineffaçable** et **non rétrogradable** hors du scope `admin` (garde repo).
+ * - **ineffaçable** et **non rétrogradable** hors du rôle `admin`
+ *   (`staff-access.policy.ts`).
+ *
+ * Il protège une **ligne** ; la propriété « il reste au moins un administrateur »
+ * est un invariant distinct, tenu par la même politique.
  *
  * `auth0Id` reste nul : le lien de connexion se fait quand ce staff se logue via
  * Auth0 (résolution par e-mail), pas ici.
@@ -21,7 +25,10 @@ export const BOOTSTRAP_ADMIN: StaffUserPayload = {
   firstName: "Dev",
   lastName: "La Folie Coffee",
   email: BOOTSTRAP_ADMIN_EMAIL,
-  scopes: ["admin"],
+  phone: "",
+  jobTitle: "",
+  role: "admin",
+  overrides: [],
 };
 
 /** Vrai si cet e-mail est celui de l'admin racine (comparaison normalisée). */

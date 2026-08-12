@@ -1,17 +1,22 @@
-<fold-panel-header [title]="heading()" subtitle="Identité et périmètre d'accès." />
+<fold-panel-header [title]="heading()" subtitle="Identité et rôle dans le back-office." />
 
 <div class="body">
   <fold-input label="Prénom" [(value)]="firstName" required />
   <fold-input label="Nom" [(value)]="lastName" required />
   <fold-input label="E-mail" type="email" [(value)]="email" required />
+  <fold-input label="Téléphone" type="tel" [(value)]="phone" />
+  <fold-input label="Fonction" placeholder="Responsable grands comptes" [(value)]="jobTitle" />
 
-  <fold-multiselect
-    label="Périmètre"
-    placeholder="Aucun accès"
-    hint="Les domaines du back-office auxquels cette personne a accès."
-    [options]="scopeOptions"
-    [(value)]="scopes"
-  />
+  <fold-select
+    label="Rôle"
+    hint="Ce que cette personne peut faire dans le back-office."
+    [value]="role()"
+    (valueChange)="setRole($event)"
+  >
+    @for (option of roleOptions; track option.value) {
+      <option [value]="option.value">{{ option.label }}</option>
+    }
+  </fold-select>
 </div>
 
 <footer class="foot">

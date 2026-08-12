@@ -28,17 +28,17 @@ export class PrismaStaffDirectory extends StaffDirectory {
     }
     const row = await this.prisma.staffUser.findUnique({
       where: { auth0Id: subject },
-      select: { firstName: true, lastName: true, scopes: true },
+      select: { firstName: true, lastName: true, role: true, jobTitle: true },
     });
     if (row === null) {
       return null;
     }
     return {
       name: `${row.firstName} ${row.lastName}`.trim(),
-      // Plusieurs périmètres possibles : on les garde tous, dans l'ordre de la
-      // fiche. Le titre affiché en trace doit dire ce qu'il en était, pas
-      // choisir arbitrairement lequel « compte ».
-      role: row.scopes.join(", "),
+      // La **fonction** si elle est renseignée, sinon le rôle : une trace se lit
+      // par un humain, et « Responsable grands comptes » lui dit plus que
+      // « commercial ». Le rôle reste le repli, jamais une chaîne vide.
+      role: row.jobTitle.trim() === "" ? row.role : row.jobTitle,
     };
   }
 }

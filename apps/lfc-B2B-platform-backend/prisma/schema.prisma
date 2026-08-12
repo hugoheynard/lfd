@@ -179,13 +179,59 @@ enum PaymentStatus {
   @@schema("public")
 }
 
-/// **Périmètre** d'un utilisateur staff — les domaines du back-office auxquels il
-/// a accès. Stocké pour l'instant (l'annuaire) ; l'enforcement (masquer les
-/// sections) viendra quand le login staff sera branché sur Auth0.
-enum StaffScope {
+/// **Rôle** d'un utilisateur staff — un paquet nommé de permissions. Le contenu
+/// de chaque paquet vit dans le code (`@lfd/contracts`, `ROLE_GRANTS`), pas ici :
+/// la base ne stocke que l'affectation.
+enum StaffRole {
+  admin
   commercial
   comptabilite
-  admin
+  support
+  dev
+
+  @@schema("public")
+}
+
+/// Où en est une personne vis-à-vis de sa **connexion**. La fiche précède le
+/// compte ; l'entrée se constate (`active`), le départ se ferme (`suspended`)
+/// sans rien détruire.
+enum StaffStatus {
+  pending
+  invited
+  active
+  suspended
+
+  @@schema("public")
+}
+
+/// Les domaines du back-office sur lesquels une permission porte. Miroir de
+/// `StaffResource` (`@lfd/contracts`).
+enum StaffResource {
+  companies
+  orders
+  growth
+  appointments
+  support
+  settings
+  staff
+  tech
+
+  @@schema("public")
+}
+
+/// Deux niveaux, jamais trois. `write` implique `read`.
+enum StaffAction {
+  read
+  write
+
+  @@schema("public")
+}
+
+/// Ce qu'une dérogation fait à une permission. L'absence de ligne vaut
+/// « hérite » : on ne stocke que l'écart au rôle.
+enum StaffOverrideEffect {
+  allow
+  deny
 
   @@schema("public")
 }
@@ -949,10 +995,10 @@ model DeliveryZone {
 }
 
 /// Utilisateur **staff** (back-office) — l'annuaire des personnes qui opèrent la
-/// suite : prénom, nom, e-mail (clé humaine + futur lien de connexion) et un
-/// **périmètre** (ensemble de `StaffScope`). Source de vérité **locale** : on ne
-/// dépend pas d'Auth0 pour administrer sa propre suite. Le provisioning de
-/// connexion (Auth0) est différé ; `auth0Id` reste nul jusque-là.
+/// suite : identité, **rôle**, et l'état de sa connexion. Source de vérité
+/// **locale** : on ne dépend pas d'Auth0 pour administrer sa propre suite.
+///
+/// Modèle et invariants : `documentation/b2b/architecture-acces-staff.md`.
 model StaffUser {
   id String @id @default(cuid())
 
@@ -960,18 +1006,57 @@ model StaffUser {
   lastName  String @map("last_name")
   email     String @unique
 
-  /// Le périmètre : quels domaines du back-office. Vide = aucun accès (annuaire
-  /// seul). Premier tableau scalaire du schéma (Postgres enum array).
-  scopes StaffScope[]
+  /// Facultatifs — un annuaire à moitié rempli reste un annuaire utile.
+  phone    String @default("")
+  jobTitle String @default("") @map("job_title")
 
-  /// Identité Auth0, si/quand un compte de connexion est provisionné. Nul tant
-  /// que le login staff n'est pas branché.
+  /// Le rôle : le paquet de permissions dont cette personne hérite.
+  role StaffRole @default(commercial)
+
+  /// L'état de la connexion. La fiche précède le compte, donc `pending` par
+  /// défaut : créer quelqu'un ne lui ouvre aucune porte.
+  status StaffStatus @default(pending)
+
+  /// Identité Auth0, liée à la **première connexion** (l'entrée se constate).
+  /// Nulle tant que la personne n'est jamais entrée.
   auth0Id String? @unique @map("auth0_id")
+
+  /// Les écarts au rôle, pour cette personne.
+  overrides StaffPermissionOverride[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("staff_users")
+  @@schema("public")
+}
+
+/// Un **écart au rôle**, pour une personne, sur une permission. Une ligne = un
+/// écart ; l'absence de ligne vaut « hérite du rôle ».
+///
+/// `grantedAt`/`grantedBy` rendent l'écart **imputable** : la question « qui a
+/// ouvert la compta à Marc, et quand » doit rester répondable dans six mois. Un
+/// tableau de scopes sur la personne ne savait rien en dire — c'est la raison
+/// première de cette table.
+model StaffPermissionOverride {
+  id String @id @default(cuid())
+
+  staffUserId String    @map("staff_user_id")
+  staffUser   StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+
+  resource StaffResource
+  action   StaffAction
+  effect   StaffOverrideEffect
+
+  /// Le `sub` du staff qui a posé l'écart — un identifiant, pas un nom : il
+  /// reste résolvable après un changement de nom ou de rôle.
+  grantedBy String   @map("granted_by")
+  grantedAt DateTime @default(now()) @map("granted_at")
+
+  /// Un seul écart par permission : deux lignes contradictoires sur le même
+  /// couple seraient une question sans réponse.
+  @@unique([staffUserId, resource, action])
+  @@map("staff_permission_overrides")
   @@schema("public")
 }
 

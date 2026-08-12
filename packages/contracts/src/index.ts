@@ -274,9 +274,9 @@ export type {
   StaffOverride,
   StaffMeView,
 } from "./staff-access.js";
-export { staffScopeSchema, staffUserPayloadSchema } from "./staff-user.js";
+export { staffStatusSchema, staffUserPayloadSchema, STAFF_STATUS_LABELS } from "./staff-user.js";
 export type {
-  StaffScope,
+  StaffStatus,
   StaffUserPayload,
   StaffUserView,
   CreatedStaffUserResponse,

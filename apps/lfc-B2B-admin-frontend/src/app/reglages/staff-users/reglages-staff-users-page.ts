@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import type { StaffScope, StaffUserView } from '@lfd/contracts';
+import { STAFF_ROLE_LABELS, STAFF_STATUS_LABELS, type StaffUserView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -17,7 +17,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
-import { SCOPE_LABELS } from './staff-scopes';
+import { STATUS_VARIANT } from './staff-roles';
 import { StaffUserPanel, type StaffUserPanelData } from './staff-user-panel/staff-user-panel';
 import { StaffUsersService } from './staff-users.service';
 
@@ -25,10 +25,11 @@ type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * Sous-page **Utilisateurs** des Réglages (staff) — l'annuaire du back-office
- * dans une `fold-data-table` : prénom, nom, e-mail, **périmètre** (badges), plus
- * les actions par ligne (éditer / supprimer). La saisie passe par
- * `StaffUserPanel` (side-panel) ; ici on liste, on ouvre le panneau et on
- * recharge. Le provisioning de connexion (Auth0) est différé.
+ * dans une `fold-data-table` : identité, **rôle**, état de la connexion, plus les
+ * actions par ligne (éditer / supprimer). La saisie passe par `StaffUserPanel`
+ * (side-panel) ; ici on liste, on ouvre le panneau et on recharge.
+ *
+ * L'invitation (ouvrir un vrai compte) reste à câbler.
  */
 @Component({
   selector: 'app-reglages-staff-users-page',
@@ -63,7 +64,9 @@ export class ReglagesStaffUsersPage {
     { key: 'lastName', label: 'Nom' },
     { key: 'firstName', label: 'Prénom' },
     { key: 'email', label: 'E-mail' },
-    { key: 'scopes', label: 'Périmètre' },
+    { key: 'jobTitle', label: 'Fonction' },
+    { key: 'role', label: 'Rôle' },
+    { key: 'status', label: 'Accès' },
     { key: 'actions', label: '', width: '4rem', align: 'right' },
   ];
 
@@ -88,9 +91,18 @@ export class ReglagesStaffUsersPage {
     }
   }
 
-  /** Libellé FR d'un périmètre (pour les badges). */
-  protected scopeLabel(scope: StaffScope): string {
-    return SCOPE_LABELS[scope];
+  // Le contexte d'un `foldCell` n'est pas typé : on entre par une méthode, qui
+  // rend la ligne typée au passage — plutôt que d'indexer un Record avec `any`.
+  protected roleLabel(user: StaffUserView): string {
+    return STAFF_ROLE_LABELS[user.role];
+  }
+
+  protected statusLabel(user: StaffUserView): string {
+    return STAFF_STATUS_LABELS[user.status];
+  }
+
+  protected statusVariant(user: StaffUserView): 'neutral' | 'success' | 'warning' {
+    return STATUS_VARIANT[user.status];
   }
 
   protected add(): void {

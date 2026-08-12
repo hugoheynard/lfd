@@ -10,24 +10,34 @@ export abstract class StaffUserRepository {
   abstract list(): Promise<readonly StaffUserView[]>;
 
   /**
-   * Ajoute un user.
+   * Ajoute un user. `actorSub` attribue ses éventuelles dérogations à leur auteur.
    * @throws {DuplicateStaffEmailError} l'e-mail est déjà pris.
    */
-  abstract create(payload: StaffUserPayload): Promise<string>;
+  abstract create(payload: StaffUserPayload, actorSub: string): Promise<string>;
 
   /**
-   * Remplace un user.
+   * Remplace un user — identité, rôle et dérogations, ces dernières en bloc.
+   *
+   * `actorSub` sert deux fois : il attribue les dérogations, et il permet de
+   * reconnaître que l'auteur se vise **lui-même** (garde-fou d'auto-rétrogradation).
+   *
    * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
    * @throws {DuplicateStaffEmailError} l'e-mail est pris par un autre user.
+   * @throws {ProtectedStaffUserError} la cible est l'admin racine, renommé ou rétrogradé.
+   * @throws {SelfDemotionError} l'auteur se retire son propre rôle `admin`.
+   * @throws {LastStaffAdminError} la mutation retirerait le dernier administrateur.
+   * @throws {AdminOverrideRefusedError} une dérogation priverait un admin de `staff:write`.
    */
-  abstract update(id: string, payload: StaffUserPayload): Promise<void>;
+  abstract update(id: string, payload: StaffUserPayload, actorSub: string): Promise<void>;
 
   /**
    * Supprime un user.
    * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
    * @throws {ProtectedStaffUserError} la cible est l'admin racine (ineffaçable).
+   * @throws {SelfDemotionError} l'auteur se supprime lui-même alors qu'il est admin.
+   * @throws {LastStaffAdminError} la cible est le dernier administrateur.
    */
-  abstract remove(id: string): Promise<void>;
+  abstract remove(id: string, actorSub: string): Promise<void>;
 
   /**
    * Garantit l'existence de l'**admin racine** (`BOOTSTRAP_ADMIN`) : le crée s'il

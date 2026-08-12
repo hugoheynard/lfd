@@ -9,8 +9,8 @@
       <div class="head-text">
         <h2 class="section-title">Utilisateurs</h2>
         <p class="section-desc">
-          Les personnes qui opèrent la suite et leur périmètre d'accès. La connexion (login) sera
-          branchée plus tard ; pour l'instant c'est l'annuaire de référence.
+          Les personnes qui opèrent la suite et le rôle de chacune. L'invitation à créer un compte
+          n'est pas encore branchée : une fiche décrit un accès, elle ne l'ouvre pas.
         </p>
       </div>
       <button foldButton size="sm" icon="plus" (click)="add()">Ajouter</button>
@@ -29,16 +29,20 @@
         <span class="strong">{{ row.lastName }}</span>
       </ng-template>
 
-      <ng-template foldCell="scopes" let-row>
-        @if (row.scopes.length === 0) {
+      <ng-template foldCell="jobTitle" let-row>
+        @if (row.jobTitle === '') {
           <span class="muted">—</span>
         } @else {
-          <span class="scopes">
-            @for (scope of row.scopes; track scope) {
-              <fold-badge variant="neutral" [content]="scopeLabel(scope)" />
-            }
-          </span>
+          {{ row.jobTitle }}
         }
+      </ng-template>
+
+      <ng-template foldCell="role" let-row>
+        <fold-badge variant="neutral" [content]="roleLabel(row)" />
+      </ng-template>
+
+      <ng-template foldCell="status" let-row>
+        <fold-badge [variant]="statusVariant(row)" [content]="statusLabel(row)" />
       </ng-template>
 
       <ng-template foldCell="actions" let-row>

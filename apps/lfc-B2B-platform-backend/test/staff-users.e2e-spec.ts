@@ -1,7 +1,8 @@
 /**
- * E2E de l'**annuaire staff** (back-office) : CRUD staff-gated + invariants du
- * repository — e-mail unique (doublon → 409), périmètre dédoublonné, 404 sur id
- * inconnu. Tout est staff-only (aucune surface publique).
+ * E2E de l'**annuaire staff** (back-office) : CRUD staff-gated + invariants —
+ * e-mail unique (doublon → 409), dérogations dédoublonnées, 404 sur id inconnu,
+ * et le garde-fou qui interdit de retirer le **dernier administrateur**. Tout est
+ * staff-only (aucune surface publique).
  */
 import type { CreatedStaffUserResponse, StaffUserView } from "@lfd/contracts";
 
@@ -37,7 +38,7 @@ const user = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   firstName: "Alex",
   lastName: "Martin",
   email: "alex.martin@lfc.test",
-  scopes: ["commercial"],
+  role: "commercial",
   ...over,
 });
 
@@ -52,19 +53,29 @@ async function list(): Promise<readonly StaffUserView[]> {
 }
 
 describe("annuaire staff", () => {
-  it("crée un user et le liste avec son périmètre", async () => {
-    await create({ scopes: ["commercial", "comptabilite"] });
+  it("crée un user et le liste avec son effectif de permissions", async () => {
+    await create({ jobTitle: "Responsable grands comptes", phone: "06 12 34 56 78" });
     const users = await list();
     expect(users).toHaveLength(1);
     expect(users[0]?.email).toBe("alex.martin@lfc.test");
-    expect(users[0]?.scopes).toEqual(["commercial", "comptabilite"]);
+    expect(users[0]?.jobTitle).toBe("Responsable grands comptes");
+    // L'effectif est résolu par le serveur : l'écran n'a pas à rejouer la formule.
+    expect(users[0]?.permissions).toContain("companies:write");
+    expect(users[0]?.permissions).not.toContain("staff:write");
   });
 
-  it("dédoublonne le périmètre et normalise l'e-mail en minuscule", async () => {
-    await create({ email: "Alex.Martin@LFC.test", scopes: ["admin", "admin", "commercial"] });
+  it("dédoublonne les dérogations et normalise l'e-mail en minuscule", async () => {
+    await create({
+      email: "Alex.Martin@LFC.test",
+      overrides: [
+        { resource: "orders", action: "write", effect: "allow" },
+        { resource: "orders", action: "write", effect: "allow" },
+      ],
+    });
     const users = await list();
     expect(users[0]?.email).toBe("alex.martin@lfc.test");
-    expect(users[0]?.scopes).toEqual(["admin", "commercial"]);
+    expect(users[0]?.overrides).toHaveLength(1);
+    expect(users[0]?.permissions).toContain("orders:write");
   });
 
   it("refuse un e-mail déjà pris (409), casse insensible", async () => {
@@ -76,15 +87,16 @@ describe("annuaire staff", () => {
     expect(await list()).toHaveLength(1);
   });
 
-  it("édite un user (nom + périmètre)", async () => {
+  it("édite un user (nom + rôle)", async () => {
     const id = await create();
     await staff()
       .patch(`/admin/staff-users/${id}`)
-      .send(user({ lastName: "Durand", scopes: ["admin"] }))
+      .send(user({ lastName: "Durand", role: "admin" }))
       .expect(204);
     const users = await list();
     expect(users[0]?.lastName).toBe("Durand");
-    expect(users[0]?.scopes).toEqual(["admin"]);
+    expect(users[0]?.role).toBe("admin");
+    expect(users[0]?.permissions).toContain("staff:write");
   });
 
   it("refuse d'éditer vers l'e-mail d'un autre user (409)", async () => {
@@ -105,5 +117,54 @@ describe("annuaire staff", () => {
   it("404 sur édition/suppression d'un id inconnu", async () => {
     await staff().patch("/admin/staff-users/nope").send(user()).expect(404);
     await staff().delete("/admin/staff-users/nope").expect(404);
+  });
+});
+
+describe("annuaire staff — on ne se verrouille pas dehors", () => {
+  it("refuse de supprimer le dernier administrateur (409)", async () => {
+    const id = await create({ role: "admin" });
+
+    const response = await staff().delete(`/admin/staff-users/${id}`);
+
+    expect(response.status).toBe(409);
+    expect(await list()).toHaveLength(1);
+  });
+
+  it("refuse de rétrograder le dernier administrateur (409)", async () => {
+    // Le chemin le plus discret vers le verrouillage : pas une suppression, une
+    // simple édition de rôle.
+    const id = await create({ role: "admin" });
+
+    const response = await staff()
+      .patch(`/admin/staff-users/${id}`)
+      .send(user({ role: "support" }));
+
+    expect(response.status).toBe(409);
+  });
+
+  it("laisse partir un administrateur dès qu'un autre existe", async () => {
+    const first = await create({ email: "one@lfc.test", role: "admin" });
+    await create({ email: "two@lfc.test", firstName: "Bea", role: "admin" });
+
+    await staff().delete(`/admin/staff-users/${first}`).expect(204);
+
+    expect(await list()).toHaveLength(1);
+  });
+
+  it("refuse une dérogation qui priverait un admin de l'annuaire (409)", async () => {
+    const id = await create({ email: "one@lfc.test", role: "admin" });
+    await create({ email: "two@lfc.test", firstName: "Bea", role: "admin" });
+
+    const response = await staff()
+      .patch(`/admin/staff-users/${id}`)
+      .send(
+        user({
+          email: "one@lfc.test",
+          role: "admin",
+          overrides: [{ resource: "staff", action: "write", effect: "deny" }],
+        }),
+      );
+
+    expect(response.status).toBe(409);
   });
 });
