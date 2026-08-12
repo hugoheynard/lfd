@@ -3,6 +3,7 @@ export { CompanyContactsCard } from './company-contacts-card/company-contacts-ca
 export { CompanyReferenceCard } from './company-reference-card/company-reference-card';
 export { CompanyAddressesCard } from './company-addresses-card/company-addresses-card';
 export { CompanyBillingCard } from './company-billing-card/company-billing-card';
+export { CompanyFulfillmentCard } from './company-fulfillment-card/company-fulfillment-card';
 export { CompanyIdentityFields } from './company-identity-fields/company-identity-fields';
 export { ContactFields } from './contact-fields/contact-fields';
 export { AddressFields } from './address-fields/address-fields';
@@ -50,3 +51,13 @@ export {
   gpsMapUrl,
 } from './delivery-format';
 export type { WeeklySlotRow } from './delivery-format';
+export {
+  DEFAULT_DESTINATION,
+  destinationOf,
+  fulfillmentDestinations,
+  namedDestinations,
+  noPreference,
+  preferenceForDestination,
+  preferenceForMethod,
+} from './fulfillment-preference.model';
+export type { FulfillmentDestination } from './fulfillment-preference.model';

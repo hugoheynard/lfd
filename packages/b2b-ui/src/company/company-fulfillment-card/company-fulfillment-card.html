@@ -1,0 +1,61 @@
+<fold-page-section title="Préférences d'acheminement" icon="truck" [description]="description()">
+  <fold-card>
+    <div class="choice">
+      <span class="choice-label">Méthode habituelle</span>
+      @if (canManage()) {
+        <div class="choice-actions">
+          <button
+            foldButton
+            size="sm"
+            [emphasis]="method() === 'pickup' ? 'solid' : 'outline'"
+            [intent]="method() === 'pickup' ? 'primary' : 'neutral'"
+            (click)="chooseMethod('pickup')"
+          >
+            Retrait
+          </button>
+          @if (deliveryOffered()) {
+            <button
+              foldButton
+              size="sm"
+              [emphasis]="method() === 'delivery' ? 'solid' : 'outline'"
+              [intent]="method() === 'delivery' ? 'primary' : 'neutral'"
+              (click)="chooseMethod('delivery')"
+            >
+              Livraison
+            </button>
+          }
+          @if (method() !== null) {
+            <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="clear()">
+              Retirer la préférence
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    @if (method() === null) {
+      <p class="none">{{ noPreferenceHint() }}</p>
+    } @else if (noDestination()) {
+      <fold-callout variant="warning">
+        @if (method() === 'pickup') {
+          Aucun point de retrait n'est configuré — la commande partira au point par défaut dès
+          qu'il y en aura un.
+        } @else {
+          {{ noDeliveryHint() }}
+        }
+      </fold-callout>
+    } @else {
+      <!-- « Par défaut » est la première option, pas un placeholder : suivre le
+           défaut du moment est un choix, et le plus fréquent. Désigner nommément
+           le défaut d'aujourd'hui figerait la préférence le jour où il change. -->
+      <fold-listbox
+        class="destination"
+        [label]="destinationLabel()"
+        [options]="options()"
+        [value]="destinationId()"
+        [disabled]="!canManage()"
+        (selectionChange)="chooseDestination($event)"
+      />
+    }
+  </fold-card>
+</fold-page-section>
