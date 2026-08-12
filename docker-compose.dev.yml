@@ -5,11 +5,15 @@
 # Usage :
 #   pnpm dev:infra              # démarre (docker compose up -d)
 #   pnpm dev:infra:down         # arrête, garde les données
-#   pnpm dev:infra:nuke         # arrête ET détruit le volume (repart de zéro)
+#   pnpm dev:infra:nuke         # arrête ET détruit les volumes (repart de zéro)
 #
 # Miroir prod : Neon (Postgres managé, ADR-09). Même contrat de connexion via
 # `DATABASE_URL` — seule l'URL change. En dev :
 #   DATABASE_URL="postgresql://lfc:lfc@localhost:5433/lfc_pim?schema=public"
+#
+# Même principe pour le stockage objet : la prod est Cloudflare R2, le dev est
+# MinIO. Les deux parlent S3, et `S3StorageService` pose déjà
+# `forcePathStyle: true` — c'est l'`endpoint` qui change, rien d'autre.
 
 services:
   postgres:
@@ -33,5 +37,50 @@ services:
       retries: 10
       start_period: 5s
 
+  # Stockage objet compatible S3 — le R2 du poste de dev.
+  #
+  # Le KBIS et le mandat SEPA passaient par un `DocumentStore` qui, faute de
+  # `STORAGE_*`, refusait poliment : on développait le dépôt de pièces sans
+  # jamais déposer de pièce. MinIO rend le flux RÉEL en local — mêmes octets,
+  # même SDK, même chemin de code que la prod.
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: lfd-dev-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      # Identifiants de DEV, en clair et assumés : ce conteneur n'écoute que sur
+      # la boucle locale et ne contient que des pièces de test.
+      MINIO_ROOT_USER: lfc
+      MINIO_ROOT_PASSWORD: lfclfclfc
+    # Ports hôte décalés comme Postgres (5433) : 9000 est un port trop courant
+    # pour le réserver. 9100 = API S3, 9101 = console web.
+    ports:
+      - "9100:9000"
+      - "9101:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # Crée le bucket au démarrage, puis sort. Sans lui, la première pièce déposée
+  # tomberait sur un `NoSuchBucket` — en prod le bucket R2 est créé une fois à
+  # la main, ici il doit renaître avec le volume (`dev:infra:nuke`).
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    container_name: lfd-dev-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "mc alias set lfd http://minio:9000 lfc lfclfclfc &&
+             mc mb --ignore-existing lfd/lfc-b2b-dev &&
+             echo 'bucket lfc-b2b-dev prêt'"
+
 volumes:
   postgres-data:
+  minio-data:
