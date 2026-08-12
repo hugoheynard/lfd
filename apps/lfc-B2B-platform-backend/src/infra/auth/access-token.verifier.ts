@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 import { AuthConfig } from "./auth.config.js";
+import { EMAIL_CLAIM, EMAIL_VERIFIED_CLAIM, readStringClaim } from "./auth0-claims.js";
 import type { VerifiedToken } from "./principal.js";
 
 type RemoteKeySet = ReturnType<typeof createRemoteJWKSet>;
@@ -34,24 +35,6 @@ export class AccessTokenVerifier {
   }
 }
 
-/**
- * Claim **namespacé** portant l'e-mail (Auth0 strippe les claims non namespacés
- * des access tokens). À alimenter côté Auth0 par une Action :
- * `api.accessToken.setCustomClaim("https://lafoliedouce.eu/email", event.user.email)`.
- * Absent = provisioning JIT avec e-mail vide (renseigné plus tard via le profil).
- */
-const EMAIL_CLAIM = "https://lafoliedouce.eu/email";
-
-/**
- * Claim **namespacé** disant si l'adresse a été prouvée — même Action Auth0 :
- * `api.accessToken.setCustomClaim("https://lafoliedouce.eu/email_verified", event.user.email_verified)`.
- *
- * Absent = le token n'en dit rien, et on ne recopie rien. C'est la différence
- * entre « pas encore vérifié » et « on ne sait pas » : seule la seconde autorise
- * à laisser la base telle quelle.
- */
-const EMAIL_VERIFIED_CLAIM = "https://lafoliedouce.eu/email_verified";
-
 function toVerifiedToken(payload: JWTPayload): VerifiedToken {
   const subject = payload.sub;
   if (subject === undefined || subject === "") {
@@ -59,8 +42,8 @@ function toVerifiedToken(payload: JWTPayload): VerifiedToken {
   }
   const scope = payload["scope"];
   const scopes = typeof scope === "string" ? scope.split(" ").filter((entry) => entry !== "") : [];
-  const claimed = payload[EMAIL_CLAIM];
-  const email = typeof claimed === "string" && claimed !== "" ? claimed : undefined;
+  // Absent = provisioning JIT avec e-mail vide (renseigné plus tard via le profil).
+  const email = readStringClaim(payload, EMAIL_CLAIM);
   const verified = payload[EMAIL_VERIFIED_CLAIM];
   // `exactOptionalPropertyTypes` : un claim absent ne devient pas une propriété
   // à `undefined`, sinon « on ne sait pas » se lirait comme « non ».

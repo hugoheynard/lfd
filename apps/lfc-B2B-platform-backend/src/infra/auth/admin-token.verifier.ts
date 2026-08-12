@@ -3,6 +3,7 @@ import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 
 import { AppConfig } from "../config/app-config.js";
 import { AuthConfig } from "./auth.config.js";
+import { EMAIL_CLAIM, readStringClaim } from "./auth0-claims.js";
 import type { StaffPrincipal } from "./staff-principal.js";
 
 type RemoteKeySet = ReturnType<typeof createRemoteJWKSet>;
@@ -56,6 +57,10 @@ function toStaffPrincipal(payload: JWTPayload): StaffPrincipal {
   // L'adresse ne sert qu'au **premier** rapprochement avec l'annuaire ; ensuite
   // c'est le `sub` qui relie, et il ne bouge plus. Un tenant qui ne pose pas ce
   // claim rend le rapprochement impossible — jamais faux.
-  const email = payload["email"];
-  return { subject, email: typeof email === "string" && email !== "" ? email : undefined, scopes };
+  //
+  // Le claim est **namespacé**, et ce n'est pas négociable : Auth0 retire en
+  // silence tout claim nu d'un access token. Lire `payload["email"]` rendrait
+  // donc toujours `undefined`, et chaque membre du staff prendrait un `403`
+  // inexplicable à sa première connexion.
+  return { subject, email: readStringClaim(payload, EMAIL_CLAIM), scopes };
 }
