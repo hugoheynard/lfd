@@ -116,18 +116,13 @@ describe('InformationsPage — ouverture d’un compte', () => {
     expect(fiche.state()).toBe('ready');
   });
 
-  it('montre la synthèse COMPLÈTE, comme sur une fiche où rien n’est fait', async () => {
-    const { fiche } = await setup();
-    expect(fiche.libSteps().map((step) => step.key)).toEqual([
-      'legal',
-      'tva',
-      'kbis',
-      'billing',
-      'delivery',
-      'payment',
-    ]);
-    // Rien n'est réuni : le compte ne peut pas être activé.
-    expect(fiche.ready()).toBe(false);
+  it('ne réclame que ce qui OUVRE — pas le dossier d’activation', async () => {
+    // Réclamer KBIS, adresses et règlement devant un formulaire vide faisait
+    // passer pour bloquant ce qui ne l'est pas : un compte s'ouvre sans papiers.
+    const { page, fiche } = await setup();
+    expect(page['checklistSteps']().map((step) => step.key)).toEqual(['enseigne', 'holder']);
+
+    // Rien n'est réuni : le compte ne peut évidemment pas être activé.
     expect(fiche.canActivate()).toBe(false);
   });
 

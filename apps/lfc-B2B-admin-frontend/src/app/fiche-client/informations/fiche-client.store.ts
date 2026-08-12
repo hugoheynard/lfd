@@ -18,13 +18,7 @@ import { AdminCompaniesService } from '../../comptes-clients/admin-companies.ser
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
 import { PlatformSettingsService } from '../../reglages/platform-settings.service';
 import { toContactCards, toIdentityView } from '../admin-company-view';
-import {
-  activationSteps,
-  hasLegalIdentity,
-  isReachable,
-  missingRequiredPieces,
-  type ActivationStep,
-} from './activation-steps';
+import { activationSteps, blockedReason, type ActivationStep } from './activation-steps';
 
 /** Où en est la lecture de la fiche. */
 export type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
@@ -94,13 +88,15 @@ export class FicheClientStore {
     () => this.company()?.addresses.deliveries ?? [],
   );
 
-  /** Ce qu'il reste à compléter — sans société, c'est **tout** (mode ouverture). */
+  /** Ce qu'il reste à compléter — habillage du verdict serveur, rien de plus. */
   private readonly steps = computed<readonly ActivationStep[]>(() =>
-    activationSteps(this.company(), this.settings()),
+    activationSteps(this.company()),
   );
 
   /** Étapes projetées vers le view-model de la lib (ajout du `kind` d'UI). */
   readonly libSteps = computed<readonly CompanyActivationStep[]>(() =>
+    // Seul le KBIS **absent** prend un fichier ; « à vérifier » est un geste,
+    // pas un dépôt.
     this.steps().map((step) => ({ ...step, kind: step.key === 'kbis' ? 'file' : 'action' })),
   );
 
@@ -121,41 +117,16 @@ export class FicheClientStore {
   readonly status = computed<CompanyStatus>(() => this.company()?.status ?? 'pending');
 
   /**
-   * Le compte peut-il être activé ? Le bouton doit dire la même chose que le
-   * serveur : en attente, pièces requises réunies, **et** identité légale
-   * complète — sans SIRET il n'y a rien à facturer, et le serveur refuse.
+   * Le compte peut-il être activé ? **Le serveur l'a dit.**
+   *
+   * Cet écran refaisait le calcul (identité légale, joignabilité, pièces
+   * requises) et les deux versions ont divergé. La règle n'est plus écrite
+   * qu'une fois, côté domaine ; ici on lit un booléen.
    */
-  readonly canActivate = computed(() => {
-    const company = this.company();
-    if (company === null || !this.isPending()) {
-      return false;
-    }
-    return (
-      hasLegalIdentity(company) &&
-      isReachable(company) &&
-      missingRequiredPieces(company, this.settings()).length === 0
-    );
-  });
+  readonly canActivate = computed(() => this.company()?.gate.canActivate === true);
 
   /** Ce qui bloque l'activation, en une phrase ; vide quand rien ne bloque. */
-  readonly blockedReason = computed(() => {
-    const company = this.company();
-    if (company === null || this.canActivate()) {
-      return '';
-    }
-    if (!hasLegalIdentity(company)) {
-      return "Raison sociale, forme juridique et SIRET sont nécessaires : sans eux, il n'y a rien à facturer.";
-    }
-    if (!isReachable(company)) {
-      return 'Aucun interlocuteur joignable : renseignez au moins un numéro de téléphone.';
-    }
-    // Le cas le plus fréquent et le moins devinable : la pièce est là, elle
-    // n'a simplement pas été vérifiée. Le dire évite de chercher ce qui manque.
-    if (missingRequiredPieces(company, this.settings()).includes('kbis') && company.kbis !== null) {
-      return "L'extrait KBIS est déposé mais pas encore vérifié : ouvrez-le, comparez-le à l'identité, puis confirmez.";
-    }
-    return 'Il reste des pièces à réunir.';
-  });
+  readonly blockedReason = computed(() => blockedReason(this.company()));
 
   /** Pose l'identifiant de route avant le premier chargement. */
   start(companyId: string | null): void {

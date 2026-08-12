@@ -1,4 +1,6 @@
 import type {
+  ActivationPiece,
+  PieceMode,
   FulfillmentPreferenceView,
   CompanyAddressesView,
   CompanyContactView,
@@ -117,6 +119,37 @@ export interface AdminCompanyDetail extends AdminCompany {
    * se lève en re-vérifiant l'extrait, pas en cliquant « Réactiver ».
    */
   readonly suspensionCause: SuspensionCause | null;
+  /** Ce que le serveur répondrait si l'on cliquait « Activer » maintenant. */
+  readonly gate: ActivationGate;
+}
+
+/**
+ * Le **verdict** d'activation, calculé par le serveur — la même fonction qui
+ * garde la porte. L'écran l'affiche, il ne le recalcule pas : la copie qu'il en
+ * tenait a fini par contredire la porte (« Activer » allumé sur un KBIS déposé
+ * mais non vérifié → 409).
+ */
+export interface ActivationGate {
+  readonly canActivate: boolean;
+  readonly blocking: readonly ActivationBlocker[];
+  readonly checklist: readonly ActivationCheck[];
+}
+
+/** Ce qui empêche d'activer — un code, la phrase est à l'écran. */
+export type ActivationBlocker =
+  | 'identite_legale'
+  | 'telephone'
+  | 'tva'
+  | 'kbis_absent'
+  | 'kbis_non_verifie'
+  | 'facturation'
+  | 'livraison';
+
+/** L'état d'une pièce du dossier, avec le mode qui la gouverne. */
+export interface ActivationCheck {
+  readonly piece: ActivationPiece;
+  readonly mode: PieceMode;
+  readonly done: boolean;
 }
 
 /** L'ouverture du compte, datée et signée. */

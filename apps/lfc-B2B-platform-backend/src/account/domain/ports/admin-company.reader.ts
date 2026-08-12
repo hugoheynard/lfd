@@ -7,6 +7,7 @@ import type {
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import type { DeferredTerm } from "@lfd/contracts";
 
+import type { ActivationGate } from "../services/activation-gate.js";
 import type { ContactView, KbisView } from "./account.reader.js";
 
 /**
@@ -161,6 +162,17 @@ export interface StaffActorView {
   readonly sub: string;
   readonly name: string;
   readonly role: string;
+}
+
+/**
+ * La fiche **servie au staff** : le détail, plus le **verdict** d'activation.
+ *
+ * Le verdict ne vit pas dans le reader (il dépend des réglages plateforme, une
+ * autre source) : il est composé par le handler de requête. C'est ce qui permet
+ * à l'écran de ne plus rejouer la règle — il l'affiche.
+ */
+export interface AdminCompanyFicheView extends AdminCompanyDetailView {
+  readonly gate: ActivationGate;
 }
 
 /** L'ouverture du compte, datée et signée. */

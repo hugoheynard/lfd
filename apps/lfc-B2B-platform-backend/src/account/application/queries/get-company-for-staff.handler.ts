@@ -2,8 +2,10 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import {
   AdminCompanyReader,
-  type AdminCompanyDetailView,
+  type AdminCompanyFicheView,
 } from "../../domain/ports/admin-company.reader.js";
+import { PlatformSettingsRepository } from "../../../platform-settings/domain/platform-settings.repository.js";
+import { activationGate } from "../../domain/services/activation-gate.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { GetCompanyForStaffQuery } from "./get-company-for-staff.query.js";
 
@@ -12,19 +14,29 @@ import { GetCompanyForStaffQuery } from "./get-company-for-staff.query.js";
  * (`AdminAuthGuard`) garde la surface en amont. `null` (aucune société pour cet
  * id) devient un `CompanyNotFoundError` (404) : le staff voit toutes les
  * sociétés, donc rien à cacher — c'est un simple « n'existe pas ».
+ *
+ * La fiche part avec son **verdict d'activation** (`gate`) : ce qui bloque, et
+ * si le serveur accepterait d'activer. C'est la seule autorité — l'écran
+ * l'affiche, il ne le recalcule pas.
  */
 @QueryHandler(GetCompanyForStaffQuery)
 export class GetCompanyForStaffHandler implements IQueryHandler<
   GetCompanyForStaffQuery,
-  AdminCompanyDetailView
+  AdminCompanyFicheView
 > {
-  constructor(private readonly companies: AdminCompanyReader) {}
+  constructor(
+    private readonly companies: AdminCompanyReader,
+    private readonly settings: PlatformSettingsRepository,
+  ) {}
 
-  async execute(query: GetCompanyForStaffQuery): Promise<AdminCompanyDetailView> {
+  async execute(query: GetCompanyForStaffQuery): Promise<AdminCompanyFicheView> {
     const company = await this.companies.byId(query.companyId);
     if (company === null) {
       throw new CompanyNotFoundError(query.companyId);
     }
-    return company;
+    // Le **verdict** part avec la fiche, calculé par la fonction qui garde aussi
+    // la porte d'activation. L'écran n'a plus rien à redéduire — et ne peut donc
+    // plus se contredire avec le serveur.
+    return { ...company, gate: activationGate(company, await this.settings.read()) };
   }
 }

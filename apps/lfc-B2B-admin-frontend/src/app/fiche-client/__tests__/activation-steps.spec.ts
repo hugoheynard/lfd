@@ -1,63 +1,36 @@
-import type { PlatformSettings } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
-import {
-  activationSteps,
-  missingRequiredPieces,
-  openingSteps,
-} from '../informations/activation-steps';
+import type {
+  ActivationCheck,
+  ActivationGate,
+  AdminCompanyDetail,
+} from '../../comptes-clients/admin-company';
+import { activationSteps, blockedReason, openingSteps } from '../informations/activation-steps';
 
-const ALL_REQUIRED: PlatformSettings = {
-  tva: 'required',
-  kbis: 'required',
-  billing: 'required',
-  delivery: 'required',
-};
+/**
+ * Ces tests ne vérifient plus **la règle** — elle vit côté serveur, dans
+ * `activationGate`, et n'est plus écrite qu'une fois. Ils vérifient
+ * l'**habillage** : un verdict donné produit-il la bonne liste et la bonne
+ * phrase. C'est tout ce que cet écran a encore le droit de savoir.
+ */
+const ALL_TODO: readonly ActivationCheck[] = [
+  { piece: 'tva', mode: 'required', done: false },
+  { piece: 'kbis', mode: 'required', done: false },
+  { piece: 'billing', mode: 'required', done: false },
+  { piece: 'delivery', mode: 'required', done: false },
+];
 
-/** Une société dont tout est fait — on retire ensuite ce qu'on veut tester. */
-function complete(overrides: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
+function withGate(gate: Partial<ActivationGate>): AdminCompanyDetail {
   return {
-    activation: null,
-    suspensionCause: null,
-    id: 'cmp_1',
-    reference: 'C-000001',
-    raisonSociale: 'La Folie Douce',
-    enseigne: '',
-    formeJuridique: 'SAS',
-    siret: '12345678901234',
-    tvaIntracom: 'FR12345678901',
-    status: 'pending',
-    grantedTerms: [],
-    requestedTerm: null,
-    primaryContact: { id: null, firstName: 'A', lastName: 'B', fonction: '', email: '', phone: '' },
-    owner: null,
-    kbis: {
-      fileName: 'kbis.pdf',
-      uploadedAt: '2026-08-01T00:00:00.000Z',
-      certified: true,
-      certifiedAt: '2026-08-02T00:00:00.000Z',
-      certifiedBy: { sub: 'staff|1', name: 'Camille Rousseau', role: 'commercial' },
-    },
-    hasOpenSupportRequest: false,
-    fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
-    createdAt: '2026-08-01T00:00:00.000Z',
-    vatNumberRequired: true,
-    contacts: [],
-    addresses: {
-      billing: { id: 'adr_1' } as AdminCompanyDetail['addresses']['billing'],
-      deliveries: [{ id: 'adr_2' } as AdminCompanyDetail['addresses']['deliveries'][number]],
-    },
-    ...overrides,
-  };
+    gate: { canActivate: false, blocking: [], checklist: ALL_TODO, ...gate },
+  } as AdminCompanyDetail;
 }
 
-describe('activationSteps', () => {
-  it('réclame TOUT quand la société n’existe pas encore', () => {
-    // C'est le mode ouverture : le commercial doit voir dès maintenant ce qu'il
-    // aura à demander, pas le découvrir pièce par pièce.
-    expect(activationSteps(null, ALL_REQUIRED).map((s) => s.key)).toEqual([
-      'legal',
+describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => {
+  it('liste les pièces que le serveur dit non faites, la condition de règlement en fin', () => {
+    const steps = activationSteps(withGate({}));
+
+    expect(steps.map((step) => step.key)).toEqual([
       'tva',
       'kbis',
       'billing',
@@ -66,81 +39,71 @@ describe('activationSteps', () => {
     ]);
   });
 
-  it('ne garde que le règlement quand le dossier est complet', () => {
-    expect(activationSteps(complete(), ALL_REQUIRED).map((s) => s.key)).toEqual(['payment']);
-  });
-
-  it('ne réclame pas une pièce que le service n’utilise pas', () => {
-    const steps = activationSteps(complete({ addresses: { billing: null, deliveries: [] } }), {
-      ...ALL_REQUIRED,
-      delivery: 'hidden',
-    });
-    expect(steps.map((s) => s.key)).toEqual(['billing', 'payment']);
-  });
-
-  it("réclame l'identité légale d'un compte ouvert sans papiers", () => {
-    // Elle n'est pas configurable : sans SIRET, il n'y a rien à facturer. Elle
-    // ouvre donc la liste, avant les pièces.
+  it('tait une pièce faite, et une pièce masquée en réglages', () => {
     const steps = activationSteps(
-      complete({ raisonSociale: '', siret: '', formeJuridique: '' }),
-      ALL_REQUIRED,
+      withGate({
+        checklist: [
+          { piece: 'tva', mode: 'required', done: true },
+          { piece: 'kbis', mode: 'hidden', done: false },
+          { piece: 'billing', mode: 'optional', done: false },
+          { piece: 'delivery', mode: 'required', done: false },
+        ],
+      }),
     );
-    expect(steps.map((s) => s.key)).toEqual(['legal', 'payment']);
+
+    // `optional` reste demandée — « pas bloquante » n'est pas « pas demandée ».
+    expect(steps.map((step) => step.key)).toEqual(['billing', 'delivery', 'payment']);
   });
 
-  it('ne réclame pas de TVA à un non-assujetti', () => {
-    const steps = activationSteps(
-      complete({ vatNumberRequired: false, tvaIntracom: '' }),
-      ALL_REQUIRED,
+  it("ouvre la liste sur l'identité légale quand le serveur la signale", () => {
+    const steps = activationSteps(withGate({ blocking: ['identite_legale'] }));
+
+    expect(steps[0]?.key).toBe('legal');
+  });
+
+  it('ne dit rien devant un compte pas encore ouvert', () => {
+    expect(activationSteps(null)).toEqual([]);
+  });
+
+  it('dit ce qui bloque EN PREMIER, pas la liste entière', () => {
+    // Une phrase sous un bouton, pas un rapport : on corrige dans cet ordre.
+    const reason = blockedReason(withGate({ blocking: ['telephone', 'kbis_absent'] }));
+
+    expect(reason).toContain('Aucun interlocuteur joignable');
+  });
+
+  it('distingue le KBIS absent du KBIS non vérifié', () => {
+    // Le cas le moins devinable : la pièce est là, personne ne l'a ouverte.
+    expect(blockedReason(withGate({ blocking: ['kbis_non_verifie'] }))).toContain(
+      'déposé mais pas encore vérifié',
     );
-    expect(steps.map((s) => s.key)).toEqual(['payment']);
+    expect(blockedReason(withGate({ blocking: ['kbis_absent'] }))).toContain(
+      "n'a pas encore été déposé",
+    );
   });
 
-  it('rend une liste vide quand le réglage est illisible', () => {
-    // Fail-closed sur l'affichage : mieux vaut ne rien réclamer que réclamer des
-    // pièces peut-être désactivées.
-    expect(activationSteps(complete(), null)).toEqual([]);
-  });
-});
+  it("change de geste quand l'extrait est là mais pas vérifié", () => {
+    // « Déposer le KBIS » devant un fichier déjà déposé envoie chercher ce qui
+    // est sous les yeux. Le geste attendu n'est pas un dépôt, c'est une lecture.
+    const steps = activationSteps(withGate({ blocking: ['kbis_non_verifie'] }));
+    const kbis = steps.find((step) => step.key.startsWith('kbis'));
 
-describe('missingRequiredPieces', () => {
-  it('interdit d’activer un compte qui n’existe pas encore', () => {
-    expect(missingRequiredPieces(null, ALL_REQUIRED)).toEqual([
-      'tva',
-      'kbis',
-      'billing',
-      'delivery',
-    ]);
+    expect(kbis?.key).toBe('kbis_verify');
+    expect(kbis?.cta).toBe("J'ai vérifié cet extrait");
+    expect(kbis?.title).toContain('à vérifier');
   });
 
-  it('ignore une pièce seulement optionnelle', () => {
-    const company = complete({ kbis: null });
-    expect(missingRequiredPieces(company, { ...ALL_REQUIRED, kbis: 'optional' })).toEqual([]);
-  });
-});
+  it('redemande un DÉPÔT quand rien n’a été déposé', () => {
+    const steps = activationSteps(withGate({ blocking: ['kbis_absent'] }));
+    const kbis = steps.find((step) => step.key.startsWith('kbis'));
 
-describe('le KBIS ne compte que VÉRIFIÉ (même règle que le serveur)', () => {
-  /** Déposé, mais que personne n'a ouvert. */
-  const deposited = {
-    fileName: 'kbis.pdf',
-    uploadedAt: '2026-08-01T00:00:00.000Z',
-    certified: false,
-    certifiedAt: null,
-    certifiedBy: null,
-  };
-
-  it('un extrait déposé mais non vérifié laisse la pièce MANQUANTE', () => {
-    // Sinon l'écran allumerait « Activer le compte » et le serveur répondrait
-    // 409 : un bouton qui promet ce que le serveur refuse est pire qu'un
-    // bouton grisé.
-    expect(missingRequiredPieces(complete({ kbis: deposited }), ALL_REQUIRED)).toContain('kbis');
-    expect(
-      activationSteps(complete({ kbis: deposited }), ALL_REQUIRED).map((s) => s.key),
-    ).toContain('kbis');
+    expect(kbis?.key).toBe('kbis');
+    expect(kbis?.cta).toBe('Déposer le KBIS');
   });
 
-  it('vérifié ⇒ la pièce est acquise', () => {
-    expect(missingRequiredPieces(complete(), ALL_REQUIRED)).not.toContain('kbis');
+  it('se tait quand rien ne bloque', () => {
+    expect(blockedReason(withGate({ canActivate: true }))).toBe('');
+    expect(blockedReason(null)).toBe('');
   });
 });
 

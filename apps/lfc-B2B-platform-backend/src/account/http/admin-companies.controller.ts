@@ -21,7 +21,7 @@ import { GetCustomerSheetQuery } from "../application/queries/get-customer-sheet
 import { ListAllCompaniesQuery } from "../application/queries/list-all-companies.query.js";
 import type { CustomerSheetView } from "@lfd/contracts";
 import type {
-  AdminCompanyDetailView,
+  AdminCompanyFicheView,
   AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
 import { adminCreateCompanyPayload, type AdminCreateCompanyPayload } from "./payloads.js";
@@ -69,8 +69,8 @@ export class AdminCompaniesController {
   }
 
   @Get(":companyId")
-  getOne(@Param("companyId") companyId: string): Promise<AdminCompanyDetailView> {
-    return this.queries.execute<GetCompanyForStaffQuery, AdminCompanyDetailView>(
+  getOne(@Param("companyId") companyId: string): Promise<AdminCompanyFicheView> {
+    return this.queries.execute<GetCompanyForStaffQuery, AdminCompanyFicheView>(
       new GetCompanyForStaffQuery(companyId),
     );
   }

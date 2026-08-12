@@ -146,6 +146,12 @@ export class FicheClientFacade {
 
   /** Le panneau d'une étape d'activation ; la fiche se recharge à sa fermeture. */
   openStep(key: string): void {
+    // La vérification n'ouvre aucun panneau : c'est le geste lui-même, et il
+    // est identique à celui de la carte Identité.
+    if (key === 'kbis_verify') {
+      void this.certifyKbis();
+      return;
+    }
     this.afterPanel((company) => this.panels.openStep(key, company));
   }
 

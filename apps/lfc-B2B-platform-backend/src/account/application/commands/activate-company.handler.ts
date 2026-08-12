@@ -14,7 +14,7 @@ import {
 } from "../../domain/ports/admin-company.reader.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { StaffDirectory } from "../../domain/ports/staff-directory.js";
-import { missingRequiredPieces } from "../../domain/services/activation-requirements.js";
+import { activationGate } from "../../domain/services/activation-gate.js";
 import { ActivateCompanyByStaffCommand } from "./activate-company.command.js";
 
 /**
@@ -50,12 +50,12 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     if (view === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    const missing = missingRequiredPieces(view, await this.settings.read());
-    if (missing.length > 0) {
+    const gate = activationGate(view, await this.settings.read());
+    if (gate.blocking.length > 0) {
       throw new CompanyActivationBlockedError(
         command.companyId,
-        missing,
-        `Activation impossible : pièces requises manquantes (${missing.join(", ")}).`,
+        gate.blocking,
+        `Activation impossible : ${gate.blocking.join(", ")}.`,
       );
     }
 

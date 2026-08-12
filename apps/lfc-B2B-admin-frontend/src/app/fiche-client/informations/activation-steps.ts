@@ -1,14 +1,26 @@
-import type { ActivationPiece, PlatformSettings } from '@lfd/contracts';
+import type { ActivationPiece } from '@lfd/contracts';
 import type { CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
-import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
+import type { ActivationBlocker, AdminCompanyDetail } from '../../comptes-clients/admin-company';
 
 /**
  * Les pièces d'un dossier, plus la condition de règlement qui n'en est pas une,
  * plus les deux **minimums d'ouverture** (`enseigne`, `holder`) — qui ne sont ni
  * l'une ni l'autre : ils précèdent l'existence du compte.
  */
-export type StepKey = ActivationPiece | 'legal' | 'payment' | 'enseigne' | 'holder';
+export type StepKey =
+  | ActivationPiece
+  | 'legal'
+  | 'payment'
+  | 'enseigne'
+  | 'holder'
+  /**
+   * Le KBIS **déposé mais pas vérifié** : la même pièce, un autre geste. Une
+   * clé distincte plutôt qu'un texte conditionnel, parce que ce qui change
+   * n'est pas la formulation mais l'action — on ne redemande pas un fichier
+   * qui est déjà là, on l'ouvre.
+   */
+  | 'kbis_verify';
 
 /** Une étape restante, telle que la fiche la présente. */
 export interface ActivationStep {
@@ -46,6 +58,12 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
     detail: "Déposez l'extrait reçu du client, puis confirmez l'avoir vérifié.",
     cta: 'Déposer le KBIS',
   },
+  kbis_verify: {
+    title: 'Extrait KBIS à vérifier',
+    detail:
+      "L'extrait est déposé — ouvrez-le, comparez-le à l'identité enregistrée, puis confirmez.",
+    cta: "J'ai vérifié cet extrait",
+  },
   billing: {
     title: 'Adresse de facturation',
     detail: 'Renseignez l’adresse de facturation.',
@@ -63,22 +81,39 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
   },
 };
 
-/** Ordre de présentation — celui dans lequel on les réclame au client. */
-const PIECES: readonly ActivationPiece[] = ['tva', 'kbis', 'billing', 'delivery'];
-
 /**
- * Ce qu'il **reste** à compléter (pur).
+ * La phrase qui va avec chaque empêchement. **La seule chose que cet écran sait
+ * de l'activation** : comment le dire en français.
  *
- * `company` à `null` signifie « rien n'est encore là » : c'est le cas du compte
- * qu'on est en train d'ouvrir, et c'est ce qui permet à la page de création de
- * montrer **la même** synthèse que la fiche, complète, plutôt qu'un écran vide
- * qui ferait croire qu'il n'y a rien à demander.
- *
- * Une pièce `hidden` en configuration est retirée : on ne réclame pas ce qui
- * n'existe pas dans le service (la livraison, quand il n'y a que du retrait).
- * `settings` à `null` — réglage illisible — rend une liste vide plutôt que de
- * réclamer des pièces peut-être désactivées.
+ * Le verdict, lui, vient du serveur (`company.gate`) — la même fonction qui
+ * garde la porte. Cet écran le rejouait, et les deux ont divergé : « Activer le
+ * compte » s'allumait sur un KBIS déposé mais non vérifié, et le serveur
+ * répondait 409. Un bouton qui promet ce que le serveur refuse est pire qu'un
+ * bouton grisé.
  */
+const BLOCKER_SENTENCES: Readonly<Record<ActivationBlocker, string>> = {
+  identite_legale:
+    "Raison sociale, forme juridique et SIRET sont nécessaires : sans eux, il n'y a rien à facturer.",
+  telephone: 'Aucun interlocuteur joignable : renseignez au moins un numéro de téléphone.',
+  tva: 'Le numéro de TVA intracommunautaire manque.',
+  kbis_absent: "L'extrait KBIS n'a pas encore été déposé.",
+  kbis_non_verifie:
+    "L'extrait KBIS est déposé mais pas encore vérifié : ouvrez-le, comparez-le à l'identité, puis confirmez.",
+  facturation: "L'adresse de facturation manque.",
+  livraison: 'Aucune adresse de livraison enregistrée.',
+};
+
+/** Quelle pièce porte quel empêchement — pour ouvrir la liste sur le bon geste. */
+const BLOCKER_STEPS: Readonly<Record<ActivationBlocker, StepKey>> = {
+  identite_legale: 'legal',
+  telephone: 'legal',
+  tva: 'tva',
+  kbis_absent: 'kbis',
+  kbis_non_verifie: 'kbis_verify',
+  facturation: 'billing',
+  livraison: 'delivery',
+};
+
 /**
  * Ce qu'il manque pour **OUVRIR** — deux champs, pas douze.
  *
@@ -106,90 +141,51 @@ export function openingSteps(
   return missing.map((key) => ({ key, ...STEP_TEXTS[key] }));
 }
 
-export function activationSteps(
-  company: AdminCompanyDetail | null,
-  settings: PlatformSettings | null,
-): readonly ActivationStep[] {
-  if (settings === null) {
+/**
+ * Ce qu'il **reste** à compléter pour activer — **habillage** du verdict serveur.
+ *
+ * Aucune règle ici : `company.gate` dit ce qui manque et ce qui bloque, on ne
+ * fait que lui donner un titre et un bouton. `null` (compte pas encore ouvert)
+ * rend une liste vide — c'est `openingSteps` qui parle à ce moment-là.
+ */
+export function activationSteps(company: AdminCompanyDetail | null): readonly ActivationStep[] {
+  if (company === null) {
     return [];
   }
-  // L'identité légale n'est pas une pièce configurable : sans SIRET, il n'y a
-  // rien à facturer. Elle ouvre donc la liste, et ne se désactive pas.
-  const legal: ActivationStep[] = hasLegalIdentity(company)
-    ? []
-    : [{ key: 'legal' as const, ...STEP_TEXTS.legal }];
+  // L'identité légale n'est pas une pièce configurable ; elle ouvre la liste
+  // quand le serveur la signale (SIRET absent ⇒ rien à facturer).
+  const legal: ActivationStep[] = company.gate.blocking.includes('identite_legale')
+    ? [{ key: 'legal' as const, ...STEP_TEXTS.legal }]
+    : [];
 
-  const steps = PIECES.filter(
-    (piece) => settings[piece] !== 'hidden' && !isPieceDone(company, piece),
-  ).map((piece) => ({ key: piece, ...STEP_TEXTS[piece] }));
+  // Le KBIS déposé mais non vérifié n'appelle pas « déposer » : le fichier est
+  // là. Réclamer un dépôt devant une pièce présente envoie chercher ce qui est
+  // sous les yeux — c'est le manque le moins devinable du dossier.
+  const kbisDeposited = company.gate.blocking.includes('kbis_non_verifie');
+  const pieces = company.gate.checklist
+    .filter((check) => check.mode !== 'hidden' && !check.done)
+    .map((check) => {
+      const key: StepKey = check.piece === 'kbis' && kbisDeposited ? 'kbis_verify' : check.piece;
+      return { key, ...STEP_TEXTS[key] };
+    });
 
   // La condition de règlement n'est pas une pièce : elle ne « manque » jamais
   // (il y en a toujours une par défaut), elle se CONFIRME. Elle reste donc en
   // fin de liste, toujours.
-  return [...legal, ...steps, { key: 'payment' as const, ...STEP_TEXTS.payment }];
+  return [...legal, ...pieces, { key: 'payment' as const, ...STEP_TEXTS.payment }];
 }
 
 /**
- * Les pièces **requises** encore absentes — miroir du gate serveur d'activation.
- *
- * Un compte qui n'existe pas encore ne s'active pas : `company` à `null` rend la
- * liste des pièces requises, ce qui interdit le CTA d'activation.
+ * Ce qui bloque, en **une** phrase : la première, celle qu'on corrigera d'abord.
+ * Vide quand rien ne bloque — un bouton grisé muet est une impasse, mais une
+ * phrase sous un bouton actif est du bruit.
  */
-export function missingRequiredPieces(
-  company: AdminCompanyDetail | null,
-  settings: PlatformSettings | null,
-): readonly ActivationPiece[] {
-  if (settings === null) {
-    return [];
-  }
-  return PIECES.filter((piece) => settings[piece] === 'required' && !isPieceDone(company, piece));
+export function blockedReason(company: AdminCompanyDetail | null): string {
+  const first = company?.gate.blocking[0];
+  return first === undefined ? '' : BLOCKER_SENTENCES[first];
 }
 
-/** Une pièce est-elle là ? Sans société, aucune ne l'est. */
-function isPieceDone(company: AdminCompanyDetail | null, piece: ActivationPiece): boolean {
-  if (company === null) {
-    return false;
-  }
-  switch (piece) {
-    case 'tva':
-      // Non assujetti : la pièce n'a pas lieu d'être, donc elle ne manque pas.
-      return !company.vatNumberRequired || company.tvaIntracom.trim() !== '';
-    case 'kbis':
-      // **Vérifié**, pas « déposé » — la même règle que la porte serveur. La
-      // lire autrement ici allumerait « Activer le compte » sur un extrait que
-      // personne n'a ouvert, et le serveur répondrait 409 : un bouton qui
-      // promet ce que le serveur refuse est pire qu'un bouton grisé.
-      return company.kbis?.certified === true;
-    case 'billing':
-      return company.addresses.billing !== null;
-    case 'delivery':
-      return company.addresses.deliveries.length > 0;
-  }
-}
-
-/**
- * L'identité **du greffe** est-elle au complet ? Elle n'est pas une pièce
- * configurable : sans elle, il n'y a rien à facturer, et le serveur refuse
- * d'activer. L'enseigne n'en fait pas partie — c'est le nom d'usage, exigé dès
- * l'ouverture.
- */
-export function hasLegalIdentity(company: AdminCompanyDetail | null): boolean {
-  return (
-    company !== null &&
-    company.raisonSociale.trim() !== '' &&
-    company.formeJuridique.trim() !== '' &&
-    company.siret.trim() !== ''
-  );
-}
-
-/**
- * Y a-t-il **quelqu'un à appeler** ? Au moins un interlocuteur avec un numéro.
- *
- * Ce n'est pas une pièce administrative, c'est la condition d'une livraison :
- * activer une société qu'on ne peut pas joindre, c'est envoyer un camion devant
- * une porte fermée sans pouvoir prévenir. Le serveur refuse ; l'écran doit dire
- * la même chose que lui, jamais mieux.
- */
-export function isReachable(company: AdminCompanyDetail | null): boolean {
-  return company !== null && company.contacts.some((contact) => contact.phone.trim() !== '');
+/** L'étape sur laquelle ouvrir quand on clique « pourquoi ça bloque ». */
+export function stepForBlocker(blocker: ActivationBlocker): StepKey {
+  return BLOCKER_STEPS[blocker];
 }
