@@ -463,7 +463,13 @@ La 4 suit immédiatement, sinon l'écran offre des boutons qui rendent `403`.
       _avant_ de déployer la tranche 3.
 - [ ] **Les migrations sont appliquées avant le premier boot.** Constaté le
       2026-08-12 : `ensureBootstrapAdmin` échoue sur une colonne manquante,
-      l'échec est **attrapé et journalisé** pour ne pas tuer l'API — et le
-      symptôme visible devient « Aucun accès » pour l'admin racine, ce qui
-      n'oriente vers rien. À reprendre en tranche 7 : un boot incapable de semer
-      l'admin racine ne devrait pas passer inaperçu.
+      l'échec est **attrapé** pour ne pas tuer l'API — et le symptôme visible
+      devenait « Aucun accès » pour l'admin racine, ce qui n'orientait vers rien.
+      **Corrigé le jour même** : l'échec est désormais publié dans le bulletin de
+      démarrage (`infra/startup/`), au niveau `error`, avec sa cause la plus
+      probable. Un boot dégradé se lit maintenant dans les cinq premières lignes
+      de log.
+- [ ] **Lire le bulletin de démarrage après chaque déploiement.** Il liste les
+      canaux éteints — identité, courrier, paiement, stockage — chacun avec le
+      réglage à poser. C'est le contrôle qui remplace « espérer que le secret
+      soit bien arrivé ».
