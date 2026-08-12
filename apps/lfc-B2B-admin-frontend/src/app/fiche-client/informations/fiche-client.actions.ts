@@ -90,6 +90,11 @@ export class FicheClientActions {
     );
   }
 
+  /** Rend l'accès à un compte suspendu par décision humaine. */
+  reactivate(company: AdminCompanyDetail): Promise<boolean> {
+    return this.run(() => this.service.reactivate(company.id), 'Compte réactivé.');
+  }
+
   /** Accorde (ou retire) les crédits de règlement — l'ensemble complet part. */
   grantTerms(company: AdminCompanyDetail, terms: readonly DeferredTerm[]): Promise<boolean> {
     return this.run(

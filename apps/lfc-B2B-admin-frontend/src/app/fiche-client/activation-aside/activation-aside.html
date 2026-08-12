@@ -34,6 +34,44 @@
     @if (blockedReason(); as reason) {
       <p class="why">{{ reason }}</p>
     }
+  } @else if (suspended()) {
+    <p class="kicker">
+      <fold-icon name="alert" [size]="15" />
+      Compte suspendu
+    </p>
+
+    @if (liftsByItself()) {
+      <!-- Aucun bouton : la reprise est automatique. En proposer un laisserait
+           croire qu'il existe un chemin qui contourne la vérification. -->
+      <p class="lede">
+        L'accès est coupé parce que la <strong>vérification du KBIS a été retirée</strong>. Il
+        revient tout seul dès qu'un extrait est vérifié à nouveau, sur la carte Identité.
+      </p>
+    } @else {
+      <p class="lede">
+        L'accès a été coupé par l'équipe : ce client ne peut plus commander. Le réactiver lui rend
+        la commande immédiatement.
+      </p>
+      <button foldButton intent="primary" icon="check" (click)="reactivate.emit()">
+        Réactiver le compte
+      </button>
+    }
+    @if (activationLabel(); as trace) {
+      <p class="trace">{{ trace }}</p>
+    }
+  } @else if (terminated()) {
+    <p class="kicker">
+      <fold-icon name="close" [size]="15" />
+      Compte résilié
+    </p>
+    <!-- État terminal, et l'écran le dit : rien à cliquer, on rouvre un compte. -->
+    <p class="lede">
+      La relation commerciale est close. L'historique reste consultable ; reprendre avec ce client
+      passe par l'ouverture d'un nouveau compte.
+    </p>
+    @if (activationLabel(); as trace) {
+      <p class="trace">{{ trace }}</p>
+    }
   } @else {
     <p class="kicker">
       <fold-icon name="check" [size]="15" />
@@ -43,5 +81,10 @@
       Ce client peut commander. Les pièces restent modifiables : compléter un dossier actif ne le
       remet pas en attente.
     </p>
+    <!-- Qui a engagé l'ouverture, et quand. Même exigence que la vérification du
+         KBIS : ouvrir la commande à un client est un acte, pas un réglage. -->
+    @if (activationLabel(); as trace) {
+      <p class="trace">{{ trace }}</p>
+    }
   }
 </fold-card>

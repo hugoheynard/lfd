@@ -216,11 +216,14 @@
         @if (!fiche.draft()) {
           <app-activation-aside
             asideRight
-            [pending]="fiche.isPending()"
+            [status]="fiche.status()"
             [canActivate]="fiche.canActivate()"
             [blockedReason]="fiche.blockedReason()"
             [remaining]="fiche.libSteps().length"
+            [activation]="fiche.company()?.activation ?? null"
+            [suspensionCause]="fiche.company()?.suspensionCause ?? null"
             (activate)="fiche.activate()"
+            (reactivate)="fiche.reactivate()"
           />
         }
       </fold-aside-layout>

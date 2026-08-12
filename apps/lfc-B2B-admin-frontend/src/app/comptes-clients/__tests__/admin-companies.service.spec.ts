@@ -75,6 +75,8 @@ describe('AdminCompaniesService', () => {
 
   it('GET /admin/companies/:id renvoie la fiche détail', async () => {
     const detail: AdminCompanyDetail = {
+      activation: null,
+      suspensionCause: null,
       ...company,
       vatNumberRequired: true,
       addresses: { billing: null, deliveries: [] },

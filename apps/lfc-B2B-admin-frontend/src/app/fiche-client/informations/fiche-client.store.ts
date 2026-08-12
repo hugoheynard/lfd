@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type {
   BillingAddressView,
+  CompanyStatus,
   DeliveryAddressView,
   PickupAddressView,
   PieceMode,
@@ -110,6 +111,14 @@ export class FicheClientStore {
 
   /** Le compte est-il en attente d'activation ? (Le CTA n'a de sens que là.) */
   readonly isPending = computed(() => this.company()?.status === 'pending');
+
+  /**
+   * Où en est le compte — les **quatre** états, pas « en attente ou pas ». Le
+   * rail affichait « Compte actif » à un compte suspendu, en contradiction avec
+   * le badge d'en-tête de la fiche. Défaut `pending` : une fiche pas encore
+   * chargée n'affirme rien de plus que le point de départ.
+   */
+  readonly status = computed<CompanyStatus>(() => this.company()?.status ?? 'pending');
 
   /**
    * Le compte peut-il être activé ? Le bouton doit dire la même chose que le

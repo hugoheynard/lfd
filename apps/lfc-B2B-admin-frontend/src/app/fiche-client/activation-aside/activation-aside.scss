@@ -46,3 +46,14 @@
   font-size: var(--fold-text-sm);
   line-height: 1.4;
 }
+
+// La trace d'engagement (qui a ouvert, quand) : présente, jamais bruyante —
+// on la lit quand on la cherche, elle ne dispute pas la place au geste.
+.trace {
+  margin: 0;
+  padding-top: var(--fold-space-xs);
+  border-top: 1px solid var(--fold-color-border-subtle, var(--fold-color-border));
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  line-height: 1.4;
+}

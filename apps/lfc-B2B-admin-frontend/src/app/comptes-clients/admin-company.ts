@@ -47,11 +47,11 @@ export interface Kbis {
    * le titre peuvent être vides : le `sub` n'était alors rattaché à aucune fiche
    * de l'annuaire, et on préfère l'identifiant brut à un nom inventé.
    */
-  readonly certifiedBy: Certifier | null;
+  readonly certifiedBy: StaffActor | null;
 }
 
-/** L'agent qui a engagé sa parole sur l'extrait. */
-export interface Certifier {
+/** L'agent qui a engagé sa parole — sur un extrait vérifié, sur un compte ouvert. */
+export interface StaffActor {
   readonly sub: string;
   readonly name: string;
   readonly role: string;
@@ -105,7 +105,28 @@ export interface AdminCompanyDetail extends AdminCompany {
    * « retrait » : c'est l'état de tout le portefeuille existant.
    */
   readonly fulfillmentPreference: FulfillmentPreferenceView;
+  /**
+   * Quand le compte a été ouvert, et par qui. `null` s'il ne l'a jamais été ;
+   * `by` à `null` pour les activations antérieures à la trace — on affiche alors
+   * la date seule, pas un auteur inventé.
+   */
+  readonly activation: ActivationTrace | null;
+  /**
+   * Ce qui a coupé l'accès, `null` hors suspension. L'écran s'en sert pour ne
+   * pas proposer un geste inutile : une suspension née du retrait de vérification
+   * se lève en re-vérifiant l'extrait, pas en cliquant « Réactiver ».
+   */
+  readonly suspensionCause: SuspensionCause | null;
 }
+
+/** L'ouverture du compte, datée et signée. */
+export interface ActivationTrace {
+  readonly at: string;
+  readonly by: StaffActor | null;
+}
+
+/** Pourquoi l'accès est coupé — ce qui décide de la façon de le rendre. */
+export type SuspensionCause = 'staff' | 'kbis_revoked';
 
 /** Libellé FR d'un statut de société. */
 export const STATUS_LABELS: Readonly<Record<CompanyStatus, string>> = {

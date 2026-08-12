@@ -7,6 +7,8 @@ import { toContactCards, toIdentityView } from '../admin-company-view';
 
 function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
   return {
+    activation: null,
+    suspensionCause: null,
     id: 'c1',
     reference: 'C-ADM001',
     raisonSociale: 'Café des Halles SAS',

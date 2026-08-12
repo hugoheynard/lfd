@@ -247,6 +247,20 @@ export class AdminCompaniesService {
     );
   }
 
+  /**
+   * **Réactive** un compte suspendu. Réservé à la suspension décidée par un
+   * humain : celle qu'a provoquée le retrait de vérification du KBIS se lève
+   * toute seule à la re-vérification, sans passer par ici.
+   */
+  async reactivate(companyId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/status`, {
+        action: 'reactivate',
+        reason: '',
+      }),
+    );
+  }
+
   /** Ajoute une adresse de livraison. */
   async addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<void> {
     await firstValueFrom(

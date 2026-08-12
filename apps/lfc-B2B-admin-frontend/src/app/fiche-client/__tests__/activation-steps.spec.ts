@@ -14,6 +14,8 @@ const ALL_REQUIRED: PlatformSettings = {
 /** Une société dont tout est fait — on retire ensuite ce qu'on veut tester. */
 function complete(overrides: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
   return {
+    activation: null,
+    suspensionCause: null,
     id: 'cmp_1',
     reference: 'C-000001',
     raisonSociale: 'La Folie Douce',

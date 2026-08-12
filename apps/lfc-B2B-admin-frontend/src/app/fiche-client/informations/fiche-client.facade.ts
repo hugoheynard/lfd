@@ -45,6 +45,8 @@ export class FicheClientFacade {
   readonly libSteps = this.store.libSteps;
   readonly ready = this.store.ready;
   readonly isPending = this.store.isPending;
+  /** Les quatre états du compte — le rail droit les distingue tous. */
+  readonly status = this.store.status;
   readonly canActivate = this.store.canActivate;
   readonly blockedReason = this.store.blockedReason;
 
@@ -109,6 +111,11 @@ export class FicheClientFacade {
   /** Retire la certification posée par erreur. */
   revokeKbisCertification(): Promise<void> {
     return this.mutate((company) => this.actions.revokeKbisCertification(company));
+  }
+
+  /** Réactive un compte suspendu (suspension staff uniquement). */
+  reactivate(): Promise<void> {
+    return this.mutate((company) => this.actions.reactivate(company));
   }
 
   grantTerms(terms: readonly DeferredTerm[]): Promise<void> {
