@@ -60,14 +60,15 @@ export class FicheClientShell {
   private readonly router = inject(Router);
 
   /**
-   * Densité de la barre : `compact` sur un écran étroit. `comfortable` y coûte
-   * une hauteur de rangée pour rien — et sur une barre horizontale qui défile
-   * déjà, chaque pixel de padding est un onglet de moins visible.
+   * Barre repliée en accordéon d'icônes sur un écran étroit : chaque onglet
+   * tombe à son icône, sauf l'actif qui garde son libellé.
+   *
+   * Une barre horizontale qui déborde devient défilante — donc des onglets
+   * qu'on ne voit qu'en balayant, sans savoir qu'ils sont là. Repliée, ils
+   * tiennent tous à l'écran, et le seul libellé qui compte vraiment — celui de
+   * la page où l'on est — reste lisible.
    */
-  protected readonly navSize = computed<'compact' | 'comfortable'>(() =>
-    this.narrow() ? 'compact' : 'comfortable',
-  );
-  private readonly narrow = narrowViewport();
+  protected readonly navCollapsed = narrowViewport();
 
   /** Le nom d'usage de la société — enseigne, à défaut raison sociale. */
   protected readonly name = signal<string>('');
