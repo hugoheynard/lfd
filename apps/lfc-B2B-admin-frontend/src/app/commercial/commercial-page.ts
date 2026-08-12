@@ -8,6 +8,7 @@ import {
   type FoldIconName,
   type FoldViewNavItem,
 } from 'fold-ng';
+import { narrowViewport } from '../shared/viewport/narrow-viewport';
 
 /** Un onglet, plus ce que la page doit en dire — titre et intro vivent ICI. */
 interface CommercialTab extends FoldViewNavItem {
@@ -88,6 +89,16 @@ const TABS: CommercialTab[] = [
 })
 export class CommercialPage {
   private readonly router = inject(Router);
+
+  /**
+   * Densité de la barre : `compact` sur un écran étroit. `comfortable` y coûte
+   * une hauteur de rangée pour rien — et sur une barre horizontale qui défile
+   * déjà, chaque pixel de padding est un onglet de moins visible.
+   */
+  protected readonly navSize = computed<'compact' | 'comfortable'>(() =>
+    this.narrow() ? 'compact' : 'comfortable',
+  );
+  private readonly narrow = narrowViewport();
 
   protected readonly tabs: FoldViewNavItem[] = TABS;
 

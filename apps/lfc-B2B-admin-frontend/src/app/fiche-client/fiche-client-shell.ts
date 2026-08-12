@@ -20,6 +20,7 @@ import { companyDisplayName } from '@lfd/contracts';
 import { PinnedAccountsStore, MAX_PINNED } from '../commercial/cockpit/pinned-store';
 import { NotifyService } from '../notify.service';
 import { AdminCompaniesService } from '../comptes-clients/admin-companies.service';
+import { narrowViewport } from '../shared/viewport/narrow-viewport';
 
 /**
  * La **coquille d'un compte client** : un en-tête qui porte le nom de la société
@@ -57,6 +58,16 @@ export class FicheClientShell {
   private readonly pins = inject(PinnedAccountsStore);
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
+
+  /**
+   * Densité de la barre : `compact` sur un écran étroit. `comfortable` y coûte
+   * une hauteur de rangée pour rien — et sur une barre horizontale qui défile
+   * déjà, chaque pixel de padding est un onglet de moins visible.
+   */
+  protected readonly navSize = computed<'compact' | 'comfortable'>(() =>
+    this.narrow() ? 'compact' : 'comfortable',
+  );
+  private readonly narrow = narrowViewport();
 
   /** Le nom d'usage de la société — enseigne, à défaut raison sociale. */
   protected readonly name = signal<string>('');
