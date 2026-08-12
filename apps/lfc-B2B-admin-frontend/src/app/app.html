@@ -26,27 +26,31 @@
         }
       </a>
 
-      <a
-        fold-menu-item
-        icon="company"
-        label="Comptes clients"
-        routerLink="/comptes-clients"
-        routerLinkActive
-        #comptesRla="routerLinkActive"
-        [active]="comptesRla.isActive"
-        (click)="mobileNavOpen.set(false)"
-      ></a>
+      @if (canSeeCompanies()) {
+        <a
+          fold-menu-item
+          icon="company"
+          label="Comptes clients"
+          routerLink="/comptes-clients"
+          routerLinkActive
+          #comptesRla="routerLinkActive"
+          [active]="comptesRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
 
-      <a
-        fold-menu-item
-        icon="calendar"
-        label="Commercial"
-        routerLink="/commercial"
-        routerLinkActive
-        #commercialRla="routerLinkActive"
-        [active]="commercialRla.isActive"
-        (click)="mobileNavOpen.set(false)"
-      ></a>
+      @if (canSeeCommercial()) {
+        <a
+          fold-menu-item
+          icon="calendar"
+          label="Commercial"
+          routerLink="/commercial"
+          routerLinkActive
+          #commercialRla="routerLinkActive"
+          [active]="commercialRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
 
       <!-- QUI est connecté, quand la session est celle de cette app. Embarqué,
            l'identité appartient au shell et s'affiche là-haut : la répéter ici
@@ -59,17 +63,19 @@
            va pour régler quelque chose et repartir. Au milieu des destinations de
            travail, il pesait autant que « Comptes clients », qu'on ouvre vingt
            fois par jour. -->
-      <a
-        footer
-        fold-menu-item
-        icon="settings"
-        label="Réglages"
-        routerLink="/reglages"
-        routerLinkActive
-        #reglagesRla="routerLinkActive"
-        [active]="reglagesRla.isActive"
-        (click)="mobileNavOpen.set(false)"
-      ></a>
+      @if (canSeeSettings()) {
+        <a
+          footer
+          fold-menu-item
+          icon="settings"
+          label="Réglages"
+          routerLink="/reglages"
+          routerLinkActive
+          #reglagesRla="routerLinkActive"
+          [active]="reglagesRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
 
       <button
         footer
@@ -108,45 +114,63 @@
       </div>
     </div>
 
-    <!-- Contenu routé -->
-    <router-outlet />
+    <!-- Contenu routé. Connecté mais sans aucun droit, on le DIT : une coquille
+         vide ressemblerait à une panne, et la personne appellerait au lieu de
+         demander un accès. -->
+    @if (noAccess()) {
+      <div class="no-access">
+        <h1>Aucun accès</h1>
+        <p>
+          Votre compte est bien connecté, mais aucun périmètre ne lui est attribué dans le
+          back-office. Demandez à un administrateur de vous ouvrir un accès.
+        </p>
+      </div>
+    } @else {
+      <router-outlet />
+    }
 
     <!-- Navigation mobile — grille de tuiles plein écran (le shell ne rend pas de
          tiroir, `mobileNav="none"`). Même `mobileNavOpen` que le burger. -->
     <fold-nav-launcher [(open)]="mobileNavOpen" label="Aller à">
-      <a
-        fold-nav-tile
-        variant="filled"
-        icon="company"
-        label="Comptes clients"
-        routerLink="/comptes-clients"
-        routerLinkActive
-        #comptesTile="routerLinkActive"
-        [active]="comptesTile.isActive"
-        (click)="mobileNavOpen.set(false)"
-      ></a>
-      <a
-        fold-nav-tile
-        variant="filled"
-        icon="calendar"
-        label="Commercial"
-        routerLink="/commercial"
-        routerLinkActive
-        #commercialTile="routerLinkActive"
-        [active]="commercialTile.isActive"
-        (click)="mobileNavOpen.set(false)"
-      ></a>
-      <a
-        fold-nav-tile
-        variant="filled"
-        icon="settings"
-        label="Réglages"
-        routerLink="/reglages"
-        routerLinkActive
-        #reglagesTile="routerLinkActive"
-        [active]="reglagesTile.isActive"
-        (click)="mobileNavOpen.set(false)"
-      ></a>
+      @if (canSeeCompanies()) {
+        <a
+          fold-nav-tile
+          variant="filled"
+          icon="company"
+          label="Comptes clients"
+          routerLink="/comptes-clients"
+          routerLinkActive
+          #comptesTile="routerLinkActive"
+          [active]="comptesTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeCommercial()) {
+        <a
+          fold-nav-tile
+          variant="filled"
+          icon="calendar"
+          label="Commercial"
+          routerLink="/commercial"
+          routerLinkActive
+          #commercialTile="routerLinkActive"
+          [active]="commercialTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeSettings()) {
+        <a
+          fold-nav-tile
+          variant="filled"
+          icon="settings"
+          label="Réglages"
+          routerLink="/reglages"
+          routerLinkActive
+          #reglagesTile="routerLinkActive"
+          [active]="reglagesTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
       <button
         fold-nav-tile
         variant="filled"

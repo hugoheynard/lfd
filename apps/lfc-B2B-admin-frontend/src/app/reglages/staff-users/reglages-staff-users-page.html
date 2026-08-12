@@ -13,7 +13,9 @@
           n'est pas encore branchée : une fiche décrit un accès, elle ne l'ouvre pas.
         </p>
       </div>
-      <button foldButton size="sm" icon="plus" (click)="add()">Ajouter</button>
+      <button *appCan="'staff:write'" foldButton size="sm" icon="plus" (click)="add()">
+        Ajouter
+      </button>
     </div>
 
     <fold-data-table
@@ -57,7 +59,11 @@
             <span hidden></span>
           </fold-inline-confirm>
         } @else {
-          <fold-dropdown placement="bottom-end" ariaLabel="Actions de l'utilisateur">
+          <fold-dropdown
+            *appCan="'staff:write'"
+            placement="bottom-end"
+            ariaLabel="Actions de l'utilisateur"
+          >
             <button
               foldPopoverTrigger="menu"
               type="button"

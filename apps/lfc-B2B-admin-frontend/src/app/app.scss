@@ -132,3 +132,24 @@ fold-app-shell {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Connecté, mais aucun périmètre : un message centré plutôt qu'une page vide. */
+.no-access {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3);
+  max-width: 40rem;
+  margin: var(--fold-space-9) auto;
+  padding: 0 var(--fold-space-5);
+  text-align: center;
+
+  h1 {
+    margin: 0;
+    font-size: var(--fold-font-size-xl);
+  }
+
+  p {
+    margin: 0;
+    color: var(--fold-text-muted);
+  }
+}

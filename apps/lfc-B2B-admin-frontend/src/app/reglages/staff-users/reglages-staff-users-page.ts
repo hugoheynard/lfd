@@ -17,6 +17,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
+import { CanDirective } from '../../shared/can/can.directive';
 import { STATUS_VARIANT } from './staff-roles';
 import { StaffUserPanel, type StaffUserPanelData } from './staff-user-panel/staff-user-panel';
 import { StaffUsersService } from './staff-users.service';
@@ -45,6 +46,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldDropdownItemComponent,
     FoldInlineConfirmComponent,
     FoldPopoverTriggerDirective,
+    CanDirective,
   ],
   templateUrl: './reglages-staff-users-page.html',
   styleUrl: './reglages-staff-users-page.scss',

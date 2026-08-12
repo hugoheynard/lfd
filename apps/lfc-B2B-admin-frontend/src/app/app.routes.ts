@@ -1,9 +1,12 @@
 import { type Routes } from '@angular/router';
 
+import { permissionGuard } from './auth/permission.guard';
+
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'comptes-clients' },
   {
     path: 'comptes-clients',
+    canActivate: [permissionGuard('companies:read')],
     title: 'Comptes clients — LFC B2B admin',
     loadComponent: () =>
       import('./comptes-clients/comptes-clients-page').then((m) => m.ComptesClientsPage),
@@ -12,6 +15,7 @@ export const routes: Routes = [
     // AVANT `comptes-clients/:id` : sans cela « nouveau » serait lu comme un
     // identifiant de société, et la page afficherait « Société introuvable ».
     path: 'comptes-clients/nouveau',
+    canActivate: [permissionGuard('companies:write')],
     title: 'Nouveau compte client — LFC B2B admin',
     loadComponent: () =>
       import('./fiche-client/nouveau-compte-shell').then((m) => m.NouveauCompteShell),
@@ -21,6 +25,7 @@ export const routes: Routes = [
     // friction » n'a pas d'entreprise, donc pas de fiche où la loger. Une route
     // de premier niveau les couvre toutes les deux.
     path: 'commandes/:id',
+    canActivate: [permissionGuard('orders:read')],
     title: 'Commande — LFC B2B admin',
     loadComponent: () =>
       import('./commandes/commande-page/commande-page').then((m) => m.AdminCommandePage),
@@ -31,6 +36,7 @@ export const routes: Routes = [
     // caméra refuse de lire. Chaque caractère de plus densifie les modules, donc
     // fragilise le scan — ce n'est pas de la coquetterie d'URL.
     path: 'retrait/:token',
+    canActivate: [permissionGuard('orders:write')],
     title: 'Retrait — LFC B2B admin',
     loadComponent: () => import('./retrait/retrait-page/retrait-page').then((m) => m.RetraitPage),
   },
@@ -41,6 +47,7 @@ export const routes: Routes = [
     // Une coquille, cinq vues routées — l'en-tête et l'épingle appartiennent à
     // la coquille.
     path: 'comptes-clients/:id',
+    canActivate: [permissionGuard('companies:read')],
     title: 'Compte client — LFC B2B admin',
     loadComponent: () =>
       import('./fiche-client/fiche-client-shell').then((m) => m.FicheClientShell),
@@ -74,6 +81,7 @@ export const routes: Routes = [
   },
   {
     path: 'reglages',
+    canActivate: [permissionGuard('settings:read')],
     title: 'Réglages — LFC B2B admin',
     loadComponent: () => import('./reglages/reglages-page').then((m) => m.ReglagesPage),
     children: [
@@ -96,6 +104,7 @@ export const routes: Routes = [
       },
       {
         path: 'commercial',
+        canActivate: [permissionGuard('growth:read')],
         title: 'Commercial — LFC B2B admin',
         loadComponent: () =>
           import('./reglages/commercial/reglages-commercial-page').then(
@@ -152,6 +161,7 @@ export const routes: Routes = [
     // inviteraient à en sortir, et voleraient la largeur au rail d'historique.
     // Le retour se fait par un lien explicite, pas par un onglet resté allumé.
     path: 'rendez-vous/:appointmentId',
+    canActivate: [permissionGuard('appointments:read')],
     title: 'Rendez-vous — LFC B2B admin',
     loadComponent: () =>
       import('./commercial/calendrier/rendez-vous/rendez-vous-page').then((m) => m.RendezVousPage),

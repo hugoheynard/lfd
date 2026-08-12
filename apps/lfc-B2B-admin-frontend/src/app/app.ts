@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   FoldAppShellComponent,
@@ -13,6 +20,7 @@ import {
   FoldToastContainerComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from './auth/permissions.store';
 import { StaffAuth } from './auth/staff-auth';
 import { StaffLoginPage } from './auth/staff-login/staff-login';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
@@ -68,6 +76,25 @@ export class App {
   protected readonly mobileNavOpen = signal(false);
 
   private readonly auth = inject(StaffAuth);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * Le menu se déduit des **permissions**, jamais du rôle : le jour où une
+   * dérogation ouvre la croissance à quelqu'un, l'entrée apparaît sans qu'on y
+   * touche.
+   */
+  protected readonly canSeeCompanies = computed(() => this.permissions.can('companies:read'));
+  protected readonly canSeeCommercial = computed(() => this.permissions.can('growth:read'));
+  protected readonly canSeeSettings = computed(() => this.permissions.can('settings:read'));
+
+  /**
+   * Connecté, mais l'annuaire ne nous connaît pas — ou plus. On le **dit** :
+   * une coquille vide et un menu sans entrées ressembleraient à une panne, et
+   * la personne appellerait au lieu de demander un accès.
+   */
+  protected readonly noAccess = computed(
+    () => this.permissions.loaded() && this.permissions.permissions().length === 0,
+  );
 
   /** Embarqué dans la suite (iframe) ? → rail `secondary` ; sinon `primary`. */
   protected readonly hosted = inject(SuiteEmbed).hosted;
@@ -89,6 +116,16 @@ export class App {
   );
 
   private readonly router = inject(Router);
+
+  constructor() {
+    // La lecture ne peut pas partir avant la session : sans jeton, `/admin/me`
+    // rendrait 401 et on conclurait « aucun accès » à tort.
+    effect(() => {
+      if (!this.resolving() && !this.locked()) {
+        void this.permissions.ensureLoaded();
+      }
+    });
+  }
 
   /**
    * Déconnexion. Standalone, elle ferme la vraie session Auth0 (retour sur la
