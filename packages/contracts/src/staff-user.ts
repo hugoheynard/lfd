@@ -71,6 +71,25 @@ export interface StaffUserView {
   readonly jobTitle: string;
   readonly role: StaffRole;
   readonly status: StaffStatus;
+  /**
+   * Quand le dernier lien d'invitation a été émis (ISO), `null` si jamais.
+   * Ré-inviter l'écrase : émettre un ticket tue le précédent.
+   */
+  readonly invitedAt: string | null;
+  /**
+   * L'invitation est-elle **périmée** ? Calculée par le **serveur**, à la
+   * lecture.
+   *
+   * Elle pourrait se déduire de `invitedAt` côté écran — et c'est précisément
+   * ce qu'il ne faut pas faire : le nombre de jours est une règle, pas une
+   * constante d'affichage. Écrite dans le front, elle divergerait le jour où on
+   * la change, et l'écran annoncerait un accès encore ouvert que le serveur a
+   * déjà cessé d'honorer.
+   *
+   * Toujours `false` hors du statut `invited` : un compte actif n'a pas
+   * d'invitation à périmer.
+   */
+  readonly invitationExpired: boolean;
   readonly overrides: readonly StaffOverride[];
   readonly permissions: readonly StaffPermission[];
 }

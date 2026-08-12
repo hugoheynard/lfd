@@ -1021,6 +1021,12 @@ model StaffUser {
   /// Nulle tant que la personne n'est jamais entrée.
   auth0Id String? @unique @map("auth0_id")
 
+  /// Quand le **dernier** lien d'invitation a été émis. Ré-inviter l'écrase :
+  /// un ticket est à usage unique, émettre le suivant tue le précédent, donc
+  /// seule la dernière date décrit un accès encore réclamable. Nulle tant que
+  /// personne n'a invité.
+  invitedAt DateTime? @map("invited_at")
+
   /// Les écarts au rôle, pour cette personne.
   overrides StaffPermissionOverride[]
 

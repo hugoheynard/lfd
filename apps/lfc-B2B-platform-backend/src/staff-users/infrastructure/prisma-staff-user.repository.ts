@@ -13,6 +13,8 @@ import { Injectable } from "@nestjs/common";
 
 import { AppConfig } from "../../infra/config/app-config.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
+import { Clock } from "../../infra/time/clock.js";
+import { isInvitationExpired } from "../../shared/invitation/invitation-expiry.js";
 import { bootstrapAdmin } from "../domain/bootstrap-admin.js";
 import {
   assertEditAllowed,
@@ -38,6 +40,7 @@ interface StaffRow {
   readonly jobTitle: string;
   readonly role: StaffRole;
   readonly status: StaffStatus;
+  readonly invitedAt: Date | null;
   readonly overrides: readonly OverrideRow[];
 }
 
@@ -50,6 +53,7 @@ const SELECT = {
   jobTitle: true,
   role: true,
   status: true,
+  invitedAt: true,
   overrides: { select: { resource: true, action: true, effect: true } },
 } as const;
 
@@ -57,7 +61,7 @@ const SELECT = {
  * La vue porte l'**effectif** déjà résolu : l'écran affiche ce qu'on lui donne au
  * lieu de rejouer la formule. Deux implémentations de la même règle divergent.
  */
-function toView(row: StaffRow): StaffUserView {
+function toView(row: StaffRow, now: Date): StaffUserView {
   const overrides = row.overrides.map((entry) => ({ ...entry }));
   return {
     id: row.id,
@@ -68,6 +72,14 @@ function toView(row: StaffRow): StaffUserView {
     jobTitle: row.jobTitle,
     role: row.role,
     status: row.status,
+    invitedAt: row.invitedAt?.toISOString() ?? null,
+    // La péremption ne vaut que pour une invitation en attente : une fois
+    // entrée, la personne n'a plus de lien à réclamer, et un « invitation
+    // expirée » sur un compte actif serait une alarme mensongère.
+    invitationExpired:
+      row.status === "invited" &&
+      row.invitedAt !== null &&
+      isInvitationExpired(row.invitedAt, now),
     overrides,
     permissions: resolveStaffPermissions(row.role, overrides),
   };
@@ -96,6 +108,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
+    private readonly clock: Clock,
   ) {
     super();
   }
@@ -105,7 +118,8 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
       select: SELECT,
     });
-    return rows.map(toView);
+    const now = this.clock.now();
+    return rows.map((row) => toView(row, now));
   }
 
   async me(id: string): Promise<StaffMeView> {
@@ -113,7 +127,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     if (row === null) {
       throw new StaffUserNotFoundError(id);
     }
-    const view = toView(row);
+    const view = toView(row, this.clock.now());
     return {
       id: view.id,
       firstName: view.firstName,

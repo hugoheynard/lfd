@@ -2,6 +2,7 @@ import type { StaffRole } from "@lfd/contracts";
 import { Test } from "@nestjs/testing";
 
 import { AppConfig } from "../../infra/config/app-config.js";
+import { Clock } from "../../infra/time/clock.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL as BOOTSTRAP_ADMIN_EMAIL } from "../domain/bootstrap-admin.js";
 import {
@@ -77,6 +78,9 @@ async function buildRepo(prisma: object): Promise<StaffUserRepository> {
         provide: AppConfig,
         useValue: { bootstrapAdminEmail: (): string => BOOTSTRAP_ADMIN_EMAIL },
       },
+      // Horloge figée : la vue calcule la péremption d'invitation, et un test
+      // qui lit l'heure du système finit par échouer un jour précis.
+      { provide: Clock, useValue: { now: (): Date => new Date("2026-08-12T12:00:00.000Z") } },
       { provide: StaffUserRepository, useClass: PrismaStaffUserRepository },
     ],
   }).compile();
