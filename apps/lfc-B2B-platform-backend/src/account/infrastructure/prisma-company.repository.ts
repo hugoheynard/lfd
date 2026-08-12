@@ -4,7 +4,7 @@ import { CompanyStatus, CustomerRole } from "../../infra/database/client/client.
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { IdGenerator } from "../../infra/id/id-generator.js";
 import { Clock } from "../../infra/time/clock.js";
-import { Company } from "../domain/entities/company.js";
+import { Company, type CompanySoftState } from "../domain/entities/company.js";
 import { SiretAlreadyRegisteredError } from "../domain/errors/account-errors.js";
 import {
   CompanyRepository,
@@ -114,11 +114,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
           formeJuridique: company.formeJuridique,
           siret: company.siretDigits,
           tvaIntracom: company.tvaIntracom,
-          contactPrenom: company.contact.firstName.value,
-          contactNom: company.contact.lastName.value,
-          contactFonction: company.contact.fonction,
-          contactEmail: company.contact.email.value,
-          contactTelephone: company.contact.phone.value,
+          ...contactColumns(company.toPersistence().contact),
           // Déclarée, pas cliente : l'activation est commerciale.
           status: CompanyStatus.pending,
         },
@@ -171,11 +167,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
           formeJuridique: company.formeJuridique,
           siret: company.siretDigits,
           tvaIntracom: company.tvaIntracom,
-          contactPrenom: company.contact.firstName.value,
-          contactNom: company.contact.lastName.value,
-          contactFonction: company.contact.fonction,
-          contactEmail: company.contact.email.value,
-          contactTelephone: company.contact.phone.value,
+          ...contactColumns(company.toPersistence().contact),
           // Déclarée, pas cliente : l'activation reste commerciale.
           status: CompanyStatus.pending,
         },
@@ -199,13 +191,20 @@ export class PrismaCompanyRepository extends CompanyRepository {
       formeJuridique: row.formeJuridique,
       siret: row.siret,
       tvaIntracom: row.tvaIntracom,
-      contact: ContactDetails.create({
-        firstName: row.contactPrenom,
-        lastName: row.contactNom,
-        fonction: row.contactFonction,
-        email: row.contactEmail,
-        phone: row.contactTelephone,
-      }),
+      // Adresse vide ⇒ **aucun détenteur**, et non un contact sans nom : la
+      // société a été ouverte sur son enseigne seule, le rattachement viendra.
+      // Passer ces colonnes vides à `ContactDetails.create` lèverait d'ailleurs
+      // sur l'e-mail, et une fiche parfaitement légitime deviendrait illisible.
+      contact:
+        row.contactEmail.trim() === ""
+          ? null
+          : ContactDetails.create({
+              firstName: row.contactPrenom,
+              lastName: row.contactNom,
+              fonction: row.contactFonction,
+              email: row.contactEmail,
+              phone: row.contactTelephone,
+            }),
       grantedTerms: row.grantedTerms,
       requestedTerm: row.requestedTerm,
       status: row.status,
@@ -246,11 +245,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         formeJuridique: state.formeJuridique,
         siret: state.siret,
         tvaIntracom: state.tvaIntracom,
-        contactPrenom: state.contact.firstName,
-        contactNom: state.contact.lastName,
-        contactFonction: state.contact.fonction,
-        contactEmail: state.contact.email,
-        contactTelephone: state.contact.phone,
+        ...contactColumns(state.contact),
         grantedTerms: [...state.grantedTerms],
         requestedTerm: state.requestedTerm,
         status: state.status,
@@ -355,6 +350,30 @@ function mentionsSiret(target: unknown): boolean {
 /** Une propriété d'un objet d'erreur — sans assertion, et sans supposer sa forme. */
 function readField(source: unknown, key: string): unknown {
   return typeof source === "object" && source !== null ? Reflect.get(source, key) : undefined;
+}
+
+/**
+ * Les cinq colonnes du détenteur, aplaties — **vides** quand il n'y en a pas.
+ *
+ * C'est ici, et nulle part ailleurs, qu'on choisit la chaîne vide : les colonnes
+ * sont non nulles, le domaine dit `null`, et cette traduction est un détail de
+ * schéma. La lecture fait le chemin inverse (adresse vide ⇒ pas de détenteur),
+ * si bien que l'aller-retour est fidèle.
+ */
+function contactColumns(contact: CompanySoftState["contact"]): {
+  contactPrenom: string;
+  contactNom: string;
+  contactFonction: string;
+  contactEmail: string;
+  contactTelephone: string;
+} {
+  return {
+    contactPrenom: contact?.firstName ?? "",
+    contactNom: contact?.lastName ?? "",
+    contactFonction: contact?.fonction ?? "",
+    contactEmail: contact?.email ?? "",
+    contactTelephone: contact?.phone ?? "",
+  };
 }
 
 /** Une chaîne vide n'est pas une valeur : c'est une absence. */

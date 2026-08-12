@@ -9,6 +9,7 @@ import type { AdminCompanyDetailView } from "../ports/admin-company.reader.js";
  */
 export type ActivationBlocker =
   | "identite_legale"
+  | "detenteur"
   | "telephone"
   | "tva"
   | "kbis_absent"
@@ -76,6 +77,14 @@ export function activationGate(
   if (!hasLegalIdentity(company)) {
     blocking.push("identite_legale");
   }
+  // Un compte s'OUVRE sans détenteur — le commercial n'a parfois que l'enseigne,
+  // et l'adresse arrive le lendemain. Il ne devient pas CLIENT sans : activer
+  // sans personne à qui ouvrir l'espace fabriquerait un compte actif où nul ne
+  // peut se connecter, et le client découvrirait au premier besoin qu'on lui a
+  // ouvert une porte sans lui donner la clé.
+  if (!hasHolder(company)) {
+    blocking.push("detenteur");
+  }
   // Un livreur qui cherche une porte doit pouvoir appeler quelqu'un — n'importe
   // lequel des interlocuteurs, pas forcément le détenteur.
   if (!isReachable(company)) {
@@ -132,6 +141,14 @@ function hasLegalIdentity(company: AdminCompanyDetailView): boolean {
     company.formeJuridique.trim() !== "" &&
     company.siret.trim() !== ""
   );
+}
+
+/**
+ * Un détenteur est-il rattaché ? L'**adresse** en décide : c'est elle qui ouvre
+ * l'espace, et c'est le seul champ que le rattachement exige.
+ */
+function hasHolder(company: AdminCompanyDetailView): boolean {
+  return company.primaryContact.email.trim() !== "";
 }
 
 /** Au moins un numéro joignable, sur le détenteur ou sur un interlocuteur. */

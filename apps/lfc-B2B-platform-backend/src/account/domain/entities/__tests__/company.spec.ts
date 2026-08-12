@@ -1,5 +1,6 @@
 import {
   CompanyActivationBlockedError,
+  CompanyAlreadyHasOwnerError,
   InvalidCompanyIdentityError,
 } from "../../errors/account-errors.js";
 import { EmailAddress } from "../../value-objects/email-address.js";
@@ -151,6 +152,41 @@ describe("Company.declare", () => {
   it("reprend le contact fourni sans le redemander", () => {
     // Le créateur EST l'interlocuteur : lui redemander son nom juste après son
     // profil serait de la double saisie.
-    expect(Company.declare(identity, contact).contact.email.value).toBe("camille@pqmarais.fr");
+    expect(Company.declare(identity, contact).contact?.email.value).toBe("camille@pqmarais.fr");
+  });
+
+  it("s'ouvre SANS détenteur — et le dit `null`, pas « quelqu'un sans nom »", () => {
+    // Au téléphone, le commercial n'a souvent que l'enseigne. Un contact aux
+    // champs vides ferait passer « on ne sait pas encore » pour une personne
+    // réelle, et l'activation ne saurait plus les distinguer.
+    expect(Company.declare(identity, null).contact).toBeNull();
+  });
+});
+
+describe("Company.attachHolder", () => {
+  it("comble la place laissée vide à l'ouverture", () => {
+    const company = Company.declare(identity, null);
+
+    company.attachHolder(contact);
+
+    expect(company.contact?.email.value).toBe("camille@pqmarais.fr");
+  });
+
+  it("REFUSE d'écraser un détenteur en place", () => {
+    // En changer est une autre décision : un second détenteur ne doit pas
+    // naître d'un rattachement de rattrapage.
+    const company = Company.declare(identity, contact);
+
+    expect(() => company.attachHolder(contact)).toThrow(CompanyAlreadyHasOwnerError);
+  });
+
+  it("bloque l'activation tant que personne n'est rattaché", () => {
+    // Le compte serait actif et sa porte murée : le client découvrirait au
+    // premier besoin qu'on lui a ouvert un espace sans lui donner la clé.
+    const company = Company.declare(identity, null);
+
+    expect(() => company.activate(new Date("2026-08-12T10:00:00.000Z"), true, AGENT)).toThrow(
+      CompanyActivationBlockedError,
+    );
   });
 });

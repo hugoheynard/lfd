@@ -1,5 +1,6 @@
 import {
   CompanyActivationBlockedError,
+  CompanyAlreadyHasOwnerError,
   CompanyStatusTransitionError,
   InvalidCompanyIdentityError,
 } from "../errors/account-errors.js";
@@ -27,7 +28,17 @@ export interface CompanyIdentityInput {
   readonly tvaIntracom: string;
 }
 
-/** Le contact principal de la société, repris du profil de son créateur. */
+/**
+ * Le contact principal de la société — le **détenteur**, celui qu'on rappelle et
+ * qui se connecte.
+ *
+ * `null` partout où il apparaît est un état légitime, pas une donnée manquante :
+ * une société ouverte au téléphone n'a d'abord qu'une enseigne, et l'adresse du
+ * détenteur arrive plus tard (cf. `attachHolder`). Le représenter par un contact
+ * aux champs vides ferait passer « on ne sait pas encore » pour « quelqu'un sans
+ * nom ni adresse » — et l'activation, qui exige un interlocuteur joignable, ne
+ * saurait plus distinguer les deux.
+ */
 export interface CompanyContact {
   readonly firstName: PersonName;
   readonly lastName: PersonName;
@@ -45,7 +56,8 @@ export interface ReconstituteCompanyInput {
   readonly formeJuridique: string;
   readonly siret: string;
   readonly tvaIntracom: string;
-  readonly contact: CompanyContact;
+  /** `null` tant qu'aucun détenteur n'a été rattaché. */
+  readonly contact: CompanyContact | null;
   /** Terme **convenu** (celui qui s'applique). */
   readonly grantedTerms: readonly DeferredTerm[];
   /** Terme **demandé** par le client, ou `null` (aucune demande en cours). */
@@ -83,13 +95,14 @@ export interface CompanySoftState {
   readonly formeJuridique: string;
   readonly siret: string;
   readonly tvaIntracom: string;
+  /** `null` tant qu'aucun détenteur n'est rattaché — pas un contact vide. */
   readonly contact: {
     readonly firstName: string;
     readonly lastName: string;
     readonly fonction: string;
     readonly email: string;
     readonly phone: string;
-  };
+  } | null;
   readonly grantedTerms: readonly DeferredTerm[];
   readonly requestedTerm: DeferredTerm | null;
   readonly status: CompanyStatus;
@@ -125,7 +138,7 @@ export class Company {
     private formeJuridiqueValue: string,
     private siretValue: Siret | null,
     private tvaIntracomValue: string,
-    private contactValue: CompanyContact,
+    private contactValue: CompanyContact | null,
     private grantedTermsValue: readonly DeferredTerm[],
     private requestedTermValue: DeferredTerm | null,
     private preferenceValue: FulfillmentPreferenceView,
@@ -137,7 +150,7 @@ export class Company {
     private nafCodeValue: string,
   ) {}
 
-  static declare(identity: CompanyIdentityInput, contact: CompanyContact): Company {
+  static declare(identity: CompanyIdentityInput, contact: CompanyContact | null): Company {
     return new Company(
       null,
       // L'ENSEIGNE est ce qu'on exige : c'est le nom que le commercial a en
@@ -280,8 +293,25 @@ export class Company {
     return this.tvaIntracomValue;
   }
 
-  get contact(): CompanyContact {
+  get contact(): CompanyContact | null {
     return this.contactValue;
+  }
+
+  /**
+   * Rattache le **détenteur** d'un compte qui n'en avait pas encore.
+   *
+   * Distinct de `changePrimaryContact` (qui remplace) parce que ce n'est pas le
+   * même acte : ici on comble un vide laissé ouvert à dessein, et l'agrégat
+   * refuse d'écraser un détenteur en place — un second détenteur ne se crée pas
+   * par inadvertance, il se décide.
+   *
+   * @throws {CompanyAlreadyHasOwnerError} un détenteur est déjà rattaché.
+   */
+  attachHolder(contact: CompanyContact): void {
+    if (this.contactValue !== null) {
+      throw new CompanyAlreadyHasOwnerError(this.identityId ?? "");
+    }
+    this.contactValue = contact;
   }
 
   /** Édite l'identité **souple** (enseigne + TVA). L'identité légale reste figée. */
@@ -407,6 +437,16 @@ export class Company {
         "Aucun numéro de téléphone : un livreur doit pouvoir joindre quelqu'un.",
       );
     }
+    // Sans détenteur, l'espace n'a personne à qui s'ouvrir : le compte serait
+    // actif et sa porte murée. S'ouvrir sans est légitime (l'adresse arrive
+    // ensuite) ; le rester au moment de devenir client ne l'est pas.
+    if (this.contactValue === null) {
+      throw new CompanyActivationBlockedError(
+        this.identityId ?? "",
+        ["detenteur"],
+        "Aucun détenteur rattaché : personne ne pourrait se connecter à cet espace.",
+      );
+    }
     // L'identité légale, elle, EST de cet agrégat — et sans elle on ne peut pas
     // facturer. Un compte s'ouvre sans papiers ; il ne devient pas client sans.
     if (!this.hasLegalIdentity) {
@@ -487,13 +527,7 @@ export class Company {
       formeJuridique: this.formeJuridiqueValue,
       siret: this.siretDigits,
       tvaIntracom: this.tvaIntracomValue,
-      contact: {
-        firstName: this.contactValue.firstName.value,
-        lastName: this.contactValue.lastName.value,
-        fonction: this.contactValue.fonction,
-        email: this.contactValue.email.value,
-        phone: this.contactValue.phone.value,
-      },
+      contact: serializeContact(this.contactValue),
       grantedTerms: this.grantedTermsValue,
       requestedTerm: this.requestedTermValue,
       fulfillmentPreference: this.preferenceValue,
@@ -504,6 +538,25 @@ export class Company {
       nafCode: this.nafCodeValue,
     };
   }
+}
+
+/**
+ * Aplatit le détenteur pour les colonnes de `companies`, ou rend `null`.
+ *
+ * L'adaptateur choisit ce qu'il écrit dans des colonnes non nulles ; le domaine,
+ * lui, ne fabrique pas un contact aux champs vides pour faire plaisir au schéma.
+ */
+function serializeContact(contact: CompanyContact | null): CompanySoftState["contact"] {
+  if (contact === null) {
+    return null;
+  }
+  return {
+    firstName: contact.firstName.value,
+    lastName: contact.lastName.value,
+    fonction: contact.fonction,
+    email: contact.email.value,
+    phone: contact.phone.value,
+  };
 }
 
 /** Texte obligatoire, normalisé (espaces réduits). */

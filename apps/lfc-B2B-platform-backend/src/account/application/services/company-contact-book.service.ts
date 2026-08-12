@@ -66,7 +66,8 @@ export class CompanyContactBook {
     if (company === null) {
       throw new CompanyNotFoundError(companyId);
     }
-    if (sameAddress(company.contact.email.value, email)) {
+    // Pas encore de détenteur ⇒ aucune adresse à protéger : le carnet accepte.
+    if (sameAddress(company.contact?.email.value ?? "", email)) {
       throw new ContactAlreadyExistsError(email);
     }
   }

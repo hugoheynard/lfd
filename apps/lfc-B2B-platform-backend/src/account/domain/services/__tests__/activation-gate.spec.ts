@@ -175,6 +175,32 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
     expect(activationGate(sansSiret, ALL_REQUIRED).blocking).toEqual(["identite_legale"]);
   });
 
+  it("exige un DÉTENTEUR, même sur un dossier complet par ailleurs", () => {
+    // Un compte s'ouvre sur sa seule enseigne ; il ne devient pas client sans
+    // personne à qui ouvrir l'espace. Activer ici fabriquerait un compte actif
+    // dont la porte est murée.
+    const sansDetenteur = detail({
+      ...COMPLETE,
+      primaryContact: { id: null, firstName: "", lastName: "", fonction: "", email: "", phone: "" },
+      contacts: [
+        {
+          contactId: "ct_1",
+          role: "manager",
+          firstName: "R",
+          lastName: "P",
+          fonction: "réception",
+          email: "r@p.fr",
+          // Un numéro joignable : c'est bien le DÉTENTEUR qui manque, pas le
+          // téléphone — les deux empêchements ne se recouvrent pas.
+          phone: "06 12 34 56 78",
+          access: "none",
+        },
+      ],
+    });
+
+    expect(activationGate(sansDetenteur, ALL_REQUIRED).blocking).toEqual(["detenteur"]);
+  });
+
   it("n'ouvre la porte QUE sur un compte en attente", () => {
     // Un compte actif, suspendu ou résilié ne s'active pas : allumer le bouton
     // promettrait ce que l'agrégat refuse.
