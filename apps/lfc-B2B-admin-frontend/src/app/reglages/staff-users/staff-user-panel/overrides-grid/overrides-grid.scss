@@ -1,0 +1,60 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3);
+}
+
+.grid-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-3);
+}
+
+.grid-hint {
+  margin: 0;
+  font-size: var(--fold-font-size-sm);
+  color: var(--fold-text-muted);
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: var(--fold-space-2);
+    text-align: left;
+    border-bottom: 1px solid var(--fold-border-subtle);
+  }
+
+  thead th {
+    font-size: var(--fold-font-size-xs);
+    font-weight: var(--fold-font-weight-medium);
+    color: var(--fold-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  tbody th {
+    font-weight: var(--fold-font-weight-medium);
+    white-space: nowrap;
+  }
+
+  td {
+    display: flex;
+    align-items: center;
+    gap: var(--fold-space-2);
+  }
+}
+
+/* L'effectif : la réponse à « au final, est-ce qu'elle peut ? ». */
+.effective {
+  font-size: var(--fold-font-size-xs);
+  color: var(--fold-text-muted);
+}
+
+.effective-yes {
+  color: var(--fold-text-success);
+  font-weight: var(--fold-font-weight-medium);
+}

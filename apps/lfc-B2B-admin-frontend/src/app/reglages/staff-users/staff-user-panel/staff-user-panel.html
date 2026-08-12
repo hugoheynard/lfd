@@ -17,6 +17,11 @@
       <option [value]="option.value">{{ option.label }}</option>
     }
   </fold-select>
+
+  <section class="overrides">
+    <h3 class="overrides-title">Dérogations au rôle</h3>
+    <app-overrides-grid [role]="role()" [(overrides)]="overrides" />
+  </section>
 </div>
 
 <footer class="foot">

@@ -2,6 +2,8 @@ import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   type CreatedStaffUserResponse,
   type StaffUserPayload,
+  staffStatusChangeSchema,
+  type StaffStatusChange,
   staffUserPayloadSchema,
   type StaffUserView,
 } from "@lfd/contracts";
@@ -21,6 +23,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { ListStaffUsersQuery } from "../application/list-staff-users.query.js";
+import { SetStaffStatusCommand } from "../application/set-staff-status.command.js";
 import {
   CreateStaffUserCommand,
   RemoveStaffUserCommand,
@@ -68,6 +71,22 @@ export class AdminStaffUsersController {
   ): Promise<void> {
     await this.commands.execute<UpdateStaffUserCommand, void>(
       new UpdateStaffUserCommand(id, payload, actorSub),
+    );
+  }
+
+  /**
+   * Suspendre ou réintégrer. Geste distinct de l'édition d'identité : on ne
+   * ferme pas un accès en enregistrant un formulaire de coordonnées.
+   */
+  @Patch(":id/status")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setStatus(
+    @Param("id") id: string,
+    @Body(new ZodBody(staffStatusChangeSchema)) change: StaffStatusChange,
+    @StaffSub() actorSub: string,
+  ): Promise<void> {
+    await this.commands.execute<SetStaffStatusCommand, void>(
+      new SetStaffStatusCommand(id, change, actorSub),
     );
   }
 

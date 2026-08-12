@@ -1,4 +1,9 @@
-import type { StaffMeView, StaffUserPayload, StaffUserView } from "@lfd/contracts";
+import type {
+  StaffMeView,
+  StaffStatusChange,
+  StaffUserPayload,
+  StaffUserView,
+} from "@lfd/contracts";
 
 /**
  * Port des **utilisateurs staff** (annuaire back-office). Source de vérité
@@ -44,6 +49,18 @@ export abstract class StaffUserRepository {
    * @throws {LastStaffAdminError} la cible est le dernier administrateur.
    */
   abstract remove(id: string, actorSub: string): Promise<void>;
+
+  /**
+   * Suspend une personne, ou la réintègre. Suspendre **ferme tout, tout de
+   * suite, sans rien détruire** : c'est le geste du départ, et on ne supprime
+   * pas quelqu'un dont le nom est attaché à des décisions datées ailleurs.
+   *
+   * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
+   * @throws {ProtectedStaffUserError} la cible est l'admin racine.
+   * @throws {SelfDemotionError} l'auteur se suspend lui-même alors qu'il est admin.
+   * @throws {LastStaffAdminError} suspendre laisserait le back-office sans admin.
+   */
+  abstract setStatus(id: string, change: StaffStatusChange, actorSub: string): Promise<void>;
 
   /**
    * Garantit l'existence de l'**admin racine** (`BOOTSTRAP_ADMIN`) : le crée s'il

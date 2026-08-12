@@ -6,6 +6,7 @@ import { ListStaffUsersHandler } from "./application/list-staff-users.handler.js
 import {
   CreateStaffUserHandler,
   RemoveStaffUserHandler,
+  SetStaffStatusHandler,
   UpdateStaffUserHandler,
 } from "./application/staff-user.handlers.js";
 import { StaffUserRepository } from "./domain/staff-user.repository.js";
@@ -32,6 +33,7 @@ import { PrismaStaffUserRepository } from "./infrastructure/prisma-staff-user.re
     CreateStaffUserHandler,
     UpdateStaffUserHandler,
     RemoveStaffUserHandler,
+    SetStaffStatusHandler,
   ],
 })
 export class StaffUsersModule implements OnModuleInit {

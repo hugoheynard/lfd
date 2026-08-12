@@ -1,9 +1,9 @@
 # Accès staff — rôles, permissions et invitations du back-office
 
-**État : 🟡 le mur existe.** Tranches 1 à 3 livrées le 2026-08-12 : le catalogue,
-le schéma et les invariants, puis **le mur lui-même** — toute surface `/admin/*`
-exige désormais une fiche d'annuaire connue et le bon périmètre. Restent
-l'écran (§11, tranches 4 à 7).
+**État : 🟡 le modèle tourne.** Tranches 1 à 5 livrées le 2026-08-12 : catalogue,
+schéma, **le mur** (toute surface `/admin/*` exige une fiche connue et le bon
+périmètre), le socle front qui cache ce qu'on ne peut pas exercer, et l'écran
+d'administration. Restent **l'invitation** et la preuve (§11, tranches 6 et 7).
 
 Il répond à une seule question : **qui, dans l'équipe, peut faire quoi dans le
 back-office** — et comment on garde la certitude de pouvoir toujours entrer.
@@ -44,10 +44,8 @@ rôle et à des dérogations, `auth0Id` se lie à la première connexion, et
 
 Ce qui reste ouvert à cette date :
 
-- **Le front admin n'a aucun guard** : le serveur refuse, l'écran ne cache pas
-  encore. On clique et on prend un `403` (tranche 4).
 - **Aucune invitation.** Créer une fiche ne crée pas de compte ; les deux gestes
-  ne sont pas cousus (tranche 6).
+  ne sont pas cousus (tranche 6). C'est le dernier trou fonctionnel.
 
 ---
 
@@ -366,7 +364,7 @@ fournisseur — on cesse simplement de l'ignorer.
 | 6    | **Invitation**           | Extraction de la règle d'expiration, ticket Auth0, e-mail, `invited → active` constaté.                                                                                             | moyen     |
 | 7    | **Preuve**               | e2e : un vrai `403` par rôle, et le test « on ne peut pas se verrouiller dehors ».                                                                                                  | nul       |
 
-**Ordre** : 1 → 2 → **3 et 4 sans écart** → 5 → 6 → 7.
+**Ordre** : 1 → 2 → **3 et 4 sans écart** → 5 → 6 → 7. Les cinq premières sont faites.
 
 Les tranches 1 et 2 ne cassent rien et peuvent partir immédiatement. **La 3 est
 le seul moment où la bêta peut tomber** : c'est elle qui transforme « tout le

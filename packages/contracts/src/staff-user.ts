@@ -75,6 +75,16 @@ export interface StaffUserView {
   readonly permissions: readonly StaffPermission[];
 }
 
+/**
+ * La seule transition d'état qui se **demande**. `pending` et `invited` se
+ * constatent (création, invitation), `active` aussi (première connexion) : seul
+ * le couple suspendre / réintégrer est un geste délibéré.
+ */
+export const staffStatusChangeSchema = z.object({
+  status: z.enum(["active", "suspended"]),
+});
+export type StaffStatusChange = z.infer<typeof staffStatusChangeSchema>;
+
 /** Réponse de création d'un user staff. */
 export interface CreatedStaffUserResponse {
   readonly id: string;

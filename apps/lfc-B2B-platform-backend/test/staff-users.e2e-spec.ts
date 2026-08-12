@@ -200,3 +200,59 @@ describe("/admin/me", () => {
     expect(me.permissions).toContain("settings:write");
   });
 });
+
+describe("annuaire staff — suspendre et réintégrer", () => {
+  async function statusOf(email: string): Promise<string | undefined> {
+    const rows = await list();
+    return rows.find((row) => row.email === email)?.status;
+  }
+
+  it("suspend quelqu'un d'autre, sans rien détruire", async () => {
+    const id = await create({ email: "two@lfc.test", firstName: "Bea", role: "support" });
+
+    await staff()
+      .patch(`/admin/staff-users/${id}/status`)
+      .send({ status: "suspended" })
+      .expect(204);
+
+    // La fiche est toujours là : on ne supprime pas quelqu'un dont le nom est
+    // attaché à des décisions datées ailleurs.
+    expect(await statusOf("two@lfc.test")).toBe("suspended");
+  });
+
+  it("réintègre", async () => {
+    const id = await create({ email: "two@lfc.test", firstName: "Bea", role: "support" });
+    await staff()
+      .patch(`/admin/staff-users/${id}/status`)
+      .send({ status: "suspended" })
+      .expect(204);
+
+    await staff().patch(`/admin/staff-users/${id}/status`).send({ status: "active" }).expect(204);
+
+    expect(await statusOf("two@lfc.test")).toBe("active");
+  });
+
+  it("refuse qu'on se suspende soi-même (409)", async () => {
+    const response = await staff().get("/admin/staff-users").expect(200);
+    const rows = jsonBody<readonly StaffUserView[]>(response);
+    const me = rows.find((row) => row.email === E2E_STAFF_EMAIL);
+
+    const refused = await staff()
+      .patch(`/admin/staff-users/${me?.id ?? "?"}/status`)
+      .send({ status: "suspended" });
+
+    expect(refused.status).toBe(409);
+  });
+
+  it("refuse un état qui ne se demande pas (400)", async () => {
+    // `pending`, `invited` et `active` se CONSTATENT : seul le couple
+    // suspendre / réintégrer est un geste délibéré.
+    const id = await create({ email: "two@lfc.test", firstName: "Bea", role: "support" });
+
+    const response = await staff()
+      .patch(`/admin/staff-users/${id}/status`)
+      .send({ status: "invited" });
+
+    expect(response.status).toBe(400);
+  });
+});

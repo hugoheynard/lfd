@@ -18,6 +18,7 @@ import {
 
 import { NotifyService } from '../../../notify.service';
 import { ROLE_OPTIONS, toStaffRole } from '../staff-roles';
+import { OverridesGrid } from './overrides-grid/overrides-grid';
 import { StaffUsersService } from '../staff-users.service';
 
 /** Charge d'ouverture du panneau : le user à éditer, ou `null` pour en créer un. */
@@ -34,14 +35,20 @@ const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+$/u;
  * mince : il seede des signaux depuis `data`, valide de forme, puis enchaîne la
  * sauvegarde et ferme avec un résultat vrai (la page recharge la liste).
  *
- * Les **dérogations** au rôle sont transportées telles quelles à l'édition : ce
- * formulaire ne les montre pas encore, et un formulaire qui n'affiche pas une
- * donnée n'a pas le droit de l'effacer.
+ * Les **dérogations** au rôle s'éditent dans une grille dédiée
+ * ({@link OverridesGrid}) : c'est le geste rare, il ne doit pas encombrer le
+ * geste courant.
  */
 @Component({
   selector: 'app-staff-user-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldButtonComponent, FoldInputComponent, FoldSelectComponent],
+  imports: [
+    FoldPanelHeaderComponent,
+    FoldButtonComponent,
+    FoldInputComponent,
+    FoldSelectComponent,
+    OverridesGrid,
+  ],
   templateUrl: './staff-user-panel.html',
   styleUrl: './staff-user-panel.scss',
 })
@@ -62,8 +69,8 @@ export class StaffUserPanel {
   protected readonly role = signal<StaffRole>('commercial');
   protected readonly saving = signal(false);
 
-  /** Les écarts au rôle, transportés sans être montrés (voir l'en-tête de classe). */
-  private readonly overrides = signal<readonly StaffOverride[]>([]);
+  /** Les écarts au rôle — édités par la grille, enregistrés avec le reste. */
+  protected readonly overrides = signal<readonly StaffOverride[]>([]);
 
   protected readonly isCreate = computed(() => (this.data()?.user ?? null) === null);
   protected readonly heading = computed(() =>

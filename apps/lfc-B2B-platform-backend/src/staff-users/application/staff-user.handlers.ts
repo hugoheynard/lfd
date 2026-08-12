@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { StaffUserRepository } from "../domain/staff-user.repository.js";
+import { SetStaffStatusCommand } from "./set-staff-status.command.js";
 import {
   CreateStaffUserCommand,
   RemoveStaffUserCommand,
@@ -37,5 +38,14 @@ export class RemoveStaffUserHandler implements ICommandHandler<RemoveStaffUserCo
 
   async execute(command: RemoveStaffUserCommand): Promise<void> {
     await this.staff.remove(command.id, command.actorSub);
+  }
+}
+
+@CommandHandler(SetStaffStatusCommand)
+export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusCommand, void> {
+  constructor(private readonly staff: StaffUserRepository) {}
+
+  async execute(command: SetStaffStatusCommand): Promise<void> {
+    await this.staff.setStatus(command.id, command.change, command.actorSub);
   }
 }

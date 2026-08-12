@@ -22,3 +22,16 @@
   padding: var(--fold-space-md) var(--fold-space-lg);
   border-top: 1px solid var(--fold-color-border-subtle);
 }
+
+.overrides {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3);
+  padding-top: var(--fold-space-4);
+  border-top: 1px solid var(--fold-border-subtle);
+}
+
+.overrides-title {
+  margin: 0;
+  font-size: var(--fold-font-size-md);
+}

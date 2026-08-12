@@ -131,6 +131,22 @@ export class ReglagesStaffUsersPage {
     this.confirmingId.set(user.id);
   }
 
+  /** Suspendre ferme tout sans rien détruire ; réintégrer rouvre. */
+  protected async toggleSuspension(user: StaffUserView): Promise<void> {
+    const suspended = user.status === 'suspended';
+    try {
+      await this.service.setStatus(user.id, { status: suspended ? 'active' : 'suspended' });
+      this.notify.success(suspended ? 'Accès réactivé.' : 'Accès suspendu.');
+      await this.load();
+    } catch (error) {
+      this.notify.error(error);
+    }
+  }
+
+  protected isSuspended(user: StaffUserView): boolean {
+    return user.status === 'suspended';
+  }
+
   protected async confirmRemove(user: StaffUserView): Promise<void> {
     this.confirmingId.set(null);
     try {

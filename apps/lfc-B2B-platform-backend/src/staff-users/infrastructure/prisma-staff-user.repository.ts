@@ -1,6 +1,7 @@
 import {
   resolveStaffPermissions,
   type StaffMeView,
+  type StaffStatusChange,
   type StaffOverride,
   type StaffRole,
   type StaffStatus,
@@ -15,6 +16,7 @@ import { bootstrapAdmin } from "../domain/bootstrap-admin.js";
 import {
   assertEditAllowed,
   assertRemovalAllowed,
+  assertStatusChangeAllowed,
   type StaffMutationTarget,
 } from "../domain/staff-access.policy.js";
 import { DuplicateStaffEmailError, StaffUserNotFoundError } from "../domain/staff-user-errors.js";
@@ -155,6 +157,12 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     const target = await this.loadTarget(id, actorSub);
     assertRemovalAllowed(target);
     await this.prisma.staffUser.delete({ where: { id } });
+  }
+
+  async setStatus(id: string, change: StaffStatusChange, actorSub: string): Promise<void> {
+    const target = await this.loadTarget(id, actorSub);
+    assertStatusChangeAllowed(target, change.status);
+    await this.prisma.staffUser.update({ where: { id }, data: { status: change.status } });
   }
 
   async ensureBootstrapAdmin(): Promise<void> {
