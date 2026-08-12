@@ -50,18 +50,7 @@ export function projectContacts(
 ): readonly CompanyContactView[] {
   const byEmail = new Map(access.map((row) => [key(row.email), row]));
   return [
-    {
-      // `null` : le détenteur n'est pas une ligne du carnet, il EST la société.
-      contactId: null,
-      firstName: holder.contactPrenom,
-      lastName: holder.contactNom,
-      fonction: holder.contactFonction,
-      email: holder.contactEmail,
-      phone: holder.contactTelephone,
-      // Constaté, jamais choisi : c'est l'adresse qui a ouvert le compte.
-      role: "owner",
-      ...stateOf(byEmail.get(key(holder.contactEmail))),
-    },
+    ...holderCard(holder, byEmail),
     ...book.map((contact) => ({
       contactId: contact.id,
       firstName: contact.prenom,
@@ -75,6 +64,41 @@ export function projectContacts(
       role: contact.role,
       ...stateOf(byEmail.get(key(contact.email))),
     })),
+  ];
+}
+
+/**
+ * Le détenteur en tête de liste — **ou personne**.
+ *
+ * Une société s'ouvre désormais sur sa seule enseigne, et ses colonnes de contact
+ * sont alors vides. Les projeter quand même rendait une carte fantôme : « Fonction
+ * — / E-mail (vide) / Téléphone — », avec le bouton « ouvrir l'accès » offert
+ * dessus. Et ce bouton **partait** : l'adresse vide traversait tout, jusqu'à
+ * rattacher comme propriétaire la personne dont la colonne e-mail est vide.
+ *
+ * L'adresse décide, parce que c'est elle qui fait le détenteur : c'est par elle
+ * qu'il se connecte, et c'est le seul champ que le rattachement exige.
+ */
+function holderCard(
+  holder: HolderRow,
+  byEmail: ReadonlyMap<string, AccessRow>,
+): readonly CompanyContactView[] {
+  if (key(holder.contactEmail) === "") {
+    return [];
+  }
+  return [
+    {
+      // `null` : le détenteur n'est pas une ligne du carnet, il EST la société.
+      contactId: null,
+      firstName: holder.contactPrenom,
+      lastName: holder.contactNom,
+      fonction: holder.contactFonction,
+      email: holder.contactEmail,
+      phone: holder.contactTelephone,
+      // Constaté, jamais choisi : c'est l'adresse qui a ouvert le compte.
+      role: "owner",
+      ...stateOf(byEmail.get(key(holder.contactEmail))),
+    },
   ];
 }
 

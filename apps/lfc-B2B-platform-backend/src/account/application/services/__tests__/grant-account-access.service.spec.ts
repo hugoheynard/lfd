@@ -2,6 +2,7 @@ import type { B2bMailer } from "../../../../infra/mailer/mailer.module.js";
 import {
   AccountDisabledError,
   CompanyAlreadyHasOwnerError,
+  InvalidEmailError,
 } from "../../../domain/errors/account-errors.js";
 import {
   CompanyMemberRepository,
@@ -303,5 +304,35 @@ describe("GrantAccountAccess — le nom d'une personne lui appartient", () => {
     await granter(members, mailer).service.grant(INPUT);
 
     expect(sent[0]?.greeting).toBe("Claire");
+  });
+});
+
+describe("GrantAccountAccess — l'adresse passe par le value object", () => {
+  it("REFUSE une adresse vide, sans rien chercher ni écrire", async () => {
+    // L'adresse vide était une clé de recherche valide : `findAccountByEmail("")`
+    // trouvait la personne dont la colonne e-mail est vide, qui devenait alors
+    // propriétaire d'une société qui n'est pas la sienne. Le mailer refusait
+    // ensuite d'écrire « à blanc » — mais le rattachement était déjà en base.
+    const members = new FakeMembers({ account: account("active") });
+    const { mailer, sent } = fakeMailer();
+
+    await expect(granter(members, mailer).service.grant({ ...INPUT, email: "  " })).rejects.toThrow(
+      InvalidEmailError,
+    );
+    expect(members.attached).toEqual([]);
+    expect(members.created).toEqual([]);
+    expect(sent).toEqual([]);
+  });
+
+  it("normalise l'adresse avant d'en faire une clé", async () => {
+    // Deux graphies d'une même boîte ne doivent pas donner deux identités.
+    const members = new FakeMembers();
+    const { mailer } = fakeMailer();
+    const { service, identity } = granter(members, mailer);
+
+    await service.grant({ ...INPUT, email: "  Camille@Halles.FR " });
+
+    expect(identity.provisioned[0]?.email).toBe("camille@halles.fr");
+    expect(members.created[0]?.email).toBe("camille@halles.fr");
   });
 });

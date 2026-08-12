@@ -9,6 +9,7 @@ import {
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
 import { ensureNoRivalOwner } from "../../domain/services/company-access.js";
 import type { AccessOutcome } from "../../domain/value-objects/access-outcome.js";
+import { EmailAddress } from "../../domain/value-objects/email-address.js";
 import type { CompanyRole } from "../../domain/value-objects/company-role.js";
 
 /** Qui rattacher, à quelle société, avec quel rôle. */
@@ -80,7 +81,21 @@ export class GrantAccountAccess extends AccountAccessGranter {
     super();
   }
 
-  async grant(input: AccessToGrant): Promise<AccessGranted> {
+  async grant(raw: AccessToGrant): Promise<AccessGranted> {
+    // L'adresse passe par le VALUE OBJECT, ici et pour tous les chemins : c'est
+    // le seul goulot par lequel un accès s'ouvre.
+    //
+    // Sans lui, une adresse **vide** restait une clé de recherche valide — et
+    // `findAccountByEmail("")` trouvait bel et bien la personne dont la colonne
+    // e-mail est vide, qui devenait alors propriétaire d'une société qui n'est
+    // pas la sienne. Le mailer refusait ensuite d'écrire « à blanc », mais le
+    // rattachement, lui, était déjà en base : le dernier rempart n'est pas le
+    // premier.
+    //
+    // Normalisée au passage : c'est cette forme-là qui sert de clé, et non ce
+    // qu'un commercial a tapé avec une majuscule ou un espace de copier-coller.
+    const input: AccessToGrant = { ...raw, email: EmailAddress.create(raw.email).value };
+
     const known = await this.members.findAccountByEmail(input.email);
     if (known === null) {
       return this.openNewAccess(input);
