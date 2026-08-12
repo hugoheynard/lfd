@@ -251,6 +251,29 @@ export type {
   DeliveryZoneView,
   CreatedDeliveryZoneResponse,
 } from "./delivery-zone.js";
+export {
+  staffResourceSchema,
+  staffActionSchema,
+  staffRoleSchema,
+  staffOverrideEffectSchema,
+  staffOverrideSchema,
+  staffPermission,
+  resolveStaffPermissions,
+  hasStaffPermission,
+  ROLE_GRANTS,
+  ALL_STAFF_PERMISSIONS,
+  STAFF_ROLE_LABELS,
+  STAFF_RESOURCE_LABELS,
+} from "./staff-access.js";
+export type {
+  StaffResource,
+  StaffAction,
+  StaffPermission,
+  StaffRole,
+  StaffOverrideEffect,
+  StaffOverride,
+  StaffMeView,
+} from "./staff-access.js";
 export { staffScopeSchema, staffUserPayloadSchema } from "./staff-user.js";
 export type {
   StaffScope,
