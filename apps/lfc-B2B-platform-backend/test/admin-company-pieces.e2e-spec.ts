@@ -6,10 +6,11 @@
  * Ce que ces e2e éprouvent et que rien d'autre ne prouve : que ces mutations
  * passent **sans aucun membership** (le staff n'est membre de rien), écrivent la
  * vraie ligne SQL, et — pour le règlement — que fixer le terme convenu **solde**
- * la demande client. Deux frontières doublées : le verifier **staff**
- * (`AdminTokenVerifier`) et le **stockage objet** (`DocumentStore`) ; le reste est réel.
+ * la demande client. Une seule frontière doublée : le verifier **staff**
+ * (`AdminTokenVerifier`). Le stockage objet est réel (MinIO, qui parle S3 comme
+ * R2) : le KBIS déposé par le staff emprunte donc le même chemin, jusqu'aux
+ * octets, que celui déposé par le client.
  */
-import { DocumentStore } from "../src/infra/storage/document-store.js";
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
 import { AddressKind, CompanyStatus, DeferredTerm } from "../src/infra/database/client/client.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
@@ -23,25 +24,12 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
 
-/** Magasin objet en mémoire — le KBIS ne part pas vers R2 en test. */
-class FakeDocumentStore extends DocumentStore {
-  save(key: string): Promise<string> {
-    return Promise.resolve(key);
-  }
-  read(): Promise<Buffer> {
-    return Promise.reject(new Error("non utilisé ici"));
-  }
-}
-
 let ctx: E2eContext;
 let companyId: string;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [
-      { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: DocumentStore, value: new FakeDocumentStore() },
-    ],
+    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
   });
 });
 

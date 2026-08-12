@@ -58,7 +58,10 @@ jobs:
 
   # ── Le backend B2B ──────────────────────────────────────────────────────────
   # Ses tests e2e frappent un vrai Postgres : le harnais attend le port 5433 et
-  # crée lui-même la base `lfc_b2b_test` (`db:test:setup`, idempotent).
+  # crée lui-même la base `lfc_b2b_test` (`db:test:setup`, idempotent). Ils
+  # frappent aussi un vrai stockage objet (MinIO, port 9100) : les pièces —
+  # KBIS, mandat signé — partent pour de bon. Le bucket, lui, est créé par le
+  # harnais (`ensureTestBucket`), donc rien à provisionner ici.
   b2b-backend:
     name: Backend B2B
     runs-on: ubuntu-latest
@@ -92,6 +95,22 @@ jobs:
         run: pnpm --filter lfc-b2b-platform-backend exec tsc --noEmit
       - name: Lint
         run: pnpm --filter lfc-b2b-platform-backend lint:ci
+      # `docker run` plutôt qu'un `services:` : l'image MinIO a besoin d'une
+      # commande (`server /data`), et un bloc `services` ne sait pas en passer.
+      - name: Démarrer le stockage objet (MinIO)
+        run: |
+          docker run -d --name minio -p 9100:9000 \
+            -e MINIO_ROOT_USER=lfc -e MINIO_ROOT_PASSWORD=lfclfclfc \
+            minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+          for _ in $(seq 1 30); do
+            if curl -fs http://localhost:9100/minio/health/live > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MinIO n'a pas démarré à temps" >&2
+          docker logs minio >&2
+          exit 1
       - name: Préparer la base de test
         run: pnpm --filter lfc-b2b-platform-backend run db:test:setup
       - name: Tests (unitaires + e2e)

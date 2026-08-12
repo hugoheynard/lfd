@@ -33,6 +33,35 @@ process.env["AUTH_DEV_IMPERSONATE"] = "false";
 process.env["AUTH_ADMIN_DEV_BYPASS"] = "false";
 
 /**
+ * Stockage objet des e2e : le MinIO du conteneur de dev (`lfd-dev-minio`, port
+ * hôte 9100), mais un bucket **à part** — `lfc-b2b-test`, jamais celui de dev,
+ * pour qu'un test qui vide le bucket n'emporte pas les pièces de travail. Même
+ * raisonnement que `lfc_b2b_test` face à la base de développement.
+ *
+ * **Écrasement dur**, comme les bypass ci-dessus et pour la même raison : le
+ * `.env` local pointe le bucket de DEV, donc un `??=` laisserait les e2e écrire
+ * — et supprimer — dedans.
+ */
+const TEST_STORAGE = {
+  bucket: "lfc-b2b-test",
+  endpoint: "http://localhost:9100",
+  region: "auto",
+  accessKeyId: "lfc",
+  secretAccessKey: "lfclfclfc",
+} as const;
+
+process.env["STORAGE_BUCKET"] = TEST_STORAGE.bucket;
+process.env["STORAGE_ENDPOINT"] = TEST_STORAGE.endpoint;
+process.env["STORAGE_REGION"] = TEST_STORAGE.region;
+process.env["STORAGE_ACCESS_KEY_ID"] = TEST_STORAGE.accessKeyId;
+process.env["STORAGE_SECRET_ACCESS_KEY"] = TEST_STORAGE.secretAccessKey;
+
+/** La configuration de stockage des tests — lue par `test/storage.ts`. */
+export function testStorageConfig(): typeof TEST_STORAGE {
+  return TEST_STORAGE;
+}
+
+/**
  * Jeton interne qui protège `POST /admin/recompute` (porte machine-à-machine du
  * Cron Trigger). Posé **en dur** pour toutes les suites : sans bypass de dev, le
  * guard exige ce jeton — l'e2e du recompute le présente en réutilisant cette

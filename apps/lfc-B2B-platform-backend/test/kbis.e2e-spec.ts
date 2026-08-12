@@ -2,44 +2,25 @@
  * E2E du **KBIS** : dépôt muré (gestionnaire), téléchargement muré (tout membre),
  * et son reflet dans `GET /me` (présence + badge certifié dérivé du statut).
  *
- * Le stockage objet (R2) est **doublé** par un magasin en mémoire — c'est une
- * frontière sortante, pas ce qu'un e2e éprouve. Tout le reste est réel : le mur
- * via `memberships`, les métadonnées en base, le contrat HTTP.
+ * Le stockage objet est **réel** : MinIO, qui parle S3 comme R2. Le fichier part
+ * vraiment et revient vraiment. Un magasin en mémoire prouvait le mur mais pas
+ * la chaîne — or c'est la chaîne qui casse en ligne. Tout le reste est réel de
+ * même : le mur via `memberships`, les métadonnées en base, le contrat HTTP.
  */
-import { DocumentStore, type StoredDocument } from "../src/infra/storage/document-store.js";
 import { CompanyStatus, CustomerRole } from "../src/infra/database/client/client.js";
 import type { AccountView } from "../src/account/domain/ports/account.reader.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { storageKeys } from "./storage.js";
 
 const ADMIN = "auth0|admin";
 const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
 
-/** Magasin objet en mémoire — clé → octets. */
-class FakeDocumentStore extends DocumentStore {
-  readonly saved = new Map<string, Buffer>();
-
-  save(key: string, document: StoredDocument): Promise<string> {
-    this.saved.set(key, document.bytes);
-    return Promise.resolve(key);
-  }
-
-  read(storageKey: string): Promise<Buffer> {
-    const bytes = this.saved.get(storageKey);
-    if (bytes === undefined) {
-      return Promise.reject(new Error(`clé absente du fake store : ${storageKey}`));
-    }
-    return Promise.resolve(bytes);
-  }
-}
-
 let ctx: E2eContext;
-let store: FakeDocumentStore;
 let companyId: string;
 
 beforeAll(async () => {
-  store = new FakeDocumentStore();
-  ctx = await bootstrapE2e({ overrides: [{ token: DocumentStore, value: store }] });
+  ctx = await bootstrapE2e();
 });
 
 afterAll(async () => {
@@ -48,7 +29,6 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  store.saved.clear();
   const admin = await createUser(ctx.prisma, { auth0Sub: ADMIN, email: "gerant@pqmarais.fr" });
   const company = await createCompany(ctx.prisma, {
     raisonSociale: "Boulangerie du Marais SAS",
@@ -114,6 +94,28 @@ describe("dépôt du KBIS", () => {
     expect((await companyOf(ADMIN)).kbis?.certified).toBe(true);
   });
 
+  it("range la pièce SOUS l'entreprise, et un re-dépôt écrase au lieu d'accumuler", async () => {
+    // Deux garanties que le magasin en mémoire ne pouvait pas donner : le mur de
+    // tenancy est **dans le chemin** de la clé, et « une même clé écrase » —
+    // sinon chaque correction laisserait derrière elle l'ancien extrait.
+    await ctx
+      .asSub(ADMIN)
+      .put(`/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k.pdf")
+      .expect(204);
+    expect(await storageKeys()).toEqual([`companies/${companyId}/kbis`]);
+
+    await ctx
+      .asSub(ADMIN)
+      .put(`/companies/${companyId}/kbis`)
+      .attach("file", Buffer.from("%PDF-1.4\nkbis corrigé", "latin1"), "k.pdf")
+      .expect(204);
+    expect(await storageKeys()).toEqual([`companies/${companyId}/kbis`]);
+
+    const download = await ctx.asSub(ADMIN).get(`/companies/${companyId}/kbis`).expect(200);
+    expect(Buffer.from(download.body as Buffer).toString("latin1")).toContain("corrigé");
+  });
+
   it("refuse un fichier qui n'est pas un PDF (400), rien n'est stocké", async () => {
     const response = await ctx
       .asSub(ADMIN)
@@ -121,7 +123,7 @@ describe("dépôt du KBIS", () => {
       .attach("file", Buffer.from("pas un pdf"), "faux.pdf");
 
     expect(response.status).toBe(400);
-    expect(store.saved.size).toBe(0);
+    expect(await storageKeys()).toEqual([]);
   });
 
   it("refuse un simple membre (403) et un non-membre (404)", async () => {

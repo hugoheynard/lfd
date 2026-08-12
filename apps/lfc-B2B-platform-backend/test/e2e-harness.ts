@@ -1,6 +1,7 @@
 /**
  * Harnais des tests **e2e** : une app NestJS complète devant un **vrai**
- * Postgres jetable.
+ * Postgres jetable et un **vrai** stockage objet jetable (MinIO, qui parle S3
+ * comme R2).
  *
  * Ce qui est réel — tout ce qui peut mentir autrement : le module applicatif
  * entier (guard global compris), le filtre d'erreurs de `main.ts`, le client
@@ -22,8 +23,9 @@
  * cycle d'accès (compte inconnu, inactif, désactivé en cours de route) se joue
  * en **base**, ce qui est précisément le design DB-autoritaire à vérifier.
  *
- * Prérequis : `pnpm db:test:setup` (base créée + migrée). Sans ça, `bootstrapE2e`
- * échoue avec le message qui dit quoi lancer.
+ * Prérequis : `pnpm dev:infra` (Postgres + MinIO) puis `pnpm db:test:setup`
+ * (base créée + migrée). Sans ça, `bootstrapE2e` échoue avec le message qui dit
+ * quoi lancer.
  */
 import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
@@ -38,6 +40,7 @@ import { PrismaService } from "../src/infra/database/prisma.service.js";
 import { AppErrorFilter } from "../src/shared/http/app-error.filter.js";
 import type { VerifiedToken } from "../src/infra/auth/principal.js";
 import { testDatabaseUrl } from "./setup-env.js";
+import { ensureTestBucket, resetStorage } from "./storage.js";
 
 /**
  * Corps de réponse **typé**.
@@ -125,6 +128,7 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   const prisma = app.get(PrismaService);
   const background = app.get(BackgroundWork);
   await assertDatabaseReady(prisma);
+  await ensureTestBucket();
 
   const server = (): request.Agent => request.agent(app.getHttpServer());
 
@@ -137,9 +141,12 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
     // tourne hors de la requête HTTP : sans cette attente, elle peut écrire
     // APRÈS le `TRUNCATE`, et son alerte réapparaît alors dans le test suivant —
     // un échec qui accuse le mauvais test, une fois sur sept.
+    // Le bucket est vidé avec les tables, et pour la même raison : une pièce
+    // laissée par un test serait visible du suivant.
     reset: async () => {
       await background.whenIdle();
       await truncateAll(prisma);
+      await resetStorage();
     },
     close: () => app.close(),
   };

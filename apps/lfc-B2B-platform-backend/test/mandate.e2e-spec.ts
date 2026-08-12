@@ -5,13 +5,13 @@
  * s'écrit vraiment, que l'index partiel **un seul mandat actif par société**
  * tient sous une seconde tentative, que la révocation date sans effacer, et —
  * surtout — qu'**aucune réponse ne laisse sortir d'identifiant de moyen de
- * paiement**. Trois frontières doublées : le verifier staff, le prestataire
- * (Stripe) et le stockage objet ; le reste est réel.
+ * paiement**. Deux frontières doublées : le verifier staff et le prestataire
+ * (Stripe). Le stockage objet est réel (MinIO) — le mandat signé part vraiment,
+ * sous une clé qui porte la société ET le mandat.
  */
 import type { MandateSectionView, PaymentMandateView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { DocumentStore } from "../src/infra/storage/document-store.js";
 import { MandateGateway, type MandateToRegister } from "../src/payments/domain/mandate-gateway.js";
 import type { RegisteredMandate } from "../src/payments/domain/entities/payment-mandate.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -24,16 +24,6 @@ const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
-
-/** Magasin objet en mémoire — la pièce ne part pas vers R2 en test. */
-class FakeDocumentStore extends DocumentStore {
-  save(key: string): Promise<string> {
-    return Promise.resolve(key);
-  }
-  read(): Promise<Buffer> {
-    return Promise.reject(new Error("non utilisé ici"));
-  }
-}
 
 /** Prestataire doublé : aucun appel réseau, mais la même forme de réponse. */
 class FakeMandateGateway extends MandateGateway {
@@ -68,7 +58,6 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: DocumentStore, value: new FakeDocumentStore() },
       { token: MandateGateway, value: gateway },
     ],
   });
