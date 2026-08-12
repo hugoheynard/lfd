@@ -1,9 +1,8 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import type { AccountAlertView, PendingAlertCounts } from "@lfd/contracts";
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from "@nestjs/common";
+import { Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { AcknowledgeAlertCommand } from "../application/commands/acknowledge-alert.command.js";
 import { CountPendingAlertsQuery } from "../application/queries/count-pending-alerts.query.js";
@@ -18,8 +17,7 @@ import { ListAccountAlertsQuery } from "../application/queries/list-account-aler
  * de nom ou de rôle.
  */
 @Controller("admin")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("orders")
 export class AdminAccountAlertsController {
   constructor(
     private readonly queries: QueryBus,

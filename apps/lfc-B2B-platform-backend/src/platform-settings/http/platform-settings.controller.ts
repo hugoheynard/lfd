@@ -10,7 +10,7 @@ import { GetPlatformSettingsQuery } from "../application/get-platform-settings.q
  * Lecture **publique** des réglages plateforme — de simples *feature flags*
  * d'activation (quelles pièces existent / sont requises). Non sensible : le
  * client comme l'admin en ont besoin pour masquer les pièces `hidden`, donc
- * `@Public()` désarme le guard client (le staff n'a pas de token client) et la
+ * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  * route ne demande aucune authentification. L'**écriture** reste staff-only
  * ({@link AdminPlatformSettingsController}).
  *

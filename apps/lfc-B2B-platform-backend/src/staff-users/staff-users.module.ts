@@ -1,6 +1,7 @@
 import { Logger, Module, type OnModuleInit } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
+import { GetStaffMeHandler } from "./application/get-staff-me.handler.js";
 import { ListStaffUsersHandler } from "./application/list-staff-users.handler.js";
 import {
   CreateStaffUserHandler,
@@ -8,6 +9,7 @@ import {
   UpdateStaffUserHandler,
 } from "./application/staff-user.handlers.js";
 import { StaffUserRepository } from "./domain/staff-user.repository.js";
+import { AdminMeController } from "./http/admin-me.controller.js";
 import { AdminStaffUsersController } from "./http/admin-staff-users.controller.js";
 import { PrismaStaffUserRepository } from "./infrastructure/prisma-staff-user.repository.js";
 
@@ -22,10 +24,11 @@ import { PrismaStaffUserRepository } from "./infrastructure/prisma-staff-user.re
  */
 @Module({
   imports: [CqrsModule],
-  controllers: [AdminStaffUsersController],
+  controllers: [AdminStaffUsersController, AdminMeController],
   providers: [
     { provide: StaffUserRepository, useClass: PrismaStaffUserRepository },
     ListStaffUsersHandler,
+    GetStaffMeHandler,
     CreateStaffUserHandler,
     UpdateStaffUserHandler,
     RemoveStaffUserHandler,

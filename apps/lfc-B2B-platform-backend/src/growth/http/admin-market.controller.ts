@@ -1,3 +1,4 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   type AddMarketNafPayload,
   addMarketNafPayloadSchema,
@@ -5,21 +6,9 @@ import {
   addMarketZonePayloadSchema,
   type MarketConfigView,
 } from "@lfd/contracts";
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { AddMarketNafCommand } from "../application/commands/add-market-naf.command.js";
 import { AddMarketZoneCommand } from "../application/commands/add-market-zone.command.js";
@@ -34,8 +23,7 @@ import { GetMarketConfigQuery } from "../application/queries/get-market-config.q
  * externe. Le refresh renvoie la config à jour (comptages figés) en une réponse.
  */
 @Controller("admin/commercial/market")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("growth")
 export class AdminMarketController {
   constructor(
     private readonly commands: CommandBus,

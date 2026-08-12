@@ -1,4 +1,4 @@
-import type { StaffUserPayload, StaffUserView } from "@lfd/contracts";
+import type { StaffMeView, StaffUserPayload, StaffUserView } from "@lfd/contracts";
 
 /**
  * Port des **utilisateurs staff** (annuaire back-office). Source de vérité
@@ -8,6 +8,12 @@ import type { StaffUserPayload, StaffUserView } from "@lfd/contracts";
 export abstract class StaffUserRepository {
   /** Tous les users staff, triés par nom puis prénom. */
   abstract list(): Promise<readonly StaffUserView[]>;
+
+  /**
+   * L'identité et l'**effectif** d'une personne — ce que `/admin/me` renvoie.
+   * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
+   */
+  abstract me(id: string): Promise<StaffMeView>;
 
   /**
    * Ajoute un user. `actorSub` attribue ses éventuelles dérogations à leur auteur.

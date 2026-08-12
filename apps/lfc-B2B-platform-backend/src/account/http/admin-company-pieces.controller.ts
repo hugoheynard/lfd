@@ -1,3 +1,4 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   type BillingAddressPayload,
   billingAddressPayloadSchema,
@@ -27,7 +28,6 @@ import {
   Res,
   StreamableFile,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -35,9 +35,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { ChangeCompanyStatusCommand } from "../application/commands/change-company-status.command.js";
 import { ActivateCompanyByStaffCommand } from "../application/commands/activate-company.command.js";
@@ -74,15 +72,13 @@ interface UploadedFilePart {
  * commercial complète une société **à la place** du client — dépôt du KBIS,
  * identité/TVA, condition de règlement **convenue**, adresses.
  *
- * Même montage à deux surfaces que {@link AdminCompaniesController} (`@Public()`
- * désarme le guard client, `AdminAuthGuard` réarme la porte staff) et même
- * préfixe `admin/companies`. Aucun mur membership dans les handlers — le staff
+ * Surface staff murée par `@AdminSurface`, et même préfixe `admin/companies` que
+ * {@link AdminCompaniesController}. Aucun mur membership dans les handlers — le staff
  * n'est membre d'aucune société ; l'auth staff est le seul mur. Le contrôleur ne
  * fait que le transport et dispatche au bus.
  */
 @Controller("admin/companies")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("companies")
 export class AdminCompanyPiecesController {
   constructor(
     private readonly commands: CommandBus,

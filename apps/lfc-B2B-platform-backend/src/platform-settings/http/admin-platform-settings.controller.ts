@@ -1,21 +1,18 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import { type PlatformSettings, platformSettingsSchema } from "@lfd/contracts";
-import { Body, Controller, HttpCode, HttpStatus, Patch, UseGuards } from "@nestjs/common";
+import { Body, Controller, HttpCode, HttpStatus, Patch } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { UpdatePlatformSettingsCommand } from "../application/update-platform-settings.command.js";
 
 /**
  * Écriture **staff** des réglages plateforme (page Réglages admin). Même montage
- * à deux surfaces que les autres contrôleurs admin : `@Public()` désarme le guard
- * client, `AdminAuthGuard` réarme la porte staff. La lecture est publique
+ * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  * ({@link PlatformSettingsController}).
  */
 @Controller("admin/platform-settings")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("settings")
 export class AdminPlatformSettingsController {
   constructor(private readonly commands: CommandBus) {}
 

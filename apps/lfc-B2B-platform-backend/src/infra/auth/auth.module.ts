@@ -7,6 +7,8 @@ import { AuthConfig } from "./auth.config.js";
 import { AuthGuard } from "./auth.guard.js";
 import { CustomerUserResolver } from "./customer-user.resolver.js";
 import { DevImpersonation } from "./dev-impersonation.js";
+import { StaffAccessGuard } from "./staff-access.guard.js";
+import { StaffAccessResolver } from "./staff-access.resolver.js";
 
 /**
  * Couche infrastructure : authentification Auth0 (OIDC) enrichie B2B.
@@ -18,9 +20,10 @@ import { DevImpersonation } from "./dev-impersonation.js";
  * jeton Auth0.
  *
  * Surface **staff** (Invariant C) : `AdminTokenVerifier` + `AdminAuthGuard`
- * portent une audience distincte du client. Le guard admin n'est PAS global —
- * on l'attache explicitement (`@UseGuards`) sur les contrôleurs `/admin/*`,
- * exporté ici pour qu'ils puissent le résoudre.
+ * portent une audience distincte du client, et `StaffAccessGuard` +
+ * `StaffAccessResolver` disent ce que la personne a le droit de faire. Aucun de
+ * ces guards n'est global : ils s'attachent ensemble par `@AdminSurface(...)` sur
+ * les contrôleurs `/admin/*`, et sont exportés ici pour qu'ils s'y résolvent.
  */
 @Global()
 @Module({
@@ -31,8 +34,17 @@ import { DevImpersonation } from "./dev-impersonation.js";
     DevImpersonation,
     AdminTokenVerifier,
     AdminAuthGuard,
+    StaffAccessResolver,
+    StaffAccessGuard,
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
-  exports: [AccessTokenVerifier, CustomerUserResolver, AdminTokenVerifier, AdminAuthGuard],
+  exports: [
+    AccessTokenVerifier,
+    CustomerUserResolver,
+    AdminTokenVerifier,
+    AdminAuthGuard,
+    StaffAccessResolver,
+    StaffAccessGuard,
+  ],
 })
 export class AuthModule {}

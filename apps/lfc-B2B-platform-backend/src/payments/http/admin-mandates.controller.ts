@@ -1,3 +1,4 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   type MandateSectionView,
   type PaymentMandateView,
@@ -15,14 +16,11 @@ import {
   Post,
   Put,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { InvalidScannedDocumentError } from "../../shared/errors/storage-errors.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import {
@@ -50,12 +48,10 @@ interface UploadedFilePart {
  * et c'est le commercial qui les reporte. Il n'y a donc pas d'endpoint client
  * jumeau, contrairement au KBIS.
  *
- * Même montage à deux surfaces que les autres contrôleurs admin (`@Public()`
- * désarme le guard client, `AdminAuthGuard` réarme la porte staff).
+ * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin/companies")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("companies")
 export class AdminMandatesController {
   constructor(
     private readonly commands: CommandBus,

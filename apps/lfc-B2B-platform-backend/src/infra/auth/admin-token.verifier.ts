@@ -53,5 +53,9 @@ function toStaffPrincipal(payload: JWTPayload): StaffPrincipal {
   }
   const scope = payload["scope"];
   const scopes = typeof scope === "string" ? scope.split(" ").filter((entry) => entry !== "") : [];
-  return { subject, scopes };
+  // L'adresse ne sert qu'au **premier** rapprochement avec l'annuaire ; ensuite
+  // c'est le `sub` qui relie, et il ne bouge plus. Un tenant qui ne pose pas ce
+  // claim rend le rapprochement impossible — jamais faux.
+  const email = payload["email"];
+  return { subject, email: typeof email === "string" && email !== "" ? email : undefined, scopes };
 }

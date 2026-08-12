@@ -1,23 +1,12 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   type CreatedPickupResponse,
   type PickupAddressPayload,
   pickupAddressPayloadSchema,
 } from "@lfd/contracts";
-import {
-  Body,
-  Controller,
-  Delete,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Post,
-  UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import {
   CreatePickupAddressCommand,
@@ -28,12 +17,10 @@ import {
 
 /**
  * Gestion **staff** des points de retrait (page Réglages). Ajouter / éditer /
- * supprimer (≥1 gardé) / désigner le défaut. Montage à deux surfaces habituel
- * (`@Public()` désarme le guard client, `AdminAuthGuard` réarme la porte staff).
+ * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin/pickup-addresses")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("settings")
 export class AdminPickupAddressesController {
   constructor(private readonly commands: CommandBus) {}
 

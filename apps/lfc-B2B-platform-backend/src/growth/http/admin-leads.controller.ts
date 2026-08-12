@@ -1,3 +1,4 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   type AdvanceLeadStatusPayload,
   advanceLeadStatusPayloadSchema,
@@ -6,21 +7,9 @@ import {
   type CreatedLeadResponse,
   type LeadView,
 } from "@lfd/contracts";
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Post,
-  UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { CaptureLeadCommand } from "../application/commands/capture-lead.command.js";
 import { ChangeLeadStatusCommand } from "../application/commands/change-lead-status.command.js";
@@ -28,12 +17,10 @@ import { ListLeadsQuery } from "../application/queries/list-leads.query.js";
 
 /**
  * Surface **staff** des leads cold (démarchage). Saisir un lead + lister la file.
- * Montage à deux surfaces habituel (`@Public()` désarme le guard client global,
- * `AdminAuthGuard` réarme la porte staff).
+ * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin/leads")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("growth")
 export class AdminLeadsController {
   constructor(
     private readonly commands: CommandBus,

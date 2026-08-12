@@ -39,6 +39,7 @@ import { BackgroundWork } from "../src/infra/events/background-work.js";
 import { PrismaService } from "../src/infra/database/prisma.service.js";
 import { AppErrorFilter } from "../src/shared/http/app-error.filter.js";
 import type { VerifiedToken } from "../src/infra/auth/principal.js";
+import { StaffAccessResolver } from "../src/infra/auth/staff-access.resolver.js";
 import { testDatabaseUrl } from "./setup-env.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 
@@ -154,10 +155,45 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
     reset: async () => {
       await background.whenIdle();
       await truncateAll(prisma);
+      await seedE2eStaff(prisma);
+      // La résolution d'accès garde un cache court par `sub` : sans cet oubli,
+      // le test suivant travaillerait avec l'id d'une fiche qu'on vient d'effacer.
+      app.get(StaffAccessResolver).forget();
       await resetStorage();
     },
     close: () => app.close(),
   };
+}
+
+/**
+ * Le `sub` sous lequel les suites admin appellent l'API. Les stubs de
+ * `AdminTokenVerifier` le renvoient tous ; l'annuaire lui répond.
+ */
+export const E2E_STAFF_SUB = "staff-e2e";
+
+/** L'e-mail de la fiche d'annuaire qui incarne l'opérateur des tests. */
+export const E2E_STAFF_EMAIL = "e2e@lfc.test";
+
+/**
+ * Sème l'**opérateur** des suites admin : une fiche d'annuaire `admin`, déjà
+ * liée au `sub` que les stubs présentent.
+ *
+ * Depuis que la surface admin est murée, porter un jeton valide ne suffit plus —
+ * il faut être quelqu'un. Sans cette ligne, chaque suite admin prendrait `403` et
+ * accuserait le mauvais coupable. Les suites qui **comptent** l'annuaire doivent
+ * en tenir compte : cette personne existe pour de bon.
+ */
+async function seedE2eStaff(prisma: PrismaService): Promise<void> {
+  await prisma.staffUser.create({
+    data: {
+      firstName: "Opérateur",
+      lastName: "E2E",
+      email: E2E_STAFF_EMAIL,
+      role: "admin",
+      status: "active",
+      auth0Id: E2E_STAFF_SUB,
+    },
+  });
 }
 
 /**

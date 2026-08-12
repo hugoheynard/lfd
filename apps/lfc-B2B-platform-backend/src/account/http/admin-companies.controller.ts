@@ -1,18 +1,8 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  UseGuards,
-} from "@nestjs/common";
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { AttachAccountHolderCommand } from "../application/commands/attach-account-holder.command.js";
 import type { HolderAttached } from "../application/commands/attach-account-holder.handler.js";
@@ -35,12 +25,11 @@ import { adminCreateCompanyPayload, type AdminCreateCompanyPayload } from "./pay
  *
  * `@Public()` **désarme** le guard client global (le staff n'a pas de token
  * client) ; `@UseGuards(AdminAuthGuard)` **réarme** avec la porte staff (audience
- * dédiée, ou bypass de dev). C'est le montage à deux surfaces de l'Invariant C :
- * un seul backend B2B, deux publics, la confiance vient du JWT.
+ * dédiée, ou bypass de dev), puis `@AdminSurface` vérifie le périmètre. Invariant C :
+ * un seul backend B2B, deux publics, la confiance vient du JWT et de l.annuaire.
  */
 @Controller("admin/companies")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("companies")
 export class AdminCompaniesController {
   constructor(
     private readonly queries: QueryBus,

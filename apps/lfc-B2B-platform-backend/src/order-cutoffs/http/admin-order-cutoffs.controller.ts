@@ -1,3 +1,4 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   type CreatedOrderCutoffResponse,
   type OrderCutoffPayload,
@@ -14,12 +15,9 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import {
   CreateOrderCutoffCommand,
@@ -30,15 +28,13 @@ import {
 
 /**
  * Gestion **staff** des heures limites de commande (page Réglages → Retraits &
- * livraisons). Montage à deux surfaces habituel : `@Public()` désarme le guard
- * client, `AdminAuthGuard` réarme la porte staff.
+ * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  *
  * Une règle par ligne, et rien d'autre : ajouter un labo ou décaler le dimanche
  * doit rester de la saisie.
  */
 @Controller("admin/order-cutoffs")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("settings")
 export class AdminOrderCutoffsController {
   constructor(
     private readonly commands: CommandBus,

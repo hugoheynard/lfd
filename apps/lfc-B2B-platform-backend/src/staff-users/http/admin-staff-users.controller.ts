@@ -1,3 +1,4 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   type CreatedStaffUserResponse,
   type StaffUserPayload,
@@ -14,12 +15,9 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { ListStaffUsersQuery } from "../application/list-staff-users.query.js";
@@ -31,13 +29,11 @@ import {
 
 /**
  * Surface **admin** (staff) de l'annuaire des users staff : lister, ajouter,
- * éditer, supprimer. Montage à deux surfaces habituel (`@Public()` désarme le
- * guard client, `AdminAuthGuard` réarme la porte staff). Aucune surface publique :
+ * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  * l'annuaire est staff-only de bout en bout.
  */
 @Controller("admin/staff-users")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("staff")
 export class AdminStaffUsersController {
   constructor(
     private readonly queries: QueryBus,

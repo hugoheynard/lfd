@@ -1,8 +1,7 @@
-import { Controller, Get, UseGuards } from "@nestjs/common";
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
+import { Controller, Get } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { ListProspectsQuery } from "../application/queries/list-prospects.query.js";
 import type { ProspectView } from "@lfd/contracts";
 
@@ -10,13 +9,10 @@ import type { ProspectView } from "@lfd/contracts";
  * Surface **staff** du module croissance : la liste des **prospects** (hot/mid),
  * dérivée du journal, pour l'onglet commercial.
  *
- * Même montage à deux surfaces que les autres contrôleurs `/admin/*` : `@Public()`
- * désarme le guard client global, `@UseGuards(AdminAuthGuard)` réarme la porte
- * staff (audience dédiée, ou bypass de dev).
+ * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin/prospects")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("growth")
 export class AdminProspectsController {
   constructor(private readonly queries: QueryBus) {}
 

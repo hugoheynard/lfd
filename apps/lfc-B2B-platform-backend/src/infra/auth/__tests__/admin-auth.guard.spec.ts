@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { App } from "supertest/types";
 
+import { BOOTSTRAP_ADMIN_EMAIL } from "../../../staff-users/domain/bootstrap-admin.js";
 import { AppConfig } from "../../config/app-config.js";
 import { AdminAuthGuard } from "../admin-auth.guard.js";
 import { AdminTokenVerifier } from "../admin-token.verifier.js";
@@ -57,7 +58,11 @@ describe("AdminAuthGuard — bypass de dev", () => {
 
   it("accepte SANS jeton et pose un staff synthétique", async () => {
     const response = await request(app.getHttpServer()).get("/admin/probe").expect(200);
-    expect(response.body).toEqual({ subject: "dev-staff", scopes: [] });
+    expect(response.body).toEqual({
+      subject: "dev-staff",
+      email: BOOTSTRAP_ADMIN_EMAIL,
+      scopes: [],
+    });
   });
 });
 

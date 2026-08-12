@@ -1,3 +1,4 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   appointmentTransitionPayloadSchema,
   availabilityConfigPayloadSchema,
@@ -25,12 +26,9 @@ import {
   Post,
   Put,
   Query,
-  UseGuards,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { SaveAvailabilityExceptionsCommand } from "../application/commands/save-availability-exceptions.command.js";
 import { SaveAvailabilityCommand } from "../application/commands/save-availability.command.js";
@@ -47,12 +45,10 @@ import { ListAppointmentsQuery } from "../application/queries/list-appointments.
  * prévisualiser les créneaux qu'elles ouvrent, lire la file, poser un
  * rendez-vous soi-même et le faire avancer.
  *
- * Même montage à deux surfaces que les autres `/admin/*` (`@Public()` désarme le
- * guard client global, `AdminAuthGuard` réarme la porte staff).
+ * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */
 @Controller("admin")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("appointments")
 export class AdminAppointmentsController {
   constructor(
     private readonly commands: CommandBus,

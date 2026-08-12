@@ -1,9 +1,8 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import type { StaffNotificationsSummary } from "@lfd/contracts";
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from "@nestjs/common";
+import { Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { MarkNotificationReadCommand } from "../application/commands/mark-notification-read.command.js";
 import { GetStaffNotificationsQuery } from "../application/queries/get-staff-notifications.query.js";
@@ -15,8 +14,7 @@ import { GetStaffNotificationsQuery } from "../application/queries/get-staff-not
  * attente chez les autres. `readBy` dit qui s'en est chargé.
  */
 @Controller("admin/notifications")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("support")
 export class AdminStaffNotificationsController {
   constructor(
     private readonly queries: QueryBus,

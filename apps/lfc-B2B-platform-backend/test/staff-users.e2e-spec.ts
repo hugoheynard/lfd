@@ -7,7 +7,7 @@
 import type { CreatedStaffUserResponse, StaffUserView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_EMAIL, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -47,9 +47,15 @@ async function create(over: Record<string, unknown> = {}): Promise<string> {
   return jsonBody<CreatedStaffUserResponse>(response).id;
 }
 
+/**
+ * L'annuaire **sans l'opérateur** des tests. Depuis que la surface admin est
+ * murée, la personne qui appelle existe forcément en base ; la compter ferait
+ * dire aux assertions autre chose que ce qu'elles veulent dire.
+ */
 async function list(): Promise<readonly StaffUserView[]> {
   const response = await staff().get("/admin/staff-users").expect(200);
-  return jsonBody<readonly StaffUserView[]>(response);
+  const rows = jsonBody<readonly StaffUserView[]>(response);
+  return rows.filter((row) => row.email !== E2E_STAFF_EMAIL);
 }
 
 describe("annuaire staff", () => {
@@ -120,51 +126,77 @@ describe("annuaire staff", () => {
   });
 });
 
+/**
+ * Ce qu'on prouve **ici**, c'est le câblage : que la règle du domaine remonte
+ * jusqu'à un vrai code HTTP. La règle elle-même — « il reste au moins un
+ * administrateur » — se prouve sans base dans `staff-access.policy.spec.ts`,
+ * parce qu'un e2e ne peut plus l'atteindre : l'opérateur des tests **est** un
+ * administrateur, donc personne n'est jamais le dernier.
+ */
 describe("annuaire staff — on ne se verrouille pas dehors", () => {
-  it("refuse de supprimer le dernier administrateur (409)", async () => {
-    const id = await create({ role: "admin" });
+  async function operatorId(): Promise<string> {
+    const response = await staff().get("/admin/staff-users").expect(200);
+    const rows = jsonBody<readonly StaffUserView[]>(response);
+    const operator = rows.find((row) => row.email === E2E_STAFF_EMAIL);
+    if (operator === undefined) {
+      throw new Error("L'opérateur e2e devrait être dans l'annuaire.");
+    }
+    return operator.id;
+  }
 
-    const response = await staff().delete(`/admin/staff-users/${id}`);
+  it("refuse qu'on se supprime soi-même (409)", async () => {
+    // Le pied dans le plat le plus courant, et le seul qu'on ne peut pas
+    // réparer soi-même.
+    const response = await staff().delete(`/admin/staff-users/${await operatorId()}`);
 
     expect(response.status).toBe(409);
-    expect(await list()).toHaveLength(1);
   });
 
-  it("refuse de rétrograder le dernier administrateur (409)", async () => {
-    // Le chemin le plus discret vers le verrouillage : pas une suppression, une
-    // simple édition de rôle.
-    const id = await create({ role: "admin" });
-
+  it("refuse qu'on se rétrograde soi-même (409)", async () => {
+    // Le chemin le plus discret : pas une suppression, une simple édition de rôle.
     const response = await staff()
-      .patch(`/admin/staff-users/${id}`)
-      .send(user({ role: "support" }));
+      .patch(`/admin/staff-users/${await operatorId()}`)
+      .send(user({ email: E2E_STAFF_EMAIL, role: "support" }));
 
     expect(response.status).toBe(409);
   });
 
-  it("laisse partir un administrateur dès qu'un autre existe", async () => {
-    const first = await create({ email: "one@lfc.test", role: "admin" });
-    await create({ email: "two@lfc.test", firstName: "Bea", role: "admin" });
+  it("laisse partir un administrateur qui n'est pas soi", async () => {
+    const other = await create({ email: "two@lfc.test", firstName: "Bea", role: "admin" });
 
-    await staff().delete(`/admin/staff-users/${first}`).expect(204);
+    await staff().delete(`/admin/staff-users/${other}`).expect(204);
 
-    expect(await list()).toHaveLength(1);
+    expect(await list()).toHaveLength(0);
   });
 
   it("refuse une dérogation qui priverait un admin de l'annuaire (409)", async () => {
-    const id = await create({ email: "one@lfc.test", role: "admin" });
-    await create({ email: "two@lfc.test", firstName: "Bea", role: "admin" });
+    const other = await create({ email: "two@lfc.test", firstName: "Bea", role: "admin" });
 
     const response = await staff()
-      .patch(`/admin/staff-users/${id}`)
+      .patch(`/admin/staff-users/${other}`)
       .send(
         user({
-          email: "one@lfc.test",
+          email: "two@lfc.test",
+          firstName: "Bea",
           role: "admin",
           overrides: [{ resource: "staff", action: "write", effect: "deny" }],
         }),
       );
 
     expect(response.status).toBe(409);
+  });
+});
+
+describe("/admin/me", () => {
+  it("dit qui on est et ce qu'on peut faire", async () => {
+    const response = await staff().get("/admin/me").expect(200);
+    const me = jsonBody<{ email: string; role: string; permissions: string[] }>(response);
+
+    expect(me.email).toBe(E2E_STAFF_EMAIL);
+    expect(me.role).toBe("admin");
+    // L'administrateur porte tous les pouvoirs : c'est l'invariant qui garantit
+    // qu'il reste toujours quelqu'un capable de tout réparer.
+    expect(me.permissions).toContain("staff:write");
+    expect(me.permissions).toContain("settings:write");
   });
 });

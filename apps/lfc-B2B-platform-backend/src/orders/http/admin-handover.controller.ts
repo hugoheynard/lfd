@@ -1,17 +1,8 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import { type OrderHandoverView } from "@lfd/contracts";
-import {
-  Controller,
-  Get,
-  Param,
-  Post,
-  Req,
-  UnauthorizedException,
-  UseGuards,
-} from "@nestjs/common";
+import { Controller, Get, Param, Post, Req, UnauthorizedException } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import type { AuthenticatedStaffRequest } from "../../infra/auth/staff-principal.js";
 import { ConfirmHandoverCommand } from "../application/commands/confirm-handover.command.js";
 import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
@@ -31,8 +22,7 @@ import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
  * propre remise.
  */
 @Controller("admin/handover")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("orders")
 export class AdminHandoverController {
   constructor(
     private readonly queries: QueryBus,

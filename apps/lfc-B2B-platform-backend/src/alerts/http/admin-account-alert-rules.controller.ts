@@ -1,3 +1,4 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   accountAlertOverrideSchema,
   alertKindSchema,
@@ -15,12 +16,9 @@ import {
   HttpStatus,
   Param,
   Put,
-  UseGuards,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { ClearAccountAlertOverrideCommand } from "../application/commands/clear-account-alert-override.command.js";
@@ -37,8 +35,7 @@ import { GetAccountAlertRulesQuery } from "../application/queries/get-account-al
  * la même chose, dont une seule serait vraie.
  */
 @Controller("admin/companies/:companyId/alert-rules")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("companies")
 export class AdminAccountAlertRulesController {
   constructor(
     private readonly queries: QueryBus,

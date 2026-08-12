@@ -1,8 +1,9 @@
 # Accès staff — rôles, permissions et invitations du back-office
 
-**État : 📐 doc-first.** Le modèle et les frontières sont tranchés ici ; rien
-n'est codé au-delà de ce que la section « État des lieux » recense. Ce document
-est le contrat de la mise en œuvre, pas son compte rendu.
+**État : 🟡 le mur existe.** Tranches 1 à 3 livrées le 2026-08-12 : le catalogue,
+le schéma et les invariants, puis **le mur lui-même** — toute surface `/admin/*`
+exige désormais une fiche d'annuaire connue et le bon périmètre. Restent
+l'écran (§11, tranches 4 à 7).
 
 Il répond à une seule question : **qui, dans l'équipe, peut faire quoi dans le
 back-office** — et comment on garde la certitude de pouvoir toujours entrer.
@@ -26,30 +27,27 @@ La moitié du chemin est faite, et c'est la moitié structurante :
 | Porte staff — audience Auth0 dédiée, fail-closed sans elle               | `src/infra/auth/admin-auth.guard.ts`        | ✅   |
 | Écran Réglages → Utilisateurs — liste, création, édition, suppression    | `reglages/staff-users/`                     | ✅   |
 
-Et voici le trou, en une phrase :
+Et voici le trou tel qu'il était, gardé ici parce qu'il explique tout le reste :
 
-> **Les `scopes` d'une personne ne sont lus nulle part.** Hors du module
-> `staff-users`, la seule occurrence du mot dans le backend est le `scope` du
+> **Les `scopes` d'une personne n'étaient lus nulle part.** Hors du module
+> `staff-users`, la seule occurrence du mot dans le backend était le `scope` du
 > _jeton_ — jamais celui de la fiche.
 
-Conséquence opérationnelle : **tout porteur d'un jeton staff valide peut tout
-faire.** Un commercial peut éditer les réglages de facturation, supprimer un
-utilisateur staff, activer un compte client. Le périmètre est saisi dans un
-écran, écrit en base, et n'a aucun effet. C'est le pire des trois états
-possibles — pas de mur du tout serait au moins honnête ; un mur peint sur le
-sol laisse croire qu'on est protégé.
+Conséquence opérationnelle : **tout porteur d'un jeton staff valide pouvait tout
+faire.** Le périmètre était saisi dans un écran, écrit en base, et sans effet.
+C'était le pire des trois états possibles — pas de mur du tout serait au moins
+honnête ; un mur peint sur le sol laisse croire qu'on est protégé.
 
-Le front admin n'a **aucun guard** : zéro fichier. Ni le serveur ni l'écran ne
-filtrent.
+**Fermé le 2026-08-12** par les tranches 1 à 3 : `scopes` a laissé place à un
+rôle et à des dérogations, `auth0Id` se lie à la première connexion, et
+`StaffAccessGuard` refuse tout ce qui n'est ni connu ni autorisé.
 
-Trois manques matériels s'ajoutent :
+Ce qui reste ouvert à cette date :
 
-- **`auth0Id` n'est jamais renseigné.** Rien ne coud un jeton à une fiche : même
-  si on voulait autoriser, on ne saurait pas _qui_ est devant.
-- **Ni téléphone, ni fonction, ni rôle, ni statut** sur la table — l'annuaire ne
-  dit pas assez pour être un annuaire.
+- **Le front admin n'a aucun guard** : le serveur refuse, l'écran ne cache pas
+  encore. On clique et on prend un `403` (tranche 4).
 - **Aucune invitation.** Créer une fiche ne crée pas de compte ; les deux gestes
-  ne sont pas cousus.
+  ne sont pas cousus (tranche 6).
 
 ---
 
@@ -358,15 +356,15 @@ fournisseur — on cesse simplement de l'ignorer.
 
 ## 11. Le plan de mise en œuvre
 
-| #   | Tranche                  | Contenu                                                                                                                                                        | Risque    |
-| --- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| 1   | **Contrat et catalogue** | `@lfd/contracts` : `StaffRole`, `StaffPermission`, `ROLE_PERMISSIONS`, `StaffMeView`, payload étendu. `resolvePermissions()` pure + tests.                     | nul       |
-| 2   | **Domaine et schéma**    | Migration Prisma (`phone`, `jobTitle`, `role`, `status`, `staff_permission_overrides`), reprise des `scopes` en rôles, agrégat portant les 4 invariants du §6. | faible    |
-| 3   | **Le mur**               | `StaffPrincipalResolver`, `StaffAccessGuard`, `@RequirePermission`, cache 30 s, `GET /admin/me`, décorateur posé sur **toutes** les routes `/admin/*`.         | **élevé** |
-| 4   | **Socle front**          | `PermissionsStore`, `permissionGuard`, `*canWrite`, menu filtré.                                                                                               | moyen     |
-| 5   | **Écran Utilisateurs**   | Identité complète, sélecteur de rôle, grille de dérogations, suspension.                                                                                       | faible    |
-| 6   | **Invitation**           | Extraction de la règle d'expiration, ticket Auth0, e-mail, `invited → active` constaté.                                                                        | moyen     |
-| 7   | **Preuve**               | e2e : un vrai `403` par rôle, et le test « on ne peut pas se verrouiller dehors ».                                                                             | nul       |
+| #    | Tranche                  | Contenu                                                                                                                                                                             | Risque    |
+| ---- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 1 ✅ | **Contrat et catalogue** | `@lfd/contracts` : `StaffRole`, `StaffPermission`, `ROLE_GRANTS`, `StaffMeView`, payload étendu. `resolveStaffPermissions()` pure + tests.                                          | nul       |
+| 2 ✅ | **Domaine et schéma**    | Migration Prisma (`phone`, `jobTitle`, `role`, `status`, `staff_permission_overrides`), reprise des `scopes` en rôles, `staff-access.policy.ts` portant les 4 invariants du §6.     | faible    |
+| 3 ✅ | **Le mur**               | `StaffAccessResolver` (liaison `auth0Id` constatée, cache 30 s), `StaffAccessGuard`, `@AdminSurface` sur les **24** surfaces `/admin/*`, `GET /admin/me`, suite e2e `staff-access`. | **élevé** |
+| 4    | **Socle front**          | `PermissionsStore`, `permissionGuard`, `*canWrite`, menu filtré.                                                                                                                    | moyen     |
+| 5    | **Écran Utilisateurs**   | Identité complète, sélecteur de rôle, grille de dérogations, suspension.                                                                                                            | faible    |
+| 6    | **Invitation**           | Extraction de la règle d'expiration, ticket Auth0, e-mail, `invited → active` constaté.                                                                                             | moyen     |
+| 7    | **Preuve**               | e2e : un vrai `403` par rôle, et le test « on ne peut pas se verrouiller dehors ».                                                                                                  | nul       |
 
 **Ordre** : 1 → 2 → **3 et 4 sans écart** → 5 → 6 → 7.
 

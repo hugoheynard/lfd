@@ -1,23 +1,13 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   inviteCompanyMemberPayloadSchema,
   type CompanyMemberInvitedView,
   type CompanyMemberView,
   type InviteCompanyMemberPayload,
 } from "@lfd/contracts";
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import { InviteCompanyMemberCommand } from "../application/commands/invite-company-member.command.js";
@@ -32,8 +22,7 @@ import { ListCompanyMembersQuery } from "../application/queries/list-company-mem
  * carnet d'adresses une liste de droits.
  */
 @Controller("admin/companies/:companyId/members")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("companies")
 export class AdminCompanyMembersController {
   constructor(
     private readonly queries: QueryBus,

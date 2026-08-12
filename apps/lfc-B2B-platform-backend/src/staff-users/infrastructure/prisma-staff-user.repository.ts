@@ -1,5 +1,6 @@
 import {
   resolveStaffPermissions,
+  type StaffMeView,
   type StaffOverride,
   type StaffRole,
   type StaffStatus,
@@ -98,6 +99,22 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
       select: SELECT,
     });
     return rows.map(toView);
+  }
+
+  async me(id: string): Promise<StaffMeView> {
+    const row = await this.prisma.staffUser.findUnique({ where: { id }, select: SELECT });
+    if (row === null) {
+      throw new StaffUserNotFoundError(id);
+    }
+    const view = toView(row);
+    return {
+      id: view.id,
+      firstName: view.firstName,
+      lastName: view.lastName,
+      email: view.email,
+      role: view.role,
+      permissions: view.permissions,
+    };
   }
 
   async create(payload: StaffUserPayload, actorSub: string): Promise<string> {

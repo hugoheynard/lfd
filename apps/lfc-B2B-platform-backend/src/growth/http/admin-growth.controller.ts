@@ -1,8 +1,7 @@
-import { Controller, Get, UseGuards } from "@nestjs/common";
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
+import { Controller, Get } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { GetAcquisitionMetricsQuery } from "../application/queries/get-acquisition-metrics.query.js";
 import { GetGrowthStatsQuery } from "../application/queries/get-growth-stats.query.js";
 import { GetMarketAdoptionQuery } from "../application/queries/get-market-adoption.query.js";
@@ -27,11 +26,10 @@ import type {
 /**
  * Surface **staff** du dashboard de croissance (`GET /admin/growth/stats`) : KPIs,
  * courbe d'acquisition, distribution de momentum, entonnoirs et cohortes — dérivés
- * du journal. Même montage à deux surfaces que les autres contrôleurs `/admin/*`.
+ * du journal. Même montage `@AdminSurface` que les autres contrôleurs `/admin/*`.
  */
 @Controller("admin/growth")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("growth")
 export class AdminGrowthController {
   constructor(private readonly queries: QueryBus) {}
 

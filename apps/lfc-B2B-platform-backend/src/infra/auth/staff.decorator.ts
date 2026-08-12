@@ -1,4 +1,4 @@
-import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
+import { createParamDecorator, ForbiddenException, type ExecutionContext } from "@nestjs/common";
 
 import type { AuthenticatedStaffRequest } from "./staff-principal.js";
 
@@ -17,5 +17,25 @@ export const StaffSub = createParamDecorator(
   (_data: unknown, context: ExecutionContext): string => {
     const request = context.switchToHttp().getRequest<AuthenticatedStaffRequest>();
     return request.staff?.subject ?? "unknown-staff";
+  },
+);
+
+/**
+ * L'id de la **fiche** d'annuaire de la personne qui appelle, posé par
+ * `StaffAccessGuard`.
+ *
+ * Contrairement à {@link StaffSub}, pas de valeur de repli : le guard refuse la
+ * requête quand il ne résout personne, donc arriver ici sans fiche serait un
+ * montage cassé — mieux vaut le voir tout de suite qu'inventer un identifiant
+ * qui ne désigne rien.
+ */
+export const StaffUserId = createParamDecorator(
+  (_data: unknown, context: ExecutionContext): string => {
+    const request = context.switchToHttp().getRequest<AuthenticatedStaffRequest>();
+    const staffUserId = request.access?.staffUserId;
+    if (staffUserId === undefined) {
+      throw new ForbiddenException("Accès staff non résolu.");
+    }
+    return staffUserId;
   },
 );

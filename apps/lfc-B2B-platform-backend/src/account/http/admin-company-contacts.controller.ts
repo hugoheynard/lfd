@@ -1,18 +1,7 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Post,
-  UseGuards,
-} from "@nestjs/common";
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
+import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import {
   AddContactByStaffCommand,
@@ -37,8 +26,7 @@ import {
  * comptoir.
  */
 @Controller("admin/companies/:companyId")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("companies")
 export class AdminCompanyContactsController {
   constructor(private readonly commands: CommandBus) {}
 

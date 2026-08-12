@@ -1,18 +1,8 @@
+import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import type { SupportRequestView } from "@lfd/contracts";
-import {
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from "@nestjs/common";
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminAuthGuard } from "../../infra/auth/admin-auth.guard.js";
-import { Public } from "../../infra/auth/public.decorator.js";
 import { HandleSupportRequestCommand } from "../application/commands/handle-support-request.command.js";
 import { ListSupportRequestsQuery } from "../application/queries/list-support-requests.query.js";
 
@@ -21,11 +11,10 @@ import { ListSupportRequestsQuery } from "../application/queries/list-support-re
  *
  * Jusqu'ici le client remplissait un formulaire (canal, numéro, disponibilité,
  * message) qu'aucune surface ne lisait — la vue admin n'en tirait qu'un booléen.
- * Même montage à deux surfaces que les autres `/admin/*`.
+ * Même montage `@AdminSurface` que les autres `/admin/*`.
  */
 @Controller("admin/support-requests")
-@Public()
-@UseGuards(AdminAuthGuard)
+@AdminSurface("support")
 export class AdminSupportController {
   constructor(
     private readonly commands: CommandBus,
