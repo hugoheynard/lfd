@@ -1,7 +1,13 @@
 @if (metrics(); as m) {
   <section class="pb" aria-label="État du portefeuille">
     <article class="pb-tile">
-      <p class="pb-label">Comptes actifs</p>
+      <p class="pb-label">
+        <!-- Le libellé se raccourcit sous 640px, il ne s'abrège jamais tout seul :
+             « Comptes actifs » et « Actifs » sont deux formulations écrites, pas
+             une troncature qui couperait au hasard de la largeur. -->
+        <span class="pb-lbl-full">Comptes actifs</span>
+        <span class="pb-lbl-short">Actifs</span>
+      </p>
       <p class="pb-value">{{ m.activeCompanies }}</p>
       <!-- La croissance se lit par rapport au stock : « +3 » seul ne dit pas si
            c'est beaucoup. -->
@@ -12,13 +18,22 @@
           Aucune entrée sur 30 jours
         }
       </p>
+      <!-- La même chose, télégraphiée, quand la ligne fait 100 px de large. -->
+      <p class="pb-delta">
+        <span [class.pb-up]="m.activatedLast30d > 0">+{{ m.activatedLast30d }}</span> / 30j
+      </p>
     </article>
 
     <article class="pb-tile">
-      <p class="pb-label">Pouls du portefeuille</p>
+      <p class="pb-label">
+        <span class="pb-lbl-full">Pouls du portefeuille</span>
+        <span class="pb-lbl-short">Pouls</span>
+      </p>
       <!-- Chaque part porte son intitulé EN CLAIR. Une couleur et une icône de
            14 px n'apprennent rien à qui n'a pas déjà la légende en tête, et une
-           infobulle au survol n'est pas un libellé. -->
+           infobulle au survol n'est pas un libellé. En mobile l'intitulé tombe :
+           la flèche et le rang tiennent lieu de légende sur trois chiffres
+           voisins, et le détail reste à un tour de poignet. -->
       <div class="pb-pulse">
         <span class="pb-pulse-part">
           <span class="pb-pulse-value pb-up">
@@ -43,16 +58,29 @@
         30 jours contre les 30 précédents · {{ measured() }} compte{{ measured() > 1 ? 's' : '' }}
         ayant commandé
       </p>
+      <p class="pb-delta">30j vs 30j</p>
     </article>
 
     <article class="pb-tile">
-      <p class="pb-label">Encaissements en échec</p>
+      <p class="pb-label">
+        <span class="pb-lbl-full">Encaissements en échec</span>
+        <span class="pb-lbl-short">Échecs</span>
+      </p>
       <p class="pb-value" [class.pb-down]="m.failedPayments > 0">{{ m.failedPayments }}</p>
       <p class="pb-note">
         @if (m.failedPayments > 0) {
           Commandes passées, argent non encaissé — à relancer
         } @else {
           Rien à relancer
+        }
+      </p>
+      <!-- Un nombre rouge et muet n'appelle aucun geste : le mot reste, même à
+           l'étroit. -->
+      <p class="pb-delta">
+        @if (m.failedPayments > 0) {
+          à relancer
+        } @else {
+          rien à relancer
         }
       </p>
     </article>

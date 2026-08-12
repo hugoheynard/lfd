@@ -117,38 +117,82 @@
   font-weight: 700;
 }
 
+/* Deux écritures du même intitulé — une seule s'affiche à la fois (cf. le
+   gabarit). `display:none` la retire aussi des lecteurs d'écran : rien n'est lu
+   deux fois. */
+.pb-lbl-short,
+.pb-delta {
+  display: none;
+}
+
 /**
- * Mobile — la même barre, à sa juste taille.
+ * Mobile — les trois mesures sur UNE ligne.
  *
  * Empilées, les trois tuiles pleine hauteur repoussaient la table sous la ligne
  * de flottaison : on tombait sur un tableau de bord alors qu'on venait chercher
- * une liste. Tous les chiffres restent — c'est leur encombrement qui cède, pas
- * leur nombre.
+ * une liste. Sur trois colonnes serrées, ce qui reste est ce qu'on lit d'un
+ * coup d'œil — un intitulé court, le chiffre, et une note télégraphiée. Les
+ * phrases, elles, ne rétrécissent pas : elles cèdent la place.
  */
 @media (max-width: 640px) {
-  .pb-tile {
-    padding: var(--fold-space-md);
+  .pb {
+    /* `auto-fit` retomberait à une colonne : ici on IMPOSE la ligne. */
+    grid-template-columns: repeat(3, 1fr);
   }
 
-  /* Empilées, le filet doit courir EN HAUT de la tuile, pas sur son flanc : un
-     trait vertical entre deux blocs superposés ne sépare rien. */
+  .pb-tile {
+    grid-template-rows: auto auto auto;
+    padding: var(--fold-space-sm);
+  }
+
   .pb-tile + .pb-tile::before {
-    inset-block: auto;
-    inset-block-start: 0;
-    inset-inline: var(--fold-space-md);
-    width: auto;
-    height: 1px;
+    inset-block: var(--fold-space-xs, 0.35rem);
+  }
+
+  .pb-label {
+    font-size: 9px;
+    letter-spacing: 0.05em;
+  }
+
+  .pb-lbl-full {
+    display: none;
+  }
+
+  .pb-lbl-short {
+    display: inline;
   }
 
   .pb-value {
-    font-size: 1.5rem;
+    margin-top: 0.2rem;
+    font-size: 1.35rem;
   }
 
+  /* Les phrases sortent, la version télégraphiée entre. */
+  .pb-note {
+    display: none;
+  }
+
+  .pb-delta {
+    display: block;
+    margin: 0.2rem 0 0;
+    font-size: 10px;
+    line-height: 1.3;
+    color: var(--fold-color-text-muted);
+  }
+
+  /* Le pouls tient en trois chiffres fléchés ; les intitulés tombent, la flèche
+     et l'ordre suffisent à trois valeurs voisines. */
   .pb-pulse {
-    gap: var(--fold-space-md);
+    gap: 0.5rem;
+    margin-top: 0.2rem;
   }
 
   .pb-pulse-value {
-    font-size: 1.15rem;
+    gap: 0.05rem;
+    font-size: 0.95rem;
+  }
+
+  .pb-pulse-caption {
+    display: none;
   }
 }
