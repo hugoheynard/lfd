@@ -70,8 +70,14 @@ export type CompanyMemberStatus = z.infer<typeof companyMemberStatusSchema>;
  * `none` est le cas le plus fréquent et parfaitement légitime : le responsable
  * réception qui prend les livraisons n'a aucune raison de se connecter. Ce n'est
  * donc pas un manque à corriger, c'est une situation à montrer telle quelle.
+ *
+ * `expired` est l'invitation que personne n'a réclamée à temps. En droit elle ne
+ * vaut pas plus que `none` — le lien de mot de passe est mort de toute façon —
+ * mais elle ne se dit pas pareil : `none`, c'est quelqu'un à qui on n'a jamais
+ * rien proposé ; `expired`, c'est une demande partie et restée sans réponse. Le
+ * geste qu'elle appelle diffère aussi : **relancer**, pas inviter.
  */
-export const contactAccessSchema = z.enum(["none", "invited", "active"]);
+export const contactAccessSchema = z.enum(["none", "invited", "expired", "active"]);
 
 export type ContactAccess = z.infer<typeof contactAccessSchema>;
 

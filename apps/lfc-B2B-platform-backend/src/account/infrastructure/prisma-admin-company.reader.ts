@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "../../infra/database/client/client.js";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
+import { Clock } from "../../infra/time/clock.js";
 import { CompanyAddressReader } from "../domain/ports/company-address.reader.js";
 import {
   AdminCompanyReader,
@@ -80,6 +81,8 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
   constructor(
     private readonly prisma: PrismaService,
     private readonly addresses: CompanyAddressReader,
+    /** L'échéance d'une invitation se juge à l'instant de la requête. */
+    private readonly clock: Clock,
   ) {
     super();
   }
@@ -122,7 +125,13 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       }),
       this.prisma.membership.findMany({
         where: { companyId },
-        select: { user: { select: { email: true, status: true, emailVerified: true } } },
+        // `createdAt` du MEMBERSHIP : c'est la date du rattachement à CETTE
+        // société, donc le compteur de l'invitation. Celle du compte serait
+        // fausse — la personne a pu être invitée ailleurs il y a un an.
+        select: {
+          createdAt: true,
+          user: { select: { email: true, status: true, emailVerified: true } },
+        },
       }),
     ]);
     return {
@@ -132,7 +141,8 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       contacts: projectContacts(
         row,
         book,
-        access.map((membership) => membership.user),
+        access.map((membership) => ({ ...membership.user, attachedAt: membership.createdAt })),
+        this.clock.now(),
       ),
       activation:
         row.activatedAt === null

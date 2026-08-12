@@ -1,6 +1,7 @@
 import type { CompanyContactView, ContactAccess } from "@lfd/contracts";
 
 import type { CustomerRole, UserStatus } from "../../infra/database/client/client.js";
+import { isInvitationExpired } from "../domain/services/invitation-expiry.js";
 
 /** Le détenteur, tel qu'il vit aplati sur la société. */
 export interface HolderRow {
@@ -27,6 +28,12 @@ export interface AccessRow {
   readonly email: string;
   readonly status: UserStatus;
   readonly emailVerified: boolean;
+  /**
+   * Quand elle a été rattachée **à cette société** — la date du membership, pas
+   * celle du compte : la même personne peut avoir été invitée ailleurs il y a un
+   * an et ici hier.
+   */
+  readonly attachedAt: Date;
 }
 
 /**
@@ -47,10 +54,12 @@ export function projectContacts(
   holder: HolderRow,
   book: readonly ContactRow[],
   access: readonly AccessRow[],
+  now: Date,
 ): readonly CompanyContactView[] {
   const byEmail = new Map(access.map((row) => [key(row.email), row]));
+  const stateOf = (row: AccessRow | undefined): AccessState => accessState(row, now);
   return [
-    ...holderCard(holder, byEmail),
+    ...holderCard(holder, byEmail, stateOf),
     ...book.map((contact) => ({
       contactId: contact.id,
       firstName: contact.prenom,
@@ -82,6 +91,7 @@ export function projectContacts(
 function holderCard(
   holder: HolderRow,
   byEmail: ReadonlyMap<string, AccessRow>,
+  stateOf: (row: AccessRow | undefined) => AccessState,
 ): readonly CompanyContactView[] {
   if (key(holder.contactEmail) === "") {
     return [];
@@ -102,13 +112,27 @@ function holderCard(
   ];
 }
 
-/** L'état d'accès + la preuve de l'adresse, ou l'absence des deux. */
-function stateOf(row: AccessRow | undefined): {
-  access: ContactAccess;
-  emailVerified: boolean;
-} {
+/** L'état d'accès + la preuve de l'adresse. */
+interface AccessState {
+  readonly access: ContactAccess;
+  readonly emailVerified: boolean;
+}
+
+/**
+ * L'état d'accès, **échéance comprise**, ou l'absence des deux.
+ *
+ * L'expiration est calculée ici plutôt que lue en base : le balayage qui révoque
+ * pour de bon ne passe que quelques fois par jour, et entre deux passages
+ * l'écran doit dire la vérité — pas « invité » sur un lien mort depuis une
+ * semaine. La règle, elle, n'est écrite qu'une fois (`isInvitationExpired`) et
+ * sert aux deux.
+ */
+function accessState(row: AccessRow | undefined, now: Date): AccessState {
   if (row === undefined) {
     return { access: "none", emailVerified: false };
+  }
+  if (row.status === "invited" && isInvitationExpired(row.attachedAt, now)) {
+    return { access: "expired", emailVerified: row.emailVerified };
   }
   return { access: toAccess(row.status), emailVerified: row.emailVerified };
 }
