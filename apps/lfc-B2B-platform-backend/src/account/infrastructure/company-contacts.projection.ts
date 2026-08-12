@@ -1,7 +1,7 @@
 import type { CompanyContactView, ContactAccess } from "@lfd/contracts";
 
 import type { CustomerRole, UserStatus } from "../../infra/database/client/client.js";
-import { isInvitationExpired } from "../domain/services/invitation-expiry.js";
+import { isInvitationExpired } from "../../shared/invitation/invitation-expiry.js";
 
 /** Le détenteur, tel qu'il vit aplati sur la société. */
 export interface HolderRow {
