@@ -1,6 +1,5 @@
 import type { StaffOverride, StaffRole } from "@lfd/contracts";
 
-import { BOOTSTRAP_ADMIN_EMAIL } from "./bootstrap-admin.js";
 import {
   assertEditAllowed,
   assertRemovalAllowed,
@@ -18,6 +17,7 @@ import {
 function admin(overrides: Partial<StaffMutationTarget> = {}): StaffMutationTarget {
   return {
     email: "camille@lafoliedouce.com",
+    isRoot: false,
     role: "admin",
     otherLivingAdmins: 1,
     isSelf: false,
@@ -34,11 +34,11 @@ function intent(role: StaffRole, extra: { email?: string; overrides?: StaffOverr
 }
 
 describe("l'admin racine", () => {
-  const root = admin({ email: BOOTSTRAP_ADMIN_EMAIL });
+  const root = admin({ isRoot: true, email: "racine@lafoliedouce.com" });
 
   it("ne peut pas être rétrogradé", () => {
     expect(() =>
-      assertEditAllowed(root, intent("commercial", { email: BOOTSTRAP_ADMIN_EMAIL })),
+      assertEditAllowed(root, intent("commercial", { email: "racine@lafoliedouce.com" })),
     ).toThrow(ProtectedStaffUserError);
   });
 
@@ -57,7 +57,7 @@ describe("l'admin racine", () => {
 
   it("se laisse éditer sur le reste", () => {
     expect(() =>
-      assertEditAllowed(root, intent("admin", { email: BOOTSTRAP_ADMIN_EMAIL })),
+      assertEditAllowed(root, intent("admin", { email: "racine@lafoliedouce.com" })),
     ).not.toThrow();
   });
 });

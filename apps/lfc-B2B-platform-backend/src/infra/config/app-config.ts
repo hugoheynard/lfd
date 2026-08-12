@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import type { S3StorageConfig } from "@lfd/storage";
 
+import { normalizeBootstrapEmail } from "../../staff-users/domain/bootstrap-admin.js";
+
 import {
   optionalAdminDevBypass,
   optionalDevImpersonation,
@@ -39,6 +41,7 @@ export class AppConfig {
   private readonly portValue: number;
   private readonly impersonation: DevImpersonationConfig | null;
   private readonly adminAudienceValue: string | null;
+  private readonly bootstrapAdminEmailValue: string;
   private readonly adminBypass: boolean;
   private readonly recomputeTokenValue: string | null;
   private readonly adminBaseUrlValue: string | null;
@@ -59,6 +62,9 @@ export class AppConfig {
     this.portValue = optionalPort("PORT", 3200);
     this.impersonation = optionalDevImpersonation();
     this.adminAudienceValue = optionalString("AUTH0_ADMIN_AUDIENCE");
+    this.bootstrapAdminEmailValue = normalizeBootstrapEmail(
+      optionalString("BOOTSTRAP_ADMIN_EMAIL") ?? "",
+    );
     this.adminBypass = optionalAdminDevBypass();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
@@ -222,6 +228,19 @@ export class AppConfig {
    */
   adminDevBypass(): boolean {
     return this.adminBypass || this.impersonation !== null;
+  }
+
+  /**
+   * E-mail de l'**admin racine** (`BOOTSTRAP_ADMIN_EMAIL`), semé au boot et
+   * protégé de toute suppression, rétrogradation ou renommage.
+   *
+   * Configurable **par déploiement** : c'est la porte de secours du back-office,
+   * et elle ne sert que si elle pointe une boîte que quelqu'un relève vraiment.
+   * Un compte Auth0 doit exister à cette adresse dans la connexion staff, sinon
+   * personne n'entre au premier déploiement.
+   */
+  bootstrapAdminEmail(): string {
+    return this.bootstrapAdminEmailValue;
   }
 
   /**

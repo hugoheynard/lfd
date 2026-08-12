@@ -181,18 +181,19 @@ Sans cette ligne `envVars`, NestJS démarrerait avec un `process.env` vide et pl
 
 ### Tableau de référence — chaque secret runtime B2B
 
-| Nom (env NestJS)                                                                     | Nature GitHub                      | Obligatoire ? | Sert à                              | Absent ⇒                    |
-| ------------------------------------------------------------------------------------ | ---------------------------------- | ------------- | ----------------------------------- | --------------------------- |
-| `DATABASE_B2B_URL`                                                                   | 🔒 Secret                          | **Oui**       | Connexion Prisma Postgres           | Boot échoue                 |
-| `AUTH0_DOMAIN`                                                                       | 📢 Variable (`B2B_AUTH0_DOMAIN`)   | **Oui**       | Vérif JWT client                    | Boot échoue                 |
-| `AUTH0_AUDIENCE`                                                                     | 📢 Variable (`B2B_AUTH0_AUDIENCE`) | **Oui**       | Audience API client                 | Boot échoue                 |
-| `AUTH0_ADMIN_AUDIENCE`                                                               | 📢 Variable                        | Non           | Vérif JWT **staff** (`/admin/*`)    | `/admin` refuse tout token  |
-| `AUTH0_M2M_CLIENT_ID`                                                                | 🔒 Secret                          | Non           | Management API (changer email)      | Édition email refusée       |
-| `AUTH0_M2M_CLIENT_SECRET`                                                            | 🔒 Secret                          | Non           | idem                                | idem                        |
-| `STRIPE_SECRET_KEY`                                                                  | 🔒 Secret                          | Non\*         | Créer PaymentIntent                 | Paiement `per_order` refusé |
-| `STRIPE_PUBLISHABLE_KEY`                                                             | 🔒 Secret                          | Non\*         | Renvoyée au front (Payment Element) | idem                        |
-| `STRIPE_WEBHOOK_SECRET`                                                              | 🔒 Secret                          | Non\*         | Valider signature webhook           | idem                        |
-| `STORAGE_BUCKET` / `_ACCESS_KEY_ID` / `_SECRET_ACCESS_KEY` / `_ENDPOINT` / `_REGION` | 🔒 Secret                          | Non\*         | Dépôt/lecture KBIS (R2)             | KBIS indisponible           |
+| Nom (env NestJS)                                                                     | Nature GitHub                      | Obligatoire ? | Sert à                              | Absent ⇒                      |
+| ------------------------------------------------------------------------------------ | ---------------------------------- | ------------- | ----------------------------------- | ----------------------------- |
+| `DATABASE_B2B_URL`                                                                   | 🔒 Secret                          | **Oui**       | Connexion Prisma Postgres           | Boot échoue                   |
+| `AUTH0_DOMAIN`                                                                       | 📢 Variable (`B2B_AUTH0_DOMAIN`)   | **Oui**       | Vérif JWT client                    | Boot échoue                   |
+| `AUTH0_AUDIENCE`                                                                     | 📢 Variable (`B2B_AUTH0_AUDIENCE`) | **Oui**       | Audience API client                 | Boot échoue                   |
+| `AUTH0_ADMIN_AUDIENCE`                                                               | 📢 Variable                        | Non           | Vérif JWT **staff** (`/admin/*`)    | `/admin` refuse tout token    |
+| `BOOTSTRAP_ADMIN_EMAIL`                                                              | 📢 Variable                        | Non           | Admin racine semé au boot           | Défaut `dev@lafoliedouce.com` |
+| `AUTH0_M2M_CLIENT_ID`                                                                | 🔒 Secret                          | Non           | Management API (changer email)      | Édition email refusée         |
+| `AUTH0_M2M_CLIENT_SECRET`                                                            | 🔒 Secret                          | Non           | idem                                | idem                          |
+| `STRIPE_SECRET_KEY`                                                                  | 🔒 Secret                          | Non\*         | Créer PaymentIntent                 | Paiement `per_order` refusé   |
+| `STRIPE_PUBLISHABLE_KEY`                                                             | 🔒 Secret                          | Non\*         | Renvoyée au front (Payment Element) | idem                          |
+| `STRIPE_WEBHOOK_SECRET`                                                              | 🔒 Secret                          | Non\*         | Valider signature webhook           | idem                          |
+| `STORAGE_BUCKET` / `_ACCESS_KEY_ID` / `_SECRET_ACCESS_KEY` / `_ENDPOINT` / `_REGION` | 🔒 Secret                          | Non\*         | Dépôt/lecture KBIS (R2)             | KBIS indisponible             |
 
 \* Les trois clés Stripe vont **ensemble** ; les cinq `STORAGE_*` vont **ensemble** (l'une sans les autres = erreur au démarrage).
 

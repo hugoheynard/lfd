@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { App } from "supertest/types";
 
-import { BOOTSTRAP_ADMIN_EMAIL } from "../../../staff-users/domain/bootstrap-admin.js";
+import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL } from "../../../staff-users/domain/bootstrap-admin.js";
 import { AppConfig } from "../../config/app-config.js";
 import { AdminAuthGuard } from "../admin-auth.guard.js";
 import { AdminTokenVerifier } from "../admin-token.verifier.js";
@@ -18,7 +18,7 @@ const verifierStub = {
   verify: (jeton: string): Promise<StaffPrincipal> =>
     jeton.startsWith("bad")
       ? Promise.reject(new Error("signature refusée"))
-      : Promise.resolve({ subject: jeton, scopes: ["read:companies"] }),
+      : Promise.resolve({ subject: jeton, email: undefined, scopes: ["read:companies"] }),
 };
 
 /** Contrôleur sonde : route admin, gardée staff, publique vis-à-vis du guard client. */
@@ -37,7 +37,13 @@ async function bootProbe(bypass: boolean): Promise<INestApplication<App>> {
     controllers: [ProbeAdminController],
     providers: [
       AdminAuthGuard,
-      { provide: AppConfig, useValue: { adminDevBypass: (): boolean => bypass } },
+      {
+        provide: AppConfig,
+        useValue: {
+          adminDevBypass: (): boolean => bypass,
+          bootstrapAdminEmail: (): string => DEFAULT_BOOTSTRAP_ADMIN_EMAIL,
+        },
+      },
       { provide: AdminTokenVerifier, useValue: verifierStub },
     ],
   }).compile();
@@ -60,7 +66,7 @@ describe("AdminAuthGuard — bypass de dev", () => {
     const response = await request(app.getHttpServer()).get("/admin/probe").expect(200);
     expect(response.body).toEqual({
       subject: "dev-staff",
-      email: BOOTSTRAP_ADMIN_EMAIL,
+      email: DEFAULT_BOOTSTRAP_ADMIN_EMAIL,
       scopes: [],
     });
   });

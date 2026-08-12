@@ -404,7 +404,10 @@ La 4 suit immédiatement, sinon l'écran offre des boutons qui rendent `403`.
       un 500 (§10).
 - [ ] **Clé Resend + domaine vérifié** — sinon l'invitation part dans le vide,
       silencieusement.
-- [ ] **L'admin racine correspond à une vraie boîte** que quelqu'un relève :
-      c'est la porte de secours, elle ne sert que si elle est écoutée.
+- [ ] **`BOOTSTRAP_ADMIN_EMAIL` pointe une vraie boîte** que quelqu'un relève, et
+      un compte Auth0 existe à cette adresse dans la connexion staff. C'est la
+      porte de secours : elle ne sert que si elle est écoutée. **Sortie de
+      secours** si tout est fermé : un `UPDATE staff_users SET auth0_id = …` sur
+      la ligne racine rouvre la porte.
 - [ ] **Le bypass de dev résout vers l'admin racine** (§7) — vérifié en local
       _avant_ de déployer la tranche 3.

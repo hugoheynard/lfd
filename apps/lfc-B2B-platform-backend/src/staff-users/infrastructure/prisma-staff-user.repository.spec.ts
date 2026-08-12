@@ -1,8 +1,9 @@
 import type { StaffRole } from "@lfd/contracts";
 import { Test } from "@nestjs/testing";
 
+import { AppConfig } from "../../infra/config/app-config.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import { BOOTSTRAP_ADMIN_EMAIL } from "../domain/bootstrap-admin.js";
+import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL as BOOTSTRAP_ADMIN_EMAIL } from "../domain/bootstrap-admin.js";
 import {
   LastStaffAdminError,
   ProtectedStaffUserError,
@@ -72,6 +73,10 @@ async function buildRepo(prisma: object): Promise<StaffUserRepository> {
   const moduleRef = await Test.createTestingModule({
     providers: [
       { provide: PrismaService, useValue: prisma },
+      {
+        provide: AppConfig,
+        useValue: { bootstrapAdminEmail: (): string => BOOTSTRAP_ADMIN_EMAIL },
+      },
       { provide: StaffUserRepository, useClass: PrismaStaffUserRepository },
     ],
   }).compile();

@@ -6,7 +6,6 @@ import {
   type StaffStatus,
 } from "@lfd/contracts";
 
-import { isBootstrapAdminEmail } from "./bootstrap-admin.js";
 import {
   AdminOverrideRefusedError,
   LastStaffAdminError,
@@ -27,8 +26,15 @@ import {
 
 /** Ce qu'il faut savoir de la personne visée pour trancher une mutation. */
 export interface StaffMutationTarget {
-  /** L'e-mail **actuel** en base — c'est lui qui identifie l'admin racine. */
+  /** L'e-mail **actuel** en base — la référence de la règle « racine non renommable ». */
   readonly email: string;
+  /**
+   * Vrai si cette fiche est l'**admin racine**. Le domaine ne connaît pas
+   * l'adresse : elle est configurable par déploiement, et une règle qui
+   * dépendrait d'une constante d'environnement ne serait plus une règle de
+   * domaine.
+   */
+  readonly isRoot: boolean;
   readonly role: StaffRole;
   /**
    * Le nombre d'**autres** administrateurs encore en état d'entrer, c'est-à-dire
@@ -76,7 +82,7 @@ export function assertEditAllowed(target: StaffMutationTarget, intent: StaffMuta
  * @throws {LastStaffAdminError} la cible est le dernier administrateur.
  */
 export function assertRemovalAllowed(target: StaffMutationTarget): void {
-  if (isBootstrapAdminEmail(target.email)) {
+  if (target.isRoot) {
     throw new ProtectedStaffUserError();
   }
   if (target.role === "admin") {
@@ -99,7 +105,7 @@ export function assertStatusChangeAllowed(
   if (nextStatus !== "suspended") {
     return;
   }
-  if (isBootstrapAdminEmail(target.email)) {
+  if (target.isRoot) {
     throw new ProtectedStaffUserError();
   }
   if (target.role === "admin") {
@@ -112,10 +118,10 @@ export function assertStatusChangeAllowed(
  * s'auto-exclut du provisioning, ou échappe à sa propre garde par renommage.
  */
 function assertRootAdminIntact(target: StaffMutationTarget, intent: StaffMutationIntent): void {
-  if (!isBootstrapAdminEmail(target.email)) {
+  if (!target.isRoot) {
     return;
   }
-  if (!isBootstrapAdminEmail(intent.email) || intent.role !== "admin") {
+  if (intent.email.trim().toLowerCase() !== target.email || intent.role !== "admin") {
     throw new ProtectedStaffUserError();
   }
 }

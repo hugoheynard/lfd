@@ -9,8 +9,9 @@ import {
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import { AppConfig } from "../../infra/config/app-config.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import { BOOTSTRAP_ADMIN } from "../domain/bootstrap-admin.js";
+import { bootstrapAdmin } from "../domain/bootstrap-admin.js";
 import {
   assertEditAllowed,
   assertRemovalAllowed,
@@ -89,7 +90,10 @@ function identityColumns(payload: StaffUserPayload) {
 /** Adaptateur Prisma de l'annuaire staff. Tient l'unicité de l'e-mail. */
 @Injectable()
 export class PrismaStaffUserRepository extends StaffUserRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: AppConfig,
+  ) {
     super();
   }
 
@@ -154,7 +158,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
   }
 
   async ensureBootstrapAdmin(): Promise<void> {
-    const data = identityColumns(BOOTSTRAP_ADMIN);
+    const data = identityColumns(bootstrapAdmin(this.config.bootstrapAdminEmail()));
     const existing = await this.prisma.staffUser.findUnique({
       where: { email: data.email },
       select: { id: true },
@@ -180,6 +184,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     }
     return {
       email: existing.email,
+      isRoot: existing.email === this.config.bootstrapAdminEmail(),
       role: existing.role,
       otherLivingAdmins: await this.countOtherLivingAdmins(id),
       isSelf: existing.auth0Id !== null && existing.auth0Id === actorSub,

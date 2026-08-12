@@ -5,25 +5,13 @@ import {
   type ExecutionContext,
 } from "@nestjs/common";
 
-import { BOOTSTRAP_ADMIN_EMAIL } from "../../staff-users/domain/bootstrap-admin.js";
 import { AppConfig } from "../config/app-config.js";
 import { attachActor } from "../context/request-context.store.js";
 import { AdminTokenVerifier } from "./admin-token.verifier.js";
-import type { AuthenticatedStaffRequest, StaffPrincipal } from "./staff-principal.js";
+import type { AuthenticatedStaffRequest } from "./staff-principal.js";
 
-/**
- * Identité synthétique du bypass de dev — jamais atteinte en prod.
- *
- * Elle porte l'e-mail de l'**admin racine** pour que la résolution d'accès
- * emprunte le chemin normal (rapprochement par adresse) et rende un vrai
- * périmètre. Sans ça, poser le mur fermerait le poste de travail local le jour
- * même.
- */
-const DEV_STAFF: StaffPrincipal = {
-  subject: "dev-staff",
-  email: BOOTSTRAP_ADMIN_EMAIL,
-  scopes: [],
-};
+/** Le `sub` synthétique du bypass de dev — jamais atteint en prod. */
+const DEV_STAFF_SUBJECT = "dev-staff";
 
 /**
  * Guard de la surface **admin** (`/admin/*`) : porte STAFF, distincte du guard
@@ -48,8 +36,16 @@ export class AdminAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedStaffRequest>();
 
     if (this.config.adminDevBypass()) {
-      request.staff = DEV_STAFF;
-      attachActor({ type: "staff", id: DEV_STAFF.subject });
+      // L'identité synthétique porte l'e-mail de l'**admin racine** pour que la
+      // résolution d'accès emprunte le chemin normal (rapprochement par adresse)
+      // et rende un vrai périmètre. Sans ça, poser le mur aurait fermé le poste
+      // de travail local le jour même.
+      request.staff = {
+        subject: DEV_STAFF_SUBJECT,
+        email: this.config.bootstrapAdminEmail(),
+        scopes: [],
+      };
+      attachActor({ type: "staff", id: DEV_STAFF_SUBJECT });
       return true;
     }
 
