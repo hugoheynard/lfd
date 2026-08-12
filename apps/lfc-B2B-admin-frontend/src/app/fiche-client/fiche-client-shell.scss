@@ -1,4 +1,3 @@
-
 /* La nav et la vue forment UN bloc : l'écart entre les deux est plus serré que
    le rythme de page, sinon les pastilles pleines flottent au-dessus du vide au
    lieu de coiffer la première carte. */
@@ -10,7 +9,10 @@
 }
 
 /* Accrochée en haut : une fiche client est longue (informations, journal), et
-   changer d'onglet ne doit pas demander de remonter. */
+   changer d'onglet ne doit pas demander de remonter. L'opacité vient de la
+   barre elle-même (`background="surface"`, opaque depuis fold-ng 0.10.1) : on
+   ne repeint pas un fond ici, sous peine d'en inventer un que le thème ignore
+   — c'est ce qui s'était passé, avec un token qui n'existait pas. */
 .fc-tabs {
   position: sticky;
   top: 0;
@@ -18,5 +20,4 @@
   display: block;
   min-width: 0;
   padding-block: var(--fold-space-xs);
-  background: var(--fold-color-surface);
 }
