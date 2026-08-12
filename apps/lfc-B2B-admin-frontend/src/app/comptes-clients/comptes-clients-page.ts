@@ -198,14 +198,14 @@ export class ComptesClientsPage {
   protected readonly searching = computed(() => this.search() !== '');
 
   /**
-   * Ce que le titre de la table annonce : combien de comptes on regarde **après
-   * filtre**. C'est le seul chiffre de l'écran que le segment actif fait bouger,
-   * et celui qu'on cherche des yeux — pas le total, qui ne dirait rien du tri
-   * en cours.
+   * Le libellé du filet d'en-tête de la table — nom **et** compte sur la même
+   * ligne. Le chiffre est celui d'**après filtre** : c'est le seul de l'écran
+   * que le segment actif fait bouger, et celui qu'on cherche des yeux. Le total
+   * ne dirait rien du tri en cours.
    */
-  protected readonly tableSubtitle = computed(() => {
+  protected readonly tableTitle = computed(() => {
     const count = this.filtered().length;
-    return count === 1 ? '1 compte' : `${count} comptes`;
+    return count === 1 ? 'Comptes clients · 1' : `Comptes clients · ${count}`;
   });
 
   /** Message d'état vide, contextualisé au segment actif — ou à la recherche. */

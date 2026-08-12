@@ -72,17 +72,12 @@
       [loading]="state() === 'loading'"
       [empty]="emptyState()"
     >
-      <!-- La barre de titre de la table, projetée dans sa surface accent : la
-           table se nomme elle-même, et son sous-titre dit combien de lignes on
-           regarde — le seul chiffre que le filtre fait bouger, et qu'on cherche
-           des yeux avant de lire la première ligne. -->
-      <fold-element-title
-        foldToolbar
-        variant="title"
-        icon="company"
-        title="Comptes clients"
-        [subtitle]="tableSubtitle()"
-      />
+      <!-- La barre de titre de la table, projetée dans sa surface accent. Variante
+           `bar` : UNE ligne, c'est un filet d'en-tête, pas une section. Le compte
+           tient dans le libellé plutôt que dans un sous-titre — il n'aurait pas
+           mérité une seconde ligne, mais il mérite d'être là : c'est le seul
+           chiffre de l'écran que le filtre fait bouger. -->
+      <fold-element-title foldToolbar variant="bar" icon="company" [title]="tableTitle()" />
 
       <ng-template foldCell="reference" let-row>
         <a class="ref-link" [routerLink]="['/comptes-clients', row.id]">{{ row.reference }}</a>
