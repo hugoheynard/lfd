@@ -50,16 +50,24 @@
   // réveiller le container. `period` n'accepte que 10 ou 60 (secondes). 300/min
   // = large pour un SPA connecté, mais coupe le flood d'une IP unique. La
   // protection volumétrique/distribuée reste l'anti-DDoS automatique Cloudflare.
-  "unsafe": {
-    "bindings": [
-      {
-        "name": "RATE_LIMITER",
-        "type": "ratelimit",
-        "namespace_id": "1001",
-        "simple": { "limit": 300, "period": 60 },
-      },
-    ],
-  },
+  //
+  // ⚠️ Champ de PREMIER NIVEAU `ratelimits`, et non `unsafe.bindings`. Sous
+  // l'ancienne forme, le binding existait assez pour ne pas faire planter le
+  // Worker — mais sa configuration n'était pas appliquée et `limit()` rendait
+  // toujours `success: true`. Mesuré le 2026-08-13 en production : 500 requêtes
+  // d'une même IP en rafale, **zéro 429**, toutes arrivées au container. Une
+  // protection qu'on croit avoir et qu'on n'a pas est pire que pas de
+  // protection : on ne la surveille plus.
+  //
+  // Le compteur est LOCAL au datacentre Cloudflare qui exécute le Worker, et
+  // volontairement approximatif — c'est un coupe-flood, pas une comptabilité.
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 300, "period": 60 },
+    },
+  ],
 
   // Cron Triggers : réveillent le Worker (handler `scheduled`), qui départage les
   // deux rythmes sur l'expression exacte du cron. ⚠️ `*/5 * * * *` est recopié

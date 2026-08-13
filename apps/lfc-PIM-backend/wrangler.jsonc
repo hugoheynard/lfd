@@ -29,14 +29,15 @@
   // réveiller le container. `period` n'accepte que 10 ou 60 (secondes). 300/min
   // = large pour un SPA connecté, mais coupe le flood d'une IP unique. La
   // protection volumétrique/distribuée reste l'anti-DDoS automatique Cloudflare.
-  "unsafe": {
-    "bindings": [
-      {
-        "name": "RATE_LIMITER",
-        "type": "ratelimit",
-        "namespace_id": "1001",
-        "simple": { "limit": 300, "period": 60 },
-      },
-    ],
-  },
+  // ⚠️ Champ de PREMIER NIVEAU `ratelimits`, jamais `unsafe.bindings` : sous
+  // l'ancienne forme la configuration n'était pas appliquée et `limit()` rendait
+  // toujours `success: true`. Même correction et même mesure que côté B2B, cf.
+  // son wrangler.jsonc.
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "1002",
+      "simple": { "limit": 300, "period": 60 },
+    },
+  ],
 }
