@@ -13,15 +13,30 @@
       // RACINE du monorepo). `__CF_ACCOUNT_ID__` est remplacé au deploy par le
       // secret CLOUDFLARE_ACCOUNT_ID (jamais commité). Tag `latest`.
       "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfc-b2b-backend:latest",
-      "max_instances": 2,
+      // UNE instance, tenue chaude par le cron `*/5` (cf. `triggers.crons`).
+      //
+      // Ce n'est pas un plafond de capacité mais un choix de routage : Cloudflare
+      // n'offre aujourd'hui aucun routage sensible à la charge, seulement
+      // `getRandom` — un tirage au sort. À trafic faible, deux instances tirées
+      // aux dés donnent deux machines tièdes et une requête sur deux qui démarre
+      // à froid ; une seule instance chaude fait strictement mieux.
+      //
+      // L'ordre des leviers quand ça serrera, chacun sur une MESURE (latence en
+      // hausse, CPU au plafond) et pas par anticipation :
+      //   1. `instance_type: "standard-1"` — grossir avant de multiplier : un
+      //      seul process Node profite mieux d'un demi-vCPU que d'un deuxième
+      //      container qu'il faut apprendre à router.
+      //   2. `max_instances: 2` + routage par compteur de requêtes en vol tenu
+      //      dans le DO primaire (le seul point qui connaisse sa charge).
+      "max_instances": 1,
       // lite (1/16 vCPU,256Mi) trop petit pour Node+Nest → basic (1/4 vCPU,1Gi).
       // Monter à "standard-1" (1/2 vCPU,4Gi) si la RAM serre.
-      "instance_type": "basic"
-    }
+      "instance_type": "basic",
+    },
   ],
 
   "durable_objects": {
-    "bindings": [{ "name": "BACKEND", "class_name": "Backend" }]
+    "bindings": [{ "name": "BACKEND", "class_name": "Backend" }],
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Backend"] }],
 
@@ -35,15 +50,26 @@
         "name": "RATE_LIMITER",
         "type": "ratelimit",
         "namespace_id": "1001",
-        "simple": { "limit": 300, "period": 60 }
-      }
-    ]
+        "simple": { "limit": 300, "period": 60 },
+      },
+    ],
   },
 
-  // Cron Triggers : réveillent le Worker (handler `scheduled`) qui déclenche le
-  // recompute batch du read-model `lead_score` (POST /admin/recompute vers le
-  // container, jeton RECOMPUTE_TOKEN). 3×/jour aux HEURES CREUSES — hors des pics
-  // de commande (atelier + services chefs).
+  // Cron Triggers : réveillent le Worker (handler `scheduled`), qui départage les
+  // deux rythmes sur l'expression exacte du cron. ⚠️ `*/5 * * * *` est recopié
+  // dans `KEEP_WARM_CRON` (worker.ts) — les deux chaînes doivent rester
+  // identiques, sinon le ping partirait en recompute.
+  //
+  // 1. `*/5` — RAFRAÎCHISSEMENT. Frappe `/health` sur l'instance nommée toutes
+  //    les 5 min, donc bien plus souvent que son `sleepAfter = "1h"` : elle ne
+  //    s'endort jamais et personne ne paie de démarrage à froid. Sans ce cron,
+  //    une nuit ou un dimanche suffisent à endormir le backend, et le premier
+  //    visiteur du matin attend le boot de Node. Coût : ~8 600 requêtes Worker
+  //    par mois, invisible dans le forfait.
+  //
+  // 2. `0 3|11|19` — RECOMPUTE du read-model `lead_score` (POST /admin/recompute
+  //    vers le container, jeton RECOMPUTE_TOKEN), 3×/jour aux HEURES CREUSES,
+  //    hors des pics de commande (atelier + services chefs).
   //
   // ⚠️ Les crons Cloudflare sont en **UTC**. On vise ~04h/12h/20h Europe/Paris ;
   // avec le décalage saisonnier (UTC+1 hiver / UTC+2 été), 03/11/19 UTC tombe à
@@ -51,6 +77,6 @@
   // pour un batch dont la fraîcheur assumée est ≤ ~8 h. Le jeton se pose par
   // `wrangler secret put RECOMPUTE_TOKEN` (jamais commité).
   "triggers": {
-    "crons": ["0 3 * * *", "0 11 * * *", "0 19 * * *"]
-  }
+    "crons": ["*/5 * * * *", "0 3 * * *", "0 11 * * *", "0 19 * * *"],
+  },
 }

@@ -2,13 +2,13 @@
 //
 // Rôle : (1) rate-limiter par IP AVANT le container (défense anti-abus/DDoS —
 // le flood est rejeté à l'edge sans jamais réveiller Node) ; (2) router la
-// requête vers UNE instance de container (réparti, stateless) ; (3) transférer
-// au container les variables runtime posées comme secrets du Worker
-// (`wrangler secret put` → `this.env` → `envVars` → process.env du NestJS).
+// requête vers L'instance de container (une seule, nommée — cf. `PRIMARY`) ;
+// (3) transférer au container les variables runtime posées comme secrets du
+// Worker (`wrangler secret put` → `this.env` → `envVars` → process.env du NestJS).
 //
 // ⚠️ Hors de `src/` : pas typé par le tsconfig Nest ; wrangler/esbuild le bundle.
 // Types éditeur : container/tsconfig.json.
-import { Container, getRandom } from "@cloudflare/containers";
+import { Container, getContainer } from "@cloudflare/containers";
 
 /**
  * Binding Rate Limiting de Cloudflare (déclaré dans wrangler.jsonc). `limit()`
@@ -62,8 +62,32 @@ function pickEnv(env: Env): Record<string, string> {
 /** Le container = un Durable Object qui pilote l'image NestJS. */
 export class Backend extends Container<Env> {
   defaultPort = 8080; // NestJS écoute ce port (Dockerfile : ENV PORT=8080).
-  sleepAfter = "1h"; // reste chaud → anti cold-start.
+  // Délai d'INACTIVITÉ, pas un maintien en éveil : sans requête pendant une
+  // heure l'instance s'endort, et la requête suivante paie le démarrage à
+  // froid. Ce qui la garde chaude est le cron de rafraîchissement ci-dessous ;
+  // cette ligne n'est que le filet quand le cron ne passe plus.
+  sleepAfter = "1h";
   envVars = pickEnv(this.env); // secrets du Worker → env du container.
+}
+
+/**
+ * Le nom de l'instance unique — **déterministe, et c'est tout l'intérêt** : un
+ * nom fixe route toujours vers le même container, donc vers celui que le cron
+ * tient chaud.
+ *
+ * Le contraire, `getRandom(binding, N)`, tire au sort à chaque requête sans
+ * aucune notion de charge. À trafic faible il disperse le trafic sur N
+ * instances tièdes au lieu d'en garder une chaude, et une requête sur N paie un
+ * démarrage à froid — l'inverse de ce qu'on cherche. Cloudflare ne fournit à ce
+ * jour aucun routage sensible à la charge (leur page « Scaling and Routing »
+ * l'annonce au futur), et `max_instances` n'est qu'un plafond de facturation,
+ * pas un déclencheur. Passer à plusieurs instances demandera donc un vrai
+ * signal mesuré, pas un changement de chiffre.
+ */
+const PRIMARY_INSTANCE = "primary";
+
+function backend(env: Env): DurableObjectStub<Backend> {
+  return getContainer(env.BACKEND, PRIMARY_INSTANCE);
 }
 
 /** 429 renvoyé quand une IP dépasse son quota edge. `Retry-After` = fenêtre. */
@@ -114,8 +138,7 @@ async function triggerRecompute(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  const instance = await getRandom(env.BACKEND, 2);
-  await instance.fetch(
+  await backend(env).fetch(
     new Request("https://internal/admin/recompute", {
       method: "POST",
       headers: { "x-lfc-recompute-token": token },
@@ -123,19 +146,48 @@ async function triggerRecompute(env: Env): Promise<void> {
   );
 }
 
+/**
+ * L'expression exacte du cron de rafraîchissement, telle qu'écrite dans
+ * `wrangler.jsonc`. Cloudflare ne transmet que cette chaîne pour distinguer les
+ * déclenchements : elle doit rester **identique des deux côtés**, sinon le ping
+ * serait traité comme un recompute (et le recompute ne partirait jamais).
+ */
+const KEEP_WARM_CRON = "*/5 * * * *";
+
+/**
+ * Garde l'instance chaude en la sollicitant plus souvent que son `sleepAfter`.
+ *
+ * C'est ce qui fait la différence entre « s'endort après une heure de calme » et
+ * « répond tout de suite à 7 h du matin ». On frappe `/health` : route publique
+ * et hors throttler, qui n'ouvre ni la base ni rien d'autre — le but est de
+ * toucher le container, pas de mesurer quoi que ce soit.
+ *
+ * Une erreur ici ne mérite pas de faire échouer le déclenchement : le prochain
+ * ping arrive dans cinq minutes, et un cron en échec n'a aucun lecteur.
+ */
+async function keepWarm(env: Env): Promise<void> {
+  try {
+    await backend(env).fetch(new Request("https://internal/health"));
+  } catch {
+    // Silencieux par conception : voir ci-dessus.
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (await isRateLimited(request, env)) {
       return tooManyRequests();
     }
-    const instance = await getRandom(env.BACKEND, 2);
-    return instance.fetch(request);
+    return backend(env).fetch(request);
   },
 
-  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc) : le Worker
-  // se réveille aux heures creuses et lance le recompute. `waitUntil` garde le
-  // Worker vivant jusqu'à la fin de l'appel container.
-  scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
-    ctx.waitUntil(triggerRecompute(env));
+  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Deux
+  // rythmes sur le même handler, départagés par l'expression : toutes les 5 min
+  // pour garder le container chaud, et 3×/jour aux heures creuses pour le
+  // recompute batch. `waitUntil` garde le Worker vivant jusqu'à la fin de
+  // l'appel container.
+  scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
+    const work = controller.cron === KEEP_WARM_CRON ? keepWarm(env) : triggerRecompute(env);
+    ctx.waitUntil(work);
   },
 };

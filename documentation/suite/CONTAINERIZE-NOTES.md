@@ -9,7 +9,8 @@
 
 - ✅ `@cloudflare/containers`, `wrangler`, `@cloudflare/workers-types@^5` ajoutés aux
   deux backends (lockfile à jour).
-- ✅ `container/worker.ts` **typecheck** (routage réparti `await getRandom(ns, 2)`).
+- ✅ `container/worker.ts` **typecheck**. B2B : instance nommée (`getContainer`) ;
+  PIM : réparti (`getRandom`). Cf. « Rappels d'archi ».
 - ✅ Backends `tsc --noEmit` verts ; `app.listen(port, "0.0.0.0")` explicite.
 - ✅ Ymls pointent le wrangler **pinné** (`pnpm exec wrangler deploy`).
 
@@ -43,13 +44,31 @@
    Worker route sur `defaultPort=8080`. Garder ces trois alignés.
 4. **`instance_type`** : démarré en `basic` (1/4 vCPU, 1 Gi). Si Node+Nest serre en
    RAM au boot, passer à `standard-1` (4 Gi).
-5. **DB & connexions** : chaque instance a son pool → avec `max_instances=2`, prévoir
-   un **pooler** (PgBouncer / pooler hébergeur) pour ne pas dépasser `max_connections`.
+5. **DB & connexions** : chaque instance a son pool. À une instance (le cas B2B),
+   un pool suffit ; le jour où `max_instances` remonte, prévoir un **pooler**
+   (PgBouncer / pooler hébergeur) pour ne pas dépasser `max_connections`.
 
 ## Rappels d'archi (déjà tranchés)
 
-- `max_instances = 2` au démarrage ; routage **réparti** (`getRandom`) — stateless.
-- `sleepAfter = "1h"` pour rester chaud (anti cold-start).
+- **B2B : UNE instance nommée (`getContainer(binding, "primary")`), tenue chaude
+  par un cron `*/5` qui frappe `/health`.** Deux choses qu'on avait mal lues au
+  départ : `sleepAfter = "1h"` est un délai d'**inactivité**, pas un maintien en
+  éveil (une nuit de calme suffit à endormir le backend) ; et `getRandom(b, N)`
+  **tire au sort**, sans aucune notion de charge — Cloudflare n'offre à ce jour
+  aucun routage sensible à la charge (leur page _Scaling and Routing_ l'annonce
+  au futur), et `max_instances` n'est qu'un plafond de facturation. À trafic
+  faible, deux instances tirées aux dés = deux machines tièdes et une requête sur
+  deux qui démarre à froid ; une seule instance chaude fait strictement mieux,
+  pour le même prix (~7 $/mois).
+- **Montée en charge, dans cet ordre et chacune sur une MESURE** (latence en
+  hausse, CPU au plafond) : (1) `instance_type: "standard-1"` — grossir avant de
+  multiplier, un process Node profite mieux d'un demi-vCPU que d'un second
+  container à router ; (2) `max_instances: 2` + routage par compteur de requêtes
+  en vol tenu dans le DO primaire ; (3) si on dépasse vraiment la plateforme,
+  Cloud Run (autoscaling à la concurrence + `min-instances: 1`) — **pas**
+  Kubernetes, dont le coût d'opération n'a aucun sens à une personne.
+- Le PIM reste sur `getRandom` : backoffice interne, où un démarrage à froid
+  occasionnel est acceptable. À revoir si l'usage devient quotidien.
 - Le Worker ne fait que router ; toute la logique reste dans l'image NestJS.
 - Les deux workflows `deploy_pim_backend.yml` / `deploy_b2b_backend.yml` lancent
   `wrangler deploy` sur push `main` touchant le backend concerné.
