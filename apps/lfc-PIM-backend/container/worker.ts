@@ -4,10 +4,8 @@
 // Voir apps/lfc-B2B-platform-backend/container/worker.ts pour les détails.
 import { Container } from '@cloudflare/containers';
 
-/** Binding Rate Limiting Cloudflare (wrangler.jsonc) : compte par `key` à l'edge. */
-interface RateLimiter {
-  limit(options: { key: string }): Promise<{ success: boolean }>;
-}
+import { guardedFetch } from './edge-guard';
+import type { RateLimiter } from './edge-guard';
 
 /** Variables runtime forwardées au container. `PORT`/`NODE_ENV` viennent de l'image. */
 const RUNTIME_KEYS = [
@@ -72,62 +70,13 @@ function backend(env: Env): DurableObjectStub<Backend> {
   );
 }
 
-/** 429 renvoyé quand une IP dépasse son quota edge. */
-function tooManyRequests(): Response {
-  return new Response('Too Many Requests', {
-    status: 429,
-    headers: { 'retry-after': '60', 'content-type': 'text/plain' },
-  });
-}
-
-/** L'en-tête que le backend NestJS lit pour identifier le client (throttler). */
-const CLIENT_IP_HEADER = 'x-lfc-client-ip';
-
-/**
- * IP cliente : **uniquement `cf-connecting-ip`**, posée par Cloudflare et
- * infalsifiable par le client. On ne lit pas `x-lfc-client-ip` — c'est une
- * valeur d'origine cliente. Cf. le worker B2B pour la démonstration du trou.
- */
-function clientIp(request: Request): string | null {
-  const direct = request.headers.get('cf-connecting-ip');
-  return direct !== null && direct !== '' ? direct : null;
-}
-
-/**
- * Réécrit `x-lfc-client-ip` avant transmission au container, pour que
- * l'invariant supposé par le backend (« quelqu'un en amont l'écrase toujours »)
- * soit enfin vrai. Ce Worker est la frontière de confiance : dernier point où
- * l'on connaît la vraie IP, premier que la requête franchit. Supprimé plutôt
- * que laissé passer quand il n'y a pas d'IP (appel interne). Cf. le worker B2B.
- */
-function withTrustedClientIp(request: Request): Request {
-  const headers = new Headers(request.headers);
-  const real = clientIp(request);
-  if (real === null) {
-    headers.delete(CLIENT_IP_HEADER);
-  } else {
-    headers.set(CLIENT_IP_HEADER, real);
-  }
-  return new Request(request, { headers });
-}
-
-/** Rate-limit par IP cliente. Sans IP (appel interne) : pas de limite. */
-async function isRateLimited(request: Request, env: Env): Promise<boolean> {
-  const ip = clientIp(request);
-  if (ip === null) {
-    return false;
-  }
-  const { success } = await env.RATE_LIMITER.limit({ key: ip });
-  return !success;
-}
-
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (await isRateLimited(request, env)) {
-      return tooManyRequests();
-    }
-    // Jamais `request` brut : le container ne doit voir que l'en-tête d'IP
-    // réécrit ici, sinon son throttler se laisse guider par le client.
-    return backend(env).fetch(withTrustedClientIp(request));
+    // Toute la politique d'edge vit dans `edge-guard.ts`, sous tests. Ici, que
+    // du câblage : ce fichier importe le monde Workers, donc il n'est pas
+    // testable — il ne doit donc contenir aucune décision.
+    return guardedFetch(request, env.RATE_LIMITER, (forwarded) =>
+      backend(env).fetch(forwarded),
+    );
   },
 };

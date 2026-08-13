@@ -10,14 +10,8 @@
 // Types éditeur : container/tsconfig.json.
 import { Container } from "@cloudflare/containers";
 
-/**
- * Binding Rate Limiting de Cloudflare (déclaré dans wrangler.jsonc). `limit()`
- * compte les appels par `key` sur la fenêtre configurée et répond `success:false`
- * quand le quota est dépassé. Le comptage vit à l'edge, hors du container.
- */
-interface RateLimiter {
-  limit(options: { key: string }): Promise<{ success: boolean }>;
-}
+import { guardedFetch } from "./edge-guard";
+import type { RateLimiter } from "./edge-guard";
 
 /** Variables runtime forwardées au container. `PORT`/`NODE_ENV` viennent de l'image. */
 const RUNTIME_KEYS = [
@@ -73,19 +67,14 @@ export class Backend extends Container<Env> {
 /**
  * Le nom de l'instance unique — **déterministe, et c'est tout l'intérêt** : un
  * nom fixe route toujours vers le même container, donc vers celui que le cron
- * tient chaud.
+ * tient chaud. Le contraire, `getRandom(binding, N)`, tire au sort à chaque
+ * requête sans aucune notion de charge : à trafic faible il disperse le trafic
+ * sur N instances tièdes au lieu d'en garder une chaude. Cloudflare n'offre à ce
+ * jour aucun routage sensible à la charge, et `max_instances` n'est qu'un
+ * plafond de facturation — passer à plusieurs instances demandera un signal
+ * mesuré, pas un changement de chiffre.
  *
- * Le contraire, `getRandom(binding, N)`, tire au sort à chaque requête sans
- * aucune notion de charge. À trafic faible il disperse le trafic sur N
- * instances tièdes au lieu d'en garder une chaude, et une requête sur N paie un
- * démarrage à froid — l'inverse de ce qu'on cherche. Cloudflare ne fournit à ce
- * jour aucun routage sensible à la charge (leur page « Scaling and Routing »
- * l'annonce au futur), et `max_instances` n'est qu'un plafond de facturation,
- * pas un déclencheur. Passer à plusieurs instances demandera donc un vrai
- * signal mesuré, pas un changement de chiffre.
- */
-/**
- * Le suffixe `-weur` n'est pas décoratif : **c'est ce qui déplace l'objet.**
+ * Le suffixe `-weur`, lui, n'est pas décoratif : **c'est ce qui déplace l'objet.**
  *
  * Un Durable Object ne change jamais d'emplacement après sa création (Cloudflare
  * annonce la relocalisation « pour plus tard »), et `locationHint` n'est lu qu'au
@@ -117,82 +106,6 @@ const PLACEMENT = { locationHint: "weur" } as const;
 
 function backend(env: Env): DurableObjectStub<Backend> {
   return env.BACKEND.get(env.BACKEND.idFromName(PRIMARY_INSTANCE), PLACEMENT);
-}
-
-/** 429 renvoyé quand une IP dépasse son quota edge. `Retry-After` = fenêtre. */
-function tooManyRequests(): Response {
-  return new Response("Too Many Requests", {
-    status: 429,
-    headers: { "retry-after": "60", "content-type": "text/plain" },
-  });
-}
-
-/** L'en-tête que le backend NestJS lit pour identifier le client (throttler). */
-const CLIENT_IP_HEADER = "x-lfc-client-ip";
-
-/**
- * Résout l'IP cliente — **uniquement depuis `cf-connecting-ip`**, que Cloudflare
- * pose lui-même sur toute requête entrante et qu'un client ne peut pas falsifier.
- *
- * On ne lit surtout PAS `x-lfc-client-ip` ici : c'est une valeur qui vient du
- * client. Absente ⇒ appel interne (cron), qu'on ne limite pas.
- */
-function clientIp(request: Request): string | null {
-  const direct = request.headers.get("cf-connecting-ip");
-  return direct !== null && direct !== "" ? direct : null;
-}
-
-/**
- * Réécrit `x-lfc-client-ip` **avant** de transmettre au container.
- *
- * ## Le trou que ça bouche
- *
- * Le backend NestJS clé son throttler sur `x-lfc-client-ip` (`resolveClientIp`),
- * en s'appuyant sur un invariant écrit dans son propre commentaire : « la gateway
- * la recopie et l'écrase toujours, donc non spoofable ». **Cet invariant était
- * faux** : il n'y a aucune gateway sur le chemin (aucune route, `PROD_ROUTES`
- * vide, et le domaine visé n'existe pas en DNS), et ce Worker restera de toute
- * façon joignable en direct sur `workers.dev`. Personne n'écrasait donc rien.
- *
- * Mesuré en production le 2026-08-13, 75 requêtes sur `/platform-settings`
- * (limite 60/min) : en-tête FIXE → 15 rejets en 429 ; en-tête TOURNANT → **zéro
- * rejet**. Même client, même minute, même volume. Il suffisait d'incrémenter un
- * en-tête à chaque requête pour n'être jamais limité.
- *
- * ## Pourquoi ici et pas dans le backend
- *
- * Ce Worker EST la frontière de confiance : le dernier point où l'on connaît la
- * vraie IP (`cf-connecting-ip`, posée par Cloudflare) et le premier que la
- * requête franchit. En écrasant l'en-tête ici, on rend enfin VRAI ce que le
- * backend supposait — sans qu'il ait à changer, et que la gateway existe un jour
- * ou non.
- *
- * On **supprime** l'en-tête plutôt que de le laisser passer quand
- * `cf-connecting-ip` manque (appel interne) : sinon un client pourrait le poser
- * lui-même sur un chemin où on ne le remplace pas.
- */
-function withTrustedClientIp(request: Request): Request {
-  const headers = new Headers(request.headers);
-  const real = clientIp(request);
-  if (real === null) {
-    headers.delete(CLIENT_IP_HEADER);
-  } else {
-    headers.set(CLIENT_IP_HEADER, real);
-  }
-  return new Request(request, { headers });
-}
-
-/**
- * Passe le rate-limiter par IP cliente. Sans IP (appel interne), on ne limite
- * pas — on ne bloque pas un chemin d'infra sur une clé absente. `true` = à rejeter.
- */
-async function isRateLimited(request: Request, env: Env): Promise<boolean> {
-  const ip = clientIp(request);
-  if (ip === null) {
-    return false;
-  }
-  const { success } = await env.RATE_LIMITER.limit({ key: ip });
-  return !success;
 }
 
 /**
@@ -243,12 +156,11 @@ async function keepWarm(env: Env): Promise<void> {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (await isRateLimited(request, env)) {
-      return tooManyRequests();
-    }
-    // Jamais `request` brut : le container ne doit voir que l'en-tête d'IP
-    // réécrit ici, sinon son throttler se laisse guider par le client.
-    return backend(env).fetch(withTrustedClientIp(request));
+    // Toute la politique d'edge (limite + réécriture de l'IP cliente) vit dans
+    // `edge-guard.ts`, sous tests. Ici on ne fait que câbler le binding et la
+    // destination — c'est délibéré : ce fichier n'est pas testable (il importe
+    // le monde Workers), donc il ne doit contenir aucune décision.
+    return guardedFetch(request, env.RATE_LIMITER, (forwarded) => backend(env).fetch(forwarded));
   },
 
   // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Deux
