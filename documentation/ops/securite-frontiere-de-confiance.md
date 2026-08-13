@@ -85,7 +85,8 @@ l'`Origin` reste celle du front, le backend décide, la passerelle relaie.
 - **Pas de WAF, pas de règles de rate limiting Cloudflare** : produits de zone,
   et le compte n'a aucune zone.
 - **La passerelle est un point unique de défaillance.** Elle est triviale et
-  sans état, mais elle n'a **aucune couverture CI** aujourd'hui.
+  sans état, et désormais couverte par la CI (typecheck, lint, 8 tests) — mais
+  un point unique reste un point unique.
 - **Aucun secret partagé entre passerelle et backends.** Le lien de confiance
   repose entièrement sur le fait que les backends n'ont pas d'adresse publique.
   Le jour où l'un d'eux en retrouve une, l'invariant tombe **en silence** — c'est

@@ -156,10 +156,41 @@ jobs:
   # Le SEUL statut à exiger sur la branche. `always()` + le test explicite sur
   # `result` est ce qui fait qu'un job annulé ou sauté ne passe pas pour un
   # succès — un `needs` seul laisserait filer un `skipped`.
+  # ── La passerelle ───────────────────────────────────────────────────────────
+  # Le Worker que TOUT le trafic traverse depuis le 2026-08-13 : les backends
+  # n'ont plus d'adresse publique, elle est le seul chemin. Elle était pourtant
+  # le seul morceau du dépôt sans aucune couverture — une régression de routage
+  # ne se serait découverte qu'en production.
+  #
+  # Ses tests portent sur `routes.ts`, où vivent TOUTES les décisions (`index.ts`
+  # n'exécute que le transport) : préfixe retiré avant transmission, préfixe
+  # voisin qui ne vole pas les requêtes, sous-domaines de dev intacts.
+  gateway:
+    name: Passerelle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Elle importe `@lfd/endpoints` (ports et sous-domaines de dev) : sans ce
+      # build, le typecheck échoue sur un paquet non compilé.
+      - name: Construire les paquets
+        run: pnpm --filter "./packages/**" build
+      - name: Typecheck
+        run: pnpm --filter lfc-suite-gateway exec tsc --noEmit
+      - name: Lint
+        run: pnpm --filter lfc-suite-gateway lint
+      - name: Tests
+        run: pnpm --filter lfc-suite-gateway test
+
   ci-gate:
     name: ci-gate
     runs-on: ubuntu-latest
-    needs: [packages, b2b-backend, fronts-et-pim]
+    needs: [packages, b2b-backend, fronts-et-pim, gateway]
     if: always()
     steps:
       - name: Vérifier que tout est vert
@@ -167,9 +198,11 @@ jobs:
           echo "packages      : ${{ needs.packages.result }}"
           echo "b2b-backend   : ${{ needs.b2b-backend.result }}"
           echo "fronts-et-pim : ${{ needs.fronts-et-pim.result }}"
+          echo "gateway       : ${{ needs.gateway.result }}"
           if [ "${{ needs.packages.result }}" != "success" ] \
             || [ "${{ needs.b2b-backend.result }}" != "success" ] \
-            || [ "${{ needs.fronts-et-pim.result }}" != "success" ]; then
+            || [ "${{ needs.fronts-et-pim.result }}" != "success" ] \
+            || [ "${{ needs.gateway.result }}" != "success" ]; then
             echo "::error::Un job de la CI n'est pas au vert."
             exit 1
           fi

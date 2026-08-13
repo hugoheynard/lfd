@@ -69,19 +69,19 @@ qu'une nouvelle sur un schéma à moitié migré.
 
 ## 3. Ce que la CI couvre — et ce qu'elle ne couvre pas
 
-`ci.yml` a trois jobs plus une barrière :
+`ci.yml` a quatre jobs plus une barrière :
 
-| Job             | Périmètre                                                           |
-| --------------- | ------------------------------------------------------------------- |
-| `packages`      | les paquets partagés, en premier et à part                          |
-| `b2b-backend`   | lint, typecheck, tests (dont e2e sur Postgres docker + MinIO)       |
-| `fronts-et-pim` | les quatre fronts et le backend PIM                                 |
-| `ci-gate`       | échoue si l'un des trois n'est pas vert — **le seul statut requis** |
+| Job             | Périmètre                                                            |
+| --------------- | -------------------------------------------------------------------- |
+| `packages`      | les paquets partagés, en premier et à part                           |
+| `b2b-backend`   | lint, typecheck, tests (dont e2e sur Postgres docker + MinIO)        |
+| `fronts-et-pim` | les quatre fronts et le backend PIM                                  |
+| `gateway`       | typecheck, lint et 8 tests de routage du Worker d'entrée             |
+| `ci-gate`       | échoue si l'un des quatre n'est pas vert — **le seul statut requis** |
 
-🟡 **La passerelle n'est couverte par aucun job.** Ses tests de routage, son
-lint et son typecheck ne tournent nulle part — alors que depuis le 2026-08-13
-c'est le Worker que **tout** le trafic traverse. C'est le trou le plus voyant du
-dépôt.
+La barrière a été **falsifiée** avant d'être crue : sa condition rougit bien
+quand `gateway` échoue. Une barrière qu'on n'a pas vue refuser n'est pas une
+barrière.
 
 🟡 **`container/` échappe à ESLint et Prettier** dans les deux backends : leurs
 globs (`{src,apps,libs,test}/**`) ne l'incluent pas. C'est pourtant du code de

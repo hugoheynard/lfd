@@ -47,8 +47,6 @@ app iPhone) et
 
 ## Ce qui reste ouvert
 
-- La **passerelle n'est couverte par aucun job de CI**, alors que tout le trafic
-  la traverse. Trou le plus voyant du dépôt.
 - `container/` **échappe à ESLint et Prettier** dans les deux backends.
 - `LEGACY_B2B_FRONT` (`lfc-b2b.pages.dev`) reste autorisée en CORS : une build
   qu'aucun workflow ne met à jour.
