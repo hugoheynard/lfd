@@ -2,7 +2,7 @@
 // rate-limit par IP à l'edge + forwarding des variables runtime (secrets du
 // Worker → env du container).
 // Voir apps/lfc-B2B-platform-backend/container/worker.ts pour les détails.
-import { Container, getRandom } from "@cloudflare/containers";
+import { Container, getRandom } from '@cloudflare/containers';
 
 /** Binding Rate Limiting Cloudflare (wrangler.jsonc) : compte par `key` à l'edge. */
 interface RateLimiter {
@@ -11,12 +11,12 @@ interface RateLimiter {
 
 /** Variables runtime forwardées au container. `PORT`/`NODE_ENV` viennent de l'image. */
 const RUNTIME_KEYS = [
-  "DATABASE_URL",
-  "AUTH0_DOMAIN",
-  "AUTH0_AUDIENCE",
-  "SHOPIFY_ADMIN_TOKEN",
-  "SHOPIFY_CLIENT_ID",
-  "SHOPIFY_CLIENT_SECRET",
+  'DATABASE_URL',
+  'AUTH0_DOMAIN',
+  'AUTH0_AUDIENCE',
+  'SHOPIFY_ADMIN_TOKEN',
+  'SHOPIFY_CLIENT_ID',
+  'SHOPIFY_CLIENT_SECRET',
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];
@@ -40,15 +40,15 @@ function pickEnv(env: Env): Record<string, string> {
 
 export class Backend extends Container<Env> {
   defaultPort = 8080; // NestJS écoute ce port (Dockerfile : ENV PORT=8080).
-  sleepAfter = "1h"; // reste chaud → anti cold-start.
+  sleepAfter = '1h'; // reste chaud → anti cold-start.
   envVars = pickEnv(this.env); // secrets du Worker → env du container.
 }
 
 /** 429 renvoyé quand une IP dépasse son quota edge. */
 function tooManyRequests(): Response {
-  return new Response("Too Many Requests", {
+  return new Response('Too Many Requests', {
     status: 429,
-    headers: { "retry-after": "60", "content-type": "text/plain" },
+    headers: { 'retry-after': '60', 'content-type': 'text/plain' },
   });
 }
 
@@ -57,12 +57,12 @@ function tooManyRequests(): Response {
  * spoofable) d'abord, sinon `cf-connecting-ip` (accès direct). Cf. le worker B2B.
  */
 function clientIp(request: Request): string | null {
-  const forwarded = request.headers.get("x-lfc-client-ip");
-  if (forwarded !== null && forwarded !== "") {
+  const forwarded = request.headers.get('x-lfc-client-ip');
+  if (forwarded !== null && forwarded !== '') {
     return forwarded;
   }
-  const direct = request.headers.get("cf-connecting-ip");
-  return direct !== null && direct !== "" ? direct : null;
+  const direct = request.headers.get('cf-connecting-ip');
+  return direct !== null && direct !== '' ? direct : null;
 }
 
 /** Rate-limit par IP cliente. Sans IP (appel interne) : pas de limite. */
