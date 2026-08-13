@@ -137,7 +137,18 @@ export const DEV_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
  * envoie l'`Origin` du domaine réellement visité.
  */
 export const PROD_FRONT_ORIGINS = {
-  b2bFront: "https://lfc-b2b.pages.dev",
+  // ⚠️ `lfc-b2b-eu7`, PAS `lfc-b2b` : Cloudflare a suffixé le sous-domaine du
+  // projet Pages (le nom court était déjà pris). Vérifié le 2026-08-13 par
+  // l'API Cloudflare, puis en comparant les bundles servis — `lfc-b2b.pages.dev`
+  // rend une build DIFFÉRENTE et plus ancienne, qu'aucun de nos déploiements
+  // ne met à jour.
+  //
+  // La conséquence était une panne complète et silencieuse : la boutique
+  // déployée émettait ses appels depuis `lfc-b2b-eu7…`, origine absente de la
+  // liste ci-dessous, donc refusée par le CORS. Mesuré : préflight sans aucun
+  // en-tête `access-control-allow-origin`. Personne ne l'avait vu parce que
+  // personne ne s'était encore connecté à la boutique cliente.
+  b2bFront: "https://lfc-b2b-eu7.pages.dev",
   b2bAdminFront: "https://lfc-b2b-admin.pages.dev",
   pimFront: "https://lfc-pim.pages.dev",
 } as const;
@@ -147,9 +158,20 @@ export const PROD_FRONT_ORIGINS = {
  * (boutique cliente + admin staff, Invariant C) ; le PIM un seul. Liste **fermée**
  * → un site tiers reste refusé.
  */
+/**
+ * Ancienne adresse de la boutique, servie par un déploiement que nos workflows
+ * ne mettent plus à jour (probablement l'autre compte Cloudflare, celui qui
+ * hébergeait aussi l'ancienne base). Gardée le temps que les liens déjà
+ * distribués cessent d'être suivis.
+ *
+ * ⚠️ À RETIRER. Autoriser en CORS une origine dont on ne maîtrise plus le
+ * contenu déployé, c'est faire confiance à du code qu'on ne relit plus.
+ */
+const LEGACY_B2B_FRONT = "https://lfc-b2b.pages.dev";
+
 export const PROD_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
   pim: [PROD_FRONT_ORIGINS.pimFront],
-  b2b: [PROD_FRONT_ORIGINS.b2bFront, PROD_FRONT_ORIGINS.b2bAdminFront],
+  b2b: [PROD_FRONT_ORIGINS.b2bFront, PROD_FRONT_ORIGINS.b2bAdminFront, LEGACY_B2B_FRONT],
 };
 
 /**
