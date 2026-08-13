@@ -30,6 +30,24 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Backend"] }],
 
+  // PLUS AUCUNE ADRESSE PUBLIQUE. Ce Worker n'est joignable que par le service
+  // binding de la passerelle (`gateway/wrangler.toml`) : c'est ce qui fait d'elle
+  // une vraie frontière et non une décoration. Tant que `…workers.dev` répondait
+  // au monde, la contourner suffisait à ignorer tout ce qu'elle applique.
+  //
+  // Ce qui continue de fonctionner sans adresse publique : les Cron Triggers
+  // (attachés au Worker, pas à une URL) et l'accès au container par son binding
+  // Durable Object. Ce qui cesse : tout appel entrant direct, y compris le nôtre.
+  //
+  // Vérifié avant de fermer — aucun tiers ne dépendait de cette adresse : le PIM
+  // n'expose aucun webhook (zéro occurrence dans son code), et la cible du
+  // webhook Stripe (`api-b2b.lafoliedouce.eu`) ne résout pas en DNS, donc elle
+  // était déjà morte.
+  //
+  // ⚠️ Pour rouvrir en urgence : repasser à `true` et redéployer. La passerelle
+  // reste le chemin normal ; ceci n'est qu'un interrupteur de secours.
+  "workers_dev": false,
+
   // Journalisation des requêtes, activée pour RÉPONDRE À UNE QUESTION précise :
   // « qui appelle ce backend en direct ? ». Tant qu'on ne le sait pas, on ne peut
   // pas éteindre `workers.dev` sans risquer de couper un appelant qu'on n'avait
