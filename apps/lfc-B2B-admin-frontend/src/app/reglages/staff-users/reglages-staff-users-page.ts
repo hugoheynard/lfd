@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { STAFF_ROLE_LABELS, STAFF_STATUS_LABELS, type StaffUserView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -6,8 +7,10 @@ import {
   FoldCardComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDataTableRowCardDirective,
   FoldDropdownComponent,
   FoldDropdownItemComponent,
+  FoldElementTitleComponent,
   FoldIconComponent,
   FoldInlineConfirmComponent,
   FoldPanelHostService,
@@ -35,12 +38,15 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'app-reglages-staff-users-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NgTemplateOutlet,
     FoldCardComponent,
     FoldButtonComponent,
     FoldBadgeComponent,
     FoldIconComponent,
+    FoldElementTitleComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    FoldDataTableRowCardDirective,
     FoldDropdownComponent,
     FoldDropdownItemComponent,
     FoldInlineConfirmComponent,
@@ -77,6 +83,19 @@ export class ReglagesStaffUsersPage {
   };
 
   protected readonly rowKey = (user: StaffUserView): string => user.id;
+
+  /**
+   * Le titre de la table porte le nombre d'**actifs** — pas le total.
+   *
+   * C'est le seul chiffre que l'annuaire ne totalise nulle part et qui répond à
+   * la vraie question : combien de personnes peuvent entrer *maintenant*. Une
+   * fiche invitée, expirée ou suspendue occupe une ligne sans ouvrir de porte,
+   * et compter les lignes ferait croire à un périmètre plus large qu'il n'est.
+   */
+  protected readonly tableTitle = computed(() => {
+    const active = this.users().filter((user) => user.status === 'active').length;
+    return `Utilisateurs · ${String(active)} actif${active > 1 ? 's' : ''}`;
+  });
 
   constructor() {
     void this.load();

@@ -4,10 +4,22 @@
        celle du viewport, donc l'intégration en iframe de la suite est juste.
        Le view-nav garde `direction="auto"` : il lit le layout par DI et bascule
        vertical ↔ horizontal tout seul. -->
-  <fold-nav-layout placement="side" [foldAt]="896">
+  <fold-nav-layout #nav placement="side" [foldAt]="896">
+    <!-- `collapsed` suit la décision du layout (`stacked`, sa surface publique :
+         en `placement="side"`, elle vaut exactement « le rail s'est replié »)
+         plutôt qu'une media query. Le seuil n'est donc écrit qu'UNE fois, sur
+         `foldAt`, et il porte sur la largeur du LAYOUT — donc juste aussi en
+         iframe, où le viewport ment. Replié, le view-nav horizontal devient un
+         accordéon d'icônes : seul l'onglet actif garde son libellé. Sur un
+         téléphone, quatre libellés côte à côte débordaient.
+
+         ⚠️ Replié, les icônes deviennent PORTANTES : les quatre noms sont bien
+         au catalogue fold — `FoldIconName` accepte n'importe quelle chaîne, donc
+         un nom emprunté ailleurs compilerait et n'afficherait rien du tout. -->
     <fold-view-nav
       tabNav
       [items]="tabs"
+      [collapsed]="nav.stacked()"
       size="comfortable"
       activeStyle="underline"
       background="transparent"

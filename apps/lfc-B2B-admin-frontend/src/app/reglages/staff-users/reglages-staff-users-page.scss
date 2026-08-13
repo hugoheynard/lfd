@@ -3,7 +3,7 @@
   color: var(--fold-color-text-muted);
 }
 
-// En-tête de section : texte à gauche, bouton « Ajouter » à droite.
+// En-tête de section : explication à gauche, bouton « Ajouter » à droite.
 .head {
   display: flex;
   align-items: flex-start;
@@ -12,17 +12,11 @@
   flex-wrap: wrap;
   margin-bottom: var(--fold-space-md);
 }
-.head-text {
-  min-width: 0;
-  flex: 1 1 18rem;
-}
 
-.section-title {
-  margin: 0 0 var(--fold-space-xs);
-  font-size: var(--fold-text-lg, 1.125rem);
-}
 .section-desc {
   margin: 0;
+  min-width: 0;
+  flex: 1 1 18rem;
   color: var(--fold-color-text-muted);
 }
 
@@ -44,6 +38,40 @@
 .email:focus-visible {
   color: var(--fold-color-text);
   text-decoration: underline;
+}
+
+// Carte mobile (`mobileLayout="custom"`) — hiérarchie plutôt qu'alignement :
+// l'identité d'abord, puis ce qui décide de l'accès, puis les coordonnées.
+// Une carte étiquette/valeur automatique aurait rendu les sept colonnes à
+// l'identique, y compris la colonne d'actions au libellé vide.
+.rc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+.rc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.rc-name {
+  min-width: 0;
+  font-weight: 600;
+}
+
+.rc-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.rc-job {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
 }
 
 // Déclencheur du menu — bouton icône discret (même que les autres tables).

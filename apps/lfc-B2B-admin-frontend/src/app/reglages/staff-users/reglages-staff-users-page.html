@@ -4,22 +4,79 @@
     <button foldButton (click)="load()">Réessayer</button>
   </div>
 } @else {
+  <!-- Le bloc d'actions d'une ligne, écrit UNE fois : la table le pose dans sa
+       colonne, la carte mobile le pose dans son coin. Deux copies auraient
+       divergé au premier ajout d'action. -->
+  <ng-template #rowActions let-row>
+    @if (confirmingId() === row.id) {
+      <fold-inline-confirm
+        [open]="true"
+        intent="danger"
+        message="Supprimer cet utilisateur ?"
+        (confirmed)="confirmRemove(row)"
+        (cancelled)="confirmingId.set(null)"
+      >
+        <span hidden></span>
+      </fold-inline-confirm>
+    } @else {
+      <fold-dropdown
+        *appCan="'staff:write'"
+        placement="bottom-end"
+        ariaLabel="Actions de l'utilisateur"
+      >
+        <button
+          foldPopoverTrigger="menu"
+          type="button"
+          class="menu-trigger"
+          aria-label="Actions de l'utilisateur"
+        >
+          <fold-icon name="more-vertical" [size]="18" />
+        </button>
+        <fold-dropdown-item icon="edit" (selected)="edit(row)">Modifier</fold-dropdown-item>
+        @if (canInvite(row)) {
+          <fold-dropdown-item icon="mail" (selected)="invite(row)">
+            {{ inviteLabel(row) }}
+          </fold-dropdown-item>
+        }
+        <fold-dropdown-item
+          [icon]="isSuspended(row) ? 'check' : 'lock'"
+          (selected)="toggleSuspension(row)"
+        >
+          {{ isSuspended(row) ? "Réactiver l'accès" : "Suspendre l'accès" }}
+        </fold-dropdown-item>
+        <fold-dropdown-item icon="bin" tone="danger" (selected)="askRemove(row)">
+          Supprimer
+        </fold-dropdown-item>
+      </fold-dropdown>
+    }
+  </ng-template>
+
   <fold-card>
+    <!-- Pas de titre ici : l'onglet des Réglages nomme déjà l'écran, et la barre
+         de la table le redirait une troisième fois. Reste l'explication — la
+         seule chose que ni l'onglet ni la barre ne peuvent dire. -->
     <div class="head">
-      <div class="head-text">
-        <h2 class="section-title">Utilisateurs</h2>
-        <p class="section-desc">
-          Les personnes qui opèrent la suite et le rôle de chacune. Créer une fiche n'ouvre aucun
-          accès : c'est l'invitation qui envoie le lien, et lui seul permet d'entrer.
-        </p>
-      </div>
-      <button *appCan="'staff:write'" foldButton size="sm" icon="plus" (click)="add()">
+      <p class="section-desc">
+        Les personnes qui opèrent la suite et le rôle de chacune. Créer une fiche n'ouvre aucun
+        accès : c'est l'invitation qui envoie le lien, et lui seul permet d'entrer.
+      </p>
+      <button
+        *appCan="'staff:write'"
+        foldButton
+        intent="primary"
+        emphasis="solid"
+        size="sm"
+        icon="plus"
+        (click)="add()"
+      >
         Ajouter
       </button>
     </div>
 
     <fold-data-table
       caption="Utilisateurs staff"
+      toolbarSurface="accent"
+      mobileLayout="custom"
       hover
       [columns]="columns"
       [rows]="users()"
@@ -27,6 +84,11 @@
       [loading]="state() === 'loading'"
       [empty]="emptyState"
     >
+      <!-- Même filet d'en-tête que la table des comptes clients. Le compte tient
+           dans le libellé : il dit combien de personnes peuvent RÉELLEMENT
+           entrer, ce qu'aucune colonne ne totalise. -->
+      <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
+
       <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne sans
            `foldCell` rend une cellule vide. Chaque `key` de `columns` doit donc
            avoir son template ici — y compris les plus bêtes. -->
@@ -59,47 +121,30 @@
       </ng-template>
 
       <ng-template foldCell="actions" let-row>
-        @if (confirmingId() === row.id) {
-          <fold-inline-confirm
-            [open]="true"
-            intent="danger"
-            message="Supprimer cet utilisateur ?"
-            (confirmed)="confirmRemove(row)"
-            (cancelled)="confirmingId.set(null)"
-          >
-            <span hidden></span>
-          </fold-inline-confirm>
-        } @else {
-          <fold-dropdown
-            *appCan="'staff:write'"
-            placement="bottom-end"
-            ariaLabel="Actions de l'utilisateur"
-          >
-            <button
-              foldPopoverTrigger="menu"
-              type="button"
-              class="menu-trigger"
-              aria-label="Actions de l'utilisateur"
-            >
-              <fold-icon name="more-vertical" [size]="18" />
-            </button>
-            <fold-dropdown-item icon="edit" (selected)="edit(row)">Modifier</fold-dropdown-item>
-            @if (canInvite(row)) {
-              <fold-dropdown-item icon="mail" (selected)="invite(row)">
-                {{ inviteLabel(row) }}
-              </fold-dropdown-item>
-            }
-            <fold-dropdown-item
-              [icon]="isSuspended(row) ? 'check' : 'lock'"
-              (selected)="toggleSuspension(row)"
-            >
-              {{ isSuspended(row) ? "Réactiver l'accès" : "Suspendre l'accès" }}
-            </fold-dropdown-item>
-            <fold-dropdown-item icon="bin" tone="danger" (selected)="askRemove(row)">
-              Supprimer
-            </fold-dropdown-item>
-          </fold-dropdown>
-        }
+        <ng-container *ngTemplateOutlet="rowActions; context: { $implicit: row }" />
+      </ng-template>
+
+      <!-- Carte mobile plutôt que la table en `scroll` : sept colonnes sur un
+           téléphone obligeraient à balayer horizontalement pour lire un rôle. La
+           carte hiérarchise — identité, puis accès, puis coordonnées — au lieu
+           de tout aligner. -->
+      <ng-template foldRowCard let-row>
+        <div class="rc">
+          <div class="rc-head">
+            <span class="rc-name">{{ row.firstName }} {{ row.lastName }}</span>
+            <ng-container *ngTemplateOutlet="rowActions; context: { $implicit: row }" />
+          </div>
+
+          <div class="rc-badges">
+            <fold-badge variant="neutral" [content]="roleLabel(row)" />
+            <fold-badge [variant]="statusVariant(row)" [content]="statusLabel(row)" />
+          </div>
+
+          @if (row.jobTitle !== '') {
+            <span class="rc-job">{{ row.jobTitle }}</span>
+          }
+          <a class="email" [href]="'mailto:' + row.email">{{ row.email }}</a>
+        </div>
       </ng-template>
     </fold-data-table>
   </fold-card>
