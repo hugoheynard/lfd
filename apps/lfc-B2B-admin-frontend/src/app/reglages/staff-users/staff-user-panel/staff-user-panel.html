@@ -1,25 +1,47 @@
 <fold-panel-header [title]="heading()" subtitle="Identité et rôle dans le back-office." />
 
 <div class="body">
-  <fold-input label="Prénom" [(value)]="firstName" required />
-  <fold-input label="Nom" [(value)]="lastName" required />
-  <fold-input label="E-mail" type="email" [(value)]="email" required />
-  <fold-input label="Téléphone" type="tel" [(value)]="phone" />
-  <fold-input label="Fonction" placeholder="Responsable grands comptes" [(value)]="jobTitle" />
+  <!-- Trois blocs, dans l'ordre où on y pense : QUI, puis CE QU'ELLE PEUT, puis
+       l'exception. Une pile de six champs identiques obligeait à lire chaque
+       libellé pour savoir où on en était. -->
+  <section class="block">
+    <h3 class="block-title">Identité</h3>
+    <!-- Prénom/nom et téléphone/fonction vont deux par deux : ce sont des
+         champs courts, et les mettre côte à côte raccourcit le panneau d'autant
+         — le rôle remonte alors au-dessus de la ligne de flottaison. -->
+    <div class="pair">
+      <fold-input label="Prénom" [(value)]="firstName" required />
+      <fold-input label="Nom" [(value)]="lastName" required />
+    </div>
+    <fold-input
+      label="E-mail"
+      type="email"
+      hint="C'est à cette adresse que part l'invitation."
+      [(value)]="email"
+      required
+    />
+    <div class="pair">
+      <fold-input label="Téléphone" type="tel" [(value)]="phone" />
+      <fold-input label="Fonction" placeholder="Responsable grands comptes" [(value)]="jobTitle" />
+    </div>
+  </section>
 
-  <fold-select
-    label="Rôle"
-    hint="Ce que cette personne peut faire dans le back-office."
-    [value]="role()"
-    (valueChange)="setRole($event)"
-  >
-    @for (option of roleOptions; track option.value) {
-      <option [value]="option.value">{{ option.label }}</option>
-    }
-  </fold-select>
+  <section class="block">
+    <h3 class="block-title">Rôle</h3>
+    <fold-select
+      label="Rôle"
+      hint="Ce que cette personne peut faire dans le back-office."
+      [value]="role()"
+      (valueChange)="setRole($event)"
+    >
+      @for (option of roleOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </fold-select>
+  </section>
 
-  <section class="overrides">
-    <h3 class="overrides-title">Dérogations au rôle</h3>
+  <section class="block">
+    <h3 class="block-title">Dérogations au rôle</h3>
     <app-overrides-grid [role]="role()" [(overrides)]="overrides" />
   </section>
 </div>

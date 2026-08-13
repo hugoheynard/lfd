@@ -1,60 +1,104 @@
+// ⚠️ Tous les tokens ici sont ceux que fold expose RÉELLEMENT
+// (`fold-ng/tokens/`) : l'échelle d'espace est `xs|sm|md|lg|xl|2xl…`, la
+// typographie `--fold-text-*`, les couleurs `--fold-color-*`. Un `var()`
+// inconnu sans repli rend la déclaration invalide : le gap tombe à 0 et une
+// bordure prend la couleur du TEXTE. C'est exactement ce qui était arrivé ici.
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3);
+  gap: var(--fold-space-md);
 }
 
 .grid-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--fold-space-3);
+  gap: var(--fold-space-md);
 }
 
 .grid-hint {
   margin: 0;
-  font-size: var(--fold-font-size-sm);
-  color: var(--fold-text-muted);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.grid-scroll {
+  overflow-x: auto;
 }
 
 .grid {
   width: 100%;
+  // Les trois colonnes ont besoin d'un plancher : sous cette largeur, la grille
+  // défile plutôt que d'écraser les selects jusqu'à l'illisible.
+  min-width: 20rem;
   border-collapse: collapse;
+  font-size: var(--fold-text-sm);
 
   th,
   td {
-    padding: var(--fold-space-2);
+    padding: var(--fold-space-sm) var(--fold-space-xs);
     text-align: left;
-    border-bottom: 1px solid var(--fold-border-subtle);
+    vertical-align: middle;
+    border-bottom: 1px solid var(--fold-color-border-subtle);
   }
 
   thead th {
-    font-size: var(--fold-font-size-xs);
-    font-weight: var(--fold-font-weight-medium);
-    color: var(--fold-text-muted);
+    font-size: var(--fold-text-xs);
+    font-weight: 600;
+    color: var(--fold-color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
 
   tbody th {
-    font-weight: var(--fold-font-weight-medium);
+    font-weight: 500;
     white-space: nowrap;
+    padding-right: var(--fold-space-md);
   }
 
-  td {
-    display: flex;
-    align-items: center;
-    gap: var(--fold-space-2);
+  // La dernière ligne n'a pas besoin d'un trait : il n'y a rien à séparer
+  // en dessous, et il se lirait comme le bord d'un cadre inachevé.
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-bottom: 0;
   }
 }
 
-/* L'effectif : la réponse à « au final, est-ce qu'elle peut ? ». */
+.cell {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
 .effective {
-  font-size: var(--fold-font-size-xs);
-  color: var(--fold-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: var(--fold-radius-round);
+  background: currentcolor;
+  // Une pastille pleine « non » pèserait autant qu'un « oui » : on la creuse.
+  opacity: 0.45;
 }
 
 .effective-yes {
-  color: var(--fold-text-success);
-  font-weight: var(--fold-font-weight-medium);
+  color: var(--fold-color-success-text);
+  font-weight: 500;
+}
+.effective-yes .dot {
+  opacity: 1;
+}
+
+// Contraste forcé : la couleur ne passe plus, seul le mot reste. La pastille
+// doit alors s'effacer plutôt que d'apparaître comme une puce parasite.
+@media (forced-colors: active) {
+  .dot {
+    display: none;
+  }
 }

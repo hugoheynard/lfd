@@ -113,7 +113,7 @@ export class ReglagesStaffUsersPage {
 
   /** Jamais invitée ⇒ « Inviter » ; déjà invitée ou entrée ⇒ « Renvoyer ». */
   protected inviteLabel(user: StaffUserView): string {
-    return user.invitedAt === null ? "Inviter à créer son compte" : 'Renvoyer le lien';
+    return user.invitedAt === null ? 'Inviter à créer son compte' : 'Renvoyer le lien';
   }
 
   /**

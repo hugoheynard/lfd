@@ -33,11 +33,17 @@
   color: var(--fold-color-text-muted);
 }
 
-// Badges de périmètre : sur une ligne, repliés si étroit.
-.scopes {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs);
+// L'e-mail est cliquable, mais il ne doit pas crier : il est là pour être LU
+// dans la colonne, et accessoirement écrit. D'où le soulignement au survol
+// seulement — souligner toute la colonne en ferait un mur de liens bleus.
+.email {
+  color: var(--fold-color-text-secondary);
+  text-decoration: none;
+}
+.email:hover,
+.email:focus-visible {
+  color: var(--fold-color-text);
+  text-decoration: underline;
 }
 
 // Déclencheur du menu — bouton icône discret (même que les autres tables).

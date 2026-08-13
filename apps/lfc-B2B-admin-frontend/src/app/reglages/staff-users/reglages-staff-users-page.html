@@ -27,8 +27,19 @@
       [loading]="state() === 'loading'"
       [empty]="emptyState"
     >
+      <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne sans
+           `foldCell` rend une cellule vide. Chaque `key` de `columns` doit donc
+           avoir son template ici — y compris les plus bêtes. -->
       <ng-template foldCell="lastName" let-row>
         <span class="strong">{{ row.lastName }}</span>
+      </ng-template>
+
+      <ng-template foldCell="firstName" let-row>
+        {{ row.firstName }}
+      </ng-template>
+
+      <ng-template foldCell="email" let-row>
+        <a class="email" [href]="'mailto:' + row.email">{{ row.email }}</a>
       </ng-template>
 
       <ng-template foldCell="jobTitle" let-row>

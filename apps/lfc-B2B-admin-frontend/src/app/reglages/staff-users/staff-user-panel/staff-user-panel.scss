@@ -11,8 +11,35 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-md);
+  gap: var(--fold-space-xl);
   padding: var(--fold-space-lg);
+}
+
+// Un bloc = une question. L'espacement INTERNE (md) est plus serré que celui
+// qui sépare les blocs (xl) : c'est ce rapport, et non un trait, qui fait lire
+// « trois groupes » plutôt que « six champs ».
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.block-title {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fold-color-text-muted);
+}
+
+// Deux champs courts par ligne, qui repassent l'un sous l'autre dès que le
+// panneau est étroit. `minmax(0, …)` et non `auto` : sans le 0, un libellé long
+// impose sa largeur à la colonne et fait déborder la grille.
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+  gap: var(--fold-space-md);
 }
 
 .foot {
@@ -21,17 +48,4 @@
   gap: var(--fold-space-sm);
   padding: var(--fold-space-md) var(--fold-space-lg);
   border-top: 1px solid var(--fold-color-border-subtle);
-}
-
-.overrides {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-3);
-  padding-top: var(--fold-space-4);
-  border-top: 1px solid var(--fold-border-subtle);
-}
-
-.overrides-title {
-  margin: 0;
-  font-size: var(--fold-font-size-md);
 }

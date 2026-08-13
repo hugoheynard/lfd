@@ -8,36 +8,50 @@
   }
 </div>
 
-<table class="grid">
-  <thead>
-    <tr>
-      <th scope="col">Domaine</th>
-      <th scope="col">Lecture</th>
-      <th scope="col">Écriture</th>
-    </tr>
-  </thead>
-  <tbody>
-    @for (row of rows(); track row.resource) {
+<!-- Deux selects par ligne : sous un panneau étroit, la grille défile DANS son
+     conteneur au lieu de pousser le panneau et d'y créer un défilement
+     horizontal général. -->
+<div class="grid-scroll">
+  <table class="grid">
+    <thead>
       <tr>
-        <th scope="row">{{ row.label }}</th>
-        @for (cell of [row.read, row.write]; track cell.action) {
-          <td>
-            <fold-select
-              size="sm"
-              [attr.aria-label]="row.label + ' — ' + cell.action"
-              [value]="cell.choice"
-              (valueChange)="setChoice(row.resource, cell.action, $event)"
-            >
-              @for (choice of choices; track choice.value) {
-                <option [value]="choice.value">{{ choice.label }}</option>
-              }
-            </fold-select>
-            <span class="effective" [class.effective-yes]="cell.granted">
-              {{ cell.granted ? 'oui' : 'non' }}
-            </span>
-          </td>
-        }
+        <th scope="col">Domaine</th>
+        <th scope="col">Lecture</th>
+        <th scope="col">Écriture</th>
       </tr>
-    }
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.resource) {
+        <tr>
+          <th scope="row">{{ row.label }}</th>
+          @for (cell of [row.read, row.write]; track cell.action) {
+            <td>
+              <!-- Le flex vit sur ce div, PAS sur le `<td>` : une cellule en
+                 `display: flex` sort de l'algorithme de tableau, et les colonnes
+                 cessent de s'aligner avec leur en-tête. -->
+              <div class="cell">
+                <fold-select
+                  size="sm"
+                  [attr.aria-label]="row.label + ' — ' + cell.action"
+                  [value]="cell.choice"
+                  (valueChange)="setChoice(row.resource, cell.action, $event)"
+                >
+                  @for (choice of choices; track choice.value) {
+                    <option [value]="choice.value">{{ choice.label }}</option>
+                  }
+                </fold-select>
+                <!-- L'effectif : la réponse à « au final, est-ce qu'elle peut ? ».
+                   La pastille porte la couleur, le mot porte le sens — la
+                   couleur seule ne dirait rien à qui ne la distingue pas. -->
+                <span class="effective" [class.effective-yes]="cell.granted">
+                  <span class="dot" aria-hidden="true"></span>
+                  {{ cell.granted ? 'oui' : 'non' }}
+                </span>
+              </div>
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
