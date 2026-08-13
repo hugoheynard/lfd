@@ -2,7 +2,7 @@
 // rate-limit par IP à l'edge + forwarding des variables runtime (secrets du
 // Worker → env du container).
 // Voir apps/lfc-B2B-platform-backend/container/worker.ts pour les détails.
-import { Container, getRandom } from '@cloudflare/containers';
+import { Container } from '@cloudflare/containers';
 
 /** Binding Rate Limiting Cloudflare (wrangler.jsonc) : compte par `key` à l'edge. */
 interface RateLimiter {
@@ -44,6 +44,34 @@ export class Backend extends Container<Env> {
   envVars = pickEnv(this.env); // secrets du Worker → env du container.
 }
 
+/**
+ * Tirage au sort d'une des deux instances, **en Europe de l'Ouest**.
+ *
+ * Écrit ici plutôt que via `getRandom()` du SDK pour une seule raison : ce
+ * helper ne sait pas transmettre de `locationHint`, et sans indice les DO
+ * naissent près de la requête qui les crée — au Texas dans le cas du backend
+ * B2B (2026-08-13). Le corps est celui de `getRandom` : tirage uniforme puis
+ * `idFromName`.
+ *
+ * Le préfixe `weur-` remplace les anciens `instance-N` : un DO ne change JAMAIS
+ * d'emplacement après création et l'indice n'est lu qu'au premier `get()` d'un
+ * id — déplacer les instances existantes exigeait donc des ids neufs. Sans état
+ * dans ce DO (simple routeur vers l'image), on n'abandonne que du vide.
+ *
+ * ⚠️ `INSTANCE_COUNT` doit rester ≤ `max_instances` (wrangler.jsonc) : au-delà,
+ * on tirerait des instances que Cloudflare refuse de démarrer.
+ */
+const INSTANCE_COUNT = 2;
+const PLACEMENT = { locationHint: 'weur' } as const;
+
+function backend(env: Env): DurableObjectStub<Backend> {
+  const index = Math.floor(Math.random() * INSTANCE_COUNT);
+  return env.BACKEND.get(
+    env.BACKEND.idFromName(`weur-${String(index)}`),
+    PLACEMENT,
+  );
+}
+
 /** 429 renvoyé quand une IP dépasse son quota edge. */
 function tooManyRequests(): Response {
   return new Response('Too Many Requests', {
@@ -80,7 +108,6 @@ export default {
     if (await isRateLimited(request, env)) {
       return tooManyRequests();
     }
-    const instance = await getRandom(env.BACKEND, 2);
-    return instance.fetch(request);
+    return backend(env).fetch(request);
   },
 };

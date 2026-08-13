@@ -38,6 +38,24 @@
       // lite (1/16 vCPU,256Mi) trop petit pour Node+Nest → basic (1/4 vCPU,1Gi).
       // Monter à "standard-1" (1/2 vCPU,4Gi) si la RAM serre.
       "instance_type": "basic",
+      // PLACEMENT — le container tourne en Europe de l'Ouest, point.
+      //
+      // Par défaut Cloudflare place le container « au plus près de la requête qui
+      // le démarre, parmi les emplacements ayant déjà l'image ». Ce qui le démarre
+      // ici n'est pas un client français mais le cron de rafraîchissement, qui
+      // s'exécute où Cloudflare veut : le 2026-08-13, l'instance vivait à
+      // **Dallas-Fort Worth**, soit un aller-retour transatlantique sur CHAQUE
+      // appel d'API pour des clients tous français. Le défaut « au plus près »
+      // n'est un bon défaut que pour un service dont le trafic est mondial.
+      //
+      // `constraints` n'est pas un vœu, contrairement au `locationHint` des
+      // Durable Objects : c'est une contrainte d'ordonnancement. WEUR seul suffit
+      // (ni ME/OC/AFR, qui interdisent d'être utilisées seules).
+      //
+      // Non ajouté volontairement : `"jurisdiction": "eu"`. Ce serait une
+      // garantie de CONFORMITÉ (frontière de traitement des données), pas de
+      // latence, et une décision distincte — WEUR inclut des emplacements hors UE.
+      "constraints": { "regions": ["WEUR"] },
     },
   ],
 

@@ -8,7 +8,7 @@
 //
 // ⚠️ Hors de `src/` : pas typé par le tsconfig Nest ; wrangler/esbuild le bundle.
 // Types éditeur : container/tsconfig.json.
-import { Container, getContainer } from "@cloudflare/containers";
+import { Container } from "@cloudflare/containers";
 
 /**
  * Binding Rate Limiting de Cloudflare (déclaré dans wrangler.jsonc). `limit()`
@@ -84,10 +84,39 @@ export class Backend extends Container<Env> {
  * pas un déclencheur. Passer à plusieurs instances demandera donc un vrai
  * signal mesuré, pas un changement de chiffre.
  */
-const PRIMARY_INSTANCE = "primary";
+/**
+ * Le suffixe `-weur` n'est pas décoratif : **c'est ce qui déplace l'objet.**
+ *
+ * Un Durable Object ne change jamais d'emplacement après sa création (Cloudflare
+ * annonce la relocalisation « pour plus tard »), et `locationHint` n'est lu qu'au
+ * TOUT PREMIER `get()` d'un id donné. L'ancien id `"primary"` avait été créé par
+ * le cron, donc loin de nos clients — constaté à Dallas-Fort Worth le
+ * 2026-08-13. Poser un indice dessus n'aurait rien fait : il fallait un id neuf.
+ *
+ * Ça ne coûte rien ici parce que ce DO ne stocke RIEN : il n'est qu'un routeur
+ * vers l'image NestJS (`Backend` ne touche jamais `ctx.storage`). Le renommer
+ * abandonne un objet vide. Sur un DO porteur d'état, ce serait une migration.
+ */
+const PRIMARY_INSTANCE = "primary-weur";
+
+/**
+ * Indice de placement du DO — à ne pas confondre avec les `constraints` du
+ * container (wrangler.jsonc), qui sont, elles, une vraie contrainte
+ * d'ordonnancement. Ici Cloudflare choisit « le centre de données minimisant la
+ * latence depuis l'indice », donc au mieux ; ça suffit, un DO européen ne
+ * repartira pas au Texas.
+ *
+ * **Les deux réglages sont nécessaires.** Le Worker s'exécute à l'edge (Paris),
+ * appelle le DO, qui appelle le container : ne corriger que le container
+ * laisserait l'aller-retour transatlantique sur le premier saut.
+ *
+ * `getContainer()` du SDK ne sait pas transmettre d'indice — d'où le
+ * `idFromName` + `get` explicites, qui sont exactement ce qu'il fait par ailleurs.
+ */
+const PLACEMENT = { locationHint: "weur" } as const;
 
 function backend(env: Env): DurableObjectStub<Backend> {
-  return getContainer(env.BACKEND, PRIMARY_INSTANCE);
+  return env.BACKEND.get(env.BACKEND.idFromName(PRIMARY_INSTANCE), PLACEMENT);
 }
 
 /** 429 renvoyé quand une IP dépasse son quota edge. `Retry-After` = fenêtre. */

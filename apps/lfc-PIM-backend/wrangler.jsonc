@@ -17,6 +17,11 @@
       "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfc-pim-backend:__IMAGE_TAG__",
       "max_instances": 2,
       "instance_type": "basic",
+      // Placement forcé en Europe de l'Ouest — le défaut « au plus près de la
+      // requête qui démarre le container » avait posé le backend B2B à Dallas.
+      // Même raison et même arbitrage (dont le refus de `jurisdiction`), cf. le
+      // wrangler.jsonc du backend B2B.
+      "constraints": { "regions": ["WEUR"] },
     },
   ],
 
