@@ -84,21 +84,23 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler containers push lfc-b2b-backend:latest
 
-      # 2) Injecte l'account id dans l'`image` du wrangler (jamais commité), puis déploie
-      #    le Worker qui référence l'image poussée.
-      - name: Deploy Worker
-        working-directory: apps/lfc-B2B-platform-backend
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_B2B_BACKEND_WORKER }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          sed -i "s/__CF_ACCOUNT_ID__/${CLOUDFLARE_ACCOUNT_ID}/" wrangler.jsonc
-          pnpm exec wrangler deploy
-
-      # 3) Auto-sync des secrets RUNTIME depuis les secrets GitHub (source unique).
-      #    Ne pousse QUE ceux renseignés (optionnels absents = feature désactivée).
-      #    Les valeurs viennent de secrets GitHub, jamais du repo. Liste = .env.example.
+      # 2) Les secrets AVANT le déploiement : un container qui démarre sans
+      #    DATABASE_B2B_URL meurt au boot (`required()` lève), puis redémarre une
+      #    fois les secrets arrivés. Ça se répare tout seul, mais ça produit une
+      #    fenêtre d'indisponibilité et une erreur qui inquiète pour rien.
+      #
+      #    Les secrets d'un Worker PERSISTENT d'un déploiement à l'autre : cette
+      #    étape est donc un no-op sur les runs suivants, sauf quand une valeur
+      #    change — et c'est précisément là qu'elle doit passer en premier, pour
+      #    que le nouveau code trouve la nouvelle valeur déjà posée.
+      #
+      #    `continue-on-error` couvre le SEUL cas où elle ne peut pas réussir :
+      #    le tout premier run, quand le Worker n'existe pas encore et qu'on ne
+      #    peut donc rien lui attacher. Le déploiement suivant le crée, l'étape
+      #    passe au run d'après, et l'ordre nominal reprend. Sans cette
+      #    tolérance, le premier déploiement échouerait sans rien livrer.
       - name: Sync runtime secrets
+        continue-on-error: true
         working-directory: apps/lfc-B2B-platform-backend
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_B2B_BACKEND_WORKER }}
@@ -153,3 +155,14 @@ jobs:
               printf '%s' "$value" | pnpm exec wrangler secret put "$name"
             fi
           done
+
+      # 3) Injecte l'account id dans l'`image` du wrangler (jamais commité), puis déploie
+      #    le Worker qui référence l'image poussée.
+      - name: Deploy Worker
+        working-directory: apps/lfc-B2B-platform-backend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_B2B_BACKEND_WORKER }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          sed -i "s/__CF_ACCOUNT_ID__/${CLOUDFLARE_ACCOUNT_ID}/" wrangler.jsonc
+          pnpm exec wrangler deploy
