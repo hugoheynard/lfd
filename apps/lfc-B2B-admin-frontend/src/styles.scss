@@ -55,3 +55,33 @@ body {
 router-outlet ~ * {
   display: block;
 }
+
+/* ── Pas de zoom automatique à l'ouverture du clavier ───────────────────────
+   iOS zoome AUTOMATIQUEMENT sur tout champ dont la police calculée est sous
+   16px, puis ne dézoome pas : la mise en page reste décalée jusqu'à ce qu'on
+   pince l'écran pour revenir. Or les champs fold sont à `--fold-text-md` (14px)
+   en taille par défaut, et `--fold-text-sm` (12px) en `size="sm"`.
+
+   La solution de facilité serait `maximum-scale=1, user-scalable=no` sur le
+   viewport. On ne la prend PAS : elle supprime le zoom manuel pour tout le
+   monde, y compris pour qui en a besoin pour lire (WCAG 1.4.4). On corrige la
+   cause — la taille du texte saisi — plutôt que le symptôme.
+
+   Ciblé sur `pointer: coarse` : le doigt, pas la souris. Les densités choisies
+   restent donc intactes sur poste de travail, où le problème n'existe pas.
+
+   `!important` assumé : les styles de composant fold portent un attribut de
+   scope (`input[_ngcontent-…]`), donc une règle globale perd la spécificité
+   quoi qu'on écrive. C'est le cas d'usage légitime — contraindre un système de
+   design tiers à une règle de plateforme.
+
+   ⚠️ Sa vraie place est dans fold-ng, qui possède ces composants : un champ qui
+   déclenche le zoom iOS est un défaut du système de design, pas de cette app.
+   À remonter là-bas ; d'ici là, cette règle tient. */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
