@@ -1,6 +1,10 @@
+<!-- Replié, seul l'onglet actif garde son libellé ; les deux autres tombent à
+     leur icône. Les trois noms sont au catalogue fold — replié, l'icône porte
+     l'onglet à elle seule, et `FoldIconName` accepte n'importe quelle chaîne. -->
 <fold-view-nav
   [items]="sections"
   [(activeKey)]="section"
+  [collapsed]="collapsed()"
   direction="horizontal"
   size="comfortable"
   activeStyle="fill"

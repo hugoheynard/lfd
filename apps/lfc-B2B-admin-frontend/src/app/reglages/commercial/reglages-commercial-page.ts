@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { FoldViewNavComponent, type FoldViewNavItem } from 'fold-ng';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { FoldViewNavComponent, observeElementWidth, type FoldViewNavItem } from 'fold-ng';
 
 import { AvailabilityCard } from './availability-card/availability-card';
 import { AccountAlertsCard } from './account-alerts-card/account-alerts-card';
@@ -8,6 +8,15 @@ import { MarketCard } from './market-card/market-card';
 
 /** Les trois sections, dans l'ordre où le commercial les rencontre. */
 type SectionKey = 'rdv' | 'marches' | 'alertes';
+
+/**
+ * Largeur (px) sous laquelle la barre se replie en icônes. Mesurée sur le
+ * besoin réel : « Prise de rendez-vous » et « Définition des marchés » côte à
+ * côte réclament ~35rem en densité `comfortable`. Ce n'est pas le `foldAt` du
+ * rail parent (896) : ces deux barres se replient pour des raisons différentes,
+ * et partager un seuil aurait fait dépendre l'une du gabarit de l'autre.
+ */
+const COLLAPSE_AT = 560;
 
 /**
  * Sous-page **Commercial** des Réglages (staff). Trois sections, présentées par
@@ -41,6 +50,27 @@ type SectionKey = 'rdv' | 'marches' | 'alertes';
 })
 export class ReglagesCommercialPage {
   protected readonly section = signal<string>('rdv');
+
+  /**
+   * Largeur de CETTE page, pas du viewport : le rail des Réglages lui prend sa
+   * place tant qu'il n'est pas replié, et en iframe de la suite le viewport ne
+   * dit rien d'utile. `observeElementWidth` est la primitive de fold — celle que
+   * `fold-nav-layout` utilise pour sa propre décision.
+   */
+  private readonly width = observeElementWidth();
+
+  /**
+   * Replie la barre en icônes quand les trois libellés ne tiennent plus.
+   *
+   * `w > 0` n'est pas une précaution mais la sémantique de la primitive : `0`
+   * signifie « pas encore mesuré » (SSR, ou premier rendu). Sans ce test, la
+   * page s'afficherait repliée le temps d'une frame puis se déplierait —
+   * exactement le scintillement qu'on cherche à éviter.
+   */
+  protected readonly collapsed = computed(() => {
+    const width = this.width();
+    return width > 0 && width <= COLLAPSE_AT;
+  });
 
   protected readonly sections: FoldViewNavItem[] = [
     { key: 'rdv' satisfies SectionKey, label: 'Prise de rendez-vous', icon: 'calendar' },
