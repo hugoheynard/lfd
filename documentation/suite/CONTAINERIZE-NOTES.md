@@ -48,6 +48,46 @@
    un pool suffit ; le jour où `max_instances` remonte, prévoir un **pooler**
    (PgBouncer / pooler hébergeur) pour ne pas dépasser `max_connections`.
 
+## Migrer une base VIVANTE
+
+Un déploiement n'est pas atomique : entre `prisma migrate deploy` et le
+`wrangler deploy` qui suit, **l'ancien code sert le trafic contre le nouveau
+schéma**. Tout ce qui va suivre découle de cette phrase.
+
+L'étape de migration est donc placée **le plus tard possible avant le deploy**
+(après le build et le push de l'image) : la fenêtre tombe de plusieurs minutes —
+la durée d'un `docker build` — à quelques secondes. Elle ne disparaît pas.
+
+**La règle : une migration ne doit jamais retirer ce que le code EN LIGNE lit
+encore.** Ajouter est sûr ; retirer et renommer ne le sont pas.
+
+Déplacer une donnée (une colonne qui change de table) se fait donc en **trois
+déploiements**, et non en une migration :
+
+|                  | Migration                               | Code                                           |
+| ---------------- | --------------------------------------- | ---------------------------------------------- |
+| **1. Étendre**   | crée la cible + **recopie** les données | écrit dans les **deux**, lit encore l'ancienne |
+| **2. Basculer**  | —                                       | lit la **nouvelle**                            |
+| **3. Resserrer** | `DROP COLUMN`                           | ne connaît plus l'ancienne                     |
+
+Le prix est la double écriture temporaire à l'étape 1. Le bénéfice : aucune
+étape ne casse sa voisine, et le retour arrière reste possible tant que le `DROP`
+n'a pas eu lieu — l'ancienne colonne est encore là, et à jour.
+
+⚠️ **Prisma ne déduit jamais un déplacement** : il voit une colonne qui disparaît
+et une autre qui apparaît, et génère un `DROP` + un `ADD` sans lien. En dev
+`migrate dev` prévient ; en CI `migrate deploy` applique en silence et la donnée
+est perdue. Le transfert s'écrit **à la main**, dans le fichier `.sql` :
+
+```bash
+pnpm exec prisma migrate dev --create-only --name <nom>   # écrit sans appliquer
+```
+
+Référence à recopier — les cinq colonnes `rep_*` de `companies` vers
+`company_contacts`, avec créer / recopier / supprimer dans une seule
+transaction : `prisma/migrations/20260730065832_company_contacts/migration.sql`.
+(Fait en un temps, car la base était alors vide de clients.)
+
 ## Rappels d'archi (déjà tranchés)
 
 - **B2B : UNE instance nommée (`getContainer(binding, "primary")`), tenue chaude
