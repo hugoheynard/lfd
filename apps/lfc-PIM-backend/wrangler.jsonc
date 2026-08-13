@@ -9,15 +9,19 @@
     {
       "class_name": "Backend",
       // Image pré-poussée sur le registre Cloudflare (build+push CI, contexte racine).
-      // `__CF_ACCOUNT_ID__` remplacé au deploy par le secret CLOUDFLARE_ACCOUNT_ID.
-      "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfc-pim-backend:latest",
+      // Deux placeholders remplacés au deploy : `__CF_ACCOUNT_ID__` par le secret
+      // CLOUDFLARE_ACCOUNT_ID, et `__IMAGE_TAG__` par le SHA du commit.
+      //
+      // ⚠️ PAS de tag `latest` — Cloudflare Containers le refuse. Même raison et
+      // même montage que le backend B2B, cf. son wrangler.jsonc.
+      "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfc-pim-backend:__IMAGE_TAG__",
       "max_instances": 2,
-      "instance_type": "basic"
-    }
+      "instance_type": "basic",
+    },
   ],
 
   "durable_objects": {
-    "bindings": [{ "name": "BACKEND", "class_name": "Backend" }]
+    "bindings": [{ "name": "BACKEND", "class_name": "Backend" }],
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Backend"] }],
 
@@ -31,8 +35,8 @@
         "name": "RATE_LIMITER",
         "type": "ratelimit",
         "namespace_id": "1001",
-        "simple": { "limit": 300, "period": 60 }
-      }
-    ]
-  }
+        "simple": { "limit": 300, "period": 60 },
+      },
+    ],
+  },
 }

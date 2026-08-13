@@ -57,14 +57,14 @@ jobs:
 
       # 1) Build depuis la RACINE du monorepo, puis push sur le registre Cloudflare.
       - name: Build image (contexte racine)
-        run: docker build -f apps/lfc-PIM-backend/Dockerfile -t lfc-pim-backend:latest .
+        run: docker build -f apps/lfc-PIM-backend/Dockerfile -t lfc-pim-backend:"$GITHUB_SHA" .
 
       - name: Push image → registre Cloudflare
         working-directory: apps/lfc-PIM-backend
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_PIM_BACKEND_WORKER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm exec wrangler containers push lfc-pim-backend:latest
+        run: pnpm exec wrangler containers push lfc-pim-backend:"$GITHUB_SHA"
 
       # 2) Le schéma AVANT le code — mais le plus TARD possible avant lui.
       #
@@ -104,6 +104,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           sed -i "s/__CF_ACCOUNT_ID__/${CLOUDFLARE_ACCOUNT_ID}/" wrangler.jsonc
+          sed -i "s/__IMAGE_TAG__/${GITHUB_SHA}/" wrangler.jsonc
           pnpm exec wrangler deploy
 
       # 4) Auto-sync des secrets RUNTIME depuis les secrets GitHub (source unique).

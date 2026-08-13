@@ -10,9 +10,15 @@
     {
       "class_name": "Backend",
       // Image pré-poussée sur le registre Cloudflare (build+push en CI depuis la
-      // RACINE du monorepo). `__CF_ACCOUNT_ID__` est remplacé au deploy par le
-      // secret CLOUDFLARE_ACCOUNT_ID (jamais commité). Tag `latest`.
-      "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfc-b2b-backend:latest",
+      // RACINE du monorepo). Deux placeholders, tous deux remplacés au deploy :
+      // `__CF_ACCOUNT_ID__` par le secret CLOUDFLARE_ACCOUNT_ID (jamais commité)
+      // et `__IMAGE_TAG__` par le SHA du commit.
+      //
+      // ⚠️ PAS de tag `latest` : Cloudflare Containers le REFUSE
+      // (« Invalid image. Latest tags are not allowed on images. »), constaté au
+      // 1er déploiement réel. Un tag mouvant rendrait d'ailleurs un déploiement
+      // non reproductible — on ne saurait plus quelle image tourne.
+      "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfc-b2b-backend:__IMAGE_TAG__",
       // UNE instance, tenue chaude par le cron `*/5` (cf. `triggers.crons`).
       //
       // Ce n'est pas un plafond de capacité mais un choix de routage : Cloudflare
