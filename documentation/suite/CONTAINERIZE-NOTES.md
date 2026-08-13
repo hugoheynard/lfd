@@ -1,5 +1,12 @@
 # Containerisation des backends (PIM & B2B) — checklist du 1er deploy
 
+> ⚠️ **SUPERSÉDÉ le 2026-08-13.** Notes de containerisation écrites avant le
+> premier déploiement. Ce qu'elles anticipaient est tranché — et parfois
+> autrement. La référence à jour est [`../ops/`](../ops/README.md).
+>
+> Conservé pour l'historique : les pièges qu'elles avaient prévus (contexte de
+> build à la racine, `pnpm deploy`) se sont bien produits.
+
 > Scaffold posé (wrangler.jsonc + Dockerfile + container/worker.ts pour chaque
 > backend). **Non validé** : le build Docker n'a pas été exécuté. Ce qui suit est
 > ce qu'il faut vérifier/ajuster au **premier `wrangler deploy` réel** (machine

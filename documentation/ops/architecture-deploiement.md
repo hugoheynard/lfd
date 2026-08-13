@@ -1,0 +1,190 @@
+# Architecture de déploiement — ce qui tourne, et où
+
+✅ **Décrit l'état réel au 2026-08-13**, chaque affirmation vérifiée contre la
+plateforme (API Cloudflare, journaux de déploiement, requêtes réelles) et non
+contre l'intention. Les points non vérifiés sont signalés comme tels.
+
+## 1. La carte
+
+Sept choses sont déployées : trois Workers Cloudflare et quatre projets Pages.
+
+```mermaid
+flowchart TB
+    subgraph nav["Navigateurs"]
+        A["Admin staff<br/>lfc-b2b-admin.pages.dev"]
+        B["Boutique client<br/>lfc-b2b-eu7.pages.dev"]
+        P["PIM<br/>lfc-pim.pages.dev"]
+        S["Shell suite<br/>lfc-suite.pages.dev"]
+    end
+
+    GW["**lfc-suite-gateway**<br/>Worker · SEULE porte d'entrée<br/>lfc-suite-gateway.lafoliedouce.workers.dev"]
+
+    subgraph prive["Sans aucune adresse publique"]
+        WB["Worker lfc-b2b-backend"]
+        WP["Worker lfc-pim-backend"]
+        CB["Container NestJS B2B<br/>WEUR · 1 instance chaude"]
+        CP["Container NestJS PIM<br/>WEUR · 2 instances"]
+    end
+
+    DBB[("Prisma Postgres<br/>base B2B")]
+    DBP[("Prisma Postgres<br/>base PIM")]
+
+    A -->|"/api/b2b/*"| GW
+    B -->|"/api/b2b/*"| GW
+    P -->|"/api/pim/*"| GW
+    S --> A & B & P
+
+    GW -->|service binding| WB
+    GW -->|service binding| WP
+    WB -->|Durable Object| CB
+    WP -->|Durable Object| CP
+    CB --> DBB
+    CP --> DBP
+```
+
+**Le point important est le cadre « sans adresse publique ».** Les deux Workers
+de backend ont `"workers_dev": false` : ils ne répondent à personne sur
+Internet. Seul le _service binding_ de la passerelle les atteint, et un binding
+est un appel interne au compte Cloudflare, qui ne sort jamais sur le réseau.
+
+Vérifié le 2026-08-13 : `lfc-b2b-backend.lafoliedouce.workers.dev` → **404**,
+la même route par la passerelle → **200**.
+
+C'est ce qui fait de la passerelle une frontière et non une décoration. Tant
+que les backends répondaient au monde, la contourner suffisait à ignorer tout
+ce qu'elle applique.
+
+## 2. Le chemin d'une requête
+
+```mermaid
+sequenceDiagram
+    participant N as Navigateur
+    participant G as Passerelle (Worker)
+    participant W as Worker backend
+    participant C as Container NestJS
+    participant D as Base Prisma
+
+    N->>G: GET /api/b2b/platform-settings
+    Note over G: résout le préfixe → backend b2b<br/>RETIRE `/api/b2b`<br/>écrase x-lfc-client-ip ← cf-connecting-ip<br/>pose/propage traceparent
+    G->>W: fetch(/platform-settings) via service binding
+    Note over W: rate-limit edge par IP<br/>RÉÉCRIT x-lfc-client-ip (2ᵉ fois)
+    W->>C: fetch via Durable Object
+    Note over C: throttler NestJS (clé = x-lfc-client-ip)<br/>guards Auth0 · CORS
+    C->>D: requête SQL
+    D-->>C: lignes
+    C-->>N: réponse (CORS de l'origine du front)
+```
+
+**Le préfixe est retiré avant transmission** : le backend ne sait pas qu'une
+passerelle existe, et le jour où un domaine permettra de router par
+sous-domaine, rien ne changera de son côté.
+
+**L'en-tête d'IP est écrit deux fois, et ce n'est pas une redondance.** La
+passerelle le pose parce qu'elle est la première à voir le client ; le Worker
+backend le réécrit parce qu'il reste la frontière de confiance de son propre
+périmètre. Si demain la passerelle disparaissait du chemin, le Worker
+tiendrait toujours. Cf. [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md).
+
+## 3. Où tournent les containers, et pourquoi c'est écrit
+
+Les deux containers sont **contraints à l'Europe de l'Ouest** :
+
+| Réglage                              | Où                    | Nature                                    |
+| ------------------------------------ | --------------------- | ----------------------------------------- |
+| `constraints: { regions: ["WEUR"] }` | `wrangler.jsonc`      | **contrainte** d'ordonnancement           |
+| `locationHint: "weur"`               | `container/worker.ts` | **indice** de placement du Durable Object |
+
+Les deux sont nécessaires : le chemin a deux sauts (Worker → Durable Object →
+container), et n'en corriger qu'un laisse l'autre où Cloudflare veut.
+
+Sans ces réglages, l'instance vivait à **Dallas-Fort Worth** — un aller-retour
+transatlantique sur chaque appel, pour une clientèle française. Ce n'était pas
+un incident : le défaut Cloudflare place le container au plus près de _la
+requête qui le démarre_, et ce qui le démarre est le cron de rafraîchissement,
+qui s'exécute où Cloudflare veut.
+
+Emplacement réel constaté après correction : **`lhr20`, Londres**. WEUR est la
+maille la plus fine qui existe — il n'y a pas de « Paris ». Note que Londres est
+**hors UE** : si une garantie de résidence des données devient nécessaire, le
+levier est `jurisdiction: "eu"`, décision de conformité restée ouverte.
+
+⚠️ **Un Durable Object ne change jamais d'emplacement après sa création**, et
+l'indice n'est lu qu'au tout premier `get()` d'un id. Déplacer les instances a
+donc exigé de les **renommer** (`primary` → `primary-weur`, `instance-N` →
+`weur-N`). Gratuit ici parce que ces DO ne stockent rien ; sur un DO porteur
+d'état, ce serait une migration.
+
+## 4. Chauffage et capacité
+
+|                 | B2B                       | PIM     |
+| --------------- | ------------------------- | ------- |
+| Instances max   | **1**                     | 2       |
+| Instance        | `basic` (¼ vCPU, 1 Gio)   | `basic` |
+| `sleepAfter`    | 1 h                       | 1 h     |
+| Cron de chauffe | `*/5 * * * *` → `/health` | aucun   |
+
+**Une seule instance côté B2B est un choix de routage, pas un plafond de
+capacité.** Cloudflare n'offre aujourd'hui aucun routage sensible à la charge —
+seulement `getRandom`, un tirage au sort. À trafic faible, deux instances
+tirées aux dés donnent deux machines tièdes et une requête sur deux qui démarre
+à froid ; une seule instance chaude fait strictement mieux.
+
+`sleepAfter` est un **délai d'inactivité**, pas un maintien en éveil. C'est le
+cron `*/5` qui empêche l'endormissement, en sollicitant l'instance plus souvent
+qu'elle ne peut s'endormir.
+
+L'ordre des leviers quand ça serrera, chacun sur une **mesure** et non par
+anticipation : grossir l'instance (`standard-1`) avant de la multiplier ; et ne
+passer à plusieurs instances qu'avec un vrai routage par charge.
+
+## 5. Les bases
+
+Les deux bases vivent dans le **même espace Prisma « La Folie Coffee »**, sous
+le compte `dev@lafoliedouce.com`.
+
+```mermaid
+flowchart LR
+    B2B["Backend B2B"] -->|"prisma+postgres://<br/>(Accelerate)"| A["accelerate.prisma-data.net"]
+    PIM["Backend PIM"] -->|"prisma+postgres://"| A
+    A --> DB[("Prisma Postgres<br/>2 bases séparées")]
+```
+
+**Le schéma de l'URL choisit le transport**, et les deux backends branchent
+dessus :
+
+- `prisma+postgres://…` → **Accelerate** (pooling + cache) ;
+- `postgres://…` → **adapter `pg`** (TCP direct), utilisé par les tests e2e.
+
+⚠️ Ce branchement a coûté une panne. Le PIM montait `adapter-pg`
+inconditionnellement : lui présenter une chaîne Accelerate donnait un
+déploiement **vert**, une migration **réussie** (`prisma migrate` accepte les
+deux formes) et un **500 à la première requête** — la connexion Prisma étant
+paresseuse, le démarrage ne dit rien. Les deux services branchent désormais de
+la même façon.
+
+## 6. Ce qui n'existe pas, et qu'il faut savoir
+
+|                                       | État                                                         |
+| ------------------------------------- | ------------------------------------------------------------ |
+| Zone Cloudflare                       | **aucune** — le compte n'héberge aucun domaine               |
+| Domaine personnalisé                  | aucun ; tout est en `*.workers.dev` / `*.pages.dev`          |
+| `lafoliecoffee.xyz`                   | **n'existe pas en DNS**                                      |
+| `api-b2b` / `api-pim.lafoliedouce.eu` | **ne résolvent pas** ; `lafoliedouce.eu` est chez Proximedia |
+| WAF, règles de rate limiting          | indisponibles — ce sont des produits **de zone**             |
+
+Conséquence directe : le webhook Stripe déclaré sur `api-b2b.lafoliedouce.eu`
+est **déjà mort**, indépendamment de nos changements. Et les audiences Auth0
+qui portent ces noms sont des **identifiants**, pas des adresses : elles n'ont
+pas besoin de résoudre, et les « corriger » invaliderait les jetons existants.
+
+Amener un domaine sur Cloudflare est le prochain levier structurant : il
+débloque le WAF, les règles de rate limiting, et des URL qui ne soient pas
+`lafoliedouce.workers.dev`. Le jour venu, on repasse des préfixes de chemin aux
+sous-domaines **sans toucher aux backends**.
+
+## 7. À lire ensuite
+
+- [`pipelines.md`](pipelines.md) — qui déclenche quoi, et dans quel ordre
+- [`secrets-et-variables.md`](secrets-et-variables.md) — où vit chaque valeur
+- [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md) — le mur, ce qu'il tient et ce qu'il ne tient pas
+- [`runbook.md`](runbook.md) — déployer, revenir en arrière, rouvrir une porte

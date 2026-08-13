@@ -18,6 +18,7 @@ Chaque ligne porte l'**état réel du code**, pas l'intention :
 
 ## Où va un nouveau doc
 
+- **Déploiement, infra, sécurité d'accès → `ops/`.**
 - Architecture / décision d'un projet → `b2b/`, `pim/`, `suite/`.
 - TODO, roadmap, inventaire de dette → `todos/`.
 - La **racine** ne porte que cet index et le **plan de release courant**.
@@ -29,6 +30,19 @@ Chaque ligne porte l'**état réel du code**, pas l'intention :
 | Doc                                                  | État | De quoi ça parle                                                                                                               |
 | ---------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------ |
 | [`release-plan-2026-08.md`](release-plan-2026-08.md) | 🟡   | Les deux jalons d'août : plateforme client en test (12/08), commercial-acquisition (17/08). **Le plan qui pilote la semaine.** |
+
+## Ops — faire tourner la production
+
+**Commencer par [`ops/README.md`](ops/README.md)** : il porte le résumé en dix
+lignes et les trois pièges qui reviennent.
+
+| Doc                                                                                | État | De quoi ça parle                                                                                                                         |
+| ---------------------------------------------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ops/architecture-deploiement.md`](ops/architecture-deploiement.md)               | ✅   | **La carte** : 3 Workers, 4 projets Pages, le chemin d'une requête, le placement des containers (WEUR), les bases. Diagrammes.           |
+| [`ops/pipelines.md`](ops/pipelines.md)                                             | ✅   | Qui déclenche quoi, l'**ordre des étapes d'un déploiement** (et pourquoi la migration est en 6ᵉ), les aléas connus, les versions.        |
+| [`ops/secrets-et-variables.md`](ops/secrets-et-variables.md)                       | ✅   | Secret ou Variable, qui lit quoi, **quelles URL doivent résoudre** (et lesquelles sont des identifiants Auth0 qui n'ont pas à le faire). |
+| [`ops/securite-frontiere-de-confiance.md`](ops/securite-frontiere-de-confiance.md) | ✅   | Les 3 couches, **dont une inerte**. L'IP cliente forgeable et son correctif, le CORS, ce que le mur ne tient pas.                        |
+| [`ops/runbook.md`](ops/runbook.md)                                                 | ✅   | Les gestes **et leurs contrôles** : déployer, vérifier le mur, revenir en arrière, enquêter, symptômes fréquents.                        |
 
 ## B2B — la plateforme client et son back-office
 

@@ -1,5 +1,15 @@
 # Déploiement du backend B2B — Cloudflare Containers
 
+> ⚠️ **SUPERSÉDÉ le 2026-08-13.** Ce document décrivait le _scaffold_ avant tout
+> déploiement réel (« pas encore validé par un build Docker »). Depuis, tout a
+> changé : les backends sont en production, leurs Workers n'ont **plus aucune
+> adresse publique**, et la topologie passe par une passerelle. La référence à
+> jour est [`../ops/architecture-deploiement.md`](../ops/architecture-deploiement.md)
+> et [`../ops/pipelines.md`](../ops/pipelines.md).
+>
+> Conservé pour l'historique du raisonnement (choix d'audiences Auth0, chemins
+> des secrets), **pas comme description de l'état actuel**.
+
 > **État** : scaffold complet, typecheck vert. **Pas encore validé** par un 1er build Docker réel.
 > Ce doc décrit le flow de déploiement, les secrets nécessaires, les chemins qu'ils
 > empruntent, et le modèle d'audience Auth0. Le PIM suit le même patron (§7).
