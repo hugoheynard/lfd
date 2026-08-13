@@ -1,3 +1,5 @@
+import type { S3StorageConfig } from "@lfd/storage";
+
 import type {
   Auth0ManagementCredentials,
   DevImpersonationConfig,
@@ -51,72 +53,67 @@ export function optionalManagementCredentials(): Auth0ManagementCredentials | nu
 }
 
 /**
- * La **connexion** R2, ou `null` si le canal n'est pas configuré.
+ * De quoi parler au stockage d'un **usage** : son bucket, ses clés — ou `null`
+ * si ce stockage n'est pas configuré.
  *
- * Séparée du bucket, et c'est tout l'intérêt : l'endpoint, la région et les
- * clés sont des propriétés du COMPTE — elles ne changent pas d'un bucket à
- * l'autre. Les répéter par usage produirait cinq réglages par bucket, dont
- * quatre identiques, qu'il faudrait tenir alignés à la main.
+ * **Ce qui est propre à l'usage, et ce qui ne l'est pas.** L'endpoint et la
+ * région sont des faits du COMPTE : ils ne changent pas d'un bucket à l'autre,
+ * et les répéter par usage produirait des copies à tenir alignées à la main. Le
+ * bucket et les clés, eux, appartiennent à l'usage — c'est ce qui permet à un
+ * jeton de n'ouvrir QUE ce bucket.
  *
- * `accessKeyId` et `secretAccessKey` vont ensemble : une connexion à moitié
- * renseignée est une erreur de démarrage, pas un `undefined` découvert au
- * premier dépôt de fichier.
+ * Cette isolation est le vrai sujet : les KBIS sont des pièces d'identité
+ * d'entreprise. Le jour où un autre bucket sert à des assets publics, un jeton
+ * fuité depuis là ne doit pas ouvrir les papiers des clients.
+ *
+ * Les deux clés vont ENSEMBLE : une configuration à moitié posée est une erreur
+ * de démarrage, pas un `undefined` découvert au premier dépôt de fichier.
  */
-export function optionalR2Connection(): R2Connection | null {
-  const accessKeyId = optionalString("R2_ACCESS_KEY_ID") ?? "";
-  const secretAccessKey = optionalString("R2_SECRET_ACCESS_KEY") ?? "";
-  const endpoint = optionalString("R2_ENDPOINT") ?? "";
-  const region = optionalString("R2_REGION") ?? "";
+export function optionalR2Storage(usage: R2StorageUsage): S3StorageConfig | null {
+  const names = R2_SETTINGS[usage];
+  const bucket = optionalString(names.bucket) ?? "";
+  const accessKeyId = optionalString(names.accessKeyId) ?? "";
+  const secretAccessKey = optionalString(names.secretAccessKey) ?? "";
 
-  if (accessKeyId === "" && secretAccessKey === "") {
+  if (bucket === "" && accessKeyId === "" && secretAccessKey === "") {
     return null;
   }
-  if (accessKeyId === "" || secretAccessKey === "") {
+  if (bucket === "" || accessKeyId === "" || secretAccessKey === "") {
     throw new Error(
-      "R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY vont ensemble : renseignez les deux, ou aucun.",
+      `${names.bucket}, ${names.accessKeyId} et ${names.secretAccessKey} vont ensemble : ` +
+        "renseignez les trois, ou aucun.",
     );
   }
+  const endpoint = optionalString("R2_ENDPOINT");
+  const region = optionalString("R2_REGION");
   return {
+    bucket,
     accessKeyId,
     secretAccessKey,
-    ...(endpoint !== "" ? { endpoint } : {}),
-    ...(region !== "" ? { region } : {}),
+    ...(endpoint === null ? {} : { endpoint }),
+    ...(region === null ? {} : { region }),
   };
 }
 
-/**
- * Le nom du bucket d'un **usage**, ou `null` s'il n'est pas nommé.
- *
- * Un usage = un bucket = **une** variable. Ajouter un stockage (exports,
- * factures, avatars…) coûte donc une ligne d'environnement, pas cinq — et son
- * nom dit à quoi il sert, ce qu'un `STORAGE_BUCKET` générique ne pouvait plus
- * faire dès le deuxième.
- */
-export function optionalR2Bucket(usage: R2BucketUsage): string | null {
-  return optionalString(R2_BUCKET_SETTINGS[usage]);
-}
-
-/** Les usages de stockage de cette app. Un de plus ⇒ une ligne de plus ici. */
-export type R2BucketUsage = "kbis";
+/** Les stockages de cette app. Un de plus ⇒ une entrée de plus ci-dessous. */
+export type R2StorageUsage = "kbis";
 
 /**
- * La variable d'environnement qui nomme le bucket de chaque usage.
+ * Les variables d'environnement de chaque usage.
  *
- * Table explicite plutôt que nom calculé (`R2_BUCKET_${usage.toUpperCase()}`) :
- * un nom construit à la volée est invisible à une recherche plein texte, et
- * c'est précisément ce qu'on lit quand on cherche « d'où vient ce bucket ».
+ * Table explicite plutôt que noms calculés : un nom construit à la volée
+ * (`R2_${usage}_BUCKET`) est invisible à une recherche plein texte — exactement
+ * ce qu'on lit quand on cherche d'où vient un bucket ou quelle clé l'ouvre.
  */
-const R2_BUCKET_SETTINGS: Readonly<Record<R2BucketUsage, string>> = {
-  kbis: "R2_BUCKET_KBIS",
+const R2_SETTINGS: Readonly<
+  Record<R2StorageUsage, { bucket: string; accessKeyId: string; secretAccessKey: string }>
+> = {
+  kbis: {
+    bucket: "R2_KBIS_BUCKET",
+    accessKeyId: "R2_KBIS_ACCESS_KEY_ID",
+    secretAccessKey: "R2_KBIS_SECRET_ACCESS_KEY",
+  },
 };
-
-/** La partie « compte » d'une configuration R2, commune à tous les buckets. */
-export interface R2Connection {
-  accessKeyId: string;
-  secretAccessKey: string;
-  region?: string;
-  endpoint?: string;
-}
 
 /**
  * Lit le flag d'impersonation de dev. **Fail-closed** : si le flag est actif

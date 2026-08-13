@@ -103,7 +103,8 @@ const CHECKS: readonly Check[] = [
   },
   {
     capability: "Stockage des KBIS",
-    setting: "R2_BUCKET_KBIS + R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_ENDPOINT / R2_REGION",
+    setting:
+      "R2_KBIS_BUCKET / R2_KBIS_ACCESS_KEY_ID / R2_KBIS_SECRET_ACCESS_KEY (+ R2_ENDPOINT / R2_REGION)",
     consequence: "les KBIS ne peuvent être ni déposés ni téléchargés",
     severity: "degraded",
     present: (s) => s.hasStorage,

@@ -9,12 +9,10 @@ import {
   optionalMailerConfig,
   optionalManagementCredentials,
   optionalPort,
-  optionalR2Bucket,
-  optionalR2Connection,
+  optionalR2Storage,
   optionalString,
   optionalStripeConfig,
-  type R2BucketUsage,
-  type R2Connection,
+  type R2StorageUsage,
   required,
 } from "./env-readers.js";
 
@@ -46,7 +44,6 @@ export class AppConfig {
   private readonly auth0StaffConnectionValue: string;
   private readonly clientBaseUrlValue: string | null;
   private readonly management: Auth0ManagementCredentials | null;
-  private readonly r2: R2Connection | null;
   private readonly stripeValue: StripeConfig | null;
   private readonly mailerValue: MailerConfig;
   private readonly portValue: number;
@@ -69,7 +66,6 @@ export class AppConfig {
       optionalString("AUTH0_STAFF_CONNECTION") ?? DEFAULT_AUTH0_STAFF_CONNECTION;
     this.clientBaseUrlValue = optionalString("CLIENT_BASE_URL");
     this.management = optionalManagementCredentials();
-    this.r2 = optionalR2Connection();
     this.stripeValue = optionalStripeConfig();
     this.mailerValue = optionalMailerConfig();
     this.portValue = optionalPort("PORT", 3200);
@@ -173,22 +169,18 @@ export class AppConfig {
   }
 
   /**
-   * De quoi parler au bucket d'un **usage** donné, ou `null` s'il manque la
-   * connexion ou le nom du bucket.
+   * De quoi parler au stockage d'un **usage** donné, ou `null` s'il n'est pas
+   * configuré.
    *
-   * La connexion est commune au compte, le bucket appartient à l'usage : c'est
-   * ici que les deux se rejoignent, une fois, plutôt que dans chaque adaptateur.
+   * Chaque usage porte son bucket ET ses clés : un jeton n'ouvre que le sien.
+   * Seuls l'endpoint et la région restent communs — ce sont des faits du compte.
    *
    * Optionnel comme le M2M : l'API démarre sans (dev, CI). C'est l'adaptateur
    * qui refuse explicitement quand c'est `null` — le reste de l'app fonctionne,
    * seul cet usage est indisponible.
    */
-  r2Bucket(usage: R2BucketUsage): S3StorageConfig | null {
-    const bucket = optionalR2Bucket(usage);
-    if (this.r2 === null || bucket === null) {
-      return null;
-    }
-    return { bucket, ...this.r2 };
+  r2Storage(usage: R2StorageUsage): S3StorageConfig | null {
+    return optionalR2Storage(usage);
   }
 
   /**

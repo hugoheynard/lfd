@@ -35,10 +35,10 @@ export class S3DocumentStore extends DocumentStore {
     if (this.cached !== null) {
       return this.cached;
     }
-    const config = this.config.r2Bucket("kbis");
+    const config = this.config.r2Storage("kbis");
     if (config === null) {
       throw new DocumentStorageUnavailableError(
-        "Le stockage des pièces n'est pas configuré (R2_BUCKET_KBIS + R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY).",
+        "Le stockage des pièces n'est pas configuré (R2_KBIS_BUCKET / R2_KBIS_ACCESS_KEY_ID / R2_KBIS_SECRET_ACCESS_KEY).",
       );
     }
     this.cached = new S3StorageService(config);
