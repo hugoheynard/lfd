@@ -12,7 +12,10 @@ name: deploy_b2b_backend
 #   CLOUDFLARE_ACCOUNT_ID — account id partagé (injecté dans l'image au deploy).
 #
 # Secrets RUNTIME (≠ GitHub) posés une fois via `wrangler secret put` :
-#   DATABASE_B2B_URL, Auth0, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, …
+#   DATABASE_B2B_URL, Auth0, RESEND_MAILER_B2B_API_KEY, STRIPE_*, … — la liste
+#   qui fait foi est la boucle `for name in …` ci-dessous, tenue à jour avec
+#   `.env.example`. Un réglage absent de cette boucle N'ATTEINT PAS le Worker,
+#   même posé dans GitHub : il n'y a aucun message pour le dire.
 
 on:
   push:
@@ -53,6 +56,22 @@ jobs:
       - name: Typecheck
         run: pnpm --filter lfc-b2b-platform-backend exec tsc --noEmit
 
+      # 0) Le schéma AVANT le code. L'ordre inverse met en ligne un backend qui
+      #    interroge des colonnes absentes : constaté le 2026-08-12 en dev, où
+      #    l'admin racine n'a pas pu être semé et le symptôme visible est devenu
+      #    « Aucun accès » — un message qui n'oriente vers rien.
+      #
+      #    `migrate deploy` n'applique QUE les migrations existantes : il n'en
+      #    génère aucune et ne réinitialise jamais. Il échoue plutôt que de
+      #    forcer, ce qui bloque le déploiement — c'est le comportement voulu :
+      #    mieux vaut l'ancienne version en ligne qu'une nouvelle sur un schéma
+      #    à moitié migré.
+      - name: Migrer la base
+        working-directory: apps/lfc-B2B-platform-backend
+        env:
+          DATABASE_B2B_URL: ${{ secrets.DATABASE_B2B_URL }}
+        run: pnpm exec prisma migrate deploy
+
       # 1) Build l'image depuis la RACINE du monorepo (contexte complet), puis la
       #    pousse sur le registre Cloudflare via wrangler (auth automatique).
       - name: Build image (contexte racine)
@@ -91,6 +110,22 @@ jobs:
           AUTH0_ADMIN_AUDIENCE: ${{ vars.AUTH0_ADMIN_AUDIENCE }}
           AUTH0_M2M_CLIENT_ID: ${{ secrets.AUTH0_M2M_CLIENT_ID }}
           AUTH0_M2M_CLIENT_SECRET: ${{ secrets.AUTH0_M2M_CLIENT_SECRET }}
+          # Connexion staff : distincte de la connexion client, c'est le mur qui
+          # empêche un client de s'authentifier contre le back-office.
+          AUTH0_STAFF_CONNECTION: ${{ vars.AUTH0_STAFF_CONNECTION }}
+          # L'adresse de l'admin RACINE — une adresse, pas un secret. Sans elle,
+          # le code retombe sur son défaut, et la porte de secours ne pointe pas
+          # vers la boîte qu'on relève.
+          BOOTSTRAP_ADMIN_EMAIL: ${{ vars.BOOTSTRAP_ADMIN_EMAIL }}
+          # Racines publiques : elles décident où atterrit quelqu'un APRÈS avoir
+          # posé son mot de passe. Absentes, il reste sur une page Auth0.
+          CLIENT_BASE_URL: ${{ vars.CLIENT_BASE_URL }}
+          ADMIN_BASE_URL: ${{ vars.ADMIN_BASE_URL }}
+          # Courrier : sans la clé, aucune invitation ne part — ni pour l'équipe,
+          # ni pour un client.
+          RESEND_MAILER_B2B_API_KEY: ${{ secrets.RESEND_MAILER_B2B_API_KEY }}
+          MAILER_FROM_ADDRESS: ${{ vars.MAILER_FROM_ADDRESS }}
+          MAILER_STAFF_INBOX: ${{ vars.MAILER_STAFF_INBOX }}
           STORAGE_BUCKET: ${{ secrets.STORAGE_BUCKET }}
           STORAGE_ACCESS_KEY_ID: ${{ secrets.STORAGE_ACCESS_KEY_ID }}
           STORAGE_SECRET_ACCESS_KEY: ${{ secrets.STORAGE_SECRET_ACCESS_KEY }}
@@ -101,7 +136,9 @@ jobs:
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
         run: |
           for name in DATABASE_B2B_URL AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
-                      AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET \
+                      AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET AUTH0_STAFF_CONNECTION \
+                      BOOTSTRAP_ADMIN_EMAIL CLIENT_BASE_URL ADMIN_BASE_URL \
+                      RESEND_MAILER_B2B_API_KEY MAILER_FROM_ADDRESS MAILER_STAFF_INBOX \
                       STORAGE_BUCKET STORAGE_ACCESS_KEY_ID STORAGE_SECRET_ACCESS_KEY \
                       STORAGE_ENDPOINT STORAGE_REGION \
                       STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET; do
