@@ -30,6 +30,20 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Backend"] }],
 
+  // Journalisation des requêtes, activée pour RÉPONDRE À UNE QUESTION précise :
+  // « qui appelle ce backend en direct ? ». Tant qu'on ne le sait pas, on ne peut
+  // pas éteindre `workers.dev` sans risquer de couper un appelant qu'on n'avait
+  // pas en tête — et la coupure serait silencieuse.
+  //
+  // À lire dans le tableau de bord Cloudflare (Workers → Observability) ou par
+  // `wrangler tail`. Ce qu'on cherche : des `user-agent` et des chemins qui ne
+  // soient ni les fronts, ni les crons.
+  //
+  // ⚠️ À retirer une fois la question tranchée : ces journaux sont facturés au
+  // volume, et un réglage d'enquête qu'on oublie devient une ligne de facture
+  // que personne ne relie à sa cause.
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+
   // Rate limiting à l'edge (par IP cliente) : le Worker rejette en 429 AVANT de
   // réveiller le container. `period` n'accepte que 10 ou 60 (secondes). 300/min
   // = large pour un SPA connecté, mais coupe le flood d'une IP unique. La
