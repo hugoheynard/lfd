@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '@auth0/auth0-angular';
-import { firstValueFrom } from 'rxjs';
+import { filter, firstValueFrom, take } from 'rxjs';
 
 import { STAFF_OWNS_SESSION } from './auth.providers';
 
@@ -71,14 +71,37 @@ export class StaffAuth {
    * `null` n'est pas une erreur ici : c'est l'état d'une app embarquée (le jeton
    * vient du shell) ou d'un poste de dev sans Auth0 configuré (le backend tourne
    * en bypass). Le mur reste le backend — un appel sans jeton s'y fera refuser.
+   *
+   * **On attend d'abord que le SDK ait fini de résoudre la session.** Sans cette
+   * attente, « je ne sais pas encore » se dit `null`, c'est-à-dire exactement
+   * comme « il n'y en a pas » — et l'appelant ne peut pas faire la différence.
+   *
+   * Ce n'était pas théorique : au retour du callback Auth0, le garde de route
+   * appelle `ensureLoaded()` AVANT que la session soit restaurée (le composant
+   * racine, lui, attend `isLoading` — le garde ne passe pas par là). L'appel
+   * partait donc sans en-tête, prenait un 401, et le magasin de permissions
+   * retenait ce refus SANS JAMAIS RÉESSAYER : « aucun accès » pour toute la
+   * session, jusqu'à un rechargement manuel. Sur un appareil neuf, c'est-à-dire
+   * à chaque première connexion. Constaté en production le 2026-08-13.
    */
   async token(): Promise<string | null> {
     if (!this.auth) {
       return null;
     }
     try {
+      await firstValueFrom(
+        this.auth.isLoading$.pipe(
+          filter((loading) => !loading),
+          take(1),
+        ),
+      );
       return await firstValueFrom(this.auth.getAccessTokenSilently());
-    } catch {
+    } catch (error: unknown) {
+      // Une fois la session résolue, un échec est une VRAIE anomalie (audience
+      // inconnue d'Auth0, refus de consentement, réseau). On part quand même
+      // sans en-tête — le backend reste le mur — mais en le disant : sans cette
+      // ligne, la cause est à trois couches du 401 qu'on finit par voir.
+      console.warn('[staff-auth] jeton indisponible, appel sans en-tête', error);
       return null;
     }
   }
