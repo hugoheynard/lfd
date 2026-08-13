@@ -1,9 +1,32 @@
+/* La porte d'entrée du back-office : un champ d'accent plein écran, une carte
+   posée dessus. Le contraste fond/carte fait tout le travail — c'est le seul
+   écran de l'app sans navigation, donc le seul où l'œil n'a qu'une chose à
+   trouver, et il doit la trouver tout de suite.
+
+   ⚠️ Tous les tokens ci-dessous existent dans `fold-ng/tokens`. La version
+   précédente s'appuyait sur `--fold-color-surface-muted` et `--fold-color-surface`,
+   qui n'ont jamais existé : la page et la carte tombaient donc sur le repli, et
+   la carte n'avait tout simplement PAS de fond. Un token inventé ne casse rien
+   bruyamment — il rend juste une déclaration inerte. */
+
 .login {
   display: grid;
-  place-items: center;
+  align-content: center;
+  justify-items: center;
+  gap: var(--fold-space-xl);
   min-height: 100dvh;
   padding: var(--fold-space-lg);
-  background: var(--fold-color-surface-muted, var(--fold-color-surface));
+  /* Le champ d'accent. Deux arrêts de la MÊME famille (primary → primary-strong)
+     plutôt que deux teintes différentes : on cherche de la profondeur, pas un
+     dégradé décoratif. La lueur radiale décentrée évite l'aplat parfaitement
+     uniforme qui, en plein écran, se lit comme une erreur de rendu. */
+  background:
+    radial-gradient(
+      120% 90% at 15% 0%,
+      color-mix(in srgb, var(--fold-color-on-primary) 18%, transparent),
+      transparent 60%
+    ),
+    linear-gradient(160deg, var(--fold-color-primary), var(--fold-color-primary-strong));
 }
 
 .login-card {
@@ -11,11 +34,13 @@
   flex-direction: column;
   align-items: center;
   gap: var(--fold-space-md);
-  width: min(28rem, 100%);
+  width: min(26rem, 100%);
   padding: var(--fold-space-xl);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-lg, 12px);
-  background: var(--fold-color-surface);
+  border-radius: var(--fold-radius-lg);
+  /* Pas de bordure : sur un fond coloré, c'est l'ombre qui détache la carte.
+     Une bordure en plus donnerait le contour dur d'une boîte de dialogue. */
+  background: var(--fold-color-surface-card);
+  box-shadow: var(--fold-shadow-lg);
   text-align: center;
 }
 
@@ -24,10 +49,10 @@
   place-items: center;
   width: 48px;
   height: 48px;
-  border-radius: var(--fold-radius-md, 8px);
+  border-radius: var(--fold-radius-md);
   background: var(--fold-color-primary);
   color: var(--fold-color-on-primary);
-  font-size: 0.85rem;
+  font-size: var(--fold-text-xs);
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -36,6 +61,7 @@
   margin: 0;
   font-size: var(--fold-text-xl);
   font-weight: 700;
+  color: var(--fold-color-text);
 }
 
 .login-lead {
@@ -46,6 +72,8 @@
 }
 
 .login-cta {
+  /* Pleine largeur : une carte à une seule action ne mérite pas qu'on vise. */
+  width: 100%;
   margin-top: var(--fold-space-xs);
 }
 
@@ -53,4 +81,17 @@
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
+}
+
+.login-brand {
+  margin: 0;
+  /* Sur l'accent, et non dans la carte : la signature appartient au fond.
+     `on-primary` est le token prévu pour du texte sur un aplat primary — il
+     garantit le contraste dans les deux thèmes, là où un blanc en dur ne le
+     ferait que dans un seul. */
+  color: var(--fold-color-on-primary);
+  font-size: var(--fold-text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
 }
