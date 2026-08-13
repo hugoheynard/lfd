@@ -9,7 +9,12 @@ name: deploy_pim_backend
 # Secrets GitHub requis :
 #   LFC_PIM_BACKEND_WORKER — token « Account · Workers Scripts · Edit » + « Containers · Edit ».
 #   CLOUDFLARE_ACCOUNT_ID — account id partagé (injecté dans l'image au deploy).
-# Secrets RUNTIME (`wrangler secret put`) : DATABASE_PIM_URL, Auth0, …
+# Secrets RUNTIME (`wrangler secret put`) : PIM_DATABASE_URL, Auth0, … — la
+# liste qui fait foi est la boucle `for name in …` en fin de fichier.
+#
+# ⚠️ `PIM_DATABASE_URL` sert DEUX fois : la migration (étape 2) et la variable
+# `DATABASE_URL` du container. Elle doit donc être posée AVANT le premier
+# déploiement, sinon la migration ne crée rien et le PIM démarre sans tables.
 
 on:
   push:
@@ -61,7 +66,37 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler containers push lfc-pim-backend:latest
 
-      # 2) Injecte l'account id puis déploie le Worker.
+      # 2) Le schéma AVANT le code — mais le plus TARD possible avant lui.
+      #
+      #    Cette étape manquait : le PIM se déployait contre une base dont
+      #    personne n'avait jamais créé les tables. Même raisonnement que le
+      #    backend B2B, et même placement (cf. deploy_b2b_backend.yml) : migrer
+      #    en tête de workflow intercalerait le build et le push de l'image
+      #    entre le nouveau schéma et le nouveau code, soit plusieurs minutes
+      #    pendant lesquelles l'ANCIEN container servirait le trafic contre le
+      #    NOUVEAU schéma. Ici la fenêtre se réduit au `wrangler deploy`.
+      #
+      #    ⚠️ Elle ne disparaît pas : un déplacement de données sur une base
+      #    VIVANTE se fait en trois déploiements (étendre / basculer /
+      #    resserrer), jamais en une migration qui `DROP` ce que le code lit
+      #    encore. Cf. documentation/suite/CONTAINERIZE-NOTES.md.
+      #
+      #    Le nom de la variable diffère du B2B : le schéma PIM lit `DATABASE_URL`
+      #    (cf. prisma.config.ts), alimenté par le secret `PIM_DATABASE_URL` —
+      #    la même paire que la boucle de synchronisation plus bas.
+      #
+      #    `migrate deploy` n'applique QUE les migrations existantes : il n'en
+      #    génère aucune et ne réinitialise jamais. Il échoue plutôt que de
+      #    forcer, ce qui bloque le déploiement — c'est voulu : mieux vaut
+      #    l'ancienne version en ligne qu'une nouvelle sur un schéma à moitié
+      #    migré. Le coût d'un échec ici est une image construite pour rien.
+      - name: Migrer la base
+        working-directory: apps/lfc-PIM-backend
+        env:
+          DATABASE_URL: ${{ secrets.PIM_DATABASE_URL }}
+        run: pnpm exec prisma migrate deploy
+
+      # 3) Injecte l'account id puis déploie le Worker.
       - name: Deploy Worker
         working-directory: apps/lfc-PIM-backend
         env:
@@ -71,7 +106,7 @@ jobs:
           sed -i "s/__CF_ACCOUNT_ID__/${CLOUDFLARE_ACCOUNT_ID}/" wrangler.jsonc
           pnpm exec wrangler deploy
 
-      # 3) Auto-sync des secrets RUNTIME depuis les secrets GitHub (source unique).
+      # 4) Auto-sync des secrets RUNTIME depuis les secrets GitHub (source unique).
       #    Ne pousse QUE ceux renseignés. Liste = apps/lfc-PIM-backend/.env.example.
       - name: Sync runtime secrets
         working-directory: apps/lfc-PIM-backend
