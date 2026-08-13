@@ -16,3 +16,23 @@ compatibility_date = "2026-07-01"
 [dev]
 ip = "127.0.0.1"
 port = 8787
+
+# Service bindings vers les backends : appels INTERNES au compte, sans passer par
+# le réseau public. C'est la pièce qui rend la passerelle non contournable — une
+# fois `workers_dev = false` posé sur les deux backends, ils n'auront plus aucune
+# adresse publique et ce binding sera leur seul chemin d'entrée.
+#
+# ⚠️ Ordre de bascule impératif : brancher ici, repointer les fronts, VÉRIFIER,
+# et seulement ensuite éteindre `workers.dev` côté backends. L'inverse coupe la
+# production entre deux déploiements.
+#
+# Absents en `wrangler dev` (le routage local passe par les sous-domaines
+# `*.localhost` et des URL publiques) : `Env` les déclare optionnels, et un
+# binding manquant rend un 503 explicite plutôt qu'un repli silencieux.
+[[services]]
+binding = "B2B_BACKEND"
+service = "lfc-b2b-backend"
+
+[[services]]
+binding = "PIM_BACKEND"
+service = "lfc-pim-backend"
