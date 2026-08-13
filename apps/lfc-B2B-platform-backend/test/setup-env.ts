@@ -4,8 +4,17 @@
  * échouent volontairement à l'amorçage si leur configuration manque : on la
  * fournit donc ici, une fois pour toutes les suites.
  *
- * `??=` partout : une valeur déjà présente dans l'environnement gagne, ce qui
- * permet à la CI de pointer une autre base sans toucher au code.
+ * Deux régimes, et la différence est ce qui fait tenir ce fichier :
+ *
+ * - `??=` — une valeur déjà présente gagne. Pour ce que la CI doit pouvoir
+ *   pointer ailleurs sans toucher au code : la base, le tenant Auth0.
+ * - `=` — **écrasement dur**. Pour tout ce dont le `.env` local donnerait une
+ *   version DIFFÉRENTE de celle du runner : bypass d'auth, stockage objet,
+ *   prestataire de paiement. Sans ça, `pnpm test` en local n'exerce pas la même
+ *   application que la CI, et l'écart ne se découvre qu'après le push.
+ *
+ * Ajouter un réglage optionnel que le `.env` renseigne, sans l'inscrire ici,
+ * recrée exactement cette panne — c'est arrivé pour Stripe.
  */
 
 /**
@@ -60,6 +69,28 @@ process.env["R2_KBIS_SECRET_ACCESS_KEY"] = TEST_STORAGE.secretAccessKey;
 export function testStorageConfig(): typeof TEST_STORAGE {
   return TEST_STORAGE;
 }
+
+/**
+ * Prestataire de paiement — **des valeurs factices, mais PRÉSENTES**.
+ *
+ * Les trois vont ensemble ou aucune (cf. `optionalStripeConfig`). Sans elles,
+ * `PaymentGateway.publishableKey()` lève, et `GET /admin/companies/:id/mandate`
+ * — qui renvoie cette clé pour monter l'IBAN Element — rend `500`.
+ *
+ * **Écrasement dur**, comme le stockage et les bypass, mais pour une raison
+ * pire : l'absence ne se voyait QU'EN CI. Le `.env` local renseigne Stripe, donc
+ * la suite du mandat passait ici et échouait sur le runner. C'est le symptôme le
+ * plus coûteux qui soit — il n'apparaît qu'après le push, sur du code qu'on
+ * croyait éprouvé.
+ *
+ * Aucun appel réseau n'en découle : le SDK ne se connecte qu'à l'appel d'une
+ * API, et les suites qui en font une doublent `PaymentGateway` (orders,
+ * admin-orders, account-alerts). Celle du mandat ne double que `MandateGateway`
+ * et traverse donc le vrai adaptateur — voulu : elle éprouve le vrai contrôleur.
+ */
+process.env["STRIPE_SECRET_KEY"] = "sk_test_e2e";
+process.env["STRIPE_WEBHOOK_SECRET"] = "whsec_e2e";
+process.env["STRIPE_PUBLISHABLE_KEY"] = "pk_test_e2e";
 
 /**
  * Jeton interne qui protège `POST /admin/recompute` (porte machine-à-machine du
