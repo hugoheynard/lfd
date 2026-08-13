@@ -50,11 +50,11 @@ const TEST_STORAGE = {
   secretAccessKey: "lfclfclfc",
 } as const;
 
-process.env["STORAGE_BUCKET"] = TEST_STORAGE.bucket;
-process.env["STORAGE_ENDPOINT"] = TEST_STORAGE.endpoint;
-process.env["STORAGE_REGION"] = TEST_STORAGE.region;
-process.env["STORAGE_ACCESS_KEY_ID"] = TEST_STORAGE.accessKeyId;
-process.env["STORAGE_SECRET_ACCESS_KEY"] = TEST_STORAGE.secretAccessKey;
+process.env["R2_BUCKET_KBIS"] = TEST_STORAGE.bucket;
+process.env["R2_ENDPOINT"] = TEST_STORAGE.endpoint;
+process.env["R2_REGION"] = TEST_STORAGE.region;
+process.env["R2_ACCESS_KEY_ID"] = TEST_STORAGE.accessKeyId;
+process.env["R2_SECRET_ACCESS_KEY"] = TEST_STORAGE.secretAccessKey;
 
 /** La configuration de stockage des tests — lue par `test/storage.ts`. */
 export function testStorageConfig(): typeof TEST_STORAGE {

@@ -134,11 +134,13 @@ jobs:
           RESEND_MAILER_B2B_API_KEY: ${{ secrets.RESEND_MAILER_B2B_API_KEY }}
           MAILER_FROM_ADDRESS: ${{ vars.MAILER_FROM_ADDRESS }}
           MAILER_STAFF_INBOX: ${{ vars.MAILER_STAFF_INBOX }}
-          STORAGE_BUCKET: ${{ secrets.STORAGE_BUCKET }}
-          STORAGE_ACCESS_KEY_ID: ${{ secrets.STORAGE_ACCESS_KEY_ID }}
-          STORAGE_SECRET_ACCESS_KEY: ${{ secrets.STORAGE_SECRET_ACCESS_KEY }}
-          STORAGE_ENDPOINT: ${{ secrets.STORAGE_ENDPOINT }}
-          STORAGE_REGION: ${{ secrets.STORAGE_REGION }}
+          # Stockage R2 : la connexion (compte) d'un côté, un bucket par usage de
+          # l'autre. Un stockage de plus = une variable de plus, pas cinq.
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ vars.R2_ENDPOINT }}
+          R2_REGION: ${{ vars.R2_REGION }}
+          R2_BUCKET_KBIS: ${{ vars.R2_BUCKET_KBIS }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
@@ -147,8 +149,8 @@ jobs:
                       AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET AUTH0_STAFF_CONNECTION \
                       BOOTSTRAP_ADMIN_EMAIL CLIENT_BASE_URL ADMIN_BASE_URL \
                       RESEND_MAILER_B2B_API_KEY MAILER_FROM_ADDRESS MAILER_STAFF_INBOX \
-                      STORAGE_BUCKET STORAGE_ACCESS_KEY_ID STORAGE_SECRET_ACCESS_KEY \
-                      STORAGE_ENDPOINT STORAGE_REGION \
+                      R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ENDPOINT R2_REGION \
+                      R2_BUCKET_KBIS \
                       STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET; do
             value="${!name}"
             if [ -n "$value" ]; then

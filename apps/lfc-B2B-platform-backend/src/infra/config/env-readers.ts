@@ -1,5 +1,3 @@
-import type { S3StorageConfig } from "@lfd/storage";
-
 import type {
   Auth0ManagementCredentials,
   DevImpersonationConfig,
@@ -53,35 +51,71 @@ export function optionalManagementCredentials(): Auth0ManagementCredentials | nu
 }
 
 /**
- * Configuration R2/S3, ou `null` si non fournie.
+ * La **connexion** R2, ou `null` si le canal n'est pas configuré.
  *
- * `bucket`, `accessKeyId` et `secretAccessKey` forment le trio requis : si l'un
- * est là, les trois doivent l'être (une config partielle est une erreur de
- * démarrage, pas un `undefined` découvert au premier dépôt). `endpoint` (l'URL
- * R2) et `region` sont optionnels — `region` vaut « auto » côté service.
+ * Séparée du bucket, et c'est tout l'intérêt : l'endpoint, la région et les
+ * clés sont des propriétés du COMPTE — elles ne changent pas d'un bucket à
+ * l'autre. Les répéter par usage produirait cinq réglages par bucket, dont
+ * quatre identiques, qu'il faudrait tenir alignés à la main.
+ *
+ * `accessKeyId` et `secretAccessKey` vont ensemble : une connexion à moitié
+ * renseignée est une erreur de démarrage, pas un `undefined` découvert au
+ * premier dépôt de fichier.
  */
-export function optionalStorageConfig(): S3StorageConfig | null {
-  const bucket = process.env["STORAGE_BUCKET"]?.trim() ?? "";
-  const accessKeyId = process.env["STORAGE_ACCESS_KEY_ID"]?.trim() ?? "";
-  const secretAccessKey = process.env["STORAGE_SECRET_ACCESS_KEY"]?.trim() ?? "";
-  const endpoint = process.env["STORAGE_ENDPOINT"]?.trim() ?? "";
-  const region = process.env["STORAGE_REGION"]?.trim() ?? "";
+export function optionalR2Connection(): R2Connection | null {
+  const accessKeyId = optionalString("R2_ACCESS_KEY_ID") ?? "";
+  const secretAccessKey = optionalString("R2_SECRET_ACCESS_KEY") ?? "";
+  const endpoint = optionalString("R2_ENDPOINT") ?? "";
+  const region = optionalString("R2_REGION") ?? "";
 
-  if (bucket === "" && accessKeyId === "" && secretAccessKey === "") {
+  if (accessKeyId === "" && secretAccessKey === "") {
     return null;
   }
-  if (bucket === "" || accessKeyId === "" || secretAccessKey === "") {
+  if (accessKeyId === "" || secretAccessKey === "") {
     throw new Error(
-      "STORAGE_BUCKET, STORAGE_ACCESS_KEY_ID et STORAGE_SECRET_ACCESS_KEY vont ensemble : renseignez les trois, ou aucun.",
+      "R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY vont ensemble : renseignez les deux, ou aucun.",
     );
   }
   return {
-    bucket,
     accessKeyId,
     secretAccessKey,
     ...(endpoint !== "" ? { endpoint } : {}),
     ...(region !== "" ? { region } : {}),
   };
+}
+
+/**
+ * Le nom du bucket d'un **usage**, ou `null` s'il n'est pas nommé.
+ *
+ * Un usage = un bucket = **une** variable. Ajouter un stockage (exports,
+ * factures, avatars…) coûte donc une ligne d'environnement, pas cinq — et son
+ * nom dit à quoi il sert, ce qu'un `STORAGE_BUCKET` générique ne pouvait plus
+ * faire dès le deuxième.
+ */
+export function optionalR2Bucket(usage: R2BucketUsage): string | null {
+  return optionalString(R2_BUCKET_SETTINGS[usage]);
+}
+
+/** Les usages de stockage de cette app. Un de plus ⇒ une ligne de plus ici. */
+export type R2BucketUsage = "kbis";
+
+/**
+ * La variable d'environnement qui nomme le bucket de chaque usage.
+ *
+ * Table explicite plutôt que nom calculé (`R2_BUCKET_${usage.toUpperCase()}`) :
+ * un nom construit à la volée est invisible à une recherche plein texte, et
+ * c'est précisément ce qu'on lit quand on cherche « d'où vient ce bucket ».
+ */
+const R2_BUCKET_SETTINGS: Readonly<Record<R2BucketUsage, string>> = {
+  kbis: "R2_BUCKET_KBIS",
+};
+
+/** La partie « compte » d'une configuration R2, commune à tous les buckets. */
+export interface R2Connection {
+  accessKeyId: string;
+  secretAccessKey: string;
+  region?: string;
+  endpoint?: string;
 }
 
 /**
