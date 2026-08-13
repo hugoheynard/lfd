@@ -2,7 +2,7 @@
 //
 // Rôle : (1) rate-limiter par IP AVANT le container (défense anti-abus/DDoS —
 // le flood est rejeté à l'edge sans jamais réveiller Node) ; (2) router la
-// requête vers L'instance de container (une seule, nommée — cf. `PRIMARY`) ;
+// requête vers L'instance de container (une seule, cf. `PRIMARY_INSTANCE`) ;
 // (3) transférer au container les variables runtime posées comme secrets du
 // Worker (`wrangler secret put` → `this.env` → `envVars` → process.env du NestJS).
 //

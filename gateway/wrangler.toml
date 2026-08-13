@@ -1,14 +1,21 @@
-# Passerelle de la suite LFC (Cloudflare Worker). UN worker possède toute la zone :
-# il route CHAQUE sous-domaine (option B, cf.
-# documentation/architecture-suite-gateway-scaling.md) vers son upstream — fronts
-# (Pages) et backends (Containers) en prod, serveurs dev locaux en dev.
+# Passerelle de la suite LFC (Cloudflare Worker) — **la seule porte d'entrée**.
+#
+# En PROD : routage par **préfixe de chemin** (`/api/b2b`, `/api/pim`, cf.
+# src/routes.ts) vers des **service bindings**, déclarés en fin de fichier. Les
+# backends n'ont plus aucune adresse publique ; ce Worker est le seul chemin.
+#
+# ⚠️ L'en-tête précédent décrivait un routage par SOUS-DOMAINE sur « la zone » —
+# il n'a jamais été appliqué : le compte Cloudflare n'a aucune zone, et rien ne
+# pointait vers cette passerelle. Le routage par chemin donne le même résultat
+# sans posséder de domaine ; on repassera aux sous-domaines le jour où il y en
+# aura un, sans toucher aux backends (le préfixe est retiré avant transmission).
 #
 # En DEV : `wrangler dev` sert sur 127.0.0.1:8787 et route les `*.localhost:8787`
-# vers les serveurs locaux (voir src/routes.ts, dérivé de @lfd/endpoints). Les
-# navigateurs résolvent `*.localhost` → 127.0.0.1 sans /etc/hosts.
+# vers les serveurs locaux — inchangé. `*.localhost` résout en loopback sans
+# /etc/hosts. Les service bindings sont absents en dev, et un binding manquant
+# rend un 503 explicite plutôt qu'un repli silencieux sur un appel public.
 #
-# En PROD : les `routes` sur la zone réelle seront ajoutées ici au déploiement
-# (Phase 4 du plan) ; la carte prod vit dans src/routes.ts.
+# Détail et diagrammes : documentation/ops/architecture-deploiement.md
 name = "lfc-suite-gateway"
 main = "src/index.ts"
 compatibility_date = "2026-07-01"

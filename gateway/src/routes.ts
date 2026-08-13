@@ -42,7 +42,7 @@ export type BackendKey = keyof typeof API_PREFIXES;
 /** Table dev : sous-domaine `*.localhost` → serveur local. */
 const local = (port: number): string => `http://127.0.0.1:${port}`;
 
-export const DEV_ROUTES: Readonly<Record<string, string>> = {
+const DEV_ROUTES: Readonly<Record<string, string>> = {
   [`${GATEWAY_SUBDOMAINS.suiteShell}.localhost`]: local(DEV_PORTS.suiteShell),
   [`${GATEWAY_SUBDOMAINS.pimFront}.localhost`]: local(DEV_PORTS.pimFront),
   [`${GATEWAY_SUBDOMAINS.b2bFront}.localhost`]: local(DEV_PORTS.b2bFront),
