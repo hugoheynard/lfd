@@ -119,8 +119,14 @@ jobs:
           BOOTSTRAP_ADMIN_EMAIL: ${{ vars.BOOTSTRAP_ADMIN_EMAIL }}
           # Racines publiques : elles décident où atterrit quelqu'un APRÈS avoir
           # posé son mot de passe. Absentes, il reste sur une page Auth0.
-          CLIENT_BASE_URL: ${{ vars.CLIENT_BASE_URL }}
-          ADMIN_BASE_URL: ${{ vars.ADMIN_BASE_URL }}
+          #
+          # `B2B_ADMIN_BASE_URL` est PARTAGÉE avec la boutique cliente, qui en a
+          # besoin pour le QR de retrait — c'est le staff qui le scanne, il doit
+          # donc pointer vers le back-office. Une seule variable pour les deux
+          # usages : deux copies à tenir identiques finiraient par diverger, et
+          # le QR mènerait alors nulle part sans que rien ne le signale.
+          CLIENT_BASE_URL: ${{ vars.B2B_CLIENT_BASE_URL }}
+          ADMIN_BASE_URL: ${{ vars.B2B_ADMIN_BASE_URL }}
           # Courrier : sans la clé, aucune invitation ne part — ni pour l'équipe,
           # ni pour un client.
           RESEND_MAILER_B2B_API_KEY: ${{ secrets.RESEND_MAILER_B2B_API_KEY }}
