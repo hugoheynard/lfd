@@ -29,8 +29,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-
 jobs:
   # ── Les paquets partagés ────────────────────────────────────────────────────
   # En premier et à part : c'est le trou qu'aucune commande d'app ne couvrait.
