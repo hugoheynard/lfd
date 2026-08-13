@@ -9,12 +9,19 @@ name: deploy_pim_backend
 # Secrets GitHub requis :
 #   LFC_PIM_BACKEND_WORKER — token « Account · Workers Scripts · Edit » + « Containers · Edit ».
 #   CLOUDFLARE_ACCOUNT_ID — account id partagé (injecté dans l'image au deploy).
-# Secrets RUNTIME (`wrangler secret put`) : PIM_DATABASE_URL, Auth0, … — la
+# Secrets RUNTIME (`wrangler secret put`) : DATABASE_PIM_URL, Auth0, … — la
 # liste qui fait foi est la boucle `for name in …` en fin de fichier.
 #
-# ⚠️ `PIM_DATABASE_URL` sert DEUX fois : la migration (étape 2) et la variable
+# ⚠️ `DATABASE_PIM_URL` sert DEUX fois : la migration (étape 2) et la variable
 # `DATABASE_URL` du container. Elle doit donc être posée AVANT le premier
 # déploiement, sinon la migration ne crée rien et le PIM démarre sans tables.
+#
+# Ce secret s'appelait `PIM_DATABASE_URL` jusqu'au 2026-08-13 — renommé pour
+# être symétrique de `DATABASE_B2B_URL` (préfixe commun `DATABASE_`, suffixe =
+# l'app), maintenant que les deux bases vivent dans le MÊME espace Prisma
+# « La Folie Coffee ». Deux noms construits à l'envers l'un de l'autre, c'est la
+# ligne qu'on lit trois fois avant de comprendre pourquoi le déploiement est vert
+# et la base vide.
 
 on:
   push:
@@ -82,7 +89,7 @@ jobs:
       #    encore. Cf. documentation/suite/CONTAINERIZE-NOTES.md.
       #
       #    Le nom de la variable diffère du B2B : le schéma PIM lit `DATABASE_URL`
-      #    (cf. prisma.config.ts), alimenté par le secret `PIM_DATABASE_URL` —
+      #    (cf. prisma.config.ts), alimenté par le secret `DATABASE_PIM_URL` —
       #    la même paire que la boucle de synchronisation plus bas.
       #
       #    `migrate deploy` n'applique QUE les migrations existantes : il n'en
@@ -93,7 +100,7 @@ jobs:
       - name: Migrer la base
         working-directory: apps/lfc-PIM-backend
         env:
-          DATABASE_URL: ${{ secrets.PIM_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_PIM_URL }}
         run: pnpm exec prisma migrate deploy
 
       # 3) Injecte l'account id puis déploie le Worker.
@@ -114,7 +121,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_PIM_BACKEND_WORKER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          DATABASE_URL: ${{ secrets.PIM_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_PIM_URL }}
           # Identifiants Auth0 = PUBLICS → GitHub VARIABLES (pas Secrets). Tenant PROD.
           AUTH0_DOMAIN: ${{ vars.SUITE_AUTH0_DOMAIN }}
           AUTH0_AUDIENCE: ${{ vars.SUITE_AUTH0_AUDIENCE_PIM }}
