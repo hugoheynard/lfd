@@ -85,3 +85,23 @@ router-outlet ~ * {
     font-size: 16px !important;
   }
 }
+
+/* ── Coque iOS : marges de sécurité ──────────────────────────────────────────
+   Dans la coque Capacitor, la WebView occupe TOUT l'écran — encoche, barre
+   d'état et barre d'accueil comprises. Sans ces marges, l'en-tête passerait
+   sous l'horloge et le dernier élément sous la barre d'accueil.
+
+   Posé sur `body` plutôt que sur un composant : la coque charge le site déployé,
+   donc n'importe quelle page peut être la première affichée. Une règle globale
+   est le seul endroit qui les couvre toutes.
+
+   Inoffensif partout ailleurs : hors iOS à encoche, `env(safe-area-inset-*)`
+   vaut `0px`, et le repli explicite couvre les moteurs qui ignorent `env()`.
+   C'est aussi pour ça que ces marges peuvent vivre dans la build partagée avec
+   le navigateur de bureau, sans build ni feuille de style à part. */
+body {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}

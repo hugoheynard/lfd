@@ -4,7 +4,13 @@
     <meta charset="utf-8" />
     <title>LFC B2B admin</title>
     <base href="/" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- `viewport-fit=cover` : sans lui, iOS borde la page de bandes noires sur un
+         écran à encoche ET laisse `env(safe-area-inset-*)` à zéro — les marges de
+         sécurité du CSS ne s'appliqueraient donc jamais. Sans effet ailleurs. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Coque iOS (Capacitor) : barre d'état en texte sombre sur notre fond clair. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="LFC Admin" />
     <!-- Tokens fold : copiés en asset (fold-tokens/) et liés ici, PAS via un
          @import Sass/styles-array — le builder ne les inline pas et laisserait un
          import nu qui 404. -->

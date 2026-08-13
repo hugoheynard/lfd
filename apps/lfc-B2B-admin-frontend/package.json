@@ -14,7 +14,10 @@
     "postinstall": "pnpm config:api && pnpm config:auth",
     "config:auth": "node scripts/generate-auth-config.mjs",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "ios:add": "cap add ios",
+    "ios:sync": "cap sync ios",
+    "ios:open": "cap open ios"
   },
   "private": true,
   "packageManager": "pnpm@10.12.1",
@@ -26,6 +29,8 @@
     "@angular/platform-browser": "^22.0.7",
     "@angular/router": "^22.0.7",
     "@auth0/auth0-angular": "^2.11.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@lfd/b2b-ui": "workspace:*",
     "@lfd/contracts": "workspace:*",
     "@lfd/endpoints": "workspace:*",
@@ -45,6 +50,7 @@
     "@angular/build": "^22.0.7",
     "@angular/cli": "^22.0.7",
     "@angular/compiler-cli": "^22.0.7",
+    "@capacitor/cli": "^8.5.0",
     "@playwright/test": "catalog:",
     "@types/d3": "^7.4.3",
     "@types/d3-sankey": "^0.12.5",
