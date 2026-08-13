@@ -127,20 +127,59 @@ function tooManyRequests(): Response {
   });
 }
 
+/** L'en-tête que le backend NestJS lit pour identifier le client (throttler). */
+const CLIENT_IP_HEADER = "x-lfc-client-ip";
+
 /**
- * Résout l'IP cliente. `x-lfc-client-ip` d'abord : la gateway y recopie l'IP
- * réelle (`cf-connecting-ip`) et l'écrase toujours, donc non spoofable — c'est la
- * seule valeur fiable quand la requête a franchi la gateway (le `cf-connecting-ip`
- * vu ici serait alors l'IP de l'infra, pas du client). En accès direct (sans
- * gateway), on retombe sur `cf-connecting-ip`. Aucune des deux ⇒ appel interne.
+ * Résout l'IP cliente — **uniquement depuis `cf-connecting-ip`**, que Cloudflare
+ * pose lui-même sur toute requête entrante et qu'un client ne peut pas falsifier.
+ *
+ * On ne lit surtout PAS `x-lfc-client-ip` ici : c'est une valeur qui vient du
+ * client. Absente ⇒ appel interne (cron), qu'on ne limite pas.
  */
 function clientIp(request: Request): string | null {
-  const forwarded = request.headers.get("x-lfc-client-ip");
-  if (forwarded !== null && forwarded !== "") {
-    return forwarded;
-  }
   const direct = request.headers.get("cf-connecting-ip");
   return direct !== null && direct !== "" ? direct : null;
+}
+
+/**
+ * Réécrit `x-lfc-client-ip` **avant** de transmettre au container.
+ *
+ * ## Le trou que ça bouche
+ *
+ * Le backend NestJS clé son throttler sur `x-lfc-client-ip` (`resolveClientIp`),
+ * en s'appuyant sur un invariant écrit dans son propre commentaire : « la gateway
+ * la recopie et l'écrase toujours, donc non spoofable ». **Cet invariant était
+ * faux** : il n'y a aucune gateway sur le chemin (aucune route, `PROD_ROUTES`
+ * vide, et le domaine visé n'existe pas en DNS), et ce Worker restera de toute
+ * façon joignable en direct sur `workers.dev`. Personne n'écrasait donc rien.
+ *
+ * Mesuré en production le 2026-08-13, 75 requêtes sur `/platform-settings`
+ * (limite 60/min) : en-tête FIXE → 15 rejets en 429 ; en-tête TOURNANT → **zéro
+ * rejet**. Même client, même minute, même volume. Il suffisait d'incrémenter un
+ * en-tête à chaque requête pour n'être jamais limité.
+ *
+ * ## Pourquoi ici et pas dans le backend
+ *
+ * Ce Worker EST la frontière de confiance : le dernier point où l'on connaît la
+ * vraie IP (`cf-connecting-ip`, posée par Cloudflare) et le premier que la
+ * requête franchit. En écrasant l'en-tête ici, on rend enfin VRAI ce que le
+ * backend supposait — sans qu'il ait à changer, et que la gateway existe un jour
+ * ou non.
+ *
+ * On **supprime** l'en-tête plutôt que de le laisser passer quand
+ * `cf-connecting-ip` manque (appel interne) : sinon un client pourrait le poser
+ * lui-même sur un chemin où on ne le remplace pas.
+ */
+function withTrustedClientIp(request: Request): Request {
+  const headers = new Headers(request.headers);
+  const real = clientIp(request);
+  if (real === null) {
+    headers.delete(CLIENT_IP_HEADER);
+  } else {
+    headers.set(CLIENT_IP_HEADER, real);
+  }
+  return new Request(request, { headers });
 }
 
 /**
@@ -207,7 +246,9 @@ export default {
     if (await isRateLimited(request, env)) {
       return tooManyRequests();
     }
-    return backend(env).fetch(request);
+    // Jamais `request` brut : le container ne doit voir que l'en-tête d'IP
+    // réécrit ici, sinon son throttler se laisse guider par le client.
+    return backend(env).fetch(withTrustedClientIp(request));
   },
 
   // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Deux

@@ -80,17 +80,35 @@ function tooManyRequests(): Response {
   });
 }
 
+/** L'en-tête que le backend NestJS lit pour identifier le client (throttler). */
+const CLIENT_IP_HEADER = 'x-lfc-client-ip';
+
 /**
- * IP cliente : `x-lfc-client-ip` (propagée et écrasée par la gateway, non
- * spoofable) d'abord, sinon `cf-connecting-ip` (accès direct). Cf. le worker B2B.
+ * IP cliente : **uniquement `cf-connecting-ip`**, posée par Cloudflare et
+ * infalsifiable par le client. On ne lit pas `x-lfc-client-ip` — c'est une
+ * valeur d'origine cliente. Cf. le worker B2B pour la démonstration du trou.
  */
 function clientIp(request: Request): string | null {
-  const forwarded = request.headers.get('x-lfc-client-ip');
-  if (forwarded !== null && forwarded !== '') {
-    return forwarded;
-  }
   const direct = request.headers.get('cf-connecting-ip');
   return direct !== null && direct !== '' ? direct : null;
+}
+
+/**
+ * Réécrit `x-lfc-client-ip` avant transmission au container, pour que
+ * l'invariant supposé par le backend (« quelqu'un en amont l'écrase toujours »)
+ * soit enfin vrai. Ce Worker est la frontière de confiance : dernier point où
+ * l'on connaît la vraie IP, premier que la requête franchit. Supprimé plutôt
+ * que laissé passer quand il n'y a pas d'IP (appel interne). Cf. le worker B2B.
+ */
+function withTrustedClientIp(request: Request): Request {
+  const headers = new Headers(request.headers);
+  const real = clientIp(request);
+  if (real === null) {
+    headers.delete(CLIENT_IP_HEADER);
+  } else {
+    headers.set(CLIENT_IP_HEADER, real);
+  }
+  return new Request(request, { headers });
 }
 
 /** Rate-limit par IP cliente. Sans IP (appel interne) : pas de limite. */
@@ -108,6 +126,8 @@ export default {
     if (await isRateLimited(request, env)) {
       return tooManyRequests();
     }
-    return backend(env).fetch(request);
+    // Jamais `request` brut : le container ne doit voir que l'en-tête d'IP
+    // réécrit ici, sinon son throttler se laisse guider par le client.
+    return backend(env).fetch(withTrustedClientIp(request));
   },
 };
