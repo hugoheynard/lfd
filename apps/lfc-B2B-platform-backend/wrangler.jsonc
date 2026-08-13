@@ -65,7 +65,7 @@
     {
       "name": "RATE_LIMITER",
       "namespace_id": "1003",
-      "simple": { "limit": 5, "period": 10 },
+      "simple": { "limit": 300, "period": 60 },
     },
   ],
 
