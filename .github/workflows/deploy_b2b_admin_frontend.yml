@@ -48,6 +48,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Les paquets partagés AVANT le build : `tsc` résout `@lfd/contracts` par
+      # les chemins du tsconfig (donc la SOURCE) et passe sans `dist/`, mais le
+      # bundler d'Angular, lui, suit le `exports` du package.json et cherche
+      # `dist/index.js`. Sans cette étape le typecheck est vert et le build
+      # échoue — c'est ce qui est arrivé au 1er déploiement (2026-08-13).
+      # La CI, elle, ne le voyait pas : `ci.yml` construit déjà les paquets.
+      - name: Build shared packages
+        run: pnpm --filter "./packages/**" build
+
       # UNE seule variable pour les deux fronts : ils tapent le MÊME backend B2B
       # (Invariant C — un backend, deux publics, séparés par l'audience du jeton).
       # Deux variables à tenir identiques sans que rien ne le vérifie, c'est une

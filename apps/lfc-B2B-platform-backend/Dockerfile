@@ -18,7 +18,17 @@ RUN pnpm -r --filter "./packages/*" run build
 RUN pnpm --filter lfc-b2b-platform-backend exec prisma generate
 RUN pnpm --filter lfc-b2b-platform-backend run build
 # Dossier autonome (app + deps prod) — voir NOTE pnpm deploy dans CONTAINERIZE-NOTES.
-RUN pnpm --filter lfc-b2b-platform-backend deploy --prod /app
+#
+# `--legacy` est OBLIGATOIRE depuis pnpm v10 : sans lui, `deploy` exige
+# `inject-workspace-packages=true` sur le workspace et s'arrête en
+# ERR_PNPM_DEPLOY_NONINJECTED_WORKSPACE. Constaté au 1er déploiement réel
+# (2026-08-13) — les notes de containerisation l'avaient anticipé.
+#
+# On reste en legacy plutôt que d'activer l'injection à la racine : celle-ci
+# changerait la façon dont TOUTES les apps du monorepo résolvent leurs paquets
+# internes, y compris en dev. Un réglage global pour satisfaire une étape de
+# build serait payé par tout le monde.
+RUN pnpm --filter lfc-b2b-platform-backend deploy --legacy --prod /app
 
 # ---- runtime ----
 FROM node:22-slim AS runtime

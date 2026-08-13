@@ -9,3 +9,10 @@
 **/*.log
 **/.env
 **/.env.*
+# Ne JAMAIS embarquer l'état incrémental de TypeScript : `**/dist` est exclu
+# ci-dessus, donc un `tsconfig.tsbuildinfo` venu de la machine du développeur ferait
+# croire à `tsc -b` que tout est déjà construit — l'image partirait alors avec des
+# paquets @lfd/* SANS leur `dist`, et le container mourrait au démarrage sur un
+# ERR_MODULE_NOT_FOUND. Constaté le 2026-08-13 en build local ; invisible en CI,
+# dont le checkout neuf n'a pas ces fichiers — donc un écart local/CI de plus.
+**/*.tsbuildinfo

@@ -57,6 +57,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Les paquets partagés AVANT le build : `tsc` résout `@lfd/contracts` par
+      # les chemins du tsconfig (donc la SOURCE) et passe sans `dist/`, mais le
+      # bundler d'Angular suit le `exports` du package.json et cherche
+      # `dist/index.js`. Sans cette étape le typecheck est vert et le build
+      # échoue — c'est ce qui est arrivé au 1er déploiement (2026-08-13).
+      # La CI ne le voyait pas : `ci.yml` construit déjà les paquets.
+      - name: Build shared packages
+        run: pnpm --filter "./packages/**" build
+
       # Injecte la config Auth0 PUBLIQUE (domain/clientId/audience/apiBaseUrl) dans
       # `auth.env.generated.ts` depuis les *Variables* du repo — avant typecheck ET
       # build, pour que les deux voient les vraies valeurs. Rien de secret ici.
