@@ -8,7 +8,8 @@ name: deploy_b2b_admin_frontend
 #   CLOUDFLARE_ACCOUNT_ID — account id partagé.
 # Variables PUBLIQUES (onglet Variables — jamais des secrets : elles finissent dans
 # le bundle navigateur, et c'est prévu) :
-#   B2B_ADMIN_API_BASE_URL — URL du backend B2B (le sous-domaine gateway en prod).
+#   B2B_API_BASE_URL — URL du backend B2B, PARTAGÉE avec la boutique cliente :
+#     un seul backend, deux publics (Invariant C). Une seule variable pour les deux.
 #   B2B_ADMIN_AUTH0_DOMAIN · B2B_ADMIN_AUTH0_CLIENT_ID · B2B_ADMIN_AUTH0_AUDIENCE
 #     — connexion staff quand l'app tourne HORS du shell. Sous le shell, la suite
 #       possède la session et ces trois valeurs ne servent pas.
@@ -47,10 +48,16 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # UNE seule variable pour les deux fronts : ils tapent le MÊME backend B2B
+      # (Invariant C — un backend, deux publics, séparés par l'audience du jeton).
+      # Deux variables à tenir identiques sans que rien ne le vérifie, c'est une
+      # divergence qui attend son heure : on en change une, on oublie l'autre, et
+      # un front parle à une URL morte sans rien dire de plus que « l'app ne
+      # marche pas ». Le nom d'env local reste celui qu'attend le script.
       - name: Generate API config (public build var)
         working-directory: apps/lfc-B2B-admin-frontend
         env:
-          B2B_ADMIN_API_BASE_URL: ${{ vars.B2B_ADMIN_API_BASE_URL }}
+          B2B_ADMIN_API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
         run: node scripts/generate-api-config.mjs
 
       - name: Generate Auth0 config (public build vars)
