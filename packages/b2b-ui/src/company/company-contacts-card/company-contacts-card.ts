@@ -50,6 +50,14 @@ export class CompanyContactsCard {
   readonly contacts = input.required<readonly CompanyContactCardView[]>();
   /** Le gestionnaire peut ajouter / éditer / supprimer (bouton + menus). */
   readonly canManage = input(false);
+  /**
+   * Le vide, dit avec les mots de l'écran qui porte la carte — comme
+   * `kbisEmptyHint` sur la carte d'identité. Le défaut parle du **compte**, pas
+   * de celui qui le regarde : il tient donc sur les deux surfaces.
+   */
+  readonly emptyHint = input(
+    "Aucun contact enregistré. Le détenteur en devient un dès qu'il est rattaché.",
+  );
 
   /** Ajouter un contact. */
   readonly add = output<void>();

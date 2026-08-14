@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type {
   BillingAddressView,
   DeliveryAddressView,
@@ -88,6 +88,23 @@ export class CompanyAddressesCard {
   readonly setDefault = output<DeliveryAddressView>();
   /** Supprimer une adresse de livraison (confirmé). */
   readonly remove = output<DeliveryAddressView>();
+
+  /**
+   * Ce que la section contient **vraiment**.
+   *
+   * La phrase était écrite en dur — « une adresse de facturation, une ou
+   * plusieurs adresses de livraison » — alors que le bloc livraison disparaît
+   * quand le service n'existe pas encore. Elle annonçait des cartes que
+   * personne ne verrait, sur l'écran même où l'on cherche ce qui manque.
+   */
+  protected readonly description = computed(() => {
+    if (this.showDeliveries()) {
+      return 'Une adresse de facturation, une ou plusieurs adresses de livraison.';
+    }
+    return this.showPickup()
+      ? 'Une adresse de facturation, et le point où ce client retire ses commandes.'
+      : 'Une adresse de facturation.';
+  });
 
   /** Adresse dont la confirmation de suppression est ouverte (état UI local). */
   protected readonly confirmingId = signal<string | null>(null);

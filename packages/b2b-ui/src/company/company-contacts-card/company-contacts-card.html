@@ -122,6 +122,11 @@
           }
         }
       </fold-card>
+    } @empty {
+      <!-- Un compte ouvert sans détenteur n'a AUCUN contact : la section
+           n'affichait alors qu'un titre et une promesse, sans rien dessous.
+           Ce vide-là se dit, comme les autres. -->
+      <fold-callout variant="info">{{ emptyHint() }}</fold-callout>
     }
   </div>
 </fold-page-section>

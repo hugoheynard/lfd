@@ -86,6 +86,15 @@ describe('carte contacts — état de l’accès', () => {
     expect(host.textContent).not.toContain("n'a pas d'accès");
   });
 
+  it('dit le vide au lieu de ne rien afficher', () => {
+    // Un compte ouvert à l'enseigne seule n'a AUCUN contact. La section
+    // n'affichait alors qu'un titre et sa promesse — « le contact principal de
+    // l'entreprise, et vos interlocuteurs » — au-dessus de rien du tout.
+    const host = render([]);
+
+    expect(host.textContent).toContain('Aucun contact enregistré');
+  });
+
   it('laisse ouvrir l’accès du DÉTENTEUR, qui n’a pas d’identifiant de contact', () => {
     // C'est le rattrapage du compte ouvert pendant que le fournisseur
     // d'identité était injoignable : le détenteur est là, sans accès.

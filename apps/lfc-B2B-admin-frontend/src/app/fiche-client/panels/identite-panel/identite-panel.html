@@ -5,6 +5,7 @@
     label="Enseigne"
     hint="nom commercial, s'il diffère de la raison sociale"
     optional
+    optionalLabel="facultatif"
     [value]="enseigne()"
     (valueChange)="enseigne.set($event)"
   />
@@ -49,6 +50,7 @@
         : 'facultatif pour cette forme — franchise en base'
     "
     [optional]="!vatRequired()"
+    optionalLabel="facultatif"
     [value]="tvaIntracom()"
     (valueChange)="tvaIntracom.set($event)"
   />
