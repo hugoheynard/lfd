@@ -13,7 +13,25 @@ import { Container } from "@cloudflare/containers";
 import { guardedFetch } from "./edge-guard";
 import type { RateLimiter } from "./edge-guard";
 
-/** Variables runtime forwardées au container. `PORT`/`NODE_ENV` viennent de l'image. */
+/**
+ * Variables runtime forwardées au container. `PORT`/`NODE_ENV` viennent de l'image.
+ *
+ * ⚠️ **Cette liste est un filtre, pas une documentation.** Un secret posé sur le
+ * Worker et absent d'ici n'atteint JAMAIS le NestJS : le container démarre sans,
+ * et le réglage se comporte comme non configuré. Rien ne le signale — ni au
+ * déploiement, ni au boot, ni dans les logs du Worker.
+ *
+ * Elle avait divergé de ce que lit `AppConfig`, et ça a coûté cher en
+ * production : cinq noms `STORAGE_*` hérités d'un ancien nommage, là où le code
+ * lit `R2_*`. Les secrets étaient bien posés, le workflow les poussait bien — et
+ * le Worker les jetait. Tout dépôt de KBIS rendait 500. Dans la même dérive, la
+ * clé Resend n'était pas transmise : le mailer tournait à blanc, aucune
+ * invitation ne partait, et le staff copiait les liens à la main sans savoir
+ * qu'il contournait une panne.
+ *
+ * `container/__tests__/runtime-keys.spec.ts` compare cette liste à ce que la
+ * configuration lit réellement. Une troisième dérive échoue en CI.
+ */
 const RUNTIME_KEYS = [
   "DATABASE_B2B_URL",
   "AUTH0_DOMAIN",
@@ -21,11 +39,29 @@ const RUNTIME_KEYS = [
   "AUTH0_ADMIN_AUDIENCE",
   "AUTH0_M2M_CLIENT_ID",
   "AUTH0_M2M_CLIENT_SECRET",
-  "STORAGE_BUCKET",
-  "STORAGE_ACCESS_KEY_ID",
-  "STORAGE_SECRET_ACCESS_KEY",
-  "STORAGE_ENDPOINT",
-  "STORAGE_REGION",
+  // Les deux connexions : le mur entre l'équipe et les clients chez Auth0. Non
+  // transmises, elles retombaient sur les défauts du code — justes aujourd'hui,
+  // mais alors incorrigeables sans redéployer.
+  "AUTH0_STAFF_CONNECTION",
+  "AUTH0_DB_CONNECTION",
+  "BOOTSTRAP_ADMIN_EMAIL",
+  // Où atterrit quelqu'un APRÈS avoir posé son mot de passe, et où pointent les
+  // boutons des e-mails.
+  "CLIENT_BASE_URL",
+  "ADMIN_BASE_URL",
+  // Courrier : sans la clé, le mailer rend les gabarits et n'envoie rien.
+  "RESEND_MAILER_B2B_API_KEY",
+  "RESEND_API_KEY",
+  "MAILER_FROM_ADDRESS",
+  "MAILER_REPLY_TO",
+  "MAILER_STAFF_INBOX",
+  // Stockage des pièces (KBIS). Endpoint et région sont des faits du COMPTE ;
+  // bucket et clés appartiennent à l'USAGE, pour qu'un jeton n'ouvre que le sien.
+  "R2_ENDPOINT",
+  "R2_REGION",
+  "R2_KBIS_BUCKET",
+  "R2_KBIS_ACCESS_KEY_ID",
+  "R2_KBIS_SECRET_ACCESS_KEY",
   "STRIPE_SECRET_KEY",
   "STRIPE_PUBLISHABLE_KEY",
   "STRIPE_WEBHOOK_SECRET",
