@@ -192,6 +192,13 @@
             (inviteContact)="fiche.openAccess($event)"
           />
 
+          <!-- Le staff saisit TOUJOURS les adresses de livraison, même service
+               fermé : c'est le carnet d'adresses du client, pas une promesse de
+               tournée. Le commercial les récupère au téléphone bien avant qu'on
+               livre, et les perdre obligerait à tout resaisir le jour de
+               l'ouverture. Ce que `DELIVERY_SERVICE_OPEN` ferme, c'est l'OFFRE
+               — le choix au panier, la préférence d'acheminement — pas la
+               fiche. -->
           <lfd-company-addresses-card
             [billing]="fiche.billing()"
             [deliveries]="fiche.deliveries()"
@@ -201,7 +208,7 @@
             (editDelivery)="fiche.editDelivery($event)"
             (setDefault)="fiche.setDefaultDelivery($event)"
             (remove)="fiche.removeDelivery($event)"
-            [showDeliveries]="!fiche.deliveryHidden"
+            [showDeliveries]="true"
             [showPickup]="fiche.deliveryHidden"
             [pickup]="fiche.defaultPickup()"
           />
