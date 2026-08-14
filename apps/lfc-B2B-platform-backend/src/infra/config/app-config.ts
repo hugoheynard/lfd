@@ -25,8 +25,18 @@ import {
  * au démarrage** (fail-fast plutôt qu'un `undefined` qui se propage), et
  * **substituables en test** via l'injection.
  */
-/** Le nom qu'Auth0 donne à la connexion base de données d'un tenant neuf. */
-const DEFAULT_AUTH0_DB_CONNECTION = "Username-Password-Authentication";
+/**
+ * La connexion où naissent les identités **client**. Comme celle de l'équipe :
+ * valeur **constatée dans le tenant**, pas devinée.
+ *
+ * Le défaut d'usine d'Auth0 (`Username-Password-Authentication`) était en place
+ * et ne visait rien : ce tenant n'a que ses deux connexions nommées. Auth0
+ * répondait donc en erreur — et pas le `409` qui aurait déclenché la reprise par
+ * e-mail — si bien que **toute** ouverture d'accès remontait un `500`. Un défaut
+ * plausible mais faux est pire que pas de défaut : il désigne silencieusement
+ * une base d'utilisateurs qui n'existe pas.
+ */
+const DEFAULT_AUTH0_DB_CONNECTION = "lfc-b2b-customers";
 
 /**
  * La connexion où naissent les identités **de l'équipe**. Valeur constatée dans
@@ -123,9 +133,10 @@ export class AppConfig {
 
   /**
    * Nom de la **connexion base de données** Auth0 où naissent les identités
-   * client. Un défaut plutôt qu'un réglage obligatoire : c'est le nom que tout
-   * tenant Auth0 porte dès sa création, et l'exiger ferait échouer le boot en
-   * dev et en CI pour une valeur que personne ne change.
+   * client (`AUTH0_DB_CONNECTION`). Un défaut plutôt qu'un réglage obligatoire,
+   * pour la même raison que côté équipe : l'exiger ferait échouer le boot en dev
+   * et en CI pour une valeur que personne ne change. Mais ce défaut est celui du
+   * **tenant**, pas celui d'usine d'Auth0 — cf. {@link DEFAULT_AUTH0_DB_CONNECTION}.
    */
   auth0DatabaseConnection(): string {
     return this.auth0ConnectionValue;
