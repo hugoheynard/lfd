@@ -25,6 +25,17 @@ Balayage fait le 2026-08-14 : les onze écrans qui bricolaient encore le leur on
 été alignés, et le CSS correspondant supprimé. Toute réapparition est une
 régression.
 
+## Zéro `<select>` natif, zéro carte maison
+
+Deux autres règles du fichier ci-dessus, rappelées parce qu'elles viennent
+d'être appliquées ici : le contrôle de choix est **`fold-listbox`** (API
+`[options]`, libellé **visible**), et une carte est **`fold-card`** +
+**`fold-element-title`** — jamais un `<article>` stylé à la main.
+
+Balayage fait le 2026-08-14 : plus aucun `<select>` dans l'app (les quatre
+derniers étaient dans Croissance), et cette page ne dessine plus ni carte, ni
+en-tête, ni pastille de portée, ni encadré d'aparté.
+
 ## Deux arbres de navigation (dette connue)
 
 Une entrée de menu doit être ajoutée **deux fois** : au rail `fold-menu-item`

@@ -65,6 +65,53 @@ statique inconnu sur un composant Angular **ne lève rien** : `icon="clock"` et
 l'icône passe par le slot `[empty-icon]`, le texte par `subtitle`. La source est
 `node_modules/fold-ng/types/fold-ng.d.ts`.
 
+### Zéro `<select>` natif (règle permanente)
+
+**Aucun `<select>` dans un template.** Le contrôle de choix est
+**`<fold-listbox>`**, en API `[options]` — un tableau `{ value, label }` :
+
+```html
+<fold-listbox
+  size="sm"
+  label="Granularité"
+  [options]="grains"
+  [value]="grain()"
+  (selectionChange)="grain.set($event)"
+/>
+```
+
+Ce n'est pas cosmétique. `[options]` **lie la valeur aux options à la
+compilation**, et `selectionChange` rend la valeur **déjà typée** (jamais
+`null`). Le `<select>` natif, lui, ne parle que `string` : chaque usage traînait
+un handler qui déballait un `Event`, castait en `HTMLSelectElement`, puis
+**revalidait** la chaîne contre le tableau d'origine — dix lignes par sélecteur
+pour rattraper un type qu'on avait déjà.
+
+- `[(value)]` / `valueChange` quand il faut aussi observer l'effacement (`×`) —
+  la valeur y est `T | null`.
+- `<fold-option>` projetées seulement si la ligne est riche (icône, second
+  niveau) ; sinon `[options]`.
+- **Le libellé est visible**, via `label` : un `.visually-hidden` laisse un
+  voyant devant une liste déroulante dont rien ne dit ce qu'elle règle.
+- `fold-select` existe et enrobe un `<select>` natif : il dépanne pour un
+  formulaire simple, mais le défaut est `fold-listbox`.
+
+### Les briques d'une carte (règle permanente)
+
+Une carte de contenu n'est **jamais** un `<article>` stylé à la main :
+
+| Ce qu'on veut                  | Le composant                                                  |
+| ------------------------------ | ------------------------------------------------------------- |
+| La carte                       | `<fold-card>`                                                 |
+| Son en-tête (titre + actions)  | `<fold-element-title variant="title">` + slot `[titleAction]` |
+| Une portée / qualification     | le `subtitle` du même composant, pas une pastille maison      |
+| Un aparté encadré sous un bloc | `<fold-callout>` (+ `variant="eyebrow"` pour son titre)       |
+
+⚠️ **`interactive` pose `role="button"` sur la carte entière.** Ne l'utiliser que
+si la carte est réellement un contrôle unique — jamais quand elle contient un
+bouton, un lien ou un graphe. Corollaire : **pas d'ombre au survol** sur une
+carte non cliquable ; elle promet un clic qui n'existe pas.
+
 ## CSS propre & marges (règles permanentes)
 
 - **Zéro CSS morte.** Toute classe définie dans un `.scss` est référencée dans le

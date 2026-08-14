@@ -44,6 +44,11 @@ ni d'espacement en dur.
 complet et le piège des attributs muets :
 [`../lfc-B2B-platform-frontend/CLAUDE.md`](../lfc-B2B-platform-frontend/CLAUDE.md).
 
+**Zéro `<select>` natif** : le contrôle de choix est `fold-listbox` (API
+`[options]`, `selectionChange` rend la valeur déjà typée, libellé visible). Et
+une carte de contenu est `fold-card` + `fold-element-title`, jamais un
+`<article>` stylé à la main. Détail dans le même fichier.
+
 ## POC frontend-only (contexte)
 
 Pas de backend en POC : la « DB » est un seed versionné dans le repo
