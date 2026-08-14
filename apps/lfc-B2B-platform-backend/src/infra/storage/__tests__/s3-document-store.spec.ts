@@ -6,10 +6,24 @@ import { S3DocumentStore } from "../s3-document-store.js";
 /**
  * Un `AppConfig` doublé : seule `r2Storage` compte ici, et c'est elle qui décide
  * si l'adaptateur a de quoi parler à R2.
+ *
+ * Une **sous-classe** et non un objet greffé sur le prototype : `Object.create`
+ * rend `any`, ce que le lint refuse à juste titre — un double qui ment sur son
+ * type ne vérifie plus rien. Le vrai constructeur tourne (l'environnement de
+ * test fournit ce qu'il exige), seule la lecture du stockage est remplacée.
  */
+class FakeConfig extends AppConfig {
+  constructor(private readonly storage: S3StorageConfig | null) {
+    super();
+  }
+
+  override r2Storage(): S3StorageConfig | null {
+    return this.storage;
+  }
+}
+
 function configWith(storage: S3StorageConfig | null): AppConfig {
-  const stub: Pick<AppConfig, "r2Storage"> = { r2Storage: () => storage };
-  return Object.assign(Object.create(AppConfig.prototype), stub);
+  return new FakeConfig(storage);
 }
 
 const CONFIGURED: S3StorageConfig = {
