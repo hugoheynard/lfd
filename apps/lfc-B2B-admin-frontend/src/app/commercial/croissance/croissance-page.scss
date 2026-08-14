@@ -123,67 +123,10 @@
   font-weight: 600;
 }
 
-/* ── Grille de cartes ── */
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--fold-space-md, 1rem);
-}
-
-.card {
-  border: 1px solid var(--growth-hairline);
-  border-radius: var(--fold-radius-lg, 0.75rem);
-  background: var(--fold-color-surface);
-  padding: var(--fold-space-md, 1rem) var(--fold-space-md, 1rem) var(--fold-space-md, 1rem);
-  min-width: 0;
-  box-shadow: var(--growth-shadow);
-  transition: box-shadow 0.2s ease;
-  /* La bulle d'info déborde de l'en-tête. */
-  overflow: visible;
-
-  &:hover {
-    box-shadow: var(--growth-shadow-hover);
-  }
-}
-
-.card.wide {
-  grid-column: 1 / -1;
-}
-
-/* En-tête de carte : titre à gauche, contrôles + bulle d'info à droite. */
-.card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--fold-space-sm, 0.5rem);
-  margin-bottom: var(--fold-space-md, 0.9rem);
-  padding-bottom: var(--fold-space-sm, 0.6rem);
-  border-bottom: 1px solid var(--growth-hairline);
-}
-
-.card-head h2 {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.35;
-}
-
-/* Petit tag de portée temporelle à côté d'un titre (ex. « cumulé à date »). */
-.scope-tag {
-  display: inline-block;
-  margin-left: 0.45rem;
-  padding: 0.08rem 0.4rem;
-  border: 1px solid var(--growth-hairline);
-  border-radius: 999px;
-  background: var(--fold-color-surface-card);
-  color: var(--fold-color-text-muted);
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  vertical-align: middle;
-  white-space: nowrap;
 }
 
 /* Contrôles à droite de l'en-tête (tri, granularité + bulle d'info). */
@@ -194,44 +137,7 @@
   flex: 0 0 auto;
 }
 
-.sort-select {
-  padding: 0.22rem 0.5rem;
-  border: 1px solid var(--growth-hairline);
-  border-radius: var(--fold-radius-md, 0.375rem);
-  background: var(--fold-color-surface-card);
-  color: var(--fold-color-text);
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 500;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid var(--fold-color-primary);
-    outline-offset: -1px;
-  }
-}
-
-/* Bloc « interprétations possibles » sous un graphe. */
-.interp {
-  margin-top: var(--fold-space-sm, 0.6rem);
-  padding: var(--fold-space-sm, 0.6rem) var(--fold-space-md, 0.85rem);
-  border: 1px solid var(--growth-hairline);
-  border-left: 3px solid var(--fold-color-primary);
-  border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface-card);
-}
-
-.interp-title {
-  display: block;
-  font-size: var(--growth-eyebrow);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--fold-color-text-muted);
-  margin-bottom: 0.4rem;
-}
-
-.interp ul {
+fold-callout ul {
   margin: 0;
   padding-left: 1.1rem;
   display: flex;
@@ -242,23 +148,8 @@
   color: var(--fold-color-text-muted);
 }
 
-.interp strong {
+fold-callout strong {
   color: var(--fold-color-text);
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card {
-    transition: none;
-  }
 }
 
 @media (max-width: 60rem) {

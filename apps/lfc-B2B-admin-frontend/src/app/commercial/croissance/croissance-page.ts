@@ -1,8 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldCardComponent,
+  FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldInfoComponent,
+  FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldNavLayoutComponent,
   FoldTabPanelComponent,
@@ -94,7 +98,11 @@ interface Kpi {
     Sunburst,
     FoldInfoComponent,
     FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldCardComponent,
+    FoldElementTitleComponent,
     FoldEmptyStateComponent,
+    FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldNavLayoutComponent,
     FoldTabsComponent,
@@ -308,33 +316,6 @@ export class CroissancePage {
     }
   }
 
-  /** Change le tri de l'adoption/perte par territoire depuis le `<select>`. */
-  protected onAdoptionSort(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    const match = this.adoptionSorts.find((s) => s.value === value);
-    if (match !== undefined) {
-      this.adoptionSort.set(match.value);
-    }
-  }
-
-  /** Change la granularité temporelle du CA par secteur NAF depuis le `<select>`. */
-  protected onSectorGrain(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    const match = this.sectorGrains.find((g) => g.value === value);
-    if (match !== undefined) {
-      this.sectorGrain.set(match.value);
-    }
-  }
-
-  /** Change la granularité temporelle des graphes Volume / CA depuis le `<select>`. */
-  protected onCaGrain(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    const match = this.caGrains.find((g) => g.value === value);
-    if (match !== undefined) {
-      this.caGrain.set(match.value);
-    }
-  }
-
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
@@ -390,15 +371,6 @@ export class CroissancePage {
       this.acquisitionMetrics.set(await this.market.acquisitionMetrics());
     } catch {
       this.acquisitionMetrics.set(null);
-    }
-  }
-
-  /** Change la granularité temporelle du graphe Entrées / sorties. */
-  protected onAcqGrain(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    const match = this.acqGrains.find((g) => g.value === value);
-    if (match !== undefined) {
-      this.acqGrain.set(match.value);
     }
   }
 }
