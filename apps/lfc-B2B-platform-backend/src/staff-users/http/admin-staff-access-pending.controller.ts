@@ -7,6 +7,7 @@ import {
   ListPendingStaffAccessQuery,
 } from "../application/pending-staff-access.js";
 import type { PendingStaffAccessView } from "../domain/pending-staff-access.reader.js";
+import type { IssuedPasswordLink } from "../../account/application/commands/issue-password-link.handler.js";
 
 /**
  * Les accès **staff** à remettre à la main — jumeau de la surface client, sous
@@ -33,10 +34,9 @@ export class AdminStaffAccessPendingController {
   }
 
   @Post(":staffUserId/link")
-  async issueLink(@Param("staffUserId") staffUserId: string): Promise<{ url: string }> {
-    const url = await this.commands.execute<IssueStaffPasswordLinkCommand, string>(
+  issueLink(@Param("staffUserId") staffUserId: string): Promise<IssuedPasswordLink> {
+    return this.commands.execute<IssueStaffPasswordLinkCommand, IssuedPasswordLink>(
       new IssueStaffPasswordLinkCommand(staffUserId),
     );
-    return { url };
   }
 }

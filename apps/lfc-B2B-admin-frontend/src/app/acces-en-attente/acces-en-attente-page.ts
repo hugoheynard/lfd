@@ -10,7 +10,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../notify.service';
-import { displayName, waitingFor, type PendingAccess } from './pending-access.model';
+import { displayName, validUntil, waitingFor, type PendingAccess } from './pending-access.model';
 import { PendingAccessService } from './pending-access.service';
 
 /** Une ligne prête à rendre — nom et attente calculés une fois. */
@@ -109,8 +109,8 @@ export class AccesEnAttentePage {
     }
     this.issuing.set(person.userId);
     try {
-      const url = await this.service.issueLink(person);
-      await this.toClipboard(url);
+      const link = await this.service.issueLink(person);
+      await this.toClipboard(link.url, validUntil(link.expiresAt));
     } catch (error) {
       this.notify.error(error);
       // La personne a pu créer son accès entre l'affichage et le clic : la
@@ -122,12 +122,12 @@ export class AccesEnAttentePage {
     }
   }
 
-  private async toClipboard(url: string): Promise<void> {
+  private async toClipboard(url: string, until: string): Promise<void> {
     try {
       await navigator.clipboard.writeText(url);
-      this.notify.success('Lien copié — il expire, remettez-le sans tarder.');
+      this.notify.success(`Lien copié — valable jusqu'au ${until}.`);
     } catch {
-      this.notify.success(`Lien à copier : ${url}`);
+      this.notify.success(`Lien à copier (valable jusqu'au ${until}) : ${url}`);
     }
   }
 }

@@ -1,9 +1,24 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
+import { Clock } from "../../../infra/time/clock.js";
+import { PASSWORD_TICKET_TTL_SECONDS } from "../../../infra/identity/auth0-identity.gateway.js";
 import { PendingAccessReader } from "../../domain/ports/pending-access.reader.js";
 import { PendingAccessNotFoundError } from "../../domain/errors/account-errors.js";
 import { IssuePasswordLinkCommand } from "./issue-password-link.command.js";
+
+/**
+ * Le lien, et **jusqu'à quand il ouvre**.
+ *
+ * L'échéance part avec lui : un commercial qui copie un lien le mardi et
+ * l'envoie le lundi suivant enverrait une erreur, et il doit le savoir au
+ * moment de coller, pas au moment où le client se plaint.
+ */
+export interface IssuedPasswordLink {
+  readonly url: string;
+  /** ISO. Calculée sur le TTL réellement demandé au fournisseur. */
+  readonly expiresAt: string;
+}
 
 /**
  * Fabrique un lien de mot de passe **à la demande**, pour que le staff le
@@ -25,17 +40,29 @@ import { IssuePasswordLinkCommand } from "./issue-password-link.command.js";
  * réinitialiser sans qu'elle ait rien demandé.
  */
 @CommandHandler(IssuePasswordLinkCommand)
-export class IssuePasswordLinkHandler implements ICommandHandler<IssuePasswordLinkCommand, string> {
+export class IssuePasswordLinkHandler implements ICommandHandler<
+  IssuePasswordLinkCommand,
+  IssuedPasswordLink
+> {
   constructor(
     private readonly pending: PendingAccessReader,
     private readonly identity: CustomerIdentityPort,
+    private readonly clock: Clock,
   ) {}
 
-  async execute(command: IssuePasswordLinkCommand): Promise<string> {
+  async execute(command: IssuePasswordLinkCommand): Promise<IssuedPasswordLink> {
     const subject = await this.pending.subjectOf(command.userId);
     if (subject === null) {
       throw new PendingAccessNotFoundError(command.userId);
     }
-    return this.identity.issuePasswordLink(subject);
+    const url = await this.identity.issuePasswordLink(subject);
+    // Calculée ici et non devinée par l'écran : c'est le serveur qui demande le
+    // TTL au fournisseur, lui seul sait combien de temps le ticket ouvre.
+    return { url, expiresAt: expiryFrom(this.clock.now()) };
   }
+}
+
+/** L'instant où le ticket cesse d'ouvrir, sur le TTL demandé à Auth0. */
+export function expiryFrom(now: Date): string {
+  return new Date(now.getTime() + PASSWORD_TICKET_TTL_SECONDS * 1000).toISOString();
 }

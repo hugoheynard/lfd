@@ -16,7 +16,7 @@ import { Auth0ManagementClient, CONFLICT } from "./auth0-management.client.js";
  * assez court pour qu'un lien oublié dans une boîte partagée finisse par ne plus
  * rien ouvrir. Le renvoyer coûte un clic.
  */
-const PASSWORD_TICKET_TTL_SECONDS = 7 * 24 * 60 * 60;
+export const PASSWORD_TICKET_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 /**
  * La mécanique Auth0 d'ouverture d'identité — **la connexion est un paramètre**.

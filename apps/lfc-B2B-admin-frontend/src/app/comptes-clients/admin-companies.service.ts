@@ -263,11 +263,13 @@ export class AdminCompaniesService {
    * Fabrique un lien de mot de passe **frais** pour une personne en attente —
    * le repli quand l'e-mail n'est pas parti. Même route que la file.
    */
-  async issueAccessLink(userId: string): Promise<string> {
-    const { url } = await firstValueFrom(
-      this.http.post<{ url: string }>(`${B2B_API_BASE}/admin/access-pending/${userId}/link`, {}),
+  async issueAccessLink(userId: string): Promise<{ url: string; expiresAt: string }> {
+    return firstValueFrom(
+      this.http.post<{ url: string; expiresAt: string }>(
+        `${B2B_API_BASE}/admin/access-pending/${userId}/link`,
+        {},
+      ),
     );
-    return url;
   }
 
   /** Fixe la condition de règlement **convenue** (solde la demande client). */

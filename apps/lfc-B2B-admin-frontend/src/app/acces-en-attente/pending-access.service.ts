@@ -35,18 +35,21 @@ export class PendingAccessService {
    * droits à usage unique, et un `GET` finirait préchargé, mis en cache et
    * rangé dans l'historique du navigateur.
    */
-  async issueLink(person: PendingAccess): Promise<string> {
+  async issueLink(person: PendingAccess): Promise<IssuedLink> {
     // Deux annuaires, deux routes : la personne porte d'où elle vient, l'écran
     // n'a pas à le deviner.
     const base =
       person.kind === 'staff'
         ? `${B2B_API_BASE}/admin/staff-access-pending`
         : `${B2B_API_BASE}/admin/access-pending`;
-    const { url } = await firstValueFrom(
-      this.http.post<{ url: string }>(`${base}/${person.userId}/link`, {}),
-    );
-    return url;
+    return firstValueFrom(this.http.post<IssuedLink>(`${base}/${person.userId}/link`, {}));
   }
+}
+
+/** Le lien, et jusqu'à quand il ouvre — l'échéance vient du serveur. */
+export interface IssuedLink {
+  readonly url: string;
+  readonly expiresAt: string;
 }
 
 /** La ligne telle que la file client la rend. */

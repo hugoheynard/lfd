@@ -11,6 +11,7 @@ import type { AdminCompanyDetail, CompanyOpened } from '../../comptes-clients/ad
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
 import type { HolderChoice } from '../holder-picker/holder-picker';
+import { validUntil } from '../../acces-en-attente/pending-access.model';
 
 /**
  * Ce que la fiche **écrit**.
@@ -235,9 +236,9 @@ export class FicheClientActions {
    */
   private async copyAccessLink(userId: string): Promise<void> {
     try {
-      const url = await this.service.issueAccessLink(userId);
-      await navigator.clipboard.writeText(url);
-      this.notify.success('Lien copié — il expire, remettez-le sans tarder.');
+      const link = await this.service.issueAccessLink(userId);
+      await navigator.clipboard.writeText(link.url);
+      this.notify.success(`Lien copié — valable jusqu'au ${validUntil(link.expiresAt)}.`);
     } catch {
       this.notify.success('Lien à remettre depuis « Accès à remettre ».');
     }

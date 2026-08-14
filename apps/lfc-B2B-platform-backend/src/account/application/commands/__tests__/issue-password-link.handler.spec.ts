@@ -29,12 +29,15 @@ describe("fabriquer un lien à remettre à la main", () => {
     const handler = new IssuePasswordLinkHandler(
       reader("auth0|abc"),
       identity("https://auth/ticket-neuf", issued),
+      { now: () => new Date("2026-08-14T09:00:00.000Z") },
     );
 
-    const url = await handler.execute(new IssuePasswordLinkCommand("usr_1"));
+    const link = await handler.execute(new IssuePasswordLinkCommand("usr_1"));
 
-    expect(url).toBe("https://auth/ticket-neuf");
+    expect(link.url).toBe("https://auth/ticket-neuf");
     expect(issued).toEqual(["auth0|abc"]);
+    // Sept jours : l'écran ne devine pas l'échéance, le serveur la donne.
+    expect(link.expiresAt).toBe("2026-08-21T09:00:00.000Z");
   });
 
   it("REFUSE pour quelqu'un qui n'attend plus", async () => {
@@ -42,7 +45,9 @@ describe("fabriquer un lien à remettre à la main", () => {
     // de la file et le clic. Lui fabriquer un lien reviendrait à offrir de quoi
     // le réinitialiser sans qu'elle ait rien demandé.
     const issued: string[] = [];
-    const handler = new IssuePasswordLinkHandler(reader(null), identity("https://auth/x", issued));
+    const handler = new IssuePasswordLinkHandler(reader(null), identity("https://auth/x", issued), {
+      now: () => new Date("2026-08-14T09:00:00.000Z"),
+    });
 
     await expect(handler.execute(new IssuePasswordLinkCommand("usr_1"))).rejects.toThrow(
       PendingAccessNotFoundError,

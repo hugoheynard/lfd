@@ -10,6 +10,11 @@ import {
   type PendingStaffAccessView,
 } from "../domain/pending-staff-access.reader.js";
 import { StaffIdentityPort } from "../domain/staff-identity.port.js";
+import { Clock } from "../../infra/time/clock.js";
+import {
+  expiryFrom,
+  type IssuedPasswordLink,
+} from "../../account/application/commands/issue-password-link.handler.js";
 import { StaffUserNotFoundError } from "../domain/staff-user-errors.js";
 
 /** La file des accès staff à remettre. Aucun paramètre : elle est entière. */
@@ -41,18 +46,21 @@ export class ListPendingStaffAccessHandler implements IQueryHandler<
 @CommandHandler(IssueStaffPasswordLinkCommand)
 export class IssueStaffPasswordLinkHandler implements ICommandHandler<
   IssueStaffPasswordLinkCommand,
-  string
+  IssuedPasswordLink
 > {
   constructor(
     private readonly pending: PendingStaffAccessReader,
     private readonly identities: StaffIdentityPort,
+    private readonly clock: Clock,
   ) {}
 
-  async execute(command: IssueStaffPasswordLinkCommand): Promise<string> {
+  async execute(command: IssueStaffPasswordLinkCommand): Promise<IssuedPasswordLink> {
     const subject = await this.pending.subjectOf(command.staffUserId);
     if (subject === null) {
       throw new StaffUserNotFoundError(command.staffUserId);
     }
-    return this.identities.issuePasswordLink(subject);
+    const url = await this.identities.issuePasswordLink(subject);
+    // Le même calcul que côté client : un seul TTL, une seule vérité.
+    return { url, expiresAt: expiryFrom(this.clock.now()) };
   }
 }

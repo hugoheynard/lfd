@@ -38,3 +38,20 @@ export function waitingFor(invitedAt: string, now: Date): string {
   }
   return days === 1 ? 'depuis hier' : `depuis ${days} jours`;
 }
+
+/**
+ * « valable jusqu'au lundi 21 août » — dite au moment de la copie, parce que
+ * c'est là qu'elle sert : un lien copié un mardi et envoyé le lundi suivant
+ * enverrait une erreur, et le commercial doit le savoir avant de coller, pas
+ * quand le client se plaint.
+ *
+ * Le jour et non l'heure : personne ne colle un lien à la minute près, et une
+ * heure affichée ferait croire à une précision que le geste n'a pas.
+ */
+export function validUntil(expiresAt: string): string {
+  return new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date(expiresAt));
+}
