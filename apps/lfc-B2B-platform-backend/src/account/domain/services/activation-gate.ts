@@ -1,4 +1,4 @@
-import type { ActivationPiece, PieceMode, PlatformSettings } from "@lfd/contracts";
+import type { ActivationPiece } from "@lfd/contracts";
 
 import type { AdminCompanyDetailView } from "../ports/admin-company.reader.js";
 
@@ -12,21 +12,16 @@ export type ActivationBlocker =
   | "detenteur"
   | "telephone"
   | "tva"
-  | "kbis_absent"
-  | "kbis_non_verifie"
-  | "facturation"
-  | "livraison";
+  | "facturation";
 
 /** Une pièce du dossier, telle que la fiche la montre. */
 export interface ActivationCheck {
   readonly piece: ActivationPiece;
   /**
-   * Le mode configuré : `required` bloque, `optional` se demande sans bloquer,
-   * `hidden` ne se demande pas du tout. L'écran a besoin des trois — filtrer ici
-   * lui ferait redécouvrir la nuance, et c'est ce genre de re-déduction qu'on
-   * cherche justement à supprimer.
+   * Cette pièce **empêche-t-elle** l'activation ? Faux = on la réclame quand
+   * même, elle ne gate rien (le KBIS, aujourd'hui).
    */
-  readonly mode: PieceMode;
+  readonly blocking: boolean;
   readonly done: boolean;
 }
 
@@ -40,7 +35,7 @@ export interface ActivationCheck {
  * une règle qui finira par se contredire ; celle-ci n'est plus écrite qu'ici, et
  * l'écran ne fait que la rendre.
  *
- * Pur : (fiche, réglages) → verdict. Ni Nest, ni Prisma, ni horloge.
+ * Pur : fiche → verdict. Ni Nest, ni Prisma, ni horloge, **ni configuration**.
  */
 export interface ActivationGate {
   /** Le serveur accepterait-il d'activer maintenant ? */
@@ -51,29 +46,47 @@ export interface ActivationGate {
   readonly checklist: readonly ActivationCheck[];
 }
 
-/** Ordre de présentation : celui dans lequel on les réclame au client. */
-const PIECES: readonly ActivationPiece[] = ["tva", "kbis", "billing", "delivery"];
+/**
+ * Les pièces demandées, et **lesquelles bloquent** — écrit ici, en dur.
+ *
+ * C'était un réglage staff (`b2b_platform_settings`, un mode par pièce). Il a
+ * disparu : le parcours d'ouverture est arrêté, et un parcours arrêté ne se
+ * reconfigure pas depuis un écran. Une case cochée par erreur un mardi soir
+ * changeait la définition de « client » pour toute la plateforme, sans revue,
+ * sans test, sans trace.
+ *
+ * - `tva` — bloquante. Sans numéro, une société assujettie n'est pas facturable.
+ *   Les non-assujetties sont déjà réputées en règle (cf. `isDone`).
+ * - `kbis` — **jamais bloquante**. C'est une convention interne : on veut voir
+ *   l'extrait, on ne veut pas perdre la commande de demain matin pour un PDF.
+ *   Le signal vit ailleurs (file de vérification), pas dans cette porte.
+ * - `billing` — bloquante. Il faut savoir à qui adresser la facture.
+ *
+ * La **livraison** n'y figure plus du tout : le service n'existe pas. Le jour
+ * où il ouvre, elle revient ici — dans un commit, avec ses tests, pas dans une
+ * case à cocher.
+ */
+const PIECES: readonly { readonly piece: ActivationPiece; readonly blocking: boolean }[] = [
+  { piece: "tva", blocking: true },
+  { piece: "kbis", blocking: false },
+  { piece: "billing", blocking: true },
+];
 
-const PIECE_BLOCKERS: Readonly<Record<ActivationPiece, ActivationBlocker>> = {
+const PIECE_BLOCKERS: Readonly<Partial<Record<ActivationPiece, ActivationBlocker>>> = {
   tva: "tva",
-  kbis: "kbis_absent",
   billing: "facturation",
-  delivery: "livraison",
 };
 
-export function activationGate(
-  company: AdminCompanyDetailView,
-  settings: PlatformSettings,
-): ActivationGate {
+export function activationGate(company: AdminCompanyDetailView): ActivationGate {
   const checklist = PIECES.map((piece) => ({
-    piece,
-    mode: settings[piece],
-    done: isDone(company, piece),
+    piece: piece.piece,
+    blocking: piece.blocking,
+    done: isDone(company, piece.piece),
   }));
 
   const blocking: ActivationBlocker[] = [];
-  // L'identité légale n'est pas une pièce configurable : sans SIRET, il n'y a
-  // rien à facturer. Elle ne se désactive donc pas en réglages.
+  // L'identité légale n'est pas une pièce parmi d'autres : sans SIRET, il n'y a
+  // rien à facturer.
   if (!hasLegalIdentity(company)) {
     blocking.push("identite_legale");
   }
@@ -91,8 +104,9 @@ export function activationGate(
     blocking.push("telephone");
   }
   for (const check of checklist) {
-    if (check.mode === "required" && !check.done) {
-      blocking.push(blockerFor(company, check.piece));
+    const blocker = PIECE_BLOCKERS[check.piece];
+    if (check.blocking && !check.done && blocker !== undefined) {
+      blocking.push(blocker);
     }
   }
 
@@ -105,18 +119,6 @@ export function activationGate(
   };
 }
 
-/**
- * Le KBIS a deux façons de manquer, et elles n'appellent pas le même geste :
- * déposer un extrait, ou en ouvrir un qui dort déjà là. C'est le cas le plus
- * fréquent et le moins devinable — d'où deux codes plutôt qu'un.
- */
-function blockerFor(company: AdminCompanyDetailView, piece: ActivationPiece): ActivationBlocker {
-  if (piece === "kbis" && company.kbis !== null) {
-    return "kbis_non_verifie";
-  }
-  return PIECE_BLOCKERS[piece];
-}
-
 function isDone(company: AdminCompanyDetailView, piece: ActivationPiece): boolean {
   switch (piece) {
     case "tva":
@@ -124,12 +126,15 @@ function isDone(company: AdminCompanyDetailView, piece: ActivationPiece): boolea
       return !company.vatNumberRequired || company.tvaIntracom.trim() !== "";
     case "kbis":
       // **Certifié**, et non « déposé ». Se contenter de la présence reviendrait
-      // à activer sur la foi d'un PDF que personne n'a ouvert — n'importe quel
-      // fichier vaudrait alors garantie.
+      // à cocher sur la foi d'un PDF que personne n'a ouvert — n'importe quel
+      // fichier vaudrait alors garantie. Ne bloque rien, mais dit vrai.
       return company.kbis?.certified === true;
     case "billing":
       return company.addresses.billing !== null;
     case "delivery":
+      // Le service n'existe pas : la pièce n'est jamais demandée (elle n'est pas
+      // dans `PIECES`). Le cas reste écrit parce que le type l'exige, et il dira
+      // la vérité le jour où la livraison ouvrira.
       return company.addresses.deliveries.length > 0;
   }
 }

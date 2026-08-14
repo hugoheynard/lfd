@@ -4,7 +4,6 @@ import {
   AdminCompanyReader,
   type AdminCompanyFicheView,
 } from "../../domain/ports/admin-company.reader.js";
-import { PlatformSettingsRepository } from "../../../platform-settings/domain/platform-settings.repository.js";
 import { activationGate } from "../../domain/services/activation-gate.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { GetCompanyForStaffQuery } from "./get-company-for-staff.query.js";
@@ -24,10 +23,7 @@ export class GetCompanyForStaffHandler implements IQueryHandler<
   GetCompanyForStaffQuery,
   AdminCompanyFicheView
 > {
-  constructor(
-    private readonly companies: AdminCompanyReader,
-    private readonly settings: PlatformSettingsRepository,
-  ) {}
+  constructor(private readonly companies: AdminCompanyReader) {}
 
   async execute(query: GetCompanyForStaffQuery): Promise<AdminCompanyFicheView> {
     const company = await this.companies.byId(query.companyId);
@@ -37,6 +33,6 @@ export class GetCompanyForStaffHandler implements IQueryHandler<
     // Le **verdict** part avec la fiche, calculé par la fonction qui garde aussi
     // la porte d'activation. L'écran n'a plus rien à redéduire — et ne peut donc
     // plus se contredire avec le serveur.
-    return { ...company, gate: activationGate(company, await this.settings.read()) };
+    return { ...company, gate: activationGate(company) };
   }
 }

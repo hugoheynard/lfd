@@ -1,34 +1,24 @@
 import { z } from "zod";
 
 /**
- * Contrat de fil des **réglages plateforme B2B** — la configuration **globale**
- * qui pilote les pièces d'activation d'un compte client. Les **points de retrait**
- * (acheminement) ont leur propre contrat (`pickup.ts`). Cf.
- * `documentation/architecture-activation-configuration-b2b.md`.
+ * Les **pièces du dossier d'activation** d'un compte client.
+ *
+ * Ce fichier portait aussi la *configuration* de ces pièces — un mode
+ * (`hidden` / `optional` / `required`) par pièce, réglable par le staff depuis
+ * Réglages → Activation client. Elle a été **supprimée** : le parcours
+ * d'ouverture est arrêté, et un parcours arrêté ne se reconfigure pas depuis un
+ * écran. Une case cochée un mardi soir redéfinissait « client » pour toute la
+ * plateforme, sans revue, sans test et sans trace.
+ *
+ * Ce qui bloque désormais est écrit en dur dans `activationGate` (backend), la
+ * seule autorité. Il ne reste ici que le **vocabulaire** : le nom des pièces,
+ * partagé par le serveur et les deux fronts.
  */
 
 /**
- * Mode d'une **pièce d'activation** (aligné sur l'enum Prisma `PieceMode`) :
- * - `hidden` — la pièce n'existe pas encore (ex. livraison sans service) : masquée
- *   client + admin, jamais exigée ;
- * - `optional` — visible, mais ne **gate** pas l'activation ;
- * - `required` — exigée pour activer le compte.
+ * Les pièces d'un dossier. `paymentTerm` n'en est pas une (elle a toujours une
+ * valeur) ; `delivery` n'est plus demandée tant que le service n'existe pas,
+ * mais son nom reste — c'est un vocabulaire, pas une liste d'exigences.
  */
-export const pieceModeSchema = z.enum(["hidden", "optional", "required"]);
-export type PieceMode = z.infer<typeof pieceModeSchema>;
-
-/** Les pièces d'activation configurables. `paymentTerm` a toujours une valeur → pas ici. */
 export const activationPieceSchema = z.enum(["tva", "kbis", "billing", "delivery"]);
 export type ActivationPiece = z.infer<typeof activationPieceSchema>;
-
-/**
- * Réglages plateforme : le **mode par pièce**. Sert de **vue** (GET) **et** de
- * **charge** (PATCH) — même forme, la config est un simple dictionnaire mode/pièce.
- */
-export const platformSettingsSchema = z.object({
-  tva: pieceModeSchema,
-  kbis: pieceModeSchema,
-  billing: pieceModeSchema,
-  delivery: pieceModeSchema,
-});
-export type PlatformSettings = z.infer<typeof platformSettingsSchema>;

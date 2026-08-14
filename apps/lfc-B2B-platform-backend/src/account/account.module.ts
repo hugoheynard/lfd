@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
-import { PlatformSettingsModule } from "../platform-settings/platform-settings.module.js";
 import { ActivateCompanyByStaffHandler } from "./application/commands/activate-company.handler.js";
 import { AddCompanyContactHandler } from "./application/commands/add-company-contact.handler.js";
 import {
@@ -120,7 +119,7 @@ import { MeController } from "./http/me.controller.js";
  * sans Prisma ni réseau.
  */
 @Module({
-  imports: [CqrsModule, PlatformSettingsModule],
+  imports: [CqrsModule],
   controllers: [
     MeController,
     CompaniesController,

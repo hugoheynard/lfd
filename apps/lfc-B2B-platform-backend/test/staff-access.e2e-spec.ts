@@ -81,10 +81,12 @@ describe("le mur staff — chacun son périmètre", () => {
 
   it("lui laisse LIRE les réglages mais pas les ÉCRIRE", async () => {
     // L'action se déduit du verbe, sans qu'aucune route ait eu à la déclarer :
-    // sur la même ressource `settings`, le GET passe et l'écriture est refusée.
+    // sur la même ressource, le GET passe et l'écriture est refusée. L'id est
+    // volontairement introuvable — le guard tranche AVANT que la ressource soit
+    // cherchée, donc un 404 ici prouverait déjà qu'on est passé.
     await accountant().get("/admin/order-cutoffs").expect(200);
 
-    const response = await accountant().patch("/admin/platform-settings").send({});
+    const response = await accountant().patch("/admin/order-cutoffs/inexistant").send({});
     expect(response.status).toBe(403);
   });
 

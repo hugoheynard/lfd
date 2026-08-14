@@ -126,7 +126,7 @@ describe("la matrice des rôles — l'écriture se déduit du verbe", () => {
 
     await agent.get("/admin/order-cutoffs").expect(200);
 
-    const response = await agent.patch("/admin/platform-settings").send({});
+    const response = await agent.patch("/admin/order-cutoffs/inexistant").send({});
     expect(response.status).toBe(403);
   });
 
@@ -135,7 +135,7 @@ describe("la matrice des rôles — l'écriture se déduit du verbe", () => {
     // test précédent pour la mauvaise raison.
     const agent = await asRole("admin");
 
-    const response = await agent.patch("/admin/platform-settings").send({});
+    const response = await agent.patch("/admin/order-cutoffs/inexistant").send({});
     expect(response.status).not.toBe(403);
   });
 });

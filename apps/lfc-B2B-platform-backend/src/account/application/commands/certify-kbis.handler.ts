@@ -49,48 +49,30 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
       byRole: agent?.role ?? "",
     });
 
-    await this.liftKbisSuspension(command.companyId);
     // Au journal : l'état courant dira « vérifié », mais pas QUAND ni par qui
     // le jour où la vérification sera retirée. L'historique, lui, garde tout.
     this.events.publish(new KbisCertifiedEvent(command.companyId, at));
   }
 
-  /**
-   * **Relève** la suspension que le retrait de vérification avait provoquée.
-   *
-   * La symétrie est le point : si couper l'accès est automatique, le rendre doit
-   * l'être aussi. Faire cliquer une seconde fois « Réactiver » n'ajouterait
-   * aucune décision — la décision était de vérifier l'extrait — mais ajouterait
-   * une occasion de l'oublier, et un client resterait bloqué sur un dossier
-   * complet.
-   *
-   * `kbis_revoked` **seulement** : une suspension décidée par un humain (impayé,
-   * litige) ne se lève pas parce qu'un document a été validé.
-   */
-  private async liftKbisSuspension(companyId: string): Promise<void> {
-    const company = await this.companies.load(companyId);
-    if (company === null || company.suspensionCause !== "kbis_revoked") {
-      return;
-    }
-    company.reactivate();
-    await this.companies.save(company);
-  }
 }
 
 /**
- * Retire la certification — **et suspend le compte s'il était actif**.
+ * Retire la certification — **et ne touche pas au compte**.
  *
- * Ce n'est pas un effet de bord discret, c'est la même règle lue dans l'autre
- * sens : un compte est activable parce que son identité a été vérifiée. Retirer
- * la vérification et laisser le compte commander reviendrait à faire de la
- * certification une formalité d'entrée qu'on peut retirer sans conséquence.
+ * Elle suspendait, autrefois : « un compte est activable parce que son identité
+ * a été vérifiée ». La règle a changé, et c'est une décision commerciale
+ * assumée — la vérification du KBIS est une **convention interne**, pas une
+ * condition d'exercice. Couper la commande d'une boulangerie pour un PDF, c'est
+ * payer une perte certaine (la commande de demain matin) contre un risque qui
+ * ne se matérialise qu'à la facturation, sur des clients que le commercial a
+ * vus. Le manque se voit ailleurs — dans la file de vérification — au lieu de
+ * se venger sur le chiffre.
  *
- * La suspension passe par l'agrégat (`suspend()`), qui sait d'où l'on a le droit
- * de venir : un compte `pending` ou déjà suspendu n'est pas touché.
+ * Ce chemin rejoint donc celui du **remplacement** d'extrait, qui décertifiait
+ * déjà sans suspendre : deux gestes menant au même état ne peuvent pas avoir
+ * deux conséquences. C'était l'incohérence, pas la règle.
+ *
  * Idempotent : décertifier ce qui ne l'est pas ne fait rien.
- *
- * Elle porte sa **cause** (`kbis_revoked`), et c'est elle qui rend la reprise
- * automatique possible sans rouvrir par erreur un compte suspendu pour impayé.
  */
 @CommandHandler(RevokeKbisCertificationCommand)
 export class RevokeKbisCertificationHandler implements ICommandHandler<
@@ -110,15 +92,11 @@ export class RevokeKbisCertificationHandler implements ICommandHandler<
     }
     await this.companies.saveKbisCertification(command.companyId, null);
 
-    const suspended = company.status === "active";
-    if (suspended) {
-      company.suspend("kbis_revoked");
-      await this.companies.save(company);
-    }
-    // Sans cette ligne, une suspension serait INEXPLICABLE le lendemain : l'état
+    // Sans cette ligne, le retrait serait INTROUVABLE le lendemain : l'état
     // courant redevient « déposé, pas vérifié », comme si rien ne s'était passé.
+    // `suspended` reste à faux — plus aucun retrait ne coupe l'accès.
     this.events.publish(
-      new KbisCertificationRevokedEvent(command.companyId, this.clock.now(), suspended),
+      new KbisCertificationRevokedEvent(command.companyId, this.clock.now(), false),
     );
   }
 }

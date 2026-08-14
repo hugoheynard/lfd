@@ -5,7 +5,6 @@ import {
   AdminCompanyReader,
   type AdminCompanyDetailView,
 } from "../../../domain/ports/admin-company.reader.js";
-import { PlatformSettingsRepository } from "../../../../platform-settings/domain/platform-settings.repository.js";
 import { GetCompanyForStaffHandler } from "../get-company-for-staff.handler.js";
 import { GetCompanyForStaffQuery } from "../get-company-for-staff.query.js";
 
@@ -41,20 +40,6 @@ const detail: AdminCompanyDetailView = {
   fulfillmentPreference: { method: null, pickupAddressId: null, deliveryAddressId: null },
 };
 
-/** Réglages stub : tout requis — le verdict a de quoi refuser. */
-function settings(): PlatformSettingsRepository {
-  return {
-    read: () =>
-      Promise.resolve({
-        tva: "required" as const,
-        kbis: "required" as const,
-        billing: "required" as const,
-        delivery: "required" as const,
-      }),
-    write: () => Promise.resolve(),
-  };
-}
-
 /** Reader stub : `byId` renvoie ce qu'on lui donne, `listAll` inutilisé ici. */
 function reader(result: AdminCompanyDetailView | null): AdminCompanyReader {
   return {
@@ -67,17 +52,19 @@ describe("GetCompanyForStaffHandler", () => {
   it("renvoie la fiche AVEC son verdict d'activation", async () => {
     // Le verdict part avec la fiche : l'écran ne le recalcule plus, donc il ne
     // peut plus contredire la porte serveur.
-    const handler = new GetCompanyForStaffHandler(reader(detail), settings());
+    const handler = new GetCompanyForStaffHandler(reader(detail));
 
     const fiche = await handler.execute(new GetCompanyForStaffQuery("company_1"));
 
     expect(fiche).toMatchObject(detail);
     expect(fiche.gate.canActivate).toBe(false);
-    expect(fiche.gate.blocking).toContain("kbis_absent");
+    // Le KBIS ne bloque plus (convention interne) : c'est la facturation
+    // manquante qui tient la porte sur cette fiche.
+    expect(fiche.gate.blocking).toContain("facturation");
   });
 
   it("lève CompanyNotFoundError quand aucune société ne porte l'id", async () => {
-    const handler = new GetCompanyForStaffHandler(reader(null), settings());
+    const handler = new GetCompanyForStaffHandler(reader(null));
 
     await expect(handler.execute(new GetCompanyForStaffQuery("company_unknown"))).rejects.toThrow(
       CompanyNotFoundError,

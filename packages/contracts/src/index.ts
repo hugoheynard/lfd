@@ -165,12 +165,8 @@ export type {
   RequestClassification,
   ClassificationIssue,
 } from "./request-topic.js";
-export {
-  pieceModeSchema,
-  activationPieceSchema,
-  platformSettingsSchema,
-} from "./platform-settings.js";
-export type { PieceMode, ActivationPiece, PlatformSettings } from "./platform-settings.js";
+export { activationPieceSchema } from "./platform-settings.js";
+export type { ActivationPiece } from "./platform-settings.js";
 export {
   alertKindSchema,
   alertDeliverySchema,

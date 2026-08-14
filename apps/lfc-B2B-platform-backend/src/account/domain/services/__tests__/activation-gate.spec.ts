@@ -1,5 +1,3 @@
-import type { PlatformSettings } from "@lfd/contracts";
-
 import type { AdminCompanyDetailView } from "../../ports/admin-company.reader.js";
 import { activationGate } from "../activation-gate.js";
 
@@ -36,13 +34,6 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     ...over,
   };
 }
-
-const ALL_REQUIRED: PlatformSettings = {
-  tva: "required",
-  kbis: "required",
-  billing: "required",
-  delivery: "required",
-};
 
 /** Un dossier complet — on retire ensuite ce qu'on veut éprouver. */
 const COMPLETE: Partial<AdminCompanyDetailView> = {
@@ -82,23 +73,21 @@ const COMPLETE: Partial<AdminCompanyDetailView> = {
 
 describe("activationGate — le verdict, et il n'y en a qu'un", () => {
   it("dit ce qui bloque, pièce par pièce", () => {
-    expect(activationGate(detail(), ALL_REQUIRED).blocking).toEqual([
-      "tva",
-      "kbis_absent",
-      "facturation",
-      "livraison",
-    ]);
+    // Ni le KBIS ni la livraison : le premier est une convention interne, la
+    // seconde un service qui n'existe pas.
+    expect(activationGate(detail()).blocking).toEqual(["tva", "facturation"]);
   });
 
   it("ouvre la porte quand tout est réuni", () => {
-    const gate = activationGate(detail(COMPLETE), ALL_REQUIRED);
+    const gate = activationGate(detail(COMPLETE));
     expect(gate.blocking).toEqual([]);
     expect(gate.canActivate).toBe(true);
   });
 
-  it("distingue le KBIS ABSENT du KBIS non vérifié", () => {
-    // Deux manques, deux gestes : déposer un extrait, ou ouvrir celui qui dort
-    // déjà là. Les confondre laisse chercher un fichier qui est sous les yeux.
+  it("laisse passer un KBIS déposé mais pas vérifié — et le dit non fait", () => {
+    // La vérification est une CONVENTION INTERNE : on veut voir l'extrait, on
+    // ne veut pas perdre la commande de demain matin pour un PDF. Elle reste
+    // dite « non faite » — c'est le signal qui la réclame, pas la porte.
     const deposited = {
       ...COMPLETE,
       kbis: {
@@ -109,19 +98,27 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
         certifiedBy: null,
       },
     };
-    expect(activationGate(detail(deposited), ALL_REQUIRED).blocking).toEqual(["kbis_non_verifie"]);
+    const gate = activationGate(detail(deposited));
+    expect(gate.blocking).toEqual([]);
+    expect(gate.canActivate).toBe(true);
+    expect(gate.checklist.find((check) => check.piece === "kbis")?.done).toBe(false);
   });
 
-  it("n'exige pas une pièce seulement `optional`", () => {
-    const settings: PlatformSettings = { ...ALL_REQUIRED, billing: "optional", tva: "hidden" };
-    const gate = activationGate(detail({ ...COMPLETE, tvaIntracom: "" }), settings);
-    expect(gate.blocking).toEqual([]);
-    // Elle reste dans la liste : « pas bloquante » n'est pas « pas demandée ».
-    expect(gate.checklist.find((check) => check.piece === "billing")?.mode).toBe("optional");
+  it("réclame le KBIS sans le rendre bloquant", () => {
+    // « Pas bloquante » n'est pas « pas demandée » : la pièce reste dans la
+    // liste, avec son état, et c'est ce qui la fait remonter au staff.
+    const kbis = activationGate(detail()).checklist.find((check) => check.piece === "kbis");
+    expect(kbis).toBeDefined();
+    expect(kbis?.blocking).toBe(false);
+  });
+
+  it("ne demande PLUS la livraison, tant que le service n'existe pas", () => {
+    const pieces = activationGate(detail()).checklist.map((check) => check.piece);
+    expect(pieces).toEqual(["tva", "kbis", "billing"]);
   });
 
   it("ne réclame pas de TVA à un non-assujetti", () => {
-    const gate = activationGate(detail({ ...COMPLETE, vatNumberRequired: false }), ALL_REQUIRED);
+    const gate = activationGate(detail({ ...COMPLETE, vatNumberRequired: false }));
     expect(gate.blocking).toEqual([]);
   });
 
@@ -139,7 +136,7 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
         phone: "",
       },
     });
-    expect(activationGate(mute, ALL_REQUIRED).blocking).toEqual(["telephone"]);
+    expect(activationGate(mute).blocking).toEqual(["telephone"]);
   });
 
   it("accepte le numéro d'un interlocuteur, pas seulement du détenteur", () => {
@@ -166,13 +163,13 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
         },
       ],
     });
-    expect(activationGate(viaContact, ALL_REQUIRED).blocking).toEqual([]);
+    expect(activationGate(viaContact).blocking).toEqual([]);
   });
 
-  it("exige l'identité légale, qu'aucun réglage ne désactive", () => {
-    // Sans SIRET, il n'y a rien à facturer — ce n'est pas une pièce configurable.
+  it("exige l'identité légale", () => {
+    // Sans SIRET, il n'y a rien à facturer.
     const sansSiret = detail({ ...COMPLETE, siret: "" });
-    expect(activationGate(sansSiret, ALL_REQUIRED).blocking).toEqual(["identite_legale"]);
+    expect(activationGate(sansSiret).blocking).toEqual(["identite_legale"]);
   });
 
   it("exige un DÉTENTEUR, même sur un dossier complet par ailleurs", () => {
@@ -198,13 +195,13 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
       ],
     });
 
-    expect(activationGate(sansDetenteur, ALL_REQUIRED).blocking).toEqual(["detenteur"]);
+    expect(activationGate(sansDetenteur).blocking).toEqual(["detenteur"]);
   });
 
   it("n'ouvre la porte QUE sur un compte en attente", () => {
     // Un compte actif, suspendu ou résilié ne s'active pas : allumer le bouton
     // promettrait ce que l'agrégat refuse.
-    const actif = activationGate(detail({ ...COMPLETE, status: "active" }), ALL_REQUIRED);
+    const actif = activationGate(detail({ ...COMPLETE, status: "active" }));
     expect(actif.blocking).toEqual([]);
     expect(actif.canActivate).toBe(false);
   });

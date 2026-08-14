@@ -10,7 +10,6 @@ import { OrdersModule } from "./orders/orders.module.js";
 import { PaymentsModule } from "./payments/payments.module.js";
 import { OrderCutoffsModule } from "./order-cutoffs/order-cutoffs.module.js";
 import { PickupAddressesModule } from "./pickup-addresses/pickup-addresses.module.js";
-import { PlatformSettingsModule } from "./platform-settings/platform-settings.module.js";
 import { StaffNotificationsModule } from "./staff-notifications/staff-notifications.module.js";
 import { StaffUsersModule } from "./staff-users/staff-users.module.js";
 import { SubscriptionsModule } from "./subscriptions/subscriptions.module.js";
@@ -51,7 +50,6 @@ import { SecurityModule } from "./infra/security/security.module.js";
     SecurityModule,
     AuthModule,
     // Config globale (feature flags d'activation) — avant les contextes qui la lisent.
-    PlatformSettingsModule,
     OrderCutoffsModule,
     PickupAddressesModule,
     DeliveryZonesModule,

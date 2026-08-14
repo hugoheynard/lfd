@@ -2,7 +2,6 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { Clock } from "../../../infra/time/clock.js";
-import { PlatformSettingsRepository } from "../../../platform-settings/domain/platform-settings.repository.js";
 import {
   CompanyActivationBlockedError,
   CompanyNotFoundError,
@@ -20,10 +19,11 @@ import { ActivateCompanyByStaffCommand } from "./activate-company.command.js";
 /**
  * Active un compte client (Porte B). Deux responsabilités, séparées :
  *
- * 1. **Policy de complétude** (ici) : toutes les pièces `required` (selon la
- *    config plateforme) doivent être présentes. Les pièces (TVA + KBIS + adresses)
- *    croisent plusieurs tables — on les lit via la fiche staff (`AdminCompanyReader`),
- *    c'est une règle **cross-agrégat**, hors de `Company`.
+ * 1. **Policy de complétude** (ici) : les pièces bloquantes doivent être là. La
+ *    liste et le caractère bloquant sont écrits dans `activationGate`, en dur —
+ *    plus aucun réglage ne les déplace. Elles croisent plusieurs tables : on les
+ *    lit via la fiche staff (`AdminCompanyReader`), c'est une règle
+ *    **cross-agrégat**, hors de `Company`.
  * 2. **Transition d'état** (l'agrégat) : `Company.activate()` porte le passage
  *    `pending → active` et **refuse** toute société qui n'est pas `pending`.
  *
@@ -37,7 +37,6 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
   constructor(
     private readonly companies: CompanyRepository,
     private readonly reader: AdminCompanyReader,
-    private readonly settings: PlatformSettingsRepository,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly staff: StaffDirectory,
@@ -50,7 +49,7 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     if (view === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    const gate = activationGate(view, await this.settings.read());
+    const gate = activationGate(view);
     if (gate.blocking.length > 0) {
       throw new CompanyActivationBlockedError(
         command.companyId,

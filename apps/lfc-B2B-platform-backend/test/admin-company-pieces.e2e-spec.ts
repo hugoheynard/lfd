@@ -18,8 +18,8 @@ import { createCompany } from "./factories.js";
 
 const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
 
-/** L'unique ligne de config plateforme (cf. `PrismaPlatformSettingsRepository`). */
-const PLATFORM_SETTINGS_ID = "singleton";
+/* Ce que le dossier doit contenir est écrit dans `activationGate`, pas en base :
+   il n'y a plus rien à préparer côté configuration. */
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -372,13 +372,10 @@ describe("certification du KBIS", () => {
     expect(company.kbisCertifiedAt).toBeNull();
   });
 
-  it("KBIS requis : DÉPOSÉ ne suffit pas, il faut CERTIFIÉ pour activer", async () => {
-    // La porte d'activation lit la certification, pas la présence du fichier.
-    await ctx.prisma.platformSettings.upsert({
-      where: { id: PLATFORM_SETTINGS_ID },
-      create: { id: PLATFORM_SETTINGS_ID, kbisMode: "required" },
-      update: { kbisMode: "required" },
-    });
+  it("n'attend PAS le KBIS pour activer — mais le dit non vérifié", async () => {
+    // La vérification est une convention interne : on veut voir l'extrait, on
+    // ne perd pas la commande de demain matin pour un PDF. Elle ne tient donc
+    // plus la porte — c'est le signal côté liste qui la réclame.
     await ctx.prisma.company.update({
       where: { id: companyId },
       data: { tvaIntracom: "FR32812456789", contactTelephone: "01 42 71 08 44" },
@@ -399,10 +396,6 @@ describe("certification du KBIS", () => {
       .attach("file", PDF, "k.pdf")
       .expect(204);
 
-    const refused = await staff().post(`/admin/companies/${companyId}/activate`);
-    expect(refused.status).toBe(409);
-
-    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
     await staff().post(`/admin/companies/${companyId}/activate`).expect(204);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
@@ -412,45 +405,41 @@ describe("certification du KBIS", () => {
     expect(company.activatedBySub).toBe("staff-e2e");
   });
 
-  it("retirer la vérification suspend, la re-vérifier REND l'accès", async () => {
-    // Le cycle complet, et sa symétrie : ce qui coupe automatiquement doit
-    // rendre automatiquement. Un second clic « Réactiver » n'ajouterait aucune
-    // décision — la décision était de vérifier l'extrait — mais ajouterait une
-    // occasion de l'oublier, et le client resterait bloqué sur un dossier
-    // complet.
+  it("retirer la vérification NE COUPE PAS l'accès", async () => {
+    // C'était l'inverse, et c'était incohérent : REMPLACER un extrait
+    // décertifiait déjà sans suspendre. Deux gestes menant au même état ne
+    // peuvent pas avoir deux conséquences — et couper la commande d'une
+    // boulangerie pour un PDF coûte plus que ça ne protège.
     await activatedCompany();
 
     await staff().delete(`/admin/companies/${companyId}/kbis/certification`).expect(204);
-    const suspended = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
-    expect(suspended.status).toBe(CompanyStatus.suspended);
-    expect(suspended.suspensionCause).toBe("kbis_revoked");
-
-    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
-    const revived = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
-    expect(revived.status).toBe(CompanyStatus.active);
-    expect(revived.suspensionCause).toBeNull();
-  });
-
-  it("ne rouvre PAS un compte suspendu par décision humaine", async () => {
-    // Le mur : certifier un document ne lève pas un recouvrement. Sans la cause,
-    // vérifier un KBIS rouvrirait le robinet d'un client en litige.
-    await activatedCompany();
-    await staff()
-      .patch(`/admin/companies/${companyId}/status`)
-      .send({ action: "suspend", reason: "Impayé sur la facture d'août" })
-      .expect(204);
-
-    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
-    expect(company.status).toBe(CompanyStatus.suspended);
-    expect(company.suspensionCause).toBe("staff");
+    expect(company.status).toBe(CompanyStatus.active);
+    expect(company.suspensionCause).toBeNull();
+    // La vérification, elle, est bien tombée : c'est ce que le signal réclamera.
+    expect(company.kbisCertifiedAt).toBeNull();
+  });
+
+  it("le REMPLACEMENT d'un extrait décertifie, sans couper non plus", async () => {
+    // L'autre chemin vers le même état. Il est ouvert au client sur sa propre
+    // société : s'il coupait, un dépôt maladroit fermerait son compte.
+    await activatedCompany();
+
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k2.pdf")
+      .expect(204);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.status).toBe(CompanyStatus.active);
+    expect(company.kbisCertifiedAt).toBeNull();
   });
 
   it("écrit la vérification ET son retrait au JOURNAL", async () => {
     // L'état courant ne garde rien d'une certification retirée : la fiche
-    // redevient « déposé, pas vérifié ». Sans ces lignes, la suspension qui
-    // suit est inexplicable le lendemain.
+    // redevient « déposé, pas vérifié ». Sans ces lignes, plus personne ne
+    // saurait le lendemain qu'elle a existé, ni qui l'a retirée.
     await activatedCompany();
     await staff().delete(`/admin/companies/${companyId}/kbis/certification`).expect(204);
     // Les abonnés du journal tournent HORS de la requête HTTP. `drain()` les
@@ -467,16 +456,12 @@ describe("certification du KBIS", () => {
     ]);
     // Nominatif : « un membre du staff » n'engage personne.
     expect(journal[0]?.actorId).toBe("staff-e2e");
-    expect(journal[1]?.payload).toMatchObject({ suspended: true });
+    // Plus aucun retrait ne suspend : le journal le dit aussi.
+    expect(journal[1]?.payload).toMatchObject({ suspended: false });
   });
 
   /** Un compte actif, pièces réunies et extrait vérifié — le point de départ. */
   async function activatedCompany(): Promise<void> {
-    await ctx.prisma.platformSettings.upsert({
-      where: { id: PLATFORM_SETTINGS_ID },
-      create: { id: PLATFORM_SETTINGS_ID, kbisMode: "required" },
-      update: { kbisMode: "required" },
-    });
     await ctx.prisma.company.update({
       where: { id: companyId },
       data: { tvaIntracom: "FR32812456789", contactTelephone: "01 42 71 08 44" },

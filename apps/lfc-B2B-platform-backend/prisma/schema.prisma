@@ -119,19 +119,6 @@ enum AddressKind {
   @@schema("public")
 }
 
-/// Mode d'une **pièce d'activation** dans la configuration globale (Réglages).
-/// `hidden` = la pièce n'existe pas encore (ex. livraison sans service) → masquée
-/// client + admin, jamais exigée. `optional` = visible mais ne gate pas
-/// l'activation. `required` = exigée pour activer. Cf.
-/// `documentation/architecture-activation-configuration-b2b.md`.
-enum PieceMode {
-  hidden
-  optional
-  required
-
-  @@schema("public")
-}
-
 /// Mode d'**acheminement** d'une commande. `delivery` = livraison à une adresse ;
 /// `pickup` = retrait au point de retrait (labo), fallback tant que la livraison
 /// n'existe pas. Cf. `documentation/architecture-activation-configuration-b2b.md`.
@@ -881,31 +868,8 @@ model SubscriptionLine {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PlatformSettings — configuration GLOBALE (une seule ligne)
+// Points de retrait — adresses GLOBALES de la plateforme
 // ─────────────────────────────────────────────────────────────────────────────
-
-/// Réglages globaux de la plateforme B2B — **une seule ligne** (singleton, `id`
-/// fixe). Pilote les **pièces d'activation** : quelles sont cachées / optionnelles
-/// / requises. Global à LFC (pas par société — « la livraison n'existe pas » est
-/// une réalité business). Édité depuis la page Réglages admin. Cf.
-/// `documentation/architecture-activation-configuration-b2b.md`.
-model PlatformSettings {
-  // Singleton : une constante fixe (`SINGLETON`) garantit l'unicité de la ligne.
-  id String @id
-
-  // Mode de chaque pièce d'activation. Défauts au lancement : la livraison est
-  // cachée (service absent), le KBIS optionnel (vérification pas encore en place),
-  // TVA et facturation requises.
-  tvaMode      PieceMode @default(required) @map("tva_mode")
-  kbisMode     PieceMode @default(optional) @map("kbis_mode")
-  billingMode  PieceMode @default(required) @map("billing_mode")
-  deliveryMode PieceMode @default(hidden) @map("delivery_mode")
-
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("b2b_platform_settings")
-  @@schema("public")
-}
 
 /// Un **point de retrait** (laboratoire) — adresse **globale** (pas par entreprise),
 /// fallback d'acheminement tant que la livraison n'existe pas. Plusieurs points
