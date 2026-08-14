@@ -19,9 +19,16 @@
                d'icônes : aucun nom fold ne dit « à faire », et une puce ne peut
                ni manquer ni changer de sens. -->
           <span class="step-mark" aria-hidden="true"></span>
-          <span
-            ><strong>{{ step.title }}</strong> — {{ step.detail }}</span
-          >
+          <span>
+            <strong>{{ step.title }}</strong>
+            @if (step.blocking === false) {
+              <!-- Réclamée, mais elle n'empêche rien. Sans ce mot, la ligne se
+                   lisait comme un verrou au-dessus d'un bouton actif, et on
+                   cherchait le trou dans la porte. -->
+              <span class="step-optional">n'empêche pas l'activation</span>
+            }
+            — {{ step.detail }}
+          </span>
         </div>
 
         @if (step.cta === '') {

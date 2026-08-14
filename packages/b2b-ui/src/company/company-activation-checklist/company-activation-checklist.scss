@@ -33,6 +33,16 @@
   color: var(--fold-color-text-muted);
 }
 
+/* Une pièce réclamée mais NON bloquante. En toutes lettres plutôt qu'un
+   « facultatif » : facultatif se lirait « ne la demandez pas », alors qu'on la
+   demande — elle n'empêche simplement pas d'activer. */
+.step-optional {
+  margin-left: var(--fold-space-2xs, 0.25rem);
+  font-size: var(--fold-text-xs);
+  font-style: italic;
+  color: var(--fold-color-text-muted);
+}
+
 /* La puce d'un point NON réglé : un anneau vide, à la taille de l'ancienne
    icône (16 px) pour ne rien décaler. Discrète — c'est le callout qui porte
    l'alerte, pas chaque ligne. */

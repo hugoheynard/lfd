@@ -34,10 +34,19 @@ export interface ActivationStep {
   readonly title: string;
   readonly detail: string;
   readonly cta: string;
+  /**
+   * Cette étape **empêche-t-elle** l'activation ?
+   *
+   * Faux pour une pièce `optional` en réglages : on la réclame, elle ne bloque
+   * pas. La liste les mélangeait sans le dire, et un dossier auquel il ne
+   * manquait qu'une pièce facultative montrait des lignes au-dessus d'un bouton
+   * ACTIF — de quoi douter de la porte, alors que le réglage disait cela.
+   */
+  readonly blocking: boolean;
 }
 
 /** Le texte de chaque étape — écrit une fois, qu'elle soit due ou faite. */
-const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
+const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key' | 'blocking'>>> = {
   enseigne: {
     // Le titre reprend MOT POUR MOT l'étiquette du champ. Un synonyme, même
     // meilleur, oblige le lecteur à traduire avant de chercher.
@@ -140,7 +149,7 @@ export function openingSteps(identity: CompanyIdentityDraft): readonly Activatio
   if (identity.enseigne.trim() !== '') {
     return [];
   }
-  return [{ key: 'enseigne', ...STEP_TEXTS.enseigne }];
+  return [{ key: 'enseigne', ...STEP_TEXTS.enseigne, blocking: true }];
 }
 
 /**
@@ -157,13 +166,13 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
   // L'identité légale n'est pas une pièce configurable ; elle ouvre la liste
   // quand le serveur la signale (SIRET absent ⇒ rien à facturer).
   const legal: ActivationStep[] = company.gate.blocking.includes('identite_legale')
-    ? [{ key: 'legal' as const, ...STEP_TEXTS.legal }]
+    ? [{ key: 'legal' as const, ...STEP_TEXTS.legal, blocking: true }]
     : [];
 
   // Le détenteur non plus n'est pas une pièce configurable : un compte actif
   // sans personne à qui ouvrir l'espace est un compte dont la porte est murée.
   const holder: ActivationStep[] = company.gate.blocking.includes('detenteur')
-    ? [{ key: 'holder' as const, ...STEP_TEXTS.holder }]
+    ? [{ key: 'holder' as const, ...STEP_TEXTS.holder, blocking: true }]
     : [];
 
   // Le téléphone n'est pas une pièce configurable non plus. Il ne se réclame
@@ -172,7 +181,7 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
   // mais l'écran ne fait faire qu'un geste à la fois.
   const phone: ActivationStep[] =
     holder.length === 0 && company.gate.blocking.includes('telephone')
-      ? [{ key: 'telephone' as const, ...STEP_TEXTS.telephone }]
+      ? [{ key: 'telephone' as const, ...STEP_TEXTS.telephone, blocking: true }]
       : [];
 
   // Le KBIS déposé mais non vérifié n'appelle pas « déposer » : le fichier est
@@ -183,7 +192,9 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
     .filter((check) => check.mode !== 'hidden' && !check.done)
     .map((check) => {
       const key: StepKey = check.piece === 'kbis' && kbisDeposited ? 'kbis_verify' : check.piece;
-      return { key, ...STEP_TEXTS[key] };
+      // Seul le mode `required` oppose un empêchement — c'est la même lecture
+      // que fait le serveur pour remplir `gate.blocking`.
+      return { key, ...STEP_TEXTS[key], blocking: check.mode === 'required' };
     });
 
   // **Pas de « condition de règlement » ici.** Elle ne manque jamais — payer à

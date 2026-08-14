@@ -83,6 +83,26 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
     expect(steps[0]?.key).toBe('holder');
   });
 
+  it('distingue la pièce qui BLOQUE de celle qu’on réclame seulement', () => {
+    // Le KBIS est `optional` par défaut (la vérification n'est pas en place) :
+    // il se réclame sans empêcher d'activer. La liste les affichait à
+    // l'identique, et un bouton actif au-dessus passait pour un trou.
+    const steps = activationSteps(
+      withGate({
+        blocking: ['tva'],
+        checklist: [
+          { piece: 'tva', mode: 'required', done: false },
+          { piece: 'kbis', mode: 'optional', done: false },
+          { piece: 'billing', mode: 'required', done: true },
+          { piece: 'delivery', mode: 'hidden', done: false },
+        ],
+      }),
+    );
+
+    expect(steps.find((step) => step.key === 'tva')?.blocking).toBe(true);
+    expect(steps.find((step) => step.key === 'kbis')?.blocking).toBe(false);
+  });
+
   it('ne dit rien devant un compte pas encore ouvert', () => {
     expect(activationSteps(null)).toEqual([]);
   });

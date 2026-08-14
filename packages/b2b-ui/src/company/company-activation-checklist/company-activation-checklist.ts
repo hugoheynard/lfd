@@ -16,6 +16,19 @@ export interface CompanyActivationStep {
    */
   readonly cta: string;
   readonly kind: 'action' | 'file';
+  /**
+   * Cette étape **empêche-t-elle** l'activation ?
+   *
+   * `false` = réclamée sans bloquer (pièce `optional` en réglages). Sans cette
+   * nuance, toutes les lignes se ressemblaient dans un encart d'avertissement :
+   * un dossier auquel il ne manquait qu'une pièce facultative montrait une
+   * liste au-dessus d'un bouton **actif**, et on cherchait le trou dans la
+   * porte alors que le réglage disait exactement cela.
+   *
+   * `undefined` vaut « bloquante » — c'est l'appelant qui ne sait pas encore
+   * faire la différence, et supposer qu'une étape bloque est le défaut prudent.
+   */
+  readonly blocking?: boolean;
 }
 
 /**
