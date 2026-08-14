@@ -9,14 +9,8 @@ const SHOPIFY_ICON =
   '<path d="M6 8h12l-.8 11.2A2 2 0 0 1 15.2 21H8.8a2 2 0 0 1-2-1.8L6 8Z"/>' +
   '<path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>';
 
-// Menu kebab : trois points verticaux.
-const KEBAB_ICON =
-  '<svg viewBox="0 0 24 24" fill="currentColor">' +
-  '<circle cx="12" cy="5" r="1.7"/>' +
-  '<circle cx="12" cy="12" r="1.7"/>' +
-  '<circle cx="12" cy="19" r="1.7"/></svg>';
-
-// Déconnexion : porte + flèche sortante.
+// Déconnexion : porte + flèche sortante. ÉCRASE le `logout` de fold — même nom,
+// notre dessin. Un override ne se déclare pas : le nom est déjà connu.
 const LOGOUT_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
   'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
@@ -33,7 +27,6 @@ const LOGOUT_ICON =
 export function providePimIcons(): Provider {
   return provideFoldIcons({
     shopify: SHOPIFY_ICON,
-    kebab: KEBAB_ICON,
     logout: LOGOUT_ICON,
   });
 }
