@@ -4,7 +4,7 @@
 
 <!-- Bandeau d'honnêteté du mode : en dry-run, l'état boutique est inconnu. -->
 <div class="rec-mode" [class.is-live]="isLive()">
-  <fold-icon [name]="isLive() ? 'plug' : 'flask'" [size]="15" />
+  <fold-icon [name]="isLive() ? 'lightning' : 'wrench'" [size]="15" />
   @if (isLive()) {
     <span>Mode réel — le tableau reflète l'état de la boutique.</span>
   } @else {

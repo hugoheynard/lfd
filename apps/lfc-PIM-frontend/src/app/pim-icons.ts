@@ -24,9 +24,17 @@ const LOGOUT_ICON =
  *  - le parent route du remote-entry (mode fédéré : la config du PIM n'est PAS
  *    appliquée, c'est celle du shell — on ré-enregistre donc au niveau route).
  */
+/**
+ * Ce que le PIM enregistre : un nom neuf, et un écrasement. Le nom neuf est
+ * DÉCLARÉ dans `src/fold-icons.d.ts` — sans quoi il ne compilerait pas.
+ */
+const PIM_ICONS = {
+  shopify: SHOPIFY_ICON,
+  // ÉCRASE le `logout` de fold — même nom, notre dessin. C'est pour ça qu'il
+  // n'apparaît pas dans l'augmentation ci-dessous : le nom est déjà connu.
+  logout: LOGOUT_ICON,
+} as const;
+
 export function providePimIcons(): Provider {
-  return provideFoldIcons({
-    shopify: SHOPIFY_ICON,
-    logout: LOGOUT_ICON,
-  });
+  return provideFoldIcons(PIM_ICONS);
 }

@@ -1,4 +1,5 @@
 import type { AlertKind } from '@lfd/contracts';
+import type { FoldIconName } from 'fold-ng';
 
 /** Comment un type d'alerte s'écrit à l'écran. Le vocabulaire vit dans le contrat. */
 interface AlertKindLabel {
@@ -10,7 +11,7 @@ interface AlertKindLabel {
    * règle allumée : « ça détecte X » ne suffit pas, il faut « et alors ? ».
    */
   readonly why: string;
-  readonly icon: string;
+  readonly icon: FoldIconName;
 }
 
 export const ALERT_KIND_LABELS: Readonly<Record<AlertKind, AlertKindLabel>> = {

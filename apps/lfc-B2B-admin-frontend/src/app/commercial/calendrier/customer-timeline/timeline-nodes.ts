@@ -1,5 +1,6 @@
 import type { CustomerTimelineEntry } from '@lfd/contracts';
 import type { FoldTimelineNode } from 'fold-ng';
+import type { FoldIconName } from 'fold-ng';
 
 /**
  * Le journal **mis en mots**. Le backend rend des types techniques
@@ -8,7 +9,7 @@ import type { FoldTimelineNode } from 'fold-ng';
  */
 
 /** Ce qu'on sait dire d'un type d'événement. Le reste est ignoré, pas deviné. */
-const KNOWN: Record<string, { label: string; icon: string }> = {
+const KNOWN: Record<string, { label: string; icon: FoldIconName }> = {
   'user.registered': { label: 'Compte créé', icon: 'user' },
   'company.declared': { label: 'Entreprise déclarée', icon: 'company' },
   'company.step_reached': { label: 'Étape d’activation franchie', icon: 'check' },
@@ -59,7 +60,7 @@ const OUTCOME: Record<string, string> = {
 export interface TimelineRow {
   readonly key: string;
   readonly title: string;
-  readonly icon: string;
+  readonly icon: FoldIconName;
   readonly date: Date;
   /** Qui a agi — « Client », « Équipe », « Automatique ». */
   readonly actor: string;

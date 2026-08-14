@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import type { FoldIconName } from 'fold-ng';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -38,7 +39,7 @@ type FilterValue = 'all' | ProspectTemperature;
 interface LeadAction {
   readonly status: Exclude<LeadStatus, 'new'>;
   readonly label: string;
-  readonly icon: string;
+  readonly icon: FoldIconName;
   readonly danger: boolean;
 }
 
@@ -49,11 +50,11 @@ const ACTIVE_RANK: Record<string, number> = { new: 0, contacted: 1, qualified: 2
 const ADVANCE_STEPS: readonly {
   status: Exclude<LeadStatus, 'new'>;
   label: string;
-  icon: string;
+  icon: FoldIconName;
 }[] = [
   { status: 'contacted', label: 'Marquer contacté', icon: 'phone' },
   { status: 'qualified', label: 'Marquer qualifié', icon: 'check' },
-  { status: 'negotiating', label: 'En négociation', icon: 'trending-up' },
+  { status: 'negotiating', label: 'En négociation', icon: 'stats' },
 ];
 
 /** Badge variant (fold) — accepté par `fold-badge [variant]`. */
@@ -241,8 +242,8 @@ export class ProspectsPage {
     ).map((step) => ({ ...step, danger: false }));
     return [
       ...forward,
-      { status: 'converted', label: 'Convertir', icon: 'user-check', danger: false },
-      { status: 'lost', label: 'Marquer perdu', icon: 'x', danger: true },
+      { status: 'converted', label: 'Convertir', icon: 'check-circle', danger: false },
+      { status: 'lost', label: 'Marquer perdu', icon: 'x-circle', danger: true },
     ];
   }
 
