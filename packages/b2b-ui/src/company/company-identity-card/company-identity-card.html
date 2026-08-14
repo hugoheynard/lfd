@@ -100,19 +100,6 @@
           <fold-badge content="En attente de validation" variant="warning" />
         }
       </div>
-
-      @if (canManageKbis() && id.kbis) {
-        <button
-          foldButton
-          emphasis="outline"
-          size="sm"
-          icon="plus"
-          [disabled]="busy()"
-          (click)="askReplace()"
-        >
-          Remplacer
-        </button>
-      }
     </div>
 
     <!-- Remplacer un extrait VÉRIFIÉ annule la vérification : c'est la règle du
@@ -166,15 +153,29 @@
           <span class="kbis-date">Déposé le {{ k.uploadedAt | date: 'dd/MM/yyyy' }}</span>
         </div>
         @if (canAccessKbis()) {
-          <!-- Deux icônes en fin de ligne : le nom du fichier dit déjà de quoi
-               il s'agit, les libellés ne répétaient que l'évident et poussaient
-               la ligne à passer sur deux niveaux. Le titre reste accessible. -->
+          <!-- Des icônes en fin de ligne : le nom du fichier dit déjà de quoi il
+               s'agit, les libellés ne répétaient que l'évident et poussaient la
+               ligne à passer sur deux niveaux. Le titre reste accessible.
+               « Remplacer » ouvre la tête de file parce que c'est le geste qui
+               ENGAGE — les deux suivants ne font que lire la pièce. -->
           <div class="kbis-actions">
+            @if (canManageKbis()) {
+              <button
+                foldButton
+                emphasis="outline"
+                size="sm"
+                icon="upload"
+                title="Remplacer l'extrait"
+                aria-label="Remplacer l'extrait"
+                [disabled]="busy()"
+                (click)="askReplace()"
+              ></button>
+            }
             <button
               foldButton
               emphasis="outline"
               size="sm"
-              icon="grid"
+              icon="eye"
               title="Voir l'extrait"
               aria-label="Voir l'extrait"
               (click)="viewKbis.emit()"
