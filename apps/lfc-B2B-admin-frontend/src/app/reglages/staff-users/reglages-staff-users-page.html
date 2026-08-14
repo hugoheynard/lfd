@@ -52,42 +52,29 @@
   </ng-template>
 
   <fold-card>
-    <!-- Pas de titre ici : l'onglet des Réglages nomme déjà l'écran, et la barre
-         de la table le redirait une troisième fois. Reste l'explication — la
-         seule chose que ni l'onglet ni la barre ne peuvent dire. -->
-    <div class="head">
-      <p class="section-desc">
-        Les personnes qui opèrent la suite et le rôle de chacune. Créer une fiche n'ouvre aucun
-        accès : c'est l'invitation qui envoie le lien, et lui seul permet d'entrer.
-      </p>
-      <button
-        *appCan="'staff:write'"
-        foldButton
-        intent="primary"
-        emphasis="solid"
-        size="sm"
-        icon="plus"
-        (click)="add()"
-      >
-        Ajouter
-      </button>
-    </div>
-
     <fold-data-table
       caption="Utilisateurs staff"
       toolbarSurface="accent"
       mobileLayout="custom"
       hover
       [columns]="columns"
-      [rows]="users()"
+      [rows]="pageRows()"
       [rowKey]="rowKey"
       [loading]="state() === 'loading'"
       [empty]="emptyState"
     >
       <!-- Même filet d'en-tête que la table des comptes clients. Le compte tient
            dans le libellé : il dit combien de personnes peuvent RÉELLEMENT
-           entrer, ce qu'aucune colonne ne totalise. -->
-      <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
+           entrer, ce qu'aucune colonne ne totalise.
+           L'explication passe en INFO-BULLE : c'est une phrase qu'on lit une
+           fois et qu'on relit rarement, et en paragraphe permanent elle
+           repoussait la liste sous la ligne de flottaison à chaque visite. -->
+      <fold-element-title foldToolbar variant="bar" [title]="tableTitle()">
+        <fold-info
+          label="À quoi sert cet écran"
+          text="Les personnes qui opèrent la suite, et le rôle de chacune. Créer une fiche n'ouvre aucun accès : c'est l'invitation qui envoie le lien, et lui seul permet d'entrer."
+        />
+      </fold-element-title>
 
       <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne sans
            `foldCell` rend une cellule vide. Chaque `key` de `columns` doit donc
@@ -154,5 +141,31 @@
         </div>
       </ng-template>
     </fold-data-table>
+
+    <!-- Sous la liste, jamais au-dessus : on vient ici pour LIRE l'équipe, on
+         ajoute quelqu'un une fois par trimestre. Un bouton en tête volait la
+         première ligne de regard à l'usage principal. -->
+    <footer class="foot">
+      @if (totalPages() > 1) {
+        <fold-paginator
+          [currentPage]="page()"
+          [totalItems]="users().length"
+          [pageSize]="pageSize"
+          (pageChange)="page.set($event)"
+        />
+      } @else {
+        <span></span>
+      }
+      <button
+        *appCan="'staff:write'"
+        foldButton
+        intent="primary"
+        emphasis="solid"
+        icon="plus"
+        (click)="add()"
+      >
+        Ajouter une personne
+      </button>
+    </footer>
   </fold-card>
 }

@@ -3,21 +3,18 @@
   color: var(--fold-color-text-muted);
 }
 
-// En-tête de section : explication à gauche, bouton « Ajouter » à droite.
-.head {
+// Pied de carte : la pagination à gauche, l'ajout à droite. Les deux SOUS la
+// liste — on vient ici pour lire l'équipe, on y ajoute quelqu'un une fois par
+// trimestre. Un bouton en tête volait la première ligne de regard.
+.foot {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--fold-space-md);
   flex-wrap: wrap;
-  margin-bottom: var(--fold-space-md);
-}
-
-.section-desc {
-  margin: 0;
-  min-width: 0;
-  flex: 1 1 18rem;
-  color: var(--fold-color-text-muted);
+  margin-top: var(--fold-space-md);
+  padding-top: var(--fold-space-md);
+  border-top: 1px solid var(--fold-color-border-subtle);
 }
 
 .strong {
@@ -46,6 +43,13 @@
 // poids égal, donc aucune hiérarchie, et une carte deux fois plus haute que
 // nécessaire dès qu'une adresse se repliait.
 .rc {
+  // Chaque carte porte son cadre : sans lui, les cartes se touchaient et la
+  // liste se lisait comme un seul bloc gris où l'on perdait la limite entre
+  // deux personnes.
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  background: var(--fold-color-surface-card);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -118,10 +122,10 @@
   }
 }
 
-// Sur étroit, l'explication et le bouton se disputent la ligne : le bouton
-// passe dessous, pleine largeur, plutôt que de finir orphelin dans un coin.
+// Sur étroit, la pagination et l'ajout ne tiennent pas côte à côte : l'ajout
+// prend toute la largeur, sous la pagination, plutôt que de finir orphelin.
 @media (max-width: 40rem) {
-  .head {
+  .foot {
     flex-direction: column;
     align-items: stretch;
   }

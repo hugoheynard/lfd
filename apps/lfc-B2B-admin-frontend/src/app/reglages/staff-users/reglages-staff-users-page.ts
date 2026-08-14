@@ -11,6 +11,8 @@ import {
   FoldDropdownComponent,
   FoldDropdownItemComponent,
   FoldElementTitleComponent,
+  FoldInfoComponent,
+  FoldPaginatorComponent,
   FoldIconComponent,
   FoldInlineConfirmComponent,
   FoldPanelHostService,
@@ -44,6 +46,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldBadgeComponent,
     FoldIconComponent,
     FoldElementTitleComponent,
+    FoldInfoComponent,
+    FoldPaginatorComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
     FoldDataTableRowCardDirective,
@@ -65,6 +69,28 @@ export class ReglagesStaffUsersPage {
   protected readonly users = signal<readonly StaffUserView[]>([]);
   /** User dont la confirmation de suppression est ouverte (état UI local). */
   protected readonly confirmingId = signal<string | null>(null);
+
+  /**
+   * Une page tient dans un écran sans molette. Au-delà, on pagine plutôt que
+   * de dérouler : une équipe se lit, elle ne se parcourt pas.
+   */
+  protected readonly pageSize = 12;
+  protected readonly page = signal(1);
+
+  protected readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.users().length / this.pageSize)),
+  );
+
+  /**
+   * La tranche visible. Bornée par `totalPages` : une suppression sur la
+   * dernière page la ferait disparaître, et on afficherait le vide sur une
+   * page qui n'existe plus.
+   */
+  protected readonly pageRows = computed(() => {
+    const current = Math.min(this.page(), this.totalPages());
+    const start = (current - 1) * this.pageSize;
+    return this.users().slice(start, start + this.pageSize);
+  });
 
   /** Colonnes de la data-table — chaque `key` a son `<ng-template foldCell>`. */
   protected readonly columns: readonly FoldTableColumn[] = [
