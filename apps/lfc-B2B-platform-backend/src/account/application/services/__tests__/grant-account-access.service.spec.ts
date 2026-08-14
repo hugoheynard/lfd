@@ -16,6 +16,10 @@ import {
   type IdentityToProvision,
   type ProvisionedIdentity,
 } from "../../../domain/ports/customer-identity.port.js";
+import {
+  IdentityProviderUnavailableError,
+  IdentitySubjectUnknownError,
+} from "../../../../shared/errors/identity-errors.js";
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
 import { GrantAccountAccess, type AccessToGrant } from "../grant-account-access.service.js";
 
@@ -35,6 +39,7 @@ interface Existing {
 class FakeMembers extends CompanyMemberRepository {
   readonly created: MemberToCreate[] = [];
   readonly attached: Attachment[] = [];
+  readonly rebound: { readonly userId: string; readonly subject: string }[] = [];
 
   constructor(private readonly existing: Existing = {}) {
     super();
@@ -58,6 +63,11 @@ class FakeMembers extends CompanyMemberRepository {
     return Promise.resolve();
   }
 
+  rebindSubject(userId: string, subject: string): Promise<void> {
+    this.rebound.push({ userId, subject });
+    return Promise.resolve();
+  }
+
   alignRole(): Promise<void> {
     return Promise.resolve();
   }
@@ -71,6 +81,18 @@ class FakeIdentity extends CustomerIdentityPort {
   readonly provisioned: IdentityToProvision[] = [];
   readonly reissuedFor: string[] = [];
 
+  /**
+   * @param unknownSubjects les sujets que ce fournisseur **ne connaît pas** —
+   *   nos deux bases ont divergé, mais le canal répond très bien.
+   * @param down le canal est en **panne** : rien ne répond, pour rien.
+   */
+  constructor(
+    private readonly unknownSubjects: readonly string[] = [],
+    private readonly down = false,
+  ) {
+    super();
+  }
+
   changeEmail(): Promise<void> {
     return Promise.resolve();
   }
@@ -82,6 +104,12 @@ class FakeIdentity extends CustomerIdentityPort {
 
   issuePasswordLink(subject: string): Promise<string> {
     this.reissuedFor.push(subject);
+    if (this.down) {
+      return Promise.reject(new IdentityProviderUnavailableError("canal en panne"));
+    }
+    if (this.unknownSubjects.includes(subject)) {
+      return Promise.reject(new IdentitySubjectUnknownError(subject));
+    }
     return Promise.resolve("https://tickets/renvoye");
   }
 }
@@ -190,6 +218,44 @@ describe("GrantAccountAccess — connue, mais SANS mot de passe", () => {
     await granter(members, mailer).service.grant(INPUT);
 
     expect(members.attached).toEqual([{ userId: "user_known", companyId: "cmp_1", role: "owner" }]);
+  });
+});
+
+describe("GrantAccountAccess — notre `sub` a vieilli", () => {
+  it("RETROUVE l'identité par l'adresse et réaligne le sujet stocké", async () => {
+    // L'état que laisse tout compte ouvert pendant que l'adaptateur de
+    // développement fabriquait des `dev|…` : le fournisseur ne connaît pas ce
+    // sujet-là. Sans reprise, la personne est DÉFINITIVEMENT injoignable — la
+    // même erreur à chaque clic, et rien dans le produit pour en sortir.
+    const members = new FakeMembers({ account: account("invited") });
+    const { mailer, sent } = fakeMailer();
+    const { service, identity } = granter(members, mailer, new FakeIdentity(["auth0|known"]));
+
+    const granted = await service.grant(INPUT);
+
+    expect(granted).toEqual({ userId: "user_known", outcome: "link_reissued", mailSent: true });
+    // L'adresse a servi de clé — jamais le sujet périmé.
+    expect(identity.provisioned).toEqual([
+      { email: "camille@halles.fr", firstName: "Claire", lastName: "" },
+    ]);
+    // Et le pointeur est réécrit, pour que le passage suivant n'ait rien à réparer.
+    expect(members.rebound).toEqual([{ userId: "user_known", subject: "auth0|1" }]);
+    expect(sent[0]?.carriesPasswordLink).toBe(true);
+  });
+
+  it("laisse remonter une VRAIE panne du fournisseur", async () => {
+    // La reprise ne doit rattraper que le désaccord de sujet. Avaler une panne
+    // ferait annoncer un accès ouvert sur un canal muet.
+    const members = new FakeMembers({ account: account("invited") });
+    const { mailer } = fakeMailer();
+    const identity = new FakeIdentity([], true);
+
+    await expect(granter(members, mailer, identity).service.grant(INPUT)).rejects.toBeInstanceOf(
+      IdentityProviderUnavailableError,
+    );
+    // Surtout pas de seconde identité fabriquée « au cas où ».
+    expect(identity.provisioned).toEqual([]);
+    expect(members.rebound).toEqual([]);
   });
 });
 

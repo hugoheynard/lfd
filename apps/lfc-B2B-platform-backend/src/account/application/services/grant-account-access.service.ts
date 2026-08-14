@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { MAILER, type B2bMailer } from "../../../infra/mailer/mailer.module.js";
+import { IdentitySubjectUnknownError } from "../../../shared/errors/identity-errors.js";
 import { AccountDisabledError } from "../../domain/errors/account-errors.js";
 import {
   CompanyMemberRepository,
@@ -135,7 +136,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
    * on en fabrique un.
    */
   private async reissueLink(known: KnownAccount, input: AccessToGrant): Promise<AccessGranted> {
-    const url = await this.identity.issuePasswordLink(known.subject);
+    const url = await this.linkForKnown(known, input.email);
     await this.attach(known.userId, input);
     // Son prénom à ELLE : celui qu'un commercial vient de taper n'a pas à la
     // renommer dans l'e-mail qu'elle reçoit.
@@ -143,6 +144,44 @@ export class GrantAccountAccess extends AccountAccessGranter {
       ...input,
       firstName: known.firstName,
     });
+  }
+
+  /**
+   * Un lien pour quelqu'un que nous connaissons — **même si notre `sub` a
+   * vieilli**.
+   *
+   * Le cas se produit dès que nos deux bases divergent : un compte ouvert
+   * pendant que l'adaptateur de développement fabriquait des sujets `dev|…`,
+   * une identité supprimée chez Auth0, un changement de tenant. Sans reprise, la
+   * personne devient **définitivement** injoignable — chaque clic sur « ouvrir
+   * l'accès » rendait le même 500, et rien dans le produit ne permettait d'en
+   * sortir.
+   *
+   * La reprise ne devine rien : `provision` est déjà idempotent sur l'adresse
+   * (créer, sinon retrouver), donc il rend le `sub` que le fournisseur reconnaît
+   * aujourd'hui. On le réécrit chez nous — le pointeur technique, jamais la clé
+   * humaine — et le prochain passage n'aura plus rien à réparer.
+   */
+  private async linkForKnown(known: KnownAccount, email: string): Promise<string> {
+    try {
+      return await this.identity.issuePasswordLink(known.subject);
+    } catch (error) {
+      if (!(error instanceof IdentitySubjectUnknownError)) {
+        throw error;
+      }
+      this.logger.warn(
+        `Sujet d'identité périmé pour ${email} (${known.subject}) — réalignement sur le fournisseur.`,
+      );
+      // Son prénom à ELLE : `provision` ne sert ici qu'à retrouver l'identité,
+      // il ne doit pas la renommer avec ce qu'un commercial vient de taper.
+      const provisioned = await this.identity.provision({
+        email,
+        firstName: known.firstName,
+        lastName: "",
+      });
+      await this.members.rebindSubject(known.userId, provisioned.subject);
+      return provisioned.passwordSetupUrl;
+    }
   }
 
   /** Cliente active : une société de plus dans son espace, pas un second compte. */

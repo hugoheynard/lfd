@@ -34,6 +34,12 @@ export class Auth0ManagementClient {
    * Un `409` rend la sentinelle `CONFLICT` au lieu de lever : « cette adresse
    * existe déjà » est une réponse utile, pas une panne, et l'appelant en fait
    * quelque chose d'utile (réutiliser l'identité plutôt qu'en créer une seconde).
+   *
+   * Un `404` rend `NOT_FOUND`, pour la même raison : « je ne connais pas cette
+   * identité » est un **fait**, pas un incident. Seules les routes portant un
+   * `user_id` peuvent le produire ici, et c'est justement là qu'il faut le
+   * distinguer d'une panne — un sujet périmé se rattrape par l'e-mail, une
+   * panne non.
    */
   async call(
     method: string,
@@ -52,6 +58,9 @@ export class Auth0ManagementClient {
 
     if (response.status === 409) {
       return CONFLICT;
+    }
+    if (response.status === 404) {
+      return NOT_FOUND;
     }
     if (!response.ok) {
       // Le corps Auth0 peut porter des détails de tenant : il est TRACÉ, jamais
@@ -118,6 +127,9 @@ export class Auth0ManagementClient {
 
 /** Sentinelle de `409` — une valeur, pas une exception : le conflit est une réponse. */
 export const CONFLICT = Symbol("auth0.conflict");
+
+/** Sentinelle de `404` — l'identité visée n'existe pas chez le fournisseur. */
+export const NOT_FOUND = Symbol("auth0.not_found");
 
 /** Réponse `/oauth/token`, validée : elle vient du réseau, donc de `unknown`. */
 function parseTokenPayload(raw: unknown): { accessToken: string; expiresInSeconds: number } {

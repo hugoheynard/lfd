@@ -82,6 +82,10 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
     return user.id;
   }
 
+  async rebindSubject(userId: string, subject: string): Promise<void> {
+    await this.prisma.user.update({ where: { id: userId }, data: { auth0Sub: subject } });
+  }
+
   async findOwner(companyId: string): Promise<KnownAccount | null> {
     const owner = await this.prisma.membership.findFirst({
       where: { companyId, role: "owner" },

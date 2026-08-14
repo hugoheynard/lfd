@@ -2,12 +2,15 @@ import { randomBytes } from "node:crypto";
 
 import { Injectable } from "@nestjs/common";
 
-import { IdentityProviderUnavailableError } from "../../shared/errors/identity-errors.js";
+import {
+  IdentityProviderUnavailableError,
+  IdentitySubjectUnknownError,
+} from "../../shared/errors/identity-errors.js";
 import type {
   IdentityToProvision,
   ProvisionedIdentity,
 } from "../../shared/identity/provisioned-identity.js";
-import { Auth0ManagementClient, CONFLICT } from "./auth0-management.client.js";
+import { Auth0ManagementClient, CONFLICT, NOT_FOUND } from "./auth0-management.client.js";
 
 /**
  * Durée de vie du lien de mot de passe : **7 jours**.
@@ -79,6 +82,9 @@ export class Auth0IdentityGateway {
    * traînait dans une boîte partagée.
    *
    * @param resultUrl où atterrir une fois le mot de passe posé, si on le sait.
+   * @throws {IdentitySubjectUnknownError} le fournisseur ne connaît pas ce
+   *   sujet. Distinct d'une panne : l'appelant qui dispose de l'e-mail peut
+   *   repasser par `provision` et réaligner nos deux bases.
    */
   async issuePasswordLink(subject: string, resultUrl?: string): Promise<string> {
     const ticket = await this.api.call("POST", "/api/v2/tickets/password-change", {
@@ -90,6 +96,9 @@ export class Auth0IdentityGateway {
       mark_email_as_verified: true,
       ...(resultUrl === undefined ? {} : { result_url: resultUrl }),
     });
+    if (ticket === NOT_FOUND) {
+      throw new IdentitySubjectUnknownError(subject);
+    }
     const url = readString(ticket, "ticket");
     if (url === null) {
       throw new IdentityProviderUnavailableError(
@@ -106,11 +115,17 @@ export class Auth0IdentityGateway {
    * d'authentification.
    */
   async changeEmail(subject: string, email: string): Promise<void> {
-    await this.api.call("PATCH", `/api/v2/users/${encodeURIComponent(subject)}`, {
+    const patched = await this.api.call("PATCH", `/api/v2/users/${encodeURIComponent(subject)}`, {
       email,
       email_verified: false,
       verify_email: true,
     });
+    // Un sujet inconnu ne doit PAS passer pour un succès : l'appelant écrirait
+    // ensuite la nouvelle adresse chez nous, et la personne se connecterait
+    // avec l'ancienne en en voyant une autre à l'écran.
+    if (patched === NOT_FOUND) {
+      throw new IdentitySubjectUnknownError(subject);
+    }
   }
 
   /**

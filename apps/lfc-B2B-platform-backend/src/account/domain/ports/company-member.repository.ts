@@ -77,6 +77,22 @@ export abstract class CompanyMemberRepository {
   abstract createInvited(input: MemberToCreate): Promise<string>;
 
   /**
+   * Réaligne le `sub` d'une personne sur celui que le fournisseur d'identité
+   * lui reconnaît **aujourd'hui**.
+   *
+   * Nos deux bases peuvent diverger — un compte ouvert pendant que l'adaptateur
+   * de développement fabriquait des sujets `dev|…`, une identité supprimée chez
+   * Auth0 — et un sujet périmé rend la personne **définitivement** injoignable :
+   * chaque demande de lien échoue exactement pareil, et rien ne la répare de
+   * soi-même.
+   *
+   * L'adresse, elle, n'a pas bougé : c'est par elle qu'on retrouve la bonne
+   * identité, et c'est ce résultat-là qu'on réécrit ici. Jamais la clé humaine,
+   * seulement le pointeur technique.
+   */
+  abstract rebindSubject(userId: string, subject: string): Promise<void>;
+
+  /**
    * Rattache une personne à une société avec un rôle — **ou aligne son rôle**
    * si elle l'est déjà.
    *
