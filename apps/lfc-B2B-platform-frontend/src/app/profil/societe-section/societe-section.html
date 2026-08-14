@@ -42,7 +42,6 @@
           label="Enseigne"
           hint="nom commercial, si différent"
           optional
-          optionalLabel="facultatif"
           [value]="enseigne()"
           (valueChange)="enseigne.set($event)"
         />
@@ -63,7 +62,6 @@
           label="N° de TVA intracommunautaire"
           placeholder="ex. FR32 812456789"
           optional
-          optionalLabel="facultatif"
           [value]="tvaIntracom()"
           (valueChange)="tvaIntracom.set($event)"
         />

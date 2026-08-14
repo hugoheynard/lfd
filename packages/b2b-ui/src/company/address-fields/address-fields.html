@@ -2,7 +2,6 @@
   label="Nom de l'adresse"
   hint="ex. Siège, Boutique Bastille"
   optional
-  optionalLabel="facultatif"
   [value]="value().label"
   (valueChange)="set('label', $event)"
 />
@@ -17,7 +16,6 @@
   label="Complément"
   hint="bâtiment, étage, instructions de livraison…"
   optional
-  optionalLabel="facultatif"
   [value]="value().ligne2"
   (valueChange)="set('ligne2', $event)"
 />
@@ -134,7 +132,6 @@
         <fold-listbox
           label="Reprendre un contact connu"
           optional
-          optionalLabel="facultatif"
           placeholder="Choisir un contact…"
           [options]="knownContactOptions()"
           [value]="null"
@@ -182,7 +179,6 @@
         class="grow"
         label="Latitude"
         optional
-        optionalLabel="facultatif"
         placeholder="48.8566"
         [value]="value().gpsLat"
         (valueChange)="set('gpsLat', $event)"
@@ -191,7 +187,6 @@
         class="grow"
         label="Longitude"
         optional
-        optionalLabel="facultatif"
         placeholder="2.3522"
         [value]="value().gpsLng"
         (valueChange)="set('gpsLng', $event)"

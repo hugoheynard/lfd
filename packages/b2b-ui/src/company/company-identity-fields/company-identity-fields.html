@@ -10,7 +10,6 @@
   "
   [required]="!enseigneOptional()"
   [optional]="enseigneOptional()"
-  optionalLabel="facultatif"
   [value]="value().enseigne"
   (valueChange)="setEnseigne($event)"
 />
@@ -23,7 +22,6 @@
   "
   [required]="!legalDeferred()"
   [optional]="legalDeferred()"
-  optionalLabel="facultatif"
   [value]="value().raisonSociale"
   (valueChange)="setRaisonSociale($event)"
 />
@@ -38,7 +36,6 @@
     placeholder="À choisir"
     [required]="!legalDeferred()"
     [optional]="legalDeferred()"
-    optionalLabel="facultatif"
     [options]="legalForms"
     [value]="value().formeJuridique"
     (selectionChange)="setFormeJuridique($event)"
@@ -54,7 +51,6 @@
     "
     [required]="!legalDeferred()"
     [optional]="legalDeferred()"
-    optionalLabel="facultatif"
     [value]="value().siret"
     (valueChange)="setSiret($event)"
   />
@@ -73,7 +69,6 @@
   "
   [required]="vatRequired() && !legalDeferred()"
   [optional]="!vatRequired()"
-  optionalLabel="facultatif"
   [value]="value().tvaIntracom"
   (valueChange)="setTvaIntracom($event)"
 />

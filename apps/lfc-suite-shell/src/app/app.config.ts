@@ -1,4 +1,5 @@
 import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from "@angular/core";
+import { provideFoldCommonLabels } from "fold-ng";
 import { provideHttpClient, withFetch } from "@angular/common/http";
 import { provideRouter, withComponentInputBinding } from "@angular/router";
 
@@ -17,6 +18,16 @@ import { DEV_BYPASS_AUTH } from "./auth/dev-flags";
  */
 export const appConfig: ApplicationConfig = {
   providers: [
+    // Les quatre mots que fold dit de lui-même, traduits UNE fois. Sans ce
+    // fournisseur, chaque champ répétait `optionalLabel="facultatif"` (25 fois
+    // dans 9 fichiers), et « More information » partait en anglais au lecteur
+    // d'écran sur chaque bulle d'aide.
+    provideFoldCommonLabels({
+      optional: "facultatif",
+      info: "En savoir plus",
+      clear: "Effacer",
+      loading: "Chargement…",
+    }),
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withFetch()),

@@ -18,34 +18,20 @@
   type="email"
   [required]="emailRequired()"
   [optional]="!emailRequired()"
-  optionalLabel="facultatif"
   hint="son adresse suffit : c'est par elle que son accès arrive"
   [value]="email()"
   (valueChange)="email.set($event)"
 />
 
 <div class="hp-row">
-  <fold-input
-    label="Prénom"
-    optional
-    optionalLabel="facultatif"
-    [value]="firstName()"
-    (valueChange)="firstName.set($event)"
-  />
-  <fold-input
-    label="Nom"
-    optional
-    optionalLabel="facultatif"
-    [value]="lastName()"
-    (valueChange)="lastName.set($event)"
-  />
+  <fold-input label="Prénom" optional [value]="firstName()" (valueChange)="firstName.set($event)" />
+  <fold-input label="Nom" optional [value]="lastName()" (valueChange)="lastName.set($event)" />
 </div>
 
 <fold-input
   label="Téléphone"
   type="tel"
   optional
-  optionalLabel="facultatif"
   hint="pas nécessaire maintenant ; il le sera pour activer le compte"
   [value]="phone()"
   (valueChange)="phone.set($event)"

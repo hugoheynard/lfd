@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding, withRouterConfig } from '@angular/router';
-import { provideFoldToasts } from 'fold-ng';
+import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
 import { provideStaffAuth } from './auth/auth.providers';
@@ -17,6 +17,16 @@ import { SuiteEmbed } from './suite-embed/suite-embed';
 // pour appeler la surface `/admin/*` du backend B2B.
 export const appConfig: ApplicationConfig = {
   providers: [
+    // Les quatre mots que fold dit de lui-même, traduits UNE fois. Sans ce
+    // fournisseur, chaque champ répétait `optionalLabel="facultatif"` (25 fois
+    // dans 9 fichiers), et « More information » partait en anglais au lecteur
+    // d'écran sur chaque bulle d'aide.
+    provideFoldCommonLabels({
+      optional: 'facultatif',
+      info: 'En savoir plus',
+      clear: 'Effacer',
+      loading: 'Chargement…',
+    }),
     provideBrowserGlobalErrorListeners(),
     // `withComponentInputBinding` : un segment de route arrive dans un `input()`
     // du composant, sans passer par `ActivatedRoute`. C'est ce qui permet à une

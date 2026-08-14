@@ -1,4 +1,5 @@
 import { SUITE_APP_URLS } from "./suite-config";
+import type { FoldIconName } from "fold-ng";
 
 /**
  * Entrée du **registre** d'apps, statique et possédée par le shell.
@@ -15,7 +16,7 @@ export interface SuiteAppEntry {
   /** Libellé du switcher (rail primaire). */
   readonly title: string;
   /** Icône fold du switcher. */
-  readonly icon: string;
+  readonly icon: FoldIconName;
   /** 1er segment de route où l'app est montée (`pim` → `/pim/**`). */
   readonly routePath: string;
   /**

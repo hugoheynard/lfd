@@ -8,7 +8,6 @@
     label="Enseigne (nom commercial)"
     hint="si différent de la raison sociale"
     optional
-    optionalLabel="facultatif"
     [value]="enseigne()"
     (valueChange)="enseigne.set($event)"
   />
@@ -16,7 +15,6 @@
     label="N° de TVA intracommunautaire"
     placeholder="FR00 000000000"
     optional
-    optionalLabel="facultatif"
     [value]="tvaIntracom()"
     (valueChange)="tvaIntracom.set($event)"
   />
