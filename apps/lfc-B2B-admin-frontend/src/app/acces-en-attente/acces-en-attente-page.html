@@ -49,15 +49,20 @@
       @if (rows().length === 0) {
         <!-- Le vide sera fréquent, et c'est une bonne nouvelle : il se dit
              comme telle plutôt qu'en tableau sans lignes. -->
+        <!-- L'icône passe par le SLOT `[empty-icon]`, pas par un attribut :
+             `fold-empty-state` n'a pas d'entrée `icon`, et `icon="check"`
+             atterrissait en attribut HTML muet — ça compile, ça n'affiche
+             rien. -->
         <fold-empty-state
-          icon="check"
           title="Personne n'attend"
           [subtitle]="
             tab() === 'client'
               ? 'Tous les accès clients ouverts ont été créés par leurs détenteurs.'
               : 'Toute l’équipe invitée a créé son accès.'
           "
-        />
+        >
+          <fold-icon empty-icon name="check-circle" [size]="28" />
+        </fold-empty-state>
       } @else {
         <ul class="rows">
           @for (row of rows(); track row.person.userId) {
