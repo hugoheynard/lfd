@@ -74,6 +74,22 @@ export class ReglagesStaffUsersPage {
    * Une page tient dans un écran sans molette. Au-delà, on pagine plutôt que
    * de dérouler : une équipe se lit, elle ne se parcourt pas.
    */
+  /**
+   * Le ton d'une ligne — la seule chose que la couleur a le droit de dire ici.
+   *
+   * Une invitation périmée et un accès suspendu ne se voient pas dans une
+   * pastille qu'on lit ligne par ligne : ils se voient au premier coup d'œil
+   * sur la liste entière, ou ils ne se voient pas. Le reste des lignes reste
+   * neutre — teinter aussi les comptes sains ferait un arc-en-ciel où plus
+   * rien ne ressort.
+   */
+  protected readonly rowTone = (row: StaffUserView): 'warning' | 'alert' | null => {
+    if (this.isSuspended(row)) {
+      return 'alert';
+    }
+    return row.invitationExpired ? 'warning' : null;
+  };
+
   protected readonly pageSize = 12;
   protected readonly page = signal(1);
 
