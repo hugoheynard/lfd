@@ -38,9 +38,15 @@
                     <span class="name">{{ row.name }}</span>
                     <span class="email">{{ row.person.email }}</span>
                     <span class="meta">
-                      <a [routerLink]="['/comptes-clients', row.person.companyId]">
+                      @if (row.person.companyId; as companyId) {
+                        <a [routerLink]="['/comptes-clients', companyId]">
+                          {{ row.person.companyName }}
+                        </a>
+                      } @else {
+                        <!-- Un membre de l'équipe n'a pas de fiche société où
+                             aller : son rattachement est sa fonction. -->
                         {{ row.person.companyName }}
-                      </a>
+                      }
                       · attend {{ row.waiting }}
                     </span>
                   </div>

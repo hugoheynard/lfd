@@ -27,10 +27,15 @@
       </a>
 
       @if (canSeeCompanies()) {
+        <!-- Accent et non alerte sur les comptes : un dossier incomplet n'est
+             pas un incident, c'est du travail qui attend. L'alerte reste pour
+             ce qui coûte tout de suite. -->
         <a
           fold-menu-item
           icon="company"
           label="Comptes clients"
+          [badge]="companyBadge()"
+          badgeTone="accent"
           routerLink="/comptes-clients"
           routerLinkActive
           #comptesRla="routerLinkActive"
@@ -44,6 +49,8 @@
           fold-menu-item
           icon="mail"
           label="Accès à remettre"
+          [badge]="accessBadge()"
+          badgeTone="warning"
           routerLink="/acces-en-attente"
           routerLinkActive
           #accesRla="routerLinkActive"

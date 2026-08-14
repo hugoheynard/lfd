@@ -19,6 +19,13 @@ import { StaffUserRepository } from "./domain/staff-user.repository.js";
 import { Auth0StaffIdentity } from "./infrastructure/auth0-staff-identity.js";
 import { DevStaffIdentity } from "./infrastructure/dev-staff-identity.js";
 import { AdminMeController } from "./http/admin-me.controller.js";
+import { AdminStaffAccessPendingController } from "./http/admin-staff-access-pending.controller.js";
+import { PendingStaffAccessReader } from "./domain/pending-staff-access.reader.js";
+import { PrismaPendingStaffAccessReader } from "./infrastructure/prisma-pending-staff-access.reader.js";
+import {
+  IssueStaffPasswordLinkHandler,
+  ListPendingStaffAccessHandler,
+} from "./application/pending-staff-access.js";
 import { AdminStaffUsersController } from "./http/admin-staff-users.controller.js";
 import { PrismaStaffUserRepository } from "./infrastructure/prisma-staff-user.repository.js";
 
@@ -33,8 +40,11 @@ import { PrismaStaffUserRepository } from "./infrastructure/prisma-staff-user.re
  */
 @Module({
   imports: [CqrsModule],
-  controllers: [AdminStaffUsersController, AdminMeController],
+  controllers: [AdminStaffUsersController, AdminStaffAccessPendingController, AdminMeController],
   providers: [
+    { provide: PendingStaffAccessReader, useClass: PrismaPendingStaffAccessReader },
+    ListPendingStaffAccessHandler,
+    IssueStaffPasswordLinkHandler,
     { provide: StaffUserRepository, useClass: PrismaStaffUserRepository },
     // Le resolver EST le cache : il n'y en a qu'un, et l'annuaire ne le connaît
     // que par ce port étroit — il ne sait ni sa clé, ni sa durée de vie.

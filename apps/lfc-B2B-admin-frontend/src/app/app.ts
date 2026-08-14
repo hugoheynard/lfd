@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavCountsService } from './nav-counts.service';
 import {
   FoldAppShellComponent,
   FoldButtonIconComponent,
@@ -86,6 +87,15 @@ export class App {
    * touche.
    */
   protected readonly canSeeCompanies = computed(() => this.permissions.can('companies:read'));
+
+  private readonly counts = inject(NavCountsService);
+  /** Ce qui attend derrière chaque entrée — `undefined` masque le badge. */
+  protected readonly companyBadge = computed(() =>
+    this.counts.companyWarnings() > 0 ? this.counts.companyWarnings() : undefined,
+  );
+  protected readonly accessBadge = computed(() =>
+    this.counts.accessPending() > 0 ? this.counts.accessPending() : undefined,
+  );
   protected readonly canSeeCommercial = computed(() => this.permissions.can('growth:read'));
   protected readonly canSeeSettings = computed(() => this.permissions.can('settings:read'));
 
@@ -125,6 +135,15 @@ export class App {
     effect(() => {
       if (!this.resolving() && !this.locked()) {
         void this.permissions.ensureLoaded();
+      }
+    });
+
+    // Les compteurs du menu partent avec les permissions, et pas avant : sans
+    // droits résolus, les deux lectures reviendraient en 403 et laisseraient
+    // des badges à zéro qui ressembleraient à « rien à faire ».
+    effect(() => {
+      if (this.canSeeCompanies()) {
+        void this.counts.refresh();
       }
     });
   }

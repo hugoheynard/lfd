@@ -89,7 +89,7 @@ export class AccesEnAttentePage {
     }
     this.issuing.set(person.userId);
     try {
-      const url = await this.service.issueLink(person.userId);
+      const url = await this.service.issueLink(person);
       await this.toClipboard(url);
     } catch (error) {
       this.notify.error(error);

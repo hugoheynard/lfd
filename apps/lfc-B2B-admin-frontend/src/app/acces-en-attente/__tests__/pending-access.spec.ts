@@ -13,6 +13,7 @@ function person(over: Partial<PendingAccess> = {}): PendingAccess {
     companyId: 'cmp_1',
     companyName: 'Le Comptoir',
     invitedAt: '2026-08-02T09:00:00.000Z',
+    kind: 'client',
     ...over,
   };
 }
