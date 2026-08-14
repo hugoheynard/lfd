@@ -126,7 +126,6 @@
             [identity]="id"
             [canManage]="true"
             [canManageKbis]="true"
-            [kbisRequirement]="fiche.kbisRequirement()"
             [canAccessKbis]="true"
             (edit)="fiche.openStep('tva')"
             (kbisSelected)="onFile({ key: 'kbis', file: $event })"
@@ -202,8 +201,8 @@
             (editDelivery)="fiche.editDelivery($event)"
             (setDefault)="fiche.setDefaultDelivery($event)"
             (remove)="fiche.removeDelivery($event)"
-            [showDeliveries]="!fiche.deliveryHidden()"
-            [showPickup]="fiche.deliveryHidden()"
+            [showDeliveries]="!fiche.deliveryHidden"
+            [showPickup]="fiche.deliveryHidden"
             [pickup]="fiche.defaultPickup()"
           />
 
@@ -217,7 +216,7 @@
               [preference]="c.fulfillmentPreference"
               [pickups]="fiche.pickups()"
               [deliveries]="fiche.deliveries()"
-              [deliveryOffered]="!fiche.deliveryHidden()"
+              [deliveryOffered]="!fiche.deliveryHidden"
               description="Comment ce client est servi d'habitude. C'est le point de départ de ses commandes — il pourra en changer au panier."
               noPreferenceHint="Aucune préférence : ce client choisit son acheminement à chaque commande, comme aujourd'hui."
               noDeliveryHint="Cette société n'a pas encore d'adresse de livraison. Ajoutez-en une pour pouvoir en choisir une par défaut."

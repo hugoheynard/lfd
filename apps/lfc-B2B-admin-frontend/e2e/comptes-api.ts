@@ -1,5 +1,5 @@
 import type { Page, Route } from '@playwright/test';
-import type { CompanyContactView, PlatformSettings } from '@lfd/contracts';
+import type { CompanyContactView } from '@lfd/contracts';
 
 /** La société sur laquelle portent les tests d'ouverture de compte. */
 export const COMPANY_ID = 'company-cpt';
@@ -66,7 +66,6 @@ export class ComptesApiDouble {
     await page.route('**/admin/**', (route) => this.dispatch(route));
     // Réglages et points de retrait vivent HORS de `/admin` : sans eux, la
     // fiche resterait en chargement.
-    await page.route('**/platform-settings', (route) => json(route, SETTINGS));
     await page.route('**/pickup-addresses', (route) => json(route, []));
   }
 
@@ -349,13 +348,6 @@ const PORTFOLIO = {
 };
 
 /** Toutes les pièces facultatives : le scénario porte sur l'accès, pas sur elles. */
-const SETTINGS: PlatformSettings = {
-  tva: 'optional',
-  kbis: 'optional',
-  billing: 'optional',
-  delivery: 'optional',
-};
-
 async function json(route: Route, body: unknown): Promise<void> {
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 }

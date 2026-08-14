@@ -40,7 +40,6 @@ export class FicheClientFacade {
   readonly deliveries = this.store.deliveries;
   readonly pickups = this.store.pickups;
   readonly defaultPickup = this.store.defaultPickup;
-  readonly kbisRequirement = this.store.kbisRequirement;
   readonly deliveryHidden = this.store.deliveryHidden;
   readonly libSteps = this.store.libSteps;
   readonly ready = this.store.ready;

@@ -152,8 +152,8 @@
          mais la synthèse le réclamera » — et une règle écrite à deux endroits
          finit toujours par se contredire. Le TON, lui, reste informé par le
          réglage : exigé se voit en avertissement, attendu en information. -->
-    @if (kbisRequirement() !== 'hidden' && !id.kbis) {
-      <fold-callout [variant]="kbisRequirement() === 'required' ? 'warning' : 'info'">
+    @if (askForKbis() && !id.kbis) {
+      <fold-callout variant="info">
         Aucun extrait KBIS n'a encore été déposé. Un PDF ou une photo lisible font l'affaire.
       </fold-callout>
     }

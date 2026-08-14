@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
 import type { DeliveryAddressView, FulfillmentPreferenceView } from '@lfd/contracts';
 import { CompanyFulfillmentCard } from '@lfd/b2b-ui/company';
 
@@ -6,7 +7,6 @@ import { AccountService } from '../../account/account.service';
 import type { Company } from '../../account/account.model';
 import { AddressesService } from '../addresses.service';
 import { PickupAddressesService } from '../pickup-addresses.service';
-import { PlatformSettingsService } from '../platform-settings.service';
 
 /**
  * Section **Préférences d'acheminement** d'une entreprise côté **client** —
@@ -31,7 +31,6 @@ export class AcheminementSection {
   private readonly account = inject(AccountService);
   private readonly addresses = inject(AddressesService);
   private readonly pickupsService = inject(PickupAddressesService);
-  private readonly settings = inject(PlatformSettingsService);
 
   readonly company = input.required<Company>();
 
@@ -42,7 +41,7 @@ export class AcheminementSection {
   );
 
   /** La livraison est-elle un service ouvert ? Sinon, seul le retrait a un sens. */
-  protected readonly deliveryOffered = computed(() => !this.settings.deliveryHidden());
+  protected readonly deliveryOffered = DELIVERY_SERVICE_OPEN;
 
   /** Seul le gestionnaire règle la préférence ; les autres la lisent. */
   protected readonly canManage = computed(() => this.company().role === 'company_admin');

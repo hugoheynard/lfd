@@ -7,7 +7,6 @@ import type { Company } from '../../account/account.model';
 import { AccountService } from '../../account/account.service';
 import { AddressesService } from '../addresses.service';
 import { PickupAddressesService } from '../pickup-addresses.service';
-import { PlatformSettingsService } from '../platform-settings.service';
 import { AcheminementSection } from './acheminement-section';
 
 function company(over: Partial<Company> = {}): Company {
@@ -47,7 +46,7 @@ interface Harness {
   readonly section: AcheminementSection;
 }
 
-function render(over: Partial<Company> = {}, deliveryHidden = false): Harness {
+function render(over: Partial<Company> = {}): Harness {
   const saved: FulfillmentPreferenceView[] = [];
 
   TestBed.configureTestingModule({
@@ -68,7 +67,6 @@ function render(over: Partial<Company> = {}, deliveryHidden = false): Harness {
         },
       },
       { provide: PickupAddressesService, useValue: { addresses: signal([]) } },
-      { provide: PlatformSettingsService, useValue: { deliveryHidden: signal(deliveryHidden) } },
     ],
   });
 
@@ -118,11 +116,13 @@ describe("section Préférences d'acheminement (client)", () => {
     expect(saved).toEqual([{ method: 'pickup', pickupAddressId: null, deliveryAddressId: null }]);
   });
 
-  it('MASQUE la livraison quand le service est fermé', () => {
+  it('MASQUE la livraison tant que le service est fermé', () => {
     // Proposer un acheminement que la plateforme ne rend pas serait une
-    // promesse que personne ne peut tenir.
-    const { section } = render({}, true);
+    // promesse que personne ne peut tenir. Ce n'était un réglage qu'en
+    // apparence : LFC ne livre pas, c'est un fait, et `DELIVERY_SERVICE_OPEN`
+    // le dit en un seul endroit.
+    const { section } = render();
 
-    expect(section['deliveryOffered']()).toBe(false);
+    expect(section['deliveryOffered']).toBe(false);
   });
 });

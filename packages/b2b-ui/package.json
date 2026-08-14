@@ -5,6 +5,10 @@
   "private": true,
   "sideEffects": false,
   "exports": {
+    "./flags": {
+      "types": "./src/flags.ts",
+      "default": "./src/flags.ts"
+    },
     "./appointment": {
       "types": "./src/appointment/index.ts",
       "default": "./src/appointment/index.ts"

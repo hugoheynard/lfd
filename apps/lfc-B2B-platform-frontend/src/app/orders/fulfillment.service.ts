@@ -1,4 +1,5 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
 
 import type { BillingAddressPayload, CartAdjustment, FulfillmentMethod } from '@lfd/contracts';
 
@@ -7,7 +8,6 @@ import { computeVatCents } from '../data/vat';
 import { AddressesService } from '../entreprises/addresses.service';
 import { DeliveryZonesService } from '../entreprises/delivery-zones.service';
 import { PickupAddressesService } from '../entreprises/pickup-addresses.service';
-import { PlatformSettingsService } from '../entreprises/platform-settings.service';
 import { CommerceContextService } from '../commerce/commerce-context.service';
 import {
   courierFrom,
@@ -60,7 +60,6 @@ export class FulfillmentService {
   private readonly zonesSvc = inject(DeliveryZonesService);
   private readonly pickupsSvc = inject(PickupAddressesService);
   private readonly addressesSvc = inject(AddressesService);
-  private readonly settings = inject(PlatformSettingsService);
   private readonly context = inject(CommerceContextService);
   private readonly cart = inject(CartService);
 
@@ -86,7 +85,7 @@ export class FulfillmentService {
   readonly defaultPickup = this.pickupsSvc.defaultPickup;
 
   /** La livraison est-elle un service ouvert ? Sinon, seul le retrait a un sens. */
-  readonly deliveryOffered = computed(() => !this.settings.deliveryHidden());
+  readonly deliveryOffered = DELIVERY_SERVICE_OPEN;
 
   /**
    * Les adresses de la société sélectionnée. Réservées aux comptes **actifs** :
@@ -224,7 +223,7 @@ export class FulfillmentService {
       const choice = preferredChoice(
         company.fulfillmentPreference,
         this.companyAddresses(),
-        this.deliveryOffered(),
+        this.deliveryOffered,
       );
       if (choice === null) {
         return;

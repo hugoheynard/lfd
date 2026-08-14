@@ -14,17 +14,24 @@ import { activationSteps, blockedReason, openingSteps } from '../informations/ac
  * phrase. C'est tout ce que cet écran a encore le droit de savoir.
  */
 const ALL_TODO: readonly ActivationCheck[] = [
-  { piece: 'tva', mode: 'required', done: false },
-  { piece: 'kbis', mode: 'required', done: false },
-  { piece: 'billing', mode: 'required', done: false },
-  { piece: 'delivery', mode: 'required', done: false },
+  { piece: 'tva', blocking: true, done: false },
+  { piece: 'kbis', blocking: false, done: false },
+  { piece: 'billing', blocking: true, done: false },
 ];
 
-function withGate(gate: Partial<ActivationGate>): AdminCompanyDetail {
+function withGate(
+  gate: Partial<ActivationGate>,
+  over: Partial<AdminCompanyDetail> = {},
+): AdminCompanyDetail {
   return {
+    kbis: null,
+    ...over,
     gate: { canActivate: false, blocking: [], checklist: ALL_TODO, ...gate },
   } as AdminCompanyDetail;
 }
+
+/** Un extrait déposé, pas encore vérifié — le cas qui change le geste. */
+const DEPOSITED = { kbis: { certified: false } } as Partial<AdminCompanyDetail>;
 
 describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => {
   it('liste les pièces que le serveur dit non faites, et RIEN d’autre', () => {
@@ -33,23 +40,22 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
     // avec un geste mort apprend à ignorer l'encart entier.
     const steps = activationSteps(withGate({}));
 
-    expect(steps.map((step) => step.key)).toEqual(['tva', 'kbis', 'billing', 'delivery']);
+    expect(steps.map((step) => step.key)).toEqual(['tva', 'kbis', 'billing']);
   });
 
-  it('tait une pièce faite, et une pièce masquée en réglages', () => {
+  it('tait une pièce faite, et garde celle qui ne bloque pas', () => {
     const steps = activationSteps(
       withGate({
         checklist: [
-          { piece: 'tva', mode: 'required', done: true },
-          { piece: 'kbis', mode: 'hidden', done: false },
-          { piece: 'billing', mode: 'optional', done: false },
-          { piece: 'delivery', mode: 'required', done: false },
+          { piece: 'tva', blocking: true, done: true },
+          { piece: 'kbis', blocking: false, done: false },
+          { piece: 'billing', blocking: false, done: false },
         ],
       }),
     );
 
-    // `optional` reste demandée — « pas bloquante » n'est pas « pas demandée ».
-    expect(steps.map((step) => step.key)).toEqual(['billing', 'delivery']);
+    // Non bloquante reste demandée — « pas bloquante » n'est pas « pas demandée ».
+    expect(steps.map((step) => step.key)).toEqual(['kbis', 'billing']);
   });
 
   it("ouvre la liste sur l'identité légale quand le serveur la signale", () => {
@@ -63,10 +69,9 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
     // pièces : un dossier complet sans téléphone affichait « 1 point à régler »
     // au-dessus de zéro ligne, et le manquant n'était nommé nulle part.
     const complet: readonly ActivationCheck[] = [
-      { piece: 'tva', mode: 'required', done: true },
-      { piece: 'kbis', mode: 'required', done: true },
-      { piece: 'billing', mode: 'required', done: true },
-      { piece: 'delivery', mode: 'required', done: true },
+      { piece: 'tva', blocking: true, done: true },
+      { piece: 'kbis', blocking: false, done: true },
+      { piece: 'billing', blocking: true, done: true },
     ];
     const steps = activationSteps(withGate({ blocking: ['telephone'], checklist: complet }));
 
@@ -84,17 +89,16 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
   });
 
   it('distingue la pièce qui BLOQUE de celle qu’on réclame seulement', () => {
-    // Le KBIS est `optional` par défaut (la vérification n'est pas en place) :
-    // il se réclame sans empêcher d'activer. La liste les affichait à
+    // Le KBIS ne bloque jamais : c'est une convention interne, il se réclame
+    // sans empêcher d'activer. La liste les affichait à
     // l'identique, et un bouton actif au-dessus passait pour un trou.
     const steps = activationSteps(
       withGate({
         blocking: ['tva'],
         checklist: [
-          { piece: 'tva', mode: 'required', done: false },
-          { piece: 'kbis', mode: 'optional', done: false },
-          { piece: 'billing', mode: 'required', done: true },
-          { piece: 'delivery', mode: 'hidden', done: false },
+          { piece: 'tva', blocking: true, done: false },
+          { piece: 'kbis', blocking: false, done: false },
+          { piece: 'billing', blocking: true, done: true },
         ],
       }),
     );
@@ -109,25 +113,17 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
 
   it('dit ce qui bloque EN PREMIER, pas la liste entière', () => {
     // Une phrase sous un bouton, pas un rapport : on corrige dans cet ordre.
-    const reason = blockedReason(withGate({ blocking: ['telephone', 'kbis_absent'] }));
+    const reason = blockedReason(withGate({ blocking: ['telephone', 'facturation'] }));
 
     expect(reason).toContain('Aucun interlocuteur joignable');
-  });
-
-  it('distingue le KBIS absent du KBIS non vérifié', () => {
-    // Le cas le moins devinable : la pièce est là, personne ne l'a ouverte.
-    expect(blockedReason(withGate({ blocking: ['kbis_non_verifie'] }))).toContain(
-      'déposé mais pas encore vérifié',
-    );
-    expect(blockedReason(withGate({ blocking: ['kbis_absent'] }))).toContain(
-      "n'a pas encore été déposé",
-    );
   });
 
   it("change de geste quand l'extrait est là mais pas vérifié", () => {
     // « Déposer le KBIS » devant un fichier déjà déposé envoie chercher ce qui
     // est sous les yeux. Le geste attendu n'est pas un dépôt, c'est une lecture.
-    const steps = activationSteps(withGate({ blocking: ['kbis_non_verifie'] }));
+    // La présence se lit sur la FICHE : le verdict ne la distingue plus, le
+    // KBIS ne bloquant plus rien.
+    const steps = activationSteps(withGate({}, DEPOSITED));
     const kbis = steps.find((step) => step.key.startsWith('kbis'));
 
     expect(kbis?.key).toBe('kbis_verify');
@@ -136,7 +132,7 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
   });
 
   it('redemande un DÉPÔT quand rien n’a été déposé', () => {
-    const steps = activationSteps(withGate({ blocking: ['kbis_absent'] }));
+    const steps = activationSteps(withGate({}));
     const kbis = steps.find((step) => step.key.startsWith('kbis'));
 
     expect(kbis?.key).toBe('kbis');
@@ -149,10 +145,9 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
     const complet = activationSteps(
       withGate({
         checklist: [
-          { piece: 'tva', mode: 'required', done: true },
-          { piece: 'kbis', mode: 'required', done: true },
-          { piece: 'billing', mode: 'required', done: true },
-          { piece: 'delivery', mode: 'required', done: true },
+          { piece: 'tva', blocking: true, done: true },
+          { piece: 'kbis', blocking: false, done: true },
+          { piece: 'billing', blocking: true, done: true },
         ],
       }),
     );

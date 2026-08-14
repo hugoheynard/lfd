@@ -121,11 +121,7 @@ const BLOCKER_SENTENCES: Readonly<Record<ActivationBlocker, string>> = {
     "Aucun détenteur rattaché : personne ne pourrait se connecter à cet espace. Renseignez l'adresse de la personne qui commande.",
   telephone: 'Aucun interlocuteur joignable : renseignez au moins un numéro de téléphone.',
   tva: 'Le numéro de TVA intracommunautaire manque.',
-  kbis_absent: "L'extrait KBIS n'a pas encore été déposé.",
-  kbis_non_verifie:
-    "L'extrait KBIS est déposé mais pas encore vérifié : ouvrez-le, comparez-le à l'identité, puis confirmez.",
   facturation: "L'adresse de facturation manque.",
-  livraison: 'Aucune adresse de livraison enregistrée.',
 };
 
 /**
@@ -186,15 +182,17 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
 
   // Le KBIS déposé mais non vérifié n'appelle pas « déposer » : le fichier est
   // là. Réclamer un dépôt devant une pièce présente envoie chercher ce qui est
-  // sous les yeux — c'est le manque le moins devinable du dossier.
-  const kbisDeposited = company.gate.blocking.includes('kbis_non_verifie');
+  // sous les yeux — c'est le manque le moins devinable du dossier. La présence
+  // se lit sur la FICHE : le verdict ne la distingue plus, puisque le KBIS ne
+  // bloque plus rien.
+  const kbisDeposited = company.kbis !== null;
   const pieces = company.gate.checklist
-    .filter((check) => check.mode !== 'hidden' && !check.done)
+    .filter((check) => !check.done)
     .map((check) => {
       const key: StepKey = check.piece === 'kbis' && kbisDeposited ? 'kbis_verify' : check.piece;
-      // Seul le mode `required` oppose un empêchement — c'est la même lecture
-      // que fait le serveur pour remplir `gate.blocking`.
-      return { key, ...STEP_TEXTS[key], blocking: check.mode === 'required' };
+      // Le serveur dit lui-même laquelle tient la porte — l'écran ne le redéduit
+      // pas d'un mode qu'il aurait fallu réinterpréter.
+      return { key, ...STEP_TEXTS[key], blocking: check.blocking };
     });
 
   // **Pas de « condition de règlement » ici.** Elle ne manque jamais — payer à

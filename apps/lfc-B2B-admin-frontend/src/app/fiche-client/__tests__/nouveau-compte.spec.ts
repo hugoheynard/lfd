@@ -1,25 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import type { PickupAddressView, PlatformSettings } from '@lfd/contracts';
+import type { PickupAddressView } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { CompanyOpened } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
-import { PlatformSettingsService } from '../../reglages/platform-settings.service';
 import { FicheClientFacade } from '../informations/fiche-client.facade';
 import { InformationsPage } from '../informations/informations-page';
 
 /** Toutes les pièces exigées : le cas le plus bavard pour la synthèse. */
-const SETTINGS: PlatformSettings = {
-  tva: 'required',
-  kbis: 'required',
-  billing: 'required',
-  delivery: 'required',
-};
-
 const CREATED: CompanyOpened = {
   id: 'cmp_1',
   holder: 'attached',
@@ -51,12 +43,6 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
         useValue: {
           create,
         } satisfies Pick<AdminCompaniesService, 'create'>,
-      },
-      {
-        provide: PlatformSettingsService,
-        useValue: {
-          get: (): Promise<PlatformSettings> => Promise.resolve(SETTINGS),
-        } satisfies Pick<PlatformSettingsService, 'get'>,
       },
       {
         provide: PickupAddressesService,

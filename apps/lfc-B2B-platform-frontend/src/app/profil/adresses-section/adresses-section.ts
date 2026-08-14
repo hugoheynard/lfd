@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
 import type { BillingAddressView, DeliveryAddressView, DeliveryContact } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { CompanyAddressesCard } from '@lfd/b2b-ui/company';
@@ -6,7 +7,6 @@ import { CompanyAddressesCard } from '@lfd/b2b-ui/company';
 import type { Company } from '../../account/account.model';
 import { AddressesService } from '../../entreprises/addresses.service';
 import { PickupAddressesService } from '../../entreprises/pickup-addresses.service';
-import { PlatformSettingsService } from '../../entreprises/platform-settings.service';
 import { AdressePanel, type AdressePanelData } from '../adresse-panel/adresse-panel';
 
 /**
@@ -25,14 +25,13 @@ import { AdressePanel, type AdressePanelData } from '../adresse-panel/adresse-pa
 export class AdressesSection {
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly addresses = inject(AddressesService);
-  private readonly settings = inject(PlatformSettingsService);
   private readonly pickups = inject(PickupAddressesService);
 
   readonly company = input.required<Company>();
 
   protected readonly canManage = computed(() => this.company().role === 'company_admin');
-  /** Masque le bloc livraison tant que le service n'existe pas (config globale). */
-  protected readonly deliveryHidden = this.settings.deliveryHidden;
+  /** Masque le bloc livraison tant que le service n'existe pas. */
+  protected readonly deliveryHidden = !DELIVERY_SERVICE_OPEN;
   /** Le point de retrait par défaut, montré à la place de la livraison masquée. */
   protected readonly defaultPickup = this.pickups.defaultPickup;
   protected readonly view = this.addresses.view;

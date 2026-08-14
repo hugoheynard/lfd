@@ -45,7 +45,7 @@ describe('permissionGuard — laisse passer qui a le droit', () => {
 });
 
 describe('permissionGuard — redirige plutôt que de bloquer', () => {
-  it('renvoie vers la première destination ouverte, dans l\'ordre du menu', async () => {
+  it("renvoie vers la première destination ouverte, dans l'ordre du menu", async () => {
     // L'ordre compte : `companies` passe avant `orders`, comme dans le menu.
     // Renvoyer ailleurs donnerait l'impression d'avoir cliqué de travers.
     const result = await guardWith(['companies:read', 'orders:read']);
@@ -61,7 +61,7 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
 });
 
 describe('permissionGuard — le cas qui fige un navigateur', () => {
-  it('laisse passer quand AUCUNE porte n\'est ouverte', async () => {
+  it("laisse passer quand AUCUNE porte n'est ouverte", async () => {
     // Sans ça, chaque redirection retomberait sur un garde qui redirige : le
     // navigateur boucle, et la personne ne voit jamais l'écran qui explique
     // qu'elle n'a aucun périmètre.

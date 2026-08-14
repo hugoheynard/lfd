@@ -53,7 +53,7 @@ function answer(body: StaffMeView): void {
 }
 
 describe('PermissionsStore — avant de savoir', () => {
-  it('ne dit oui à rien tant que la lecture n\'a pas eu lieu', () => {
+  it("ne dit oui à rien tant que la lecture n'a pas eu lieu", () => {
     // Le défaut par défaut est le refus. Dire oui puis se raviser ferait
     // clignoter les boutons — et offrirait un geste qui échouera.
     expect(store.can('orders:read')).toBe(false);
@@ -66,7 +66,7 @@ describe('PermissionsStore — avant de savoir', () => {
 });
 
 describe('PermissionsStore — après la lecture', () => {
-  it('rend exactement les permissions du serveur, sans en déduire d\'autres', async () => {
+  it("rend exactement les permissions du serveur, sans en déduire d'autres", async () => {
     const loading = store.ensureLoaded();
     answer(ME);
     await loading;
@@ -77,7 +77,7 @@ describe('PermissionsStore — après la lecture', () => {
     expect(store.can('staff:read')).toBe(false);
   });
 
-  it('expose l\'identité pour que l\'écran sache qui parle', async () => {
+  it("expose l'identité pour que l'écran sache qui parle", async () => {
     const loading = store.ensureLoaded();
     answer(ME);
     await loading;
@@ -101,7 +101,7 @@ describe('PermissionsStore — un seul appel', () => {
     expect(store.loaded()).toBe(true);
   });
 
-  it('ne relit pas une fois qu\'il sait', async () => {
+  it("ne relit pas une fois qu'il sait", async () => {
     const loading = store.ensureLoaded();
     answer(ME);
     await loading;
@@ -130,7 +130,9 @@ describe('PermissionsStore — le refus du serveur', () => {
     // Le cas de la personne authentifiée mais absente de l'annuaire : l'écran
     // doit pouvoir le DIRE, pas afficher une coquille vide.
     const loading = store.ensureLoaded();
-    ctrl.expectOne(`${B2B_API_BASE}/admin/me`).flush(null, { status: 403, statusText: 'Forbidden' });
+    ctrl
+      .expectOne(`${B2B_API_BASE}/admin/me`)
+      .flush(null, { status: 403, statusText: 'Forbidden' });
     await loading;
 
     expect(store.denied()).toBe(true);
@@ -141,7 +143,9 @@ describe('PermissionsStore — le refus du serveur', () => {
 
   it('ne réessaie pas en boucle après un refus', async () => {
     const loading = store.ensureLoaded();
-    ctrl.expectOne(`${B2B_API_BASE}/admin/me`).flush(null, { status: 403, statusText: 'Forbidden' });
+    ctrl
+      .expectOne(`${B2B_API_BASE}/admin/me`)
+      .flush(null, { status: 403, statusText: 'Forbidden' });
     await loading;
 
     // Un second appel ne doit émettre aucune requête : `verify()` le prouve.

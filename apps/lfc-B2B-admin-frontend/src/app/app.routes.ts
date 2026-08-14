@@ -85,15 +85,8 @@ export const routes: Routes = [
     title: 'Réglages — LFC B2B admin',
     loadComponent: () => import('./reglages/reglages-page').then((m) => m.ReglagesPage),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'activation' },
-      {
-        path: 'activation',
-        title: 'Activation client — LFC B2B admin',
-        loadComponent: () =>
-          import('./reglages/activation/reglages-activation-page').then(
-            (m) => m.ReglagesActivationPage,
-          ),
-      },
+      { path: '', pathMatch: 'full', redirectTo: 'retraits-livraisons' },
+
       {
         path: 'retraits-livraisons',
         title: 'Retraits & livraisons — LFC B2B admin',

@@ -1,11 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { DELIVERY_SERVICE_OPEN } from '@lfd/b2b-ui/flags';
 import type {
   BillingAddressView,
   CompanyStatus,
   DeliveryAddressView,
   PickupAddressView,
-  PieceMode,
-  PlatformSettings,
 } from '@lfd/contracts';
 import type {
   CompanyActivationStep,
@@ -16,7 +15,6 @@ import type {
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
-import { PlatformSettingsService } from '../../reglages/platform-settings.service';
 import { toContactCards, toIdentityView } from '../admin-company-view';
 import { activationSteps, blockedReason, type ActivationStep } from './activation-steps';
 
@@ -24,8 +22,8 @@ import { activationSteps, blockedReason, type ActivationStep } from './activatio
 export type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
 
 /**
- * Ce que la fiche client **lit** : la société, la configuration de la
- * plateforme, les points de retrait — et tout ce qui s'en déduit.
+ * Ce que la fiche client **lit** : la société, les points de retrait — et tout
+ * ce qui s'en déduit.
  *
  * Séparé des gestes ({@link FicheClientActions}) parce que ce sont deux raisons
  * de changer distinctes : ici on répond à « qu'y a-t-il à l'écran ? », là à
@@ -39,7 +37,6 @@ export type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
 @Injectable()
 export class FicheClientStore {
   private readonly service = inject(AdminCompaniesService);
-  private readonly settingsService = inject(PlatformSettingsService);
   private readonly pickupsService = inject(PickupAddressesService);
 
   /** L'identifiant de la société, `null` quand on est en train de l'ouvrir. */
@@ -47,7 +44,6 @@ export class FicheClientStore {
 
   readonly state = signal<LoadState>('loading');
   readonly company = signal<AdminCompanyDetail | null>(null);
-  readonly settings = signal<PlatformSettings | null>(null);
   /** Les points de retrait de la plateforme (le défaut en tête). */
   readonly pickups = signal<readonly PickupAddressView[]>([]);
 
@@ -65,10 +61,9 @@ export class FicheClientStore {
    * et un rappel qui se trompe d'exigence fait réclamer une pièce facultative au
    * client.
    */
-  readonly kbisRequirement = computed<PieceMode>(() => this.settings()?.kbis ?? 'hidden');
 
   /** La livraison est-elle masquée (service absent) ? Cache la carte livraison. */
-  readonly deliveryHidden = computed(() => this.settings()?.delivery === 'hidden');
+  readonly deliveryHidden = !DELIVERY_SERVICE_OPEN;
 
   readonly identity = computed<CompanyIdentityView | null>(() => {
     const company = this.company();
@@ -161,9 +156,8 @@ export class FicheClientStore {
       this.state.set('loading');
     }
     try {
-      const [company, settings, pickups] = await Promise.all([
+      const [company, pickups] = await Promise.all([
         id === null ? Promise.resolve(undefined) : this.service.getById(id),
-        this.settingsService.get(),
         this.pickupsService.list().catch(() => [] as readonly PickupAddressView[]),
       ]);
       // Un compte qu'on ouvre n'a pas d'id : l'absence est ATTENDUE, elle ne
@@ -173,7 +167,6 @@ export class FicheClientStore {
         return;
       }
       this.company.set(company ?? null);
-      this.settings.set(settings);
       this.pickups.set(pickups);
       this.state.set('ready');
     } catch {

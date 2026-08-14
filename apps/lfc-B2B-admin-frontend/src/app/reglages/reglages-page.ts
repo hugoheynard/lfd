@@ -16,8 +16,6 @@ import {
  * transparent — le 3ᵉ rail : app → workspace → vues en page) lit cet état par DI
  * et bascule son orientation seul. Chaque onglet est une sous-page routée :
  *
- * - **Activation client** — config des pièces d'activation (masquée / optionnelle
- *   / requise), globale à la plateforme.
  * - **Retraits & livraisons** — les points de retrait (laboratoires), fallback
  *   d'acheminement tant que la livraison n'existe pas.
  * - **Commercial** — les seuils d'alerte du pipeline d'acquisition.
@@ -35,7 +33,6 @@ export class ReglagesPage {
    * un nom emprunté ailleurs compile et n'affiche rien.
    */
   protected readonly tabs: FoldViewNavItem[] = [
-    { key: 'activation', label: 'Activation client', link: 'activation', icon: 'completed' },
     {
       key: 'retraits-livraisons',
       label: 'Retraits & livraisons',

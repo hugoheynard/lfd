@@ -1,6 +1,5 @@
 import type {
   ActivationPiece,
-  PieceMode,
   FulfillmentPreferenceView,
   CompanyAddressesView,
   CompanyContactView,
@@ -137,19 +136,19 @@ export interface ActivationGate {
 
 /** Ce qui empêche d'activer — un code, la phrase est à l'écran. */
 export type ActivationBlocker =
-  | 'identite_legale'
-  | 'detenteur'
-  | 'telephone'
-  | 'tva'
-  | 'kbis_absent'
-  | 'kbis_non_verifie'
-  | 'facturation'
-  | 'livraison';
+  'identite_legale' | 'detenteur' | 'telephone' | 'tva' | 'facturation';
 
-/** L'état d'une pièce du dossier, avec le mode qui la gouverne. */
+/**
+ * L'état d'une pièce du dossier, et si elle **empêche** d'activer.
+ *
+ * `blocking` remplace le `mode` d'autrefois (`hidden`/`optional`/`required`) :
+ * la configuration a disparu, il ne reste qu'un fait — cette pièce tient-elle
+ * la porte, oui ou non. Le KBIS est le cas qui compte : demandé, jamais
+ * bloquant.
+ */
 export interface ActivationCheck {
   readonly piece: ActivationPiece;
-  readonly mode: PieceMode;
+  readonly blocking: boolean;
   readonly done: boolean;
 }
 
