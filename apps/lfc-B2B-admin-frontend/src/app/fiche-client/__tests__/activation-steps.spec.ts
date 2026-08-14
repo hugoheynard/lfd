@@ -58,6 +58,31 @@ describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => 
     expect(steps[0]?.key).toBe('legal');
   });
 
+  it('réclame le NUMÉRO que le serveur exige, au lieu de le taire', () => {
+    // Le rail compte les empêchements (`gate.blocking`), la liste montrait les
+    // pièces : un dossier complet sans téléphone affichait « 1 point à régler »
+    // au-dessus de zéro ligne, et le manquant n'était nommé nulle part.
+    const complet: readonly ActivationCheck[] = [
+      { piece: 'tva', mode: 'required', done: true },
+      { piece: 'kbis', mode: 'required', done: true },
+      { piece: 'billing', mode: 'required', done: true },
+      { piece: 'delivery', mode: 'required', done: true },
+    ];
+    const steps = activationSteps(withGate({ blocking: ['telephone'], checklist: complet }));
+
+    expect(steps.map((step) => step.key)).toEqual(['telephone']);
+    expect(steps[0]?.cta).toBe('Ajouter un numéro');
+  });
+
+  it('ne réclame pas le numéro de quelqu’un qui n’existe pas encore', () => {
+    // Sans détenteur, le serveur bloque sur les DEUX. L'écran ne fait faire
+    // qu'un geste à la fois : rattacher d'abord, appeler ensuite.
+    const steps = activationSteps(withGate({ blocking: ['detenteur', 'telephone'] }));
+
+    expect(steps.map((step) => step.key)).not.toContain('telephone');
+    expect(steps[0]?.key).toBe('holder');
+  });
+
   it('ne dit rien devant un compte pas encore ouvert', () => {
     expect(activationSteps(null)).toEqual([]);
   });

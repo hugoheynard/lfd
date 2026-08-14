@@ -69,6 +69,17 @@ export class CompanyIdentityFields {
    */
   readonly legalDeferred = input(false);
 
+  /**
+   * L'enseigne est-elle **facultative** ici ?
+   *
+   * À l'ouverture, non : c'est le seul champ exigé, parce que c'est tout ce que
+   * le commercial a au téléphone. En **correction**, oui : la société porte
+   * désormais une raison sociale, et l'enseigne redevient ce qu'elle est — un
+   * nom commercial, utile seulement s'il diffère du greffe. Le domaine le
+   * permet (`editSoftIdentity` la traite en optionnelle) ; l'écran le dit.
+   */
+  readonly enseigneOptional = input(false);
+
   protected setRaisonSociale(raisonSociale: string): void {
     this.value.update((draft) => ({ ...draft, raisonSociale }));
   }

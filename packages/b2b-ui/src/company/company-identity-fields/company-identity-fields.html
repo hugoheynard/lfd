@@ -3,8 +3,14 @@
      donnée de greffe — elle appartient au bloc légal, avec le SIRET. -->
 <fold-input
   label="Enseigne"
-  hint="le nom sous lequel l'établissement est connu"
-  required
+  [hint]="
+    enseigneOptional()
+      ? 'nom commercial, s\'il diffère de la raison sociale'
+      : 'le nom sous lequel l\'établissement est connu'
+  "
+  [required]="!enseigneOptional()"
+  [optional]="enseigneOptional()"
+  optionalLabel="facultatif"
   [value]="value().enseigne"
   (valueChange)="setEnseigne($event)"
 />

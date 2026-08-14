@@ -1,59 +1,20 @@
 <fold-panel-header title="Identité" subtitle="Tout est corrigeable — y compris le greffe." />
 
 <div class="body">
-  <fold-input
-    label="Enseigne"
-    hint="nom commercial, s'il diffère de la raison sociale"
-    optional
-    optionalLabel="facultatif"
-    [value]="enseigne()"
-    (valueChange)="enseigne.set($event)"
-  />
-
   @if (legalMissing()) {
-    <p class="legal-note">
+    <!-- En TÊTE, et en avertissement : c'est la raison pour laquelle ce panneau
+         vient d'être ouvert. En gris entre deux champs, la phrase disait la
+         chose la plus lourde de l'écran sur le ton le plus léger. -->
+    <fold-callout variant="warning">
       Ce compte a été ouvert sans ses papiers. Sans eux, il ne pourra pas être activé.
-    </p>
+    </fold-callout>
   }
 
-  <!-- Le greffe est éditable en TOUT temps : une faute de frappe saisie au
-       comptoir restait gravée, et le compte portait une identité fausse sans
-       recours. C'est le back-office — c'est ici qu'on répare. -->
-  <fold-input
-    label="Raison sociale"
-    hint="la dénomination au registre du commerce"
-    [value]="raisonSociale()"
-    (valueChange)="raisonSociale.set($event)"
-  />
-  <!-- Une liste, pas un champ libre : c'est elle qui décide de la TVA. -->
-  <fold-listbox
-    label="Forme juridique"
-    placeholder="À choisir"
-    [options]="legalForms"
-    [value]="formeJuridique()"
-    (selectionChange)="formeJuridique.set($event)"
-  />
-  <fold-input
-    label="SIRET"
-    placeholder="812 456 789 00021"
-    hint="14 chiffres — la clé de contrôle est vérifiée"
-    [value]="siret()"
-    (valueChange)="siret.set($event)"
-  />
-
-  <fold-input
-    label="N° de TVA intracommunautaire"
-    placeholder="FR12345678901"
-    [hint]="
-      vatRequired()
-        ? 'obligatoire pour cette forme juridique'
-        : 'facultatif pour cette forme — franchise en base'
-    "
-    [optional]="!vatRequired()"
-    optionalLabel="facultatif"
-    [value]="tvaIntracom()"
-    (valueChange)="tvaIntracom.set($event)"
-  />
+  <!-- Les MÊMES champs que le formulaire client — un seul fragment, une seule
+       règle de TVA. Les deux copies avaient divergé : celle-ci affirmait encore
+       « obligatoire pour cette forme juridique » sans qu'aucune forme soit
+       choisie. -->
+  <lfd-company-identity-fields [(value)]="draft" [enseigneOptional]="true" />
 </div>
 
 <footer class="foot">

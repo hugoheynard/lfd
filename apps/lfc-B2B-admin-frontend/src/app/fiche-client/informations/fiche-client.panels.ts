@@ -58,6 +58,12 @@ export class FicheClientPanels {
     if (key === 'delivery') {
       return this.openNewDelivery(company);
     }
+    // Le numéro manquant se saisit sur le DÉTENTEUR : c'est lui qu'on appelle,
+    // et l'étape ne se propose que lorsqu'il est déjà rattaché. Ouvrir « nouvel
+    // interlocuteur » ferait créer une personne pour porter un téléphone.
+    if (key === 'telephone') {
+      return this.openContact(company, null, false);
+    }
     return null;
   }
 

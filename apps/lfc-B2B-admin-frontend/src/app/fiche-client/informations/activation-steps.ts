@@ -14,6 +14,13 @@ export type StepKey =
   | 'enseigne'
   | 'holder'
   /**
+   * Un **numéro joignable**, sur le détenteur ou sur n'importe quel
+   * interlocuteur. Le serveur en fait un empêchement (`telephone`) ; l'écran
+   * n'en disait rien. Le rail comptait donc un point de plus que la liste n'en
+   * montrait, et le manquant n'était jamais nommé — sauf à être le premier.
+   */
+  | 'telephone'
+  /**
    * Le KBIS **déposé mais pas vérifié** : la même pièce, un autre geste. Une
    * clé distincte plutôt qu'un texte conditionnel, parce que ce qui change
    * n'est pas la formulation mais l'action — on ne redemande pas un fichier
@@ -43,6 +50,12 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
     detail:
       "La personne qui commande et qui recevra l'accès à l'espace. Son adresse suffit : si elle est déjà cliente, cette société rejoindra l'espace qu'elle a.",
     cta: 'Rattacher le détenteur',
+  },
+  telephone: {
+    title: 'Numéro joignable',
+    detail:
+      'Un livreur qui cherche la porte doit pouvoir appeler. Le détenteur ou un interlocuteur, peu importe lequel.',
+    cta: 'Ajouter un numéro',
   },
   legal: {
     title: 'Identité légale',
@@ -153,6 +166,15 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
     ? [{ key: 'holder' as const, ...STEP_TEXTS.holder }]
     : [];
 
+  // Le téléphone n'est pas une pièce configurable non plus. Il ne se réclame
+  // qu'une fois le détenteur là : devant un compte sans personne, « ajoutez un
+  // numéro » réclamerait le numéro de personne — le serveur bloque sur les deux,
+  // mais l'écran ne fait faire qu'un geste à la fois.
+  const phone: ActivationStep[] =
+    holder.length === 0 && company.gate.blocking.includes('telephone')
+      ? [{ key: 'telephone' as const, ...STEP_TEXTS.telephone }]
+      : [];
+
   // Le KBIS déposé mais non vérifié n'appelle pas « déposer » : le fichier est
   // là. Réclamer un dépôt devant une pièce présente envoie chercher ce qui est
   // sous les yeux — c'est le manque le moins devinable du dossier.
@@ -168,7 +190,7 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
   // la commande est le socle, offert à tous — et son bouton n'ouvrait rien. Une
   // ligne d'avertissement permanente, sur une exigence qui n'existe pas, avec un
   // geste qui ne fait rien : elle apprenait à ignorer l'encart entier.
-  return [...legal, ...holder, ...pieces];
+  return [...legal, ...holder, ...phone, ...pieces];
 }
 
 /**

@@ -8,20 +8,13 @@ import {
   signal,
 } from '@angular/core';
 
-import {
-  LEGAL_FORM_OPTIONS,
-  legalFormRequiresVat,
-  toLegalForm,
-  type LegalForm,
-} from '@lfd/contracts';
+import { CompanyIdentityFields, type CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 import {
   FoldButtonComponent,
-  FoldInputComponent,
-  FoldListboxComponent,
+  FoldCalloutComponent,
   type FoldPanelDefaults,
   FoldPanelHeaderComponent,
   FoldPanelRef,
-  type FoldSelectOption,
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
@@ -39,23 +32,27 @@ export interface AdminIdentitePanelData {
 }
 
 /**
- * Panneau **Identité** côté staff — édite l'identité **souple** d'une société
- * (enseigne + n° de TVA) à la place du client (Porte B).
+ * Panneau **Identité** côté staff — édite l'identité d'une société à la place du
+ * client (Porte B).
  *
- * Il réclame **aussi** forme juridique et SIRET quand ils manquent : un compte
- * peut s'ouvrir sans papiers (le commercial est chez le client), et sans eux il
- * ne pourra jamais être activé — un compte ouvert pour rien. Ces deux champs
- * n'apparaissent donc que s'ils sont vides : une fois posés, ils sont figés, et
- * un champ qu'on ne peut pas changer n'a rien à faire dans un formulaire.
+ * Les cinq champs sont **toujours** présents et **tous** modifiables : côté
+ * back-office le serveur corrige (`correctLegalIdentity`) là où le client ne
+ * fait que compléter. Une faute de frappe saisie au comptoir se répare donc
+ * ici, SIRET compris.
+ *
+ * Les champs eux-mêmes viennent de `lfd-company-identity-fields`, le fragment
+ * que le formulaire client utilise déjà : deux copies avaient divergé, et
+ * celle-ci affirmait encore que « la forme juridique impose un numéro de TVA »
+ * sur un écran où aucune forme n'était choisie.
  */
 @Component({
   selector: 'app-admin-identite-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldPanelHeaderComponent,
-    FoldInputComponent,
-    FoldListboxComponent,
+    FoldCalloutComponent,
     FoldButtonComponent,
+    CompanyIdentityFields,
   ],
   templateUrl: './identite-panel.html',
   styleUrl: './identite-panel.scss',
@@ -78,32 +75,19 @@ export class AdminIdentitePanel {
 
   readonly data = input.required<AdminIdentitePanelData>();
 
-  protected readonly enseigne = signal('');
-  protected readonly tvaIntracom = signal('');
-  protected readonly raisonSociale = signal('');
-  protected readonly formeJuridique = signal('');
-  protected readonly siret = signal('');
+  protected readonly draft = signal<CompanyIdentityDraft>({
+    raisonSociale: '',
+    enseigne: '',
+    formeJuridique: '',
+    siret: '',
+    tvaIntracom: '',
+  });
   protected readonly submitting = signal(false);
 
-  /** Les formes du catalogue — la liste vient du contrat, pas de l'écran. */
-  protected readonly legalForms: readonly FoldSelectOption<LegalForm>[] = LEGAL_FORM_OPTIONS.map(
-    (option) => ({ value: option.value, label: option.label }),
-  );
-
   /**
-   * La TVA est-elle obligatoire pour la forme choisie ? Sans forme reconnue on
-   * répond OUI — le même défaut prudent que le serveur : inviter à renseigner
-   * plutôt que laisser manquer en silence.
-   */
-  protected readonly vatRequired = computed(() => {
-    const form = toLegalForm(this.formeJuridique());
-    return form === null ? true : legalFormRequiresVat(form);
-  });
-
-  /**
-   * Le compte a-t-il été ouvert sans ses papiers ? Ne commande plus l'affichage
-   * des champs — ils sont TOUS là, toujours — seulement le mot qui rappelle que
-   * l'activation restera bloquée tant qu'ils manquent.
+   * Le compte a-t-il été ouvert sans ses papiers ? Se lit sur la donnée
+   * **reçue**, jamais sur le brouillon : sinon l'avertissement disparaîtrait à
+   * la première frappe, avant que quoi que ce soit soit enregistré.
    */
   protected readonly legalMissing = computed(() => {
     const data = this.data();
@@ -121,11 +105,13 @@ export class AdminIdentitePanel {
     // renvoyait des chaînes vides pour ce qui existait déjà.
     effect(() => {
       const data = this.data();
-      this.enseigne.set(data.enseigne);
-      this.tvaIntracom.set(data.tvaIntracom);
-      this.raisonSociale.set(data.raisonSociale);
-      this.formeJuridique.set(data.formeJuridique);
-      this.siret.set(data.siret);
+      this.draft.set({
+        raisonSociale: data.raisonSociale,
+        enseigne: data.enseigne,
+        formeJuridique: data.formeJuridique,
+        siret: data.siret,
+        tvaIntracom: data.tvaIntracom,
+      });
     });
   }
 
@@ -135,12 +121,13 @@ export class AdminIdentitePanel {
     }
     this.submitting.set(true);
     try {
+      const draft = this.draft();
       await this.service.updateIdentity(this.data().companyId, {
-        enseigne: this.enseigne().trim(),
-        tvaIntracom: this.tvaIntracom().trim(),
-        raisonSociale: this.raisonSociale().trim(),
-        formeJuridique: this.formeJuridique().trim(),
-        siret: this.siret().trim(),
+        enseigne: draft.enseigne.trim(),
+        tvaIntracom: draft.tvaIntracom.trim(),
+        raisonSociale: draft.raisonSociale.trim(),
+        formeJuridique: draft.formeJuridique.trim(),
+        siret: draft.siret.trim(),
       });
       this.notify.success('Identité mise à jour.');
       this.ref.close(true);

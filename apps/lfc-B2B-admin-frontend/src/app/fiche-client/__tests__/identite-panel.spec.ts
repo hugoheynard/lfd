@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { FoldPanelRef } from 'fold-ng';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -19,7 +19,17 @@ const PARTIELLE: AdminIdentitePanelData = {
   siret: '',
 };
 
-function open(data: AdminIdentitePanelData): AdminIdentitePanel {
+/** Un compte ouvert à l'enseigne seule : aucun papier. */
+const SANS_PAPIERS: AdminIdentitePanelData = {
+  companyId: 'cmp_2',
+  enseigne: 'Le Comptoir',
+  tvaIntracom: '',
+  raisonSociale: '',
+  formeJuridique: '',
+  siret: '',
+};
+
+function mount(data: AdminIdentitePanelData): ComponentFixture<AdminIdentitePanel> {
   TestBed.configureTestingModule({
     providers: [
       { provide: AdminCompaniesService, useValue: { updateIdentity: () => Promise.resolve() } },
@@ -30,7 +40,11 @@ function open(data: AdminIdentitePanelData): AdminIdentitePanel {
   const fixture = TestBed.createComponent(AdminIdentitePanel);
   fixture.componentRef.setInput('data', data);
   fixture.detectChanges();
-  return fixture.componentInstance;
+  return fixture;
+}
+
+function open(data: AdminIdentitePanelData): AdminIdentitePanel {
+  return mount(data).componentInstance;
 }
 
 describe('AdminIdentitePanel', () => {
@@ -44,21 +58,32 @@ describe('AdminIdentitePanel', () => {
     // rien saisi, et renvoyait du vide pour ce qui était déjà là.
     const panel = open(PARTIELLE);
 
-    expect(panel['enseigne']()).toBe('Le Comptoir');
-    expect(panel['tvaIntracom']()).toBe('FR32812456789');
-    expect(panel['raisonSociale']()).toBe('Le Comptoir SAS');
-    expect(panel['formeJuridique']()).toBe('SAS');
-    expect(panel['siret']()).toBe('');
+    expect(panel['draft']()).toEqual({
+      enseigne: 'Le Comptoir',
+      tvaIntracom: 'FR32812456789',
+      raisonSociale: 'Le Comptoir SAS',
+      formeJuridique: 'SAS',
+      siret: '',
+    });
   });
 
-  it("réclame les champs du greffe tant qu'il en manque un", () => {
+  it("avertit tant qu'un champ du greffe manque", () => {
     expect(open(PARTIELLE)['legalMissing']()).toBe(true);
   });
 
-  it('cesse de les réclamer une fois tous posés', () => {
-    // Un champ figé n'a rien à faire dans un formulaire.
+  it('se tait une fois tous posés', () => {
     TestBed.resetTestingModule();
 
     expect(open({ ...PARTIELLE, siret: '81245678900021' })['legalMissing']()).toBe(false);
+  });
+
+  it('ne fait pas reposer la TVA sur une forme juridique non choisie', () => {
+    // Le défaut « TVA requise » est prudent et reste juste ; c'est la PHRASE
+    // qui mentait — elle nommait une forme juridique que l'écran d'à côté
+    // déclarait manquante.
+    const text = (mount(SANS_PAPIERS).nativeElement as HTMLElement).textContent ?? '';
+
+    expect(text).not.toContain('obligatoire pour cette forme juridique');
+    expect(text).toContain('selon la forme juridique');
   });
 });
