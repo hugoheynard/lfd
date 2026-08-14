@@ -27,608 +27,628 @@
         }
       </div>
 
-      <nav class="tabs" role="tablist" aria-label="Types de données">
-        @for (tab of tabs; track tab.key) {
-          <button
-            type="button"
-            role="tab"
-            class="tab"
-            [class.tab--active]="activeTab() === tab.key"
-            [attr.aria-selected]="activeTab() === tab.key"
-            (click)="activeTab.set(tab.key)"
-          >
-            {{ tab.label }}
-          </button>
-        }
-      </nav>
+      <!-- Barre de SECOND niveau : « Commercial » porte déjà la sienne, en
+           `fill`, au-dessus. Le soulignement marque la subordination — deux
+           barres pleines l'une sous l'autre se liraient comme deux navigations
+           concurrentes. Elle reste collante : la page fait six sections de
+           graphes, et changer de section ne doit pas demander de remonter. -->
+      <fold-nav-layout>
+        <fold-tabs
+          tabNav
+          #bar="foldTabs"
+          class="tabs"
+          activeStyle="underline"
+          background="surface"
+          [tabs]="tabs"
+          [activeKey]="activeTab()"
+          (activeKeyChange)="selectTab($event)"
+        />
 
-      @switch (activeTab()) {
-        @case ('acquisition') {
-          <p class="section-lead">
-            <strong>Qui entre, et par quel canal ?</strong> Le rythme des inscriptions et des
-            premières commandes, et la part qui vient du référencement (product-led) plutôt que du
-            démarchage (sales-led).
-          </p>
-          <div class="grid">
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Entrées et sorties du parc</h2>
-                <div class="head-controls">
-                  <label class="sort-control">
-                    <span class="visually-hidden">Granularité</span>
-                    <select class="sort-select" [value]="acqGrain()" (change)="onAcqGrain($event)">
-                      @for (g of acqGrains; track g.value) {
-                        <option [value]="g.value">{{ g.label }}</option>
-                      }
-                    </select>
-                  </label>
-                  <fold-info
-                    label="Entrées et sorties du parc"
-                    text="Sur un même axe de comptage, à la granularité choisie (jour, semaine, mois, trimestre, année) : ce qui ENTRE — inscriptions, premières commandes (comptées une seule fois par personne, à la date de sa toute première commande), leads saisis — et ce qui SORT : les résiliations confirmées. Les entrées portent une aire discrète, la sortie est une ligne rouge nette. Quand la ligne rouge passe au-dessus des entrées, le parc se contracte."
-                  />
-                </div>
-              </header>
-              @if (acquisition(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Comparer ce qui entre dans le parc et ce qui en sort, au même rythme."
-                  read="Trois courbes d'entrée (inscriptions, 1res commandes, leads) et une ligne rouge de sortie (résiliations). L'écart entre les deux = la croissance nette du parc ; la ligne rouge qui remonte vers les entrées est le signal d'alerte."
-                />
-              } @else {
-                <p class="muted">Pas encore assez d'activité pour tracer les entrées et sorties.</p>
-              }
-            </article>
+        <fold-tab-panel [tabs]="bar" [key]="activeTab()">
+          @switch (activeTab()) {
+            @case ('acquisition') {
+              <p class="section-lead">
+                <strong>Qui entre, et par quel canal ?</strong> Le rythme des inscriptions et des
+                premières commandes, et la part qui vient du référencement (product-led) plutôt que
+                du démarchage (sales-led).
+              </p>
+              <div class="grid">
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Entrées et sorties du parc</h2>
+                    <div class="head-controls">
+                      <label class="sort-control">
+                        <span class="visually-hidden">Granularité</span>
+                        <select
+                          class="sort-select"
+                          [value]="acqGrain()"
+                          (change)="onAcqGrain($event)"
+                        >
+                          @for (g of acqGrains; track g.value) {
+                            <option [value]="g.value">{{ g.label }}</option>
+                          }
+                        </select>
+                      </label>
+                      <fold-info
+                        label="Entrées et sorties du parc"
+                        text="Sur un même axe de comptage, à la granularité choisie (jour, semaine, mois, trimestre, année) : ce qui ENTRE — inscriptions, premières commandes (comptées une seule fois par personne, à la date de sa toute première commande), leads saisis — et ce qui SORT : les résiliations confirmées. Les entrées portent une aire discrète, la sortie est une ligne rouge nette. Quand la ligne rouge passe au-dessus des entrées, le parc se contracte."
+                      />
+                    </div>
+                  </header>
+                  @if (acquisition(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Comparer ce qui entre dans le parc et ce qui en sort, au même rythme."
+                      read="Trois courbes d'entrée (inscriptions, 1res commandes, leads) et une ligne rouge de sortie (résiliations). L'écart entre les deux = la croissance nette du parc ; la ligne rouge qui remonte vers les entrées est le signal d'alerte."
+                    />
+                  } @else {
+                    <p class="muted">
+                      Pas encore assez d'activité pour tracer les entrées et sorties.
+                    </p>
+                  }
+                </article>
 
-            <article class="card">
-              <header class="card-head">
-                <h2>Mode d'acquisition</h2>
-                <fold-info
-                  label="Mode d'acquisition"
-                  text="Part de l'acquisition auto-découverte (product-led, self-service sans démarchage) vs poussée par le commercial (sales-led : staff ou lead converti), sur toute la période. La part product-led est un indicateur direct de la qualité du référencement (SEO / agence web) — à lire avec l'acquisition hebdomadaire pour séparer « plus de trafic » de « meilleure conversion »."
-                />
-              </header>
-              @if (mixDonut(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Mesurer la part d'acquisition qui vient du référencement (product-led) vs du démarchage (sales-led)."
-                  read="Plus la part product-led est grosse, meilleur est le SEO / l'auto-découverte. Le centre affiche le % product-led."
-                />
-              }
-            </article>
+                <article class="card">
+                  <header class="card-head">
+                    <h2>Mode d'acquisition</h2>
+                    <fold-info
+                      label="Mode d'acquisition"
+                      text="Part de l'acquisition auto-découverte (product-led, self-service sans démarchage) vs poussée par le commercial (sales-led : staff ou lead converti), sur toute la période. La part product-led est un indicateur direct de la qualité du référencement (SEO / agence web) — à lire avec l'acquisition hebdomadaire pour séparer « plus de trafic » de « meilleure conversion »."
+                    />
+                  </header>
+                  @if (mixDonut(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Mesurer la part d'acquisition qui vient du référencement (product-led) vs du démarchage (sales-led)."
+                      read="Plus la part product-led est grosse, meilleur est le SEO / l'auto-découverte. Le centre affiche le % product-led."
+                    />
+                  }
+                </article>
 
-            <article class="card">
-              <header class="card-head">
-                <h2>Mode d'acquisition — par semaine</h2>
-                <fold-info
-                  label="Mix product-led / sales-led dans le temps"
-                  text="La même répartition product-led / sales-led, semaine par semaine (aires empilées) : montre si le canal organique gagne ou perd du terrain au fil du temps."
-                />
-              </header>
-              @if (mix(); as opt) {
-                <app-chart [option]="opt" height="280px" />
-                <app-chart-note
-                  goal="Voir si le canal organique gagne ou perd du terrain dans le temps."
-                  read="Aires empilées product-led / sales-led semaine par semaine ; une bande verte qui grossit = l'organique progresse."
-                />
-              }
-            </article>
-          </div>
-        }
+                <article class="card">
+                  <header class="card-head">
+                    <h2>Mode d'acquisition — par semaine</h2>
+                    <fold-info
+                      label="Mix product-led / sales-led dans le temps"
+                      text="La même répartition product-led / sales-led, semaine par semaine (aires empilées) : montre si le canal organique gagne ou perd du terrain au fil du temps."
+                    />
+                  </header>
+                  @if (mix(); as opt) {
+                    <app-chart [option]="opt" height="280px" />
+                    <app-chart-note
+                      goal="Voir si le canal organique gagne ou perd du terrain dans le temps."
+                      read="Aires empilées product-led / sales-led semaine par semaine ; une bande verte qui grossit = l'organique progresse."
+                    />
+                  }
+                </article>
+              </div>
+            }
 
-        @case ('marche') {
-          <p class="section-lead">
-            <strong>Où en est la conquête, territoire par territoire ?</strong> La part du marché
-            visé déjà cliente, la vitesse à laquelle elle progresse, et le type de clients qu'on
-            gagne ou qu'on perd dans chaque zone.
-          </p>
-          <div class="grid">
-            <article class="card wide">
-              <header class="card-head">
-                <h2>
-                  Adoption et churn par territoire <span class="scope-tag">cumulé à date</span>
-                </h2>
-                <div class="head-controls">
-                  <label class="sort-control">
-                    <span class="visually-hidden">Trier</span>
-                    <select
-                      class="sort-select"
-                      [value]="adoptionSort()"
-                      (change)="onAdoptionSort($event)"
-                    >
-                      @for (opt of adoptionSorts; track opt.value) {
-                        <option [value]="opt.value">{{ opt.label }}</option>
-                      }
-                    </select>
-                  </label>
-                  <fold-info
-                    label="Adoption et churn par territoire"
-                    text="Instantané CUMULÉ À DATE (all-time), deux barres par zone. — CALCUL. Adoption (pénétration) = sociétés actives ÷ acteurs visés (le pool, en bout de ligne) : la part du marché actuellement cliente. Churn = sociétés résiliées ÷ (actives + résiliées) : la part de tout ce qu'on a onboardé dans la zone qui est repartie. — BORNAGE. Le churn est rapporté à la base onboardée (actives + résiliées), PAS au pool : sinon, comme le pool est fixe et que les résiliations s'accumulent, un marché qui se renouvelle ferait dépasser 100 %. Rapporté à la base, le churn reste borné 0–100 % (part d'un tout). Les deux barres ont donc des dénominateurs différents (marché vs base onboardée) et ne s'additionnent pas. Le « +X pts » sur l'adoption = les points gagnés sur la fenêtre (~90 j). Configurez zones et NAF dans Réglages ▸ Commercial."
-                  />
-                </div>
-              </header>
-              @if (adoption(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Situer chaque territoire : part de marché conquise (adoption) et part de la base repartie (churn). Instantané cumulé à date."
-                  read="Par zone : Adoption (vert) = actives ÷ acteurs visés (le pool, en bout de ligne). Churn (rouge) = résiliées ÷ (actives + résiliées) — borné 0–100 % (rapporté au pool, il pourrait dépasser 100 % quand le marché se renouvelle). Dénominateurs différents → les deux barres ne s'additionnent pas. « +X pts » = points d'adoption gagnés sur la fenêtre (~90 j). Un churn sur une base trop faible (n < 10) est grisé et porte son « n » : c'est du bruit, pas un signal."
-                />
-              } @else {
-                <p class="muted">
-                  Aucune zone ciblée renseignée. Ajoutez des codes postaux et des codes NAF dans
-                  Réglages ▸ Commercial, puis « Redemander les comptages ».
-                </p>
-              }
-            </article>
+            @case ('marche') {
+              <p class="section-lead">
+                <strong>Où en est la conquête, territoire par territoire ?</strong> La part du
+                marché visé déjà cliente, la vitesse à laquelle elle progresse, et le type de
+                clients qu'on gagne ou qu'on perd dans chaque zone.
+              </p>
+              <div class="grid">
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>
+                      Adoption et churn par territoire <span class="scope-tag">cumulé à date</span>
+                    </h2>
+                    <div class="head-controls">
+                      <label class="sort-control">
+                        <span class="visually-hidden">Trier</span>
+                        <select
+                          class="sort-select"
+                          [value]="adoptionSort()"
+                          (change)="onAdoptionSort($event)"
+                        >
+                          @for (opt of adoptionSorts; track opt.value) {
+                            <option [value]="opt.value">{{ opt.label }}</option>
+                          }
+                        </select>
+                      </label>
+                      <fold-info
+                        label="Adoption et churn par territoire"
+                        text="Instantané CUMULÉ À DATE (all-time), deux barres par zone. — CALCUL. Adoption (pénétration) = sociétés actives ÷ acteurs visés (le pool, en bout de ligne) : la part du marché actuellement cliente. Churn = sociétés résiliées ÷ (actives + résiliées) : la part de tout ce qu'on a onboardé dans la zone qui est repartie. — BORNAGE. Le churn est rapporté à la base onboardée (actives + résiliées), PAS au pool : sinon, comme le pool est fixe et que les résiliations s'accumulent, un marché qui se renouvelle ferait dépasser 100 %. Rapporté à la base, le churn reste borné 0–100 % (part d'un tout). Les deux barres ont donc des dénominateurs différents (marché vs base onboardée) et ne s'additionnent pas. Le « +X pts » sur l'adoption = les points gagnés sur la fenêtre (~90 j). Configurez zones et NAF dans Réglages ▸ Commercial."
+                      />
+                    </div>
+                  </header>
+                  @if (adoption(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Situer chaque territoire : part de marché conquise (adoption) et part de la base repartie (churn). Instantané cumulé à date."
+                      read="Par zone : Adoption (vert) = actives ÷ acteurs visés (le pool, en bout de ligne). Churn (rouge) = résiliées ÷ (actives + résiliées) — borné 0–100 % (rapporté au pool, il pourrait dépasser 100 % quand le marché se renouvelle). Dénominateurs différents → les deux barres ne s'additionnent pas. « +X pts » = points d'adoption gagnés sur la fenêtre (~90 j). Un churn sur une base trop faible (n < 10) est grisé et porte son « n » : c'est du bruit, pas un signal."
+                    />
+                  } @else {
+                    <p class="muted">
+                      Aucune zone ciblée renseignée. Ajoutez des codes postaux et des codes NAF dans
+                      Réglages ▸ Commercial, puis « Redemander les comptages ».
+                    </p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Vélocité par territoire</h2>
-                <fold-info
-                  label="Vélocité par territoire"
-                  text="La part de marché dans le temps, une courbe par zone. Là où « Adoption par territoire » donne l'instantané, celle-ci montre la trajectoire : la pente = la vitesse de conquête. Une droite qui monte = traction ; qui s'aplatit = saturation ou essoufflement commercial. Seules les zones avec au moins une activation sont tracées."
-                />
-              </header>
-              @if (zoneVelocity(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Voir la trajectoire de conquête de chaque zone dans le temps."
-                  read="Une courbe par zone ; la pente = la vitesse. Qui monte = traction, qui s'aplatit = saturation ou essoufflement."
-                />
-              } @else {
-                <p class="muted">
-                  Pas encore d'activation dans les zones ciblées pour tracer une trajectoire.
-                </p>
-              }
-            </article>
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Vélocité par territoire</h2>
+                    <fold-info
+                      label="Vélocité par territoire"
+                      text="La part de marché dans le temps, une courbe par zone. Là où « Adoption par territoire » donne l'instantané, celle-ci montre la trajectoire : la pente = la vitesse de conquête. Une droite qui monte = traction ; qui s'aplatit = saturation ou essoufflement commercial. Seules les zones avec au moins une activation sont tracées."
+                    />
+                  </header>
+                  @if (zoneVelocity(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Voir la trajectoire de conquête de chaque zone dans le temps."
+                      read="Une courbe par zone ; la pente = la vitesse. Qui monte = traction, qui s'aplatit = saturation ou essoufflement."
+                    />
+                  } @else {
+                    <p class="muted">
+                      Pas encore d'activation dans les zones ciblées pour tracer une trajectoire.
+                    </p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Mix des clients par territoire (secteur NAF)</h2>
-                <fold-info
-                  label="Mix des clients par secteur NAF et territoire"
-                  text="Pour chaque zone, deux barres empilées à 100 % par secteur NAF : Adoption (nos sociétés actives) et Churn (nos résiliées). On lit quels TYPES de clients on gagne vs on perd — ex. « on gagne surtout des restaurants mais on perd surtout des bars ». Le pool par NAF est pris en compte : le tooltip donne la pénétration du secteur (actives ÷ pool NAF), pour ne pas surpondérer un secteur juste parce que son pool est gros. La barre du haut = adoption, celle du bas (plus claire) = churn."
-                />
-              </header>
-              @if (sectorMix(); as opt) {
-                <app-chart [option]="opt" height="360px" />
-                <app-chart-note
-                  goal="Voir, dans les mouvements de chaque territoire, quels TYPES de clients (secteur NAF) on gagne vs on perd."
-                  read="Par zone, deux barres empilées à 100 % : en haut Adoption (actives), en bas Churn (résiliées, plus clair) ; couleur = secteur NAF. Le tooltip donne le compte et la pénétration du secteur (÷ pool NAF)."
-                />
-              } @else {
-                <p class="muted">
-                  Aucune donnée de mix par secteur (config marché ou sociétés manquantes).
-                </p>
-              }
-            </article>
-          </div>
-        }
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Mix des clients par territoire (secteur NAF)</h2>
+                    <fold-info
+                      label="Mix des clients par secteur NAF et territoire"
+                      text="Pour chaque zone, deux barres empilées à 100 % par secteur NAF : Adoption (nos sociétés actives) et Churn (nos résiliées). On lit quels TYPES de clients on gagne vs on perd — ex. « on gagne surtout des restaurants mais on perd surtout des bars ». Le pool par NAF est pris en compte : le tooltip donne la pénétration du secteur (actives ÷ pool NAF), pour ne pas surpondérer un secteur juste parce que son pool est gros. La barre du haut = adoption, celle du bas (plus claire) = churn."
+                    />
+                  </header>
+                  @if (sectorMix(); as opt) {
+                    <app-chart [option]="opt" height="360px" />
+                    <app-chart-note
+                      goal="Voir, dans les mouvements de chaque territoire, quels TYPES de clients (secteur NAF) on gagne vs on perd."
+                      read="Par zone, deux barres empilées à 100 % : en haut Adoption (actives), en bas Churn (résiliées, plus clair) ; couleur = secteur NAF. Le tooltip donne le compte et la pénétration du secteur (÷ pool NAF)."
+                    />
+                  } @else {
+                    <p class="muted">
+                      Aucune donnée de mix par secteur (config marché ou sociétés manquantes).
+                    </p>
+                  }
+                </article>
+              </div>
+            }
 
-        @case ('volume') {
-          <p class="section-lead">
-            <strong>Qu'est-ce que le parc rapporte ?</strong> Le niveau et la trajectoire du chiffre
-            d'affaires, si le panier moyen progresse, quels types de commandes et de secteurs le
-            portent, et à quel point il dépend de quelques grands comptes.
-          </p>
-          <div class="grid">
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Chiffre d'affaires dans le temps</h2>
-                <div class="head-controls">
-                  <label class="sort-control">
-                    <span class="visually-hidden">Granularité</span>
-                    <select class="sort-select" [value]="caGrain()" (change)="onCaGrain($event)">
-                      @for (g of caGrains; track g.value) {
-                        <option [value]="g.value">{{ g.label }}</option>
-                      }
-                    </select>
-                  </label>
-                  <fold-info
-                    label="Chiffre d'affaires dans le temps"
-                    text="Le CA (TTC) encaissé par période, à la granularité choisie (jour, semaine, mois, trimestre, année). Le jour est le grain natif ; les grains plus larges regroupent les jours. La granularité choisie ici pilote aussi les deux graphes CA suivants. Compte toutes les commandes (y compris zéro-friction sans société)."
-                  />
-                </div>
-              </header>
-              @if (revenueTrend(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Suivre le niveau et la tendance du chiffre d'affaires encaissé."
-                  read="Aire du CA (TTC) par période. Une pente qui monte = CA en croissance. Le sélecteur en haut change le grain (jour → année)."
-                />
-              } @else {
-                <p class="muted">Pas encore de commandes pour tracer le chiffre d'affaires.</p>
-              }
-            </article>
+            @case ('volume') {
+              <p class="section-lead">
+                <strong>Qu'est-ce que le parc rapporte ?</strong> Le niveau et la trajectoire du
+                chiffre d'affaires, si le panier moyen progresse, quels types de commandes et de
+                secteurs le portent, et à quel point il dépend de quelques grands comptes.
+              </p>
+              <div class="grid">
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Chiffre d'affaires dans le temps</h2>
+                    <div class="head-controls">
+                      <label class="sort-control">
+                        <span class="visually-hidden">Granularité</span>
+                        <select
+                          class="sort-select"
+                          [value]="caGrain()"
+                          (change)="onCaGrain($event)"
+                        >
+                          @for (g of caGrains; track g.value) {
+                            <option [value]="g.value">{{ g.label }}</option>
+                          }
+                        </select>
+                      </label>
+                      <fold-info
+                        label="Chiffre d'affaires dans le temps"
+                        text="Le CA (TTC) encaissé par période, à la granularité choisie (jour, semaine, mois, trimestre, année). Le jour est le grain natif ; les grains plus larges regroupent les jours. La granularité choisie ici pilote aussi les deux graphes CA suivants. Compte toutes les commandes (y compris zéro-friction sans société)."
+                      />
+                    </div>
+                  </header>
+                  @if (revenueTrend(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Suivre le niveau et la tendance du chiffre d'affaires encaissé."
+                      read="Aire du CA (TTC) par période. Une pente qui monte = CA en croissance. Le sélecteur en haut change le grain (jour → année)."
+                    />
+                  } @else {
+                    <p class="muted">Pas encore de commandes pour tracer le chiffre d'affaires.</p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>CA vs nombre de commandes <span class="scope-tag">indice base 100</span></h2>
-                <fold-info
-                  label="CA vs nombre de commandes (panier moyen)"
-                  text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le CA MARCHANDISES HT (subtotal − remise) et le nombre de commandes. Le HT est volontaire : sur du TTC, le panier moyen monterait dès que la TVA ou les frais de livraison montent, sans qu'un euro de marchandise ait bougé. Quand le CA monte plus vite que le nombre de commandes, le PANIER MOYEN augmente — l'écart se lit directement. Base d'indexation = moyenne des 4 premières périodes non nulles (robuste à une inter-saison à zéro). Le tooltip donne le CA, le nombre de commandes et le panier moyen. Suit la granularité du graphe CA du dessus."
-                />
-              </header>
-              @if (caVsOrders(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Voir si le panier moyen augmente : CA qui monte plus vite que le nombre de commandes."
-                  read="Deux courbes indexées base 100 : CA (plein) et nombre de commandes (pointillé). L'écart qui se creuse vers le haut = panier moyen en hausse. Panier moyen au tooltip."
-                />
-              } @else {
-                <p class="muted">Pas encore assez de commandes pour comparer.</p>
-              }
-            </article>
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>
+                      CA vs nombre de commandes <span class="scope-tag">indice base 100</span>
+                    </h2>
+                    <fold-info
+                      label="CA vs nombre de commandes (panier moyen)"
+                      text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le CA MARCHANDISES HT (subtotal − remise) et le nombre de commandes. Le HT est volontaire : sur du TTC, le panier moyen monterait dès que la TVA ou les frais de livraison montent, sans qu'un euro de marchandise ait bougé. Quand le CA monte plus vite que le nombre de commandes, le PANIER MOYEN augmente — l'écart se lit directement. Base d'indexation = moyenne des 4 premières périodes non nulles (robuste à une inter-saison à zéro). Le tooltip donne le CA, le nombre de commandes et le panier moyen. Suit la granularité du graphe CA du dessus."
+                    />
+                  </header>
+                  @if (caVsOrders(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Voir si le panier moyen augmente : CA qui monte plus vite que le nombre de commandes."
+                      read="Deux courbes indexées base 100 : CA (plein) et nombre de commandes (pointillé). L'écart qui se creuse vers le haut = panier moyen en hausse. Panier moyen au tooltip."
+                    />
+                  } @else {
+                    <p class="muted">Pas encore assez de commandes pour comparer.</p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>CA par type de commande</h2>
-                <fold-info
-                  label="CA par type de commande (unique vs récurrent)"
-                  text="Aires empilées en euros : le CA porté par les commandes UNIQUES (ponctuelles) vs RÉCURRENTES (issues d'un abonnement). L'enveloppe du haut = le CA total ; l'épaisseur de chaque bande = la part portée par ce type. On comprend quel type de commande porte le CA — et si le récurrent prend de l'ampleur. Suit la granularité du graphe CA du haut."
-                />
-              </header>
-              @if (caByType(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Comprendre quel type de commande (unique vs récurrent) porte le CA."
-                  read="Aires empilées € : commandes uniques (bleu) et récurrentes (violet). L'enveloppe = le CA total, l'épaisseur = la part de chaque type. Une bande récurrente qui grossit = l'abonnement monte en charge."
-                />
-              } @else {
-                <p class="muted">Pas encore de commandes pour ventiler le CA par type.</p>
-              }
-            </article>
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>CA par type de commande</h2>
+                    <fold-info
+                      label="CA par type de commande (unique vs récurrent)"
+                      text="Aires empilées en euros : le CA porté par les commandes UNIQUES (ponctuelles) vs RÉCURRENTES (issues d'un abonnement). L'enveloppe du haut = le CA total ; l'épaisseur de chaque bande = la part portée par ce type. On comprend quel type de commande porte le CA — et si le récurrent prend de l'ampleur. Suit la granularité du graphe CA du haut."
+                    />
+                  </header>
+                  @if (caByType(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Comprendre quel type de commande (unique vs récurrent) porte le CA."
+                      read="Aires empilées € : commandes uniques (bleu) et récurrentes (violet). L'enveloppe = le CA total, l'épaisseur = la part de chaque type. Une bande récurrente qui grossit = l'abonnement monte en charge."
+                    />
+                  } @else {
+                    <p class="muted">Pas encore de commandes pour ventiler le CA par type.</p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Marché vs volume <span class="scope-tag">indice base 100</span></h2>
-                <fold-info
-                  label="Marché vs volume (CA) dans le temps"
-                  text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le marché visé (nombre d'acteurs, quasi constant → ligne ~plate) et le volume = CA DE LA SEMAINE (TTC). Le CA est périodique, PAS cumulé : cumulé, la courbe ne pouvait que monter, même pendant un effondrement — le graphe ne pouvait jamais annoncer une mauvaise nouvelle. Base d'indexation = moyenne des 4 premières semaines non nulles. Le tooltip donne le CA en euros et le nombre d'acteurs. Le marché est un comptage figé (via l'API entreprises) ; il ne varie pas tant qu'on ne redemande pas — donc à ce jour, seule la courbe de CA bouge réellement."
-                />
-              </header>
-              @if (volumeVsMarket(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Comparer l'évolution du marché visé et du CA pour juger l'activation commerciale à marché donné."
-                  read="Deux courbes indexées base 100 : marché (pointillé, ~plat) et CA cumulé (plein). L'écart qui se creuse = on extrait de plus en plus du même marché."
-                />
-                <div class="interp">
-                  <span class="interp-title">Interprétations possibles</span>
-                  <ul>
-                    <li>
-                      <strong>Marché stable, CA ↑</strong> — meilleure activation commerciale : on
-                      extrait plus du même marché.
-                    </li>
-                    <li>
-                      <strong>Marché stable, CA ↓</strong> — problème commercial ou conjoncture
-                      défavorable (en station, vérifier d'abord la saison).
-                    </li>
-                    <li>
-                      <strong>Marché stable, CA en dents de scie</strong> — saisonnalité : à
-                      comparer à la même période de l'an dernier plutôt qu'à la semaine précédente.
-                    </li>
-                  </ul>
-                  <p class="muted">
-                    Le marché est un comptage figé : il ne varie que lorsqu'on redemande les
-                    comptages dans Réglages ▸ Commercial. Les lectures « marché ↓ » ne sont donc pas
-                    observables ici tant qu'on ne l'historise pas.
-                  </p>
-                </div>
-              } @else {
-                <p class="muted">Pas encore assez de semaines de commandes pour comparer.</p>
-              }
-            </article>
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Marché vs volume <span class="scope-tag">indice base 100</span></h2>
+                    <fold-info
+                      label="Marché vs volume (CA) dans le temps"
+                      text="Deux courbes INDEXÉES base 100 (même axe, pas de double échelle) : le marché visé (nombre d'acteurs, quasi constant → ligne ~plate) et le volume = CA DE LA SEMAINE (TTC). Le CA est périodique, PAS cumulé : cumulé, la courbe ne pouvait que monter, même pendant un effondrement — le graphe ne pouvait jamais annoncer une mauvaise nouvelle. Base d'indexation = moyenne des 4 premières semaines non nulles. Le tooltip donne le CA en euros et le nombre d'acteurs. Le marché est un comptage figé (via l'API entreprises) ; il ne varie pas tant qu'on ne redemande pas — donc à ce jour, seule la courbe de CA bouge réellement."
+                    />
+                  </header>
+                  @if (volumeVsMarket(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Comparer l'évolution du marché visé et du CA pour juger l'activation commerciale à marché donné."
+                      read="Deux courbes indexées base 100 : marché (pointillé, ~plat) et CA cumulé (plein). L'écart qui se creuse = on extrait de plus en plus du même marché."
+                    />
+                    <div class="interp">
+                      <span class="interp-title">Interprétations possibles</span>
+                      <ul>
+                        <li>
+                          <strong>Marché stable, CA ↑</strong> — meilleure activation commerciale :
+                          on extrait plus du même marché.
+                        </li>
+                        <li>
+                          <strong>Marché stable, CA ↓</strong> — problème commercial ou conjoncture
+                          défavorable (en station, vérifier d'abord la saison).
+                        </li>
+                        <li>
+                          <strong>Marché stable, CA en dents de scie</strong> — saisonnalité : à
+                          comparer à la même période de l'an dernier plutôt qu'à la semaine
+                          précédente.
+                        </li>
+                      </ul>
+                      <p class="muted">
+                        Le marché est un comptage figé : il ne varie que lorsqu'on redemande les
+                        comptages dans Réglages ▸ Commercial. Les lectures « marché ↓ » ne sont donc
+                        pas observables ici tant qu'on ne l'historise pas.
+                      </p>
+                    </div>
+                  } @else {
+                    <p class="muted">Pas encore assez de semaines de commandes pour comparer.</p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>CA par secteur NAF dans le temps</h2>
-                <div class="head-controls">
-                  <label class="sort-control">
-                    <span class="visually-hidden">Granularité</span>
-                    <select
-                      class="sort-select"
-                      [value]="sectorGrain()"
-                      (change)="onSectorGrain($event)"
-                    >
-                      @for (g of sectorGrains; track g.value) {
-                        <option [value]="g.value">{{ g.label }}</option>
-                      }
-                    </select>
-                  </label>
-                  <fold-info
-                    label="CA par secteur NAF dans le temps"
-                    text="Aires empilées : le CA (TTC) ventilé par secteur NAF des sociétés clientes, à la granularité choisie (jour, semaine, mois, trimestre, année). Le jour est le grain natif ; les grains plus larges regroupent les jours d'après leur date. L'enveloppe du haut = le CA total ; l'épaisseur d'une bande = la contribution du secteur. On voit quels TYPES de clients portent la croissance du CA. Seules les commandes rattachées à une société (donc à un NAF) comptent — les commandes zéro-friction sans société n'y figurent pas."
-                  />
-                </div>
-              </header>
-              @if (sectorRevenueChart(); as opt) {
-                <app-chart [option]="opt" height="320px" />
-                <app-chart-note
-                  goal="Voir quels secteurs NAF portent la croissance du CA dans le temps."
-                  read="Aires empilées (une par secteur, couleur = secteur) ; le haut = le CA total, l'épaisseur d'une bande = sa part. Montants en euros au tooltip."
-                />
-              } @else {
-                <p class="muted">
-                  Pas encore de commandes rattachées à une société pour ventiler le CA par NAF.
-                </p>
-              }
-            </article>
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>CA par secteur NAF dans le temps</h2>
+                    <div class="head-controls">
+                      <label class="sort-control">
+                        <span class="visually-hidden">Granularité</span>
+                        <select
+                          class="sort-select"
+                          [value]="sectorGrain()"
+                          (change)="onSectorGrain($event)"
+                        >
+                          @for (g of sectorGrains; track g.value) {
+                            <option [value]="g.value">{{ g.label }}</option>
+                          }
+                        </select>
+                      </label>
+                      <fold-info
+                        label="CA par secteur NAF dans le temps"
+                        text="Aires empilées : le CA (TTC) ventilé par secteur NAF des sociétés clientes, à la granularité choisie (jour, semaine, mois, trimestre, année). Le jour est le grain natif ; les grains plus larges regroupent les jours d'après leur date. L'enveloppe du haut = le CA total ; l'épaisseur d'une bande = la contribution du secteur. On voit quels TYPES de clients portent la croissance du CA. Seules les commandes rattachées à une société (donc à un NAF) comptent — les commandes zéro-friction sans société n'y figurent pas."
+                      />
+                    </div>
+                  </header>
+                  @if (sectorRevenueChart(); as opt) {
+                    <app-chart [option]="opt" height="320px" />
+                    <app-chart-note
+                      goal="Voir quels secteurs NAF portent la croissance du CA dans le temps."
+                      read="Aires empilées (une par secteur, couleur = secteur) ; le haut = le CA total, l'épaisseur d'une bande = sa part. Montants en euros au tooltip."
+                    />
+                  } @else {
+                    <p class="muted">
+                      Pas encore de commandes rattachées à une société pour ventiler le CA par NAF.
+                    </p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>
-                  Part des grands comptes <span class="scope-tag">concentration du volume</span>
-                </h2>
-                <fold-info
-                  label="Concentration du volume"
-                  text="Courbe de Lorenz du volume de commandes par compte : plus la courbe s'éloigne de la diagonale d'égalité, plus quelques grands comptes concentrent le volume. Le Gini résume l'inégalité (0 = égal, 1 = tout sur un compte)."
-                />
-              </header>
-              @if (concentration(); as c) {
-                <p class="muted">{{ concentrationHint() }}</p>
-                <app-lorenz [data]="c" height="300px" />
-                <app-chart-note
-                  goal="Savoir si le volume de commandes est concentré sur quelques grands comptes."
-                  read="Courbe de Lorenz : plus elle s'éloigne de la diagonale, plus c'est concentré. Le Gini résume (0 = égal, 1 = tout sur un compte)."
-                />
-              } @else {
-                <p class="muted">Pas encore de commandes pour mesurer la concentration.</p>
-              }
-            </article>
-          </div>
-        }
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>
+                      Part des grands comptes <span class="scope-tag">concentration du volume</span>
+                    </h2>
+                    <fold-info
+                      label="Concentration du volume"
+                      text="Courbe de Lorenz du volume de commandes par compte : plus la courbe s'éloigne de la diagonale d'égalité, plus quelques grands comptes concentrent le volume. Le Gini résume l'inégalité (0 = égal, 1 = tout sur un compte)."
+                    />
+                  </header>
+                  @if (concentration(); as c) {
+                    <p class="muted">{{ concentrationHint() }}</p>
+                    <app-lorenz [data]="c" height="300px" />
+                    <app-chart-note
+                      goal="Savoir si le volume de commandes est concentré sur quelques grands comptes."
+                      read="Courbe de Lorenz : plus elle s'éloigne de la diagonale, plus c'est concentré. Le Gini résume (0 = égal, 1 = tout sur un compte)."
+                    />
+                  } @else {
+                    <p class="muted">Pas encore de commandes pour mesurer la concentration.</p>
+                  }
+                </article>
+              </div>
+            }
 
-        @case ('retention') {
-          <p class="section-lead">
-            <strong>Pourquoi part-on, et sait-on rattraper ?</strong> Les motifs de départ du
-            général au détail, la part des tentatives qu'on parvient à sauver, par quel levier, et à
-            quelle vitesse on réagit.
-          </p>
-          <div class="grid">
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Raisons de résiliation</h2>
-                <fold-info
-                  label="Raisons de résiliation"
-                  text="Sunburst zoomable des résiliations confirmées : anneau intérieur = la catégorie de départ (tarif, concurrent, cessation, qualité, plus de besoin, injoignable, autre), anneau du milieu = la sous-raison précise (meilleur prix ailleurs, concurrent de proximité, livraison trop chère, déménagement…), et pour « Meilleur prix ailleurs » un 3ᵉ anneau détaille la catégorie produit concernée (boissons, vins & spiritueux, épicerie, frais). Cliquez une catégorie pour zoomer, le centre pour revenir. Enregistré à la clôture du compte par le client ou le commercial. All-time."
-                />
-              </header>
-              @if (terminationSunburst(); as data) {
-                <app-sunburst [data]="data" [nodeColors]="terminationColors()" height="560px" />
-                <app-chart-note
-                  goal="Comprendre pourquoi les comptes partent, du motif général au détail produit."
-                  read="Anneau intérieur = catégorie, extérieurs = sous-raison puis détail ; clic pour zoomer, centre pour revenir. Plus l'arc est large, plus le motif pèse."
-                />
-              } @else {
-                <p class="muted">Aucune résiliation enregistrée.</p>
-              }
-            </article>
+            @case ('retention') {
+              <p class="section-lead">
+                <strong>Pourquoi part-on, et sait-on rattraper ?</strong> Les motifs de départ du
+                général au détail, la part des tentatives qu'on parvient à sauver, par quel levier,
+                et à quelle vitesse on réagit.
+              </p>
+              <div class="grid">
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Raisons de résiliation</h2>
+                    <fold-info
+                      label="Raisons de résiliation"
+                      text="Sunburst zoomable des résiliations confirmées : anneau intérieur = la catégorie de départ (tarif, concurrent, cessation, qualité, plus de besoin, injoignable, autre), anneau du milieu = la sous-raison précise (meilleur prix ailleurs, concurrent de proximité, livraison trop chère, déménagement…), et pour « Meilleur prix ailleurs » un 3ᵉ anneau détaille la catégorie produit concernée (boissons, vins & spiritueux, épicerie, frais). Cliquez une catégorie pour zoomer, le centre pour revenir. Enregistré à la clôture du compte par le client ou le commercial. All-time."
+                    />
+                  </header>
+                  @if (terminationSunburst(); as data) {
+                    <app-sunburst [data]="data" [nodeColors]="terminationColors()" height="560px" />
+                    <app-chart-note
+                      goal="Comprendre pourquoi les comptes partent, du motif général au détail produit."
+                      read="Anneau intérieur = catégorie, extérieurs = sous-raison puis détail ; clic pour zoomer, centre pour revenir. Plus l'arc est large, plus le motif pèse."
+                    />
+                  } @else {
+                    <p class="muted">Aucune résiliation enregistrée.</p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Taux de rattrapage</h2>
-                <fold-info
-                  label="Taux de rattrapage des terminaisons"
-                  text="Part des tentatives de résiliation qui ont été rattrapées (le compte est resté), globale et par catégorie de départ — mêmes teintes que le sunburst pour relier les deux cartes. Une tentative rattrapée = un compte sauvé. Sous chaque barre de taux, deux barres fines décomposent le rattrapage par canal : « auto » (plateforme, incentive automatique) et « comm. » (sauvé à la main par un commercial) — leur somme fait le taux. On lit d'un coup quelles catégories se récupèrent, et par quel levier."
-                />
-              </header>
-              @if (terminationRecovery(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Savoir quelle part des tentatives de départ on arrive à sauver, et par quel levier."
-                  read="Une barre de taux par catégorie (couleur = motif) ; les deux barres fines dessous = auto (plateforme) vs commercial. Plus la barre est longue, mieux on récupère."
-                />
-              } @else {
-                <p class="muted">Aucune tentative de résiliation enregistrée.</p>
-              }
-            </article>
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Taux de rattrapage</h2>
+                    <fold-info
+                      label="Taux de rattrapage des terminaisons"
+                      text="Part des tentatives de résiliation qui ont été rattrapées (le compte est resté), globale et par catégorie de départ — mêmes teintes que le sunburst pour relier les deux cartes. Une tentative rattrapée = un compte sauvé. Sous chaque barre de taux, deux barres fines décomposent le rattrapage par canal : « auto » (plateforme, incentive automatique) et « comm. » (sauvé à la main par un commercial) — leur somme fait le taux. On lit d'un coup quelles catégories se récupèrent, et par quel levier."
+                    />
+                  </header>
+                  @if (terminationRecovery(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Savoir quelle part des tentatives de départ on arrive à sauver, et par quel levier."
+                      read="Une barre de taux par catégorie (couleur = motif) ; les deux barres fines dessous = auto (plateforme) vs commercial. Plus la barre est longue, mieux on récupère."
+                    />
+                  } @else {
+                    <p class="muted">Aucune tentative de résiliation enregistrée.</p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Vélocité de rattrapage</h2>
-                <fold-info
-                  label="Vélocité de rattrapage dans le temps"
-                  text="Le taux de rattrapage semaine par semaine (ligne neutre — la taille du point grandit avec le nombre de tentatives, donc sa fiabilité) et le taux cumulé (ligne verte pointillée) qui lisse la trajectoire. La question : réagit-on de mieux en mieux au churn ? Une pente qui monte = réaction plus efficace dans le temps ; qui s'aplatit ou descend = on perd du terrain sur la rétention. Le taux est rattaché à la semaine de la tentative."
-                />
-              </header>
-              @if (recoveryTrend(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Savoir si on réagit de mieux en mieux au churn au fil du temps."
-                  read="Ligne hebdo (point plus gros = plus fiable) + ligne cumulée pointillée. Une pente qui monte = réaction plus efficace."
-                />
-              } @else {
-                <p class="muted">
-                  Pas encore assez de semaines de tentatives pour tracer une vélocité.
-                </p>
-              }
-            </article>
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Vélocité de rattrapage</h2>
+                    <fold-info
+                      label="Vélocité de rattrapage dans le temps"
+                      text="Le taux de rattrapage semaine par semaine (ligne neutre — la taille du point grandit avec le nombre de tentatives, donc sa fiabilité) et le taux cumulé (ligne verte pointillée) qui lisse la trajectoire. La question : réagit-on de mieux en mieux au churn ? Une pente qui monte = réaction plus efficace dans le temps ; qui s'aplatit ou descend = on perd du terrain sur la rétention. Le taux est rattaché à la semaine de la tentative."
+                    />
+                  </header>
+                  @if (recoveryTrend(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Savoir si on réagit de mieux en mieux au churn au fil du temps."
+                      read="Ligne hebdo (point plus gros = plus fiable) + ligne cumulée pointillée. Une pente qui monte = réaction plus efficace."
+                    />
+                  } @else {
+                    <p class="muted">
+                      Pas encore assez de semaines de tentatives pour tracer une vélocité.
+                    </p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Délai de réaction par catégorie</h2>
-                <fold-info
-                  label="Délai de réaction au churn (jours)"
-                  text="Boxplot du temps, en jours, entre la déclaration de résiliation et l'action qui l'a rattrapée, une boîte par catégorie de départ (mêmes teintes que le sunburst). La boîte = la dispersion des délais (quartiles) ; la barre centrale = la médiane. Boîte basse = on sauve vite (le tarif se négocie court) ; boîte haute = motif long à sauver (la qualité demande de corriger). Les points rouges au-dessus = des sauvetages qui ont traîné (outliers). Une catégorie n'apparaît qu'avec au moins 3 rattrapages."
-                />
-              </header>
-              @if (recoveryReaction(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Savoir à quelle vitesse on sauve un compte, selon le motif de départ."
-                  read="Une boîte par motif (jours) ; barre centrale = médiane. Boîte basse = on sauve vite ; points rouges = sauvetages qui ont traîné."
-                />
-              } @else {
-                <p class="muted">
-                  Pas encore assez de rattrapages par catégorie pour une distribution.
-                </p>
-              }
-            </article>
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Délai de réaction par catégorie</h2>
+                    <fold-info
+                      label="Délai de réaction au churn (jours)"
+                      text="Boxplot du temps, en jours, entre la déclaration de résiliation et l'action qui l'a rattrapée, une boîte par catégorie de départ (mêmes teintes que le sunburst). La boîte = la dispersion des délais (quartiles) ; la barre centrale = la médiane. Boîte basse = on sauve vite (le tarif se négocie court) ; boîte haute = motif long à sauver (la qualité demande de corriger). Les points rouges au-dessus = des sauvetages qui ont traîné (outliers). Une catégorie n'apparaît qu'avec au moins 3 rattrapages."
+                    />
+                  </header>
+                  @if (recoveryReaction(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Savoir à quelle vitesse on sauve un compte, selon le motif de départ."
+                      read="Une boîte par motif (jours) ; barre centrale = médiane. Boîte basse = on sauve vite ; points rouges = sauvetages qui ont traîné."
+                    />
+                  } @else {
+                    <p class="muted">
+                      Pas encore assez de rattrapages par catégorie pour une distribution.
+                    </p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Délai de réaction — par semaine</h2>
-                <fold-info
-                  label="Délai de réaction hebdo × catégorie"
-                  text="Le même délai de réaction (jours), mais dans le temps : l'axe = les semaines, et pour chaque semaine les catégories sont groupées côte à côte (une boîte par motif, mêmes teintes que le sunburst). On lit d'un coup la vitesse par motif ET son évolution : des boîtes qui descendent semaine après semaine = on réagit de plus en plus vite. Une case reste vide si aucun rattrapage ce motif-là cette semaine."
-                />
-              </header>
-              @if (recoveryReactionWeekly(); as opt) {
-                <app-chart [option]="opt" height="320px" />
-                <app-chart-note
-                  goal="Voir la vitesse de réaction par motif ET son évolution dans le temps."
-                  read="Chaque semaine, une boîte par motif côte à côte (couleur = motif). Des boîtes qui descendent = on réagit de plus en plus vite ; case vide = aucun rattrapage ce motif-là."
-                />
-              } @else {
-                <p class="muted">Pas encore assez de rattrapages hebdomadaires par catégorie.</p>
-              }
-            </article>
-          </div>
-        }
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Délai de réaction — par semaine</h2>
+                    <fold-info
+                      label="Délai de réaction hebdo × catégorie"
+                      text="Le même délai de réaction (jours), mais dans le temps : l'axe = les semaines, et pour chaque semaine les catégories sont groupées côte à côte (une boîte par motif, mêmes teintes que le sunburst). On lit d'un coup la vitesse par motif ET son évolution : des boîtes qui descendent semaine après semaine = on réagit de plus en plus vite. Une case reste vide si aucun rattrapage ce motif-là cette semaine."
+                    />
+                  </header>
+                  @if (recoveryReactionWeekly(); as opt) {
+                    <app-chart [option]="opt" height="320px" />
+                    <app-chart-note
+                      goal="Voir la vitesse de réaction par motif ET son évolution dans le temps."
+                      read="Chaque semaine, une boîte par motif côte à côte (couleur = motif). Des boîtes qui descendent = on réagit de plus en plus vite ; case vide = aucun rattrapage ce motif-là."
+                    />
+                  } @else {
+                    <p class="muted">
+                      Pas encore assez de rattrapages hebdomadaires par catégorie.
+                    </p>
+                  }
+                </article>
+              </div>
+            }
 
-        @case ('vivier') {
-          <p class="section-lead">
-            <strong>Que vaut le pipeline ?</strong> La répartition des prospects par chaleur,
-            comment ils se réchauffent ou refroidissent, et où ils bloquent — à l'onboarding comme
-            dans le pipeline de démarchage.
-          </p>
-          <div class="grid">
-            <article class="card">
-              <header class="card-head">
-                <h2>Momentum du vivier — part par chaleur</h2>
-                <fold-info
-                  label="Momentum du vivier"
-                  text="La part de prospects dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). Aires empilées : l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total du vivier. La direction par bande (qui se réchauffe/refroidit) se lit sur les transferts ci-contre."
-                />
-              </header>
-              @if (temperatureFlow(); as opt) {
-                <app-chart [option]="opt" height="280px" />
-                <app-chart-note
-                  goal="Voir comment se répartit le vivier de prospects par chaleur au fil des semaines."
-                  read="Aires empilées chauds / tièdes / froids ; l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total."
-                />
-              }
-            </article>
+            @case ('vivier') {
+              <p class="section-lead">
+                <strong>Que vaut le pipeline ?</strong> La répartition des prospects par chaleur,
+                comment ils se réchauffent ou refroidissent, et où ils bloquent — à l'onboarding
+                comme dans le pipeline de démarchage.
+              </p>
+              <div class="grid">
+                <article class="card">
+                  <header class="card-head">
+                    <h2>Momentum du vivier — part par chaleur</h2>
+                    <fold-info
+                      label="Momentum du vivier"
+                      text="La part de prospects dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). Aires empilées : l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total du vivier. La direction par bande (qui se réchauffe/refroidit) se lit sur les transferts ci-contre."
+                    />
+                  </header>
+                  @if (temperatureFlow(); as opt) {
+                    <app-chart [option]="opt" height="280px" />
+                    <app-chart-note
+                      goal="Voir comment se répartit le vivier de prospects par chaleur au fil des semaines."
+                      read="Aires empilées chauds / tièdes / froids ; l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total."
+                    />
+                  }
+                </article>
 
-            <article class="card">
-              <header class="card-head">
-                <h2>Transferts entre bandes (sur la période)</h2>
-                <fold-info
-                  label="Transferts entre bandes"
-                  text="Comment les prospects ont changé de chaleur entre le début (« avant », à gauche) et la fin (« après », à droite) de la période : qui est passé de tiède à chaud, de chaud à froid, converti, perdu, ou vient d'entrer. La largeur d'un ruban = le nombre de personnes qui ont fait ce passage."
-                />
-              </header>
-              @if (transitions(); as opt) {
-                <app-chart [option]="opt" height="280px" />
-                <app-chart-note
-                  goal="Voir comment les prospects changent de chaleur entre le début et la fin de la période."
-                  read="Rubans du « avant » (gauche) vers « après » (droite) ; la largeur = le nombre de personnes qui font ce passage."
-                />
-              } @else {
-                <p class="muted">Pas encore assez de mouvements pour tracer les transferts.</p>
-              }
-            </article>
+                <article class="card">
+                  <header class="card-head">
+                    <h2>Transferts entre bandes (sur la période)</h2>
+                    <fold-info
+                      label="Transferts entre bandes"
+                      text="Comment les prospects ont changé de chaleur entre le début (« avant », à gauche) et la fin (« après », à droite) de la période : qui est passé de tiède à chaud, de chaud à froid, converti, perdu, ou vient d'entrer. La largeur d'un ruban = le nombre de personnes qui ont fait ce passage."
+                    />
+                  </header>
+                  @if (transitions(); as opt) {
+                    <app-chart [option]="opt" height="280px" />
+                    <app-chart-note
+                      goal="Voir comment les prospects changent de chaleur entre le début et la fin de la période."
+                      read="Rubans du « avant » (gauche) vers « après » (droite) ; la largeur = le nombre de personnes qui font ce passage."
+                    />
+                  } @else {
+                    <p class="muted">Pas encore assez de mouvements pour tracer les transferts.</p>
+                  }
+                </article>
 
-            <article class="card">
-              <header class="card-head">
-                <h2>Entonnoir d'activation</h2>
-                <fold-info
-                  label="Entonnoir d'activation"
-                  text="De la société déclarée jusqu'à son activation, marche par marche (TVA, KBIS, facturation, livraison). Les fuites entre marches = les frictions d'onboarding."
-                />
-              </header>
-              @if (activationFunnel(); as opt) {
-                <app-chart [option]="opt" height="280px" />
-                <app-chart-note
-                  goal="Repérer où les sociétés déclarées bloquent avant d'être activées."
-                  read="Chaque marche = les sociétés ayant franchi cette pièce ; les fuites entre marches = les frictions d'onboarding."
-                />
-              }
-            </article>
+                <article class="card">
+                  <header class="card-head">
+                    <h2>Entonnoir d'activation</h2>
+                    <fold-info
+                      label="Entonnoir d'activation"
+                      text="De la société déclarée jusqu'à son activation, marche par marche (TVA, KBIS, facturation, livraison). Les fuites entre marches = les frictions d'onboarding."
+                    />
+                  </header>
+                  @if (activationFunnel(); as opt) {
+                    <app-chart [option]="opt" height="280px" />
+                    <app-chart-note
+                      goal="Repérer où les sociétés déclarées bloquent avant d'être activées."
+                      read="Chaque marche = les sociétés ayant franchi cette pièce ; les fuites entre marches = les frictions d'onboarding."
+                    />
+                  }
+                </article>
 
-            <article class="card">
-              <header class="card-head">
-                <h2>Pipeline de démarchage</h2>
-                <fold-info
-                  label="Pipeline de démarchage"
-                  text="Progression des leads sortants dans le pipeline commercial : saisis → contactés → qualifiés → en négociation → convertis. Chaque marche compte les leads ayant atteint au moins cette étape."
-                />
-              </header>
-              @if (coldFunnel(); as opt) {
-                <app-chart [option]="opt" height="280px" />
-                <app-chart-note
-                  goal="Suivre la progression des leads sortants dans le pipeline commercial."
-                  read="Chaque marche compte les leads ayant atteint au moins cette étape (saisis → contactés → … → convertis)."
-                />
-              }
-            </article>
-          </div>
-        }
+                <article class="card">
+                  <header class="card-head">
+                    <h2>Pipeline de démarchage</h2>
+                    <fold-info
+                      label="Pipeline de démarchage"
+                      text="Progression des leads sortants dans le pipeline commercial : saisis → contactés → qualifiés → en négociation → convertis. Chaque marche compte les leads ayant atteint au moins cette étape."
+                    />
+                  </header>
+                  @if (coldFunnel(); as opt) {
+                    <app-chart [option]="opt" height="280px" />
+                    <app-chart-note
+                      goal="Suivre la progression des leads sortants dans le pipeline commercial."
+                      read="Chaque marche compte les leads ayant atteint au moins cette étape (saisis → contactés → … → convertis)."
+                    />
+                  }
+                </article>
+              </div>
+            }
 
-        @case ('usage') {
-          <p class="section-lead">
-            <strong>Comment se comporte le parcours produit ?</strong> Le trajet du clic à
-            l'activation avec ses fuites, la rétention des cohortes d'inscrits, et les délais clés
-            du cycle.
-          </p>
-          <div class="grid">
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Cycle de vie (du clic à l'activation)</h2>
-                <fold-info
-                  label="Cycle de vie"
-                  text="Les flux de personnes d'une étape à la suivante — inscrit, a commandé, a déclaré une société, activé — avec les fuites à chaque transition. La largeur d'un ruban = le nombre de personnes qui passent."
-                />
-              </header>
-              @if (lifecycle(); as opt) {
-                <app-chart [option]="opt" height="300px" />
-                <app-chart-note
-                  goal="Suivre le parcours des personnes du clic à l'activation, avec les pertes à chaque étape."
-                  read="Rubans d'une étape à la suivante ; la largeur = le nombre de personnes qui passent, les fuites = ceux qui décrochent."
-                />
-              } @else {
-                <p class="muted">Pas encore assez de parcours pour tracer le flux.</p>
-              }
-            </article>
+            @case ('usage') {
+              <p class="section-lead">
+                <strong>Comment se comporte le parcours produit ?</strong> Le trajet du clic à
+                l'activation avec ses fuites, la rétention des cohortes d'inscrits, et les délais
+                clés du cycle.
+              </p>
+              <div class="grid">
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Cycle de vie (du clic à l'activation)</h2>
+                    <fold-info
+                      label="Cycle de vie"
+                      text="Les flux de personnes d'une étape à la suivante — inscrit, a commandé, a déclaré une société, activé — avec les fuites à chaque transition. La largeur d'un ruban = le nombre de personnes qui passent."
+                    />
+                  </header>
+                  @if (lifecycle(); as opt) {
+                    <app-chart [option]="opt" height="300px" />
+                    <app-chart-note
+                      goal="Suivre le parcours des personnes du clic à l'activation, avec les pertes à chaque étape."
+                      read="Rubans d'une étape à la suivante ; la largeur = le nombre de personnes qui passent, les fuites = ceux qui décrochent."
+                    />
+                  } @else {
+                    <p class="muted">Pas encore assez de parcours pour tracer le flux.</p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Rétention par cohorte d'inscription</h2>
-                <fold-info
-                  label="Rétention par cohorte"
-                  text="Pour chaque semaine d'inscription (une ligne), la part de la cohorte ayant commandé k semaines plus tard. La couleur va du clair (faible rétention) au foncé (forte rétention)."
-                />
-              </header>
-              @if (cohorts(); as opt) {
-                <app-chart [option]="opt" height="320px" />
-                <app-chart-note
-                  goal="Voir si les nouvelles cohortes d'inscrits reviennent commander dans le temps."
-                  read="Une ligne par semaine d'inscription ; la couleur fonce avec la part qui recommande k semaines après l'inscription."
-                />
-              } @else {
-                <p class="muted">Pas encore assez de cohortes pour une heatmap.</p>
-              }
-            </article>
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Rétention par cohorte d'inscription</h2>
+                    <fold-info
+                      label="Rétention par cohorte"
+                      text="Pour chaque semaine d'inscription (une ligne), la part de la cohorte ayant commandé k semaines plus tard. La couleur va du clair (faible rétention) au foncé (forte rétention)."
+                    />
+                  </header>
+                  @if (cohorts(); as opt) {
+                    <app-chart [option]="opt" height="320px" />
+                    <app-chart-note
+                      goal="Voir si les nouvelles cohortes d'inscrits reviennent commander dans le temps."
+                      read="Une ligne par semaine d'inscription ; la couleur fonce avec la part qui recommande k semaines après l'inscription."
+                    />
+                  } @else {
+                    <p class="muted">Pas encore assez de cohortes pour une heatmap.</p>
+                  }
+                </article>
 
-            <article class="card wide">
-              <header class="card-head">
-                <h2>Vélocité — délais (jours)</h2>
-                <fold-info
-                  label="Vélocité"
-                  text="Distribution des délais en jours : temps entre l'inscription et la 1re commande, et entre la déclaration d'une société et son activation. La boîte couvre les quartiles, le trait central la médiane."
-                />
-              </header>
-              @if (velocity(); as opt) {
-                <app-chart [option]="opt" height="280px" />
-                <app-chart-note
-                  goal="Mesurer les délais clés : inscription → 1re commande, et déclaration → activation."
-                  read="Une boîte par délai (jours) ; la boîte couvre les quartiles, le trait central la médiane."
-                />
-              }
-            </article>
-          </div>
-        }
-      }
+                <article class="card wide">
+                  <header class="card-head">
+                    <h2>Vélocité — délais (jours)</h2>
+                    <fold-info
+                      label="Vélocité"
+                      text="Distribution des délais en jours : temps entre l'inscription et la 1re commande, et entre la déclaration d'une société et son activation. La boîte couvre les quartiles, le trait central la médiane."
+                    />
+                  </header>
+                  @if (velocity(); as opt) {
+                    <app-chart [option]="opt" height="280px" />
+                    <app-chart-note
+                      goal="Mesurer les délais clés : inscription → 1re commande, et déclaration → activation."
+                      read="Une boîte par délai (jours) ; la boîte couvre les quartiles, le trait central la médiane."
+                    />
+                  }
+                </article>
+              </div>
+            }
+          }
+        </fold-tab-panel>
+      </fold-nav-layout>
     }
   }
 </section>

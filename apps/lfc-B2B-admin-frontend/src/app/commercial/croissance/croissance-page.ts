@@ -4,6 +4,10 @@ import {
   FoldEmptyStateComponent,
   FoldInfoComponent,
   FoldLoadingStateComponent,
+  FoldNavLayoutComponent,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
 } from 'fold-ng';
 import type {
   AccountConcentration,
@@ -56,7 +60,13 @@ import { GrowthService } from './growth.service';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /** Onglets du dashboard, un par type de donnée. */
-type TabKey = 'acquisition' | 'marche' | 'volume' | 'retention' | 'vivier' | 'usage';
+const TAB_KEYS = ['acquisition', 'marche', 'volume', 'retention', 'vivier', 'usage'] as const;
+
+type TabKey = (typeof TAB_KEYS)[number];
+
+function isTabKey(key: string): key is TabKey {
+  return TAB_KEYS.some((known) => known === key);
+}
 
 /** Une tuile KPI. */
 interface Kpi {
@@ -86,6 +96,9 @@ interface Kpi {
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    FoldNavLayoutComponent,
+    FoldTabsComponent,
+    FoldTabPanelComponent,
   ],
   templateUrl: './croissance-page.html',
   styleUrl: './croissance-page.scss',
@@ -96,7 +109,7 @@ export class CroissancePage {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly activeTab = signal<TabKey>('acquisition');
-  protected readonly tabs: ReadonlyArray<{ readonly key: TabKey; readonly label: string }> = [
+  protected readonly tabs: FoldTabItem[] = [
     { key: 'acquisition', label: 'Acquisition' },
     { key: 'marche', label: 'Marché & territoire' },
     { key: 'volume', label: 'Volume / CA' },
@@ -282,6 +295,17 @@ export class CroissancePage {
 
   constructor() {
     void this.load();
+  }
+
+  /**
+   * `fold-tabs` rend une clé de type `string` ; la section, elle, appartient à
+   * une union fermée. On referme via un prédicat plutôt qu'avec un `as` : une
+   * clé inconnue laisse la section en place au lieu de vider la page.
+   */
+  protected selectTab(key: string): void {
+    if (isTabKey(key)) {
+      this.activeTab.set(key);
+    }
   }
 
   /** Change le tri de l'adoption/perte par territoire depuis le `<select>`. */

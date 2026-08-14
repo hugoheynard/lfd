@@ -95,52 +95,18 @@
   line-height: 1.4;
 }
 
-/* ── Navigation de sections : collante, la page est longue ── */
+/* ── Navigation de sections : collante, la page est longue ──
+   `fold-tabs` fait tout le dessin (soulignement, survol, focus, clavier). Il
+   ne reste ici que la POSITION : collée en haut, et tirée jusqu'aux bords de
+   la page pour que le fond opaque de la barre couvre ce qui défile dessous —
+   sans la marge négative, le contenu passerait dans les gouttières. */
 .tabs {
   position: sticky;
   top: 0;
   z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.15rem;
+  display: block;
   margin: 0 calc(-1 * var(--fold-space-lg, 1.5rem));
-  padding: 0.35rem var(--fold-space-lg, 1.5rem) 0;
-  border-bottom: 1px solid var(--growth-hairline);
-  background: color-mix(in srgb, var(--fold-color-background, #fff) 88%, transparent);
-  backdrop-filter: blur(10px);
-}
-
-.tab {
-  appearance: none;
-  border: none;
-  background: transparent;
-  padding: 0.55rem 0.85rem;
-  margin-bottom: -1px;
-  border-bottom: 2px solid transparent;
-  color: var(--fold-color-text-muted);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease;
-
-  &:hover {
-    color: var(--fold-color-text);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--fold-color-primary);
-    outline-offset: -2px;
-    border-radius: var(--fold-radius-sm, 0.25rem);
-  }
-}
-
-.tab--active {
-  color: var(--fold-color-primary);
-  border-bottom-color: var(--fold-color-primary);
-  font-weight: 600;
+  padding: 0 var(--fold-space-lg, 1.5rem);
 }
 
 /* Chapeau de section : ce que la section répond, en une phrase. */
@@ -290,8 +256,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card,
-  .tab {
+  .card {
     transition: none;
   }
 }
