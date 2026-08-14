@@ -4,6 +4,7 @@ import {
   FoldButtonComponent,
   FoldIconComponent,
   FoldCardComponent,
+  FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldPageLayoutComponent,
 } from 'fold-ng';
@@ -38,6 +39,7 @@ interface PendingRow {
     FoldCardComponent,
     FoldButtonComponent,
     FoldIconComponent,
+    FoldElementTitleComponent,
     FoldEmptyStateComponent,
   ],
   templateUrl: './acces-en-attente-page.html',

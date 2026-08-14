@@ -1,13 +1,13 @@
 <fold-page-layout>
-  <header class="head">
-    <div>
-      <h1>Accès à remettre</h1>
-      <p class="subtitle">
-        Les personnes à qui l'accès a été ouvert et qui n'ont pas encore créé le leur. Une ligne
-        disparaît d'elle-même dès que son mot de passe est posé.
-      </p>
-    </div>
-  </header>
+  <!-- Le bouclier plutôt que l'enveloppe : cet écran ne parle pas d'e-mails, il
+       parle d'ACCÈS — et c'est le chemin de secours quand le canal habituel se
+       tait. L'enveloppe promettait un envoi ; le bouclier dit la clé. -->
+  <fold-element-title
+    variant="eyebrow"
+    icon="shield"
+    title="Accès à remettre"
+    subtitle="Les personnes à qui l'accès a été ouvert et qui n'ont pas encore créé le leur. Une ligne disparaît d'elle-même dès que son mot de passe est posé."
+  />
 
   @switch (state()) {
     @case ('loading') {
