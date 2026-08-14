@@ -42,6 +42,7 @@ import { ListAllCompaniesHandler } from "./application/queries/list-all-companie
 import { ListCompanyAddressesHandler } from "./application/queries/list-company-addresses.handler.js";
 import { AccountReader } from "./domain/ports/account.reader.js";
 import { AdminCompanyReader } from "./domain/ports/admin-company.reader.js";
+import { PendingAccessReader } from "./domain/ports/pending-access.reader.js";
 import { CompanyAddressReader } from "./domain/ports/company-address.reader.js";
 import { CompanyAddressRepository } from "./domain/ports/company-address.repository.js";
 import { CompanyContactRepository } from "./domain/ports/company-contact.repository.js";
@@ -79,6 +80,9 @@ import {
 } from "./infrastructure/prisma-company-member.repository.js";
 import { PrismaAccountReader } from "./infrastructure/prisma-account.reader.js";
 import { PrismaAdminCompanyReader } from "./infrastructure/prisma-admin-company.reader.js";
+import { PrismaPendingAccessReader } from "./infrastructure/prisma-pending-access.reader.js";
+import { ListPendingAccessHandler } from "./application/queries/list-pending-access.handler.js";
+import { IssuePasswordLinkHandler } from "./application/commands/issue-password-link.handler.js";
 import { PrismaCompanyAddressReader } from "./infrastructure/prisma-company-address.reader.js";
 import { PrismaCompanyAddressRepository } from "./infrastructure/prisma-company-address.repository.js";
 import { PrismaCompanyContactRepository } from "./infrastructure/prisma-company-contact.repository.js";
@@ -99,6 +103,7 @@ import { AdminCompanyMembersController } from "./http/admin-company-members.cont
 import { AdminCompanyContactsController } from "./http/admin-company-contacts.controller.js";
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
 import { CompaniesController } from "./http/companies.controller.js";
+import { AdminAccessPendingController } from "./http/admin-access-pending.controller.js";
 import { AdminSupportController } from "./http/admin-support.controller.js";
 import { SupportController } from "./http/support.controller.js";
 import { ChangeCompanyStatusHandler } from "./application/commands/change-company-status.handler.js";
@@ -128,6 +133,7 @@ import { MeController } from "./http/me.controller.js";
     CompanyAddressesController,
     SupportController,
     AdminSupportController,
+    AdminAccessPendingController,
     AdminCompaniesController,
     AdminCompanyMembersController,
     AdminCompanyContactsController,
@@ -190,6 +196,9 @@ import { MeController } from "./http/me.controller.js";
     { provide: UserProfileRepository, useClass: PrismaUserProfileRepository },
     { provide: NavPreferencesRepository, useClass: PrismaNavPreferencesRepository },
     { provide: AdminCompanyReader, useClass: PrismaAdminCompanyReader },
+    { provide: PendingAccessReader, useClass: PrismaPendingAccessReader },
+    ListPendingAccessHandler,
+    IssuePasswordLinkHandler,
     { provide: CustomerSheetReader, useClass: PrismaCustomerSheetReader },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },
     { provide: StaffDirectory, useClass: PrismaStaffDirectory },

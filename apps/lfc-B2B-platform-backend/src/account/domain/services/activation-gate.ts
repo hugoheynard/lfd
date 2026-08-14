@@ -8,11 +8,7 @@ import type { AdminCompanyDetailView } from "../ports/admin-company.reader.js";
  * reformulation un déploiement backend, et d'une traduction une migration.
  */
 export type ActivationBlocker =
-  | "identite_legale"
-  | "detenteur"
-  | "telephone"
-  | "tva"
-  | "facturation";
+  "identite_legale" | "detenteur" | "telephone" | "tva" | "facturation";
 
 /** Une pièce du dossier, telle que la fiche la montre. */
 export interface ActivationCheck {

@@ -53,7 +53,6 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
     // le jour où la vérification sera retirée. L'historique, lui, garde tout.
     this.events.publish(new KbisCertifiedEvent(command.companyId, at));
   }
-
 }
 
 /**

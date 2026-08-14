@@ -110,6 +110,22 @@ export class CompanyNotFoundError extends ResourceNotFoundError {
 }
 
 /**
+ * Personne à qui remettre un lien : elle n'existe pas, ou — le cas fréquent —
+ * elle vient de poser son mot de passe entre l'affichage de la file et le clic.
+ *
+ * Un 404 plutôt qu'un 409 : de là où le staff se tient, la ligne a simplement
+ * disparu de la file, ce qui est exactement ce qu'on voulait qu'il arrive.
+ */
+export class PendingAccessNotFoundError extends ResourceNotFoundError {
+  constructor(readonly userId: string) {
+    super(
+      "account.pending_access.not_found",
+      "Cette personne n'attend plus d'accès — elle l'a peut-être créé entre-temps.",
+    );
+  }
+}
+
+/**
  * L'activation est refusée : des **pièces requises** manquent, ou la société n'est
  * pas dans l'état `pending`. Refus **métier** (409) — la demande est bien formée,
  * mais l'état courant l'interdit. `missing` liste les pièces à compléter (vide si
