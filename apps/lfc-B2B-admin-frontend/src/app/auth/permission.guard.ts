@@ -17,6 +17,19 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
 ];
 
 /**
+ * Un garde qui **dit** ce qu'il ferme.
+ *
+ * Une fonction de garde est opaque : rien, ni à la relecture ni au test, ne
+ * distingue `permissionGuard('settings:read')` de `permissionGuard('staff:read')`.
+ * Porter la permission sur la fonction rend la table des routes inspectable —
+ * c'est ce qui permet de vérifier que chaque écran est derrière le **bon** droit,
+ * et pas seulement derrière un droit quelconque.
+ */
+export interface PermissionGuard extends CanActivateFn {
+  readonly permission: StaffPermission;
+}
+
+/**
  * Garde de route : cette personne peut-elle voir cet écran ?
  *
  * **Le front cache, le serveur refuse.** Ce garde n'est pas un mur — il évite
@@ -27,8 +40,8 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
  * autorisée plutôt que bloquée : renvoyer `false` laisse l'utilisateur sur une
  * page vide, sans rien lui dire de ce qu'il peut faire à la place.
  */
-export function permissionGuard(permission: StaffPermission): CanActivateFn {
-  return async (): Promise<boolean | UrlTree> => {
+export function permissionGuard(permission: StaffPermission): PermissionGuard {
+  const guard = async (): Promise<boolean | UrlTree> => {
     const permissions = inject(PermissionsStore);
     const router = inject(Router);
 
@@ -41,4 +54,8 @@ export function permissionGuard(permission: StaffPermission): CanActivateFn {
     // Rediriger en rond serait pire qu'une page qui explique.
     return fallback === undefined ? true : router.parseUrl(fallback.path);
   };
+  // La permission voyage AVEC le garde : sans ça, la table des routes ne dit
+  // pas quel droit ouvre quel écran, et un garde hérité du mauvais parent est
+  // indiscernable du bon (cf. `app.routes.spec.ts`).
+  return Object.assign(guard, { permission });
 }

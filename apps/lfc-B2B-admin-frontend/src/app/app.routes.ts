@@ -113,6 +113,12 @@ export const routes: Routes = [
       },
       {
         path: 'utilisateurs',
+        // `staff:read` et non `settings:read` : l'annuaire de l'équipe vit sous
+        // Réglages par commodité de rangement, mais c'est une AUTRE ressource —
+        // la seule que le catalogue réserve à `admin`. Hériter du garde du
+        // parent ouvrait l'écran à quiconque peut lire les réglages, et chaque
+        // appel y rendait 403.
+        canActivate: [permissionGuard('staff:read')],
         title: 'Utilisateurs — LFC B2B admin',
         loadComponent: () =>
           import('./reglages/staff-users/reglages-staff-users-page').then(
@@ -123,6 +129,10 @@ export const routes: Routes = [
   },
   {
     path: 'commercial',
+    // Le rail masquait déjà l'entrée sans `growth:read` — mais une URL tapée,
+    // un favori ou un lien collé ne passent pas par le rail. Le garde est ici
+    // parce que c'est le seul endroit par lequel on entre vraiment.
+    canActivate: [permissionGuard('growth:read')],
     title: 'Commercial — LFC B2B admin',
     loadComponent: () => import('./commercial/commercial-page').then((m) => m.CommercialPage),
     children: [
