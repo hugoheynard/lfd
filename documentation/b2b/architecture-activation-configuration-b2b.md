@@ -60,9 +60,30 @@ KBIS non vérifié doit donc **se voir**, et pas sur la fiche — qu'on n'ouvre 
 lorsqu'on a déjà un problème — mais sur la **liste des comptes clients**, l'écran
 qu'on ouvre pour travailler.
 
-Décision prise : un **badge sur la ligne du compte**, pas une entrée dans la
-`play-queue` du cockpit. Cette file est un modèle de **scoring commercial**
-(`LeadScoreView`, « les meilleurs coups du jour ») ; y verser une tâche de
+**La forme retenue : une galerie horizontale** en tête de la liste — un bandeau
+de cartes d'avertissement qu'on parcourt en scrollant latéralement, une carte par
+compte concerné.
+
+Ce n'est pas un détail de présentation, c'est ce qui rend la chose tenable. Un
+badge dans la colonne d'un tableau se lit compte par compte : il faut déjà savoir
+lequel regarder. Une galerie se lit **par le manque** — « qu'est-ce qui traîne ce
+matin ? » — et son défilement borne naturellement l'attention à ce qui tient dans
+la rangée. Elle assume aussi de n'être pas exhaustive : on y met ce qui appelle un
+geste, pas l'état de 250 comptes.
+
+Ce que la forme impose :
+
+- **Le défilement est le seul mode de navigation**, donc l'ordre est une décision
+  serveur (le plus urgent d'abord), pas un tri d'écran.
+- **Une carte porte un compte et un motif**, pas un compte et quatre motifs : deux
+  manques sur le même compte font deux cartes, et la répétition du nom est le
+  signal, pas un défaut.
+- **Il faut un état vide qui se réjouisse**, parce qu'il sera fréquent, et un
+  compteur qui dise combien de cartes attendent hors écran.
+
+Ce n'est **pas** une entrée dans la `play-queue` du cockpit : cette file est un
+modèle de **scoring commercial** (`LeadScoreView`, « les meilleurs coups du
+jour ») ; y verser une tâche de
 back-office fausserait le score.
 
 ⚠️ **Ce badge est le premier d'une famille, et il faut le construire comme tel.**
@@ -91,8 +112,16 @@ Ce qu'il faudra trancher au moment de la construire :
   une liste illisible. Il faudra un ordre de priorité, et probablement un seul
   badge visible plus un compteur.
 
-En attendant, le badge KBIS se pose seul — mais sa donnée doit déjà venir du
-serveur, dans un champ qui pourra devenir un tableau.
+La donnée vient du serveur dès la première carte : `AdminCompanyView` gagne un
+**tableau** `warnings`, ordonné, et non un booléen KBIS qu'il faudrait défaire au
+deuxième motif.
+
+⚠️ Deux manques de données à combler au moment de le câbler, constatés en lisant
+`COMPANY_SELECT` (`prisma-admin-company.reader.ts`) : la liste ne charge **ni
+l'adresse de facturation ni le mandat SEPA**. « Pièce manquante » et « mandat
+absent » exigent donc d'enrichir la projection de liste — deux existences, pas
+deux jointures complètes. Le KBIS et l'ancienneté, eux, y sont déjà
+(`kbisUploadedAt`, `kbisCertifiedAt`, `createdAt`).
 
 ## 4. À lire ensuite
 
