@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import {
   FoldButtonComponent,
+  FoldIconComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldPageLayoutComponent,
@@ -36,6 +37,7 @@ interface PendingRow {
     FoldPageLayoutComponent,
     FoldCardComponent,
     FoldButtonComponent,
+    FoldIconComponent,
     FoldEmptyStateComponent,
   ],
   templateUrl: './acces-en-attente-page.html',

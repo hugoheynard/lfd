@@ -66,7 +66,13 @@
                 <div class="row">
                   <div class="who">
                     <span class="name">{{ row.name }}</span>
-                    <span class="email">{{ row.person.email }}</span>
+                    <!-- L'icône avant l'adresse : sur une carte où le nom et
+                         la société sont déjà du texte, elle donne à l'e-mail sa
+                         nature d'un coup d'œil, sans le mot « e-mail ». -->
+                    <span class="email">
+                      <fold-icon name="mail" [size]="14" />
+                      {{ row.person.email }}
+                    </span>
                     <span class="meta">
                       @if (row.person.companyId; as companyId) {
                         <a [routerLink]="['/comptes-clients', companyId]">
@@ -84,13 +90,21 @@
                        mort depuis longtemps. -->
                   <button
                     foldButton
+                    class="copy"
                     intent="primary"
                     emphasis="soft"
                     icon="copy"
                     [disabled]="issuing() !== null"
+                    [attr.aria-label]="'Copier le lien de ' + row.name"
                     (click)="copyLink(row.person)"
                   >
-                    Copier le lien
+                    <!-- Le libellé tombe sur étroit, l'icône reste. Une carte de
+                         téléphone n'a pas la place d'un verbe, et le geste se
+                         devine : c'est le seul bouton de la ligne. Le nom passe
+                         en `aria-label`, sinon on perdrait DE QUI on copie le
+                         lien — trois boutons « Copier » identiques au lecteur
+                         d'écran. -->
+                    <span class="copy-label">Copier le lien</span>
                   </button>
                 </div>
               </fold-card>
