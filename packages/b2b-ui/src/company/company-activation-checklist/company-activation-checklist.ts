@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { FoldButtonComponent, FoldCalloutComponent, FoldIconComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 /**
  * Une étape d'activation à compléter. `kind` distingue une action ouvrant un
@@ -29,7 +29,7 @@ export interface CompanyActivationStep {
 @Component({
   selector: 'lfd-company-activation-checklist',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCalloutComponent, FoldButtonComponent, FoldIconComponent],
+  imports: [FoldCalloutComponent, FoldButtonComponent],
   templateUrl: './company-activation-checklist.html',
   styleUrl: './company-activation-checklist.scss',
 })

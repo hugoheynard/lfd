@@ -1,13 +1,24 @@
-<!-- L'adresse d'abord, et elle suffit : c'est par elle que le détenteur
-     recevra son mot de passe, et c'est elle qui dit au serveur s'il a déjà un
-     espace. Aucune recherche : la liste des sociétés d'une personne ne regarde
-     ni le commercial ni le client qu'il est en train de servir. -->
+<!-- L'adresse d'abord, et elle suffit : c'est elle qui dit au serveur si cette
+     personne a déjà un espace. Aucune recherche : la liste des sociétés d'une
+     personne ne regarde ni le commercial ni le client qu'il est en train de
+     servir.
+
+     ⚠️ L'aide ne promet PAS un « lien de mot de passe ». Le serveur a trois
+     issues (cf. `GrantAccountAccess.grant`) : identité créée + lien, lien
+     réémis, ou — si la personne est déjà cliente ACTIVE — un simple « cette
+     société a rejoint votre espace », sans aucun lien. Promettre un lien dans
+     les trois cas ferait conclure à un échec d'envoi dans le troisième.
+
+     Et l'aide reste volontairement muette sur laquelle des trois : le dire
+     apprendrait au commercial que cette adresse est déjà connue de la
+     plateforme, donc que cette personne travaille avec un autre de nos
+     clients. Même raison que la phrase unique de `openingMessage`. -->
 <fold-input
   label="E-mail du détenteur"
   type="email"
   [required]="emailRequired()"
   [optional]="!emailRequired()"
-  hint="c'est par là qu'il recevra son lien de mot de passe"
+  hint="son adresse suffit : c'est par elle que son accès arrive"
   [value]="email()"
   (valueChange)="email.set($event)"
 />
@@ -21,7 +32,7 @@
   label="Téléphone"
   type="tel"
   optional
-  hint="au moins un numéro joignable sera nécessaire pour activer le compte"
+  hint="pas nécessaire maintenant ; il le sera pour activer le compte"
   [value]="phone()"
   (valueChange)="phone.set($event)"
 />

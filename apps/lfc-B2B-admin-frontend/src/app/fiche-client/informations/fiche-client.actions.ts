@@ -53,6 +53,9 @@ export class FicheClientActions {
             : {
                 firstName: holder.firstName,
                 lastName: holder.lastName,
+                // Vide à l'ouverture : la fonction se saisit depuis la fiche,
+                // sur la carte Contacts. Au téléphone on a un nom, rarement un
+                // intitulé de poste — l'exiger ici bloquerait pour rien.
                 fonction: '',
                 email: holder.email,
                 phone: holder.phone,

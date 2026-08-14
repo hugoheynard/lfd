@@ -44,8 +44,8 @@
           >
             <p intro>
               @if (fiche.draft()) {
-                Pour <strong>ouvrir</strong> le compte : le nom d'usage et le détenteur. KBIS et
-                adresses se réclameront ensuite, section par section.
+                Pour <strong>ouvrir</strong> : l'enseigne, rien d'autre. Le reste — détenteur, KBIS,
+                adresses — se demande ensuite, section par section.
               } @else if (fiche.status() === 'pending') {
                 Complétez les pièces manquantes pour activer ce compte, à la place du client.
               } @else {
@@ -67,7 +67,7 @@
           <fold-page-section
             title="Identité légale"
             icon="company"
-            description="Telle qu'elle figure au registre du commerce."
+            description="Le nom commercial suffit pour ouvrir ; les mentions du greffe peuvent venir ensuite."
           >
             <fold-card class="form">
               <lfd-company-identity-fields
@@ -84,14 +84,24 @@
           <fold-page-section
             title="Détenteur du compte"
             icon="user"
-            description="Celui que l'on rappelle est celui qui commande : il recevra l'accès à l'espace. Vous pourrez aussi le rattacher plus tard, depuis la fiche."
+            description="Facultatif. La personne que vous avez au téléphone : c'est elle qui commandera, et qui recevra l'accès à l'espace client. Vous pourrez la rattacher plus tard depuis la fiche."
           >
             <fold-card class="form">
               <app-holder-picker (holderChange)="holder.set($event)" />
             </fold-card>
           </fold-page-section>
 
+          <!-- Le bouton dit POURQUOI il est éteint, à côté de lui.
+               Un commercial commence souvent par le détenteur — c'est la
+               personne qu'il a au téléphone — et se retrouvait alors devant un
+               bouton gris dont la cause était en haut de l'écran, hors de son
+               regard. Un bouton désactivé n'est pas focalisable : la phrase est
+               donc du texte adjacent, lu dans l'ordre du document, et non un
+               `aria-describedby` que personne n'atteindrait. -->
           <div class="open-actions">
+            @if (!canCreate()) {
+              <p class="open-blocker">Saisissez l'enseigne pour ouvrir le compte.</p>
+            }
             <button
               foldButton
               intent="primary"

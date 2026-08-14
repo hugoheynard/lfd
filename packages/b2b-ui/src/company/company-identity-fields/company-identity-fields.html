@@ -17,6 +17,7 @@
   "
   [required]="!legalDeferred()"
   [optional]="legalDeferred()"
+  optionalLabel="facultatif"
   [value]="value().raisonSociale"
   (valueChange)="setRaisonSociale($event)"
 />
@@ -31,6 +32,7 @@
     placeholder="À choisir"
     [required]="!legalDeferred()"
     [optional]="legalDeferred()"
+    optionalLabel="facultatif"
     [options]="legalForms"
     [value]="value().formeJuridique"
     (selectionChange)="setFormeJuridique($event)"
@@ -46,6 +48,7 @@
     "
     [required]="!legalDeferred()"
     [optional]="legalDeferred()"
+    optionalLabel="facultatif"
     [value]="value().siret"
     (valueChange)="setSiret($event)"
   />
@@ -56,12 +59,15 @@
 <fold-input
   label="TVA intracommunautaire"
   [hint]="
-    vatRequired()
-      ? 'obligatoire pour cette forme juridique'
-      : 'facultatif pour cette forme — franchise en base'
+    vatUndecided()
+      ? 'obligatoire ou non selon la forme juridique'
+      : vatRequired()
+        ? 'obligatoire pour cette forme juridique'
+        : 'facultatif pour cette forme — franchise en base'
   "
   [required]="vatRequired() && !legalDeferred()"
   [optional]="!vatRequired()"
+  optionalLabel="facultatif"
   [value]="value().tvaIntracom"
   (valueChange)="setTvaIntracom($event)"
 />

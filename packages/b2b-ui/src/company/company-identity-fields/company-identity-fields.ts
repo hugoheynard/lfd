@@ -43,6 +43,20 @@ export class CompanyIdentityFields {
   });
 
   /**
+   * Vrai tant qu'AUCUNE forme juridique n'est choisie.
+   *
+   * `vatRequired` répond `true` par défaut — c'est le bon réglage pour le
+   * caractère obligatoire (on ne relâche pas une contrainte qu'on n'a pas
+   * vérifiée), mais c'est le mauvais texte : « obligatoire pour cette forme
+   * juridique » nomme une forme qui n'existe pas encore, et l'affirme sur un
+   * écran d'ouverture où le champ n'est de toute façon pas requis
+   * (`legalDeferred`). On dit donc ce qu'on sait : ça dépendra de la forme.
+   */
+  protected readonly vatUndecided = computed(
+    () => toLegalForm(this.value().formeJuridique) === null,
+  );
+
+  /**
    * **Différer** l'identité légale : raison sociale, forme juridique et SIRET
    * passent de requis à facultatifs. L'enseigne, elle, reste exigée — c'est le
    * nom de la société pour tout le monde sauf le greffe.

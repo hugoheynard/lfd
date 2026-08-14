@@ -14,7 +14,18 @@
 
 .open-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: var(--fold-space-md);
+}
+
+/* La raison du bouton éteint, juste à sa gauche : assez discrète pour ne pas
+   ressembler à une erreur — rien n'est cassé, il manque une saisie — mais assez
+   proche pour être lue dans le même coup d'œil. */
+.open-blocker {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
 }
 
 /* La vérification du KBIS, projetée SOUS le fichier dans la carte d'identité.

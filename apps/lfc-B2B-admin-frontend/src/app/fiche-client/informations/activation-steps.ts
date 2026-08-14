@@ -32,7 +32,9 @@ export interface ActivationStep {
 /** Le texte de chaque étape — écrit une fois, qu'elle soit due ou faite. */
 const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
   enseigne: {
-    title: "Nom d'usage",
+    // Le titre reprend MOT POUR MOT l'étiquette du champ. Un synonyme, même
+    // meilleur, oblige le lecteur à traduire avant de chercher.
+    title: 'Enseigne',
     detail: "Le nom sous lequel le client se reconnaît — c'est le seul champ exigé pour ouvrir.",
     cta: '',
   },
@@ -50,7 +52,11 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key'>>> = {
   },
   tva: {
     title: 'Numéro de TVA',
-    detail: 'La forme juridique impose un numéro de TVA intracommunautaire.',
+    // Ne s'appuie PAS sur la forme juridique : elle peut manquer, et manque
+    // souvent — la ligne « Identité légale » juste au-dessus le dit alors dans
+    // la même liste. Justifier une obligation par une donnée absente fait se
+    // contredire deux lignes voisines.
+    detail: 'Un numéro de TVA intracommunautaire est requis pour ce compte.',
     cta: 'Renseigner la TVA',
   },
   kbis: {

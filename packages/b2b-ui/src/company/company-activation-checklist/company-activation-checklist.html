@@ -11,7 +11,14 @@
     @for (step of steps(); track step.key) {
       <li class="step">
         <div class="step-text">
-          <fold-icon name="check-circle" [size]="16" />
+          <!-- Une puce CREUSE, jamais une coche. Cette liste ne contient QUE ce
+               qui manque (`activationSteps` filtre sur `!done`) : chaque ligne
+               affichée est une chose À FAIRE. Elle portait `check-circle`, le
+               symbole universel de « c'est fait » — cinq coches en face de
+               « 5 points à régler ». Dessinée en CSS et non tirée du registre
+               d'icônes : aucun nom fold ne dit « à faire », et une puce ne peut
+               ni manquer ni changer de sens. -->
+          <span class="step-mark" aria-hidden="true"></span>
           <span
             ><strong>{{ step.title }}</strong> — {{ step.detail }}</span
           >

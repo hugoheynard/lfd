@@ -146,3 +146,20 @@ describe("ce qu'il faut pour OUVRIR n'est pas ce qu'il faut pour ACTIVER", () =>
     expect(openingSteps({ ...EMPTY, enseigne: 'Chez Milo' })).toEqual([]);
   });
 });
+
+describe('Aucune étape ne justifie une exigence par une donnée absente', () => {
+  /**
+   * La ligne TVA disait « La forme juridique impose un numéro de TVA
+   * intracommunautaire » — alors que la ligne « Identité légale », deux lignes
+   * plus haut dans la MÊME liste, annonce que la forme juridique manque. Deux
+   * voisines qui se contredisent : l'une constate l'absence, l'autre s'appuie
+   * dessus. Constaté à l'écran en production le 2026-08-13.
+   */
+  it('ne fait pas reposer la TVA sur la forme juridique', () => {
+    const steps = activationSteps(withGate({ blocking: ['identite_legale'] }));
+    const tva = steps.find((step) => step.key === 'tva');
+
+    expect(tva).toBeDefined();
+    expect(tva?.detail).not.toMatch(/forme juridique/i);
+  });
+});

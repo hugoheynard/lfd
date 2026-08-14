@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import type { PickupAddressView, PlatformSettings } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -27,6 +28,8 @@ const CREATED: CompanyOpened = {
 
 interface Harness {
   readonly page: InformationsPage;
+  /** Le DOM rendu : certains contrats se jouent à l'écran, pas dans un signal. */
+  readonly fixture: ComponentFixture<InformationsPage>;
   /** La façade : ce que la page lit et déclenche. */
   readonly fiche: FicheClientFacade;
   readonly create: ReturnType<typeof vi.fn>;
@@ -82,7 +85,7 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
   vi.spyOn(TestBed.inject(Router), 'navigate').mockImplementation(navigate);
   await Promise.resolve();
   await Promise.resolve();
-  return { page, fiche, create, navigate, errors };
+  return { page, fixture, fiche, create, navigate, errors };
 }
 
 /** Remplit le bloc d'ouverture avec le minimum exigé. */
@@ -211,5 +214,28 @@ describe('InformationsPage — ouverture d’un compte', () => {
     // n'est pas celle du commercial.
     expect(page['identityDraft']().enseigne).toBe('  Le Comptoir  ');
     expect(fiche.creating()).toBe(false);
+  });
+});
+
+describe("Le bouton d'ouverture dit pourquoi il est éteint", () => {
+  /**
+   * Un commercial commence souvent par le détenteur — c'est la personne qu'il a
+   * au téléphone. Il se retrouvait devant un bouton gris dont la cause (le champ
+   * enseigne, vide) était en haut de l'écran, hors de son regard.
+   */
+  it("affiche la raison tant que l'enseigne manque", async () => {
+    const { fixture } = await setup();
+    fixture.detectChanges();
+
+    const blocker = fixture.nativeElement.querySelector('.open-blocker');
+    expect(blocker?.textContent?.trim()).toBe("Saisissez l'enseigne pour ouvrir le compte.");
+  });
+
+  it('retire la raison dès que le champ est rempli', async () => {
+    const { page, fixture } = await setup();
+    fill(page);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.open-blocker')).toBeNull();
   });
 });
