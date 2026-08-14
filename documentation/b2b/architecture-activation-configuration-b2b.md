@@ -1,138 +1,100 @@
-# Activation & configuration des pièces B2B — design
+# Le dossier d'activation : ce qui bloque, ce qui se réclame
 
-> Ce qu'il faut pour **activer** un compte client, rendu **configurable** par le
-> staff, sans jamais re-bloquer un compte déjà actif.
->
-> Trois couches distinctes : une **config globale** (quelles pièces sont cachées /
-> optionnelles / requises), un **gate d'activation** (le bouton « Activer », gaté
-> côté serveur), et une **conformité dérivée** (les comptes actifs à qui il manque
-> une pièce nouvellement requise sont _avertis_, jamais bloqués).
->
-> Décidé le **2026-08-03**. Prérequis lus :
-> [`architecture-compte-client-cycle-de-vie.md`](architecture-compte-client-cycle-de-vie.md)
-> (deux portes, dossier `pending` validé côté commercial) et la fiche client admin
-> livrée (synthèse d'activation + mutations staff Porte B).
->
-> **Statut : Slice A LIVRÉE (2026-08-03)** — config + page Réglages + masquage UI
->
-> - commande `ActivateCompanyByStaff` gatée + CTA « Activer ». **Slice B**
->   (conformité / grâce, §4) reste à faire.
+✅ **État au 2026-08-14.** Ce document décrivait une **configuration** — un mode
+`hidden` / `optional` / `required` par pièce, réglable depuis Réglages →
+Activation client. Elle a été **supprimée**. Ce qui suit décrit ce qui la
+remplace, et pourquoi.
 
----
+## 1. Pourquoi la configuration a disparu
 
-## 0. Le problème
+Le parcours d'ouverture est arrêté. Une fois arrêté, il n'a plus à se redéfinir
+depuis un écran : une case cochée un mardi soir changeait la définition de
+« client » pour toute la plateforme — sans revue, sans test, sans trace, et sans
+que personne puisse dire le lendemain pourquoi un compte était passé.
 
-La fiche client admin sait déjà **refléter** les pièces manquantes (synthèse) et
-les **compléter** à la place du client (Porte B). Trois manques :
+La règle vit désormais dans **une seule fonction**, `activationGate`
+(`apps/lfc-B2B-platform-backend/src/account/domain/services/activation-gate.ts`),
+pure, testée, et lue par les deux chemins qui comptent : la fiche staff (qui
+l'affiche) et la commande d'activation (qui refuse). L'écran n'a plus le droit
+de la rejouer.
 
-1. **Aucune activation.** `active` est censé être « validé par une activation
-   commerciale explicite » (cf. `company-status.ts`), mais **aucune commande ne
-   fait `pending→active`** aujourd'hui. Le staff n'a pas de bouton pour activer.
-2. **Les exigences sont figées dans le code.** La synthèse liste TVA, KBIS,
-   facturation, livraison, règlement en dur. Or **la livraison n'existe pas encore
-   comme service** — la demander est un mensonge — et **la vérification KBIS**
-   devrait pouvoir être optionnelle selon le moment.
-3. **Aucun garde-fou anti-rétro-blocage.** Rendre une pièce obligatoire plus tard
-   ne doit **jamais** re-bloquer un compte déjà actif.
-
-## 1. Trois couches, trois règles
+## 2. La règle
 
 ```mermaid
-flowchart TD
-  cfg[Config globale<br/>mode par pièce + requiredSince]
-  cfg -->|masque les hidden| ui[UI client + admin]
-  cfg -->|liste required/optional manquants| synth[Synthèse admin]
-  cfg -->|exige les required| gate[Gate d'activation<br/>ActivateCompanyByStaff]
-  cfg -->|required manquant sur compte actif| comp[Conformité dérivée<br/>warn + grâce, jamais bloquant]
-  gate -->|pending → active| active[(Compte actif)]
-  active --> comp
+flowchart TB
+    subgraph bloc["Bloquent — le serveur refuse"]
+        L["Identité légale<br/>raison sociale + forme + SIRET"]
+        D["Détenteur<br/>une adresse e-mail"]
+        T["Téléphone<br/>n'importe quel interlocuteur"]
+        V["TVA<br/>si la forme y assujettit"]
+        F["Adresse de facturation"]
+    end
+    subgraph conv["Se réclame, ne bloque pas"]
+        K["Extrait KBIS vérifié"]
+    end
+    subgraph hors["Hors périmètre"]
+        LI["Livraison<br/>le service n'existe pas"]
+    end
 ```
 
-Le point qui rend le tout cohérent : **une pièce `required` gate l'ACTIVATION, pas
-l'ACCÈS runtime**. Le mur des commandes (statut `active` requis) reste inchangé ;
-la conformité ne touche jamais au statut ni aux commandes.
+**Le KBIS est une convention interne.** On veut voir l'extrait ; on ne veut pas
+perdre la commande de demain matin pour un PDF. Le risque qu'il couvre — une
+société qui n'est pas celle qu'elle dit — se matérialise à la **facturation**,
+pas à la commande, sur des clients que le commercial a rencontrés. Il reste donc
+demandé, son état reste vrai (« certifié », jamais « déposé »), et il ne tient
+aucune porte.
 
-## 2. Config globale — un **mode** par pièce (pas un flag par feature)
+Corollaire assumé : **rien ne suspend un compte pour un KBIS**. Ni le retrait de
+vérification, ni le remplacement de l'extrait. Ces deux gestes menaient au même
+état avec deux conséquences différentes — le second (ouvert au client sur sa
+propre société) ne suspendait déjà pas. C'était l'incohérence, pas la règle.
 
-Une config **globale** (à l'échelle LFC, pas par société — « la livraison n'existe
-pas » est une réalité business), éditée depuis une **page Réglages** dans le menu
-admin. Chaque pièce d'activation porte **un mode** :
+**La livraison** n'est plus une pièce. Le jour où le service ouvre, elle revient
+dans un commit avec ses tests. Côté écrans, une seule ligne commande son
+affichage : `DELIVERY_SERVICE_OPEN` (`@lfd/b2b-ui/flags`), lue par cinq écrans.
 
-| Mode       | UI                                             | Gate d'activation     | Ex.                             |
-| ---------- | ---------------------------------------------- | --------------------- | ------------------------------- |
-| `hidden`   | **cachée** client + admin (cartes ET synthèse) | jamais exigée         | livraison (service absent)      |
-| `optional` | visible, déposable                             | **n'exige pas**       | KBIS avant sa mise en place     |
-| `required` | visible                                        | **exige la présence** | facturation, TVA (si assujetti) |
+## 3. Ce qui reste à construire : la ligne d'avertissements
 
-Un **seul enum** couvre les deux besoins de Hugo (masquer la livraison ; rendre le
-KBIS optionnel), au lieu de deux flags ad hoc qui divergeraient. Extensible : une
-nouvelle pièce = une entrée dans le registre, pas une branche de plus (OCP).
+Une pièce qui ne bloque jamais devient décorative si personne ne la regarde. Le
+KBIS non vérifié doit donc **se voir**, et pas sur la fiche — qu'on n'ouvre que
+lorsqu'on a déjà un problème — mais sur la **liste des comptes clients**, l'écran
+qu'on ouvre pour travailler.
 
-Chaque pièce requise porte aussi un **`requiredSince`** (date de bascule vers
-`required`) — l'ancre de la grâce, cf. §4.
+Décision prise : un **badge sur la ligne du compte**, pas une entrée dans la
+`play-queue` du cockpit. Cette file est un modèle de **scoring commercial**
+(`LeadScoreView`, « les meilleurs coups du jour ») ; y verser une tâche de
+back-office fausserait le score.
 
-**Pièces au catalogue initial** : `tva` (conditionné par l'assujettissement, cf.
-`vatNumberRequired`), `kbis`, `billing`, `delivery`, `paymentTerm`. La TVA garde
-sa condition métier : `required` **et** assujetti.
+⚠️ **Ce badge est le premier d'une famille, et il faut le construire comme tel.**
+Il ne sera pas seul longtemps :
 
-## 3. Gate d'activation — le bouton « Activer »
+| Avertissement             | Ce qu'il dit                                  |
+| ------------------------- | --------------------------------------------- |
+| KBIS à vérifier           | l'extrait est là, personne ne l'a ouvert      |
+| Pièce manquante           | le dossier est incomplet, l'activation attend |
+| En attente depuis N jours | le compte est ouvert et n'avance plus         |
+| Mandat SEPA absent        | un moyen de paiement annoncé qui n'existe pas |
 
-- Nouvelle commande **`ActivateCompanyByStaffCommand(companyId)`** (Porte B, sans
-  mur membership, comme les autres mutations staff). Le handler charge la config,
-  vérifie que **toutes les pièces `required` applicables** sont présentes → sinon
-  `BusinessError` 409 « pièces manquantes ». Sur succès : `pending → active`
-  (+ `activatedAt`).
-- **Fiche admin** : un CTA **« Activer le compte »** près de la synthèse —
-  **désactivé** tant qu'une pièce `required` manque, **solide** dès que OK. Le
-  front lit la même synthèse pour l'état visuel ; **le serveur retranche** (jamais
-  de confiance au front).
-- **KBIS = présence, pas certification.** L'activation exige que le KBIS soit
-  _déposé_ ; sa _certification_ (le flag `certified` posé par le staff) relève de
-  la conformité douce, pas du gate. _(Décision 1.)_
+Ces quatre-là partagent la même forme : un **fait par compte**, daté, avec un
+degré d'urgence qui croît avec l'âge, et un geste. La bonne cible est donc une
+**ligne de données par compte** — un tableau d'avertissements calculé côté
+serveur et rendu par la liste — et non quatre calculs dispersés dans le front.
 
-## 4. Conformité dérivée — jamais de rétro-blocage
+Ce qu'il faudra trancher au moment de la construire :
 
-Rendre une pièce `required` a **deux effets séparés** :
+- **Où le calcul vit.** Probablement à côté de `activationGate`, qui connaît déjà
+  l'état des pièces — mais l'ancienneté et l'inactivité n'en font pas partie.
+- **Qui porte l'âge.** `kbisUploadedAt` existe ; « en attente depuis » se déduit
+  de `createdAt`, mais « n'avance plus » demanderait une date de dernier geste
+  qui n'est aujourd'hui écrite nulle part.
+- **Le bruit.** Quatre badges sur chaque ligne d'une liste de 250 comptes, c'est
+  une liste illisible. Il faudra un ordre de priorité, et probablement un seul
+  badge visible plus un compteur.
 
-- **Sur le futur (le gate)** : les prochaines activations doivent la respecter.
-- **Sur l'existant (comptes `active`)** : **on ne touche pas leur statut**. La
-  conformité est **calculée en lecture** à partir de (config, état société) :
+En attendant, le badge KBIS se pose seul — mais sa donnée doit déjà venir du
+serveur, dans un champ qui pourra devenir un tableau.
 
-  > pièce `required` **et** absente **et** compte `active`
-  > → **non conforme**, avec `graceUntil = requiredSince + N jours`.
+## 4. À lire ensuite
 
-  Avant `graceUntil` : warn discret. Après : le warn **monte en intensité**
-  (bandeau fiche, colonne liste), mais **n'a jamais d'effet sur l'accès ni les
-  commandes**. _(« activer le KBIS en cours de route → grâce puis warn, jamais
-  bloquant ».)_
-
-Aucune migration, aucun re-scan : la non-conformité est **dérivée**, comme la
-synthèse. Le jour où la config change, rien n'est écrit sur les sociétés.
-
-## 5. Impact sur l'existant
-
-- **Synthèse admin** (`fiche-client`) : filtre les `hidden`, annote `optional` vs
-  `required`, et calcule le `canActivate` du CTA.
-- **Cartes adresses / KBIS** (client + admin) : masquées si la pièce est `hidden`.
-  La section livraison disparaît des deux fronts tant que `delivery = hidden`.
-- **Mur des commandes** (statut `active`) : **inchangé**. La conformité ne le
-  touche pas.
-- **Réglages admin** : nouvelle page (menu admin) éditant la config — un seul
-  écran, une ligne par pièce (mode + aperçu du nombre de comptes impactés).
-
-## 6. Périmètre & découpage
-
-- **Hors périmètre pour l'instant** : la **désactivation / suspension**
-  (`active → suspended`) — on ne fait que `pending → active`. _(Décision 2.)_
-- **Slice A** ✅ **LIVRÉE** : config (`b2b_platform_settings`, un `PieceMode` par
-  pièce) + page Réglages admin + `GET /platform-settings` public + `PATCH` staff +
-  masquage UI (synthèse admin, cartes client+admin via `showDeliveries`) + commande
-  `ActivateCompanyByStaff` gatée serveur (`missingRequiredPieces`) + CTA « Activer ».
-- **Slice B** (ensuite) : la couche **conformité / grâce** — indépendante et plus
-  subtile, dérivée en lecture. _(Décision 3.)_
-
-## 7. Décisions actées (2026-08-03)
-
-1. **KBIS** : l'activation exige la **présence**, pas la certification.
-2. **Suspension / désactivation** : hors périmètre ; uniquement `pending→active`.
-3. **Découpage** : Slice A (activation + config) avant Slice B (conformité/grâce).
+- [`architecture-compte-client-cycle-de-vie.md`](architecture-compte-client-cycle-de-vie.md) — ouverture, activation, suspension
+- [`architecture-alertes-compte-client.md`](architecture-alertes-compte-client.md) — les alertes de **commande** (à ne pas confondre avec ces avertissements de **dossier**)
