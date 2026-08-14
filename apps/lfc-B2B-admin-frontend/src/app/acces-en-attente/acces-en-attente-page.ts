@@ -6,12 +6,22 @@ import {
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
 } from 'fold-ng';
 
 import { NotifyService } from '../notify.service';
 import { displayName, validUntil, waitingFor, type PendingAccess } from './pending-access.model';
 import { PendingAccessService } from './pending-access.service';
+
+/** Le compte d'un périmètre, ou `null` quand il est vide (pas de pastille). */
+function count(people: readonly PendingAccess[], kind: PendingAccess['kind']): number | null {
+  const found = people.filter((person) => person.kind === kind).length;
+  return found === 0 ? null : found;
+}
 
 /** Une ligne prête à rendre — nom et attente calculés une fois. */
 interface PendingRow {
@@ -41,6 +51,9 @@ interface PendingRow {
     FoldIconComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
+    FoldTabsComponent,
+    FoldTabPanelComponent,
   ],
   templateUrl: './acces-en-attente-page.html',
   styleUrl: './acces-en-attente-page.scss',
@@ -64,12 +77,15 @@ export class AccesEnAttentePage {
    */
   protected readonly tab = signal<'client' | 'staff'>('client');
 
-  protected readonly clientCount = computed(
-    () => this.people().filter((person) => person.kind === 'client').length,
-  );
-  protected readonly staffCount = computed(
-    () => this.people().filter((person) => person.kind === 'staff').length,
-  );
+  /**
+   * La barre, avec son compte par périmètre. `null` plutôt que `0` : un badge
+   * qui affiche zéro dit « regarde ici » pour ne rien montrer — l'absence de
+   * pastille EST le zéro, et laisse la pastille vouloir dire quelque chose.
+   */
+  protected readonly tabs = computed<FoldTabItem[]>(() => [
+    { key: 'client', label: 'Clients', badge: count(this.people(), 'client') },
+    { key: 'staff', label: 'Équipe', badge: count(this.people(), 'staff') },
+  ]);
 
   protected readonly rows = computed<readonly PendingRow[]>(() =>
     this.people()
@@ -83,6 +99,16 @@ export class AccesEnAttentePage {
 
   constructor() {
     void this.load();
+  }
+
+  /**
+   * `fold-tabs` rend une clé de type `string` — l'onglet, lui, n'a que deux
+   * valeurs. On referme ici plutôt que d'élargir le signal : élargir ferait
+   * accepter un troisième périmètre qui n'existe pas et donnerait une liste
+   * vide sans que rien ne le signale.
+   */
+  protected selectTab(key: string): void {
+    this.tab.set(key === 'staff' ? 'staff' : 'client');
   }
 
   protected async load(): Promise<void> {

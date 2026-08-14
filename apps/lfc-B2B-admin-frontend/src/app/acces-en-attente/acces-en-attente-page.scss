@@ -12,13 +12,6 @@
   max-width: 60ch;
 }
 
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--fold-space-sm);
-}
-
 .rows {
   display: flex;
   flex-direction: column;
@@ -87,47 +80,12 @@
   }
 }
 
-// Onglets de périmètre — un segment, pas des liens : on ne change pas de page,
-// on filtre la même. Le compte vit DANS l'onglet, sinon il faut l'ouvrir pour
-// savoir s'il vaut la peine d'être ouvert.
+// Onglets de périmètre — `fold-tabs` compact/fill fait tout le dessin : segment,
+// pastilles, état actif, clavier. Il ne reste que sa place dans la page. La barre
+// se cale à gauche au lieu de s'étirer : deux onglets tirés sur toute la largeur
+// se liraient comme une barre d'outils, pas comme un choix.
 .tabs {
-  display: flex;
-  gap: var(--fold-space-2xs);
+  display: block;
+  width: fit-content;
   margin-bottom: var(--fold-space-md);
-}
-
-.tab {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--fold-space-2xs);
-  padding: var(--fold-space-2xs) var(--fold-space-sm);
-  border: 1px solid var(--fold-color-border-subtle);
-  border-radius: var(--fold-radius-round, 999px);
-  background: transparent;
-  color: var(--fold-color-text-secondary);
-  font: inherit;
-  cursor: pointer;
-}
-
-.tab:hover {
-  color: var(--fold-color-text);
-}
-
-.tab.is-on {
-  border-color: transparent;
-  background: var(--fold-color-accent-soft, var(--fold-color-surface-sunken));
-  color: var(--fold-color-text);
-  font-weight: 600;
-}
-
-// Chiffres alignés : deux onglets côte à côte se comparent, et un « 1 » plus
-// étroit qu'un « 8 » ferait danser le libellé.
-.tab-count {
-  font-variant-numeric: tabular-nums;
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
-}
-
-.tab.is-on .tab-count {
-  color: inherit;
 }
