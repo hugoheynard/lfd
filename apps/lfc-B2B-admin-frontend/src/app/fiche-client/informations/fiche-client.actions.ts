@@ -176,6 +176,11 @@ export class FicheClientActions {
       // Le sort de l'envoi n'est pas arrondi : un « c'est envoyé ! » de
       // politesse ferait attendre un e-mail qui n'arrivera jamais.
       this.notify.success(accessMessage(result));
+      // Canal muet : on ne renvoie pas le commercial sur un autre écran, il a
+      // le client au téléphone. Le lien atterrit dans son presse-papier, ici.
+      if (!result.mailSent) {
+        await this.copyAccessLink(result.member.userId);
+      }
       return true;
     } catch (error) {
       this.notify.error(error);
@@ -216,6 +221,25 @@ export class FicheClientActions {
       return false;
     } finally {
       this.granting.set(false);
+    }
+  }
+
+  /**
+   * Fabrique le lien et le met dans le presse-papier — le repli quand l'e-mail
+   * n'est pas parti.
+   *
+   * Un lien **neuf** à chaque fois : il est à usage unique et daté, et celui de
+   * l'envoi manqué n'existe plus. L'échec est silencieux ici — le message
+   * principal a déjà dit l'essentiel (« l'accès est ouvert »), et empiler deux
+   * toasts sur un même geste apprend à les fermer sans les lire.
+   */
+  private async copyAccessLink(userId: string): Promise<void> {
+    try {
+      const url = await this.service.issueAccessLink(userId);
+      await navigator.clipboard.writeText(url);
+      this.notify.success('Lien copié — il expire, remettez-le sans tarder.');
+    } catch {
+      this.notify.success('Lien à remettre depuis « Accès à remettre ».');
     }
   }
 

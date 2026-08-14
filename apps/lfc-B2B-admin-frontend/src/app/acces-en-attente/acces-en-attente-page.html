@@ -20,13 +20,43 @@
       </div>
     }
     @default {
+      <!-- Deux périmètres, deux onglets : le commercial ne mélange pas les
+           clients qu'il sert et l'équipe qui l'entoure. Le compte est SUR
+           l'onglet — c'est lui qui dit lequel des deux traîne, sans l'ouvrir. -->
+      <nav class="tabs" aria-label="Périmètre">
+        <button
+          type="button"
+          class="tab"
+          [class.is-on]="tab() === 'client'"
+          [attr.aria-pressed]="tab() === 'client'"
+          (click)="tab.set('client')"
+        >
+          Clients
+          <span class="tab-count">{{ clientCount() }}</span>
+        </button>
+        <button
+          type="button"
+          class="tab"
+          [class.is-on]="tab() === 'staff'"
+          [attr.aria-pressed]="tab() === 'staff'"
+          (click)="tab.set('staff')"
+        >
+          Équipe
+          <span class="tab-count">{{ staffCount() }}</span>
+        </button>
+      </nav>
+
       @if (rows().length === 0) {
         <!-- Le vide sera fréquent, et c'est une bonne nouvelle : il se dit
              comme telle plutôt qu'en tableau sans lignes. -->
         <fold-empty-state
           icon="check"
           title="Personne n'attend"
-          description="Tous les accès ouverts ont été créés par leurs détenteurs."
+          [subtitle]="
+            tab() === 'client'
+              ? 'Tous les accès clients ouverts ont été créés par leurs détenteurs.'
+              : 'Toute l’équipe invitée a créé son accès.'
+          "
         />
       } @else {
         <ul class="rows">

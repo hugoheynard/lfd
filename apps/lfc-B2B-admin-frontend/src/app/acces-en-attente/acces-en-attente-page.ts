@@ -53,12 +53,28 @@ export class AccesEnAttentePage {
   /** Figé au chargement : un âge qui se recalcule à chaque rendu est instable. */
   private readonly loadedAt = signal(new Date());
 
+  /**
+   * L'onglet ouvert. Deux périmètres qui ne se mélangent pas dans la tête du
+   * commercial : les clients qu'il sert, l'équipe qui l'entoure. Les compter
+   * séparément, c'est aussi voir tout de suite lequel des deux traîne.
+   */
+  protected readonly tab = signal<'client' | 'staff'>('client');
+
+  protected readonly clientCount = computed(
+    () => this.people().filter((person) => person.kind === 'client').length,
+  );
+  protected readonly staffCount = computed(
+    () => this.people().filter((person) => person.kind === 'staff').length,
+  );
+
   protected readonly rows = computed<readonly PendingRow[]>(() =>
-    this.people().map((person) => ({
-      person,
-      name: displayName(person),
-      waiting: waitingFor(person.invitedAt, this.loadedAt()),
-    })),
+    this.people()
+      .filter((person) => person.kind === this.tab())
+      .map((person) => ({
+        person,
+        name: displayName(person),
+        waiting: waitingFor(person.invitedAt, this.loadedAt()),
+      })),
   );
 
   constructor() {
