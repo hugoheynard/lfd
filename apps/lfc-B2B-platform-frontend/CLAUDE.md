@@ -42,6 +42,29 @@ On ne crée un composant applicatif que pour de la logique **métier**, et il
 **compose** des primitives fold. Tokens fold uniquement (`--fold-color-*`,
 `--fold-space-*`, …) — pas de couleur ni d'espacement en dur.
 
+### Les états d'une vue passent TOUS par fold (règle permanente)
+
+Chargement, erreur et vide sont des **composants fold**, jamais du balisage
+maison. Aucune exception, aucune nouveauté :
+
+| État                       | Le composant                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| Chargement                 | `<fold-loading message="…" />`                                               |
+| Erreur de chargement       | `<fold-empty-state tone="alert" title="…">` + un bouton `foldButton` projeté |
+| Vide                       | `<fold-empty-state title="…" subtitle="…">` + `<fold-icon empty-icon …>`     |
+| Échec **partiel** en ligne | `<fold-callout variant="alert">` — le contenu s'affiche quand même           |
+
+Un `<p class="state">Chargement…</p>` ou un `<div>` d'erreur bricolé est un
+défaut à corriger, pas un choix de page. L'erreur et le vide partagent le même
+composant à dessein : les deux disent « rien sous les yeux », et se distinguent
+par le **ton** et le **texte**, pas par deux mises en page.
+
+⚠️ **Lire la déclaration du composant avant d'utiliser une entrée.** Un attribut
+statique inconnu sur un composant Angular **ne lève rien** : `icon="clock"` et
+`description="…"` sur `fold-empty-state` compilaient et n'affichaient rien —
+l'icône passe par le slot `[empty-icon]`, le texte par `subtitle`. La source est
+`node_modules/fold-ng/types/fold-ng.d.ts`.
+
 ## CSS propre & marges (règles permanentes)
 
 - **Zéro CSS morte.** Toute classe définie dans un `.scss` est référencée dans le
@@ -52,11 +75,11 @@ On ne crée un composant applicatif que pour de la logique **métier**, et il
   - du **`gap`** du conteneur flex/grid parent (y compris les slots de
     `fold-page-layout`, `fold-aside-layout`, panels `.body`) ;
   - des **écarts naturels** des composants fold.
-  Seules exceptions tolérées : `margin: auto` (centrage / poussée flex, ex.
-  `.foot { margin-top: auto }`), `margin: 0` (reset), et une **marge négative**
-  délibérée de chevauchement (effet visuel, ex. `featured-flag`). Pour séparer un
-  label de son contrôle, envelopper la paire dans un flex-column avec `gap` — pas
-  un `margin-bottom` sur le label.
+    Seules exceptions tolérées : `margin: auto` (centrage / poussée flex, ex.
+    `.foot { margin-top: auto }`), `margin: 0` (reset), et une **marge négative**
+    délibérée de chevauchement (effet visuel, ex. `featured-flag`). Pour séparer un
+    label de son contrôle, envelopper la paire dans un flex-column avec `gap` — pas
+    un `margin-bottom` sur le label.
 
 ## Toute page dans un fold-page-layout
 

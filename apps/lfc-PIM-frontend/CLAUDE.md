@@ -37,6 +37,13 @@ des primitives fold plutôt que de styler des `<button>`/`<input>` bruts.
 Tokens fold uniquement (`--fold-color-*`, `--fold-space-*`, …) — pas de couleur
 ni d'espacement en dur.
 
+**Les états d'une vue passent tous par fold, sans exception** : `fold-loading`
+(chargement), `fold-empty-state` en `tone="alert"` (erreur), `fold-empty-state`
+(vide), `fold-callout` (échec partiel qui laisse le contenu à l'écran). Jamais un
+`<p class="state">Chargement…</p>` maison, jamais un état inventé. Le tableau
+complet et le piège des attributs muets :
+[`../lfc-B2B-platform-frontend/CLAUDE.md`](../lfc-B2B-platform-frontend/CLAUDE.md).
+
 ## POC frontend-only (contexte)
 
 Pas de backend en POC : la « DB » est un seed versionné dans le repo
