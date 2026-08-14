@@ -147,8 +147,15 @@ export class ReglagesStaffUsersPage {
   /** Invite, ou renvoie un lien : même geste, même appel. */
   protected async invite(user: StaffUserView): Promise<void> {
     try {
-      await this.service.invite(user.id);
-      this.notify.success(`Lien envoyé à ${user.email}.`);
+      const { mailSent } = await this.service.invite(user.id);
+      // Le canal peut être muet — mailer non configuré, fournisseur en panne.
+      // L'annoncer parti serait envoyer quelqu'un attendre un e-mail qui
+      // n'arrivera pas ; le lien se remet alors depuis « Accès à remettre ».
+      this.notify.success(
+        mailSent
+          ? `Lien envoyé à ${user.email}.`
+          : `Accès ouvert, mais l'e-mail n'est pas parti — remettez le lien depuis « Accès à remettre ».`,
+      );
       await this.load();
     } catch (error) {
       this.notify.error(error);

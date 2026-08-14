@@ -96,7 +96,7 @@ describe("invitation staff — la première fois", () => {
     const id = await createColleague();
     expect((await view(id)).status).toBe("pending");
 
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(204);
+    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
 
     const invited = await view(id);
     expect(invited.status).toBe("invited");
@@ -110,7 +110,7 @@ describe("invitation staff — la première fois", () => {
     // le rapprochement par e-mail marcherait une fois, puis plus jamais.
     const id = await createColleague();
 
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(204);
+    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
 
     const row = await ctx.prisma.staffUser.findUniqueOrThrow({ where: { id } });
     expect(row.auth0Id).toBe("auth0|sophie@lfc.test");
@@ -122,10 +122,10 @@ describe("invitation staff — le renvoi", () => {
     // Le doublon d'identité est le vrai risque : deux `sub` pour une personne,
     // et le rapprochement d'annuaire devient un tirage au sort.
     const id = await createColleague();
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(204);
+    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
     calls.provisioned = [];
 
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(204);
+    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
 
     expect(calls.provisioned).toEqual([]);
     expect(calls.relinked).toEqual(["auth0|sophie@lfc.test"]);
@@ -133,14 +133,14 @@ describe("invitation staff — le renvoi", () => {
 
   it("repousse l'échéance", async () => {
     const id = await createColleague();
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(204);
+    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
     const first = (await view(id)).invitedAt;
     await ctx.prisma.staffUser.update({
       where: { id },
       data: { invitedAt: new Date("2026-01-01T00:00:00.000Z") },
     });
 
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(204);
+    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
 
     const second = (await view(id)).invitedAt;
     expect(second).not.toBe("2026-01-01T00:00:00.000Z");
@@ -156,7 +156,7 @@ describe("invitation staff — le renvoi", () => {
       data: { status: "active", auth0Id: "auth0|deja" },
     });
 
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(204);
+    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
 
     expect((await view(id)).status).toBe("active");
     expect(calls.relinked).toEqual(["auth0|deja"]);
@@ -207,7 +207,7 @@ describe("invitation staff — les refus", () => {
 describe("invitation staff — la péremption se dit", () => {
   it("passe à `invitationExpired` une fois le délai franchi", async () => {
     const id = await createColleague();
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(204);
+    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
 
     // Une invitation datée d'un jour de trop : la borne est inclusive côté vie,
     // donc on la franchit franchement plutôt que de la frôler.
@@ -219,7 +219,7 @@ describe("invitation staff — la péremption se dit", () => {
 
   it("ne périme pas une invitation d'hier", async () => {
     const id = await createColleague();
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(204);
+    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
 
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
     await ctx.prisma.staffUser.update({ where: { id }, data: { invitedAt: yesterday } });

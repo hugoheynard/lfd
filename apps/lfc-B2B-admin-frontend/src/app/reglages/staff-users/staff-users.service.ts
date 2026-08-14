@@ -55,9 +55,12 @@ export class StaffUsersService {
    * L'écran n'a pas à le deviner — il se tromperait dès qu'un second onglet est
    * ouvert sur la même fiche.
    */
-  async invite(id: string): Promise<void> {
-    await firstValueFrom(
-      this.http.post<void>(`${B2B_API_BASE}/admin/staff-users/${id}/invitation`, {}),
+  async invite(id: string): Promise<{ mailSent: boolean }> {
+    return firstValueFrom(
+      this.http.post<{ mailSent: boolean }>(
+        `${B2B_API_BASE}/admin/staff-users/${id}/invitation`,
+        {},
+      ),
     );
   }
 

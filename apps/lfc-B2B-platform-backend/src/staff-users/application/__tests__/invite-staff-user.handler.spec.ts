@@ -37,7 +37,7 @@ class IdentityDown extends Error {
   }
 }
 
-function harness(row: StaffIdentityFacts, identityFails = false): Harness {
+function harness(row: StaffIdentityFacts, identityFails = false, mailerOn = true): Harness {
   const provisioned: string[] = [];
   const relinked: string[] = [];
   const marked: { id: string; subject: string; at: Date }[] = [];
@@ -71,7 +71,7 @@ function harness(row: StaffIdentityFacts, identityFails = false): Harness {
   // On déclare celui qu'on attend — un envoi d'un autre gabarit ne compilerait
   // pas, ce qui est exactement le garde qu'on veut.
   const mailer: Pick<Deps[3], "enabled" | "send"> = {
-    enabled: true,
+    enabled: mailerOn,
     send: (args: {
       readonly to: string;
       readonly data: { readonly passwordSetupUrl: string };
@@ -153,5 +153,22 @@ describe("InviteStaffUserHandler — ordre des opérations", () => {
 
     expect(h.marked).toEqual([]);
     expect(h.mails).toEqual([]);
+  });
+});
+
+describe("InviteStaffUserHandler — ce que l'écran a le droit d'annoncer", () => {
+  it("dit que l'e-mail est parti quand le canal est ouvert", async () => {
+    const h = harness(target());
+
+    await expect(h.handler.execute(COMMAND)).resolves.toEqual({ mailSent: true });
+  });
+
+  it("dit qu'il n'est PAS parti quand le mailer tourne à blanc", async () => {
+    // Sans clé, le mailer rend le gabarit, le journalise et n'envoie rien : il
+    // ne lève donc pas. Rendre `void` faisait annoncer « lien envoyé » à
+    // quelqu'un qui n'attendrait jamais rien — le lien se remet alors à la main.
+    const h = harness(target(), false, false);
+
+    await expect(h.handler.execute(COMMAND)).resolves.toEqual({ mailSent: false });
   });
 });

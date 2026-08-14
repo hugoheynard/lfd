@@ -1,3 +1,4 @@
+import type { StaffInvited } from "../application/invite-staff-user.handler.js";
 import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   type CreatedStaffUserResponse,
@@ -104,10 +105,12 @@ export class AdminStaffUsersController {
    * Le verbe suffit à exiger `staff:write` (surface réflexive) : inviter
    * quelqu'un dans le back-office est un geste d'administrateur.
    */
+  // 200 et non 204 : la réponse porte `mailSent`. Le 204 d'avant ne pouvait
+  // rien dire, et l'écran annonçait donc un envoi qu'il n'avait pas constaté.
   @Post(":id/invitation")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async invite(@Param("id") id: string, @StaffSub() actorSub: string): Promise<void> {
-    await this.commands.execute<InviteStaffUserCommand, void>(
+  @HttpCode(HttpStatus.OK)
+  invite(@Param("id") id: string, @StaffSub() actorSub: string): Promise<StaffInvited> {
+    return this.commands.execute<InviteStaffUserCommand, StaffInvited>(
       new InviteStaffUserCommand(id, actorSub),
     );
   }
