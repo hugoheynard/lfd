@@ -1,5 +1,6 @@
 import type {
   ActivationPiece,
+  CompanyWarning,
   FulfillmentPreferenceView,
   CompanyAddressesView,
   CompanyContactView,
@@ -84,6 +85,13 @@ export interface AdminCompany {
    */
   readonly hasOpenSupportRequest: boolean;
   readonly createdAt: string;
+  /**
+   * Ce qui, dans ce dossier, appelle un geste — **déjà ordonné par le serveur**,
+   * du plus coûteux au moins pressant. La galerie ne retrie pas : au
+   * défilement, il n'y a pas d'en-tête de colonne pour rattraper un mauvais
+   * classement.
+   */
+  readonly warnings: readonly CompanyWarning[];
 }
 
 /**

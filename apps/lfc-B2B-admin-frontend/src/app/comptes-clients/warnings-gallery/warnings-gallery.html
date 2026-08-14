@@ -1,0 +1,31 @@
+@if (count() > 0) {
+  <section class="gallery" aria-label="Ce qui appelle un geste">
+    <header class="gallery-head">
+      <h2>À traiter</h2>
+      <!-- Le nombre TOTAL, pas celui des cartes visibles : la rangée en montre
+           trois ou quatre selon la largeur, et voir le bord ferait croire qu'on
+           a tout vu. -->
+      <span class="count">{{ count() }}</span>
+    </header>
+
+    <!-- `tabindex="0"` : une zone qui défile doit pouvoir défiler au clavier.
+         Sans lui, tout ce qui dépasse du bord est inatteignable sans souris. -->
+    <ul class="strip" tabindex="0">
+      @for (card of cards(); track card.key) {
+        <li class="card" [class]="'is-' + card.tone">
+          <a class="card-link" [routerLink]="['/comptes-clients', card.companyId]">
+            <span class="card-head">
+              <fold-icon name="alert" [size]="15" />
+              <span class="card-title">{{ card.title }}</span>
+            </span>
+            <span class="card-company">{{ card.companyName }}</span>
+            <span class="card-detail">{{ card.detail }}</span>
+            @if (card.age) {
+              <span class="card-age">{{ card.age }}</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+  </section>
+}

@@ -32,6 +32,7 @@ function makeCompany(
     owner: null,
     hasOpenSupportRequest,
     createdAt: '2026-07-30T10:00:00.000Z',
+    warnings: [],
   };
 }
 

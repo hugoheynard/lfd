@@ -32,6 +32,9 @@
 
   @if (state() === 'ready') {
     <app-portfolio-bar [metrics]="metrics()" />
+    <!-- Ce qui appelle un geste, avant la liste : on ouvre cet écran pour
+         travailler, pas pour contempler 250 lignes. -->
+    <app-warnings-gallery [companies]="companies()" [now]="loadedAt()" />
   }
 
   @if (state() === 'error') {

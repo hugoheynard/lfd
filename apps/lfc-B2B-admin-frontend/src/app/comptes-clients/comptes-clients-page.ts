@@ -19,6 +19,7 @@ import {
 
 import { PendingAlertsService } from '../shared/alerts/pending-alerts.service';
 import { PortfolioBar } from './portfolio-bar/portfolio-bar';
+import { WarningsGallery } from './warnings-gallery/warnings-gallery';
 import { PortfolioMetricsService } from './portfolio-metrics.service';
 import { AdminCompaniesService } from './admin-companies.service';
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-company';
@@ -88,6 +89,7 @@ function isFilterValue(value: string): value is FilterValue {
     FoldViewToggleComponent,
     FoldPaginatorComponent,
     PortfolioBar,
+    WarningsGallery,
     RouterLink,
   ],
   templateUrl: './comptes-clients-page.html',
@@ -100,6 +102,15 @@ export class ComptesClientsPage {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly companies = signal<readonly AdminCompany[]>([]);
+
+  /**
+   * L'instant qui date les avertissements, figé au chargement de l'écran.
+   *
+   * Pas un `new Date()` dans le rendu : un âge qui se recalcule à chaque
+   * détection de changement rendrait la galerie non déterministe — et son test
+   * dépendant du jour où on le lance.
+   */
+  protected readonly loadedAt = signal(new Date());
   protected readonly filter = signal<FilterValue>('all');
   /** Le terme cherché — société, SIRET, ou propriétaire de l'espace. */
   protected readonly search = signal('');

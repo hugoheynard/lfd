@@ -1,0 +1,97 @@
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.gallery-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+
+  h2 {
+    margin: 0;
+    font-size: var(--fold-text-sm);
+    font-weight: var(--fold-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--fold-color-text-muted);
+  }
+}
+
+.count {
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-secondary);
+}
+
+/* La rangée : un seul axe, et le débordement se parcourt. `scroll-snap` cale
+   chaque carte sur le bord — sans lui, on s'arrête toujours au milieu d'une. */
+.strip {
+  display: flex;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0 0 var(--fold-space-2xs);
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+}
+
+.card {
+  flex: 0 0 min(20rem, 78%);
+  scroll-snap-align: start;
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  /* La gravité se lit au liseré avant de se lire au texte. */
+  border-left-width: 3px;
+
+  &.is-alert {
+    border-left-color: var(--fold-color-alert-border, var(--fold-color-danger));
+  }
+  &.is-warning {
+    border-left-color: var(--fold-color-warning-border, var(--fold-color-warning));
+  }
+  &.is-info {
+    border-left-color: var(--fold-color-info-border, var(--fold-color-accent));
+  }
+}
+
+.card-link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xs);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  color: inherit;
+  text-decoration: none;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-2xs);
+  color: var(--fold-color-text-muted);
+}
+
+.card-title {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.card-company {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.card-detail {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.card-age {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
