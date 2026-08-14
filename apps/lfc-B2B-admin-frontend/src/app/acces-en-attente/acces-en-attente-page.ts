@@ -1,12 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import {
   FoldButtonComponent,
   FoldIconComponent,
-  FoldCardComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
+  FoldNavLayoutComponent,
   FoldPageLayoutComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
@@ -14,6 +13,10 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../notify.service';
+import {
+  PendingAccessRowComponent,
+  type PendingRow,
+} from './pending-access-row/pending-access-row';
 import { displayName, validUntil, waitingFor, type PendingAccess } from './pending-access.model';
 import { PendingAccessService } from './pending-access.service';
 
@@ -21,13 +24,6 @@ import { PendingAccessService } from './pending-access.service';
 function count(people: readonly PendingAccess[], kind: PendingAccess['kind']): number | null {
   const found = people.filter((person) => person.kind === kind).length;
   return found === 0 ? null : found;
-}
-
-/** Une ligne prête à rendre — nom et attente calculés une fois. */
-interface PendingRow {
-  readonly person: PendingAccess;
-  readonly name: string;
-  readonly waiting: string;
 }
 
 /**
@@ -44,16 +40,16 @@ interface PendingRow {
   selector: 'app-acces-en-attente-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
     FoldPageLayoutComponent,
-    FoldCardComponent,
     FoldButtonComponent,
     FoldIconComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    FoldNavLayoutComponent,
     FoldTabsComponent,
     FoldTabPanelComponent,
+    PendingAccessRowComponent,
   ],
   templateUrl: './acces-en-attente-page.html',
   styleUrl: './acces-en-attente-page.scss',

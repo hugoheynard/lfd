@@ -26,95 +26,60 @@
       </fold-empty-state>
     }
     @default {
-      <!-- Deux périmètres, deux onglets : le commercial ne mélange pas les
-           clients qu'il sert et l'équipe qui l'entoure. Le compte est SUR
-           l'onglet — c'est lui qui dit lequel des deux traîne, sans l'ouvrir. -->
-      <fold-tabs
-        #bar="foldTabs"
-        class="tabs"
-        size="compact"
-        activeStyle="fill"
-        [tabs]="tabs()"
-        [activeKey]="tab()"
-        (activeKeyChange)="selectTab($event)"
-      />
+      <!-- `fold-nav-layout`, comme Commercial et la fiche client : c'est lui qui
+           tient l'écart entre la barre et ce qu'elle commande, et qui rabat la
+           nav sur étroit. Deux périmètres, deux onglets — le commercial ne
+           mélange pas les clients qu'il sert et l'équipe qui l'entoure — et le
+           compte vit SUR l'onglet, sinon il faut l'ouvrir pour savoir s'il vaut
+           la peine d'être ouvert. -->
+      <fold-nav-layout>
+        <fold-tabs
+          tabNav
+          #bar="foldTabs"
+          size="compact"
+          activeStyle="fill"
+          background="surface"
+          [tabs]="tabs()"
+          [activeKey]="tab()"
+          (activeKeyChange)="selectTab($event)"
+        />
 
-      <!-- UN seul panneau, dont la clé suit l'onglet : les deux périmètres se
-           rendent exactement pareil, seule la source change. Deux
-           `fold-tab-panel` dupliqueraient la carte pour n'en montrer qu'une. -->
-      <fold-tab-panel [tabs]="bar" [key]="tab()">
-        @if (rows().length === 0) {
-          <!-- Le vide sera fréquent, et c'est une bonne nouvelle : il se dit
-             comme telle plutôt qu'en tableau sans lignes. -->
-          <!-- L'icône passe par le SLOT `[empty-icon]`, pas par un attribut :
-             `fold-empty-state` n'a pas d'entrée `icon`, et `icon="check"`
-             atterrissait en attribut HTML muet — ça compile, ça n'affiche
-             rien. -->
-          <fold-empty-state
-            title="Personne n'attend"
-            [subtitle]="
-              tab() === 'client'
-                ? 'Tous les accès clients ouverts ont été créés par leurs détenteurs.'
-                : 'Toute l’équipe invitée a créé son accès.'
-            "
-          >
-            <fold-icon empty-icon name="check-circle" [size]="28" />
-          </fold-empty-state>
-        } @else {
-          <ul class="rows">
-            @for (row of rows(); track row.person.userId) {
-              <li>
-                <fold-card>
-                  <div class="row">
-                    <div class="who">
-                      <span class="name">{{ row.name }}</span>
-                      <!-- L'icône avant l'adresse : sur une carte où le nom et
-                         la société sont déjà du texte, elle donne à l'e-mail sa
-                         nature d'un coup d'œil, sans le mot « e-mail ». -->
-                      <span class="email">
-                        <fold-icon name="mail" [size]="14" />
-                        {{ row.person.email }}
-                      </span>
-                      <span class="meta">
-                        @if (row.person.companyId; as companyId) {
-                          <a [routerLink]="['/comptes-clients', companyId]">
-                            {{ row.person.companyName }}
-                          </a>
-                        } @else {
-                          <!-- Un membre de l'équipe n'a pas de fiche société où
-                             aller : son rattachement est sa fonction. -->
-                          {{ row.person.companyName }}
-                        }
-                        · attend {{ row.waiting }}
-                      </span>
-                    </div>
-                    <!-- Un lien FRAIS à chaque clic : celui de l'ouverture serait
-                       mort depuis longtemps. -->
-                    <button
-                      foldButton
-                      class="copy"
-                      intent="primary"
-                      emphasis="soft"
-                      icon="copy"
-                      [disabled]="issuing() !== null"
-                      [attr.aria-label]="'Copier le lien de ' + row.name"
-                      (click)="copyLink(row.person)"
-                    >
-                      <!-- Le libellé tombe sur étroit, l'icône reste. Une carte de
-                         téléphone n'a pas la place d'un verbe, et le geste se
-                         devine : c'est le seul bouton de la ligne. Le nom passe
-                         en `aria-label`, sinon on perdrait DE QUI on copie le
-                         lien — trois boutons « Copier » identiques au lecteur
-                         d'écran. -->
-                      <span class="copy-label">Copier le lien</span>
-                    </button>
-                  </div>
-                </fold-card>
-              </li>
-            }
-          </ul>
-        }
-      </fold-tab-panel>
+        <!-- UN seul panneau, dont la clé suit l'onglet : les deux périmètres se
+             rendent exactement pareil, seule la source change. Deux
+             `fold-tab-panel` dupliqueraient la liste pour n'en montrer qu'une. -->
+        <fold-tab-panel [tabs]="bar" [key]="tab()">
+          @if (rows().length === 0) {
+            <!-- Le vide sera fréquent, et c'est une bonne nouvelle : il se dit
+                 comme telle plutôt qu'en tableau sans lignes. -->
+            <!-- L'icône passe par le SLOT `[empty-icon]`, pas par un attribut :
+                 `fold-empty-state` n'a pas d'entrée `icon`, et `icon="check"`
+                 atterrissait en attribut HTML muet — ça compile, ça n'affiche
+                 rien. -->
+            <fold-empty-state
+              title="Personne n'attend"
+              [subtitle]="
+                tab() === 'client'
+                  ? 'Tous les accès clients ouverts ont été créés par leurs détenteurs.'
+                  : 'Toute l’équipe invitée a créé son accès.'
+              "
+            >
+              <fold-icon empty-icon name="check-circle" [size]="28" />
+            </fold-empty-state>
+          } @else {
+            <ul class="rows">
+              @for (row of rows(); track row.person.userId) {
+                <li>
+                  <app-pending-access-row
+                    [row]="row"
+                    [busy]="issuing() !== null"
+                    (copy)="copyLink(row.person)"
+                  />
+                </li>
+              }
+            </ul>
+          }
+        </fold-tab-panel>
+      </fold-nav-layout>
     }
   }
 </fold-page-layout>
