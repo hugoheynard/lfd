@@ -160,6 +160,17 @@
           [active]="comptesTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
+        <a
+          fold-nav-tile
+          variant="filled"
+          icon="mail"
+          label="Accès à remettre"
+          routerLink="/acces-en-attente"
+          routerLinkActive
+          #accesTile="routerLinkActive"
+          [active]="accesTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeeCommercial()) {
         <a

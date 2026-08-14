@@ -125,25 +125,32 @@
       </ng-template>
 
       <!-- Carte mobile plutôt que la table en `scroll` : sept colonnes sur un
-           téléphone obligeraient à balayer horizontalement pour lire un rôle. La
-           carte hiérarchise — identité, puis accès, puis coordonnées — au lieu
-           de tout aligner. -->
+           téléphone obligeraient à balayer horizontalement pour lire un rôle.
+           Deux blocs, pas cinq lignes : QUI (nom, fonction, adresse) puis CE
+           QU'IL PEUT (le statut, seule chose qui mérite une couleur). -->
       <ng-template foldRowCard let-row>
         <div class="rc">
-          <div class="rc-head">
+          <div class="rc-id">
             <span class="rc-name">{{ row.firstName }} {{ row.lastName }}</span>
+            <!-- Fonction et rôle sur UNE ligne, en texte : ce sont des faits,
+                 pas des états. En pastilles ils entraient en concurrence avec
+                 le statut, et trois couleurs côte à côte ne hiérarchisent
+                 plus rien. -->
+            <span class="rc-meta">
+              @if (row.jobTitle !== '') {
+                {{ row.jobTitle }} ·
+              }
+              {{ roleLabel(row) }}
+            </span>
+            <!-- Tronquée : une adresse longue repliée sur deux lignes double la
+                 hauteur de chaque carte, et c'est ça qui encombre. -->
+            <a class="email" [href]="'mailto:' + row.email">{{ row.email }}</a>
+          </div>
+
+          <div class="rc-side">
+            <fold-badge [variant]="statusVariant(row)" [content]="statusLabel(row)" />
             <ng-container *ngTemplateOutlet="rowActions; context: { $implicit: row }" />
           </div>
-
-          <div class="rc-badges">
-            <fold-badge variant="neutral" [content]="roleLabel(row)" />
-            <fold-badge [variant]="statusVariant(row)" [content]="statusLabel(row)" />
-          </div>
-
-          @if (row.jobTitle !== '') {
-            <span class="rc-job">{{ row.jobTitle }}</span>
-          }
-          <a class="email" [href]="'mailto:' + row.email">{{ row.email }}</a>
         </div>
       </ng-template>
     </fold-data-table>

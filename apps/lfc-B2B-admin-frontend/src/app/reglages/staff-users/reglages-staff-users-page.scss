@@ -40,37 +40,54 @@
   text-decoration: underline;
 }
 
-// Carte mobile (`mobileLayout="custom"`) — hiérarchie plutôt qu'alignement :
-// l'identité d'abord, puis ce qui décide de l'accès, puis les coordonnées.
-// Une carte étiquette/valeur automatique aurait rendu les sept colonnes à
-// l'identique, y compris la colonne d'actions au libellé vide.
+// Carte mobile (`mobileLayout="custom"`) — DEUX blocs et non cinq lignes.
+// À gauche qui c'est, à droite ce qu'il peut. La version d'avant empilait nom,
+// deux pastilles, fonction et adresse à intervalle régulier : cinq éléments de
+// poids égal, donc aucune hiérarchie, et une carte deux fois plus haute que
+// nécessaire dès qu'une adresse se repliait.
 .rc {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-  min-width: 0;
-}
-
-.rc-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.rc-id {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  // Sans ça, un enfant en `text-overflow` pousse le flex au lieu de se couper.
+  min-width: 0;
 }
 
 .rc-name {
-  min-width: 0;
   font-weight: 600;
+  line-height: 1.3;
 }
 
-.rc-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs);
-}
-
-.rc-job {
+// Fonction et rôle réunis : deux faits qui se lisent d'un souffle.
+.rc-meta {
+  font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
+}
+
+// Le statut porte seul la couleur ; le menu reste à portée du pouce.
+.rc-side {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-2xs);
+}
+
+// L'adresse ne se replie pas : elle se coupe. Une carte de hauteur stable se
+// balaie du regard, une carte qui grandit avec la longueur d'un e-mail non.
+.rc .email {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--fold-text-sm);
 }
 
@@ -90,4 +107,22 @@
 .menu-trigger:hover {
   background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
   color: var(--fold-color-text);
+}
+
+// Au doigt, une cible de 28 px se rate. On l'agrandit là où le pointeur est
+// grossier — donc sans épaissir les lignes de la table au bureau.
+@media (pointer: coarse) {
+  .menu-trigger {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+// Sur étroit, l'explication et le bouton se disputent la ligne : le bouton
+// passe dessous, pleine largeur, plutôt que de finir orphelin dans un coin.
+@media (max-width: 40rem) {
+  .head {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
