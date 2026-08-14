@@ -8,7 +8,7 @@ function reader(subject: string | null): PendingAccessReader {
   return {
     list: () => Promise.resolve([]),
     subjectOf: () => Promise.resolve(subject),
-  } as PendingAccessReader;
+  };
 }
 
 function identity(url: string, issued: string[] = []): CustomerIdentityPort {
