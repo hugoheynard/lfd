@@ -10,6 +10,7 @@ import {
   type AdminCompanyDetailView,
   type AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
+import { companyWarnings } from "../domain/services/company-warnings.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 import { projectContacts } from "./company-contacts.projection.js";
 
@@ -64,6 +65,18 @@ const COMPANY_SELECT = {
     select: { user: { select: { firstName: true, lastName: true, email: true } } },
     take: 1,
   },
+  // Deux EXISTENCES pour la galerie d'avertissements — pas deux jointures
+  // complètes : `take: 1` et un seul champ. La liste doit rester une liste.
+  addresses: {
+    where: { kind: "facturation", archivedAt: null },
+    select: { id: true },
+    take: 1,
+  },
+  mandates: {
+    where: { status: "active" },
+    select: { id: true },
+    take: 1,
+  },
 } satisfies Prisma.CompanySelect;
 
 type CompanyRow = Prisma.CompanyGetPayload<{ select: typeof COMPANY_SELECT }>;
@@ -92,7 +105,8 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       orderBy: { createdAt: "desc" },
       select: COMPANY_SELECT,
     });
-    return rows.map((row) => toView(row));
+    const now = this.clock.now();
+    return rows.map((row) => toView(row, now));
   }
 
   async byId(companyId: string): Promise<AdminCompanyDetailView | null> {
@@ -135,7 +149,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       }),
     ]);
     return {
-      ...toView(row),
+      ...toView(row, this.clock.now()),
       vatNumberRequired: requiresVatNumber(row.formeJuridique),
       addresses,
       contacts: projectContacts(
@@ -169,7 +183,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
 }
 
 /** Mappe une ligne société vers la vue admin de liste (champs propres). */
-function toView(company: CompanyRow): AdminCompanyView {
+function toView(company: CompanyRow, now: Date): AdminCompanyView {
   return {
     id: company.id,
     reference: company.reference,
@@ -212,5 +226,22 @@ function toView(company: CompanyRow): AdminCompanyView {
     owner: company.memberships[0]?.user ?? null,
     hasOpenSupportRequest: company.supportRequests.length > 0,
     createdAt: company.createdAt.toISOString(),
+    warnings: companyWarnings(
+      {
+        status: company.status,
+        createdAt: company.createdAt,
+        hasLegalIdentity:
+          company.raisonSociale.trim() !== "" &&
+          company.formeJuridique.trim() !== "" &&
+          company.siret.trim() !== "",
+        hasHolder: company.contactEmail.trim() !== "",
+        hasBillingAddress: company.addresses.length > 0,
+        hasGrantedTerms: company.grantedTerms.length > 0,
+        hasActiveMandate: company.mandates.length > 0,
+        kbisUploadedAt: company.kbisUploadedAt,
+        kbisCertifiedAt: company.kbisCertifiedAt,
+      },
+      now,
+    ),
   };
 }

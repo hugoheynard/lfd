@@ -166,6 +166,8 @@ export type {
   ClassificationIssue,
 } from "./request-topic.js";
 export { activationPieceSchema } from "./platform-settings.js";
+export { companyWarningKindSchema, companyWarningSchema } from "./company-warning.js";
+export type { CompanyWarning, CompanyWarningKind } from "./company-warning.js";
 export type { ActivationPiece } from "./platform-settings.js";
 export {
   alertKindSchema,

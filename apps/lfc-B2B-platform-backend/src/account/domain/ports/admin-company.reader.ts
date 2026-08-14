@@ -1,4 +1,5 @@
 import type {
+  CompanyWarning,
   CompanyAddressesView,
   CompanyContactView,
   FulfillmentPreferenceView,
@@ -70,6 +71,13 @@ export interface AdminCompanyView {
   readonly hasOpenSupportRequest: boolean;
   /** ISO. Ancienneté du compte (tri par défaut : plus récent d'abord). */
   readonly createdAt: string;
+  /**
+   * Ce qui, dans ce dossier, appelle un geste — **ordonné par le serveur**, du
+   * plus coûteux au moins pressant. La galerie de la liste se parcourt au
+   * défilement : il n'y a pas d'en-tête de colonne pour rattraper un mauvais
+   * classement, donc l'ordre n'est pas une affaire d'écran.
+   */
+  readonly warnings: readonly CompanyWarning[];
 }
 
 /**
