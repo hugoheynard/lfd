@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="LFC B2B admin">
+  <!-- La pastille du rail, à l'échelle de l'onglet : même bleu de marque
+       (--fold-ref-navy-500), même coin, même mot. Un onglet doit se reconnaître
+       à ce qu'on voit dans l'app, pas à un logo qu'on n'y croise jamais. -->
+  <rect width="64" height="64" rx="14" fill="#24448f" />
+  <!-- `textLength` fixe la largeur du mot indépendamment de la police que le
+       navigateur trouvera : sans lui, un fallback plus large déborderait la
+       pastille, et un plus étroit flotterait au milieu. -->
+  <text
+    x="32"
+    y="33"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+    font-size="26"
+    font-weight="700"
+    letter-spacing="-0.5"
+    textLength="46"
+    lengthAdjust="spacingAndGlyphs"
+    fill="#ffffff"
+  >B2B</text>
+</svg>

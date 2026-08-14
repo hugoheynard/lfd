@@ -25,14 +25,16 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               {
+                "glob": "**/*",
+                "input": "public"
+              },
+              {
                 "glob": "**/*.css",
                 "input": "node_modules/fold-ng/tokens",
                 "output": "fold-tokens"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ]
+            "styles": ["src/styles.scss"]
           },
           "configurations": {
             "production": {

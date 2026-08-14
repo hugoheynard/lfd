@@ -4,6 +4,11 @@
     <meta charset="utf-8" />
     <title>LFC B2B admin</title>
     <base href="/" />
+    <!-- Déclarer l'icône coupe la requête d'office vers /favicon.ico — que
+         l'app ne servait pas, d'où le 404 à chaque chargement. En SVG : une
+         pastille nette à toutes les tailles, et le bleu du rail plutôt que le
+         logo Angular que portaient les trois autres apps. -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <!-- `viewport-fit=cover` : sans lui, iOS borde la page de bandes noires sur un
          écran à encoche ET laisse `env(safe-area-inset-*)` à zéro — les marges de
          sécurité du CSS ne s'appliqueraient donc jamais. Sans effet ailleurs. -->
