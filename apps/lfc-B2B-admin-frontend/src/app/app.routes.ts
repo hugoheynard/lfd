@@ -80,6 +80,13 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'acces-en-attente',
+    canActivate: [permissionGuard('companies:read')],
+    title: 'Accès à remettre — LFC B2B admin',
+    loadComponent: () =>
+      import('./acces-en-attente/acces-en-attente-page').then((m) => m.AccesEnAttentePage),
+  },
+  {
     path: 'reglages',
     canActivate: [permissionGuard('settings:read')],
     title: 'Réglages — LFC B2B admin',

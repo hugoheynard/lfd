@@ -37,6 +37,19 @@
           [active]="comptesRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
+        <!-- Le canal de secours : les accès ouverts que personne n'a créés. Il
+             vit à côté des comptes clients parce que c'est le même geste
+             commercial, pas un réglage. -->
+        <a
+          fold-menu-item
+          icon="mail"
+          label="Accès à remettre"
+          routerLink="/acces-en-attente"
+          routerLinkActive
+          #accesRla="routerLinkActive"
+          [active]="accesRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
 
       @if (canSeeCommercial()) {

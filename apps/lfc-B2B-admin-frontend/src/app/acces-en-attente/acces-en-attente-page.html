@@ -1,0 +1,67 @@
+<fold-page-layout>
+  <header class="head">
+    <div>
+      <h1>Accès à remettre</h1>
+      <p class="subtitle">
+        Les personnes à qui l'accès a été ouvert et qui n'ont pas encore créé le leur. Une ligne
+        disparaît d'elle-même dès que son mot de passe est posé.
+      </p>
+    </div>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="state">Chargement…</p>
+    }
+    @case ('error') {
+      <div class="state">
+        <p>Impossible de lire la file.</p>
+        <button foldButton (click)="load()">Réessayer</button>
+      </div>
+    }
+    @default {
+      @if (rows().length === 0) {
+        <!-- Le vide sera fréquent, et c'est une bonne nouvelle : il se dit
+             comme telle plutôt qu'en tableau sans lignes. -->
+        <fold-empty-state
+          icon="check"
+          title="Personne n'attend"
+          description="Tous les accès ouverts ont été créés par leurs détenteurs."
+        />
+      } @else {
+        <ul class="rows">
+          @for (row of rows(); track row.person.userId) {
+            <li>
+              <fold-card>
+                <div class="row">
+                  <div class="who">
+                    <span class="name">{{ row.name }}</span>
+                    <span class="email">{{ row.person.email }}</span>
+                    <span class="meta">
+                      <a [routerLink]="['/comptes-clients', row.person.companyId]">
+                        {{ row.person.companyName }}
+                      </a>
+                      · attend {{ row.waiting }}
+                    </span>
+                  </div>
+                  <!-- Un lien FRAIS à chaque clic : celui de l'ouverture serait
+                       mort depuis longtemps. -->
+                  <button
+                    foldButton
+                    intent="primary"
+                    emphasis="soft"
+                    icon="copy"
+                    [disabled]="issuing() !== null"
+                    (click)="copyLink(row.person)"
+                  >
+                    Copier le lien
+                  </button>
+                </div>
+              </fold-card>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</fold-page-layout>
