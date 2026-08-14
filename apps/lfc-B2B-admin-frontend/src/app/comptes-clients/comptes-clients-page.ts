@@ -2,12 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import {
   FoldBadgeComponent,
-  FoldPaginatorComponent,
   FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldDataTableRowCardDirective,
   FoldElementTitleComponent,
+  FoldEmptyStateComponent,
+  FoldPaginatorComponent,
   FoldSearchComponent,
   FoldStatusBadgeComponent,
   FoldViewToggleComponent,
@@ -91,6 +92,7 @@ function isFilterValue(value: string): value is FilterValue {
     PortfolioBar,
     WarningsGallery,
     RouterLink,
+    FoldEmptyStateComponent,
   ],
   templateUrl: './comptes-clients-page.html',
   styleUrl: './comptes-clients-page.scss',

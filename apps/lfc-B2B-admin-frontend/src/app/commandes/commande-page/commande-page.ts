@@ -13,6 +13,7 @@ import { OrderDetail, orderDocuments, type OrderDocument } from '@lfd/b2b-ui/ord
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
 } from 'fold-ng';
@@ -41,6 +42,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     OrderDetail,
+    FoldEmptyStateComponent,
   ],
   templateUrl: './commande-page.html',
   styleUrl: './commande-page.scss',

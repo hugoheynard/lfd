@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FoldCardComponent, FoldElementTitleComponent, FoldLoadingStateComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCardComponent,
+  FoldElementTitleComponent,
+  FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
+} from 'fold-ng';
 import type { AlertRule, AlertRuleView } from '@lfd/contracts';
 
 import { NotifyService } from '../../../notify.service';
@@ -22,7 +28,14 @@ import { AlertRuleRow } from '../../../shared/alerts/alert-rule-row/alert-rule-r
 @Component({
   selector: 'app-account-alerts-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldElementTitleComponent, FoldLoadingStateComponent, AlertRuleRow],
+  imports: [
+    FoldCardComponent,
+    FoldElementTitleComponent,
+    FoldLoadingStateComponent,
+    AlertRuleRow,
+    FoldButtonComponent,
+    FoldEmptyStateComponent,
+  ],
   templateUrl: './account-alerts-card.html',
   styleUrl: './account-alerts-card.scss',
 })

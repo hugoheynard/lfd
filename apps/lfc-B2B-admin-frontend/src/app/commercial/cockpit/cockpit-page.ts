@@ -10,6 +10,8 @@ import { Router, RouterLink } from '@angular/router';
 import {
   FoldButtonComponent,
   FoldCalendarDayComponent,
+  FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
   foldToday,
   type FoldCalendarDate,
 } from 'fold-ng';
@@ -76,6 +78,8 @@ interface Kpi {
     RevenuePaceCard,
     RouterLink,
     SupportQueue,
+    FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
   ],
   templateUrl: './cockpit-page.html',
   styleUrl: './cockpit-page.scss',

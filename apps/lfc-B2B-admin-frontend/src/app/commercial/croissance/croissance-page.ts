@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FoldButtonComponent, FoldInfoComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldEmptyStateComponent,
+  FoldInfoComponent,
+  FoldLoadingStateComponent,
+} from 'fold-ng';
 import type {
   AccountConcentration,
   AcquisitionMetricsView,
@@ -72,7 +77,16 @@ interface Kpi {
 @Component({
   selector: 'app-croissance-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Chart, ChartNote, Lorenz, Sunburst, FoldInfoComponent, FoldButtonComponent],
+  imports: [
+    Chart,
+    ChartNote,
+    Lorenz,
+    Sunburst,
+    FoldInfoComponent,
+    FoldButtonComponent,
+    FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
+  ],
   templateUrl: './croissance-page.html',
   styleUrl: './croissance-page.scss',
 })

@@ -8,15 +8,6 @@
   gap: var(--fold-space-lg, 1.5rem);
 }
 
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--fold-space-md, 1rem);
-  padding: var(--fold-space-xl, 2.5rem);
-  color: var(--fold-color-text-muted);
-}
-
 .filter {
   align-self: flex-start;
 }

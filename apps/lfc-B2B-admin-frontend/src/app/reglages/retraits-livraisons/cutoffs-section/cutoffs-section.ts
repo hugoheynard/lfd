@@ -6,7 +6,9 @@ import {
   FoldCalloutComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldInlineConfirmComponent,
+  FoldLoadingStateComponent,
   FoldPanelHostService,
 } from 'fold-ng';
 
@@ -34,7 +36,9 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
+    FoldIconComponent,
     FoldInlineConfirmComponent,
+    FoldLoadingStateComponent,
   ],
   templateUrl: './cutoffs-section.html',
   styleUrl: './cutoffs-section.scss',

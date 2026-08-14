@@ -1,11 +1,3 @@
 :host {
   display: block;
 }
-
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--fold-space-sm);
-  color: var(--fold-color-text-muted);
-}

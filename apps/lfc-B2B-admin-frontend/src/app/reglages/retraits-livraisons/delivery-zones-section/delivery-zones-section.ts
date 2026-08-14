@@ -7,7 +7,9 @@ import {
   FoldCardComponent,
   FoldDropdownComponent,
   FoldDropdownItemComponent,
+  FoldEmptyStateComponent,
   FoldIconComponent,
+  FoldLoadingStateComponent,
   FoldInlineConfirmComponent,
   FoldPanelHostService,
   FoldPopoverTriggerDirective,
@@ -32,6 +34,8 @@ type LoadState = 'loading' | 'ready' | 'error';
   imports: [
     FoldCardComponent,
     FoldBadgeComponent,
+    FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldIconComponent,

@@ -63,15 +63,6 @@ h1 {
   line-height: 1.45;
 }
 
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--fold-space-md, 1rem);
-  padding: var(--fold-space-xl, 2.5rem);
-  color: var(--fold-color-text-muted);
-}
-
 /* Les deux files (à vérifier / assistance) côte à côte, alignées à droite. */
 .queues {
   display: flex;

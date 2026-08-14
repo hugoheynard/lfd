@@ -7,10 +7,12 @@
   />
 
   @if (error()) {
-    <p class="sec-error">
+    <!-- Une bannière, pas un état de vue : ce qui suit s'affiche quand même.
+         Même forme que `availability-card`. -->
+    <fold-callout variant="alert">
       Une action a échoué.
       <button type="button" class="sec-link" (click)="reload()">Recharger</button>
-    </p>
+    </fold-callout>
   }
 
   <!-- Le chiffre qui compte, en tête. -->

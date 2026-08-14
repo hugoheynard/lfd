@@ -1,8 +1,7 @@
 @if (state() === 'error') {
-  <div class="state">
-    <p>Impossible de charger les utilisateurs.</p>
+  <fold-empty-state tone="alert" title="Impossible de charger les utilisateurs">
     <button foldButton (click)="load()">Réessayer</button>
-  </div>
+  </fold-empty-state>
 } @else {
   <!-- Le bloc d'actions d'une ligne, écrit UNE fois : la table le pose dans sa
        colonne, la carte mobile le pose dans son coin. Deux copies auraient

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
-import { FoldLoadingStateComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent } from 'fold-ng';
 import type {
   AccountAlertOverride,
   AccountAlertRuleView,
@@ -29,7 +29,13 @@ import { AlertJournal } from './alert-journal/alert-journal';
 @Component({
   selector: 'app-client-alertes-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldLoadingStateComponent, AccountAlertCard, AlertJournal],
+  imports: [
+    FoldLoadingStateComponent,
+    AccountAlertCard,
+    AlertJournal,
+    FoldButtonComponent,
+    FoldEmptyStateComponent,
+  ],
   templateUrl: './alertes-page.html',
   styleUrl: './alertes-page.scss',
 })

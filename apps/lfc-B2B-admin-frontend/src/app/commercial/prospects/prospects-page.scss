@@ -9,15 +9,6 @@
   max-width: 72rem;
 }
 
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--fold-space-md, 1rem);
-  padding: var(--fold-space-xl, 2.5rem);
-  color: var(--fold-color-text-muted);
-}
-
 .queues {
   display: flex;
   flex-wrap: wrap;

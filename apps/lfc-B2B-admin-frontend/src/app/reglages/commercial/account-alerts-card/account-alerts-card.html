@@ -14,10 +14,9 @@
   @if (loading()) {
     <fold-loading message="Chargement des règles…" />
   } @else if (failed()) {
-    <p class="sec-error">
-      Les règles n'ont pas pu être chargées.
-      <button type="button" class="sec-link" (click)="load()">Réessayer</button>
-    </p>
+    <fold-empty-state tone="alert" title="Les règles n'ont pas pu être chargées">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
   } @else {
     <div class="ac-rules">
       @for (rule of rules(); track rule.kind) {

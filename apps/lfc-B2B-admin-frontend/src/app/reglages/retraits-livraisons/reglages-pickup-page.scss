@@ -4,11 +4,6 @@
   gap: var(--fold-space-lg);
 }
 
-.state {
-  padding: var(--fold-space-lg);
-  color: var(--fold-color-text-muted);
-}
-
 // En-tête de section : texte à gauche, bouton « Ajouter » à droite.
 .head {
   display: flex;

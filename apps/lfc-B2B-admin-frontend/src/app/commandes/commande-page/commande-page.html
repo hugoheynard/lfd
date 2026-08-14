@@ -16,10 +16,9 @@
       <fold-loading message="Chargement de la commande…" />
     }
     @case ('error') {
-      <div class="state">
-        <p>Impossible de charger cette commande.</p>
+      <fold-empty-state tone="alert" title="Impossible de charger cette commande">
         <button foldButton (click)="load()">Réessayer</button>
-      </div>
+      </fold-empty-state>
     }
     @default {
       @if (order(); as o) {
