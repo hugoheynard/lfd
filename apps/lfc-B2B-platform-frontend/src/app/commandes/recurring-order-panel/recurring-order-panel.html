@@ -93,17 +93,13 @@
     </div>
   } @else {
     @if (pickups.addresses().length > 1) {
-      <label class="fld">
-        <span class="fld-lbl">Adresse de retrait</span>
-        <select class="fld-ctl" (change)="onPickup($event)">
-          @for (point of pickups.addresses(); track point.id) {
-            <option [value]="point.id" [selected]="point.id === pickupId()">
-              {{ point.label || point.ville }} — {{ point.ligne1 }}, {{ point.codePostal }}
-              {{ point.ville }}
-            </option>
-          }
-        </select>
-      </label>
+      <fold-listbox
+        label="Adresse de retrait"
+        placeholder="Choisir un point de retrait"
+        [options]="pickupOptions()"
+        [value]="pickupId()"
+        (selectionChange)="pickupId.set($event)"
+      />
     } @else if (pickups.defaultPickup(); as pickup) {
       <p class="pickup">
         Retrait à <strong>{{ pickup.label || pickup.ville }}</strong> — {{ pickup.ligne1 }},

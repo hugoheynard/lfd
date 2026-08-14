@@ -15,10 +15,12 @@ import type {
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldListboxComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
+  type FoldSelectOption,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
@@ -44,6 +46,7 @@ type AddressField = 'ligne1' | 'ligne2' | 'codePostal' | 'ville';
     FoldPanelHeaderComponent,
     FoldPanelFooterComponent,
     FoldButtonComponent,
+    FoldListboxComponent,
     FoldViewToggleComponent,
   ],
   templateUrl: './recurring-order-panel.html',
@@ -82,6 +85,14 @@ export class RecurringOrderPanel {
   protected readonly submitting = signal(false);
 
   protected readonly isCourier = computed(() => this.method() === 'delivery');
+
+  /** Les points de retrait, en options de listbox — libellé identique à l'ancien. */
+  protected readonly pickupOptions = computed<readonly FoldSelectOption<string>[]>(() =>
+    this.pickups.addresses().map((point) => ({
+      value: point.id,
+      label: `${point.label || point.ville} — ${point.ligne1}, ${point.codePostal} ${point.ville}`,
+    })),
+  );
 
   /** Formulaire prêt : coursier ⇒ adresse minimale ; retrait ⇒ un point existe. */
   protected readonly ready = computed(() => {
@@ -123,11 +134,6 @@ export class RecurringOrderPanel {
 
   protected onMethod(value: string): void {
     this.method.set(value === 'delivery' ? 'delivery' : 'pickup');
-  }
-
-  protected onPickup(event: Event): void {
-    const el = event.target;
-    this.pickupId.set(el instanceof HTMLSelectElement ? el.value : '');
   }
 
   protected onDate(which: 'start' | 'end', event: Event): void {
