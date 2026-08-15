@@ -5,6 +5,7 @@ import type {
   OrderHandoverLine,
   OrderStatus,
   OrderView,
+  ProductionSheet,
 } from "@lfd/contracts";
 
 /**
@@ -63,6 +64,28 @@ export abstract class OrderReader {
    * une seule règle.
    */
   abstract findByHandoverToken(token: string): Promise<HandoverOrder | null>;
+
+  /**
+   * Les **fiches de fonction** d'une journée de service : les commandes dont la
+   * date de retrait/livraison est celle-là, avec leurs lignes, ordonnées par
+   * référence.
+   *
+   * Ordre par **référence** et non par date de commande : une pile de papier se
+   * réimprime, et deux tirages doivent rendre exactement la même pile — sinon la
+   * numérotation « fiche 3/14 » cesse de désigner la même feuille.
+   *
+   * Seules les **annulées** sont écartées. Une commande déjà remise reste dans
+   * son lot : la retirer ferait maigrir la pile entre deux tirages, et c'est
+   * précisément le compte qui sert de preuve qu'il ne manque rien.
+   */
+  abstract listForProduction(date: string): Promise<readonly ProductionSheet[]>;
+
+  /**
+   * Combien de commandes vivantes n'ont **aucune date de service**, tous jours
+   * confondus. Elles n'entrent dans aucun lot ; sans ce compte, elles seraient
+   * invisibles pour la production sans que rien ne le signale.
+   */
+  abstract countUndatedForProduction(): Promise<number>;
 }
 
 /**

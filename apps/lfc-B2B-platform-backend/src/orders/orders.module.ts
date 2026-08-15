@@ -18,6 +18,7 @@ import { ListCustomerSkusHandler } from "./application/queries/list-customer-sku
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { GetOrderPaymentHandler } from "./application/queries/get-order-payment.handler.js";
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
+import { GetProductionBatchHandler } from "./application/queries/get-production-batch.handler.js";
 import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
 import { ListPersonalOrdersHandler } from "./application/queries/list-personal-orders.handler.js";
@@ -38,6 +39,7 @@ import { AdminHandoverController } from "./http/admin-handover.controller.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { AdminOrderDraftsController } from "./http/admin-order-drafts.controller.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
+import { AdminProductionController } from "./http/admin-production.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
 
 /**
@@ -54,6 +56,7 @@ import { OrdersController } from "./http/orders.controller.js";
     OrdersController,
     CompanyOrdersController,
     AdminOrdersController,
+    AdminProductionController,
     AdminOrderDraftsController,
     AdminCatalogController,
     AdminHandoverController,
@@ -68,6 +71,7 @@ import { OrdersController } from "./http/orders.controller.js";
     GetOrderHandler,
     GetOrderPaymentHandler,
     GetAdminOrderHandler,
+    GetProductionBatchHandler,
     ListAdminOrdersHandler,
     ListCatalogHandler,
     ListCustomerSkusHandler,

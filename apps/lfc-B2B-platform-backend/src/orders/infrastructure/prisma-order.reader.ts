@@ -10,6 +10,7 @@ import {
   type OrderStatus,
   type OrderView,
   type PaymentStatus,
+  type ProductionSheet,
   type RecurringDeltas,
   recurringDeltasSchema,
 } from "@lfd/contracts";
@@ -214,6 +215,54 @@ export class PrismaOrderReader extends OrderReader {
         quantity: line.quantity,
       })),
     };
+  }
+
+  /**
+   * Le lot d'une journée. La colonne est `@db.Date` : **égalité stricte** sur le
+   * jour, pas d'intervalle à composer, et l'index posé sur elle sert.
+   */
+  async listForProduction(date: string): Promise<readonly ProductionSheet[]> {
+    const rows = await this.prisma.order.findMany({
+      where: {
+        requestedDeliveryDate: new Date(`${date}T00:00:00.000Z`),
+        status: { not: "cancelled" },
+      },
+      orderBy: { orderNumber: "asc" },
+      select: {
+        id: true,
+        orderNumber: true,
+        fulfillmentMethod: true,
+        pickupAddress: true,
+        deliveryAddressSnapshot: true,
+        note: true,
+        fromSubscriptionId: true,
+        placedByStaffId: true,
+        company: { select: { raisonSociale: true } },
+        placedBy: { select: { email: true, firstName: true, lastName: true } },
+        lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+      },
+    });
+    return rows.map((row) => ({
+      orderId: row.id,
+      orderNumber: row.orderNumber,
+      customerLabel: customerLabelOf(row),
+      fulfillmentMethod: row.fulfillmentMethod,
+      pickupLabel: pickupLabelOf(row.pickupAddress),
+      deliveryAddress: parseAddress(row.deliveryAddressSnapshot),
+      note: row.note,
+      origin: orderOriginOf(row),
+      lines: row.lines.map((line) => ({
+        sku: line.sku,
+        productName: line.productNameSnapshot,
+        quantity: line.quantity,
+      })),
+    }));
+  }
+
+  async countUndatedForProduction(): Promise<number> {
+    return this.prisma.order.count({
+      where: { requestedDeliveryDate: null, status: { not: "cancelled" } },
+    });
   }
 }
 
