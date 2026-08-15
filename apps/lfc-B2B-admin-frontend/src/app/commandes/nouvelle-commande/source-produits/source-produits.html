@@ -23,25 +23,6 @@
     />
   }
 
-  <fold-tab-panel class="src-panel" [tabs]="t" key="habituels">
-    @if (habitLines().length === 0) {
-      <fold-empty-state
-        title="Rien encore commandé"
-        subtitle="Ce compte n'a pas d'historique sur les douze derniers mois. Le catalogue est à côté."
-      />
-    } @else {
-      <p class="src-note">
-        Les plus repris en tête, sur les douze derniers mois. La quantité proposée est sa moyenne
-        par commande.
-      </p>
-      <ul class="src-list">
-        @for (line of habitLines(); track line.product.id) {
-          <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
-        }
-      </ul>
-    }
-  </fold-tab-panel>
-
   <fold-tab-panel class="src-panel" [tabs]="t" key="catalogue">
     @if (shelves().length === 0) {
       <fold-empty-state title="Aucun produit" subtitle="Rien ne correspond à cette recherche." />
@@ -57,21 +38,51 @@
     }
   </fold-tab-panel>
 
-  <fold-tab-panel class="src-panel" [tabs]="t" key="commande">
-    @if (order() === null) {
+  <!-- L'onglet se dédouble : la liste des commandes, et celle qu'on a choisie.
+       Le clic et son résultat tiennent alors dans le même écran. -->
+  <fold-tab-panel class="src-panel src-panel--split" [tabs]="t" key="commande">
+    <app-historique-commandes
+      class="src-orders"
+      [orders]="orders()"
+      [selectedId]="selectedOrderId()"
+      (select)="selectOrder.emit($event)"
+    />
+
+    <div class="src-detail">
+      @if (order(); as chosen) {
+        <div class="src-order">
+          <p class="src-note">{{ chosen.orderNumber }} — {{ orderDate() }}</p>
+          <button type="button" class="src-all" (click)="addAll.emit(orderLines())">
+            Tout reprendre
+          </button>
+        </div>
+        <ul class="src-list">
+          @for (line of orderLines(); track line.product.id) {
+            <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
+          }
+        </ul>
+      } @else {
+        <fold-empty-state
+          title="Aucune commande choisie"
+          subtitle="Choisissez une commande à gauche pour en reprendre les lignes."
+        />
+      }
+    </div>
+  </fold-tab-panel>
+
+  <fold-tab-panel class="src-panel" [tabs]="t" key="habituels">
+    @if (habitLines().length === 0) {
       <fold-empty-state
-        title="Aucune commande choisie"
-        subtitle="Choisissez une commande à gauche pour en reprendre les lignes."
+        title="Rien encore commandé"
+        subtitle="Ce compte n'a pas d'historique sur les douze derniers mois. Le catalogue est à côté."
       />
     } @else {
-      <div class="src-order">
-        <p class="src-note">Commande du {{ orderDate() }}.</p>
-        <button type="button" class="src-all" (click)="addAll.emit(orderLines())">
-          Tout reprendre
-        </button>
-      </div>
+      <p class="src-note">
+        Les plus repris en tête, sur les douze derniers mois. La quantité proposée est sa moyenne
+        par commande.
+      </p>
       <ul class="src-list">
-        @for (line of orderLines(); track line.product.id) {
+        @for (line of habitLines(); track line.product.id) {
           <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
         }
       </ul>

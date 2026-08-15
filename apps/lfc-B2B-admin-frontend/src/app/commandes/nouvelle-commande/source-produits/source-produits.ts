@@ -8,7 +8,7 @@ import {
   FoldTabsComponent,
   type FoldTabItem,
 } from 'fold-ng';
-import type { CatalogItemView, CustomerSkuStat, OrderView } from '@lfd/contracts';
+import type { AdminOrderRow, CatalogItemView, CustomerSkuStat, OrderView } from '@lfd/contracts';
 import {
   catalogShelves,
   ProductRow,
@@ -21,6 +21,7 @@ import { formatCents, formatOrderDate } from '@lfd/b2b-ui/order';
 
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import type { CartStore } from '../cart.store';
+import { HistoriqueCommandes } from '../historique-commandes/historique-commandes';
 
 /**
  * Une ligne proposée : le produit tel que la rangée partagée le rend, plus la
@@ -47,16 +48,18 @@ export interface ProposedLine {
 export type SourceKind = 'habituels' | 'catalogue' | 'commande';
 
 /**
- * La colonne du milieu : **d'où viennent les articles**.
+ * La colonne de gauche : **d'où viennent les articles**.
  *
- * Trois sources, et l'ordre des onglets est la thèse de l'écran : ce qu'il
- * reprend d'habitude, puis le catalogue entier, puis une commande précise. Un
- * commercial au téléphone ne parcourt pas 92 produits, il reprend les trente
- * lignes de ce client-là. Le catalogue existe pour la nouveauté, pas pour le
- * quotidien.
+ * Trois sources en onglets — le catalogue, ses commandes, ses habitudes — et
+ * c'est tout ce que l'écran contient avec le panier. L'historique occupait une
+ * troisième colonne ; elle restait là, à prendre un tiers de la largeur, pendant
+ * qu'on parcourait le catalogue ou les habitudes, c'est-à-dire les deux tiers du
+ * temps.
  *
- * La troisième source n'a de contenu qu'après un clic dans la colonne de
- * gauche — c'est elle qui répond à « refais-moi la même que mardi ».
+ * **L'onglet « Ses commandes » se dédouble** : la liste à gauche, la commande
+ * choisie à droite avec ses lignes et leurs quantités. Le geste — cliquer une
+ * commande, en voir le détail, tout reprendre — se joue alors dans un seul
+ * onglet, au lieu de traverser l'écran.
  *
  * Les rangées viennent de `@lfd/b2b-ui/catalog`, comme celles du catalogue
  * client : cet écran avait commencé par les réécrire, et les avait réécrites en
@@ -71,6 +74,7 @@ export type SourceKind = 'habituels' | 'catalogue' | 'commande';
     FoldSearchComponent,
     FoldTabPanelComponent,
     FoldTabsComponent,
+    HistoriqueCommandes,
     NgTemplateOutlet,
     ProductRow,
   ],
@@ -83,10 +87,15 @@ export class SourceProduits {
   readonly habits = input.required<readonly CustomerSkuStat[]>();
   /** La commande choisie à gauche, ou `null` tant qu'aucune ne l'est. */
   readonly order = input<OrderView | null>(null);
+  /** L'historique du compte : le volet gauche de l'onglet « Ses commandes ». */
+  readonly orders = input.required<readonly AdminOrderRow[]>();
+  readonly selectedOrderId = input<string | null>(null);
   /** Le panier, pour afficher ce qui y est déjà — lu, jamais muté ici. */
   readonly cart = input.required<CartStore>();
 
   readonly kindChange = output<SourceKind>();
+  /** Une commande choisie dans le volet gauche — la page va la relire en détail. */
+  readonly selectOrder = output<string>();
   readonly add = output<ProposedLine>();
   /** « Tout reprendre » : les lignes d'une commande, d'un coup. */
   readonly addAll = output<readonly ProposedLine[]>();
@@ -116,9 +125,6 @@ export class SourceProduits {
     return order === null ? [] : order.lines.map(fromOrderLine);
   });
 
-  /** Le titre de l'onglet « commande » : son numéro, ou l'invitation à en choisir une. */
-  protected readonly orderLabel = computed(() => this.order()?.orderNumber ?? 'Une commande');
-
   protected readonly orderDate = computed(() => {
     const order = this.order();
     return order === null ? '' : formatOrderDate(order.placedAt);
@@ -138,14 +144,13 @@ export class SourceProduits {
    * change de **vue sur la même page**, l'adresse ne bouge pas. Chacun porte une
    * icône — c'est elle qui reste quand la barre se replie sur mobile.
    *
-   * L'onglet « commande » prend le numéro de celle qu'on a choisie à gauche :
-   * l'écran doit dire de quelle commande il parle, pas seulement qu'il en montre
-   * une.
+   * Le catalogue ouvre le bal : c'est la source qui a toujours quelque chose à
+   * montrer, y compris pour un compte qui n'a jamais rien commandé.
    */
   protected readonly tabItems = computed<FoldTabItem[]>(() => [
-    { key: 'habituels', label: 'Ses habitudes', icon: 'repeat', badge: this.habitLines().length },
     { key: 'catalogue', label: 'Catalogue', icon: 'grid' },
-    { key: 'commande', label: this.orderLabel(), icon: 'receipt' },
+    { key: 'commande', label: 'Ses commandes', icon: 'receipt', badge: this.orders().length },
+    { key: 'habituels', label: 'Ses habitudes', icon: 'repeat', badge: this.habitLines().length },
   ]);
 
   /** Ce qui est déjà au panier pour ce SKU — la pastille de la rangée. */

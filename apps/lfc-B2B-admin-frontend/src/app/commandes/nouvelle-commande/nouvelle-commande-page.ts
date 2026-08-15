@@ -35,7 +35,6 @@ import { PickupAddressesService } from '../../reglages/retraits-livraisons/picku
 import { AdminCatalogService } from '../catalog.service';
 import { AdminOrdersService } from '../orders.service';
 import { CartStore } from './cart.store';
-import { HistoriqueCommandes } from './historique-commandes/historique-commandes';
 import { PanierCommande, type OrderDraft } from './panier-commande/panier-commande';
 import {
   SourceProduits,
@@ -64,10 +63,14 @@ const EMPTY_SPECS: DeliverySpecs = {
 /**
  * **Saisir une commande pour un client** — l'écran du commercial au téléphone.
  *
- * Trois colonnes, et leur ordre est la thèse : à gauche ce que le client a déjà
- * commandé, au milieu ce qu'on peut ajouter, à droite le panier. On lit de
+ * Deux colonnes, et leur ordre est la thèse : à gauche ce qu'on peut ajouter
+ * (le catalogue, ses commandes, ses habitudes), à droite le panier. On lit de
  * gauche à droite comme se déroule l'appel — « la même que mardi », « ajoute-moi
  * deux baguettes », « c'est tout ».
+ *
+ * L'historique a eu sa propre colonne ; elle occupait un tiers de la largeur en
+ * permanence pour servir une source sur trois. Elle est devenue le volet gauche
+ * de l'onglet qui la concerne.
  *
  * **Une page pleine et non un panneau**, comme le dossier de rendez-vous : on y
  * travaille dix minutes avec le client en ligne, elle a une adresse, elle
@@ -86,7 +89,6 @@ const EMPTY_SPECS: DeliverySpecs = {
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
-    HistoriqueCommandes,
     PanierCommande,
     SourceProduits,
   ],
@@ -120,7 +122,12 @@ export class NouvelleCommandePage {
   protected readonly zones = signal<readonly DeliveryZoneView[]>([]);
   protected readonly submitting = signal(false);
 
-  protected readonly source = signal<SourceKind>('habituels');
+  /**
+   * La source ouverte. Le **catalogue** par défaut : c'est la seule qui a
+   * toujours quelque chose à montrer, y compris devant un compte qui n'a jamais
+   * commandé.
+   */
+  protected readonly source = signal<SourceKind>('catalogue');
   protected readonly selectedOrderId = signal<string | null>(null);
   protected readonly selectedOrder = signal<OrderView | null>(null);
 
@@ -173,9 +180,6 @@ export class NouvelleCommandePage {
       this.buyers.set(buyers);
       this.pickups.set(pickups);
       this.zones.set(zones);
-      // Sans historique, « ses habitudes » est un écran vide : on ouvre alors
-      // sur le catalogue, qui a toujours quelque chose à montrer.
-      this.source.set(habits.length === 0 ? 'catalogue' : 'habituels');
       this.state.set('ready');
     } catch {
       this.state.set('error');

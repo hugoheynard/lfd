@@ -22,7 +22,7 @@
 
 .nc-columns {
   display: grid;
-  grid-template-columns: minmax(14rem, 1fr) minmax(0, 2fr) minmax(20rem, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(20rem, 1fr);
   gap: var(--fold-space-lg);
   flex: 1;
   min-height: 0;
@@ -41,19 +41,9 @@
   overflow-y: auto;
 }
 
-/* Sous 1100 px les trois colonnes deviennent illisibles : le panier passe en
-   pleine largeur sous les deux autres, dans l'ordre où on s'en sert. */
-@media (max-width: 1100px) {
-  .nc-columns {
-    grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
-  }
-
-  .nc-right {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 720px) {
+/* Sous 900 px, le panier passe en pleine largeur sous les sources, dans l'ordre
+   où on s'en sert : on choisit d'abord, on valide ensuite. */
+@media (max-width: 900px) {
   .nc-columns {
     grid-template-columns: 1fr;
   }

@@ -1,11 +1,7 @@
-<h2 class="his-title">Ses commandes</h2>
-
-@if (loading()) {
-  <fold-loading message="Chargement…" />
-} @else if (orders().length === 0) {
+@if (orders().length === 0) {
   <fold-empty-state
     title="Aucune commande"
-    subtitle="Ce compte n'a encore rien commandé — le catalogue est au milieu."
+    subtitle="Ce compte n'a encore rien commandé — le catalogue est à côté."
   />
 } @else {
   <ul class="his-list">

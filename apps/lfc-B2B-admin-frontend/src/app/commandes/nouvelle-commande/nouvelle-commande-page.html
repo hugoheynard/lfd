@@ -30,21 +30,17 @@
     }
 
     <div class="nc-columns">
-      <app-historique-commandes
-        class="nc-col nc-left"
-        [orders]="history()"
-        [selectedId]="selectedOrderId()"
-        (select)="onSelectOrder($event)"
-      />
-
       <app-source-produits
-        class="nc-col nc-mid"
+        class="nc-col nc-left"
         [kind]="source()"
         [catalogue]="catalogue()"
         [habits]="habits()"
+        [orders]="history()"
+        [selectedOrderId]="selectedOrderId()"
         [order]="selectedOrder()"
         [cart]="cart"
         (kindChange)="source.set($event)"
+        (selectOrder)="onSelectOrder($event)"
         (add)="onAdd($event)"
         (addAll)="onAddAll($event)"
       />

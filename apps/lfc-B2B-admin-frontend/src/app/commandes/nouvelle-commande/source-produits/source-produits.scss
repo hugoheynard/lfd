@@ -22,6 +22,32 @@
   overflow-y: auto;
 }
 
+/* L'onglet « Ses commandes » : la liste et le détail côte à côte, chacun
+   défilant pour lui-même — la liste ne doit pas remonter quand on parcourt une
+   commande de trente lignes. */
+.src-panel--split {
+  display: grid;
+  grid-template-columns: minmax(14rem, 2fr) minmax(0, 3fr);
+  gap: var(--fold-space-lg);
+  overflow: hidden;
+}
+
+.src-orders,
+.src-detail {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Trop étroit pour deux volets : la liste passe au-dessus du détail, dans
+   l'ordre du geste. */
+@media (max-width: 900px) {
+  .src-panel--split {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(8rem, auto) 1fr;
+    overflow-y: auto;
+  }
+}
+
 .src-note {
   margin: 0 0 var(--fold-space-sm);
   color: var(--fold-color-text-muted);
