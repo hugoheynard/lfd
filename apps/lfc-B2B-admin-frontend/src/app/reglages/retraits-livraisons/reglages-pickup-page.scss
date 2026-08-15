@@ -35,3 +35,57 @@
   flex-direction: column;
   gap: var(--fold-space-sm);
 }
+
+// Chaque point est sa propre carte ; l'accent signale le défaut.
+.point.is-default {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface, transparent);
+}
+
+// L'adresse à gauche, le menu dropover à droite.
+.point-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+// Les plages d'ouverture déclarées — deux au plus, jamais fusionnées.
+.hours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: var(--fold-space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-sm);
+}
+.hours-row,
+.hours-none {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-text-muted);
+}
+.hours-text {
+  color: var(--fold-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+// Déclencheur du menu — bouton icône discret (même que les adresses de livraison).
+.menu-trigger {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm, 6px);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+.menu-trigger:hover {
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
+  color: var(--fold-color-text);
+}

@@ -21,29 +21,78 @@
         <button foldButton size="sm" icon="plus" (click)="add()">Ajouter un point</button>
       </div>
 
-      <ul class="points">
+      <!-- pickup adresses -->
+      <div class="points">
         @for (point of addresses(); track point.id) {
-          <li>
-            <app-pickup-point-card
-              [point]="point"
-              [canRemove]="canRemove()"
-              [confirming]="confirmingId() === point.id"
-              (setDefault)="setDefault(point)"
-              (edit)="edit(point)"
-              (askRemove)="askRemove(point)"
-              (confirmRemove)="confirmRemove(point)"
-              (cancelRemove)="confirmingId.set(null)"
-            />
-          </li>
+          <fold-card class="point" [class.is-default]="point.isDefault">
+            <div class="point-row">
+              <lfd-address [address]="postal(point)">
+                @if (point.isDefault) {
+                  <fold-badge content="Par défaut" variant="success" />
+                }
+                @if (point.discount; as discount) {
+                  <fold-badge [content]="'− ' + fee(discount)" variant="accent" />
+                }
+              </lfd-address>
+
+              <fold-dropdown placement="bottom-end" ariaLabel="Actions du point de retrait">
+                <button
+                  foldPopoverTrigger="menu"
+                  type="button"
+                  class="menu-trigger"
+                  aria-label="Actions du point de retrait"
+                >
+                  <fold-icon name="more-vertical" [size]="18" />
+                </button>
+                @if (!point.isDefault) {
+                  <fold-dropdown-item icon="star" (selected)="setDefault(point)">
+                    Définir par défaut
+                  </fold-dropdown-item>
+                }
+                <fold-dropdown-item icon="edit" (selected)="edit(point)"
+                  >Modifier</fold-dropdown-item
+                >
+                @if (canRemove()) {
+                  <fold-dropdown-item icon="bin" tone="danger" (selected)="askRemove(point)">
+                    Supprimer
+                  </fold-dropdown-item>
+                }
+              </fold-dropdown>
+            </div>
+
+            <ul class="hours">
+              @for (row of hours(point.opening); track row.label) {
+                <li class="hours-row">
+                  <span class="hours-name">{{ row.label }}</span>
+                  <span class="hours-text">{{ row.text }}</span>
+                </li>
+              } @empty {
+                <li class="hours-none">
+                  <fold-icon name="clock" [size]="15" />
+                  <span>Aucune heure déclarée — toute heure de retrait est acceptée.</span>
+                </li>
+              }
+            </ul>
+
+            @if (confirmingId() === point.id) {
+              <fold-inline-confirm
+                [open]="true"
+                intent="danger"
+                message="Supprimer ce point de retrait ?"
+                (confirmed)="confirmRemove(point)"
+                (cancelled)="confirmingId.set(null)"
+              >
+                <span hidden></span>
+              </fold-inline-confirm>
+            }
+          </fold-card>
         } @empty {
-          <li>
-            <fold-callout variant="warning">
-              Aucun point de retrait. Ajoutez-en un pour que les clients puissent retirer leurs
-              commandes.
-            </fold-callout>
-          </li>
+          <fold-callout variant="warning">
+            Aucun point de retrait. Ajoutez-en un pour que les clients puissent retirer leurs
+            commandes.
+          </fold-callout>
         }
-      </ul>
+      </div>
     </fold-card>
 
     <app-cutoffs-section [points]="addresses()" />

@@ -1,19 +1,29 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { PickupAddressView } from '@lfd/contracts';
+import { AddressView } from '@lfd/b2b-ui/address';
+import { postalFrom } from '@lfd/b2b-ui/company';
+import { formatAdjustmentValue } from '@lfd/b2b-ui/pricing';
+import type { PostalAddress } from '@lfd/b2b-ui/address';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldDropdownComponent,
+  FoldDropdownItemComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldLoadingStateComponent,
+  FoldInlineConfirmComponent,
   FoldPanelHostService,
+  FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
 import { CutoffsSection } from './cutoffs-section/cutoffs-section';
 import { DeliveryZonesSection } from './delivery-zones-section/delivery-zones-section';
 import { PickupAddressesService } from './pickup-addresses.service';
-import { PickupPointCard } from './pickup-point-card/pickup-point-card';
+import { openingRows } from './pickup-opening.model';
 import { PickupPanel, type PickupPanelData } from './pickup-panel/pickup-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -29,12 +39,18 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'app-reglages-pickup-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AddressView,
     FoldCardComponent,
+    FoldBadgeComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
-    PickupPointCard,
+    FoldIconComponent,
+    FoldDropdownComponent,
+    FoldDropdownItemComponent,
+    FoldInlineConfirmComponent,
+    FoldPopoverTriggerDirective,
     CutoffsSection,
     DeliveryZonesSection,
   ],
@@ -53,6 +69,19 @@ export class ReglagesPickupPage {
 
   /** On garde toujours au moins un point : le dernier n'est pas supprimable. */
   protected readonly canRemove = computed(() => this.addresses().length > 1);
+
+  /** Formate la remise d'un point de retrait pour l'affichage. */
+  protected readonly fee = formatAdjustmentValue;
+  /** Les plages d'ouverture déclarées, lisibles. Vide = aucune heure opposée. */
+  protected readonly hours = openingRows;
+
+  /**
+   * L'adresse à afficher. Un point sans nom d'usage prend celui de sa ville :
+   * une carte sans titre ne se distingue pas de sa voisine dans la liste.
+   */
+  protected postal(point: PickupAddressView): PostalAddress {
+    return { ...postalFrom(point), label: point.label || point.ville };
+  }
 
   constructor() {
     void this.load();
