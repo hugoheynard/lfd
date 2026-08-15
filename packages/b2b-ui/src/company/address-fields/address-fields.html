@@ -168,6 +168,13 @@
     }
   </fieldset>
 
+  <fold-checkbox
+    label="Signature exigée à la remise"
+    hint="préremplit vos commandes livrées ici ; modifiable au panier"
+    [checked]="value().signatureRequired"
+    (checkedChange)="set('signatureRequired', $event)"
+  />
+
   <hr class="sep" />
 
   <fieldset class="gps">

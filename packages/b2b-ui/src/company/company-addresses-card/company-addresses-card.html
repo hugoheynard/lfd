@@ -153,6 +153,12 @@
                           <span>{{ contactName(contact) }} · {{ contact.telephone }}</span>
                         </p>
                       }
+                      @if (a.specs.signatureRequired) {
+                        <p class="detail-line">
+                          <fold-icon name="edit" [size]="15" />
+                          <span>Signature exigée à la remise</span>
+                        </p>
+                      }
                       @if (a.specs.note) {
                         <p class="detail-line">
                           <fold-icon name="chat" [size]="15" />

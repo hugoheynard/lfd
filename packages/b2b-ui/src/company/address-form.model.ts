@@ -39,6 +39,8 @@ export interface AddressDraft {
   readonly contactPrenom: string;
   readonly contactNom: string;
   readonly contactTel: string;
+  /** Ce site exige-t-il une signature à la remise ? Préremplissage, pas contrainte. */
+  readonly signatureRequired: boolean;
   readonly gpsLat: string;
   readonly gpsLng: string;
 }
@@ -81,6 +83,7 @@ export const EMPTY_ADDRESS_DRAFT: AddressDraft = {
   contactPrenom: '',
   contactNom: '',
   contactTel: '',
+  signatureRequired: false,
   gpsLat: '',
   gpsLng: '',
 };
@@ -103,6 +106,7 @@ export function deliveryDraftFrom(view: DeliveryAddressView): AddressDraft {
     contactPrenom: contact?.prenom ?? '',
     contactNom: contact?.nom ?? '',
     contactTel: contact?.telephone ?? '',
+    signatureRequired: view.specs.signatureRequired,
     gpsLat: view.specs.gps === null ? '' : String(view.specs.gps.lat),
     gpsLng: view.specs.gps === null ? '' : String(view.specs.gps.lng),
   };
@@ -235,8 +239,9 @@ export function toDeliveryPayload(draft: AddressDraft): DeliveryAddressPayload {
     ...toBillingPayload(draft),
     isDefault: draft.isDefault,
     specs: {
-      // Réglage du site, préremplissage d'une commande — pas une contrainte.
-      signatureRequired: false,
+      // Réglage du site, préremplissage d'une commande — pas une contrainte :
+      // le panier peut s'en écarter, et l'écart se voit (provenance figée).
+      signatureRequired: draft.signatureRequired,
       note: draft.note.trim(),
       slots: buildSlots(draft),
       deliveryContact: buildContact(draft),
