@@ -3,7 +3,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 
 import { AppModule } from "../../src/app.module.js";
 import { EstablishmentDirectory } from "../../src/account/domain/ports/establishment-directory.js";
-import { KbisStore } from "../../src/account/domain/ports/kbis-store.js";
+import { DocumentStore } from "../../src/infra/storage/document-store.js";
 import { CustomerUserResolver } from "../../src/infra/auth/customer-user.resolver.js";
 import type { Actor } from "../../src/infra/context/request-context.js";
 import { runWithRequestContext } from "../../src/infra/context/request-context.store.js";
@@ -11,7 +11,7 @@ import { newTraceId } from "../../src/infra/context/trace-context.js";
 import { PrismaService } from "../../src/infra/database/prisma.service.js";
 import { PaymentGateway } from "../../src/payments/domain/payment-gateway.js";
 import { FakeEstablishmentDirectory } from "./fake-establishment-directory.js";
-import { FakeKbisStore } from "./fake-kbis-store.js";
+import { FakeDocumentStore } from "./fake-document-store.js";
 import { FakePaymentGateway } from "./fake-payment-gateway.js";
 
 /**
@@ -36,8 +36,8 @@ export async function bootstrapHarness(): Promise<SeedHarness> {
   const module = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(PaymentGateway)
     .useClass(FakePaymentGateway)
-    .overrideProvider(KbisStore)
-    .useClass(FakeKbisStore)
+    .overrideProvider(DocumentStore)
+    .useClass(FakeDocumentStore)
     .overrideProvider(EstablishmentDirectory)
     .useClass(FakeEstablishmentDirectory)
     .compile();
