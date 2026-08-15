@@ -10,6 +10,60 @@
     (checkedChange)="setDefault($event)"
   />
 
+  <fieldset class="opening">
+    <legend class="field-label">Heures de retrait</legend>
+    <p class="opening-hint">
+      Les deux plages restent séparées : une commande doit tenir dans <em>l'une</em> d'elles, jamais
+      à cheval sur le creux entre les deux.
+    </p>
+
+    <div class="slot-row">
+      <span class="slot-name">Créneau pro</span>
+      <input
+        class="time"
+        type="time"
+        aria-label="Début du créneau pro"
+        [value]="opening().proStart"
+        (input)="setOpening('proStart', inputValue($event))"
+      />
+      <span class="dash">–</span>
+      <input
+        class="time"
+        type="time"
+        aria-label="Fin du créneau pro"
+        [value]="opening().proEnd"
+        (input)="setOpening('proEnd', inputValue($event))"
+      />
+    </div>
+
+    <div class="slot-row">
+      <span class="slot-name">Ouverture au public</span>
+      <input
+        class="time"
+        type="time"
+        aria-label="Début de l'ouverture au public"
+        [value]="opening().publicStart"
+        (input)="setOpening('publicStart', inputValue($event))"
+      />
+      <span class="dash">–</span>
+      <input
+        class="time"
+        type="time"
+        aria-label="Fin de l'ouverture au public"
+        [value]="opening().publicEnd"
+        (input)="setOpening('publicEnd', inputValue($event))"
+      />
+    </div>
+
+    @if (openingIssue()) {
+      <p class="opening-issue">{{ openingIssue() }}</p>
+    } @else if (!opening().proEnd && !opening().publicEnd) {
+      <p class="opening-hint">
+        Sans aucune heure déclarée, ce point accepte n'importe quelle heure de retrait.
+      </p>
+    }
+  </fieldset>
+
   <app-cart-adjustment-field
     label="Réduction de retrait"
     [value]="discount()"

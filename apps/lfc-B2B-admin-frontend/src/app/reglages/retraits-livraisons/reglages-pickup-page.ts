@@ -20,6 +20,7 @@ import { formatAdjustment } from './cart-adjustment-format';
 import { CutoffsSection } from './cutoffs-section/cutoffs-section';
 import { DeliveryZonesSection } from './delivery-zones-section/delivery-zones-section';
 import { PickupAddressesService } from './pickup-addresses.service';
+import { openingRows } from './pickup-opening.model';
 import { PickupPanel, type PickupPanelData } from './pickup-panel/pickup-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -67,6 +68,8 @@ export class ReglagesPickupPage {
 
   /** Formate la remise d'un point de retrait pour l'affichage. */
   protected readonly fee = formatAdjustment;
+  /** Les plages d'ouverture déclarées, lisibles. Vide = aucune heure opposée. */
+  protected readonly hours = openingRows;
 
   constructor() {
     void this.load();

@@ -16,6 +16,70 @@
   padding: var(--fold-space-lg);
 }
 
+// Les deux plages d'ouverture : un nom à gauche, deux heures à droite.
+.opening {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.opening > legend {
+  padding: 0;
+  margin-bottom: var(--fold-space-xs);
+}
+
+.field-label {
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.opening-hint,
+.opening-issue {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+}
+.opening-hint {
+  color: var(--fold-color-text-muted);
+}
+.opening-hint em {
+  font-style: normal;
+  font-weight: 600;
+}
+.opening-issue {
+  color: var(--fold-color-alert);
+}
+
+.slot-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+.slot-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--fold-color-text);
+}
+.dash {
+  color: var(--fold-color-text-muted);
+}
+
+.time {
+  flex: none;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  font: inherit;
+  color: var(--fold-color-text);
+  background: var(--fold-color-surface-card);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+}
+.time:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 1px;
+}
+
 .foot {
   display: flex;
   justify-content: flex-end;

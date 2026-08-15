@@ -26,6 +26,13 @@ import {
 import { NotifyService } from '../../../notify.service';
 import { CartAdjustmentField } from '../cart-adjustment-field/cart-adjustment-field';
 import { PickupAddressesService } from '../pickup-addresses.service';
+import {
+  EMPTY_OPENING_DRAFT,
+  openingDraftFrom,
+  openingIssueOf,
+  toPickupOpening,
+  type OpeningDraft,
+} from '../pickup-opening.model';
 
 /** Charge d'ouverture du panneau : le point à éditer, ou `null` pour en créer un. */
 export interface PickupPanelData {
@@ -63,14 +70,20 @@ export class PickupPanel {
   protected readonly draft = signal<AddressDraft>(EMPTY_ADDRESS_DRAFT);
   /** Remise du point (retirer ici coûte moins cher), ou `null`. */
   protected readonly discount = signal<CartAdjustment | null>(null);
+  /** Heures d'ouverture du point — deux fenêtres nommées, jamais fusionnées. */
+  protected readonly opening = signal<OpeningDraft>(EMPTY_OPENING_DRAFT);
   protected readonly saving = signal(false);
+
+  protected readonly openingIssue = computed(() => openingIssueOf(this.opening()));
 
   protected readonly isCreate = computed(() => (this.data()?.address ?? null) === null);
   protected readonly heading = computed(() =>
     this.isCreate() ? 'Nouveau point de retrait' : 'Modifier le point de retrait',
   );
-  /** Postal seul (le fragment n'exige pas les consignes de livraison). */
-  protected readonly canSubmit = computed(() => isAddressValid(this.draft(), 'facturation'));
+  /** Postal (le fragment n'exige pas les consignes de livraison) + heures cohérentes. */
+  protected readonly canSubmit = computed(
+    () => isAddressValid(this.draft(), 'facturation') && this.openingIssue() === '',
+  );
 
   constructor() {
     // Préremplit le brouillon à l'ouverture. `data` est fixé et ne change plus.
@@ -81,6 +94,7 @@ export class PickupPanel {
       }
       this.draft.set({ ...billingDraftFrom(address), isDefault: address.isDefault });
       this.discount.set(address.discount);
+      this.opening.set(openingDraftFrom(address.opening));
     });
   }
 
@@ -88,20 +102,27 @@ export class PickupPanel {
     this.draft.update((draft) => ({ ...draft, isDefault }));
   }
 
+  protected setOpening<K extends keyof OpeningDraft>(key: K, value: string): void {
+    this.opening.update((draft) => ({ ...draft, [key]: value }));
+  }
+
+  /** Lit la valeur d'un `<input>` natif sans caster. */
+  protected inputValue(event: Event): string {
+    const el = event.target;
+    return el instanceof HTMLInputElement ? el.value : '';
+  }
+
   protected async submit(): Promise<void> {
-    const address = this.data()?.address ?? null;
     if (!this.canSubmit() || this.saving()) {
       return;
     }
+    const address = this.data()?.address ?? null;
     this.saving.set(true);
     const payload: PickupAddressPayload = {
       ...toBillingPayload(this.draft()),
       isDefault: this.draft().isDefault,
       discount: this.discount(),
-      // Les heures d'ouverture sont RECONDUITES telles quelles : cet écran ne
-      // les édite pas encore, et un envoi de payload complet les écraserait à
-      // chaque enregistrement d'une remise ou d'une adresse.
-      opening: address?.opening ?? { publicOpening: null, proPickup: null },
+      opening: toPickupOpening(this.opening()),
     };
     try {
       if (address === null) {
