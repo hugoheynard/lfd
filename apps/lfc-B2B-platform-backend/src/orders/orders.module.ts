@@ -9,21 +9,26 @@ import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
+import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
+import { ListCustomerSkusHandler } from "./application/queries/list-customer-skus.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
 import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
 import { ListPersonalOrdersHandler } from "./application/queries/list-personal-orders.handler.js";
+import { CustomerSkuReader } from "./domain/ports/customer-sku.reader.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
 import { OrderReader } from "./domain/ports/order.reader.js";
 import { OrderRepository } from "./domain/ports/order.repository.js";
 import { ProductCatalogReader } from "./domain/ports/product-catalog.reader.js";
+import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { SeededProductCatalog } from "./infrastructure/seeded-product-catalog.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
 import { AdminHandoverController } from "./http/admin-handover.controller.js";
+import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
 
@@ -41,6 +46,7 @@ import { OrdersController } from "./http/orders.controller.js";
     OrdersController,
     CompanyOrdersController,
     AdminOrdersController,
+    AdminCatalogController,
     AdminHandoverController,
   ],
   providers: [
@@ -52,9 +58,12 @@ import { OrdersController } from "./http/orders.controller.js";
     GetOrderHandler,
     GetAdminOrderHandler,
     ListAdminOrdersHandler,
+    ListCatalogHandler,
+    ListCustomerSkusHandler,
     GetHandoverHandler,
     ConfirmHandoverHandler,
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
+    { provide: CustomerSkuReader, useClass: PrismaCustomerSkuReader },
     { provide: ProductCatalogReader, useClass: SeededProductCatalog },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },
