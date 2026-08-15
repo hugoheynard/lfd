@@ -17,6 +17,8 @@ function order(
     status,
     paymentStatus: 'paid',
     fulfillmentMethod: 'pickup',
+    subtotalCents: totalCents,
+    vatCents: 0,
     totalCents,
     customerLabel: 'Café des Halles',
     companyId: 'cmp_1',

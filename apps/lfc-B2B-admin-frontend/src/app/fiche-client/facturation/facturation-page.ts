@@ -27,6 +27,8 @@ import {
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
+import { NotifyService } from '../../notify.service';
+import { periodCsv, periodFileName } from './billing-csv';
 import {
   groupByYear,
   ledgerRows,
@@ -78,6 +80,7 @@ export class ClientFacturationPage {
   private readonly orders = inject(AdminOrdersService);
   private readonly companies = inject(AdminCompaniesService);
   private readonly router = inject(Router);
+  private readonly notify = inject(NotifyService);
 
   protected readonly state = signal<LoadState>('loading');
   private readonly rows = signal<readonly AdminOrderRow[]>([]);
@@ -140,6 +143,31 @@ export class ClientFacturationPage {
 
   protected openOrder(row: AdminOrderRow): void {
     void this.router.navigate(['/commandes', row.id]);
+  }
+
+  /**
+   * Télécharge le relevé d'un mois — les deux régimes dans une seule table.
+   *
+   * Fabriqué **dans le navigateur**, depuis ce qui est déjà à l'écran : le
+   * serveur n'a rien à rendre qu'il ne rende déjà, et un export qui repasserait
+   * par lui pourrait dire autre chose que la page qu'on regarde. Le jour où le
+   * volume dépassera la fenêtre de lecture, c'est une route qu'il faudra — et
+   * l'écran le dit déjà quand la fenêtre est pleine.
+   */
+  protected exportPeriod(row: LedgerRow): void {
+    const csv = periodCsv(row, (order) => paymentStatusLabel(order.paymentStatus));
+    const name = periodFileName(this.company()?.reference ?? '', row.key);
+    // `text/csv` et non `application/octet-stream` : le système propose alors le
+    // tableur, au lieu de demander quoi faire du fichier.
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    link.click();
+    // Libéré au tour suivant : révoquer dans la foulée annule le téléchargement
+    // sur certains navigateurs, qui n'ont pas encore lu le blob.
+    setTimeout(() => URL.revokeObjectURL(url));
+    this.notify.success(`Relevé ${row.month} exporté.`);
   }
 
   constructor() {

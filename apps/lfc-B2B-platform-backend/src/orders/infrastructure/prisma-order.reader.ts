@@ -140,6 +140,8 @@ export class PrismaOrderReader extends OrderReader {
         status: true,
         paymentStatus: true,
         fulfillmentMethod: true,
+        subtotalCents: true,
+        vatCents: true,
         totalCents: true,
         companyId: true,
         fromSubscriptionId: true,
@@ -235,6 +237,8 @@ interface AdminRow {
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly fulfillmentMethod: FulfillmentMethod;
+  readonly subtotalCents: number;
+  readonly vatCents: number;
   readonly totalCents: number;
   readonly companyId: string | null;
   readonly fromSubscriptionId: string | null;
@@ -256,6 +260,8 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
     status: row.status,
     paymentStatus: row.paymentStatus,
     fulfillmentMethod: row.fulfillmentMethod,
+    subtotalCents: row.subtotalCents,
+    vatCents: row.vatCents,
     totalCents: row.totalCents,
     customerLabel: customerLabelOf(row),
     companyId: row.companyId,

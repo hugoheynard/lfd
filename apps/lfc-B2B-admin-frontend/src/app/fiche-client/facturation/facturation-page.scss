@@ -147,6 +147,46 @@
   font-weight: 600;
 }
 
+/* Discret jusqu'au survol de la ligne : le registre se lit d'abord, il ne
+   propose qu'ensuite. Toujours visible au clavier, sinon l'action n'existerait
+   que pour la souris. */
+.fac-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--fold-space-xs);
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--fold-radius-sm);
+  background: none;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  font-size: var(--fold-text-xs);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--fold-color-border);
+    color: var(--fold-color-text);
+    opacity: 1;
+  }
+}
+
+.fac-rail:hover .fac-export,
+.fac-rail:focus-within .fac-export {
+  opacity: 1;
+}
+
+/* Au doigt, il n'y a pas de survol : l'export reste visible. */
+@media (hover: none) {
+  .fac-export {
+    opacity: 1;
+  }
+}
+
 .fac-rail-state {
   color: var(--fold-color-primary-text);
   font-size: var(--fold-text-xs);

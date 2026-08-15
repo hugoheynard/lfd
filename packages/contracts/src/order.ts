@@ -305,6 +305,13 @@ export interface AdminOrderRow {
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly fulfillmentMethod: FulfillmentMethod;
+  /**
+   * Sous-total **HT** et **TVA**, en centimes — la décomposition que réclame la
+   * comptabilité. Ils vivent déjà sur la commande ; les taire dans la liste
+   * obligeait à ouvrir chaque commande pour reporter un mois.
+   */
+  readonly subtotalCents: number;
+  readonly vatCents: number;
   readonly totalCents: number;
   /**
    * Qui a commandé, en clair : la raison sociale, ou la personne quand la

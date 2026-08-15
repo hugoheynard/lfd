@@ -102,6 +102,17 @@
             @if (row.open) {
               <span class="fac-rail-state">en cours</span>
             }
+            <!-- L'export est au mois, donc dans le rail du mois : c'est là que
+                 se lit la période, c'est là qu'on la prend. -->
+            <button
+              type="button"
+              class="fac-export"
+              [attr.aria-label]="'Exporter le relevé de ' + row.month"
+              (click)="exportPeriod(row)"
+            >
+              <fold-icon name="download" size="xs" />
+              CSV
+            </button>
           </p>
 
           <div class="fac-cell" [class.is-open]="row.open">
