@@ -99,6 +99,28 @@
   font-style: italic;
 }
 
+// L'heure convenue — grosse : c'est ce qu'on cherche en chargeant la tournée.
+.fp-when {
+  margin: 1mm 0 0;
+  font-size: 13pt;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.fp-when--none {
+  font-size: 10pt;
+  font-weight: 400;
+  font-style: italic;
+}
+
+// Une consigne opposable : encadrée, elle ne se lit pas comme une note.
+.fp-signature {
+  margin: 1.5mm 0 0;
+  padding: 0.8mm 1.5mm;
+  font-size: 10pt;
+  font-weight: 700;
+  border: 1pt solid currentColor;
+}
+
 .fp-origin {
   margin: 1mm 0 0;
   font-size: 10pt;

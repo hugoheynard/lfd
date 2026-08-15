@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { BillingAddressPayload } from "./address.js";
+import type { BillingAddressPayload, FulfillmentWindow } from "./address.js";
 import type { FulfillmentMethod, OrderOrigin } from "./order.js";
 
 /**
@@ -43,18 +43,21 @@ export interface ProductionSheetLine {
  * **Qui appeler** en livrant. Le livreur sonne à une porte : il lui faut un nom
  * et un numéro, pas une raison sociale.
  *
- * Trois provenances, dans cet ordre — c'est la seule information de la fiche qui
- * se cherche ailleurs que sur la commande :
+ * Trois provenances, dans cet ordre :
  *
- * - `address` — le contact **de l'adresse** (carnet de la société). Le bon ;
+ * - `order` — le contact **convenu sur la commande**, figé à la passation. Le
+ *   bon : c'est ce que le client a vu à l'écran en validant ;
  * - `holder` — à défaut, le **détenteur du compte** (le membre `owner`). Il n'a
- *   pas forcément été prévenu, mais c'est quelqu'un à qui parler ;
- * - `null` — l'adresse a été dictée à la volée et le compte n'a pas de
- *   détenteur. La fiche le **dit** alors : le livreur doit savoir qu'il part
- *   sans numéro, pas le découvrir devant la porte.
+ *   pas forcément été prévenu, mais c'est quelqu'un à qui parler. C'est la
+ *   seule information de la fiche qui se cherche encore ailleurs que sur la
+ *   commande — un compte n'a qu'un détenteur, et il ne change pas d'un jour à
+ *   l'autre comme un réglage d'adresse ;
+ * - `null` — rien de convenu et pas de détenteur. La fiche le **dit** alors :
+ *   le livreur doit savoir qu'il part sans numéro, pas le découvrir devant la
+ *   porte.
  */
 export interface ProductionContact {
-  readonly source: "address" | "holder";
+  readonly source: "order" | "holder";
   readonly name: string;
   /** Peut être vide : un détenteur sans téléphone reste un nom à demander. */
   readonly phone: string;
@@ -91,6 +94,22 @@ export interface ProductionSheet {
   readonly deliveryAddress: BillingAddressPayload | null;
   /** Qui appeler en livrant — cf. {@link ProductionContact}. `null` = personne. */
   readonly deliveryContact: ProductionContact | null;
+  /**
+   * L'**heure convenue** — celle du retrait ou du passage du coursier, telle
+   * qu'elle a été arrêtée à la passation. `null` = aucune heure convenue, la
+   * commande se remet quand elle se remet.
+   *
+   * Elle vient du bloc figé sur la commande, pas des heures du point ni des
+   * créneaux du carnet : ceux-là peuvent changer demain, et une feuille déjà
+   * partie en tournée ne doit pas dire autre chose que le papier.
+   */
+  readonly window: FulfillmentWindow | null;
+  /**
+   * La remise exige-t-elle une **signature** ? Convenu sur la commande, donc
+   * opposable : le livreur ne repart pas sans, même si le réglage du site a
+   * changé depuis.
+   */
+  readonly signatureRequired: boolean;
   /** La note du client — consigne de fabrication ou d'accès, elle se lit au labo. */
   readonly note: string;
   /** Par quelle porte la commande est entrée (récurrente, saisie, self-service). */

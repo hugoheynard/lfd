@@ -55,6 +55,21 @@ export class FicheProduction {
     );
   });
 
+  /**
+   * L'heure convenue, mise en forme. `null` quand rien n'a été arrêté — la
+   * fiche l'écrit alors en toutes lettres plutôt que de laisser un blanc.
+   *
+   * Une borne basse absente se lit « avant X » : le client a dit jusqu'à quand,
+   * pas à partir de quand, et rendre `00:00 – X` inventerait une heure.
+   */
+  protected readonly windowLabel = computed<string | null>(() => {
+    const window = this.sheet().window;
+    if (window === null) {
+      return null;
+    }
+    return window.start === null ? `Avant ${window.end}` : `${window.start} – ${window.end}`;
+  });
+
   /** L'origine n'est dite QUE si elle apprend quelque chose au labo. */
   protected readonly originLabel = computed<string | null>(() =>
     this.sheet().origin === 'recurring' ? ORDER_ORIGIN_LABELS.recurring : null,

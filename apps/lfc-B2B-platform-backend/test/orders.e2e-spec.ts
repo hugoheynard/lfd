@@ -117,14 +117,9 @@ async function seedZone(): Promise<string> {
  * point, et un test qui laisserait le serveur choisir n'exercerait pas ce que
  * l'écran envoie.
  */
-function pickupOrder(
-  companyId: string | null,
-  pickupAddressId = pickupId,
-): Record<string, unknown> {
+function pickupOrder(companyId: string | null): Record<string, unknown> {
   return {
     companyId,
-    pickupAddressId,
-    requestedDeliveryDate: SERVICE_DAY,
     pickupAddressId: pickupId,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "pickup",

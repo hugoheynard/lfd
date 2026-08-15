@@ -14,6 +14,8 @@ function sheet(orderNumber: string, lines: [string, string, number][]): Producti
     pickupAddress: null,
     deliveryAddress: null,
     deliveryContact: null,
+    window: null,
+    signatureRequired: false,
     note: '',
     origin: 'self_service',
     lines: lines.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),

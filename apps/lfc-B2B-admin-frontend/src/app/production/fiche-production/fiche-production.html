@@ -24,6 +24,12 @@
       <p class="fp-addr">{{ line }}</p>
     }
 
+    <!-- L'heure CONVENUE, figée à la passation. Absente, on l'écrit : « pas
+         d'heure » est une information, un blanc se lirait comme un oubli. -->
+    <p class="fp-when" [class.fp-when--none]="windowLabel() === null">
+      {{ windowLabel() ?? 'Sans heure convenue' }}
+    </p>
+
     @if (sheet().fulfillmentMethod === 'delivery') {
       @if (sheet().deliveryContact; as contact) {
         <p class="fp-contact">
@@ -32,7 +38,7 @@
             <span class="fp-phone">{{ contact.phone }}</span>
           }
           <!-- D'où vient ce nom : un détenteur de compte n'attend pas forcément
-               la livraison, contrairement au contact de l'adresse. -->
+               la livraison, contrairement au contact convenu sur la commande. -->
           @if (contact.source === 'holder') {
             <span class="fp-contact-src">détenteur du compte</span>
           }
@@ -41,6 +47,12 @@
         <!-- Écrit, pas laissé blanc : le livreur doit savoir qu'il part sans
              numéro AVANT de sonner, pas le découvrir devant la porte. -->
         <p class="fp-contact fp-contact--none">Aucun contact sur place</p>
+      }
+
+      <!-- Opposable : convenu sur la commande, il ne bouge pas si le réglage
+           du site change. Le livreur ne repart pas sans. -->
+      @if (sheet().signatureRequired) {
+        <p class="fp-signature">Signature exigée à la remise</p>
       }
     }
 

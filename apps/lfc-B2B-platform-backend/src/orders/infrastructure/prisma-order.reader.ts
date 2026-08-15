@@ -5,7 +5,6 @@ import {
   billingAddressPayloadSchema,
   type CartAdjustment,
   cartAdjustmentSchema,
-  deliverySpecsSchema,
   type FulfillmentMethod,
   type OrderLineView,
   type OrderStatus,
@@ -243,12 +242,16 @@ export class PrismaOrderReader extends OrderReader {
         note: true,
         fromSubscriptionId: true,
         placedByStaffId: true,
+        // L'acheminement CONVENU, figé à la passation. C'est lui qui dit le
+        // contact, l'heure et la signature — plus le carnet d'adresses, dont la
+        // lecture faisait changer un bon déjà imprimé quand un réglage bougeait.
+        fulfillment: true,
         company: {
           select: {
             raisonSociale: true,
             enseigne: true,
-            // Le détenteur : le repli quand l'adresse ne nomme personne. Une
-            // seule ligne attendue — un compte a au plus un `owner`.
+            // Le détenteur : le repli quand rien n'a été convenu. Une seule
+            // ligne attendue — un compte a au plus un `owner`.
             memberships: {
               where: { role: "owner" },
               take: 1,
@@ -256,15 +259,17 @@ export class PrismaOrderReader extends OrderReader {
             },
           },
         },
-        // Le contact de livraison vit sur le CARNET, pas sur la commande : celle-ci
-        // ne fige que les champs postaux. Une adresse dictée à la volée n'a donc
-        // pas de contact — c'est structurel, pas un oubli de saisie.
-        deliveryAddress: { select: { deliverySpecs: true } },
         placedBy: { select: { email: true, firstName: true, lastName: true } },
         lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
       },
     });
-    return rows.map((row) => ({
+    return rows.map((row) => this.toSheet(row));
+  }
+
+  /** Une ligne de commande → une fiche. Extrait pour tenir la limite de lignes. */
+  private toSheet(row: ProductionRow): ProductionSheet {
+    const agreed = fulfillmentOf(row.fulfillment);
+    return {
       orderId: row.id,
       orderNumber: row.orderNumber,
       tradeName: row.company?.enseigne ?? "",
@@ -273,7 +278,9 @@ export class PrismaOrderReader extends OrderReader {
       pickupLabel: pickupLabelOf(row.pickupAddress),
       pickupAddress: parseAddress(row.pickupAddress),
       deliveryAddress: parseAddress(row.deliveryAddressSnapshot),
-      deliveryContact: deliveryContactOf(row),
+      deliveryContact: contactOf(agreed, row.company),
+      window: agreed.window.value,
+      signatureRequired: agreed.signatureRequired.value,
       note: row.note,
       origin: orderOriginOf(row),
       lines: row.lines.map((line) => ({
@@ -281,7 +288,7 @@ export class PrismaOrderReader extends OrderReader {
         productName: line.productNameSnapshot,
         quantity: line.quantity,
       })),
-    }));
+    };
   }
 }
 
@@ -303,41 +310,70 @@ const NOTHING_AGREED: OrderFulfillment = {
 };
 
 /**
- * **Qui appeler en livrant**, dans l'ordre : le contact de l'adresse du carnet,
+ * **Qui appeler en livrant**, dans l'ordre : le contact convenu sur la commande,
  * puis le détenteur du compte, puis personne.
  *
- * La priorité n'est pas arbitraire — le contact d'adresse a été renseigné POUR
- * cette adresse, le détenteur ne sait peut-être même pas qu'une livraison
- * arrive. Rendre `null` plutôt qu'un nom bricolé permet à la fiche d'écrire
- * « aucun contact », ce qui est une information et pas un blanc.
+ * La fiche ne relit **plus le carnet d'adresses**. Elle le faisait, et c'était
+ * le défaut : changer le contact d'une adresse réécrivait des bons déjà partis
+ * en tournée. Ce qui a été convenu à la passation est figé sur la commande, et
+ * ce qui bouge ensuite passe par un avenant.
+ *
+ * Le détenteur reste une lecture vivante, faute de mieux — mais il ne change
+ * pas d'un jour à l'autre comme un réglage, et c'est un repli, pas la règle.
+ * Rendre `null` plutôt qu'un nom bricolé permet à la fiche d'écrire « aucun
+ * contact », ce qui est une information et pas un blanc.
  */
-function deliveryContactOf(row: {
-  readonly deliveryAddress: { readonly deliverySpecs: Prisma.JsonValue } | null;
-  readonly company: {
-    readonly memberships: readonly {
-      readonly user: {
-        readonly firstName: string;
-        readonly lastName: string;
-        readonly phone: string;
-      };
-    }[];
-  } | null;
-}): ProductionContact | null {
-  const specs = deliverySpecsSchema.safeParse(row.deliveryAddress?.deliverySpecs);
-  const onSite = specs.success ? specs.data.deliveryContact : null;
-  if (onSite !== null && onSite !== undefined) {
+function contactOf(agreed: OrderFulfillment, company: HolderSide | null): ProductionContact | null {
+  const onOrder = agreed.contact.value;
+  if (onOrder !== null) {
     return {
-      source: "address",
-      name: `${onSite.prenom} ${onSite.nom}`.trim(),
-      phone: onSite.telephone,
+      source: "order",
+      name: `${onOrder.prenom} ${onOrder.nom}`.trim(),
+      phone: onOrder.telephone,
     };
   }
-  const holder = row.company?.memberships[0]?.user;
+  const holder = company?.memberships[0]?.user;
   if (holder === undefined) {
     return null;
   }
   const name = `${holder.firstName} ${holder.lastName}`.trim();
   return name === "" ? null : { source: "holder", name, phone: holder.phone };
+}
+
+/** Le détenteur du compte tel que la requête le ramène (0 ou 1 ligne). */
+interface HolderSide {
+  readonly memberships: readonly {
+    readonly user: {
+      readonly firstName: string;
+      readonly lastName: string;
+      readonly phone: string;
+    };
+  }[];
+}
+
+/** Ce que Prisma rend pour une fiche de production. */
+interface ProductionRow {
+  readonly id: string;
+  readonly orderNumber: string;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly pickupAddress: Prisma.JsonValue | null;
+  readonly deliveryAddressSnapshot: Prisma.JsonValue | null;
+  readonly note: string;
+  readonly fromSubscriptionId: string | null;
+  readonly placedByStaffId: string | null;
+  readonly fulfillment: Prisma.JsonValue | null;
+  readonly company:
+    (HolderSide & { readonly raisonSociale: string; readonly enseigne: string }) | null;
+  readonly placedBy: {
+    readonly email: string;
+    readonly firstName: string;
+    readonly lastName: string;
+  };
+  readonly lines: readonly {
+    readonly sku: string;
+    readonly productNameSnapshot: string;
+    readonly quantity: number;
+  }[];
 }
 
 /**
