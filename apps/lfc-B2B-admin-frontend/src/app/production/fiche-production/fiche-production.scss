@@ -1,0 +1,162 @@
+/* Une feuille A4. À l'écran elle est une carte, à l'impression elle EST la page :
+   les deux se règlent ici, pour qu'on voie à l'écran ce qui sortira. */
+:host {
+  display: block;
+  padding: 14mm 12mm;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  /* Noir sur blanc, toujours : l'encre d'une imprimante n'a pas de thème, et le
+     gris de l'interface sort délavé. */
+  color: #111;
+}
+
+.fp-head {
+  padding-bottom: 4mm;
+  border-bottom: 2px solid #111;
+}
+
+/* Le lot et le rang en tête : c'est ce qui permet de constater qu'il ne manque
+   pas une feuille dans la pile. */
+.fp-batch {
+  margin: 0 0 2mm;
+  font-size: 10pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fp-customer {
+  margin: 0;
+  font-size: 20pt;
+  line-height: 1.1;
+}
+
+.fp-ref {
+  margin: 1mm 0 0;
+  font-size: 11pt;
+  font-variant-numeric: tabular-nums;
+}
+
+.fp-route {
+  margin: 5mm 0;
+}
+
+.fp-method {
+  margin: 0;
+  font-size: 16pt;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fp-where {
+  margin: 1mm 0 0;
+  font-size: 12pt;
+}
+
+.fp-origin {
+  margin: 1mm 0 0;
+  font-size: 10pt;
+  font-style: italic;
+}
+
+.fp-lines {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.fp-caption {
+  padding-bottom: 2mm;
+  font-size: 10pt;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.fp-lines th,
+.fp-lines td {
+  padding: 2.5mm 2mm;
+  border-bottom: 1px solid #999;
+  text-align: left;
+  vertical-align: top;
+}
+
+.fp-lines th {
+  font-size: 9pt;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fp-qty-head,
+.fp-qty {
+  width: 18mm;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La quantité est le seul chiffre qui compte au fournil : elle se lit de loin. */
+.fp-qty {
+  font-size: 16pt;
+  font-weight: 700;
+}
+
+.fp-product {
+  display: block;
+  font-size: 12pt;
+}
+
+.fp-sku {
+  display: block;
+  font-size: 8pt;
+  letter-spacing: 0.04em;
+}
+
+.fp-tick-head,
+.fp-tick {
+  width: 16mm;
+  text-align: center;
+}
+
+.fp-box {
+  display: inline-block;
+  width: 6mm;
+  height: 6mm;
+  border: 1.5px solid #111;
+}
+
+.fp-note {
+  margin-top: 5mm;
+  padding: 3mm;
+  border: 1.5px solid #111;
+}
+
+.fp-note-title {
+  margin: 0 0 1mm;
+  font-size: 9pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fp-note-body {
+  margin: 0;
+  font-size: 11pt;
+}
+
+/* ── À l'impression ──────────────────────────────────────────────────────── */
+
+@media print {
+  /* Une fiche = une page. La dernière ne pousse pas de page blanche derrière
+     elle : c'est le `:last-of-type` du parent qui s'en charge, ici on garde la
+     règle simple et la page l'annule. */
+  :host {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    break-after: page;
+  }
+
+  /* Un tableau coupé en deux entre deux pages perd son en-tête et sa ligne. */
+  .fp-lines tr {
+    break-inside: avoid;
+  }
+}

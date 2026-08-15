@@ -1,0 +1,197 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* ── La barre de commande de l'écran ─────────────────────────────────────── */
+
+.pr-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--fold-space-md);
+}
+
+.pr-when {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pr-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pr-date {
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+}
+
+.pr-count {
+  margin: 0 auto 0 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Les deux lectures ───────────────────────────────────────────────────── */
+
+/* Masquée, pas détruite : le tirage contient les deux vues, et un `@if` les
+   aurait retirées du DOM — on imprimerait alors ce qu'on regarde, pas le
+   dossier. */
+.pr-view.is-hidden {
+  display: none;
+}
+
+.pr-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* ── Le récapitulatif, sur sa feuille ────────────────────────────────────── */
+
+.pr-sheet {
+  display: block;
+  padding: 14mm 12mm;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  /* Noir sur blanc : l'encre n'a pas de thème, et le gris de l'interface sort
+     délavé. */
+  color: #111;
+}
+
+.pr-recap-head {
+  padding-bottom: 4mm;
+  border-bottom: 2px solid #111;
+}
+
+.pr-recap-batch {
+  margin: 0 0 2mm;
+  font-size: 10pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pr-recap-title {
+  margin: 0;
+  font-size: 20pt;
+  line-height: 1.1;
+}
+
+.pr-recap-sum {
+  margin: 1mm 0 0;
+  font-size: 11pt;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-group {
+  margin-top: 6mm;
+}
+
+/* Le rayon, en bandeau : au fournil on travaille par poste, et le poste se
+   trouve d'un coup d'œil en descendant la feuille. */
+.pr-group-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  margin: 0 0 2mm;
+  padding-bottom: 1.5mm;
+  border-bottom: 1px solid #111;
+  font-size: 12pt;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pr-group-sum {
+  font-size: 14pt;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pr-table td {
+  padding: 2mm;
+  border-bottom: 1px solid #ccc;
+  text-align: left;
+  vertical-align: top;
+}
+
+/* La quantité est le seul chiffre qui compte au fournil : elle se lit de loin. */
+.pr-qty {
+  width: 20mm;
+  font-size: 16pt;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-product {
+  display: block;
+  font-size: 12pt;
+}
+
+.pr-sku {
+  display: block;
+  font-size: 8pt;
+  letter-spacing: 0.04em;
+}
+
+.pr-spread {
+  width: 24mm;
+  font-size: 9pt;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── À l'impression ──────────────────────────────────────────────────────── */
+
+@media print {
+  /* Tout le dossier sort, quel que soit l'onglet regardé. */
+  .pr-view.is-hidden {
+    display: block;
+  }
+
+  .pr-bar,
+  .pr-no-print {
+    display: none;
+  }
+
+  :host {
+    gap: 0;
+  }
+
+  .pr-stack {
+    gap: 0;
+  }
+
+  .pr-sheet {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    break-after: page;
+  }
+
+  /* Un rayon coupé en deux pages perd son bandeau — donc son poste. */
+  .pr-group {
+    break-inside: avoid;
+  }
+
+  /* Le tout dernier bon ne pousse pas une page blanche derrière lui. */
+  .pr-stack app-fiche-production:last-child {
+    break-after: auto;
+  }
+}

@@ -1,0 +1,122 @@
+<!-- La barre ne s'imprime pas : elle sert à choisir le jour, la lecture et le
+     tirage. Elle n'a rien à faire au fournil. -->
+<header class="pr-bar">
+  <div class="pr-when">
+    <label class="pr-label" for="pr-date">Journée de service</label>
+    <input
+      id="pr-date"
+      class="pr-date"
+      type="date"
+      [value]="date()"
+      (change)="onDate($any($event.target).value)"
+    />
+  </div>
+
+  @if (state() === 'ready' && sheets().length > 0) {
+    <fold-view-toggle
+      size="sm"
+      ariaLabel="Lecture du lot"
+      [options]="views"
+      [value]="view()"
+      (valueChange)="view.set($event)"
+    />
+    <p class="pr-count">
+      {{ sheets().length }} commande{{ sheets().length > 1 ? 's' : '' }} · {{ pieces() }} pièce{{
+        pieces() > 1 ? 's' : ''
+      }}
+    </p>
+    <!-- Le tirage sort le dossier entier, pas l'onglet affiché : le fournil
+         reçoit un paquet, pas une capture d'écran. -->
+    <button foldButton variant="primary" (click)="print()">Imprimer le dossier</button>
+  }
+</header>
+
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture du lot…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de lire le lot"
+      subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (undatedCount() > 0) {
+      <!-- Une commande sans date de service n'entre dans aucun lot. Le dire ici
+           est la seule chose qui l'empêche de disparaître en silence. -->
+      <fold-callout variant="warning" class="pr-no-print">
+        {{ undatedCount() }} commande{{ undatedCount() > 1 ? 's' : '' }} sans date de
+        retrait/livraison — elle{{ undatedCount() > 1 ? 's' : '' }} n'apparaîtra{{
+          undatedCount() > 1 ? 'ont' : ''
+        }}
+        sur aucun lot tant qu'on ne lui{{ undatedCount() > 1 ? 'r' : '' }} en aura pas donné une.
+      </fold-callout>
+    }
+
+    @if (sheets().length === 0) {
+      <fold-empty-state
+        title="Rien à produire ce jour-là"
+        subtitle="Aucune commande n'est à retirer ni à livrer à cette date."
+      />
+    } @else {
+      <!-- Les deux vues restent dans le DOM, masquées et non détruites : une vue
+           détruite ne s'imprimerait pas, et le tirage doit contenir les deux. -->
+      <section class="pr-view" [class.is-hidden]="view() !== 'recap'" aria-label="Récapitulatif">
+        <article class="pr-sheet pr-recap">
+          <header class="pr-recap-head">
+            <p class="pr-recap-batch">Lot du {{ dayLabel() }}</p>
+            <h2 class="pr-recap-title">À fabriquer</h2>
+            <p class="pr-recap-sum">
+              {{ sheets().length }} commande{{ sheets().length > 1 ? 's' : '' }} ·
+              {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }}
+            </p>
+          </header>
+
+          @for (group of recap(); track group.label) {
+            <section class="pr-group">
+              <h3 class="pr-group-title">
+                {{ group.label }}
+                <span class="pr-group-sum">{{ group.quantity }}</span>
+              </h3>
+              <table class="pr-table">
+                <tbody>
+                  @for (line of group.lines; track line.sku) {
+                    <tr>
+                      <td class="pr-qty">{{ line.quantity }}</td>
+                      <td>
+                        <span class="pr-product">{{ line.productName }}</span>
+                        <span class="pr-sku">{{ line.sku }}</span>
+                      </td>
+                      <!-- Sur combien de commandes ça se répartit : 240 en 3 fois
+                           ne se prépare pas comme 240 en 40. -->
+                      <td class="pr-spread">
+                        {{ line.orderCount }} cde{{ line.orderCount > 1 ? 's' : '' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+          }
+        </article>
+      </section>
+
+      <section class="pr-view" [class.is-hidden]="view() !== 'bons'" aria-label="Bons de commande">
+        <div class="pr-stack">
+          @for (sheet of sheets(); track sheet.orderId; let i = $index) {
+            <app-fiche-production
+              [sheet]="sheet"
+              [rank]="i + 1"
+              [total]="sheets().length"
+              [dayLabel]="dayLabel()"
+            />
+          }
+        </div>
+      </section>
+    }
+  }
+}

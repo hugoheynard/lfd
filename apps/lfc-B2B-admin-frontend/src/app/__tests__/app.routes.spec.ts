@@ -45,6 +45,8 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   'reglages/commercial': 'growth:read',
   'reglages/utilisateurs': 'staff:read',
 
+  production: 'orders:read',
+
   commercial: 'growth:read',
   'commercial/cockpit': null,
   'commercial/prospects': null,

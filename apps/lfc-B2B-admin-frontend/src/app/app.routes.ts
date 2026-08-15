@@ -160,6 +160,15 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'production',
+    // Les commandes en lecture : c'est la même donnée que la liste staff, vue
+    // par le fournil. Le garde est ici parce qu'une URL tapée ou un favori ne
+    // passent pas par le rail — et un poste du labo ouvrira exactement ça.
+    canActivate: [permissionGuard('orders:read')],
+    title: 'Production — LFC B2B admin',
+    loadComponent: () => import('./production/production-page').then((m) => m.ProductionPage),
+  },
+  {
     path: 'commercial',
     // Le rail masquait déjà l'entrée sans `growth:read` — mais une URL tapée,
     // un favori ou un lien collé ne passent pas par le rail. Le garde est ici

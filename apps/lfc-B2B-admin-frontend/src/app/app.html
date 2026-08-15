@@ -57,7 +57,23 @@
         ></a>
       }
 
-      <!-- Le catalogue viendra ici, entre le commercial et le canal de secours. -->
+      @if (canSeeProduction()) {
+        <!-- La production : ce que le labo doit fabriquer aujourd'hui et demain.
+             Après le commercial parce qu'on y va une ou deux fois par jour, à la
+             clôture — pas vingt. -->
+        <a
+          fold-menu-item
+          icon="list"
+          label="Production"
+          routerLink="/production"
+          routerLinkActive
+          #prodRla="routerLinkActive"
+          [active]="prodRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
+      <!-- Le catalogue viendra ici, entre la production et le canal de secours. -->
 
       @if (canSeeCompanies()) {
         <!-- Le canal de secours, donc en dernier : les accès ouverts que
@@ -185,6 +201,19 @@
           routerLinkActive
           #commercialTile="routerLinkActive"
           [active]="commercialTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeProduction()) {
+        <a
+          fold-nav-tile
+          variant="filled"
+          icon="list"
+          label="Production"
+          routerLink="/production"
+          routerLinkActive
+          #prodTile="routerLinkActive"
+          [active]="prodTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }

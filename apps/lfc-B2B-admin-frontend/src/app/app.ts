@@ -97,6 +97,8 @@ export class App {
     this.counts.accessPending() > 0 ? this.counts.accessPending() : undefined,
   );
   protected readonly canSeeCommercial = computed(() => this.permissions.can('growth:read'));
+  /** Le fournil lit les commandes ; il n'a rien à voir avec le commercial. */
+  protected readonly canSeeProduction = computed(() => this.permissions.can('orders:read'));
   protected readonly canSeeSettings = computed(() => this.permissions.can('settings:read'));
 
   /**

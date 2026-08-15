@@ -1,0 +1,57 @@
+<header class="fp-head">
+  <p class="fp-batch">Lot du {{ dayLabel() }} · fiche {{ rank() }}/{{ total() }}</p>
+  <h2 class="fp-customer">{{ sheet().customerLabel }}</h2>
+  <p class="fp-ref">{{ sheet().orderNumber }}</p>
+</header>
+
+<!-- L'acheminement en gros et haut : celui qui prépare le colis cherche
+     d'abord s'il part en tournée ou s'il attend au comptoir. -->
+<section class="fp-route" aria-label="Acheminement">
+  <p class="fp-method">{{ methodLabel() }}</p>
+  @if (destination(); as where) {
+    <p class="fp-where">{{ where }}</p>
+  }
+  @if (originLabel(); as origin) {
+    <p class="fp-origin">{{ origin }}</p>
+  }
+</section>
+
+<table class="fp-lines">
+  <caption class="fp-caption">
+    À préparer —
+    {{
+      pieces()
+    }}
+    pièce{{
+      pieces() > 1 ? 's' : ''
+    }}
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col" class="fp-qty-head">Qté</th>
+      <th scope="col">Produit</th>
+      <th scope="col" class="fp-tick-head">Fait</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (line of sheet().lines; track line.sku) {
+      <tr>
+        <td class="fp-qty">{{ line.quantity }}</td>
+        <td>
+          <span class="fp-product">{{ line.productName }}</span>
+          <span class="fp-sku">{{ line.sku }}</span>
+        </td>
+        <!-- Une case à cocher au stylo : la fiche est aussi la liste de
+             préparation, et on coche en remplissant le bac. -->
+        <td class="fp-tick"><span class="fp-box" aria-hidden="true"></span></td>
+      </tr>
+    }
+  </tbody>
+</table>
+
+@if (sheet().note !== '') {
+  <section class="fp-note">
+    <h3 class="fp-note-title">Note du client</h3>
+    <p class="fp-note-body">{{ sheet().note }}</p>
+  </section>
+}
