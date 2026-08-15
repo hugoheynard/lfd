@@ -94,15 +94,15 @@ export class FicheClientShell {
     { key: 'dashboard', label: 'Tableau de bord', link: 'dashboard', icon: 'grid' },
     { key: 'informations', label: 'Informations', link: 'informations', icon: 'company' },
     { key: 'commandes', label: 'Commandes', link: 'commandes', icon: 'list' },
-    { key: 'facturation', label: 'Facturation', link: 'facturation', icon: 'receipt' },
-    { key: 'stats', label: 'Stats', link: 'stats', icon: 'stats' },
     {
       key: 'paniers-recurrents',
       label: 'Paniers récurrents',
       link: 'paniers-recurrents',
       icon: 'repeat',
     },
+    { key: 'facturation', label: 'Facturation', link: 'facturation', icon: 'receipt' },
     { key: 'alertes', label: 'Alertes', link: 'alertes', icon: 'bell' },
+    { key: 'stats', label: 'Stats', link: 'stats', icon: 'stats' },
     { key: 'data', label: 'Données', link: 'data', icon: 'stats' },
   ];
 
