@@ -30,7 +30,21 @@ import {
 } from "../../../domain/ports/product-catalog.reader.js";
 import { DomainEventPublisher } from "../../../../infra/events/domain-event-publisher.js";
 import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
+import {
+  type DeliveryDefaults,
+  DeliveryDefaultsReader,
+  NO_DELIVERY_DEFAULTS,
+} from "../../../domain/ports/delivery-defaults.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
+
+/**
+ * Aucun réglage d'adresse : tout ce que la commande porte y est donc un choix.
+ * Les cas de préremplissage sont couverts par `agreed-fulfillment.spec` — ici on
+ * exerce le handler, pas la règle de provenance.
+ */
+function noDeliveryDefaults(): DeliveryDefaultsReader {
+  return { of: (): Promise<DeliveryDefaults> => Promise.resolve(NO_DELIVERY_DEFAULTS) };
+}
 import { PlaceOrderCommand } from "../place-order.command.js";
 import { PlaceOrderHandler } from "../place-order.handler.js";
 
@@ -131,7 +145,7 @@ function drafting(
   pickupsDouble: PickupAddressRepository,
   zonesDouble: DeliveryZoneRepository,
 ): OrderDrafting {
-  return new OrderDrafting(catalog, pickupsDouble, zonesDouble);
+  return new OrderDrafting(catalog, pickupsDouble, zonesDouble, noDeliveryDefaults());
 }
 
 const LABO_POINT: PickupAddressView = {
@@ -144,6 +158,9 @@ const LABO_POINT: PickupAddressView = {
   pays: "France",
   isDefault: true,
   discount: null,
+  // Aucune heure déclarée : le point n'oppose alors rien à la tranche demandée.
+  // Les cas d'ouverture sont couverts par `agreed-fulfillment.spec`.
+  opening: { publicOpening: null, proPickup: null },
 };
 
 /** Le snapshot attendu : le point résolu réduit à ses champs postaux. */

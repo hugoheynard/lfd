@@ -720,6 +720,14 @@ model Order {
 
   pickupAddress Json? @map("pickup_address")
 
+  // L'acheminement CONVENU, figé à la commande, chaque valeur avec sa provenance
+  // (défaut du réglage / override) — forme = `OrderFulfillment` de
+  // `@lfd/contracts`. Figé comme les prix : le contact d'une adresse, ses heures
+  // ou son exigence de signature peuvent changer demain, et un bon déjà imprimé
+  // ne doit pas se mettre à dire autre chose que le papier parti en tournée.
+  // Ce qui bouge après la commande passe par un AVENANT.
+  fulfillment Json?
+
   // Argent en centimes (snapshot au moment de la commande). Prix marchandises
   // **HT** ; `total` est le **TTC** encaissé = `max(0, subtotal − discount) +
   // deliveryFee + vat`. Remise = point de retrait ; frais = zone ; TVA par taux
@@ -913,6 +921,13 @@ model PickupAddress {
   // aucune remise ; sinon `discountValue` = bp (percent) ou centimes (amount).
   discountMode  CartAdjustmentMode? @map("discount_mode")
   discountValue Int?                @map("discount_value")
+
+  // Quand un pro peut venir : ouverture au public ET créneau réservé aux pros,
+  // deux fenêtres NOMMÉES et jamais fusionnées — leur union peut avoir un trou
+  // (pros 5h–6h30, public 7h–20h), et l'aplatir inventerait une demi-heure
+  // d'ouverture. Forme = `PickupOpening` de `@lfd/contracts`, en JSON car on ne
+  // requête jamais par heure.
+  opening Json?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

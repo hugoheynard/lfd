@@ -10,10 +10,21 @@ import { Injectable } from "@nestjs/common";
 
 import { DeliveryZoneRepository } from "../../../delivery-zones/domain/delivery-zone.repository.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
+import { type DeliveryContact, type FulfillmentWindow } from "@lfd/contracts";
+import {
+  DeliveryDefaultsReader,
+  NO_DELIVERY_DEFAULTS,
+} from "../../domain/ports/delivery-defaults.reader.js";
+import {
+  agreeFulfillment,
+  type FulfillmentDefaults,
+  windowFitsPickup,
+} from "../../domain/services/agreed-fulfillment.js";
 import { Order } from "../../domain/entities/order.js";
 import {
   InvalidOrderFulfillmentError,
   NoDeliveryZoneForPostalCodeError,
+  PickupClosedAtRequestedTimeError,
   PickupNotConfiguredError,
   UnknownSkuError,
 } from "../../domain/errors/order-errors.js";
@@ -24,8 +35,18 @@ import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 export interface OrderContent {
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryAddress: BillingAddressPayload | null;
+  /** L'adresse du carnet dont elle vient, ou `null` si dictée à la volée. */
+  readonly deliveryAddressId: string | null;
   readonly pickupAddressId: string | null;
   readonly requestedDeliveryDate: string | null;
+  /**
+   * La tranche demandée — engagement, pas préférence. `undefined` = l'écran ne
+   * se prononce pas, le réglage du client s'applique (cf. `agreeFulfillment`).
+   */
+  readonly requestedWindow?: FulfillmentWindow | null | undefined;
+  /** Qui reçoit, tel que l'écran l'affiche. `undefined` = prendre le réglage. */
+  readonly deliveryContact?: DeliveryContact | null | undefined;
+  readonly signatureRequired?: boolean | undefined;
   readonly note: string;
   readonly lines: readonly OrderLineRequest[];
 }
@@ -69,6 +90,7 @@ export class OrderDrafting {
     private readonly catalog: ProductCatalogReader,
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
+    private readonly deliveryDefaults: DeliveryDefaultsReader,
   ) {}
 
   /** Compose la commande. Le règlement reste à décider par l'appelant. */
@@ -76,7 +98,16 @@ export class OrderDrafting {
     const lines = this.resolveLines(content.lines);
     const subtotalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
     const acheminement = await this.resolveFulfillment(content, subtotalCents);
+    const agreed = agreeFulfillment(
+      {
+        window: content.requestedWindow,
+        contact: content.deliveryContact,
+        signatureRequired: content.signatureRequired,
+      },
+      await this.defaultsFor(content),
+    );
     return Order.draft({
+      agreed,
       companyId: parties.companyId,
       placedByUserId: parties.placedByUserId,
       placedByStaffId: parties.placedByStaffId,
@@ -98,6 +129,24 @@ export class OrderDrafting {
   }
 
   /**
+   * Les réglages qui **préremplissent** cette commande.
+   *
+   * En coursier ils viennent de l'adresse du carnet — et seulement si elle en
+   * vient : une adresse dictée à la volée n'a aucun réglage, donc tout ce que le
+   * client y met est un choix, pas une reprise.
+   *
+   * En retrait il n'y a **aucun défaut** : le point est partagé entre tous les
+   * clients, ses heures sont une contrainte d'ouverture et non une préférence de
+   * ce client-là. Ce que le client demande y est donc toujours un choix.
+   */
+  private async defaultsFor(content: OrderContent): Promise<FulfillmentDefaults> {
+    if (content.fulfillmentMethod === "pickup" || content.deliveryAddressId === null) {
+      return NO_DELIVERY_DEFAULTS;
+    }
+    return this.deliveryDefaults.of(content.deliveryAddressId);
+  }
+
+  /**
    * Résout l'acheminement et ses deux ajustements (autoritaires, jamais envoyés
    * par le client). **Retrait** : snapshot du point (choisi ou défaut) + sa remise.
    * **Coursier** : adresse livrée figée + zone **déduite de son code postal**,
@@ -111,6 +160,12 @@ export class OrderDrafting {
       const point = await this.pickups.resolve(content.pickupAddressId);
       if (point === null) {
         throw new PickupNotConfiguredError();
+      }
+      // La tranche demandée doit tenir dans l'une des fenêtres du point — jamais
+      // dans leur union : entre le créneau pro et l'ouverture publique il peut y
+      // avoir porte close, et l'accepter serait promettre une remise impossible.
+      if (!windowFitsPickup(content.requestedWindow ?? null, point.opening)) {
+        throw new PickupClosedAtRequestedTimeError();
       }
       return {
         deliveryZoneId: null,

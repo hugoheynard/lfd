@@ -251,6 +251,20 @@ export class FulfillmentService {
   }
 
   /**
+   * L'adresse **du carnet** choisie, ou `null` quand elle est saisie à la volée.
+   *
+   * C'est elle qui porte les consignes du site — contact, signature, créneau —
+   * dont la commande se préremplit. Une adresse dictée n'en a aucune : tout ce
+   * que le client y met est alors un choix, pas une reprise.
+   */
+  deliveryAddressId(): string | null {
+    if (!this.isCourier() || this.addressId() === NEW_ADDRESS) {
+      return null;
+    }
+    return this.addressId();
+  }
+
+  /**
    * Id du point de retrait à envoyer. **Toujours explicite** en retrait : celui
    * que le client a choisi, à défaut celui que l'écran lui présente coché.
    *

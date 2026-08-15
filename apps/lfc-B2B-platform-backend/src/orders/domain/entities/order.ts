@@ -1,6 +1,9 @@
 import {
   cartAdjustmentCents,
   type BillingAddressPayload,
+  // Aliasé : `OrderFulfillmentInput` désigne déjà ici le mode + les adresses.
+  // Deux « fulfillment » dans le même fichier finiraient par se confondre.
+  type OrderFulfillment as AgreedFulfillment,
   type CartAdjustment,
   type FulfillmentMethod,
   type PaymentStatus,
@@ -34,6 +37,14 @@ export interface DraftOrderInput {
   /** Qui l'a saisie chez LFC, ou `null` quand le client a commandé seul. */
   readonly placedByStaffId: string | null;
   readonly fulfillment: OrderFulfillmentInput;
+  /**
+   * L'acheminement **convenu** — tranche, contact, signature — déjà figé avec sa
+   * provenance. L'agrégat ne le recalcule pas : c'est une décision prise à la
+   * frontière (le réglage du client y entre), pas un invariant de la commande.
+   * Il le porte et le rend, pour qu'aucune relecture ultérieure n'aille
+   * réinterroger un réglage qui aura bougé.
+   */
+  readonly agreed: AgreedFulfillment;
   readonly requestedDeliveryDate: Date | null;
   readonly note: string;
   readonly lines: readonly OrderLineInput[];
@@ -54,6 +65,8 @@ export interface OrderToPlace {
   readonly deliveryZoneId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
   readonly pickupAddress: BillingAddressPayload | null;
+  /** L'acheminement convenu, figé (cf. {@link DraftOrderInput.agreed}). */
+  readonly agreed: AgreedFulfillment;
   readonly requestedDeliveryDate: Date | null;
   readonly note: string;
   readonly subtotalCents: number;
@@ -104,6 +117,7 @@ export class Order {
     private readonly placedByUserId: string,
     private readonly placedByStaffId: string | null,
     private readonly fulfillment: OrderFulfillmentInput,
+    private readonly agreed: AgreedFulfillment,
     private readonly requestedDeliveryDate: Date | null,
     private readonly note: string,
     private readonly lines: readonly OrderLine[],
@@ -139,6 +153,7 @@ export class Order {
       input.placedByUserId,
       input.placedByStaffId,
       fulfillment,
+      input.agreed,
       input.requestedDeliveryDate,
       input.note,
       lines,
@@ -182,6 +197,7 @@ export class Order {
       deliveryZoneId: this.fulfillment.deliveryZoneId,
       deliveryAddress: this.fulfillment.deliveryAddress,
       pickupAddress: this.fulfillment.pickupAddress,
+      agreed: this.agreed,
       requestedDeliveryDate: this.requestedDeliveryDate,
       note: this.note,
       subtotalCents: this.subtotalCentsValue,

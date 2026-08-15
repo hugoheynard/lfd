@@ -38,6 +38,8 @@ import { CompanyOrdersController } from "./http/company-orders.controller.js";
 import { AdminHandoverController } from "./http/admin-handover.controller.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { AdminOrderDraftsController } from "./http/admin-order-drafts.controller.js";
+import { DeliveryDefaultsReader } from "./domain/ports/delivery-defaults.reader.js";
+import { PrismaDeliveryDefaultsReader } from "./infrastructure/prisma-delivery-defaults.reader.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { AdminProductionController } from "./http/admin-production.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
@@ -71,6 +73,7 @@ import { OrdersController } from "./http/orders.controller.js";
     GetOrderHandler,
     GetOrderPaymentHandler,
     GetAdminOrderHandler,
+    { provide: DeliveryDefaultsReader, useClass: PrismaDeliveryDefaultsReader },
     GetProductionBatchHandler,
     ListAdminOrdersHandler,
     ListCatalogHandler,

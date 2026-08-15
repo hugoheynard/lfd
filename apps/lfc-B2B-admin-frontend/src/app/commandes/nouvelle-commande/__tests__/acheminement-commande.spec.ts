@@ -18,6 +18,8 @@ const LABO: PickupAddressView = {
   pays: 'France',
   isDefault: true,
   discount: null,
+  // Aucune heure déclarée : le point n'oppose rien à la tranche demandée.
+  opening: { publicOpening: null, proPickup: null },
 };
 
 const ADRESSE: DeliveryAddressView = {
@@ -34,6 +36,7 @@ const ADRESSE: DeliveryAddressView = {
     slots: { mode: 'everyday', slot: null },
     deliveryContact: null,
     gps: null,
+    signatureRequired: false,
   },
 };
 

@@ -24,7 +24,21 @@ import {
   type CatalogItem,
   ProductCatalogReader,
 } from "../../../domain/ports/product-catalog.reader.js";
+import {
+  type DeliveryDefaults,
+  DeliveryDefaultsReader,
+  NO_DELIVERY_DEFAULTS,
+} from "../../../domain/ports/delivery-defaults.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
+
+/**
+ * Aucun réglage d'adresse : tout ce que la commande porte y est donc un choix.
+ * Les cas de préremplissage sont couverts par `agreed-fulfillment.spec` — ici on
+ * exerce le handler, pas la règle de provenance.
+ */
+function noDeliveryDefaults(): DeliveryDefaultsReader {
+  return { of: (): Promise<DeliveryDefaults> => Promise.resolve(NO_DELIVERY_DEFAULTS) };
+}
 import { PlaceOrderForCustomerCommand } from "../place-order-for-customer.command.js";
 import { PlaceOrderForCustomerHandler } from "../place-order-for-customer.handler.js";
 
@@ -53,6 +67,9 @@ const LABO: PickupAddressView = {
   pays: "France",
   isDefault: true,
   discount: null,
+  // Aucune heure déclarée : le point n'oppose alors rien à la tranche demandée.
+  // Les cas d'ouverture sont couverts par `agreed-fulfillment.spec`.
+  opening: { publicOpening: null, proPickup: null },
 };
 
 /**
@@ -168,7 +185,7 @@ function handler(
     "clientBaseUrl" in options ? (options.clientBaseUrl ?? null) : "https://boutique.lfc.fr";
   return new PlaceOrderForCustomerHandler(
     guardDouble,
-    new OrderDrafting(catalog, pickups, zones),
+    new OrderDrafting(catalog, pickups, zones, noDeliveryDefaults()),
     repo(sink),
     options.payments ?? payments(),
     options.events ?? new FakeEvents(),
@@ -311,7 +328,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     };
     const free = new PlaceOrderForCustomerHandler(
       guard("orders"),
-      new OrderDrafting(gratuit, pickups, zones),
+      new OrderDrafting(gratuit, pickups, zones, noDeliveryDefaults()),
       repo(sink),
       payments(intents),
       new FakeEvents(),

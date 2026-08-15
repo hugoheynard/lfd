@@ -65,6 +65,8 @@ const HISTORY_SIZE = 30;
  * renseignent depuis la fiche, où on les voit tous.
  */
 const EMPTY_SPECS: DeliverySpecs = {
+  // Réglage du site, préremplissage d'une commande — pas une contrainte.
+  signatureRequired: false,
   note: '',
   slots: { mode: 'everyday', slot: null },
   deliveryContact: null,
@@ -336,6 +338,11 @@ export class NouvelleCommandePage {
         fulfillmentMethod: draft.fulfillmentMethod,
         deliveryAddress: draft.deliveryAddress,
         pickupAddressId: draft.pickupAddressId,
+        // L'adresse du carnet, quand elle en vient : c'est elle qui porte les
+        // consignes dont la commande se prérempli. Une adresse dictée n'en a
+        // aucune. Le sélecteur d'acheminement ne remonte pas encore l'id — il le
+        // fera avec l'écran d'override.
+        deliveryAddressId: null,
         requestedDeliveryDate: draft.requestedDeliveryDate,
         note: draft.note,
         lines: [...this.cart.toPayloadLines()],

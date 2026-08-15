@@ -98,6 +98,9 @@ export class CheckoutPanel {
       // Aucune zone n'est envoyée : le serveur la déduit du code postal livré.
       deliveryAddress: this.fulfillment.deliveryAddressPayload(),
       pickupAddressId: this.fulfillment.pickupAddressId(),
+      // L'identité de l'adresse du carnet : sans elle le serveur ne peut pas
+      // savoir de quel réglage la commande s'écarte.
+      deliveryAddressId: this.fulfillment.deliveryAddressId(),
       requestedDeliveryDate: this.requestedDate(),
       note: this.note().trim(),
       lines: this.cart.lines().map((line) => ({ sku: line.product.id, quantity: line.qty })),

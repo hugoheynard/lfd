@@ -13,7 +13,13 @@ const BOUTIQUE: DeliveryAddressView = {
   ville: 'Boulogne',
   pays: 'France',
   isDefault: true,
-  specs: { note: '', slots: { mode: 'everyday', slot: null }, deliveryContact: null, gps: null },
+  specs: {
+    note: '',
+    slots: { mode: 'everyday', slot: null },
+    deliveryContact: null,
+    gps: null,
+    signatureRequired: false,
+  },
 };
 
 const CATALOGUE: readonly CatalogItemView[] = [

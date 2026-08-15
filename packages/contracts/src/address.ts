@@ -38,6 +38,37 @@ export const deliverySlotSchema = z
   });
 export type DeliverySlot = z.infer<typeof deliverySlotSchema>;
 
+/**
+ * Une **fenêtre horaire d'acheminement** : `HH:mm`→`HH:mm`, la borne basse
+ * facultative.
+ *
+ * Un seul objet pour deux lectures que le métier fait indifféremment — « entre
+ * 6h et 8h » est une fenêtre, « avant 8h » est la même fenêtre sans borne basse.
+ * En faire deux concepts aurait obligé chaque écran, chaque validation et chaque
+ * impression à traiter les deux cas.
+ *
+ * Retrait et livraison la partagent : ce que le client demande a la même forme
+ * des deux côtés, seule la façon de la contraindre diffère.
+ */
+export const fulfillmentWindowSchema = z
+  .object({
+    /** `null` = aucune borne basse — « avant `end` ». */
+    start: z.string().regex(TIME_HHMM, "heure attendue au format HH:mm").nullable().default(null),
+    end: z.string().regex(TIME_HHMM, "heure attendue au format HH:mm"),
+  })
+  .refine((window) => window.start === null || window.start < window.end, {
+    message: "la fin de la fenêtre doit suivre le début",
+    path: ["end"],
+  });
+export type FulfillmentWindow = z.infer<typeof fulfillmentWindowSchema>;
+
+/** Vrai quand `inner` tient entièrement dans `outer`. Une borne basse absente vaut « dès l'ouverture ». */
+export function windowContains(outer: FulfillmentWindow, inner: FulfillmentWindow): boolean {
+  const outerStart = outer.start ?? "00:00";
+  const innerStart = inner.start ?? outerStart;
+  return innerStart >= outerStart && inner.end <= outer.end;
+}
+
 /** Un créneau (ou aucun, `null`) pour chacun des sept jours. */
 export const slotByDaySchema = z.object({
   mon: deliverySlotSchema.nullable(),
@@ -84,6 +115,12 @@ export const deliverySpecsSchema = z.object({
   slots: deliverySlotsSchema,
   deliveryContact: deliveryContactSchema.nullable(),
   gps: gpsPointSchema.nullable(),
+  /**
+   * Ce site **exige-t-il une signature** à la remise ? Réglage de l'adresse, donc
+   * **préremplissage** d'une commande — pas une contrainte : une commande peut
+   * s'en écarter, et l'écart se voit (cf. la provenance sur la commande).
+   */
+  signatureRequired: z.boolean().default(false),
 });
 export type DeliverySpecs = z.infer<typeof deliverySpecsSchema>;
 

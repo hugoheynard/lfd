@@ -1,3 +1,4 @@
+import type { OrderFulfillment } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { OrderStatus, PaymentStatus, Prisma } from "../../infra/database/client/client.js";
@@ -54,6 +55,8 @@ export class PrismaOrderRepository extends OrderRepository {
         deliveryZoneId: state.deliveryZoneId,
         deliveryAddressSnapshot: state.deliveryAddress ?? Prisma.DbNull,
         pickupAddress: state.pickupAddress ?? Prisma.DbNull,
+        // L'acheminement convenu, figé avec sa provenance — plus jamais relu.
+        fulfillment: toFulfillmentJson(state.agreed),
         subtotalCents: state.subtotalCents,
         discountCents: state.discountCents,
         discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
@@ -106,4 +109,26 @@ export class PrismaOrderRepository extends OrderRepository {
     });
     return count === 1;
   }
+}
+
+/**
+ * L'acheminement convenu, en JSON **écrit explicitement**.
+ *
+ * Prisma refuse un type `readonly` comme valeur JSON, et un cast l'aurait fait
+ * taire sans rien garantir. Recopier la forme ici la rend symétrique de
+ * `orderFulfillmentSchema`, qui la relit : les deux bouts sont visibles côte à
+ * côte, et un champ ajouté d'un seul côté se voit.
+ */
+function toFulfillmentJson(agreed: OrderFulfillment): Prisma.InputJsonValue {
+  return {
+    window: {
+      value: agreed.window.value === null ? null : { ...agreed.window.value },
+      source: agreed.window.source,
+    },
+    contact: {
+      value: agreed.contact.value === null ? null : { ...agreed.contact.value },
+      source: agreed.contact.source,
+    },
+    signatureRequired: { ...agreed.signatureRequired },
+  };
 }

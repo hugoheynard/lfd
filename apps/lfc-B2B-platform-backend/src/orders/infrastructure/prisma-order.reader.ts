@@ -9,6 +9,8 @@ import {
   type FulfillmentMethod,
   type OrderLineView,
   type OrderStatus,
+  type OrderFulfillment,
+  orderFulfillmentSchema,
   type OrderView,
   type PaymentStatus,
   type ProductionContact,
@@ -44,6 +46,7 @@ interface OrderRow {
   readonly deliveryAddressId: string | null;
   readonly deliveryAddressSnapshot: Prisma.JsonValue | null;
   readonly pickupAddress: Prisma.JsonValue | null;
+  readonly fulfillment: Prisma.JsonValue | null;
   readonly note: string;
   readonly subtotalCents: number;
   readonly discountCents: number;
@@ -72,6 +75,7 @@ const ORDER_SELECT = {
   deliveryAddressId: true,
   deliveryAddressSnapshot: true,
   pickupAddress: true,
+  fulfillment: true,
   note: true,
   subtotalCents: true,
   discountCents: true,
@@ -282,6 +286,23 @@ export class PrismaOrderReader extends OrderReader {
 }
 
 /**
+ * L'acheminement convenu, figé en JSON. Validé plutôt que casté — et le **repli
+ * est explicite** : une commande antérieure à la colonne n'en porte pas, elle
+ * rend alors « rien de convenu, tout par défaut » plutôt qu'un contact inventé.
+ */
+function fulfillmentOf(value: Prisma.JsonValue | null): OrderFulfillment {
+  const parsed = orderFulfillmentSchema.safeParse(value);
+  return parsed.success ? parsed.data : NOTHING_AGREED;
+}
+
+/** Ce que dit une commande qui n'a jamais rien convenu : rien, et par défaut. */
+const NOTHING_AGREED: OrderFulfillment = {
+  window: { value: null, source: "default" },
+  contact: { value: null, source: "default" },
+  signatureRequired: { value: false, source: "default" },
+};
+
+/**
  * **Qui appeler en livrant**, dans l'ordre : le contact de l'adresse du carnet,
  * puis le détenteur du compte, puis personne.
  *
@@ -415,6 +436,7 @@ function toOrderView(row: OrderRow): OrderView {
     deliveryAddressId: row.deliveryAddressId,
     deliveryAddress: parseAddress(row.deliveryAddressSnapshot),
     pickupAddress: parseAddress(row.pickupAddress),
+    fulfillment: fulfillmentOf(row.fulfillment),
     note: row.note,
     subtotalCents: row.subtotalCents,
     discountCents: row.discountCents,

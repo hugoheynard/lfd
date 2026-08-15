@@ -98,6 +98,10 @@ export class PickupPanel {
       ...toBillingPayload(this.draft()),
       isDefault: this.draft().isDefault,
       discount: this.discount(),
+      // Les heures d'ouverture sont RECONDUITES telles quelles : cet écran ne
+      // les édite pas encore, et un envoi de payload complet les écraserait à
+      // chaque enregistrement d'une remise ou d'une adresse.
+      opening: address?.opening ?? { publicOpening: null, proPickup: null },
     };
     try {
       if (address === null) {

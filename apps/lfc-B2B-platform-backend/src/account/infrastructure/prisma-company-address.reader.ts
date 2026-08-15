@@ -16,6 +16,7 @@ const EMPTY_SPECS: DeliverySpecs = {
   slots: { mode: "everyday", slot: null },
   deliveryContact: null,
   gps: null,
+  signatureRequired: false,
 };
 
 /** Une ligne d'adresse telle que Prisma la sélectionne. */

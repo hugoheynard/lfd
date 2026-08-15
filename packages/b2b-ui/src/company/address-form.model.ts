@@ -235,6 +235,8 @@ export function toDeliveryPayload(draft: AddressDraft): DeliveryAddressPayload {
     ...toBillingPayload(draft),
     isDefault: draft.isDefault,
     specs: {
+      // Réglage du site, préremplissage d'une commande — pas une contrainte.
+      signatureRequired: false,
       note: draft.note.trim(),
       slots: buildSlots(draft),
       deliveryContact: buildContact(draft),

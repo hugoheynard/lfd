@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-import { billingAddressPayloadSchema, type BillingAddressPayload } from "./address.js";
+import {
+  billingAddressPayloadSchema,
+  type BillingAddressPayload,
+  deliveryContactSchema,
+  type DeliveryContact,
+  type FulfillmentWindow,
+  fulfillmentWindowSchema,
+} from "./address.js";
 import type { CartAdjustment } from "./cart-adjustment.js";
 
 /**
@@ -90,12 +97,50 @@ export const orderContentShape = {
   fulfillmentMethod: fulfillmentMethodSchema.default("pickup"),
   /** Adresse livrée (coursier) — requise si `delivery` ; sa zone est déduite. */
   deliveryAddress: billingAddressPayloadSchema.nullable().default(null),
+  /**
+   * L'adresse **du carnet** dont elle provient, quand elle en vient. `null` =
+   * dictée à la volée.
+   *
+   * Le snapshot postal ne suffit pas : les consignes du site (contact, exigence
+   * de signature, créneau) vivent sur la ligne du carnet, et sans son identité
+   * le serveur ne peut pas savoir de quel réglage la commande s'écarte. La
+   * retrouver en comparant les champs postaux serait deviner.
+   */
+  deliveryAddressId: z.string().trim().nullable().default(null),
   /** Point de retrait — requis si `pickup`, ignoré sinon. */
   pickupAddressId: z.string().trim().nullable().default(null),
   /** Jour de retrait/livraison. **Obligatoire** : c'est la journée de production. */
   requestedDeliveryDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/u, "date de retrait/livraison requise (AAAA-MM-JJ)"),
+  /**
+   * La **tranche horaire demandée** — en retrait comme en livraison, c'est la
+   * même forme et le même engagement : on s'y tient.
+   *
+   * En retrait, elle doit tenir dans l'une des fenêtres d'ouverture du point
+   * (pro ou public) ; le serveur refuse sinon, parce qu'accepter une heure de
+   * porte close est une promesse qu'on ne peut pas tenir.
+   *
+   * `null` = aucune tranche demandée. L'écran propose celle du réglage, mais un
+   * client peut n'en vouloir aucune.
+   */
+  requestedWindow: fulfillmentWindowSchema.nullable().optional(),
+  /**
+   * Qui recevra, et faut-il une signature. Les deux **valeurs résolues** telles
+   * que l'écran les montre — pas des drapeaux d'override.
+   *
+   * La provenance n'est pas envoyée : le serveur la **déduit** en comparant au
+   * réglage. Un client qui envoie exactement le défaut n'a rien décidé, et un
+   * champ « j'ai modifié » séparé de la valeur finirait par la contredire.
+   *
+   * **Absent ≠ `null`.** Absent = « je ne me prononce pas », et le serveur
+   * applique le réglage du client. `null` = « explicitement aucun », donc un
+   * override si le réglage en proposait un. Sans cette distinction, un écran qui
+   * ignore encore le champ effacerait le contact d'un compte qui en a un — et le
+   * bon de livraison partirait en tournée en disant « aucun contact ».
+   */
+  deliveryContact: deliveryContactSchema.nullable().optional(),
+  signatureRequired: z.boolean().optional(),
   note: z.string().default(""),
   lines: z.array(orderLineInputSchema).min(1, "au moins une ligne"),
 } as const;
@@ -109,6 +154,36 @@ export function hasAddressWhenDelivered(content: {
   readonly deliveryAddress: BillingAddressPayload | null;
 }): boolean {
   return content.fulfillmentMethod !== "delivery" || content.deliveryAddress !== null;
+}
+
+/**
+ * D'où vient une valeur d'acheminement portée par la commande.
+ *
+ * `default` = reprise telle quelle du réglage du client (adresse) ou du point de
+ * retrait ; `override` = quelqu'un l'a changée POUR cette commande.
+ *
+ * Ce n'est pas de la décoration. Un réglage est un **préremplissage**, jamais une
+ * contrainte : tout est modifiable à la commande. Ce qu'on doit pouvoir dire
+ * ensuite, c'est si la valeur a été **subie ou choisie** — le fournil et le
+ * livreur ne traitent pas de la même façon « le client a toujours ça » et « le
+ * client a demandé ça aujourd'hui ». D'où une provenance par champ, et non un
+ * drapeau global sur la commande.
+ */
+export const fulfillmentSourceSchema = z.enum(["default", "override"]);
+export type FulfillmentSource = z.infer<typeof fulfillmentSourceSchema>;
+
+/**
+ * Une valeur d'acheminement **figée sur la commande**, avec sa provenance.
+ *
+ * Figée comme les prix, et pour la même raison : le contact d'une adresse, ses
+ * horaires ou son exigence de signature peuvent changer demain. Aller les
+ * relire au moment d'imprimer ferait dire à un bon déjà sorti autre chose que
+ * le papier qui est au fournil. Une commande est un fait clos ; ce qui bouge
+ * après passe par un **avenant** (cf. `architecture-commande-immuable-avenants`).
+ */
+export interface FulfillmentDecision<T> {
+  readonly value: T;
+  readonly source: FulfillmentSource;
 }
 
 /**
@@ -217,6 +292,34 @@ export interface OrderLineView {
   readonly lineTotalCents: number;
 }
 
+/**
+ * L'acheminement **convenu** d'une commande — figé, avec la provenance de chaque
+ * valeur (cf. {@link FulfillmentDecision}).
+ *
+ * `window` peut être `null` : aucune tranche demandée. `contact` aussi : une
+ * commande retirée n'a personne à appeler, et une livraison peut partir sans
+ * contact — la fiche le dit alors en toutes lettres.
+ */
+export interface OrderFulfillment {
+  readonly window: FulfillmentDecision<FulfillmentWindow | null>;
+  readonly contact: FulfillmentDecision<DeliveryContact | null>;
+  readonly signatureRequired: FulfillmentDecision<boolean>;
+}
+
+/**
+ * Le même bloc, en schéma — le JSON figé est **validé** à la relecture, jamais
+ * casté : une commande d'avant la colonne n'en porte pas, et une forme
+ * inattendue ne doit pas remonter en vue.
+ */
+const decisionOf = <T extends z.ZodTypeAny>(value: T) =>
+  z.object({ value, source: fulfillmentSourceSchema });
+
+export const orderFulfillmentSchema = z.object({
+  window: decisionOf(fulfillmentWindowSchema.nullable()),
+  contact: decisionOf(deliveryContactSchema.nullable()),
+  signatureRequired: decisionOf(z.boolean()),
+});
+
 /** Une commande, telle que la liste/le détail l'affichent. */
 export interface OrderView {
   readonly id: string;
@@ -233,6 +336,16 @@ export interface OrderView {
   readonly deliveryAddress: BillingAddressPayload | null;
   /** Adresse de retrait **figée** au moment de la commande, ou `null` en livraison. */
   readonly pickupAddress: BillingAddressPayload | null;
+  /**
+   * Ce qui a été **convenu** pour l'acheminement, figé à la commande, chaque
+   * valeur avec sa provenance : la tranche horaire demandée, qui reçoit, et si
+   * une signature est exigée.
+   *
+   * Figé et non relu : ces trois valeurs viennent de réglages qui peuvent
+   * changer demain. Un bon de livraison déjà imprimé ne doit pas se mettre à
+   * dire autre chose que le papier qui est parti en tournée.
+   */
+  readonly fulfillment: OrderFulfillment;
   readonly note: string;
   /** Sous-total marchandises **HT**, en centimes. */
   readonly subtotalCents: number;

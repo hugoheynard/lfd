@@ -2,6 +2,8 @@ export {
   addressKindSchema,
   weekdaySchema,
   deliverySlotSchema,
+  fulfillmentWindowSchema,
+  windowContains,
   slotByDaySchema,
   deliverySlotsSchema,
   deliveryContactSchema,
@@ -14,6 +16,7 @@ export type {
   AddressKind,
   Weekday,
   DeliverySlot,
+  FulfillmentWindow,
   SlotByDay,
   DeliverySlots,
   DeliveryContact,
@@ -229,7 +232,8 @@ export type {
 } from "./account-alert-override.js";
 export { cartAdjustmentSchema, cartAdjustmentCents } from "./cart-adjustment.js";
 export type { CartAdjustment } from "./cart-adjustment.js";
-export { pickupAddressPayloadSchema } from "./pickup.js";
+export { pickupAddressPayloadSchema, pickupOpeningSchema, pickupWindows } from "./pickup.js";
+export type { PickupOpening } from "./pickup.js";
 export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
 export { adminOrdersQuerySchema } from "./order.js";
 export type { AdminOrderRow, AdminOrdersQuery } from "./order.js";
@@ -302,6 +306,8 @@ export {
   fulfillmentMethodSchema,
   orderLineInputSchema,
   orderContentShape,
+  fulfillmentSourceSchema,
+  orderFulfillmentSchema,
   hasAddressWhenDelivered,
   hasPickupPointWhenPickedUp,
   pickupPointIssue,
@@ -315,6 +321,9 @@ export type {
   OrderStatus,
   PaymentStatus,
   FulfillmentMethod,
+  FulfillmentDecision,
+  FulfillmentSource,
+  OrderFulfillment,
   OrderLineInput,
   PlaceOrderPayload,
   OrderOrigin,

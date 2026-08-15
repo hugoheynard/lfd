@@ -44,6 +44,20 @@ export class UnknownSkuError extends DomainError {
  * labo dans les Réglages). Refus **métier** (409) : la demande est bien formée,
  * mais l'état de la plateforme ne permet pas ce mode d'acheminement.
  */
+/**
+ * La tranche demandée tombe hors des heures du point. **Business** et non
+ * technique : rien n'est cassé, c'est le client qui demande une heure où la
+ * porte est close — et il doit pouvoir en choisir une autre.
+ */
+export class PickupClosedAtRequestedTimeError extends BusinessError {
+  constructor() {
+    super(
+      "orders.pickup.closed_at_requested_time",
+      "Le point de retrait est fermé sur la tranche horaire demandée.",
+    );
+  }
+}
+
 export class PickupNotConfiguredError extends BusinessError {
   constructor() {
     super(

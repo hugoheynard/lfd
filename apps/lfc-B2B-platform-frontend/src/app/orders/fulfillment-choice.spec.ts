@@ -13,7 +13,13 @@ function delivery(over: Partial<DeliveryAddressView> = {}): DeliveryAddressView 
     ville: "Val d'Isère",
     pays: 'France',
     isDefault: true,
-    specs: { note: '', slots: { mode: 'everyday', slot: null }, deliveryContact: null, gps: null },
+    specs: {
+      note: '',
+      slots: { mode: 'everyday', slot: null },
+      deliveryContact: null,
+      gps: null,
+      signatureRequired: false,
+    },
     ...over,
   };
 }

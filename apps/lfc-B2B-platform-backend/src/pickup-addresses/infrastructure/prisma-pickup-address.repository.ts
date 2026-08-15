@@ -1,6 +1,12 @@
-import type { PickupAddressPayload, PickupAddressView } from "@lfd/contracts";
+import {
+  type PickupAddressPayload,
+  type PickupAddressView,
+  type PickupOpening,
+  pickupOpeningSchema,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import type { Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import {
   fromAdjustmentColumns,
@@ -19,6 +25,7 @@ function writable(payload: PickupAddressPayload): {
   pays: string;
   discountMode: "percent" | "amount" | null;
   discountValue: number | null;
+  opening: Prisma.InputJsonValue;
 } {
   const discount = toAdjustmentColumns(payload.discount);
   return {
@@ -28,6 +35,7 @@ function writable(payload: PickupAddressPayload): {
     codePostal: payload.codePostal,
     ville: payload.ville,
     pays: payload.pays,
+    opening: payload.opening,
     discountMode: discount.mode,
     discountValue: discount.value,
   };
@@ -44,6 +52,17 @@ interface PickupRow {
   readonly isDefault: boolean;
   readonly discountMode: "percent" | "amount" | null;
   readonly discountValue: number | null;
+  readonly opening: Prisma.JsonValue | null;
+}
+
+/**
+ * Les heures d'ouverture figées en JSON. Validées plutôt que castées : un point
+ * antérieur à la colonne n'en porte pas, et l'absence se lit « aucune heure
+ * déclarée » — l'écran doit alors le dire, pas accepter n'importe quelle heure.
+ */
+function openingOf(value: Prisma.JsonValue | null): PickupOpening {
+  const parsed = pickupOpeningSchema.safeParse(value);
+  return parsed.success ? parsed.data : { publicOpening: null, proPickup: null };
 }
 
 function toView(row: PickupRow): PickupAddressView {
@@ -54,6 +73,7 @@ function toView(row: PickupRow): PickupAddressView {
     ligne2: row.ligne2,
     codePostal: row.codePostal,
     ville: row.ville,
+    opening: openingOf(row.opening),
     pays: row.pays,
     isDefault: row.isDefault,
     discount: fromAdjustmentColumns(row.discountMode, row.discountValue),
@@ -71,6 +91,7 @@ const SELECT = {
   isDefault: true,
   discountMode: true,
   discountValue: true,
+  opening: true,
 } as const;
 
 /** Adaptateur Prisma des points de retrait (globaux). Tient les invariants ≥1/défaut. */
