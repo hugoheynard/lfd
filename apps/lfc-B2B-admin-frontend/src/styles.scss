@@ -19,6 +19,36 @@
    back-office est dense et se lit de haut en bas : on resserre ici, une fois,
    pour toutes les pages — plutôt que page par page, où ça finirait par
    diverger. */
+/* ── La famille « info » quitte le violet ───────────────────────────────────
+   Le thème `navi` porte une dominante **navy** (rails, en-tête, primary) et une
+   page ivoire — mais son `info` est un **violet** (`purple-600`). Dilué à 8 %
+   sur cette page, ce violet vire au **rose pâle** : une teinte qui n'appartient
+   à aucune des couleurs de l'écran, et qui saute aux yeux dès qu'un callout ou
+   une pastille l'emploie.
+
+   On la redéfinit en **azur**, ici et une seule fois, plutôt qu'écran par écran.
+   Ce n'est pas un caprice : c'est exactement le geste que fold a déjà fait pour
+   le thème `bubbly` (« Info — moved to azure, away from the violet brand »),
+   pour la même raison — une famille de statut qui entre en collision avec la
+   dominante doit changer de teinte.
+
+   Deux nuances plutôt qu'une : la base sert les fonds et les bordures, le **700**
+   sert le texte — `#0ea5e9` sur ivoire tourne autour de 2,8:1, très en dessous
+   du contraste requis pour être lu.
+
+   Sélecteur `html[data-theme='navi']` et non `:root` : à égalité de spécificité,
+   c'est l'ordre de chargement qui trancherait, et cette feuille n'est pas
+   garantie de passer après les tokens (liés depuis `index.html`). */
+html[data-theme='navi'] {
+  --lfc-ref-azure-500: #0ea5e9;
+  --lfc-ref-azure-700: #0369a1;
+
+  --fold-color-info: var(--lfc-ref-azure-500);
+  --fold-color-info-text: var(--lfc-ref-azure-700);
+  --fold-color-info-surface: color-mix(in srgb, var(--lfc-ref-azure-500) 10%, transparent);
+  --fold-color-info-border: color-mix(in srgb, var(--lfc-ref-azure-500) 28%, transparent);
+}
+
 :root {
   --fold-page-gutter: clamp(1rem, 3vw, 1.5rem); /* 16 → 24 px */
   --fold-page-gap: clamp(1rem, 2.5vw, 1.5rem); /* 16 → 24 px */
