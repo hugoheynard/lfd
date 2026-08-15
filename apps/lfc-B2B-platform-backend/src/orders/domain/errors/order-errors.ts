@@ -102,6 +102,24 @@ export class InvalidOrderPaymentError extends DomainError {
 }
 
 /**
+ * L'équipe a demandé de porter la commande **au compte** d'une société qui ne
+ * règle pas au compte. Refus **métier** (409) : la demande est bien formée,
+ * c'est le crédit qui n'existe pas.
+ *
+ * Ce refus est le mur de cette surface. Sans lui, un écran de back-office
+ * suffirait à accorder un délai de paiement qu'aucun commercial n'a négocié — et
+ * la plateforme livrerait à crédit sans jamais l'avoir décidé.
+ */
+export class AccountSettlementNotGrantedError extends BusinessError {
+  constructor() {
+    super(
+      "orders.settlement.account_not_granted",
+      "Cette société ne règle pas au compte : la commande doit être réglée par lien de paiement.",
+    );
+  }
+}
+
+/**
  * Le jeton de remise scanné ne correspond à aucune commande — **404** comme
  * partout : un jeton inconnu et un jeton qui n'a jamais existé doivent être
  * indiscernables, sans quoi essayer des chaînes au hasard finirait par dire
