@@ -69,12 +69,6 @@
   font-size: var(--fold-text-xs);
 }
 
-.row-date,
-.row-origin {
+.row-date {
   color: var(--fold-color-text-muted);
-}
-
-.row-origin::before {
-  content: '·';
-  margin-right: var(--fold-space-sm);
 }

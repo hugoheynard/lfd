@@ -38,6 +38,11 @@ import {
  * ce qu'on lit une fois qu'on a trouvé. L'inverse obligeait à s'arrêter sur
  * chaque ligne.
  *
+ * Le seul réglage est `states`, et ce n'est **pas** une densité : c'est ce que
+ * le lecteur est en train de faire. Devant l'historique d'un client qu'on
+ * recopie, l'avancement et le règlement de la commande d'il y a trois mois
+ * n'apprennent rien — la provenance, si, parce qu'elle dit qui l'a saisie.
+ *
  * Elle ne navigue pas elle-même : elle **émet** `open`. Selon l'écran, cliquer
  * ouvre une page ou charge une source dans la colonne d'à côté ; une rangée qui
  * déciderait à leur place ne servirait qu'à l'un des deux.
@@ -58,6 +63,16 @@ export class OrderRow {
    * naturellement, et qui sans transformation passerait la chaîne vide.
    */
   readonly selected = input(false, { transform: booleanAttribute });
+  /**
+   * Montrer l'avancement et le règlement. Faux quand la liste sert à **choisir
+   * un modèle** plutôt qu'à instruire un dossier : l'état d'une commande passée
+   * est alors du bruit, et il pousse la ligne à la ligne suivante.
+   *
+   * La provenance, elle, reste toujours : « saisie par l'équipe » explique une
+   * commande dont le client ne se souvient pas, et ça vaut dans les deux
+   * contextes.
+   */
+  readonly states = input(true, { transform: booleanAttribute });
 
   readonly open = output<AdminOrderRow>();
 

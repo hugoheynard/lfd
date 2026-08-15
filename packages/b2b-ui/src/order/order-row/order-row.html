@@ -11,9 +11,11 @@
   <span class="row-meta">
     <span class="row-date">{{ placedAt() }}</span>
     @if (origin(); as pill) {
-      <span class="row-origin">{{ pill }}</span>
+      <fold-badge variant="info" [content]="pill" />
     }
-    <fold-badge [variant]="statusTone()" [content]="status()" />
-    <fold-badge [variant]="paymentTone()" [content]="payment()" />
+    @if (states()) {
+      <fold-badge [variant]="statusTone()" [content]="status()" />
+      <fold-badge [variant]="paymentTone()" [content]="payment()" />
+    }
   </span>
 </button>
