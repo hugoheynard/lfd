@@ -49,6 +49,15 @@ export class StripePaymentGateway extends PaymentGateway {
     return { paymentIntentId: intent.id, clientSecret: intent.client_secret };
   }
 
+  async retrieveIntent(paymentIntentId: string): Promise<CreatedIntent> {
+    const client = this.requireClient();
+    const intent = await client.paymentIntents.retrieve(paymentIntentId);
+    if (intent.client_secret === null) {
+      throw new PaymentGatewayUnavailableError("client_secret absent de la PaymentIntent relue");
+    }
+    return { paymentIntentId: intent.id, clientSecret: intent.client_secret };
+  }
+
   publishableKey(): string {
     return this.requireConfig().publishableKey;
   }

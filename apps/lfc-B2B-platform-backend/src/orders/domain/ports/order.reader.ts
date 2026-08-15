@@ -19,6 +19,12 @@ export interface OwnedOrder {
   readonly companyId: string | null;
   /** Le client qui l'a passée — le mur des commandes personnelles. */
   readonly placedByUserId: string;
+  /**
+   * L'intention Stripe rattachée, ou `null`. Hors `OrderView` pour la même
+   * raison que le propriétaire : le client n'a pas à la lire dans sa commande,
+   * il la reçoit quand il demande explicitement à régler.
+   */
+  readonly stripePaymentIntentId: string | null;
 }
 
 /**

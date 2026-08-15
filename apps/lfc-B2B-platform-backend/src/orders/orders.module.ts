@@ -13,6 +13,7 @@ import { GetAdminOrderHandler } from "./application/queries/get-admin-order.hand
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { ListCustomerSkusHandler } from "./application/queries/list-customer-skus.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
+import { GetOrderPaymentHandler } from "./application/queries/get-order-payment.handler.js";
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
 import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
@@ -58,6 +59,7 @@ import { OrdersController } from "./http/orders.controller.js";
     ListCompanyOrdersHandler,
     ListPersonalOrdersHandler,
     GetOrderHandler,
+    GetOrderPaymentHandler,
     GetAdminOrderHandler,
     ListAdminOrdersHandler,
     ListCatalogHandler,

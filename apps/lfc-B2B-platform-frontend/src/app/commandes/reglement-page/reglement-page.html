@@ -1,0 +1,33 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Préparation du règlement…" />
+  }
+  @case ('settled') {
+    <fold-callout variant="success" title="Rien à régler">
+      Cette commande est déjà réglée, ou elle est portée au compte de votre société et sera
+      facturée. Vous n'avez rien à faire.
+    </fold-callout>
+    <a foldButton variant="solid" [routerLink]="['/commandes', id()]">Voir la commande</a>
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Le règlement n'a pas pu s'ouvrir"
+      subtitle="Votre commande, elle, est intacte."
+    >
+      <button foldButton (click)="load(id())">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (payment(); as intent) {
+      <h1 class="reg-title">Régler votre commande</h1>
+      <app-stripe-payment
+        [clientSecret]="intent.clientSecret"
+        [publishableKey]="intent.publishableKey"
+        [amountCents]="intent.amountCents"
+        (paid)="onPaid()"
+        (cancelled)="onPaid()"
+      />
+    }
+  }
+}

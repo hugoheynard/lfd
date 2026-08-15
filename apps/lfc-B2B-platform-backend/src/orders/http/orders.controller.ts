@@ -2,6 +2,7 @@ import {
   type OrderView,
   type PlaceOrderPayload,
   placeOrderPayloadSchema,
+  type OrderPaymentIntent,
   type PlacedOrderResponse,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
@@ -14,6 +15,7 @@ import {
   PlaceOrderCommand,
   type PlaceOrderResult,
 } from "../application/commands/place-order.command.js";
+import { GetOrderPaymentQuery } from "../application/queries/get-order-payment.query.js";
 import { GetOrderQuery } from "../application/queries/get-order.query.js";
 import { ListPersonalOrdersQuery } from "../application/queries/list-personal-orders.query.js";
 
@@ -70,5 +72,23 @@ export class OrdersController {
   @Get(":id")
   async one(@CurrentUser() user: Principal, @Param("id") id: string): Promise<OrderView> {
     return this.queries.execute<GetOrderQuery, OrderView>(new GetOrderQuery(user.userId, id));
+  }
+
+  /**
+   * De quoi **régler** une commande laissée en attente — la cible du lien que
+   * l'équipe transmet quand elle a saisi une commande au téléphone.
+   *
+   * Même mur que la lecture : qui peut voir la commande peut la payer. Un `409`
+   * si elle n'attend rien (déjà réglée, portée au compte), et non un `404` — le
+   * client doit apprendre que sa commande va bien, pas qu'elle a disparu.
+   */
+  @Get(":id/payment")
+  async payment(
+    @CurrentUser() user: Principal,
+    @Param("id") id: string,
+  ): Promise<OrderPaymentIntent> {
+    return this.queries.execute<GetOrderPaymentQuery, OrderPaymentIntent>(
+      new GetOrderPaymentQuery(user.userId, id),
+    );
   }
 }

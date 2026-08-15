@@ -155,7 +155,12 @@ export class PrismaOrderReader extends OrderReader {
   async findById(orderId: string): Promise<OwnedOrder | null> {
     const row = await this.prisma.order.findUnique({
       where: { id: orderId },
-      select: { ...ORDER_SELECT, companyId: true, placedByUserId: true },
+      select: {
+        ...ORDER_SELECT,
+        companyId: true,
+        placedByUserId: true,
+        stripePaymentIntentId: true,
+      },
     });
     if (row === null) {
       return null;
@@ -164,6 +169,7 @@ export class PrismaOrderReader extends OrderReader {
       view: toOrderView(row),
       companyId: row.companyId,
       placedByUserId: row.placedByUserId,
+      stripePaymentIntentId: row.stripePaymentIntentId,
     };
   }
 

@@ -61,6 +61,15 @@ export const routes: Routes = [
       import('./commandes/commandes-page/commandes-page').then((m) => m.CommandesPage),
   },
   {
+    // AVANT `commandes/:id` : sans cela le segment `regler` serait lu comme la
+    // suite d'un identifiant, et le lien de règlement ouvrirait le détail.
+    path: 'commandes/:id/regler',
+    title: 'Régler ma commande — La Folie Coffee B2B',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./commandes/reglement-page/reglement-page').then((m) => m.ReglementPage),
+  },
+  {
     path: 'commandes/:id',
     title: 'Commande — La Folie Coffee B2B',
     canActivate: [authenticatedGuard],

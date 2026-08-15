@@ -102,6 +102,25 @@ export class InvalidOrderPaymentError extends DomainError {
 }
 
 /**
+ * On demande à régler une commande qui n'attend aucun règlement — déjà payée,
+ * portée au compte, ou annulée. Refus **métier** (409) : la demande est bien
+ * formée, c'est l'état de la commande qui s'y oppose.
+ *
+ * Le message nomme l'état, parce qu'un client qui suit un lien périmé doit
+ * comprendre que sa commande va bien, et non qu'elle est cassée.
+ */
+export class OrderNotPayableError extends BusinessError {
+  constructor(readonly paymentStatus: string) {
+    super(
+      "orders.payment.not_payable",
+      paymentStatus === "paid"
+        ? "Cette commande est déjà réglée."
+        : "Cette commande n'attend aucun règlement en ligne.",
+    );
+  }
+}
+
+/**
  * L'équipe a demandé de porter la commande **au compte** d'une société qui ne
  * règle pas au compte. Refus **métier** (409) : la demande est bien formée,
  * c'est le crédit qui n'existe pas.

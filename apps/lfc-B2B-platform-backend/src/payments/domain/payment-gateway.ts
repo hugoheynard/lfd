@@ -42,6 +42,19 @@ export abstract class PaymentGateway {
    */
   abstract createIntent(params: CreateIntentParams): Promise<CreatedIntent>;
 
+  /**
+   * Relit une intention **déjà créée** pour en obtenir le `clientSecret`.
+   *
+   * Le secret n'est pas persisté chez nous, et c'est délibéré : seul l'id de
+   * l'intention l'est. Un client qui revient régler une commande laissée en
+   * attente le redemande donc au prestataire, plutôt que de le lire dans une
+   * colonne où il aurait vieilli.
+   *
+   * @throws {PaymentGatewayUnavailableError} canal non configuré, intention
+   * inconnue, ou réponse sans `client_secret`.
+   */
+  abstract retrieveIntent(paymentIntentId: string): Promise<CreatedIntent>;
+
   /** Clé **publique** Stripe (`pk_…`) à transmettre au navigateur. */
   abstract publishableKey(): string;
 
