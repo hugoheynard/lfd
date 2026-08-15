@@ -1,23 +1,23 @@
 :host {
   display: flex;
   align-items: flex-start;
-  gap: var(--fold-space-xs);
+  gap: var(--fold-space-sm);
   color: var(--fold-color-text);
-  line-height: 1.4;
   min-width: 0;
 }
 
-// La punaise s'aligne sur la première ligne de texte, pas sur le bloc entier.
+// La punaise, discrète et alignée sur la première ligne de texte — pas sur le
+// bloc. Un cran plus claire que le texte : elle situe, elle ne se lit pas.
 .addr-pin {
   flex: none;
-  margin-top: 0.15rem;
-  color: var(--fold-color-text-muted);
+  margin-top: 0.2rem;
+  color: var(--fold-color-text-faded, var(--fold-color-text-muted));
 }
 
 .addr-body {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
   min-width: 0;
 }
 
@@ -27,9 +27,11 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--fold-space-xs);
+  gap: var(--fold-space-xs) var(--fold-space-sm);
 }
 
+// Le titre porte le poids ; tout le reste est plus léger que lui. C'est le
+// seul contraste de la carte, et il suffit.
 .addr-label {
   display: inline-flex;
   align-items: center;
@@ -41,17 +43,29 @@
 }
 .addr-name {
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-// `<address>` est italique par défaut dans les navigateurs — pas ici.
+// `<address>` est italique par défaut dans les navigateurs — pas ici. Les
+// lignes serrées (1.35) forment un bloc, comme sur une enveloppe, et les
+// chiffres du code postal s'alignent d'une ligne à l'autre.
 .addr-lines {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
   font-style: normal;
   min-width: 0;
+  line-height: 1.35;
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+// La première ligne — la voie — reste au premier plan : c'est elle qu'on lit
+// quand on cherche l'adresse d'un regard.
+.addr-lines > span:first-child {
+  color: var(--fold-color-text);
 }
 
 .addr-inline {
   color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
 }

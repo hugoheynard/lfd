@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+} from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 import type { FoldIconName } from 'fold-ng';
 
@@ -32,7 +38,7 @@ export class AddressView {
    * qui fait lire « un lieu » avant même les mots. `[icon]="false"` dans les
    * contextes où la nature du bloc est déjà dite autrement.
    */
-  readonly icon = input(true);
+  readonly icon = input(true, { transform: booleanAttribute });
   readonly iconName = input<FoldIconName>('map-pin');
 
   protected readonly lines = computed(() => postalLines(this.address()));
