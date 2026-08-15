@@ -18,6 +18,7 @@
     // fichier, zéro import externe) comme `@lfd/b2b-ui` : un subpath par domaine.
     "paths": {
       "@lfd/b2b-ui/appointment": ["../../packages/b2b-ui/src/appointment/index.ts"],
+      "@lfd/b2b-ui/cart": ["../../packages/b2b-ui/src/cart/index.ts"],
       "@lfd/b2b-ui/catalog": ["../../packages/b2b-ui/src/catalog/index.ts"],
       "@lfd/b2b-ui/company": ["../../packages/b2b-ui/src/company/index.ts"],
       "@lfd/b2b-ui/order": ["../../packages/b2b-ui/src/order/index.ts"],

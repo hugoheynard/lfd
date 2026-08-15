@@ -24,6 +24,10 @@
     "./catalog": {
       "types": "./src/catalog/index.ts",
       "default": "./src/catalog/index.ts"
+    },
+    "./cart": {
+      "types": "./src/cart/index.ts",
+      "default": "./src/cart/index.ts"
     }
   },
   "scripts": {

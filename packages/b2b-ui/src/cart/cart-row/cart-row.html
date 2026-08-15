@@ -1,0 +1,30 @@
+@if (image(); as src) {
+  <img class="line-img" [src]="src" [alt]="imageAlt()" />
+} @else {
+  <div class="line-img line-img--ph" aria-hidden="true">{{ initial() }}</div>
+}
+
+<div class="line-main">
+  <p class="line-name">{{ name() }}</p>
+  <p class="line-unit">{{ unitPrice() }} {{ unit() }}</p>
+</div>
+
+<fold-number-input
+  class="line-qty"
+  size="sm"
+  [value]="quantity()"
+  [min]="min()"
+  [step]="1"
+  [integer]="true"
+  (valueChange)="onQuantity($event)"
+/>
+
+<span class="line-total">{{ lineTotal() }}</span>
+
+<fold-button-icon
+  icon="bin"
+  size="sm"
+  tone="critical"
+  tooltip="Retirer du panier"
+  (clicked)="remove.emit()"
+/>

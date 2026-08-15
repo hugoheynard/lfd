@@ -10,13 +10,12 @@ import { Router } from '@angular/router';
 
 import {
   FoldButtonComponent,
-  FoldButtonIconComponent,
   FoldCalloutComponent,
-  FoldNumberInputComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldPanelHostService,
 } from 'fold-ng';
+import { CartRow } from '@lfd/b2b-ui/cart';
 
 import type { FoldProduct, FoldProductOrder } from '../../../shared';
 import { FeaturedRail, type FeaturedItem } from '../../boutique/featured-rail/featured-rail';
@@ -54,9 +53,8 @@ const PREFLIGHT_DEBOUNCE_MS = 500;
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
     FoldButtonComponent,
-    FoldButtonIconComponent,
-    FoldNumberInputComponent,
     FoldCalloutComponent,
+    CartRow,
     CommerceNav,
     FeaturedRail,
   ],
@@ -159,9 +157,13 @@ export class CartPage {
     return formatEurValue(value);
   }
 
-  /** Ajuste la quantité d'une ligne (le stepper renvoie `null` si vidé). */
-  protected onQty(line: CartLine, value: number | null): void {
-    this.cart.setQty(line.product.id, value ?? 0);
+  /** Le prix de la ligne partagée est en **centimes** ; le panier compte en euros. */
+  protected cents(eur: number): number {
+    return Math.round(eur * 100);
+  }
+
+  protected onQty(line: CartLine, value: number): void {
+    this.cart.setQty(line.product.id, value);
   }
 
   protected remove(line: CartLine): void {

@@ -1,0 +1,66 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+}
+
+.line-img {
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  border-radius: var(--fold-radius-sm);
+  object-fit: cover;
+}
+
+.line-img--ph {
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: var(--fold-color-text-muted);
+  background: var(--fold-color-surface-sunken);
+}
+
+.line-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.line-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.line-unit {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.line-qty {
+  flex: none;
+  width: 7rem;
+}
+
+.line-total {
+  flex: none;
+  min-width: 5rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Sous 640px, la ligne se replie : le total passe à la ligne plutôt que de
+   comprimer le nom du produit, qui est ce qu'on lit en premier. */
+@media (max-width: 640px) {
+  :host {
+    flex-wrap: wrap;
+  }
+
+  .line-total {
+    text-align: left;
+  }
+}
