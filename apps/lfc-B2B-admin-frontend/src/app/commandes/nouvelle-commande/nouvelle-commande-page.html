@@ -17,8 +17,22 @@
         [routerLink]="['/comptes-clients', id(), 'commandes']"
         label="Ses commandes"
       />
-      <h1 class="nc-title">Nouvelle commande — {{ companyName() }}</h1>
+      <div class="nc-titles">
+        <h1 class="nc-title">Nouvelle commande — {{ companyName() }}</h1>
+        @if (!narrow()) {
+          <button foldButton variant="ghost" [disabled]="savingDraft()" (click)="onSaveDraft()">
+            {{ savingDraft() ? 'Enregistrement…' : 'Enregistrer le brouillon' }}
+          </button>
+        }
+      </div>
     </header>
+
+    @if (resumedAt(); as at) {
+      <fold-callout variant="info" title="Brouillon repris">
+        Saisie mise de côté le {{ at }} sur ce poste.
+        <button foldButton variant="ghost" (click)="onDropDraft()">Repartir de zéro</button>
+      </fold-callout>
+    }
 
     @if (buyers().length === 0) {
       <!-- Sans personne à qui porter la commande, l'écran ne mène nulle part :
@@ -45,18 +59,34 @@
         (addAll)="onAddAll($event)"
       />
 
-      <app-panier-commande
-        class="nc-col nc-right"
-        [cart]="cart"
-        [companyName]="companyName()"
-        [buyers]="buyers()"
-        [pickups]="pickups()"
-        [addresses]="addresses()"
-        [zones]="zones()"
-        [settlesOnAccount]="settlesOnAccount()"
-        [submitting]="submitting()"
-        (place)="onPlace($event)"
-      />
+      <!-- En large, le panier tient sa colonne ; en étroit, il passe en tiroir et
+           ne laisse que sa barre. Rendu conditionnel et non masqué en CSS : deux
+           instances vivantes, ce serait deux paniers à tenir d'accord. -->
+      @if (!narrow()) {
+        <app-panier-commande
+          class="nc-col nc-right"
+          [cart]="cart"
+          [draft]="draft"
+          [companyName]="companyName()"
+          [buyers]="buyers()"
+          [pickups]="pickups()"
+          [addresses]="addresses()"
+          [zones]="zones()"
+          [settlesOnAccount]="settlesOnAccount()"
+          [submitting]="submitting()"
+          (place)="onPlace($event)"
+        />
+      }
     </div>
+
+    @if (narrow()) {
+      <app-barre-panier
+        class="nc-bar"
+        [cart]="cart"
+        [saving]="savingDraft()"
+        (open)="openPanier()"
+        (save)="onSaveDraft()"
+      />
+    }
   }
 }

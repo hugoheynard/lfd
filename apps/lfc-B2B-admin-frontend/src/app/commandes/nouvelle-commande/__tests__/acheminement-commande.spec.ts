@@ -6,6 +6,7 @@ import {
   AcheminementCommande,
   type FulfillmentChoice,
 } from '../acheminement-commande/acheminement-commande';
+import { DraftStore } from '../draft.store';
 
 const LABO: PickupAddressView = {
   id: 'pick_1',
@@ -53,6 +54,9 @@ function choiceOf(options: {
   keep?: boolean;
 }): FulfillmentChoice {
   const fixture = TestBed.createComponent(AcheminementCommande);
+  // Le brouillon de l'écran : c'est lui qui garde le choix, le composant n'en
+  // est qu'une vue (cf. `DraftStore`).
+  fixture.componentRef.setInput('draft', new DraftStore());
   fixture.componentRef.setInput('pickups', options.pickups ?? [LABO]);
   fixture.componentRef.setInput('addresses', options.addresses ?? [ADRESSE]);
   fixture.componentRef.setInput('zones', options.zones ?? [ZONE_92]);

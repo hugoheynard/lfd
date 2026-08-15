@@ -1,0 +1,42 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+/* La cible d'ouverture prend toute la place restante : au pouce, c'est ce qui
+   compte le plus. Le total en `tabular-nums` — il change à chaque ajout, et il
+   ne doit pas faire danser la barre. */
+.bar-cart {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--fold-color-primary-border);
+  }
+}
+
+.bar-count {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.bar-total {
+  margin-left: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-go {
+  color: var(--fold-color-text-muted);
+}

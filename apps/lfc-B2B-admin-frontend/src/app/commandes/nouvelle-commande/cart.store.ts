@@ -85,6 +85,11 @@ export class CartStore {
     this.lines$.set([]);
   }
 
+  /** Repose des lignes entières — la reprise d'un brouillon mis de côté. */
+  restore(lines: readonly CartLine[]): void {
+    this.lines$.set([...lines]);
+  }
+
   /**
    * Ce qui part au serveur : des SKU et des quantités, **jamais de prix**. Le
    * nom et le montant affichés n'ont servi qu'à l'écran ; c'est le catalogue

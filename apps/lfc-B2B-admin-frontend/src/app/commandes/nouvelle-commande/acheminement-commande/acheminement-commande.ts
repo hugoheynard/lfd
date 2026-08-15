@@ -1,14 +1,7 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output } from '@angular/core';
 import { FoldListboxComponent, FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
 import { formatAdjustment, resolveZoneForPostalCode } from '@lfd/b2b-ui/order';
+import { NEW_ADDRESS, type DraftAddress, type DraftStore } from '../draft.store';
 import type {
   BillingAddressPayload,
   DeliveryAddressView,
@@ -30,13 +23,6 @@ export interface FulfillmentChoice {
   /** Ce qui empêche d'acheminer, en clair — `null` quand tout est en place. */
   readonly issue: string | null;
 }
-
-/** Le choix « une autre adresse » — sentinelle, jamais un identifiant. */
-const NEW_ADDRESS = '__new__';
-
-const EMPTY_ADDRESS = { ligne1: '', ligne2: '', codePostal: '', ville: '' };
-
-type DraftAddress = typeof EMPTY_ADDRESS;
 
 /**
  * **Comment la commande parvient au client** — retrait ou coursier, comme dans le
@@ -70,19 +56,13 @@ export class AcheminementCommande {
   /** Le carnet de livraison de la société — la défaut en tête. */
   readonly addresses = input.required<readonly DeliveryAddressView[]>();
   readonly zones = input.required<readonly DeliveryZoneView[]>();
+  /** Le brouillon de l'écran : c'est LUI qui garde le choix, pas ce composant. */
+  readonly draft = input.required<DraftStore>();
 
   readonly choiceChange = output<FulfillmentChoice>();
 
-  protected readonly method = signal<FulfillmentMethod>('pickup');
-  private readonly pickupId = signal('');
-  /** `''` = la première du carnet ; {@link NEW_ADDRESS} = la saisie. */
-  private readonly chosenAddressId = signal('');
-  /** L'adresse **saisie**, vivante même quand une autre est sélectionnée. */
-  private readonly draft = signal<DraftAddress>(EMPTY_ADDRESS);
-  /** La case « enregistrer au carnet », décochée par défaut — cf. `courierChoice`. */
-  protected readonly keepAddress = signal(false);
-
-  protected readonly NEW_ADDRESS = NEW_ADDRESS;
+  protected readonly method = computed(() => this.draft().method());
+  protected readonly keepAddress = computed(() => this.draft().keepAddress());
 
   protected readonly methods: readonly FoldViewToggleOption[] = [
     { value: 'pickup', icon: 'store', label: 'Retrait' },
@@ -94,7 +74,7 @@ export class AcheminementCommande {
   /** Le point choisi, sinon celui par défaut, sinon le premier — jamais rien si un existe. */
   protected readonly pickup = computed<PickupAddressView | null>(() => {
     const points = this.pickups();
-    const chosen = points.find((point) => point.id === this.pickupId());
+    const chosen = points.find((point) => point.id === this.draft().pickupId());
     return chosen ?? points.find((point) => point.isDefault) ?? points[0] ?? null;
   });
 
@@ -104,7 +84,7 @@ export class AcheminementCommande {
    * d'elle-même plutôt que d'afficher une liste sans option.
    */
   protected readonly addressId = computed(() => {
-    const chosen = this.chosenAddressId();
+    const chosen = this.draft().addressId();
     if (chosen !== '') {
       return chosen;
     }
@@ -118,7 +98,7 @@ export class AcheminementCommande {
     const book = this.addresses();
     const chosen = book.find((entry) => entry.id === this.addressId());
     if (chosen === undefined) {
-      return this.draft();
+      return this.draft().address();
     }
     return {
       ligne1: chosen.ligne1,
@@ -225,21 +205,21 @@ export class AcheminementCommande {
   }
 
   protected onMethod(value: string): void {
-    this.method.set(value === 'delivery' ? 'delivery' : 'pickup');
+    this.draft().method.set(value === 'delivery' ? 'delivery' : 'pickup');
   }
 
   protected onPickup(id: string): void {
-    this.pickupId.set(id);
+    this.draft().pickupId.set(id);
   }
 
   protected onAddress(id: string): void {
-    this.chosenAddressId.set(id);
+    this.draft().addressId.set(id);
   }
 
   protected onKeep(event: Event): void {
     const element = event.target;
     if (element instanceof HTMLInputElement) {
-      this.keepAddress.set(element.checked);
+      this.draft().keepAddress.set(element.checked);
     }
   }
 
@@ -247,7 +227,7 @@ export class AcheminementCommande {
   protected onField(field: keyof DraftAddress, event: Event): void {
     const element = event.target;
     if (element instanceof HTMLInputElement) {
-      this.draft.update((address) => ({ ...address, [field]: element.value }));
+      this.draft().patchAddress({ [field]: element.value });
     }
   }
 }

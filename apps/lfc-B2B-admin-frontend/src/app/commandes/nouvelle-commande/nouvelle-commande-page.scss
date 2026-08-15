@@ -15,6 +15,13 @@
   gap: var(--fold-space-sm);
 }
 
+.nc-titles {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
 .nc-title {
   margin: 0;
   font-size: var(--fold-text-xl);
@@ -47,4 +54,14 @@
   .nc-columns {
     grid-template-columns: 1fr;
   }
+}
+
+/* La barre du panier, en mobile : collée en bas de la page, au-dessus de tout
+   ce qui défile. */
+.nc-bar {
+  position: sticky;
+  bottom: 0;
+  padding: var(--fold-space-sm) 0;
+  background: var(--fold-color-surface-card);
+  border-top: 1px solid var(--fold-color-border);
 }

@@ -14,6 +14,7 @@ import { CartRow } from '@lfd/b2b-ui/cart';
 import { formatCents } from '@lfd/b2b-ui/order';
 
 import type { CartStore } from '../cart.store';
+import type { DraftStore } from '../draft.store';
 import {
   AcheminementCommande,
   type FulfillmentChoice,
@@ -77,6 +78,8 @@ const NO_FULFILLMENT: FulfillmentChoice = {
 })
 export class PanierCommande {
   readonly cart = input.required<CartStore>();
+  /** Le brouillon : les décisions qui ne sont pas des articles. */
+  readonly draft = input.required<DraftStore>();
   /** Le nom du compte — la commande est la sienne, et la colonne le redit. */
   readonly companyName = input.required<string>();
   /** Les personnes du compte à qui la commande peut être portée. */
@@ -94,13 +97,18 @@ export class PanierCommande {
 
   readonly place = output<OrderDraft>();
 
-  protected readonly buyerUserId = signal<string | null>(null);
+  /**
+   * L'acheminement résolu par le sélecteur. Le seul état que la colonne garde
+   * pour elle : c'est une **dérivation** du brouillon et des points/zones connus,
+   * pas une décision de plus.
+   */
   protected readonly fulfillment = signal<FulfillmentChoice>(NO_FULFILLMENT);
-  protected readonly requestedDate = signal('');
-  protected readonly note = signal('');
-  protected readonly settlement = signal<StaffSettlement>('link');
   /** La validation demande une confirmation explicite — cf. `blockers`. */
   protected readonly confirming = signal(false);
+
+  protected readonly requestedDate = computed(() => this.draft().requestedDate());
+  protected readonly note = computed(() => this.draft().note());
+  protected readonly settlement = computed(() => this.draft().settlement());
 
   protected readonly labels = STAFF_SETTLEMENT_LABELS;
   /**
@@ -112,7 +120,7 @@ export class PanierCommande {
 
   /** Le choix par défaut : le détenteur, sinon le premier membre venu. */
   protected readonly buyer = computed<string | null>(() => {
-    const chosen = this.buyerUserId();
+    const chosen = this.draft().buyerUserId();
     if (chosen !== null) {
       return chosen;
     }
@@ -161,7 +169,7 @@ export class PanierCommande {
   }
 
   protected onSettlement(value: string): void {
-    this.settlement.set(value === 'account' ? 'account' : 'link');
+    this.draft().settlement.set(value === 'account' ? 'account' : 'link');
     // Changer de mode de règlement rouvre la confirmation : c'est précisément la
     // décision qu'on demandait de confirmer.
     this.confirming.set(false);

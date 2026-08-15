@@ -1,0 +1,13 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Le panneau porte le défilement : l'en-tête reste, le panier coule dessous. */
+.pnl-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--fold-space-lg);
+}

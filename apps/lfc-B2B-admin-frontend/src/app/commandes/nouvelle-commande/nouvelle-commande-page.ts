@@ -10,9 +10,11 @@ import {
 import { Router } from '@angular/router';
 import {
   FoldBackLinkComponent,
+  FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
+  FoldPanelHostService,
 } from 'fold-ng';
 import {
   companyDisplayName,
@@ -34,7 +36,13 @@ import { DeliveryZonesService } from '../../reglages/retraits-livraisons/deliver
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
 import { AdminCatalogService } from '../catalog.service';
 import { AdminOrdersService } from '../orders.service';
+import { formatOrderInstant } from '@lfd/b2b-ui/order';
+import { narrowViewport } from '../../shared/viewport/narrow-viewport';
+import { BarrePanier } from './barre-panier/barre-panier';
 import { CartStore } from './cart.store';
+import { clearDraft, loadDraft, saveDraft } from './draft-storage';
+import { DraftStore } from './draft.store';
+import { PanierPanel, type PanierPanelData } from './panier-panel/panier-panel';
 import { PanierCommande, type OrderDraft } from './panier-commande/panier-commande';
 import {
   SourceProduits,
@@ -85,7 +93,9 @@ const EMPTY_SPECS: DeliverySpecs = {
   selector: 'app-nouvelle-commande-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    BarrePanier,
     FoldBackLinkComponent,
+    FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
@@ -104,6 +114,7 @@ export class NouvelleCommandePage {
   private readonly pickupsService = inject(PickupAddressesService);
   private readonly zonesService = inject(DeliveryZonesService);
   private readonly notify = inject(NotifyService);
+  private readonly panels = inject(FoldPanelHostService);
   private readonly router = inject(Router);
 
   /**
@@ -111,6 +122,15 @@ export class NouvelleCommandePage {
    * deux onglets ouverts sur deux clients ne doivent pas se partager un panier.
    */
   protected readonly cart = new CartStore();
+  /** Les décisions qui ne sont pas des articles. Même portée que le panier. */
+  protected readonly draft = new DraftStore();
+
+  /**
+   * Écran étroit ⇒ le panier passe en tiroir, derrière la barre du bas. La
+   * largeur est lue en TypeScript et non en CSS : c'est elle qui décide si la
+   * colonne est **rendue**, pas seulement si on la voit.
+   */
+  protected readonly narrow = narrowViewport();
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly company = signal<AdminCompanyDetail | null>(null);
@@ -121,6 +141,9 @@ export class NouvelleCommandePage {
   protected readonly pickups = signal<readonly PickupAddressView[]>([]);
   protected readonly zones = signal<readonly DeliveryZoneView[]>([]);
   protected readonly submitting = signal(false);
+  protected readonly savingDraft = signal(false);
+  /** Le brouillon repris à l'ouverture, pour le dire à l'écran. Vide sinon. */
+  protected readonly resumedAt = signal('');
 
   /**
    * La source ouverte. Le **catalogue** par défaut : c'est la seule qui a
@@ -180,9 +203,76 @@ export class NouvelleCommandePage {
       this.buyers.set(buyers);
       this.pickups.set(pickups);
       this.zones.set(zones);
+      this.resume(companyId);
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  /**
+   * Reprend le brouillon mis de côté pour ce compte, s'il y en a un. Silencieux
+   * quand il n'y en a pas ; annoncé quand il y en a, parce qu'un panier qui se
+   * remplit tout seul demande une explication.
+   */
+  private resume(companyId: string): void {
+    const stored = loadDraft(companyId);
+    if (stored === null) {
+      return;
+    }
+    this.cart.restore(stored.lines);
+    this.draft.restore(stored.draft);
+    this.resumedAt.set(formatOrderInstant(stored.savedAt));
+  }
+
+  /** Met la saisie de côté. Cf. `draft-storage` pour ce que « de côté » veut dire. */
+  protected onSaveDraft(): void {
+    this.savingDraft.set(true);
+    const kept = saveDraft(this.id(), {
+      lines: this.cart.lines(),
+      draft: this.draft.snapshot(),
+    });
+    this.savingDraft.set(false);
+    if (kept) {
+      this.notify.success('Brouillon enregistré sur ce poste.');
+      return;
+    }
+    this.notify.info("Le brouillon n'a pas pu être enregistré sur ce poste.");
+  }
+
+  /** Efface le brouillon repris, et repart d'un écran vide. */
+  protected onDropDraft(): void {
+    clearDraft(this.id());
+    this.cart.clear();
+    this.draft.reset();
+    this.resumedAt.set('');
+  }
+
+  /**
+   * Ouvre le panier en tiroir (mobile). Le panneau ne poste pas : il **ferme en
+   * rendant** le brouillon, et la page enchaîne — c'est elle qui tient le service
+   * et l'état d'envoi.
+   */
+  protected async openPanier(): Promise<void> {
+    const company = this.company();
+    if (company === null) {
+      return;
+    }
+    const ref = this.panels.open<PanierPanelData, OrderDraft>(PanierPanel, {
+      data: {
+        cart: this.cart,
+        draft: this.draft,
+        companyName: this.companyName(),
+        buyers: this.buyers(),
+        pickups: this.pickups(),
+        addresses: this.addresses(),
+        zones: this.zones(),
+        settlesOnAccount: this.settlesOnAccount(),
+      },
+    });
+    const placed = await ref.closed;
+    if (placed !== undefined) {
+      await this.onPlace(placed);
     }
   }
 
@@ -226,6 +316,11 @@ export class NouvelleCommandePage {
         lines: [...this.cart.toPayloadLines()],
       });
       this.cart.clear();
+      // La commande est partie : le brouillon mis de côté n'a plus d'objet, et
+      // le laisser ferait rouvrir l'écran sur une commande déjà passée.
+      this.draft.reset();
+      clearDraft(this.id());
+      this.resumedAt.set('');
       // Le carnet APRÈS la commande : une adresse enregistrée pour une commande
       // qui n'est pas passée serait une trace de rien.
       if (draft.saveAddressToBook && draft.deliveryAddress !== null) {

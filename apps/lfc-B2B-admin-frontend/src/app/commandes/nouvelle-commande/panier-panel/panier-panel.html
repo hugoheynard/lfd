@@ -1,0 +1,14 @@
+<fold-panel-header title="Panier" [subtitle]="data().companyName" (closed)="close()" />
+
+<app-panier-commande
+  class="pnl-body"
+  [cart]="data().cart"
+  [draft]="data().draft"
+  [companyName]="data().companyName"
+  [buyers]="data().buyers"
+  [pickups]="data().pickups"
+  [addresses]="data().addresses"
+  [zones]="data().zones"
+  [settlesOnAccount]="data().settlesOnAccount"
+  (place)="onPlace($event)"
+/>

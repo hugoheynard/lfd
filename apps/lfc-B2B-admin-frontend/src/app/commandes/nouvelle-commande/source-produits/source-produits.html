@@ -35,6 +35,18 @@
           }
         </ul>
       }
+
+      @if (matching().length > pageSize) {
+        <fold-paginator
+          class="src-pages"
+          [currentPage]="page()"
+          [totalItems]="matching().length"
+          [pageSize]="pageSize"
+          [pageSizeOptions]="[]"
+          [siblingCount]="0"
+          (pageChange)="page.set($event)"
+        />
+      }
     }
   </fold-tab-panel>
 

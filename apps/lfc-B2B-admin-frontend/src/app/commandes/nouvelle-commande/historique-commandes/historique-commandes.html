@@ -5,7 +5,7 @@
   />
 } @else {
   <ul class="his-list">
-    @for (row of orders(); track row.id) {
+    @for (row of visible(); track row.id) {
       <li>
         <lfd-order-row
           [order]="row"
@@ -15,4 +15,16 @@
       </li>
     }
   </ul>
+
+  @if (orders().length > pageSize) {
+    <fold-paginator
+      class="his-pages"
+      [currentPage]="page()"
+      [totalItems]="orders().length"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="[]"
+      [siblingCount]="0"
+      (pageChange)="page.set($event)"
+    />
+  }
 }
