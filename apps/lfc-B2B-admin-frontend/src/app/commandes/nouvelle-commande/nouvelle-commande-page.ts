@@ -24,7 +24,9 @@ import {
   type CompanyMemberView,
   type CatalogItemView,
   type CustomerSkuStat,
+  type DeliveryAddressView,
   type DeliveryZoneView,
+  type OrderDraftView,
   type OrderView,
   type PickupAddressView,
 } from '@lfd/contracts';
@@ -36,11 +38,12 @@ import { DeliveryZonesService } from '../../reglages/retraits-livraisons/deliver
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
 import { AdminCatalogService } from '../catalog.service';
 import { AdminOrdersService } from '../orders.service';
+import { OrderDraftsService } from '../order-drafts.service';
 import { formatOrderInstant } from '@lfd/b2b-ui/order';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { BarrePanier } from './barre-panier/barre-panier';
 import { CartStore } from './cart.store';
-import { clearDraft, loadDraft, saveDraft } from './draft-storage';
+import { draftPayloadOf, draftSnapshotOf, restoreLines } from './draft-payload';
 import { DraftStore } from './draft.store';
 import { PanierPanel, type PanierPanelData } from './panier-panel/panier-panel';
 import { PanierCommande, type OrderDraft } from './panier-commande/panier-commande';
@@ -113,6 +116,7 @@ export class NouvelleCommandePage {
   private readonly catalogService = inject(AdminCatalogService);
   private readonly pickupsService = inject(PickupAddressesService);
   private readonly zonesService = inject(DeliveryZonesService);
+  private readonly draftsService = inject(OrderDraftsService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly router = inject(Router);
@@ -183,15 +187,17 @@ export class NouvelleCommandePage {
     try {
       // Sept lectures indépendantes : les enchaîner aurait multiplié l'attente
       // par sept devant un commercial qui a le client en ligne.
-      const [company, history, catalogue, habits, buyers, pickups, zones] = await Promise.all([
-        this.companies.getById(companyId),
-        this.orders.list({ companyId, limit: HISTORY_SIZE }),
-        this.catalogService.list(),
-        this.catalogService.habitsOf(companyId),
-        this.companies.listMembers(companyId),
-        this.pickupsService.list(),
-        this.zonesService.list(),
-      ]);
+      const [company, history, catalogue, habits, buyers, pickups, zones, saved] =
+        await Promise.all([
+          this.companies.getById(companyId),
+          this.orders.list({ companyId, limit: HISTORY_SIZE }),
+          this.catalogService.list(),
+          this.catalogService.habitsOf(companyId),
+          this.companies.listMembers(companyId),
+          this.pickupsService.list(),
+          this.zonesService.list(),
+          this.draftsService.find(companyId),
+        ]);
       if (company === undefined) {
         this.state.set('error');
         return;
@@ -203,7 +209,7 @@ export class NouvelleCommandePage {
       this.buyers.set(buyers);
       this.pickups.set(pickups);
       this.zones.set(zones);
-      this.resume(companyId);
+      this.resume(saved, catalogue, company.addresses.deliveries);
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -214,38 +220,57 @@ export class NouvelleCommandePage {
    * Reprend le brouillon mis de côté pour ce compte, s'il y en a un. Silencieux
    * quand il n'y en a pas ; annoncé quand il y en a, parce qu'un panier qui se
    * remplit tout seul demande une explication.
+   *
+   * Les lignes sont **re-résolues au catalogue du jour** : une saisie de la
+   * semaine dernière ne doit pas rouvrir sur un tarif périmé. Ce que le catalogue
+   * ne connaît plus est retiré, et dit.
    */
-  private resume(companyId: string): void {
-    const stored = loadDraft(companyId);
-    if (stored === null) {
+  private resume(
+    saved: OrderDraftView | null,
+    catalogue: readonly CatalogItemView[],
+    addresses: readonly DeliveryAddressView[],
+  ): void {
+    if (saved === null) {
       return;
     }
-    this.cart.restore(stored.lines);
-    this.draft.restore(stored.draft);
-    this.resumedAt.set(formatOrderInstant(stored.savedAt));
+    const { lines, dropped } = restoreLines(saved, catalogue);
+    this.cart.restore(lines);
+    this.draft.restore(draftSnapshotOf(saved, addresses));
+    this.resumedAt.set(formatOrderInstant(saved.savedAt));
+    if (dropped.length > 0) {
+      this.notify.info(
+        `${dropped.length} ligne(s) du brouillon ne sont plus au catalogue : ${dropped.join(', ')}.`,
+      );
+    }
   }
 
-  /** Met la saisie de côté. Cf. `draft-storage` pour ce que « de côté » veut dire. */
-  protected onSaveDraft(): void {
+  /** Met la saisie de côté, sur le compte — reprise depuis n'importe quel poste. */
+  protected async onSaveDraft(): Promise<void> {
     this.savingDraft.set(true);
-    const kept = saveDraft(this.id(), {
-      lines: this.cart.lines(),
-      draft: this.draft.snapshot(),
-    });
-    this.savingDraft.set(false);
-    if (kept) {
-      this.notify.success('Brouillon enregistré sur ce poste.');
-      return;
+    try {
+      const view = await this.draftsService.save(
+        this.id(),
+        draftPayloadOf(this.draft.snapshot(), this.cart.lines(), this.addresses()),
+      );
+      this.resumedAt.set(formatOrderInstant(view.savedAt));
+      this.notify.success('Brouillon enregistré.');
+    } catch {
+      this.notify.error(null, "Le brouillon n'a pas pu être enregistré.");
+    } finally {
+      this.savingDraft.set(false);
     }
-    this.notify.info("Le brouillon n'a pas pu être enregistré sur ce poste.");
   }
 
-  /** Efface le brouillon repris, et repart d'un écran vide. */
-  protected onDropDraft(): void {
-    clearDraft(this.id());
+  /** Jette le brouillon, et repart d'un écran vide. */
+  protected async onDropDraft(): Promise<void> {
     this.cart.clear();
     this.draft.reset();
     this.resumedAt.set('');
+    try {
+      await this.draftsService.discard(this.id());
+    } catch {
+      this.notify.error(null, "Le brouillon n'a pas pu être effacé.");
+    }
   }
 
   /**
@@ -317,10 +342,11 @@ export class NouvelleCommandePage {
       });
       this.cart.clear();
       // La commande est partie : le brouillon mis de côté n'a plus d'objet, et
-      // le laisser ferait rouvrir l'écran sur une commande déjà passée.
+      // le laisser ferait rouvrir l'écran sur une commande déjà passée. Son
+      // effacement ne conditionne pas le reste — la commande, elle, est passée.
       this.draft.reset();
-      clearDraft(this.id());
       this.resumedAt.set('');
+      void this.draftsService.discard(this.id()).catch(() => undefined);
       // Le carnet APRÈS la commande : une adresse enregistrée pour une commande
       // qui n'est pas passée serait une trace de rien.
       if (draft.saveAddressToBook && draft.deliveryAddress !== null) {

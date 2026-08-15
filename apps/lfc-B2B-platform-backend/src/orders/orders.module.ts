@@ -6,10 +6,13 @@ import { PaymentsModule } from "../payments/payments.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
+import { DiscardOrderDraftHandler } from "./application/commands/discard-order-draft.handler.js";
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
+import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
+import { GetOrderDraftHandler } from "./application/queries/get-order-draft.handler.js";
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { ListCustomerSkusHandler } from "./application/queries/list-customer-skus.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
@@ -21,16 +24,19 @@ import { ListPersonalOrdersHandler } from "./application/queries/list-personal-o
 import { CustomerSkuReader } from "./domain/ports/customer-sku.reader.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
 import { OrderReader } from "./domain/ports/order.reader.js";
+import { OrderDraftRepository } from "./domain/ports/order-draft.repository.js";
 import { OrderRepository } from "./domain/ports/order.repository.js";
 import { ProductCatalogReader } from "./domain/ports/product-catalog.reader.js";
 import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
+import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.repository.js";
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { SeededProductCatalog } from "./infrastructure/seeded-product-catalog.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
 import { AdminHandoverController } from "./http/admin-handover.controller.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
+import { AdminOrderDraftsController } from "./http/admin-order-drafts.controller.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
 
@@ -48,6 +54,7 @@ import { OrdersController } from "./http/orders.controller.js";
     OrdersController,
     CompanyOrdersController,
     AdminOrdersController,
+    AdminOrderDraftsController,
     AdminCatalogController,
     AdminHandoverController,
   ],
@@ -66,10 +73,14 @@ import { OrdersController } from "./http/orders.controller.js";
     ListCustomerSkusHandler,
     GetHandoverHandler,
     ConfirmHandoverHandler,
+    GetOrderDraftHandler,
+    SaveOrderDraftHandler,
+    DiscardOrderDraftHandler,
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     { provide: CustomerSkuReader, useClass: PrismaCustomerSkuReader },
     { provide: ProductCatalogReader, useClass: SeededProductCatalog },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
+    { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },
   ],
 })

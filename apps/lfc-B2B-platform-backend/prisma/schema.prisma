@@ -344,6 +344,7 @@ model Company {
   contacts        CompanyContact[]
   addresses       Address[]
   orders          Order[]
+  orderDraft      OrderDraft?
   supportRequests SupportRequest[]
   mandates        PaymentMandate[]
 
@@ -1621,5 +1622,35 @@ model StaffNotification {
 
   @@index([readAt, occurredAt])
   @@map("staff_notifications")
+  @@schema("public")
+}
+
+/// Le **brouillon** d'une commande saisie par l'équipe — une saisie interrompue,
+/// pas une commande incomplète.
+///
+/// **Un par société** (`companyId` unique), et non un par membre du staff : c'est
+/// le compte qu'on sert, et un commercial qui reprend l'appel d'un collègue doit
+/// retrouver ce qui a été saisi. La contrepartie est assumée — deux saisies
+/// simultanées, la dernière écrase l'autre — d'où `savedByStaffId`, qui dit au
+/// moins à qui demander.
+///
+/// Le contenu est un `Json` validé par `orderDraftPayloadSchema` à l'entrée comme
+/// à la sortie : une table à colonnes suivrait chaque évolution de l'écran de
+/// saisie pour des données qui ne sont jamais requêtées autrement que par
+/// société. Aucun FK sur les lignes non plus — un brouillon référence des SKU,
+/// et les prix seront de toute façon ré-résolus à la passation.
+model OrderDraft {
+  id        String   @id @default(uuid())
+  companyId String   @unique @map("company_id")
+  payload   Json
+  // La fiche staff qui a enregistré. Nullable : un départ ne doit pas effacer
+  // le brouillon d'un client.
+  savedByStaffId String?  @map("saved_by_staff_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("order_drafts")
   @@schema("public")
 }

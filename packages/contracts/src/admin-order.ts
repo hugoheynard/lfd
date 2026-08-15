@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-import { deliveryAddressIssue, hasAddressWhenDelivered, orderContentShape } from "./order.js";
+import { billingAddressPayloadSchema } from "./address.js";
+import {
+  deliveryAddressIssue,
+  fulfillmentMethodSchema,
+  hasAddressWhenDelivered,
+  orderContentShape,
+  orderLineInputSchema,
+} from "./order.js";
 
 /**
  * La commande **saisie par l'équipe** pour un client — au téléphone, en
@@ -103,4 +110,64 @@ export interface CustomerSkuStat {
    * laisserait croire que le client ne l'a jamais pris.
    */
   readonly stillAvailable: boolean;
+}
+
+/**
+ * Le **brouillon** d'une commande en cours de saisie, tel qu'il est conservé.
+ *
+ * Un brouillon n'est pas une commande à laquelle il manquerait des champs :
+ * c'est une saisie interrompue. Tout y est donc facultatif — pas d'acheteur, pas
+ * de date, zéro ligne sont des états parfaitement normaux d'un appel qu'on
+ * reprendra. Les invariants (au moins une ligne, une adresse quand on livre) ne
+ * s'appliquent qu'à la **passation**, et c'est `adminPlaceOrderPayloadSchema` qui
+ * les porte.
+ *
+ * On garde des faits, jamais l'état de l'écran : `deliveryAddress` est l'adresse
+ * retenue, pas « la troisième du carnet ». L'écran retrouve sa sélection en
+ * comparant ; l'inverse aurait figé une mise en page dans une table.
+ */
+export const orderDraftPayloadSchema = z.object({
+  buyerUserId: z.string().trim().min(1).nullable().default(null),
+  fulfillmentMethod: fulfillmentMethodSchema.default("pickup"),
+  pickupAddressId: z.string().trim().min(1).nullable().default(null),
+  deliveryAddress: billingAddressPayloadSchema.nullable().default(null),
+  requestedDeliveryDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/u, "date attendue au format AAAA-MM-JJ")
+    .nullable()
+    .default(null),
+  note: z.string().default(""),
+  settlement: staffSettlementSchema.default("link"),
+  lines: z.array(orderLineInputSchema).default([]),
+});
+export type OrderDraftPayload = z.infer<typeof orderDraftPayloadSchema>;
+
+/**
+ * Le brouillon **relu**, avec sa trace : quand, et par qui.
+ *
+ * Un brouillon par société, partagé par l'équipe — pas un par personne. C'est le
+ * compte qu'on sert, pas soi-même : un commercial qui reprend l'appel d'un
+ * collègue doit retrouver ce qui a été saisi. La contrepartie est assumée : deux
+ * saisies simultanées sur le même compte, et la dernière écrase l'autre. D'où la
+ * trace, qui dit au moins **à qui** demander.
+ */
+/**
+ * La lecture d'un brouillon — **enveloppée**, et volontairement.
+ *
+ * « Pas de brouillon » est une réponse normale, pas une absence de ressource :
+ * un 404 obligerait chaque appelant à traiter une erreur pour un cas ordinaire.
+ * Et un corps `null` nu se sérialise en corps **vide**, que le client relit en
+ * `{}` — un objet qui ressemble à un brouillon sans en être un. L'enveloppe
+ * rend la réponse lisible sans convention tacite.
+ */
+export interface OrderDraftResponse {
+  readonly draft: OrderDraftView | null;
+}
+
+export interface OrderDraftView extends OrderDraftPayload {
+  readonly companyId: string;
+  /** ISO du dernier enregistrement. */
+  readonly savedAt: string;
+  /** La fiche staff qui l'a enregistré, ou `null` si elle a disparu depuis. */
+  readonly savedByStaffId: string | null;
 }

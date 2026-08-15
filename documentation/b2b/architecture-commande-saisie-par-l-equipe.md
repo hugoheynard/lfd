@@ -206,6 +206,42 @@ La famille d'un produit se lit dans son préfixe de SKU (`VIE`/`PAI`/`PAT`/`SAL`
 
 ---
 
+## 5 bis. Le brouillon
+
+Un appel s'interrompt. La saisie se met de côté (`PUT /admin/order-drafts/:companyId`)
+et se reprend — **depuis n'importe quel poste**, ce qui est la seule raison de
+l'avoir sortie du navigateur.
+
+**Un brouillon par société, partagé par l'équipe** — pas un par personne. C'est le
+compte qu'on sert : un commercial qui reprend l'appel d'un collègue doit
+retrouver ce qui a été saisi. La contrepartie est assumée — deux saisies
+simultanées sur le même compte, la dernière écrase l'autre — d'où
+`saved_by_staff_id`, qui dit au moins à qui demander. Un verrou optimiste
+viendrait le jour où deux commerciaux se marchent dessus pour de vrai.
+
+**Aucun invariant.** Zéro ligne, pas d'acheteur, pas de date : ce sont des états
+normaux d'un appel interrompu. Les invariants (au moins une ligne, une adresse
+quand on livre, un acheteur membre) valent pour la **passation**, et c'est
+`adminPlaceOrderPayloadSchema` qui les porte. Un brouillon qu'on refuserait de
+garder parce qu'il ne passerait pas serait un brouillon qui ne sert à rien. C'est
+aussi pourquoi il n'y a **pas d'agrégat** derrière ce port : il n'y a rien à
+protéger, et une entité serait de la cérémonie autour d'un `upsert`.
+
+**Des faits, pas l'état de l'écran.** On garde l'adresse _retenue_, pas « la
+troisième du carnet » ; les lignes sont des SKU et des quantités, **sans prix**.
+À la reprise, l'écran rapproche l'adresse du carnet par sa rue et son code postal
+(sinon il rouvre la saisie, garnie), et **re-résout les prix au catalogue du
+jour** — une saisie de la semaine dernière ne doit pas rouvrir sur un tarif
+périmé qu'on annoncerait au téléphone. Un SKU disparu du catalogue est retiré et
+signalé.
+
+La lecture est **enveloppée** (`{ draft: … | null }`) : « pas de brouillon » est
+une réponse ordinaire, pas un 404 ; et un `null` nu se sérialise en corps vide,
+que le client relit en `{}` — un objet qui ressemble à un brouillon sans en être
+un.
+
+---
+
 ## 6. Le droit qui a changé
 
 `commercial` avait `orders: "read"` — la personne même pour qui cette surface

@@ -29,7 +29,7 @@
 
     @if (resumedAt(); as at) {
       <fold-callout variant="info" title="Brouillon repris">
-        Saisie mise de côté le {{ at }} sur ce poste.
+        Saisie mise de côté le {{ at }}. Les prix ont été rafraîchis au catalogue du jour.
         <button foldButton variant="ghost" (click)="onDropDraft()">Repartir de zéro</button>
       </fold-callout>
     }
