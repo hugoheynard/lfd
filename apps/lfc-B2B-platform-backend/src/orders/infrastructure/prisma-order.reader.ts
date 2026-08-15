@@ -5,11 +5,13 @@ import {
   billingAddressPayloadSchema,
   type CartAdjustment,
   cartAdjustmentSchema,
+  deliverySpecsSchema,
   type FulfillmentMethod,
   type OrderLineView,
   type OrderStatus,
   type OrderView,
   type PaymentStatus,
+  type ProductionContact,
   type ProductionSheet,
   type RecurringDeltas,
   recurringDeltasSchema,
@@ -237,7 +239,23 @@ export class PrismaOrderReader extends OrderReader {
         note: true,
         fromSubscriptionId: true,
         placedByStaffId: true,
-        company: { select: { raisonSociale: true } },
+        company: {
+          select: {
+            raisonSociale: true,
+            enseigne: true,
+            // Le détenteur : le repli quand l'adresse ne nomme personne. Une
+            // seule ligne attendue — un compte a au plus un `owner`.
+            memberships: {
+              where: { role: "owner" },
+              take: 1,
+              select: { user: { select: { firstName: true, lastName: true, phone: true } } },
+            },
+          },
+        },
+        // Le contact de livraison vit sur le CARNET, pas sur la commande : celle-ci
+        // ne fige que les champs postaux. Une adresse dictée à la volée n'a donc
+        // pas de contact — c'est structurel, pas un oubli de saisie.
+        deliveryAddress: { select: { deliverySpecs: true } },
         placedBy: { select: { email: true, firstName: true, lastName: true } },
         lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
       },
@@ -245,10 +263,13 @@ export class PrismaOrderReader extends OrderReader {
     return rows.map((row) => ({
       orderId: row.id,
       orderNumber: row.orderNumber,
-      customerLabel: customerLabelOf(row),
+      tradeName: row.company?.enseigne ?? "",
+      legalName: customerLabelOf(row),
       fulfillmentMethod: row.fulfillmentMethod,
       pickupLabel: pickupLabelOf(row.pickupAddress),
+      pickupAddress: parseAddress(row.pickupAddress),
       deliveryAddress: parseAddress(row.deliveryAddressSnapshot),
+      deliveryContact: deliveryContactOf(row),
       note: row.note,
       origin: orderOriginOf(row),
       lines: row.lines.map((line) => ({
@@ -258,6 +279,44 @@ export class PrismaOrderReader extends OrderReader {
       })),
     }));
   }
+}
+
+/**
+ * **Qui appeler en livrant**, dans l'ordre : le contact de l'adresse du carnet,
+ * puis le détenteur du compte, puis personne.
+ *
+ * La priorité n'est pas arbitraire — le contact d'adresse a été renseigné POUR
+ * cette adresse, le détenteur ne sait peut-être même pas qu'une livraison
+ * arrive. Rendre `null` plutôt qu'un nom bricolé permet à la fiche d'écrire
+ * « aucun contact », ce qui est une information et pas un blanc.
+ */
+function deliveryContactOf(row: {
+  readonly deliveryAddress: { readonly deliverySpecs: Prisma.JsonValue } | null;
+  readonly company: {
+    readonly memberships: readonly {
+      readonly user: {
+        readonly firstName: string;
+        readonly lastName: string;
+        readonly phone: string;
+      };
+    }[];
+  } | null;
+}): ProductionContact | null {
+  const specs = deliverySpecsSchema.safeParse(row.deliveryAddress?.deliverySpecs);
+  const onSite = specs.success ? specs.data.deliveryContact : null;
+  if (onSite !== null && onSite !== undefined) {
+    return {
+      source: "address",
+      name: `${onSite.prenom} ${onSite.nom}`.trim(),
+      phone: onSite.telephone,
+    };
+  }
+  const holder = row.company?.memberships[0]?.user;
+  if (holder === undefined) {
+    return null;
+  }
+  const name = `${holder.firstName} ${holder.lastName}`.trim();
+  return name === "" ? null : { source: "holder", name, phone: holder.phone };
 }
 
 /**

@@ -249,6 +249,7 @@ export { productionBatchQuerySchema } from "./production-sheet.js";
 export type {
   ProductionBatchQuery,
   ProductionBatchView,
+  ProductionContact,
   ProductionSheet,
   ProductionSheetLine,
 } from "./production-sheet.js";

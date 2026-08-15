@@ -11,9 +11,20 @@
   color: #111;
 }
 
+/* QUI à gauche, OÙ à droite. Le bloc d'adresse est le plus large des deux :
+   c'est lui qui contient des lignes qu'on ne peut pas couper. */
 .fp-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6mm;
+  align-items: start;
   padding-bottom: 4mm;
   border-bottom: 2px solid #111;
+}
+
+.fp-where {
+  max-width: 78mm;
+  text-align: right;
 }
 
 /* Le lot et le rang en tête : c'est ce qui permet de constater qu'il ne manque
@@ -25,20 +36,23 @@
   text-transform: uppercase;
 }
 
-.fp-customer {
+/* L'enseigne : le nom qu'on connaît, en gros. */
+.fp-trade {
   margin: 0;
   font-size: 20pt;
   line-height: 1.1;
+}
+
+/* La raison sociale : présente pour lever une ambiguïté, pas pour être lue. */
+.fp-legal {
+  margin: 1mm 0 0;
+  font-size: 10pt;
 }
 
 .fp-ref {
   margin: 1mm 0 0;
   font-size: 11pt;
   font-variant-numeric: tabular-nums;
-}
-
-.fp-route {
-  margin: 5mm 0;
 }
 
 .fp-method {
@@ -49,9 +63,40 @@
   text-transform: uppercase;
 }
 
-.fp-where {
+/* Le point de retrait nommé, quand il en porte un. */
+.fp-point {
   margin: 1mm 0 0;
   font-size: 12pt;
+  font-weight: 600;
+}
+
+.fp-addr {
+  margin: 0;
+  font-size: 11pt;
+  line-height: 1.35;
+}
+
+/* Le contact, détaché de l'adresse : ce n'est pas une ligne postale. */
+.fp-contact {
+  margin: 2mm 0 0;
+  font-size: 11pt;
+}
+
+.fp-contact--none {
+  font-style: italic;
+}
+
+.fp-phone {
+  display: block;
+  font-size: 13pt;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.fp-contact-src {
+  display: block;
+  font-size: 8pt;
+  font-style: italic;
 }
 
 .fp-origin {

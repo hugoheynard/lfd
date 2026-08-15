@@ -39,17 +39,58 @@ export interface ProductionSheetLine {
   readonly quantity: number;
 }
 
+/**
+ * **Qui appeler** en livrant. Le livreur sonne à une porte : il lui faut un nom
+ * et un numéro, pas une raison sociale.
+ *
+ * Trois provenances, dans cet ordre — c'est la seule information de la fiche qui
+ * se cherche ailleurs que sur la commande :
+ *
+ * - `address` — le contact **de l'adresse** (carnet de la société). Le bon ;
+ * - `holder` — à défaut, le **détenteur du compte** (le membre `owner`). Il n'a
+ *   pas forcément été prévenu, mais c'est quelqu'un à qui parler ;
+ * - `null` — l'adresse a été dictée à la volée et le compte n'a pas de
+ *   détenteur. La fiche le **dit** alors : le livreur doit savoir qu'il part
+ *   sans numéro, pas le découvrir devant la porte.
+ */
+export interface ProductionContact {
+  readonly source: "address" | "holder";
+  readonly name: string;
+  /** Peut être vide : un détenteur sans téléphone reste un nom à demander. */
+  readonly phone: string;
+}
+
 /** Une fiche : une commande, telle qu'on la fabrique et telle qu'on la remet. */
 export interface ProductionSheet {
   readonly orderId: string;
   readonly orderNumber: string;
-  /** La raison sociale, ou la personne quand la commande est sans entreprise. */
-  readonly customerLabel: string;
+  /**
+   * Le nom **commercial** — l'enseigne. C'est celui que le fournil connaît et
+   * celui qui est peint sur la devanture. Vide quand la société n'en a pas
+   * déclaré, ou quand la commande est personnelle.
+   */
+  readonly tradeName: string;
+  /**
+   * La **raison sociale** — le nom au greffe. Il lève l'ambiguïté entre deux
+   * enseignes voisines, et c'est lui qui figure sur les papiers.
+   *
+   * Sur une commande **sans entreprise** (zéro friction), c'est la personne :
+   * l'enseigne est vide et ce champ porte seul le nom. Une fiche a toujours
+   * quelqu'un à qui remettre, même quand ce n'est pas une société.
+   */
+  readonly legalName: string;
   readonly fulfillmentMethod: FulfillmentMethod;
   /** Le point de retrait nommé, quand c'est un retrait et qu'il en porte un. */
   readonly pickupLabel: string | null;
+  /**
+   * L'adresse **postale** du point de retrait — celle qu'on lit au téléphone à
+   * un client qui demande où venir. Le libellé seul ne suffit pas.
+   */
+  readonly pickupAddress: BillingAddressPayload | null;
   /** L'adresse servie, quand c'est un coursier. */
   readonly deliveryAddress: BillingAddressPayload | null;
+  /** Qui appeler en livrant — cf. {@link ProductionContact}. `null` = personne. */
+  readonly deliveryContact: ProductionContact | null;
   /** La note du client — consigne de fabrication ou d'accès, elle se lit au labo. */
   readonly note: string;
   /** Par quelle porte la commande est entrée (récurrente, saisie, self-service). */

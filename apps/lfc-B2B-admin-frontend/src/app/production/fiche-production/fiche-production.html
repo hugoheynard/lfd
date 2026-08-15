@@ -1,20 +1,54 @@
+<!-- Deux colonnes : QUI à gauche, OÙ à droite. Celui qui prépare cherche
+     l'identité, celui qui charge la tournée cherche l'adresse — côte à côte,
+     aucun des deux ne descend chercher l'autre. -->
 <header class="fp-head">
-  <p class="fp-batch">Lot du {{ dayLabel() }} · fiche {{ rank() }}/{{ total() }}</p>
-  <h2 class="fp-customer">{{ sheet().customerLabel }}</h2>
-  <p class="fp-ref">{{ sheet().orderNumber }}</p>
-</header>
+  <div class="fp-who">
+    <p class="fp-batch">Lot du {{ dayLabel() }} · fiche {{ rank() }}/{{ total() }}</p>
+    @if (sheet().tradeName !== '') {
+      <h2 class="fp-trade">{{ sheet().tradeName }}</h2>
+      <!-- La raison sociale sous l'enseigne : elle lève l'ambiguïté entre deux
+           devantures voisines sans voler la vedette au nom qu'on connaît. -->
+      <p class="fp-legal">{{ sheet().legalName }}</p>
+    } @else {
+      <h2 class="fp-trade">{{ sheet().legalName }}</h2>
+    }
+    <p class="fp-ref">{{ sheet().orderNumber }}</p>
+  </div>
 
-<!-- L'acheminement en gros et haut : celui qui prépare le colis cherche
-     d'abord s'il part en tournée ou s'il attend au comptoir. -->
-<section class="fp-route" aria-label="Acheminement">
-  <p class="fp-method">{{ methodLabel() }}</p>
-  @if (destination(); as where) {
-    <p class="fp-where">{{ where }}</p>
-  }
-  @if (originLabel(); as origin) {
-    <p class="fp-origin">{{ origin }}</p>
-  }
-</section>
+  <div class="fp-where">
+    <p class="fp-method">{{ methodLabel() }}</p>
+    @if (sheet().pickupLabel; as point) {
+      <p class="fp-point">{{ point }}</p>
+    }
+    @for (line of addressLines(); track line) {
+      <p class="fp-addr">{{ line }}</p>
+    }
+
+    @if (sheet().fulfillmentMethod === 'delivery') {
+      @if (sheet().deliveryContact; as contact) {
+        <p class="fp-contact">
+          {{ contact.name }}
+          @if (contact.phone !== '') {
+            <span class="fp-phone">{{ contact.phone }}</span>
+          }
+          <!-- D'où vient ce nom : un détenteur de compte n'attend pas forcément
+               la livraison, contrairement au contact de l'adresse. -->
+          @if (contact.source === 'holder') {
+            <span class="fp-contact-src">détenteur du compte</span>
+          }
+        </p>
+      } @else {
+        <!-- Écrit, pas laissé blanc : le livreur doit savoir qu'il part sans
+             numéro AVANT de sonner, pas le découvrir devant la porte. -->
+        <p class="fp-contact fp-contact--none">Aucun contact sur place</p>
+      }
+    }
+
+    @if (originLabel(); as origin) {
+      <p class="fp-origin">{{ origin }}</p>
+    }
+  </div>
+</header>
 
 <table class="fp-lines">
   <caption class="fp-caption">
