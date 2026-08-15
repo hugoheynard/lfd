@@ -60,19 +60,11 @@
               </fold-dropdown>
             </div>
 
-            <ul class="hours">
-              @for (row of hours(point.opening); track row.label) {
-                <li class="hours-row">
-                  <span class="hours-name">{{ row.label }}</span>
-                  <span class="hours-text">{{ row.text }}</span>
-                </li>
-              } @empty {
-                <li class="hours-none">
-                  <fold-icon name="clock" [size]="15" />
-                  <span>Aucune heure déclarée — toute heure de retrait est acceptée.</span>
-                </li>
-              }
-            </ul>
+            <lfd-hours
+              [entries]="hours(point.opening)"
+              hideEmpty
+              noneText="Aucune heure déclarée — toute heure de retrait est acceptée."
+            />
 
             @if (confirmingId() === point.id) {
               <fold-inline-confirm
@@ -95,8 +87,8 @@
       </div>
     </fold-card>
 
-    <app-cutoffs-section [points]="addresses()" />
-
     <app-delivery-zones-section />
+
+    <app-cutoffs-section [points]="addresses()" />
   }
 }

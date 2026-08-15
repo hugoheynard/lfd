@@ -20,6 +20,8 @@ import {
 } from 'fold-ng';
 
 import { AddressView } from '../../address/address-view/address-view';
+import { HoursView } from '../../hours/hours-view/hours-view';
+import type { HoursEntry } from '../../hours/hours.model';
 import type { PostalAddress } from '../../address/address.model';
 import { postalFrom } from '../address-form.model';
 import {
@@ -27,7 +29,6 @@ import {
   formatGps,
   gpsMapUrl,
   hasDeliverySlot,
-  type WeeklySlotRow,
   weeklySlots,
 } from '../delivery-format';
 
@@ -43,6 +44,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AddressView,
+    HoursView,
     FoldPageSectionComponent,
     FoldCardComponent,
     FoldBadgeComponent,
@@ -133,7 +135,7 @@ export class CompanyAddressesCard {
     return hasDeliverySlot(address.specs.slots);
   }
 
-  protected weekly(address: DeliveryAddressView): readonly WeeklySlotRow[] {
+  protected weekly(address: DeliveryAddressView): readonly HoursEntry[] {
     return weeklySlots(address.specs.slots);
   }
 

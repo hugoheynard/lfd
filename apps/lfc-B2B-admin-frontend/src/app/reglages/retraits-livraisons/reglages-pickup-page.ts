@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { PickupAddressView } from '@lfd/contracts';
 import { AddressView } from '@lfd/b2b-ui/address';
+import { HoursView } from '@lfd/b2b-ui/hours';
 import { postalFrom } from '@lfd/b2b-ui/company';
 import { formatAdjustmentValue } from '@lfd/b2b-ui/pricing';
 import type { PostalAddress } from '@lfd/b2b-ui/address';
@@ -40,6 +41,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AddressView,
+    HoursView,
     FoldCardComponent,
     FoldBadgeComponent,
     FoldEmptyStateComponent,

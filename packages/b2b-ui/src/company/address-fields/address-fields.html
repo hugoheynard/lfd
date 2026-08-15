@@ -39,47 +39,9 @@
       (checkedChange)="set('sameEveryDay', $event)"
     />
 
-    @if (value().sameEveryDay) {
-      <div class="slot-row">
-        <span class="slot-day">Tous les jours</span>
-        <input
-          class="time"
-          type="time"
-          [value]="value().everyStart"
-          (input)="set('everyStart', inputValue($event))"
-        />
-        <span class="dash">–</span>
-        <input
-          class="time"
-          type="time"
-          [value]="value().everyEnd"
-          (input)="set('everyEnd', inputValue($event))"
-        />
-      </div>
-    } @else {
-      @for (d of weekdays; track d.value) {
-        <div class="slot-row">
-          <span class="slot-day">{{ d.label }}</span>
-          <input
-            class="time"
-            type="time"
-            [value]="value().days[d.value].start"
-            (input)="setDay(d.value, 'start', inputValue($event))"
-          />
-          <span class="dash">–</span>
-          <input
-            class="time"
-            type="time"
-            [value]="value().days[d.value].end"
-            (input)="setDay(d.value, 'end', inputValue($event))"
-          />
-        </div>
-      }
-    }
-
-    @if (slotIssue()) {
-      <p class="slot-issue">{{ slotIssue() }}</p>
-    }
+    <!-- Une ligne « Tous les jours », ou sept : le socle rend les lignes
+         qu'on lui donne, c'est ici qu'on décide lesquelles. -->
+    <lfd-hours-form [value]="slotEntries()" (valueChange)="setSlotEntries($event)" />
   </fieldset>
 
   <hr class="sep" />

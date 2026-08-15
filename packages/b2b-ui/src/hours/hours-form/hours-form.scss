@@ -1,0 +1,53 @@
+// Fragment transparent : le fieldset devient enfant direct du formulaire
+// container, qui gouverne l'espacement.
+:host {
+  display: contents;
+}
+
+.hours {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.hours > legend {
+  padding: 0;
+  margin-bottom: var(--fold-space-xs);
+}
+
+.field-label {
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+// Une ligne : le nom à gauche, les deux heures et le tiret à droite.
+.hours-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+.hours-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--fold-color-text);
+}
+.dash {
+  color: var(--fold-color-text-muted);
+}
+.time {
+  flex: none;
+}
+
+.hours-hint {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+.hours-issue {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-alert);
+}

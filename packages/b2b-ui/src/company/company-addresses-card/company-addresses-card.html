@@ -116,16 +116,14 @@
                           <fold-icon name="clock" [size]="15" />
                           Créneaux de livraison
                         </p>
-                        <ul class="week">
-                          @for (row of weekly(a); track row.short) {
-                            <li class="week-row" [class.is-empty]="!row.slot">
-                              <span class="week-day">{{ row.label }}</span>
-                              <span class="week-slot">
-                                {{ row.slot ? row.slot.start + '–' + row.slot.end : '—' }}
-                              </span>
-                            </li>
-                          }
-                        </ul>
+                        <!-- Les sept jours restent affichés, tiret compris :
+                             « mardi, rien » est justement l'information. -->
+                        <lfd-hours
+                          class="week"
+                          layout="rows"
+                          [icon]="false"
+                          [entries]="weekly(a)"
+                        />
                       </div>
 
                       @if (a.specs.deliveryContact; as contact) {

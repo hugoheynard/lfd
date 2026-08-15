@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
-import type { DeliveryContact, Weekday } from '@lfd/contracts';
+import type { DeliveryContact } from '@lfd/contracts';
 import {
   FoldCheckboxComponent,
   FoldInputComponent,
@@ -8,6 +8,8 @@ import {
 } from 'fold-ng';
 
 import { AddressForm } from '../../address/address-form/address-form';
+import { HoursForm } from '../../hours/hours-form/hours-form';
+import type { HoursEntry } from '../../hours/hours.model';
 import {
   ALL_POSTAL_FIELDS,
   DEFAULT_POSTAL_FIELDS,
@@ -17,9 +19,9 @@ import { formatDeliveryContact, WEEKDAYS } from '../delivery-format';
 import {
   contactIssueOf,
   postalOfDraft,
-  slotIssueOf,
   withPostal,
   type AddressDraft,
+  type DraftDays,
 } from '../address-form.model';
 
 /**
@@ -37,7 +39,13 @@ import {
 @Component({
   selector: 'lfd-address-fields',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AddressForm, FoldInputComponent, FoldCheckboxComponent, FoldListboxComponent],
+  imports: [
+    AddressForm,
+    HoursForm,
+    FoldInputComponent,
+    FoldCheckboxComponent,
+    FoldListboxComponent,
+  ],
   templateUrl: './address-fields.html',
   styleUrl: './address-fields.scss',
 })
@@ -61,10 +69,51 @@ export class AddressFields {
     this.value.update((draft) => withPostal(draft, postal));
   }
 
-  protected readonly weekdays = WEEKDAYS;
+  /**
+   * Les créneaux, en lignes nommées. Une seule — « Tous les jours » — ou sept,
+   * selon la case : c'est la même saisie, ce n'est pas la même promesse.
+   */
+  protected readonly slotEntries = computed<readonly HoursEntry[]>(() => {
+    const draft = this.value();
+    if (draft.sameEveryDay) {
+      return [
+        {
+          key: 'every',
+          label: 'Tous les jours',
+          range: { start: draft.everyStart, end: draft.everyEnd },
+        },
+      ];
+    }
+    return WEEKDAYS.map((day) => ({
+      key: day.value,
+      label: day.label,
+      range: draft.days[day.value],
+    }));
+  });
+
+  protected setSlotEntries(entries: readonly HoursEntry[]): void {
+    const single = entries[0];
+    if (this.value().sameEveryDay) {
+      if (single !== undefined) {
+        this.value.update((draft) => ({
+          ...draft,
+          everyStart: single.range.start,
+          everyEnd: single.range.end,
+        }));
+      }
+      return;
+    }
+    this.value.update((draft) => ({
+      ...draft,
+      days: WEEKDAYS.reduce<DraftDays>((days, day) => {
+        const found = entries.find((entry) => entry.key === day.value);
+        return { ...days, [day.value]: found?.range ?? draft.days[day.value] };
+      }, draft.days),
+    }));
+  }
+
   protected readonly isLivraison = computed(() => this.kind() === 'livraison');
 
-  protected readonly slotIssue = computed(() => slotIssueOf(this.value()));
   protected readonly contactIssue = computed(() =>
     this.isLivraison() ? contactIssueOf(this.value()) : '',
   );
@@ -82,14 +131,6 @@ export class AddressFields {
 
   protected set<K extends keyof AddressDraft>(key: K, value: AddressDraft[K]): void {
     this.value.update((draft) => ({ ...draft, [key]: value }));
-  }
-
-  /** Met à jour un bout d'un créneau journalier, immuablement. */
-  protected setDay(day: Weekday, field: 'start' | 'end', value: string): void {
-    this.value.update((draft) => ({
-      ...draft,
-      days: { ...draft.days, [day]: { ...draft.days[day], [field]: value } },
-    }));
   }
 
   /**

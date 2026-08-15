@@ -10,55 +10,17 @@
     (checkedChange)="setDefault($event)"
   />
 
-  <fieldset class="opening">
-    <legend class="field-label">Heures de retrait</legend>
-    <p class="opening-hint">
-      Les deux plages restent séparées : une commande doit tenir dans <em>l'une</em> d'elles, jamais
-      à cheval sur le creux entre les deux.
-    </p>
-
-    <div class="slot-row">
-      <span class="slot-name">Créneau pro</span>
-      <fold-time
-        class="time"
-        [attr.aria-label]="'Début — Créneau pro'"
-        [value]="opening().proStart"
-        (valueChange)="setOpening('proStart', $event)"
-      />
-      <span class="dash">–</span>
-      <fold-time
-        class="time"
-        [attr.aria-label]="'Fin — Créneau pro'"
-        [value]="opening().proEnd"
-        (valueChange)="setOpening('proEnd', $event)"
-      />
-    </div>
-
-    <div class="slot-row">
-      <span class="slot-name">Ouverture au public</span>
-      <fold-time
-        class="time"
-        [attr.aria-label]="'Début — Ouverture au public'"
-        [value]="opening().publicStart"
-        (valueChange)="setOpening('publicStart', $event)"
-      />
-      <span class="dash">–</span>
-      <fold-time
-        class="time"
-        [attr.aria-label]="'Fin — Ouverture au public'"
-        [value]="opening().publicEnd"
-        (valueChange)="setOpening('publicEnd', $event)"
-      />
-    </div>
-
-    @if (openingIssue()) {
-      <p class="opening-issue">{{ openingIssue() }}</p>
-    } @else if (!opening().proEnd && !opening().publicEnd) {
+  <lfd-hours-form
+    legend="Heures de retrait"
+    hint="Les deux plages restent séparées : une commande doit tenir dans l'une d'elles, jamais à cheval sur le creux entre les deux."
+    [(value)]="opening"
+  >
+    @if (noOpening()) {
       <p class="opening-hint">
         Sans aucune heure déclarée, ce point accepte n'importe quelle heure de retrait.
       </p>
     }
-  </fieldset>
+  </lfd-hours-form>
 
   <lfd-price-alteration-field
     label="Réduction de retrait"

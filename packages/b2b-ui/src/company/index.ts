@@ -53,7 +53,6 @@ export {
   formatGps,
   gpsMapUrl,
 } from './delivery-format';
-export type { WeeklySlotRow } from './delivery-format';
 export {
   DEFAULT_DESTINATION,
   destinationOf,

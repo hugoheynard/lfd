@@ -1,3 +1,4 @@
+import type { HoursEntry } from '../hours/hours.model';
 import type {
   DeliveryContact,
   DeliverySlot,
@@ -27,13 +28,6 @@ export const WEEKDAYS: readonly {
   { value: 'sun', label: 'Dimanche', short: 'Dim' },
 ];
 
-/** Une ligne de la vue hebdomadaire : un jour et son créneau (ou aucun). */
-export interface WeeklySlotRow {
-  readonly short: string;
-  readonly label: string;
-  readonly slot: DeliverySlot | null;
-}
-
 /** Rend un créneau lisible : `08:00–10:00`. */
 export function formatSlot(slot: DeliverySlot): string {
   return `${slot.start}–${slot.end}`;
@@ -50,13 +44,20 @@ export function hasDeliverySlot(slots: DeliverySlots): boolean {
   return WEEKDAYS.some((day) => slots.byDay[day.value] !== null);
 }
 
-/** Déplie les créneaux en sept lignes pour la visualisation. */
-export function weeklySlots(slots: DeliverySlots): readonly WeeklySlotRow[] {
-  return WEEKDAYS.map((day) => ({
-    short: day.short,
-    label: day.label,
-    slot: slots.mode === 'everyday' ? slots.slot : slots.byDay[day.value],
-  }));
+/**
+ * Déplie les créneaux en sept plages nommées, pour le socle `lfd-hours`. Les
+ * jours sans créneau restent dans la liste : c'est l'affichage qui décide de
+ * les montrer en creux ou de les taire.
+ */
+export function weeklySlots(slots: DeliverySlots): readonly HoursEntry[] {
+  return WEEKDAYS.map((day) => {
+    const slot = slots.mode === 'everyday' ? slots.slot : slots.byDay[day.value];
+    return {
+      key: day.value,
+      label: day.label,
+      range: { start: slot?.start ?? '', end: slot?.end ?? '' },
+    };
+  });
 }
 
 /** Nom complet d'un contact de livraison, espaces superflus retirés. */

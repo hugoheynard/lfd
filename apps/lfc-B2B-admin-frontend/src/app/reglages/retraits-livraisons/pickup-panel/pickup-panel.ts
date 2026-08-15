@@ -14,8 +14,8 @@ import {
   FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
-  FoldTimeComponent,
 } from 'fold-ng';
+import { HoursForm, hoursIssueOf, type HoursEntry } from '@lfd/b2b-ui/hours';
 import {
   AddressFields,
   billingDraftFrom,
@@ -34,13 +34,7 @@ import {
 
 import { NotifyService } from '../../../notify.service';
 import { PickupAddressesService } from '../pickup-addresses.service';
-import {
-  EMPTY_OPENING_DRAFT,
-  openingDraftFrom,
-  openingIssueOf,
-  toPickupOpening,
-  type OpeningDraft,
-} from '../pickup-opening.model';
+import { EMPTY_OPENING, openingEntries, toPickupOpening } from '../pickup-opening.model';
 
 /** Charge d'ouverture du panneau : le point à éditer, ou `null` pour en créer un. */
 export interface PickupPanelData {
@@ -63,8 +57,8 @@ export interface PickupPanelData {
     FoldPanelFooterComponent,
     FoldButtonComponent,
     FoldCheckboxComponent,
-    FoldTimeComponent,
     AddressFields,
+    HoursForm,
     PriceAlterationField,
   ],
   templateUrl: './pickup-panel.html',
@@ -81,10 +75,15 @@ export class PickupPanel {
   /** Remise du point (retirer ici coûte moins cher), ou `null`. */
   protected readonly discount = signal<CartAdjustment | null>(null);
   /** Heures d'ouverture du point — deux fenêtres nommées, jamais fusionnées. */
-  protected readonly opening = signal<OpeningDraft>(EMPTY_OPENING_DRAFT);
+  protected readonly opening = signal<readonly HoursEntry[]>(openingEntries(EMPTY_OPENING));
   protected readonly saving = signal(false);
 
-  protected readonly openingIssue = computed(() => openingIssueOf(this.opening()));
+  protected readonly openingIssue = computed(() => hoursIssueOf(this.opening()));
+
+  /** Aucune plage renseignée : le point accepte alors n'importe quelle heure. */
+  protected readonly noOpening = computed(() =>
+    this.opening().every((entry) => entry.range.start === '' && entry.range.end === ''),
+  );
 
   /**
    * La remise vue comme une altération de prix. Le sens est **structurel** —
@@ -112,7 +111,7 @@ export class PickupPanel {
       }
       this.draft.set({ ...billingDraftFrom(address), isDefault: address.isDefault });
       this.discount.set(address.discount);
-      this.opening.set(openingDraftFrom(address.opening));
+      this.opening.set(openingEntries(address.opening));
     });
   }
 
@@ -122,10 +121,6 @@ export class PickupPanel {
 
   protected setDefault(isDefault: boolean): void {
     this.draft.update((draft) => ({ ...draft, isDefault }));
-  }
-
-  protected setOpening<K extends keyof OpeningDraft>(key: K, value: string): void {
-    this.opening.update((draft) => ({ ...draft, [key]: value }));
   }
 
   protected async submit(): Promise<void> {

@@ -1,0 +1,38 @@
+<fieldset class="hours">
+  @if (legend()) {
+    <legend class="field-label">{{ legend() }}</legend>
+  }
+  @if (hint()) {
+    <p class="hours-hint">{{ hint() }}</p>
+  }
+
+  @for (entry of value(); track entry.key) {
+    <!-- Le nom de la plage est le seul repère : chaque champ le reprend dans
+         son `aria-label`, sinon l'assistance technique lit « Début » quatorze
+         fois de suite sans savoir de quel jour il s'agit. -->
+    <div class="hours-row">
+      <span class="hours-name">{{ entry.label }}</span>
+      <fold-time
+        class="time"
+        [attr.aria-label]="startLabel() + ' — ' + entry.label"
+        [value]="entry.range.start"
+        (valueChange)="set(entry.key, 'start', $event)"
+      />
+      <span class="dash">–</span>
+      <fold-time
+        class="time"
+        [attr.aria-label]="endLabel() + ' — ' + entry.label"
+        [value]="entry.range.end"
+        (valueChange)="set(entry.key, 'end', $event)"
+      />
+    </div>
+  }
+
+  @if (issue()) {
+    <p class="hours-issue">{{ issue() }}</p>
+  }
+
+  <!-- Ce que l'appelant veut dire sous les champs : une conséquence, un
+       avertissement — le fragment ne connaît aucune des deux. -->
+  <ng-content />
+</fieldset>

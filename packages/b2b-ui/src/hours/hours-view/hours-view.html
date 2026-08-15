@@ -1,0 +1,22 @@
+@if (isEmpty()) {
+  @if (noneText()) {
+    <p class="hours-none">
+      @if (icon()) {
+        <fold-icon [name]="iconName()" [size]="15" />
+      }
+      <span>{{ noneText() }}</span>
+    </p>
+  }
+} @else {
+  @if (icon()) {
+    <fold-icon class="hours-icon" [name]="iconName()" [size]="15" />
+  }
+  <ul class="hours-list">
+    @for (line of lines(); track line.key) {
+      <li class="hours-row" [class.is-empty]="!line.declared">
+        <span class="hours-name">{{ line.label }}</span>
+        <span class="hours-text">{{ line.text }}</span>
+      </li>
+    }
+  </ul>
+}

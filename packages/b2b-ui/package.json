@@ -21,6 +21,10 @@
       "types": "./src/company/index.ts",
       "default": "./src/company/index.ts"
     },
+    "./hours": {
+      "types": "./src/hours/index.ts",
+      "default": "./src/hours/index.ts"
+    },
     "./order": {
       "types": "./src/order/index.ts",
       "default": "./src/order/index.ts"

@@ -1,0 +1,93 @@
+:host {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+  min-width: 0;
+}
+
+.hours-icon {
+  flex: none;
+  margin-top: 0.1rem;
+  color: var(--fold-color-text-faded);
+}
+
+// En ligne, chaque plage est une unité : son nom en petites capitales, son
+// heure juste après. Deux plages se lisent alors comme deux faits, sans qu'on
+// ait besoin d'un séparateur de plus.
+.hours-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs) var(--fold-space-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.hours-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.hours-name {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+// L'heure est la donnée : elle garde la couleur pleine et des chiffres de
+// même chasse, pour que deux lignes s'alignent au caractère près.
+.hours-text {
+  color: var(--fold-color-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+// `rows` : une plage par ligne, reliée à son heure par un filet — la mise en
+// page d'un tarif ou d'un horaire imprimé, qui tient l'œil jusqu'au bout de la
+// ligne sans tracer de tableau.
+:host(.is-rows) {
+  align-items: stretch;
+}
+:host(.is-rows) .hours-list {
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+}
+:host(.is-rows) .hours-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: var(--fold-space-md);
+  padding: 0.25rem 0;
+}
+:host(.is-rows) .hours-row + .hours-row {
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+:host(.is-rows) .hours-name {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: 500;
+}
+
+// Une ligne en creux s'efface d'un cran : elle dit « rien ce jour-là » sans
+// peser autant que les jours servis.
+.hours-row.is-empty .hours-name,
+.hours-row.is-empty .hours-text {
+  color: var(--fold-color-text-faded);
+}
+
+.hours-none {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
