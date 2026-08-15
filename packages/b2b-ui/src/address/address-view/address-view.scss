@@ -1,0 +1,57 @@
+:host {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-text);
+  line-height: 1.4;
+  min-width: 0;
+}
+
+// La punaise s'aligne sur la première ligne de texte, pas sur le bloc entier.
+.addr-pin {
+  flex: none;
+  margin-top: 0.15rem;
+  color: var(--fold-color-text-muted);
+}
+
+.addr-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+// En ligne : le nom d'usage et l'adresse se suivent, et passent à la ligne
+// ensemble plutôt que de s'empiler.
+:host(.is-inline) .addr-body {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+}
+
+.addr-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+.addr-label:empty {
+  display: none;
+}
+.addr-name {
+  font-weight: 600;
+}
+
+// `<address>` est italique par défaut dans les navigateurs — pas ici.
+.addr-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-style: normal;
+  min-width: 0;
+}
+
+.addr-inline {
+  color: var(--fold-color-text-muted);
+}

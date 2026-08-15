@@ -9,6 +9,10 @@
       "types": "./src/flags.ts",
       "default": "./src/flags.ts"
     },
+    "./address": {
+      "types": "./src/address/index.ts",
+      "default": "./src/address/index.ts"
+    },
     "./appointment": {
       "types": "./src/appointment/index.ts",
       "default": "./src/appointment/index.ts"

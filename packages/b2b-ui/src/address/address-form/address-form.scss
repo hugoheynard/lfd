@@ -1,0 +1,54 @@
+// Fragment transparent : ses champs deviennent enfants directs du formulaire
+// container, qui gouverne l'espacement (gap).
+:host {
+  display: contents;
+}
+
+// Code postal + ville sur une ligne ; passe en colonne si trop étroit.
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+.cp {
+  flex: 1 1 7rem;
+  min-width: 0;
+}
+.ville {
+  flex: 3 1 10rem;
+  min-width: 0;
+}
+.grow {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+.coords {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.coords > legend {
+  padding: 0;
+  margin-bottom: var(--fold-space-xs);
+}
+
+.field-label {
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+.field-label em {
+  font-weight: 400;
+  font-style: normal;
+  color: var(--fold-color-text-muted);
+}
+
+.coords-issue {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-alert);
+}

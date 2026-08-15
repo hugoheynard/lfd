@@ -1,0 +1,119 @@
+@if (has('label')) {
+  <fold-input
+    label="Nom de l'adresse"
+    [hint]="labelHint()"
+    optional
+    [value]="value().label"
+    (valueChange)="set('label', $event)"
+  />
+}
+
+@if (has('line1')) {
+  <fold-input
+    label="Adresse"
+    placeholder="n° et voie"
+    required
+    [value]="value().line1"
+    (valueChange)="set('line1', $event)"
+  />
+}
+@if (has('line2')) {
+  <fold-input
+    label="Complément"
+    [hint]="line2Hint()"
+    optional
+    [value]="value().line2"
+    (valueChange)="set('line2', $event)"
+  />
+}
+
+@if (has('postalCode') || has('city')) {
+  <div class="row">
+    @if (has('postalCode')) {
+      <fold-input
+        class="cp"
+        label="Code postal"
+        required
+        [value]="value().postalCode"
+        (valueChange)="set('postalCode', $event)"
+      />
+    }
+    @if (has('city')) {
+      <fold-input
+        class="ville"
+        label="Ville"
+        required
+        [value]="value().city"
+        (valueChange)="set('city', $event)"
+      />
+    }
+  </div>
+}
+
+@if (has('country')) {
+  <fold-listbox
+    label="Pays"
+    required
+    placeholder="Choisir un pays…"
+    [options]="countryChoices()"
+    [value]="value().country"
+    (selectionChange)="set('country', $event)"
+  />
+}
+
+@if (has('coordinates')) {
+  <fieldset class="coords">
+    <legend class="field-label">
+      {{ coordinatesLabel() }} <em>(optionnel — {{ coordinatesHint() }})</em>
+    </legend>
+
+    <!-- Deux façons de saisir le même point : à la main, ou collé depuis une
+         carte. Le second est le geste réel — on ne tape pas des décimales, on
+         les copie — mais le premier reste pour corriger une seule des deux. -->
+    <fold-view-toggle
+      size="sm"
+      ariaLabel="Mode de saisie du point"
+      [options]="entryModes"
+      [value]="entryMode()"
+      (valueChange)="entryMode.set($event)"
+    />
+
+    @if (entryMode() === 'pair') {
+      <div class="row">
+        <fold-input
+          class="grow"
+          label="Latitude"
+          optional
+          placeholder="48.8566"
+          [value]="value().latitude"
+          (valueChange)="set('latitude', $event)"
+        />
+        <fold-input
+          class="grow"
+          label="Longitude"
+          optional
+          placeholder="2.3522"
+          [value]="value().longitude"
+          (valueChange)="set('longitude', $event)"
+        />
+      </div>
+    } @else {
+      <fold-input
+        label="Point"
+        optional
+        hint="collez « 48.8566, 2.3522 » depuis une carte"
+        placeholder="48.8566, 2.3522"
+        [value]="pastedPoint()"
+        (valueChange)="setPastedPoint($event)"
+      />
+    }
+
+    @if (coordinatesIssue()) {
+      <p class="coords-issue">{{ coordinatesIssue() }}</p>
+    }
+
+    <!-- La carte, si l'appelant en a une : ce fragment ne sait pas en dessiner,
+         et n'a pas à choisir de bibliothèque à sa place. -->
+    <ng-content select="[map]" />
+  </fieldset>
+}

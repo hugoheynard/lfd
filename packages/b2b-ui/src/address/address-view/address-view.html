@@ -1,0 +1,28 @@
+@if (icon()) {
+  <!-- Décorative : les lignes qui suivent disent déjà que c'est une adresse. -->
+  <fold-icon class="addr-pin" [name]="iconName()" [size]="16" />
+}
+
+<div class="addr-body">
+  <!-- Toujours rendu : c'est le point d'accroche des badges projetés, même sans
+       nom d'usage. Vide de bout en bout, le CSS le retire (`:empty`). -->
+  <span class="addr-label">
+    @if (address().label) {
+      <span class="addr-name">{{ address().label }}</span>
+    }
+    <ng-content />
+  </span>
+
+  @if (layout() === 'inline') {
+    <span class="addr-inline">{{ inline() }}</span>
+  } @else {
+    <address class="addr-lines">
+      @for (line of lines(); track $index) {
+        <span>{{ line }}</span>
+      }
+    </address>
+  }
+
+  <!-- La carte, si l'appelant en a une. -->
+  <ng-content select="[map]" />
+</div>
