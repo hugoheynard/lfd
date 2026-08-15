@@ -52,6 +52,59 @@ envoie, à qui, et comment on s'en désabonne. **Ne pas** les livrer avant les
 alertes internes : un client qui reçoit une confirmation alors que personne à
 LFC n'a été prévenu, c'est la pire des deux moitiés.
 
+## La cloche du back-office — le sondage, et pourquoi pas de WebSocket
+
+`StaffNotificationsStore` relance `GET /admin/notifications` **toutes les 60 s**,
+et c'est délibéré : « une cloche n'est pas du temps réel ». Deux défauts s'y sont
+glissés, du même genre tous les deux — un appel inconditionnel.
+
+### a. Il sonne aussi quand personne ne regarde 🟠
+
+Le `setInterval` démarre à la construction du magasin et tourne tant que l'app
+est ouverte, **onglet en arrière-plan compris**. Un onglet laissé ouvert la
+journée, c'est ~500 appels pour rien.
+
+À faire : suspendre sur `document.hidden`, relire sur `visibilitychange`. Effet
+de bord heureux — revenir sur l'onglet rafraîchit **instantanément**, ce qui est
+le seul moment où la fraîcheur compte vraiment.
+
+### b. Il sonne à une porte que deux rôles n'ont pas 🔴
+
+Le contrôleur est `@AdminSurface("support")`, donc `support:read`. Dans
+`ROLE_GRANTS`, **`comptabilite` et `dev` ne l'ont pas** : pour eux c'est un `403`
+par minute, indéfiniment. Le magasin passe alors `failed` à vrai, et le panneau
+affiche « le fil n'a pas pu être relu » — un message de panne pour un refus de
+droit.
+
+À faire : ne pas démarrer la boucle sans `permissions.can('support:read')`, et
+distinguer « pas le droit » de « n'a pas pu ». Même famille que les trous du
+socle d'autorisation front corrigés le 2026-08-14.
+
+### c. Pourquoi pas un WebSocket — décidé, pas oublié
+
+Le gain serait la **latence** (1 s au lieu de 60), pour un fil que personne ne
+regarde en attendant. La charge n'est pas un argument : trois personnes au
+back-office font trois requêtes par minute.
+
+Le coût, sur cette plateforme, est réel. La primitive WebSocket de Cloudflare est
+le **Durable Object** ; or le nôtre n'est qu'un routeur sans état vers le
+container. Deux chemins, tous deux chers :
+
+- terminer le WS **dans le container** — il hérite de l'instance unique tuée à
+  chaque déploiement, sans drain (cf.
+  [`todo-deploiement-en-exploitation.md`](todo-deploiement-en-exploitation.md)) ;
+- faire du DO un **vrai acteur** qui tient les connexions — propre, mais c'est un
+  chantier : lui faire remonter les écritures Postgres, gérer la
+  resynchronisation.
+
+Et dans les deux cas il faut **quand même** une relecture complète à la
+reconnexion : on n'aurait pas remplacé le sondage, on l'aurait gardé en filet.
+
+**Ce qui fera basculer la décision** : le premier écran qui demande du vrai temps
+réel — le scan de retrait (le client présente son QR, le comptoir doit voir
+l'état basculer), ou un suivi de commande côté client. Là, la latence devient
+fonctionnelle, et un seul écran justifiera le chantier.
+
 ## Ce qu'on ne fait pas
 
 Pas de file d'attente ni de relance automatique pour l'instant. Le disjoncteur
