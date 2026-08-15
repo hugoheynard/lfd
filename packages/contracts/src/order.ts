@@ -63,12 +63,17 @@ export type OrderLineInput = z.infer<typeof orderLineInputSchema>;
  * **Ce que dit un panier**, indépendamment de qui l'envoie : l'acheminement, la
  * date souhaitée, la note et les lignes.
  *
- * `requestedDeliveryDate` est une date ISO (`YYYY-MM-DD`) ou `null` ; les lignes
- * sont non vides et dédupliquées par SKU côté client (le serveur refuse un
- * panier vide de toute façon). En **coursier** (`delivery`), l'**adresse livrée**
- * est fournie — l'une de celles de la société, ou une adresse saisie à la volée.
- * En **retrait** (`pickup`), `pickupAddressId` `null` = le point par défaut
- * (labo, résolu serveur).
+ * **Une commande dit toujours QUAND et OÙ.** `requestedDeliveryDate` est une
+ * date ISO (`YYYY-MM-DD`) obligatoire, et l'acheminement est complet : en
+ * **coursier** l'adresse livrée est fournie (carnet ou saisie à la volée), en
+ * **retrait** le point est choisi. Les deux étaient facultatifs, et le résultat
+ * était une commande que la production ne voyait pas : sans date elle n'entre
+ * dans aucune journée de fabrication, et un point implicite se découvre au
+ * comptoir. Un défaut serveur silencieux fait porter au labo une décision que
+ * personne n'a prise.
+ *
+ * Les lignes sont non vides et dédupliquées par SKU côté client (le serveur
+ * refuse un panier vide de toute façon).
  *
  * **La zone n'est pas envoyée** : elle se **déduit** du code postal de l'adresse
  * livrée (`resolveForPostalCode` — code exact ou préfixe de secteur, le plus long
@@ -85,13 +90,12 @@ export const orderContentShape = {
   fulfillmentMethod: fulfillmentMethodSchema.default("pickup"),
   /** Adresse livrée (coursier) — requise si `delivery` ; sa zone est déduite. */
   deliveryAddress: billingAddressPayloadSchema.nullable().default(null),
-  /** Point de retrait choisi si `pickup` ; `null` = le point par défaut (serveur). */
+  /** Point de retrait — requis si `pickup`, ignoré sinon. */
   pickupAddressId: z.string().trim().nullable().default(null),
+  /** Jour de retrait/livraison. **Obligatoire** : c'est la journée de production. */
   requestedDeliveryDate: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/u, "date attendue au format AAAA-MM-JJ")
-    .nullable()
-    .default(null),
+    .regex(/^\d{4}-\d{2}-\d{2}$/u, "date de retrait/livraison requise (AAAA-MM-JJ)"),
   note: z.string().default(""),
   lines: z.array(orderLineInputSchema).min(1, "au moins une ligne"),
 } as const;
@@ -105,6 +109,27 @@ export function hasAddressWhenDelivered(content: {
   readonly deliveryAddress: BillingAddressPayload | null;
 }): boolean {
   return content.fulfillmentMethod !== "delivery" || content.deliveryAddress !== null;
+}
+
+/**
+ * Le retrait exige un point. Symétrique du prédicat ci-dessus, et pour la même
+ * raison : l'acheminement d'une commande se décide à la commande.
+ *
+ * Le serveur savait retomber sur le point marqué par défaut. C'était commode et
+ * faux : il y a plusieurs points de retrait, et « celui par défaut » est un
+ * réglage d'aujourd'hui qui peut changer entre la commande et le retrait. Le
+ * client choisit — l'écran peut très bien lui présenter le défaut coché.
+ */
+export function hasPickupPointWhenPickedUp(content: {
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly pickupAddressId: string | null;
+}): boolean {
+  return content.fulfillmentMethod !== "pickup" || content.pickupAddressId !== null;
+}
+
+/** Le message et le chemin du refus ci-dessus — écrits une fois (cf. `deliveryAddressIssue`). */
+export function pickupPointIssue(): { message: string; path: PropertyKey[] } {
+  return { message: "point de retrait requis", path: ["pickupAddressId"] };
 }
 
 /**
@@ -129,7 +154,8 @@ export const placeOrderPayloadSchema = z
     companyId: z.string().trim().min(1).nullable().default(null),
     ...orderContentShape,
   })
-  .refine(hasAddressWhenDelivered, deliveryAddressIssue());
+  .refine(hasAddressWhenDelivered, deliveryAddressIssue())
+  .refine(hasPickupPointWhenPickedUp, pickupPointIssue());
 export type PlaceOrderPayload = z.infer<typeof placeOrderPayloadSchema>;
 
 /**

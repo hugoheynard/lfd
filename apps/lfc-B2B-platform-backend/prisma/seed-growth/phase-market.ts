@@ -27,7 +27,9 @@ const NAF_CODES: ReadonlyArray<{ code: string; label: string }> = [
  */
 export async function seedMarket(harness: SeedHarness, anchor: Date): Promise<boolean> {
   for (const codePostal of ZONES) {
-    await harness.commands.execute<AddMarketZoneCommand, void>(new AddMarketZoneCommand(codePostal));
+    await harness.commands.execute<AddMarketZoneCommand, void>(
+      new AddMarketZoneCommand(codePostal),
+    );
   }
   for (const naf of NAF_CODES) {
     await harness.commands.execute<AddMarketNafCommand, void>(

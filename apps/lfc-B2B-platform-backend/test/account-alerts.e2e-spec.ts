@@ -21,6 +21,16 @@ import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
+/**
+ * Le jour de **service** d'une commande de test. Obligatoire depuis que
+ * `orderContentShape` l'exige : sans lui, la commande n'entrerait dans aucune
+ * journée de production.
+ */
+const SERVICE_DAY = "2026-09-01";
+
+/** L'id du point semé par le test courant (cf. `orders.e2e-spec`). */
+let pickupId = "pickup_absent";
+
 const CLIENT = "auth0|client";
 const SKU = "VIE-001";
 
@@ -73,7 +83,7 @@ async function seed(status: CompanyStatus = "active"): Promise<string> {
   const user = await createUser(ctx.prisma, { auth0Sub: CLIENT });
   const company = await createCompany(ctx.prisma, { status });
   await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
-  await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.pickupAddress.create({
     data: {
       label: "Labo",
       ligne1: "1 rue du Four",
@@ -82,7 +92,9 @@ async function seed(status: CompanyStatus = "active"): Promise<string> {
       pays: "France",
       isDefault: true,
     },
+    select: { id: true },
   });
+  pickupId = point.id;
   return company.id;
 }
 
@@ -91,7 +103,14 @@ async function orderSku(companyId: string, sku: string, quantity: number): Promi
   await ctx
     .asSub(CLIENT)
     .post("/orders")
-    .send({ companyId, fulfillmentMethod: "pickup", note: "", lines: [{ sku, quantity }] })
+    .send({
+      companyId,
+      pickupAddressId: pickupId,
+      requestedDeliveryDate: SERVICE_DAY,
+      fulfillmentMethod: "pickup",
+      note: "",
+      lines: [{ sku, quantity }],
+    })
     .expect(201);
 }
 
@@ -102,6 +121,8 @@ async function order(companyId: string, quantity: number): Promise<void> {
     .post("/orders")
     .send({
       companyId,
+      pickupAddressId: pickupId,
+      requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",
       note: "",
       lines: [{ sku: SKU, quantity }],

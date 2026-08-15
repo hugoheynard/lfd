@@ -18,6 +18,27 @@ import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
+/**
+ * Le jour de **service** d'une commande de test. Obligatoire depuis que
+ * `orderContentShape` l'exige : sans lui, la commande n'entrerait dans aucune
+ * journée de production.
+ */
+const SERVICE_DAY = "2026-09-01";
+
+/** L'id du point semé par le test courant (cf. `orders.e2e-spec`). */
+let pickupId = "pickup_absent";
+
+/**
+ * L'acheminement minimal d'une commande valide : un jour de service et un point
+ * de retrait explicite. Les payloads s'appuyaient sur les défauts du schéma —
+ * ils n'en ont plus.
+ */
+const pickupContent = (): Record<string, unknown> => ({
+  fulfillmentMethod: "pickup",
+  pickupAddressId: pickupId,
+  requestedDeliveryDate: SERVICE_DAY,
+});
+
 const MEMBER = "auth0|member";
 const SOLO = "auth0|solo";
 
@@ -68,9 +89,12 @@ function staff(): ReturnType<E2eContext["asSub"]> {
   return ctx.asSub("staff-e2e");
 }
 
-/** Le point de retrait par défaut — sans lui, tout `pickup` part en 409. */
-async function seedPickup(): Promise<void> {
-  await ctx.prisma.pickupAddress.create({
+/**
+ * Le point de retrait — sans lui, tout `pickup` part en 409. Il rend son id :
+ * le contrat exige un point **explicite**, une commande ne le déduit plus.
+ */
+async function seedPickup(): Promise<string> {
+  const point = await ctx.prisma.pickupAddress.create({
     data: {
       label: "Labo",
       ligne1: "1 rue du Four",
@@ -79,7 +103,10 @@ async function seedPickup(): Promise<void> {
       pays: "France",
       isDefault: true,
     },
+    select: { id: true },
   });
+  pickupId = point.id;
+  return point.id;
 }
 
 /** Une commande d'entreprise + une commande personnelle, par deux clients distincts. */
@@ -101,12 +128,12 @@ async function seedTwoOrders(): Promise<{ companyId: string }> {
   await ctx
     .asSub(MEMBER)
     .post("/orders")
-    .send({ companyId: company.id, lines: [{ sku: "VIE-001", quantity: 2 }] })
+    .send({ ...pickupContent(), companyId: company.id, lines: [{ sku: "VIE-001", quantity: 2 }] })
     .expect(201);
   await ctx
     .asSub(SOLO)
     .post("/orders")
-    .send({ lines: [{ sku: "VIE-002", quantity: 3 }] })
+    .send({ ...pickupContent(), lines: [{ sku: "VIE-002", quantity: 3 }] })
     .expect(201);
 
   return { companyId: company.id };
@@ -183,7 +210,11 @@ describe("GET /admin/orders/:id", () => {
       await ctx
         .asSub(MEMBER)
         .post("/orders")
-        .send({ companyId: company.id, lines: [{ sku: "VIE-001", quantity: 2 }] })
+        .send({
+          ...pickupContent(),
+          companyId: company.id,
+          lines: [{ sku: "VIE-001", quantity: 2 }],
+        })
         .expect(201),
     );
 

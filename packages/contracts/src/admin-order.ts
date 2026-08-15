@@ -5,6 +5,8 @@ import {
   deliveryAddressIssue,
   fulfillmentMethodSchema,
   hasAddressWhenDelivered,
+  hasPickupPointWhenPickedUp,
+  pickupPointIssue,
   orderContentShape,
   orderLineInputSchema,
 } from "./order.js";
@@ -62,7 +64,8 @@ export const adminPlaceOrderPayloadSchema = z
     settlement: staffSettlementSchema,
     ...orderContentShape,
   })
-  .refine(hasAddressWhenDelivered, deliveryAddressIssue());
+  .refine(hasAddressWhenDelivered, deliveryAddressIssue())
+  .refine(hasPickupPointWhenPickedUp, pickupPointIssue());
 export type AdminPlaceOrderPayload = z.infer<typeof adminPlaceOrderPayloadSchema>;
 
 /**

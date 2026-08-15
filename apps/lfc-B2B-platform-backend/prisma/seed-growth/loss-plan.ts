@@ -135,7 +135,10 @@ const CATS: readonly Cat[] = [
 ];
 
 /** Déplie des sous-raisons pondérées en une liste de longueur `count` (round-robin). */
-function expandSubs(subs: readonly SubW[], count: number): ReadonlyArray<{ sub: string; detail: string }> {
+function expandSubs(
+  subs: readonly SubW[],
+  count: number,
+): ReadonlyArray<{ sub: string; detail: string }> {
   const flat: { sub: string; detail: string }[] = [];
   for (const s of subs) {
     for (let i = 0; i < s.w; i += 1) {

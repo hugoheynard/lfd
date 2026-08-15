@@ -17,6 +17,8 @@ interface RevenueRow {
   totalCents: number;
   fromSubscriptionId: string | null;
   createdAt: Date;
+  /** Jour de service. Obligatoire comme sur une vraie commande — cf. `orderContentShape`. */
+  requestedDeliveryDate: Date;
 }
 
 /**
@@ -81,8 +83,17 @@ function buildOrders(
         totalCents: amount,
         fromSubscriptionId: n < recurringSlots ? `seed-sub-${company.id}` : null,
         createdAt,
+        // J+1, comme la règle réelle (on commande la veille pour le lendemain).
+        // Une commande sans jour de service n'existerait pour aucune journée de
+        // production : le seed doit produire des données que la prod sait lire.
+        requestedDeliveryDate: dayOnly(new Date(createdAt.getTime() + DAY_MS)),
       });
     }
   }
   return rows;
+}
+
+/** Minuit UTC du jour — la colonne est `@db.Date`, l'heure n'y a pas de sens. */
+function dayOnly(at: Date): Date {
+  return new Date(`${at.toISOString().slice(0, 10)}T00:00:00.000Z`);
 }

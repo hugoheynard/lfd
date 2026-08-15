@@ -79,13 +79,6 @@ export abstract class OrderReader {
    * précisément le compte qui sert de preuve qu'il ne manque rien.
    */
   abstract listForProduction(date: string): Promise<readonly ProductionSheet[]>;
-
-  /**
-   * Combien de commandes vivantes n'ont **aucune date de service**, tous jours
-   * confondus. Elles n'entrent dans aucun lot ; sans ce compte, elles seraient
-   * invisibles pour la production sans que rien ne le signale.
-   */
-  abstract countUndatedForProduction(): Promise<number>;
 }
 
 /**

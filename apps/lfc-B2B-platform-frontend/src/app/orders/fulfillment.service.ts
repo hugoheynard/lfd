@@ -250,12 +250,20 @@ export class FulfillmentService {
     this.addressId.set(id);
   }
 
-  /** Id du point de retrait à envoyer (`null` = laisser le serveur prendre le défaut). */
+  /**
+   * Id du point de retrait à envoyer. **Toujours explicite** en retrait : celui
+   * que le client a choisi, à défaut celui que l'écran lui présente coché.
+   *
+   * Le serveur savait retomber sur « le point par défaut ». C'était commode et
+   * faux : le défaut est un réglage d'aujourd'hui, et une commande passée
+   * maintenant pour la semaine prochaine se retirerait alors ailleurs que là où
+   * le client l'a lue. Ce que l'écran montre est ce qui part.
+   */
   pickupAddressId(): string | null {
     if (this.isCourier()) {
       return null;
     }
-    return this.pickupId() || null;
+    return this.selectedPickup()?.id ?? null;
   }
 
   /** Modifie l'adresse **saisie à la volée** (les champs ne s'ouvrent que sur elle). */

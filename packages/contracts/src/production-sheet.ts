@@ -18,6 +18,11 @@ import type { FulfillmentMethod, OrderOrigin } from "./order.js";
  *   feuilles, une commande cesse d'exister pour la production sans que personne
  *   l'apprenne. Le lot porte donc son compte, et chaque fiche son rang — une
  *   absence se voit, au lieu d'être silencieuse.
+ *
+ * Le lot est **exhaustif par construction** : une commande ne peut pas être
+ * passée sans jour de retrait/livraison (cf. `orderContentShape`), donc aucune
+ * ne peut échapper à une journée. C'est l'invariant qui garantit la couverture,
+ * pas un compteur d'orphelines affiché au fournil.
  */
 
 /** La date d'un lot : le jour de **service** (retrait ou livraison), pas de commande. */
@@ -61,11 +66,4 @@ export interface ProductionBatchView {
   /** `AAAA-MM-JJ`, la journée servie. */
   readonly date: string;
   readonly sheets: readonly ProductionSheet[];
-  /**
-   * Les commandes **sans date de service**, tous jours confondus. Elles
-   * n'entrent dans aucun lot : sans ce compte, elles seraient invisibles pour la
-   * production sans que rien ne le signale. L'écran le dit ; c'est au staff de
-   * leur donner une date.
-   */
-  readonly undatedCount: number;
 }

@@ -67,13 +67,27 @@ async function seedConfirmed(
   const zone = zoneOf(index);
   const declaredAt = new Date(anchor.getTime() - ((index * 9) % 150) * DAY_MS);
   let created = false;
-  if (await seedCompany(harness, zoneWho(index, zone.codePostal, zone.ville), siret, 3, declaredAt)) {
+  if (
+    await seedCompany(harness, zoneWho(index, zone.codePostal, zone.ville), siret, 3, declaredAt)
+  ) {
     await harness.prisma.company.updateMany({ where: { siret }, data: { status: "terminated" } });
     created = true;
   }
-  const company = await harness.prisma.company.findFirst({ where: { siret }, select: { id: true } });
+  const company = await harness.prisma.company.findFirst({
+    where: { siret },
+    select: { id: true },
+  });
   if (company !== null) {
-    await record(harness, `term_c_${index}`, company.id, part, index, "confirmed", weekDate(anchor, week), null);
+    await record(
+      harness,
+      `term_c_${index}`,
+      company.id,
+      part,
+      index,
+      "confirmed",
+      weekDate(anchor, week),
+      null,
+    );
   }
   return created;
 }
@@ -101,7 +115,16 @@ async function seedRecovered(
     }
     const createdAt = weekDate(anchor, item.week);
     const resolvedAt = new Date(createdAt.getTime() + item.delayDays * DAY_MS);
-    await record(harness, `term_r_${j}`, company.id, item.part, j, "recovered", createdAt, resolvedAt);
+    await record(
+      harness,
+      `term_r_${j}`,
+      company.id,
+      item.part,
+      j,
+      "recovered",
+      createdAt,
+      resolvedAt,
+    );
   }
 }
 

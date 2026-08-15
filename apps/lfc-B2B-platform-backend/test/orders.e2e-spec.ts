@@ -41,7 +41,26 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  pickupId = NO_PICKUP;
 });
+
+/**
+ * Le jour de **service** d'une commande de test. Obligatoire depuis que
+ * `orderContentShape` l'exige : une commande sans jour de retrait/livraison
+ * n'entrerait dans aucune journée de production.
+ */
+const SERVICE_DAY = "2026-09-01";
+
+/** Aucun point semé : un retrait qui le désigne doit échouer, pas réussir par hasard. */
+const NO_PICKUP = "pickup_absent";
+
+/**
+ * L'id du point semé par le test courant. Le contrat exige désormais un point
+ * **explicite** en retrait ; le mémoriser ici évite de le faire circuler dans
+ * chaque appel, et le remettre à zéro à chaque test empêche qu'un test qui
+ * oublie de semer passe grâce au point du précédent.
+ */
+let pickupId = NO_PICKUP;
 
 const LABO: BillingAddressPayload = {
   label: "Labo",
@@ -73,8 +92,13 @@ async function seedCompany(status: CompanyStatus): Promise<string> {
 }
 
 /** Sème le point de retrait par défaut (table globale). */
-async function seedPickup(): Promise<void> {
-  await ctx.prisma.pickupAddress.create({ data: { ...LABO, isDefault: true } });
+async function seedPickup(): Promise<string> {
+  const point = await ctx.prisma.pickupAddress.create({
+    data: { ...LABO, isDefault: true },
+    select: { id: true },
+  });
+  pickupId = point.id;
+  return point.id;
 }
 
 /** Sème une zone de livraison à frais fixe (20 €). */
@@ -86,10 +110,23 @@ async function seedZone(): Promise<string> {
   return zone.id;
 }
 
-/** Une commande retrait, pour l'entreprise `companyId` (ou personnelle si `null`). */
-function pickupOrder(companyId: string | null): Record<string, unknown> {
+/**
+ * Une commande retrait, pour l'entreprise `companyId` (ou personnelle si `null`).
+ *
+ * Le point est **explicite** : le contrat n'accepte plus qu'un retrait sans
+ * point, et un test qui laisserait le serveur choisir n'exercerait pas ce que
+ * l'écran envoie.
+ */
+function pickupOrder(
+  companyId: string | null,
+  pickupAddressId = pickupId,
+): Record<string, unknown> {
   return {
     companyId,
+    pickupAddressId,
+    requestedDeliveryDate: SERVICE_DAY,
+    pickupAddressId: pickupId,
+    requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "pickup",
     note: "Livrer avant 8h",
     lines: [{ sku: "VIE-001", quantity: 3 }],
@@ -226,6 +263,7 @@ describe("checkout → Order", () => {
       .post(`/orders`)
       .send({
         companyId: null,
+        requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
         deliveryAddress: COURIER_ADDR,
         note: "",
@@ -259,6 +297,7 @@ describe("checkout → Order", () => {
       .post(`/orders`)
       .send({
         companyId: null,
+        requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
         deliveryAddress: { ...COURIER_ADDR, codePostal: "75002", ville: "Paris" },
         note: "",
@@ -280,6 +319,8 @@ describe("retrait", () => {
       .post(`/orders`)
       .send({
         companyId,
+        pickupAddressId: pickupId,
+        requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",
         note: "",
         lines: [{ sku: "VIE-001", quantity: 2 }],
@@ -303,6 +344,8 @@ describe("retrait", () => {
       .post(`/orders`)
       .send({
         companyId,
+        pickupAddressId: pickupId,
+        requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",
         note: "",
         lines: [{ sku: "VIE-001", quantity: 1 }],

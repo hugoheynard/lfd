@@ -302,6 +302,8 @@ export {
   orderLineInputSchema,
   orderContentShape,
   hasAddressWhenDelivered,
+  hasPickupPointWhenPickedUp,
+  pickupPointIssue,
   deliveryAddressIssue,
   placeOrderPayloadSchema,
   orderOriginSchema,

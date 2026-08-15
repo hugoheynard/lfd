@@ -5,14 +5,9 @@ import { OrderReader } from "../../domain/ports/order.reader.js";
 import { GetProductionBatchQuery } from "./get-production-batch.query.js";
 
 /**
- * Sert le lot d'une journée, **et** le nombre de commandes sans date de service.
- *
- * Les deux ensemble, en une réponse : ce second chiffre est ce qui empêche une
- * commande sans date de disparaître silencieusement de la production. Le laisser
- * à un second appel, c'est accepter que l'écran s'en passe le jour où on le
- * simplifie.
- *
- * Les deux lectures partent **en parallèle** : elles ne se conditionnent pas.
+ * Sert le lot d'une journée. Rien à composer : aucune commande ne peut être
+ * passée sans jour de retrait/livraison, donc le lot d'une date est exhaustif —
+ * il n'y a pas d'orphelines à signaler à côté.
  */
 @QueryHandler(GetProductionBatchQuery)
 export class GetProductionBatchHandler implements IQueryHandler<
@@ -22,10 +17,6 @@ export class GetProductionBatchHandler implements IQueryHandler<
   constructor(private readonly orders: OrderReader) {}
 
   async execute(query: GetProductionBatchQuery): Promise<ProductionBatchView> {
-    const [sheets, undatedCount] = await Promise.all([
-      this.orders.listForProduction(query.date),
-      this.orders.countUndatedForProduction(),
-    ]);
-    return { date: query.date, sheets, undatedCount };
+    return { date: query.date, sheets: await this.orders.listForProduction(query.date) };
   }
 }

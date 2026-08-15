@@ -258,12 +258,6 @@ export class PrismaOrderReader extends OrderReader {
       })),
     }));
   }
-
-  async countUndatedForProduction(): Promise<number> {
-    return this.prisma.order.count({
-      where: { requestedDeliveryDate: null, status: { not: "cancelled" } },
-    });
-  }
 }
 
 /**

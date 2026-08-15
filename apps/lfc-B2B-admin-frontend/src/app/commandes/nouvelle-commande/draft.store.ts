@@ -59,7 +59,7 @@ export class DraftStore {
   readonly addressId = signal('');
   readonly address = signal<DraftAddress>(EMPTY_ADDRESS);
   readonly keepAddress = signal(false);
-  readonly requestedDate = signal('');
+  readonly requestedDate = signal(tomorrowIso());
   readonly note = signal('');
   readonly settlement = signal<StaffSettlement>('link');
 
@@ -102,9 +102,21 @@ export class DraftStore {
       addressId: '',
       address: EMPTY_ADDRESS,
       keepAddress: false,
-      requestedDate: '',
+      requestedDate: tomorrowIso(),
       note: '',
       settlement: 'link',
     });
   }
+}
+
+/**
+ * Demain, en `AAAA-MM-JJ` local. Le jour de service est **obligatoire** ; le
+ * proposer à J+1 plutôt que vide colle au cas courant (on saisit la veille pour
+ * le lendemain) et évite d'ouvrir l'écran sur un bouton déjà bloqué.
+ */
+function tomorrowIso(): string {
+  const day = new Date();
+  day.setDate(day.getDate() + 1);
+  const month = `${day.getMonth() + 1}`.padStart(2, '0');
+  return `${day.getFullYear()}-${month}-${`${day.getDate()}`.padStart(2, '0')}`;
 }

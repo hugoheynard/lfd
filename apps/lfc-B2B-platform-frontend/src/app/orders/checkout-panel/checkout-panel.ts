@@ -40,7 +40,12 @@ export class CheckoutPanel {
   protected readonly cart = inject(CartService);
   protected readonly fulfillment = inject(FulfillmentService);
 
-  protected readonly requestedDate = signal('');
+  /**
+   * Jour de retrait/livraison — **obligatoire**. Proposé à J+1 plutôt que vide :
+   * c'est le cas courant (on commande la veille pour le lendemain), et un champ
+   * vide obligatoire n'est qu'une façon polie de bloquer le bouton.
+   */
+  protected readonly requestedDate = signal(tomorrowIso());
   protected readonly note = signal('');
 
   protected readonly submitting = signal(false);
@@ -60,6 +65,9 @@ export class CheckoutPanel {
       !this.submitting() &&
       !this.cart.isEmpty() &&
       this.fulfillment.ready() &&
+      // Sans jour de service, la commande n'entre dans aucune journée de
+      // production : le serveur la refuserait, autant le dire avant.
+      this.requestedDate() !== '' &&
       this.placedNumber() === null,
   );
 
@@ -90,7 +98,7 @@ export class CheckoutPanel {
       // Aucune zone n'est envoyée : le serveur la déduit du code postal livré.
       deliveryAddress: this.fulfillment.deliveryAddressPayload(),
       pickupAddressId: this.fulfillment.pickupAddressId(),
-      requestedDeliveryDate: this.requestedDate() === '' ? null : this.requestedDate(),
+      requestedDeliveryDate: this.requestedDate(),
       note: this.note().trim(),
       lines: this.cart.lines().map((line) => ({ sku: line.product.id, quantity: line.qty })),
     };
@@ -150,4 +158,12 @@ function readError(error: unknown): string {
     }
   }
   return 'La commande a échoué. Réessayez.';
+}
+
+/** Demain, en `AAAA-MM-JJ` local : le jour de service proposé par défaut. */
+function tomorrowIso(): string {
+  const day = new Date();
+  day.setDate(day.getDate() + 1);
+  const month = `${day.getMonth() + 1}`.padStart(2, '0');
+  return `${day.getFullYear()}-${month}-${`${day.getDate()}`.padStart(2, '0')}`;
 }

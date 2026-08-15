@@ -8,7 +8,6 @@ import {
 } from '@angular/core';
 import {
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldViewToggleComponent,
@@ -65,9 +64,12 @@ function defaultDate(): string {
  * La production n'a pas d'écran de suivi, et le papier ne répond pas : si
  * l'imprimante manque de feuilles, une commande cesse d'exister pour le fournil
  * sans que personne l'apprenne. D'où le lot **compté**, chaque bon **numéroté**,
- * un tirage **reproductible à l'identique** (ordre par référence, commandes
- * déjà remises conservées), et les commandes **sans date de service annoncées**
- * — elles n'entrent dans aucun lot.
+ * et un tirage **reproductible à l'identique** (ordre par référence, commandes
+ * déjà remises conservées).
+ *
+ * Le lot est **exhaustif par construction** : aucune commande ne peut être
+ * passée sans jour de retrait/livraison. Rien à signaler ici sur les commandes
+ * qui manqueraient — il ne peut pas y en avoir.
  */
 @Component({
   selector: 'app-production-page',
@@ -75,7 +77,6 @@ function defaultDate(): string {
   imports: [
     FicheProduction,
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldViewToggleComponent,
@@ -96,7 +97,6 @@ export class ProductionPage {
   private readonly catalogue = signal<readonly CatalogItemView[]>([]);
 
   protected readonly sheets = computed(() => this.batch()?.sheets ?? []);
-  protected readonly undatedCount = computed(() => this.batch()?.undatedCount ?? 0);
   protected readonly recap = computed(() => productionRecap(this.sheets(), this.catalogue()));
   protected readonly pieces = computed(() => totalPieces(this.recap()));
 

@@ -21,6 +21,16 @@ import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
+/**
+ * Le jour de **service** d'une commande de test. Obligatoire depuis que
+ * `orderContentShape` l'exige : sans lui, la commande n'entrerait dans aucune
+ * journée de production.
+ */
+const SERVICE_DAY = "2026-09-01";
+
+/** L'id du point semé par le test courant (cf. `orders.e2e-spec`). */
+let pickupId = "pickup_absent";
+
 const BUYER = "auth0|acheteur";
 const OUTSIDER = "auth0|etranger";
 
@@ -68,9 +78,12 @@ function staff(): ReturnType<E2eContext["asSub"]> {
   return ctx.asSub("staff-e2e");
 }
 
-/** Sans point de retrait par défaut, tout `pickup` part en 409. */
-async function seedPickup(): Promise<void> {
-  await ctx.prisma.pickupAddress.create({
+/**
+ * Le point de retrait. Il rend son id : le contrat exige un point **explicite**,
+ * une commande ne le déduit plus d'un défaut serveur.
+ */
+async function seedPickup(): Promise<string> {
+  const point = await ctx.prisma.pickupAddress.create({
     data: {
       label: "Labo",
       ligne1: "1 rue du Four",
@@ -79,7 +92,10 @@ async function seedPickup(): Promise<void> {
       pays: "France",
       isDefault: true,
     },
+    select: { id: true },
   });
+  pickupId = point.id;
+  return point.id;
 }
 
 /** Une société avec un détenteur, et — au choix — un crédit accordé. */
@@ -103,6 +119,11 @@ async function seedCompany(onAccount: boolean): Promise<{
 function payload(over: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     settlement: "link",
+    // Une commande dit toujours QUAND et OÙ : ces deux champs ne sont plus des
+    // défauts du schéma, ils font partie de ce qu'une commande valide porte.
+    requestedDeliveryDate: SERVICE_DAY,
+    fulfillmentMethod: "pickup",
+    pickupAddressId: pickupId,
     lines: [{ sku: "VIE-001", quantity: 12 }],
     ...over,
   };
@@ -140,7 +161,7 @@ describe("POST /admin/orders — le mur", () => {
 
     await staff()
       .post("/admin/orders")
-      .send({ companyId, buyerUserId: buyerId, lines: [{ sku: "VIE-001", quantity: 1 }] })
+      .send({ ...payload({ companyId, buyerUserId: buyerId }), settlement: undefined })
       .expect(400);
   });
 });

@@ -68,7 +68,9 @@ async function seedActiveBase(
   let created = 0;
   for (let k = 0; created < target - existing && k < target * 2; k += 1) {
     const declaredAt = new Date(anchor.getTime() - ((k * 7) % 168) * DAY_MS);
-    if (await seedCompany(harness, zoneWho(base + k, cp, ville), validSiret(base + k), 5, declaredAt)) {
+    if (
+      await seedCompany(harness, zoneWho(base + k, cp, ville), validSiret(base + k), 5, declaredAt)
+    ) {
       created += 1;
     }
   }
@@ -79,5 +81,11 @@ async function seedActiveBase(
 function zoneWho(index: number, cp: string, ville: string): ReturnType<typeof persona> {
   const base = persona(index);
   const venue = base.businessName.split(" · ")[0];
-  return { ...base, businessName: `${venue} · ${ville}`, stationLabel: ville, codePostal: cp, ville };
+  return {
+    ...base,
+    businessName: `${venue} · ${ville}`,
+    stationLabel: ville,
+    codePostal: cp,
+    ville,
+  };
 }

@@ -169,6 +169,11 @@ async function seedOrder(index: number, days: number, totalCents: number): Promi
       placedByUserId: ESTABLISHED.userId,
       status: OrderStatus.fulfilled,
       fulfillmentMethod: FulfillmentMethod.delivery,
+      // Servie le lendemain de la commande : une commande sans jour de service
+      // n'entre dans aucune journée de production (cf. `orderContentShape`).
+      requestedDeliveryDate: new Date(
+        `${new Date(placedAt.getTime() + 86_400_000).toISOString().slice(0, 10)}T00:00:00.000Z`,
+      ),
       subtotalCents: totalCents,
       totalCents,
       createdAt: placedAt,
@@ -204,6 +209,11 @@ async function seedSubscription(index: number, recurrence: string): Promise<void
       status: "active",
       startDate: daysAgo(60),
       fulfillmentMethod: FulfillmentMethod.delivery,
+      // Servie le lendemain de la commande : une commande sans jour de service
+      // n'entre dans aucune journée de production (cf. `orderContentShape`).
+      requestedDeliveryDate: new Date(
+        `${new Date(placedAt.getTime() + 86_400_000).toISOString().slice(0, 10)}T00:00:00.000Z`,
+      ),
       note: `Panier récurrent de démonstration (${recurrence})`,
       createdAt: daysAgo(60),
       lines: { create: [{ sku: "CAFE-GRAIN-1KG", quantity: 3 }] },

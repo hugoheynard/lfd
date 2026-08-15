@@ -28,7 +28,8 @@ export interface OrderDraft {
   readonly deliveryAddress: BillingAddressPayload | null;
   /** L'adresse dictée rejoint-elle le carnet du compte ? */
   readonly saveAddressToBook: boolean;
-  readonly requestedDeliveryDate: string | null;
+  /** Jour de retrait/livraison. Obligatoire : c'est la journée de production. */
+  readonly requestedDeliveryDate: string;
   readonly note: string;
   readonly settlement: StaffSettlement;
 }
@@ -147,6 +148,11 @@ export class PanierCommande {
         "Ce compte n'a aucun interlocuteur avec un accès : la commande n'a personne à qui être portée.",
       );
     }
+    if (this.draft().requestedDate() === '') {
+      issues.push(
+        "Aucun jour de retrait/livraison : la commande n'entrerait dans aucune journée de production.",
+      );
+    }
     const acheminement = this.fulfillment().issue;
     if (acheminement !== null) {
       issues.push(acheminement);
@@ -187,7 +193,7 @@ export class PanierCommande {
       pickupAddressId: acheminement.pickupAddressId,
       deliveryAddress: acheminement.deliveryAddress,
       saveAddressToBook: acheminement.saveToBook,
-      requestedDeliveryDate: this.requestedDate() === '' ? null : this.requestedDate(),
+      requestedDeliveryDate: this.requestedDate(),
       note: this.note(),
       settlement: this.settlement(),
     });

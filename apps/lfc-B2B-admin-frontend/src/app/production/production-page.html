@@ -45,18 +45,6 @@
     </fold-empty-state>
   }
   @default {
-    @if (undatedCount() > 0) {
-      <!-- Une commande sans date de service n'entre dans aucun lot. Le dire ici
-           est la seule chose qui l'empêche de disparaître en silence. -->
-      <fold-callout variant="warning" class="pr-no-print">
-        {{ undatedCount() }} commande{{ undatedCount() > 1 ? 's' : '' }} sans date de
-        retrait/livraison — elle{{ undatedCount() > 1 ? 's' : '' }} n'apparaîtra{{
-          undatedCount() > 1 ? 'ont' : ''
-        }}
-        sur aucun lot tant qu'on ne lui{{ undatedCount() > 1 ? 'r' : '' }} en aura pas donné une.
-      </fold-callout>
-    }
-
     @if (sheets().length === 0) {
       <fold-empty-state
         title="Rien à produire ce jour-là"
