@@ -173,7 +173,7 @@ export class NouvelleCommandePage {
 
   protected onAdd(line: ProposedLine): void {
     this.cart.add(
-      { sku: line.sku, name: line.name, unitPriceCents: line.unitPriceCents },
+      { sku: line.product.id, name: line.product.name, unitPriceCents: line.unitPriceCents },
       line.quantity,
     );
   }

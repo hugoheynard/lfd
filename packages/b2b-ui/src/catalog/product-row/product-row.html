@@ -6,14 +6,16 @@
     } @else {
       <span class="pr-initial" aria-hidden="true">{{ initial() }}</span>
     }
-    <fold-toggle-icon
-      class="pr-fav"
-      icon="heart"
-      size="sm"
-      [active]="favorite()"
-      [tooltip]="favorite() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
-      (toggled)="onFavorite()"
-    />
+    @if (favoritable()) {
+      <fold-toggle-icon
+        class="pr-fav"
+        icon="heart"
+        size="sm"
+        [active]="favorite()"
+        [tooltip]="favorite() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+        (toggled)="onFavorite()"
+      />
+    }
   </div>
 
   <div class="pr-main">

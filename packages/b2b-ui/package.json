@@ -20,6 +20,10 @@
     "./order": {
       "types": "./src/order/index.ts",
       "default": "./src/order/index.ts"
+    },
+    "./catalog": {
+      "types": "./src/catalog/index.ts",
+      "default": "./src/catalog/index.ts"
     }
   },
   "scripts": {

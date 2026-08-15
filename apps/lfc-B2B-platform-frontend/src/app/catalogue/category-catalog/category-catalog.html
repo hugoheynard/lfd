@@ -18,7 +18,7 @@
     @if (!isCollapsed(group.id)) {
       <div class="cc-list" role="list">
         @for (p of group.products; track p.id) {
-          <app-product-row
+          <lfd-product-row
             role="listitem"
             [product]="p"
             [favorite]="favorites.has(p.id)"

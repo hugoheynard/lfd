@@ -1,38 +1,42 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FoldEmptyStateComponent, FoldSearchComponent } from 'fold-ng';
+import type { CatalogItemView, CustomerSkuStat, OrderView } from '@lfd/contracts';
 import {
-  CATALOG_CATEGORY_LABELS,
-  CATALOG_CATEGORY_ORDER,
-  type CatalogItemView,
-  type CustomerSkuStat,
-  type OrderView,
-} from '@lfd/contracts';
+  catalogShelves,
+  ProductRow,
+  toCatalogProduct,
+  type CatalogOrder,
+  type CatalogProduct,
+  type CatalogShelf,
+} from '@lfd/b2b-ui/catalog';
 import { formatCents, formatOrderDate } from '@lfd/b2b-ui/order';
 
 import type { CartStore } from '../cart.store';
 
-/** Ce qu'une ligne proposée sait dire d'elle, quelle que soit sa source. */
+/**
+ * Une ligne proposée : le produit tel que la rangée partagée le rend, plus la
+ * **raison** de sa présence — ce que cette source-là sait dire de lui.
+ */
 export interface ProposedLine {
-  readonly sku: string;
-  readonly name: string;
+  readonly product: CatalogProduct;
+  /**
+   * Prix unitaire HT en **centimes**. La rangée affiche `product.price`, déjà
+   * formaté ; le panier, lui, a besoin du nombre pour sommer. Deux
+   * représentations du même prix, et c'est assumé : formater dans le panier
+   * puis reparser à l'addition serait pire.
+   */
   readonly unitPriceCents: number;
-  /** Ce que la source suggère d'ajouter : 1 au catalogue, la quantité d'une commande. */
-  readonly quantity: number;
   /** Une seconde ligne d'écran : « 12 commandes · 480 pcs », « ×24 ». */
   readonly hint: string;
-  /** Faux = plus au catalogue : proposable en lecture, pas en ajout. */
+  /** La quantité que la source suggère : 1 au catalogue, celle d'une commande. */
+  readonly quantity: number;
+  /** Faux = plus au catalogue : montré en lecture, pas proposable à l'ajout. */
   readonly available: boolean;
 }
 
 /** Les trois façons de regarder ce qu'on peut ajouter. */
 export type SourceKind = 'habituels' | 'catalogue' | 'commande';
-
-/** Un rayon du catalogue, tel que la vue liste le sépare. */
-interface Shelf {
-  readonly label: string;
-  readonly lines: readonly ProposedLine[];
-}
 
 /**
  * La colonne du milieu : **d'où viennent les articles**.
@@ -45,11 +49,15 @@ interface Shelf {
  *
  * La troisième source n'a de contenu qu'après un clic dans la colonne de
  * gauche — c'est elle qui répond à « refais-moi la même que mardi ».
+ *
+ * Les rangées viennent de `@lfd/b2b-ui/catalog`, comme celles du catalogue
+ * client : cet écran avait commencé par les réécrire, et les avait réécrites en
+ * moins bien — sans colisage, et avec sa propre idée de la mise en page.
  */
 @Component({
   selector: 'app-source-produits',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldEmptyStateComponent, FoldSearchComponent, NgTemplateOutlet],
+  imports: [FoldEmptyStateComponent, FoldSearchComponent, NgTemplateOutlet, ProductRow],
   templateUrl: './source-produits.html',
   styleUrl: './source-produits.scss',
 })
@@ -70,14 +78,13 @@ export class SourceProduits {
   protected readonly search = signal('');
 
   /** Les rayons du catalogue, filtrés par la recherche. Un rayon vide disparaît. */
-  protected readonly shelves = computed<readonly Shelf[]>(() => {
+  protected readonly shelves = computed<readonly CatalogShelf<ProposedLine>[]>(() => {
     const needle = normalise(this.search());
-    return CATALOG_CATEGORY_ORDER.map((category) => ({
-      label: CATALOG_CATEGORY_LABELS[category],
-      lines: this.catalogue()
-        .filter((item) => item.category === category && matches(item, needle))
-        .map(fromCatalog),
-    })).filter((shelf) => shelf.lines.length > 0);
+    const kept = this.catalogue().filter((item) => matches(item, needle));
+    return catalogShelves(kept, (item) => item.category).map((shelf) => ({
+      ...shelf,
+      items: shelf.items.map(fromCatalog),
+    }));
   });
 
   /** Ce que ce client reprend, filtré par la même recherche. */
@@ -94,10 +101,7 @@ export class SourceProduits {
   });
 
   /** Le titre de l'onglet « commande » : son numéro, ou l'invitation à en choisir une. */
-  protected readonly orderLabel = computed(() => {
-    const order = this.order();
-    return order === null ? 'Une commande' : order.orderNumber;
-  });
+  protected readonly orderLabel = computed(() => this.order()?.orderNumber ?? 'Une commande');
 
   protected readonly orderDate = computed(() => {
     const order = this.order();
@@ -110,17 +114,22 @@ export class SourceProduits {
     { kind: 'commande', label: 'Une commande' },
   ];
 
-  protected price(line: ProposedLine): string {
-    return formatCents(line.unitPriceCents);
-  }
-
-  /** Ce qui est déjà au panier pour ce SKU — la pastille sur la ligne. */
+  /** Ce qui est déjà au panier pour ce SKU — la pastille de la rangée. */
   protected inCart(sku: string): number {
     return this.cart().quantityOf(sku);
   }
 
   protected onSelect(kind: SourceKind): void {
     this.kindChange.emit(kind);
+  }
+
+  /**
+   * La rangée rend le produit **et la quantité réglée à l'écran** : on renvoie la
+   * ligne d'origine avec cette quantité-là. Reprendre celle de la source
+   * ignorerait le pas-à-pas que le commercial vient de tourner.
+   */
+  protected onRowAction(line: ProposedLine, chosen: CatalogOrder): void {
+    this.add.emit({ ...line, quantity: chosen.quantity });
   }
 }
 
@@ -135,11 +144,10 @@ function matches(item: CatalogItemView, needle: string): boolean {
 
 function fromCatalog(item: CatalogItemView): ProposedLine {
   return {
-    sku: item.sku,
-    name: item.name,
+    product: toCatalogProduct(item),
     unitPriceCents: item.unitPriceCents,
-    quantity: 1,
     hint: item.sku,
+    quantity: 1,
     available: true,
   };
 }
@@ -147,24 +155,30 @@ function fromCatalog(item: CatalogItemView): ProposedLine {
 function fromHabit(stat: CustomerSkuStat): ProposedLine {
   const orders = stat.orderCount > 1 ? `${stat.orderCount} commandes` : '1 commande';
   return {
-    sku: stat.sku,
-    name: stat.productName,
+    product: {
+      id: stat.sku,
+      name: stat.productName,
+      // Un SKU retiré n'a plus de tarif : afficher le dernier facturé
+      // annoncerait un prix qu'on ne tiendra pas. `outOfStock` fait rendre à la
+      // rangée son état « indisponible » plutôt qu'un bouton d'ajout.
+      ...(stat.stillAvailable ? { price: formatCents(stat.unitPriceCents) } : {}),
+      outOfStock: !stat.stillAvailable,
+    },
     unitPriceCents: stat.unitPriceCents,
+    hint: `${orders} · ${stat.totalQuantity} pcs · ${formatCents(stat.totalCents)}`,
     // La quantité MOYENNE par commande, arrondie : reprendre le cumul de l'année
     // remplirait le panier de 480 croissants.
     quantity: Math.max(1, Math.round(stat.totalQuantity / Math.max(1, stat.orderCount))),
-    hint: `${orders} · ${stat.totalQuantity} pcs · ${formatCents(stat.totalCents)}`,
     available: stat.stillAvailable,
   };
 }
 
 function fromOrderLine(line: OrderView['lines'][number]): ProposedLine {
   return {
-    sku: line.sku,
-    name: line.productName,
+    product: { id: line.sku, name: line.productName, price: formatCents(line.unitPriceCents) },
     unitPriceCents: line.unitPriceCents,
-    quantity: line.quantity,
     hint: `×${line.quantity}`,
+    quantity: line.quantity,
     available: true,
   };
 }

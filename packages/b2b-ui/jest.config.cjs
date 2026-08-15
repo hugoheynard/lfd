@@ -23,4 +23,14 @@ module.exports = {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: './tsconfig.test.json' }],
   },
+  // `@lfd/contracts` s'expose en ESM (`dist/index.js`), que ce runner CJS ne sait
+  // pas charger. On le résout donc à sa SOURCE, que ts-jest compile comme le
+  // reste : les tests lisent alors les mêmes libellés que la production, au lieu
+  // de s'en passer ou d'en recopier une version.
+  moduleNameMapper: {
+    '^@lfd/contracts$': '<rootDir>/../contracts/src/index.ts',
+    // Ses imports relatifs portent l'extension `.js` (NodeNext) : on la retire
+    // pour que le résolveur retombe sur la source TS.
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
 };

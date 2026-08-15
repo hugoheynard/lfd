@@ -85,50 +85,19 @@
   list-style: none;
 }
 
+/* La rangée partagée porte sa propre mise en page ; il ne reste ici que la
+   légende qui dit POURQUOI cette ligne est proposée — la seule chose que le
+   back-office ajoute au catalogue client. */
 .src-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
-  align-items: center;
-  gap: var(--fold-space-3);
-  padding: var(--fold-space-2) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-1);
+  padding-bottom: var(--fold-space-2);
   border-bottom: 1px solid var(--fold-color-border-subtle);
-
-  &.is-gone {
-    color: var(--fold-color-text-muted);
-  }
 }
 
-.src-name {
-  grid-column: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* La deuxième ligne d'écran passe sous le nom : sur une colonne étroite, la
-   mettre en colonne écraserait le nom du produit, qui est ce qu'on lit. */
 .src-hint {
-  grid-column: 1;
-  grid-row: 2;
+  padding-left: var(--fold-space-2);
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-xs);
-}
-
-.src-price {
-  font-variant-numeric: tabular-nums;
-}
-
-.src-in-cart {
-  min-width: 1.6rem;
-  padding: 0 var(--fold-space-1);
-  border-radius: var(--fold-radius-full);
-  background: var(--fold-color-accent-soft);
-  color: var(--fold-color-accent);
-  font-size: var(--fold-font-size-xs);
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-
-.src-gone {
   font-size: var(--fold-font-size-xs);
 }

@@ -38,7 +38,7 @@
           par commande.
         </p>
         <ul class="src-list">
-          @for (line of habitLines(); track line.sku) {
+          @for (line of habitLines(); track line.product.id) {
             <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
           }
         </ul>
@@ -52,7 +52,7 @@
         @for (shelf of shelves(); track shelf.label) {
           <h3 class="src-shelf">{{ shelf.label }}</h3>
           <ul class="src-list">
-            @for (line of shelf.lines; track line.sku) {
+            @for (line of shelf.items; track line.product.id) {
               <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
             }
           </ul>
@@ -74,7 +74,7 @@
           </button>
         </div>
         <ul class="src-list">
-          @for (line of orderLines(); track line.sku) {
+          @for (line of orderLines(); track line.product.id) {
             <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
           }
         </ul>
@@ -83,20 +83,19 @@
   }
 </div>
 
-<!-- Une seule ligne pour les trois sources : ce qui change est ce qu'elles
-     racontent (`hint`), pas la façon d'ajouter. -->
+<!-- Une seule rangée pour les trois sources : ce qui change est ce qu'elles
+     racontent (`hint`), pas la façon d'ajouter. La rangée elle-même est celle
+     du catalogue client — même densité, même pas-à-pas, même colisage. -->
 <ng-template #row let-line>
-  <li class="src-row" [class.is-gone]="!line.available">
-    <span class="src-name">{{ line.name }}</span>
+  <li class="src-row">
+    <lfd-product-row
+      [product]="line.product"
+      [inCart]="inCart(line.product.id)"
+      [favoritable]="false"
+      priceSuffix="HT"
+      notifyLabel="Retiré du catalogue"
+      (action)="onRowAction(line, $event)"
+    />
     <span class="src-hint">{{ line.hint }}</span>
-    <span class="src-price">{{ price(line) }}</span>
-    @if (inCart(line.sku) > 0) {
-      <span class="src-in-cart" title="Déjà au panier">{{ inCart(line.sku) }}</span>
-    }
-    @if (line.available) {
-      <button type="button" class="src-add" (click)="add.emit(line)">+ {{ line.quantity }}</button>
-    } @else {
-      <span class="src-gone">Retiré du catalogue</span>
-    }
   </li>
 </ng-template>
