@@ -98,37 +98,91 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Une période ─────────────────────────────────────────────────────────── */
+/* ── La rupture d'exercice ───────────────────────────────────────────────── */
 
-.fac-period {
+/* Une barre pleine largeur, l'année posée au milieu. C'est la seule coupure du
+   registre : tout le reste est filet fin, pour que celle-ci se voie sans crier.
+   Le filet est tracé par deux dégradés plutôt que par des `::before/::after`
+   flexés — un seul élément, aucune boîte à aligner. */
+.fac-year {
   display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-  padding: var(--fold-space-md);
-  border: 1px solid var(--fold-color-border-subtle);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-card);
+  align-items: center;
+  justify-content: center;
+  margin: var(--fold-space-lg) 0 var(--fold-space-sm);
+  background: linear-gradient(var(--fold-color-border), var(--fold-color-border)) center / 100% 1px
+    no-repeat;
 }
 
-/* Un rail à gauche plutôt qu'un fond teinté : la carte reste lisible, et la
-   distinction se voit du coin de l'œil sans écraser les lignes. */
-.fac-period--open {
-  border-left: 3px solid var(--fold-color-primary);
+.fac-year-label {
+  padding: 0 var(--fold-space-md);
+  background: var(--fold-color-bg-page);
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.18em;
+}
+
+/* ── Une période du registre ─────────────────────────────────────────────── */
+
+/* Le rail de mois à gauche, le corps à droite. Pas de carte : un registre se
+   tient par ses filets et son alignement, pas par des boîtes empilées. */
+.fac-period {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0 var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.fac-period.is-open {
+  /* Un liseré, pas un fond : la période en cours se repère du coin de l'œil
+     sans que ses lignes changent de couleur. */
+  border-top-color: var(--fold-color-primary);
+  box-shadow: inset 3px 0 0 -1px var(--fold-color-primary-border);
+}
+
+/* Le rappel de période : bas de casse, espacé, discret — il se lit en
+   descendant, il ne se lit pas en premier. */
+.fac-rail {
+  margin: 0;
+  padding-top: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fac-rail-month {
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.fac-rail-state {
+  color: var(--fold-color-primary-text);
+  font-size: var(--fold-text-xs);
+  letter-spacing: 0.06em;
+}
+
+.fac-body {
+  min-width: 0;
 }
 
 .fac-period-head {
   display: flex;
   align-items: baseline;
   gap: var(--fold-space-sm);
+  padding-bottom: var(--fold-space-xs);
 }
 
-.fac-period-label {
-  font-weight: 600;
+.fac-period-meta {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
 }
 
 .fac-period-total {
   margin-left: auto;
-  font-size: var(--fold-text-lg);
+  font-size: var(--fold-text-md);
 }
 
 .fac-note,
@@ -141,21 +195,25 @@
 /* ── Les lignes ──────────────────────────────────────────────────────────── */
 
 .fac-list {
-  margin: var(--fold-space-xs) 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* Une grille et non un `flex` : les colonnes s'alignent alors d'une ligne à
-   l'autre, ce qui est toute la raison d'un relevé — on additionne du regard.
-   La date passe sous la référence, le montant tient la colonne de droite. */
+/* Une grille et non un `flex` : les colonnes s'alignent d'une ligne à l'autre,
+   ce qui est toute la raison d'un registre — on additionne du regard. La date
+   passe sous la référence, le montant tient la colonne de droite. */
 .fac-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 0 var(--fold-space-sm);
-  padding: var(--fold-space-sm) 0;
+  padding: var(--fold-space-xs) 0;
   border-top: 1px solid var(--fold-color-border-subtle);
+
+  &:first-child {
+    border-top: 0;
+  }
 }
 
 .fac-row--paid {
@@ -169,7 +227,7 @@
   background: none;
   color: inherit;
   font: inherit;
-  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   text-align: left;
   cursor: pointer;
 
@@ -197,4 +255,18 @@
   grid-column: 2;
   grid-row: 1 / span 2;
   align-self: center;
+}
+
+/* Sous 640 px, le rail passerait à deux caractères par ligne : il repasse
+   au-dessus du corps, en une ligne. */
+@media (max-width: 640px) {
+  .fac-period {
+    grid-template-columns: 1fr;
+    gap: var(--fold-space-xs);
+  }
+
+  .fac-rail {
+    flex-direction: row;
+    gap: var(--fold-space-sm);
+  }
 }

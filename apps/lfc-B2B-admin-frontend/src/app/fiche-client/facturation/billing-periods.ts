@@ -45,6 +45,16 @@ function monthKeyOf(iso: string): string {
   return `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`;
 }
 
+/** L'année d'une clé `AAAA-MM`. */
+export function yearOf(key: string): string {
+  return key.slice(0, 4);
+}
+
+/** « août » — le mois seul, pour le rail de gauche du registre. */
+export function monthOnly(key: string): string {
+  return new Date(`${key}-01T00:00:00`).toLocaleDateString('fr-FR', { month: 'long' });
+}
+
 /** « Août 2026 » depuis une clé `AAAA-MM`. */
 export function monthLabel(key: string): string {
   const label = new Date(`${key}-01T00:00:00`).toLocaleDateString('fr-FR', {
@@ -118,4 +128,35 @@ export function splitForBilling(orders: readonly AdminOrderRow[], now: Date): Bi
       .filter((period) => !period.open)
       .reduce((sum, period) => sum + period.totalCents, 0),
   };
+}
+
+/** Une année et ce qu'elle porte — le registre se lit année par année. */
+export interface YearGroup<T> {
+  readonly year: string;
+  readonly items: readonly T[];
+}
+
+/**
+ * Regroupe par **année civile**, en préservant l'ordre reçu.
+ *
+ * Un exercice comptable se lit par année, et le passage de l'une à l'autre est
+ * une rupture — pas une ligne de plus. Le regroupement se fait ici pour que
+ * l'écran n'ait qu'à poser la barre : une année vide n'existe pas, et deux
+ * groupes ne peuvent pas porter la même.
+ */
+export function groupByYear<T>(
+  items: readonly T[],
+  yearFor: (item: T) => string,
+): readonly YearGroup<T>[] {
+  const groups: YearGroup<T>[] = [];
+  for (const item of items) {
+    const year = yearFor(item);
+    const last = groups[groups.length - 1];
+    if (last !== undefined && last.year === year) {
+      groups[groups.length - 1] = { year, items: [...last.items, item] };
+      continue;
+    }
+    groups.push({ year, items: [item] });
+  }
+  return groups;
 }

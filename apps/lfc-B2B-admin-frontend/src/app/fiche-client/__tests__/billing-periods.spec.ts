@@ -1,7 +1,13 @@
 import type { AdminOrderRow, OrderStatus, PaymentStatus } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { periodDueDate, splitForBilling } from '../facturation/billing-periods';
+import {
+  groupByYear,
+  monthOnly,
+  periodDueDate,
+  splitForBilling,
+  yearOf,
+} from '../facturation/billing-periods';
 
 const NOW = new Date('2026-08-15T10:00:00');
 
@@ -95,5 +101,39 @@ describe('le partage facturation d’un compte', () => {
   it('échoit au 1er du mois suivant', () => {
     expect(periodDueDate('2026-08')).toBe('2026-09-01');
     expect(periodDueDate('2026-12')).toBe('2027-01-01');
+  });
+});
+
+describe('le regroupement par année', () => {
+  it('coupe à chaque changement d’année, en préservant l’ordre reçu', () => {
+    const split = splitForBilling(
+      [
+        order('2026-01-03T09:00:00Z', 100, 'not_required'),
+        order('2025-12-03T09:00:00Z', 200, 'not_required'),
+        order('2026-08-03T09:00:00Z', 300, 'not_required'),
+      ],
+      NOW,
+    );
+
+    const years = groupByYear(split.periods, (period) => yearOf(period.key));
+
+    expect(years.map((group) => group.year)).toEqual(['2026', '2025']);
+    expect(years[0]?.items.map((period) => period.key)).toEqual(['2026-08', '2026-01']);
+  });
+
+  it('ne crée pas deux groupes pour une même année contiguë', () => {
+    const split = splitForBilling(
+      [
+        order('2026-08-03T09:00:00Z', 100, 'not_required'),
+        order('2026-07-03T09:00:00Z', 200, 'not_required'),
+      ],
+      NOW,
+    );
+
+    expect(groupByYear(split.periods, (period) => yearOf(period.key))).toHaveLength(1);
+  });
+
+  it('rend le mois seul pour le rail de gauche', () => {
+    expect(monthOnly('2026-08')).toBe('août');
   });
 });

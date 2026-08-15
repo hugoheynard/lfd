@@ -26,7 +26,15 @@ import {
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
-import { periodDueDate, splitForBilling } from './billing-periods';
+import {
+  groupByYear,
+  monthOnly,
+  periodDueDate,
+  splitForBilling,
+  yearOf,
+  type BillingPeriod,
+  type YearGroup,
+} from './billing-periods';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -85,6 +93,20 @@ export class ClientFacturationPage {
     this.split().periods.filter((period) => !period.open),
   );
 
+  /**
+   * Le registre « au compte », **par année**. Un exercice se lit année par
+   * année, et le passage de l'une à l'autre est une rupture, pas une ligne de
+   * plus.
+   */
+  protected readonly accountYears = computed<readonly YearGroup<BillingPeriod>[]>(() =>
+    groupByYear(this.split().periods, (period) => yearOf(period.key)),
+  );
+
+  /** Le registre « à la commande », par année lui aussi — même rythme de lecture. */
+  protected readonly perOrderYears = computed<readonly YearGroup<AdminOrderRow>[]>(() =>
+    groupByYear(this.split().perOrder, (order) => order.placedAt.slice(0, 4)),
+  );
+
   /** Le compte règle-t-il au mois ? Faux ⇒ la colonne de gauche s'explique. */
   protected readonly onAccount = computed(() => (this.company()?.grantedTerms.length ?? 0) > 0);
 
@@ -102,6 +124,11 @@ export class ClientFacturationPage {
 
   protected day(iso: string): string {
     return formatOrderDate(iso);
+  }
+
+  /** « août » — le rappel de période, dans le rail de gauche. */
+  protected month(key: string): string {
+    return monthOnly(key);
   }
 
   protected closingOf(key: string): string {
