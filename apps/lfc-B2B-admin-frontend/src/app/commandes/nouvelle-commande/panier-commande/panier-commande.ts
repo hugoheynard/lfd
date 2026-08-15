@@ -25,6 +25,8 @@ export interface OrderDraft {
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly pickupAddressId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
+  /** L'adresse dictée rejoint-elle le carnet du compte ? */
+  readonly saveAddressToBook: boolean;
   readonly requestedDeliveryDate: string | null;
   readonly note: string;
   readonly settlement: StaffSettlement;
@@ -35,6 +37,7 @@ const NO_FULFILLMENT: FulfillmentChoice = {
   method: 'pickup',
   pickupAddressId: null,
   deliveryAddress: null,
+  saveToBook: false,
   issue: 'Acheminement non déterminé.',
 };
 
@@ -175,6 +178,7 @@ export class PanierCommande {
       fulfillmentMethod: acheminement.method,
       pickupAddressId: acheminement.pickupAddressId,
       deliveryAddress: acheminement.deliveryAddress,
+      saveAddressToBook: acheminement.saveToBook,
       requestedDeliveryDate: this.requestedDate() === '' ? null : this.requestedDate(),
       note: this.note(),
       settlement: this.settlement(),

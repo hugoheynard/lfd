@@ -17,6 +17,8 @@ import {
 import {
   companyDisplayName,
   type AdminOrderRow,
+  type BillingAddressPayload,
+  type DeliverySpecs,
   type CompanyMemberView,
   type CatalogItemView,
   type CustomerSkuStat,
@@ -46,6 +48,18 @@ type LoadState = 'loading' | 'ready' | 'error';
 
 /** Combien de commandes passées la colonne de gauche propose comme modèles. */
 const HISTORY_SIZE = 30;
+
+/**
+ * Les consignes d'une adresse ajoutée depuis une commande : **vides**. On tient
+ * ce qui a été dicté, rien de plus ; les créneaux et le contact de livraison se
+ * renseignent depuis la fiche, où on les voit tous.
+ */
+const EMPTY_SPECS: DeliverySpecs = {
+  note: '',
+  slots: { mode: 'everyday', slot: null },
+  deliveryContact: null,
+  gps: null,
+};
 
 /**
  * **Saisir une commande pour un client** — l'écran du commercial au téléphone.
@@ -208,6 +222,11 @@ export class NouvelleCommandePage {
         lines: [...this.cart.toPayloadLines()],
       });
       this.cart.clear();
+      // Le carnet APRÈS la commande : une adresse enregistrée pour une commande
+      // qui n'est pas passée serait une trace de rien.
+      if (draft.saveAddressToBook && draft.deliveryAddress !== null) {
+        await this.keepAddress(draft.deliveryAddress);
+      }
       // Le lien de règlement est copié plutôt qu'affiché en passant : le
       // commercial a le client en ligne, et le canal e-mail n'a pas encore fait
       // ses preuves en production.
@@ -220,6 +239,23 @@ export class NouvelleCommandePage {
       this.notify.error(null, "La commande n'a pas pu être enregistrée.");
     } finally {
       this.submitting.set(false);
+    }
+  }
+
+  /**
+   * Ajoute au carnet l'adresse dictée. Son échec **ne remonte pas** en erreur de
+   * commande : la commande, elle, est passée — annoncer le contraire enverrait le
+   * commercial la ressaisir.
+   */
+  private async keepAddress(address: BillingAddressPayload): Promise<void> {
+    try {
+      await this.companies.addDelivery(this.id(), {
+        ...address,
+        isDefault: false,
+        specs: EMPTY_SPECS,
+      });
+    } catch {
+      this.notify.info("L'adresse n'a pas pu être ajoutée au carnet du compte.");
     }
   }
 

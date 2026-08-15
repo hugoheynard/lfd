@@ -47,3 +47,14 @@
   font-size: var(--fold-text-sm);
   font-weight: 500;
 }
+
+/* La case « garder au carnet » : sous les champs qu'elle concerne, et jamais
+   ailleurs — elle n'a de sens que sur une adresse dictée. */
+.ach-keep {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+  cursor: pointer;
+}

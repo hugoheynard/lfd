@@ -50,6 +50,7 @@ function choiceOf(options: {
   zones?: readonly DeliveryZoneView[];
   courier?: boolean;
   dictate?: { ligne1: string; codePostal: string; ville: string };
+  keep?: boolean;
 }): FulfillmentChoice {
   const fixture = TestBed.createComponent(AcheminementCommande);
   fixture.componentRef.setInput('pickups', options.pickups ?? [LABO]);
@@ -80,6 +81,14 @@ function choiceOf(options: {
     }
     fixture.detectChanges();
   }
+  if (options.keep === true) {
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.checked = true;
+    box.addEventListener('change', (event) => fixture.componentInstance['onKeep'](event));
+    box.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+  }
   if (last === null) {
     throw new Error("Le sélecteur n'a émis aucun acheminement.");
   }
@@ -94,6 +103,7 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       method: 'pickup',
       pickupAddressId: 'pick_1',
       deliveryAddress: null,
+      saveToBook: false,
       issue: null,
     });
   });
@@ -153,5 +163,20 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
 
   it('bloque quand aucun point de retrait n’est configuré', () => {
     expect(choiceOf({ pickups: [] }).issue).toContain('Réglages');
+  });
+
+  it('ne garde l’adresse au carnet que si la case est cochée', () => {
+    // Une commande peut livrer une adresse de passage : l'enregistrer d'office
+    // remplirait le carnet du compte de lieux où l'on ne retournera jamais.
+    const dictate = { ligne1: '5 rue Neuve', codePostal: '92200', ville: 'Neuilly' };
+
+    expect(choiceOf({ courier: true, addresses: [], dictate }).saveToBook).toBe(false);
+    expect(choiceOf({ courier: true, addresses: [], dictate, keep: true }).saveToBook).toBe(true);
+  });
+
+  it('ne propose pas de garder une adresse qui vient déjà du carnet', () => {
+    // La case n'est pas rendue dans ce cas ; le choix le redit, pour que le jour
+    // où le gabarit changerait, le carnet ne se duplique pas en silence.
+    expect(choiceOf({ courier: true, keep: true }).saveToBook).toBe(false);
   });
 });

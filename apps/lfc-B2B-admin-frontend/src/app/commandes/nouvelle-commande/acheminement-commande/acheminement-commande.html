@@ -48,6 +48,13 @@
         />
       </label>
     </div>
+
+    <!-- Un geste explicite : la commande peut très bien livrer une adresse de
+         passage, qui n'a rien à faire au carnet du compte. -->
+    <label class="ach-keep">
+      <input type="checkbox" [checked]="keepAddress()" (change)="onKeep($event)" />
+      <span>Enregistrer cette adresse au carnet du compte</span>
+    </label>
   } @else {
     <p class="ach-line">{{ address().ligne1 }}, {{ address().codePostal }} {{ address().ville }}</p>
   }

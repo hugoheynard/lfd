@@ -22,6 +22,11 @@ export interface FulfillmentChoice {
   readonly method: FulfillmentMethod;
   readonly pickupAddressId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
+  /**
+   * L'adresse dictée doit-elle rejoindre le carnet du compte ? Vrai seulement
+   * pour une **saisie** — une entrée du carnet ne s'y ajoute pas deux fois.
+   */
+  readonly saveToBook: boolean;
   /** Ce qui empêche d'acheminer, en clair — `null` quand tout est en place. */
   readonly issue: string | null;
 }
@@ -74,6 +79,8 @@ export class AcheminementCommande {
   private readonly chosenAddressId = signal('');
   /** L'adresse **saisie**, vivante même quand une autre est sélectionnée. */
   private readonly draft = signal<DraftAddress>(EMPTY_ADDRESS);
+  /** La case « enregistrer au carnet », décochée par défaut — cf. `courierChoice`. */
+  protected readonly keepAddress = signal(false);
 
   protected readonly NEW_ADDRESS = NEW_ADDRESS;
 
@@ -175,6 +182,7 @@ export class AcheminementCommande {
       method: 'pickup',
       pickupAddressId: point?.id ?? null,
       deliveryAddress: null,
+      saveToBook: false,
       issue:
         point === null
           ? 'Aucun point de retrait n’est configuré (Réglages → Livraisons & retraits).'
@@ -189,6 +197,7 @@ export class AcheminementCommande {
         method: 'delivery',
         pickupAddressId: null,
         deliveryAddress: null,
+        saveToBook: false,
         issue: 'Adresse de livraison incomplète — rue, code postal et ville sont requis.',
       };
     }
@@ -205,6 +214,9 @@ export class AcheminementCommande {
         ville: address.ville.trim(),
         pays: 'France',
       },
+      // Décochée par défaut, et sans effet sur une entrée du carnet : c'est un
+      // geste explicite, pas une conséquence d'avoir tapé une adresse.
+      saveToBook: this.isNewAddress() && this.keepAddress(),
       issue:
         this.zone() === null
           ? `Aucune tournée ne dessert le ${address.codePostal.trim()} — choisissez le retrait.`
@@ -222,6 +234,13 @@ export class AcheminementCommande {
 
   protected onAddress(id: string): void {
     this.chosenAddressId.set(id);
+  }
+
+  protected onKeep(event: Event): void {
+    const element = event.target;
+    if (element instanceof HTMLInputElement) {
+      this.keepAddress.set(element.checked);
+    }
   }
 
   /** Répercute un champ de la **saisie** (les champs ne s'ouvrent que sur elle). */

@@ -189,6 +189,12 @@ La famille d'un produit se lit dans son préfixe de SKU (`VIE`/`PAI`/`PAT`/`SAL`
   téléphone appartient à sa fiche, pas à une commande. Carnet vide ⇒ l'écran
   renvoie à la fiche au lieu d'ouvrir un champ.
 
+  Une adresse **dictée** peut rejoindre le carnet, par une case à cocher
+  décochée par défaut : une commande livre parfois un lieu de passage, et
+  l'enregistrer d'office remplirait le carnet d'adresses où l'on ne retournera
+  jamais. L'ajout se fait **après** la commande, et son échec ne la remet pas en
+  cause — annoncer une erreur enverrait le commercial la ressaisir.
+
   ⚠️ `DELIVERY_SERVICE_OPEN` reste à **faux** et ne gouverne plus que la carte
   Adresses et la checklist d'activation : les zones se règlent dans Réglages →
   Livraisons & retraits, et le panier client offre les deux acheminements depuis
