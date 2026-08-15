@@ -17,8 +17,14 @@ import {
   FoldSelectComponent,
 } from 'fold-ng';
 
+import {
+  fromCartAdjustment,
+  PriceAlterationField,
+  toCartAdjustment,
+  type PriceAlteration,
+} from '@lfd/b2b-ui/pricing';
+
 import { NotifyService } from '../../../../notify.service';
-import { CartAdjustmentField } from '../../cart-adjustment-field/cart-adjustment-field';
 import { DeliveryZonesService } from '../../delivery-zones.service';
 
 /** Charge d'ouverture : la zone à éditer, ou `null` pour en créer une. */
@@ -61,7 +67,7 @@ function isRowValid(row: PrefixRow): boolean {
     FoldButtonIconComponent,
     FoldInputComponent,
     FoldSelectComponent,
-    CartAdjustmentField,
+    PriceAlterationField,
   ],
   templateUrl: './zone-panel.html',
   styleUrl: './zone-panel.scss',
@@ -79,6 +85,17 @@ export class ZonePanel {
   protected readonly label = signal('');
   protected readonly fee = signal<CartAdjustment | null>(null);
   protected readonly saving = signal(false);
+
+  /**
+   * Le frais vu comme une altération de prix. Le sens est **structurel** — un
+   * frais de zone majore, toujours — donc il ne se stocke pas : on le remet à
+   * la lecture et on le laisse tomber à l'écriture.
+   */
+  protected readonly feeAlteration = computed(() => fromCartAdjustment(this.fee(), 'increase'));
+
+  protected setFee(alteration: PriceAlteration | null): void {
+    this.fee.set(toCartAdjustment(alteration));
+  }
 
   /** Les préfixes valides (dédupliqués) — payload + gate de soumission. */
   protected readonly prefixes = computed(() => [

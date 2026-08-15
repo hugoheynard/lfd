@@ -1,0 +1,68 @@
+<div class="paf">
+  <span class="paf-label">{{ label() }}</span>
+
+  <div class="paf-row">
+    <!-- Le sens ne s'affiche que s'il se choisit : une remise de retrait ne
+         majore jamais, et le bouton inviterait à créer l'impossible. -->
+    @if (canPickDirection()) {
+      <div class="paf-seg" role="group" aria-label="Sens de l'altération">
+        <button
+          type="button"
+          class="paf-btn"
+          [class.is-on]="direction() === 'decrease'"
+          [attr.aria-pressed]="direction() === 'decrease'"
+          (click)="setDirection('decrease')"
+        >
+          Réduction
+        </button>
+        <button
+          type="button"
+          class="paf-btn"
+          [class.is-on]="direction() === 'increase'"
+          [attr.aria-pressed]="direction() === 'increase'"
+          (click)="setDirection('increase')"
+        >
+          Majoration
+        </button>
+      </div>
+    }
+
+    <div class="paf-seg" role="group" aria-label="Unité">
+      <button
+        type="button"
+        class="paf-btn"
+        [class.is-on]="mode() === 'percent'"
+        [attr.aria-pressed]="mode() === 'percent'"
+        (click)="setMode('percent')"
+      >
+        %
+      </button>
+      <button
+        type="button"
+        class="paf-btn"
+        [class.is-on]="mode() === 'amount'"
+        [attr.aria-pressed]="mode() === 'amount'"
+        (click)="setMode('amount')"
+      >
+        €
+      </button>
+    </div>
+
+    <fold-number-input
+      class="paf-amount"
+      [attr.aria-label]="label()"
+      [min]="0"
+      [disabled]="none()"
+      [value]="amount()"
+      (valueChange)="setAmount($event)"
+    />
+  </div>
+
+  @if (hasNoneBox()) {
+    <fold-checkbox [label]="noneLabel()" [checked]="none()" (checkedChange)="setNone($event)" />
+  }
+
+  <!-- La phrase, pas un « − » devant le nombre : le signe et le bouton de sens
+       diraient deux fois la même chose, et l'œil ne saurait plus lequel fait foi. -->
+  <p class="paf-say" aria-live="polite">{{ sentence() }}</p>
+</div>

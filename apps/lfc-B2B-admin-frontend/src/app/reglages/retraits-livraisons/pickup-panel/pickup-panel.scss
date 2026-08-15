@@ -66,24 +66,8 @@
   color: var(--fold-color-text-muted);
 }
 
+// `fold-time` porte son propre habillage : ici on ne fait que la largeur.
 .time {
   flex: none;
-  padding: var(--fold-space-xs) var(--fold-space-sm);
-  font: inherit;
-  color: var(--fold-color-text);
-  background: var(--fold-color-surface-card);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-sm);
-}
-.time:focus-visible {
-  outline: 2px solid var(--fold-color-primary);
-  outline-offset: 1px;
-}
-
-.foot {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--fold-space-sm);
-  padding: var(--fold-space-md) var(--fold-space-lg);
-  border-top: 1px solid var(--fold-color-border-subtle);
+  width: 9rem;
 }

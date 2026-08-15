@@ -19,39 +19,35 @@
 
     <div class="slot-row">
       <span class="slot-name">Créneau pro</span>
-      <input
+      <fold-time
         class="time"
-        type="time"
-        aria-label="Début du créneau pro"
+        [attr.aria-label]="'Début — Créneau pro'"
         [value]="opening().proStart"
-        (input)="setOpening('proStart', inputValue($event))"
+        (valueChange)="setOpening('proStart', $event)"
       />
       <span class="dash">–</span>
-      <input
+      <fold-time
         class="time"
-        type="time"
-        aria-label="Fin du créneau pro"
+        [attr.aria-label]="'Fin — Créneau pro'"
         [value]="opening().proEnd"
-        (input)="setOpening('proEnd', inputValue($event))"
+        (valueChange)="setOpening('proEnd', $event)"
       />
     </div>
 
     <div class="slot-row">
       <span class="slot-name">Ouverture au public</span>
-      <input
+      <fold-time
         class="time"
-        type="time"
-        aria-label="Début de l'ouverture au public"
+        [attr.aria-label]="'Début — Ouverture au public'"
         [value]="opening().publicStart"
-        (input)="setOpening('publicStart', inputValue($event))"
+        (valueChange)="setOpening('publicStart', $event)"
       />
       <span class="dash">–</span>
-      <input
+      <fold-time
         class="time"
-        type="time"
-        aria-label="Fin de l'ouverture au public"
+        [attr.aria-label]="'Fin — Ouverture au public'"
         [value]="opening().publicEnd"
-        (input)="setOpening('publicEnd', inputValue($event))"
+        (valueChange)="setOpening('publicEnd', $event)"
       />
     </div>
 
@@ -64,16 +60,18 @@
     }
   </fieldset>
 
-  <app-cart-adjustment-field
+  <lfd-price-alteration-field
     label="Réduction de retrait"
-    [value]="discount()"
-    (valueChange)="discount.set($event)"
+    lockedDirection="decrease"
+    noneLabel="Aucune réduction sur ce point"
+    [value]="discountAlteration()"
+    (valueChange)="setDiscount($event)"
   />
 </div>
 
-<footer class="foot">
+<fold-panel-footer>
   <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
   <button foldButton intent="primary" [disabled]="!canSubmit() || saving()" (click)="submit()">
     {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
   </button>
-</footer>
+</fold-panel-footer>

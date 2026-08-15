@@ -48,11 +48,13 @@
     (valueChange)="label.set($event)"
   />
 
-  <app-cart-adjustment-field
+  <!-- Pas de case « aucun frais » : une zone desservie gratuitement est une
+       tournée dont personne ne connaît le coût. Le frais est obligatoire. -->
+  <lfd-price-alteration-field
     label="Frais de livraison"
-    [allowNone]="false"
-    [value]="fee()"
-    (valueChange)="fee.set($event)"
+    lockedDirection="increase"
+    [value]="feeAlteration()"
+    (valueChange)="setFee($event)"
   />
 </div>
 

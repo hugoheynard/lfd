@@ -32,6 +32,10 @@
     "./subscription": {
       "types": "./src/subscription/index.ts",
       "default": "./src/subscription/index.ts"
+    },
+    "./pricing": {
+      "types": "./src/pricing/index.ts",
+      "default": "./src/pricing/index.ts"
     }
   },
   "scripts": {

@@ -11,8 +11,10 @@ import type { CartAdjustment, PickupAddressPayload, PickupAddressView } from '@l
 import {
   FoldButtonComponent,
   FoldCheckboxComponent,
+  FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
+  FoldTimeComponent,
 } from 'fold-ng';
 import {
   AddressFields,
@@ -23,8 +25,14 @@ import {
   type AddressDraft,
 } from '@lfd/b2b-ui/company';
 
+import {
+  fromCartAdjustment,
+  PriceAlterationField,
+  toCartAdjustment,
+  type PriceAlteration,
+} from '@lfd/b2b-ui/pricing';
+
 import { NotifyService } from '../../../notify.service';
-import { CartAdjustmentField } from '../cart-adjustment-field/cart-adjustment-field';
 import { PickupAddressesService } from '../pickup-addresses.service';
 import {
   EMPTY_OPENING_DRAFT,
@@ -52,10 +60,12 @@ export interface PickupPanelData {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldPanelHeaderComponent,
+    FoldPanelFooterComponent,
     FoldButtonComponent,
     FoldCheckboxComponent,
+    FoldTimeComponent,
     AddressFields,
-    CartAdjustmentField,
+    PriceAlterationField,
   ],
   templateUrl: './pickup-panel.html',
   styleUrl: './pickup-panel.scss',
@@ -75,6 +85,14 @@ export class PickupPanel {
   protected readonly saving = signal(false);
 
   protected readonly openingIssue = computed(() => openingIssueOf(this.opening()));
+
+  /**
+   * La remise vue comme une altération de prix. Le sens est **structurel** —
+   * retirer soi-même coûte moins cher, jamais plus — donc il ne se stocke pas.
+   */
+  protected readonly discountAlteration = computed(() =>
+    fromCartAdjustment(this.discount(), 'decrease'),
+  );
 
   protected readonly isCreate = computed(() => (this.data()?.address ?? null) === null);
   protected readonly heading = computed(() =>
@@ -98,18 +116,16 @@ export class PickupPanel {
     });
   }
 
+  protected setDiscount(alteration: PriceAlteration | null): void {
+    this.discount.set(toCartAdjustment(alteration));
+  }
+
   protected setDefault(isDefault: boolean): void {
     this.draft.update((draft) => ({ ...draft, isDefault }));
   }
 
   protected setOpening<K extends keyof OpeningDraft>(key: K, value: string): void {
     this.opening.update((draft) => ({ ...draft, [key]: value }));
-  }
-
-  /** Lit la valeur d'un `<input>` natif sans caster. */
-  protected inputValue(event: Event): string {
-    const el = event.target;
-    return el instanceof HTMLInputElement ? el.value : '';
   }
 
   protected async submit(): Promise<void> {
