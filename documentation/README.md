@@ -43,6 +43,7 @@ lignes et les trois pièges qui reviennent.
 | [`ops/secrets-et-variables.md`](ops/secrets-et-variables.md)                       | ✅   | Secret ou Variable, qui lit quoi, **quelles URL doivent résoudre** (et lesquelles sont des identifiants Auth0 qui n'ont pas à le faire). |
 | [`ops/securite-frontiere-de-confiance.md`](ops/securite-frontiere-de-confiance.md) | ✅   | Les 3 couches, **dont une inerte**. L'IP cliente forgeable et son correctif, le CORS, ce que le mur ne tient pas.                        |
 | [`ops/runbook.md`](ops/runbook.md)                                                 | ✅   | Les gestes **et leurs contrôles** : déployer, vérifier le mur, revenir en arrière, enquêter, symptômes fréquents.                        |
+| [`ops/build-des-fronts.md`](ops/build-des-fronts.md)                               | ✅   | Les 2 réglages communs aux 4 fronts : **par où entrent les tokens fold**, et ce qu'un budget de bundle attrape (et ce qu'il ne dit pas). |
 
 ## B2B — la plateforme client et son back-office
 
