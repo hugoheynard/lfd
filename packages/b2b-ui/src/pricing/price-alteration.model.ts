@@ -26,11 +26,33 @@ export function alterationValue(alteration: PriceAlteration): number {
   return (alteration.mode === 'percent' ? alteration.bp : alteration.cents) / 100;
 }
 
-/** La grandeur en texte court : « 20 % » ou « 20,00 € ». */
+/**
+ * La grandeur **sans signe** : « 20 % », « 20,00 € ».
+ *
+ * L'unique règle de mise en forme d'un ajustement — le signe (ou son absence)
+ * se décide chez l'appelant, qui seul sait dans quel sens ça va. Il y avait
+ * deux implémentations : celle du fil de commande, signée `−` parce qu'elle ne
+ * montrait que des remises, et une copie côté réglages qui rendait `5.5 %` avec
+ * un **point**, faute d'`Intl`. Un séparateur décimal anglais sur un écran de
+ * réglage français est le genre de détail qu'on ne voit jamais soi-même.
+ */
+export function formatAdjustmentValue(adjustment: CartAdjustment): string {
+  if (adjustment.mode === 'amount') {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+    }).format(adjustment.cents / 100);
+  }
+  const percent = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(
+    adjustment.bp / 100,
+  );
+  return `${percent} %`;
+}
+
+/** La grandeur d'une altération, sans signe — cf. {@link formatAdjustmentValue}. */
 export function formatAlteration(alteration: PriceAlteration): string {
-  return alteration.mode === 'percent'
-    ? `${alterationValue(alteration)} %`
-    : `${alterationValue(alteration).toFixed(2).replace('.', ',')} €`;
+  return formatAdjustmentValue(alteration);
 }
 
 /**

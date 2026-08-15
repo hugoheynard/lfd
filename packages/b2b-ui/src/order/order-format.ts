@@ -1,3 +1,5 @@
+import { formatAdjustmentValue } from '../pricing/price-alteration.model';
+
 import type { CartAdjustment, FulfillmentMethod, OrderStatus, PaymentStatus } from '@lfd/contracts';
 import type { FoldBadgeVariant } from 'fold-ng';
 
@@ -91,15 +93,13 @@ export function formatVatRate(rate: number): string {
  * taux, « −15,00 € » pour un montant fixe. Rendre le taux plutôt que de le
  * recalculer depuis le montant est ce qui distingue une remise nommée d'un
  * chiffre orphelin — et une division ferait dire « −19,99 % » au premier arrondi.
+ *
+ * Le **signe est ici**, pas dans la mise en forme : sur un fil de commande, un
+ * ajustement est toujours une remise. Ailleurs (un frais de zone) il majore, et
+ * c'est {@link formatAdjustmentValue} qu'on appelle.
  */
 export function formatAdjustment(adjustment: CartAdjustment): string {
-  if (adjustment.mode === 'amount') {
-    return `−${formatCents(adjustment.cents)}`;
-  }
-  const percent = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(
-    adjustment.bp / 100,
-  );
-  return `−${percent} %`;
+  return `−${formatAdjustmentValue(adjustment)}`;
 }
 
 /** ISO (instant ou `YYYY-MM-DD`) → « 6 août 2026 ». */

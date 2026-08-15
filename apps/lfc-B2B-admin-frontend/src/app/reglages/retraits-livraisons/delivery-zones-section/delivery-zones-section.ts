@@ -16,7 +16,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
-import { formatAdjustment } from '../cart-adjustment-format';
+import { formatAdjustmentValue } from '@lfd/b2b-ui/pricing';
 import { DeliveryZonesService } from '../delivery-zones.service';
 import { ZonePanel, type ZonePanelData } from './zone-panel/zone-panel';
 
@@ -56,7 +56,7 @@ export class DeliveryZonesSection {
   protected readonly list = signal<readonly DeliveryZoneView[]>([]);
   protected readonly confirmingId = signal<string | null>(null);
 
-  protected readonly fee = formatAdjustment;
+  protected readonly fee = formatAdjustmentValue;
 
   constructor() {
     void this.load();

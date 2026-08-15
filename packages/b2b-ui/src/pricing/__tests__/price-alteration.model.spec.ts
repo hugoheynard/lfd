@@ -44,8 +44,12 @@ describe('la phrase qui dit ce que ça fait', () => {
     expect(alterationSentence({ direction: 'decrease', mode: 'percent', bp: 2000 })).toBe(
       'Vous réduisez le prix de 20 %.',
     );
-    expect(alterationSentence({ direction: 'increase', mode: 'amount', cents: 2000 })).toBe(
-      'Vous augmentez le prix de 20,00 €.',
+    // `\s` et pas une espace littérale : `Intl` sépare le montant du symbole
+    // par une espace fine INSÉCABLE (U+202F). C'est la bonne typographie
+    // française, et une espace ordinaire dans le test ferait échouer sur un
+    // caractère que personne ne voit à la relecture.
+    expect(alterationSentence({ direction: 'increase', mode: 'amount', cents: 2000 })).toMatch(
+      /^Vous augmentez le prix de 20,00\s€\.$/u,
     );
   });
 
@@ -54,10 +58,23 @@ describe('la phrase qui dit ce que ça fait', () => {
   });
 });
 
-describe('le format court', () => {
-  it('écrit les euros avec deux décimales et une virgule', () => {
-    expect(formatAlteration({ direction: 'increase', mode: 'amount', cents: 550 })).toBe('5,50 €');
-    expect(formatAlteration({ direction: 'decrease', mode: 'percent', bp: 550 })).toBe('5.5 %');
+describe('le format court, SANS signe', () => {
+  it('écrit en français : virgule décimale, euro en suffixe', () => {
+    // La copie qui vivait côté réglages rendait « 5.5 % » avec un POINT, faute
+    // d'`Intl`. Sur un écran français, c'est le genre de détail qu'on ne voit
+    // jamais soi-même — d'où une seule implémentation, testée ici.
+    expect(formatAlteration({ direction: 'decrease', mode: 'percent', bp: 550 })).toBe('5,5 %');
+    expect(formatAlteration({ direction: 'increase', mode: 'amount', cents: 550 })).toContain(
+      '5,50',
+    );
+  });
+
+  it('ne préfixe RIEN : le signe appartient au sens, pas au nombre', () => {
+    const majoration = formatAlteration({ direction: 'increase', mode: 'percent', bp: 2000 });
+    const remise = formatAlteration({ direction: 'decrease', mode: 'percent', bp: 2000 });
+
+    expect(majoration).toBe('20 %');
+    expect(remise).toBe(majoration);
   });
 });
 

@@ -3,6 +3,7 @@ export {
   alterationSentence,
   alterationValue,
   buildAlteration,
+  formatAdjustmentValue,
   formatAlteration,
   fromCartAdjustment,
   toCartAdjustment,

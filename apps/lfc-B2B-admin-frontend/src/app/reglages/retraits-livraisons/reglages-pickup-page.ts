@@ -16,7 +16,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
-import { formatAdjustment } from './cart-adjustment-format';
+import { formatAdjustmentValue } from '@lfd/b2b-ui/pricing';
 import { CutoffsSection } from './cutoffs-section/cutoffs-section';
 import { DeliveryZonesSection } from './delivery-zones-section/delivery-zones-section';
 import { PickupAddressesService } from './pickup-addresses.service';
@@ -67,7 +67,7 @@ export class ReglagesPickupPage {
   protected readonly canRemove = computed(() => this.addresses().length > 1);
 
   /** Formate la remise d'un point de retrait pour l'affichage. */
-  protected readonly fee = formatAdjustment;
+  protected readonly fee = formatAdjustmentValue;
   /** Les plages d'ouverture déclarées, lisibles. Vide = aucune heure opposée. */
   protected readonly hours = openingRows;
 
