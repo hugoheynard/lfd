@@ -13,8 +13,14 @@ flowchart LR
     V --> BUILD["Build des fronts<br/>(compilé DANS le bundle)"]
     S --> SYNC["`wrangler secret put`<br/>à chaque déploiement"]
     V --> SYNC
-    SYNC --> W["Worker"] --> ENV["envVars → process.env du NestJS"]
+    SYNC --> W["Worker"] --> F{"**RUNTIME_KEYS**<br/>filtre — container/worker.ts"}
+    F -->|"nom listé"| ENV["envVars → process.env du NestJS"]
+    F -->|"nom absent"| X["jeté, en silence"]
 ```
+
+⚠️ **Le filtre du dernier saut est le piège nº1 de cette chaîne.** Un secret peut
+être correctement posé dans GitHub, correctement poussé sur le Worker, et **ne
+jamais atteindre le NestJS** — cf. §3 bis.
 
 **Un identifiant Auth0 de SPA n'est pas un secret** : il finit dans le bundle
 navigateur, c'est prévu ainsi. Le mettre en Secret ne le cacherait pas, ça
@@ -56,7 +62,7 @@ comparant les bundles servis. Elle reste tolérée en CORS sous le nom
 | `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY` | backend B2B                        | mode démo                                               |
 | `RESEND_MAILER_B2B_API_KEY`                                              | backend B2B                        | envoi sortant uniquement                                |
 | `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                        | backend B2B                        | Management API                                          |
-| `R2_KBIS_*` · `STORAGE_*`                                                | backend B2B                        | pièces jointes KBIS                                     |
+| `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                    | backend B2B                        | pièces (KBIS) — bucket et endpoint sont des Variables   |
 | `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                               | backend PIM                        | le PIM **appelle** Shopify ; il ne reçoit aucun webhook |
 | `RECOMPUTE_TOKEN`                                                        | Worker B2B **et** container        | comparé par `RecomputeGuard`                            |
 | `CLOUDFLARE_ACCOUNT_ID`                                                  | tous les déploiements              | injecté dans l'image au deploy                          |
@@ -66,6 +72,29 @@ comparant les bundles servis. Elle reste tolérée en CORS sous le nom
 code source. Le seul endpoint entrant de tiers est `POST /payments/webhook`
 côté B2B, et sa cible déclarée chez Stripe (`api-b2b.lafoliedouce.eu`) ne
 résout pas : il est déjà mort.
+
+## 3 bis. Le dernier saut — `RUNTIME_KEYS` 🔴
+
+Poser un secret sur le Worker **ne suffit pas**. Le Worker ne transmet au
+container que les noms inscrits dans `RUNTIME_KEYS`
+(`apps/lfc-B2B-platform-backend/container/worker.ts`) ; tout le reste est jeté
+sans un mot.
+
+Cette liste avait dérivé de ce que lit `AppConfig` — cinq noms `STORAGE_*`
+hérités d'un ancien nommage, là où le code lit `R2_*`. Conséquence en production,
+constatée le **2026-08-14** : le container démarrait sans stockage **ni mailer**.
+Tout dépôt de KBIS rendait 500, et **aucune invitation n'est jamais partie** — le
+staff copiait les liens à la main sans savoir qu'il contournait une panne.
+
+`container/__tests__/runtime-keys.spec.ts` compare désormais la liste aux noms
+réellement lus, **dans les deux sens** : un nom manquant casse la CI, un nom mort
+aussi. Un nom mort est aussi dangereux qu'un nom absent — il fait croire qu'un
+réglage est branché.
+
+⚠️ **Une variable qui change ne redémarre pas le container.** Les `envVars` ne
+sont lues qu'à son démarrage, et un changement de secret ne déclenche **aucun**
+rollout — seule une image neuve le fait. Cf.
+[`../todos/todo-deploiement-en-exploitation.md`](../todos/todo-deploiement-en-exploitation.md).
 
 ## 4. La liste qui fait foi
 
