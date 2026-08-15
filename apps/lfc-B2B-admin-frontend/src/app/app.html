@@ -42,21 +42,6 @@
           [active]="comptesRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
-        <!-- Le canal de secours : les accès ouverts que personne n'a créés. Il
-             vit à côté des comptes clients parce que c'est le même geste
-             commercial, pas un réglage. -->
-        <a
-          fold-menu-item
-          icon="shield"
-          label="Accès à remettre"
-          [badge]="accessBadge()"
-          badgeTone="warning"
-          routerLink="/acces-en-attente"
-          routerLinkActive
-          #accesRla="routerLinkActive"
-          [active]="accesRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
       }
 
       @if (canSeeCommercial()) {
@@ -68,6 +53,28 @@
           routerLinkActive
           #commercialRla="routerLinkActive"
           [active]="commercialRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
+      <!-- Le catalogue viendra ici, entre le commercial et le canal de secours. -->
+
+      @if (canSeeCompanies()) {
+        <!-- Le canal de secours, donc en dernier : les accès ouverts que
+             personne n'a créés. C'est un geste commercial, mais rare — au
+             milieu des destinations de travail, il pesait autant que « Comptes
+             clients », qu'on ouvre vingt fois par jour. Sa pastille suffit à le
+             faire remonter à l'œil quand il a quelque chose à dire. -->
+        <a
+          fold-menu-item
+          icon="shield"
+          label="Accès à remettre"
+          [badge]="accessBadge()"
+          badgeTone="warning"
+          routerLink="/acces-en-attente"
+          routerLinkActive
+          #accesRla="routerLinkActive"
+          [active]="accesRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -167,17 +174,6 @@
           [active]="comptesTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
-        <a
-          fold-nav-tile
-          variant="filled"
-          icon="shield"
-          label="Accès à remettre"
-          routerLink="/acces-en-attente"
-          routerLinkActive
-          #accesTile="routerLinkActive"
-          [active]="accesTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
       }
       @if (canSeeCommercial()) {
         <a
@@ -189,6 +185,22 @@
           routerLinkActive
           #commercialTile="routerLinkActive"
           [active]="commercialTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      <!-- Même ordre que le rail : le catalogue s'insérera ici, et le canal de
+           secours reste en dernier. Deux navigations qui ne rangent pas pareil
+           obligent à réapprendre l'écran en changeant de taille. -->
+      @if (canSeeCompanies()) {
+        <a
+          fold-nav-tile
+          variant="filled"
+          icon="shield"
+          label="Accès à remettre"
+          routerLink="/acces-en-attente"
+          routerLinkActive
+          #accesTile="routerLinkActive"
+          [active]="accesTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
