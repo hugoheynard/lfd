@@ -1,15 +1,62 @@
 :host {
   display: flex;
   flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* ── La synthèse ─────────────────────────────────────────────────────────── */
+
+.fac-sum {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   gap: var(--fold-space-md);
 }
 
-/* Deux colonnes de même poids : les lire côte à côte est tout l'intérêt de
-   l'écran. Sous 900 px elles s'empilent, le mensuel d'abord. */
+.fac-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+}
+
+/* La période en cours est la seule sur laquelle on peut encore agir : elle
+   porte la teinte, les deux autres restent neutres.
+
+   Famille **primary** et non `info` : dans le thème `navi`, `info` est un violet
+   — dilué sur l'ivoire de la page, il vire au rose et n'appartient à aucune des
+   couleurs de l'écran. L'accent de marque (navy) est la dominante ; c'est lui
+   qui doit soutenir. */
+.fac-tile--open {
+  border-color: var(--fold-color-primary-border);
+  background: var(--fold-color-primary-surface);
+}
+
+.fac-tile-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.fac-tile-value {
+  font-size: var(--fold-text-xl);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.fac-tile-note {
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-xs);
+}
+
+/* ── Les deux colonnes ───────────────────────────────────────────────────── */
+
 .fac-cols {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--fold-space-lg);
+  align-items: start;
 }
 
 @media (max-width: 900px) {
@@ -25,11 +72,12 @@
   min-width: 0;
 }
 
+/* Le titre, sa qualification, et le montant à droite : trois informations sur
+   une ligne, dont une seule se compare d'une colonne à l'autre. */
 .fac-head {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: var(--fold-space-md);
+  gap: var(--fold-space-sm);
   padding-bottom: var(--fold-space-sm);
   border-bottom: 1px solid var(--fold-color-border);
 }
@@ -39,10 +87,18 @@
   font-size: var(--fold-text-lg);
 }
 
-.fac-sum {
-  font-weight: 600;
+.fac-head-note {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.fac-head-sum {
+  margin-left: auto;
+  font-size: var(--fold-text-lg);
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Une période ─────────────────────────────────────────────────────────── */
 
 .fac-period {
   display: flex;
@@ -54,23 +110,25 @@
   background: var(--fold-color-surface-card);
 }
 
-/* La période en cours est celle qu'on regarde : elle porte la teinte, les
-   closes restent neutres. */
+/* Un rail à gauche plutôt qu'un fond teinté : la carte reste lisible, et la
+   distinction se voit du coin de l'œil sans écraser les lignes. */
 .fac-period--open {
-  border-color: var(--fold-color-info-border);
-  background: var(--fold-color-info-surface);
+  border-left: 3px solid var(--fold-color-primary);
 }
 
 .fac-period-head {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: var(--fold-space-sm);
 }
 
 .fac-period-label {
-  margin-right: var(--fold-space-sm);
   font-weight: 600;
+}
+
+.fac-period-total {
+  margin-left: auto;
+  font-size: var(--fold-text-lg);
 }
 
 .fac-note,
@@ -80,52 +138,63 @@
   font-size: var(--fold-text-sm);
 }
 
+/* ── Les lignes ──────────────────────────────────────────────────────────── */
+
 .fac-list {
-  margin: 0;
+  margin: var(--fold-space-xs) 0 0;
   padding: 0;
   list-style: none;
 }
 
+/* Une grille et non un `flex` : les colonnes s'alignent alors d'une ligne à
+   l'autre, ce qui est toute la raison d'un relevé — on additionne du regard.
+   La date passe sous la référence, le montant tient la colonne de droite. */
 .fac-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  gap: var(--fold-space-sm);
-  padding: var(--fold-space-xs) 0;
-  border-bottom: 1px solid var(--fold-color-border-subtle);
-
-  &:last-child {
-    border-bottom: 0;
-  }
+  gap: 0 var(--fold-space-sm);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
 }
 
 .fac-row--paid {
-  padding: var(--fold-space-sm) 0;
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
 .fac-link {
+  grid-column: 1;
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
   font: inherit;
   font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-align: left;
   cursor: pointer;
 
   &:hover {
     color: var(--fold-color-primary-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 }
 
 .fac-date {
+  grid-column: 1;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-xs);
 }
 
-/* Le montant colle à droite, en chiffres de largeur fixe : c'est la colonne
-   qu'on additionne du regard. */
 .fac-num {
-  margin-left: auto;
+  grid-column: -1;
+  grid-row: 1 / span 2;
+  align-self: center;
   font-variant-numeric: tabular-nums;
+}
+
+.fac-row--paid fold-badge {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
 }

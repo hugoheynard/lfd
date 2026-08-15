@@ -36,7 +36,7 @@
         <ng-template foldCell="orderNumber" let-row>
           <span class="cmd-ref">{{ row.orderNumber }}</span>
           @if (origin(row); as pill) {
-            <fold-badge variant="info" [content]="pill" />
+            <fold-badge variant="accent" [content]="pill" />
           }
         </ng-template>
 

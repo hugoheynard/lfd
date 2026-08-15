@@ -88,6 +88,11 @@ export class ClientFacturationPage {
   /** Le compte règle-t-il au mois ? Faux ⇒ la colonne de gauche s'explique. */
   protected readonly onAccount = computed(() => (this.company()?.grantedTerms.length ?? 0) > 0);
 
+  /** Ce qui a été réglé à l'unité, en centimes — le pendant du total « au compte ». */
+  protected readonly perOrderTotalCents = computed(() =>
+    this.split().perOrder.reduce((sum, order) => sum + order.totalCents, 0),
+  );
+
   /** Vrai quand la fenêtre de lecture est pleine : les mois anciens sont incomplets. */
   protected readonly maybeTruncated = computed(() => this.rows().length === ORDERS_WINDOW);
 
