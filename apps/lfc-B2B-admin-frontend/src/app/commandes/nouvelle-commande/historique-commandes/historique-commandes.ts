@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FoldEmptyStateComponent, FoldLoadingStateComponent } from 'fold-ng';
-import { ORDER_ORIGIN_LABELS, type AdminOrderRow } from '@lfd/contracts';
-import { formatCents, formatOrderDate } from '@lfd/b2b-ui/order';
+import type { AdminOrderRow } from '@lfd/contracts';
+import { OrderRow } from '@lfd/b2b-ui/order';
 
 /**
  * La colonne de gauche : **ce que ce client a déjà commandé**.
@@ -11,14 +11,14 @@ import { formatCents, formatOrderDate } from '@lfd/b2b-ui/order';
  * central de l'écran — « refais-moi la même que mardi » est la phrase la plus
  * fréquente au téléphone.
  *
- * Volontairement maigre : numéro, date, montant. L'état d'avancement et le
- * règlement se lisent sur la fiche de la commande ; ici on cherche un **modèle**
- * à reprendre, pas un dossier à instruire.
+ * Les rangées sont celles de l'onglet Commandes de la fiche, en densité
+ * **compacte** : ici on cherche un modèle à reprendre, pas un dossier à
+ * instruire. L'état d'avancement et le règlement se lisent sur la commande.
  */
 @Component({
   selector: 'app-historique-commandes',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldEmptyStateComponent, FoldLoadingStateComponent],
+  imports: [FoldEmptyStateComponent, FoldLoadingStateComponent, OrderRow],
   templateUrl: './historique-commandes.html',
   styleUrl: './historique-commandes.scss',
 })
@@ -28,17 +28,4 @@ export class HistoriqueCommandes {
   readonly loading = input(false);
 
   readonly select = output<string>();
-
-  protected date(row: AdminOrderRow): string {
-    return formatOrderDate(row.placedAt);
-  }
-
-  protected total(row: AdminOrderRow): string {
-    return formatCents(row.totalCents);
-  }
-
-  /** La provenance, sauf quand c'est le cas normal — cf. l'onglet Commandes. */
-  protected originPill(row: AdminOrderRow): string | null {
-    return row.origin === 'self_service' ? null : ORDER_ORIGIN_LABELS[row.origin];
-  }
 }

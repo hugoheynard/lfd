@@ -7,24 +7,15 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
-  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
-import { ORDER_ORIGIN_LABELS } from '@lfd/contracts';
 import type { AdminOrderRow, CustomerSheetView } from '@lfd/contracts';
-import {
-  formatCents,
-  formatOrderDate,
-  orderStatusLabel,
-  orderStatusVariant,
-  paymentStatusLabel,
-  paymentStatusVariant,
-} from '@lfd/b2b-ui/order';
+import { OrderRow } from '@lfd/b2b-ui/order';
 
 import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
@@ -49,11 +40,11 @@ const PAGE_SIZE = 50;
   selector: 'app-client-commandes-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    OrderRow,
     RouterLink,
   ],
   templateUrl: './commandes-page.html',
@@ -64,6 +55,7 @@ export class ClientCommandesPage {
 
   private readonly sheets = inject(CustomerSheetService);
   private readonly orders = inject(AdminOrdersService);
+  private readonly router = inject(Router);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<readonly AdminOrderRow[]>([]);
@@ -102,38 +94,8 @@ export class ClientCommandesPage {
     }
   }
 
-  protected date(row: AdminOrderRow): string {
-    return formatOrderDate(row.placedAt);
-  }
-
-  /**
-   * La pastille de provenance, ou `null` quand il n'y a rien à signaler.
-   *
-   * `self_service` est le cas normal : l'étiqueter sur chaque ligne mettrait un
-   * mot partout pour ne rien distinguer. Les deux autres, si — elles disent
-   * qu'une commande n'est pas née du geste du client.
-   */
-  protected originPill(row: AdminOrderRow): string | null {
-    return row.origin === 'self_service' ? null : ORDER_ORIGIN_LABELS[row.origin];
-  }
-
-  protected total(row: AdminOrderRow): string {
-    return formatCents(row.totalCents);
-  }
-
-  protected status(row: AdminOrderRow): string {
-    return orderStatusLabel(row.status);
-  }
-
-  protected statusTone(row: AdminOrderRow): ReturnType<typeof orderStatusVariant> {
-    return orderStatusVariant(row.status);
-  }
-
-  protected payment(row: AdminOrderRow): string {
-    return paymentStatusLabel(row.paymentStatus);
-  }
-
-  protected paymentTone(row: AdminOrderRow): ReturnType<typeof paymentStatusVariant> {
-    return paymentStatusVariant(row.paymentStatus);
+  /** Ouvrir une commande = aller sur sa page. La rangée n'en décide pas. */
+  protected openOrder(row: AdminOrderRow): void {
+    void this.router.navigate(['/commandes', row.id]);
   }
 }

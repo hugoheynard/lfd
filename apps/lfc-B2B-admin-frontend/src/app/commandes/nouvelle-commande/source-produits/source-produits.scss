@@ -4,40 +4,22 @@
   min-height: 0;
 }
 
-.src-head {
+/* Le layout porte la barre et les panneaux ; c'est LUI qui défile, pas la
+   colonne — sinon la barre d'onglets sortirait de l'écran au premier rayon. */
+.src-layout {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3);
-  padding-bottom: var(--fold-space-3);
-  border-bottom: 1px solid var(--fold-color-border);
-}
-
-.src-tabs {
-  display: flex;
-  gap: var(--fold-space-1);
-}
-
-.src-tab {
-  padding: var(--fold-space-2) var(--fold-space-3);
-  border: 0;
-  border-radius: var(--fold-radius-sm);
-  background: transparent;
-  color: var(--fold-color-text-muted);
-  font: inherit;
-  font-weight: 500;
-  cursor: pointer;
-
-  &.is-on {
-    background: var(--fold-color-surface-raised);
-    color: var(--fold-color-text);
-  }
-}
-
-.src-body {
+  min-height: 0;
   flex: 1;
+}
+
+.src-search {
+  margin: var(--fold-space-3) 0;
+}
+
+.src-panel {
   min-height: 0;
   overflow-y: auto;
-  padding-top: var(--fold-space-3);
 }
 
 .src-note {
@@ -53,15 +35,13 @@
   gap: var(--fold-space-3);
 }
 
-.src-all,
-.src-add {
+.src-all {
   padding: var(--fold-space-1) var(--fold-space-3);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm);
   background: var(--fold-color-surface);
   color: var(--fold-color-text);
   font: inherit;
-  font-variant-numeric: tabular-nums;
   cursor: pointer;
 
   &:hover {

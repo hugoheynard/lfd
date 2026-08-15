@@ -1,6 +1,13 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { FoldEmptyStateComponent, FoldSearchComponent } from 'fold-ng';
+import {
+  FoldEmptyStateComponent,
+  FoldNavLayoutComponent,
+  FoldSearchComponent,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
+} from 'fold-ng';
 import type { CatalogItemView, CustomerSkuStat, OrderView } from '@lfd/contracts';
 import {
   catalogShelves,
@@ -12,6 +19,7 @@ import {
 } from '@lfd/b2b-ui/catalog';
 import { formatCents, formatOrderDate } from '@lfd/b2b-ui/order';
 
+import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import type { CartStore } from '../cart.store';
 
 /**
@@ -57,7 +65,15 @@ export type SourceKind = 'habituels' | 'catalogue' | 'commande';
 @Component({
   selector: 'app-source-produits',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldEmptyStateComponent, FoldSearchComponent, NgTemplateOutlet, ProductRow],
+  imports: [
+    FoldEmptyStateComponent,
+    FoldNavLayoutComponent,
+    FoldSearchComponent,
+    FoldTabPanelComponent,
+    FoldTabsComponent,
+    NgTemplateOutlet,
+    ProductRow,
+  ],
   templateUrl: './source-produits.html',
   styleUrl: './source-produits.scss',
 })
@@ -108,19 +124,38 @@ export class SourceProduits {
     return order === null ? '' : formatOrderDate(order.placedAt);
   });
 
-  protected readonly tabs: readonly { readonly kind: SourceKind; readonly label: string }[] = [
-    { kind: 'habituels', label: 'Ses habitudes' },
-    { kind: 'catalogue', label: 'Catalogue' },
-    { kind: 'commande', label: 'Une commande' },
-  ];
+  /**
+   * L'écran est-il étroit ? La barre s'y replie en icônes — `collapsed` est une
+   * **entrée** du composant, pas du CSS : l'encapsulation de vue met ses
+   * paddings hors de portée d'une feuille d'app, donc le TypeScript doit savoir
+   * la largeur.
+   */
+  private readonly narrow = narrowViewport();
+  protected readonly collapsed = this.narrow;
+
+  /**
+   * Les trois sources, en onglets ARIA (`fold-tabs`) et non en nav routée : on
+   * change de **vue sur la même page**, l'adresse ne bouge pas. Chacun porte une
+   * icône — c'est elle qui reste quand la barre se replie sur mobile.
+   *
+   * L'onglet « commande » prend le numéro de celle qu'on a choisie à gauche :
+   * l'écran doit dire de quelle commande il parle, pas seulement qu'il en montre
+   * une.
+   */
+  protected readonly tabItems = computed<FoldTabItem[]>(() => [
+    { key: 'habituels', label: 'Ses habitudes', icon: 'repeat', badge: this.habitLines().length },
+    { key: 'catalogue', label: 'Catalogue', icon: 'grid' },
+    { key: 'commande', label: this.orderLabel(), icon: 'receipt' },
+  ]);
 
   /** Ce qui est déjà au panier pour ce SKU — la pastille de la rangée. */
   protected inCart(sku: string): number {
     return this.cart().quantityOf(sku);
   }
 
-  protected onSelect(kind: SourceKind): void {
-    this.kindChange.emit(kind);
+  /** La barre écrit une clé ; on la relaie telle quelle au parent, qui décide. */
+  protected onTab(key: string): void {
+    this.kindChange.emit(key as SourceKind);
   }
 
   /**

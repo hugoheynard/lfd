@@ -1,4 +1,5 @@
 export { OrderDetail } from './order-detail/order-detail';
+export { OrderRow } from './order-row/order-row';
 export type { OrderDocument } from './order-detail/order-detail';
 export {
   ORDER_DOC_DELIVERY_NOTE,

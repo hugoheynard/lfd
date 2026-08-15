@@ -1,0 +1,64 @@
+:host {
+  display: block;
+}
+
+.row {
+  display: grid;
+  /* Le numéro pousse, tout le reste tient sa largeur : une ligne dont les
+     colonnes bougent d'une commande à l'autre ne se lit pas en diagonale. */
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--fold-space-1) var(--fold-space-3);
+  width: 100%;
+  padding: var(--fold-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--fold-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--fold-color-surface-raised);
+  }
+
+  &.is-selected {
+    border-color: var(--fold-color-accent);
+    background: var(--fold-color-accent-soft);
+  }
+}
+
+.row-number {
+  font-variant-numeric: tabular-nums;
+}
+
+.row-total {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.row-date,
+.row-origin {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-font-size-xs);
+}
+
+/* Compacte : date et provenance passent sous le numéro, le total reste à
+   droite. C'est la seule différence de gabarit entre les deux densités. */
+.is-dense {
+  .row-origin,
+  .row-date {
+    grid-column: 1;
+  }
+}
+
+/* Pleine : tout sur une ligne, badges compris. */
+.row:not(.is-dense) {
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+
+  .row-origin,
+  .row-date {
+    grid-column: auto;
+  }
+}

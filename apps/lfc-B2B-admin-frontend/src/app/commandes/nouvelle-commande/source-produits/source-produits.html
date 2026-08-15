@@ -1,18 +1,18 @@
-<header class="src-head">
-  <div class="src-tabs" role="tablist" aria-label="Source des articles">
-    @for (tab of tabs; track tab.kind) {
-      <button
-        type="button"
-        role="tab"
-        class="src-tab"
-        [class.is-on]="kind() === tab.kind"
-        [attr.aria-selected]="kind() === tab.kind"
-        (click)="onSelect(tab.kind)"
-      >
-        {{ tab.kind === 'commande' ? orderLabel() : tab.label }}
-      </button>
-    }
-  </div>
+<!-- La barre vit dans le slot `tabNav` du layout, les panneaux dans son contenu :
+     c'est la paire par référence (`#t="foldTabs"`) qui les recoud, et elle
+     autorise justement de les séparer. -->
+<fold-nav-layout class="src-layout" placement="top">
+  <fold-tabs
+    tabNav
+    #t="foldTabs"
+    activeStyle="fill"
+    size="compact"
+    background="transparent"
+    [tabs]="tabItems()"
+    [collapsed]="collapsed()"
+    [activeKey]="kind()"
+    (activeKeyChange)="onTab($event)"
+  />
 
   @if (kind() !== 'commande') {
     <fold-search
@@ -22,66 +22,62 @@
       (searchChange)="search.set($event)"
     />
   }
-</header>
 
-<div class="src-body">
-  @switch (kind()) {
-    @case ('habituels') {
-      @if (habitLines().length === 0) {
-        <fold-empty-state
-          title="Rien encore commandé"
-          subtitle="Ce compte n'a pas d'historique sur les douze derniers mois. Le catalogue est à côté."
-        />
-      } @else {
-        <p class="src-note">
-          Les plus repris en tête, sur les douze derniers mois. La quantité proposée est sa moyenne
-          par commande.
-        </p>
-        <ul class="src-list">
-          @for (line of habitLines(); track line.product.id) {
-            <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
-          }
-        </ul>
-      }
-    }
-
-    @case ('catalogue') {
-      @if (shelves().length === 0) {
-        <fold-empty-state title="Aucun produit" subtitle="Rien ne correspond à cette recherche." />
-      } @else {
-        @for (shelf of shelves(); track shelf.label) {
-          <h3 class="src-shelf">{{ shelf.label }}</h3>
-          <ul class="src-list">
-            @for (line of shelf.items; track line.product.id) {
-              <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
-            }
-          </ul>
+  <fold-tab-panel class="src-panel" [tabs]="t" key="habituels">
+    @if (habitLines().length === 0) {
+      <fold-empty-state
+        title="Rien encore commandé"
+        subtitle="Ce compte n'a pas d'historique sur les douze derniers mois. Le catalogue est à côté."
+      />
+    } @else {
+      <p class="src-note">
+        Les plus repris en tête, sur les douze derniers mois. La quantité proposée est sa moyenne
+        par commande.
+      </p>
+      <ul class="src-list">
+        @for (line of habitLines(); track line.product.id) {
+          <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
         }
-      }
+      </ul>
     }
+  </fold-tab-panel>
 
-    @default {
-      @if (order() === null) {
-        <fold-empty-state
-          title="Aucune commande choisie"
-          subtitle="Choisissez une commande à gauche pour en reprendre les lignes."
-        />
-      } @else {
-        <div class="src-order">
-          <p class="src-note">Commande du {{ orderDate() }}.</p>
-          <button type="button" class="src-all" (click)="addAll.emit(orderLines())">
-            Tout reprendre
-          </button>
-        </div>
+  <fold-tab-panel class="src-panel" [tabs]="t" key="catalogue">
+    @if (shelves().length === 0) {
+      <fold-empty-state title="Aucun produit" subtitle="Rien ne correspond à cette recherche." />
+    } @else {
+      @for (shelf of shelves(); track shelf.category) {
+        <h3 class="src-shelf">{{ shelf.label }}</h3>
         <ul class="src-list">
-          @for (line of orderLines(); track line.product.id) {
+          @for (line of shelf.items; track line.product.id) {
             <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
           }
         </ul>
       }
     }
-  }
-</div>
+  </fold-tab-panel>
+
+  <fold-tab-panel class="src-panel" [tabs]="t" key="commande">
+    @if (order() === null) {
+      <fold-empty-state
+        title="Aucune commande choisie"
+        subtitle="Choisissez une commande à gauche pour en reprendre les lignes."
+      />
+    } @else {
+      <div class="src-order">
+        <p class="src-note">Commande du {{ orderDate() }}.</p>
+        <button type="button" class="src-all" (click)="addAll.emit(orderLines())">
+          Tout reprendre
+        </button>
+      </div>
+      <ul class="src-list">
+        @for (line of orderLines(); track line.product.id) {
+          <ng-container *ngTemplateOutlet="row; context: { $implicit: line }" />
+        }
+      </ul>
+    }
+  </fold-tab-panel>
+</fold-nav-layout>
 
 <!-- Une seule rangée pour les trois sources : ce qui change est ce qu'elles
      racontent (`hint`), pas la façon d'ajouter. La rangée elle-même est celle
