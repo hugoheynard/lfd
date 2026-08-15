@@ -23,7 +23,7 @@ import {
 } from 'fold-ng';
 
 import { productById } from '../../data/catalogue-seed';
-import { formatDayFr } from '../../data/recurrence';
+import { formatDayFr } from '@lfd/b2b-ui/subscription';
 import { NotifyService } from '../../notify.service';
 import { SubscriptionsService } from '../subscriptions.service';
 

@@ -5,11 +5,13 @@ import { CreateSubscriptionHandler } from "./application/commands/create-subscri
 import { DeleteSubscriptionHandler } from "./application/commands/delete-subscription.handler.js";
 import { SetSubscriptionStatusHandler } from "./application/commands/set-subscription-status.handler.js";
 import { UpsertOccurrenceOverrideHandler } from "./application/commands/upsert-occurrence-override.handler.js";
+import { ListCompanySubscriptionsHandler } from "./application/queries/list-company-subscriptions.handler.js";
 import { ListSubscriptionsHandler } from "./application/queries/list-subscriptions.handler.js";
 import { SubscriptionReader } from "./domain/ports/subscription.reader.js";
 import { SubscriptionRepository } from "./domain/ports/subscription.repository.js";
 import { PrismaSubscriptionReader } from "./infrastructure/prisma-subscription.reader.js";
 import { PrismaSubscriptionRepository } from "./infrastructure/prisma-subscription.repository.js";
+import { AdminSubscriptionsController } from "./http/admin-subscriptions.controller.js";
 import { SubscriptionsController } from "./http/subscriptions.controller.js";
 
 /**
@@ -18,13 +20,14 @@ import { SubscriptionsController } from "./http/subscriptions.controller.js";
  */
 @Module({
   imports: [CqrsModule],
-  controllers: [SubscriptionsController],
+  controllers: [SubscriptionsController, AdminSubscriptionsController],
   providers: [
     CreateSubscriptionHandler,
     UpsertOccurrenceOverrideHandler,
     SetSubscriptionStatusHandler,
     DeleteSubscriptionHandler,
     ListSubscriptionsHandler,
+    ListCompanySubscriptionsHandler,
     { provide: SubscriptionRepository, useClass: PrismaSubscriptionRepository },
     { provide: SubscriptionReader, useClass: PrismaSubscriptionReader },
   ],

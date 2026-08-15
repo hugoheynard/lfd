@@ -28,6 +28,10 @@
     "./cart": {
       "types": "./src/cart/index.ts",
       "default": "./src/cart/index.ts"
+    },
+    "./subscription": {
+      "types": "./src/subscription/index.ts",
+      "default": "./src/subscription/index.ts"
     }
   },
   "scripts": {

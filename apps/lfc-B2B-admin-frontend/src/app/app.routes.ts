@@ -82,6 +82,13 @@ export const routes: Routes = [
           import('./fiche-client/commandes/commandes-page').then((m) => m.ClientCommandesPage),
       },
       {
+        path: 'paniers-recurrents',
+        loadComponent: () =>
+          import('./fiche-client/paniers-recurrents/paniers-recurrents-page').then(
+            (m) => m.ClientPaniersRecurrentsPage,
+          ),
+      },
+      {
         path: 'alertes',
         loadComponent: () =>
           import('./fiche-client/alertes/alertes-page').then((m) => m.ClientAlertesPage),

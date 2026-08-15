@@ -353,6 +353,7 @@ export type {
   UpsertOccurrenceOverridePayload,
   SubscriptionLineView,
   SubscriptionView,
+  AdminSubscriptionRow,
   OccurrenceOverrideView,
 } from "./subscription.js";
 

@@ -9,7 +9,7 @@ import {
   nextOccurrences,
   RECURRENCE_LABELS,
   todayIso,
-} from '../../data/recurrence';
+} from '@lfd/b2b-ui/subscription';
 
 const FULFILLMENT_LABELS: Readonly<Record<FulfillmentMethod, string>> = {
   delivery: 'Coursier',

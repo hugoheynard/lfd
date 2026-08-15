@@ -25,7 +25,7 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
-import { RECURRENCE_OPTIONS, todayIso } from '../../data/recurrence';
+import { RECURRENCE_OPTIONS, todayIso } from '@lfd/b2b-ui/subscription';
 import { NotifyService } from '../../notify.service';
 import { PickupAddressesService } from '../../entreprises/pickup-addresses.service';
 import { SubscriptionsService } from '../subscriptions.service';

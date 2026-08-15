@@ -1,0 +1,60 @@
+@switch (state()) {
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de charger les paniers récurrents"
+      subtitle="La lecture a échoué — les paniers, eux, sont intacts."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    <section class="rec">
+      <header class="rec-head">
+        <h2 class="rec-h2">Paniers récurrents</h2>
+        <span class="rec-count">
+          {{ activeCount() }} actif{{ activeCount() > 1 ? 's' : '' }} sur {{ rows().length }}
+        </span>
+      </header>
+
+      <!-- Ce que la liste NE dit pas, dit à l'écran : la production issue de ces
+           paniers n'est pas encore planifiée par la plateforme. -->
+      <fold-callout variant="info">
+        Ces commandes se déclenchent d'elles-mêmes. La date annoncée est calculée depuis le gabarit
+        — aucune commande n'est créée à l'avance.
+      </fold-callout>
+
+      <fold-data-table
+        caption="Paniers récurrents du compte"
+        density="compact"
+        [columns]="columns"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [loading]="state() === 'loading'"
+        [empty]="emptyState"
+      >
+        <ng-template foldCell="placedByName" let-row>
+          <span class="rec-who">{{ row.placedByName }}</span>
+          <span class="rec-period">{{ period(row) }}</span>
+        </ng-template>
+
+        <ng-template foldCell="recurrence" let-row>{{ rhythm(row) }}</ng-template>
+        <ng-template foldCell="next" let-row>{{ next(row) }}</ng-template>
+
+        <ng-template foldCell="lines" let-row>
+          <span class="rec-lines">{{ row.lines.length }}</span>
+        </ng-template>
+
+        <ng-template foldCell="fulfillment" let-row>{{ fulfillment(row) }}</ng-template>
+
+        <ng-template foldCell="status" let-row>
+          @if (row.status === 'active') {
+            <fold-badge variant="success" content="Actif" />
+          } @else {
+            <fold-badge variant="warning" content="En pause" />
+          }
+        </ng-template>
+      </fold-data-table>
+    </section>
+  }
+}

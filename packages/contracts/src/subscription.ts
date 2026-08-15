@@ -119,3 +119,17 @@ export interface SubscriptionView {
   /** ISO — créé le. */
   readonly createdAt: string;
 }
+
+/**
+ * Un panier récurrent **vu du back-office**.
+ *
+ * Deux champs de plus, et ils disent la même chose : **à qui il appartient**. Un
+ * abonnement est porté par une personne, pas par une société — le compte en
+ * regroupe donc plusieurs, et la liste staff serait illisible sans dire lequel
+ * est celui de qui.
+ */
+export interface AdminSubscriptionRow extends SubscriptionView {
+  readonly placedByUserId: string;
+  /** Nom d'usage du client, ou son e-mail quand il n'a pas encore de nom. */
+  readonly placedByName: string;
+}

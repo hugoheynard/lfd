@@ -37,6 +37,10 @@ import { narrowViewport } from '../shared/viewport/narrow-viewport';
  * - **Informations** — l'état civil du compte : pièces d'activation, identité,
  *   contacts, adresses. Ce qu'on ouvre pour *corriger* quelque chose ;
  * - **Commandes** — ce qu'il a acheté, et à quel rythme ;
+ * - **Paniers récurrents** — ce qui va tomber sans que personne ne recommande.
+ *   Une vue à part et non un bloc de l'onglet Commandes : une commande passée est
+ *   un fait, un panier récurrent est un engagement qui produira des faits ;
+ *   les mélanger, c'était compter les seconds pour rien ;
  * - **Alertes** — ce que la plateforme surveille chez lui, et ce que ce compte
  *   fait de chaque règle (la suivre, l'éteindre, ou porter la sienne) ;
  * - **Données** — ce que le système sait de lui, journal compris.
@@ -84,6 +88,12 @@ export class FicheClientShell {
     { key: 'dashboard', label: 'Tableau de bord', link: 'dashboard', icon: 'grid' },
     { key: 'informations', label: 'Informations', link: 'informations', icon: 'company' },
     { key: 'commandes', label: 'Commandes', link: 'commandes', icon: 'list' },
+    {
+      key: 'paniers-recurrents',
+      label: 'Paniers récurrents',
+      link: 'paniers-recurrents',
+      icon: 'repeat',
+    },
     { key: 'alertes', label: 'Alertes', link: 'alertes', icon: 'bell' },
     { key: 'data', label: 'Données', link: 'data', icon: 'stats' },
   ];
