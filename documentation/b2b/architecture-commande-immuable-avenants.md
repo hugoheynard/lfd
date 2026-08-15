@@ -7,6 +7,13 @@ questions liées, avant qu'un écran ne fige la mauvaise réponse.
 
 ## Les deux décisions
 
+> **Depuis le 2026-08-15**, une commande peut aussi être **saisie par l'équipe**
+> pour un client (cf.
+> [`architecture-commande-saisie-par-l-equipe.md`](architecture-commande-saisie-par-l-equipe.md)).
+> Cela n'entame en rien ce document : on ajoute un fait, on n'en réécrit aucun.
+> Un avenant aura d'ailleurs le même besoin — un **auteur** qui peut être staff —
+> et la réponse y est la même : un attribut, pas une nature d'avenant.
+
 ### 1. Une commande passée ne se modifie plus
 
 Elle est un **fait daté**, pas un panier avec un statut. Ce qui a été commandé,

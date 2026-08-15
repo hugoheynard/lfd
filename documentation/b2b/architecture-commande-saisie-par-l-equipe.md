@@ -1,0 +1,209 @@
+# La commande saisie par l'équipe — au téléphone, en clientèle
+
+**État : ✅ livré le 2026-08-15.** Le commercial peut passer une commande à la
+place d'un client depuis le back-office : `POST /admin/orders`, écran
+`/comptes-clients/:id/nouvelle-commande`.
+
+---
+
+## 1. Ce que ce n'est pas : une autre nature de commande
+
+Le réflexe, en voyant arriver une seconde porte d'entrée, est d'introduire une
+union discriminée — `customer_order | platform_order`. Elle a été écartée, et
+c'est la décision structurante de ce chantier.
+
+**Le test.** Qu'est-ce qui _se comporte_ différemment ? Les lignes, les prix, la
+TVA, l'acheminement, le jeton de retrait, la frise d'avancement : identiques. Ne
+diffèrent que l'auteur enregistré et le chemin de règlement. Une union qui
+discrimine deux formes portant les mêmes vingt-cinq champs est une étiquette
+déguisée en type : chaque lecteur doit narrower pour n'apprendre rien, et la
+balise descend jusque dans l'app client, où la distinction n'a aucun sens.
+
+**Le fond.** Une commande saisie par le commercial _pour_ un client reste **la
+commande de ce client** : elle apparaît dans « Mes commandes », elle se règle à
+son nom, elle porte son QR de retrait. Il n'y a pas deux natures de commande, il
+y a deux portes d'entrée.
+
+**La preuve était déjà au schéma.** `from_subscription_id` dit exactement le même
+genre de fait — « d'où vient cette commande » — et il a été modélisé en colonne
+nullable. Un `kind` devrait donc naître à trois valeurs sans être fermé pour
+autant.
+
+### Le modèle retenu
+
+| Fait                                 | Où il vit                                       |
+| ------------------------------------ | ----------------------------------------------- |
+| Au nom de qui                        | `orders.placed_by_user_id` — toujours un client |
+| Qui l'a saisie chez LFC              | `orders.placed_by_staff_id` — nullable          |
+| Quel abonnement l'a produite         | `orders.from_subscription_id` — nullable        |
+| **Par quelle porte elle est entrée** | `origin`, **dérivé** des deux colonnes          |
+
+```mermaid
+flowchart LR
+    S["placed_by_staff_id"] --> O{"orderOriginOf()"}
+    R["from_subscription_id"] --> O
+    O -->|"staff ≠ null"| B["back_office"]
+    O -->|"abonnement ≠ null"| C["recurring"]
+    O -->|"ni l'un ni l'autre"| A["self_service"]
+```
+
+`origin` n'est **pas** une colonne : ce serait un troisième endroit où
+l'information vit, donc un troisième endroit où elle peut se désaccorder des
+deux autres. La règle est une fonction pure et testée
+(`orders/domain/services/order-origin.ts`), les vues de lecture l'appellent.
+
+La saisie humaine l'emporte quand les deux marques coexistent. Le cas n'existe
+pas encore — le planificateur d'abonnements ne passe pas par le back-office —
+mais l'arbitrage est gravé dans un test, pour qu'il ne soit pas rendu un jour
+par l'ordre des `if`.
+
+**Pas de clé étrangère** vers `staff_users` : une commande est une pièce
+comptable, elle ne doit ni disparaître ni bloquer le jour où l'on retire du
+personnel de l'annuaire. Un identifiant et non un instantané du nom — l'inverse
+de `handed_over_by`, qui fige le `sub` parce que c'est une **attestation**, pas
+un affichage.
+
+---
+
+## 2. Les deux règles propres à cette surface
+
+Le panier se compose exactement comme celui du client : `OrderDrafting` est
+partagé par les deux passations. Prix ré-résolus au catalogue, remise de retrait
+du point choisi, zone déduite du code postal — une seconde implémentation aurait
+fini par diverger, et sur le chemin qu'on teste le moins.
+
+### 2.1 Le mur porte sur l'ACHETEUR, pas sur l'acteur
+
+Un commercial n'est membre d'aucune société cliente. Vérifier **son**
+appartenance refuserait toutes les commandes ; l'oublier les autoriserait
+toutes. C'est `buyerUserId` qui doit être membre — il vient du corps de la
+requête, donc il se vérifie. Le droit d'être là, lui, a déjà été tranché par la
+porte staff, et l'identité du saisisseur vient de cette porte : un client au nom
+de qui commander se choisit à l'écran, l'auteur d'une trace ne se choisit pas.
+
+### 2.2 Aucune carte n'est saisie par l'équipe
+
+Deux modes, et pas de troisième :
+
+| `settlement` | Ce qui se passe                                                                    |
+| ------------ | ---------------------------------------------------------------------------------- |
+| `account`    | `payment_status: not_required` — à facturer. **Refusé** sans crédit accordé (409). |
+| `link`       | Intention Stripe + une URL que le client suit lui-même (`/commandes/:id/regler`).  |
+
+Il n'y a délibérément pas de « carte saisie au comptoir » : un numéro dicté au
+téléphone et tapé par un commercial est exactement ce qu'on ne veut pas rendre
+possible.
+
+`settlement` **n'a pas de défaut**. Choisir entre facturer et réclamer un
+règlement est une décision commerciale ; un défaut silencieux la prendrait à la
+place du commercial, et toujours dans le même sens.
+
+Le refus du compte sans crédit est le mur de cette surface. Sans lui, un écran
+de back-office suffirait à accorder un délai de paiement que personne n'a
+négocié — et la plateforme livrerait à crédit sans jamais l'avoir décidé.
+
+---
+
+## 3. ⚠️ « Intégré à la période en cours » — ce que ça veut dire aujourd'hui
+
+L'écran de confirmation annonce, en mode `account` : _« facturée sur la période
+en cours »_. **Cette période n'existe pas encore.** La facturation mensuelle est
+doc-first — aucune facture, aucune échéance, aucun prélèvement :
+[`architecture-facturation-mensuelle.md`](architecture-facturation-mensuelle.md).
+
+Ce que la commande porte réellement est `payment_status: not_required`, avec le
+même sens que pour une commande passée par le client sur son terme : **à
+facturer hors ligne**. La phrase est donc une promesse qui tiendra le jour où la
+boucle de facturation existera, et une description honnête de l'intention
+aujourd'hui.
+
+Ce qui rendrait la phrase fausse : accorder le mensuel à des sociétés sans avoir
+livré la facturation. C'est déjà le risque nommé par le document ci-dessus ;
+cette surface l'augmente seulement en volume.
+
+---
+
+## 4. La pertinence, qui est tout l'écran
+
+Devant 92 produits, un commercial au téléphone n'a pas besoin d'un catalogue. Il
+a besoin des trente lignes que ce client-là reprend chaque semaine.
+
+Trois colonnes, dans l'ordre où se déroule l'appel :
+
+| Colonne | Ce qu'elle porte                                                          |
+| ------- | ------------------------------------------------------------------------- |
+| Gauche  | Ses commandes passées — **cliquables** : « refais-moi la même que mardi » |
+| Milieu  | La source : ses habitudes (défaut), le catalogue, ou une commande choisie |
+| Droite  | Le panier, l'acheminement, le règlement, la confirmation                  |
+
+`GET /admin/catalog/companies/:id` agrège les lignes des douze derniers mois par
+SKU, **triées par reprise puis récence** : le chiffre d'affaires ferait remonter
+les articles chers, pas les articles habituels. La quantité proposée est la
+**moyenne par commande**, pas le cumul de l'année — sinon le panier part avec 480
+croissants.
+
+Deux décisions qui se lisent dans les tests :
+
+- le nom et le prix viennent du **catalogue d'aujourd'hui**, jamais du snapshot
+  de la vieille commande. Un commercial qui lit cette liste au téléphone annonce
+  donc le tarif que le serveur appliquera ;
+- un SKU **retiré du catalogue** descend quand même, sous son dernier nom
+  facturé, barré et sans prix. Le filtrer laisserait croire que le client ne l'a
+  jamais pris, et il le reproposerait.
+
+### Le catalogue vient du serveur
+
+Il existait déjà trois copies de la table des produits : le PIM, le seed du front
+client (visuels, descriptions), le seed du backend (les prix qui font foi au
+checkout). Une quatrième dans l'app admin aurait été **la copie de trop** : celle
+où le commercial annonce un prix que le serveur refuse ensuite. `GET
+/admin/catalog` sert donc le catalogue **du checkout**, et un test vérifie que
+`all()` et `resolve()` parlent des mêmes articles.
+
+La famille d'un produit se lit dans son préfixe de SKU (`VIE`/`PAI`/`PAT`/`SAL`/
+`CHO`) — elle y est déjà, et une colonne à côté aurait pu la contredire.
+
+---
+
+## 5. Ce que l'écran refuse de faire
+
+- **Calculer de l'argent.** Le seul montant affiché est le sous-total HT — une
+  multiplication et une somme. Remise, TVA par taux et total TTC restent au
+  serveur, et le panier le dit à l'écran. Les recopier donnerait deux
+  implémentations de la même règle d'arrondi, donc deux résultats à un centime
+  près, et un client qui compare son écran à sa facture (cf.
+  [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)).
+- **Proposer la livraison.** `DELIVERY_SERVICE_OPEN` est à faux : LFC ne livre
+  pas encore. Un coursier ici ferait promettre au téléphone un service qui
+  n'existe pas.
+- **Modifier une commande passée.** Ajouter un fait n'est pas en réécrire un.
+  Faire avancer ou annuler viendront avec les avenants.
+
+---
+
+## 6. Le droit qui a changé
+
+`commercial` avait `orders: "read"` — la personne même pour qui cette surface
+existe ne pouvait pas poster de commande. Il a `orders: "write"` depuis le
+2026-08-15.
+
+**Élargissement assumé** : ce droit couvre aussi l'attestation de remise au
+comptoir (`POST /admin/handover/:token`). Celui qui prend la commande est
+souvent celui qui remet le sac. Il ne couvre toujours pas la modification d'une
+commande passée — aucune route ne l'expose.
+
+---
+
+## 7. Ce qui reste ouvert
+
+- **La facturation mensuelle** (§3) — la seule dette réelle de cette surface.
+- **Le lien de règlement ne part par aucun e-mail.** Il est copié dans le
+  presse-papier du commercial et dicté dans un toast si la copie échoue, parce
+  que le canal e-mail n'a encore jamais envoyé un message en production (cf.
+  [`../todos/todo-notifications.md`](../todos/todo-notifications.md)). Le jour où
+  il enverra, l'envoi s'ajoutera **sans remplacer** la copie : une commande prise
+  au téléphone se conclut au téléphone.
+- **Sans `CLIENT_BASE_URL`**, la commande part quand même et le lien est absent —
+  le commercial le voit. Il n'y a pas d'autre chemin aujourd'hui pour retrouver
+  la page de règlement que le lien lui-même : « Mes commandes » ne propose pas
+  encore « régler » sur une commande en attente.
