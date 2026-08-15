@@ -1,0 +1,42 @@
+<fold-view-toggle
+  class="ach-toggle"
+  activeStyle="accent"
+  ariaLabel="Mode d'acheminement"
+  [options]="methods"
+  [value]="method()"
+  (valueChange)="onMethod($event)"
+/>
+
+@if (isCourier()) {
+  @if (addressOptions().length > 1) {
+    <fold-listbox
+      label="Adresse de livraison"
+      [options]="addressOptions()"
+      [value]="address()?.id ?? ''"
+      (selectionChange)="onAddress($event)"
+    />
+  } @else if (address(); as only) {
+    <p class="ach-line">
+      Livraison à <strong>{{ only.label || only.ville }}</strong> — {{ only.ligne1 }},
+      {{ only.codePostal }} {{ only.ville }}
+    </p>
+  }
+
+  @if (zoneLabel(); as zone) {
+    <p class="ach-line">{{ zone }}</p>
+  }
+} @else {
+  @if (pickupOptions().length > 1) {
+    <fold-listbox
+      label="Point de retrait"
+      [options]="pickupOptions()"
+      [value]="pickup()?.id ?? ''"
+      (selectionChange)="onPickup($event)"
+    />
+  } @else if (pickup(); as only) {
+    <p class="ach-line">
+      Retrait à <strong>{{ only.label || only.ville }}</strong> — {{ only.ligne1 }},
+      {{ only.codePostal }} {{ only.ville }}
+    </p>
+  }
+}

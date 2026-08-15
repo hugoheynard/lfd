@@ -2,52 +2,85 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { FoldButtonComponent, FoldCalloutComponent, FoldSelectComponent } from 'fold-ng';
 import {
   STAFF_SETTLEMENT_LABELS,
+  type BillingAddressPayload,
   type CompanyMemberView,
+  type DeliveryAddressView,
+  type DeliveryZoneView,
+  type FulfillmentMethod,
   type PickupAddressView,
   type StaffSettlement,
 } from '@lfd/contracts';
+import { CartRow } from '@lfd/b2b-ui/cart';
 import { formatCents } from '@lfd/b2b-ui/order';
 
 import type { CartStore } from '../cart.store';
+import {
+  AcheminementCommande,
+  type FulfillmentChoice,
+} from '../acheminement-commande/acheminement-commande';
 
 /** Ce que la colonne rend au moment de valider — les lignes viennent de la page. */
 export interface OrderDraft {
   readonly buyerUserId: string;
+  readonly fulfillmentMethod: FulfillmentMethod;
   readonly pickupAddressId: string | null;
+  readonly deliveryAddress: BillingAddressPayload | null;
   readonly requestedDeliveryDate: string | null;
   readonly note: string;
   readonly settlement: StaffSettlement;
 }
 
+/** L'acheminement tant que le sélecteur n'a rien émis — le temps d'un rendu. */
+const NO_FULFILLMENT: FulfillmentChoice = {
+  method: 'pickup',
+  pickupAddressId: null,
+  deliveryAddress: null,
+  issue: 'Acheminement non déterminé.',
+};
+
 /**
  * La colonne de droite : **le panier et ce qui l'accompagne**.
  *
- * Elle porte les quatre décisions qui ne sont pas des articles — au nom de qui,
- * où et quand retirer, et comment ça se règle — puis rend un brouillon complet.
- * La page y ajoute les lignes : le panier sait ce qu'il contient, la colonne sait
- * ce qu'on en fait.
+ * Elle porte les quatre décisions qui ne sont pas des articles — pour qui,
+ * comment et quand acheminer, et comment ça se règle — puis rend un brouillon
+ * complet. La page y ajoute les lignes : le panier sait ce qu'il contient, la
+ * colonne sait ce qu'on en fait.
  *
- * **Retrait uniquement**, et ce n'est pas un raccourci : `DELIVERY_SERVICE_OPEN`
- * est à faux, LFC ne livre pas encore. Proposer un coursier ici ferait promettre
- * au téléphone un service qui n'existe pas.
+ * **La commande appartient au compte, pas à une personne.** L'interlocuteur choisi
+ * ici est celui à qui elle est portée — celui qu'on rappelle si une caisse manque,
+ * et le seul à qui un lien de règlement puisse être adressé. Il ne la verra pas
+ * pour autant dans son « Mes commandes », qui ne liste que les commandes
+ * personnelles ; l'écran l'annonçait, et faisait promettre au commercial un écran
+ * qui n'affiche rien.
  *
- * **Le seul montant affiché est le sous-total HT.** Remise de retrait, TVA par
- * taux et total TTC sont calculés par le serveur à la validation — les recopier
- * ici donnerait deux implémentations de la même règle d'arrondi, donc deux
- * résultats à un centime près, et un client qui compare son écran à sa facture.
+ * **Le seul montant affiché est le sous-total HT.** Remise de retrait, frais de
+ * zone, TVA par taux et total TTC sont calculés par le serveur à la validation —
+ * les recopier ici donnerait deux implémentations de la même règle d'arrondi,
+ * donc deux résultats à un centime près, et un client qui compare son écran à sa
+ * facture.
  */
 @Component({
   selector: 'app-panier-commande',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldCalloutComponent, FoldSelectComponent],
+  imports: [
+    AcheminementCommande,
+    CartRow,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldSelectComponent,
+  ],
   templateUrl: './panier-commande.html',
   styleUrl: './panier-commande.scss',
 })
 export class PanierCommande {
   readonly cart = input.required<CartStore>();
-  /** Les personnes du compte au nom de qui on peut porter la commande. */
+  /** Le nom du compte — la commande est la sienne, et la colonne le redit. */
+  readonly companyName = input.required<string>();
+  /** Les personnes du compte à qui la commande peut être portée. */
   readonly buyers = input.required<readonly CompanyMemberView[]>();
   readonly pickups = input.required<readonly PickupAddressView[]>();
+  readonly addresses = input.required<readonly DeliveryAddressView[]>();
+  readonly zones = input.required<readonly DeliveryZoneView[]>();
   /**
    * La société règle-t-elle au compte ? Faux ⇒ seul le lien est proposé. Le
    * serveur refuse de toute façon, mais un bouton qui échoue toujours est un
@@ -59,7 +92,7 @@ export class PanierCommande {
   readonly place = output<OrderDraft>();
 
   protected readonly buyerUserId = signal<string | null>(null);
-  protected readonly pickupAddressId = signal<string | null>(null);
+  protected readonly fulfillment = signal<FulfillmentChoice>(NO_FULFILLMENT);
   protected readonly requestedDate = signal('');
   protected readonly note = signal('');
   protected readonly settlement = signal<StaffSettlement>('link');
@@ -84,8 +117,9 @@ export class PanierCommande {
     return (members.find((m) => m.role === 'owner') ?? members[0])?.userId ?? null;
   });
 
-  protected readonly point = computed<string | null>(
-    () => this.pickupAddressId() ?? this.pickups().find((p) => p.isDefault)?.id ?? null,
+  /** Retrait ou livraison : la date demandée ne désigne pas la même chose. */
+  protected readonly dateLabel = computed(() =>
+    this.fulfillment().method === 'delivery' ? 'Livraison souhaitée le' : 'Retrait souhaité le',
   );
 
   /**
@@ -102,6 +136,10 @@ export class PanierCommande {
         "Ce compte n'a aucun interlocuteur avec un accès : la commande n'a personne à qui être portée.",
       );
     }
+    const acheminement = this.fulfillment().issue;
+    if (acheminement !== null) {
+      issues.push(acheminement);
+    }
     if (this.settlement() === 'account' && !this.settlesOnAccount()) {
       issues.push('Cette société ne règle pas au compte — aucun crédit ne lui a été accordé.');
     }
@@ -113,13 +151,10 @@ export class PanierCommande {
   /** Le sous-total HT du panier. Cf. l'avertissement de la classe. */
   protected readonly subtotal = computed(() => formatCents(this.cart().subtotalCents()));
 
-  protected linePrice(unitPriceCents: number, quantity: number): string {
-    return formatCents(unitPriceCents * quantity);
-  }
-
-  protected onQuantity(sku: string, value: string): void {
-    const quantity = Number.parseInt(value, 10);
-    this.cart().setQuantity(sku, Number.isNaN(quantity) ? 0 : quantity);
+  protected onFulfillment(choice: FulfillmentChoice): void {
+    this.fulfillment.set(choice);
+    // Changer d'acheminement change ce qu'on s'apprêtait à confirmer.
+    this.confirming.set(false);
   }
 
   protected onSettlement(value: string): void {
@@ -134,9 +169,12 @@ export class PanierCommande {
     if (buyerUserId === null || !this.canPlace()) {
       return;
     }
+    const acheminement = this.fulfillment();
     this.place.emit({
       buyerUserId,
-      pickupAddressId: this.point(),
+      fulfillmentMethod: acheminement.method,
+      pickupAddressId: acheminement.pickupAddressId,
+      deliveryAddress: acheminement.deliveryAddress,
       requestedDeliveryDate: this.requestedDate() === '' ? null : this.requestedDate(),
       note: this.note(),
       settlement: this.settlement(),

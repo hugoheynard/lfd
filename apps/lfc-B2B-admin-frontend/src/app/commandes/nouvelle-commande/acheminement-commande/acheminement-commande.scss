@@ -1,0 +1,17 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.ach-toggle {
+  align-self: start;
+}
+
+/* Le point de retrait ou le secteur : une phrase, pas un champ — il n'y a rien à
+   y choisir quand il n'y a qu'une réponse. */
+.ach-line {
+  margin: 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+}

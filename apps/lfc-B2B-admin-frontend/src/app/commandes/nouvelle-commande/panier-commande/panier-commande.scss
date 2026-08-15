@@ -40,48 +40,8 @@
   list-style: none;
 }
 
-.pan-line {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 4.5rem auto auto;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  padding: var(--fold-space-sm) 0;
-  border-bottom: 1px solid var(--fold-color-border-subtle);
-}
-
-.pan-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pan-qty {
-  width: 100%;
-  padding: var(--fold-space-xs);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface-card);
-  color: inherit;
-  font: inherit;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.pan-total {
-  font-variant-numeric: tabular-nums;
-}
-
-.pan-drop {
-  border: 0;
-  background: transparent;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-lg);
-  line-height: 1;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--fold-color-alert-text);
-  }
+.pan-list li + li {
+  margin-top: var(--fold-space-xs);
 }
 
 .pan-form {

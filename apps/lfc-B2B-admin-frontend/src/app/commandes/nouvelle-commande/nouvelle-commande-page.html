@@ -52,8 +52,11 @@
       <app-panier-commande
         class="nc-col nc-right"
         [cart]="cart"
+        [companyName]="companyName()"
         [buyers]="buyers()"
         [pickups]="pickups()"
+        [addresses]="addresses()"
+        [zones]="zones()"
         [settlesOnAccount]="settlesOnAccount()"
         [submitting]="submitting()"
         (place)="onPlace($event)"

@@ -11,26 +11,14 @@
   } @else {
     <ul class="pan-list">
       @for (line of cart().lines(); track line.sku) {
-        <li class="pan-line">
-          <span class="pan-name">{{ line.name }}</span>
-          <input
-            class="pan-qty"
-            type="number"
-            min="0"
-            step="1"
-            [attr.aria-label]="'Quantité — ' + line.name"
-            [value]="line.quantity"
-            (change)="onQuantity(line.sku, $any($event.target).value)"
+        <li>
+          <lfd-cart-row
+            [name]="line.name"
+            [unitPriceCents]="line.unitPriceCents"
+            [quantity]="line.quantity"
+            (quantityChange)="cart().setQuantity(line.sku, $event)"
+            (remove)="cart().remove(line.sku)"
           />
-          <span class="pan-total">{{ linePrice(line.unitPriceCents, line.quantity) }}</span>
-          <button
-            type="button"
-            class="pan-drop"
-            [attr.aria-label]="'Retirer ' + line.name"
-            (click)="cart().remove(line.sku)"
-          >
-            ×
-          </button>
         </li>
       }
     </ul>
@@ -39,8 +27,12 @@
 
 <div class="pan-form">
   <fold-select
-    label="Au nom de"
-    hint="La commande apparaîtra dans l'espace de cette personne."
+    label="Commande portée par"
+    [hint]="
+      'Elle appartient au compte ' +
+      companyName() +
+      ' ; cette personne en est l’interlocuteur, et la destinataire d’un éventuel lien de règlement.'
+    "
     [value]="buyer() ?? ''"
     (valueChange)="buyerUserId.set($event)"
   >
@@ -49,21 +41,17 @@
     }
   </fold-select>
 
-  <fold-select
-    label="Point de retrait"
-    hint="LFC ne livre pas encore : toute commande se retire au labo."
-    [value]="point() ?? ''"
-    (valueChange)="pickupAddressId.set($event)"
-  >
-    @for (pickup of pickups(); track pickup.id) {
-      <option [value]="pickup.id">{{ pickup.label || pickup.ville }}</option>
-    }
-  </fold-select>
+  <app-acheminement-commande
+    [pickups]="pickups()"
+    [addresses]="addresses()"
+    [zones]="zones()"
+    (choiceChange)="onFulfillment($event)"
+  />
 
   <!-- `<input type="date">` en natif : Signal Forms ne couvre pas les dates, et
        le contrôle du navigateur bat tout masque maison. -->
   <label class="pan-field">
-    <span class="pan-label">Retrait souhaité le</span>
+    <span class="pan-label">{{ dateLabel() }}</span>
     <input
       type="date"
       [value]="requestedDate()"
@@ -106,7 +94,9 @@
   </div>
   <!-- Ce que l'écran ne calcule PAS, dit à l'écran : sinon le commercial
        annoncerait le sous-total comme un total. -->
-  <p class="pan-note">Remise de retrait, TVA et total TTC sont calculés à la validation.</p>
+  <p class="pan-note">
+    Remise de retrait, frais de livraison, TVA et total TTC sont calculés à la validation.
+  </p>
 
   @for (blocker of blockers(); track blocker) {
     <fold-callout variant="warning">{{ blocker }}</fold-callout>

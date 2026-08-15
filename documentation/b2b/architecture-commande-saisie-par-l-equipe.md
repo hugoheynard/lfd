@@ -33,10 +33,19 @@ autant.
 
 | Fait                                 | Où il vit                                       |
 | ------------------------------------ | ----------------------------------------------- |
-| Au nom de qui                        | `orders.placed_by_user_id` — toujours un client |
+| À qui elle est portée                | `orders.placed_by_user_id` — toujours un client |
 | Qui l'a saisie chez LFC              | `orders.placed_by_staff_id` — nullable          |
 | Quel abonnement l'a produite         | `orders.from_subscription_id` — nullable        |
 | **Par quelle porte elle est entrée** | `origin`, **dérivé** des deux colonnes          |
+
+⚠️ **« Portée à » n'est pas « visible par ».** La commande appartient au
+**compte** ; l'interlocuteur choisi est celui qu'on rappelle et à qui un lien de
+règlement est adressé. Il ne la verra pas dans son « Mes commandes » : `GET
+/orders/mine` ne liste que les commandes **personnelles** (`company_id IS
+NULL`). L'écran de saisie l'annonçait — « la commande apparaîtra dans l'espace de
+cette personne » — et faisait promettre au commercial un écran qui n'affiche
+rien. Le jour où le client verra les commandes de son compte, c'est cette
+requête-là qui changera, pas le modèle.
 
 ```mermaid
 flowchart LR
@@ -173,9 +182,19 @@ La famille d'un produit se lit dans son préfixe de SKU (`VIE`/`PAI`/`PAT`/`SAL`
   implémentations de la même règle d'arrondi, donc deux résultats à un centime
   près, et un client qui compare son écran à sa facture (cf.
   [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)).
-- **Proposer la livraison.** `DELIVERY_SERVICE_OPEN` est à faux : LFC ne livre
-  pas encore. Un coursier ici ferait promettre au téléphone un service qui
-  n'existe pas.
+- **Saisir une adresse de livraison à la volée.** Le sélecteur d'acheminement
+  propose retrait **ou** coursier, comme le panier du client — mais les adresses
+  viennent du **carnet de la société**. Côté client, l'adresse libre sert à
+  commander sans compte ; ici le compte existe, et une adresse dictée au
+  téléphone appartient à sa fiche, pas à une commande. Carnet vide ⇒ l'écran
+  renvoie à la fiche au lieu d'ouvrir un champ.
+
+  ⚠️ `DELIVERY_SERVICE_OPEN` reste à **faux** et ne gouverne plus que la carte
+  Adresses et la checklist d'activation : les zones se règlent dans Réglages →
+  Livraisons & retraits, et le panier client offre les deux acheminements depuis
+  le pivot « zéro friction ». Le drapeau et la réalité ont divergé ; c'est la
+  réalité que le back-office suit.
+
 - **Modifier une commande passée.** Ajouter un fait n'est pas en réécrire un.
   Faire avancer ou annuler viendront avec les avenants.
 

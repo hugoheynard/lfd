@@ -20,6 +20,7 @@ import {
   type CompanyMemberView,
   type CatalogItemView,
   type CustomerSkuStat,
+  type DeliveryZoneView,
   type OrderView,
   type PickupAddressView,
 } from '@lfd/contracts';
@@ -27,6 +28,7 @@ import {
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
+import { DeliveryZonesService } from '../../reglages/retraits-livraisons/delivery-zones.service';
 import { PickupAddressesService } from '../../reglages/retraits-livraisons/pickup-addresses.service';
 import { AdminCatalogService } from '../catalog.service';
 import { AdminOrdersService } from '../orders.service';
@@ -84,6 +86,7 @@ export class NouvelleCommandePage {
   private readonly orders = inject(AdminOrdersService);
   private readonly catalogService = inject(AdminCatalogService);
   private readonly pickupsService = inject(PickupAddressesService);
+  private readonly zonesService = inject(DeliveryZonesService);
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
 
@@ -100,11 +103,15 @@ export class NouvelleCommandePage {
   protected readonly habits = signal<readonly CustomerSkuStat[]>([]);
   protected readonly buyers = signal<readonly CompanyMemberView[]>([]);
   protected readonly pickups = signal<readonly PickupAddressView[]>([]);
+  protected readonly zones = signal<readonly DeliveryZoneView[]>([]);
   protected readonly submitting = signal(false);
 
   protected readonly source = signal<SourceKind>('habituels');
   protected readonly selectedOrderId = signal<string | null>(null);
   protected readonly selectedOrder = signal<OrderView | null>(null);
+
+  /** Le carnet de livraison du compte — vide tant que la fiche n'en porte aucune. */
+  protected readonly addresses = computed(() => this.company()?.addresses.deliveries ?? []);
 
   protected readonly companyName = computed(() => {
     const company = this.company();
@@ -130,15 +137,16 @@ export class NouvelleCommandePage {
   protected async load(companyId: string): Promise<void> {
     this.state.set('loading');
     try {
-      // Cinq lectures indépendantes : les enchaîner aurait multiplié l'attente
-      // par cinq devant un commercial qui a le client en ligne.
-      const [company, history, catalogue, habits, buyers, pickups] = await Promise.all([
+      // Sept lectures indépendantes : les enchaîner aurait multiplié l'attente
+      // par sept devant un commercial qui a le client en ligne.
+      const [company, history, catalogue, habits, buyers, pickups, zones] = await Promise.all([
         this.companies.getById(companyId),
         this.orders.list({ companyId, limit: HISTORY_SIZE }),
         this.catalogService.list(),
         this.catalogService.habitsOf(companyId),
         this.companies.listMembers(companyId),
         this.pickupsService.list(),
+        this.zonesService.list(),
       ]);
       if (company === undefined) {
         this.state.set('error');
@@ -150,6 +158,7 @@ export class NouvelleCommandePage {
       this.habits.set(habits);
       this.buyers.set(buyers);
       this.pickups.set(pickups);
+      this.zones.set(zones);
       // Sans historique, « ses habitudes » est un écran vide : on ouvre alors
       // sur le catalogue, qui a toujours quelque chose à montrer.
       this.source.set(habits.length === 0 ? 'catalogue' : 'habituels');
@@ -191,8 +200,8 @@ export class NouvelleCommandePage {
         companyId: this.id(),
         buyerUserId: draft.buyerUserId,
         settlement: draft.settlement,
-        fulfillmentMethod: 'pickup',
-        deliveryAddress: null,
+        fulfillmentMethod: draft.fulfillmentMethod,
+        deliveryAddress: draft.deliveryAddress,
         pickupAddressId: draft.pickupAddressId,
         requestedDeliveryDate: draft.requestedDeliveryDate,
         note: draft.note,
