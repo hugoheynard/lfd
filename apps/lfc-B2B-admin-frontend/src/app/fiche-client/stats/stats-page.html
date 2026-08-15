@@ -45,22 +45,35 @@
 
       <section class="st-block">
         <header class="st-head">
-          <h2 class="st-h2">Commandé par mois</h2>
-          @if (bestMonth(); as best) {
+          <h2 class="st-h2">Commandé par période</h2>
+          <!-- Le sélecteur est dans l'en-tête du graphe qu'il gouverne, pas en
+               haut de page : ce qu'il change se voit juste en dessous. -->
+          <app-stats-grain class="st-grain" />
+        </header>
+
+        <p class="st-notes">
+          @if (bestPeriod(); as best) {
             <span class="st-note">
-              Meilleur mois : {{ best.label }} — {{ euros(best.totalCents) }}
+              Meilleure période : {{ best.label }} — {{ euros(best.totalCents) }}
             </span>
           }
-        </header>
+          <!-- La part récurrente est écrite en clair : la hachure la donne d'un
+               coup d'œil, elle ne donne pas le chiffre. -->
+          @if (recurringShare(); as share) {
+            <span class="st-note">
+              Paniers récurrents : {{ share }} % du commandé ({{ euros(totals().recurringCents) }})
+            </span>
+          }
+        </p>
 
         @if (maybeTruncated()) {
           <fold-callout variant="warning">
-            Ce compte dépasse la fenêtre de lecture : les mois les plus anciens de la courbe sont
-            incomplets.
+            Ce compte dépasse la fenêtre de lecture : les périodes les plus anciennes du graphe sont
+            incomplètes.
           </fold-callout>
         }
 
-        <app-chart height="280px" [option]="chartOption()" />
+        <app-chart height="300px" [option]="chartOption()" />
       </section>
 
       <section class="st-block">

@@ -50,6 +50,26 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--fold-space-md);
+  flex-wrap: wrap;
+}
+
+/* Le segmenté n'a pas de ligne de base à aligner : il se cale sur le centre du
+   titre, sinon il flotte d'un pixel au-dessus. */
+.st-grain {
+  align-self: center;
+}
+
+/* Les notes de lecture, sous le titre : la meilleure période et la part
+   récurrente. Elles se posent l'une sous l'autre quand la largeur manque. */
+.st-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: 0;
+
+  &:empty {
+    display: none;
+  }
 }
 
 .st-h2 {
