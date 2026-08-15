@@ -1,0 +1,60 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-4);
+  /* La page occupe la hauteur disponible : chaque colonne défile pour elle-même,
+     sinon le panier sort de l'écran dès que le catalogue est long. */
+  height: 100%;
+  min-height: 0;
+  padding: var(--fold-space-5);
+}
+
+.nc-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2);
+}
+
+.nc-title {
+  margin: 0;
+  font-size: var(--fold-font-size-xl);
+}
+
+.nc-columns {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) minmax(0, 2fr) minmax(20rem, 1fr);
+  gap: var(--fold-space-4);
+  flex: 1;
+  min-height: 0;
+}
+
+.nc-col {
+  min-height: 0;
+  padding: var(--fold-space-4);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface);
+  overflow: hidden;
+}
+
+.nc-right {
+  overflow-y: auto;
+}
+
+/* Sous 1100 px les trois colonnes deviennent illisibles : le panier passe en
+   pleine largeur sous les deux autres, dans l'ordre où on s'en sert. */
+@media (max-width: 1100px) {
+  .nc-columns {
+    grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
+  }
+
+  .nc-right {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .nc-columns {
+    grid-template-columns: 1fr;
+  }
+}

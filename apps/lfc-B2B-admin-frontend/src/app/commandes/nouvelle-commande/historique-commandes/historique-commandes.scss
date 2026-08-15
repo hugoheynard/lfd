@@ -1,0 +1,61 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3);
+  min-height: 0;
+}
+
+.his-title {
+  margin: 0;
+  font-size: var(--fold-font-size-lg);
+}
+
+.his-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.his-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--fold-space-1) var(--fold-space-2);
+  width: 100%;
+  padding: var(--fold-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--fold-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--fold-color-surface-raised);
+  }
+
+  /* Sélectionnée = la source affichée au milieu. Le lien entre les deux
+     colonnes doit se voir sans relire les deux. */
+  &.is-on {
+    border-color: var(--fold-color-accent);
+    background: var(--fold-color-accent-soft);
+  }
+}
+
+.his-number {
+  font-variant-numeric: tabular-nums;
+}
+
+.his-total {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.his-date,
+.his-pill {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-font-size-xs);
+}

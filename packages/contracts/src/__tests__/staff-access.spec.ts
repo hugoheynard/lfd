@@ -72,10 +72,12 @@ describe("resolveStaffPermissions — les dérogations", () => {
   });
 
   it("ajoute ce que le rôle ne donne pas", () => {
-    // « Marc est commercial MAIS il gère aussi les relances. »
-    const permissions = resolveStaffPermissions("commercial", [allow("orders", "write")]);
+    // « Marc est commercial MAIS il a aussi la main sur l'outillage. »
+    // `tech` et non `orders` : depuis que le commercial écrit les commandes, une
+    // dérogation dessus n'ajouterait rien — le test passerait sans rien prouver.
+    const permissions = resolveStaffPermissions("commercial", [allow("tech", "write")]);
 
-    expect(hasStaffPermission(permissions, "orders:write")).toBe(true);
+    expect(hasStaffPermission(permissions, "tech:write")).toBe(true);
   });
 
   it("retire ce que le rôle donne", () => {

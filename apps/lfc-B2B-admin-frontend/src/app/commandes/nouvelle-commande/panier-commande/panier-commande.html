@@ -1,0 +1,145 @@
+<header class="pan-head">
+  <h2 class="pan-title">Panier</h2>
+  <span class="pan-count"
+    >{{ cart().itemCount() }} article{{ cart().itemCount() > 1 ? 's' : '' }}</span
+  >
+</header>
+
+<div class="pan-lines">
+  @if (cart().isEmpty()) {
+    <p class="pan-empty">Ajoutez des articles depuis la colonne du milieu.</p>
+  } @else {
+    <ul class="pan-list">
+      @for (line of cart().lines(); track line.sku) {
+        <li class="pan-line">
+          <span class="pan-name">{{ line.name }}</span>
+          <input
+            class="pan-qty"
+            type="number"
+            min="0"
+            step="1"
+            [attr.aria-label]="'Quantité — ' + line.name"
+            [value]="line.quantity"
+            (change)="onQuantity(line.sku, $any($event.target).value)"
+          />
+          <span class="pan-total">{{ linePrice(line.unitPriceCents, line.quantity) }}</span>
+          <button
+            type="button"
+            class="pan-drop"
+            [attr.aria-label]="'Retirer ' + line.name"
+            (click)="cart().remove(line.sku)"
+          >
+            ×
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+<div class="pan-form">
+  <fold-select
+    label="Au nom de"
+    hint="La commande apparaîtra dans l'espace de cette personne."
+    [value]="buyer() ?? ''"
+    (valueChange)="buyerUserId.set($event)"
+  >
+    @for (member of buyers(); track member.userId) {
+      <option [value]="member.userId">{{ nameOf(member) }}</option>
+    }
+  </fold-select>
+
+  <fold-select
+    label="Point de retrait"
+    hint="LFC ne livre pas encore : toute commande se retire au labo."
+    [value]="point() ?? ''"
+    (valueChange)="pickupAddressId.set($event)"
+  >
+    @for (pickup of pickups(); track pickup.id) {
+      <option [value]="pickup.id">{{ pickup.label || pickup.ville }}</option>
+    }
+  </fold-select>
+
+  <!-- `<input type="date">` en natif : Signal Forms ne couvre pas les dates, et
+       le contrôle du navigateur bat tout masque maison. -->
+  <label class="pan-field">
+    <span class="pan-label">Retrait souhaité le</span>
+    <input
+      type="date"
+      [value]="requestedDate()"
+      (change)="requestedDate.set($any($event.target).value)"
+    />
+  </label>
+
+  <label class="pan-field">
+    <span class="pan-label">Note</span>
+    <textarea
+      rows="2"
+      placeholder="Ce que l'atelier doit savoir."
+      [value]="note()"
+      (input)="note.set($any($event.target).value)"
+    ></textarea>
+  </label>
+
+  <fieldset class="pan-settle">
+    <legend class="pan-label">Règlement</legend>
+    @for (mode of settlementModes; track mode) {
+      <label class="pan-radio" [class.is-off]="mode === 'account' && !settlesOnAccount()">
+        <input
+          type="radio"
+          name="settlement"
+          [value]="mode"
+          [checked]="settlement() === mode"
+          [disabled]="mode === 'account' && !settlesOnAccount()"
+          (change)="onSettlement(mode)"
+        />
+        <span>{{ labels[mode] }}</span>
+      </label>
+    }
+  </fieldset>
+</div>
+
+<footer class="pan-foot">
+  <div class="pan-sum">
+    <span>Sous-total HT</span>
+    <strong>{{ subtotal() }}</strong>
+  </div>
+  <!-- Ce que l'écran ne calcule PAS, dit à l'écran : sinon le commercial
+       annoncerait le sous-total comme un total. -->
+  <p class="pan-note">Remise de retrait, TVA et total TTC sont calculés à la validation.</p>
+
+  @for (blocker of blockers(); track blocker) {
+    <fold-callout variant="warning">{{ blocker }}</fold-callout>
+  }
+
+  @if (blockers().length === 0) {
+    @if (!confirming()) {
+      <button foldButton variant="solid" [disabled]="submitting()" (click)="confirming.set(true)">
+        Valider la commande
+      </button>
+    } @else {
+      <fold-callout variant="info" title="Confirmer">
+        @if (settlement() === 'account') {
+          Cette commande partira <strong>au compte</strong> et sera facturée sur la période en
+          cours. Rien ne sera encaissé maintenant.
+        } @else {
+          Un <strong>lien de règlement</strong> sera créé ; il faudra le transmettre au client pour
+          que la commande soit payée.
+        }
+      </fold-callout>
+      <div class="pan-confirm">
+        <button foldButton variant="solid" [disabled]="!canPlace()" (click)="submit()">
+          {{ submitting() ? 'Envoi…' : 'Confirmer' }}
+        </button>
+        <button
+          foldButton
+          variant="ghost"
+          [disabled]="submitting()"
+          (click)="confirming.set(false)"
+        >
+          Revenir
+        </button>
+      </div>
+    }
+  }
+</footer>

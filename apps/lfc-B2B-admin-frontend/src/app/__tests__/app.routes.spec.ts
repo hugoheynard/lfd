@@ -25,6 +25,7 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   'comptes-clients': 'companies:read',
   'comptes-clients/nouveau': 'companies:write',
   'commandes/:id': 'orders:read',
+  'comptes-clients/:id/nouvelle-commande': 'orders:write',
   'retrait/:token': 'orders:write',
 
   'comptes-clients/:id': 'companies:read',

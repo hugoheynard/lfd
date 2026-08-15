@@ -31,6 +31,19 @@ export const routes: Routes = [
       import('./commandes/commande-page/commande-page').then((m) => m.AdminCommandePage),
   },
   {
+    // PLEINE PAGE, hors de la coquille à onglets de la fiche : on y saisit une
+    // commande pendant dix minutes, avec le client en ligne, et les trois
+    // colonnes réclament toute la largeur. Des onglets à côté inviteraient à en
+    // sortir en cours de saisie — et le panier ne survit pas à la navigation.
+    path: 'comptes-clients/:id/nouvelle-commande',
+    canActivate: [permissionGuard('orders:write')],
+    title: 'Nouvelle commande — LFC B2B admin',
+    loadComponent: () =>
+      import('./commandes/nouvelle-commande/nouvelle-commande-page').then(
+        (m) => m.NouvelleCommandePage,
+      ),
+  },
+  {
     // La cible d'un QR de retrait. Route de premier niveau et courte : elle est
     // encodée dans un code-barres, et parfois dictée au téléphone le jour où une
     // caméra refuse de lire. Chaque caractère de plus densifie les modules, donc

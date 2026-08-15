@@ -114,7 +114,13 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   },
   commercial: {
     companies: "write",
-    orders: "read",
+    // `write` depuis la saisie assistée : le commercial prend les commandes au
+    // téléphone, c'est son métier. Ce droit couvre aussi l'attestation de remise
+    // au comptoir (`POST /admin/handover/:token`) — élargissement assumé : celui
+    // qui prend la commande est souvent celui qui remet le sac.
+    // Il ne couvre TOUJOURS PAS la modification d'une commande passée : aucune
+    // route ne l'expose, et ce sont les avenants qui la porteront.
+    orders: "write",
     growth: "write",
     appointments: "write",
     support: "write",

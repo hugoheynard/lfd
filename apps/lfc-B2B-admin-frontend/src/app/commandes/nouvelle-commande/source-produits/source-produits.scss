@@ -1,0 +1,134 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.src-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3);
+  padding-bottom: var(--fold-space-3);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.src-tabs {
+  display: flex;
+  gap: var(--fold-space-1);
+}
+
+.src-tab {
+  padding: var(--fold-space-2) var(--fold-space-3);
+  border: 0;
+  border-radius: var(--fold-radius-sm);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+
+  &.is-on {
+    background: var(--fold-color-surface-raised);
+    color: var(--fold-color-text);
+  }
+}
+
+.src-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: var(--fold-space-3);
+}
+
+.src-note {
+  margin: 0 0 var(--fold-space-2);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-font-size-sm);
+}
+
+.src-order {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-3);
+}
+
+.src-all,
+.src-add {
+  padding: var(--fold-space-1) var(--fold-space-3);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface);
+  color: var(--fold-color-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--fold-color-accent);
+    color: var(--fold-color-accent);
+  }
+}
+
+.src-shelf {
+  margin: var(--fold-space-4) 0 var(--fold-space-2);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.src-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.src-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: var(--fold-space-3);
+  padding: var(--fold-space-2) 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+
+  &.is-gone {
+    color: var(--fold-color-text-muted);
+  }
+}
+
+.src-name {
+  grid-column: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La deuxième ligne d'écran passe sous le nom : sur une colonne étroite, la
+   mettre en colonne écraserait le nom du produit, qui est ce qu'on lit. */
+.src-hint {
+  grid-column: 1;
+  grid-row: 2;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-font-size-xs);
+}
+
+.src-price {
+  font-variant-numeric: tabular-nums;
+}
+
+.src-in-cart {
+  min-width: 1.6rem;
+  padding: 0 var(--fold-space-1);
+  border-radius: var(--fold-radius-full);
+  background: var(--fold-color-accent-soft);
+  color: var(--fold-color-accent);
+  font-size: var(--fold-font-size-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.src-gone {
+  font-size: var(--fold-font-size-xs);
+}

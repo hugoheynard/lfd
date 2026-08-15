@@ -2,7 +2,13 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { AdminOrderRow, AdminOrdersQuery, OrderView } from '@lfd/contracts';
+import type {
+  AdminOrderRow,
+  AdminOrdersQuery,
+  AdminPlaceOrderPayload,
+  AdminPlacedOrderResponse,
+  OrderView,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -42,6 +48,17 @@ export class AdminOrdersService {
   async byId(id: string): Promise<OrderView> {
     return firstValueFrom(
       this.http.get<OrderView>(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}`),
+    );
+  }
+
+  /**
+   * Passe une commande **au nom d'un client**. Aucun prix n'est envoyé : le
+   * serveur les ré-résout, et c'est lui qui rend le total et l'éventuel lien de
+   * règlement.
+   */
+  async place(payload: AdminPlaceOrderPayload): Promise<AdminPlacedOrderResponse> {
+    return firstValueFrom(
+      this.http.post<AdminPlacedOrderResponse>(`${B2B_API_BASE}/admin/orders`, payload),
     );
   }
 }

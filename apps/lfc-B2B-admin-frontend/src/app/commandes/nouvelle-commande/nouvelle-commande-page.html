@@ -1,0 +1,63 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Préparation de la saisie…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible d'ouvrir la saisie"
+      subtitle="Le compte, le catalogue ou l'historique n'ont pas pu être lus."
+    >
+      <button foldButton (click)="load(id())">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    <header class="nc-head">
+      <fold-back-link
+        [routerLink]="['/comptes-clients', id(), 'commandes']"
+        label="Ses commandes"
+      />
+      <h1 class="nc-title">Nouvelle commande — {{ companyName() }}</h1>
+    </header>
+
+    @if (buyers().length === 0) {
+      <!-- Sans personne à qui porter la commande, l'écran ne mène nulle part :
+           on le dit avant que le commercial ne remplisse un panier pour rien. -->
+      <fold-callout variant="warning" title="Aucun accès ouvert sur ce compte">
+        Une commande est portée au nom d'une personne du compte. Ouvrez un accès depuis la fiche
+        avant de saisir.
+      </fold-callout>
+    }
+
+    <div class="nc-columns">
+      <app-historique-commandes
+        class="nc-col nc-left"
+        [orders]="history()"
+        [selectedId]="selectedOrderId()"
+        (select)="onSelectOrder($event)"
+      />
+
+      <app-source-produits
+        class="nc-col nc-mid"
+        [kind]="source()"
+        [catalogue]="catalogue()"
+        [habits]="habits()"
+        [order]="selectedOrder()"
+        [cart]="cart"
+        (kindChange)="source.set($event)"
+        (add)="onAdd($event)"
+        (addAll)="onAddAll($event)"
+      />
+
+      <app-panier-commande
+        class="nc-col nc-right"
+        [cart]="cart"
+        [buyers]="buyers()"
+        [pickups]="pickups()"
+        [settlesOnAccount]="settlesOnAccount()"
+        [submitting]="submitting()"
+        (place)="onPlace($event)"
+      />
+    </div>
+  }
+}

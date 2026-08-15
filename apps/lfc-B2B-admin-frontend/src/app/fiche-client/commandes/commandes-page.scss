@@ -93,3 +93,11 @@
   font-size: var(--fold-text-lg, 1.125rem);
   color: var(--fold-color-text);
 }
+
+.cmd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-3);
+  flex-wrap: wrap;
+}

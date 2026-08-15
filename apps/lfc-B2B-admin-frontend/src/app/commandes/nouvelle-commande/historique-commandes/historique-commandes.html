@@ -1,0 +1,31 @@
+<h2 class="his-title">Ses commandes</h2>
+
+@if (loading()) {
+  <fold-loading message="Chargement…" />
+} @else if (orders().length === 0) {
+  <fold-empty-state
+    title="Aucune commande"
+    subtitle="Ce compte n'a encore rien commandé — le catalogue est au milieu."
+  />
+} @else {
+  <ul class="his-list">
+    @for (row of orders(); track row.id) {
+      <li>
+        <button
+          type="button"
+          class="his-row"
+          [class.is-on]="selectedId() === row.id"
+          [attr.aria-pressed]="selectedId() === row.id"
+          (click)="select.emit(row.id)"
+        >
+          <span class="his-number">{{ row.orderNumber }}</span>
+          <span class="his-date">{{ date(row) }}</span>
+          <span class="his-total">{{ total(row) }}</span>
+          @if (originPill(row); as pill) {
+            <span class="his-pill">{{ pill }}</span>
+          }
+        </button>
+      </li>
+    }
+  </ul>
+}
