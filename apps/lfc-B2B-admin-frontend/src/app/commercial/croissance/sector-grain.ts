@@ -1,7 +1,18 @@
 import type { SectorRevenueView } from '@lfd/contracts';
 
-/** Granularité temporelle du CA par secteur NAF. */
-export type SectorGrain = 'day' | 'week' | 'month' | 'quarter' | 'year';
+import type { StatsGrain } from '../../shared/stats-grain/stats-grain';
+
+/**
+ * Granularité temporelle du CA par secteur NAF — **le pas de temps commun** du
+ * back-office, pas un second. Deux unions portant les mêmes cinq mots auraient
+ * fini par diverger, et la divergence se serait vue en dernier.
+ *
+ * Ce qui reste propre à ce module est le **regroupement d'une série quotidienne
+ * venue du serveur** ; `grainBuckets` fait l'autre moitié du travail, découper
+ * une fenêtre à partir d'aujourd'hui. Les libellés restent locaux : ici on
+ * nomme une **unité** (« Mois »), là-bas une **fenêtre** (« Mois » sur douze).
+ */
+export type SectorGrain = StatsGrain;
 
 /** Options du `<select>` de granularité (ordre du plus fin au plus large). */
 export const SECTOR_GRAINS: ReadonlyArray<{ readonly value: SectorGrain; readonly label: string }> =

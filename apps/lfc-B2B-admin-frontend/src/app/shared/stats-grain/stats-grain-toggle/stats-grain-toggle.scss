@@ -1,0 +1,13 @@
+/* Cinq segments tiennent sur un écran large, pas sur un téléphone : le groupe
+   défile plutôt que de se replier en menu — un segmenté qui se replie change de
+   nature à mi-chemin, et on ne sait plus où chercher le réglage. */
+:host {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+:host::-webkit-scrollbar {
+  display: none;
+}
