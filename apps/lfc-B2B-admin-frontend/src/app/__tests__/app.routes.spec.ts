@@ -32,6 +32,7 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   'comptes-clients/:id/dashboard': null,
   'comptes-clients/:id/informations': null,
   'comptes-clients/:id/commandes': null,
+  'comptes-clients/:id/facturation': null,
   'comptes-clients/:id/stats': null,
   'comptes-clients/:id/paniers-recurrents': null,
   'comptes-clients/:id/alertes': null,

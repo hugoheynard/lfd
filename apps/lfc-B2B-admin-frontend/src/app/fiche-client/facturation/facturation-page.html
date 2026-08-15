@@ -1,0 +1,124 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture des commandes…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de charger la facturation"
+      subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    <!-- Ce que l'écran EST, dit d'emblée : un relevé de ce qui devra être
+         facturé, pas des factures. Aucune n'existe dans le système. -->
+    <fold-callout variant="info" title="Relevé, pas facture">
+      Aucune facture n'est émise par la plateforme. Cet écran rassemble les commandes telles
+      qu'elles se reportent en comptabilité.
+    </fold-callout>
+
+    @if (maybeTruncated()) {
+      <fold-callout variant="warning">
+        Ce compte dépasse la fenêtre de lecture : les périodes les plus anciennes sont incomplètes.
+      </fold-callout>
+    }
+
+    <div class="fac-cols">
+      <section class="fac-col">
+        <header class="fac-head">
+          <h2 class="fac-h2">Au compte — à facturer</h2>
+          <span class="fac-sum">{{
+            euros(split().openTotalCents + split().closedTotalCents)
+          }}</span>
+        </header>
+
+        @if (!onAccount()) {
+          <p class="fac-note">
+            Ce compte règle à la commande — aucun terme mensuel ne lui a été accordé.
+          </p>
+        }
+
+        @if (openPeriod(); as period) {
+          <article class="fac-period fac-period--open">
+            <header class="fac-period-head">
+              <div>
+                <span class="fac-period-label">{{ period.label }}</span>
+                <fold-badge variant="info" content="En cours" />
+              </div>
+              <strong class="fac-num">{{ euros(period.totalCents) }}</strong>
+            </header>
+            <p class="fac-note">
+              {{ period.orders.length }} commande{{ period.orders.length > 1 ? 's' : '' }} · clôture
+              le {{ closingOf(period.key) }}
+            </p>
+            <ul class="fac-list">
+              @for (order of period.orders; track order.id) {
+                <li class="fac-row">
+                  <button type="button" class="fac-link" (click)="openOrder(order)">
+                    {{ order.orderNumber }}
+                  </button>
+                  <span class="fac-date">{{ day(order.placedAt) }}</span>
+                  <span class="fac-num">{{ euros(order.totalCents) }}</span>
+                </li>
+              }
+            </ul>
+          </article>
+        }
+
+        @for (period of closedPeriods(); track period.key) {
+          <article class="fac-period">
+            <header class="fac-period-head">
+              <span class="fac-period-label">{{ period.label }}</span>
+              <strong class="fac-num">{{ euros(period.totalCents) }}</strong>
+            </header>
+            <p class="fac-note">
+              {{ period.orders.length }} commande{{ period.orders.length > 1 ? 's' : '' }} · close
+              depuis le {{ closingOf(period.key) }}
+            </p>
+            <ul class="fac-list">
+              @for (order of period.orders; track order.id) {
+                <li class="fac-row">
+                  <button type="button" class="fac-link" (click)="openOrder(order)">
+                    {{ order.orderNumber }}
+                  </button>
+                  <span class="fac-date">{{ day(order.placedAt) }}</span>
+                  <span class="fac-num">{{ euros(order.totalCents) }}</span>
+                </li>
+              }
+            </ul>
+          </article>
+        }
+
+        @if (split().periods.length === 0) {
+          <p class="fac-empty">Rien porté au compte.</p>
+        }
+      </section>
+
+      <section class="fac-col">
+        <header class="fac-head">
+          <h2 class="fac-h2">À la commande — déjà réglé</h2>
+          <span class="fac-sum">{{ split().perOrder.length }}</span>
+        </header>
+
+        @if (split().perOrder.length === 0) {
+          <p class="fac-empty">Aucune commande réglée à l'unité.</p>
+        } @else {
+          <ul class="fac-list">
+            @for (order of split().perOrder; track order.id) {
+              <li class="fac-row fac-row--paid">
+                <button type="button" class="fac-link" (click)="openOrder(order)">
+                  {{ order.orderNumber }}
+                </button>
+                <span class="fac-date">{{ day(order.placedAt) }}</span>
+                <fold-badge [variant]="paymentTone(order)" [content]="payment(order)" />
+                <span class="fac-num">{{ euros(order.totalCents) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  }
+}

@@ -82,6 +82,13 @@ export const routes: Routes = [
           import('./fiche-client/commandes/commandes-page').then((m) => m.ClientCommandesPage),
       },
       {
+        path: 'facturation',
+        loadComponent: () =>
+          import('./fiche-client/facturation/facturation-page').then(
+            (m) => m.ClientFacturationPage,
+          ),
+      },
+      {
         path: 'stats',
         loadComponent: () =>
           import('./fiche-client/stats/stats-page').then((m) => m.ClientStatsPage),

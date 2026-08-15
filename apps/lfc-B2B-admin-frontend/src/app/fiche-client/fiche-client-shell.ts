@@ -37,6 +37,9 @@ import { narrowViewport } from '../shared/viewport/narrow-viewport';
  * - **Informations** — l'état civil du compte : pièces d'activation, identité,
  *   contacts, adresses. Ce qu'on ouvre pour *corriger* quelque chose ;
  * - **Commandes** — ce qu'il a acheté, et à quel rythme ;
+ * - **Facturation** — ce qui reste à facturer (au compte, par mois) face à ce
+ *   qui est déjà réglé à la commande. Un **relevé**, pas des factures : la
+ *   plateforme n'en émet aucune ;
  * - **Stats** — ce que le compte pèse, à quel rythme, et sur quoi. L'onglet
  *   Commandes montre des lignes, celui-ci une forme : la même matière, lue de
  *   loin ;
@@ -91,6 +94,7 @@ export class FicheClientShell {
     { key: 'dashboard', label: 'Tableau de bord', link: 'dashboard', icon: 'grid' },
     { key: 'informations', label: 'Informations', link: 'informations', icon: 'company' },
     { key: 'commandes', label: 'Commandes', link: 'commandes', icon: 'list' },
+    { key: 'facturation', label: 'Facturation', link: 'facturation', icon: 'receipt' },
     { key: 'stats', label: 'Stats', link: 'stats', icon: 'stats' },
     {
       key: 'paniers-recurrents',

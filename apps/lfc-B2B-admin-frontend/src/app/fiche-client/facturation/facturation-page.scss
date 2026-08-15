@@ -1,0 +1,131 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Deux colonnes de même poids : les lire côte à côte est tout l'intérêt de
+   l'écran. Sous 900 px elles s'empilent, le mensuel d'abord. */
+.fac-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--fold-space-lg);
+}
+
+@media (max-width: 900px) {
+  .fac-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fac-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  min-width: 0;
+}
+
+.fac-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  padding-bottom: var(--fold-space-sm);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.fac-h2 {
+  margin: 0;
+  font-size: var(--fold-text-lg);
+}
+
+.fac-sum {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.fac-period {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+}
+
+/* La période en cours est celle qu'on regarde : elle porte la teinte, les
+   closes restent neutres. */
+.fac-period--open {
+  border-color: var(--fold-color-info-border);
+  background: var(--fold-color-info-surface);
+}
+
+.fac-period-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.fac-period-label {
+  margin-right: var(--fold-space-sm);
+  font-weight: 600;
+}
+
+.fac-note,
+.fac-empty {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.fac-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fac-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-xs) 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.fac-row--paid {
+  padding: var(--fold-space-sm) 0;
+}
+
+.fac-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--fold-color-primary-text);
+  }
+}
+
+.fac-date {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* Le montant colle à droite, en chiffres de largeur fixe : c'est la colonne
+   qu'on additionne du regard. */
+.fac-num {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
