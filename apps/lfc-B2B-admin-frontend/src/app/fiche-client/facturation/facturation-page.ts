@@ -13,6 +13,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
 import type { AdminOrderRow } from '@lfd/contracts';
@@ -28,11 +29,11 @@ import { AdminCompaniesService } from '../../comptes-clients/admin-companies.ser
 import { AdminOrdersService } from '../../commandes/orders.service';
 import {
   groupByYear,
-  monthOnly,
+  ledgerRows,
   periodDueDate,
   splitForBilling,
   yearOf,
-  type BillingPeriod,
+  type LedgerRow,
   type YearGroup,
 } from './billing-periods';
 
@@ -65,6 +66,7 @@ const ORDERS_WINDOW = 200;
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
+    FoldIconComponent,
     FoldLoadingStateComponent,
   ],
   templateUrl: './facturation-page.html',
@@ -94,17 +96,15 @@ export class ClientFacturationPage {
   );
 
   /**
-   * Le registre « au compte », **par année**. Un exercice se lit année par
-   * année, et le passage de l'une à l'autre est une rupture, pas une ligne de
-   * plus.
+   * Le registre, **par année**. Un exercice se lit année par année, et le
+   * passage de l'une à l'autre est une rupture, pas une ligne de plus.
+   *
+   * Une seule grille pour les deux régimes : août au compte et août à la
+   * commande partagent la ligne, donc la hauteur. Deux colonnes indépendantes
+   * auraient glissé l'une par rapport à l'autre dès le premier mois dépareillé.
    */
-  protected readonly accountYears = computed<readonly YearGroup<BillingPeriod>[]>(() =>
-    groupByYear(this.split().periods, (period) => yearOf(period.key)),
-  );
-
-  /** Le registre « à la commande », par année lui aussi — même rythme de lecture. */
-  protected readonly perOrderYears = computed<readonly YearGroup<AdminOrderRow>[]>(() =>
-    groupByYear(this.split().perOrder, (order) => order.placedAt.slice(0, 4)),
+  protected readonly years = computed<readonly YearGroup<LedgerRow>[]>(() =>
+    groupByYear(ledgerRows(this.split()), (row) => yearOf(row.key)),
   );
 
   /** Le compte règle-t-il au mois ? Faux ⇒ la colonne de gauche s'explique. */
@@ -124,11 +124,6 @@ export class ClientFacturationPage {
 
   protected day(iso: string): string {
     return formatOrderDate(iso);
-  }
-
-  /** « août » — le rappel de période, dans le rail de gauche. */
-  protected month(key: string): string {
-    return monthOnly(key);
   }
 
   protected closingOf(key: string): string {

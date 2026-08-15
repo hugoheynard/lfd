@@ -4,6 +4,7 @@ import type { AdminPlaceOrderPayload, PlaceOrderPayload } from "@lfd/contracts";
 
 import { PlaceOrderForCustomerCommand } from "../src/orders/application/commands/place-order-for-customer.command.js";
 import { PlaceOrderCommand } from "../src/orders/application/commands/place-order.command.js";
+import { PaymentStatus } from "../src/infra/database/client/client.js";
 import { bootstrapHarness, customer, type SeedHarness } from "./seed-growth/harness.js";
 
 /**
@@ -20,6 +21,11 @@ import { bootstrapHarness, customer, type SeedHarness } from "./seed-growth/harn
  *
  * **Additif et idempotent** : une échéance déjà servie (même société, même jour)
  * est sautée. Rejouable à volonté ; il n'efface rien.
+ *
+ * **Deux régimes de règlement**, parce que l'écran de facturation les oppose :
+ * deux tiers des échéances partent au compte (`not_required`, à facturer en fin
+ * de mois), un tiers est réglé à la commande (`paid`). Un compte qui n'aurait
+ * que l'un des deux ne dirait rien de la mise en page.
  *
  * Les commandes passent par les **vrais handlers** : prix ré-résolus au
  * catalogue, TVA calculée par l'agrégat, jeton de retrait émis. Seule la **date
@@ -116,6 +122,10 @@ async function main(): Promise<void> {
         lines: linesFor(occurrence),
         at,
         staffId: byStaff ? staffId : null,
+        // Une échéance sur trois est réglée **à la commande** plutôt que portée
+        // au compte : sans elles, l'écran de facturation n'aurait qu'une colonne
+        // remplie, et on ne verrait pas si les deux s'alignent.
+        paidAtOrder: occurrence % 3 === 1,
       });
       created += 1;
     }
@@ -166,6 +176,7 @@ async function place(
     readonly lines: readonly { readonly sku: string; readonly quantity: number }[];
     readonly at: Date;
     readonly staffId: string | null;
+    readonly paidAtOrder: boolean;
   },
 ): Promise<void> {
   const content = {
@@ -196,12 +207,21 @@ async function place(
     );
   });
 
-  // La seule écriture directe du seed. `created_at` a un défaut SQL : ni le
-  // `Clock` ni le contexte daté ne le devancent, et c'est cette colonne que
-  // lisent l'historique et l'agrégation « déjà commandés ».
+  // Les deux seules écritures directes du seed.
+  //
+  // `created_at` a un défaut SQL : ni le `Clock` ni le contexte daté ne le
+  // devancent, et c'est cette colonne que lisent l'historique et l'agrégation
+  // « déjà commandés ».
+  //
+  // `payment_status` figure un encaissement par carte, que ce seed ne peut pas
+  // simuler autrement : la vraie bascule vient du webhook Stripe, et il n'y a
+  // pas de Stripe en développement.
   await harness.prisma.order.update({
     where: { id: placed.id },
-    data: { createdAt: input.at },
+    data: {
+      createdAt: input.at,
+      ...(input.paidAtOrder ? { paymentStatus: PaymentStatus.paid } : {}),
+    },
   });
 }
 

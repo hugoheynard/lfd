@@ -50,36 +50,31 @@
   font-size: var(--fold-text-xs);
 }
 
-/* ── Les deux colonnes ───────────────────────────────────────────────────── */
+/* ── Le registre ─────────────────────────────────────────────────────────── */
 
-.fac-cols {
+/* UNE grille pour les deux régimes : rail de mois, au compte, à la commande.
+   Août au compte et août à la commande partagent donc la ligne, donc la
+   hauteur — deux colonnes indépendantes auraient glissé l'une par rapport à
+   l'autre dès le premier mois dépareillé. */
+.fac-ledger {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--fold-space-lg);
+  grid-template-columns: 5.5rem minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: var(--fold-space-lg);
   align-items: start;
 }
 
-@media (max-width: 900px) {
-  .fac-cols {
-    grid-template-columns: 1fr;
-  }
-}
-
-.fac-col {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-md);
-  min-width: 0;
-}
-
-/* Le titre, sa qualification, et le montant à droite : trois informations sur
-   une ligne, dont une seule se compare d'une colonne à l'autre. */
 .fac-head {
   display: flex;
   align-items: baseline;
   gap: var(--fold-space-sm);
   padding-bottom: var(--fold-space-sm);
   border-bottom: 1px solid var(--fold-color-border);
+}
+
+/* L'icône se cale sur la ligne de base du titre plutôt que sur la sienne. */
+.fac-head fold-icon {
+  align-self: center;
+  color: var(--fold-color-text-muted);
 }
 
 .fac-h2 {
@@ -100,15 +95,15 @@
 
 /* ── La rupture d'exercice ───────────────────────────────────────────────── */
 
-/* Une barre pleine largeur, l'année posée au milieu. C'est la seule coupure du
-   registre : tout le reste est filet fin, pour que celle-ci se voie sans crier.
-   Le filet est tracé par deux dégradés plutôt que par des `::before/::after`
-   flexés — un seul élément, aucune boîte à aligner. */
+/* Une barre sur TOUTE la largeur du registre, l'année posée au milieu. C'est la
+   seule coupure : tout le reste est filet fin, pour que celle-ci se voie sans
+   crier. Le filet est un dégradé sur l'élément — un seul nœud, rien à aligner. */
 .fac-year {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: var(--fold-space-lg) 0 var(--fold-space-sm);
+  margin: var(--fold-space-xl) 0 var(--fold-space-sm);
   background: linear-gradient(var(--fold-color-border), var(--fold-color-border)) center / 100% 1px
     no-repeat;
 }
@@ -122,40 +117,34 @@
   letter-spacing: 0.18em;
 }
 
-/* ── Une période du registre ─────────────────────────────────────────────── */
+/* ── Le rail de mois ─────────────────────────────────────────────────────── */
 
-/* Le rail de mois à gauche, le corps à droite. Pas de carte : un registre se
-   tient par ses filets et son alignement, pas par des boîtes empilées. */
-.fac-period {
-  display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
-  gap: 0 var(--fold-space-md);
-  padding: var(--fold-space-sm) 0;
-  border-top: 1px solid var(--fold-color-border-subtle);
-}
-
-.fac-period.is-open {
-  /* Un liseré, pas un fond : la période en cours se repère du coin de l'œil
-     sans que ses lignes changent de couleur. */
-  border-top-color: var(--fold-color-primary);
-  box-shadow: inset 3px 0 0 -1px var(--fold-color-primary-border);
-}
-
-/* Le rappel de période : bas de casse, espacé, discret — il se lit en
-   descendant, il ne se lit pas en premier. */
+/* Bas de casse, espacé, discret : il se lit en descendant, pas en premier. Il
+   vaut pour les DEUX cellules de sa ligne — le mois n'est écrit qu'une fois. */
 .fac-rail {
-  margin: 0;
-  padding-top: 2px;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  margin: 0;
+  padding: var(--fold-space-md) 0 var(--fold-space-sm);
+}
+
+.fac-rail--head {
+  padding: 0;
 }
 
 .fac-rail-month {
   color: var(--fold-color-text-secondary);
   font-size: var(--fold-text-sm);
-  font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
+}
+
+/* La période en cours se signale ICI, par un mot — pas par un trait qui
+   coupait la ligne à gauche et en haut, et qui cassait l'alignement du
+   registre. */
+.fac-rail.is-open .fac-rail-month {
+  color: var(--fold-color-primary-text);
+  font-weight: 600;
 }
 
 .fac-rail-state {
@@ -164,25 +153,46 @@
   letter-spacing: 0.06em;
 }
 
-.fac-body {
+/* ── Une cellule ─────────────────────────────────────────────────────────── */
+
+.fac-cell {
+  padding: var(--fold-space-md) 0 var(--fold-space-sm);
+  border-top: 1px solid var(--fold-color-border-subtle);
   min-width: 0;
 }
 
-.fac-period-head {
+/* Le mois en cours : un fond à peine posé, sans bordure — la teinte suffit à
+   dire « c'est ici que ça s'accumule ». */
+.fac-cell.is-open {
+  background: var(--fold-color-primary-surface);
+  box-shadow:
+    var(--fold-space-sm) 0 0 var(--fold-color-primary-surface),
+    calc(-1 * var(--fold-space-sm)) 0 0 var(--fold-color-primary-surface);
+}
+
+.fac-cell-head {
   display: flex;
   align-items: baseline;
   gap: var(--fold-space-sm);
-  padding-bottom: var(--fold-space-xs);
+  margin: 0 0 var(--fold-space-xs);
 }
 
-.fac-period-meta {
+.fac-cell-meta {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
 }
 
-.fac-period-total {
+.fac-cell-total {
   margin-left: auto;
   font-size: var(--fold-text-md);
+}
+
+/* Un mois sans rien de ce côté : un tiret, pas un vide. La ligne garde sa
+   hauteur, et l'œil sait qu'il n'a rien manqué. */
+.fac-cell-void {
+  margin: 0;
+  color: var(--fold-color-text-faded);
+  font-variant-numeric: tabular-nums;
 }
 
 .fac-note,
@@ -190,6 +200,10 @@
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
+}
+
+.fac-note--account {
+  padding-top: var(--fold-space-sm);
 }
 
 /* ── Les lignes ──────────────────────────────────────────────────────────── */
@@ -257,16 +271,25 @@
   align-self: center;
 }
 
-/* Sous 640 px, le rail passerait à deux caractères par ligne : il repasse
-   au-dessus du corps, en une ligne. */
-@media (max-width: 640px) {
-  .fac-period {
+/* Sous 900 px, le registre se déplie : rail au-dessus, puis les deux régimes
+   l'un sous l'autre. L'alignement vertical n'a plus de sens sur une colonne. */
+@media (max-width: 900px) {
+  .fac-ledger {
     grid-template-columns: 1fr;
-    gap: var(--fold-space-xs);
+    row-gap: var(--fold-space-xs);
   }
 
   .fac-rail {
     flex-direction: row;
     gap: var(--fold-space-sm);
+    padding-bottom: 0;
+  }
+
+  .fac-rail--head {
+    display: none;
+  }
+
+  .fac-cell.is-open {
+    box-shadow: none;
   }
 }

@@ -160,3 +160,64 @@ export function groupByYear<T>(
   }
   return groups;
 }
+
+/**
+ * Une **ligne du registre** : un mois, ce qu'il porte au compte, et ce qui a été
+ * réglé à la commande le même mois.
+ *
+ * Les deux régimes partagent la ligne parce qu'ils partagent le mois : août au
+ * compte et août à la commande doivent occuper la **même hauteur**, sinon l'œil
+ * compare deux colonnes qui ont glissé l'une par rapport à l'autre.
+ */
+export interface LedgerRow {
+  /** `AAAA-MM`. */
+  readonly key: string;
+  /** « août » — le rail, qui vaut pour les deux régimes. */
+  readonly month: string;
+  readonly open: boolean;
+  /** La période au compte, ou `null` si rien n'y a été porté ce mois-là. */
+  readonly period: BillingPeriod | null;
+  /** Les commandes réglées à la commande ce mois-là. */
+  readonly orders: readonly AdminOrderRow[];
+  /** Total au compte, en centimes (0 sans période). */
+  readonly accountCents: number;
+  /** Total réglé à la commande, en centimes. */
+  readonly perOrderCents: number;
+}
+
+/**
+ * Assemble le registre : un mois par ligne, du plus récent au plus ancien.
+ *
+ * L'union des deux régimes, et non leur juxtaposition — un mois où l'on n'a que
+ * des commandes réglées à l'unité existe, un mois où l'on n'a que du compte
+ * aussi, et les deux doivent apparaître à leur place dans la chronologie.
+ */
+export function ledgerRows(split: BillingSplit): readonly LedgerRow[] {
+  const byMonth = new Map<string, AdminOrderRow[]>();
+  for (const order of split.perOrder) {
+    const key = monthKeyOf(order.placedAt);
+    const bucket = byMonth.get(key);
+    if (bucket === undefined) {
+      byMonth.set(key, [order]);
+    } else {
+      bucket.push(order);
+    }
+  }
+
+  const keys = new Set<string>([...split.periods.map((period) => period.key), ...byMonth.keys()]);
+  return [...keys]
+    .sort((a, b) => b.localeCompare(a))
+    .map((key) => {
+      const period = split.periods.find((entry) => entry.key === key) ?? null;
+      const orders = byMonth.get(key) ?? [];
+      return {
+        key,
+        month: monthOnly(key),
+        open: period?.open ?? false,
+        period,
+        orders,
+        accountCents: period?.totalCents ?? 0,
+        perOrderCents: orders.reduce((sum, order) => sum + order.totalCents, 0),
+      };
+    });
+}

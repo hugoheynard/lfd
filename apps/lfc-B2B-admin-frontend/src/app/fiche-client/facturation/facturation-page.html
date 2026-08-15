@@ -62,96 +62,85 @@
       </fold-callout>
     }
 
-    <div class="fac-cols">
-      <section class="fac-col">
-        <header class="fac-head">
-          <h2 class="fac-h2">Au compte</h2>
-          <span class="fac-head-note">à facturer</span>
-          <strong class="fac-head-sum">
-            {{ euros(split().openTotalCents + split().closedTotalCents) }}
-          </strong>
-        </header>
+    <section class="fac-ledger" aria-label="Registre de facturation">
+      <!-- Les deux en-têtes sont dans la grille, donc alignés avec les colonnes
+           qu'ils annoncent — et le rail de gauche reste vide, il ne titre rien. -->
+      <p class="fac-rail fac-rail--head"></p>
+      <header class="fac-head">
+        <fold-icon name="calendar" size="sm" />
+        <h2 class="fac-h2">Au compte</h2>
+        <span class="fac-head-note">à facturer</span>
+        <strong class="fac-head-sum">
+          {{ euros(split().openTotalCents + split().closedTotalCents) }}
+        </strong>
+      </header>
+      <header class="fac-head">
+        <fold-icon name="receipt" size="sm" />
+        <h2 class="fac-h2">À la commande</h2>
+        <span class="fac-head-note">hors mensuel</span>
+        <strong class="fac-head-sum">{{ euros(perOrderTotalCents()) }}</strong>
+      </header>
 
-        @if (!onAccount()) {
-          <p class="fac-note">
-            Ce compte règle à la commande — aucun terme mensuel ne lui a été accordé.
+      @if (!onAccount()) {
+        <p class="fac-rail"></p>
+        <p class="fac-note fac-note--account">
+          Ce compte règle à la commande — aucun terme mensuel ne lui a été accordé.
+        </p>
+        <p class="fac-note"></p>
+      }
+
+      @for (group of years(); track group.year) {
+        <!-- La rupture d'exercice : une barre sur TOUTE la largeur du registre,
+             l'année au milieu. C'est la seule coupure. -->
+        <p class="fac-year">
+          <span class="fac-year-label">{{ group.year }}</span>
+        </p>
+
+        @for (row of group.items; track row.key) {
+          <p class="fac-rail" [class.is-open]="row.open">
+            <span class="fac-rail-month">{{ row.month }}</span>
+            @if (row.open) {
+              <span class="fac-rail-state">en cours</span>
+            }
           </p>
-        }
 
-        @for (group of accountYears(); track group.year) {
-          <!-- La rupture d'exercice : une barre pleine largeur, l'année au
-               milieu. Rien d'autre ne coupe le registre. -->
-          <p class="fac-year">
-            <span class="fac-year-label">{{ group.year }}</span>
-          </p>
-
-          @for (period of group.items; track period.key) {
-            <article class="fac-period" [class.is-open]="period.open">
-              <!-- Le rail de gauche : le mois, et lui seul. C'est le repère qu'on
-                   suit du pouce en descendant le registre. -->
-              <p class="fac-rail">
-                <span class="fac-rail-month">{{ month(period.key) }}</span>
-                @if (period.open) {
-                  <span class="fac-rail-state">en cours</span>
-                }
+          <div class="fac-cell" [class.is-open]="row.open">
+            @if (row.period; as period) {
+              <p class="fac-cell-head">
+                <span class="fac-cell-meta">
+                  {{ period.orders.length }} commande{{ period.orders.length > 1 ? 's' : '' }} ·
+                  {{ row.open ? 'clôture le' : 'close depuis le' }} {{ closingOf(period.key) }}
+                </span>
+                <strong class="fac-num fac-cell-total">{{ euros(period.totalCents) }}</strong>
               </p>
-
-              <div class="fac-body">
-                <header class="fac-period-head">
-                  <span class="fac-period-meta">
-                    {{ period.orders.length }} commande{{ period.orders.length > 1 ? 's' : '' }} ·
-                    {{ period.open ? 'clôture le' : 'close depuis le' }}
-                    {{ closingOf(period.key) }}
-                  </span>
-                  <strong class="fac-num fac-period-total">{{ euros(period.totalCents) }}</strong>
-                </header>
-
-                <ul class="fac-list">
-                  @for (order of period.orders; track order.id) {
-                    <li class="fac-row">
-                      <button type="button" class="fac-link" (click)="openOrder(order)">
-                        {{ order.orderNumber }}
-                      </button>
-                      <span class="fac-date">{{ day(order.placedAt) }}</span>
-                      <span class="fac-num">{{ euros(order.totalCents) }}</span>
-                    </li>
-                  }
-                </ul>
-              </div>
-            </article>
-          }
-        }
-
-        @if (split().periods.length === 0) {
-          <p class="fac-empty">Rien porté au compte.</p>
-        }
-      </section>
-
-      <section class="fac-col">
-        <header class="fac-head">
-          <h2 class="fac-h2">À la commande</h2>
-          <span class="fac-head-note">hors mensuel</span>
-          <strong class="fac-head-sum">{{ euros(perOrderTotalCents()) }}</strong>
-        </header>
-
-        @if (split().perOrder.length === 0) {
-          <p class="fac-empty">Aucune commande réglée à l'unité.</p>
-        }
-
-        @for (group of perOrderYears(); track group.year) {
-          <p class="fac-year">
-            <span class="fac-year-label">{{ group.year }}</span>
-          </p>
-
-          <article class="fac-period">
-            <p class="fac-rail">
-              <span class="fac-rail-month">{{ group.items.length }}</span>
-              <span class="fac-rail-state">commandes</span>
-            </p>
-
-            <div class="fac-body">
               <ul class="fac-list">
-                @for (order of group.items; track order.id) {
+                @for (order of period.orders; track order.id) {
+                  <li class="fac-row">
+                    <button type="button" class="fac-link" (click)="openOrder(order)">
+                      {{ order.orderNumber }}
+                    </button>
+                    <span class="fac-date">{{ day(order.placedAt) }}</span>
+                    <span class="fac-num">{{ euros(order.totalCents) }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="fac-cell-void">—</p>
+            }
+          </div>
+
+          <div class="fac-cell">
+            @if (row.orders.length > 0) {
+              <p class="fac-cell-head">
+                <span class="fac-cell-meta">
+                  {{ row.orders.length }} commande{{ row.orders.length > 1 ? 's' : '' }} · réglée{{
+                    row.orders.length > 1 ? 's' : ''
+                  }}
+                </span>
+                <strong class="fac-num fac-cell-total">{{ euros(row.perOrderCents) }}</strong>
+              </p>
+              <ul class="fac-list">
+                @for (order of row.orders; track order.id) {
                   <li class="fac-row fac-row--paid">
                     <button type="button" class="fac-link" (click)="openOrder(order)">
                       {{ order.orderNumber }}
@@ -162,10 +151,18 @@
                   </li>
                 }
               </ul>
-            </div>
-          </article>
+            } @else {
+              <p class="fac-cell-void">—</p>
+            }
+          </div>
         }
-      </section>
-    </div>
+      }
+
+      @if (years().length === 0) {
+        <p class="fac-rail"></p>
+        <p class="fac-empty">Aucune commande sur ce compte.</p>
+        <p class="fac-empty"></p>
+      }
+    </section>
   }
 }
