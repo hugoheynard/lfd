@@ -1,0 +1,245 @@
+/**
+ * E2E de la **commande saisie par l'équipe** (`POST /admin/orders`).
+ *
+ * Ce que seul le vrai SQL prouve, et qu'un test de handler ne peut pas :
+ * - le **mur porte sur l'acheteur**, un client qui n'est pas membre de la
+ *   société visée est refusé — c'est le point le plus facile à casser, puisque
+ *   l'acteur (le staff) n'est membre de rien par construction ;
+ * - la commande atterrit avec les deux identités distinctes en colonnes, et
+ *   remonte ensuite dans « Mes commandes » **du client**, pas de l'équipe ;
+ * - le refus du **compte sans crédit** mord au niveau HTTP, en 409, et
+ *   n'écrit rien.
+ *
+ * Deux frontières doublées : la signature du jeton **staff** (tenant Auth0
+ * distant) et la passerelle Stripe. Le reste — guard, bus, domaine, SQL — est réel.
+ */
+import type { AdminPlacedOrderResponse, OrderView } from "@lfd/contracts";
+
+import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { CompanyStatus, CustomerRole, DeferredTerm } from "../src/infra/database/client/client.js";
+import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
+import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+
+const BUYER = "auth0|acheteur";
+const OUTSIDER = "auth0|etranger";
+
+const stubAdminVerifier = {
+  verify: (): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: "staff-e2e", scopes: [] }),
+};
+
+/** L'identifiant d'intention change à chaque appel : la colonne est `@unique`. */
+let intentCounter = 0;
+const fakeGateway = {
+  createIntent: () => {
+    intentCounter += 1;
+    return Promise.resolve({
+      paymentIntentId: `pi_admin_${intentCounter}`,
+      clientSecret: `pi_admin_${intentCounter}_secret`,
+    });
+  },
+  retrieveIntent: (id: string) =>
+    Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` }),
+  publishableKey: () => "pk_e2e",
+  parseWebhook: () => ({ kind: "ignored" as const }),
+};
+
+let ctx: E2eContext;
+
+beforeAll(async () => {
+  ctx = await bootstrapE2e({
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: fakeGateway },
+    ],
+  });
+});
+
+afterAll(async () => {
+  await ctx.close();
+});
+
+beforeEach(async () => {
+  await ctx.reset();
+});
+
+function staff(): ReturnType<E2eContext["asSub"]> {
+  return ctx.asSub("staff-e2e");
+}
+
+/** Sans point de retrait par défaut, tout `pickup` part en 409. */
+async function seedPickup(): Promise<void> {
+  await ctx.prisma.pickupAddress.create({
+    data: {
+      label: "Labo",
+      ligne1: "1 rue du Four",
+      codePostal: "73150",
+      ville: "Val d'Isère",
+      pays: "France",
+      isDefault: true,
+    },
+  });
+}
+
+/** Une société avec un détenteur, et — au choix — un crédit accordé. */
+async function seedCompany(onAccount: boolean): Promise<{
+  readonly companyId: string;
+  readonly buyerId: string;
+}> {
+  await seedPickup();
+  const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+  if (onAccount) {
+    await ctx.prisma.company.update({
+      where: { id: company.id },
+      data: { grantedTerms: [DeferredTerm.monthly] },
+    });
+  }
+  const buyer = await createUser(ctx.prisma, { auth0Sub: BUYER, email: "acheteur@test.fr" });
+  await attachTo(ctx.prisma, buyer.id, company.id, CustomerRole.owner);
+  return { companyId: company.id, buyerId: buyer.id };
+}
+
+function payload(over: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    settlement: "link",
+    lines: [{ sku: "VIE-001", quantity: 12 }],
+    ...over,
+  };
+}
+
+describe("POST /admin/orders — le mur", () => {
+  it("refuse un acheteur qui n'est pas membre de la société visée", async () => {
+    // Le staff, lui, n'est membre de rien : si le mur portait sur l'acteur,
+    // cette route serait morte. S'il ne portait sur personne, ce test passerait.
+    const { companyId } = await seedCompany(false);
+    const outsider = await createUser(ctx.prisma, {
+      auth0Sub: OUTSIDER,
+      email: "etranger@test.fr",
+    });
+
+    await staff()
+      .post("/admin/orders")
+      .send(payload({ companyId, buyerUserId: outsider.id }))
+      .expect(404);
+
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+
+  it("exige une société : le zéro friction est un parcours client", async () => {
+    const { buyerId } = await seedCompany(false);
+
+    await staff()
+      .post("/admin/orders")
+      .send(payload({ buyerUserId: buyerId }))
+      .expect(400);
+  });
+
+  it("exige un règlement choisi — aucun défaut silencieux", async () => {
+    const { companyId, buyerId } = await seedCompany(true);
+
+    await staff()
+      .post("/admin/orders")
+      .send({ companyId, buyerUserId: buyerId, lines: [{ sku: "VIE-001", quantity: 1 }] })
+      .expect(400);
+  });
+});
+
+describe("POST /admin/orders — la trace", () => {
+  it("porte la commande au nom du client ET garde qui l'a saisie", async () => {
+    const { companyId, buyerId } = await seedCompany(true);
+
+    const placed = jsonBody<AdminPlacedOrderResponse>(
+      await staff()
+        .post("/admin/orders")
+        .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
+        .expect(201),
+    );
+
+    const row = await ctx.prisma.order.findUniqueOrThrow({ where: { id: placed.id } });
+    expect(row.placedByUserId).toBe(buyerId);
+    // L'identifiant de la fiche d'annuaire de l'opérateur E2E, résolu par le
+    // guard — pas le `sub` du jeton, et surtout pas une chaîne inventée.
+    expect(row.placedByStaffId).not.toBeNull();
+  });
+
+  it("remonte dans « Mes commandes » DU CLIENT, marquée comme saisie par l'équipe", async () => {
+    // C'est tout l'argument du modèle : la commande appartient au client.
+    const { companyId, buyerId } = await seedCompany(true);
+    await staff()
+      .post("/admin/orders")
+      .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
+      .expect(201);
+
+    const orders = jsonBody<readonly OrderView[]>(
+      await ctx.asSub(BUYER).get(`/companies/${companyId}/orders`).expect(200),
+    );
+
+    expect(orders).toHaveLength(1);
+    expect(orders[0]?.origin).toBe("back_office");
+  });
+});
+
+describe("POST /admin/orders — le règlement", () => {
+  it("au compte : rien à encaisser quand le crédit est accordé", async () => {
+    const { companyId, buyerId } = await seedCompany(true);
+
+    const placed = jsonBody<AdminPlacedOrderResponse>(
+      await staff()
+        .post("/admin/orders")
+        .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
+        .expect(201),
+    );
+
+    const row = await ctx.prisma.order.findUniqueOrThrow({ where: { id: placed.id } });
+    expect(row.paymentStatus).toBe("not_required");
+    expect(row.stripePaymentIntentId).toBeNull();
+    expect(placed.paymentUrl).toBeUndefined();
+  });
+
+  it("REFUSE le compte à une société sans crédit — et n'écrit rien", async () => {
+    // Sans ce refus, un écran de back-office suffirait à accorder un délai de
+    // paiement que personne n'a négocié.
+    const { companyId, buyerId } = await seedCompany(false);
+
+    await staff()
+      .post("/admin/orders")
+      .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
+      .expect(409);
+
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+
+  it("lien : la commande attend un règlement, que le client peut aller faire", async () => {
+    const { companyId, buyerId } = await seedCompany(false);
+
+    const placed = jsonBody<AdminPlacedOrderResponse>(
+      await staff()
+        .post("/admin/orders")
+        .send(payload({ companyId, buyerUserId: buyerId, settlement: "link" }))
+        .expect(201),
+    );
+
+    const row = await ctx.prisma.order.findUniqueOrThrow({ where: { id: placed.id } });
+    expect(row.paymentStatus).toBe("pending");
+
+    // La boucle se referme : le client suit le lien et obtient de quoi payer.
+    const intent = jsonBody<{ readonly amountCents: number }>(
+      await ctx.asSub(BUYER).get(`/orders/${placed.id}/payment`).expect(200),
+    );
+    expect(intent.amountCents).toBe(placed.totalCents);
+  });
+
+  it("une commande portée au compte n'a rien à régler : 409, pas 404", async () => {
+    // Un client qui suit un vieux lien doit apprendre que sa commande va bien.
+    const { companyId, buyerId } = await seedCompany(true);
+    const placed = jsonBody<AdminPlacedOrderResponse>(
+      await staff()
+        .post("/admin/orders")
+        .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
+        .expect(201),
+    );
+
+    await ctx.asSub(BUYER).get(`/orders/${placed.id}/payment`).expect(409);
+  });
+});
