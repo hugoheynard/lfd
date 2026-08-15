@@ -12,8 +12,20 @@
     </fold-empty-state>
   }
   @default {
-    @if (sheet(); as view) {
-      <app-customer-sheet [sheet]="view" (changed)="load()" />
-    }
+    <!-- L'historique dans le rail COLLANT : on le garde sous les yeux pendant
+         qu'on descend les chiffres, parce que c'est lui qui répond aux
+         questions qu'ils soulèvent (« depuis quand ? », « qui a annulé ? »).
+         Le journal le servait déjà — `sheet.timeline` — seul l'écran manquait.
+
+         Deux @if séparés : chaque bloc ne porte qu'un nœud, sinon la
+         projection dans le rail ne s'applique pas. -->
+    <fold-aside-layout asideRightLabel="Historique commercial">
+      @if (sheet(); as view) {
+        <app-customer-sheet [sheet]="view" (changed)="load()" />
+      }
+      @if (sheet(); as view) {
+        <app-customer-timeline asideRight [entries]="view.timeline" />
+      }
+    </fold-aside-layout>
   }
 }

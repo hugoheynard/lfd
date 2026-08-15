@@ -1,15 +1,22 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
-import { FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent } from 'fold-ng';
+import {
+  FoldAsideLayoutComponent,
+  FoldButtonComponent,
+  FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
+} from 'fold-ng';
 import type { CustomerSheetView } from '@lfd/contracts';
 
 import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
 import { CustomerSheet } from '../../commercial/calendrier/customer-sheet/customer-sheet';
+import { CustomerTimeline } from '../../commercial/calendrier/customer-timeline/customer-timeline';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * **Tableau de bord** d'un compte : ce que le commercial regarde avant d'appeler
- * — les chiffres, les dernières commandes, l'historique d'interaction.
+ * — les chiffres et les dernières commandes au centre, l'**historique
+ * d'interaction** dans le rail collant, comme sur la fiche rendez-vous.
  *
  * C'est la fiche commerciale construite pour la page rendez-vous, réemployée
  * telle quelle : elle était déjà présentationnelle (elle reçoit sa vue, elle ne
@@ -19,7 +26,14 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'app-client-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CustomerSheet, FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent],
+  imports: [
+    CustomerSheet,
+    CustomerTimeline,
+    FoldAsideLayoutComponent,
+    FoldButtonComponent,
+    FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
+  ],
   templateUrl: './dashboard-page.html',
 })
 export class ClientDashboardPage {

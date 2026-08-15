@@ -59,10 +59,6 @@
           </lfd-company-activation-checklist>
         }
 
-        @if (fiche.company(); as c) {
-          <lfd-company-reference-card [reference]="c.reference" label="Référence client" />
-        }
-
         @if (fiche.draft()) {
           <fold-page-section
             title="Identité légale"
@@ -258,6 +254,18 @@
             [suspensionCause]="fiche.company()?.suspensionCause ?? null"
             (activate)="fiche.activate()"
             (reactivate)="fiche.reactivate()"
+          />
+        }
+
+        <!-- La référence dans le rail plutôt qu'au fil du dossier : c'est un
+             identifiant qu'on RECOPIE (au téléphone, sur un document), pas une
+             information qu'on lit une fois. Elle reste donc atteignable sans
+             remonter la page. Sous le geste d'activation, qui tient le rail. -->
+        @if (fiche.company(); as c) {
+          <lfd-company-reference-card
+            asideRight
+            [reference]="c.reference"
+            label="Référence client"
           />
         }
       </fold-aside-layout>
