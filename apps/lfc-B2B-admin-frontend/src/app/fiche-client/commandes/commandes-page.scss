@@ -11,51 +11,6 @@
   font-weight: 700;
 }
 
-.cmd-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs, 0.35rem);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.cmd-row {
-  display: grid;
-  /* Numéro · date · statut · règlement · total. Le total est calé à droite :
-     c'est ce qu'on balaie en descendant la liste. */
-  grid-template-columns: minmax(8rem, auto) minmax(6rem, 1fr) auto auto minmax(5rem, auto);
-  align-items: center;
-  gap: var(--fold-space-sm, 0.75rem);
-  padding: var(--fold-space-sm, 0.6rem) var(--fold-space-md, 1rem);
-  border: 1px solid var(--fold-color-border-subtle, var(--fold-color-border));
-  border-radius: var(--fold-radius-md, 0.5rem);
-}
-
-.cmd-open {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--fold-space-xs);
-  min-width: 0;
-  color: inherit;
-  text-decoration: none;
-}
-
-.cmd-open:hover .cmd-number {
-  text-decoration: underline;
-}
-
-.cmd-open:focus-visible {
-  outline: 2px solid var(--fold-color-primary);
-  outline-offset: 2px;
-  border-radius: var(--fold-radius-xs);
-}
-
-.cmd-number {
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-
 /* Une commande issue d'un panier récurrent : un rythme, pas un achat isolé. */
 .cmd-pill {
   padding: 0.05rem 0.4rem;
@@ -71,11 +26,6 @@
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
-}
-
-.cmd-date {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm, 0.875rem);
 }
 
 .cmd-total {
@@ -100,4 +50,15 @@
   justify-content: space-between;
   gap: var(--fold-space-md);
   flex-wrap: wrap;
+}
+
+.cmd-ref {
+  margin-right: var(--fold-space-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* La seule colonne qu'on parcourt de haut en bas : chiffres de largeur fixe,
+   sans quoi les montants ne s'alignent pas d'une ligne à l'autre. */
+.cmd-total {
+  font-variant-numeric: tabular-nums;
 }

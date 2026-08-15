@@ -13,9 +13,5 @@
     @if (origin(); as pill) {
       <fold-badge variant="info" [content]="pill" />
     }
-    @if (states()) {
-      <fold-badge [variant]="statusTone()" [content]="status()" />
-      <fold-badge [variant]="paymentTone()" [content]="payment()" />
-    }
   </span>
 </button>

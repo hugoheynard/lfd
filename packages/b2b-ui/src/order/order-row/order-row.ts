@@ -9,14 +9,7 @@ import {
 import { FoldBadgeComponent } from 'fold-ng';
 import { ORDER_ORIGIN_LABELS, type AdminOrderRow } from '@lfd/contracts';
 
-import {
-  formatCents,
-  formatOrderDate,
-  orderStatusLabel,
-  orderStatusVariant,
-  paymentStatusLabel,
-  paymentStatusVariant,
-} from '../order-format';
+import { formatCents, formatOrderDate } from '../order-format';
 
 /**
  * `lfd-order-row` — **une commande sur une ligne**, telle que le back-office la
@@ -38,10 +31,11 @@ import {
  * ce qu'on lit une fois qu'on a trouvé. L'inverse obligeait à s'arrêter sur
  * chaque ligne.
  *
- * Le seul réglage est `states`, et ce n'est **pas** une densité : c'est ce que
- * le lecteur est en train de faire. Devant l'historique d'un client qu'on
- * recopie, l'avancement et le règlement de la commande d'il y a trois mois
- * n'apprennent rien — la provenance, si, parce qu'elle dit qui l'a saisie.
+ * Elle ne montre **ni avancement ni règlement**, et c'est la question du
+ * lecteur qui le décide : devant l'historique qu'on recopie, l'état d'une
+ * commande d'il y a trois mois n'apprend rien. La provenance, si — elle dit qui
+ * l'a saisie. Là où l'on compare vraiment (l'onglet Commandes d'une fiche),
+ * c'est un **tableau** qui sert, pas une suite de rangées.
  *
  * Elle ne navigue pas elle-même : elle **émet** `open`. Selon l'écran, cliquer
  * ouvre une page ou charge une source dans la colonne d'à côté ; une rangée qui
@@ -63,25 +57,11 @@ export class OrderRow {
    * naturellement, et qui sans transformation passerait la chaîne vide.
    */
   readonly selected = input(false, { transform: booleanAttribute });
-  /**
-   * Montrer l'avancement et le règlement. Faux quand la liste sert à **choisir
-   * un modèle** plutôt qu'à instruire un dossier : l'état d'une commande passée
-   * est alors du bruit, et il pousse la ligne à la ligne suivante.
-   *
-   * La provenance, elle, reste toujours : « saisie par l'équipe » explique une
-   * commande dont le client ne se souvient pas, et ça vaut dans les deux
-   * contextes.
-   */
-  readonly states = input(true, { transform: booleanAttribute });
 
   readonly open = output<AdminOrderRow>();
 
   protected readonly placedAt = computed(() => formatOrderDate(this.order().placedAt));
   protected readonly total = computed(() => formatCents(this.order().totalCents));
-  protected readonly status = computed(() => orderStatusLabel(this.order().status));
-  protected readonly statusTone = computed(() => orderStatusVariant(this.order().status));
-  protected readonly payment = computed(() => paymentStatusLabel(this.order().paymentStatus));
-  protected readonly paymentTone = computed(() => paymentStatusVariant(this.order().paymentStatus));
 
   /**
    * La provenance, ou `null` quand il n'y a rien à signaler. `self_service` est

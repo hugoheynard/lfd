@@ -1,7 +1,4 @@
 @switch (state()) {
-  @case ('loading') {
-    <fold-loading message="Chargement des commandes…" />
-  }
   @case ('error') {
     <fold-empty-state
       tone="alert"
@@ -24,24 +21,46 @@
         </a>
       </header>
 
-      @if (rows().length === 0) {
-        <fold-empty-state title="Aucune commande" subtitle="Ce compte n'a encore rien commandé." />
-      } @else {
-        <ul class="cmd-list">
-          @for (row of rows(); track row.id) {
-            <li>
-              <lfd-order-row [order]="row" (open)="openOrder(row)" />
-            </li>
+      <fold-data-table
+        caption="Commandes du compte"
+        hover
+        clickable
+        density="compact"
+        [columns]="columns"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [loading]="state() === 'loading'"
+        [empty]="emptyState"
+        (rowClick)="openOrder($event)"
+      >
+        <ng-template foldCell="orderNumber" let-row>
+          <span class="cmd-ref">{{ row.orderNumber }}</span>
+          @if (origin(row); as pill) {
+            <fold-badge variant="info" [content]="pill" />
           }
-        </ul>
+        </ng-template>
 
-        @if (maybeTruncated()) {
-          <!-- Une liste plafonnée qui se tait passe pour exhaustive. -->
-          <p class="cmd-note">
-            Les 50 commandes les plus récentes. La pagination viendra avec l'écran global des
-            commandes.
-          </p>
-        }
+        <ng-template foldCell="placedAt" let-row>{{ date(row) }}</ng-template>
+
+        <ng-template foldCell="status" let-row>
+          <fold-badge [variant]="statusTone(row)" [content]="status(row)" />
+        </ng-template>
+
+        <ng-template foldCell="paymentStatus" let-row>
+          <fold-badge [variant]="paymentTone(row)" [content]="payment(row)" />
+        </ng-template>
+
+        <ng-template foldCell="totalCents" let-row>
+          <span class="cmd-total">{{ total(row) }}</span>
+        </ng-template>
+      </fold-data-table>
+
+      @if (maybeTruncated()) {
+        <!-- Une liste plafonnée qui se tait passe pour exhaustive. -->
+        <p class="cmd-note">
+          Les 50 commandes les plus récentes. La pagination viendra avec l'écran global des
+          commandes.
+        </p>
       }
 
       <h2 class="cmd-h2">Paniers récurrents</h2>
