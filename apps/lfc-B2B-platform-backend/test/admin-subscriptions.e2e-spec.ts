@@ -72,7 +72,7 @@ describe("GET /admin/companies/:companyId/subscriptions", () => {
       lastName: "Durand",
     });
     await attachTo(ctx.prisma, member.id, company.id, CustomerRole.owner);
-    await attachTo(ctx.prisma, colleague.id, company.id, CustomerRole.member);
+    await attachTo(ctx.prisma, colleague.id, company.id, CustomerRole.orders);
     // Un client hors du compte : son panier ne doit pas entrer dans la liste.
     await createUser(ctx.prisma, { auth0Sub: OUTSIDER, email: "solo@exemple.fr" });
 
