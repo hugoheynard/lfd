@@ -27,10 +27,16 @@ import {
  * `AdminOrderRow` ; elles l'avaient rendu de deux façons, avec deux fois la même
  * pastille de provenance et deux fois le même format de date.
  *
- * **Deux densités, un seul gabarit.** `dense` retire les badges d'état : dans
- * une colonne étroite on cherche un **modèle à reprendre**, pas un dossier à
- * instruire — l'état se lit sur la commande. Deux composants pour cela auraient
- * refait diverger la date et la provenance.
+ * **Un seul gabarit, passe-partout.** Deux lignes : la référence et le total,
+ * puis tout le contexte (date, provenance, états) sur une seconde ligne qui
+ * **passe à la ligne d'elle-même**. C'est ce qui lui permet de servir une
+ * colonne étroite comme un onglet pleine largeur sans mode à choisir — une
+ * bascule de densité était l'inverse d'un passe-partout, et elle obligeait
+ * chaque appelant à trancher une question de mise en page.
+ *
+ * La hiérarchie est assumée : le **total** est ce qu'on parcourt, la référence
+ * ce qu'on lit une fois qu'on a trouvé. L'inverse obligeait à s'arrêter sur
+ * chaque ligne.
  *
  * Elle ne navigue pas elle-même : elle **émet** `open`. Selon l'écran, cliquer
  * ouvre une page ou charge une source dans la colonne d'à côté ; une rangée qui
@@ -46,14 +52,11 @@ import {
 export class OrderRow {
   readonly order = input.required<AdminOrderRow>();
   /**
-   * Compacte : sans les badges d'état. Pour une colonne étroite.
+   * Mise en évidence — la ligne dont le contenu est affiché à côté.
    *
-   * `booleanAttribute` pour que `<lfd-order-row dense />` suffise — la forme
-   * qu'on écrit naturellement, et qui sans transformation passerait la chaîne
-   * vide.
+   * `booleanAttribute` pour que l'attribut nu suffise : la forme qu'on écrit
+   * naturellement, et qui sans transformation passerait la chaîne vide.
    */
-  readonly dense = input(false, { transform: booleanAttribute });
-  /** Mise en évidence — la ligne dont le contenu est affiché à côté. */
   readonly selected = input(false, { transform: booleanAttribute });
 
   readonly open = output<AdminOrderRow>();

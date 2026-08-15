@@ -1,7 +1,7 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-4);
+  gap: var(--fold-space-lg);
   min-height: 0;
 }
 
@@ -9,17 +9,17 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--fold-space-3);
+  gap: var(--fold-space-md);
 }
 
 .pan-title {
   margin: 0;
-  font-size: var(--fold-font-size-lg);
+  font-size: var(--fold-text-lg);
 }
 
 .pan-count {
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-sm);
+  font-size: var(--fold-text-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -31,7 +31,7 @@
 .pan-empty {
   margin: 0;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-sm);
+  font-size: var(--fold-text-sm);
 }
 
 .pan-list {
@@ -44,8 +44,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 4.5rem auto auto;
   align-items: center;
-  gap: var(--fold-space-2);
-  padding: var(--fold-space-2) 0;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) 0;
   border-bottom: 1px solid var(--fold-color-border-subtle);
 }
 
@@ -57,10 +57,10 @@
 
 .pan-qty {
   width: 100%;
-  padding: var(--fold-space-1);
+  padding: var(--fold-space-xs);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   color: inherit;
   font: inherit;
   font-variant-numeric: tabular-nums;
@@ -75,32 +75,32 @@
   border: 0;
   background: transparent;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-lg);
+  font-size: var(--fold-text-lg);
   line-height: 1;
   cursor: pointer;
 
   &:hover {
-    color: var(--fold-color-danger);
+    color: var(--fold-color-alert-text);
   }
 }
 
 .pan-form {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3);
+  gap: var(--fold-space-md);
 }
 
 .pan-field {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-1);
+  gap: var(--fold-space-xs);
 
   input,
   textarea {
-    padding: var(--fold-space-2);
+    padding: var(--fold-space-sm);
     border: 1px solid var(--fold-color-border);
     border-radius: var(--fold-radius-sm);
-    background: var(--fold-color-surface);
+    background: var(--fold-color-surface-card);
     color: inherit;
     font: inherit;
     resize: vertical;
@@ -109,14 +109,14 @@
 
 .pan-label {
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-sm);
+  font-size: var(--fold-text-sm);
   font-weight: 500;
 }
 
 .pan-settle {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-1);
+  gap: var(--fold-space-xs);
   margin: 0;
   padding: 0;
   border: 0;
@@ -125,7 +125,7 @@
 .pan-radio {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-2);
+  gap: var(--fold-space-sm);
   cursor: pointer;
 
   &.is-off {
@@ -137,8 +137,8 @@
 .pan-foot {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3);
-  padding-top: var(--fold-space-3);
+  gap: var(--fold-space-md);
+  padding-top: var(--fold-space-md);
   border-top: 1px solid var(--fold-color-border);
 }
 
@@ -152,10 +152,10 @@
 .pan-note {
   margin: 0;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-xs);
+  font-size: var(--fold-text-xs);
 }
 
 .pan-confirm {
   display: flex;
-  gap: var(--fold-space-2);
+  gap: var(--fold-space-sm);
 }

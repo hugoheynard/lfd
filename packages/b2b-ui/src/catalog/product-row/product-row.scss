@@ -43,7 +43,7 @@
   top: -2px;
   left: -2px;
   transform: scale(0.85);
-  border-radius: var(--fold-radius-full, 999px);
+  border-radius: var(--fold-radius-pill, 999px);
   background: var(--fold-color-glass, rgba(255, 255, 255, 0.7));
   backdrop-filter: blur(3px);
 }
@@ -100,7 +100,7 @@
   padding: 1px;
   gap: 1px;
   border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-full, 999px);
+  border-radius: var(--fold-radius-pill, 999px);
   background: var(--fold-color-surface-sunken);
 }
 .pr-mode-opt {
@@ -108,7 +108,7 @@
   border: 0;
   cursor: pointer;
   padding: 0.1rem 0.45rem;
-  border-radius: var(--fold-radius-full, 999px);
+  border-radius: var(--fold-radius-pill, 999px);
   background: transparent;
   color: var(--fold-color-text-muted);
   font-size: 0.7rem;

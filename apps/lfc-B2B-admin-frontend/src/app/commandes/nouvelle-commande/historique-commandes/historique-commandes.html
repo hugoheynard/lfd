@@ -12,7 +12,6 @@
     @for (row of orders(); track row.id) {
       <li>
         <lfd-order-row
-          dense
           [order]="row"
           [selected]="selectedId() === row.id"
           (open)="select.emit(row.id)"

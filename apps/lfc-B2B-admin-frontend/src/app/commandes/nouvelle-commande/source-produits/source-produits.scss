@@ -14,7 +14,7 @@
 }
 
 .src-search {
-  margin: var(--fold-space-3) 0;
+  margin: var(--fold-space-md) 0;
 }
 
 .src-panel {
@@ -23,37 +23,37 @@
 }
 
 .src-note {
-  margin: 0 0 var(--fold-space-2);
+  margin: 0 0 var(--fold-space-sm);
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-sm);
+  font-size: var(--fold-text-sm);
 }
 
 .src-order {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--fold-space-3);
+  gap: var(--fold-space-md);
 }
 
 .src-all {
-  padding: var(--fold-space-1) var(--fold-space-3);
+  padding: var(--fold-space-xs) var(--fold-space-md);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   color: var(--fold-color-text);
   font: inherit;
   cursor: pointer;
 
   &:hover {
-    border-color: var(--fold-color-accent);
-    color: var(--fold-color-accent);
+    border-color: var(--fold-color-primary-text);
+    color: var(--fold-color-primary-text);
   }
 }
 
 .src-shelf {
-  margin: var(--fold-space-4) 0 var(--fold-space-2);
+  margin: var(--fold-space-lg) 0 var(--fold-space-sm);
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-sm);
+  font-size: var(--fold-text-sm);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -71,13 +71,13 @@
 .src-row {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-1);
-  padding-bottom: var(--fold-space-2);
+  gap: var(--fold-space-xs);
+  padding-bottom: var(--fold-space-sm);
   border-bottom: 1px solid var(--fold-color-border-subtle);
 }
 
 .src-hint {
-  padding-left: var(--fold-space-2);
+  padding-left: var(--fold-space-sm);
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-xs);
+  font-size: var(--fold-text-xs);
 }

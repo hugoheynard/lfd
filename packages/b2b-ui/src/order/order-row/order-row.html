@@ -1,23 +1,19 @@
 <button
   type="button"
   class="row"
-  [class.is-dense]="dense()"
   [class.is-selected]="selected()"
   [attr.aria-pressed]="selected() ? true : null"
   (click)="open.emit(order())"
 >
-  <span class="row-number">{{ order().orderNumber }}</span>
-
-  @if (origin(); as pill) {
-    <span class="row-origin">{{ pill }}</span>
-  }
-
-  <span class="row-date">{{ placedAt() }}</span>
-
-  @if (!dense()) {
-    <fold-badge size="sm" [variant]="statusTone()" [content]="status()" />
-    <fold-badge size="sm" [variant]="paymentTone()" [content]="payment()" />
-  }
-
+  <span class="row-ref">{{ order().orderNumber }}</span>
   <span class="row-total">{{ total() }}</span>
+
+  <span class="row-meta">
+    <span class="row-date">{{ placedAt() }}</span>
+    @if (origin(); as pill) {
+      <span class="row-origin">{{ pill }}</span>
+    }
+    <fold-badge [variant]="statusTone()" [content]="status()" />
+    <fold-badge [variant]="paymentTone()" [content]="payment()" />
+  </span>
 </button>
