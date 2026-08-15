@@ -22,6 +22,7 @@
     "lint": "turbo run lint",
     "lint:no-direct-env": "node dev-toolbox/gates/no-direct-env.mjs",
     "lint:events-tracked": "node dev-toolbox/gates/events-tracked.mjs",
+    "lint:fold-tokens": "node dev-toolbox/gates/fold-tokens.mjs",
     "test": "turbo run test",
     "clean": "turbo run clean"
   },

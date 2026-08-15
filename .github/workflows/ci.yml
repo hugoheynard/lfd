@@ -130,6 +130,12 @@ jobs:
       - name: Construire les paquets
         run: pnpm --filter "./packages/**" build
 
+      # Une variable CSS inconnue ne casse ni le build ni les tests : elle est
+      # ignorée, et la page a l'air correcte jusqu'au jour où le thème change.
+      # Ce gate la refuse à l'entrée.
+      - name: "Gate : variables fold existantes"
+        run: pnpm lint:fold-tokens
+
       - name: Typecheck des fronts
         run: |
           pnpm --filter lfc-b2b-admin-frontend exec tsc --noEmit
