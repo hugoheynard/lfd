@@ -163,7 +163,7 @@ une taxonomie d'intention :
 
 **Deux ressources absentes, volontairement.** `catalog` appartient au PIM, pas à
 ce backend. `billing` n'existe pas — la
-[facturation mensuelle](architecture-facturation-mensuelle.md) est encore
+[facturation](architecture-facturation.md) est encore
 doc-first ; la ressource naîtra avec ses routes, pas avant. Nommer une ressource
 sans surface, c'est écrire un droit que personne ne peut ni exercer ni tester.
 
@@ -403,7 +403,7 @@ l'écran annoncerait un accès encore ouvert que le serveur a cessé d'honorer.
 | 4 ✅ | **Socle front**          | `PermissionsStore`, `permissionGuard`, `*canWrite`, menu filtré.                                                                                                                    | moyen     |
 | 5 ✅ | **Écran Utilisateurs**   | Identité complète, sélecteur de rôle, grille de dérogations, suspension.                                                                                                            | faible    |
 | 6 ✅ | **Invitation**           | Règle d'expiration extraite dans `shared/`, mécanique Auth0 paramétrée par connexion, `invited_at`, `POST …/invitation`, e-mail `staff.invited`, entrée d'écran.                    | moyen     |
-| 7 ✅ | **Preuve**               | 3 suites e2e (65 cas) : matrice rôle × surface dérivée de `ROLE_GRANTS`, porte de secours traversée par HTTP, parcours d'invitation. Reste le chaînon Auth0 réel, manuel (§13).      | nul       |
+| 7 ✅ | **Preuve**               | 3 suites e2e (65 cas) : matrice rôle × surface dérivée de `ROLE_GRANTS`, porte de secours traversée par HTTP, parcours d'invitation. Reste le chaînon Auth0 réel, manuel (§13).     | nul       |
 
 **Ordre** : 1 → 2 → **3 et 4 sans écart** → 5 → 6 → 7. **Toutes faites.**
 
@@ -500,6 +500,7 @@ l'Action, l'audience et la connexion s'accordent — trois réglages hors du dé
 
 Tant que ce parcours n'a pas été fait une fois, la chaîne d'identité est
 **supposée**, pas constatée.
+
 - [ ] **Les migrations sont appliquées avant le premier boot.** Constaté le
       2026-08-12 : `ensureBootstrapAdmin` échoue sur une colonne manquante,
       l'échec est **attrapé** pour ne pas tuer l'API — et le symptôme visible

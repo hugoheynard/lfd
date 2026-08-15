@@ -118,7 +118,7 @@ négocié — et la plateforme livrerait à crédit sans jamais l'avoir décidé
 L'écran de confirmation annonce, en mode `account` : _« facturée sur la période
 en cours »_. **Cette période n'existe pas encore.** La facturation mensuelle est
 doc-first — aucune facture, aucune échéance, aucun prélèvement :
-[`architecture-facturation-mensuelle.md`](architecture-facturation-mensuelle.md).
+[`architecture-facturation.md`](architecture-facturation.md).
 
 Ce que la commande porte réellement est `payment_status: not_required`, avec le
 même sens que pour une commande passée par le client sur son terme : **à
