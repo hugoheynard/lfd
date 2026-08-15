@@ -1,0 +1,77 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md, 10px);
+}
+:host(.is-default) {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface, transparent);
+}
+
+// L'adresse à gauche, le menu dropover à droite.
+.point-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+// Un bloc adresse : lignes empilées, style non-italique (override du <address>).
+.addr {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-style: normal;
+  color: var(--fold-color-text);
+  line-height: 1.4;
+}
+.addr-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+// Les plages d'ouverture déclarées — deux au plus, jamais fusionnées.
+.hours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-sm);
+}
+.hours-row,
+.hours-none {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-text-muted);
+}
+.hours-text {
+  color: var(--fold-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+// Déclencheur du menu — bouton icône discret (même que les adresses de livraison).
+.menu-trigger {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm, 6px);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+.menu-trigger:hover {
+  background: var(--fold-color-surface-sunken, rgba(0, 0, 0, 0.06));
+  color: var(--fold-color-text);
+}

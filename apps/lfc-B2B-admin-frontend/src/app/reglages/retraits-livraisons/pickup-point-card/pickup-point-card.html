@@ -1,0 +1,69 @@
+@let p = point();
+
+<div class="point-row">
+  <address class="addr">
+    <span class="addr-label">
+      {{ p.label || p.ville }}
+      @if (p.isDefault) {
+        <fold-badge content="Par défaut" variant="success" />
+      }
+      @if (p.discount; as discount) {
+        <fold-badge [content]="'− ' + fee(discount)" variant="accent" />
+      }
+    </span>
+    <span>{{ p.ligne1 }}</span>
+    @if (p.ligne2) {
+      <span>{{ p.ligne2 }}</span>
+    }
+    <span>{{ p.codePostal }} {{ p.ville }}</span>
+    <span>{{ p.pays }}</span>
+  </address>
+
+  <fold-dropdown placement="bottom-end" ariaLabel="Actions du point de retrait">
+    <button
+      foldPopoverTrigger="menu"
+      type="button"
+      class="menu-trigger"
+      aria-label="Actions du point de retrait"
+    >
+      <fold-icon name="more-vertical" [size]="18" />
+    </button>
+    @if (!p.isDefault) {
+      <fold-dropdown-item icon="star" (selected)="setDefault.emit()">
+        Définir par défaut
+      </fold-dropdown-item>
+    }
+    <fold-dropdown-item icon="edit" (selected)="edit.emit()">Modifier</fold-dropdown-item>
+    @if (canRemove()) {
+      <fold-dropdown-item icon="bin" tone="danger" (selected)="askRemove.emit()">
+        Supprimer
+      </fold-dropdown-item>
+    }
+  </fold-dropdown>
+</div>
+
+<ul class="hours">
+  @for (row of hours(p.opening); track row.label) {
+    <li class="hours-row">
+      <span class="hours-name">{{ row.label }}</span>
+      <span class="hours-text">{{ row.text }}</span>
+    </li>
+  } @empty {
+    <li class="hours-none">
+      <fold-icon name="clock" [size]="15" />
+      <span>Aucune heure déclarée — toute heure de retrait est acceptée.</span>
+    </li>
+  }
+</ul>
+
+@if (confirming()) {
+  <fold-inline-confirm
+    [open]="true"
+    intent="danger"
+    message="Supprimer ce point de retrait ?"
+    (confirmed)="confirmRemove.emit()"
+    (cancelled)="cancelRemove.emit()"
+  >
+    <span hidden></span>
+  </fold-inline-confirm>
+}

@@ -1,26 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { PickupAddressView } from '@lfd/contracts';
 import {
-  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldDropdownComponent,
-  FoldDropdownItemComponent,
   FoldEmptyStateComponent,
-  FoldIconComponent,
   FoldLoadingStateComponent,
-  FoldInlineConfirmComponent,
   FoldPanelHostService,
-  FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
-import { formatAdjustmentValue } from '@lfd/b2b-ui/pricing';
 import { CutoffsSection } from './cutoffs-section/cutoffs-section';
 import { DeliveryZonesSection } from './delivery-zones-section/delivery-zones-section';
 import { PickupAddressesService } from './pickup-addresses.service';
-import { openingRows } from './pickup-opening.model';
+import { PickupPointCard } from './pickup-point-card/pickup-point-card';
 import { PickupPanel, type PickupPanelData } from './pickup-panel/pickup-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -37,16 +30,11 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldCardComponent,
-    FoldBadgeComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldIconComponent,
-    FoldDropdownComponent,
-    FoldDropdownItemComponent,
-    FoldInlineConfirmComponent,
-    FoldPopoverTriggerDirective,
+    PickupPointCard,
     CutoffsSection,
     DeliveryZonesSection,
   ],
@@ -65,11 +53,6 @@ export class ReglagesPickupPage {
 
   /** On garde toujours au moins un point : le dernier n'est pas supprimable. */
   protected readonly canRemove = computed(() => this.addresses().length > 1);
-
-  /** Formate la remise d'un point de retrait pour l'affichage. */
-  protected readonly fee = formatAdjustmentValue;
-  /** Les plages d'ouverture déclarées, lisibles. Vide = aucune heure opposée. */
-  protected readonly hours = openingRows;
 
   constructor() {
     void this.load();
