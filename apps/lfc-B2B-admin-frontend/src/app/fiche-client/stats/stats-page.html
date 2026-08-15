@@ -1,0 +1,101 @@
+@switch (state()) {
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de charger les statistiques"
+      subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    <section class="st">
+      @if (stats(); as s) {
+        <ul class="st-kpis">
+          <li class="st-kpi">
+            <span class="st-kpi-label">Total commandé</span>
+            <strong class="st-kpi-value">{{ euros(s.totalSpentCents) }}</strong>
+          </li>
+          <li class="st-kpi">
+            <span class="st-kpi-label">Commandes</span>
+            <strong class="st-kpi-value">{{ s.ordersCount }}</strong>
+          </li>
+          <li class="st-kpi">
+            <span class="st-kpi-label">Panier moyen</span>
+            <strong class="st-kpi-value">
+              {{ s.ordersCount === 0 ? '—' : euros(s.averageTicketCents) }}
+            </strong>
+          </li>
+          <li class="st-kpi">
+            <span class="st-kpi-label">30 derniers jours</span>
+            <strong class="st-kpi-value">{{ euros(s.trend.last30Cents) }}</strong>
+            @if (trendLabel(); as pill) {
+              <fold-badge
+                [variant]="s.trend.direction === 'down' ? 'warning' : 'success'"
+                [content]="pill"
+              />
+            } @else {
+              <!-- Pas de pourcentage quand la période précédente était à zéro :
+                   on ne divise pas par rien, et « +∞ % » n'apprend rien. -->
+              <span class="st-kpi-note">Rien sur les 30 jours précédents</span>
+            }
+          </li>
+        </ul>
+      }
+
+      <section class="st-block">
+        <header class="st-head">
+          <h2 class="st-h2">Commandé par mois</h2>
+          @if (bestMonth(); as best) {
+            <span class="st-note">
+              Meilleur mois : {{ best.label }} — {{ euros(best.totalCents) }}
+            </span>
+          }
+        </header>
+
+        @if (maybeTruncated()) {
+          <fold-callout variant="warning">
+            Ce compte dépasse la fenêtre de lecture : les mois les plus anciens de la courbe sont
+            incomplets.
+          </fold-callout>
+        }
+
+        <app-chart height="280px" [option]="chartOption()" />
+      </section>
+
+      <section class="st-block">
+        <header class="st-head">
+          <h2 class="st-h2">Les plus repris</h2>
+          <span class="st-note">Sur les douze derniers mois</span>
+        </header>
+
+        <fold-data-table
+          caption="Produits les plus commandés"
+          density="compact"
+          [columns]="columns"
+          [rows]="topSkus()"
+          [rowKey]="rowKey"
+          [loading]="state() === 'loading'"
+          [empty]="emptyState"
+        >
+          <ng-template foldCell="productName" let-row>
+            <span class="st-sku">{{ row.productName }}</span>
+            @if (!row.stillAvailable) {
+              <fold-badge variant="warning" content="Retiré du catalogue" />
+            }
+          </ng-template>
+          <ng-template foldCell="orderCount" let-row>
+            <span class="st-num">{{ row.orderCount }}</span>
+          </ng-template>
+          <ng-template foldCell="totalQuantity" let-row>
+            <span class="st-num">{{ row.totalQuantity }}</span>
+          </ng-template>
+          <ng-template foldCell="totalCents" let-row>
+            <span class="st-num">{{ euros(row.totalCents) }}</span>
+          </ng-template>
+          <ng-template foldCell="lastOrderedAt" let-row>{{ day(row.lastOrderedAt) }}</ng-template>
+        </fold-data-table>
+      </section>
+    </section>
+  }
+}

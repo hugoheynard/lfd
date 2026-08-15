@@ -82,6 +82,11 @@ export const routes: Routes = [
           import('./fiche-client/commandes/commandes-page').then((m) => m.ClientCommandesPage),
       },
       {
+        path: 'stats',
+        loadComponent: () =>
+          import('./fiche-client/stats/stats-page').then((m) => m.ClientStatsPage),
+      },
+      {
         path: 'paniers-recurrents',
         loadComponent: () =>
           import('./fiche-client/paniers-recurrents/paniers-recurrents-page').then(
