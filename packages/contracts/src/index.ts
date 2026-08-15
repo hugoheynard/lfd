@@ -293,7 +293,12 @@ export {
   paymentStatusSchema,
   fulfillmentMethodSchema,
   orderLineInputSchema,
+  orderContentShape,
+  hasAddressWhenDelivered,
+  deliveryAddressIssue,
   placeOrderPayloadSchema,
+  orderOriginSchema,
+  ORDER_ORIGIN_LABELS,
   recurringDeltasSchema,
 } from "./order.js";
 export type {
@@ -302,6 +307,7 @@ export type {
   FulfillmentMethod,
   OrderLineInput,
   PlaceOrderPayload,
+  OrderOrigin,
   OrderLineView,
   OrderView,
   OrderPaymentIntent,
@@ -309,6 +315,23 @@ export type {
   RecurringDeltas,
   RecurringDeltaLine,
 } from "./order.js";
+export {
+  catalogCategorySchema,
+  CATALOG_CATEGORY_LABELS,
+  CATALOG_CATEGORY_ORDER,
+} from "./catalog.js";
+export type { CatalogCategory, CatalogItemView } from "./catalog.js";
+export {
+  staffSettlementSchema,
+  STAFF_SETTLEMENT_LABELS,
+  adminPlaceOrderPayloadSchema,
+} from "./admin-order.js";
+export type {
+  StaffSettlement,
+  AdminPlaceOrderPayload,
+  AdminPlacedOrderResponse,
+  CustomerSkuStat,
+} from "./admin-order.js";
 export type { OrderHandoverLine, OrderHandoverView } from "./order-handover.js";
 export {
   recurrenceSchema,

@@ -7,6 +7,7 @@ import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.modu
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
+import { OrderDrafting } from "./application/services/order-drafting.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
@@ -43,6 +44,7 @@ import { OrdersController } from "./http/orders.controller.js";
     AdminHandoverController,
   ],
   providers: [
+    OrderDrafting,
     PlaceOrderHandler,
     ConfirmOrderPaymentHandler,
     ListCompanyOrdersHandler,

@@ -1,52 +1,27 @@
-import {
-  cartAdjustmentCents,
-  type BillingAddressPayload,
-  type CartAdjustment,
-  type PickupAddressView,
-} from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { DeliveryZoneRepository } from "../../../delivery-zones/domain/delivery-zone.repository.js";
 import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
-import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
-import { Order } from "../../domain/entities/order.js";
-import {
-  InvalidOrderFulfillmentError,
-  NoDeliveryZoneForPostalCodeError,
-  PickupNotConfiguredError,
-  UnknownSkuError,
-} from "../../domain/errors/order-errors.js";
+import type { Order } from "../../domain/entities/order.js";
 import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
-import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
-import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
+import { OrderDrafting } from "../services/order-drafting.service.js";
 import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
 
 /** Devise unique de la plateforme (montants en centimes d'euro). */
 const CURRENCY = "eur";
 
-/** Acheminement résolu : les snapshots à figer et les deux ajustements de prix. */
-interface ResolvedFulfillment {
-  readonly deliveryZoneId: string | null;
-  readonly deliveryAddress: BillingAddressPayload | null;
-  readonly pickupAddress: BillingAddressPayload | null;
-  readonly discountCents: number;
-  /** L'ajustement figé qui l'a produite (taux/montant du point), ou `null`. */
-  readonly discountAdjustment: CartAdjustment | null;
-  readonly deliveryFeeCents: number;
-}
-
 /**
- * Passe une commande — **zéro friction**. Le handler **orchestre** (mur, catalogue,
- * acheminement, décision carte/différé, Stripe) ; le **calcul monétaire et les
- * invariants** vivent dans l'agrégat `Order` :
- * - mur **membre** SEULEMENT si une entreprise est visée (sinon personnelle) ;
- * - **ré-résolution serveur** des prix (sku + qté) et du **frais de zone** ;
- * - l'agrégat `draft()` calcule sous-total/TVA/total ; on décide ensuite le
- *   règlement (`payByCard` si carte requise et total > 0, sinon `deferPayment`).
+ * Passe une commande — **zéro friction**, le client pour lui-même.
+ *
+ * Le handler **orchestre** ; la composition du panier vit dans {@link OrderDrafting}
+ * (prix ré-résolus, acheminement, ajustements) et le **calcul monétaire** dans
+ * l'agrégat `Order`. Ne restent ici que les deux décisions propres à ce chemin :
+ * - le mur **membre**, SEULEMENT si une entreprise est visée (sinon personnelle) ;
+ * - le règlement : `payByCard` si une carte est requise et le total > 0, sinon
+ *   `deferPayment`.
  *
  * Pour une carte, l'intention Stripe est créée AVANT la persistance, dimensionnée
  * sur `order.totalCents` : une commande `pending` porte toujours son intent.
@@ -55,10 +30,8 @@ interface ResolvedFulfillment {
 export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, PlaceOrderResult> {
   constructor(
     private readonly guard: OrderGuardReader,
-    private readonly catalog: ProductCatalogReader,
+    private readonly drafting: OrderDrafting,
     private readonly orders: OrderRepository,
-    private readonly pickups: PickupAddressRepository,
-    private readonly zones: DeliveryZoneRepository,
     private readonly payments: PaymentGateway,
     private readonly events: DomainEventPublisher,
   ) {}
@@ -74,29 +47,10 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       ensureOrderMember(role, companyId);
     }
 
-    const lines = this.resolveLines(payload.lines);
-    const subtotalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
-    const acheminement = await this.resolveFulfillment(payload, subtotalCents);
-
-    // L'agrégat calcule sous-total / TVA / total (TTC) et porte les invariants.
-    const order = Order.draft({
-      companyId,
-      placedByUserId: command.actorUserId,
-      fulfillment: {
-        method: payload.fulfillmentMethod,
-        deliveryZoneId: acheminement.deliveryZoneId,
-        deliveryAddress: acheminement.deliveryAddress,
-        pickupAddress: acheminement.pickupAddress,
-      },
-      requestedDeliveryDate: payload.requestedDeliveryDate
-        ? new Date(payload.requestedDeliveryDate)
-        : null,
-      note: payload.note,
-      lines,
-      discountCents: acheminement.discountCents,
-      discountAdjustment: acheminement.discountAdjustment,
-      deliveryFeeCents: acheminement.deliveryFeeCents,
-    });
+    const order = await this.drafting.draft(
+      { companyId, placedByUserId: command.actorUserId, placedByStaffId: null },
+      payload,
+    );
 
     const intent = await this.settle(order, companyId);
     const placed = await this.orders.place(order);
@@ -168,89 +122,4 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     }
     return !(await this.guard.settlesOnAccount(companyId));
   }
-
-  /**
-   * Résout l'acheminement et ses deux ajustements (autoritaires, jamais envoyés
-   * par le client). **Retrait** : snapshot du point (choisi ou défaut) + sa remise.
-   * **Coursier** : adresse livrée figée + zone **déduite de son code postal**,
-   * dont on tire le frais.
-   */
-  private async resolveFulfillment(
-    payload: PlaceOrderCommand["payload"],
-    subtotalCents: number,
-  ): Promise<ResolvedFulfillment> {
-    if (payload.fulfillmentMethod === "pickup") {
-      const point = await this.pickups.resolve(payload.pickupAddressId);
-      if (point === null) {
-        throw new PickupNotConfiguredError();
-      }
-      return {
-        deliveryZoneId: null,
-        deliveryAddress: null,
-        pickupAddress: toSnapshot(point),
-        discountCents: point.discount ? cartAdjustmentCents(point.discount, subtotalCents) : 0,
-        discountAdjustment: point.discount,
-        deliveryFeeCents: 0,
-      };
-    }
-
-    // Coursier — le schéma garantit l'adresse ; on garde une défense typée.
-    const address = payload.deliveryAddress;
-    if (address === null) {
-      throw new InvalidOrderFulfillmentError("Adresse de livraison requise en coursier.");
-    }
-    // La zone se DÉDUIT du code postal livré : c'est une propriété de l'adresse,
-    // pas un choix. Personne ne peut donc annoncer un secteur moins cher que le sien.
-    const zone = await this.zones.resolveForPostalCode(address.codePostal);
-    if (zone === null) {
-      throw new NoDeliveryZoneForPostalCodeError(address.codePostal);
-    }
-    return {
-      deliveryZoneId: zone.id,
-      deliveryAddress: address,
-      pickupAddress: null,
-      discountCents: 0,
-      // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
-      discountAdjustment: null,
-      deliveryFeeCents: cartAdjustmentCents(zone.fee, subtotalCents),
-    };
-  }
-
-  /**
-   * Fusionne les lignes par SKU (quantités additionnées) puis résout chacune au
-   * catalogue — c'est ici que le prix devient autoritaire, jamais celui du client.
-   */
-  private resolveLines(
-    input: readonly { readonly sku: string; readonly quantity: number }[],
-  ): OrderLineInput[] {
-    const quantities = new Map<string, number>();
-    for (const line of input) {
-      quantities.set(line.sku, (quantities.get(line.sku) ?? 0) + line.quantity);
-    }
-    return [...quantities].map(([sku, quantity]) => {
-      const item = this.catalog.resolve(sku);
-      if (item === null) {
-        throw new UnknownSkuError(sku);
-      }
-      return {
-        sku: item.sku,
-        productName: item.name,
-        unitPriceCents: item.unitPriceCents,
-        vatRate: item.vatRate,
-        quantity,
-      };
-    });
-  }
-}
-
-/** Le point de retrait résolu, réduit à ses champs postaux (le snapshot figé). */
-function toSnapshot(point: PickupAddressView): BillingAddressPayload {
-  return {
-    label: point.label,
-    ligne1: point.ligne1,
-    ligne2: point.ligne2,
-    codePostal: point.codePostal,
-    ville: point.ville,
-    pays: point.pays,
-  };
 }

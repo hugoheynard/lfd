@@ -18,6 +18,7 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "../../infra/database/client/client.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { OrderReader, type HandoverOrder, type OwnedOrder } from "../domain/ports/order.reader.js";
+import { orderOriginOf } from "../domain/services/order-origin.js";
 
 /** Une ligne de commande telle que Prisma la sélectionne. */
 interface OrderLineRow {
@@ -49,6 +50,7 @@ interface OrderRow {
   readonly totalCents: number;
   readonly currency: string;
   readonly fromSubscriptionId: string | null;
+  readonly placedByStaffId: string | null;
   readonly recurringDeltas: Prisma.JsonValue | null;
   readonly handoverToken: string | null;
   readonly handedOverAt: Date | null;
@@ -76,6 +78,7 @@ const ORDER_SELECT = {
   totalCents: true,
   currency: true,
   fromSubscriptionId: true,
+  placedByStaffId: true,
   recurringDeltas: true,
   handoverToken: true,
   handedOverAt: true,
@@ -140,6 +143,7 @@ export class PrismaOrderReader extends OrderReader {
         totalCents: true,
         companyId: true,
         fromSubscriptionId: true,
+        placedByStaffId: true,
         createdAt: true,
         company: { select: { raisonSociale: true } },
         placedBy: { select: { email: true, firstName: true, lastName: true } },
@@ -228,6 +232,7 @@ interface AdminRow {
   readonly totalCents: number;
   readonly companyId: string | null;
   readonly fromSubscriptionId: string | null;
+  readonly placedByStaffId: string | null;
   readonly createdAt: Date;
   readonly company: { readonly raisonSociale: string } | null;
   readonly placedBy: {
@@ -248,7 +253,7 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
     totalCents: row.totalCents,
     customerLabel: customerLabelOf(row),
     companyId: row.companyId,
-    fromSubscription: row.fromSubscriptionId !== null,
+    origin: orderOriginOf(row),
   };
 }
 
@@ -305,6 +310,8 @@ function toOrderView(row: OrderRow): OrderView {
     totalCents: row.totalCents,
     currency: row.currency,
     fromSubscriptionId: row.fromSubscriptionId,
+    origin: orderOriginOf(row),
+    placedByStaffId: row.placedByStaffId,
     recurringDeltas: parseDeltas(row.recurringDeltas),
     placedAt: row.createdAt.toISOString(),
     lines: row.lines.map(toLineView),

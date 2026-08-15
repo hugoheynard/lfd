@@ -15,6 +15,7 @@ import {
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
+import { ORDER_ORIGIN_LABELS } from '@lfd/contracts';
 import type { AdminOrderRow, CustomerSheetView } from '@lfd/contracts';
 import {
   formatCents,
@@ -103,6 +104,17 @@ export class ClientCommandesPage {
 
   protected date(row: AdminOrderRow): string {
     return formatOrderDate(row.placedAt);
+  }
+
+  /**
+   * La pastille de provenance, ou `null` quand il n'y a rien à signaler.
+   *
+   * `self_service` est le cas normal : l'étiqueter sur chaque ligne mettrait un
+   * mot partout pour ne rien distinguer. Les deux autres, si — elles disent
+   * qu'une commande n'est pas née du geste du client.
+   */
+  protected originPill(row: AdminOrderRow): string | null {
+    return row.origin === 'self_service' ? null : ORDER_ORIGIN_LABELS[row.origin];
   }
 
   protected total(row: AdminOrderRow): string {

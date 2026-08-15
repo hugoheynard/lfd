@@ -676,9 +676,27 @@ model Order {
   companyId String?  @map("company_id")
   company   Company? @relation(fields: [companyId], references: [id])
 
-  // Qui a passé la commande (le client connecté).
+  // AU NOM DE QUI la commande est passée — toujours un client. Quand l'équipe
+  // la saisit au téléphone, c'est le contact du compte qui est porté ici : la
+  // commande reste celle du client, et elle apparaît dans « Mes commandes ».
   placedByUserId String @map("placed_by_user_id")
   placedBy       User   @relation(fields: [placedByUserId], references: [id])
+
+  // QUI L'A SAISIE chez LFC, quand ce n'est pas le client lui-même. Nul = le
+  // client a commandé seul.
+  //
+  // Un `StaffUser.id`, mais **pas** une clé étrangère : une commande est une
+  // pièce comptable, elle ne doit ni disparaître ni bloquer le jour où on retire
+  // du personnel de l'annuaire. Et un identifiant plutôt qu'un instantané du
+  // nom — un annuaire corrigé doit corriger l'affichage, pas laisser un ancien
+  // nom figé sur la commande (le raisonnement inverse de `handedOverBy`, qui
+  // fige le `sub` parce que c'est une ATTESTATION, pas un affichage).
+  //
+  // Ce n'est pas une nature de commande, c'est une porte d'entrée : avec
+  // `fromSubscriptionId`, ces deux colonnes produisent l'`origin` des vues de
+  // lecture (self_service | back_office | recurring). Un `kind` discriminé
+  // aurait dupliqué la même information dans une troisième forme.
+  placedByStaffId String? @map("placed_by_staff_id")
 
   status OrderStatus @default(placed)
 
@@ -749,6 +767,7 @@ model Order {
 
   @@index([companyId])
   @@index([placedByUserId])
+  @@index([placedByStaffId])
   @@index([requestedDeliveryDate])
   @@index([status])
   @@index([paymentStatus])

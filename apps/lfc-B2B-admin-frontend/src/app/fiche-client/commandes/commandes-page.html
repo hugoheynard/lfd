@@ -23,8 +23,8 @@
             <li class="cmd-row">
               <a class="cmd-open" [routerLink]="['/commandes', row.id]">
                 <span class="cmd-number">{{ row.orderNumber }}</span>
-                @if (row.fromSubscription) {
-                  <span class="cmd-pill">Récurrent</span>
+                @if (originPill(row); as pill) {
+                  <span class="cmd-pill">{{ pill }}</span>
                 }
               </a>
               <span class="cmd-date">{{ date(row) }}</span>

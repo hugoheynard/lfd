@@ -60,14 +60,14 @@ export const orderLineInputSchema = z.object({
 export type OrderLineInput = z.infer<typeof orderLineInputSchema>;
 
 /**
- * Charge de passation d'une commande. `requestedDeliveryDate` est une date ISO
- * (`YYYY-MM-DD`) ou `null` ; les lignes sont non vides et dédupliquées par SKU
- * côté client (le serveur refuse un panier vide de toute façon).
+ * **Ce que dit un panier**, indépendamment de qui l'envoie : l'acheminement, la
+ * date souhaitée, la note et les lignes.
  *
- * `companyId` est **optionnel** : `null` = commande personnelle (le client
- * connecté). En **coursier** (`delivery`), le client fournit l'**adresse livrée**
- * (`deliveryAddress`) — l'une de celles de sa société, ou une adresse saisie à la
- * volée. En **retrait** (`pickup`), `pickupAddressId` `null` = le point par défaut
+ * `requestedDeliveryDate` est une date ISO (`YYYY-MM-DD`) ou `null` ; les lignes
+ * sont non vides et dédupliquées par SKU côté client (le serveur refuse un
+ * panier vide de toute façon). En **coursier** (`delivery`), l'**adresse livrée**
+ * est fournie — l'une de celles de la société, ou une adresse saisie à la volée.
+ * En **retrait** (`pickup`), `pickupAddressId` `null` = le point par défaut
  * (labo, résolu serveur).
  *
  * **La zone n'est pas envoyée** : elle se **déduit** du code postal de l'adresse
@@ -75,30 +75,90 @@ export type OrderLineInput = z.infer<typeof orderLineInputSchema>;
  * gagne). La laisser au client rendait le frais négociable : il suffisait
  * d'annoncer la zone la moins chère avec une adresse ailleurs. Un secteur est une
  * propriété de l'adresse, pas une option de commande.
+ *
+ * Extrait pour que la surface staff (`admin-order.ts`) décrive le même panier
+ * sans le redéclarer. Deux copies de cette forme dériveraient — et la seconde
+ * serait celle du back-office, donc celle qu'on teste le moins.
+ */
+export const orderContentShape = {
+  /** Mode d'acheminement. Défaut `pickup` (aucun extra requis). */
+  fulfillmentMethod: fulfillmentMethodSchema.default("pickup"),
+  /** Adresse livrée (coursier) — requise si `delivery` ; sa zone est déduite. */
+  deliveryAddress: billingAddressPayloadSchema.nullable().default(null),
+  /** Point de retrait choisi si `pickup` ; `null` = le point par défaut (serveur). */
+  pickupAddressId: z.string().trim().nullable().default(null),
+  requestedDeliveryDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/u, "date attendue au format AAAA-MM-JJ")
+    .nullable()
+    .default(null),
+  note: z.string().default(""),
+  lines: z.array(orderLineInputSchema).min(1, "au moins une ligne"),
+} as const;
+
+/**
+ * Le coursier exige une adresse. Prédicat partagé par les deux surfaces : la
+ * règle ne dépend pas de qui saisit.
+ */
+export function hasAddressWhenDelivered(content: {
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly deliveryAddress: BillingAddressPayload | null;
+}): boolean {
+  return content.fulfillmentMethod !== "delivery" || content.deliveryAddress !== null;
+}
+
+/**
+ * Le message et le chemin du refus ci-dessus — écrits une fois.
+ *
+ * Une **fonction** et non une constante : Zod veut un `path` mutable, et deux
+ * schémas partageant le même tableau partageraient un objet qu'il se réserve le
+ * droit de toucher.
+ */
+export function deliveryAddressIssue(): { message: string; path: PropertyKey[] } {
+  return { message: "adresse de livraison requise", path: ["deliveryAddress"] };
+}
+
+/**
+ * Charge de passation d'une commande **par le client lui-même**. `companyId` est
+ * **optionnel** : `null` = commande personnelle (le client connecté). La surface
+ * staff, elle, exige une société — cf. `admin-order.ts`.
  */
 export const placeOrderPayloadSchema = z
   .object({
     /** Entreprise cliente, ou `null` = commande personnelle (client connecté). */
     companyId: z.string().trim().min(1).nullable().default(null),
-    /** Mode d'acheminement. Défaut `pickup` (aucun extra requis). */
-    fulfillmentMethod: fulfillmentMethodSchema.default("pickup"),
-    /** Adresse livrée (coursier) — requise si `delivery` ; sa zone est déduite. */
-    deliveryAddress: billingAddressPayloadSchema.nullable().default(null),
-    /** Point de retrait choisi si `pickup` ; `null` = le point par défaut (serveur). */
-    pickupAddressId: z.string().trim().nullable().default(null),
-    requestedDeliveryDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/u, "date attendue au format AAAA-MM-JJ")
-      .nullable()
-      .default(null),
-    note: z.string().default(""),
-    lines: z.array(orderLineInputSchema).min(1, "au moins une ligne"),
+    ...orderContentShape,
   })
-  .refine(
-    (payload) => payload.fulfillmentMethod !== "delivery" || payload.deliveryAddress !== null,
-    { message: "adresse de livraison requise", path: ["deliveryAddress"] },
-  );
+  .refine(hasAddressWhenDelivered, deliveryAddressIssue());
 export type PlaceOrderPayload = z.infer<typeof placeOrderPayloadSchema>;
+
+/**
+ * **D'où vient** une commande — dérivé au serveur, jamais envoyé.
+ *
+ * Ce n'est pas une nature de commande, c'est une porte d'entrée : les lignes,
+ * les prix, la TVA et le retrait sont les mêmes dans les trois cas. En faire une
+ * union discriminée aurait obligé chaque lecteur à narrower pour n'apprendre
+ * rien, et aurait fait descendre jusqu'à l'app client une distinction qui ne la
+ * concerne pas.
+ *
+ * - `self_service` — le client l'a passée lui-même ;
+ * - `back_office` — un membre de l'équipe l'a saisie pour lui (au téléphone,
+ *   en clientèle) ;
+ * - `recurring` — un panier récurrent l'a produite.
+ *
+ * Les deux colonnes qui le produisent (`placed_by_staff_id`, `from_subscription_id`)
+ * restent la source de vérité : `origin` est un mot pour l'écran, pas un
+ * troisième endroit où l'information vivrait.
+ */
+export const orderOriginSchema = z.enum(["self_service", "back_office", "recurring"]);
+export type OrderOrigin = z.infer<typeof orderOriginSchema>;
+
+/** Libellés d'écran — le code parle anglais, l'interface parle français. */
+export const ORDER_ORIGIN_LABELS: Readonly<Record<OrderOrigin, string>> = {
+  self_service: "Passée par le client",
+  back_office: "Saisie par l'équipe",
+  recurring: "Panier récurrent",
+};
 
 // ─── Vues de LECTURE ─────────────────────────────────────────────────────────
 
@@ -170,6 +230,18 @@ export interface OrderView {
   readonly currency: string;
   /** Panier récurrent d'origine (« récurrent »), ou `null` (commande ponctuelle). */
   readonly fromSubscriptionId: string | null;
+  /**
+   * Par quelle porte cette commande est entrée. Dérivé serveur — cf.
+   * {@link OrderOrigin}. Le client le voit aussi, et c'est voulu : « saisie par
+   * l'équipe » explique une commande qu'il ne se souvient pas d'avoir passée.
+   */
+  readonly origin: OrderOrigin;
+  /**
+   * Le membre de l'équipe qui l'a saisie, ou `null`. Un identifiant d'annuaire
+   * et non un instantané du nom : un annuaire corrigé doit corriger l'affichage,
+   * pas laisser un ancien nom figé sur la commande.
+   */
+  readonly placedByStaffId: string | null;
   /** Écarts vs le gabarit récurrent (pills +/−), ou `null` si non issue d'un abonnement. */
   readonly recurringDeltas: RecurringDeltas | null;
   /** ISO. Passée le. */
@@ -242,8 +314,13 @@ export interface AdminOrderRow {
   readonly customerLabel: string;
   /** `null` = commande personnelle, sans entreprise. */
   readonly companyId: string | null;
-  /** Issue d'un panier récurrent — un rythme, pas un achat isolé. */
-  readonly fromSubscription: boolean;
+  /**
+   * Par quelle porte elle est entrée — cf. {@link OrderOrigin}. Remplace le
+   * booléen `fromSubscription` : deux façons de dire la provenance sur la même
+   * ligne finissaient par se contredire dès qu'une troisième porte s'ouvrait,
+   * et c'est précisément ce qui vient d'arriver avec la saisie par l'équipe.
+   */
+  readonly origin: OrderOrigin;
 }
 
 /**

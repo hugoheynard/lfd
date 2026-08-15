@@ -30,6 +30,7 @@ import {
 } from "../../../domain/ports/product-catalog.reader.js";
 import { DomainEventPublisher } from "../../../../infra/events/domain-event-publisher.js";
 import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
+import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { PlaceOrderCommand } from "../place-order.command.js";
 import { PlaceOrderHandler } from "../place-order.handler.js";
 
@@ -118,6 +119,19 @@ function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
   };
 }
 
+/**
+ * La composition du panier, montée sur les doubles du test. Le service réel et
+ * non un double : c'est LUI qui ré-résout les prix au catalogue et déduit la
+ * zone du code postal, et ce sont ces règles-là que les tests ci-dessous
+ * vérifient. Le doubler reviendrait à tester le handler contre une fiction.
+ */
+function drafting(
+  pickupsDouble: PickupAddressRepository,
+  zonesDouble: DeliveryZoneRepository,
+): OrderDrafting {
+  return new OrderDrafting(catalog, pickupsDouble, zonesDouble);
+}
+
 const LABO_POINT: PickupAddressView = {
   id: "pickup_1",
   label: "Labo",
@@ -192,10 +206,8 @@ describe("PlaceOrderHandler", () => {
     const published = events();
     const handler = new PlaceOrderHandler(
       guard(null, null),
-      catalog,
+      drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
-      pickups(LABO_POINT),
-      zones(),
       payments(),
       published,
     );
@@ -216,10 +228,8 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard(null, "active"),
-      catalog,
+      drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
-      pickups(LABO_POINT),
-      zones(),
       payments(),
       events(),
     );
@@ -235,10 +245,8 @@ describe("PlaceOrderHandler", () => {
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
       guard(null, null),
-      catalog,
+      drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
-      pickups(LABO_POINT),
-      zones(),
       payments(intentSink),
       events(),
     );
@@ -256,10 +264,8 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
-      catalog,
+      drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
-      pickups(LABO_POINT),
-      zones(),
       payments(),
       events(),
     );
@@ -289,10 +295,8 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
-      catalog,
+      drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
-      pickups(LABO_POINT),
-      zones(),
       payments(),
       events(),
     );
@@ -322,10 +326,8 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
-      catalog,
+      drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
-      pickups(LABO_POINT),
-      zones(),
       payments(),
       events(),
     );
@@ -345,10 +347,8 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
-      catalog,
+      drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
-      pickups(LABO_POINT),
-      zones(),
       payments(),
       events(),
     );
@@ -365,10 +365,8 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
-      catalog,
+      drafting(pickups(null), zones()),
       capturingRepo(sink),
-      pickups(null),
-      zones(),
       payments(),
       events(),
     );
@@ -384,10 +382,8 @@ describe("PlaceOrderHandler", () => {
     const point: PickupAddressView = { ...LABO_POINT, discount: { mode: "percent", bp: 2000 } };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
-      catalog,
+      drafting(pickups(point), zones()),
       capturingRepo(sink),
-      pickups(point),
-      zones(),
       payments(),
       events(),
     );
@@ -405,10 +401,8 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
-      catalog,
+      drafting(pickups(), zones(TARENTAISE)),
       capturingRepo(sink),
-      pickups(),
-      zones(TARENTAISE),
       payments(),
       events(),
     );
@@ -441,10 +435,8 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
-      catalog,
+      drafting(pickups(), zones(TARENTAISE)),
       capturingRepo(sink),
-      pickups(),
-      zones(TARENTAISE),
       payments(),
       events(),
     );
@@ -469,10 +461,8 @@ describe("PlaceOrderHandler", () => {
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
       guard("member", "active", false),
-      catalog,
+      drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
-      pickups(LABO_POINT),
-      zones(),
       payments(intentSink),
       events(),
     );
@@ -494,10 +484,8 @@ describe("PlaceOrderHandler", () => {
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
       guard("member", "active"),
-      catalog,
+      drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
-      pickups(LABO_POINT),
-      zones(),
       payments(intentSink),
       events(),
     );
@@ -515,10 +503,8 @@ describe("PlaceOrderHandler", () => {
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
       guard("member", "pending"),
-      catalog,
+      drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
-      pickups(LABO_POINT),
-      zones(),
       payments(intentSink),
       events(),
     );

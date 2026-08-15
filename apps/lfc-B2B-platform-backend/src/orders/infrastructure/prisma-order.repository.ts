@@ -48,6 +48,7 @@ export class PrismaOrderRepository extends OrderRepository {
         handoverToken: issuesHandoverToken(state.fulfillmentMethod) ? this.secrets.next() : null,
         companyId: state.companyId,
         placedByUserId: state.placedByUserId,
+        placedByStaffId: state.placedByStaffId,
         requestedDeliveryDate: state.requestedDeliveryDate,
         fulfillmentMethod: state.fulfillmentMethod,
         deliveryZoneId: state.deliveryZoneId,

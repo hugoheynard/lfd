@@ -29,7 +29,10 @@ export interface OrderFulfillmentInput {
 /** Ce qu'il faut pour **composer** une commande (prix/frais déjà résolus serveur). */
 export interface DraftOrderInput {
   readonly companyId: string | null;
+  /** Au nom de qui — toujours un client, même quand l'équipe saisit pour lui. */
   readonly placedByUserId: string;
+  /** Qui l'a saisie chez LFC, ou `null` quand le client a commandé seul. */
+  readonly placedByStaffId: string | null;
   readonly fulfillment: OrderFulfillmentInput;
   readonly requestedDeliveryDate: Date | null;
   readonly note: string;
@@ -46,6 +49,7 @@ export interface DraftOrderInput {
 export interface OrderToPlace {
   readonly companyId: string | null;
   readonly placedByUserId: string;
+  readonly placedByStaffId: string | null;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryZoneId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
@@ -98,6 +102,7 @@ export class Order {
   private constructor(
     private readonly companyId: string | null,
     private readonly placedByUserId: string,
+    private readonly placedByStaffId: string | null,
     private readonly fulfillment: OrderFulfillmentInput,
     private readonly requestedDeliveryDate: Date | null,
     private readonly note: string,
@@ -132,6 +137,7 @@ export class Order {
     return new Order(
       input.companyId,
       input.placedByUserId,
+      input.placedByStaffId,
       fulfillment,
       input.requestedDeliveryDate,
       input.note,
@@ -171,6 +177,7 @@ export class Order {
     return {
       companyId: this.companyId,
       placedByUserId: this.placedByUserId,
+      placedByStaffId: this.placedByStaffId,
       fulfillmentMethod: this.fulfillment.method,
       deliveryZoneId: this.fulfillment.deliveryZoneId,
       deliveryAddress: this.fulfillment.deliveryAddress,
