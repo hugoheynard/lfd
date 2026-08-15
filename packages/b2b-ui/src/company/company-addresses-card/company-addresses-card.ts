@@ -19,6 +19,9 @@ import {
   FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
+import { AddressView } from '../../address/address-view/address-view';
+import type { PostalAddress } from '../../address/address.model';
+import { postalFrom } from '../address-form.model';
 import {
   formatDeliveryContact,
   formatGps,
@@ -39,6 +42,7 @@ import {
   selector: 'lfd-company-addresses-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AddressView,
     FoldPageSectionComponent,
     FoldCardComponent,
     FoldBadgeComponent,
@@ -110,6 +114,19 @@ export class CompanyAddressesCard {
   protected readonly confirmingId = signal<string | null>(null);
   /** Adresse dont le détail de livraison est déplié (état UI local). */
   protected readonly expandedId = signal<string | null>(null);
+
+  /** La vue de fil, dans la langue neutre du composant d'adresse. */
+  protected postal(view: BillingAddressView): PostalAddress {
+    return postalFrom(view);
+  }
+
+  /**
+   * Idem, mais avec la ville en nom d'usage à défaut d'étiquette : dans une
+   * liste, une carte sans titre ne se distingue pas de sa voisine.
+   */
+  protected named(view: BillingAddressView): PostalAddress {
+    return { ...postalFrom(view), label: view.label || view.ville };
+  }
 
   /** Commandable seulement si un créneau de livraison est défini. */
   protected isUsable(address: DeliveryAddressView): boolean {

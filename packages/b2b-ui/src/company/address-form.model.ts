@@ -11,6 +11,7 @@ import type {
   Weekday,
 } from '@lfd/contracts';
 
+import { coordinatesIssueOf, postalIssueOf, type PostalAddress } from '../address/address.model';
 import { WEEKDAYS } from './delivery-format';
 
 /**
@@ -125,6 +126,55 @@ function postalOf(
   };
 }
 
+/**
+ * La forme postale telle que nos contrats la nomment (en français). Le pont
+ * vers `PostalAddress` — l'API neutre de `@lfd/b2b-ui/address` — se traverse
+ * ici, une fois, et non dans chaque écran : c'est le seul endroit qui doit
+ * savoir que `ligne1` et `line1` désignent la même chose.
+ */
+interface FrenchPostal {
+  readonly label: string;
+  readonly ligne1: string;
+  readonly ligne2: string;
+  readonly codePostal: string;
+  readonly ville: string;
+  readonly pays: string;
+}
+
+/** Vue ou brouillon → adresse postale neutre (affichage), sans le point GPS. */
+export function postalFrom(view: FrenchPostal): PostalAddress {
+  return {
+    label: view.label,
+    line1: view.ligne1,
+    line2: view.ligne2,
+    postalCode: view.codePostal,
+    city: view.ville,
+    country: view.pays,
+    latitude: '',
+    longitude: '',
+  };
+}
+
+/** Brouillon → adresse postale neutre, point GPS compris (saisie). */
+export function postalOfDraft(draft: AddressDraft): PostalAddress {
+  return { ...postalFrom(draft), latitude: draft.gpsLat, longitude: draft.gpsLng };
+}
+
+/** Adresse postale neutre → brouillon, les consignes intactes (saisie). */
+export function withPostal(draft: AddressDraft, postal: PostalAddress): AddressDraft {
+  return {
+    ...draft,
+    label: postal.label,
+    ligne1: postal.line1,
+    ligne2: postal.line2,
+    codePostal: postal.postalCode,
+    ville: postal.city,
+    pays: postal.country,
+    gpsLat: postal.latitude,
+    gpsLng: postal.longitude,
+  };
+}
+
 function slotsDraft(
   slots: DeliverySlots,
 ): Pick<AddressDraft, 'sameEveryDay' | 'everyStart' | 'everyEnd' | 'days'> {
@@ -191,25 +241,12 @@ export function contactIssueOf(draft: AddressDraft): string {
 
 /** Message d'erreur GPS (`''` si valide) : deux coordonnées, ou aucune, en bornes. */
 export function gpsIssueOf(draft: AddressDraft): string {
-  const lat = draft.gpsLat.trim();
-  const lng = draft.gpsLng.trim();
-  if (lat === '' && lng === '') {
-    return '';
-  }
-  if (lat === '' || lng === '') {
-    return 'Renseignez la latitude ET la longitude, ou laissez les deux vides.';
-  }
-  const nlat = Number(lat);
-  const nlng = Number(lng);
-  const inRange =
-    Number.isFinite(nlat) && Number.isFinite(nlng) && Math.abs(nlat) <= 90 && Math.abs(nlng) <= 180;
-  return inRange ? '' : 'Coordonnées hors limites (latitude ±90, longitude ±180).';
+  return coordinatesIssueOf(postalOfDraft(draft));
 }
 
 /** Contrôle de forme : postal requis, plus les consignes pour une livraison. */
 export function isAddressValid(draft: AddressDraft, kind: 'facturation' | 'livraison'): boolean {
-  const postalOk =
-    draft.ligne1.trim() !== '' && draft.codePostal.trim() !== '' && draft.ville.trim() !== '';
+  const postalOk = postalIssueOf(postalFrom(draft)) === '';
   if (kind === 'facturation') {
     return postalOk;
   }

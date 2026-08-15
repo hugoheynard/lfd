@@ -1,43 +1,12 @@
-<fold-input
-  label="Nom de l'adresse"
-  hint="ex. Siège, Boutique Bastille"
-  optional
-  [value]="value().label"
-  (valueChange)="set('label', $event)"
+<!-- Le point GPS n'a de sens qu'en livraison : c'est le livreur qui cherche
+     l'entrée, pas le comptable qui poste une facture. -->
+<lfd-address-form
+  line2Hint="bâtiment, étage, instructions de livraison…"
+  coordinatesHint="lieux difficiles à localiser"
+  [fields]="postalFields()"
+  [value]="postal()"
+  (valueChange)="setPostal($event)"
 />
-<fold-input
-  label="Adresse"
-  placeholder="n° et voie"
-  required
-  [value]="value().ligne1"
-  (valueChange)="set('ligne1', $event)"
-/>
-<fold-input
-  label="Complément"
-  hint="bâtiment, étage, instructions de livraison…"
-  optional
-  [value]="value().ligne2"
-  (valueChange)="set('ligne2', $event)"
-/>
-
-<div class="row">
-  <fold-input
-    class="cp"
-    label="Code postal"
-    required
-    [value]="value().codePostal"
-    (valueChange)="set('codePostal', $event)"
-  />
-  <fold-input
-    class="ville"
-    label="Ville"
-    required
-    [value]="value().ville"
-    (valueChange)="set('ville', $event)"
-  />
-</div>
-
-<fold-input label="Pays" required [value]="value().pays" (valueChange)="set('pays', $event)" />
 
 @if (isLivraison()) {
   <fold-checkbox
@@ -174,33 +143,4 @@
     [checked]="value().signatureRequired"
     (checkedChange)="set('signatureRequired', $event)"
   />
-
-  <hr class="sep" />
-
-  <fieldset class="gps">
-    <legend class="field-label">
-      Point GPS <em>(optionnel — lieux difficiles à localiser)</em>
-    </legend>
-    <div class="row">
-      <fold-input
-        class="grow"
-        label="Latitude"
-        optional
-        placeholder="48.8566"
-        [value]="value().gpsLat"
-        (valueChange)="set('gpsLat', $event)"
-      />
-      <fold-input
-        class="grow"
-        label="Longitude"
-        optional
-        placeholder="2.3522"
-        [value]="value().gpsLng"
-        (valueChange)="set('gpsLng', $event)"
-      />
-    </div>
-    @if (gpsIssue()) {
-      <p class="slot-issue">{{ gpsIssue() }}</p>
-    }
-  </fieldset>
 }

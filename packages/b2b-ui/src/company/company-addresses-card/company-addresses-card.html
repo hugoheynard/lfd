@@ -17,17 +17,7 @@
         }
       </div>
       @if (billing(); as fa) {
-        <address class="addr">
-          @if (fa.label) {
-            <span class="addr-label">{{ fa.label }}</span>
-          }
-          <span>{{ fa.ligne1 }}</span>
-          @if (fa.ligne2) {
-            <span>{{ fa.ligne2 }}</span>
-          }
-          <span>{{ fa.codePostal }} {{ fa.ville }}</span>
-          <span>{{ fa.pays }}</span>
-        </address>
+        <lfd-address [address]="postal(fa)" />
       } @else {
         <fold-callout variant="warning">Aucune adresse de facturation renseignée.</fold-callout>
       }
@@ -55,20 +45,11 @@
           @for (a of deliveries(); track a.id) {
             <li class="delivery" [class.is-default]="a.isDefault">
               <div class="delivery-row">
-                <address class="addr">
-                  <span class="addr-label">
-                    {{ a.label || a.ville }}
-                    @if (a.isDefault) {
-                      <fold-badge content="Par défaut" variant="success" />
-                    }
-                  </span>
-                  <span>{{ a.ligne1 }}</span>
-                  @if (a.ligne2) {
-                    <span>{{ a.ligne2 }}</span>
+                <lfd-address [address]="named(a)">
+                  @if (a.isDefault) {
+                    <fold-badge content="Par défaut" variant="success" />
                   }
-                  <span>{{ a.codePostal }} {{ a.ville }}</span>
-                  <span>{{ a.pays }}</span>
-                </address>
+                </lfd-address>
 
                 @if (canManage()) {
                   <fold-dropdown placement="bottom-end" ariaLabel="Actions de l'adresse">
@@ -206,15 +187,7 @@
           <p class="card-kicker">Point de retrait</p>
         </div>
         @if (pickup(); as p) {
-          <address class="addr">
-            <span class="addr-label">{{ p.label || p.ville }}</span>
-            <span>{{ p.ligne1 }}</span>
-            @if (p.ligne2) {
-              <span>{{ p.ligne2 }}</span>
-            }
-            <span>{{ p.codePostal }} {{ p.ville }}</span>
-            <span>{{ p.pays }}</span>
-          </address>
+          <lfd-address [address]="named(p)" />
           <p class="pickup-hint">
             Retrait au laboratoire, en attendant le service de livraison à domicile.
           </p>

@@ -37,6 +37,9 @@ export {
   contactIssueOf,
   gpsIssueOf,
   isAddressValid,
+  postalFrom,
+  postalOfDraft,
+  withPostal,
   toBillingPayload,
   toDeliveryPayload,
 } from './address-form.model';

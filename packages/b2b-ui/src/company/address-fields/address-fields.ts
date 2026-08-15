@@ -7,8 +7,20 @@ import {
   type FoldSelectOption,
 } from 'fold-ng';
 
+import { AddressForm } from '../../address/address-form/address-form';
+import {
+  ALL_POSTAL_FIELDS,
+  DEFAULT_POSTAL_FIELDS,
+  type PostalAddress,
+} from '../../address/address.model';
 import { formatDeliveryContact, WEEKDAYS } from '../delivery-format';
-import { contactIssueOf, gpsIssueOf, slotIssueOf, type AddressDraft } from '../address-form.model';
+import {
+  contactIssueOf,
+  postalOfDraft,
+  slotIssueOf,
+  withPostal,
+  type AddressDraft,
+} from '../address-form.model';
 
 /**
  * Champs d'une **adresse** (facturation ou livraison) — fragment de formulaire
@@ -17,11 +29,15 @@ import { contactIssueOf, gpsIssueOf, slotIssueOf, type AddressDraft } from '../a
  * la sauvegarde. Le bloc **livraison** (défaut, note, créneaux, contact, GPS) ne
  * s'affiche que pour `kind = 'livraison'`. Les messages d'erreur *de forme* sont
  * calculés ici ; la validité globale (`isAddressValid`) est au container.
+ *
+ * L'adresse **postale** elle-même n'est plus écrite ici : c'est
+ * `lfd-address-form`, qui ne connaît que la poste. Ne reste sous ce toit que ce
+ * qui est propre à LFC — les consignes de livraison.
  */
 @Component({
   selector: 'lfd-address-fields',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldInputComponent, FoldCheckboxComponent, FoldListboxComponent],
+  imports: [AddressForm, FoldInputComponent, FoldCheckboxComponent, FoldListboxComponent],
   templateUrl: './address-fields.html',
   styleUrl: './address-fields.scss',
 })
@@ -33,15 +49,24 @@ export class AddressFields {
   /** Contacts connus de l'entreprise, proposés pour préremplir le contact sur place. */
   readonly knownContacts = input<readonly DeliveryContact[]>([]);
 
+  /** La part postale du brouillon, dans la langue neutre du fragment adresse. */
+  protected readonly postal = computed(() => postalOfDraft(this.value()));
+
+  /** Le point GPS ne se demande qu'en livraison. */
+  protected readonly postalFields = computed(() =>
+    this.isLivraison() ? ALL_POSTAL_FIELDS : DEFAULT_POSTAL_FIELDS,
+  );
+
+  protected setPostal(postal: PostalAddress): void {
+    this.value.update((draft) => withPostal(draft, postal));
+  }
+
   protected readonly weekdays = WEEKDAYS;
   protected readonly isLivraison = computed(() => this.kind() === 'livraison');
 
   protected readonly slotIssue = computed(() => slotIssueOf(this.value()));
   protected readonly contactIssue = computed(() =>
     this.isLivraison() ? contactIssueOf(this.value()) : '',
-  );
-  protected readonly gpsIssue = computed(() =>
-    this.isLivraison() ? gpsIssueOf(this.value()) : '',
   );
 
   /** Nom lisible d'un contact connu, pour l'option du select. */
