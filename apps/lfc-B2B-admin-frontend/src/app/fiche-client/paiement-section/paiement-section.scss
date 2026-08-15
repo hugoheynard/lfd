@@ -41,7 +41,7 @@
   display: inline-flex;
   align-items: center;
   cursor: pointer;
-  padding: var(--fold-space-2xs) var(--fold-space-sm);
+  padding: var(--fold-space-xs) var(--fold-space-sm);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm);
   font-size: var(--fold-text-sm);
@@ -55,7 +55,7 @@
 }
 
 .proof-pick:focus-within {
-  outline: 2px solid var(--fold-color-accent);
+  outline: 2px solid var(--fold-color-primary);
   outline-offset: 1px;
 }
 

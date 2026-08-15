@@ -26,7 +26,7 @@
   gap: var(--fold-space-sm);
   margin: calc(var(--fold-space-md) * -1) calc(var(--fold-space-md) * -1) 0;
   padding: var(--fold-space-sm) var(--fold-space-md);
-  background: var(--fold-color-bg-accent-subtle, var(--fold-color-bg-rail-tertiary));
+  background: var(--fold-color-bg-rail-tertiary);
   border-radius: var(--fold-radius-md, 10px) var(--fold-radius-md, 10px) 0 0;
 }
 

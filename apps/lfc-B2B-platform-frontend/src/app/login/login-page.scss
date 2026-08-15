@@ -7,7 +7,7 @@
   place-items: center;
   min-height: 100dvh;
   padding: var(--fold-space-lg, 1.5rem);
-  background: var(--fold-color-bg, #f7f6f3);
+  background: var(--fold-color-bg-page);
 }
 
 .login-card {
@@ -18,7 +18,7 @@
   gap: var(--fold-space-md, 1rem);
   padding: var(--fold-space-xl, 2rem);
   border-radius: var(--fold-radius-lg, 12px);
-  background: var(--fold-color-surface, #fff);
+  background: var(--fold-color-surface-card);
   box-shadow: var(--fold-shadow-md);
   text-align: center;
 }

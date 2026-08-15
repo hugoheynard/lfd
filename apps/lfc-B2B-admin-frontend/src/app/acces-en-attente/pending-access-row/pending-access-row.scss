@@ -13,7 +13,7 @@
 }
 
 .name {
-  font-weight: var(--fold-weight-semibold);
+  font-weight: 600;
 }
 
 .email,
@@ -27,7 +27,7 @@
 .email {
   display: inline-flex;
   align-items: center;
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-xs);
   min-width: 0;
 
   fold-icon {

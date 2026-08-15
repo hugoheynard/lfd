@@ -1,13 +1,13 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-4);
+  gap: var(--fold-space-lg);
   max-width: 34rem;
   margin: 0 auto;
-  padding: var(--fold-space-5);
+  padding: var(--fold-space-xl);
 }
 
 .reg-title {
   margin: 0;
-  font-size: var(--fold-font-size-xl);
+  font-size: var(--fold-text-xl);
 }

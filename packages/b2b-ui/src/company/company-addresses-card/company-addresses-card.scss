@@ -136,7 +136,7 @@
   color: var(--fold-color-text);
 }
 .week-row.is-empty .week-slot {
-  color: var(--fold-color-text-subtle, var(--fold-color-text-muted));
+  color: var(--fold-color-text-muted);
 }
 
 // Contact / note / GPS : ligne discrète avec icône alignée en tête.

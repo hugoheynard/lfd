@@ -12,7 +12,7 @@
   h2 {
     margin: 0;
     font-size: var(--fold-text-sm);
-    font-weight: var(--fold-weight-semibold);
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--fold-color-text-muted);
@@ -31,7 +31,7 @@
   display: flex;
   gap: var(--fold-space-sm);
   margin: 0;
-  padding: 0 0 var(--fold-space-2xs);
+  padding: 0 0 var(--fold-space-xs);
   list-style: none;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -48,20 +48,20 @@
   border-left-width: 3px;
 
   &.is-alert {
-    border-left-color: var(--fold-color-alert-border, var(--fold-color-danger));
+    border-left-color: var(--fold-color-alert-border, var(--fold-color-alert));
   }
   &.is-warning {
     border-left-color: var(--fold-color-warning-border, var(--fold-color-warning));
   }
   &.is-info {
-    border-left-color: var(--fold-color-info-border, var(--fold-color-accent));
+    border-left-color: var(--fold-color-info-border, var(--fold-color-primary));
   }
 }
 
 .card-link {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-xs);
   padding: var(--fold-space-sm) var(--fold-space-md);
   color: inherit;
   text-decoration: none;
@@ -70,19 +70,19 @@
 .card-head {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-xs);
   color: var(--fold-color-text-muted);
 }
 
 .card-title {
   font-size: var(--fold-text-xs);
-  font-weight: var(--fold-weight-semibold);
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .card-company {
-  font-weight: var(--fold-weight-semibold);
+  font-weight: 600;
 }
 
 .card-detail {

@@ -59,7 +59,7 @@
   padding: var(--fold-space-sm);
   font: inherit;
   color: var(--fold-color-text);
-  background: var(--fold-color-surface, transparent);
+  background: var(--fold-color-surface-card);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 10px);
 }
@@ -124,7 +124,7 @@
 }
 
 .slot-chip--on {
-  border-color: var(--fold-color-border-accent, var(--fold-color-border));
-  background: var(--fold-color-surface-accent-soft, var(--fold-color-surface-card));
-  color: var(--fold-color-text-accent, var(--fold-color-text));
+  border-color: var(--fold-color-primary-border);
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary-text);
 }

@@ -22,7 +22,7 @@
 }
 
 .ac-state[data-state='off'] {
-  border-left-color: var(--fold-color-danger, #dc2626);
+  border-left-color: var(--fold-color-alert);
 }
 
 .ac-state[data-state='custom'] {

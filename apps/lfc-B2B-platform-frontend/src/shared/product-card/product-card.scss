@@ -20,7 +20,7 @@
     transform 120ms ease;
 }
 .pc:hover {
-  border-color: var(--fold-color-border-strong, var(--fold-color-primary));
+  border-color: var(--fold-color-primary);
   box-shadow: var(--fold-shadow-md);
   transform: translateY(-2px);
 }
@@ -92,7 +92,7 @@
   position: absolute;
   top: var(--fold-space-xs, 0.35rem);
   right: var(--fold-space-xs, 0.35rem);
-  border-radius: var(--fold-radius-full, 999px);
+  border-radius: var(--fold-radius-pill);
   background: var(--fold-color-glass, rgba(255, 255, 255, 0.7));
   backdrop-filter: blur(4px);
 }
@@ -124,7 +124,7 @@
   flex: none;
   align-self: flex-start;
   padding: 0.1rem 0.5rem;
-  border-radius: var(--fold-radius-full, 999px);
+  border-radius: var(--fold-radius-pill);
   background: var(--fold-color-primary-surface, var(--fold-color-surface-sunken));
   color: var(--fold-color-primary-text, var(--fold-color-primary));
   font-size: var(--fold-text-xs, 0.75rem);
@@ -180,7 +180,7 @@
   padding: 2px;
   gap: 2px;
   border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-full, 999px);
+  border-radius: var(--fold-radius-pill);
   background: var(--fold-color-surface-sunken);
 }
 .pc-mode-opt {
@@ -188,7 +188,7 @@
   border: 0;
   cursor: pointer;
   padding: 0.2rem 0.6rem;
-  border-radius: var(--fold-radius-full, 999px);
+  border-radius: var(--fold-radius-pill);
   background: transparent;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs, 0.75rem);

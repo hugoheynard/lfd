@@ -71,7 +71,7 @@
   padding: var(--fold-space-sm);
   font: inherit;
   color: var(--fold-color-text);
-  background: var(--fold-color-surface, transparent);
+  background: var(--fold-color-surface-card);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 10px);
 }
@@ -112,7 +112,7 @@
   padding: var(--fold-space-xs) var(--fold-space-sm);
   font: inherit;
   color: var(--fold-color-text);
-  background: var(--fold-color-surface, transparent);
+  background: var(--fold-color-surface-card);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm, 6px);
 }
@@ -124,5 +124,5 @@
 .slot-issue {
   margin: 0;
   font-size: var(--fold-text-sm, 0.875rem);
-  color: var(--fold-color-danger, #c0392b);
+  color: var(--fold-color-alert);
 }

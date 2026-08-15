@@ -37,7 +37,7 @@
    « facultatif » : facultatif se lirait « ne la demandez pas », alors qu'on la
    demande — elle n'empêche simplement pas d'activer. */
 .step-optional {
-  margin-left: var(--fold-space-2xs, 0.25rem);
+  margin-left: var(--fold-space-xs);
   font-size: var(--fold-text-xs);
   font-style: italic;
   color: var(--fold-color-text-muted);

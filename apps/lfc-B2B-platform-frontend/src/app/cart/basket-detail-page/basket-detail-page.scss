@@ -15,7 +15,7 @@
 .name {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2xs, 0.25rem);
+  gap: var(--fold-space-xs);
   flex: 1;
   min-width: 14rem;
 }
@@ -27,7 +27,7 @@
   padding: var(--fold-space-sm) var(--fold-space-md);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm, 8px);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   color: var(--fold-color-text);
   font: inherit;
   font-weight: 600;
@@ -43,7 +43,7 @@
 .date {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2xs, 0.25rem);
+  gap: var(--fold-space-xs);
   font-size: var(--fold-text-sm, 0.875rem);
   color: var(--fold-color-text-muted);
 }
@@ -51,7 +51,7 @@
   padding: var(--fold-space-xs) var(--fold-space-sm);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm, 8px);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   color: var(--fold-color-text);
   font: inherit;
 }
@@ -75,7 +75,7 @@
   padding: var(--fold-space-sm) var(--fold-space-md);
   border: 1px solid var(--fold-color-border-subtle);
   border-radius: var(--fold-radius-md, 10px);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
 }
 
 .line-img {

@@ -24,7 +24,7 @@
   padding-inline-start: calc(var(--fold-space-md, 1rem) + 3px);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface-card, var(--fold-color-surface));
+  background: var(--fold-color-surface-card, var(--fold-color-surface-card));
   overflow: hidden;
   transition:
     border-color var(--fold-motion-fast, 0.15s),

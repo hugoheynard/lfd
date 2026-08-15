@@ -137,19 +137,19 @@ fold-app-shell {
 .no-access {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3);
+  gap: var(--fold-space-md);
   max-width: 40rem;
-  margin: var(--fold-space-9) auto;
-  padding: 0 var(--fold-space-5);
+  margin: var(--fold-space-4xl) auto;
+  padding: 0 var(--fold-space-xl);
   text-align: center;
 
   h1 {
     margin: 0;
-    font-size: var(--fold-font-size-xl);
+    font-size: var(--fold-text-xl);
   }
 
   p {
     margin: 0;
-    color: var(--fold-text-muted);
+    color: var(--fold-color-text-muted);
   }
 }

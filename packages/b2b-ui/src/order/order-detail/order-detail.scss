@@ -398,7 +398,7 @@ fold-aside-layout {
   width: 2rem;
   height: 2rem;
   border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface-muted, var(--fold-color-surface));
+  background: var(--fold-color-surface-sunken);
   color: var(--fold-color-text-muted);
 }
 
@@ -430,7 +430,7 @@ fold-aside-layout {
 .od-doc-tag {
   padding: 0.05rem 0.4rem;
   border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-surface-muted, var(--fold-color-surface));
+  background: var(--fold-color-surface-sunken);
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
   white-space: nowrap;

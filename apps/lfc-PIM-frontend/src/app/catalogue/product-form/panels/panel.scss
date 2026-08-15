@@ -4,7 +4,7 @@
 }
 
 .panel-desc {
-  margin: 0 0 var(--fold-space-3, 0.75rem);
+  margin: 0 0 var(--fold-space-md);
   color: var(--fold-color-text-muted, #71717a);
   font-size: 0.875rem;
 }
@@ -12,19 +12,19 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg);
 }
 
 .stack {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-1, 0.25rem);
+  gap: var(--fold-space-xs);
 }
 
 .field-label,
@@ -39,12 +39,12 @@
   padding: 0.5rem 0.625rem;
   border: 1px solid var(--fold-color-border, #d4d4d8);
   border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface, #fff);
+  background: var(--fold-color-surface-card);
   color: var(--fold-color-text, #18181b);
   font: inherit;
 
   &:focus-visible {
-    outline: 2px solid var(--fold-color-focus, #2563eb);
+    outline: 2px solid var(--fold-color-primary);
     outline-offset: 1px;
   }
 }
@@ -57,8 +57,8 @@
 .section-footer {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-3, 0.75rem);
-  margin-top: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-md);
+  margin-top: var(--fold-space-lg);
 }
 
 .section-status,
@@ -69,21 +69,21 @@
 
 .scope {
   display: flex;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm);
 }
 
 .groups {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg);
 
   fieldset {
     border: 1px solid var(--fold-color-border, #e4e4e7);
     border-radius: var(--fold-radius-md, 0.5rem);
-    padding: var(--fold-space-3, 0.75rem);
+    padding: var(--fold-space-md);
     display: flex;
     flex-direction: column;
-    gap: var(--fold-space-1, 0.25rem);
+    gap: var(--fold-space-xs);
   }
 
   legend {
@@ -105,12 +105,12 @@
 .tva-list {
   margin: 0;
   display: grid;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm);
 
   div {
     display: flex;
     justify-content: space-between;
-    gap: var(--fold-space-4, 1rem);
+    gap: var(--fold-space-lg);
   }
 
   dt {
@@ -126,12 +126,12 @@
 .media {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3, 0.75rem);
+  gap: var(--fold-space-md);
 }
 
 .media-row {
   display: grid;
   grid-template-columns: minmax(8rem, 12rem) 1fr auto;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm);
   align-items: end;
 }

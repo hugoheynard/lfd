@@ -30,8 +30,8 @@
   flex: 0 0 auto;
   padding: 0.35rem 0.85rem;
   border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-full, 999px);
-  background: var(--fold-color-surface, #fff);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
   color: var(--fold-color-text);
   font: inherit;
   font-size: var(--fold-text-sm, 0.875rem);

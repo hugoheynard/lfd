@@ -16,7 +16,7 @@
 .sec-warn {
   margin: 0 0 var(--fold-space-md);
   padding: 0.6rem 0.85rem;
-  border-left: 3px solid var(--fold-color-danger, #dc2626);
+  border-left: 3px solid var(--fold-color-alert);
   border-radius: var(--fold-radius-sm, 6px);
   background: var(--fold-color-surface-card);
   color: var(--fold-color-text);
@@ -68,7 +68,7 @@
 
   &:hover:not(:disabled) {
     background: var(--fold-color-surface-hover, rgba(0, 0, 0, 0.05));
-    color: var(--fold-color-danger, #dc2626);
+    color: var(--fold-color-alert);
   }
 
   &:disabled {

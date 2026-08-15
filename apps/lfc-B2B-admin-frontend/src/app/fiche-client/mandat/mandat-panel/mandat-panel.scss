@@ -31,7 +31,7 @@
 
 .field {
   display: grid;
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-xs);
 }
 
 .label {
@@ -53,14 +53,14 @@
   padding: var(--fold-space-sm) var(--fold-space-md);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   color: var(--fold-color-text);
   font: inherit;
   min-height: 2.75rem;
 }
 
 .native:focus-visible {
-  outline: 2px solid var(--fold-color-accent);
+  outline: 2px solid var(--fold-color-primary);
   outline-offset: 1px;
 }
 

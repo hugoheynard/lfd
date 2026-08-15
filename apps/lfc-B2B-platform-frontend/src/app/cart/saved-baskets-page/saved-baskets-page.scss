@@ -13,7 +13,7 @@
   text-align: left;
   border: 1px solid var(--fold-color-border-subtle);
   border-radius: var(--fold-radius-md, 12px);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   color: inherit;
   font: inherit;
   cursor: pointer;
@@ -57,7 +57,7 @@
 .stat {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2xs, 0.15rem);
+  gap: var(--fold-space-xs);
 }
 .stat--right {
   text-align: right;

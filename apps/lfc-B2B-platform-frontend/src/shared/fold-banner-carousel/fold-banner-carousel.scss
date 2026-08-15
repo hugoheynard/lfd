@@ -121,7 +121,7 @@
   height: 2.5rem;
   padding: 0;
   border: 1px solid var(--fold-color-glass-border, rgba(255, 255, 255, 0.25));
-  border-radius: var(--fold-radius-full, 999px);
+  border-radius: var(--fold-radius-pill);
   background: var(--fold-color-glass, rgba(0, 0, 0, 0.35));
   color: var(--fbc-fg);
   cursor: pointer;
@@ -142,7 +142,7 @@
   right: var(--fold-space-md, 1rem);
 }
 .fbc-arrow:hover {
-  background: var(--fold-color-glass-strong, rgba(0, 0, 0, 0.55));
+  background: var(--fold-color-scrim);
 }
 
 .fbc-dots {
@@ -154,7 +154,7 @@
   display: flex;
   gap: var(--fold-space-xs, 0.4rem);
   padding: 0.35rem 0.5rem;
-  border-radius: var(--fold-radius-full, 999px);
+  border-radius: var(--fold-radius-pill);
   background: var(--fold-color-glass, rgba(0, 0, 0, 0.3));
   opacity: 0;
   transition: opacity 160ms ease;

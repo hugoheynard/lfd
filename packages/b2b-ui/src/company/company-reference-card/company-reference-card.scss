@@ -29,7 +29,7 @@
 // La référence elle-même — grande, monospace, facile à lire et à dicter.
 .value {
   flex: none;
-  font-family: var(--fold-font-mono, ui-monospace, monospace);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-weight: 600;
   font-size: var(--fold-text-lg, 1.125rem);
   letter-spacing: 0.08em;

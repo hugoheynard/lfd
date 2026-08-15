@@ -77,6 +77,6 @@
 
 .rdv-error {
   margin: var(--fold-space-xs) 0 0;
-  color: var(--fold-color-text-alert, var(--fold-color-text-muted));
+  color: var(--fold-color-alert-text);
   font-size: var(--fold-text-xs, 0.75rem);
 }

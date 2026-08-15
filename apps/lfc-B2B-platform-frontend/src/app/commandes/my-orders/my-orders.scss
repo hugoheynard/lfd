@@ -14,7 +14,7 @@
 .order {
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 10px);
-  background: var(--fold-color-surface, #fff);
+  background: var(--fold-color-surface-card);
   overflow: hidden;
 }
 .order.is-open {
@@ -87,8 +87,8 @@
   color: var(--fold-color-success, #1a7f4b);
 }
 .chip--status[data-status='cancelled'] {
-  background: color-mix(in srgb, var(--fold-color-danger, #c0392b) 15%, transparent);
-  color: var(--fold-color-danger, #c0392b);
+  background: color-mix(in srgb, var(--fold-color-alert) 15%, transparent);
+  color: var(--fold-color-alert);
 }
 .chip--pay[data-pay='paid'] {
   background: color-mix(in srgb, var(--fold-color-success, #1a7f4b) 15%, transparent);
@@ -99,8 +99,8 @@
   color: var(--fold-color-warning, #b7791f);
 }
 .chip--pay[data-pay='failed'] {
-  background: color-mix(in srgb, var(--fold-color-danger, #c0392b) 15%, transparent);
-  color: var(--fold-color-danger, #c0392b);
+  background: color-mix(in srgb, var(--fold-color-alert) 15%, transparent);
+  color: var(--fold-color-alert);
 }
 
 /* Pills de composition — récurrent / ajout / retrait. */
@@ -121,8 +121,8 @@
   color: var(--fold-color-success, #1a7f4b);
 }
 .pill--rem {
-  background: color-mix(in srgb, var(--fold-color-danger, #c0392b) 14%, transparent);
-  color: var(--fold-color-danger, #c0392b);
+  background: color-mix(in srgb, var(--fold-color-alert) 14%, transparent);
+  color: var(--fold-color-alert);
 }
 
 /* Corps déplié : frise à gauche, composition à droite. */

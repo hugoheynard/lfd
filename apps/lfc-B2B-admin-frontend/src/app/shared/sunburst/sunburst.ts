@@ -119,7 +119,9 @@ export class Sunburst {
       .attr('width', width)
       .attr('height', height)
       .attr('viewBox', `${-width / 2} ${-height / 2} ${width} ${height}`)
-      .style('font', '11px var(--fold-font-sans, system-ui, sans-serif)');
+      // Le SVG hérite de la police de la page : fold n'expose pas de token de
+      // famille, et en nommer un ici aurait figé une famille de plus.
+      .style('font-size', '11px');
 
     const rows = root.descendants().slice(1) as ANode[];
     const named = this.nodeColors();

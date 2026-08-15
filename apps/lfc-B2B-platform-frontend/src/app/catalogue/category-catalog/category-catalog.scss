@@ -23,7 +23,7 @@
   justify-content: space-between;
   gap: var(--fold-space-sm, 0.5rem);
   padding: var(--fold-space-sm, 0.5rem) 0;
-  background: var(--fold-color-surface, #fff);
+  background: var(--fold-color-surface-card);
   color: var(--fold-color-text);
   text-align: start;
 }
@@ -38,7 +38,7 @@
 }
 .cc-count {
   padding: 0.05rem 0.5rem;
-  border-radius: var(--fold-radius-full, 999px);
+  border-radius: var(--fold-radius-pill);
   background: var(--fold-color-surface-sunken);
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs, 0.75rem);
