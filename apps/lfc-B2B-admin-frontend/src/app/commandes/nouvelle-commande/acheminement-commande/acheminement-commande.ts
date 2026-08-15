@@ -26,6 +26,13 @@ export interface FulfillmentChoice {
   readonly issue: string | null;
 }
 
+/** Le choix « une autre adresse » — sentinelle, jamais un identifiant. */
+const NEW_ADDRESS = '__new__';
+
+const EMPTY_ADDRESS = { ligne1: '', ligne2: '', codePostal: '', ville: '' };
+
+type DraftAddress = typeof EMPTY_ADDRESS;
+
 /**
  * **Comment la commande parvient au client** — retrait ou coursier, comme dans le
  * panier du client.
@@ -36,11 +43,11 @@ export interface FulfillmentChoice {
  * Un back-office qui ne sait pas commander ce que le client sait commander force
  * le commercial à raccrocher.
  *
- * **Les adresses viennent du carnet de la société**, jamais d'une saisie libre :
- * côté client, l'adresse à la volée sert à commander sans compte ; ici le compte
- * existe, et une adresse dictée au téléphone appartient à sa fiche — pas à une
- * commande. Un carnet vide n'est donc pas un obstacle à contourner, c'est une
- * information : il faut passer par la fiche.
+ * **Le carnet de la société d'abord, la saisie ensuite** — l'ordre du panier
+ * client. Une adresse dictée au téléphone reste une adresse de commande : elle
+ * est figée dans le fil, et n'entre pas au carnet, qui se tient depuis la fiche.
+ * Le carnet vide ouvre donc directement la saisie plutôt que d'immobiliser
+ * l'appel.
  *
  * **La zone n'est pas un choix** : elle se déduit du code postal livré, ici comme
  * au serveur, qui la re-déduira à la passation. L'annoncer avant sert à dire le
@@ -63,7 +70,12 @@ export class AcheminementCommande {
 
   protected readonly method = signal<FulfillmentMethod>('pickup');
   private readonly pickupId = signal('');
-  private readonly addressId = signal('');
+  /** `''` = la première du carnet ; {@link NEW_ADDRESS} = la saisie. */
+  private readonly chosenAddressId = signal('');
+  /** L'adresse **saisie**, vivante même quand une autre est sélectionnée. */
+  private readonly draft = signal<DraftAddress>(EMPTY_ADDRESS);
+
+  protected readonly NEW_ADDRESS = NEW_ADDRESS;
 
   protected readonly methods: readonly FoldViewToggleOption[] = [
     { value: 'pickup', icon: 'store', label: 'Retrait' },
@@ -79,18 +91,41 @@ export class AcheminementCommande {
     return chosen ?? points.find((point) => point.isDefault) ?? points[0] ?? null;
   });
 
-  /** L'adresse choisie, sinon la première du carnet (qui est la défaut). */
-  protected readonly address = computed<DeliveryAddressView | null>(() => {
+  /**
+   * L'adresse sélectionnée : celle qu'on a choisie, la première du carnet sinon,
+   * et {@link NEW_ADDRESS} quand le carnet est vide — la saisie s'ouvre alors
+   * d'elle-même plutôt que d'afficher une liste sans option.
+   */
+  protected readonly addressId = computed(() => {
+    const chosen = this.chosenAddressId();
+    if (chosen !== '') {
+      return chosen;
+    }
+    return this.addresses()[0]?.id ?? NEW_ADDRESS;
+  });
+
+  protected readonly isNewAddress = computed(() => this.addressId() === NEW_ADDRESS);
+
+  /** L'adresse livrée : celle du carnet, ou la saisie. */
+  protected readonly address = computed<DraftAddress>(() => {
     const book = this.addresses();
-    return book.find((entry) => entry.id === this.addressId()) ?? book[0] ?? null;
+    const chosen = book.find((entry) => entry.id === this.addressId());
+    if (chosen === undefined) {
+      return this.draft();
+    }
+    return {
+      ligne1: chosen.ligne1,
+      ligne2: chosen.ligne2,
+      codePostal: chosen.codePostal,
+      ville: chosen.ville,
+    };
   });
 
-  protected readonly zone = computed<DeliveryZoneView | null>(() => {
-    const address = this.address();
-    return address === null ? null : resolveZoneForPostalCode(this.zones(), address.codePostal);
-  });
+  protected readonly zone = computed<DeliveryZoneView | null>(() =>
+    resolveZoneForPostalCode(this.zones(), this.address().codePostal.trim()),
+  );
 
-  /** « Secteur Nord — livraison 8,00 € », ou `null` hors coursier. */
+  /** « Secteur Nord — livraison 8,00 € », ou `null` quand la zone est inconnue. */
   protected readonly zoneLabel = computed<string | null>(() => {
     const zone = this.zone();
     if (zone === null) {
@@ -104,58 +139,77 @@ export class AcheminementCommande {
     this.pickups().map((point) => ({ value: point.id, label: point.label || point.ville })),
   );
 
-  protected readonly addressOptions = computed(() =>
-    this.addresses().map((entry) => ({
+  /** Le carnet, puis « une autre adresse » — l'ordre du panier client. */
+  protected readonly addressOptions = computed(() => [
+    ...this.addresses().map((entry) => ({
       value: entry.id,
       label: `${entry.label || entry.ville} — ${entry.ligne1}, ${entry.codePostal}`,
     })),
-  );
+    { value: NEW_ADDRESS, label: 'Une autre adresse…' },
+  ]);
 
-  protected readonly choice = computed<FulfillmentChoice>(() => {
-    if (!this.isCourier()) {
-      const point = this.pickup();
-      return {
-        method: 'pickup',
-        pickupAddressId: point?.id ?? null,
-        deliveryAddress: null,
-        issue:
-          point === null
-            ? 'Aucun point de retrait n’est configuré (Réglages → Livraisons & retraits).'
-            : null,
-      };
-    }
+  /** L'adresse a ses champs requis (rue, code postal, ville). */
+  private readonly addressComplete = computed(() => {
     const address = this.address();
-    if (address === null) {
-      return {
-        method: 'delivery',
-        pickupAddressId: null,
-        deliveryAddress: null,
-        issue: 'Ce compte n’a aucune adresse de livraison — ajoutez-la depuis sa fiche.',
-      };
-    }
-    return {
-      method: 'delivery',
-      pickupAddressId: null,
-      deliveryAddress: {
-        label: address.label,
-        ligne1: address.ligne1,
-        ligne2: address.ligne2,
-        codePostal: address.codePostal,
-        ville: address.ville,
-        pays: address.pays,
-      },
-      issue:
-        this.zone() === null
-          ? `Aucune tournée ne dessert le ${address.codePostal} — choisissez le retrait.`
-          : null,
-    };
+    return (
+      address.ligne1.trim() !== '' &&
+      address.codePostal.trim() !== '' &&
+      address.ville.trim() !== ''
+    );
   });
+
+  protected readonly choice = computed<FulfillmentChoice>(() =>
+    this.isCourier() ? this.courierChoice() : this.pickupChoice(),
+  );
 
   constructor() {
     // Le choix vaut dès l'ouverture (retrait au point par défaut) : l'émettre sur
     // les seules interactions aurait laissé le panier sans acheminement tant que
     // le commercial ne touche à rien, c'est-à-dire dans le cas le plus courant.
     effect(() => this.choiceChange.emit(this.choice()));
+  }
+
+  private pickupChoice(): FulfillmentChoice {
+    const point = this.pickup();
+    return {
+      method: 'pickup',
+      pickupAddressId: point?.id ?? null,
+      deliveryAddress: null,
+      issue:
+        point === null
+          ? 'Aucun point de retrait n’est configuré (Réglages → Livraisons & retraits).'
+          : null,
+    };
+  }
+
+  private courierChoice(): FulfillmentChoice {
+    const address = this.address();
+    if (!this.addressComplete()) {
+      return {
+        method: 'delivery',
+        pickupAddressId: null,
+        deliveryAddress: null,
+        issue: 'Adresse de livraison incomplète — rue, code postal et ville sont requis.',
+      };
+    }
+    return {
+      method: 'delivery',
+      pickupAddressId: null,
+      deliveryAddress: {
+        // Une adresse de commande ne porte pas de nom d'usage : le carnet le tient
+        // pour ses propres entrées, la saisie n'en a pas.
+        label: '',
+        ligne1: address.ligne1.trim(),
+        ligne2: address.ligne2.trim(),
+        codePostal: address.codePostal.trim(),
+        ville: address.ville.trim(),
+        pays: 'France',
+      },
+      issue:
+        this.zone() === null
+          ? `Aucune tournée ne dessert le ${address.codePostal.trim()} — choisissez le retrait.`
+          : null,
+    };
   }
 
   protected onMethod(value: string): void {
@@ -167,6 +221,14 @@ export class AcheminementCommande {
   }
 
   protected onAddress(id: string): void {
-    this.addressId.set(id);
+    this.chosenAddressId.set(id);
+  }
+
+  /** Répercute un champ de la **saisie** (les champs ne s'ouvrent que sur elle). */
+  protected onField(field: keyof DraftAddress, event: Event): void {
+    const element = event.target;
+    if (element instanceof HTMLInputElement) {
+      this.draft.update((address) => ({ ...address, [field]: element.value }));
+    }
   }
 }

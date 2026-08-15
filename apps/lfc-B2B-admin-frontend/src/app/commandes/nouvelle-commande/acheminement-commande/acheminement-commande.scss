@@ -8,10 +8,42 @@
   align-self: start;
 }
 
-/* Le point de retrait ou le secteur : une phrase, pas un champ — il n'y a rien à
-   y choisir quand il n'y a qu'une réponse. */
+/* Le point de retrait, l'adresse retenue ou le secteur : une phrase, pas un
+   champ — il n'y a rien à y choisir quand il n'y a qu'une réponse. */
 .ach-line {
   margin: 0;
   color: var(--fold-color-text-secondary);
   font-size: var(--fold-text-sm);
+}
+
+.ach-field {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+
+  input {
+    padding: var(--fold-space-sm);
+    border: 1px solid var(--fold-color-border);
+    border-radius: var(--fold-radius-sm);
+    background: var(--fold-color-surface-card);
+    color: inherit;
+    font: inherit;
+  }
+}
+
+.ach-field--cp {
+  flex: 0 0 7rem;
+}
+
+.ach-row {
+  display: flex;
+  gap: var(--fold-space-sm);
+}
+
+.ach-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  font-weight: 500;
 }

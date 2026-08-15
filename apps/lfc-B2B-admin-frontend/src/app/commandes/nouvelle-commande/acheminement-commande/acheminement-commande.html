@@ -8,18 +8,48 @@
 />
 
 @if (isCourier()) {
-  @if (addressOptions().length > 1) {
-    <fold-listbox
-      label="Adresse de livraison"
-      [options]="addressOptions()"
-      [value]="address()?.id ?? ''"
-      (selectionChange)="onAddress($event)"
-    />
-  } @else if (address(); as only) {
-    <p class="ach-line">
-      Livraison à <strong>{{ only.label || only.ville }}</strong> — {{ only.ligne1 }},
-      {{ only.codePostal }} {{ only.ville }}
-    </p>
+  <!-- Le carnet de la société d'abord, la saisie ensuite. -->
+  <fold-listbox
+    label="Adresse de livraison"
+    [options]="addressOptions()"
+    [value]="addressId()"
+    (selectionChange)="onAddress($event)"
+  />
+
+  @if (isNewAddress()) {
+    <label class="ach-field">
+      <span class="ach-label">Rue</span>
+      <input
+        type="text"
+        autocomplete="street-address"
+        placeholder="N° et rue"
+        [value]="address().ligne1"
+        (input)="onField('ligne1', $event)"
+      />
+    </label>
+    <div class="ach-row">
+      <label class="ach-field ach-field--cp">
+        <span class="ach-label">Code postal</span>
+        <input
+          type="text"
+          inputmode="numeric"
+          autocomplete="postal-code"
+          [value]="address().codePostal"
+          (input)="onField('codePostal', $event)"
+        />
+      </label>
+      <label class="ach-field">
+        <span class="ach-label">Ville</span>
+        <input
+          type="text"
+          autocomplete="address-level2"
+          [value]="address().ville"
+          (input)="onField('ville', $event)"
+        />
+      </label>
+    </div>
+  } @else {
+    <p class="ach-line">{{ address().ligne1 }}, {{ address().codePostal }} {{ address().ville }}</p>
   }
 
   @if (zoneLabel(); as zone) {

@@ -49,6 +49,7 @@ function choiceOf(options: {
   addresses?: readonly DeliveryAddressView[];
   zones?: readonly DeliveryZoneView[];
   courier?: boolean;
+  dictate?: { ligne1: string; codePostal: string; ville: string };
 }): FulfillmentChoice {
   const fixture = TestBed.createComponent(AcheminementCommande);
   fixture.componentRef.setInput('pickups', options.pickups ?? [LABO]);
@@ -60,6 +61,23 @@ function choiceOf(options: {
   fixture.detectChanges();
   if (options.courier === true) {
     fixture.componentInstance['onMethod']('delivery');
+    fixture.detectChanges();
+  }
+  const dictated = options.dictate;
+  if (dictated !== undefined) {
+    fixture.componentInstance['onAddress']('__new__');
+    type Field = 'ligne1' | 'codePostal' | 'ville';
+    const fields: readonly Field[] = ['ligne1', 'codePostal', 'ville'];
+    for (const field of fields) {
+      // Un vrai élément et un vrai événement : `onField` lit `event.target`, et le
+      // simuler par un littéral aurait demandé un cast que le dépôt interdit.
+      const input = document.createElement('input');
+      input.value = dictated[field];
+      input.addEventListener('input', (event) =>
+        fixture.componentInstance['onField'](field, event),
+      );
+      input.dispatchEvent(new Event('input'));
+    }
     fixture.detectChanges();
   }
   if (last === null) {
@@ -86,7 +104,9 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
     expect(choice.method).toBe('delivery');
     expect(choice.pickupAddressId).toBeNull();
     expect(choice.deliveryAddress).toEqual({
-      label: 'Boutique',
+      // Pas de nom d'usage : le carnet le tient pour ses entrées, une adresse de
+      // commande est une adresse, pas une fiche.
+      label: '',
       ligne1: '12 avenue Foch',
       ligne2: '',
       codePostal: '92100',
@@ -104,13 +124,31 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
     expect(choice.issue).toContain('92100');
   });
 
-  it('bloque quand le compte n’a aucune adresse de livraison', () => {
-    // Une adresse dictée au téléphone appartient à la fiche, pas à une commande :
-    // le sélecteur renvoie donc vers la fiche au lieu d'ouvrir une saisie libre.
+  it('ouvre la saisie quand le carnet est vide, et bloque tant qu’elle est incomplète', () => {
+    // Un carnet vide ne doit pas immobiliser l'appel : la saisie s'ouvre d'
+    // elle-même, et c'est l'adresse manquante — pas le carnet — qui bloque.
     const choice = choiceOf({ courier: true, addresses: [] });
 
     expect(choice.deliveryAddress).toBeNull();
-    expect(choice.issue).toContain('fiche');
+    expect(choice.issue).toContain('incomplète');
+  });
+
+  it('accepte une adresse dictée au téléphone', () => {
+    const choice = choiceOf({
+      courier: true,
+      addresses: [],
+      dictate: { ligne1: '5 rue Neuve', codePostal: '92200', ville: 'Neuilly' },
+    });
+
+    expect(choice.deliveryAddress).toEqual({
+      label: '',
+      ligne1: '5 rue Neuve',
+      ligne2: '',
+      codePostal: '92200',
+      ville: 'Neuilly',
+      pays: 'France',
+    });
+    expect(choice.issue).toBeNull();
   });
 
   it('bloque quand aucun point de retrait n’est configuré', () => {
