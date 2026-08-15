@@ -1,8 +1,8 @@
-/* fold-ng design tokens : liés depuis index.html (`fold-tokens/index.css`,
-   copié en asset depuis node_modules/fold-ng/tokens), PAS via un `@import`
-   Sass/styles-array — le dev-server Native Federation n'inline pas ces CSS et
-   laisserait un import nu qui 404 (fold non stylé). En asset, ce sont de vrais
-   fichiers servis. Ce fichier ne fait donc plus que les styles applicatifs. */
+/* fold-ng design tokens — la source unique (primitives + scales + semantic).
+   Dans le graphe SCSS, comme dans les trois autres apps : le builder les inline
+   dans le bundle de styles, donc une requête de moins au premier rendu, et une
+   édition du paquet recharge à chaud. */
+@import "fold-ng/tokens.css";
 
 * {
   box-sizing: border-box;

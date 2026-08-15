@@ -6,11 +6,6 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
-    <!-- Tokens fold : copiés en asset (fold-tokens/) et liés ici, PAS via un
-         @import Sass/styles-array — le dev-server Native Federation ne les
-         inline pas et laisserait un import nu qui 404. En asset, index.css et
-         ses @import relatifs (primitives/scales/semantic) sont de vrais fichiers. -->
-    <link rel="stylesheet" href="fold-tokens/index.css" />
   </head>
   <body>
     <app-root></app-root>

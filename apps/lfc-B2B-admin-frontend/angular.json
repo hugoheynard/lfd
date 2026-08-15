@@ -27,11 +27,6 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              },
-              {
-                "glob": "**/*.css",
-                "input": "node_modules/fold-ng/tokens",
-                "output": "fold-tokens"
               }
             ],
             "styles": ["src/styles.scss"]

@@ -1,7 +1,8 @@
-/* fold-ng design tokens : liés depuis index.html (`fold-tokens/index.css`,
-   copié en asset depuis node_modules/fold-ng/tokens), PAS via un `@import`
-   Sass/styles-array — depuis le passage sous le builder Native Federation, il
-   n'inline plus ces CSS et laisserait un import nu qui 404 (tokens absents). */
+/* fold-ng design tokens — la source unique (primitives + scales + semantic).
+   Dans le graphe SCSS, comme dans les trois autres apps : le builder les inline
+   dans le bundle de styles, donc une requête de moins au premier rendu, et une
+   édition du paquet recharge à chaud. */
+@import 'fold-ng/tokens.css';
 
 /* Tokens applicatifs LFD, dérivés des tokens fold (donc théma-agnostiques).
    `--lfd-backdrop-navi` : lavis bleu pâle de l'accent de marque, posé derrière

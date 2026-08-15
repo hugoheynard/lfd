@@ -1,11 +1,17 @@
 /* Socle visuel des sections de réglages commerciaux (`.sec-*`). Chargé ici, une
    seule fois : en `@use` depuis chaque composant, Sass l'inlinait dans les trois
-   feuilles scopées — mêmes règles, trois fois le poids. */
+   feuilles scopées — mêmes règles, trois fois le poids.
+
+   En tête de fichier parce que Sass l'exige : un `@use` ne peut suivre aucune
+   autre règle, `@import` compris. */
 @use 'styles/commercial-sections';
 
-/* fold-ng design tokens : liés depuis index.html (`fold-tokens/index.css`, copié
-   en asset depuis node_modules/fold-ng/tokens), PAS via un `@import` Sass — le
-   builder ne les inline pas et laisserait un import nu qui 404. */
+/* fold-ng design tokens — la source unique (primitives + scales + semantic).
+   Dans le graphe SCSS, comme dans les trois autres apps : le builder les inline
+   dans le bundle de styles, donc une requête de moins au premier rendu, et une
+   édition du paquet recharge à chaud. `fold-ng/tokens.css` est un sous-chemin
+   d'export déclaré par le paquet. */
+@import 'fold-ng/tokens.css';
 
 /* ── Rythme des pages ───────────────────────────────────────────────────────
    `fold-page-layout` applique par défaut : gouttière 16→32 px (fluide), gap
