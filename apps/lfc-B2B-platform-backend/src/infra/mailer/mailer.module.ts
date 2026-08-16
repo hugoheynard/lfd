@@ -1,14 +1,15 @@
-import { createMailer, type Mailer, type MailerLogger } from "@lfd/mailer";
+import { createMailer, type MailerLogger } from "@lfd/mailer";
 import { Global, Logger, Module } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
+import { AdminMailCheckController } from "./admin-mail-check.controller.js";
 import { B2B_MAIL_TEMPLATES, type B2bMails } from "./mail-templates.js";
+import { MAILER, type B2bMailer } from "./mailer.tokens.js";
 
-/** Jeton d'injection du mailer — les appelants injectent **ça**, jamais un adaptateur. */
-export const MAILER = Symbol("MAILER");
-
-/** Le type qu'un appelant écrit : le mailer, chargé de la carte de cette app. */
-export type B2bMailer = Mailer<B2bMails>;
+// Ré-exportés pour que les appelants existants continuent d'écrire
+// `from "…/mailer.module.js"` — cf. mailer.tokens.ts pour la raison du fichier.
+export { MAILER };
+export type { B2bMailer };
 
 /**
  * Le mailer transactionnel de la plateforme.
@@ -20,6 +21,11 @@ export type B2bMailer = Mailer<B2bMails>;
  */
 @Global()
 @Module({
+  // Le contrôle de mise en service vit ici plutôt que dans un module `ops/` : il
+  // n'a d'autre dépendance que le mailer et la configuration, et le garder à
+  // côté de l'adaptateur qu'il éprouve évite qu'on le déplace un jour sans voir
+  // ce qu'il teste réellement.
+  controllers: [AdminMailCheckController],
   providers: [
     {
       provide: MAILER,

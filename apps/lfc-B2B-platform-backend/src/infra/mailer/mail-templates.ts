@@ -83,6 +83,20 @@ export interface B2bMails {
     /** Le lien à usage unique, à durée de vie limitée. */
     readonly passwordSetupUrl: string;
   };
+  /**
+   * **Le contrôle de mise en service**, envoyé après chaque déploiement à
+   * l'admin de secours. Son contenu n'a aucun intérêt — c'est son **arrivée**
+   * qui est l'information, et elle prouve la chaîne entière : clé parvenue
+   * jusqu'au NestJS, expéditeur sur un domaine vérifié, Resend qui accepte,
+   * DKIM qui signe, boîte qui reçoit.
+   */
+  "ops.deploy-check": {
+    /** La révision déployée — pour savoir QUELLE image a prouvé quoi. */
+    readonly revision: string;
+    /** L'expéditeur réellement utilisé. Le lire dans le corps évite d'aller
+     *  fouiller les en-têtes pour vérifier qu'il est bien celui qu'on croit. */
+    readonly fromAddress: string;
+  };
   /** Un client demande à être rappelé ou écrit. Destinataire : la boîte de l'équipe. */
   "staff.support-requested": {
     readonly contactName: string;
@@ -104,6 +118,24 @@ function detailsBody(details: readonly (readonly [string, string])[], message: s
 }
 
 export const B2B_MAIL_TEMPLATES: TemplateRegistry<B2bMails> = {
+  "ops.deploy-check": (data) => ({
+    subject: sanitiseSubject(`[LFC] Courrier opérationnel — ${data.revision}`),
+    html: renderLayout({
+      title: "Le courrier sortant fonctionne",
+      body: detailsBody(
+        [
+          ["Révision", data.revision],
+          ["Expéditeur", data.fromAddress],
+        ],
+        "Cet e-mail est parti du backend déployé. Sa seule présence ici prouve que " +
+          "la clé Resend atteint le container, que l'expéditeur est sur un domaine " +
+          "vérifié, et que le message est délivré.",
+      ),
+      footer:
+        "Message automatique de contrôle, envoyé à chaque déploiement. " +
+        "S'il cesse d'arriver, le canal e-mail est tombé — même si rien d'autre ne le dit.",
+    }),
+  }),
   "staff.account-alert": (data) => ({
     subject: sanitiseSubject(`Alerte — ${data.companyName} · ${data.ruleLabel}`),
     html: renderLayout({
