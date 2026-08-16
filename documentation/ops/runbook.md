@@ -148,6 +148,32 @@ facturé au volume ; si un jour il pèse, la réponse est
 `head_sampling_rate`, **pas** l'extinction : on peut se passer d'un
 échantillon, pas de la vue.
 
+## Remettre la production à blanc
+
+⚠️ **Irréversible.** Vide le contenu métier — comptes, sociétés, commandes,
+abonnements, paiements, RDV, prospects. Garde la configuration (zones,
+créneaux, points de retrait, règles d'alerte, disponibilités) et **deux** comptes
+staff : `dev@` et `cecile@`.
+
+```bash
+cd apps/lfc-B2B-platform-backend
+DATABASE_B2B_URL="<url de prod>" pnpm db:wipe:business            # simulation
+DATABASE_B2B_URL="<url de prod>" APPLY=1 pnpm db:wipe:business    # exécution
+```
+
+Sans `APPLY=1`, **rien n'est écrit** : le script compte et affiche. On lance la
+simulation, on relit les chiffres, puis on exécute — et on relance la simulation
+après, pour constater qu'il ne reste rien.
+
+Un **garde-fou** compare la liste des tables traitées au schéma Prisma : une
+table ajoutée sans être classée (vidée, ou conservée avec sa raison) fait échouer
+le script avant toute écriture. C'est ce qui empêche une table neuve de rester
+silencieusement pleine de données de test.
+
+⚠️ **Auth0 n'est pas touché.** Les identités survivent à la base : une connexion
+réussie mènera à un compte inconnu du backend. Les supprimer se fait à la main
+dans le tableau de bord, ou se décide de ne pas le faire — mais ça se décide.
+
 ## Savoir où tourne un container
 
 ```bash

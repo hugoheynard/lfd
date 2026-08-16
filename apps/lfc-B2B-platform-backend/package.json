@@ -32,6 +32,7 @@
     "seed:growth": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/seed-growth.ts",
     "seed:growth:reset": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/reset-growth.ts",
     "backfill:naf": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/backfill-naf.ts",
+    "db:wipe:business": "NODE_OPTIONS=--no-warnings node --loader ts-node/esm prisma/wipe-business-data.ts",
     "seed:temoin": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/seed-temoin-orders.ts"
   },
   "dependencies": {
