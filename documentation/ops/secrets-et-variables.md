@@ -53,6 +53,35 @@ projet Pages, le nom court étant déjà pris. `lfc-b2b.pages.dev` sert une buil
 comparant les bundles servis. Elle reste tolérée en CORS sous le nom
 `LEGACY_B2B_FRONT`, marquée à retirer.
 
+### Ces URL sont recopiées chez Auth0, et rien ne le rappelle 🔴
+
+Chaque front envoie `redirect_uri = window.location.origin` — voulu : une seule
+build sert tous les environnements. En contrepartie, **son origine doit être
+déclarée dans l'application Auth0**, sinon le fournisseur refuse de rendre un
+jeton (« Callback URL mismatch »). Trois listes, à tenir identiques :
+
+| Application Auth0            | Doit contenir                      | Front concerné |
+| ---------------------------- | ---------------------------------- | -------------- |
+| La Folie Coffee B2B platform | la valeur de `B2B_CLIENT_BASE_URL` | espace client  |
+| LFC B2B Admin                | la valeur de `B2B_ADMIN_BASE_URL`  | back-office    |
+| La Folie Coffee Admin Suite  | l'origine du shell                 | suite interne  |
+
+**Allowed Callback URLs**, **Allowed Logout URLs** et **Allowed Web Origins** —
+les trois, pas une seule. Auth0 → Applications → _l'app_ → Settings →
+Application URIs, puis « Save changes » (jusqu'à 30 s de propagation).
+
+⚠️ **Le piège est le renommage.** Le 2026-08-16, la connexion à l'espace client
+était cassée en production : le projet Pages était passé de `lfc-b2b` à
+`lfc-b2b-eu7`, la variable GitHub avait suivi, Auth0 non. Rien ne l'avait
+signalé — ce réglage est **invisible du dépôt**, et le déploiement le plus vert
+du monde ne le vérifie pas. Toute modification de `B2B_CLIENT_BASE_URL` ou de
+`B2B_ADMIN_BASE_URL` doit donc s'accompagner de la mise à jour de ces listes,
+dans le même geste.
+
+Ajouter, ne pas remplacer : les entrées de développement (`localhost:7316`,
+`127.0.0.1:7316`) doivent survivre, sinon c'est le dev qu'on casse en réparant
+la production.
+
 ## 3. Les secrets, par destination
 
 | Secret                                                                   | Va vers                            | Notes                                                                    |
