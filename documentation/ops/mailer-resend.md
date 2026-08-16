@@ -192,9 +192,15 @@ dépôt (cf. [`secrets-et-variables.md §5`](secrets-et-variables.md)).
 | `MAILER_REPLY_TO`           | —               | **à ne PAS poser** tant que §2.5 n'est pas fait |
 | `MAILER_STAFF_INBOX`        | —               | idem                                            |
 
-- **`MAILER_FROM_ADDRESS`** — c'est aussi le défaut du code
-  ([`env-readers.ts`](../../apps/lfc-B2B-platform-backend/src/infra/config/env-readers.ts)) :
-  poser la Variable rend le réglage explicite, ne pas la poser ne casse rien.
+- 🔴 **`MAILER_FROM_ADDRESS` est OBLIGATOIRE tant que le correctif du défaut
+  n'est pas sur `main`.** Le défaut du code
+  ([`env-readers.ts`](../../apps/lfc-B2B-platform-backend/src/infra/config/env-readers.ts))
+  vaut bien `no-reply@lafoliecoffee.info`, mais ce commit vit sur `dev` : la
+  version **déployée** porte encore `no-reply@lafoliedouce.fr`, un domaine que
+  personne ne possède. Sans la Variable, le container expédierait depuis ce
+  domaine et **Resend refuserait chaque envoi** — sans erreur au démarrage,
+  puisque la clé, elle, serait bien là. Le canal aurait l'air ouvert.
+  La Variable redevient facultative une fois le correctif fusionné.
 - **Les deux autres restent vides**, et c'est le bon état tant qu'aucune adresse
   n'est routée. **Une adresse non routée est pire qu'une variable vide** : le
   code croit le canal ouvert, et l'e-mail part vers un serveur qui n'existe pas.
