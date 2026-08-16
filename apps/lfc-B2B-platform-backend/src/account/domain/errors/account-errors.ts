@@ -228,11 +228,18 @@ export class AccountDisabledError extends BusinessError {
  * prime. Transférer la détention est un autre geste, qui n'existe pas encore.
  */
 export class CompanyAlreadyHasOwnerError extends BusinessError {
-  constructor(readonly companyId: string) {
-    super(
-      "account.company.already_has_owner",
-      "Cette société a déjà un détenteur : un second ne peut pas être ajouté.",
-    );
+  /**
+   * @param explanation ce que l'appelant essayait de faire, dit dans SES termes.
+   *   Le refus est le même partout ; ce qui change, c'est ce que la personne
+   *   devant l'écran croyait faire. Un message qui parle d'« ajouter un second
+   *   détenteur » à quelqu'un qui corrigeait une faute de frappe est exact et
+   *   inutile — constaté le 2026-08-16.
+   */
+  constructor(
+    readonly companyId: string,
+    explanation = "Cette société a déjà un détenteur : un second ne peut pas être ajouté.",
+  ) {
+    super("account.company.already_has_owner", explanation);
   }
 }
 

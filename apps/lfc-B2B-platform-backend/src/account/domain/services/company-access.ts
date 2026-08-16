@@ -55,6 +55,11 @@ export function ensureCompanyMember(role: CompanyRole | null, companyId: string)
  * de la société, pas une contrainte de table — et elle doit se lire au même
  * endroit que « qui peut gérer quoi ».
  *
+ * Le message nomme le cas RÉEL, qui n'est presque jamais « on a voulu ajouter
+ * un second détenteur ». C'est presque toujours une adresse corrigée sur la
+ * fiche : l'affichage suit, l'accès non — il appartient au compte ouvert avec
+ * l'ancienne adresse. Le refus est correct ; c'est l'explication qui manquait.
+ *
  * @throws {CompanyAlreadyHasOwnerError} un autre détenteur existe déjà.
  */
 export function ensureNoRivalOwner(
@@ -66,5 +71,11 @@ export function ensureNoRivalOwner(
   if (role !== "owner" || currentOwnerUserId === null || currentOwnerUserId === candidateUserId) {
     return;
   }
-  throw new CompanyAlreadyHasOwnerError(companyId);
+  throw new CompanyAlreadyHasOwnerError(
+    companyId,
+    "L'accès détenteur de cette société appartient déjà à un autre compte. " +
+      "Corriger l'adresse sur la fiche ne le déplace pas : le lien doit être renvoyé " +
+      "à l'adresse qui a ouvert l'accès. Pour changer d'adresse, il faut aujourd'hui " +
+      "passer par le support — le transfert de détention n'existe pas encore.",
+  );
 }
