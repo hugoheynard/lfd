@@ -148,31 +148,30 @@ facturé au volume ; si un jour il pèse, la réponse est
 `head_sampling_rate`, **pas** l'extinction : on peut se passer d'un
 échantillon, pas de la vue.
 
-## Remettre la production à blanc
+## Remettre la production à blanc — délibérément SANS outil
 
-⚠️ **Irréversible.** Vide le contenu métier — comptes, sociétés, commandes,
-abonnements, paiements, RDV, prospects. Garde la configuration (zones,
-créneaux, points de retrait, règles d'alerte, disponibilités) et **deux** comptes
-staff : `dev@` et `cecile@`.
+Fait une fois, le **2026-08-16**, pour vider les données de test avant
+l'ouverture commerciale. Un script dédié avait été écrit puis **supprimé le jour
+même** : une commande qui vide la production en une ligne est un danger
+permanent pour un gain d'une fois par an. Son histoire reste dans git
+(`prisma/wipe-business-data.ts`, commits du 16/08) si le besoin revient.
 
-```bash
-cd apps/lfc-B2B-platform-backend
-DATABASE_B2B_URL="<url de prod>" pnpm db:wipe:business            # simulation
-DATABASE_B2B_URL="<url de prod>" APPLY=1 pnpm db:wipe:business    # exécution
-```
+Ce qu'il faut savoir si le cas se représente, et qui a coûté du temps :
 
-Sans `APPLY=1`, **rien n'est écrit** : le script compte et affiche. On lance la
-simulation, on relit les chiffres, puis on exécute — et on relance la simulation
-après, pour constater qu'il ne reste rien.
-
-Un **garde-fou** compare la liste des tables traitées au schéma Prisma : une
-table ajoutée sans être classée (vidée, ou conservée avec sa raison) fait échouer
-le script avant toute écriture. C'est ce qui empêche une table neuve de rester
-silencieusement pleine de données de test.
-
-⚠️ **Auth0 n'est pas touché.** Les identités survivent à la base : une connexion
-réussie mènera à un compte inconnu du backend. Les supprimer se fait à la main
-dans le tableau de bord, ou se décide de ne pas le faire — mais ça se décide.
+- **Le transport dépend du schéma de l'URL.** `prisma+postgres://` est une
+  passerelle HTTP (Accelerate) ; l'adaptateur `pg` ne sait pas lui parler et
+  expire après un long silence. Cf. `PrismaService`, qui arbitre déjà.
+- **La console Prisma n'a pas d'éditeur SQL** — `Queries` est du monitoring,
+  `Studio` un navigateur ligne à ligne. Passer par `psql` avec la chaîne relue
+  dans `Connection strings`.
+- **Un `TRUNCATE` en une seule instruction** se moque de l'ordre des clés
+  étrangères, à condition que l'ensemble des tables soit complet ; sinon
+  Postgres refuse en nommant la manquante — un échec sûr, rien n'est supprimé.
+- **Les sauvegardes automatiques** (menu `Backups`) couvrent trois jours sur le
+  plan actuel. Restaurer vers une base neuve avant l'opération donne une archive
+  figée que la rétention n'effacera pas.
+- **Auth0 n'est pas concerné** : les identités survivent à la base, et une
+  connexion réussie mène alors à un compte inconnu du backend.
 
 ## Savoir où tourne un container
 
