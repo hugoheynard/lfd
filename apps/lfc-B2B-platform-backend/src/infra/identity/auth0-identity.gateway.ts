@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import {
   IdentityProviderUnavailableError,
@@ -20,6 +20,13 @@ import { Auth0ManagementClient, CONFLICT, NOT_FOUND } from "./auth0-management.c
  * rien ouvrir. Le renvoyer coûte un clic.
  */
 export const PASSWORD_TICKET_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+/** L'empreinte d'une adresse chez le fournisseur — assez pour trancher, pas plus. */
+export interface IdentityFootprint {
+  readonly connections: readonly string[];
+  /** Faux = Auth0 rend une identité dont on ne sait pas lire l'identifiant. */
+  readonly hasUserId: boolean;
+}
 
 /**
  * La mécanique Auth0 d'ouverture d'identité — **la connexion est un paramètre**.
@@ -41,6 +48,8 @@ export const PASSWORD_TICKET_TTL_SECONDS = 7 * 24 * 60 * 60;
  */
 @Injectable()
 export class Auth0IdentityGateway {
+  private readonly logger = new Logger(Auth0IdentityGateway.name);
+
   constructor(private readonly api: Auth0ManagementClient) {}
 
   /**
@@ -67,6 +76,14 @@ export class Auth0IdentityGateway {
     if (subject === null) {
       // Auth0 a dit « déjà pris » puis « je ne trouve rien » : deux réponses
       // incompatibles. Mieux vaut s'arrêter que provisionner un doublon.
+      //
+      // C'était le SEUL chemin d'échec muet — les deux appels réussissent, donc
+      // le tenant n'enregistre aucune anomalie, et l'appelant reçoit un `500`
+      // neutre. On le journalise avec la connexion visée : sans elle, la ligne
+      // n'orienterait pas plus que le silence qu'elle remplace.
+      this.logger.error(
+        `Adresse déjà prise sur « ${connection} », mais aucune identité ne s'y retrouve.`,
+      );
       throw new IdentityProviderUnavailableError(
         "Cette adresse est déjà connue du fournisseur d'identité, mais son compte est introuvable.",
       );
@@ -129,6 +146,33 @@ export class Auth0IdentityGateway {
   }
 
   /**
+   * **Ce que le fournisseur sait d'une adresse**, sans rien créer.
+   *
+   * Sert au contrôle d'exploitation, et à rien d'autre : c'est la lecture qui
+   * décide du seul chemin d'échec impossible à distinguer de l'extérieur —
+   * Auth0 répond « adresse déjà prise » à la création, puis ne la retrouve pas.
+   * Les deux appels réussissent, donc rien n'apparaît côté tenant ; l'erreur qui
+   * en sort est un `500` neutre.
+   *
+   * On ne publie **que les noms de connexion** et la lisibilité de l'identifiant
+   * — jamais le `user_id`, ni le profil. C'est exactement ce qu'il faut pour
+   * trancher, et rien de plus.
+   */
+  async describeEmail(email: string): Promise<readonly IdentityFootprint[]> {
+    const found = await this.api.call(
+      "GET",
+      `/api/v2/users-by-email?email=${encodeURIComponent(email.toLowerCase())}`,
+    );
+    if (!Array.isArray(found)) {
+      return [];
+    }
+    return found.map((user) => ({
+      connections: connectionsOf(user),
+      hasUserId: readUserId(user) !== null,
+    }));
+  }
+
+  /**
    * Crée l'utilisateur ; rend `null` si l'adresse est **déjà prise** (409).
    *
    * Le mot de passe posé ici est jeté : il n'est ni conservé, ni transmis, ni
@@ -177,6 +221,17 @@ export class Auth0IdentityGateway {
  */
 function throwawayPassword(): string {
   return `Aa1!${randomBytes(32).toString("base64url")}`;
+}
+
+/** Les connexions d'une identité, telles qu'Auth0 les nomme. */
+function connectionsOf(raw: unknown): readonly string[] {
+  const identities: unknown = readProperty(raw, "identities");
+  if (!Array.isArray(identities)) {
+    return [];
+  }
+  return identities
+    .map((identity) => readString(identity, "connection"))
+    .filter((name): name is string => name !== null);
 }
 
 /**
