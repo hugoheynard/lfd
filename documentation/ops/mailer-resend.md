@@ -36,21 +36,46 @@ ne pas y revenir :
 chez Resend fait **refuser l'envoi côté fournisseur** — l'e-mail ne part pas, et
 le seul endroit où ça se voit est le journal (`Envoi Resend refusé`).
 
-### On envoie depuis un sous-domaine, et on reçoit sur l'apex
+### Une seule adresse pour tout le transactionnel : `no-reply@lafoliecoffee.info`
 
-|                         | Où                          | Qui le sert              |
-| ----------------------- | --------------------------- | ------------------------ |
-| **Envoi** (sortant)     | `mail.lafoliecoffee.info`   | Resend (DKIM + SPF + MX) |
-| **Réception** (entrant) | `lafoliecoffee.info` (apex) | Cloudflare Email Routing |
+Sur l'**apex**, et c'est ce que voit la personne qui reçoit. Elle porte les trois
+démarches, qui partent toutes du **même** mailer :
 
-Deux raisons de ne pas envoyer depuis l'apex, et la seconde est bloquante :
+| Démarche                     | Gabarit                  | Déclencheur                    |
+| ---------------------------- | ------------------------ | ------------------------------ |
+| Ouverture d'accès **client** | `customer.access-opened` | un commercial ouvre un compte  |
+| Invitation **staff**         | `staff.invited`          | un admin invite un collègue    |
+| Alertes internes             | `staff.*`                | RDV, demande de contact, seuil |
 
-1. La réputation d'expédition de la plateforme reste séparée de celle du courrier
-   de l'entreprise — un incident transactionnel n'emporte pas le reste.
-2. **Un domaine n'a qu'un jeu de `MX`.** Resend en pose un pour le retour des
-   rebonds, Cloudflare Email Routing en pose un pour la réception : les deux sur
-   l'apex se marcheraient dessus. Sur des étages différents, ils coexistent sans
-   arbitrage.
+**Auth0 n'envoie aucun de ces e-mails.** Il fabrique seulement le lien à usage
+unique (`passwordSetupUrl`, un ticket de la Management API) ; c'est notre backend
+qui le met en page et l'expédie
+([`grant-account-access.service.ts`](../../apps/lfc-B2B-platform-backend/src/account/application/services/grant-account-access.service.ts),
+[`invite-staff-user.handler.ts`](../../apps/lfc-B2B-platform-backend/src/staff-users/application/invite-staff-user.handler.ts)).
+Une seule adresse d'expédition couvre donc réellement les deux mondes — il n'y a
+pas de fournisseur d'e-mail à configurer côté Auth0.
+
+### Envoi sur l'apex, réception sur l'apex — sans collision
+
+|                         | Enregistrements                                  | Qui les sert             |
+| ----------------------- | ------------------------------------------------ | ------------------------ |
+| **Envoi** (sortant)     | `TXT resend._domainkey` · `MX send` · `TXT send` | Resend                   |
+| **Réception** (entrant) | `MX @` · `TXT @` (SPF)                           | Cloudflare Email Routing |
+
+**Resend pose son `MX` et son SPF sur `send.<domaine>`, jamais sur l'apex**,
+même quand on enregistre l'apex chez lui ([doc Resend / Cloudflare](https://resend.com/docs/dashboard/domains/cloudflare)).
+Seul le DKIM, un `TXT`, atterrit à la racine de la zone. Il n'y a donc **aucun
+conflit** avec le `MX` que pose Email Routing : les deux services cohabitent sur
+le même domaine.
+
+> Une version antérieure de cette page affirmait le contraire et rendait le
+> sous-domaine d'envoi obligatoire. C'était faux, et ça coûtait une adresse
+> d'expédition plus laide sans rien acheter.
+
+⚠️ **Un seul enregistrement SPF par nom.** Email Routing pose le sien sur l'apex,
+Resend le sien sur `send` : deux noms, donc pas de fusion à faire. Mais si un
+jour un `TXT v=spf1…` doit être ajouté à l'apex, il faut **fusionner** avec celui
+de Cloudflare — deux SPF sur le même nom invalident les deux.
 
 ⚠️ **La zone n'a aucun `MX` aujourd'hui, donc aucune adresse
 `@lafoliecoffee.info` ne reçoit quoi que ce soit.** Tant que Email Routing n'est
@@ -59,16 +84,32 @@ boîtes qui n'existent pas — et un e-mail envoyé à une adresse inexistante n
 produit aucun symptôme visible de notre côté. C'est l'étape 2.5 ci-dessous, et
 elle n'est pas facultative.
 
+### Le sous-domaine, on le garde pour le commercial
+
+Le vrai découpage n'est pas transactionnel / courrier d'entreprise : c'est
+**transactionnel / commercial**.
+
+Un e-mail de promotion récolte des plaintes « indésirable » ; un lien de mot de
+passe doit arriver. Sur le même domaine, les premières dégradent la réputation
+du second — et le symptôme est le pire de tous : des clients qui ne reçoivent
+plus leur accès, sans erreur nulle part.
+
+Le jour où l'emailing arrive, il prend donc **son propre sous-domaine**
+(`news.lafoliecoffee.info`), enregistré comme un second domaine chez Resend, avec
+sa réputation à lui. Rien à changer ici ce jour-là : c'est un ajout, pas une
+migration.
+
 ## 2. Chez Resend (tableau de bord, à la main)
 
-1. **Domains → Add Domain** — `mail.lafoliecoffee.info`, région **EU**
-   (cohérent avec l'ancrage WEUR des containers ; les données d'envoi restent
-   dans la même juridiction).
+1. **Domains → Add Domain** — `lafoliecoffee.info`, région **EU** (cohérent avec
+   l'ancrage WEUR des containers ; les données d'envoi restent dans la même
+   juridiction).
 2. Resend affiche les enregistrements à poser. Ils sont de trois familles, et
    les trois comptent :
-   - **DKIM** (`TXT`, sur `resend._domainkey.mail`) — la signature. Sans elle,
-     rien ne part.
-   - **SPF** (`TXT` + `MX` sur `mail`) — l'autorisation, et le retour des rebonds.
+   - **DKIM** (`TXT`, sur `resend._domainkey`) — la signature. Sans elle, rien
+     ne part.
+   - **SPF** (`TXT` + `MX` sur `send`) — l'autorisation, et le retour des
+     rebonds. Posés par Resend sur ce sous-domaine, pas sur l'apex.
    - **DMARC** (`TXT` sur `_dmarc`) — la politique. Facultatif chez Resend,
      **pas** pour Gmail et Outlook, qui l'exigent de tout expéditeur en volume.
      Commencer à `p=none` : on observe avant de rejeter.
@@ -77,9 +118,9 @@ elle n'est pas facultative.
    le délai externe : de quelques minutes à quelques heures. À lancer en premier.
 
    ⚠️ Cloudflare ajoute le suffixe de zone tout seul. Le nom à saisir est
-   `resend._domainkey.mail`, **pas** `resend._domainkey.mail.lafoliecoffee.info`
-   — sinon l'enregistrement atterrit sur `…mail.lafoliecoffee.info.lafoliecoffee.info`
-   et la vérification échoue sans dire pourquoi.
+   `resend._domainkey`, **pas** `resend._domainkey.lafoliecoffee.info` — sinon
+   l'enregistrement atterrit sur `…lafoliecoffee.info.lafoliecoffee.info` et la
+   vérification échoue sans dire pourquoi.
 
 4. **API Keys → Create** — permission **Sending access** seulement, et
    **restreinte au domaine** vérifié. Une clé d'envoi qui ne sait pas lire les
@@ -110,17 +151,18 @@ La valeur se copie **du tableau de bord Resend vers GitHub, directement** :
 jamais par un terminal, jamais dans une conversation, jamais dans un fichier du
 dépôt (cf. [`secrets-et-variables.md §5`](secrets-et-variables.md)).
 
-| Nom                         | Où              | Valeur                             |
-| --------------------------- | --------------- | ---------------------------------- |
-| `RESEND_MAILER_B2B_API_KEY` | 🔒 **Secret**   | la clé créée en §2.4               |
-| `MAILER_FROM_ADDRESS`       | 📢 **Variable** | `no-reply@mail.lafoliecoffee.info` |
-| `MAILER_REPLY_TO`           | 📢 **Variable** | `contact@lafoliecoffee.info`       |
-| `MAILER_STAFF_INBOX`        | 📢 **Variable** | `commercial@lafoliecoffee.info`    |
+| Nom                         | Où              | Valeur                          |
+| --------------------------- | --------------- | ------------------------------- |
+| `RESEND_MAILER_B2B_API_KEY` | 🔒 **Secret**   | la clé créée en §2.4            |
+| `MAILER_FROM_ADDRESS`       | 📢 **Variable** | `no-reply@lafoliecoffee.info`   |
+| `MAILER_REPLY_TO`           | 📢 **Variable** | `contact@lafoliecoffee.info`    |
+| `MAILER_STAFF_INBOX`        | 📢 **Variable** | `commercial@lafoliecoffee.info` |
 
-- **`MAILER_FROM_ADDRESS`** — sur le **sous-domaine vérifié**, jamais sur l'apex.
-  C'est aussi le défaut du code
+- **`MAILER_FROM_ADDRESS`** — c'est aussi le défaut du code
   ([`env-readers.ts`](../../apps/lfc-B2B-platform-backend/src/infra/config/env-readers.ts)) :
-  poser la Variable rend le réglage explicite, ne pas la poser ne casse rien.
+  poser la Variable rend le réglage explicite, ne pas la poser ne casse rien. Le
+  jour où l'emailing prend `news.`, cette variable ne bouge **pas** — c'est un
+  second domaine chez Resend, pas un changement d'expéditeur transactionnel.
 - **`MAILER_REPLY_TO`** — l'expéditeur est un `no-reply`. Sans cette variable,
   une personne qui répond à son invitation écrit dans le vide, et personne ne
   saura jamais qu'elle a répondu. C'est le défaut le moins visible des trois.

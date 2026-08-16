@@ -222,14 +222,17 @@ export function optionalMailerConfig(): MailerConfig {
 }
 
 /**
- * L'expéditeur par défaut, sur le **sous-domaine d'envoi réellement vérifié**
- * chez Resend.
+ * L'expéditeur par défaut, sur le domaine réellement vérifié chez Resend.
  *
  * Il valait `no-reply@lafoliedouce.fr` — un domaine que personne ne possède, et
  * qu'aucun fournisseur n'accepterait. Un défaut plausible mais faux est pire que
  * pas de défaut : il rend un mauvais réglage indiscernable d'un bon, jusqu'à ce
- * qu'un envoi soit refusé en production. Le domaine d'envoi est un
- * **sous-domaine** (`mail.`) pour laisser l'apex à la réception — cf.
- * `documentation/ops/mailer-resend.md`.
+ * qu'un envoi soit refusé en production.
+ *
+ * **Sur l'apex**, et non sur un sous-domaine : une seule adresse porte tout le
+ * transactionnel — accès client, invitation staff, alertes internes — et c'est
+ * elle que voit la personne qui reçoit. Un futur envoi COMMERCIAL, lui, prendra
+ * son propre sous-domaine : c'est le seul découpage qui protège réellement la
+ * délivrabilité. Cf. `documentation/ops/mailer-resend.md`.
  */
-const DEFAULT_FROM_ADDRESS = "no-reply@mail.lafoliecoffee.info";
+const DEFAULT_FROM_ADDRESS = "no-reply@lafoliecoffee.info";
