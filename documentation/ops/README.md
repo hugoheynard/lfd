@@ -12,6 +12,7 @@ Le reste de `documentation/` décrit le métier ; ici on décrit la machine.
 | [`secrets-et-variables.md`](secrets-et-variables.md)                       | « Où vit cette valeur ? » — Secret ou Variable, qui la lit, laquelle doit résoudre               |
 | [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md) | « Qu'est-ce qui nous protège vraiment ? » — les trois couches, dont une inerte                   |
 | [`runbook.md`](runbook.md)                                                 | « Comment je fais, et comment je sais que ça a marché ? » — les gestes et leurs contrôles        |
+| [`mailer-resend.md`](mailer-resend.md)                                     | « Pourquoi l'e-mail n'est pas arrivé ? » — le domaine à vérifier, les 4 réglages, les contrôles  |
 
 Voir aussi, hors de ce dossier :
 [`b2b/admin-app-ios-capacitor.md`](../b2b/admin-app-ios-capacitor.md) (l'admin en
