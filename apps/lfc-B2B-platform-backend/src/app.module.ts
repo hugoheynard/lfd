@@ -19,6 +19,7 @@ import { envFilePaths } from "./infra/config/env-readers.js";
 import { ContextModule } from "./infra/context/context.module.js";
 import { EventsModule } from "./infra/events/events.module.js";
 import { IdentityModule } from "./infra/identity/identity.module.js";
+import { LoggingModule } from "./infra/logging/logging.module.js";
 import { StartupModule } from "./infra/startup/startup.module.js";
 import { MailerModule } from "./infra/mailer/mailer.module.js";
 import { DatabaseModule } from "./infra/database/database.module.js";
@@ -43,6 +44,7 @@ import { SecurityModule } from "./infra/security/security.module.js";
     EventsModule,
     IdentityModule,
     StartupModule,
+    LoggingModule,
     MailerModule,
     DatabaseModule,
     // AVANT AuthModule : le ThrottlerGuard (APP_GUARD) doit s'exécuter en premier

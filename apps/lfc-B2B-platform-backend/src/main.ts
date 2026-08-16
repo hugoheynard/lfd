@@ -6,7 +6,7 @@ import { AppModule } from "./app.module.js";
 import { AppConfig } from "./infra/config/app-config.js";
 import { requestContextMiddleware } from "./infra/context/request-context.middleware.js";
 import { AppErrorFilter } from "./shared/http/app-error.filter.js";
-import { QuietBootLogger } from "./shared/quiet-boot-logger.js";
+import { RecordingLogger } from "./infra/logging/recording-logger.js";
 
 /** Plafond de taille du corps JSON : borne un vecteur de déni de service (payload géant). */
 const JSON_BODY_LIMIT = "512kb";
@@ -14,11 +14,14 @@ const JSON_BODY_LIMIT = "512kb";
 async function bootstrap(): Promise<void> {
   // Logger de démarrage silencieux : masque l'énumération des routes/modules
   // (bruit en watch), garde erreurs/warnings — un montage qui échoue reste loud.
+  // Il GARDE aussi en mémoire les lignes d'erreur et d'alerte : Cloudflare ne
+  // remonte pas la sortie d'un container, donc sans ce tampon l'application
+  // parle dans le vide (cf. infra/logging/log-buffer.ts).
   // `rawBody: true` : Express conserve le corps brut de chaque requête. Le webhook
   // Stripe en a besoin — Stripe signe les octets exacts du payload, un JSON
   // re-sérialisé casserait la vérification de signature.
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: new QuietBootLogger(),
+    logger: new RecordingLogger(),
     rawBody: true,
   });
 

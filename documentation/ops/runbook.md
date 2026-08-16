@@ -113,6 +113,27 @@ La sonde publique `/health` en porte les **compteurs** (`capabilities.blocking`
 verrouillée est une aide qu'on ne doit qu'à soi-même. Le déploiement s'arrête
 sur un canal bloquant (étape « Inventaire des canaux »).
 
+## Lire les journaux de l'application
+
+Cloudflare **ne remonte pas** la sortie d'un container : l'API `Container`
+n'expose que la fin du process, et l'observabilité du Worker ne capte que le
+Worker. Le chaînon n'existe pas — ce n'était pas un réglage manqué.
+
+L'application garde donc elle-même ses **300 dernières lignes** d'erreur et
+d'alerte, et les rend :
+
+```bash
+curl -s "https://<api>/admin/ops/logs?limit=50" -H "x-lfc-recompute-token: <jeton>"
+```
+
+Le jeton étant en écriture seule dans GitHub, le chemin normal est le workflow
+**`ops_b2b_logs`** (Actions → Run workflow), qui imprime un tableau lisible.
+
+⚠️ Tampon **vivant** : borné, perdu au redémarrage, propre à l'instance qui
+répond. Il dit ce qui vient de se passer, pas ce qui s'est passé cette nuit —
+la conservation durable suppose une table, une rétention et une politique de
+données, et reste à faire.
+
 ## Enquêter sur qui appelle quoi
 
 La journalisation est **active en permanence** (`"observability": { "enabled":
