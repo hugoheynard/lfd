@@ -191,15 +191,24 @@ export class Auth0IdentityGateway {
    * Le mot de passe posé ici est jeté : il n'est ni conservé, ni transmis, ni
    * utilisable — il n'existe que parce qu'Auth0 en exige un à la création. Le
    * vrai mot de passe sera choisi par la personne, via le lien.
+   *
+   * **Le corps est minimal, et c'est une règle, pas une économie.** Le
+   * fournisseur d'identité n'a besoin que de quoi authentifier : une adresse,
+   * un secret, une base d'utilisateurs. Le nom et le prénom vivent dans NOTRE
+   * base, qui en est la source de vérité — les recopier chez lui créait une
+   * seconde vérité à tenir à jour, et exposait des données personnelles à un
+   * tiers sans que rien ne le justifie.
+   *
+   * C'est aussi ce qui a cassé la production le 2026-08-16 : Auth0 rendait un
+   * `400` sur ce corps-là, quand la même création passait sans ces trois
+   * champs. Chaque champ envoyé « au cas où » est une règle de validation
+   * étrangère qu'on s'impose.
    */
   private async createUser(connection: string, input: IdentityToProvision): Promise<string | null> {
     const created = await this.api.call("POST", "/api/v2/users", {
       connection,
       email: input.email,
       password: throwawayPassword(),
-      given_name: input.firstName,
-      family_name: input.lastName,
-      name: `${input.firstName} ${input.lastName}`.trim(),
       email_verified: false,
       verify_email: false,
     });
