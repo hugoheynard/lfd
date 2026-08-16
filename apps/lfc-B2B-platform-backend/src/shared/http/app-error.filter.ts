@@ -84,6 +84,11 @@ export class AppErrorFilter implements ExceptionFilter {
     response.status(status).json({
       code: error.code,
       message: technical ? "Une erreur technique est survenue." : error.message,
+      // Les faits publiables sortent MÊME en production, et même sur une erreur
+      // technique : ce sont des nombres sans contenu (cf. `PublicErrorFacts`),
+      // et sans eux un incident ne laisse rien d'exploitable à qui n'a pas accès
+      // aux journaux — ce qui est le cas quand ils sont inatteignables.
+      ...error.facts,
       ...(technical ? this.detailOf(error) : {}),
       ...requestIdField(),
     });

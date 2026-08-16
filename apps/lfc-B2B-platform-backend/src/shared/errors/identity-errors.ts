@@ -1,4 +1,4 @@
-import { TechnicalError } from "./app-error.js";
+import { TechnicalError, type PublicErrorFacts } from "./app-error.js";
 
 /**
  * Le **fournisseur d'identité** a refusé, ou son canal n'est pas configuré.
@@ -14,8 +14,19 @@ import { TechnicalError } from "./app-error.js";
  * pas un incident du contexte `account`.
  */
 export class IdentityProviderUnavailableError extends TechnicalError {
-  constructor(reason: string, cause?: unknown) {
+  /**
+   * Le **statut** rendu par le fournisseur, quand il a répondu.
+   *
+   * Publié dans la réponse HTTP (cf. `PublicErrorFacts`), parce qu'un `429` ne
+   * se traite pas comme un `403` : sans ce nombre, l'exploitant reste devant
+   * « une erreur technique est survenue », qui n'oriente vers rien. Le CORPS de
+   * la réponse, lui, reste au journal — il peut porter des détails du tenant.
+   */
+  override readonly facts: PublicErrorFacts;
+
+  constructor(reason: string, providerStatus?: number, cause?: unknown) {
     super("identity_provider.unavailable", reason, cause);
+    this.facts = providerStatus === undefined ? {} : { providerStatus };
   }
 }
 

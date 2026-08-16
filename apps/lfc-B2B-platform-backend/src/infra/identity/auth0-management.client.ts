@@ -89,7 +89,12 @@ export class Auth0ManagementClient {
       this.logger.error(
         `${method} ${path} a échoué (${String(response.status)}) : ${await response.text()}`,
       );
-      throw new IdentityProviderUnavailableError("Le fournisseur d'identité a refusé l'opération.");
+      // Le statut voyage avec l'erreur : c'est le seul indice qui sortira de
+      // la production, et il ne dit rien de plus qu'un numéro.
+      throw new IdentityProviderUnavailableError(
+        "Le fournisseur d'identité a refusé l'opération.",
+        response.status,
+      );
     }
     return response.status === 204 ? null : await response.json();
   }
@@ -155,6 +160,7 @@ export class Auth0ManagementClient {
       this.logger.error(`Jeton M2M refusé (${String(response.status)})`);
       throw new IdentityProviderUnavailableError(
         "Impossible d'obtenir un jeton auprès du fournisseur d'identité.",
+        response.status,
       );
     }
 

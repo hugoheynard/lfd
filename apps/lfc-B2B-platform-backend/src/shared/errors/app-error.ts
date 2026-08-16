@@ -18,7 +18,27 @@
  */
 export type ErrorCategory = "domain" | "business" | "authorization" | "technical";
 
+/**
+ * Des faits **publiables** joints à une erreur : ils sortent dans la réponse
+ * HTTP, y compris en production, y compris sur une erreur technique.
+ *
+ * La règle est étroite et ne se négocie pas — **des nombres sans contenu**, du
+ * genre code de statut d'un service amont. Jamais un message, jamais un
+ * identifiant, jamais rien qui vienne du corps d'une réponse tierce : ces
+ * choses-là restent dans le journal. Le type l'impose plutôt que de le
+ * recommander.
+ *
+ * Ça existe parce qu'un message neutre ne laisse RIEN à l'exploitant quand les
+ * journaux sont inatteignables. Le 2026-08-16, un `500` répété sur l'ouverture
+ * d'un accès a résisté une demi-journée, alors que le fournisseur d'identité
+ * répondait un numéro parfaitement anodin qui n'arrivait nulle part.
+ */
+export type PublicErrorFacts = Readonly<Record<string, number>>;
+
 export abstract class AppError extends Error {
+  /** Faits publiables (cf. {@link PublicErrorFacts}). Vide sauf mention contraire. */
+  readonly facts: PublicErrorFacts = {};
+
   protected constructor(
     readonly category: ErrorCategory,
     readonly code: string,

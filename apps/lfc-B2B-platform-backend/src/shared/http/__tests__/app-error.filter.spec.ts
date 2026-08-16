@@ -3,6 +3,7 @@ import type { ArgumentsHost } from "@nestjs/common";
 import type { Response } from "express";
 
 import { InvalidEmailError } from "../../../account/domain/errors/account-errors.js";
+import { IdentityProviderUnavailableError } from "../../errors/identity-errors.js";
 import { PersistenceError } from "../../errors/persistence-errors.js";
 import { AppErrorFilter } from "../app-error.filter.js";
 
@@ -108,5 +109,33 @@ describe("AppErrorFilter", () => {
       expect(body?.["code"]).toBe("account.email.invalid");
       expect(body).not.toHaveProperty("detail");
     });
+  });
+});
+
+describe("faits publiables", () => {
+  it("publie le statut du fournisseur EN PRODUCTION, sur une erreur technique", () => {
+    // Sans lui, un incident ne laisse rien d'exploitable à qui n'a pas accès aux
+    // journaux — et le 2026-08-16 ils étaient inatteignables une demi-journée.
+    const captured = fakeResponse();
+    new AppErrorFilter(false).catch(
+      new IdentityProviderUnavailableError("refus", 429),
+      hostFor(captured.response),
+    );
+
+    expect(captured.body()).toMatchObject({
+      code: "identity_provider.unavailable",
+      message: "Une erreur technique est survenue.",
+      providerStatus: 429,
+    });
+  });
+
+  it("ne publie rien quand le fournisseur n'a pas répondu", () => {
+    const captured = fakeResponse();
+    new AppErrorFilter(false).catch(
+      new IdentityProviderUnavailableError("canal non configuré"),
+      hostFor(captured.response),
+    );
+
+    expect(captured.body()).not.toHaveProperty("providerStatus");
   });
 });
