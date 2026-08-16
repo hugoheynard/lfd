@@ -175,6 +175,8 @@ const KEPT_MODELS: Readonly<Record<string, string>> = {
 async function main(): Promise<void> {
   const connectionString = required("DATABASE_B2B_URL");
   const apply = process.env["APPLY"] === "1";
+  console.log(`Base visée : ${describeTarget(connectionString)}\n`);
+
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
   assertClassified(wipedTables(prisma).map((entry) => entry.name));
   try {
@@ -187,6 +189,28 @@ async function main(): Promise<void> {
     console.log("\nTerminé. Relance SANS APPLY pour vérifier qu'il ne reste rien.");
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+/**
+ * **Dit sur quelle base on est**, sans jamais afficher d'identifiants.
+ *
+ * Une opération irréversible qui ne nomme pas sa cible demande à l'exploitant
+ * de se souvenir de ce qu'il a tapé. C'est précisément ce dont on ne se
+ * souvient pas à 23 h, et l'écart entre « je crois viser la prod » et « je vise
+ * la prod » ne se rattrape pas après un `APPLY=1`.
+ *
+ * Prisma Postgres passe par une passerelle : l'URL porte alors le nom de la
+ * passerelle, pas celui de la base. On affiche ce qu'on a — c'est déjà ce qui
+ * distingue une chaîne locale d'une chaîne distante.
+ */
+function describeTarget(connectionString: string): string {
+  try {
+    const url = new URL(connectionString);
+    const database = url.pathname.replace(/^\//, "");
+    return `${url.hostname}${database === "" ? "" : ` · ${database}`}`;
+  } catch {
+    return "cible illisible (URL malformée)";
   }
 }
 
