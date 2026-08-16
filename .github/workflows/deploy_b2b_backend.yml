@@ -281,7 +281,49 @@ jobs:
           echo
           echo "E-mail de contrôle expédié — vérifiez la boîte de l'admin de secours."
 
-      # 6) L'INVENTAIRE — ce que l'instance en ligne ne saura pas faire.
+      # 6) LE CANAL D'IDENTITÉ — jumeau du contrôle du courrier.
+      #
+      #    Même défaut structurel : mal configuré, il ne tombe pas en panne, il
+      #    ressemble à un canal qui marche jusqu'à ce que quelqu'un s'en serve.
+      #    L'inventaire (étape suivante) dit que les identifiants SONT là ; il ne
+      #    dit pas que le tenant les accepte, ni que le jeton obtenu ouvre les
+      #    gestes que les écrans proposent. C'est ce que celle-ci vérifie.
+      #
+      #    Strictement en lecture : elle échange un jeton et lit ce qu'il ouvre.
+      #    Aucun compte n'est créé, donc elle peut tourner à chaque déploiement.
+      - name: Vérifier le canal d'identité
+        env:
+          API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
+          RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
+        run: |
+          set -uo pipefail
+          report=$(curl --fail-with-body --silent --show-error --max-time 30 \
+                   "${API_BASE_URL}/admin/ops/identity-check" \
+                   -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}") || {
+            echo "::error::Contrôle d'identité injoignable — la porte machine-à-machine a refusé."
+            exit 1
+          }
+
+          REPORT="${report}" python3 <<'PY'
+          import json, os, sys
+          report = json.loads(os.environ["REPORT"])
+          if not report["configured"]:
+              print("::error::Identifiants M2M absents du container (AUTH0_M2M_CLIENT_ID / _SECRET).")
+              sys.exit(1)
+          if not report["tokenGranted"]:
+              print(f"::error::Le tenant {report['domain']} a refusé le jeton M2M "
+                    f"({report.get('tokenStatus')}) : {report.get('tokenError')}")
+              sys.exit(1)
+          missing = report["missingScopes"]
+          if missing:
+              print(f"::error::Autorisations manquantes sur l'application M2M : {', '.join(missing)} "
+                    f"— à accorder dans Auth0 → Applications → APIs → Management API.")
+              sys.exit(1)
+          print(f"Canal d'identité opérationnel sur {report['domain']} — "
+                f"clients : {report['customerConnection']}, équipe : {report['staffConnection']}.")
+          PY
+
+      # 7) L'INVENTAIRE — ce que l'instance en ligne ne saura pas faire.
       #
       #    Le backend le sait depuis toujours et l'écrit à son démarrage… dans un
       #    journal que personne ne captait. Le 2026-08-16, un `500` sur

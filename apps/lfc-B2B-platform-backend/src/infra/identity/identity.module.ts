@@ -2,6 +2,7 @@ import { Global, Module } from "@nestjs/common";
 
 import { Auth0IdentityGateway } from "./auth0-identity.gateway.js";
 import { Auth0ManagementClient } from "./auth0-management.client.js";
+import { OpsIdentityCheckController } from "./ops-identity-check.controller.js";
 
 /**
  * Le **canal d'identité** de la plateforme : le transport vers la Management
@@ -18,6 +19,10 @@ import { Auth0ManagementClient } from "./auth0-management.client.js";
  */
 @Global()
 @Module({
+  // Le contrôle de mise en service vit à côté du transport qu'il éprouve, comme
+  // celui du courrier : le déplacer un jour dans un module `ops/` ferait perdre
+  // de vue ce qu'il teste réellement.
+  controllers: [OpsIdentityCheckController],
   providers: [Auth0ManagementClient, Auth0IdentityGateway],
   exports: [Auth0ManagementClient, Auth0IdentityGateway],
 })

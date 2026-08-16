@@ -2,9 +2,30 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { AppConfig } from "../../infra/config/app-config.js";
 import { IdentityProviderUnavailableError } from "../../shared/errors/identity-errors.js";
+import {
+  missingManagementScopes,
+  scopesFromAccessToken,
+  REQUIRED_MANAGEMENT_SCOPES,
+} from "./identity-diagnosis.js";
 
 /** Marge avant expiration du jeton M2M, pour ne pas l'utiliser à la seconde près. */
 const TOKEN_EXPIRY_MARGIN_SECONDS = 60;
+
+/** De quoi lire un refus d'Auth0 sans recopier une page d'erreur dans une réponse. */
+const TOKEN_ERROR_MAX_CHARS = 500;
+
+/** Ce que le contrôle du canal d'identité rapporte — jamais le jeton lui-même. */
+export interface IdentityDiagnosis {
+  /** Les identifiants M2M sont-ils présents dans l'environnement du container ? */
+  readonly configured: boolean;
+  /** Le tenant a-t-il accordé un jeton ? */
+  readonly tokenGranted: boolean;
+  readonly tokenStatus?: number;
+  readonly tokenError?: string;
+  readonly grantedScopes?: readonly string[];
+  /** Vide = le canal peut tout ce que les écrans proposent. */
+  readonly missingScopes: readonly string[];
+}
 
 /**
  * Le **transport** vers la Management API Auth0 : obtenir un jeton M2M, le
@@ -73,6 +94,52 @@ export class Auth0ManagementClient {
     return response.status === 204 ? null : await response.json();
   }
 
+  /**
+   * **Le contrôle de mise en service du canal d'identité** : le tenant nous
+   * répond-il, et ce qu'il nous répond ouvre-t-il les gestes que les écrans
+   * proposent déjà ?
+   *
+   * Strictement en LECTURE — il échange un jeton et lit ce que ce jeton ouvre.
+   * Rien n'est créé chez le fournisseur, donc il peut tourner à chaque
+   * déploiement sans laisser de compte fantôme derrière lui.
+   *
+   * Il existe parce que la panne du 2026-08-16 ne se laissait pas provoquer :
+   * un `500` sur l'ouverture d'un accès, aucune trace côté Auth0, des journaux
+   * de container qui n'arrivaient nulle part — puis plus rien à reproduire. Un
+   * canal doit pouvoir **prouver qu'il fonctionne** sans qu'on ait à attendre
+   * qu'il casse.
+   *
+   * Le jeton ne sort jamais d'ici : on ne publie que ce qu'il ouvre.
+   */
+  async diagnose(): Promise<IdentityDiagnosis> {
+    const credentials = this.config.auth0ManagementCredentials();
+    if (credentials === null) {
+      return { configured: false, tokenGranted: false, missingScopes: REQUIRED_MANAGEMENT_SCOPES };
+    }
+
+    const response = await this.requestToken(credentials);
+    if (!response.ok) {
+      // Le corps d'Auth0 est la seule chose qui distingue « mauvais secret »
+      // d'« application désactivée ». Il ne porte aucune donnée personnelle, et
+      // la route est derrière le jeton d'exploitation : il sort.
+      return {
+        configured: true,
+        tokenGranted: false,
+        tokenStatus: response.status,
+        tokenError: (await response.text()).slice(0, TOKEN_ERROR_MAX_CHARS),
+        missingScopes: REQUIRED_MANAGEMENT_SCOPES,
+      };
+    }
+
+    const granted = scopesFromAccessToken(parseTokenPayload(await response.json()).accessToken);
+    return {
+      configured: true,
+      tokenGranted: true,
+      grantedScopes: granted,
+      missingScopes: missingManagementScopes(granted),
+    };
+  }
+
   /** Jeton M2M valide, depuis le cache ou fraîchement demandé. */
   private async token(): Promise<string> {
     const credentials = this.assertConfigured();
@@ -82,17 +149,7 @@ export class Auth0ManagementClient {
       return cached.value;
     }
 
-    const domain = this.config.auth0Domain();
-    const response = await fetch(`https://${domain}/oauth/token`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        grant_type: "client_credentials",
-        client_id: credentials.clientId,
-        client_secret: credentials.clientSecret,
-        audience: `https://${domain}/api/v2/`,
-      }),
-    });
+    const response = await this.requestToken(credentials);
 
     if (!response.ok) {
       this.logger.error(`Jeton M2M refusé (${String(response.status)})`);
@@ -107,6 +164,24 @@ export class Auth0ManagementClient {
       expiresAtMs: Date.now() + (payload.expiresInSeconds - TOKEN_EXPIRY_MARGIN_SECONDS) * 1000,
     };
     return payload.accessToken;
+  }
+
+  /** L'échange `client_credentials`, brut — l'appelant décide quoi faire du refus. */
+  private async requestToken(credentials: {
+    clientId: string;
+    clientSecret: string;
+  }): Promise<Response> {
+    const domain = this.config.auth0Domain();
+    return await fetch(`https://${domain}/oauth/token`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "client_credentials",
+        client_id: credentials.clientId,
+        client_secret: credentials.clientSecret,
+        audience: `https://${domain}/api/v2/`,
+      }),
+    });
   }
 
   /**
