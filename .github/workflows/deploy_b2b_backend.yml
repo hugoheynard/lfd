@@ -221,25 +221,56 @@ jobs:
       #
       #    L'étape échoue si l'envoi échoue, délibérément : un contrôle qui
       #    journalise sans rien casser est ignoré en trois semaines.
+      #
+      #    ⏱ ELLE ATTEND LE ROULEMENT DU CONTAINER. `wrangler deploy` rend la
+      #    main quand le Worker est à jour, pas quand l'instance sert l'image
+      #    neuve : l'ANCIENNE continue de répondre pendant une à quelques
+      #    minutes. Constaté le 2026-08-16 — un 404 sur une route qui existait,
+      #    avec neuf secondes de reprises. Un contrôle qui prétend prouver que
+      #    l'image neuve démarre doit lui en laisser le temps.
       - name: Vérifier le courrier sortant
         env:
           API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
           RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           if [ -z "${RECOMPUTE_TOKEN}" ]; then
             echo "::error::RECOMPUTE_TOKEN absent des secrets GitHub — la porte machine-à-machine ne peut pas être franchie."
-            echo "Ajoutez-y la MÊME valeur que celle posée à la main sur le Worker."
             exit 1
           fi
-          # --fail-with-body : un 4xx/5xx fait échouer l'étape SANS masquer le
-          # corps, qui porte la raison (jeton refusé, envoi refusé par Resend…).
-          # --retry : le container sort de veille, le premier appel peut expirer.
-          curl --fail-with-body --silent --show-error \
-               --retry 3 --retry-connrefused --retry-all-errors --max-time 90 \
-               -X POST "${API_BASE_URL}/admin/ops/mail-check" \
-               -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}" \
-               -H "content-type: application/json" \
-               -d "{\"revision\":\"${GITHUB_SHA:0:7}\"}"
-          echo
+
+          # 30 tentatives × 10 s = 5 min, largement au-dessus d'un roulement
+          # observé en une à deux minutes.
+          for attempt in $(seq 1 30); do
+            code=$(curl --silent --show-error --output /tmp/mail-check.json --write-out '%{http_code}' \
+                        --max-time 60 \
+                        -X POST "${API_BASE_URL}/admin/ops/mail-check" \
+                        -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}" \
+                        -H "content-type: application/json" \
+                        -d "{\"revision\":\"${GITHUB_SHA:0:7}\"}" || echo "000")
+
+            case "${code}" in
+              2*)
+                echo "E-mail de contrôle expédié (tentative ${attempt}) :"
+                cat /tmp/mail-check.json; echo
+                exit 0
+                ;;
+              401|403)
+                # Un jeton refusé ne guérit pas en attendant. Échouer tout de
+                # suite plutôt que de brûler cinq minutes sur un diagnostic faux.
+                echo "::error::Jeton refusé (${code}) — RECOMPUTE_TOKEN diffère entre GitHub et le Worker."
+                cat /tmp/mail-check.json; echo
+                exit 1
+                ;;
+              *)
+                # 404 : l'ancienne image répond encore. 5xx/000 : elle démarre.
+                echo "Tentative ${attempt}/30 — HTTP ${code}, le container ne sert pas encore l'image neuve."
+                sleep 10
+                ;;
+            esac
+          done
+
+          echo "::error::Le courrier n'a pas pu être vérifié après 5 minutes."
+          cat /tmp/mail-check.json 2>/dev/null || true
+          exit 1
           echo "E-mail de contrôle expédié — vérifiez la boîte de l'admin de secours."
