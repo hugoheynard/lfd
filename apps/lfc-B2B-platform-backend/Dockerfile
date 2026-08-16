@@ -35,6 +35,12 @@ FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
+# La révision est GRAVÉE DANS L'IMAGE, jamais transmise par le Worker : c'est ce
+# qui en fait une réponse fiable à « qu'est-ce qui tourne, là, maintenant ? ».
+# Passée par le Worker, elle changerait sans que l'image change, et l'instance
+# mentirait sur elle-même — exactement l'inverse de ce qu'on lui demande.
+ARG APP_REVISION=""
+ENV APP_REVISION=$APP_REVISION
 COPY --from=build /app ./
 EXPOSE 8080
 CMD ["node", "dist/main.js"]

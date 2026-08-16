@@ -87,6 +87,7 @@ describe("inventaire — aucun réglage optionnel oublié", () => {
     "EXPOSE_ERROR_DETAIL", // développement uniquement
     "PORT", // a un défaut
     "NODE_ENV", // a un défaut
+    "APP_REVISION", // gravée dans l'image ; absente = build local, aucune capacité éteinte
   ]);
 
   it("chaque optionalString d'AppConfig est inventorié ou exempté", () => {

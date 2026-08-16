@@ -1,15 +1,9 @@
-import { Body, Controller, HttpCode, Inject, Post, UseGuards } from "@nestjs/common";
+import { Controller, HttpCode, Inject, Post, UseGuards } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
 import { Public } from "../auth/public.decorator.js";
 import { RecomputeGuard } from "../auth/recompute.guard.js";
 import { MAILER, type B2bMailer } from "./mailer.tokens.js";
-
-/** Ce que l'appelant peut dire — rien d'obligatoire. */
-interface MailCheckBody {
-  /** La révision déployée, pour tracer QUELLE image a prouvé quoi. */
-  readonly revision?: string;
-}
 
 /** Ce que l'appelant apprend. `sent` ment rarement : un échec lève. */
 interface MailCheckResult {
@@ -62,9 +56,11 @@ export class AdminMailCheckController {
 
   @Post()
   @HttpCode(200)
-  async check(@Body() body: MailCheckBody): Promise<MailCheckResult> {
-    const revision = body.revision?.trim() ?? "";
-    const stamped = revision === "" ? "révision inconnue" : revision;
+  async check(): Promise<MailCheckResult> {
+    // La révision vient de l'IMAGE, jamais de l'appelant : celle qu'on nous
+    // soufflerait pourrait désigner un déploiement que ce container ne sert
+    // pas, et l'e-mail attesterait alors d'une version qui ne l'a pas envoyé.
+    const stamped = this.config.revision();
     const from = this.config.mailerConfig().fromAddress;
     const to = this.config.bootstrapAdminEmail();
 

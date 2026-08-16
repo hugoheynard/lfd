@@ -26,6 +26,10 @@ const NOT_FORWARDED: Readonly<Record<string, string>> = {
   // Posés par l'image (Dockerfile), pas par le Worker.
   PORT: "fixé par le Dockerfile",
   NODE_ENV: "fixé par le Dockerfile",
+  // GRAVÉE dans l'image au build, et c'est tout l'intérêt : transmise par le
+  // Worker, elle pourrait changer sans que l'image change, et l'instance
+  // mentirait sur la version qu'elle sert.
+  APP_REVISION: "gravée dans l'image — sinon /health pourrait mentir",
   // Le bypass d'authentification staff et l'impersonation n'existent qu'en
   // développement local. Les transmettre serait leur donner un chemin vers la
   // production — que `optionalAdminDevBypass` refuse déjà, mais on ne compte

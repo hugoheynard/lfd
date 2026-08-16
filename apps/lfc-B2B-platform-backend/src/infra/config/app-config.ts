@@ -60,6 +60,7 @@ export class AppConfig {
   private readonly impersonation: DevImpersonationConfig | null;
   private readonly adminAudienceValue: string | null;
   private readonly bootstrapAdminEmailValue: string;
+  private readonly revisionValue: string;
   private readonly adminBypass: boolean;
   private readonly recomputeTokenValue: string | null;
   private readonly adminBaseUrlValue: string | null;
@@ -87,6 +88,7 @@ export class AppConfig {
     this.adminBypass = optionalAdminDevBypass();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
+    this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.exposeDetail = !this.production;
   }
@@ -278,6 +280,20 @@ export class AppConfig {
    */
   bootstrapAdminEmail(): string {
     return this.bootstrapAdminEmailValue;
+  }
+
+  /**
+   * La révision **réellement en cours d'exécution** (`APP_REVISION`).
+   *
+   * Gravée dans l'image au build, jamais transmise par le Worker : c'est ce qui
+   * en fait une réponse fiable à « qu'est-ce qui tourne ? ». Une variable du
+   * Worker changerait sans que l'image change, et l'instance mentirait sur
+   * elle-même.
+   *
+   * `"inconnue"` en développement, où aucune image n'est construite.
+   */
+  revision(): string {
+    return this.revisionValue;
   }
 
   /**

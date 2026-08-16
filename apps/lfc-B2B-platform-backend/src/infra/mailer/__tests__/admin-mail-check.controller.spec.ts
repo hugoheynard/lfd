@@ -24,10 +24,11 @@ function mailerSpy(sent: SentMail[], fail = false): B2bMailer {
 }
 
 /** La configuration réduite à ce que le contrôleur lit. */
-function configStub(fromAddress: string, admin: string): AppConfig {
+function configStub(fromAddress: string, admin: string, revision = "abc1234"): AppConfig {
   return {
     mailerConfig: () => ({ apiKey: null, fromAddress, replyTo: null, staffInbox: null }),
     bootstrapAdminEmail: () => admin,
+    revision: () => revision,
   } as AppConfig;
 }
 
@@ -42,7 +43,7 @@ describe("le contrôle de mise en service du courrier", () => {
       configStub("no-reply@exemple.test", "admin@exemple.test"),
     );
 
-    const result = await controller.check({ revision: "abc1234" });
+    const result = await controller.check();
 
     expect(result.from).toBe("no-reply@exemple.test");
     expect(sent[0]?.data["fromAddress"]).toBe("no-reply@exemple.test");
@@ -55,22 +56,24 @@ describe("le contrôle de mise en service du courrier", () => {
       configStub("no-reply@exemple.test", "dev@exemple.test"),
     );
 
-    await controller.check({});
+    await controller.check();
 
     expect(sent[0]?.to).toBe("dev@exemple.test");
     expect(sent[0]?.template).toBe("ops.deploy-check");
   });
 
-  it("porte la révision, et le dit quand elle manque", async () => {
+  it("porte la révision de L'IMAGE, pas celle qu'on lui souffle", async () => {
+    // Une révision fournie par l'appelant pourrait désigner un déploiement que
+    // ce container ne sert pas : l'e-mail attesterait d'une version qui ne l'a
+    // pas envoyé, et le contrôle deviendrait un faux témoignage.
     const sent: SentMail[] = [];
     const controller = new AdminMailCheckController(
       mailerSpy(sent),
-      configStub("no-reply@exemple.test", "dev@exemple.test"),
+      configStub("no-reply@exemple.test", "dev@exemple.test", "deadbee"),
     );
 
-    expect((await controller.check({ revision: "  deadbee  " })).revision).toBe("deadbee");
-    // Une révision absente ne doit pas produire un objet d'e-mail tronqué.
-    expect((await controller.check({})).revision).toBe("révision inconnue");
+    expect((await controller.check()).revision).toBe("deadbee");
+    expect(sent[0]?.data["revision"]).toBe("deadbee");
   });
 
   it("REMONTE l’échec plutôt que de rendre un succès", async () => {
@@ -81,7 +84,7 @@ describe("le contrôle de mise en service du courrier", () => {
       configStub("no-reply@exemple.test", "dev@exemple.test"),
     );
 
-    await expect(controller.check({})).rejects.toThrow();
+    await expect(controller.check()).rejects.toThrow();
   });
 });
 
