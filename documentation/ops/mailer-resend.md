@@ -234,6 +234,50 @@ sans l'ajouter partout casse la CI, ce qui est le but : la version précédente 
 cette chaîne a laissé `MAILER_REPLY_TO` branché sur du vide pendant des semaines,
 sans un mot.
 
+## 4 bis. La preuve permanente — un e-mail à chaque déploiement
+
+Le workflow appelle `POST /admin/ops/mail-check` **après** `wrangler deploy`. Le
+container expédie alors, depuis l'adresse configurée, un `ops.deploy-check` vers
+`BOOTSTRAP_ADMIN_EMAIL` — l'admin de secours, déjà réglé, déjà transmis. Aucune
+configuration de plus.
+
+Trois choix qui font la différence entre un contrôle utile et un décor :
+
+1. **L'envoi part du container, pas du workflow.** Un `curl` vers Resend depuis
+   GitHub Actions validerait le seul segment qui n'a jamais cassé. Le maillon
+   fragile est le dernier — `RUNTIME_KEYS` → `envVars` → `process.env` — et seul
+   un envoi émis d'ici le couvre.
+2. **L'expéditeur est celui de la configuration**, pas une adresse en dur. Une
+   adresse codée prouverait que le _domaine_ marche ; elle serait verte avec un
+   `MAILER_FROM_ADDRESS` cassé — le cas exact rencontré le 2026-08-16.
+3. **L'échec fait échouer le déploiement.** Un contrôle qui journalise sans rien
+   casser est ignoré en trois semaines.
+
+Effet de bord utile : la requête réveille le container endormi (`sleepAfter`),
+donc elle prouve aussi que l'**image neuve démarre** — pas seulement que
+`wrangler deploy` a rendu 200.
+
+⚠️ **Ce que ce contrôle ne prouve pas**, et qu'il ne faut pas croire couvert :
+les **gabarits réels** (un `passwordSetupUrl` cassé passerait au travers ; le
+rendu est couvert par les tests unitaires, qui portent sur des fonctions pures)
+et la **délivrabilité chez un vrai client** — `dev@lafoliedouce.com` est une
+boîte qu'on maîtrise, elle ne dit rien de l'onglet « indésirables » d'un Outlook.
+Le §5 reste donc à faire **une fois**, à la main.
+
+### `RECOMPUTE_TOKEN` entre dans la chaîne normale
+
+La porte est celle du recompute (`x-lfc-recompute-token`, `RecomputeGuard`) — pas
+une seconde porte machine-à-machine à inventer. Mais ce jeton était posé **à la
+main**, donc sans source de vérité : il est désormais un Secret GitHub, poussé
+par la même boucle que les autres. Une rotation se fait à un seul endroit, et
+l'exception qui le concernait dans
+[`runtime-keys.spec.ts`](../../apps/lfc-B2B-platform-backend/container/__tests__/runtime-keys.spec.ts)
+a disparu.
+
+**À poser une fois** : Secret `RECOMPUTE_TOKEN` avec la **même valeur** que celle
+déjà sur le Worker. Sans lui, l'étape de contrôle échoue avec un message qui le
+dit — elle ne se saute pas en silence.
+
 ## 5. Vérifier — dans cet ordre
 
 1. **Le bulletin de démarrage.** Le backend dit à voix haute ce qu'il ne sait
