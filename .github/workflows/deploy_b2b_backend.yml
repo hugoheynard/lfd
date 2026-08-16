@@ -99,6 +99,7 @@ jobs:
           # Connexion staff : distincte de la connexion client, c'est le mur qui
           # empêche un client de s'authentifier contre le back-office.
           AUTH0_STAFF_CONNECTION: ${{ vars.AUTH0_STAFF_CONNECTION }}
+          AUTH0_DB_CONNECTION: ${{ vars.AUTH0_DB_CONNECTION }}
           # L'adresse de l'admin RACINE — une adresse, pas un secret. Sans elle,
           # le code retombe sur son défaut, et la porte de secours ne pointe pas
           # vers la boîte qu'on relève.
@@ -115,8 +116,18 @@ jobs:
           ADMIN_BASE_URL: ${{ vars.B2B_ADMIN_BASE_URL }}
           # Courrier : sans la clé, aucune invitation ne part — ni pour l'équipe,
           # ni pour un client.
+          #
+          # `MAILER_FROM_ADDRESS` doit être sur un domaine VÉRIFIÉ chez Resend :
+          # une adresse d'expédition sur un domaine non vérifié fait refuser
+          # l'envoi côté fournisseur, et le symptôme est un e-mail qui ne part
+          # jamais — pas une erreur au démarrage.
+          #
+          # `MAILER_REPLY_TO` est l'adresse où atterrit une RÉPONSE. L'expéditeur
+          # est un `no-reply` : sans elle, une personne qui répond à son
+          # invitation écrit dans le vide.
           RESEND_MAILER_B2B_API_KEY: ${{ secrets.RESEND_MAILER_B2B_API_KEY }}
           MAILER_FROM_ADDRESS: ${{ vars.MAILER_FROM_ADDRESS }}
+          MAILER_REPLY_TO: ${{ vars.MAILER_REPLY_TO }}
           MAILER_STAFF_INBOX: ${{ vars.MAILER_STAFF_INBOX }}
           # Stockage R2 : endpoint et région sont des faits du COMPTE ; le bucket
           # et les clés appartiennent à l'USAGE, pour qu'un jeton n'ouvre que le
@@ -131,9 +142,11 @@ jobs:
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
         run: |
           for name in DATABASE_B2B_URL AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
-                      AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET AUTH0_STAFF_CONNECTION \
+                      AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET \
+                      AUTH0_STAFF_CONNECTION AUTH0_DB_CONNECTION \
                       BOOTSTRAP_ADMIN_EMAIL CLIENT_BASE_URL ADMIN_BASE_URL \
-                      RESEND_MAILER_B2B_API_KEY MAILER_FROM_ADDRESS MAILER_STAFF_INBOX \
+                      RESEND_MAILER_B2B_API_KEY \
+                      MAILER_FROM_ADDRESS MAILER_REPLY_TO MAILER_STAFF_INBOX \
                       R2_ENDPOINT R2_REGION \
                       R2_KBIS_BUCKET R2_KBIS_ACCESS_KEY_ID R2_KBIS_SECRET_ACCESS_KEY \
                       STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET; do
