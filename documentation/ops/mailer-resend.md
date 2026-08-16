@@ -77,12 +77,11 @@ Resend le sien sur `send` : deux noms, donc pas de fusion à faire. Mais si un
 jour un `TXT v=spf1…` doit être ajouté à l'apex, il faut **fusionner** avec celui
 de Cloudflare — deux SPF sur le même nom invalident les deux.
 
-⚠️ **La zone n'a aucun `MX` aujourd'hui, donc aucune adresse
-`@lafoliecoffee.info` ne reçoit quoi que ce soit.** Tant que Email Routing n'est
-pas activé, `MAILER_REPLY_TO` et `MAILER_STAFF_INBOX` pointeraient vers des
-boîtes qui n'existent pas — et un e-mail envoyé à une adresse inexistante ne
-produit aucun symptôme visible de notre côté. C'est l'étape 2.5 ci-dessous, et
-elle n'est pas facultative.
+⚠️ **La zone n'a aucun `MX`, donc aucune adresse `@lafoliecoffee.info` ne reçoit
+quoi que ce soit.** C'est l'état voulu aujourd'hui (§2.5), et c'est ce qui
+interdit de poser `MAILER_REPLY_TO` et `MAILER_STAFF_INBOX` : elles
+désigneraient des boîtes qui n'existent pas, et un e-mail envoyé à une adresse
+inexistante ne produit aucun symptôme visible de notre côté.
 
 ### Deux adresses sur le même domaine, et le risque qu'on accepte
 
