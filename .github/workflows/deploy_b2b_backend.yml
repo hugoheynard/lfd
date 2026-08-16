@@ -280,4 +280,46 @@ jobs:
                -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}"
           echo
           echo "E-mail de contrôle expédié — vérifiez la boîte de l'admin de secours."
-          echo "E-mail de contrôle expédié — vérifiez la boîte de l'admin de secours."
+
+      # 6) L'INVENTAIRE — ce que l'instance en ligne ne saura pas faire.
+      #
+      #    Le backend le sait depuis toujours et l'écrit à son démarrage… dans un
+      #    journal que personne ne captait. Le 2026-08-16, un `500` sur
+      #    l'ouverture d'un accès a coûté une demi-heure d'enquête à travers
+      #    Cloudflare, Resend et Auth0 pendant que le bulletin de démarrage
+      #    portait déjà la réponse.
+      #
+      #    L'étape ÉCHOUE sur un canal bloquant. Elle vient après `wrangler
+      #    deploy` : le code est donc déjà en ligne, et un échec ici ne
+      #    l'annule pas — il rend visible un réglage absent au lieu de le
+      #    laisser se manifester trois jours plus tard sous la forme d'un
+      #    bouton qui rend 500. Un contrôle qui n'arrête rien est ignoré en
+      #    trois semaines.
+      - name: Inventaire des canaux
+        env:
+          API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
+          RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
+        run: |
+          set -uo pipefail
+          report=$(curl --fail-with-body --silent --show-error --max-time 30 \
+                   "${API_BASE_URL}/admin/ops/capabilities" \
+                   -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}") || {
+            echo "::error::Inventaire injoignable — la porte machine-à-machine a refusé."
+            exit 1
+          }
+
+          # Le rapport passe par l'ENVIRONNEMENT, pas par l'entrée standard :
+          # celle-ci est déjà prise par le script lui-même (`<<'PY'`).
+          REPORT="${report}" python3 <<'PY'
+          import json, os, sys
+          report = json.loads(os.environ["REPORT"])
+          missing = report["missing"]
+          if not missing:
+              print(f"Révision {report['revision']} — tous les canaux sont configurés.")
+              sys.exit(0)
+          for entry in missing:
+              level = "error" if entry["severity"] == "blocking" else "warning"
+              print(f"::{level}::{entry['capability']} — poser {entry['setting']} "
+                    f"(sinon : {entry['consequence']})")
+          sys.exit(1 if any(e["severity"] == "blocking" for e in missing) else 0)
+          PY

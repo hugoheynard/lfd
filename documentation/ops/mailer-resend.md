@@ -294,6 +294,16 @@ dit — elle ne se saute pas en silence.
    sinon la clé n'est pas arrivée jusqu'au container. C'est le contrôle le moins
    cher, et il précède tous les autres.
 
+   Ce bulletin est imprimé **une fois**, au démarrage — le manquer était facile,
+   et l'a été. Le même constat se **demande** à tout moment :
+
+   ```bash
+   curl -s https://<api>/admin/ops/capabilities -H "x-lfc-recompute-token: <jeton>"
+   ```
+
+   Le déploiement le fait déjà et **échoue** sur un canal bloquant (étape
+   « Inventaire des canaux »).
+
 2. **Un vrai envoi.** Ouvrir un compte client depuis le back-office, sur une
    adresse qu'on relève. L'e-mail attendu est `customer.access-opened`, objet
    « Votre accès à l'espace pro … », avec un bouton « Choisir mon mot de passe ».

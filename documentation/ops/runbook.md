@@ -95,18 +95,37 @@ Pour une **migration de base**, il n'y a pas de retour arrière automatique. Un
 déplacement de données se fait en trois déploiements — étendre, basculer,
 resserrer — précisément pour que chaque étape soit réversible seule.
 
-## Enquêter sur qui appelle quoi
+## Savoir ce que l'instance en ligne sait faire
 
-La journalisation est **désactivée** (facturée au volume). Pour la rallumer le
-temps d'une enquête, dans `wrangler.jsonc` :
+Un réglage absent n'est pas une erreur : c'est une **capacité éteinte**, et
+l'app le sait. Pour le lui demander :
 
-```jsonc
-"observability": { "enabled": true, "head_sampling_rate": 1 },
+```bash
+curl -s https://<api>/admin/ops/capabilities -H "x-lfc-recompute-token: <jeton>"
 ```
 
-Puis lire dans Cloudflare → Workers → Observability, ou `wrangler tail`.
-**La retirer une fois la question tranchée** — un réglage d'enquête qu'on oublie
-devient une ligne de facture que personne ne relie à sa cause.
+Elle rend la révision servie et la liste des canaux éteints — la capacité en
+mots métier, la variable à poser, ce qui ne marchera pas. Rien de secret n'en
+sort : l'inventaire ne manipule que des booléens.
+
+La sonde publique `/health` en porte les **compteurs** (`capabilities.blocking`
+/ `.degraded`), sans nommer aucun réglage : dire au monde quelle porte n'est pas
+verrouillée est une aide qu'on ne doit qu'à soi-même. Le déploiement s'arrête
+sur un canal bloquant (étape « Inventaire des canaux »).
+
+## Enquêter sur qui appelle quoi
+
+La journalisation est **active en permanence** (`"observability": { "enabled":
+true }` dans `wrangler.jsonc`). Elle ne l'était pas jusqu'au 2026-08-16, et le
+prix s'est payé d'un coup : un `500` sur l'ouverture d'un accès a demandé une
+demi-heure d'enquête à travers Cloudflare, Resend et Auth0, alors que la cause
+exacte était écrite à chaque tentative dans un journal que rien ne captait. Le
+bulletin de démarrage, lui, parlait dans le vide depuis trois jours.
+
+Lire dans Cloudflare → Workers → Observability, ou `wrangler tail`. Le coût est
+facturé au volume ; si un jour il pèse, la réponse est
+`head_sampling_rate`, **pas** l'extinction : on peut se passer d'un
+échantillon, pas de la vue.
 
 ## Savoir où tourne un container
 
