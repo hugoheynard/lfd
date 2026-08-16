@@ -59,7 +59,13 @@ jobs:
       # 1) Build l'image depuis la RACINE du monorepo (contexte complet), puis la
       #    pousse sur le registre Cloudflare via wrangler (auth automatique).
       - name: Build image (contexte racine)
-        run: docker build -f apps/lfc-B2B-platform-backend/Dockerfile -t lfc-b2b-backend:"$GITHUB_SHA" .
+        # `APP_REVISION` est gravée dans l'image : c'est elle que `/health`
+        # renverra, et donc ce qui permet d'attendre l'image NEUVE plutôt qu'un
+        # simple 200 que l'ancienne rend tout aussi bien.
+        run: |
+          docker build -f apps/lfc-B2B-platform-backend/Dockerfile \
+            --build-arg APP_REVISION="${GITHUB_SHA:0:7}" \
+            -t lfc-b2b-backend:"$GITHUB_SHA" .
 
       - name: Push image → registre Cloudflare
         working-directory: apps/lfc-B2B-platform-backend
@@ -222,12 +228,39 @@ jobs:
       #    L'étape échoue si l'envoi échoue, délibérément : un contrôle qui
       #    journalise sans rien casser est ignoré en trois semaines.
       #
-      #    ⏱ ELLE ATTEND LE ROULEMENT DU CONTAINER. `wrangler deploy` rend la
+      #    ⏱ ELLE ATTEND UNE CONDITION, PAS UNE DURÉE. `wrangler deploy` rend la
       #    main quand le Worker est à jour, pas quand l'instance sert l'image
-      #    neuve : l'ANCIENNE continue de répondre pendant une à quelques
-      #    minutes. Constaté le 2026-08-16 — un 404 sur une route qui existait,
-      #    avec neuf secondes de reprises. Un contrôle qui prétend prouver que
-      #    l'image neuve démarre doit lui en laisser le temps.
+      #    neuve : l'ANCIENNE répond encore une à deux minutes. Constaté le
+      #    2026-08-16, par un 404 sur une route qui existait déjà.
+      #
+      #    Attendre un `/health` à 200 ne corrigerait RIEN — l'ancienne image le
+      #    rend tout aussi bien. C'est pourquoi `/health` publie la révision
+      #    gravée dans l'image : on attend que ce soit CELLE QU'ON VIENT DE
+      #    POUSSER qui réponde. La condition est vraie ou fausse, elle ne se
+      #    devine pas.
+      - name: Attendre que l'image neuve serve
+        env:
+          API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
+        run: |
+          set -uo pipefail
+          expected="${GITHUB_SHA:0:7}"
+          echo "Révision attendue : ${expected}"
+
+          for attempt in $(seq 1 40); do
+            served=$(curl --silent --max-time 20 "${API_BASE_URL}/health" \
+                     | python3 -c "import json,sys; print(json.load(sys.stdin).get('revision',''))" 2>/dev/null || echo "")
+
+            if [ "${served}" = "${expected}" ]; then
+              echo "L'image ${expected} répond (tentative ${attempt})."
+              exit 0
+            fi
+            echo "Tentative ${attempt}/40 — révision servie : « ${served:-aucune réponse} »."
+            sleep 10
+          done
+
+          echo "::error::L'image ${expected} ne répond toujours pas après ~7 minutes."
+          exit 1
+
       - name: Vérifier le courrier sortant
         env:
           API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
@@ -238,39 +271,13 @@ jobs:
             echo "::error::RECOMPUTE_TOKEN absent des secrets GitHub — la porte machine-à-machine ne peut pas être franchie."
             exit 1
           fi
-
-          # 30 tentatives × 10 s = 5 min, largement au-dessus d'un roulement
-          # observé en une à deux minutes.
-          for attempt in $(seq 1 30); do
-            code=$(curl --silent --show-error --output /tmp/mail-check.json --write-out '%{http_code}' \
-                        --max-time 60 \
-                        -X POST "${API_BASE_URL}/admin/ops/mail-check" \
-                        -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}" \
-                        -H "content-type: application/json" \
-                        -d "{\"revision\":\"${GITHUB_SHA:0:7}\"}" || echo "000")
-
-            case "${code}" in
-              2*)
-                echo "E-mail de contrôle expédié (tentative ${attempt}) :"
-                cat /tmp/mail-check.json; echo
-                exit 0
-                ;;
-              401|403)
-                # Un jeton refusé ne guérit pas en attendant. Échouer tout de
-                # suite plutôt que de brûler cinq minutes sur un diagnostic faux.
-                echo "::error::Jeton refusé (${code}) — RECOMPUTE_TOKEN diffère entre GitHub et le Worker."
-                cat /tmp/mail-check.json; echo
-                exit 1
-                ;;
-              *)
-                # 404 : l'ancienne image répond encore. 5xx/000 : elle démarre.
-                echo "Tentative ${attempt}/30 — HTTP ${code}, le container ne sert pas encore l'image neuve."
-                sleep 10
-                ;;
-            esac
-          done
-
-          echo "::error::Le courrier n'a pas pu être vérifié après 5 minutes."
-          cat /tmp/mail-check.json 2>/dev/null || true
-          exit 1
+          # Un seul appel : l'étape précédente a établi que la bonne image sert.
+          # Reprendre ici masquerait un vrai échec d'envoi derrière une attente.
+          # --fail-with-body : échoue sur 4xx/5xx SANS masquer le corps, qui
+          # porte la raison (jeton refusé, envoi refusé par Resend…).
+          curl --fail-with-body --silent --show-error --max-time 90 \
+               -X POST "${API_BASE_URL}/admin/ops/mail-check" \
+               -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}"
+          echo
+          echo "E-mail de contrôle expédié — vérifiez la boîte de l'admin de secours."
           echo "E-mail de contrôle expédié — vérifiez la boîte de l'admin de secours."
