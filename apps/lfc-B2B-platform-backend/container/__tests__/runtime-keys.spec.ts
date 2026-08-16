@@ -16,10 +16,6 @@ const NOT_DEPLOYED: Readonly<Record<string, string>> = {
   // et le code accepte l'autre nom pour ne pas casser un environnement existant.
   // Poser les deux depuis la CI donnerait deux sources pour une seule valeur.
   RESEND_API_KEY: "alias de repli — la CI ne pose que RESEND_MAILER_B2B_API_KEY",
-  // Posé À LA MAIN (`wrangler secret put`), délibérément : c'est un jeton
-  // interne partagé entre le Worker et le container, qui n'a pas d'origine dans
-  // un tableau de bord tiers. Cf. wrangler.jsonc.
-  RECOMPUTE_TOKEN: "posé à la main — jeton interne, aucune origine tierce",
 };
 
 /**

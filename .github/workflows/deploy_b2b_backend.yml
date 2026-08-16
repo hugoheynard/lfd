@@ -140,6 +140,11 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          # Jeton interne des portes machine-à-machine (recompute, contrôle du
+          # courrier). Il était posé À LA MAIN, donc sans source de vérité : une
+          # rotation se serait faite quelque part, sans trace, et le Cron aurait
+          # cessé de passer sans que rien ne le dise.
+          RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
         run: |
           for name in DATABASE_B2B_URL AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
                       AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET \
@@ -149,7 +154,8 @@ jobs:
                       MAILER_FROM_ADDRESS MAILER_REPLY_TO MAILER_STAFF_INBOX \
                       R2_ENDPOINT R2_REGION \
                       R2_KBIS_BUCKET R2_KBIS_ACCESS_KEY_ID R2_KBIS_SECRET_ACCESS_KEY \
-                      STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET; do
+                      STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET \
+                      RECOMPUTE_TOKEN; do
             value="${!name}"
             if [ -n "$value" ]; then
               printf '%s' "$value" | pnpm exec wrangler secret put "$name"
@@ -199,3 +205,41 @@ jobs:
           sed -i "s/__CF_ACCOUNT_ID__/${CLOUDFLARE_ACCOUNT_ID}/" wrangler.jsonc
           sed -i "s/__IMAGE_TAG__/${GITHUB_SHA}/" wrangler.jsonc
           pnpm exec wrangler deploy
+
+      # 5) LA PREUVE — un e-mail réellement reçu, pas un déploiement vert.
+      #
+      #    Le mailer ne tombe jamais en panne visible : sans clé il journalise et
+      #    rend la main, et avec un expéditeur non vérifié le fournisseur refuse
+      #    en silence. Un canal mort ressemble exactement à un canal qui marche.
+      #    Le seul contrôle qui ne ment pas est un message arrivé.
+      #
+      #    L'appel part d'ICI mais l'envoi part du CONTAINER : c'est ce qui
+      #    couvre le dernier maillon (RUNTIME_KEYS → envVars → process.env), le
+      #    seul qui ait réellement cassé. Il réveille aussi le container endormi,
+      #    donc il prouve que l'IMAGE NEUVE démarre — pas seulement que
+      #    `wrangler deploy` a rendu 200.
+      #
+      #    L'étape échoue si l'envoi échoue, délibérément : un contrôle qui
+      #    journalise sans rien casser est ignoré en trois semaines.
+      - name: Vérifier le courrier sortant
+        env:
+          API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
+          RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RECOMPUTE_TOKEN}" ]; then
+            echo "::error::RECOMPUTE_TOKEN absent des secrets GitHub — la porte machine-à-machine ne peut pas être franchie."
+            echo "Ajoutez-y la MÊME valeur que celle posée à la main sur le Worker."
+            exit 1
+          fi
+          # --fail-with-body : un 4xx/5xx fait échouer l'étape SANS masquer le
+          # corps, qui porte la raison (jeton refusé, envoi refusé par Resend…).
+          # --retry : le container sort de veille, le premier appel peut expirer.
+          curl --fail-with-body --silent --show-error \
+               --retry 3 --retry-connrefused --retry-all-errors --max-time 90 \
+               -X POST "${API_BASE_URL}/admin/ops/mail-check" \
+               -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}" \
+               -H "content-type: application/json" \
+               -d "{\"revision\":\"${GITHUB_SHA:0:7}\"}"
+          echo
+          echo "E-mail de contrôle expédié — vérifiez la boîte de l'admin de secours."
