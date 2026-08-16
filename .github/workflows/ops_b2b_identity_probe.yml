@@ -44,9 +44,11 @@ jobs:
             exit 1
           }
 
-          # Le rapport est écrit dans le RÉSUMÉ du job : c'est ce qui se lit
-          # d'un téléphone, sans dérouler des journaux.
-          REPORT="${report}" python3 <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          # Le rapport va dans le RÉSUMÉ du job — ce qui se lit d'un téléphone,
+          # sans dérouler de journaux — ET sur la sortie standard : un résumé
+          # ne se relit pas en ligne de commande, et un rapport qu'on ne peut
+          # consulter que d'une seule façon finit par n'être consulté d'aucune.
+          REPORT="${report}" python3 <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, os
           report = json.loads(os.environ["REPORT"])
           print(f"## Canal d'identité — `{report['domain']}`\n")
