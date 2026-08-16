@@ -3,8 +3,7 @@ import type { StaffStatus } from "@lfd/contracts";
 import { StaffIdentityPort } from "../../domain/staff-identity.port.js";
 import { SuspendedStaffInviteError } from "../../domain/staff-user-errors.js";
 import type { StaffIdentityFacts } from "../../domain/staff-user.repository.js";
-import { InviteStaffUserCommand } from "../staff-user.commands.js";
-import { InviteStaffUserHandler } from "../invite-staff-user.handler.js";
+import { OpenStaffAccess } from "../open-staff-access.service.js";
 
 const NOW = new Date("2026-08-12T12:00:00.000Z");
 
@@ -21,14 +20,14 @@ function target(overrides: Partial<StaffIdentityFacts> = {}): StaffIdentityFacts
 }
 
 interface Harness {
-  readonly handler: InviteStaffUserHandler;
+  readonly handler: OpenStaffAccess;
   readonly provisioned: string[];
   readonly relinked: string[];
   readonly marked: { id: string; subject: string; at: Date }[];
   readonly mails: { to: string; url: string }[];
 }
 
-type Deps = ConstructorParameters<typeof InviteStaffUserHandler>;
+type Deps = ConstructorParameters<typeof OpenStaffAccess>;
 
 /** Panne du fournisseur d'identité, pour éprouver l'ordre des opérations. */
 class IdentityDown extends Error {
@@ -81,7 +80,7 @@ function harness(row: StaffIdentityFacts, identityFails = false, mailerOn = true
     },
   };
 
-  const handler = new InviteStaffUserHandler(
+  const handler = new OpenStaffAccess(
     staff as Deps[0],
     identities,
     { now: (): Date => NOW },
@@ -90,13 +89,13 @@ function harness(row: StaffIdentityFacts, identityFails = false, mailerOn = true
   return { handler, provisioned, relinked, marked, mails };
 }
 
-const COMMAND = new InviteStaffUserCommand("s1", "auth0|moi");
+const SUBJECT = "s1";
 
-describe("InviteStaffUserHandler — première invitation", () => {
+describe("OpenStaffAccess — première invitation", () => {
   it("ouvre une identité, date l'invitation et envoie le lien", async () => {
     const h = harness(target());
 
-    await h.handler.execute(COMMAND);
+    await h.handler.open(SUBJECT);
 
     expect(h.provisioned).toEqual(["sophie@lfc.test"]);
     expect(h.relinked).toEqual([]);
@@ -105,13 +104,13 @@ describe("InviteStaffUserHandler — première invitation", () => {
   });
 });
 
-describe("InviteStaffUserHandler — renvoi", () => {
+describe("OpenStaffAccess — renvoi", () => {
   it("ne recrée pas d'identité quand elle existe déjà", async () => {
     // Le doublon d'identité est le vrai risque : deux `sub` pour une personne,
     // et le rapprochement d'annuaire devient un tirage au sort.
     const h = harness(target({ auth0Id: "auth0|deja", status: "invited" }));
 
-    await h.handler.execute(COMMAND);
+    await h.handler.open(SUBJECT);
 
     expect(h.provisioned).toEqual([]);
     expect(h.relinked).toEqual(["auth0|deja"]);
@@ -121,19 +120,19 @@ describe("InviteStaffUserHandler — renvoi", () => {
   it("renvoie aussi à quelqu'un déjà entré — c'est le mot de passe oublié", async () => {
     const h = harness(target({ auth0Id: "auth0|deja", status: "active" }));
 
-    await h.handler.execute(COMMAND);
+    await h.handler.open(SUBJECT);
 
     expect(h.mails).toHaveLength(1);
   });
 });
 
-describe("InviteStaffUserHandler — suspendue", () => {
+describe("OpenStaffAccess — suspendue", () => {
   it("refuse, sans toucher au fournisseur d'identité ni au courrier", async () => {
     // Un lien de mot de passe rouvrirait la porte que la suspension a fermée :
     // le suivre vaut entrée, et l'entrée réactive la fiche.
     const h = harness(target({ auth0Id: "auth0|deja", status: "suspended" }));
 
-    await expect(h.handler.execute(COMMAND)).rejects.toBeInstanceOf(SuspendedStaffInviteError);
+    await expect(h.handler.open(SUBJECT)).rejects.toBeInstanceOf(SuspendedStaffInviteError);
 
     expect(h.provisioned).toEqual([]);
     expect(h.relinked).toEqual([]);
@@ -142,25 +141,25 @@ describe("InviteStaffUserHandler — suspendue", () => {
   });
 });
 
-describe("InviteStaffUserHandler — ordre des opérations", () => {
+describe("OpenStaffAccess — ordre des opérations", () => {
   it("n'écrit pas « invitée » si le lien n'a pas pu être frappé", async () => {
     // Le lien d'abord, l'écriture ensuite. L'ordre inverse laisserait une fiche
     // qui annonce une invitation que personne n'a reçue, et l'administrateur
     // attendrait une réponse à un e-mail jamais parti.
     const h = harness(target(), true);
 
-    await expect(h.handler.execute(COMMAND)).rejects.toBeInstanceOf(IdentityDown);
+    await expect(h.handler.open(SUBJECT)).rejects.toBeInstanceOf(IdentityDown);
 
     expect(h.marked).toEqual([]);
     expect(h.mails).toEqual([]);
   });
 });
 
-describe("InviteStaffUserHandler — ce que l'écran a le droit d'annoncer", () => {
+describe("OpenStaffAccess — ce que l'écran a le droit d'annoncer", () => {
   it("dit que l'e-mail est parti quand le canal est ouvert", async () => {
     const h = harness(target());
 
-    await expect(h.handler.execute(COMMAND)).resolves.toEqual({ mailSent: true });
+    await expect(h.handler.open(SUBJECT)).resolves.toEqual({ mailSent: true });
   });
 
   it("dit qu'il n'est PAS parti quand le mailer tourne à blanc", async () => {
@@ -169,6 +168,6 @@ describe("InviteStaffUserHandler — ce que l'écran a le droit d'annoncer", () 
     // quelqu'un qui n'attendrait jamais rien — le lien se remet alors à la main.
     const h = harness(target(), false, false);
 
-    await expect(h.handler.execute(COMMAND)).resolves.toEqual({ mailSent: false });
+    await expect(h.handler.open(SUBJECT)).resolves.toEqual({ mailSent: false });
   });
 });

@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { StaffIdentityPort } from "../domain/staff-identity.port.js";
 import { StaffUserRepository, type StaffIdentityFacts } from "../domain/staff-user.repository.js";
+import { OpenStaffAccess } from "./open-staff-access.service.js";
 import { SetStaffStatusCommand } from "./set-staff-status.command.js";
 import {
   CreateStaffUserCommand,
@@ -16,12 +17,39 @@ import {
  * (`staff-access.policy.ts`). Le mur d'entrée est l'`AdminAuthGuard` sur la route.
  */
 
+/**
+ * Crée un membre de l'équipe **et l'invite dans la foulée**.
+ *
+ * Créer puis inviter étaient deux gestes, et le second s'oubliait : la fiche
+ * existait, la personne n'avait rien reçu, et rien à l'écran ne distinguait
+ * « créée » de « invitée ». Or il n'y a pas de membre du staff qu'on
+ * enregistre sans vouloir qu'il se connecte — l'invitation EST la création.
+ *
+ * **L'échec de l'invitation ne défait jamais la fiche.** Si le fournisseur
+ * d'identité ou le courrier tombe, la personne existe quand même dans
+ * l'annuaire et « Renvoyer le lien » reprend la main. L'inverse perdrait une
+ * saisie pour une panne de canal, et ne laisserait rien à rattraper.
+ */
 @CommandHandler(CreateStaffUserCommand)
 export class CreateStaffUserHandler implements ICommandHandler<CreateStaffUserCommand, string> {
-  constructor(private readonly staff: StaffUserRepository) {}
+  private readonly logger = new Logger(CreateStaffUserHandler.name);
 
-  execute(command: CreateStaffUserCommand): Promise<string> {
-    return this.staff.create(command.payload, command.actorSub);
+  constructor(
+    private readonly staff: StaffUserRepository,
+    private readonly access: OpenStaffAccess,
+  ) {}
+
+  async execute(command: CreateStaffUserCommand): Promise<string> {
+    const id = await this.staff.create(command.payload, command.actorSub);
+    try {
+      await this.access.open(id);
+    } catch (error) {
+      this.logger.error(
+        `Membre ${id} créé, mais son invitation n'est pas partie — à renvoyer depuis sa fiche.`,
+        error,
+      );
+    }
+    return id;
   }
 }
 

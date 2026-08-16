@@ -5,6 +5,7 @@ import { AppConfig } from "../infra/config/app-config.js";
 import { StartupReport } from "../infra/startup/startup-report.service.js";
 import { GetStaffMeHandler } from "./application/get-staff-me.handler.js";
 import { InviteStaffUserHandler } from "./application/invite-staff-user.handler.js";
+import { OpenStaffAccess } from "./application/open-staff-access.service.js";
 import { ListStaffUsersHandler } from "./application/list-staff-users.handler.js";
 import {
   CreateStaffUserHandler,
@@ -56,6 +57,8 @@ import { PrismaStaffUserRepository } from "./infrastructure/prisma-staff-user.re
     RemoveStaffUserHandler,
     SetStaffStatusHandler,
     InviteStaffUserHandler,
+    // Partagé par l'invitation ET la création — cf. son en-tête.
+    OpenStaffAccess,
     {
       // Même arbitrage que côté client, et pour la même raison : le double de
       // dev n'apparaît QUE si le canal réel n'est pas configuré ET qu'on n'est
