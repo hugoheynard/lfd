@@ -1,4 +1,5 @@
 import {
+  isProviderSubject,
   missingManagementScopes,
   scopesFromAccessToken,
   REQUIRED_MANAGEMENT_SCOPES,
@@ -45,5 +46,22 @@ describe("missingManagementScopes", () => {
 
   it("ignore les autorisations en trop", () => {
     expect(missingManagementScopes([...REQUIRED_MANAGEMENT_SCOPES, "read:logs"])).toEqual([]);
+  });
+});
+
+describe("isProviderSubject", () => {
+  it("écarte un sujet fabriqué en développement", () => {
+    // Le cas vécu : un `dev|…` en base de PRODUCTION. Envoyé à Auth0 il rend un
+    // `400`, pas un `404` — la reprise ne partait donc jamais, et la personne
+    // restait injoignable à chaque clic sur « ouvrir l'accès ».
+    expect(isProviderSubject("dev|jean@exemple.fr")).toBe(false);
+  });
+
+  it("accepte les sujets du fournisseur, y compris une stratégie qu'on ne connaît pas", () => {
+    // Une liste BLANCHE des stratégies Auth0 s'allongerait sans nous et
+    // finirait par refuser un sujet parfaitement légitime.
+    expect(isProviderSubject("auth0|6a7f2bafea6cc8fa4df5f4e5")).toBe(true);
+    expect(isProviderSubject("google-oauth2|1234")).toBe(true);
+    expect(isProviderSubject("waad|annuaire-dun-client")).toBe(true);
   });
 });

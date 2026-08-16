@@ -48,6 +48,28 @@ export function scopesFromAccessToken(token: string): readonly string[] {
   return typeof scope === "string" ? scope.split(" ").filter((entry) => entry !== "") : [];
 }
 
+/**
+ * Ce sujet peut-il **appartenir** au fournisseur ?
+ *
+ * Auth0 nomme ses sujets `<stratégie>|<id>` — `auth0|…` pour une base de mots de
+ * passe, `google-oauth2|…` pour une connexion sociale. Le préfixe `dev|` est le
+ * NÔTRE : l'adaptateur de développement le fabrique quand aucune application
+ * M2M n'est configurée, et il ne désigne rien chez le fournisseur.
+ *
+ * Un tel sujet peut atterrir en base de production — un compte ouvert avant que
+ * le canal ne soit branché suffit. Envoyé à Auth0, il rend un **`400`**, pas un
+ * `404` : la reprise automatique, qui ne se déclenche que sur « sujet inconnu »,
+ * restait donc muette et la personne devenait définitivement injoignable.
+ *
+ * Volontairement une **liste noire d'un seul élément**, jamais une liste blanche
+ * des stratégies d'Auth0 : celle-là s'allonge sans nous, et refuser un jour un
+ * sujet légitime parce qu'on ne connaît pas sa stratégie serait pire que le
+ * défaut qu'on corrige. On n'écarte que ce dont on est l'auteur.
+ */
+export function isProviderSubject(subject: string): boolean {
+  return !subject.startsWith("dev|");
+}
+
 /** Celles qui manquent, dans l'ordre de déclaration — un diagnostic se lit. */
 export function missingManagementScopes(granted: readonly string[]): readonly string[] {
   const owned = new Set(granted);

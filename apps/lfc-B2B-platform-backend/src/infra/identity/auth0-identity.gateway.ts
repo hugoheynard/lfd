@@ -11,6 +11,7 @@ import type {
   ProvisionedIdentity,
 } from "../../shared/identity/provisioned-identity.js";
 import { Auth0ManagementClient, CONFLICT, NOT_FOUND } from "./auth0-management.client.js";
+import { isProviderSubject } from "./identity-diagnosis.js";
 
 /**
  * Durée de vie du lien de mot de passe : **7 jours**.
@@ -104,6 +105,18 @@ export class Auth0IdentityGateway {
    *   repasser par `provision` et réaligner nos deux bases.
    */
   async issuePasswordLink(subject: string, resultUrl?: string): Promise<string> {
+    // Un sujet que le fournisseur ne peut PAS connaître ne se demande pas : on
+    // le déclare inconnu tout de suite, ce que l'appelant sait rattraper.
+    //
+    // Le seul producteur de tels sujets est l'adaptateur de développement
+    // (`dev|<adresse>`), et ils peuvent atterrir en base de production dès qu'un
+    // compte y a été ouvert sans M2M configuré. Les envoyer à Auth0 rend un
+    // `400` — un identifiant malformé n'est pas un `404` — donc la reprise
+    // automatique ne se déclenchait pas, et la personne restait DÉFINITIVEMENT
+    // injoignable : chaque clic sur « ouvrir l'accès » rendait le même 500.
+    if (!isProviderSubject(subject)) {
+      throw new IdentitySubjectUnknownError(subject);
+    }
     const ticket = await this.api.call("POST", "/api/v2/tickets/password-change", {
       user_id: subject,
       ttl_sec: PASSWORD_TICKET_TTL_SECONDS,
