@@ -64,6 +64,23 @@ export class StaffUsersService {
     );
   }
 
+  /**
+   * Fabrique un lien **sans l'envoyer**, pour le remettre de la main à la main.
+   *
+   * Le canal e-mail muet n'est pas le seul cas : donner le lien de vive voix au
+   * téléphone est une façon normale de dépanner quelqu'un. Le lien vaut prise de
+   * contrôle du compte — il ne se stocke jamais, il se refabrique à la demande,
+   * et le neuf tue le précédent.
+   */
+  async issueLink(id: string): Promise<{ url: string; expiresAt: string }> {
+    return firstValueFrom(
+      this.http.post<{ url: string; expiresAt: string }>(
+        `${B2B_API_BASE}/admin/staff-access-pending/${id}/link`,
+        {},
+      ),
+    );
+  }
+
   /** Supprime un user staff. */
   async remove(id: string): Promise<void> {
     await firstValueFrom(this.http.delete<void>(`${B2B_API_BASE}/admin/staff-users/${id}`));

@@ -36,6 +36,10 @@
           <fold-dropdown-item icon="mail" (selected)="invite(row)">
             {{ inviteLabel(row) }}
           </fold-dropdown-item>
+          <!-- Le repli quand le courrier est muet — et le dépannage au téléphone. -->
+          <fold-dropdown-item icon="copy" (selected)="copyLink(row)">
+            {{ linkLabel(row) }}
+          </fold-dropdown-item>
         }
         <fold-dropdown-item
           [icon]="isSuspended(row) ? 'check' : 'lock'"
@@ -73,7 +77,7 @@
       <fold-element-title foldToolbar variant="bar" [title]="tableTitle()">
         <fold-info
           label="À quoi sert cet écran"
-          text="Les personnes qui opèrent la suite, et le rôle de chacune. Créer une fiche n'ouvre aucun accès : c'est l'invitation qui envoie le lien, et lui seul permet d'entrer."
+          text="Les personnes qui opèrent la suite, et le rôle de chacune. Créer une fiche envoie l'invitation dans la foulée. Si le courrier ne part pas, la clé se copie depuis le menu de la ligne et se remet à la main."
         />
       </fold-element-title>
 

@@ -174,9 +174,52 @@ export class ReglagesStaffUsersPage {
     return user.invitationExpired ? 'warning' : STATUS_VARIANT[user.status];
   }
 
-  /** Jamais invitée ⇒ « Inviter » ; déjà invitée ou entrée ⇒ « Renvoyer ». */
+  /**
+   * Ce que l'envoi fait **pour cette personne-là**.
+   *
+   * « Renvoyer le lien » était vrai de tout le monde et ne disait rien à
+   * personne : sur une fiche active, il n'y a aucune invitation à renvoyer —
+   * elle est déjà entrée. Ce qu'on lui envoie est un lien de **changement de
+   * mot de passe**, et l'appeler autrement fait hésiter au moment de cliquer.
+   */
   protected inviteLabel(user: StaffUserView): string {
-    return user.invitedAt === null ? 'Inviter à créer son compte' : 'Renvoyer le lien';
+    if (user.status === 'active') {
+      return 'Envoyer un lien de mot de passe';
+    }
+    return user.invitedAt === null ? "Envoyer l'invitation" : "Renvoyer l'invitation";
+  }
+
+  /**
+   * Obtenir le lien **sans l'envoyer** — toujours proposé.
+   *
+   * Il répond au canal e-mail muet, mais pas seulement : donner le lien de vive
+   * voix au téléphone est une façon normale de dépanner. Une action qui
+   * n'apparaîtrait qu'après une panne serait introuvable le jour de la panne.
+   */
+  protected linkLabel(user: StaffUserView): string {
+    return user.status === 'active'
+      ? 'Copier un lien de mot de passe'
+      : "Copier un lien d'invitation";
+  }
+
+  /**
+   * Fabrique un lien et le met dans le presse-papier.
+   *
+   * Il n'est jamais affiché : un lien de prise de contrôle qui traîne sur un
+   * écran partagé est un lien compromis. Le presse-papier se vide tout seul,
+   * un rendu à l'écran non.
+   */
+  protected async copyLink(user: StaffUserView): Promise<void> {
+    try {
+      const { url, expiresAt } = await this.service.issueLink(user.id);
+      await navigator.clipboard.writeText(url);
+      this.notify.success(
+        `Lien copié — valable jusqu'au ${new Date(expiresAt).toLocaleString('fr-FR')}. ` +
+          `Il vaut accès au compte : ne le transmettez qu'à ${user.email}.`,
+      );
+    } catch (error) {
+      this.notify.error(error);
+    }
   }
 
   /**
@@ -197,8 +240,8 @@ export class ReglagesStaffUsersPage {
       // n'arrivera pas ; le lien se remet alors depuis « Accès à remettre ».
       this.notify.success(
         mailSent
-          ? `Lien envoyé à ${user.email}.`
-          : `Accès ouvert, mais l'e-mail n'est pas parti — remettez le lien depuis « Accès à remettre ».`,
+          ? `${this.inviteLabel(user)} — envoyé à ${user.email}.`
+          : `L'e-mail n'est pas parti. Le lien reste valable : copiez-le depuis « ${this.linkLabel(user)} » et remettez-le à la main.`,
       );
       await this.load();
     } catch (error) {
