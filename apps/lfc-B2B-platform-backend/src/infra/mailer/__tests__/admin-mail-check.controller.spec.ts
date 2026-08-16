@@ -1,5 +1,5 @@
 import { AdminMailCheckController } from "../admin-mail-check.controller.js";
-import { B2B_MAIL_TEMPLATES } from "../mail-templates.js";
+import { b2bMailTemplates } from "../mail-templates.js";
 import type { AppConfig } from "../../config/app-config.js";
 import type { B2bMailer } from "../mailer.tokens.js";
 
@@ -90,7 +90,11 @@ describe("le contrôle de mise en service du courrier", () => {
 
 describe("le gabarit du contrôle", () => {
   it("nomme la révision et l’expéditeur dans ce qu’on reçoit", () => {
-    const mail = B2B_MAIL_TEMPLATES["ops.deploy-check"]({
+    const templates = b2bMailTemplates({
+      supportEmail: "dev@exemple.test",
+      backOfficeUrl: "https://admin.exemple.test",
+    });
+    const mail = templates["ops.deploy-check"]({
       revision: "abc1234",
       fromAddress: "no-reply@exemple.test",
     });

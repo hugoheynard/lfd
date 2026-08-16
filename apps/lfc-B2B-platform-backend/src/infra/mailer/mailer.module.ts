@@ -3,7 +3,7 @@ import { Global, Logger, Module } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
 import { AdminMailCheckController } from "./admin-mail-check.controller.js";
-import { B2B_MAIL_TEMPLATES, type B2bMails } from "./mail-templates.js";
+import { b2bMailTemplates, type B2bMails } from "./mail-templates.js";
 import { MAILER, type B2bMailer } from "./mailer.tokens.js";
 
 // Ré-exportés pour que les appelants existants continuent d'écrire
@@ -34,7 +34,14 @@ export type { B2bMailer };
         const mailer = config.mailerConfig();
         return createMailer<B2bMails>({
           apiKey: mailer.apiKey,
-          registry: B2B_MAIL_TEMPLATES,
+          // La marque est construite ICI, pas déclarée dans les gabarits :
+          // l'adresse de recours est l'admin RACINE, la seule que le domaine
+          // protège de toute suppression ou renommage. Une adresse de support
+          // qui disparaît envoie quelqu'un attendre.
+          registry: b2bMailTemplates({
+            supportEmail: config.bootstrapAdminEmail(),
+            backOfficeUrl: config.adminBaseUrl() ?? "",
+          }),
           fromAddress: mailer.fromAddress,
           replyTo: mailer.replyTo,
           logger: nestLogger(),

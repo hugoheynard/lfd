@@ -1,6 +1,8 @@
-import { Logger } from "@nestjs/common";
+import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { MAILER, type B2bMailer } from "../../infra/mailer/mailer.tokens.js";
+import { AppConfig } from "../../infra/config/app-config.js";
 import { StaffIdentityPort } from "../domain/staff-identity.port.js";
 import { StaffUserRepository, type StaffIdentityFacts } from "../domain/staff-user.repository.js";
 import { OpenStaffAccess } from "./open-staff-access.service.js";
@@ -116,11 +118,52 @@ export class RemoveStaffUserHandler implements ICommandHandler<RemoveStaffUserCo
   }
 }
 
+/**
+ * Suspend ou réintègre — **et le dit à la personne concernée**.
+ *
+ * Sans cet e-mail, elle apprenait la fermeture de son accès en se heurtant à un
+ * refus de connexion, sans savoir si c'était une panne, une erreur de mot de
+ * passe ou une décision. Un refus muet fait ouvrir un ticket ; une phrase
+ * évite le ticket et la mauvaise interprétation.
+ *
+ * L'envoi ne conditionne PAS la transition : suspendre est une décision de
+ * sécurité, et un fournisseur d'e-mail en panne ne doit jamais laisser une
+ * porte ouverte. On ferme, puis on prévient.
+ */
 @CommandHandler(SetStaffStatusCommand)
 export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusCommand, void> {
-  constructor(private readonly staff: StaffUserRepository) {}
+  private readonly logger = new Logger(SetStaffStatusHandler.name);
+
+  constructor(
+    private readonly staff: StaffUserRepository,
+    private readonly config: AppConfig,
+    @Inject(MAILER) private readonly mailer: B2bMailer,
+  ) {}
 
   async execute(command: SetStaffStatusCommand): Promise<void> {
     await this.staff.setStatus(command.id, command.change, command.actorSub);
+    await this.tell(command.id, command.change.status);
+  }
+
+  private async tell(id: string, status: "active" | "suspended"): Promise<void> {
+    try {
+      const target = await this.staff.identityOf(id);
+      await (status === "suspended"
+        ? this.mailer.send({
+            to: target.email,
+            template: "staff.access-suspended",
+            data: { firstName: target.firstName },
+          })
+        : this.mailer.send({
+            to: target.email,
+            template: "staff.access-restored",
+            data: {
+              firstName: target.firstName,
+              backOfficeUrl: this.config.adminBaseUrl() ?? "",
+            },
+          }));
+    } catch (error) {
+      this.logger.error(`Changement d'accès non notifié à ${id} (statut ${status}).`, error);
+    }
   }
 }

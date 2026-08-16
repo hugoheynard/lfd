@@ -47,11 +47,17 @@ export class OpenStaffAccess {
     }
 
     const { subject, passwordSetupUrl } = await this.openIdentity(target);
+    // Le gabarit suit l'ÉTAT, pas le geste : « bienvenue dans l'équipe » à
+    // quelqu'un qui travaille ici depuis six mois est au mieux troublant, au
+    // pire une raison de croire à un hameçonnage et de ne pas cliquer.
+    const template = target.status === "active" ? "staff.password-reset" : "staff.invited";
     await this.staff.markInvited(target.id, subject, this.clock.now());
 
     // Le lien ne sort d'ici que par cette adresse-là. Il vaut prise de contrôle
     // du compte : ni journal, ni réponse HTTP, ni écran de celui qui invite.
-    return { mailSent: await this.deliver(target.email, passwordSetupUrl, target.firstName) };
+    return {
+      mailSent: await this.deliver(template, target.email, passwordSetupUrl, target.firstName),
+    };
   }
 
   /**
@@ -61,13 +67,14 @@ export class OpenStaffAccess {
    * le journalise, et résout sans erreur. Répondre `true` ici ferait annoncer
    * une invitation envoyée à quelqu'un qui n'attendra jamais rien.
    */
-  private async deliver(to: string, passwordSetupUrl: string, firstName: string): Promise<boolean> {
+  private async deliver(
+    template: "staff.invited" | "staff.password-reset",
+    to: string,
+    passwordSetupUrl: string,
+    firstName: string,
+  ): Promise<boolean> {
     try {
-      await this.mailer.send({
-        to,
-        template: "staff.invited",
-        data: { firstName, passwordSetupUrl },
-      });
+      await this.mailer.send({ to, template, data: { firstName, passwordSetupUrl } });
       return this.mailer.enabled;
     } catch (error) {
       this.logger.error(`Invitation non envoyée à ${to}`, error);

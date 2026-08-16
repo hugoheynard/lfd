@@ -92,11 +92,11 @@ async function view(id: string): Promise<StaffUserView> {
 }
 
 describe("invitation staff — la première fois", () => {
-  it("ouvre une identité, date l'invitation, et l'écran le voit", async () => {
+  it("part À LA CRÉATION : la fiche naît invitée, sans second geste", async () => {
+    // La règle a changé le 2026-08-16 : créer quelqu'un l'invite. Deux gestes
+    // laissaient une fiche qui existe sans que la personne ait rien reçu, et
+    // rien à l'écran ne distinguait « créée » de « invitée ».
     const id = await createColleague();
-    expect((await view(id)).status).toBe("pending");
-
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
 
     const invited = await view(id);
     expect(invited.status).toBe("invited");
@@ -110,8 +110,6 @@ describe("invitation staff — la première fois", () => {
     // le rapprochement par e-mail marcherait une fois, puis plus jamais.
     const id = await createColleague();
 
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
-
     const row = await ctx.prisma.staffUser.findUniqueOrThrow({ where: { id } });
     expect(row.auth0Id).toBe("auth0|sophie@lfc.test");
   });
@@ -122,7 +120,8 @@ describe("invitation staff — le renvoi", () => {
     // Le doublon d'identité est le vrai risque : deux `sub` pour une personne,
     // et le rapprochement d'annuaire devient un tirage au sort.
     const id = await createColleague();
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
+    // La création a déjà provisionné : on repart de la table rase pour
+    // observer ce que le RENVOI fait, et lui seul.
     calls.provisioned = [];
 
     await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
@@ -173,6 +172,11 @@ describe("invitation staff — les refus", () => {
       .send({ status: "suspended" })
       .expect(204);
 
+    // La création provisionne désormais : on repart à zéro pour n'observer
+    // que ce que le geste REFUSÉ a fait — c'est-à-dire rien.
+    calls.provisioned = [];
+    calls.relinked = [];
+
     await staff().post(`/admin/staff-users/${id}/invitation`).expect(409);
 
     expect(calls.provisioned).toEqual([]);
@@ -197,6 +201,11 @@ describe("invitation staff — les refus", () => {
         auth0Id: "staff-compta",
       },
     });
+
+    // La création provisionne désormais : on repart à zéro pour n'observer
+    // que ce que le geste REFUSÉ a fait — c'est-à-dire rien.
+    calls.provisioned = [];
+    calls.relinked = [];
 
     await ctx.asSub("staff-compta").post(`/admin/staff-users/${id}/invitation`).expect(403);
 
