@@ -177,7 +177,7 @@ async function main(): Promise<void> {
   const apply = process.env["APPLY"] === "1";
   console.log(`Base visée : ${describeTarget(connectionString)}\n`);
 
-  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  const prisma = new PrismaClient(clientOptions(connectionString));
   assertClassified(wipedTables(prisma).map((entry) => entry.name));
   try {
     await report(prisma, apply);
@@ -205,6 +205,9 @@ async function main(): Promise<void> {
  * distingue une chaîne locale d'une chaîne distante.
  */
 function describeTarget(connectionString: string): string {
+  if (!isDirectPostgresUrl(connectionString)) {
+    return "passerelle Prisma Postgres — le nom de la base n'apparaît pas dans l'URL";
+  }
   try {
     const url = new URL(connectionString);
     const database = url.pathname.replace(/^\//, "");
@@ -212,6 +215,25 @@ function describeTarget(connectionString: string): string {
   } catch {
     return "cible illisible (URL malformée)";
   }
+}
+
+/**
+ * **Le schéma de l'URL choisit le transport**, exactement comme `PrismaService`.
+ *
+ * `prisma+postgres://` désigne une passerelle HTTP (Prisma Postgres) ; lui
+ * parler avec l'adaptateur `pg`, qui attend le protocole Postgres natif,
+ * n'échoue pas franchement — ça expire au bout d'un long silence. Constaté le
+ * 2026-08-16 : le script visait la production et semblait simplement lent.
+ */
+function isDirectPostgresUrl(url: string): boolean {
+  return url.startsWith("postgresql://") || url.startsWith("postgres://");
+}
+
+/** Les options de connexion, choisies par le schéma — union discriminée Prisma 7. */
+function clientOptions(connectionString: string): ConstructorParameters<typeof PrismaClient>[0] {
+  return isDirectPostgresUrl(connectionString)
+    ? { adapter: new PrismaPg({ connectionString }) }
+    : { accelerateUrl: connectionString };
 }
 
 /** Affiche ce qui existe, table par table, avant toute écriture. */
