@@ -37,8 +37,23 @@ export class StartupReport implements OnApplicationBootstrap {
     this.reported.push(missing);
   }
 
+  /**
+   * L'inventaire **courant** : ce que la configuration permet de déduire, plus
+   * ce que les modules ont constaté.
+   *
+   * Public parce que le bulletin ne suffit pas. Il est imprimé **une fois**, au
+   * démarrage : le lire suppose d'avoir attaché un journal à ce moment-là. Le
+   * 2026-08-16 il a été imprimé dans le vide — aucune observabilité sur le
+   * Worker — et l'enquête a cherché ailleurs ce qu'il disait déjà. Le même
+   * constat, **interrogeable**, se demande quand la question se pose, pas quand
+   * le container redémarre.
+   */
+  missing(): readonly MissingCapability[] {
+    return [...auditCapabilities(this.snapshot()), ...this.reported];
+  }
+
   onApplicationBootstrap(): void {
-    const missing = [...auditCapabilities(this.snapshot()), ...this.reported];
+    const missing = this.missing();
     if (missing.length === 0) {
       this.logger.log("Tous les canaux sont configurés.");
       return;
