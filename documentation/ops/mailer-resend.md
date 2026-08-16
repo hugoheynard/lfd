@@ -84,26 +84,53 @@ boîtes qui n'existent pas — et un e-mail envoyé à une adresse inexistante n
 produit aucun symptôme visible de notre côté. C'est l'étape 2.5 ci-dessous, et
 elle n'est pas facultative.
 
-### Le sous-domaine, on le garde pour le commercial
+### Deux adresses sur le même domaine, et le risque qu'on accepte
 
-Le vrai découpage n'est pas transactionnel / courrier d'entreprise : c'est
-**transactionnel / commercial**.
+**Décision du 2026-08-16** : `no-reply@` (transactionnel) et `news@` (commercial)
+partagent `lafoliecoffee.info`. Une fois l'apex vérifié, **n'importe quelle
+adresse du domaine peut expédier** — `news@` n'a donc demandé aucun
+enregistrement de plus.
 
-Un e-mail de promotion récolte des plaintes « indésirable » ; un lien de mot de
-passe doit arriver. Sur le même domaine, les premières dégradent la réputation
-du second — et le symptôme est le pire de tous : des clients qui ne reçoivent
-plus leur accès, sans erreur nulle part.
+Le risque assumé : un e-mail de promotion récolte des plaintes « indésirable » ;
+un lien de mot de passe doit arriver. Sur le même domaine, les premières
+dégradent la réputation du second, et le symptôme est le pire de tous — des
+clients qui ne reçoivent plus leur accès, sans erreur nulle part.
 
-Le jour où l'emailing arrive, il prend donc **son propre sous-domaine**
-(`news.lafoliecoffee.info`), enregistré comme un second domaine chez Resend, avec
-sa réputation à lui. Rien à changer ici ce jour-là : c'est un ajout, pas une
-migration.
+**Le signal qui doit faire changer d'avis** : dès que l'envoi commercial devient
+régulier ou volumineux, ou au premier taux de plainte visible dans les métriques
+Resend, il déménage sur `news.lafoliecoffee.info`, enregistré comme un **second**
+domaine avec sa réputation à lui. `MAILER_FROM_ADDRESS` ne bouge pas ce jour-là :
+c'est un ajout, pas une migration.
 
 ## 2. Chez Resend (tableau de bord, à la main)
+
+> ✅ **Fait le 2026-08-16** — domaine `lafoliecoffee.info` créé sur le compte
+> `lafoliedouce`, région Ireland (eu-west-1), les 4 enregistrements posés dans
+> Cloudflare par import BIND et résolvant publiquement. Ce qui suit est la
+> procédure, gardée pour la refaire (second domaine, autre environnement).
 
 1. **Domains → Add Domain** — `lafoliecoffee.info`, région **EU** (cohérent avec
    l'ancrage WEUR des containers ; les données d'envoi restent dans la même
    juridiction).
+
+   **Manual setup, pas « Auto configure »** : la configuration automatique
+   demande un accès OAuth en écriture sur toute la zone Cloudflare. Poser quatre
+   enregistrements à la main ne coûte rien et n'accorde aucun droit permanent à
+   un tiers.
+
+   Le plus rapide est l'**import BIND** (DNS → Records → Import), qui pose les
+   quatre d'un coup et évite quatre saisies à recopier :
+
+   ```
+   resend._domainkey.<domaine>. 1 IN TXT "p=…"
+   send.<domaine>.              1 IN MX 10 feedback-smtp.eu-west-1.amazonses.com.
+   send.<domaine>.              1 IN TXT "v=spf1 include:amazonses.com ~all"
+   _dmarc.<domaine>.            1 IN TXT "v=DMARC1; p=none;"
+   ```
+
+   Laisser **« Proxy imported DNS records » décoché** — un `TXT` ou un `MX` ne
+   se proxifie pas.
+
 2. Resend affiche les enregistrements à poser. Ils sont de trois familles, et
    les trois comptent :
    - **DKIM** (`TXT`, sur `resend._domainkey`) — la signature. Sans elle, rien
@@ -126,24 +153,32 @@ migration.
    **restreinte au domaine** vérifié. Une clé d'envoi qui ne sait pas lire les
    journaux ni gérer les domaines ne peut pas grand-chose si elle fuit.
 
-### 2.5 — Ouvrir la réception (Cloudflare, pas Resend)
+### 2.5 — La réception, volontairement PAS ouverte
 
-Resend **envoie** ; il ne reçoit pas. Sans cette étape, répondre à un e-mail de
-la plateforme ne mène nulle part.
+**Décision du 2026-08-16 : on n'ouvre aucune adresse de réception pour l'instant.**
+Ni `contact@`, ni `commercial@`, ni le `MX` d'Email Routing sur l'apex.
 
-Dans le tableau de bord Cloudflare, zone `lafoliecoffee.info` → **Email → Email
-Routing** → activer. Cloudflare pose les `MX` de l'apex, puis créer les adresses
-de destination (chacune demande une confirmation dans la boîte cible) :
+Ce que ça coûte, en clair, pour que ce soit un choix et pas un oubli :
 
-| Adresse                         | Sert à               | Redirige vers         |
-| ------------------------------- | -------------------- | --------------------- |
-| `contact@lafoliecoffee.info`    | `MAILER_REPLY_TO`    | la boîte qu'on relève |
-| `commercial@lafoliecoffee.info` | `MAILER_STAFF_INBOX` | idem, ou une autre    |
+- **`MAILER_REPLY_TO` reste vide** → une personne qui répond à son invitation
+  écrit à `no-reply@`, qui ne reçoit rien. Sa réponse est perdue, et personne ne
+  saura qu'elle a répondu.
+- **`MAILER_STAFF_INBOX` reste vide** → aucune alerte interne ne part (RDV pris,
+  demande de contact, seuil franchi). Le code s'en abstient délibérément plutôt
+  que d'envoyer au hasard, donc ça ne casse rien — ça reste éteint, en silence.
 
-Les deux peuvent pointer vers la même boîte au départ — ce qui compte est que
-les **adresses** soient distinctes : le jour où l'équipe commerciale n'est plus
-la même personne que le support, la bascule est un changement de routage, pas un
-redéploiement.
+L'ouverture d'accès client, elle, fonctionne : elle ne dépend que de l'envoi.
+
+**Pour ouvrir la réception le jour venu** : Cloudflare, zone
+`lafoliecoffee.info` → **Email → Email Routing** → activer (Cloudflare pose les
+`MX` de l'apex), puis créer les adresses de destination — chacune demande une
+confirmation dans la boîte cible. Elles peuvent pointer vers la même boîte au
+départ ; ce qui compte est que les **adresses** soient distinctes, pour que la
+séparation future soit un changement de routage et pas un redéploiement.
+
+⚠️ Ne pas activer « **Enable Receiving** » côté Resend à la place : celui-là pose
+un `MX` **sur l'apex** (`inbound-smtp…`), et là le conflit avec Email Routing est
+réel. L'envoi n'en a pas besoin.
 
 ## 3. Dans GitHub
 
@@ -151,27 +186,24 @@ La valeur se copie **du tableau de bord Resend vers GitHub, directement** :
 jamais par un terminal, jamais dans une conversation, jamais dans un fichier du
 dépôt (cf. [`secrets-et-variables.md §5`](secrets-et-variables.md)).
 
-| Nom                         | Où              | Valeur                          |
-| --------------------------- | --------------- | ------------------------------- |
-| `RESEND_MAILER_B2B_API_KEY` | 🔒 **Secret**   | la clé créée en §2.4            |
-| `MAILER_FROM_ADDRESS`       | 📢 **Variable** | `no-reply@lafoliecoffee.info`   |
-| `MAILER_REPLY_TO`           | 📢 **Variable** | `contact@lafoliecoffee.info`    |
-| `MAILER_STAFF_INBOX`        | 📢 **Variable** | `commercial@lafoliecoffee.info` |
+| Nom                         | Où              | Valeur                                          |
+| --------------------------- | --------------- | ----------------------------------------------- |
+| `RESEND_MAILER_B2B_API_KEY` | 🔒 **Secret**   | la clé créée en §2.4                            |
+| `MAILER_FROM_ADDRESS`       | 📢 **Variable** | `no-reply@lafoliecoffee.info`                   |
+| `MAILER_REPLY_TO`           | —               | **à ne PAS poser** tant que §2.5 n'est pas fait |
+| `MAILER_STAFF_INBOX`        | —               | idem                                            |
 
 - **`MAILER_FROM_ADDRESS`** — c'est aussi le défaut du code
   ([`env-readers.ts`](../../apps/lfc-B2B-platform-backend/src/infra/config/env-readers.ts)) :
-  poser la Variable rend le réglage explicite, ne pas la poser ne casse rien. Le
-  jour où l'emailing prend `news.`, cette variable ne bouge **pas** — c'est un
-  second domaine chez Resend, pas un changement d'expéditeur transactionnel.
-- **`MAILER_REPLY_TO`** — l'expéditeur est un `no-reply`. Sans cette variable,
-  une personne qui répond à son invitation écrit dans le vide, et personne ne
-  saura jamais qu'elle a répondu. C'est le défaut le moins visible des trois.
-- **`MAILER_STAFF_INBOX`** — absente, aucune alerte interne ne part, et c'est
-  **délibéré** : on n'envoie pas plutôt que d'envoyer au hasard.
+  poser la Variable rend le réglage explicite, ne pas la poser ne casse rien.
+- **Les deux autres restent vides**, et c'est le bon état tant qu'aucune adresse
+  n'est routée. **Une adresse non routée est pire qu'une variable vide** : le
+  code croit le canal ouvert, et l'e-mail part vers un serveur qui n'existe pas.
+  Vide, il s'abstient — ce que le bulletin de démarrage dira à voix haute.
 
-Les deux dernières supposent l'étape 2.5 faite. Une adresse non routée est pire
-qu'une variable vide : le code croit le canal ouvert, et l'e-mail tombe chez un
-serveur qui n'existe pas.
+⚠️ Le bulletin de démarrage annoncera donc `Démarré en mode dégradé`, en nommant
+les canaux éteints. **C'est attendu**, pas une panne : seul le canal d'envoi
+devait être ouvert aujourd'hui.
 
 ## 4. Déployer — et pourquoi un simple « save » ne suffit pas
 
@@ -207,9 +239,11 @@ sans un mot.
    [Démarrage] Tous les canaux sont configurés.
    ```
 
-   Si à la place on lit `Démarré en mode dégradé`, la ligne qui suit nomme la
-   variable à poser. C'est le contrôle le moins cher, et il précède tous les
-   autres.
+   Aujourd'hui on lira `Démarré en mode dégradé`, en nommant le courrier
+   entrant : c'est le §2.5 non fait, et c'est voulu. Ce qui compte est que le
+   **Courrier transactionnel** ne figure PAS dans la liste des canaux éteints —
+   sinon la clé n'est pas arrivée jusqu'au container. C'est le contrôle le moins
+   cher, et il précède tous les autres.
 
 2. **Un vrai envoi.** Ouvrir un compte client depuis le back-office, sur une
    adresse qu'on relève. L'e-mail attendu est `customer.access-opened`, objet
@@ -222,9 +256,9 @@ sans un mot.
    une adresse Outlook, et regarder l'en-tête d'authentification (`spf=pass`,
    `dkim=pass`, `dmarc=pass`).
 
-4. **Répondre à l'e-mail reçu.** C'est le seul moyen de constater que
-   `MAILER_REPLY_TO` est juste. Un `no-reply` qui rebondit ne se voit pas
-   autrement.
+4. **Répondre à l'e-mail reçu** — le jour où §2.5 sera fait. C'est le seul moyen
+   de constater que `MAILER_REPLY_TO` est juste ; un `no-reply` qui rebondit ne
+   se voit pas autrement. Aujourd'hui, la réponse se perd, et c'est assumé.
 
 ## 6. Ce qui reste ouvert après cette page
 
