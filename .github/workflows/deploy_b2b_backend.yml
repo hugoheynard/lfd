@@ -105,7 +105,7 @@ jobs:
           # Connexion staff : distincte de la connexion client, c'est le mur qui
           # empêche un client de s'authentifier contre le back-office.
           AUTH0_STAFF_CONNECTION: ${{ vars.AUTH0_STAFF_CONNECTION }}
-          AUTH0_DB_CONNECTION: ${{ vars.AUTH0_DB_CONNECTION }}
+          AUTH0_CUSTOMER_CONNECTION: ${{ vars.AUTH0_CUSTOMER_CONNECTION }}
           # L'adresse de l'admin RACINE — une adresse, pas un secret. Sans elle,
           # le code retombe sur son défaut, et la porte de secours ne pointe pas
           # vers la boîte qu'on relève.
@@ -154,7 +154,7 @@ jobs:
         run: |
           for name in DATABASE_B2B_URL AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
                       AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET \
-                      AUTH0_STAFF_CONNECTION AUTH0_DB_CONNECTION \
+                      AUTH0_STAFF_CONNECTION AUTH0_CUSTOMER_CONNECTION \
                       BOOTSTRAP_ADMIN_EMAIL CLIENT_BASE_URL ADMIN_BASE_URL \
                       RESEND_MAILER_B2B_API_KEY \
                       MAILER_FROM_ADDRESS MAILER_REPLY_TO MAILER_STAFF_INBOX \

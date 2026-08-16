@@ -37,11 +37,16 @@
 
 > **2026-08-16** — la procédure de mise en service (domaine, DNS, les quatre
 > réglages, les contrôles) vit maintenant dans
-> [`../ops/mailer-resend.md`](../ops/mailer-resend.md). Deux trous de la chaîne
-> de configuration y ont été fermés au passage : `MAILER_REPLY_TO` et
-> `AUTH0_DB_CONNECTION` étaient transmis par le Worker mais **jamais posés** par
-> le déploiement — branchés sur du vide. La CI compare désormais les trois
-> listes de noms.
+> [`../ops/mailer-resend.md`](../ops/mailer-resend.md). `MAILER_REPLY_TO` et
+> `AUTH0_CUSTOMER_CONNECTION` ont rejoint la boucle de déploiement, et la CI
+> compare désormais les trois listes de noms.
+>
+> ⚠️ **Nuance apprise le jour même** : « présent dans `RUNTIME_KEYS`, absent de
+> la boucle » n'est pas toujours un défaut. Pour un réglage qui a un **défaut
+> dans le code**, ne rien pousser laisse simplement ce défaut gagner — ce qui
+> peut être le comportement voulu. Poser la Variable sans en vérifier la valeur
+> revient alors à écraser un défaut juste par une valeur périmée. La symétrie
+> des trois listes est une aide, pas une règle.
 
 - **`MAILER_STAFF_INBOX`** — l'adresse de l'équipe commerciale. Prévue en
   configuration, **renseignée nulle part**. Sans elle, aucune alerte interne ne

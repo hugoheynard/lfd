@@ -36,7 +36,7 @@ import {
  * plausible mais faux est pire que pas de défaut : il désigne silencieusement
  * une base d'utilisateurs qui n'existe pas.
  */
-const DEFAULT_AUTH0_DB_CONNECTION = "lfc-b2b-customers";
+const DEFAULT_AUTH0_CUSTOMER_CONNECTION = "lfc-b2b-customers";
 
 /**
  * La connexion où naissent les identités **de l'équipe**. Valeur constatée dans
@@ -72,7 +72,7 @@ export class AppConfig {
     this.auth0DomainValue = required("AUTH0_DOMAIN");
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
     this.auth0ConnectionValue =
-      optionalString("AUTH0_DB_CONNECTION") ?? DEFAULT_AUTH0_DB_CONNECTION;
+      optionalString("AUTH0_CUSTOMER_CONNECTION") ?? DEFAULT_AUTH0_CUSTOMER_CONNECTION;
     this.auth0StaffConnectionValue =
       optionalString("AUTH0_STAFF_CONNECTION") ?? DEFAULT_AUTH0_STAFF_CONNECTION;
     this.clientBaseUrlValue = optionalString("CLIENT_BASE_URL");
@@ -135,10 +135,10 @@ export class AppConfig {
 
   /**
    * Nom de la **connexion base de données** Auth0 où naissent les identités
-   * client (`AUTH0_DB_CONNECTION`). Un défaut plutôt qu'un réglage obligatoire,
+   * client (`AUTH0_CUSTOMER_CONNECTION`). Un défaut plutôt qu'un réglage obligatoire,
    * pour la même raison que côté équipe : l'exiger ferait échouer le boot en dev
    * et en CI pour une valeur que personne ne change. Mais ce défaut est celui du
-   * **tenant**, pas celui d'usine d'Auth0 — cf. {@link DEFAULT_AUTH0_DB_CONNECTION}.
+   * **tenant**, pas celui d'usine d'Auth0 — cf. {@link DEFAULT_AUTH0_CUSTOMER_CONNECTION}.
    */
   auth0DatabaseConnection(): string {
     return this.auth0ConnectionValue;

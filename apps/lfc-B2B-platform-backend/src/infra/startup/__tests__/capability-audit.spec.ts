@@ -75,7 +75,7 @@ describe("inventaire — aucun réglage optionnel oublié", () => {
    * démarrage.
    */
   const EXEMPTED = new Set([
-    "AUTH0_DB_CONNECTION", // a un défaut : le nom Auth0 d'un tenant neuf
+    "AUTH0_CUSTOMER_CONNECTION", // a un défaut : le nom Auth0 d'un tenant neuf
     "AUTH0_STAFF_CONNECTION", // a un défaut : `lfc-staff`, constaté dans le tenant
     "BOOTSTRAP_ADMIN_EMAIL", // a un défaut ; son échec réel est signalé par StaffUsersModule
     "RECOMPUTE_TOKEN", // outil d'exploitation, pas une porte du produit

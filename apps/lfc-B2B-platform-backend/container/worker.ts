@@ -43,7 +43,7 @@ const RUNTIME_KEYS = [
   // transmises, elles retombaient sur les défauts du code — justes aujourd'hui,
   // mais alors incorrigeables sans redéployer.
   "AUTH0_STAFF_CONNECTION",
-  "AUTH0_DB_CONNECTION",
+  "AUTH0_CUSTOMER_CONNECTION",
   "BOOTSTRAP_ADMIN_EMAIL",
   // Où atterrit quelqu'un APRÈS avoir posé son mot de passe, et où pointent les
   // boutons des e-mails.

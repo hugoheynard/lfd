@@ -121,7 +121,7 @@ describe("les variables transmises au container", () => {
     // Le maillon le plus discret des trois : un nom peut être lu par la config,
     // transmis par le Worker, et n'être jamais POSÉ. Le réglage est alors
     // parfaitement branché — sur du vide. C'était le cas de `MAILER_REPLY_TO`
-    // et `AUTH0_DB_CONNECTION` la veille de la mise en production.
+    // et `AUTH0_CUSTOMER_CONNECTION` la veille de la mise en production.
     const deployed = new Set(deployedKeys());
     const never = forwardedKeys().filter((name) => !deployed.has(name) && !(name in NOT_DEPLOYED));
 
