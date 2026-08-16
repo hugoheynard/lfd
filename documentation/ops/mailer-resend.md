@@ -18,44 +18,91 @@ exactement à un mailer qui marche**, vu de l'écran.
 
 La seule preuve est un e-mail reçu. Pas un déploiement vert, pas un 200.
 
-## 1. La décision à prendre en premier : le domaine d'expédition
+## 1. Le domaine — décidé le 2026-08-16
 
-Trois domaines circulent dans le dépôt, et ils ne désignent pas la même chose :
+**`lafoliecoffee.info`**, zone **Cloudflare** (`haley` / `clint.ns.cloudflare.com`),
+**vide** au moment de la décision : aucun `MX`, aucun `A`, aucun `TXT`.
 
-| Domaine            | Ce qu'il est aujourd'hui                                                   |
+Les autres domaines du dépôt ne conviennent pas, et il faut savoir pourquoi pour
+ne pas y revenir :
+
+| Domaine            | Ce qu'il est                                                               |
 | ------------------ | -------------------------------------------------------------------------- |
-| `lafoliedouce.fr`  | le **défaut du code** (`DEFAULT_FROM_ADDRESS`) — jamais vérifié            |
 | `lafoliedouce.eu`  | le tenant Auth0, et les **audiences** — des identifiants, pas des adresses |
-| `lafoliecoffee.fr` | l'adresse de contact affichée côté client (placeholder assumé)             |
+| `lafoliedouce.fr`  | l'ancien défaut du code — **personne ne le possède**                       |
+| `lafoliecoffee.fr` | l'adresse de contact affichée côté client — placeholder, `.fr` ≠ `.info`   |
 
-**Ce qui compte n'est pas l'esthétique : c'est le DNS.** Le domaine choisi doit
-être une zone dont on tient les enregistrements. Un domaine non vérifié chez
-Resend fait **refuser l'envoi côté fournisseur** — l'e-mail ne part pas, et le
-seul endroit où ça se voit est le journal (`Envoi Resend refusé`).
+**Ce qui compte n'est pas l'esthétique : c'est le DNS.** Un domaine non vérifié
+chez Resend fait **refuser l'envoi côté fournisseur** — l'e-mail ne part pas, et
+le seul endroit où ça se voit est le journal (`Envoi Resend refusé`).
 
-Recommandation : expédier depuis un **sous-domaine dédié** (`mail.<domaine>` ou
-`send.<domaine>`). La réputation d'expédition de la plateforme reste alors
-séparée de celle du domaine principal — un incident sur les e-mails
-transactionnels n'emporte pas le courrier de l'entreprise.
+### On envoie depuis un sous-domaine, et on reçoit sur l'apex
+
+|                         | Où                          | Qui le sert              |
+| ----------------------- | --------------------------- | ------------------------ |
+| **Envoi** (sortant)     | `mail.lafoliecoffee.info`   | Resend (DKIM + SPF + MX) |
+| **Réception** (entrant) | `lafoliecoffee.info` (apex) | Cloudflare Email Routing |
+
+Deux raisons de ne pas envoyer depuis l'apex, et la seconde est bloquante :
+
+1. La réputation d'expédition de la plateforme reste séparée de celle du courrier
+   de l'entreprise — un incident transactionnel n'emporte pas le reste.
+2. **Un domaine n'a qu'un jeu de `MX`.** Resend en pose un pour le retour des
+   rebonds, Cloudflare Email Routing en pose un pour la réception : les deux sur
+   l'apex se marcheraient dessus. Sur des étages différents, ils coexistent sans
+   arbitrage.
+
+⚠️ **La zone n'a aucun `MX` aujourd'hui, donc aucune adresse
+`@lafoliecoffee.info` ne reçoit quoi que ce soit.** Tant que Email Routing n'est
+pas activé, `MAILER_REPLY_TO` et `MAILER_STAFF_INBOX` pointeraient vers des
+boîtes qui n'existent pas — et un e-mail envoyé à une adresse inexistante ne
+produit aucun symptôme visible de notre côté. C'est l'étape 2.5 ci-dessous, et
+elle n'est pas facultative.
 
 ## 2. Chez Resend (tableau de bord, à la main)
 
-1. **Domains → Add Domain** — le sous-domaine choisi en §1, région **EU**
+1. **Domains → Add Domain** — `mail.lafoliecoffee.info`, région **EU**
    (cohérent avec l'ancrage WEUR des containers ; les données d'envoi restent
    dans la même juridiction).
 2. Resend affiche les enregistrements à poser. Ils sont de trois familles, et
    les trois comptent :
-   - **DKIM** (`TXT`, sur `resend._domainkey.<sous-domaine>`) — la signature.
-     Sans elle, rien ne part.
-   - **SPF** (`TXT` + `MX` sur le sous-domaine d'envoi) — l'autorisation.
-   - **DMARC** (`TXT` sur `_dmarc.<domaine>`) — la politique. Facultatif chez
-     Resend, **pas** pour Gmail et Outlook, qui l'exigent de tout expéditeur en
-     volume. Commencer à `p=none` : on observe avant de rejeter.
-3. **Poser ces enregistrements dans la zone DNS**, puis **Verify**. C'est le
-   délai externe : de quelques minutes à quelques heures. À lancer en premier.
+   - **DKIM** (`TXT`, sur `resend._domainkey.mail`) — la signature. Sans elle,
+     rien ne part.
+   - **SPF** (`TXT` + `MX` sur `mail`) — l'autorisation, et le retour des rebonds.
+   - **DMARC** (`TXT` sur `_dmarc`) — la politique. Facultatif chez Resend,
+     **pas** pour Gmail et Outlook, qui l'exigent de tout expéditeur en volume.
+     Commencer à `p=none` : on observe avant de rejeter.
+3. **Poser ces enregistrements dans la zone Cloudflare**, en **DNS only**
+   (nuage gris — un `TXT` ou un `MX` ne se proxifie pas), puis **Verify**. C'est
+   le délai externe : de quelques minutes à quelques heures. À lancer en premier.
+
+   ⚠️ Cloudflare ajoute le suffixe de zone tout seul. Le nom à saisir est
+   `resend._domainkey.mail`, **pas** `resend._domainkey.mail.lafoliecoffee.info`
+   — sinon l'enregistrement atterrit sur `…mail.lafoliecoffee.info.lafoliecoffee.info`
+   et la vérification échoue sans dire pourquoi.
+
 4. **API Keys → Create** — permission **Sending access** seulement, et
    **restreinte au domaine** vérifié. Une clé d'envoi qui ne sait pas lire les
    journaux ni gérer les domaines ne peut pas grand-chose si elle fuit.
+
+### 2.5 — Ouvrir la réception (Cloudflare, pas Resend)
+
+Resend **envoie** ; il ne reçoit pas. Sans cette étape, répondre à un e-mail de
+la plateforme ne mène nulle part.
+
+Dans le tableau de bord Cloudflare, zone `lafoliecoffee.info` → **Email → Email
+Routing** → activer. Cloudflare pose les `MX` de l'apex, puis créer les adresses
+de destination (chacune demande une confirmation dans la boîte cible) :
+
+| Adresse                         | Sert à               | Redirige vers         |
+| ------------------------------- | -------------------- | --------------------- |
+| `contact@lafoliecoffee.info`    | `MAILER_REPLY_TO`    | la boîte qu'on relève |
+| `commercial@lafoliecoffee.info` | `MAILER_STAFF_INBOX` | idem, ou une autre    |
+
+Les deux peuvent pointer vers la même boîte au départ — ce qui compte est que
+les **adresses** soient distinctes : le jour où l'équipe commerciale n'est plus
+la même personne que le support, la bascule est un changement de routage, pas un
+redéploiement.
 
 ## 3. Dans GitHub
 
@@ -63,20 +110,26 @@ La valeur se copie **du tableau de bord Resend vers GitHub, directement** :
 jamais par un terminal, jamais dans une conversation, jamais dans un fichier du
 dépôt (cf. [`secrets-et-variables.md §5`](secrets-et-variables.md)).
 
-| Nom                         | Où              | Valeur                                                                   |
-| --------------------------- | --------------- | ------------------------------------------------------------------------ |
-| `RESEND_MAILER_B2B_API_KEY` | 🔒 **Secret**   | la clé créée en §2.4                                                     |
-| `MAILER_FROM_ADDRESS`       | 📢 **Variable** | `no-reply@<sous-domaine vérifié>` — **doit** être sur le domaine vérifié |
-| `MAILER_REPLY_TO`           | 📢 **Variable** | l'adresse où atterrit une réponse humaine                                |
-| `MAILER_STAFF_INBOX`        | 📢 **Variable** | la boîte de l'équipe commerciale (alertes internes)                      |
+| Nom                         | Où              | Valeur                             |
+| --------------------------- | --------------- | ---------------------------------- |
+| `RESEND_MAILER_B2B_API_KEY` | 🔒 **Secret**   | la clé créée en §2.4               |
+| `MAILER_FROM_ADDRESS`       | 📢 **Variable** | `no-reply@mail.lafoliecoffee.info` |
+| `MAILER_REPLY_TO`           | 📢 **Variable** | `contact@lafoliecoffee.info`       |
+| `MAILER_STAFF_INBOX`        | 📢 **Variable** | `commercial@lafoliecoffee.info`    |
 
-Sur les deux dernières :
-
+- **`MAILER_FROM_ADDRESS`** — sur le **sous-domaine vérifié**, jamais sur l'apex.
+  C'est aussi le défaut du code
+  ([`env-readers.ts`](../../apps/lfc-B2B-platform-backend/src/infra/config/env-readers.ts)) :
+  poser la Variable rend le réglage explicite, ne pas la poser ne casse rien.
 - **`MAILER_REPLY_TO`** — l'expéditeur est un `no-reply`. Sans cette variable,
   une personne qui répond à son invitation écrit dans le vide, et personne ne
   saura jamais qu'elle a répondu. C'est le défaut le moins visible des trois.
 - **`MAILER_STAFF_INBOX`** — absente, aucune alerte interne ne part, et c'est
   **délibéré** : on n'envoie pas plutôt que d'envoyer au hasard.
+
+Les deux dernières supposent l'étape 2.5 faite. Une adresse non routée est pire
+qu'une variable vide : le code croit le canal ouvert, et l'e-mail tombe chez un
+serveur qui n'existe pas.
 
 ## 4. Déployer — et pourquoi un simple « save » ne suffit pas
 
