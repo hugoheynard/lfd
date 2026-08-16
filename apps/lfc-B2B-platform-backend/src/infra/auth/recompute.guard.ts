@@ -51,10 +51,17 @@ export class RecomputeGuard implements CanActivate {
   }
 }
 
-/** Normalise un en-tête (une valeur ou une liste) en chaîne, ou `undefined`. */
+/**
+ * Normalise un en-tête (une valeur ou une liste) en chaîne, ou `undefined`.
+ *
+ * **Trimé**, et ce n'est pas de la complaisance : la valeur attendue l'est déjà
+ * (`optionalString` trime en lisant l'environnement), donc sans ça un jeton
+ * collé avec une espace en trop rendrait un 401 parfaitement opaque — le secret
+ * serait *le bon*, et rien ne le dirait. La RFC 7230 autorise d'ailleurs des
+ * espaces autour d'une valeur d'en-tête : les retirer est le comportement
+ * correct, pas un assouplissement.
+ */
 function headerValue(raw: string | string[] | undefined): string | undefined {
-  if (Array.isArray(raw)) {
-    return raw[0];
-  }
-  return raw;
+  const first = Array.isArray(raw) ? raw[0] : raw;
+  return first?.trim();
 }
