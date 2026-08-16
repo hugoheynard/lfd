@@ -1,0 +1,69 @@
+name: ops_b2b_identity_probe
+
+# Sonde le canal d'identité de la PROD, à la demande.
+#
+# Pourquoi un workflow plutôt qu'un `curl` depuis un poste : la route est gardée
+# par `RECOMPUTE_TOKEN`, un secret GitHub — donc en ÉCRITURE SEULE. Personne ne
+# peut le relire, et c'est très bien ainsi. Un contrôle d'exploitation dont la
+# clé n'est détenue que par la CI doit donc s'actionner depuis la CI, sinon il
+# n'est utilisable par personne — ce qui revient à ne pas exister.
+#
+# Aucune écriture : la sonde échange un jeton et lit. Rien n'est créé chez le
+# fournisseur d'identité, aucun compte, aucun e-mail.
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: "Adresse à sonder (facultatif — sans elle, seul l'état du canal est rendu)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Interroger le canal d'identité
+        env:
+          API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
+          RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
+          EMAIL: ${{ inputs.email }}
+        run: |
+          set -uo pipefail
+          url="${API_BASE_URL}/admin/ops/identity-check"
+          if [ -n "${EMAIL}" ]; then
+            url="${url}?email=$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "${EMAIL}")"
+          fi
+
+          report=$(curl --fail-with-body --silent --show-error --max-time 30 \
+                   "${url}" -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}") || {
+            echo "::error::Sonde injoignable — la porte machine-à-machine a refusé."
+            exit 1
+          }
+
+          # Le rapport est écrit dans le RÉSUMÉ du job : c'est ce qui se lit
+          # d'un téléphone, sans dérouler des journaux.
+          REPORT="${report}" python3 <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          report = json.loads(os.environ["REPORT"])
+          print(f"## Canal d'identité — `{report['domain']}`\n")
+          print(f"- jeton M2M accordé : **{report['tokenGranted']}**")
+          print(f"- autorisations manquantes : **{report['missingScopes'] or 'aucune'}**")
+          print(f"- connexion clients : `{report['customerConnection']}`")
+          print(f"- connexion équipe : `{report['staffConnection']}`\n")
+          footprint = report.get("footprint")
+          if footprint is None:
+              print("_Aucune adresse sondée._")
+          elif not footprint:
+              print("### Empreinte\n\nLe fournisseur **ne connaît pas** cette adresse.")
+          else:
+              print("### Empreinte\n")
+              for entry in footprint:
+                  connections = ", ".join(f"`{c}`" for c in entry["connections"]) or "_aucune_"
+                  print(f"- connexions : {connections} — identifiant lisible : **{entry['hasUserId']}**")
+          PY
+
+          echo "Rapport écrit dans le résumé du job."
