@@ -129,4 +129,22 @@
   "triggers": {
     "crons": ["*/5 * * * *", "0 3 * * *", "0 11 * * *", "0 19 * * *"],
   },
+
+  // ── Observabilité ────────────────────────────────────────────────────────
+  //
+  // Sans ce bloc, le Worker ne capture AUCUNE sortie console — et comme le
+  // NestJS tourne dans le container derrière lui, ses journaux n'avaient nulle
+  // part où aller : ni `wrangler tail`, ni le tableau de bord.
+  //
+  // Le coût de cette cécité s'est mesuré le 2026-08-16. Un `500` sur
+  // l'ouverture d'un accès client a demandé une demi-heure d'enquête à travers
+  // Cloudflare, Resend et Auth0 — alors que la cause exacte (le statut et le
+  // corps renvoyés par Auth0) était écrite par le client d'identité à CHAQUE
+  // tentative, dans un journal inatteignable.
+  //
+  // Le bulletin de démarrage souffrait du même sort : il nomme les canaux
+  // éteints, à voix haute, dans le vide. Un contrôle inaudible ne contrôle rien.
+  "observability": {
+    "enabled": true,
+  },
 }
