@@ -382,3 +382,49 @@ export class AmountFloorOnBroadScopeError extends DomainError {
     );
   }
 }
+
+/** Une échelle de volume **sans palier** : elle ne dit rien. */
+export class EmptyVolumeLadderError extends DomainError {
+  constructor() {
+    super(
+      "pricing.ladder.empty",
+      "Un barème de volume porte au moins un palier : sans palier, il n'accorde rien et occupe pourtant l'étage volume.",
+    );
+  }
+}
+
+/**
+ * Deux paliers à la **même quantité**, ou une quantité nulle.
+ *
+ * À quantité égale, lequel gagne ? La réponse dépendrait de l'ordre de saisie,
+ * donc du hasard — la même faute que deux règles également spécifiques, et le
+ * même refus.
+ */
+export class AmbiguousVolumeTierError extends DomainError {
+  constructor(readonly minQuantity: number) {
+    super(
+      "pricing.ladder.ambiguous_tier",
+      `Deux paliers ne peuvent pas partager la même quantité (${String(minQuantity)}), et une quantité de palier est strictement positive.`,
+    );
+  }
+}
+
+/**
+ * Un barème où **commander plus rapporte moins**.
+ *
+ * C'est l'incohérence que des règles indépendantes ne pouvaient pas voir :
+ * « 50+ à −10 %, 100+ à −5 % » se compose de deux règles parfaitement valides,
+ * et forme pourtant un barème que personne n'a voulu — un client qui passe de 90
+ * à 100 pièces verrait sa remise fondre.
+ */
+export class RegressiveVolumeLadderError extends DomainError {
+  constructor(
+    readonly minQuantity: number,
+    readonly previousMinQuantity: number,
+  ) {
+    super(
+      "pricing.ladder.regressive",
+      `Le palier ${String(minQuantity)} accorde moins que le palier ${String(previousMinQuantity)} : commander plus y rapporterait moins.`,
+    );
+  }
+}
