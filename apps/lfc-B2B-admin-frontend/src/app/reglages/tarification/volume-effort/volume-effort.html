@@ -1,0 +1,38 @@
+@if (elasticity(); as elastic) {
+  <div class="node node-elastic">
+    @if (ratioLabel(elastic); as ratio) {
+      <span class="ratio">{{ ratio }} pour le même chiffre</span>
+    } @else {
+      <span class="ratio">offert — aucun volume ne compense</span>
+    }
+
+    @if (elastic.sinceChange; as since) {
+      <!-- La seule comparaison qui juge la RÈGLE : avant / après le changement. -->
+      <div class="perf" [class.is-on-track]="isOnTrack(since)">
+        <span class="label">depuis la règle</span>
+        @if (!since.conclusive) {
+          <span class="value">trop tôt ({{ since.observed.days }} j)</span>
+        } @else if (attainmentLabel(since); as pct) {
+          <span class="value">{{ pct }} de l'objectif</span>
+          <span class="detail">{{ volumes(since) }}</span>
+        } @else {
+          <span class="value">pas d'historique avant</span>
+        }
+      </div>
+    }
+
+    <div class="perf" [class.is-on-track]="isOnTrack(elastic.rolling)">
+      <span class="label">{{ elastic.rolling.observed.days }} derniers jours</span>
+      @if (attainmentLabel(elastic.rolling); as pct) {
+        <span class="value">{{ pct }} de l'objectif</span>
+        <span class="detail">{{ volumes(elastic.rolling) }}</span>
+      } @else {
+        <span class="value">pas de référence</span>
+      }
+    </div>
+  </div>
+} @else {
+  <div class="node node-elastic is-flat">
+    <span class="value">prix inchangé</span>
+  </div>
+}

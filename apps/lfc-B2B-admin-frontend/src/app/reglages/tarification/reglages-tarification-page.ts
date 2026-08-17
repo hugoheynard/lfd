@@ -10,16 +10,7 @@ import type {
 } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
 
-import {
-  attainmentLabel,
-  deltaLabel,
-  isDiscount,
-  isOnTrack,
-  ratioLabel,
-  roomEuros,
-  roomPercent,
-  ruleSentence,
-} from './pricing-format';
+import { deltaLabel, isDiscount, roomEuros, roomPercent, ruleSentence } from './pricing-format';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -33,6 +24,7 @@ import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
 import { GridSkeleton } from './grid-skeleton/grid-skeleton';
 import { RuleChip } from './rule-chip/rule-chip';
 import { TarificationSummaryBar } from './summary-bar/summary-bar';
+import { VolumeEffort } from './volume-effort/volume-effort';
 import { JournalPanel, type JournalPanelData } from './journal-panel/journal-panel';
 import { RulePanel, type RulePanelData } from './rule-panel/rule-panel';
 import { TarificationService } from './tarification.service';
@@ -87,6 +79,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     GridSkeleton,
     RuleChip,
     TarificationSummaryBar,
+    VolumeEffort,
   ],
   templateUrl: './reglages-tarification-page.html',
   styleUrl: './reglages-tarification-page.scss',
@@ -104,9 +97,6 @@ export class ReglagesTarificationPage {
   // calcule pas.
   protected readonly deltaLabel = deltaLabel;
   protected readonly isDiscount = isDiscount;
-  protected readonly ratioLabel = ratioLabel;
-  protected readonly attainmentLabel = attainmentLabel;
-  protected readonly isOnTrack = isOnTrack;
 
   /** Les deux unités de la marge, prises sur la vue plutôt que sur deux nombres. */
   protected roomEuros(room: NegotiationRoom): string {

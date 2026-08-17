@@ -17,6 +17,10 @@
 
 $col-gap: 2.25rem;
 
+// La couleur des traits de liaison, écrite une fois (variable Sass : elle ne
+// traverse pas le CSS livré).
+$link: var(--fold-color-text-faded, var(--fold-color-border));
+
 .legend,
 .grid {
   display: grid;
@@ -113,9 +117,23 @@ $col-gap: 2.25rem;
   }
 }
 
+// **Chaque carte prend la hauteur de son contenu**, et se cale au MILIEU de sa
+// ligne. Étirer tout le monde faisait grandir la fiche d'un article, sa limite et
+// son prix parce qu'une colonne voisine portait trois altérations — trois cartes
+// vides et hautes pour une seule qui avait quelque chose à dire.
+//
+// L'alignement central suffit à tenir la lecture : les milieux restent sur la
+// même ligne d'un bout à l'autre, et c'est exactement là que passent les traits
+// de liaison.
 .cell {
   position: relative;
   display: flex;
+  align-items: center;
+}
+
+// Sauf la colonne famille : son nœud couvre TOUS les articles du rayon, donc il
+// s'étire — c'est sa hauteur qui dit qu'il n'y en a qu'un pour tous.
+.col-family {
   align-items: stretch;
 }
 
@@ -142,17 +160,36 @@ $col-gap: 2.25rem;
 }
 
 // --- Les liens entre nœuds ------------------------------------------------
-// Un trait pointillé dans chaque gouttière, tiré depuis la gauche de la cellule
-// qui le reçoit. Le nœud de famille en reçoit UN seul (il est unique) et en
-// renvoie autant qu'il y a d'articles : d'où la barre verticale sur son bord
-// droit, qui donne à voir l'éventail.
+// Le prix se construit de GAUCHE à DROITE, et les traits doivent le dire. Ils
+// sont donc pleins et contrastés, avec un chevron à l'arrivée : un pointillé
+// pâle se lisait comme une bordure de tableau, pas comme une relation.
+//
+// Le nœud de famille en reçoit UN seul (il est unique) et en renvoie autant
+// qu'il y a d'articles : d'où la barre verticale sur son bord droit, qui donne à
+// voir l'éventail. C'est aussi pourquoi il n'a pas de chevron — ce qui en part
+// n'arrive pas quelque part, ça se divise.
+
 .cell:not(.col-article)::before {
   content: '';
   position: absolute;
   top: 50%;
   left: -$col-gap;
   width: $col-gap;
-  border-top: 1px dashed var(--fold-color-border);
+  border-top: 1.5px solid $link;
+  opacity: 0.55;
+}
+
+.cell:not(.col-article):not(.col-family)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -0.5rem;
+  width: 0.34rem;
+  height: 0.34rem;
+  border-top: 1.5px solid var(--fold-color-text-faded, var(--fold-color-border));
+  border-right: 1.5px solid $link;
+  opacity: 0.55;
+  transform: translateY(-50%) rotate(45deg);
 }
 
 .col-family::after {
@@ -161,7 +198,8 @@ $col-gap: 2.25rem;
   top: 0.9rem;
   bottom: 0.9rem;
   right: calc(-#{$col-gap} / 2);
-  border-left: 1px dashed var(--fold-color-border);
+  border-left: 1.5px solid $link;
+  opacity: 0.55;
 }
 
 .col-product::before {
@@ -171,23 +209,49 @@ $col-gap: 2.25rem;
 
 // --- Les nœuds ------------------------------------------------------------
 
+// **Une carte**, pas une cellule de tableau : surface propre, ombre courte,
+// coins francs. Et une hauteur minimale COURTE — un nœud qui n'a qu'une ligne à
+// dire ne doit pas occuper la place d'un qui en a trois.
 .node {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 0.15rem;
-  min-height: 3.25rem;
+  min-height: 2.5rem;
   padding: var(--fold-space-2, 0.5rem) var(--fold-space-3, 0.75rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card, var(--fold-color-surface));
+  box-shadow: var(--fold-shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
   font: inherit;
   text-align: left;
 }
 
+// Ce qui s'ouvre se soulève au survol — le relief dit « cliquable » avant que le
+// curseur ne le dise.
+@media (hover: hover) {
+  button.node:hover {
+    box-shadow: var(--fold-shadow-md, 0 2px 6px rgb(0 0 0 / 10%));
+  }
+}
+
+// Le soulèvement est du mouvement : il ne s'ajoute que si le système l'accepte.
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  button.node {
+    transition:
+      box-shadow 120ms ease-out,
+      transform 120ms ease-out;
+  }
+
+  button.node:hover {
+    transform: translateY(-1px);
+  }
+}
+
 .node-article {
   background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
+  box-shadow: none;
 }
 
 .article-name {
@@ -250,6 +314,14 @@ $col-gap: 2.25rem;
 .node-family,
 .node-product {
   gap: var(--fold-space-2, 0.5rem);
+  justify-content: center;
+  padding-top: var(--fold-space-2, 0.5rem);
+  padding-bottom: var(--fold-space-2, 0.5rem);
+}
+
+// Le nœud de famille couvre tout le rayon : ses règles se posent en HAUT, sinon
+// elles flotteraient au milieu d'une colonne vide.
+.node-family {
   justify-content: flex-start;
   padding-top: var(--fold-space-3, 0.75rem);
 }
@@ -368,56 +440,12 @@ $col-gap: 2.25rem;
   color: var(--fold-color-text-muted);
 }
 
-.room-note,
-.perf-label,
-.perf-detail {
+.room-note {
   font-size: var(--fold-text-xs, 0.75rem);
   color: var(--fold-color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
-// L'effort de volume : le ratio d'abord, puis les deux comparaisons.
-.node-elastic {
-  align-items: flex-start;
-  gap: var(--fold-space-2, 0.5rem);
-  justify-content: flex-start;
-  padding-top: var(--fold-space-2, 0.5rem);
-
-  &.is-flat {
-    justify-content: center;
-    color: var(--fold-color-text-muted);
-  }
-}
-
-.elastic-ratio {
-  font-weight: 700;
-  font-size: var(--fold-text-sm, 0.875rem);
-  font-variant-numeric: tabular-nums;
-}
-
-.perf {
-  display: flex;
-  flex-direction: column;
-  gap: 0.05rem;
-  padding-left: var(--fold-space-2, 0.5rem);
-  border-left: 2px solid var(--fold-color-border);
-
-  // L'objectif tenu se colore ; l'objectif manqué reste NEUTRE. Peindre en
-  // rouge tout ce qui est sous 100 % ferait paniquer sur des remises récentes
-  // qui n'ont pas encore eu le temps de produire quoi que ce soit.
-  &.is-on-track {
-    border-left-color: var(--fold-color-success-border, currentcolor);
-  }
-}
-
-.perf-value {
-  font-size: var(--fold-text-sm, 0.875rem);
-  font-variant-numeric: tabular-nums;
-}
-
-// Sous 60rem, l'éventail ne tient plus : la grille redevient une pile par
-// article. On coupe les traits plutôt que de les laisser pointer dans le vide —
-// un connecteur qui ne relie rien se lit comme une erreur d'affichage.
 // L'apparition des rayons, décalée : elle donne à voir que la page se remplit
 // de haut en bas, ce qui est l'ordre où on la lit. Purement décoratif — donc la
 // première chose à couper quand le système demande moins de mouvement.

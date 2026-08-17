@@ -207,42 +207,6 @@ function elasticity(overrides: Partial<ItemElasticityView> = {}): ItemElasticity
   };
 }
 
-describe("l'effort de volume", () => {
-  /** Le chiffre qui doit sauter aux yeux, dans la langue du commercial. */
-  it('dit le ratio en clair, à la virgule française', () => {
-    expect(page()['ratioLabel'](elasticity())).toBe('×1,25');
-  });
-
-  /**
-   * Un article offert n'atteint le chiffre d'origine à aucun volume. « ×∞ »
-   * n'aide personne — l'écran dira autre chose à la place.
-   */
-  it("n'invente pas de ratio sur un article offert", () => {
-    expect(page()['ratioLabel'](elasticity({ isoRevenueRatioBp: null }))).toBeNull();
-  });
-
-  it("dit l'atteinte en pourcent entier", () => {
-    expect(page()['attainmentLabel'](comparison())).toBe('92 %');
-  });
-
-  it("n'annonce pas d'atteinte quand il n'y a pas d'objectif", () => {
-    expect(page()['attainmentLabel'](comparison({ attainmentBp: null }))).toBeNull();
-  });
-
-  /**
-   * Seul l'objectif TENU se colore. Peindre en rouge tout ce qui est sous 100 %
-   * ferait paniquer sur des remises trop récentes pour avoir produit quoi que ce
-   * soit — c'est le rôle de `conclusive`, pas d'une couleur.
-   */
-  it('ne signale que la réussite, jamais le retard', () => {
-    const screen = page();
-
-    expect(screen['isOnTrack'](comparison({ attainmentBp: 10_000 }))).toBe(true);
-    expect(screen['isOnTrack'](comparison({ attainmentBp: 9_900 }))).toBe(false);
-    expect(screen['isOnTrack'](comparison({ attainmentBp: null }))).toBe(false);
-  });
-});
-
 describe('la remise accordable', () => {
   const room = { floorCents: 150, maxDiscountCents: 50, maxDiscountBp: 2_500 };
 

@@ -245,50 +245,7 @@
                    est. La comparaison qui juge la RÈGLE d'abord, la glissante
                    ensuite : elles ne répondent pas à la même question. -->
               <div class="cell col-elastic" [style.gridRow]="row + 1">
-                @if (item.elasticity; as elastic) {
-                  <div class="node node-elastic">
-                    @if (ratioLabel(elastic); as ratio) {
-                      <span class="elastic-ratio">{{ ratio }} pour le même chiffre</span>
-                    } @else {
-                      <span class="elastic-ratio">offert — aucun volume ne compense</span>
-                    }
-
-                    @if (elastic.sinceChange; as since) {
-                      <div class="perf" [class.is-on-track]="isOnTrack(since)">
-                        <span class="perf-label">depuis la règle</span>
-                        @if (!since.conclusive) {
-                          <span class="perf-value">trop tôt ({{ since.observed.days }} j)</span>
-                        } @else if (attainmentLabel(since); as pct) {
-                          <span class="perf-value">{{ pct }} de l'objectif</span>
-                          <span class="perf-detail">
-                            {{ since.observedVolume }} vendus / {{ since.targetVolume }} visés
-                          </span>
-                        } @else {
-                          <span class="perf-value">pas d'historique avant</span>
-                        }
-                      </div>
-                    }
-
-                    <div class="perf" [class.is-on-track]="isOnTrack(elastic.rolling)">
-                      <span class="perf-label"
-                        >{{ elastic.rolling.observed.days }} derniers jours</span
-                      >
-                      @if (attainmentLabel(elastic.rolling); as pct) {
-                        <span class="perf-value">{{ pct }} de l'objectif</span>
-                        <span class="perf-detail">
-                          {{ elastic.rolling.observedVolume }} vendus /
-                          {{ elastic.rolling.targetVolume }} visés
-                        </span>
-                      } @else {
-                        <span class="perf-value">pas de référence</span>
-                      }
-                    </div>
-                  </div>
-                } @else {
-                  <div class="node node-elastic is-flat">
-                    <span class="perf-value">prix inchangé</span>
-                  </div>
-                }
+                <app-volume-effort [elasticity]="item.elasticity" />
               </div>
             }
           </div>

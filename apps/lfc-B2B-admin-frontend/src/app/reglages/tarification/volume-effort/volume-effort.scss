@@ -1,0 +1,58 @@
+:host {
+  display: flex;
+  flex: 1;
+  align-items: center;
+}
+
+.node {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--fold-space-2, 0.5rem);
+  min-height: 2.5rem;
+  padding: var(--fold-space-2, 0.5rem) var(--fold-space-3, 0.75rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface-card, var(--fold-color-surface));
+  box-shadow: var(--fold-shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
+
+  &.is-flat {
+    justify-content: center;
+    color: var(--fold-color-text-muted);
+  }
+}
+
+.ratio {
+  font-weight: 700;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.perf {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  padding-left: var(--fold-space-2, 0.5rem);
+  border-left: 2px solid var(--fold-color-border);
+
+  // L'objectif tenu se colore ; l'objectif manqué reste NEUTRE. Peindre en rouge
+  // tout ce qui est sous 100 % ferait paniquer sur des remises récentes qui
+  // n'ont pas encore eu le temps de produire quoi que ce soit.
+  &.is-on-track {
+    border-left-color: var(--fold-color-success-border, currentcolor);
+  }
+}
+
+.value {
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.label,
+.detail {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
