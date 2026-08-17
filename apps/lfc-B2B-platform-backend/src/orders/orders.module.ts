@@ -4,6 +4,7 @@ import { CqrsModule } from "@nestjs/cqrs";
 import { CatalogModule } from "../catalog/catalog.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
 import { PaymentsModule } from "../payments/payments.module.js";
+import { PricingModule } from "../pricing/pricing.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
@@ -59,7 +60,14 @@ import { OrdersController } from "./http/orders.controller.js";
  * Les deux disparaissent ensemble à la bascule.
  */
 @Module({
-  imports: [CqrsModule, PickupAddressesModule, DeliveryZonesModule, PaymentsModule, CatalogModule],
+  imports: [
+    CqrsModule,
+    PickupAddressesModule,
+    DeliveryZonesModule,
+    PaymentsModule,
+    CatalogModule,
+    PricingModule,
+  ],
   controllers: [
     OrdersController,
     CompanyOrdersController,

@@ -1778,3 +1778,78 @@ model CatalogItemOverride {
   @@map("catalog_item_overrides")
   @@schema("public")
 }
+
+// ---------------------------------------------------------------------------
+// Règles tarifaires — cf. documentation/b2b/architecture-resolution-de-prix.md
+// ---------------------------------------------------------------------------
+
+/// Une **règle tarifaire** : un étage, une portée, une audience, une fenêtre.
+///
+/// Les discriminants (`stage`, `scopeType`, `nature`…) sont des `String` et non
+/// des enums Prisma, et c'est délibéré : ils entrent dans une contrainte
+/// d'EXCLUSION GiST, où un type énuméré ajoute une dépendance à la classe
+/// d'opérateurs de `btree_gist` sans rien apporter. L'union est validée au bord
+/// par zod, comme `recurrence` et `status` ailleurs dans ce schéma.
+///
+/// ⚠️ La garantie qui compte n'est PAS dans ce modèle : c'est la contrainte
+/// `price_rules_no_overlap`, posée en SQL par la migration. Deux règles
+/// également spécifiques valides au même instant deviennent **impossibles à
+/// insérer** — sans elle, le prix dépendrait de l'ordre de tri, donc du hasard.
+model PriceRule {
+  id String @id @default(cuid())
+
+  /// `mercuriale` | `volume` | `promotion` | `geste` — l'ordre d'application
+  /// est déclaré dans le domaine, jamais ici.
+  stage String
+
+  /// `replace` pose un prix (engagement en euros) ; `alter` modifie l'entrant.
+  nature String
+
+  /// `global` | `category` | `product` | `variant`. `scopeId` est `NULL` **si et
+  /// seulement si** `scopeType = 'global'`.
+  scopeType String  @map("scope_type")
+  scopeId   String? @map("scope_id")
+
+  /// `all` | `segment` | `company`. Même règle de nullité.
+  audienceType String  @map("audience_type")
+  audienceId   String? @map("audience_id")
+
+  /// Palier de quantité de l'étage volume. `NULL` = aucun seuil.
+  minQuantity Int? @map("min_quantity")
+
+  /// `nature = 'replace'` : le prix posé, HT en centimes.
+  amountCents Int? @map("amount_cents")
+
+  /// `nature = 'alter'` : sens, unité, grandeur. La grandeur est **toujours
+  /// positive** — le sens vit dans `direction`.
+  direction String? // increase | decrease
+  mode      String? // percent | amount
+  value     Int? // bp si percent, cents si amount
+
+  /// Plancher propre à la règle. `NULL` = celui de la plateforme s'applique.
+  floorMode  String? @map("floor_mode") // percent | amount
+  floorValue Int?    @map("floor_value") // bp du canonique, ou cents
+
+  /// Borne basse **incluse**, borne haute **exclue** : deux règles qui se
+  /// succèdent au même instant ne se chevauchent jamais.
+  ///
+  /// `Timestamptz` et non `timestamp` : sans fuseau, `tstzrange()` dépend du
+  /// réglage de session, donc n'est pas `IMMUTABLE`, donc **ne peut pas entrer
+  /// dans la contrainte d'exclusion** — Postgres refuse la migration. C'est
+  /// aussi le type juste : une fenêtre tarifaire est un fait daté absolu.
+  validFrom DateTime  @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(3)
+
+  /// Ce que la trace affichera au client et au service client.
+  label String
+
+  /// Qui a posé cette règle. Sur un tarif négocié, la question posée six mois
+  /// plus tard est toujours « qui a accordé ça ».
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([stage])
+  @@index([audienceId])
+  @@map("price_rules")
+  @@schema("public")
+}

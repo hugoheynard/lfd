@@ -73,9 +73,18 @@ describe("resolvePrice — sans règle", () => {
     expect(result.floored).toBe(false);
   });
 
-  it("refuse un prix canonique nul ou négatif — il n'y a rien à altérer", () => {
-    expect(() => resolvePrice(0, [], context())).toThrow(InvalidCanonicalPriceError);
+  it("refuse un prix canonique négatif — une dette n'est pas une ligne de commande", () => {
     expect(() => resolvePrice(-100, [], context())).toThrow(InvalidCanonicalPriceError);
+  });
+
+  /**
+   * Zéro **passe**. Un article offert est un cas réel, et le refuser cassait le
+   * chemin d'une commande sans rien à encaisser — constaté en branchant S2.
+   */
+  it("accepte un article à zéro, et les altérations le laissent à zéro", () => {
+    const result = resolvePrice(0, [percentOff({ id: "p", bp: 1000 })], context());
+
+    expect(result.finalCents).toBe(0);
   });
 });
 

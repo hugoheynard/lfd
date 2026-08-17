@@ -28,6 +28,9 @@ import {
   PickupNotConfiguredError,
   UnknownSkuError,
 } from "../../domain/errors/order-errors.js";
+import { pricingContextFor } from "../../../pricing/application/pricing-context.js";
+import { PriceRuleReader } from "../../../pricing/domain/ports/price-rule.reader.js";
+import { resolvePrice } from "../../../pricing/domain/resolve-price.js";
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 
@@ -88,6 +91,7 @@ interface ResolvedFulfillment {
 export class OrderDrafting {
   constructor(
     private readonly catalog: ProductCatalogReader,
+    private readonly priceRules: PriceRuleReader,
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
     private readonly deliveryDefaults: DeliveryDefaultsReader,
@@ -95,7 +99,7 @@ export class OrderDrafting {
 
   /** Compose la commande. Le règlement reste à décider par l'appelant. */
   async draft(parties: OrderParties, content: OrderContent): Promise<Order> {
-    const lines = this.resolveLines(content.lines);
+    const lines = await this.resolveLines(content.lines, parties);
     const subtotalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
     const acheminement = await this.resolveFulfillment(content, subtotalCents);
     const agreed = agreeFulfillment(
@@ -200,27 +204,47 @@ export class OrderDrafting {
   }
 
   /**
-   * Fusionne les lignes par SKU (quantités additionnées) puis résout chacune au
-   * catalogue — c'est ici que le prix devient autoritaire, jamais celui du client.
+   * Fusionne les lignes par SKU (quantités additionnées) puis résout chacune —
+   * c'est ici que le prix devient autoritaire, jamais celui du client.
+   *
+   * Deux étapes, dans cet ordre : le **catalogue** donne le prix canonique, puis
+   * les **règles tarifaires** l'altèrent. La fusion par SKU précède les deux, et
+   * c'est ce qui rend le palier de volume juste : deux lignes de 60 croissants
+   * ouvrent le palier « 100+ », alors qu'aucune ne l'ouvrirait seule.
    */
-  private resolveLines(input: readonly OrderLineRequest[]): OrderLineInput[] {
+  private async resolveLines(
+    input: readonly OrderLineRequest[],
+    parties: OrderParties,
+  ): Promise<OrderLineInput[]> {
     const quantities = new Map<string, number>();
     for (const line of input) {
       quantities.set(line.sku, (quantities.get(line.sku) ?? 0) + line.quantity);
     }
-    return [...quantities].map(([sku, quantity]) => {
-      const item = this.catalog.resolve(sku);
-      if (item === null) {
-        throw new UnknownSkuError(sku);
-      }
-      return {
-        sku: item.sku,
-        productName: item.name,
-        unitPriceCents: item.unitPriceCents,
-        vatRate: item.vatRate,
-        quantity,
-      };
-    });
+
+    // L'instant est pris UNE fois pour toute la commande : deux lignes résolues à
+    // quelques millisecondes d'écart pourraient sinon tomber de part et d'autre
+    // du basculement d'une promotion.
+    const at = new Date();
+
+    return Promise.all(
+      [...quantities].map(async ([sku, quantity]) => {
+        const item = this.catalog.resolve(sku);
+        if (item === null) {
+          throw new UnknownSkuError(sku);
+        }
+        const context = pricingContextFor(item.sku, item.category, quantity, parties, at);
+        const rules = await this.priceRules.candidatesFor(context);
+        const resolved = resolvePrice(item.unitPriceCents, rules, context);
+
+        return {
+          sku: item.sku,
+          productName: item.name,
+          unitPriceCents: resolved.finalCents,
+          vatRate: item.vatRate,
+          quantity,
+        };
+      }),
+    );
   }
 }
 

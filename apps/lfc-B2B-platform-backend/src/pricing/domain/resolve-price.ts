@@ -39,7 +39,12 @@ export function resolvePrice(
   context: PricingContext,
   floor: PriceFloor | null = null,
 ): ResolvedPrice {
-  if (!Number.isInteger(canonicalCents) || canonicalCents <= 0) {
+  // Zéro est **accepté** : un article offert (échantillon, geste commercial
+  // catalogué) est un cas réel, et le contrat de fil le permet déjà
+  // (`nonnegative`). Seul le négatif est refusé — il n'a aucune lecture. La
+  // première écriture refusait aussi zéro, par réflexe de rigueur : elle
+  // cassait un chemin existant, celui d'une commande sans rien à encaisser.
+  if (!Number.isInteger(canonicalCents) || canonicalCents < 0) {
     throw new InvalidCanonicalPriceError(canonicalCents);
   }
 

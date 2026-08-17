@@ -29,6 +29,7 @@ import {
   DeliveryDefaultsReader,
   NO_DELIVERY_DEFAULTS,
 } from "../../../domain/ports/delivery-defaults.reader.js";
+import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 
 /**
@@ -41,6 +42,13 @@ function noDeliveryDefaults(): DeliveryDefaultsReader {
 }
 import { PlaceOrderForCustomerCommand } from "../place-order-for-customer.command.js";
 import { PlaceOrderForCustomerHandler } from "../place-order-for-customer.handler.js";
+
+/**
+ * Catalogue **sans règle tarifaire** : le comportement du système avant qu'une
+ * seule règle n'existe. Ces suites éprouvent la commande, pas le prix — la
+ * résolution a ses propres tests, purs et exhaustifs.
+ */
+const noPriceRules: PriceRuleReader = { candidatesFor: () => Promise.resolve([]) };
 
 const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": {
@@ -185,7 +193,7 @@ function handler(
     "clientBaseUrl" in options ? (options.clientBaseUrl ?? null) : "https://boutique.lfc.fr";
   return new PlaceOrderForCustomerHandler(
     guardDouble,
-    new OrderDrafting(catalog, pickups, zones, noDeliveryDefaults()),
+    new OrderDrafting(catalog, noPriceRules, pickups, zones, noDeliveryDefaults()),
     repo(sink),
     options.payments ?? payments(),
     options.events ?? new FakeEvents(),
@@ -328,7 +336,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     };
     const free = new PlaceOrderForCustomerHandler(
       guard("orders"),
-      new OrderDrafting(gratuit, pickups, zones, noDeliveryDefaults()),
+      new OrderDrafting(gratuit, noPriceRules, pickups, zones, noDeliveryDefaults()),
       repo(sink),
       payments(intents),
       new FakeEvents(),

@@ -334,20 +334,33 @@ Ce que les décisions ajoutent au chantier, et qui n'y était pas :
 
       Deux choses décidées **en écrivant**, et qui manquaient au doc :
 
-          - **l'audience prime sur la portée produit.** « La plus spécifique sur les
-            deux axes » ne suffisait pas : une règle *produit / tous* et une règle
-            *globale / ce client* ne se dominent pas. Sans ordre entre les axes, le
-            gagnant dépendait du tri SQL. Une règle qui vise CE client gagne — sinon
-            une promotion générale écraserait un engagement négocié ;
-          - **le calcul traverse la chaîne en `bigint`.** « Arrondir une seule fois »
-            oblige à porter un rationnel ; en `number`, trois pourcentages sur un
-            article à 1 000 € dépassent `MAX_SAFE_INTEGER`, donc le calcul devient
-            faux exactement sur les articles chers.
+              - **l'audience prime sur la portée produit.** « La plus spécifique sur les
+                deux axes » ne suffisait pas : une règle *produit / tous* et une règle
+                *globale / ce client* ne se dominent pas. Sans ordre entre les axes, le
+                gagnant dépendait du tri SQL. Une règle qui vise CE client gagne — sinon
+                une promotion générale écraserait un engagement négocié ;
+              - **le calcul traverse la chaîne en `bigint`.** « Arrondir une seule fois »
+                oblige à porter un rationnel ; en `number`, trois pourcentages sur un
+                article à 1 000 € dépassent `MAX_SAFE_INTEGER`, donc le calcul devient
+                faux exactement sur les articles chers.
 
-- [ ] **S2 — la persistance.** Table + contrainte d'exclusion + port de lecture.
-      Branchement dans `OrderDrafting.resolveLines`, qui est **déjà** le point
-      unique où le prix d'une ligne se décide, et qui agrège déjà les quantités
-      par SKU (donc le palier de volume est résolvable sans rien déplacer).
+- [x] **S2 — la persistance.** ✅ 2026-08-17 — table `price_rules`, contrainte
+      d'exclusion GiST, port de lecture, branchement dans
+      `OrderDrafting.resolveLines`. 10 tests e2e sur un vrai Postgres.
+
+      Trois choses apprises en branchant :
+
+          - **`valid_from/to` sont en `timestamptz`.** Sur des `timestamp` sans
+            fuseau, `tstzrange()` dépend du réglage de session, n'est donc pas
+            `IMMUTABLE`, et Postgres **refuse** la contrainte d'exclusion. Le type
+            juste était aussi le seul possible ;
+          - **`coalesce` dans la contrainte n'est pas cosmétique.** NULL n'entre
+            jamais en conflit avec NULL : sans lui, deux règles globales / tous
+            clients aux fenêtres superposées passaient — le cas le plus courant ;
+          - **zéro est un prix canonique valide.** `resolvePrice` le refusait par
+            réflexe de rigueur ; ça cassait le chemin existant d'une commande sans
+            rien à encaisser. Seul le négatif est refusé.
+
 - [ ] **S3 — Réglages → Tarifs.** Saisie des règles, avec
       `lfd-price-alteration-field` (sens **non** verrouillé cette fois).
 - [ ] **S4 — la trace.** Figée sur la ligne, affichée au panier et sur la fiche
