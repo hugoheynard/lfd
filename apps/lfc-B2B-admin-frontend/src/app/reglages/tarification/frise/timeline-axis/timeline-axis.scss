@@ -1,0 +1,104 @@
+.axis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-1, 0.25rem);
+}
+
+.ruler {
+  position: relative;
+  height: 1.1rem;
+}
+
+.tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+  white-space: nowrap;
+}
+
+.track {
+  position: relative;
+  min-height: 4rem;
+  padding: var(--fold-space-2, 0.5rem) 0;
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 4%));
+  // Le curseur dit ce que la piste attend : on vise, on ne clique pas au hasard.
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+}
+
+// La bande entre deux marqueurs : la période qu'on est en train de tracer.
+.zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--fold-color-accent-soft, rgb(0 0 0 / 8%));
+  pointer-events: none;
+}
+
+// Aujourd'hui. Un axe sans « maintenant » se lit mal.
+.today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--fold-color-border);
+  pointer-events: none;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.row {
+  position: relative;
+  height: 1.2rem;
+}
+
+.bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--fold-color-accent, currentcolor);
+  opacity: 0.7;
+  overflow: hidden;
+}
+
+.bar-label {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-accent-contrast, #fff);
+  white-space: nowrap;
+}
+
+// Le marqueur est PHYSIQUE : une tige et une tête, qu'on voit se poser.
+.marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--fold-color-text);
+  pointer-events: none;
+}
+
+.marker-head {
+  position: absolute;
+  top: -0.35rem;
+  left: 50%;
+  width: 0.7rem;
+  height: 0.7rem;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 2px;
+  background: var(--fold-color-text);
+}

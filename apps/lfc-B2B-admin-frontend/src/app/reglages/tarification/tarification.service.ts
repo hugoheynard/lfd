@@ -28,9 +28,16 @@ import { B2B_API_BASE } from '../../api/api-config';
 export class TarificationService {
   private readonly http = inject(HttpClient);
 
-  /** Le tableau complet — familles, articles, règles, limites, prix résolus. */
-  read(): Promise<PricingBoardView> {
-    return firstValueFrom(this.http.get<PricingBoardView>(`${B2B_API_BASE}/admin/pricing`));
+  /**
+   * Le tableau complet — familles, articles, règles, limites, prix résolus.
+   *
+   * `at` le rend **tel qu'il était** : les décisions en vigueur ce jour-là, avec
+   * les règles archivées depuis. Pas le prix facturé — le tarif de liste n'est
+   * pas historisé, et l'écran l'écrit.
+   */
+  read(at?: string): Promise<PricingBoardView> {
+    const query = at === undefined ? '' : `?at=${encodeURIComponent(at)}`;
+    return firstValueFrom(this.http.get<PricingBoardView>(`${B2B_API_BASE}/admin/pricing${query}`));
   }
 
   /**

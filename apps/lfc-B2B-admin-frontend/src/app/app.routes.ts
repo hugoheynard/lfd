@@ -151,6 +151,15 @@ export const routes: Routes = [
           ),
       },
       {
+        // La frise vit à côté de la grille, pas dedans : deux façons de lire le
+        // même prix — l'une pour décider aujourd'hui, l'autre pour comprendre ce
+        // qui s'est passé. Une route propre les rend partageables par lien.
+        path: 'tarification/frise',
+        title: 'Frise tarifaire — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/tarification/frise/frise-page').then((m) => m.FrisePage),
+      },
+      {
         path: 'facturation',
         title: 'Facturation — LFC B2B admin',
         loadComponent: () =>

@@ -8,6 +8,7 @@ import type {
   PricingCategoryView,
   PricingItemView,
 } from '@lfd/contracts';
+import { RouterLink } from '@angular/router';
 import { formatEuros } from '@lfd/catalog-ui';
 
 import { roomEuros, roomPercent, ruleSentence } from './pricing-format';
@@ -77,6 +78,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'app-reglages-tarification-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldEmptyStateComponent,
