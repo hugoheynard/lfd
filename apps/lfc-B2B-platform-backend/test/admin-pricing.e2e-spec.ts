@@ -518,6 +518,38 @@ describe("suspendre, reprendre, archiver", () => {
   });
 
   /**
+   * **Le barème compose, et la frise le dit.** Il a quitté `price_rules` pour sa
+   * table ; sans ce raccordement, la frise se lirait « rien d'autre ne joue »
+   * alors que le client paie promotion × palier.
+   */
+  it("pose le barème sur la frise, et annonce le cumul aux deux bouts", async () => {
+    await postRule({
+      stage: "promotion",
+      label: "Promo catalogue",
+      effect: { nature: "alter", direction: "decrease", mode: "percent", value: 2_000 },
+      validFrom: "2026-08-01T00:00:00.000Z",
+      validTo: "2026-08-30T00:00:00.000Z",
+    });
+    await putLadder(
+      [
+        { minQuantity: 50, value: 1_000 },
+        { minQuantity: 100, value: 2_000 },
+      ],
+      { scope: { type: "category", id: FAMILY } },
+    );
+
+    const view = await board();
+    const family = view.categories.find((category) => category.id === FAMILY);
+    const [overlap] = family?.overlaps ?? [];
+
+    expect(family?.ladders).toHaveLength(1);
+    expect(overlap?.kind).toBe("compose");
+    // −20 % puis −10 % au premier palier ; −20 % puis −20 % au dernier.
+    expect(overlap?.composedBp).toBe(2_800);
+    expect(overlap?.composedTopBp).toBe(3_600);
+  });
+
+  /**
    * **Le croisement qui arrive vraiment.** Deux règles de même étage et de même
    * portée ne peuvent pas se recouvrir — la contrainte d'exclusion l'interdit.
    * Mais une promotion de FAMILLE recouvre en permanence une promotion de

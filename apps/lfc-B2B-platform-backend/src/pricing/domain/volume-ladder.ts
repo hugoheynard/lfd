@@ -96,9 +96,19 @@ export function tierFor(ladder: VolumeLadder, quantity: number): VolumeTier | nu
  */
 export function ladderAsRule(ladder: VolumeLadder, context: PricingContext): PriceRule | null {
   const tier = tierFor(ladder, context.quantity);
-  if (tier === null) {
-    return null;
-  }
+  return tier === null ? null : ladderAtTier(ladder, tier);
+}
+
+/**
+ * **L'échelle vue à un palier donné**, sans passer par une quantité.
+ *
+ * Extrait de {@link ladderAsRule} pour la **frise** des recouvrements : elle ne
+ * résout aucune commande, donc elle n'a pas de quantité à présenter — mais elle
+ * doit dire ce que le barème compose avec une promotion, et cela dépend du
+ * palier. Elle demande donc les deux bouts de l'échelle plutôt que d'en inventer
+ * un.
+ */
+export function ladderAtTier(ladder: VolumeLadder, tier: VolumeTier): PriceRule {
   return {
     id: ladder.id,
     stage: "volume",

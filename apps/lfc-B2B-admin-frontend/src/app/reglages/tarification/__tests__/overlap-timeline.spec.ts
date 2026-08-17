@@ -1,9 +1,9 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
-import type { PriceOverlapView, PriceRuleView } from '@lfd/contracts';
+import type { PriceOverlapView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { OverlapTimeline } from '../overlap-timeline/overlap-timeline';
+import { OverlapTimeline, type TimelineBand } from '../overlap-timeline/overlap-timeline';
 import {
   barOf,
   composedLabel,
@@ -22,25 +22,13 @@ import {
 
 const iso = (day: string): string => `2026-08-${day}T00:00:00.000Z`;
 
-function rule(id: string, from: string, to: string | null): PriceRuleView {
+function rule(id: string, from: string, to: string | null): TimelineBand {
   return {
     id,
-    stage: 'promotion',
-    scope: { type: 'global', id: null },
-    audience: { type: 'all', id: null },
-    minQuantity: null,
-    effect: { nature: 'alter', direction: 'decrease', mode: 'percent', value: 1_000 },
     label: `Promo ${id}`,
+    summary: `Promotion ${id}`,
     validFrom: iso(from),
     validTo: to === null ? null : iso(to),
-    createdBy: 'staff',
-    createdAt: iso('01'),
-    status: 'active',
-    pausedAt: null,
-    pausedBy: null,
-    archivedAt: null,
-    archivedBy: null,
-    archiveReason: null,
   };
 }
 
@@ -52,18 +40,19 @@ function overlap(over: Partial<PriceOverlapView> = {}): PriceOverlapView {
     evictedRuleIds: [],
     kind: 'compose',
     composedBp: 2_800,
+    composedTopBp: 2_800,
     ...over,
   };
 }
 
 function mount(
-  rules: readonly PriceRuleView[],
+  bands: readonly TimelineBand[],
   overlaps: readonly PriceOverlapView[],
 ): ComponentFixture<OverlapTimeline> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({});
   const fixture = TestBed.createComponent(OverlapTimeline);
-  fixture.componentRef.setInput('rules', rules);
+  fixture.componentRef.setInput('bands', bands);
   fixture.componentRef.setInput('overlaps', overlaps);
   fixture.detectChanges();
   return fixture;
@@ -124,7 +113,18 @@ describe('ce que la frise annonce', () => {
 
   /** Un montant ne se cumule pas en fraction sans connaître l'article. */
   it("ne dit rien quand le cumul ne s'exprime pas en pourcentage", () => {
-    expect(composedLabel(overlap({ composedBp: null }))).toBeNull();
+    expect(composedLabel(overlap({ composedBp: null, composedTopBp: null }))).toBeNull();
+  });
+
+  /**
+   * **Un barème n'a pas un cumul, il en a autant que de paliers.** Un chiffre
+   * unique serait faux pour toutes les quantités sauf une : la frise annonce donc
+   * les deux bouts de l'échelle.
+   */
+  it('annonce une fourchette quand un barème compose', () => {
+    expect(composedLabel(overlap({ composedBp: 2_800, composedTopBp: 3_600 }))).toBe(
+      'de −28,0 % à −36,0 %',
+    );
   });
 
   it('dit la période, et laisse une fin ouverte ouverte', () => {

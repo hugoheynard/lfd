@@ -124,7 +124,7 @@
                Une promotion famille, elle, recouvre en permanence la promotion
                catalogue — et l'évince. Le tableau montrait déjà la barrée ; il ne
                disait pas à partir de quand. -->
-          <app-overlap-timeline [rules]="lineageOf(category)" [overlaps]="category.overlaps" />
+          <app-overlap-timeline [bands]="lineageOf(category)" [overlaps]="category.overlaps" />
 
           <div class="grid">
             @for (item of category.items; track item.sku; let row = $index) {

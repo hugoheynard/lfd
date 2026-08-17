@@ -8,6 +8,7 @@ import {
   type PricingBoardView,
   type PricingCategoryView,
   type PricingItemView,
+  type PricingLadderBandView,
   type NegotiationRoom,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
@@ -15,7 +16,8 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { BoardElasticityService } from "../application/board-elasticity.service.js";
 import { ProductCatalogReader } from "../../orders/domain/ports/product-catalog.reader.js";
-import { overlapSegments, type OverlapSegment } from "../domain/rule-overlaps.js";
+import { lineageSegments } from "../domain/lineage-overlaps.js";
+import { type OverlapSegment } from "../domain/rule-overlaps.js";
 import { referenceCanonicalFor } from "../application/floor-reference.js";
 import { volumeTierPrices } from "../application/volume-tier-prices.js";
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
@@ -133,10 +135,21 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     const actingGlobalRules = rules
       .filter((entry) => entry.rule.scope.type === "global" && entry.rule.suspendedFrom === null)
       .map((entry) => entry.rule);
+    const globalLadders = ladders.filter((ladder) => ladder.scope.type === "global");
 
     const board: PricingBoardView = {
       categories: CATALOG_CATEGORY_ORDER.map((category) =>
-        this.categoryView(category, rules, floors, ladders, actingGlobalRules, at),
+        this.categoryView(
+          category,
+          rules,
+          floors,
+          ladders,
+          {
+            rules: actingGlobalRules,
+            ladders: globalLadders,
+          },
+          at,
+        ),
       ).filter((view) => view.items.length > 0),
       globalFloor: floors.find((entry) => entry.floor.scope.type === "global")?.view ?? null,
       globalRules: rules
@@ -159,13 +172,19 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     rules: readonly LoadedRule[],
     floors: readonly LoadedFloor[],
     ladders: readonly VolumeLadder[],
-    actingGlobalRules: readonly PriceRule[],
+    catalogue: { rules: readonly PriceRule[]; ladders: readonly VolumeLadder[] },
     at: Date,
   ): PricingCategoryView {
     const articles = this.catalog.all().filter((item) => item.category === category);
     const ownRules = rules.filter((entry) =>
       scopeTargets(entry.rule.scope.type, entry.rule.scope.id, category),
     );
+    // La lignée, barèmes compris : un barème compose avec toute promotion en
+    // cours, et la frise se lirait « rien d'autre ne joue » sans lui.
+    const lineageLadders = [
+      ...catalogue.ladders,
+      ...ladders.filter((ladder) => scopeTargets(ladder.scope.type, ladder.scope.id, category)),
+    ];
     return {
       id: category,
       name: CATALOG_CATEGORY_LABELS[category],
@@ -180,10 +199,16 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       // recouvrement arrive, puisque deux règles de même étage et même portée ne
       // peuvent pas se recouvrir. Les suspendues sont écartées — une règle qui
       // n'agit plus n'évince personne. (Les archivées ne sont même pas lues.)
-      overlaps: overlapSegments([
-        ...actingGlobalRules,
-        ...ownRules.filter((entry) => entry.rule.suspendedFrom === null).map((entry) => entry.rule),
-      ]).map(overlapView),
+      overlaps: lineageSegments(
+        [
+          ...catalogue.rules,
+          ...ownRules
+            .filter((entry) => entry.rule.suspendedFrom === null)
+            .map((entry) => entry.rule),
+        ],
+        lineageLadders,
+      ).map(overlapView),
+      ladders: lineageLadders.filter((ladder) => ladder.suspendedFrom === null).map(ladderBandView),
       items: articles.map((item) =>
         itemView(
           { sku: item.sku, name: item.name, canonicalCents: item.unitPriceCents },
@@ -330,6 +355,17 @@ function negotiationRoom(finalCents: number, floorCents: number | null): Negotia
   };
 }
 
+/** Barème de domaine → barre datée. La frise ne montre pas les paliers, elle montre une période. */
+function ladderBandView(ladder: VolumeLadder): PricingLadderBandView {
+  return {
+    id: ladder.id,
+    label: ladder.label,
+    validFrom: ladder.validFrom.toISOString(),
+    validTo: ladder.validTo?.toISOString() ?? null,
+    tierCount: ladder.tiers.length,
+  };
+}
+
 /** Segment de domaine → vue de fil. Les dates traversent en ISO, comme partout. */
 function overlapView(segment: OverlapSegment): PriceOverlapView {
   return {
@@ -337,6 +373,7 @@ function overlapView(segment: OverlapSegment): PriceOverlapView {
     to: segment.to?.toISOString() ?? null,
     ruleIds: segment.ruleIds,
     evictedRuleIds: segment.evictedIds,
+    composedTopBp: segment.composedTopBp,
     kind: segment.kind,
     composedBp: segment.composedBp,
   };

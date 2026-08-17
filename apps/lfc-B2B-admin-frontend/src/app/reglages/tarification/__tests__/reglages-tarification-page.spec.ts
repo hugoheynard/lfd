@@ -112,6 +112,7 @@ function category(overrides: Partial<PricingCategoryView> = {}): PricingCategory
     floor: null,
     rules: [],
     overlaps: [],
+    ladders: [],
     items: [item()],
     ...overrides,
   };

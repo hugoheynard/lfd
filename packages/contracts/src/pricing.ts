@@ -612,8 +612,37 @@ export interface PriceOverlapView {
    *
    * `null` dès qu'une gagnante n'est pas une altération en pourcentage : un
    * montant ne se cumule pas en fraction sans connaître l'article.
+   *
+   * Quand un **barème** entre dans la tranche, c'est le cumul à son **premier
+   * palier** — le plus faible. Cf. {@link composedTopBp}.
    */
   readonly composedBp: number | null;
+  /**
+   * Le même cumul, au palier le plus **haut** du barème en jeu.
+   *
+   * Égal à {@link composedBp} tant qu'aucun barème ne compose : un cumul de
+   * règles ne dépend pas de la quantité. Dès qu'un barème compose, il en dépend —
+   * et l'écran annonce une fourchette, parce qu'un chiffre unique serait faux
+   * pour toutes les quantités sauf une.
+   */
+  readonly composedTopBp: number | null;
+}
+
+/**
+ * Un **barème posé sur la frise** — juste de quoi tracer une barre datée.
+ *
+ * Volontairement plus maigre que {@link VolumeLadderView} : la frise ne montre
+ * pas les paliers, elle montre une période. Les prix palier par palier vivent
+ * dans la colonne du prix, où ils sont **résolus** article par article — donc
+ * exacts, ce qu'une frise ne peut pas être.
+ */
+export interface PricingLadderBandView {
+  readonly id: string;
+  readonly label: string;
+  readonly validFrom: string;
+  readonly validTo: string | null;
+  /** Pour dire « 3 paliers » sans les transporter tous. */
+  readonly tierCount: number;
 }
 
 /** Une famille et ses articles — la bande horizontale de l'écran. */
@@ -634,6 +663,12 @@ export interface PricingCategoryView {
    * frise du seul catalogue n'avait presque rien à montrer.
    */
   readonly overlaps: readonly PriceOverlapView[];
+  /**
+   * Les **barèmes** de la lignée — catalogue puis famille —, posés sur le même
+   * axe que les règles. Sans eux, la frise se lirait « rien d'autre ne joue »
+   * alors qu'un barème compose avec toute promotion en cours.
+   */
+  readonly ladders: readonly PricingLadderBandView[];
   readonly items: readonly PricingItemView[];
 }
 

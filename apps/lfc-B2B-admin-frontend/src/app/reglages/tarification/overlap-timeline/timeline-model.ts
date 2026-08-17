@@ -1,4 +1,4 @@
-import type { PriceOverlapView, PriceRuleView } from '@lfd/contracts';
+import type { PriceOverlapView } from '@lfd/contracts';
 
 /**
  * **La mise à l'échelle d'une frise de dates.**
@@ -38,12 +38,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * le même instant : une frise sans durée n'a pas d'échelle, et diviser par zéro
  * donnerait des barres de largeur infinie.
  */
-export function timelineWindow(rules: readonly PriceRuleView[]): TimelineWindow | null {
-  if (rules.length === 0) {
+export function timelineWindow(
+  bands: readonly { readonly validFrom: string; readonly validTo: string | null }[],
+): TimelineWindow | null {
+  if (bands.length === 0) {
     return null;
   }
-  const starts = rules.map((rule) => Date.parse(rule.validFrom));
-  const ends = rules.map((rule) => (rule.validTo === null ? Number.NaN : Date.parse(rule.validTo)));
+  const starts = bands.map((band) => Date.parse(band.validFrom));
+  const ends = bands.map((band) => (band.validTo === null ? Number.NaN : Date.parse(band.validTo)));
   const from = Math.min(...starts);
   const closed = ends.filter((end) => !Number.isNaN(end));
   const hasOpenEnd = closed.length < ends.length;
@@ -68,15 +70,30 @@ function clamp(time: number, window: TimelineWindow): number {
   return Math.min(Math.max(time, window.from), window.to);
 }
 
-/** Le cumul en clair — « −28 % » — ou `null` quand il ne s'exprime pas en fraction. */
+/**
+ * Le cumul en clair — « −28 % », ou « de −10 % à −28 % » quand un **barème**
+ * compose : l'effet dépend alors du palier atteint, et un chiffre unique serait
+ * faux pour toutes les quantités sauf une.
+ *
+ * `null` quand le cumul ne s'exprime pas en fraction.
+ */
 export function composedLabel(overlap: PriceOverlapView): string | null {
-  if (overlap.composedBp === null) {
+  const low = percentLabel(overlap.composedBp);
+  const high = percentLabel(overlap.composedTopBp);
+  if (low === null) {
     return null;
   }
-  const percent = Math.abs(overlap.composedBp / 100)
+  return high === null || high === low ? low : `de ${low} à ${high}`;
+}
+
+function percentLabel(bp: number | null): string | null {
+  if (bp === null) {
+    return null;
+  }
+  const percent = Math.abs(bp / 100)
     .toFixed(1)
     .replace('.', ',');
-  return `${overlap.composedBp < 0 ? '+' : '−'}${percent} %`;
+  return `${bp < 0 ? '+' : '−'}${percent} %`;
 }
 
 /** La période d'un recouvrement, en clair. Une fin ouverte se dit, elle ne s'invente pas. */

@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { PriceOverlapView, PriceRuleView } from '@lfd/contracts';
+import type { PriceOverlapView } from '@lfd/contracts';
 
-import { ruleSentence } from '../pricing-format';
 import {
   barOf,
   composedLabel,
@@ -10,7 +9,23 @@ import {
   type TimelineBar,
 } from './timeline-model';
 
-/** Une règle, prête à être posée sur l'axe. */
+/**
+ * **Une barre à poser sur l'axe** — une règle, ou un barème.
+ *
+ * La frise ne connaît ni l'un ni l'autre : elle place des périodes nommées. Les
+ * deux familles ont des formes très différentes (l'une porte un effet, l'autre
+ * une échelle de paliers) et rien de tout cela ne sert à tracer une barre.
+ */
+export interface TimelineBand {
+  readonly id: string;
+  readonly label: string;
+  /** Ce que le survol dit — une phrase déjà écrite par l'appelant. */
+  readonly summary: string;
+  readonly validFrom: string;
+  readonly validTo: string | null;
+}
+
+/** Une bande, une fois placée. */
 interface TimelineRow {
   readonly id: string;
   readonly label: string;
@@ -56,10 +71,10 @@ interface TimelineOverlap {
   styleUrl: './overlap-timeline.scss',
 })
 export class OverlapTimeline {
-  readonly rules = input.required<readonly PriceRuleView[]>();
+  readonly bands = input.required<readonly TimelineBand[]>();
   readonly overlaps = input.required<readonly PriceOverlapView[]>();
 
-  private readonly window = computed(() => timelineWindow(this.rules()));
+  private readonly window = computed(() => timelineWindow(this.bands()));
 
   /**
    * Visible **dès deux règles**, même sans recouvrement.
@@ -68,7 +83,7 @@ export class OverlapTimeline {
    * frise absente la laisse entière — on ne sait pas si rien ne se croise, ou si
    * l'écran ne le dit pas.
    */
-  protected readonly visible = computed(() => this.window() !== null && this.rules().length > 1);
+  protected readonly visible = computed(() => this.window() !== null && this.bands().length > 1);
 
   protected readonly rows = computed<readonly TimelineRow[]>(() => {
     const window = this.window();
@@ -76,15 +91,15 @@ export class OverlapTimeline {
       return [];
     }
     const overlapped = new Set(this.overlaps().flatMap((overlap) => overlap.ruleIds));
-    return this.rules().map((rule) => ({
-      id: rule.id,
-      label: rule.label,
-      summary: ruleSentence(rule),
-      bar: barOf(window, rule.validFrom, rule.validTo),
+    return this.bands().map((band) => ({
+      id: band.id,
+      label: band.label,
+      summary: band.summary,
+      bar: barOf(window, band.validFrom, band.validTo),
       evictions: this.overlaps()
-        .filter((overlap) => overlap.evictedRuleIds.includes(rule.id))
+        .filter((overlap) => overlap.evictedRuleIds.includes(band.id))
         .map((overlap) => barOf(window, overlap.from, overlap.to)),
-      overlapped: overlapped.has(rule.id),
+      overlapped: overlapped.has(band.id),
     }));
   });
 

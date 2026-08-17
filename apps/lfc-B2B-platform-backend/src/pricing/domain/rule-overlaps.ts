@@ -60,6 +60,15 @@ export interface OverlapSegment {
    * serait inventer une réponse à une question mal posée.
    */
   readonly composedBp: number | null;
+  /**
+   * Le même cumul, mais **au palier le plus haut** du barème en jeu.
+   *
+   * Égal à {@link composedBp} tant qu'aucun barème n'entre dans la tranche — un
+   * cumul de règles ne dépend pas de la quantité. Dès qu'un barème compose, il en
+   * dépend : l'écran annonce alors une fourchette plutôt qu'un chiffre unique,
+   * qui serait faux pour toutes les quantités sauf une.
+   */
+  readonly composedTopBp: number | null;
 }
 
 /**
@@ -130,6 +139,9 @@ function segmentOf(from: Date, to: Date | null, active: readonly PriceRule[]): O
     evictedIds: active.filter((rule) => !winnerIds.has(rule.id)).map((rule) => rule.id),
     kind: winners.length > 1 ? "compose" : "supersede",
     composedBp: composedBp(winners),
+    // Sans barème, le cumul ne dépend pas de la quantité : les deux bouts de la
+    // fourchette sont le même chiffre, et l'écran n'en affiche qu'un.
+    composedTopBp: composedBp(winners),
   };
 }
 

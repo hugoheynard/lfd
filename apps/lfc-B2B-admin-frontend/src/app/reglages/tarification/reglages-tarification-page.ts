@@ -24,7 +24,7 @@ import { FinalPrice } from './final-price/final-price';
 import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
 import { GridSkeleton } from './grid-skeleton/grid-skeleton';
 import { LadderPanel, type LadderPanelData } from './ladder-panel/ladder-panel';
-import { OverlapTimeline } from './overlap-timeline/overlap-timeline';
+import { OverlapTimeline, type TimelineBand } from './overlap-timeline/overlap-timeline';
 import { RuleChip } from './rule-chip/rule-chip';
 import { TarificationSummaryBar } from './summary-bar/summary-bar';
 import { VolumeEffort } from './volume-effort/volume-effort';
@@ -189,14 +189,30 @@ export class ReglagesTarificationPage {
   protected readonly globalRules = computed(() => this.board()?.globalRules ?? []);
 
   /**
-   * **La lignée d'une famille** : les règles du catalogue, puis les siennes.
+   * **La lignée d'une famille**, prête pour la frise : les règles du catalogue,
+   * les siennes, et les **barèmes** des deux niveaux.
    *
-   * Les deux jeux sur un seul axe, parce que c'est entre eux que le recouvrement
-   * arrive. Le serveur a déjà dit qui évince qui sur chaque tranche ; la frise
-   * n'a plus qu'à placer les barres.
+   * Tout sur un seul axe, parce que c'est entre eux que le recouvrement arrive.
+   * Le serveur a déjà dit qui évince qui et ce que le cumul vaut ; la frise n'a
+   * plus qu'à placer les barres — d'où des **bandes** plutôt que des règles :
+   * une règle et un barème n'ont en commun que d'occuper une période.
    */
-  protected lineageOf(category: PricingCategoryView): readonly PriceRuleView[] {
-    return [...this.globalRules(), ...category.rules];
+  protected lineageOf(category: PricingCategoryView): readonly TimelineBand[] {
+    const rules = [...this.globalRules(), ...category.rules].map((rule) => ({
+      id: rule.id,
+      label: rule.label,
+      summary: ruleSentence(rule),
+      validFrom: rule.validFrom,
+      validTo: rule.validTo,
+    }));
+    const ladders = category.ladders.map((ladder) => ({
+      id: ladder.id,
+      label: ladder.label,
+      summary: `Barème de volume · ${ladder.tierCount} palier${ladder.tierCount > 1 ? 's' : ''}`,
+      validFrom: ladder.validFrom,
+      validTo: ladder.validTo,
+    }));
+    return [...rules, ...ladders];
   }
 
   /**
