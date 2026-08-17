@@ -36,6 +36,7 @@ import {
   NO_DELIVERY_DEFAULTS,
 } from "../../../domain/ports/delivery-defaults.reader.js";
 import { PriceFloorReader } from "../../../../pricing/domain/ports/price-floor.reader.js";
+import { VolumeLadderReader } from "../../../../pricing/domain/ports/volume-ladder.reader.js";
 import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.reader.js";
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
@@ -73,6 +74,12 @@ const noPriceFloors: PriceFloorReader = {
  * pas parce que ces suites mesurent quoi que ce soit.
  */
 const noSkuVolumes: SkuVolumeReader = { volumesFor: () => Promise.resolve(new Map()) };
+
+/** Aucun barème de volume : ces cas mesurent autre chose. */
+const noVolumeLadders: VolumeLadderReader = {
+  candidatesFor: () => Promise.resolve([]),
+  listAll: () => Promise.resolve([]),
+};
 
 const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": { sku: "VIE-001", name: "Croissant", unitPriceCents: 200, vatRate: 0 },
@@ -176,6 +183,7 @@ function drafting(
     noPriceRules,
     noPriceFloors,
     noSkuVolumes,
+    noVolumeLadders,
     pickupsDouble,
     zonesDouble,
     noDeliveryDefaults(),

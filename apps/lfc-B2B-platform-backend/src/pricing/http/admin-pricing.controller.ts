@@ -1,10 +1,22 @@
 import {
   createPriceRulePayloadSchema,
   pricingReasonPayloadSchema,
+  setVolumeLadderPayloadSchema,
   type CreatePriceRulePayload,
   type PricingReasonPayload,
+  type SetVolumeLadderPayload,
 } from "@lfd/contracts";
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+} from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
@@ -15,6 +27,7 @@ import {
   CreatePriceRuleCommand,
   PausePriceRuleCommand,
   ResumePriceRuleCommand,
+  SetVolumeLadderCommand,
 } from "../application/commands/pricing.commands.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
 import type { PriceRuleView, PriceScopePayload, PricingBoardView } from "@lfd/contracts";
@@ -60,6 +73,37 @@ export class AdminPricingController {
   @Get("rules/archived")
   archivedRules(): Promise<PriceRuleView[]> {
     return this.board.archivedRules();
+  }
+
+  /**
+   * **Poser un barème de volume** — l'échelle entière, d'un coup.
+   *
+   * `PUT` et non `POST` sur des paliers : les paliers d'une cible forment UNE
+   * décision, et se remplacent ensemble. Poser palier par palier laisserait,
+   * entre deux appels, un barème qui régresse — exactement ce que l'échelle
+   * existe pour rendre impossible.
+   */
+  @Put("volume-ladders")
+  @HttpCode(HttpStatus.CREATED)
+  async setVolumeLadder(
+    @Body(new ZodBody(setVolumeLadderPayloadSchema)) payload: SetVolumeLadderPayload,
+    @StaffSub() staffSub: string,
+  ): Promise<{ id: string }> {
+    const id = await this.commands.execute<SetVolumeLadderCommand, string>(
+      new SetVolumeLadderCommand(
+        {
+          scope: { type: payload.scope.type, id: payload.scope.id },
+          audience: { type: payload.audience.type, id: payload.audience.id },
+          unit: payload.unit,
+          tiers: payload.tiers,
+          label: payload.label,
+          validFrom: new Date(payload.validFrom),
+          validTo: payload.validTo === null ? null : new Date(payload.validTo),
+        },
+        staffSub,
+      ),
+    );
+    return { id };
   }
 
   /** Rend l'identifiant posé : l'écran en a besoin pour cibler ses gestes. */

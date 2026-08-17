@@ -1971,6 +1971,65 @@ model PriceFloor {
   @@schema("public")
 }
 
+/// **Le barème de volume** — une échelle, pas N règles.
+///
+/// « 50+ à −10 % » et « 100+ à −5 % » sont deux règles parfaitement valides
+/// prises séparément, et forment ensemble un barème que personne n'a voulu : un
+/// client qui passe de 90 à 100 pièces y verrait sa remise fondre. Réunis en
+/// échelle, les paliers deviennent UNE décision, et l'agrégat peut refuser ce
+/// qu'aucune règle isolée ne pouvait voir.
+model VolumeLadder {
+  /// ULID opaque : deux barèmes SUCCESSIFS sur la même cible coexistent (celui
+  /// d'aujourd'hui, celui de septembre), donc l'identifiant ne peut pas dériver
+  /// de la cible. C'est la contrainte d'exclusion qui garantit l'unicité — pas
+  /// dans l'absolu, mais À UN INSTANT DONNÉ.
+  id String @id
+
+  scopeType String  @map("scope_type")
+  scopeId   String? @map("scope_id")
+
+  audienceType String  @map("audience_type")
+  audienceId   String? @map("audience_id")
+
+  /// `percent` | `amount` — l'unité de TOUTE l'échelle. Un seul champ pour tous
+  /// les paliers : le mélange devient impossible, pas interdit. C'est ce qui rend
+  /// la progression vérifiable, deux points de base se comparant sans connaître
+  /// l'article.
+  unit String
+
+  /// Les paliers, triés par quantité croissante : `[{ minQuantity, value }]`.
+  ///
+  /// En JSON et non dans une table fille, délibérément : une échelle s'écrit
+  /// **entière** ou pas du tout. Une table fille permettrait d'insérer un palier
+  /// sans les autres — exactement ce que cet agrégat existe pour empêcher.
+  tiers Json
+
+  /// Ce que la trace affichera au client et au service client.
+  label String
+
+  /// Borne basse **incluse**, borne haute **exclue** — la convention de tout le
+  /// modèle. `Timestamptz` pour la même raison que sur les règles : sans fuseau,
+  /// `tstzrange()` dépend du réglage de session, donc n'est pas IMMUTABLE, donc
+  /// ne peut pas entrer dans la contrainte d'exclusion.
+  validFrom DateTime  @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(3)
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Même cycle de vie qu'une règle : suspendre garde la cible, archiver la rend.
+  pausedAt      DateTime? @map("paused_at") @db.Timestamptz(3)
+  pausedBy      String?   @map("paused_by")
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
+  @@index([archivedAt])
+  @@map("volume_ladders")
+  @@schema("public")
+}
+
 /// **Le journal des actes tarifaires** — append-only.
 ///
 /// Sur un prix négocié, la question posée six mois plus tard n'est jamais

@@ -36,18 +36,17 @@ export interface VolumeTier {
 export type VolumeLadderUnit = "percent" | "amount";
 
 /**
- * Une échelle posée sur une portée et une audience.
+ * Une échelle posée sur une portée, une audience et une **fenêtre**.
  *
- * **Pas de fenêtre**, à la différence d'une règle : un barème de volume est une
- * grille debout, pas une opération datée. Deux barèmes datés qui se recouvrent
- * poseraient exactement l'ambiguïté que la frise des chevauchements sert à
- * rendre visible — et sur un barème, elle serait invisible au client comme au
- * staff. On l'édite (ce qui est une nouvelle décision, journalisée) ou on
- * l'archive.
+ * Datée comme une règle, pour la raison évidente : on prépare le barème de
+ * septembre au mois d'août, sans toucher à celui qui tourne.
  *
- * Ce que ça coûte, et c'est assumé : on ne programme pas le barème de
- * septembre au mois d'août. Le jour où ce manque se fait sentir, il se comblera
- * par une échelle **datée**, sans rien défaire ici.
+ * Mais **deux barèmes ne se recouvrent jamais sur la même cible** — ce serait
+ * l'ambiguïté que la frise des chevauchements sert à rendre visible, et sur un
+ * barème elle serait invisible au client comme au staff. La garantie est en base
+ * (contrainte d'exclusion GiST), donc elle tient même contre deux écritures
+ * concurrentes ; l'agrégat ne peut pas la porter seul, ne voyant qu'une échelle
+ * à la fois.
  */
 export interface VolumeLadder {
   readonly id: string;
@@ -58,6 +57,10 @@ export interface VolumeLadder {
   readonly tiers: readonly VolumeTier[];
   /** Ce que la trace affichera au client et au service client. */
   readonly label: string;
+  /** Borne basse **incluse**. */
+  readonly validFrom: Date;
+  /** Borne haute **exclue**. `null` = ouverte. */
+  readonly validTo: Date | null;
   /** L'instant où l'échelle a cessé d'agir. `null` = elle agit. */
   readonly suspendedFrom: Date | null;
 }
@@ -102,11 +105,8 @@ export function ladderAsRule(ladder: VolumeLadder, context: PricingContext): Pri
     scope: ladder.scope,
     audience: ladder.audience,
     minQuantity: tier.minQuantity,
-    // Une échelle n'a pas de fenêtre : elle vaut tant qu'elle n'est pas
-    // suspendue. Une borne basse dans un passé lointain dit exactement ça au
-    // reste du pipeline, sans lui apprendre un cas de plus.
-    validFrom: new Date(0),
-    validTo: null,
+    validFrom: ladder.validFrom,
+    validTo: ladder.validTo,
     suspendedFrom: ladder.suspendedFrom,
     label: ladder.label,
     nature: "alter",

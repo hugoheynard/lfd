@@ -1,6 +1,7 @@
 import type { PriceFloorPolicy } from "../../domain/floor-policy.js";
 import type { PriceScope } from "../../domain/price-rule.js";
 import type { PricingRuleDraft } from "../../domain/entities/pricing-rule.js";
+import type { VolumeLadderDraft } from "../../domain/entities/volume-ladder.js";
 
 /**
  * Une commande par **geste**, nommée comme le geste.
@@ -53,6 +54,19 @@ export class ArchivePriceRuleCommand {
     readonly id: string,
     readonly staffSub: string,
     readonly reason: string | null,
+  ) {}
+}
+
+/**
+ * **Poser un barème de volume** — une échelle, pas N règles.
+ *
+ * Un geste qui remplace l'ancien « ajouter un palier » : les paliers d'une même
+ * cible forment une seule décision, et se saisissent ensemble.
+ */
+export class SetVolumeLadderCommand {
+  constructor(
+    readonly draft: VolumeLadderDraft,
+    readonly staffSub: string,
   ) {}
 }
 

@@ -237,6 +237,10 @@ export const pricingActSchema = z.enum([
 ]);
 export type PricingActKind = z.infer<typeof pricingActSchema>;
 
+/** Ce sur quoi un acte porte : une règle, une limite, ou un barème de volume. */
+export const pricingSubjectSchema = z.enum(["rule", "floor", "ladder"]);
+export type PricingSubjectType = z.infer<typeof pricingSubjectSchema>;
+
 export const PRICING_ACT_LABELS: Readonly<Record<PricingActKind, string>> = {
   posed: "Posée",
   paused: "Suspendue",
@@ -256,7 +260,7 @@ export const PRICING_ACT_LABELS: Readonly<Record<PricingActKind, string>> = {
  */
 export interface PricingJournalEntryView {
   readonly id: string;
-  readonly subjectType: "rule" | "floor";
+  readonly subjectType: PricingSubjectType;
   readonly subjectId: string;
   readonly act: PricingActKind;
   /** Le `sub` du membre du staff, ou `system`. */
@@ -430,6 +434,11 @@ export interface PricingItemView {
   readonly canonicalCents: number;
   /** Le plancher posé **sur cet article**, ou `null`. */
   readonly ownFloor: PriceFloorView | null;
+  /**
+   * Le barème de volume qui vise cet article, et ce qu'il donne palier par
+   * palier. `null` quand aucun ne le vise.
+   */
+  readonly volumeTiers: readonly VolumeTierPriceView[] | null;
   /** Celui qui s'applique réellement — le sien, ou celui dont il hérite. */
   readonly effectiveFloor: PriceFloorView | null;
   /** Les règles qui visent cet article nommément. */
@@ -451,6 +460,86 @@ export interface PricingItemView {
    * `null` si aucune limite n'est posée sur cet article.
    */
   readonly negotiationRoom: NegotiationRoom | null;
+}
+
+// ---------------------------------------------------------------------------
+// Le barème de volume — une échelle, pas N règles
+// ---------------------------------------------------------------------------
+
+/**
+ * **Un palier** : à partir de cette quantité, cette remise.
+ *
+ * Le schéma sert aussi à **relire** les paliers persistés en JSON : ils ont été
+ * écrits par une version du code et se relisent par une autre, des mois plus
+ * tard. Déclaré ici parce que la forme et sa validation doivent vivre au même
+ * endroit — deux fichiers finiraient par décrire deux formes.
+ */
+export const volumeTierSchema = z.object({
+  /** Quantité minimale **sur la commande**. Strictement positive. */
+  minQuantity: z.number().int().positive(),
+  /** La remise : points de base si `percent`, centimes si `amount`. Positive. */
+  value: z.number().int().positive(),
+});
+export type VolumeTierPayload = z.infer<typeof volumeTierSchema>;
+
+export const volumeTiersSchema = z.array(volumeTierSchema);
+
+/**
+ * **Poser un barème de volume.**
+ *
+ * Une seule unité pour toute l'échelle : « 50+ à −5 %, 100+ à −0,20 € » ne se
+ * compare pas sans connaître l'article, donc ne permet pas de vérifier que le
+ * barème progresse. Un champ unique rend le mélange impossible, pas interdit.
+ *
+ * Le serveur refuse en plus ce qu'aucun palier isolé ne peut voir : une échelle
+ * qui régresse (commander plus rapporterait moins), deux paliers à la même
+ * quantité, une échelle vide.
+ */
+export const setVolumeLadderPayloadSchema = z.object({
+  scope: priceScopeSchema,
+  audience: priceAudienceSchema,
+  unit: priceModeSchema,
+  tiers: volumeTiersSchema.min(1),
+  label: z.string().min(1).max(120),
+  /** Borne basse **incluse**. */
+  validFrom: z.string().datetime(),
+  /** Borne haute **exclue**. `null` = ouverte. */
+  validTo: z.string().datetime().nullable(),
+});
+export type SetVolumeLadderPayload = z.infer<typeof setVolumeLadderPayloadSchema>;
+
+/**
+ * Le barème, tel que l'écran le lit.
+ *
+ * `tiers` est **trié par quantité croissante** — le serveur le garantit, donc
+ * l'écran peut l'afficher tel quel et marquer le palier atteint sans retrier.
+ */
+export interface VolumeLadderView {
+  readonly id: string;
+  readonly scope: PriceScopePayload;
+  readonly audience: PriceAudiencePayload;
+  readonly unit: PriceMode;
+  readonly tiers: readonly VolumeTierPayload[];
+  readonly label: string;
+  readonly validFrom: string;
+  readonly validTo: string | null;
+  readonly createdBy: string;
+  readonly status: RuleStatus;
+}
+
+/**
+ * **Ce que le barème donne, palier par palier**, sur UN article.
+ *
+ * C'est la grille que le commercial lit au téléphone — « à combien je lui fais
+ * les 100 ? » — et elle ne peut se calculer qu'ici : il faut le prix canonique
+ * de l'article, et l'arithmétique qui facture.
+ */
+export interface VolumeTierPriceView {
+  readonly minQuantity: number;
+  /** Le prix unitaire à ce palier, tous étages passés. */
+  readonly unitPriceCents: number;
+  /** L'écart au tarif d'entrée, en points de base d'une baisse (`1000` = −10 %). */
+  readonly discountBp: number;
 }
 
 /**

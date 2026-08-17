@@ -9,7 +9,7 @@ import type { JournalEntry } from "../domain/ports/pricing-journal.reader.js";
 /** Au-delà, ce n'est plus une histoire, c'est un fichier de logs. */
 const RECENT_ENTRIES = 50;
 
-const SUBJECT_TYPES = ["rule", "floor"] as const;
+const SUBJECT_TYPES = ["rule", "floor", "ladder"] as const;
 
 /**
  * **Le journal des décisions tarifaires** — qui a posé, qui a arrêté, quand.

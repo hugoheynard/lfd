@@ -8,6 +8,7 @@ import {
   CreatePriceRuleHandler,
   SetPriceFloorHandler,
 } from "./application/commands/pricing.handlers.js";
+import { SetVolumeLadderHandler } from "./application/commands/volume-ladder.handlers.js";
 import {
   ArchivePriceRuleHandler,
   PausePriceRuleHandler,
@@ -18,6 +19,7 @@ import { PricingBoardReader } from "./domain/ports/pricing-board.reader.js";
 import { PricingFloorRepository } from "./domain/ports/pricing-floor.repository.js";
 import { PricingJournalReader } from "./domain/ports/pricing-journal.reader.js";
 import { PricingRuleRepository } from "./domain/ports/pricing-rule.repository.js";
+import { VolumeLadderRepository } from "./domain/ports/volume-ladder.repository.js";
 import { AdminPriceFloorsController } from "./http/admin-price-floors.controller.js";
 import { AdminPricingController } from "./http/admin-pricing.controller.js";
 import { AdminPricingJournalController } from "./http/admin-pricing-journal.controller.js";
@@ -25,6 +27,7 @@ import { PrismaPricingBoardReader } from "./infrastructure/prisma-pricing-board.
 import { PrismaPricingFloorRepository } from "./infrastructure/prisma-pricing-floor.repository.js";
 import { PrismaPricingJournalReader } from "./infrastructure/prisma-pricing-journal.reader.js";
 import { PrismaPricingRuleRepository } from "./infrastructure/prisma-pricing-rule.repository.js";
+import { PrismaVolumeLadderRepository } from "./infrastructure/prisma-volume-ladder.repository.js";
 import { PricingModule } from "./pricing.module.js";
 
 /**
@@ -52,7 +55,9 @@ import { PricingModule } from "./pricing.module.js";
     ConfirmPriceFloorHandler,
     SetPriceFloorHandler,
     ArchivePriceFloorHandler,
+    SetVolumeLadderHandler,
     { provide: PricingRuleRepository, useClass: PrismaPricingRuleRepository },
+    { provide: VolumeLadderRepository, useClass: PrismaVolumeLadderRepository },
     { provide: PricingFloorRepository, useClass: PrismaPricingFloorRepository },
     { provide: PricingBoardReader, useClass: PrismaPricingBoardReader },
     { provide: PricingJournalReader, useClass: PrismaPricingJournalReader },

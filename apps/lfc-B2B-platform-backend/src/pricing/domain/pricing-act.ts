@@ -1,4 +1,5 @@
 import type { PriceFloorPolicy } from "./floor-policy.js";
+import type { VolumeLadder } from "./volume-ladder.js";
 import type { PriceFloor, PriceRule, PriceScopeType, PriceStage } from "./price-rule.js";
 
 /**
@@ -26,7 +27,7 @@ export const PRICING_ACTS = [
 ] as const;
 export type PricingActKind = (typeof PRICING_ACTS)[number];
 
-export type PricingSubjectType = "rule" | "floor";
+export type PricingSubjectType = "rule" | "floor" | "ladder";
 
 export interface PricingAct {
   readonly subjectType: PricingSubjectType;
@@ -87,6 +88,23 @@ export function describeRule(rule: PriceRule): string {
 }
 
 /**
+ * La phrase que le journal gardera d'un barème de volume.
+ *
+ * Les paliers y figurent **tous**, dans l'ordre : c'est l'échelle entière qui a
+ * été décidée, et relire « 50+ à −5 % » sans savoir ce qui suivait ne dirait
+ * rien de ce qu'on avait accordé.
+ */
+export function describeLadder(ladder: VolumeLadder): string {
+  const tiers = ladder.tiers
+    .map(
+      (tier) =>
+        `${String(tier.minQuantity)}+ à −${ladder.unit === "percent" ? `${percent(tier.value)} %` : euros(tier.value)}`,
+    )
+    .join(", ");
+  return `Barème « ${ladder.label} » · ${tiers} · ${describeWindowOf(ladder.validFrom, ladder.validTo)}`;
+}
+
+/**
  * La phrase que le journal gardera d'une limite.
  *
  * Le mur d'abord, la porte ensuite et seulement si elle existe : c'est l'ordre
@@ -134,8 +152,12 @@ function describeTarget(rule: PriceRule): string {
 }
 
 function describeWindow(rule: PriceRule): string {
-  const from = day(rule.validFrom);
-  return rule.validTo === null ? `à partir du ${from}` : `du ${from} au ${day(rule.validTo)}`;
+  return describeWindowOf(rule.validFrom, rule.validTo);
+}
+
+function describeWindowOf(validFrom: Date, validTo: Date | null): string {
+  const from = day(validFrom);
+  return validTo === null ? `à partir du ${from}` : `du ${from} au ${day(validTo)}`;
 }
 
 /**

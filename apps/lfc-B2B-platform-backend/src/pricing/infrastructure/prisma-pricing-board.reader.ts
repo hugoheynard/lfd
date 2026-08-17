@@ -17,6 +17,9 @@ import { BoardElasticityService } from "../application/board-elasticity.service.
 import { ProductCatalogReader } from "../../orders/domain/ports/product-catalog.reader.js";
 import { overlapSegments, type OverlapSegment } from "../domain/rule-overlaps.js";
 import { referenceCanonicalFor } from "../application/floor-reference.js";
+import { volumeTierPrices } from "../application/volume-tier-prices.js";
+import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
+import type { VolumeLadder } from "../domain/volume-ladder.js";
 import { pricingContextFor } from "../application/pricing-context.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
 import { decideFloor } from "../domain/floor-policy.js";
@@ -70,6 +73,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     private readonly prisma: PrismaService,
     private readonly catalog: ProductCatalogReader,
     private readonly elasticity: BoardElasticityService,
+    private readonly ladders: VolumeLadderReader,
   ) {
     super();
   }
@@ -100,12 +104,13 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // à ne plus les voir. Sans cette clause, une règle retirée continuerait
     // d'occuper son nœud — et pire, la colonne des prix résolus dirait la
     // vérité pendant que le nœud d'à côté afficherait une règle qui n'agit plus.
-    const [ruleRows, floorRows] = await Promise.all([
+    const [ruleRows, floorRows, ladders] = await Promise.all([
       this.prisma.priceRule.findMany({
         where: { archivedAt: null },
         orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
       }),
       this.prisma.priceFloor.findMany({ where: { archivedAt: null } }),
+      this.ladders.listAll(),
     ]);
     const rules: LoadedRule[] = ruleRows.map((row) => ({
       rule: ruleFromRow(row),
@@ -131,7 +136,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
 
     const board: PricingBoardView = {
       categories: CATALOG_CATEGORY_ORDER.map((category) =>
-        this.categoryView(category, rules, floors, at),
+        this.categoryView(category, rules, floors, ladders, at),
       ).filter((view) => view.items.length > 0),
       globalFloor: floors.find((entry) => entry.floor.scope.type === "global")?.view ?? null,
       globalRules: rules
@@ -154,6 +159,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     category: CatalogCategory,
     rules: readonly LoadedRule[],
     floors: readonly LoadedFloor[],
+    ladders: readonly VolumeLadder[],
     at: Date,
   ): PricingCategoryView {
     const articles = this.catalog.all().filter((item) => item.category === category);
@@ -175,6 +181,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
           pricingContextFor(item.sku, item.category, 1, { companyId: null }, at),
           rules,
           floors,
+          ladders,
         ),
       ),
     };
@@ -205,6 +212,7 @@ function itemView(
   context: PricingContext,
   rules: readonly LoadedRule[],
   floors: readonly LoadedFloor[],
+  ladders: readonly VolumeLadder[],
 ): PricingItemView {
   const winner = resolveScopedFloor(
     floors.map((entry) => entry.floor),
@@ -232,6 +240,16 @@ function itemView(
     name: article.name,
     canonicalCents: article.canonicalCents,
     ownFloor: floors.find((entry) => targetsArticle(entry.floor.scope, article.sku))?.view ?? null,
+    // La grille du barème : chaque ligne est une RÉSOLUTION COMPLÈTE à la
+    // quantité du palier — un prix « canonique × (1 − remise) » mentirait dès
+    // qu'une promotion compose avec le palier, ou qu'un plancher le relève.
+    volumeTiers: volumeTierPrices(
+      article.canonicalCents,
+      ladders,
+      rules.map((entry) => entry.rule),
+      context,
+      decision?.applied ?? null,
+    ),
     effectiveFloor: floors.find((entry) => entry.floor.id === winner?.id)?.view ?? null,
     rules: rules
       .filter((entry) => targetsArticle(entry.rule.scope, article.sku))

@@ -35,10 +35,12 @@ import { decideFloor } from "../../../pricing/domain/floor-policy.js";
 import { observedRatioBp } from "../../../pricing/domain/elasticity.js";
 import { rollingWindows } from "../../../pricing/domain/elasticity-windows.js";
 import { SkuVolumeReader } from "../../../pricing/domain/ports/sku-volume.reader.js";
+import { VolumeLadderReader } from "../../../pricing/domain/ports/volume-ladder.reader.js";
+import { ladderAsRule } from "../../../pricing/domain/volume-ladder.js";
 import { floorCentsFor, resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
 import { resolvePrice } from "../../../pricing/domain/resolve-price.js";
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
-import type { ScopedPriceFloor } from "../../../pricing/domain/price-rule.js";
+import type { PriceRule, ScopedPriceFloor } from "../../../pricing/domain/price-rule.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 
 /** Ce qu'un panier demande, quelle que soit la porte par laquelle il arrive. */
@@ -101,6 +103,7 @@ export class OrderDrafting {
     private readonly priceRules: PriceRuleReader,
     private readonly priceFloors: PriceFloorReader,
     private readonly skuVolumes: SkuVolumeReader,
+    private readonly volumeLadders: VolumeLadderReader,
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
     private readonly deliveryDefaults: DeliveryDefaultsReader,
@@ -243,10 +246,19 @@ export class OrderDrafting {
           throw new UnknownSkuError(sku);
         }
         const context = pricingContextFor(item.sku, item.category, quantity, parties, at);
-        const [rules, floors] = await Promise.all([
+        const [rules, floors, ladders] = await Promise.all([
           this.priceRules.candidatesFor(context),
           this.priceFloors.candidatesFor(context),
+          this.volumeLadders.candidatesFor(context),
         ]);
+
+        // Le barème de volume rejoint les règles sous la forme de la règle
+        // d'étage volume qu'il est à CETTE quantité. La spécificité arbitre
+        // ensuite comme d'habitude — un barème de produit l'emporte sur celui de
+        // sa famille, sans que la résolution apprenne un cas de plus.
+        const volumeRules = ladders
+          .map((ladder) => ladderAsRule(ladder, context))
+          .filter((rule): rule is PriceRule => rule !== null);
 
         // Quel plancher VISE cet article, puis lequel de ses étages s'ouvre :
         // deux questions distinctes, la seconde dépendant de la commande et de
@@ -262,7 +274,7 @@ export class OrderDrafting {
 
         const resolved = resolvePrice(
           item.unitPriceCents,
-          rules,
+          [...rules, ...volumeRules],
           context,
           decision?.applied ?? null,
         );

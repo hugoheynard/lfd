@@ -4,6 +4,7 @@ import {
   EmptyVolumeLadderError,
   InvalidAlterationError,
   RegressiveVolumeLadderError,
+  ReversedValidityWindowError,
 } from "../pricing-errors.js";
 import { ladderAsRule, tierFor } from "../volume-ladder.js";
 import type { PricingContext } from "../price-rule.js";
@@ -28,12 +29,17 @@ function draft(
     unit: "percent",
     tiers,
     label: "Barème viennoiserie",
+    validFrom: new Date("2026-08-01T00:00:00.000Z"),
+    validTo: null,
     ...over,
   };
 }
 
-const pose = (tiers: readonly VolumeTier[], over: Partial<VolumeLadderDraft> = {}) =>
-  VolumeLadderAggregate.pose(draft(tiers, over), "auth0|cecile");
+const pose = (
+  tiers: readonly VolumeTier[],
+  over: Partial<VolumeLadderDraft> = {},
+  id = "ladder_1",
+) => VolumeLadderAggregate.pose(id, draft(tiers, over), "auth0|cecile");
 
 function context(quantity: number): PricingContext {
   return {
@@ -102,18 +108,22 @@ describe("poser un barème", () => {
     expect(() => pose([])).toThrow(EmptyVolumeLadderError);
   });
 
-  /**
-   * L'identifiant dérive de la cible : « un seul barème par produit » devient
-   * structurel, pas surveillé.
-   */
-  it("dérive son identifiant de la portée ET de l'audience", () => {
-    const forAll = pose([{ minQuantity: 50, value: 500 }]);
-    const forOne = pose([{ minQuantity: 50, value: 500 }], {
-      audience: { type: "company", id: "cmp_dupont" },
-    });
+  it("refuse une fenêtre qui se ferme avant de s'ouvrir", () => {
+    expect(() =>
+      pose([{ minQuantity: 50, value: 500 }], {
+        validFrom: new Date("2026-08-10T00:00:00.000Z"),
+        validTo: new Date("2026-08-01T00:00:00.000Z"),
+      }),
+    ).toThrow(ReversedValidityWindowError);
+  });
 
-    expect(forAll.id).not.toBe(forOne.id);
-    expect(pose([{ minQuantity: 80, value: 900 }]).id).toBe(forAll.id);
+  /**
+   * « Un seul barème actif par cible » ne vit PAS dans l'agrégat : il ne voit
+   * qu'une échelle à la fois, et deux écritures concurrentes lui échapperaient.
+   * C'est une contrainte d'exclusion GiST qui le tient — l'e2e le prouve.
+   */
+  it("porte l'identifiant qu'on lui donne, sans le dériver de la cible", () => {
+    expect(pose([{ minQuantity: 50, value: 500 }], {}, "ladder_x").id).toBe("ladder_x");
   });
 });
 
@@ -147,6 +157,13 @@ describe("l'échelle vue comme une règle", () => {
    * C'est la pièce qui évite de toucher au pipeline : la résolution ne connaît
    * que des règles, et la spécificité continue d'arbitrer entre elles.
    */
+  it("porte la fenêtre de l'échelle — c'est elle qui date le barème", () => {
+    const rule = ladderAsRule(ladder, context(120));
+
+    expect(rule?.validFrom).toEqual(new Date("2026-08-01T00:00:00.000Z"));
+    expect(rule?.validTo).toBeNull();
+  });
+
   it("rend une règle de l'étage volume, portant le palier atteint", () => {
     const rule = ladderAsRule(ladder, context(120));
 

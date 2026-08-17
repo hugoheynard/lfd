@@ -428,3 +428,39 @@ export class RegressiveVolumeLadderError extends DomainError {
     );
   }
 }
+
+/**
+ * Un barème **recouvre** un autre sur la même cible.
+ *
+ * Deux barèmes actifs sur le même produit rendraient le prix dépendant de
+ * l'ordre de tri, donc du hasard — la même faute que deux règles également
+ * spécifiques, et le même refus. La différence est qu'ici l'ambiguïté serait
+ * INVISIBLE : un barème ne se lit pas en frise, il se lit en grille.
+ *
+ * C'est la contrainte d'exclusion qui parle. Sa réponse est traduite plutôt
+ * qu'avalée : le staff doit savoir lequel des deux il est en train de doubler.
+ */
+export class OverlappingVolumeLadderError extends BusinessError {
+  constructor(cause?: unknown) {
+    super(
+      "pricing.ladder.overlaps",
+      "Un barème de volume est déjà en vigueur sur cette cible pendant cette période. Fermez-le ou décalez sa fin avant d'en poser un autre.",
+      cause,
+    );
+  }
+}
+
+/**
+ * Une ligne de `volume_ladders` que le domaine ne sait pas lire.
+ *
+ * Même raisonnement que pour une règle illisible : un barème ignoré facturerait
+ * un prix que personne n'a décidé, et sans trace.
+ */
+export class CorruptedVolumeLadderError extends TechnicalError {
+  constructor(
+    readonly ladderId: string,
+    readonly reason: string,
+  ) {
+    super("pricing.ladder.corrupted", `Barème « ${ladderId} » illisible : ${reason}.`);
+  }
+}

@@ -1,5 +1,6 @@
 import {
   AmbiguousVolumeTierError,
+  ReversedValidityWindowError,
   EmptyVolumeLadderError,
   InvalidAlterationError,
   RegressiveVolumeLadderError,
@@ -17,6 +18,10 @@ export interface VolumeLadderDraft {
   readonly unit: VolumeLadderUnit;
   readonly tiers: readonly VolumeTier[];
   readonly label: string;
+  /** Borne basse **incluse**. */
+  readonly validFrom: Date;
+  /** Borne haute **exclue**. `null` = ouverte. */
+  readonly validTo: Date | null;
 }
 
 export interface VolumeLadderState extends VolumeLadderDraft {
@@ -40,9 +45,10 @@ export interface VolumeLadderState extends VolumeLadderDraft {
  * - **des quantités distinctes et positives** : à quantité égale, le gagnant
  *   dépendrait de l'ordre de saisie, donc du hasard.
  *
- * L'identifiant **dérive de la cible** (portée + audience) : « un seul barème
- * par produit », que tu demandais, devient structurel plutôt que surveillé — deux
- * échelles sur la même cible ne peuvent pas même porter deux noms différents.
+ * « Un seul barème actif par cible » ne vit PAS ici : l'agrégat ne voit qu'une
+ * échelle à la fois, et deux écritures concurrentes lui échapperaient. C'est une
+ * contrainte d'exclusion GiST qui le tient — l'unicité n'est pas absolue, elle
+ * vaut à un instant donné, puisqu'un barème est daté.
  */
 export class VolumeLadderAggregate {
   private constructor(private readonly state: VolumeLadderState) {}
@@ -53,10 +59,15 @@ export class VolumeLadderAggregate {
    * @throws {AmbiguousVolumeTierError} deux paliers à la même quantité, ou quantité nulle.
    * @throws {RegressiveVolumeLadderError} palier plus haut, remise plus faible.
    * @throws {InvalidAlterationError} remise nulle ou négative.
+   * @throws {ReversedValidityWindowError} fenêtre qui se ferme avant de s'ouvrir.
    */
-  static pose(draft: VolumeLadderDraft, createdBy: string): VolumeLadderAggregate {
+  static pose(id: string, draft: VolumeLadderDraft, createdBy: string): VolumeLadderAggregate {
     assertScopedId("portée", draft.scope.type === "global", draft.scope.id);
     assertScopedId("audience", draft.audience.type === "all", draft.audience.id);
+
+    if (draft.validTo !== null && draft.validTo.getTime() <= draft.validFrom.getTime()) {
+      throw new ReversedValidityWindowError(draft.validFrom, draft.validTo);
+    }
 
     if (draft.tiers.length === 0) {
       throw new EmptyVolumeLadderError();
@@ -67,13 +78,7 @@ export class VolumeLadderAggregate {
     const tiers = [...draft.tiers].sort((left, right) => left.minQuantity - right.minQuantity);
     assertProgressive(tiers);
 
-    return new VolumeLadderAggregate({
-      ...draft,
-      tiers,
-      id: ladderIdFor(draft.scope, draft.audience),
-      createdBy,
-      lifecycle: IN_FORCE,
-    });
+    return new VolumeLadderAggregate({ ...draft, tiers, id, createdBy, lifecycle: IN_FORCE });
   }
 
   /** Reconstruit sans revérifier : ce qui est en base y est déjà passé. */
@@ -102,6 +107,8 @@ export class VolumeLadderAggregate {
       unit: this.state.unit,
       tiers: this.state.tiers,
       label: this.state.label,
+      validFrom: this.state.validFrom,
+      validTo: this.state.validTo,
       suspendedFrom: suspendedFromOf(this.state.lifecycle),
     };
   }
@@ -109,17 +116,6 @@ export class VolumeLadderAggregate {
   toPersistence(): VolumeLadderState {
     return this.state;
   }
-}
-
-/**
- * L'identifiant **dérivé de la cible**.
- *
- * Même raison que pour un plancher : « un seul barème par produit » devient
- * structurel, donc re-poser est un remplacement — sans lecture préalable, et
- * sans course entre deux écritures concurrentes.
- */
-export function ladderIdFor(scope: PriceScope, audience: PriceAudience): string {
-  return `${scope.type}:${scope.id ?? ""}|${audience.type}:${audience.id ?? ""}`;
 }
 
 /** `id` est renseigné **si et seulement si** la portée n'est pas la plus large. */
