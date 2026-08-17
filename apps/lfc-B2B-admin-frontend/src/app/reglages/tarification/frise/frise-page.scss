@@ -1,7 +1,45 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-5, 1.25rem);
+}
+
+// La frise est un OUTIL : elle vit dans une carte posée, pas dans le flux de la
+// page. Le geste qu'on y fait mérite une surface qui le contient.
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2, 0.5rem);
+  padding: var(--fold-space-4, 1rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg, 0.75rem);
+  background: var(--fold-color-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+// Le résultat d'une lecture : une carte à part, pour qu'on voie qu'il RÉPOND à
+// ce qui a été posé au-dessus.
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3, 0.75rem);
+  padding: var(--fold-space-4, 1rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg, 0.75rem);
+  background: var(--fold-color-surface);
+}
+
+.result-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.result-title {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
 }
 
 .head {
@@ -20,8 +58,9 @@
 
 .title {
   margin: 0;
-  font-size: var(--fold-text-lg, 1.125rem);
-  font-weight: 600;
+  font-size: var(--fold-text-xl, 1.25rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
 .hint,
@@ -72,7 +111,8 @@
 
 // Un tableau large défile dans son cadre : la page ne part JAMAIS de côté.
 .table-scroll {
-  overflow-x: auto;
+  max-height: 32rem;
+  overflow: auto;
 }
 
 .table {
@@ -83,10 +123,23 @@
 
 .table th,
 .table td {
-  padding: 0.4rem 0.6rem;
+  padding: 0.55rem 0.7rem;
   border-bottom: 1px solid var(--fold-color-border);
   text-align: left;
   vertical-align: top;
+}
+
+// Une ligne sur deux, à peine teintée : quatre-vingt-dix lignes se suivent sans
+// que l'œil saute d'une colonne à l'autre.
+.table tbody tr:nth-child(even) {
+  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 2%));
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--fold-color-surface);
+  border-bottom-width: 2px;
 }
 
 .table thead th {
@@ -147,8 +200,17 @@
   color: var(--fold-color-text-muted);
 }
 
+// L'écart est le chiffre qu'on vient chercher : il se porte en PASTILLE, et non
+// dans la même graisse que le reste de la ligne.
 .delta {
-  font-weight: 600;
+  font-weight: 650;
+}
+
+.delta > span {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 4%));
 }
 
 .delta.is-down {

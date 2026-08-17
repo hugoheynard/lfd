@@ -1,45 +1,81 @@
 <section class="axis" aria-label="Frise des décisions tarifaires">
-  <!-- Les graduations : des repères connus — « sept. 26 » — et non des
-       intervalles réguliers dont personne ne sait ce qu'ils valent. -->
+  <!-- Les mois en bandes alternées : l'œil situe une barre sans suivre un trait
+       jusqu'à la graduation. Un repère connu vaut mieux qu'une règle graduée. -->
   <div class="ruler" aria-hidden="true">
     @for (tick of ticks(); track tick.at) {
       <span class="tick" [style.left.%]="tick.percent">{{ tick.label }}</span>
     }
   </div>
 
-  <!--
-    La piste entière écoute le pointeur : un clic pose un marqueur, un clic
-    maintenu puis glissé ouvre une zone. Les barres restent dessous pendant le
-    geste — c'est tout l'intérêt de viser ICI plutôt que dans deux champs.
-  -->
   <div
     class="track"
     role="application"
     aria-label="Poser un marqueur, ou glisser pour ouvrir une période"
+    [style.--lanes]="laneCount()"
     (pointerdown)="onPointerDown($event)"
     (pointermove)="onPointerMove($event)"
     (pointerup)="onPointerUp($event)"
   >
+    <div class="weeks" aria-hidden="true">
+      @for (week of weeks(); track week.at) {
+        <span class="week" [style.left.%]="week.percent">
+          <span class="week-day">{{ week.label }}</span>
+        </span>
+      }
+    </div>
+
+    <div class="months" aria-hidden="true">
+      @for (month of monthBands(); track month.at) {
+        <span
+          class="month"
+          [class.is-shaded]="month.shaded"
+          [style.left.%]="month.left"
+          [style.width.%]="month.width"
+        ></span>
+      }
+    </div>
+
     @if (zone(); as band) {
-      <span class="zone" [style.left.%]="band.left" [style.width.%]="band.width"></span>
+      <span class="zone" [style.left.%]="band.left" [style.width.%]="band.width">
+        @if (zoneDays(); as days) {
+          <span class="zone-days">{{ days }} j</span>
+        }
+      </span>
     }
 
-    <span class="today" [style.left.%]="todayPercent()" aria-hidden="true"></span>
+    <span class="today" [style.left.%]="todayPercent()" aria-hidden="true">
+      <span class="today-label">aujourd'hui</span>
+    </span>
 
-    <ul class="rows">
-      @for (row of rows(); track row.id) {
-        <li class="row">
-          <span class="bar" [style.left.%]="row.left" [style.width.%]="row.width">
-            <span class="bar-label">{{ row.label }}</span>
-          </span>
-        </li>
+    <!-- Les barres sont RANGÉES : deux décisions qui ne se croisent pas partagent
+         leur ligne, donc seules celles qui se recouvrent vraiment s'empilent. -->
+    <div class="bars">
+      @for (bar of placed(); track bar.id) {
+        <span
+          class="bar"
+          [class.is-open]="bar.open"
+          [style.left.%]="bar.left"
+          [style.width.%]="bar.width"
+          [style.top.rem]="bar.lane * 1.6"
+          [title]="bar.label"
+        >
+          <span class="bar-label">{{ bar.label }}</span>
+        </span>
       }
-    </ul>
+    </div>
 
     @for (marker of markers(); track $index) {
       <span class="marker" [style.left.%]="marker" aria-hidden="true">
         <span class="marker-head"></span>
       </span>
+    }
+  </div>
+
+  <!-- La date SOUS le doigt : sans elle, il faut descendre lire le champ pour
+       savoir ce qu'on vient de viser. -->
+  <div class="labels" aria-hidden="true">
+    @for (label of labels(); track $index) {
+      <span class="label" [style.left.%]="label.percent">{{ label.day }}</span>
     }
   </div>
 </section>

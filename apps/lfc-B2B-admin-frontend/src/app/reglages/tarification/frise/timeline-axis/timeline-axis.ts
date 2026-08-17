@@ -4,8 +4,10 @@ import {
   axisSpan,
   instantAt,
   monthTicks,
+  packLanes,
   percentOf,
   snapToDay,
+  weekTicks,
   type AxisSpan,
 } from '../axis-model';
 
@@ -75,20 +77,63 @@ export class TimelineAxis {
   protected readonly span = computed<AxisSpan>(() => axisSpan(this.bands(), this.now));
   protected readonly ticks = computed(() => monthTicks(this.span()));
 
+  /**
+   * Les lundis, en traits fins. Le mois situe, la semaine permet de **viser** :
+   * « vers le 20 » se pointe à trois jours près sur une bande de trente.
+   *
+   * Effacés dès que l'axe s'étale : au-delà d'une soixantaine de semaines, les
+   * traits se touchent et deviennent une trame — un bruit, plus un repère.
+   */
+  protected readonly weeks = computed(() => {
+    const ticks = weekTicks(this.span());
+    return ticks.length > 60 ? [] : ticks;
+  });
+
+  /**
+   * Les mois en **bandes**, une sur deux teintée.
+   *
+   * L'œil situe alors une barre sans suivre un trait jusqu'à la graduation : un
+   * repère connu — « c'est dans septembre » — vaut mieux qu'une règle graduée
+   * qu'il faut lire.
+   */
+  protected readonly monthBands = computed(() => {
+    const ticks = this.ticks();
+    return ticks.map((tick, index) => ({
+      at: tick.at,
+      left: tick.percent,
+      width: (ticks[index + 1]?.percent ?? 100) - tick.percent,
+      shaded: index % 2 === 1,
+    }));
+  });
+
   /** Aujourd'hui, marqué d'un trait : un axe sans « maintenant » se lit mal. */
   protected readonly todayPercent = computed(() => percentOf(this.span(), this.now));
 
-  protected readonly rows = computed(() =>
-    this.bands().map((band) => ({
-      id: band.id,
-      label: band.label,
-      left: percentOf(this.span(), Date.parse(band.validFrom)),
-      width: Math.max(
-        1.5,
-        percentOf(this.span(), band.validTo === null ? this.span().to : Date.parse(band.validTo)) -
-          percentOf(this.span(), Date.parse(band.validFrom)),
-      ),
-    })),
+  /**
+   * Les barres, **rangées en voies** : deux décisions qui ne se croisent pas
+   * partagent leur ligne. Une ligne par décision donnait une frise haute comme un
+   * immeuble, où l'œil perdait l'axe avant d'avoir fini de descendre.
+   */
+  protected readonly placed = computed(() => {
+    const span = this.span();
+    return packLanes(this.bands(), span).map(({ band, lane }) => {
+      const left = percentOf(span, Date.parse(band.validFrom));
+      const right = percentOf(span, band.validTo === null ? span.to : Date.parse(band.validTo));
+      return {
+        id: band.id,
+        label: band.label,
+        lane,
+        left,
+        width: Math.max(1.5, right - left),
+        /** Une fin ouverte ne se ferme pas : la barre s'estompe au lieu de s'arrêter net. */
+        open: band.validTo === null,
+      };
+    });
+  });
+
+  /** La hauteur de la piste suit le nombre de voies, jamais le nombre de barres. */
+  protected readonly laneCount = computed(() =>
+    Math.max(1, ...this.placed().map((bar) => bar.lane + 1)),
   );
 
   /**
@@ -104,6 +149,29 @@ export class TimelineAxis {
       return Math.abs(cursor - anchor) < DRAG_THRESHOLD_PERCENT ? [anchor] : [anchor, cursor];
     }
     return this.selectionPercents();
+  });
+
+  /**
+   * **La date sous le doigt.** Un marqueur sans sa date oblige à descendre lire
+   * le champ pour savoir ce qu'on vient de viser — soit exactement le
+   * va-et-vient que poser le marqueur ici devait supprimer.
+   */
+  protected readonly labels = computed(() =>
+    this.markers().map((percent) => ({
+      percent,
+      day: frenchDay(instantAt(this.span(), percent)),
+    })),
+  );
+
+  /** Combien de jours la zone couvre — la question qui suit toujours « du…au ». */
+  protected readonly zoneDays = computed(() => {
+    const [first, second] = [...this.markers()].sort((left, right) => left - right);
+    if (first === undefined || second === undefined) {
+      return null;
+    }
+    const span = this.span();
+    const days = Math.round((instantAt(span, second) - instantAt(span, first)) / 86_400_000);
+    return days <= 0 ? null : days;
   });
 
   /** La bande grisée entre deux marqueurs — elle n'existe qu'à deux. */
@@ -178,4 +246,9 @@ export class TimelineAxis {
     }
     return ((event.clientX - track.left) / track.width) * 100;
   }
+}
+
+/** « 12 sept. » — la forme courte, celle qu'on lit sans s'arrêter. */
+function frenchDay(at: number): string {
+  return new Date(at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }

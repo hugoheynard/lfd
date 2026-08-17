@@ -5,8 +5,10 @@ import {
   dayStart,
   instantAt,
   monthTicks,
+  packLanes,
   percentOf,
   snapToDay,
+  weekTicks,
 } from '../frise/axis-model';
 
 /**
@@ -87,5 +89,77 @@ describe('les graduations', () => {
     });
 
     expect(ticks.map((tick) => tick.label)).toEqual(['août 26', 'sept. 26', 'oct. 26']);
+  });
+});
+
+describe('les semaines', () => {
+  const span = {
+    from: Date.parse('2026-08-01T00:00:00.000Z'),
+    to: Date.parse('2026-08-31T00:00:00.000Z'),
+  };
+
+  /** Le mois SITUE, la semaine permet de VISER : « vers le 20 » se pointe. */
+  it('pose un trait par lundi, et rien entre', () => {
+    const ticks = weekTicks(span);
+
+    // Août 2026 : les lundis sont les 3, 10, 17, 24 et 31.
+    expect(ticks.map((tick) => tick.label)).toEqual(['3', '10', '17', '24', '31']);
+  });
+
+  it('reste dans les bornes de l’axe', () => {
+    for (const tick of weekTicks(span)) {
+      expect(tick.percent).toBeGreaterThanOrEqual(0);
+      expect(tick.percent).toBeLessThanOrEqual(100);
+    }
+  });
+});
+
+describe('le rangement en voies', () => {
+  const span = {
+    from: Date.parse('2026-08-01T00:00:00.000Z'),
+    to: Date.parse('2026-12-31T00:00:00.000Z'),
+  };
+  const band = (validFrom: string, validTo: string | null) => ({ validFrom, validTo });
+
+  /**
+   * Une ligne par décision donnait une frise haute comme un immeuble. Rangées,
+   * celles qui se succèdent partagent leur ligne.
+   */
+  it('met deux périodes qui se succèdent sur la MÊME voie', () => {
+    const lanes = packLanes(
+      [
+        band('2026-08-01T00:00:00.000Z', '2026-08-20T00:00:00.000Z'),
+        band('2026-09-01T00:00:00.000Z', '2026-09-20T00:00:00.000Z'),
+      ],
+      span,
+    );
+
+    expect(lanes.map((entry) => entry.lane)).toEqual([0, 0]);
+  });
+
+  /** Celles qui se recouvrent VRAIMENT s'empilent — ce sont les seules. */
+  it('empile deux périodes qui se recouvrent', () => {
+    const lanes = packLanes(
+      [
+        band('2026-08-01T00:00:00.000Z', '2026-09-30T00:00:00.000Z'),
+        band('2026-08-15T00:00:00.000Z', '2026-09-15T00:00:00.000Z'),
+      ],
+      span,
+    );
+
+    expect(lanes.map((entry) => entry.lane)).toEqual([0, 1]);
+  });
+
+  /** Une fin ouverte occupe sa voie jusqu'au bout de l'axe. */
+  it('garde sa voie pour une décision sans terme', () => {
+    const lanes = packLanes(
+      [
+        band('2026-08-01T00:00:00.000Z', null),
+        band('2026-10-01T00:00:00.000Z', '2026-10-10T00:00:00.000Z'),
+      ],
+      span,
+    );
+
+    expect(lanes.map((entry) => entry.lane)).toEqual([0, 1]);
   });
 });

@@ -31,137 +31,178 @@
     </fold-empty-state>
   }
   @case ('ready') {
-    <app-timeline-axis
-      [bands]="bands()"
-      [selection]="selection()"
-      (selected)="onSelected($event)"
-    />
+    <!-- La frise est un OUTIL : elle vit dans une surface qui contient le geste,
+         pas dans le flux de la page. -->
+    <section class="stage">
+      <app-timeline-axis
+        [bands]="bands()"
+        [selection]="selection()"
+        (selected)="onSelected($event)"
+      />
 
-    <!-- Le clavier n'est pas un second choix : ces deux champs pilotent la même
-         sélection que l'axe, et servent aussi à viser une date au jour près. -->
-    <div class="markers">
-      <div class="marker">
-        <label class="marker-label" for="frise-from">Marqueur</label>
-        <input
-          id="frise-from"
-          class="marker-field"
-          type="date"
-          [value]="dayOf('from')"
-          (change)="setDay('from', $any($event.target).value)"
-        />
+      <!-- Le clavier n'est pas un second choix : ces deux champs pilotent la même
+           sélection que l'axe, et servent aussi à viser une date au jour près. -->
+      <div class="markers">
+        <div class="marker">
+          <label class="marker-label" for="frise-from">Marqueur</label>
+          <input
+            id="frise-from"
+            class="marker-field"
+            type="date"
+            [value]="dayOf('from')"
+            (change)="setDay('from', $any($event.target).value)"
+          />
+        </div>
+        <div class="marker">
+          <label class="marker-label" for="frise-to">Second marqueur</label>
+          <input
+            id="frise-to"
+            class="marker-field"
+            type="date"
+            [value]="dayOf('to')"
+            (change)="setDay('to', $any($event.target).value)"
+          />
+        </div>
+        @if (reading()) {
+          <span class="reading">Lecture…</span>
+        } @else if (selection() === null) {
+          <span class="reading">Cliquez sur l'axe, ou glissez pour comparer deux dates.</span>
+        }
       </div>
-      <div class="marker">
-        <label class="marker-label" for="frise-to">Second marqueur</label>
-        <input
-          id="frise-to"
-          class="marker-field"
-          type="date"
-          [value]="dayOf('to')"
-          (change)="setDay('to', $any($event.target).value)"
-        />
-      </div>
-      @if (reading()) {
-        <span class="reading">Lecture…</span>
-      }
-    </div>
-
-    @if (selection() === null) {
-      <p class="empty">Aucun marqueur posé. Cliquez sur l'axe pour voir le catalogue à une date.</p>
-    }
+    </section>
 
     <!-- UN marqueur : le catalogue à cet instant, paliers compris. -->
     @if (rows().length > 0) {
-      <div class="table-scroll">
-        <table class="table">
-          <caption class="sr-only">
-            Le catalogue au marqueur posé
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Article</th>
-              <th scope="col" class="num">Prix</th>
-              <th scope="col">Paliers de volume</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of rows(); track row.sku) {
-              <tr>
-                <th scope="row" class="item">
-                  <span class="item-name">{{ row.name }}</span>
-                  <span class="item-meta">{{ row.categoryName }}</span>
-                </th>
-                <td class="num strong">{{ euros(row.finalCents) }}</td>
-                <td>
-                  @if (row.tiers.length === 0) {
-                    <span class="muted">—</span>
-                  } @else {
-                    <ul class="tiers">
-                      @for (tier of row.tiers; track tier.minQuantity) {
-                        <li class="tier">
-                          <span class="tier-qty">{{ tier.minQuantity }}+</span>
-                          <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
-                        </li>
-                      }
-                    </ul>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
+      <section class="result">
+        <header class="result-head">
+          <h2 class="result-title">Le catalogue au marqueur</h2>
+          <span class="hint">{{ rows().length }} articles</span>
+        </header>
 
-    <!-- DEUX marqueurs : les deux catalogues, et au milieu ce qui a bougé. -->
-    @if (comparison(); as compared) {
-      <p class="summary">
-        <strong>{{ compared.changedCount }}</strong> article(s) ont changé de prix sur
-        <strong>{{ compared.days }}</strong> jour(s). Le volume est comparé aux
-        {{ compared.days }} jours précédents.
-      </p>
-
-      @if (moved().length === 0) {
-        <p class="empty">Aucun prix n'a bougé entre ces deux marqueurs.</p>
-      } @else {
         <div class="table-scroll">
           <table class="table">
             <caption class="sr-only">
-              Ce qui a bougé entre les deux marqueurs
+              Le catalogue au marqueur posé
             </caption>
             <thead>
               <tr>
                 <th scope="col">Article</th>
-                <th scope="col" class="num">Prix &amp; paliers au 1<sup>er</sup></th>
-                <th scope="col" class="num">Écart</th>
-                <th scope="col" class="num">Prix &amp; paliers au 2<sup>e</sup></th>
-                <th scope="col" class="num">Volume</th>
-                <th scope="col" class="num">Écart volume</th>
+                <th scope="col" class="num">Prix</th>
+                <th scope="col">Paliers de volume</th>
               </tr>
             </thead>
             <tbody>
-              @for (item of moved(); track item.sku) {
+              @for (row of rows(); track row.sku) {
                 <tr>
                   <th scope="row" class="item">
-                    <span class="item-name">{{ item.name }}</span>
-                    <span class="item-meta">{{ item.categoryName }}</span>
+                    <span class="item-name">{{ row.name }}</span>
+                    <span class="item-meta">{{ row.categoryName }}</span>
                   </th>
-                  <td class="num">{{ euros(item.fromCents) }}</td>
-                  <td class="num delta" [class]="'is-' + direction(item.priceVariationBp)">
-                    {{ percent(item.priceVariationBp) }}
-                  </td>
-                  <td class="num strong">{{ euros(item.toCents) }}</td>
-                  <td class="num">
-                    {{ item.volume }} <span class="muted">/ {{ item.previousVolume }}</span>
-                  </td>
-                  <td class="num delta" [class]="'is-' + direction(item.volumeVariationBp)">
-                    {{ percent(item.volumeVariationBp) }}
+                  <td class="num strong">{{ euros(row.finalCents) }}</td>
+                  <td>
+                    @if (row.tiers.length === 0) {
+                      <span class="muted">—</span>
+                    } @else {
+                      <ul class="tiers">
+                        @for (tier of row.tiers; track tier.minQuantity) {
+                          <li class="tier">
+                            <span class="tier-qty">{{ tier.minQuantity }}+</span>
+                            <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
+                          </li>
+                        }
+                      </ul>
+                    }
                   </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
-      }
+      </section>
+    }
+
+    <!-- DEUX marqueurs : les deux catalogues, et au milieu ce qui a bougé. -->
+    @if (comparison(); as compared) {
+      <section class="result">
+        <header class="result-head">
+          <h2 class="result-title">Ce qui a bougé</h2>
+          <span class="hint">
+            <strong>{{ compared.changedCount }}</strong> article(s) sur
+            <strong>{{ compared.days }}</strong> jour(s) — volume comparé aux
+            {{ compared.days }} jours précédents.
+          </span>
+        </header>
+
+        @if (moved().length === 0) {
+          <p class="empty">Aucun prix n'a bougé entre ces deux marqueurs.</p>
+        } @else {
+          <div class="table-scroll">
+            <table class="table">
+              <caption class="sr-only">
+                Ce qui a bougé entre les deux marqueurs
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Article</th>
+                  <th scope="col" class="num">Prix &amp; paliers au 1<sup>er</sup></th>
+                  <th scope="col" class="num">Écart</th>
+                  <th scope="col" class="num">Prix &amp; paliers au 2<sup>e</sup></th>
+                  <th scope="col" class="num">Volume</th>
+                  <th scope="col" class="num">Écart volume</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of moved(); track item.sku) {
+                  <tr>
+                    <th scope="row" class="item">
+                      <span class="item-name">{{ item.name }}</span>
+                      <span class="item-meta">{{ item.categoryName }}</span>
+                    </th>
+                    <td class="num side">
+                      {{ euros(item.fromCents) }}
+                      <!-- Les paliers du PREMIER marqueur : un barème naît et meurt
+                           comme le reste, et ne montrer que ceux d'aujourd'hui ferait
+                           lire une baisse sans voir le barème disparu avec. -->
+                      @if (item.fromTiers; as tiers) {
+                        <ul class="tiers">
+                          @for (tier of tiers; track tier.minQuantity) {
+                            <li class="tier">
+                              <span class="tier-qty">{{ tier.minQuantity }}+</span>
+                              <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </td>
+                    <td class="num delta" [class]="'is-' + direction(item.priceVariationBp)">
+                      <span>{{ percent(item.priceVariationBp) }}</span>
+                    </td>
+                    <td class="num side strong">
+                      {{ euros(item.toCents) }}
+                      @if (item.toTiers; as tiers) {
+                        <ul class="tiers">
+                          @for (tier of tiers; track tier.minQuantity) {
+                            <li class="tier">
+                              <span class="tier-qty">{{ tier.minQuantity }}+</span>
+                              <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </td>
+                    <td class="num">
+                      {{ item.volume }} <span class="muted">/ {{ item.previousVolume }}</span>
+                    </td>
+                    <td class="num delta" [class]="'is-' + direction(item.volumeVariationBp)">
+                      <span>{{ percent(item.volumeVariationBp) }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
     }
   }
 }

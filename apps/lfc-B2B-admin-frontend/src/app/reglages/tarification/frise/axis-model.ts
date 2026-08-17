@@ -104,3 +104,72 @@ export function monthTicks(span: AxisSpan): AxisTick[] {
   }
   return ticks;
 }
+
+/**
+ * **Les lundis**, en traits fins entre les mois.
+ *
+ * Un mois seul ne permet pas de viser : « la promo a commencé vers le 20 » se
+ * pointe à trois jours près sur une bande de trente. La semaine donne le pas
+ * intermédiaire — assez pour compter à l'œil, assez rare pour ne pas hachurer
+ * l'axe.
+ *
+ * Aucune graduation en dessous du jour : le marqueur s'arrondit au jour, donc
+ * une règle plus fine promettrait une précision que la lecture n'a pas.
+ */
+export function weekTicks(span: AxisSpan): AxisTick[] {
+  const ticks: AxisTick[] = [];
+  const cursor = new Date(span.from);
+  cursor.setUTCHours(0, 0, 0, 0);
+  // `getUTCDay()` rend 0 le dimanche : la semaine française commence lundi.
+  cursor.setUTCDate(cursor.getUTCDate() + ((8 - cursor.getUTCDay()) % 7));
+
+  while (cursor.getTime() <= span.to) {
+    const at = cursor.getTime();
+    ticks.push({ at, percent: percentOf(span, at), label: String(cursor.getUTCDate()) });
+    cursor.setUTCDate(cursor.getUTCDate() + 7);
+  }
+  return ticks;
+}
+
+/** Une barre, une fois rangée dans sa voie. */
+export interface LaneBand<T> {
+  readonly band: T;
+  readonly lane: number;
+}
+
+/**
+ * **Le rangement en voies** : deux barres qui ne se croisent pas partagent leur
+ * ligne.
+ *
+ * Une ligne par décision donnait une frise haute comme un immeuble, où l'œil
+ * perdait l'axe avant d'avoir fini de descendre. Rangées, quinze décisions qui se
+ * succèdent tiennent sur une seule ligne — et les rares qui se recouvrent
+ * VRAIMENT se voient, puisque ce sont les seules à s'empiler.
+ *
+ * Un jour de marge entre deux barres voisines : coller deux périodes qui se
+ * touchent les ferait lire comme une seule.
+ */
+export function packLanes<T extends { validFrom: string; validTo: string | null }>(
+  bands: readonly T[],
+  span: AxisSpan,
+  gapDays = 1,
+): LaneBand<T>[] {
+  const gap = gapDays * DAY_MS;
+  const ordered = [...bands].sort((left, right) => start(left) - start(right));
+  const lastEnd: number[] = [];
+
+  return ordered.map((band) => {
+    const lane = lastEnd.findIndex((end) => end + gap <= start(band));
+    const chosen = lane === -1 ? lastEnd.length : lane;
+    lastEnd[chosen] = end(band, span);
+    return { band, lane: chosen };
+  });
+}
+
+function start(band: { validFrom: string }): number {
+  return Date.parse(band.validFrom);
+}
+
+function end(band: { validTo: string | null }, span: AxisSpan): number {
+  return band.validTo === null ? span.to : Date.parse(band.validTo);
+}

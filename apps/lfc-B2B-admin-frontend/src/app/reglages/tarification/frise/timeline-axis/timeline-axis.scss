@@ -1,88 +1,164 @@
 .axis {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-1, 0.25rem);
+  gap: 0;
 }
 
 .ruler {
   position: relative;
-  height: 1.1rem;
+  height: 1.2rem;
 }
 
 .tick {
   position: absolute;
   transform: translateX(-50%);
   font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--fold-color-text-muted);
   white-space: nowrap;
 }
 
 .track {
+  --lanes: 1;
+
   position: relative;
-  min-height: 4rem;
-  padding: var(--fold-space-2, 0.5rem) 0;
-  border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 4%));
-  // Le curseur dit ce que la piste attend : on vise, on ne clique pas au hasard.
+  // La hauteur suit les VOIES, jamais le nombre de barres : quinze décisions
+  // qui se succèdent tiennent sur une ligne.
+  min-height: calc(var(--lanes) * 1.6rem + 1.2rem);
+  padding: 1rem 0 0.6rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg, 0.75rem);
+  background: var(--fold-color-surface);
+  overflow: hidden;
   cursor: crosshair;
   touch-action: none;
   user-select: none;
 }
 
-// La bande entre deux marqueurs : la période qu'on est en train de tracer.
+// Les semaines : un trait fin et un quantième discret. Le mois situe, la semaine
+// permet de viser — et l'un s'efface quand l'autre parle.
+.weeks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.week {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed var(--fold-color-border);
+  opacity: 0.55;
+}
+
+.week-day {
+  position: absolute;
+  top: 0.1rem;
+  left: 0.15rem;
+  font-size: 0.6rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+  opacity: 0.8;
+}
+
+// Les mois, en bandes alternées très pâles — un fond, pas un motif.
+.months {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.month {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--fold-color-border);
+  opacity: 0.6;
+}
+
+// Une teinte sur deux, très pâle : un fond qui SITUE, jamais un motif qui attire.
+.month.is-shaded {
+  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
+}
+
 .zone {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: var(--fold-color-accent-soft, rgb(0 0 0 / 8%));
+  display: flex;
+  align-items: start;
+  justify-content: center;
+  border-inline: 1px solid var(--fold-color-accent, currentcolor);
+  background: color-mix(in srgb, var(--fold-color-accent, #666) 10%, transparent);
   pointer-events: none;
 }
 
-// Aujourd'hui. Un axe sans « maintenant » se lit mal.
+.zone-days {
+  margin-top: -0.1rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--fold-color-accent, currentcolor);
+  color: var(--fold-color-accent-contrast, #fff);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .today {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 1px;
-  background: var(--fold-color-border);
+  background: var(--fold-color-text-muted);
+  opacity: 0.5;
   pointer-events: none;
 }
 
-.rows {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  pointer-events: none;
+.today-label {
+  position: absolute;
+  bottom: 0.1rem;
+  left: 0.25rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+  white-space: nowrap;
 }
 
-.row {
+.bars {
   position: relative;
-  height: 1.2rem;
+  pointer-events: none;
 }
 
 .bar {
   position: absolute;
-  top: 0;
-  bottom: 0;
   display: flex;
   align-items: center;
-  padding: 0 0.4rem;
-  border-radius: 999px;
+  height: 1.3rem;
+  padding: 0 0.5rem;
+  border-radius: var(--fold-radius-md, 0.5rem);
   background: var(--fold-color-accent, currentcolor);
-  opacity: 0.7;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
   overflow: hidden;
+}
+
+// Une fin ouverte ne s'arrête pas net : elle s'estompe, et se lit « ça continue ».
+.bar.is-open {
+  mask-image: linear-gradient(90deg, #000 82%, transparent 100%);
+  border-end-end-radius: 0;
+  border-start-end-radius: 0;
 }
 
 .bar-label {
   font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 500;
   color: var(--fold-color-accent-contrast, #fff);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-// Le marqueur est PHYSIQUE : une tige et une tête, qu'on voit se poser.
 .marker {
   position: absolute;
   top: 0;
@@ -94,11 +170,30 @@
 
 .marker-head {
   position: absolute;
-  top: -0.35rem;
+  top: -0.1rem;
   left: 50%;
-  width: 0.7rem;
-  height: 0.7rem;
+  width: 0.6rem;
+  height: 0.6rem;
   transform: translateX(-50%) rotate(45deg);
   border-radius: 2px;
   background: var(--fold-color-text);
+}
+
+.labels {
+  position: relative;
+  height: 1.3rem;
+  margin-top: 0.25rem;
+}
+
+.label {
+  position: absolute;
+  transform: translateX(-50%);
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--fold-color-text);
+  color: var(--fold-color-surface);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
