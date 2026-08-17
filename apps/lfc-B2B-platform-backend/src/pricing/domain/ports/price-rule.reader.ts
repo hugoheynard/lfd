@@ -32,6 +32,23 @@ export abstract class PriceRuleReader {
    * « qu'a-t-on décidé ? » et non « que s'applique-t-il ici ? ». Une règle
    * expirée n'est candidate nulle part et doit pourtant rester visible, ne
    * serait-ce que pour être rouverte.
+   *
+   * `at` est l'instant **de lecture**, et il porte une nuance qui a déjà coûté
+   * une fois : « archivée » se lit à cet instant, pas au présent. Une règle
+   * rangée hier s'appliquait le mois dernier, et l'exclure d'une lecture datée
+   * appauvrirait le passé à chaque rangement — sans que rien ne le signale.
    */
-  abstract listAll(): Promise<PriceRule[]>;
+  abstract listAll(at: Date): Promise<PriceRule[]>;
+
+  /**
+   * **Ce qu'on a rangé**, du plus récemment archivé au plus ancien.
+   *
+   * Une lecture à part et non un drapeau sur `listAll` : « qu'est-ce qui
+   * s'applique ? » et « qu'a-t-on retiré ? » sont deux questions, et mêler les
+   * secondes aux premières alourdirait chaque nœud de l'écran pour un besoin
+   * qu'on a trois fois par an.
+   *
+   * @param limit au-delà, ce n'est plus une mémoire consultable, c'est un export.
+   */
+  abstract listArchived(limit: number): Promise<PriceRule[]>;
 }

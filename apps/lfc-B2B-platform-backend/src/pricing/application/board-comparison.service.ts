@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { mirrorWindow, variationBp, windowDays } from "../domain/comparison.js";
-import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
+import { PricingBoardReader } from "./ports/pricing-board.reader.js";
 import { ReversedComparisonWindowError } from "../domain/pricing-errors.js";
 import { SkuVolumeReader } from "../domain/ports/sku-volume.reader.js";
 import type {

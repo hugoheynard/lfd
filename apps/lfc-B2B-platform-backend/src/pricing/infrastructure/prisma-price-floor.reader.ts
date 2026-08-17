@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { PriceFloorReader } from "../domain/ports/price-floor.reader.js";
+import { unarchivedAt } from "./archived-at.js";
 import { floorFromRow } from "./price-rows.js";
 import type { PricingContext, ScopedPriceFloor } from "../domain/price-rule.js";
 
@@ -29,8 +30,9 @@ export class PrismaPriceFloorReader extends PriceFloorReader {
     return rows.map(floorFromRow);
   }
 
-  async listAll(): Promise<ScopedPriceFloor[]> {
-    const rows = await this.prisma.priceFloor.findMany({ where: { archivedAt: null } });
+  /** « Archivée » se lit **à l'instant demandé** : cf. {@link unarchivedAt}. */
+  async listAll(at: Date): Promise<ScopedPriceFloor[]> {
+    const rows = await this.prisma.priceFloor.findMany({ where: unarchivedAt(at) });
     return rows.map(floorFromRow);
   }
 }

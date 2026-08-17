@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { PriceRuleReader } from "../domain/ports/price-rule.reader.js";
+import { unarchivedAt } from "./archived-at.js";
 import { ruleFromRow } from "./price-rows.js";
 import type { PriceRule, PricingContext } from "../domain/price-rule.js";
 
@@ -48,11 +49,22 @@ export class PrismaPriceRuleReader extends PriceRuleReader {
    * Tout ce qui est posé, expiré et suspendu compris — l'écran doit pouvoir le
    * rouvrir. Les **archivées**, non : ranger sert précisément à ne plus les voir,
    * et leur histoire reste lisible dans le journal.
+   *
+   * « Archivée » se lit **à l'instant demandé** : cf. {@link unarchivedAt}.
    */
-  async listAll(): Promise<PriceRule[]> {
+  async listAll(at: Date): Promise<PriceRule[]> {
     const rows = await this.prisma.priceRule.findMany({
-      where: { archivedAt: null },
+      where: unarchivedAt(at),
       orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
+    });
+    return rows.map(ruleFromRow);
+  }
+
+  async listArchived(limit: number): Promise<PriceRule[]> {
+    const rows = await this.prisma.priceRule.findMany({
+      where: { archivedAt: { not: null } },
+      orderBy: { archivedAt: "desc" },
+      take: limit,
     });
     return rows.map(ruleFromRow);
   }

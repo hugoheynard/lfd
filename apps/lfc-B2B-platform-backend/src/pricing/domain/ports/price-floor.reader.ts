@@ -16,6 +16,12 @@ export abstract class PriceFloorReader {
   /** Les planchers qui visent **potentiellement** cet article. */
   abstract candidatesFor(context: PricingContext): Promise<ScopedPriceFloor[]>;
 
-  /** Tous les planchers posés — ce que l'écran de paramétrage montre. */
-  abstract listAll(): Promise<ScopedPriceFloor[]>;
+  /**
+   * Tous les planchers posés — ce que l'écran de paramétrage montre.
+   *
+   * Daté pour la même raison que les règles : une limite archivée hier
+   * protégeait bien les prix du mois dernier, et une lecture passée qui
+   * l'omettrait annoncerait une marge de négociation que personne n'a eue.
+   */
+  abstract listAll(at: Date): Promise<ScopedPriceFloor[]>;
 }

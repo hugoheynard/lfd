@@ -2,49 +2,47 @@ import {
   CATALOG_CATEGORY_LABELS,
   CATALOG_CATEGORY_ORDER,
   type CatalogCategory,
-  type PriceFloorView,
-  type PriceRuleView,
   type PriceOverlapView,
+  type PriceRuleView,
   type PricingBoardView,
   type PricingCategoryView,
-  type PricingItemView,
   type PricingLadderBandView,
-  type NegotiationRoom,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { BoardElasticityService } from "../application/board-elasticity.service.js";
-import { ProductCatalogReader } from "../../orders/domain/ports/product-catalog.reader.js";
+import {
+  ProductCatalogReader,
+  type CatalogItem,
+} from "../../orders/domain/ports/product-catalog.reader.js";
 import { lineageSegments } from "../domain/lineage-overlaps.js";
 import { type OverlapSegment } from "../domain/rule-overlaps.js";
 import { referenceCanonicalFor } from "../application/floor-reference.js";
-import { volumeTierPrices } from "../application/volume-tier-prices.js";
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
 import { pricingContextFor } from "../application/pricing-context.js";
-import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
-import { decideFloor } from "../domain/floor-policy.js";
-import { floorCentsFor, resolveScopedFloor } from "../domain/resolve-floor.js";
-import { resolvePrice } from "../domain/resolve-price.js";
-import { applies, winnerOf } from "../domain/specificity.js";
+import { PricingBoardReader } from "../application/ports/pricing-board.reader.js";
 import {
-  PRICE_STAGES,
-  type PriceRule,
-  type PricingContext,
-  type ScopedPriceFloor,
-} from "../domain/price-rule.js";
+  boardMaterials,
+  itemView,
+  type BoardMaterials,
+  type LoadedFloor,
+  type LoadedRule,
+} from "../application/board-item.js";
+import { type PriceRule, type PriceScope } from "../domain/price-rule.js";
+import { unarchivedAt } from "./archived-at.js";
 import { floorFromRow, floorViewFromRow, ruleFromRow, ruleViewFromRow } from "./price-rows.js";
 
-/** Une règle lue une fois, sous ses deux formes : celle qui calcule, celle qui s'affiche. */
-interface LoadedRule {
-  readonly rule: PriceRule;
-  readonly view: PriceRuleView;
-}
+/** Au-delà, ce n'est plus une mémoire consultable, c'est un export. */
+const ARCHIVED_PAGE = 100;
 
-interface LoadedFloor {
-  readonly floor: ScopedPriceFloor;
-  readonly view: PriceFloorView;
+/** Tout ce qu'une lecture ramène, avant que le tableau ne se monte. */
+interface LoadedBoard {
+  readonly rules: readonly LoadedRule[];
+  readonly floors: readonly LoadedFloor[];
+  readonly ladders: readonly VolumeLadder[];
+  readonly articles: readonly CatalogItem[];
 }
 
 /**
@@ -61,14 +59,12 @@ interface LoadedFloor {
  * jour de la bascule, ce port change de source et cet écran suit sans rien
  * changer ici.
  *
- * **Le prix vient de `resolvePrice`**, la fonction qui facture. Aucune
- * arithmétique d'affichage n'est écrite ici : un écran qui recalcule à sa façon
- * finit par annoncer autre chose que la facture, et c'est précisément ce qu'un
- * client conteste.
+ * **Le calcul, lui, n'est plus ici** : la résolution d'un article vit dans
+ * `application/board-item.ts`, et cet adaptateur ne fait que ce qu'un adaptateur
+ * doit faire — lire des lignes, les convertir, appeler la composition. Le
+ * mélanger au calcul donnait un fichier qui changeait pour deux raisons, dont
+ * une seule tenait à Postgres.
  */
-/** Au-delà, ce n'est plus une mémoire consultable, c'est un export. */
-const ARCHIVED_PAGE = 100;
-
 @Injectable()
 export class PrismaPricingBoardReader extends PricingBoardReader {
   constructor(
@@ -80,14 +76,6 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     super();
   }
 
-  /**
-   * **Ce qu'on a rangé**, du plus récemment archivé au plus ancien.
-   *
-   * Une lecture à part, et pas un drapeau sur le tableau : « qu'est-ce qui
-   * s'applique ? » et « qu'a-t-on retiré ? » sont deux questions, et mêler les
-   * secondes aux premières alourdirait quatre-vingt-dix nœuds pour un besoin
-   * qu'on a trois fois par an.
-   */
   async archivedRules(): Promise<PriceRuleView[]> {
     const rows = await this.prisma.priceRule.findMany({
       where: { archivedAt: { not: null } },
@@ -102,24 +90,43 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // parler du même instant. Le défaut est maintenant ; une date donnée rend
     // l'écran tel qu'il était.
     const at = instant ?? new Date();
+    return this.assemble(await this.load(at), at);
+  }
 
+  /**
+   * Le même tableau, plus la mesure des ventes.
+   *
+   * La mesure vient **après** la résolution, en une passe groupée : elle a besoin
+   * de savoir quels articles ont bougé, et de combien. Et elle est réservée à
+   * l'écran — la comparaison de deux marqueurs lit deux tableaux dont elle ne
+   * veut que les prix, et l'enrichir lui ferait payer quatre requêtes de ventes
+   * qu'elle jetterait aussitôt.
+   *
+   * Les dates d'entrée en vigueur viennent des règles **chargées** et non de la
+   * vue : la vue ne liste que les portées catalogue et famille, et un article
+   * dont le prix bouge par une règle de portée produit y serait invisible — donc
+   * mesuré sans point de coupure, donc muet.
+   */
+  async readForScreen(instant?: Date): Promise<PricingBoardView> {
+    const at = instant ?? new Date();
+    const loaded = await this.load(at);
+    const ruleDates = new Map(loaded.rules.map((entry) => [entry.rule.id, entry.rule.validFrom]));
+    return this.elasticity.enrich(this.assemble(loaded, at), ruleDates, at);
+  }
+
+  private async load(at: Date): Promise<LoadedBoard> {
     // **Les archivées n'entrent pas dans le tableau** : ranger sert précisément
-    // à ne plus les voir. Sans cette clause, une règle retirée continuerait
-    // d'occuper son nœud — et pire, la colonne des prix résolus dirait la
-    // vérité pendant que le nœud d'à côté afficherait une règle qui n'agit plus.
-    //
-    // « Archivée » se lit **à l'instant demandé**, pas au présent : une règle
-    // rangée hier s'appliquait le mois dernier, et l'exclure d'une lecture datée
-    // appauvrirait le passé à chaque rangement — sans que rien ne le signale.
-    const unarchived = { OR: [{ archivedAt: null }, { archivedAt: { gt: at } }] };
+    // à ne plus les voir. « Archivée » se lit à l'instant demandé — cf.
+    // `unarchivedAt`, qui porte le pourquoi.
     const [ruleRows, floorRows, ladders] = await Promise.all([
       this.prisma.priceRule.findMany({
-        where: unarchived,
+        where: unarchivedAt(at),
         orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
       }),
-      this.prisma.priceFloor.findMany({ where: unarchived }),
+      this.prisma.priceFloor.findMany({ where: unarchivedAt(at) }),
       this.ladders.listAll(at),
     ]);
+
     const rules: LoadedRule[] = ruleRows.map((row) => ({
       rule: ruleFromRow(row),
       view: ruleViewFromRow(row),
@@ -135,61 +142,65 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       };
     });
 
+    return { rules, floors, ladders, articles };
+  }
+
+  private assemble(loaded: LoadedBoard, at: Date): PricingBoardView {
+    const materials = boardMaterials(loaded.rules, loaded.floors);
+    // Groupé UNE fois : filtrer le catalogue entier par famille rendait le coût
+    // proportionnel au produit familles × articles, pour un découpage qui ne
+    // change jamais d'une famille à l'autre.
+    const byCategory = groupByCategory(loaded.articles);
+
     // Les recouvrements se calculent sur les règles qui AGISSENT : une règle
     // suspendue ne recouvre rien, et l'annoncer ferait chercher un cumul qui
     // n'existe pas. (Les archivées ne sont même pas lues.)
-    const actingGlobalRules = rules
-      .filter((entry) => entry.rule.scope.type === "global" && actsAt(entry.rule.suspendedFrom, at))
-      .map((entry) => entry.rule);
-    const globalLadders = ladders.filter((ladder) => ladder.scope.type === "global");
+    const catalogue = {
+      rules: loaded.rules
+        .filter(
+          (entry) => entry.rule.scope.type === "global" && actsAt(entry.rule.suspendedFrom, at),
+        )
+        .map((entry) => entry.rule),
+      ladders: loaded.ladders.filter((ladder) => ladder.scope.type === "global"),
+    };
 
-    const board: PricingBoardView = {
+    return {
       categories: CATALOG_CATEGORY_ORDER.map((category) =>
         this.categoryView(
           category,
-          rules,
-          floors,
-          ladders,
-          {
-            rules: actingGlobalRules,
-            ladders: globalLadders,
-          },
+          byCategory.get(category) ?? [],
+          loaded,
+          materials,
+          catalogue,
           at,
         ),
       ).filter((view) => view.items.length > 0),
-      globalFloor: floors.find((entry) => entry.floor.scope.type === "global")?.view ?? null,
-      globalRules: rules
+      globalFloor: loaded.floors.find((entry) => entry.floor.scope.type === "global")?.view ?? null,
+      globalRules: loaded.rules
         .filter((entry) => entry.rule.scope.type === "global")
         .map((entry) => entry.view),
       simulation: { quantity: 1, at: at.toISOString(), audience: "all" },
     };
-
-    // La mesure des ventes vient APRÈS la résolution, en une passe groupée : elle
-    // a besoin de savoir quels articles ont bougé, et de combien.
-    return this.elasticity.enrich(
-      board,
-      new Map(rules.map((entry) => [entry.rule.id, entry.rule.validFrom])),
-      at,
-    );
   }
 
   private categoryView(
     category: CatalogCategory,
-    rules: readonly LoadedRule[],
-    floors: readonly LoadedFloor[],
-    ladders: readonly VolumeLadder[],
+    articles: readonly CatalogItem[],
+    loaded: {
+      rules: readonly LoadedRule[];
+      floors: readonly LoadedFloor[];
+      ladders: readonly VolumeLadder[];
+    },
+    materials: BoardMaterials,
     catalogue: { rules: readonly PriceRule[]; ladders: readonly VolumeLadder[] },
     at: Date,
   ): PricingCategoryView {
-    const articles = this.catalog.all().filter((item) => item.category === category);
-    const ownRules = rules.filter((entry) =>
-      scopeTargets(entry.rule.scope.type, entry.rule.scope.id, category),
-    );
+    const ownRules = loaded.rules.filter((entry) => targetsCategory(entry.rule.scope, category));
     // La lignée, barèmes compris : un barème compose avec toute promotion en
     // cours, et la frise se lirait « rien d'autre ne joue » sans lui.
     const lineageLadders = [
       ...catalogue.ladders,
-      ...ladders.filter((ladder) => scopeTargets(ladder.scope.type, ladder.scope.id, category)),
+      ...loaded.ladders.filter((ladder) => targetsCategory(ladder.scope, category)),
     ];
     return {
       id: category,
@@ -198,8 +209,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       // en mélangerait deux n'en annonce aucun plutôt que le premier venu.
       vatRatePercent: uniformVatRate(articles.map((item) => item.vatRate)),
       floor:
-        floors.find((entry) => scopeTargets(entry.floor.scope.type, entry.floor.scope.id, category))
-          ?.view ?? null,
+        loaded.floors.find((entry) => targetsCategory(entry.floor.scope, category))?.view ?? null,
       rules: ownRules.map((entry) => entry.view),
       // La LIGNÉE, catalogue puis famille : c'est entre niveaux que le
       // recouvrement arrive, puisque deux règles de même étage et même portée ne
@@ -219,9 +229,9 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
         itemView(
           { sku: item.sku, name: item.name, canonicalCents: item.unitPriceCents },
           pricingContextFor(item.sku, item.category, 1, { companyId: null }, at),
-          rules,
-          floors,
-          ladders,
+          materials,
+          loaded,
+          loaded.ladders,
         ),
       ),
     };
@@ -239,9 +249,31 @@ function actsAt(suspendedFrom: Date | null, at: Date): boolean {
   return suspendedFrom === null || suspendedFrom.getTime() > at.getTime();
 }
 
-/** La portée vise-t-elle cette famille (et pas un article, ni tout le catalogue) ? */
-function scopeTargets(type: string, id: string | null, category: string): boolean {
-  return type === "category" && id === category;
+/**
+ * La portée vise-t-elle cette famille (et pas un article, ni tout le catalogue) ?
+ *
+ * Prend une `PriceScope` et non deux primitives : le type et l'identifiant vont
+ * ensemble, et les séparer en `(type: string, id: string | null)` jetait l'union
+ * discriminée exactement là où elle protège — l'appariement de portée.
+ */
+function targetsCategory(scope: PriceScope, category: CatalogCategory): boolean {
+  return scope.type === "category" && scope.id === category;
+}
+
+/** Le catalogue rangé par famille, en une passe. */
+function groupByCategory(
+  articles: readonly CatalogItem[],
+): ReadonlyMap<CatalogCategory, CatalogItem[]> {
+  const grouped = new Map<CatalogCategory, CatalogItem[]>();
+  for (const article of articles) {
+    const bucket = grouped.get(article.category);
+    if (bucket === undefined) {
+      grouped.set(article.category, [article]);
+      continue;
+    }
+    bucket.push(article);
+  }
+  return grouped;
 }
 
 /**
@@ -256,120 +288,6 @@ function uniformVatRate(rates: readonly number[]): number | null {
     return null;
   }
   return rest.every((rate) => rate === first) ? first : null;
-}
-
-function itemView(
-  article: { sku: string; name: string; canonicalCents: number },
-  context: PricingContext,
-  rules: readonly LoadedRule[],
-  floors: readonly LoadedFloor[],
-  ladders: readonly VolumeLadder[],
-): PricingItemView {
-  const winner = resolveScopedFloor(
-    floors.map((entry) => entry.floor),
-    context,
-  );
-
-  // La même fonction que la caisse, avec les preuves de la simulation :
-  // quantité 1, aucune mesure d'historique. La porte reste donc FERMÉE, ce qui
-  // est la lecture juste — l'écran montre le prix de vitrine, et le plancher
-  // dynamique s'ouvre sur des conditions que la vitrine ne remplit pas.
-  const decision =
-    winner === null
-      ? null
-      : decideFloor(winner.policy, { quantity: context.quantity, observedVolumeRatioBp: null });
-
-  const resolved = resolvePrice(
-    article.canonicalCents,
-    rules.map((entry) => entry.rule),
-    context,
-    decision?.applied ?? null,
-  );
-
-  return {
-    sku: article.sku,
-    name: article.name,
-    canonicalCents: article.canonicalCents,
-    ownFloor: floors.find((entry) => targetsArticle(entry.floor.scope, article.sku))?.view ?? null,
-    // La grille du barème : chaque ligne est une RÉSOLUTION COMPLÈTE à la
-    // quantité du palier — un prix « canonique × (1 − remise) » mentirait dès
-    // qu'une promotion compose avec le palier, ou qu'un plancher le relève.
-    volumeTiers: volumeTierPrices(
-      article.canonicalCents,
-      ladders,
-      rules.map((entry) => entry.rule),
-      context,
-      decision?.applied ?? null,
-    ),
-    effectiveFloor: floors.find((entry) => entry.floor.id === winner?.id)?.view ?? null,
-    rules: rules
-      .filter((entry) => targetsArticle(entry.rule.scope, article.sku))
-      .map((entry) => entry.view),
-    supersededRuleIds: supersededIn(rules, context),
-    steps: resolved.steps.map((step) => ({ ...step })),
-    floored: resolved.floored,
-    finalCents: resolved.finalCents,
-    negotiationRoom: negotiationRoom(
-      resolved.finalCents,
-      decision === null ? null : floorCentsFor(decision.applied, article.canonicalCents),
-    ),
-    // Posée à `null` ici, remplie par la passe de mesure : la résolution d'un
-    // prix ne consulte pas l'historique des ventes, et ne doit pas commencer.
-    elasticity: null,
-  };
-}
-
-function targetsArticle(scope: { type: string; id: string | null }, sku: string): boolean {
-  return (scope.type === "product" || scope.type === "variant") && scope.id === sku;
-}
-
-/**
- * Les règles qui **s'appliquaient** à cet article sans gagner leur étage.
- *
- * Sans ce champ, l'écran alignerait une altération de famille et une altération
- * de produit et laisserait croire qu'elles s'enchaînent — alors que la plus
- * spécifique REMPLACE l'autre à l'intérieur d'un étage. Le lecteur additionnerait
- * deux remises dont une seule a produit un effet, sans aucun moyen de s'en
- * apercevoir : les deux nombres seraient là, et le total ne collerait pas.
- */
-function supersededIn(rules: readonly LoadedRule[], context: PricingContext): string[] {
-  const evicted: string[] = [];
-  for (const stage of PRICE_STAGES) {
-    const applicable = rules
-      .map((entry) => entry.rule)
-      .filter((rule) => rule.stage === stage && applies(rule, context));
-    if (applicable.length < 2) {
-      continue;
-    }
-    const winner = winnerOf(applicable, context);
-    evicted.push(...applicable.filter((rule) => rule.id !== winner?.id).map((rule) => rule.id));
-  }
-  return evicted;
-}
-
-/**
- * **Ce qu'un commercial peut encore lâcher** sans franchir la limite.
- *
- * Sans limite posée, il n'y a pas de marge définie : rendre `null` plutôt qu'un
- * nombre évite d'annoncer une latitude que personne n'a décidée. Un article déjà
- * relevé au plancher rend `0` — ce qui est une information, et pas la même.
- *
- * Bornée à zéro : un prix passé sous son plancher (donné par une mercuriale, que
- * le plancher relève ensuite) donnerait une marge négative, c'est-à-dire une
- * hausse déguisée en remise dans la colonne où on lit les remises.
- */
-function negotiationRoom(finalCents: number, floorCents: number | null): NegotiationRoom | null {
-  if (floorCents === null) {
-    return null;
-  }
-  const room = Math.max(0, finalCents - floorCents);
-  return {
-    floorCents,
-    maxDiscountCents: room,
-    // En points de base du prix FINAL : c'est sur ce prix-là que le commercial
-    // annonce « je te fais 5 % », pas sur le canonique que le client n'a jamais vu.
-    maxDiscountBp: finalCents <= 0 ? 0 : Math.round((room / finalCents) * 10_000),
-  };
 }
 
 /** Barème de domaine → barre datée. La frise ne montre pas les paliers, elle montre une période. */

@@ -32,7 +32,7 @@ import {
 } from "../application/commands/pricing.commands.js";
 import { BoardComparisonService } from "../application/board-comparison.service.js";
 import { InvalidPricingInstantError } from "../domain/pricing-errors.js";
-import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
+import { PricingBoardReader } from "../application/ports/pricing-board.reader.js";
 import type {
   PriceRuleView,
   PriceScopePayload,
@@ -72,10 +72,13 @@ export class AdminPricingController {
    * instant y reviennent, les suspensions postérieures ne comptent pas. Ce que
    * la lecture datée montre, ce sont les DÉCISIONS en vigueur ce jour-là — pas
    * le prix facturé, le tarif canonique n'étant pas historisé.
+   *
+   * `readForScreen` et non `read` : c'est la seule route qui montre le rapport
+   * prix/volume, donc la seule qui doive payer les requêtes de ventes.
    */
   @Get()
   read(@Query("at") at?: string): Promise<PricingBoardView> {
-    return this.board.read(at === undefined ? undefined : parseInstant(at));
+    return this.board.readForScreen(at === undefined ? undefined : parseInstant(at));
   }
 
   /**

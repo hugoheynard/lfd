@@ -16,7 +16,7 @@ import {
 } from "./application/commands/rule-lifecycle.handlers.js";
 import { BoardComparisonService } from "./application/board-comparison.service.js";
 import { BoardElasticityService } from "./application/board-elasticity.service.js";
-import { PricingBoardReader } from "./domain/ports/pricing-board.reader.js";
+import { PricingBoardReader } from "./application/ports/pricing-board.reader.js";
 import { PricingFloorRepository } from "./domain/ports/pricing-floor.repository.js";
 import { PricingJournalReader } from "./domain/ports/pricing-journal.reader.js";
 import { PricingRuleRepository } from "./domain/ports/pricing-rule.repository.js";
