@@ -1,4 +1,4 @@
-import type { OrderFulfillment } from "@lfd/contracts";
+import type { OrderFulfillment, PriceStepView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { OrderStatus, PaymentStatus, Prisma } from "../../infra/database/client/client.js";
@@ -74,6 +74,13 @@ export class PrismaOrderRepository extends OrderRepository {
             vatRate: line.vatRate,
             quantity: line.quantity,
             lineTotalCents: line.lineTotalCents,
+            basePriceCents: line.pricing?.basePriceCents ?? null,
+            // `Prisma.DbNull` et non `null` : sur une colonne JSON nullable,
+            // `null` désigne le *littéral* JSON `null`, pas l'absence de valeur.
+            // Les deux se relisent différemment, et c'est précisément la
+            // distinction qu'on veut tenir ici — absence = commande antérieure.
+            pricingSteps: line.pricing === null ? Prisma.DbNull : jsonSteps(line.pricing.steps),
+            pricingFloored: line.pricing?.floored ?? null,
           })),
         },
       },
@@ -131,4 +138,22 @@ function toFulfillmentJson(agreed: OrderFulfillment): Prisma.InputJsonValue {
     },
     signatureRequired: { ...agreed.signatureRequired },
   };
+}
+
+/**
+ * Les étages, en JSON pur.
+ *
+ * Recopiés champ à champ plutôt que passés tels quels : `PriceStepView` est une
+ * **interface**, et TypeScript ne leur accorde pas de signature d'index — donc
+ * elle n'est pas assignable au type JSON de Prisma. Le mapping n'est pas une
+ * cérémonie : il rend explicite ce qui part en base, et une nouvelle propriété
+ * du domaine ne s'y invitera pas sans qu'on l'ait décidé.
+ */
+function jsonSteps(steps: readonly PriceStepView[]): Prisma.InputJsonValue {
+  return steps.map((step) => ({
+    stage: step.stage,
+    ruleId: step.ruleId,
+    label: step.label,
+    resultCents: step.resultCents,
+  }));
 }

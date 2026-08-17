@@ -254,6 +254,14 @@ export class OrderDrafting {
           unitPriceCents: resolved.finalCents,
           vatRate: item.vatRate,
           quantity,
+          // La trace part avec le prix, et pour la même raison : dans six mois,
+          // les règles qui l'ont produit peuvent avoir été retirées. Sans elle,
+          // la seule réponse à « pourquoi ce prix ? » serait « c'était le prix ».
+          pricing: {
+            basePriceCents: resolved.basePriceCents,
+            steps: resolved.steps,
+            floored: resolved.floored,
+          },
         };
       }),
     );

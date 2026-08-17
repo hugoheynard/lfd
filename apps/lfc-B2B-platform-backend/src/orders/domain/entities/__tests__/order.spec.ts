@@ -67,6 +67,8 @@ describe("Order.draft — calcul monétaire", () => {
         vatRate: 5.5,
         quantity: 3,
         lineTotalCents: 600,
+        // Ligne fabriquée à la main : sans résolution, il n'y a rien à tracer.
+        pricing: null,
       },
     ]);
   });

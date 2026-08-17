@@ -130,6 +130,74 @@ async function unitPriceOf(orderId: string): Promise<number> {
   return line.unitPriceCents;
 }
 
+/** La ligne complète — la trace y est figée à côté du prix. */
+function lineOf(orderId: string) {
+  return ctx.prisma.orderLine.findFirstOrThrow({ where: { orderId } });
+}
+
+describe("la trace figée sur la ligne", () => {
+  /**
+   * Sans règle, la trace existe quand même et dit « aucun étage n'a joué ».
+   * C'est une AFFIRMATION, distincte du `null` des commandes antérieures qui,
+   * lui, avoue qu'on ne sait pas.
+   */
+  it("existe même sans règle, et dit qu'aucun étage n'a joué", async () => {
+    const response = await placeOrder(1);
+
+    const line = await lineOf(jsonBody<{ id: string }>(response).id);
+    expect(line.basePriceCents).toBe(CANONICAL);
+    expect(line.pricingSteps).toEqual([]);
+    expect(line.pricingFloored).toBe(false);
+  });
+
+  it("garde le prix d'entrée ET chaque étage qui a joué", async () => {
+    await seedRule({ id: "vol", stage: "volume", bp: 2000 });
+    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+
+    const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
+
+    expect(line.basePriceCents).toBe(CANONICAL);
+    expect(line.pricingSteps).toEqual([
+      { stage: "volume", ruleId: "vol", label: "vol", resultCents: 160 },
+      { stage: "promotion", ruleId: "promo", label: "promo", resultCents: 144 },
+    ]);
+    expect(line.unitPriceCents).toBe(144);
+  });
+
+  it("consigne que le plancher a relevé le prix", async () => {
+    await seedRule({ id: "promo", stage: "promotion", bp: 5000 });
+    await seedFloor("global", null, 150);
+
+    const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
+
+    expect(line.pricingFloored).toBe(true);
+    // La trace garde ce que la RÈGLE a produit (100), le prix garde ce que le
+    // plancher a imposé (150). Les deux nombres sont vrais, et leur écart est
+    // exactement ce qu'on veut pouvoir montrer.
+    expect(line.pricingSteps).toEqual([
+      { stage: "promotion", ruleId: "promo", label: "promo", resultCents: 100 },
+    ]);
+    expect(line.unitPriceCents).toBe(150);
+  });
+
+  /**
+   * La trace SURVIT à la règle qui l'a produite : `ruleId` est une piste pour le
+   * service client, pas une clé étrangère. Une règle effacée ne doit pas emporter
+   * l'explication d'une facture déjà payée.
+   */
+  it("survit à la suppression de la règle qui l'a produite", async () => {
+    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+    const orderId = jsonBody<{ id: string }>(await placeOrder(1)).id;
+
+    await ctx.prisma.priceRule.delete({ where: { id: "promo" } });
+
+    const line = await lineOf(orderId);
+    expect(line.pricingSteps).toEqual([
+      { stage: "promotion", ruleId: "promo", label: "promo", resultCents: 180 },
+    ]);
+  });
+});
+
 describe("la contrainte d'exclusion", () => {
   it("refuse deux règles également spécifiques aux fenêtres qui se chevauchent", async () => {
     await seedRule({ id: "a", stage: "promotion" });

@@ -7,6 +7,8 @@ import {
   cartAdjustmentSchema,
   type FulfillmentMethod,
   type OrderLineView,
+  type OrderLinePricingTrace,
+  priceStepsSchema,
   type OrderStatus,
   type OrderFulfillment,
   orderFulfillmentSchema,
@@ -32,6 +34,9 @@ interface OrderLineRow {
   readonly vatRate: { toNumber(): number };
   readonly quantity: number;
   readonly lineTotalCents: number;
+  readonly basePriceCents: number | null;
+  readonly pricingSteps: Prisma.JsonValue | null;
+  readonly pricingFloored: boolean | null;
 }
 
 /** Une commande telle que Prisma la sélectionne. */
@@ -97,6 +102,9 @@ const ORDER_SELECT = {
       vatRate: true,
       quantity: true,
       lineTotalCents: true,
+      basePriceCents: true,
+      pricingSteps: true,
+      pricingFloored: true,
     },
   },
 } as const;
@@ -514,5 +522,32 @@ function toLineView(line: OrderLineRow): OrderLineView {
     vatRate: line.vatRate.toNumber(),
     quantity: line.quantity,
     lineTotalCents: line.lineTotalCents,
+    pricing: parseTrace(line),
+  };
+}
+
+/**
+ * La trace, **validée** plutôt que castée.
+ *
+ * Elle a été écrite en JSON par une version du code ; elle est relue par une
+ * autre, des mois plus tard. Zod est la seule barrière entre les deux — et une
+ * trace illisible rend `null` (« on ne sait pas ») au lieu de lever : une
+ * facture doit rester consultable même si l'explication de son prix ne l'est
+ * plus. C'est l'inverse de l'arbitrage fait sur les RÈGLES, et pour une raison
+ * nette : là-bas une donnée illisible ferait FACTURER un prix que personne n'a
+ * décidé ; ici elle empêche seulement de commenter un prix déjà facturé.
+ */
+function parseTrace(line: OrderLineRow): OrderLinePricingTrace | null {
+  if (line.basePriceCents === null || line.pricingFloored === null) {
+    return null;
+  }
+  const steps = priceStepsSchema.safeParse(line.pricingSteps);
+  if (!steps.success) {
+    return null;
+  }
+  return {
+    basePriceCents: line.basePriceCents,
+    steps: steps.data,
+    floored: line.pricingFloored,
   };
 }

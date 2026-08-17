@@ -807,6 +807,24 @@ model OrderLine {
   quantity       Int
   lineTotalCents Int @map("line_total_cents")
 
+  /// **La trace de résolution**, figée à la passation — cf.
+  /// `documentation/b2b/architecture-resolution-de-prix.md`.
+  ///
+  /// Elle répond à « pourquoi ce prix ? » six mois plus tard, quand les règles
+  /// qui l'ont produit peuvent avoir été retirées. C'est un fait clos, comme le
+  /// prix : on ne la recalcule jamais, on la relit.
+  ///
+  /// `NULL` = commande passée **avant** que la trace n'existe. Ce n'est PAS la
+  /// même chose qu'une trace vide : `steps: []` affirme « aucun étage n'a joué »,
+  /// `NULL` avoue « on ne sait pas ». Un défaut à `[]` aurait transformé une
+  /// ignorance en affirmation, sur les seules commandes qu'on ne peut plus
+  /// vérifier.
+  basePriceCents Int?     @map("base_price_cents")
+  pricingSteps   Json?    @map("pricing_steps")
+  /// Le plancher a-t-il relevé ce prix ? Consigné plutôt qu'avalé : un prix
+  /// relevé est un prix dont une règle n'a pas produit son effet.
+  pricingFloored Boolean? @map("pricing_floored")
+
   // Un SKU n'apparaît qu'UNE fois par commande. `place-order` fusionne déjà les
   // quantités du panier ; la contrainte rend la règle structurelle plutôt que
   // conventionnelle. C'est aussi ce qui rend une moyenne par SKU calculable sans

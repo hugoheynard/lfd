@@ -229,6 +229,9 @@ describe("checkout → Order", () => {
         vatRate: 5.5,
         quantity: 3,
         lineTotalCents: 600,
+        // Vue de commande : la trace remonte sous sa forme de contrat. Aucune
+        // règle en base ici — elle dit donc qu'aucun étage n'a joué.
+        pricing: { basePriceCents: 200, steps: [], floored: false },
       },
     ]);
     // Alimentaire → 5,5 % : 600 HT + round(600 × 5,5 %) = 600 + 33 = 633 TTC.

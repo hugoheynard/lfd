@@ -329,6 +329,9 @@ describe("PlaceOrderHandler", () => {
         vatRate: 0,
         quantity: 3,
         lineTotalCents: 600,
+        // Aucune règle dans ces doubles : la trace existe et dit qu'aucun étage
+        // n'a joué. C'est une affirmation, pas une absence.
+        pricing: { basePriceCents: 200, steps: [], floored: false },
       },
     ]);
     expect(sink.placed?.subtotalCents).toBe(600);

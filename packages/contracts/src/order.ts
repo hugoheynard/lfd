@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { OrderLinePricingTrace } from "./pricing.js";
+
 import {
   billingAddressPayloadSchema,
   type BillingAddressPayload,
@@ -290,6 +292,15 @@ export interface OrderLineView {
   readonly vatRate: number;
   readonly quantity: number;
   readonly lineTotalCents: number;
+  /**
+   * **Pourquoi ce prix** — la trace figée à la passation.
+   *
+   * `null` sur une commande passée avant que la trace n'existe. L'écran doit
+   * alors se taire plutôt qu'afficher « aucune altération » : ce serait
+   * affirmer une chose qu'on ne sait pas, sur les seules commandes qu'on ne
+   * peut plus vérifier.
+   */
+  readonly pricing: OrderLinePricingTrace | null;
 }
 
 /**

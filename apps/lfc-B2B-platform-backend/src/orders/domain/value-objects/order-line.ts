@@ -1,3 +1,5 @@
+import type { OrderLinePricingTrace } from "@lfd/contracts";
+
 import { InvalidOrderLineError } from "../errors/order-errors.js";
 
 /** Ce que le catalogue résout pour une ligne (déjà autoritaire côté serveur). */
@@ -9,12 +11,26 @@ export interface OrderLineInput {
   /** Taux de TVA du produit en %, ex. 5.5 ou 20. */
   readonly vatRate: number;
   readonly quantity: number;
+  /**
+   * **Pourquoi** ce prix — la trace de résolution, figée avec lui.
+   *
+   * `null` sur une ligne fabriquée sans passer par la résolution (un test, un
+   * import). L'absence est représentée plutôt qu'inventée : une trace vide
+   * affirmerait « aucun étage n'a joué », ce qui est une autre phrase.
+   */
+  readonly pricing?: OrderLinePricingTrace | null;
 }
 
 /** Une ligne prête à persister (snapshots figés + total calculé). */
 export interface OrderLineSnapshot extends OrderLineInput {
   /** Total **HT** de la ligne = prix unitaire × quantité, en centimes. */
   readonly lineTotalCents: number;
+  /**
+   * Requis ici alors qu'il est facultatif à l'entrée : l'appelant peut ne pas
+   * savoir, l'adaptateur doit décider quoi écrire. `null` est un choix, pas un
+   * oubli — et le type l'oblige à le poser.
+   */
+  readonly pricing: OrderLinePricingTrace | null;
 }
 
 /**
@@ -31,6 +47,7 @@ export class OrderLine {
     readonly vatRate: number,
     readonly quantity: number,
     readonly lineTotalCents: number,
+    readonly pricing: OrderLinePricingTrace | null,
   ) {}
 
   static create(input: OrderLineInput): OrderLine {
@@ -47,6 +64,7 @@ export class OrderLine {
       input.vatRate,
       input.quantity,
       input.unitPriceCents * input.quantity,
+      assertConsistent(input),
     );
   }
 
@@ -58,6 +76,31 @@ export class OrderLine {
       vatRate: this.vatRate,
       quantity: this.quantity,
       lineTotalCents: this.lineTotalCents,
+      pricing: this.pricing,
     };
   }
+}
+
+/**
+ * La trace doit **s'accorder** avec le prix qu'elle explique.
+ *
+ * Le dernier étage sort sur le prix unitaire — sauf si le plancher l'a relevé,
+ * auquel cas c'est lui qui a le dernier mot. Une trace qui aboutirait ailleurs
+ * serait pire que pas de trace : elle donnerait au service client une
+ * explication fausse, avec l'assurance d'un chiffre écrit.
+ */
+function assertConsistent(input: OrderLineInput): OrderLinePricingTrace | null {
+  const trace = input.pricing ?? null;
+  if (trace === null) {
+    return null;
+  }
+  const last = trace.steps.at(-1);
+  const expected = last?.resultCents ?? trace.basePriceCents;
+  if (!trace.floored && expected !== input.unitPriceCents) {
+    throw new InvalidOrderLineError(
+      input.sku,
+      `la trace aboutit à ${String(expected)} centimes, la ligne en facture ${String(input.unitPriceCents)}`,
+    );
+  }
+  return trace;
 }

@@ -1,14 +1,17 @@
 import { z } from "zod";
 
 /**
- * Le **paramétrage tarifaire** vu du back-office — cf.
+ * Le vocabulaire du **prix** — cf.
  * `documentation/b2b/architecture-resolution-de-prix.md`.
  *
- * Ce fichier ne décrit **que** la saisie et la lecture par le staff. Le calcul,
- * lui, vit dans le domaine du backend et n'a pas à traverser le fil : ce que
- * l'écran reçoit est le **résultat** d'une résolution faite par la même fonction
- * que celle qui facture, jamais de quoi la refaire côté navigateur. Deux
- * implémentations du prix finiraient par en donner deux.
+ * Il sert **deux publics**, et c'est pourquoi il ne s'appelle plus
+ * « pricing-admin » : le staff qui saisit les règles, et le client qui lit la
+ * trace figée sur sa commande. `PriceStepView` traverse les deux.
+ *
+ * Ce qui ne traverse jamais le fil, c'est le **calcul**. Ce qu'un écran reçoit
+ * est le résultat d'une résolution faite par la fonction qui facture, jamais de
+ * quoi la refaire côté navigateur : deux implémentations du prix finiraient par
+ * en donner deux, et celle qu'on regarde le moins divergerait.
  */
 
 /** Les étages, dans l'ordre où ils s'appliquent. L'ordre EST la décision. */
@@ -143,13 +146,57 @@ export interface PriceFloorView {
   readonly updatedAt: string;
 }
 
-/** Un étage qui a produit un effet — l'unité de la trace. */
+/**
+ * Un étage qui a produit un effet — l'unité de la trace.
+ *
+ * `label` est ce que le **client** lit ; `stage` est un mot de la maison
+ * (« mercuriale », « geste ») qu'on ne lui montre pas. C'est toute la raison
+ * d'être du libellé : sans lui, expliquer un prix reviendrait à exposer le
+ * vocabulaire interne du barème.
+ */
 export interface PriceStepView {
   readonly stage: PriceStage;
   readonly ruleId: string;
   readonly label: string;
   /** Le prix **au sortir** de cet étage. */
   readonly resultCents: number;
+}
+
+/**
+ * Le schéma des étages, pour **relire** une trace persistée.
+ *
+ * Elle a été écrite en JSON par une version du code et se relit par une autre,
+ * des mois plus tard : c'est la seule barrière entre les deux. Déclaré ici parce
+ * que la forme et sa validation doivent vivre au même endroit — deux fichiers
+ * finiraient par décrire deux formes.
+ */
+export const priceStepsSchema = z.array(
+  z.object({
+    stage: priceStageSchema,
+    ruleId: z.string(),
+    label: z.string(),
+    resultCents: z.number().int(),
+  }),
+);
+
+/**
+ * **La trace figée sur une ligne de commande.**
+ *
+ * Elle répond à « pourquoi ce prix ? » six mois plus tard, quand les règles qui
+ * l'ont produit peuvent avoir été retirées. C'est un **fait clos**, comme le
+ * prix lui-même : on ne la recalcule jamais, on la relit.
+ *
+ * `ruleId` y survit à la suppression de la règle — volontairement. Le lien est
+ * une piste pour le service client, pas une clé étrangère : une règle effacée ne
+ * doit pas emporter l'explication d'une facture déjà payée.
+ */
+export interface OrderLinePricingTrace {
+  /** Le prix canonique d'entrée, avant tout étage. */
+  readonly basePriceCents: number;
+  /** Les étages qui ont produit un effet, dans l'ordre. Vide = aucun. */
+  readonly steps: readonly PriceStepView[];
+  /** Le plancher a-t-il **relevé** le prix ? */
+  readonly floored: boolean;
 }
 
 /**

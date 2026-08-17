@@ -7,7 +7,7 @@ describe("OrderLine", () => {
   it("calcule le total de ligne = prix unitaire × quantité", () => {
     const line = OrderLine.create({ ...base, quantity: 3 });
     expect(line.lineTotalCents).toBe(600);
-    expect(line.toSnapshot()).toEqual({ ...base, quantity: 3, lineTotalCents: 600 });
+    expect(line.toSnapshot()).toEqual({ ...base, quantity: 3, lineTotalCents: 600, pricing: null });
   });
 
   it("refuse une quantité nulle, négative ou non entière", () => {

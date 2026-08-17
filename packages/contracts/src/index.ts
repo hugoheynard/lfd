@@ -487,8 +487,9 @@ export {
   priceScopeSchema,
   priceScopeTypeSchema,
   priceStageSchema,
+  priceStepsSchema,
   setPriceFloorPayloadSchema,
-} from "./pricing-admin.js";
+} from "./pricing.js";
 export type {
   CreatePriceRulePayload,
   PriceAudiencePayload,
@@ -501,9 +502,10 @@ export type {
   PriceScopePayload,
   PriceScopeType,
   PriceStage,
+  OrderLinePricingTrace,
   PriceStepView,
   PricingBoardView,
   PricingCategoryView,
   PricingItemView,
   SetPriceFloorPayload,
-} from "./pricing-admin.js";
+} from "./pricing.js";
