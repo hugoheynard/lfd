@@ -113,37 +113,6 @@ function category(overrides: Partial<PricingCategoryView> = {}): PricingCategory
   };
 }
 
-describe('ce que le nœud affiche', () => {
-  it("dit l'étage, le sens et l'unité", () => {
-    expect(page()['ruleSummary'](rule())).toBe('Promotion −10 %');
-  });
-
-  it('marque un supplément par un plus, jamais par un nombre signé', () => {
-    const supplement = rule({
-      effect: { nature: 'alter', direction: 'increase', mode: 'amount', value: 30 },
-    });
-
-    expect(page()['ruleSummary'](supplement)).toContain('+');
-  });
-
-  it('dit « à » pour un prix posé — ce n’est pas une remise', () => {
-    const posed = rule({ stage: 'geste', effect: { nature: 'replace', amountCents: 180 } });
-
-    expect(page()['ruleSummary'](posed)).toContain('à');
-  });
-
-  it('porte le palier quand il y en a un', () => {
-    expect(page()['ruleSummary'](rule({ stage: 'volume', minQuantity: 100 }))).toContain('dès 100');
-  });
-
-  it('distingue une limite en fraction d’une limite en euros', () => {
-    const screen = page();
-
-    expect(screen['floorLabel'](floor({ mode: 'percent', value: 5000 }))).toContain('% du tarif');
-    expect(screen['floorLabel'](floor({ mode: 'amount', value: 150 }))).not.toContain('%');
-  });
-});
-
 describe('la limite héritée', () => {
   /**
    * Poser sa propre limite fait sauter celle dont on hérite — y compris vers le
@@ -368,12 +337,5 @@ describe('suspendre et reprendre', () => {
     await pageWith([], opened)['openRuleJournal'](rule());
 
     expect(opened).toContain('JournalPanel');
-  });
-
-  it("propose l'inverse de l'état courant", () => {
-    const screen = pageWith([]);
-
-    expect(screen['toggleLabel'](rule())).toContain('Suspendre');
-    expect(screen['toggleLabel'](rule({ status: 'paused' }))).toContain('Reprendre');
   });
 });

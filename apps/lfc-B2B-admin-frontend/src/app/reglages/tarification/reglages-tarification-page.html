@@ -1,6 +1,6 @@
 @switch (state()) {
   @case ('loading') {
-    <fold-loading message="Résolution des prix…" />
+    <app-grid-skeleton />
   }
   @case ('error') {
     <fold-empty-state tone="alert" title="Impossible de charger la tarification">
@@ -14,36 +14,25 @@
         description="Le catalogue est vide. Publiez des produits sur le canal B2B, puis relancez un push."
       />
     } @else {
+      <app-tarification-summary
+        [itemCount]="itemCount()"
+        [alteredCount]="alteredCount()"
+        [flooredCount]="flooredCount()"
+        [staleFloorCount]="staleFloorCount()"
+        (archivesRequested)="openArchives()"
+      />
+
       <!--
-        L'avertissement est en TÊTE parce qu'il change la lecture de tout ce qui
-        suit : sans lui, la dernière colonne passerait pour « le prix », alors
-        qu'elle est le prix de vitrine.
+        La mise en garde vient AVANT la grille parce qu'elle change la lecture de
+        tout ce qui suit : sans elle, la colonne du prix passerait pour « le
+        prix », alors qu'elle est le prix de vitrine. En une ligne, pas en pavé —
+        elle se relit chaque jour et ne doit pas s'apprendre à être sautée.
       -->
-      <fold-callout variant="info">
-        <p>
-          Les prix affichés sont ceux d'<strong>un article</strong>, pour un client
-          <strong>sans tarif négocié</strong>, aujourd'hui. Les mercuriales et les paliers de volume
-          existent et ne se voient pas ici — ils dépendent de qui commande, et de combien.
-        </p>
-      </fold-callout>
-
-      @if (flooredCount() > 0) {
-        <fold-callout variant="warning">
-          <p>
-            <strong>{{ flooredCount() }}</strong> prix ont été <strong>relevés</strong> par une
-            limite. Une règle n'y a donc pas produit son effet : c'est le moment de regarder
-            laquelle, avant qu'un client ne le remarque.
-          </p>
-        </fold-callout>
-      }
-
-      <!-- L'entrée vers ce qui n'est plus là. Discrète, en haut à droite : on la
-           cherche rarement, mais quand on la cherche, on sait quoi chercher. -->
-      <div class="toolbar">
-        <button foldButton emphasis="outline" intent="neutral" (click)="openArchives()">
-          Archives
-        </button>
-      </div>
+      <p class="caveat">
+        Prix d'<strong>un article</strong>, pour un client <strong>sans tarif négocié</strong>,
+        aujourd'hui. Les mercuriales et les paliers de volume existent et ne se voient pas ici : ils
+        dépendent de qui commande, et de combien.
+      </p>
 
       <!-- Les en-têtes de colonnes, posés UNE fois : la grille se lit de gauche
            à droite comme le prix se construit. -->
@@ -135,55 +124,14 @@
                   @if (category.rules.length > 0) {
                     <div class="node node-family">
                       @for (rule of category.rules; track rule.id) {
-                        <div
-                          class="rule"
-                          [class.is-superseded]="isSuperseded(rule, category)"
-                          [class.is-paused]="rule.status === 'paused'"
-                        >
-                          <span class="rule-summary">{{ ruleSummary(rule) }}</span>
-                          <span class="rule-label">{{ rule.label }}</span>
-                          @if (rule.status === 'paused') {
-                            <!-- « En pause » et « supplantée » disent deux choses
-                                 sans rapport : l'une que quelqu'un l'a arrêtée,
-                                 l'autre qu'une règle plus précise la remplace. -->
-                            <span class="rule-note">en pause</span>
-                          }
-                          @if (isSuperseded(rule, category)) {
-                            <!-- Dans un même étage, la règle d'article REMPLACE
-                                 celle de la famille. Le taire laisserait le
-                                 lecteur additionner deux remises dont une agit. -->
-                            <span class="rule-note">supplantée sur certains articles</span>
-                          }
-                          <div class="rule-acts">
-                            <button
-                              type="button"
-                              class="rule-toggle"
-                              [attr.aria-label]="toggleLabel(rule)"
-                              (click)="toggleRule(rule)"
-                            >
-                              {{ rule.status === 'paused' ? '▸' : '❚❚' }}
-                            </button>
-                            <!-- Le journal se lit LÀ où la décision se voit :
-                                 chercher qui a suspendu une promo ne devrait pas
-                                 demander d'ouvrir un autre écran. -->
-                            <button
-                              type="button"
-                              class="rule-toggle"
-                              [attr.aria-label]="'Journal de ' + rule.label"
-                              (click)="openRuleJournal(rule)"
-                            >
-                              Journal
-                            </button>
-                          </div>
-                          <button
-                            type="button"
-                            class="rule-remove"
-                            [attr.aria-label]="'Retirer ' + rule.label"
-                            (click)="removeRule(rule)"
-                          >
-                            ×
-                          </button>
-                        </div>
+                        <app-rule-chip
+                          [rule]="rule"
+                          [superseded]="isSuperseded(rule, category)"
+                          [showLabel]="true"
+                          (toggled)="toggleRule($event)"
+                          (journalRequested)="openRuleJournal($event)"
+                          (archiveRequested)="removeRule($event)"
+                        />
                       }
                       <button
                         type="button"
@@ -213,38 +161,12 @@
                 @if (item.rules.length > 0) {
                   <div class="node node-product">
                     @for (rule of item.rules; track rule.id) {
-                      <div class="rule" [class.is-paused]="rule.status === 'paused'">
-                        <span class="rule-summary">{{ ruleSummary(rule) }}</span>
-                        @if (rule.status === 'paused') {
-                          <span class="rule-note">en pause</span>
-                        }
-                        <div class="rule-acts">
-                          <button
-                            type="button"
-                            class="rule-toggle"
-                            [attr.aria-label]="toggleLabel(rule)"
-                            (click)="toggleRule(rule)"
-                          >
-                            {{ rule.status === 'paused' ? '▸' : '❚❚' }}
-                          </button>
-                          <button
-                            type="button"
-                            class="rule-toggle"
-                            [attr.aria-label]="'Journal de ' + rule.label"
-                            (click)="openRuleJournal(rule)"
-                          >
-                            Journal
-                          </button>
-                        </div>
-                        <button
-                          type="button"
-                          class="rule-remove"
-                          [attr.aria-label]="'Retirer ' + rule.label"
-                          (click)="removeRule(rule)"
-                        >
-                          ×
-                        </button>
-                      </div>
+                      <app-rule-chip
+                        [rule]="rule"
+                        (toggled)="toggleRule($event)"
+                        (journalRequested)="openRuleJournal($event)"
+                        (archiveRequested)="removeRule($event)"
+                      />
                     }
                     <button
                       type="button"
@@ -275,7 +197,17 @@
                   [class.is-changed]="item.finalCents !== item.canonicalCents"
                   [class.is-floored]="item.floored"
                 >
+                  @if (deltaLabel(item); as delta) {
+                    <!-- Le tarif d'entrée, barré : sans lui, l'écart n'a pas de
+                         point de départ visible. -->
+                    <span class="final-from">{{ euros(item.canonicalCents) }}</span>
+                  }
                   <span class="final-price">{{ euros(item.finalCents) }}</span>
+                  @if (deltaLabel(item); as delta) {
+                    <!-- Ce qu'on ne peut PAS lire en comparant deux colonnes sur
+                         quatre-vingt-dix lignes : de combien le prix a bougé. -->
+                    <span class="final-delta" [class.is-up]="!isDiscount(item)">{{ delta }}</span>
+                  }
                   @if (item.floored) {
                     <span class="final-note">relevé au plancher</span>
                   } @else if (item.steps.length > 0) {

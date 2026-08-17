@@ -1,0 +1,15 @@
+<!-- Décoratif : les lecteurs d'écran reçoivent le message d'attente de la page,
+     pas cette maquette. -->
+<p class="sr-only" role="status">Résolution des prix…</p>
+
+<div class="skeleton" aria-hidden="true">
+  <div class="bar bar-summary"></div>
+  @for (shelf of shelves; track shelf) {
+    <div class="shelf">
+      <div class="bar bar-title"></div>
+      @for (row of rows; track row) {
+        <div class="bar bar-row"></div>
+      }
+    </div>
+  }
+</div>

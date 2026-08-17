@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
-  ElasticityComparison,
-  ItemElasticityView,
   NegotiationRoom,
   PriceFloorView,
   PriceRuleView,
@@ -10,20 +8,31 @@ import type {
   PricingCategoryView,
   PricingItemView,
 } from '@lfd/contracts';
-import { PRICE_STAGE_LABELS } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
+
+import {
+  attainmentLabel,
+  deltaLabel,
+  isDiscount,
+  isOnTrack,
+  ratioLabel,
+  roomEuros,
+  roomPercent,
+  ruleSentence,
+} from './pricing-format';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldEmptyStateComponent,
-  FoldLoadingStateComponent,
   FoldPanelHostService,
 } from 'fold-ng';
 
 import { ArchivePanel, type ArchivePanelData } from './archive-panel/archive-panel';
 import { ArchivesPanel } from './archives-panel/archives-panel';
 import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
+import { GridSkeleton } from './grid-skeleton/grid-skeleton';
+import { RuleChip } from './rule-chip/rule-chip';
+import { TarificationSummaryBar } from './summary-bar/summary-bar';
 import { JournalPanel, type JournalPanelData } from './journal-panel/journal-panel';
 import { RulePanel, type RulePanelData } from './rule-panel/rule-panel';
 import { TarificationService } from './tarification.service';
@@ -74,9 +83,10 @@ type LoadState = 'loading' | 'ready' | 'error';
   imports: [
     FoldBadgeComponent,
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldEmptyStateComponent,
-    FoldLoadingStateComponent,
+    GridSkeleton,
+    RuleChip,
+    TarificationSummaryBar,
   ],
   templateUrl: './reglages-tarification-page.html',
   styleUrl: './reglages-tarification-page.scss',
@@ -89,6 +99,23 @@ export class ReglagesTarificationPage {
   protected readonly board = signal<PricingBoardView | null>(null);
 
   protected readonly euros = formatEuros;
+
+  // La mise en forme vit à côté, en fonctions pures : le composant expose, il ne
+  // calcule pas.
+  protected readonly deltaLabel = deltaLabel;
+  protected readonly isDiscount = isDiscount;
+  protected readonly ratioLabel = ratioLabel;
+  protected readonly attainmentLabel = attainmentLabel;
+  protected readonly isOnTrack = isOnTrack;
+
+  /** Les deux unités de la marge, prises sur la vue plutôt que sur deux nombres. */
+  protected roomEuros(room: NegotiationRoom): string {
+    return roomEuros(room.maxDiscountCents);
+  }
+
+  protected roomPercent(room: NegotiationRoom): string {
+    return roomPercent(room.maxDiscountBp);
+  }
 
   protected readonly categories = computed<readonly PricingCategoryView[]>(
     () => this.board()?.categories ?? [],
@@ -110,6 +137,31 @@ export class ReglagesTarificationPage {
         .filter((item) => item.steps.length > 0).length,
   );
 
+  /** Le dénominateur : sans lui, « 12 altérés » ne veut rien dire. */
+  protected readonly itemCount = computed(
+    () => this.categories().flatMap((category) => category.items).length,
+  );
+
+  /**
+   * Combien de limites ont **vieilli** — le tarif a bougé sous elles.
+   *
+   * Compté par PORTÉE et non par article : une limite de famille qui a dérivé
+   * est UNE décision à revoir, pas quarante. Compter les articles ferait passer
+   * une seule intention datée pour une avalanche.
+   */
+  protected readonly staleFloorCount = computed(() => {
+    const scopes = new Set<string>();
+    for (const category of this.categories()) {
+      for (const item of category.items) {
+        const floor = item.effectiveFloor;
+        if (floor?.drift?.stale === true) {
+          scopes.add(floor.id);
+        }
+      }
+    }
+    return scopes.size;
+  });
+
   constructor() {
     void this.load();
   }
@@ -124,17 +176,6 @@ export class ReglagesTarificationPage {
     }
   }
 
-  /** Ce qu'une règle fait, en une ligne — c'est ce que le nœud affiche. */
-  protected ruleSummary(rule: PriceRuleView): string {
-    const effect =
-      rule.effect.nature === 'replace'
-        ? `à ${formatEuros(rule.effect.amountCents)}`
-        : `${rule.effect.direction === 'increase' ? '+' : '−'}${magnitude(rule)}`;
-    const tier = rule.minQuantity === null ? '' : ` dès ${String(rule.minQuantity)}`;
-    return `${PRICE_STAGE_LABELS[rule.stage]} ${effect}${tier}`;
-  }
-
-  /** Une limite, mise en forme selon son unité. */
   protected floorLabel(floor: PriceFloorView): string {
     return floor.mode === 'percent'
       ? `${String(floor.value / 100)} % du tarif`
@@ -203,7 +244,7 @@ export class ReglagesTarificationPage {
     await this.openArchive({
       subject: { kind: 'rule', id: rule.id },
       target: rule.label,
-      summary: `${this.ruleSummary(rule)} — ${rule.label}`,
+      summary: `${ruleSentence(rule)} — ${rule.label}`,
     });
   }
 
@@ -233,11 +274,6 @@ export class ReglagesTarificationPage {
     );
   }
 
-  /** Ce que le bouton propose : l'inverse de l'état courant. */
-  protected toggleLabel(rule: PriceRuleView): string {
-    return rule.status === 'paused' ? `Reprendre ${rule.label}` : `Suspendre ${rule.label}`;
-  }
-
   private async openRule(data: RulePanelData): Promise<void> {
     await this.reloadIfChanged(
       this.panels.open<RulePanelData | undefined, boolean>(RulePanel, { data, width: 'md' }).closed,
@@ -262,55 +298,9 @@ export class ReglagesTarificationPage {
     }
   }
 
-  /**
-   * Le ratio iso-chiffre, en clair : « ×1,25 ».
-   *
-   * `null` quand il n'a pas de valeur finie — un article offert n'atteint le
-   * chiffre d'origine à aucun volume, et « ×∞ » n'aide personne.
-   */
-  protected ratioLabel(elasticity: ItemElasticityView): string | null {
-    const ratio = elasticity.isoRevenueRatioBp;
-    return ratio === null ? null : `×${(ratio / 10_000).toFixed(2).replace('.', ',')}`;
-  }
-
-  /** Où en est le réalisé vis-à-vis de l'objectif, en pourcent entier. */
-  protected attainmentLabel(comparison: ElasticityComparison): string | null {
-    return comparison.attainmentBp === null
-      ? null
-      : `${String(Math.round(comparison.attainmentBp / 100))} %`;
-  }
-
-  /** L'objectif est-il tenu ? Sert à colorer, jamais à cacher le chiffre. */
-  protected isOnTrack(comparison: ElasticityComparison): boolean {
-    return comparison.attainmentBp !== null && comparison.attainmentBp >= 10_000;
-  }
-
-  /**
-   * La marge négociable, dans les DEUX unités.
-   *
-   * Le commercial choisit laquelle il annonce dans son appel : ni l'une ni
-   * l'autre n'est un sous-titre, et l'écran les met au même poids.
-   */
-  protected roomEuros(room: NegotiationRoom): string {
-    return formatEuros(room.maxDiscountCents);
-  }
-
-  protected roomPercent(room: NegotiationRoom): string {
-    return `${(room.maxDiscountBp / 100).toFixed(1).replace('.', ',')} %`;
-  }
-
-  /** La portée d'un nœud, pour l'attribut de test — utile aux specs. */
   protected scopeKey(scope: PriceScopePayload): string {
     return `${scope.type}:${scope.id ?? ''}`;
   }
 }
 
 /** La grandeur d'une altération, avec son unité. */
-function magnitude(rule: PriceRuleView): string {
-  if (rule.effect.nature === 'replace') {
-    return formatEuros(rule.effect.amountCents);
-  }
-  return rule.effect.mode === 'percent'
-    ? `${String(rule.effect.value / 100)} %`
-    : formatEuros(rule.effect.value);
-}

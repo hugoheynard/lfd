@@ -1,0 +1,57 @@
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-5, 1.5rem);
+}
+
+.bar {
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 5%));
+}
+
+.bar-summary {
+  height: 5.25rem;
+  border-radius: var(--fold-radius-lg, 0.75rem);
+}
+
+.shelf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2, 0.5rem);
+  padding: var(--fold-space-3, 0.75rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg, 0.75rem);
+}
+
+.bar-title {
+  width: 9rem;
+  height: 1.25rem;
+}
+
+.bar-row {
+  height: 3.25rem;
+}
+
+// Le pouls dit « ça travaille ». Coupé dès que le système demande moins de
+// mouvement : l'ossature reste lisible sans lui.
+@media (prefers-reduced-motion: no-preference) {
+  .bar {
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
+  }
+}

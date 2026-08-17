@@ -1,0 +1,31 @@
+<section class="summary" aria-label="Synthèse de la tarification">
+  <div class="stat">
+    <span class="stat-value">{{ itemCount() }}</span>
+    <span class="stat-label">articles tarifés</span>
+  </div>
+
+  <div class="stat" [class.is-lit]="alteredCount() > 0">
+    <span class="stat-value">{{ alteredCount() }}</span>
+    <span class="stat-label">portent une altération</span>
+  </div>
+
+  <!-- Le seul chiffre de cet écran qui appelle un geste aujourd'hui : une règle
+       n'y a pas produit son effet. -->
+  <div class="stat is-warning" [class.is-lit]="flooredCount() > 0">
+    <span class="stat-value">{{ flooredCount() }}</span>
+    <span class="stat-label">relevés par une limite</span>
+  </div>
+
+  <div class="stat is-warning" [class.is-lit]="staleFloorCount() > 0">
+    <span class="stat-value">{{ staleFloorCount() }}</span>
+    <span class="stat-label">limites à confirmer</span>
+  </div>
+
+  <span class="spacer"></span>
+
+  <!-- L'entrée vers ce qui n'est plus là. Discrète : on la cherche rarement,
+       mais quand on la cherche, on sait quoi chercher. -->
+  <button foldButton emphasis="outline" intent="neutral" (click)="archivesRequested.emit()">
+    Archives
+  </button>
+</section>

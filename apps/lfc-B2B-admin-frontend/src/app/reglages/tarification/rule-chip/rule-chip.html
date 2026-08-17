@@ -1,0 +1,46 @@
+<span class="summary">{{ summary() }}</span>
+
+@if (showLabel()) {
+  <span class="note">{{ rule().label }}</span>
+}
+
+@if (rule().status === 'paused') {
+  <span class="note">en pause</span>
+}
+
+@if (superseded()) {
+  <!-- Dans un même étage, la règle d'article REMPLACE celle de la famille. Le
+       taire laisserait le lecteur additionner deux remises dont une agit. -->
+  <span class="note">supplantée sur certains articles</span>
+}
+
+<!-- Discrets tant qu'on ne s'en approche pas : quatre-vingt-dix boutons pleins
+     noieraient la donnée qu'ils accompagnent. Discrets, pas cachés — ils gardent
+     leur place et reviennent au focus clavier. -->
+<div class="acts">
+  <button
+    type="button"
+    class="act"
+    [attr.aria-label]="toggleLabel()"
+    (click)="toggled.emit(rule())"
+  >
+    {{ rule().status === 'paused' ? '▸' : '❚❚' }}
+  </button>
+  <button
+    type="button"
+    class="act"
+    [attr.aria-label]="'Journal de ' + rule().label"
+    (click)="journalRequested.emit(rule())"
+  >
+    Journal
+  </button>
+</div>
+
+<button
+  type="button"
+  class="remove"
+  [attr.aria-label]="'Retirer ' + rule().label"
+  (click)="archiveRequested.emit(rule())"
+>
+  ×
+</button>
