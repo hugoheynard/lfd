@@ -143,6 +143,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'tarification',
+        title: 'Tarification — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/tarification/reglages-tarification-page').then(
+            (m) => m.ReglagesTarificationPage,
+          ),
+      },
+      {
         path: 'commercial',
         canActivate: [permissionGuard('growth:read')],
         title: 'Commercial — LFC B2B admin',

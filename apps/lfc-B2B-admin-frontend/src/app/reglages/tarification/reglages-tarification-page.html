@@ -1,0 +1,229 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Résolution des prix…" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de charger la tarification">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    @if (categories().length === 0) {
+      <fold-empty-state
+        title="Aucun article à tarifer"
+        description="Le catalogue est vide. Publiez des produits sur le canal B2B, puis relancez un push."
+      />
+    } @else {
+      <!--
+        L'avertissement est en TÊTE parce qu'il change la lecture de tout ce qui
+        suit : sans lui, la dernière colonne passerait pour « le prix », alors
+        qu'elle est le prix de vitrine.
+      -->
+      <fold-callout variant="info">
+        <p>
+          Les prix affichés sont ceux d'<strong>un article</strong>, pour un client
+          <strong>sans tarif négocié</strong>, aujourd'hui. Les mercuriales et les paliers de volume
+          existent et ne se voient pas ici — ils dépendent de qui commande, et de combien.
+        </p>
+      </fold-callout>
+
+      @if (flooredCount() > 0) {
+        <fold-callout variant="warning">
+          <p>
+            <strong>{{ flooredCount() }}</strong> prix ont été <strong>relevés</strong> par une
+            limite. Une règle n'y a donc pas produit son effet : c'est le moment de regarder
+            laquelle, avant qu'un client ne le remarque.
+          </p>
+        </fold-callout>
+      }
+
+      <!-- Les en-têtes de colonnes, posés UNE fois : la grille se lit de gauche
+           à droite comme le prix se construit. -->
+      <div class="legend" aria-hidden="true">
+        <span class="legend-cell col-article">Article · tarif</span>
+        <span class="legend-cell col-limit">Limite</span>
+        <span class="legend-cell col-family">Altération famille</span>
+        <span class="legend-cell col-product">Altération produit</span>
+        <span class="legend-cell col-final">Prix final</span>
+      </div>
+
+      @for (category of categories(); track category.id) {
+        <section class="shelf">
+          <header class="shelf-head">
+            <h2 class="shelf-name">{{ category.name }}</h2>
+            <fold-badge [content]="category.items.length + ' articles'" variant="neutral" />
+            @if (category.vatRatePercent !== null) {
+              <span class="shelf-vat">TVA {{ category.vatRatePercent }} %</span>
+            }
+            <span class="shelf-spacer"></span>
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              (click)="editCategoryFloor(category)"
+            >
+              {{
+                category.floor === null
+                  ? 'Limite de famille'
+                  : 'Limite : ' + floorLabel(category.floor)
+              }}
+            </button>
+          </header>
+
+          <div class="grid">
+            @for (item of category.items; track item.sku; let row = $index) {
+              <!-- Colonne 1 — l'article et son tarif d'entrée. -->
+              <div class="cell col-article" [style.gridRow]="row + 1">
+                <div class="node node-article">
+                  <span class="article-name">{{ item.name }}</span>
+                  <span class="article-meta"
+                    >{{ item.sku }} · {{ euros(item.canonicalCents) }}</span
+                  >
+                </div>
+              </div>
+
+              <!-- Colonne 2 — la limite. Ce n'est PAS un étage : elle s'applique
+                   en fin de chaîne. Elle ne s'allume que lorsqu'elle a mordu. -->
+              <div class="cell col-limit" [style.gridRow]="row + 1">
+                @if (item.effectiveFloor !== null) {
+                  <button
+                    type="button"
+                    class="node node-guard"
+                    [class.is-active]="item.floored"
+                    [class.is-inherited]="isInherited(item)"
+                    [attr.data-scope]="scopeKey({ type: 'product', id: item.sku })"
+                    (click)="editItemFloor(item)"
+                  >
+                    <span class="guard-value">{{ floorLabel(item.effectiveFloor) }}</span>
+                    <span class="guard-meta">
+                      {{ isInherited(item) ? 'héritée' : 'propre'
+                      }}{{ item.floored ? ' · a relevé' : '' }}
+                    </span>
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="node node-add"
+                    [attr.aria-label]="'Poser une limite sur ' + item.name"
+                    (click)="editItemFloor(item)"
+                  >
+                    +
+                  </button>
+                }
+              </div>
+
+              <!-- Colonne 3 — UN nœud pour toute la famille, de la hauteur de
+                   ses articles. C'est la forme qui dit qu'il n'y en a qu'un. -->
+              @if (row === 0) {
+                <div class="cell col-family" [style.gridRow]="'1 / span ' + category.items.length">
+                  @if (category.rules.length > 0) {
+                    <div class="node node-family">
+                      @for (rule of category.rules; track rule.id) {
+                        <div class="rule" [class.is-superseded]="isSuperseded(rule, category)">
+                          <span class="rule-summary">{{ ruleSummary(rule) }}</span>
+                          <span class="rule-label">{{ rule.label }}</span>
+                          @if (isSuperseded(rule, category)) {
+                            <!-- Dans un même étage, la règle d'article REMPLACE
+                                 celle de la famille. Le taire laisserait le
+                                 lecteur additionner deux remises dont une agit. -->
+                            <span class="rule-note">supplantée sur certains articles</span>
+                          }
+                          <button
+                            type="button"
+                            class="rule-remove"
+                            [attr.aria-label]="'Retirer ' + rule.label"
+                            (click)="removeRule(rule)"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      }
+                      <button
+                        type="button"
+                        class="node-add node-add-inline"
+                        [attr.aria-label]="'Ajouter une altération sur ' + category.name"
+                        (click)="addCategoryRule(category)"
+                      >
+                        +
+                      </button>
+                    </div>
+                  } @else {
+                    <button
+                      type="button"
+                      class="node node-add node-add-tall"
+                      [attr.data-scope]="scopeKey({ type: 'category', id: category.id })"
+                      [attr.aria-label]="'Ajouter une altération sur ' + category.name"
+                      (click)="addCategoryRule(category)"
+                    >
+                      +
+                    </button>
+                  }
+                </div>
+              }
+
+              <!-- Colonne 4 — ce qui vise cet article nommément. -->
+              <div class="cell col-product" [style.gridRow]="row + 1">
+                @if (item.rules.length > 0) {
+                  <div class="node node-product">
+                    @for (rule of item.rules; track rule.id) {
+                      <div class="rule">
+                        <span class="rule-summary">{{ ruleSummary(rule) }}</span>
+                        <button
+                          type="button"
+                          class="rule-remove"
+                          [attr.aria-label]="'Retirer ' + rule.label"
+                          (click)="removeRule(rule)"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    }
+                    <button
+                      type="button"
+                      class="node-add node-add-inline"
+                      [attr.aria-label]="'Ajouter une altération sur ' + item.name"
+                      (click)="addItemRule(item)"
+                    >
+                      +
+                    </button>
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    class="node node-add"
+                    [attr.data-scope]="scopeKey({ type: 'product', id: item.sku })"
+                    [attr.aria-label]="'Ajouter une altération sur ' + item.name"
+                    (click)="addItemRule(item)"
+                  >
+                    +
+                  </button>
+                }
+              </div>
+
+              <!-- Colonne 5 — ce qui sort de la chaîne. -->
+              <div class="cell col-final" [style.gridRow]="row + 1">
+                <div
+                  class="node node-final"
+                  [class.is-changed]="item.finalCents !== item.canonicalCents"
+                  [class.is-floored]="item.floored"
+                >
+                  <span class="final-price">{{ euros(item.finalCents) }}</span>
+                  @if (item.floored) {
+                    <span class="final-note">relevé au plancher</span>
+                  } @else if (item.steps.length > 0) {
+                    <span class="final-note">{{ item.steps.length }} étage(s)</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <p class="tally">
+        <strong>{{ alteredCount() }}</strong> article(s) portent au moins une altération.
+      </p>
+    }
+  }
+}

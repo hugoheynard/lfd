@@ -1,0 +1,91 @@
+<fold-panel-header
+  title="Limite de prix"
+  [subtitle]="'Sur ' + target() + '. Le prix ne descendra pas sous ce seuil.'"
+/>
+
+<div class="body">
+  @if (inherited() !== null) {
+    <!--
+      Le point qui surprend : une limite d'article REMPLACE celle de sa famille,
+      elle ne s'y ajoute pas. Elle peut donc l'ABAISSER. Il faut le voir avant
+      de le faire, pas après.
+    -->
+    <p class="inherited">
+      Aujourd'hui, cette cible hérite d'une limite de
+      <strong>{{ inheritedLabel() }}</strong
+      >. En poser une ici la <strong>remplacera</strong> — y compris pour descendre plus bas.
+    </p>
+  }
+
+  <div class="mode">
+    <span class="mode-label">Exprimée en</span>
+    <div class="mode-choices" role="group" aria-label="Unité de la limite">
+      <button
+        type="button"
+        class="mode-choice"
+        [class.is-on]="mode() === 'amount'"
+        [attr.aria-pressed]="mode() === 'amount'"
+        (click)="setMode('amount')"
+      >
+        € — un montant
+      </button>
+      <button
+        type="button"
+        class="mode-choice"
+        [class.is-on]="mode() === 'percent'"
+        [attr.aria-pressed]="mode() === 'percent'"
+        (click)="setMode('percent')"
+      >
+        % — du tarif
+      </button>
+    </div>
+    <p class="mode-hint">
+      @if (mode() === 'percent') {
+        Une fraction <strong>suit</strong> le tarif : si le PIM augmente, la limite monte avec lui.
+      } @else {
+        Un montant est une limite <strong>absolue</strong> — pour un coût fixe connu, qu'un
+        pourcentage n'exprimerait pas.
+      }
+    </p>
+  </div>
+
+  <fold-input
+    [label]="mode() === 'percent' ? 'Limite (% du tarif)' : 'Limite (€ HT)'"
+    inputmode="decimal"
+    [placeholder]="mode() === 'percent' ? '50' : '1,20'"
+    [value]="amount() === null ? '' : amount()!.toString()"
+    (valueChange)="setAmount($event)"
+  />
+
+  @if (preview(); as apercu) {
+    <p class="preview">
+      Sur cet article, ça fait <strong>{{ apercu }}</strong
+      >.
+    </p>
+  }
+
+  @if (mode() === 'percent' && (amount() ?? 0) > 100) {
+    <p class="warn">
+      Au-delà de 100 %, ce n'est plus une limite : elle <strong>relèverait</strong> tous les prix, y
+      compris ceux qu'aucune règle n'a touchés.
+    </p>
+  }
+
+  <p class="when">
+    La limite s'applique <strong>en fin de chaîne</strong>, une fois tous les étages passés. Quand
+    elle mord, l'écran le dit sur le prix final.
+  </p>
+</div>
+
+<footer class="foot">
+  @if (current() !== null) {
+    <button foldButton emphasis="outline" intent="danger" [disabled]="saving()" (click)="remove()">
+      Retirer
+    </button>
+  }
+  <span class="spacer"></span>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || saving()" (click)="submit()">
+    {{ current() === null ? 'Poser la limite' : 'Enregistrer' }}
+  </button>
+</footer>

@@ -1,0 +1,126 @@
+<fold-panel-header
+  title="Altérer le prix"
+  [subtitle]="'Sur ' + target() + '. La règle la plus précise gagne dans son étage.'"
+/>
+
+<div class="body">
+  <fold-select label="Étage" [value]="stage()" (valueChange)="setStage($event)">
+    @for (option of stages; track option.value) {
+      <option [value]="option.value">{{ option.label }}</option>
+    }
+  </fold-select>
+
+  <!--
+    Poser un prix ≠ le modifier, et le choix appartient à celui qui saisit :
+    un montant en euros ne suit PAS les hausses du tarif de liste, un
+    pourcentage les suit. Les deux sont légitimes selon ce qu'on a promis.
+  -->
+  <div class="nature">
+    <span class="nature-label">Ce que la règle fait</span>
+    <div class="nature-choices" role="group" aria-label="Ce que la règle fait">
+      <button
+        type="button"
+        class="nature-choice"
+        [class.is-on]="nature() === 'alter'"
+        [attr.aria-pressed]="nature() === 'alter'"
+        (click)="setNature('alter')"
+      >
+        Modifier le prix
+      </button>
+      <button
+        type="button"
+        class="nature-choice"
+        [class.is-on]="nature() === 'replace'"
+        [attr.aria-pressed]="nature() === 'replace'"
+        (click)="setNature('replace')"
+      >
+        Poser un prix
+      </button>
+    </div>
+    <p class="nature-hint">
+      @if (nature() === 'alter') {
+        Le prix entrant est modifié. Un pourcentage <strong>suit</strong> les hausses du tarif.
+      } @else {
+        Un prix ferme, en euros. Il ne bougera <strong>pas</strong> si le tarif de liste monte.
+      }
+    </p>
+  </div>
+
+  @if (nature() === 'alter') {
+    <!-- Le sens n'est PAS verrouillé : un supplément produit vit dans le même
+         étage qu'une remise, donc il se saisit. Premier écran où c'est le cas. -->
+    <lfd-price-alteration-field
+      label="Altération"
+      [value]="alteration()"
+      (valueChange)="alteration.set($event)"
+    />
+  } @else {
+    <fold-input
+      label="Prix posé (€ HT)"
+      inputmode="decimal"
+      placeholder="1,80"
+      [value]="amount() === null ? '' : amount()!.toString()"
+      (valueChange)="setAmount($event)"
+    />
+  }
+
+  @if (wantsQuantity()) {
+    <fold-input
+      label="À partir de (quantité)"
+      inputmode="numeric"
+      placeholder="100"
+      hint="Mesuré sur la quantité TOTALE du SKU dans la commande, lignes fusionnées."
+      [value]="minQuantity() === null ? '' : minQuantity()!.toString()"
+      (valueChange)="setMinQuantity($event)"
+    />
+  }
+
+  <fold-input
+    label="Libellé"
+    hint="Ce que le client et le service client liront dans la trace du prix."
+    placeholder="Promotion de rentrée"
+    [value]="label()"
+    (valueChange)="label.set($event)"
+  />
+
+  <!-- Dates en `<input type="date">` NATIF : `fold-input` ne porte pas ce type,
+       et les Signal Forms ne couvrent pas les dates. Même parti que le panier
+       et le bon de production. -->
+  <div class="window">
+    <div class="date">
+      <label class="date-label" for="rule-from">À partir du</label>
+      <input
+        id="rule-from"
+        class="date-field"
+        type="date"
+        [value]="validFrom()"
+        (change)="validFrom.set($any($event.target).value)"
+      />
+    </div>
+    <div class="date">
+      <label class="date-label" for="rule-to"
+        >Jusqu'au <span class="date-optional">facultatif</span></label
+      >
+      <input
+        id="rule-to"
+        class="date-field"
+        type="date"
+        [value]="validTo()"
+        (change)="validTo.set($any($event.target).value)"
+      />
+      <p class="date-hint">Vide = sans terme. Ce jour-là, la règle ne s'applique plus.</p>
+    </div>
+  </div>
+
+  <p class="audience">
+    Cette règle s'applique à <strong>tous les clients</strong>. Un tarif négocié pour une entreprise
+    précise est une <strong>mercuriale</strong>, et elle se saisit sur la fiche du client.
+  </p>
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || saving()" (click)="submit()">
+    Poser la règle
+  </button>
+</footer>

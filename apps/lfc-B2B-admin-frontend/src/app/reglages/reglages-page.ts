@@ -59,6 +59,13 @@ export class ReglagesPage {
       needs: 'settings:read',
     },
     {
+      key: 'tarification',
+      label: 'Tarification',
+      link: 'tarification',
+      icon: 'tag',
+      needs: 'settings:read',
+    },
+    {
       key: 'commercial',
       label: 'Commercial',
       link: 'commercial',

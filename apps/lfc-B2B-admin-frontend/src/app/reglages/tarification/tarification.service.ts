@@ -1,0 +1,61 @@
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+
+import type {
+  CreatePriceRulePayload,
+  PriceScopePayload,
+  PricingBoardView,
+  SetPriceFloorPayload,
+} from '@lfd/contracts';
+
+import { B2B_API_BASE } from '../../api/api-config';
+
+/**
+ * Le **paramétrage tarifaire** : ce qui altère un prix, et ce qui l'empêche de
+ * descendre trop bas.
+ *
+ * Écriture par geste nommé, comme côté serveur. Aucune arithmétique ici : le
+ * tableau arrive avec ses prix **déjà résolus** par la fonction qui facture. Un
+ * recalcul côté navigateur finirait par annoncer autre chose que la facture, et
+ * c'est exactement ce qu'un client conteste.
+ */
+@Injectable({ providedIn: 'root' })
+export class TarificationService {
+  private readonly http = inject(HttpClient);
+
+  /** Le tableau complet — familles, articles, règles, limites, prix résolus. */
+  read(): Promise<PricingBoardView> {
+    return firstValueFrom(this.http.get<PricingBoardView>(`${B2B_API_BASE}/admin/pricing`));
+  }
+
+  /** Pose une règle. Rend son identifiant, pour pouvoir la retirer. */
+  async createRule(payload: CreatePriceRulePayload): Promise<string> {
+    const created = await firstValueFrom(
+      this.http.post<{ id: string }>(`${B2B_API_BASE}/admin/pricing/rules`, payload),
+    );
+    return created.id;
+  }
+
+  async removeRule(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${B2B_API_BASE}/admin/pricing/rules/${encodeURIComponent(id)}`),
+    );
+  }
+
+  /** Pose la limite. **Idempotent par portée** : re-poser remplace. */
+  async setFloor(payload: SetPriceFloorPayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${B2B_API_BASE}/admin/pricing/floors`, payload));
+  }
+
+  /**
+   * Retire la limite d'une portée.
+   *
+   * La portée globale a son propre chemin : elle ne désigne aucune cible, donc
+   * le sien n'en porte pas — un segment vide ne s'apparie pas côté serveur.
+   */
+  async removeFloor(scope: PriceScopePayload): Promise<void> {
+    const path = scope.id === null ? 'global' : `${scope.type}/${encodeURIComponent(scope.id)}`;
+    await firstValueFrom(this.http.delete<void>(`${B2B_API_BASE}/admin/pricing/floors/${path}`));
+  }
+}

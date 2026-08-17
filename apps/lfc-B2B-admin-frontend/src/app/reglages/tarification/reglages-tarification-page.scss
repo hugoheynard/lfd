@@ -1,0 +1,323 @@
+/*
+ * Cinq colonnes, lues de gauche à droite comme le prix se construit.
+ *
+ * La grille est **explicite** : chaque cellule porte sa colonne (par sa classe)
+ * et sa ligne (par un style lié). Le placement automatique aurait suffi tant
+ * qu'aucune cellule ne s'étend ; le nœud de famille s'étend sur toute la hauteur
+ * de son rayon, et à partir de là l'algorithme d'auto-placement décide de choses
+ * qu'on ne veut pas lui laisser décider.
+ */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-5, 1.5rem);
+}
+
+$col-gap: 2.25rem;
+
+.legend,
+.grid {
+  display: grid;
+  grid-template-columns:
+    minmax(13rem, 1.5fr)
+    minmax(7rem, 0.9fr)
+    minmax(10rem, 1.2fr)
+    minmax(10rem, 1.2fr)
+    minmax(8rem, 0.9fr);
+  column-gap: $col-gap;
+}
+
+.legend {
+  padding: 0 var(--fold-space-3, 0.75rem);
+}
+
+.legend-cell {
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.shelf {
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg, 0.75rem);
+  background: var(--fold-color-surface);
+  padding: var(--fold-space-3, 0.75rem);
+}
+
+.shelf-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-2, 0.5rem);
+  padding: 0 var(--fold-space-1, 0.25rem) var(--fold-space-3, 0.75rem);
+}
+
+.shelf-name {
+  margin: 0;
+  font-size: var(--fold-text-md, 1rem);
+}
+
+.shelf-vat,
+.tally {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.shelf-spacer {
+  flex: 1;
+}
+
+.tally {
+  margin: 0;
+}
+
+.grid {
+  row-gap: var(--fold-space-2, 0.5rem);
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.col-article {
+  grid-column: 1;
+}
+.col-limit {
+  grid-column: 2;
+}
+.col-family {
+  grid-column: 3;
+}
+.col-product {
+  grid-column: 4;
+}
+.col-final {
+  grid-column: 5;
+}
+
+/* --- Les liens entre nœuds ------------------------------------------------
+ * Un trait pointillé dans chaque gouttière, tiré depuis la gauche de la cellule
+ * qui le reçoit. Le nœud de famille en reçoit UN seul (il est unique) et en
+ * renvoie autant qu'il y a d'articles : d'où la barre verticale sur son bord
+ * droit, qui donne à voir l'éventail.
+ */
+.cell:not(.col-article)::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -$col-gap;
+  width: $col-gap;
+  border-top: 1px dashed var(--fold-color-border);
+}
+
+.col-family::after {
+  content: '';
+  position: absolute;
+  top: 0.9rem;
+  bottom: 0.9rem;
+  right: calc(-#{$col-gap} / 2);
+  border-left: 1px dashed var(--fold-color-border);
+}
+
+.col-product::before {
+  left: calc(-#{$col-gap} / 2);
+  width: calc(#{$col-gap} / 2);
+}
+
+/* --- Les nœuds ------------------------------------------------------------ */
+
+.node {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: 3.25rem;
+  padding: var(--fold-space-2, 0.5rem) var(--fold-space-3, 0.75rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface);
+  font: inherit;
+  text-align: left;
+}
+
+.node-article {
+  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
+}
+
+.article-name {
+  font-weight: 600;
+  font-size: var(--fold-text-sm, 0.875rem);
+  line-height: 1.25;
+}
+
+.article-meta,
+.guard-meta,
+.final-note,
+.rule-label,
+.rule-note {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * La limite est un **garde-fou**, pas un étage : elle s'applique en fin de
+ * chaîne, quelle que soit sa place dans la lecture. Elle reste donc discrète
+ * tant qu'elle n'a pas mordu, et ne s'allume que lorsqu'elle a relevé le prix.
+ */
+.node-guard {
+  border-style: dashed;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+
+  &.is-inherited {
+    opacity: 0.75;
+  }
+
+  &.is-active {
+    border-style: solid;
+    border-color: var(--fold-color-warning-border, currentcolor);
+    background: var(--fold-color-warning-surface, rgb(180 120 0 / 10%));
+    color: var(--fold-color-warning-text, var(--fold-color-text));
+    opacity: 1;
+  }
+}
+
+.guard-value {
+  font-weight: 600;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.node-family,
+.node-product {
+  gap: var(--fold-space-2, 0.5rem);
+  justify-content: flex-start;
+  padding-top: var(--fold-space-3, 0.75rem);
+}
+
+.rule {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  position: relative;
+  padding-right: 1.25rem;
+
+  /* Supplantée : la règle s'appliquait et n'a pas gagné son étage. Barrée, pas
+     masquée — elle existe, et il faut pouvoir la retirer. */
+  &.is-superseded .rule-summary {
+    text-decoration: line-through;
+    color: var(--fold-color-text-muted);
+  }
+}
+
+.rule-summary {
+  font-weight: 600;
+  font-size: var(--fold-text-sm, 0.875rem);
+  line-height: 1.25;
+}
+
+.rule-remove {
+  position: absolute;
+  top: -0.15rem;
+  right: -0.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--fold-color-surface-sunken, rgb(0 0 0 / 6%));
+    color: var(--fold-color-text);
+  }
+}
+
+/* Le nœud « créer » : en pointillés, parce qu'il n'existe pas encore. */
+.node-add {
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    border-style: solid;
+    border-color: var(--fold-color-accent, var(--fold-color-text));
+    color: var(--fold-color-accent, var(--fold-color-text));
+  }
+}
+
+.node-add-inline {
+  min-height: 1.75rem;
+  padding: 0.15rem;
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-sm, 0.375rem);
+}
+
+.node-add-tall {
+  min-height: 100%;
+}
+
+.node-final {
+  align-items: flex-end;
+  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
+
+  &.is-changed {
+    background: var(--fold-color-surface);
+    border-color: var(--fold-color-accent, var(--fold-color-border));
+  }
+
+  &.is-floored {
+    border-color: var(--fold-color-warning-border, currentcolor);
+    background: var(--fold-color-warning-surface, rgb(180 120 0 / 10%));
+  }
+}
+
+.final-price {
+  font-weight: 700;
+  font-size: var(--fold-text-md, 1rem);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Sous 60rem, l'éventail ne tient plus : la grille redevient une pile par
+ * article. On coupe les traits plutôt que de les laisser pointer dans le vide —
+ * un connecteur qui ne relie rien se lit comme une erreur d'affichage.
+ */
+@media (width < 60rem) {
+  .legend {
+    display: none;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    row-gap: var(--fold-space-3, 0.75rem);
+  }
+
+  .cell,
+  .cell.col-family {
+    grid-column: 1;
+    grid-row: auto !important;
+  }
+
+  .cell::before,
+  .col-family::after {
+    display: none;
+  }
+}
