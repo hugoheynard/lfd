@@ -1,13 +1,15 @@
 # LaFolieDouce — conventions du monorepo
 
-Monorepo `lfd` (pnpm + turbo), branche de travail **`dev`**. Quatre apps :
+Monorepo `lfd` (pnpm + turbo), branche de travail **`dev`**.
 
 ```
 apps/lfc-PIM-backend/            NestJS · Prisma Postgres (db PIM)      ─┐ backends :
 apps/lfc-B2B-platform-backend/   NestJS · Prisma Postgres (db commerce) ─┘ ce document
-apps/lfc-PIM-frontend/           Angular 22 zoneless SSR · fold-ng      ─┐ frontends :
-apps/lfc-B2B-platform-frontend/  Angular 22 zoneless SSR · fold-ng      ─┘ CLAUDE.md de l'app
-packages/storage/                utilitaires stockage objet
+apps/lfc-PIM-frontend/           Angular 22 zoneless SSR · fold-ng      ─┐
+apps/lfc-B2B-platform-frontend/  Angular 22 zoneless SSR · fold-ng       │ frontends :
+apps/lfc-B2B-admin-frontend/     Angular 22 · back-office staff          │ CLAUDE.md de l'app
+apps/lfc-suite-shell/            hôte de la suite interne (iframes)     ─┘
+packages/                        contracts · b2b-ui · endpoints · mailer · storage · …
 ```
 
 **Ce fichier est la source de vérité pour TOUS les backends du monorepo.** Les
@@ -17,6 +19,42 @@ sections transverses (documentation, JSDoc, commits, quality gates).
 
 **Ne pas précharger la documentation.** Ouvrir un doc de `documentation/`
 seulement quand la tâche courante le demande.
+
+---
+
+## 0. 🔴 Le back-office est EN SERVICE depuis le 2026-08-17
+
+Le back-office staff (`lfc-B2B-admin-frontend` + `/admin/*` du backend B2B) est
+**ouvert à l'usage commercial réel**. Ce n'est plus une maquette qu'on itère : des
+comptes clients y sont créés, des accès y sont ouverts, des e-mails en partent.
+
+La base de commerce de production a été **remise à blanc la veille** (2026-08-16)
+pour partir d'un état propre. Tout ce qui s'y trouve désormais est **de la donnée
+réelle** — il n'y a plus de « données de test à jeter » en production.
+
+Ce que ça change concrètement, pour tout travail qui touche le B2B :
+
+- **Aucune remise à blanc, aucune suppression de masse.** Le script qui le
+  permettait a été supprimé volontairement le jour même. Le geste, s'il redevenait
+  nécessaire, est décrit — sans outil — dans
+  [`documentation/ops/runbook.md`](documentation/ops/runbook.md).
+- **Les migrations sont additives et réversibles.** Un déplacement de données se
+  fait en trois déploiements : étendre, basculer, resserrer. Plus de
+  `migrate reset`, plus de colonne supprimée dans le même passage.
+- **Un contrat déjà servi ne se casse pas.** Le champ qu'un front en ligne lit se
+  déprécie, il ne disparaît pas dans le même déploiement.
+- **Les messages d'erreur sont lus par du personnel qui n'a pas le code sous les
+  yeux.** Un refus doit nommer le cas réel et le geste de sortie (cf.
+  `CompanyAlreadyHasOwnerError`, réécrite pour ça le 2026-08-16).
+- **Un e-mail parti est parti.** Une adresse en rebond dur entre en liste de
+  suppression chez Resend et n'en sort qu'à la main — `mailSent: true` atteste
+  que Resend a accepté, pas que le message est arrivé.
+- **Merger dans `main` déploie.** Ce n'est plus un environnement de démonstration :
+  un merge est une mise en production, et le contrôle associé est dans le runbook.
+
+**Le réflexe :** avant toute opération sur la production, se demander ce qu'elle
+détruit si elle se trompe. Si la réponse n'est pas « rien », proposer le geste et
+laisser Hugo décider — ne pas l'exécuter d'autorité.
 
 ---
 
