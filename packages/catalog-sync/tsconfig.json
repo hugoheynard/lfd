@@ -1,0 +1,19 @@
+{
+  // Format de **synchronisation** du catalogue PIM → plateforme B2B (Zod → types).
+  // SoR de la forme du snapshot poussé sur le fil. Feuille du graphe : ne dépend
+  // que de zod, dépendue par les DEUX backends — aucun ne possède le format, ce
+  // qui est précisément ce qui l'empêche de dériver vers le langage de l'un ou de
+  // l'autre. Émet des déclarations ; `exports.types` pointe la source in-workspace.
+  "extends": "../../tsconfig/tsflags.backend.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+}
