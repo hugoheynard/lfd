@@ -9,6 +9,7 @@ import type {
   PricingBoardView,
   PricingJournalEntryView,
   SetPriceFloorPayload,
+  SetVolumeLadderPayload,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
@@ -43,6 +44,20 @@ export class TarificationService {
     return firstValueFrom(
       this.http.get<PriceRuleView[]>(`${B2B_API_BASE}/admin/pricing/rules/archived`),
     );
+  }
+
+  /**
+   * **Pose un barème de volume** — l'échelle entière, d'un coup.
+   *
+   * `PUT` et non `POST` sur des paliers : ils forment UNE décision et se
+   * remplacent ensemble. Poser palier par palier laisserait, entre deux appels,
+   * un barème qui régresse.
+   */
+  async setVolumeLadder(payload: SetVolumeLadderPayload): Promise<string> {
+    const created = await firstValueFrom(
+      this.http.put<{ id: string }>(`${B2B_API_BASE}/admin/pricing/volume-ladders`, payload),
+    );
+    return created.id;
   }
 
   /** Pose une règle. Rend son identifiant, pour pouvoir la retirer. */

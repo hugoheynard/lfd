@@ -23,6 +23,7 @@ import { ArchivesPanel } from './archives-panel/archives-panel';
 import { FinalPrice } from './final-price/final-price';
 import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
 import { GridSkeleton } from './grid-skeleton/grid-skeleton';
+import { LadderPanel, type LadderPanelData } from './ladder-panel/ladder-panel';
 import { OverlapTimeline } from './overlap-timeline/overlap-timeline';
 import { RuleChip } from './rule-chip/rule-chip';
 import { TarificationSummaryBar } from './summary-bar/summary-bar';
@@ -214,6 +215,30 @@ export class ReglagesTarificationPage {
    */
   protected addGlobalRule(): void {
     void this.openRule({ scope: { type: 'global', id: null }, target: 'tout le catalogue' });
+  }
+
+  /**
+   * **Le barème de volume** d'un article — tous ses paliers, d'un seul geste.
+   *
+   * Il remplace l'ancien « palier de quantité » saisi règle par règle : les
+   * paliers d'une cible forment une seule décision, et se relisent en grille.
+   */
+  protected editItemLadder(item: PricingItemView): void {
+    void this.openLadder({
+      scope: { type: 'product', id: item.sku },
+      target: item.name,
+      tiers: (item.volumeTiers ?? []).map((tier) => ({
+        minQuantity: tier.minQuantity,
+        value: tier.discountBp,
+      })),
+      unit: 'percent',
+    });
+  }
+
+  private async openLadder(data: LadderPanelData): Promise<void> {
+    await this.reloadIfChanged(
+      this.panels.open<LadderPanelData, boolean>(LadderPanel, { data, width: 'md' }).closed,
+    );
   }
 
   protected addCategoryRule(category: PricingCategoryView): void {

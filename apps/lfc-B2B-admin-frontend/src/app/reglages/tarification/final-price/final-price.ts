@@ -31,4 +31,19 @@ export class FinalPrice {
 
   protected readonly delta = computed(() => deltaLabel(this.item()));
   protected readonly discount = computed(() => isDiscount(this.item()));
+
+  /**
+   * **La grille du barème** : le prix à chaque palier.
+   *
+   * C'est la réponse à la question qu'un commercial pose au téléphone — « à
+   * combien je lui fais les 100 ? » — et elle n'existait nulle part : l'écran ne
+   * montrait que le prix à l'unité, en disant en tête que les paliers de volume
+   * ne s'y voyaient pas.
+   */
+  protected readonly tiers = computed(() => this.item().volumeTiers ?? []);
+
+  /** La remise du palier, en clair. Toujours une baisse : un barème n'augmente pas. */
+  protected tierDiscount(discountBp: number): string {
+    return `−${(discountBp / 100).toFixed(1).replace('.', ',')} %`;
+  }
 }

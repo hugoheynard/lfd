@@ -492,6 +492,92 @@ describe("suspendre, reprendre, archiver", () => {
     expect((await board()).globalOverlaps).toEqual([]);
   });
 
+  const putLadder = (
+    tiers: { minQuantity: number; value: number }[],
+    over: Record<string, unknown> = {},
+  ) =>
+    staff()
+      .put("/admin/pricing/volume-ladders")
+      .send({
+        scope: { type: "product", id: SKU },
+        audience: { type: "all", id: null },
+        unit: "percent",
+        tiers,
+        label: "Barème croissant",
+        validFrom: "2026-01-01T00:00:00.000Z",
+        validTo: null,
+        ...over,
+      });
+
+  it("pose un barème de volume", async () => {
+    const response = await putLadder([
+      { minQuantity: 50, value: 500 },
+      { minQuantity: 100, value: 1_000 },
+    ]);
+
+    expect(response.status).toBe(201);
+  });
+
+  /**
+   * **Le refus qui justifie l'échelle.** Deux règles indépendantes ne pouvaient
+   * pas le porter : chacune, prise seule, est parfaitement valide.
+   */
+  it("refuse un barème où commander plus rapporte moins", async () => {
+    const response = await putLadder([
+      { minQuantity: 50, value: 1_000 },
+      { minQuantity: 100, value: 500 },
+    ]);
+
+    expect(response.status).toBe(400);
+  });
+
+  /**
+   * **Deux barèmes ne se recouvrent jamais sur la même cible.** C'est la
+   * contrainte d'exclusion qui parle, et elle ressort lisible plutôt qu'en 500.
+   */
+  it("refuse un second barème qui recouvre le premier", async () => {
+    await putLadder([{ minQuantity: 50, value: 500 }]);
+
+    const response = await putLadder([{ minQuantity: 50, value: 800 }], {
+      label: "Le doublon",
+    });
+
+    expect(response.status).toBe(409);
+  });
+
+  it("accepte un barème qui prend la suite du précédent", async () => {
+    await putLadder([{ minQuantity: 50, value: 500 }], {
+      validFrom: "2026-01-01T00:00:00.000Z",
+      validTo: "2026-09-01T00:00:00.000Z",
+    });
+
+    const response = await putLadder([{ minQuantity: 50, value: 800 }], {
+      label: "Barème de septembre",
+      validFrom: "2026-09-01T00:00:00.000Z",
+    });
+
+    expect(response.status).toBe(201);
+  });
+
+  /**
+   * La grille que le commercial lit au téléphone : chaque ligne est une
+   * résolution complète à la quantité du palier, pas un « canonique moins la
+   * remise » — VIE-001 vaut 200 c, donc 100+ à −10 % font 180 c.
+   */
+  it("rend le prix de CHAQUE palier sur l'écran", async () => {
+    await putLadder([
+      { minQuantity: 50, value: 500 },
+      { minQuantity: 100, value: 1_000 },
+    ]);
+
+    const tiers = (await croissant()).volumeTiers;
+
+    expect(tiers).toEqual([
+      { minQuantity: 50, unitPriceCents: 190, discountBp: 500 },
+      { minQuantity: 100, unitPriceCents: 180, discountBp: 1_000 },
+    ]);
+  });
+
   it("refuse un sujet de journal inventé", async () => {
     expect((await staff().get("/admin/pricing/journal/licorne/x")).status).toBe(400);
   });

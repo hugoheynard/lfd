@@ -14,3 +14,18 @@
 } @else if (item().steps.length > 0) {
   <span class="note">{{ item().steps.length }} étage(s)</span>
 }
+
+@if (tiers().length > 0) {
+  <!-- Le barème, palier par palier. Chaque ligne est une résolution complète à
+       cette quantité — pas un « canonique × (1 − remise) », qui mentirait dès
+       qu'une promotion compose avec le palier. -->
+  <ul class="tiers">
+    @for (tier of tiers(); track tier.minQuantity) {
+      <li class="tier">
+        <span class="tier-qty">{{ tier.minQuantity }}+</span>
+        <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
+        <span class="tier-off">{{ tierDiscount(tier.discountBp) }}</span>
+      </li>
+    }
+  </ul>
+}

@@ -1,0 +1,112 @@
+<fold-panel-header
+  title="Barème de volume"
+  [subtitle]="'Sur ' + target() + '. Tous les paliers ensemble : c\'est une seule décision.'"
+/>
+
+<div class="body">
+  <fold-input label="Nom du barème" placeholder="Barème viennoiserie" [(value)]="label" />
+
+  <!-- L'unité vaut pour TOUTE l'échelle : sans ça, deux paliers ne se
+       comparent pas sans connaître l'article, et on ne peut plus vérifier que
+       le barème progresse. -->
+  <div class="mode">
+    <span class="mode-label">Paliers exprimés en</span>
+    <div class="mode-choices" role="group" aria-label="Unité du barème">
+      <button
+        type="button"
+        class="mode-choice"
+        [class.is-on]="unit() === 'percent'"
+        [attr.aria-pressed]="unit() === 'percent'"
+        (click)="setUnit('percent')"
+      >
+        % — du tarif
+      </button>
+      <button
+        type="button"
+        class="mode-choice"
+        [class.is-on]="unit() === 'amount'"
+        [attr.aria-pressed]="unit() === 'amount'"
+        (click)="setUnit('amount')"
+      >
+        € — par pièce
+      </button>
+    </div>
+  </div>
+
+  <div class="tiers">
+    <div class="tiers-head" aria-hidden="true">
+      <span>À partir de</span>
+      <span>Remise</span>
+      <span></span>
+    </div>
+
+    @for (tier of tiers(); track $index) {
+      <div class="tier">
+        <fold-input
+          [label]="'Quantité du palier ' + ($index + 1)"
+          hideLabel
+          inputmode="numeric"
+          placeholder="50"
+          [value]="tier.minQuantity === null ? '' : tier.minQuantity.toString()"
+          (valueChange)="setQuantity($index, $event)"
+        />
+        <fold-input
+          [label]="'Remise du palier ' + ($index + 1)"
+          hideLabel
+          inputmode="decimal"
+          [placeholder]="unit() === 'percent' ? '5' : '0,20'"
+          [value]="tier.value === null ? '' : tier.value.toString()"
+          (valueChange)="setValue($index, $event)"
+        />
+        <button
+          type="button"
+          class="tier-remove"
+          [disabled]="tiers().length <= 1"
+          [attr.aria-label]="'Retirer le palier ' + ($index + 1)"
+          (click)="removeTier($index)"
+        >
+          ×
+        </button>
+      </div>
+    }
+
+    <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="addTier()">
+      Ajouter un palier
+    </button>
+  </div>
+
+  <div class="window">
+    <label class="window-field">
+      <span class="window-label">Début</span>
+      <input
+        type="date"
+        [value]="validFrom()"
+        (change)="validFrom.set($any($event.target).value)"
+      />
+    </label>
+    <label class="window-field">
+      <span class="window-label">Fin (facultative)</span>
+      <input type="date" [value]="validTo()" (change)="validTo.set($any($event.target).value)" />
+    </label>
+  </div>
+
+  <!-- Le serveur refuse de toute façon ; découvrir en cliquant qu'un barème
+       régresse ferait recommencer une saisie de cinq lignes. -->
+  @if (problem(); as issue) {
+    <p class="warn">{{ issue }}</p>
+  } @else {
+    <p class="when">
+      Deux barèmes ne peuvent pas se recouvrir sur la même cible : si un autre y est déjà en vigueur
+      sur cette période, le serveur refusera plutôt que de laisser le prix dépendre de l'ordre de
+      tri.
+    </p>
+  }
+</div>
+
+<footer class="foot">
+  <span class="spacer"></span>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSubmit() || saving()" (click)="submit()">
+    Poser le barème
+  </button>
+</footer>
