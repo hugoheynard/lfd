@@ -1,7 +1,9 @@
 # La résolution de prix — un empilement d'étages datés
 
-**État : 📐 doc-first.** Rien de ce document n'est codé. Date : 2026-08-15,
-**trois forks tranchés le 2026-08-17** — S1 n'est plus bloqué.
+**État : 🟡 partiellement implémenté.** Les trois forks sont tranchés et **S1 est
+livré** (le domaine pur, `src/pricing/domain/`, 32 tests). S2 à S5 — persistance,
+écran, trace affichée, mercuriale — ne sont pas commencés. Date : 2026-08-15,
+forks et S1 le 2026-08-17.
 
 Voisins :
 
@@ -325,10 +327,23 @@ Ce que les décisions ajoutent au chantier, et qui n'y était pas :
 - la fonction pure porte le **plancher** et rend `floored` dans sa trace ;
 - l'écran d'une échéance à venir affiche un prix **estimé**, jamais promis.
 
-- [ ] **S1 — le domaine, pur.** `resolvePrice(canonical, rules, context)` :
-      fonction pure, sans base, testée seule. Contexte = client, date, quantité.
-      C'est là que vivent l'ordre des étages, la spécificité, la composition,
-      l'arrondi et le plancher.
+- [x] **S1 — le domaine, pur.** ✅ 2026-08-17 — `src/pricing/domain/` :
+      `resolvePrice(canonical, rules, context, floor)`, la spécificité, l'ordre
+      des étages, la composition, l'arrondi unique et le plancher. Sans Nest,
+      sans base, sans horloge. 32 tests.
+
+      Deux choses décidées **en écrivant**, et qui manquaient au doc :
+
+          - **l'audience prime sur la portée produit.** « La plus spécifique sur les
+            deux axes » ne suffisait pas : une règle *produit / tous* et une règle
+            *globale / ce client* ne se dominent pas. Sans ordre entre les axes, le
+            gagnant dépendait du tri SQL. Une règle qui vise CE client gagne — sinon
+            une promotion générale écraserait un engagement négocié ;
+          - **le calcul traverse la chaîne en `bigint`.** « Arrondir une seule fois »
+            oblige à porter un rationnel ; en `number`, trois pourcentages sur un
+            article à 1 000 € dépassent `MAX_SAFE_INTEGER`, donc le calcul devient
+            faux exactement sur les articles chers.
+
 - [ ] **S2 — la persistance.** Table + contrainte d'exclusion + port de lecture.
       Branchement dans `OrderDrafting.resolveLines`, qui est **déjà** le point
       unique où le prix d'une ligne se décide, et qui agrège déjà les quantités

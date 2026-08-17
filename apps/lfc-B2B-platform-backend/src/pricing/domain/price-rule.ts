@@ -1,0 +1,135 @@
+/**
+ * Le vocabulaire de la **résolution de prix** — cf.
+ * `documentation/b2b/architecture-resolution-de-prix.md`.
+ *
+ * Ces types sont ceux du **domaine**, volontairement redéclarés ici plutôt
+ * qu'importés de `@lfd/b2b-ui/pricing` : le domaine ne dépend pas d'un paquet de
+ * présentation. La forme est la même (`bp` / `cents`, entiers, grandeur toujours
+ * positive, sens porté par `direction`) — et elle doit le rester : deux
+ * vocabulaires pour la même chose finiraient par se contredire.
+ */
+
+/**
+ * Les **étages**, dans l'ordre où ils s'appliquent.
+ *
+ * L'ordre **est** la décision commerciale, pas un détail : −20 % puis −5 € ne
+ * donne pas le même prix que −5 € puis −20 %. Le déclarer une fois, ici, évite
+ * qu'un appelant en choisisse un autre sans le savoir.
+ */
+export const PRICE_STAGES = ["mercuriale", "volume", "promotion", "geste"] as const;
+export type PriceStage = (typeof PRICE_STAGES)[number];
+
+/** Ce qu'une règle vise, du plus large au plus précis. */
+export type PriceScopeType = "global" | "category" | "product" | "variant";
+
+/** Qui la règle vise, du plus large au plus précis. */
+export type PriceAudienceType = "all" | "segment" | "company";
+
+export interface PriceScope {
+  readonly type: PriceScopeType;
+  /** `null` **si et seulement si** `type === 'global'`. */
+  readonly id: string | null;
+}
+
+export interface PriceAudience {
+  readonly type: PriceAudienceType;
+  /** `null` **si et seulement si** `type === 'all'`. */
+  readonly id: string | null;
+}
+
+export type PriceDirection = "increase" | "decrease";
+
+/**
+ * De combien, dans quelle unité, dans quel sens.
+ *
+ * La grandeur reste **toujours positive** : « −20 % » se dit par `direction`,
+ * jamais par un signe. Deux façons d'exprimer la même chose finiraient par se
+ * contredire.
+ */
+export type PriceAlteration =
+  | { readonly direction: PriceDirection; readonly mode: "percent"; readonly bp: number }
+  | { readonly direction: PriceDirection; readonly mode: "amount"; readonly cents: number };
+
+/**
+ * Le **plancher**, à deux formes (décision du 2026-08-17).
+ *
+ * `percent` : une fraction du prix canonique, en points de base — elle suit le
+ * tarif quand le PIM augmente. `amount` : une limite absolue en centimes, pour
+ * un article dont on connaît un coût fixe qu'un pourcentage n'exprimerait pas.
+ *
+ * C'est un **garde-fou** contre l'empilement accidentel, pas une règle de marge :
+ * le prix de revient n'existe nulle part dans le modèle. Le jour où il existera,
+ * il deviendra une troisième forme, sans rien défaire ici.
+ */
+export type PriceFloor =
+  | { readonly mode: "percent"; readonly bp: number }
+  | { readonly mode: "amount"; readonly cents: number };
+
+/**
+ * Une règle tarifaire.
+ *
+ * `replace` **pose** un prix (un engagement en euros — la mercuriale) ; `alter`
+ * **modifie** le prix entrant. La distinction n'est pas cosmétique : une
+ * mercuriale saisie en pourcentage suivrait le tarif de liste, ce qui n'est pas
+ * ce qu'on a promis au client.
+ */
+export type PriceRule = {
+  readonly id: string;
+  readonly stage: PriceStage;
+  readonly scope: PriceScope;
+  readonly audience: PriceAudience;
+  /** Quantité minimale d'application. `null` = aucun seuil. */
+  readonly minQuantity: number | null;
+  /** Borne basse **incluse**. */
+  readonly validFrom: Date;
+  /** Borne haute **exclue**. `null` = ouverte. */
+  readonly validTo: Date | null;
+  /** Ce que la trace affichera. */
+  readonly label: string;
+} & (
+  | { readonly nature: "replace"; readonly amountCents: number }
+  | { readonly nature: "alter"; readonly alteration: PriceAlteration }
+);
+
+/** Ce sur quoi on résout : un article, une quantité, un client, un instant. */
+export interface PricingContext {
+  readonly at: Date;
+  readonly quantity: number;
+  /** Les identifiants de portée de l'article visé. */
+  readonly variantSku: string;
+  readonly productSku: string;
+  readonly categoryId: string;
+  /** `null` pour une commande sans entreprise (parcours zéro friction). */
+  readonly companyId: string | null;
+  readonly segmentId: string | null;
+}
+
+/** Un étage qui a produit un effet — l'unité de la trace. */
+export interface PriceStep {
+  readonly stage: PriceStage;
+  readonly ruleId: string;
+  readonly label: string;
+  /** Le prix **au sortir** de cet étage, arrondi pour l'affichage. */
+  readonly resultCents: number;
+}
+
+/**
+ * Le résultat, avec **sa trace**.
+ *
+ * Un chiffre seul ne se défend pas : la trace permet au panier d'afficher
+ * « pourquoi ce prix », au service client de répondre, et à une facture
+ * contestée de se relire.
+ */
+export interface ResolvedPrice {
+  readonly basePriceCents: number;
+  readonly steps: readonly PriceStep[];
+  /**
+   * Le plancher a-t-il **relevé** le prix ?
+   *
+   * Consigné plutôt qu'avalé : un prix relevé est un prix dont une règle n'a pas
+   * produit son effet, et il vaut mieux le voir avant qu'un client ne le
+   * remarque.
+   */
+  readonly floored: boolean;
+  readonly finalCents: number;
+}
