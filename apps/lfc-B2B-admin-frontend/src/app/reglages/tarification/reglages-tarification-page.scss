@@ -45,33 +45,45 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
   color: var(--fold-color-text-muted);
 }
 
+// La légende colle en haut : sept colonnes se lisent mal quand leur nom est
+// resté trois écrans plus haut.
 .legend {
-  padding: 0 var(--fold-space-3, 0.75rem);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: var(--fold-space-2, 0.5rem) var(--fold-space-4, 1rem);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface);
+  box-shadow: 0 1px 0 var(--fold-color-border);
 }
 
 .legend-cell {
-  font-size: var(--fold-text-xs, 0.75rem);
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--fold-color-text-muted);
 }
 
 .shelf {
+  padding: var(--fold-space-4, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg, 0.75rem);
   background: var(--fold-color-surface);
-  padding: var(--fold-space-3, 0.75rem);
+  // Deux ombres : une courte qui décolle la carte, une large et presque
+  // invisible qui l'assoit. Une seule grossit sans donner de poids.
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 5%),
+    0 8px 24px -16px rgb(0 0 0 / 18%);
 }
 
-// L'en-tête du rayon reste visible pendant qu'on descend ses articles : sans
-// ça, on perd la famille dont on lit la limite.
 // La bande du catalogue se distingue de ses rayons : c'est leur SOURCE, pas un
-// rayon de plus. Une teinte de fond suffit — un cadre plus lourd l'aurait fait
-// passer pour une alerte.
+// rayon de plus. Une teinte suffit — un cadre plus lourd l'aurait fait passer
+// pour une alerte.
 .shelf-global {
   background: var(--fold-color-surface-subtle, var(--fold-color-surface));
 }
+
 .global-rules {
   display: flex;
   flex-wrap: wrap;
@@ -80,37 +92,29 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
   padding: 0 var(--fold-space-1, 0.25rem) var(--fold-space-2, 0.5rem);
 }
 
+// **L'en-tête du rayon reste visible** pendant qu'on descend ses articles, sans
+// quoi on perd la famille dont on lit la limite.
+//
+// UNE déclaration, et c'est tout le sujet : elle existait en double, et la
+// seconde écrasait le `sticky` de la première. L'en-tête ne collait pas, et rien
+// ne le signalait — deux règles de même poids sur le même sélecteur ne se voient
+// qu'à la lecture.
 .shelf-head {
   position: sticky;
   top: 0;
-  z-index: 1;
-  background: var(--fold-color-surface);
-}
-
-// La bande du catalogue se distingue de ses rayons : c'est leur SOURCE, pas un
-// rayon de plus. Une teinte de fond suffit — un cadre plus lourd l'aurait fait
-// passer pour une alerte.
-.shelf-global {
-  background: var(--fold-color-surface-subtle, var(--fold-color-surface));
-}
-.global-rules {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-3, 0.75rem);
-  padding: 0 var(--fold-space-1, 0.25rem) var(--fold-space-2, 0.5rem);
-}
-
-.shelf-head {
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--fold-space-2, 0.5rem);
-  padding: 0 var(--fold-space-1, 0.25rem) var(--fold-space-3, 0.75rem);
+  padding: var(--fold-space-1, 0.25rem) var(--fold-space-1, 0.25rem) var(--fold-space-3, 0.75rem);
+  background: linear-gradient(180deg, var(--fold-color-surface) 72%, transparent);
 }
 
 .shelf-name {
   margin: 0;
   font-size: var(--fold-text-md, 1rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
 .shelf-vat,
@@ -128,8 +132,10 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
   margin: 0;
 }
 
+// Les lignes respirent un cran de plus que les colonnes : c'est ce qui fait
+// qu'on lit UNE ligne d'un bout à l'autre plutôt qu'une colonne de haut en bas.
 .grid {
-  row-gap: var(--fold-space-2, 0.5rem);
+  row-gap: var(--fold-space-3, 0.75rem);
 }
 
 // **La ligne se survole comme une ligne.** Sept cellules séparées par des
@@ -263,6 +269,14 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
   }
 }
 
+// **Le clavier voit ce que la souris voit.** Un anneau franc, posé à l'extérieur
+// pour ne pas rogner le contenu : sans lui, un écran fait de cartes cliquables se
+// parcourt en aveugle au `Tab`.
+button.node:focus-visible {
+  outline: 2px solid var(--fold-color-accent, currentcolor);
+  outline-offset: 2px;
+}
+
 // Le soulèvement est du mouvement : il ne s'ajoute que si le système l'accepte.
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   button.node {
@@ -279,28 +293,6 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
 .node-article {
   background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
   box-shadow: none;
-}
-
-// Discret tant qu'on ne s'en approche pas, comme les autres gestes de la grille.
-.article-ladder {
-  align-self: flex-start;
-  margin-top: 0.15rem;
-  padding: 0.05rem 0.35rem;
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-sm, 0.375rem);
-  background: transparent;
-  color: var(--fold-color-text-muted);
-  font: inherit;
-  font-size: var(--fold-text-xs, 0.75rem);
-  cursor: pointer;
-  opacity: 0.55;
-  transition: opacity 120ms ease-out;
-
-  &:hover,
-  &:focus-visible {
-    opacity: 1;
-    color: var(--fold-color-text);
-  }
 }
 
 .article-name {

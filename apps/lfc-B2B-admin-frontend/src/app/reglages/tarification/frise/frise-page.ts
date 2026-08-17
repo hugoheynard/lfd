@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import type {
   PricingBoardView,
+  PricingCategoryView,
   PricingComparisonItemView,
   PricingComparisonView,
 } from '@lfd/contracts';
@@ -9,6 +10,8 @@ import { formatEuros } from '@lfd/catalog-ui';
 import { FoldButtonComponent, FoldEmptyStateComponent } from 'fold-ng';
 
 import { dayStart } from './axis-model';
+import { OverlapTimeline, type TimelineBand } from '../overlap-timeline/overlap-timeline';
+import { ruleSentence } from '../pricing-format';
 import { TarificationService } from '../tarification.service';
 import { TimelineAxis, type AxisBand, type AxisSelection } from './timeline-axis/timeline-axis';
 
@@ -42,7 +45,13 @@ interface SnapshotRow {
 @Component({
   selector: 'app-frise-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FoldButtonComponent, FoldEmptyStateComponent, TimelineAxis],
+  imports: [
+    RouterLink,
+    FoldButtonComponent,
+    FoldEmptyStateComponent,
+    OverlapTimeline,
+    TimelineAxis,
+  ],
   templateUrl: './frise-page.html',
   styleUrl: './frise-page.scss',
 })
@@ -93,6 +102,35 @@ export class FrisePage {
       }));
     return dedupe([...rules, ...ladders]);
   });
+
+  /** Les familles d'aujourd'hui : elles portent les frises de lignée. */
+  protected readonly categories = computed(() => this.board()?.categories ?? []);
+
+  /**
+   * **La lignée d'une famille**, prête pour sa frise : les règles du catalogue,
+   * les siennes, et les barèmes des deux niveaux.
+   *
+   * Elle vit ICI et non sur la grille : la grille sert à décider aujourd'hui,
+   * et une frise y répondait à une question qu'on n'y pose pas. Sur cette page,
+   * elle est chez elle — c'est le même axe du temps, en plus fin.
+   */
+  protected lineageOf(category: PricingCategoryView): readonly TimelineBand[] {
+    const rules = [...(this.board()?.globalRules ?? []), ...category.rules].map((rule) => ({
+      id: rule.id,
+      label: rule.label,
+      summary: ruleSentence(rule),
+      validFrom: rule.validFrom,
+      validTo: rule.validTo,
+    }));
+    const ladders = category.ladders.map((ladder) => ({
+      id: ladder.id,
+      label: ladder.label,
+      summary: `Barème de volume · ${ladder.tierCount} palier${ladder.tierCount > 1 ? 's' : ''}`,
+      validFrom: ladder.validFrom,
+      validTo: ladder.validTo,
+    }));
+    return [...rules, ...ladders];
+  }
 
   /** Le catalogue au marqueur unique — vide dès qu'une zone est ouverte. */
   protected readonly rows = computed<readonly SnapshotRow[]>(() => {

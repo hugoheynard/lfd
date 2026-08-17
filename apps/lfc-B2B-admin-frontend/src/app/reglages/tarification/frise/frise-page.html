@@ -71,6 +71,22 @@
       </div>
     </section>
 
+    <!-- Les croisements PAR FAMILLE, sur la lignée catalogue → famille. C'est
+         entre niveaux que le recouvrement arrive : deux règles de même étage et
+         même portée ne peuvent pas se recouvrir. Une promotion de famille, elle,
+         évince celle du catalogue — et la frise dit à partir de quand. -->
+    @for (category of categories(); track category.id) {
+      @if (category.overlaps.length > 0) {
+        <section class="result">
+          <header class="result-head">
+            <h2 class="result-title">{{ category.name }}</h2>
+            <span class="hint">croisements de la lignée catalogue → famille</span>
+          </header>
+          <app-overlap-timeline [bands]="lineageOf(category)" [overlaps]="category.overlaps" />
+        </section>
+      }
+    }
+
     <!-- UN marqueur : le catalogue à cet instant, paliers compris. -->
     @if (rows().length > 0) {
       <section class="result">

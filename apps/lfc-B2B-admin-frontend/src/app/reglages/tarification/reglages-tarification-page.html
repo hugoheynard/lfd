@@ -28,11 +28,6 @@
         <a routerLink="/reglages/tarification/frise">Voir la frise tarifaire →</a>
       </p>
 
-      <!-- Deux marqueurs sur l'axe du temps : le catalogue à l'un, à l'autre,
-           et ce qui a bougé entre les deux — prix ET volume. Repliée par défaut
-           dans la lecture : on ouvre cet écran pour décider, pas pour analyser. -->
-      <app-comparison-band />
-
       <!--
         La mise en garde vient AVANT la grille parce qu'elle change la lecture de
         tout ce qui suit : sans elle, la colonne du prix passerait pour « le
@@ -128,14 +123,6 @@
               }}
             </button>
           </header>
-
-          <!-- La frise de la LIGNÉE catalogue → famille. C'est entre niveaux que
-               le recouvrement arrive : deux règles de même étage et même portée
-               ne peuvent pas se recouvrir, la contrainte d'exclusion l'interdit.
-               Une promotion famille, elle, recouvre en permanence la promotion
-               catalogue — et l'évince. Le tableau montrait déjà la barrée ; il ne
-               disait pas à partir de quand. -->
-          <app-overlap-timeline [bands]="lineageOf(category)" [overlaps]="category.overlaps" />
 
           <div class="grid">
             @for (item of category.items; track item.sku; let row = $index) {
