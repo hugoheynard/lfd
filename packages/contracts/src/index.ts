@@ -340,6 +340,18 @@ export {
   CATALOG_CATEGORY_ORDER,
 } from "./catalog.js";
 export type { CatalogCategory, CatalogItemView } from "./catalog.js";
+
+export {
+  setB2bPricePayloadSchema,
+  setCatalogVisibilityPayloadSchema,
+  setCatalogFeaturedPayloadSchema,
+} from "./catalog-admin.js";
+export type {
+  CatalogAdminItemView,
+  SetB2bPricePayload,
+  SetCatalogVisibilityPayload,
+  SetCatalogFeaturedPayload,
+} from "./catalog-admin.js";
 export {
   staffSettlementSchema,
   STAFF_SETTLEMENT_LABELS,

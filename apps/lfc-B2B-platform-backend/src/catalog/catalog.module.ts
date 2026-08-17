@@ -1,12 +1,22 @@
 import { Module } from "@nestjs/common";
+import { CqrsModule } from "@nestjs/cqrs";
 
+import {
+  AlignOnPimPriceHandler,
+  SetB2bPriceHandler,
+  SetCatalogFeaturedHandler,
+  SetCatalogVisibilityHandler,
+} from "./application/commands/catalog-decision.handlers.js";
 import { IngestCatalogService } from "./application/ingest-catalog.service.js";
+import { CatalogAdminReader } from "./domain/ports/catalog-admin.reader.js";
 import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
 import { CatalogReader } from "./domain/ports/catalog.reader.js";
+import { PrismaCatalogAdminReader } from "./infrastructure/prisma-catalog-admin.reader.js";
 import { PrismaCatalogCategoryProjection } from "./infrastructure/prisma-catalog-category.projection.js";
 import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-item.repository.js";
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
+import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { CatalogIngestController } from "./http/catalog-ingest.controller.js";
 
 /**
@@ -18,19 +28,26 @@ import { CatalogIngestController } from "./http/catalog-ingest.controller.js";
  * l'invariant « une décision commerciale survit à un push » vit dans le domaine,
  * pas dans un commentaire d'adaptateur.
  *
- * Trois ports, parce qu'ils répondent à trois questions différentes (ISP) :
- * `CatalogReader` lit le catalogue résolu (autorité de prix du checkout et de
- * l'affichage) ; `CatalogItemRepository` charge et enregistre des agrégats ;
+ * Quatre ports, parce qu'ils répondent à quatre questions différentes (ISP) :
+ * `CatalogReader` sert la boutique (le vendable, prix résolu) ;
+ * `CatalogAdminReader` sert le paramétrage (tout, provenance comprise) ;
+ * `CatalogItemRepository` charge et enregistre des agrégats ;
  * `CatalogCategoryProjection` tient le miroir des familles — nommé projection
  * parce qu'aucune règle ne peut refuser d'y écrire.
  */
 @Module({
-  controllers: [CatalogIngestController],
+  imports: [CqrsModule],
+  controllers: [CatalogIngestController, AdminCatalogController],
   providers: [
     IngestCatalogService,
+    SetB2bPriceHandler,
+    AlignOnPimPriceHandler,
+    SetCatalogVisibilityHandler,
+    SetCatalogFeaturedHandler,
     { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },
     { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
     { provide: CatalogReader, useClass: PrismaCatalogReader },
+    { provide: CatalogAdminReader, useClass: PrismaCatalogAdminReader },
   ],
   exports: [CatalogReader, CatalogItemRepository],
 })
