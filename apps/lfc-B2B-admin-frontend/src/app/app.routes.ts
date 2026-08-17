@@ -135,6 +135,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'catalogue',
+        title: 'Catalogue — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/catalogue/reglages-catalogue-page').then(
+            (m) => m.ReglagesCataloguePage,
+          ),
+      },
+      {
         path: 'commercial',
         canActivate: [permissionGuard('growth:read')],
         title: 'Commercial — LFC B2B admin',

@@ -42,6 +42,9 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
 
   reglages: 'settings:read',
   'reglages/retraits-livraisons': null,
+  // `null` = hérite du `settings:read` du parent : le paramétrage du catalogue
+  // est du réglage, pas une ressource à part.
+  'reglages/catalogue': null,
   'reglages/commercial': 'growth:read',
   'reglages/utilisateurs': 'staff:read',
 

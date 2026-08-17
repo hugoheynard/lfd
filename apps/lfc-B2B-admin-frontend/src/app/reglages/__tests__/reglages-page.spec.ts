@@ -27,6 +27,7 @@ describe('les onglets de Réglages', () => {
   it("n'offre à un administrateur aucune porte de moins", () => {
     expect(tabsFor(['settings:read', 'growth:read', 'staff:read'])).toEqual([
       'retraits-livraisons',
+      'catalogue',
       'commercial',
       'utilisateurs',
     ]);
@@ -37,11 +38,13 @@ describe('les onglets de Réglages', () => {
     // `staff:read` — le catalogue réserve cette ressource à `admin`.
     expect(tabsFor(['settings:read', 'growth:read'])).toEqual([
       'retraits-livraisons',
+      'catalogue',
       'commercial',
     ]);
   });
 
   it('cache « Commercial » à la comptabilité', () => {
-    expect(tabsFor(['settings:read'])).toEqual(['retraits-livraisons']);
+    // Le catalogue reste : son paramétrage est du réglage, donc `settings:read`.
+    expect(tabsFor(['settings:read'])).toEqual(['retraits-livraisons', 'catalogue']);
   });
 });

@@ -52,6 +52,13 @@ export class ReglagesPage {
       needs: 'settings:read',
     },
     {
+      key: 'catalogue',
+      label: 'Catalogue',
+      link: 'catalogue',
+      icon: 'package',
+      needs: 'settings:read',
+    },
+    {
       key: 'commercial',
       label: 'Commercial',
       link: 'commercial',

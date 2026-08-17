@@ -1,0 +1,29 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-5);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-3);
+}
+
+.head-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-2);
+}
+
+.section-title {
+  margin: 0;
+  font-size: var(--fold-font-size-lg);
+}
+
+.callout-title {
+  margin: 0 0 var(--fold-space-2);
+  font-size: var(--fold-font-size-md);
+  font-weight: 600;
+}

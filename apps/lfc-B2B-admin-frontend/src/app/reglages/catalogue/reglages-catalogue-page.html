@@ -1,0 +1,67 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Chargement du catalogue…" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de charger le catalogue">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    @if (total() === 0) {
+      <fold-empty-state
+        title="Aucun article reçu"
+        description="Le catalogue arrive du PIM. Publiez-y des produits sur le canal B2B, puis lancez un push."
+      />
+    } @else {
+      <!--
+        Le compteur de non-vendables est en TÊTE et non en pied de page : c'est le
+        chiffre qui change ce qu'on fait de l'écran. Le reléguer en bas donnerait
+        une liste rassurante dont une partie n'est achetable par personne.
+      -->
+      @if (untaxedCount() > 0) {
+        <fold-callout variant="warning">
+          <h3 class="callout-title">Des articles ne sont pas vendables</h3>
+          <p>
+            <strong>{{ untaxedCount() }}</strong> article(s) sur {{ total() }} appartiennent à une
+            famille sans régime de TVA dans le PIM. Ils sont bien reçus et leur prix canonique est
+            là, mais la boutique ne peut pas les vendre : sans taux, rien ne saurait les facturer.
+          </p>
+          <p>Réglez le régime « à emporter » de ces familles dans le PIM, puis relancez un push.</p>
+        </fold-callout>
+      }
+
+      @for (shelf of shelves(); track shelf.id) {
+        <fold-card>
+          <div cardHeader class="head">
+            <h2 class="section-title">{{ shelf.name }}</h2>
+            <div class="head-meta">
+              <fold-badge [content]="shelf.items.length + ' articles'" variant="neutral" />
+              @if (shelf.untaxed) {
+                <fold-badge content="sans TVA" variant="warning" />
+              }
+            </div>
+          </div>
+
+          @for (item of shelf.items; track item.sku) {
+            <lfd-catalog-row
+              [sku]="item.sku"
+              [name]="item.name"
+              [category]="item.categoryName"
+              [originCents]="item.pimPriceCents"
+              [alteredCents]="item.b2bPriceCents"
+              [dimmed]="item.isHidden"
+            >
+              @if (item.isHidden) {
+                <fold-badge content="masqué" variant="neutral" />
+              }
+              <button foldButton size="sm" variant="ghost" (click)="toggleVisibility(item)">
+                {{ item.isHidden ? 'Réafficher' : 'Masquer' }}
+              </button>
+            </lfd-catalog-row>
+          }
+        </fold-card>
+      }
+    }
+  }
+}
