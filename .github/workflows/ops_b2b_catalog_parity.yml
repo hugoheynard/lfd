@@ -1,0 +1,93 @@
+name: ops_b2b_catalog_parity
+
+# Compare, EN PRODUCTION, ce que le checkout facture aujourd'hui (le seed) à ce
+# qu'il facturerait après la bascule (le catalogue reçu du PIM).
+#
+# C'est l'étape 2 du plan de bascule de
+# `documentation/b2b/architecture-catalogue-synchronise.md`, et elle est non
+# négociable : le seed est l'autorité de prix depuis l'ouverture commerciale, et
+# un écart silencieux facture le mauvais montant sans que rien ne le signale.
+#
+# Pourquoi un workflow : la route est gardée par `RECOMPUTE_TOKEN`, secret
+# GitHub donc en écriture seule. Même raison que `ops_b2b_logs`.
+#
+# ⚠️ TEMPORAIRE. Ce workflow meurt avec le seed, à la slice C7.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comparer le seed au catalogue reçu
+        env:
+          API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
+          RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
+        run: |
+          set -uo pipefail
+          report=$(curl --fail-with-body --silent --show-error --max-time 30 \
+                   "${API_BASE_URL}/admin/catalog/parity" \
+                   -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}") || {
+            echo "::error::Comparaison injoignable — la porte machine-à-machine a refusé."
+            exit 1
+          }
+
+          REPORT="${report}" python3 <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, os
+
+          report = json.loads(os.environ["REPORT"])
+
+          def euros(cents):
+              return f"{cents / 100:.2f} €"
+
+          print("## Parité du catalogue\n")
+          print(f"- Seed (autorité actuelle) : **{report['seedCount']}** articles")
+          print(f"- Reçu du PIM : **{report['receivedCount']}** articles\n")
+
+          if report["identical"]:
+              print("✅ **Aucun écart.** La bascule ne change aucun montant facturé.")
+              raise SystemExit(0)
+
+          print("⚠️ **Des écarts subsistent** — chacun doit s'expliquer avant de basculer.\n")
+
+          if report["missing"]:
+              print("### 🔴 Vendus aujourd'hui, absents du catalogue reçu\n")
+              print("Après la bascule, un client qui les commande verrait son panier refusé.\n")
+              print(", ".join(f"`{sku}`" for sku in report["missing"]) + "\n")
+
+          if report["priceGaps"]:
+              print("### 💶 Prix qui changent\n")
+              print("| SKU | Aujourd'hui | Après |")
+              print("| --- | --- | --- |")
+              for gap in report["priceGaps"]:
+                  print(f"| `{gap['sku']}` | {euros(gap['seed'])} | {euros(gap['received'])} |")
+              print()
+
+          if report["vatGaps"]:
+              print("### 🧾 Taux de TVA qui changent\n")
+              print("Attendu : le seed code 5,5 % pour tout, y compris le non-alimentaire.\n")
+              print("| SKU | Aujourd'hui | Après |")
+              print("| --- | --- | --- |")
+              for gap in report["vatGaps"]:
+                  print(f"| `{gap['sku']}` | {gap['seed']} % | {gap['received']} % |")
+              print()
+
+          if report["nameGaps"]:
+              print("### ✏️ Noms qui changent\n")
+              for gap in report["nameGaps"]:
+                  print(f"- `{gap['sku']}` : « {gap['seed']} » → « {gap['received']} »")
+              print()
+
+          if report["extra"]:
+              print("### ➕ Nouveautés reçues\n")
+              print(", ".join(f"`{sku}`" for sku in report["extra"]) + "\n")
+          PY
+
+          # Le job ne rougit PAS sur un écart : à ce stade, des écarts sont le
+          # résultat attendu, pas une panne. Ce qu'on veut, c'est les LIRE.
+          # Rougir ferait de ce rapport une alarme qu'on apprend à ignorer.
+          echo "Rapport lu — voir le résumé du job."

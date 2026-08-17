@@ -1,6 +1,8 @@
 # Le catalogue synchronisé — le PIM pousse, la plateforme accueille et altère
 
-**État : 📐 doc-first.** Rien de ce document n'est codé. Date : 2026-08-17.
+**État : 🟡 partiellement implémenté.** C1 à C4 sont codés et testés ; C5 livre
+sa comparaison de parité, mais la bascule attend deux blocages hors code (voir
+« La bascule »). C6 et C7 ne sont pas commencés. Date : 2026-08-17.
 
 Voisins :
 
@@ -203,6 +205,38 @@ pour de vrai**. La bascule ne se fait pas parce que le code compile :
 Le seed backend est l'autorité de prix : tant que l'étape 2 n'est pas faite, un
 écart silencieux facture le mauvais montant sans que rien ne le signale.
 
+**L'étape 2 est outillée** : `GET /admin/catalog/parity` compare les deux
+implémentations réelles — le seed tel que le checkout le résout, le catalogue
+reçu tel que la boutique le lirait — et le workflow `ops_b2b_catalog_parity`
+l'imprime en tableau lisible. Comparer les fichiers sources aurait prouvé que
+deux tableaux se ressemblent, pas que la caisse rend la même monnaie.
+
+### 🔴 Deux blocages, tous deux HORS code (constatés le 2026-08-17)
+
+**1. Cinq familles sur six n'ont pas de régime de TVA dans le PIM.** Seul
+« Pains » (18 produits) en porte un. Un push aujourd'hui emmènerait **18 produits
+sur 93**, et la projection nommerait 74 exclusions `famille_sans_tva`. C'est le
+refus qui fonctionne comme prévu — mais la bascule attend une **saisie dans le
+PIM**, pas une ligne de code. (Au passage : deux familles « Viennoiseries »
+coexistent, dont une portant un seul produit — à fusionner.)
+
+**2. Le SKU vendu change de forme.** Le seed vend le SKU **produit**
+(`VIE-001`) ; le PIM pousse celui de la **déclinaison** (`VIE-001-1`), parce que
+c'est elle qui porte le prix. Conséquences :
+
+- la comparaison de parité rapproche donc par `productSku` **sur la déclinaison
+  par défaut** — sans quoi elle rendrait 92 disparitions et 92 apparitions ;
+- les `OrderLine` déjà écrites gardent l'ancienne chaîne, et c'est correct : ce
+  sont des snapshots, pas des clés étrangères ;
+- **mais** « les SKU déjà commandés » (le rappel de commande) joint les lignes
+  passées au catalogue. Après la bascule, il ne trouverait plus rien pour les
+  commandes antérieures, **en silence**. À traiter avec la bascule, pas après.
+
+**3. Corollaire de séquencement : C5 et C7 ne se séparent pas.** Le front client
+appelle le catalogue par SKU produit. Basculer le backend sans le front donnerait
+une boutique dont chaque ajout au panier est refusé par la caisse. Les deux
+slices partent ensemble, ou aucune.
+
 ---
 
 ## Chantier
@@ -215,8 +249,8 @@ Le seed backend est l'autorité de prix : tant que l'étape 2 n'est pas faite, u
       le moule Shopify.
 - [ ] **C4 — B2B : contexte `catalog/`.** Les deux tables, l'ingestion
       anti-corruption, le port de lecture. **Dépend de l'arbitrage d'identité.**
-- [ ] **C5 — B2B : bascule du port.** `ProductCatalogReader` seed → Prisma, avec
-      la comparaison des 92 SKU et la TVA réelle.
+- [~] **C5 — B2B : la comparaison de parité est livrée** (`/admin/catalog/parity` + workflow `ops_b2b_catalog_parity`). **La bascule du port reste à faire**,
+  et attend les deux blocages ci-dessus — dont un qui est de la saisie PIM.
 - [ ] **C6 — `catalog-ui` + écran admin.** Prix B2B et visibilité, avec la
       provenance affichée.
 - [ ] **C7 — Front client sur l'API.** Les 22 fichiers, puis suppression des deux

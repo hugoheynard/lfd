@@ -31,6 +31,16 @@ export abstract class CatalogIngestionRepository {
 /** Un article vendable, prix **résolu** : la décision locale a déjà gagné. */
 export interface ResolvedCatalogItem {
   readonly sku: string;
+  /**
+   * Le SKU du **produit** dont cet article est une déclinaison.
+   *
+   * Rendu parce que les deux ne coïncident pas : le PIM dérive le SKU d'une
+   * déclinaison de celui de son produit (`VIE-001` → `VIE-001-1`), alors que le
+   * seed B2B vend le SKU produit. C'est la clé qui permet de comparer les deux
+   * catalogues avant de basculer — sans elle, la comparaison ne verrait que
+   * 92 disparitions et 92 apparitions.
+   */
+  readonly productSku: string;
   readonly name: string;
   /** Prix HT en centimes réellement applicable — celui du B2B s'il existe. */
   readonly unitPriceCents: number;
@@ -39,6 +49,15 @@ export interface ResolvedCatalogItem {
   readonly vatRate: number;
   readonly categoryId: string;
   readonly categoryName: string;
+  /**
+   * L'unité vendue **par défaut** du produit.
+   *
+   * Un produit peut avoir plusieurs déclinaisons (l'unité, le carton) ; c'est
+   * celle-ci que le seed connaissait, et c'est donc elle qu'une comparaison
+   * doit rapprocher. Sans ce drapeau, le carton écrase l'unité dans un index
+   * par produit, et le rapport annonce qu'un croissant coûte 60 €.
+   */
+  readonly isDefault: boolean;
   readonly isFeatured: boolean;
 }
 

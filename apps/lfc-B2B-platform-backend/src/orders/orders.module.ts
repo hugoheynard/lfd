@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
+import { CatalogModule } from "../catalog/catalog.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
 import { PaymentsModule } from "../payments/payments.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
@@ -42,6 +43,7 @@ import { DeliveryDefaultsReader } from "./domain/ports/delivery-defaults.reader.
 import { PrismaDeliveryDefaultsReader } from "./infrastructure/prisma-delivery-defaults.reader.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { AdminProductionController } from "./http/admin-production.controller.js";
+import { AdminCatalogParityController } from "./http/admin-catalog-parity.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
 
 /**
@@ -51,9 +53,13 @@ import { OrdersController } from "./http/orders.controller.js";
  * Autonome : il lit ses garde-fous (rôle + statut d'entreprise) via son propre
  * port plutôt que de dépendre des internes du contexte `account`. Les prix sont
  * résolus par un catalogue semé (jetable jusqu'au sync PIM).
+ *
+ * Importe `CatalogModule` pour une seule raison, et **temporaire** : le
+ * contrôleur de parité compare l'autorité de prix en place au catalogue reçu.
+ * Les deux disparaissent ensemble à la bascule.
  */
 @Module({
-  imports: [CqrsModule, PickupAddressesModule, DeliveryZonesModule, PaymentsModule],
+  imports: [CqrsModule, PickupAddressesModule, DeliveryZonesModule, PaymentsModule, CatalogModule],
   controllers: [
     OrdersController,
     CompanyOrdersController,
@@ -62,6 +68,7 @@ import { OrdersController } from "./http/orders.controller.js";
     AdminOrderDraftsController,
     AdminCatalogController,
     AdminHandoverController,
+    AdminCatalogParityController,
   ],
   providers: [
     OrderDrafting,

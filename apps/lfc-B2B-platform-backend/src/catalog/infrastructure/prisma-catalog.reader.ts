@@ -6,8 +6,10 @@ import { CatalogReader, type ResolvedCatalogItem } from "../domain/catalog.repos
 /** La forme que Prisma rend, article + famille + décision locale éventuelle. */
 interface ItemRow {
   readonly sku: string;
+  readonly productSku: string;
   readonly name: string;
   readonly priceCents: number;
+  readonly isDefault: boolean;
   readonly position: number;
   readonly category: {
     readonly id: string;
@@ -68,12 +70,14 @@ function resolve(row: ItemRow): ResolvedCatalogItem {
   const localPrice = row.override?.priceCents ?? null;
   return {
     sku: row.sku,
+    productSku: row.productSku,
     name: row.name,
     unitPriceCents: localPrice ?? row.priceCents,
     pimPriceCents: row.priceCents,
     vatRate: row.category.vatRatePercent.toNumber(),
     categoryId: row.category.id,
     categoryName: row.category.name,
+    isDefault: row.isDefault,
     isFeatured: row.override?.isFeatured ?? false,
   };
 }
