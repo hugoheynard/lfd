@@ -28,6 +28,7 @@ export interface CapabilitySnapshot {
   readonly hasStripe: boolean;
   readonly hasClientBaseUrl: boolean;
   readonly hasAdminBaseUrl: boolean;
+  readonly hasCatalogIngestSecret: boolean;
 }
 
 /**
@@ -123,6 +124,14 @@ const CHECKS: readonly Check[] = [
     consequence: "même chose pour l'équipe, côté back-office",
     severity: "degraded",
     present: (s) => s.hasAdminBaseUrl,
+  },
+  {
+    capability: "Réception du catalogue poussé par le PIM",
+    setting: "B2B_CATALOG_PUSH_SECRET",
+    consequence:
+      "le PIM ne peut plus mettre le catalogue à jour : la boutique continue de vendre ce qu'elle a reçu la dernière fois, sans que rien ne le signale",
+    severity: "degraded",
+    present: (s) => s.hasCatalogIngestSecret,
   },
 ];
 

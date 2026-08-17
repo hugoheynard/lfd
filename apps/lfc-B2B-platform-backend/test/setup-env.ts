@@ -101,6 +101,14 @@ process.env["STRIPE_PUBLISHABLE_KEY"] = "pk_test_e2e";
 export const TEST_RECOMPUTE_TOKEN = "test-recompute-secret";
 process.env["RECOMPUTE_TOKEN"] = TEST_RECOMPUTE_TOKEN;
 
+/**
+ * Secret partagé qui protège l'**ingestion du catalogue** poussé par le PIM.
+ * Posé en dur pour la même raison que le jeton de recompute : sans bypass de
+ * dev, le guard l'exige, et l'e2e le présente en réutilisant cette constante.
+ */
+export const TEST_CATALOG_SECRET = "test-catalog-secret";
+process.env["B2B_CATALOG_PUSH_SECRET"] = TEST_CATALOG_SECRET;
+
 /** URL de la base de test, une fois le défaut ci-dessus appliqué. */
 export function testDatabaseUrl(): string {
   return process.env["DATABASE_B2B_URL"] ?? DEFAULT_TEST_DATABASE_URL;

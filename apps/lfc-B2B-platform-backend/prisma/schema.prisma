@@ -1655,9 +1655,9 @@ model StaffNotification {
 /// société. Aucun FK sur les lignes non plus — un brouillon référence des SKU,
 /// et les prix seront de toute façon ré-résolus à la passation.
 model OrderDraft {
-  id        String   @id @default(uuid())
-  companyId String   @unique @map("company_id")
-  payload   Json
+  id             String   @id @default(uuid())
+  companyId      String   @unique @map("company_id")
+  payload        Json
   // La fiche staff qui a enregistré. Nullable : un départ ne doit pas effacer
   // le brouillon d'un client.
   savedByStaffId String?  @map("saved_by_staff_id")
@@ -1667,5 +1667,109 @@ model OrderDraft {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("order_drafts")
+  @@schema("public")
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue REÇU du PIM — cf. documentation/b2b/architecture-catalogue-synchronise.md
+//
+// Deux tables, et c'est LA décision de structure de ce chantier. Le miroir est
+// remplacé en entier à chaque push ; l'override porte les décisions prises ici.
+// Les fondre donnerait au push suivant deux issues, toutes deux fausses :
+// écraser le travail commercial, ou refuser de s'appliquer.
+// ---------------------------------------------------------------------------
+
+/// Une **famille** reçue du PIM. Miroir : jamais éditée ici.
+model CatalogCategory {
+  id String @id
+
+  name     String
+  slug     String
+  parentId String? @map("parent_id")
+  position Int     @default(0)
+
+  /// Taux de TVA en %, résolu par le PIM depuis le régime « à emporter » de la
+  /// famille. Reçu plutôt que déduit : la plateforme codait 5,5 % en dur pour
+  /// tout, y compris le non-alimentaire.
+  vatRatePercent Decimal @map("vat_rate_percent") @db.Decimal(5, 2)
+
+  items CatalogItem[]
+
+  receivedAt DateTime @map("received_at")
+
+  @@map("catalog_categories")
+  @@schema("public")
+}
+
+/// **L'article vendable** reçu du PIM — une déclinaison, pas un produit.
+///
+/// La clé est le SKU : c'est lui que porte une ligne de commande, et il survit
+/// à tout changement d'identifiant interne côté PIM. `productId` / `productSku`
+/// sont conservés pour regrouper à l'écran, pas pour joindre.
+model CatalogItem {
+  sku String @id
+
+  productId  String @map("product_id")
+  productSku String @map("product_sku")
+  name       String
+  kind       String
+
+  categoryId String          @map("category_id")
+  category   CatalogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  /// Prix canonique HT en centimes, tel que le PIM le tarife. **Pré-altération** :
+  /// le prix B2B, s'il existe, vit dans `CatalogItemOverride`.
+  priceCents  Int     @map("price_cents")
+  weightGrams Int?    @map("weight_grams")
+  isDefault   Boolean @default(false) @map("is_default")
+  position    Int     @default(0)
+
+  /// Quand ce push l'a écrit. Sert à repérer ce qu'un push partiel aurait laissé.
+  receivedAt DateTime @map("received_at")
+
+  override CatalogItemOverride?
+
+  @@index([categoryId])
+  @@index([productId])
+  @@map("catalog_items")
+  @@schema("public")
+}
+
+/// Ce que **la plateforme** décide, par-dessus ce que le PIM envoie.
+///
+/// Une ligne n'existe que si quelqu'un a décidé quelque chose : « revenir au
+/// prix du PIM » est une SUPPRESSION de ligne, pas une ressaisie. C'est aussi ce
+/// qui permet à l'écran de dire « prix PIM 2,40 € · prix B2B 2,10 €, posé par
+/// Cécile le 12/08 » au lieu d'un nombre sans provenance.
+///
+/// Elle **survit au push**, et cette survie tient à UNE règle d'ingestion : les
+/// articles maintenus sont **mis à jour**, jamais supprimés puis recréés. Une
+/// ingestion en « table rase » cascaderait ici et effacerait tout le travail
+/// commercial sans un mot. C'est le piège de cette table ; le test
+/// « un push ne perd pas les décisions déjà prises » existe pour le tenir.
+///
+/// La cascade sert l'autre cas, celui où elle est juste : un article réellement
+/// **retiré** du catalogue emporte sa décision, parce qu'un prix négocié ne veut
+/// plus rien dire sans l'article qu'il tarifait.
+model CatalogItemOverride {
+  sku  String      @id
+  item CatalogItem @relation(fields: [sku], references: [sku], onDelete: Cascade)
+
+  /// Prix de liste **du canal B2B**, HT en centimes. `NULL` = on garde celui du
+  /// PIM. C'est l'ENTRÉE du pipeline de résolution de prix, pas un de ses étages :
+  /// mercuriale, dégressif et promotions viendront par-dessus.
+  priceCents Int? @map("price_cents")
+
+  /// Retiré du catalogue B2B sans être retiré du PIM.
+  isHidden   Boolean @default(false) @map("is_hidden")
+  /// Mis en avant dans la boutique.
+  isFeatured Boolean @default(false) @map("is_featured")
+
+  /// Qui a décidé, et quand. La question posée six mois plus tard est toujours
+  /// « qui a accordé ce prix ».
+  decidedBy String?  @map("decided_by")
+  decidedAt DateTime @updatedAt @map("decided_at")
+
+  @@map("catalog_item_overrides")
   @@schema("public")
 }

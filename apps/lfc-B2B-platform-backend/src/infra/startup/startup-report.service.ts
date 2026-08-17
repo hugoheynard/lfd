@@ -86,6 +86,7 @@ export class StartupReport implements OnApplicationBootstrap {
       hasStorage: this.config.r2Storage("kbis") !== null,
       hasStripe: this.config.stripeConfig() !== null,
       hasClientBaseUrl: this.config.clientBaseUrl() !== null,
+      hasCatalogIngestSecret: this.config.catalogIngestSecret() !== null,
       hasAdminBaseUrl: this.config.adminBaseUrl() !== null,
     };
   }

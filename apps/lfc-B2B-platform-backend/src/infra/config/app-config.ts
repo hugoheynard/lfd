@@ -63,6 +63,7 @@ export class AppConfig {
   private readonly revisionValue: string;
   private readonly adminBypass: boolean;
   private readonly recomputeTokenValue: string | null;
+  private readonly catalogIngestSecretValue: string | null;
   private readonly adminBaseUrlValue: string | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
@@ -87,6 +88,7 @@ export class AppConfig {
     );
     this.adminBypass = optionalAdminDevBypass();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
+    this.catalogIngestSecretValue = optionalString("B2B_CATALOG_PUSH_SECRET");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
@@ -305,6 +307,19 @@ export class AppConfig {
    */
   recomputeToken(): string | null {
     return this.recomputeTokenValue;
+  }
+
+  /**
+   * Secret partagé qui protège l'**ingestion du catalogue** poussé par le PIM
+   * (`POST /catalog/ingest`), présenté dans `x-lfc-catalog-secret`.
+   *
+   * **La même valeur des deux côtés** : le PIM la lit sous le nom
+   * `B2B_CATALOG_PUSH_SECRET`, et c'est le seul endroit du système où deux
+   * services partagent un secret — d'où le rappel. `null` si non configuré : le
+   * guard refuse alors tout en prod (fail-closed), sauf sous le bypass de dev.
+   */
+  catalogIngestSecret(): string | null {
+    return this.catalogIngestSecretValue;
   }
 
   /**

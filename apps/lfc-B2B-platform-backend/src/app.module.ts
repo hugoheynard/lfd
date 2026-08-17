@@ -9,6 +9,7 @@ import { GrowthModule } from "./growth/growth.module.js";
 import { OrdersModule } from "./orders/orders.module.js";
 import { PaymentsModule } from "./payments/payments.module.js";
 import { OrderCutoffsModule } from "./order-cutoffs/order-cutoffs.module.js";
+import { CatalogModule } from "./catalog/catalog.module.js";
 import { PickupAddressesModule } from "./pickup-addresses/pickup-addresses.module.js";
 import { StaffNotificationsModule } from "./staff-notifications/staff-notifications.module.js";
 import { StaffUsersModule } from "./staff-users/staff-users.module.js";
@@ -54,6 +55,7 @@ import { SecurityModule } from "./infra/security/security.module.js";
     // Config globale (feature flags d'activation) — avant les contextes qui la lisent.
     OrderCutoffsModule,
     PickupAddressesModule,
+    CatalogModule,
     DeliveryZonesModule,
     // Annuaire back-office (isolé, source de vérité locale).
     StaffUsersModule,

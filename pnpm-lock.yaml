@@ -147,6 +147,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1097.0
         version: 3.1097.0
+      '@lfd/catalog-sync':
+        specifier: workspace:*
+        version: link:../../packages/catalog-sync
       '@lfd/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts

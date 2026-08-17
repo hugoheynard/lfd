@@ -68,6 +68,9 @@ const RUNTIME_KEYS = [
   // Jeton interne du recompute : forwardé au container (le guard le compare) ET
   // lu ici par le handler `scheduled` (le Cron Trigger le présente à l'endpoint).
   "RECOMPUTE_TOKEN",
+  // Secret partagé avec le PIM : il garde l'ingestion du catalogue. Absent, le
+  // guard refuse tout (fail-closed) et la boutique fige son catalogue.
+  "B2B_CATALOG_PUSH_SECRET",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];

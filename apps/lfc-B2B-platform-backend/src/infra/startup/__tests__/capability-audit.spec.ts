@@ -12,6 +12,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasStripe: true,
   hasClientBaseUrl: true,
   hasAdminBaseUrl: true,
+  hasCatalogIngestSecret: true,
 };
 
 function without(...keys: readonly (keyof CapabilitySnapshot)[]): CapabilitySnapshot {
