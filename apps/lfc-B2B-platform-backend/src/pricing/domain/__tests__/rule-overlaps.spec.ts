@@ -1,4 +1,4 @@
-import type { PriceRule, PriceStage } from "../price-rule.js";
+import type { PriceRule, PriceScope, PriceStage } from "../price-rule.js";
 import { overlapSegments } from "../rule-overlaps.js";
 
 /**
@@ -15,12 +15,12 @@ function rule(
   id: string,
   from: string,
   to: string | null,
-  over: { stage?: PriceStage; bp?: number } = {},
+  over: { stage?: PriceStage; bp?: number; scope?: PriceScope } = {},
 ): PriceRule {
   return {
     id,
     stage: over.stage ?? "promotion",
-    scope: { type: "global", id: null },
+    scope: over.scope ?? { type: "global", id: null },
     audience: { type: "all", id: null },
     minQuantity: null,
     validFrom: day(from),
@@ -99,7 +99,8 @@ describe("le cumul", () => {
     ]);
 
     expect(segment?.kind).toBe("supersede");
-    expect(segment?.composedBp).toBeNull();
+    // Une seule agit : le chiffre annoncé est le SIEN, pas la somme des deux.
+    expect(segment?.composedBp).toBe(1_000);
   });
 
   /**
@@ -162,5 +163,60 @@ describe("trois règles", () => {
     ]);
     // ×0,9³ = 0,729 → −27,1 %.
     expect(segments[1]?.composedBp).toBe(2_710);
+  });
+});
+
+/**
+ * **La lignée** — c'est là que le recouvrement arrive vraiment.
+ *
+ * Deux règles de même étage ET de même portée ne peuvent pas se recouvrir : la
+ * contrainte d'exclusion l'interdit en base. Mais une promotion de FAMILLE
+ * recouvre en permanence une promotion de CATALOGUE, et la famille gagne — c'est
+ * le cas que l'écran n'a jamais su montrer autrement que par une règle barrée,
+ * sans dire à partir de quand.
+ */
+describe("une lignée catalogue → famille", () => {
+  const famille: PriceScope = { type: "category", id: "viennoiserie" };
+
+  it("évince la règle du catalogue pendant que celle de la famille court", () => {
+    const [segment] = overlapSegments([
+      rule("catalogue", "01", "30", { stage: "promotion", bp: 2_000 }),
+      rule("famille", "10", "20", { stage: "promotion", bp: 1_000, scope: famille }),
+    ]);
+
+    expect(segment?.kind).toBe("supersede");
+    expect(segment?.evictedIds).toEqual(["catalogue"]);
+    // Ce que le client paie sur la tranche : les −10 % de la famille, seuls.
+    expect(segment?.composedBp).toBe(1_000);
+  });
+
+  /** L'éviction est DATÉE : hors de la fenêtre famille, le catalogue reprend. */
+  it("ne déborde pas de la fenêtre de celle qui évince", () => {
+    const segments = overlapSegments([
+      rule("catalogue", "01", "30", { stage: "promotion" }),
+      rule("famille", "10", "20", { stage: "promotion", scope: famille }),
+    ]);
+
+    expect(segments).toHaveLength(1);
+    expect(segments[0]?.from).toEqual(day("10"));
+    expect(segments[0]?.to).toEqual(day("20"));
+  });
+
+  /**
+   * Éviction **et** cumul sur la même tranche : la famille évince le catalogue
+   * dans leur étage, puis compose avec le geste. Le cumul ne compte QUE les
+   * gagnantes — sans quoi il annoncerait un prix que la caisse ne facture pas.
+   */
+  it("ne compte pas l’évincée dans le cumul", () => {
+    const [segment] = overlapSegments([
+      rule("catalogue", "01", "30", { stage: "promotion", bp: 5_000 }),
+      rule("famille", "01", "30", { stage: "promotion", bp: 2_000, scope: famille }),
+      rule("geste", "01", "30", { stage: "geste", bp: 1_000 }),
+    ]);
+
+    expect(segment?.kind).toBe("compose");
+    expect(segment?.evictedIds).toEqual(["catalogue"]);
+    // ×0,8 × 0,9 = ×0,72 → −28 %. Les −50 % évincés n'y entrent pas.
+    expect(segment?.composedBp).toBe(2_800);
   });
 });

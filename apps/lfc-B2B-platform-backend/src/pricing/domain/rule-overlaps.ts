@@ -1,5 +1,6 @@
 import { fromCents, roundToCents, scaleByBasisPoints } from "./exact-money.js";
 import { PRICE_STAGES, type PriceRule, type PriceStage } from "./price-rule.js";
+import { compareSpecificity } from "./specificity.js";
 
 /**
  * **Deux décisions qui se recouvrent dans le temps.**
@@ -23,9 +24,9 @@ import { PRICE_STAGES, type PriceRule, type PriceStage } from "./price-rule.js";
 
 /** Ce qui se passe quand plusieurs règles couvrent le même instant. */
 export type OverlapKind =
-  /** Étages distincts : elles se composent, et le client paie le produit. */
+  /** Plusieurs étages survivent : elles se composent, le client paie le produit. */
   | "compose"
-  /** Même étage : la plus spécifique gagne, l'autre ne produit rien. */
+  /** Une seule survit : les autres sont évincées dans leur étage. */
   | "supersede";
 
 export interface OverlapSegment {
@@ -33,15 +34,30 @@ export interface OverlapSegment {
   readonly from: Date;
   /** Borne haute **exclue**. `null` = le recouvrement ne se referme jamais. */
   readonly to: Date | null;
+  /** Toutes les règles en vigueur sur la tranche, gagnantes comprises. */
   readonly ruleIds: readonly string[];
+  /**
+   * Celles qu'une **plus spécifique évince** dans leur propre étage.
+   *
+   * C'est le cas dominant dès qu'on regarde une lignée : une promotion famille
+   * et une promotion catalogue se recouvrent en permanence, et la famille gagne.
+   * Le tableau montrait déjà la barrée ; il ne disait pas **à partir de quand**,
+   * ni **jusqu'à quand** — la seule chose qu'on veut savoir devant deux dates.
+   */
+  readonly evictedIds: readonly string[];
   readonly kind: OverlapKind;
   /**
-   * L'effet cumulé, en points de base d'une **baisse** (`2800` = −28 %).
+   * L'effet cumulé des **gagnantes**, en points de base d'une baisse
+   * (`2800` = −28 %).
    *
-   * `null` dès qu'une des règles n'est pas une altération en pourcentage : un
+   * Des gagnantes seulement, et c'est tout l'intérêt de le calculer ici : une
+   * règle évincée ne produit rien, et la compter ferait afficher un cumul que la
+   * caisse ne facture pas.
+   *
+   * `null` dès qu'une gagnante n'est pas une altération en pourcentage : un
    * montant en euros ou un prix posé ne se cumulent pas en fraction sans
-   * connaître l'article, et cette vue n'en connaît aucun. Afficher un chiffre
-   * là serait inventer une réponse à une question mal posée.
+   * connaître l'article, et cette vue n'en connaît aucun. Afficher un chiffre là
+   * serait inventer une réponse à une question mal posée.
    */
   readonly composedBp: number | null;
 }
@@ -105,15 +121,37 @@ function coversStart(rule: PriceRule, at: Date): boolean {
 }
 
 function segmentOf(from: Date, to: Date | null, active: readonly PriceRule[]): OverlapSegment {
-  const stages = new Set<PriceStage>(active.map((rule) => rule.stage));
-  const composes = stages.size === active.length;
+  const winners = winnersOf(active);
+  const winnerIds = new Set(winners.map((rule) => rule.id));
   return {
     from,
     to,
     ruleIds: active.map((rule) => rule.id),
-    kind: composes ? "compose" : "supersede",
-    composedBp: composes ? composedBp(active) : null,
+    evictedIds: active.filter((rule) => !winnerIds.has(rule.id)).map((rule) => rule.id),
+    kind: winners.length > 1 ? "compose" : "supersede",
+    composedBp: composedBp(winners),
   };
+}
+
+/**
+ * **Une gagnante par étage** — la plus spécifique, avec l'ordre qui facture.
+ *
+ * C'est la loi du pipeline appliquée à une tranche de temps : dans un étage une
+ * seule règle agit, entre étages elles s'empilent. Deux règles strictement aussi
+ * spécifiques ne peuvent pas coexister (contrainte d'exclusion en base) ; si
+ * l'impossible arrivait, la première rencontrée gagne — cette vue **décrit**,
+ * elle ne facture pas, et lever ici ferait tomber tout un écran de lecture pour
+ * une donnée abîmée.
+ */
+function winnersOf(active: readonly PriceRule[]): readonly PriceRule[] {
+  const best = new Map<PriceStage, PriceRule>();
+  for (const rule of active) {
+    const held = best.get(rule.stage);
+    if (held === undefined || compareSpecificity(rule, held) > 0) {
+      best.set(rule.stage, rule);
+    }
+  }
+  return [...best.values()];
 }
 
 /**

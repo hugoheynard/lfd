@@ -111,6 +111,18 @@ const postRule = (overrides: RuleBody = {}) =>
 const board = async (): Promise<PricingBoardView> =>
   jsonBody<PricingBoardView>(await staff().get("/admin/pricing"));
 
+/**
+ * Les recouvrements de la **lignée** d'une famille — catalogue puis famille.
+ *
+ * Portés par la famille et non par le catalogue : deux règles de même étage et
+ * de même portée ne peuvent pas se recouvrir (contrainte d'exclusion), donc
+ * c'est entre NIVEAUX que le croisement arrive.
+ */
+async function familyOverlaps(): Promise<PricingBoardView["categories"][number]["overlaps"]> {
+  const view = await board();
+  return view.categories.find((category) => category.id === FAMILY)?.overlaps ?? [];
+}
+
 /** L'article VIE-001, tel que l'écran le rend. */
 async function croissant(): Promise<PricingBoardView["categories"][number]["items"][number]> {
   const view = await board();
@@ -474,7 +486,7 @@ describe("suspendre, reprendre, archiver", () => {
       validTo: "2026-08-30T00:00:00.000Z",
     });
 
-    const [overlap] = (await board()).globalOverlaps;
+    const [overlap] = await familyOverlaps();
 
     expect(overlap?.from).toBe("2026-08-15T00:00:00.000Z");
     expect(overlap?.to).toBe("2026-08-20T00:00:00.000Z");
@@ -498,11 +510,48 @@ describe("suspendre, reprendre, archiver", () => {
       validFrom: "2026-08-15T00:00:00.000Z",
       validTo: "2026-08-30T00:00:00.000Z",
     });
-    expect((await board()).globalOverlaps).toHaveLength(1);
+    expect(await familyOverlaps()).toHaveLength(1);
 
     await staff().post(`/admin/pricing/rules/${id}/pause`).send({ reason: null });
 
-    expect((await board()).globalOverlaps).toEqual([]);
+    expect(await familyOverlaps()).toEqual([]);
+  });
+
+  /**
+   * **Le croisement qui arrive vraiment.** Deux règles de même étage et de même
+   * portée ne peuvent pas se recouvrir — la contrainte d'exclusion l'interdit.
+   * Mais une promotion de FAMILLE recouvre en permanence une promotion de
+   * CATALOGUE, et la famille gagne : c'est le seul cas que le staff verra, et il
+   * n'était visible nulle part autrement que par une règle barrée, sans date.
+   */
+  it("dit que la promotion de famille évince celle du catalogue, et pendant combien de temps", async () => {
+    const { id: catalogueId } = jsonBody<{ id: string }>(
+      await postRule({
+        stage: "promotion",
+        label: "Promo catalogue",
+        effect: { nature: "alter", direction: "decrease", mode: "percent", value: 2_000 },
+        validFrom: "2026-08-01T00:00:00.000Z",
+        validTo: "2026-08-30T00:00:00.000Z",
+      }),
+    );
+
+    await postRule({
+      stage: "promotion",
+      scope: { type: "category", id: FAMILY },
+      label: "Promo viennoiserie",
+      effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1_000 },
+      validFrom: "2026-08-10T00:00:00.000Z",
+      validTo: "2026-08-20T00:00:00.000Z",
+    });
+
+    const [overlap] = await familyOverlaps();
+
+    expect(overlap?.from).toBe("2026-08-10T00:00:00.000Z");
+    expect(overlap?.to).toBe("2026-08-20T00:00:00.000Z");
+    expect(overlap?.kind).toBe("supersede");
+    expect(overlap?.evictedRuleIds).toEqual([catalogueId]);
+    // Ce que le client paie sur la tranche : les −10 % de la famille, SEULS.
+    expect(overlap?.composedBp).toBe(1_000);
   });
 
   const putLadder = (

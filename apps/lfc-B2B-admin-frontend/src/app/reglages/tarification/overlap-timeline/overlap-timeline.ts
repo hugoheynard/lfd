@@ -16,6 +16,8 @@ interface TimelineRow {
   readonly label: string;
   readonly summary: string;
   readonly bar: TimelineBar;
+  /** Les tranches où une plus spécifique l'évince : la barre s'y creuse. */
+  readonly evictions: readonly TimelineBar[];
   readonly overlapped: boolean;
 }
 
@@ -29,20 +31,23 @@ interface TimelineOverlap {
 }
 
 /**
- * **La frise des altérations du catalogue.**
+ * **La frise d'une lignée** — le catalogue et la famille sur un axe commun.
  *
- * Une ligne par règle, sur un axe de dates commun : le recouvrement se VOIT,
- * au lieu de se déduire en comparant quatre dates de tête. Sous les barres, les
- * tranches où plusieurs règles jouent en même temps, avec ce qu'elles font
- * vraiment au prix.
+ * C'est **entre niveaux** que le recouvrement arrive : deux règles de même étage
+ * et même portée ne peuvent pas se recouvrir, la contrainte d'exclusion
+ * l'interdit. Une promotion famille, elle, recouvre en permanence la promotion
+ * catalogue — et **l'évince**. Le tableau montrait déjà la barrée ; il ne disait
+ * ni à partir de quand, ni jusqu'à quand.
  *
- * **Le cumul n'est pas une somme** — −20 % puis −10 % font −28 % — et il vient
- * du serveur, avec l'arithmétique qui facture. Le composant n'en calcule aucun :
- * il place des barres.
+ * D'où les deux lectures que la frise porte, et qu'il ne faut pas confondre :
  *
- * Deux recouvrements à ne pas confondre, et l'écran les nomme : `compose`, où le
- * client paie le produit des deux ; `supersede`, où les règles partagent leur
- * étage et où la plus spécifique évince simplement l'autre.
+ * - **l'éviction**, dans un même étage — la barre de la perdante se **creuse**
+ *   sur la tranche où l'autre gagne. Elles ne s'additionnent pas, l'une passe ;
+ * - **le cumul**, entre étages — le client paie le produit des gagnantes, et
+ *   −20 % puis −10 % font −28 %.
+ *
+ * Aucun de ces deux chiffres n'est calculé ici : ils viennent du serveur, avec
+ * l'arithmétique qui facture. Le composant place des barres.
  */
 @Component({
   selector: 'app-overlap-timeline',
@@ -56,8 +61,14 @@ export class OverlapTimeline {
 
   private readonly window = computed(() => timelineWindow(this.rules()));
 
-  /** La frise ne s'affiche que si elle a quelque chose à montrer. */
-  protected readonly visible = computed(() => this.window() !== null && this.overlaps().length > 0);
+  /**
+   * Visible **dès deux règles**, même sans recouvrement.
+   *
+   * Voir deux barres qui ne se touchent pas répond à la question posée ; une
+   * frise absente la laisse entière — on ne sait pas si rien ne se croise, ou si
+   * l'écran ne le dit pas.
+   */
+  protected readonly visible = computed(() => this.window() !== null && this.rules().length > 1);
 
   protected readonly rows = computed<readonly TimelineRow[]>(() => {
     const window = this.window();
@@ -70,6 +81,9 @@ export class OverlapTimeline {
       label: rule.label,
       summary: ruleSentence(rule),
       bar: barOf(window, rule.validFrom, rule.validTo),
+      evictions: this.overlaps()
+        .filter((overlap) => overlap.evictedRuleIds.includes(rule.id))
+        .map((overlap) => barOf(window, overlap.from, overlap.to)),
       overlapped: overlapped.has(rule.id),
     }));
   });

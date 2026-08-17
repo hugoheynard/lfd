@@ -130,19 +130,18 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // Les recouvrements se calculent sur les règles qui AGISSENT : une règle
     // suspendue ne recouvre rien, et l'annoncer ferait chercher un cumul qui
     // n'existe pas. (Les archivées ne sont même pas lues.)
-    const globalRules = rules.filter(
-      (entry) => entry.rule.scope.type === "global" && entry.rule.suspendedFrom === null,
-    );
+    const actingGlobalRules = rules
+      .filter((entry) => entry.rule.scope.type === "global" && entry.rule.suspendedFrom === null)
+      .map((entry) => entry.rule);
 
     const board: PricingBoardView = {
       categories: CATALOG_CATEGORY_ORDER.map((category) =>
-        this.categoryView(category, rules, floors, ladders, at),
+        this.categoryView(category, rules, floors, ladders, actingGlobalRules, at),
       ).filter((view) => view.items.length > 0),
       globalFloor: floors.find((entry) => entry.floor.scope.type === "global")?.view ?? null,
       globalRules: rules
         .filter((entry) => entry.rule.scope.type === "global")
         .map((entry) => entry.view),
-      globalOverlaps: overlapSegments(globalRules.map((entry) => entry.rule)).map(overlapView),
       simulation: { quantity: 1, at: at.toISOString(), audience: "all" },
     };
 
@@ -160,9 +159,13 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     rules: readonly LoadedRule[],
     floors: readonly LoadedFloor[],
     ladders: readonly VolumeLadder[],
+    actingGlobalRules: readonly PriceRule[],
     at: Date,
   ): PricingCategoryView {
     const articles = this.catalog.all().filter((item) => item.category === category);
+    const ownRules = rules.filter((entry) =>
+      scopeTargets(entry.rule.scope.type, entry.rule.scope.id, category),
+    );
     return {
       id: category,
       name: CATALOG_CATEGORY_LABELS[category],
@@ -172,9 +175,15 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       floor:
         floors.find((entry) => scopeTargets(entry.floor.scope.type, entry.floor.scope.id, category))
           ?.view ?? null,
-      rules: rules
-        .filter((entry) => scopeTargets(entry.rule.scope.type, entry.rule.scope.id, category))
-        .map((entry) => entry.view),
+      rules: ownRules.map((entry) => entry.view),
+      // La LIGNÉE, catalogue puis famille : c'est entre niveaux que le
+      // recouvrement arrive, puisque deux règles de même étage et même portée ne
+      // peuvent pas se recouvrir. Les suspendues sont écartées — une règle qui
+      // n'agit plus n'évince personne. (Les archivées ne sont même pas lues.)
+      overlaps: overlapSegments([
+        ...actingGlobalRules,
+        ...ownRules.filter((entry) => entry.rule.suspendedFrom === null).map((entry) => entry.rule),
+      ]).map(overlapView),
       items: articles.map((item) =>
         itemView(
           { sku: item.sku, name: item.name, canonicalCents: item.unitPriceCents },
@@ -327,6 +336,7 @@ function overlapView(segment: OverlapSegment): PriceOverlapView {
     from: segment.from.toISOString(),
     to: segment.to?.toISOString() ?? null,
     ruleIds: segment.ruleIds,
+    evictedRuleIds: segment.evictedIds,
     kind: segment.kind,
     composedBp: segment.composedBp,
   };

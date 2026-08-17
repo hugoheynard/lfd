@@ -188,8 +188,16 @@ export class ReglagesTarificationPage {
   protected readonly globalFloor = computed(() => this.board()?.globalFloor ?? null);
   protected readonly globalRules = computed(() => this.board()?.globalRules ?? []);
 
-  /** Les périodes où plusieurs altérations du catalogue jouent en même temps. */
-  protected readonly globalOverlaps = computed(() => this.board()?.globalOverlaps ?? []);
+  /**
+   * **La lignée d'une famille** : les règles du catalogue, puis les siennes.
+   *
+   * Les deux jeux sur un seul axe, parce que c'est entre eux que le recouvrement
+   * arrive. Le serveur a déjà dit qui évince qui sur chaque tranche ; la frise
+   * n'a plus qu'à placer les barres.
+   */
+  protected lineageOf(category: PricingCategoryView): readonly PriceRuleView[] {
+    return [...this.globalRules(), ...category.rules];
+  }
 
   /**
    * **La limite du catalogue** — celle dont toutes les autres héritent.

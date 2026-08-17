@@ -57,6 +57,19 @@ function compare(left: Specificity, right: Specificity): number {
   return 0;
 }
 
+/**
+ * **Laquelle de ces deux règles gagne son étage** — positif si la gauche gagne,
+ * `0` si aucune ne domine.
+ *
+ * Exporté pour la **frise** des recouvrements : elle doit dire qui évince qui,
+ * et elle doit le dire avec l'ordre qui facture. Réimplémenter la comparaison
+ * là-bas aurait donné un écran qui désigne un gagnant, et une caisse qui en
+ * applique un autre — le genre de divergence qu'on ne découvre qu'au litige.
+ */
+export function compareSpecificity(left: PriceRule, right: PriceRule): number {
+  return compare(specificityOf(left), specificityOf(right));
+}
+
 /** La portée vise-t-elle cet article ? Un `id` qui ne correspond pas l'exclut. */
 export function matchesScope(scope: PriceScope, context: PricingContext): boolean {
   switch (scope.type) {

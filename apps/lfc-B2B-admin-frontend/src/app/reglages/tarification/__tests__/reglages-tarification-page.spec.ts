@@ -31,7 +31,6 @@ const EMPTY_BOARD: PricingBoardView = {
   categories: [],
   globalFloor: null,
   globalRules: [],
-  globalOverlaps: [],
   simulation: { quantity: 1, at: '2026-08-17T10:00:00.000Z', audience: 'all' },
 };
 
@@ -112,6 +111,7 @@ function category(overrides: Partial<PricingCategoryView> = {}): PricingCategory
     vatRatePercent: 5.5,
     floor: null,
     rules: [],
+    overlaps: [],
     items: [item()],
     ...overrides,
   };

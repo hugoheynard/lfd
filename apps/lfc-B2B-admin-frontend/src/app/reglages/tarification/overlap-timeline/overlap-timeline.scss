@@ -78,6 +78,15 @@
   opacity: 0.85;
 }
 
+// **La barre creuse** : sur cette tranche, une plus précise évince la règle.
+// Elle n'a pas disparu — elle ne produit simplement rien —, donc on la creuse au
+// lieu de la couper : le tracé continue, la matière s'en va.
+.bar-evicted {
+  background: var(--fold-color-surface, #fff);
+  border: 1px dashed var(--fold-color-border);
+  opacity: 1;
+}
+
 // Le cumul est le seul fait qui appelle un geste : c'est le seul qui s'allume.
 .bar-overlap {
   background: var(--fold-color-warning-border, currentcolor);

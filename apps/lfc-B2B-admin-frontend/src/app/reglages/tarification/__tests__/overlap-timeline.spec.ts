@@ -49,6 +49,7 @@ function overlap(over: Partial<PriceOverlapView> = {}): PriceOverlapView {
     from: iso('15'),
     to: iso('20'),
     ruleIds: ['a', 'b'],
+    evictedRuleIds: [],
     kind: 'compose',
     composedBp: 2_800,
     ...over,
@@ -133,9 +134,21 @@ describe('ce que la frise annonce', () => {
 });
 
 describe("la frise à l'écran", () => {
-  /** Pas de chevauchement, pas de frise : elle ne doit pas peser quand tout va bien. */
-  it("ne s'affiche pas sans chevauchement", () => {
+  /** Une seule règle : il n'y a rien à croiser, donc rien à montrer. */
+  it("ne s'affiche pas sur une règle seule", () => {
     expect(textOf(mount([rule('a', '01', '10')], []))).toBe('');
+  });
+
+  /**
+   * Deux règles qui ne se touchent pas : la frise s'affiche quand même. Voir
+   * deux barres disjointes répond à la question ; une frise absente la laisse
+   * entière — on ne sait pas si rien ne se croise, ou si l'écran se tait.
+   */
+  it('se montre dès deux règles, même sans chevauchement', () => {
+    const text = textOf(mount([rule('a', '01', '10'), rule('b', '15', '20')], []));
+
+    expect(text).toContain("Aucune de ces altérations n'en croise une autre");
+    expect(text).toContain('Promo a');
   });
 
   it('pose une ligne par règle et annonce le cumul', () => {
@@ -151,14 +164,41 @@ describe("la frise à l'écran", () => {
    * Annoncer un cumul ici ferait crier au danger là où il n'y a qu'une relève.
    */
   it("dit « la plus précise gagne » au lieu d'un cumul, sur un même étage", () => {
-    const text = textOf(
-      mount(
-        [rule('a', '01', '20'), rule('b', '15', '30')],
-        [overlap({ kind: 'supersede', composedBp: null })],
-      ),
+    const fixture = mount(
+      [rule('a', '01', '20'), rule('b', '15', '30')],
+      [overlap({ kind: 'supersede', composedBp: null })],
     );
 
-    expect(text).toContain('la plus précise gagne');
-    expect(text).not.toContain('%');
+    // La ligne du recouvrement, pas l'intro : c'est ELLE qui ne doit pas
+    // annoncer de cumul là où il n'y a qu'une relève.
+    const line = String(fixture.nativeElement.querySelector('.overlaps')?.textContent ?? '');
+    expect(line).toContain('la plus précise gagne');
+    expect(line).not.toContain('cumul');
+  });
+
+  /**
+   * **La barre creuse.** Sur la tranche où une plus précise l'évince, la règle
+   * du catalogue ne produit plus rien — la frise la creuse plutôt que de la
+   * couper : le tracé continue, la matière s'en va.
+   */
+  it('creuse la barre de la règle évincée, sur la seule tranche où elle perd', () => {
+    const fixture = mount(
+      [rule('a', '01', '30'), rule('b', '10', '20')],
+      [overlap({ from: iso('10'), to: iso('20'), kind: 'supersede', evictedRuleIds: ['a'] })],
+    );
+
+    const holes = fixture.nativeElement.querySelectorAll('.bar-evicted');
+    expect(holes.length).toBe(1);
+  });
+
+  /** Une règle qui gagne partout ne se creuse jamais. */
+  it('ne creuse pas la barre de celle qui gagne', () => {
+    const fixture = mount(
+      [rule('a', '01', '30'), rule('b', '10', '20')],
+      [overlap({ from: iso('10'), to: iso('20'), kind: 'supersede', evictedRuleIds: ['a'] })],
+    );
+
+    const rows = fixture.nativeElement.querySelectorAll('.rows:first-of-type .row');
+    expect(rows[1]?.querySelectorAll('.bar-evicted').length).toBe(0);
   });
 });

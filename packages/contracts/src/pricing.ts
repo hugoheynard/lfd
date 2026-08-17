@@ -584,21 +584,33 @@ export interface PriceOverlapView {
   readonly from: string;
   /** Borne haute **exclue**. `null` = le recouvrement ne se referme jamais. */
   readonly to: string | null;
+  /** Toutes les règles en vigueur sur la tranche, gagnantes comprises. */
   readonly ruleIds: readonly string[];
   /**
-   * `compose` — étages distincts : elles se composent, et le client paie le
-   * produit. `supersede` — même étage : la plus spécifique gagne, l'autre ne
-   * produit rien. Les confondre ferait crier au cumul là où il n'y a qu'une
+   * Celles qu'une **plus spécifique évince** dans leur propre étage.
+   *
+   * Le cas dominant sur une lignée : une promotion famille recouvre en
+   * permanence une promotion catalogue, et la famille gagne. Le tableau montrait
+   * déjà la barrée ; il ne disait pas à partir de quand.
+   */
+  readonly evictedRuleIds: readonly string[];
+  /**
+   * `compose` — plusieurs étages survivent : elles se composent, et le client
+   * paie le produit. `supersede` — une seule survit, les autres sont évincées
+   * dans leur étage. Les confondre ferait crier au cumul là où il n'y a qu'une
    * relève.
    */
   readonly kind: OverlapKind;
   /**
-   * L'effet cumulé, en points de base d'une **baisse** (`2800` = −28 %).
+   * L'effet cumulé des **gagnantes**, en points de base d'une baisse
+   * (`2800` = −28 %).
    *
    * Composé et non additionné : −20 % puis −10 % font −28 %, parce que la
-   * seconde s'applique au prix sortant de la première.
+   * seconde s'applique au prix sortant de la première. Les évincées n'y entrent
+   * pas — elles ne produisent rien, et les compter afficherait un cumul que la
+   * caisse ne facture pas.
    *
-   * `null` dès qu'une des règles n'est pas une altération en pourcentage : un
+   * `null` dès qu'une gagnante n'est pas une altération en pourcentage : un
    * montant ne se cumule pas en fraction sans connaître l'article.
    */
   readonly composedBp: number | null;
@@ -612,6 +624,16 @@ export interface PricingCategoryView {
   readonly vatRatePercent: number | null;
   readonly floor: PriceFloorView | null;
   readonly rules: readonly PriceRuleView[];
+  /**
+   * Les tranches où plusieurs règles de la **lignée** — catalogue puis famille —
+   * couvrent le même instant.
+   *
+   * Portées par la famille et non par le catalogue, parce que le recouvrement
+   * intéressant est **entre niveaux** : deux règles de même étage et même portée
+   * ne peuvent pas se recouvrir (la contrainte d'exclusion l'interdit), donc une
+   * frise du seul catalogue n'avait presque rien à montrer.
+   */
+  readonly overlaps: readonly PriceOverlapView[];
   readonly items: readonly PricingItemView[];
 }
 
@@ -628,11 +650,6 @@ export interface PricingBoardView {
   readonly globalFloor: PriceFloorView | null;
   /** Les règles de portée globale — elles s'appliquent à toutes les familles. */
   readonly globalRules: readonly PriceRuleView[];
-  /**
-   * Les périodes où **plusieurs** règles globales sont en vigueur à la fois.
-   * Vide quand aucune ne se recouvre — le cas normal.
-   */
-  readonly globalOverlaps: readonly PriceOverlapView[];
   readonly simulation: {
     readonly quantity: number;
     readonly at: string;
