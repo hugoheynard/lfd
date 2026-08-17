@@ -1,0 +1,91 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+}
+
+.muted {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+/* Une liste ordonnée, du plus récent au plus ancien : le journal se lit comme
+   on cherche — « qu'est-ce qui vient de se passer », puis on remonte. */
+.acts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.act {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-left-width: 3px;
+  border-radius: var(--fold-radius-md, 0.5rem);
+
+  /* L'archivage est terminal : il se voit sans se lire. */
+  &.is-terminal {
+    border-left-color: var(--fold-color-warning-border, currentcolor);
+  }
+}
+
+.act-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.act-verb {
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--fold-color-text);
+}
+
+.act-when {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.act-summary {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  line-height: 1.45;
+  color: var(--fold-color-text);
+}
+
+.act-actor {
+  margin: 0;
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+}
+
+/* Le motif est la phrase de quelqu'un : elle est citée, pas paraphrasée. */
+.act-reason {
+  margin: 0.25rem 0 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--fold-color-text-muted);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.spacer {
+  flex: 1;
+}

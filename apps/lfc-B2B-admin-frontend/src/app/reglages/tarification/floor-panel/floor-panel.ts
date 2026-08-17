@@ -13,12 +13,15 @@ import {
   FoldButtonComponent,
   FoldInputComponent,
   FoldPanelHeaderComponent,
+  FoldPanelHostService,
   FoldPanelRef,
 } from 'fold-ng';
 
 import { formatEuros } from '@lfd/catalog-ui';
 
 import { NotifyService } from '../../../notify.service';
+import { ArchivePanel, type ArchivePanelData } from '../archive-panel/archive-panel';
+import { JournalPanel, type JournalPanelData } from '../journal-panel/journal-panel';
 import { TarificationService } from '../tarification.service';
 
 /** Charge d'ouverture : la portée visée, ce qui y est posé, ce dont elle hérite. */
@@ -57,6 +60,7 @@ export class FloorPanel {
   private readonly tarification = inject(TarificationService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
+  private readonly panels = inject(FoldPanelHostService);
 
   readonly data = input<FloorPanelData | undefined>(undefined);
 
@@ -216,25 +220,55 @@ export class FloorPanel {
     }
   }
 
-  /** Retire la limite : la portée retombe sur celle dont elle hérite, ou sur rien. */
-  protected async remove(): Promise<void> {
-    const scope = this.data()?.scope;
-    if (scope === undefined || this.saving()) {
+  /**
+   * **Retirer** ouvre le panneau d'archivage, qui demande pourquoi.
+   *
+   * Rien n'est effacé : la limite est archivée, la portée retombe sur celle dont
+   * elle hérite, et le journal garde qui l'a retirée et pour quelle raison.
+   */
+  protected retire(): void {
+    const data = this.data();
+    const current = this.current();
+    if (data === undefined || current === null) {
       return;
     }
-    this.saving.set(true);
-    try {
-      await this.tarification.removeFloor(scope);
-      this.notify.success('Limite retirée.');
-      this.ref.close(true);
-    } catch (error) {
-      this.notify.error(error, "La limite n'a pas pu être retirée.");
-    } finally {
-      this.saving.set(false);
+    this.panels.open<ArchivePanelData, boolean>(ArchivePanel, {
+      data: {
+        subject: { kind: 'floor', scope: data.scope },
+        target: data.target,
+        summary: `Limite sur ${data.target} — ${floorSentence(current)}`,
+      },
+      width: 'md',
+    });
+  }
+
+  /**
+   * **Le journal de cette limite** : qui l'a posée, qui l'a confirmée, quand.
+   *
+   * Il REMPLACE ce panneau plutôt que de s'empiler dessus — lire l'histoire
+   * n'est pas une étape de la saisie, et deux panneaux superposés cacheraient
+   * celui qu'on croyait encore ouvert.
+   */
+  protected openJournal(): void {
+    const data = this.data();
+    const current = this.current();
+    if (data === undefined || current === null) {
+      return;
     }
+    this.panels.open<JournalPanelData, boolean>(JournalPanel, {
+      data: { subjectType: 'floor', subjectId: current.id, target: data.target },
+      width: 'md',
+    });
   }
 
   protected cancel(): void {
     this.ref.close();
   }
+}
+
+/** La limite en une phrase, pour que le panneau d'archivage dise ce qu'il range. */
+function floorSentence(floor: PriceFloorView): string {
+  return floor.mode === 'amount'
+    ? formatEuros(floor.value)
+    : `${String(floor.value / 100).replace('.', ',')} % du tarif`;
 }

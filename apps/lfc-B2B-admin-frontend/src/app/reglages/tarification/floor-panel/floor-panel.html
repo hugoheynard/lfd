@@ -114,9 +114,12 @@
 
 <footer class="foot">
   @if (current() !== null) {
-    <button foldButton emphasis="outline" intent="danger" [disabled]="saving()" (click)="remove()">
+    <button foldButton emphasis="outline" intent="danger" [disabled]="saving()" (click)="retire()">
       Retirer
     </button>
+    <!-- L'histoire se lit LÀ où la décision se modifie : « qui a posé ça, et
+         quand » ne devrait pas demander d'ouvrir un autre écran. -->
+    <button foldButton emphasis="soft" intent="neutral" (click)="openJournal()">Journal</button>
   }
   <span class="spacer"></span>
   <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>

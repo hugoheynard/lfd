@@ -259,11 +259,17 @@ $col-gap: 2.25rem;
   line-height: 1.25;
 }
 
+/* Les deux gestes non destructeurs d'une règle, côte à côte. */
+.rule-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-2, 0.35rem);
+}
+
 /* Suspendre et retirer se ressemblent trop pour être voisins sans distinction :
    l'un se défait, l'autre non. Le premier reste dans le flux du nœud, le second
    garde son coin. */
 .rule-toggle {
-  align-self: flex-start;
   padding: 0.1rem 0.35rem;
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm, 0.375rem);

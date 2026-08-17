@@ -1,0 +1,31 @@
+<fold-panel-header
+  title="Archiver"
+  [subtitle]="'Retirer ' + target() + ' du tableau. Rien n\'est effacé.'"
+/>
+
+<div class="body">
+  <!-- Ce qu'on range, sous les yeux pendant qu'on l'explique : on ne demande pas
+       un motif sur une décision qu'on ne voit plus. -->
+  <p class="what">{{ summary() }}</p>
+
+  <fold-textarea
+    label="Pourquoi"
+    optional
+    optionalLabel="facultatif"
+    [rows]="3"
+    placeholder="Remplacée par la promo de rentrée, doublon, erreur de saisie…"
+    hint="Écrit ici, ce motif reste dans le journal. C'est la seule réponse qu'aura celui qui relira dans six mois."
+    [(value)]="reason"
+  />
+
+  <p class="terminal">
+    Une décision archivée est <strong>close</strong> : elle ne se reprend pas. Reposer la même règle
+    est possible — ce sera alors une <strong>nouvelle</strong> décision, à votre nom et à sa date.
+  </p>
+</div>
+
+<footer class="foot">
+  <span class="spacer"></span>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="danger" [disabled]="saving()" (click)="submit()">Archiver</button>
+</footer>

@@ -146,14 +146,27 @@
                                  lecteur additionner deux remises dont une agit. -->
                             <span class="rule-note">supplantée sur certains articles</span>
                           }
-                          <button
-                            type="button"
-                            class="rule-toggle"
-                            [attr.aria-label]="toggleLabel(rule)"
-                            (click)="toggleRule(rule)"
-                          >
-                            {{ rule.status === 'paused' ? '▸' : '❚❚' }}
-                          </button>
+                          <div class="rule-acts">
+                            <button
+                              type="button"
+                              class="rule-toggle"
+                              [attr.aria-label]="toggleLabel(rule)"
+                              (click)="toggleRule(rule)"
+                            >
+                              {{ rule.status === 'paused' ? '▸' : '❚❚' }}
+                            </button>
+                            <!-- Le journal se lit LÀ où la décision se voit :
+                                 chercher qui a suspendu une promo ne devrait pas
+                                 demander d'ouvrir un autre écran. -->
+                            <button
+                              type="button"
+                              class="rule-toggle"
+                              [attr.aria-label]="'Journal de ' + rule.label"
+                              (click)="openRuleJournal(rule)"
+                            >
+                              Journal
+                            </button>
+                          </div>
                           <button
                             type="button"
                             class="rule-remove"
@@ -197,14 +210,24 @@
                         @if (rule.status === 'paused') {
                           <span class="rule-note">en pause</span>
                         }
-                        <button
-                          type="button"
-                          class="rule-toggle"
-                          [attr.aria-label]="toggleLabel(rule)"
-                          (click)="toggleRule(rule)"
-                        >
-                          {{ rule.status === 'paused' ? '▸' : '❚❚' }}
-                        </button>
+                        <div class="rule-acts">
+                          <button
+                            type="button"
+                            class="rule-toggle"
+                            [attr.aria-label]="toggleLabel(rule)"
+                            (click)="toggleRule(rule)"
+                          >
+                            {{ rule.status === 'paused' ? '▸' : '❚❚' }}
+                          </button>
+                          <button
+                            type="button"
+                            class="rule-toggle"
+                            [attr.aria-label]="'Journal de ' + rule.label"
+                            (click)="openRuleJournal(rule)"
+                          >
+                            Journal
+                          </button>
+                        </div>
                         <button
                           type="button"
                           class="rule-remove"

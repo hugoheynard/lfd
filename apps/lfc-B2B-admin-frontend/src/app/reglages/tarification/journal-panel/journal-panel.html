@@ -1,0 +1,49 @@
+<fold-panel-header
+  title="Journal"
+  [subtitle]="'Ce qui est arrivé à ' + target() + '. Rien ne s\'y modifie ni ne s\'y efface.'"
+/>
+
+<div class="body">
+  @switch (state()) {
+    @case ('loading') {
+      <p class="muted">Lecture du journal…</p>
+    }
+    @case ('error') {
+      <p class="muted">Le journal n'a pas pu être lu.</p>
+    }
+    @default {
+      @if (entries().length === 0) {
+        <!-- Un journal vide n'est pas une erreur : c'est une décision posée
+             avant que le journal n'existe. Le dire vaut mieux que d'afficher
+             une liste vide sans explication. -->
+        <fold-empty-state
+          title="Aucun acte enregistré"
+          subtitle="Cette décision est antérieure au journal, ou personne n'y a touché depuis."
+        />
+      } @else {
+        <ol class="acts">
+          @for (entry of entries(); track entry.id) {
+            <li class="act" [class.is-terminal]="entry.act === 'archived'">
+              <div class="act-head">
+                <span class="act-verb">{{ actLabel(entry) }}</span>
+                <span class="act-when">{{ when(entry) }}</span>
+              </div>
+              <!-- La phrase FIGÉE au moment de l'acte : elle dit ce que la
+                   décision valait ce jour-là, pas ce qu'elle vaut aujourd'hui. -->
+              <p class="act-summary">{{ entry.summary }}</p>
+              <p class="act-actor">par {{ entry.actor }}</p>
+              @if (entry.reason !== null) {
+                <p class="act-reason">« {{ entry.reason }} »</p>
+              }
+            </li>
+          }
+        </ol>
+      }
+    }
+  }
+</div>
+
+<footer class="foot">
+  <span class="spacer"></span>
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Fermer</button>
+</footer>

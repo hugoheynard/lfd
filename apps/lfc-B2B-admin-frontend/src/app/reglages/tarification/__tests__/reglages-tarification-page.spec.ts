@@ -294,7 +294,17 @@ describe('la remise accordable', () => {
  * l'utilisateur : arrêter ce qui tourne, rallumer ce qui est arrêté.
  */
 describe('suspendre et reprendre', () => {
-  function pageWith(calls: string[]): ReglagesTarificationPage {
+  /** Hôte de panneaux doublé : on note ce qui s'ouvre, sans monter de panneau. */
+  function panelHost(opened: string[]): { open: (component: { name: string }) => unknown } {
+    return {
+      open: (component) => {
+        opened.push(component.name);
+        return { closed: Promise.resolve(false) };
+      },
+    };
+  }
+
+  function pageWith(calls: string[], opened: string[] = []): ReglagesTarificationPage {
     const service: Pick<TarificationService, 'read' | 'pauseRule' | 'resumeRule' | 'archiveRule'> =
       {
         read: () => Promise.resolve(board),
@@ -315,7 +325,7 @@ describe('suspendre et reprendre', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: TarificationService, useValue: service },
-        { provide: FoldPanelHostService, useValue: {} },
+        { provide: FoldPanelHostService, useValue: panelHost(opened) },
       ],
     });
     return TestBed.runInInjectionContext(() => new ReglagesTarificationPage());
@@ -338,15 +348,26 @@ describe('suspendre et reprendre', () => {
   });
 
   /**
-   * Le mot ne change pas pour l'utilisateur — « retirer » dit bien ce qu'il veut
-   * faire. Ce qui a changé est dessous : la décision est archivée, pas effacée.
+   * Retirer n'archive pas tout de suite : il **demande pourquoi**. Le motif est
+   * la seule réponse qu'aura celui qui relira dans six mois, et « êtes-vous
+   * sûr ? » ne l'aurait pas récoltée.
    */
-  it('retire en ARCHIVANT, jamais en supprimant', async () => {
+  it("retire en DEMANDANT le motif, jamais d'un seul clic", async () => {
     const calls: string[] = [];
+    const opened: string[] = [];
 
-    await pageWith(calls)['removeRule'](rule());
+    await pageWith(calls, opened)['removeRule'](rule());
 
-    expect(calls).toContain('archive:rule_1');
+    expect(opened).toContain('ArchivePanel');
+    expect(calls).toEqual([]);
+  });
+
+  it('ouvre le journal de la règle depuis son nœud', async () => {
+    const opened: string[] = [];
+
+    await pageWith([], opened)['openRuleJournal'](rule());
+
+    expect(opened).toContain('JournalPanel');
   });
 
   it("propose l'inverse de l'état courant", () => {

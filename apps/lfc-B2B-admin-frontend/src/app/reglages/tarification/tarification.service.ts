@@ -102,14 +102,18 @@ export class TarificationService {
   }
 
   /**
-   * Retire la limite d'une portée.
+   * **Archive** la limite d'une portée, avec le motif écrit à l'écran.
    *
-   * La portée globale a son propre chemin : elle ne désigne aucune cible, donc
-   * le sien n'en porte pas — un segment vide ne s'apparie pas côté serveur.
+   * `POST` et non `DELETE` : un `DELETE` ne porte pas de corps de façon fiable à
+   * travers les intermédiaires HTTP, et le motif est précisément ce qu'on veut
+   * garder. Le serveur conserve son `DELETE` sans motif — aucun écran ne l'appelle
+   * plus, et un client qui n'a rien à dire s'en sert encore.
    */
-  async removeFloor(scope: PriceScopePayload): Promise<void> {
+  async archiveFloor(scope: PriceScopePayload, reason: string | null): Promise<void> {
     await firstValueFrom(
-      this.http.delete<void>(`${B2B_API_BASE}/admin/pricing/floors/${floorPath(scope)}`),
+      this.http.post<void>(`${B2B_API_BASE}/admin/pricing/floors/${floorPath(scope)}/archive`, {
+        reason,
+      }),
     );
   }
 }

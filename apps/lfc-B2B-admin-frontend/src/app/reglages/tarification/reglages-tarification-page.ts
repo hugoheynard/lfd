@@ -21,7 +21,9 @@ import {
   FoldPanelHostService,
 } from 'fold-ng';
 
+import { ArchivePanel, type ArchivePanelData } from './archive-panel/archive-panel';
 import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
+import { JournalPanel, type JournalPanelData } from './journal-panel/journal-panel';
 import { RulePanel, type RulePanelData } from './rule-panel/rule-panel';
 import { TarificationService } from './tarification.service';
 
@@ -189,15 +191,34 @@ export class ReglagesTarificationPage {
   }
 
   /**
-   * **Retirer** archive : la décision quitte le tableau, la ligne reste.
+   * **Retirer** ouvre le panneau d'archivage, qui demande pourquoi.
    *
-   * Le mot ne change pas côté écran — « retirer » dit bien ce que le staff veut
-   * faire. Ce qui a changé est dessous : plus rien ne s'efface, et le journal
-   * garde qui a retiré quoi, et quand.
+   * Un panneau plutôt qu'une confirmation en ligne : « êtes-vous sûr ? » ne
+   * demande rien, alors que la seule question utile six mois plus tard est le
+   * motif. Le mot ne change pas pour autant — « retirer » dit bien ce que le
+   * staff veut faire ; ce qui a changé est dessous, plus rien ne s'efface.
    */
   protected async removeRule(rule: PriceRuleView): Promise<void> {
-    await this.tarification.archiveRule(rule.id, null);
-    await this.load();
+    await this.openArchive({
+      subject: { kind: 'rule', id: rule.id },
+      target: rule.label,
+      summary: `${this.ruleSummary(rule)} — ${rule.label}`,
+    });
+  }
+
+  /** **Le journal d'une règle** : qui l'a posée, qui l'a suspendue, quand. */
+  protected async openRuleJournal(rule: PriceRuleView): Promise<void> {
+    await this.openJournal({ subjectType: 'rule', subjectId: rule.id, target: rule.label });
+  }
+
+  private async openJournal(data: JournalPanelData): Promise<void> {
+    await this.panels.open<JournalPanelData, boolean>(JournalPanel, { data, width: 'md' }).closed;
+  }
+
+  private async openArchive(data: ArchivePanelData): Promise<void> {
+    await this.reloadIfChanged(
+      this.panels.open<ArchivePanelData, boolean>(ArchivePanel, { data, width: 'md' }).closed,
+    );
   }
 
   /** Ce que le bouton propose : l'inverse de l'état courant. */
