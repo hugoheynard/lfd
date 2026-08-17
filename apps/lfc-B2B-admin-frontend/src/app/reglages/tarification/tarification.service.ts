@@ -7,6 +7,7 @@ import type {
   PriceRuleView,
   PriceScopePayload,
   PricingBoardView,
+  PricingComparisonView,
   PricingJournalEntryView,
   SetPriceFloorPayload,
   SetVolumeLadderPayload,
@@ -30,6 +31,21 @@ export class TarificationService {
   /** Le tableau complet — familles, articles, règles, limites, prix résolus. */
   read(): Promise<PricingBoardView> {
     return firstValueFrom(this.http.get<PricingBoardView>(`${B2B_API_BASE}/admin/pricing`));
+  }
+
+  /**
+   * **Deux marqueurs**, et ce qui a bougé entre eux : le prix par article, et le
+   * volume vendu contre la fenêtre miroir d'avant.
+   *
+   * Un seul appel et non deux lectures datées recollées ici : le volume se
+   * mesure sur la fenêtre QUI SÉPARE les marqueurs, et cette fenêtre n'existe
+   * dans aucune des deux lectures.
+   */
+  compare(from: string, to: string): Promise<PricingComparisonView> {
+    const query = new URLSearchParams({ from, to }).toString();
+    return firstValueFrom(
+      this.http.get<PricingComparisonView>(`${B2B_API_BASE}/admin/pricing/comparison?${query}`),
+    );
   }
 
   /**

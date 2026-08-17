@@ -9,7 +9,16 @@ import type { PriceRuleView, PricingBoardView } from "@lfd/contracts";
  * moins finirait par diverger de celle qui facture.
  */
 export abstract class PricingBoardReader {
-  abstract read(): Promise<PricingBoardView>;
+  /**
+   * L'écran **à un instant donné**, aujourd'hui par défaut.
+   *
+   * Daté parce que tout ce qu'il montre l'est déjà : les fenêtres de validité,
+   * les suspensions, les archivages. Ce que la lecture datée rend est donc
+   * « quelles décisions étaient en vigueur ce jour-là », pas « quel prix a été
+   * facturé » — cette question-là a sa réponse ailleurs, exacte : la trace figée
+   * sur la ligne de commande. Le tarif canonique, lui, vient du PIM au présent.
+   */
+  abstract read(at?: Date): Promise<PricingBoardView>;
 
   /**
    * **Ce qu'on a rangé** — les règles archivées, de la plus récente à la plus

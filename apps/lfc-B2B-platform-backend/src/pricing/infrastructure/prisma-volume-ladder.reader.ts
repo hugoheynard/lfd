@@ -41,9 +41,9 @@ export class PrismaVolumeLadderReader extends VolumeLadderReader {
   }
 
   /** Tout ce qui est posé, suspendu compris — l'écran doit pouvoir le rouvrir. */
-  async listAll(): Promise<VolumeLadder[]> {
+  async listAll(at: Date): Promise<VolumeLadder[]> {
     const rows = await this.prisma.volumeLadder.findMany({
-      where: { archivedAt: null },
+      where: { OR: [{ archivedAt: null }, { archivedAt: { gt: at } }] },
       orderBy: { validFrom: "asc" },
     });
     return rows.map(ladderFromRow);

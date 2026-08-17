@@ -21,6 +21,9 @@ export abstract class VolumeLadderReader {
    *
    * Distincte de `candidatesFor` parce qu'elle répond à une autre question :
    * « qu'a-t-on décidé ? » et non « que s'applique-t-il ici ? ».
+   *
+   * `at` est l'instant **de lecture** : un barème archivé APRÈS lui existait
+   * encore ce jour-là, et l'exclure appauvrirait le passé à chaque rangement.
    */
-  abstract listAll(): Promise<VolumeLadder[]>;
+  abstract listAll(at: Date): Promise<VolumeLadder[]>;
 }

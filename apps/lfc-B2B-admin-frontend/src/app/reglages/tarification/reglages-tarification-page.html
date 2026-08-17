@@ -22,6 +22,11 @@
         (archivesRequested)="openArchives()"
       />
 
+      <!-- Deux marqueurs sur l'axe du temps : le catalogue à l'un, à l'autre,
+           et ce qui a bougé entre les deux — prix ET volume. Repliée par défaut
+           dans la lecture : on ouvre cet écran pour décider, pas pour analyser. -->
+      <app-comparison-band />
+
       <!--
         La mise en garde vient AVANT la grille parce qu'elle change la lecture de
         tout ce qui suit : sans elle, la colonne du prix passerait pour « le

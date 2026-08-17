@@ -1,0 +1,133 @@
+.compare {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3, 0.75rem);
+  padding: var(--fold-space-4, 1rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg, 0.75rem);
+  background: var(--fold-color-surface);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-1, 0.25rem);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-weight: 600;
+}
+
+.hint,
+.summary {
+  margin: 0;
+  font-size: var(--fold-text-xs, 0.75rem);
+  line-height: 1.5;
+  color: var(--fold-color-text-muted);
+}
+
+.failed {
+  margin: 0;
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-danger-text, var(--fold-color-text));
+}
+
+.markers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--fold-space-3, 0.75rem);
+}
+
+.marker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.marker-label {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+}
+
+.marker-field {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+
+// Un tableau large ne pousse JAMAIS la page de côté : il défile dans son cadre.
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fold-text-xs, 0.75rem);
+}
+
+.table th,
+.table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--fold-color-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table thead th {
+  font-weight: 600;
+  color: var(--fold-color-text-muted);
+}
+
+// Les chiffres s'alignent en colonne, sinon on ne compare pas, on lit.
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-weight: 500;
+}
+
+.item-meta,
+.muted {
+  color: var(--fold-color-text-muted);
+}
+
+.delta {
+  font-weight: 600;
+}
+
+// Une baisse de prix et une hausse de volume vont dans le même sens commercial,
+// mais l'écran ne juge pas : il dit le SENS, et laisse la lecture au staff.
+.delta.is-down {
+  color: var(--fold-color-danger-text, currentcolor);
+}
+
+.delta.is-up {
+  color: var(--fold-color-success-text, currentcolor);
+}
+
+.delta.is-flat {
+  color: var(--fold-color-text-muted);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

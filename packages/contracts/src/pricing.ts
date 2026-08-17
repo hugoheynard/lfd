@@ -748,3 +748,50 @@ export interface ItemElasticityView {
   /** Fenêtre glissante — où on en est aujourd'hui, indépendamment de la règle. */
   readonly rolling: ElasticityComparison;
 }
+
+/**
+ * **Un article vu de deux instants**, et ce qui a bougé entre les deux.
+ *
+ * Le prix vient de la résolution — la fonction qui facture — appelée à chacune
+ * des deux dates. Le volume vient des commandes réelles sur la fenêtre qui les
+ * sépare, comparé à la fenêtre **miroir** juste avant, de même durée : comparer
+ * trente jours à quatre-vingt-dix ferait passer une saison pour un effet.
+ */
+export interface PricingComparisonItemView {
+  readonly sku: string;
+  readonly name: string;
+  readonly categoryId: string;
+  readonly categoryName: string;
+  /** Le prix résolu au premier marqueur, puis au second. HT, en centimes. */
+  readonly fromCents: number;
+  readonly toCents: number;
+  /** L'écart de prix en points de base (`-1500` = −15 %). `null` si le premier vaut zéro. */
+  readonly priceVariationBp: number | null;
+  /** Les pièces vendues sur la fenêtre, puis sur la fenêtre miroir d'avant. */
+  readonly volume: number;
+  readonly previousVolume: number;
+  /** `null` quand la fenêtre miroir n'a rien vendu : ce n'est pas une variation. */
+  readonly volumeVariationBp: number | null;
+}
+
+/**
+ * **Deux marqueurs, et tout ce qui les sépare.**
+ *
+ * Ce que cette vue dit : quelles décisions étaient en vigueur à chaque instant,
+ * et ce que le catalogue valait sous elles. Ce qu'elle **ne dit pas** : le prix
+ * facturé ce jour-là. Le tarif canonique vient du PIM au présent — il n'est pas
+ * historisé — donc une lecture passée applique les décisions d'hier aux tarifs
+ * d'aujourd'hui. La vérité de ce qui a été facturé vit sur les lignes de
+ * commande, figée à la passation.
+ */
+export interface PricingComparisonView {
+  /** Les deux marqueurs, bornes de la fenêtre observée. */
+  readonly from: string;
+  readonly to: string;
+  /** La fenêtre miroir, celle d'avant — même durée. */
+  readonly previousFrom: string;
+  readonly days: number;
+  /** Combien d'articles ont changé de prix entre les deux instants. */
+  readonly changedCount: number;
+  readonly items: readonly PricingComparisonItemView[];
+}

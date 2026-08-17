@@ -134,6 +134,41 @@ export class MercurialeMustPoseAPriceError extends DomainError {
 }
 
 /**
+ * Deux marqueurs de comparaison dans le désordre, ou confondus.
+ *
+ * Une fenêtre qui se ferme avant de s'ouvrir n'a pas de volume à mesurer, et sa
+ * fenêtre miroir irait vers le futur. Refusé à la frontière plutôt que renvoyé
+ * vide : un tableau vide se lit « rien n'a bougé », ce qui est un mensonge.
+ */
+export class ReversedComparisonWindowError extends DomainError {
+  constructor(
+    readonly from: Date,
+    readonly to: Date,
+  ) {
+    super(
+      "pricing.comparison.reversed_window",
+      "Le second marqueur doit être postérieur au premier : une fenêtre qui se ferme avant de s'ouvrir n'a rien à mesurer.",
+    );
+  }
+}
+
+/**
+ * Une date de lecture illisible.
+ *
+ * Refusée à la frontière, pendant que c'est encore explicable : une date
+ * invalide deviendrait `Invalid Date`, traverserait toutes les comparaisons en
+ * rendant `false`, et l'écran afficherait un catalogue vide sans dire pourquoi.
+ */
+export class InvalidPricingInstantError extends DomainError {
+  constructor(readonly value: string) {
+    super(
+      "pricing.instant.invalid",
+      `« ${value} » n'est pas une date lisible : l'écran daté a besoin d'un instant ISO.`,
+    );
+  }
+}
+
+/**
  * Un identifiant de portée (ou d'audience) qui contredit son type.
  *
  * Les deux sens sont refusés : une portée « famille » sans famille ne vise rien,

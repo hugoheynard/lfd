@@ -14,6 +14,7 @@ import {
   PausePriceRuleHandler,
   ResumePriceRuleHandler,
 } from "./application/commands/rule-lifecycle.handlers.js";
+import { BoardComparisonService } from "./application/board-comparison.service.js";
 import { BoardElasticityService } from "./application/board-elasticity.service.js";
 import { PricingBoardReader } from "./domain/ports/pricing-board.reader.js";
 import { PricingFloorRepository } from "./domain/ports/pricing-floor.repository.js";
@@ -48,6 +49,7 @@ import { PricingModule } from "./pricing.module.js";
   controllers: [AdminPricingController, AdminPriceFloorsController, AdminPricingJournalController],
   providers: [
     BoardElasticityService,
+    BoardComparisonService,
     CreatePriceRuleHandler,
     PausePriceRuleHandler,
     ResumePriceRuleHandler,

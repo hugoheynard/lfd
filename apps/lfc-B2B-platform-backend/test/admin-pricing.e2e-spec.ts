@@ -10,7 +10,7 @@
  * 3. l'écran affiche le prix que la **caisse** calculerait, parce qu'il passe par
  *    la même fonction et le même catalogue.
  */
-import type { PricingBoardView } from "@lfd/contracts";
+import type { PricingBoardView, PricingComparisonView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
@@ -1106,5 +1106,123 @@ describe("le signal de dérive de la limite", () => {
 
   it("refuse de confirmer une limite qui n'existe pas", async () => {
     expect((await staff().post(`/admin/pricing/floors/product/${SKU}/confirm`)).status).toBe(404);
+  });
+});
+
+/**
+ * **Les deux marqueurs.**
+ *
+ * Ce que cette lecture prouve, et qu'aucun test unitaire ne peut : la clause
+ * d'archivage est bien **datée**. Une règle rangée aujourd'hui doit continuer
+ * d'apparaître dans une lecture d'hier — sans quoi le passé s'appauvrit à chaque
+ * rangement, silencieusement.
+ */
+describe("l’écran daté et la comparaison", () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  /** Une vente de `quantity` unités, reculée dans le temps. */
+  async function sell(quantity: number, daysAgo: number): Promise<void> {
+    const response = await ctx
+      .asSub("auth0|solo")
+      .post("/orders")
+      .send({
+        fulfillmentMethod: "pickup",
+        pickupAddressId: pickupId,
+        requestedDeliveryDate: "2026-09-01",
+        lines: [{ sku: SKU, quantity }],
+      });
+    await ctx.prisma.order.update({
+      where: { id: jsonBody<{ id: string }>(response).id },
+      data: { createdAt: new Date(Date.now() - daysAgo * DAY_MS) },
+    });
+  }
+
+  const at = (iso: string) => staff().get(`/admin/pricing?at=${iso}`);
+
+  it("refuse une date illisible plutôt que de rendre un catalogue vide", async () => {
+    expect((await staff().get("/admin/pricing?at=hier")).status).toBe(400);
+  });
+
+  it("rend le tableau tel qu'il était : une règle archivée depuis y agit encore", async () => {
+    const { id } = jsonBody<{ id: string }>(
+      await postRule({
+        stage: "promotion",
+        effect: { nature: "alter", direction: "decrease", mode: "percent", value: 5_000 },
+        validFrom: "2026-01-01T00:00:00.000Z",
+        validTo: null,
+      }),
+    );
+    const before = await priceOf(SKU);
+    expect(before).toBe(CANONICAL / 2);
+
+    await staff().post(`/admin/pricing/rules/${id}/archive`).send({ reason: "fin" });
+
+    // Au présent : la règle a disparu, le prix remonte.
+    expect(await priceOf(SKU)).toBe(CANONICAL);
+
+    // Hier : elle agissait, et le prix le dit.
+    const past = jsonBody<PricingBoardView>(await at("2026-08-01T00:00:00.000Z"));
+    const item = past.categories
+      .flatMap((category) => category.items)
+      .find((candidate) => candidate.sku === SKU);
+    expect(item?.finalCents).toBe(CANONICAL / 2);
+  });
+
+  it("refuse deux marqueurs dans le désordre", async () => {
+    const response = await staff().get(
+      "/admin/pricing/comparison?from=2026-08-20T00:00:00.000Z&to=2026-08-10T00:00:00.000Z",
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  /**
+   * Le cœur de la vue : deux instants, et l'écart entre les deux. La promotion
+   * n'existe qu'après le premier marqueur, donc l'article a baissé de moitié.
+   */
+  it("dit ce qui a bougé entre les deux marqueurs", async () => {
+    await postRule({
+      stage: "promotion",
+      effect: { nature: "alter", direction: "decrease", mode: "percent", value: 5_000 },
+      validFrom: "2026-08-15T00:00:00.000Z",
+      validTo: null,
+    });
+
+    const comparison = jsonBody<PricingComparisonView>(
+      await staff().get(
+        "/admin/pricing/comparison?from=2026-08-10T00:00:00.000Z&to=2026-08-20T00:00:00.000Z",
+      ),
+    );
+    const item = comparison.items.find((candidate) => candidate.sku === SKU);
+
+    expect(comparison.days).toBe(10);
+    expect(comparison.previousFrom).toBe("2026-07-31T00:00:00.000Z");
+    expect(item?.fromCents).toBe(CANONICAL);
+    expect(item?.toCents).toBe(CANONICAL / 2);
+    expect(item?.priceVariationBp).toBe(-5_000);
+    expect(comparison.changedCount).toBeGreaterThan(0);
+  });
+
+  /**
+   * **Le volume, et sa variation.** Les ventes viennent de commandes réelles, et
+   * la fenêtre miroir a la même durée — sans quoi un écart mesurerait la
+   * longueur de la mesure plutôt que l'effet du prix.
+   */
+  it("compte le volume de la fenêtre, contre celui de la fenêtre miroir", async () => {
+    await sell(100, 25); // dans la fenêtre miroir (J−30 → J−15)
+    await sell(120, 5); // dans la fenêtre observée (J−15 → aujourd'hui)
+
+    const now = Date.now();
+    const from = new Date(now - 15 * DAY_MS).toISOString();
+    const to = new Date(now + DAY_MS).toISOString();
+    const comparison = jsonBody<PricingComparisonView>(
+      await staff().get(`/admin/pricing/comparison?from=${from}&to=${to}`),
+    );
+
+    const item = comparison.items.find((candidate) => candidate.sku === SKU);
+    expect(item?.volume).toBe(120);
+    expect(item?.previousVolume).toBe(100);
+    // +20 % de pièces vendues.
+    expect(item?.volumeVariationBp).toBe(2_000);
   });
 });

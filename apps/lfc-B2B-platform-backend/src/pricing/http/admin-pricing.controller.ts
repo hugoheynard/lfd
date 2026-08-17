@@ -16,6 +16,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
@@ -29,8 +30,15 @@ import {
   ResumePriceRuleCommand,
   SetVolumeLadderCommand,
 } from "../application/commands/pricing.commands.js";
+import { BoardComparisonService } from "../application/board-comparison.service.js";
+import { InvalidPricingInstantError } from "../domain/pricing-errors.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
-import type { PriceRuleView, PriceScopePayload, PricingBoardView } from "@lfd/contracts";
+import type {
+  PriceRuleView,
+  PriceScopePayload,
+  PricingBoardView,
+  PricingComparisonView,
+} from "@lfd/contracts";
 import type { PricingRuleDraft } from "../domain/entities/pricing-rule.js";
 import type { PriceScope } from "../domain/price-rule.js";
 
@@ -53,13 +61,34 @@ import type { PriceScope } from "../domain/price-rule.js";
 export class AdminPricingController {
   constructor(
     private readonly board: PricingBoardReader,
+    private readonly comparison: BoardComparisonService,
     private readonly commands: CommandBus,
   ) {}
 
-  /** Le tableau complet — familles, articles, règles, limites, prix résolus. */
+  /**
+   * Le tableau complet — familles, articles, règles, limites, prix résolus.
+   *
+   * `?at=<ISO>` le rend **tel qu'il était** : les règles archivées après cet
+   * instant y reviennent, les suspensions postérieures ne comptent pas. Ce que
+   * la lecture datée montre, ce sont les DÉCISIONS en vigueur ce jour-là — pas
+   * le prix facturé, le tarif canonique n'étant pas historisé.
+   */
   @Get()
-  read(): Promise<PricingBoardView> {
-    return this.board.read();
+  read(@Query("at") at?: string): Promise<PricingBoardView> {
+    return this.board.read(at === undefined ? undefined : parseInstant(at));
+  }
+
+  /**
+   * **Deux marqueurs, et ce qui a bougé entre eux** : le prix par article, et le
+   * volume vendu comparé à la fenêtre miroir d'avant.
+   *
+   * Une route à part et non deux appels datés recollés dans le navigateur : le
+   * volume se mesure sur la fenêtre QUI SÉPARE les marqueurs, et cette fenêtre
+   * n'existe dans aucune des deux lectures.
+   */
+  @Get("comparison")
+  compare(@Query("from") from: string, @Query("to") to: string): Promise<PricingComparisonView> {
+    return this.comparison.compare(parseInstant(from), parseInstant(to));
   }
 
   /**
@@ -181,6 +210,21 @@ export class AdminPricingController {
       new ArchivePriceRuleCommand(id, staffSub, null),
     );
   }
+}
+
+/**
+ * Une date ISO → un instant.
+ *
+ * @throws {InvalidPricingInstantError} chaîne illisible. Sans ce refus, un
+ *   `Invalid Date` traverserait toutes les comparaisons en rendant `false`, et
+ *   l'écran afficherait un catalogue vide sans dire pourquoi.
+ */
+function parseInstant(value: string): Date {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new InvalidPricingInstantError(value);
+  }
+  return parsed;
 }
 
 /**

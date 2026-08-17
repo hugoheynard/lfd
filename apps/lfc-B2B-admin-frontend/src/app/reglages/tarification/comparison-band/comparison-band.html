@@ -1,0 +1,99 @@
+<section class="compare" aria-label="Comparer deux dates">
+  <header class="head">
+    <h2 class="title">Comparer deux dates</h2>
+    <p class="hint">
+      Les <strong>décisions</strong> en vigueur à chaque date, et le volume vendu entre les deux. Le
+      tarif de liste n'est pas historisé : ce n'est pas le prix facturé ce jour-là — celui-là est
+      figé sur les commandes.
+    </p>
+  </header>
+
+  <div class="markers">
+    <div class="marker">
+      <label class="marker-label" for="compare-from">Premier marqueur</label>
+      <input
+        id="compare-from"
+        class="marker-field"
+        type="date"
+        [value]="from()"
+        (change)="from.set($any($event.target).value)"
+      />
+    </div>
+    <div class="marker">
+      <label class="marker-label" for="compare-to">Second marqueur</label>
+      <input
+        id="compare-to"
+        class="marker-field"
+        type="date"
+        [value]="to()"
+        (change)="to.set($any($event.target).value)"
+      />
+    </div>
+    <button
+      foldButton
+      size="sm"
+      intent="primary"
+      [disabled]="!canRun() || loading()"
+      (click)="run()"
+    >
+      {{ loading() ? 'Lecture…' : 'Comparer' }}
+    </button>
+  </div>
+
+  @if (failed()) {
+    <p class="failed">
+      La lecture n'a pas abouti. Vérifiez que le second marqueur suit le premier.
+    </p>
+  }
+
+  @if (result(); as comparison) {
+    <p class="summary">
+      <strong>{{ comparison.changedCount }}</strong> article(s) ont changé de prix sur
+      <strong>{{ comparison.days }}</strong> jour(s). Le volume est comparé aux
+      {{ comparison.days }} jours précédents.
+    </p>
+
+    @if (moved().length === 0) {
+      <p class="summary">Aucun prix n'a bougé entre ces deux dates.</p>
+    } @else {
+      <div class="table-scroll">
+        <table class="table">
+          <caption class="sr-only">
+            Articles dont le prix a changé, du plus gros écart au plus petit
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Article</th>
+              <th scope="col" class="num">Avant</th>
+              <th scope="col" class="num">Après</th>
+              <th scope="col" class="num">Prix</th>
+              <th scope="col" class="num">Volume</th>
+              <th scope="col" class="num">Avant</th>
+              <th scope="col" class="num">Volume</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of moved(); track item.sku) {
+              <tr>
+                <th scope="row" class="item">
+                  <span class="item-name">{{ item.name }}</span>
+                  <span class="item-meta">{{ item.categoryName }}</span>
+                </th>
+                <td class="num">{{ euros(item.fromCents) }}</td>
+                <td class="num">{{ euros(item.toCents) }}</td>
+                <td class="num delta" [class]="'is-' + direction(item.priceVariationBp)">
+                  {{ percent(item.priceVariationBp) }}
+                </td>
+                <td class="num">{{ item.volume }}</td>
+                <td class="num muted">{{ item.previousVolume }}</td>
+                <td class="num delta" [class]="'is-' + direction(item.volumeVariationBp)">
+                  {{ percent(item.volumeVariationBp) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

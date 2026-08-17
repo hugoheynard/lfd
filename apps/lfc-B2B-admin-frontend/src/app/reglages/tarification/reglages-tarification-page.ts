@@ -20,6 +20,7 @@ import {
 
 import { ArchivePanel, type ArchivePanelData } from './archive-panel/archive-panel';
 import { ArchivesPanel } from './archives-panel/archives-panel';
+import { ComparisonBand } from './comparison-band/comparison-band';
 import { FinalPrice } from './final-price/final-price';
 import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
 import { GridSkeleton } from './grid-skeleton/grid-skeleton';
@@ -79,6 +80,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldEmptyStateComponent,
+    ComparisonBand,
     FinalPrice,
     GridSkeleton,
     OverlapTimeline,

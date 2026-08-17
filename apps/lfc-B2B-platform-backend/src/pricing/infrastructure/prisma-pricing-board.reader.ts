@@ -97,22 +97,28 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     return rows.map(ruleViewFromRow);
   }
 
-  async read(): Promise<PricingBoardView> {
-    // Pris avant toute lecture : l'âge d'une limite et la résolution des prix
-    // doivent parler du même instant.
-    const at = new Date();
+  async read(instant?: Date): Promise<PricingBoardView> {
+    // Pris une fois : l'âge d'une limite et la résolution des prix doivent
+    // parler du même instant. Le défaut est maintenant ; une date donnée rend
+    // l'écran tel qu'il était.
+    const at = instant ?? new Date();
 
     // **Les archivées n'entrent pas dans le tableau** : ranger sert précisément
     // à ne plus les voir. Sans cette clause, une règle retirée continuerait
     // d'occuper son nœud — et pire, la colonne des prix résolus dirait la
     // vérité pendant que le nœud d'à côté afficherait une règle qui n'agit plus.
+    //
+    // « Archivée » se lit **à l'instant demandé**, pas au présent : une règle
+    // rangée hier s'appliquait le mois dernier, et l'exclure d'une lecture datée
+    // appauvrirait le passé à chaque rangement — sans que rien ne le signale.
+    const unarchived = { OR: [{ archivedAt: null }, { archivedAt: { gt: at } }] };
     const [ruleRows, floorRows, ladders] = await Promise.all([
       this.prisma.priceRule.findMany({
-        where: { archivedAt: null },
+        where: unarchived,
         orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
       }),
-      this.prisma.priceFloor.findMany({ where: { archivedAt: null } }),
-      this.ladders.listAll(),
+      this.prisma.priceFloor.findMany({ where: unarchived }),
+      this.ladders.listAll(at),
     ]);
     const rules: LoadedRule[] = ruleRows.map((row) => ({
       rule: ruleFromRow(row),
@@ -133,7 +139,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // suspendue ne recouvre rien, et l'annoncer ferait chercher un cumul qui
     // n'existe pas. (Les archivées ne sont même pas lues.)
     const actingGlobalRules = rules
-      .filter((entry) => entry.rule.scope.type === "global" && entry.rule.suspendedFrom === null)
+      .filter((entry) => entry.rule.scope.type === "global" && actsAt(entry.rule.suspendedFrom, at))
       .map((entry) => entry.rule);
     const globalLadders = ladders.filter((ladder) => ladder.scope.type === "global");
 
@@ -220,6 +226,17 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       ),
     };
   }
+}
+
+/**
+ * La décision **agit-elle** à cet instant ?
+ *
+ * Comparé à l'instant de lecture et non au présent : une promotion suspendue le
+ * 12 agissait encore le 10, et une frise du 10 qui l'omettrait raconterait une
+ * autre histoire que celle qu'ont vécue les commandes de ce jour-là.
+ */
+function actsAt(suspendedFrom: Date | null, at: Date): boolean {
+  return suspendedFrom === null || suspendedFrom.getTime() > at.getTime();
 }
 
 /** La portée vise-t-elle cette famille (et pas un article, ni tout le catalogue) ? */

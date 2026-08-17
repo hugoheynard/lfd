@@ -531,6 +531,8 @@ export type {
   PricingCategoryView,
   PricingItemView,
   PricingLadderBandView,
+  PricingComparisonView,
+  PricingComparisonItemView,
   OverlapKind,
   PriceOverlapView,
   PricingActKind,
