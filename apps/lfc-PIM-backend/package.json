@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@lfd/endpoints": "workspace:*",
+    "@lfd/catalog-sync": "workspace:*",
     "@lfd/pim-contracts": "workspace:*",
     "@lfd/shopify-admin": "workspace:*",
     "@nestjs/common": "^11.1.9",

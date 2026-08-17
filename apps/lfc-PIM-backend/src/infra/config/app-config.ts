@@ -26,6 +26,8 @@ export class AppConfig implements ShopifyCredentialsSource {
   private readonly shopifyToken: string | null;
   private readonly shopifyClientIdValue: string | null;
   private readonly shopifyClientSecretValue: string | null;
+  private readonly b2bPushUrl: string | null;
+  private readonly b2bPushSecret: string | null;
   private readonly production: boolean;
 
   constructor() {
@@ -36,6 +38,8 @@ export class AppConfig implements ShopifyCredentialsSource {
     this.shopifyToken = optional('SHOPIFY_ADMIN_TOKEN');
     this.shopifyClientIdValue = optional('SHOPIFY_CLIENT_ID');
     this.shopifyClientSecretValue = optional('SHOPIFY_CLIENT_SECRET');
+    this.b2bPushUrl = optional('B2B_CATALOG_PUSH_URL');
+    this.b2bPushSecret = optional('B2B_CATALOG_PUSH_SECRET');
     this.production = (process.env['NODE_ENV']?.trim() ?? '') === 'production';
   }
 
@@ -82,6 +86,23 @@ export class AppConfig implements ShopifyCredentialsSource {
    * server-to-server via le *client credentials grant*. Deux secrets, jamais en base.
    * `null` tant que l'un des deux manque : une moitié d'identifiant est inutile.
    */
+  /**
+   * Où pousser le catalogue vers la plateforme B2B, et avec quel secret.
+   *
+   * Rendus **ensemble** ou pas du tout — même raison que pour les identifiants
+   * Shopify ci-dessous : une URL sans secret ne sert à rien, un secret sans URL
+   * non plus, et `null` dit « canal éteint » d'une seule voix plutôt que de
+   * laisser l'appelant recomposer la condition à chaque fois.
+   *
+   * Absent = **capacité éteinte**, pas panne : le canal ne pousse pas, et le dit.
+   */
+  b2bCatalogPush(): { readonly url: string; readonly secret: string } | null {
+    if (this.b2bPushUrl === null || this.b2bPushSecret === null) {
+      return null;
+    }
+    return { url: this.b2bPushUrl, secret: this.b2bPushSecret };
+  }
+
   shopifyOAuthCredentials(): ShopifyOAuthCredentials | null {
     if (
       this.shopifyClientIdValue === null ||

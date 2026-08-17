@@ -15,6 +15,10 @@ const RUNTIME_KEYS = [
   'SHOPIFY_ADMIN_TOKEN',
   'SHOPIFY_CLIENT_ID',
   'SHOPIFY_CLIENT_SECRET',
+  // Canal plateforme B2B : où pousser le catalogue, et avec quel secret. Les
+  // deux ou aucun — sans eux le canal est éteint, pas en panne (cf. `AppConfig`).
+  'B2B_CATALOG_PUSH_URL',
+  'B2B_CATALOG_PUSH_SECRET',
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];

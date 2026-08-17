@@ -383,6 +383,9 @@ importers:
 
   apps/lfc-PIM-backend:
     dependencies:
+      '@lfd/catalog-sync':
+        specifier: workspace:*
+        version: link:../../packages/catalog-sync
       '@lfd/endpoints':
         specifier: workspace:*
         version: link:../../packages/endpoints

@@ -34,13 +34,14 @@ secrets sont ceux qu'on croit.
 
 ## 2. Les URL, et lesquelles doivent résoudre
 
-| Variable              | Valeur                             | Doit résoudre ?                                    |
-| --------------------- | ---------------------------------- | -------------------------------------------------- |
-| `B2B_API_BASE_URL`    | `…gateway…workers.dev/api/b2b`     | **oui** — appelée par 2 fronts                     |
-| `PIM_API_BASE_URL`    | `…gateway…workers.dev/api/pim`     | **oui**                                            |
-| `B2B_ADMIN_BASE_URL`  | `https://lfc-b2b-admin.pages.dev`  | oui — liens dans les e-mails staff                 |
-| `B2B_CLIENT_BASE_URL` | `https://lfc-b2b-eu7.pages.dev`    | **oui** — liens de création de mot de passe client |
-| `AUTH0_*_AUDIENCE`    | `https://api-b2b.lafoliedouce.eu…` | **non** — ce sont des **identifiants**             |
+| Variable               | Valeur                             | Doit résoudre ?                                    |
+| ---------------------- | ---------------------------------- | -------------------------------------------------- |
+| `B2B_API_BASE_URL`     | `…gateway…workers.dev/api/b2b`     | **oui** — appelée par 2 fronts                     |
+| `PIM_API_BASE_URL`     | `…gateway…workers.dev/api/pim`     | **oui**                                            |
+| `B2B_ADMIN_BASE_URL`   | `https://lfc-b2b-admin.pages.dev`  | oui — liens dans les e-mails staff                 |
+| `B2B_CLIENT_BASE_URL`  | `https://lfc-b2b-eu7.pages.dev`    | **oui** — liens de création de mot de passe client |
+| `AUTH0_*_AUDIENCE`     | `https://api-b2b.lafoliedouce.eu…` | **non** — ce sont des **identifiants**             |
+| `B2B_CATALOG_PUSH_URL` | `…gateway…/api/b2b/catalog/ingest` | **oui** — le PIM y pousse le catalogue             |
 
 ⚠️ **La distinction de la dernière ligne est celle qui se perd.** Une audience
 Auth0 est une chaîne d'identification, pas une adresse à joindre. Ces domaines
@@ -84,18 +85,19 @@ la production.
 
 ## 3. Les secrets, par destination
 
-| Secret                                                                   | Va vers                            | Notes                                                                    |
-| ------------------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------ |
-| `DATABASE_B2B_URL`                                                       | backend B2B                        | forme `prisma+postgres://` (Accelerate)                                  |
-| `DATABASE_PIM_URL`                                                       | backend PIM (comme `DATABASE_URL`) | renommé depuis `PIM_DATABASE_URL` le 2026-08-13                          |
-| `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY` | backend B2B                        | mode démo                                                                |
-| `RESEND_MAILER_B2B_API_KEY`                                              | backend B2B                        | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md) |
-| `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                        | backend B2B                        | Management API                                                           |
-| `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                    | backend B2B                        | pièces (KBIS) — bucket et endpoint sont des Variables                    |
-| `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                               | backend PIM                        | le PIM **appelle** Shopify ; il ne reçoit aucun webhook                  |
-| `RECOMPUTE_TOKEN`                                                        | Worker B2B **et** container        | comparé par `RecomputeGuard`                                             |
-| `CLOUDFLARE_ACCOUNT_ID`                                                  | tous les déploiements              | injecté dans l'image au deploy                                           |
-| `LFC_{PIM,B2B}_BACKEND_WORKER`                                           | déploiements                       | jetons Cloudflare, un par app                                            |
+| Secret                                                                   | Va vers                            | Notes                                                                          |
+| ------------------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------ |
+| `DATABASE_B2B_URL`                                                       | backend B2B                        | forme `prisma+postgres://` (Accelerate)                                        |
+| `DATABASE_PIM_URL`                                                       | backend PIM (comme `DATABASE_URL`) | renommé depuis `PIM_DATABASE_URL` le 2026-08-13                                |
+| `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY` | backend B2B                        | mode démo                                                                      |
+| `RESEND_MAILER_B2B_API_KEY`                                              | backend B2B                        | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md)       |
+| `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                        | backend B2B                        | Management API                                                                 |
+| `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                    | backend B2B                        | pièces (KBIS) — bucket et endpoint sont des Variables                          |
+| `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                               | backend PIM                        | le PIM **appelle** Shopify ; il ne reçoit aucun webhook                        |
+| `B2B_CATALOG_PUSH_SECRET`                                                | backend PIM **et** backend B2B     | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés** |
+| `RECOMPUTE_TOKEN`                                                        | Worker B2B **et** container        | comparé par `RecomputeGuard`                                                   |
+| `CLOUDFLARE_ACCOUNT_ID`                                                  | tous les déploiements              | injecté dans l'image au deploy                                                 |
+| `LFC_{PIM,B2B}_BACKEND_WORKER`                                           | déploiements                       | jetons Cloudflare, un par app                                                  |
 
 **Le PIM ne reçoit aucun webhook** — zéro occurrence de « webhook » dans son
 code source. Le seul endpoint entrant de tiers est `POST /payments/webhook`

@@ -1,3 +1,4 @@
+import type { LocalizedText } from '../value-objects/localized-text.js';
 import type { ProductRecord } from './product.repository.js';
 
 /**
@@ -21,9 +22,33 @@ export interface CategoryTvaTags {
   readonly surPlace: string | null;
 }
 
+/**
+ * Une famille telle qu'un **canal** a besoin de la ranger : son identité, sa
+ * place dans l'arbre, et le **taux** de TVA — pas le tag.
+ *
+ * Shopify range par collection, donc il lit un `tag` ; la plateforme B2B calcule
+ * une facture, donc elle lit un nombre. Deux besoins distincts sur la même
+ * donnée d'origine — résolus tous les deux **ici**, où la catégorie et le régime
+ * sont connus, plutôt que dans chaque adaptateur.
+ *
+ * Le texte reste `LocalizedText` : l'aplatissement vers une langue est une
+ * décision de canal, pas du catalogue.
+ */
+export interface ChannelCategory {
+  readonly id: string;
+  readonly name: LocalizedText;
+  readonly slug: LocalizedText;
+  readonly parentId: string | null;
+  readonly position: number;
+  /** Taux du régime « à emporter » en %, ou `null` si la famille n'est pas réglée. */
+  readonly emporterVatPercent: number | null;
+}
+
 export abstract class CatalogueReader {
   abstract publishable(): Promise<ProductRecord[]>;
   abstract byIds(ids: readonly string[]): Promise<ProductRecord[]>;
   /** Le tag de collection `tva-*` par contexte pour une catégorie (résout le régime). */
   abstract tvaTags(categoryId: string): Promise<CategoryTvaTags>;
+  /** Les familles **non archivées**, avec leur taux de TVA à emporter résolu. */
+  abstract channelCategories(): Promise<ChannelCategory[]>;
 }

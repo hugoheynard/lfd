@@ -4,6 +4,12 @@ import { CatalogueModule } from '../../catalogue/catalogue.module.js';
 import { DatabaseModule } from '../../infra/database/database.module.js';
 import { B2bMembershipController } from './membership/membership.controller.js';
 import { B2bMembershipService } from './membership/membership.service.js';
+import {
+  DryRunB2bCatalogDriver,
+  LiveB2bCatalogDriver,
+} from './products/driver.js';
+import { B2bPushController } from './products/push.controller.js';
+import { B2bCatalogPushService } from './products/push.service.js';
 
 /**
  * Adaptateur du canal **plateforme B2B** — le second canal, après Shopify.
@@ -21,8 +27,14 @@ import { B2bMembershipService } from './membership/membership.service.js';
  */
 @Module({
   imports: [DatabaseModule, CatalogueModule],
-  controllers: [B2bMembershipController],
-  providers: [B2bMembershipService],
+  controllers: [B2bMembershipController, B2bPushController],
+  providers: [
+    B2bMembershipService,
+    B2bCatalogPushService,
+    // Les deux pilotes, concrets : le service choisit selon ce qui est demandé.
+    DryRunB2bCatalogDriver,
+    LiveB2bCatalogDriver,
+  ],
   exports: [B2bMembershipService],
 })
 export class B2bPlatformModule {}

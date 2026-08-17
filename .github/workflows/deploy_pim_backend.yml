@@ -128,9 +128,15 @@ jobs:
           SHOPIFY_ADMIN_TOKEN: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}
           SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
           SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          # Canal plateforme B2B. L'URL est publique (une adresse d'API) → Variable ;
+          # le secret prouve l'identité de l'appelant → Secret. Les deux ou aucun :
+          # une moitié laisse le canal éteint, ce qui est le comportement voulu.
+          B2B_CATALOG_PUSH_URL: ${{ vars.B2B_CATALOG_PUSH_URL }}
+          B2B_CATALOG_PUSH_SECRET: ${{ secrets.B2B_CATALOG_PUSH_SECRET }}
         run: |
           for name in DATABASE_URL AUTH0_DOMAIN AUTH0_AUDIENCE \
-                      SHOPIFY_ADMIN_TOKEN SHOPIFY_CLIENT_ID SHOPIFY_CLIENT_SECRET; do
+                      SHOPIFY_ADMIN_TOKEN SHOPIFY_CLIENT_ID SHOPIFY_CLIENT_SECRET \
+                      B2B_CATALOG_PUSH_URL B2B_CATALOG_PUSH_SECRET; do
             value="${!name}"
             if [ -n "$value" ]; then
               printf '%s' "$value" | pnpm exec wrangler secret put "$name"
