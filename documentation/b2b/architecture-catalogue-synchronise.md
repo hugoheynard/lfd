@@ -122,7 +122,16 @@ place pour Shopify. La logique est acquise dans cette maison ; on l'applique.
    suppose que les deux côtés sont d'accord sur l'état de départ ; un snapshot
    est vrai tout seul, rejouable, et diffable. Le versionnement et le rollback
    sont ceux du canal Shopify.
-6. **L'ingestion est une couche anti-corruption.** Le B2B mappe le payload vers
+6. **L'article est un AGRÉGAT, pas une table.** Toute écriture passe par une
+   méthode nommée de `CatalogItem` — `setB2bPrice`, `alignOnPim`, `hide`,
+   `feature` — jamais par une colonne ni une primitive. La question de tri n'est
+   pas « y a-t-il des transitions » mais « **existe-t-il une règle qui peut
+   refuser cette écriture ?** » : il y en a trois (prix positif, prix jamais
+   égal à celui du PIM, pas de mise en avant sur un masqué). Conséquence la plus
+   utile : `refreshFromPim()` n'écrit que les faits, donc perdre une décision
+   commerciale à un push **n'est pas exprimable**. Les familles, elles, restent
+   une projection — aucune règle ne peut refuser d'y écrire.
+7. **L'ingestion est une couche anti-corruption.** Le B2B mappe le payload vers
    **son** modèle au bord. Aucun type du PIM ne franchit `infrastructure/` —
    même règle que pour Prisma.
 
