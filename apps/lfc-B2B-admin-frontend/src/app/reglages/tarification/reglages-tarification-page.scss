@@ -242,12 +242,43 @@ $col-gap: 2.25rem;
     text-decoration: line-through;
     color: var(--fold-color-text-muted);
   }
+
+  /* Suspendue : elle existe, elle n'agit pas. Estompée plutôt que barrée — le
+     barré est déjà pris par « supplantée », et les deux faits sont sans
+     rapport : l'un dit que quelqu'un l'a arrêtée, l'autre qu'une règle plus
+     précise la remplace. */
+  &.is-paused {
+    opacity: 0.6;
+    border-style: dashed;
+  }
 }
 
 .rule-summary {
   font-weight: 600;
   font-size: var(--fold-text-sm, 0.875rem);
   line-height: 1.25;
+}
+
+/* Suspendre et retirer se ressemblent trop pour être voisins sans distinction :
+   l'un se défait, l'autre non. Le premier reste dans le flux du nœud, le second
+   garde son coin. */
+.rule-toggle {
+  align-self: flex-start;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm, 0.375rem);
+  background: transparent;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  font-size: var(--fold-text-xs, 0.75rem);
+  line-height: 1.2;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--fold-color-surface-sunken, rgb(0 0 0 / 6%));
+    color: var(--fold-color-text);
+  }
 }
 
 .rule-remove {

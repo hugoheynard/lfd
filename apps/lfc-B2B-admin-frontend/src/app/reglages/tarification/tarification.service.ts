@@ -6,6 +6,7 @@ import type {
   CreatePriceRulePayload,
   PriceScopePayload,
   PricingBoardView,
+  PricingJournalEntryView,
   SetPriceFloorPayload,
 } from '@lfd/contracts';
 
@@ -37,9 +38,47 @@ export class TarificationService {
     return created.id;
   }
 
-  async removeRule(id: string): Promise<void> {
+  /**
+   * **Suspend** une promotion : elle cesse d'agir et garde sa place.
+   *
+   * Sa fenêtre n'est pas touchée — une promo « du 1er au 31 » suspendue trois
+   * jours ne se prolonge pas de trois jours. Elle les a perdus, ce qui est ce
+   * qui s'est passé.
+   */
+  async pauseRule(id: string, reason: string | null): Promise<void> {
+    await this.act(id, 'pause', reason);
+  }
+
+  /** **Reprend** : la règle réagit à partir de maintenant. */
+  async resumeRule(id: string): Promise<void> {
+    await this.act(id, 'resume', null);
+  }
+
+  /**
+   * **Archive** — le seul geste qui retire une règle du tableau.
+   *
+   * Rien ne s'efface : une règle a facturé, elle a fait un prix, et l'effacer
+   * effacerait l'explication d'une facture qui, elle, reste.
+   */
+  async archiveRule(id: string, reason: string | null): Promise<void> {
+    await this.act(id, 'archive', reason);
+  }
+
+  /** Ce qui est arrivé à cette règle ou à cette limite, du plus récent au plus ancien. */
+  journalFor(subjectType: 'rule' | 'floor', subjectId: string): Promise<PricingJournalEntryView[]> {
+    return firstValueFrom(
+      this.http.get<PricingJournalEntryView[]>(
+        `${B2B_API_BASE}/admin/pricing/journal/${subjectType}/${encodeURIComponent(subjectId)}`,
+      ),
+    );
+  }
+
+  private async act(id: string, verb: string, reason: string | null): Promise<void> {
     await firstValueFrom(
-      this.http.delete<void>(`${B2B_API_BASE}/admin/pricing/rules/${encodeURIComponent(id)}`),
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/pricing/rules/${encodeURIComponent(id)}/${verb}`,
+        { reason },
+      ),
     );
   }
 

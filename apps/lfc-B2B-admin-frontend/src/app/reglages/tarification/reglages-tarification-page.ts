@@ -175,9 +175,34 @@ export class ReglagesTarificationPage {
     });
   }
 
-  protected async removeRule(rule: PriceRuleView): Promise<void> {
-    await this.tarification.removeRule(rule.id);
+  /**
+   * **Suspendre ou reprendre** — un seul bouton, parce que c'est un seul geste
+   * vu de l'utilisateur : arrêter ce qui tourne, rallumer ce qui est arrêté.
+   */
+  protected async toggleRule(rule: PriceRuleView): Promise<void> {
+    if (rule.status === 'paused') {
+      await this.tarification.resumeRule(rule.id);
+    } else {
+      await this.tarification.pauseRule(rule.id, null);
+    }
     await this.load();
+  }
+
+  /**
+   * **Retirer** archive : la décision quitte le tableau, la ligne reste.
+   *
+   * Le mot ne change pas côté écran — « retirer » dit bien ce que le staff veut
+   * faire. Ce qui a changé est dessous : plus rien ne s'efface, et le journal
+   * garde qui a retiré quoi, et quand.
+   */
+  protected async removeRule(rule: PriceRuleView): Promise<void> {
+    await this.tarification.archiveRule(rule.id, null);
+    await this.load();
+  }
+
+  /** Ce que le bouton propose : l'inverse de l'état courant. */
+  protected toggleLabel(rule: PriceRuleView): string {
+    return rule.status === 'paused' ? `Reprendre ${rule.label}` : `Suspendre ${rule.label}`;
   }
 
   private async openRule(data: RulePanelData): Promise<void> {

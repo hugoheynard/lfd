@@ -34,6 +34,7 @@ const EMPTY_BOARD: PricingBoardView = {
 
 function page(board: PricingBoardView = EMPTY_BOARD): ReglagesTarificationPage {
   const service: Pick<TarificationService, 'read'> = { read: () => Promise.resolve(board) };
+
   TestBed.configureTestingModule({
     providers: [
       { provide: TarificationService, useValue: service },
@@ -56,6 +57,12 @@ function rule(overrides: Partial<PriceRuleView> = {}): PriceRuleView {
     validTo: null,
     createdBy: 'staff',
     createdAt: '2026-01-01T00:00:00.000Z',
+    status: 'active',
+    pausedAt: null,
+    pausedBy: null,
+    archivedAt: null,
+    archivedBy: null,
+    archiveReason: null,
     ...overrides,
   };
 }
@@ -279,5 +286,73 @@ describe('la remise accordable', () => {
 
     expect(screen['roomEuros'](room)).toContain('0,50');
     expect(screen['roomPercent'](room)).toBe('25,0 %');
+  });
+});
+
+/**
+ * **Un seul bouton pour deux gestes**, parce que c'est un seul geste vu de
+ * l'utilisateur : arrêter ce qui tourne, rallumer ce qui est arrêté.
+ */
+describe('suspendre et reprendre', () => {
+  function pageWith(calls: string[]): ReglagesTarificationPage {
+    const service: Pick<TarificationService, 'read' | 'pauseRule' | 'resumeRule' | 'archiveRule'> =
+      {
+        read: () => Promise.resolve(board),
+        pauseRule: (id) => {
+          calls.push(`pause:${id}`);
+          return Promise.resolve();
+        },
+        resumeRule: (id) => {
+          calls.push(`resume:${id}`);
+          return Promise.resolve();
+        },
+        archiveRule: (id) => {
+          calls.push(`archive:${id}`);
+          return Promise.resolve();
+        },
+      };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: TarificationService, useValue: service },
+        { provide: FoldPanelHostService, useValue: {} },
+      ],
+    });
+    return TestBed.runInInjectionContext(() => new ReglagesTarificationPage());
+  }
+
+  it('suspend une règle en vigueur', async () => {
+    const calls: string[] = [];
+
+    await pageWith(calls)['toggleRule'](rule());
+
+    expect(calls).toContain('pause:rule_1');
+  });
+
+  it('reprend une règle suspendue', async () => {
+    const calls: string[] = [];
+
+    await pageWith(calls)['toggleRule'](rule({ status: 'paused' }));
+
+    expect(calls).toContain('resume:rule_1');
+  });
+
+  /**
+   * Le mot ne change pas pour l'utilisateur — « retirer » dit bien ce qu'il veut
+   * faire. Ce qui a changé est dessous : la décision est archivée, pas effacée.
+   */
+  it('retire en ARCHIVANT, jamais en supprimant', async () => {
+    const calls: string[] = [];
+
+    await pageWith(calls)['removeRule'](rule());
+
+    expect(calls).toContain('archive:rule_1');
+  });
+
+  it("propose l'inverse de l'état courant", () => {
+    const screen = pageWith([]);
+
+    expect(screen['toggleLabel'](rule())).toContain('Suspendre');
+    expect(screen['toggleLabel'](rule({ status: 'paused' }))).toContain('Reprendre');
   });
 });
