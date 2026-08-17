@@ -222,12 +222,13 @@ deux tableaux se ressemblent, pas que la caisse rend la même monnaie.
 
 ### 🔴 Deux blocages, tous deux HORS code (constatés le 2026-08-17)
 
-**1. Cinq familles sur six n'ont pas de régime de TVA dans le PIM.** Seul
-« Pains » (18 produits) en porte un. Un push aujourd'hui emmènerait **18 produits
-sur 93**, et la projection nommerait 74 exclusions `famille_sans_tva`. C'est le
-refus qui fonctionne comme prévu — mais la bascule attend une **saisie dans le
-PIM**, pas une ligne de code. (Au passage : deux familles « Viennoiseries »
-coexistent, dont une portant un seul produit — à fusionner.)
+**1. ~~Cinq familles sur six n'ont pas de régime de TVA dans le PIM.~~** Résolu
+autrement le 2026-08-17 : le taux voyage **nullable**, et le refus est déplacé de
+« ne pas recevoir » vers « ne pas vendre ». Tout le catalogue entre et se voit
+dans le paramétrage ; `CatalogReader.listSellable()` écarte de la boutique les
+articles sans taux, sans jamais inventer 5,5 %. La saisie des régimes reste à
+faire dans le PIM — elle ne bloque plus que la VENTE. (Au passage : deux familles
+« Viennoiseries » coexistent, dont une portant un seul produit — à fusionner.)
 
 **2. Le SKU vendu change de forme.** Le seed vend le SKU **produit**
 (`VIE-001`) ; le PIM pousse celui de la **déclinaison** (`VIE-001-1`), parce que
@@ -245,6 +246,57 @@ c'est elle qui porte le prix. Conséquences :
 appelle le catalogue par SKU produit. Basculer le backend sans le front donnerait
 une boutique dont chaque ajout au panier est refusé par la caisse. Les deux
 slices partent ensemble, ou aucune.
+
+---
+
+## Peupler la base en dev — la recette complète
+
+Trois gestes, dans cet ordre. Les deux backends tournent (`Dev all`), et le PIM
+doit connaître sa cible : ajouter dans `apps/lfc-PIM-backend/.env`
+
+```
+B2B_CATALOG_PUSH_URL=http://localhost:3200/catalog/ingest
+B2B_CATALOG_PUSH_SECRET=dev-catalog-secret
+```
+
+et **la même valeur** dans `apps/lfc-B2B-platform-backend/.env` sous
+`B2B_CATALOG_PUSH_SECRET`. Une moitié seule laisse le canal éteint — c'est voulu,
+et le bulletin de démarrage le dira.
+
+**1. Publier les produits sur le canal B2B.** L'appartenance est explicite : rien
+ne part tant que personne ne l'a décidé.
+
+```bash
+IDS=$(docker exec lfd-dev-postgres psql -U lfc -d lfc_pim -tAc \
+  "select string_agg(format('\"%s\"', id), ',') from product where status <> 'archived'")
+curl -s -X PUT http://localhost:3100/channels/b2b/products \
+  -H 'content-type: application/json' \
+  -d "{\"productIds\":[$IDS],\"published\":true}"
+```
+
+**2. Simuler, lire ce qui partirait, puis pousser.** La simulation est le défaut :
+un bouton qui pousse le catalogue vendu ne part pas sur un appel mal formé.
+
+```bash
+curl -s -X POST http://localhost:3100/channels/b2b/push -H 'content-type: application/json' -d '{"dryRun":true}'
+curl -s -X POST http://localhost:3100/channels/b2b/push -H 'content-type: application/json' -d '{"dryRun":false}'
+```
+
+Lire `excluded` **avant** de pousser pour de bon : chaque motif y est nommé
+(déclinaison arrêtée, sans prix, famille inconnue).
+
+**3. Vérifier.** L'écran back-office **Réglages → Catalogue**, ou directement :
+
+```bash
+docker exec lfd-dev-postgres psql -U lfc -d lfc_b2b_dev -c \
+  "select count(*) articles, count(*) filter (where c.vat_rate_percent is null) sans_tva
+   from catalog_items i join catalog_categories c on c.id = i.category_id"
+```
+
+⚠️ Sur les 93 produits du PIM, **92 sont tarifés** et 5 familles sur 6 n'ont pas
+de régime de TVA. Tout arrive quand même ; les articles sans taux se voient dans
+le paramétrage, marqués, et ne sont pas vendables tant que le régime n'est pas
+réglé dans le PIM.
 
 ---
 
