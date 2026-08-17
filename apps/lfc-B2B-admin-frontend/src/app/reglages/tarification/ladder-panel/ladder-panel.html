@@ -81,12 +81,12 @@
       <input
         type="date"
         [value]="validFrom()"
-        (change)="validFrom.set($any($event.target).value)"
+        (change)="validFrom.set(nativeValue($event))"
       />
     </label>
     <label class="window-field">
       <span class="window-label">Fin (facultative)</span>
-      <input type="date" [value]="validTo()" (change)="validTo.set($any($event.target).value)" />
+      <input type="date" [value]="validTo()" (change)="validTo.set(nativeValue($event))" />
     </label>
   </div>
 

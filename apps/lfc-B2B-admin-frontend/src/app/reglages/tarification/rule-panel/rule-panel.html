@@ -83,7 +83,7 @@
         class="date-field"
         type="date"
         [value]="validFrom()"
-        (change)="validFrom.set($any($event.target).value)"
+        (change)="validFrom.set(nativeValue($event))"
       />
     </div>
     <div class="date">
@@ -95,7 +95,7 @@
         class="date-field"
         type="date"
         [value]="validTo()"
-        (change)="validTo.set($any($event.target).value)"
+        (change)="validTo.set(nativeValue($event))"
       />
       <p class="date-hint">Vide = sans terme. Ce jour-là, la règle ne s'applique plus.</p>
     </div>

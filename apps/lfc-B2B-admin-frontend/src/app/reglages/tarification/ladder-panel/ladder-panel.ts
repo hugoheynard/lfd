@@ -7,6 +7,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { nativeValue } from '../../../shared/native-input';
 import { NotifyService } from '../../../notify.service';
 import { TarificationService } from '../tarification.service';
 
@@ -50,6 +51,8 @@ interface DraftTier {
   styleUrl: './ladder-panel.scss',
 })
 export class LadderPanel {
+  protected readonly nativeValue = nativeValue;
+
   private readonly tarification = inject(TarificationService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);

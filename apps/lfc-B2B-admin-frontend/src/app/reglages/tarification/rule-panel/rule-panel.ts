@@ -10,6 +10,7 @@ import {
 
 import { PriceAlterationField, type PriceAlteration } from '@lfd/b2b-ui/pricing';
 
+import { nativeValue } from '../../../shared/native-input';
 import { NotifyService } from '../../../notify.service';
 import { TarificationService } from '../tarification.service';
 
@@ -72,6 +73,8 @@ type Nature = 'alter' | 'replace';
   styleUrl: './rule-panel.scss',
 })
 export class RulePanel {
+  protected readonly nativeValue = nativeValue;
+
   private readonly tarification = inject(TarificationService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);

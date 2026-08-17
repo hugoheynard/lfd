@@ -10,6 +10,7 @@ import { formatEuros } from '@lfd/catalog-ui';
 import { FoldButtonComponent, FoldEmptyStateComponent } from 'fold-ng';
 
 import { dayStart } from './axis-model';
+import { nativeValue } from '../../../shared/native-input';
 import { OverlapTimeline, type TimelineBand } from '../overlap-timeline/overlap-timeline';
 import { ruleSentence } from '../pricing-format';
 import { TarificationService } from '../tarification.service';
@@ -59,6 +60,7 @@ export class FrisePage {
   private readonly tarification = inject(TarificationService);
 
   protected readonly euros = formatEuros;
+  protected readonly nativeValue = nativeValue;
 
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly selection = signal<AxisSelection | null>(null);
@@ -103,18 +105,33 @@ export class FrisePage {
     return dedupe([...rules, ...ladders]);
   });
 
-  /** Les familles d'aujourd'hui : elles portent les frises de lignée. */
-  protected readonly categories = computed(() => this.board()?.categories ?? []);
-
   /**
-   * **La lignée d'une famille**, prête pour sa frise : les règles du catalogue,
-   * les siennes, et les barèmes des deux niveaux.
+   * **Les frises de lignée**, une par famille qui a quelque chose à montrer :
+   * les règles du catalogue, les siennes, et les barèmes des deux niveaux.
    *
-   * Elle vit ICI et non sur la grille : la grille sert à décider aujourd'hui,
-   * et une frise y répondait à une question qu'on n'y pose pas. Sur cette page,
-   * elle est chez elle — c'est le même axe du temps, en plus fin.
+   * Elles vivent ICI et non sur la grille : la grille sert à décider
+   * aujourd'hui, et une frise y répondait à une question qu'on n'y pose pas.
+   * Sur cette page, elles sont chez elles — c'est le même axe du temps, en plus
+   * fin.
+   *
+   * Un `computed` et non une méthode appelée depuis le gabarit : une méthode
+   * rebâtissait les tableaux de barres à **chaque cycle de détection**, donc
+   * rendait une référence neuve à chaque fois, donc redessinait toutes les
+   * frises `OnPush` en dessous — pour un contenu identique. Ici, elles ne se
+   * recalculent que lorsque le tableau change.
    */
-  protected lineageOf(category: PricingCategoryView): readonly TimelineBand[] {
+  protected readonly lineages = computed(() =>
+    (this.board()?.categories ?? [])
+      .filter((category) => category.overlaps.length > 0)
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        overlaps: category.overlaps,
+        bands: this.lineageOf(category),
+      })),
+  );
+
+  private lineageOf(category: PricingCategoryView): readonly TimelineBand[] {
     const rules = [...(this.board()?.globalRules ?? []), ...category.rules].map((rule) => ({
       id: rule.id,
       label: rule.label,
