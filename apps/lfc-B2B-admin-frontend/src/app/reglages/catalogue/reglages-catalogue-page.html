@@ -19,6 +19,21 @@
         chiffre qui change ce qu'on fait de l'écran. Le reléguer en bas donnerait
         une liste rassurante dont une partie n'est achetable par personne.
       -->
+      <div class="toolbar">
+        <input
+          class="search"
+          type="search"
+          placeholder="Rechercher un article ou une référence…"
+          aria-label="Rechercher dans le catalogue"
+          [value]="query()"
+          (input)="onSearch($event)"
+        />
+        <p class="counts">
+          <strong>{{ shown() }}</strong> / {{ total() }} articles ·
+          <strong>{{ alteredCount() }}</strong> à prix B2B
+        </p>
+      </div>
+
       @if (untaxedCount() > 0) {
         <fold-callout variant="warning">
           <h3 class="callout-title">Des articles ne sont pas vendables</h3>
@@ -29,6 +44,13 @@
           </p>
           <p>Réglez le régime « à emporter » de ces familles dans le PIM, puis relancez un push.</p>
         </fold-callout>
+      }
+
+      @if (shown() === 0) {
+        <fold-empty-state
+          title="Aucun article ne correspond"
+          description="Essayez un autre nom ou une autre référence."
+        />
       }
 
       @for (shelf of shelves(); track shelf.id) {
@@ -52,6 +74,18 @@
               [alteredCents]="item.b2bPriceCents"
               [dimmed]="item.isHidden"
             >
+              @if (item.vatRatePercent !== null) {
+                <span class="vat">TVA {{ item.vatRatePercent }} %</span>
+              } @else {
+                <fold-badge content="sans TVA" variant="warning" />
+              }
+              <lfd-price-editor
+                [originCents]="item.pimPriceCents"
+                [alteredCents]="item.b2bPriceCents"
+                [label]="item.name"
+                (save)="setPrice(item, $event)"
+                (reset)="alignOnPim(item)"
+              />
               @if (item.isHidden) {
                 <fold-badge content="masqué" variant="neutral" />
               }

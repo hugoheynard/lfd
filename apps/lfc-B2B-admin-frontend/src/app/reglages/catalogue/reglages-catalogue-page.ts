@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { CatalogAdminItemView } from '@lfd/contracts';
-import { CatalogRow } from '@lfd/catalog-ui';
+import { CatalogRow, PriceEditor } from '@lfd/catalog-ui';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -44,6 +44,7 @@ interface Shelf {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CatalogRow,
+    PriceEditor,
     FoldCardComponent,
     FoldBadgeComponent,
     FoldButtonComponent,
@@ -61,12 +62,35 @@ export class ReglagesCataloguePage {
   protected readonly state = signal<LoadState>('loading');
   private readonly items = signal<readonly CatalogAdminItemView[]>([]);
 
+  /**
+   * Le filtre de recherche. Quatre-vingt-douze lignes ne se parcourent pas à
+   * l'œil : sans lui, corriger un prix demande de faire défiler cinq rayons.
+   */
+  protected readonly query = signal('');
+
+  /** Nom ou référence, sans accent ni casse — on tape « pate » et « Pâté » sort. */
+  private readonly matching = computed(() => {
+    const needle = normalize(this.query());
+    if (needle === '') {
+      return this.items();
+    }
+    return this.items().filter(
+      (item) => normalize(item.name).includes(needle) || normalize(item.sku).includes(needle),
+    );
+  });
+
   /** Combien d'articles ne sont pas vendables faute de TVA — le chiffre à voir. */
   protected readonly untaxedCount = computed(
     () => this.items().filter((item) => item.vatRatePercent === null).length,
   );
 
+  /** Combien portent un prix décidé ici — la mesure du travail commercial déjà fait. */
+  protected readonly alteredCount = computed(
+    () => this.items().filter((item) => item.b2bPriceCents !== null).length,
+  );
+
   protected readonly total = computed(() => this.items().length);
+  protected readonly shown = computed(() => this.matching().length);
 
   /**
    * Rangé par famille, dans l'ordre du serveur.
@@ -77,7 +101,7 @@ export class ReglagesCataloguePage {
    */
   protected readonly shelves = computed<readonly Shelf[]>(() => {
     const byId = new Map<string, CatalogAdminItemView[]>();
-    for (const item of this.items()) {
+    for (const item of this.matching()) {
       const shelf = byId.get(item.categoryId);
       if (shelf === undefined) {
         byId.set(item.categoryId, [item]);
@@ -107,6 +131,32 @@ export class ReglagesCataloguePage {
     }
   }
 
+  protected onSearch(event: Event): void {
+    this.query.set((event.target as HTMLInputElement).value);
+  }
+
+  /** Pose le prix B2B. Le serveur refuse un montant égal à celui du PIM. */
+  protected async setPrice(item: CatalogAdminItemView, priceCents: number): Promise<void> {
+    try {
+      await this.catalogue.setPrice(item.sku, priceCents);
+      this.notify.success(`Prix B2B posé sur ${item.name}.`);
+      await this.load();
+    } catch (error) {
+      this.notify.error(error, "Le prix n'a pas pu être enregistré.");
+    }
+  }
+
+  /** Retire la décision : l'article repasse au tarif du PIM et suivra ses hausses. */
+  protected async alignOnPim(item: CatalogAdminItemView): Promise<void> {
+    try {
+      await this.catalogue.alignOnPim(item.sku);
+      this.notify.success(`${item.name} suit de nouveau le tarif du PIM.`);
+      await this.load();
+    } catch (error) {
+      this.notify.error(error, "La décision n'a pas pu être retirée.");
+    }
+  }
+
   /** Masque ou réaffiche un article, puis recharge : le serveur reste l'autorité. */
   protected async toggleVisibility(item: CatalogAdminItemView): Promise<void> {
     try {
@@ -117,4 +167,12 @@ export class ReglagesCataloguePage {
       this.notify.error(error, "L'article n'a pas pu être modifié.");
     }
   }
+}
+
+/** Sans accent ni casse : on tape « pate » et « Pâté » sort. */
+function normalize(value: string): string {
+  return value
+    .toLocaleLowerCase('fr')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/gu, '');
 }
