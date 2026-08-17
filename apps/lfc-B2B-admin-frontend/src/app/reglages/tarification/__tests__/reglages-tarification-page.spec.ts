@@ -66,6 +66,8 @@ function floor(overrides: Partial<PriceFloorView> = {}): PriceFloorView {
     scope: { type: 'category', id: 'viennoiserie' },
     mode: 'amount',
     value: 150,
+    // Le mur seul : la porte n'est pas ce que ces cas mesurent.
+    dynamic: null,
     createdBy: 'staff',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,

@@ -1,0 +1,152 @@
+/*
+ * Une page qui se LIT, pas qui s'opère. La mesure de ligne est donc bornée :
+ * du texte plein cadre sur un écran large ne se lit pas, il se survole — et
+ * cette page est faite pour être lue une fois, sérieusement.
+ */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-5, 1.5rem);
+}
+
+:host p,
+:host li {
+  max-width: 62ch;
+  line-height: 1.6;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2, 0.5rem);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fold-text-xl, 1.375rem);
+}
+
+.lede {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+}
+
+.section-title {
+  margin: 0;
+  font-size: var(--fold-text-lg, 1.125rem);
+}
+
+.sub {
+  margin: var(--fold-space-4, 1rem) 0 var(--fold-space-2, 0.5rem);
+  font-size: var(--fold-text-md, 1rem);
+}
+
+/*
+ * Le « pourquoi » est en retrait et discret : il porte la raison, pas la règle.
+ * Le lecteur pressé lit les règles ; celui qui doute lit les raisons.
+ */
+.why {
+  margin: var(--fold-space-2, 0.5rem) 0 0;
+  padding-left: var(--fold-space-3, 0.75rem);
+  border-left: 2px solid var(--fold-color-border);
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: var(--fold-space-4, 1rem);
+  margin: var(--fold-space-4, 1rem) 0;
+}
+
+.fact {
+  padding: var(--fold-space-3, 0.75rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+}
+
+.fact-title {
+  margin: 0 0 var(--fold-space-2, 0.5rem);
+  font-size: var(--fold-text-sm, 0.875rem);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fold-color-text-muted);
+}
+
+.fact p {
+  margin: 0;
+}
+
+/* Le classement de spécificité : numéroté parce que c'est un ORDRE, pas une liste. */
+.ranks {
+  margin: var(--fold-space-3, 0.75rem) 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3, 0.75rem);
+}
+
+.ranks li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-3, 0.75rem);
+}
+
+.rank-n {
+  flex: 0 0 1.6rem;
+  height: 1.6rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--fold-color-border);
+  border-radius: 50%;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-body .why {
+  display: block;
+  margin-top: 0.35rem;
+  border: 0;
+  padding-left: 0;
+}
+
+.formula {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  margin: var(--fold-space-4, 1rem) 0;
+  padding: var(--fold-space-4, 1rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
+}
+
+.formula-line {
+  font-size: var(--fold-text-lg, 1.125rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.formula-note {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+}
+
+/* Ce qui est décidé mais pas construit : dit en pointillés, pour qu'on ne le
+   cherche pas dans l'application. */
+.pending {
+  margin-top: var(--fold-space-4, 1rem);
+  padding: var(--fold-space-3, 0.75rem);
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}

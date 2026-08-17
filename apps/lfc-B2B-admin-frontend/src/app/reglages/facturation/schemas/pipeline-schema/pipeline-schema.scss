@@ -1,0 +1,70 @@
+/*
+ * Les trois schémas partagent leur grammaire — un fichier de styles par
+ * composant les répète volontairement plutôt que de créer une feuille commune
+ * pour trois usages. La 4ᵉ occurrence justifiera l'extraction, pas avant.
+ */
+.schema {
+  display: block;
+  width: 100%;
+  max-width: 54rem;
+  height: auto;
+}
+
+.node rect {
+  fill: var(--fold-color-surface);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.node-base rect {
+  fill: var(--fold-color-surface-sunken, rgb(0 0 0 / 4%));
+}
+
+.node-final rect {
+  stroke: var(--fold-color-accent, var(--fold-color-text));
+  stroke-width: 1.5;
+}
+
+.link path {
+  fill: none;
+  stroke: var(--fold-color-border);
+  stroke-width: 1.5;
+}
+
+.guard path {
+  fill: none;
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.guard rect {
+  fill: var(--fold-color-surface);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+
+.t-label,
+.t-sub,
+.t-note {
+  text-anchor: middle;
+  font-family: inherit;
+}
+
+.t-label {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--fold-color-text);
+}
+
+.t-sub {
+  font-size: 11px;
+  fill: var(--fold-color-text-muted);
+}
+
+.t-note {
+  text-anchor: start;
+  font-size: 11px;
+  font-style: italic;
+  fill: var(--fold-color-text-muted);
+}

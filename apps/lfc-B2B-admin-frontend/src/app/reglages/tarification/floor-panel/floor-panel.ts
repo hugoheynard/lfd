@@ -152,6 +152,12 @@ export class FloorPanel {
         scope,
         mode: this.mode(),
         value: Math.round(value * 100),
+        // Le MUR seul. La porte — un plancher plus bas déverrouillé par le
+        // volume — est acceptée par le serveur mais pas encore saisissable ici :
+        // envoyer `null` explicitement plutôt que d'omettre le champ, pour que
+        // re-poser une limite n'efface pas une porte par inadvertance… et pour
+        // que le jour où l'écran la propose, ce soit une décision visible.
+        dynamic: null,
       });
       this.notify.success('Limite posée.');
       this.ref.close(true);

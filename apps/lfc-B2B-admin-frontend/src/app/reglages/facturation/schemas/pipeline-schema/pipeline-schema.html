@@ -1,0 +1,66 @@
+<svg viewBox="0 0 860 220" role="img" class="schema">
+  <title>
+    Le prix part du tarif du PIM, traverse quatre étages, et la limite arbitre le résultat
+  </title>
+
+  <!-- L'entrée -->
+  <g class="node node-base">
+    <rect x="4" y="34" width="118" height="52" rx="8" />
+    <text x="63" y="55" class="t-label">Prix canonique</text>
+    <text x="63" y="72" class="t-sub">tarif du PIM</text>
+  </g>
+
+  <!-- Les quatre étages -->
+  <g class="node">
+    <rect x="150" y="34" width="128" height="52" rx="8" />
+    <text x="214" y="55" class="t-label">1 · Mercuriale</text>
+    <text x="214" y="72" class="t-sub">pose un prix</text>
+  </g>
+  <g class="node">
+    <rect x="306" y="34" width="128" height="52" rx="8" />
+    <text x="370" y="55" class="t-label">2 · Volume</text>
+    <text x="370" y="72" class="t-sub">modifie</text>
+  </g>
+  <g class="node">
+    <rect x="462" y="34" width="128" height="52" rx="8" />
+    <text x="526" y="55" class="t-label">3 · Promotion</text>
+    <text x="526" y="72" class="t-sub">modifie</text>
+  </g>
+  <g class="node">
+    <rect x="618" y="34" width="128" height="52" rx="8" />
+    <text x="682" y="55" class="t-label">4 · Geste</text>
+    <text x="682" y="72" class="t-sub">modifie</text>
+  </g>
+
+  <!-- La sortie -->
+  <g class="node node-final">
+    <rect x="774" y="34" width="82" height="52" rx="8" />
+    <text x="815" y="55" class="t-label">Prix</text>
+    <text x="815" y="72" class="t-label">final</text>
+  </g>
+
+  <!-- Les liens -->
+  <g class="link">
+    <path d="M122 60 H150" />
+    <path d="M278 60 H306" />
+    <path d="M434 60 H462" />
+    <path d="M590 60 H618" />
+    <path d="M746 60 H774" />
+  </g>
+
+  <!-- La limite : SOUS la chaîne, parce qu'elle n'en est pas un maillon -->
+  <g class="guard">
+    <path d="M63 100 V150 H815 V92" stroke-dasharray="5 4" />
+    <rect x="330" y="128" width="200" height="44" rx="8" />
+    <text x="430" y="149" class="t-label">Limite</text>
+    <text x="430" y="165" class="t-sub">arbitre le résultat, en fin de chaîne</text>
+  </g>
+
+  <text x="4" y="205" class="t-note">
+    Chaque étage s'applique au prix SORTANT du précédent : −20 % puis −10 % font −28 %, jamais −30
+    %.
+  </text>
+  <text x="4" y="18" class="t-note">
+    Un étage sans règle est transparent — il laisse passer le prix entrant.
+  </text>
+</svg>

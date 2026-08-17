@@ -66,6 +66,13 @@ export class ReglagesPage {
       needs: 'settings:read',
     },
     {
+      key: 'facturation',
+      label: 'Facturation',
+      link: 'facturation',
+      icon: 'library',
+      needs: 'settings:read',
+    },
+    {
       key: 'commercial',
       label: 'Commercial',
       link: 'commercial',

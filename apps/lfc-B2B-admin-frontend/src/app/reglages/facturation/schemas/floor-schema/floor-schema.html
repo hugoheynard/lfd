@@ -1,0 +1,56 @@
+<svg viewBox="0 0 620 260" role="img" class="schema">
+  <title>
+    Le mur ne se franchit jamais ; la porte s'ouvre plus bas quand le volume la déverrouille
+  </title>
+
+  <!-- L'axe des prix -->
+  <line class="axis" x1="120" y1="24" x2="120" y2="212" />
+  <text x="112" y="20" class="t-axis">€</text>
+
+  <!-- Le tarif d'entrée -->
+  <line class="level level-base" x1="120" y1="44" x2="520" y2="44" />
+  <text x="530" y="42" class="t-level">Prix canonique</text>
+  <text x="530" y="57" class="t-sub-left">2,00 €</text>
+
+  <!-- La descente des altérations -->
+  <path class="fall" d="M200 44 L200 104" marker-end="url(#arrow)" />
+  <text x="212" y="80" class="t-sub-left">les étages font descendre</text>
+
+  <!-- Le mur -->
+  <line class="level level-hard" x1="120" y1="128" x2="520" y2="128" />
+  <text x="530" y="126" class="t-level">Mur</text>
+  <text x="530" y="141" class="t-sub-left">1,50 € — jamais franchi</text>
+
+  <!-- La porte -->
+  <line class="level level-door" x1="120" y1="188" x2="520" y2="188" />
+  <text x="530" y="186" class="t-level">Porte</text>
+  <text x="530" y="201" class="t-sub-left">1,20 € — si le volume suit</text>
+
+  <!-- La zone interdite par défaut -->
+  <rect class="forbidden" x="120" y="128" width="400" height="60" />
+  <text x="320" y="164" class="t-forbidden">
+    ouvert seulement si LES DEUX conditions sont remplies
+  </text>
+
+  <!-- La clé -->
+  <g class="key">
+    <rect x="120" y="216" width="400" height="34" rx="8" />
+    <text x="320" y="237" class="t-key">
+      quantité de la commande ≥ seuil ET volume observé ≥ ratio
+    </text>
+  </g>
+
+  <defs>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="6"
+      markerHeight="6"
+      orient="auto-start-reverse"
+    >
+      <path d="M0 0 L10 5 L0 10 z" class="arrow-head" />
+    </marker>
+  </defs>
+</svg>

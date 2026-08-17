@@ -47,6 +47,9 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   'reglages/catalogue': null,
   // Même raison : décider d'un prix est du réglage.
   'reglages/tarification': null,
+  // Page de DOCUMENTATION : elle explique la tarification, elle ne la règle pas.
+  // Même mur que l'onglet qu'elle commente.
+  'reglages/facturation': null,
   'reglages/commercial': 'growth:read',
   'reglages/utilisateurs': 'staff:read',
 

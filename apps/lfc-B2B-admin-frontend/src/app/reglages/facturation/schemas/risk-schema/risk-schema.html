@@ -1,0 +1,40 @@
+<svg viewBox="0 0 760 300" role="img" class="schema">
+  <title>
+    Quand le coût monte au fil de la saison, le prix vivant suit et le client encaisse ; le prix
+    bloqué reste plat et c'est la maison qui absorbe
+  </title>
+
+  <!-- Axes -->
+  <line class="axis" x1="70" y1="30" x2="70" y2="230" />
+  <line class="axis" x1="70" y1="230" x2="700" y2="230" />
+  <text x="70" y="252" class="t-tick">signature</text>
+  <text x="385" y="252" class="t-tick t-mid">mi-saison</text>
+  <text x="700" y="252" class="t-tick t-end">fin de saison</text>
+  <text x="62" y="26" class="t-axis">€</text>
+
+  <!-- L'aire entre les deux courbes : le risque, et il a un propriétaire. -->
+  <path class="risk-area" d="M70 170 L700 90 L700 170 Z" />
+  <text x="470" y="150" class="t-risk">le risque, c'est cette surface</text>
+
+  <!-- Le prix vivant : il suit le coût -->
+  <path class="line line-living" d="M70 170 L700 90" />
+  <text x="708" y="88" class="t-series t-living">Prix vivant</text>
+  <text x="708" y="103" class="t-sub">le client encaisse</text>
+
+  <!-- Le prix bloqué : plat depuis la signature -->
+  <path class="line line-locked" d="M70 170 L700 170" />
+  <text x="708" y="168" class="t-series t-locked">Prix bloqué</text>
+  <text x="708" y="183" class="t-sub">la maison absorbe</text>
+
+  <!-- Le coût, en fond : c'est lui qui bouge -->
+  <path class="line line-cost" d="M70 200 L700 118" />
+  <text x="78" y="214" class="t-sub">coût de la maison</text>
+
+  <!-- La contrepartie -->
+  <g class="trade">
+    <rect x="70" y="266" width="630" height="30" rx="8" />
+    <text x="385" y="286" class="t-trade">
+      le client échange sa liberté de volume · la maison échange sa liberté de prix
+    </text>
+  </g>
+</svg>

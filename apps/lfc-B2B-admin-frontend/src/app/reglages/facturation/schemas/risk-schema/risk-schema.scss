@@ -1,0 +1,92 @@
+.schema {
+  display: block;
+  width: 100%;
+  max-width: 50rem;
+  height: auto;
+}
+
+.axis {
+  stroke: var(--fold-color-border);
+  stroke-width: 1.5;
+}
+
+.line {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.line-living {
+  stroke: var(--fold-color-accent, var(--fold-color-text));
+}
+
+.line-locked {
+  stroke: var(--fold-color-text);
+}
+
+/* Le coût est en pointillés fins : il n'est pas un prix, c'est ce qui pousse. */
+.line-cost {
+  stroke: var(--fold-color-text-muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+}
+
+.risk-area {
+  fill: var(--fold-color-warning-surface, rgb(180 120 0 / 12%));
+}
+
+.trade rect {
+  fill: none;
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+
+.t-series,
+.t-sub,
+.t-tick,
+.t-axis {
+  text-anchor: start;
+  font-family: inherit;
+}
+
+.t-series {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--fold-color-text);
+}
+
+.t-living {
+  fill: var(--fold-color-accent, var(--fold-color-text));
+}
+
+.t-sub,
+.t-tick,
+.t-axis {
+  font-size: 11px;
+  fill: var(--fold-color-text-muted);
+}
+
+.t-mid {
+  text-anchor: middle;
+}
+
+.t-end {
+  text-anchor: end;
+}
+
+.t-risk,
+.t-trade {
+  text-anchor: middle;
+  font-family: inherit;
+  fill: var(--fold-color-text-muted);
+}
+
+.t-risk {
+  font-size: 11px;
+  font-style: italic;
+}
+
+.t-trade {
+  font-size: 12px;
+  fill: var(--fold-color-text);
+}

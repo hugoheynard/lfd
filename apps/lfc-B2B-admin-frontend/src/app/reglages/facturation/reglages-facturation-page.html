@@ -1,0 +1,309 @@
+<header class="intro">
+  <h1 class="title">Comment un prix se fabrique</h1>
+  <p class="lede">
+    Cette page explique ce que le système fait quand il facture, et pourquoi. Elle ne règle rien —
+    la saisie se trouve dans l'onglet <strong>Tarification</strong>. Elle sert à répondre à un
+    client qui conteste, et à décider en connaissant les contreparties.
+  </p>
+</header>
+
+<fold-card>
+  <div cardHeader class="head"><h2 class="section-title">La chaîne</h2></div>
+
+  <p>
+    Un prix part du <strong>tarif du PIM</strong> et traverse quatre étages. Chacun peut le modifier
+    ; à la fin, une <strong>limite</strong> vérifie qu'on n'est pas allé trop loin.
+  </p>
+
+  <app-pipeline-schema />
+
+  <div class="pair">
+    <div class="fact">
+      <h3 class="fact-title">Les étages se composent</h3>
+      <p>
+        −20 % puis −10 % font <strong>−28 %</strong> (0,8 × 0,9), jamais −30 %. Chaque étage
+        s'applique au prix qui sort du précédent.
+      </p>
+      <p class="why">
+        C'est la seule règle qui reste vraie quand on <em>insère</em> un étage. Avec l'addition, un
+        cinquième étage changerait rétroactivement le sens des quatre autres.
+      </p>
+    </div>
+    <div class="fact">
+      <h3 class="fact-title">L'ordre est une décision commerciale</h3>
+      <p>
+        −20 % puis −5 € ne donne pas le même prix que −5 € puis −20 %. L'ordre des quatre étages
+        n'est pas un détail technique : c'est un choix, arrêté une fois.
+      </p>
+    </div>
+  </div>
+
+  <fold-callout variant="info">
+    <p>
+      <strong>Un seul arrondi, à la toute fin.</strong> La chaîne calcule en fractions exactes et
+      n'arrondit qu'au dernier moment. Arrondir à chaque étage décalerait d'un centime au bout de
+      quatre — et un centime sur une facture, ça se voit.
+    </p>
+  </fold-callout>
+</fold-card>
+
+<fold-card>
+  <div cardHeader class="head"><h2 class="section-title">Poser un prix ≠ le modifier</h2></div>
+
+  <div class="pair">
+    <div class="fact">
+      <h3 class="fact-title">Poser un prix — en euros</h3>
+      <p>
+        « Ce client paie 2,10 € le croissant. » Le prix ne bouge pas si le tarif de liste monte.
+      </p>
+      <p class="why">C'est ce qu'on signe : un engagement, pas une réduction.</p>
+    </div>
+    <div class="fact">
+      <h3 class="fact-title">Modifier — en % ou en €</h3>
+      <p>
+        « −10 % sur la viennoiserie. » Le prix suit le tarif : si la liste monte, le prix monte.
+      </p>
+      <p class="why">C'est ce qu'on veut pour une promotion ou un dégressif.</p>
+    </div>
+  </div>
+
+  <fold-callout variant="warning">
+    <p>
+      <strong>Le piège que le système refuse.</strong> Une mercuriale saisie en « −13 % »
+      <em>suivrait</em> les hausses du tarif de liste : le jour où le PIM augmente, le prix «
+      négocié » du client augmente avec lui. Ce n'est pas ce qui a été promis. Le système refuse
+      donc une mercuriale exprimée en pourcentage — elle doit être un montant.
+    </p>
+  </fold-callout>
+</fold-card>
+
+<fold-card>
+  <div cardHeader class="head">
+    <h2 class="section-title">Qui gagne, quand deux règles se croisent</h2>
+  </div>
+
+  <p>
+    Dans un <strong>même étage</strong>, une seule règle s'applique : la plus précise
+    <strong>remplace</strong> les autres. Elles ne s'additionnent pas.
+  </p>
+
+  <ol class="ranks">
+    <li>
+      <span class="rank-n">1</span>
+      <span class="rank-body">
+        <strong>Le client d'abord.</strong> Une règle qui vise CE client bat une règle qui vise ce
+        produit pour tout le monde.
+        <span class="why">
+          L'inverse laisserait une promotion générale écraser un tarif négocié individuellement —
+          exactement ce pour quoi un client appelle.
+        </span>
+      </span>
+    </li>
+    <li>
+      <span class="rank-n">2</span>
+      <span class="rank-body">
+        <strong>Puis la précision produit.</strong> Déclinaison, puis produit, puis famille, puis
+        tout le catalogue.
+      </span>
+    </li>
+    <li>
+      <span class="rank-n">3</span>
+      <span class="rank-body">
+        <strong>Puis le palier.</strong> À égalité, le seuil de quantité le plus haut parmi ceux
+        atteints l'emporte — « 100+ » bat « 50+ ».
+      </span>
+    </li>
+  </ol>
+
+  <p class="why">
+    Deux règles strictement aussi précises au même moment sont <strong>impossibles</strong> : la
+    base les refuse. Sans ça, le prix dépendrait de l'ordre de tri, donc du hasard, et deux
+    commandes identiques pourraient être facturées différemment.
+  </p>
+</fold-card>
+
+<fold-card>
+  <div cardHeader class="head"><h2 class="section-title">La limite : un mur et une porte</h2></div>
+
+  <p>
+    Une limite unique force à choisir entre <em>protéger</em> et <em>laisser négocier</em>. Il y en
+    a donc deux, et une clé entre les deux.
+  </p>
+
+  <app-floor-schema />
+
+  <div class="pair">
+    <div class="fact">
+      <h3 class="fact-title">Le mur</h3>
+      <p>Jamais franchi, quoi qu'il arrive. C'est l'intention de la direction, en un nombre.</p>
+    </div>
+    <div class="fact">
+      <h3 class="fact-title">La porte</h3>
+      <p>
+        Plus bas, ouverte seulement si <strong>les deux</strong> conditions sont remplies : la
+        quantité de la commande, et le volume observé sur la période. La plus stricte gagne.
+      </p>
+    </div>
+  </div>
+
+  <fold-callout variant="info">
+    <p>
+      <strong>Faute de mesure, on protège.</strong> Sans historique de ventes, la condition de
+      volume est considérée comme non remplie et le mur s'applique. Un déverrouillage par ignorance
+      serait une remise accordée par un trou dans les données — et personne ne la verrait passer.
+    </p>
+  </fold-callout>
+
+  <p class="why">
+    La limite n'est pas un calcul de marge, et c'est délibéré. Une marge calculée suppose un coût de
+    revient — donc quinze arbitraires sur la matière, la main-d'œuvre, l'amortissement du four — et
+    un coût faux à 15 % près, affiché dans un tableau de bord, fait prendre des décisions confiantes
+    et fausses. Un mur ne prétend jamais être une mesure : c'est un jugement, donc il se conteste.
+  </p>
+</fold-card>
+
+<fold-card>
+  <div cardHeader class="head"><h2 class="section-title">Ce qu'une remise coûte en volume</h2></div>
+
+  <p>
+    Une remise ne se juge pas au pourcentage. Elle se juge à ce qu'elle
+    <strong>oblige à vendre</strong>.
+  </p>
+
+  <div class="formula">
+    <span class="formula-line">baisser de 20 % ⇒ vendre <strong>×1,25</strong></span>
+    <span class="formula-note">pour encaisser le même chiffre d'affaires</span>
+  </div>
+
+  <p>
+    L'écran Tarification affiche ce ratio par article, l'objectif de volume qu'il implique, et où en
+    est le réalisé — <strong>depuis la pose de la règle</strong> (deux fenêtres de même durée, de
+    part et d'autre) et sur les <strong>30 derniers jours</strong>. Les deux répondent à des
+    questions différentes : la première juge la décision, la seconde dit où on en est.
+  </p>
+
+  <fold-callout variant="warning">
+    <p>
+      <strong>Trois limites à connaître avant de s'y fier.</strong> Le calcul est à
+      <em>chiffre constant</em>, jamais à marge constante. La comparaison avant/après n'a aucun
+      groupe témoin — en station, comparer février à mars mesure surtout la saison. Et le chiffre
+      est <em>par article</em> : si la baisse du croissant déplace du volume depuis le pain au
+      chocolat, l'objectif s'affichera atteint sans que le chiffre total ait bougé.
+    </p>
+  </fold-callout>
+
+  <p class="why">
+    Sous quatorze jours de recul, l'écran affiche « trop tôt » au lieu d'un pourcentage. Moins de
+    deux semaines couvre un nombre inégal de week-ends, et on ne vend pas la même chose un samedi
+    qu'un mardi.
+  </p>
+</fold-card>
+
+<fold-card>
+  <div cardHeader class="head"><h2 class="section-title">La remise encore accordable</h2></div>
+
+  <p>
+    L'écart entre le prix final et la limite : c'est ce qu'un commercial peut lâcher au téléphone
+    sans demander à personne. Il est donné en <strong>euros</strong> et en
+    <strong>pourcentage</strong>, au même poids — à chacun de choisir la métrique qu'il annonce.
+  </p>
+  <p class="why">
+    Le pourcentage se calcule sur le <strong>prix final</strong>, pas sur le tarif du PIM : c'est
+    sur ce prix-là qu'on dit « je te fais 5 % ». Le canonique, le client ne l'a jamais vu.
+  </p>
+</fold-card>
+
+<fold-card>
+  <div cardHeader class="head">
+    <h2 class="section-title">Qui porte le risque : prix vivant ou prix bloqué</h2>
+  </div>
+
+  <p>
+    Quand les coûts de la maison montent en cours de saison, quelqu'un encaisse. Le système sait
+    dire <em>qui</em> — et c'est un choix commercial, pas une fatalité.
+  </p>
+
+  <app-risk-schema />
+
+  <div class="pair">
+    <div class="fact">
+      <h3 class="fact-title">Prix vivant — le défaut</h3>
+      <p>
+        Le client paie le tarif du jour. Une hausse s'applique à lui dès sa commande suivante. Aucun
+        engagement de volume, aucune garantie de prix.
+      </p>
+      <p class="why"><strong>Il assume la hausse.</strong></p>
+    </div>
+    <div class="fact">
+      <h3 class="fact-title">Prix bloqué — l'engagement</h3>
+      <p>
+        Le client engage un volume sur une durée. En échange, son prix d'entrée est figé : les
+        hausses de tarif ne l'atteignent pas.
+      </p>
+      <p class="why"><strong>Le volume absorbe la hausse.</strong></p>
+    </div>
+  </div>
+
+  <h3 class="sub">Le contrat brasseur, pour fixer les idées</h3>
+  <p>
+    Un café qui achète au coup par coup paie le prix du jour : le brasseur augmente en mars, il paie
+    plus dès la commande suivante. Un café qui s'engage sur 40 hectolitres sur douze mois ne bouge
+    pas — il a <strong>acheté la stabilité</strong>, et il l'a payée en s'engageant. Si le malt
+    s'envole, c'est le brasseur qui encaisse, et il l'accepte parce que le volume garanti absorbe
+    ses frais fixes.
+  </p>
+  <p class="why">
+    Ce n'est pas une faveur, c'est un <strong>échange</strong> : le client cède sa liberté de
+    volume, la maison cède sa liberté de prix. Un hôtel qui prend 300 viennoiseries chaque matin de
+    décembre à avril veut un prix ferme pour son budget ; un restaurant qui commande au gré de son
+    remplissage veut le tarif du jour et aucune obligation.
+  </p>
+
+  <h3 class="sub">La question qui se pose ensuite : activer une promo sur le prix bloqué ?</h3>
+  <p>
+    Un client engagé n'est pas exclu des opérations commerciales. Mais sa base est plus ancienne —
+    donc, quand les prix montent, plus basse. Une même promotion lui donne mécaniquement moins cher
+    qu'à un client au prix vivant.
+  </p>
+  <fold-callout variant="warning">
+    <p>
+      <strong>La lecture qui décide.</strong> Si le client au prix bloqué est <em>déjà</em> sous le
+      prix vivant promotionné, la promo ne lui est pas nécessaire : elle offrirait une remise à
+      quelqu'un qui a <strong>déjà obtenu la sienne en s'engageant</strong>. L'activer le paierait
+      deux fois pour le même engagement.
+    </p>
+  </fold-callout>
+
+  <fold-callout variant="warning">
+    <p>
+      <strong>Le pari est asymétrique, et il faut l'assumer.</strong> Si les coûts baissent, le
+      client engagé se retrouve au-dessus du marché — et il le verra. Un contrat qui devient
+      défavorable au client n'est pas un revenu stable, c'est une demande de renégociation. En
+      station, une mauvaise saison, c'est tout le monde qui renégocie en même temps.
+    </p>
+  </fold-callout>
+
+  <p class="pending">
+    Le prix bloqué est une <strong>décision prise, pas encore construite</strong>. Ce qui reste à
+    trancher avant de coder : ce qui se passe quand le volume engagé n'est pas atteint.
+  </p>
+</fold-card>
+
+<fold-card>
+  <div cardHeader class="head"><h2 class="section-title">Pourquoi ce prix ? — la trace</h2></div>
+
+  <p>
+    Chaque ligne de commande garde <strong>l'explication de son prix</strong>, figée au moment de la
+    passation : le tarif d'entrée, chaque étage qui a joué avec son libellé, et si la limite a
+    relevé le résultat.
+  </p>
+  <p class="why">
+    Elle survit à la règle qui l'a produite. Une promotion supprimée en avril n'efface pas
+    l'explication d'une facture de février — sans quoi la seule réponse possible à « pourquoi ce
+    prix ? » serait « c'était le prix ».
+  </p>
+  <p>
+    Le client lit les <strong>libellés</strong> que l'équipe a écrits (« Promotion de rentrée »),
+    jamais le nom des étages : « mercuriale » et « geste » sont du vocabulaire de la maison.
+  </p>
+</fold-card>

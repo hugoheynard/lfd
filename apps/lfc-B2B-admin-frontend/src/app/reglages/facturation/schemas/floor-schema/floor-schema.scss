@@ -1,0 +1,83 @@
+.schema {
+  display: block;
+  width: 100%;
+  max-width: 42rem;
+  height: auto;
+}
+
+.axis,
+.level {
+  stroke: var(--fold-color-border);
+  stroke-width: 1.5;
+}
+
+.level-base {
+  stroke: var(--fold-color-text-muted);
+}
+
+/* Le mur est plein : il ne se négocie pas. La porte est en pointillés : elle
+   n'existe que sous condition. La différence de trait DIT la différence de
+   nature, sans avoir à la lire. */
+.level-hard {
+  stroke: var(--fold-color-warning-border, currentcolor);
+  stroke-width: 2.5;
+}
+
+.level-door {
+  stroke: var(--fold-color-accent, var(--fold-color-text));
+  stroke-width: 2;
+  stroke-dasharray: 7 5;
+}
+
+.forbidden {
+  fill: var(--fold-color-warning-surface, rgb(180 120 0 / 8%));
+}
+
+.fall {
+  fill: none;
+  stroke: var(--fold-color-text-muted);
+  stroke-width: 1.5;
+}
+
+.arrow-head {
+  fill: var(--fold-color-text-muted);
+}
+
+.key rect {
+  fill: none;
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+
+.t-level,
+.t-sub-left,
+.t-axis {
+  text-anchor: start;
+  font-family: inherit;
+}
+
+.t-level {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--fold-color-text);
+}
+
+.t-sub-left,
+.t-axis {
+  font-size: 11px;
+  fill: var(--fold-color-text-muted);
+}
+
+.t-forbidden,
+.t-key {
+  text-anchor: middle;
+  font-family: inherit;
+  font-size: 11px;
+  fill: var(--fold-color-text-muted);
+}
+
+.t-key {
+  font-size: 12px;
+  fill: var(--fold-color-text);
+}

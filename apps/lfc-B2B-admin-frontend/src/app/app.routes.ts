@@ -151,6 +151,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'facturation',
+        title: 'Facturation — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/facturation/reglages-facturation-page').then(
+            (m) => m.ReglagesFacturationPage,
+          ),
+      },
+      {
         path: 'commercial',
         canActivate: [permissionGuard('growth:read')],
         title: 'Commercial — LFC B2B admin',

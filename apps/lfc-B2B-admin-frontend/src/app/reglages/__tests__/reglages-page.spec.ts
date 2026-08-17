@@ -29,6 +29,7 @@ describe('les onglets de Réglages', () => {
       'retraits-livraisons',
       'catalogue',
       'tarification',
+      'facturation',
       'commercial',
       'utilisateurs',
     ]);
@@ -41,6 +42,7 @@ describe('les onglets de Réglages', () => {
       'retraits-livraisons',
       'catalogue',
       'tarification',
+      'facturation',
       'commercial',
     ]);
   });
@@ -52,6 +54,7 @@ describe('les onglets de Réglages', () => {
       'retraits-livraisons',
       'catalogue',
       'tarification',
+      'facturation',
     ]);
   });
 });
