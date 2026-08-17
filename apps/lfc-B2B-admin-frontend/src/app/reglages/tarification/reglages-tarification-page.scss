@@ -1,5 +1,8 @@
 /*
- * Cinq colonnes, lues de gauche à droite comme le prix se construit.
+ * Sept colonnes : cinq qui CONSTRUISENT le prix, lues de gauche à droite, puis
+ * deux qui le COMMENTENT — ce qu'on peut encore lâcher, et ce que la baisse
+ * oblige à vendre. La rupture entre les deux groupes est voulue : les cinq
+ * premières se chaînent, les deux dernières se lisent.
  *
  * La grille est **explicite** : chaque cellule porte sa colonne (par sa classe)
  * et sa ligne (par un style lié). Le placement automatique aurait suffi tant
@@ -20,11 +23,13 @@ $col-gap: 2.25rem;
 .grid {
   display: grid;
   grid-template-columns:
-    minmax(13rem, 1.5fr)
-    minmax(7rem, 0.9fr)
-    minmax(10rem, 1.2fr)
-    minmax(10rem, 1.2fr)
-    minmax(8rem, 0.9fr);
+    minmax(12rem, 1.3fr)
+    minmax(6.5rem, 0.8fr)
+    minmax(9rem, 1.1fr)
+    minmax(9rem, 1.1fr)
+    minmax(7rem, 0.8fr)
+    minmax(8rem, 0.9fr)
+    minmax(11rem, 1.2fr);
   column-gap: $col-gap;
 }
 
@@ -98,6 +103,12 @@ $col-gap: 2.25rem;
 }
 .col-final {
   grid-column: 5;
+}
+.col-room {
+  grid-column: 6;
+}
+.col-elastic {
+  grid-column: 7;
 }
 
 /* --- Les liens entre nœuds ------------------------------------------------
@@ -296,11 +307,92 @@ $col-gap: 2.25rem;
 }
 
 /*
+ * La marge négociable : les DEUX unités au même poids typographique. Mettre le
+ * pourcentage en sous-titre aurait choisi à la place du commercial celle qu'il
+ * annonce au téléphone.
+ */
+.node-room {
+  align-items: flex-start;
+
+  &.is-spent,
+  &.is-undefined {
+    color: var(--fold-color-text-muted);
+  }
+
+  &.is-undefined {
+    border-style: dashed;
+  }
+}
+
+.room-values {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.room-value {
+  font-weight: 600;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.room-sep {
+  color: var(--fold-color-text-muted);
+}
+
+.room-note,
+.perf-label,
+.perf-detail {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* L'effort de volume : le ratio d'abord, puis les deux comparaisons. */
+.node-elastic {
+  align-items: flex-start;
+  gap: var(--fold-space-2, 0.5rem);
+  justify-content: flex-start;
+  padding-top: var(--fold-space-2, 0.5rem);
+
+  &.is-flat {
+    justify-content: center;
+    color: var(--fold-color-text-muted);
+  }
+}
+
+.elastic-ratio {
+  font-weight: 700;
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.perf {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  padding-left: var(--fold-space-2, 0.5rem);
+  border-left: 2px solid var(--fold-color-border);
+
+  /* L'objectif tenu se colore ; l'objectif manqué reste NEUTRE. Peindre en
+     rouge tout ce qui est sous 100 % ferait paniquer sur des remises récentes
+     qui n'ont pas encore eu le temps de produire quoi que ce soit. */
+  &.is-on-track {
+    border-left-color: var(--fold-color-success-border, currentcolor);
+  }
+}
+
+.perf-value {
+  font-size: var(--fold-text-sm, 0.875rem);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
  * Sous 60rem, l'éventail ne tient plus : la grille redevient une pile par
  * article. On coupe les traits plutôt que de les laisser pointer dans le vide —
  * un connecteur qui ne relie rien se lit comme une erreur d'affichage.
  */
-@media (width < 60rem) {
+@media (width < 82rem) {
   .legend {
     display: none;
   }

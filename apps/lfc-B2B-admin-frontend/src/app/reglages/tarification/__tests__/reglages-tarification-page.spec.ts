@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type {
+  ElasticityComparison,
+  ItemElasticityView,
   PriceFloorView,
   PriceRuleView,
   PricingBoardView,
@@ -82,6 +84,8 @@ function item(overrides: Partial<PricingItemView> = {}): PricingItemView {
     steps: [],
     floored: false,
     finalCents: 200,
+    elasticity: null,
+    negotiationRoom: null,
     ...overrides,
   };
 }
@@ -195,5 +199,81 @@ describe('les compteurs de tête', () => {
     await screen['load']();
 
     expect(screen['alteredCount']()).toBe(1);
+  });
+});
+
+function comparison(overrides: Partial<ElasticityComparison> = {}): ElasticityComparison {
+  const window = { from: '2026-07-01T00:00:00.000Z', to: '2026-08-01T00:00:00.000Z', days: 30 };
+  return {
+    baseline: window,
+    baselineVolume: 400,
+    observed: window,
+    observedVolume: 460,
+    targetVolume: 500,
+    attainmentBp: 9_200,
+    conclusive: true,
+    ...overrides,
+  };
+}
+
+function elasticity(overrides: Partial<ItemElasticityView> = {}): ItemElasticityView {
+  return {
+    fromCents: 200,
+    toCents: 160,
+    isoRevenueRatioBp: 12_500,
+    sinceChange: comparison(),
+    rolling: comparison(),
+    ...overrides,
+  };
+}
+
+describe("l'effort de volume", () => {
+  /** Le chiffre qui doit sauter aux yeux, dans la langue du commercial. */
+  it('dit le ratio en clair, à la virgule française', () => {
+    expect(page()['ratioLabel'](elasticity())).toBe('×1,25');
+  });
+
+  /**
+   * Un article offert n'atteint le chiffre d'origine à aucun volume. « ×∞ »
+   * n'aide personne — l'écran dira autre chose à la place.
+   */
+  it("n'invente pas de ratio sur un article offert", () => {
+    expect(page()['ratioLabel'](elasticity({ isoRevenueRatioBp: null }))).toBeNull();
+  });
+
+  it("dit l'atteinte en pourcent entier", () => {
+    expect(page()['attainmentLabel'](comparison())).toBe('92 %');
+  });
+
+  it("n'annonce pas d'atteinte quand il n'y a pas d'objectif", () => {
+    expect(page()['attainmentLabel'](comparison({ attainmentBp: null }))).toBeNull();
+  });
+
+  /**
+   * Seul l'objectif TENU se colore. Peindre en rouge tout ce qui est sous 100 %
+   * ferait paniquer sur des remises trop récentes pour avoir produit quoi que ce
+   * soit — c'est le rôle de `conclusive`, pas d'une couleur.
+   */
+  it('ne signale que la réussite, jamais le retard', () => {
+    const screen = page();
+
+    expect(screen['isOnTrack'](comparison({ attainmentBp: 10_000 }))).toBe(true);
+    expect(screen['isOnTrack'](comparison({ attainmentBp: 9_900 }))).toBe(false);
+    expect(screen['isOnTrack'](comparison({ attainmentBp: null }))).toBe(false);
+  });
+});
+
+describe('la remise accordable', () => {
+  const room = { floorCents: 150, maxDiscountCents: 50, maxDiscountBp: 2_500 };
+
+  /**
+   * Les deux unités sont rendues séparément et au même poids : le commercial
+   * choisit celle qu'il annonce, l'écran ne choisit pas pour lui.
+   */
+  it('donne les euros et les pourcents, chacun mis en forme pour être lu', () => {
+    const screen = page();
+
+    expect(screen['roomEuros'](room)).toContain('0,50');
+    expect(screen['roomPercent'](room)).toBe('25,0 %');
   });
 });

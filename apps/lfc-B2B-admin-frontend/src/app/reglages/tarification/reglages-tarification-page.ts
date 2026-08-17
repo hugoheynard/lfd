@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
+  ElasticityComparison,
+  ItemElasticityView,
+  NegotiationRoom,
   PriceFloorView,
   PriceRuleView,
   PriceScopePayload,
@@ -33,6 +36,16 @@ type LoadState = 'loading' | 'ready' | 'error';
  * le prix qui en sort. Chaque cellule vide porte un `+` en pointillés : la
  * colonne dit où poser, sans qu'on ait à chercher dans un menu.
  *
+ * Deux colonnes suivent, qui ne construisent plus le prix mais le **commentent** :
+ *
+ * - **la remise encore accordable**, en euros ET en pourcent — le commercial
+ *   choisit celle qu'il annonce dans son appel, donc aucune n'est un sous-titre
+ *   de l'autre ;
+ * - **l'effort de volume** que l'altération impose : « ×1,25 pour le même
+ *   chiffre », et où en est le réalisé. Deux comparaisons, parce qu'elles
+ *   répondent à deux questions — celle qui juge la règle (avant/après) et celle
+ *   qui dit où on en est (fenêtre glissante).
+ *
  * **Trois choses que cet écran doit dire sous peine de mentir**, et qu'il dit :
  *
  * - la limite s'applique **en fin de chaîne**, pas à la place qu'elle occupe
@@ -41,6 +54,13 @@ type LoadState = 'loading' | 'ready' | 'error';
  * - dans un même étage, l'altération de l'article **remplace** celle de sa
  *   famille — elles ne s'enchaînent pas. Le nœud supplanté est barré, sinon le
  *   lecteur additionnerait deux remises dont une seule agit ;
+ * - l'objectif de volume se calcule **à chiffre d'affaires constant**, jamais à
+ *   marge constante : le prix de revient n'existe nulle part dans le modèle, et
+ *   un coût inventé afficherait une marge fausse avec l'aplomb d'un tableau de
+ *   bord ;
+ * - un objectif manqué reste **neutre** à l'écran. Peindre en rouge tout ce qui
+ *   est sous 100 % ferait paniquer sur des remises trop récentes pour avoir
+ *   produit quoi que ce soit — d'où `conclusive`, qui dit « trop tôt » ;
  * - le prix montré est celui d'**un** article pour **quelqu'un sans tarif
  *   négocié**, aujourd'hui. Mercuriales et paliers de volume existent et ne se
  *   voient pas ici — c'est le prix de vitrine, et l'en-tête l'écrit.
@@ -182,6 +202,43 @@ export class ReglagesTarificationPage {
     if ((await closed) === true) {
       await this.load();
     }
+  }
+
+  /**
+   * Le ratio iso-chiffre, en clair : « ×1,25 ».
+   *
+   * `null` quand il n'a pas de valeur finie — un article offert n'atteint le
+   * chiffre d'origine à aucun volume, et « ×∞ » n'aide personne.
+   */
+  protected ratioLabel(elasticity: ItemElasticityView): string | null {
+    const ratio = elasticity.isoRevenueRatioBp;
+    return ratio === null ? null : `×${(ratio / 10_000).toFixed(2).replace('.', ',')}`;
+  }
+
+  /** Où en est le réalisé vis-à-vis de l'objectif, en pourcent entier. */
+  protected attainmentLabel(comparison: ElasticityComparison): string | null {
+    return comparison.attainmentBp === null
+      ? null
+      : `${String(Math.round(comparison.attainmentBp / 100))} %`;
+  }
+
+  /** L'objectif est-il tenu ? Sert à colorer, jamais à cacher le chiffre. */
+  protected isOnTrack(comparison: ElasticityComparison): boolean {
+    return comparison.attainmentBp !== null && comparison.attainmentBp >= 10_000;
+  }
+
+  /**
+   * La marge négociable, dans les DEUX unités.
+   *
+   * Le commercial choisit laquelle il annonce dans son appel : ni l'une ni
+   * l'autre n'est un sous-titre, et l'écran les met au même poids.
+   */
+  protected roomEuros(room: NegotiationRoom): string {
+    return formatEuros(room.maxDiscountCents);
+  }
+
+  protected roomPercent(room: NegotiationRoom): string {
+    return `${(room.maxDiscountBp / 100).toFixed(1).replace('.', ',')} %`;
   }
 
   /** La portée d'un nœud, pour l'attribut de test — utile aux specs. */
