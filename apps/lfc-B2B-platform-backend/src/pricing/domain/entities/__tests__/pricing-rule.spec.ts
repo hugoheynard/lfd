@@ -53,16 +53,13 @@ describe("PricingRule.create", () => {
 
   /**
    * Volontairement plus étroit que le tableau du doc, qui assigne une nature à
-   * chaque étage : « 100+ à 1,80 € fixe » est un geste commercial réel, et rien
-   * ne se casse à l'autoriser. Un invariant sans raison finit contourné.
+   * chaque étage : « pendant l'opération, cet article est à 1,80 € » est une
+   * décision commerciale réelle, et rien ne se casse à l'autoriser. Un invariant
+   * sans raison finit contourné plutôt que compris.
    */
-  it("laisse les AUTRES étages poser un prix — le volume à prix fixe est réel", () => {
+  it("laisse les AUTRES étages poser un prix ferme", () => {
     expect(() =>
-      create({
-        stage: "volume",
-        minQuantity: 100,
-        effect: { nature: "replace", amountCents: 180 },
-      }),
+      create({ stage: "promotion", effect: { nature: "replace", amountCents: 180 } }),
     ).not.toThrow();
   });
 

@@ -18,6 +18,24 @@ import { z } from "zod";
 export const priceStageSchema = z.enum(["mercuriale", "volume", "promotion", "geste"]);
 export type PriceStage = z.infer<typeof priceStageSchema>;
 
+/**
+ * Les étages qu'une règle **saisie** peut porter — l'étage `volume` en est
+ * exclu, et c'est la porte fermée.
+ *
+ * Le volume n'est plus une règle : c'est un **barème**, une échelle entière qui
+ * se pose d'un geste et qu'un agrégat refuse de laisser régresser. Tant que les
+ * deux chemins coexistaient, on pouvait poser « 100+ à −5 % » en règle libre à
+ * côté d'un barème accordant −10 % dès 50 : deux décisions au même étage, dont
+ * aucune ne voyait l'autre, et dont la plus spécifique gagnait par accident. Le
+ * barème existait précisément pour rendre ce cas impossible.
+ *
+ * L'étage, lui, **reste** dans {@link priceStageSchema} : le barème s'y présente
+ * au moment du calcul, et toutes les traces déjà figées le nomment. Ce qui
+ * disparaît, c'est la façon de l'écrire à la main — pas l'étage.
+ */
+export const authoredPriceStageSchema = z.enum(["mercuriale", "promotion", "geste"]);
+export type AuthoredPriceStage = z.infer<typeof authoredPriceStageSchema>;
+
 /** Ce qu'une règle vise, du plus large au plus précis. */
 export const priceScopeTypeSchema = z.enum(["global", "category", "product", "variant"]);
 export type PriceScopeType = z.infer<typeof priceScopeTypeSchema>;
@@ -92,9 +110,14 @@ export const priceEffectSchema = z.discriminatedUnion("nature", [
 ]);
 export type PriceEffectPayload = z.infer<typeof priceEffectSchema>;
 
-/** Créer une règle. Le serveur refuse tout ce que l'agrégat refuse. */
+/**
+ * Créer une règle. Le serveur refuse tout ce que l'agrégat refuse.
+ *
+ * `stage` est l'étage **saisissable** : le volume ne s'écrit plus règle par
+ * règle, il se pose en barème (cf. {@link authoredPriceStageSchema}).
+ */
 export const createPriceRulePayloadSchema = z.object({
-  stage: priceStageSchema,
+  stage: authoredPriceStageSchema,
   scope: priceScopeSchema,
   audience: priceAudienceSchema,
   /** Palier de quantité. `null` = aucun seuil. */

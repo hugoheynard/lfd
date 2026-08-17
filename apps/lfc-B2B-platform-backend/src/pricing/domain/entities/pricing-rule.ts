@@ -11,6 +11,7 @@ import {
 import { IN_FORCE, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
 import type { RuleLifecycle, RuleStatus } from "../rule-lifecycle.js";
 import type {
+  AuthoredPriceStage,
   PriceAlteration,
   PriceAudience,
   PriceRule,
@@ -20,7 +21,8 @@ import type {
 
 /** Ce qu'un appelant apporte pour créer une règle — l'intention, pas l'état. */
 export interface PricingRuleDraft {
-  readonly stage: PriceStage;
+  /** L'étage **saisissable** : le volume se pose en barème, pas en règle. */
+  readonly stage: AuthoredPriceStage;
   readonly scope: PriceScope;
   readonly audience: PriceAudience;
   readonly minQuantity: number | null;
@@ -32,8 +34,16 @@ export interface PricingRuleDraft {
   readonly validTo: Date | null;
 }
 
-/** L'état persisté — ce que l'adaptateur écrit, et rien d'autre. */
-export interface PricingRuleState extends PricingRuleDraft {
+/**
+ * L'état persisté — ce que l'adaptateur écrit, et rien d'autre.
+ *
+ * Son `stage` est plus large que celui du brouillon, **volontairement** : les
+ * règles volume d'avant le barème existent en base, archivées, et une facture les
+ * cite. Un état qui refuserait de les relire rendrait illisible l'histoire qu'on
+ * a justement décidé de ne jamais effacer.
+ */
+export interface PricingRuleState extends Omit<PricingRuleDraft, "stage"> {
+  readonly stage: PriceStage;
   readonly id: string;
   readonly createdBy: string;
   readonly lifecycle: RuleLifecycle;
@@ -62,6 +72,12 @@ export interface PricingRuleState extends PricingRuleDraft {
  * `create` est le **seul** constructeur public. Un `new PricingRule(state)`
  * exposé aurait permis d'écrire en base une règle qu'aucun de ces refus n'a
  * traversée.
+ *
+ * Un troisième invariant ne s'écrit **pas** ici, et c'est délibéré : l'étage
+ * `volume` n'est pas refusé, il est **inexprimable** — le brouillon ne l'accepte
+ * pas dans son type. Le volume appartient au barème, et un refus à l'exécution
+ * aurait laissé le code appelant compiler puis échouer ; le type le fait échouer
+ * avant d'exister. Le fil, lui, est fermé par `authoredPriceStageSchema`.
  */
 export class PricingRule {
   private constructor(private readonly state: PricingRuleState) {}
@@ -81,9 +97,10 @@ export class PricingRule {
     // engagement en euros, il se stocke en euros.
     //
     // Volontairement plus étroit que le tableau du doc, qui assigne une nature
-    // à CHAQUE étage : « 100+ à 1,80 € fixe » et « cet article offert » sont des
-    // gestes commerciaux réels, et rien ne se casse à les autoriser. Un
-    // invariant sans raison finit par être contourné plutôt que compris.
+    // à CHAQUE étage : « pendant l'opération, cet article est à 1,80 € » et
+    // « cet article offert » sont des décisions commerciales réelles, et rien ne
+    // se casse à les autoriser. Un invariant sans raison finit par être
+    // contourné plutôt que compris.
     if (draft.stage === "mercuriale" && draft.effect.nature !== "replace") {
       throw new MercurialeMustPoseAPriceError();
     }

@@ -485,6 +485,7 @@ export {
   pricingSubjectSchema,
   pricingReasonPayloadSchema,
   ruleStatusSchema,
+  authoredPriceStageSchema,
   createPriceRulePayloadSchema,
   priceAudienceSchema,
   priceAudienceTypeSchema,
@@ -504,6 +505,7 @@ export {
   volumeTiersSchema,
 } from "./pricing.js";
 export type {
+  AuthoredPriceStage,
   CreatePriceRulePayload,
   PriceAudiencePayload,
   PriceAudienceType,

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import type { CreatePriceRulePayload, PriceScopePayload, PriceStage } from '@lfd/contracts';
+import type { AuthoredPriceStage, CreatePriceRulePayload, PriceScopePayload } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldInputComponent,
@@ -27,9 +27,14 @@ export interface RulePanelData {
  * choisir un client est un écran à part (S5). L'offrir sans le sélecteur aurait
  * produit des tarifs négociés ouverts à tous — soit exactement le contraire de
  * ce qu'une mercuriale est.
+ *
+ * Le **volume** n'y est plus non plus, et pour une raison plus forte : il ne
+ * s'écrit pas règle par règle. Une remise de volume est une échelle entière —
+ * elle se pose par le bouton « Barème », qui garantit que commander plus
+ * n'accorde jamais moins. Tant que les deux chemins coexistaient, on pouvait
+ * poser ici un palier isolé qui l'emportait sur le barème de la même cible.
  */
-const STAGES: readonly { readonly value: PriceStage; readonly label: string }[] = [
-  { value: 'volume', label: 'Volume — un palier de quantité' },
+const STAGES: readonly { readonly value: AuthoredPriceStage; readonly label: string }[] = [
   { value: 'promotion', label: 'Promotion — une opération datée' },
   { value: 'geste', label: 'Geste — un cas particulier' },
 ];
@@ -75,21 +80,17 @@ export class RulePanel {
 
   protected readonly stages = STAGES;
 
-  protected readonly stage = signal<PriceStage>('promotion');
+  protected readonly stage = signal<AuthoredPriceStage>('promotion');
   protected readonly nature = signal<Nature>('alter');
   protected readonly label = signal('');
   protected readonly alteration = signal<PriceAlteration | null>(null);
   /** Le prix posé, en euros tels que saisis. */
   protected readonly amount = signal<number | null>(null);
-  protected readonly minQuantity = signal<number | null>(null);
   protected readonly validFrom = signal(today());
   protected readonly validTo = signal('');
   protected readonly saving = signal(false);
 
   protected readonly target = computed(() => this.data()?.target ?? '');
-
-  /** Un palier n'a de sens que sur l'étage qui le lit. */
-  protected readonly wantsQuantity = computed(() => this.stage() === 'volume');
 
   protected readonly canSubmit = computed(() => {
     if (this.label().trim() === '' || this.validFrom() === '') {
@@ -112,11 +113,6 @@ export class RulePanel {
   protected setAmount(value: string): void {
     const parsed = Number.parseFloat(value.replace(',', '.'));
     this.amount.set(value.trim() === '' || Number.isNaN(parsed) ? null : parsed);
-  }
-
-  protected setMinQuantity(value: string): void {
-    const parsed = Number.parseInt(value, 10);
-    this.minQuantity.set(Number.isNaN(parsed) || parsed <= 0 ? null : parsed);
   }
 
   protected async submit(): Promise<void> {
@@ -156,7 +152,9 @@ export class RulePanel {
       stage: this.stage(),
       scope,
       audience: { type: 'all', id: null },
-      minQuantity: this.wantsQuantity() ? this.minQuantity() : null,
+      // Aucun seuil : le seul étage qui lisait un palier de quantité était le
+      // volume, et il se pose désormais en barème.
+      minQuantity: null,
       effect,
       label: this.label().trim(),
       validFrom: new Date(`${this.validFrom()}T00:00:00.000Z`).toISOString(),

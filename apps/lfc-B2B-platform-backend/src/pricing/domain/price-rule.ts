@@ -21,6 +21,20 @@ import type { PriceFloorPolicy } from "./floor-policy.js";
 export const PRICE_STAGES = ["mercuriale", "volume", "promotion", "geste"] as const;
 export type PriceStage = (typeof PRICE_STAGES)[number];
 
+/**
+ * Les étages qu'une **règle** peut porter — `volume` n'en est pas.
+ *
+ * Le volume appartient au **barème** : une échelle entière, posée d'un geste,
+ * dont l'agrégat garantit qu'elle progresse. Une règle volume libre entrait dans
+ * le même étage sans passer par aucun de ces refus, et l'emportait par
+ * spécificité contre le barème de la même cible.
+ *
+ * L'étage reste dans {@link PRICE_STAGES} parce que le **calcul** en a besoin :
+ * `ladderAsRule` y présente le barème, et toutes les traces déjà figées le
+ * nomment. Ce qui disparaît est la façon de l'écrire, pas l'étage.
+ */
+export type AuthoredPriceStage = Exclude<PriceStage, "volume">;
+
 /** Ce qu'une règle vise, du plus large au plus précis. */
 export type PriceScopeType = "global" | "category" | "product" | "variant";
 

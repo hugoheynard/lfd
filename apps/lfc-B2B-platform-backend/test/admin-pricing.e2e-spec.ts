@@ -159,6 +159,19 @@ describe("poser une règle", () => {
     expect(response.status).toBe(201);
   });
 
+  /**
+   * **La porte fermée.** Une remise de volume n'est plus une règle : c'est un
+   * barème, et le barème existe pour garantir ce qu'aucune règle isolée ne
+   * pouvait voir — que commander plus n'accorde jamais moins. Tant que cette
+   * route acceptait l'étage, on pouvait poser « 100+ à −5 % » à côté d'un barème
+   * accordant −10 % dès 50, et le palier isolé l'emportait par spécificité.
+   */
+  it("refuse l'étage volume : il appartient au barème", async () => {
+    const response = await postRule({ stage: "volume", minQuantity: 100 });
+
+    expect(response.status).toBe(400);
+  });
+
   it("refuse une portée « famille » sans famille", async () => {
     const response = await postRule({ scope: { type: "category", id: null } });
 

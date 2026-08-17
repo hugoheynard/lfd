@@ -64,17 +64,6 @@
     />
   }
 
-  @if (wantsQuantity()) {
-    <fold-input
-      label="À partir de (quantité)"
-      inputmode="numeric"
-      placeholder="100"
-      hint="Mesuré sur la quantité TOTALE du SKU dans la commande, lignes fusionnées."
-      [value]="minQuantity() === null ? '' : minQuantity()!.toString()"
-      (valueChange)="setMinQuantity($event)"
-    />
-  }
-
   <fold-input
     label="Libellé"
     hint="Ce que le client et le service client liront dans la trace du prix."
@@ -115,6 +104,12 @@
   <p class="audience">
     Cette règle s'applique à <strong>tous les clients</strong>. Un tarif négocié pour une entreprise
     précise est une <strong>mercuriale</strong>, et elle se saisit sur la fiche du client.
+  </p>
+
+  <p class="audience">
+    Une remise sur la <strong>quantité</strong> ne se pose pas ici : c'est un
+    <strong>barème</strong>, une échelle entière saisie d'un geste — c'est ce qui garantit que
+    commander plus n'accorde jamais moins.
   </p>
 </div>
 
