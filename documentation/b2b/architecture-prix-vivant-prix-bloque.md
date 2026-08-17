@@ -84,7 +84,15 @@ sa commande suivante.
 
 - Aucun engagement de volume de sa part.
 - Aucune garantie de prix de la nôtre.
-- **Il assume l'overhead.**
+
+|     | Ce que ça donne                                                                                                                                                             |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅  | **Le client assume la hausse.** Le coût qui monte est répercuté, la marge tient.                                                                                            |
+| ⚠️  | **Risque de baisse de volume.** Rien ne le retient : il peut commander moins, décaler, ou aller voir ailleurs — et c'est exactement au moment où on augmente qu'il y pense. |
+
+Le risque n'a donc pas disparu, il a **changé de nature** : on ne porte plus le
+risque de prix, on porte le risque de volume. Et le second est plus difficile à
+voir venir que le premier — une hausse se décide, une désaffection se constate.
 
 C'est le comportement actuel de la plateforme, et il reste le **défaut**. Le
 nommer ne change rien à son fonctionnement ; ça permet seulement de dire ce
@@ -98,7 +106,11 @@ l'atteignent pas.
 
 - Engagement de volume de sa part.
 - Prix d'entrée garanti de la nôtre.
-- **Le volume absorbe l'overhead.**
+
+|     | Ce que ça donne                                                                                                                                                |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅  | **Le volume est acquis.** Il ne dépend plus de l'humeur d'une saison, et il absorbe les frais fixes.                                                           |
+| ⚠️  | **La hausse est pour nous.** Et le volume d'un seul client peut ne pas suffire à l'absorber — voir plus bas, c'est le point qui décide de la façon de mesurer. |
 
 C'est le contrat brasseur, et c'est un objet nouveau dans le modèle : ni une
 mercuriale (qui est un prix négocié mais **sans** engagement de volume ni terme
@@ -134,6 +146,46 @@ prix vivant. C'est l'objet de l'indicateur ci-dessous.
 exprimé en fraction (« jamais sous 50 % du tarif ») suivrait sinon le tarif de
 liste et remonterait sous un prix contractuel figé — ce qui reviendrait à
 reprendre d'une main la garantie donnée de l'autre.
+
+---
+
+## Mesurer le MODÈLE, pas le client
+
+**Le volume d'un client ne suffit pas toujours à absorber la hausse, et ce n'est
+pas un échec.** Un hôtel engagé sur 300 viennoiseries par jour couvre une part
+des frais fixes de la saison ; il ne couvre pas, à lui seul, une envolée du
+beurre. Regarder son contrat isolément le fera toujours apparaître comme une
+perte dès que les coûts montent.
+
+Juger client par client tuerait donc l'instrument : chaque contrat pris seul
+paraîtrait mauvais exactement quand le dispositif entier fonctionne.
+
+**La performance du prix bloqué se mesure sur la POPULATION des adoptants**, en
+moyenne, sur la période :
+
+```
+absorbé   = Σ ( volume livré à prix bloqué × (tarif vivant du jour − prix bloqué) )
+apporté   = Σ ( volume livré à prix bloqué )            ← le volume qu'on n'aurait pas eu
+équilibre = apporté couvre-t-il l'absorbé ?
+```
+
+Trois conséquences, et ce sont elles qui rendent le chiffre utile :
+
+- **Un contrat déficitaire n'est pas un mauvais contrat.** Il l'est seulement si
+  la moyenne de la cohorte l'est aussi. Le tableau doit donc afficher la
+  moyenne AVANT le détail, sinon on résiliera le mauvais.
+- **Le seuil est un signal d'arrêt, pas de résiliation.** Quand la cohorte passe
+  sous l'équilibre, ce qu'on arrête, c'est de **signer de nouveaux contrats au
+  prix actuel** — pas d'honorer ceux qui existent. Les honorer est précisément ce
+  qu'on a vendu.
+- **La cohorte se renouvelle par le bas.** Chaque nouveau contrat se signe au
+  tarif du jour, donc plus haut ; la moyenne remonte d'elle-même à mesure que les
+  anciens arrivent à terme. Un modèle qui ne se renouvellerait pas dériverait
+  jusqu'à devenir une remise permanente que personne n'a décidée.
+
+**Ce que ça implique pour l'écran** : l'unité d'affichage du prix bloqué n'est
+pas la fiche client, c'est la **cohorte**. La fiche client montre un engagement ;
+seul le tableau de bord dit si le dispositif tient.
 
 ---
 

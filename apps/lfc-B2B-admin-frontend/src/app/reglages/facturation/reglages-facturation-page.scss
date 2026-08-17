@@ -118,6 +118,50 @@
   padding-left: 0;
 }
 
+/*
+ * Le bilan d'un chemin : ce qu'il donne, ce qu'il coûte. Les deux lignes ont le
+ * même poids — un chemin dont on ne montrerait que l'avantage serait une
+ * brochure, pas une doctrine.
+ */
+.tally {
+  margin: var(--fold-space-2, 0.5rem) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2, 0.5rem);
+}
+
+.tally li {
+  padding-left: 1.4rem;
+  position: relative;
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+
+.tally li::before {
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+.up::before {
+  content: '+';
+  color: var(--fold-color-success-text, var(--fold-color-text));
+}
+
+.down::before {
+  content: '−';
+  color: var(--fold-color-warning-text, var(--fold-color-text));
+}
+
+.consequences {
+  margin: var(--fold-space-3, 0.75rem) 0;
+  padding-left: var(--fold-space-4, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2, 0.5rem);
+}
+
 .formula {
   display: flex;
   flex-direction: column;
