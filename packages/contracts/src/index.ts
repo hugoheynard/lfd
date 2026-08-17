@@ -509,6 +509,7 @@ export type {
   PriceStepView,
   DynamicFloorPayload,
   FloorDecisionView,
+  FloorDriftView,
   FloorUnlockPayload,
   ElasticityComparison,
   ItemElasticityView,

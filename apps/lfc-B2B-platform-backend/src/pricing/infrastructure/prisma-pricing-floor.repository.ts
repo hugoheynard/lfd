@@ -2,7 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { PricingFloorRepository } from "../domain/ports/pricing-floor.repository.js";
-import type { PricingFloor } from "../domain/entities/pricing-floor.js";
+import { PricingFloor } from "../domain/entities/pricing-floor.js";
+import { floorFromRow } from "./price-rows.js";
 import type { PriceFloor } from "../domain/price-rule.js";
 
 @Injectable()
@@ -32,6 +33,10 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
       dynamicValue: dynamic === null ? null : magnitudeOf(dynamic.floor),
       unlockMinQuantity: dynamic?.unlock.minQuantity ?? null,
       unlockMinVolumeRatioBp: dynamic?.unlock.minVolumeRatioBp ?? null,
+      // Re-posée = re-décidée : la référence se rafraîchit, et l'écart repart
+      // de zéro. C'est exactement ce qu'on veut d'une confirmation — sans quoi
+      // le signal ne s'éteindrait jamais et on apprendrait à l'ignorer.
+      referenceCanonicalCents: state.referenceCanonicalCents,
       createdBy: state.createdBy,
     };
 
@@ -39,6 +44,21 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
       where: { id: state.id },
       create: { id: state.id, ...shared },
       update: shared,
+    });
+  }
+
+  async load(id: string): Promise<PricingFloor | null> {
+    const row = await this.prisma.priceFloor.findUnique({ where: { id } });
+    if (row === null) {
+      return null;
+    }
+    const scoped = floorFromRow(row);
+    return PricingFloor.reconstitute({
+      id: scoped.id,
+      scope: scoped.scope,
+      policy: scoped.policy,
+      createdBy: row.createdBy,
+      referenceCanonicalCents: row.referenceCanonicalCents,
     });
   }
 

@@ -1919,6 +1919,19 @@ model PriceFloor {
   /// Ratio de volume **observé** requis, en points de base (`12500` = ×1,25).
   unlockMinVolumeRatioBp Int? @map("unlock_min_volume_ratio_bp")
 
+  /// Le tarif **représentatif des articles visés**, figé au moment où la limite a
+  /// été posée — la médiane de leurs prix canoniques.
+  ///
+  /// C'est la seule chose qui permette de dire, six mois plus tard, que
+  /// l'intention a vieilli : sans référence, on ne peut comparer le tarif
+  /// d'aujourd'hui à rien. Médiane et non moyenne — une limite de famille ne doit
+  /// pas se juger déplacée parce qu'une pièce montée y côtoie des croissants.
+  ///
+  /// `NULL` = limite posée avant que cette référence n'existe. L'écran se tait
+  /// alors plutôt que d'annoncer « 0 % d'écart », qui ferait passer une absence
+  /// de mesure pour une confirmation.
+  referenceCanonicalCents Int? @map("reference_canonical_cents")
+
   /// Qui a posé cette limite. Même raison que sur une règle : la question posée
   /// six mois plus tard est toujours « qui a autorisé de descendre si bas ».
   createdBy String   @map("created_by")

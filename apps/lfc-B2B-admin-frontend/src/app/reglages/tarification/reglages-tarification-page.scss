@@ -200,6 +200,22 @@ $col-gap: 2.25rem;
   }
 }
 
+/*
+ * « À confirmer » ne se confond pas avec « a relevé » : l'une dit que la limite
+ * a MORDU, l'autre qu'elle a VIEILLI. Deux faits sans rapport, donc deux
+ * marques distinctes.
+ */
+.node-guard.is-stale {
+  border-style: solid;
+  border-color: var(--fold-color-warning-border, currentcolor);
+}
+
+.guard-stale {
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--fold-color-warning-text, var(--fold-color-text));
+}
+
 .guard-value {
   font-weight: 600;
   font-size: var(--fold-text-sm, 0.875rem);

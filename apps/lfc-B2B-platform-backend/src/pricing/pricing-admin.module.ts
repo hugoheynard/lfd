@@ -3,6 +3,7 @@ import { CqrsModule } from "@nestjs/cqrs";
 
 import { OrdersModule } from "../orders/orders.module.js";
 import {
+  ConfirmPriceFloorHandler,
   CreatePriceRuleHandler,
   RemovePriceFloorHandler,
   RemovePriceRuleHandler,
@@ -37,6 +38,7 @@ import { PricingModule } from "./pricing.module.js";
   providers: [
     BoardElasticityService,
     CreatePriceRuleHandler,
+    ConfirmPriceFloorHandler,
     RemovePriceRuleHandler,
     SetPriceFloorHandler,
     RemovePriceFloorHandler,

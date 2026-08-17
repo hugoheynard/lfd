@@ -523,3 +523,96 @@ describe("la remise commerciale accordable", () => {
     expect(item.negotiationRoom?.maxDiscountCents).toBe(0);
   });
 });
+
+describe("le signal de dérive de la limite", () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  const putFloor = (mode: string, value: number) =>
+    staff()
+      .put("/admin/pricing/floors")
+      .send({ scope: { type: "product", id: SKU }, mode, value });
+
+  /** Vieillit la limite ET fausse sa référence, pour simuler une hausse du tarif. */
+  function ageFloor(referenceCanonicalCents: number, daysAgo: number) {
+    return ctx.prisma.priceFloor.update({
+      where: { id: `product:${SKU}` },
+      data: {
+        referenceCanonicalCents,
+        updatedAt: new Date(Date.now() - daysAgo * DAY_MS),
+      },
+    });
+  }
+
+  const floorOf = async () => (await croissant()).ownFloor;
+
+  it("fige le tarif de référence en posant la limite", async () => {
+    await putFloor("amount", 150);
+
+    // VIE-001 vaut 200 c : la limite ne vise que lui, donc c'est sa référence.
+    expect((await floorOf())?.drift?.referenceCanonicalCents).toBe(CANONICAL);
+  });
+
+  it("ne signale rien quand le tarif n'a pas bougé", async () => {
+    await putFloor("amount", 150);
+
+    const drift = (await floorOf())?.drift;
+    expect(drift?.driftBp).toBe(0);
+    expect(drift?.stale).toBe(false);
+  });
+
+  it("signale l'écart quand le tarif a monté depuis la décision", async () => {
+    await putFloor("amount", 150);
+    await ageFloor(178, 240); // 178 → 200 = +12,4 %
+
+    const drift = (await floorOf())?.drift;
+    expect(drift?.driftBp).toBe(1_236);
+    expect(drift?.ageDays).toBe(240);
+    expect(drift?.stale).toBe(true);
+  });
+
+  /**
+   * Le point qui rend ce signal petit : une limite en FRACTION suit le tarif par
+   * construction — elle ne peut pas se retrouver décalée.
+   */
+  it("se tait sur une limite en fraction, même très ancienne", async () => {
+    await putFloor("percent", 7_500);
+    await ageFloor(100, 900);
+
+    expect((await floorOf())?.drift).toBeNull();
+  });
+
+  /**
+   * L'âge seul n'alarme pas : une vieille limite sur un tarif stable est aussi
+   * juste qu'au premier jour.
+   */
+  it("ne s'alarme pas d'une vieille limite dont le tarif n'a pas bougé", async () => {
+    await putFloor("amount", 150);
+    await ageFloor(CANONICAL, 900);
+
+    const drift = (await floorOf())?.drift;
+    expect(drift?.ageDays).toBe(900);
+    expect(drift?.stale).toBe(false);
+  });
+
+  /**
+   * CONFIRMER éteint le signal sans rien changer à la limite. Sans ce geste, la
+   * seule façon de faire taire le rappel serait de MODIFIER la décision — soit
+   * l'inverse du but.
+   */
+  it("confirmer rafraîchit la référence et la date, sans toucher à la valeur", async () => {
+    await putFloor("amount", 150);
+    await ageFloor(178, 240);
+
+    const response = await staff().post(`/admin/pricing/floors/product/${SKU}/confirm`);
+
+    expect(response.status).toBe(204);
+    const floor = await floorOf();
+    expect(floor?.value).toBe(150);
+    expect(floor?.drift?.stale).toBe(false);
+    expect(floor?.drift?.ageDays).toBe(0);
+  });
+
+  it("refuse de confirmer une limite qui n'existe pas", async () => {
+    expect((await staff().post(`/admin/pricing/floors/product/${SKU}/confirm`)).status).toBe(404);
+  });
+});

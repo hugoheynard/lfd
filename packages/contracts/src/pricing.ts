@@ -169,6 +169,28 @@ export interface PriceRuleView {
 }
 
 /**
+ * **L'écart entre l'intention et le tarif d'aujourd'hui.**
+ *
+ * Une limite est une décision, et une décision date : le beurre prend 30 %, la
+ * limite reste où elle était. Ce bloc ne calcule aucune marge — il compare le
+ * tarif représentatif d'aujourd'hui à celui du jour où la limite a été posée.
+ *
+ * `null` sur une limite en **fraction** : « jamais sous 50 % du tarif » suit le
+ * tarif par construction, elle ne peut pas dériver. Et `null` aussi quand aucune
+ * référence n'a été enregistrée — annoncer « 0 % d'écart » ferait passer une
+ * absence de mesure pour une confirmation.
+ */
+export interface FloorDriftView {
+  readonly referenceCanonicalCents: number;
+  readonly currentCanonicalCents: number;
+  /** L'écart **signé**, en points de base (`1200` = +12 %). */
+  readonly driftBp: number;
+  readonly ageDays: number;
+  /** L'écart justifie-t-il de rouvrir la décision ? */
+  readonly stale: boolean;
+}
+
+/**
  * Un plancher tel que l'écran le lit — le **mur**, et la **porte** s'il y en a
  * une.
  *
@@ -181,6 +203,8 @@ export interface PriceFloorView {
   readonly mode: PriceMode;
   readonly value: number;
   readonly dynamic: DynamicFloorPayload | null;
+  /** L'intention a-t-elle vieilli ? Cf. {@link FloorDriftView}. */
+  readonly drift: FloorDriftView | null;
   readonly createdBy: string;
   readonly updatedAt: string;
 }

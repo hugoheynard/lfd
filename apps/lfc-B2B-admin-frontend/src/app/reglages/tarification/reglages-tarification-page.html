@@ -94,6 +94,7 @@
                     class="node node-guard"
                     [class.is-active]="item.floored"
                     [class.is-inherited]="isInherited(item)"
+                    [class.is-stale]="item.effectiveFloor.drift?.stale === true"
                     [attr.data-scope]="scopeKey({ type: 'product', id: item.sku })"
                     (click)="editItemFloor(item)"
                   >
@@ -102,6 +103,10 @@
                       {{ isInherited(item) ? 'héritée' : 'propre'
                       }}{{ item.floored ? ' · a relevé' : '' }}
                     </span>
+                    @if (item.effectiveFloor.drift?.stale) {
+                      <!-- L'intention a vieilli : le tarif a bougé sous elle. -->
+                      <span class="guard-stale">à confirmer</span>
+                    }
                   </button>
                 } @else {
                   <button

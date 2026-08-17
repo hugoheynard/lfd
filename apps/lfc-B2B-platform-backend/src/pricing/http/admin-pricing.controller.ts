@@ -22,6 +22,7 @@ import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import {
+  ConfirmPriceFloorCommand,
   CreatePriceRuleCommand,
   RemovePriceFloorCommand,
   RemovePriceRuleCommand,
@@ -89,6 +90,36 @@ export class AdminPricingController {
   ): Promise<void> {
     await this.commands.execute<SetPriceFloorCommand, void>(
       new SetPriceFloorCommand(toScope(payload.scope), toPolicy(payload), staffSub),
+    );
+  }
+
+  /**
+   * **Confirmer** une limite sans la changer : l'intention est maintenue, sa
+   * référence et sa date repartent d'aujourd'hui.
+   *
+   * `POST` et non `PUT` : ce n'est pas une écriture idempotente de valeur, c'est
+   * un acte daté — « j'ai regardé l'écart, et je maintiens ». Le rejouer
+   * n'écrase rien, il redate.
+   */
+  @Post("floors/global/confirm")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async confirmGlobalFloor(@StaffSub() staffSub: string): Promise<void> {
+    await this.confirmFloorOn({ type: "global", id: null }, staffSub);
+  }
+
+  @Post("floors/:scopeType/:scopeId/confirm")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async confirmFloor(
+    @Param("scopeType") scopeType: string,
+    @Param("scopeId") scopeId: string,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
+    await this.confirmFloorOn({ type: parseScopeType(scopeType), id: scopeId }, staffSub);
+  }
+
+  private async confirmFloorOn(scope: PriceScopePayload, staffSub: string): Promise<void> {
+    await this.commands.execute<ConfirmPriceFloorCommand, void>(
+      new ConfirmPriceFloorCommand(toScope(scope), staffSub),
     );
   }
 

@@ -17,6 +17,41 @@
     </p>
   }
 
+  @if (drift(); as ecart) {
+    <!--
+      Une limite est une intention, et une intention date. Le bloc ne parle que
+      quand il a quelque chose à dire : une limite en fraction suit le tarif, et
+      une limite dont le tarif n'a pas bougé reste juste.
+    -->
+    <div class="drift" [class.is-stale]="ecart.stale">
+      <p class="drift-head">
+        Posée il y a <strong>{{ ageLabel() }}</strong> · le tarif a bougé de
+        <strong>{{ driftLabel() }}</strong> depuis
+      </p>
+      <p class="drift-detail">
+        {{ euros(ecart.referenceCanonicalCents) }} à l'époque,
+        {{ euros(ecart.currentCanonicalCents) }}
+        aujourd'hui.
+      </p>
+      @if (ecart.stale) {
+        <p class="drift-ask">
+          Cette limite reflète-t-elle encore ce que vous voulez ? Ajustez-la, ou
+          <strong>confirmez-la</strong> — elle repartira pour un tour.
+        </p>
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          [disabled]="saving()"
+          (click)="confirm()"
+        >
+          Confirmer sans changer
+        </button>
+      }
+    </div>
+  }
+
   <div class="mode">
     <span class="mode-label">Exprimée en</span>
     <div class="mode-choices" role="group" aria-label="Unité de la limite">

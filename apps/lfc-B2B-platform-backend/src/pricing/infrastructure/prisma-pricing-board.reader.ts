@@ -14,6 +14,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { BoardElasticityService } from "../application/board-elasticity.service.js";
 import { ProductCatalogReader } from "../../orders/domain/ports/product-catalog.reader.js";
+import { referenceCanonicalFor } from "../application/floor-reference.js";
 import { pricingContextFor } from "../application/pricing-context.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
 import { decideFloor } from "../domain/floor-policy.js";
@@ -69,6 +70,10 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
   }
 
   async read(): Promise<PricingBoardView> {
+    // Pris avant toute lecture : l'âge d'une limite et la résolution des prix
+    // doivent parler du même instant.
+    const at = new Date();
+
     const [ruleRows, floorRows] = await Promise.all([
       this.prisma.priceRule.findMany({ orderBy: [{ stage: "asc" }, { validFrom: "asc" }] }),
       this.prisma.priceFloor.findMany(),
@@ -77,15 +82,16 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       rule: ruleFromRow(row),
       view: ruleViewFromRow(row),
     }));
-    const floors: LoadedFloor[] = floorRows.map((row) => ({
-      floor: floorFromRow(row),
-      view: floorViewFromRow(row),
-    }));
-
-    // L'instant est pris UNE fois pour tout l'écran : deux lignes résolues à
-    // quelques millisecondes d'écart pourraient sinon tomber de part et d'autre
-    // du basculement d'une promotion, et l'écran se contredirait lui-même.
-    const at = new Date();
+    // Le tarif représentatif d'AUJOURD'HUI, par portée : c'est lui qui, comparé
+    // à celui figé à la pose, dit si l'intention a vieilli.
+    const articles = this.catalog.all();
+    const floors: LoadedFloor[] = floorRows.map((row) => {
+      const floor = floorFromRow(row);
+      return {
+        floor,
+        view: floorViewFromRow(row, referenceCanonicalFor(floor.scope, articles), at),
+      };
+    });
 
     const board: PricingBoardView = {
       categories: CATALOG_CATEGORY_ORDER.map((category) =>

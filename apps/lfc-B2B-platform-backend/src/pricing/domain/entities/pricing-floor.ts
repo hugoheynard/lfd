@@ -14,6 +14,12 @@ export interface PricingFloorState {
   readonly scope: PriceScope;
   readonly policy: PriceFloorPolicy;
   readonly createdBy: string;
+  /**
+   * Le tarif représentatif des articles visés, figé à la pose. `null` quand
+   * l'appelant ne sait pas le calculer — le signal de dérive se taira, plutôt
+   * que d'annoncer un écart nul qu'il n'a pas mesuré.
+   */
+  readonly referenceCanonicalCents: number | null;
 }
 
 /** 100 % du prix canonique, en points de base. */
@@ -45,7 +51,12 @@ export class PricingFloor {
    * @throws {InvalidAlterationError} grandeur nulle ou négative.
    * @throws {FloorAboveCanonicalError} fraction supérieure à 100 % du canonique.
    */
-  static pose(scope: PriceScope, policy: PriceFloorPolicy, createdBy: string): PricingFloor {
+  static pose(
+    scope: PriceScope,
+    policy: PriceFloorPolicy,
+    createdBy: string,
+    referenceCanonicalCents: number | null = null,
+  ): PricingFloor {
     if ((scope.type === "global") !== (scope.id === null)) {
       throw new ScopeIdMismatchError("portée", scope.type === "global", scope.id);
     }
@@ -69,7 +80,13 @@ export class PricingFloor {
       }
     }
 
-    return new PricingFloor({ id: floorIdForScope(scope), scope, policy, createdBy });
+    return new PricingFloor({
+      id: floorIdForScope(scope),
+      scope,
+      policy,
+      createdBy,
+      referenceCanonicalCents,
+    });
   }
 
   static reconstitute(state: PricingFloorState): PricingFloor {

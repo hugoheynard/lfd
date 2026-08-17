@@ -1,6 +1,7 @@
 import type { PriceFloorView, PriceRuleView } from "@lfd/contracts";
 
 import { CorruptedPriceFloorError, CorruptedPriceRuleError } from "../domain/pricing-errors.js";
+import { floorDrift } from "../domain/floor-drift.js";
 import type { DynamicFloor } from "../domain/floor-policy.js";
 import {
   PRICE_STAGES,
@@ -55,6 +56,7 @@ export interface FloorRow {
   readonly dynamicValue: number | null;
   readonly unlockMinQuantity: number | null;
   readonly unlockMinVolumeRatioBp: number | null;
+  readonly referenceCanonicalCents: number | null;
   readonly createdBy: string;
   readonly updatedAt: Date;
 }
@@ -162,7 +164,16 @@ function dynamicOf(row: FloorRow): DynamicFloor | null {
   };
 }
 
-export function floorViewFromRow(row: FloorRow): PriceFloorView {
+/**
+ * @param currentCanonicalCents le tarif représentatif **d'aujourd'hui** pour la
+ *   portée visée, ou `null` si l'appelant ne sait pas le calculer. Passé plutôt
+ *   que lu ici : ce fichier convertit des lignes, il n'interroge pas le catalogue.
+ */
+export function floorViewFromRow(
+  row: FloorRow,
+  currentCanonicalCents: number | null = null,
+  now: Date = new Date(),
+): PriceFloorView {
   const scoped = floorFromRow(row);
   const dynamic = scoped.policy.dynamic;
   return {
@@ -178,6 +189,13 @@ export function floorViewFromRow(row: FloorRow): PriceFloorView {
             value: dynamic.floor.mode === "percent" ? dynamic.floor.bp : dynamic.floor.cents,
             unlock: dynamic.unlock,
           },
+    drift: floorDrift(
+      scoped.policy.hard,
+      row.referenceCanonicalCents,
+      currentCanonicalCents,
+      row.updatedAt,
+      now,
+    ),
     createdBy: row.createdBy,
     updatedAt: row.updatedAt.toISOString(),
   };

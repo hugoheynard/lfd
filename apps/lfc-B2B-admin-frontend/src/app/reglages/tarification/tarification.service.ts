@@ -49,13 +49,38 @@ export class TarificationService {
   }
 
   /**
+   * **Confirme** une limite sans la changer : l'intention est maintenue, sa
+   * référence et sa date repartent d'aujourd'hui.
+   *
+   * Un geste à part, pas un `PUT` déguisé. Sans lui, la seule façon d'éteindre
+   * le signal de dérive serait de MODIFIER la limite — donc de changer une
+   * décision pour faire taire un rappel.
+   */
+  async confirmFloor(scope: PriceScopePayload): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${B2B_API_BASE}/admin/pricing/floors/${floorPath(scope)}/confirm`, {}),
+    );
+  }
+
+  /**
    * Retire la limite d'une portée.
    *
    * La portée globale a son propre chemin : elle ne désigne aucune cible, donc
    * le sien n'en porte pas — un segment vide ne s'apparie pas côté serveur.
    */
   async removeFloor(scope: PriceScopePayload): Promise<void> {
-    const path = scope.id === null ? 'global' : `${scope.type}/${encodeURIComponent(scope.id)}`;
-    await firstValueFrom(this.http.delete<void>(`${B2B_API_BASE}/admin/pricing/floors/${path}`));
+    await firstValueFrom(
+      this.http.delete<void>(`${B2B_API_BASE}/admin/pricing/floors/${floorPath(scope)}`),
+    );
   }
+}
+
+/**
+ * Le chemin d'une limite.
+ *
+ * La portée globale ne désigne aucune cible, donc le sien n'en porte pas — un
+ * segment vide ne s'apparie pas côté serveur.
+ */
+function floorPath(scope: PriceScopePayload): string {
+  return scope.id === null ? 'global' : `${scope.type}/${encodeURIComponent(scope.id)}`;
 }

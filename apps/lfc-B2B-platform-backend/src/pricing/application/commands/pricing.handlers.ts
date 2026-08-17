@@ -6,7 +6,10 @@ import { PricingRule } from "../../domain/entities/pricing-rule.js";
 import { PricingFloorRepository } from "../../domain/ports/pricing-floor.repository.js";
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import { PriceRuleNotFoundError, PriceFloorNotFoundError } from "../../domain/pricing-errors.js";
+import { ProductCatalogReader } from "../../../orders/domain/ports/product-catalog.reader.js";
+import { referenceCanonicalFor } from "../floor-reference.js";
 import {
+  ConfirmPriceFloorCommand,
   CreatePriceRuleCommand,
   RemovePriceFloorCommand,
   RemovePriceRuleCommand,
@@ -54,10 +57,56 @@ export class RemovePriceRuleHandler implements ICommandHandler<RemovePriceRuleCo
 
 @CommandHandler(SetPriceFloorCommand)
 export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorCommand, void> {
-  constructor(private readonly floors: PricingFloorRepository) {}
+  constructor(
+    private readonly floors: PricingFloorRepository,
+    private readonly catalog: ProductCatalogReader,
+  ) {}
 
+  /**
+   * Poser une limite fige le **tarif représentatif** des articles visées. C'est
+   * lui qui permettra, six mois plus tard, de dire que l'intention a vieilli —
+   * sans référence, le tarif d'aujourd'hui ne se compare à rien.
+   */
   async execute(command: SetPriceFloorCommand): Promise<void> {
-    await this.floors.pose(PricingFloor.pose(command.scope, command.policy, command.staffSub));
+    await this.floors.pose(
+      PricingFloor.pose(
+        command.scope,
+        command.policy,
+        command.staffSub,
+        referenceCanonicalFor(command.scope, this.catalog.all()),
+      ),
+    );
+  }
+}
+
+@CommandHandler(ConfirmPriceFloorCommand)
+export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFloorCommand, void> {
+  constructor(
+    private readonly floors: PricingFloorRepository,
+    private readonly catalog: ProductCatalogReader,
+  ) {}
+
+  /**
+   * **Confirmer** : la limite ne change pas, sa référence et sa date si.
+   *
+   * C'est ce qui éteint le signal de dérive. Sans ce geste, la seule façon de le
+   * faire taire serait de MODIFIER la limite — donc de changer une décision pour
+   * se débarrasser d'un rappel, ce qui est l'inverse du but.
+   */
+  async execute(command: ConfirmPriceFloorCommand): Promise<void> {
+    const existing = await this.floors.load(floorIdForScope(command.scope));
+    if (existing === null) {
+      throw new PriceFloorNotFoundError(command.scope.type, command.scope.id);
+    }
+    const state = existing.toPersistence();
+    await this.floors.pose(
+      PricingFloor.pose(
+        state.scope,
+        state.policy,
+        command.staffSub,
+        referenceCanonicalFor(state.scope, this.catalog.all()),
+      ),
+    );
   }
 }
 

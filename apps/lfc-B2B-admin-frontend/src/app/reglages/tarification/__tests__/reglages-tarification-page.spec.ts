@@ -68,6 +68,8 @@ function floor(overrides: Partial<PriceFloorView> = {}): PriceFloorView {
     value: 150,
     // Le mur seul : la porte n'est pas ce que ces cas mesurent.
     dynamic: null,
+    // Le tarif n'a pas bougé sous cette limite.
+    drift: null,
     createdBy: 'staff',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,

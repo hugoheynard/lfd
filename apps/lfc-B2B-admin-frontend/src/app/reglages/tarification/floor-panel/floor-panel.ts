@@ -66,8 +66,31 @@ export class FloorPanel {
   protected readonly saving = signal(false);
   private readonly seeded = signal(false);
 
+  /** Centimes → euros, exposé au gabarit. */
+  protected readonly euros = formatEuros;
+
   protected readonly target = computed(() => this.data()?.target ?? '');
   protected readonly current = computed(() => this.data()?.current ?? null);
+
+  /** L'écart entre l'intention et le tarif du jour, s'il y a lieu de le montrer. */
+  protected readonly drift = computed(() => this.current()?.drift ?? null);
+
+  /** « +12,4 % » — signé, parce qu'une baisse de tarif compte aussi. */
+  protected readonly driftLabel = computed(() => {
+    const drift = this.drift();
+    if (drift === null) {
+      return '';
+    }
+    const percent = (drift.driftBp / 100).toFixed(1).replace('.', ',');
+    return drift.driftBp > 0 ? `+${percent} %` : `${percent} %`;
+  });
+
+  /** L'âge en mois pleins : « il y a 8 mois » se lit mieux que « 240 jours ». */
+  protected readonly ageLabel = computed(() => {
+    const days = this.drift()?.ageDays ?? 0;
+    const months = Math.floor(days / 30);
+    return months >= 1 ? `${String(months)} mois` : `${String(days)} jours`;
+  });
 
   /**
    * La limite dont on hérite, **quand ce n'est pas la sienne**. C'est celle-là
@@ -163,6 +186,31 @@ export class FloorPanel {
       this.ref.close(true);
     } catch (error) {
       this.notify.error(error, "La limite n'a pas pu être posée.");
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  /**
+   * **Maintenir** l'intention : la limite ne change pas, sa référence et sa date
+   * repartent d'aujourd'hui.
+   *
+   * C'est ce qui éteint le signal. L'alternative — modifier la limite pour faire
+   * taire le rappel — reviendrait à changer une décision pour de mauvaises
+   * raisons.
+   */
+  protected async confirm(): Promise<void> {
+    const scope = this.data()?.scope;
+    if (scope === undefined || this.saving()) {
+      return;
+    }
+    this.saving.set(true);
+    try {
+      await this.tarification.confirmFloor(scope);
+      this.notify.success('Limite confirmée — elle repart pour un tour.');
+      this.ref.close(true);
+    } catch (error) {
+      this.notify.error(error, "La limite n'a pas pu être confirmée.");
     } finally {
       this.saving.set(false);
     }
