@@ -54,34 +54,49 @@
 
   <div class="mode">
     <span class="mode-label">Exprimée en</span>
-    <div class="mode-choices" role="group" aria-label="Unité de la limite">
-      <button
-        type="button"
-        class="mode-choice"
-        [class.is-on]="mode() === 'amount'"
-        [attr.aria-pressed]="mode() === 'amount'"
-        (click)="setMode('amount')"
-      >
-        € — un montant
-      </button>
-      <button
-        type="button"
-        class="mode-choice"
-        [class.is-on]="mode() === 'percent'"
-        [attr.aria-pressed]="mode() === 'percent'"
-        (click)="setMode('percent')"
-      >
-        % — du tarif
-      </button>
-    </div>
-    <p class="mode-hint">
-      @if (mode() === 'percent') {
-        Une fraction <strong>suit</strong> le tarif : si le PIM augmente, la limite monte avec lui.
-      } @else {
-        Un montant est une limite <strong>absolue</strong> — pour un coût fixe connu, qu'un
-        pourcentage n'exprimerait pas.
-      }
-    </p>
+    @if (unitScoped()) {
+      <div class="mode-choices" role="group" aria-label="Unité de la limite">
+        <button
+          type="button"
+          class="mode-choice"
+          [class.is-on]="mode() === 'amount'"
+          [attr.aria-pressed]="mode() === 'amount'"
+          (click)="setMode('amount')"
+        >
+          € — un montant
+        </button>
+        <button
+          type="button"
+          class="mode-choice"
+          [class.is-on]="mode() === 'percent'"
+          [attr.aria-pressed]="mode() === 'percent'"
+          (click)="setMode('percent')"
+        >
+          % — du tarif
+        </button>
+      </div>
+      <p class="mode-hint">
+        @if (mode() === 'percent') {
+          Une fraction <strong>suit</strong> le tarif : si le PIM augmente, la limite monte avec
+          lui.
+        } @else {
+          Un montant est une limite <strong>absolue</strong> — pour un coût fixe connu, qu'un
+          pourcentage n'exprimerait pas.
+        }
+      </p>
+    } @else {
+      <!--
+        Pas de choix ici, et la raison est écrite : un montant unique sur une
+        portée large laisserait passer les articles chers et relèverait les
+        articles bon marché. Offrir le choix pour le refuser ensuite serait la
+        façon la plus sûre de faire saisir deux fois la même chose.
+      -->
+      <p class="mode-hint">
+        <strong>En pourcentage du tarif</strong>, forcément : au-delà d'un article, un montant
+        unique relèverait les prix bas et laisserait passer les prix élevés. Une fraction, elle,
+        suit chaque article à son échelle.
+      </p>
+    }
   </div>
 
   <fold-input

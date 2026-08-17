@@ -41,7 +41,6 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
   margin: 0;
   padding-left: var(--fold-space-3, 0.75rem);
   border-left: 2px solid var(--fold-color-border);
-  font-size: var(--fold-text-sm, 0.875rem);
   line-height: 1.5;
   color: var(--fold-color-text-muted);
 }
@@ -67,11 +66,39 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
 
 // L'en-tête du rayon reste visible pendant qu'on descend ses articles : sans
 // ça, on perd la famille dont on lit la limite.
+// La bande du catalogue se distingue de ses rayons : c'est leur SOURCE, pas un
+// rayon de plus. Une teinte de fond suffit — un cadre plus lourd l'aurait fait
+// passer pour une alerte.
+.shelf-global {
+  background: var(--fold-color-surface-subtle, var(--fold-color-surface));
+}
+.global-rules {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-3, 0.75rem);
+  padding: 0 var(--fold-space-1, 0.25rem) var(--fold-space-2, 0.5rem);
+}
+
 .shelf-head {
   position: sticky;
   top: 0;
   z-index: 1;
   background: var(--fold-color-surface);
+}
+
+// La bande du catalogue se distingue de ses rayons : c'est leur SOURCE, pas un
+// rayon de plus. Une teinte de fond suffit — un cadre plus lourd l'aurait fait
+// passer pour une alerte.
+.shelf-global {
+  background: var(--fold-color-surface-subtle, var(--fold-color-surface));
+}
+.global-rules {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-3, 0.75rem);
+  padding: 0 var(--fold-space-1, 0.25rem) var(--fold-space-2, 0.5rem);
 }
 
 .shelf-head {
@@ -261,10 +288,7 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
 }
 
 .article-meta,
-.guard-meta,
-.final-note,
-.rule-label,
-.rule-note {
+.guard-meta {
   font-size: var(--fold-text-xs, 0.75rem);
   color: var(--fold-color-text-muted);
   font-variant-numeric: tabular-nums;
@@ -348,64 +372,11 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
 .node-add-inline {
   min-height: 1.75rem;
   padding: 0.15rem;
-  border: 1px dashed var(--fold-color-border);
   border-radius: var(--fold-radius-sm, 0.375rem);
 }
 
 .node-add-tall {
   min-height: 100%;
-}
-
-.node-final {
-  align-items: flex-end;
-  gap: 0.05rem;
-  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
-
-  &.is-changed {
-    background: var(--fold-color-surface);
-    border-color: var(--fold-color-accent, var(--fold-color-border));
-  }
-
-  &.is-floored {
-    border-color: var(--fold-color-warning-border, currentcolor);
-    background: var(--fold-color-warning-surface, rgb(180 120 0 / 10%));
-  }
-}
-
-// Le tarif d'entrée, barré : l'écart a besoin d'un point de départ visible.
-.final-from {
-  font-size: var(--fold-text-xs, 0.75rem);
-  color: var(--fold-color-text-muted);
-  text-decoration: line-through;
-  font-variant-numeric: tabular-nums;
-}
-
-.final-price {
-  font-weight: 700;
-  font-size: 1.15rem;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
-}
-
-// L'écart, en une puce. C'est la seule chose qu'on ne peut pas lire en
-// comparant deux colonnes sur quatre-vingt-dix lignes.
-//
-// Baisse et hausse ne partagent pas la même couleur, mais gardent le même
-// SIGNE typographique explicite (− / +) : la couleur seule ne se lit ni en
-// daltonien, ni imprimé.
-.final-delta {
-  padding: 0.05rem 0.35rem;
-  border-radius: 999px;
-  background: var(--fold-color-success-surface, rgb(0 120 60 / 10%));
-  color: var(--fold-color-success-text, var(--fold-color-text));
-  font-size: var(--fold-text-xs, 0.75rem);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-
-  &.is-up {
-    background: var(--fold-color-warning-surface, rgb(180 120 0 / 10%));
-    color: var(--fold-color-warning-text, var(--fold-color-text));
-  }
 }
 
 // La marge négociable : les DEUX unités au même poids typographique. Mettre le

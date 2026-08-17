@@ -46,6 +46,54 @@
         <span class="legend-cell col-elastic">Effort de volume</span>
       </div>
 
+      <!--
+        **La bande du catalogue.** Ce qui vaut pour tout, posé AU-DESSUS des
+        rayons parce que c'est ce dont ils héritent : la limite dont chaque
+        famille part, et les altérations que rien de plus précis n'a évincées.
+        Sans elle, ces deux décisions existaient dans le modèle et n'étaient
+        visibles nulle part.
+      -->
+      <section class="shelf shelf-global">
+        <header class="shelf-head">
+          <h2 class="shelf-name">Tout le catalogue</h2>
+          <span class="shelf-vat">ce dont chaque famille hérite</span>
+          <span class="shelf-spacer"></span>
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            (click)="editGlobalFloor()"
+          >
+            {{
+              globalFloor() === null
+                ? 'Limite du catalogue'
+                : 'Limite : ' + floorLabel(globalFloor()!)
+            }}
+          </button>
+        </header>
+
+        <div class="global-rules">
+          @for (rule of globalRules(); track rule.id) {
+            <app-rule-chip
+              [rule]="rule"
+              [showLabel]="true"
+              (toggled)="toggleRule($event)"
+              (journalRequested)="openRuleJournal($event)"
+              (archiveRequested)="removeRule($event)"
+            />
+          }
+          <button
+            type="button"
+            class="node-add node-add-inline"
+            aria-label="Ajouter une altération sur tout le catalogue"
+            (click)="addGlobalRule()"
+          >
+            +
+          </button>
+        </div>
+      </section>
+
       @for (category of categories(); track category.id) {
         <section class="shelf">
           <header class="shelf-head">
@@ -192,28 +240,7 @@
 
               <!-- Colonne 5 — ce qui sort de la chaîne. -->
               <div class="cell col-final" [style.gridRow]="row + 1">
-                <div
-                  class="node node-final"
-                  [class.is-changed]="item.finalCents !== item.canonicalCents"
-                  [class.is-floored]="item.floored"
-                >
-                  @if (deltaLabel(item); as delta) {
-                    <!-- Le tarif d'entrée, barré : sans lui, l'écart n'a pas de
-                         point de départ visible. -->
-                    <span class="final-from">{{ euros(item.canonicalCents) }}</span>
-                  }
-                  <span class="final-price">{{ euros(item.finalCents) }}</span>
-                  @if (deltaLabel(item); as delta) {
-                    <!-- Ce qu'on ne peut PAS lire en comparant deux colonnes sur
-                         quatre-vingt-dix lignes : de combien le prix a bougé. -->
-                    <span class="final-delta" [class.is-up]="!isDiscount(item)">{{ delta }}</span>
-                  }
-                  @if (item.floored) {
-                    <span class="final-note">relevé au plancher</span>
-                  } @else if (item.steps.length > 0) {
-                    <span class="final-note">{{ item.steps.length }} étage(s)</span>
-                  }
-                </div>
+                <app-final-price [item]="item" />
               </div>
 
               <!-- Colonne 6 — ce qu'un commercial peut encore lâcher. Les DEUX

@@ -1,5 +1,6 @@
 import { PricingFloor, floorIdForScope } from "../pricing-floor.js";
 import {
+  AmountFloorOnBroadScopeError,
   DynamicFloorNotBelowHardError,
   FloorAboveCanonicalError,
   InvalidAlterationError,
@@ -37,7 +38,7 @@ describe("PricingFloor.pose", () => {
    */
   it("deux limites sur la même portée portent le MÊME identifiant", () => {
     const scope = { type: "category", id: "viennoiserie" } as const;
-    const first = PricingFloor.pose(scope, wall({ mode: "amount", cents: 100 }), "a");
+    const first = PricingFloor.pose(scope, wall({ mode: "percent", bp: 6_000 }), "a");
     const second = PricingFloor.pose(scope, wall({ mode: "percent", bp: 4000 }), "b");
 
     expect(first.id).toBe(second.id);
@@ -82,14 +83,20 @@ describe("PricingFloor.pose", () => {
 
   it("refuse une grandeur nulle", () => {
     expect(() =>
-      PricingFloor.pose({ type: "global", id: null }, wall({ mode: "amount", cents: 0 }), "a"),
+      PricingFloor.pose(
+        { type: "product", id: "VIE-001" },
+        wall({ mode: "amount", cents: 0 }),
+        "a",
+      ),
     ).toThrow(InvalidAlterationError);
   });
 });
 
 describe("la porte", () => {
   const HARD = { mode: "amount", cents: 150 } as const;
-  const scope = { type: "global", id: null } as const;
+  // Une porte en euros ne se pose que sur un ARTICLE : au-delà, le montant ne
+  // veut rien dire. Cf. le bloc « une limite en euros » plus bas.
+  const scope = { type: "product", id: "VIE-001" } as const;
 
   it("s'ouvre sur une quantité, sur un volume, ou sur les deux", () => {
     expect(() =>
@@ -163,6 +170,68 @@ describe("la porte", () => {
         },
         "a",
       ),
+    ).not.toThrow();
+  });
+});
+
+/**
+ * **Une limite en euros n'a de sens que sur une unité.**
+ *
+ * « Jamais sous 1,50 € » sur tout le catalogue laisserait passer une pièce
+ * montée à 1,50 € et relèverait un croissant qui se vend 2,00 € : le même mur,
+ * deux effets opposés. Une fraction, elle, suit l'article.
+ */
+describe("une limite en euros", () => {
+  const AMOUNT = { mode: "amount", cents: 150 } as const;
+
+  it("se pose sur un article", () => {
+    expect(() =>
+      PricingFloor.pose({ type: "product", id: "VIE-001" }, wall(AMOUNT), "a"),
+    ).not.toThrow();
+  });
+
+  it("se pose sur une déclinaison", () => {
+    expect(() =>
+      PricingFloor.pose({ type: "variant", id: "VIE-001-1" }, wall(AMOUNT), "a"),
+    ).not.toThrow();
+  });
+
+  it("est refusée sur une famille", () => {
+    expect(() =>
+      PricingFloor.pose({ type: "category", id: "viennoiserie" }, wall(AMOUNT), "a"),
+    ).toThrow(AmountFloorOnBroadScopeError);
+  });
+
+  it("est refusée sur tout le catalogue", () => {
+    expect(() => PricingFloor.pose({ type: "global", id: null }, wall(AMOUNT), "a")).toThrow(
+      AmountFloorOnBroadScopeError,
+    );
+  });
+
+  /** Le refus vaut aussi pour la PORTE : elle est une limite, comme le mur. */
+  it("est refusée sur la porte d'une portée large", () => {
+    expect(() =>
+      PricingFloor.pose(
+        { type: "category", id: "viennoiserie" },
+        {
+          hard: { mode: "percent", bp: 6_000 },
+          dynamic: {
+            floor: { mode: "amount", cents: 120 },
+            unlock: { minQuantity: 100, minVolumeRatioBp: null },
+          },
+        },
+        "a",
+      ),
+    ).toThrow(AmountFloorOnBroadScopeError);
+  });
+
+  /** Une fraction, elle, suit l'article : elle passe partout. */
+  it("laisse passer une fraction sur toutes les portées", () => {
+    const percent = wall({ mode: "percent", bp: 6_000 });
+
+    expect(() => PricingFloor.pose({ type: "global", id: null }, percent, "a")).not.toThrow();
+    expect(() =>
+      PricingFloor.pose({ type: "category", id: "viennoiserie" }, percent, "a"),
     ).not.toThrow();
   });
 });

@@ -1,4 +1,5 @@
 import {
+  AmountFloorOnBroadScopeError,
   DynamicFloorNotBelowHardError,
   FloorAboveCanonicalError,
   InvalidAlterationError,
@@ -50,6 +51,7 @@ export class PricingFloor {
    * @throws {ScopeIdMismatchError} portée dont l'identifiant contredit le type.
    * @throws {InvalidAlterationError} grandeur nulle ou négative.
    * @throws {FloorAboveCanonicalError} fraction supérieure à 100 % du canonique.
+   * @throws {AmountFloorOnBroadScopeError} limite en euros au-delà d'un article.
    */
   static pose(
     scope: PriceScope,
@@ -62,9 +64,11 @@ export class PricingFloor {
     }
 
     assertSaneFloor(policy.hard);
+    assertUnitScoped(scope, policy.hard);
     const dynamic = policy.dynamic;
     if (dynamic !== null) {
       assertSaneFloor(dynamic.floor);
+      assertUnitScoped(scope, dynamic.floor);
 
       // Une porte sans clé serait un mur plus bas : le plancher dur ne servirait
       // plus à rien, et personne ne verrait qu'il a été contourné.
@@ -104,6 +108,25 @@ export class PricingFloor {
 
   toPersistence(): PricingFloorState {
     return this.state;
+  }
+}
+
+/**
+ * **Une limite en euros n'a de sens que sur une unité.**
+ *
+ * « Jamais sous 1,50 € » sur tout le catalogue laisserait passer une pièce
+ * montée à 1,50 € et relèverait un croissant qui se vend 2,00 € : le même mur,
+ * deux effets opposés. Une fraction, elle, suit l'article — « jamais sous 60 %
+ * du tarif » protège les deux à leur échelle.
+ *
+ * Refusé ici, dans l'agrégat, et non dans le schéma de fil : c'est une règle du
+ * modèle, pas une contrainte de saisie, et l'import comme le seed doivent la
+ * rencontrer aussi.
+ */
+function assertUnitScoped(scope: PriceScope, floor: PriceFloor): void {
+  const isUnit = scope.type === "product" || scope.type === "variant";
+  if (floor.mode === "amount" && !isUnit) {
+    throw new AmountFloorOnBroadScopeError(scope.type);
   }
 }
 

@@ -35,7 +35,11 @@ const DATA: FloorPanelData = {
   canonicalCents: 200,
 };
 
-function mount(opened: string[], calls: string[]): ComponentFixture<FloorPanel> {
+function mount(
+  opened: string[],
+  calls: string[],
+  data: FloorPanelData = DATA,
+): ComponentFixture<FloorPanel> {
   const service: Pick<TarificationService, 'setFloor' | 'confirmFloor'> = {
     setFloor: () => {
       calls.push('setFloor');
@@ -64,7 +68,7 @@ function mount(opened: string[], calls: string[]): ComponentFixture<FloorPanel> 
     ],
   });
   const fixture = TestBed.createComponent(FloorPanel);
-  fixture.componentRef.setInput('data', DATA);
+  fixture.componentRef.setInput('data', data);
   fixture.detectChanges();
   return fixture;
 }
@@ -90,5 +94,56 @@ describe('retirer une limite', () => {
     mount(opened, []).componentInstance['openJournal']();
 
     expect(opened).toEqual(['JournalPanel']);
+  });
+});
+
+/**
+ * **Une limite en euros n'a de sens que sur une unité.**
+ *
+ * Sur une famille ou sur tout le catalogue, un montant unique relèverait les
+ * prix bas et laisserait passer les prix élevés — le même mur, deux effets
+ * opposés. L'écran ne propose donc pas le choix, plutôt que de l'offrir et de le
+ * refuser ensuite : c'est la façon la plus sûre de faire saisir deux fois la
+ * même chose.
+ */
+describe("l'unité de la limite", () => {
+  const onScope = (scope: FloorPanelData['scope']): FloorPanelData => ({
+    ...DATA,
+    scope,
+    current: null,
+  });
+
+  it('laisse choisir sur un article', () => {
+    const panel = mount([], [], onScope({ type: 'product', id: 'VIE-001' })).componentInstance;
+
+    expect(panel['unitScoped']()).toBe(true);
+  });
+
+  it("s'ouvre en pourcentage sur une famille, et refuse d'en changer", () => {
+    const panel = mount(
+      [],
+      [],
+      onScope({ type: 'category', id: 'viennoiserie' }),
+    ).componentInstance;
+
+    expect(panel['mode']()).toBe('percent');
+    panel['setMode']('amount');
+    expect(panel['mode']()).toBe('percent');
+  });
+
+  it('fait de même sur tout le catalogue', () => {
+    const panel = mount([], [], onScope({ type: 'global', id: null })).componentInstance;
+
+    expect(panel['unitScoped']()).toBe(false);
+    expect(panel['mode']()).toBe('percent');
+  });
+
+  /** L'écran l'ÉCRIT, plutôt que de laisser deviner pourquoi le choix a disparu. */
+  it('écrit pourquoi le choix ne se pose pas', () => {
+    const text = String(
+      mount([], [], onScope({ type: 'global', id: null })).nativeElement.textContent ?? '',
+    );
+
+    expect(text).toContain('En pourcentage du tarif');
   });
 });

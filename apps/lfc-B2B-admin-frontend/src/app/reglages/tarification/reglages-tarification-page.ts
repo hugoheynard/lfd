@@ -10,7 +10,7 @@ import type {
 } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
 
-import { deltaLabel, isDiscount, roomEuros, roomPercent, ruleSentence } from './pricing-format';
+import { roomEuros, roomPercent, ruleSentence } from './pricing-format';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -20,6 +20,7 @@ import {
 
 import { ArchivePanel, type ArchivePanelData } from './archive-panel/archive-panel';
 import { ArchivesPanel } from './archives-panel/archives-panel';
+import { FinalPrice } from './final-price/final-price';
 import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
 import { GridSkeleton } from './grid-skeleton/grid-skeleton';
 import { RuleChip } from './rule-chip/rule-chip';
@@ -76,6 +77,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldEmptyStateComponent,
+    FinalPrice,
     GridSkeleton,
     RuleChip,
     TarificationSummaryBar,
@@ -95,8 +97,6 @@ export class ReglagesTarificationPage {
 
   // La mise en forme vit à côté, en fonctions pures : le composant expose, il ne
   // calcule pas.
-  protected readonly deltaLabel = deltaLabel;
-  protected readonly isDiscount = isDiscount;
 
   /** Les deux unités de la marge, prises sur la vue plutôt que sur deux nombres. */
   protected roomEuros(room: NegotiationRoom): string {
@@ -179,6 +179,36 @@ export class ReglagesTarificationPage {
 
   protected isSuperseded(rule: PriceRuleView, category: PricingCategoryView): boolean {
     return category.items.some((item) => item.supersededRuleIds.includes(rule.id));
+  }
+
+  /** La limite et les règles qui valent pour **tout le catalogue**. */
+  protected readonly globalFloor = computed(() => this.board()?.globalFloor ?? null);
+  protected readonly globalRules = computed(() => this.board()?.globalRules ?? []);
+
+  /**
+   * **La limite du catalogue** — celle dont toutes les autres héritent.
+   *
+   * Elle n'a pas de prix canonique à montrer : elle ne vise aucun article en
+   * particulier, et c'est exactement pourquoi elle ne peut s'exprimer qu'en
+   * pourcentage.
+   */
+  protected editGlobalFloor(): void {
+    void this.openFloor({
+      scope: { type: 'global', id: null },
+      target: 'tout le catalogue',
+      current: this.globalFloor(),
+      inherited: null,
+      canonicalCents: null,
+    });
+  }
+
+  /**
+   * **Une altération sur tout le catalogue** : la hausse de saison, le geste de
+   * fin d'année. Elle s'applique à chaque article que rien de plus précis ne
+   * vise — c'est l'étage le plus large de la chaîne.
+   */
+  protected addGlobalRule(): void {
+    void this.openRule({ scope: { type: 'global', id: null }, target: 'tout le catalogue' });
   }
 
   protected addCategoryRule(category: PricingCategoryView): void {

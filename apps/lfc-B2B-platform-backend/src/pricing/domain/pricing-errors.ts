@@ -361,3 +361,24 @@ export class UnknownPricingSubjectError extends DomainError {
     super("pricing.subject.unknown", `Sujet de journal inconnu « ${value} ».`);
   }
 }
+
+/**
+ * Une limite **en euros** posée sur une portée qui n'est pas une unité.
+ *
+ * « Jamais sous 1,50 € » ne veut rien dire sur tout le catalogue, ni sur une
+ * famille : le même mur laisserait passer une pièce montée à 1,50 € et
+ * relèverait un croissant qui se vend 2,00 €. Le montant ne prend son sens qu'une
+ * fois qu'on sait DE QUEL article on parle.
+ *
+ * Une **fraction**, elle, suit l'article : « jamais sous 60 % du tarif » protège
+ * la pièce montée et le croissant de la même façon, chacun à son échelle. C'est
+ * la seule forme qu'une portée large peut porter honnêtement.
+ */
+export class AmountFloorOnBroadScopeError extends DomainError {
+  constructor(readonly scopeType: string) {
+    super(
+      "pricing.floor.amount_on_broad_scope",
+      "Une limite en euros ne veut rien dire au-delà d'un article : le même montant relèverait les uns et laisserait passer les autres. Sur tout le catalogue ou sur une famille, la limite s'exprime en pourcentage du tarif.",
+    );
+  }
+}

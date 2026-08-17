@@ -302,4 +302,26 @@ describe('suspendre et reprendre', () => {
 
     expect(opened).toContain('JournalPanel');
   });
+
+  /**
+   * La limite du catalogue et ses altérations existaient dans le modèle et
+   * n'étaient visibles nulle part : la bande du haut est leur seul accès.
+   */
+  it('ouvre la limite de tout le catalogue', async () => {
+    const opened: string[] = [];
+
+    pageWith([], opened)['editGlobalFloor']();
+    await Promise.resolve();
+
+    expect(opened).toContain('FloorPanel');
+  });
+
+  it('ouvre la pose d’une altération sur tout le catalogue', async () => {
+    const opened: string[] = [];
+
+    pageWith([], opened)['addGlobalRule']();
+    await Promise.resolve();
+
+    expect(opened).toContain('RulePanel');
+  });
 });

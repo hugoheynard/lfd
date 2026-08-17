@@ -332,7 +332,7 @@ describe("suspendre, reprendre, archiver", () => {
   it("archive une limite avec son motif, et le journal le garde", async () => {
     await staff()
       .put("/admin/pricing/floors")
-      .send({ scope: { type: "global", id: null }, mode: "amount", value: 100, dynamic: null });
+      .send({ scope: { type: "global", id: null }, mode: "percent", value: 5_000, dynamic: null });
 
     const archived = await staff()
       .post("/admin/pricing/floors/global/archive")
@@ -387,6 +387,59 @@ describe("suspendre, reprendre, archiver", () => {
     expect((await archivedList()).map((rule) => rule.id)).not.toContain(id);
   });
 
+  /**
+   * « Jamais sous 1,50 € » sur tout le catalogue laisserait passer une pièce
+   * montée à 1,50 € et relèverait un croissant qui se vend 2,00 €. Le refus
+   * traverse le bus et ressort en 400, pas en 500.
+   */
+  it("refuse une limite en euros sur tout le catalogue", async () => {
+    const response = await staff()
+      .put("/admin/pricing/floors")
+      .send({ scope: { type: "global", id: null }, mode: "amount", value: 150, dynamic: null });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("refuse une limite en euros sur une famille", async () => {
+    const response = await staff()
+      .put("/admin/pricing/floors")
+      .send({
+        scope: { type: "category", id: FAMILY },
+        mode: "amount",
+        value: 150,
+        dynamic: null,
+      });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("accepte la même limite en pourcentage", async () => {
+    const response = await staff()
+      .put("/admin/pricing/floors")
+      .send({
+        scope: { type: "category", id: FAMILY },
+        mode: "percent",
+        value: 6_000,
+        dynamic: null,
+      });
+
+    expect(response.status).toBe(204);
+  });
+
+  /** Sur un ARTICLE, le montant reprend tout son sens : on sait de quoi on parle. */
+  it("accepte une limite en euros sur un article", async () => {
+    const response = await staff()
+      .put("/admin/pricing/floors")
+      .send({
+        scope: { type: "product", id: SKU },
+        mode: "amount",
+        value: 150,
+        dynamic: null,
+      });
+
+    expect(response.status).toBe(204);
+  });
+
   it("refuse un sujet de journal inventé", async () => {
     expect((await staff().get("/admin/pricing/journal/licorne/x")).status).toBe(400);
   });
@@ -397,16 +450,16 @@ describe("poser une limite", () => {
     staff().put("/admin/pricing/floors").send({ scope, mode, value });
 
   it("pose une limite globale", async () => {
-    expect((await putFloor({ type: "global", id: null }, "amount", 150)).status).toBe(204);
+    expect((await putFloor({ type: "global", id: null }, "percent", 5_000)).status).toBe(204);
   });
 
   /** Idempotent par portée : re-poser REMPLACE, il n'y a jamais deux limites. */
   it("re-poser sur la même portée remplace au lieu d'empiler", async () => {
-    await putFloor({ type: "global", id: null }, "amount", 150);
-    await putFloor({ type: "global", id: null }, "amount", 170);
+    await putFloor({ type: "global", id: null }, "percent", 5_000);
+    await putFloor({ type: "global", id: null }, "percent", 6_000);
 
     expect(await ctx.prisma.priceFloor.count()).toBe(1);
-    expect((await board()).globalFloor?.value).toBe(170);
+    expect((await board()).globalFloor?.value).toBe(6_000);
   });
 
   /**
@@ -418,7 +471,7 @@ describe("poser une limite", () => {
   });
 
   it("retire une limite par sa portée, puis refuse de la retirer deux fois", async () => {
-    await putFloor({ type: "category", id: FAMILY }, "amount", 100);
+    await putFloor({ type: "category", id: FAMILY }, "percent", 5_000);
 
     expect((await staff().delete(`/admin/pricing/floors/category/${FAMILY}`)).status).toBe(204);
     expect((await staff().delete(`/admin/pricing/floors/category/${FAMILY}`)).status).toBe(404);
@@ -430,7 +483,7 @@ describe("poser une limite", () => {
    * un 404 qui accusait la donnée alors que c'était le routage.
    */
   it("retire la limite globale par un chemin sans cible", async () => {
-    await putFloor({ type: "global", id: null }, "amount", 100);
+    await putFloor({ type: "global", id: null }, "percent", 5_000);
 
     expect((await staff().delete("/admin/pricing/floors/global")).status).toBe(204);
   });
@@ -491,7 +544,7 @@ describe("l'écran de tarification", () => {
   it("distingue la limite de l'article de celle dont il hérite", async () => {
     await staff()
       .put("/admin/pricing/floors")
-      .send({ scope: { type: "category", id: FAMILY }, mode: "amount", value: 170 });
+      .send({ scope: { type: "category", id: FAMILY }, mode: "percent", value: 8_500 });
 
     const inherited = await croissant();
     expect(inherited.ownFloor).toBeNull();
@@ -510,7 +563,7 @@ describe("l'écran de tarification", () => {
     await postRule({ effect: alter(5000) }); // 200 → 100
     await staff()
       .put("/admin/pricing/floors")
-      .send({ scope: { type: "global", id: null }, mode: "amount", value: 150 });
+      .send({ scope: { type: "global", id: null }, mode: "percent", value: 7_500 });
 
     const item = await croissant();
 

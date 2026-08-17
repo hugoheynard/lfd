@@ -1,0 +1,16 @@
+@if (delta(); as ecart) {
+  <!-- Le tarif d'entrée, barré : sans lui, l'écart n'a pas de point de départ. -->
+  <span class="from">{{ euros(item().canonicalCents) }}</span>
+}
+
+<span class="price">{{ euros(item().finalCents) }}</span>
+
+@if (delta(); as ecart) {
+  <span class="delta" [class.is-up]="!discount()">{{ ecart }}</span>
+}
+
+@if (item().floored) {
+  <span class="note">relevé au plancher</span>
+} @else if (item().steps.length > 0) {
+  <span class="note">{{ item().steps.length }} étage(s)</span>
+}

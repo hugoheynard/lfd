@@ -65,6 +65,23 @@ export class FloorPanel {
   readonly data = input<FloorPanelData | undefined>(undefined);
 
   protected readonly mode = signal<PriceMode>('amount');
+
+  /**
+   * **Une limite en euros n'a de sens que sur une unité.**
+   *
+   * « Jamais sous 1,50 € » sur une famille laisserait passer une pièce montée à
+   * 1,50 € et relèverait un croissant qui se vend 2,00 € : le même mur, deux
+   * effets opposés. Une fraction, elle, suit l'article.
+   *
+   * L'écran ne propose donc pas le choix au-delà d'un article — plutôt que de
+   * l'offrir et de le refuser ensuite, ce qui est la façon la plus sûre de faire
+   * saisir deux fois la même chose. Le serveur le refuse de son côté : c'est une
+   * règle du modèle, pas une commodité de saisie.
+   */
+  protected readonly unitScoped = computed(() => {
+    const type = this.data()?.scope.type;
+    return type === 'product' || type === 'variant';
+  });
   /** La grandeur telle que saisie : des euros, ou des pourcents. */
   protected readonly amount = signal<number | null>(null);
   protected readonly saving = signal(false);
@@ -137,17 +154,27 @@ export class FloorPanel {
     // chaque passage remettrait le champ à sa valeur d'origine pendant qu'on est
     // en train de le retaper.
     effect(() => {
-      const current = this.data()?.current ?? null;
-      if (untracked(this.seeded) || current === null) {
+      const data = this.data();
+      if (data === undefined || untracked(this.seeded)) {
         return;
       }
       this.seeded.set(true);
-      this.mode.set(current.mode);
-      this.amount.set(current.value / 100);
+      // Au-delà d'un article, l'unité n'est pas un choix : le panneau s'ouvre
+      // donc directement sur la seule forme qui ait un sens.
+      if (!untracked(this.unitScoped)) {
+        this.mode.set('percent');
+      }
+      if (data.current !== null) {
+        this.mode.set(data.current.mode);
+        this.amount.set(data.current.value / 100);
+      }
     });
   }
 
   protected setMode(mode: PriceMode): void {
+    if (mode === 'amount' && !this.unitScoped()) {
+      return;
+    }
     this.mode.set(mode);
   }
 
