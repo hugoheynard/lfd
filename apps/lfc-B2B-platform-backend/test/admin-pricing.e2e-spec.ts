@@ -462,3 +462,64 @@ describe("le rapport prix / volume", () => {
     expect((await croissant()).elasticity?.sinceChange?.observedVolume).toBe(0);
   });
 });
+
+describe("la remise commerciale accordable", () => {
+  const putFloor = (mode: string, value: number) =>
+    staff()
+      .put("/admin/pricing/floors")
+      .send({ scope: { type: "product", id: SKU }, mode, value });
+
+  /**
+   * Sans limite posée, il n'y a pas de marge DÉFINIE. Afficher un nombre
+   * supposerait un plancher que personne n'a décidé.
+   */
+  it("n'annonce aucune marge quand aucune limite n'est posée", async () => {
+    expect((await croissant()).negotiationRoom).toBeNull();
+  });
+
+  /**
+   * Les deux métriques sont portées ensemble : le commercial choisit laquelle il
+   * annonce au téléphone, et aucune n'est un dérivé d'affichage de l'autre.
+   */
+  it("donne la marge en centimes ET en pourcentage du prix final", async () => {
+    await putFloor("amount", 150);
+
+    const room = (await croissant()).negotiationRoom;
+
+    // 2,00 € final, plancher 1,50 € ⇒ 0,50 € accordables, soit 25 %.
+    expect(room).toEqual({ floorCents: 150, maxDiscountCents: 50, maxDiscountBp: 2_500 });
+  });
+
+  it("se calcule sur le prix APRÈS altération, pas sur le canonique", async () => {
+    await postRule({ effect: alter(1000) }); // 200 → 180
+    await putFloor("amount", 150);
+
+    const room = (await croissant()).negotiationRoom;
+
+    expect(room?.maxDiscountCents).toBe(30);
+    // 30 / 180 = 16,67 % — sur le prix que le client verra, pas sur 200.
+    expect(room?.maxDiscountBp).toBe(1_667);
+  });
+
+  /**
+   * Une limite en fraction se ramène en centimes par la MÊME arithmétique que
+   * `resolvePrice`. Un arrondi divergent promettrait un centime que la caisse
+   * refuserait — au pire endroit possible, devant le client.
+   */
+  it("ramène une limite en fraction du tarif en centimes", async () => {
+    await putFloor("percent", 7_500); // 75 % de 200 = 150
+
+    expect((await croissant()).negotiationRoom?.floorCents).toBe(150);
+  });
+
+  /** Un article déjà relevé au plancher rend zéro : c'est une information. */
+  it("rend zéro quand le plancher a déjà mordu", async () => {
+    await postRule({ effect: alter(5000) }); // 200 → 100
+    await putFloor("amount", 150); // relevé à 150
+
+    const item = await croissant();
+
+    expect(item.floored).toBe(true);
+    expect(item.negotiationRoom?.maxDiscountCents).toBe(0);
+  });
+});

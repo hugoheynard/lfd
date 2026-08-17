@@ -7,6 +7,7 @@ import {
   type PricingBoardView,
   type PricingCategoryView,
   type PricingItemView,
+  type NegotiationRoom,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -15,7 +16,7 @@ import { BoardElasticityService } from "../application/board-elasticity.service.
 import { ProductCatalogReader } from "../../orders/domain/ports/product-catalog.reader.js";
 import { pricingContextFor } from "../application/pricing-context.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
-import { resolveScopedFloor } from "../domain/resolve-floor.js";
+import { floorCentsFor, resolveScopedFloor } from "../domain/resolve-floor.js";
 import { resolvePrice } from "../domain/resolve-price.js";
 import { applies, winnerOf } from "../domain/specificity.js";
 import {
@@ -185,6 +186,10 @@ function itemView(
     steps: resolved.steps.map((step) => ({ ...step })),
     floored: resolved.floored,
     finalCents: resolved.finalCents,
+    negotiationRoom: negotiationRoom(
+      resolved.finalCents,
+      winner === null ? null : floorCentsFor(winner.floor, article.canonicalCents),
+    ),
     // Posée à `null` ici, remplie par la passe de mesure : la résolution d'un
     // prix ne consulte pas l'historique des ventes, et ne doit pas commencer.
     elasticity: null,
@@ -217,4 +222,29 @@ function supersededIn(rules: readonly LoadedRule[], context: PricingContext): st
     evicted.push(...applicable.filter((rule) => rule.id !== winner?.id).map((rule) => rule.id));
   }
   return evicted;
+}
+
+/**
+ * **Ce qu'un commercial peut encore lâcher** sans franchir la limite.
+ *
+ * Sans limite posée, il n'y a pas de marge définie : rendre `null` plutôt qu'un
+ * nombre évite d'annoncer une latitude que personne n'a décidée. Un article déjà
+ * relevé au plancher rend `0` — ce qui est une information, et pas la même.
+ *
+ * Bornée à zéro : un prix passé sous son plancher (donné par une mercuriale, que
+ * le plancher relève ensuite) donnerait une marge négative, c'est-à-dire une
+ * hausse déguisée en remise dans la colonne où on lit les remises.
+ */
+function negotiationRoom(finalCents: number, floorCents: number | null): NegotiationRoom | null {
+  if (floorCents === null) {
+    return null;
+  }
+  const room = Math.max(0, finalCents - floorCents);
+  return {
+    floorCents,
+    maxDiscountCents: room,
+    // En points de base du prix FINAL : c'est sur ce prix-là que le commercial
+    // annonce « je te fais 5 % », pas sur le canonique que le client n'a jamais vu.
+    maxDiscountBp: finalCents <= 0 ? 0 : Math.round((room / finalCents) * 10_000),
+  };
 }

@@ -200,6 +200,27 @@ export interface OrderLinePricingTrace {
 }
 
 /**
+ * **Ce qu'un commercial peut encore lâcher** sans franchir la limite.
+ *
+ * La différence entre le prix final hors geste et le plancher qui s'applique —
+ * autrement dit la marge de négociation, celle qu'on peut accorder au téléphone
+ * sans demander à personne.
+ *
+ * `null` quand **aucune limite** n'est posée : il n'y a alors pas de marge
+ * définie, et afficher un nombre supposerait un plancher que personne n'a
+ * décidé. Un article déjà relevé au plancher rend `0` — ce qui est une
+ * information, pas une absence.
+ */
+export interface NegotiationRoom {
+  /** Le plancher qui s'applique, ramené en centimes sur CET article. */
+  readonly floorCents: number;
+  /** Ce qu'on peut encore accorder, en centimes. Jamais négatif. */
+  readonly maxDiscountCents: number;
+  /** La même chose en points de base du prix final (`500` = 5 %). */
+  readonly maxDiscountBp: number;
+}
+
+/**
  * Un article, avec tout ce qui décide de son prix — la ligne de l'écran.
  *
  * `supersededRuleIds` mérite son existence : une règle de famille et une règle
@@ -231,6 +252,11 @@ export interface PricingItemView {
    * quatre-vingt-dix lignes.
    */
   readonly elasticity: ItemElasticityView | null;
+  /**
+   * La remise commerciale maximale accordable — cf. {@link NegotiationRoom}.
+   * `null` si aucune limite n'est posée sur cet article.
+   */
+  readonly negotiationRoom: NegotiationRoom | null;
 }
 
 /** Une famille et ses articles — la bande horizontale de l'écran. */

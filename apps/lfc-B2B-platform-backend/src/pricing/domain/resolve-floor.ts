@@ -1,3 +1,4 @@
+import { fractionByBasisPoints, fromCents, roundToCents } from "./exact-money.js";
 import { AmbiguousPriceFloorsError } from "./pricing-errors.js";
 import { matchesScope, SCOPE_RANK } from "./specificity.js";
 import type { PriceFloor, PricingContext, ScopedPriceFloor } from "./price-rule.js";
@@ -62,4 +63,22 @@ export function resolveScopedFloor(
     throw new AmbiguousPriceFloorsError(best.id, tie.id);
   }
   return best;
+}
+
+/**
+ * Un plancher, **en centimes**, sur un article donné.
+ *
+ * Passe par la même arithmétique exacte que `resolvePrice` — et pas par un
+ * `Math.round(canonical * bp / 10000)` qui aurait l'air identique. Les deux
+ * divergeraient d'un centime sur certaines valeurs, et l'écran promettrait alors
+ * une marge de négociation que la caisse refuserait : le pire endroit possible
+ * pour un écart d'arrondi, parce qu'il se découvre devant le client.
+ *
+ * La fraction se calcule sur le **canonique**, jamais sur le prix altéré : un
+ * plancher qui suivrait le prix vers le bas ne plancherait rien.
+ */
+export function floorCentsFor(floor: PriceFloor, canonicalCents: number): number {
+  return floor.mode === "amount"
+    ? floor.cents
+    : roundToCents(fractionByBasisPoints(fromCents(canonicalCents), floor.bp));
 }

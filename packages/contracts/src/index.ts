@@ -506,6 +506,7 @@ export type {
   PriceStepView,
   ElasticityComparison,
   ItemElasticityView,
+  NegotiationRoom,
   VolumeWindowView,
   PricingBoardView,
   PricingCategoryView,
