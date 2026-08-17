@@ -440,6 +440,58 @@ describe("suspendre, reprendre, archiver", () => {
     expect(response.status).toBe(204);
   });
 
+  /**
+   * Deux altérations du catalogue qui se recouvrent : personne ne l'a décidé —
+   * chacune a été posée pour de bonnes raisons — et le client paie le cumul.
+   * L'écran doit le voir avant lui.
+   */
+  it("signale deux altérations du catalogue qui se recouvrent", async () => {
+    await postRule({
+      stage: "promotion",
+      label: "Promo de rentrée",
+      effect: { nature: "alter", direction: "decrease", mode: "percent", value: 2_000 },
+      validFrom: "2026-08-01T00:00:00.000Z",
+      validTo: "2026-08-20T00:00:00.000Z",
+    });
+    await postRule({
+      stage: "geste",
+      label: "Geste de fin de mois",
+      effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1_000 },
+      validFrom: "2026-08-15T00:00:00.000Z",
+      validTo: "2026-08-30T00:00:00.000Z",
+    });
+
+    const [overlap] = (await board()).globalOverlaps;
+
+    expect(overlap?.from).toBe("2026-08-15T00:00:00.000Z");
+    expect(overlap?.to).toBe("2026-08-20T00:00:00.000Z");
+    // −20 % puis −10 % font −28 %, pas −30 % : le cumul est un PRODUIT.
+    expect(overlap?.composedBp).toBe(2_800);
+    expect(overlap?.kind).toBe("compose");
+  });
+
+  /** Une règle suspendue ne recouvre rien : elle n'agit plus. */
+  it("cesse de signaler le recouvrement dès qu'une des deux est suspendue", async () => {
+    const { id } = jsonBody<{ id: string }>(
+      await postRule({
+        stage: "promotion",
+        validFrom: "2026-08-01T00:00:00.000Z",
+        validTo: "2026-08-20T00:00:00.000Z",
+      }),
+    );
+    await postRule({
+      stage: "geste",
+      label: "Geste",
+      validFrom: "2026-08-15T00:00:00.000Z",
+      validTo: "2026-08-30T00:00:00.000Z",
+    });
+    expect((await board()).globalOverlaps).toHaveLength(1);
+
+    await staff().post(`/admin/pricing/rules/${id}/pause`).send({ reason: null });
+
+    expect((await board()).globalOverlaps).toEqual([]);
+  });
+
   it("refuse un sujet de journal inventé", async () => {
     expect((await staff().get("/admin/pricing/journal/licorne/x")).status).toBe(400);
   });

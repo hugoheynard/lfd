@@ -1,0 +1,56 @@
+@if (visible()) {
+  <section class="timeline" aria-label="Chevauchement des altérations du catalogue">
+    <p class="intro">
+      <strong>{{ overlaps().length }}</strong> période(s) où plusieurs altérations du catalogue
+      jouent en même temps. Le cumul n'est pas une somme : chaque étage s'applique au prix sortant
+      du précédent.
+    </p>
+
+    <!-- Une ligne par règle, sur un axe commun : le chevauchement se VOIT, au
+         lieu de se déduire en comparant quatre dates de tête. -->
+    <ul class="rows">
+      @for (row of rows(); track row.id) {
+        <li class="row" [class.is-overlapped]="row.overlapped">
+          <span class="row-name" [title]="row.summary">{{ row.label }}</span>
+          <span class="track">
+            <span
+              class="bar"
+              [style.left.%]="row.bar.leftPercent"
+              [style.width.%]="row.bar.widthPercent"
+            ></span>
+          </span>
+        </li>
+      }
+    </ul>
+
+    <!-- Et sous les barres, ce que leurs croisements produisent. -->
+    <ul class="rows overlaps">
+      @for (segment of segments(); track segment.key) {
+        <li class="row">
+          <span class="row-name">
+            @if (segment.composed; as cumul) {
+              <strong>{{ cumul }}</strong>
+            } @else if (segment.kind === 'supersede') {
+              <!-- Même étage : la plus spécifique gagne, elles ne s'ajoutent pas.
+                   Annoncer un cumul ici ferait crier au danger sans raison. -->
+              la plus précise gagne
+            } @else {
+              <!-- Un montant ne se cumule pas en fraction sans connaître
+                   l'article : mieux vaut le dire que d'inventer un chiffre. -->
+              cumul non exprimable en %
+            }
+          </span>
+          <span class="track">
+            <span
+              class="bar bar-overlap"
+              [class.is-supersede]="segment.kind === 'supersede'"
+              [style.left.%]="segment.bar.leftPercent"
+              [style.width.%]="segment.bar.widthPercent"
+            ></span>
+          </span>
+          <span class="row-period">{{ segment.period }}</span>
+        </li>
+      }
+    </ul>
+  </section>
+}

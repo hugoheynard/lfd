@@ -4,6 +4,7 @@ import {
   type CatalogCategory,
   type PriceFloorView,
   type PriceRuleView,
+  type PriceOverlapView,
   type PricingBoardView,
   type PricingCategoryView,
   type PricingItemView,
@@ -14,6 +15,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { BoardElasticityService } from "../application/board-elasticity.service.js";
 import { ProductCatalogReader } from "../../orders/domain/ports/product-catalog.reader.js";
+import { overlapSegments, type OverlapSegment } from "../domain/rule-overlaps.js";
 import { referenceCanonicalFor } from "../application/floor-reference.js";
 import { pricingContextFor } from "../application/pricing-context.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
@@ -120,6 +122,13 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       };
     });
 
+    // Les recouvrements se calculent sur les règles qui AGISSENT : une règle
+    // suspendue ne recouvre rien, et l'annoncer ferait chercher un cumul qui
+    // n'existe pas. (Les archivées ne sont même pas lues.)
+    const globalRules = rules.filter(
+      (entry) => entry.rule.scope.type === "global" && entry.rule.suspendedFrom === null,
+    );
+
     const board: PricingBoardView = {
       categories: CATALOG_CATEGORY_ORDER.map((category) =>
         this.categoryView(category, rules, floors, at),
@@ -128,6 +137,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       globalRules: rules
         .filter((entry) => entry.rule.scope.type === "global")
         .map((entry) => entry.view),
+      globalOverlaps: overlapSegments(globalRules.map((entry) => entry.rule)).map(overlapView),
       simulation: { quantity: 1, at: at.toISOString(), audience: "all" },
     };
 
@@ -290,5 +300,16 @@ function negotiationRoom(finalCents: number, floorCents: number | null): Negotia
     // En points de base du prix FINAL : c'est sur ce prix-là que le commercial
     // annonce « je te fais 5 % », pas sur le canonique que le client n'a jamais vu.
     maxDiscountBp: finalCents <= 0 ? 0 : Math.round((room / finalCents) * 10_000),
+  };
+}
+
+/** Segment de domaine → vue de fil. Les dates traversent en ISO, comme partout. */
+function overlapView(segment: OverlapSegment): PriceOverlapView {
+  return {
+    from: segment.from.toISOString(),
+    to: segment.to?.toISOString() ?? null,
+    ruleIds: segment.ruleIds,
+    kind: segment.kind,
+    composedBp: segment.composedBp,
   };
 }

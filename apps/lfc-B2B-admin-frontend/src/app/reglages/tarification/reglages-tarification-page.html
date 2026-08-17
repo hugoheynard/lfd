@@ -92,6 +92,12 @@
             +
           </button>
         </div>
+
+        <!-- Quand deux altérations se recouvrent dans le temps, personne ne l'a
+             décidé : chacune a été posée pour de bonnes raisons, à des semaines
+             d'intervalle. La frise le rend visible, et dit ce que le cumul fait
+             vraiment au prix. -->
+        <app-overlap-timeline [rules]="globalRules()" [overlaps]="globalOverlaps()" />
       </section>
 
       @for (category of categories(); track category.id) {

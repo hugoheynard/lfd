@@ -453,6 +453,45 @@ export interface PricingItemView {
   readonly negotiationRoom: NegotiationRoom | null;
 }
 
+/**
+ * **Ce qui se passe quand deux décisions se recouvrent dans le temps.**
+ *
+ * Une promotion du 1er au 20, un geste du 15 au 30 : du 15 au 20, les deux
+ * jouent. Personne ne l'a décidé — chacune a été posée pour de bonnes raisons, à
+ * des semaines d'intervalle — et le client, lui, paie le cumul.
+ *
+ * Le calcul vient du **serveur**, avec l'arithmétique qui facture : un cumul
+ * recalculé dans le navigateur finirait par annoncer un chiffre que la caisse ne
+ * pratique pas.
+ */
+export const overlapKindSchema = z.enum(["compose", "supersede"]);
+export type OverlapKind = z.infer<typeof overlapKindSchema>;
+
+export interface PriceOverlapView {
+  /** Borne basse **incluse**. */
+  readonly from: string;
+  /** Borne haute **exclue**. `null` = le recouvrement ne se referme jamais. */
+  readonly to: string | null;
+  readonly ruleIds: readonly string[];
+  /**
+   * `compose` — étages distincts : elles se composent, et le client paie le
+   * produit. `supersede` — même étage : la plus spécifique gagne, l'autre ne
+   * produit rien. Les confondre ferait crier au cumul là où il n'y a qu'une
+   * relève.
+   */
+  readonly kind: OverlapKind;
+  /**
+   * L'effet cumulé, en points de base d'une **baisse** (`2800` = −28 %).
+   *
+   * Composé et non additionné : −20 % puis −10 % font −28 %, parce que la
+   * seconde s'applique au prix sortant de la première.
+   *
+   * `null` dès qu'une des règles n'est pas une altération en pourcentage : un
+   * montant ne se cumule pas en fraction sans connaître l'article.
+   */
+  readonly composedBp: number | null;
+}
+
 /** Une famille et ses articles — la bande horizontale de l'écran. */
 export interface PricingCategoryView {
   readonly id: string;
@@ -477,6 +516,11 @@ export interface PricingBoardView {
   readonly globalFloor: PriceFloorView | null;
   /** Les règles de portée globale — elles s'appliquent à toutes les familles. */
   readonly globalRules: readonly PriceRuleView[];
+  /**
+   * Les périodes où **plusieurs** règles globales sont en vigueur à la fois.
+   * Vide quand aucune ne se recouvre — le cas normal.
+   */
+  readonly globalOverlaps: readonly PriceOverlapView[];
   readonly simulation: {
     readonly quantity: number;
     readonly at: string;

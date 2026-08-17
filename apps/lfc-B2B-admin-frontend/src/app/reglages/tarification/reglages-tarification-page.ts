@@ -23,6 +23,7 @@ import { ArchivesPanel } from './archives-panel/archives-panel';
 import { FinalPrice } from './final-price/final-price';
 import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
 import { GridSkeleton } from './grid-skeleton/grid-skeleton';
+import { OverlapTimeline } from './overlap-timeline/overlap-timeline';
 import { RuleChip } from './rule-chip/rule-chip';
 import { TarificationSummaryBar } from './summary-bar/summary-bar';
 import { VolumeEffort } from './volume-effort/volume-effort';
@@ -79,6 +80,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldEmptyStateComponent,
     FinalPrice,
     GridSkeleton,
+    OverlapTimeline,
     RuleChip,
     TarificationSummaryBar,
     VolumeEffort,
@@ -184,6 +186,9 @@ export class ReglagesTarificationPage {
   /** La limite et les règles qui valent pour **tout le catalogue**. */
   protected readonly globalFloor = computed(() => this.board()?.globalFloor ?? null);
   protected readonly globalRules = computed(() => this.board()?.globalRules ?? []);
+
+  /** Les périodes où plusieurs altérations du catalogue jouent en même temps. */
+  protected readonly globalOverlaps = computed(() => this.board()?.globalOverlaps ?? []);
 
   /**
    * **La limite du catalogue** — celle dont toutes les autres héritent.

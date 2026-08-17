@@ -1,0 +1,91 @@
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2, 0.5rem);
+  padding: var(--fold-space-3, 0.75rem) var(--fold-space-1, 0.25rem) var(--fold-space-1, 0.25rem);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.intro {
+  margin: 0;
+  font-size: var(--fold-text-xs, 0.75rem);
+  line-height: 1.5;
+  color: var(--fold-color-text-muted);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// Les recouvrements se lisent SOUS les barres qui les produisent : un filet les
+// sépare sans les détacher.
+.overlaps {
+  padding-top: var(--fold-space-2, 0.5rem);
+  border-top: 1px dashed var(--fold-color-border);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 12rem) 1fr minmax(0, 9rem);
+  align-items: center;
+  gap: var(--fold-space-2, 0.5rem);
+}
+
+.row-name {
+  overflow: hidden;
+  font-size: var(--fold-text-xs, 0.75rem);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fold-color-text-muted);
+}
+
+// Une règle prise dans un recouvrement se nomme en pleine encre : c'est elle
+// qu'on vient chercher.
+.row.is-overlapped .row-name {
+  color: var(--fold-color-text);
+  font-weight: 600;
+}
+
+.row-period {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.track {
+  position: relative;
+  height: 0.85rem;
+  border-radius: 999px;
+  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 5%));
+}
+
+.bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--fold-color-accent, currentcolor);
+  opacity: 0.55;
+}
+
+.row.is-overlapped .bar {
+  opacity: 0.85;
+}
+
+// Le cumul est le seul fait qui appelle un geste : c'est le seul qui s'allume.
+.bar-overlap {
+  background: var(--fold-color-warning-border, currentcolor);
+  opacity: 1;
+}
+
+// Une éviction n'est pas un danger — elle se montre sans crier.
+.bar-overlap.is-supersede {
+  background: var(--fold-color-text-faded, var(--fold-color-border));
+  opacity: 0.8;
+}
