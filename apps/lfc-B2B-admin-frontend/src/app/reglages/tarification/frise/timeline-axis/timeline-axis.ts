@@ -159,7 +159,10 @@ export class TimelineAxis {
   protected readonly labels = computed(() =>
     this.markers().map((percent) => ({
       percent,
-      day: frenchDay(instantAt(this.span(), percent)),
+      // Étiquetée depuis le jour RETENU, pas depuis l'instant survolé : les deux
+      // sont la même information, et les calculer séparément les faisait
+      // diverger — cf. `frenchDay`.
+      day: frenchDay(snapToDay(instantAt(this.span(), percent))),
     })),
   );
 
@@ -248,7 +251,21 @@ export class TimelineAxis {
   }
 }
 
-/** « 12 sept. » — la forme courte, celle qu'on lit sans s'arrêter. */
-function frenchDay(at: number): string {
-  return new Date(at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+/**
+ * « 12 sept. » — la forme courte, celle qu'on lit sans s'arrêter.
+ *
+ * Prend le **jour retenu** (`AAAA-MM-JJ`) et le rend **en UTC**, comme le titre
+ * du tableau plus bas. C'est la correction d'un décalage d'un jour, bien réel :
+ * l'étiquette se calculait depuis l'instant survolé, formaté dans le fuseau du
+ * navigateur, pendant que la sélection s'arrondissait au jour UTC. À Paris l'été,
+ * tout instant survolé après 22 h UTC affichait « 9 août » sur l'axe, retenait le
+ * 8, et l'intitulé du tableau écrivait « au 8 août » — soit deux dates
+ * différentes à l'écran pour un seul geste, sur environ 8 % de la largeur.
+ */
+function frenchDay(day: string): string {
+  return new Date(`${day}T00:00:00.000Z`).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
 }

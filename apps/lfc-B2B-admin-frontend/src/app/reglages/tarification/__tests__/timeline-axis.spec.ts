@@ -64,6 +64,15 @@ function drag(fixture: ComponentFixture<TimelineAxis>, fromX: number, toX: numbe
   return captured;
 }
 
+/** La forme attendue d'une étiquette : le jour retenu, rendu en UTC. */
+function frenchDay(day: string): string {
+  return new Date(`${day}T00:00:00.000Z`).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+}
+
 describe("les marqueurs de l'axe", () => {
   it('pose UN marqueur sur un clic net', () => {
     const selection = drag(mount(), 400, 400);
@@ -101,6 +110,48 @@ describe("les marqueurs de l'axe", () => {
     expect(selection.from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(selection.to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(selection.from < selection.to).toBe(true);
+  });
+
+  /**
+   * **L'étiquette sous le doigt dit le jour qui sera retenu.**
+   *
+   * Elle ne le disait pas : la sélection s'arrondissait au jour UTC pendant que
+   * l'étiquette formatait l'instant survolé dans le fuseau du navigateur. À
+   * Paris l'été, tout point tombant après 22 h UTC — environ 8 % de la largeur —
+   * annonçait le lendemain et retenait la veille, pendant que le titre du
+   * tableau, lui, écrivait la veille. Deux dates à l'écran pour un seul geste.
+   *
+   * Balayé sur toute la piste plutôt que sur un point choisi : le décalage ne se
+   * produit que sur une bande étroite, et un test qui viserait « une date »
+   * serait resté vert sur le bug.
+   */
+  it('étiquette exactement le jour qu’elle retient, sur toute la piste', () => {
+    const fixture = mount();
+    const axis = fixture.componentInstance;
+    let checked = 0;
+
+    for (let x = 0; x <= 1000; x += 1) {
+      // Lue PENDANT le geste, doigt encore posé : c'est le seul moment où
+      // l'étiquette parle d'un instant libre. Une fois relâchée, la sélection
+      // est déjà arrondie au jour, et la comparaison ne prouverait plus rien —
+      // c'est exactement l'erreur de la première version de ce test.
+      axis['onPointerDown'](pointerAt(x));
+      axis['onPointerMove'](pointerAt(x));
+      const shown = axis['labels']()[0]?.day;
+
+      let retained: AxisSelection | null = null;
+      const stop = axis.selected.subscribe((selection) => (retained = selection));
+      axis['onPointerUp'](pointerAt(x));
+      stop.unsubscribe();
+
+      if (retained === null || retained['kind'] !== 'instant') {
+        throw new Error('Attendu un marqueur.');
+      }
+      expect(shown).toBe(frenchDay(retained['day']));
+      checked += 1;
+    }
+
+    expect(checked).toBe(1001);
   });
 
   /** Les barres des décisions restent visibles : c'est ce qu'on vise. */
