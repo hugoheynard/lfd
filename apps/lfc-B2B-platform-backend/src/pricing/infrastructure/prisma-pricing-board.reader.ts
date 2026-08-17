@@ -11,6 +11,7 @@ import {
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
+import { BoardElasticityService } from "../application/board-elasticity.service.js";
 import { ProductCatalogReader } from "../../orders/domain/ports/product-catalog.reader.js";
 import { pricingContextFor } from "../application/pricing-context.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
@@ -60,6 +61,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
   constructor(
     private readonly prisma: PrismaService,
     private readonly catalog: ProductCatalogReader,
+    private readonly elasticity: BoardElasticityService,
   ) {
     super();
   }
@@ -83,7 +85,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // du basculement d'une promotion, et l'écran se contredirait lui-même.
     const at = new Date();
 
-    return {
+    const board: PricingBoardView = {
       categories: CATALOG_CATEGORY_ORDER.map((category) =>
         this.categoryView(category, rules, floors, at),
       ).filter((view) => view.items.length > 0),
@@ -93,6 +95,14 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
         .map((entry) => entry.view),
       simulation: { quantity: 1, at: at.toISOString(), audience: "all" },
     };
+
+    // La mesure des ventes vient APRÈS la résolution, en une passe groupée : elle
+    // a besoin de savoir quels articles ont bougé, et de combien.
+    return this.elasticity.enrich(
+      board,
+      new Map(rules.map((entry) => [entry.rule.id, entry.rule.validFrom])),
+      at,
+    );
   }
 
   private categoryView(
@@ -175,6 +185,9 @@ function itemView(
     steps: resolved.steps.map((step) => ({ ...step })),
     floored: resolved.floored,
     finalCents: resolved.finalCents,
+    // Posée à `null` ici, remplie par la passe de mesure : la résolution d'un
+    // prix ne consulte pas l'historique des ventes, et ne doit pas commencer.
+    elasticity: null,
   };
 }
 

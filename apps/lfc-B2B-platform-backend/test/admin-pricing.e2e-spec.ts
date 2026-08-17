@@ -13,6 +13,7 @@
 import type { PricingBoardView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -21,11 +22,31 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
 
+/**
+ * Passerelle de paiement doublée : l'intention change à chaque appel, la colonne
+ * étant `@unique`. Sans ce double, poser une commande échoue — et le rapport
+ * prix/volume n'a alors aucune vente à mesurer.
+ */
+let intentCounter = 0;
+const fakeGateway = {
+  createIntent: () => {
+    intentCounter += 1;
+    return Promise.resolve({
+      id: `pi_${String(intentCounter)}`,
+      clientSecret: `secret_${String(intentCounter)}`,
+    });
+  },
+  publishableKey: () => "pk_test",
+};
+
 let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: fakeGateway },
+    ],
   });
 });
 
@@ -33,8 +54,23 @@ afterAll(async () => {
   await ctx.close();
 });
 
+/** Le point de retrait — un panier a besoin d'un acheminement pour exister. */
+let pickupId = "pickup_absent";
+
 beforeEach(async () => {
   await ctx.reset();
+  const point = await ctx.prisma.pickupAddress.create({
+    data: {
+      label: "Labo",
+      ligne1: "1 rue du Four",
+      codePostal: "73150",
+      ville: "Val d'Isère",
+      pays: "France",
+      isDefault: true,
+    },
+    select: { id: true },
+  });
+  pickupId = point.id;
 });
 
 const staff = () => ctx.asSub("staff-e2e");
@@ -301,3 +337,128 @@ describe("l'écran de tarification", () => {
 function alter(bp: number): Record<string, unknown> {
   return { nature: "alter", direction: "decrease", mode: "percent", value: bp };
 }
+
+describe("le rapport prix / volume", () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  /** Une vente de `quantity` unités, datée du passé. */
+  async function sell(quantity: number, daysAgo: number): Promise<void> {
+    const response = await ctx
+      .asSub("auth0|solo")
+      .post("/orders")
+      .send({
+        fulfillmentMethod: "pickup",
+        pickupAddressId: pickupId,
+        requestedDeliveryDate: "2026-09-01",
+        lines: [{ sku: SKU, quantity }],
+      });
+    // La commande est datée d'aujourd'hui par défaut : on la recule pour la
+    // faire tomber dans la fenêtre voulue. C'est `order.createdAt` que la mesure
+    // lit — la date à laquelle le prix a été résolu.
+    await ctx.prisma.order.update({
+      where: { id: jsonBody<{ id: string }>(response).id },
+      data: { createdAt: new Date(Date.now() - daysAgo * DAY_MS) },
+    });
+  }
+
+  /** Une remise posée il y a `daysAgo` jours — le point de coupure de l'avant/après. */
+  function seedOldRule(bp: number, daysAgo: number) {
+    return ctx.prisma.priceRule.create({
+      data: {
+        id: "promo",
+        stage: "promotion",
+        nature: "alter",
+        scopeType: "global",
+        audienceType: "all",
+        direction: "decrease",
+        mode: "percent",
+        value: bp,
+        validFrom: new Date(Date.now() - daysAgo * DAY_MS),
+        label: "Promo",
+        createdBy: "e2e",
+      },
+    });
+  }
+
+  it("n'attache rien aux articles dont le prix n'a pas bougé", async () => {
+    expect((await croissant()).elasticity).toBeNull();
+  });
+
+  /**
+   * Le chiffre qui doit sauter aux yeux : − 20 % oblige à vendre ×1,25 pour
+   * encaisser le même chiffre.
+   */
+  it("traduit la remise en ratio de volume iso-chiffre", async () => {
+    await seedOldRule(2000, 40);
+
+    const item = await croissant();
+
+    expect(item.finalCents).toBe(160);
+    expect(item.elasticity?.isoRevenueRatioBp).toBe(12_500);
+  });
+
+  it("mesure le réalisé de part et d'autre de la pose de la règle", async () => {
+    await seedOldRule(2000, 40);
+    await sell(100, 60); // avant la règle
+    await sell(110, 20); // après
+
+    const since = (await croissant()).elasticity?.sinceChange;
+
+    expect(since?.baselineVolume).toBe(100);
+    expect(since?.observedVolume).toBe(110);
+    // 100 × 1,25 = 125 à atteindre ; on est à 110, soit 88 %.
+    expect(since?.targetVolume).toBe(125);
+    expect(since?.attainmentBp).toBe(8_800);
+    expect(since?.conclusive).toBe(true);
+  });
+
+  /**
+   * Quelques jours après la pose, un écart ne veut rien dire. L'écran doit
+   * pouvoir dire « trop tôt » plutôt que de faire juger une décision sur du bruit.
+   */
+  it("avoue quand le recul est insuffisant pour conclure", async () => {
+    await seedOldRule(2000, 3);
+    await sell(50, 1);
+
+    expect((await croissant()).elasticity?.sinceChange?.conclusive).toBe(false);
+  });
+
+  it("rend la fenêtre glissante même sans recul sur la règle", async () => {
+    await seedOldRule(2000, 1);
+    await sell(80, 40); // le mois d'avant
+    await sell(90, 10); // le mois écoulé
+
+    const rolling = (await croissant()).elasticity?.rolling;
+
+    expect(rolling?.baselineVolume).toBe(80);
+    expect(rolling?.observedVolume).toBe(90);
+  });
+
+  /**
+   * Sans historique, il n'y a pas d'objectif — et surtout pas un objectif de
+   * zéro, qui ferait passer une absence de mesure pour une réussite.
+   */
+  it("n'invente pas d'objectif quand rien ne s'est vendu avant", async () => {
+    await seedOldRule(2000, 40);
+    await sell(30, 10);
+
+    const since = (await croissant()).elasticity?.sinceChange;
+
+    expect(since?.baselineVolume).toBe(0);
+    expect(since?.targetVolume).toBeNull();
+    expect(since?.attainmentBp).toBeNull();
+  });
+
+  /** Une commande annulée n'a rien vendu : la compter gonflerait le réalisé. */
+  it("ne compte pas les commandes annulées", async () => {
+    await seedOldRule(2000, 40);
+    await sell(100, 60);
+    await sell(110, 20);
+    await ctx.prisma.order.updateMany({
+      where: { createdAt: { gte: new Date(Date.now() - 30 * DAY_MS) } },
+      data: { status: "cancelled" },
+    });
+
+    expect((await croissant()).elasticity?.sinceChange?.observedVolume).toBe(0);
+  });
+});

@@ -225,6 +225,12 @@ export interface PricingItemView {
   /** Le plancher a-t-il **relevé** le prix ? */
   readonly floored: boolean;
   readonly finalCents: number;
+  /**
+   * Ce que l'altération coûte en volume. `null` quand le prix n'a pas bougé —
+   * il n'y a alors rien à compenser, et afficher « ×1,00 » ferait du bruit sur
+   * quatre-vingt-dix lignes.
+   */
+  readonly elasticity: ItemElasticityView | null;
 }
 
 /** Une famille et ses articles — la bande horizontale de l'écran. */
@@ -256,4 +262,61 @@ export interface PricingBoardView {
     readonly at: string;
     readonly audience: "all";
   };
+}
+
+// ---------------------------------------------------------------------------
+// Élasticité — ce qu'une altération coûte en volume
+// ---------------------------------------------------------------------------
+
+/** Une fenêtre d'observation. Borne basse incluse, borne haute exclue. */
+export interface VolumeWindowView {
+  readonly from: string;
+  readonly to: string;
+  readonly days: number;
+}
+
+/**
+ * Une comparaison **volume réalisé contre objectif**, sur deux fenêtres de même
+ * durée.
+ *
+ * `conclusive` n'est pas décoratif : quelques jours après la pose d'une règle,
+ * l'écart n'a aucun sens, et l'afficher comme un résultat ferait juger une
+ * décision sur du bruit. L'écran doit alors dire « trop tôt » plutôt qu'un
+ * pourcentage.
+ */
+export interface ElasticityComparison {
+  readonly baseline: VolumeWindowView;
+  readonly baselineVolume: number;
+  readonly observed: VolumeWindowView;
+  readonly observedVolume: number;
+  /** Le volume à atteindre pour tenir le chiffre. `null` = pas de référence. */
+  readonly targetVolume: number | null;
+  /** Où en est le réalisé vis-à-vis de l'objectif, en bp. `null` = pas d'objectif. */
+  readonly attainmentBp: number | null;
+  /** La fenêtre observée est-elle assez longue pour conclure ? */
+  readonly conclusive: boolean;
+}
+
+/**
+ * **Ce que l'altération d'un article coûte en volume.**
+ *
+ * Attachée à l'ARTICLE et non à la règle, parce que c'est là que le prix et le
+ * volume existent tous les deux sans ambiguïté : une règle de famille exprimée
+ * en euros n'implique pas le même ratio sur un croissant et sur une pièce
+ * montée. Une règle en pourcentage, elle, porte son ratio intrinsèquement —
+ * l'écran l'affiche alors sur le nœud de la règle aussi.
+ */
+export interface ItemElasticityView {
+  readonly fromCents: number;
+  readonly toCents: number;
+  /** Le volume qu'il faut vendre pour le même chiffre, en bp (`12500` = ×1,25). */
+  readonly isoRevenueRatioBp: number | null;
+  /**
+   * Avant / après le **changement de prix** — la seule comparaison qui juge la
+   * règle. `null` quand rien n'a changé, ou quand la date du changement est
+   * inconnue.
+   */
+  readonly sinceChange: ElasticityComparison | null;
+  /** Fenêtre glissante — où on en est aujourd'hui, indépendamment de la règle. */
+  readonly rolling: ElasticityComparison;
 }

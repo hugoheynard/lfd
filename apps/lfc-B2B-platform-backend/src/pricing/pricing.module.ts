@@ -1,8 +1,10 @@
 import { Module } from "@nestjs/common";
 
 import { PriceFloorReader } from "./domain/ports/price-floor.reader.js";
+import { SkuVolumeReader } from "./domain/ports/sku-volume.reader.js";
 import { PriceRuleReader } from "./domain/ports/price-rule.reader.js";
 import { PrismaPriceFloorReader } from "./infrastructure/prisma-price-floor.reader.js";
+import { PrismaSkuVolumeReader } from "./infrastructure/prisma-sku-volume.reader.js";
 import { PrismaPriceRuleReader } from "./infrastructure/prisma-price-rule.reader.js";
 
 /**
@@ -18,7 +20,8 @@ import { PrismaPriceRuleReader } from "./infrastructure/prisma-price-rule.reader
   providers: [
     { provide: PriceRuleReader, useClass: PrismaPriceRuleReader },
     { provide: PriceFloorReader, useClass: PrismaPriceFloorReader },
+    { provide: SkuVolumeReader, useClass: PrismaSkuVolumeReader },
   ],
-  exports: [PriceRuleReader, PriceFloorReader],
+  exports: [PriceRuleReader, PriceFloorReader, SkuVolumeReader],
 })
 export class PricingModule {}
