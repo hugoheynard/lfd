@@ -23,6 +23,7 @@ function item(canonicalCents: number, finalCents: number): PricingItemView {
     steps: [],
     floored: false,
     finalCents,
+    volumeTiers: [],
     elasticity: null,
     negotiationRoom: null,
   };

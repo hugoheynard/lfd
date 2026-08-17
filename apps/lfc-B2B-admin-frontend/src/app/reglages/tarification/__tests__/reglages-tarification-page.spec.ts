@@ -1,7 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import type {
-  ElasticityComparison,
-  ItemElasticityView,
   PriceFloorView,
   PriceRuleView,
   PricingBoardView,
@@ -11,7 +9,11 @@ import type {
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
+import { ArchivePanel } from '../archive-panel/archive-panel';
+import { FloorPanel } from '../floor-panel/floor-panel';
+import { JournalPanel } from '../journal-panel/journal-panel';
 import { ReglagesTarificationPage } from '../reglages-tarification-page';
+import { RulePanel } from '../rule-panel/rule-panel';
 import { TarificationService } from '../tarification.service';
 
 /**
@@ -29,6 +31,7 @@ const EMPTY_BOARD: PricingBoardView = {
   categories: [],
   globalFloor: null,
   globalRules: [],
+  globalOverlaps: [],
   simulation: { quantity: 1, at: '2026-08-17T10:00:00.000Z', audience: 'all' },
 };
 
@@ -95,6 +98,7 @@ function item(overrides: Partial<PricingItemView> = {}): PricingItemView {
     steps: [],
     floored: false,
     finalCents: 200,
+    volumeTiers: [],
     elasticity: null,
     negotiationRoom: null,
     ...overrides,
@@ -182,31 +186,6 @@ describe('les compteurs de tête', () => {
   });
 });
 
-function comparison(overrides: Partial<ElasticityComparison> = {}): ElasticityComparison {
-  const window = { from: '2026-07-01T00:00:00.000Z', to: '2026-08-01T00:00:00.000Z', days: 30 };
-  return {
-    baseline: window,
-    baselineVolume: 400,
-    observed: window,
-    observedVolume: 460,
-    targetVolume: 500,
-    attainmentBp: 9_200,
-    conclusive: true,
-    ...overrides,
-  };
-}
-
-function elasticity(overrides: Partial<ItemElasticityView> = {}): ItemElasticityView {
-  return {
-    fromCents: 200,
-    toCents: 160,
-    isoRevenueRatioBp: 12_500,
-    sinceChange: comparison(),
-    rolling: comparison(),
-    ...overrides,
-  };
-}
-
 describe('la remise accordable', () => {
   const room = { floorCents: 150, maxDiscountCents: 50, maxDiscountBp: 2_500 };
 
@@ -228,19 +207,19 @@ describe('la remise accordable', () => {
  */
 describe('suspendre et reprendre', () => {
   /** Hôte de panneaux doublé : on note ce qui s'ouvre, sans monter de panneau. */
-  function panelHost(opened: string[]): { open: (component: { name: string }) => unknown } {
+  function panelHost(opened: unknown[]): { open: (component: unknown) => unknown } {
     return {
       open: (component) => {
-        opened.push(component.name);
+        opened.push(component);
         return { closed: Promise.resolve(false) };
       },
     };
   }
 
-  function pageWith(calls: string[], opened: string[] = []): ReglagesTarificationPage {
+  function pageWith(calls: string[], opened: unknown[] = []): ReglagesTarificationPage {
     const service: Pick<TarificationService, 'read' | 'pauseRule' | 'resumeRule' | 'archiveRule'> =
       {
-        read: () => Promise.resolve(board),
+        read: () => Promise.resolve(EMPTY_BOARD),
         pauseRule: (id) => {
           calls.push(`pause:${id}`);
           return Promise.resolve();
@@ -287,20 +266,20 @@ describe('suspendre et reprendre', () => {
    */
   it("retire en DEMANDANT le motif, jamais d'un seul clic", async () => {
     const calls: string[] = [];
-    const opened: string[] = [];
+    const opened: unknown[] = [];
 
     await pageWith(calls, opened)['removeRule'](rule());
 
-    expect(opened).toContain('ArchivePanel');
+    expect(opened).toContain(ArchivePanel);
     expect(calls).toEqual([]);
   });
 
   it('ouvre le journal de la règle depuis son nœud', async () => {
-    const opened: string[] = [];
+    const opened: unknown[] = [];
 
     await pageWith([], opened)['openRuleJournal'](rule());
 
-    expect(opened).toContain('JournalPanel');
+    expect(opened).toContain(JournalPanel);
   });
 
   /**
@@ -308,20 +287,20 @@ describe('suspendre et reprendre', () => {
    * n'étaient visibles nulle part : la bande du haut est leur seul accès.
    */
   it('ouvre la limite de tout le catalogue', async () => {
-    const opened: string[] = [];
+    const opened: unknown[] = [];
 
     pageWith([], opened)['editGlobalFloor']();
     await Promise.resolve();
 
-    expect(opened).toContain('FloorPanel');
+    expect(opened).toContain(FloorPanel);
   });
 
   it('ouvre la pose d’une altération sur tout le catalogue', async () => {
-    const opened: string[] = [];
+    const opened: unknown[] = [];
 
     pageWith([], opened)['addGlobalRule']();
     await Promise.resolve();
 
-    expect(opened).toContain('RulePanel');
+    expect(opened).toContain(RulePanel);
   });
 });

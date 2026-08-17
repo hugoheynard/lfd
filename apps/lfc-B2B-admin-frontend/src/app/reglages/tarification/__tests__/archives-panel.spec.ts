@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../../notify.service';
 import { ArchivesPanel } from '../archives-panel/archives-panel';
+import { JournalPanel } from '../journal-panel/journal-panel';
 import { TarificationService } from '../tarification.service';
 
 /**
@@ -37,7 +38,7 @@ function archived(overrides: Partial<PriceRuleView> = {}): PriceRuleView {
   };
 }
 
-function mount(rules: PriceRuleView[], opened: string[] = []): ComponentFixture<ArchivesPanel> {
+function mount(rules: PriceRuleView[], opened: unknown[] = []): ComponentFixture<ArchivesPanel> {
   const service: Pick<TarificationService, 'archivedRules'> = {
     archivedRules: () => Promise.resolve(rules),
   };
@@ -50,8 +51,8 @@ function mount(rules: PriceRuleView[], opened: string[] = []): ComponentFixture<
       {
         provide: FoldPanelHostService,
         useValue: {
-          open: (component: { name: string }) => {
-            opened.push(component.name);
+          open: (component: unknown) => {
+            opened.push(component);
             return { closed: Promise.resolve(false) };
           },
         },
@@ -101,12 +102,12 @@ describe('les archives', () => {
 
   /** Le seul geste possible ici est de LIRE : une décision archivée est close. */
   it('ouvre le journal de la règle rangée', async () => {
-    const opened: string[] = [];
+    const opened: unknown[] = [];
     const fixture = mount([archived()], opened);
     await settled(fixture);
 
     fixture.componentInstance['openJournal'](archived());
 
-    expect(opened).toEqual(['JournalPanel']);
+    expect(opened).toEqual([JournalPanel]);
   });
 });

@@ -5,7 +5,9 @@ import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../../notify.service';
+import { ArchivePanel } from '../archive-panel/archive-panel';
 import { FloorPanel, type FloorPanelData } from '../floor-panel/floor-panel';
+import { JournalPanel } from '../journal-panel/journal-panel';
 import { TarificationService } from '../tarification.service';
 
 /**
@@ -36,7 +38,7 @@ const DATA: FloorPanelData = {
 };
 
 function mount(
-  opened: string[],
+  opened: unknown[],
   calls: string[],
   data: FloorPanelData = DATA,
 ): ComponentFixture<FloorPanel> {
@@ -59,8 +61,8 @@ function mount(
       {
         provide: FoldPanelHostService,
         useValue: {
-          open: (component: { name: string }) => {
-            opened.push(component.name);
+          open: (component: unknown) => {
+            opened.push(component);
             return { closed: Promise.resolve(false) };
           },
         },
@@ -79,21 +81,21 @@ describe('retirer une limite', () => {
    * « êtes-vous sûr ? » ne l'aurait jamais récolté.
    */
   it("passe par le panneau d'archivage, et ne supprime rien tout de suite", () => {
-    const opened: string[] = [];
+    const opened: unknown[] = [];
     const calls: string[] = [];
 
     mount(opened, calls).componentInstance['retire']();
 
-    expect(opened).toEqual(['ArchivePanel']);
+    expect(opened).toEqual([ArchivePanel]);
     expect(calls).toEqual([]);
   });
 
   it("ouvre le journal de la limite depuis le panneau où on l'édite", () => {
-    const opened: string[] = [];
+    const opened: unknown[] = [];
 
     mount(opened, []).componentInstance['openJournal']();
 
-    expect(opened).toEqual(['JournalPanel']);
+    expect(opened).toEqual([JournalPanel]);
   });
 });
 
