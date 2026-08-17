@@ -142,18 +142,32 @@ pour tout, y compris le non-alimentaire.
 
 ---
 
-## 🔴 Ouvert : comment le PIM prouve son identité au B2B
+## Comment le PIM prouve son identité au B2B — secret partagé (2026-08-17)
 
-Le push est un appel **backend → backend**, sans utilisateur. Les deux tournent
-en Cloudflare Containers derrière la passerelle ; aucun canal machine-à-machine
-n'existe entre eux aujourd'hui.
+Le push est un appel **backend → backend**, sans utilisateur. Décision : un
+**secret partagé porté par un en-tête**, comparé en temps constant par un guard,
+symétrique du `RECOMPUTE_TOKEN` déjà en place. Retenu pour sa portabilité : il
+fonctionne en local, en CI, et chez n'importe quel hébergeur — le jour où l'un
+des deux backends déménage, rien à refaire.
 
-Deux réponses possibles — un secret partagé porté par un en-tête (simple,
-symétrique du `RECOMPUTE_TOKEN` déjà en place), ou un jeton M2M Auth0 sur une
-troisième audience (cohérent avec le reste, mais consomme le quota de 1 000
-jetons/mois du plan Free). **À trancher avant C4** : c'est la seule pièce du
-chantier qui touche la sécurité, et l'endpoint d'ingestion réécrit tout le
-catalogue.
+Un **service binding** Cloudflare serait strictement plus solide : l'identité y
+est topologique, il n'y a pas de secret à fuiter ni à faire tourner, et le
+trafic ne touche jamais le réseau public. Il n'est pas écarté — c'est une
+**amélioration disponible**, pas une dette : binding et secret ne s'excluent
+pas (l'un est un transport, l'autre une preuve d'identité), et l'ajouter plus
+tard ne change **aucune ligne de code**, seulement la topologie.
+
+L'écart entre les deux est d'ailleurs plus étroit qu'il n'y paraît : l'endpoint
+d'ingestion n'est **pas joignable nu** — `workers.dev` est fermé sur les deux
+backends, seule la passerelle route (cf.
+[`../ops/securite-frontiere-de-confiance.md`](../ops/securite-frontiere-de-confiance.md)).
+Le secret ne garde pas une porte ouverte sur Internet ; il empêche qu'un
+appelant **déjà admis par la passerelle** réécrive le catalogue vendu.
+
+Un jeton M2M Auth0 sur une troisième audience a été écarté : il ajouterait une
+dépendance externe sur un chemin qui n'en a pas, et consommerait le quota de
+1 000 jetons/mois du plan Free — déjà partagé avec la Management API qui ouvre
+les accès clients.
 
 ---
 
