@@ -23,6 +23,26 @@ export class AmbiguousPriceRulesError extends DomainError {
 }
 
 /**
+ * Deux planchers de **même portée** visent le même article.
+ *
+ * Même nature de faute que pour les règles, et même double barrière : un index
+ * unique en base, cette vérification dans le domaine. La différence est qu'ici
+ * le résultat serait *plus* insidieux — un plancher tiré au hasard entre deux ne
+ * se voit que le jour où le mauvais laisse passer un prix trop bas.
+ */
+export class AmbiguousPriceFloorsError extends DomainError {
+  constructor(
+    readonly firstFloorId: string,
+    readonly secondFloorId: string,
+  ) {
+    super(
+      "pricing.floors.ambiguous",
+      `Deux planchers de même portée s'appliquent (${firstFloorId}, ${secondFloorId}) : la limite ne peut pas être déterminée.`,
+    );
+  }
+}
+
+/**
  * Une grandeur d'altération négative ou nulle.
  *
  * La grandeur est **toujours positive** — le sens vit dans `direction`. Un
@@ -69,5 +89,21 @@ export class CorruptedPriceRuleError extends TechnicalError {
     readonly reason: string,
   ) {
     super("pricing.rule.corrupted", `Règle tarifaire « ${ruleId} » illisible : ${reason}.`);
+  }
+}
+
+/**
+ * Une ligne de `price_floors` que le domaine ne sait pas lire.
+ *
+ * Même raisonnement que pour une règle illisible, en plus tranché : ignorer un
+ * plancher retirerait la protection exactement là où quelqu'un avait jugé
+ * qu'elle était nécessaire — et sans que rien ne le dise.
+ */
+export class CorruptedPriceFloorError extends TechnicalError {
+  constructor(
+    readonly floorId: string,
+    readonly reason: string,
+  ) {
+    super("pricing.floor.corrupted", `Plancher « ${floorId} » illisible : ${reason}.`);
   }
 }

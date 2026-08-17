@@ -66,6 +66,29 @@ export type PriceFloor =
   | { readonly mode: "amount"; readonly cents: number };
 
 /**
+ * Un plancher **posé sur une portée** — la forme sous laquelle il se saisit et
+ * se persiste.
+ *
+ * Trois choses qu'il n'a pas, et dont chacune est une décision :
+ *
+ * - **pas d'étage.** Un plancher n'est pas une couche de prix, c'est la limite
+ *   que l'empilement des couches ne franchit pas. Lui donner un rang le ferait
+ *   composer avec les autres, alors qu'il les arbitre ;
+ * - **pas d'audience.** Il protège la maison contre son propre barème, pas un
+ *   client contre un autre. Un plancher négociable ne plancherait rien ;
+ * - **pas de fenêtre.** Un garde-fou daté est un garde-fou qui s'ouvre tout
+ *   seul un matin, sans que personne ne l'ait décidé ce matin-là.
+ *
+ * Reste donc la **portée**, résolue exactement comme celle des règles : le plus
+ * spécifique gagne, et il n'y a rien à réapprendre.
+ */
+export interface ScopedPriceFloor {
+  readonly id: string;
+  readonly scope: PriceScope;
+  readonly floor: PriceFloor;
+}
+
+/**
  * Une règle tarifaire.
  *
  * `replace` **pose** un prix (un engagement en euros — la mercuriale) ; `alter`

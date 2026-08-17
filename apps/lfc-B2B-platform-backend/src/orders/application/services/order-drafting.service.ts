@@ -29,7 +29,9 @@ import {
   UnknownSkuError,
 } from "../../domain/errors/order-errors.js";
 import { pricingContextFor } from "../../../pricing/application/pricing-context.js";
+import { PriceFloorReader } from "../../../pricing/domain/ports/price-floor.reader.js";
 import { PriceRuleReader } from "../../../pricing/domain/ports/price-rule.reader.js";
+import { resolveFloor } from "../../../pricing/domain/resolve-floor.js";
 import { resolvePrice } from "../../../pricing/domain/resolve-price.js";
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
@@ -92,6 +94,7 @@ export class OrderDrafting {
   constructor(
     private readonly catalog: ProductCatalogReader,
     private readonly priceRules: PriceRuleReader,
+    private readonly priceFloors: PriceFloorReader,
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
     private readonly deliveryDefaults: DeliveryDefaultsReader,
@@ -207,8 +210,9 @@ export class OrderDrafting {
    * Fusionne les lignes par SKU (quantités additionnées) puis résout chacune —
    * c'est ici que le prix devient autoritaire, jamais celui du client.
    *
-   * Deux étapes, dans cet ordre : le **catalogue** donne le prix canonique, puis
-   * les **règles tarifaires** l'altèrent. La fusion par SKU précède les deux, et
+   * Trois étapes, dans cet ordre : le **catalogue** donne le prix canonique, les
+   * **règles tarifaires** l'altèrent, et le **plancher** arbitre le résultat. La
+   * fusion par SKU précède les trois, et
    * c'est ce qui rend le palier de volume juste : deux lignes de 60 croissants
    * ouvrent le palier « 100+ », alors qu'aucune ne l'ouvrirait seule.
    */
@@ -233,8 +237,16 @@ export class OrderDrafting {
           throw new UnknownSkuError(sku);
         }
         const context = pricingContextFor(item.sku, item.category, quantity, parties, at);
-        const rules = await this.priceRules.candidatesFor(context);
-        const resolved = resolvePrice(item.unitPriceCents, rules, context);
+        const [rules, floors] = await Promise.all([
+          this.priceRules.candidatesFor(context),
+          this.priceFloors.candidatesFor(context),
+        ]);
+        const resolved = resolvePrice(
+          item.unitPriceCents,
+          rules,
+          context,
+          resolveFloor(floors, context),
+        );
 
         return {
           sku: item.sku,

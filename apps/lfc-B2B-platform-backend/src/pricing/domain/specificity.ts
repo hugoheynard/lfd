@@ -27,7 +27,12 @@ const AUDIENCE_RANK: Readonly<Record<PriceAudience["type"], number>> = {
   company: 2,
 };
 
-const SCOPE_RANK: Readonly<Record<PriceScope["type"], number>> = {
+/**
+ * Exporté parce que le **plancher** s'y adosse : il n'a ni étage ni audience,
+ * mais il a une portée, et elle se résout selon le même ordre. Deux échelles de
+ * spécificité pour la même notion finiraient par diverger d'un cran.
+ */
+export const SCOPE_RANK: Readonly<Record<PriceScope["type"], number>> = {
   global: 0,
   category: 1,
   product: 2,
@@ -52,8 +57,8 @@ function compare(left: Specificity, right: Specificity): number {
   return 0;
 }
 
-/** La règle vise-t-elle cet article ? Un `id` qui ne correspond pas exclut la règle. */
-function matchesScope(scope: PriceScope, context: PricingContext): boolean {
+/** La portée vise-t-elle cet article ? Un `id` qui ne correspond pas l'exclut. */
+export function matchesScope(scope: PriceScope, context: PricingContext): boolean {
   switch (scope.type) {
     case "global":
       return true;

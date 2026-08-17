@@ -110,6 +110,13 @@ function seedRule(seed: RuleSeed) {
   });
 }
 
+/** Pose un plancher. La saisie staff est la slice S3 ; ici on sème. */
+function seedFloor(scopeType: string, scopeId: string | null, cents: number) {
+  return ctx.prisma.priceFloor.create({
+    data: { scopeType, scopeId, mode: "amount", value: cents, createdBy: "e2e" },
+  });
+}
+
 function placeOrder(quantity: number) {
   return ctx
     .asSub("auth0|solo")
@@ -232,6 +239,66 @@ describe("une règle change le prix facturé", () => {
    * Le parcours zéro friction est le défaut de la boutique : une commande sans
    * entreprise ne doit pas hériter d'un tarif négocié pour quelqu'un d'autre.
    */
+  /**
+   * Le plancher est le seul garde-fou contre l'empilement accidentel : quatre
+   * étages qui se composent, un barème recopié une fois de trop, et le prix
+   * passe sous ce que la maison peut vendre. Ce test prouve qu'il **relève**
+   * réellement la ligne, pas seulement qu'il se lit.
+   */
+  it("le plancher relève un prix que les règles ont trop descendu", async () => {
+    await seedRule({ id: "promo", stage: "promotion", bp: 5000 }); // 200 → 100
+    await seedFloor("global", null, 150);
+
+    const response = await placeOrder(1);
+
+    expect(await unitPriceOf(jsonBody<{ id: string }>(response).id)).toBe(150);
+  });
+
+  it("un plancher que le prix ne touche pas ne change rien", async () => {
+    await seedRule({ id: "promo", stage: "promotion", bp: 1000 }); // 200 → 180
+    await seedFloor("global", null, 150);
+
+    const response = await placeOrder(1);
+
+    expect(await unitPriceOf(jsonBody<{ id: string }>(response).id)).toBe(180);
+  });
+
+  /**
+   * L'héritage, sur le chemin qui facture : le plancher de la FAMILLE couvre
+   * l'article sans que personne n'ait eu à le recopier dessus.
+   */
+  it("le plancher de la famille couvre ses articles", async () => {
+    await seedRule({ id: "promo", stage: "promotion", bp: 5000 });
+    await seedFloor("category", "viennoiserie", 170);
+
+    const response = await placeOrder(1);
+
+    expect(await unitPriceOf(jsonBody<{ id: string }>(response).id)).toBe(170);
+  });
+
+  /** Un plancher d'article REMPLACE celui de sa famille — il peut donc l'abaisser. */
+  it("le plancher de l'article l'emporte sur celui de sa famille", async () => {
+    await seedRule({ id: "promo", stage: "promotion", bp: 5000 });
+    await seedFloor("category", "viennoiserie", 170);
+    await seedFloor("product", SKU, 120);
+
+    const response = await placeOrder(1);
+
+    expect(await unitPriceOf(jsonBody<{ id: string }>(response).id)).toBe(120);
+  });
+
+  /**
+   * Le piège que `coalesce` répare, dans sa seconde occurrence : sans lui, deux
+   * planchers GLOBAUX cohabiteraient, Postgres tenant deux NULL pour distincts —
+   * et la résolution en tirerait un au hasard.
+   */
+  it("refuse deux planchers de même portée, globaux compris", async () => {
+    await seedFloor("global", null, 100);
+
+    await expect(seedFloor("global", null, 200)).rejects.toThrow();
+    await expect(seedFloor("category", "viennoiserie", 100)).resolves.toBeDefined();
+  });
+
   it("une règle visant une entreprise n'atteint pas une commande sans entreprise", async () => {
     const company = await createCompany(ctx.prisma, { name: "Dupont" });
     await seedRule({

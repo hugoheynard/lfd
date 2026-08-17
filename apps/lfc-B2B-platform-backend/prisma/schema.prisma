@@ -1853,3 +1853,40 @@ model PriceRule {
   @@map("price_rules")
   @@schema("public")
 }
+
+/// Le **plancher** posé sur une portée : la limite que l'empilement des règles
+/// ne franchit pas.
+///
+/// Il n'a ni étage, ni audience, ni fenêtre — cf. `ScopedPriceFloor` dans le
+/// domaine, où chacune de ces trois absences est une décision et non un manque.
+/// Reste la portée, résolue comme celle des règles : le plus spécifique gagne,
+/// et un plancher d'article **remplace** celui de sa famille.
+///
+/// ⚠️ Comme pour les règles, l'unicité réelle n'est PAS dans ce modèle :
+/// `@@unique([scopeType, scopeId])` laisserait passer deux planchers globaux,
+/// Postgres tenant deux `NULL` pour distincts. C'est l'index unique
+/// `price_floors_one_per_scope` sur `coalesce(scope_id, '')`, posé en SQL par la
+/// migration, qui porte la garantie — même leçon que `coalesce` dans la
+/// contrainte d'exclusion des règles.
+model PriceFloor {
+  id String @id @default(cuid())
+
+  /// `global` | `category` | `product` | `variant`. `scopeId` est `NULL` **si et
+  /// seulement si** `scopeType = 'global'`.
+  scopeType String  @map("scope_type")
+  scopeId   String? @map("scope_id")
+
+  /// `percent` : une fraction du prix canonique, en points de base — elle suit
+  /// le tarif quand le PIM augmente. `amount` : une limite absolue en centimes.
+  mode  String
+  value Int
+
+  /// Qui a posé cette limite. Même raison que sur une règle : la question posée
+  /// six mois plus tard est toujours « qui a autorisé de descendre si bas ».
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("price_floors")
+  @@schema("public")
+}
