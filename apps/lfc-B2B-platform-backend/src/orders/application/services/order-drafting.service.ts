@@ -31,9 +31,14 @@ import {
 import { pricingContextFor } from "../../../pricing/application/pricing-context.js";
 import { PriceFloorReader } from "../../../pricing/domain/ports/price-floor.reader.js";
 import { PriceRuleReader } from "../../../pricing/domain/ports/price-rule.reader.js";
-import { resolveFloor } from "../../../pricing/domain/resolve-floor.js";
+import { decideFloor } from "../../../pricing/domain/floor-policy.js";
+import { observedRatioBp } from "../../../pricing/domain/elasticity.js";
+import { rollingWindows } from "../../../pricing/domain/elasticity-windows.js";
+import { SkuVolumeReader } from "../../../pricing/domain/ports/sku-volume.reader.js";
+import { floorCentsFor, resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
 import { resolvePrice } from "../../../pricing/domain/resolve-price.js";
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
+import type { ScopedPriceFloor } from "../../../pricing/domain/price-rule.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 
 /** Ce qu'un panier demande, quelle que soit la porte par laquelle il arrive. */
@@ -95,6 +100,7 @@ export class OrderDrafting {
     private readonly catalog: ProductCatalogReader,
     private readonly priceRules: PriceRuleReader,
     private readonly priceFloors: PriceFloorReader,
+    private readonly skuVolumes: SkuVolumeReader,
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
     private readonly deliveryDefaults: DeliveryDefaultsReader,
@@ -241,11 +247,24 @@ export class OrderDrafting {
           this.priceRules.candidatesFor(context),
           this.priceFloors.candidatesFor(context),
         ]);
+
+        // Quel plancher VISE cet article, puis lequel de ses étages s'ouvre :
+        // deux questions distinctes, la seconde dépendant de la commande et de
+        // l'historique.
+        const scoped = resolveScopedFloor(floors, context);
+        const decision =
+          scoped === null
+            ? null
+            : decideFloor(scoped.policy, {
+                quantity,
+                observedVolumeRatioBp: await this.observedRatio(item.sku, scoped, at),
+              });
+
         const resolved = resolvePrice(
           item.unitPriceCents,
           rules,
           context,
-          resolveFloor(floors, context),
+          decision?.applied ?? null,
         );
 
         return {
@@ -261,10 +280,49 @@ export class OrderDrafting {
             basePriceCents: resolved.basePriceCents,
             steps: resolved.steps,
             floored: resolved.floored,
+            // La décision de plancher est figée AVEC le prix. C'est ce qui rend
+            // le plancher dynamique tenable : sans la mesure consignée, un prix
+            // qui dépend de l'historique cesse d'être explicable dès que
+            // l'historique bouge. Elle ne se relit jamais.
+            floorDecision:
+              decision === null
+                ? null
+                : {
+                    tier: decision.tier,
+                    floorCents: floorCentsFor(decision.applied, item.unitPriceCents),
+                    observedVolumeRatioBp: decision.unlock?.observedVolumeRatioBp ?? null,
+                    quantityMet: decision.unlock?.quantityMet ?? true,
+                    volumeMet: decision.unlock?.volumeMet ?? true,
+                  },
           },
         };
       }),
     );
+  }
+
+  /**
+   * Le ratio de volume observé sur cet article — **uniquement quand il décide
+   * de quelque chose**.
+   *
+   * Aucune requête si le plancher n'a pas de porte, ou si sa clé ne parle pas de
+   * volume : la très grande majorité des commandes ne paie donc rien pour cette
+   * mesure. C'est la seule façon d'admettre une lecture d'historique sur le
+   * chemin qui facture sans le ralentir pour tout le monde.
+   */
+  private async observedRatio(
+    sku: string,
+    scoped: ScopedPriceFloor,
+    at: Date,
+  ): Promise<number | null> {
+    if (scoped.policy.dynamic?.unlock.minVolumeRatioBp == null) {
+      return null;
+    }
+    const windows = rollingWindows(at);
+    const [baseline, observed] = await Promise.all([
+      this.skuVolumes.volumesFor([sku], windows.baseline),
+      this.skuVolumes.volumesFor([sku], windows.observed),
+    ]);
+    return observedRatioBp(baseline.get(sku) ?? 0, observed.get(sku) ?? 0);
   }
 }
 

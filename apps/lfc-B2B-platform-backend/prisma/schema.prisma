@@ -821,6 +821,11 @@ model OrderLine {
   /// vérifier.
   basePriceCents Int?     @map("base_price_cents")
   pricingSteps   Json?    @map("pricing_steps")
+  /// Quel étage de plancher a mordu, et sur quelles preuves — figé avec le prix.
+  /// C'est ce qui rend le plancher DYNAMIQUE tenable : sans la mesure consignée,
+  /// un prix qui dépend de l'historique cesse d'être explicable dès que
+  /// l'historique bouge. Ne se relit jamais.
+  pricingFloor   Json?    @map("pricing_floor")
   /// Le plancher a-t-il relevé ce prix ? Consigné plutôt qu'avalé : un prix
   /// relevé est un prix dont une règle n'a pas produit son effet.
   pricingFloored Boolean? @map("pricing_floored")
@@ -1894,10 +1899,25 @@ model PriceFloor {
   scopeType String  @map("scope_type")
   scopeId   String? @map("scope_id")
 
+  /// **Le mur** — jamais franchi, quoi qu'il arrive.
+  ///
   /// `percent` : une fraction du prix canonique, en points de base — elle suit
   /// le tarif quand le PIM augmente. `amount` : une limite absolue en centimes.
   mode  String
   value Int
+
+  /// **La porte** : un plancher plus bas, que le volume déverrouille. `NULL` =
+  /// il n'y en a pas, et le mur est la seule limite.
+  ///
+  /// Les deux conditions ci-dessous doivent être remplies pour l'ouvrir — la
+  /// plus stricte gagne. Une condition `NULL` est réputée remplie ; les deux
+  /// `NULL` feraient de la porte un mur, ce que l'agrégat refuse.
+  dynamicMode  String? @map("dynamic_mode")
+  dynamicValue Int?    @map("dynamic_value")
+  /// Quantité minimale **sur la commande** — déterministe au checkout.
+  unlockMinQuantity Int? @map("unlock_min_quantity")
+  /// Ratio de volume **observé** requis, en points de base (`12500` = ×1,25).
+  unlockMinVolumeRatioBp Int? @map("unlock_min_volume_ratio_bp")
 
   /// Qui a posé cette limite. Même raison que sur une règle : la question posée
   /// six mois plus tard est toujours « qui a autorisé de descendre si bas ».

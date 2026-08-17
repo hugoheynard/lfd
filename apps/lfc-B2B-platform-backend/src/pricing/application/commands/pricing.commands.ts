@@ -1,4 +1,5 @@
-import type { PriceFloor, PriceScope } from "../../domain/price-rule.js";
+import type { PriceFloorPolicy } from "../../domain/floor-policy.js";
+import type { PriceScope } from "../../domain/price-rule.js";
 import type { PricingRuleDraft } from "../../domain/entities/pricing-rule.js";
 
 /**
@@ -23,7 +24,7 @@ export class RemovePriceRuleCommand {
 export class SetPriceFloorCommand {
   constructor(
     readonly scope: PriceScope,
-    readonly floor: PriceFloor,
+    readonly policy: PriceFloorPolicy,
     readonly staffSub: string,
   ) {}
 }

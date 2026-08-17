@@ -1,15 +1,18 @@
 import {
+  DynamicFloorNotBelowHardError,
   FloorAboveCanonicalError,
   InvalidAlterationError,
   ScopeIdMismatchError,
+  UnlockableDynamicFloorError,
 } from "../pricing-errors.js";
+import type { PriceFloorPolicy } from "../floor-policy.js";
 import type { PriceFloor, PriceScope, ScopedPriceFloor } from "../price-rule.js";
 
-/** L'état persisté d'un plancher posé. */
+/** L'état persisté d'un plancher posé — le mur, et la porte s'il y en a une. */
 export interface PricingFloorState {
   readonly id: string;
   readonly scope: PriceScope;
-  readonly floor: PriceFloor;
+  readonly policy: PriceFloorPolicy;
   readonly createdBy: string;
 }
 
@@ -42,25 +45,31 @@ export class PricingFloor {
    * @throws {InvalidAlterationError} grandeur nulle ou négative.
    * @throws {FloorAboveCanonicalError} fraction supérieure à 100 % du canonique.
    */
-  static pose(scope: PriceScope, floor: PriceFloor, createdBy: string): PricingFloor {
+  static pose(scope: PriceScope, policy: PriceFloorPolicy, createdBy: string): PricingFloor {
     if ((scope.type === "global") !== (scope.id === null)) {
       throw new ScopeIdMismatchError("portée", scope.type === "global", scope.id);
     }
 
-    const magnitude = floor.mode === "percent" ? floor.bp : floor.cents;
-    if (!Number.isInteger(magnitude) || magnitude <= 0) {
-      throw new InvalidAlterationError(magnitude);
+    assertSaneFloor(policy.hard);
+    const dynamic = policy.dynamic;
+    if (dynamic !== null) {
+      assertSaneFloor(dynamic.floor);
+
+      // Une porte sans clé serait un mur plus bas : le plancher dur ne servirait
+      // plus à rien, et personne ne verrait qu'il a été contourné.
+      if (dynamic.unlock.minQuantity === null && dynamic.unlock.minVolumeRatioBp === null) {
+        throw new UnlockableDynamicFloorError();
+      }
+
+      // Une porte PLUS HAUTE que le mur ne s'ouvre sur rien : le mur mordrait
+      // d'abord, et l'écran afficherait une condition de volume qui ne change
+      // jamais le prix. Refusé à la saisie, où c'est encore une faute de frappe.
+      if (!isStrictlyBelow(dynamic.floor, policy.hard)) {
+        throw new DynamicFloorNotBelowHardError();
+      }
     }
 
-    // Un plancher à 120 % du canonique ne planchérait rien : il RELÈVERAIT tous
-    // les prix, y compris ceux qu'aucune règle n'a touchés. Ce serait une hausse
-    // tarifaire déguisée en garde-fou, saisie dans l'écran qui protège des
-    // hausses — et personne ne penserait à la chercher là.
-    if (floor.mode === "percent" && floor.bp > FULL_CANONICAL_BP) {
-      throw new FloorAboveCanonicalError(floor.bp);
-    }
-
-    return new PricingFloor({ id: floorIdForScope(scope), scope, floor, createdBy });
+    return new PricingFloor({ id: floorIdForScope(scope), scope, policy, createdBy });
   }
 
   static reconstitute(state: PricingFloorState): PricingFloor {
@@ -73,10 +82,44 @@ export class PricingFloor {
 
   /** La forme que lit la résolution. */
   get asScopedFloor(): ScopedPriceFloor {
-    return { id: this.state.id, scope: this.state.scope, floor: this.state.floor };
+    return { id: this.state.id, scope: this.state.scope, policy: this.state.policy };
   }
 
   toPersistence(): PricingFloorState {
     return this.state;
   }
+}
+
+/** Grandeur strictement positive, et fraction qui ne dépasse pas le canonique. */
+function assertSaneFloor(floor: PriceFloor): void {
+  const magnitude = floor.mode === "percent" ? floor.bp : floor.cents;
+  if (!Number.isInteger(magnitude) || magnitude <= 0) {
+    throw new InvalidAlterationError(magnitude);
+  }
+  // Un plancher à 120 % du canonique ne planchérait rien : il RELÈVERAIT tous
+  // les prix, y compris ceux qu'aucune règle n'a touchés. Ce serait une hausse
+  // tarifaire déguisée en garde-fou, saisie dans l'écran qui protège des
+  // hausses — et personne ne penserait à la chercher là.
+  if (floor.mode === "percent" && floor.bp > FULL_CANONICAL_BP) {
+    throw new FloorAboveCanonicalError(floor.bp);
+  }
+}
+
+/**
+ * La porte est-elle vraiment **sous** le mur ?
+ *
+ * Comparable uniquement à unité égale : « 50 % du tarif » et « 1,20 € » ne se
+ * comparent pas sans connaître l'article, et cet agrégat n'en connaît aucun (il
+ * peut porter sur toute une famille). Deux unités différentes sont donc
+ * **acceptées** — la comparaison se fera à la résolution, article par article,
+ * où elle a enfin un sens.
+ */
+function isStrictlyBelow(door: PriceFloor, wall: PriceFloor): boolean {
+  if (door.mode === "percent" && wall.mode === "percent") {
+    return door.bp < wall.bp;
+  }
+  if (door.mode === "amount" && wall.mode === "amount") {
+    return door.cents < wall.cents;
+  }
+  return true;
 }

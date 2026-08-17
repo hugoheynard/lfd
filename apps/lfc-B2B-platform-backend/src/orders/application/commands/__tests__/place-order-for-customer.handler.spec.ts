@@ -30,6 +30,7 @@ import {
   NO_DELIVERY_DEFAULTS,
 } from "../../../domain/ports/delivery-defaults.reader.js";
 import { PriceFloorReader } from "../../../../pricing/domain/ports/price-floor.reader.js";
+import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.reader.js";
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 
@@ -59,6 +60,13 @@ const noPriceFloors: PriceFloorReader = {
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
 };
+
+/**
+ * Aucune vente mesurée. Sans plancher dynamique conditionné au volume, ce port
+ * n'est jamais appelé — le double existe pour que la construction reste possible,
+ * pas parce que ces suites mesurent quoi que ce soit.
+ */
+const noSkuVolumes: SkuVolumeReader = { volumesFor: () => Promise.resolve(new Map()) };
 
 const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": {
@@ -203,7 +211,15 @@ function handler(
     "clientBaseUrl" in options ? (options.clientBaseUrl ?? null) : "https://boutique.lfc.fr";
   return new PlaceOrderForCustomerHandler(
     guardDouble,
-    new OrderDrafting(catalog, noPriceRules, noPriceFloors, pickups, zones, noDeliveryDefaults()),
+    new OrderDrafting(
+      catalog,
+      noPriceRules,
+      noPriceFloors,
+      noSkuVolumes,
+      pickups,
+      zones,
+      noDeliveryDefaults(),
+    ),
     repo(sink),
     options.payments ?? payments(),
     options.events ?? new FakeEvents(),
@@ -346,7 +362,15 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     };
     const free = new PlaceOrderForCustomerHandler(
       guard("orders"),
-      new OrderDrafting(gratuit, noPriceRules, noPriceFloors, pickups, zones, noDeliveryDefaults()),
+      new OrderDrafting(
+        gratuit,
+        noPriceRules,
+        noPriceFloors,
+        noSkuVolumes,
+        pickups,
+        zones,
+        noDeliveryDefaults(),
+      ),
       repo(sink),
       payments(intents),
       new FakeEvents(),

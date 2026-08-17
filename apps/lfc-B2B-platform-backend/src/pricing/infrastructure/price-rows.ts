@@ -1,9 +1,11 @@
 import type { PriceFloorView, PriceRuleView } from "@lfd/contracts";
 
 import { CorruptedPriceFloorError, CorruptedPriceRuleError } from "../domain/pricing-errors.js";
+import type { DynamicFloor } from "../domain/floor-policy.js";
 import {
   PRICE_STAGES,
   type PriceAlteration,
+  type PriceFloor,
   type PriceRule,
   type PriceScopeType,
   type ScopedPriceFloor,
@@ -49,6 +51,10 @@ export interface FloorRow {
   readonly scopeId: string | null;
   readonly mode: string;
   readonly value: number;
+  readonly dynamicMode: string | null;
+  readonly dynamicValue: number | null;
+  readonly unlockMinQuantity: number | null;
+  readonly unlockMinVolumeRatioBp: number | null;
   readonly createdBy: string;
   readonly updatedAt: Date;
 }
@@ -114,26 +120,64 @@ export function floorFromRow(row: FloorRow): ScopedPriceFloor {
   if (scopeType === undefined) {
     throw new CorruptedPriceFloorError(row.id, `portée inattendue « ${row.scopeType} »`);
   }
-  if (row.mode !== "percent" && row.mode !== "amount") {
-    throw new CorruptedPriceFloorError(row.id, `unité inconnue « ${row.mode} »`);
-  }
   return {
     id: row.id,
     scope: { type: scopeType, id: row.scopeId },
-    floor:
-      row.mode === "percent"
-        ? { mode: "percent", bp: row.value }
-        : { mode: "amount", cents: row.value },
+    policy: { hard: floorOf(row.id, row.mode, row.value), dynamic: dynamicOf(row) },
+  };
+}
+
+/** Une grandeur + son unité → un plancher. */
+function floorOf(rowId: string, mode: string, value: number): PriceFloor {
+  if (mode === "percent") {
+    return { mode: "percent", bp: value };
+  }
+  if (mode === "amount") {
+    return { mode: "amount", cents: value };
+  }
+  throw new CorruptedPriceFloorError(rowId, `unité inconnue « ${mode} »`);
+}
+
+/**
+ * La porte, ou `null`.
+ *
+ * Une porte **sans clé** est refusée plutôt qu'ignorée : elle serait un mur plus
+ * bas, le plancher dur ne servirait plus à rien, et personne ne verrait qu'il a
+ * été contourné. La base l'interdit aussi par un `CHECK` — ceci est la seconde
+ * barrière, celle qui tient quand la donnée n'a pas traversé l'agrégat.
+ */
+function dynamicOf(row: FloorRow): DynamicFloor | null {
+  if (row.dynamicMode === null || row.dynamicValue === null) {
+    return null;
+  }
+  if (row.unlockMinQuantity === null && row.unlockMinVolumeRatioBp === null) {
+    throw new CorruptedPriceFloorError(row.id, "plancher dynamique sans condition d'ouverture");
+  }
+  return {
+    floor: floorOf(row.id, row.dynamicMode, row.dynamicValue),
+    unlock: {
+      minQuantity: row.unlockMinQuantity,
+      minVolumeRatioBp: row.unlockMinVolumeRatioBp,
+    },
   };
 }
 
 export function floorViewFromRow(row: FloorRow): PriceFloorView {
-  const floor = floorFromRow(row);
+  const scoped = floorFromRow(row);
+  const dynamic = scoped.policy.dynamic;
   return {
-    id: floor.id,
-    scope: floor.scope,
-    mode: floor.floor.mode,
+    id: scoped.id,
+    scope: scoped.scope,
+    mode: scoped.policy.hard.mode,
     value: row.value,
+    dynamic:
+      dynamic === null
+        ? null
+        : {
+            mode: dynamic.floor.mode,
+            value: dynamic.floor.mode === "percent" ? dynamic.floor.bp : dynamic.floor.cents,
+            unlock: dynamic.unlock,
+          },
     createdBy: row.createdBy,
     updatedAt: row.updatedAt.toISOString(),
   };

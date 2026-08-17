@@ -57,7 +57,7 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
   constructor(private readonly floors: PricingFloorRepository) {}
 
   async execute(command: SetPriceFloorCommand): Promise<void> {
-    await this.floors.pose(PricingFloor.pose(command.scope, command.floor, command.staffSub));
+    await this.floors.pose(PricingFloor.pose(command.scope, command.policy, command.staffSub));
   }
 }
 

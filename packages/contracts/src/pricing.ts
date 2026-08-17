@@ -110,14 +110,46 @@ export const createPriceRulePayloadSchema = z.object({
 export type CreatePriceRulePayload = z.infer<typeof createPriceRulePayloadSchema>;
 
 /**
+ * La **condition de déverrouillage** d'un plancher dynamique.
+ *
+ * Deux termes, et **les deux** doivent être remplis — la plus stricte gagne. Un
+ * terme absent est réputé rempli ; les deux absents feraient du plancher
+ * dynamique un plancher tout court, ce que le serveur refuse.
+ */
+export const floorUnlockSchema = z.object({
+  /** Quantité minimale **sur la commande**. `null` = pas de condition. */
+  minQuantity: z.number().int().positive().nullable(),
+  /**
+   * Ratio de volume **observé** requis, en points de base (`12500` = ×1,25).
+   * L'écran propose par défaut le ratio iso-chiffre de la baisse. `null` = pas
+   * de condition.
+   */
+  minVolumeRatioBp: z.number().int().positive().nullable(),
+});
+export type FloorUnlockPayload = z.infer<typeof floorUnlockSchema>;
+
+/** Un plancher plus bas, et la clé qui l'ouvre. */
+export const dynamicFloorSchema = z.object({
+  mode: priceModeSchema,
+  value: z.number().int().positive(),
+  unlock: floorUnlockSchema,
+});
+export type DynamicFloorPayload = z.infer<typeof dynamicFloorSchema>;
+
+/**
  * Poser un plancher sur une portée. **Idempotent par portée** : re-poser
  * remplace, il n'y a jamais deux limites sur la même cible.
+ *
+ * `mode` / `value` décrivent le **mur** — jamais franchi, quoi qu'il arrive.
+ * `dynamic` décrit la **porte** : un plancher plus bas que le volume ouvre.
  */
 export const setPriceFloorPayloadSchema = z.object({
   scope: priceScopeSchema,
   mode: priceModeSchema,
   /** Points de base du **prix canonique** si `percent`, centimes si `amount`. */
   value: z.number().int().positive(),
+  /** La porte, ou `null` s'il n'y en a pas. */
+  dynamic: dynamicFloorSchema.nullable().default(null),
 });
 export type SetPriceFloorPayload = z.infer<typeof setPriceFloorPayloadSchema>;
 
@@ -136,14 +168,39 @@ export interface PriceRuleView {
   readonly createdAt: string;
 }
 
-/** Un plancher tel que l'écran le lit. */
+/**
+ * Un plancher tel que l'écran le lit — le **mur**, et la **porte** s'il y en a
+ * une.
+ *
+ * `mode` / `value` sont ceux du mur : c'est la limite qui vaut toujours, donc
+ * celle qu'un écran affiche quand il n'en montre qu'une.
+ */
 export interface PriceFloorView {
   readonly id: string;
   readonly scope: PriceScopePayload;
   readonly mode: PriceMode;
   readonly value: number;
+  readonly dynamic: DynamicFloorPayload | null;
   readonly createdBy: string;
   readonly updatedAt: string;
+}
+
+/**
+ * **Quel étage de plancher a mordu**, et sur quelles preuves — figé avec le prix.
+ *
+ * C'est ce qui rend le plancher dynamique tenable. Faire dépendre un prix de
+ * l'historique le rendrait inexplicable dès que l'historique bouge ; la mesure
+ * est donc consignée au moment où elle a compté, et ne se relit jamais.
+ */
+export interface FloorDecisionView {
+  readonly tier: "hard" | "dynamic";
+  /** Le plancher appliqué, ramené en centimes sur cet article. */
+  readonly floorCents: number;
+  /** Le ratio de volume mesuré à cet instant. `null` = pas de référence. */
+  readonly observedVolumeRatioBp: number | null;
+  /** Les deux termes de la condition, tels qu'ils ont été évalués. */
+  readonly quantityMet: boolean;
+  readonly volumeMet: boolean;
 }
 
 /**
@@ -179,6 +236,15 @@ export const priceStepsSchema = z.array(
   }),
 );
 
+/** Le schéma de la décision de plancher, pour **relire** une trace persistée. */
+export const floorDecisionSchema = z.object({
+  tier: z.enum(["hard", "dynamic"]),
+  floorCents: z.number().int(),
+  observedVolumeRatioBp: z.number().int().nullable(),
+  quantityMet: z.boolean(),
+  volumeMet: z.boolean(),
+});
+
 /**
  * **La trace figée sur une ligne de commande.**
  *
@@ -197,6 +263,12 @@ export interface OrderLinePricingTrace {
   readonly steps: readonly PriceStepView[];
   /** Le plancher a-t-il **relevé** le prix ? */
   readonly floored: boolean;
+  /**
+   * Quel étage de plancher s'appliquait, et sur quelles preuves. `null` quand
+   * aucune limite n'était posée — ou sur une commande antérieure au plancher à
+   * deux étages.
+   */
+  readonly floorDecision: FloorDecisionView | null;
 }
 
 /**

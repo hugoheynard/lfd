@@ -488,6 +488,9 @@ export {
   priceScopeTypeSchema,
   priceStageSchema,
   priceStepsSchema,
+  dynamicFloorSchema,
+  floorUnlockSchema,
+  floorDecisionSchema,
   setPriceFloorPayloadSchema,
 } from "./pricing.js";
 export type {
@@ -504,6 +507,9 @@ export type {
   PriceStage,
   OrderLinePricingTrace,
   PriceStepView,
+  DynamicFloorPayload,
+  FloorDecisionView,
+  FloorUnlockPayload,
   ElasticityComparison,
   ItemElasticityView,
   NegotiationRoom,

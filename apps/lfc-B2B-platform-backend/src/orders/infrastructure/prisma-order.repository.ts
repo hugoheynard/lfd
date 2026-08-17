@@ -81,6 +81,10 @@ export class PrismaOrderRepository extends OrderRepository {
             // distinction qu'on veut tenir ici — absence = commande antérieure.
             pricingSteps: line.pricing === null ? Prisma.DbNull : jsonSteps(line.pricing.steps),
             pricingFloored: line.pricing?.floored ?? null,
+            pricingFloor:
+              line.pricing?.floorDecision == null
+                ? Prisma.DbNull
+                : { ...line.pricing.floorDecision },
           })),
         },
       },

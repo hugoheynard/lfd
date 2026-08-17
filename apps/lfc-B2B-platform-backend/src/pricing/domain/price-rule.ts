@@ -1,3 +1,5 @@
+import type { PriceFloorPolicy } from "./floor-policy.js";
+
 /**
  * Le vocabulaire de la **résolution de prix** — cf.
  * `documentation/b2b/architecture-resolution-de-prix.md`.
@@ -85,7 +87,15 @@ export type PriceFloor =
 export interface ScopedPriceFloor {
   readonly id: string;
   readonly scope: PriceScope;
-  readonly floor: PriceFloor;
+  /**
+   * Le mur et, s'il y en a une, la porte — cf. `PriceFloorPolicy`.
+   *
+   * Une **politique** et non un plancher nu : quel étage s'applique dépend de la
+   * commande et de l'historique, donc la portée seule ne suffit plus à répondre.
+   * Les deux questions restent séparées — « quel plancher me vise ? » puis
+   * « lequel de ses étages s'ouvre ? ».
+   */
+  readonly policy: PriceFloorPolicy;
 }
 
 /**

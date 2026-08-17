@@ -31,6 +31,7 @@ import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
 import { UnknownPriceScopeError } from "../domain/pricing-errors.js";
 import type { PricingBoardView } from "@lfd/contracts";
 import type { PricingRuleDraft } from "../domain/entities/pricing-rule.js";
+import type { PriceFloorPolicy } from "../domain/floor-policy.js";
 import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
 
 /**
@@ -87,7 +88,7 @@ export class AdminPricingController {
     @StaffSub() staffSub: string,
   ): Promise<void> {
     await this.commands.execute<SetPriceFloorCommand, void>(
-      new SetPriceFloorCommand(toScope(payload.scope), toFloor(payload), staffSub),
+      new SetPriceFloorCommand(toScope(payload.scope), toPolicy(payload), staffSub),
     );
   }
 
@@ -158,10 +159,25 @@ function toScope(scope: PriceScopePayload): PriceScope {
   return { type: scope.type, id: scope.id };
 }
 
-function toFloor(payload: SetPriceFloorPayload): PriceFloor {
-  return payload.mode === "percent"
-    ? { mode: "percent", bp: payload.value }
-    : { mode: "amount", cents: payload.value };
+/**
+ * Payload → politique de plancher : le **mur**, et la **porte** s'il y en a une.
+ *
+ * Les conditions d'ouverture traversent telles quelles ; c'est l'agrégat qui
+ * refuse une porte sans clé, ou une porte au-dessus du mur.
+ */
+function toPolicy(payload: SetPriceFloorPayload): PriceFloorPolicy {
+  const dynamic = payload.dynamic;
+  return {
+    hard: toFloor(payload.mode, payload.value),
+    dynamic:
+      dynamic === null
+        ? null
+        : { floor: toFloor(dynamic.mode, dynamic.value), unlock: dynamic.unlock },
+  };
+}
+
+function toFloor(mode: "percent" | "amount", value: number): PriceFloor {
+  return mode === "percent" ? { mode: "percent", bp: value } : { mode: "amount", cents: value };
 }
 
 const SCOPE_TYPES = ["global", "category", "product", "variant"] as const;

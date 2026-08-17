@@ -9,6 +9,7 @@ import {
   type OrderLineView,
   type OrderLinePricingTrace,
   priceStepsSchema,
+  floorDecisionSchema,
   type OrderStatus,
   type OrderFulfillment,
   orderFulfillmentSchema,
@@ -37,6 +38,7 @@ interface OrderLineRow {
   readonly basePriceCents: number | null;
   readonly pricingSteps: Prisma.JsonValue | null;
   readonly pricingFloored: boolean | null;
+  readonly pricingFloor: Prisma.JsonValue | null;
 }
 
 /** Une commande telle que Prisma la sélectionne. */
@@ -105,6 +107,7 @@ const ORDER_SELECT = {
       basePriceCents: true,
       pricingSteps: true,
       pricingFloored: true,
+      pricingFloor: true,
     },
   },
 } as const;
@@ -549,5 +552,9 @@ function parseTrace(line: OrderLineRow): OrderLinePricingTrace | null {
     basePriceCents: line.basePriceCents,
     steps: steps.data,
     floored: line.pricingFloored,
+    // Une décision illisible rend `null` sans emporter le reste de la trace : le
+    // détail des étages reste consultable, on perd seulement le commentaire du
+    // plancher.
+    floorDecision: floorDecisionSchema.safeParse(line.pricingFloor).data ?? null,
   };
 }

@@ -246,3 +246,39 @@ export class UnknownPriceScopeError extends DomainError {
     super("pricing.scope.unknown", `Portée inconnue « ${value} ».`);
   }
 }
+
+/**
+ * Un plancher dynamique **sans condition d'ouverture**.
+ *
+ * Ce serait un mur plus bas : le plancher dur ne servirait plus à rien, et
+ * personne ne verrait qu'il a été contourné — puisque l'écran continuerait de
+ * l'afficher.
+ */
+export class UnlockableDynamicFloorError extends DomainError {
+  constructor() {
+    super(
+      "pricing.floor.dynamic_without_key",
+      "Un plancher dynamique doit être déverrouillé par une quantité, un volume, ou les deux : sans condition, il remplacerait purement et simplement le plancher dur.",
+    );
+  }
+}
+
+/**
+ * Un plancher dynamique **au-dessus** du plancher dur.
+ *
+ * Il ne s'ouvrirait sur rien : le mur mordrait d'abord, et l'écran afficherait
+ * une condition de volume qui ne change jamais le prix. Refusé à la saisie,
+ * pendant que c'est encore une faute de frappe.
+ *
+ * Comparé seulement à unité égale : « 50 % du tarif » et « 1,20 € » ne se
+ * comparent pas sans connaître l'article, et cet agrégat peut porter sur toute
+ * une famille.
+ */
+export class DynamicFloorNotBelowHardError extends DomainError {
+  constructor() {
+    super(
+      "pricing.floor.dynamic_not_below_hard",
+      "Le plancher dynamique doit être STRICTEMENT sous le plancher dur : au-dessus, il ne s'ouvrirait sur rien.",
+    );
+  }
+}

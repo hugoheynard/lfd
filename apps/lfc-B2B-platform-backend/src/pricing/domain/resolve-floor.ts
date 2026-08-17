@@ -23,20 +23,16 @@ import type { PriceFloor, PricingContext, ScopedPriceFloor } from "./price-rule.
  *   la même raison que pour les règles — une fonction pure doit être
  *   déterministe même appelée avec des données fabriquées à la main.
  */
-export function resolveFloor(
-  floors: readonly ScopedPriceFloor[],
-  context: PricingContext,
-): PriceFloor | null {
-  return resolveScopedFloor(floors, context)?.floor ?? null;
-}
-
 /**
  * Le plancher gagnant **avec sa portée**.
  *
- * L'écran de tarification en a besoin : il doit dire d'où vient la limite qui
- * s'applique — la sienne, ou celle de sa famille. `resolveFloor` n'aurait pas
- * suffi, et retrouver la portée par comparaison de valeurs aurait confondu deux
- * planchers réglés au même montant.
+ * Rend la portée et non seulement la valeur : l'écran doit dire d'où vient la
+ * limite qui s'applique — la sienne, ou celle de sa famille — et retrouver la
+ * portée par comparaison de valeurs aurait confondu deux planchers réglés au
+ * même montant.
+ *
+ * Il ne dit PAS quel étage s'ouvre : c'est une autre question, qui dépend de la
+ * commande et de l'historique, et elle a sa propre fonction (`decideFloor`).
  */
 export function resolveScopedFloor(
   floors: readonly ScopedPriceFloor[],

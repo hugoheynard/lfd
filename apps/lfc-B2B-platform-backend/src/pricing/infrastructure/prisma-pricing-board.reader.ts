@@ -16,6 +16,7 @@ import { BoardElasticityService } from "../application/board-elasticity.service.
 import { ProductCatalogReader } from "../../orders/domain/ports/product-catalog.reader.js";
 import { pricingContextFor } from "../application/pricing-context.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
+import { decideFloor } from "../domain/floor-policy.js";
 import { floorCentsFor, resolveScopedFloor } from "../domain/resolve-floor.js";
 import { resolvePrice } from "../domain/resolve-price.js";
 import { applies, winnerOf } from "../domain/specificity.js";
@@ -166,11 +167,21 @@ function itemView(
     floors.map((entry) => entry.floor),
     context,
   );
+
+  // La même fonction que la caisse, avec les preuves de la simulation :
+  // quantité 1, aucune mesure d'historique. La porte reste donc FERMÉE, ce qui
+  // est la lecture juste — l'écran montre le prix de vitrine, et le plancher
+  // dynamique s'ouvre sur des conditions que la vitrine ne remplit pas.
+  const decision =
+    winner === null
+      ? null
+      : decideFloor(winner.policy, { quantity: context.quantity, observedVolumeRatioBp: null });
+
   const resolved = resolvePrice(
     article.canonicalCents,
     rules.map((entry) => entry.rule),
     context,
-    winner?.floor ?? null,
+    decision?.applied ?? null,
   );
 
   return {
@@ -188,7 +199,7 @@ function itemView(
     finalCents: resolved.finalCents,
     negotiationRoom: negotiationRoom(
       resolved.finalCents,
-      winner === null ? null : floorCentsFor(winner.floor, article.canonicalCents),
+      decision === null ? null : floorCentsFor(decision.applied, article.canonicalCents),
     ),
     // Posée à `null` ici, remplie par la passe de mesure : la résolution d'un
     // prix ne consulte pas l'historique des ventes, et ne doit pas commencer.

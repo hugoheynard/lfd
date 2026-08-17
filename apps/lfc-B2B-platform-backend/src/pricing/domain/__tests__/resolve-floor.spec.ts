@@ -1,5 +1,5 @@
 import { AmbiguousPriceFloorsError } from "../pricing-errors.js";
-import { resolveFloor } from "../resolve-floor.js";
+import { resolveScopedFloor } from "../resolve-floor.js";
 import type { PriceScopeType, PricingContext, ScopedPriceFloor } from "../price-rule.js";
 
 const CONTEXT: PricingContext = {
@@ -18,7 +18,19 @@ function floor(
   scopeId: string | null,
   cents: number,
 ): ScopedPriceFloor {
-  return { id, scope: { type, id: scopeId }, floor: { mode: "amount", cents } };
+  return {
+    id,
+    scope: { type, id: scopeId },
+    policy: { hard: { mode: "amount", cents }, dynamic: null },
+  };
+}
+
+/** Le mur du plancher gagnant — ce que ces cas mesurent. */
+function resolveFloor(
+  floors: readonly ScopedPriceFloor[],
+  context: typeof CONTEXT,
+): { mode: string; cents?: number; bp?: number } | null {
+  return resolveScopedFloor(floors, context)?.policy.hard ?? null;
 }
 
 describe("resolveFloor", () => {
@@ -88,7 +100,7 @@ describe("resolveFloor", () => {
     const fraction: ScopedPriceFloor = {
       id: "f",
       scope: { type: "global", id: null },
-      floor: { mode: "percent", bp: 5000 },
+      policy: { hard: { mode: "percent", bp: 5000 }, dynamic: null },
     };
 
     expect(resolveFloor([fraction], CONTEXT)).toEqual({ mode: "percent", bp: 5000 });

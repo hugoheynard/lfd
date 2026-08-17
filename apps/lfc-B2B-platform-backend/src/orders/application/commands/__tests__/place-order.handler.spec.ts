@@ -36,6 +36,7 @@ import {
   NO_DELIVERY_DEFAULTS,
 } from "../../../domain/ports/delivery-defaults.reader.js";
 import { PriceFloorReader } from "../../../../pricing/domain/ports/price-floor.reader.js";
+import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.reader.js";
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 
@@ -65,6 +66,13 @@ const noPriceFloors: PriceFloorReader = {
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
 };
+
+/**
+ * Aucune vente mesurée. Sans plancher dynamique conditionné au volume, ce port
+ * n'est jamais appelé — le double existe pour que la construction reste possible,
+ * pas parce que ces suites mesurent quoi que ce soit.
+ */
+const noSkuVolumes: SkuVolumeReader = { volumesFor: () => Promise.resolve(new Map()) };
 
 const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": { sku: "VIE-001", name: "Croissant", unitPriceCents: 200, vatRate: 0 },
@@ -167,6 +175,7 @@ function drafting(
     catalog,
     noPriceRules,
     noPriceFloors,
+    noSkuVolumes,
     pickupsDouble,
     zonesDouble,
     noDeliveryDefaults(),
@@ -331,7 +340,13 @@ describe("PlaceOrderHandler", () => {
         lineTotalCents: 600,
         // Aucune règle dans ces doubles : la trace existe et dit qu'aucun étage
         // n'a joué. C'est une affirmation, pas une absence.
-        pricing: { basePriceCents: 200, steps: [], floored: false },
+        pricing: {
+          basePriceCents: 200,
+          steps: [],
+          floored: false,
+          // Aucun plancher posé : il n'y a pas d'étage à commenter.
+          floorDecision: null,
+        },
       },
     ]);
     expect(sink.placed?.subtotalCents).toBe(600);
