@@ -1,0 +1,82 @@
+.schema {
+  display: block;
+  width: 100%;
+  max-width: 46rem;
+  height: auto;
+}
+
+.node rect {
+  fill: var(--fold-color-surface);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.node-pool rect {
+  fill: var(--fold-color-surface-sunken, rgb(0 0 0 / 4%));
+}
+
+.node-tier rect {
+  stroke: var(--fold-color-accent, var(--fold-color-text));
+  stroke-width: 1.5;
+}
+
+.link path,
+.round path {
+  fill: none;
+  stroke: var(--fold-color-border);
+  stroke-width: 1.5;
+}
+
+.link-strong {
+  fill: none;
+  stroke: var(--fold-color-accent, var(--fold-color-text));
+  stroke-width: 2;
+}
+
+.arrow-head {
+  fill: var(--fold-color-accent, var(--fold-color-text));
+}
+
+.t-label,
+.t-sub,
+.t-pool,
+.t-round,
+.t-note-center {
+  text-anchor: middle;
+  font-family: inherit;
+}
+
+.t-label {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--fold-color-text);
+}
+
+.t-pool {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  fill: var(--fold-color-text);
+}
+
+.t-sub {
+  font-size: 11px;
+  fill: var(--fold-color-text-muted);
+}
+
+.t-round {
+  font-size: 12px;
+  fill: var(--fold-color-text);
+}
+
+.t-note,
+.t-note-center {
+  font-size: 11px;
+  font-style: italic;
+  fill: var(--fold-color-text-muted);
+}
+
+.t-note {
+  text-anchor: start;
+  font-family: inherit;
+}

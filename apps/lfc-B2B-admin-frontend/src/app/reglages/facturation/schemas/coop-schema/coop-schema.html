@@ -1,0 +1,73 @@
+<svg viewBox="0 0 720 300" role="img" class="schema">
+  <title>
+    Trois acheteurs d'un même secteur mettent leur volume en commun ; le total du secteur ouvre un
+    palier dont tous bénéficient
+  </title>
+
+  <text x="4" y="18" class="t-note">Secteur 73150 — une tournée, un camion, une matinée</text>
+
+  <!-- Les trois acheteurs -->
+  <g class="node">
+    <rect x="4" y="34" width="150" height="46" rx="8" />
+    <text x="79" y="54" class="t-label">Hôtel des Cimes</text>
+    <text x="79" y="70" class="t-sub">120 / semaine</text>
+  </g>
+  <g class="node">
+    <rect x="4" y="94" width="150" height="46" rx="8" />
+    <text x="79" y="114" class="t-label">Le Refuge</text>
+    <text x="79" y="130" class="t-sub">80 / semaine</text>
+  </g>
+  <g class="node">
+    <rect x="4" y="154" width="150" height="46" rx="8" />
+    <text x="79" y="174" class="t-label">Chalet Blanc</text>
+    <text x="79" y="190" class="t-sub">60 / semaine</text>
+  </g>
+
+  <!-- La convergence -->
+  <g class="link">
+    <path d="M154 57 C210 57 210 117 260 117" />
+    <path d="M154 117 H260" />
+    <path d="M154 177 C210 177 210 117 260 117" />
+  </g>
+
+  <!-- Le total du secteur -->
+  <g class="node node-pool">
+    <rect x="260" y="88" width="170" height="58" rx="8" />
+    <text x="345" y="112" class="t-label">Volume du secteur</text>
+    <text x="345" y="132" class="t-pool">260 / semaine</text>
+  </g>
+
+  <path class="link-strong" d="M430 117 H492" marker-end="url(#coop-arrow)" />
+
+  <!-- Le palier ouvert -->
+  <g class="node node-tier">
+    <rect x="500" y="88" width="216" height="58" rx="8" />
+    <text x="608" y="112" class="t-label">Palier « 250+ » ouvert</text>
+    <text x="608" y="132" class="t-sub">pour les trois, pas pour le plus gros</text>
+  </g>
+
+  <!-- La tournée, qui légitime le partage -->
+  <g class="round">
+    <path d="M20 224 H700" stroke-dasharray="6 5" />
+    <text x="360" y="246" class="t-round">
+      la tournée est l'unité réelle du coût — le partage n'est pas une fiction commerciale
+    </text>
+    <text x="360" y="272" class="t-note-center">
+      chacun a intérêt à ce que son voisin commande : le palier commun fait baisser son propre prix
+    </text>
+  </g>
+
+  <defs>
+    <marker
+      id="coop-arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="6"
+      markerHeight="6"
+      orient="auto-start-reverse"
+    >
+      <path d="M0 0 L10 5 L0 10 z" class="arrow-head" />
+    </marker>
+  </defs>
+</svg>

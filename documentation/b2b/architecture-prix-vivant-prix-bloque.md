@@ -189,6 +189,93 @@ seul le tableau de bord dit si le dispositif tient.
 
 ---
 
+## Le prix et le territoire
+
+**Le canonique peut s'adapter au marché local**, par zone de code postal. Val
+d'Isère en février et une vallée à vingt kilomètres ne sont pas le même marché :
+ni la même concurrence, ni la même disposition à payer, ni le même service.
+
+La zone existe déjà dans le modèle (`DeliveryZone`, une liste de préfixes
+postaux) et elle a une propriété précieuse : elle se **déduit de l'adresse
+livrée**, elle ne se choisit pas. Personne ne peut donc s'annoncer dans un
+secteur moins cher que le sien.
+
+### Deux justifications à ne surtout pas confondre
+
+La zone porte **déjà** un frais de livraison. Si le canonique varie aussi par
+zone, la même réalité géographique est tarifée deux fois — et le client qui
+compare le verra.
+
+| Instrument          | Ce qu'il couvre                                          |
+| ------------------- | -------------------------------------------------------- |
+| **Frais de zone**   | le **coût** : la distance, le temps de tournée           |
+| **Canonique local** | le **marché** : la concurrence, ce que la place supporte |
+
+Écrire cette distinction n'est pas une précaution de style : c'est ce qui permet
+à un commercial de **justifier** l'écart au téléphone. « Vous êtes plus loin »
+explique un frais. Ça n'explique pas un tarif de base plus élevé — et si personne
+ne sait dire ce qui l'explique, il ne faut pas le poser.
+
+### Où ça s'insère
+
+**À l'entrée du pipeline, exactement comme le prix bloqué.** Le canonique local
+remplace le canonique national, et toute la chaîne se déroule ensuite sans
+changement. Aucun étage de plus, aucune spécificité nouvelle à arbitrer.
+
+Une conséquence à trancher : **quand un client a un prix bloqué ET livre dans une
+zone adaptée, lequel gagne ?** Le contrat, sans hésiter. Sinon un client
+changerait d'adresse de livraison et casserait sa propre garantie — ou pire,
+irait chercher la zone qui l'arrange.
+
+---
+
+## La coopérative d'acheteurs
+
+**Le palier se mesure sur la ZONE, pas sur le client.** Les acheteurs d'un même
+secteur mettent leur volume en commun ; le total du secteur ouvre un tarif
+meilleur pour tous ceux qui s'y trouvent.
+
+### Pourquoi la zone est une cohorte légitime
+
+Ce n'est pas un regroupement arbitraire. **La tournée est l'unité réelle du
+coût** : un camion, un chauffeur, une matinée. Deux clients sur la même tournée
+coûtent réellement moins cher chacun que deux clients sur deux tournées. Le
+partage n'est donc pas une fiction commerciale, il correspond à une économie qui
+existe.
+
+C'est aussi la réponse, à une granularité qui a un sens physique, au problème
+posé plus haut : le volume d'**un** client ne suffit pas à absorber une hausse,
+celui d'un **secteur** peut y arriver.
+
+### La dynamique : le client devient prescripteur
+
+Chaque acheteur a intérêt à ce que son voisin commande — ça fait monter le
+palier commun, donc baisser son propre prix. La clientèle installée devient une
+force de prospection qu'on n'a pas à payer, et elle prospecte exactement là où
+la tournée passe déjà.
+
+C'est le seul mécanisme de cette page qui **crée** du volume au lieu de le
+constater.
+
+### Ce qu'il faut trancher avant de coder
+
+**Un palier acquis se perd-il en cours de période ?** Si un membre part et fait
+retomber le secteur sous le seuil, il ne faut pas que les autres soient punis
+pour être restés. Direction à privilégier : le palier est **acquis pour la
+période en cours**, et se réévalue à la suivante — même principe que la décision
+de plancher figée à la passation.
+
+**Le retardataire profite sans avoir construit — et c'est voulu.** Celui qui
+rejoint un secteur déjà au bon palier en bénéficie immédiatement. C'est
+exactement l'incitation qu'on cherche : ce serait un mauvais calcul de la
+retirer pour une question d'équité qui n'intéresse personne.
+
+**Et si la zone n'a qu'un seul acheteur ?** Le mécanisme devient une remise
+individuelle déguisée en coopérative. Il faut soit un nombre minimum de membres,
+soit accepter d'y voir un cas particulier — et le dire.
+
+---
+
 ## L'indicateur qui décide d'activer une promo
 
 La question opérationnelle est : **« est-ce que j'active cette promo pour les

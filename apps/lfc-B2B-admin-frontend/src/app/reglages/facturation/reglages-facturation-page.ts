@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FoldCalloutComponent, FoldCardComponent } from 'fold-ng';
 
+import { CoopSchema } from './schemas/coop-schema/coop-schema';
 import { FloorSchema } from './schemas/floor-schema/floor-schema';
 import { PipelineSchema } from './schemas/pipeline-schema/pipeline-schema';
 import { RiskSchema } from './schemas/risk-schema/risk-schema';
@@ -20,16 +21,25 @@ import { RiskSchema } from './schemas/risk-schema/risk-schema';
  * où une décision change, c'est cette page qu'on met à jour en même temps que
  * le code — au même titre que le doc d'architecture qu'elle résume.
  *
- * Trois schémas la portent, chacun pour une raison que le texte seul ne rend
+ * Quatre schémas la portent, chacun pour une raison que le texte seul ne rend
  * pas : l'**ordre** des étages (une liste à puces perd que −20 % puis −5 € ≠
- * −5 € puis −20 %), la **hauteur** des deux planchers, et l'**aire** entre deux
+ * −5 € puis −20 %), la **hauteur** des deux planchers, l'**aire** entre deux
  * courbes de prix — qui est littéralement le risque, et dont on voit d'un coup
- * de qui elle est.
+ * de qui elle est — et la **convergence** de plusieurs acheteurs vers un volume
+ * commun, parce que la mise en commun est le seul modèle mental de la page que
+ * le lecteur n'apporte pas avec lui.
  */
 @Component({
   selector: 'app-reglages-facturation-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldCalloutComponent, PipelineSchema, FloorSchema, RiskSchema],
+  imports: [
+    FoldCardComponent,
+    FoldCalloutComponent,
+    PipelineSchema,
+    FloorSchema,
+    RiskSchema,
+    CoopSchema,
+  ],
   templateUrl: './reglages-facturation-page.html',
   styleUrl: './reglages-facturation-page.scss',
 })
