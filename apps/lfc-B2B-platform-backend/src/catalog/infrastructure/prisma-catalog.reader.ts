@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import { CatalogReader, type ResolvedCatalogItem } from "../domain/catalog.repository.js";
+import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
 
 /** La forme que Prisma rend, article + famille + décision locale éventuelle. */
 interface ItemRow {

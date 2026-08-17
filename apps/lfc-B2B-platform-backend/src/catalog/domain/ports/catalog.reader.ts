@@ -1,33 +1,3 @@
-import type { CatalogSnapshot } from "@lfd/catalog-sync";
-
-/** Ce qu'une ingestion a réellement changé, pour que l'appelant puisse le dire. */
-export interface IngestionOutcome {
-  readonly acceptedProducts: number;
-  readonly acceptedVariants: number;
-  readonly acceptedCategories: number;
-  /** Les SKU présents avant, absents du snapshot — donc retirés de la vente. */
-  readonly removedSkus: readonly string[];
-}
-
-/**
- * Port d'**écriture** du catalogue reçu.
- *
- * Séparé du port de lecture (ISP) : l'ingestion écrit tout et ne lit rien pour
- * son métier ; le checkout lit et n'écrit jamais. Un seul port fat obligerait le
- * chemin de paiement à dépendre de méthodes capables de réécrire le catalogue.
- */
-export abstract class CatalogIngestionRepository {
-  /**
-   * Applique un snapshot **complet**.
-   *
-   * Contrat non négociable : les articles maintenus sont **mis à jour**, jamais
-   * supprimés puis recréés. La table des décisions locales cascade depuis les
-   * articles ; une ingestion en « table rase » effacerait donc tous les prix B2B
-   * sans un mot.
-   */
-  abstract apply(snapshot: CatalogSnapshot): Promise<IngestionOutcome>;
-}
-
 /** Un article vendable, prix **résolu** : la décision locale a déjà gagné. */
 export interface ResolvedCatalogItem {
   readonly sku: string;

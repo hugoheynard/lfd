@@ -1,6 +1,6 @@
 import { Controller, Get, UseGuards } from "@nestjs/common";
 
-import { CatalogReader } from "../../catalog/domain/catalog.repository.js";
+import { CatalogReader } from "../../catalog/domain/ports/catalog.reader.js";
 import { compareCatalogs, type ParityReport } from "../../catalog/domain/catalog-parity.js";
 import { Public } from "../../infra/auth/public.decorator.js";
 import { RecomputeGuard } from "../../infra/auth/recompute.guard.js";

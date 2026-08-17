@@ -8,7 +8,7 @@ import {
 import { Public } from "../../infra/auth/public.decorator.js";
 import { CatalogIngestGuard } from "../../infra/auth/catalog-ingest.guard.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
-import { CatalogIngestionRepository } from "../domain/catalog.repository.js";
+import { IngestCatalogService } from "../application/ingest-catalog.service.js";
 
 /**
  * **L'entrée du catalogue** poussé par le PIM.
@@ -26,7 +26,7 @@ import { CatalogIngestionRepository } from "../domain/catalog.repository.js";
 @UseGuards(CatalogIngestGuard)
 @Controller("catalog")
 export class CatalogIngestController {
-  constructor(private readonly ingestion: CatalogIngestionRepository) {}
+  constructor(private readonly ingestion: IngestCatalogService) {}
 
   @Post("ingest")
   async ingest(

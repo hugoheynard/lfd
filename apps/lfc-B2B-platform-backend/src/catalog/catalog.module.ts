@@ -1,7 +1,11 @@
 import { Module } from "@nestjs/common";
 
-import { CatalogIngestionRepository, CatalogReader } from "./domain/catalog.repository.js";
-import { PrismaCatalogIngestionRepository } from "./infrastructure/prisma-catalog-ingestion.repository.js";
+import { IngestCatalogService } from "./application/ingest-catalog.service.js";
+import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
+import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
+import { CatalogReader } from "./domain/ports/catalog.reader.js";
+import { PrismaCatalogCategoryProjection } from "./infrastructure/prisma-catalog-category.projection.js";
+import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-item.repository.js";
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
 import { CatalogIngestController } from "./http/catalog-ingest.controller.js";
 
@@ -9,22 +13,25 @@ import { CatalogIngestController } from "./http/catalog-ingest.controller.js";
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
  * ici (prix B2B, visibilité).
  *
- * Deux ports exportés parce qu'ils servent deux mondes : `CatalogReader` est
- * l'autorité de prix du checkout et de l'affichage ; `CatalogIngestionRepository`
- * n'est utilisé que par l'entrée du push. Les séparer évite qu'un chemin de
- * paiement dépende de méthodes capables de réécrire le catalogue (ISP).
+ * Contexte à part entière, avec son agrégat. Toute écriture passe par une
+ * méthode nommée de `CatalogItem` — jamais une colonne, jamais une primitive :
+ * l'invariant « une décision commerciale survit à un push » vit dans le domaine,
+ * pas dans un commentaire d'adaptateur.
  *
- * Pas d'agrégat ici, et c'est un choix : la table reçue n'a aucune transition
- * (elle est remplacée), et l'override non plus (prix, deux drapeaux). Forcer un
- * agrégat serait de la cérémonie — cf. la question de tri du CLAUDE.md, « existe-
- * t-il une règle qui peut refuser cette écriture ? ».
+ * Trois ports, parce qu'ils répondent à trois questions différentes (ISP) :
+ * `CatalogReader` lit le catalogue résolu (autorité de prix du checkout et de
+ * l'affichage) ; `CatalogItemRepository` charge et enregistre des agrégats ;
+ * `CatalogCategoryProjection` tient le miroir des familles — nommé projection
+ * parce qu'aucune règle ne peut refuser d'y écrire.
  */
 @Module({
   controllers: [CatalogIngestController],
   providers: [
-    { provide: CatalogIngestionRepository, useClass: PrismaCatalogIngestionRepository },
+    IngestCatalogService,
+    { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },
+    { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
     { provide: CatalogReader, useClass: PrismaCatalogReader },
   ],
-  exports: [CatalogReader, CatalogIngestionRepository],
+  exports: [CatalogReader, CatalogItemRepository],
 })
 export class CatalogModule {}
