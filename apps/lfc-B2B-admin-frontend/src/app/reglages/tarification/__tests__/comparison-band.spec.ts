@@ -23,6 +23,8 @@ function item(over: Partial<PricingComparisonItemView> = {}): PricingComparisonI
     categoryName: 'Viennoiseries',
     fromCents: 200,
     toCents: 170,
+    fromTiers: null,
+    toTiers: null,
     priceVariationBp: -1_500,
     volume: 120,
     previousVolume: 100,

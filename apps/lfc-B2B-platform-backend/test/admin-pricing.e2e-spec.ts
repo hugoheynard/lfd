@@ -1204,6 +1204,52 @@ describe("l’écran daté et la comparaison", () => {
   });
 
   /**
+   * **Les paliers, des deux côtés.** Un barème naît et s'arrête comme le reste :
+   * ne montrer que ceux du second marqueur ferait lire une baisse de prix
+   * unitaire sans voir que le barème qui l'accompagnait a disparu.
+   */
+  it("porte les paliers de volume aux deux marqueurs", async () => {
+    await staff()
+      .put("/admin/pricing/volume-ladders")
+      .send({
+        scope: { type: "product", id: SKU },
+        audience: { type: "all", id: null },
+        unit: "percent",
+        tiers: [
+          { minQuantity: 50, value: 1_000 },
+          { minQuantity: 100, value: 2_000 },
+        ],
+        label: "Barème croissant",
+        validFrom: "2026-08-01T00:00:00.000Z",
+        validTo: null,
+      });
+
+    const comparison = jsonBody<PricingComparisonView>(
+      await staff().get(
+        "/admin/pricing/comparison?from=2026-08-10T00:00:00.000Z&to=2026-08-20T00:00:00.000Z",
+      ),
+    );
+    const item = comparison.items.find((candidate) => candidate.sku === SKU);
+
+    // 200 c, −10 % dès 50 et −20 % dès 100 : chaque palier est une RÉSOLUTION,
+    // pas un canonique × (1 − remise).
+    expect(item?.fromTiers?.map((tier) => tier.unitPriceCents)).toEqual([180, 160]);
+    expect(item?.toTiers?.map((tier) => tier.unitPriceCents)).toEqual([180, 160]);
+  });
+
+  /** Aucun barème ce jour-là : `null`, et non un tableau vide qui se lirait « zéro palier ». */
+  it("ne porte aucun palier quand il n'y a pas de barème", async () => {
+    const comparison = jsonBody<PricingComparisonView>(
+      await staff().get(
+        "/admin/pricing/comparison?from=2026-08-10T00:00:00.000Z&to=2026-08-20T00:00:00.000Z",
+      ),
+    );
+
+    expect(comparison.items[0]?.fromTiers).toBeNull();
+    expect(comparison.items[0]?.toTiers).toBeNull();
+  });
+
+  /**
    * **Le volume, et sa variation.** Les ventes viennent de commandes réelles, et
    * la fenêtre miroir a la même durée — sans quoi un écart mesurerait la
    * longueur de la mesure plutôt que l'effet du prix.

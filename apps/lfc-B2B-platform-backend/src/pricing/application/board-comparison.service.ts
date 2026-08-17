@@ -8,6 +8,7 @@ import type {
   PricingBoardView,
   PricingComparisonItemView,
   PricingComparisonView,
+  VolumeTierPriceView,
 } from "@lfd/contracts";
 
 /**
@@ -45,9 +46,9 @@ export class BoardComparisonService {
       this.volumes.volumesFor(skus, mirror),
     ]);
 
-    const priceBefore = new Map(itemsOf(before).map((item) => [item.sku, item.finalCents]));
+    const asBefore = new Map(itemsOf(before).map((item) => [item.sku, item]));
     const items = itemsOf(after).map((item) =>
-      comparisonItem(item, priceBefore.get(item.sku) ?? item.finalCents, {
+      comparisonItem(item, asBefore.get(item.sku) ?? item, {
         volume: sold.get(item.sku) ?? 0,
         previousVolume: soldBefore.get(item.sku) ?? 0,
       }),
@@ -71,6 +72,7 @@ interface FlatItem {
   readonly categoryId: string;
   readonly categoryName: string;
   readonly finalCents: number;
+  readonly volumeTiers: readonly VolumeTierPriceView[] | null;
 }
 
 function itemsOf(board: PricingBoardView): FlatItem[] {
@@ -81,13 +83,14 @@ function itemsOf(board: PricingBoardView): FlatItem[] {
       categoryId: category.id,
       categoryName: category.name,
       finalCents: item.finalCents,
+      volumeTiers: item.volumeTiers,
     })),
   );
 }
 
 /**
- * Un article absent de la lecture d'avant garde **son propre prix** des deux
- * côtés, donc une variation nulle.
+ * Un article absent de la lecture d'avant se compare **à lui-même** : même prix
+ * des deux côtés, donc une variation nulle.
  *
  * C'est le cas d'un article entré au catalogue entre les deux marqueurs. Le
  * compter comme une variation depuis zéro afficherait « +∞ % » sur une nouveauté
@@ -95,7 +98,7 @@ function itemsOf(board: PricingBoardView): FlatItem[] {
  */
 function comparisonItem(
   item: FlatItem,
-  fromCents: number,
+  before: FlatItem,
   sales: { volume: number; previousVolume: number },
 ): PricingComparisonItemView {
   return {
@@ -103,9 +106,11 @@ function comparisonItem(
     name: item.name,
     categoryId: item.categoryId,
     categoryName: item.categoryName,
-    fromCents,
+    fromCents: before.finalCents,
     toCents: item.finalCents,
-    priceVariationBp: variationBp(fromCents, item.finalCents),
+    fromTiers: before.volumeTiers,
+    toTiers: item.volumeTiers,
+    priceVariationBp: variationBp(before.finalCents, item.finalCents),
     volume: sales.volume,
     previousVolume: sales.previousVolume,
     volumeVariationBp: variationBp(sales.previousVolume, sales.volume),

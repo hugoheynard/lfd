@@ -118,6 +118,13 @@
   font-weight: 400;
 }
 
+// Les colonnes de prix portent leur barème sous le prix : la colonne reste une
+// colonne de prix, l'échelle se lit dessous sans changer de ligne des yeux.
+.side .tiers {
+  justify-content: end;
+  margin-top: 0.25rem;
+}
+
 .tiers {
   display: flex;
   flex-wrap: wrap;

@@ -765,6 +765,20 @@ export interface PricingComparisonItemView {
   /** Le prix résolu au premier marqueur, puis au second. HT, en centimes. */
   readonly fromCents: number;
   readonly toCents: number;
+  /**
+   * Les **paliers de volume** à chaque marqueur, ou `null` s'il n'y a pas de
+   * barème ce jour-là.
+   *
+   * Des deux côtés, parce qu'un barème naît, change et s'arrête comme le reste :
+   * ne montrer que ceux d'aujourd'hui ferait lire une baisse de prix unitaire
+   * sans voir que le barème qui l'accompagnait a disparu.
+   *
+   * Ils ne coûtent aucune lecture de plus : la comparaison lit déjà les deux
+   * catalogues, et les paliers y sont — chacun étant une résolution complète à la
+   * quantité de son palier.
+   */
+  readonly fromTiers: readonly VolumeTierPriceView[] | null;
+  readonly toTiers: readonly VolumeTierPriceView[] | null;
   /** L'écart de prix en points de base (`-1500` = −15 %). `null` si le premier vaut zéro. */
   readonly priceVariationBp: number | null;
   /** Les pièces vendues sur la fenêtre, puis sur la fenêtre miroir d'avant. */
