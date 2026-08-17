@@ -14,7 +14,7 @@ interface AdminRow {
   readonly category: {
     readonly id: string;
     readonly name: string;
-    readonly vatRatePercent: { toNumber: () => number };
+    readonly vatRatePercent: { toNumber: () => number } | null;
   };
   readonly override: {
     readonly priceCents: number | null;
@@ -58,7 +58,7 @@ function toView(row: AdminRow): CatalogAdminItemView {
     pimPriceCents: row.priceCents,
     b2bPriceCents,
     effectivePriceCents: b2bPriceCents ?? row.priceCents,
-    vatRatePercent: row.category.vatRatePercent.toNumber(),
+    vatRatePercent: row.category.vatRatePercent?.toNumber() ?? null,
     isHidden: row.override?.isHidden ?? false,
     isFeatured: row.override?.isFeatured ?? false,
     decidedBy: row.override?.decidedBy ?? null,

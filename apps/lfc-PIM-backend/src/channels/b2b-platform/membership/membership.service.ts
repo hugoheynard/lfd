@@ -60,4 +60,29 @@ export class B2bMembershipService {
   async unpublish(productId: string): Promise<void> {
     await this.prisma.b2bChannelBinding.deleteMany({ where: { productId } });
   }
+
+  /**
+   * La même bascule, **en lot** — ouvrir un canal se fait une fois sur tout un
+   * catalogue. Idempotent comme l'unitaire : les déjà-publiés gardent leur date.
+   *
+   * @returns le nombre de produits **effectivement** concernés, pour que
+   *   l'appelant puisse dire « 93 publiés » plutôt que « c'est fait ».
+   */
+  async publishMany(
+    productIds: readonly string[],
+    actor: string | null,
+  ): Promise<number> {
+    for (const productId of productIds) {
+      await this.publish(productId, actor);
+    }
+    return productIds.length;
+  }
+
+  /** Retire un lot du canal. */
+  async unpublishMany(productIds: readonly string[]): Promise<number> {
+    const removed = await this.prisma.b2bChannelBinding.deleteMany({
+      where: { productId: { in: [...productIds] } },
+    });
+    return removed.count;
+  }
 }

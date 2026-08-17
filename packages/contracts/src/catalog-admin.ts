@@ -27,7 +27,12 @@ export interface CatalogAdminItemView {
   /** Ce qui sera facturé : le B2B s'il existe, le PIM sinon. */
   readonly effectivePriceCents: number;
 
-  readonly vatRatePercent: number;
+  /**
+   * `null` = la famille n'a pas de régime de TVA dans le PIM. L'article est
+   * alors visible ici mais **pas vendable** : l'écran doit le dire, plutôt que
+   * de laisser croire à un catalogue en ligne.
+   */
+  readonly vatRatePercent: number | null;
   readonly isHidden: boolean;
   readonly isFeatured: boolean;
 

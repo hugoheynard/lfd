@@ -15,7 +15,7 @@ interface ItemRow {
     readonly id: string;
     readonly name: string;
     readonly position: number;
-    readonly vatRatePercent: { toNumber: () => number };
+    readonly vatRatePercent: { toNumber: () => number } | null;
   };
   readonly override: {
     readonly priceCents: number | null;
@@ -45,28 +45,38 @@ export class PrismaCatalogReader extends CatalogReader {
     if (row === null || row.override?.isHidden === true) {
       return null;
     }
-    return resolve(row);
+    const vatRate = row.category.vatRatePercent;
+    return vatRate === null ? null : resolve(row, vatRate.toNumber());
   }
 
   async listSellable(): Promise<ResolvedCatalogItem[]> {
     const rows = await this.prisma.catalogItem.findMany({
-      where: { OR: [{ override: null }, { override: { isHidden: false } }] },
+      where: {
+        OR: [{ override: null }, { override: { isHidden: false } }],
+        // Le mur : sans taux de TVA, on ne sait pas facturer. L'article reste au
+        // catalogue et se voit dans le paramétrage ; il ne se vend pas.
+        category: { vatRatePercent: { not: null } },
+      },
       include: { category: true, override: true },
       orderBy: [{ category: { position: "asc" } }, { position: "asc" }],
     });
-    return rows.map(resolve);
+    return rows.flatMap((row) => {
+      const vatRate = row.category.vatRatePercent;
+      return vatRate === null ? [] : [resolve(row, vatRate.toNumber())];
+    });
   }
 }
 
 /**
  * La règle de résolution, en une ligne : **la décision locale gagne quand elle
- * existe**, sinon c'est le prix du PIM.
+ * existe**, sinon c'est le prix du PIM. Le taux est passé **déjà vérifié non
+ * nul** : un article sans TVA n'arrive jamais ici, il a été écarté avant.
  *
  * Les deux sont rendus. Un écran qui ne verrait que le prix final ne pourrait
  * pas dire « prix PIM 2,40 € · prix B2B 2,10 € », et un prix sans provenance ne
  * se défend pas devant un client qui le conteste.
  */
-function resolve(row: ItemRow): ResolvedCatalogItem {
+function resolve(row: ItemRow, vatRate: number): ResolvedCatalogItem {
   const localPrice = row.override?.priceCents ?? null;
   return {
     sku: row.sku,
@@ -74,7 +84,7 @@ function resolve(row: ItemRow): ResolvedCatalogItem {
     name: row.name,
     unitPriceCents: localPrice ?? row.priceCents,
     pimPriceCents: row.priceCents,
-    vatRate: row.category.vatRatePercent.toNumber(),
+    vatRate,
     categoryId: row.category.id,
     categoryName: row.category.name,
     isDefault: row.isDefault,

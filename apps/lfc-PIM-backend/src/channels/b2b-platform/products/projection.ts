@@ -29,8 +29,7 @@ export interface Exclusion {
     | 'variant_sans_prix'
     | 'variant_arretee'
     | 'produit_sans_variante_vendable'
-    | 'famille_inconnue'
-    | 'famille_sans_tva';
+    | 'famille_inconnue';
 }
 
 export interface Projection {
@@ -109,9 +108,13 @@ function sortVariants(product: ProductRecord): {
  * Ce qui n'entre pas :
  * - une déclinaison arrêtée ou non tarifée ;
  * - un produit dont plus aucune déclinaison n'est vendable ;
- * - un produit dont la famille est inconnue ou **sans régime de TVA** — sans
- *   taux, la plateforme ne saurait pas facturer, et un défaut silencieux à 5,5 %
- *   est exactement l'erreur qu'on répare en faisant voyager la TVA.
+ * - un produit dont la famille est **inconnue** — on ne range pas au hasard.
+ *
+ * Ce qui entre malgré tout : une famille **sans régime de TVA**. Le taux part à
+ * `null` plutôt que d'exclure le produit, parce que le prix canonique a de la
+ * valeur sans lui — un écran de paramétrage n'a pas besoin de savoir facturer.
+ * Le refus n'a pas disparu, il est déplacé là où il compte : la plateforme
+ * écarte de sa BOUTIQUE tout article sans taux, plutôt qu'un défaut à 5,5 %.
  *
  * Les familles rendues sont **celles réellement utilisées** : pousser un rayon
  * vide oblige la plateforme à en gérer l'affichage sans jamais rien y ranger.
@@ -124,8 +127,8 @@ export function projectCatalog(
   const byId = new Map(categories.map((category) => [category.id, category]));
   const excluded: Exclusion[] = [];
   const kept: SyncProduct[] = [];
-  /** Familles retenues → leur taux, déjà vérifié non nul. Pas de repli plus bas. */
-  const usedCategories = new Map<string, number>();
+  /** Familles réellement utilisées : pousser un rayon vide n'apprend rien. */
+  const usedCategories = new Set<string>();
 
   for (const product of products) {
     const category = byId.get(product.categoryId);
@@ -133,12 +136,6 @@ export function projectCatalog(
       excluded.push({ sku: product.sku, reason: 'famille_inconnue' });
       continue;
     }
-    const vatRatePercent = category.emporterVatPercent;
-    if (vatRatePercent === null) {
-      excluded.push({ sku: product.sku, reason: 'famille_sans_tva' });
-      continue;
-    }
-
     const { sellable, excluded: rejected } = sortVariants(product);
     excluded.push(...rejected);
 
@@ -150,7 +147,7 @@ export function projectCatalog(
       continue;
     }
 
-    usedCategories.set(category.id, vatRatePercent);
+    usedCategories.add(category.id);
     kept.push({
       id: product.id,
       sku: product.sku,
@@ -165,29 +162,23 @@ export function projectCatalog(
     snapshot: {
       version: CATALOG_SNAPSHOT_VERSION,
       generatedAt,
-      categories: categories.flatMap((category) => {
-        const vatRatePercent = usedCategories.get(category.id);
-        return vatRatePercent === undefined
-          ? []
-          : [projectCategory(category, vatRatePercent)];
-      }),
+      categories: categories
+        .filter((category) => usedCategories.has(category.id))
+        .map(projectCategory),
       products: kept,
     },
     excluded,
   };
 }
 
-/** Même raison que pour le prix : le taux est passé vérifié, pas replié. */
-function projectCategory(
-  category: ChannelCategory,
-  vatRatePercent: number,
-): SyncCategory {
+/** Le taux part tel quel, `null` compris — on ne remplit jamais un trou de TVA. */
+function projectCategory(category: ChannelCategory): SyncCategory {
   return {
     id: category.id,
     name: frenchOf(category.name),
     slug: frenchOf(category.slug),
     parentId: category.parentId,
     position: category.position,
-    vatRatePercent,
+    vatRatePercent: category.emporterVatPercent,
   };
 }

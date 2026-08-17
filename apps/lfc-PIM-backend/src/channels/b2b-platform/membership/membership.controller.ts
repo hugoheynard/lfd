@@ -1,8 +1,10 @@
 import { Body, Controller, Get, Param, Put } from '@nestjs/common';
 import {
   setB2bMembershipPayloadSchema,
+  setB2bMembershipsPayloadSchema,
   type B2bMembershipView,
   type SetB2bMembershipPayload,
+  type SetB2bMembershipsPayload,
 } from '@lfd/pim-contracts';
 
 import { Public } from '../../../infra/auth/public.decorator.js';
@@ -29,6 +31,21 @@ export class B2bMembershipController {
   @Get()
   list(): Promise<B2bMembershipView[]> {
     return this.membership.list();
+  }
+
+  /**
+   * Bascule **en lot**. Déclarée avant la route paramétrée : sans ça, Nest ferait
+   * correspondre `PUT /products` à `PUT /products/:productId` avec un id vide.
+   */
+  @Put()
+  async setMany(
+    @Body(new ZodBody(setB2bMembershipsPayloadSchema))
+    body: SetB2bMembershipsPayload,
+  ): Promise<{ affected: number }> {
+    const affected = body.published
+      ? await this.membership.publishMany(body.productIds, null)
+      : await this.membership.unpublishMany(body.productIds);
+    return { affected };
   }
 
   @Put(':productId')

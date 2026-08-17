@@ -58,8 +58,15 @@ export type {
   ProductDetailView,
 } from "./product.js";
 
-export { setB2bMembershipPayloadSchema } from "./b2b-channel.js";
-export type { SetB2bMembershipPayload, B2bMembershipView } from "./b2b-channel.js";
+export {
+  setB2bMembershipPayloadSchema,
+  setB2bMembershipsPayloadSchema,
+} from "./b2b-channel.js";
+export type {
+  SetB2bMembershipPayload,
+  SetB2bMembershipsPayload,
+  B2bMembershipView,
+} from "./b2b-channel.js";
 
 export { pushPayloadSchema, rollbackPayloadSchema } from "./shopify.js";
 export type {

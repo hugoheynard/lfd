@@ -46,8 +46,14 @@ export const syncCategorySchema = z.object({
    * régime « sur place » décrit une consommation en boutique, qui n'existe pas
    * sur ce canal. Le choix est fait ici, une fois, plutôt que laissé au
    * récepteur qui n'a pas de quoi trancher.
+   *
+   * **`null` = famille non réglée dans le PIM.** Le catalogue voyage quand même,
+   * parce que le prix canonique a de la valeur sans le taux — un écran de
+   * paramétrage n'a pas besoin de savoir facturer. Ce qui reste interdit, et qui
+   * l'est ailleurs, c'est de **vendre** sans taux : la plateforme écarte ces
+   * articles de sa boutique plutôt que d'inventer 5,5 %.
    */
-  vatRatePercent: z.number().nonnegative(),
+  vatRatePercent: z.number().nonnegative().nullable(),
 });
 export type SyncCategory = z.infer<typeof syncCategorySchema>;
 

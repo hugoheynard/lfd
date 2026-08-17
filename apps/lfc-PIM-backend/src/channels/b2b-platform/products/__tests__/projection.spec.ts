@@ -120,19 +120,21 @@ describe('projectCatalog', () => {
   });
 
   /**
-   * Le cas qui justifie que la TVA voyage. Un défaut silencieux à 5,5 % sur une
-   * famille non réglée est exactement l'erreur que le B2B commet aujourd'hui en
-   * codant le taux en dur — la projection refuse plutôt que de la reproduire.
+   * Une famille non réglée ne bloque plus le voyage : le prix canonique a de la
+   * valeur sans le taux, et un écran de paramétrage n'a pas besoin de savoir
+   * facturer. Le refus n'a pas disparu, il est déplacé — c'est la BOUTIQUE qui
+   * écarte un article sans taux, jamais un défaut à 5,5 %.
    */
-  it('écarte un produit dont la famille n’a pas de régime de TVA', () => {
+  it('pousse un produit dont la famille n’a pas de TVA, avec un taux null', () => {
     const { snapshot, excluded } = projectCatalog(
       [product()],
       [category({ emporterVatPercent: null })],
       AT,
     );
 
-    expect(excluded).toEqual([{ sku: 'VIE-001', reason: 'famille_sans_tva' }]);
-    expect(snapshot.products).toEqual([]);
+    expect(excluded).toEqual([]);
+    expect(snapshot.products).toHaveLength(1);
+    expect(snapshot.categories[0]?.vatRatePercent).toBeNull();
   });
 
   it('écarte un produit dont la famille est inconnue', () => {

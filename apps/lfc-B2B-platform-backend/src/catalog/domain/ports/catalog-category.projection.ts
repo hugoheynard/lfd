@@ -5,7 +5,8 @@ export interface CatalogCategoryFacts {
   readonly slug: string;
   readonly parentId: string | null;
   readonly position: number;
-  readonly vatRatePercent: number;
+  /** `null` = famille non réglée dans le PIM. On ne remplit jamais ce trou. */
+  readonly vatRatePercent: number | null;
   readonly receivedAt: Date;
 }
 

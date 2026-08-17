@@ -1691,7 +1691,12 @@ model CatalogCategory {
   /// Taux de TVA en %, résolu par le PIM depuis le régime « à emporter » de la
   /// famille. Reçu plutôt que déduit : la plateforme codait 5,5 % en dur pour
   /// tout, y compris le non-alimentaire.
-  vatRatePercent Decimal @map("vat_rate_percent") @db.Decimal(5, 2)
+  ///
+  /// `NULL` = famille **non réglée dans le PIM**. Le catalogue entre quand même :
+  /// le prix canonique a de la valeur sans le taux. Ce qui reste interdit, c'est
+  /// de VENDRE sans taux — `CatalogReader` écarte ces articles de la boutique
+  /// plutôt que d'inventer 5,5 %.
+  vatRatePercent Decimal? @map("vat_rate_percent") @db.Decimal(5, 2)
 
   items CatalogItem[]
 

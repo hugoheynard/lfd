@@ -16,6 +16,20 @@ export const setB2bMembershipPayloadSchema = z.object({
 });
 export type SetB2bMembershipPayload = z.infer<typeof setB2bMembershipPayloadSchema>;
 
+/**
+ * La même bascule, **en lot**.
+ *
+ * Ouvrir un canal se fait une fois, sur tout un catalogue : quatre-vingt-treize
+ * appels pour un geste unique ne serait pas de la rigueur, ce serait un écran
+ * inutilisable. Les identifiants restent **explicites** — pas de « tout
+ * publier » magique qui emporterait un brouillon oublié.
+ */
+export const setB2bMembershipsPayloadSchema = z.object({
+  productIds: z.array(z.string().min(1)).min(1),
+  published: z.boolean(),
+});
+export type SetB2bMembershipsPayload = z.infer<typeof setB2bMembershipsPayloadSchema>;
+
 /** L'état d'un produit vis-à-vis du canal B2B. */
 export interface B2bMembershipView {
   readonly productId: string;
