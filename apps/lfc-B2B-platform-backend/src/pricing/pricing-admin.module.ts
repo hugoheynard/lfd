@@ -18,6 +18,7 @@ import { PricingBoardReader } from "./domain/ports/pricing-board.reader.js";
 import { PricingFloorRepository } from "./domain/ports/pricing-floor.repository.js";
 import { PricingJournalReader } from "./domain/ports/pricing-journal.reader.js";
 import { PricingRuleRepository } from "./domain/ports/pricing-rule.repository.js";
+import { AdminPriceFloorsController } from "./http/admin-price-floors.controller.js";
 import { AdminPricingController } from "./http/admin-pricing.controller.js";
 import { AdminPricingJournalController } from "./http/admin-pricing-journal.controller.js";
 import { PrismaPricingBoardReader } from "./infrastructure/prisma-pricing-board.reader.js";
@@ -41,7 +42,7 @@ import { PricingModule } from "./pricing.module.js";
  */
 @Module({
   imports: [CqrsModule, OrdersModule, PricingModule],
-  controllers: [AdminPricingController, AdminPricingJournalController],
+  controllers: [AdminPricingController, AdminPriceFloorsController, AdminPricingJournalController],
   providers: [
     BoardElasticityService,
     CreatePriceRuleHandler,

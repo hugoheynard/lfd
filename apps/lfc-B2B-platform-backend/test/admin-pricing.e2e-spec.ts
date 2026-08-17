@@ -324,6 +324,28 @@ describe("suspendre, reprendre, archiver", () => {
     expect(entry?.summary).toContain("Promotion");
   });
 
+  /**
+   * Le motif est ce qu'on relira ; il doit donc pouvoir être écrit AU MOMENT du
+   * geste, y compris sur une limite. Un `DELETE` ne porte pas de corps de façon
+   * fiable — d'où une route `POST .../archive` à côté de lui.
+   */
+  it("archive une limite avec son motif, et le journal le garde", async () => {
+    await staff()
+      .put("/admin/pricing/floors")
+      .send({ scope: { type: "global", id: null }, mode: "amount", value: 100, dynamic: null });
+
+    const archived = await staff()
+      .post("/admin/pricing/floors/global/archive")
+      .send({ reason: "Le tarif a changé, la limite n'a plus de sens" });
+
+    expect(archived.status).toBe(204);
+    const [entry] = jsonBody<{ act: string; reason: string | null }[]>(
+      await staff().get("/admin/pricing/journal/floor/global%3A"),
+    );
+    expect(entry?.act).toBe("archived");
+    expect(entry?.reason).toContain("plus de sens");
+  });
+
   it("refuse un sujet de journal inventé", async () => {
     expect((await staff().get("/admin/pricing/journal/licorne/x")).status).toBe(400);
   });

@@ -1,43 +1,25 @@
 import {
   createPriceRulePayloadSchema,
   pricingReasonPayloadSchema,
-  setPriceFloorPayloadSchema,
   type CreatePriceRulePayload,
-  type PriceScopePayload,
   type PricingReasonPayload,
-  type SetPriceFloorPayload,
 } from "@lfd/contracts";
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import {
-  ArchivePriceFloorCommand,
   ArchivePriceRuleCommand,
-  ConfirmPriceFloorCommand,
   CreatePriceRuleCommand,
   PausePriceRuleCommand,
   ResumePriceRuleCommand,
-  SetPriceFloorCommand,
 } from "../application/commands/pricing.commands.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
-import { UnknownPriceScopeError } from "../domain/pricing-errors.js";
-import type { PricingBoardView } from "@lfd/contracts";
+import type { PriceScopePayload, PricingBoardView } from "@lfd/contracts";
 import type { PricingRuleDraft } from "../domain/entities/pricing-rule.js";
-import type { PriceFloorPolicy } from "../domain/floor-policy.js";
-import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
+import type { PriceScope } from "../domain/price-rule.js";
 
 /**
  * **Le paramétrage tarifaire.**
@@ -142,79 +124,6 @@ export class AdminPricingController {
       new ArchivePriceRuleCommand(id, staffSub, null),
     );
   }
-
-  @Put("floors")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async setFloor(
-    @Body(new ZodBody(setPriceFloorPayloadSchema)) payload: SetPriceFloorPayload,
-    @StaffSub() staffSub: string,
-  ): Promise<void> {
-    await this.commands.execute<SetPriceFloorCommand, void>(
-      new SetPriceFloorCommand(toScope(payload.scope), toPolicy(payload), staffSub),
-    );
-  }
-
-  /**
-   * **Confirmer** une limite sans la changer : l'intention est maintenue, sa
-   * référence et sa date repartent d'aujourd'hui.
-   *
-   * `POST` et non `PUT` : ce n'est pas une écriture idempotente de valeur, c'est
-   * un acte daté — « j'ai regardé l'écart, et je maintiens ». Le rejouer
-   * n'écrase rien, il redate.
-   */
-  @Post("floors/global/confirm")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async confirmGlobalFloor(@StaffSub() staffSub: string): Promise<void> {
-    await this.confirmFloorOn({ type: "global", id: null }, staffSub);
-  }
-
-  @Post("floors/:scopeType/:scopeId/confirm")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async confirmFloor(
-    @Param("scopeType") scopeType: string,
-    @Param("scopeId") scopeId: string,
-    @StaffSub() staffSub: string,
-  ): Promise<void> {
-    await this.confirmFloorOn({ type: parseScopeType(scopeType), id: scopeId }, staffSub);
-  }
-
-  private async confirmFloorOn(scope: PriceScopePayload, staffSub: string): Promise<void> {
-    await this.commands.execute<ConfirmPriceFloorCommand, void>(
-      new ConfirmPriceFloorCommand(toScope(scope), staffSub),
-    );
-  }
-
-  /**
-   * La limite **globale** — elle ne désigne aucune cible, donc son chemin n'en
-   * porte pas.
-   *
-   * Deux routes plutôt qu'une avec un segment vide : `DELETE .../floors/global/`
-   * ne s'apparie tout simplement pas, un segment vide n'étant pas un segment.
-   * Le premier essai l'avait supposé et rendait un 404 qui accusait la donnée
-   * alors que c'était le routage.
-   */
-  @Delete("floors/global")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async removeGlobalFloor(@StaffSub() staffSub: string): Promise<void> {
-    await this.archiveFloorOn({ type: "global", id: null }, staffSub);
-  }
-
-  @Delete("floors/:scopeType/:scopeId")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async removeFloor(
-    @Param("scopeType") scopeType: string,
-    @Param("scopeId") scopeId: string,
-    @StaffSub() staffSub: string,
-  ): Promise<void> {
-    await this.archiveFloorOn({ type: parseScopeType(scopeType), id: scopeId }, staffSub);
-  }
-
-  /** Retirer une limite l'**archive** : rien ne s'efface, ici non plus. */
-  private async archiveFloorOn(scope: PriceScopePayload, staffSub: string): Promise<void> {
-    await this.commands.execute<ArchivePriceFloorCommand, void>(
-      new ArchivePriceFloorCommand(toScope(scope), staffSub, null),
-    );
-  }
 }
 
 /**
@@ -251,40 +160,4 @@ function toDraft(payload: CreatePriceRulePayload): PricingRuleDraft {
 
 function toScope(scope: PriceScopePayload): PriceScope {
   return { type: scope.type, id: scope.id };
-}
-
-/**
- * Payload → politique de plancher : le **mur**, et la **porte** s'il y en a une.
- *
- * Les conditions d'ouverture traversent telles quelles ; c'est l'agrégat qui
- * refuse une porte sans clé, ou une porte au-dessus du mur.
- */
-function toPolicy(payload: SetPriceFloorPayload): PriceFloorPolicy {
-  const dynamic = payload.dynamic;
-  return {
-    hard: toFloor(payload.mode, payload.value),
-    dynamic:
-      dynamic === null
-        ? null
-        : { floor: toFloor(dynamic.mode, dynamic.value), unlock: dynamic.unlock },
-  };
-}
-
-function toFloor(mode: "percent" | "amount", value: number): PriceFloor {
-  return mode === "percent" ? { mode: "percent", bp: value } : { mode: "amount", cents: value };
-}
-
-const SCOPE_TYPES = ["global", "category", "product", "variant"] as const;
-
-/**
- * Le segment de chemin est une chaîne libre : le valider ici évite qu'une portée
- * inventée descende jusqu'au domaine, où elle ne correspondrait à rien et
- * ressortirait en « aucune limite posée » — un 404 qui mentirait sur la cause.
- */
-function parseScopeType(value: string): (typeof SCOPE_TYPES)[number] {
-  const match = SCOPE_TYPES.find((candidate) => candidate === value);
-  if (match === undefined) {
-    throw new UnknownPriceScopeError(value);
-  }
-  return match;
 }
