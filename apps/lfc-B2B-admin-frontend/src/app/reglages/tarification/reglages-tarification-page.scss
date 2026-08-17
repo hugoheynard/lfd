@@ -33,6 +33,11 @@ $col-gap: 2.25rem;
   column-gap: $col-gap;
 }
 
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .legend {
   padding: 0 var(--fold-space-3, 0.75rem);
 }

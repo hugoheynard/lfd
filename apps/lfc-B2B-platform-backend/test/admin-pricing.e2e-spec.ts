@@ -346,6 +346,47 @@ describe("suspendre, reprendre, archiver", () => {
     expect(entry?.reason).toContain("plus de sens");
   });
 
+  const archivedList = async (): Promise<{ id: string; status: string }[]> =>
+    jsonBody<{ id: string; status: string }[]>(await staff().get("/admin/pricing/rules/archived"));
+
+  /**
+   * Ranger sert à ne plus voir : une règle archivée quitte le TABLEAU. Si elle y
+   * restait, la colonne des prix résolus dirait la vérité pendant que le nœud
+   * d'à côté afficherait une règle qui n'agit plus.
+   */
+  it("retire la règle archivée du tableau", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    await archive(id);
+
+    const view = await board();
+
+    expect(view.globalRules.map((rule) => rule.id)).not.toContain(id);
+  });
+
+  it("la retrouve dans les archives, avec son état", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    await archive(id, "Doublon");
+
+    const archives = await archivedList();
+
+    expect(archives.map((rule) => rule.id)).toContain(id);
+    expect(archives.find((rule) => rule.id === id)?.status).toBe("archived");
+  });
+
+  /** Les archives ne montrent QUE ce qui est rangé — sinon ce serait le tableau. */
+  it("ne montre pas les règles encore en vigueur", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+
+    expect((await archivedList()).map((rule) => rule.id)).not.toContain(id);
+  });
+
+  it("n'y range pas non plus une règle seulement suspendue", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    await pause(id);
+
+    expect((await archivedList()).map((rule) => rule.id)).not.toContain(id);
+  });
+
   it("refuse un sujet de journal inventé", async () => {
     expect((await staff().get("/admin/pricing/journal/licorne/x")).status).toBe(400);
   });

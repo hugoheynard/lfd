@@ -59,6 +59,9 @@ interface LoadedFloor {
  * finit par annoncer autre chose que la facture, et c'est précisément ce qu'un
  * client conteste.
  */
+/** Au-delà, ce n'est plus une mémoire consultable, c'est un export. */
+const ARCHIVED_PAGE = 100;
+
 @Injectable()
 export class PrismaPricingBoardReader extends PricingBoardReader {
   constructor(
@@ -69,14 +72,38 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     super();
   }
 
+  /**
+   * **Ce qu'on a rangé**, du plus récemment archivé au plus ancien.
+   *
+   * Une lecture à part, et pas un drapeau sur le tableau : « qu'est-ce qui
+   * s'applique ? » et « qu'a-t-on retiré ? » sont deux questions, et mêler les
+   * secondes aux premières alourdirait quatre-vingt-dix nœuds pour un besoin
+   * qu'on a trois fois par an.
+   */
+  async archivedRules(): Promise<PriceRuleView[]> {
+    const rows = await this.prisma.priceRule.findMany({
+      where: { archivedAt: { not: null } },
+      orderBy: { archivedAt: "desc" },
+      take: ARCHIVED_PAGE,
+    });
+    return rows.map(ruleViewFromRow);
+  }
+
   async read(): Promise<PricingBoardView> {
     // Pris avant toute lecture : l'âge d'une limite et la résolution des prix
     // doivent parler du même instant.
     const at = new Date();
 
+    // **Les archivées n'entrent pas dans le tableau** : ranger sert précisément
+    // à ne plus les voir. Sans cette clause, une règle retirée continuerait
+    // d'occuper son nœud — et pire, la colonne des prix résolus dirait la
+    // vérité pendant que le nœud d'à côté afficherait une règle qui n'agit plus.
     const [ruleRows, floorRows] = await Promise.all([
-      this.prisma.priceRule.findMany({ orderBy: [{ stage: "asc" }, { validFrom: "asc" }] }),
-      this.prisma.priceFloor.findMany(),
+      this.prisma.priceRule.findMany({
+        where: { archivedAt: null },
+        orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
+      }),
+      this.prisma.priceFloor.findMany({ where: { archivedAt: null } }),
     ]);
     const rules: LoadedRule[] = ruleRows.map((row) => ({
       rule: ruleFromRow(row),

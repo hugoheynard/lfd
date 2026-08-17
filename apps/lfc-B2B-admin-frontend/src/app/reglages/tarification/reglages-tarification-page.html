@@ -37,6 +37,14 @@
         </fold-callout>
       }
 
+      <!-- L'entrée vers ce qui n'est plus là. Discrète, en haut à droite : on la
+           cherche rarement, mais quand on la cherche, on sait quoi chercher. -->
+      <div class="toolbar">
+        <button foldButton emphasis="outline" intent="neutral" (click)="openArchives()">
+          Archives
+        </button>
+      </div>
+
       <!-- Les en-têtes de colonnes, posés UNE fois : la grille se lit de gauche
            à droite comme le prix se construit. -->
       <div class="legend" aria-hidden="true">

@@ -17,7 +17,7 @@ import {
   ResumePriceRuleCommand,
 } from "../application/commands/pricing.commands.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
-import type { PriceScopePayload, PricingBoardView } from "@lfd/contracts";
+import type { PriceRuleView, PriceScopePayload, PricingBoardView } from "@lfd/contracts";
 import type { PricingRuleDraft } from "../domain/entities/pricing-rule.js";
 import type { PriceScope } from "../domain/price-rule.js";
 
@@ -49,7 +49,20 @@ export class AdminPricingController {
     return this.board.read();
   }
 
-  /** Rend l'identifiant posé : l'écran en a besoin pour cibler la suppression. */
+  /**
+   * **Ce qu'on a rangé** — les règles archivées, de la plus récente à la plus
+   * ancienne.
+   *
+   * Une route à part et non un drapeau sur le tableau : « qu'est-ce qui
+   * s'applique ? » et « qu'a-t-on retiré ? » sont deux questions, et mêler les
+   * secondes aux premières alourdirait chaque nœud de l'écran.
+   */
+  @Get("rules/archived")
+  archivedRules(): Promise<PriceRuleView[]> {
+    return this.board.archivedRules();
+  }
+
+  /** Rend l'identifiant posé : l'écran en a besoin pour cibler ses gestes. */
   @Post("rules")
   @HttpCode(HttpStatus.CREATED)
   async createRule(

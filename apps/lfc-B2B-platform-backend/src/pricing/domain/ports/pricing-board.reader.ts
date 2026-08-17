@@ -1,4 +1,4 @@
-import type { PricingBoardView } from "@lfd/contracts";
+import type { PriceRuleView, PricingBoardView } from "@lfd/contracts";
 
 /**
  * Port de lecture de **l'écran de tarification**.
@@ -10,4 +10,15 @@ import type { PricingBoardView } from "@lfd/contracts";
  */
 export abstract class PricingBoardReader {
   abstract read(): Promise<PricingBoardView>;
+
+  /**
+   * **Ce qu'on a rangé** — les règles archivées, de la plus récente à la plus
+   * ancienne.
+   *
+   * Séparé de `read` parce que ce sont deux questions : « qu'est-ce qui
+   * s'applique ? » et « qu'a-t-on retiré ? ». Les mêler alourdirait chaque nœud
+   * du tableau pour un besoin qu'on a trois fois par an — et rendrait l'écran
+   * ambigu là où il doit être net.
+   */
+  abstract archivedRules(): Promise<PriceRuleView[]>;
 }

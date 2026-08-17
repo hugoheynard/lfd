@@ -1,0 +1,48 @@
+<fold-panel-header
+  title="Archives"
+  subtitle="Les règles retirées du tableau. Elles n'agissent plus, elles ne sont pas effacées."
+/>
+
+<div class="body">
+  @switch (state()) {
+    @case ('loading') {
+      <p class="muted">Lecture des archives…</p>
+    }
+    @case ('error') {
+      <p class="muted">Les archives n'ont pas pu être lues.</p>
+    }
+    @default {
+      @if (rules().length === 0) {
+        <fold-empty-state
+          title="Rien n'a été archivé"
+          subtitle="Les règles retirées du tableau viendront ici, avec leur motif."
+        />
+      } @else {
+        <ul class="rules">
+          @for (rule of rules(); track rule.id) {
+            <li class="rule">
+              <p class="rule-label">{{ rule.label }}</p>
+              <p class="rule-summary">{{ summary(rule) }}</p>
+              <p class="rule-archived">{{ archivedLine(rule) }}</p>
+              @if (rule.archiveReason !== null) {
+                <!-- Le motif est la phrase de quelqu'un : citée, pas reformulée. -->
+                <p class="rule-reason">« {{ rule.archiveReason }} »</p>
+              }
+              <!-- Le seul geste possible ici : lire. Une décision archivée est
+                   close ; la reposer se fait par le geste normal, et ce sera
+                   alors une NOUVELLE décision, à son auteur et à sa date. -->
+              <button foldButton emphasis="soft" intent="neutral" (click)="openJournal(rule)">
+                Journal
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</div>
+
+<footer class="foot">
+  <span class="spacer"></span>
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Fermer</button>
+</footer>

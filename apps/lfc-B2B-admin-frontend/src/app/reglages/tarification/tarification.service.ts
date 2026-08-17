@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   CreatePriceRulePayload,
+  PriceRuleView,
   PriceScopePayload,
   PricingBoardView,
   PricingJournalEntryView,
@@ -28,6 +29,20 @@ export class TarificationService {
   /** Le tableau complet — familles, articles, règles, limites, prix résolus. */
   read(): Promise<PricingBoardView> {
     return firstValueFrom(this.http.get<PricingBoardView>(`${B2B_API_BASE}/admin/pricing`));
+  }
+
+  /**
+   * **Ce qu'on a rangé** — les règles archivées, de la plus récente à la plus
+   * ancienne.
+   *
+   * Une lecture à part et non un champ du tableau : « qu'est-ce qui
+   * s'applique ? » et « qu'a-t-on retiré ? » sont deux questions, et la seconde
+   * se pose trois fois par an.
+   */
+  archivedRules(): Promise<PriceRuleView[]> {
+    return firstValueFrom(
+      this.http.get<PriceRuleView[]>(`${B2B_API_BASE}/admin/pricing/rules/archived`),
+    );
   }
 
   /** Pose une règle. Rend son identifiant, pour pouvoir la retirer. */

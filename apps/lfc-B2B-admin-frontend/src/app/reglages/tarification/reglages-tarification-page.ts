@@ -22,6 +22,7 @@ import {
 } from 'fold-ng';
 
 import { ArchivePanel, type ArchivePanelData } from './archive-panel/archive-panel';
+import { ArchivesPanel } from './archives-panel/archives-panel';
 import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
 import { JournalPanel, type JournalPanelData } from './journal-panel/journal-panel';
 import { RulePanel, type RulePanelData } from './rule-panel/rule-panel';
@@ -204,6 +205,17 @@ export class ReglagesTarificationPage {
       target: rule.label,
       summary: `${this.ruleSummary(rule)} — ${rule.label}`,
     });
+  }
+
+  /**
+   * **Les archives** — ce qui a été retiré du tableau.
+   *
+   * Une liste à part plutôt que des lignes grisées dans la grille : ranger sert
+   * à ne plus voir, et l'écran qui répond à « quel est le prix ? » doit rester
+   * le plus net de tous. Encore faut-il pouvoir retrouver.
+   */
+  protected async openArchives(): Promise<void> {
+    await this.panels.open<boolean>(ArchivesPanel, { width: 'md' }).closed;
   }
 
   /** **Le journal d'une règle** : qui l'a posée, qui l'a suspendue, quand. */
