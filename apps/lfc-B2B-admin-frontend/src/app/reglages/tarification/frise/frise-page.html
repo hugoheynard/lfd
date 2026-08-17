@@ -63,10 +63,13 @@
             (change)="setDay('to', $any($event.target).value)"
           />
         </div>
+        <span class="markers-spacer"></span>
         @if (reading()) {
-          <span class="reading">Lecture…</span>
+          <span class="reading is-busy">Lecture…</span>
         } @else if (selection() === null) {
-          <span class="reading">Cliquez sur l'axe, ou glissez pour comparer deux dates.</span>
+          <span class="reading">Cliquez sur l'axe · glissez pour comparer</span>
+        } @else {
+          <span class="reading is-set">{{ rangeLabel() }}</span>
         }
       </div>
     </section>
@@ -91,7 +94,7 @@
     @if (rows().length > 0) {
       <section class="result">
         <header class="result-head">
-          <h2 class="result-title">Le catalogue au marqueur</h2>
+          <h2 class="result-title">Le catalogue {{ rangeLabel() }}</h2>
           <span class="hint">{{ rows().length }} articles</span>
         </header>
 
@@ -141,7 +144,7 @@
     @if (comparison(); as compared) {
       <section class="result">
         <header class="result-head">
-          <h2 class="result-title">Ce qui a bougé</h2>
+          <h2 class="result-title">Ce qui a bougé, {{ rangeLabel() }}</h2>
           <span class="hint">
             <strong>{{ compared.changedCount }}</strong> article(s) sur
             <strong>{{ compared.days }}</strong> jour(s) — volume comparé aux

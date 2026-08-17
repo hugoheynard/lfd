@@ -232,6 +232,23 @@ export class FrisePage {
       : selection[which];
   }
 
+  /**
+   * **Ce qu'on regarde, écrit en toutes lettres.**
+   *
+   * Un tableau intitulé « le catalogue au marqueur » oblige à remonter à l'axe
+   * pour savoir DE QUAND il parle. La date se répète donc là où on lit les
+   * chiffres : c'est la seule redondance qui fasse gagner du temps.
+   */
+  protected readonly rangeLabel = computed(() => {
+    const selection = this.selection();
+    if (selection === null) {
+      return '';
+    }
+    return selection.kind === 'instant'
+      ? `au ${longDay(selection.day)}`
+      : `du ${longDay(selection.from)} au ${longDay(selection.to)}`;
+  });
+
   /** Une variation en clair. `—` quand elle ne se calcule pas : on n'invente pas un zéro. */
   protected percent(bp: number | null): string {
     if (bp === null) {
@@ -249,6 +266,16 @@ export class FrisePage {
     }
     return bp > 0 ? 'up' : 'down';
   }
+}
+
+/** « 12 septembre 2026 » — la forme longue, celle d'un titre. */
+function longDay(day: string): string {
+  return new Date(`${day}T00:00:00.000Z`).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
 /** Une même décision ne se dessine qu'une fois, même vue de deux familles. */
