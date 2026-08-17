@@ -103,10 +103,28 @@ function isInForce(rule: PriceRule, at: Date): boolean {
   return rule.validTo === null || rule.validTo.getTime() > at.getTime();
 }
 
+/**
+ * La règle a-t-elle été **interrompue** avant cet instant ?
+ *
+ * Comparé à l'instant de résolution et non à « maintenant », et c'est ce qui rend
+ * la suspension honnête : une promotion suspendue le 12 s'appliquait encore le
+ * 10. Un simple booléen `paused` aurait effacé la distinction et fait mentir
+ * toute relecture d'une date passée.
+ *
+ * Ce que ce champ ne sait pas dire, c'est qu'une règle **reprise** a été
+ * suspendue un moment : la reprise l'efface. Cet intervalle vit dans le journal,
+ * qui est l'endroit fait pour ça — et les commandes déjà passées portent leur
+ * trace figée, donc rien de facturé ne dépend de cette relecture.
+ */
+function isSuspended(rule: PriceRule, at: Date): boolean {
+  return rule.suspendedFrom !== null && rule.suspendedFrom.getTime() <= at.getTime();
+}
+
 /** Toutes les conditions d'application, réunies. */
 export function applies(rule: PriceRule, context: PricingContext): boolean {
   return (
     isInForce(rule, context.at) &&
+    !isSuspended(rule, context.at) &&
     matchesScope(rule.scope, context) &&
     matchesAudience(rule.audience, context) &&
     (rule.minQuantity === null || context.quantity >= rule.minQuantity)

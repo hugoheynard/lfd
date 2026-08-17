@@ -117,6 +117,17 @@ export type PriceRule = {
   readonly validFrom: Date;
   /** Borne haute **exclue**. `null` = ouverte. */
   readonly validTo: Date | null;
+  /**
+   * L'instant où la règle a **cessé d'agir**, indépendamment de sa fenêtre.
+   * `null` = elle n'a jamais été interrompue.
+   *
+   * Un seul champ pour deux gestes pourtant très différents — la suspension et
+   * l'archivage — parce que le **calcul** n'a aucune raison de les distinguer :
+   * les deux disent « cette règle n'agit plus ». Ce qui les sépare — une pause
+   * réserve son créneau, un archivage le rend — ne regarde que le staff et la
+   * base. Cf. `rule-lifecycle.ts`.
+   */
+  readonly suspendedFrom: Date | null;
   /** Ce que la trace affichera. */
   readonly label: string;
 } & (

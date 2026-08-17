@@ -282,3 +282,82 @@ export class DynamicFloorNotBelowHardError extends DomainError {
     );
   }
 }
+
+/**
+ * Un geste sur une règle **archivée**.
+ *
+ * L'archivage est terminal, et c'est ce qui lui donne sa valeur : une décision
+ * archivée est une décision close, dont l'écran et le journal disent la même
+ * chose pour toujours. La rouvrir en la reprenant ferait de l'archive un simple
+ * masquage — et personne ne saurait plus si une règle archivée a pu facturer
+ * après sa date de fin.
+ *
+ * Reposer la même règle est évidemment permis : c'est alors une **nouvelle**
+ * décision, avec son auteur et sa date, ce qu'elle est réellement.
+ */
+export class ArchivedPriceRuleIsSealedError extends BusinessError {
+  constructor(readonly ruleId: string) {
+    super(
+      "pricing.rule.archived_is_sealed",
+      "Cette règle est archivée : une décision close ne se rouvre pas. Posez-en une nouvelle — elle portera votre nom et sa date, ce qui est plus honnête qu'une reprise.",
+    );
+  }
+}
+
+/**
+ * Mettre en pause une règle **déjà en pause**.
+ *
+ * Un refus, et pas un silence complaisant : deux personnes peuvent avoir le même
+ * écran ouvert, et celle qui arrive seconde doit apprendre que quelqu'un l'a
+ * précédée. Accepter en ne faisant rien lui ferait croire que c'est SON geste
+ * qui a arrêté la promotion — et le journal, lui, nommerait l'autre.
+ */
+export class PriceRuleAlreadyPausedError extends BusinessError {
+  constructor(
+    readonly ruleId: string,
+    readonly pausedAt: Date,
+  ) {
+    super(
+      "pricing.rule.already_paused",
+      `Cette règle est déjà en pause depuis le ${pausedAt.toISOString()} : quelqu'un vous a précédé.`,
+    );
+  }
+}
+
+/** Reprendre une règle qui n'est pas en pause. Même raisonnement, en miroir. */
+export class PriceRuleNotPausedError extends BusinessError {
+  constructor(readonly ruleId: string) {
+    super("pricing.rule.not_paused", "Cette règle n'est pas en pause : il n'y a rien à reprendre.");
+  }
+}
+
+/**
+ * Suspendre ou reprendre une règle dont la **fenêtre est déjà close**.
+ *
+ * Le geste n'aurait aucun effet — la règle ne s'applique plus depuis sa date de
+ * fin — mais il en aurait l'**apparence** : l'écran afficherait « en pause », et
+ * quelqu'un croirait avoir arrêté une promotion qui s'était arrêtée toute seule.
+ * Un geste qui rassure à tort est pire qu'un refus.
+ *
+ * Une règle qui n'a **pas encore commencé** se met, elle, très bien en pause :
+ * c'est même le cas le plus utile — désamorcer une promotion programmée avant
+ * qu'elle ne parte.
+ */
+export class ClosedPriceRuleWindowError extends BusinessError {
+  constructor(
+    readonly ruleId: string,
+    readonly validTo: Date,
+  ) {
+    super(
+      "pricing.rule.window_closed",
+      `Cette règle est terminée depuis le ${validTo.toISOString()} : la suspendre ne changerait rien, sinon l'affichage.`,
+    );
+  }
+}
+
+/** Un sujet de journal qui n'existe pas — même raisonnement que pour une portée. */
+export class UnknownPricingSubjectError extends DomainError {
+  constructor(readonly value: string) {
+    super("pricing.subject.unknown", `Sujet de journal inconnu « ${value} ».`);
+  }
+}

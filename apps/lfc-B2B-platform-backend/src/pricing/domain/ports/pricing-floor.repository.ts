@@ -1,4 +1,5 @@
 import type { PricingFloor } from "../entities/pricing-floor.js";
+import type { PricingAct } from "../pricing-act.js";
 
 /**
  * Port d'**écriture** des planchers.
@@ -6,9 +7,13 @@ import type { PricingFloor } from "../entities/pricing-floor.js";
  * `pose` est idempotent par portée : l'identifiant étant dérivé de la cible, il
  * n'y a pas de « créer ou mettre à jour ? » à trancher, ni d'appelant qui
  * puisse se tromper de branche.
+ *
+ * Chaque écriture prend son **acte**, pour la même raison que du côté des règles :
+ * un argument obligatoire ne s'oublie pas, un second appel si. L'adaptateur écrit
+ * la limite et sa trace dans la même transaction.
  */
 export abstract class PricingFloorRepository {
-  abstract pose(floor: PricingFloor): Promise<void>;
+  abstract pose(floor: PricingFloor, act: PricingAct): Promise<void>;
 
   /**
    * Charge la limite posée sur cette portée, ou `null`.
@@ -20,6 +25,13 @@ export abstract class PricingFloorRepository {
    */
   abstract load(id: string): Promise<PricingFloor | null>;
 
-  /** Retire la limite. Rend `false` si aucune n'était posée sur cette portée. */
-  abstract remove(id: string): Promise<boolean>;
+  /**
+   * **Archive** la limite. Rend `false` si aucune n'était posée sur cette portée.
+   *
+   * Jamais de `DELETE` : une limite a arbitré des prix, et savoir qu'elle
+   * existait explique des factures. Elle laisse sa ligne, marquée, et le journal
+   * garde la suite complète des décisions prises sur cette portée — c'est là que
+   * vit l'histoire, pas dans la table d'état.
+   */
+  abstract archive(id: string, act: PricingAct): Promise<boolean>;
 }

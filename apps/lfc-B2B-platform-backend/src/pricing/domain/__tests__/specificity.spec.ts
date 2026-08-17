@@ -32,6 +32,7 @@ function rule(over: Partial<PriceRule> = {}): PriceRule {
     minQuantity: null,
     validFrom: new Date("2026-08-01T00:00:00.000Z"),
     validTo: null,
+    suspendedFrom: null,
     label: "règle",
     nature: "alter",
     alteration: { direction: "decrease", mode: "percent", bp: 1000 },
@@ -157,5 +158,60 @@ describe("winnerOf — l'ordre des critères", () => {
     const expiree = rule({ id: "b", validTo: new Date("2026-08-10T00:00:00.000Z") });
 
     expect(winnerOf([applicable, expiree], context())?.id).toBe("a");
+  });
+});
+
+/**
+ * **La suspension**, vue par le calcul. Il ne distingue pas une pause d'un
+ * archivage : les deux disent « cette règle n'agit plus ». Ce qui les sépare —
+ * la pause réserve son créneau — ne regarde que le staff et la base.
+ */
+describe("applies — la règle interrompue", () => {
+  const AVANT = new Date("2026-08-15T10:00:00.000Z");
+  const APRES = new Date("2026-08-20T10:00:00.000Z");
+
+  it("s'applique tant que rien ne l'a interrompue", () => {
+    expect(applies(rule({ suspendedFrom: null }), context())).toBe(true);
+  });
+
+  it("ne s'applique plus après avoir été interrompue", () => {
+    expect(applies(rule({ suspendedFrom: AVANT }), context({ at: APRES }))).toBe(false);
+  });
+
+  /**
+   * **La suspension ne réécrit pas le passé.** Une promotion suspendue le 20
+   * s'appliquait encore le 15, et une commande du 15 relue aujourd'hui doit
+   * retrouver le prix qu'elle a payé. Un booléen `paused` aurait effacé cette
+   * distinction et fait mentir toute relecture d'une date antérieure.
+   */
+  it("s'appliquait ENCORE avant l'instant de la suspension", () => {
+    expect(applies(rule({ suspendedFrom: APRES }), context({ at: AVANT }))).toBe(true);
+  });
+
+  /** Borne INCLUSE : à la seconde de la suspension, elle n'agit déjà plus. */
+  it("cesse d'agir à l'instant EXACT de la suspension", () => {
+    expect(applies(rule({ suspendedFrom: AVANT }), context({ at: AVANT }))).toBe(false);
+  });
+
+  it("laisse gagner la règle restée en vigueur, même moins spécifique", () => {
+    const suspendue = rule({
+      id: "precise",
+      scope: { type: "variant", id: "VIE-001-1" },
+      suspendedFrom: AVANT,
+    });
+    const large = rule({ id: "large" });
+
+    expect(winnerOf([suspendue, large], context({ at: APRES }))?.id).toBe("large");
+  });
+
+  /**
+   * Deux règles également spécifiques ne sont ambiguës que si les DEUX
+   * s'appliquent : suspendre l'une est justement la façon de sortir du conflit.
+   */
+  it("ne crée aucune ambiguïté avec une jumelle suspendue", () => {
+    const suspendue = rule({ id: "ancienne", suspendedFrom: AVANT });
+    const vivante = rule({ id: "nouvelle" });
+
+    expect(winnerOf([suspendue, vivante], context({ at: APRES }))?.id).toBe("nouvelle");
   });
 });
