@@ -1,0 +1,303 @@
+/**
+ * E2E du **paramétrage tarifaire** — sur un vrai Postgres.
+ *
+ * Trois choses que seul ce niveau prouve :
+ *
+ * 1. les refus des agrégats traversent le bus et le filtre d'erreurs pour
+ *    ressortir en `400`, pas en `500` ;
+ * 2. la **contrainte d'exclusion** — une garantie SQL — ressort en `409` avec une
+ *    phrase que le staff peut lire, au lieu du 500 brut que Prisma remonterait ;
+ * 3. l'écran affiche le prix que la **caisse** calculerait, parce qu'il passe par
+ *    la même fonction et le même catalogue.
+ */
+import type { PricingBoardView } from "@lfd/contracts";
+
+import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+
+/** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
+const stubAdminVerifier = {
+  verify: (): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: "staff-e2e", scopes: [] }),
+};
+
+let ctx: E2eContext;
+
+beforeAll(async () => {
+  ctx = await bootstrapE2e({
+    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+  });
+});
+
+afterAll(async () => {
+  await ctx.close();
+});
+
+beforeEach(async () => {
+  await ctx.reset();
+});
+
+const staff = () => ctx.asSub("staff-e2e");
+
+/** VIE-001 vaut 200 c dans le catalogue qui facture. */
+const SKU = "VIE-001";
+const CANONICAL = 200;
+const FAMILY = "viennoiserie";
+
+interface RuleBody {
+  stage?: string;
+  scope?: { type: string; id: string | null };
+  audience?: { type: string; id: string | null };
+  minQuantity?: number | null;
+  effect?: Record<string, unknown>;
+  label?: string;
+  validFrom?: string;
+  validTo?: string | null;
+}
+
+function ruleBody(overrides: RuleBody = {}): Record<string, unknown> {
+  return {
+    stage: "promotion",
+    scope: { type: "global", id: null },
+    audience: { type: "all", id: null },
+    minQuantity: null,
+    effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1000 },
+    label: "Promo",
+    validFrom: "2026-01-01T00:00:00.000Z",
+    validTo: null,
+    ...overrides,
+  };
+}
+
+const postRule = (overrides: RuleBody = {}) =>
+  staff().post("/admin/pricing/rules").send(ruleBody(overrides));
+
+const board = async (): Promise<PricingBoardView> =>
+  jsonBody<PricingBoardView>(await staff().get("/admin/pricing"));
+
+/** L'article VIE-001, tel que l'écran le rend. */
+async function croissant(): Promise<PricingBoardView["categories"][number]["items"][number]> {
+  const view = await board();
+  const family = view.categories.find((category) => category.id === FAMILY);
+  const item = family?.items.find((candidate) => candidate.sku === SKU);
+  if (item === undefined) {
+    throw new Error(`L'écran ne montre pas ${SKU} — le catalogue a changé sous le test.`);
+  }
+  return item;
+}
+
+describe("poser une règle", () => {
+  it("rend l'identifiant posé — l'écran en a besoin pour la retirer", async () => {
+    const response = await postRule();
+
+    expect(response.status).toBe(201);
+    expect(jsonBody<{ id: string }>(response).id).not.toBe("");
+  });
+
+  /**
+   * Le refus central du modèle, vu du bord : une mercuriale en pourcentage
+   * suivrait les hausses du tarif de liste, ce qui n'est pas ce qui a été
+   * négocié. `400`, et non un 500 qui ferait accuser l'infrastructure.
+   */
+  it("refuse une mercuriale en pourcentage, en 400", async () => {
+    const response = await postRule({ stage: "mercuriale" });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("accepte une mercuriale qui pose un prix", async () => {
+    const response = await postRule({
+      stage: "mercuriale",
+      effect: { nature: "replace", amountCents: 210 },
+      audience: { type: "company", id: "cmp_absent" },
+    });
+
+    expect(response.status).toBe(201);
+  });
+
+  it("refuse une portée « famille » sans famille", async () => {
+    const response = await postRule({ scope: { type: "category", id: null } });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("refuse une fenêtre qui se ferme avant de s'ouvrir", async () => {
+    const response = await postRule({ validTo: "2025-01-01T00:00:00.000Z" });
+
+    expect(response.status).toBe(400);
+  });
+
+  /**
+   * La garantie porteuse du modèle : deux règles également spécifiques au même
+   * moment n'existent pas. Elle vit en SQL — ce test prouve qu'elle remonte
+   * **lisible**, et non en 500 sans rapport visible avec le geste du staff.
+   */
+  it("refuse un doublon en 409, avec une phrase lisible", async () => {
+    await postRule();
+
+    const response = await postRule({ label: "La même, autrement nommée" });
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ message: string }>(response).message).toContain("promotion");
+  });
+
+  it("retire une règle, puis refuse de la retirer deux fois", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+
+    expect((await staff().delete(`/admin/pricing/rules/${id}`)).status).toBe(204);
+    expect((await staff().delete(`/admin/pricing/rules/${id}`)).status).toBe(404);
+  });
+});
+
+describe("poser une limite", () => {
+  const putFloor = (scope: { type: string; id: string | null }, mode: string, value: number) =>
+    staff().put("/admin/pricing/floors").send({ scope, mode, value });
+
+  it("pose une limite globale", async () => {
+    expect((await putFloor({ type: "global", id: null }, "amount", 150)).status).toBe(204);
+  });
+
+  /** Idempotent par portée : re-poser REMPLACE, il n'y a jamais deux limites. */
+  it("re-poser sur la même portée remplace au lieu d'empiler", async () => {
+    await putFloor({ type: "global", id: null }, "amount", 150);
+    await putFloor({ type: "global", id: null }, "amount", 170);
+
+    expect(await ctx.prisma.priceFloor.count()).toBe(1);
+    expect((await board()).globalFloor?.value).toBe(170);
+  });
+
+  /**
+   * Au-delà de 100 %, ce n'est plus un plancher : ça relèverait tous les prix,
+   * y compris ceux qu'aucune règle n'a touchés.
+   */
+  it("refuse une fraction supérieure au prix canonique", async () => {
+    expect((await putFloor({ type: "global", id: null }, "percent", 12_000)).status).toBe(400);
+  });
+
+  it("retire une limite par sa portée, puis refuse de la retirer deux fois", async () => {
+    await putFloor({ type: "category", id: FAMILY }, "amount", 100);
+
+    expect((await staff().delete(`/admin/pricing/floors/category/${FAMILY}`)).status).toBe(204);
+    expect((await staff().delete(`/admin/pricing/floors/category/${FAMILY}`)).status).toBe(404);
+  });
+
+  /**
+   * La portée globale ne désigne aucune cible : son chemin n'en porte pas. Un
+   * segment VIDE ne s'apparie pas — le premier essai l'avait supposé et prenait
+   * un 404 qui accusait la donnée alors que c'était le routage.
+   */
+  it("retire la limite globale par un chemin sans cible", async () => {
+    await putFloor({ type: "global", id: null }, "amount", 100);
+
+    expect((await staff().delete("/admin/pricing/floors/global")).status).toBe(204);
+  });
+});
+
+describe("l'écran de tarification", () => {
+  it("montre le prix canonique quand rien n'est posé", async () => {
+    const item = await croissant();
+
+    expect(item.canonicalCents).toBe(CANONICAL);
+    expect(item.finalCents).toBe(CANONICAL);
+    expect(item.steps).toEqual([]);
+  });
+
+  it("montre la trace, étage par étage", async () => {
+    await postRule({ label: "Promo de rentrée" });
+
+    const item = await croissant();
+
+    expect(item.steps).toHaveLength(1);
+    expect(item.steps[0]).toMatchObject({
+      stage: "promotion",
+      label: "Promo de rentrée",
+      resultCents: 180,
+    });
+    expect(item.finalCents).toBe(180);
+  });
+
+  it("range la règle de famille sur la famille, pas sur l'article", async () => {
+    await postRule({ scope: { type: "category", id: FAMILY } });
+
+    const view = await board();
+    const family = view.categories.find((category) => category.id === FAMILY);
+    expect(family?.rules).toHaveLength(1);
+    expect(family?.items.find((item) => item.sku === SKU)?.rules).toEqual([]);
+  });
+
+  /**
+   * **Le point que l'écran doit dire.** Dans un même étage, la règle d'article
+   * REMPLACE celle de la famille — elles ne s'enchaînent pas. Sans
+   * `supersededRuleIds`, l'écran alignerait deux remises dont une seule agit, et
+   * le lecteur additionnerait 10 + 20 pour trouver un total qui ne colle pas.
+   */
+  it("signale la règle de famille SUPPLANTÉE par celle de l'article", async () => {
+    const { id: familyRule } = jsonBody<{ id: string }>(
+      await postRule({ scope: { type: "category", id: FAMILY }, effect: alter(1000) }),
+    );
+    await postRule({ scope: { type: "product", id: SKU }, effect: alter(2000) });
+
+    const item = await croissant();
+
+    expect(item.supersededRuleIds).toEqual([familyRule]);
+    // 200 − 20 % = 160. Composées, les deux auraient donné 144.
+    expect(item.finalCents).toBe(160);
+    expect(item.steps).toHaveLength(1);
+  });
+
+  it("distingue la limite de l'article de celle dont il hérite", async () => {
+    await staff()
+      .put("/admin/pricing/floors")
+      .send({ scope: { type: "category", id: FAMILY }, mode: "amount", value: 170 });
+
+    const inherited = await croissant();
+    expect(inherited.ownFloor).toBeNull();
+    expect(inherited.effectiveFloor?.scope).toEqual({ type: "category", id: FAMILY });
+
+    await staff()
+      .put("/admin/pricing/floors")
+      .send({ scope: { type: "product", id: SKU }, mode: "amount", value: 120 });
+
+    const own = await croissant();
+    expect(own.ownFloor?.value).toBe(120);
+    expect(own.effectiveFloor?.scope).toEqual({ type: "product", id: SKU });
+  });
+
+  it("consigne que la limite a relevé le prix", async () => {
+    await postRule({ effect: alter(5000) }); // 200 → 100
+    await staff()
+      .put("/admin/pricing/floors")
+      .send({ scope: { type: "global", id: null }, mode: "amount", value: 150 });
+
+    const item = await croissant();
+
+    expect(item.floored).toBe(true);
+    expect(item.finalCents).toBe(150);
+  });
+
+  /**
+   * Le prix montré est celui d'UN article commandé par quelqu'un sans tarif
+   * négocié. L'écran doit le dire : sinon cette colonne passe pour « le prix »,
+   * alors qu'elle est le prix de vitrine.
+   */
+  it("annonce les conditions de sa simulation", async () => {
+    const { simulation } = await board();
+
+    expect(simulation).toMatchObject({ quantity: 1, audience: "all" });
+    expect(Number.isNaN(Date.parse(simulation.at))).toBe(false);
+  });
+
+  it("n'applique pas une mercuriale visant un client à la vitrine", async () => {
+    await postRule({
+      stage: "mercuriale",
+      effect: { nature: "replace", amountCents: 150 },
+      audience: { type: "company", id: "cmp_dupont" },
+    });
+
+    expect((await croissant()).finalCents).toBe(CANONICAL);
+  });
+});
+
+function alter(bp: number): Record<string, unknown> {
+  return { nature: "alter", direction: "decrease", mode: "percent", value: bp };
+}

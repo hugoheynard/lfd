@@ -105,5 +105,9 @@ import { OrdersController } from "./http/orders.controller.js";
     { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },
   ],
+  // Le catalogue sort d'ici parce que l'écran de tarification en a besoin : il
+  // doit résoudre les prix contre l'autorité que la caisse utilise, pas contre
+  // une seconde copie. Cf. `PricingAdminModule`.
+  exports: [ProductCatalogReader],
 })
 export class OrdersModule {}

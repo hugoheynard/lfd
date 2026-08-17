@@ -26,6 +26,21 @@ export function resolveFloor(
   floors: readonly ScopedPriceFloor[],
   context: PricingContext,
 ): PriceFloor | null {
+  return resolveScopedFloor(floors, context)?.floor ?? null;
+}
+
+/**
+ * Le plancher gagnant **avec sa portée**.
+ *
+ * L'écran de tarification en a besoin : il doit dire d'où vient la limite qui
+ * s'applique — la sienne, ou celle de sa famille. `resolveFloor` n'aurait pas
+ * suffi, et retrouver la portée par comparaison de valeurs aurait confondu deux
+ * planchers réglés au même montant.
+ */
+export function resolveScopedFloor(
+  floors: readonly ScopedPriceFloor[],
+  context: PricingContext,
+): ScopedPriceFloor | null {
   const [first, ...rest] = floors.filter((candidate) => matchesScope(candidate.scope, context));
   if (first === undefined) {
     return null;
@@ -46,5 +61,5 @@ export function resolveFloor(
   if (tie !== null) {
     throw new AmbiguousPriceFloorsError(best.id, tie.id);
   }
-  return best.floor;
+  return best;
 }

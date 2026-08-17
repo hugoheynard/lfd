@@ -1,36 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import { CorruptedPriceRuleError } from "../domain/pricing-errors.js";
 import { PriceRuleReader } from "../domain/ports/price-rule.reader.js";
-import {
-  PRICE_STAGES,
-  type PriceAlteration,
-  type PriceRule,
-  type PricingContext,
-} from "../domain/price-rule.js";
-
-/** La ligne telle que Prisma la rend — discriminants en `String`, donc à vérifier. */
-interface RuleRow {
-  readonly id: string;
-  readonly stage: string;
-  readonly nature: string;
-  readonly scopeType: string;
-  readonly scopeId: string | null;
-  readonly audienceType: string;
-  readonly audienceId: string | null;
-  readonly minQuantity: number | null;
-  readonly amountCents: number | null;
-  readonly direction: string | null;
-  readonly mode: string | null;
-  readonly value: number | null;
-  readonly validFrom: Date;
-  readonly validTo: Date | null;
-  readonly label: string;
-}
-
-const SCOPE_TYPES = ["global", "category", "product", "variant"] as const;
-const AUDIENCE_TYPES = ["all", "segment", "company"] as const;
+import { ruleFromRow } from "./price-rows.js";
+import type { PriceRule, PricingContext } from "../domain/price-rule.js";
 
 @Injectable()
 export class PrismaPriceRuleReader extends PriceRuleReader {
@@ -64,7 +37,15 @@ export class PrismaPriceRuleReader extends PriceRuleReader {
         ],
       },
     });
-    return rows.map(toDomain);
+    return rows.map(ruleFromRow);
+  }
+
+  /** Tout ce qui est posé, expiré compris — l'écran doit pouvoir le rouvrir. */
+  async listAll(): Promise<PriceRule[]> {
+    const rows = await this.prisma.priceRule.findMany({
+      orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
+    });
+    return rows.map(ruleFromRow);
   }
 }
 
@@ -83,67 +64,4 @@ function audienceFilter(context: PricingContext): { audienceType: string; audien
     clauses.push({ audienceType: "company", audienceId: context.companyId });
   }
   return clauses;
-}
-
-/**
- * Ligne → règle de domaine.
- *
- * Les discriminants sont des `String` en base : une valeur inattendue **lève**
- * plutôt que de se propager. Une règle illisible qui passerait en silence
- * facturerait un prix que personne n'a décidé — c'est le seul cas où planter
- * vaut mieux que continuer.
- */
-function toDomain(row: RuleRow): PriceRule {
-  const stage = expect(row.id, "stage", row.stage, PRICE_STAGES);
-  const scopeType = expect(row.id, "scopeType", row.scopeType, SCOPE_TYPES);
-  const audienceType = expect(row.id, "audienceType", row.audienceType, AUDIENCE_TYPES);
-
-  const common = {
-    id: row.id,
-    stage: stage,
-    scope: { type: scopeType, id: row.scopeId },
-    audience: { type: audienceType, id: row.audienceId },
-    minQuantity: row.minQuantity,
-    validFrom: row.validFrom,
-    validTo: row.validTo,
-    label: row.label,
-  } as const;
-
-  if (row.nature === "replace") {
-    if (row.amountCents === null) {
-      throw new CorruptedPriceRuleError(row.id, "amountCents manquant sur une règle « replace »");
-    }
-    return { ...common, nature: "replace", amountCents: row.amountCents };
-  }
-  if (row.nature === "alter") {
-    return { ...common, nature: "alter", alteration: alterationOf(row) };
-  }
-  throw new CorruptedPriceRuleError(row.id, `nature inconnue « ${row.nature} »`);
-}
-
-function alterationOf(row: RuleRow): PriceAlteration {
-  if (row.value === null || (row.direction !== "increase" && row.direction !== "decrease")) {
-    throw new CorruptedPriceRuleError(row.id, "sens ou grandeur manquants sur une règle « alter »");
-  }
-  if (row.mode === "percent") {
-    return { direction: row.direction, mode: "percent", bp: row.value };
-  }
-  if (row.mode === "amount") {
-    return { direction: row.direction, mode: "amount", cents: row.value };
-  }
-  throw new CorruptedPriceRuleError(row.id, `unité inconnue « ${String(row.mode)} »`);
-}
-
-/** Vérifie qu'une chaîne de la base appartient bien à l'union du domaine. */
-function expect<T extends string>(
-  ruleId: string,
-  field: string,
-  value: string,
-  allowed: readonly T[],
-): T {
-  const match = allowed.find((candidate) => candidate === value);
-  if (match === undefined) {
-    throw new CorruptedPriceRuleError(ruleId, `${field} : valeur inattendue « ${value} »`);
-  }
-  return match;
 }

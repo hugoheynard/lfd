@@ -29,6 +29,7 @@ import {
   DeliveryDefaultsReader,
   NO_DELIVERY_DEFAULTS,
 } from "../../../domain/ports/delivery-defaults.reader.js";
+import { PriceFloorReader } from "../../../../pricing/domain/ports/price-floor.reader.js";
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 
@@ -48,7 +49,16 @@ import { PlaceOrderForCustomerHandler } from "../place-order-for-customer.handle
  * seule règle n'existe. Ces suites éprouvent la commande, pas le prix — la
  * résolution a ses propres tests, purs et exhaustifs.
  */
-const noPriceRules: PriceRuleReader = { candidatesFor: () => Promise.resolve([]) };
+const noPriceRules: PriceRuleReader = {
+  candidatesFor: () => Promise.resolve([]),
+  listAll: () => Promise.resolve([]),
+};
+
+/** Aucune limite posée : le prix sort du pipeline tel quel. */
+const noPriceFloors: PriceFloorReader = {
+  candidatesFor: () => Promise.resolve([]),
+  listAll: () => Promise.resolve([]),
+};
 
 const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": {
@@ -193,7 +203,7 @@ function handler(
     "clientBaseUrl" in options ? (options.clientBaseUrl ?? null) : "https://boutique.lfc.fr";
   return new PlaceOrderForCustomerHandler(
     guardDouble,
-    new OrderDrafting(catalog, noPriceRules, pickups, zones, noDeliveryDefaults()),
+    new OrderDrafting(catalog, noPriceRules, noPriceFloors, pickups, zones, noDeliveryDefaults()),
     repo(sink),
     options.payments ?? payments(),
     options.events ?? new FakeEvents(),
@@ -336,7 +346,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     };
     const free = new PlaceOrderForCustomerHandler(
       guard("orders"),
-      new OrderDrafting(gratuit, noPriceRules, pickups, zones, noDeliveryDefaults()),
+      new OrderDrafting(gratuit, noPriceRules, noPriceFloors, pickups, zones, noDeliveryDefaults()),
       repo(sink),
       payments(intents),
       new FakeEvents(),

@@ -1,4 +1,9 @@
-import { DomainError, TechnicalError } from "../../shared/errors/app-error.js";
+import {
+  BusinessError,
+  DomainError,
+  ResourceNotFoundError,
+  TechnicalError,
+} from "../../shared/errors/app-error.js";
 
 /**
  * Deux règles applicables **strictement aussi spécifiques** dans le même étage.
@@ -105,5 +110,139 @@ export class CorruptedPriceFloorError extends TechnicalError {
     readonly reason: string,
   ) {
     super("pricing.floor.corrupted", `Plancher « ${floorId} » illisible : ${reason}.`);
+  }
+}
+
+/**
+ * Une **mercuriale** exprimée autrement qu'en euros.
+ *
+ * Le piège central du modèle, et la raison pour laquelle `replace` et `alter`
+ * sont deux natures distinctes. Un tarif négocié saisi en « −13 % » suit le prix
+ * de liste : le jour où le PIM augmente, le prix du client augmente avec lui.
+ * Ce n'est pas ce qu'on lui a promis — un engagement se stocke en euros.
+ *
+ * Les autres étages n'ont pas cette contrainte : « 100+ à 1,80 € fixe » et « cet
+ * article offert » sont des gestes réels, et rien ne se casse à les autoriser.
+ */
+export class MercurialeMustPoseAPriceError extends DomainError {
+  constructor() {
+    super(
+      "pricing.mercuriale.must_pose_a_price",
+      "Une mercuriale pose un PRIX en euros, jamais un pourcentage : saisie en pourcentage, elle suivrait les hausses du tarif de liste, ce qui n'est pas ce qui a été négocié.",
+    );
+  }
+}
+
+/**
+ * Un identifiant de portée (ou d'audience) qui contredit son type.
+ *
+ * Les deux sens sont refusés : une portée « famille » sans famille ne vise rien,
+ * et une portée « tout le catalogue » qui nomme une famille dit deux choses à la
+ * fois. Laisser passer l'un ou l'autre donnerait une règle dont personne ne peut
+ * dire ce qu'elle vise sans lire le code qui la lit.
+ */
+export class ScopeIdMismatchError extends DomainError {
+  constructor(
+    readonly axis: string,
+    readonly isWidest: boolean,
+    readonly id: string | null,
+  ) {
+    super(
+      "pricing.scope.id_mismatch",
+      isWidest
+        ? `La ${axis} la plus large ne désigne rien en particulier : « ${String(id)} » est de trop.`
+        : `Cette ${axis} doit désigner une cible, et aucune n'est fournie.`,
+    );
+  }
+}
+
+/** Une fenêtre de validité qui se ferme avant de s'ouvrir. */
+export class ReversedValidityWindowError extends DomainError {
+  constructor(
+    readonly validFrom: Date,
+    readonly validTo: Date,
+  ) {
+    super(
+      "pricing.window.reversed",
+      `La fin de validité (${validTo.toISOString()}) précède ou égale son début (${validFrom.toISOString()}).`,
+    );
+  }
+}
+
+/**
+ * Un plancher fixé **au-dessus** du prix canonique.
+ *
+ * Il ne planchérait rien : il relèverait tous les prix, y compris ceux
+ * qu'aucune règle n'a touchés. Ce serait une hausse tarifaire déguisée en
+ * garde-fou, saisie dans l'écran qui protège des hausses — et personne ne
+ * penserait à la chercher là.
+ */
+export class FloorAboveCanonicalError extends DomainError {
+  constructor(readonly bp: number) {
+    super(
+      "pricing.floor.above_canonical",
+      `Un plancher à ${String(bp / 100)} % du prix canonique le dépasse : il relèverait les prix au lieu de les protéger.`,
+    );
+  }
+}
+
+/**
+ * Une règle **aussi spécifique** couvre déjà tout ou partie de cette fenêtre.
+ *
+ * C'est la contrainte d'exclusion qui parle. Elle est traduite plutôt qu'avalée :
+ * sans ça, le staff obtiendrait un 500 sans rapport visible avec ce qu'il vient
+ * de saisir, alors que le refus est parfaitement explicable — deux règles
+ * également spécifiques au même moment rendraient le prix dépendant de l'ordre
+ * de tri, donc du hasard.
+ */
+export class OverlappingPriceRuleError extends BusinessError {
+  constructor(
+    readonly stage: string,
+    cause?: unknown,
+  ) {
+    super(
+      "pricing.rule.overlaps",
+      `Une règle de l'étage « ${stage} », aussi spécifique que celle-ci, est déjà en vigueur sur cette période. Fermez-la ou décalez sa fin avant d'en poser une autre.`,
+      cause,
+    );
+  }
+}
+
+/**
+ * La règle visée n'existe plus.
+ *
+ * Un **404** et non un silence : deux personnes peuvent avoir le même écran
+ * ouvert, et celle qui arrive seconde mérite de savoir que son geste n'a rien
+ * fait plutôt que de croire qu'il a marché.
+ */
+export class PriceRuleNotFoundError extends ResourceNotFoundError {
+  constructor(readonly ruleId: string) {
+    super("pricing.rule.not_found", `Aucune règle tarifaire « ${ruleId} ».`);
+  }
+}
+
+/** Aucun plancher n'était posé sur cette portée. Même raisonnement. */
+export class PriceFloorNotFoundError extends ResourceNotFoundError {
+  constructor(
+    readonly scopeType: string,
+    readonly scopeId: string | null,
+  ) {
+    super(
+      "pricing.floor.not_found",
+      `Aucune limite posée sur cette portée (${scopeType}${scopeId === null ? "" : ` : ${scopeId}`}).`,
+    );
+  }
+}
+
+/**
+ * Une portée qui n'existe pas, reçue par un segment de chemin.
+ *
+ * Refusée à la frontière plutôt que laissée descendre : plus bas, elle ne
+ * correspondrait à rien et ressortirait en « aucune limite posée » — un 404 qui
+ * mentirait sur la cause.
+ */
+export class UnknownPriceScopeError extends DomainError {
+  constructor(readonly value: string) {
+    super("pricing.scope.unknown", `Portée inconnue « ${value} ».`);
   }
 }

@@ -7,6 +7,7 @@ import { AlertsModule } from "./alerts/alerts.module.js";
 import { DeliveryZonesModule } from "./delivery-zones/delivery-zones.module.js";
 import { GrowthModule } from "./growth/growth.module.js";
 import { OrdersModule } from "./orders/orders.module.js";
+import { PricingAdminModule } from "./pricing/pricing-admin.module.js";
 import { PaymentsModule } from "./payments/payments.module.js";
 import { OrderCutoffsModule } from "./order-cutoffs/order-cutoffs.module.js";
 import { CatalogModule } from "./catalog/catalog.module.js";
@@ -67,6 +68,7 @@ import { SecurityModule } from "./infra/security/security.module.js";
     // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.
     PaymentsModule,
     OrdersModule,
+    PricingAdminModule,
     // Paniers récurrents (abonnements) — murés par le seul client connecté.
     SubscriptionsModule,
     // Croissance (cross-domain) : journal d'événements, consommé par les émetteurs.

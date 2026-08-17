@@ -24,4 +24,14 @@ export abstract class PriceRuleReader {
    * oublie une facture le mauvais prix.
    */
   abstract candidatesFor(context: PricingContext): Promise<PriceRule[]>;
+
+  /**
+   * Toutes les règles posées — ce que l'écran de paramétrage montre.
+   *
+   * Distincte de `candidatesFor` parce qu'elle répond à une autre question :
+   * « qu'a-t-on décidé ? » et non « que s'applique-t-il ici ? ». Une règle
+   * expirée n'est candidate nulle part et doit pourtant rester visible, ne
+   * serait-ce que pour être rouverte.
+   */
+  abstract listAll(): Promise<PriceRule[]>;
 }

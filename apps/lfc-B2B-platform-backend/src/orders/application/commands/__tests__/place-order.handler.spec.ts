@@ -35,6 +35,7 @@ import {
   DeliveryDefaultsReader,
   NO_DELIVERY_DEFAULTS,
 } from "../../../domain/ports/delivery-defaults.reader.js";
+import { PriceFloorReader } from "../../../../pricing/domain/ports/price-floor.reader.js";
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 
@@ -54,7 +55,16 @@ import { PlaceOrderHandler } from "../place-order.handler.js";
  * seule règle n'existe. Ces suites éprouvent la commande, pas le prix — la
  * résolution a ses propres tests, purs et exhaustifs.
  */
-const noPriceRules: PriceRuleReader = { candidatesFor: () => Promise.resolve([]) };
+const noPriceRules: PriceRuleReader = {
+  candidatesFor: () => Promise.resolve([]),
+  listAll: () => Promise.resolve([]),
+};
+
+/** Aucune limite posée : le prix sort du pipeline tel quel. */
+const noPriceFloors: PriceFloorReader = {
+  candidatesFor: () => Promise.resolve([]),
+  listAll: () => Promise.resolve([]),
+};
 
 const CATALOG: Record<string, CatalogItem> = {
   "VIE-001": { sku: "VIE-001", name: "Croissant", unitPriceCents: 200, vatRate: 0 },
@@ -153,7 +163,14 @@ function drafting(
   pickupsDouble: PickupAddressRepository,
   zonesDouble: DeliveryZoneRepository,
 ): OrderDrafting {
-  return new OrderDrafting(catalog, noPriceRules, pickupsDouble, zonesDouble, noDeliveryDefaults());
+  return new OrderDrafting(
+    catalog,
+    noPriceRules,
+    noPriceFloors,
+    pickupsDouble,
+    zonesDouble,
+    noDeliveryDefaults(),
+  );
 }
 
 const LABO_POINT: PickupAddressView = {
