@@ -1,7 +1,16 @@
 import type { ElasticityComparison, ItemElasticityView, PricingItemView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { attainmentLabel, deltaLabel, isDiscount, isOnTrack, ratioLabel } from '../pricing-format';
+import {
+  attainmentLabel,
+  deltaLabel,
+  formatLongDay,
+  formatVariation,
+  isDiscount,
+  isOnTrack,
+  ratioLabel,
+  variationDirection,
+} from '../pricing-format';
 
 /**
  * **Trois cas où la bonne réponse est de ne RIEN afficher.**
@@ -101,5 +110,43 @@ describe("l'effort de volume", () => {
     expect(isOnTrack(comparison(10_000))).toBe(true);
     expect(isOnTrack(comparison(9_999))).toBe(false);
     expect(isOnTrack(comparison(null))).toBe(false);
+  });
+});
+
+/**
+ * **Les trois mises en forme de la frise**, sorties du composant.
+ *
+ * Elles y vivaient en méthodes, donc n'étaient éprouvées que par les gabarits
+ * qui les appellent — c'est-à-dire pas du tout sur les cas limites, qui sont
+ * précisément ceux qui comptent : la variation incalculable, et le fuseau.
+ */
+describe('les variations en clair', () => {
+  it('porte le sens par un signe, jamais par la couleur seule', () => {
+    expect(formatVariation(-1_250)).toBe('−12,5 %');
+    expect(formatVariation(1_250)).toBe('+12,5 %');
+    expect(formatVariation(0)).toBe('0,0 %');
+  });
+
+  /** Partir de zéro n'est pas une variation, c'est une apparition. */
+  it('refuse d’inventer un chiffre quand la variation ne se calcule pas', () => {
+    expect(formatVariation(null)).toBe('—');
+    expect(variationDirection(null)).toBe('flat');
+  });
+
+  it('range zéro avec le plat, pas avec la hausse', () => {
+    expect(variationDirection(0)).toBe('flat');
+    expect(variationDirection(1)).toBe('up');
+    expect(variationDirection(-1)).toBe('down');
+  });
+});
+
+describe('la date d’un titre', () => {
+  /**
+   * Rendue en UTC comme le jour qu'elle reçoit. Sans ce fuseau explicite, un
+   * navigateur à l'ouest de Greenwich titrerait la veille de ce qu'il affiche.
+   */
+  it('rend le jour reçu, sans glisser d’un fuseau', () => {
+    expect(formatLongDay('2026-09-12')).toBe('12 septembre 2026');
+    expect(formatLongDay('2026-01-01')).toBe('1 janvier 2026');
   });
 });

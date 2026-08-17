@@ -99,3 +99,44 @@ function ruleEffect(rule: PriceRuleView): string {
     ? `${sign}${String(rule.effect.value / 100).replace('.', ',')} %`
     : `${sign}${formatEuros(rule.effect.value)}`;
 }
+
+/**
+ * **Une variation en clair**, depuis des points de base.
+ *
+ * `—` quand elle ne se calcule pas — partir de zéro n'est pas une variation,
+ * c'est une apparition. Inventer un `0 %` là ferait lire « rien n'a bougé » sur
+ * un article qui vient d'entrer au catalogue.
+ */
+export function formatVariation(bp: number | null): string {
+  if (bp === null) {
+    return '—';
+  }
+  const value = Math.abs(bp / 100)
+    .toFixed(1)
+    .replace('.', ',');
+  return `${bp > 0 ? '+' : bp < 0 ? '−' : ''}${value} %`;
+}
+
+/** Le SENS d'une variation, pour la couleur — jamais pour l'information seule. */
+export function variationDirection(bp: number | null): 'up' | 'down' | 'flat' {
+  if (bp === null || bp === 0) {
+    return 'flat';
+  }
+  return bp > 0 ? 'up' : 'down';
+}
+
+/**
+ * « 12 septembre 2026 » — la forme longue, celle d'un titre.
+ *
+ * Rendue **en UTC**, comme le jour qu'elle reçoit : les deux bouts de la chaîne
+ * parlent du même fuseau, sinon un titre annonce la veille de ce qui est
+ * affiché dessous.
+ */
+export function formatLongDay(day: string): string {
+  return new Date(`${day}T00:00:00.000Z`).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}

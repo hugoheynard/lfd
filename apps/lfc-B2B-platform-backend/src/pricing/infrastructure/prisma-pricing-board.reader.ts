@@ -1,13 +1,4 @@
-import {
-  CATALOG_CATEGORY_LABELS,
-  CATALOG_CATEGORY_ORDER,
-  type CatalogCategory,
-  type PriceOverlapView,
-  type PriceRuleView,
-  type PricingBoardView,
-  type PricingCategoryView,
-  type PricingLadderBandView,
-} from "@lfd/contracts";
+import { CATALOG_CATEGORY_ORDER, type PriceRuleView, type PricingBoardView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../infra/database/prisma.service.js";
@@ -16,21 +7,12 @@ import {
   ProductCatalogReader,
   type CatalogItem,
 } from "../../orders/domain/ports/product-catalog.reader.js";
-import { lineageSegments } from "../domain/lineage-overlaps.js";
-import { type OverlapSegment } from "../domain/rule-overlaps.js";
 import { referenceCanonicalFor } from "../application/floor-reference.js";
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
-import { pricingContextFor } from "../application/pricing-context.js";
 import { PricingBoardReader } from "../application/ports/pricing-board.reader.js";
-import {
-  boardMaterials,
-  itemView,
-  type BoardMaterials,
-  type LoadedFloor,
-  type LoadedRule,
-} from "../application/board-item.js";
-import { type PriceRule, type PriceScope } from "../domain/price-rule.js";
+import { boardMaterials, type LoadedFloor, type LoadedRule } from "../application/board-item.js";
+import { actsAt, categoryView, groupByCategory } from "../application/board-category.js";
 import { unarchivedAt } from "./archived-at.js";
 import { floorFromRow, floorViewFromRow, ruleFromRow, ruleViewFromRow } from "./price-rows.js";
 
@@ -166,14 +148,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
 
     return {
       categories: CATALOG_CATEGORY_ORDER.map((category) =>
-        this.categoryView(
-          category,
-          byCategory.get(category) ?? [],
-          loaded,
-          materials,
-          catalogue,
-          at,
-        ),
+        categoryView(category, byCategory.get(category) ?? [], loaded, materials, catalogue, at),
       ).filter((view) => view.items.length > 0),
       globalFloor: loaded.floors.find((entry) => entry.floor.scope.type === "global")?.view ?? null,
       globalRules: loaded.rules
@@ -182,134 +157,4 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       simulation: { quantity: 1, at: at.toISOString(), audience: "all" },
     };
   }
-
-  private categoryView(
-    category: CatalogCategory,
-    articles: readonly CatalogItem[],
-    loaded: {
-      rules: readonly LoadedRule[];
-      floors: readonly LoadedFloor[];
-      ladders: readonly VolumeLadder[];
-    },
-    materials: BoardMaterials,
-    catalogue: { rules: readonly PriceRule[]; ladders: readonly VolumeLadder[] },
-    at: Date,
-  ): PricingCategoryView {
-    const ownRules = loaded.rules.filter((entry) => targetsCategory(entry.rule.scope, category));
-    // La lignée, barèmes compris : un barème compose avec toute promotion en
-    // cours, et la frise se lirait « rien d'autre ne joue » sans lui.
-    const lineageLadders = [
-      ...catalogue.ladders,
-      ...loaded.ladders.filter((ladder) => targetsCategory(ladder.scope, category)),
-    ];
-    return {
-      id: category,
-      name: CATALOG_CATEGORY_LABELS[category],
-      // Le taux vient du catalogue, où il est **par produit**. Une famille qui
-      // en mélangerait deux n'en annonce aucun plutôt que le premier venu.
-      vatRatePercent: uniformVatRate(articles.map((item) => item.vatRate)),
-      floor:
-        loaded.floors.find((entry) => targetsCategory(entry.floor.scope, category))?.view ?? null,
-      rules: ownRules.map((entry) => entry.view),
-      // La LIGNÉE, catalogue puis famille : c'est entre niveaux que le
-      // recouvrement arrive, puisque deux règles de même étage et même portée ne
-      // peuvent pas se recouvrir. Les suspendues sont écartées — une règle qui
-      // n'agit plus n'évince personne. (Les archivées ne sont même pas lues.)
-      overlaps: lineageSegments(
-        [
-          ...catalogue.rules,
-          ...ownRules
-            .filter((entry) => entry.rule.suspendedFrom === null)
-            .map((entry) => entry.rule),
-        ],
-        lineageLadders,
-      ).map(overlapView),
-      ladders: lineageLadders.filter((ladder) => ladder.suspendedFrom === null).map(ladderBandView),
-      items: articles.map((item) =>
-        itemView(
-          { sku: item.sku, name: item.name, canonicalCents: item.unitPriceCents },
-          pricingContextFor(item.sku, item.category, 1, { companyId: null }, at),
-          materials,
-          loaded,
-          loaded.ladders,
-        ),
-      ),
-    };
-  }
-}
-
-/**
- * La décision **agit-elle** à cet instant ?
- *
- * Comparé à l'instant de lecture et non au présent : une promotion suspendue le
- * 12 agissait encore le 10, et une frise du 10 qui l'omettrait raconterait une
- * autre histoire que celle qu'ont vécue les commandes de ce jour-là.
- */
-function actsAt(suspendedFrom: Date | null, at: Date): boolean {
-  return suspendedFrom === null || suspendedFrom.getTime() > at.getTime();
-}
-
-/**
- * La portée vise-t-elle cette famille (et pas un article, ni tout le catalogue) ?
- *
- * Prend une `PriceScope` et non deux primitives : le type et l'identifiant vont
- * ensemble, et les séparer en `(type: string, id: string | null)` jetait l'union
- * discriminée exactement là où elle protège — l'appariement de portée.
- */
-function targetsCategory(scope: PriceScope, category: CatalogCategory): boolean {
-  return scope.type === "category" && scope.id === category;
-}
-
-/** Le catalogue rangé par famille, en une passe. */
-function groupByCategory(
-  articles: readonly CatalogItem[],
-): ReadonlyMap<CatalogCategory, CatalogItem[]> {
-  const grouped = new Map<CatalogCategory, CatalogItem[]>();
-  for (const article of articles) {
-    const bucket = grouped.get(article.category);
-    if (bucket === undefined) {
-      grouped.set(article.category, [article]);
-      continue;
-    }
-    bucket.push(article);
-  }
-  return grouped;
-}
-
-/**
- * Le taux de la famille, s'il y en a **un seul**.
- *
- * `null` quand la famille en mélange deux : l'écran dit alors « varie » plutôt
- * que d'annoncer celui du premier article, qui serait faux pour les autres.
- */
-function uniformVatRate(rates: readonly number[]): number | null {
-  const [first, ...rest] = rates;
-  if (first === undefined) {
-    return null;
-  }
-  return rest.every((rate) => rate === first) ? first : null;
-}
-
-/** Barème de domaine → barre datée. La frise ne montre pas les paliers, elle montre une période. */
-function ladderBandView(ladder: VolumeLadder): PricingLadderBandView {
-  return {
-    id: ladder.id,
-    label: ladder.label,
-    validFrom: ladder.validFrom.toISOString(),
-    validTo: ladder.validTo?.toISOString() ?? null,
-    tierCount: ladder.tiers.length,
-  };
-}
-
-/** Segment de domaine → vue de fil. Les dates traversent en ISO, comme partout. */
-function overlapView(segment: OverlapSegment): PriceOverlapView {
-  return {
-    from: segment.from.toISOString(),
-    to: segment.to?.toISOString() ?? null,
-    ruleIds: segment.ruleIds,
-    evictedRuleIds: segment.evictedIds,
-    composedTopBp: segment.composedTopBp,
-    kind: segment.kind,
-    composedBp: segment.composedBp,
-  };
 }

@@ -12,7 +12,12 @@ import { FoldButtonComponent, FoldEmptyStateComponent } from 'fold-ng';
 import { dayStart } from './axis-model';
 import { nativeValue } from '../../../shared/native-input';
 import { OverlapTimeline, type TimelineBand } from '../overlap-timeline/overlap-timeline';
-import { ruleSentence } from '../pricing-format';
+import {
+  formatLongDay,
+  formatVariation,
+  ruleSentence,
+  variationDirection,
+} from '../pricing-format';
 import { TarificationService } from '../tarification.service';
 import { TimelineAxis, type AxisBand, type AxisSelection } from './timeline-axis/timeline-axis';
 
@@ -61,6 +66,8 @@ export class FrisePage {
 
   protected readonly euros = formatEuros;
   protected readonly nativeValue = nativeValue;
+  protected readonly percent = formatVariation;
+  protected readonly direction = variationDirection;
 
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly selection = signal<AxisSelection | null>(null);
@@ -262,36 +269,8 @@ export class FrisePage {
       return '';
     }
     return selection.kind === 'instant'
-      ? `au ${longDay(selection.day)}`
-      : `du ${longDay(selection.from)} au ${longDay(selection.to)}`;
-  });
-
-  /** Une variation en clair. `—` quand elle ne se calcule pas : on n'invente pas un zéro. */
-  protected percent(bp: number | null): string {
-    if (bp === null) {
-      return '—';
-    }
-    const value = Math.abs(bp / 100)
-      .toFixed(1)
-      .replace('.', ',');
-    return `${bp > 0 ? '+' : bp < 0 ? '−' : ''}${value} %`;
-  }
-
-  protected direction(bp: number | null): 'up' | 'down' | 'flat' {
-    if (bp === null || bp === 0) {
-      return 'flat';
-    }
-    return bp > 0 ? 'up' : 'down';
-  }
-}
-
-/** « 12 septembre 2026 » — la forme longue, celle d'un titre. */
-function longDay(day: string): string {
-  return new Date(`${day}T00:00:00.000Z`).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
+      ? `au ${formatLongDay(selection.day)}`
+      : `du ${formatLongDay(selection.from)} au ${formatLongDay(selection.to)}`;
   });
 }
 
