@@ -16,6 +16,13 @@
     // dans `vite/deps`, ce qui supprime le cache figé « does not provide an export
     // named X » quand on ajoute un export au package. `@lfd/endpoints` (un seul
     // fichier, zéro import externe) comme `@lfd/b2b-ui` : un subpath par domaine.
+    //
+    // Ce mapping n'est PAS un confort : sans lui, Vite traite le package comme
+    // une dépendance externe et le confie au pré-bundler esbuild, qui résout les
+    // imports relatifs en ESM strict et refuse « ./x/x » sans extension. Le build
+    // AOT, lui, passe — il utilise la résolution TypeScript. Un package du
+    // workspace absent de cette liste casse donc le serveur de dev SEUL, et la CI
+    // reste verte. C'est ce qui est arrivé à `@lfd/catalog-ui` le 2026-08-17.
     "paths": {
       "@lfd/b2b-ui/appointment": ["../../packages/b2b-ui/src/appointment/index.ts"],
       "@lfd/b2b-ui/cart": ["../../packages/b2b-ui/src/cart/index.ts"],
@@ -26,6 +33,7 @@
       "@lfd/b2b-ui/order": ["../../packages/b2b-ui/src/order/index.ts"],
       "@lfd/b2b-ui/pricing": ["../../packages/b2b-ui/src/pricing/index.ts"],
       "@lfd/b2b-ui/subscription": ["../../packages/b2b-ui/src/subscription/index.ts"],
+      "@lfd/catalog-ui": ["../../packages/catalog-ui/src/index.ts"],
       "@lfd/endpoints": ["../../packages/endpoints/src/index.ts"]
     }
   },
