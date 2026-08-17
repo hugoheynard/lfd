@@ -162,8 +162,9 @@ model Product {
   editorial ProductEditorial?
   media     ProductMedia[]
 
-  /// Relation virtuelle — la clé étrangère est portée par le binding (ADR-13).
+  /// Relations virtuelles — la clé étrangère est portée par le binding (ADR-13).
   shopifyBinding ShopifyProductBinding?
+  b2bBinding     B2bChannelBinding?
 
   @@index([categoryId])
   @@map("product")
@@ -392,4 +393,35 @@ model ProductMedia {
   @@id([productId, mediaId])
   @@index([productId])
   @@map("product_media")
+}
+
+// ---------------------------------------------------------------------------
+// Canal **plateforme B2B** — table possédée par l'ADAPTATEUR (ADR-13). Le socle
+// ne pointe jamais vers un canal : la clé étrangère est portée ici.
+// Re-dérivable par un re-push ; ce n'est pas un fait métier, c'est un état de
+// synchro — SAUF la décision de publication elle-même, qui n'existe qu'ici.
+// ---------------------------------------------------------------------------
+
+/// L'**appartenance d'un produit au canal B2B** : sa présence dit « vendu aux
+/// pros », son absence dit le contraire. Un état de publication (`published`)
+/// ne suffirait pas — il confondrait « publié chez Shopify » et « vendu aux
+/// pros », et les deux catalogues ne pourraient jamais diverger.
+///
+/// Dépublier **supprime la ligne**. Le produit disparaîtra du prochain snapshot,
+/// et le récepteur le nommera dans son rapport (`removedSkus`) : la nouvelle est
+/// portée par le push, pas par un drapeau qu'il faudrait penser à relire.
+model B2bChannelBinding {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// Quand ce produit a rejoint le canal, et par qui. La question posée six mois
+  /// plus tard est toujours « qui a mis ça en vente ».
+  publishedAt DateTime @default(now()) @map("published_at")
+  publishedBy String?  @map("published_by")
+
+  /// Dernière poussée **réellement acceptée** par la plateforme. `NULL` = publié
+  /// mais jamais parti — l'écart que l'écran doit montrer.
+  lastPushedAt DateTime? @map("last_pushed_at")
+
+  @@map("b2b_channel_binding")
 }

@@ -4,6 +4,7 @@ import { RouterModule } from '@nestjs/core';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { CatalogueModule } from './catalogue/catalogue.module.js';
+import { B2bPlatformModule } from './channels/b2b-platform/b2b-platform.module.js';
 import { ShopifyModule } from './channels/shopify/shopify.module.js';
 import { CommerceModule } from './commerce/commerce.module.js';
 import { LocationsModule } from './locations/locations.module.js';
@@ -33,13 +34,18 @@ import { SecurityModule } from './infra/security/security.module.js';
     CommerceModule,
     LocationsModule,
     ShopifyModule,
-    // Hiérarchie des routes montée ici (racine de composition) : tous les
-    // contrôleurs de ShopifyModule héritent du préfixe `channels/shopify`, donc
-    // ils ne déclarent que leur sous-chemin (`settings`, `collections/tva/…`).
+    B2bPlatformModule,
+    // Hiérarchie des routes montée ici (racine de composition) : les contrôleurs
+    // d'un module de canal héritent de son préfixe (`channels/shopify`,
+    // `channels/b2b`), donc ils ne déclarent que leur sous-chemin (`settings`,
+    // `collections/tva/…`, `products`).
     RouterModule.register([
       {
         path: 'channels',
-        children: [{ path: 'shopify', module: ShopifyModule }],
+        children: [
+          { path: 'shopify', module: ShopifyModule },
+          { path: 'b2b', module: B2bPlatformModule },
+        ],
       },
     ]),
   ],
