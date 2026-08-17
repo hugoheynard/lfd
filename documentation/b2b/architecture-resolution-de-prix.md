@@ -1,6 +1,7 @@
 # La résolution de prix — un empilement d'étages datés
 
-**État : 📐 doc-first.** Rien de ce document n'est codé. Date : 2026-08-15.
+**État : 📐 doc-first.** Rien de ce document n'est codé. Date : 2026-08-15,
+**trois forks tranchés le 2026-08-17** — S1 n'est plus bloqué.
 
 Voisins :
 
@@ -118,12 +119,35 @@ hausse tarifaire réécrirait le prix d'une commande déjà facturée. C'est
 exactement le défaut qu'on vient de corriger sur le bon de production, en pire :
 là, c'est de l'argent.
 
-> **🔴 FORK 1 — décision produit ouverte.**
-> Un panier récurrent commandé aujourd'hui pour dans trois semaines : on applique
-> le tarif **du jour de commande** ou **du jour de service** ?
-> Les deux sont défendables — le premier est une promesse tenue au client, le
-> second reflète le coût réel du jour. **Si personne ne tranche, le code en
-> choisira un par accident.**
+### ✅ Décidé le 2026-08-17 — un gabarit ne gèle pas de prix
+
+La question posée ici — « jour de commande ou jour de service ? » — supposait
+que le prix flotte entre les deux. Il ne flotte pas : **le prix se fige à la
+passation**, et c'est déjà la règle. Ce qui manquait, c'était de dire **combien
+de passations** a un panier récurrent.
+
+**Réponse : une par échéance.** Un gabarit dit **quoi** commander, jamais
+**combien** ça coûte. Chaque échéance qui part est sa propre passation : elle
+résout le prix du jour, et le fige sur ses lignes comme n'importe quelle
+commande.
+
+Ce qui a tranché : l'alternative crée un **engagement tarifaire sans terme que
+personne n'a signé**. Un client s'abonne un mardi, la farine augmente six mois
+plus tard, et la marge s'érode sans que rien ne le signale — il faudrait alors
+rendre la date de fin obligatoire pour borner l'engagement, donc compliquer
+l'abonnement pour réparer une décision de prix.
+
+Un client qui veut un prix tenu n'est pas sans réponse : c'est exactement ce que
+fait la **mercuriale** (étage 1), datée, explicite et signée. Deux mécaniques,
+deux intentions — les confondre donnerait un engagement implicite qu'aucun écran
+ne montre.
+
+Corollaire pour l'écran : une échéance à venir affiche un prix **estimé**, pas
+promis. L'annoncer comme ferme serait mentir de bonne foi.
+
+Attention à ne pas généraliser au-delà : une **commande ponctuelle** passée
+aujourd'hui pour dans trois semaines garde le prix du jour où le client l'a
+acceptée. Là, il y a bien eu une passation, et une seule.
 
 ---
 
@@ -140,23 +164,57 @@ se voit. La chaîne travaille en rationnel, l'arrondi est la dernière opératio
 remise de panier. Une chaîne de quatre altérations peut passer sous le prix de
 revient sans que rien ne bronche.
 
-> **🔴 FORK 3 — décision produit ouverte.**
-> Plancher à **zéro** (simple, mais laisse vendre à perte) ou au **prix de
-> revient** (juste, mais on ne connaît pas le coût — il n'est nulle part dans le
-> modèle) ? La seconde réponse ouvre un chantier PIM à elle seule.
+### ✅ Décidé le 2026-08-17 — un plancher à deux formes
+
+Le plancher s'exprime **soit en fraction du prix canonique, soit en montant**,
+au choix — exactement comme une altération porte un `mode` percent/amount. Même
+vocabulaire, même value object, rien de neuf à apprendre :
+
+```
+PriceFloor = { mode: 'percent', value: bp }   // ex. 5000 bp = 50 % du canonique
+           | { mode: 'amount',  value: cents } // ex. 150 = jamais sous 1,50 €
+```
+
+La fraction suit le tarif : le jour où le PIM augmente, le plancher monte avec
+lui, sans que personne ait à le rouvrir. Le montant, lui, dit une limite absolue
+— utile quand un article a un coût fixe connu (un emballage, une pièce achetée)
+que le pourcentage ne saurait pas exprimer.
+
+**Ce que ce plancher est, et n'est pas.** C'est un **garde-fou**, pas une règle
+de marge. Il attrape le vrai risque — quatre étages qui se composent par
+accident, une saisie à côté, un barème recopié une fois de trop — et il ne
+prétend pas connaître un coût de revient qui n'existe nulle part dans le modèle.
+
+Le prix de revient reste le plancher **juste**, et il reste hors d'atteinte : il
+suppose un coût matière et une main-d'œuvre par déclinaison, donc un chantier PIM
+entier. Le jour où il existera, il deviendra une troisième forme de `PriceFloor`
+— l'union est ouverte pour ça, et rien de ce qui est décidé ici ne sera à défaire.
+
+**Toucher le plancher n'est pas un détail à avaler en silence.** La résolution le
+consigne dans sa trace (`floored: true`) : un prix qui a été relevé est un prix
+dont une règle n'a pas produit son effet, et c'est exactement ce qu'on veut voir
+avant qu'un client ne le remarque.
 
 ---
 
 ## La composition de deux pourcentages
 
-> **🔴 FORK 2 — décision produit ouverte. Recommandation : composition.**
-> −20 % puis −10 % font **−28 %** (0,8 × 0,9) ou **−30 %** (addition des taux) ?
->
-> Je recommande la **composition** : chaque étage s'applique au prix sortant du
-> précédent. C'est la seule règle qui reste cohérente quand on insère un étage au
-> milieu — avec l'addition, ajouter un cinquième étage change rétroactivement le
-> sens des quatre autres. C'est aussi la seule qui garantit qu'on ne descend
-> jamais en dessous de zéro par accumulation.
+### ✅ Décidé le 2026-08-17 — composition
+
+−20 % puis −10 % font **−28 %** (0,8 × 0,9), jamais −30 %. Chaque étage
+s'applique au prix **sortant** du précédent.
+
+Deux raisons, et la première est la vraie : c'est la seule règle qui reste
+cohérente quand on **insère un étage au milieu**. Avec l'addition, ajouter un
+cinquième étage change rétroactivement le sens des quatre autres — le même
+barème donnerait deux prix selon l'année où on l'a écrit. La seconde : la
+composition ne peut jamais franchir zéro par accumulation, là où quatre étages
+additifs à −30 % rendraient un prix négatif.
+
+Le coût assumé : ce n'est **pas** ce qu'un commercial calcule de tête. Un client
+au téléphone qui entend « −20 et −10 » comprendra −30. C'est précisément pour ça
+que la **trace** existe (plus bas) : le prix ne s'annonce pas comme un
+pourcentage global, il se lit ligne à ligne.
 
 Corollaire : **l'ordre des étages est une règle commerciale**, pas un détail
 d'implémentation. −20 % puis −5 € ≠ −5 € puis −20 %. Le tableau plus haut _est_
@@ -215,6 +273,11 @@ price_rules
   created_by      text not null                 -- qui a posé cette règle
   created_at      timestamptz not null
 
+  -- Plancher, deux formes (fork 3). NULL = pas de plancher propre : celui de la
+  -- plateforme s'applique. `floor_mode` contraint `floor_value` comme ailleurs.
+  floor_mode      enum(percent, amount) null
+  floor_value     int null                      -- bp du canonique, ou cents
+
   EXCLUDE USING gist (
     stage WITH =, scope_type WITH =, scope_id WITH =,
     audience_type WITH =, audience_id WITH =, min_quantity WITH =,
@@ -236,7 +299,12 @@ mois plus tard est toujours « qui a accordé ça ? ».
 À la passation, la ligne garde **la trace**, pas seulement le nombre :
 
 ```
-{ basePriceCents, steps: [{ stage, ruleId, label, resultCents }], finalCents }
+{
+  basePriceCents,
+  steps: [{ stage, ruleId, label, resultCents }],
+  floored: false,          // le plancher a-t-il relevé le prix ?
+  finalCents
+}
 ```
 
 Même raison que la provenance de l'acheminement : un chiffre seul ne se défend
@@ -247,8 +315,15 @@ client peut répondre, et une facture contestée se relit.
 
 ## Chantier
 
-**Les trois forks doivent être tranchés avant S1** : ils décident du contenu de
-la fonction pure, pas de son emballage.
+**Les trois forks sont tranchés** (2026-08-17). S1 peut commencer : ce qui restait
+à décider portait sur le contenu de la fonction pure, pas sur son emballage.
+
+Ce que les décisions ajoutent au chantier, et qui n'y était pas :
+
+- l'échéance d'un panier récurrent **résout son prix au moment où elle part**,
+  donc `resolvePrice` sera appelée par le planificateur, pas à la souscription ;
+- la fonction pure porte le **plancher** et rend `floored` dans sa trace ;
+- l'écran d'une échéance à venir affiche un prix **estimé**, jamais promis.
 
 - [ ] **S1 — le domaine, pur.** `resolvePrice(canonical, rules, context)` :
       fonction pure, sans base, testée seule. Contexte = client, date, quantité.
