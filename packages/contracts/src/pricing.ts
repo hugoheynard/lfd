@@ -166,6 +166,104 @@ export interface PriceRuleView {
   readonly validTo: string | null;
   readonly createdBy: string;
   readonly createdAt: string;
+  /**
+   * Où en est la décision — cf. {@link ruleStatusSchema}.
+   *
+   * **Dérivé** des dates ci-dessous, jamais stocké : une colonne `status` aurait
+   * pu contredire ce qui l'a produite, et l'écran aurait affiché « en vigueur »
+   * sur une règle portant une date d'archivage.
+   */
+  readonly status: RuleStatus;
+  /** Quand, et par qui, elle a été suspendue. `null` = elle ne l'est pas. */
+  readonly pausedAt: string | null;
+  readonly pausedBy: string | null;
+  /** Quand, par qui, et pourquoi elle a été archivée. */
+  readonly archivedAt: string | null;
+  readonly archivedBy: string | null;
+  readonly archiveReason: string | null;
+}
+
+/**
+ * L'état d'une règle tarifaire.
+ *
+ * - `active` — elle s'applique quand sa fenêtre le dit ;
+ * - `paused` — elle n'agit plus **et garde sa place** : la reprise ne peut donc
+ *   pas échouer sur une jumelle posée entre-temps ;
+ * - `archived` — terminal : elle n'agit plus et **rend sa place**.
+ *
+ * Rien ne s'efface. Une règle a facturé, elle a fait un prix, et la supprimer
+ * effacerait l'explication d'une facture qui, elle, reste.
+ */
+export const ruleStatusSchema = z.enum(["active", "paused", "archived"]);
+export type RuleStatus = z.infer<typeof ruleStatusSchema>;
+
+export const RULE_STATUS_LABELS: Readonly<Record<RuleStatus, string>> = {
+  active: "En vigueur",
+  paused: "En pause",
+  archived: "Archivée",
+};
+
+/**
+ * Le **motif** d'un geste qui arrête quelque chose.
+ *
+ * Facultatif, délibérément : rendre le motif obligatoire produirait des « ok » et
+ * des « . » — des champs remplis qui n'apprennent rien et donnent l'illusion
+ * d'une traçabilité. Écrit, il l'est parce que quelqu'un avait à dire.
+ */
+export const pricingReasonPayloadSchema = z.object({
+  reason: z.string().min(1).max(280).nullable().default(null),
+});
+export type PricingReasonPayload = z.infer<typeof pricingReasonPayloadSchema>;
+
+// ---------------------------------------------------------------------------
+// Le journal — qui a posé, qui a arrêté, quand
+// ---------------------------------------------------------------------------
+
+/**
+ * Ce qui peut arriver à une décision tarifaire.
+ *
+ * `confirmed` n'est pas un synonyme de `posed` : il dit « j'ai regardé l'écart et
+ * je maintiens » — la valeur ne bouge pas, la date si. Les confondre effacerait
+ * du journal la seule chose qu'on y cherche : quelqu'un a-t-il **revu** cette
+ * limite, ou traîne-t-elle depuis deux ans ?
+ */
+export const pricingActSchema = z.enum([
+  "posed",
+  "paused",
+  "resumed",
+  "archived",
+  "confirmed",
+  "replaced",
+]);
+export type PricingActKind = z.infer<typeof pricingActSchema>;
+
+export const PRICING_ACT_LABELS: Readonly<Record<PricingActKind, string>> = {
+  posed: "Posée",
+  paused: "Suspendue",
+  resumed: "Reprise",
+  archived: "Archivée",
+  confirmed: "Confirmée",
+  replaced: "Remplacée",
+};
+
+/**
+ * **Un acte, tel que le journal le rend.**
+ *
+ * `summary` est une phrase **figée à l'écriture**, pas un rendu de l'état
+ * courant : la règle peut avoir changé, avoir été archivée, ou avoir disparu du
+ * vocabulaire de l'écran. Un journal qui rendrait la phrase d'aujourd'hui pour un
+ * acte d'hier raconterait l'histoire à l'envers.
+ */
+export interface PricingJournalEntryView {
+  readonly id: string;
+  readonly subjectType: "rule" | "floor";
+  readonly subjectId: string;
+  readonly act: PricingActKind;
+  /** Le `sub` du membre du staff, ou `system`. */
+  readonly actor: string;
+  readonly occurredAt: string;
+  readonly reason: string | null;
+  readonly summary: string;
 }
 
 /**

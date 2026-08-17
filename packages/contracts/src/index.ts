@@ -478,6 +478,11 @@ export type {
 export {
   PRICE_SCOPE_LABELS,
   PRICE_STAGE_LABELS,
+  PRICING_ACT_LABELS,
+  RULE_STATUS_LABELS,
+  pricingActSchema,
+  pricingReasonPayloadSchema,
+  ruleStatusSchema,
   createPriceRulePayloadSchema,
   priceAudienceSchema,
   priceAudienceTypeSchema,
@@ -518,5 +523,9 @@ export type {
   PricingBoardView,
   PricingCategoryView,
   PricingItemView,
+  PricingActKind,
+  PricingJournalEntryView,
+  PricingReasonPayload,
+  RuleStatus,
   SetPriceFloorPayload,
 } from "./pricing.js";
