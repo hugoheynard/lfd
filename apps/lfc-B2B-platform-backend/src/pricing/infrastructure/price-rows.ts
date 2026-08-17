@@ -1,7 +1,10 @@
 import type { PriceFloorView, PriceRuleView } from "@lfd/contracts";
 
+import type { PricingRuleState } from "../domain/entities/pricing-rule.js";
+
 import { CorruptedPriceFloorError, CorruptedPriceRuleError } from "../domain/pricing-errors.js";
 import { floorDrift } from "../domain/floor-drift.js";
+import { statusOf, suspendedFromOf, type RuleLifecycle } from "../domain/rule-lifecycle.js";
 import type { DynamicFloor } from "../domain/floor-policy.js";
 import {
   PRICE_STAGES,
@@ -44,6 +47,11 @@ export interface RuleRow {
   readonly label: string;
   readonly createdBy: string;
   readonly createdAt: Date;
+  readonly pausedAt: Date | null;
+  readonly pausedBy: string | null;
+  readonly archivedAt: Date | null;
+  readonly archivedBy: string | null;
+  readonly archiveReason: string | null;
 }
 
 export interface FloorRow {
@@ -76,6 +84,10 @@ export function ruleFromRow(row: RuleRow): PriceRule {
     minQuantity: row.minQuantity,
     validFrom: row.validFrom,
     validTo: row.validTo,
+    // Le calcul ne distingue pas la pause de l'archivage : les deux disent
+    // « cette règle n'agit plus ». Le PLUS TÔT gagne — une règle suspendue puis
+    // archivée a cessé d'agir à la pause.
+    suspendedFrom: suspendedFromOf(lifecycleFromRow(row)),
     label: row.label,
   } as const;
 
@@ -89,6 +101,45 @@ export function ruleFromRow(row: RuleRow): PriceRule {
     return { ...common, nature: "alter", alteration: alterationOf(row) };
   }
   throw new CorruptedPriceRuleError(row.id, `nature inconnue « ${row.nature} »`);
+}
+
+/** Les cinq colonnes du cycle de vie, réunies en une valeur. */
+export function lifecycleFromRow(row: RuleRow): RuleLifecycle {
+  return {
+    pausedAt: row.pausedAt,
+    pausedBy: row.pausedBy,
+    archivedAt: row.archivedAt,
+    archivedBy: row.archivedBy,
+    archiveReason: row.archiveReason,
+  };
+}
+
+/**
+ * La ligne telle que l'**agrégat** la reprend — pour lui appliquer une
+ * transition.
+ *
+ * Passe par `ruleFromRow`, donc par ses refus de discriminant : une ligne
+ * illisible lève ici aussi, plutôt que de rendre un agrégat sur lequel on
+ * pourrait ensuite écrire.
+ */
+export function ruleStateFromRow(row: RuleRow): PricingRuleState {
+  const rule = ruleFromRow(row);
+  return {
+    id: rule.id,
+    stage: rule.stage,
+    scope: rule.scope,
+    audience: rule.audience,
+    minQuantity: rule.minQuantity,
+    effect:
+      rule.nature === "replace"
+        ? { nature: "replace", amountCents: rule.amountCents }
+        : { nature: "alter", alteration: rule.alteration },
+    label: rule.label,
+    validFrom: rule.validFrom,
+    validTo: rule.validTo,
+    createdBy: row.createdBy,
+    lifecycle: lifecycleFromRow(row),
+  };
 }
 
 /** La même ligne, telle que l'écran la lit — avec sa provenance. */
@@ -114,6 +165,12 @@ export function ruleViewFromRow(row: RuleRow): PriceRuleView {
     validTo: rule.validTo?.toISOString() ?? null,
     createdBy: row.createdBy,
     createdAt: row.createdAt.toISOString(),
+    status: statusOf(lifecycleFromRow(row)),
+    pausedAt: row.pausedAt?.toISOString() ?? null,
+    pausedBy: row.pausedBy,
+    archivedAt: row.archivedAt?.toISOString() ?? null,
+    archivedBy: row.archivedBy,
+    archiveReason: row.archiveReason,
   };
 }
 

@@ -122,6 +122,14 @@ async function croissant(): Promise<PricingBoardView["categories"][number]["item
   return item;
 }
 
+/** Le prix que l'écran annonce pour VIE-001 — donc celui que la caisse ferait. */
+const priceOf = async (sku: string): Promise<number> => {
+  if (sku !== SKU) {
+    throw new Error(`Ce test ne connaît que ${SKU}.`);
+  }
+  return (await croissant()).finalCents;
+};
+
 describe("poser une règle", () => {
   it("rend l'identifiant posé — l'écran en a besoin pour la retirer", async () => {
     const response = await postRule();
@@ -177,11 +185,147 @@ describe("poser une règle", () => {
     expect(jsonBody<{ message: string }>(response).message).toContain("promotion");
   });
 
-  it("retire une règle, puis refuse de la retirer deux fois", async () => {
+  /**
+   * Retirer **archive** : la décision quitte l'écran, la ligne reste. Le second
+   * geste répond `409` et non `404` — la règle existe toujours, elle est
+   * SCELLÉE. Rendre `404` prétendrait qu'elle n'a jamais existé, ce qui est
+   * exactement ce qu'on refuse de dire d'une règle qui a facturé.
+   */
+  it("retire une règle, puis refuse de rouvrir une décision close", async () => {
     const { id } = jsonBody<{ id: string }>(await postRule());
 
     expect((await staff().delete(`/admin/pricing/rules/${id}`)).status).toBe(204);
-    expect((await staff().delete(`/admin/pricing/rules/${id}`)).status).toBe(404);
+    expect((await staff().delete(`/admin/pricing/rules/${id}`)).status).toBe(409);
+  });
+
+  it("répond 404 sur une règle qui n'a jamais existé", async () => {
+    expect((await staff().delete("/admin/pricing/rules/inconnue")).status).toBe(404);
+  });
+});
+
+/**
+ * **Le cycle de vie et son journal**, sur un vrai Postgres — c'est le seul
+ * niveau qui prouve les deux choses qui comptent ici : que la contrainte
+ * d'exclusion est bien devenue PARTIELLE, et que chaque geste laisse son acte.
+ */
+describe("suspendre, reprendre, archiver", () => {
+  const pause = (id: string, reason: string | null = null) =>
+    staff().post(`/admin/pricing/rules/${id}/pause`).send({ reason });
+
+  const resume = (id: string) => staff().post(`/admin/pricing/rules/${id}/resume`).send({});
+
+  const archive = (id: string, reason: string | null = null) =>
+    staff().post(`/admin/pricing/rules/${id}/archive`).send({ reason });
+
+  const journalOf = async (id: string): Promise<{ act: string; summary: string }[]> =>
+    jsonBody<{ act: string; summary: string }[]>(
+      await staff().get(`/admin/pricing/journal/rule/${id}`),
+    );
+
+  it("suspend une promotion, et le prix de vitrine remonte", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    const remise = await priceOf(SKU);
+
+    expect((await pause(id, "Four en panne")).status).toBe(204);
+
+    expect(await priceOf(SKU)).toBeGreaterThan(remise);
+  });
+
+  it("reprend, et la remise revient", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    const remise = await priceOf(SKU);
+    await pause(id);
+
+    expect((await resume(id)).status).toBe(204);
+
+    expect(await priceOf(SKU)).toBe(remise);
+  });
+
+  /**
+   * **La pause GARDE la place.** Sans ça, quelqu'un poserait une jumelle pendant
+   * la suspension et la reprise échouerait sur un chevauchement que personne n'a
+   * vu venir — la promotion deviendrait irrécupérable le jour où on veut la
+   * rallumer.
+   */
+  it("refuse une jumelle pendant la pause — le créneau reste réservé", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    await pause(id);
+
+    expect((await postRule({ label: "La même, pendant la pause" })).status).toBe(409);
+  });
+
+  /** **L'archivage REND la place** : c'est toute la différence avec la pause. */
+  it("accepte une jumelle après archivage — le créneau est libéré", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    await archive(id);
+
+    expect((await postRule({ label: "Celle qui la remplace" })).status).toBe(201);
+  });
+
+  it("refuse de suspendre deux fois", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    await pause(id);
+
+    expect((await pause(id)).status).toBe(409);
+  });
+
+  it("refuse de reprendre ce qui n'est pas suspendu", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+
+    expect((await resume(id)).status).toBe(409);
+  });
+
+  it("refuse tout geste sur une règle archivée", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    await archive(id);
+
+    expect((await pause(id)).status).toBe(409);
+    expect((await resume(id)).status).toBe(409);
+  });
+
+  /**
+   * Le cœur de la traçabilité : la suite complète des gestes, avec leur auteur,
+   * leur date et le motif écrit. C'est ce qui répond à « qui a arrêté la promo
+   * du 12 août » six mois plus tard.
+   */
+  it("garde la suite des actes, du plus récent au plus ancien", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    await pause(id, "Four en panne");
+    await resume(id);
+    await archive(id, "Remplacée par la promo de rentrée");
+
+    const entries = await journalOf(id);
+
+    expect(entries.map((entry) => entry.act)).toEqual(["archived", "resumed", "paused", "posed"]);
+  });
+
+  it("nomme l'auteur et retient le motif écrit", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    await pause(id, "Four en panne");
+
+    const [entry] = jsonBody<{ actor: string; reason: string | null }[]>(
+      await staff().get(`/admin/pricing/journal/rule/${id}`),
+    );
+
+    expect(entry?.actor).toBe("staff-e2e");
+    expect(entry?.reason).toBe("Four en panne");
+  });
+
+  /**
+   * La phrase est FIGÉE à l'écriture : elle doit rester lisible après que la
+   * règle a quitté l'écran, sans quoi le journal renverrait à un vide.
+   */
+  it("garde une phrase lisible même après archivage", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule());
+    await archive(id);
+
+    const [entry] = await journalOf(id);
+
+    expect(entry?.summary).toContain("Promotion");
+  });
+
+  it("refuse un sujet de journal inventé", async () => {
+    expect((await staff().get("/admin/pricing/journal/licorne/x")).status).toBe(400);
   });
 });
 

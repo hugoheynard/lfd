@@ -3,19 +3,26 @@ import { CqrsModule } from "@nestjs/cqrs";
 
 import { OrdersModule } from "../orders/orders.module.js";
 import {
+  ArchivePriceFloorHandler,
   ConfirmPriceFloorHandler,
   CreatePriceRuleHandler,
-  RemovePriceFloorHandler,
-  RemovePriceRuleHandler,
   SetPriceFloorHandler,
 } from "./application/commands/pricing.handlers.js";
+import {
+  ArchivePriceRuleHandler,
+  PausePriceRuleHandler,
+  ResumePriceRuleHandler,
+} from "./application/commands/rule-lifecycle.handlers.js";
 import { BoardElasticityService } from "./application/board-elasticity.service.js";
 import { PricingBoardReader } from "./domain/ports/pricing-board.reader.js";
 import { PricingFloorRepository } from "./domain/ports/pricing-floor.repository.js";
+import { PricingJournalReader } from "./domain/ports/pricing-journal.reader.js";
 import { PricingRuleRepository } from "./domain/ports/pricing-rule.repository.js";
 import { AdminPricingController } from "./http/admin-pricing.controller.js";
+import { AdminPricingJournalController } from "./http/admin-pricing-journal.controller.js";
 import { PrismaPricingBoardReader } from "./infrastructure/prisma-pricing-board.reader.js";
 import { PrismaPricingFloorRepository } from "./infrastructure/prisma-pricing-floor.repository.js";
+import { PrismaPricingJournalReader } from "./infrastructure/prisma-pricing-journal.reader.js";
 import { PrismaPricingRuleRepository } from "./infrastructure/prisma-pricing-rule.repository.js";
 import { PricingModule } from "./pricing.module.js";
 
@@ -34,17 +41,20 @@ import { PricingModule } from "./pricing.module.js";
  */
 @Module({
   imports: [CqrsModule, OrdersModule, PricingModule],
-  controllers: [AdminPricingController],
+  controllers: [AdminPricingController, AdminPricingJournalController],
   providers: [
     BoardElasticityService,
     CreatePriceRuleHandler,
+    PausePriceRuleHandler,
+    ResumePriceRuleHandler,
+    ArchivePriceRuleHandler,
     ConfirmPriceFloorHandler,
-    RemovePriceRuleHandler,
     SetPriceFloorHandler,
-    RemovePriceFloorHandler,
+    ArchivePriceFloorHandler,
     { provide: PricingRuleRepository, useClass: PrismaPricingRuleRepository },
     { provide: PricingFloorRepository, useClass: PrismaPricingFloorRepository },
     { provide: PricingBoardReader, useClass: PrismaPricingBoardReader },
+    { provide: PricingJournalReader, useClass: PrismaPricingJournalReader },
   ],
 })
 export class PricingAdminModule {}

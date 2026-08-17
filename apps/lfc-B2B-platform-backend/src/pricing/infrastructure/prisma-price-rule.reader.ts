@@ -22,6 +22,10 @@ export class PrismaPriceRuleReader extends PriceRuleReader {
   async candidatesFor(context: PricingContext): Promise<PriceRule[]> {
     const rows = await this.prisma.priceRule.findMany({
       where: {
+        // Élagage : une règle archivée ne peut plus rien facturer, et la
+        // fonction pure refiltre de toute façon sur `suspendedFrom`. Deux
+        // barrières pour la même chose, dont une seule est éprouvable sans base.
+        archivedAt: null,
         validFrom: { lte: context.at },
         OR: [{ validTo: null }, { validTo: { gt: context.at } }],
         AND: [
@@ -40,9 +44,14 @@ export class PrismaPriceRuleReader extends PriceRuleReader {
     return rows.map(ruleFromRow);
   }
 
-  /** Tout ce qui est posé, expiré compris — l'écran doit pouvoir le rouvrir. */
+  /**
+   * Tout ce qui est posé, expiré et suspendu compris — l'écran doit pouvoir le
+   * rouvrir. Les **archivées**, non : ranger sert précisément à ne plus les voir,
+   * et leur histoire reste lisible dans le journal.
+   */
   async listAll(): Promise<PriceRule[]> {
     const rows = await this.prisma.priceRule.findMany({
+      where: { archivedAt: null },
       orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
     });
     return rows.map(ruleFromRow);

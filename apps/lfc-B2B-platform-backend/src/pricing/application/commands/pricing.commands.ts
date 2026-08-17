@@ -17,8 +17,43 @@ export class CreatePriceRuleCommand {
   ) {}
 }
 
-export class RemovePriceRuleCommand {
-  constructor(readonly id: string) {}
+/**
+ * **Suspendre** une promotion — elle cesse d'agir et garde sa place.
+ *
+ * Un geste à part, et non un `PUT { active: false }` : la question qu'on posera
+ * dans six mois est « qui a arrêté la promo du 12 août », et seule une intention
+ * nommée y répond. Un champ modifié ne dit pas ce que l'utilisateur croyait
+ * faire.
+ */
+export class PausePriceRuleCommand {
+  constructor(
+    readonly id: string,
+    readonly staffSub: string,
+    readonly reason: string | null,
+  ) {}
+}
+
+/** **Reprendre** : elle réagit, à partir de maintenant. */
+export class ResumePriceRuleCommand {
+  constructor(
+    readonly id: string,
+    readonly staffSub: string,
+  ) {}
+}
+
+/**
+ * **Archiver** — terminal, et le seul geste qui retire une règle de l'écran.
+ *
+ * Il n'y a pas de suppression : une règle a facturé, elle a fait un prix, et
+ * l'effacer effacerait la réponse à « pourquoi ce prix » alors que la facture,
+ * elle, reste.
+ */
+export class ArchivePriceRuleCommand {
+  constructor(
+    readonly id: string,
+    readonly staffSub: string,
+    readonly reason: string | null,
+  ) {}
 }
 
 export class SetPriceFloorCommand {
@@ -44,6 +79,11 @@ export class ConfirmPriceFloorCommand {
   ) {}
 }
 
-export class RemovePriceFloorCommand {
-  constructor(readonly scope: PriceScope) {}
+/** **Archiver** une limite. Même raison que pour une règle : rien ne s'efface. */
+export class ArchivePriceFloorCommand {
+  constructor(
+    readonly scope: PriceScope,
+    readonly staffSub: string,
+    readonly reason: string | null,
+  ) {}
 }

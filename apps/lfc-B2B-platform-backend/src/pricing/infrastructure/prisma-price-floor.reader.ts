@@ -15,6 +15,9 @@ export class PrismaPriceFloorReader extends PriceFloorReader {
   async candidatesFor(context: PricingContext): Promise<ScopedPriceFloor[]> {
     const rows = await this.prisma.priceFloor.findMany({
       where: {
+        // Une limite archivée ne protège plus rien : elle ne doit pas ressortir
+        // comme candidate, sinon elle continuerait d'arbitrer des prix.
+        archivedAt: null,
         OR: [
           { scopeType: "global" },
           { scopeType: "category", scopeId: context.categoryId },
@@ -27,7 +30,7 @@ export class PrismaPriceFloorReader extends PriceFloorReader {
   }
 
   async listAll(): Promise<ScopedPriceFloor[]> {
-    const rows = await this.prisma.priceFloor.findMany();
+    const rows = await this.prisma.priceFloor.findMany({ where: { archivedAt: null } });
     return rows.map(floorFromRow);
   }
 }

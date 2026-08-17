@@ -1,8 +1,10 @@
 import {
   createPriceRulePayloadSchema,
+  pricingReasonPayloadSchema,
   setPriceFloorPayloadSchema,
   type CreatePriceRulePayload,
   type PriceScopePayload,
+  type PricingReasonPayload,
   type SetPriceFloorPayload,
 } from "@lfd/contracts";
 import {
@@ -22,10 +24,12 @@ import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import {
+  ArchivePriceFloorCommand,
+  ArchivePriceRuleCommand,
   ConfirmPriceFloorCommand,
   CreatePriceRuleCommand,
-  RemovePriceFloorCommand,
-  RemovePriceRuleCommand,
+  PausePriceRuleCommand,
+  ResumePriceRuleCommand,
   SetPriceFloorCommand,
 } from "../application/commands/pricing.commands.js";
 import { PricingBoardReader } from "../domain/ports/pricing-board.reader.js";
@@ -76,10 +80,67 @@ export class AdminPricingController {
     return { id };
   }
 
+  /**
+   * **Suspendre** une promotion : elle cesse d'agir et garde sa place.
+   *
+   * `POST` sur un sous-chemin et non `PATCH { paused: true }` : ce n'est pas une
+   * écriture de champ, c'est un geste daté et signé. Six mois plus tard, la
+   * question posée est « qui a arrêté la promo du 12 août », et seule une
+   * intention nommée y répond.
+   */
+  @Post("rules/:id/pause")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async pauseRule(
+    @Param("id") id: string,
+    @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
+    await this.commands.execute<PausePriceRuleCommand, void>(
+      new PausePriceRuleCommand(id, staffSub, payload.reason),
+    );
+  }
+
+  /** **Reprendre** : la règle réagit à partir de maintenant. */
+  @Post("rules/:id/resume")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resumeRule(@Param("id") id: string, @StaffSub() staffSub: string): Promise<void> {
+    await this.commands.execute<ResumePriceRuleCommand, void>(
+      new ResumePriceRuleCommand(id, staffSub),
+    );
+  }
+
+  /**
+   * **Archiver** — le seul geste qui retire une règle de l'écran.
+   *
+   * Il n'y a **pas** de suppression, et le `DELETE` d'origine est devenu cet
+   * archivage : une règle a facturé, elle a fait un prix, et l'effacer effacerait
+   * la réponse à « pourquoi ce prix » alors que la facture, elle, reste.
+   */
+  @Post("rules/:id/archive")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async archiveRule(
+    @Param("id") id: string,
+    @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
+    await this.commands.execute<ArchivePriceRuleCommand, void>(
+      new ArchivePriceRuleCommand(id, staffSub, payload.reason),
+    );
+  }
+
+  /**
+   * L'ancien geste « retirer », qui **archive** désormais.
+   *
+   * Conservé parce que c'est le verbe que l'écran connaît, et que « retirer »
+   * dit bien ce que le staff veut faire — la règle quitte le tableau. Ce qui a
+   * changé est ce qui se passe dessous : plus rien ne s'efface.
+   */
   @Delete("rules/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async removeRule(@Param("id") id: string): Promise<void> {
-    await this.commands.execute<RemovePriceRuleCommand, void>(new RemovePriceRuleCommand(id));
+  async removeRule(@Param("id") id: string, @StaffSub() staffSub: string): Promise<void> {
+    await this.commands.execute<ArchivePriceRuleCommand, void>(
+      new ArchivePriceRuleCommand(id, staffSub, null),
+    );
   }
 
   @Put("floors")
@@ -134,8 +195,8 @@ export class AdminPricingController {
    */
   @Delete("floors/global")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async removeGlobalFloor(): Promise<void> {
-    await this.removeFloorOn({ type: "global", id: null });
+  async removeGlobalFloor(@StaffSub() staffSub: string): Promise<void> {
+    await this.archiveFloorOn({ type: "global", id: null }, staffSub);
   }
 
   @Delete("floors/:scopeType/:scopeId")
@@ -143,13 +204,15 @@ export class AdminPricingController {
   async removeFloor(
     @Param("scopeType") scopeType: string,
     @Param("scopeId") scopeId: string,
+    @StaffSub() staffSub: string,
   ): Promise<void> {
-    await this.removeFloorOn({ type: parseScopeType(scopeType), id: scopeId });
+    await this.archiveFloorOn({ type: parseScopeType(scopeType), id: scopeId }, staffSub);
   }
 
-  private async removeFloorOn(scope: PriceScopePayload): Promise<void> {
-    await this.commands.execute<RemovePriceFloorCommand, void>(
-      new RemovePriceFloorCommand(toScope(scope)),
+  /** Retirer une limite l'**archive** : rien ne s'efface, ici non plus. */
+  private async archiveFloorOn(scope: PriceScopePayload, staffSub: string): Promise<void> {
+    await this.commands.execute<ArchivePriceFloorCommand, void>(
+      new ArchivePriceFloorCommand(toScope(scope), staffSub, null),
     );
   }
 }

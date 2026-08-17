@@ -1871,7 +1871,25 @@ model PriceRule {
   createdBy String   @map("created_by")
   createdAt DateTime @default(now()) @map("created_at")
 
+  /// **Suspendue.** Elle cesse d'agir et GARDE sa place : la contrainte
+  /// d'exclusion la voit toujours, donc personne ne peut poser une jumelle qui
+  /// rendrait la reprise impossible.
+  pausedAt DateTime? @map("paused_at") @db.Timestamptz(3)
+  pausedBy String?   @map("paused_by")
+
+  /// **Archivée.** Terminal : elle cesse d'agir et REND sa place — la contrainte
+  /// d'exclusion est partielle, `WHERE archived_at IS NULL`.
+  ///
+  /// Jamais de `DELETE` : une règle a facturé, elle a fait un prix, et l'effacer
+  /// effacerait la réponse à « pourquoi ce prix » alors que la facture, elle,
+  /// reste. Le motif est demandé ici et pas à la pause, parce que c'est le geste
+  /// qui ne se défait pas.
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
   @@index([stage])
+  @@index([archivedAt])
   @@index([audienceId])
   @@map("price_rules")
   @@schema("public")
@@ -1938,6 +1956,66 @@ model PriceFloor {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  /// **Archivée.** Une limite ne se supprime pas davantage qu'une règle : elle a
+  /// arbitré des prix, et savoir qu'elle existait explique des factures.
+  ///
+  /// Pas de versionnage ici, à la différence des règles : l'identifiant est
+  /// DÉRIVÉ de la portée, donc il n'y a jamais qu'une ligne par cible. Une limite
+  /// retirée puis re-posée reprend sa ligne, et son histoire vit dans le journal
+  /// — l'endroit fait pour ça.
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
   @@map("price_floors")
+  @@schema("public")
+}
+
+/// **Le journal des actes tarifaires** — append-only.
+///
+/// Sur un prix négocié, la question posée six mois plus tard n'est jamais
+/// « quelle était la règle » mais « qui a décidé ça, et qui l'a arrêté ». L'état
+/// courant ne peut pas y répondre : il est précisément ce qui a remplacé la
+/// réponse.
+///
+/// Aucune colonne mutable, aucun `updatedAt`, et aucun port qui expose une mise à
+/// jour ou un effacement. Un journal réinscriptible ne prouve rien — le premier
+/// jour où il servirait vraiment serait celui où quelqu'un aurait intérêt à le
+/// corriger.
+model PricingEvent {
+  /// ULID : triable par le temps, donc paginable de façon stable sur un flux
+  /// qui ne fait que grandir.
+  id String @id
+
+  /// `rule` | `floor`. Pas de clé étrangère, volontairement : l'acte doit
+  /// survivre à son sujet, et une cascade de suppression emporterait justement
+  /// la trace qu'on cherchait à garder.
+  subjectType String @map("subject_type")
+  subjectId   String @map("subject_id")
+
+  /// `posed` | `paused` | `resumed` | `archived` | `confirmed` | `replaced`.
+  act String
+
+  /// Le `sub` du membre du staff, ou `system`.
+  ///
+  /// Le NOM n'est pas figé ici, à la différence des traces client : l'annuaire
+  /// staff est à nous et un `sub` est stable. Afficher le nom d'aujourd'hui est
+  /// même la réponse utile — on cherche qui aller voir, pas comment il
+  /// s'appelait à l'époque.
+  actor String
+
+  /// L'instant de l'acte, autorité = l'horloge du backend.
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+
+  /// Ce que l'auteur a écrit quand l'écran le lui a demandé. `NULL` = rien.
+  reason String?
+
+  /// **Ce que la décision disait**, en une phrase FIGÉE à l'écriture. Recalculée
+  /// à la lecture, elle raconterait l'histoire à l'envers.
+  summary String
+
+  @@index([subjectType, subjectId, occurredAt])
+  @@index([occurredAt])
+  @@map("pricing_events")
   @@schema("public")
 }

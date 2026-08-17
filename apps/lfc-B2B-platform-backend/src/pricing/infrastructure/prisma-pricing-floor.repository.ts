@@ -1,14 +1,20 @@
 import { Injectable } from "@nestjs/common";
 
+import { IdGenerator } from "../../infra/id/id-generator.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { PricingFloorRepository } from "../domain/ports/pricing-floor.repository.js";
 import { PricingFloor } from "../domain/entities/pricing-floor.js";
 import { floorFromRow } from "./price-rows.js";
+import { eventRow } from "./pricing-journal.writer.js";
+import type { PricingAct } from "../domain/pricing-act.js";
 import type { PriceFloor } from "../domain/price-rule.js";
 
 @Injectable()
 export class PrismaPricingFloorRepository extends PricingFloorRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ids: IdGenerator,
+  ) {
     super();
   }
 
@@ -17,7 +23,7 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
    * l'identifiant est dérivé de la portée : pas de lecture préalable, donc pas de
    * fenêtre entre « je regarde s'il existe » et « je l'écris ».
    */
-  async pose(floor: PricingFloor): Promise<void> {
+  async pose(floor: PricingFloor, act: PricingAct): Promise<void> {
     const state = floor.toPersistence();
     const dynamic = state.policy.dynamic;
     const shared = {
@@ -38,17 +44,28 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
       // le signal ne s'éteindrait jamais et on apprendrait à l'ignorer.
       referenceCanonicalCents: state.referenceCanonicalCents,
       createdBy: state.createdBy,
+      // Re-poser sur une portée archivée la REND : c'est une nouvelle décision,
+      // avec son auteur et sa date, et l'histoire de la portée reste lisible
+      // dans le journal. Laisser `archived_at` en place aurait donné une limite
+      // qui protège et qui se dit retirée.
+      archivedAt: null,
+      archivedBy: null,
+      archiveReason: null,
     };
 
-    await this.prisma.priceFloor.upsert({
-      where: { id: state.id },
-      create: { id: state.id, ...shared },
-      update: shared,
-    });
+    await this.prisma.$transaction([
+      this.prisma.priceFloor.upsert({
+        where: { id: state.id },
+        create: { id: state.id, ...shared },
+        update: shared,
+      }),
+      this.prisma.pricingEvent.create({ data: eventRow(this.ids.next(), act) }),
+    ]);
   }
 
+  /** La limite **en vigueur** : une limite archivée n'en est plus une. */
   async load(id: string): Promise<PricingFloor | null> {
-    const row = await this.prisma.priceFloor.findUnique({ where: { id } });
+    const row = await this.prisma.priceFloor.findFirst({ where: { id, archivedAt: null } });
     if (row === null) {
       return null;
     }
@@ -62,9 +79,27 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
     });
   }
 
-  async remove(id: string): Promise<boolean> {
-    const { count } = await this.prisma.priceFloor.deleteMany({ where: { id } });
-    return count > 0;
+  /**
+   * **Archive**, jamais `DELETE`. Le `where` porte sur `archivedAt: null` : ré-
+   * archiver une limite déjà retirée rend `false`, donc un 404 — deux personnes
+   * peuvent avoir le même écran ouvert, et la seconde doit savoir que son geste
+   * n'a rien fait.
+   */
+  async archive(id: string, act: PricingAct): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.priceFloor.updateMany({
+        where: { id, archivedAt: null },
+        data: { archivedAt: act.at, archivedBy: act.actor, archiveReason: act.reason },
+      });
+      // Transaction INTERACTIVE et non tableau : sans elle, un archivage qui ne
+      // trouve rien écrirait quand même son acte, et le journal raconterait un
+      // geste qui n'a rien fait.
+      if (count === 0) {
+        return false;
+      }
+      await tx.pricingEvent.create({ data: eventRow(this.ids.next(), act) });
+      return true;
+    });
   }
 }
 
