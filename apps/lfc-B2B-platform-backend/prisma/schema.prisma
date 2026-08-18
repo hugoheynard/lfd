@@ -1703,6 +1703,42 @@ model OrderDraft {
 // ---------------------------------------------------------------------------
 
 /// Une **famille** reçue du PIM. Miroir : jamais éditée ici.
+/// **L'historique du tarif canonique** — append-only, une ligne par CHANGEMENT.
+///
+/// Le prix enregistré est l'**effectif** : la décision B2B quand elle existe,
+/// sinon celui du PIM. C'est ce prix-là qui entre dans la résolution, donc le
+/// seul dont une relecture datée ait besoin.
+///
+/// Écrit dans la transaction qui sauve l'article, au seul endroit par lequel les
+/// deux chemins passent (`saveMany`). C'est ce qui rend « aucun changement de
+/// prix sans sa trace » structurel plutôt que discipliné : un push du PIM comme
+/// une décision du back-office y aboutissent, et aucun appelant ne peut
+/// l'esquiver.
+///
+/// Une ligne n'est posée que si le prix effectif **diffère** du dernier
+/// enregistré : sans ça, un push de 92 articles inchangés écrirait 92 lignes à
+/// chaque synchronisation, et l'historique deviendrait illisible en une semaine.
+model CatalogPriceHistory {
+  id String @id
+
+  /// Le SKU de la déclinaison — la clé de l'article reçu.
+  sku String
+  /// Le SKU du PRODUIT : c'est par lui que la boutique vend, donc par lui qu'on relit.
+  productSku String @map("product_sku")
+
+  /// Prix HT en centimes réellement applicable à cet instant.
+  priceCents Int @map("price_cents")
+  /// `pim` (le tarif reçu) ou `b2b` (la décision locale l'emporte).
+  source String
+
+  recordedAt DateTime @map("recorded_at")
+
+  @@index([productSku, recordedAt])
+  @@index([recordedAt])
+  @@map("catalog_price_history")
+  @@schema("public")
+}
+
 model CatalogCategory {
   id String @id
 

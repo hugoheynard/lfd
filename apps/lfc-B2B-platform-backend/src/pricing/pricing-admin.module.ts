@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
+import { CatalogModule } from "../catalog/catalog.module.js";
 import { OrdersModule } from "../orders/orders.module.js";
 import {
   ArchivePriceFloorHandler,
@@ -45,7 +46,9 @@ import { PricingModule } from "./pricing.module.js";
  * lecteur d'écran dans `PricingModule` aurait fermé le cycle.
  */
 @Module({
-  imports: [CqrsModule, OrdersModule, PricingModule],
+  // `CatalogModule` pour l'historique du tarif : la lecture datée doit rendre le
+  // tarif de CE jour-là, et lui seul sait le relire.
+  imports: [CqrsModule, CatalogModule, OrdersModule, PricingModule],
   controllers: [AdminPricingController, AdminPriceFloorsController, AdminPricingJournalController],
   providers: [
     BoardElasticityService,

@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
+import { Clock } from "../../infra/time/clock.js";
+import { IdGenerator } from "../../infra/id/id-generator.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
 import { CatalogItem, type CatalogItemState } from "../domain/entities/catalog-item.js";
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
@@ -34,7 +36,11 @@ interface ItemRow {
  */
 @Injectable()
 export class PrismaCatalogItemRepository extends CatalogItemRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ids: IdGenerator,
+    private readonly clock: Clock,
+  ) {
     super();
   }
 
@@ -62,6 +68,10 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
       return;
     }
     const states = items.map((item) => item.toPersistence());
+    // Le prix EFFECTIF déjà tracé, par SKU : c'est à lui qu'on compare pour
+    // n'écrire une ligne d'historique que sur un vrai changement.
+    const recorded = await this.lastRecordedPrices(states.map((state) => state.facts.sku));
+    const recordedAt = this.clock.now();
 
     await this.prisma.$transaction(async (tx) => {
       for (const state of states) {
@@ -91,7 +101,48 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
           update: decision,
         });
       }
+
+      // **La trace du tarif, dans la MÊME transaction que le prix.**
+      //
+      // Ici et non chez les appelants : un push du PIM et une décision du
+      // back-office aboutissent tous deux à `saveMany`, et c'est le seul point
+      // par lequel ils passent. Un port d'écriture séparé aurait laissé écrire
+      // un prix sans sa trace — au premier oubli, à la première branche
+      // d'erreur, au premier chemin de rattrapage.
+      const changes = states.flatMap((state) => {
+        const effective = state.decision?.priceCents ?? state.facts.priceCents;
+        // Inchangé ⇒ aucune ligne. Sans cette garde, un push de quatre-vingt-douze
+        // articles identiques écrirait quatre-vingt-douze lignes à chaque
+        // synchronisation, et l'historique serait illisible en une semaine.
+        if (recorded.get(state.facts.sku) === effective) {
+          return [];
+        }
+        return [
+          {
+            id: this.ids.next(),
+            sku: state.facts.sku,
+            productSku: state.facts.productSku,
+            priceCents: effective,
+            source: state.decision?.priceCents === undefined ? "pim" : "b2b",
+            recordedAt,
+          },
+        ];
+      });
+      if (changes.length > 0) {
+        await tx.catalogPriceHistory.createMany({ data: changes });
+      }
     });
+  }
+
+  /** Le dernier prix tracé de chaque SKU — la référence du « a-t-il changé ? ». */
+  private async lastRecordedPrices(skus: readonly string[]): Promise<ReadonlyMap<string, number>> {
+    const rows = await this.prisma.catalogPriceHistory.findMany({
+      where: { sku: { in: [...skus] } },
+      orderBy: [{ sku: "asc" }, { recordedAt: "desc" }],
+      distinct: ["sku"],
+      select: { sku: true, priceCents: true },
+    });
+    return new Map(rows.map((row) => [row.sku, row.priceCents]));
   }
 
   async removeMany(skus: readonly string[]): Promise<void> {

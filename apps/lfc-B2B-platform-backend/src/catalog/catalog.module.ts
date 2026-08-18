@@ -11,10 +11,12 @@ import { IngestCatalogService } from "./application/ingest-catalog.service.js";
 import { CatalogAdminReader } from "./domain/ports/catalog-admin.reader.js";
 import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
+import { CanonicalPriceHistoryReader } from "./domain/ports/canonical-price-history.reader.js";
 import { CatalogReader } from "./domain/ports/catalog.reader.js";
 import { PrismaCatalogAdminReader } from "./infrastructure/prisma-catalog-admin.reader.js";
 import { PrismaCatalogCategoryProjection } from "./infrastructure/prisma-catalog-category.projection.js";
 import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-item.repository.js";
+import { PrismaCanonicalPriceHistoryReader } from "./infrastructure/prisma-canonical-price-history.reader.js";
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { CatalogIngestController } from "./http/catalog-ingest.controller.js";
@@ -33,7 +35,10 @@ import { CatalogIngestController } from "./http/catalog-ingest.controller.js";
  * `CatalogAdminReader` sert le paramétrage (tout, provenance comprise) ;
  * `CatalogItemRepository` charge et enregistre des agrégats ;
  * `CatalogCategoryProjection` tient le miroir des familles — nommé projection
- * parce qu'aucune règle ne peut refuser d'y écrire.
+ * parce qu'aucune règle ne peut refuser d'y écrire ;
+ * `CanonicalPriceHistoryReader` relit le tarif à une date. Il n'a **pas** de
+ * jumeau en écriture : la trace est posée dans la transaction qui sauve
+ * l'article, au seul endroit par lequel les deux chemins de changement passent.
  */
 @Module({
   imports: [CqrsModule],
@@ -48,7 +53,10 @@ import { CatalogIngestController } from "./http/catalog-ingest.controller.js";
     { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
     { provide: CatalogReader, useClass: PrismaCatalogReader },
     { provide: CatalogAdminReader, useClass: PrismaCatalogAdminReader },
+    { provide: CanonicalPriceHistoryReader, useClass: PrismaCanonicalPriceHistoryReader },
   ],
-  exports: [CatalogReader, CatalogItemRepository],
+  // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
+  // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
+  exports: [CatalogReader, CatalogItemRepository, CanonicalPriceHistoryReader],
 })
 export class CatalogModule {}

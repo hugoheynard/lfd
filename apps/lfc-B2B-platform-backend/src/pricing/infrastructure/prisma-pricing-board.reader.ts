@@ -8,6 +8,7 @@ import {
   type CatalogItem,
 } from "../../orders/domain/ports/product-catalog.reader.js";
 import { referenceCanonicalFor } from "../application/floor-reference.js";
+import { CanonicalPriceHistoryReader } from "../../catalog/domain/ports/canonical-price-history.reader.js";
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
 import { PricingBoardReader } from "../application/ports/pricing-board.reader.js";
@@ -25,6 +26,8 @@ interface LoadedBoard {
   readonly floors: readonly LoadedFloor[];
   readonly ladders: readonly VolumeLadder[];
   readonly articles: readonly CatalogItem[];
+  /** Depuis quand le tarif est tracé — `null` si l'historique est vide. */
+  readonly historyStartsAt: Date | null;
 }
 
 /**
@@ -54,6 +57,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     private readonly catalog: ProductCatalogReader,
     private readonly elasticity: BoardElasticityService,
     private readonly ladders: VolumeLadderReader,
+    private readonly history: CanonicalPriceHistoryReader,
   ) {
     super();
   }
@@ -100,13 +104,15 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // **Les archivées n'entrent pas dans le tableau** : ranger sert précisément
     // à ne plus les voir. « Archivée » se lit à l'instant demandé — cf.
     // `unarchivedAt`, qui porte le pourquoi.
-    const [ruleRows, floorRows, ladders] = await Promise.all([
+    const [ruleRows, floorRows, ladders, pastPrices, historyStartsAt] = await Promise.all([
       this.prisma.priceRule.findMany({
         where: unarchivedAt(at),
         orderBy: [{ stage: "asc" }, { validFrom: "asc" }],
       }),
       this.prisma.priceFloor.findMany({ where: unarchivedAt(at) }),
       this.ladders.listAll(at),
+      this.history.pricesAt(at),
+      this.history.startsAt(),
     ]);
 
     const rules: LoadedRule[] = ruleRows.map((row) => ({
@@ -115,7 +121,18 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     }));
     // Le tarif représentatif d'AUJOURD'HUI, par portée : c'est lui qui, comparé
     // à celui figé à la pose, dit si l'intention a vieilli.
-    const articles = await this.catalog.all();
+    // **Le tarif de CE jour-là**, pas celui d'aujourd'hui.
+    //
+    // Sans cette surcouche, une lecture datée appliquait les décisions d'hier
+    // aux tarifs d'aujourd'hui — un mélange qui a l'air d'un prix passé sans en
+    // être un. Un article sans trace antérieure garde son tarif courant : c'est
+    // tout ce qu'on sait de lui, et `canonicalHistoryStartsAt` dit à l'écran
+    // jusqu'où il peut se fier à ce qu'il lit.
+    const current = await this.catalog.all();
+    const articles = current.map((item) => {
+      const past = pastPrices.get(item.sku);
+      return past === undefined ? item : { ...item, unitPriceCents: past };
+    });
     const floors: LoadedFloor[] = floorRows.map((row) => {
       const floor = floorFromRow(row);
       return {
@@ -124,7 +141,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       };
     });
 
-    return { rules, floors, ladders, articles };
+    return { rules, floors, ladders, articles, historyStartsAt };
   }
 
   private assemble(loaded: LoadedBoard, at: Date): PricingBoardView {
@@ -154,6 +171,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       globalRules: loaded.rules
         .filter((entry) => entry.rule.scope.type === "global")
         .map((entry) => entry.view),
+      canonicalHistoryStartsAt: loaded.historyStartsAt?.toISOString() ?? null,
       simulation: { quantity: 1, at: at.toISOString(), audience: "all" },
     };
   }

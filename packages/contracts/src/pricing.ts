@@ -716,6 +716,17 @@ export interface PricingBoardView {
   readonly globalFloor: PriceFloorView | null;
   /** Les règles de portée globale — elles s'appliquent à toutes les familles. */
   readonly globalRules: readonly PriceRuleView[];
+  /**
+   * **Depuis quand le tarif canonique est historisé**, en ISO — `null` si aucune
+   * trace n'existe encore.
+   *
+   * Une lecture datée AVANT cet instant applique les décisions de ce jour-là aux
+   * tarifs d'aujourd'hui : l'histoire commence quand on l'écrit, et avant elle
+   * il n'y a rien. L'écran doit pouvoir le dire plutôt que de rendre un tableau
+   * qui aurait l'air complet — c'est précisément le mensonge que cet historique
+   * existe pour supprimer.
+   */
+  readonly canonicalHistoryStartsAt: string | null;
   readonly simulation: {
     readonly quantity: number;
     readonly at: string;

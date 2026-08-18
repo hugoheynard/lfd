@@ -203,3 +203,82 @@ describe("une décision survit au push suivant", () => {
     expect(item?.effectivePriceCents).toBe(180);
   });
 });
+
+/**
+ * **L'historique du tarif canonique** — ce que la frise attendait pour dire le
+ * vrai prix.
+ *
+ * Jusqu'ici, une lecture datée appliquait les décisions d'hier aux tarifs
+ * d'AUJOURD'HUI : un mélange qui ressemble à un prix passé sans en être un.
+ * Éprouvé de bout en bout parce que la garantie est transactionnelle — la trace
+ * est écrite dans la transaction qui sauve l'article, et seule une vraie base le
+ * démontre.
+ */
+describe("l'historique du tarif canonique", () => {
+  it("trace le prix décidé, et le relit à la date où il valait", async () => {
+    const before = new Date();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 999 }).expect(204);
+
+    const now = jsonBody<{ categories: { items: { sku: string; canonicalCents: number }[] }[] }>(
+      await asStaff().get("/admin/pricing").expect(200),
+    );
+    expect(croissantIn(now)).toBe(999);
+
+    // La MÊME lecture, datée d'avant la décision : le tarif d'alors.
+    const past = jsonBody<{ categories: { items: { sku: string; canonicalCents: number }[] }[] }>(
+      await asStaff().get(`/admin/pricing?at=${before.toISOString()}`).expect(200),
+    );
+    expect(croissantIn(past)).toBe(200);
+  });
+
+  /**
+   * **Le chemin du PIM trace aussi.** C'est ce que le point d'écriture unique
+   * garantit : l'ingestion et la décision du back-office aboutissent toutes deux
+   * à `saveMany`, et aucune ne peut l'esquiver. Le `beforeEach` de cette suite
+   * pousse un snapshot — il suffit donc de constater qu'une trace existe déjà.
+   */
+  it("trace aussi ce que le PIM pousse, sans que personne l'ait demandé", async () => {
+    const rows = await ctx.prisma.catalogPriceHistory.findMany({ where: { sku: SKU } });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.priceCents).toBe(200);
+    expect(rows[0]?.source).toBe("pim");
+  });
+
+  /**
+   * L'histoire commence quand on l'écrit, et l'écran doit pouvoir le dire : une
+   * lecture antérieure applique les décisions d'alors aux tarifs d'aujourd'hui.
+   */
+  it("annonce depuis quand il sait quelque chose", async () => {
+    const board = jsonBody<{ canonicalHistoryStartsAt: string | null }>(
+      await asStaff().get("/admin/pricing").expect(200),
+    );
+    const first = await ctx.prisma.catalogPriceHistory.findFirst({
+      orderBy: { recordedAt: "asc" },
+    });
+
+    expect(board.canonicalHistoryStartsAt).toBe(first?.recordedAt.toISOString());
+  });
+
+  /** Sans cette garde, un push de 92 articles inchangés écrirait 92 lignes. */
+  it("n'écrit rien quand le prix ne bouge pas", async () => {
+    const before = await ctx.prisma.catalogPriceHistory.count({ where: { sku: SKU } });
+
+    await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 300 }).expect(204);
+    await asStaff().put(`/admin/catalog/${SKU}/price`).send({ priceCents: 300 }).expect(204);
+
+    const after = await ctx.prisma.catalogPriceHistory.count({ where: { sku: SKU } });
+    expect(after - before).toBe(1);
+  });
+});
+
+/** Le croissant dans un tableau de tarification, par le SKU que la boutique vend. */
+function croissantIn(board: {
+  categories: { items: { sku: string; canonicalCents: number }[] }[];
+}): number | undefined {
+  return board.categories
+    .flatMap((category) => category.items)
+    .find((item) => item.sku === "VIE-001")?.canonicalCents;
+}
