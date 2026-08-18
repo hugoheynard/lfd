@@ -134,6 +134,22 @@ export class MercurialeMustPoseAPriceError extends DomainError {
 }
 
 /**
+ * Une mercuriale qui prétend franchir le scellement **qu'elle pose**.
+ *
+ * `stacksOverMercuriale` est la porte de sortie d'un scellement ; sur l'étage
+ * qui scelle, elle ne désigne rien. Refusée plutôt qu'ignorée : un drapeau
+ * accepté puis sans effet finit par être coché en croyant obtenir quelque chose.
+ */
+export class MercurialeCannotStackOverItselfError extends DomainError {
+  constructor() {
+    super(
+      "pricing.mercuriale.cannot_stack_over_itself",
+      "C'est la mercuriale qui scelle la chaîne : elle ne peut pas se déclarer elle-même cumulable par-dessus une mercuriale.",
+    );
+  }
+}
+
+/**
  * Deux marqueurs de comparaison dans le désordre, ou confondus.
  *
  * Une fenêtre qui se ferme avant de s'ouvrir n'a pas de volume à mesurer, et sa

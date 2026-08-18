@@ -2,6 +2,7 @@ import {
   ArchivedPriceRuleIsSealedError,
   ClosedPriceRuleWindowError,
   InvalidAlterationError,
+  MercurialeCannotStackOverItselfError,
   MercurialeMustPoseAPriceError,
   PriceRuleAlreadyPausedError,
   PriceRuleNotPausedError,
@@ -32,6 +33,13 @@ export interface PricingRuleDraft {
   readonly label: string;
   readonly validFrom: Date;
   readonly validTo: Date | null;
+  /**
+   * **Agir malgré une mercuriale** — cf. `PriceRule.stacksOverMercuriale`.
+   *
+   * Le défaut est `false` : une promotion publique ne vise pas les comptes
+   * déjà au tarif négocié tant que personne ne l'a écrit.
+   */
+  readonly stacksOverMercuriale: boolean;
 }
 
 /**
@@ -85,6 +93,8 @@ export class PricingRule {
   /**
    * @throws {MercurialeMustPoseAPriceError} une mercuriale exprimée en
    *   pourcentage — le piège central du modèle.
+   * @throws {MercurialeCannotStackOverItselfError} une mercuriale qui prétend
+   *   franchir le scellement qu'elle pose elle-même.
    * @throws {ScopeIdMismatchError} portée ou audience dont l'identifiant
    *   contredit le type.
    * @throws {ReversedValidityWindowError} fenêtre qui se ferme avant de s'ouvrir.
@@ -103,6 +113,13 @@ export class PricingRule {
     // contourné plutôt que compris.
     if (draft.stage === "mercuriale" && draft.effect.nature !== "replace") {
       throw new MercurialeMustPoseAPriceError();
+    }
+
+    // Une mercuriale qui « s'empile sur une mercuriale » n'a pas de lecture :
+    // c'est elle qui scelle. Refusé plutôt qu'ignoré — un drapeau accepté puis
+    // sans effet finit par être coché en croyant obtenir quelque chose.
+    if (draft.stage === "mercuriale" && draft.stacksOverMercuriale) {
+      throw new MercurialeCannotStackOverItselfError();
     }
 
     assertScopedId("portée", draft.scope.type === "global", draft.scope.id);
@@ -229,6 +246,7 @@ export class PricingRule {
       validTo: this.state.validTo,
       suspendedFrom: suspendedFromOf(this.state.lifecycle),
       label: this.state.label,
+      stacksOverMercuriale: this.state.stacksOverMercuriale,
     };
     return this.state.effect.nature === "replace"
       ? { ...common, nature: "replace", amountCents: this.state.effect.amountCents }

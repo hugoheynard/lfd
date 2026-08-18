@@ -181,7 +181,7 @@ export class FrisePage {
   /** La date de début de l'historique, en toutes lettres. */
   protected readonly historyStartLabel = computed(() => {
     const startsAt = this.board()?.canonicalHistoryStartsAt ?? null;
-    return startsAt === null ? "premier tarif enregistré" : formatLongDay(startsAt.slice(0, 10));
+    return startsAt === null ? 'premier tarif enregistré' : formatLongDay(startsAt.slice(0, 10));
   });
 
   /** Le catalogue au marqueur unique — vide dès qu'une zone est ouverte. */

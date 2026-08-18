@@ -72,6 +72,16 @@
     (valueChange)="label.set($event)"
   />
 
+  <!-- La porte de sortie du scellement. Décochée par défaut : un cumul non
+       voulu se paie en marge sans que rien ne le signale, un cumul manquant se
+       remarque au premier appel d'un client. -->
+  <fold-checkbox
+    label="Cumuler avec les tarifs négociés"
+    hint="Par défaut, une mercuriale scelle le prix : cette règle ne s'applique pas aux comptes qui en ont une. Cochez pour qu'elle s'y ajoute quand même."
+    [checked]="stacksOverMercuriale()"
+    (checkedChange)="stacksOverMercuriale.set($event)"
+  />
+
   <!-- Dates en `<input type="date">` NATIF : `fold-input` ne porte pas ce type,
        et les Signal Forms ne couvrent pas les dates. Même parti que le panier
        et le bon de production. -->

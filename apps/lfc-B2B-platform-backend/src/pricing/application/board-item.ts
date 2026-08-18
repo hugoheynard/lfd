@@ -112,6 +112,8 @@ export function itemView(
       .filter((entry) => targetsArticle(entry.rule.scope, article.sku))
       .map((entry) => entry.view),
     supersededRuleIds: supersededIn(materials.byStage, context),
+    sealedByRuleId: resolved.sealedByRuleId,
+    sealedRuleIds: resolved.sealedRuleIds,
     steps: resolved.steps.map((step) => ({ ...step })),
     floored: resolved.floored,
     clampedToZero: resolved.clampedToZero,

@@ -1902,6 +1902,15 @@ model PriceRule {
   /// Ce que la trace affichera au client et au service client.
   label String
 
+  /// **Cette règle agit-elle malgré une mercuriale ?**
+  ///
+  /// Une mercuriale scelle la chaîne : les étages suivants sont transparents.
+  /// Ce drapeau est la porte de sortie, et elle est explicite — « oui, cette
+  /// promotion vise aussi les comptes au tarif négocié ». `false` par défaut,
+  /// y compris sur les règles antérieures au scellement : c'est le comportement
+  /// que la maison a décidé, pas celui qu'elle subissait.
+  stacksOverMercuriale Boolean @default(false) @map("stacks_over_mercuriale")
+
   /// Qui a posé cette règle. Sur un tarif négocié, la question posée six mois
   /// plus tard est toujours « qui a accordé ça ».
   createdBy String   @map("created_by")

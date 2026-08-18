@@ -26,6 +26,7 @@ function rule(overrides: Partial<PriceRuleView> = {}): PriceRuleView {
     validFrom: '2026-08-01T00:00:00.000Z',
     validTo: null,
     createdBy: 'staff',
+    stacksOverMercuriale: false,
     createdAt: '2026-07-20T00:00:00.000Z',
     status: 'active',
     pausedAt: null,

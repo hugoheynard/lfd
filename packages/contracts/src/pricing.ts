@@ -93,21 +93,22 @@ export type PriceAudiencePayload = z.infer<typeof priceAudienceSchema>;
  * — ce n'est pas ce qu'on a promis au client. Un tarif négocié est un engagement
  * en euros, il se stocke en euros.
  */
-export const priceEffectSchema = z.discriminatedUnion("nature", [
-  z.object({
-    nature: z.literal("replace"),
-    /** Le prix posé, HT en centimes. Zéro passe — un article offert est réel. */
-    amountCents: z.number().int().nonnegative(),
-  }),
-  z.object({
-    nature: z.literal("alter"),
-    direction: priceDirectionSchema,
-    mode: priceModeSchema,
-    /** Points de base si `percent`, centimes si `amount`. **Toujours positif** :
-     *  le signe se dit par `direction`, jamais par le nombre. */
-    value: z.number().int().positive(),
-  }),
-])
+export const priceEffectSchema = z
+  .discriminatedUnion("nature", [
+    z.object({
+      nature: z.literal("replace"),
+      /** Le prix posé, HT en centimes. Zéro passe — un article offert est réel. */
+      amountCents: z.number().int().nonnegative(),
+    }),
+    z.object({
+      nature: z.literal("alter"),
+      direction: priceDirectionSchema,
+      mode: priceModeSchema,
+      /** Points de base si `percent`, centimes si `amount`. **Toujours positif** :
+       *  le signe se dit par `direction`, jamais par le nombre. */
+      value: z.number().int().positive(),
+    }),
+  ])
   /**
    * **Une baisse en pourcentage ne dépasse pas 100 %.**
    *
@@ -151,6 +152,18 @@ export const createPriceRulePayloadSchema = z.object({
   validFrom: z.string().datetime(),
   /** Borne haute **exclue**. `null` = ouverte. */
   validTo: z.string().datetime().nullable(),
+  /**
+   * **Cumuler par-dessus une mercuriale.**
+   *
+   * Une mercuriale scelle la chaîne : le tarif négocié est le prix, et les
+   * étages suivants sont transparents. Cocher ceci sur une promotion dit « elle
+   * vise AUSSI les comptes au tarif négocié » — donc une remise par-dessus une
+   * remise déjà accordée.
+   *
+   * `false` par défaut, et le défaut est la décision : le cumul non voulu coûte
+   * de la marge en silence, le cumul manquant se remarque au premier appel.
+   */
+  stacksOverMercuriale: z.boolean().default(false),
 });
 export type CreatePriceRulePayload = z.infer<typeof createPriceRulePayloadSchema>;
 
@@ -207,6 +220,14 @@ export interface PriceRuleView {
   readonly minQuantity: number | null;
   readonly effect: PriceEffectPayload;
   readonly label: string;
+  /**
+   * Agit-elle **malgré** une mercuriale ? Cf. `createPriceRulePayloadSchema`.
+   *
+   * Sur l'écran, c'est ce qui distingue « promotion de rentrée » de « promotion
+   * de rentrée, comptes négociés compris » — deux décisions dont l'écart se
+   * mesure en marge, et qu'aucun autre champ ne laisse deviner.
+   */
+  readonly stacksOverMercuriale: boolean;
   readonly validFrom: string;
   readonly validTo: string | null;
   readonly createdBy: string;
@@ -506,6 +527,17 @@ export interface PricingItemView {
   readonly rules: readonly PriceRuleView[];
   /** Les règles de famille qu'une règle d'article évince, étage par étage. */
   readonly supersededRuleIds: readonly string[];
+  /**
+   * La **mercuriale** qui scelle la chaîne pour cet article, ou `null`.
+   *
+   * Voisin de `supersededRuleIds` et pourtant distinct : une règle évincée a
+   * perdu **son étage** contre plus spécifique ; une règle scellée avait gagné
+   * le sien, et c'est le tarif négocié du client qui l'écarte. Deux raisons de
+   * ne pas s'appliquer, deux phrases différentes à l'écran.
+   */
+  readonly sealedByRuleId: string | null;
+  /** Les règles qui auraient agi si la mercuriale n'avait pas scellé. */
+  readonly sealedRuleIds: readonly string[];
   readonly steps: readonly PriceStepView[];
   /** Le plancher a-t-il **relevé** le prix ? */
   readonly floored: boolean;

@@ -45,6 +45,7 @@ export interface RuleRow {
   readonly validFrom: Date;
   readonly validTo: Date | null;
   readonly label: string;
+  readonly stacksOverMercuriale: boolean;
   readonly createdBy: string;
   readonly createdAt: Date;
   readonly pausedAt: Date | null;
@@ -89,6 +90,7 @@ export function ruleFromRow(row: RuleRow): PriceRule {
     // archivée a cessé d'agir à la pause.
     suspendedFrom: suspendedFromOf(lifecycleFromRow(row)),
     label: row.label,
+    stacksOverMercuriale: row.stacksOverMercuriale,
   } as const;
 
   if (row.nature === "replace") {
@@ -135,6 +137,7 @@ export function ruleStateFromRow(row: RuleRow): PricingRuleState {
         ? { nature: "replace", amountCents: rule.amountCents }
         : { nature: "alter", alteration: rule.alteration },
     label: rule.label,
+    stacksOverMercuriale: rule.stacksOverMercuriale,
     validFrom: rule.validFrom,
     validTo: rule.validTo,
     createdBy: row.createdBy,
@@ -161,6 +164,7 @@ export function ruleViewFromRow(row: RuleRow): PriceRuleView {
             value: magnitudeOf(rule.alteration),
           },
     label: rule.label,
+    stacksOverMercuriale: rule.stacksOverMercuriale,
     validFrom: rule.validFrom.toISOString(),
     validTo: rule.validTo?.toISOString() ?? null,
     createdBy: row.createdBy,

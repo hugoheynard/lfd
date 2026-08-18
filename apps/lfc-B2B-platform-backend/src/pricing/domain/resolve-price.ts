@@ -29,6 +29,13 @@ import { winnerOf } from "./specificity.js";
  * - **un plancher à deux formes**, fraction du canonique ou montant, dont le
  *   déclenchement est consigné plutôt qu'avalé.
  *
+ * Une quatrième s'y est ajoutée le 2026-08-18 : **la mercuriale scelle**. Un
+ * prix négocié posé à l'étage mercuriale rend les étages suivants transparents,
+ * sauf pour une règle qui porte `stacksOverMercuriale`. Auparavant la chaîne
+ * composait jusqu'au bout, si bien qu'un compte au tarif négocié empochait AUSSI
+ * la promotion publique — un cumul que personne n'avait décidé, qui ne se lisait
+ * nulle part, et qui ne se découvrait qu'en comparant deux factures.
+ *
  * @throws {InvalidCanonicalPriceError} prix canonique nul ou négatif.
  * @throws {InvalidAlterationError} grandeur d'altération non strictement positive.
  * @throws {AmbiguousPriceRulesError} deux règles également spécifiques dans un étage.
@@ -49,15 +56,26 @@ export function resolvePrice(
   }
 
   const steps: PriceStep[] = [];
+  const sealedRuleIds: string[] = [];
   let running = fromCents(canonicalCents);
+  let sealedByRuleId: string | null = null;
 
   for (const stage of PRICE_STAGES) {
+    // Le gagnant de l'étage se désigne D'ABORD, le scellement décide ENSUITE
+    // s'il agit. L'ordre compte : filtrer les règles avant l'arbitrage
+    // laisserait une règle moins spécifique gagner un étage qu'elle avait
+    // perdu, donc appliquerait une décision que l'éviction avait écartée.
     const winner = winnerOf(
       rules.filter((rule) => rule.stage === stage),
       context,
     );
     if (winner === null) {
       continue; // Étage transparent : il laisse passer le prix entrant.
+    }
+    if (sealedByRuleId !== null && !winner.stacksOverMercuriale) {
+      // Scellé : la règle est écartée, et le fait est CONSIGNÉ plutôt qu'avalé.
+      sealedRuleIds.push(winner.id);
+      continue;
     }
     running = apply(running, winner);
     steps.push({
@@ -69,6 +87,9 @@ export function resolvePrice(
       // qu'on cherche justement à éviter.
       resultCents: roundToCents(running),
     });
+    if (stage === "mercuriale") {
+      sealedByRuleId = winner.id;
+    }
   }
 
   const lowest = floorValue(floor, canonicalCents);
@@ -99,6 +120,8 @@ export function resolvePrice(
     steps,
     floored,
     clampedToZero,
+    sealedByRuleId,
+    sealedRuleIds,
     finalCents: clampedToZero ? 0 : rounded,
   };
 }

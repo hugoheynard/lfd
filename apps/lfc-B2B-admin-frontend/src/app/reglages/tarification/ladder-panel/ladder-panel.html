@@ -78,11 +78,7 @@
   <div class="window">
     <label class="window-field">
       <span class="window-label">Début</span>
-      <input
-        type="date"
-        [value]="validFrom()"
-        (change)="validFrom.set(nativeValue($event))"
-      />
+      <input type="date" [value]="validFrom()" (change)="validFrom.set(nativeValue($event))" />
     </label>
     <label class="window-field">
       <span class="window-label">Fin (facultative)</span>

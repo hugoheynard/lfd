@@ -119,6 +119,10 @@ export function ladderAtTier(ladder: VolumeLadder, tier: VolumeTier): PriceRule 
     validTo: ladder.validTo,
     suspendedFrom: ladder.suspendedFrom,
     label: ladder.label,
+    // Un barème ne franchit **jamais** une mercuriale, et ce n'est pas un
+    // défaut prudent : un prix négocié EST déjà le prix du volume négocié.
+    // L'empiler sur le barème public accorderait deux fois la même remise.
+    stacksOverMercuriale: false,
     nature: "alter",
     alteration:
       ladder.unit === "percent"

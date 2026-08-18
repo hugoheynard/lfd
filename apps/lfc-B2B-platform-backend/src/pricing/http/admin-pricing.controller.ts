@@ -335,6 +335,7 @@ function toDraft(payload: CreatePriceRulePayload): PricingRuleDraft {
                   },
           },
     label: payload.label,
+    stacksOverMercuriale: payload.stacksOverMercuriale,
     validFrom: new Date(payload.validFrom),
     validTo: payload.validTo === null ? null : new Date(payload.validTo),
   };

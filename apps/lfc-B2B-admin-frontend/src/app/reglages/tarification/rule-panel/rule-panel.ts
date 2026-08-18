@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import type { AuthoredPriceStage, CreatePriceRulePayload, PriceScopePayload } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldCheckboxComponent,
   FoldInputComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
@@ -65,6 +66,7 @@ type Nature = 'alter' | 'replace';
   imports: [
     FoldPanelHeaderComponent,
     FoldButtonComponent,
+    FoldCheckboxComponent,
     FoldInputComponent,
     FoldSelectComponent,
     PriceAlterationField,
@@ -86,6 +88,16 @@ export class RulePanel {
   protected readonly stage = signal<AuthoredPriceStage>('promotion');
   protected readonly nature = signal<Nature>('alter');
   protected readonly label = signal('');
+
+  /**
+   * **Cumuler par-dessus une mercuriale** — décoché par défaut.
+   *
+   * Une mercuriale scelle la chaîne : le client au tarif négocié ne prend pas
+   * aussi l'offre publique. Cocher ici rouvre la porte pour CETTE règle, et
+   * c'est le seul endroit où le geste se fait — il coûte de la marge sur les
+   * comptes qui en consomment le plus, donc il se décide, il ne se subit pas.
+   */
+  protected readonly stacksOverMercuriale = signal(false);
   protected readonly alteration = signal<PriceAlteration | null>(null);
   /** Le prix posé, en euros tels que saisis. */
   protected readonly amount = signal<number | null>(null);
@@ -160,6 +172,7 @@ export class RulePanel {
       minQuantity: null,
       effect,
       label: this.label().trim(),
+      stacksOverMercuriale: this.stacksOverMercuriale(),
       validFrom: new Date(`${this.validFrom()}T00:00:00.000Z`).toISOString(),
       validTo:
         this.validTo() === '' ? null : new Date(`${this.validTo()}T00:00:00.000Z`).toISOString(),

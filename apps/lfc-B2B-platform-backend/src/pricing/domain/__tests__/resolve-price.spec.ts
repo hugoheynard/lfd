@@ -41,6 +41,7 @@ function percentOff(over: Partial<PriceRule> & { bp: number }): PriceRule {
     validTo: null,
     suspendedFrom: null,
     label: `−${String(bp / 100)} %`,
+    stacksOverMercuriale: false,
     nature: "alter",
     alteration: { direction: "decrease", mode: "percent", bp },
     ...rest,
@@ -59,6 +60,7 @@ function mercuriale(amountCents: number, over: Partial<PriceRule> = {}): PriceRu
     validTo: null,
     suspendedFrom: null,
     label: "Mercuriale Dupont",
+    stacksOverMercuriale: false,
     nature: "replace",
     amountCents,
     ...over,
@@ -193,16 +195,83 @@ describe("resolvePrice — replace contre alter", () => {
     expect(result.finalCents).toBe(210);
   });
 
-  it("l'exemple du doc, de bout en bout", () => {
-    // Base 2,40 € → mercuriale Dupont 2,10 € → palier 100+ −5 % → 2,00 €.
+  /**
+   * **La mercuriale scelle** (décision du 2026-08-18).
+   *
+   * Ce test-ci disait exactement l'inverse jusqu'à cette date : il attendait
+   * 2,00 €, c'est-à-dire le palier de volume appliqué PAR-DESSUS le tarif
+   * négocié. Personne n'avait décidé ce cumul — il tombait de la composition,
+   * et il donnait deux fois la même remise de volume au client qui l'avait déjà
+   * négociée en euros.
+   */
+  it("une mercuriale rend les étages suivants transparents", () => {
+    // Base 2,40 € → mercuriale Dupont 2,10 €. Le palier 100+ ne joue PAS.
     const result = resolvePrice(
       240,
       [mercuriale(210), percentOff({ id: "vol", stage: "volume", bp: 500, minQuantity: 100 })],
       context({ quantity: 100 }),
     );
 
+    expect(result.finalCents).toBe(210);
+    expect(result.steps.map((step) => step.resultCents)).toEqual([210]);
+    expect(result.sealedByRuleId).toBe("merc");
+    // Écartée, mais **nommée** : sans ce champ, un commercial ne saurait pas
+    // dire si son palier a expiré ou si le tarif négocié l'a scellé.
+    expect(result.sealedRuleIds).toEqual(["vol"]);
+  });
+
+  it("une règle explicitement cumulable franchit le scellement", () => {
+    const result = resolvePrice(
+      240,
+      [
+        mercuriale(210),
+        percentOff({
+          id: "promo",
+          stage: "promotion",
+          bp: 500,
+          stacksOverMercuriale: true,
+        }),
+      ],
+      context(),
+    );
+
     expect(result.finalCents).toBe(200);
-    expect(result.steps.map((step) => step.resultCents)).toEqual([210, 200]);
+    expect(result.sealedRuleIds).toEqual([]);
+    // Le scellement reste consigné : il a bien eu lieu, cette règle l'a traversé.
+    expect(result.sealedByRuleId).toBe("merc");
+  });
+
+  /**
+   * Le scellement ne fait pas **remonter** une règle moins spécifique.
+   *
+   * La promotion d'article gagne son étage, puis le scellement l'écarte. Si le
+   * filtre passait avant l'arbitrage, la promotion de catalogue — cumulable —
+   * prendrait la place qu'elle avait perdue, et le client paierait un prix
+   * qu'aucune des deux décisions n'avait prévu.
+   */
+  it("n'exhume pas la règle qu'une plus spécifique avait évincée", () => {
+    const result = resolvePrice(
+      240,
+      [
+        mercuriale(210),
+        percentOff({
+          id: "catalogue",
+          stage: "promotion",
+          bp: 1000,
+          stacksOverMercuriale: true,
+        }),
+        percentOff({
+          id: "article",
+          stage: "promotion",
+          bp: 500,
+          scope: { type: "product", id: "VIE-001" },
+        }),
+      ],
+      context(),
+    );
+
+    expect(result.finalCents).toBe(210);
+    expect(result.sealedRuleIds).toEqual(["article"]);
   });
 
   it("refuse une grandeur d'altération négative — le sens vit dans `direction`", () => {

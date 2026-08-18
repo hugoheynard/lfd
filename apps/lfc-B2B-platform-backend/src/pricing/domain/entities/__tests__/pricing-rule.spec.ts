@@ -1,6 +1,7 @@
 import { PricingRule, type PricingRuleDraft } from "../pricing-rule.js";
 import {
   InvalidAlterationError,
+  MercurialeCannotStackOverItselfError,
   MercurialeMustPoseAPriceError,
   ReversedValidityWindowError,
   ScopeIdMismatchError,
@@ -19,6 +20,7 @@ function draft(overrides: Partial<PricingRuleDraft> = {}): PricingRuleDraft {
       alteration: { direction: "decrease", mode: "percent", bp: 1000 },
     },
     label: "Promo de rentrée",
+    stacksOverMercuriale: false,
     validFrom: FROM,
     validTo: null,
     ...overrides,
@@ -40,6 +42,28 @@ describe("PricingRule.create", () => {
    */
   it("refuse une mercuriale exprimée en pourcentage", () => {
     expect(() => create({ stage: "mercuriale" })).toThrow(MercurialeMustPoseAPriceError);
+  });
+
+  /**
+   * `stacksOverMercuriale` est la **porte de sortie** d'un scellement. Sur
+   * l'étage qui scelle, elle ne désigne rien : le refus vaut mieux que le
+   * silence, parce qu'un drapeau accepté puis sans effet finit par être coché
+   * en croyant obtenir quelque chose.
+   */
+  it("refuse une mercuriale qui se déclare cumulable par-dessus une mercuriale", () => {
+    expect(() =>
+      create({
+        stage: "mercuriale",
+        effect: { nature: "replace", amountCents: 210 },
+        stacksOverMercuriale: true,
+      }),
+    ).toThrow(MercurialeCannotStackOverItselfError);
+  });
+
+  it("porte le drapeau de cumul jusqu'à la forme que lit la résolution", () => {
+    const rule = create({ stacksOverMercuriale: true });
+
+    expect(rule.asPriceRule.stacksOverMercuriale).toBe(true);
   });
 
   it("accepte une mercuriale qui pose un prix en euros", () => {

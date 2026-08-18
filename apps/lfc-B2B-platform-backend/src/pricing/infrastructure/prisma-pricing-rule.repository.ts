@@ -129,6 +129,7 @@ function ruleData(
     validFrom: state.validFrom,
     validTo: state.validTo,
     label: state.label,
+    stacksOverMercuriale: state.stacksOverMercuriale,
     createdBy: state.createdBy,
   };
 }

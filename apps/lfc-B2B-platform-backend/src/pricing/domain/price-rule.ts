@@ -144,6 +144,24 @@ export type PriceRule = {
   readonly suspendedFrom: Date | null;
   /** Ce que la trace affichera. */
   readonly label: string;
+  /**
+   * **Cette règle agit-elle malgré une mercuriale ?**
+   *
+   * Une mercuriale **scelle** la chaîne : elle pose un prix négocié, et les
+   * étages suivants sont transparents (cf. `resolvePrice`). Sans ce scellement,
+   * un client au tarif négocié cumulait sa remise déjà accordée avec l'offre
+   * publique — personne ne l'avait décidé, c'était une conséquence de la
+   * composition, et rien à l'écran ne le montrait.
+   *
+   * Le drapeau est la porte de sortie, et elle est **explicite** : `true` dit
+   * « oui, cette promotion vise aussi les comptes sous mercuriale ». Le défaut
+   * est `false`, parce qu'un cumul non voulu coûte de la marge en silence,
+   * tandis qu'un cumul manquant se remarque tout de suite.
+   *
+   * Toujours `false` sur une règle d'étage `mercuriale` : une mercuriale qui
+   * s'empilerait sur elle-même n'a pas de lecture.
+   */
+  readonly stacksOverMercuriale: boolean;
 } & (
   | { readonly nature: "replace"; readonly amountCents: number }
   | { readonly nature: "alter"; readonly alteration: PriceAlteration }
@@ -199,5 +217,23 @@ export interface ResolvedPrice {
    * refuse pas à la saisie puisque le canonique varie d'un article à l'autre.
    */
   readonly clampedToZero: boolean;
+  /**
+   * La **mercuriale qui a scellé** la chaîne, ou `null` si aucune n'agissait.
+   *
+   * Consigné pour la même raison que {@link floored} : c'est un prix qu'une
+   * règle n'a pas produit. Sans ce champ, un commercial voyant sa promotion
+   * absente de la trace ne saurait pas dire si elle a expiré, si elle a été
+   * évincée par plus spécifique, ou si le tarif négocié du client l'a scellée.
+   */
+  readonly sealedByRuleId: string | null;
+  /**
+   * Les règles qui **auraient agi** si la mercuriale n'avait pas scellé.
+   *
+   * Une par étage au plus — celle qui avait déjà gagné son étage. Un scellement
+   * ne fait pas remonter une règle moins spécifique : elle avait perdu son
+   * étage avant que le scellement ne se pose, et la faire ressusciter
+   * appliquerait une décision que l'éviction avait écartée.
+   */
+  readonly sealedRuleIds: readonly string[];
   readonly finalCents: number;
 }
