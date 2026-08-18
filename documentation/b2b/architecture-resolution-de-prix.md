@@ -1586,3 +1586,67 @@ franchit descend le prix **sous** ce qu'elles annoncent. L'écran les compte et
 prévient plutôt que de composer à moitié — composer demanderait la fonction qui
 facture, donc le serveur, et une simulation qui se croit exacte à moitié est pire
 que celle qui annonce ce qu'elle ignore.
+
+
+## Le volume annoncé conditionne le prix (2026-08-19)
+
+La première écriture de l'engagement jugeait le palier sur le **cumul mesuré**.
+Elle répondait à une autre question que celle du commercial : celle d'un client
+qui n'a rien promis et qu'on récompense à mesure. Un client qui annonce sa saison
+et paie le tarif d'entrée pendant trois mois n'a, lui, rien obtenu de ce qu'on
+lui a vendu au téléphone.
+
+La mesure retenue est donc **`max(promis, livré)`** :
+
+- le **promis** ouvre le palier dès la première commande — c'est la promesse
+  vendue, et la faire attendre reviendrait à ne pas l'avoir accordée ;
+- le **livré** reprend la main dès qu'il dépasse : sans ce `max`, dépasser son
+  engagement coûterait un palier au client, l'inverse exact de ce qu'un barème
+  de volume encourage.
+
+Les **trois** nombres sont figés sur la ligne de commande. Une ligne facturée au
+palier de 6 000 alors que 600 ont été livrés n'est relisible que si la trace dit
+que c'est la promesse qui a ouvert ce palier ; sans quoi elle passerait pour une
+erreur. Sur les traces antérieures, `retainedQuantity` vaut `null` — le palier s'y
+jugeait sur le cumul seul, et lui inventer une mesure réécrirait l'histoire d'une
+facture déjà payée.
+
+### Quel étage lit quelle mesure
+
+| Étage | Le seuil parle de | Mesure lue |
+| --- | --- | --- |
+| `mercuriale` | la saison négociée | `max(promis, livré)` sous engagement |
+| `volume` | la saison négociée | idem |
+| `promotion` | ce panier-ci | quantité de la commande |
+| `geste` | ce panier-ci | quantité de la commande |
+
+Un « à partir de 50 » sur une promotion est une incitation au panier ; le lire sur
+la saison l'accorderait dès la première livraison d'un client annuel.
+
+**Conséquence qu'il faut connaître avant de poser une grille** : sans engagement,
+les paliers d'une mercuriale se lisent sur la **commande**. Une grille
+« 10 000+ à 1,50 € » posée seule n'ouvre son palier qu'à un client qui commande
+10 000 pièces d'un coup, et jamais à celui qui les étale sur la saison. C'est
+l'engagement qui transforme un seuil de panier en seuil de saison — et c'est
+pourquoi un devis négocié sur un volume annuel en demande un.
+
+### Ce que cela ouvre, et qui n'est pas tranché
+
+Le prix est désormais accordé **sur une intention**. Si la promesse n'est pas
+tenue, chaque facture émise reste juste et aucune n'est révisée — mais la remise a
+été consentie sur un volume qui n'est jamais venu, et la charge de la sortie
+anticipée est **entièrement portée par nous**. C'est exactement l'aire que le
+simulateur chiffre.
+
+La compenser demande une décision commerciale — clause de sortie, régularisation
+au terme, engagement minimum facturé — qui n'est **pas** prise ici, et qui ne doit
+pas être bricolée dans le moteur : elle changerait la nature de la trace figée.
+
+### Ce que la simulation décrit, du coup
+
+La courbe à paliers du simulateur lit les seuils sur le **cumul livré**. Ce
+régime n'est celui d'aucune des deux situations d'une mercuriale : sans
+engagement les seuils se lisent par commande, avec engagement le prix est plat au
+palier annoncé. C'est le régime d'un **barème de volume dont la promesse est
+dépassée**. L'écran le dit — une simulation qui laisse croire que les paliers
+s'accumulent d'une commande à l'autre serait fausse dans les deux cas courants.

@@ -19,6 +19,15 @@
  *   par la répartition dans le temps : c'est le seul point où les courbes se
  *   croisent, donc la seule lecture qui montre le partage d'une sortie anticipée.
  *
+ * **Sur quelle mesure les seuils se lisent — la réserve la plus importante.**
+ * Ce modèle lit les seuils sur le **cumul livré**. Le moteur, lui, lit les
+ * seuils d'une mercuriale sur la **quantité de la commande** — sauf si un
+ * engagement couvre l'article, auquel cas c'est le **volume annoncé** qui les
+ * ouvre tous dès la première commande, donc un prix **plat**. La courbe à
+ * paliers décrit donc un régime intermédiaire : celui d'un barème de volume
+ * dont la promesse est dépassée. L'écran le dit au lecteur plutôt que de le
+ * laisser croire que les paliers s'accumulent d'une commande à l'autre.
+ *
  * **Pourquoi le calcul est ici et non au serveur.** Une mercuriale SCELLE la
  * chaîne : ni palier de volume ni promotion ne s'ajoutent par-dessus. Le prix
  * facturé sous mercuriale est donc le prix du palier, relevé par la limite s'il

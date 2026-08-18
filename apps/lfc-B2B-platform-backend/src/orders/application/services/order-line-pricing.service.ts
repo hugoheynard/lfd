@@ -10,7 +10,7 @@ import { observedRatioBp } from "../../../pricing/domain/elasticity.js";
 import { pricingContextFor } from "../../../pricing/application/pricing-context.js";
 import { rollingWindows } from "../../../pricing/domain/elasticity-windows.js";
 import { volumeTierPrices } from "../../../pricing/application/volume-tier-prices.js";
-import { commitmentFor } from "../../../pricing/domain/volume-commitment.js";
+import { commitmentFor, retainedQuantity } from "../../../pricing/domain/volume-commitment.js";
 import { CustomerVolumeReader } from "../../../pricing/domain/ports/customer-volume.reader.js";
 import { VolumeCommitmentReader } from "../../../pricing/domain/ports/volume-commitment.reader.js";
 import { floorCentsFor, resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
@@ -170,7 +170,9 @@ export class OrderLinePricing {
       quantity,
       parties,
       at,
-      decision?.cumulativeQuantity ?? null,
+      // La mesure RETENUE, pas le cumul : sous engagement, c'est le volume
+      // annoncé qui ouvre le palier dès la première commande.
+      decision?.retainedQuantity ?? null,
     );
     const [rules, floors, ladders] = await Promise.all([
       this.priceRules.candidatesFor(context),
@@ -264,6 +266,10 @@ export class OrderLinePricing {
    * d'une période partirait toujours d'un cumul nul et le palier arriverait avec
    * une commande de retard — un client qui commande ses 6 000 pièces en une fois
    * paierait le tarif d'entrée sur la totalité.
+   *
+   * Les trois nombres sont consignés, et pas seulement celui qui décide : une
+   * ligne facturée au palier de 10 000 alors que 1 200 ont été livrés n'est
+   * relisible que si la trace dit que c'est la PROMESSE qui a ouvert ce palier.
    */
   private async commitmentDecision(
     item: { sku: string; category: string },
@@ -283,10 +289,12 @@ export class OrderLinePricing {
       from: commitment.validFrom,
       to: commitment.validTo,
     });
+    const cumulativeQuantity = (ordered.get(item.sku) ?? 0) + quantity;
     return {
       commitmentId: commitment.id,
       promisedQuantity: commitment.promisedQuantity,
-      cumulativeQuantity: (ordered.get(item.sku) ?? 0) + quantity,
+      cumulativeQuantity,
+      retainedQuantity: retainedQuantity(commitment, cumulativeQuantity),
     };
   }
 

@@ -457,6 +457,19 @@ export interface CommitmentDecisionView {
   readonly promisedQuantity: number;
   /** Le cumul de la période, **cette commande comprise**, au moment du calcul. */
   readonly cumulativeQuantity: number;
+  /**
+   * **La mesure sur laquelle le palier s'est jugé** : `max(promis, livré)`.
+   *
+   * Les deux autres nombres ne suffisent pas à relire la facture : une ligne
+   * facturée au palier de 10 000 alors que 1 200 ont été livrés n'est explicable
+   * que si l'on sait que c'est la PROMESSE qui a ouvert ce palier. Sans ce
+   * champ, la trace laisserait croire à une erreur.
+   *
+   * `null` sur une trace **antérieure** au volume annoncé : le palier s'y jugeait
+   * sur le cumul seul, et lui inventer une mesure retenue réécrirait l'histoire
+   * d'une facture déjà payée.
+   */
+  readonly retainedQuantity: number | null;
 }
 
 /** Le schéma de l'engagement, pour **relire** une trace persistée. */
@@ -464,6 +477,8 @@ export const commitmentDecisionSchema = z.object({
   commitmentId: z.string(),
   promisedQuantity: z.number().int(),
   cumulativeQuantity: z.number().int(),
+  /** `null` sur une trace antérieure : le palier s'y jugeait sur le cumul seul. */
+  retainedQuantity: z.number().int().nullable().default(null),
 });
 
 /** Le schéma de la décision de plancher, pour **relire** une trace persistée. */

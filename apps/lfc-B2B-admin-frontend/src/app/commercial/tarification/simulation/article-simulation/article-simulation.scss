@@ -170,3 +170,15 @@
   color: var(--fold-color-warning-text);
   font-size: var(--fold-text-sm, 0.875rem);
 }
+
+// Ce que la courbe suppose, dit au-dessus d'elle. Sans cette ligne, le tracé
+// laisse croire que les paliers s'accumulent d'une commande à l'autre — ce qui
+// n'est vrai ni sans engagement (seuils par commande) ni avec (prix plat).
+.regime {
+  margin: 0;
+  padding-left: var(--fold-space-3, 0.75rem);
+  border-left: 2px solid var(--fold-color-border);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm, 0.875rem);
+  line-height: 1.5;
+}

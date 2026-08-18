@@ -517,18 +517,25 @@ describe("POST /orders/quote — la grille et le scellement", () => {
 });
 
 /**
- * **L'engagement de volume** — le barème se juge sur le CUMUL de la période.
+ * **L'engagement de volume** — le volume ANNONCÉ ouvre le palier.
  *
- * C'est le seul test qui prouve la forme retenue : sans lui, la lecture de
- * l'historique par le chemin qui facture ne serait démontrée nulle part, et le
- * palier pourrait se jouer sur la quantité de la commande sans que rien ne le
- * dise.
+ * La story du commercial : « ma saison, c'est 6 000 » — et le prix négocié est
+ * là dès la première commande, pas au bout de la cinq-centième pièce. Le palier
+ * se juge donc sur `max(promis, livré)` : le promis ouvre, le livré reprend la
+ * main s'il dépasse.
+ *
+ * Ces tests sont le seul endroit où la forme retenue se prouve de bout en bout.
+ * Sans eux, le palier pourrait se rejouer sur la quantité du panier, ou sur le
+ * cumul seul, sans que rien ne le dise.
  */
 describe("l'engagement de volume", () => {
   const CLIENT = "auth0|engage";
   let companyId = "";
 
-  /** Le barème global : 500+ à −20 %. Aucune commande unitaire ne l'atteint. */
+  /**
+   * Le barème global : 500+ à −20 %, puis 10 000+ à −40 %. Le second palier est
+   * au-DESSUS de la promesse : c'est lui qui prouve que le livré reprend la main.
+   */
   async function seedLadder(): Promise<void> {
     await ctx.prisma.volumeLadder.create({
       data: {
@@ -538,8 +545,11 @@ describe("l'engagement de volume", () => {
         audienceType: "all",
         audienceId: null,
         unit: "percent",
-        tiers: [{ minQuantity: 500, value: 2000 }],
-        label: "500+ à −20 %",
+        tiers: [
+          { minQuantity: 500, value: 2000 },
+          { minQuantity: 10_000, value: 4000 },
+        ],
+        label: "500+ à −20 %, 10 000+ à −40 %",
         validFrom: new Date("2026-01-01T00:00:00.000Z"),
         createdBy: "e2e",
       },
@@ -589,41 +599,44 @@ describe("l'engagement de volume", () => {
   });
 
   /**
-   * **Avec engagement, la MÊME commande ouvre le palier** — parce que le cumul
-   * de la période, cette commande comprise, atteint le seuil.
+   * **Le cas qui porte toute la story.** Le client a annoncé 6 000 ; sa toute
+   * première commande de 100 est facturée au palier de son annonce. Le faire
+   * attendre le volume réel reviendrait à ne pas lui avoir accordé ce qu'on lui
+   * a vendu au téléphone.
    */
-  it("avec un engagement, le cumul de la période décide du palier", async () => {
+  it("le volume ANNONCÉ ouvre le palier dès la première commande", async () => {
     await seedLadder();
     await seedCommitment();
 
-    // 300 puis 300 : ni l'une ni l'autre n'atteint 500 seule.
-    await order(300).expect(201);
-    const line = await lineOf(jsonBody<{ id: string }>(await order(300)).id);
+    const line = await lineOf(jsonBody<{ id: string }>(await order(100)).id);
 
-    // 600 cumulés → palier 500+ → 200 × 0,8 = 160.
+    // 6 000 promis → palier 500+ → 200 × 0,8 = 160, dès la première pièce.
     expect(line.unitPriceCents).toBe(160);
   });
 
   /**
-   * Le cumul **inclut la commande en cours**. Sans cela, un client qui commande
-   * ses 6 000 pièces en une fois paierait le tarif d'entrée sur la totalité —
-   * le palier arriverait avec une commande de retard.
+   * **Le livré reprend la main dès qu'il dépasse la promesse.** Sans ce `max`,
+   * dépasser son engagement coûterait un palier au client — l'inverse exact de
+   * ce qu'un barème de volume encourage.
    */
-  it("la commande en cours compte dans son propre cumul", async () => {
+  it("dépasser la promesse ouvre le palier supérieur", async () => {
     await seedLadder();
     await seedCommitment();
 
-    const line = await lineOf(jsonBody<{ id: string }>(await order(500)).id);
+    const line = await lineOf(jsonBody<{ id: string }>(await order(10_000)).id);
 
-    expect(line.unitPriceCents).toBe(160);
+    // 10 000 livrés > 6 000 promis → palier 10 000+ → 200 × 0,6 = 120.
+    expect(line.unitPriceCents).toBe(120);
   });
 
   /**
-   * La **mesure figée** avec le prix, exactement comme la décision de plancher.
-   * Sans elle, « pourquoi ce palier-là ? » n'a plus de réponse dès la commande
-   * suivante : le cumul d'alors n'existe nulle part ailleurs.
+   * La **mesure figée** avec le prix, exactement comme la décision de plancher —
+   * et les TROIS nombres, pas seulement celui qui décide. Une ligne facturée au
+   * palier de 6 000 alors que 600 ont été livrés n'est relisible que si la trace
+   * dit que c'est la promesse qui a ouvert ce palier ; sans quoi elle passerait
+   * pour une erreur.
    */
-  it("fige le cumul mesuré sur la ligne, avec le prix", async () => {
+  it("fige la mesure retenue sur la ligne, avec le prix", async () => {
     await seedLadder();
     await seedCommitment();
     await order(300).expect(201);
@@ -634,6 +647,7 @@ describe("l'engagement de volume", () => {
       commitmentId: "cmt",
       promisedQuantity: 6000,
       cumulativeQuantity: 600,
+      retainedQuantity: 6000,
     });
   });
 
@@ -649,9 +663,11 @@ describe("l'engagement de volume", () => {
   });
 
   /**
-   * **Clore ne révise rien.** La commande passée garde le palier qu'elle a
-   * mérité — c'est l'argument central du cumul contre le prix fixe, et il se
-   * prouve ici.
+   * **Clore ne révise rien.** La commande passée garde le prix qu'elle a été
+   * facturée, et la suivante repart sur la quantité du panier. C'est ce qui rend
+   * le volume annoncé tenable : la remise est accordée d'avance, mais aucune
+   * facture n'est jamais réécrite — ni à la hausse si la promesse tombe, ni à
+   * la baisse si elle est dépassée.
    */
   it("clore n'a aucun effet rétroactif sur les commandes passées", async () => {
     await seedLadder();

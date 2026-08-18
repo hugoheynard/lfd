@@ -5,33 +5,57 @@ import type { PriceScope } from "./price-rule.js";
  * barème se juge alors sur le **cumul** de cette période plutôt que sur la
  * quantité de chaque commande.
  *
- * Décidé le 2026-08-18, contre le prix fixe daté. Les deux formes donnent le
- * MÊME prix au volume promis ; elles ne divergent que lorsque la promesse n'est
- * pas tenue — et c'est là que le choix se fait :
+ * **Le volume annoncé conditionne le prix** (décidé le 2026-08-18, corrigé le
+ * 2026-08-19). La story est celle du commercial : Club Med dit « ma saison,
+ * c'est 10 000 baguettes », et c'est CE nombre qui fait le prix — dès la
+ * première commande, pas au bout de la neuf-millième pièce.
  *
- * - un **prix fixe** n'a aucune réponse arithmétique à la sous-performance. Il
- *   faut une clause, puis un rattrapage facturé rétroactivement : réécrire
- *   l'explication de factures déjà payées, ce que la trace figée sur la ligne
- *   existe précisément pour empêcher ;
- * - le **cumul** laisse le client au palier qu'il a réellement atteint. Chaque
- *   facture est juste au moment où elle est émise, aucune n'est jamais révisée,
- *   et les conditions de sortie deviennent de l'arithmétique au lieu d'un texte.
+ * La première écriture jugeait le palier sur le seul cumul mesuré. Elle
+ * répondait à une autre question : celle d'un client qui n'a rien promis et que
+ * l'on récompense à mesure. Un client qui annonce et paie le tarif d'entrée
+ * pendant trois mois n'a, lui, rien obtenu de ce qu'il a négocié.
  *
- * Ce que ce n'est **pas** : une réservation. Rien n'est bloqué, rien n'est dû.
- * `promisedQuantity` sert au suivi et ne participe à aucun calcul — un prix qui
- * dépendrait de la promesse serait une remise accordée sur une intention.
+ * D'où {@link retainedQuantity} : `max(promis, livré)`. Le promis ouvre le
+ * palier immédiatement ; le livré prend le relais s'il dépasse la promesse — un
+ * client qui commande plus que prévu ne doit pas rester bloqué au palier de son
+ * annonce.
+ *
+ * **Ce que cela ouvre, et qui n'est pas tranché.** Le prix est accordé sur une
+ * intention. Si la promesse n'est pas tenue, chaque facture émise reste juste et
+ * aucune n'est révisée — mais la remise a été consentie sur un volume qui n'est
+ * jamais venu. C'est exactement la charge de sortie anticipée que le simulateur
+ * chiffre, et elle est désormais **entièrement portée par nous**. La compenser
+ * demande une décision commerciale (clause de sortie, régularisation au terme)
+ * qui n'est pas prise ici — et qui ne doit surtout pas être bricolée en douce
+ * dans le moteur.
  */
 export interface VolumeCommitment {
   readonly id: string;
   /** Un engagement vise TOUJOURS un client nommé : c'est une négociation. */
   readonly companyId: string;
   readonly scope: PriceScope;
-  /** Le volume visé. Pour l'écran, jamais pour le prix. */
+  /** Le volume annoncé. **Il fait le prix** — cf. {@link retainedQuantity}. */
   readonly promisedQuantity: number;
   /** Borne basse **incluse**. */
   readonly validFrom: Date;
   /** Borne haute **exclue**, et jamais ouverte. */
   readonly validTo: Date;
+}
+
+/**
+ * **La mesure sur laquelle le palier se juge** : `max(promis, livré)`.
+ *
+ * Le promis ouvre le palier **dès la première commande** — c'est la promesse
+ * qu'on a vendue, et la faire attendre le volume réel reviendrait à ne pas
+ * l'avoir accordée. Le livré reprend la main dès qu'il dépasse : un client qui
+ * commande plus que prévu ne reste pas bloqué au palier de son annonce.
+ *
+ * Un `max` et non le promis seul, donc : sans lui, dépasser la promesse
+ * coûterait un palier au client, ce qui est exactement l'inverse de ce qu'un
+ * barème de volume est censé encourager.
+ */
+export function retainedQuantity(commitment: VolumeCommitment, cumulativeQuantity: number): number {
+  return Math.max(commitment.promisedQuantity, cumulativeQuantity);
 }
 
 /**

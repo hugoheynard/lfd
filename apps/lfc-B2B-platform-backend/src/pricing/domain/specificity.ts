@@ -1,6 +1,12 @@
 import { AmbiguousPriceRulesError } from "./pricing-errors.js";
 import { volumeQuantityOf } from "./price-rule.js";
-import type { PriceAudience, PriceRule, PriceScope, PricingContext } from "./price-rule.js";
+import type {
+  PriceAudience,
+  PriceRule,
+  PriceScope,
+  PriceStage,
+  PricingContext,
+} from "./price-rule.js";
 
 /**
  * **Qui gagne dans un étage**, et pourquoi.
@@ -135,17 +141,33 @@ function isSuspended(rule: PriceRule, at: Date): boolean {
 }
 
 /**
+ * Les étages dont le seuil parle du **contrat**, et non du panier.
+ *
+ * `mercuriale` et `volume` négocient une saison : « 10 000 baguettes sur
+ * l'année ». Leur seuil se lit donc sur la mesure de l'engagement quand il y en
+ * a un. `promotion` et `geste` parlent de CETTE commande — « à partir de 50
+ * pièces » sur une promotion est une incitation au panier, et la lire sur la
+ * saison l'accorderait dès la première livraison d'un client annuel.
+ */
+const CONTRACT_STAGES: readonly PriceStage[] = ["mercuriale", "volume"];
+
+/**
  * Toutes les conditions d'application, réunies.
  *
  * Le seuil de quantité se juge sur **deux mesures différentes**, et c'est
- * délibéré : l'étage `volume` lit le cumul de l'engagement quand il y en a un,
- * tous les autres lisent la quantité de la commande. Un « à partir de 50 » posé
- * sur une promotion parle bien de CETTE commande ; le même nombre sur un palier
- * de barème parle du volume négocié. Les confondre donnerait, sur un engagement
- * annuel, une promotion accordée dès la première livraison.
+ * délibéré — cf. {@link CONTRACT_STAGES}.
+ *
+ * Conséquence à connaître : **sans engagement, les paliers d'une mercuriale se
+ * lisent sur la commande.** Une grille « 10 000+ à 1,50 € » posée sans
+ * engagement n'ouvre son palier qu'à un client qui commande 10 000 pièces d'un
+ * coup, et jamais à celui qui les étale sur la saison. C'est l'engagement qui
+ * transforme un seuil de panier en seuil de saison, et c'est pour cela qu'un
+ * devis négocié sur un volume annuel en demande un.
  */
 export function applies(rule: PriceRule, context: PricingContext): boolean {
-  const measured = rule.stage === "volume" ? volumeQuantityOf(context) : context.quantity;
+  const measured = CONTRACT_STAGES.includes(rule.stage)
+    ? volumeQuantityOf(context)
+    : context.quantity;
   return (
     isInForce(rule, context.at) &&
     !isSuspended(rule, context.at) &&

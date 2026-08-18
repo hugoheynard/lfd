@@ -216,3 +216,46 @@ describe("applies — la règle interrompue", () => {
     expect(winnerOf([suspendue, vivante], context({ at: APRES }))?.id).toBe("nouvelle");
   });
 });
+
+/**
+ * **Sur quelle mesure un seuil se juge.** Deux étages parlent du contrat, deux
+ * parlent du panier — et confondre les deux donne soit une promotion accordée
+ * dès la première livraison, soit un tarif négocié qui n'arrive jamais.
+ */
+describe("applies — le seuil, et ce qu'il mesure", () => {
+  const threshold = { minQuantity: 10_000 } as const;
+  /** Le client a annoncé sa saison : la mesure retenue vaut 10 000 dès le départ. */
+  const underCommitment = context({ quantity: 100, cumulativeQuantity: 10_000 });
+
+  it("une MERCURIALE lit la mesure de l'engagement — c'est la saison négociée", () => {
+    const negotiated = rule({ stage: "mercuriale", ...threshold });
+    expect(applies(negotiated, underCommitment)).toBe(true);
+  });
+
+  it("un BARÈME de volume aussi", () => {
+    expect(applies(rule({ stage: "volume", ...threshold }), underCommitment)).toBe(true);
+  });
+
+  it("une PROMOTION lit la commande — « dès 50 pièces » parle du panier", () => {
+    // La lire sur la saison l'accorderait dès la première livraison d'un client
+    // annuel, ce qui n'est pas une incitation au panier mais un cadeau.
+    expect(applies(rule({ stage: "promotion", ...threshold }), underCommitment)).toBe(false);
+  });
+
+  it("un GESTE aussi", () => {
+    expect(applies(rule({ stage: "geste", ...threshold }), underCommitment)).toBe(false);
+  });
+
+  /**
+   * **Sans engagement, un palier de mercuriale se lit sur la COMMANDE.** Une
+   * grille « 10 000+ » posée sans engagement n'ouvre son palier qu'à qui
+   * commande 10 000 d'un coup — jamais à qui les étale sur la saison.
+   */
+  it("sans engagement, la mercuriale retombe sur la quantité de la commande", () => {
+    const spread = context({ quantity: 100, cumulativeQuantity: null });
+    expect(applies(rule({ stage: "mercuriale", ...threshold }), spread)).toBe(false);
+    expect(
+      applies(rule({ stage: "mercuriale", ...threshold }), context({ quantity: 10_000 })),
+    ).toBe(true);
+  });
+});
