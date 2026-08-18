@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { BillingAddressPayload, OrderLineView, OrderView } from '@lfd/contracts';
+
+import { entryPriceOf, priceStepLabels, wasFloored } from '../order-pricing';
 import {
   FoldAsideLayoutComponent,
   FoldBadgeComponent,
@@ -266,6 +268,11 @@ export class OrderDetail {
       quantity: line.quantity,
     })),
   );
+
+  /** Cf. `order-pricing.ts` — la dérivation vit là, pure et éprouvée. */
+  protected readonly entryPriceOf = entryPriceOf;
+  protected readonly priceStepLabels = priceStepLabels;
+  protected readonly wasFloored = wasFloored;
 
   protected isAdded(line: OrderLineView): boolean {
     return this.addedSkus().has(line.sku);

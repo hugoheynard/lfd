@@ -87,8 +87,29 @@
                   @if (isAdded(line)) {
                     <span class="od-pill od-pill--add">ajout</span>
                   }
+                  <!-- **Pourquoi ce prix**, figé à la passation. Les étages qui
+                       ont produit un effet, dans l'ordre où ils l'ont produit.
+                       Sans eux, la seule réponse à un client qui conteste serait
+                       « c'était le prix ». Les règles qui les ont produits
+                       peuvent avoir été retirées depuis : la trace, elle, reste. -->
+                  @for (label of priceStepLabels(line); track $index) {
+                    <span class="od-step">{{ label }}</span>
+                  }
+                  @if (wasFloored(line)) {
+                    <span class="od-pill od-pill--floor" title="Une limite a relevé ce prix">
+                      plancher
+                    </span>
+                  }
                 </td>
-                <td class="od-col-num">{{ fmtCents(line.unitPriceCents) }}</td>
+                <td class="od-col-num">
+                  @if (entryPriceOf(line); as entry) {
+                    <!-- Le tarif d'entrée, barré : c'est lui qui rend la remise
+                         lisible. `<s>` et non une classe — la rature doit exister
+                         pour un lecteur d'écran aussi. -->
+                    <s class="od-was">{{ fmtCents(entry) }}</s>
+                  }
+                  {{ fmtCents(line.unitPriceCents) }}
+                </td>
                 <td class="od-col-num od-muted">{{ fmtVat(line.vatRate) }}</td>
                 <td class="od-col-num">{{ fmtCents(line.lineTotalCents) }}</td>
               </tr>

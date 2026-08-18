@@ -463,3 +463,27 @@ fold-aside-layout {
   background: color-mix(in srgb, var(--fold-color-alert) 14%, transparent);
   color: var(--fold-color-alert);
 }
+
+// **La trace du prix**, sur la ligne qui la porte. Discrète par construction :
+// elle répond à une question qu'on ne pose pas tous les jours, et ne doit pas
+// concurrencer le montant.
+.od-step {
+  display: inline-block;
+  margin-left: var(--fold-space-1, 0.25rem);
+  padding: 0 var(--fold-space-1, 0.25rem);
+  border-radius: var(--fold-radius-sm, 3px);
+  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 4%));
+  color: var(--fold-color-text-muted);
+  font-size: 0.75rem;
+}
+
+// Le prix relevé par une limite : une règle n'y a PAS produit son effet, et
+// c'est exactement ce qu'un client remarque avant nous.
+.od-pill--floor {
+  background: var(--fold-color-warning-surface, rgb(180 120 0 / 10%));
+}
+
+.od-was {
+  margin-right: var(--fold-space-1, 0.25rem);
+  color: var(--fold-color-text-muted);
+}
