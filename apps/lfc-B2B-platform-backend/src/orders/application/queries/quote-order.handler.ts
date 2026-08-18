@@ -2,6 +2,8 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { OrderQuoteLineView, OrderQuotePayload, OrderQuoteView } from "@lfd/contracts";
 
 import { OrderDrafting } from "../services/order-drafting.service.js";
+import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
+import { ensureOrderMember } from "../../domain/services/order-access.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 
 /**
@@ -14,23 +16,44 @@ import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
  */
 export class QuoteOrderQuery {
   constructor(
-    readonly staffUserId: string,
+    readonly actorUserId: string,
     readonly payload: OrderQuotePayload,
+    /**
+     * L'appelant est-il le **staff** ?
+     *
+     * Le staff estime pour n'importe quel client — c'est son métier, et sa
+     * surface est déjà murée. Un CLIENT, lui, doit être membre de la société
+     * qu'il nomme : sans ce mur, n'importe qui sonderait la mercuriale d'un
+     * concurrent en devinant son identifiant. Un devis rend un PRIX NÉGOCIÉ ; il
+     * se mure exactement comme la commande qui l'appliquerait.
+     */
+    readonly asStaff: boolean,
   ) {}
 }
 
 @QueryHandler(QuoteOrderQuery)
 export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQuoteView> {
-  constructor(private readonly drafting: OrderDrafting) {}
+  constructor(
+    private readonly drafting: OrderDrafting,
+    private readonly guard: OrderGuardReader,
+  ) {}
 
   async execute(query: QuoteOrderQuery): Promise<OrderQuoteView> {
+    const { companyId } = query.payload;
+    if (!query.asStaff && companyId !== null) {
+      // Le MÊME mur que la commande, et par la même fonction : deux règles
+      // d'appartenance pour la même société finiraient par diverger, et c'est
+      // du côté de la lecture que la fuite serait silencieuse.
+      ensureOrderMember(await this.guard.roleOf(query.actorUserId, companyId), companyId);
+    }
+
     const lines = await this.drafting.quote(
       {
-        companyId: query.payload.companyId,
+        companyId,
         // L'estimation ne s'attribue à personne : elle ne crée rien. Le saisisseur
         // n'apparaît qu'au moment où une commande existe, et porte une trace.
-        placedByUserId: query.staffUserId,
-        placedByStaffId: query.staffUserId,
+        placedByUserId: query.actorUserId,
+        placedByStaffId: query.asStaff ? query.actorUserId : null,
       },
       query.payload.lines.map((line) => ({
         sku: line.sku,

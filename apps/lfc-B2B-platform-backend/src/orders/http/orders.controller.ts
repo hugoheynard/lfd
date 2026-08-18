@@ -1,9 +1,13 @@
+import { QuoteOrderQuery } from "../application/queries/quote-order.handler.js";
 import {
   type OrderView,
   type PlaceOrderPayload,
   placeOrderPayloadSchema,
   type OrderPaymentIntent,
   type PlacedOrderResponse,
+  orderQuotePayloadSchema,
+  type OrderQuotePayload,
+  type OrderQuoteView,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -51,6 +55,29 @@ export class OrdersController {
     return placed.payment === undefined
       ? { id: placed.id, orderNumber: placed.orderNumber }
       : { id: placed.id, orderNumber: placed.orderNumber, payment: placed.payment };
+  }
+
+  /**
+   * **Ce que la commande coûtera**, avant de la passer.
+   *
+   * Le panier du client affichait le tarif de son catalogue embarqué pendant que
+   * le serveur facturait le prix résolu — mercuriale de sa société, palier de
+   * volume atteint, promotion en cours. Il voyait donc un montant, et en payait
+   * un autre.
+   *
+   * Le `companyId` du CORPS est muré exactement comme sur `POST /orders` : le
+   * client doit en être membre. Un devis rend un prix négocié ; sans ce mur, on
+   * sonderait la mercuriale d'un concurrent en devinant son identifiant.
+   */
+  @Post("quote")
+  @HttpCode(HttpStatus.OK)
+  async quote(
+    @CurrentUser() user: Principal,
+    @Body(new ZodBody(orderQuotePayloadSchema)) payload: OrderQuotePayload,
+  ): Promise<OrderQuoteView> {
+    return this.queries.execute<QuoteOrderQuery, OrderQuoteView>(
+      new QuoteOrderQuery(user.userId, payload, false),
+    );
   }
 
   /** Liste les commandes **personnelles** du client (sans entreprise). */

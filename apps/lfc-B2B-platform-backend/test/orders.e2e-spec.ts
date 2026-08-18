@@ -445,3 +445,58 @@ describe("un SKU n'apparaît qu'une fois par commande", () => {
     ).rejects.toThrow();
   });
 });
+
+/**
+ * **Le devis client** — ce que le panier annoncera avant de commander.
+ *
+ * Le front client porte sa propre copie du catalogue : il affichait donc le
+ * tarif de cette copie pendant que le serveur facturait le prix résolu. Le
+ * client voyait un montant et en payait un autre.
+ *
+ * Le cas qui compte le plus n'est pas le prix : c'est le **mur**. Un devis rend
+ * un prix NÉGOCIÉ ; s'il acceptait n'importe quel `companyId`, on sonderait la
+ * mercuriale d'un concurrent en devinant son identifiant.
+ */
+describe("POST /orders/quote", () => {
+  it("refuse d'estimer pour une société dont on n'est pas membre", async () => {
+    const companyId = await seedCompany("active");
+
+    await ctx
+      .asSub(STRANGER)
+      .post("/orders/quote")
+      .send({ companyId, lines: [{ sku: "VIE-001", quantity: 6 }] })
+      .expect(404);
+  });
+
+  it("estime pour sa propre société", async () => {
+    const companyId = await seedCompany("active");
+
+    const body = jsonBody<{
+      lines: { sku: string; unitPriceCents: number }[];
+      subtotalCents: number;
+    }>(
+      await ctx
+        .asSub(MEMBER)
+        .post("/orders/quote")
+        .send({ companyId, lines: [{ sku: "VIE-001", quantity: 6 }] })
+        .expect(200),
+    );
+
+    expect(body.lines[0]?.sku).toBe("VIE-001");
+    expect(body.subtotalCents).toBe(body.lines[0]!.unitPriceCents * 6);
+  });
+
+  /** Le parcours zéro friction : sans société, seules les règles ouvertes à tous jouent. */
+  it("estime sans société, pour un client de passage", async () => {
+    const WALKIN = "auth0|walkin-quote";
+    const body = jsonBody<{ lines: { unitPriceCents: number }[] }>(
+      await ctx
+        .asSub(WALKIN)
+        .post("/orders/quote")
+        .send({ companyId: null, lines: [{ sku: "VIE-001", quantity: 2 }] })
+        .expect(200),
+    );
+
+    expect(body.lines[0]?.unitPriceCents).toBe(200);
+  });
+});

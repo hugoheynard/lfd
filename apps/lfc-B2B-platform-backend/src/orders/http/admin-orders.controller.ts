@@ -76,7 +76,7 @@ export class AdminOrdersController {
     @Body(new ZodBody(orderQuotePayloadSchema)) payload: OrderQuotePayload,
   ): Promise<OrderQuoteView> {
     return this.queries.execute<QuoteOrderQuery, OrderQuoteView>(
-      new QuoteOrderQuery(staffUserIdOf(request), payload),
+      new QuoteOrderQuery(staffUserIdOf(request), payload, true),
     );
   }
 
