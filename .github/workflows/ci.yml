@@ -138,10 +138,15 @@ jobs:
 
       - name: Typecheck des fronts
         run: |
-          pnpm --filter lfc-b2b-admin-frontend exec tsc --noEmit
-          pnpm --filter lfc-b2b-platform-frontend exec tsc --noEmit
-          pnpm --filter lfc-pim-frontend exec tsc --noEmit
-          pnpm --filter lfc-suite-shell exec tsc --noEmit
+          # `-p tsconfig.app.json` et NON `tsc --noEmit` : le tsconfig racine de
+          # ces apps est une config « solution », qui ne porte que des
+          # `references` et aucun `include`. `tsc --noEmit` dessus ne compile
+          # donc RIEN — il rendait vert sans rien lire. Vérifié le 2026-08-18 en
+          # y glissant un appel de méthode inexistante : aucune erreur.
+          pnpm --filter lfc-b2b-admin-frontend exec tsc -p tsconfig.app.json --noEmit
+          pnpm --filter lfc-b2b-platform-frontend exec tsc -p tsconfig.app.json --noEmit
+          pnpm --filter lfc-pim-frontend exec tsc -p tsconfig.app.json --noEmit
+          pnpm --filter lfc-suite-shell exec tsc -p tsconfig.app.json --noEmit
       - name: Tests des fronts
         run: |
           pnpm --filter lfc-b2b-admin-frontend test
