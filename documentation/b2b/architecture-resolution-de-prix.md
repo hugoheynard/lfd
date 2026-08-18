@@ -387,15 +387,15 @@ Ce que les décisions ajoutent au chantier, et qui n'y était pas :
 
       Deux choses décidées **en écrivant**, et qui manquaient au doc :
 
-                                                                                          - **l'audience prime sur la portée produit.** « La plus spécifique sur les
-                                                                                            deux axes » ne suffisait pas : une règle *produit / tous* et une règle
-                                                                                            *globale / ce client* ne se dominent pas. Sans ordre entre les axes, le
-                                                                                            gagnant dépendait du tri SQL. Une règle qui vise CE client gagne — sinon
-                                                                                            une promotion générale écraserait un engagement négocié ;
-                                                                                          - **le calcul traverse la chaîne en `bigint`.** « Arrondir une seule fois »
-                                                                                            oblige à porter un rationnel ; en `number`, trois pourcentages sur un
-                                                                                            article à 1 000 € dépassent `MAX_SAFE_INTEGER`, donc le calcul devient
-                                                                                            faux exactement sur les articles chers.
+                                                                                              - **l'audience prime sur la portée produit.** « La plus spécifique sur les
+                                                                                                deux axes » ne suffisait pas : une règle *produit / tous* et une règle
+                                                                                                *globale / ce client* ne se dominent pas. Sans ordre entre les axes, le
+                                                                                                gagnant dépendait du tri SQL. Une règle qui vise CE client gagne — sinon
+                                                                                                une promotion générale écraserait un engagement négocié ;
+                                                                                              - **le calcul traverse la chaîne en `bigint`.** « Arrondir une seule fois »
+                                                                                                oblige à porter un rationnel ; en `number`, trois pourcentages sur un
+                                                                                                article à 1 000 € dépassent `MAX_SAFE_INTEGER`, donc le calcul devient
+                                                                                                faux exactement sur les articles chers.
 
 - [x] **S2 — la persistance.** ✅ 2026-08-17 — table `price_rules`, contrainte
       d'exclusion GiST, port de lecture, branchement dans
@@ -403,16 +403,16 @@ Ce que les décisions ajoutent au chantier, et qui n'y était pas :
 
       Trois choses apprises en branchant :
 
-                                                                                      - **`valid_from/to` sont en `timestamptz`.** Sur des `timestamp` sans
-                                                                                        fuseau, `tstzrange()` dépend du réglage de session, n'est donc pas
-                                                                                        `IMMUTABLE`, et Postgres **refuse** la contrainte d'exclusion. Le type
-                                                                                        juste était aussi le seul possible ;
-                                                                                      - **`coalesce` dans la contrainte n'est pas cosmétique.** NULL n'entre
-                                                                                        jamais en conflit avec NULL : sans lui, deux règles globales / tous
-                                                                                        clients aux fenêtres superposées passaient — le cas le plus courant ;
-                                                                                      - **zéro est un prix canonique valide.** `resolvePrice` le refusait par
-                                                                                        réflexe de rigueur ; ça cassait le chemin existant d'une commande sans
-                                                                                        rien à encaisser. Seul le négatif est refusé.
+                                                                                          - **`valid_from/to` sont en `timestamptz`.** Sur des `timestamp` sans
+                                                                                            fuseau, `tstzrange()` dépend du réglage de session, n'est donc pas
+                                                                                            `IMMUTABLE`, et Postgres **refuse** la contrainte d'exclusion. Le type
+                                                                                            juste était aussi le seul possible ;
+                                                                                          - **`coalesce` dans la contrainte n'est pas cosmétique.** NULL n'entre
+                                                                                            jamais en conflit avec NULL : sans lui, deux règles globales / tous
+                                                                                            clients aux fenêtres superposées passaient — le cas le plus courant ;
+                                                                                          - **zéro est un prix canonique valide.** `resolvePrice` le refusait par
+                                                                                            réflexe de rigueur ; ça cassait le chemin existant d'une commande sans
+                                                                                            rien à encaisser. Seul le négatif est refusé.
 
 - [x] **S3 — Réglages → Tarification.** ✅ 2026-08-17 — le plancher devient une
       donnée posée sur une portée, les deux agrégats d'écriture, l'API admin, et
@@ -420,51 +420,51 @@ Ce que les décisions ajoutent au chantier, et qui n'y était pas :
 
       Ce que la slice a ajouté au modèle, et qui n'était pas au doc :
 
-                                                                                      - **le plancher est SCOPÉ**, résolu comme une règle (le plus spécifique
-                                                                                        gagne), et il n'a ni étage, ni audience, ni fenêtre. Chacune de ces
-                                                                                        trois absences est une décision : ce n'est pas une couche de prix
-                                                                                        mais la limite que l'empilement ne franchit pas ; il protège la
-                                                                                        maison contre son propre barème, pas un client contre un autre ; et
-                                                                                        un garde-fou daté s'ouvrirait tout seul un matin. Un plancher
-                                                                                        d'article REMPLACE celui de sa famille — il peut donc l'abaisser,
-                                                                                        et c'est le geste « cet article est une exception » ;
-                                                                                      - **l'identifiant d'un plancher dérive de sa portée.** Deux limites sur
-                                                                                        la même cible ne peuvent pas porter deux noms : re-poser devient un
-                                                                                        upsert sur la clé primaire, sans lecture préalable ni course ;
-                                                                                      - **un seul invariant contraint la nature d'un étage**, et non quatre
-                                                                                        par symétrie : la MERCURIALE pose un prix. Les autres étages peuvent
-                                                                                        poser ou altérer — « 100+ à 1,80 € fixe » et « cet article offert »
-                                                                                        sont des gestes réels. Un invariant sans raison finit contourné
-                                                                                        plutôt que compris.
+                                                                                          - **le plancher est SCOPÉ**, résolu comme une règle (le plus spécifique
+                                                                                            gagne), et il n'a ni étage, ni audience, ni fenêtre. Chacune de ces
+                                                                                            trois absences est une décision : ce n'est pas une couche de prix
+                                                                                            mais la limite que l'empilement ne franchit pas ; il protège la
+                                                                                            maison contre son propre barème, pas un client contre un autre ; et
+                                                                                            un garde-fou daté s'ouvrirait tout seul un matin. Un plancher
+                                                                                            d'article REMPLACE celui de sa famille — il peut donc l'abaisser,
+                                                                                            et c'est le geste « cet article est une exception » ;
+                                                                                          - **l'identifiant d'un plancher dérive de sa portée.** Deux limites sur
+                                                                                            la même cible ne peuvent pas porter deux noms : re-poser devient un
+                                                                                            upsert sur la clé primaire, sans lecture préalable ni course ;
+                                                                                          - **un seul invariant contraint la nature d'un étage**, et non quatre
+                                                                                            par symétrie : la MERCURIALE pose un prix. Les autres étages peuvent
+                                                                                            poser ou altérer — « 100+ à 1,80 € fixe » et « cet article offert »
+                                                                                            sont des gestes réels. Un invariant sans raison finit contourné
+                                                                                            plutôt que compris.
 
-                                                                                  Trois choses apprises en branchant :
+                                                                                      Trois choses apprises en branchant :
 
-                                                                                      - **la contrainte d'exclusion ne remonte pas son SQLSTATE.**
-                                                                                        L'adaptateur `pg` emballe la phrase de Postgres dans un
-                                                                                        `DriverAdapterError` ; `23P01` n'apparaît ni dans le message ni dans
-                                                                                        `meta`. On guette le NOM de la contrainte, qui est à nous et désigne
-                                                                                        cette règle métier plutôt que n'importe quelle exclusion de la base ;
-                                                                                      - **un segment de chemin vide ne s'apparie pas.** La limite globale a sa
-                                                                                        propre route ; la supposition inverse rendait un 404 qui accusait la
-                                                                                        donnée alors que c'était le routage ;
-                                                                                      - **l'écran lit le catalogue qui FACTURE** (`ProductCatalogReader`), pas
-                                                                                        la table du PIM. Les deux ne s'accordent pas encore (C5b) : un écran
-                                                                                        de tarification bâti sur l'autre serait le simulateur d'un système
-                                                                                        qu'on ne fait pas tourner.
+                                                                                          - **la contrainte d'exclusion ne remonte pas son SQLSTATE.**
+                                                                                            L'adaptateur `pg` emballe la phrase de Postgres dans un
+                                                                                            `DriverAdapterError` ; `23P01` n'apparaît ni dans le message ni dans
+                                                                                            `meta`. On guette le NOM de la contrainte, qui est à nous et désigne
+                                                                                            cette règle métier plutôt que n'importe quelle exclusion de la base ;
+                                                                                          - **un segment de chemin vide ne s'apparie pas.** La limite globale a sa
+                                                                                            propre route ; la supposition inverse rendait un 404 qui accusait la
+                                                                                            donnée alors que c'était le routage ;
+                                                                                          - **l'écran lit le catalogue qui FACTURE** (`ProductCatalogReader`), pas
+                                                                                            la table du PIM. Les deux ne s'accordent pas encore (C5b) : un écran
+                                                                                            de tarification bâti sur l'autre serait le simulateur d'un système
+                                                                                            qu'on ne fait pas tourner.
 
-                                                                                  Ce que l'écran refuse de laisser croire :
+                                                                                      Ce que l'écran refuse de laisser croire :
 
-                                                                                      - la limite est en 2ᵉ colonne mais s'applique en FIN de chaîne : elle est
-                                                                                        dessinée en garde-fou, pas en étage, et ne s'allume que lorsqu'elle a
-                                                                                        réellement relevé un prix ;
-                                                                                      - une règle de famille supplantée par une règle d'article est **barrée**
-                                                                                        et non masquée — sinon le lecteur additionne deux remises dont une
-                                                                                        seule agit ;
-                                                                                      - le prix montré est celui d'**un** article pour quelqu'un **sans tarif
-                                                                                        négocié**. Un encart le dit avant la grille.
+                                                                                          - la limite est en 2ᵉ colonne mais s'applique en FIN de chaîne : elle est
+                                                                                            dessinée en garde-fou, pas en étage, et ne s'allume que lorsqu'elle a
+                                                                                            réellement relevé un prix ;
+                                                                                          - une règle de famille supplantée par une règle d'article est **barrée**
+                                                                                            et non masquée — sinon le lecteur additionne deux remises dont une
+                                                                                            seule agit ;
+                                                                                          - le prix montré est celui d'**un** article pour quelqu'un **sans tarif
+                                                                                            négocié**. Un encart le dit avant la grille.
 
-                                                                                  **Reste ouvert** : la mercuriale n'est pas saisissable ici, faute de
-                                                                                  sélecteur de client — c'est S5.
+                                                                                      **Reste ouvert** : la mercuriale n'est pas saisissable ici, faute de
+                                                                                      sélecteur de client — c'est S5.
 
 - [ ] **S4 — la trace.** Figée sur la ligne, affichée au panier et sur la fiche
       commande.
@@ -902,6 +902,83 @@ question que personne n'a posée.
 > comparait après le relâchement, donc après l'arrondi, et restait verte sur le
 > bug.
 
+## L'engagement de volume — le barème sur cumul
+
+### ✅ Décidé le 2026-08-18 — le cumul, pas le prix fixe
+
+Vendre un volume sur une durée admettait deux formes, et **au volume promis
+elles donnent le même prix**. Elles ne divergent que lorsque la promesse n'est
+pas tenue — c'est donc là, et nulle part ailleurs, que le choix se fait :
+
+|                  | **Prix fixe daté**                                               | **Barème sur cumul**                          |
+| ---------------- | ---------------------------------------------------------------- | --------------------------------------------- |
+| Au volume promis | le prix négocié                                                  | le même prix                                  |
+| Trajectoire      | le tarif de fin dès le 1er jour                                  | on monte les paliers en cours de route        |
+| Sous-performance | **aucune réponse arithmétique** → clause + rattrapage rétroactif | le client reste au palier atteint             |
+| Excédent         | livré au prix promis                                             | le palier suivant s'ouvre tout seul           |
+| Sortie anticipée | à négocier, puis à facturer                                      | rien à régler : les factures sont déjà justes |
+
+Le rattrapage rétroactif est ce qui tranche. Il suppose de réécrire
+l'explication de factures **déjà payées**, alors que la trace figée sur la ligne
+existe exactement pour l'empêcher — et que renommer une règle est déjà, pour
+cette raison, la seule modification qu'une décision tarifaire accepte.
+
+Le cumul, lui, rend chaque facture juste **au moment où elle est émise**. Aucune
+n'est jamais révisée, et les conditions de sortie cessent d'être un texte pour
+devenir de l'arithmétique.
+
+### Le mécanisme, en une ligne du domaine
+
+`applies` juge le seuil sur deux mesures différentes : le **cumul** pour l'étage
+`volume`, la **quantité de la commande** pour tous les autres.
+
+```ts
+const measured = rule.stage === "volume" ? volumeQuantityOf(context) : context.quantity;
+```
+
+C'est une distinction, pas une exception. « À partir de 50 » posé sur une
+promotion parle de CETTE commande ; le même nombre sur un palier de barème parle
+du volume négocié. Les confondre aurait accordé, sur un engagement annuel, la
+promotion dès la première livraison.
+
+Le reste de la chaîne ne change pas : un barème continue de se présenter comme
+la règle d'étage volume qu'il est, la spécificité arbitre comme d'habitude, et
+`resolvePrice` n'apprend aucun cas de plus.
+
+### Quatre décisions, et leurs refus
+
+- **le cumul inclut la commande en cours.** Sans cela le palier arriverait avec
+  une commande de retard, et un client prenant ses 6 000 pièces en une fois
+  paierait le tarif d'entrée sur la totalité ;
+- **la promesse ne calcule rien.** `promisedQuantity` sert au suivi ; un prix qui
+  en dépendrait serait une remise accordée sur une **intention** ;
+- **pas de pause**, seulement clore. Suspendre laisserait une période où le cumul
+  grossit sans que le palier suive — un prix que personne n'a décidé ;
+- **pas de modification.** Changer la période d'un engagement en cours
+  déplacerait le palier de commandes déjà facturées, dont la trace ne bouge pas.
+  Pour corriger : clore, et signer.
+
+Une contrainte d'exclusion GiST interdit deux engagements vivants sur la même
+cible pour un client : deux cumuls concurrents donneraient deux paliers, donc un
+prix dépendant du tri.
+
+### La mesure est figée avec le prix
+
+`pricing_commitment` sur la ligne de commande porte `{ commitmentId,
+promisedQuantity, cumulativeQuantity }`. Même principe que la décision de
+plancher : un prix qui dépend de l'historique cesse d'être explicable dès que
+l'historique bouge. Sans cette colonne, « pourquoi ce palier-là ? » n'a plus de
+réponse dès la commande suivante — le cumul d'alors n'existe nulle part ailleurs.
+
+### Ce que ça ne fait pas
+
+Aucune **réservation** : rien n'est bloqué, rien n'est dû. Un engagement déclare
+une période et un volume visé ; le prix ne dépend que de ce qui a été commandé.
+C'est ce qui permet de laisser les conditions de sortie anticipée de côté sans
+laisser un trou : il n'y a rien à régler.
+
+---
+
 ## Le banc d'essai — `/reglages/tarification/simulateur`
 
 **✅ 2026-08-18.** Trois écrans lisent le même prix, et chacun répond à une
@@ -935,6 +1012,42 @@ L'écart au tarif y est **signé** : le banc sert aussi à voir qu'une règle a 
 **monter** un prix (un supplément de préparation, une mercuriale devenue plus
 chère que le catalogue depuis que le PIM a baissé). L'écraser à zéro cacherait ce
 qu'on vient chercher.
+
+### Le mode temporel — l'engagement, et ses trois issues
+
+Le mode ponctuel répond à « à cette quantité, combien ? ». Le mode temporel
+répond à la question qui décide d'un engagement : **« et s'il n'en prend que
+70 % ? »**. Trois scénarios sont projetés — 70 %, 100 %, 130 % de la promesse —
+parce que le manque et l'excédent **encadrent** la promesse plutôt que de la
+commenter. Un tableau qui n'afficherait que le nominal laisserait croire que la
+question est le prix, alors qu'elle est le risque.
+
+Il repose sur `POST /admin/pricing/projection` : ce que l'article coûterait à des
+niveaux de cumul qui n'existent pas encore. Réappliquer côté écran la règle « le
+plus haut palier atteint gagne » aurait suffi — c'est une ligne — et aurait créé
+exactement la divergence que ce contexte évite. Un e2e l'interdit : projection et
+commande réelle rendent le même prix au même cumul.
+
+Trois décisions dans la projection :
+
+- **une seule lecture de base** pour tous les niveaux — règles, barèmes et
+  planchers ne dépendent pas du cumul ;
+- **la porte du plancher dynamique reste fermée** : une projection ne peut pas
+  prouver un volume observé, et l'ouvrir sur une hypothèse accorderait une remise
+  que rien n'a établie ;
+- **la borne dit non** au-delà de vingt-quatre niveaux plutôt que de tronquer en
+  silence — une réponse amputée se lit comme une réponse.
+
+Les trois scénarios partent en **un seul appel** : leurs niveaux sont mis en
+commun avant d'être demandés. Trois appels résolus à trois instants pourraient
+tomber de part et d'autre du basculement d'une promotion, et le tableau
+comparerait alors des mondes différents.
+
+La colonne qui porte la comparaison est le **prix moyen réellement payé** — les
+volumes différant d'un scénario à l'autre, les totaux ne se comparent pas. Sur
+l'exemple des tests : promesse tenue 1,60 €, promesse manquée 1,80 €. Le client
+qui sous-performe paie plus cher, sans clause, sans rattrapage, et sans qu'aucune
+facture soit révisée. **C'est tout l'argument du cumul, rendu lisible.**
 
 Ce que le banc **ne dit pas**, et qu'il écrit en haut de page : les prix sont HT
 et hors acheminement. Remise de retrait, frais de zone et TVA dépendent d'une
@@ -1271,36 +1384,6 @@ Sur la **structure**, ce que la revue a laissé volontairement en place :
   (zones de livraison, panier staff, production, mandat SEPA). `nativeValue()`
   les absorbe tous ; le passage n'a pas été fait pour ne pas mêler des écrans
   sans rapport à cette revue.
-
-Sur l'**engagement de volume**, la question ouverte du 2026-08-18 :
-
-Un devis ponctuel est une **lecture** — la fonction qui facture, appelée sans
-rien écrire. C'est ce que fait le simulateur. Un devis **temporel** — « 500 par
-mois pendant un an à ce prix-là » — est d'une autre nature : il accorde un prix
-aujourd'hui contre une promesse, donc il suppose de savoir quoi faire quand la
-promesse n'est pas tenue. Rien de tel n'existe dans le modèle : pas d'agrégat
-d'engagement, pas de réservation, pas de règlement d'écart. La seule pièce qui
-regarde du cumul est `minVolumeRatioBp` sur le plancher dynamique, et encore
-comme **preuve d'ouverture d'une porte**, jamais comme promesse due.
-
-Deux formes s'offrent, et le choix entre elles EST le choix des conditions de
-sortie :
-
-- **prix fixe** (une mercuriale datée). Simple, et la moitié seulement du
-  problème : sous-performance et excédent n'ont aucune réponse arithmétique, il
-  faut une clause, et le rattrapage se facture rétroactivement — sur des lignes
-  dont la trace est figée, donc en réécrivant l'explication de factures payées ;
-- **barème sur volume cumulé**. Plus de machinerie, mais les conditions de
-  sortie deviennent de l'arithmétique : le client tombe au palier qu'il a
-  réellement mérité, chaque facture reste juste au moment où elle est émise, et
-  rien n'a besoin d'être révisé. Ce qui diffère alors du prix fixe n'est pas le
-  point nominal — au volume promis, les deux donnent le même prix — mais la
-  **trajectoire** : le barème facture plus cher en début de période, le prix fixe
-  accorde le tarif de fin dès le premier jour.
-
-La composition des deux est probablement la réponse : le fixe porte la promesse,
-le barème porte la résolution quand elle n'est pas tenue. Rien n'est engagé tant
-que ce n'est pas tranché.
 
 Sur la **donnée**, la limite qui commande tout le reste :
 
