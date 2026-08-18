@@ -1,3 +1,4 @@
+import { volumeQuantityOf } from "./price-rule.js";
 import type { PriceAudience, PriceRule, PriceScope, PricingContext } from "./price-rule.js";
 
 /**
@@ -95,7 +96,10 @@ export function tierFor(ladder: VolumeLadder, quantity: number): VolumeTier | nu
  * transparent, exactement comme lorsqu'aucune règle ne s'applique.
  */
 export function ladderAsRule(ladder: VolumeLadder, context: PricingContext): PriceRule | null {
-  const tier = tierFor(ladder, context.quantity);
+  // Le CUMUL de l'engagement s'il y en a un, la quantité de la commande sinon.
+  // C'est ici que « barème sur volume cumulé » se joue, en un seul appel : le
+  // reste de la chaîne ne connaît toujours qu'une règle d'étage volume.
+  const tier = tierFor(ladder, volumeQuantityOf(context));
   return tier === null ? null : ladderAtTier(ladder, tier);
 }
 

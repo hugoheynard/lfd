@@ -178,6 +178,33 @@ export interface PricingContext {
   /** `null` pour une commande sans entreprise (parcours zéro friction). */
   readonly companyId: string | null;
   readonly segmentId: string | null;
+  /**
+   * **Le volume cumulé sur la période d'engagement**, cette commande comprise.
+   * `null` = aucun engagement ne couvre cet article pour ce client.
+   *
+   * C'est la seule mesure sur laquelle l'étage **volume** se juge quand elle
+   * existe : un client qui a promis 6 000 sur l'année prend son palier dès la
+   * première commande de 500, parce que c'est le cumul qui compte et non le
+   * panier du jour. Les autres étages continuent de lire `quantity` — le seuil
+   * d'une promotion parle bien de CETTE commande.
+   *
+   * Elle inclut la commande en cours : sans cela, la première commande d'une
+   * période partirait toujours d'un cumul nul, et le palier arriverait avec une
+   * commande de retard.
+   */
+  readonly cumulativeQuantity: number | null;
+}
+
+/**
+ * **La quantité sur laquelle l'étage volume se juge.**
+ *
+ * Le cumul d'un engagement s'il y en a un, la quantité de la commande sinon.
+ * Écrit une fois : la résolution, l'arbitrage de spécificité et la grille des
+ * paliers doivent lire le MÊME nombre, sans quoi l'écran annoncerait un palier
+ * que la caisse n'appliquerait pas.
+ */
+export function volumeQuantityOf(context: PricingContext): number {
+  return context.cumulativeQuantity ?? context.quantity;
 }
 
 /** Un étage qui a produit un effet — l'unité de la trace. */

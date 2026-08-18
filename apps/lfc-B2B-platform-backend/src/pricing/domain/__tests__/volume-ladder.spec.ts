@@ -50,6 +50,7 @@ function context(quantity: number): PricingContext {
     categoryId: "viennoiserie",
     companyId: null,
     segmentId: null,
+    cumulativeQuantity: null,
   };
 }
 

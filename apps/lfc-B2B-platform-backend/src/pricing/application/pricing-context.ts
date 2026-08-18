@@ -34,6 +34,12 @@ export function pricingContextFor(
   quantity: number,
   parties: PricingParties,
   at: Date,
+  /**
+   * Le cumul de l'engagement, cette commande comprise, ou `null` s'il n'y en a
+   * pas. Passé par l'appelant plutôt que lu ici : ce fichier assemble un
+   * contexte, il n'interroge aucune base.
+   */
+  cumulativeQuantity: number | null = null,
 ): PricingContext {
   return {
     at,
@@ -43,5 +49,6 @@ export function pricingContextFor(
     categoryId: categoryCode,
     companyId: parties.companyId,
     segmentId: null,
+    cumulativeQuantity,
   };
 }

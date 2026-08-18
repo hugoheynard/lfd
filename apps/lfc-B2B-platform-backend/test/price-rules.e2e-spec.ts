@@ -12,7 +12,7 @@
  */
 import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
 
 const SERVICE_DAY = "2026-09-01";
 let pickupId = "pickup_absent";
@@ -513,5 +513,159 @@ describe("POST /orders/quote — la grille et le scellement", () => {
     // Sans ce champ, un commercial ne saurait pas si sa promotion a expiré, si
     // elle a été évincée par plus spécifique, ou si le tarif du client l'écarte.
     expect(body.lines[0]?.sealedRuleIds).toEqual(["promo"]);
+  });
+});
+
+/**
+ * **L'engagement de volume** — le barème se juge sur le CUMUL de la période.
+ *
+ * C'est le seul test qui prouve la forme retenue : sans lui, la lecture de
+ * l'historique par le chemin qui facture ne serait démontrée nulle part, et le
+ * palier pourrait se jouer sur la quantité de la commande sans que rien ne le
+ * dise.
+ */
+describe("l'engagement de volume", () => {
+  const CLIENT = "auth0|engage";
+  let companyId = "";
+
+  /** Le barème global : 500+ à −20 %. Aucune commande unitaire ne l'atteint. */
+  async function seedLadder(): Promise<void> {
+    await ctx.prisma.volumeLadder.create({
+      data: {
+        id: "ladder",
+        scopeType: "global",
+        scopeId: null,
+        audienceType: "all",
+        audienceId: null,
+        unit: "percent",
+        tiers: [{ minQuantity: 500, value: 2000 }],
+        label: "500+ à −20 %",
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        createdBy: "e2e",
+      },
+    });
+  }
+
+  async function seedCommitment(): Promise<void> {
+    await ctx.prisma.volumeCommitment.create({
+      data: {
+        id: "cmt",
+        companyId,
+        scopeType: "product",
+        scopeId: SKU,
+        promisedQuantity: 6000,
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        validTo: new Date("2027-01-01T00:00:00.000Z"),
+        createdBy: "e2e",
+      },
+    });
+  }
+
+  /** Une commande de ce client, portée par sa société. */
+  function order(quantity: number) {
+    return ctx
+      .asSub(CLIENT)
+      .post("/orders")
+      .send({ ...pickupContent(), companyId, lines: [{ sku: SKU, quantity }] });
+  }
+
+  beforeEach(async () => {
+    const user = await createUser(ctx.prisma, { auth0Sub: CLIENT });
+    const company = await createCompany(ctx.prisma);
+    companyId = company.id;
+    await attachTo(ctx.prisma, user.id, companyId, "orders");
+  });
+
+  /**
+   * **Le cas qui décide de tout.** Sans engagement, une commande de 100 n'ouvre
+   * pas un palier posé à 500 : elle paie le tarif d'entrée.
+   */
+  it("sans engagement, une petite commande n'ouvre pas le palier", async () => {
+    await seedLadder();
+
+    const line = await lineOf(jsonBody<{ id: string }>(await order(100)).id);
+
+    expect(line.unitPriceCents).toBe(CANONICAL);
+  });
+
+  /**
+   * **Avec engagement, la MÊME commande ouvre le palier** — parce que le cumul
+   * de la période, cette commande comprise, atteint le seuil.
+   */
+  it("avec un engagement, le cumul de la période décide du palier", async () => {
+    await seedLadder();
+    await seedCommitment();
+
+    // 300 puis 300 : ni l'une ni l'autre n'atteint 500 seule.
+    await order(300).expect(201);
+    const line = await lineOf(jsonBody<{ id: string }>(await order(300)).id);
+
+    // 600 cumulés → palier 500+ → 200 × 0,8 = 160.
+    expect(line.unitPriceCents).toBe(160);
+  });
+
+  /**
+   * Le cumul **inclut la commande en cours**. Sans cela, un client qui commande
+   * ses 6 000 pièces en une fois paierait le tarif d'entrée sur la totalité —
+   * le palier arriverait avec une commande de retard.
+   */
+  it("la commande en cours compte dans son propre cumul", async () => {
+    await seedLadder();
+    await seedCommitment();
+
+    const line = await lineOf(jsonBody<{ id: string }>(await order(500)).id);
+
+    expect(line.unitPriceCents).toBe(160);
+  });
+
+  /**
+   * La **mesure figée** avec le prix, exactement comme la décision de plancher.
+   * Sans elle, « pourquoi ce palier-là ? » n'a plus de réponse dès la commande
+   * suivante : le cumul d'alors n'existe nulle part ailleurs.
+   */
+  it("fige le cumul mesuré sur la ligne, avec le prix", async () => {
+    await seedLadder();
+    await seedCommitment();
+    await order(300).expect(201);
+
+    const line = await lineOf(jsonBody<{ id: string }>(await order(300)).id);
+
+    expect(line.pricingCommitment).toEqual({
+      commitmentId: "cmt",
+      promisedQuantity: 6000,
+      cumulativeQuantity: 600,
+    });
+  });
+
+  /** L'engagement d'un client ne franchit pas le mur : un autre n'en profite pas. */
+  it("ne profite qu'au client qui l'a signé", async () => {
+    await seedLadder();
+    await seedCommitment();
+
+    const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(300)).id);
+
+    expect(line.unitPriceCents).toBe(CANONICAL);
+    expect(line.pricingCommitment).toBeNull();
+  });
+
+  /**
+   * **Clore ne révise rien.** La commande passée garde le palier qu'elle a
+   * mérité — c'est l'argument central du cumul contre le prix fixe, et il se
+   * prouve ici.
+   */
+  it("clore n'a aucun effet rétroactif sur les commandes passées", async () => {
+    await seedLadder();
+    await seedCommitment();
+    const first = jsonBody<{ id: string }>(await order(500)).id;
+
+    await ctx.prisma.volumeCommitment.update({
+      where: { id: "cmt" },
+      data: { archivedAt: new Date(), archivedBy: "e2e" },
+    });
+
+    expect((await lineOf(first)).unitPriceCents).toBe(160);
+    // …mais la commande SUIVANTE repart sur la quantité du panier.
+    const after = await lineOf(jsonBody<{ id: string }>(await order(300)).id);
+    expect(after.unitPriceCents).toBe(CANONICAL);
   });
 });

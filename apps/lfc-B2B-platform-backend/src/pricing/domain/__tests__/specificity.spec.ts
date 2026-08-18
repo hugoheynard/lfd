@@ -19,6 +19,7 @@ function context(over: Partial<PricingContext> = {}): PricingContext {
     categoryId: "cat_vien",
     companyId: "cmp_dupont",
     segmentId: "seg_boulangerie",
+    cumulativeQuantity: null,
     ...over,
   };
 }

@@ -444,6 +444,28 @@ export const priceStepsSchema = z.array(
   }),
 );
 
+/**
+ * L'engagement qui a décidé du palier, **et le cumul mesuré à cet instant**.
+ *
+ * Figé avec le prix pour la même raison que la décision de plancher : un prix
+ * qui dépend de l'historique cesse d'être explicable dès que l'historique bouge.
+ * Six mois plus tard, « pourquoi ce palier-là ? » n'aurait aucune réponse — le
+ * cumul d'alors n'existerait plus nulle part.
+ */
+export interface CommitmentDecisionView {
+  readonly commitmentId: string;
+  readonly promisedQuantity: number;
+  /** Le cumul de la période, **cette commande comprise**, au moment du calcul. */
+  readonly cumulativeQuantity: number;
+}
+
+/** Le schéma de l'engagement, pour **relire** une trace persistée. */
+export const commitmentDecisionSchema = z.object({
+  commitmentId: z.string(),
+  promisedQuantity: z.number().int(),
+  cumulativeQuantity: z.number().int(),
+});
+
 /** Le schéma de la décision de plancher, pour **relire** une trace persistée. */
 export const floorDecisionSchema = z.object({
   tier: z.enum(["hard", "dynamic"]),
@@ -477,6 +499,12 @@ export interface OrderLinePricingTrace {
    * deux étages.
    */
   readonly floorDecision: FloorDecisionView | null;
+  /**
+   * L'engagement de volume qui a décidé du palier, et le cumul mesuré alors.
+   * `null` = aucun engagement ne couvrait cette ligne, le palier s'est joué sur
+   * la quantité de la commande.
+   */
+  readonly commitment: CommitmentDecisionView | null;
 }
 
 /**
@@ -898,4 +926,60 @@ export interface PricingComparisonView {
   /** Combien d'articles ont changé de prix entre les deux instants. */
   readonly changedCount: number;
   readonly items: readonly PricingComparisonItemView[];
+}
+
+/**
+ * **L'engagement de volume** — un client promet un volume sur une période, et
+ * le barème se juge alors sur le **cumul** de la période au lieu de la quantité
+ * de chaque commande.
+ *
+ * C'est la forme retenue le 2026-08-18, contre le prix fixe daté, et le motif
+ * est entièrement dans les **conditions de sortie**. Au volume promis, les deux
+ * formes donnent le même prix ; elles divergent quand la promesse n'est pas
+ * tenue. Un prix fixe n'a alors aucune réponse arithmétique : il faut une
+ * clause, et un rattrapage facturé rétroactivement — donc réécrire l'explication
+ * de factures déjà payées, ce que la trace figée interdit précisément. Le cumul,
+ * lui, laisse le client au palier qu'il a **réellement atteint** : chaque
+ * facture reste juste au moment où elle est émise, et rien n'est jamais révisé.
+ *
+ * Ce que l'engagement **n'est pas** : une réservation. Rien n'est bloqué, rien
+ * n'est dû. Il déclare une période et un volume visé ; le prix, lui, ne dépend
+ * que de ce qui a été commandé.
+ */
+export const createVolumeCommitmentPayloadSchema = z.object({
+  companyId: z.string().min(1),
+  scope: priceScopeSchema,
+  /** Le volume visé sur la période. Sert à l'écran, jamais au calcul. */
+  promisedQuantity: z.number().int().positive(),
+  /** Borne basse **incluse**. */
+  validFrom: z.string().datetime(),
+  /**
+   * Borne haute **exclue**, et **obligatoire** : un engagement sans terme est
+   * une mercuriale, qui a son propre étage. C'est la période qui donne un sens
+   * au cumul — sans elle, il n'y a rien à cumuler sur quoi que ce soit.
+   */
+  validTo: z.string().datetime(),
+});
+export type CreateVolumeCommitmentPayload = z.infer<typeof createVolumeCommitmentPayloadSchema>;
+
+/** Un engagement, tel que l'écran le lit. */
+export interface VolumeCommitmentView {
+  readonly id: string;
+  readonly companyId: string;
+  readonly scope: PriceScopePayload;
+  readonly promisedQuantity: number;
+  readonly validFrom: string;
+  readonly validTo: string;
+  readonly createdBy: string;
+  readonly createdAt: string;
+  readonly archivedAt: string | null;
+  readonly archivedBy: string | null;
+  readonly archiveReason: string | null;
+  /**
+   * Le volume **déjà commandé** sur la période, à l'instant de la lecture.
+   *
+   * Mesuré, jamais promis : c'est lui qui décide du palier, et l'écart avec
+   * `promisedQuantity` est toute l'information que le suivi apporte.
+   */
+  readonly orderedQuantity: number;
 }

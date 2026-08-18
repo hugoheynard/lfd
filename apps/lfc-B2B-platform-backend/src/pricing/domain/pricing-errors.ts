@@ -555,3 +555,45 @@ export class VolumeLadderNotFoundError extends ResourceNotFoundError {
     super("pricing.ladder.not_found", `Aucun barème de volume « ${ladderId} ».`);
   }
 }
+
+/**
+ * Un volume visé nul ou négatif.
+ *
+ * Un engagement à zéro n'engage à rien, et l'écran de suivi afficherait un
+ * « 0 % atteint » qui ressemble à une alerte alors que rien n'a été promis.
+ */
+export class InvalidPromisedVolumeError extends DomainError {
+  constructor(quantity: number) {
+    super(
+      "pricing.commitment.invalid_promised_volume",
+      `Le volume visé par un engagement doit être un entier strictement positif (reçu : ${String(quantity)}).`,
+    );
+  }
+}
+
+/** Un engagement clos ne se rouvre pas : on en signe un nouveau. */
+export class ArchivedVolumeCommitmentIsSealedError extends DomainError {
+  constructor(id: string) {
+    super(
+      "pricing.commitment.archived_is_sealed",
+      `L'engagement ${id} est clos : il ne se rouvre pas, un nouvel engagement se signe.`,
+    );
+  }
+}
+
+/** Deux engagements vivants sur la même cible et la même période, pour un client. */
+export class OverlappingVolumeCommitmentError extends DomainError {
+  constructor() {
+    super(
+      "pricing.commitment.overlaps",
+      "Un engagement couvre déjà cette cible pour ce client sur une partie de cette période : deux cumuls concurrents donneraient deux paliers, donc un prix indéterminé.",
+    );
+  }
+}
+
+/** L'engagement demandé n'existe pas, ou ne concerne pas ce client. */
+export class VolumeCommitmentNotFoundError extends DomainError {
+  constructor(id: string) {
+    super("pricing.commitment.not_found", `Aucun engagement de volume ${id}.`);
+  }
+}

@@ -830,6 +830,15 @@ model OrderLine {
   /// relevé est un prix dont une règle n'a pas produit son effet.
   pricingFloored Boolean? @map("pricing_floored")
 
+  /// L'engagement de volume qui a décidé du palier, et le CUMUL mesuré à cet
+  /// instant : `{ id, promisedQuantity, cumulativeQuantity }`.
+  ///
+  /// Figé pour la même raison que la décision de plancher : un prix qui dépend
+  /// de l'historique cesse d'être explicable dès que l'historique bouge. Ne se
+  /// relit jamais, ne se recalcule jamais. `NULL` = aucun engagement ne couvrait
+  /// cette ligne, le palier s'est joué sur la quantité de la commande.
+  pricingCommitment Json? @map("pricing_commitment")
+
   // Un SKU n'apparaît qu'UNE fois par commande. `place-order` fusionne déjà les
   // quantités du panier ; la contrainte rend la règle structurelle plutôt que
   // conventionnelle. C'est aussi ce qui rend une moyenne par SKU calculable sans
@@ -2072,6 +2081,54 @@ model VolumeLadder {
 
   @@index([archivedAt])
   @@map("volume_ladders")
+  @@schema("public")
+}
+
+/// **L'engagement de volume** — un client vise un volume sur une période, et le
+/// barème se juge alors sur le CUMUL de la période plutôt que sur la quantité de
+/// chaque commande.
+///
+/// Retenu contre le prix fixe daté, et le motif est dans les conditions de
+/// sortie : au volume promis les deux formes donnent le même prix, mais quand la
+/// promesse n'est pas tenue, seul le cumul a une réponse arithmétique — le client
+/// reste au palier qu'il a réellement atteint, et aucune facture n'est révisée.
+///
+/// Ce n'est PAS une réservation : rien n'est bloqué, rien n'est dû. Le prix ne
+/// dépend que de ce qui a été commandé.
+model VolumeCommitment {
+  /// ULID opaque, comme le barème : deux engagements successifs sur la même
+  /// cible coexistent, donc l'identifiant ne peut pas dériver de la cible.
+  id String @id
+
+  /// Un engagement vise TOUJOURS un client nommé : c'est une négociation, pas
+  /// une offre. D'où l'absence d'axe « audience » — il n'y a qu'un cas.
+  companyId String @map("company_id")
+
+  scopeType String  @map("scope_type")
+  scopeId   String? @map("scope_id")
+
+  /// Le volume visé. Il sert au SUIVI, jamais au calcul : c'est le cumul mesuré
+  /// qui décide du palier. Un engagement dont la promesse piloterait le prix
+  /// serait une remise accordée sur une intention.
+  promisedQuantity Int @map("promised_quantity")
+
+  /// Borne basse incluse, borne haute exclue — et la haute est OBLIGATOIRE : un
+  /// engagement sans terme est une mercuriale, qui a son propre étage.
+  validFrom DateTime @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime @map("valid_to") @db.Timestamptz(3)
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  /// Archivé, jamais suspendu — un engagement ne se met pas en pause : il court
+  /// ou il est clos. Le suspendre laisserait une période où le cumul continue
+  /// sans que le palier suive, donc un prix que personne n'a décidé.
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
+  @@index([companyId, archivedAt])
+  @@map("volume_commitments")
   @@schema("public")
 }
 

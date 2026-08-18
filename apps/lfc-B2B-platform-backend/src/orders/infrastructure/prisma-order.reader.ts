@@ -9,6 +9,7 @@ import {
   type OrderLineView,
   type OrderLinePricingTrace,
   priceStepsSchema,
+  commitmentDecisionSchema,
   floorDecisionSchema,
   type OrderStatus,
   type OrderFulfillment,
@@ -39,6 +40,7 @@ interface OrderLineRow {
   readonly pricingSteps: Prisma.JsonValue | null;
   readonly pricingFloored: boolean | null;
   readonly pricingFloor: Prisma.JsonValue | null;
+  readonly pricingCommitment: Prisma.JsonValue | null;
 }
 
 /** Une commande telle que Prisma la sélectionne. */
@@ -108,6 +110,7 @@ const ORDER_SELECT = {
       pricingSteps: true,
       pricingFloored: true,
       pricingFloor: true,
+      pricingCommitment: true,
     },
   },
 } as const;
@@ -556,5 +559,8 @@ function parseTrace(line: OrderLineRow): OrderLinePricingTrace | null {
     // détail des étages reste consultable, on perd seulement le commentaire du
     // plancher.
     floorDecision: floorDecisionSchema.safeParse(line.pricingFloor).data ?? null,
+    // Même indulgence, même raison : l'engagement explique un palier, il ne le
+    // refait pas. Illisible, on perd l'explication, pas la commande.
+    commitment: commitmentDecisionSchema.safeParse(line.pricingCommitment).data ?? null,
   };
 }

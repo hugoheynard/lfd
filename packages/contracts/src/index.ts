@@ -504,6 +504,8 @@ export {
   dynamicFloorSchema,
   floorUnlockSchema,
   floorDecisionSchema,
+  commitmentDecisionSchema,
+  createVolumeCommitmentPayloadSchema,
   setPriceFloorPayloadSchema,
   setVolumeLadderPayloadSchema,
   volumeTierSchema,
@@ -551,4 +553,7 @@ export type {
   VolumeLadderView,
   VolumeTierPayload,
   VolumeTierPriceView,
+  CommitmentDecisionView,
+  CreateVolumeCommitmentPayload,
+  VolumeCommitmentView,
 } from "./pricing.js";

@@ -85,6 +85,8 @@ export class PrismaOrderRepository extends OrderRepository {
               line.pricing?.floorDecision == null
                 ? Prisma.DbNull
                 : { ...line.pricing.floorDecision },
+            pricingCommitment:
+              line.pricing?.commitment == null ? Prisma.DbNull : { ...line.pricing.commitment },
           })),
         },
       },

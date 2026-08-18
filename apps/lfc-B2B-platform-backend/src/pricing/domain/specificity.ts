@@ -1,4 +1,5 @@
 import { AmbiguousPriceRulesError } from "./pricing-errors.js";
+import { volumeQuantityOf } from "./price-rule.js";
 import type { PriceAudience, PriceRule, PriceScope, PricingContext } from "./price-rule.js";
 
 /**
@@ -133,14 +134,24 @@ function isSuspended(rule: PriceRule, at: Date): boolean {
   return rule.suspendedFrom !== null && rule.suspendedFrom.getTime() <= at.getTime();
 }
 
-/** Toutes les conditions d'application, réunies. */
+/**
+ * Toutes les conditions d'application, réunies.
+ *
+ * Le seuil de quantité se juge sur **deux mesures différentes**, et c'est
+ * délibéré : l'étage `volume` lit le cumul de l'engagement quand il y en a un,
+ * tous les autres lisent la quantité de la commande. Un « à partir de 50 » posé
+ * sur une promotion parle bien de CETTE commande ; le même nombre sur un palier
+ * de barème parle du volume négocié. Les confondre donnerait, sur un engagement
+ * annuel, une promotion accordée dès la première livraison.
+ */
 export function applies(rule: PriceRule, context: PricingContext): boolean {
+  const measured = rule.stage === "volume" ? volumeQuantityOf(context) : context.quantity;
   return (
     isInForce(rule, context.at) &&
     !isSuspended(rule, context.at) &&
     matchesScope(rule.scope, context) &&
     matchesAudience(rule.audience, context) &&
-    (rule.minQuantity === null || context.quantity >= rule.minQuantity)
+    (rule.minQuantity === null || measured >= rule.minQuantity)
   );
 }
 

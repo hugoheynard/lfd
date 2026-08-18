@@ -28,6 +28,7 @@ import { PricingFloorRepository } from "./domain/ports/pricing-floor.repository.
 import { PricingJournalReader } from "./domain/ports/pricing-journal.reader.js";
 import { PricingRuleRepository } from "./domain/ports/pricing-rule.repository.js";
 import { VolumeLadderRepository } from "./domain/ports/volume-ladder.repository.js";
+import { VolumeCommitmentRepository } from "./domain/ports/volume-commitment.repository.js";
 import { AdminPriceFloorsController } from "./http/admin-price-floors.controller.js";
 import { AdminPricingController } from "./http/admin-pricing.controller.js";
 import { AdminPricingJournalController } from "./http/admin-pricing-journal.controller.js";
@@ -36,6 +37,13 @@ import { PrismaPricingFloorRepository } from "./infrastructure/prisma-pricing-fl
 import { PrismaPricingJournalReader } from "./infrastructure/prisma-pricing-journal.reader.js";
 import { PrismaPricingRuleRepository } from "./infrastructure/prisma-pricing-rule.repository.js";
 import { PrismaVolumeLadderRepository } from "./infrastructure/prisma-volume-ladder.repository.js";
+import { PrismaVolumeCommitmentRepository } from "./infrastructure/prisma-volume-commitment.repository.js";
+import { VolumeCommitmentsQuery } from "./application/queries/volume-commitments.query.js";
+import {
+  CloseVolumeCommitmentHandler,
+  SignVolumeCommitmentHandler,
+} from "./application/commands/volume-commitment.handlers.js";
+import { AdminVolumeCommitmentsController } from "./http/admin-volume-commitments.controller.js";
 import { PricingModule } from "./pricing.module.js";
 
 /**
@@ -55,7 +63,12 @@ import { PricingModule } from "./pricing.module.js";
   // `CatalogModule` pour l'historique du tarif : la lecture datée doit rendre le
   // tarif de CE jour-là, et lui seul sait le relire.
   imports: [CqrsModule, CatalogModule, OrdersModule, PricingModule],
-  controllers: [AdminPricingController, AdminPriceFloorsController, AdminPricingJournalController],
+  controllers: [
+    AdminPricingController,
+    AdminPriceFloorsController,
+    AdminPricingJournalController,
+    AdminVolumeCommitmentsController,
+  ],
   providers: [
     BoardElasticityService,
     BoardComparisonService,
@@ -71,8 +84,12 @@ import { PricingModule } from "./pricing.module.js";
     PauseVolumeLadderHandler,
     ResumeVolumeLadderHandler,
     ArchiveVolumeLadderHandler,
+    SignVolumeCommitmentHandler,
+    CloseVolumeCommitmentHandler,
+    VolumeCommitmentsQuery,
     { provide: PricingRuleRepository, useClass: PrismaPricingRuleRepository },
     { provide: VolumeLadderRepository, useClass: PrismaVolumeLadderRepository },
+    { provide: VolumeCommitmentRepository, useClass: PrismaVolumeCommitmentRepository },
     { provide: PricingFloorRepository, useClass: PrismaPricingFloorRepository },
     { provide: PricingBoardReader, useClass: PrismaPricingBoardReader },
     { provide: PricingJournalReader, useClass: PrismaPricingJournalReader },

@@ -31,7 +31,7 @@ export function volumeTierPrices(
   }
 
   return ladder.tiers.map((tier) => {
-    const at = { ...context, quantity: tier.minQuantity };
+    const at = atQuantity(context, tier.minQuantity);
     const resolved = resolvePrice(canonicalCents, withLadder(rules, ladders, at), at, floor);
     return {
       minQuantity: tier.minQuantity,
@@ -55,11 +55,28 @@ function winningLadder(
   context: PricingContext,
 ): VolumeLadder | null {
   const reach = Math.max(...ladders.flatMap((ladder) => ladder.tiers.map((t) => t.minQuantity)), 1);
+  const probe = atQuantity(context, reach);
   const asRules = ladders
-    .map((ladder) => ladderAsRule(ladder, { ...context, quantity: reach }))
+    .map((ladder) => ladderAsRule(ladder, probe))
     .filter((rule): rule is PriceRule => rule !== null);
-  const winner = winnerOf(asRules, { ...context, quantity: reach });
+  const winner = winnerOf(asRules, probe);
   return winner === null ? null : (ladders.find((ladder) => ladder.id === winner.id) ?? null);
+}
+
+/**
+ * Le contexte **déplacé à une quantité**, sur la mesure qui compte.
+ *
+ * Sous engagement, un palier se lit « quand le CUMUL atteint N », pas « quand la
+ * commande fait N » : la grille doit donc bouger le cumul, sans quoi elle
+ * annoncerait des paliers hors d'atteinte à un client qui les a déjà franchis.
+ * Sans engagement, les deux mesures sont la même et rien ne change.
+ */
+function atQuantity(context: PricingContext, quantity: number): PricingContext {
+  return {
+    ...context,
+    quantity,
+    cumulativeQuantity: context.cumulativeQuantity === null ? null : quantity,
+  };
 }
 
 /** Les règles du moment, plus le palier que les barèmes ouvrent à cette quantité. */

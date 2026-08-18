@@ -10,6 +10,7 @@ const CONTEXT: PricingContext = {
   categoryId: "viennoiserie",
   companyId: null,
   segmentId: null,
+  cumulativeQuantity: null,
 };
 
 function floor(

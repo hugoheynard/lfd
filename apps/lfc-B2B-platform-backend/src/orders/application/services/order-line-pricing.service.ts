@@ -1,11 +1,18 @@
 import { Injectable } from "@nestjs/common";
-import type { OrderLineInput as OrderLineRequest, VolumeTierPriceView } from "@lfd/contracts";
+import type {
+  CommitmentDecisionView,
+  OrderLineInput as OrderLineRequest,
+  VolumeTierPriceView,
+} from "@lfd/contracts";
 
 import { decideFloor } from "../../../pricing/domain/floor-policy.js";
 import { observedRatioBp } from "../../../pricing/domain/elasticity.js";
 import { pricingContextFor } from "../../../pricing/application/pricing-context.js";
 import { rollingWindows } from "../../../pricing/domain/elasticity-windows.js";
 import { volumeTierPrices } from "../../../pricing/application/volume-tier-prices.js";
+import { commitmentFor } from "../../../pricing/domain/volume-commitment.js";
+import { CustomerVolumeReader } from "../../../pricing/domain/ports/customer-volume.reader.js";
+import { VolumeCommitmentReader } from "../../../pricing/domain/ports/volume-commitment.reader.js";
 import { floorCentsFor, resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
 import { ladderAsRule } from "../../../pricing/domain/volume-ladder.js";
 import { resolvePrice } from "../../../pricing/domain/resolve-price.js";
@@ -16,6 +23,7 @@ import { VolumeLadderReader } from "../../../pricing/domain/ports/volume-ladder.
 import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
 import { UnknownSkuError } from "../../domain/errors/order-errors.js";
 import type { PriceRule, ScopedPriceFloor } from "../../../pricing/domain/price-rule.js";
+import type { VolumeCommitment } from "../../../pricing/domain/volume-commitment.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 import type { OrderParties } from "./order-parties.js";
 
@@ -72,6 +80,8 @@ export class OrderLinePricing {
     private readonly priceFloors: PriceFloorReader,
     private readonly skuVolumes: SkuVolumeReader,
     private readonly volumeLadders: VolumeLadderReader,
+    private readonly commitments: VolumeCommitmentReader,
+    private readonly customerVolumes: CustomerVolumeReader,
   ) {}
 
   /**
@@ -129,13 +139,17 @@ export class OrderLinePricing {
     // sur le chemin qui facture.
     const catalogue = await this.catalog.resolveMany([...quantities.keys()]);
 
+    // Les engagements du client, lus UNE fois — pas une requête par ligne. Un
+    // client de passage n'en a pas, et le port le sait sans interroger la base.
+    const live = await this.commitments.liveFor(parties.companyId);
+
     return Promise.all(
       [...quantities].map(async ([sku, quantity]) => {
         const item = catalogue.get(sku) ?? null;
         if (item === null) {
           throw new UnknownSkuError(sku);
         }
-        return this.resolveOne(item, quantity, parties, at, withTiers);
+        return this.resolveOne(item, quantity, parties, at, withTiers, live);
       }),
     );
   }
@@ -147,8 +161,17 @@ export class OrderLinePricing {
     parties: OrderParties,
     at: Date,
     withTiers: boolean,
+    live: readonly VolumeCommitment[],
   ): Promise<ResolvedOrderLine> {
-    const context = pricingContextFor(item.sku, item.category, quantity, parties, at);
+    const decision = await this.commitmentDecision(item, quantity, at, live);
+    const context = pricingContextFor(
+      item.sku,
+      item.category,
+      quantity,
+      parties,
+      at,
+      decision?.cumulativeQuantity ?? null,
+    );
     const [rules, floors, ladders] = await Promise.all([
       this.priceRules.candidatesFor(context),
       this.priceFloors.candidatesFor(context),
@@ -166,14 +189,14 @@ export class OrderLinePricing {
     // Quel plancher VISE cet article, puis lequel de ses étages s'ouvre : deux
     // questions distinctes, la seconde dépendant de la commande et de l'historique.
     const scoped = resolveScopedFloor(floors, context);
-    const decision =
+    const floorDecision =
       scoped === null
         ? null
         : decideFloor(scoped.policy, {
             quantity,
             observedVolumeRatioBp: await this.observedRatio(item.sku, scoped, at),
           });
-    const applied = decision?.applied ?? null;
+    const applied = floorDecision?.applied ?? null;
     const resolved = resolvePrice(
       item.unitPriceCents,
       [...rules, ...volumeRules],
@@ -200,15 +223,19 @@ export class OrderLinePricing {
           // dépend de l'historique cesse d'être explicable dès que l'historique
           // bouge. Elle ne se relit jamais.
           floorDecision:
-            decision === null
+            floorDecision === null
               ? null
               : {
-                  tier: decision.tier,
-                  floorCents: floorCentsFor(decision.applied, item.unitPriceCents),
-                  observedVolumeRatioBp: decision.unlock?.observedVolumeRatioBp ?? null,
-                  quantityMet: decision.unlock?.quantityMet ?? true,
-                  volumeMet: decision.unlock?.volumeMet ?? true,
+                  tier: floorDecision.tier,
+                  floorCents: floorCentsFor(floorDecision.applied, item.unitPriceCents),
+                  observedVolumeRatioBp: floorDecision.unlock?.observedVolumeRatioBp ?? null,
+                  quantityMet: floorDecision.unlock?.quantityMet ?? true,
+                  volumeMet: floorDecision.unlock?.volumeMet ?? true,
                 },
+          // La MESURE figée avec le prix, exactement comme la décision de
+          // plancher : sans elle, « pourquoi ce palier-là ? » n'a plus de
+          // réponse dès que le client passe la commande suivante.
+          commitment: decision,
         },
       },
       canonicalCents: item.unitPriceCents,
@@ -222,6 +249,44 @@ export class OrderLinePricing {
         ? volumeTierPrices(item.unitPriceCents, ladders, rules, context, applied)
         : null,
       floorCents: applied === null ? null : floorCentsFor(applied, item.unitPriceCents),
+    };
+  }
+
+  /**
+   * **Où en est le client sur son engagement**, cette commande comprise.
+   *
+   * `null` — et **aucune requête** — quand aucun engagement ne couvre l'article.
+   * C'est le cas de l'immense majorité des lignes ; leur faire payer une lecture
+   * de l'historique reviendrait à ralentir toute la boutique pour une minorité
+   * de comptes négociés.
+   *
+   * Le cumul **inclut la commande en cours**. Sans cela, la première commande
+   * d'une période partirait toujours d'un cumul nul et le palier arriverait avec
+   * une commande de retard — un client qui commande ses 6 000 pièces en une fois
+   * paierait le tarif d'entrée sur la totalité.
+   */
+  private async commitmentDecision(
+    item: { sku: string; category: string },
+    quantity: number,
+    at: Date,
+    live: readonly VolumeCommitment[],
+  ): Promise<CommitmentDecisionView | null> {
+    const commitment = commitmentFor(
+      live,
+      { categoryId: item.category, productSku: item.sku, variantSku: item.sku },
+      at,
+    );
+    if (commitment === null) {
+      return null;
+    }
+    const ordered = await this.customerVolumes.volumesFor(commitment.companyId, [item.sku], {
+      from: commitment.validFrom,
+      to: commitment.validTo,
+    });
+    return {
+      commitmentId: commitment.id,
+      promisedQuantity: commitment.promisedQuantity,
+      cumulativeQuantity: (ordered.get(item.sku) ?? 0) + quantity,
     };
   }
 
