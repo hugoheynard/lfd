@@ -2,12 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { RouterLink } from '@angular/router';
 import type { PriceTemplateKind, PriceTemplateView } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
-import { FoldButtonComponent, FoldEmptyStateComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldButtonComponent, FoldEmptyStateComponent } from 'fold-ng';
 
-import { NotifyService } from '../../../notify.service';
 import { PriceTemplatesService } from '../templates.service';
-import { GabaritPanel, type GabaritPanelData } from '../gabarit-panel/gabarit-panel';
-import { PoserPanel, type PoserPanelData } from '../poser-panel/poser-panel';
 import {
   averageGapBp,
   entryPriceCents,
@@ -37,6 +34,11 @@ const COPY: Readonly<Record<PriceTemplateKind, { title: string; hint: string }>>
  * colonne. La nature vient de la route, et ne change que deux phrases et un
  * bouton.
  *
+ * **Aucun éditeur en panneau.** Composer et réviser mènent au même écran : la
+ * grille du gabarit, qui a le layout de la tarification générale. Une grille de
+ * quatre-vingt-douze articles ne se travaille pas dans un tiroir, et la
+ * comparaison au catalogue sert au moment où l'on tape le prix.
+ *
  * **Le prix fixe n'est pas un mode.** C'est la grille à un seul palier, à partir
  * de 1 ; l'écran le NOMME pour qu'on ne le cherche pas ailleurs, mais rien
  * derrière ne le distingue.
@@ -53,8 +55,6 @@ export class GabaritsPage {
   readonly kind = input.required<PriceTemplateKind>();
 
   private readonly templates = inject(PriceTemplatesService);
-  private readonly panels = inject(FoldPanelHostService);
-  private readonly notify = inject(NotifyService);
 
   protected readonly euros = formatEuros;
   protected readonly isFlatPrice = isFlatPrice;
@@ -103,43 +103,5 @@ export class GabaritsPage {
       return 'flat';
     }
     return bp > 0 ? 'down' : 'up';
-  }
-
-  protected async compose(): Promise<void> {
-    await this.edit({ kind: this.kind(), template: null });
-  }
-
-  protected async revise(template: PriceTemplateView): Promise<void> {
-    await this.edit({ kind: this.kind(), template });
-  }
-
-  private async edit(data: GabaritPanelData): Promise<void> {
-    const saved = await this.panels.open<GabaritPanelData, boolean>(GabaritPanel, {
-      data,
-      width: 'lg',
-    }).closed;
-    if (saved === true) {
-      await this.load();
-    }
-  }
-
-  /**
-   * **Poser le gabarit chez un client.**
-   *
-   * Le contenu ne se re-choisit pas au moment de poser : c'est le gabarit qui le
-   * porte. Laisser amender ici aurait fait deux sources pour un même prix, et
-   * « qu'est-ce qu'on lui a mis, au juste ? » n'aurait plus de réponse unique.
-   */
-  protected async pose(template: PriceTemplateView): Promise<void> {
-    const data: PoserPanelData = { templateId: template.id, label: template.label };
-    const posed = await this.panels.open<PoserPanelData, number>(PoserPanel, {
-      data,
-      width: 'md',
-    }).closed;
-    if (typeof posed === 'number') {
-      this.notify.success(
-        `${String(posed)} règle(s) de mercuriale posée(s) depuis « ${template.label} ».`,
-      );
-    }
   }
 }

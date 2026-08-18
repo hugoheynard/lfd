@@ -1,0 +1,203 @@
+<header class="head">
+  <div class="head-text">
+    <a class="back" routerLink="..">← Tous les gabarits</a>
+    <h2 class="title">{{ isNew() ? 'Nouveau gabarit' : label() }}</h2>
+  </div>
+  <div class="head-actions">
+    @if (posable()) {
+      <button foldButton emphasis="outline" intent="neutral" (click)="pose()">
+        Poser chez un client
+      </button>
+    }
+    <button foldButton [disabled]="!canSave()" (click)="save()">
+      {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+    </button>
+  </div>
+</header>
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="loading">Chargement du catalogue…</p>
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de charger la grille">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    <fold-input
+      label="Nom du gabarit"
+      hint="Ce que le client lira dans la trace de son prix — « Mercuriale Club Med »."
+      placeholder="Mercuriale Club Med"
+      [value]="label()"
+      (valueChange)="label.set($event)"
+    />
+
+    <p class="tally">
+      <strong>{{ summary().priced }}</strong> article(s) tarifé(s)
+      @if (summary().averageImpactBp !== null) {
+        ·
+        <span class="delta" [class]="'is-' + direction(summary().averageImpactBp!)">{{
+          percent(summary().averageImpactBp!)
+        }}</span>
+        au catalogue en moyenne
+      }
+      @if (summary().floored > 0) {
+        · <strong>{{ summary().floored }}</strong> relevé(s) par une limite
+      }
+    </p>
+
+    <!--
+      La mise en garde vient AVANT la grille, comme sur la tarification générale
+      et pour la même raison : sans elle, la colonne « prix final » passerait pour
+      la saisie. Une mercuriale SCELLE les étages suivants — mais la limite, elle,
+      s'applique après tout et relève un prix négocié trop bas.
+    -->
+    <p class="caveat">
+      Une mercuriale <strong>scelle</strong> : ni palier de volume ni promotion ne s'ajoutent
+      par-dessus. La <strong>limite</strong>, elle, s'applique quand même — c'est pourquoi le prix
+      final peut différer de ce que vous saisissez.
+    </p>
+
+    <!-- Les mêmes en-têtes que la grille générale, posés UNE fois : on lit de
+         gauche à droite comme le prix se construit. -->
+    <div class="legend" aria-hidden="true">
+      <span class="legend-cell col-article">Article · tarif B2B</span>
+      <span class="legend-cell col-price">Prix mercuriale</span>
+      <span class="legend-cell col-limit">Limite</span>
+      <span class="legend-cell col-room">Marge de négoce</span>
+      <span class="legend-cell col-impact">Impact</span>
+      <span class="legend-cell col-final">Prix final</span>
+    </div>
+
+    @for (category of categories(); track category.id) {
+      <section class="shelf">
+        <header class="shelf-head">
+          <h3 class="shelf-name">{{ category.name }}</h3>
+          <fold-badge [content]="category.items.length + ' articles'" variant="neutral" />
+          @if (category.vatRatePercent !== null) {
+            <span class="shelf-vat">TVA {{ category.vatRatePercent }} %</span>
+          }
+        </header>
+
+        <div class="grid">
+          @for (row of rowsOf(category); track row.sku; let index = $index) {
+            <!-- Colonne 1 — l'article et son tarif d'entrée. -->
+            <div class="cell col-article" [style.gridRow]="index + 1">
+              <div class="node node-article">
+                <span class="article-name">{{ row.name }}</span>
+                <span class="article-meta">{{ row.sku }} · {{ euros(row.catalogCents) }}</span>
+              </div>
+            </div>
+
+            <!-- Colonne 2 — le prix négocié, saisi ICI. Pas de panneau : la
+                 comparaison au catalogue sert au moment où l'on tape. -->
+            <div class="cell col-price" [style.gridRow]="index + 1">
+              @if (row.mercurialeCents === null) {
+                <button
+                  type="button"
+                  class="node node-add"
+                  [attr.aria-label]="'Tarifer ' + row.name"
+                  (click)="priceIt(row.sku, row.catalogCents)"
+                >
+                  +
+                </button>
+              } @else {
+                <div class="node node-price">
+                  @for (tier of tiersOf(row.sku); track $index) {
+                    <div class="tier">
+                      @if ($index === 0) {
+                        <span class="tier-from">dès 1</span>
+                      } @else {
+                        <input
+                          class="tier-qty"
+                          type="text"
+                          inputmode="numeric"
+                          placeholder="dès…"
+                          [attr.aria-label]="'Seuil du palier ' + ($index + 1)"
+                          [value]="tier.minQuantity"
+                          (input)="setTier(row.sku, $index, 'minQuantity', nativeValue($event))"
+                        />
+                      }
+                      <input
+                        class="tier-price"
+                        type="text"
+                        inputmode="decimal"
+                        placeholder="0,80"
+                        [attr.aria-label]="'Prix du palier ' + ($index + 1) + ' de ' + row.name"
+                        [value]="tier.unitPrice"
+                        (input)="setTier(row.sku, $index, 'unitPrice', nativeValue($event))"
+                      />
+                      @if ($index > 0) {
+                        <button
+                          type="button"
+                          class="tier-drop"
+                          [attr.aria-label]="'Retirer le palier ' + ($index + 1)"
+                          (click)="removeTier(row.sku, $index)"
+                        >
+                          ×
+                        </button>
+                      }
+                    </div>
+                  }
+                  <div class="price-actions">
+                    <button type="button" class="link" (click)="addTier(row.sku)">+ palier</button>
+                    <button type="button" class="link is-danger" (click)="clear(row.sku)">
+                      retirer
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Colonne 3 — la limite. Elle existe indépendamment du gabarit :
+                 elle s'affiche même sur un article non tarifé. -->
+            <div class="cell col-limit" [style.gridRow]="index + 1">
+              @if (row.floorCents === null) {
+                <span class="muted">—</span>
+              } @else {
+                <span class="node node-guard" [class.is-active]="row.floored">
+                  {{ euros(row.floorCents) }}
+                  @if (row.floored) {
+                    <span class="guard-meta">a relevé</span>
+                  }
+                </span>
+              }
+            </div>
+
+            <!-- Colonne 4 — ce qu'un commercial peut encore lâcher. -->
+            <div class="cell col-room" [style.gridRow]="index + 1">
+              @if (row.roomCents === null) {
+                <span class="muted">—</span>
+              } @else {
+                <span class="room">{{ euros(row.roomCents) }}</span>
+              }
+            </div>
+
+            <!-- Colonne 5 — ce que la grille coûte face au catalogue. -->
+            <div class="cell col-impact" [style.gridRow]="index + 1">
+              @if (row.impactBp === null) {
+                <span class="muted">—</span>
+              } @else {
+                <span class="delta" [class]="'is-' + direction(row.impactBp)">
+                  {{ percent(row.impactBp) }}
+                </span>
+              }
+            </div>
+
+            <!-- Colonne 6 — le prix RÉELLEMENT facturé, limite comprise. -->
+            <div class="cell col-final" [style.gridRow]="index + 1">
+              @if (row.finalCents === null) {
+                <span class="muted">tarif B2B</span>
+              } @else {
+                <span class="final" [class.is-floored]="row.floored">{{
+                  euros(row.finalCents)
+                }}</span>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    }
+  }
+}

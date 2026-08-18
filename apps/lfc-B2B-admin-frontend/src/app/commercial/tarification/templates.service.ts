@@ -27,6 +27,13 @@ export class PriceTemplatesService {
     );
   }
 
+  /** Un gabarit et sa grille — le tarif catalogue en regard vient du serveur. */
+  async byId(id: string): Promise<PriceTemplateView> {
+    return firstValueFrom(
+      this.http.get<PriceTemplateView>(`${this.base}/${encodeURIComponent(id)}`),
+    );
+  }
+
   async compose(payload: SavePriceTemplatePayload): Promise<{ id: string }> {
     return firstValueFrom(this.http.post<{ id: string }>(this.base, payload));
   }

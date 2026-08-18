@@ -262,11 +262,35 @@ export const routes: Routes = [
           import('./commercial/tarification/gabarits/gabarits-page').then((m) => m.GabaritsPage),
       },
       {
+        // La grille d'UN gabarit : le layout de la tarification générale, édité
+        // en place. `nouveau` compose, un identifiant révise — même écran, parce
+        // que composer et réviser sont le même geste sur le même objet.
+        path: 'tarification/mercuriales-templates/:id',
+        title: 'Grille de mercuriale — LFC B2B admin',
+        data: { kind: 'mercuriale' },
+        loadComponent: () =>
+          import('./commercial/tarification/grille/gabarit-grille-page').then(
+            (m) => m.GabaritGrillePage,
+          ),
+      },
+      {
         path: 'tarification/devis-templates',
         title: 'Gabarits de devis — LFC B2B admin',
         data: { kind: 'devis' },
         loadComponent: () =>
           import('./commercial/tarification/gabarits/gabarits-page').then((m) => m.GabaritsPage),
+      },
+      {
+        // La grille d'UN gabarit : le layout de la tarification générale, édité
+        // en place. `nouveau` compose, un identifiant révise — même écran, parce
+        // que composer et réviser sont le même geste sur le même objet.
+        path: 'tarification/devis-templates/:id',
+        title: 'Grille de devis — LFC B2B admin',
+        data: { kind: 'devis' },
+        loadComponent: () =>
+          import('./commercial/tarification/grille/gabarit-grille-page').then(
+            (m) => m.GabaritGrillePage,
+          ),
       },
     ],
   },

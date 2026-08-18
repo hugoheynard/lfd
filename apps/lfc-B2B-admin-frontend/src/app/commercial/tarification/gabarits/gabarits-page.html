@@ -16,7 +16,7 @@
         Gabarits de mercuriale →
       </a>
     }
-    <button foldButton (click)="compose()">Composer un gabarit</button>
+    <a foldButton routerLink="nouveau">Composer un gabarit</a>
   </div>
 </header>
 
@@ -35,7 +35,7 @@
         title="Aucun gabarit"
         description="Un gabarit est une grille de prix : un prix fixe, ou des paliers. On la prépare une fois, on la repose autant de fois qu'on veut."
       >
-        <button foldButton (click)="compose()">Composer le premier</button>
+        <a foldButton routerLink="nouveau">Composer le premier</a>
       </fold-empty-state>
     }
 
@@ -58,12 +58,9 @@
             </span>
           </button>
           <div class="card-actions">
-            <button foldButton emphasis="outline" intent="neutral" (click)="revise(template)">
-              Réviser
-            </button>
-            @if (posable()) {
-              <button foldButton (click)="pose(template)">Poser chez un client</button>
-            }
+            <a foldButton emphasis="outline" intent="neutral" [routerLink]="[template.id]">
+              Ouvrir la grille
+            </a>
           </div>
         </header>
 

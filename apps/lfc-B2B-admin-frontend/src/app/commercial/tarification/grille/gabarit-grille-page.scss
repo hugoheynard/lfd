@@ -1,0 +1,325 @@
+// Six colonnes, lues de gauche à droite comme le prix se construit — le MÊME
+// rythme que la tarification générale, à un détail près : là où elle montre les
+// altérations de famille et de produit, celle-ci montre le prix négocié. Le
+// reste (limite, marge, impact, prix final) est identique, parce que ce sont les
+// mêmes questions.
+//
+// La grille est explicite : chaque cellule porte sa colonne par sa classe et sa
+// ligne par un style lié. Le placement automatique suffirait tant qu'aucune
+// cellule ne s'étend ; le jour où l'une le fera, l'algorithme déciderait de
+// choses qu'on ne veut pas lui laisser décider.
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-4, 1rem);
+}
+
+.legend,
+.grid {
+  display: grid;
+  grid-template-columns:
+    minmax(12rem, 1.3fr)
+    minmax(11rem, 1.4fr)
+    minmax(6.5rem, 0.8fr)
+    minmax(7rem, 0.8fr)
+    minmax(6rem, 0.7fr)
+    minmax(7rem, 0.8fr);
+  column-gap: 2.25rem;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-4, 1rem);
+  flex-wrap: wrap;
+}
+
+.head-actions {
+  display: flex;
+  gap: var(--fold-space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.back {
+  font-size: var(--fold-font-size-sm, 0.875rem);
+}
+
+.title {
+  margin: 0.25rem 0 0;
+  font-size: var(--fold-font-size-lg, 1.125rem);
+}
+
+.tally {
+  margin: 0;
+  font-size: var(--fold-font-size-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+// Une ligne, pas un pavé : elle se relit chaque jour et ne doit pas s'apprendre
+// à être sautée.
+.caveat {
+  margin: 0;
+  padding-left: var(--fold-space-3, 0.75rem);
+  border-left: 2px solid var(--fold-color-border);
+  line-height: 1.5;
+  color: var(--fold-color-text-muted);
+}
+
+// La légende colle en haut : six colonnes se lisent mal quand leur nom est resté
+// trois écrans plus haut.
+.legend {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: var(--fold-space-2, 0.5rem) var(--fold-space-4, 1rem);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: var(--fold-color-surface);
+  box-shadow: 0 1px 0 var(--fold-color-border);
+}
+
+.legend-cell {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.shelf {
+  padding: var(--fold-space-4, 1rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg, 0.75rem);
+  background: var(--fold-color-surface);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 5%),
+    0 8px 24px -16px rgb(0 0 0 / 18%);
+}
+
+// L'en-tête du rayon reste visible pendant qu'on descend ses articles, sans quoi
+// on perd la famille dont on lit le prix.
+.shelf-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-2, 0.5rem);
+  padding: var(--fold-space-1, 0.25rem) var(--fold-space-1, 0.25rem) var(--fold-space-3, 0.75rem);
+  background: linear-gradient(180deg, var(--fold-color-surface) 72%, transparent);
+}
+
+.shelf-name {
+  margin: 0;
+  font-size: var(--fold-text-md, 1rem);
+  font-weight: 650;
+}
+
+.shelf-vat {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+}
+
+// Les lignes respirent un cran de plus que les colonnes : c'est ce qui fait
+// qu'on lit UNE ligne d'un bout à l'autre plutôt qu'une colonne de haut en bas.
+.grid {
+  row-gap: var(--fold-space-3, 0.75rem);
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+}
+
+.col-article {
+  grid-column: 1;
+}
+.col-price {
+  grid-column: 2;
+}
+.col-limit {
+  grid-column: 3;
+  justify-content: flex-end;
+}
+.col-room {
+  grid-column: 4;
+  justify-content: flex-end;
+}
+.col-impact {
+  grid-column: 5;
+  justify-content: flex-end;
+}
+.col-final {
+  grid-column: 6;
+  justify-content: flex-end;
+}
+
+.node {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.node-article {
+  min-width: 0;
+}
+
+.article-name {
+  font-weight: 600;
+}
+
+.article-meta,
+.muted,
+.guard-meta {
+  font-size: var(--fold-font-size-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+// Tarifer un article : une cible large et discrète, pas un bouton qui crie. Il y
+// en a quatre-vingt-douze à l'écran.
+.node-add {
+  width: 2rem;
+  height: 2rem;
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-md, 0.5rem);
+  background: none;
+  color: var(--fold-color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.node-add:hover {
+  border-style: solid;
+  color: var(--fold-color-text);
+}
+
+.node-price {
+  width: 100%;
+  gap: 0.25rem;
+}
+
+// Les deux champs d'un palier se lisent en ligne : « dès N, ce prix ». Empilés,
+// la grille devenait une colonne de champs sans rapport visible.
+.tier {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tier-from {
+  min-width: 3.25rem;
+  font-size: var(--fold-font-size-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+}
+
+.tier-qty,
+.tier-price {
+  width: 100%;
+  min-width: 0;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm, 0.25rem);
+  background: var(--fold-color-surface);
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.tier-qty {
+  max-width: 3.25rem;
+}
+
+.tier-price {
+  max-width: 5rem;
+}
+
+.tier-drop {
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.price-actions {
+  display: flex;
+  gap: var(--fold-space-2, 0.5rem);
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-font-size-xs, 0.75rem);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link.is-danger:hover {
+  color: var(--fold-color-danger-text, var(--fold-color-text));
+}
+
+.node-guard {
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+// La limite ne s'allume que lorsqu'elle a MORDU : une limite qui se signale tout
+// le temps cesse d'être un signal.
+.node-guard.is-active {
+  color: var(--fold-color-danger-text, var(--fold-color-text));
+  font-weight: 600;
+}
+
+.room,
+.delta,
+.final {
+  font-variant-numeric: tabular-nums;
+}
+
+.final {
+  font-weight: 650;
+}
+
+// Un prix final relevé n'est plus celui qu'on a saisi : il se distingue, sinon
+// on annonce au client le nombre du champ.
+.final.is-floored {
+  color: var(--fold-color-danger-text, var(--fold-color-text));
+}
+
+.delta.is-down {
+  color: var(--fold-color-success-text, var(--fold-color-text));
+}
+
+.delta.is-up {
+  color: var(--fold-color-danger-text, var(--fold-color-text));
+}
+
+.loading {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+// Sous 60rem, six colonnes ne tiennent plus : la grille redevient une pile de
+// lignes plutôt qu'un tableau qu'on balaie latéralement sans savoir ce qu'on rate.
+@media (max-width: 60rem) {
+  .legend {
+    display: none;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    row-gap: var(--fold-space-4, 1rem);
+  }
+
+  .cell {
+    grid-column: 1 !important;
+    justify-content: flex-start;
+  }
+}

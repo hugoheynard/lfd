@@ -68,6 +68,8 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   // négocie leurs tarifs.
   'commercial/tarification/mercuriales-templates': null,
   'commercial/tarification/devis-templates': null,
+  'commercial/tarification/mercuriales-templates/:id': null,
+  'commercial/tarification/devis-templates/:id': null,
 
   'rendez-vous/:appointmentId': 'appointments:read',
 };
