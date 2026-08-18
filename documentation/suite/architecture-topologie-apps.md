@@ -181,3 +181,127 @@ fige la frontière qu'on est en train de discuter.
   l'appareil change, pas le jour où le sujet grossit.
 - **Le trou d'autorisation du PIM** est à traiter **indépendamment** de tout ceci :
   il est ouvert maintenant.
+
+## L'arborescence cible — la séparation, physiquement
+
+Trois blocs métier, un socle technique. Le point du découpage est qu'on doit
+pouvoir **voir** la frontière en ouvrant le dossier, et qu'un import qui la
+franchit doit sauter aux yeux dans une revue de diff.
+
+```
+apps/lfd-api/                          ← ex lfc-B2B-platform-backend, renommé
+├── prisma/
+│   └── schema.prisma                  schemas = ["staff", "pim", "b2b", "growth"]
+└── src/
+    │
+    ├── staff/                         ▸ LE SOCLE PARTAGÉ — schéma `staff`
+    │   ├── directory/                   annuaire (ex `staff-users/`)
+    │   ├── permissions/                 catalogue, rôles, overrides, résolution
+    │   ├── invitations/                 émission, péremption, première entrée
+    │   ├── notifications/               (ex `staff-notifications/`)
+    │   └── staff.module.ts
+    │
+    ├── pim/                           ▸ LE RÉFÉRENTIEL — schéma `pim`
+    │   ├── catalogue/                   produits, catégories, collections
+    │   ├── channels/
+    │   │   ├── shopify/                 réconciliation 3 voies, snapshots
+    │   │   └── b2b-platform/            le fil — devient un PORT, plus du HTTP
+    │   ├── commerce/                    régimes de TVA
+    │   ├── locations/  allergens/
+    │   └── pim.module.ts
+    │
+    ├── b2b/                           ▸ LA PLATEFORME MARCHANDE — `b2b` + `growth`
+    │   ├── account/                     personnes, memberships, sociétés
+    │   ├── orders/  subscriptions/  payments/
+    │   ├── pricing/                     règles, planchers, barèmes, gabarits
+    │   ├── catalog/                     la lecture du référentiel (voir plus bas)
+    │   ├── delivery-zones/  pickup-addresses/  order-cutoffs/
+    │   ├── alerts/  growth/
+    │   └── b2b.module.ts
+    │
+    ├── platform/                      ▸ TECHNIQUE PURE — zéro connaissance métier
+    │   ├── database/                    Prisma, clients, transactions
+    │   ├── auth/                        vérification de jeton, principal
+    │   ├── http/  mailer/  storage/  time/  security/
+    │   └── platform.module.ts
+    │
+    ├── appBootstrap/                  racine de composition
+    ├── main.ts                        rôle `api`
+    └── worker.ts                      rôle `worker` — MÊME image
+```
+
+Ce qui bouge peu, volontairement : les dossiers du PIM se déplacent **tels
+quels**, ceux du B2B se rangent sous `b2b/`, et `staff-users/` +
+`staff-notifications/` — qui existent **déjà** comme dossiers de premier niveau —
+se regroupent sous `staff/`. L'extraction du socle staff n'invente rien : elle
+rend explicite un partage aujourd'hui accidentel, puisque le PIM ne peut pas
+atteindre l'annuaire qui décide pourtant de qui a le droit d'y entrer.
+
+### Qui a le droit d'importer qui
+
+C'est la matrice que `lint:context-boundaries` transcrit. Elle est courte exprès :
+si elle ne tient pas en cinq lignes, le découpage est faux.
+
+| Depuis ↓ vers → | `staff`          | `pim`               | `b2b` | `platform` |
+| --------------- | ---------------- | ------------------- | ----- | ---------- |
+| **`staff`**     | —                | ✗                   | ✗     | ✓          |
+| **`pim`**       | ✓ (autorisation) | —                   | ✗     | ✓          |
+| **`b2b`**       | ✓ (autorisation) | **port uniquement** | —     | ✓          |
+| **`platform`**  | ✗                | ✗                   | ✗     | —          |
+
+Deux lectures à retenir :
+
+- **`staff` ne connaît personne.** Il dit qui est qui et qui peut quoi ; s'il
+  connaissait le B2B, on ne pourrait plus le poser devant le PIM ;
+- **`b2b → pim` passe par un port, jamais par une table.** C'est la frontière
+  qui remplace le réseau : `CatalogFeedPort` déclaré dans `b2b/`, implémenté dans
+  `pim/channels/b2b-platform/`. Le jour où quelqu'un écrit une jointure
+  `pim.products × b2b.orders`, la gate le refuse.
+
+### Les schémas Postgres
+
+Une base, quatre schémas — le B2B est **déjà** en `multiSchema` (`public`,
+`growth`), donc ce n'est pas un saut d'architecture mais une ligne de plus :
+
+```prisma
+datasource db {
+  provider = "postgresql"
+  schemas  = ["staff", "pim", "b2b", "growth"]
+}
+```
+
+`public` devient `b2b`. Une table appartient à **un** schéma, et le schéma dit
+qui la possède. Aucune jointure ne traverse : le franchissement passe par un port,
+exactement comme il passait par HTTP.
+
+### Les packages
+
+```
+packages/
+├── staff-contracts/       ▸ NOUVEAU — rôles, permissions, vues annuaire
+├── pim-contracts/         ▸ existe — DTO du référentiel
+├── b2b-contracts/         ▸ ex `contracts/`, renommé pour cesser d'être « les » contrats
+├── endpoints/             messages d'erreur HTTP, partagé
+├── shopify-admin/         transport Admin Shopify, framework-free
+├── catalog-sync/  storage/  mailer/  ops-contract/
+└── ui :  fold-ng (npm)  ·  b2b-ui  ·  catalog-ui
+```
+
+Le renommage `contracts` → `b2b-contracts` n'est pas cosmétique : tant qu'un
+package s'appelle « les contrats », tout finit dedans, et la frontière disparaît
+du côté où elle se voyait le mieux. Trois contextes, trois paquets de contrats,
+et l'import dit à qui l'on parle.
+
+### Ce que devient `b2b/catalog/`
+
+Aujourd'hui il porte l'ingestion, la parité, les décisions d'ingestion, la
+projection de catégories et l'historique du prix canonique — une vingtaine de
+fichiers qui n'existent que parce que le référentiel est de l'autre côté d'un
+réseau.
+
+Après : il ne garde que **la lecture** (`ProductCatalogReader` sur le port) et,
+si on le veut, le **contrôle de parité** — qui cesse d'être un protocole pour
+devenir un garde-fou explicite. Le reste fond.
+
+Ce n'est pas un gain gratuit : c'est le vrai bénéfice de la fusion, et c'est
+aussi ce qui la rend irréversible.
