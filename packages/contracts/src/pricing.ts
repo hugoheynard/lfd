@@ -1119,3 +1119,27 @@ export const applyPriceTemplatePayloadSchema = z.object({
   validTo: z.string().datetime().nullable(),
 });
 export type ApplyPriceTemplatePayload = z.infer<typeof applyPriceTemplatePayloadSchema>;
+
+/**
+ * **Ce que le marché paie déjà pour cet article.**
+ *
+ * L'indicateur d'aide à la négociation : avant d'accorder un prix, savoir où il
+ * se situe par rapport aux mercuriales **en place chez les autres clients**.
+ *
+ * La **médiane** et non la moyenne : sur une poignée de clients, un contrat
+ * exceptionnel — le tout premier, celui qu'on a arraché — tirerait la moyenne et
+ * ferait passer un prix normal pour une largesse. La médiane ne bouge pas pour
+ * un point extrême, et c'est précisément la propriété qu'on veut ici.
+ *
+ * Les bornes accompagnent la médiane parce qu'un seul nombre cache la
+ * dispersion : « médiane 1,15 € » ne dit pas si tout le monde est à 1,15 ou si
+ * l'on va de 0,90 à 1,60.
+ */
+export interface MercurialeBenchmarkView {
+  readonly sku: string;
+  readonly medianCents: number;
+  readonly lowCents: number;
+  readonly highCents: number;
+  /** Sur combien de clients la médiane est calculée — un chiffre sur deux se dit. */
+  readonly companyCount: number;
+}

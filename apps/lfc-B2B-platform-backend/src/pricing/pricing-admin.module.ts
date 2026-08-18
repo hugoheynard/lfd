@@ -40,6 +40,7 @@ import { PrismaVolumeLadderRepository } from "./infrastructure/prisma-volume-lad
 import { PrismaVolumeCommitmentRepository } from "./infrastructure/prisma-volume-commitment.repository.js";
 import { VolumeCommitmentsQuery } from "./application/queries/volume-commitments.query.js";
 import { PriceProjectionQuery } from "./application/queries/price-projection.query.js";
+import { MercurialeBenchmarkQuery } from "./application/queries/mercuriale-benchmark.query.js";
 import { PriceTemplatesQuery } from "./application/queries/price-templates.query.js";
 import {
   ApplyPriceTemplateHandler,
@@ -99,6 +100,7 @@ import { PricingModule } from "./pricing.module.js";
     VolumeCommitmentsQuery,
     PriceProjectionQuery,
     PriceTemplatesQuery,
+    MercurialeBenchmarkQuery,
     SavePriceTemplateHandler,
     ApplyPriceTemplateHandler,
     { provide: PricingRuleRepository, useClass: PrismaPricingRuleRepository },

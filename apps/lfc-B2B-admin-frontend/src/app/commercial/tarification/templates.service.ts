@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type {
   ApplyPriceTemplatePayload,
+  MercurialeBenchmarkView,
   PriceTemplateKind,
   PriceTemplateView,
   SavePriceTemplatePayload,
@@ -31,6 +32,19 @@ export class PriceTemplatesService {
   async byId(id: string): Promise<PriceTemplateView> {
     return firstValueFrom(
       this.http.get<PriceTemplateView>(`${this.base}/${encodeURIComponent(id)}`),
+    );
+  }
+
+  /**
+   * **Ce que le marché paie déjà**, article par article — l'indicateur d'aide.
+   *
+   * Lu une fois avec la grille et non par article : quatre-vingt-douze appels
+   * pour un écran qu'on ouvre pour lire seraient absurdes, et la médiane d'un
+   * article se calcule de toute façon sur la même passe que celle des autres.
+   */
+  async benchmark(): Promise<readonly MercurialeBenchmarkView[]> {
+    return firstValueFrom(
+      this.http.get<readonly MercurialeBenchmarkView[]>(`${this.base}/benchmark`),
     );
   }
 

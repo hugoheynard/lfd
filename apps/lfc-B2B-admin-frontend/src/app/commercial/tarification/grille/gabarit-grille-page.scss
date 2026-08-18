@@ -287,6 +287,35 @@ button.node:focus-visible {
   text-decoration: underline;
 }
 
+// L'indicateur de marché : une note, pas une décision. Il se lit sous le prix
+// qu'on tape, et le ton dit de quel côté de la médiane on est tombé — sans
+// juger : un gros volume mérite de descendre.
+.market {
+  display: flex;
+  flex-direction: column;
+  margin: 0.25rem 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.market-median {
+  font-weight: 600;
+}
+
+.market.is-under .market-median {
+  color: var(--fold-color-warning-text);
+}
+
+.market.is-over .market-median {
+  color: var(--fold-color-success-text);
+}
+
+.market-spread {
+  opacity: 0.8;
+}
+
 // Le volume prévu : discret, dans la carte de l'article. Il n'est pas une
 // décision de prix — il dit sur quoi la décision porte.
 .planned-field {

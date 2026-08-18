@@ -1,4 +1,9 @@
-import type { PriceFloorView, PricingItemView, TemplateTierPayload } from '@lfd/contracts';
+import type {
+  MercurialeBenchmarkView,
+  PriceFloorView,
+  PricingItemView,
+  TemplateTierPayload,
+} from '@lfd/contracts';
 
 /**
  * **Une ligne de la grille mercuriale**, dérivée de bout en bout.
@@ -30,6 +35,14 @@ export interface MercurialeRow {
   readonly roomCents: number | null;
   /** L'écart au tarif catalogue, en points de base. Positif = moins cher. */
   readonly impactBp: number | null;
+  /** Ce que les autres clients paient déjà. `null` = aucune mercuriale en place. */
+  readonly benchmark: MercurialeBenchmarkView | null;
+  /**
+   * Le prix saisi face à la médiane du marché : `under` = accordé moins cher que
+   * la moitié des clients. Ce n'est **pas** un jugement — un gros volume mérite
+   * de descendre — mais c'est le fait qu'on veut connaître avant de signer.
+   */
+  readonly versusMarket: 'under' | 'over' | 'at' | null;
 }
 
 /** La limite d'un article, en centimes, quelle que soit sa forme. */
@@ -60,6 +73,7 @@ export function impactBp(catalogCents: number, finalCents: number): number | nul
 export function mercurialeRow(
   item: Pick<PricingItemView, 'sku' | 'name' | 'canonicalCents' | 'effectiveFloor'>,
   mercurialeCents: number | null,
+  benchmark: MercurialeBenchmarkView | null = null,
 ): MercurialeRow {
   const floorCents = floorCentsOf(item.effectiveFloor, item.canonicalCents);
   if (mercurialeCents === null) {
@@ -73,6 +87,8 @@ export function mercurialeRow(
       floored: false,
       roomCents: null,
       impactBp: null,
+      benchmark,
+      versusMarket: null,
     };
   }
   const floored = floorCents !== null && mercurialeCents < floorCents;
@@ -89,7 +105,17 @@ export function mercurialeRow(
     // il en a zéro — ce qui est une information, pas la même chose qu'une absence.
     roomCents: floorCents === null ? null : Math.max(0, finalCents - floorCents),
     impactBp: impactBp(item.canonicalCents, finalCents),
+    benchmark,
+    versusMarket: benchmark === null ? null : versus(finalCents, benchmark.medianCents),
   };
+}
+
+/** Le prix saisi, situé par rapport à la médiane du marché. */
+function versus(finalCents: number, medianCents: number): 'under' | 'over' | 'at' {
+  if (finalCents === medianCents) {
+    return 'at';
+  }
+  return finalCents < medianCents ? 'under' : 'over';
 }
 
 /**
@@ -121,4 +147,24 @@ export function tally(rows: readonly MercurialeRow[]): {
         ? null
         : Math.round(impacts.reduce((sum, impact) => sum + impact, 0) / impacts.length),
   };
+}
+
+/**
+ * **L'écart au catalogue, en toutes lettres.**
+ *
+ * Le signe est INVERSÉ par rapport aux points de base : un `impactBp` positif est
+ * une baisse, et l'écrire « +5 % » ferait lire une hausse. C'est la convention de
+ * cet écran, et elle vit avec le champ qu'elle met en forme plutôt que dans le
+ * composant — sans quoi un second écran la réinventerait à l'envers.
+ */
+export function impactLabel(bp: number): string {
+  return `${bp > 0 ? '−' : '+'}${(Math.abs(bp) / 100).toFixed(1).replace('.', ',')} %`;
+}
+
+/** Le SENS de l'écart, pour la couleur — jamais pour l'information seule. */
+export function impactDirection(bp: number): 'down' | 'up' | 'flat' {
+  if (bp === 0) {
+    return 'flat';
+  }
+  return bp > 0 ? 'down' : 'up';
 }

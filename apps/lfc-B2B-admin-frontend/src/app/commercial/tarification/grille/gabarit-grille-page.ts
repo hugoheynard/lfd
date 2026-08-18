@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import type { PriceTemplateKind, PricingBoardView, PricingCategoryView } from '@lfd/contracts';
+import type {
+  MercurialeBenchmarkView,
+  PriceTemplateKind,
+  PricingBoardView,
+  PricingCategoryView,
+} from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
 import {
   FoldBadgeComponent,
@@ -17,6 +22,7 @@ import { PoseBar, type PoseRequest } from '../pose-bar/pose-bar';
 import { eurosField } from './price-field';
 import {
   addTier,
+  draftFromLines,
   entryOf,
   priceAt,
   removeTier,
@@ -30,7 +36,13 @@ import {
   type DraftTier,
   type PlannedVolumes,
 } from './draft-grid';
-import { mercurialeRow, tally, type MercurialeRow } from './mercuriale-row';
+import {
+  impactDirection,
+  impactLabel,
+  mercurialeRow,
+  tally,
+  type MercurialeRow,
+} from './mercuriale-row';
 import { ArticleSimulation } from '../simulation/article-simulation/article-simulation';
 import { MercurialeMix } from '../simulation/mercuriale-mix/mercuriale-mix';
 import { mixArticlesOf } from '../simulation/mercuriale-mix';
@@ -38,11 +50,9 @@ import { gridRowOf, locateSimulation } from '../simulation/locate-simulation';
 import type { ScenarioTier } from '../simulation/revenue-model';
 
 /**
- * Le segment d'URL de chaque nature.
- *
- * Une table plutôt qu'une interpolation : « devis » ne prend pas de `s`, et un
- * gabarit enregistré aurait atterri sur une route qui n'existe pas — après un
- * `replaceUrl`, donc sans retour possible.
+ * Le segment d'URL de chaque nature. Une table plutôt qu'une interpolation :
+ * « devis » ne prend pas de `s`, et un gabarit enregistré aurait atterri sur une
+ * route inexistante — après un `replaceUrl`, donc sans retour possible.
  */
 const SEGMENT: Readonly<Record<PriceTemplateKind, string>> = {
   mercuriale: 'mercuriales-templates',
@@ -95,8 +105,9 @@ export class GabaritGrillePage {
   private readonly router = inject(Router);
 
   protected readonly euros = formatEuros;
-  // `nativeValue` et non `$any($event.target)` : le second compile et ment au
-  // compilateur, et c'est exactement ce que la convention interdit.
+  protected readonly percent = impactLabel;
+  protected readonly direction = impactDirection;
+  // `nativeValue` et non `$any($event.target)` : le second ment au compilateur.
   protected readonly nativeValue = nativeValue;
 
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
@@ -125,6 +136,9 @@ export class GabaritGrillePage {
    */
   protected readonly volumes = signal<PlannedVolumes>(new Map());
 
+  /** Ce que les autres clients paient déjà, par SKU. Vide = rien en place. */
+  private readonly benchmark = signal<ReadonlyMap<string, MercurialeBenchmarkView>>(new Map());
+
   protected readonly categories = computed(() => this.board()?.categories ?? []);
   protected readonly isNew = computed(() => this.id() === 'nouveau');
   protected readonly posable = computed(
@@ -146,22 +160,17 @@ export class GabaritGrillePage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      this.board.set(await this.tarification.read());
+      const [board, benchmark] = await Promise.all([
+        this.tarification.read(),
+        this.templates.benchmark(),
+      ]);
+      this.board.set(board);
+      this.benchmark.set(new Map(benchmark.map((entry) => [entry.sku, entry])));
       if (!this.isNew()) {
         const template = await this.templates.byId(this.id());
         this.label.set(template.label);
         this.saved.set(template.id);
-        this.draft.set(
-          new Map(
-            template.lines.map((line): [string, readonly DraftTier[]] => [
-              line.sku,
-              line.tiers.map((tier) => ({
-                minQuantity: String(tier.minQuantity),
-                unitPrice: eurosField(tier.unitPriceCents),
-              })),
-            ]),
-          ),
-        );
+        this.draft.set(draftFromLines(template.lines));
       }
       this.state.set('ready');
     } catch {
@@ -171,7 +180,9 @@ export class GabaritGrillePage {
 
   /** Les lignes d'un rayon, dérivées — le prix d'entrée pilote les colonnes de droite. */
   protected rowsOf(category: PricingCategoryView): readonly MercurialeRow[] {
-    return category.items.map((item) => mercurialeRow(item, entryOf(this.draft(), item.sku)));
+    return category.items.map((item) =>
+      mercurialeRow(item, entryOf(this.draft(), item.sku), this.benchmark().get(item.sku) ?? null),
+    );
   }
 
   /** Le plan tel que le partage en tête de page le lit. */
@@ -286,16 +297,5 @@ export class GabaritGrillePage {
     } finally {
       this.posing.set(false);
     }
-  }
-
-  protected percent(bp: number): string {
-    return `${bp > 0 ? '−' : '+'}${(Math.abs(bp) / 100).toFixed(1).replace('.', ',')} %`;
-  }
-
-  protected direction(bp: number): 'down' | 'up' | 'flat' {
-    if (bp === 0) {
-      return 'flat';
-    }
-    return bp > 0 ? 'down' : 'up';
   }
 }

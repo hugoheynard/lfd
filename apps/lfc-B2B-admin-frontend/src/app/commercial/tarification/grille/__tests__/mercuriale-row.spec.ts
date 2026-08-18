@@ -120,3 +120,38 @@ describe('tally', () => {
     expect(tally([mercurialeRow(item(), null)]).averageImpactBp).toBeNull();
   });
 });
+
+
+describe('mercurialeRow · la médiane du marché', () => {
+  const market = {
+    sku: 'baguette',
+    medianCents: 120,
+    lowCents: 100,
+    highCents: 160,
+    companyCount: 5,
+  };
+  const item = {
+    sku: 'baguette',
+    name: 'Baguette',
+    canonicalCents: 200,
+    effectiveFloor: null,
+  };
+
+  it('situe le prix saisi sous, sur, ou au-dessus de la médiane', () => {
+    expect(mercurialeRow(item, 110, market).versusMarket).toBe('under');
+    expect(mercurialeRow(item, 120, market).versusMarket).toBe('at');
+    expect(mercurialeRow(item, 130, market).versusMarket).toBe('over');
+  });
+
+  it('porte la médiane même sur un article NON tarifé — c’est là qu’elle sert le plus', () => {
+    const row = mercurialeRow(item, null, market);
+    expect(row.benchmark).toBe(market);
+    // Rien n'est saisi : il n'y a rien à situer.
+    expect(row.versusMarket).toBeNull();
+  });
+
+  it('reste muette sans mercuriale en place ailleurs', () => {
+    expect(mercurialeRow(item, 110).benchmark).toBeNull();
+    expect(mercurialeRow(item, 110).versusMarket).toBeNull();
+  });
+});

@@ -1576,6 +1576,66 @@ describe("les gabarits tarifaires", () => {
     ]);
   });
 
+  /**
+   * **L'indicateur d'aide : ce que le marché paie déjà.**
+   *
+   * Seul ce niveau prouve les deux choses qui comptent — que la médiane se
+   * calcule sur les mercuriales RÉELLEMENT en place, et qu'une décision qui a
+   * cessé d'agir en sort. Un test unitaire vérifie l'arithmétique, pas le filtre.
+   */
+  describe("la médiane du marché", () => {
+    const marketFor = async (sku: string) => {
+      const entries = jsonBody<
+        {
+          sku: string;
+          medianCents: number;
+          lowCents: number;
+          highCents: number;
+          companyCount: number;
+        }[]
+      >(await staff().get("/admin/pricing/templates/benchmark").expect(200));
+      return entries.find((entry) => entry.sku === sku) ?? null;
+    };
+
+    it("situe un prix entre les bornes, sur les mercuriales en place", async () => {
+      const { id } = jsonBody<{ id: string }>(
+        await compose([{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 140 }] }]).expect(201),
+      );
+      for (let index = 0; index < 3; index += 1) {
+        const company = await createCompany(ctx.prisma);
+        await apply(id, company.id).expect(201);
+      }
+
+      const market = await marketFor(SKU);
+
+      expect(market).not.toBeNull();
+      expect(market?.companyCount ?? 0).toBeGreaterThanOrEqual(3);
+      expect(market?.lowCents ?? 0).toBeLessThanOrEqual(market?.medianCents ?? 0);
+      expect(market?.highCents ?? 0).toBeGreaterThanOrEqual(market?.medianCents ?? 0);
+    });
+
+    it("une mercuriale archivée sort du marché", async () => {
+      const { id } = jsonBody<{ id: string }>(
+        await compose([{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 133 }] }]).expect(201),
+      );
+      const company = await createCompany(ctx.prisma);
+      await apply(id, company.id).expect(201);
+      const before = await marketFor(SKU);
+
+      // Écrit directement : ce test vise la LECTURE, et le geste d'archivage a
+      // ses propres tests plus haut.
+      await ctx.prisma.priceRule.updateMany({
+        where: { audienceId: company.id },
+        data: { archivedAt: new Date() },
+      });
+
+      // Zéro observation ne rend pas « zéro client » : l'article DISPARAÎT de la
+      // liste, et l'écran n'affiche alors aucun indicateur — ce qui est juste.
+      const after = await marketFor(SKU);
+      expect(after?.companyCount ?? 0).toBe((before?.companyCount ?? 1) - 1);
+    });
+  });
+
   /** L'écart au catalogue est ce que le commercial regarde : il est LU, pas figé. */
   it("rend le tarif catalogue en regard de chaque ligne", async () => {
     const { id } = jsonBody<{ id: string }>(

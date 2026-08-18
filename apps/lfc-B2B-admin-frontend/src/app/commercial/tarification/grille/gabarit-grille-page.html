@@ -144,6 +144,11 @@
                   (click)="priceIt(row.sku, row.catalogCents)"
                 >
                   +
+                  <!-- L'indicateur sert AVANT de tarifer : c'est là qu'on décide
+                       du premier chiffre qu'on annoncera au téléphone. -->
+                  @if (row.benchmark; as market) {
+                    <span class="market">marché {{ euros(market.medianCents) }}</span>
+                  }
                 </button>
               } @else {
                 <div class="node node-price">
@@ -182,6 +187,22 @@
                         </button>
                       }
                     </div>
+                  }
+                  <!--
+                    **Ce que les autres paient déjà.** La médiane et non la
+                    moyenne : sur une poignée de clients, le contrat arraché au
+                    premier tirerait la moyenne et ferait passer un tarif normal
+                    pour une largesse. Les bornes suivent, parce qu'un seul nombre
+                    cache la dispersion.
+                  -->
+                  @if (row.benchmark; as market) {
+                    <p class="market" [class]="'is-' + row.versusMarket">
+                      <span class="market-median">marché {{ euros(market.medianCents) }}</span>
+                      <span class="market-spread">
+                        {{ euros(market.lowCents) }} – {{ euros(market.highCents) }} ·
+                        {{ market.companyCount }} client(s)
+                      </span>
+                    </p>
                   }
                   <div class="price-actions">
                     <button type="button" class="link" (click)="addTier(row.sku)">+ palier</button>

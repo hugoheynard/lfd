@@ -572,4 +572,5 @@ export type {
   TemplateLinePayload,
   SavePriceTemplatePayload,
   ApplyPriceTemplatePayload,
+  MercurialeBenchmarkView,
 } from "./pricing.js";

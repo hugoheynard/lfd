@@ -3,6 +3,7 @@ import {
   priceTemplateKindSchema,
   savePriceTemplatePayloadSchema,
   type ApplyPriceTemplatePayload,
+  type MercurialeBenchmarkView,
   type PriceTemplateView,
   type SavePriceTemplatePayload,
 } from "@lfd/contracts";
@@ -27,6 +28,7 @@ import {
   ApplyPriceTemplateCommand,
   SavePriceTemplateCommand,
 } from "../application/commands/price-template.handlers.js";
+import { MercurialeBenchmarkQuery } from "../application/queries/mercuriale-benchmark.query.js";
 import { PriceTemplatesQuery } from "../application/queries/price-templates.query.js";
 
 /**
@@ -43,7 +45,20 @@ export class AdminPriceTemplatesController {
   constructor(
     private readonly commands: CommandBus,
     private readonly templates: PriceTemplatesQuery,
+    private readonly benchmark: MercurialeBenchmarkQuery,
   ) {}
+
+  /**
+   * **Ce que le marché paie déjà**, article par article.
+   *
+   * Sur cette surface et non sur celle du tarif général : c'est en composant une
+   * grille qu'on a besoin de savoir où l'on se situe. Avant la liste des
+   * gabarits (`:id`), sinon « benchmark » serait lu comme un identifiant.
+   */
+  @Get("benchmark")
+  async benchmarkByProduct(): Promise<readonly MercurialeBenchmarkView[]> {
+    return this.benchmark.byProduct();
+  }
 
   @Get()
   async list(@Query("kind") kind: string): Promise<readonly PriceTemplateView[]> {

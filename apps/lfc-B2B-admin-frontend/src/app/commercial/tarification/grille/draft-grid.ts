@@ -1,6 +1,6 @@
-import type { TemplateLinePayload } from '@lfd/contracts';
+import type { TemplateLinePayload, TemplateTierPayload } from '@lfd/contracts';
 
-import { centsOf } from './price-field';
+import { centsOf, eurosField } from './price-field';
 
 /** Les paliers saisis pour un article — en chaînes, cf. `price-field`. */
 export interface DraftTier {
@@ -108,6 +108,26 @@ export function toLines(grid: DraftGrid): readonly TemplateLinePayload[] {
       ? []
       : [{ sku, tiers: built.filter((tier) => tier !== null) }];
   });
+}
+
+/**
+ * **Un gabarit enregistré → la grille de saisie.** L'inverse exact de `toLines`.
+ *
+ * Ici et non dans la page : les deux sens de la même traduction se lisent
+ * ensemble, et c'est ce qui empêche l'un de dériver de l'autre.
+ */
+export function draftFromLines(
+  lines: readonly { sku: string; tiers: readonly TemplateTierPayload[] }[],
+): DraftGrid {
+  return new Map(
+    lines.map((line): [string, readonly DraftTier[]] => [
+      line.sku,
+      line.tiers.map((tier) => ({
+        minQuantity: String(tier.minQuantity),
+        unitPrice: eurosField(tier.unitPriceCents),
+      })),
+    ]),
+  );
 }
 
 /** Les volumes prévus, par SKU. Absent = article hors du plan, et non « zéro ». */

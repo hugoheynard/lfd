@@ -112,7 +112,6 @@ describe('toLines', () => {
   });
 });
 
-
 describe('withVolume / volumeOf', () => {
   it('retient un volume lisible', () => {
     const volumes = withVolume(new Map(), 'baguette', '10 000');
