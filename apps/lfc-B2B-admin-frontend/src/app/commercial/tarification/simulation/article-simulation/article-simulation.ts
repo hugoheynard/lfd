@@ -6,16 +6,16 @@ import { Chart } from '../../../../shared/chart/chart';
 import { ChartNote } from '../../../../shared/chart-note/chart-note';
 import { nativeValue } from '../../../../shared/native-input';
 import { revenueCurvesOption, revenueGapOption, type RevenueSeries } from '../revenue-chart';
+import { centsOf, eurosField } from '../../grille/price-field';
 import {
   averageUnitCents,
   curveOf,
-  fixedEquivalent,
+  fixedScenario,
   gapCents,
   revenueCentsAt,
   unitPriceCentsAt,
   volumeSamples,
   type ArticleBasis,
-  type Calibration,
   type Scenario,
   type ScenarioTier,
 } from '../revenue-model';
@@ -56,7 +56,14 @@ export class ArticleSimulation {
   protected readonly nativeValue = nativeValue;
 
   protected readonly targetVolume = signal(1_000);
-  protected readonly calibration = signal<Calibration>('revenue');
+  /**
+   * Le prix fixe comparé, **en chaîne et vide par défaut**.
+   *
+   * Vide = on retombe sur le prix moyen, la seule valeur qui fasse peser les deux
+   * offres pareil. Une chaîne et non des centimes pour la raison habituelle : un
+   * champ qu'on vide doit rester vide le temps de taper le nombre suivant.
+   */
+  protected readonly fixedField = signal('');
   protected readonly pinned = signal<readonly Scenario[]>([]);
 
   protected readonly basis = computed<ArticleBasis>(() => ({
@@ -70,9 +77,30 @@ export class ArticleSimulation {
     tiers: this.tiers(),
   }));
 
-  protected readonly reference = computed(() =>
-    fixedEquivalent(this.live(), this.basis(), this.targetVolume(), this.calibration()),
-  );
+  /**
+   * **Les deux prix remarquables**, proposés et jamais imposés.
+   *
+   * Ils bornent la discussion : au prix annoncé, le barème rapporte plus partout ;
+   * au prix moyen, les deux offres pèsent le même chiffre au volume promis. Entre
+   * les deux — et au-delà — c'est au commercial de poser SON alternative.
+   */
+  protected readonly anchors = computed(() => ({
+    headlineCents: unitPriceCentsAt(this.live(), this.basis(), this.targetVolume()),
+    averageCents: averageUnitCents(this.live(), this.basis(), this.targetVolume()),
+  }));
+
+  /** Le prix fixe comparé : celui saisi, à défaut le prix moyen. */
+  protected readonly referenceCents = computed(() => {
+    const anchors = this.anchors();
+    return centsOf(this.fixedField()) ?? anchors.averageCents ?? anchors.headlineCents;
+  });
+
+  // Le prix est DANS la légende : « prix fixe » sans son montant oblige à
+  // remonter au champ pour savoir contre quoi la courbe se compare.
+  protected readonly reference = computed(() => {
+    const scenario = fixedScenario(this.referenceCents(), this.basis());
+    return { ...scenario, label: `Fixe ${formatEuros(scenario.tiers[0]?.unitPriceCents ?? 0)}` };
+  });
 
   protected readonly canPin = computed(
     () => this.tiers().length > 1 && this.pinned().length < MAX_PINNED,
@@ -132,12 +160,17 @@ export class ArticleSimulation {
     }),
   );
 
-  /** Les deux prix qui se disent au téléphone — ils ne sont PAS le même nombre. */
-  protected readonly prices = computed(() => ({
-    headlineCents: unitPriceCentsAt(this.live(), this.basis(), this.targetVolume()),
-    averageCents: averageUnitCents(this.live(), this.basis(), this.targetVolume()),
-    referenceCents: this.reference().tiers[0]?.unitPriceCents ?? 0,
-  }));
+  /** Reprendre un prix remarquable : il ATTERRIT dans le champ, il ne le verrouille pas. */
+  protected useAnchor(cents: number | null): void {
+    if (cents !== null) {
+      this.fixedField.set(eurosField(cents));
+    }
+  }
+
+  /** Le prix fixe réellement tracé — la limite peut l'avoir relevé. */
+  protected readonly appliedFixedCents = computed(
+    () => this.reference().tiers[0]?.unitPriceCents ?? 0,
+  );
 
   protected setVolume(raw: string): void {
     const parsed = Number.parseInt(raw.replace(/\s/gu, ''), 10);

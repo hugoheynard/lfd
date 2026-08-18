@@ -25,7 +25,7 @@
 }
 
 .field,
-.calib {
+.anchors {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -47,7 +47,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.calib-choices {
+.anchor-choices {
   display: flex;
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm, 0.25rem);
@@ -68,10 +68,9 @@
   border-left: 1px solid var(--fold-color-border);
 }
 
-.choice.is-on {
+.choice:hover {
   background: var(--fold-color-surface-sunken);
   color: var(--fold-color-text);
-  font-weight: 600;
 }
 
 .kept,
@@ -149,6 +148,11 @@
 .exit-delta {
   font-weight: 600;
   color: var(--fold-color-danger-text);
+}
+
+// Le prix fixe saisi sous la limite : dit une fois, à côté du nombre corrigé.
+.floored {
+  color: var(--fold-color-warning-text);
 }
 
 // Positif = le barème a sécurisé plus que le prix fixe. Le ton suit le SENS pour

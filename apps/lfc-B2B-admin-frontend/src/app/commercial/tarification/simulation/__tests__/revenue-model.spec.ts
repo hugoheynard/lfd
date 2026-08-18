@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   averageUnitCents,
   curveOf,
-  fixedEquivalent,
+  fixedScenario,
   gapCents,
   revenueCentsAt,
   unitPriceCentsAt,
@@ -73,14 +73,13 @@ describe('revenueCentsAt', () => {
   });
 });
 
-describe('fixedEquivalent', () => {
+describe('fixedScenario', () => {
   const target = 500;
+  const headlineCents = unitPriceCentsAt(ladder, basis, target);
+  const averageCents = averageUnitCents(ladder, basis, target) ?? 0;
 
-  it('calibré sur le PRIX annoncé, le barème coûte plus cher — toujours', () => {
-    const fixed = fixedEquivalent(ladder, basis, target, 'headline');
-    expect(unitPriceCentsAt(fixed, basis, target)).toBe(unitPriceCentsAt(ladder, basis, target));
-    // Les deux courbes ne se croisent nulle part : « même prix à l'arrivée »
-    // n'est pas « même offre ».
+  it('au PRIX ANNONCÉ, le barème rapporte plus — partout, sans croisement', () => {
+    const fixed = fixedScenario(headlineCents, basis);
     for (const volume of [10, 200, target, 900]) {
       expect(revenueCentsAt(ladder, basis, volume)).toBeGreaterThan(
         revenueCentsAt(fixed, basis, volume),
@@ -88,17 +87,30 @@ describe('fixedEquivalent', () => {
     }
   });
 
-  it('calibré sur le CHIFFRE, les deux pèsent le même total au volume promis', () => {
-    const fixed = fixedEquivalent(ladder, basis, target, 'revenue');
+  it('au PRIX MOYEN, les deux pèsent le même total au volume promis', () => {
+    const fixed = fixedScenario(averageCents, basis);
     const spread = revenueCentsAt(ladder, basis, target) - revenueCentsAt(fixed, basis, target);
     // À l'arrondi du centime près, et pas davantage.
     expect(Math.abs(spread)).toBeLessThanOrEqual(target);
   });
 
   it("et là seulement, l'écart change de signe de part et d'autre", () => {
-    const fixed = fixedEquivalent(ladder, basis, target, 'revenue');
+    const fixed = fixedScenario(averageCents, basis);
     expect(revenueCentsAt(ladder, basis, 200)).toBeGreaterThan(revenueCentsAt(fixed, basis, 200));
     expect(revenueCentsAt(ladder, basis, 900)).toBeLessThan(revenueCentsAt(fixed, basis, 900));
+  });
+
+  it('un prix fixe librement choisi peut passer sous le barème partout', () => {
+    // Le cas qui motive la saisie libre : « et si je lui avais fait 0,60 € ? ».
+    const fixed = fixedScenario(60, basis);
+    expect(revenueCentsAt(fixed, basis, target)).toBeLessThan(
+      revenueCentsAt(ladder, basis, target),
+    );
+  });
+
+  it('la limite relève un prix fixe trop bas, comme à la caisse', () => {
+    const floored = fixedScenario(60, { catalogCents: 100, floorCents: 85 });
+    expect(floored.tiers[0]?.unitPriceCents).toBe(85);
   });
 });
 
@@ -122,7 +134,7 @@ describe('volumeSamples', () => {
 describe('gapCents', () => {
   it("s'annule au volume promis, et pas ailleurs", () => {
     const target = 500;
-    const fixed = fixedEquivalent(ladder, basis, target, 'revenue');
+    const fixed = fixedScenario(averageUnitCents(ladder, basis, target) ?? 0, basis);
     const volumes = [200, target];
     const gap = gapCents(curveOf(ladder, basis, volumes), curveOf(fixed, basis, volumes));
     expect(Math.abs(gap[1]?.revenueCents ?? 0)).toBeLessThanOrEqual(target);

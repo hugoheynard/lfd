@@ -12,30 +12,36 @@
   </label>
 
   <!--
-    **Le calibrage n'est pas un détail de présentation.** « Même prix à 10 000 »
-    et « même chiffre à 10 000 » ne sont pas la même offre : un barème qui atteint
-    le prix à la dix-millième unité a facturé toutes les précédentes plus cher.
-    Le choix est donc à l'écran, avec ses deux conséquences écrites.
+    **Le prix fixe se saisit.** « Et si je lui avais fait 1,30 € tout du long ? »
+    est une offre alternative, pas un calcul : aucune formule ne devine celle que
+    le commercial avait en tête. Les deux valeurs remarquables sont proposées à
+    côté, parce qu'elles bornent la discussion — mais elles atterrissent dans le
+    champ, elles ne le verrouillent pas.
   -->
-  <div class="calib" role="group" aria-label="Calibrage du prix fixe de référence">
-    <span class="field-label">Prix fixe aligné sur</span>
-    <div class="calib-choices">
-      <button
-        type="button"
-        class="choice"
-        [class.is-on]="calibration() === 'revenue'"
-        (click)="calibration.set('revenue')"
-      >
-        le chiffre total
+  <label class="field">
+    <span class="field-label">Prix fixe comparé</span>
+    <input
+      class="field-input"
+      type="text"
+      inputmode="decimal"
+      [placeholder]="anchors().averageCents !== null ? euros(anchors().averageCents!) : '0,00'"
+      [value]="fixedField()"
+      [attr.aria-label]="'Prix fixe comparé pour ' + name()"
+      (input)="fixedField.set(nativeValue($event))"
+    />
+  </label>
+
+  <div class="anchors">
+    <span class="field-label">Reprendre</span>
+    <div class="anchor-choices">
+      <button type="button" class="choice" (click)="useAnchor(anchors().headlineCents)">
+        annoncé {{ euros(anchors().headlineCents) }}
       </button>
-      <button
-        type="button"
-        class="choice"
-        [class.is-on]="calibration() === 'headline'"
-        (click)="calibration.set('headline')"
-      >
-        le prix annoncé
-      </button>
+      @if (anchors().averageCents !== null) {
+        <button type="button" class="choice" (click)="useAnchor(anchors().averageCents)">
+          moyen {{ euros(anchors().averageCents!) }}
+        </button>
+      }
     </div>
   </div>
 
@@ -67,12 +73,15 @@
 <!-- Les deux prix qui se disent au téléphone. Ils ne sont PAS le même nombre, et
      c'est exactement ce qu'un client découvre à la fin de la saison. -->
 <p class="prices">
-  À <strong>{{ targetVolume().toLocaleString('fr-FR') }}</strong> unités — annoncé
-  <strong>{{ euros(prices().headlineCents) }}</strong>
-  @if (prices().averageCents !== null) {
-    · réellement payé en moyenne <strong>{{ euros(prices().averageCents!) }}</strong>
+  À <strong>{{ targetVolume().toLocaleString('fr-FR') }}</strong> unités, le barème annonce
+  <strong>{{ euros(anchors().headlineCents) }}</strong>
+  @if (anchors().averageCents !== null) {
+    et fait payer <strong>{{ euros(anchors().averageCents!) }}</strong> en moyenne
   }
-  · prix fixe de référence <strong>{{ euros(prices().referenceCents) }}</strong>
+  · comparé à un fixe à <strong>{{ euros(appliedFixedCents()) }}</strong>
+  @if (appliedFixedCents() !== referenceCents()) {
+    <span class="floored">relevé par la limite</span>
+  }
 </p>
 
 <div class="charts">

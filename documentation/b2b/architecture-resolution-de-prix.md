@@ -1431,17 +1431,22 @@ la même offre. On compare deux offres différentes :
   volume, il rapporte strictement davantage. Les deux courbes **ne se croisent
   jamais**.
 
-D'où deux calibrages du prix fixe de référence, et l'écran oblige à choisir :
+Le prix fixe auquel on compare est donc **saisi**, pas déduit : « et si je lui
+avais fait 1,30 € tout du long ? » est une offre alternative, et aucune formule
+ne devine celle que le commercial avait en tête. Deux valeurs remarquables sont
+proposées à côté du champ, parce qu'elles bornent la discussion :
 
-| Aligné sur | Le prix fixe vaut | Ce que la courbe montre |
-| --- | --- | --- |
-| le **prix annoncé** | le prix du barème à V | le barème est plus cher partout ; l'écart monte jusqu'à V puis reste **plat** |
-| le **chiffre total** | le prix **moyen** du barème sur V | les deux se croisent à V ; l'écart est positif avant, **négatif** après |
+| Prix fixe repris | Ce que la courbe montre |
+| --- | --- |
+| le **prix annoncé** (le palier atteint à V) | le barème est plus cher partout ; l'écart monte jusqu'à V puis reste **plat** |
+| le **prix moyen** payé sur V | les deux se croisent à V ; l'écart est positif avant, **négatif** après |
 
-Seul le second calibrage répond à la question de la sortie anticipée : sous le
-volume promis nous sommes devant — le client a payé ses premières unités au prix
-fort, sans qu'aucune clause de sortie n'ait été écrite ; au-dessus, l'excédent
-part au dernier palier et c'est nous qui payons le dépassement.
+Seul le prix moyen répond à la question de la sortie anticipée : sous le volume
+promis nous sommes devant — le client a payé ses premières unités au prix fort,
+sans qu'aucune clause de sortie n'ait été écrite ; au-dessus, l'excédent part au
+dernier palier et c'est nous qui payons le dépassement. Entre les deux valeurs,
+et au-delà, l'écart se déforme continûment : c'est ce qu'on vient regarder en
+déplaçant le prix fixe.
 
 **Conséquence à retenir avant d'ajouter quoi que ce soit** : le jour où une
 régularisation de fin de saison sera proposée (« on te rend la différence sur

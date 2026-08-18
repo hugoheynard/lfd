@@ -7,15 +7,17 @@
  * précédentes plus cher — il rapporte donc STRICTEMENT plus qu'un prix fixe à
  * 1,80 €, à tout volume. Les deux courbes ne se croisent jamais.
  *
- * D'où deux calibrages, et il faut choisir lequel on regarde :
+ * Le prix fixe auquel on la compare est donc **choisi**, pas déduit : c'est une
+ * offre alternative que le commercial aurait pu faire, et lui seul sait laquelle.
+ * Deux valeurs se calculent pourtant et méritent d'être proposées, parce qu'elles
+ * bornent la discussion :
  *
- * - sur **le prix annoncé** — ce que le client entend. Le barème est alors plus
- *   cher partout, et l'écart mesure ce que la progressivité nous rapporte ;
- * - sur **le chiffre total** — ce que nous encaissons. Le prix fixe vaut alors
- *   le prix MOYEN du barème, les deux courbes se croisent au volume promis, et
- *   l'écart change de signe : sous le volume nous sommes devant, au-dessus nous
- *   sommes derrière. C'est ce calibrage-là qui montre le partage de la charge
- *   d'une sortie anticipée.
+ * - **le prix annoncé** — celui que le barème atteint au volume promis. Le
+ *   comparer à lui montre ce que la progressivité nous rapporte en plus ;
+ * - **le prix moyen** — celui réellement payé sur le volume promis. À ce prix-là
+ *   les deux offres pèsent le même chiffre à l'arrivée, et ne diffèrent plus que
+ *   par la répartition dans le temps : c'est le seul point où les courbes se
+ *   croisent, donc la seule lecture qui montre le partage d'une sortie anticipée.
  *
  * **Pourquoi le calcul est ici et non au serveur.** Une mercuriale SCELLE la
  * chaîne : ni palier de volume ni promotion ne s'ajoutent par-dessus. Le prix
@@ -119,41 +121,20 @@ function breakpoints(scenario: Scenario): readonly number[] {
 }
 
 /**
- * Sur quoi le prix fixe de référence s'aligne. Les deux réponses sont vraies,
- * et elles ne racontent pas la même négociation.
- */
-export type Calibration = 'headline' | 'revenue';
-
-/**
- * **Le prix fixe de référence** — déduit, jamais saisi.
+ * **Le prix fixe auquel on compare** — une offre, pas un calcul.
  *
- * Le déduire est ce qui rend la comparaison honnête : les deux scénarios tiennent
- * la même promesse au même volume, et tout écart entre eux est un écart de
- * structure, pas un écart d'offre.
+ * Il est saisi et non déduit : « si je lui avais fait 1,30 € tout du long » est
+ * une question que seul le commercial peut poser, et aucune formule ne la devine.
+ * Les deux valeurs remarquables (prix annoncé, prix moyen) sont proposées comme
+ * points de départ, jamais imposées.
  *
- * - `headline` : le prix que le barème atteint au volume promis. C'est ce que le
- *   client retient de l'appel — et le barème lui coûtera davantage.
- * - `revenue` : le prix MOYEN payé sur le volume promis. Les deux offres pèsent
- *   alors le même chiffre à l'arrivée, à l'arrondi du centime près, et ne
- *   diffèrent plus que par la répartition dans le temps.
+ * La limite s'applique ici aussi : un prix fixe sous le plancher serait une offre
+ * que la caisse relèverait, et la courbe la montrerait tenue.
  */
-export function fixedEquivalent(
-  scenario: Scenario,
-  basis: ArticleBasis,
-  targetVolume: number,
-  calibration: Calibration,
-): Scenario {
-  const unitPriceCents =
-    calibration === 'headline'
-      ? unitPriceCentsAt(scenario, basis, targetVolume)
-      : (averageUnitCents(scenario, basis, targetVolume) ??
-        unitPriceCentsAt(scenario, basis, targetVolume));
+export function fixedScenario(unitPriceCents: number, basis: ArticleBasis): Scenario {
   return {
     id: 'fixe',
     label: 'Prix fixe',
-    // Le prix de référence est déjà relevé s'il le fallait : le repasser par la
-    // limite ne changerait rien, mais un scénario dont le prix ignore la limite
-    // ferait mentir la courbe le jour où le calibrage changera.
     tiers: [{ minQuantity: 1, unitPriceCents: Math.max(unitPriceCents, basis.floorCents ?? 0) }],
   };
 }
@@ -202,15 +183,13 @@ export function curveOf(
 /**
  * **Ce que le barème a sécurisé de plus que le prix fixe**, à chaque volume.
  *
- * Calibré sur le chiffre, l'écart part de zéro, culmine juste avant le volume
- * promis, y revient à zéro, puis passe **négatif** : l'excédent part au dernier
- * palier. La bosse est la charge de sortie anticipée portée par le client, sans
- * qu'aucune clause n'ait été écrite ; la partie négative est ce que nous
- * concédons s'il commande plus que promis.
- *
- * Calibré sur le prix annoncé, l'écart ne redescend jamais : il monte jusqu'au
- * volume promis puis reste **plat**. C'est la prime que la progressivité nous
- * rapporte, et elle est acquise dès que le volume est atteint.
+ * Sa forme dit tout du prix fixe choisi. Au **prix moyen**, l'écart part de
+ * zéro, culmine avant le volume promis, y revient, puis passe **négatif** : la
+ * bosse est la charge de sortie anticipée portée par le client sans qu'aucune
+ * clause n'ait été écrite, et la partie négative est ce que nous concédons s'il
+ * commande plus que promis. Au **prix annoncé**, l'écart ne redescend jamais :
+ * il monte jusqu'au volume promis puis reste plat. Entre les deux, il se déforme
+ * continûment — et c'est précisément ce qu'on vient regarder en le déplaçant.
  */
 export function gapCents(
   ladder: readonly CurvePoint[],
