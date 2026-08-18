@@ -31,6 +31,14 @@
     box-shadow: inset 3px 0 0 0 var(--fold-color-warning-border, currentcolor);
     background: var(--fold-color-warning-surface, rgb(180 120 0 / 8%));
   }
+
+  // Un cran au-dessus de l'avertissement : ici la boutique donne la
+  // marchandise. La barre est plus épaisse, pour que la gravité se lise aussi
+  // sans la couleur.
+  &.is-alert.is-lit {
+    box-shadow: inset 5px 0 0 0 var(--fold-color-danger-border, currentcolor);
+    background: var(--fold-color-danger-surface, rgb(190 40 40 / 10%));
+  }
 }
 
 .stat-value {

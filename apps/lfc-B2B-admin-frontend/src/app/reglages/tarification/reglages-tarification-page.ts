@@ -122,6 +122,17 @@ export class ReglagesTarificationPage {
         .filter((item) => item.floored).length,
   );
 
+  /**
+   * Combien de prix la chaîne a poussés **sous zéro**, et qu'elle a ramenés à
+   * zéro. Le chiffre qui doit rester à zéro : au-dessus, la boutique donne.
+   */
+  protected readonly clampedCount = computed(
+    () =>
+      this.categories()
+        .flatMap((category) => category.items)
+        .filter((item) => item.clampedToZero).length,
+  );
+
   /** Combien d'articles portent au moins une altération, tous étages confondus. */
   protected readonly alteredCount = computed(
     () =>

@@ -27,6 +27,15 @@ export class TarificationSummaryBar {
   readonly flooredCount = input.required<number>();
   /** Des intentions qui ont vieilli — comptées par portée, pas par article. */
   readonly staleFloorCount = input.required<number>();
+  /**
+   * Des prix que la chaîne a poussés **sous zéro**, ramenés à zéro.
+   *
+   * La tuile la plus grave de l'écran : ce n'est pas une intention qui vieillit,
+   * c'est une règle qui donne la marchandise. Le cas arrive dès qu'une baisse en
+   * euros dépasse le prix d'un article — « −5 € » sur un croissant à 2 € — et il
+   * ne peut pas se refuser à la saisie, puisqu'il dépend de l'article.
+   */
+  readonly clampedCount = input.required<number>();
 
   readonly archivesRequested = output<void>();
 }

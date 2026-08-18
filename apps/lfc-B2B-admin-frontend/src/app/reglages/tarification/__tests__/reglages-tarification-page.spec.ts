@@ -96,6 +96,7 @@ function item(overrides: Partial<PricingItemView> = {}): PricingItemView {
     supersededRuleIds: [],
     steps: [],
     floored: false,
+    clampedToZero: false,
     finalCents: 200,
     volumeTiers: [],
     elasticity: null,

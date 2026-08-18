@@ -31,6 +31,7 @@ function item(canonicalCents: number, finalCents: number): PricingItemView {
     supersededRuleIds: [],
     steps: [],
     floored: false,
+    clampedToZero: false,
     finalCents,
     volumeTiers: [],
     elasticity: null,

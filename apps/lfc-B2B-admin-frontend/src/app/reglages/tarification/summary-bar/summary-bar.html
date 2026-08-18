@@ -21,6 +21,13 @@
     <span class="stat-label">limites à confirmer</span>
   </div>
 
+  <!-- La plus grave : une règle qui donne la marchandise. Elle ne s'allume
+       quasiment jamais — et c'est exactement pour ce jour-là qu'elle existe. -->
+  <div class="stat is-alert" [class.is-lit]="clampedCount() > 0">
+    <span class="stat-value">{{ clampedCount() }}</span>
+    <span class="stat-label">ramenés à zéro</span>
+  </div>
+
   <span class="spacer"></span>
 
   <!-- L'entrée vers ce qui n'est plus là. Discrète : on la cherche rarement,
