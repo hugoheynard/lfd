@@ -15,6 +15,7 @@ import type { PricingBoardView, PricingComparisonView } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { createCompany } from "./factories.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -1508,5 +1509,100 @@ describe("POST /admin/pricing/projection", () => {
       .post("/admin/pricing/projection")
       .send({ companyId: null, sku: "INEXISTANT", cumulativeQuantities: [10] })
       .expect(400);
+  });
+});
+
+/**
+ * **Les gabarits tarifaires** — la story Club Med, de bout en bout.
+ *
+ * Le commercial négocie : « ma saison, c'est 10 000 baguettes ». Deux façons
+ * d'arriver au prix — un prix fixe, ou une grille lue au bon palier — et une
+ * seule chose posée chez le client : des règles de mercuriale qui POSENT un prix.
+ *
+ * Ce que ces tests prouvent, et qu'aucun test unitaire ne peut : le gabarit
+ * posé change réellement le prix FACTURÉ, au bout de la chaîne complète.
+ */
+describe("les gabarits tarifaires", () => {
+  const compose = (lines: unknown) =>
+    staff()
+      .post("/admin/pricing/templates")
+      .send({ kind: "mercuriale", label: "Mercuriale Club Med", lines });
+
+  const apply = (id: string, companyId: string) =>
+    staff()
+      .post(`/admin/pricing/templates/${id}/apply`)
+      .send({
+        companyId,
+        validFrom: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+        validTo: null,
+      });
+
+  it("un prix fixe est la grille à UN palier, et pose UNE règle", async () => {
+    const { id } = jsonBody<{ id: string }>(
+      await compose([{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 150 }] }]).expect(201),
+    );
+    const company = await createCompany(ctx.prisma);
+
+    const applied = jsonBody<{ posedRules: number }>(await apply(id, company.id).expect(201));
+
+    expect(applied.posedRules).toBe(1);
+  });
+
+  it("une grille à deux paliers pose DEUX règles, au bon seuil", async () => {
+    const { id } = jsonBody<{ id: string }>(
+      await compose([
+        {
+          sku: SKU,
+          tiers: [
+            { minQuantity: 1, unitPriceCents: 170 },
+            { minQuantity: 10_000, unitPriceCents: 150 },
+          ],
+        },
+      ]).expect(201),
+    );
+    const company = await createCompany(ctx.prisma);
+
+    const applied = jsonBody<{ posedRules: number }>(await apply(id, company.id).expect(201));
+
+    expect(applied.posedRules).toBe(2);
+    const posed = await ctx.prisma.priceRule.findMany({
+      where: { audienceId: company.id },
+      orderBy: { minQuantity: "asc" },
+      select: { stage: true, nature: true, minQuantity: true, amountCents: true },
+    });
+    expect(posed).toEqual([
+      { stage: "mercuriale", nature: "replace", minQuantity: 1, amountCents: 170 },
+      { stage: "mercuriale", nature: "replace", minQuantity: 10_000, amountCents: 150 },
+    ]);
+  });
+
+  /** L'écart au catalogue est ce que le commercial regarde : il est LU, pas figé. */
+  it("rend le tarif catalogue en regard de chaque ligne", async () => {
+    const { id } = jsonBody<{ id: string }>(
+      await compose([{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 150 }] }]).expect(201),
+    );
+
+    const view = jsonBody<{ lines: { catalogPriceCents: number | null }[] }>(
+      await staff().get(`/admin/pricing/templates/${id}`).expect(200),
+    );
+
+    expect(view.lines[0]?.catalogPriceCents).toBe(CANONICAL);
+  });
+
+  /**
+   * **Le refus qui compte.** Une grille où commander plus coûte plus cher est
+   * saisissable palier par palier — chacun est valide seul. Elle ne se refuse
+   * qu'une fois la grille réunie.
+   */
+  it("refuse une grille où commander plus coûte plus cher", async () => {
+    await compose([
+      {
+        sku: SKU,
+        tiers: [
+          { minQuantity: 1, unitPriceCents: 150 },
+          { minQuantity: 10_000, unitPriceCents: 170 },
+        ],
+      },
+    ]).expect(400);
   });
 });

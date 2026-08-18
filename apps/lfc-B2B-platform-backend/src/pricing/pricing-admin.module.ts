@@ -40,6 +40,14 @@ import { PrismaVolumeLadderRepository } from "./infrastructure/prisma-volume-lad
 import { PrismaVolumeCommitmentRepository } from "./infrastructure/prisma-volume-commitment.repository.js";
 import { VolumeCommitmentsQuery } from "./application/queries/volume-commitments.query.js";
 import { PriceProjectionQuery } from "./application/queries/price-projection.query.js";
+import { PriceTemplatesQuery } from "./application/queries/price-templates.query.js";
+import {
+  ApplyPriceTemplateHandler,
+  SavePriceTemplateHandler,
+} from "./application/commands/price-template.handlers.js";
+import { PriceTemplateRepository } from "./domain/ports/price-template.repository.js";
+import { PrismaPriceTemplateRepository } from "./infrastructure/prisma-price-template.repository.js";
+import { AdminPriceTemplatesController } from "./http/admin-price-templates.controller.js";
 import {
   CloseVolumeCommitmentHandler,
   SignVolumeCommitmentHandler,
@@ -69,6 +77,7 @@ import { PricingModule } from "./pricing.module.js";
     AdminPriceFloorsController,
     AdminPricingJournalController,
     AdminVolumeCommitmentsController,
+    AdminPriceTemplatesController,
   ],
   providers: [
     BoardElasticityService,
@@ -89,9 +98,13 @@ import { PricingModule } from "./pricing.module.js";
     CloseVolumeCommitmentHandler,
     VolumeCommitmentsQuery,
     PriceProjectionQuery,
+    PriceTemplatesQuery,
+    SavePriceTemplateHandler,
+    ApplyPriceTemplateHandler,
     { provide: PricingRuleRepository, useClass: PrismaPricingRuleRepository },
     { provide: VolumeLadderRepository, useClass: PrismaVolumeLadderRepository },
     { provide: VolumeCommitmentRepository, useClass: PrismaVolumeCommitmentRepository },
+    { provide: PriceTemplateRepository, useClass: PrismaPriceTemplateRepository },
     { provide: PricingFloorRepository, useClass: PrismaPricingFloorRepository },
     { provide: PricingBoardReader, useClass: PrismaPricingBoardReader },
     { provide: PricingJournalReader, useClass: PrismaPricingJournalReader },

@@ -1026,3 +1026,96 @@ export interface PriceProjectionView {
   readonly productName: string;
   readonly points: readonly PriceProjectionPointView[];
 }
+
+/**
+ * **Un gabarit tarifaire** — la grille qu'un commercial prépare une fois et
+ * repose chez plusieurs clients.
+ *
+ * Une seule forme dans la base : une **liste de paliers**, chacun portant un
+ * prix en euros. Le « prix fixe » n'en est pas une seconde : c'est le gabarit à
+ * **un seul palier, à partir de 1**. Les deux façons de saisir — « 0,80 € quoi
+ * qu'il arrive » et « 0,85 € puis 0,80 € à partir de 5 000 » — ne changent que
+ * la manière d'arriver au prix, jamais ce qui est stocké ni ce qui est appliqué.
+ *
+ * C'est aussi pour cela qu'un gabarit n'introduit **aucune primitive de calcul**.
+ * Posé chez un client, il devient N règles de l'étage mercuriale, à des seuils
+ * différents — une forme que le moteur sait déjà résoudre, et dont la contrainte
+ * d'exclusion en base garantit déjà l'unicité (elle porte sur `min_quantity`).
+ */
+export const priceTemplateKindSchema = z.enum(["mercuriale", "devis"]);
+export type PriceTemplateKind = z.infer<typeof priceTemplateKindSchema>;
+
+/** Un palier du gabarit : à partir de cette quantité, ce prix. */
+export const templateTierSchema = z.object({
+  /** Quantité minimale. `1` = le prix d'entrée, donc le cas « prix fixe ». */
+  minQuantity: z.number().int().positive(),
+  /** Le prix posé, HT en centimes. Zéro passe — un article offert est réel. */
+  unitPriceCents: z.number().int().nonnegative(),
+});
+export type TemplateTierPayload = z.infer<typeof templateTierSchema>;
+
+export const templateLineSchema = z.object({
+  sku: z.string().min(1),
+  /**
+   * Les paliers, du plus bas seuil au plus haut. Un seul = un prix fixe.
+   *
+   * Bornés à douze : au-delà, ce n'est plus une grille qu'on lit au téléphone.
+   */
+  tiers: z.array(templateTierSchema).min(1).max(12),
+});
+export type TemplateLinePayload = z.infer<typeof templateLineSchema>;
+
+export const savePriceTemplatePayloadSchema = z.object({
+  kind: priceTemplateKindSchema,
+  label: z.string().min(1).max(120),
+  /** Bornées à trois cents : le catalogue B2B en compte moins d'une centaine. */
+  lines: z.array(templateLineSchema).min(1).max(300),
+});
+export type SavePriceTemplatePayload = z.infer<typeof savePriceTemplatePayloadSchema>;
+
+/** Une ligne du gabarit, telle que l'écran la lit — avec de quoi la comparer. */
+export interface PriceTemplateLineView {
+  readonly sku: string;
+  readonly productName: string;
+  /**
+   * Le **tarif catalogue B2B** d'aujourd'hui, pour cet article.
+   *
+   * La colonne de comparaison, et la seule qui donne un sens aux autres : « 0,80 € »
+   * ne se juge pas, « 0,80 € contre 1,00 € au catalogue » se juge. Elle est lue
+   * au moment de l'affichage et **jamais figée** dans le gabarit — un tarif
+   * catalogue recopié vieillirait en silence, et l'écart affiché serait faux
+   * sans que rien ne le signale.
+   *
+   * `null` quand le catalogue ne connaît plus ce SKU : le gabarit garde la
+   * ligne, l'écran dit qu'elle ne vise plus rien.
+   */
+  readonly catalogPriceCents: number | null;
+  readonly tiers: readonly TemplateTierPayload[];
+}
+
+export interface PriceTemplateView {
+  readonly id: string;
+  readonly kind: PriceTemplateKind;
+  readonly label: string;
+  readonly lines: readonly PriceTemplateLineView[];
+  readonly createdBy: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly archivedAt: string | null;
+}
+
+/**
+ * **Poser un gabarit chez un client** : la fenêtre, et rien d'autre.
+ *
+ * Le contenu ne se re-choisit pas ici — c'est le gabarit qui le porte. Laisser
+ * amender au moment de poser aurait fait deux sources pour un même prix, et la
+ * question « qu'est-ce qu'on lui a mis, au juste ? » n'aurait plus de réponse
+ * unique.
+ */
+export const applyPriceTemplatePayloadSchema = z.object({
+  companyId: z.string().min(1),
+  validFrom: z.string().datetime(),
+  /** `null` = sans terme. Une mercuriale ouverte est un cas courant. */
+  validTo: z.string().datetime().nullable(),
+});
+export type ApplyPriceTemplatePayload = z.infer<typeof applyPriceTemplatePayloadSchema>;

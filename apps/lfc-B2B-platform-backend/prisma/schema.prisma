@@ -2084,6 +2084,50 @@ model VolumeLadder {
   @@schema("public")
 }
 
+/// **Un gabarit tarifaire** — la grille qu'un commercial prépare une fois et
+/// repose chez plusieurs clients.
+///
+/// Une seule forme : une liste de paliers portant des PRIX en euros. Le « prix
+/// fixe » n'est pas une seconde forme, c'est le gabarit à un seul palier, à
+/// partir de 1. Les deux façons de saisir ne changent que la manière d'arriver
+/// au prix, jamais ce qui est stocké.
+///
+/// Posé chez un client, un gabarit devient N règles de l'étage mercuriale à des
+/// seuils différents — une forme que le moteur résout déjà, et dont l'unicité
+/// est déjà garantie (la contrainte d'exclusion porte sur `min_quantity`).
+model PriceTemplate {
+  id String @id
+
+  /// `mercuriale` | `devis`. Même contenu, deux usages : l'un se POSE chez un
+  /// client, l'autre alimente une estimation sans rien poser.
+  kind String
+
+  label String
+
+  /// Les lignes, `[{ sku, tiers: [{ minQuantity, unitPriceCents }] }]`.
+  ///
+  /// En JSON et non en table fille, pour la même raison que les paliers d'un
+  /// barème : une grille s'écrit ENTIÈRE ou pas du tout. Une table fille
+  /// permettrait d'insérer une ligne sans les autres, et un gabarit à moitié
+  /// enregistré serait posé chez un client sans que personne ne le voie.
+  ///
+  /// Le tarif catalogue n'y est PAS recopié : il est lu à l'affichage. Un
+  /// canonique figé vieillirait en silence et l'écart comparatif serait faux.
+  lines Json
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Archivé, jamais supprimé : un gabarit a produit des mercuriales, et les
+  /// retrouver six mois plus tard suppose qu'il existe encore.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(3)
+
+  @@index([kind, archivedAt])
+  @@map("price_templates")
+  @@schema("public")
+}
+
 /// **L'engagement de volume** — un client vise un volume sur une période, et le
 /// barème se juge alors sur le CUMUL de la période plutôt que sur la quantité de
 /// chaque commande.
