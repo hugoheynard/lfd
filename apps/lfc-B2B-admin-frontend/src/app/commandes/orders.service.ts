@@ -3,6 +3,8 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  OrderQuotePayload,
+  OrderQuoteView,
   AdminOrderRow,
   AdminOrdersQuery,
   AdminPlaceOrderPayload,
@@ -59,6 +61,21 @@ export class AdminOrdersService {
   async place(payload: AdminPlaceOrderPayload): Promise<AdminPlacedOrderResponse> {
     return firstValueFrom(
       this.http.post<AdminPlacedOrderResponse>(`${B2B_API_BASE}/admin/orders`, payload),
+    );
+  }
+
+  /**
+   * **Ce que la commande coûtera**, avant de la passer.
+   *
+   * Le panier affichait le tarif du catalogue pendant que le serveur facturait
+   * le prix résolu — mercuriale du client, palier atteint, promotion en cours.
+   * Le prix ne peut pas se calculer ici : il dépend du client ET de la quantité,
+   * et le recalculer donnerait une seconde règle d'arrondi, donc un écart d'un
+   * centime découvert devant le client.
+   */
+  async quote(payload: OrderQuotePayload): Promise<OrderQuoteView> {
+    return firstValueFrom(
+      this.http.post<OrderQuoteView>(`${B2B_API_BASE}/admin/orders/quote`, payload),
     );
   }
 }

@@ -42,7 +42,7 @@ import { OrderDraftsService } from '../order-drafts.service';
 import { formatOrderInstant } from '@lfd/b2b-ui/order';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { BarrePanier } from './barre-panier/barre-panier';
-import { CartStore } from './cart.store';
+import { CartStore, type CartLine } from './cart.store';
 import { draftPayloadOf, draftSnapshotOf, restoreLines } from './draft-payload';
 import { DraftStore } from './draft.store';
 import { PanierPanel, type PanierPanelData } from './panier-panel/panier-panel';
@@ -182,6 +182,49 @@ export class NouvelleCommandePage {
     effect(() => {
       void this.load(this.id());
     });
+
+    /**
+     * **Le prix que le serveur facturera**, redemandé dès que le panier change.
+     *
+     * Il dépend du client (sa mercuriale) et de la quantité (le palier atteint) :
+     * ni l'un ni l'autre ne se calcule ici. Sans cet appel, la colonne affichait
+     * le tarif du catalogue pendant que la validation facturait autre chose — et
+     * le commercial l'annonçait au téléphone.
+     *
+     * Le devis est **oublié avant** d'être redemandé : garder l'ancien pendant
+     * l'aller-retour ferait lire un prix qui correspond à un autre panier.
+     */
+    effect(() => {
+      const lines = this.cart.lines();
+      const companyId = this.id();
+      if (lines.length === 0) {
+        return;
+      }
+      this.cart.forgetQuote();
+      void this.refreshQuote(companyId, lines);
+    });
+  }
+
+  /**
+   * Une estimation qui échoue **ne casse rien** : la colonne retombe sur le
+   * tarif du catalogue, qui est ce qu'elle affichait avant. Interrompre la
+   * saisie pour une estimation serait disproportionné — c'est la validation qui
+   * fait foi, et elle, elle parle.
+   */
+  private async refreshQuote(companyId: string, lines: readonly CartLine[]): Promise<void> {
+    try {
+      const quote = await this.orders.quote({
+        companyId,
+        lines: lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
+      });
+      // Le panier a pu changer pendant l'aller-retour : on ne pose un devis que
+      // s'il parle encore du panier courant.
+      if (sameSkus(this.cart.lines(), lines)) {
+        this.cart.applyQuote(quote);
+      }
+    } catch {
+      // Silencieux par choix : cf. le commentaire ci-dessus.
+    }
   }
 
   protected async load(companyId: string): Promise<void> {
@@ -400,4 +443,15 @@ export class NouvelleCommandePage {
       this.notify.info(`Lien de règlement à transmettre : ${url}`);
     }
   }
+}
+
+/** Deux paniers parlent-ils des mêmes lignes ? SKU et quantités, dans l'ordre. */
+function sameSkus(left: readonly CartLine[], right: readonly CartLine[]): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (line, index) =>
+        line.sku === right[index]?.sku && line.quantity === right[index]?.quantity,
+    )
+  );
 }

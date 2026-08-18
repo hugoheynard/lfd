@@ -44,6 +44,17 @@ export class CartRow {
   readonly unitPriceCents = input.required<number>();
   readonly quantity = input.required<number>();
 
+  /**
+   * Le tarif d'ENTRÉE, quand il diffère du prix appliqué.
+   *
+   * `null` = rien à signaler, et c'est le cas ordinaire. Dès qu'une mercuriale,
+   * un palier de volume ou une promotion joue, la ligne montre les deux : le
+   * prix barré et celui qui sera facturé. Sans ça, un commercial annonce au
+   * téléphone un tarif que la commande contredit ensuite — et ne peut même pas
+   * dire au client qu'il bénéficie de quelque chose.
+   */
+  readonly canonicalPriceCents = input<number | null>(null);
+
   /** L'unité de vente, telle qu'on la dit — « / kg », « la pièce ». */
   readonly unit = input('');
   /** La vignette du produit. `null` ⇒ l'initiale, qui vaut mieux qu'un trou. */
@@ -57,6 +68,14 @@ export class CartRow {
   readonly remove = output<void>();
 
   protected readonly unitPrice = computed(() => formatCents(this.unitPriceCents()));
+
+  /** Le tarif barré — affiché **seulement** s'il diffère de ce qui est facturé. */
+  protected readonly strikedPrice = computed(() => {
+    const canonical = this.canonicalPriceCents();
+    return canonical === null || canonical === this.unitPriceCents()
+      ? null
+      : formatCents(canonical);
+  });
   protected readonly lineTotal = computed(() =>
     formatCents(this.unitPriceCents() * this.quantity()),
   );

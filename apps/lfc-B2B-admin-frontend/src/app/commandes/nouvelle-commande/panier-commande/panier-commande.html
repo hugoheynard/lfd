@@ -10,11 +10,12 @@
     <p class="pan-empty">Ajoutez des articles depuis la colonne du milieu.</p>
   } @else {
     <ul class="pan-list">
-      @for (line of cart().lines(); track line.sku) {
+      @for (line of cart().pricedLines(); track line.sku) {
         <li>
           <lfd-cart-row
             [name]="line.name"
             [unitPriceCents]="line.unitPriceCents"
+            [canonicalPriceCents]="line.canonicalPriceCents"
             [quantity]="line.quantity"
             (quantityChange)="cart().setQuantity(line.sku, $event)"
             (remove)="cart().remove(line.sku)"

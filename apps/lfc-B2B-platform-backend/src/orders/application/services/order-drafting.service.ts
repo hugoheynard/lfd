@@ -145,6 +145,27 @@ export class OrderDrafting {
   }
 
   /**
+   * **Ce que la commande coûterait, sans la passer.**
+   *
+   * Le panier du staff affichait le tarif du CATALOGUE pendant que cette
+   * méthode-ci facturait le prix RÉSOLU : un commercial annonçait au téléphone
+   * un prix que la commande contredisait ensuite.
+   *
+   * Elle réutilise `resolveLines`, **la résolution qui facture**, et n'ajoute
+   * rien : une seconde arithmétique d'estimation aurait fini par diverger de la
+   * première, et l'écart se serait découvert devant le client. Elle s'arrête au
+   * sous-total HT, parce que remise de retrait, frais de zone et TVA dépendent
+   * d'un acheminement qu'une estimation ne connaît pas — les inventer donnerait
+   * un total que la validation contredirait.
+   */
+  async quote(
+    parties: OrderParties,
+    lines: readonly OrderLineRequest[],
+  ): Promise<OrderLineInput[]> {
+    return this.resolveLines(lines, parties);
+  }
+
+  /**
    * Les réglages qui **préremplissent** cette commande.
    *
    * En coursier ils viennent de l'adresse du carnet — et seulement si elle en

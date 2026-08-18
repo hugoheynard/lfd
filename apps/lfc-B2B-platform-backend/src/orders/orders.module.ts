@@ -12,6 +12,7 @@ import { DiscardOrderDraftHandler } from "./application/commands/discard-order-d
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
 import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
+import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
 import { GetOrderDraftHandler } from "./application/queries/get-order-draft.handler.js";
@@ -94,6 +95,7 @@ import { OrdersController } from "./http/orders.controller.js";
     ListAdminOrdersHandler,
     ListCatalogHandler,
     ListCustomerSkusHandler,
+    QuoteOrderHandler,
     GetHandoverHandler,
     ConfirmHandoverHandler,
     GetOrderDraftHandler,

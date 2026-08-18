@@ -264,3 +264,102 @@ describe("POST /admin/orders — le règlement", () => {
     await ctx.asSub(BUYER).get(`/orders/${placed.id}/payment`).expect(409);
   });
 });
+
+/**
+ * **Le devis dit ce que la validation facturera.**
+ *
+ * Le panier du staff affichait le tarif du CATALOGUE pendant que `POST` facturait
+ * le prix RÉSOLU : un commercial annonçait au téléphone un prix que la commande
+ * contredisait ensuite. Éprouvé de bout en bout, et surtout **comparé à la
+ * commande réelle** : c'est la seule assertion qui prouve que les deux chemins
+ * n'ont pas divergé.
+ */
+describe("POST /admin/orders/quote — ce que ça coûtera", () => {
+  it("rend le tarif du catalogue quand aucune règle ne joue", async () => {
+    const { companyId } = await seedCompany(true);
+
+    const quote = jsonBody<{
+      lines: { sku: string; canonicalCents: number; unitPriceCents: number; steps: unknown[] }[];
+      subtotalCents: number;
+    }>(
+      await staff()
+        .post("/admin/orders/quote")
+        .send({ companyId, lines: [{ sku: "VIE-001", quantity: 12 }] })
+        .expect(200),
+    );
+
+    expect(quote.lines[0]?.canonicalCents).toBe(200);
+    expect(quote.lines[0]?.unitPriceCents).toBe(200);
+    expect(quote.lines[0]?.steps).toEqual([]);
+    expect(quote.subtotalCents).toBe(2400);
+  });
+
+  it("applique la promotion en cours, et dit par quel étage elle passe", async () => {
+    const { companyId } = await seedCompany(true);
+    await staff()
+      .post("/admin/pricing/rules")
+      .send({
+        stage: "promotion",
+        scope: { type: "global", id: null },
+        audience: { type: "all", id: null },
+        minQuantity: null,
+        effect: { nature: "alter", direction: "decrease", mode: "percent", value: 2_500 },
+        label: "Promo devis",
+        validFrom: new Date(Date.now() - 86_400_000).toISOString(),
+        validTo: null,
+      })
+      .expect(201);
+
+    const quote = jsonBody<{
+      lines: { canonicalCents: number; unitPriceCents: number; steps: { stage: string }[] }[];
+    }>(
+      await staff()
+        .post("/admin/orders/quote")
+        .send({ companyId, lines: [{ sku: "VIE-001", quantity: 12 }] })
+        .expect(200),
+    );
+
+    // 200 c − 25 % = 150 c. Le tarif d'entrée reste visible à côté.
+    expect(quote.lines[0]?.canonicalCents).toBe(200);
+    expect(quote.lines[0]?.unitPriceCents).toBe(150);
+    expect(quote.lines[0]?.steps.map((step) => step.stage)).toEqual(["promotion"]);
+  });
+
+  /**
+   * L'assertion qui compte : le devis et la commande passent par la MÊME
+   * résolution. Si l'un des deux devait un jour recalculer à sa façon, c'est ici
+   * que ça se verrait — et pas devant un client.
+   */
+  it("annonce exactement ce que la commande facture ensuite", async () => {
+    const { companyId, buyerId } = await seedCompany(true);
+    await staff()
+      .post("/admin/pricing/rules")
+      .send({
+        stage: "promotion",
+        scope: { type: "global", id: null },
+        audience: { type: "all", id: null },
+        minQuantity: null,
+        effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1_000 },
+        label: "Promo comparaison",
+        validFrom: new Date(Date.now() - 86_400_000).toISOString(),
+        validTo: null,
+      })
+      .expect(201);
+
+    const quote = jsonBody<{ lines: { unitPriceCents: number }[] }>(
+      await staff()
+        .post("/admin/orders/quote")
+        .send({ companyId, lines: [{ sku: "VIE-001", quantity: 12 }] })
+        .expect(200),
+    );
+
+    await staff()
+      .post("/admin/orders")
+      .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
+      .expect(201);
+
+    const line = await ctx.prisma.orderLine.findFirst({ where: { sku: "VIE-001" } });
+
+    expect(quote.lines[0]?.unitPriceCents).toBe(line?.unitPriceCents);
+  });
+});

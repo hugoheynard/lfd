@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { OrderLinePricingTrace } from "./pricing.js";
+import type { OrderLinePricingTrace, PriceStepView } from "./pricing.js";
 
 import {
   billingAddressPayloadSchema,
@@ -492,3 +492,53 @@ export const adminOrdersQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 export type AdminOrdersQuery = z.infer<typeof adminOrdersQuerySchema>;
+
+/**
+ * **Ce que le serveur facturera**, demandé avant de valider.
+ *
+ * Le panier du staff affichait le tarif du CATALOGUE pendant que le serveur
+ * facturait le prix RÉSOLU — mercuriale du client, palier de volume atteint,
+ * promotion en cours. Un commercial annonçait donc au téléphone un prix que la
+ * commande contredisait ensuite.
+ *
+ * Le prix ne peut pas se calculer dans le navigateur : il dépend du **client**
+ * (sa mercuriale) et de la **quantité** (le palier), et le recalculer là-bas
+ * donnerait une seconde implémentation de la règle d'arrondi — donc un écart
+ * d'un centime, découvert devant le client.
+ */
+export const orderQuotePayloadSchema = z.object({
+  /** `null` pour une commande sans entreprise : seules les règles ouvertes à tous jouent. */
+  companyId: z.string().min(1).nullable(),
+  lines: z
+    .array(z.object({ sku: z.string().min(1), quantity: z.number().int().positive() }))
+    .min(1),
+});
+export type OrderQuotePayload = z.infer<typeof orderQuotePayloadSchema>;
+
+/** Une ligne estimée : ce qu'elle coûte, et pourquoi. */
+export interface OrderQuoteLineView {
+  readonly sku: string;
+  readonly productName: string;
+  /** Le tarif d'entrée, avant tout étage — celui du catalogue. */
+  readonly canonicalCents: number;
+  /** Le prix **réellement facturé** à cette quantité, pour ce client. */
+  readonly unitPriceCents: number;
+  readonly quantity: number;
+  readonly vatRate: number;
+  /** Les étages qui ont produit un effet. Vide = le tarif d'entrée s'applique tel quel. */
+  readonly steps: readonly PriceStepView[];
+  /** Une limite a-t-elle **relevé** ce prix ? */
+  readonly floored: boolean;
+}
+
+export interface OrderQuoteView {
+  readonly lines: readonly OrderQuoteLineView[];
+  /**
+   * Le sous-total **HT** des lignes résolues.
+   *
+   * Il s'arrête là volontairement : remise de retrait, frais de zone et TVA
+   * dépendent d'un acheminement que l'estimation ne connaît pas. Les inventer
+   * ici donnerait un total que la validation contredirait.
+   */
+  readonly subtotalCents: number;
+}

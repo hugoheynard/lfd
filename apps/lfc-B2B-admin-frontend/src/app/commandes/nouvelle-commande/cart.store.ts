@@ -1,6 +1,6 @@
 import { computed, signal, type Signal } from '@angular/core';
 
-import type { OrderLineInput } from '@lfd/contracts';
+import type { OrderLineInput, OrderQuoteView } from '@lfd/contracts';
 
 /** Une ligne du panier en cours de saisie. Le prix n'est là que pour l'écran. */
 export interface CartLine {
@@ -25,11 +25,61 @@ export interface CartLine {
  * donnerait deux implémentations d'une même règle d'arrondi, donc deux résultats
  * à un centime près, et un client qui compare son écran à sa facture.
  */
+/** Une ligne du panier, au prix que le serveur facturera. */
+export interface PricedCartLine extends CartLine {
+  /** Le tarif d'entrée, ou `null` quand aucune règle ne l'a fait bouger. */
+  readonly canonicalPriceCents: number | null;
+}
+
 export class CartStore {
   private readonly lines$ = signal<readonly CartLine[]>([]);
 
+  /**
+   * **Ce que le serveur a répondu**, par SKU — le prix qu'il facturera.
+   *
+   * Vide tant qu'aucune estimation n'est revenue : la ligne affiche alors le
+   * tarif du catalogue, qui est tout ce qu'on sait d'elle. Elle ne PRÉTEND pas
+   * pour autant que c'est le prix final — c'est l'estimation qui le dit, et
+   * l'écran attend qu'elle arrive plutôt que d'inventer.
+   */
+  private readonly quoted$ = signal<ReadonlyMap<string, number>>(new Map());
+
   /** Les lignes, dans l'ordre où elles ont été ajoutées. */
   readonly lines: Signal<readonly CartLine[]> = this.lines$.asReadonly();
+
+  /**
+   * Les lignes **au prix facturé**, tarif d'entrée à côté quand il diffère.
+   *
+   * Le prix vient du serveur et de lui seul : il dépend du client (sa
+   * mercuriale) et de la quantité (le palier atteint), donc aucune des deux
+   * données n'est calculable ici. Le recalculer donnerait une seconde règle
+   * d'arrondi — et un écart d'un centime découvert devant le client.
+   */
+  readonly pricedLines = computed<readonly PricedCartLine[]>(() => {
+    const quoted = this.quoted$();
+    return this.lines$().map((line) => {
+      const billed = quoted.get(line.sku);
+      return billed === undefined || billed === line.unitPriceCents
+        ? { ...line, canonicalPriceCents: null }
+        : { ...line, unitPriceCents: billed, canonicalPriceCents: line.unitPriceCents };
+    });
+  });
+
+  /**
+   * Le devis du serveur, tel qu'il revient.
+   *
+   * Les SKU absents du devis **retombent** sur le tarif du catalogue plutôt que
+   * de disparaître : une estimation partielle ne doit pas faire s'évanouir une
+   * ligne du panier.
+   */
+  applyQuote(quote: OrderQuoteView): void {
+    this.quoted$.set(new Map(quote.lines.map((line) => [line.sku, line.unitPriceCents])));
+  }
+
+  /** Le devis ne vaut plus rien : le panier ou le client a changé. */
+  forgetQuote(): void {
+    this.quoted$.set(new Map());
+  }
 
   readonly isEmpty = computed(() => this.lines$().length === 0);
 
@@ -38,9 +88,12 @@ export class CartStore {
     this.lines$().reduce((total, line) => total + line.quantity, 0),
   );
 
-  /** Sous-total **HT** en centimes. Cf. l'avertissement de la classe. */
+  /**
+   * Sous-total **HT** en centimes, **au prix facturé**. Cf. l'avertissement de
+   * la classe pour ce qu'il ne contient pas (remise de retrait, zone, TVA).
+   */
   readonly subtotalCents = computed(() =>
-    this.lines$().reduce((total, line) => total + line.unitPriceCents * line.quantity, 0),
+    this.pricedLines().reduce((total, line) => total + line.unitPriceCents * line.quantity, 0),
   );
 
   /** Quantité déjà au panier pour ce SKU — ce que les sources affichent en pastille. */

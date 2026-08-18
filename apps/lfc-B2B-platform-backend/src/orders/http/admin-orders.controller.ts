@@ -1,3 +1,4 @@
+import { QuoteOrderQuery } from "../application/queries/quote-order.handler.js";
 import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
 import {
   type AdminOrderRow,
@@ -7,6 +8,9 @@ import {
   adminPlaceOrderPayloadSchema,
   type AdminPlacedOrderResponse,
   type OrderView,
+  orderQuotePayloadSchema,
+  type OrderQuotePayload,
+  type OrderQuoteView,
 } from "@lfd/contracts";
 import {
   Body,
@@ -52,6 +56,29 @@ export class AdminOrdersController {
     private readonly queries: QueryBus,
     private readonly commands: CommandBus,
   ) {}
+
+  /**
+   * **Ce que la commande coûterait**, avant de la passer.
+   *
+   * Le panier affichait le tarif du catalogue pendant que `POST` facturait le
+   * prix résolu. Cette route rend le prix que la validation appliquera, calculé
+   * par la MÊME résolution — pas par une seconde arithmétique qui aurait fini
+   * par diverger d'un centime, devant le client.
+   *
+   * Un `POST` bien qu'elle ne mute rien : le contenu du panier ne tient pas dans
+   * une chaîne de requête, et le mettre en `GET` le ferait traîner dans les
+   * journaux d'accès.
+   */
+  @Post("quote")
+  @HttpCode(HttpStatus.OK)
+  async quote(
+    @Req() request: AuthenticatedStaffRequest,
+    @Body(new ZodBody(orderQuotePayloadSchema)) payload: OrderQuotePayload,
+  ): Promise<OrderQuoteView> {
+    return this.queries.execute<QuoteOrderQuery, OrderQuoteView>(
+      new QuoteOrderQuery(staffUserIdOf(request), payload),
+    );
+  }
 
   /** Les commandes, la plus récente en tête, filtrables par société et par état. */
   @Get()

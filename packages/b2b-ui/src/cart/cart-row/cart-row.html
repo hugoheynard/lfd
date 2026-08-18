@@ -6,7 +6,15 @@
 
 <div class="line-main">
   <p class="line-name">{{ name() }}</p>
-  <p class="line-unit">{{ unitPrice() }} {{ unit() }}</p>
+  <p class="line-unit">
+    @if (strikedPrice(); as striked) {
+      <!-- Le tarif d'entrée, barré : le commercial voit ce que le client
+           obtient, et peut le lui dire. `<s>` et non une classe seule — la
+           rature doit exister pour un lecteur d'écran aussi. -->
+      <s class="line-was">{{ striked }}</s>
+    }
+    <span class="line-now">{{ unitPrice() }}</span> {{ unit() }}
+  </p>
 </div>
 
 <fold-number-input
