@@ -231,7 +231,13 @@ describe("checkout → Order", () => {
         lineTotalCents: 600,
         // Vue de commande : la trace remonte sous sa forme de contrat. Aucune
         // règle en base ici — elle dit donc qu'aucun étage n'a joué.
-        pricing: { basePriceCents: 200, steps: [], floored: false, floorDecision: null },
+        pricing: {
+          basePriceCents: 200,
+          steps: [],
+          floored: false,
+          floorDecision: null,
+          commitment: null,
+        },
       },
     ]);
     // Alimentaire → 5,5 % : 600 HT + round(600 × 5,5 %) = 600 + 33 = 633 TTC.

@@ -33,6 +33,8 @@ import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.rea
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
+import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
+import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
 
 /**
  * Aucun réglage d'adresse : tout ce que la commande porte y est donc un choix.
@@ -72,6 +74,19 @@ const noSkuVolumes: SkuVolumeReader = { volumesFor: () => Promise.resolve(new Ma
 const noVolumeLadders: VolumeLadderReader = {
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
+};
+
+/**
+ * **Aucun engagement de volume.** Le double le plus important du lot : sans lui,
+ * le palier se jouerait sur un cumul lu ailleurs, et ces tests-ci ne parleraient
+ * plus de ce qu'ils prétendent mesurer.
+ */
+const noCommitments: VolumeCommitmentReader = {
+  liveFor: () => Promise.resolve([]),
+};
+
+const noCustomerVolumes: CustomerVolumeReader = {
+  volumesFor: () => Promise.resolve(new Map<string, number>()),
 };
 
 const CATALOG: Record<string, CatalogItem> = {
@@ -215,7 +230,15 @@ function handler(
   return new PlaceOrderForCustomerHandler(
     guardDouble,
     new OrderDrafting(
-      new OrderLinePricing(catalog, noPriceRules, noPriceFloors, noSkuVolumes, noVolumeLadders),
+      new OrderLinePricing(
+        catalog,
+        noPriceRules,
+        noPriceFloors,
+        noSkuVolumes,
+        noVolumeLadders,
+        noCommitments,
+        noCustomerVolumes,
+      ),
       pickups,
       zones,
       noDeliveryDefaults(),
@@ -362,7 +385,15 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     const free = new PlaceOrderForCustomerHandler(
       guard("orders"),
       new OrderDrafting(
-        new OrderLinePricing(gratuit, noPriceRules, noPriceFloors, noSkuVolumes, noVolumeLadders),
+        new OrderLinePricing(
+          gratuit,
+          noPriceRules,
+          noPriceFloors,
+          noSkuVolumes,
+          noVolumeLadders,
+          noCommitments,
+          noCustomerVolumes,
+        ),
         pickups,
         zones,
         noDeliveryDefaults(),
