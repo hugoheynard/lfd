@@ -13,13 +13,23 @@
 </header>
 
 <!-- La mise en garde vient AVANT la frise : elle change la lecture de tout ce
-     qui suit. Le tarif de liste n'est pas historisé, donc une date passée montre
-     les DÉCISIONS de ce jour-là appliquées aux tarifs d'aujourd'hui. -->
-<p class="caveat">
-  Ce que la frise montre : les <strong>décisions</strong> en vigueur à une date. Pas le prix facturé
-  ce jour-là — le tarif de liste n'est pas historisé, et la vérité d'une facture est figée sur la
-  commande.
-</p>
+     qui suit. Elle a DEUX formes, parce que la frise sait maintenant deux choses
+     différentes selon la date visée. -->
+@if (beyondHistory()) {
+  <!-- Avant le début de l'historique, la frise ne peut pas dire le tarif de ce
+       jour-là : elle applique celui d'aujourd'hui aux décisions d'alors. C'est
+       le seul moment où elle doit se dénoncer. -->
+  <p class="caveat is-warning">
+    <strong>Avant le {{ historyStartLabel() }}</strong>, le tarif de liste n'était pas encore
+    historisé : cette lecture applique les <strong>décisions</strong> de cette date aux tarifs
+    d'aujourd'hui. Les écarts de prix qu'elle montre ne sont donc pas ceux qu'un client a payés.
+  </p>
+} @else {
+  <p class="caveat">
+    Ce que la frise montre : les <strong>décisions</strong> en vigueur à une date, appliquées au
+    tarif de liste de ce jour-là. La vérité d'une facture, elle, reste figée sur la commande.
+  </p>
+}
 
 @switch (state()) {
   @case ('loading') {

@@ -156,6 +156,34 @@ export class FrisePage {
     return [...rules, ...ladders];
   }
 
+  /**
+   * **La lecture vise-t-elle plus loin que l'historique ne remonte ?**
+   *
+   * L'historique du tarif commence le jour où on l'a écrit. Avant lui, la frise
+   * applique les décisions d'alors aux tarifs d'AUJOURD'HUI — ce qui ressemble à
+   * un prix passé sans en être un. C'est le seul moment où elle doit se
+   * dénoncer, et le seul où la mise en garde change de ton.
+   *
+   * Sans marqueur posé, la lecture est celle du présent : rien à signaler.
+   */
+  protected readonly beyondHistory = computed(() => {
+    const startsAt = this.board()?.canonicalHistoryStartsAt ?? null;
+    const selection = this.selection();
+    if (selection === null) {
+      return false;
+    }
+    // Un historique vide ne couvre AUCUNE date passée : tout marqueur est
+    // au-delà. C'est l'état du premier jour, et il doit se dire.
+    const earliest = selection.kind === 'instant' ? selection.day : selection.from;
+    return startsAt === null || dayStart(earliest) < startsAt;
+  });
+
+  /** La date de début de l'historique, en toutes lettres. */
+  protected readonly historyStartLabel = computed(() => {
+    const startsAt = this.board()?.canonicalHistoryStartsAt ?? null;
+    return startsAt === null ? "premier tarif enregistré" : formatLongDay(startsAt.slice(0, 10));
+  });
+
   /** Le catalogue au marqueur unique — vide dès qu'une zone est ouverte. */
   protected readonly rows = computed<readonly SnapshotRow[]>(() => {
     const board = this.snapshot();

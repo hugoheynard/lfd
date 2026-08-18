@@ -31,6 +31,7 @@ const EMPTY_BOARD: PricingBoardView = {
   categories: [],
   globalFloor: null,
   globalRules: [],
+  canonicalHistoryStartsAt: null,
   simulation: { quantity: 1, at: '2026-08-17T10:00:00.000Z', audience: 'all' },
 };
 

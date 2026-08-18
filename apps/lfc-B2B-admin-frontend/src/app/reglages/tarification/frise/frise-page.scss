@@ -91,6 +91,15 @@
   padding: var(--fold-space-2, 0.5rem) var(--fold-space-3, 0.75rem);
   border-left: 2px solid var(--fold-color-border);
   background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
+
+  // Hors historique : la frise applique les tarifs d'aujourd'hui à des décisions
+  // d'hier. La barre s'épaissit en plus de changer de teinte — une couleur seule
+  // ne se lit ni en daltonien, ni imprimée, ni en contraste forcé.
+  &.is-warning {
+    border-left-width: 4px;
+    border-left-color: var(--fold-color-warning-border, currentcolor);
+    background: var(--fold-color-warning-surface, rgb(180 120 0 / 8%));
+  }
 }
 
 .markers {
