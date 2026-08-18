@@ -190,6 +190,27 @@ D'où l'ordre retenu, **backend d'abord** :
 **B1 avant tout code de fusion.** C'est la seule marche non négociable : c'est
 elle qui remplace le mur que le réseau tenait.
 
+> **B0 et B1 sont faits** (2026-08-19). Les deux gates tournent en CI :
+> `lint:context-boundaries` et `lint:cross-schema-join`. Le premier a trouvé
+> **7 franchissements existants**, tous inscrits dans sa liste d'exceptions avec
+> leur raison et leur cible — la liste doit se **vider** en B2, et le gate échoue
+> si une exception devient inutile sans être retirée :
+>
+> - `staff-users → account` (×2) — l'émission du lien de mot de passe vit dans
+>   `account/`. Cible : elle remonte dans `platform/auth`, les deux populations
+>   s'en servent ;
+> - `infra/* → staff-users` (×2) — la config et son test connaissent l'admin
+>   d'amorçage. Cible : `staff/` expose la normalisation, la config passe la valeur ;
+> - `infra/auth/customer-user.resolver.ts → account` (×2) — résoudre un jeton en
+>   **client** est une affaire d'`account/`, pas de technique. Cible : le résolveur
+>   descend dans `account/`, `platform/auth` ne garde que la vérification du jeton ;
+> - `shared/http/…app-error.filter.spec.ts → account` — le test se sert d'une
+>   erreur de domaine comme échantillon. Cible : en prendre une de `platform/`.
+>
+> Aucun n'est grave isolément. Ensemble, ils disent la même chose : **la couche
+> technique en sait déjà trop sur les clients**, et c'est exactement ce qui rend
+> une fusion dangereuse si on ne la mesure pas avant.
+
 **B0 seul**, aussi : un renommage qui casse un déploiement au milieu d'une fusion
 de contextes est indébrouillable. Et il se limite à l'identité **locale** —
 dossier, paquet, CI. Le nom du Worker (`lfc-b2b-backend`) et celui de l'image

@@ -92,6 +92,16 @@ jobs:
       # une fois sur sept. Ce gate le refuse à l'entrée.
       - name: "Gate : abonnés d'événement suivis"
         run: pnpm lint:events-tracked
+
+      # Les deux murs de la fusion à venir (cf.
+      # documentation/suite/architecture-topologie-apps.md, étape B1). Ils sont
+      # posés AVANT que les contextes se rejoignent : un mur ajouté une fois la
+      # brèche ouverte ne ferme plus rien, il ne fait que constater.
+      - name: "Gate : frontières de contexte"
+        run: pnpm lint:context-boundaries
+
+      - name: "Gate : aucune jointure inter-schéma"
+        run: pnpm lint:cross-schema-join
       # `docker run` plutôt qu'un `services:` : l'image MinIO a besoin d'une
       # commande (`server /data`), et un bloc `services` ne sait pas en passer.
       - name: Démarrer le stockage objet (MinIO)
