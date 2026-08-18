@@ -156,6 +156,13 @@
   justify-content: flex-end;
 }
 
+// Le bloc de simulation prend la largeur : il ne commente pas une colonne, il
+// répond à une question posée sur toute la ligne.
+.col-simulation {
+  grid-column: 1 / -1;
+  display: block;
+}
+
 // **Chaque colonne est une carte**, comme sur la tarification générale. C'est ce
 // qui fait qu'on lit UNE ligne d'un bout à l'autre plutôt qu'un tableau de
 // chiffres : les cartes s'alignent par leur milieu, et l'œil suit la file.
@@ -278,6 +285,13 @@ button.node:focus-visible {
 
 .link {
   text-decoration: underline;
+}
+
+// Ouvert, le lien reste marqué : sinon rien à l'écran ne dit QUEL article le
+// bloc de simulation, plus bas, est en train de raconter.
+.link.is-on {
+  color: var(--fold-color-text);
+  font-weight: 600;
 }
 
 .link.is-danger:hover {

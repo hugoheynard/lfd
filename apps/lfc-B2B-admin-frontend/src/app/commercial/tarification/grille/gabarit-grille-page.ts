@@ -25,6 +25,9 @@ import {
   type DraftTier,
 } from './draft-grid';
 import { mercurialeRow, tally, type MercurialeRow } from './mercuriale-row';
+import { ArticleSimulation } from '../simulation/article-simulation/article-simulation';
+import { gridRowOf, locateSimulation } from '../simulation/locate-simulation';
+import type { ScenarioTier } from '../simulation/revenue-model';
 
 /**
  * Le segment d'URL de chaque nature.
@@ -66,6 +69,7 @@ const SEGMENT: Readonly<Record<PriceTemplateKind, string>> = {
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldInputComponent,
+    ArticleSimulation,
     PoseBar,
   ],
   templateUrl: './gabarit-grille-page.html',
@@ -98,6 +102,13 @@ export class GabaritGrillePage {
 
   /** Vrai pendant la pose : la barre l'affiche, la page le sait. */
   protected readonly posing = signal(false);
+
+  /**
+   * L'article simulé. **Un seul à la fois** : la comparaison se fait entre
+   * SCÉNARIOS d'un même article, et le chiffre de deux articles ne se lit pas
+   * sur la même échelle.
+   */
+  protected readonly simulated = signal<string | null>(null);
 
   protected readonly categories = computed(() => this.board()?.categories ?? []);
   protected readonly isNew = computed(() => this.id() === 'nouveau');
@@ -146,6 +157,26 @@ export class GabaritGrillePage {
   /** Les lignes d'un rayon, dérivées — le prix d'entrée pilote les colonnes de droite. */
   protected rowsOf(category: PricingCategoryView): readonly MercurialeRow[] {
     return category.items.map((item) => mercurialeRow(item, entryOf(this.draft(), item.sku)));
+  }
+
+  protected readonly slot = computed(() => locateSimulation(this.categories(), this.simulated()));
+
+  /** La rangée d'une ligne, le bloc de simulation compris. */
+  protected rowOf(categoryId: string, index: number): number {
+    return gridRowOf(this.slot(), categoryId, index);
+  }
+
+  /**
+   * Les paliers simulés : ceux que le SERVEUR accepterait, pas ceux qui sont à
+   * l'écran — un palier à moitié tapé ne doit pas faire bouger la courbe.
+   */
+  protected readonly simulatedTiers = computed<readonly ScenarioTier[]>(() => {
+    const sku = this.simulated();
+    return sku === null ? [] : (this.lines().find((line) => line.sku === sku)?.tiers ?? []);
+  });
+
+  protected toggleSimulation(sku: string): void {
+    this.simulated.update((current) => (current === sku ? null : sku));
   }
 
   protected tiersOf(sku: string): readonly DraftTier[] {
@@ -219,8 +250,6 @@ export class GabaritGrillePage {
         this.saved.set(id);
         // L'URL suit l'objet : recharger la page d'un gabarit enregistré ne doit
         // pas rouvrir un brouillon vide.
-        // L'URL suit l'objet : recharger la page d'un gabarit enregistré ne doit
-        // pas rouvrir un brouillon vide.
         await this.router.navigate(['/commercial/tarification', SEGMENT[this.kind()], id], {
           replaceUrl: true,
         });
@@ -236,21 +265,10 @@ export class GabaritGrillePage {
   }
 
   /**
-   * **Poser la grille chez un client**, depuis l'en-tête.
-   *
-   * Ce qui est posé est ce qu'on a sous les yeux : le contenu ne se re-choisit
-   * pas, et il n'y a rien à confirmer dans un tiroir. Un **recouvrement arrête
-   * la pose** — si le client a déjà une mercuriale sur un de ces articles à ce
-   * seuil pour cette période, le serveur refuse plutôt que d'écraser une
-   * décision déjà prise.
-   */
-  /**
-   * **Poser la grille chez un client**, sur demande de la barre d'en-tête.
-   *
-   * Un **recouvrement arrête la pose** : si le client a déjà une mercuriale sur
-   * un de ces articles à ce seuil pour cette période, le serveur refuse plutôt
-   * que d'écraser une décision déjà prise. C'est la barre qui l'annonce, et le
-   * serveur qui le garantit.
+   * **Poser la grille chez un client**, sur demande de la barre d'en-tête. Un
+   * **recouvrement arrête la pose** : si le client a déjà une mercuriale sur un
+   * de ces articles à ce seuil pour cette période, le serveur refuse plutôt que
+   * d'écraser une décision prise. La barre l'annonce, le serveur le garantit.
    */
   protected async pose(request: PoseRequest): Promise<void> {
     const id = this.saved();

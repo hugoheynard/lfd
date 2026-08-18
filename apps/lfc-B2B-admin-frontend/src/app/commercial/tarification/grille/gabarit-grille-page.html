@@ -87,16 +87,28 @@
         <div class="grid">
           @for (row of rowsOf(category); track row.sku; let index = $index) {
             <!-- Colonne 1 — l'article et son tarif d'entrée. -->
-            <div class="cell col-article" [style.gridRow]="index + 1">
+            <div class="cell col-article" [style.gridRow]="rowOf(category.id, index)">
               <div class="node node-article">
                 <span class="article-name">{{ row.name }}</span>
                 <span class="article-meta">{{ row.sku }} · {{ euros(row.catalogCents) }}</span>
+                <!-- Simuler n'a de sens que sur un article tarifé : sans grille,
+                     il n'y a pas deux manières d'arriver au prix à comparer. -->
+                @if (row.mercurialeCents !== null) {
+                  <button
+                    type="button"
+                    class="link"
+                    [class.is-on]="simulated() === row.sku"
+                    (click)="toggleSimulation(row.sku)"
+                  >
+                    {{ simulated() === row.sku ? 'fermer la simulation' : 'simuler' }}
+                  </button>
+                }
               </div>
             </div>
 
             <!-- Colonne 2 — le prix négocié, saisi ICI. Pas de panneau : la
                  comparaison au catalogue sert au moment où l'on tape. -->
-            <div class="cell col-price" [style.gridRow]="index + 1">
+            <div class="cell col-price" [style.gridRow]="rowOf(category.id, index)">
               @if (row.mercurialeCents === null) {
                 <button
                   type="button"
@@ -156,7 +168,7 @@
 
             <!-- Colonne 3 — la limite. Elle existe indépendamment du gabarit :
                  elle s'affiche même sur un article non tarifé. -->
-            <div class="cell col-limit" [style.gridRow]="index + 1">
+            <div class="cell col-limit" [style.gridRow]="rowOf(category.id, index)">
               @if (row.floorCents === null) {
                 <span class="node node-empty muted">—</span>
               } @else {
@@ -168,7 +180,7 @@
             </div>
 
             <!-- Colonne 4 — ce qu'un commercial peut encore lâcher. -->
-            <div class="cell col-room" [style.gridRow]="index + 1">
+            <div class="cell col-room" [style.gridRow]="rowOf(category.id, index)">
               @if (row.roomCents === null) {
                 <span class="node node-empty muted">—</span>
               } @else {
@@ -180,7 +192,7 @@
             </div>
 
             <!-- Colonne 5 — ce que la grille coûte face au catalogue. -->
-            <div class="cell col-impact" [style.gridRow]="index + 1">
+            <div class="cell col-impact" [style.gridRow]="rowOf(category.id, index)">
               @if (row.impactBp === null) {
                 <span class="node node-empty muted">—</span>
               } @else {
@@ -194,7 +206,7 @@
             </div>
 
             <!-- Colonne 6 — le prix RÉELLEMENT facturé, limite comprise. -->
-            <div class="cell col-final" [style.gridRow]="index + 1">
+            <div class="cell col-final" [style.gridRow]="rowOf(category.id, index)">
               @if (row.finalCents === null) {
                 <span class="node node-empty muted">tarif B2B</span>
               } @else {
@@ -206,6 +218,22 @@
                 </span>
               }
             </div>
+          }
+
+          <!-- Le bloc s'ouvre DANS la grille, sous sa ligne : la simulation
+               appartient à l'article qu'on tarife, et les lignes qui suivent se
+               décalent d'un cran plutôt que de passer dessous. -->
+          @if (slot(); as slot) {
+            @if (slot.categoryId === category.id) {
+              <div class="cell col-simulation" [style.gridRow]="slot.gridRow">
+                <app-article-simulation
+                  [name]="slot.name"
+                  [catalogCents]="slot.catalogCents"
+                  [floorCents]="slot.floorCents"
+                  [tiers]="simulatedTiers()"
+                />
+              </div>
+            }
           }
         </div>
       </section>
