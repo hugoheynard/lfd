@@ -1396,3 +1396,77 @@ Sur la **donnée**, la limite qui commande tout le reste :
     faut un déploiement, pas une devinette ;
   - les déclinaisons **non-défaut** (un carton, un conditionnement) restent
     invisibles : la boutique n'a jamais su les vendre, et c'est C7 qui les ouvre.
+
+## Les gabarits tarifaires, et ce qu'on découvre en traçant leur courbe
+
+Un **gabarit** est une grille de prix nommée, composée hors de tout client, puis
+**posée** chez l'un d'eux sur une fenêtre. Il ne facture rien : il fabrique des
+règles de l'étage `mercuriale`. C'est pour cela qu'il est le seul objet de ce
+contexte qui se **révise** — les mercuriales qu'il a déjà posées sont des
+décisions closes et ne bougent pas.
+
+Mercuriales et devis partagent la même surface (`admin/pricing/templates`), parce
+qu'ils portent exactement la même chose : une grille. Ce qui les sépare est
+l'usage, et l'usage se joue au moment d'agir, pas au moment de ranger.
+
+Le **prix fixe n'est pas un mode** : c'est la grille à un seul palier, à partir
+de 1. Rien dans l'agrégat ne le distingue, et c'est voulu — deux chemins de
+saisie, une seule chose stockée. L'agrégat refuse en revanche ce qu'aucune règle
+isolée ne pouvait voir : une grille qui **monte**, deux paliers au même seuil,
+deux lignes sur le même article, une grille vide.
+
+### « Même prix » et « même chiffre » ne sont pas la même offre
+
+C'est le résultat que la simulation a rendu visible, et il contredisait
+l'intuition de départ.
+
+Soit un volume promis **V** et deux manières d'y arriver : un prix fixe *p*, ou
+un barème qui atteint *p* à la V-ième unité. On croit comparer deux emballages de
+la même offre. On compare deux offres différentes :
+
+- **le passé ne se refacture pas.** Chaque commande part au palier en vigueur à
+  son instant, et franchir un seuil ne recrédite pas les unités déjà livrées. Le
+  barème est donc *de facto* **progressif** ;
+- il facture donc toutes les unités antérieures à V **plus cher** que *p*. À tout
+  volume, il rapporte strictement davantage. Les deux courbes **ne se croisent
+  jamais**.
+
+D'où deux calibrages du prix fixe de référence, et l'écran oblige à choisir :
+
+| Aligné sur | Le prix fixe vaut | Ce que la courbe montre |
+| --- | --- | --- |
+| le **prix annoncé** | le prix du barème à V | le barème est plus cher partout ; l'écart monte jusqu'à V puis reste **plat** |
+| le **chiffre total** | le prix **moyen** du barème sur V | les deux se croisent à V ; l'écart est positif avant, **négatif** après |
+
+Seul le second calibrage répond à la question de la sortie anticipée : sous le
+volume promis nous sommes devant — le client a payé ses premières unités au prix
+fort, sans qu'aucune clause de sortie n'ait été écrite ; au-dessus, l'excédent
+part au dernier palier et c'est nous qui payons le dépassement.
+
+**Conséquence à retenir avant d'ajouter quoi que ce soit** : le jour où une
+régularisation de fin de saison sera proposée (« on te rend la différence sur
+tout le volume »), elle ne sera pas un geste commercial de détail — elle
+supprimera *entièrement* cette protection et aplatira le barème sur le prix fixe.
+
+### Où le calcul vit, et pourquoi il n'est pas au serveur
+
+Une mercuriale **scelle** : ni palier ni promotion ne s'ajoutent par-dessus. Le
+prix facturé sous mercuriale est donc le prix du palier, relevé par la limite
+s'il passe dessous — la même dérivation que la colonne « prix final » de la
+grille, et rien de plus. La simulation est pure et vit côté écran
+(`simulation/revenue-model.ts`), avec ses tests.
+
+Cela cesse d'être vrai **le jour où une promotion pourra s'empiler** sur une
+mercuriale (l'override explicite prévu). Ce jour-là, la simulation devra passer
+par la fonction qui facture, comme `volumeTierPrices` l'a toujours fait.
+
+Deux réserves écrites dans le code, parce qu'elles se lisent mal sur un
+graphique :
+
+- le modèle facture **unité par unité**, la caisse facture **ligne par ligne** au
+  palier du cumul à cet instant. Une commande qui enjambe un seuil part en entier
+  au palier d'avant : l'écart est de l'ordre d'une commande, et il joue en notre
+  faveur ;
+- sous le premier seuil, aucune règle ne s'applique : c'est le **tarif catalogue**
+  qui est facturé, pas le premier palier. Une grille qui ne s'ouvre qu'à 500
+  laisse les 499 premières au prix public, et la courbe le montre.
