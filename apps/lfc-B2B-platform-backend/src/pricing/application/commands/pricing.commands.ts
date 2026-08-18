@@ -101,3 +101,33 @@ export class ArchivePriceFloorCommand {
     readonly reason: string | null,
   ) {}
 }
+
+/**
+ * **Les trois gestes du barème** — suspendre, reprendre, archiver.
+ *
+ * Trois commandes et non une générique, pour la même raison que du côté des
+ * règles : ce qui compte dans six mois n'est pas l'état atteint, c'est ce que
+ * l'utilisateur croyait faire.
+ */
+export class PauseVolumeLadderCommand {
+  constructor(
+    readonly id: string,
+    readonly staffSub: string,
+    readonly reason: string | null,
+  ) {}
+}
+
+export class ResumeVolumeLadderCommand {
+  constructor(
+    readonly id: string,
+    readonly staffSub: string,
+  ) {}
+}
+
+export class ArchiveVolumeLadderCommand {
+  constructor(
+    readonly id: string,
+    readonly staffSub: string,
+    readonly reason: string | null,
+  ) {}
+}

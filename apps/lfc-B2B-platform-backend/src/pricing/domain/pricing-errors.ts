@@ -499,3 +499,43 @@ export class CorruptedVolumeLadderError extends TechnicalError {
     super("pricing.ladder.corrupted", `Barème « ${ladderId} » illisible : ${reason}.`);
   }
 }
+
+/**
+ * Un geste sur un barème **archivé**.
+ *
+ * Codes distincts de ceux des règles (`pricing.ladder.*` et non
+ * `pricing.rule.*`) : l'écran doit pouvoir dire « ce barème » et non « cette
+ * règle ». Le staff qui lit le message n'a pas à traduire.
+ */
+export class ArchivedVolumeLadderIsSealedError extends BusinessError {
+  constructor(readonly ladderId: string) {
+    super(
+      "pricing.ladder.archived_is_sealed",
+      "Ce barème est archivé : une décision close ne se rouvre pas. Posez-en un nouveau.",
+    );
+  }
+}
+
+/** Suspendre deux fois : le second geste n'aurait que l'apparence d'un effet. */
+export class VolumeLadderAlreadyPausedError extends BusinessError {
+  constructor(
+    readonly ladderId: string,
+    readonly pausedAt: Date,
+  ) {
+    super("pricing.ladder.already_paused", "Ce barème est déjà suspendu.");
+  }
+}
+
+/** Reprendre ce qui n'a jamais été suspendu. */
+export class VolumeLadderNotPausedError extends BusinessError {
+  constructor(readonly ladderId: string) {
+    super("pricing.ladder.not_paused", "Ce barème n'est pas en pause : il n'y a rien à reprendre.");
+  }
+}
+
+/** Aucun barème sous cet identifiant. Un 404, comme pour une règle. */
+export class VolumeLadderNotFoundError extends ResourceNotFoundError {
+  constructor(readonly ladderId: string) {
+    super("pricing.ladder.not_found", `Aucun barème de volume « ${ladderId} ».`);
+  }
+}

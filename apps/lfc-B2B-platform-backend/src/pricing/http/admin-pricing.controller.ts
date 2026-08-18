@@ -29,6 +29,9 @@ import {
   PausePriceRuleCommand,
   ResumePriceRuleCommand,
   SetVolumeLadderCommand,
+  PauseVolumeLadderCommand,
+  ResumeVolumeLadderCommand,
+  ArchiveVolumeLadderCommand,
 } from "../application/commands/pricing.commands.js";
 import { BoardComparisonService } from "../application/board-comparison.service.js";
 import { InvalidPricingInstantError } from "../domain/pricing-errors.js";
@@ -136,6 +139,54 @@ export class AdminPricingController {
       ),
     );
     return { id };
+  }
+
+  /**
+   * **Suspendre un barème** : il cesse d'agir et garde sa place.
+   *
+   * Les trois gestes du barème calquent ceux de la règle — mêmes verbes, mêmes
+   * sous-chemins, même exigence d'un motif à l'archivage. Un barème ne pouvait
+   * jusqu'ici que naître : le port déclarait la transition, l'agrégat n'en
+   * savait rien, et corriger une échelle supposait d'en poser une autre que la
+   * contrainte d'exclusion refusait.
+   */
+  @Post("volume-ladders/:id/pause")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async pauseLadder(
+    @Param("id") id: string,
+    @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
+    await this.commands.execute<PauseVolumeLadderCommand, void>(
+      new PauseVolumeLadderCommand(id, staffSub, payload.reason),
+    );
+  }
+
+  /** **Reprendre** : le barème réagit à partir de maintenant. */
+  @Post("volume-ladders/:id/resume")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resumeLadder(@Param("id") id: string, @StaffSub() staffSub: string): Promise<void> {
+    await this.commands.execute<ResumeVolumeLadderCommand, void>(
+      new ResumeVolumeLadderCommand(id, staffSub),
+    );
+  }
+
+  /**
+   * **Archiver** un barème — terminal, et il rend sa place.
+   *
+   * C'est ce geste qui manquait le plus : sans lui, une cible portait son
+   * premier barème pour toujours, la contrainte d'exclusion refusant le suivant.
+   */
+  @Post("volume-ladders/:id/archive")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async archiveLadder(
+    @Param("id") id: string,
+    @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
+    await this.commands.execute<ArchiveVolumeLadderCommand, void>(
+      new ArchiveVolumeLadderCommand(id, staffSub, payload.reason),
+    );
   }
 
   /** Rend l'identifiant posé : l'écran en a besoin pour cibler ses gestes. */

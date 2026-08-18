@@ -1,4 +1,7 @@
 import {
+  ArchivedVolumeLadderIsSealedError,
+  VolumeLadderAlreadyPausedError,
+  VolumeLadderNotPausedError,
   AmbiguousVolumeTierError,
   ReversedValidityWindowError,
   EmptyVolumeLadderError,
@@ -96,6 +99,67 @@ export class VolumeLadderAggregate {
 
   get status(): RuleStatus {
     return statusOf(this.state.lifecycle);
+  }
+
+  /**
+   * **Suspendre.** Le barème cesse d'agir et **garde sa place**.
+   *
+   * Comme pour une règle, la pause réserve le créneau : la contrainte
+   * d'exclusion est partielle (`WHERE archived_at IS NULL`), donc un barème
+   * suspendu empêche encore d'en poser un autre sur la même cible. Sans quoi la
+   * reprise échouerait sur un chevauchement que personne n'a vu venir.
+   *
+   * @throws {ArchivedVolumeLadderIsSealedError} il est archivé.
+   * @throws {VolumeLadderAlreadyPausedError} quelqu'un l'a déjà suspendu.
+   */
+  pause(by: string, at: Date): VolumeLadderAggregate {
+    this.assertNotArchived();
+    const { pausedAt } = this.state.lifecycle;
+    if (pausedAt !== null) {
+      throw new VolumeLadderAlreadyPausedError(this.state.id, pausedAt);
+    }
+    return this.withLifecycle({ pausedAt: at, pausedBy: by });
+  }
+
+  /**
+   * **Reprendre.** Le barème réagit à partir de maintenant.
+   *
+   * @throws {ArchivedVolumeLadderIsSealedError} il est archivé.
+   * @throws {VolumeLadderNotPausedError} il n'était pas suspendu.
+   */
+  resume(): VolumeLadderAggregate {
+    this.assertNotArchived();
+    if (this.state.lifecycle.pausedAt === null) {
+      throw new VolumeLadderNotPausedError(this.state.id);
+    }
+    return this.withLifecycle({ pausedAt: null, pausedBy: null });
+  }
+
+  /**
+   * **Archiver.** Terminal : le barème cesse d'agir et **rend sa place**.
+   *
+   * Un barème en pause s'archive aussi — la pause n'est pas un état protégé.
+   * Rien ne s'efface : une échelle a facturé, et la retirer effacerait la
+   * réponse à « pourquoi ce prix » alors que la facture, elle, reste.
+   *
+   * @throws {ArchivedVolumeLadderIsSealedError} il l'est déjà.
+   */
+  archive(by: string, at: Date, reason: string | null): VolumeLadderAggregate {
+    this.assertNotArchived();
+    return this.withLifecycle({ archivedAt: at, archivedBy: by, archiveReason: reason });
+  }
+
+  private assertNotArchived(): void {
+    if (this.state.lifecycle.archivedAt !== null) {
+      throw new ArchivedVolumeLadderIsSealedError(this.state.id);
+    }
+  }
+
+  private withLifecycle(patch: Partial<RuleLifecycle>): VolumeLadderAggregate {
+    return new VolumeLadderAggregate({
+      ...this.state,
+      lifecycle: { ...this.state.lifecycle, ...patch },
+    });
   }
 
   /** La forme que lit la résolution — celle du calcul, pas celle du stockage. */

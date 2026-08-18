@@ -1272,3 +1272,99 @@ describe("l’écran daté et la comparaison", () => {
     expect(item?.volumeVariationBp).toBe(2_000);
   });
 });
+
+/**
+ * **Le cycle de vie du barème** — les trois gestes qui manquaient.
+ *
+ * Le port déclarait la transition depuis la persistance des barèmes ; l'agrégat
+ * n'en savait rien, et aucune route ne l'appelait. Un barème ne pouvait donc que
+ * NAÎTRE : une cible portait son premier pour toujours, puisque la contrainte
+ * d'exclusion refusait le suivant. C'est ce dernier point que le dernier cas
+ * éprouve, et c'est celui qui coûtait le plus cher.
+ */
+describe("suspendre, reprendre, archiver un barème", () => {
+  const SKU_L = "VIE-002";
+
+  const poseLadder = (over: Record<string, unknown> = {}) =>
+    staff()
+      .put("/admin/pricing/volume-ladders")
+      .send({
+        scope: { type: "product", id: SKU_L },
+        audience: { type: "all", id: null },
+        unit: "percent",
+        tiers: [{ minQuantity: 50, value: 500 }],
+        label: "Barème cycle",
+        validFrom: "2026-01-01T00:00:00.000Z",
+        validTo: null,
+        ...over,
+      });
+
+  it("suspend, puis refuse de suspendre deux fois", async () => {
+    const { id } = jsonBody<{ id: string }>(await poseLadder().expect(201));
+
+    await staff()
+      .post(`/admin/pricing/volume-ladders/${id}/pause`)
+      .send({ reason: "four en panne" })
+      .expect(204);
+    await staff()
+      .post(`/admin/pricing/volume-ladders/${id}/pause`)
+      .send({ reason: "encore" })
+      .expect(409);
+  });
+
+  it("refuse de reprendre ce qui n'est pas suspendu", async () => {
+    const { id } = jsonBody<{ id: string }>(await poseLadder().expect(201));
+
+    await staff().post(`/admin/pricing/volume-ladders/${id}/resume`).send({}).expect(409);
+  });
+
+  it("reprend ce qui était suspendu", async () => {
+    const { id } = jsonBody<{ id: string }>(await poseLadder().expect(201));
+
+    await staff()
+      .post(`/admin/pricing/volume-ladders/${id}/pause`)
+      .send({ reason: null })
+      .expect(204);
+    await staff().post(`/admin/pricing/volume-ladders/${id}/resume`).send({}).expect(204);
+  });
+
+  it("refuse tout geste sur un barème archivé", async () => {
+    const { id } = jsonBody<{ id: string }>(await poseLadder().expect(201));
+
+    await staff()
+      .post(`/admin/pricing/volume-ladders/${id}/archive`)
+      .send({ reason: "remplacé" })
+      .expect(204);
+    await staff()
+      .post(`/admin/pricing/volume-ladders/${id}/pause`)
+      .send({ reason: null })
+      .expect(409);
+  });
+
+  it("répond 404 sur un barème qui n'a jamais existé", async () => {
+    await staff().post("/admin/pricing/volume-ladders/ladder_inconnu/resume").send({}).expect(404);
+  });
+
+  /**
+   * **Le geste qui manquait le plus.** Une pause RÉSERVE le créneau, un
+   * archivage le REND — c'est la contrainte d'exclusion partielle qui le dit.
+   * Sans archivage, une cible restait prisonnière de son premier barème.
+   */
+  it("libère la cible en archivant, pas en suspendant", async () => {
+    const { id } = jsonBody<{ id: string }>(await poseLadder().expect(201));
+
+    await staff()
+      .post(`/admin/pricing/volume-ladders/${id}/pause`)
+      .send({ reason: null })
+      .expect(204);
+    // Suspendu ⇒ le créneau est encore réservé.
+    await poseLadder({ label: "Jumeau refusé" }).expect(409);
+
+    await staff()
+      .post(`/admin/pricing/volume-ladders/${id}/archive`)
+      .send({ reason: "on repart de zéro" })
+      .expect(204);
+    // Archivé ⇒ la place est rendue.
+    await poseLadder({ label: "Le suivant" }).expect(201);
+  });
+});

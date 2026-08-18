@@ -9,7 +9,12 @@ import {
   CreatePriceRuleHandler,
   SetPriceFloorHandler,
 } from "./application/commands/pricing.handlers.js";
-import { SetVolumeLadderHandler } from "./application/commands/volume-ladder.handlers.js";
+import {
+  ArchiveVolumeLadderHandler,
+  PauseVolumeLadderHandler,
+  ResumeVolumeLadderHandler,
+  SetVolumeLadderHandler,
+} from "./application/commands/volume-ladder.handlers.js";
 import {
   ArchivePriceRuleHandler,
   PausePriceRuleHandler,
@@ -61,6 +66,9 @@ import { PricingModule } from "./pricing.module.js";
     SetPriceFloorHandler,
     ArchivePriceFloorHandler,
     SetVolumeLadderHandler,
+    PauseVolumeLadderHandler,
+    ResumeVolumeLadderHandler,
+    ArchiveVolumeLadderHandler,
     { provide: PricingRuleRepository, useClass: PrismaPricingRuleRepository },
     { provide: VolumeLadderRepository, useClass: PrismaVolumeLadderRepository },
     { provide: PricingFloorRepository, useClass: PrismaPricingFloorRepository },
