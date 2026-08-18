@@ -1642,11 +1642,19 @@ La compenser demande une décision commerciale — clause de sortie, régularisa
 au terme, engagement minimum facturé — qui n'est **pas** prise ici, et qui ne doit
 pas être bricolée dans le moteur : elle changerait la nature de la trace figée.
 
-### Ce que la simulation décrit, du coup
+### Le sélecteur de régime du simulateur
 
-La courbe à paliers du simulateur lit les seuils sur le **cumul livré**. Ce
-régime n'est celui d'aucune des deux situations d'une mercuriale : sans
-engagement les seuils se lisent par commande, avec engagement le prix est plat au
-palier annoncé. C'est le régime d'un **barème de volume dont la promesse est
-dépassée**. L'écran le dit — une simulation qui laisse croire que les paliers
-s'accumulent d'une commande à l'autre serait fausse dans les deux cas courants.
+Les trois lectures existent réellement, et une même grille n'y rapporte pas la
+même chose. Le simulateur les propose au lieu d'en supposer une :
+
+| Régime | Ce qui est facturé | Ce qu'il révèle |
+| --- | --- | --- |
+| **engagement signé** | tout au palier annoncé, dès la première pièce ; le cumul reprend la main au-delà | la grille à paliers et un prix fixe à ce palier rapportent **exactement** la même chose |
+| **par commande** | chaque commande au palier de sa propre taille | le piège d'une grille négociée sur l'année : qui étale n'atteint jamais le palier annuel |
+| **cumul livré** | chaque unité au palier atteint à cet instant, sans refacturation | le seul des trois qui **protège d'une sortie anticipée** |
+
+Le régime « engagement signé » règle la question posée au tout début de ce
+chantier — « si on atteint le volume prévu, les paliers ne servent à rien, un
+fixe suffit ? ». Sous engagement : **oui, arithmétiquement**. La progressivité qui
+protégeait d'une sortie anticipée n'existe que dans le régime du cumul livré,
+c'est-à-dire précisément quand le client **n'a rien promis**.

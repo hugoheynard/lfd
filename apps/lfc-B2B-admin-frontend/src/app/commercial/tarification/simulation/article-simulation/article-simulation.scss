@@ -25,7 +25,8 @@
 }
 
 .field,
-.anchors {
+.anchors,
+.calib {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -66,6 +67,12 @@
 
 .choice + .choice {
   border-left: 1px solid var(--fold-color-border);
+}
+
+.choice.is-on {
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text);
+  font-weight: 600;
 }
 
 .choice:hover {

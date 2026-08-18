@@ -33,6 +33,56 @@
     </div>
   </div>
 
+  <!--
+    **Le régime n'est pas un réglage d'affichage.** C'est la question qui décide
+    du prix, et sa réponse ne vient pas de cette grille mais de ce qui est signé
+    à côté. Trois lectures réelles ; une même grille n'y rapporte pas la même
+    chose, et c'est exactement ce qu'on vient comparer.
+  -->
+  <div class="calib" role="group" aria-label="Régime de lecture des seuils">
+    <span class="field-label">Les seuils se lisent</span>
+    <div class="anchor-choices">
+      <button
+        type="button"
+        class="choice"
+        [class.is-on]="regimeKind() === 'commitment'"
+        (click)="regimeKind.set('commitment')"
+      >
+        engagement signé
+      </button>
+      <button
+        type="button"
+        class="choice"
+        [class.is-on]="regimeKind() === 'perOrder'"
+        (click)="regimeKind.set('perOrder')"
+      >
+        par commande
+      </button>
+      <button
+        type="button"
+        class="choice"
+        [class.is-on]="regimeKind() === 'delivered'"
+        (click)="regimeKind.set('delivered')"
+      >
+        cumul livré
+      </button>
+    </div>
+  </div>
+
+  @if (regimeKind() === 'perOrder') {
+    <label class="field">
+      <span class="field-label">Commande type</span>
+      <input
+        class="field-input"
+        type="text"
+        inputmode="numeric"
+        [value]="orderSizeField()"
+        [attr.aria-label]="'Taille de commande type pour ' + name()"
+        (input)="orderSizeField.set(nativeValue($event))"
+      />
+    </label>
+  }
+
   <span class="bar-spacer"></span>
 
   <button foldButton emphasis="outline" [disabled]="!canPin()" (click)="pin()">

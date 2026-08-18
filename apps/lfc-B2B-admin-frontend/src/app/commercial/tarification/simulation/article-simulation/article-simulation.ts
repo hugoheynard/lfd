@@ -7,18 +7,27 @@ import { ChartNote } from '../../../../shared/chart-note/chart-note';
 import { nativeValue } from '../../../../shared/native-input';
 import { revenueCurvesOption, revenueGapOption, type RevenueSeries } from '../revenue-chart';
 import { centsOf, eurosField } from '../../grille/price-field';
+import { averageUnderRegime, revenueUnderRegime, type PricingRegime } from '../pricing-regime';
 import {
-  averageUnitCents,
-  curveOf,
   fixedScenario,
   gapCents,
-  revenueCentsAt,
   unitPriceCentsAt,
   volumeSamples,
   type ArticleBasis,
+  type CurvePoint,
   type Scenario,
   type ScenarioTier,
 } from '../revenue-model';
+
+/** Ce que chaque régime raconte, en une phrase — dit sous les courbes. */
+const REGIME_NOTE: Readonly<Record<PricingRegime['kind'], string>> = {
+  perOrder:
+    "Sans engagement, les seuils se lisent sur CHAQUE commande : le client qui étale sa saison n'atteint jamais que le palier de sa commande type. C'est le piège le plus courant d'une grille négociée sur un volume annuel.",
+  commitment:
+    "Sous engagement, le volume annoncé ouvre le palier dès la première commande : le prix est plat. Une grille à paliers et un prix fixe à ce palier rapportent alors EXACTEMENT la même chose — c'est nous qui portons la charge si la promesse tombe.",
+  delivered:
+    "Au cumul livré, chaque unité est facturée au palier atteint à cet instant et rien n'est refacturé. C'est le seul des trois qui protège d'une sortie anticipée : les premières unités ont été payées au prix fort.",
+};
 
 /** Au-delà du volume promis : ce qu'on regarde, c'est le dépassement, pas le double. */
 const OVERSHOOT = 1.3;
@@ -78,7 +87,25 @@ export class ArticleSimulation {
    * champ qu'on vide doit rester vide le temps de taper le nombre suivant.
    */
   protected readonly fixedField = signal('');
+
+  /**
+   * **Le régime de lecture des seuils** — la question qui décide du prix, et
+   * dont la réponse ne vient pas de cette grille mais de ce qui est signé à
+   * côté. Par défaut celui de la story : engagement signé.
+   */
+  protected readonly regimeKind = signal<PricingRegime['kind']>('commitment');
+  /** La commande type, quand les seuils se lisent par commande. */
+  protected readonly orderSizeField = signal('200');
   protected readonly pinned = signal<readonly Scenario[]>([]);
+
+  protected readonly regime = computed<PricingRegime>(() => {
+    const kind = this.regimeKind();
+    if (kind === 'perOrder') {
+      const parsed = Number.parseInt(this.orderSizeField().replace(/\s/gu, ''), 10);
+      return { kind, orderSize: Number.isNaN(parsed) ? 1 : parsed };
+    }
+    return kind === 'commitment' ? { kind, promised: this.targetVolume() } : { kind };
+  });
 
   protected readonly basis = computed<ArticleBasis>(() => ({
     catalogCents: this.catalogCents(),
@@ -100,7 +127,9 @@ export class ArticleSimulation {
    */
   protected readonly anchors = computed(() => ({
     headlineCents: unitPriceCentsAt(this.live(), this.basis(), this.targetVolume()),
-    averageCents: averageUnitCents(this.live(), this.basis(), this.targetVolume()),
+    // Le prix moyen dépend du RÉGIME, pas de la grille : c'est tout l'intérêt du
+    // sélecteur. Sans engagement, l'écart avec le prix annoncé est le piège.
+    averageCents: averageUnderRegime(this.live(), this.basis(), this.targetVolume(), this.regime()),
   }));
 
   /** Le prix fixe comparé : celui saisi, à défaut le prix moyen. */
@@ -133,9 +162,17 @@ export class ArticleSimulation {
       id: scenario.id,
       label: scenario.label,
       tone: index + 1,
-      points: curveOf(scenario, this.basis(), volumes),
+      points: this.curveOf(scenario, volumes),
     }));
   });
+
+  /** Une courbe sous le régime choisi — c'est lui qui fait le prix, pas la grille. */
+  private curveOf(scenario: Scenario, volumes: readonly number[]): readonly CurvePoint[] {
+    return volumes.map((volume) => ({
+      volume,
+      revenueCents: revenueUnderRegime(scenario, this.basis(), volume, this.regime()),
+    }));
+  }
 
   protected readonly curvesOption = computed(() =>
     revenueCurvesOption(this.series(), this.targetVolume()),
@@ -164,12 +201,14 @@ export class ArticleSimulation {
    * lecture chiffrée de la bosse — un graphique montre qu'il y a un écart, il ne
    * dit pas combien, et c'est le combien qui s'écrit dans un contrat.
    */
+  protected readonly regimeNote = computed(() => REGIME_NOTE[this.regimeKind()]);
+
   protected readonly exits = computed(() =>
     [0.25, 0.5, 0.75].map((share) => {
       const volume = Math.max(1, Math.round(this.targetVolume() * share));
       const deltaCents =
-        revenueCentsAt(this.live(), this.basis(), volume) -
-        revenueCentsAt(this.reference(), this.basis(), volume);
+        revenueUnderRegime(this.live(), this.basis(), volume, this.regime()) -
+        revenueUnderRegime(this.reference(), this.basis(), volume, this.regime());
       return { share: Math.round(share * 100), volume, deltaCents };
     }),
   );
