@@ -7,10 +7,15 @@
     }
   </div>
 
+  <!-- Pas de `role="application"` : il annonce au lecteur d'écran « je gère les
+       touches moi-même », et cette piste n'en gère aucune. Le chemin clavier
+       passe par les deux champs de date de l'en-tête, qui pilotent la même
+       sélection — l'annoncer autrement enfermerait l'utilisateur dans une zone
+       qui ne répond pas. -->
   <div
     class="track"
-    role="application"
-    aria-label="Poser un marqueur, ou glisser pour ouvrir une période"
+    role="img"
+    aria-label="Frise des décisions. Au clavier, utilisez les champs de date ci-dessous."
     [style.--lanes]="laneCount()"
     (pointerdown)="onPointerDown($event)"
     (pointermove)="onPointerMove($event)"
