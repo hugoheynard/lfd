@@ -15,15 +15,14 @@ export class ListCatalogHandler implements IQueryHandler<
 > {
   constructor(private readonly catalog: ProductCatalogReader) {}
 
-  execute(): Promise<readonly CatalogItemView[]> {
-    return Promise.resolve(
-      this.catalog.all().map((item) => ({
-        sku: item.sku,
-        name: item.name,
-        unitPriceCents: item.unitPriceCents,
-        vatRate: item.vatRate,
-        category: item.category,
-      })),
-    );
+  async execute(): Promise<readonly CatalogItemView[]> {
+    const items = await this.catalog.all();
+    return items.map((item) => ({
+      sku: item.sku,
+      name: item.name,
+      unitPriceCents: item.unitPriceCents,
+      vatRate: item.vatRate,
+      category: item.category,
+    }));
   }
 }

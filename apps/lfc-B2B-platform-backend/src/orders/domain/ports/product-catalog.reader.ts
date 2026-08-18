@@ -23,8 +23,17 @@ export interface CatalogItem extends PricedSku {
  * client. Source jetable (seed) jusqu'à la vraie synchro PIM.
  */
 export abstract class ProductCatalogReader {
-  /** Résout un SKU, ou `null` s'il est inconnu du catalogue. */
-  abstract resolve(sku: string): CatalogItem | null;
+  /**
+   * Résout un SKU, ou `null` s'il est inconnu du catalogue.
+   *
+   * **Asynchrone**, et c'est la bascule du catalogue qui l'impose : lire une
+   * base l'est. Le port a longtemps été synchrone parce que sa seule
+   * implémentation était une table en dur ; garder cette signature aurait
+   * obligé l'adaptateur Postgres à servir un instantané tenu en mémoire, donc à
+   * facturer un prix périmé dès qu'un autre pod reçoit une poussée du PIM. Sur
+   * l'autorité de prix du checkout, c'était le mauvais compromis.
+   */
+  abstract resolve(sku: string): Promise<CatalogItem | null>;
 
   /**
    * Le catalogue entier, dans l'ordre où il se parcourt.
@@ -34,5 +43,16 @@ export abstract class ProductCatalogReader {
    * quatrième copie de la table des produits, dans l'app admin — donc un écran
    * où le commercial annonce au téléphone un prix que le serveur refuse ensuite.
    */
-  abstract all(): readonly CatalogItem[];
+  abstract all(): Promise<readonly CatalogItem[]>;
+
+  /**
+   * Résout **plusieurs** SKU en une lecture.
+   *
+   * Le chemin qui facture résout toutes les lignes d'un panier ; la liste des
+   * habitudes en résout des dizaines. Tant que le catalogue était une table en
+   * mémoire, les résoudre un par un ne coûtait rien — depuis qu'il vient de la
+   * base, c'est une requête par ligne. Un SKU inconnu est **absent** de la table
+   * rendue, jamais présent à `null`.
+   */
+  abstract resolveMany(skus: readonly string[]): Promise<ReadonlyMap<string, CatalogItem>>;
 }

@@ -115,7 +115,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     }));
     // Le tarif représentatif d'AUJOURD'HUI, par portée : c'est lui qui, comparé
     // à celui figé à la pose, dit si l'intention a vieilli.
-    const articles = this.catalog.all();
+    const articles = await this.catalog.all();
     const floors: LoadedFloor[] = floorRows.map((row) => {
       const floor = floorFromRow(row);
       return {

@@ -29,8 +29,12 @@ export class ListCustomerSkusHandler implements IQueryHandler<
 
   async execute(query: ListCustomerSkusQuery): Promise<readonly CustomerSkuStat[]> {
     const tallies = await this.habits.byCompany(query.companyId);
+    // Résolus EN UN LOT : une liste d'habitudes compte des dizaines d'articles,
+    // et depuis que le catalogue vient de la base, un par un serait une requête
+    // par ligne.
+    const items = await this.catalog.resolveMany(tallies.map((tally) => tally.sku));
     return tallies.map((tally) => {
-      const item = this.catalog.resolve(tally.sku);
+      const item = items.get(tally.sku) ?? null;
       return {
         sku: tally.sku,
         productName: item?.name ?? tally.lastProductName,

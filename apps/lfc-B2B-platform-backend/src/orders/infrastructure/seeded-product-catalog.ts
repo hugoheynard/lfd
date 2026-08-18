@@ -70,12 +70,25 @@ export class SeededProductCatalog extends ProductCatalogReader {
    */
   private readonly ordered: readonly CatalogItem[] = [...this.bySku.values()].sort(byShelfThenName);
 
-  resolve(sku: string): CatalogItem | null {
-    return this.bySku.get(sku) ?? null;
+  // Asynchrone comme le port, alors que rien ici n'attend : c'est la source
+  // JETABLE qui s'aligne sur le contrat, pas le contrat qui se rabaisse à elle.
+  resolve(sku: string): Promise<CatalogItem | null> {
+    return Promise.resolve(this.bySku.get(sku) ?? null);
   }
 
-  all(): readonly CatalogItem[] {
-    return this.ordered;
+  all(): Promise<readonly CatalogItem[]> {
+    return Promise.resolve(this.ordered);
+  }
+
+  resolveMany(skus: readonly string[]): Promise<ReadonlyMap<string, CatalogItem>> {
+    const found = new Map<string, CatalogItem>();
+    for (const sku of skus) {
+      const item = this.bySku.get(sku);
+      if (item !== undefined) {
+        found.set(sku, item);
+      }
+    }
+    return Promise.resolve(found);
   }
 }
 

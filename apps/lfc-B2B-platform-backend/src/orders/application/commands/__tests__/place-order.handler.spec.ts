@@ -1,3 +1,4 @@
+import { InMemoryProductCatalog } from "../../../infrastructure/in-memory-product-catalog.js";
 import type {
   BillingAddressPayload,
   DeliveryZoneView,
@@ -24,10 +25,7 @@ import {
 } from "../../../domain/ports/order-guard.reader.js";
 import type { OrderToPlace } from "../../../domain/entities/order.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
-import {
-  type CatalogItem,
-  ProductCatalogReader,
-} from "../../../domain/ports/product-catalog.reader.js";
+import { type CatalogItem } from "../../../domain/ports/product-catalog.reader.js";
 import { DomainEventPublisher } from "../../../../infra/events/domain-event-publisher.js";
 import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
 import {
@@ -130,9 +128,7 @@ function payments(sink: { intent: CreateIntentParams | null } = { intent: null }
   };
 }
 
-const catalog: ProductCatalogReader = {
-  resolve: (sku) => CATALOG[sku] ?? null,
-};
+const catalog = new InMemoryProductCatalog(Object.values(CATALOG));
 
 /** Points de retrait doublés : seul le point **résolu** varie. */
 function pickups(resolved: PickupAddressView | null = null): PickupAddressRepository {

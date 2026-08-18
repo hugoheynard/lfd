@@ -89,7 +89,7 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
       scope,
       policy,
       staffSub,
-      referenceCanonicalFor(scope, this.catalog.all()),
+      referenceCanonicalFor(scope, await this.catalog.all()),
     );
     await this.floors.pose(floor, {
       subjectType: "floor",
@@ -132,7 +132,7 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
       state.scope,
       state.policy,
       command.staffSub,
-      referenceCanonicalFor(state.scope, this.catalog.all()),
+      referenceCanonicalFor(state.scope, await this.catalog.all()),
     );
     await this.floors.pose(floor, {
       subjectType: "floor",

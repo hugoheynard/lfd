@@ -42,6 +42,7 @@ import type { VerifiedToken } from "../src/infra/auth/principal.js";
 import { StaffAccessResolver } from "../src/infra/auth/staff-access.resolver.js";
 import { testDatabaseUrl } from "./setup-env.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
+import { seedE2eCatalog } from "./catalog-fixture.js";
 
 /**
  * Corps de réponse **typé**.
@@ -156,6 +157,9 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       await background.whenIdle();
       await truncateAll(prisma);
       await seedE2eStaff(prisma);
+      // Le catalogue est désormais l'autorité de prix du checkout : sans lui,
+      // toute suite qui commande passerait au vert sur un catalogue vide.
+      await seedE2eCatalog(prisma);
       // La résolution d'accès garde un cache court par `sub` : sans cet oubli,
       // le test suivant travaillerait avec l'id d'une fiche qu'on vient d'effacer.
       app.get(StaffAccessResolver).forgetAll();

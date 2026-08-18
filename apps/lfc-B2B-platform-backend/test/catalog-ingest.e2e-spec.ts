@@ -23,6 +23,12 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  // Cette suite mesure ce qu'une INGESTION écrit : elle doit donc partir d'un
+  // catalogue vide. Le harnais en sème un depuis la bascule (il est l'autorité
+  // de prix du checkout), et le compter ici ferait échouer les compteurs pour
+  // une raison qui n'a rien à voir avec l'ingestion.
+  await ctx.prisma.catalogItem.deleteMany();
+  await ctx.prisma.catalogCategory.deleteMany();
 });
 
 const CATEGORY = {

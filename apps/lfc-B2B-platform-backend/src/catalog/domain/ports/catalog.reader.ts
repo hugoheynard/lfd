@@ -43,4 +43,32 @@ export abstract class CatalogReader {
   abstract findSku(sku: string): Promise<ResolvedCatalogItem | null>;
   /** Tout ce qui est vendable, masqués exclus, dans l'ordre d'affichage. */
   abstract listSellable(): Promise<ResolvedCatalogItem[]>;
+
+  /**
+   * L'unité **par défaut** d'un produit, par le SKU du PRODUIT.
+   *
+   * Distincte de {@link findSku}, qui prend le SKU d'une déclinaison. Les deux
+   * ne coïncident pas — le PIM dérive `VIE-001-1` de `VIE-001` — et c'est le SKU
+   * produit que la boutique a toujours vendu : il est écrit dans les commandes
+   * passées, dans les paniers récurrents, dans les brouillons. Une bascule qui
+   * changerait d'identifiant réécrirait l'histoire ; cette méthode est ce qui
+   * permet de ne pas le faire.
+   *
+   * `null` si le produit est inconnu, masqué, ou sans taux de TVA — un article
+   * qu'on ne sait pas facturer ne se vend pas.
+   */
+  abstract findDefaultByProductSku(productSku: string): Promise<ResolvedCatalogItem | null>;
+
+  /**
+   * Les unités par défaut de **plusieurs** produits, en une lecture.
+   *
+   * Par lot, et pour la même raison que le port des volumes : un panier de vingt
+   * lignes, une liste d'habitudes de cinquante articles, résolus un par un,
+   * feraient autant de requêtes. Un SKU inconnu est **absent** de la table
+   * rendue plutôt que présent à `null` — l'appelant distingue ainsi « inconnu »
+   * de « pas demandé ».
+   */
+  abstract listDefaultsByProductSkus(
+    productSkus: readonly string[],
+  ): Promise<ReadonlyMap<string, ResolvedCatalogItem>>;
 }

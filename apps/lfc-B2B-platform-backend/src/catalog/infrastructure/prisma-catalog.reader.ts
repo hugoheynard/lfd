@@ -49,6 +49,40 @@ export class PrismaCatalogReader extends CatalogReader {
     return vatRate === null ? null : resolve(row, vatRate.toNumber());
   }
 
+  /** Une seule ligne visée par index, jamais le catalogue entier chargé puis filtré. */
+  async findDefaultByProductSku(productSku: string): Promise<ResolvedCatalogItem | null> {
+    const row = await this.prisma.catalogItem.findFirst({
+      where: { productSku, isDefault: true },
+      include: { category: true, override: true },
+    });
+    if (row === null || row.override?.isHidden === true) {
+      return null;
+    }
+    const vatRate = row.category.vatRatePercent;
+    return vatRate === null ? null : resolve(row, vatRate.toNumber());
+  }
+
+  async listDefaultsByProductSkus(
+    productSkus: readonly string[],
+  ): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
+    if (productSkus.length === 0) {
+      return new Map();
+    }
+    const rows = await this.prisma.catalogItem.findMany({
+      where: { productSku: { in: [...productSkus] }, isDefault: true },
+      include: { category: true, override: true },
+    });
+    const resolved = new Map<string, ResolvedCatalogItem>();
+    for (const row of rows) {
+      const vatRate = row.category.vatRatePercent;
+      if (row.override?.isHidden === true || vatRate === null) {
+        continue;
+      }
+      resolved.set(row.productSku, resolve(row, vatRate.toNumber()));
+    }
+    return resolved;
+  }
+
   async listSellable(): Promise<ResolvedCatalogItem[]> {
     const rows = await this.prisma.catalogItem.findMany({
       where: {

@@ -1,3 +1,4 @@
+import { InMemoryProductCatalog } from "../../../infrastructure/in-memory-product-catalog.js";
 import type { AdminPlaceOrderPayload, PickupAddressView } from "@lfd/contracts";
 
 import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
@@ -20,10 +21,7 @@ import {
   type OrderRole,
 } from "../../../domain/ports/order-guard.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
-import {
-  type CatalogItem,
-  ProductCatalogReader,
-} from "../../../domain/ports/product-catalog.reader.js";
+import { type CatalogItem } from "../../../domain/ports/product-catalog.reader.js";
 import {
   type DeliveryDefaults,
   DeliveryDefaultsReader,
@@ -85,10 +83,7 @@ const CATALOG: Record<string, CatalogItem> = {
   },
 };
 
-const catalog: ProductCatalogReader = {
-  resolve: (sku) => CATALOG[sku] ?? null,
-  all: () => Object.values(CATALOG),
-};
+const catalog = new InMemoryProductCatalog(Object.values(CATALOG));
 
 const LABO: PickupAddressView = {
   id: "pickup_1",
@@ -358,16 +353,15 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
 
     // Une remise de retrait qui ramène le total à zéro n'existe pas au seed ;
     // on passe par un catalogue à prix nul, seul moyen d'atteindre ce total.
-    const gratuit: ProductCatalogReader = {
-      resolve: () => ({
+    const gratuit = new InMemoryProductCatalog([
+      {
         sku: "VIE-001",
         name: "Croissant offert",
         unitPriceCents: 0,
         vatRate: 0,
         category: "viennoiserie",
-      }),
-      all: () => [],
-    };
+      },
+    ]);
     const free = new PlaceOrderForCustomerHandler(
       guard("orders"),
       new OrderDrafting(

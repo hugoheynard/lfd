@@ -239,9 +239,14 @@ export class OrderDrafting {
     // du basculement d'une promotion.
     const at = new Date();
 
+    // Le catalogue est résolu EN UN LOT, avant la boucle : depuis qu'il vient de
+    // la base, le résoudre ligne à ligne ferait une requête par ligne de panier
+    // sur le chemin qui facture.
+    const catalogue = await this.catalog.resolveMany([...quantities.keys()]);
+
     return Promise.all(
       [...quantities].map(async ([sku, quantity]) => {
-        const item = this.catalog.resolve(sku);
+        const item = catalogue.get(sku) ?? null;
         if (item === null) {
           throw new UnknownSkuError(sku);
         }
