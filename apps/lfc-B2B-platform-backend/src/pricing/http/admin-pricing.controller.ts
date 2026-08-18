@@ -1,9 +1,12 @@
 import {
   createPriceRulePayloadSchema,
+  priceProjectionPayloadSchema,
   pricingReasonPayloadSchema,
   renamePriceRulePayloadSchema,
   setVolumeLadderPayloadSchema,
   type CreatePriceRulePayload,
+  type PriceProjectionPayload,
+  type PriceProjectionView,
   type PricingReasonPayload,
   type RenamePriceRulePayload,
   type SetVolumeLadderPayload,
@@ -24,6 +27,8 @@ import {
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../infra/auth/admin-surface.decorator.js";
+import { Clock } from "../../infra/time/clock.js";
+import { PriceProjectionQuery } from "../application/queries/price-projection.query.js";
 import { StaffSub } from "../../infra/auth/staff.decorator.js";
 import { ZodBody } from "../../shared/http/zod-body.pipe.js";
 import {
@@ -70,6 +75,8 @@ export class AdminPricingController {
     private readonly board: PricingBoardReader,
     private readonly comparison: BoardComparisonService,
     private readonly commands: CommandBus,
+    private readonly projection: PriceProjectionQuery,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -194,6 +201,22 @@ export class AdminPricingController {
   }
 
   /** Rend l'identifiant posé : l'écran en a besoin pour cibler ses gestes. */
+  /**
+   * **La projection** : ce que l'article coûterait à des niveaux de cumul qui
+   * n'existent pas encore.
+   *
+   * `POST` bien que ce soit une lecture : la liste des niveaux ne tient pas
+   * proprement dans une URL, et un `GET` à vingt-quatre paramètres répétés se
+   * lit moins bien qu'un corps. Rien n'est écrit, rien n'est mémorisé.
+   */
+  @Post("projection")
+  @HttpCode(HttpStatus.OK)
+  async project(
+    @Body(new ZodBody(priceProjectionPayloadSchema)) payload: PriceProjectionPayload,
+  ): Promise<PriceProjectionView> {
+    return this.projection.project(payload, this.clock.now());
+  }
+
   @Post("rules")
   @HttpCode(HttpStatus.CREATED)
   async createRule(

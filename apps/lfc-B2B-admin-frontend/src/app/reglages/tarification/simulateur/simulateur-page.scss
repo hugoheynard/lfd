@@ -173,3 +173,14 @@
 .loading {
   color: var(--fold-color-text-muted);
 }
+
+.stage-title {
+  margin: 0;
+  font-size: var(--fold-font-size-lg, 1.125rem);
+}
+
+// Le scénario nominal est la RÉFÉRENCE de lecture : les deux autres se lisent
+// par rapport à lui, et il doit se retrouver sans le chercher.
+.is-nominal {
+  background: var(--fold-color-surface-sunken, transparent);
+}

@@ -983,3 +983,46 @@ export interface VolumeCommitmentView {
    */
   readonly orderedQuantity: number;
 }
+
+/**
+ * **La projection de prix** — ce que coûterait l'article à des niveaux de cumul
+ * qui n'existent pas encore.
+ *
+ * C'est ce qui rend le devis temporel possible sans rien inventer : plutôt que
+ * de rejouer côté écran la règle « le plus haut palier atteint gagne », on
+ * demande au serveur de RÉSOUDRE à chaque niveau de cumul. Chaque point rendu
+ * est donc un prix produit par la fonction qui facture, exactement comme si le
+ * client y était.
+ *
+ * `cumulativeQuantities` sont des niveaux de **cumul**, pas des quantités de
+ * commande : c'est la mesure sur laquelle l'étage volume se juge sous
+ * engagement.
+ */
+export const priceProjectionPayloadSchema = z.object({
+  /** `null` = client de passage : seules les règles ouvertes à tous jouent. */
+  companyId: z.string().nullable(),
+  sku: z.string().min(1),
+  /**
+   * Bornée à vingt-quatre : chaque niveau est une résolution complète, et une
+   * projection sur trois scénarios de douze échéances en fait déjà trente-six.
+   * La borne dit non plutôt que de rendre une réponse tronquée sans le dire.
+   */
+  cumulativeQuantities: z.array(z.number().int().positive()).min(1).max(24),
+});
+export type PriceProjectionPayload = z.infer<typeof priceProjectionPayloadSchema>;
+
+/** Un niveau de cumul, et le prix qu'il donne. */
+export interface PriceProjectionPointView {
+  readonly cumulativeQuantity: number;
+  /** Le tarif d'entrée, avant tout étage. */
+  readonly canonicalCents: number;
+  /** Le prix unitaire **résolu** à ce niveau de cumul. */
+  readonly unitPriceCents: number;
+  readonly steps: readonly PriceStepView[];
+  readonly floored: boolean;
+}
+
+export interface PriceProjectionView {
+  readonly productName: string;
+  readonly points: readonly PriceProjectionPointView[];
+}

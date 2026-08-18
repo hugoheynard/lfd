@@ -4,6 +4,8 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   CreatePriceRulePayload,
+  PriceProjectionPayload,
+  PriceProjectionView,
   PriceRuleView,
   PriceScopePayload,
   PricingBoardView,
@@ -167,6 +169,18 @@ export class TarificationService {
       this.http.post<void>(`${B2B_API_BASE}/admin/pricing/floors/${floorPath(scope)}/archive`, {
         reason,
       }),
+    );
+  }
+
+  /**
+   * **Ce que l'article coûterait à des niveaux de cumul qui n'existent pas.**
+   *
+   * Le devis temporel repose entièrement là-dessus : chaque point est une
+   * résolution serveur, pas une règle de palier rejouée dans le navigateur.
+   */
+  async project(payload: PriceProjectionPayload): Promise<PriceProjectionView> {
+    return firstValueFrom(
+      this.http.post<PriceProjectionView>(`${B2B_API_BASE}/admin/pricing/projection`, payload),
     );
   }
 }

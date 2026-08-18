@@ -15,6 +15,8 @@ import { AdminCatalogService } from '../../../commandes/catalog.service';
 import { AdminOrdersService } from '../../../commandes/orders.service';
 import { NotifyService } from '../../../notify.service';
 import { benchRow, probeQuantities, stepDownCents, type BenchRow } from './quote-bench';
+import { SCENARIOS, projectionLevels, scenarioOf, type Scenario } from './commitment-bench';
+import { TarificationService } from '../tarification.service';
 
 /** Ce qu'on choisit avant de sonder : un client, un article. */
 const WALK_IN = '';
@@ -57,6 +59,7 @@ export class SimulateurPage {
   private readonly catalogService = inject(AdminCatalogService);
   private readonly orders = inject(AdminOrdersService);
   private readonly notify = inject(NotifyService);
+  private readonly tarification = inject(TarificationService);
 
   protected readonly euros = formatEuros;
 
@@ -73,6 +76,15 @@ export class SimulateurPage {
   protected readonly freeQuantity = signal<string>('');
 
   protected readonly rows = signal<readonly BenchRow[]>([]);
+
+  // ─── Mode temporel : l'engagement de volume ────────────────────────────────
+  /** Le volume visé sur la période. */
+  protected readonly promised = signal<string>('6000');
+  /** En combien de livraisons il est pris. */
+  protected readonly installments = signal<string>('12');
+  protected readonly scenarios = signal<readonly Scenario[]>([]);
+  protected readonly projecting = signal(false);
+  protected readonly scenarioLabels = SCENARIOS;
   /** Le devis de référence — celui à 1 pièce, d'où viennent barème et limite. */
   protected readonly reference = signal<OrderQuoteView | null>(null);
 
@@ -148,6 +160,69 @@ export class SimulateurPage {
   private freeAsNumber(): number | null {
     const parsed = Number.parseInt(this.freeQuantity(), 10);
     return Number.isNaN(parsed) || parsed <= 0 ? null : parsed;
+  }
+
+  /**
+   * **Le devis temporel** : la trajectoire d'un engagement, et ce qu'elle
+   * devient quand la promesse n'est pas tenue.
+   *
+   * Un seul appel couvre les trois scénarios — les niveaux de cumul sont mis en
+   * commun avant d'être demandés. Ce n'est pas une optimisation de confort :
+   * trois appels résolus à trois instants pourraient tomber de part et d'autre
+   * du basculement d'une promotion, et le tableau comparerait alors des mondes
+   * différents.
+   */
+  protected async projectCommitment(): Promise<void> {
+    const sku = this.sku();
+    const promised = Number.parseInt(this.promised(), 10);
+    const drops = Number.parseInt(this.installments(), 10);
+    if (
+      sku === '' ||
+      Number.isNaN(promised) ||
+      promised <= 0 ||
+      Number.isNaN(drops) ||
+      drops <= 0
+    ) {
+      return;
+    }
+    this.projecting.set(true);
+    try {
+      const id = this.companyId();
+      const projection = await this.tarification.project({
+        companyId: id === WALK_IN ? null : id,
+        sku,
+        cumulativeQuantities: [...projectionLevels(promised, drops)],
+      });
+      this.scenarios.set(
+        SCENARIOS.flatMap((scenario) => {
+          const built = scenarioOf(promised, scenario.bp, drops, projection.points);
+          return built === null ? [] : [built];
+        }),
+      );
+    } catch (error) {
+      this.scenarios.set([]);
+      this.notify.error(error, "L'engagement n'a pas pu être projeté.");
+    } finally {
+      this.projecting.set(false);
+    }
+  }
+
+  /** Le scénario nominal, s'il a pu être monté — la référence de lecture. */
+  protected readonly promiseKept = computed(
+    () => this.scenarios().find((scenario) => scenario.bp === 10_000) ?? null,
+  );
+
+  /** L'écart de prix moyen d'un scénario au nominal, en centimes. Signé. */
+  protected gapToPromise(scenario: Scenario): number | null {
+    const reference = this.promiseKept();
+    if (reference === null || reference.key === scenario.key) {
+      return null;
+    }
+    return scenario.averageUnitCents - reference.averageUnitCents;
+  }
+
+  protected percent(bp: number): string {
+    return `${String(Math.round(bp / 100))} %`;
   }
 
   protected marche(index: number): number | null {

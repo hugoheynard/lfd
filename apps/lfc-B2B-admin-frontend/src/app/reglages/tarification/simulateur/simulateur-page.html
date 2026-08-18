@@ -59,6 +59,122 @@
       </p>
     </section>
 
+    <!-- Le mode TEMPOREL. Une seconde surface et non un onglet : les deux
+         questions se posent sur le même article et le même client, et passer de
+         l'une à l'autre ne doit rien faire perdre. -->
+    <section class="stage">
+      <h2 class="stage-title">Engagement de volume</h2>
+      <p class="hint">
+        Le barème se juge sur le <strong>cumul de la période</strong>, pas sur chaque commande.
+        Trois scénarios sont projetés : la promesse tenue, et ce qu'il advient à
+        <strong>70 %</strong> et <strong>130 %</strong> — c'est là que cette forme se distingue d'un
+        prix fixe.
+      </p>
+
+      <div class="controls">
+        <fold-input
+          label="Volume visé sur la période"
+          inputmode="numeric"
+          placeholder="6000"
+          [value]="promised()"
+          (valueChange)="promised.set($event)"
+        />
+        <fold-input
+          label="Nombre de livraisons"
+          hint="En combien de fois le volume est pris."
+          inputmode="numeric"
+          placeholder="12"
+          [value]="installments()"
+          (valueChange)="installments.set($event)"
+        />
+        <button foldButton [disabled]="projecting()" (click)="projectCommitment()">
+          {{ projecting() ? 'Projection…' : "Projeter l'engagement" }}
+        </button>
+      </div>
+    </section>
+
+    @if (scenarios().length > 0) {
+      <section class="result">
+        <header class="result-head">
+          <h2 class="result-title">Trois scénarios</h2>
+          <span class="hint">prix moyen réellement payé, et total sur la période</span>
+        </header>
+
+        <div class="table-scroll">
+          <table class="table">
+            <caption class="sr-only">
+              Comparaison des scénarios d'engagement
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Scénario</th>
+                <th scope="col" class="num">Volume</th>
+                <th scope="col" class="num">Prix moyen</th>
+                <th scope="col" class="num">Écart au nominal</th>
+                <th scope="col" class="num">Total HT</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (scenario of scenarios(); track scenario.key) {
+                <tr [class.is-nominal]="scenario.bp === 10000">
+                  <th scope="row">
+                    {{ scenario.key }}
+                    <span class="muted">{{ percent(scenario.bp) }} du visé</span>
+                  </th>
+                  <td class="num">{{ scenario.totalQuantity }}</td>
+                  <td class="num strong">{{ euros(scenario.averageUnitCents) }}</td>
+                  <td class="num">
+                    @if (gapToPromise(scenario); as gap) {
+                      <span class="delta" [class]="'is-' + (gap > 0 ? 'up' : 'down')">
+                        {{ gap > 0 ? '+' : '−' }}{{ euros(gap > 0 ? gap : -gap) }}
+                      </span>
+                    } @else {
+                      <span class="muted">référence</span>
+                    }
+                  </td>
+                  <td class="num">{{ euros(scenario.totalCents) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- La trajectoire du scénario NOMINAL seulement : les trois côte à côte
+             feraient un tableau qu'on ne lit plus. C'est l'écart de moyenne
+             au-dessus qui porte la comparaison. -->
+        @if (promiseKept(); as kept) {
+          <h3 class="result-title">La trajectoire, promesse tenue</h3>
+          <div class="table-scroll">
+            <table class="table">
+              <caption class="sr-only">
+                Les échéances du scénario nominal
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col" class="num">Échéance</th>
+                  <th scope="col" class="num">Quantité</th>
+                  <th scope="col" class="num">Cumul atteint</th>
+                  <th scope="col" class="num">Prix unitaire</th>
+                  <th scope="col" class="num">Montant HT</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of kept.installments; track line.index) {
+                  <tr>
+                    <th scope="row" class="num">{{ line.index }}</th>
+                    <td class="num">{{ line.quantity }}</td>
+                    <td class="num strong">{{ line.cumulativeQuantity }}</td>
+                    <td class="num strong">{{ euros(line.unitPriceCents) }}</td>
+                    <td class="num">{{ euros(line.lineTotalCents) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+
     @if (rows().length > 0) {
       <section class="result">
         <header class="result-head">

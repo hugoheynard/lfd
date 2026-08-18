@@ -39,6 +39,7 @@ import { PrismaPricingRuleRepository } from "./infrastructure/prisma-pricing-rul
 import { PrismaVolumeLadderRepository } from "./infrastructure/prisma-volume-ladder.repository.js";
 import { PrismaVolumeCommitmentRepository } from "./infrastructure/prisma-volume-commitment.repository.js";
 import { VolumeCommitmentsQuery } from "./application/queries/volume-commitments.query.js";
+import { PriceProjectionQuery } from "./application/queries/price-projection.query.js";
 import {
   CloseVolumeCommitmentHandler,
   SignVolumeCommitmentHandler,
@@ -87,6 +88,7 @@ import { PricingModule } from "./pricing.module.js";
     SignVolumeCommitmentHandler,
     CloseVolumeCommitmentHandler,
     VolumeCommitmentsQuery,
+    PriceProjectionQuery,
     { provide: PricingRuleRepository, useClass: PrismaPricingRuleRepository },
     { provide: VolumeLadderRepository, useClass: PrismaVolumeLadderRepository },
     { provide: VolumeCommitmentRepository, useClass: PrismaVolumeCommitmentRepository },

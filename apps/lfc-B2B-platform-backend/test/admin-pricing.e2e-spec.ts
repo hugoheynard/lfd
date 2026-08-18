@@ -1416,3 +1416,97 @@ describe("renommer une règle", () => {
       .expect(409);
   });
 });
+
+/**
+ * **La projection** — le socle du devis temporel.
+ *
+ * Elle répond à « si le cumul valait N », sans historique et sans écriture. Le
+ * test qui compte est le second : la projection doit rendre le MÊME prix que la
+ * commande réelle au même niveau de cumul, sinon l'écran promet un tarif que la
+ * caisse contredira — le défaut que tout ce chantier existe pour empêcher.
+ */
+describe("POST /admin/pricing/projection", () => {
+  async function seedLadder(): Promise<void> {
+    await ctx.prisma.volumeLadder.create({
+      data: {
+        id: "ladder",
+        scopeType: "global",
+        scopeId: null,
+        audienceType: "all",
+        audienceId: null,
+        unit: "percent",
+        tiers: [{ minQuantity: 500, value: 2000 }],
+        label: "500+ à −20 %",
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        createdBy: "e2e",
+      },
+    });
+  }
+
+  const project = (levels: readonly number[]) =>
+    staff()
+      .post("/admin/pricing/projection")
+      .send({ companyId: null, sku: SKU, cumulativeQuantities: levels });
+
+  it("résout à chaque niveau de cumul, sans rien écrire", async () => {
+    await seedLadder();
+
+    const body = jsonBody<{
+      points: { cumulativeQuantity: number; unitPriceCents: number }[];
+    }>(await project([100, 500, 1000]).expect(200));
+
+    expect(body.points.map((point) => point.unitPriceCents)).toEqual([200, 160, 160]);
+    // Une projection n'est pas une commande : rien n'a été écrit.
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+
+  it("nomme le palier qui a joué, pour que l'écran puisse l'expliquer", async () => {
+    await seedLadder();
+
+    const body = jsonBody<{ points: { steps: { ruleId: string }[] }[] }>(
+      await project([1000]).expect(200),
+    );
+
+    expect(body.points[0]?.steps.map((step) => step.ruleId)).toEqual(["ladder"]);
+  });
+
+  /**
+   * **Le test qui interdit la divergence.** Si la projection et la commande
+   * réelle ne tombaient pas sur le même prix au même cumul, l'écran promettrait
+   * un tarif que la caisse contredirait.
+   */
+  it("rend le MÊME prix que la commande réelle au même niveau", async () => {
+    await seedLadder();
+
+    const projected = jsonBody<{ points: { unitPriceCents: number }[] }>(
+      await project([600]).expect(200),
+    ).points[0]?.unitPriceCents;
+
+    const placed = await ctx
+      .asSub("auth0|solo")
+      .post("/orders")
+      .send({
+        fulfillmentMethod: "pickup",
+        pickupAddressId: pickupId,
+        requestedDeliveryDate: "2026-09-01",
+        lines: [{ sku: SKU, quantity: 600 }],
+      })
+      .expect(201);
+    const line = await ctx.prisma.orderLine.findFirstOrThrow({
+      where: { orderId: jsonBody<{ id: string }>(placed).id },
+    });
+
+    expect(projected).toBe(line.unitPriceCents);
+  });
+
+  it("refuse plus de vingt-quatre niveaux plutôt que de tronquer en silence", async () => {
+    await project(Array.from({ length: 25 }, (_, index) => index + 1)).expect(400);
+  });
+
+  it("refuse un SKU que le catalogue ne connaît pas", async () => {
+    await staff()
+      .post("/admin/pricing/projection")
+      .send({ companyId: null, sku: "INEXISTANT", cumulativeQuantities: [10] })
+      .expect(400);
+  });
+});
