@@ -18,6 +18,17 @@ pas** — le type valait donc `any` et l'assertion ne garantissait rien. Trouvé
 lançant ESLint (type-aware, lui, sur `tsconfig.test.json`), corrigé le
 2026-08-09.
 
+> **2026-08-18 — la variante FRONT était pire, et elle est corrigée.**
+>
+> Le même trou existait sur les quatre apps Angular, en plus large : `tsc
+--noEmit` y tournait sur le tsconfig **racine**, une config « solution » qui
+> ne porte que des `references` et aucun `include`. Elle ne compilait donc
+> **aucun fichier** — ni les specs, ni le code de production — et rendait vert.
+> Vérifié en y glissant un appel de méthode inexistante : silence. Seul le build
+> AOT protégeait, et il ne tourne pas sur les quatre apps.
+>
+> La CI pointe désormais sur `tsconfig.app.json`. Les quatre passent en l'état.
+
 `tsc -p tsconfig.test.json --noEmit` est aujourd'hui **rouge sur les deux
 backends** : des doubles de test ont dérivé de l'interface qu'ils simulent
 (`CompanyRepository` a gagné `load`/`save`/`declareUnowned`, les mocks non). Une
@@ -67,3 +78,32 @@ ils ne s'exécutent que sur demande.
 Le `ci-gate` agrège les trois jobs : **c'est lui**, et lui seul, qu'on met en
 statut requis sur la branche — ajouter un job plus tard ne demandera alors aucun
 réglage dans GitHub.
+
+## 4. Un flake e2e, une suite sur 182, caractérisé mais non corrigé
+
+_(2026-08-18)_
+
+La suite backend complète échoue **environ une fois sur deux**, sur **une seule
+suite**, et jamais la même : `leads`, `appointments`, `staff-lockout`,
+`admin-orders`, `contacts`, `cockpit` s'y sont succédé. Un second lancement passe.
+
+Ce qui est établi, et qui vaut mieux que « c'est flaky » :
+
+- **le message est toujours `socket hang up`** — donc le TRANSPORT, pas la
+  donnée. Ce n'est pas une fuite d'état entre suites : aucune assertion métier
+  n'échoue, la connexion est coupée avant la réponse ;
+- il frappe la **première requête** de la suite touchée, très souvent le test
+  « mure la route (401) » qui est le premier écrit ;
+- il est **antérieur** aux changements du 2026-08-18 : vérifié en remisant
+  ceux-ci et en relançant deux fois — run 1 rouge sur `leads`, run 2 vert, même
+  signature.
+
+Piste la plus probable, non confirmée : la fermeture de l'application Nest de la
+suite précédente (`app.close()`) qui n'a pas fini de drainer quand la suivante
+émet sa première requête. La suite tourne déjà en `--runInBand`, et le
+`--forceExit` du script masque des handles ouverts — cf. le point 2 de ce
+document.
+
+**Ce qu'il ne faut pas faire** : ajouter un `retry` sur la CI. Le flake ne
+coûte aujourd'hui qu'un relancement ; le masquer coûterait le jour où il cesse
+d'être un flake.
