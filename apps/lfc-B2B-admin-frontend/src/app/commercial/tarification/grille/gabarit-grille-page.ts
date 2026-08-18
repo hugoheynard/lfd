@@ -16,16 +16,24 @@ import { PriceTemplatesService } from '../templates.service';
 import { PoseBar, type PoseRequest } from '../pose-bar/pose-bar';
 import { eurosField } from './price-field';
 import {
+  addTier,
   entryOf,
+  priceAt,
+  removeTier,
+  setTierField,
   tiersOf,
   toLines,
-  withTiers,
+  volumeOf,
+  withVolume,
   without,
   type DraftGrid,
   type DraftTier,
+  type PlannedVolumes,
 } from './draft-grid';
 import { mercurialeRow, tally, type MercurialeRow } from './mercuriale-row';
 import { ArticleSimulation } from '../simulation/article-simulation/article-simulation';
+import { MercurialeMix } from '../simulation/mercuriale-mix/mercuriale-mix';
+import { mixArticlesOf } from '../simulation/mercuriale-mix';
 import { gridRowOf, locateSimulation } from '../simulation/locate-simulation';
 import type { ScenarioTier } from '../simulation/revenue-model';
 
@@ -70,6 +78,7 @@ const SEGMENT: Readonly<Record<PriceTemplateKind, string>> = {
     FoldEmptyStateComponent,
     FoldInputComponent,
     ArticleSimulation,
+    MercurialeMix,
     PoseBar,
   ],
   templateUrl: './gabarit-grille-page.html',
@@ -109,6 +118,12 @@ export class GabaritGrillePage {
    * sur la même échelle.
    */
   protected readonly simulated = signal<string | null>(null);
+
+  /**
+   * Les volumes prévus, **tenus par la grille** : ils alimentent le partage en
+   * tête de page ET la simulation d'un article. Deux champs auraient divergé.
+   */
+  protected readonly volumes = signal<PlannedVolumes>(new Map());
 
   protected readonly categories = computed(() => this.board()?.categories ?? []);
   protected readonly isNew = computed(() => this.id() === 'nouveau');
@@ -159,6 +174,19 @@ export class GabaritGrillePage {
     return category.items.map((item) => mercurialeRow(item, entryOf(this.draft(), item.sku)));
   }
 
+  /** Le plan tel que le partage en tête de page le lit. */
+  protected readonly mixArticles = computed(() =>
+    mixArticlesOf(this.categories(), this.lines(), this.volumes()),
+  );
+
+  protected plannedVolumeOf(sku: string): number {
+    return volumeOf(this.volumes(), sku);
+  }
+
+  protected setPlannedVolume(sku: string, raw: string): void {
+    this.volumes.update((current) => withVolume(current, sku, raw));
+  }
+
   protected readonly slot = computed(() => locateSimulation(this.categories(), this.simulated()));
 
   /** La rangée d'une ligne, le bloc de simulation compris. */
@@ -183,38 +211,20 @@ export class GabaritGrillePage {
     return tiersOf(this.draft(), sku);
   }
 
-  /**
-   * Tarifer un article : un palier **à partir de 1**, préparé au tarif catalogue.
-   *
-   * C'est déjà un prix fixe — le prix fixe n'est pas un mode, c'est la grille à
-   * un palier. Partir du catalogue plutôt que du vide : une mercuriale se
-   * négocie en descendant depuis un prix connu.
-   */
   protected priceIt(sku: string, catalogCents: number): void {
-    this.draft.update((grid) =>
-      withTiers(grid, sku, [{ minQuantity: '1', unitPrice: eurosField(catalogCents) }]),
-    );
+    this.draft.update((grid) => priceAt(grid, sku, eurosField(catalogCents)));
   }
 
   protected clear(sku: string): void {
     this.draft.update((grid) => without(grid, sku));
   }
 
-  /** Un palier de plus : le seul geste qui fait passer d'un prix fixe à une grille. */
   protected addTier(sku: string): void {
-    this.draft.update((grid) =>
-      withTiers(grid, sku, [...tiersOf(grid, sku), { minQuantity: '', unitPrice: '' }]),
-    );
+    this.draft.update((grid) => addTier(grid, sku));
   }
 
   protected removeTier(sku: string, index: number): void {
-    this.draft.update((grid) =>
-      withTiers(
-        grid,
-        sku,
-        tiersOf(grid, sku).filter((_, position) => position !== index),
-      ),
-    );
+    this.draft.update((grid) => removeTier(grid, sku, index));
   }
 
   protected setTier(
@@ -223,15 +233,7 @@ export class GabaritGrillePage {
     field: 'minQuantity' | 'unitPrice',
     value: string,
   ): void {
-    this.draft.update((grid) =>
-      withTiers(
-        grid,
-        sku,
-        tiersOf(grid, sku).map((tier, position) =>
-          position === index ? { ...tier, [field]: value } : tier,
-        ),
-      ),
-    );
+    this.draft.update((grid) => setTierField(grid, sku, index, field, value));
   }
 
   /** Les lignes prêtes à partir — cf. `toLines` pour ce qui s'oublie et ce qui tombe. */

@@ -51,11 +51,18 @@ export class ArticleSimulation {
   readonly floorCents = input.required<number | null>();
   /** Les paliers lisibles de la grille en cours de saisie. */
   readonly tiers = input.required<readonly ScenarioTier[]>();
+  /**
+   * Le volume prévu, **tenu par la grille** et non par ce bloc.
+   *
+   * C'est le même nombre qui alimente le partage en tête de page : deux champs
+   * pour une seule quantité auraient fini par diverger, et le total de la
+   * mercuriale aurait cessé de correspondre à ce que montrent les courbes.
+   */
+  readonly targetVolume = input.required<number>();
 
   protected readonly euros = formatEuros;
   protected readonly nativeValue = nativeValue;
 
-  protected readonly targetVolume = signal(1_000);
   /**
    * Le prix fixe comparé, **en chaîne et vide par défaut**.
    *
@@ -171,13 +178,6 @@ export class ArticleSimulation {
   protected readonly appliedFixedCents = computed(
     () => this.reference().tiers[0]?.unitPriceCents ?? 0,
   );
-
-  protected setVolume(raw: string): void {
-    const parsed = Number.parseInt(raw.replace(/\s/gu, ''), 10);
-    if (!Number.isNaN(parsed) && parsed >= 1) {
-      this.targetVolume.set(parsed);
-    }
-  }
 
   /**
    * Garder la grille telle quelle, pour en essayer une autre.

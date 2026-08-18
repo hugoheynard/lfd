@@ -287,6 +287,26 @@ button.node:focus-visible {
   text-decoration: underline;
 }
 
+// Le volume prévu : discret, dans la carte de l'article. Il n'est pas une
+// décision de prix — il dit sur quoi la décision porte.
+.planned-field {
+  width: 100%;
+  max-width: 8rem;
+  padding: 0.125rem 0.25rem;
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-sm, 0.25rem);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.link[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 // Ouvert, le lien reste marqué : sinon rien à l'écran ne dit QUEL article le
 // bloc de simulation, plus bas, est en train de raconter.
 .link.is-on {
@@ -398,4 +418,16 @@ button.node:focus-visible {
     grid-column: 1 !important;
     justify-content: flex-start;
   }
+}
+
+// L'étiquette du volume prévu existe pour les lecteurs d'écran seulement : à
+// l'œil, le champ est dans la carte de son article et n'a rien à répéter.
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

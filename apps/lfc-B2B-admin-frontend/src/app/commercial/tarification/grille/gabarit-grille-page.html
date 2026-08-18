@@ -63,6 +63,15 @@
       final peut différer de ce que vous saisissez.
     </p>
 
+    <!--
+      **Ce que le lot pèse, avant la liste.** La question du haut de page n'est
+      pas celle d'un article : sur quoi repose le chiffre de ce devis, et ce
+      partage tient-il si le client n'en prend qu'une partie. La forme suit la
+      donnée — aire dérivante s'il y a un palier quelque part, camembert sinon,
+      parce que sans palier la part ne dépend plus du volume.
+    -->
+    <app-mercuriale-mix [articles]="mixArticles()" />
+
     <!-- Les mêmes en-têtes que la grille générale, posés UNE fois : on lit de
          gauche à droite comme le prix se construit. -->
     <div class="legend" aria-hidden="true">
@@ -91,13 +100,31 @@
               <div class="node node-article">
                 <span class="article-name">{{ row.name }}</span>
                 <span class="article-meta">{{ row.sku }} · {{ euros(row.catalogCents) }}</span>
-                <!-- Simuler n'a de sens que sur un article tarifé : sans grille,
-                     il n'y a pas deux manières d'arriver au prix à comparer. -->
+                <!-- Le volume prévu appartient à l'article : c'est LUI qu'on
+                     négocie « sur la saison ». Il alimente le partage du haut de
+                     page et la simulation, sans être saisi deux fois. -->
+                <label class="planned">
+                  <span class="sr-only">Volume prévu pour {{ row.name }}</span>
+                  <input
+                    class="planned-field"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="volume prévu"
+                    [value]="plannedVolumeOf(row.sku) || ''"
+                    (input)="setPlannedVolume(row.sku, nativeValue($event))"
+                  />
+                </label>
+                <!-- Simuler demande DEUX choses : une grille (sinon il n'y a pas
+                     deux manières d'arriver au prix) et un volume (sinon il n'y a
+                     rien à projeter). Le bouton le dit plutôt que de s'ouvrir sur
+                     un graphe vide. -->
                 @if (row.mercurialeCents !== null) {
                   <button
                     type="button"
                     class="link"
                     [class.is-on]="simulated() === row.sku"
+                    [disabled]="plannedVolumeOf(row.sku) < 1"
+                    [title]="plannedVolumeOf(row.sku) < 1 ? 'Renseignez un volume prévu' : ''"
                     (click)="toggleSimulation(row.sku)"
                   >
                     {{ simulated() === row.sku ? 'fermer la simulation' : 'simuler' }}
@@ -231,6 +258,7 @@
                   [catalogCents]="slot.catalogCents"
                   [floorCents]="slot.floorCents"
                   [tiers]="simulatedTiers()"
+                  [targetVolume]="plannedVolumeOf(slot.sku)"
                 />
               </div>
             }

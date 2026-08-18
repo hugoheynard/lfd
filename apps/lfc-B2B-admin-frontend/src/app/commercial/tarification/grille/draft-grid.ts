@@ -34,6 +34,46 @@ export function tiersOf(grid: DraftGrid, sku: string): readonly DraftTier[] {
   return grid.get(sku) ?? [];
 }
 
+/**
+ * **Tarifer un article** : un palier à partir de 1, préparé au tarif catalogue.
+ *
+ * C'est déjà un prix fixe — le prix fixe n'est pas un mode, c'est la grille à un
+ * palier. Partir du catalogue plutôt que du vide : une mercuriale se négocie en
+ * descendant depuis un prix connu.
+ */
+export function priceAt(grid: DraftGrid, sku: string, unitPrice: string): DraftGrid {
+  return withTiers(grid, sku, [{ minQuantity: '1', unitPrice }]);
+}
+
+/** Un palier de plus : le seul geste qui fait passer d'un prix fixe à une grille. */
+export function addTier(grid: DraftGrid, sku: string): DraftGrid {
+  return withTiers(grid, sku, [...tiersOf(grid, sku), { minQuantity: '', unitPrice: '' }]);
+}
+
+export function removeTier(grid: DraftGrid, sku: string, index: number): DraftGrid {
+  return withTiers(
+    grid,
+    sku,
+    tiersOf(grid, sku).filter((_, position) => position !== index),
+  );
+}
+
+export function setTierField(
+  grid: DraftGrid,
+  sku: string,
+  index: number,
+  field: 'minQuantity' | 'unitPrice',
+  value: string,
+): DraftGrid {
+  return withTiers(
+    grid,
+    sku,
+    tiersOf(grid, sku).map((tier, position) =>
+      position === index ? { ...tier, [field]: value } : tier,
+    ),
+  );
+}
+
 /** Le prix d'entrée saisi pour un article, en centimes. `null` si illisible. */
 export function entryOf(grid: DraftGrid, sku: string): number | null {
   const first = tiersOf(grid, sku)[0];
@@ -68,4 +108,28 @@ export function toLines(grid: DraftGrid): readonly TemplateLinePayload[] {
       ? []
       : [{ sku, tiers: built.filter((tier) => tier !== null) }];
   });
+}
+
+/** Les volumes prévus, par SKU. Absent = article hors du plan, et non « zéro ». */
+export type PlannedVolumes = ReadonlyMap<string, number>;
+
+/**
+ * Un volume saisi. **Vide ou illisible retire l'article du plan** plutôt que de
+ * le compter à zéro : les deux se ressemblent dans un total, mais seul le
+ * premier est honnête — un article sans volume n'a pas de chiffre, il n'en a pas
+ * un nul.
+ */
+export function withVolume(volumes: PlannedVolumes, sku: string, raw: string): PlannedVolumes {
+  const next = new Map(volumes);
+  const parsed = Number.parseInt(raw.replace(/\s/gu, ''), 10);
+  if (Number.isNaN(parsed) || parsed < 1) {
+    next.delete(sku);
+  } else {
+    next.set(sku, parsed);
+  }
+  return next;
+}
+
+export function volumeOf(volumes: PlannedVolumes, sku: string): number {
+  return volumes.get(sku) ?? 0;
 }

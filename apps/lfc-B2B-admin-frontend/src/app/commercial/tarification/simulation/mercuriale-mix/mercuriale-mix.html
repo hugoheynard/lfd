@@ -1,0 +1,23 @@
+@if (mix().plannedArticles === 0) {
+  <!-- Sans volume prévu, il n'y a pas de chiffre : le dire, plutôt qu'afficher
+       un partage bâti sur des quantités que personne n'a posées. -->
+  <p class="hint">
+    Renseignez un <strong>volume prévu</strong> sur les articles pour voir ce que la mercuriale
+    pèse, rayon par rayon.
+  </p>
+} @else {
+  <header class="head">
+    <h3 class="title">Le poids de la mercuriale</h3>
+    <p class="total">
+      <strong>{{ euros(mix().plannedCents) }}</strong> sur le plan tenu ·
+      <strong>{{ mix().plannedArticles }}</strong> article(s) au plan
+    </p>
+  </header>
+
+  <app-chart [option]="option()" height="260px" />
+
+  <app-chart-note
+    goal="Sur quoi repose le chiffre de ce devis, et si ce partage tient quand le client n'en prend qu'une partie."
+    [read]="read()"
+  />
+}

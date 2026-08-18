@@ -1475,3 +1475,35 @@ graphique :
 - sous le premier seuil, aucune règle ne s'applique : c'est le **tarif catalogue**
   qui est facturé, pas le premier palier. Une grille qui ne s'ouvre qu'à 500
   laisse les 499 premières au prix public, et la courbe le montre.
+
+### Le poids du lot, en tête de grille
+
+Une mercuriale n'est pas qu'une liste de prix : c'est un chiffre, et il repose
+sur quelques rayons. Le bloc de tête montre ce partage — et sa **forme suit la
+donnée**, ce qui est une règle et non un goût :
+
+- **aucun palier dans le lot** → tous les prix sont plats, donc la part de chaque
+  rayon est la même à tout volume. Une aire empilée dessinerait des bandes
+  rigoureusement parallèles : un graphique qui bouge pour dire que rien ne bouge.
+  C'est un **anneau** ;
+- **un palier quelque part** → la part **dérive** : le rayon qui porte le palier
+  devient relativement moins cher à mesure que le plan grossit. C'est une **aire
+  empilée en pourcentage**, seul tracé qui le montre.
+
+L'axe n'est pas un volume mais une **fraction du plan**. Les articles n'ont pas le
+même volume prévu et les additionner sur un axe de quantités mélangerait des
+baguettes et des croissants ; faire varier tout le plan d'un même facteur pose en
+revanche la vraie question — « et s'il n'en prend que la moitié ? » — sur tous les
+articles à la fois.
+
+Deux décisions d'honnêteté y sont tenues :
+
+- **un article sans volume prévu n'entre pas au plan.** Lui en prêter un
+  inventerait du chiffre ; l'écran dit combien d'articles comptent ;
+- **un article non tarifé compte au tarif catalogue.** Il se vendra bien à ce
+  prix-là, et l'écarter sous-estimerait le devis exactement sur les rayons qu'on
+  n'a pas négociés.
+
+Le **volume prévu** est saisi une seule fois, sur la ligne de l'article : c'est le
+même nombre qui alimente le partage et la simulation par article. Il n'est pas
+encore persisté avec le gabarit — la grille se recharge sans lui.

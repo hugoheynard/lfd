@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { entryOf, toLines, tiersOf, withTiers, without, type DraftGrid } from '../draft-grid';
+import {
+  entryOf,
+  toLines,
+  tiersOf,
+  volumeOf,
+  withTiers,
+  withVolume,
+  without,
+  type DraftGrid,
+} from '../draft-grid';
 
 const grid = (entries: [string, { minQuantity: string; unitPrice: string }[]][]): DraftGrid =>
   new Map(entries);
@@ -100,5 +109,31 @@ describe('toLines', () => {
 
   it('refuse un seuil nul — un palier part d’au moins une pièce', () => {
     expect(toLines(grid([['PAI-001', [{ minQuantity: '0', unitPrice: '0,80' }]]]))).toEqual([]);
+  });
+});
+
+
+describe('withVolume / volumeOf', () => {
+  it('retient un volume lisible', () => {
+    const volumes = withVolume(new Map(), 'baguette', '10 000');
+    expect(volumeOf(volumes, 'baguette')).toBe(10_000);
+  });
+
+  it("vide RETIRE l'article du plan, il ne le met pas à zéro", () => {
+    const posed = withVolume(new Map(), 'baguette', '500');
+    const cleared = withVolume(posed, 'baguette', '');
+    // Les deux se ressemblent dans un total ; seule l'absence est honnête.
+    expect(cleared.has('baguette')).toBe(false);
+    expect(volumeOf(cleared, 'baguette')).toBe(0);
+  });
+
+  it('refuse zéro et le négatif comme une absence', () => {
+    expect(withVolume(new Map(), 'a', '0').has('a')).toBe(false);
+    expect(withVolume(new Map(), 'a', '-3').has('a')).toBe(false);
+  });
+
+  it('rend une NOUVELLE carte', () => {
+    const before = new Map<string, number>();
+    expect(withVolume(before, 'a', '5')).not.toBe(before);
   });
 });

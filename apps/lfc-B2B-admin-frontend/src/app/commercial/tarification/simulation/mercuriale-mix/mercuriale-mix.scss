@@ -1,0 +1,30 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2, 0.5rem);
+  padding: var(--fold-space-4, 1rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg, 0.75rem);
+  background: var(--fold-color-surface-card);
+  box-shadow: var(--fold-shadow-sm);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--fold-space-3, 0.75rem);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fold-text-md, 1rem);
+}
+
+.total,
+.hint {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}

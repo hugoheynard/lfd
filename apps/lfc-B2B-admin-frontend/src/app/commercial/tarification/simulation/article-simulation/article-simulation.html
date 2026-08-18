@@ -1,16 +1,4 @@
 <div class="bar">
-  <label class="field">
-    <span class="field-label">Volume promis</span>
-    <input
-      class="field-input"
-      type="text"
-      inputmode="numeric"
-      [value]="targetVolume()"
-      [attr.aria-label]="'Volume promis sur ' + name()"
-      (input)="setVolume(nativeValue($event))"
-    />
-  </label>
-
   <!--
     **Le prix fixe se saisit.** « Et si je lui avais fait 1,30 € tout du long ? »
     est une offre alternative, pas un calcul : aucune formule ne devine celle que
