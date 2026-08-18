@@ -485,3 +485,14 @@ button.node:focus-visible {
     display: none;
   }
 }
+
+// Les autres lectures du même prix — la frise, le simulateur. Une ligne de
+// liens, pas des boutons : ce sont des sorties de l'écran, pas des actions
+// dessus.
+.other-readings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-4, 1rem);
+  margin: 0;
+  font-size: var(--fold-font-size-sm, 0.875rem);
+}

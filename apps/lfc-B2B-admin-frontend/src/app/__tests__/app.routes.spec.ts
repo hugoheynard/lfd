@@ -49,6 +49,7 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   'reglages/tarification': null,
   // La frise LIT la même chose que la grille, à d'autres dates : même mur.
   'reglages/tarification/frise': null,
+  'reglages/tarification/simulateur': null,
   // Page de DOCUMENTATION : elle explique la tarification, elle ne la règle pas.
   // Même mur que l'onglet qu'elle commente.
   'reglages/facturation': null,

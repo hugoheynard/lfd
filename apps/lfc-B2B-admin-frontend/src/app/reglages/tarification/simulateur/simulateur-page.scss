@@ -1,0 +1,175 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-5, 1.25rem);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-4, 1rem);
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fold-font-size-xl, 1.5rem);
+}
+
+.hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-font-size-sm, 0.875rem);
+  max-width: 62ch;
+}
+
+// L'outil vit dans une surface qui contient le geste, comme la frise : on y
+// pose des choix, on n'y lit pas un résultat.
+.stage,
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-3, 0.75rem);
+  padding: var(--fold-space-4, 1rem);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg, 0.75rem);
+  background: var(--fold-color-surface);
+}
+
+.result {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 5%),
+    0 8px 24px -16px rgb(0 0 0 / 18%);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  align-items: end;
+  gap: var(--fold-space-3, 0.75rem);
+}
+
+.caveat {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-font-size-sm, 0.875rem);
+}
+
+.result-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.result-title {
+  margin: 0;
+  font-size: var(--fold-font-size-lg, 1.125rem);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-1, 0.25rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-font-size-sm, 0.875rem);
+}
+
+.fact.is-sealed {
+  color: var(--fold-color-text);
+}
+
+.fact.is-muted {
+  color: var(--fold-color-text-muted);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fold-font-size-sm, 0.875rem);
+}
+
+.table th,
+.table td {
+  padding: var(--fold-space-2, 0.5rem);
+  border-bottom: 1px solid var(--fold-color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table thead th {
+  color: var(--fold-color-text-muted);
+  font-weight: 500;
+}
+
+// Les chiffres se comparent en colonne : chasse fixe, alignés à droite.
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}
+
+.delta.is-down {
+  color: var(--fold-color-success-text, var(--fold-color-text));
+}
+
+.delta.is-up {
+  color: var(--fold-color-danger-text, var(--fold-color-text));
+}
+
+.marche {
+  font-variant-numeric: tabular-nums;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-out {
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pill {
+  display: inline-block;
+  margin-top: var(--fold-space-1, 0.25rem);
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--fold-radius-sm, 0.25rem);
+  background: var(--fold-color-surface-sunken, transparent);
+  border: 1px solid var(--fold-color-border);
+  font-size: var(--fold-font-size-xs, 0.75rem);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.loading {
+  color: var(--fold-color-text-muted);
+}

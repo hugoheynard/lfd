@@ -1,0 +1,153 @@
+<header class="head">
+  <div class="head-text">
+    <h1 class="title">Simulateur de prix</h1>
+    <p class="hint">
+      Un <strong>article</strong>, un <strong>client</strong>, et le prix à plusieurs quantités.
+      Chaque ligne est un devis réel — le même calcul que la commande, pas une estimation.
+    </p>
+  </div>
+  <a foldButton emphasis="outline" intent="neutral" routerLink="/reglages/tarification">
+    Revenir à la grille
+  </a>
+</header>
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="loading">Chargement du catalogue…</p>
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de charger le simulateur">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    <section class="stage">
+      <div class="controls">
+        <fold-select label="Client" [value]="companyId()" (valueChange)="companyId.set($event)">
+          <option value="">Client de passage — sans société</option>
+          @for (company of companies(); track company.id) {
+            <option [value]="company.id">{{ company.raisonSociale }}</option>
+          }
+        </fold-select>
+
+        <fold-select label="Article" [value]="sku()" (valueChange)="sku.set($event)">
+          @for (item of catalog(); track item.sku) {
+            <option [value]="item.sku">{{ item.name }} — {{ euros(item.unitPriceCents) }}</option>
+          }
+        </fold-select>
+
+        <fold-input
+          label="Quantité à vérifier"
+          hint="En plus des seuils du barème. Vide = seulement les seuils."
+          inputmode="numeric"
+          placeholder="3200"
+          [value]="freeQuantity()"
+          (valueChange)="freeQuantity.set($event)"
+        />
+
+        <button foldButton [disabled]="!canRun()" (click)="run()">
+          {{ running() ? 'Sondage…' : 'Sonder le prix' }}
+        </button>
+      </div>
+
+      <!-- Ce que la simulation NE dit pas. Écrit ici et pas en bas de page :
+           un commercial qui annonce un total au téléphone doit savoir avant de
+           parler que la TVA et l'acheminement n'y sont pas. -->
+      <p class="caveat">
+        Prix <strong>HT</strong>, hors acheminement : remise de retrait, frais de zone et TVA
+        dépendent d'une livraison qu'un devis ne connaît pas encore.
+      </p>
+    </section>
+
+    @if (rows().length > 0) {
+      <section class="result">
+        <header class="result-head">
+          <h2 class="result-title">{{ companyName() }}</h2>
+          <span class="hint">{{ rows().length }} quantités sondées</span>
+        </header>
+
+        <!-- Ce qui vise l'article, avant le tableau : c'est le contexte qui
+             explique les marches qu'on va lire en dessous. -->
+        @if (referenceLine(); as line) {
+          <ul class="facts">
+            @if (line.sealedByRuleId !== null) {
+              <li class="fact is-sealed">
+                <strong>Tarif négocié</strong> — la mercuriale scelle le prix.
+                @if (line.sealedRuleIds.length > 0) {
+                  {{ line.sealedRuleIds.length }} règle(s) écartée(s) par ce scellement.
+                }
+              </li>
+            }
+            @if (line.floorCents !== null) {
+              <li class="fact">
+                Limite basse à <strong>{{ euros(line.floorCents) }}</strong> — aucun étage ne passe
+                dessous.
+              </li>
+            }
+            @if (line.volumeTiers === null) {
+              <li class="fact is-muted">Aucun barème de volume ne vise cet article.</li>
+            }
+          </ul>
+        }
+
+        <div class="table-scroll">
+          <table class="table">
+            <caption class="sr-only">
+              Le prix par quantité, pour ce client
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" class="num">Quantité</th>
+                <th scope="col" class="num">Prix unitaire</th>
+                <th scope="col" class="num">Écart au tarif</th>
+                <th scope="col" class="num">Marche</th>
+                <th scope="col" class="num">Total HT</th>
+                <th scope="col">Ce qui a joué</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.quantity; let i = $index) {
+                <tr>
+                  <th scope="row" class="num strong">{{ row.quantity }}</th>
+                  <td class="num strong">{{ euros(row.unitPriceCents) }}</td>
+                  <td class="num delta" [class]="'is-' + direction(row.discountBp)">
+                    @if (row.discountBp === 0) {
+                      <span class="muted">—</span>
+                    } @else {
+                      {{ variation(row.discountBp) }}
+                    }
+                  </td>
+                  <td class="num">
+                    @if (marche(i); as gap) {
+                      <span class="marche">−{{ euros(gap) }}</span>
+                    } @else {
+                      <span class="muted">—</span>
+                    }
+                  </td>
+                  <td class="num">{{ euros(row.totalCents) }}</td>
+                  <td>
+                    @if (row.line.steps.length === 0) {
+                      <span class="muted">tarif de liste</span>
+                    } @else {
+                      <ul class="steps">
+                        @for (step of row.line.steps; track step.ruleId) {
+                          <li class="step">
+                            {{ step.label }}
+                            <span class="step-out">{{ euros(step.resultCents) }}</span>
+                          </li>
+                        }
+                      </ul>
+                    }
+                    @if (row.line.floored) {
+                      <span class="pill">plancher</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+}

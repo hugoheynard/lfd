@@ -160,6 +160,17 @@ export const routes: Routes = [
           import('./reglages/tarification/frise/frise-page').then((m) => m.FrisePage),
       },
       {
+        // Le banc d'essai vit à côté de la grille et de la frise : trois façons
+        // de lire le même prix — ce qui est décidé, ce qui l'était, et ce que
+        // ça donne pour ce client-là à cette quantité-là.
+        path: 'tarification/simulateur',
+        title: 'Simulateur de prix — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/tarification/simulateur/simulateur-page').then(
+            (m) => m.SimulateurPage,
+          ),
+      },
+      {
         path: 'facturation',
         title: 'Facturation — LFC B2B admin',
         loadComponent: () =>

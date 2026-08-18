@@ -23,10 +23,12 @@
         (archivesRequested)="openArchives()"
       />
 
-      <!-- La frise est une autre lecture du même prix : l'axe du temps plutôt
-           que la grille. Un lien et non un onglet — elle se partage. -->
-      <p class="frise-link">
+      <!-- Deux autres lectures du même prix : l'axe du TEMPS, et le prix d'UN
+           client à UNE quantité. Des liens et non des onglets — les deux se
+           partagent, et on n'y arrive pas en travaillant sur la grille. -->
+      <p class="other-readings">
         <a routerLink="/reglages/tarification/frise">Voir la frise tarifaire →</a>
+        <a routerLink="/reglages/tarification/simulateur">Simuler un prix →</a>
       </p>
 
       <!--
