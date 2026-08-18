@@ -14,6 +14,13 @@ import { narrowViewport } from '../shared/viewport/narrow-viewport';
 /** Un onglet, plus ce que la page doit en dire — titre et intro vivent ICI. */
 interface CommercialTab extends FoldViewNavItem {
   readonly link: string;
+  /**
+   * Le fragment d'URL qui allume l'onglet, quand il diffère du lien.
+   *
+   * Une vue à deux listes (Tarification) a un lien qui pointe vers l'une des
+   * deux : sans `match`, l'onglet s'éteindrait dès qu'on passe sur l'autre.
+   */
+  readonly match?: string;
   readonly icon: FoldIconName;
   /** L'intro sous le titre : une phrase, celle que la vue portait elle-même avant. */
   readonly description: string;
@@ -61,6 +68,17 @@ const TABS: CommercialTab[] = [
     link: 'calendrier',
     icon: 'calendar',
     description: 'Les rendez-vous posés — cliquez-en un pour ouvrir son dossier.',
+  },
+  {
+    key: 'tarification',
+    label: 'Tarification',
+    // Le lien mène à la première des deux listes ; l'onglet reste allumé sur
+    // l'autre, parce que `match` couvre les deux (cf. `current`).
+    link: 'tarification/mercuriales-templates',
+    match: 'tarification',
+    icon: 'tag',
+    description:
+      "Les grilles de prix qu'on prépare une fois : un prix fixe, ou des paliers. On les repose chez autant de clients qu'on veut.",
   },
 ];
 
@@ -116,6 +134,6 @@ export class CommercialPage {
   /** La vue affichée. Repli sur la première : `/commercial` seul y redirige. */
   protected readonly current = computed<CommercialTab>(() => {
     const url = this.url();
-    return TABS.find((tab) => url.includes(`/commercial/${tab.link}`)) ?? COCKPIT;
+    return TABS.find((tab) => url.includes(`/commercial/${tab.match ?? tab.link}`)) ?? COCKPIT;
   });
 }

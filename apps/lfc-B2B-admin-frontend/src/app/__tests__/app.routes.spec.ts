@@ -63,6 +63,11 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   'commercial/prospects': null,
   'commercial/croissance': null,
   'commercial/calendrier': null,
+  // Les deux gabarits héritent du mur de `commercial` (`growth:read`) : ils
+  // portent des prix négociés, et la même personne qui voit les prospects
+  // négocie leurs tarifs.
+  'commercial/tarification/mercuriales-templates': null,
+  'commercial/tarification/devis-templates': null,
 
   'rendez-vous/:appointmentId': 'appointments:read',
 };

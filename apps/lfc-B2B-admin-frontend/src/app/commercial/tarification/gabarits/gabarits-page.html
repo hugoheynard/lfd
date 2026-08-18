@@ -1,0 +1,137 @@
+<header class="head">
+  <div class="head-text">
+    <h2 class="title">{{ copy().title }}</h2>
+    <p class="hint">{{ copy().hint }}</p>
+  </div>
+  <div class="head-actions">
+    <!-- Les deux natures se répondent : on prépare un devis en regardant les
+         mercuriales, et l'inverse. Un lien plutôt qu'un onglet — ce sont deux
+         listes, pas deux vues du même objet. -->
+    @if (posable()) {
+      <a foldButton emphasis="soft" intent="neutral" routerLink="../devis-templates">
+        Gabarits de devis →
+      </a>
+    } @else {
+      <a foldButton emphasis="soft" intent="neutral" routerLink="../mercuriales-templates">
+        Gabarits de mercuriale →
+      </a>
+    }
+    <button foldButton (click)="compose()">Composer un gabarit</button>
+  </div>
+</header>
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="loading">Chargement des gabarits…</p>
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de charger les gabarits">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    @if (rows().length === 0) {
+      <fold-empty-state
+        title="Aucun gabarit"
+        description="Un gabarit est une grille de prix : un prix fixe, ou des paliers. On la prépare une fois, on la repose autant de fois qu'on veut."
+      >
+        <button foldButton (click)="compose()">Composer le premier</button>
+      </fold-empty-state>
+    }
+
+    @for (template of rows(); track template.id) {
+      <section class="card">
+        <header class="card-head">
+          <button
+            type="button"
+            class="card-toggle"
+            [attr.aria-expanded]="opened() === template.id"
+            (click)="toggle(template.id)"
+          >
+            <span class="card-title">{{ template.label }}</span>
+            <span class="card-meta">
+              {{ template.lines.length }} article(s) · {{ ruleCount(template.lines) }} règle(s)
+              @if (averageGapBp(template.lines); as gap) {
+                · <span class="delta" [class]="'is-' + direction(gap)">{{ percent(gap) }}</span>
+                au catalogue en moyenne
+              }
+            </span>
+          </button>
+          <div class="card-actions">
+            <button foldButton emphasis="outline" intent="neutral" (click)="revise(template)">
+              Réviser
+            </button>
+            @if (posable()) {
+              <button foldButton (click)="pose(template)">Poser chez un client</button>
+            }
+          </div>
+        </header>
+
+        @if (opened() === template.id) {
+          <div class="table-scroll">
+            <table class="table">
+              <caption class="sr-only">
+                La grille du gabarit
+                {{
+                  template.label
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Article</th>
+                  <th scope="col" class="num">Catalogue B2B</th>
+                  <th scope="col">Grille</th>
+                  <th scope="col" class="num">Écart à l'entrée</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of template.lines; track line.sku) {
+                  <tr>
+                    <th scope="row" class="item">
+                      <span class="item-name">{{ line.productName }}</span>
+                      <span class="item-meta">{{ line.sku }}</span>
+                    </th>
+                    <td class="num">
+                      @if (line.catalogPriceCents === null) {
+                        <!-- Le PIM ne pousse plus cet article : la ligne existe
+                             encore, mais elle ne vise plus rien. Le dire vaut
+                             mieux qu'un tiret qu'on prend pour zéro. -->
+                        <span class="muted">hors catalogue</span>
+                      } @else {
+                        {{ euros(line.catalogPriceCents) }}
+                      }
+                    </td>
+                    <td>
+                      @if (isFlatPrice(line.tiers)) {
+                        <span class="flat">{{ euros(line.tiers[0]!.unitPriceCents) }}</span>
+                        <span class="muted">prix fixe</span>
+                      } @else {
+                        <ul class="tiers">
+                          @for (tier of line.tiers; track tier.minQuantity) {
+                            <li class="tier">
+                              <span class="tier-qty">{{ tier.minQuantity }}+</span>
+                              <span class="tier-price">{{ euros(tier.unitPriceCents) }}</span>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </td>
+                    <td class="num">
+                      @if (gap(line.catalogPriceCents, entryPriceCents(line.tiers)); as delta) {
+                        <span class="delta" [class]="'is-' + direction(delta)">
+                          {{ percent(delta) }}
+                        </span>
+                      } @else {
+                        <span class="muted">—</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  }
+}

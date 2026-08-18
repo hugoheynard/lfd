@@ -1,0 +1,53 @@
+<fold-panel-header
+  [title]="'Poser « ' + (data()?.label ?? '') + ' »'"
+  subtitle="Le gabarit devient le tarif négocié du client : une règle de mercuriale par palier."
+/>
+
+<div class="body">
+  <fold-select label="Client" [value]="companyId()" (valueChange)="companyId.set($event)">
+    @for (company of companies(); track company.id) {
+      <option [value]="company.id">{{ company.raisonSociale }}</option>
+    }
+  </fold-select>
+
+  <!-- Dates en `<input type="date">` NATIF : `fold-input` ne porte pas ce type,
+       et les Signal Forms ne couvrent pas les dates. Même parti que partout. -->
+  <div class="window">
+    <div class="date">
+      <label class="date-label" for="poser-from">À partir du</label>
+      <input
+        id="poser-from"
+        class="date-field"
+        type="date"
+        [value]="validFrom()"
+        (change)="validFrom.set(nativeValue($event))"
+      />
+    </div>
+    <div class="date">
+      <label class="date-label" for="poser-to"
+        >Jusqu'au <span class="date-optional">facultatif</span></label
+      >
+      <input
+        id="poser-to"
+        class="date-field"
+        type="date"
+        [value]="validTo()"
+        (change)="validTo.set(nativeValue($event))"
+      />
+      <p class="date-hint">Vide = sans terme. Une mercuriale ouverte est un cas courant.</p>
+    </div>
+  </div>
+
+  <p class="caveat">
+    Le contenu ne se modifie pas ici : c'est le gabarit qui le porte. Si ce client a déjà une
+    mercuriale sur l'un de ces articles pour cette période, la pose est
+    <strong>refusée</strong> plutôt que d'écraser ce qui est déjà décidé.
+  </p>
+</div>
+
+<footer class="actions">
+  <button foldButton emphasis="soft" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canPose()" (click)="pose()">
+    {{ saving() ? 'Pose…' : 'Poser chez ce client' }}
+  </button>
+</footer>

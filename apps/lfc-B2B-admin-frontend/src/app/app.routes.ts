@@ -248,6 +248,26 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./commercial/calendrier/calendrier-page').then((m) => m.CalendrierPage),
       },
+      // Deux LISTES et non deux vues du même objet : un gabarit de mercuriale se
+      // pose chez un client, un gabarit de devis sert à chiffrer. Même écran,
+      // parce qu'ils portent la même grille ; deux routes, parce qu'on ne les
+      // consulte pas pour la même raison. La nature vient de la route, jamais
+      // d'un état interne — un lien collé doit ouvrir la bonne liste.
+      { path: 'tarification', pathMatch: 'full', redirectTo: 'tarification/mercuriales-templates' },
+      {
+        path: 'tarification/mercuriales-templates',
+        title: 'Gabarits de mercuriale — LFC B2B admin',
+        data: { kind: 'mercuriale' },
+        loadComponent: () =>
+          import('./commercial/tarification/gabarits/gabarits-page').then((m) => m.GabaritsPage),
+      },
+      {
+        path: 'tarification/devis-templates',
+        title: 'Gabarits de devis — LFC B2B admin',
+        data: { kind: 'devis' },
+        loadComponent: () =>
+          import('./commercial/tarification/gabarits/gabarits-page').then((m) => m.GabaritsPage),
+      },
     ],
   },
   {
