@@ -28,3 +28,18 @@
   color: var(--fold-color-text-muted);
   font-variant-numeric: tabular-nums;
 }
+
+// Les deux anneaux côte à côte : ils se comparent, et l'un sous l'autre
+// obligerait à mémoriser le premier pour lire le second.
+.rings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--fold-space-4, 1rem);
+}
+
+.ring-title {
+  margin: 0 0 0.25rem;
+  font-size: var(--fold-text-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--fold-color-text-muted);
+}

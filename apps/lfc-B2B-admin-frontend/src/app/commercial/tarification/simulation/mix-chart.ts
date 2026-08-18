@@ -92,18 +92,39 @@ export function mixAreaOption(mix: CategoryMix): EChartsOption {
   };
 }
 
-/** Le camembert du plan tenu : un partage figé, parce qu'il ne bouge pas. */
-export function mixPieOption(mix: CategoryMix): EChartsOption {
+/**
+ * **Deux anneaux, même code couleur, même forme** — et c'est là tout l'intérêt.
+ *
+ * `revenue` : ce que chaque rayon apporte. `conceded` : ce que chaque rayon
+ * COÛTE en euros lâchés face au catalogue. Superposer mentalement les deux dit
+ * ce qu'aucune colonne ne dit : un rayon qui pèse 15 % du chiffre et 40 % de la
+ * remise est l'endroit où l'argent est parti.
+ *
+ * **Ce qui n'est pas encodé, et pourquoi.** Le pourcentage d'écart de chaque
+ * rayon ne peut PAS être la grandeur d'un anneau : des taux ne s'additionnent
+ * pas — deux rayons à −10 % et −20 % ne font pas un tout de 30 %, et l'anneau
+ * inventerait une part de quelque chose qui n'existe pas. Ce sont des **euros
+ * concédés** qui forment le tout ; l'écart en pourcent reste écrit sur l'arc,
+ * comme étiquette, là où il se lit sans être sommé.
+ */
+export function mixPieOption(
+  mix: CategoryMix,
+  dimension: 'revenue' | 'conceded' = 'revenue',
+): EChartsOption {
   const muted = themeColor('--fold-color-text-muted', '#64748b');
   const surface = themeColor('--fold-color-surface-card', '#ffffff');
   const atPlan = mix.ratios.indexOf(1);
+  const conceded = dimension === 'conceded';
   return {
     tooltip: {
       trigger: 'item',
       valueFormatter: (value) => `${Number(value).toLocaleString('fr-FR')} €`,
     },
+    // Une seule légende pour les deux anneaux : elle vit sur celui du chiffre,
+    // et les couleurs suffisent à relier le second. Deux légendes identiques
+    // prendraient la place de ce qu'on veut comparer.
     legend: {
-      show: true,
+      show: !conceded,
       bottom: 0,
       itemHeight: 8,
       itemWidth: 14,
@@ -120,11 +141,43 @@ export function mixPieOption(mix: CategoryMix): EChartsOption {
         label: { color: muted, fontSize: 11, formatter: '{b} · {d} %' },
         labelLine: { length: 8, length2: 8 },
         data: mix.categories.map((category, index) => ({
-          name: category.name,
-          value: euros(atPlan === -1 ? 0 : (category.revenueByRatio[atPlan] ?? 0)),
+          // Sur l'anneau des remises, le nom porte l'écart du rayon : c'est
+          // l'information que le taux apporte, à l'endroit où elle ne se somme
+          // pas. Un rayon qui n'a rien lâché tombe à zéro et disparaît.
+          name: conceded ? `${category.name} · ${discountLabel(category, atPlan)}` : category.name,
+          value: euros(valueOf(category, atPlan, conceded)),
           itemStyle: { color: toneAt(index) },
         })),
       },
     ],
   };
+}
+
+/** La valeur d'un rayon au plan tenu, dans l'une ou l'autre dimension. */
+function valueOf(
+  category: CategoryMix['categories'][number],
+  atPlan: number,
+  conceded: boolean,
+): number {
+  if (atPlan === -1) {
+    return 0;
+  }
+  const raw = conceded
+    ? (category.concededByRatio[atPlan] ?? 0)
+    : (category.revenueByRatio[atPlan] ?? 0);
+  // Un rayon vendu AU-DESSUS du catalogue a une concession négative : elle n'a
+  // pas de part dans un tout, et un arc négatif ne veut rien dire. Il sort de
+  // l'anneau, et l'écart reste lisible sur la ligne de l'article.
+  return Math.max(0, raw);
+}
+
+/** L'écart au catalogue d'un rayon, en pourcent — étiquette, jamais grandeur. */
+function discountLabel(category: CategoryMix['categories'][number], atPlan: number): string {
+  const catalogue = atPlan === -1 ? 0 : (category.catalogueByRatio[atPlan] ?? 0);
+  if (catalogue <= 0) {
+    return '—';
+  }
+  const conceded = category.concededByRatio[atPlan] ?? 0;
+  const share = (conceded / catalogue) * 100;
+  return `${share >= 0 ? '−' : '+'}${Math.abs(share).toFixed(1).replace('.', ',')} %`;
 }

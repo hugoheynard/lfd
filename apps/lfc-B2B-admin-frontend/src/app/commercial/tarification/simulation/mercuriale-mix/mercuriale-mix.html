@@ -10,11 +10,28 @@
     <h3 class="title">Le poids de la mercuriale</h3>
     <p class="total">
       <strong>{{ euros(mix().plannedCents) }}</strong> sur le plan tenu ·
+      <strong>{{ euros(mix().concededCents) }}</strong> lâchés au catalogue ·
       <strong>{{ mix().plannedArticles }}</strong> article(s) au plan
     </p>
   </header>
 
-  <app-chart [option]="option()" height="260px" />
+  <div class="rings">
+    <section class="ring">
+      <h4 class="ring-title">Part du chiffre</h4>
+      <app-chart [option]="option()" height="260px" />
+    </section>
+
+    <!--
+      **Le second anneau encode des EUROS lâchés, pas un taux.** Des pourcentages
+      de remise ne s'additionnent pas — deux rayons à −10 % et −20 % ne font pas
+      un tout de 30 %, et l'anneau inventerait une part de rien. L'écart en
+      pourcent reste écrit sur l'arc, là où il se lit sans être sommé.
+    -->
+    <section class="ring">
+      <h4 class="ring-title">Part de la remise</h4>
+      <app-chart [option]="concededOption()" height="260px" />
+    </section>
+  </div>
 
   <app-chart-note
     goal="Sur quoi repose le chiffre de ce devis, et si ce partage tient quand le client n'en prend qu'une partie."

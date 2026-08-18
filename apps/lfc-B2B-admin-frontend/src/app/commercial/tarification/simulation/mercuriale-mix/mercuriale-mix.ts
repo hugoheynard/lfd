@@ -18,6 +18,10 @@ import { mixAreaOption, mixPieOption } from '../mix-chart';
  * baguettes et des croissants. Faire varier tout le plan d'un même facteur pose
  * la vraie question, et la pose sur tous les articles à la fois.
  */
+/** La lecture du second anneau — elle ne dépend pas de la forme du premier. */
+const READ_CONCEDED =
+  "Le second anneau est le même partage, sur les euros LÂCHÉS : un rayon qui pèse 15 % du chiffre et 40 % de la remise est l'endroit où l'argent est parti. L'écart en pourcent est écrit sur chaque arc, mais ce sont bien des euros qui forment le tout — des taux ne s'additionnent pas.";
+
 @Component({
   selector: 'app-mercuriale-mix',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,15 +36,26 @@ export class MercurialeMix {
 
   protected readonly mix = computed(() => foldExtras(categoryMix(this.articles(), planRatios())));
 
-  /** Aire ou camembert : la forme suit la donnée, cf. `mix-chart`. */
+  /** Aire ou anneau : la forme suit la donnée, cf. `mix-chart`. */
   protected readonly option = computed(() => {
     const mix = this.mix();
-    return mix.hasTier ? mixAreaOption(mix) : mixPieOption(mix);
+    return mix.hasTier ? mixAreaOption(mix) : mixPieOption(mix, 'revenue');
   });
 
-  protected readonly read = computed(() =>
-    this.mix().hasTier
-      ? "Un rayon dont la bande s'amincit quand le plan grossit est celui qui porte un palier : sa part du chiffre baisse à mesure que le client commande. Une bande stable ne dépend pas du volume."
-      : 'Aucune grille de ce lot ne comporte de palier : la part de chaque rayon est la même à tout volume, et un tracé par volume ne montrerait que des bandes parallèles.',
-  );
+  /**
+   * **L'anneau des remises** — mêmes couleurs, même forme que celui du chiffre.
+   *
+   * Ce que la comparaison des deux montre : un rayon qui pèse 15 % du chiffre et
+   * 40 % de la remise est l'endroit où l'argent est parti. Rien d'autre à
+   * l'écran ne le dit.
+   */
+  protected readonly concededOption = computed(() => mixPieOption(this.mix(), 'conceded'));
+
+  protected readonly read = computed(() => `${this.readRevenue()} ${READ_CONCEDED}`);
+
+  private readRevenue(): string {
+    return this.mix().hasTier
+      ? "Une bande qui s'amincit quand le plan grossit est un rayon qui porte un palier : sa part du chiffre baisse à mesure que le client commande."
+      : 'Aucune grille de ce lot ne comporte de palier : la part de chaque rayon est la même à tout volume, et un tracé par volume ne montrerait que des bandes parallèles.';
+  }
 }

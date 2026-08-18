@@ -19,6 +19,19 @@ export interface MixCategory {
   readonly name: string;
   /** Le chiffre de ce rayon à chaque fraction du plan, en centimes. */
   readonly revenueByRatio: readonly number[];
+  /** Ce que le rayon aurait pesé au tarif catalogue, aux mêmes volumes. */
+  readonly catalogueByRatio: readonly number[];
+  /**
+   * **Ce qui est lâché** : catalogue − facturé, en centimes.
+   *
+   * Un montant et non un taux, et c'est ce qui rend le partage traçable : des
+   * pourcentages de remise ne s'additionnent pas — deux rayons à −10 % et −20 %
+   * ne font pas un tout de 30 %. Des euros concédés, si.
+   *
+   * Peut être **négatif** : une mercuriale au-dessus du catalogue existe, et la
+   * nier ici la ferait disparaître du total.
+   */
+  readonly concededByRatio: readonly number[];
 }
 
 export interface CategoryMix {
@@ -34,6 +47,8 @@ export interface CategoryMix {
   readonly hasTier: boolean;
   /** Le chiffre du plan tenu, en centimes. */
   readonly plannedCents: number;
+  /** Ce que le plan tenu laisse au client, face au tarif catalogue. */
+  readonly concededCents: number;
   readonly plannedArticles: number;
 }
 
@@ -67,13 +82,23 @@ export function categoryMix(
   for (const article of planned) {
     byCategory.set(article.categoryId, [...(byCategory.get(article.categoryId) ?? []), article]);
   }
-  const categories = [...byCategory.entries()].map(([id, group]) => ({
-    id,
-    name: group[0]?.categoryName ?? id,
-    revenueByRatio: ratios.map((ratio) =>
+  const categories = [...byCategory.entries()].map(([id, group]) => {
+    const revenueByRatio = ratios.map((ratio) =>
       group.reduce((sum, article) => sum + revenueAtRatio(article, ratio), 0),
-    ),
-  }));
+    );
+    const catalogueByRatio = ratios.map((ratio) =>
+      group.reduce((sum, article) => sum + catalogueAtRatio(article, ratio), 0),
+    );
+    return {
+      id,
+      name: group[0]?.categoryName ?? id,
+      revenueByRatio,
+      catalogueByRatio,
+      concededByRatio: catalogueByRatio.map(
+        (catalogue, index) => catalogue - (revenueByRatio[index] ?? 0),
+      ),
+    };
+  });
   const atPlan = ratios.indexOf(1);
   return {
     ratios,
@@ -83,6 +108,10 @@ export function categoryMix(
       atPlan === -1
         ? 0
         : categories.reduce((sum, category) => sum + (category.revenueByRatio[atPlan] ?? 0), 0),
+    concededCents:
+      atPlan === -1
+        ? 0
+        : categories.reduce((sum, category) => sum + (category.concededByRatio[atPlan] ?? 0), 0),
     plannedArticles: planned.length,
   };
 }
@@ -104,6 +133,12 @@ function revenueAtRatio(article: MixArticle, ratio: number): number {
     article.basis,
     volume,
   );
+}
+
+/** Ce que l'article aurait pesé au tarif catalogue, au même volume. */
+function catalogueAtRatio(article: MixArticle, ratio: number): number {
+  const volume = Math.round(article.plannedVolume * ratio);
+  return volume < 1 ? 0 : volume * article.basis.catalogCents;
 }
 
 /** La part d'un rayon dans le total, en pourcent — pour le camembert comme pour l'aire. */
@@ -143,9 +178,9 @@ export function foldExtras(mix: CategoryMix, max = 7): CategoryMix {
       {
         id: 'autres',
         name: `Autres (${String(extras.length)})`,
-        revenueByRatio: mix.ratios.map((_, index) =>
-          extras.reduce((sum, category) => sum + (category.revenueByRatio[index] ?? 0), 0),
-        ),
+        revenueByRatio: sumAt(extras, 'revenueByRatio', mix.ratios.length),
+        catalogueByRatio: sumAt(extras, 'catalogueByRatio', mix.ratios.length),
+        concededByRatio: sumAt(extras, 'concededByRatio', mix.ratios.length),
       },
     ],
   };
@@ -178,5 +213,16 @@ export function mixArticlesOf(
       tiers: tiersBySku.get(item.sku) ?? [],
       plannedVolume: volumes.get(item.sku) ?? 0,
     })),
+  );
+}
+
+/** La somme d'une des séries d'un groupe de rayons, position par position. */
+function sumAt(
+  categories: readonly MixCategory[],
+  key: 'revenueByRatio' | 'catalogueByRatio' | 'concededByRatio',
+  length: number,
+): number[] {
+  return Array.from({ length }, (_, index) =>
+    categories.reduce((sum, category) => sum + (category[key][index] ?? 0), 0),
   );
 }

@@ -97,3 +97,40 @@ describe('categoryMix', () => {
     expect(categoryMix([article({})], [0.5]).plannedCents).toBe(0);
   });
 });
+
+describe('categoryMix · ce qui est lâché', () => {
+  it('compte les euros concédés face au catalogue', () => {
+    // 1 000 unités à 0,90 € contre 1,00 € au catalogue : 100 € lâchés.
+    const mix = categoryMix([article({})], [1]);
+    expect(mix.categories[0]?.catalogueByRatio[0]).toBe(100 * 1_000);
+    expect(mix.categories[0]?.concededByRatio[0]).toBe(10 * 1_000);
+    expect(mix.concededCents).toBe(10 * 1_000);
+  });
+
+  it('ne concède rien sur un article non tarifé', () => {
+    const mix = categoryMix([article({ tiers: [] })], [1]);
+    expect(mix.categories[0]?.concededByRatio[0]).toBe(0);
+  });
+
+  it('rend une concession NÉGATIVE au-dessus du catalogue, sans la masquer', () => {
+    const above = article({ tiers: [{ minQuantity: 1, unitPriceCents: 130 }] });
+    // La nier ici la ferait disparaître du total ; c'est l'anneau qui l'écarte.
+    expect(categoryMix([above], [1]).concededCents).toBeLessThan(0);
+  });
+
+  it('la part de la remise ne suit PAS la part du chiffre', () => {
+    // Le cas qui justifie les deux anneaux : un petit rayon très remisé.
+    const big = article({ sku: 'a', tiers: [{ minQuantity: 1, unitPriceCents: 99 }] });
+    const small = article({
+      sku: 'b',
+      categoryId: 'v',
+      categoryName: 'V',
+      plannedVolume: 100,
+      tiers: [{ minQuantity: 1, unitPriceCents: 40 }],
+    });
+    const mix = categoryMix([big, small], [1]);
+    const revenueShare = (mix.categories[1]?.revenueByRatio[0] ?? 0) / mix.plannedCents;
+    const concededShare = (mix.categories[1]?.concededByRatio[0] ?? 0) / mix.concededCents;
+    expect(concededShare).toBeGreaterThan(revenueShare);
+  });
+});
