@@ -107,7 +107,29 @@ export const priceEffectSchema = z.discriminatedUnion("nature", [
      *  le signe se dit par `direction`, jamais par le nombre. */
     value: z.number().int().positive(),
   }),
-]);
+])
+  /**
+   * **Une baisse en pourcentage ne dépasse pas 100 %.**
+   *
+   * Sans cette borne, « −150 % » se saisissait, se persistait, et rendait un
+   * prix NÉGATIF au bout de la chaîne — que la ligne de commande refusait
+   * ensuite : un checkout cassé pour le client, pendant que l'écran de
+   * tarification affichait tranquillement « −3,00 € ».
+   *
+   * Portée sur l'union entière et non sur son membre : un `.refine` à
+   * l'intérieur d'une union discriminée en fait un `ZodEffects`, que
+   * `discriminatedUnion` refuse.
+   *
+   * Bornée ici et pas seulement dans l'agrégat : c'est la frontière que
+   * traverse toute saisie, import et rattrapage compris.
+   */
+  .refine(
+    (effect) => effect.nature !== "alter" || effect.mode !== "percent" || effect.value <= 10_000,
+    {
+      message: "Une baisse en pourcentage ne peut pas dépasser 100 % (10 000 points de base).",
+      path: ["value"],
+    },
+  );
 export type PriceEffectPayload = z.infer<typeof priceEffectSchema>;
 
 /**
@@ -471,6 +493,15 @@ export interface PricingItemView {
   readonly steps: readonly PriceStepView[];
   /** Le plancher a-t-il **relevé** le prix ? */
   readonly floored: boolean;
+  /**
+   * La chaîne est-elle passée **sous zéro**, et le prix ramené à zéro ?
+   *
+   * Le cas se produit quand une baisse en euros dépasse le prix de l'article —
+   * « −5 € sur le catalogue » sur un croissant à 2 €. Il ne se refuse pas à la
+   * saisie (le canonique varie d'un article à l'autre), donc l'écran est le
+   * SEUL endroit où on peut s'en apercevoir avant qu'un client ne commande.
+   */
+  readonly clampedToZero: boolean;
   readonly finalCents: number;
   /**
    * Ce que l'altération coûte en volume. `null` quand le prix n'a pas bougé —

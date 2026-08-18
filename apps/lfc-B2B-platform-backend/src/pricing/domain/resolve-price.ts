@@ -75,11 +75,31 @@ export function resolvePrice(
   const floored = lowest !== null && compareExact(running, lowest) < 0;
   const finalExact = floored && lowest !== null ? lowest : running;
 
+  // **Zéro est le plancher de tout le système**, même sans limite posée.
+  //
+  // Une baisse en euros plus grande que le prix — « −5 € sur le catalogue »
+  // appliqué à un croissant à 2 € — rendait −3,00 €. Ce cas-là ne peut pas se
+  // refuser à la saisie : la règle est scopée, le canonique varie d'un article
+  // à l'autre, et personne ne connaît le résultat avant de résoudre.
+  //
+  // Il ne se refuse pas non plus ICI par une exception : cette fonction est
+  // celle qui facture, et lever ferait tomber le panier d'un client pour une
+  // règle qu'il n'a pas écrite — ce qui est exactement ce qui se passait, en
+  // pire, puisque le refus tombait plus loin, sur la ligne de commande, sans
+  // que rien n'ait alerté sur l'écran de tarification.
+  //
+  // Le prix est donc ramené à zéro et le fait est CONSIGNÉ. Un article offert
+  // est un cas réel du modèle (le canonique zéro est accepté) ; un article à
+  // prix négatif n'en est pas un — ce serait un remboursement.
+  const rounded = roundToCents(finalExact);
+  const clampedToZero = rounded < 0;
+
   return {
     basePriceCents: canonicalCents,
     steps,
     floored,
-    finalCents: roundToCents(finalExact),
+    clampedToZero,
+    finalCents: clampedToZero ? 0 : rounded,
   };
 }
 

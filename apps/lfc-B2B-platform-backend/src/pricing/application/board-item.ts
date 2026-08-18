@@ -114,6 +114,7 @@ export function itemView(
     supersededRuleIds: supersededIn(materials.byStage, context),
     steps: resolved.steps.map((step) => ({ ...step })),
     floored: resolved.floored,
+    clampedToZero: resolved.clampedToZero,
     finalCents: resolved.finalCents,
     negotiationRoom: negotiationRoom(
       resolved.finalCents,

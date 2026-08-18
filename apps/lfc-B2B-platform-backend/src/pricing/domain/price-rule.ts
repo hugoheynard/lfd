@@ -189,5 +189,15 @@ export interface ResolvedPrice {
    * remarque.
    */
   readonly floored: boolean;
+  /**
+   * La chaîne est-elle **passée sous zéro**, et le prix ramené à zéro ?
+   *
+   * Consigné plutôt qu'avalé, pour la même raison que {@link floored} : c'est
+   * le signe qu'une règle a produit autre chose que ce que son auteur croyait.
+   * Une baisse en euros plus grande que le prix de l'article — « −5 € » sur un
+   * croissant à 2 € — est la façon la plus banale d'y arriver, et elle ne se
+   * refuse pas à la saisie puisque le canonique varie d'un article à l'autre.
+   */
+  readonly clampedToZero: boolean;
   readonly finalCents: number;
 }

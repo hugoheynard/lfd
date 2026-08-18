@@ -288,3 +288,64 @@ describe("resolvePrice — l'ambiguïté", () => {
     expect(result.finalCents).toBe(810);
   });
 });
+
+/**
+ * **Le prix ne descend jamais sous zéro.**
+ *
+ * Deux chemins y menaient, tous deux atteignables par une saisie ordinaire, et
+ * aucun n'était gardé. Le premier se refuse maintenant à la frontière (zod
+ * borne une baisse en pourcentage à 100 %) ; le second ne peut PAS s'y refuser,
+ * puisque le canonique varie d'un article à l'autre — il se rattrape ici.
+ *
+ * Ce qui se passait avant : la chaîne rendait −300 centimes, la ligne de
+ * commande les refusait (`prix unitaire ≥ 0 attendu`), et le client voyait son
+ * panier échouer sans explication — pendant que l'écran de tarification
+ * affichait « −3,00 € » sans le moindre signal.
+ */
+describe("le plancher naturel du système", () => {
+  const context: PricingContext = {
+    at: new Date("2026-08-17T00:00:00.000Z"),
+    quantity: 1,
+    variantSku: "VIE-001",
+    productSku: "VIE-001",
+    categoryId: "viennoiserie",
+    companyId: null,
+    segmentId: null,
+  };
+
+  const minus = (cents: number): PriceRule => ({
+    id: "geste",
+    stage: "geste",
+    scope: { type: "global", id: null },
+    audience: { type: "all", id: null },
+    minQuantity: null,
+    validFrom: new Date("2026-08-01T00:00:00.000Z"),
+    validTo: null,
+    suspendedFrom: null,
+    label: "geste",
+    nature: "alter",
+    alteration: { direction: "decrease", mode: "amount", cents },
+  });
+
+  it("ramène à zéro une baisse en euros plus grande que le prix, et le consigne", () => {
+    const resolved = resolvePrice(200, [minus(500)], context);
+
+    expect(resolved.finalCents).toBe(0);
+    expect(resolved.clampedToZero).toBe(true);
+  });
+
+  /** Un article offert est un cas réel : zéro n'est pas une anomalie, c'est la borne. */
+  it("ne crie pas quand le prix tombe pile à zéro", () => {
+    const resolved = resolvePrice(200, [minus(200)], context);
+
+    expect(resolved.finalCents).toBe(0);
+    expect(resolved.clampedToZero).toBe(false);
+  });
+
+  it("laisse tranquille un prix qui reste positif", () => {
+    const resolved = resolvePrice(200, [minus(50)], context);
+
+    expect(resolved.finalCents).toBe(150);
+    expect(resolved.clampedToZero).toBe(false);
+  });
+});
