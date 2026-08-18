@@ -1505,36 +1505,11 @@ Deux décisions d'honnêteté y sont tenues :
   n'a pas négociés.
 
 Le **volume prévu** est saisi une seule fois, sur la ligne de l'article : c'est le
-même nombre qui alimente le partage et la simulation par article. Il n'est pas
-encore persisté avec le gabarit — la grille se recharge sans lui.
-
-### L'indicateur d'aide : ce que le marché paie déjà
-
-Avant d'accorder un prix, la question du commercial est « où je me situe ». La
-grille porte donc, article par article, la **médiane des mercuriales en place
-chez les autres clients**, avec ses bornes et le nombre de clients.
-
-**La médiane et non la moyenne** : sur une poignée de comptes, le contrat arraché
-au tout premier client tirerait la moyenne et ferait passer un tarif normal pour
-une largesse. Quatre décisions vont avec, et chacune évite un chiffre faux :
-
-- **une observation par CLIENT**, pas par règle. Une mercuriale à trois paliers
-  pèserait sinon trois fois plus lourd qu'un prix fixe, et un gros compte
-  déplacerait la médiane à lui seul en négociant des paliers. Le prix retenu est
-  celui du **plus petit seuil** — le même choix que la colonne d'entrée de la
-  grille, pour la même raison ;
-- **en place** veut dire : ni archivée, ni suspendue, et dans sa fenêtre. Une
-  décision qui a cessé d'agir n'est plus ce que le client paie ;
-- **nommément un article, chez un client nommé**. Une règle de famille ou de
-  catalogue n'est pas un prix négocié, c'est le tarif de tout le monde ;
-- le prix de chaque observation passe par `resolvePrice`, **la fonction qui
-  facture**. Une mercuriale peut être posée en `replace` (un prix) comme en
-  `alter` (une remise) : lire `amountCents` ignorerait la seconde forme, et
-  l'écran comparerait des prix à des remises.
-
-Le **plancher n'est pas appliqué**, délibérément : il est propre à un client,
-alors qu'on mesure un prix de marché. Un prix relevé chez un seul compte n'est
-pas ce que les autres paient.
-
-Zéro observation ne rend pas « zéro client » : l'article **disparaît** de la
-liste, et l'écran n'affiche alors aucun indicateur.
+même nombre qui alimente le partage et la simulation par article. Il est **gardé
+avec le gabarit** (`plannedVolume` sur la ligne), et c'est une hypothèse de
+négociation, jamais une décision de prix — `templateToRules` ne le lit pas, et
+poser la grille chez un client produit exactement les mêmes règles avec ou sans
+lui. `null` par défaut, et pas zéro : un article sans volume prévu n'est pas au
+plan, il n'y est pas pour une quantité nulle. Les lignes étant en JSON, le champ
+n'a demandé **aucune migration** — c'est le schéma Zod qui relit les gabarits
+antérieurs, en leur posant `null`.

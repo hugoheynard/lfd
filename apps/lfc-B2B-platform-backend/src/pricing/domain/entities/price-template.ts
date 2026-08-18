@@ -16,6 +16,11 @@ export interface TemplateLine {
   readonly sku: string;
   /** Triés par seuil croissant, et l'agrégat le garantit. */
   readonly tiers: readonly TemplateTier[];
+  /**
+   * Le volume prévu sur la saison. **Aucun effet sur le prix** : il accompagne
+   * la grille comme hypothèse de négociation, et l'agrégat n'a rien à en dire.
+   */
+  readonly plannedVolume: number | null;
 }
 
 export interface PriceTemplateDraft {
@@ -155,7 +160,7 @@ function normalizeLine(line: TemplateLine): TemplateLine {
       throw new NonDecreasingTemplateTiersError(line.sku, tier.minQuantity);
     }
   }
-  return { sku: line.sku, tiers };
+  return { sku: line.sku, tiers, plannedVolume: line.plannedVolume };
 }
 
 function assertNoDuplicateSku(lines: readonly TemplateLine[]): void {

@@ -62,6 +62,7 @@ export class PriceTemplatesQuery {
             productName: item?.name ?? line.sku,
             catalogPriceCents: item?.unitPriceCents ?? null,
             tiers: line.tiers.map((tier) => ({ ...tier })),
+            plannedVolume: line.plannedVolume,
           };
         }),
         createdBy: state.createdBy,

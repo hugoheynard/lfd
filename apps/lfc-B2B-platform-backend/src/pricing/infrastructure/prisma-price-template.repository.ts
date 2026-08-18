@@ -28,6 +28,7 @@ export class PrismaPriceTemplateRepository extends PriceTemplateRepository {
         minQuantity: tier.minQuantity,
         unitPriceCents: tier.unitPriceCents,
       })),
+      plannedVolume: line.plannedVolume,
     }));
     await this.prisma.priceTemplate.upsert({
       where: { id: state.id },

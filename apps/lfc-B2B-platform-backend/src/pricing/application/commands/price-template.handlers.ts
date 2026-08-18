@@ -40,7 +40,13 @@ export class SavePriceTemplateHandler implements ICommandHandler<SavePriceTempla
     const draft = {
       kind: command.payload.kind,
       label: command.payload.label,
-      lines: command.payload.lines.map((line) => ({ sku: line.sku, tiers: line.tiers })),
+      lines: command.payload.lines.map((line) => ({
+        sku: line.sku,
+        tiers: line.tiers,
+        // Recopié tel quel : le volume prévu accompagne la grille, il ne change
+        // aucun prix — `templateToRules` ne le lit même pas.
+        plannedVolume: line.plannedVolume,
+      })),
     };
     const template = await this.resolve(command.id, draft, command.staffSub);
     await this.templates.save(template);

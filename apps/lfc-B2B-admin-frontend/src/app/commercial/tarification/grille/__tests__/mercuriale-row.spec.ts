@@ -121,7 +121,6 @@ describe('tally', () => {
   });
 });
 
-
 describe('mercurialeRow · la médiane du marché', () => {
   const market = {
     sku: 'baguette',

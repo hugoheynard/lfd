@@ -30,6 +30,7 @@ import {
   tiersOf,
   toLines,
   volumeOf,
+  volumesFromLines,
   withVolume,
   without,
   type DraftGrid,
@@ -123,11 +124,8 @@ export class GabaritGrillePage {
   /** Vrai pendant la pose : la barre l'affiche, la page le sait. */
   protected readonly posing = signal(false);
 
-  /**
-   * L'article simulé. **Un seul à la fois** : la comparaison se fait entre
-   * SCÉNARIOS d'un même article, et le chiffre de deux articles ne se lit pas
-   * sur la même échelle.
-   */
+  /** L'article simulé. **Un seul à la fois** : le chiffre de deux articles ne
+   * se lit pas sur la même échelle. */
   protected readonly simulated = signal<string | null>(null);
 
   /**
@@ -171,6 +169,7 @@ export class GabaritGrillePage {
         this.label.set(template.label);
         this.saved.set(template.id);
         this.draft.set(draftFromLines(template.lines));
+        this.volumes.set(volumesFromLines(template.lines));
       }
       this.state.set('ready');
     } catch {
@@ -248,7 +247,7 @@ export class GabaritGrillePage {
   }
 
   /** Les lignes prêtes à partir — cf. `toLines` pour ce qui s'oublie et ce qui tombe. */
-  protected readonly lines = computed(() => toLines(this.draft()));
+  protected readonly lines = computed(() => toLines(this.draft(), this.volumes()));
 
   protected async save(): Promise<void> {
     if (!this.canSave()) {

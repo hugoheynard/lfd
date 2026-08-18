@@ -1062,6 +1062,20 @@ export const templateLineSchema = z.object({
    * Bornés à douze : au-delà, ce n'est plus une grille qu'on lit au téléphone.
    */
   tiers: z.array(templateTierSchema).min(1).max(12),
+  /**
+   * **Le volume prévu sur la saison**, s'il a été posé.
+   *
+   * Il ne change AUCUN prix : un gabarit posé chez un client produit les mêmes
+   * règles avec ou sans lui. C'est l'hypothèse de la négociation — « ma saison,
+   * c'est 10 000 baguettes » — et elle mérite d'être gardée avec la grille,
+   * sinon toute simulation est à ressaisir au prochain chargement.
+   *
+   * `null` par défaut, et pas zéro : un article sans volume prévu n'est pas au
+   * plan, il n'y est pas pour une quantité nulle. Le défaut rend aussi les
+   * gabarits écrits AVANT ce champ relisibles sans migration — les lignes sont
+   * en JSON, c'est le schéma qui fait foi.
+   */
+  plannedVolume: z.number().int().positive().nullable().default(null),
 });
 export type TemplateLinePayload = z.infer<typeof templateLineSchema>;
 
@@ -1091,6 +1105,8 @@ export interface PriceTemplateLineView {
    */
   readonly catalogPriceCents: number | null;
   readonly tiers: readonly TemplateTierPayload[];
+  /** Le volume prévu gardé avec la grille. `null` = article hors du plan. */
+  readonly plannedVolume: number | null;
 }
 
 export interface PriceTemplateView {

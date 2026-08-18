@@ -38,7 +38,12 @@ export function templateStateFromRow(row: TemplateRow): PriceTemplateState {
     id: row.id,
     kind,
     label: row.label,
-    lines: lines.data.map((line): TemplateLine => ({ sku: line.sku, tiers: line.tiers })),
+    lines: lines.data.map((line): TemplateLine => ({
+      sku: line.sku,
+      tiers: line.tiers,
+      // Absent des gabarits écrits avant ce champ : le schéma le pose à `null`.
+      plannedVolume: line.plannedVolume,
+    })),
     createdBy: row.createdBy,
     archivedAt: row.archivedAt,
   };

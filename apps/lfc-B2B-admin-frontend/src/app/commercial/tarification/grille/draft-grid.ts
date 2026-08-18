@@ -91,7 +91,7 @@ export function entryOf(grid: DraftGrid, sku: string): number | null {
  * Les autres refus (grille qui monte, doublons de seuil) restent au **serveur** :
  * ils valent aussi pour un import et un rattrapage, pas seulement pour cet écran.
  */
-export function toLines(grid: DraftGrid): readonly TemplateLinePayload[] {
+export function toLines(grid: DraftGrid, volumes: PlannedVolumes): readonly TemplateLinePayload[] {
   return [...grid].flatMap(([sku, tiers]) => {
     const built = tiers.flatMap((tier) => {
       if (tier.minQuantity.trim() === '' && tier.unitPrice.trim() === '') {
@@ -106,7 +106,15 @@ export function toLines(grid: DraftGrid): readonly TemplateLinePayload[] {
     });
     return built.length === 0 || built.some((tier) => tier === null)
       ? []
-      : [{ sku, tiers: built.filter((tier) => tier !== null) }];
+      : [
+          {
+            sku,
+            tiers: built.filter((tier) => tier !== null),
+            // Le volume prévu voyage AVEC la grille : il ne change aucun prix,
+            // mais sans lui toute simulation serait à ressaisir au rechargement.
+            plannedVolume: volumes.get(sku) ?? null,
+          },
+        ];
   });
 }
 
@@ -152,4 +160,15 @@ export function withVolume(volumes: PlannedVolumes, sku: string, raw: string): P
 
 export function volumeOf(volumes: PlannedVolumes, sku: string): number {
   return volumes.get(sku) ?? 0;
+}
+
+/** Les volumes d'un gabarit enregistré — l'inverse de ce que `toLines` écrit. */
+export function volumesFromLines(
+  lines: readonly { sku: string; plannedVolume: number | null }[],
+): PlannedVolumes {
+  return new Map(
+    lines
+      .filter((line) => line.plannedVolume !== null && line.plannedVolume >= 1)
+      .map((line) => [line.sku, line.plannedVolume ?? 0]),
+  );
 }

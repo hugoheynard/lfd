@@ -11,6 +11,9 @@ import {
   type DraftGrid,
 } from '../draft-grid';
 
+/** Sans volume prévu : ces cas-là portent sur les paliers, pas sur le plan. */
+const lines = (value: DraftGrid) => toLines(value, new Map());
+
 const grid = (entries: [string, { minQuantity: string; unitPrice: string }[]][]): DraftGrid =>
   new Map(entries);
 
@@ -52,7 +55,7 @@ describe('entryOf', () => {
 describe('toLines', () => {
   it('convertit une grille lisible', () => {
     expect(
-      toLines(
+      lines(
         grid([
           [
             'PAI-001',
@@ -66,6 +69,7 @@ describe('toLines', () => {
     ).toEqual([
       {
         sku: 'PAI-001',
+        plannedVolume: null,
         tiers: [
           { minQuantity: 1, unitPriceCents: 85 },
           { minQuantity: 10_000, unitPriceCents: 78 },
@@ -77,7 +81,7 @@ describe('toLines', () => {
   /** Un palier vide est un ajout qu'on n'a pas rempli : il s'oublie sans bloquer. */
   it('oublie un palier entièrement vide', () => {
     expect(
-      toLines(
+      lines(
         grid([
           [
             'PAI-001',
@@ -88,7 +92,9 @@ describe('toLines', () => {
           ],
         ]),
       ),
-    ).toEqual([{ sku: 'PAI-001', tiers: [{ minQuantity: 1, unitPriceCents: 85 }] }]);
+    ).toEqual([
+      { sku: 'PAI-001', plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 85 }] },
+    ]);
   });
 
   /**
@@ -98,17 +104,19 @@ describe('toLines', () => {
    */
   it('fait tomber la LIGNE si un palier est à moitié rempli, sans bloquer les autres', () => {
     expect(
-      toLines(
+      lines(
         grid([
           ['PAI-001', [{ minQuantity: '1', unitPrice: '' }]],
           ['PAI-002', [{ minQuantity: '1', unitPrice: '0,80' }]],
         ]),
       ),
-    ).toEqual([{ sku: 'PAI-002', tiers: [{ minQuantity: 1, unitPriceCents: 80 }] }]);
+    ).toEqual([
+      { sku: 'PAI-002', plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
+    ]);
   });
 
   it('refuse un seuil nul — un palier part d’au moins une pièce', () => {
-    expect(toLines(grid([['PAI-001', [{ minQuantity: '0', unitPrice: '0,80' }]]]))).toEqual([]);
+    expect(lines(grid([['PAI-001', [{ minQuantity: '0', unitPrice: '0,80' }]]]))).toEqual([]);
   });
 });
 
@@ -134,5 +142,18 @@ describe('withVolume / volumeOf', () => {
   it('rend une NOUVELLE carte', () => {
     const before = new Map<string, number>();
     expect(withVolume(before, 'a', '5')).not.toBe(before);
+  });
+});
+
+describe('toLines · le volume prévu', () => {
+  it('voyage avec la grille', () => {
+    const value = grid([['PAI-001', [{ minQuantity: '1', unitPrice: '0,80' }]]]);
+    const [line] = toLines(value, new Map([['PAI-001', 10_000]]));
+    expect(line?.plannedVolume).toBe(10_000);
+  });
+
+  it("vaut null quand l'article n'est pas au plan — et pas zéro", () => {
+    const value = grid([['PAI-001', [{ minQuantity: '1', unitPrice: '0,80' }]]]);
+    expect(toLines(value, new Map())[0]?.plannedVolume).toBeNull();
   });
 });

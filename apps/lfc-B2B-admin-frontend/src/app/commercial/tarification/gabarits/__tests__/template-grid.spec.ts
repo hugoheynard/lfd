@@ -14,6 +14,7 @@ const line = (over: Partial<PriceTemplateLineView>): PriceTemplateLineView => ({
   productName: 'Baguette',
   catalogPriceCents: 100,
   tiers: [{ minQuantity: 1, unitPriceCents: 80 }],
+  plannedVolume: null,
   ...over,
 });
 

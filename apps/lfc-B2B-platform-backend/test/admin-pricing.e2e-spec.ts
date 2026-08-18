@@ -1636,6 +1636,40 @@ describe("les gabarits tarifaires", () => {
     });
   });
 
+  /**
+   * Le volume prévu est une **hypothèse de négociation**, pas une décision de
+   * prix : il revient tel quel, et ne pose pas une règle de plus.
+   */
+  it("garde le volume prévu avec la grille, sans qu'il pose la moindre règle", async () => {
+    const { id } = jsonBody<{ id: string }>(
+      await compose([
+        { sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 150 }], plannedVolume: 10_000 },
+      ]).expect(201),
+    );
+    const company = await createCompany(ctx.prisma);
+
+    const applied = jsonBody<{ posedRules: number }>(await apply(id, company.id).expect(201));
+    const view = jsonBody<{ lines: { plannedVolume: number | null }[] }>(
+      await staff().get(`/admin/pricing/templates/${id}`).expect(200),
+    );
+
+    expect(view.lines[0]?.plannedVolume).toBe(10_000);
+    expect(applied.posedRules).toBe(1);
+  });
+
+  /** Les gabarits écrits avant ce champ se relisent : les lignes sont en JSON. */
+  it("rend null sur une grille composée sans volume prévu", async () => {
+    const { id } = jsonBody<{ id: string }>(
+      await compose([{ sku: SKU, tiers: [{ minQuantity: 1, unitPriceCents: 150 }] }]).expect(201),
+    );
+
+    const view = jsonBody<{ lines: { plannedVolume: number | null }[] }>(
+      await staff().get(`/admin/pricing/templates/${id}`).expect(200),
+    );
+
+    expect(view.lines[0]?.plannedVolume).toBeNull();
+  });
+
   /** L'écart au catalogue est ce que le commercial regarde : il est LU, pas figé. */
   it("rend le tarif catalogue en regard de chaque ligne", async () => {
     const { id } = jsonBody<{ id: string }>(
