@@ -159,16 +159,52 @@ sur deux.
 
 ## L'ordre
 
-1. **Front** — PIM greffé sur l'admin, shell réduit à un registre. Réversible,
-   supprime la couture, débloque la navigation entre sujets, et donne au PIM une
-   vraie auth au lieu d'un jeton relayé.
-2. **T1→T3** — catalogue de permissions, domaine, mur backend.
-3. **Les deux gates.**
-4. **Backend** — PIM devient un contexte, une image, l'audience PIM disparaît.
-5. **C7** — bascule du front client sur l'API, une fois la frontière stable.
+Trois choses ont longtemps été confondues dans cette note, et les séparer change
+tout :
 
-`C7` **après**, et pas avant : il câble le front client sur l'API du catalogue et
-fige la frontière qu'on est en train de discuter.
+> **fusionner les processus ≠ fusionner les bases ≠ fusionner les audiences.**
+
+Tant que les **deux audiences restent**, le mur staff (T1→T3) n'est pas un
+prérequis à la fusion des processus : le PIM reste exactement aussi protégé
+qu'aujourd'hui — mal, mais pas moins bien. T3 est requis avant de **supprimer une
+audience**, pas avant de réunir deux modules.
+
+Et un même processus peut porter **deux clients Prisma sur deux bases** : chaque
+app génère déjà le sien dans son propre dossier. On obtient donc le M2M supprimé,
+le saut réseau supprimé et une instance en moins **sans une seule ligne de
+migration de données**.
+
+D'où l'ordre retenu, **backend d'abord** :
+
+|        | Étape                                                                                                                                   | Risque                       | Réversible |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ---------- |
+| **B0** | Renommer l'app en `lfd-api` — **seul**, avant toute fusion                                                                              | faible                       | oui        |
+| **B1** | Les **deux gates** (frontières de contexte, jointures inter-schéma)                                                                     | nul                          | —          |
+| **B2** | Un processus, deux clients Prisma, **deux bases inchangées**. Le PIM devient `pim/`, le fil devient un port, les deux audiences restent | faible                       | oui        |
+| **B3** | `b2b/catalog/` fond — la parité reste en garde-fou explicite                                                                            | faible                       | oui        |
+| **B4** | Une base, quatre schémas                                                                                                                | moyen — migration de données | par dump   |
+| **B5** | T1→T3, puis l'audience unique                                                                                                           | moyen                        | non        |
+| **B6** | Le front — PIM greffé sur l'admin, shell réduit au registre                                                                             | faible                       | oui        |
+| **B7** | `C7` — bascule du front client sur l'API                                                                                                | moyen                        | non        |
+
+**B1 avant tout code de fusion.** C'est la seule marche non négociable : c'est
+elle qui remplace le mur que le réseau tenait.
+
+**B0 seul**, aussi : un renommage qui casse un déploiement au milieu d'une fusion
+de contextes est indébrouillable. Et il se limite à l'identité **locale** —
+dossier, paquet, CI. Le nom du Worker (`lfc-b2b-backend`) et celui de l'image
+restent, parce qu'ils sont référencés par un **service binding** de la passerelle :
+les renommer crée un nouveau Worker, laisse l'ancien orphelin, et coupe la
+passerelle entre les deux déploiements. C'est une opération à part, à faire un
+jour de calme.
+
+Le coût d'avoir inversé l'ordre : les ~24 fichiers de couture front restent en
+place pendant tout le chantier backend, et le PIM continue de recevoir son jeton
+par le bridge. C'est acceptable — c'est de la plomberie qui attend, pas une
+dette qui grossit.
+
+`C7` reste **en dernier** : il câble le front client sur l'API du catalogue et
+fige la frontière qu'on est en train de déplacer.
 
 ## Ce qui n'est pas tranché
 
