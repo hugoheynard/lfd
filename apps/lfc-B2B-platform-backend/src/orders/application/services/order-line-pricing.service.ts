@@ -36,11 +36,16 @@ export interface ResolvedOrderLine {
   /** Les règles écartées par ce scellement. */
   readonly sealedRuleIds: readonly string[];
   /**
-   * Le barème qui vise l'article, résolu **palier par palier**, ou `null`.
+   * Le barème qui vise l'article, résolu **palier par palier**.
    *
    * C'est la réponse à « et si j'en prends 100 ? » — la question que le
    * commercial pose au téléphone, et la seule façon d'éprouver le système sur
    * des volumes sans passer dix commandes pour le savoir.
+   *
+   * `null` sur le chemin qui **facture** : la grille n'y sert à rien, elle
+   * coûte une résolution complète par palier, et un incident dedans ferait
+   * tomber une vente pour un tableau que personne ne regarde. Elle n'est
+   * calculée que par {@link OrderLinePricing.explain}.
    */
   readonly volumeTiers: readonly VolumeTierPriceView[] | null;
   /** Le plancher qui vise l'article, en centimes, ou `null` s'il n'y en a pas. */
@@ -85,6 +90,30 @@ export class OrderLinePricing {
     input: readonly OrderLineRequest[],
     parties: OrderParties,
   ): Promise<ResolvedOrderLine[]> {
+    return this.priceAll(input, parties, false);
+  }
+
+  /**
+   * **Le même prix, plus ce qui l'explique** — pour un devis, jamais pour une
+   * commande.
+   *
+   * La seule différence est la grille du barème, qui coûte une résolution
+   * complète par palier. La facturer à chaque commande ferait payer à toutes
+   * les ventes un tableau que seul le devis affiche — et lui donnerait un mode
+   * de défaillance qu'une vente n'a pas à connaître.
+   */
+  async explain(
+    input: readonly OrderLineRequest[],
+    parties: OrderParties,
+  ): Promise<ResolvedOrderLine[]> {
+    return this.priceAll(input, parties, true);
+  }
+
+  private async priceAll(
+    input: readonly OrderLineRequest[],
+    parties: OrderParties,
+    withTiers: boolean,
+  ): Promise<ResolvedOrderLine[]> {
     const quantities = new Map<string, number>();
     for (const line of input) {
       quantities.set(line.sku, (quantities.get(line.sku) ?? 0) + line.quantity);
@@ -106,7 +135,7 @@ export class OrderLinePricing {
         if (item === null) {
           throw new UnknownSkuError(sku);
         }
-        return this.resolveOne(item, quantity, parties, at);
+        return this.resolveOne(item, quantity, parties, at, withTiers);
       }),
     );
   }
@@ -117,6 +146,7 @@ export class OrderLinePricing {
     quantity: number,
     parties: OrderParties,
     at: Date,
+    withTiers: boolean,
   ): Promise<ResolvedOrderLine> {
     const context = pricingContextFor(item.sku, item.category, quantity, parties, at);
     const [rules, floors, ladders] = await Promise.all([
@@ -188,7 +218,9 @@ export class OrderLinePricing {
       // barème à la quantité de chaque palier. Lui passer la chaîne complète
       // dupliquait l'échelle, et deux règles de même identifiant à l'étage
       // volume rendaient la résolution ambiguë — 400 sur une commande de 20.
-      volumeTiers: volumeTierPrices(item.unitPriceCents, ladders, rules, context, applied),
+      volumeTiers: withTiers
+        ? volumeTierPrices(item.unitPriceCents, ladders, rules, context, applied)
+        : null,
       floorCents: applied === null ? null : floorCentsFor(applied, item.unitPriceCents),
     };
   }

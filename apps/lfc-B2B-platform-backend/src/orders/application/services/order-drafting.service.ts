@@ -139,7 +139,7 @@ export class OrderDrafting {
     parties: OrderParties,
     lines: readonly OrderLineRequest[],
   ): Promise<ResolvedOrderLine[]> {
-    return this.linePricing.resolve(lines, parties);
+    return this.linePricing.explain(lines, parties);
   }
 
   /**
