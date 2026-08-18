@@ -4,7 +4,7 @@ import type { OrderQuoteLineView, OrderQuotePayload, OrderQuoteView } from "@lfd
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
-import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
+import type { ResolvedOrderLine } from "../services/order-line-pricing.service.js";
 
 /**
  * **Ce que la commande coûterait**, demandé avant de la passer.
@@ -67,7 +67,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
 
     return {
       lines: lines.map(toQuoteLine),
-      subtotalCents: lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0),
+      subtotalCents: lines.reduce((sum, { line }) => sum + line.unitPriceCents * line.quantity, 0),
     };
   }
 }
@@ -80,7 +80,8 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
  * le relire ailleurs pourrait donner un autre nombre entre-temps. Sans trace —
  * une ligne qu'aucune règle n'a touchée — le prix final EST le tarif d'entrée.
  */
-function toQuoteLine(line: OrderLineInput): OrderQuoteLineView {
+function toQuoteLine(resolved: ResolvedOrderLine): OrderQuoteLineView {
+  const { line } = resolved;
   const trace = line.pricing ?? null;
   return {
     sku: line.sku,
@@ -91,5 +92,9 @@ function toQuoteLine(line: OrderLineInput): OrderQuoteLineView {
     vatRate: line.vatRate,
     steps: trace?.steps ?? [],
     floored: trace?.floored ?? false,
+    sealedByRuleId: resolved.sealedByRuleId,
+    sealedRuleIds: resolved.sealedRuleIds,
+    volumeTiers: resolved.volumeTiers,
+    floorCents: resolved.floorCents,
   };
 }

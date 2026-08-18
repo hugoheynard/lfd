@@ -83,6 +83,7 @@ interface RuleSeed {
   readonly amountCents?: number;
   readonly validFrom?: Date;
   readonly validTo?: Date | null;
+  readonly stacksOverMercuriale?: boolean;
 }
 
 /** Sème une règle directement : la saisie staff est la slice S3. */
@@ -105,6 +106,7 @@ function seedRule(seed: RuleSeed) {
       validFrom: seed.validFrom ?? new Date("2026-01-01T00:00:00.000Z"),
       validTo: seed.validTo ?? null,
       label: seed.id,
+      stacksOverMercuriale: seed.stacksOverMercuriale ?? false,
       createdBy: "e2e",
     },
   });
@@ -380,5 +382,136 @@ describe("une règle change le prix facturé", () => {
     const response = await placeOrder(1);
 
     expect(await unitPriceOf(jsonBody<{ id: string }>(response).id)).toBe(CANONICAL);
+  });
+});
+
+/**
+ * **La mercuriale scelle** — éprouvé sur le chemin qui FACTURE, pas sur une
+ * simulation.
+ *
+ * Avant le 2026-08-18, la chaîne composait jusqu'au bout : un compte au tarif
+ * négocié empochait aussi la promotion publique. Personne n'avait décidé ce
+ * cumul, et il ne se voyait qu'en comparant deux factures.
+ */
+describe("le scellement par la mercuriale", () => {
+  it("une promotion ne s'applique PAS par-dessus un tarif négocié", async () => {
+    await seedRule({ id: "merc", stage: "mercuriale", amountCents: 180 });
+    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+
+    const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
+
+    // 180 et non 162 : la promotion a été écartée, pas appliquée.
+    expect(line.unitPriceCents).toBe(180);
+    // La trace ne cite QUE l'étage qui a joué — elle décrit ce qui a fait le
+    // prix, pas ce qui aurait pu le faire.
+    expect(line.pricingSteps).toEqual([
+      { stage: "mercuriale", ruleId: "merc", label: "merc", resultCents: 180 },
+    ]);
+  });
+
+  it("une promotion explicitement cumulable franchit le scellement", async () => {
+    await seedRule({ id: "merc", stage: "mercuriale", amountCents: 180 });
+    await seedRule({
+      id: "promo",
+      stage: "promotion",
+      bp: 1000,
+      stacksOverMercuriale: true,
+    });
+
+    const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
+
+    expect(line.unitPriceCents).toBe(162);
+  });
+
+  /**
+   * Le cas le plus coûteux du lot, et le moins visible : un tarif négocié EST
+   * déjà le prix du volume négocié. Le barème par-dessus accordait une seconde
+   * fois la remise que la mercuriale avait consentie en euros.
+   */
+  it("un barème de volume ne franchit jamais un tarif négocié", async () => {
+    await seedRule({ id: "merc", stage: "mercuriale", amountCents: 180 });
+    await ctx.prisma.volumeLadder.create({
+      data: {
+        id: "ladder",
+        scopeType: "global",
+        scopeId: null,
+        audienceType: "all",
+        audienceId: null,
+        unit: "percent",
+        tiers: [{ minQuantity: 10, value: 2000 }],
+        label: "10+ à −20 %",
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        createdBy: "e2e",
+      },
+    });
+
+    const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(20)).id);
+
+    expect(line.unitPriceCents).toBe(180);
+  });
+});
+
+/**
+ * **Le devis, et ce qu'il rend visible.**
+ *
+ * Un prix seul ne se discute pas au téléphone. Le devis rend donc la grille du
+ * barème — chaque palier RÉSOLU, pas un « canonique moins la remise » — et le
+ * scellement quand il y en a un. C'est ce qui permet d'éprouver le système sur
+ * des volumes sans passer dix commandes pour connaître la réponse.
+ */
+describe("POST /orders/quote — la grille et le scellement", () => {
+  const quote = (quantity: number) =>
+    ctx
+      .asSub("auth0|solo")
+      .post("/orders/quote")
+      .send({ companyId: null, lines: [{ sku: SKU, quantity }] });
+
+  it("rend le barème palier par palier, résolu", async () => {
+    await ctx.prisma.volumeLadder.create({
+      data: {
+        id: "ladder",
+        scopeType: "global",
+        scopeId: null,
+        audienceType: "all",
+        audienceId: null,
+        unit: "percent",
+        tiers: [
+          { minQuantity: 10, value: 1000 },
+          { minQuantity: 50, value: 2000 },
+        ],
+        label: "Barème",
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        createdBy: "e2e",
+      },
+    });
+
+    const body = jsonBody<{
+      lines: {
+        unitPriceCents: number;
+        volumeTiers: { minQuantity: number; unitPriceCents: number }[] | null;
+      }[];
+    }>(await quote(1).expect(200));
+
+    // À 1 pièce aucun palier n'est atteint : le prix reste le canonique…
+    expect(body.lines[0]?.unitPriceCents).toBe(CANONICAL);
+    // …mais la grille dit ce que coûteraient 10 et 50, ce qui est la question.
+    expect(body.lines[0]?.volumeTiers).toEqual([
+      { minQuantity: 10, unitPriceCents: 180, discountBp: 1000 },
+      { minQuantity: 50, unitPriceCents: 160, discountBp: 2000 },
+    ]);
+  });
+
+  it("nomme la mercuriale qui scelle, et la règle qu'elle écarte", async () => {
+    await seedRule({ id: "merc", stage: "mercuriale", amountCents: 180 });
+    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+
+    const body = jsonBody<{
+      lines: { sealedByRuleId: string | null; sealedRuleIds: string[] }[];
+    }>(await quote(1).expect(200));
+
+    expect(body.lines[0]?.sealedByRuleId).toBe("merc");
+    // Sans ce champ, un commercial ne saurait pas si sa promotion a expiré, si
+    // elle a été évincée par plus spécifique, ou si le tarif du client l'écarte.
+    expect(body.lines[0]?.sealedRuleIds).toEqual(["promo"]);
   });
 });

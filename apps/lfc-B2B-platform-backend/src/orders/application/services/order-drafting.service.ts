@@ -26,22 +26,9 @@ import {
   NoDeliveryZoneForPostalCodeError,
   PickupClosedAtRequestedTimeError,
   PickupNotConfiguredError,
-  UnknownSkuError,
 } from "../../domain/errors/order-errors.js";
-import { pricingContextFor } from "../../../pricing/application/pricing-context.js";
-import { PriceFloorReader } from "../../../pricing/domain/ports/price-floor.reader.js";
-import { PriceRuleReader } from "../../../pricing/domain/ports/price-rule.reader.js";
-import { decideFloor } from "../../../pricing/domain/floor-policy.js";
-import { observedRatioBp } from "../../../pricing/domain/elasticity.js";
-import { rollingWindows } from "../../../pricing/domain/elasticity-windows.js";
-import { SkuVolumeReader } from "../../../pricing/domain/ports/sku-volume.reader.js";
-import { VolumeLadderReader } from "../../../pricing/domain/ports/volume-ladder.reader.js";
-import { ladderAsRule } from "../../../pricing/domain/volume-ladder.js";
-import { floorCentsFor, resolveScopedFloor } from "../../../pricing/domain/resolve-floor.js";
-import { resolvePrice } from "../../../pricing/domain/resolve-price.js";
-import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.js";
-import type { PriceRule, ScopedPriceFloor } from "../../../pricing/domain/price-rule.js";
-import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
+import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
+import type { OrderParties } from "./order-parties.js";
 
 /** Ce qu'un panier demande, quelle que soit la porte par laquelle il arrive. */
 export interface OrderContent {
@@ -61,13 +48,6 @@ export interface OrderContent {
   readonly signatureRequired?: boolean | undefined;
   readonly note: string;
   readonly lines: readonly OrderLineRequest[];
-}
-
-/** Qui est concerné : le client porté, et le membre de l'équipe s'il a saisi. */
-export interface OrderParties {
-  readonly companyId: string | null;
-  readonly placedByUserId: string;
-  readonly placedByStaffId: string | null;
 }
 
 /** Acheminement résolu : les snapshots à figer et les deux ajustements de prix. */
@@ -99,11 +79,7 @@ interface ResolvedFulfillment {
 @Injectable()
 export class OrderDrafting {
   constructor(
-    private readonly catalog: ProductCatalogReader,
-    private readonly priceRules: PriceRuleReader,
-    private readonly priceFloors: PriceFloorReader,
-    private readonly skuVolumes: SkuVolumeReader,
-    private readonly volumeLadders: VolumeLadderReader,
+    private readonly linePricing: OrderLinePricing,
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
     private readonly deliveryDefaults: DeliveryDefaultsReader,
@@ -111,7 +87,8 @@ export class OrderDrafting {
 
   /** Compose la commande. Le règlement reste à décider par l'appelant. */
   async draft(parties: OrderParties, content: OrderContent): Promise<Order> {
-    const lines = await this.resolveLines(content.lines, parties);
+    const resolved = await this.linePricing.resolve(content.lines, parties);
+    const lines = resolved.map((entry) => entry.line);
     const subtotalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
     const acheminement = await this.resolveFulfillment(content, subtotalCents);
     const agreed = agreeFulfillment(
@@ -161,8 +138,8 @@ export class OrderDrafting {
   async quote(
     parties: OrderParties,
     lines: readonly OrderLineRequest[],
-  ): Promise<OrderLineInput[]> {
-    return this.resolveLines(lines, parties);
+  ): Promise<ResolvedOrderLine[]> {
+    return this.linePricing.resolve(lines, parties);
   }
 
   /**
@@ -234,133 +211,6 @@ export class OrderDrafting {
       discountAdjustment: null,
       deliveryFeeCents: cartAdjustmentCents(zone.fee, subtotalCents),
     };
-  }
-
-  /**
-   * Fusionne les lignes par SKU (quantités additionnées) puis résout chacune —
-   * c'est ici que le prix devient autoritaire, jamais celui du client.
-   *
-   * Trois étapes, dans cet ordre : le **catalogue** donne le prix canonique, les
-   * **règles tarifaires** l'altèrent, et le **plancher** arbitre le résultat. La
-   * fusion par SKU précède les trois, et
-   * c'est ce qui rend le palier de volume juste : deux lignes de 60 croissants
-   * ouvrent le palier « 100+ », alors qu'aucune ne l'ouvrirait seule.
-   */
-  private async resolveLines(
-    input: readonly OrderLineRequest[],
-    parties: OrderParties,
-  ): Promise<OrderLineInput[]> {
-    const quantities = new Map<string, number>();
-    for (const line of input) {
-      quantities.set(line.sku, (quantities.get(line.sku) ?? 0) + line.quantity);
-    }
-
-    // L'instant est pris UNE fois pour toute la commande : deux lignes résolues à
-    // quelques millisecondes d'écart pourraient sinon tomber de part et d'autre
-    // du basculement d'une promotion.
-    const at = new Date();
-
-    // Le catalogue est résolu EN UN LOT, avant la boucle : depuis qu'il vient de
-    // la base, le résoudre ligne à ligne ferait une requête par ligne de panier
-    // sur le chemin qui facture.
-    const catalogue = await this.catalog.resolveMany([...quantities.keys()]);
-
-    return Promise.all(
-      [...quantities].map(async ([sku, quantity]) => {
-        const item = catalogue.get(sku) ?? null;
-        if (item === null) {
-          throw new UnknownSkuError(sku);
-        }
-        const context = pricingContextFor(item.sku, item.category, quantity, parties, at);
-        const [rules, floors, ladders] = await Promise.all([
-          this.priceRules.candidatesFor(context),
-          this.priceFloors.candidatesFor(context),
-          this.volumeLadders.candidatesFor(context),
-        ]);
-
-        // Le barème de volume rejoint les règles sous la forme de la règle
-        // d'étage volume qu'il est à CETTE quantité. La spécificité arbitre
-        // ensuite comme d'habitude — un barème de produit l'emporte sur celui de
-        // sa famille, sans que la résolution apprenne un cas de plus.
-        const volumeRules = ladders
-          .map((ladder) => ladderAsRule(ladder, context))
-          .filter((rule): rule is PriceRule => rule !== null);
-
-        // Quel plancher VISE cet article, puis lequel de ses étages s'ouvre :
-        // deux questions distinctes, la seconde dépendant de la commande et de
-        // l'historique.
-        const scoped = resolveScopedFloor(floors, context);
-        const decision =
-          scoped === null
-            ? null
-            : decideFloor(scoped.policy, {
-                quantity,
-                observedVolumeRatioBp: await this.observedRatio(item.sku, scoped, at),
-              });
-
-        const resolved = resolvePrice(
-          item.unitPriceCents,
-          [...rules, ...volumeRules],
-          context,
-          decision?.applied ?? null,
-        );
-
-        return {
-          sku: item.sku,
-          productName: item.name,
-          unitPriceCents: resolved.finalCents,
-          vatRate: item.vatRate,
-          quantity,
-          // La trace part avec le prix, et pour la même raison : dans six mois,
-          // les règles qui l'ont produit peuvent avoir été retirées. Sans elle,
-          // la seule réponse à « pourquoi ce prix ? » serait « c'était le prix ».
-          pricing: {
-            basePriceCents: resolved.basePriceCents,
-            steps: resolved.steps,
-            floored: resolved.floored,
-            // La décision de plancher est figée AVEC le prix. C'est ce qui rend
-            // le plancher dynamique tenable : sans la mesure consignée, un prix
-            // qui dépend de l'historique cesse d'être explicable dès que
-            // l'historique bouge. Elle ne se relit jamais.
-            floorDecision:
-              decision === null
-                ? null
-                : {
-                    tier: decision.tier,
-                    floorCents: floorCentsFor(decision.applied, item.unitPriceCents),
-                    observedVolumeRatioBp: decision.unlock?.observedVolumeRatioBp ?? null,
-                    quantityMet: decision.unlock?.quantityMet ?? true,
-                    volumeMet: decision.unlock?.volumeMet ?? true,
-                  },
-          },
-        };
-      }),
-    );
-  }
-
-  /**
-   * Le ratio de volume observé sur cet article — **uniquement quand il décide
-   * de quelque chose**.
-   *
-   * Aucune requête si le plancher n'a pas de porte, ou si sa clé ne parle pas de
-   * volume : la très grande majorité des commandes ne paie donc rien pour cette
-   * mesure. C'est la seule façon d'admettre une lecture d'historique sur le
-   * chemin qui facture sans le ralentir pour tout le monde.
-   */
-  private async observedRatio(
-    sku: string,
-    scoped: ScopedPriceFloor,
-    at: Date,
-  ): Promise<number | null> {
-    if (scoped.policy.dynamic?.unlock.minVolumeRatioBp == null) {
-      return null;
-    }
-    const windows = rollingWindows(at);
-    const [baseline, observed] = await Promise.all([
-      this.skuVolumes.volumesFor([sku], windows.baseline),
-      this.skuVolumes.volumesFor([sku], windows.observed),
-    ]);
-    return observedRatioBp(baseline.get(sku) ?? 0, observed.get(sku) ?? 0);
   }
 }
 

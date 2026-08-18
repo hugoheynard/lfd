@@ -14,6 +14,7 @@ import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.h
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
+import { OrderLinePricing } from "./application/services/order-line-pricing.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
 import { GetOrderDraftHandler } from "./application/queries/get-order-draft.handler.js";
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
@@ -82,6 +83,7 @@ import { OrdersController } from "./http/orders.controller.js";
   ],
   providers: [
     OrderDrafting,
+    OrderLinePricing,
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
     ConfirmOrderPaymentHandler,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { OrderLinePricingTrace, PriceStepView } from "./pricing.js";
+import type { OrderLinePricingTrace, PriceStepView, VolumeTierPriceView } from "./pricing.js";
 
 import {
   billingAddressPayloadSchema,
@@ -529,6 +529,26 @@ export interface OrderQuoteLineView {
   readonly steps: readonly PriceStepView[];
   /** Une limite a-t-elle **relevé** ce prix ? */
   readonly floored: boolean;
+  /**
+   * La **mercuriale** qui scelle la chaîne pour ce client, ou `null`.
+   *
+   * Sans elle, un commercial voyant sa promotion absente du devis ne saurait pas
+   * si elle a expiré ou si le tarif négocié du client l'écarte.
+   */
+  readonly sealedByRuleId: string | null;
+  /** Les règles que ce scellement a écartées. */
+  readonly sealedRuleIds: readonly string[];
+  /**
+   * Le barème qui vise l'article, **palier par palier**, ou `null`.
+   *
+   * Chaque ligne est une résolution complète à la quantité du palier, pas un
+   * « canonique × (1 − remise) » : une promotion compose avec le palier, un
+   * plancher peut le relever, et un devis qui l'ignorerait annoncerait un prix
+   * que la commande contredirait.
+   */
+  readonly volumeTiers: readonly VolumeTierPriceView[] | null;
+  /** La limite qui vise l'article, en centimes. `null` = aucune n'est posée. */
+  readonly floorCents: number | null;
 }
 
 export interface OrderQuoteView {

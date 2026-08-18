@@ -32,6 +32,7 @@ import { VolumeLadderReader } from "../../../../pricing/domain/ports/volume-ladd
 import { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volume.reader.js";
 import { PriceRuleReader } from "../../../../pricing/domain/ports/price-rule.reader.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
+import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 
 /**
  * Aucun réglage d'adresse : tout ce que la commande porte y est donc un choix.
@@ -214,11 +215,7 @@ function handler(
   return new PlaceOrderForCustomerHandler(
     guardDouble,
     new OrderDrafting(
-      catalog,
-      noPriceRules,
-      noPriceFloors,
-      noSkuVolumes,
-      noVolumeLadders,
+      new OrderLinePricing(catalog, noPriceRules, noPriceFloors, noSkuVolumes, noVolumeLadders),
       pickups,
       zones,
       noDeliveryDefaults(),
@@ -365,11 +362,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     const free = new PlaceOrderForCustomerHandler(
       guard("orders"),
       new OrderDrafting(
-        gratuit,
-        noPriceRules,
-        noPriceFloors,
-        noSkuVolumes,
-        noVolumeLadders,
+        new OrderLinePricing(gratuit, noPriceRules, noPriceFloors, noSkuVolumes, noVolumeLadders),
         pickups,
         zones,
         noDeliveryDefaults(),
