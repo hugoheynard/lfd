@@ -26,9 +26,12 @@
  * et rien de plus. Un aller-retour serveur à chaque frappe ne changerait pas un
  * centime au résultat.
  *
- * Cela vaut **tant que la mercuriale scelle**. Le jour où une promotion pourra
- * s'empiler (l'override explicite prévu), cette simulation devra passer par la
- * fonction qui facture, comme la grille des paliers l'a toujours fait.
+ * Cela vaut **tant que la mercuriale scelle** — et l'exception existe déjà : une
+ * promotion cochée « par-dessus mercuriale » s'ajoute au tarif négocié. Ce
+ * modèle ne la compte pas, et l'écran le dit (`piercing-rules.ts`) au lieu de
+ * faire semblant. La composer demanderait la fonction qui facture, donc le
+ * serveur ; une simulation qui annonce ce qu'elle ignore vaut mieux qu'une qui
+ * se croit exacte à moitié.
  */
 
 /** Un palier : à partir de cette quantité cumulée, ce prix unitaire. */

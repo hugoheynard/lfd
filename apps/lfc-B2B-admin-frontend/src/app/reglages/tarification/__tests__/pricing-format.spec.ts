@@ -1,4 +1,9 @@
-import type { ElasticityComparison, ItemElasticityView, PricingItemView } from '@lfd/contracts';
+import type {
+  ElasticityComparison,
+  ItemElasticityView,
+  PriceRuleView,
+  PricingItemView,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -9,6 +14,7 @@ import {
   isDiscount,
   isOnTrack,
   ratioLabel,
+  ruleSentence,
   variationDirection,
 } from '../pricing-format';
 
@@ -151,5 +157,42 @@ describe('la date d’un titre', () => {
   it('rend le jour reçu, sans glisser d’un fuseau', () => {
     expect(formatLongDay('2026-09-12')).toBe('12 septembre 2026');
     expect(formatLongDay('2026-01-01')).toBe('1 janvier 2026');
+  });
+});
+
+describe('ruleSentence · le franchissement du scellement', () => {
+  const promotion: PriceRuleView = {
+    id: 'rule_1',
+    stage: 'promotion',
+    scope: { type: 'global', id: null },
+    audience: { type: 'all', id: null },
+    minQuantity: null,
+    effect: { nature: 'alter', direction: 'decrease', mode: 'percent', value: 1_000 },
+    label: 'Rentrée',
+    validFrom: '2026-09-01T00:00:00.000Z',
+    validTo: null,
+    status: 'active',
+    stacksOverMercuriale: false,
+    createdBy: 'staff',
+    createdAt: '2026-08-01T00:00:00.000Z',
+    pausedAt: null,
+    pausedBy: null,
+    archivedAt: null,
+    archivedBy: null,
+    archiveReason: null,
+  };
+
+  it('se tait quand la règle respecte le scellement — le défaut', () => {
+    expect(ruleSentence(promotion)).not.toContain('mercuriale');
+  });
+
+  /**
+   * La décision la plus lourde qu'on puisse cocher sur une règle : une remise
+   * par-dessus un tarif déjà négocié. Elle doit se lire là où la règle se lit.
+   */
+  it("le dit dès qu'elle le franchit", () => {
+    expect(ruleSentence({ ...promotion, stacksOverMercuriale: true })).toContain(
+      'par-dessus mercuriale',
+    );
   });
 });

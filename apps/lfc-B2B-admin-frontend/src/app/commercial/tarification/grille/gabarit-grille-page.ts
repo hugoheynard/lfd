@@ -46,14 +46,15 @@ import {
 } from './mercuriale-row';
 import { ArticleSimulation } from '../simulation/article-simulation/article-simulation';
 import { MercurialeMix } from '../simulation/mercuriale-mix/mercuriale-mix';
+import { piercingRuleLabels } from '../simulation/piercing-rules';
 import { mixArticlesOf } from '../simulation/mercuriale-mix';
 import { gridRowOf, locateSimulation } from '../simulation/locate-simulation';
 import type { ScenarioTier } from '../simulation/revenue-model';
 
 /**
- * Le segment d'URL de chaque nature. Une table plutôt qu'une interpolation :
- * « devis » ne prend pas de `s`, et un gabarit enregistré aurait atterri sur une
- * route inexistante — après un `replaceUrl`, donc sans retour possible.
+ * Le segment d'URL de chaque nature. Une table et non une interpolation :
+ * « devis » ne prend pas de `s`, et le gabarit enregistré aurait atterri sur une
+ * route inexistante — après un `replaceUrl`, donc sans retour.
  */
 const SEGMENT: Readonly<Record<PriceTemplateKind, string>> = {
   mercuriale: 'mercuriales-templates',
@@ -128,10 +129,8 @@ export class GabaritGrillePage {
    * se lit pas sur la même échelle. */
   protected readonly simulated = signal<string | null>(null);
 
-  /**
-   * Les volumes prévus, **tenus par la grille** : ils alimentent le partage en
-   * tête de page ET la simulation d'un article. Deux champs auraient divergé.
-   */
+  /** Les volumes prévus, **tenus par la grille** : ils alimentent le partage en
+   * tête de page ET la simulation. Deux champs auraient divergé. */
   protected readonly volumes = signal<PlannedVolumes>(new Map());
 
   /** Ce que les autres clients paient déjà, par SKU. Vide = rien en place. */
@@ -184,6 +183,9 @@ export class GabaritGrillePage {
     );
   }
 
+  /** Les promotions qui s'ajoutent PAR-DESSUS une mercuriale : la courbe les ignore. */
+  protected readonly piercing = computed(() => piercingRuleLabels(this.board()));
+
   /** Le plan tel que le partage en tête de page le lit. */
   protected readonly mixArticles = computed(() =>
     mixArticlesOf(this.categories(), this.lines(), this.volumes()),
@@ -204,10 +206,8 @@ export class GabaritGrillePage {
     return gridRowOf(this.slot(), categoryId, index);
   }
 
-  /**
-   * Les paliers simulés : ceux que le SERVEUR accepterait, pas ceux qui sont à
-   * l'écran — un palier à moitié tapé ne doit pas faire bouger la courbe.
-   */
+  /** Les paliers simulés : ceux que le SERVEUR accepterait, pas ceux qui sont à
+   * l'écran — un palier à moitié tapé ne doit pas faire bouger la courbe. */
   protected readonly simulatedTiers = computed<readonly ScenarioTier[]>(() => {
     const sku = this.simulated();
     return sku === null ? [] : (this.lines().find((line) => line.sku === sku)?.tiers ?? []);

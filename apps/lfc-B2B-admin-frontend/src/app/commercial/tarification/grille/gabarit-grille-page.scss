@@ -316,6 +316,13 @@ button.node:focus-visible {
   opacity: 0.8;
 }
 
+// La mise en garde qui change la lecture de tout ce qui suit : elle prend le
+// ton d'alerte, les autres restent neutres.
+.caveat.is-warning {
+  border-left-color: var(--fold-color-warning-border);
+  color: var(--fold-color-warning-text);
+}
+
 // Le volume prévu : discret, dans la carte de l'article. Il n'est pas une
 // décision de prix — il dit sur quoi la décision porte.
 .planned-field {

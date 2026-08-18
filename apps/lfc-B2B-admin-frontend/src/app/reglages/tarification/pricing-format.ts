@@ -83,11 +83,21 @@ export function roomPercent(maxDiscountBp: number): string {
  *
  * L'étage y figure **en toutes lettres** : c'est ce qui permet à la couleur du
  * rail de renforcer l'information sans jamais la porter seule.
+ *
+ * **Le franchissement du scellement y figure aussi**, et c'est le plus important
+ * des trois. Une mercuriale scelle : par défaut, une promotion ne touche pas les
+ * comptes au tarif négocié. La règle qui porte l'override accorde une remise
+ * PAR-DESSUS une remise déjà consentie — c'est la décision la plus lourde qu'on
+ * puisse cocher sur une règle, et elle se cochait sans laisser la moindre trace
+ * à l'écran une fois posée. Dite ici, elle apparaît partout où une règle se
+ * résume : sur son nœud, sur la frise, et dans le panneau qui demande pourquoi
+ * on l'archive.
  */
 export function ruleSentence(rule: PriceRuleView): string {
   const stage = PRICE_STAGE_LABELS[rule.stage];
   const tier = rule.minQuantity === null ? '' : ` dès ${String(rule.minQuantity)}`;
-  return `${stage} ${ruleEffect(rule)}${tier}`;
+  const pierces = rule.stacksOverMercuriale ? ' · par-dessus mercuriale' : '';
+  return `${stage} ${ruleEffect(rule)}${tier}${pierces}`;
 }
 
 function ruleEffect(rule: PriceRuleView): string {

@@ -59,6 +59,13 @@ export class ArticleSimulation {
    * mercuriale aurait cessé de correspondre à ce que montrent les courbes.
    */
   readonly targetVolume = input.required<number>();
+  /**
+   * Une promotion franchit-elle le scellement ? La courbe ne la compte PAS —
+   * composer une promotion demanderait la fonction qui facture, donc le serveur.
+   * Une simulation qui annonce ce qu'elle ignore vaut mieux qu'une qui se croit
+   * exacte à moitié.
+   */
+  readonly pierced = input(false);
 
   protected readonly euros = formatEuros;
   protected readonly nativeValue = nativeValue;

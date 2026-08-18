@@ -160,3 +160,13 @@
 .exit-delta.is-positive {
   color: var(--fold-color-success-text);
 }
+
+// Au ras de la courbe, pas en tête de page : c'est ici qu'on lit le chiffre
+// qu'elle dément.
+.pierced {
+  margin: 0;
+  padding-left: var(--fold-space-3, 0.75rem);
+  border-left: 2px solid var(--fold-color-warning-border);
+  color: var(--fold-color-warning-text);
+  font-size: var(--fold-text-sm, 0.875rem);
+}

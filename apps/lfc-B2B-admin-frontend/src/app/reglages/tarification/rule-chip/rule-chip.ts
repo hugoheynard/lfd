@@ -11,6 +11,12 @@ import { ruleSentence } from '../pricing-format';
  * affichaient la même chose à deux endroits, avec les mêmes trois gestes. La
  * troisième copie aurait divergé sur le cas qui compte — l'état suspendu.
  *
+ * Une **troisième** marque, d'une autre nature : la règle qui franchit le
+ * scellement d'une mercuriale. Ce n'est ni un état ni un arbitrage, c'est une
+ * décision — celle d'accorder une remise par-dessus un tarif déjà négocié. Elle
+ * se cochait à la pose et ne se voyait plus jamais ; elle est maintenant dite en
+ * toutes lettres par le résumé, et le rail la double.
+ *
  * Deux marques distinctes, parce que ce sont deux faits sans rapport :
  * **supplantée** (une règle plus précise gagne son étage) est barrée ;
  * **en pause** (quelqu'un l'a arrêtée) est estompée. Les confondre laisserait
@@ -25,6 +31,7 @@ import { ruleSentence } from '../pricing-format';
     '[class]': 'stageClass()',
     '[class.is-superseded]': 'superseded()',
     '[class.is-paused]': "rule().status === 'paused'",
+    '[class.is-piercing]': 'rule().stacksOverMercuriale',
   },
 })
 export class RuleChip {

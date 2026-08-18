@@ -1561,3 +1561,28 @@ pas ce que les autres paient.
 
 Zéro observation ne rend pas « zéro client » : l'article **disparaît** de la
 liste, et l'écran n'affiche alors aucun indicateur.
+
+
+### L'override de scellement : posé sans trace, jusqu'ici
+
+`stacksOverMercuriale` existe de bout en bout depuis le scellement : le contrat
+le porte, l'agrégat le refuse sur l'étage `mercuriale` lui-même (une mercuriale
+ne franchit pas une mercuriale), le moteur l'honore, et le panneau de règle le
+propose en case à cocher, décochée par défaut.
+
+Ce qui manquait n'était pas la mécanique mais **la trace à l'écran**. Une fois la
+règle posée, rien ne la distinguait des autres : la décision la plus lourde qu'on
+puisse cocher — accorder une remise **par-dessus** un tarif déjà négocié — était
+invisible partout où la règle se relisait.
+
+Elle est désormais dite dans `ruleSentence`, donc **partout où une règle se
+résume** en une ligne : sur son nœud, sur la frise, et dans le panneau qui
+demande pourquoi on l'archive. Le rail du chip la double d'un trait dédoublé —
+qui renforce le mot sans jamais le porter seul.
+
+Et là où elle change un chiffre, elle se dénonce : la grille d'un gabarit et les
+courbes de simulation supposent que la mercuriale scelle. Une promotion qui la
+franchit descend le prix **sous** ce qu'elles annoncent. L'écran les compte et
+prévient plutôt que de composer à moitié — composer demanderait la fonction qui
+facture, donc le serveur, et une simulation qui se croit exacte à moitié est pire
+que celle qui annonce ce qu'elle ignore.

@@ -103,3 +103,12 @@
   background: var(--fold-color-surface-sunken, rgb(0 0 0 / 6%));
   color: var(--fold-color-text);
 }
+
+// Franchit le scellement : le rail se dédouble. Le fait est déjà écrit dans le
+// résumé (« par-dessus mercuriale ») — la marque le renforce, elle ne le porte
+// pas seule, et elle survit à un rendu en couleurs forcées.
+:host(.is-piercing) {
+  border-left-style: double;
+  border-left-width: 4px;
+  border-left-color: var(--fold-color-warning-border, currentcolor);
+}

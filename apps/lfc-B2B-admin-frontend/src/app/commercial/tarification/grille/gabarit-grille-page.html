@@ -63,6 +63,18 @@
       final peut différer de ce que vous saisissez.
     </p>
 
+    <!-- L'exception au scellement, dite là où elle change la lecture. Une
+         promotion cochée « par-dessus mercuriale » descend le prix SOUS ce que
+         cette grille annonce : le taire ferait de cet écran un menteur, pour la
+         seule raison qu'on aurait oublié une case cochée ailleurs. -->
+    @if (piercing().length > 0) {
+      <p class="caveat is-warning">
+        <strong>{{ piercing().length }} promotion(s) franchissent le scellement</strong>
+        ({{ piercing().join(', ') }}) : elles s'ajoutent au tarif négocié. Le prix réellement
+        facturé sera <strong>plus bas</strong> que ce que cette grille et les simulations annoncent.
+      </p>
+    }
+
     <!--
       **Ce que le lot pèse, avant la liste.** La question du haut de page n'est
       pas celle d'un article : sur quoi repose le chiffre de ce devis, et ce
@@ -280,6 +292,7 @@
                   [floorCents]="slot.floorCents"
                   [tiers]="simulatedTiers()"
                   [targetVolume]="plannedVolumeOf(slot.sku)"
+                  [pierced]="piercing().length > 0"
                 />
               </div>
             }
