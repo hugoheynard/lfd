@@ -4,11 +4,6 @@
     <h2 class="title">{{ isNew() ? 'Nouveau gabarit' : label() }}</h2>
   </div>
   <div class="head-actions">
-    @if (posable()) {
-      <button foldButton emphasis="outline" intent="neutral" (click)="pose()">
-        Poser chez un client
-      </button>
-    }
     <button foldButton [disabled]="!canSave()" (click)="save()">
       {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
     </button>
@@ -37,7 +32,7 @@
       <strong>{{ summary().priced }}</strong> article(s) tarifé(s)
       @if (summary().averageImpactBp !== null) {
         ·
-        <span class="delta" [class]="'is-' + direction(summary().averageImpactBp!)">{{
+        <span class="impact-value" [class]="'is-' + direction(summary().averageImpactBp!)">{{
           percent(summary().averageImpactBp!)
         }}</span>
         au catalogue en moyenne
@@ -46,6 +41,57 @@
         · <strong>{{ summary().floored }}</strong> relevé(s) par une limite
       }
     </p>
+
+    <!--
+      **Poser, en ligne.** Le geste appartient à l'en-tête de la grille et non à
+      un tiroir : ce qu'on pose est ce qu'on a sous les yeux, et un panneau aurait
+      masqué la grille au moment même de choisir chez qui la poser.
+    -->
+    @if (posable()) {
+      <section class="pose">
+        <div class="pose-field">
+          <label class="pose-label" for="pose-company">Poser chez</label>
+          <select
+            id="pose-company"
+            [value]="companyId()"
+            (change)="companyId.set(nativeValue($event))"
+          >
+            @for (company of companies(); track company.id) {
+              <option [value]="company.id">{{ company.raisonSociale }}</option>
+            }
+          </select>
+        </div>
+        <div class="pose-field">
+          <label class="pose-label" for="pose-from">À partir du</label>
+          <input
+            id="pose-from"
+            type="date"
+            [value]="validFrom()"
+            (change)="validFrom.set(nativeValue($event))"
+          />
+        </div>
+        <div class="pose-field">
+          <label class="pose-label" for="pose-to"
+            >Jusqu'au <span class="pose-optional">facultatif</span></label
+          >
+          <input
+            id="pose-to"
+            type="date"
+            [value]="validTo()"
+            (change)="validTo.set(nativeValue($event))"
+          />
+        </div>
+        <span class="pose-spacer"></span>
+        <button foldButton [disabled]="!canPose()" (click)="pose()">
+          {{ posing() ? 'Pose…' : 'Poser la grille' }}
+        </button>
+        <p class="pose-note">
+          Le contenu posé est celui de la grille ci-dessous. Si ce client a déjà une mercuriale sur
+          l'un de ces articles pour cette période, la pose est <strong>refusée</strong> plutôt que
+          d'écraser ce qui est déjà décidé.
+        </p>
+      </section>
+    }
 
     <!--
       La mise en garde vient AVANT la grille, comme sur la tarification générale
@@ -154,13 +200,11 @@
                  elle s'affiche même sur un article non tarifé. -->
             <div class="cell col-limit" [style.gridRow]="index + 1">
               @if (row.floorCents === null) {
-                <span class="muted">—</span>
+                <span class="node node-empty muted">—</span>
               } @else {
                 <span class="node node-guard" [class.is-active]="row.floored">
-                  {{ euros(row.floorCents) }}
-                  @if (row.floored) {
-                    <span class="guard-meta">a relevé</span>
-                  }
+                  <span class="guard-value">{{ euros(row.floorCents) }}</span>
+                  <span class="guard-meta">{{ row.floored ? 'a relevé' : 'limite' }}</span>
                 </span>
               }
             </div>
@@ -168,19 +212,25 @@
             <!-- Colonne 4 — ce qu'un commercial peut encore lâcher. -->
             <div class="cell col-room" [style.gridRow]="index + 1">
               @if (row.roomCents === null) {
-                <span class="muted">—</span>
+                <span class="node node-empty muted">—</span>
               } @else {
-                <span class="room">{{ euros(row.roomCents) }}</span>
+                <span class="node node-room">
+                  <span class="room-value">{{ euros(row.roomCents) }}</span>
+                  <span class="guard-meta">accordable</span>
+                </span>
               }
             </div>
 
             <!-- Colonne 5 — ce que la grille coûte face au catalogue. -->
             <div class="cell col-impact" [style.gridRow]="index + 1">
               @if (row.impactBp === null) {
-                <span class="muted">—</span>
+                <span class="node node-empty muted">—</span>
               } @else {
-                <span class="delta" [class]="'is-' + direction(row.impactBp)">
-                  {{ percent(row.impactBp) }}
+                <span class="node node-impact">
+                  <span class="impact-value" [class]="'is-' + direction(row.impactBp)">
+                    {{ percent(row.impactBp) }}
+                  </span>
+                  <span class="guard-meta">au catalogue</span>
                 </span>
               }
             </div>
@@ -188,11 +238,14 @@
             <!-- Colonne 6 — le prix RÉELLEMENT facturé, limite comprise. -->
             <div class="cell col-final" [style.gridRow]="index + 1">
               @if (row.finalCents === null) {
-                <span class="muted">tarif B2B</span>
+                <span class="node node-empty muted">tarif B2B</span>
               } @else {
-                <span class="final" [class.is-floored]="row.floored">{{
-                  euros(row.finalCents)
-                }}</span>
+                <span class="node node-final" [class.is-floored]="row.floored">
+                  <span class="final-value">{{ euros(row.finalCents) }}</span>
+                  @if (row.floored) {
+                    <span class="guard-meta">relevé par la limite</span>
+                  }
+                </span>
               }
             </div>
           }

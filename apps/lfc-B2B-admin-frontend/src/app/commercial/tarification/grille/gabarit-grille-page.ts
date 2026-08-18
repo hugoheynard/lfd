@@ -12,14 +12,14 @@ import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
   FoldInputComponent,
-  FoldPanelHostService,
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
 import { nativeValue } from '../../../shared/native-input';
 import { TarificationService } from '../../../reglages/tarification/tarification.service';
 import { PriceTemplatesService } from '../templates.service';
-import { PoserPanel, type PoserPanelData } from '../poser-panel/poser-panel';
+import type { AdminCompany } from '../../../comptes-clients/admin-company';
+import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.service';
 import { centsOf, eurosField } from './price-field';
 import { mercurialeRow, tally, type MercurialeRow } from './mercuriale-row';
 
@@ -80,7 +80,7 @@ export class GabaritGrillePage {
 
   private readonly templates = inject(PriceTemplatesService);
   private readonly tarification = inject(TarificationService);
-  private readonly panels = inject(FoldPanelHostService);
+  private readonly companiesService = inject(AdminCompaniesService);
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
 
@@ -98,6 +98,17 @@ export class GabaritGrillePage {
   protected readonly draft = signal<ReadonlyMap<string, readonly DraftTier[]>>(new Map());
   /** L'identifiant réel, une fois le gabarit composé. */
   protected readonly saved = signal<string | null>(null);
+
+  // ─── Poser, en ligne ───────────────────────────────────────────────────────
+  protected readonly companies = signal<readonly AdminCompany[]>([]);
+  protected readonly companyId = signal('');
+  protected readonly validFrom = signal(new Date().toISOString().slice(0, 10));
+  protected readonly validTo = signal('');
+  protected readonly posing = signal(false);
+
+  protected readonly canPose = computed(
+    () => this.companyId() !== '' && this.validFrom() !== '' && !this.posing(),
+  );
 
   protected readonly categories = computed(() => this.board()?.categories ?? []);
   protected readonly isNew = computed(() => this.id() === 'nouveau');
@@ -120,8 +131,15 @@ export class GabaritGrillePage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      const board = await this.tarification.read();
+      const [board, companies] = await Promise.all([
+        this.tarification.read(),
+        // Chargée avec le tableau : la barre « poser » vit dans l'en-tête, donc
+        // elle doit être prête quand la grille l'est.
+        this.companiesService.list(),
+      ]);
       this.board.set(board);
+      this.companies.set(companies);
+      this.companyId.set(companies[0]?.id ?? '');
       if (!this.isNew()) {
         const template = await this.templates.byId(this.id());
         this.label.set(template.label);
@@ -268,16 +286,33 @@ export class GabaritGrillePage {
     }
   }
 
+  /**
+   * **Poser la grille chez un client**, depuis l'en-tête.
+   *
+   * Ce qui est posé est ce qu'on a sous les yeux : le contenu ne se re-choisit
+   * pas, et il n'y a rien à confirmer dans un tiroir. Un **recouvrement arrête
+   * la pose** — si le client a déjà une mercuriale sur un de ces articles à ce
+   * seuil pour cette période, le serveur refuse plutôt que d'écraser une
+   * décision déjà prise.
+   */
   protected async pose(): Promise<void> {
     const id = this.saved();
-    if (id === null) {
+    if (id === null || !this.canPose()) {
       return;
     }
-    const data: PoserPanelData = { templateId: id, label: this.label() };
-    const posed = await this.panels.open<PoserPanelData, number>(PoserPanel, { data, width: 'md' })
-      .closed;
-    if (typeof posed === 'number') {
-      this.notify.success(`${String(posed)} règle(s) de mercuriale posée(s).`);
+    this.posing.set(true);
+    try {
+      const { posedRules } = await this.templates.apply(id, {
+        companyId: this.companyId(),
+        validFrom: new Date(`${this.validFrom()}T00:00:00.000Z`).toISOString(),
+        validTo:
+          this.validTo() === '' ? null : new Date(`${this.validTo()}T00:00:00.000Z`).toISOString(),
+      });
+      this.notify.success(`${String(posedRules)} règle(s) de mercuriale posée(s).`);
+    } catch (error) {
+      this.notify.error(error, "La grille n'a pas pu être posée.");
+    } finally {
+      this.posing.set(false);
     }
   }
 
