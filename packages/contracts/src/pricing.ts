@@ -258,6 +258,19 @@ export const RULE_STATUS_LABELS: Readonly<Record<RuleStatus, string>> = {
 export const pricingReasonPayloadSchema = z.object({
   reason: z.string().min(1).max(280).nullable().default(null),
 });
+/**
+ * **Renommer une règle** — le libellé, et rien d'autre.
+ *
+ * Il n'y a pas de `PUT /rules/:id` qui remplacerait l'effet, la portée ou la
+ * fenêtre : les changer sur une règle qui a déjà facturé réécrirait
+ * l'explication de factures déjà payées. Pour cela, archiver-et-reposer, qui
+ * laisse les deux décisions visibles côte à côte.
+ */
+export const renamePriceRulePayloadSchema = z.object({
+  label: z.string().min(1).max(120),
+});
+export type RenamePriceRulePayload = z.infer<typeof renamePriceRulePayloadSchema>;
+
 export type PricingReasonPayload = z.infer<typeof pricingReasonPayloadSchema>;
 
 // ---------------------------------------------------------------------------
@@ -279,6 +292,8 @@ export const pricingActSchema = z.enum([
   "archived",
   "confirmed",
   "replaced",
+  /** Le libellé a changé, **et rien d'autre** — aucun prix n'a bougé. */
+  "renamed",
 ]);
 export type PricingActKind = z.infer<typeof pricingActSchema>;
 
@@ -293,6 +308,7 @@ export const PRICING_ACT_LABELS: Readonly<Record<PricingActKind, string>> = {
   archived: "Archivée",
   confirmed: "Confirmée",
   replaced: "Remplacée",
+  renamed: "Renommée",
 };
 
 /**

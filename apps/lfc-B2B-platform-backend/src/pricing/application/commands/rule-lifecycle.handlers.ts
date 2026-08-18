@@ -7,6 +7,7 @@ import { describeRule } from "../../domain/pricing-act.js";
 import {
   ArchivePriceRuleCommand,
   PausePriceRuleCommand,
+  RenamePriceRuleCommand,
   ResumePriceRuleCommand,
 } from "./pricing.commands.js";
 import type { PricingRule } from "../../domain/entities/pricing-rule.js";
@@ -112,4 +113,31 @@ function actOf(
     reason,
     summary: describeRule(rule.asPriceRule),
   };
+}
+
+/**
+ * **Renommer** — la seule modification qu'une règle accepte.
+ *
+ * L'acte porte le kind `renamed` et non `replaced` : aucun prix n'a bougé, et
+ * les confondre ferait chercher un changement tarifaire là où il n'y en a pas
+ * eu, le jour où on relit le journal pour comprendre une facture.
+ *
+ * Le résumé figé décrit la règle **d'avant** — comme partout ailleurs : c'est ce
+ * qu'on a renommé qu'on veut relire, pas le résultat.
+ */
+@CommandHandler(RenamePriceRuleCommand)
+export class RenamePriceRuleHandler implements ICommandHandler<RenamePriceRuleCommand, void> {
+  constructor(
+    private readonly rules: PricingRuleRepository,
+    private readonly clock: Clock,
+  ) {}
+
+  async execute(command: RenamePriceRuleCommand): Promise<void> {
+    const now = this.clock.now();
+    const rule = await mustLoad(this.rules, command.id);
+    await this.rules.rename(
+      rule.rename(command.label),
+      actOf(rule, "renamed", command.staffSub, now, null),
+    );
+  }
 }

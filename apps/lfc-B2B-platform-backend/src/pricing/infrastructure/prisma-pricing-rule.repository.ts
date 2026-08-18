@@ -78,6 +78,21 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
   }
 
   /**
+   * Le renommage : **une seule colonne**, plus l'acte.
+   *
+   * Écrire ici l'effet ou la fenêtre serait techniquement trivial, et c'est
+   * précisément pour ça que cette méthode ne prend pas de raccourci : ce qu'elle
+   * n'écrit pas est ce qu'elle garantit.
+   */
+  async rename(rule: PricingRule, act: PricingAct): Promise<void> {
+    const { id, label } = rule.toPersistence();
+    await this.prisma.$transaction([
+      this.prisma.priceRule.update({ where: { id }, data: { label } }),
+      this.prisma.pricingEvent.create({ data: eventRow(this.ids.next(), act) }),
+    ]);
+  }
+
+  /**
    * Charge la règle **quel que soit son état**, archivée comprise : c'est
    * l'agrégat qui refuse un geste sur une décision close, pas la requête. Filtrer
    * ici rendrait un 404 là où la bonne réponse est « elle est archivée ».

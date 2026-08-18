@@ -1368,3 +1368,51 @@ describe("suspendre, reprendre, archiver un barème", () => {
     await poseLadder({ label: "Le suivant" }).expect(201);
   });
 });
+
+/**
+ * **Renommer une règle** — la seule modification qu'elle accepte.
+ *
+ * Corriger une faute de frappe obligeait jusqu'ici à archiver et reposer : une
+ * décision close pour une lettre. Ce que la route ne fait PAS compte autant :
+ * elle ne touche ni l'effet, ni la portée, ni la fenêtre. Les changer sur une
+ * règle qui a déjà facturé réécrirait l'explication de factures payées.
+ */
+describe("renommer une règle", () => {
+  it("change la phrase, et le prix ne bouge pas", async () => {
+    const { id } = jsonBody<{ id: string }>(
+      await postRule({ label: "Promo de rentre" }).expect(201),
+    );
+    const before = (await croissant()).finalCents;
+
+    await staff()
+      .patch(`/admin/pricing/rules/${id}/label`)
+      .send({ label: "Promo de rentrée" })
+      .expect(204);
+
+    const rule = (await board()).globalRules.find((candidate) => candidate.id === id);
+    expect(rule?.label).toBe("Promo de rentrée");
+    expect((await croissant()).finalCents).toBe(before);
+  });
+
+  /** L'acte dit `renamed` et non `replaced` : aucun prix n'a bougé. */
+  it("laisse une trace qui ne prétend pas à un changement de prix", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule({ label: "Avant" }).expect(201));
+
+    await staff().patch(`/admin/pricing/rules/${id}/label`).send({ label: "Après" }).expect(204);
+
+    const entries = jsonBody<{ act: string }[]>(
+      await staff().get(`/admin/pricing/journal/rule/${id}`).expect(200),
+    );
+    expect(entries[0]?.act).toBe("renamed");
+  });
+
+  it("refuse de renommer une règle archivée", async () => {
+    const { id } = jsonBody<{ id: string }>(await postRule({ label: "Close" }).expect(201));
+    await staff().post(`/admin/pricing/rules/${id}/archive`).send({ reason: "rangée" }).expect(204);
+
+    await staff()
+      .patch(`/admin/pricing/rules/${id}/label`)
+      .send({ label: "Trop tard" })
+      .expect(409);
+  });
+});

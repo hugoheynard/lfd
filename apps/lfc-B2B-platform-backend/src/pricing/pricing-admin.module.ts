@@ -18,6 +18,7 @@ import {
 import {
   ArchivePriceRuleHandler,
   PausePriceRuleHandler,
+  RenamePriceRuleHandler,
   ResumePriceRuleHandler,
 } from "./application/commands/rule-lifecycle.handlers.js";
 import { BoardComparisonService } from "./application/board-comparison.service.js";
@@ -61,6 +62,7 @@ import { PricingModule } from "./pricing.module.js";
     CreatePriceRuleHandler,
     PausePriceRuleHandler,
     ResumePriceRuleHandler,
+    RenamePriceRuleHandler,
     ArchivePriceRuleHandler,
     ConfirmPriceFloorHandler,
     SetPriceFloorHandler,

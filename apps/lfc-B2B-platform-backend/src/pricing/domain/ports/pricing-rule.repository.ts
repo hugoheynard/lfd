@@ -37,6 +37,21 @@ export abstract class PricingRuleRepository {
    */
   abstract update(rule: PricingRule, act: PricingAct): Promise<void>;
 
+  /**
+   * Enregistre un **renommage** — le libellé, et rien d'autre.
+   *
+   * Distincte de `update` alors que le SQL est presque le même, pour la même
+   * raison que `save` l'est de `update` : ce sont deux intentions. `update`
+   * n'écrit que le cycle de vie, et sa promesse doit le rester — un appelant qui
+   * lit « seul le cycle de vie bouge » doit pouvoir s'y fier. Faire passer le
+   * libellé par elle aurait fait mentir sa JSDoc, et le prochain à la lire aurait
+   * cru qu'un renommage ne peut pas arriver par là.
+   *
+   * Elle ne touche **jamais** l'effet, la portée ni la fenêtre : les changer sur
+   * une règle qui a facturé réécrirait l'explication de factures déjà payées.
+   */
+  abstract rename(rule: PricingRule, act: PricingAct): Promise<void>;
+
   /** L'agrégat, pour lui appliquer une transition. `null` s'il n'existe pas. */
   abstract load(id: string): Promise<PricingRule | null>;
 }

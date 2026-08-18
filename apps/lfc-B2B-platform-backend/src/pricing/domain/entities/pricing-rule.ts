@@ -196,6 +196,27 @@ export class PricingRule {
     return this.withLifecycle({ archivedAt: at, archivedBy: by, archiveReason: reason });
   }
 
+  /**
+   * **Renommer.** Le libellé change ; le PRIX ne bouge pas.
+   *
+   * C'est la seule modification qu'une règle accepte, et c'est une décision, pas
+   * une limite technique. Changer l'effet, la portée ou la fenêtre d'une règle
+   * qui a déjà facturé réécrirait l'explication de factures **déjà payées** : la
+   * trace figée sur la commande garderait l'ancien montant, et le journal
+   * raconterait autre chose. Pour cela il y a archiver-et-reposer, qui laisse
+   * les deux décisions visibles côte à côte.
+   *
+   * Le libellé, lui, ne participe à aucun calcul. Il n'a qu'un rôle : être lu.
+   * Corriger une faute de frappe ne devrait pas coûter une décision close.
+   *
+   * @throws {ArchivedPriceRuleIsSealedError} la règle est archivée : une
+   *   décision close ne se retouche pas, même sa phrase.
+   */
+  rename(label: string): PricingRule {
+    this.assertNotArchived();
+    return new PricingRule({ ...this.state, label });
+  }
+
   /** La forme que lit la résolution — celle du calcul, pas celle du stockage. */
   get asPriceRule(): PriceRule {
     const common = {

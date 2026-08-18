@@ -1,9 +1,11 @@
 import {
   createPriceRulePayloadSchema,
   pricingReasonPayloadSchema,
+  renamePriceRulePayloadSchema,
   setVolumeLadderPayloadSchema,
   type CreatePriceRulePayload,
   type PricingReasonPayload,
+  type RenamePriceRulePayload,
   type SetVolumeLadderPayload,
 } from "@lfd/contracts";
 import {
@@ -14,6 +16,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -27,6 +30,7 @@ import {
   ArchivePriceRuleCommand,
   CreatePriceRuleCommand,
   PausePriceRuleCommand,
+  RenamePriceRuleCommand,
   ResumePriceRuleCommand,
   SetVolumeLadderCommand,
   PauseVolumeLadderCommand,
@@ -200,6 +204,29 @@ export class AdminPricingController {
       new CreatePriceRuleCommand(toDraft(payload), staffSub),
     );
     return { id };
+  }
+
+  /**
+   * **Renommer** une règle — le libellé, et **rien d'autre**.
+   *
+   * Il n'y a pas de route qui remplacerait l'effet, la portée ou la fenêtre, et
+   * c'est une décision : les changer sur une règle qui a déjà facturé
+   * réécrirait l'explication de factures déjà payées, pendant que la trace figée
+   * sur la commande garderait l'ancien montant. Pour cela, archiver puis
+   * reposer — les deux décisions restent visibles côte à côte.
+   *
+   * `PATCH` et non `PUT` : on modifie un champ, on ne remplace pas la règle.
+   */
+  @Patch("rules/:id/label")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async renameRule(
+    @Param("id") id: string,
+    @Body(new ZodBody(renamePriceRulePayloadSchema)) payload: RenamePriceRulePayload,
+    @StaffSub() staffSub: string,
+  ): Promise<void> {
+    await this.commands.execute<RenamePriceRuleCommand, void>(
+      new RenamePriceRuleCommand(id, payload.label, staffSub),
+    );
   }
 
   /**

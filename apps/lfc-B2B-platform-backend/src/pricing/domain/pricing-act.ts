@@ -24,6 +24,15 @@ export const PRICING_ACTS = [
   "archived",
   "confirmed",
   "replaced",
+  /**
+   * **Renommé** — et rien d'autre.
+   *
+   * Un acte distinct de `replaced` parce qu'il ne change AUCUN prix : il corrige
+   * la phrase que le client lira. Les confondre ferait chercher un changement
+   * tarifaire là où il n'y en a pas eu, le jour où on relit le journal pour
+   * comprendre une facture.
+   */
+  "renamed",
 ] as const;
 export type PricingActKind = (typeof PRICING_ACTS)[number];
 
