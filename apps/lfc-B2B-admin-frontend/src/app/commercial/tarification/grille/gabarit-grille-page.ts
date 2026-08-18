@@ -1,11 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import type {
-  PriceTemplateKind,
-  PricingBoardView,
-  PricingCategoryView,
-  TemplateLinePayload,
-} from '@lfd/contracts';
+import type { PriceTemplateKind, PricingBoardView, PricingCategoryView } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
 import {
   FoldBadgeComponent,
@@ -18,9 +13,17 @@ import { NotifyService } from '../../../notify.service';
 import { nativeValue } from '../../../shared/native-input';
 import { TarificationService } from '../../../reglages/tarification/tarification.service';
 import { PriceTemplatesService } from '../templates.service';
-import type { AdminCompany } from '../../../comptes-clients/admin-company';
-import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.service';
-import { centsOf, eurosField } from './price-field';
+import { PoseBar, type PoseRequest } from '../pose-bar/pose-bar';
+import { eurosField } from './price-field';
+import {
+  entryOf,
+  tiersOf,
+  toLines,
+  withTiers,
+  without,
+  type DraftGrid,
+  type DraftTier,
+} from './draft-grid';
 import { mercurialeRow, tally, type MercurialeRow } from './mercuriale-row';
 
 /**
@@ -34,12 +37,6 @@ const SEGMENT: Readonly<Record<PriceTemplateKind, string>> = {
   mercuriale: 'mercuriales-templates',
   devis: 'devis-templates',
 };
-
-/** Les paliers saisis pour un article, en chaînes — cf. `price-field`. */
-interface DraftTier {
-  readonly minQuantity: string;
-  readonly unitPrice: string;
-}
 
 /**
  * **La grille d'un gabarit** — le même layout que la tarification générale.
@@ -69,6 +66,7 @@ interface DraftTier {
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldInputComponent,
+    PoseBar,
   ],
   templateUrl: './gabarit-grille-page.html',
   styleUrl: './gabarit-grille-page.scss',
@@ -80,7 +78,6 @@ export class GabaritGrillePage {
 
   private readonly templates = inject(PriceTemplatesService);
   private readonly tarification = inject(TarificationService);
-  private readonly companiesService = inject(AdminCompaniesService);
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
 
@@ -95,20 +92,12 @@ export class GabaritGrillePage {
   /** Le tableau tarifaire : rayons, articles, tarifs et limites. La MÊME source. */
   protected readonly board = signal<PricingBoardView | null>(null);
   /** Les paliers saisis, par SKU. Absent = article non tarifé par ce gabarit. */
-  protected readonly draft = signal<ReadonlyMap<string, readonly DraftTier[]>>(new Map());
+  protected readonly draft = signal<DraftGrid>(new Map());
   /** L'identifiant réel, une fois le gabarit composé. */
   protected readonly saved = signal<string | null>(null);
 
-  // ─── Poser, en ligne ───────────────────────────────────────────────────────
-  protected readonly companies = signal<readonly AdminCompany[]>([]);
-  protected readonly companyId = signal('');
-  protected readonly validFrom = signal(new Date().toISOString().slice(0, 10));
-  protected readonly validTo = signal('');
+  /** Vrai pendant la pose : la barre l'affiche, la page le sait. */
   protected readonly posing = signal(false);
-
-  protected readonly canPose = computed(
-    () => this.companyId() !== '' && this.validFrom() !== '' && !this.posing(),
-  );
 
   protected readonly categories = computed(() => this.board()?.categories ?? []);
   protected readonly isNew = computed(() => this.id() === 'nouveau');
@@ -131,15 +120,7 @@ export class GabaritGrillePage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      const [board, companies] = await Promise.all([
-        this.tarification.read(),
-        // Chargée avec le tableau : la barre « poser » vit dans l'en-tête, donc
-        // elle doit être prête quand la grille l'est.
-        this.companiesService.list(),
-      ]);
-      this.board.set(board);
-      this.companies.set(companies);
-      this.companyId.set(companies[0]?.id ?? '');
+      this.board.set(await this.tarification.read());
       if (!this.isNew()) {
         const template = await this.templates.byId(this.id());
         this.label.set(template.label);
@@ -164,17 +145,11 @@ export class GabaritGrillePage {
 
   /** Les lignes d'un rayon, dérivées — le prix d'entrée pilote les colonnes de droite. */
   protected rowsOf(category: PricingCategoryView): readonly MercurialeRow[] {
-    return category.items.map((item) => mercurialeRow(item, this.entryOf(item.sku)));
+    return category.items.map((item) => mercurialeRow(item, entryOf(this.draft(), item.sku)));
   }
 
   protected tiersOf(sku: string): readonly DraftTier[] {
-    return this.draft().get(sku) ?? [];
-  }
-
-  private entryOf(sku: string): number | null {
-    const tiers = this.tiersOf(sku);
-    const first = tiers[0];
-    return first === undefined ? null : centsOf(first.unitPrice);
+    return tiersOf(this.draft(), sku);
   }
 
   /**
@@ -185,26 +160,29 @@ export class GabaritGrillePage {
    * négocie en descendant depuis un prix connu.
    */
   protected priceIt(sku: string, catalogCents: number): void {
-    this.setTiers(sku, [{ minQuantity: '1', unitPrice: eurosField(catalogCents) }]);
+    this.draft.update((grid) =>
+      withTiers(grid, sku, [{ minQuantity: '1', unitPrice: eurosField(catalogCents) }]),
+    );
   }
 
   protected clear(sku: string): void {
-    this.draft.update((draft) => {
-      const next = new Map(draft);
-      next.delete(sku);
-      return next;
-    });
+    this.draft.update((grid) => without(grid, sku));
   }
 
-  /** Le seul geste qui fait passer d'un prix fixe à une grille de paliers. */
+  /** Un palier de plus : le seul geste qui fait passer d'un prix fixe à une grille. */
   protected addTier(sku: string): void {
-    this.setTiers(sku, [...this.tiersOf(sku), { minQuantity: '', unitPrice: '' }]);
+    this.draft.update((grid) =>
+      withTiers(grid, sku, [...tiersOf(grid, sku), { minQuantity: '', unitPrice: '' }]),
+    );
   }
 
   protected removeTier(sku: string, index: number): void {
-    this.setTiers(
-      sku,
-      this.tiersOf(sku).filter((_, position) => position !== index),
+    this.draft.update((grid) =>
+      withTiers(
+        grid,
+        sku,
+        tiersOf(grid, sku).filter((_, position) => position !== index),
+      ),
     );
   }
 
@@ -214,48 +192,19 @@ export class GabaritGrillePage {
     field: 'minQuantity' | 'unitPrice',
     value: string,
   ): void {
-    this.setTiers(
-      sku,
-      this.tiersOf(sku).map((tier, position) =>
-        position === index ? { ...tier, [field]: value } : tier,
+    this.draft.update((grid) =>
+      withTiers(
+        grid,
+        sku,
+        tiersOf(grid, sku).map((tier, position) =>
+          position === index ? { ...tier, [field]: value } : tier,
+        ),
       ),
     );
   }
 
-  private setTiers(sku: string, tiers: readonly DraftTier[]): void {
-    this.draft.update((draft) => {
-      const next = new Map(draft);
-      next.set(sku, tiers);
-      return next;
-    });
-  }
-
-  /**
-   * Les lignes prêtes à partir.
-   *
-   * Un palier **entièrement vide** s'oublie — c'est l'ajout qu'on n'a pas rempli.
-   * Un palier **à moitié rempli** fait échouer la ligne : c'est une faute de
-   * frappe, et zéro est un prix réel ici, donc le compléter d'office poserait un
-   * prix que personne n'a voulu, chez un client.
-   */
-  protected readonly lines = computed<readonly TemplateLinePayload[]>(() =>
-    [...this.draft()].flatMap(([sku, tiers]) => {
-      const built = tiers.flatMap((tier) => {
-        if (tier.minQuantity.trim() === '' && tier.unitPrice.trim() === '') {
-          return [];
-        }
-        const minQuantity = Number.parseInt(tier.minQuantity, 10);
-        const unitPriceCents = centsOf(tier.unitPrice);
-        if (Number.isNaN(minQuantity) || minQuantity <= 0 || unitPriceCents === null) {
-          return [null];
-        }
-        return [{ minQuantity, unitPriceCents }];
-      });
-      return built.length === 0 || built.some((tier) => tier === null)
-        ? []
-        : [{ sku, tiers: built.filter((tier) => tier !== null) }];
-    }),
-  );
+  /** Les lignes prêtes à partir — cf. `toLines` pour ce qui s'oublie et ce qui tombe. */
+  protected readonly lines = computed(() => toLines(this.draft()));
 
   protected async save(): Promise<void> {
     if (!this.canSave()) {
@@ -295,19 +244,22 @@ export class GabaritGrillePage {
    * seuil pour cette période, le serveur refuse plutôt que d'écraser une
    * décision déjà prise.
    */
-  protected async pose(): Promise<void> {
+  /**
+   * **Poser la grille chez un client**, sur demande de la barre d'en-tête.
+   *
+   * Un **recouvrement arrête la pose** : si le client a déjà une mercuriale sur
+   * un de ces articles à ce seuil pour cette période, le serveur refuse plutôt
+   * que d'écraser une décision déjà prise. C'est la barre qui l'annonce, et le
+   * serveur qui le garantit.
+   */
+  protected async pose(request: PoseRequest): Promise<void> {
     const id = this.saved();
-    if (id === null || !this.canPose()) {
+    if (id === null) {
       return;
     }
     this.posing.set(true);
     try {
-      const { posedRules } = await this.templates.apply(id, {
-        companyId: this.companyId(),
-        validFrom: new Date(`${this.validFrom()}T00:00:00.000Z`).toISOString(),
-        validTo:
-          this.validTo() === '' ? null : new Date(`${this.validTo()}T00:00:00.000Z`).toISOString(),
-      });
+      const { posedRules } = await this.templates.apply(id, request);
       this.notify.success(`${String(posedRules)} règle(s) de mercuriale posée(s).`);
     } catch (error) {
       this.notify.error(error, "La grille n'a pas pu être posée.");

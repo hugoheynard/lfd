@@ -363,58 +363,6 @@ button.node:focus-visible {
   color: var(--fold-color-danger-text, var(--fold-color-text));
 }
 
-// **Poser, en ligne.** Le geste appartient à l'en-tête de la grille, pas à un
-// tiroir : ce qu'on pose est ce qu'on a sous les yeux, et un panneau aurait
-// masqué la grille au moment de choisir chez qui la poser.
-.pose {
-  display: flex;
-  align-items: end;
-  flex-wrap: wrap;
-  gap: var(--fold-space-3, 0.75rem);
-  padding: var(--fold-space-3, 0.75rem);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-lg, 0.75rem);
-  background: var(--fold-color-surface-subtle, var(--fold-color-surface));
-}
-
-.pose-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 9rem;
-}
-
-.pose-label {
-  font-size: var(--fold-text-xs, 0.75rem);
-  font-weight: 600;
-  color: var(--fold-color-text-muted);
-}
-
-.pose-optional {
-  font-weight: 400;
-}
-
-.pose-field select,
-.pose-field input {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface);
-  color: inherit;
-  font: inherit;
-}
-
-.pose-spacer {
-  flex: 1;
-}
-
-.pose-note {
-  flex-basis: 100%;
-  margin: 0;
-  font-size: var(--fold-text-xs, 0.75rem);
-  color: var(--fold-color-text-muted);
-}
-
 .loading {
   margin: 0;
   color: var(--fold-color-text-muted);

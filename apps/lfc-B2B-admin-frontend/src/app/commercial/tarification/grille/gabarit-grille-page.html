@@ -48,49 +48,7 @@
       masqué la grille au moment même de choisir chez qui la poser.
     -->
     @if (posable()) {
-      <section class="pose">
-        <div class="pose-field">
-          <label class="pose-label" for="pose-company">Poser chez</label>
-          <select
-            id="pose-company"
-            [value]="companyId()"
-            (change)="companyId.set(nativeValue($event))"
-          >
-            @for (company of companies(); track company.id) {
-              <option [value]="company.id">{{ company.raisonSociale }}</option>
-            }
-          </select>
-        </div>
-        <div class="pose-field">
-          <label class="pose-label" for="pose-from">À partir du</label>
-          <input
-            id="pose-from"
-            type="date"
-            [value]="validFrom()"
-            (change)="validFrom.set(nativeValue($event))"
-          />
-        </div>
-        <div class="pose-field">
-          <label class="pose-label" for="pose-to"
-            >Jusqu'au <span class="pose-optional">facultatif</span></label
-          >
-          <input
-            id="pose-to"
-            type="date"
-            [value]="validTo()"
-            (change)="validTo.set(nativeValue($event))"
-          />
-        </div>
-        <span class="pose-spacer"></span>
-        <button foldButton [disabled]="!canPose()" (click)="pose()">
-          {{ posing() ? 'Pose…' : 'Poser la grille' }}
-        </button>
-        <p class="pose-note">
-          Le contenu posé est celui de la grille ci-dessous. Si ce client a déjà une mercuriale sur
-          l'un de ces articles pour cette période, la pose est <strong>refusée</strong> plutôt que
-          d'écraser ce qui est déjà décidé.
-        </p>
-      </section>
+      <app-pose-bar [busy]="posing()" (posed)="pose($event)" />
     }
 
     <!--
