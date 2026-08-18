@@ -65,7 +65,7 @@ flowchart LR
 
 ## 2. Le flow de déploiement (4 étapes CI)
 
-Déclencheur : push sur `main` touchant `apps/lfc-B2B-platform-backend/**`, `packages/**`,
+Déclencheur : push sur `main` touchant `apps/lfd-api/**`, `packages/**`,
 `pnpm-workspace.yaml`, ou le yml lui-même. Aussi lançable à la main (`workflow_dispatch`).
 
 ```mermaid
@@ -95,7 +95,7 @@ sequenceDiagram
 Les étapes, dans l'ordre du yml :
 
 1. **Prépare** — `pnpm install --frozen-lockfile`, build de `@lfd/contracts` (types partagés), puis `tsc --noEmit` (gate : un typecheck rouge stoppe le deploy).
-2. **Build image** — `docker build -f apps/lfc-B2B-platform-backend/Dockerfile -t lfc-b2b-backend:latest .`
+2. **Build image** — `docker build -f apps/lfd-api/Dockerfile -t lfc-b2b-backend:latest .`
    ⚠️ Le `.` final = **contexte racine du monorepo** : le build a besoin de `pnpm-workspace.yaml` + `packages/*`. C'est la seule voie ; `wrangler containers build` n'expose pas de build-context.
 3. **Push + Deploy** — `wrangler containers push` (image → registre Cloudflare), puis `sed` injecte l'account id dans `wrangler.jsonc` (jamais commité en clair : le fichier contient `__CF_ACCOUNT_ID__`), puis `wrangler deploy` publie le Worker qui référence l'image.
 4. **Sync des secrets runtime** — une boucle `wrangler secret put` pousse chaque secret **présent** (les vides sont sautés → feature simplement désactivée).
@@ -425,9 +425,9 @@ Le rate-limit vit sur les **Workers backend** (pas la gateway) : la sécurité e
 
 | Fichier                                             | Rôle                                         |
 | --------------------------------------------------- | -------------------------------------------- |
-| `apps/lfc-B2B-platform-backend/container/worker.ts` | Worker : routage + relais `envVars`          |
-| `apps/lfc-B2B-platform-backend/wrangler.jsonc`      | Config Worker + container (image, instances) |
-| `apps/lfc-B2B-platform-backend/Dockerfile`          | Image NestJS (build contexte racine)         |
-| `apps/lfc-B2B-platform-backend/.env.example`        | Liste **autoritaire** des variables runtime  |
+| `apps/lfd-api/container/worker.ts` | Worker : routage + relais `envVars`          |
+| `apps/lfd-api/wrangler.jsonc`      | Config Worker + container (image, instances) |
+| `apps/lfd-api/Dockerfile`          | Image NestJS (build contexte racine)         |
+| `apps/lfd-api/.env.example`        | Liste **autoritaire** des variables runtime  |
 | `.github/workflows/deploy_b2b_backend.yml`          | Pipeline CI (build → push → deploy → sync)   |
 | `documentation/CONTAINERIZE-NOTES.md`               | Points à valider au 1er build Docker         |

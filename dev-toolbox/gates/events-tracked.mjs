@@ -27,10 +27,10 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'client', 'coverage', 'out-ts
 
 /** Fichiers qui DÉFINISSENT le mécanisme, ou qui ne font que le citer. */
 const ALLOWED = new Set([
-  'apps/lfc-B2B-platform-backend/src/infra/events/background-work.ts',
-  'apps/lfc-B2B-platform-backend/src/infra/events/events.module.ts',
-  'apps/lfc-B2B-platform-backend/src/infra/events/domain-event-publisher.ts',
-  'apps/lfc-B2B-platform-backend/src/infra/events/cqrs-domain-event-publisher.ts',
+  'apps/lfd-api/src/infra/events/background-work.ts',
+  'apps/lfd-api/src/infra/events/events.module.ts',
+  'apps/lfd-api/src/infra/events/domain-event-publisher.ts',
+  'apps/lfd-api/src/infra/events/cqrs-domain-event-publisher.ts',
 ]);
 
 function* walk(dir) {

@@ -4,7 +4,7 @@ Monorepo `lfd` (pnpm + turbo), branche de travail **`dev`**.
 
 ```
 apps/lfc-PIM-backend/            NestJS · Prisma Postgres (db PIM)      ─┐ backends :
-apps/lfc-B2B-platform-backend/   NestJS · Prisma Postgres (db commerce) ─┘ ce document
+apps/lfd-api/   NestJS · Prisma Postgres (db commerce) ─┘ ce document
 apps/lfc-PIM-frontend/           Angular 22 zoneless SSR · fold-ng      ─┐
 apps/lfc-B2B-platform-frontend/  Angular 22 zoneless SSR · fold-ng       │ frontends :
 apps/lfc-B2B-admin-frontend/     Angular 22 · back-office staff          │ CLAUDE.md de l'app
@@ -341,8 +341,8 @@ Interdit : un e2e avec `PrismaService` stubbé — il ne prouve rien sur le sch�
 
 ```bash
 pnpm dev:infra                                          # racine : Postgres de dev
-pnpm --filter lfc-b2b-platform-backend db:test:setup     # crée + migre lfc_b2b_test
-pnpm --filter lfc-b2b-platform-backend test
+pnpm --filter lfd-api db:test:setup     # crée + migre lfc_b2b_test
+pnpm --filter lfd-api test
 ```
 
 `test/e2e-harness.ts` boote l'`AppModule` entier (guard global + filtre
@@ -502,12 +502,12 @@ pnpm dev:infra          # Postgres de dev (localhost:5433) — requis pour les e
 pnpm dev:infra:down     # arrêt, données conservées
 pnpm dev:infra:nuke     # arrêt + destruction du volume
 
-pnpm --filter lfc-b2b-platform-backend dev        # Nest en watch
-pnpm --filter lfc-b2b-platform-backend lint
-pnpm --filter lfc-b2b-platform-backend test
-pnpm --filter lfc-b2b-platform-backend exec tsc --noEmit
-pnpm --filter lfc-b2b-platform-backend db:migrate  # / db:deploy, db:seed, db:studio
-pnpm --filter lfc-b2b-platform-backend db:test:setup  # base jetable des e2e
+pnpm --filter lfd-api dev        # Nest en watch
+pnpm --filter lfd-api lint
+pnpm --filter lfd-api test
+pnpm --filter lfd-api exec tsc --noEmit
+pnpm --filter lfd-api db:migrate  # / db:deploy, db:seed, db:studio
+pnpm --filter lfd-api db:test:setup  # base jetable des e2e
 
 pnpm lint               # turbo, toutes les apps
 pnpm test

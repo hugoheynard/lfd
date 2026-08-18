@@ -43,7 +43,7 @@ Les fondations posées en Phase 0/1 sont bonnes et **ne sont pas le sujet** :
   distincts, `traceId` W3C, `idempotencyKey` unique, `schemaVersion`. Append-only.
 - **`Clock` + `IdGenerator` + RequestContext (ALS)** — le temps métier a une
   autorité unique, les tests sont déterministes.
-- **Agrégat `Lead`** ([`entities/lead.ts`](../../apps/lfc-B2B-platform-backend/src/growth/domain/entities/lead.ts)) :
+- **Agrégat `Lead`** ([`entities/lead.ts`](../../apps/lfd-api/src/growth/domain/entities/lead.ts)) :
   pipeline monotone (`new → contacted → qualified → negotiating`), terminaux
   `converted` / `lost`, horodatage du contact. Invariants testés.
 - **Rapprochement automatique** lead ↔ compte par e-mail à `user.registered`.
@@ -84,7 +84,7 @@ pris par ce chemin ne revient jamais dans le CRM**. C'est une fuite, pas une fea
 incohérences (un e-mail sans créneau, un rappel sans numéro, une date passée).
 
 Mais **aucune surface staff ne lit ces champs**. Le reader admin
-([`prisma-admin-company.reader.ts:34`](../../apps/lfc-B2B-platform-backend/src/account/infrastructure/prisma-admin-company.reader.ts)) :
+([`prisma-admin-company.reader.ts:34`](../../apps/lfd-api/src/account/infrastructure/prisma-admin-company.reader.ts)) :
 
 ```ts
 supportRequests: {
@@ -123,7 +123,7 @@ Deux conséquences, toutes deux bloquantes :
    rien dire.
 2. **Le client ne peut plus jamais redemander à être rappelé.** Le handler lève
    `OpenSupportRequestExistsError` tant qu'une demande est ouverte
-   ([`request-activation-support.handler.ts`](../../apps/lfc-B2B-platform-backend/src/account/application/commands/request-activation-support.handler.ts)) —
+   ([`request-activation-support.handler.ts`](../../apps/lfd-api/src/account/application/commands/request-activation-support.handler.ts)) —
    et comme aucune ne se ferme, c'est définitif.
 
 C'est un **bug fonctionnel**, pas un manque de feature.

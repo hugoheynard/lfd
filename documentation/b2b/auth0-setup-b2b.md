@@ -1,7 +1,7 @@
 # Auth0 — configuration B2B (runbook)
 
 > Runbook **daté** de la configuration réelle du tenant Auth0 pour la plateforme
-> B2B (front `lfc-B2B-platform-frontend` + backend `lfc-B2B-platform-backend`).
+> B2B (front `lfc-B2B-platform-frontend` + backend `lfd-api`).
 > Décisions d'architecture : voir [`architecture-identite-auth-tenancy.md`](architecture-identite-auth-tenancy.md).
 > Ici = **le concret** : quels réglages cliquer dans le dashboard, dans quel
 > ordre, et les pièges rencontrés.

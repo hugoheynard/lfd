@@ -84,9 +84,9 @@ jobs:
       - name: Construire les paquets dont dépend le backend
         run: pnpm --filter "./packages/**" build
       - name: Typecheck
-        run: pnpm --filter lfc-b2b-platform-backend exec tsc --noEmit
+        run: pnpm --filter lfd-api exec tsc --noEmit
       - name: Lint
-        run: pnpm --filter lfc-b2b-platform-backend lint:ci
+        run: pnpm --filter lfd-api lint:ci
       # Un abonné d'événement qui ne s'inscrit pas au travail de fond ne casse
       # aucun test le jour où on l'écrit : il casse un AUTRE test, plus tard,
       # une fois sur sept. Ce gate le refuse à l'entrée.
@@ -109,9 +109,9 @@ jobs:
           docker logs minio >&2
           exit 1
       - name: Préparer la base de test
-        run: pnpm --filter lfc-b2b-platform-backend run db:test:setup
+        run: pnpm --filter lfd-api run db:test:setup
       - name: Tests (unitaires + e2e)
-        run: pnpm --filter lfc-b2b-platform-backend test
+        run: pnpm --filter lfd-api test
 
   # ── Les fronts et le PIM ────────────────────────────────────────────────────
   # Le build de production est le seul endroit qui exerce la compilation AOT des

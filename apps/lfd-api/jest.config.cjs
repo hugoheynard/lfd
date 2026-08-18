@@ -6,7 +6,7 @@
 module.exports = {
   testEnvironment: 'node',
   rootDir: './',
-  displayName: 'lfc-b2b-platform-backend',
+  displayName: 'lfd-api',
   silent: true,
   testMatch: ['**/?(*.)+(spec|test|e2e-spec).ts'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],

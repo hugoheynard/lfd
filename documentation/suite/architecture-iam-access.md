@@ -65,7 +65,7 @@ déjà posée : **une audience par surface adressée**, jamais partagée.
 ### 3. Access absorbe `staff_users`
 
 La moitié de cette app existe déjà, au mauvais endroit :
-[`StaffUser`](../../apps/lfc-B2B-platform-backend/prisma/schema.prisma) porte
+[`StaffUser`](../../apps/lfd-api/prisma/schema.prisma) porte
 identité + `scopes` (`commercial` / `comptabilite` / `admin`) + un `auth0Id`
 nullable, dans la base **commerce**.
 

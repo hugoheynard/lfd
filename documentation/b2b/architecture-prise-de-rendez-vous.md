@@ -378,7 +378,7 @@ Deux personas semés, pour regarder la fiche sans avoir à fabriquer un compte �
 main à chaque fois :
 
 ```bash
-pnpm --filter lfc-b2b-platform-backend run db:seed:fiche
+pnpm --filter lfd-api run db:seed:fiche
 ```
 
 | Persona                    | Ce qu'il montre                                                                                      | RDV du jour |

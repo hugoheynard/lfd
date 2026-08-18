@@ -176,7 +176,7 @@ Ce qu'il faut savoir si le cas se représente, et qui a coûté du temps :
 ## Savoir où tourne un container
 
 ```bash
-cd apps/lfc-B2B-platform-backend
+cd apps/lfd-api
 npx wrangler containers list        # id de l'application
 npx wrangler containers instances <id>   # emplacement RÉEL (ex. lhr20)
 npx wrangler containers info <id>        # relit les `constraints` côté serveur

@@ -15,8 +15,8 @@ import { bootstrapHarness, customer, type SeedHarness } from "./seed-growth/harn
  * qu'il sait faire. Ce seed lui donne douze mois de vie plausible.
  *
  * ```bash
- * pnpm --filter lfc-b2b-platform-backend seed:temoin
- * SEED_COMPANY_REF=C-XXXXXX pnpm --filter lfc-b2b-platform-backend seed:temoin
+ * pnpm --filter lfd-api seed:temoin
+ * SEED_COMPANY_REF=C-XXXXXX pnpm --filter lfd-api seed:temoin
  * ```
  *
  * **Additif et idempotent** : une échéance déjà servie (même société, même jour)

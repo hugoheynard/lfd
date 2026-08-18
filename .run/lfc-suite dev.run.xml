@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="lfc-suite dev" type="CompoundRunConfigurationType">
     <toRun name="lfc-B2B-platform-frontend &gt; start" type="js.build_tools.npm" />
-    <toRun name="lfc-b2b-platform-backend" type="js.build_tools.npm" />
+    <toRun name="lfd-api" type="js.build_tools.npm" />
     <toRun name="lfc-PIM-frontend &gt; dev" type="js.build_tools.npm" />
     <toRun name="lfc-suite:dev:watch" type="js.build_tools.npm" />
     <method v="2" />

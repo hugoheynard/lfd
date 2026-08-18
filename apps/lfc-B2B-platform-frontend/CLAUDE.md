@@ -146,7 +146,7 @@ non-authentifiée d'`app.html`.
 ## Backend (contexte)
 
 Contrairement au PIM (POC frontend-only sur LocalDb), la plateforme B2B parle à un
-**vrai backend** (`apps/lfc-B2B-platform-backend`, NestJS + Prisma, db commerce
+**vrai backend** (`apps/lfd-api`, NestJS + Prisma, db commerce
 distincte de celle du PIM). `HttpClient` est provisionné en mode `fetch`
 (`app.config.ts`).
 

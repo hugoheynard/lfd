@@ -259,7 +259,7 @@ B2B_CATALOG_PUSH_URL=http://localhost:3200/catalog/ingest
 B2B_CATALOG_PUSH_SECRET=dev-catalog-secret
 ```
 
-et **la même valeur** dans `apps/lfc-B2B-platform-backend/.env` sous
+et **la même valeur** dans `apps/lfd-api/.env` sous
 `B2B_CATALOG_PUSH_SECRET`. Une moitié seule laisse le canal éteint — c'est voulu,
 et le bulletin de démarrage le dira.
 

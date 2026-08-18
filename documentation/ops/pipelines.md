@@ -11,7 +11,7 @@ PIM ne redéploie pas le B2B.
 ```mermaid
 flowchart LR
     subgraph src["Ce qui change"]
-        A["apps/lfc-B2B-platform-backend/**"]
+        A["apps/lfd-api/**"]
         B["apps/lfc-PIM-backend/**"]
         C["apps/lfc-B2B-admin-frontend/**"]
         D["packages/**"]

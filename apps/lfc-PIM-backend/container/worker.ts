@@ -1,7 +1,7 @@
 // Worker d'entrée du backend PIM en Cloudflare Container (réparti, stateless) :
 // rate-limit par IP à l'edge + forwarding des variables runtime (secrets du
 // Worker → env du container).
-// Voir apps/lfc-B2B-platform-backend/container/worker.ts pour les détails.
+// Voir apps/lfd-api/container/worker.ts pour les détails.
 import { Container } from '@cloudflare/containers';
 
 import { guardedFetch } from './edge-guard';

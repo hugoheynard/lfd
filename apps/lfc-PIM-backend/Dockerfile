@@ -1,6 +1,6 @@
 # Image du backend PIM (NestJS + Prisma via adapter-pg → PAS d'engine natif).
 # ⚠️ CONTEXTE DE BUILD = RACINE DU MONOREPO. Secrets runtime via `wrangler secret put`.
-# Voir apps/lfc-B2B-platform-backend/Dockerfile + CONTAINERIZE-NOTES.md.
+# Voir apps/lfd-api/Dockerfile + CONTAINERIZE-NOTES.md.
 
 # ---- build ----
 FROM node:22-slim AS build

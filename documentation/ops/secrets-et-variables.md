@@ -108,7 +108,7 @@ résout pas : il est déjà mort.
 
 Poser un secret sur le Worker **ne suffit pas**. Le Worker ne transmet au
 container que les noms inscrits dans `RUNTIME_KEYS`
-(`apps/lfc-B2B-platform-backend/container/worker.ts`) ; tout le reste est jeté
+(`apps/lfd-api/container/worker.ts`) ; tout le reste est jeté
 sans un mot.
 
 Cette liste avait dérivé de ce que lit `AppConfig` — cinq noms `STORAGE_*`

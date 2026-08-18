@@ -28,7 +28,7 @@
 2. **Secrets RUNTIME du Worker** (≠ secrets GitHub) — posés une fois, ils arrivent
    comme variables d'env au container :
    ```bash
-   cd apps/lfc-B2B-platform-backend
+   cd apps/lfd-api
    pnpm exec wrangler secret put DATABASE_B2B_URL
    pnpm exec wrangler secret put STRIPE_SECRET_KEY
    pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET

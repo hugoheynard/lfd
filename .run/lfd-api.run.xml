@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="lfc-b2b-platform-backend" type="js.build_tools.npm">
-    <package-json value="$PROJECT_DIR$/apps/lfc-b2b-platform-backend/package.json" />
+  <configuration default="false" name="lfd-api" type="js.build_tools.npm">
+    <package-json value="$PROJECT_DIR$/apps/lfd-api/package.json" />
     <command value="run" />
     <scripts>
       <script value="start:dev" />

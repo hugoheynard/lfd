@@ -225,7 +225,7 @@ pouvoir **voir** la frontière en ouvrant le dossier, et qu'un import qui la
 franchit doit sauter aux yeux dans une revue de diff.
 
 ```
-apps/lfd-api/                          ← ex lfc-B2B-platform-backend, renommé
+apps/lfd-api/                          ← ex lfd-api, renommé
 ├── prisma/
 │   └── schema.prisma                  schemas = ["staff", "pim", "b2b", "growth"]
 └── src/

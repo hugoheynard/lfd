@@ -6,7 +6,7 @@
 // depuis Jest tirerait tout le monde Workers. Ici, zéro import : des fonctions
 // pures sur `Request`, exécutables sous Node comme sous Workers.
 //
-// ⚠️ Ce fichier existe à l'identique dans apps/lfc-B2B-platform-backend/container/. Deux
+// ⚠️ Ce fichier existe à l'identique dans apps/lfd-api/container/. Deux
 // copies d'une primitive de sécurité, c'est un risque de dérive assumé pour
 // l'instant : le mutualiser demanderait un paquet partagé compilé pour le monde
 // Workers (tsconfig `types: ["@cloudflare/workers-types"]`, résolution Bundler),

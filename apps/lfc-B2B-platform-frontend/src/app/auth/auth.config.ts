@@ -14,7 +14,7 @@ import { AUTH_ENV } from './auth.env.generated';
  * Voir `.env.example`.
  *
  * Correspondance backend : `audience` DOIT être identique au `AUTH0_AUDIENCE`
- * du backend (`apps/lfc-B2B-platform-backend`) — c'est l'exact-match qui fait
+ * du backend (`apps/lfd-api`) — c'est l'exact-match qui fait
  * que le jeton émis pour ce front est accepté par cette API et aucune autre.
  */
 export interface AuthConfig {

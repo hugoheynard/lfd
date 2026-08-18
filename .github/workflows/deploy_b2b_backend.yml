@@ -1,6 +1,6 @@
 name: deploy_b2b_backend
 
-# Déploie le backend B2B (lfc-b2b-platform-backend, NestJS + Prisma) sur Cloudflare
+# Déploie le backend B2B (lfd-api, NestJS + Prisma) sur Cloudflare
 # **Containers** : build de l'image depuis la racine monorepo → push registre
 # Cloudflare → deploy du Worker. À chaque push sur main touchant le backend B2B.
 #
@@ -21,7 +21,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/lfc-B2B-platform-backend/**"
+      - "apps/lfd-api/**"
       - "packages/**"
       - "pnpm-workspace.yaml"
       - ".github/workflows/deploy_b2b_backend.yml"
@@ -54,7 +54,7 @@ jobs:
         run: pnpm --filter "@lfd/contracts" build
 
       - name: Typecheck
-        run: pnpm --filter lfc-b2b-platform-backend exec tsc --noEmit
+        run: pnpm --filter lfd-api exec tsc --noEmit
 
       # 1) Build l'image depuis la RACINE du monorepo (contexte complet), puis la
       #    pousse sur le registre Cloudflare via wrangler (auth automatique).
@@ -63,12 +63,12 @@ jobs:
         # renverra, et donc ce qui permet d'attendre l'image NEUVE plutôt qu'un
         # simple 200 que l'ancienne rend tout aussi bien.
         run: |
-          docker build -f apps/lfc-B2B-platform-backend/Dockerfile \
+          docker build -f apps/lfd-api/Dockerfile \
             --build-arg APP_REVISION="${GITHUB_SHA:0:7}" \
             -t lfc-b2b-backend:"$GITHUB_SHA" .
 
       - name: Push image → registre Cloudflare
-        working-directory: apps/lfc-B2B-platform-backend
+        working-directory: apps/lfd-api
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_B2B_BACKEND_WORKER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -91,7 +91,7 @@ jobs:
       #    tolérance, le premier déploiement échouerait sans rien livrer.
       - name: Sync runtime secrets
         continue-on-error: true
-        working-directory: apps/lfc-B2B-platform-backend
+        working-directory: apps/lfd-api
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_B2B_BACKEND_WORKER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -198,7 +198,7 @@ jobs:
       #    à moitié migré. Le coût d'un échec ici est une image construite pour
       #    rien : du temps de CI, pas une indisponibilité.
       - name: Migrer la base
-        working-directory: apps/lfc-B2B-platform-backend
+        working-directory: apps/lfd-api
         env:
           DATABASE_B2B_URL: ${{ secrets.DATABASE_B2B_URL }}
         run: pnpm exec prisma migrate deploy
@@ -206,7 +206,7 @@ jobs:
       # 4) Injecte l'account id dans l'`image` du wrangler (jamais commité), puis déploie
       #    le Worker qui référence l'image poussée.
       - name: Deploy Worker
-        working-directory: apps/lfc-B2B-platform-backend
+        working-directory: apps/lfd-api
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_B2B_BACKEND_WORKER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

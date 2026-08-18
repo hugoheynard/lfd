@@ -29,7 +29,7 @@ export const DEV_PORTS = {
   b2bAdminFront: 7317,
   /** Backend PIM (`lfc-PIM-backend`). */
   pimBack: 3100,
-  /** Backend B2B (`lfc-B2B-platform-backend`). */
+  /** Backend B2B (`lfd-api`). */
   b2bBack: 3200,
   /** Port Angular par défaut, gardé pour un éventuel 2ᵉ front local. */
   spareFront: 4200,

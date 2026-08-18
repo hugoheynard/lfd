@@ -50,8 +50,8 @@ démarches, qui partent toutes du **même** mailer :
 **Auth0 n'envoie aucun de ces e-mails.** Il fabrique seulement le lien à usage
 unique (`passwordSetupUrl`, un ticket de la Management API) ; c'est notre backend
 qui le met en page et l'expédie
-([`grant-account-access.service.ts`](../../apps/lfc-B2B-platform-backend/src/account/application/services/grant-account-access.service.ts),
-[`invite-staff-user.handler.ts`](../../apps/lfc-B2B-platform-backend/src/staff-users/application/invite-staff-user.handler.ts)).
+([`grant-account-access.service.ts`](../../apps/lfd-api/src/account/application/services/grant-account-access.service.ts),
+[`invite-staff-user.handler.ts`](../../apps/lfd-api/src/staff-users/application/invite-staff-user.handler.ts)).
 Une seule adresse d'expédition couvre donc réellement les deux mondes — il n'y a
 pas de fournisseur d'e-mail à configurer côté Auth0.
 
@@ -194,7 +194,7 @@ dépôt (cf. [`secrets-et-variables.md §5`](secrets-et-variables.md)).
 
 - 🔴 **`MAILER_FROM_ADDRESS` est OBLIGATOIRE tant que le correctif du défaut
   n'est pas sur `main`.** Le défaut du code
-  ([`env-readers.ts`](../../apps/lfc-B2B-platform-backend/src/infra/config/env-readers.ts))
+  ([`env-readers.ts`](../../apps/lfd-api/src/infra/config/env-readers.ts))
   vaut bien `no-reply@lafoliecoffee.info`, mais ce commit vit sur `dev` : la
   version **déployée** porte encore `no-reply@lafoliedouce.fr`, un domaine que
   personne ne possède. Sans la Variable, le container expédierait depuis ce
@@ -228,7 +228,7 @@ change donc rien : il faut relancer le workflow
 [`deploy_b2b_backend.yml`](../../.github/workflows/deploy_b2b_backend.yml).
 
 Les trois maillons de ce schéma sont tenus par
-[`container/__tests__/runtime-keys.spec.ts`](../../apps/lfc-B2B-platform-backend/container/__tests__/runtime-keys.spec.ts),
+[`container/__tests__/runtime-keys.spec.ts`](../../apps/lfd-api/container/__tests__/runtime-keys.spec.ts),
 qui compare les trois listes de noms **dans les deux sens**. Ajouter un réglage
 sans l'ajouter partout casse la CI, ce qui est le but : la version précédente de
 cette chaîne a laissé `MAILER_REPLY_TO` branché sur du vide pendant des semaines,
@@ -271,7 +271,7 @@ une seconde porte machine-à-machine à inventer. Mais ce jeton était posé **�
 main**, donc sans source de vérité : il est désormais un Secret GitHub, poussé
 par la même boucle que les autres. Une rotation se fait à un seul endroit, et
 l'exception qui le concernait dans
-[`runtime-keys.spec.ts`](../../apps/lfc-B2B-platform-backend/container/__tests__/runtime-keys.spec.ts)
+[`runtime-keys.spec.ts`](../../apps/lfd-api/container/__tests__/runtime-keys.spec.ts)
 a disparu.
 
 **À poser une fois** : Secret `RECOMPUTE_TOKEN` avec la **même valeur** que celle
@@ -281,7 +281,7 @@ dit — elle ne se saute pas en silence.
 ## 5. Vérifier — dans cet ordre
 
 1. **Le bulletin de démarrage.** Le backend dit à voix haute ce qu'il ne sait
-   pas faire ([`startup-report.service.ts`](../../apps/lfc-B2B-platform-backend/src/infra/startup/startup-report.service.ts)).
+   pas faire ([`startup-report.service.ts`](../../apps/lfd-api/src/infra/startup/startup-report.service.ts)).
    Attendu dans les logs du container :
 
    ```

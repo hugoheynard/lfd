@@ -1,6 +1,14 @@
 {
   // Backend B2B (NestJS) en Cloudflare Container, piloté par un Worker d'entrée.
   // Consommé par .github/workflows/deploy_b2b_backend.yml (wrangler deploy).
+  //
+  // ⚠️ Le paquet s'appelle `lfd-api` depuis B0, PAS ce Worker. Le renommer
+  // créerait un Worker NEUF, laisserait l'ancien orphelin, et couperait la
+  // passerelle entre les deux déploiements — `gateway/wrangler.toml` le vise par
+  // un service binding (`service = "lfc-b2b-backend"`). Même chose pour le nom
+  // d'image plus bas. Renommer l'identité DÉPLOYÉE est une opération à part :
+  // déployer la passerelle et le backend ensemble, puis supprimer l'ancien
+  // Worker à la main. Cf. documentation/suite/architecture-topologie-apps.md.
   "name": "lfc-b2b-backend",
   "main": "container/worker.ts",
   "compatibility_date": "2025-06-01",

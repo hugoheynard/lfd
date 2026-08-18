@@ -13,7 +13,7 @@ depuis un écran : une case cochée un mardi soir changeait la définition de
 que personne puisse dire le lendemain pourquoi un compte était passé.
 
 La règle vit désormais dans **une seule fonction**, `activationGate`
-(`apps/lfc-B2B-platform-backend/src/account/domain/services/activation-gate.ts`),
+(`apps/lfd-api/src/account/domain/services/activation-gate.ts`),
 pure, testée, et lue par les deux chemins qui comptent : la fiche staff (qui
 l'affiche) et la commande d'activation (qui refuse). L'écran n'a plus le droit
 de la rejouer.

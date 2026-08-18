@@ -31,7 +31,7 @@ import { localToInstant } from "../src/growth/domain/paris-time.js";
  * Il ne touche à **rien d'autre** : aucune table n'est vidée, aucune donnée
  * voisine n'est modifiée.
  *
- *     pnpm --filter lfc-b2b-platform-backend run db:seed:fiche
+ *     pnpm --filter lfd-api run db:seed:fiche
  */
 
 /** Tout ce que ce seed possède porte ce préfixe — c'est son périmètre d'effacement. */
