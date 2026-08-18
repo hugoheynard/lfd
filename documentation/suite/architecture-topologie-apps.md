@@ -305,3 +305,87 @@ devenir un garde-fou explicite. Le reste fond.
 
 Ce n'est pas un gain gratuit : c'est le vrai bénéfice de la fusion, et c'est
 aussi ce qui la rend irréversible.
+
+## L'arborescence cible — le front
+
+Le front se visualise moins bien que le backend, et ce n'est pas un défaut de
+description : **un front ne possède rien**. Le backend a des tables, des schémas,
+des transactions — sa frontière est un objet. Le front n'a que des routes et des
+dossiers ; sa frontière est une convention, donc elle doit être écrite pour
+exister.
+
+```
+apps/lfd-admin/                        ← ex lfc-B2B-admin-frontend
+└── src/app/
+    ├── auth/                          UN bootstrap Auth0 (celui de l'admin)
+    ├── api/                           client HTTP, UNE base d'URL
+    ├── shared/                        composants transverses, notify, nav-counts
+    │
+    ├── catalogue/                     ▸ du PIM — produits, catégories, collections, TVA
+    ├── publication/                   ▸ du PIM
+    ├── canaux/                        ▸ du PIM (ex `channels/` + `integration/`) — Shopify
+    ├── emplacements/                  ▸ du PIM
+    │
+    ├── comptes-clients/  fiche-client/
+    ├── commandes/  commercial/  production/  retrait/
+    ├── reglages/                      ← dont Utilisateurs : le point unique
+    │
+    └── app.routes.ts                  UN routeur, UNE nav
+```
+
+Le `data/` du PIM (client d'API, modèles) fusionne dans `api/` ; sa page
+`documentation/` devient une route comme une autre.
+
+### Ce qui disparaît
+
+|                                 |                                   |
+| ------------------------------- | --------------------------------- |
+| `apps/lfc-suite-shell/`         | l'app hôte entière                |
+| `suite-embed` dans chaque front | le client d'embed                 |
+| `packages/suite-embed/`         | le contrat de bridge              |
+| le second bootstrap Auth0       | le PIM hérite de celui de l'admin |
+| l'audience `pim` côté front     | une de moins                      |
+
+Environ **24 fichiers** de plomberie, et deux bundles Angular + fold qui n'en
+font plus qu'un.
+
+### La règle d'import, côté front
+
+Elle est plus courte que celle du backend, parce qu'il n'y a rien à posséder :
+
+- **une feature n'importe jamais une autre feature.** `commercial/` ne connaît pas
+  `catalogue/`. Ce qu'elles partagent monte dans `shared/`, ou passe par
+  l'URL — un `routerLink` est un couplage assumé, un import croisé ne l'est pas ;
+- **`api/` est le seul à parler HTTP.** Une feature appelle un service, jamais
+  `HttpClient` ;
+- **`shared/` ne connaît aucune feature.** S'il en connaît une, ce n'est pas du
+  partagé, c'est de la feature mal rangée.
+
+C'est la même matrice que le backend, en plus pauvre — et c'est normal : la
+frontière qui compte, celle des données, est déjà tenue côté serveur.
+
+### Les packages du front
+
+```
+fold-ng      (npm)   le design system — inchangé
+b2b-ui               présentation partagée admin ↔ client   ▸ DEUX consommateurs, il reste
+catalog-ui           écrans de catalogue                    ▸ UN seul consommateur
+```
+
+`catalog-ui` n'est utilisé que par l'admin — pas même par le front PIM. Après la
+fusion il en aura toujours **un**. Un package à un seul consommateur est un
+dossier qui paie un build : il ne mérite son extraction que le jour où le front
+client s'en sert. Sinon il redescend dans `shared/`.
+
+C'est la question symétrique du renommage `contracts` → `b2b-contracts` : d'un
+côté un paquet trop large qui efface une frontière, de l'autre un paquet trop
+étroit qui en invente une.
+
+### Le lanceur, plus tard
+
+Il revient dès qu'il y a **deux fronts internes** — `ops`, ou `terrain`. Ce sera
+une page avec des tuiles et des `href`, alimentée par le registre
+(`SUITE_APPS` + `requiredPermission`) qui survit à la casse. Deux fichiers.
+
+Un lanceur **navigue**. Il n'héberge pas, il ne relaie pas de jeton, il ne
+surveille pas la santé de ce qu'il ouvre.
