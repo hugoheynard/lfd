@@ -25,6 +25,7 @@
     "lint:fold-tokens": "node dev-toolbox/gates/fold-tokens.mjs",
     "lint:context-boundaries": "node dev-toolbox/gates/context-boundaries.mjs",
     "lint:cross-schema-join": "node dev-toolbox/gates/cross-schema-join.mjs",
+    "lint:pim-schema-parity": "node dev-toolbox/gates/pim-schema-parity.mjs",
     "test": "turbo run test",
     "clean": "turbo run clean"
   },

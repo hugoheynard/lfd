@@ -4,3 +4,4 @@ node_modules
 
 # Prisma — client généré (regénéré au postinstall via `prisma generate`)
 /src/infra/database/client/
+/src/pim/infra/database/client/

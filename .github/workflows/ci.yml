@@ -102,6 +102,12 @@ jobs:
 
       - name: "Gate : aucune jointure inter-schéma"
         run: pnpm lint:cross-schema-join
+
+      # Temporaire, le temps que le PIM déménage (B2c) : sa copie de schéma ne
+      # doit pas dériver de l'original, sinon le second client Prisma ignore une
+      # colonne et on l'apprend en production.
+      - name: "Gate : la copie du schéma PIM est fidèle"
+        run: pnpm lint:pim-schema-parity
       # `docker run` plutôt qu'un `services:` : l'image MinIO a besoin d'une
       # commande (`server /data`), et un bloc `services` ne sait pas en passer.
       - name: Démarrer le stockage objet (MinIO)

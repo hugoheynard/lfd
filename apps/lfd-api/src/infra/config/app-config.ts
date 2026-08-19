@@ -48,6 +48,7 @@ const DEFAULT_AUTH0_STAFF_CONNECTION = "lfc-staff";
 @Injectable()
 export class AppConfig {
   private readonly database: string;
+  private readonly pimDatabase: string;
   private readonly auth0DomainValue: string;
   private readonly auth0AudienceValue: string;
   private readonly auth0ConnectionValue: string;
@@ -70,6 +71,11 @@ export class AppConfig {
 
   constructor() {
     this.database = required("DATABASE_B2B_URL");
+    // Optionnelle tant que le PIM n'a pas déménagé (B2c) : exiger une base dont
+    // aucun code ne se sert encore ferait échouer le boot de tous les
+    // environnements pour rien. Elle redeviendra requise avec son premier
+    // consommateur — et `PimPrismaService` refuse déjà clairement si elle manque.
+    this.pimDatabase = optionalString("DATABASE_PIM_URL") ?? "";
     this.auth0DomainValue = required("AUTH0_DOMAIN");
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
     this.auth0ConnectionValue =
@@ -123,6 +129,23 @@ export class AppConfig {
    */
   databaseUrl(): string {
     return this.database;
+  }
+
+  /**
+   * URL de connexion à la base du **référentiel PIM** — le second client.
+   *
+   * Mêmes deux schémas acceptés que la base commerce, pour la même raison : le
+   * schéma de l'URL choisit le transport.
+   *
+   * @throws {Error} si elle n'est pas posée. Le refus est ici et pas au boot :
+   *   tant que rien ne lit cette base, exiger la variable ferait échouer tous
+   *   les environnements pour du code que personne n'appelle.
+   */
+  pimDatabaseUrl(): string {
+    if (this.pimDatabase === "") {
+      throw new Error("DATABASE_PIM_URL manquante : le référentiel PIM est injoignable.");
+    }
+    return this.pimDatabase;
   }
 
   /** Tenant Auth0, sans schéma ni slash — ex. `lfc.eu.auth0.com`. */

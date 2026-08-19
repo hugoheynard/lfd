@@ -218,6 +218,18 @@ elle qui remplace le mur que le réseau tenait.
 > entière du mauvais côté** — le résolveur de principal, qui lit la table des
 > personnes et publie un événement d'`account/`, vivait dans `infra/auth`.
 >
+> **B2b** ajoute le second client Prisma : `prisma.pim.config.ts`, le schéma
+> copié sous `prisma/pim/`, `PimPrismaService` et son module **non global** —
+> seul `pim/` a le droit de lire cette base. Il n'est **pas** branché dans
+> `AppModule` : rien ne le consomme avant B2c, et faire échouer le boot de tous
+> les environnements pour du code mort serait le pire échange possible.
+>
+> La copie du schéma est la seule concession, et elle est **tenue** : Prisma
+> déclare la sortie du générateur dans le schéma, donc pointer celui du PIM
+> écrirait le client chez lui. Le gate `lint:pim-schema-parity` échoue si les deux
+> divergent, et il dit lui-même qu'il disparaît avec la copie, en B2c — un gate
+> temporaire qui n'annonce pas sa sortie devient un meuble.
+>
 > Ce dernier a demandé le geste qui compte pour la suite : `platform` déclare le
 > **port** `PrincipalResolver`, `account/` fournit l'implémentation, et le guard
 > global se déclare à la **racine de composition** — seul endroit qui a le droit

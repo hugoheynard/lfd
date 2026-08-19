@@ -51,6 +51,9 @@ const BLOCK_OF = {
   pricing: "b2b",
   subscriptions: "b2b",
 
+  // ▸ LE RÉFÉRENTIEL — arrive en B2c ; son socle de base de données est déjà là.
+  pim: "pim",
+
   // ▸ TECHNIQUE PURE — zéro connaissance métier.
   infra: "platform",
   shared: "platform",
