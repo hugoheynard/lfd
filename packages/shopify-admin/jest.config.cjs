@@ -5,10 +5,12 @@ module.exports = {
   displayName: "shopify-admin",
   testMatch: ["**/?(*.)+(spec|test).ts"],
   testPathIgnorePatterns: ["/node_modules/", "/dist/"],
+  extensionsToTreatAsEsm: [".ts"],
   transform: {
     "^.+\\.ts$": [
       "ts-jest",
       {
+        useESM: true,
         tsconfig: "./tsconfig.test.json",
       },
     ],

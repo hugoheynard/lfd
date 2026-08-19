@@ -1,10 +1,12 @@
 {
-  // ts-jest compile les specs en CommonJS en mémoire — on surcharge l'émission
-  // NodeNext/ESM du build juste pour les tests (miroir de @lfd/storage).
+  // Les specs tournent en ESM, comme le paquet lui-même (`"type": "module"`) et
+  // comme `lfd-api` : plus de pont CommonJS. TypeScript 6.0 a déprécié
+  // `moduleResolution: "node10"` — seule résolution possible avec un `module`
+  // CommonJS — et 7.0 la refusera. On aligne au lieu de silencer.
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "Node",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "target": "ES2022",
     "esModuleInterop": true,
     "isolatedModules": true,

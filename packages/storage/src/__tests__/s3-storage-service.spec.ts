@@ -9,15 +9,23 @@ import {
 } from "@aws-sdk/client-s3";
 import { mockClient } from "aws-sdk-client-mock";
 
-// Capture the presign call (getSignedUrl bypasses client.send).
-jest.mock("@aws-sdk/s3-request-presigner", () => ({
-  getSignedUrl: jest.fn(async () => "https://signed.example/url"),
-}));
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { S3StorageService } from "../S3StorageService.js";
 import type { IStorageMetrics, StorageOpRecord } from "../storage-metrics.js";
 
-const getSignedUrlMock = getSignedUrl as jest.MockedFunction<typeof getSignedUrl>;
+// Capture the presign call (getSignedUrl bypasses client.send). The suite runs
+// as ESM, so `jest.mock` — which relies on CommonJS hoisting — does nothing:
+// the module registry is primed with `unstable_mockModule`, and the subject is
+// imported dynamically AFTER, so it binds to the double.
+const getSignedUrlMock = jest.fn<
+  (client: unknown, command: unknown, options?: { expiresIn?: number }) => Promise<string>
+>(async () => "https://signed.example/url");
+
+jest.unstable_mockModule("@aws-sdk/s3-request-presigner", () => ({
+  getSignedUrl: getSignedUrlMock,
+}));
+
+const { S3StorageService } = await import("../S3StorageService.js");
+type S3StorageService = InstanceType<typeof S3StorageService>;
+
 const s3Mock = mockClient(S3Client);
 
 class FakeMetrics implements IStorageMetrics {
