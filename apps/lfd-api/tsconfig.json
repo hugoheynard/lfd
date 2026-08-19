@@ -8,7 +8,9 @@
     "resolvePackageJsonExports": true,
     "isolatedModules": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    // Explicite depuis TypeScript 6.0 : le compilateur ne déduit plus le
+    // répertoire racine commun (TS5011). Sans ça, `nest build` refuse de partir.
+    "rootDir": "./src",
     // Redondants avec le flag layer (tsc les hérite déjà via `extends`), mais
     // déclarés en clair pour les transpileurs esbuild (tsx) qui ne résolvent PAS
     // `extends` pour ces deux options : sans ça, la DI Nest par type casse sous

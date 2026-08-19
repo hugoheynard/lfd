@@ -32,7 +32,7 @@
     "@lfd/endpoints": "workspace:*",
     "prettier": "^3.5.3",
     "turbo": "^2.5.0",
-    "typescript": "~5.9.3"
+    "typescript": "catalog:"
   },
   "engines": {
     "node": ">=22 <23",

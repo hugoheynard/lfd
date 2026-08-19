@@ -14,6 +14,12 @@ catalog:
   # de navigateur liés à sa version, et deux versions dans le dépôt en
   # téléchargeraient deux jeux.
   "@playwright/test": 1.62.1
+  # TypeScript, aligné une seule fois pour les backs et les packages Node.
+  # 6.0 est la DERNIÈRE version JavaScript du compilateur : elle signale en
+  # dépréciation ce que 7.0 (port Go) refuse en erreur dure. On s'y installe
+  # pour voir venir — 7.0 ne ship aucune API programmatique, donc `nest build`,
+  # ts-jest et les règles ESLint type-aware ne tournent pas dessus.
+  typescript: ~6.0.3
 
 onlyBuiltDependencies:
   - esbuild

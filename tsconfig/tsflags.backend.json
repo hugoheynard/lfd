@@ -5,6 +5,12 @@
     "moduleResolution": "NodeNext",
     "target": "ES2023",
     "lib": ["esnext"],
+    // TypeScript 6.0 a changé le défaut de `types` en `[]` : le compilateur ne
+    // balaie plus `node_modules/@types` tout seul (~30 % du démarrage à froid).
+    // Les globales Node (`fetch`, `Response`, `URLSearchParams`, `process`…) ne
+    // sont donc plus là par accident — on les déclare, une fois, pour tous les
+    // backs. Les configs de test ajoutent `"jest"` par-dessus.
+    "types": ["node"],
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "declarationMap": true,
