@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 
+import { B2bPlatformModule } from "../pim/channels/b2b-platform/b2b-platform.module.js";
+
 import {
   AlignOnPimPriceHandler,
   SetB2bPriceHandler,
@@ -19,6 +21,8 @@ import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-ite
 import { PrismaCanonicalPriceHistoryReader } from "./infrastructure/prisma-canonical-price-history.reader.js";
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
+import { AdminCatalogParityController } from "./http/admin-catalog-parity.controller.js";
+import { CheckCatalogParityService } from "./application/check-catalog-parity.service.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -40,10 +44,15 @@ import { AdminCatalogController } from "./http/admin-catalog.controller.js";
  * l'article, au seul endroit par lequel les deux chemins de changement passent.
  */
 @Module({
-  imports: [CqrsModule],
-  controllers: [AdminCatalogController],
+  // `B2bPlatformModule` pour le SEUL port de lecture du fil : le contrôle de
+  // parité a besoin de savoir ce que le référentiel publierait. C'est le
+  // franchissement `b2b → pim` que la matrice autorise — un port, jamais une
+  // table.
+  imports: [CqrsModule, B2bPlatformModule],
+  controllers: [AdminCatalogController, AdminCatalogParityController],
   providers: [
     IngestCatalogService,
+    CheckCatalogParityService,
     SetB2bPriceHandler,
     AlignOnPimPriceHandler,
     SetCatalogVisibilityHandler,
@@ -66,6 +75,7 @@ import { AdminCatalogController } from "./http/admin-catalog.controller.js";
     CatalogItemRepository,
     CanonicalPriceHistoryReader,
     IngestCatalogService,
+    CheckCatalogParityService,
   ],
 })
 export class CatalogModule {}

@@ -37,9 +37,11 @@ const SHELF_BY_PIM_CATEGORY: Readonly<Record<string, CatalogCategory>> = {
 /**
  * **L'autorité de prix du checkout, branchée sur la base.**
  *
- * Remplace `SeededProductCatalog`, dont le prix était une constante compilée :
- * l'écran de tarification comme la frise résolvaient donc de vraies décisions
- * contre des tarifs figés, et historiser ce canonique n'aurait rien historisé.
+ * A remplacé un catalogue **semé en dur**, dont le prix était une constante
+ * compilée : l'écran de tarification comme la frise résolvaient de vraies
+ * décisions contre des tarifs figés, et historiser ce canonique n'aurait rien
+ * historisé. Ce semis a fini sa vie de source de production ; il ne survit que
+ * comme jeu de données de test (`test/catalog-seed.ts`).
  *
  * **L'identifiant ne change pas.** La boutique vend le SKU du PRODUIT
  * (`VIE-001`) depuis l'ouverture commerciale ; le PIM, lui, vend la déclinaison

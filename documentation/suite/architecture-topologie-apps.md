@@ -490,12 +490,42 @@ projection de catégories et l'historique du prix canonique — une vingtaine de
 fichiers qui n'existent que parce que le référentiel est de l'autre côté d'un
 réseau.
 
-Après : il ne garde que **la lecture** (`ProductCatalogReader` sur le port) et,
-si on le veut, le **contrôle de parité** — qui cesse d'être un protocole pour
-devenir un garde-fou explicite. Le reste fond.
+Après : il ne garde que **la lecture** (`ProductCatalogReader` sur le port) et
+le **contrôle de parité** — qui cesse d'être un protocole pour devenir un
+garde-fou explicite. Le reste fond.
 
 Ce n'est pas un gain gratuit : c'est le vrai bénéfice de la fusion, et c'est
 aussi ce qui la rend irréversible.
+
+> **B3 est fait** (2026-08-19), et ce qui a fondu n'est pas ce qu'on attendait.
+>
+> Le miroir **reste** : la plateforme et le référentiel gardent deux bases
+> jusqu'à B4, et une jointure ne traverse pas. Ce qui a fondu, c'est le
+> **protocole** autour de lui. Le contrôle de parité comparait le seed en place
+> au catalogue reçu, pour autoriser une bascule d'argent ; cette bascule est
+> faite, et un comparateur qui garde un protocole terminé devient un écran qui
+> rassure sans rien mesurer.
+>
+> Il a donc changé de **sujet** — ce que le référentiel publierait, face à ce
+> que la boutique vend — de **maison** (`orders/` → `catalog/`, la question
+> porte sur le miroir, pas sur les commandes) et de **porte** (le jeton
+> d'astreinte → la surface staff du catalogue : un écart de miroir se lit avec
+> les prix, pas avec un outil d'exploitation).
+>
+> Deux décisions rendent le rapport lisible, et elles se relisent en le
+> modifiant : on rapproche par **SKU de déclinaison** (les deux côtés parlent
+> enfin la même langue, toute une gymnastique disparaît), et on compare le prix
+> **reçu**, jamais le prix appliqué — un tarif négocié est une décision, pas une
+> dérive, et les confondre ferait sonner l'alarme en permanence.
+>
+> Ce qui **disparaît** vraiment : le catalogue semé en dur côté backend, qui
+> n'avait plus qu'un consommateur (ce comparateur) et survit uniquement comme
+> jeu de données de test, où il a déménagé. La projection du fil est extraite en
+> **port de lecture** (`B2bCatalogFeedPreview`) : le push s'en sert pour savoir
+> quoi envoyer, la parité pour savoir si le miroir a dérivé — et un contrôle qui
+> aurait poussé pour se rassurer aurait changé ce qu'il mesure.
+>
+> Le seed du **front client** vit toujours : c'est `C7`, et il ne bouge pas ici.
 
 ## L'arborescence cible — le front
 

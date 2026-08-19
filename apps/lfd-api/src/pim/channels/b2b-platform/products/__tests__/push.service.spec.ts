@@ -1,12 +1,22 @@
 import { Test } from "@nestjs/testing";
-import type { CatalogSnapshot } from "@lfd/catalog-sync";
+import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
-import { CatalogueReader } from "../../../../catalogue/domain/ports/catalogue-reader.js";
 import type { ProductRecord } from "../../../../catalogue/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../../infra/database/pim-prisma.service.js";
-import { B2bMembershipService } from "../../membership/membership.service.js";
 import { B2bCatalogDriver, DryRunB2bCatalogDriver } from "../driver.js";
+import { B2bCatalogFeedPreview } from "../feed-preview.js";
+import { projectCatalog } from "../projection.js";
 import { B2bCatalogPushService } from "../push.service.js";
+
+/** Un snapshot vide mais valide — ce que le port rend quand rien n'est publié. */
+function emptySnapshot(generatedAt: string) {
+  return {
+    version: CATALOG_SNAPSHOT_VERSION,
+    generatedAt,
+    categories: [],
+    products: [],
+  } as const;
+}
 
 /**
  * Ce que ces tests éprouvent : ce que le push **estampille**, et quand. C'est là
@@ -93,17 +103,20 @@ async function build(
       B2bCatalogPushService,
       DryRunB2bCatalogDriver,
       { provide: B2bCatalogDriver, useValue: live },
+      // Le service ne projette plus lui-même : il consomme le port de lecture.
+      // Le double est d'autant plus court — c'était le but de l'extraction.
       {
-        provide: CatalogueReader,
+        provide: B2bCatalogFeedPreview,
         useValue: {
-          byIds: () => Promise.resolve([...products]),
-          channelCategories: () => Promise.resolve([category]),
-        },
-      },
-      {
-        provide: B2bMembershipService,
-        useValue: {
-          publishedProductIds: () => Promise.resolve([...publishedIds]),
+          preview: (generatedAt: string) =>
+            Promise.resolve(
+              publishedIds.length === 0
+                ? { snapshot: emptySnapshot(generatedAt), candidates: 0, excluded: [] }
+                : {
+                    ...projectCatalog([...products], [category], generatedAt),
+                    candidates: publishedIds.length,
+                  },
+            ),
         },
       },
       {

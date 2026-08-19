@@ -5,6 +5,8 @@ import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
 import { B2bMembershipController } from "./membership/membership.controller.js";
 import { B2bMembershipService } from "./membership/membership.service.js";
 import { DryRunB2bCatalogDriver } from "./products/driver.js";
+import { B2bCatalogFeedPreview } from "./products/feed-preview.js";
+import { B2bCatalogFeedProjection } from "./products/feed-projection.service.js";
 import { B2bPushController } from "./products/push.controller.js";
 import { B2bCatalogPushService } from "./products/push.service.js";
 
@@ -31,7 +33,11 @@ import { B2bCatalogPushService } from "./products/push.service.js";
     // La simulation est fournie ici ; l'envoi réel (`B2bCatalogDriver`) est
     // relié par la racine de composition, seule à connaître les deux côtés.
     DryRunB2bCatalogDriver,
+    { provide: B2bCatalogFeedPreview, useClass: B2bCatalogFeedProjection },
   ],
-  exports: [B2bMembershipService],
+  // Le port de LECTURE sort d'ici : la plateforme s'en sert pour vérifier que
+  // son miroir n'a pas dérivé de sa source. Le port d'écriture, lui, ne sort
+  // pas — publier reste une décision du référentiel.
+  exports: [B2bMembershipService, B2bCatalogFeedPreview],
 })
 export class B2bPlatformModule {}

@@ -1,4 +1,4 @@
-import { CATALOG_SEED } from "../src/orders/infrastructure/product-catalog.seed.js";
+import { CATALOG_SEED } from "./catalog-seed.js";
 import type { PrismaService } from "../src/infra/database/prisma.service.js";
 
 /**

@@ -1,145 +1,117 @@
 /**
- * La **comparaison qui autorise la bascule**.
+ * **Le miroir a-t-il dérivé de sa source ?**
  *
- * Le seed du backend est l'autorité de prix au checkout depuis l'ouverture
- * commerciale : le remplacer par le catalogue reçu du PIM change le montant
- * facturé à de vrais clients. Cette comparaison est l'étape 2 du plan de
- * bascule (`architecture-catalogue-synchronise.md`), et elle est non
- * négociable — un écart silencieux facture le mauvais prix sans rien signaler.
+ * La plateforme ne lit pas le référentiel : elle en tient un miroir, alimenté
+ * par le fil catalogue, et c'est ce miroir que la caisse facture. Un miroir qui
+ * décroche facture donc un prix que personne n'a décidé — sans que rien ne le
+ * signale, puisque tout continue de fonctionner.
  *
- * **Pure** : elle prend deux listes et rend un constat. Aucune base, aucune
- * horloge, aucun réseau — ce qui permet de l'éprouver par énumération plutôt
- * qu'en fabriquant un environnement.
+ * Cette comparaison a changé de sujet. Elle a d'abord servi de **feu vert** :
+ * comparer le seed en place au catalogue reçu, une fois, pour autoriser une
+ * bascule d'argent. Cette bascule est faite, et un comparateur qui garde un
+ * protocole terminé devient un écran qui rassure sans rien mesurer. Elle
+ * compare désormais **ce que le référentiel publierait** à **ce que la
+ * plateforme vend** — une question qui, elle, ne se referme jamais.
  *
- * ⚠️ Cette pièce est **temporaire par construction**. Elle meurt avec le seed,
- * à la slice C7. La garder après ferait vivre un comparateur sans rien à
- * comparer, donc un écran qui rassure sans rien mesurer.
+ * Deux décisions de fond, et ce sont elles qui rendent le rapport lisible :
+ *
+ * - **on rapproche par SKU de déclinaison.** Les deux côtés parlent la même
+ *   langue depuis que le miroir stocke ce que le fil envoie ; l'ancienne
+ *   version devait rapprocher un SKU produit d'un SKU déclinaison, d'où toute
+ *   une gymnastique qui disparaît ici ;
+ * - **on compare le prix du référentiel, pas le prix appliqué.** Le prix B2B
+ *   négocié est une décision légitime de la plateforme, pas une dérive. Les
+ *   confondre ferait sonner l'alarme sur chaque client à qui l'on a consenti
+ *   un tarif — c'est-à-dire tout le temps, donc jamais.
+ *
+ * **Pure** : deux listes en entrée, un constat en sortie. Aucune base, aucune
+ * horloge — ce qui permet de l'éprouver par énumération.
  */
 
-/** Un article tel que le seed le connaît aujourd'hui — l'autorité en place. */
-export interface SeedEntry {
+/** Un article tel que le référentiel le publierait — la source. */
+export interface ReferenceEntry {
+  /** SKU de la **déclinaison** : la clé de rapprochement des deux côtés. */
   readonly sku: string;
   readonly name: string;
-  readonly unitPriceCents: number;
-  readonly vatRate: number;
+  /** Prix canonique HT, en centimes. Celui du référentiel, avant toute décision. */
+  readonly priceCents: number;
 }
 
-/**
- * Un article tel que le PIM l'a poussé.
- *
- * `productSku` est la **clé de rapprochement**, pas `sku` : le PIM vend la
- * déclinaison (`VIE-001-1`), le seed vend le produit (`VIE-001`). Comparer les
- * `sku` bruts rendrait 92 disparitions et 92 apparitions, ce qui cacherait
- * exactement les écarts qu'on cherche.
- *
- * `isDefault` désigne **laquelle** des déclinaisons répond du produit. Sans lui,
- * un carton de 50 écrase l'unité dans l'index et le rapport annonce qu'un
- * croissant coûte 60 € — un faux écart au moment précis où on décide d'une
- * bascule d'argent.
- */
-export interface ReceivedEntry {
+/** Un article tel que la plateforme le tient — le miroir. */
+export interface MirrorEntry {
   readonly sku: string;
-  readonly productSku: string;
-  readonly isDefault: boolean;
   readonly name: string;
-  readonly unitPriceCents: number;
-  readonly vatRate: number;
+  /** Le prix **reçu** du référentiel, pas celui qui sera facturé. */
+  readonly pimPriceCents: number;
 }
 
 /** Un écart sur une valeur, dit avec les deux versions — jamais juste « diffère ». */
 export interface FieldGap<T> {
   readonly sku: string;
-  readonly seed: T;
-  readonly received: T;
+  readonly reference: T;
+  readonly mirror: T;
 }
 
 export interface ParityReport {
-  readonly seedCount: number;
-  readonly receivedCount: number;
+  readonly referenceCount: number;
+  readonly mirrorCount: number;
   /**
-   * Vendus aujourd'hui, absents du catalogue reçu. **Le pire cas** : après la
-   * bascule, un client qui les commande verrait son panier refusé.
+   * Publiés par le référentiel, absents du miroir. **Le pire cas** : la
+   * boutique ne sait pas les vendre, et le client ne comprend pas pourquoi.
    */
   readonly missing: readonly string[];
-  /** Reçus, inconnus du seed. Des nouveautés — à confirmer, pas à craindre. */
-  readonly extra: readonly string[];
-  /** Le prix change. Chaque ligne est de l'argent, et se relit une par une. */
+  /**
+   * Dans le miroir, plus publiés. Ils continuent d'être vendus alors que le
+   * référentiel les a retirés — ce qui est l'autre moitié du même défaut.
+   */
+  readonly stale: readonly string[];
+  /** Le prix canonique a bougé sans que le miroir suive. Chaque ligne est de l'argent. */
   readonly priceGaps: readonly FieldGap<number>[];
-  /** Le taux de TVA change — attendu, puisque le seed le code en dur à 5,5 %. */
-  readonly vatGaps: readonly FieldGap<number>[];
   readonly nameGaps: readonly FieldGap<string>[];
   /**
-   * `true` **seulement** si rien ne bouge. Un booléen plutôt qu'un score : la
-   * question posée est « peut-on basculer sans rien expliquer ? », et elle n'a
-   * pas de réponse nuancée.
+   * `true` **seulement** si rien ne diffère. Un booléen plutôt qu'un score : la
+   * question est « le miroir est-il fidèle ? », et elle n'a pas de nuance.
    */
-  readonly identical: boolean;
+  readonly inSync: boolean;
 }
 
-/**
- * Rapproche les deux catalogues par **SKU produit**, sur la déclinaison **par
- * défaut**.
- *
- * Une déclinaison non-`isDefault` (un futur conditionnement) n'a pas de
- * correspondant dans le seed : elle apparaît en `extra`, ce qui est le constat
- * juste — c'est bien un article que la boutique ne vendait pas.
- */
-export function compareCatalogs(
-  seed: readonly SeedEntry[],
-  received: readonly ReceivedEntry[],
+export function compareToReference(
+  reference: readonly ReferenceEntry[],
+  mirror: readonly MirrorEntry[],
 ): ParityReport {
-  const receivedByProductSku = new Map(
-    received.filter((entry) => entry.isDefault).map((entry) => [entry.productSku, entry]),
-  );
-  const seenProductSkus = new Set<string>();
+  const mirrorBySku = new Map(mirror.map((entry) => [entry.sku, entry]));
+  const seen = new Set<string>();
 
   const missing: string[] = [];
   const priceGaps: FieldGap<number>[] = [];
-  const vatGaps: FieldGap<number>[] = [];
   const nameGaps: FieldGap<string>[] = [];
 
-  for (const entry of seed) {
-    const match = receivedByProductSku.get(entry.sku);
+  for (const entry of reference) {
+    const match = mirrorBySku.get(entry.sku);
     if (match === undefined) {
       missing.push(entry.sku);
       continue;
     }
-    seenProductSkus.add(entry.sku);
+    seen.add(entry.sku);
 
-    if (match.unitPriceCents !== entry.unitPriceCents) {
-      priceGaps.push({
-        sku: entry.sku,
-        seed: entry.unitPriceCents,
-        received: match.unitPriceCents,
-      });
-    }
-    if (match.vatRate !== entry.vatRate) {
-      vatGaps.push({ sku: entry.sku, seed: entry.vatRate, received: match.vatRate });
+    if (match.pimPriceCents !== entry.priceCents) {
+      priceGaps.push({ sku: entry.sku, reference: entry.priceCents, mirror: match.pimPriceCents });
     }
     if (match.name !== entry.name) {
-      nameGaps.push({ sku: entry.sku, seed: entry.name, received: match.name });
+      nameGaps.push({ sku: entry.sku, reference: entry.name, mirror: match.name });
     }
   }
 
-  // Non-défaut ⇒ toujours en plus : le seed ne connaissait qu'une unité par
-  // produit. Défaut sans correspondant ⇒ nouveauté.
-  const extra = received
-    .filter((entry) => !entry.isDefault || !seenProductSkus.has(entry.productSku))
-    .map((entry) => entry.sku);
+  const stale = mirror.map((entry) => entry.sku).filter((sku) => !seen.has(sku));
 
   return {
-    seedCount: seed.length,
-    receivedCount: received.length,
+    referenceCount: reference.length,
+    mirrorCount: mirror.length,
     missing,
-    extra,
+    stale,
     priceGaps,
-    vatGaps,
     nameGaps,
-    identical:
-      missing.length === 0 &&
-      extra.length === 0 &&
-      priceGaps.length === 0 &&
-      vatGaps.length === 0 &&
-      nameGaps.length === 0,
+    inSync:
+      missing.length === 0 && stale.length === 0 && priceGaps.length === 0 && nameGaps.length === 0,
   };
 }

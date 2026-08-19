@@ -38,7 +38,6 @@ import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { CatalogBackedProductCatalog } from "./infrastructure/catalog-backed-product-catalog.js";
-import { SeededProductCatalog } from "./infrastructure/seeded-product-catalog.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
 import { AdminHandoverController } from "./http/admin-handover.controller.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
@@ -47,7 +46,6 @@ import { DeliveryDefaultsReader } from "./domain/ports/delivery-defaults.reader.
 import { PrismaDeliveryDefaultsReader } from "./infrastructure/prisma-delivery-defaults.reader.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { AdminProductionController } from "./http/admin-production.controller.js";
-import { AdminCatalogParityController } from "./http/admin-catalog-parity.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
 
 /**
@@ -79,7 +77,6 @@ import { OrdersController } from "./http/orders.controller.js";
     AdminOrderDraftsController,
     AdminCatalogController,
     AdminHandoverController,
-    AdminCatalogParityController,
   ],
   providers: [
     OrderDrafting,
@@ -105,10 +102,6 @@ import { OrdersController } from "./http/orders.controller.js";
     DiscardOrderDraftHandler,
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     { provide: CustomerSkuReader, useClass: PrismaCustomerSkuReader },
-    // Le seed reste PROVIDÉ, mais il n'est plus l'autorité : seul le contrôleur
-    // de parité l'injecte encore, par sa classe, pour comparer les deux
-    // catalogues. Il meurt avec la slice C7.
-    SeededProductCatalog,
     { provide: ProductCatalogReader, useClass: CatalogBackedProductCatalog },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },

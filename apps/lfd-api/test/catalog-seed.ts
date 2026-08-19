@@ -1,5 +1,14 @@
-import type { PricedSku } from "../domain/ports/product-catalog.reader.js";
+import type { PricedSku } from "../src/orders/domain/ports/product-catalog.reader.js";
 
+/**
+ * ⚠️ **Jeu de données de TEST**, plus une source de production.
+ *
+ * Il a été l'autorité de prix du checkout jusqu'à la bascule sur le miroir du
+ * référentiel. Il vit maintenant dans `test/` parce que c'est ce qu'il est
+ * devenu : les suites nomment ses SKU et ses prix, et les réécrire aurait
+ * mélangé « la bascule casse quelque chose » avec « le test parle d'autre
+ * chose ».
+ */
 /**
  * Catalogue **semé** du B2B — miroir du seed front (catalogue-seed.ts), lui-même
  * copié du PIM. Source de prix **autoritaire** au checkout : le client n'envoie

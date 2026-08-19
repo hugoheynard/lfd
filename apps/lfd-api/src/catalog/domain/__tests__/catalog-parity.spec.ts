@@ -1,124 +1,81 @@
-import { compareCatalogs, type ReceivedEntry, type SeedEntry } from "../catalog-parity.js";
+import { compareToReference, type MirrorEntry, type ReferenceEntry } from "../catalog-parity.js";
 
 /**
- * Ce que ces tests éprouvent : que la comparaison **voit** les écarts qui
- * coûteraient de l'argent, et qu'elle ne fabrique pas de faux écart là où seul
- * le SKU a changé de forme. Un comparateur qui crie au loup sur 92 lignes est
- * aussi inutile qu'un comparateur muet — on cesse de le lire.
+ * Ce que ces tests éprouvent : **ce que le rapport permet de décider**. Un
+ * garde-fou qui dit « ça diffère » sans dire où et de combien n'évite rien — il
+ * déplace juste l'enquête.
  */
 
-function seed(over: Partial<SeedEntry> = {}): SeedEntry {
-  return {
-    sku: "VIE-001",
-    name: "Croissant",
-    unitPriceCents: 200,
-    vatRate: 5.5,
-    ...over,
-  };
+function reference(over: Partial<ReferenceEntry> = {}): ReferenceEntry {
+  return { sku: "VIE-001-1", name: "Croissant", priceCents: 200, ...over };
 }
 
-function received(over: Partial<ReceivedEntry> = {}): ReceivedEntry {
-  return {
-    sku: "VIE-001-1",
-    productSku: "VIE-001",
-    isDefault: true,
-    name: "Croissant",
-    unitPriceCents: 200,
-    vatRate: 5.5,
-    ...over,
-  };
+function mirror(over: Partial<MirrorEntry> = {}): MirrorEntry {
+  return { sku: "VIE-001-1", name: "Croissant", pimPriceCents: 200, ...over };
 }
 
-describe("compareCatalogs", () => {
-  /**
-   * LE test de ce fichier. Le PIM dérive le SKU d'une déclinaison de celui de
-   * son produit ; comparer les `sku` bruts rendrait 92 disparitions et 92
-   * apparitions, et le rapport deviendrait illisible au moment précis où il doit
-   * décider d'une bascule.
-   */
-  it("rapproche par SKU produit, pas par SKU de déclinaison", () => {
-    const report = compareCatalogs([seed()], [received()]);
+describe("compareToReference", () => {
+  it("ne dit rien quand le miroir est fidèle", () => {
+    const report = compareToReference([reference()], [mirror()]);
 
-    expect(report.identical).toBe(true);
+    expect(report.inSync).toBe(true);
     expect(report.missing).toEqual([]);
-    expect(report.extra).toEqual([]);
+    expect(report.stale).toEqual([]);
   });
 
-  it("signale un prix qui change, avec les DEUX montants", () => {
-    const report = compareCatalogs([seed()], [received({ unitPriceCents: 220 })]);
+  it("nomme ce que le référentiel publie et que la boutique ne vend pas", () => {
+    const report = compareToReference([reference()], []);
 
-    expect(report.priceGaps).toEqual([{ sku: "VIE-001", seed: 200, received: 220 }]);
-    expect(report.identical).toBe(false);
+    expect(report.missing).toEqual(["VIE-001-1"]);
+    expect(report.inSync).toBe(false);
   });
 
   /**
-   * L'écart le plus attendu de tous : le seed code la TVA à 5,5 % pour tout, y
-   * compris le non-alimentaire. Le voir n'est pas une alerte, c'est la
-   * confirmation que faire voyager le taux servait à quelque chose.
+   * L'autre moitié du même défaut, et la plus dangereuse : la boutique continue
+   * de vendre un article que le référentiel a retiré.
    */
-  it("signale un taux de TVA qui change", () => {
-    const report = compareCatalogs([seed()], [received({ vatRate: 20 })]);
+  it("nomme ce que la boutique vend encore et que le référentiel a retiré", () => {
+    const report = compareToReference([], [mirror()]);
 
-    expect(report.vatGaps).toEqual([{ sku: "VIE-001", seed: 5.5, received: 20 }]);
+    expect(report.stale).toEqual(["VIE-001-1"]);
+    expect(report.inSync).toBe(false);
   });
 
-  it("signale un nom qui change", () => {
-    const report = compareCatalogs([seed()], [received({ name: "Croissant pur beurre" })]);
+  it("donne les DEUX versions d'un écart de prix, pas juste son existence", () => {
+    const report = compareToReference([reference({ priceCents: 220 })], [mirror()]);
+
+    expect(report.priceGaps).toEqual([{ sku: "VIE-001-1", reference: 220, mirror: 200 }]);
+  });
+
+  it("voit aussi un nom qui a bougé", () => {
+    const report = compareToReference([reference({ name: "Croissant au beurre" })], [mirror()]);
 
     expect(report.nameGaps).toEqual([
-      { sku: "VIE-001", seed: "Croissant", received: "Croissant pur beurre" },
+      { sku: "VIE-001-1", reference: "Croissant au beurre", mirror: "Croissant" },
     ]);
   });
 
   /**
-   * Le pire cas, et la raison d'être de cette comparaison : après la bascule, un
-   * client qui commande ce SKU verrait son panier refusé.
+   * **Le test qui porte la décision de fond.** Le prix B2B négocié est une
+   * décision de la plateforme, pas une dérive : c'est le prix REÇU qu'on
+   * compare. Confondre les deux ferait sonner l'alarme sur chaque client à qui
+   * l'on a consenti un tarif — donc tout le temps, donc plus jamais utilement.
    */
-  it("signale un article vendu aujourd'hui que le PIM ne pousse pas", () => {
-    const report = compareCatalogs([seed(), seed({ sku: "PAI-001" })], [received()]);
+  it("ne confond pas une décision commerciale avec une dérive", () => {
+    // Le miroir a reçu 200 du référentiel ; la plateforme facture 180.
+    // Seul le premier nombre entre dans la comparaison.
+    const report = compareToReference(
+      [reference({ priceCents: 200 })],
+      [mirror({ pimPriceCents: 200 })],
+    );
 
-    expect(report.missing).toEqual(["PAI-001"]);
-    expect(report.identical).toBe(false);
+    expect(report.inSync).toBe(true);
   });
 
-  it("signale une nouveauté reçue que le seed ne connaît pas", () => {
-    const nouveau = received({ sku: "CHO-009-1", productSku: "CHO-009" });
+  it("compte les deux côtés, pour qu'un écart massif se voie d'un coup d'œil", () => {
+    const report = compareToReference([reference(), reference({ sku: "PAI-001-1" })], [mirror()]);
 
-    const report = compareCatalogs([seed()], [received(), nouveau]);
-
-    expect(report.extra).toEqual(["CHO-009-1"]);
-  });
-
-  /**
-   * Un conditionnement (carton de 50) n'a aucun correspondant dans le seed : il
-   * doit apparaître comme un article de plus, pas comme un écart de prix sur le
-   * produit — sinon le rapport dirait qu'un croissant coûte soudain 60 €.
-   */
-  it("compte une seconde déclinaison du même produit comme un article de plus", () => {
-    const carton = received({
-      sku: "VIE-001-CARTON",
-      productSku: "VIE-001",
-      isDefault: false,
-      unitPriceCents: 6000,
-    });
-
-    const report = compareCatalogs([seed()], [received(), carton]);
-
-    expect(report.priceGaps).toEqual([]);
-    expect(report.extra).toEqual(["VIE-001-CARTON"]);
-  });
-
-  it("rend les deux effectifs, pour qu'un écart de volume saute aux yeux", () => {
-    const report = compareCatalogs([seed(), seed({ sku: "PAI-001" })], [received()]);
-
-    expect(report.seedCount).toBe(2);
-    expect(report.receivedCount).toBe(1);
-  });
-
-  it("un catalogue reçu vide rend TOUT manquant — et surtout pas « identique »", () => {
-    const report = compareCatalogs([seed()], []);
-
-    expect(report.missing).toEqual(["VIE-001"]);
-    expect(report.identical).toBe(false);
+    expect(report.referenceCount).toBe(2);
+    expect(report.mirrorCount).toBe(1);
   });
 });

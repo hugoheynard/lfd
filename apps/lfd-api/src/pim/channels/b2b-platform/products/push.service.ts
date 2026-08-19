@@ -1,11 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import type { CatalogIngestionReport } from "@lfd/catalog-sync";
 
-import { CatalogueReader } from "../../../catalogue/domain/ports/catalogue-reader.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { B2bMembershipService } from "../membership/membership.service.js";
 import { B2bCatalogDriver, DryRunB2bCatalogDriver } from "./driver.js";
-import { projectCatalog, type Exclusion } from "./projection.js";
+import { B2bCatalogFeedPreview } from "./feed-preview.js";
+import type { Exclusion } from "./projection.js";
 
 /** Ce que le push a produit, dit en entier — y compris ce qui n'est pas parti. */
 export interface B2bPushSummary {
@@ -20,8 +19,7 @@ export interface B2bPushSummary {
 @Injectable()
 export class B2bCatalogPushService {
   constructor(
-    private readonly catalogue: CatalogueReader,
-    private readonly membership: B2bMembershipService,
+    private readonly feed: B2bCatalogFeedPreview,
     private readonly dryRun: DryRunB2bCatalogDriver,
     private readonly live: B2bCatalogDriver,
     private readonly prisma: PimPrismaService,
@@ -41,9 +39,9 @@ export class B2bCatalogPushService {
    */
   async push(dryRunRequested: boolean): Promise<B2bPushSummary> {
     const driver: B2bCatalogDriver = dryRunRequested ? this.dryRun : this.live;
-    const productIds = await this.membership.publishedProductIds();
+    const { snapshot, candidates, excluded } = await this.feed.preview(new Date().toISOString());
 
-    if (productIds.length === 0) {
+    if (candidates === 0) {
       return {
         mode: driver.mode,
         candidates: 0,
@@ -52,12 +50,6 @@ export class B2bCatalogPushService {
       };
     }
 
-    const [products, categories] = await Promise.all([
-      this.catalogue.byIds(productIds),
-      this.catalogue.channelCategories(),
-    ]);
-
-    const { snapshot, excluded } = projectCatalog(products, categories, new Date().toISOString());
     const report = await driver.send(snapshot);
 
     if (driver.mode === "live") {
@@ -66,7 +58,7 @@ export class B2bCatalogPushService {
 
     return {
       mode: driver.mode,
-      candidates: productIds.length,
+      candidates,
       report,
       excluded,
     };
