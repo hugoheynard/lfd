@@ -51,6 +51,32 @@ catalog:
   jest: 29.7.0
   ts-jest: 29.4.12
   "@types/jest": 29.5.14
+  # Angular, pour les quatre fronts et les deux libs de présentation. Deux
+  # lignes de version, comme chez Angular : le framework d'un côté, l'outillage
+  # (CLI + build) de l'autre — elles n'avancent pas au même rythme.
+  #
+  # ⚠️ Les `peerDependencies` de @lfd/b2b-ui et @lfd/catalog-ui restent des
+  # PLAGES (`^22.0.0`) et ne passent PAS par le catalogue : un pair épinglé
+  # exact interdirait à un consommateur d'être sur la mineure suivante.
+  "@angular/common": 22.1.2
+  "@angular/compiler": 22.1.2
+  "@angular/core": 22.1.2
+  "@angular/forms": 22.1.2
+  "@angular/platform-browser": 22.1.2
+  "@angular/router": 22.1.2
+  "@angular/compiler-cli": 22.1.2
+  "@angular/cli": 22.1.4
+  "@angular/build": 22.1.4
+  tslib: 2.8.1
+
+# `@angular/build` déclare @angular/platform-server et @angular/ssr en pairs
+# OPTIONNELS. pnpm les installe quand même — et, faute de contrainte, les
+# laissait figés sur l'ancienne 22.0.7, ce qui faisait réclamer 22.0.7 à tout
+# l'arbre alors que le framework est en 22.1.2. Aucune app ne fait de SSR :
+# on ne les ajoute pas aux dépendances, on les force simplement à suivre.
+overrides:
+  "@angular/platform-server": 22.1.2
+  "@angular/ssr": 22.1.4
 
 onlyBuiltDependencies:
   - esbuild

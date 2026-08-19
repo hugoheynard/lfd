@@ -16,12 +16,12 @@
   "private": true,
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
-    "@angular/common": "^22.0.7",
-    "@angular/compiler": "^22.0.7",
-    "@angular/core": "^22.0.7",
-    "@angular/forms": "^22.0.7",
-    "@angular/platform-browser": "^22.0.7",
-    "@angular/router": "^22.0.7",
+    "@angular/common": "catalog:",
+    "@angular/compiler": "catalog:",
+    "@angular/core": "catalog:",
+    "@angular/forms": "catalog:",
+    "@angular/platform-browser": "catalog:",
+    "@angular/router": "catalog:",
     "@auth0/auth0-angular": "^2.11.0",
     "@lfd/b2b-ui": "workspace:*",
     "@lfd/contracts": "workspace:*",
@@ -29,19 +29,19 @@
     "@stripe/stripe-js": "^9.13.0",
     "fold-ng": "catalog:",
     "qrcode-generator": "^2.0.4",
-    "rxjs": "~7.8.0",
-    "tslib": "^2.3.0"
+    "rxjs": "catalog:",
+    "tslib": "catalog:"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "^2.6.2",
     "@analogjs/vitest-angular": "^2.6.2",
-    "@angular/build": "^22.0.7",
-    "@angular/cli": "^22.0.7",
-    "@angular/compiler-cli": "^22.0.7",
+    "@angular/build": "catalog:",
+    "@angular/cli": "catalog:",
+    "@angular/compiler-cli": "catalog:",
     "@types/node": "^26.1.0",
     "jsdom": "^26.1.0",
     "prettier": "^3.5.3",
-    "typescript": "~6.0.3",
+    "typescript": "catalog:",
     "vitest": "^4.0.8"
   }
 }
