@@ -6,7 +6,7 @@ import request from "supertest";
 import { App } from "supertest/types";
 import { AccessTokenVerifier } from "../access-token.verifier.js";
 import { AuthGuard } from "../auth.guard.js";
-import { CustomerUserResolver } from "../customer-user.resolver.js";
+import { PrincipalResolver } from "../principal.resolver.js";
 import { DevImpersonation } from "../dev-impersonation.js";
 import { CurrentUser } from "../current-user.decorator.js";
 import { CustomerRole } from "../../database/client/client.js";
@@ -70,7 +70,7 @@ describe("AuthGuard (intégration)", () => {
       controllers: [ProbeController],
       providers: [
         { provide: AccessTokenVerifier, useValue: verifierStub },
-        { provide: CustomerUserResolver, useValue: resolverStub },
+        { provide: PrincipalResolver, useValue: resolverStub },
         { provide: DevImpersonation, useValue: impersonationOff },
         { provide: APP_GUARD, useClass: AuthGuard },
       ],
@@ -147,7 +147,7 @@ describe("AuthGuard — impersonation de dev", () => {
       controllers: [ProbeController],
       providers: [
         { provide: AccessTokenVerifier, useValue: verifierStub },
-        { provide: CustomerUserResolver, useValue: resolverStub },
+        { provide: PrincipalResolver, useValue: resolverStub },
         { provide: DevImpersonation, useValue: impersonationOn },
         { provide: APP_GUARD, useClass: AuthGuard },
       ],

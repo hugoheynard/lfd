@@ -1,10 +1,11 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { UserRegisteredEvent } from "../../account/domain/events/user-registered.event.js";
-import { PrismaService } from "../database/prisma.service.js";
-import { UserStatus } from "../database/client/client.js";
-import type { CustomerRole } from "../database/client/client.js";
-import { DomainEventPublisher } from "../events/domain-event-publisher.js";
-import type { Principal, VerifiedToken } from "./principal.js";
+import { UserRegisteredEvent } from "../domain/events/user-registered.event.js";
+import { PrismaService } from "../../infra/database/prisma.service.js";
+import { UserStatus } from "../../infra/database/client/client.js";
+import type { CustomerRole } from "../../infra/database/client/client.js";
+import { DomainEventPublisher } from "../../infra/events/domain-event-publisher.js";
+import { PrincipalResolver } from "../../infra/auth/principal.resolver.js";
+import type { Principal, VerifiedToken } from "../../infra/auth/principal.js";
 
 /** La personne + ses rattachements, réduits à ce que la résolution lit. */
 interface ResolvedUser {
@@ -25,6 +26,13 @@ interface ProvenFacts {
  * Relie l'identité **externe** prouvée par Auth0 (le `sub`) à notre `User`
  * **local** — la seule source autoritaire d'autorisation.
  *
+ * Il vit dans `account/` et non dans `infra/auth/`, où il a longtemps été : il
+ * lit la table des personnes, provisionne un client au vol et publie un
+ * événement de ce domaine. Ce n'était donc pas de la technique, c'était
+ * `account/` logé dans la couche technique — et cela faisait dépendre
+ * l'authentification de CHAQUE requête de la plateforme marchande. La couche
+ * technique n'en garde que le port ({@link PrincipalResolver}).
+ *
  * Le token prouve seulement « ce porteur est ce `sub` ». Qui est ce client chez
  * nous, à quelle société il appartient (le mur de tenancy) et quel rôle il
  * détient : c'est notre base qui décide, jamais les claims.
@@ -42,11 +50,13 @@ interface ProvenFacts {
  * pour toujours. `disabled` reste refusé : c'est une décision, pas une attente.
  */
 @Injectable()
-export class CustomerUserResolver {
+export class CustomerPrincipalResolver extends PrincipalResolver {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: DomainEventPublisher,
-  ) {}
+  ) {
+    super();
+  }
 
   /**
    * Résout le `Principal` enrichi à partir d'un jeton vérifié. Provisionne le

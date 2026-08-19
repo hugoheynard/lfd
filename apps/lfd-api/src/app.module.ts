@@ -26,6 +26,8 @@ import { StartupModule } from "./infra/startup/startup.module.js";
 import { MailerModule } from "./infra/mailer/mailer.module.js";
 import { DatabaseModule } from "./infra/database/database.module.js";
 import { SecurityModule } from "./infra/security/security.module.js";
+import { APP_GUARD } from "@nestjs/core";
+import { AuthGuard } from "./infra/auth/auth.guard.js";
 
 @Module({
   imports: [
@@ -78,6 +80,22 @@ import { SecurityModule } from "./infra/security/security.module.js";
     AlertsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // **Le guard client, déclaré ICI et pas dans `AuthModule`.**
+    //
+    // Il met bout à bout deux choses qui n'appartiennent pas à la même couche :
+    // la vérification du jeton (technique) et la résolution du principal
+    // (`account/`). L'enregistrer dans `infra/auth` obligerait la couche
+    // technique à importer un domaine — ce que la matrice des frontières
+    // interdit, et pour une raison concrète : le jour où le socle staff ou le
+    // PIM se posent ici, l'authentification n'a aucune raison de traîner la
+    // plateforme marchande derrière elle.
+    //
+    // La racine de composition est le seul endroit qui a le droit de connaître
+    // tout le monde. L'API reste protégée par défaut : c'est le LIEU de la
+    // déclaration qui change, pas la règle.
+    { provide: APP_GUARD, useClass: AuthGuard },
+  ],
 })
 export class AppModule {}

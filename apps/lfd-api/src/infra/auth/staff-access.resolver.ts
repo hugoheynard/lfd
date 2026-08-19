@@ -40,7 +40,7 @@ const STAFF_SELECT = {
  *   jeton valide prouve qu'on est authentifié, pas qu'on est de l'équipe — et
  *   c'est exactement l'inverse de ce que faisait la surface admin jusqu'ici.
  *
- * Le contraste avec `CustomerUserResolver` est délibéré : côté client, un `sub`
+ * Le contraste avec `CustomerPrincipalResolver` est délibéré : côté client, un `sub`
  * inconnu est provisionné (zéro friction) ; côté staff, il est refusé. On ne
  * rejoint pas l'équipe en se connectant.
  */

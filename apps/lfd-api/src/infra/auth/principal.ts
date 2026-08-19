@@ -6,7 +6,7 @@ import type { CustomerRole } from "../database/client/client.js";
  *
  * Le token atteste seulement du `subject` (claim `sub`) et des `scopes`
  * accordés. Il ne dit RIEN de faisant autorité sur qui est l'utilisateur chez
- * nous : notre base tranche cela (cf. `CustomerUserResolver`).
+ * nous : notre base tranche cela (cf. `CustomerPrincipalResolver`).
  */
 export interface VerifiedToken {
   readonly subject: string;

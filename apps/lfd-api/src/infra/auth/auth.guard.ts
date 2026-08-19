@@ -7,7 +7,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { attachActor } from "../context/request-context.store.js";
 import { AccessTokenVerifier } from "./access-token.verifier.js";
-import { CustomerUserResolver } from "./customer-user.resolver.js";
+import { PrincipalResolver } from "./principal.resolver.js";
 import { DevImpersonation } from "./dev-impersonation.js";
 import type { AuthenticatedRequest, Principal, VerifiedToken } from "./principal.js";
 import { IS_PUBLIC_KEY } from "./public.decorator.js";
@@ -21,12 +21,17 @@ import { IS_PUBLIC_KEY } from "./public.decorator.js";
  * `resolver` enrichit avec notre `User` local + la tenancy — c'est notre base,
  * pas le token, qui autorise. Un `UnauthorizedException` du resolver (compte
  * inconnu / inactif) est un refus légitime et remonte tel quel.
+ *
+ * La seconde étape passe par un **port** ({@link PrincipalResolver}) : elle lit
+ * un domaine, et la couche technique n'a pas à le connaître. C'est la racine de
+ * composition qui relie le port à son implémentation — et c'est aussi pourquoi
+ * ce guard s'enregistre là-bas plutôt qu'ici.
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly verifier: AccessTokenVerifier,
-    private readonly resolver: CustomerUserResolver,
+    private readonly resolver: PrincipalResolver,
     private readonly reflector: Reflector,
     private readonly impersonation: DevImpersonation,
   ) {}

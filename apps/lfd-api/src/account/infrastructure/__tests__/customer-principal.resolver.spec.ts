@@ -1,10 +1,10 @@
 import { Test } from "@nestjs/testing";
-import { UserRegisteredEvent } from "../../../account/domain/events/user-registered.event.js";
-import { CustomerUserResolver } from "../customer-user.resolver.js";
-import { PrismaService } from "../../database/prisma.service.js";
-import { CustomerRole, UserStatus, type User } from "../../database/client/client.js";
-import { DomainEventPublisher } from "../../events/domain-event-publisher.js";
-import type { VerifiedToken } from "../principal.js";
+import { UserRegisteredEvent } from "../../domain/events/user-registered.event.js";
+import { CustomerPrincipalResolver } from "../customer-principal.resolver.js";
+import { PrismaService } from "../../../infra/database/prisma.service.js";
+import { CustomerRole, UserStatus, type User } from "../../../infra/database/client/client.js";
+import { DomainEventPublisher } from "../../../infra/events/domain-event-publisher.js";
+import type { VerifiedToken } from "../../../infra/auth/principal.js";
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
 class FakeEvents extends DomainEventPublisher {
@@ -93,18 +93,18 @@ function prismaDouble(
 async function resolverWith(
   double: PrismaDouble,
   events: DomainEventPublisher = new FakeEvents(),
-): Promise<CustomerUserResolver> {
+): Promise<CustomerPrincipalResolver> {
   const moduleRef = await Test.createTestingModule({
     providers: [
-      CustomerUserResolver,
+      CustomerPrincipalResolver,
       { provide: PrismaService, useValue: double.prisma },
       { provide: DomainEventPublisher, useValue: events },
     ],
   }).compile();
-  return moduleRef.get(CustomerUserResolver);
+  return moduleRef.get(CustomerPrincipalResolver);
 }
 
-describe("CustomerUserResolver", () => {
+describe("CustomerPrincipalResolver", () => {
   describe("compte existant", () => {
     it("résout un Principal autoritaire depuis la base pour un compte actif", async () => {
       const resolver = await resolverWith(prismaDouble([activeUser]));

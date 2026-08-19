@@ -16,7 +16,7 @@ const IMPERSONATE_HEADER = "x-dev-impersonate";
  * `AppConfig`). Le sujet vient de l'en-tête `X-Dev-Impersonate` s'il est
  * présent, sinon du défaut `AUTH_DEV_IMPERSONATE_SUBJECT`. Il peut être un
  * `auth0_sub` ou un **e-mail** — on le résout contre notre base pour retomber
- * sur le vrai `auth0_sub`, que le `CustomerUserResolver` sait ensuite enrichir.
+ * sur le vrai `auth0_sub`, que le `CustomerPrincipalResolver` sait ensuite enrichir.
  */
 @Injectable()
 export class DevImpersonation {

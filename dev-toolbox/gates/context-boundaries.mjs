@@ -80,13 +80,17 @@ const ALLOWED = {
  * Chacun porte sa raison et sa cible. Une entrée sans raison n'est pas une
  * exception, c'est un oubli — et la liste ne grandit pas : elle se vide.
  */
-const KNOWN = new Map([
-  [
-    "infra/auth/customer-user.resolver.ts → account",
-    "Résoudre un jeton vérifié en client est une affaire d'`account/`, pas de technique. B2 : le résolveur descend dans `account/`, `platform/auth` ne garde que la vérification du jeton.",
-  ],
-  ["infra/auth/__tests__/customer-user.resolver.spec.ts → account", "Suit son sujet."],
-]);
+/**
+ * Les franchissements **connus**, tolérés le temps de l'étape B2.
+ *
+ * Chacun porte sa raison et sa cible. Une entrée sans raison n'est pas une
+ * exception, c'est un oubli — et la liste ne grandit pas : elle se vide.
+ *
+ * Vide depuis le 2026-08-19 : les sept franchissements trouvés à la pose du gate
+ * ont tous été résorbés. Une entrée qui réapparaît ici doit donc porter une
+ * décision, pas une commodité.
+ */
+const KNOWN = new Map([]);
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {
@@ -204,5 +208,7 @@ if (failed) {
 }
 
 console.log(
-  `✅ Frontières de contexte tenues (${String(KNOWN.size)} exception(s) connue(s), à résorber en B2).`,
+  KNOWN.size === 0
+    ? "✅ Frontières de contexte tenues, sans aucune exception."
+    : `✅ Frontières de contexte tenues (${String(KNOWN.size)} exception(s) connue(s) à résorber).`,
 );

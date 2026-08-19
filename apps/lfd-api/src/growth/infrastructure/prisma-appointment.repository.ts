@@ -101,7 +101,7 @@ export class PrismaAppointmentRepository extends AppointmentRepository {
 
 /**
  * Violation d'unicité Prisma (`P2002`) — duck-typée, sans importer le client
- * (même pattern que `customer-user.resolver.ts`) : l'infrastructure ne doit pas
+ * (même pattern que `customer-principal.resolver.ts`) : l'infrastructure ne doit pas
  * imposer un type de moteur au chemin d'erreur.
  */
 function isUniqueViolation(error: unknown): boolean {

@@ -114,6 +114,8 @@ import { CompanyAddressesController } from "./http/company-addresses.controller.
 import { CompanyContactsController } from "./http/company-contacts.controller.js";
 import { CompanyKbisController } from "./http/company-kbis.controller.js";
 import { MeController } from "./http/me.controller.js";
+import { PrincipalResolver } from "../infra/auth/principal.resolver.js";
+import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.resolver.js";
 
 /**
  * Contexte **compte** : la personne (son profil) et ses entreprises.
@@ -229,6 +231,12 @@ import { MeController } from "./http/me.controller.js";
     { provide: SupportRequestRepository, useClass: PrismaSupportRequestRepository },
     OnCompanyDeclaredResolveNaf,
     { provide: EstablishmentDirectory, useClass: RechercheEntreprisesEstablishmentDirectory },
+    // **Le port de résolution du principal**, tenu par ce domaine. C'est lui qui
+    // sait ce qu'est un client chez nous : la couche technique ne fait que
+    // prouver le `sub`, et le guard global — déclaré à la racine de composition
+    // — les met bout à bout.
+    { provide: PrincipalResolver, useClass: CustomerPrincipalResolver },
   ],
+  exports: [PrincipalResolver],
 })
 export class AccountModule {}

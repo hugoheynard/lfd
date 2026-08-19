@@ -13,7 +13,7 @@ type RemoteKeySet = ReturnType<typeof createRemoteJWKSet>;
  *
  * La vérification s'arrête à ce que le token PROUVE (`sub`, `scopes`).
  * L'enrichissement (résolution du `User` local + tenancy) est délégué au
- * `CustomerUserResolver` : notre base décide de l'autorisation, pas le token.
+ * `CustomerPrincipalResolver` : notre base décide de l'autorisation, pas le token.
  */
 @Injectable()
 export class AccessTokenVerifier {

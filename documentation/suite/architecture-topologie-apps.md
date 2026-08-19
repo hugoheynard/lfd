@@ -202,6 +202,43 @@ avec les tests des deux côtés en filet.
 **B1 avant tout code de fusion.** C'est la seule marche non négociable : c'est
 elle qui remplace le mur que le réseau tenait.
 
+> **B0, B1 et B2a sont faits** (2026-08-19). Les deux gates tournent en CI :
+> `lint:context-boundaries` et `lint:cross-schema-join`.
+>
+> Le premier a trouvé **7 franchissements existants**, tous résorbés depuis. Sa
+> liste d'exceptions est **vide**, et le gate échoue si une entrée y devient
+> inutile sans être retirée — donc elle ne peut pas mentir dans l'autre sens non
+> plus.
+>
+> Ce que ces sept disaient, ensemble : **la couche technique en savait trop sur
+> les clients.** Trois n'étaient que des inversions de dépendance (l'e-mail
+> d'amorçage lu dans le domaine, une erreur de domaine empruntée par un test) ;
+> deux, une notion mal logée (la forme du lien de mot de passe, qui appartient au
+> fournisseur d'identité et non aux clients) ; les deux dernières, une **classe
+> entière du mauvais côté** — le résolveur de principal, qui lit la table des
+> personnes et publie un événement d'`account/`, vivait dans `infra/auth`.
+>
+> Ce dernier a demandé le geste qui compte pour la suite : `platform` déclare le
+> **port** `PrincipalResolver`, `account/` fournit l'implémentation, et le guard
+> global se déclare à la **racine de composition** — seul endroit qui a le droit
+> de connaître tout le monde. L'API reste protégée par défaut ; c'est le lieu de
+> la déclaration qui change.
+
+### B2 n'est PAS incrémental par contexte
+
+Découvert en préparant B2a : `allergens` est importé par `catalogue`, `locations`
+par `channels`. Déplacer une brique du PIM **casse l'app PIM tant qu'elle
+tourne** — et la partager en paquet le temps de la migration serait pire que la
+bascule elle-même.
+
+Il n'y a donc pas de migration douce contexte par contexte : **B2c est un bloc**,
+121 fichiers en un commit, l'app PIM supprimée dans le même geste. Ce qui peut
+être préparé avant l'est (B2a, B2b) ; le reste se fait d'un coup, sur une branche,
+avec les tests des deux côtés en filet.
+
+**B1 avant tout code de fusion.** C'est la seule marche non négociable : c'est
+elle qui remplace le mur que le réseau tenait.
+
 > **B0 et B1 sont faits** (2026-08-19). Les deux gates tournent en CI :
 > `lint:context-boundaries` et `lint:cross-schema-join`. Le premier a trouvé
 > **7 franchissements existants**, tous inscrits dans sa liste d'exceptions avec
