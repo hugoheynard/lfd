@@ -106,6 +106,10 @@
 
 /* ── Les briques ───────────────────────────────────────────────────────── */
 .node-card {
+  /* Un APLAT, pris au thème. Le relief tient à trois choses posées AUTOUR de la
+     surface — le filet, l'arête haute, l'ombre — jamais à une teinte étalée
+     dessus. C'est la différence entre un objet et une image d'objet. */
+  fill: var(--fold-color-surface-raised);
   stroke: var(--fold-color-border-subtle);
   stroke-width: 1;
   /* `rx` est une propriété GÉOMÉTRIQUE en CSS : l'arrondi vient donc du thème,
@@ -116,15 +120,6 @@
   filter: url(#ops-lift);
 }
 
-/* Le dégradé de la carte : deux surfaces du thème, donc juste en clair comme en
-   sombre. Court exprès — une carte n'est pas un ciel. */
-.card-stop-top {
-  stop-color: var(--fold-color-surface-raised);
-}
-.card-stop-bottom {
-  stop-color: var(--fold-color-surface-card);
-}
-
 /* L'ombre portée, en couleur de texte plutôt qu'en noir : sur un fond sombre,
    un noir opaque creuse un trou au lieu de poser un objet. */
 #ops-lift feDropShadow {
@@ -132,11 +127,12 @@
   flood-opacity: 0.09;
 }
 
-/* Un filet de lumière en haut de la carte : l'épaisseur sans l'ombre portée.
-   Une ombre mentirait sur la profondeur d'un schéma, qui est plat. */
+/* L'arête haute : le seul pixel plus clair de la carte, là où la lumière la
+   toucherait. Un pixel suffit — deux, et c'est un dégradé. */
 .node-crest {
-  stroke: var(--fold-color-surface-raised);
+  stroke: var(--fold-color-text);
   stroke-width: 1;
+  opacity: 0.06;
 }
 
 .node-glyph {

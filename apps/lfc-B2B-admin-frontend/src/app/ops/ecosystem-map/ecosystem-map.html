@@ -19,15 +19,13 @@
       <circle cx="1" cy="1" r="1" />
     </pattern>
 
-    <!-- Ce qui fait la CARTE : un dégradé vertical très court — la lumière
-         tombe d'en haut — et une ombre portée basse. Les deux ensemble donnent
-         l'épaisseur ; l'un sans l'autre donne un aplat ou une vignette. -->
-    <linearGradient id="ops-card" x1="0" y1="0" x2="0" y2="1">
-      <stop class="card-stop-top" offset="0" />
-      <stop class="card-stop-bottom" offset="1" />
-    </linearGradient>
+    <!-- Ce qui fait la CARTE : un aplat, un filet, une arête haute éclairée et
+         une ombre basse. PAS de dégradé — sur 48 unités de haut, une transition
+         verticale ne se lit pas comme une lumière, elle se lit comme une
+         salissure. L'épaisseur vient du contraste avec le plan creusé, pas d'un
+         effet peint sur l'objet lui-même. -->
     <filter id="ops-lift" x="-15%" y="-25%" width="130%" height="170%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2.5" />
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" />
     </filter>
 
     <!-- La pointe qui dit le SENS de la dépendance. Sans elle, un trait entre
@@ -90,7 +88,6 @@
         [attr.y]="box.y"
         [attr.width]="node.width"
         [attr.height]="node.height"
-        fill="url(#ops-card)"
       />
       <!-- Le filet de crête : la lumière d'un pixel qui pose l'arête haute. -->
       <line
