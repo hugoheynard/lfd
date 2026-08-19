@@ -58,10 +58,7 @@ export type {
   ProductDetailView,
 } from "./product.js";
 
-export {
-  setB2bMembershipPayloadSchema,
-  setB2bMembershipsPayloadSchema,
-} from "./b2b-channel.js";
+export { setB2bMembershipPayloadSchema, setB2bMembershipsPayloadSchema } from "./b2b-channel.js";
 export type {
   SetB2bMembershipPayload,
   SetB2bMembershipsPayload,

@@ -25,7 +25,7 @@ function line(over: Partial<OrderLineView> = {}): OrderLineView {
 }
 
 describe('la trace du prix, sur une ligne de commande', () => {
-  it("ne barre rien quand la ligne ne porte aucune trace", () => {
+  it('ne barre rien quand la ligne ne porte aucune trace', () => {
     expect(entryPriceOf(line())).toBeNull();
     expect(priceStepLabels(line())).toEqual([]);
     expect(wasFloored(line())).toBe(false);
