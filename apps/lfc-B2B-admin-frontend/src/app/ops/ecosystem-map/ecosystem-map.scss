@@ -213,6 +213,29 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* La vignette de tendance. Discrète par construction : elle accompagne le
+   chiffre, elle ne le concurrence pas. Un aplat trop franc ferait de chaque
+   carte un graphique, et la carte cesserait de se lire d'un coup d'œil. */
+.node-spark-area {
+  fill: var(--fold-color-text-faded);
+  fill-opacity: 0.18;
+  stroke: none;
+}
+
+/* Les échecs empruntent la couleur du danger, mais en trait fin : ils doivent
+   se remarquer sans crier — la couleur de la carte, elle, dit déjà le statut. */
+.node-spark-failures {
+  fill: none;
+  stroke: var(--fold-color-danger);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  opacity: 0.75;
+}
+
+.node-spark-tip {
+  fill: var(--fold-color-text-muted);
+}
+
 .node-gauge-value {
   fill: var(--fold-color-text-faded);
   font-size: 10px;

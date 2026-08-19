@@ -7,10 +7,13 @@ import { Clock } from "../../platform/time/clock.js";
 import { TrafficUnavailableError } from "./traffic-errors.js";
 import { TrafficReader } from "./traffic-reader.port.js";
 import {
+  rowsToSeries,
   rowsToSurfaces,
   rowsToWindows,
+  seriesQuery,
   surfacesQuery,
   trafficQuery,
+  type SeriesRow,
   type SurfaceRow,
   type TrafficRow,
 } from "./traffic-query.js";
@@ -49,18 +52,27 @@ export class AnalyticsEngineTrafficReader extends TrafficReader {
     const to = new Date(this.clock.now());
     const from = new Date(to.getTime() - minutes * 60_000);
 
-    // Deux requêtes, EN PARALLÈLE : un p95 par nœud ne se recompose pas depuis
-    // les p95 de ses surfaces — un quantile ne s'additionne pas. Chacune répond
-    // donc à sa question, et elles ne s'attendent pas l'une l'autre.
-    const [totals, surfaces] = await Promise.all([
+    // Trois requêtes, EN PARALLÈLE : un p95 par nœud ne se recompose pas depuis
+    // les p95 de ses surfaces — un quantile ne s'additionne pas — et l'histoire
+    // couvre une autre durée que la fenêtre. Chacune répond à sa question, et
+    // elles ne s'attendent pas l'une l'autre.
+    //
+    // L'histoire est la SEULE des trois dont l'échec est toléré : une courbe
+    // absente laisse un écran complet, alors qu'une fenêtre absente le vide.
+    const [totals, surfaces, series] = await Promise.all([
       this.query<TrafficRow>(analytics, trafficQuery(minutes)),
       this.query<SurfaceRow>(analytics, surfacesQuery(minutes)),
+      this.query<SeriesRow>(analytics, seriesQuery()).catch((cause: unknown) => {
+        this.logger.warn("Histoire du trafic indisponible", cause);
+        return [];
+      }),
     ]);
     const bySurface = rowsToSurfaces(surfaces);
 
     return {
       generatedAt: to.toISOString(),
       source: "analytics-engine",
+      series: rowsToSeries(series),
       windows: rowsToWindows(totals, {
         from: from.toISOString(),
         to: to.toISOString(),

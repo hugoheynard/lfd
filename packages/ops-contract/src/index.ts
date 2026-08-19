@@ -11,6 +11,8 @@ export type { HealthReason, NodeReading, NodeHealth, EcosystemHealth } from "./h
 
 export { errorRate, isSilent } from "./traffic.js";
 export type {
+  TrafficSample,
+  TrafficSeries,
   TrafficCounts,
   TrafficReport,
   TrafficSource,

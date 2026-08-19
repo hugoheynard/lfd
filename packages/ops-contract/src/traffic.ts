@@ -102,9 +102,44 @@ export function isSilent(counts: TrafficCounts): boolean {
  */
 export type TrafficSource = "analytics-engine" | "rehearsal";
 
-/** Ce que rend l'endpoint OPS : des fenêtres, et l'aveu de leur provenance. */
+/**
+ * **Une tranche de temps** d'un nœud — le grain de la courbe.
+ *
+ * Deux nombres, et pas un de plus : ce qui est passé, et ce qui a échoué. Une
+ * courbe se lit d'un coup d'œil ou ne se lit pas ; y verser la latence, les
+ * rejets et les surfaces en ferait un graphique, c'est-à-dire quelque chose
+ * qu'on remet à plus tard.
+ *
+ * `failures` agrège les `5xx` amont ET les `502` de la passerelle — sur une
+ * courbe, la distinction ne se voit pas, et c'est le tableau qui la porte. Les
+ * `429` n'y entrent pas, ici comme partout : le throttler qui refuse est le
+ * système qui fonctionne.
+ */
+export interface TrafficSample {
+  /** Début de la tranche (ISO). */
+  readonly at: string;
+  readonly requests: number;
+  readonly failures: number;
+}
+
+/** L'histoire récente d'un nœud, du plus ancien au plus récent. */
+export interface TrafficSeries {
+  readonly node: string;
+  readonly points: readonly TrafficSample[];
+}
+
+/**
+ * Ce que rend l'endpoint OPS : des fenêtres, leur histoire, et l'aveu de leur
+ * provenance.
+ *
+ * `series` est **à côté** des fenêtres et non dedans : une fenêtre est un
+ * agrégat, une série est une suite. Les imbriquer aurait obligé le lecteur à
+ * joindre deux requêtes SQL par nœud pour rendre un objet dont la moitié des
+ * consommateurs n'utilise qu'une part.
+ */
 export interface TrafficReport {
   readonly generatedAt: string;
   readonly source: TrafficSource;
   readonly windows: readonly TrafficWindow[];
+  readonly series: readonly TrafficSeries[];
 }

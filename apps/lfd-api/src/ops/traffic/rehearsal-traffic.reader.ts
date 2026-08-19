@@ -1,7 +1,13 @@
 import { Injectable } from "@nestjs/common";
-import type { TrafficReport, TrafficSurface, TrafficWindow } from "@lfd/ops-contract";
+import type {
+  TrafficReport,
+  TrafficSample,
+  TrafficSurface,
+  TrafficWindow,
+} from "@lfd/ops-contract";
 
 import { Clock } from "../../platform/time/clock.js";
+import { HISTORY_BUCKET_SECONDS, HISTORY_MINUTES } from "./traffic-query.js";
 import { TrafficReader } from "./traffic-reader.port.js";
 
 /**
@@ -38,10 +44,8 @@ export class RehearsalTrafficReader extends TrafficReader {
     return Promise.resolve({
       generatedAt: to.toISOString(),
       source: "rehearsal",
-      windows: [
-        rehearse("b2b", seed, minutes, from, to),
-        rehearse("pim", seed + 7, minutes, from, to),
-      ],
+      windows: [rehearse("b2b", seed, minutes, from, to)],
+      series: [{ node: "b2b", points: rehearseSeries(seed, to) }],
     });
   }
 }
@@ -102,6 +106,35 @@ function rehearseSurfaces(node: string, seed: number, requests: number): readonl
       // La surface la plus lente n'est PAS la plus appelée : c'est justement ce
       // décalage qui rend le tableau utile, et il doit se voir en répétition.
       p95Ms: 30 + ((seed + rank * 53) % 400) + (rank === 2 ? 500 : 0),
+    };
+  });
+}
+
+/**
+ * Une histoire plausible : un creux de nuit, une bosse de matinée, et un
+ * incident isolé. Déterministe comme le reste — une courbe qui bougerait à
+ * chaque rafraîchissement aurait l'air vivante, ce qu'un double ne doit jamais
+ * imiter.
+ *
+ * Le relief est là exprès : une courbe plate n'exercerait ni l'échelle, ni le
+ * point d'extrémité, ni la lecture qu'on vient lui demander — « est-ce pire que
+ * tout à l'heure ». Un double tout plat validerait un rendu qui ne sait rien
+ * dessiner.
+ */
+function rehearseSeries(seed: number, to: Date): readonly TrafficSample[] {
+  const buckets = (HISTORY_MINUTES * 60) / HISTORY_BUCKET_SECONDS;
+  const endBucket = Math.floor(to.getTime() / 1000 / HISTORY_BUCKET_SECONDS);
+
+  return Array.from({ length: buckets }, (_, index) => {
+    const bucket = endBucket - (buckets - 1 - index);
+    // Deux journées de 48 tranches : un creux vers 4 h, un pic vers 10 h.
+    const hourOfDay = ((bucket * HISTORY_BUCKET_SECONDS) / 3600) % 24;
+    const daylight = Math.max(0.08, Math.sin(((hourOfDay - 4) / 24) * Math.PI * 2) * 0.5 + 0.55);
+    const requests = Math.round(daylight * (60 + (seed % 40)));
+    return {
+      at: new Date(bucket * HISTORY_BUCKET_SECONDS * 1000).toISOString(),
+      requests,
+      failures: bucket % 29 === 0 ? Math.round(requests * 0.18) : 0,
     };
   });
 }

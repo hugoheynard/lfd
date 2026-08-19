@@ -1,9 +1,16 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import type { HealthStatus, NodeHealth, NodeKind, TrafficWindow } from '@lfd/ops-contract';
+import type {
+  HealthStatus,
+  NodeHealth,
+  NodeKind,
+  TrafficSeries,
+  TrafficWindow,
+} from '@lfd/ops-contract';
 
 import { layoutOf, type Lane, type LaneWidths, type MapLayout, type PlacedNode } from '../layout';
 import { occupancyOf, type Occupancy } from '../occupancy';
+import { sparklineOf, type Sparkline } from '../sparkline';
 import { REASON_LABEL } from '../reason-label';
 
 /** Géométrie de la carte, en unités du `viewBox`. */
@@ -15,6 +22,12 @@ const GAP = { column: 28, row: 64 } as const;
  * « ceci n'est pas la suite de cela ».
  */
 const LANE_GAP = 72;
+/**
+ * La vignette de tendance, posée à droite de la bande de relevés. Assez large
+ * pour qu'une bosse se voie sur quarante-huit tranches, assez basse pour ne rien
+ * coûter en hauteur : elle tient dans la place déjà réservée aux relevés.
+ */
+const SPARK = { width: 64, height: 12 } as const;
 /** L'écart entre deux nœuds empilés dans un couloir latéral — serré, exprès. */
 const STACK_GAP = 20;
 const PADDING = 26;
@@ -96,6 +109,8 @@ interface Box {
   readonly gauge: number | null;
   /** Ce que CE nœud dit de son activité, déjà mis en forme. Vide = rien à dire. */
   readonly readings: string;
+  /** Sa courbe des 24 h, ou `null` — rien ne garde l'histoire d'un tiers. */
+  readonly spark: Sparkline | null;
 }
 
 /**
@@ -130,6 +145,17 @@ interface Box {
 export class EcosystemMap {
   readonly nodes = input.required<readonly NodeHealth[]>();
   readonly windows = input<readonly TrafficWindow[]>([]);
+  readonly series = input<readonly TrafficSeries[]>([]);
+
+  private readonly sparklines = computed(() => {
+    const byNode = new Map(this.series().map((one) => [one.node, one.points]));
+    return new Map(
+      this.nodes().map(
+        (node) =>
+          [node.node, sparklineOf(byNode.get(node.node) ?? [], SPARK.width, SPARK.height)] as const,
+      ),
+    );
+  });
 
   private readonly layout = computed(() => layoutOf(this.nodes()));
 
@@ -173,6 +199,7 @@ export class EcosystemMap {
         glyph: GLYPHS[placed.health.kind],
         gauge: occupancy.basis === 'aucune mesure' ? null : occupancy.ratio,
         readings: formatReadings(placed.health.readings),
+        spark: this.sparklines().get(placed.health.node) ?? null,
       };
     }),
   );
@@ -205,8 +232,9 @@ export class EcosystemMap {
     });
   });
 
-  /** Exposée au gabarit : les cotes ne doivent exister qu'à UN endroit. */
+  /** Exposées au gabarit : les cotes ne doivent exister qu'à UN endroit. */
   protected readonly node = NODE;
+  protected readonly spark = SPARK;
 
   /**
    * Le mouvement est-il le bienvenu ?

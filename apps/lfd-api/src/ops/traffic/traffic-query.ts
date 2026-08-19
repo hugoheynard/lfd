@@ -1,4 +1,9 @@
-import type { TrafficSurface, TrafficWindow } from "@lfd/ops-contract";
+import type {
+  TrafficSample,
+  TrafficSeries,
+  TrafficSurface,
+  TrafficWindow,
+} from "@lfd/ops-contract";
 
 /**
  * La **décision** de lecture d'Analytics Engine : la requête SQL, et la lecture
@@ -189,4 +194,72 @@ export function rowsToSurfaces(
     byNode.set(node, [...(byNode.get(node) ?? []), entry]);
   }
   return byNode;
+}
+
+/**
+ * **L'histoire** : vingt-quatre heures découpées en tranches d'une demi-heure.
+ *
+ * Vingt-quatre heures parce que la question qu'on se pose devant une carte n'est
+ * pas « combien » mais « **est-ce pire que tout à l'heure** » — et qu'un cycle
+ * de journée est le plus court intervalle qui rende la comparaison honnête : à
+ * six heures, on prend un creux de nuit pour une amélioration.
+ *
+ * Quarante-huit points : assez pour qu'une bosse se voie, assez peu pour tenir
+ * dans une vignette de soixante unités de large.
+ */
+export const HISTORY_MINUTES = 24 * 60;
+export const HISTORY_BUCKET_SECONDS = 30 * 60;
+
+/**
+ * Le regroupement en tranches est écrit en `intDiv(toUInt32(timestamp), n) * n`
+ * plutôt qu'avec `toStartOfInterval` : Analytics Engine n'expose qu'un
+ * sous-ensemble de ClickHouse, et cette forme-là n'utilise que de l'arithmétique
+ * entière. Une fonction de confort absente ferait échouer la requête entière,
+ * donc disparaître la courbe — silencieusement, puisqu'un lecteur qui échoue
+ * rend une série vide.
+ */
+export function seriesQuery(): string {
+  return [
+    "SELECT index1 AS node,",
+    `  intDiv(toUInt32(timestamp), ${HISTORY_BUCKET_SECONDS}) * ${HISTORY_BUCKET_SECONDS} AS bucket,`,
+    "  sum(_sample_interval) AS requests,",
+    "  sumIf(_sample_interval, (blob1 = '5xx' AND blob3 = 'upstream') OR blob3 = 'gateway') AS failures",
+    `FROM ${TRAFFIC_DATASET}`,
+    `WHERE timestamp > NOW() - INTERVAL '${HISTORY_MINUTES}' MINUTE`,
+    "GROUP BY node, bucket",
+    "ORDER BY bucket",
+    "FORMAT JSON",
+  ].join("\n");
+}
+
+/** Une ligne de la requête d'histoire. */
+export interface SeriesRow {
+  readonly node?: unknown;
+  readonly bucket?: unknown;
+  readonly requests?: unknown;
+  readonly failures?: unknown;
+}
+
+/**
+ * Regroupe les tranches par nœud, en gardant l'ordre chronologique rendu par le
+ * `ORDER BY`. Les tranches VIDES ne sont pas comblées : Analytics Engine ne rend
+ * que ce qui existe, et inventer des zéros dessinerait une chute là où il n'y a
+ * qu'une absence de mesure — exactement le mensonge qu'une courbe rend
+ * convaincant.
+ */
+export function rowsToSeries(rows: readonly SeriesRow[]): readonly TrafficSeries[] {
+  const byNode = new Map<string, TrafficSample[]>();
+  for (const row of rows) {
+    if (typeof row.node !== "string" || row.node === "") {
+      continue;
+    }
+    const points = byNode.get(row.node) ?? [];
+    points.push({
+      at: new Date(toNumber(row.bucket) * 1000).toISOString(),
+      requests: toNumber(row.requests),
+      failures: toNumber(row.failures),
+    });
+    byNode.set(row.node, points);
+  }
+  return [...byNode.entries()].map(([node, points]) => ({ node, points }));
 }

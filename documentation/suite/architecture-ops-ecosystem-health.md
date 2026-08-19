@@ -859,3 +859,44 @@ autrement en test n'est plus le service qu'on teste.
   intuition tant qu'aucun palier réel ne l'étalonne.
 - **R2 classe A/B** (jeton Cloudflare) et **catégories d'e-mails Resend**
   (webhook) restent bloqués sur des gestes hors du dépôt.
+
+## 22. La courbe par nœud
+
+Vingt-quatre heures en tranches d'une demi-heure, sous chaque carte qui a une
+histoire. Elle répond à **une** question — _est-ce pire que tout à l'heure ?_ —
+et à aucune autre : ni axes, ni graduations, ni étiquettes. Une vignette qu'il
+faut déchiffrer n'est plus une vignette, c'est un graphique, et un graphique se
+remet à plus tard.
+
+**Vingt-quatre heures** parce que c'est le plus court intervalle qui rende la
+comparaison honnête : à six heures, on prend un creux de nuit pour une
+amélioration.
+
+**Deux tracés, deux faits.** L'aire dit le volume ; le trait dit les échecs, et
+n'apparaît que s'il y en a. Les échecs ont leur **propre échelle** — sur celle du
+volume, deux ordres de grandeur en dessous, ils seraient écrasés sur la ligne de
+base et invisibles. C'est assumé : on y cherche une bosse, pas une valeur. Le
+dernier point est souligné, parce que c'est « maintenant » et que c'est de lui
+qu'on lit vers la gauche.
+
+**Les tranches vides ne sont pas comblées.** Analytics Engine ne rend que ce qui
+existe ; inventer des zéros dessinerait une chute là où il n'y a qu'une absence
+de mesure — exactement le mensonge qu'une courbe rend convaincant.
+
+### Ce qu'elle ne couvre pas, et pourquoi
+
+**Seuls les nœuds observés par la passerelle ont une courbe** — aujourd'hui
+l'API. Les tiers, les fronts et la base n'en ont pas : **rien ne garde leur
+histoire**. Les verdicts de sonde et le décompte Auth0 vivent en mémoire du
+processus et meurent avec lui. Leur donner une courbe supposerait de les écrire
+quelque part, c'est-à-dire la mémoire longue qui reste ouverte au §21.
+
+### Un point à vérifier au premier déploiement
+
+Le regroupement en tranches est écrit `intDiv(toUInt32(timestamp), n) * n`
+plutôt qu'avec `toStartOfInterval` : Analytics Engine n'expose qu'un
+sous-ensemble de ClickHouse, et la forme primitive n'utilise que de
+l'arithmétique entière. Cette requête n'a **jamais tourné contre le vrai
+dataset** — rien n'est déployé. Son échec est toléré (la courbe disparaît,
+l'écran reste complet) et journalisé en `warn` : **c'est cette ligne de log
+qu'il faudra regarder** au premier déploiement.

@@ -67,6 +67,7 @@ export class SantePage {
 
   protected readonly nodes = computed(() => this.health()?.nodes ?? []);
   protected readonly windows = computed(() => this.traffic()?.windows ?? []);
+  protected readonly series = computed(() => this.traffic()?.series ?? []);
 
   /** Vrai quand les chiffres sont fabriqués — l'aveu voyage jusqu'ici. */
   protected readonly isRehearsal = computed(() => this.traffic()?.source === 'rehearsal');

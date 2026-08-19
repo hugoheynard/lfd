@@ -39,8 +39,22 @@ describe("RehearsalTrafficReader", () => {
   it("n'est pas tout vert — l'écran doit avoir de quoi s'exercer", async () => {
     const report = await reader().read(60);
 
-    expect(report.windows.length).toBeGreaterThan(1);
+    // Un seul nœud depuis que le référentiel EST cette API : la passerelle
+    // n'indexe plus qu'elle. Le double suit la carte, sinon il exercerait un
+    // écran qui n'existe plus.
+    expect(report.windows).toHaveLength(1);
     expect(report.windows.every((window) => window.requests > 0)).toBe(true);
     expect(report.windows.some((window) => window.serverErrors > 0)).toBe(true);
+  });
+
+  it("fabrique une histoire AVEC DU RELIEF, sinon la courbe ne prouve rien", async () => {
+    // Une courbe plate n'exercerait ni l'échelle, ni le point d'extrémité, ni
+    // la lecture qu'on vient lui demander — « est-ce pire que tout à l'heure ».
+    const [series] = (await reader().read(60)).series;
+    const volumes = series?.points.map((point) => point.requests) ?? [];
+
+    expect(volumes).toHaveLength(48);
+    expect(Math.max(...volumes)).toBeGreaterThan(Math.min(...volumes));
+    expect(series?.points.some((point) => point.failures > 0)).toBe(true);
   });
 });

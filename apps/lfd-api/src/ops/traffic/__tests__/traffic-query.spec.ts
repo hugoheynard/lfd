@@ -1,5 +1,8 @@
 import {
   DEFAULT_WINDOW_MINUTES,
+  HISTORY_BUCKET_SECONDS,
+  rowsToSeries,
+  seriesQuery,
   rowsToSurfaces,
   surfacesQuery,
   SURFACES_LIMIT,
@@ -166,5 +169,39 @@ describe("rowsToSurfaces", () => {
     ]);
 
     expect(byNode.size).toBe(0);
+  });
+});
+
+describe("l'histoire du trafic", () => {
+  it("regroupe en tranches avec de l'arithmétique entière, pas une fonction de confort", () => {
+    // Analytics Engine n'expose qu'un sous-ensemble de ClickHouse. Une fonction
+    // absente ferait échouer la requête entière, donc disparaître la courbe —
+    // silencieusement, puisqu'un lecteur qui échoue rend une série vide.
+    const sql = seriesQuery();
+
+    expect(sql).toContain(`intDiv(toUInt32(timestamp), ${HISTORY_BUCKET_SECONDS})`);
+    expect(sql).toContain("ORDER BY bucket");
+  });
+
+  it("exclut les 429 des échecs, ici comme partout", () => {
+    // Le throttler qui refuse est le système qui fonctionne. Une bosse rouge à
+    // chaque rafale de rejets apprendrait à ignorer la courbe.
+    expect(seriesQuery()).not.toContain("429");
+  });
+
+  it("range les tranches par nœud, en gardant l'ordre chronologique", () => {
+    const series = rowsToSeries([
+      { node: "b2b", bucket: 1_755_600_000, requests: "10", failures: "0" },
+      { node: "b2b", bucket: 1_755_601_800, requests: "20", failures: "2" },
+      { node: "pim", bucket: 1_755_600_000, requests: "5", failures: "0" },
+    ]);
+
+    expect(series.map((one) => one.node)).toEqual(["b2b", "pim"]);
+    expect(series[0]?.points.map((point) => point.requests)).toEqual([10, 20]);
+    expect(series[0]?.points[0]?.at).toBe(new Date(1_755_600_000 * 1000).toISOString());
+  });
+
+  it("ignore une ligne sans nœud plutôt que d'inventer un seau", () => {
+    expect(rowsToSeries([{ bucket: 1, requests: 3 }])).toEqual([]);
   });
 });

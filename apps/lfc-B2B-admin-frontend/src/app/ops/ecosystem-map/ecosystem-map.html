@@ -151,6 +151,40 @@
         </text>
       }
 
+      @if (box.spark) {
+        <!-- Vingt-quatre heures, à droite des relevés. Elle ne répond qu'à une
+             question — « est-ce pire que tout à l'heure » — d'où l'absence
+             d'axes : une vignette qu'il faut déchiffrer est un graphique, et un
+             graphique se remet à plus tard.
+
+             L'AIRE dit le volume, le TRAIT dit les échecs, sur sa PROPRE
+             échelle : sur celle du volume, deux ordres de grandeur en dessous,
+             il serait invisible. On y cherche une bosse, pas une valeur. -->
+        <g
+          class="node-spark"
+          [attr.transform]="
+            'translate(' +
+            (box.x + node.width - spark.width - 2) +
+            ' ' +
+            (box.y + node.height + 3) +
+            ')'
+          "
+        >
+          <path class="node-spark-area" [attr.d]="box.spark.area" />
+          @if (box.spark.failures) {
+            <path class="node-spark-failures" [attr.d]="box.spark.failures" />
+          }
+          <!-- Le dernier point souligné : c'est « maintenant », et c'est de lui
+               qu'on part pour lire vers la gauche. -->
+          <circle
+            class="node-spark-tip"
+            [attr.cx]="box.spark.tip.x"
+            [attr.cy]="box.spark.tip.y"
+            r="1.6"
+          />
+        </g>
+      }
+
       @if (box.node.dependencyDown) {
         <!-- La dépendance tombée est DÉSIGNÉE, jamais propagée : cette brique
              garde son propre statut, on montre seulement ce qui l'a peut-être
