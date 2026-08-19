@@ -37,6 +37,8 @@ export type HealthReason =
   | "traffic-healthy"
   | "heartbeat-stale"
   | "heartbeat-fresh"
+  | "probe-ok"
+  | "probe-failed"
   | "no-evidence";
 
 /**

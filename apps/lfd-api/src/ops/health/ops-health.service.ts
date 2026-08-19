@@ -6,6 +6,7 @@ import { TrafficReader } from "../traffic/traffic-reader.port.js";
 import { TOPOLOGY } from "../topology/topology.js";
 import { DatabaseReadingsReader } from "./database-readings.reader.js";
 import { deriveHealth, type NodeEvidence } from "./derive-health.js";
+import { ProbeRunner } from "../probes/probe-runner.service.js";
 import { gatewayReadings, moduleReadings } from "./readings.js";
 
 /** La fenêtre sur laquelle on juge la santé. Assez courte pour être « en ce moment ». */
@@ -25,14 +26,16 @@ export class OpsHealthService {
   constructor(
     private readonly traffic: TrafficReader,
     private readonly database: DatabaseReadingsReader,
+    private readonly probes: ProbeRunner,
     private readonly clock: Clock,
   ) {}
 
   async read(): Promise<EcosystemHealth> {
     const now = this.clock.now();
-    const [report, databaseReadings] = await Promise.all([
+    const [report, databaseReadings, probes] = await Promise.all([
       this.traffic.read(HEALTH_WINDOW_MINUTES),
       this.database.read(),
+      this.probes.run(),
     ]);
 
     const evidence = new Map<string, NodeEvidence>(
@@ -49,6 +52,19 @@ export class OpsHealthService {
     // qu'un total dépend de la fenêtre et ne se compare pas d'un écran à l'autre.
     evidence.set("gateway", { readings: gatewayReadings(report.windows) });
     evidence.set("postgres-b2b", { readings: databaseReadings });
+
+    // Les sondes s'ajoutent SANS écraser ce qu'on savait déjà : un nœud peut
+    // être à la fois sondé et observé par la gateway, et les deux angles se
+    // croisent au moment de la dérivation — pas avant.
+    for (const [node, outcome] of probes) {
+      evidence.set(node, {
+        ...evidence.get(node),
+        probe: {
+          verdict: outcome.verdict,
+          ...(outcome.detail === undefined ? {} : { detail: outcome.detail }),
+        },
+      });
+    }
 
     return {
       generatedAt: now.toISOString(),

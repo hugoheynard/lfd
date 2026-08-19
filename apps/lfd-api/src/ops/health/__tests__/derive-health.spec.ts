@@ -166,3 +166,45 @@ describe("la carte est complète", () => {
     expect(health.map((entry) => entry.node)).toEqual(["b2b", "shopify"]);
   });
 });
+
+describe("la sonde est une observation directe, et elle prime", () => {
+  it("allume un tiers que rien d'autre ne mesure", () => {
+    // Auth0, Stripe, Resend n'émettront jamais vers nous et la gateway ne les
+    // voit pas : la sonde est la SEULE source qu'on ait sur eux.
+    const [health] = derive([node({ id: "auth0", kind: "external-api" })], {
+      auth0: { probe: { verdict: "up" } },
+    });
+
+    expect(health).toMatchObject({ status: "up", reason: "probe-ok" });
+  });
+
+  it("conclut `down` sur un verdict déjà confirmé", () => {
+    // La temporisation appartient au lanceur, pas à la règle : celle-ci reste
+    // pure, et le `down` qui lui arrive a déjà encaissé ses échecs successifs.
+    const [health] = derive([node({ id: "resend", kind: "external-api" })], {
+      resend: { probe: { verdict: "down" } },
+    });
+
+    expect(health).toMatchObject({ status: "down", reason: "probe-failed" });
+  });
+
+  it("laisse `unknown` un tiers non configuré, sans le peindre en rouge", () => {
+    // Un tiers dont on n'a pas les identifiants n'est pas tombé. Les confondre
+    // ferait rougir la carte pour une case vide dans un fichier d'environnement.
+    const [health] = derive([node({ id: "shopify", kind: "external-api" })], {
+      shopify: { probe: { verdict: "unknown" } },
+    });
+
+    expect(health).toMatchObject({ status: "unknown", reason: "no-evidence" });
+  });
+
+  it("laisse le 502 de la gateway l'emporter sur une sonde optimiste", () => {
+    // Deux angles, et le plus proche du client gagne : si la gateway n'obtient
+    // pas de réponse, peu importe qu'un `SELECT 1` passe encore.
+    const [health] = derive([node()], {
+      b2b: { traffic: traffic({ gatewayFaults: 2 }), probe: { verdict: "up" } },
+    });
+
+    expect(health).toMatchObject({ status: "down", reason: "gateway-fault" });
+  });
+});

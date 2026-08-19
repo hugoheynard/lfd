@@ -3,6 +3,10 @@ import { Module } from "@nestjs/common";
 import { AppConfig } from "../platform/config/app-config.js";
 import { AdminHealthController } from "./health/admin-health.controller.js";
 import { DatabaseReadingsReader } from "./health/database-readings.reader.js";
+import { Auth0Probe, ResendProbe, ShopifyProbe, StripeProbe } from "./probes/external.probes.js";
+import { PostgresB2bProbe } from "./probes/postgres.probe.js";
+import { ProbeRunner } from "./probes/probe-runner.service.js";
+import { NODE_PROBES, type NodeProbe } from "./probes/probe.port.js";
 import { OpsHealthService } from "./health/ops-health.service.js";
 import { AdminTrafficController } from "./traffic/admin-traffic.controller.js";
 import { AnalyticsEngineTrafficReader } from "./traffic/analytics-engine-traffic.reader.js";
@@ -27,6 +31,21 @@ import { TrafficReader } from "./traffic/traffic-reader.port.js";
   providers: [
     OpsHealthService,
     DatabaseReadingsReader,
+    ProbeRunner,
+    PostgresB2bProbe,
+    Auth0Probe,
+    ResendProbe,
+    StripeProbe,
+    ShopifyProbe,
+    {
+      // Le registre. Une sonde ajoutée s'inscrit ICI et nulle part ailleurs :
+      // le lanceur ne connaît que le port, la dérivation ne connaît que des
+      // verdicts. C'est ce qui permettra d'en brancher une sur R2 ou sur un
+      // worker sans toucher à une ligne de règle.
+      provide: NODE_PROBES,
+      inject: [PostgresB2bProbe, Auth0Probe, ResendProbe, StripeProbe, ShopifyProbe],
+      useFactory: (...probes: NodeProbe[]): readonly NodeProbe[] => probes,
+    },
     AnalyticsEngineTrafficReader,
     RehearsalTrafficReader,
     {

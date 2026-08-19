@@ -44,6 +44,8 @@ export interface NodeEvidence {
   readonly lastHeartbeatAt?: string | null;
   /** Ce que CE nœud sait dire de son activité — cf. `readings.ts`. */
   readonly readings?: readonly NodeReading[];
+  /** Ce qu'une sonde a constaté du dehors — cf. `probes/`. */
+  readonly probe?: { readonly verdict: "up" | "down" | "unknown"; readonly detail?: string };
 }
 
 /** Statut et raison, indissociables : rendre l'un sans l'autre serait un verdict. */
@@ -70,6 +72,16 @@ function verdictFor(node: NodeManifest, evidence: NodeEvidence, now: Date): Verd
   // rendu par le backend ne compte PAS — il a répondu, mal.
   if (traffic !== undefined && traffic.gatewayFaults > 0) {
     return { status: "down", reason: "gateway-fault" };
+  }
+  // Une SONDE est une observation directe, et elle prime : sur un tiers, c'est
+  // même la seule qu'on ait. Le verdict `down` qui arrive ici est déjà confirmé
+  // (échecs consécutifs) — la temporisation appartient au lanceur, pas à la
+  // règle, sinon la règle ne serait plus pure.
+  if (evidence.probe?.verdict === "down") {
+    return { status: "down", reason: "probe-failed" };
+  }
+  if (evidence.probe?.verdict === "up") {
+    return { status: "up", reason: "probe-ok" };
   }
   if (traffic !== undefined && !isSilent(traffic)) {
     if (errorRate(traffic) >= DEGRADED_ERROR_RATE) {
