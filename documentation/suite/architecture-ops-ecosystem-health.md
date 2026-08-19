@@ -494,14 +494,14 @@ Deux choses à ne pas perdre de vue :
 
 ## 15. Les jalons
 
-| Jalon     | Quoi                                                                                                                              | Dépend de |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **J1** ✅ | Dataset Analytics Engine + `writeDataPoint` dans la passerelle (hors du chemin de réponse), sous tests — **fait le 2026-08-19**   | —         |
-| **J2** ✅ | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (requêtes, erreurs serveur, 429, 502 passerelle, p95) — **fait le 2026-08-19** | J1        |
-| **J3**    | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE, endpoint                 | J2        |
-| **J4**    | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` (§8 + table du §12)                                     | J3        |
-| **J5**    | Écran : schéma live, liens animés par **occupation** (§13), staff-only                                                            | J4        |
-| **J6**    | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                       | J3, en // |
+| Jalon     | Quoi                                                                                                                                                                                               | Dépend de |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **J1** ✅ | Dataset Analytics Engine + `writeDataPoint` dans la passerelle (hors du chemin de réponse), sous tests — **fait le 2026-08-19**                                                                    | —         |
+| **J2** ✅ | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (requêtes, erreurs serveur, 429, 502 passerelle, p95) — **fait le 2026-08-19**                                                                  | J1        |
+| **J3** ✅ | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE derrière un port (+ le double de répétition), endpoint staff-only — **fait le 2026-08-19** | J2        |
+| **J4**    | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` (§8 + table du §12)                                                                                                      | J3        |
+| **J5**    | Écran : schéma live, liens animés par **occupation** (§13), staff-only                                                                                                                             | J4        |
+| **J6**    | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                                                                                        | J3, en // |
 
 ### Lire la fenêtre — deux pièges d'Analytics Engine
 

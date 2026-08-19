@@ -10,7 +10,13 @@ export type { LifecycleEvent, LifecycleEventKind } from "./event.js";
 export type { NodeHealth, EcosystemHealth } from "./health.js";
 
 export { errorRate, isSilent } from "./traffic.js";
-export type { TrafficCounts, TrafficSurface, TrafficWindow } from "./traffic.js";
+export type {
+  TrafficCounts,
+  TrafficReport,
+  TrafficSource,
+  TrafficSurface,
+  TrafficWindow,
+} from "./traffic.js";
 
 export { createOpsReporter } from "./reporter.js";
 export type { OpsSignal, OpsSink, OpsReporter, OpsReporterOptions } from "./reporter.js";

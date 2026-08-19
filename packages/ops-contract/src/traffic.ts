@@ -91,3 +91,20 @@ export function errorRate(counts: TrafficCounts): number {
 export function isSilent(counts: TrafficCounts): boolean {
   return counts.requests <= 0;
 }
+
+/**
+ * D'où viennent les chiffres d'un rapport.
+ *
+ * `rehearsal` = **répétition** : Analytics Engine n'est pas configuré, les
+ * fenêtres sont fabriquées. La valeur voyage jusqu'à l'écran **exprès** — un
+ * tableau de bord branché sur un double et qui ne le dit pas est la panne
+ * d'observabilité la plus coûteuse qui soit : on croit regarder la production.
+ */
+export type TrafficSource = "analytics-engine" | "rehearsal";
+
+/** Ce que rend l'endpoint OPS : des fenêtres, et l'aveu de leur provenance. */
+export interface TrafficReport {
+  readonly generatedAt: string;
+  readonly source: TrafficSource;
+  readonly windows: readonly TrafficWindow[];
+}

@@ -1,0 +1,121 @@
+import type { TrafficWindow } from "@lfd/ops-contract";
+
+/**
+ * La **décision** de lecture d'Analytics Engine : la requête SQL, et la lecture
+ * de ses lignes. Pur et testé — l'adaptateur ne fait plus que l'appel HTTP.
+ *
+ * Même partage que `routes.ts` côté passerelle : ce qui peut se tromper vit
+ * ici, sous tests ; ce qui ne peut que transporter vit dans l'adaptateur.
+ */
+
+/** Le dataset — même nom que `TRAFFIC_DATASET` dans la passerelle. */
+export const TRAFFIC_DATASET = "lfc_gateway_traffic";
+
+/** Bornes de fenêtre acceptées, en minutes. Au-delà, la lecture coûte sans servir. */
+export const MIN_WINDOW_MINUTES = 1;
+export const MAX_WINDOW_MINUTES = 24 * 60;
+export const DEFAULT_WINDOW_MINUTES = 60;
+
+/**
+ * Ramène une durée de fenêtre demandée par l'appelant à quelque chose de sensé.
+ * Une valeur absente, illisible ou hors bornes ne fait **pas** échouer la
+ * lecture : OPS est un écran de diagnostic, pas un formulaire — refuser une
+ * requête parce que le paramètre est bancal remplacerait une information
+ * approximative par aucune information.
+ */
+export function resolveWindowMinutes(raw: string | undefined): number {
+  const parsed = Number.parseInt(raw ?? "", 10);
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_WINDOW_MINUTES;
+  }
+  return Math.min(MAX_WINDOW_MINUTES, Math.max(MIN_WINDOW_MINUTES, parsed));
+}
+
+/**
+ * La requête d'agrégation, un `GROUP BY` par nœud.
+ *
+ * Deux choix que la doc d'Analytics Engine impose et que le SQL rend visibles :
+ *
+ *  - **`sum(_sample_interval)` et non `count()`** — AE échantillonne quand le
+ *    volume monte et porte le poids de chaque point dans cette colonne. Un
+ *    `count()` rendrait le nombre de points conservés.
+ *  - **`quantileExactWeighted`** — le quantile pondéré du même poids. Non
+ *    pondéré, il mentirait vers le bas dès le premier délestage : il rassurerait
+ *    au moment exact où on le consulte pour s'inquiéter.
+ *
+ * `minutes` est un entier déjà borné par {@link resolveWindowMinutes} : rien
+ * d'extérieur n'entre dans cette chaîne (AE n'a pas de requête paramétrée).
+ */
+export function trafficQuery(minutes: number): string {
+  return [
+    "SELECT index1 AS node,",
+    "  sum(_sample_interval) AS requests,",
+    "  sumIf(_sample_interval, blob1 = '5xx' AND blob3 = 'upstream') AS serverErrors,",
+    "  sumIf(_sample_interval, blob1 = '429') AS throttled,",
+    "  sumIf(_sample_interval, blob3 = 'gateway') AS gatewayFaults,",
+    "  quantileExactWeighted(0.95)(double1, _sample_interval) AS p95Ms",
+    `FROM ${TRAFFIC_DATASET}`,
+    `WHERE timestamp > NOW() - INTERVAL '${Math.trunc(minutes)}' MINUTE`,
+    "GROUP BY node",
+    "FORMAT JSON",
+  ].join("\n");
+}
+
+/** Une ligne du `FORMAT JSON` d'Analytics Engine — tout y est potentiellement texte. */
+export interface TrafficRow {
+  readonly node?: unknown;
+  readonly requests?: unknown;
+  readonly serverErrors?: unknown;
+  readonly throttled?: unknown;
+  readonly gatewayFaults?: unknown;
+  readonly p95Ms?: unknown;
+}
+
+/**
+ * Un nombre, quel que soit ce qu'AE a rendu. Les agrégats reviennent tantôt en
+ * nombre, tantôt en chaîne selon la fonction ; un `NaN` qui remonterait jusqu'à
+ * l'écran s'y afficherait sans qu'on sache d'où il vient.
+ */
+function toNumber(value: unknown): number {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+/**
+ * Les lignes en fenêtres. Les bornes viennent de l'appelant et **pas** de la
+ * réponse : une fenêtre doit dire ce qu'elle couvre même quand AE ne rend
+ * aucune ligne — c'est-à-dire précisément quand il n'y a eu aucun trafic, le
+ * cas qu'on veut pouvoir distinguer d'une panne de lecture.
+ */
+export function rowsToWindows(
+  rows: readonly TrafficRow[],
+  bounds: { readonly from: string; readonly to: string },
+): readonly TrafficWindow[] {
+  return rows.flatMap((row) => {
+    const { node } = row;
+    // Écarté plutôt que rebaptisé : une ligne sans nœud ne se rattache à rien,
+    // et lui inventer un nom la ferait entrer dans la carte sous une identité
+    // fausse.
+    if (typeof node !== "string" || node === "") {
+      return [];
+    }
+    return [
+      {
+        node,
+        from: bounds.from,
+        to: bounds.to,
+        requests: toNumber(row.requests),
+        serverErrors: toNumber(row.serverErrors),
+        throttled: toNumber(row.throttled),
+        gatewayFaults: toNumber(row.gatewayFaults),
+        p95Ms: Math.round(toNumber(row.p95Ms)),
+      },
+    ];
+  });
+}

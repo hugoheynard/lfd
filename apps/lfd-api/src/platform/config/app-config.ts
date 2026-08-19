@@ -12,6 +12,7 @@ import {
   optionalPort,
   optionalR2Storage,
   optionalString,
+  optionalAnalyticsConfig,
   optionalStripeConfig,
   type R2StorageUsage,
   required,
@@ -61,6 +62,7 @@ export class AppConfig implements ShopifyCredentialsSource {
   private readonly clientBaseUrlValue: string | null;
   private readonly management: Auth0ManagementCredentials | null;
   private readonly stripeValue: StripeConfig | null;
+  private readonly analyticsValue: AnalyticsConfig | null;
   private readonly mailerValue: MailerConfig;
   private readonly portValue: number;
   private readonly impersonation: DevImpersonationConfig | null;
@@ -88,6 +90,7 @@ export class AppConfig implements ShopifyCredentialsSource {
     this.clientBaseUrlValue = optionalString("CLIENT_BASE_URL");
     this.management = optionalManagementCredentials();
     this.stripeValue = optionalStripeConfig();
+    this.analyticsValue = optionalAnalyticsConfig();
     this.mailerValue = optionalMailerConfig();
     this.portValue = optionalPort("PORT", 3200);
     this.impersonation = optionalDevImpersonation();
@@ -241,6 +244,11 @@ export class AppConfig implements ShopifyCredentialsSource {
    */
   stripeConfig(): StripeConfig | null {
     return this.stripeValue;
+  }
+
+  /** `null` ⇒ OPS lira des données de répétition, et l'annoncera. */
+  analyticsConfig(): AnalyticsConfig | null {
+    return this.analyticsValue;
   }
 
   /**
@@ -423,6 +431,15 @@ export interface MailerConfig {
   readonly replyTo: string | null;
   /** Boîte de l'équipe commerciale, ou `null` : aucune alerte interne ne part. */
   readonly staffInbox: string | null;
+}
+
+/**
+ * Ce qu'il faut pour LIRE Analytics Engine (l'écriture, elle, se fait dans la
+ * passerelle par un binding — aucun secret côté Worker).
+ */
+export interface AnalyticsConfig {
+  readonly accountId: string;
+  readonly apiToken: string;
 }
 
 export interface StripeConfig {

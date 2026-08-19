@@ -35,6 +35,9 @@ export const staffResourceSchema = z.enum([
   "settings",
   "staff",
   "tech",
+  // La carte de santé de l'écosystème. Elle expose la topologie interne et des
+  // messages techniques : staff only, jamais côté client.
+  "ops",
 ]);
 export type StaffResource = z.infer<typeof staffResourceSchema>;
 
@@ -79,6 +82,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   settings: "Réglages",
   staff: "Utilisateurs",
   tech: "Technique",
+  ops: "Santé de l'écosystème",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -119,6 +123,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     settings: "write",
     staff: "write",
     tech: "write",
+    ops: "write",
   },
   commercial: {
     companies: "write",
@@ -151,6 +156,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     catalog: "read",
     settings: "read",
     tech: "write",
+    // `read` et pas `write` : OPS est en lecture seule en v1 (il observe, il
+    // n'agit pas). Le jour où des actions murées arrivent, ce droit sera le
+    // premier à devoir être re-décidé — pas élargi par habitude.
+    ops: "read",
   },
 };
 

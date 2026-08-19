@@ -1,6 +1,7 @@
 import type { S3StorageConfig } from "@lfd/storage";
 
 import type {
+  AnalyticsConfig,
   Auth0ManagementCredentials,
   DevImpersonationConfig,
   MailerConfig,
@@ -236,3 +237,29 @@ export function optionalMailerConfig(): MailerConfig {
  * délivrabilité. Cf. `documentation/ops/mailer-resend.md`.
  */
 const DEFAULT_FROM_ADDRESS = "no-reply@lafoliecoffee.info";
+
+/**
+ * Lecture d'Analytics Engine — l'identifiant de compte et le jeton d'API
+ * Cloudflare qui ouvrent l'API SQL.
+ *
+ * Les deux vont ensemble ou aucune, même discipline que Stripe et pour la même
+ * raison : une moitié de configuration est pire qu'aucune, parce qu'elle se
+ * découvre au premier usage au lieu du démarrage.
+ *
+ * Absente, OPS bascule sur des données de **répétition** et le dit dans sa
+ * réponse — il ne rend jamais un tableau vide qu'on croirait calme.
+ */
+export function optionalAnalyticsConfig(): AnalyticsConfig | null {
+  const accountId = process.env["CLOUDFLARE_ACCOUNT_ID"]?.trim() ?? "";
+  const apiToken = process.env["CLOUDFLARE_ANALYTICS_TOKEN"]?.trim() ?? "";
+
+  if (accountId === "" && apiToken === "") {
+    return null;
+  }
+  if (accountId === "" || apiToken === "") {
+    throw new Error(
+      "CLOUDFLARE_ACCOUNT_ID et CLOUDFLARE_ANALYTICS_TOKEN vont ensemble : renseignez les deux, ou aucune.",
+    );
+  }
+  return { accountId, apiToken };
+}

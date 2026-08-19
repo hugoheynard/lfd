@@ -51,6 +51,12 @@ const BLOCK_OF = {
 
   // ▸ TECHNIQUE PURE — zéro connaissance métier.
   platform: "platform",
+
+  // ▸ LA CARTE DE SANTÉ — il OBSERVE, il ne possède rien. N'ayant aucun métier,
+  //   il n'a rien à lire chez les autres blocs : sa ligne est la plus stricte
+  //   de la matrice, et personne ne l'importe en retour. C'est aussi ce qui
+  //   rendra son déménagement facile le jour où il deviendra sa propre app.
+  ops: "ops",
 };
 
 /**
@@ -80,7 +86,8 @@ const ALLOWED = {
   pim: new Set(["staff", "platform"]),
   b2b: new Set(["staff", "pim", "platform"]),
   platform: new Set([]),
-  root: new Set(["staff", "pim", "b2b", "platform"]),
+  ops: new Set(["platform"]),
+  root: new Set(["staff", "pim", "b2b", "platform", "ops"]),
 };
 
 /**

@@ -45,6 +45,7 @@
     "@lfd/contracts": "workspace:*",
     "@lfd/endpoints": "workspace:*",
     "@lfd/mailer": "workspace:*",
+    "@lfd/ops-contract": "workspace:*",
     "@lfd/pim-contracts": "workspace:*",
     "@lfd/shopify-admin": "workspace:*",
     "@lfd/storage": "workspace:*",

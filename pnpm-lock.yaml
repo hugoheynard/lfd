@@ -517,6 +517,9 @@ importers:
       '@lfd/mailer':
         specifier: workspace:*
         version: link:../../packages/mailer
+      '@lfd/ops-contract':
+        specifier: workspace:*
+        version: link:../../packages/ops-contract
       '@lfd/pim-contracts':
         specifier: workspace:*
         version: link:../../packages/pim-contracts

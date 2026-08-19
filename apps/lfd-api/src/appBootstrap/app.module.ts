@@ -11,6 +11,7 @@ import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
 import { PaymentsModule } from "../b2b/payments/payments.module.js";
 import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
+import { OpsModule } from "../ops/ops.module.js";
 import { PimModule } from "../pim/pim.module.js";
 import { CatalogFeedModule } from "./catalog-feed.module.js";
 import { StaffAccessModule } from "./staff-access.module.js";
@@ -76,6 +77,7 @@ import { AuthGuard } from "../platform/auth/auth.guard.js";
     StaffNotificationsModule,
     // Le référentiel produit — même processus, **sa** base (cf. PimDatabaseModule),
     // ses routes sous `pim/`.
+    OpsModule,
     PimModule,
     // Le fil entre les deux, relié ici : le port est au PIM, l'adaptateur à la
     // plateforme, et seule la racine a le droit de les voir tous les deux.

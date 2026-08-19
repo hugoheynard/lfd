@@ -203,6 +203,7 @@ enum StaffResource {
   settings
   staff
   tech
+  ops
 
   @@schema("public")
 }

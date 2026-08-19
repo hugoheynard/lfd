@@ -77,6 +77,11 @@ const RUNTIME_KEYS = [
   "SHOPIFY_ADMIN_TOKEN",
   "SHOPIFY_CLIENT_ID",
   "SHOPIFY_CLIENT_SECRET",
+  // Lecture d'Analytics Engine par OPS. L'ÉCRITURE, elle, se fait dans la
+  // passerelle par un binding et n'a besoin d'aucun secret : seul le lecteur
+  // s'authentifie. Absents, OPS rend une fenêtre de répétition — et le dit.
+  "CLOUDFLARE_ACCOUNT_ID",
+  "CLOUDFLARE_ANALYTICS_TOKEN",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];
