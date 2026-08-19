@@ -27,9 +27,11 @@ export const DEV_PORTS = {
   b2bFront: 7316,
   /** Front B2B admin (`lfc-B2B-admin-frontend`). */
   b2bAdminFront: 7317,
-  /** Backend PIM (`lfc-PIM-backend`). */
-  pimBack: 3100,
-  /** Backend B2B (`lfd-api`). */
+  /**
+   * L'API — **une seule**, depuis que le référentiel produit a rejoint le
+   * processus de la plateforme (B2c). Le PIM avait le sien sur 3100 ; ses
+   * routes vivent maintenant sous le préfixe `/pim` de celle-ci.
+   */
   b2bBack: 3200,
   /** Port Angular par défaut, gardé pour un éventuel 2ᵉ front local. */
   spareFront: 4200,
@@ -49,14 +51,22 @@ const loopbacks = (port: number): string[] => [
   `http://127.0.0.1:${port}`,
 ];
 
+/**
+ * Le préfixe qui isole le référentiel dans l'espace d'URL de l'API. Deux
+ * contextes à plat finissent par se disputer un `/products`, et on ne le
+ * découvre qu'en production.
+ */
+export const PIM_API_PREFIX = "/pim";
+
 /** URLs dev (localhost) des fronts ET des backends, dérivées de `DEV_PORTS`. */
 export const DEV_URLS = {
   suiteShell: localhost(DEV_PORTS.suiteShell),
   pimFront: localhost(DEV_PORTS.pimFront),
   b2bFront: localhost(DEV_PORTS.b2bFront),
   b2bAdminFront: localhost(DEV_PORTS.b2bAdminFront),
-  pimBack: localhost(DEV_PORTS.pimBack),
   b2bBack: localhost(DEV_PORTS.b2bBack),
+  /** Les routes du référentiel, sous le préfixe de l'API unique. */
+  pimApi: `${localhost(DEV_PORTS.b2bBack)}${PIM_API_PREFIX}`,
 } as const;
 
 /**
@@ -74,7 +84,6 @@ export const GATEWAY_SUBDOMAINS = {
   pimFront: "pim",
   b2bFront: "b2b",
   b2bAdminFront: "b2b-admin",
-  pimBack: "api-pim",
   b2bBack: "api-b2b",
 } as const;
 
@@ -87,7 +96,6 @@ export const GATEWAY_URLS = {
   pimFront: gatewayUrl(GATEWAY_SUBDOMAINS.pimFront),
   b2bFront: gatewayUrl(GATEWAY_SUBDOMAINS.b2bFront),
   b2bAdminFront: gatewayUrl(GATEWAY_SUBDOMAINS.b2bAdminFront),
-  pimBack: gatewayUrl(GATEWAY_SUBDOMAINS.pimBack),
   b2bBack: gatewayUrl(GATEWAY_SUBDOMAINS.b2bBack),
 } as const;
 
@@ -101,30 +109,29 @@ export function isViaGateway(hostname: string): boolean {
 }
 
 /**
- * Origines CORS autorisées **en dev** pour chaque backend : son front + le port
- * spare. Type `string[]` (mutable) pour rester assignable à l'option `origin`
- * de NestJS `enableCors`. Les origines **prod** sont dans `PROD_CORS_ORIGINS` ;
- * le backend choisit l'un ou l'autre selon `NODE_ENV`.
+ * Origines CORS autorisées **en dev**. Une seule liste : l'API sert les **trois**
+ * fronts depuis que le référentiel l'a rejointe (boutique cliente, admin staff,
+ * PIM). Deux listes séparées survivraient comme un piège — celle du PIM
+ * n'aurait plus de backend à elle, et l'oublier ici couperait le référentiel
+ * par un préflight refusé, symptôme le moins lisible qui soit.
+ *
+ * Direct (localhost:PORT **et** 127.0.0.1:PORT — le dev-server bind 127.0.0.1)
+ * ET via la passerelle (*.localhost:8787) : un front peut appeler l'API de
+ * toutes ces façons selon comment il a été ouvert.
+ *
+ * Type `string[]` (mutable) pour rester assignable à l'option `origin` de
+ * NestJS `enableCors`. Les origines **prod** sont dans `PROD_CORS_ORIGINS` ; le
+ * backend choisit l'une ou l'autre selon `NODE_ENV`.
  */
-export const DEV_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
-  // Direct (localhost:PORT **et** 127.0.0.1:PORT — le dev-server bind 127.0.0.1)
-  // ET via la passerelle (*.localhost:8787) : le front peut appeler l'API de
-  // toutes ces façons selon comment il a été ouvert.
-  pim: [
-    ...loopbacks(DEV_PORTS.pimFront),
-    GATEWAY_URLS.pimFront,
-    ...loopbacks(DEV_PORTS.spareFront),
-  ],
-  // Le backend B2B sert DEUX fronts : la boutique cliente ET l'app admin staff
-  // (Invariant C) — en direct et via la passerelle.
-  b2b: [
-    ...loopbacks(DEV_PORTS.b2bFront),
-    ...loopbacks(DEV_PORTS.b2bAdminFront),
-    GATEWAY_URLS.b2bFront,
-    GATEWAY_URLS.b2bAdminFront,
-    ...loopbacks(DEV_PORTS.spareFront),
-  ],
-};
+export const DEV_CORS_ORIGINS: string[] = [
+  ...loopbacks(DEV_PORTS.b2bFront),
+  ...loopbacks(DEV_PORTS.b2bAdminFront),
+  ...loopbacks(DEV_PORTS.pimFront),
+  GATEWAY_URLS.b2bFront,
+  GATEWAY_URLS.b2bAdminFront,
+  GATEWAY_URLS.pimFront,
+  ...loopbacks(DEV_PORTS.spareFront),
+];
 
 /**
  * Origines des fronts en **PRODUCTION** (Cloudflare Pages, alias de prod stable).
@@ -154,11 +161,6 @@ export const PROD_FRONT_ORIGINS = {
 } as const;
 
 /**
- * Origines CORS autorisées **en prod** par backend. Le B2B sert DEUX fronts
- * (boutique cliente + admin staff, Invariant C) ; le PIM un seul. Liste **fermée**
- * → un site tiers reste refusé.
- */
-/**
  * Ancienne adresse de la boutique, servie par un déploiement que nos workflows
  * ne mettent plus à jour (probablement l'autre compte Cloudflare, celui qui
  * hébergeait aussi l'ancienne base). Gardée le temps que les liens déjà
@@ -169,10 +171,17 @@ export const PROD_FRONT_ORIGINS = {
  */
 const LEGACY_B2B_FRONT = "https://lfc-b2b.pages.dev";
 
-export const PROD_CORS_ORIGINS: Readonly<Record<"pim" | "b2b", string[]>> = {
-  pim: [PROD_FRONT_ORIGINS.pimFront],
-  b2b: [PROD_FRONT_ORIGINS.b2bFront, PROD_FRONT_ORIGINS.b2bAdminFront, LEGACY_B2B_FRONT],
-};
+/**
+ * Origines CORS autorisées **en prod**. Une seule liste, pour la même raison
+ * qu'en dev : une seule API, trois fronts. Liste **fermée** → un site tiers
+ * reste refusé.
+ */
+export const PROD_CORS_ORIGINS: string[] = [
+  PROD_FRONT_ORIGINS.b2bFront,
+  PROD_FRONT_ORIGINS.b2bAdminFront,
+  PROD_FRONT_ORIGINS.pimFront,
+  LEGACY_B2B_FRONT,
+];
 
 /**
  * Message **affichable** tiré d'une erreur HTTP (front), sûr **par

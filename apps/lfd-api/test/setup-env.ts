@@ -28,6 +28,15 @@
 const DEFAULT_TEST_DATABASE_URL = "postgresql://lfc:lfc@localhost:5433/lfc_b2b_test";
 
 process.env["DATABASE_B2B_URL"] ??= DEFAULT_TEST_DATABASE_URL;
+/**
+ * Base **jetable** du référentiel — même conteneur, db à part, même raison que
+ * ci-dessus. Requise depuis que le PIM vit dans ce processus : `AppConfig`
+ * refuse de se construire sans elle, donc son absence ferait échouer **toutes**
+ * les suites, pas seulement celles qui lisent le référentiel.
+ */
+const DEFAULT_TEST_PIM_DATABASE_URL = "postgresql://lfc:lfc@localhost:5433/lfc_pim_test";
+
+process.env["DATABASE_PIM_URL"] ??= DEFAULT_TEST_PIM_DATABASE_URL;
 process.env["AUTH0_DOMAIN"] ??= "test-tenant.eu.auth0.com";
 process.env["AUTH0_AUDIENCE"] ??= "https://api.test.local";
 
@@ -101,17 +110,14 @@ process.env["STRIPE_PUBLISHABLE_KEY"] = "pk_test_e2e";
 export const TEST_RECOMPUTE_TOKEN = "test-recompute-secret";
 process.env["RECOMPUTE_TOKEN"] = TEST_RECOMPUTE_TOKEN;
 
-/**
- * Secret partagé qui protège l'**ingestion du catalogue** poussé par le PIM.
- * Posé en dur pour la même raison que le jeton de recompute : sans bypass de
- * dev, le guard l'exige, et l'e2e le présente en réutilisant cette constante.
- */
-export const TEST_CATALOG_SECRET = "test-catalog-secret";
-process.env["B2B_CATALOG_PUSH_SECRET"] = TEST_CATALOG_SECRET;
-
 /** URL de la base de test, une fois le défaut ci-dessus appliqué. */
 export function testDatabaseUrl(): string {
   return process.env["DATABASE_B2B_URL"] ?? DEFAULT_TEST_DATABASE_URL;
+}
+
+/** Idem pour la base du référentiel. */
+export function testPimDatabaseUrl(): string {
+  return process.env["DATABASE_PIM_URL"] ?? DEFAULT_TEST_PIM_DATABASE_URL;
 }
 
 /**
@@ -119,5 +125,9 @@ export function testDatabaseUrl(): string {
  * base de test et non celle du `.env`.
  */
 export function testChildEnv(): NodeJS.ProcessEnv {
-  return { ...process.env, DATABASE_B2B_URL: testDatabaseUrl() };
+  return {
+    ...process.env,
+    DATABASE_B2B_URL: testDatabaseUrl(),
+    DATABASE_PIM_URL: testPimDatabaseUrl(),
+  };
 }

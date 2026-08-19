@@ -151,11 +151,17 @@ jobs:
           # rotation se serait faite quelque part, sans trace, et le Cron aurait
           # cessé de passer sans que rien ne le dise.
           RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
-          # Secret partagé avec le PIM, qui garde l'ingestion du catalogue.
-          # LA MÊME VALEUR des deux côtés : le PIM le lit sous le même nom.
-          B2B_CATALOG_PUSH_SECRET: ${{ secrets.B2B_CATALOG_PUSH_SECRET }}
+          # La base du référentiel produit — il vit dans cette image depuis B2c,
+          # avec son propre client Prisma. Deux bases, un seul processus.
+          DATABASE_PIM_URL: ${{ secrets.DATABASE_PIM_URL }}
+          # Identifiants Shopify du référentiel. Un seul des deux chemins suffit ;
+          # absents, le canal de publication est éteint (et le dit).
+          SHOPIFY_ADMIN_TOKEN: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
         run: |
-          for name in DATABASE_B2B_URL AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
+          for name in DATABASE_B2B_URL DATABASE_PIM_URL \
+                      AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
                       AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET \
                       AUTH0_STAFF_CONNECTION AUTH0_CUSTOMER_CONNECTION \
                       BOOTSTRAP_ADMIN_EMAIL CLIENT_BASE_URL ADMIN_BASE_URL \
@@ -164,7 +170,8 @@ jobs:
                       R2_ENDPOINT R2_REGION \
                       R2_KBIS_BUCKET R2_KBIS_ACCESS_KEY_ID R2_KBIS_SECRET_ACCESS_KEY \
                       STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET \
-                      RECOMPUTE_TOKEN B2B_CATALOG_PUSH_SECRET; do
+                      SHOPIFY_ADMIN_TOKEN SHOPIFY_CLIENT_ID SHOPIFY_CLIENT_SECRET \
+                      RECOMPUTE_TOKEN; do
             value="${!name}"
             if [ -n "$value" ]; then
               printf '%s' "$value" | pnpm exec wrangler secret put "$name"

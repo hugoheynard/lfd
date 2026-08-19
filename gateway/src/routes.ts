@@ -47,7 +47,6 @@ const DEV_ROUTES: Readonly<Record<string, string>> = {
   [`${GATEWAY_SUBDOMAINS.pimFront}.localhost`]: local(DEV_PORTS.pimFront),
   [`${GATEWAY_SUBDOMAINS.b2bFront}.localhost`]: local(DEV_PORTS.b2bFront),
   [`${GATEWAY_SUBDOMAINS.b2bAdminFront}.localhost`]: local(DEV_PORTS.b2bAdminFront),
-  [`${GATEWAY_SUBDOMAINS.pimBack}.localhost`]: local(DEV_PORTS.pimBack),
   [`${GATEWAY_SUBDOMAINS.b2bBack}.localhost`]: local(DEV_PORTS.b2bBack),
 };
 

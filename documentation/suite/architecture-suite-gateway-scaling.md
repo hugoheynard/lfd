@@ -24,7 +24,7 @@ Aujourd'hui, un port est écrit **en dur à plusieurs endroits** :
 
 | Numéro             | Où il apparaît                                                                                                        |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `7315` (PIM front) | `angular.json` (serve) · `suite-config.dev.ts` (URL iframe **+** allowlist bridge) · `lfc-PIM-backend/main.ts` (CORS) |
+| `7315` (PIM front) | `angular.json` (serve) · `suite-config.dev.ts` (URL iframe **+** allowlist bridge) · `packages/endpoints` (allowlist CORS) |
 | `7316` (B2B front) | `angular.json` (serve) · `lfd-api/main.ts` (CORS)                                                    |
 | `3200` (B2B back)  | `.env` (`PORT`)                                                                                                       |
 

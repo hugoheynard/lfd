@@ -10,7 +10,7 @@ import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-syn
 
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { TEST_CATALOG_SECRET } from "./setup-env.js";
+import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -73,12 +73,9 @@ function snapshot(priceCents: number): CatalogSnapshot {
   };
 }
 
+/** L'ingestion telle que le référentiel la déclenche : par le port, pas par HTTP. */
 function push(priceCents: number) {
-  return ctx
-    .http()
-    .post("/catalog/ingest")
-    .set("x-lfc-catalog-secret", TEST_CATALOG_SECRET)
-    .send(snapshot(priceCents));
+  return ctx.app.get(B2bCatalogDriver).send(snapshot(priceCents));
 }
 
 /** Le staff appelle avec un jeton quelconque : le verifier est doublé. */

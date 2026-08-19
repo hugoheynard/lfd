@@ -11,6 +11,8 @@ import { PricingAdminModule } from "./pricing/pricing-admin.module.js";
 import { PaymentsModule } from "./payments/payments.module.js";
 import { OrderCutoffsModule } from "./order-cutoffs/order-cutoffs.module.js";
 import { CatalogModule } from "./catalog/catalog.module.js";
+import { PimModule } from "./pim/pim.module.js";
+import { CatalogFeedModule } from "./appBootstrap/catalog-feed.module.js";
 import { PickupAddressesModule } from "./pickup-addresses/pickup-addresses.module.js";
 import { StaffNotificationsModule } from "./staff-notifications/staff-notifications.module.js";
 import { StaffUsersModule } from "./staff-users/staff-users.module.js";
@@ -65,6 +67,12 @@ import { AuthGuard } from "./infra/auth/auth.guard.js";
     // Cloche du back-office (@Global) : socle générique dont les alertes sont le
     // premier consommateur, J2 (RDV, demandes de contact) le second.
     StaffNotificationsModule,
+    // Le référentiel produit — même processus, **sa** base (cf. PimDatabaseModule),
+    // ses routes sous `pim/`.
+    PimModule,
+    // Le fil entre les deux, relié ici : le port est au PIM, l'adaptateur à la
+    // plateforme, et seule la racine a le droit de les voir tous les deux.
+    CatalogFeedModule,
     // Contextes métier.
     AccountModule,
     // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.

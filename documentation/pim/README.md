@@ -30,29 +30,31 @@ plan de production du labo.
 Le **langage et les verbes** d'abord ; les tables ne sont qu'une conséquence. Puis le **produit**
 (identité) au centre, et des **couches** posées autour — chacune son doc et son rythme de vie.
 
-|                             | Doc                                                                                      | Rôle                                                                                                           |
-| --------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 📖 **Langage & verbes**     | [`data-model/00-langage-et-comportement.md`](./data-model/00-langage-et-comportement.md) | **À lire en premier** — glossaire, agrégats, commandes & faits, cycle de vie                                   |
-| 🧩 **Identité (socle)**     | [`data-model/02-catalogue-items.md`](./data-model/02-catalogue-items.md)                 | Le **quoi** — `Product` / `ProductVariant` / `Category` / `Collection`. **Fait seul autorité**                 |
-| 🥗 **Réglementaire**        | [`data-model/03-nutrition.md`](./data-model/03-nutrition.md)                             | **Allergènes** (GS1 → INCO, [code](../../apps/lfc-PIM-backend/src/allergens)) + nutrition, par **déclinaison** |
-| ✍️ **Éditorial**            | [`data-model/01-produit.md`](./data-model/01-produit.md)                                 | Récit, provenance, labels, médias, SEO                                                                         |
-| 📡 **Composition & canaux** | [`data-model/04-composition-et-canaux.md`](./data-model/04-composition-et-canaux.md)     | Comment on **étend** sans diluer : trois natures de table, bindings, overrides                                 |
-| 🔖 **Identifiants & SKU**   | [`data-model/06-identifiants-et-sku.md`](./data-model/06-identifiants-et-sku.md)         | `id` vs `sku` vs référence canal ; value object, SKU par défaut, unicité                                       |
-| 💶 **Prix**                 | _à porter_                                                                               | Le **combien** — par canal + TVA                                                                               |
-| 📅 **Disponibilité**        | _à porter_                                                                               | Le **quand** — capacité, créneaux, cut-off (pas un stock)                                                      |
-| ⚖️ **Logistique**           | —                                                                                        | **Descopée v1** ([ADR-14](./adr.md#adr-14--couche-logistique-descopée-de-la-v1))                               |
+|                             | Doc                                                                                      | Rôle                                                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 📖 **Langage & verbes**     | [`data-model/00-langage-et-comportement.md`](./data-model/00-langage-et-comportement.md) | **À lire en premier** — glossaire, agrégats, commandes & faits, cycle de vie                               |
+| 🧩 **Identité (socle)**     | [`data-model/02-catalogue-items.md`](./data-model/02-catalogue-items.md)                 | Le **quoi** — `Product` / `ProductVariant` / `Category` / `Collection`. **Fait seul autorité**             |
+| 🥗 **Réglementaire**        | [`data-model/03-nutrition.md`](./data-model/03-nutrition.md)                             | **Allergènes** (GS1 → INCO, [code](../../apps/lfd-api/src/pim/allergens)) + nutrition, par **déclinaison** |
+| ✍️ **Éditorial**            | [`data-model/01-produit.md`](./data-model/01-produit.md)                                 | Récit, provenance, labels, médias, SEO                                                                     |
+| 📡 **Composition & canaux** | [`data-model/04-composition-et-canaux.md`](./data-model/04-composition-et-canaux.md)     | Comment on **étend** sans diluer : trois natures de table, bindings, overrides                             |
+| 🔖 **Identifiants & SKU**   | [`data-model/06-identifiants-et-sku.md`](./data-model/06-identifiants-et-sku.md)         | `id` vs `sku` vs référence canal ; value object, SKU par défaut, unicité                                   |
+| 💶 **Prix**                 | _à porter_                                                                               | Le **combien** — par canal + TVA                                                                           |
+| 📅 **Disponibilité**        | _à porter_                                                                               | Le **quand** — capacité, créneaux, cut-off (pas un stock)                                                  |
+| ⚖️ **Logistique**           | —                                                                                        | **Descopée v1** ([ADR-14](./adr.md#adr-14--couche-logistique-descopée-de-la-v1))                           |
 
 ## Démarrer en local
 
 ```bash
 pnpm install                       # deps (génère le client Prisma au postinstall)
 pnpm dev:infra                     # Postgres 17 dans Docker (port hôte 5433)
-cp apps/lfc-PIM-backend/.env.example apps/lfc-PIM-backend/.env
-pnpm lfc-suite:dev:watch     # front (4200) + back (3100) en watch
+cp apps/lfd-api/.env.example apps/lfd-api/.env
+pnpm lfc-suite:dev:watch     # front PIM (7315) + API unique (3200) en watch
 ```
 
 `pnpm dev:infra:down` arrête la base (données gardées) · `dev:infra:nuke` détruit le volume.
-En prod la même `DATABASE_URL` pointera sur **Neon** (ADR-09) — seul l'URL change.
+En prod la même `DATABASE_PIM_URL` pointera sur **Neon** (ADR-09) — seul l'URL
+change. Le référentiel n'a plus de backend à lui depuis **B2c** : il est un
+contexte de `lfd-api`, sur **sa** base, avec ses routes sous le préfixe `/pim`.
 
 ## Stack (résumé — détail dans [`adr.md`](./adr.md))
 

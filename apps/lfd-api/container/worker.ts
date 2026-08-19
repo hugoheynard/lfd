@@ -34,6 +34,9 @@ import type { RateLimiter } from "./edge-guard";
  */
 const RUNTIME_KEYS = [
   "DATABASE_B2B_URL",
+  // La base du référentiel produit : depuis B2c il vit dans cette image, avec
+  // son propre client Prisma. Absente, l'application refuse de démarrer.
+  "DATABASE_PIM_URL",
   "AUTH0_DOMAIN",
   "AUTH0_AUDIENCE",
   "AUTH0_ADMIN_AUDIENCE",
@@ -68,9 +71,12 @@ const RUNTIME_KEYS = [
   // Jeton interne du recompute : forwardé au container (le guard le compare) ET
   // lu ici par le handler `scheduled` (le Cron Trigger le présente à l'endpoint).
   "RECOMPUTE_TOKEN",
-  // Secret partagé avec le PIM : il garde l'ingestion du catalogue. Absent, le
-  // guard refuse tout (fail-closed) et la boutique fige son catalogue.
-  "B2B_CATALOG_PUSH_SECRET",
+  // Identifiants Shopify du référentiel : un seul des deux chemins suffit
+  // (jeton statique, ou paire client credentials). Absents, le canal de
+  // publication est éteint — l'écran Réglages le dit.
+  "SHOPIFY_ADMIN_TOKEN",
+  "SHOPIFY_CLIENT_ID",
+  "SHOPIFY_CLIENT_SECRET",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];

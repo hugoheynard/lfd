@@ -1,15 +1,21 @@
 /**
- * E2E de l'**ingestion du catalogue** poussé par le PIM — sur un vrai Postgres.
+ * E2E de l'**ingestion du catalogue** venu du référentiel — sur un vrai Postgres.
  *
  * Ce que seul le vrai SQL prouve, et qu'aucun test unitaire ne pourrait :
- * l'`upsert` ne cascade pas sur les décisions locales, alors qu'une ingestion en
+ * l'ingestion ne cascade pas sur les décisions locales, alors qu'une écriture en
  * « table rase » les effacerait. C'est le piège de ce chantier, et il ne se voit
  * qu'avec les vraies clés étrangères.
+ *
+ * L'entrée n'est plus une route : le fil est passé par le port
+ * `B2bCatalogDriver`, relié par la racine de composition. La suite l'appelle
+ * donc comme le référentiel l'appelle. Ce qui a disparu avec le HTTP, ce sont
+ * les deux tests de secret partagé — il n'y a plus de secret, plus de porte, et
+ * plus rien à refuser : c'est le gain, pas un trou de couverture.
  */
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { TEST_CATALOG_SECRET } from "./setup-env.js";
+import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
+import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
 let ctx: E2eContext;
 
@@ -65,43 +71,15 @@ function snapshot(skus: readonly { sku: string; priceCents: number }[]): Catalog
   };
 }
 
-function push(body: unknown) {
-  return ctx
-    .http()
-    .post("/catalog/ingest")
-    .set("x-lfc-catalog-secret", TEST_CATALOG_SECRET)
-    .send(body);
+function push(body: CatalogSnapshot) {
+  return ctx.app.get(B2bCatalogDriver).send(body);
 }
 
-describe("POST /catalog/ingest", () => {
-  it("refuse sans le secret partagé", async () => {
-    const response = await ctx.http().post("/catalog/ingest").send(snapshot([]));
-
-    expect(response.status).toBe(401);
-  });
-
-  it("refuse avec un mauvais secret", async () => {
-    const response = await ctx
-      .http()
-      .post("/catalog/ingest")
-      .set("x-lfc-catalog-secret", "pas-le-bon")
-      .send(snapshot([]));
-
-    expect(response.status).toBe(401);
-  });
-
-  it("refuse une version de format inconnue plutôt que d'ingérer à moitié", async () => {
-    const response = await push({ ...snapshot([]), version: 99 });
-
-    expect(response.status).toBe(400);
-    expect(await ctx.prisma.catalogItem.count()).toBe(0);
-  });
-
+describe("le fil catalogue, côté plateforme", () => {
   it("écrit le catalogue et rend des compteurs", async () => {
-    const response = await push(snapshot([{ sku: "VIE-001", priceCents: 200 }]));
+    const report = await push(snapshot([{ sku: "VIE-001", priceCents: 200 }]));
 
-    expect(response.status).toBe(201);
-    expect(jsonBody(response)).toMatchObject({
+    expect(report).toMatchObject({
       acceptedProducts: 1,
       acceptedVariants: 1,
       acceptedCategories: 1,
@@ -152,9 +130,9 @@ describe("POST /catalog/ingest", () => {
       ]),
     );
 
-    const response = await push(snapshot([{ sku: "VIE-001", priceCents: 200 }]));
+    const report = await push(snapshot([{ sku: "VIE-001", priceCents: 200 }]));
 
-    expect(jsonBody(response)).toMatchObject({ removedSkus: ["VIE-002-1"] });
+    expect(report).toMatchObject({ removedSkus: ["VIE-002-1"] });
     expect(await ctx.prisma.catalogItem.count()).toBe(1);
   });
 

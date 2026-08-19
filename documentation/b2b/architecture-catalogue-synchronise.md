@@ -251,17 +251,11 @@ slices partent ensemble, ou aucune.
 
 ## Peupler la base en dev — la recette complète
 
-Trois gestes, dans cet ordre. Les deux backends tournent (`Dev all`), et le PIM
-doit connaître sa cible : ajouter dans `apps/lfc-PIM-backend/.env`
-
-```
-B2B_CATALOG_PUSH_URL=http://localhost:3200/catalog/ingest
-B2B_CATALOG_PUSH_SECRET=dev-catalog-secret
-```
-
-et **la même valeur** dans `apps/lfd-api/.env` sous
-`B2B_CATALOG_PUSH_SECRET`. Une moitié seule laisse le canal éteint — c'est voulu,
-et le bulletin de démarrage le dira.
+Deux gestes, dans cet ordre. **Un seul backend** tourne (`lfd-api`, port 3200) et
+il n'y a **rien à configurer** : depuis B2c le référentiel vit dans le même
+processus, et le fil passe par un port en mémoire (`B2bCatalogDriver`) au lieu
+d'un `POST` signé. L'URL de push, son secret partagé et l'identité
+machine-à-machine ont disparu avec le réseau qui les rendait nécessaires.
 
 **1. Publier les produits sur le canal B2B.** L'appartenance est explicite : rien
 ne part tant que personne ne l'a décidé.
@@ -269,7 +263,7 @@ ne part tant que personne ne l'a décidé.
 ```bash
 IDS=$(docker exec lfd-dev-postgres psql -U lfc -d lfc_pim -tAc \
   "select string_agg(format('\"%s\"', id), ',') from product where status <> 'archived'")
-curl -s -X PUT http://localhost:3100/channels/b2b/products \
+curl -s -X PUT http://localhost:3200/pim/channels/b2b/products \
   -H 'content-type: application/json' \
   -d "{\"productIds\":[$IDS],\"published\":true}"
 ```
@@ -278,8 +272,8 @@ curl -s -X PUT http://localhost:3100/channels/b2b/products \
 un bouton qui pousse le catalogue vendu ne part pas sur un appel mal formé.
 
 ```bash
-curl -s -X POST http://localhost:3100/channels/b2b/push -H 'content-type: application/json' -d '{"dryRun":true}'
-curl -s -X POST http://localhost:3100/channels/b2b/push -H 'content-type: application/json' -d '{"dryRun":false}'
+curl -s -X POST http://localhost:3200/pim/channels/b2b/push -H 'content-type: application/json' -d '{"dryRun":true}'
+curl -s -X POST http://localhost:3200/pim/channels/b2b/push -H 'content-type: application/json' -d '{"dryRun":false}'
 ```
 
 Lire `excluded` **avant** de pousser pour de bon : chaque motif y est nommé

@@ -19,7 +19,6 @@ import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-ite
 import { PrismaCanonicalPriceHistoryReader } from "./infrastructure/prisma-canonical-price-history.reader.js";
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
-import { CatalogIngestController } from "./http/catalog-ingest.controller.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -42,7 +41,7 @@ import { CatalogIngestController } from "./http/catalog-ingest.controller.js";
  */
 @Module({
   imports: [CqrsModule],
-  controllers: [CatalogIngestController, AdminCatalogController],
+  controllers: [AdminCatalogController],
   providers: [
     IngestCatalogService,
     SetB2bPriceHandler,
@@ -57,6 +56,16 @@ import { CatalogIngestController } from "./http/catalog-ingest.controller.js";
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
-  exports: [CatalogReader, CatalogItemRepository, CanonicalPriceHistoryReader],
+  //
+  // `IngestCatalogService` sort pour une raison différente : c'est l'entrée du
+  // fil catalogue. Elle était une route ; elle est devenue un service que
+  // l'adaptateur du port branche à la racine de composition. Exporter, ici,
+  // c'est le geste explicite qui remplace le `@Public()` d'un contrôleur.
+  exports: [
+    CatalogReader,
+    CatalogItemRepository,
+    CanonicalPriceHistoryReader,
+    IngestCatalogService,
+  ],
 })
 export class CatalogModule {}

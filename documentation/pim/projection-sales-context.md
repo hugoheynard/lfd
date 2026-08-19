@@ -73,7 +73,7 @@ article.categoryId ─► Category.<contexte.tvaRef>  (catalogue)  ─► TvaReg
 ```
 
 Le socle existe déjà : `Category` porte `emporterTvaId` / `surPlaceTvaId`
-([`set-category-tva`](../../apps/lfc-PIM-backend/src/catalogue/application/set-category-tva.ts)),
+([`set-category-tva`](../../apps/lfd-api/src/pim/catalogue/application/set-category-tva.ts)),
 `TvaRegime.tag` est le handle dérivé du taux. Manque **le read composé** exposé à l'adaptateur :
 « pour cet article et ce contexte, quel handle de collection ». Il ne lit jamais les tables de
 l'autre domaine — il passe par un port.

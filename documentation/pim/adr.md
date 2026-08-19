@@ -70,7 +70,7 @@ l'affichage. Mapping **n:1** maintenu (donnée de référence versionnée), serv
 **Raison** : GS1 = sur-ensemble international interopérable (B2B/GDSN) ; INCO = obligation légale UE.
 Stocker le plus riche, projeter vers le bas (l'inverse serait avec perte).
 **Conséquences** : détail dans `data-model/05-allergenes-gs1-inco.md`. Slice de domaine en place :
-[`apps/lfc-PIM-backend/src/allergens`](../../apps/lfc-PIM-backend/src/allergens) (codes GS1
+[`apps/lfd-api/src/pim/allergens`](../../apps/lfd-api/src/pim/allergens) (codes GS1
 **provisoires** — à peupler depuis `ref.gs1.org`).
 
 ---

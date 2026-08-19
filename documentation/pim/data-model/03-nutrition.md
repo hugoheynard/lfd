@@ -70,7 +70,7 @@ s'ajouter plus tard sans casser celle-ci.
 
 `allergens` / `may_contain` stockent des **codes GS1** (canonique, interopérable B2B/GDSN). La
 projection vers l'**INCO-14** (filtre + libellés + mise en forme) se fait à l'affichage — logique
-déjà codée : [`src/allergens`](../../../apps/lfc-PIM-backend/src/allergens) (`toInco` /
+déjà codée : [`src/allergens`](../../../apps/lfd-api/src/pim/allergens) (`toInco` /
 `toGdsn`), détail dans `05-allergenes-gs1-inco.md` _(à porter)_. Codes GS1 **provisoires** — à
 peupler depuis `ref.gs1.org` (ADR-07).
 

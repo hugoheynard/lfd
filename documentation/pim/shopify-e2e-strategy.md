@@ -61,7 +61,7 @@ prétendre le contraire.
 
 1. **Couverture** — _chaque méthode publique « live » de l'`admin-client` a un e2e
    réel associé._ Un gate repo (comme `lint:feature-access`) parse les méthodes de
-   [`admin-client.ts`](../../apps/lfc-PIM-backend/src/channels/shopify/shared/admin-client.ts)
+   [`admin-client.ts`](../../apps/lfd-api/src/pim/channels/shopify/shared/admin-client.ts)
    et vérifie que chacune est référencée par un `*.shopify-live.e2e.ts`, via
    l'annotation `@verified-by`. Une méthode sans e2e ⇒ **build rouge**.
 2. **Isolation** — _aucun e2e live n'est dans le glob unitaire_ (sinon la CI taperait

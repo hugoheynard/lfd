@@ -51,8 +51,14 @@ const BLOCK_OF = {
   pricing: "b2b",
   subscriptions: "b2b",
 
-  // ▸ LE RÉFÉRENTIEL — arrive en B2c ; son socle de base de données est déjà là.
+  // ▸ LE RÉFÉRENTIEL — arrivé en B2c, avec sa base et ses canaux.
   pim: "pim",
+
+  // ▸ LA RACINE DE COMPOSITION — le seul endroit qui a le droit de connaître
+  //   tout le monde, parce que son unique travail est de relier les blocs
+  //   entre eux. Personne ne l'importe en retour : un contexte qui remonte
+  //   vers la racine s'est mis à dépendre de l'assemblage.
+  appBootstrap: "root",
 
   // ▸ TECHNIQUE PURE — zéro connaissance métier.
   infra: "platform",
@@ -69,12 +75,18 @@ const BLOCK_OF = {
  *   plus le poser devant le PIM — or c'est précisément ce qu'on veut faire ;
  * - **`platform` ne connaît aucun contexte.** Une brique technique qui sait
  *   qu'un annuaire staff existe n'est plus une brique technique.
+ *
+ * `root` est l'exception qui rend les autres tenables : quelqu'un doit bien
+ * relier un port à son implémentation quand les deux vivent de part et d'autre
+ * d'une frontière. Ce quelqu'un est la racine de composition, et elle seule —
+ * c'est pourquoi aucun bloc ne la contient en retour.
  */
 const ALLOWED = {
   staff: new Set(["platform"]),
   pim: new Set(["staff", "platform"]),
   b2b: new Set(["staff", "pim", "platform"]),
   platform: new Set([]),
+  root: new Set(["staff", "pim", "b2b", "platform"]),
 };
 
 /**

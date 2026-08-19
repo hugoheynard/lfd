@@ -235,42 +235,39 @@ elle qui remplace le mur que le réseau tenait.
 > global se déclare à la **racine de composition** — seul endroit qui a le droit
 > de connaître tout le monde. L'API reste protégée par défaut ; c'est le lieu de
 > la déclaration qui change.
-
-### B2 n'est PAS incrémental par contexte
-
-Découvert en préparant B2a : `allergens` est importé par `catalogue`, `locations`
-par `channels`. Déplacer une brique du PIM **casse l'app PIM tant qu'elle
-tourne** — et la partager en paquet le temps de la migration serait pire que la
-bascule elle-même.
-
-Il n'y a donc pas de migration douce contexte par contexte : **B2c est un bloc**,
-121 fichiers en un commit, l'app PIM supprimée dans le même geste. Ce qui peut
-être préparé avant l'est (B2a, B2b) ; le reste se fait d'un coup, sur une branche,
-avec les tests des deux côtés en filet.
-
-**B1 avant tout code de fusion.** C'est la seule marche non négociable : c'est
-elle qui remplace le mur que le réseau tenait.
-
-> **B0 et B1 sont faits** (2026-08-19). Les deux gates tournent en CI :
-> `lint:context-boundaries` et `lint:cross-schema-join`. Le premier a trouvé
-> **7 franchissements existants**, tous inscrits dans sa liste d'exceptions avec
-> leur raison et leur cible — la liste doit se **vider** en B2, et le gate échoue
-> si une exception devient inutile sans être retirée :
 >
-> - `staff-users → account` (×2) — l'émission du lien de mot de passe vit dans
->   `account/`. Cible : elle remonte dans `platform/auth`, les deux populations
->   s'en servent ;
-> - `infra/* → staff-users` (×2) — la config et son test connaissent l'admin
->   d'amorçage. Cible : `staff/` expose la normalisation, la config passe la valeur ;
-> - `infra/auth/customer-user.resolver.ts → account` (×2) — résoudre un jeton en
->   **client** est une affaire d'`account/`, pas de technique. Cible : le résolveur
->   descend dans `account/`, `platform/auth` ne garde que la vérification du jeton ;
-> - `shared/http/…app-error.filter.spec.ts → account` — le test se sert d'une
->   erreur de domaine comme échantillon. Cible : en prendre une de `platform/`.
+> **B2c** est fait (2026-08-19) : le référentiel vit sous `apps/lfd-api/src/pim/`,
+> l'app `lfc-PIM-backend` est supprimée, ses routes sont montées sous le préfixe
+> `pim/`. Un préfixe plutôt qu'un espace plat, parce que deux contextes à plat
+> finissent par se disputer un `/products` — et qu'on ne le découvre qu'en
+> production.
 >
-> Aucun n'est grave isolément. Ensemble, ils disent la même chose : **la couche
-> technique en sait déjà trop sur les clients**, et c'est exactement ce qui rend
-> une fusion dangereuse si on ne la mesure pas avant.
+> Ce que la fusion a **supprimé**, et qui est le vrai gain : le fil catalogue
+> n'est plus un `POST` signé mais un port en mémoire. Avec le réseau sont partis
+> le secret partagé (`B2B_CATALOG_PUSH_SECRET`), le guard qui le vérifiait, la
+> route d'ingestion, l'identité machine-à-machine, et la revalidation du rapport
+> de retour — on ne se relit pas soi-même. Le port `B2bCatalogDriver` reste
+> déclaré par le **référentiel** ; c'est la plateforme qui s'y conforme
+> (`InProcessB2bCatalogDriver`), parce qu'elle est du côté aval. Le branchement
+> vit dans `appBootstrap/`, nouveau bloc **`root`** de la matrice : le seul
+> autorisé à voir les deux côtés, et que personne n'importe en retour.
+>
+> Trois garde-fous ont travaillé pendant l'opération, ce qui est exactement ce
+> qu'on leur demandait : le gate des frontières a exigé que `appBootstrap`
+> déclare son bloc ; l'inventaire des capacités a refusé une variable
+> non déclarée ; et le test des **trois listes** (workflow → Worker →
+> configuration) a refusé de laisser `DATABASE_PIM_URL` et les identifiants
+> Shopify sans chemin jusqu'au container.
+>
+> Deux choses restent **inchangées et c'est voulu** : les deux bases (la
+> consolidation en schémas est B4, avec sa migration de données), et les deux
+> audiences. Les routes du référentiel sont `@Public()` — elles l'étaient déjà
+> dans son app. La fusion ne les ouvre pas davantage ; elle ne les ferme pas non
+> plus, et c'est B2d/T3 qui s'en chargent.
+>
+> Le déployé, lui, n'a pas bougé : le Worker `lfc-pim-backend` tourne encore sur
+> sa dernière image, plus rien ne le met à jour, et il s'éteint en **B2e** quand
+> la passerelle routera `/api/pim` vers le Worker de l'API.
 
 **B0 seul**, aussi : un renommage qui casse un déploiement au milieu d'une fusion
 de contextes est indébrouillable. Et il se limite à l'identité **locale** —

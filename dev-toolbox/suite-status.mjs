@@ -15,7 +15,6 @@ import { DEV_PORTS } from '@lfd/endpoints';
 const SERVICES = [
   { label: 'Shell suite', port: DEV_PORTS.suiteShell },
   { label: 'PIM front', port: DEV_PORTS.pimFront },
-  { label: 'PIM back', port: DEV_PORTS.pimBack },
   { label: 'B2B front', port: DEV_PORTS.b2bFront },
   { label: 'B2B admin front', port: DEV_PORTS.b2bAdminFront },
   { label: 'B2B back', port: DEV_PORTS.b2bBack },

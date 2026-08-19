@@ -51,7 +51,7 @@ async function bootstrap(): Promise<void> {
   // origines Pages en prod, localhost en dev. Une origine hors liste (dont un
   // site tiers) est refusée par le navigateur.
   app.enableCors({
-    origin: config.isProduction() ? PROD_CORS_ORIGINS.b2b : DEV_CORS_ORIGINS.b2b,
+    origin: config.isProduction() ? PROD_CORS_ORIGINS : DEV_CORS_ORIGINS,
   });
 
   // Le port passe par AppConfig comme toute autre valeur d'environnement.

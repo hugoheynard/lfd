@@ -34,7 +34,10 @@ const ALLOWED_SUFFIXES = [
   'src/infra/config/__tests__/app-config.spec.ts',
   'test/setup-env.ts',
   // CLI Prisma : tourne hors du runtime Nest, AppConfig n'y est pas disponible.
+  // Deux configs depuis que le référentiel a rejoint le processus : une par
+  // base (`prisma.config.ts`, `prisma.pim.config.ts`).
   'prisma.config.ts',
+  'prisma.pim.config.ts',
   // Serveur SSR Angular : le front n'a pas encore de passerelle de config.
   // À retirer d'ici le jour où il en aura une (cf. todo.md).
   'src/server.ts',

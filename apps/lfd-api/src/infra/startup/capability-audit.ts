@@ -28,7 +28,7 @@ export interface CapabilitySnapshot {
   readonly hasStripe: boolean;
   readonly hasClientBaseUrl: boolean;
   readonly hasAdminBaseUrl: boolean;
-  readonly hasCatalogIngestSecret: boolean;
+  readonly hasShopifyCredentials: boolean;
 }
 
 /**
@@ -126,12 +126,12 @@ const CHECKS: readonly Check[] = [
     present: (s) => s.hasAdminBaseUrl,
   },
   {
-    capability: "Réception du catalogue poussé par le PIM",
-    setting: "B2B_CATALOG_PUSH_SECRET",
+    capability: "Publication vers Shopify",
+    setting: "SHOPIFY_ADMIN_TOKEN (ou SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET)",
     consequence:
-      "le PIM ne peut plus mettre le catalogue à jour : la boutique continue de vendre ce qu'elle a reçu la dernière fois, sans que rien ne le signale",
+      "le référentiel ne peut plus publier la vitrine : l'écran Réglages annonce le canal éteint, et une publication demandée échoue au lieu de partir",
     severity: "degraded",
-    present: (s) => s.hasCatalogIngestSecret,
+    present: (s) => s.hasShopifyCredentials,
   },
 ];
 

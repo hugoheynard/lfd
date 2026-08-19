@@ -21,13 +21,13 @@ flowchart TB
 
     subgraph prive["Sans aucune adresse publique"]
         WB["Worker lfc-b2b-backend"]
-        WP["Worker lfc-pim-backend"]
+        WP["Worker lfc-pim-backend<br/>⚠️ dernière image — plus déployé (B2c)"]
         CB["Container NestJS B2B<br/>WEUR · 1 instance chaude"]
-        CP["Container NestJS PIM<br/>WEUR · 2 instances"]
+        CP["Container NestJS PIM<br/>WEUR · 2 instances<br/>⚠️ s'éteint en B2e"]
     end
 
     DBB[("Prisma Postgres<br/>base B2B")]
-    DBP[("Prisma Postgres<br/>base PIM")]
+    DBP[("Prisma Postgres<br/>base PIM<br/>lue par le container B2B depuis B2c")]
 
     A -->|"/api/b2b/*"| GW
     B -->|"/api/b2b/*"| GW

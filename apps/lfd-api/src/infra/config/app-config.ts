@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { S3StorageConfig } from "@lfd/storage";
+import type { ShopifyCredentialsSource, ShopifyOAuthCredentials } from "@lfd/shopify-admin";
 
 import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
 
@@ -45,8 +46,12 @@ const DEFAULT_AUTH0_CUSTOMER_CONNECTION = "lfc-b2b-customers";
  */
 const DEFAULT_AUTH0_STAFF_CONNECTION = "lfc-staff";
 
+// Le type des identifiants Shopify vit dans `@lfd/shopify-admin` (le transport).
+// Ré-exporté ici pour les consommateurs qui passent par `AppConfig`.
+export type { ShopifyOAuthCredentials };
+
 @Injectable()
-export class AppConfig {
+export class AppConfig implements ShopifyCredentialsSource {
   private readonly database: string;
   private readonly pimDatabase: string;
   private readonly auth0DomainValue: string;
@@ -64,18 +69,16 @@ export class AppConfig {
   private readonly revisionValue: string;
   private readonly adminBypass: boolean;
   private readonly recomputeTokenValue: string | null;
-  private readonly catalogIngestSecretValue: string | null;
   private readonly adminBaseUrlValue: string | null;
+  private readonly shopifyTokenValue: string | null;
+  private readonly shopifyClientIdValue: string | null;
+  private readonly shopifyClientSecretValue: string | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
 
   constructor() {
     this.database = required("DATABASE_B2B_URL");
-    // Optionnelle tant que le PIM n'a pas déménagé (B2c) : exiger une base dont
-    // aucun code ne se sert encore ferait échouer le boot de tous les
-    // environnements pour rien. Elle redeviendra requise avec son premier
-    // consommateur — et `PimPrismaService` refuse déjà clairement si elle manque.
-    this.pimDatabase = optionalString("DATABASE_PIM_URL") ?? "";
+    this.pimDatabase = required("DATABASE_PIM_URL");
     this.auth0DomainValue = required("AUTH0_DOMAIN");
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
     this.auth0ConnectionValue =
@@ -94,8 +97,10 @@ export class AppConfig {
     );
     this.adminBypass = optionalAdminDevBypass();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
-    this.catalogIngestSecretValue = optionalString("B2B_CATALOG_PUSH_SECRET");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
+    this.shopifyTokenValue = optionalString("SHOPIFY_ADMIN_TOKEN");
+    this.shopifyClientIdValue = optionalString("SHOPIFY_CLIENT_ID");
+    this.shopifyClientSecretValue = optionalString("SHOPIFY_CLIENT_SECRET");
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.exposeDetail = !this.production;
@@ -137,14 +142,13 @@ export class AppConfig {
    * Mêmes deux schémas acceptés que la base commerce, pour la même raison : le
    * schéma de l'URL choisit le transport.
    *
-   * @throws {Error} si elle n'est pas posée. Le refus est ici et pas au boot :
-   *   tant que rien ne lit cette base, exiger la variable ferait échouer tous
-   *   les environnements pour du code que personne n'appelle.
+   * **Requise** depuis que le référentiel vit dans ce processus : sans elle, le
+   * catalogue, la TVA et les emplacements sont muets. Elle a été facultative le
+   * temps d'un pas (B2b), quand le client existait sans consommateur ; laisser
+   * cette tolérance en place ferait passer une base injoignable pour un
+   * démarrage normal.
    */
   pimDatabaseUrl(): string {
-    if (this.pimDatabase === "") {
-      throw new Error("DATABASE_PIM_URL manquante : le référentiel PIM est injoignable.");
-    }
     return this.pimDatabase;
   }
 
@@ -333,16 +337,44 @@ export class AppConfig {
   }
 
   /**
-   * Secret partagé qui protège l'**ingestion du catalogue** poussé par le PIM
-   * (`POST /catalog/ingest`), présenté dans `x-lfc-catalog-secret`.
+   * Jeton d'API Shopify — **secret**, donc dans l'environnement et **pas en base**.
    *
-   * **La même valeur des deux côtés** : le PIM la lit sous le nom
-   * `B2B_CATALOG_PUSH_SECRET`, et c'est le seul endroit du système où deux
-   * services partagent un secret — d'où le rappel. `null` si non configuré : le
-   * guard refuse alors tout en prod (fail-closed), sauf sous le bypass de dev.
+   * Les réglages non sensibles de l'intégration (domaine de la boutique,
+   * activation) vivent en base et se pilotent depuis l'écran Réglages. Le jeton,
+   * non : un secret en base fuite par les sauvegardes, les exports et les logs,
+   * et se retrouve lisible par quiconque ouvre l'admin. L'écran affiche
+   * seulement s'il est **présent**.
    */
-  catalogIngestSecret(): string | null {
-    return this.catalogIngestSecretValue;
+  shopifyAdminToken(): string | null {
+    return this.shopifyTokenValue;
+  }
+
+  /**
+   * Identifiants d'app **Dev Dashboard** — l'unique manière d'obtenir un jeton
+   * depuis le 01/01/2026 (plus aucun token statique n'y est affiché). Échangés
+   * server-to-server via le *client credentials grant*. Deux secrets, jamais en
+   * base. `null` tant que l'un des deux manque : une moitié d'identifiant est
+   * inutile, et `null` dit « canal éteint » d'une seule voix plutôt que de
+   * laisser l'appelant recomposer la condition à chaque fois.
+   */
+  shopifyOAuthCredentials(): ShopifyOAuthCredentials | null {
+    if (this.shopifyClientIdValue === null || this.shopifyClientSecretValue === null) {
+      return null;
+    }
+    return {
+      clientId: this.shopifyClientIdValue,
+      clientSecret: this.shopifyClientSecretValue,
+    };
+  }
+
+  /**
+   * L'intégration peut passer en mode réel dès qu'**un** chemin
+   * d'authentification est approvisionné : soit le jeton legacy statique, soit
+   * la paire client credentials. L'écran n'affiche que cette présence, jamais
+   * les secrets eux-mêmes.
+   */
+  hasShopifyCredentials(): boolean {
+    return this.shopifyTokenValue !== null || this.shopifyOAuthCredentials() !== null;
   }
 
   /**

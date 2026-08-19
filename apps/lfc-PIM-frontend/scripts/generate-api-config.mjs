@@ -3,8 +3,9 @@
 // en déployé (`process.env` gagne). Valeur PUBLIQUE (l'URL d'API n'est pas un secret).
 //
 // Le PIM front est iframé sous le shell (il reçoit son jeton via SuiteBridge) : sa seule
-// config d'environnement est l'URL de SON backend. En dev on retombe sur localhost:3100
-// pour que l'app tourne sans `.env`.
+// config d'environnement est l'URL de son API. Depuis B2c, le référentiel n'a plus de
+// backend à lui : ses routes vivent sous le préfixe `/pim` de l'API unique (port 3200).
+// En dev on retombe sur cette adresse pour que l'app tourne sans `.env`.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -15,7 +16,7 @@ const appRoot = resolve(here, '..');
 const envPath = resolve(appRoot, '.env');
 const outPath = resolve(appRoot, 'src/app/data/api.env.generated.ts');
 
-const DEV_DEFAULT = 'http://localhost:3100';
+const DEV_DEFAULT = 'http://localhost:3200/pim';
 
 function parseDotenv(text) {
   const out = {};

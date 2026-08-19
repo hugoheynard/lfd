@@ -5,7 +5,7 @@
 > qui compte pour publier sans casse — _à pousser_, _modifié en boutique_, _conflit_, le
 > **diff par champ** avant d'envoyer, et le **retour arrière** par snapshot versionné.
 >
-> Statut : **design cible.** Le push actuel ([`push.service.ts`](../../apps/lfc-PIM-backend/src/channels/shopify/products/push.service.ts))
+> Statut : **design cible.** Le push actuel ([`push.service.ts`](../../apps/lfd-api/src/pim/channels/shopify/products/push.service.ts))
 > ne garde qu'un _hash_ de la dernière poussée — assez pour « ne pas repousser l'identique »,
 > pas assez pour diffuser, détecter une main étrangère, ou revenir en arrière. Ce doc décrit
 > le socle qui manque.

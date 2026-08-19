@@ -3,8 +3,8 @@
 Monorepo `lfd` (pnpm + turbo), branche de travail **`dev`**.
 
 ```
-apps/lfc-PIM-backend/            NestJS · Prisma Postgres (db PIM)      ─┐ backends :
-apps/lfd-api/   NestJS · Prisma Postgres (db commerce) ─┘ ce document
+apps/lfd-api/                    NestJS · UN processus, DEUX bases Prisma  ← ce document
+                                   src/pim/ = le référentiel (db PIM, routes /pim)
 apps/lfc-PIM-frontend/           Angular 22 zoneless SSR · fold-ng      ─┐
 apps/lfc-B2B-platform-frontend/  Angular 22 zoneless SSR · fold-ng       │ frontends :
 apps/lfc-B2B-admin-frontend/     Angular 22 · back-office staff          │ CLAUDE.md de l'app

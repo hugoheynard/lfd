@@ -12,7 +12,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasStripe: true,
   hasClientBaseUrl: true,
   hasAdminBaseUrl: true,
-  hasCatalogIngestSecret: true,
+  hasShopifyCredentials: true,
 };
 
 function without(...keys: readonly (keyof CapabilitySnapshot)[]): CapabilitySnapshot {
@@ -89,12 +89,6 @@ describe("inventaire — aucun réglage optionnel oublié", () => {
     "PORT", // a un défaut
     "NODE_ENV", // a un défaut
     "APP_REVISION", // gravée dans l'image ; absente = build local, aucune capacité éteinte
-    // Le second client Prisma existe (B2b) mais RIEN ne le consomme encore :
-    // son absence n'éteint aucune capacité produit. Elle en éteindra une le jour
-    // où le PIM déménage (B2c) — il faudra alors la sortir d'ici pour lui donner
-    // sa vraie ligne d'inventaire, sans quoi une base injoignable passerait pour
-    // un démarrage normal.
-    "DATABASE_PIM_URL",
   ]);
 
   it("chaque optionalString d'AppConfig est inventorié ou exempté", () => {

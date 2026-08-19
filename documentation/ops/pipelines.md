@@ -5,23 +5,27 @@ déploiement.
 
 ## 1. Le déclenchement
 
-Tout part de `main`, par **filtres de chemins** : un commit qui ne touche que le
-PIM ne redéploie pas le B2B.
+Tout part de `main`, par **filtres de chemins** : un commit qui ne touche qu'un
+front ne redéploie pas l'API.
+
+Depuis **B2c**, le référentiel produit vit dans `apps/lfd-api/src/pim/` : il n'a
+plus de workflow à lui, et un changement du catalogue redéploie l'API unique.
+Le Worker `lfc-pim-backend` **tourne encore**, sur sa dernière image — plus rien
+ne le met à jour, et il s'éteindra en B2e quand la passerelle routera `/api/pim`
+vers le Worker de l'API.
 
 ```mermaid
 flowchart LR
     subgraph src["Ce qui change"]
-        A["apps/lfd-api/**"]
-        B["apps/lfc-PIM-backend/**"]
+        A["apps/lfd-api/**<br/>(plateforme + référentiel)"]
         C["apps/lfc-B2B-admin-frontend/**"]
         D["packages/**"]
         E["gateway/**"]
     end
     A --> WB[deploy_b2b_backend]
-    B --> WP[deploy_pim_backend]
     C --> WA[deploy_b2b_admin_frontend]
     E --> WG[deploy_gateway]
-    D -.->|"touche tout le monde"| WB & WP & WA
+    D -.->|"touche tout le monde"| WB & WA
 ```
 
 ⚠️ **`packages/**` déclenche presque tout.** C'est voulu : `@lfd/endpoints` et
