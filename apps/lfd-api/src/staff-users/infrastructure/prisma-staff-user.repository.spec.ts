@@ -5,7 +5,7 @@ import { AppConfig } from "../../infra/config/app-config.js";
 import { Clock } from "../../infra/time/clock.js";
 import { StaffAccessCache } from "../domain/staff-access-cache.port.js";
 import { PrismaService } from "../../infra/database/prisma.service.js";
-import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL as BOOTSTRAP_ADMIN_EMAIL } from "../domain/bootstrap-admin.js";
+import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL as BOOTSTRAP_ADMIN_EMAIL } from "../../infra/config/bootstrap-admin-email.js";
 import {
   LastStaffAdminError,
   ProtectedStaffUserError,

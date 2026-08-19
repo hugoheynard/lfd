@@ -90,22 +90,10 @@ const KNOWN = new Map([
     "Même émission de lien. Même cible B2.",
   ],
   [
-    "infra/config/app-config.ts → staff-users",
-    "La config lit l'e-mail de l'admin d'amorçage. B2 : `staff/` expose la normalisation, la config ne fait que passer la valeur.",
-  ],
-  [
-    "infra/auth/__tests__/admin-auth.guard.spec.ts → staff-users",
-    "Le test du guard connaît la constante d'amorçage. Disparaît avec le point ci-dessus.",
-  ],
-  [
     "infra/auth/customer-user.resolver.ts → account",
     "Résoudre un jeton vérifié en client est une affaire d'`account/`, pas de technique. B2 : le résolveur descend dans `account/`, `platform/auth` ne garde que la vérification du jeton.",
   ],
   ["infra/auth/__tests__/customer-user.resolver.spec.ts → account", "Suit son sujet."],
-  [
-    "shared/http/__tests__/app-error.filter.spec.ts → account",
-    "Le test du filtre d'erreurs se sert d'une erreur d'`account/` comme échantillon. B2 : prendre une erreur de `platform/` — le filtre n'a aucune raison de connaître un domaine.",
-  ],
 ]);
 
 function* walk(dir) {

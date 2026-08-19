@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { S3StorageConfig } from "@lfd/storage";
 
-import { normalizeBootstrapEmail } from "../../staff-users/domain/bootstrap-admin.js";
+import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
 
 import {
   optionalAdminDevBypass,

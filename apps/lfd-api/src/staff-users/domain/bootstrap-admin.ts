@@ -1,12 +1,6 @@
 import type { StaffUserPayload } from "@lfd/contracts";
 
-/**
- * E-mail de l'admin racine **par défaut**, quand `BOOTSTRAP_ADMIN_EMAIL` n'est
- * pas posée. Il convient au dev ; en production, pointer une **vraie boîte que
- * quelqu'un relève** — c'est la porte de secours, elle ne sert que si elle est
- * écoutée.
- */
-export const DEFAULT_BOOTSTRAP_ADMIN_EMAIL = "dev@lafoliedouce.com";
+import { normalizeBootstrapEmail } from "../../infra/config/bootstrap-admin-email.js";
 
 /**
  * Identité de l'admin **racine** — le tout premier compte staff, celui qui
@@ -35,10 +29,4 @@ export function bootstrapAdmin(email: string): StaffUserPayload {
     role: "admin",
     overrides: [],
   };
-}
-
-/** L'adresse racine, normalisée comme toutes les clés e-mail de l'annuaire. */
-export function normalizeBootstrapEmail(email: string): string {
-  const trimmed = email.trim().toLowerCase();
-  return trimmed === "" ? DEFAULT_BOOTSTRAP_ADMIN_EMAIL : trimmed;
 }

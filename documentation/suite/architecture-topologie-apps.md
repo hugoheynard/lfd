@@ -187,6 +187,18 @@ D'où l'ordre retenu, **backend d'abord** :
 | **B6** | Le front — PIM greffé sur l'admin, shell réduit au registre                                                                             | faible                       | oui        |
 | **B7** | `C7` — bascule du front client sur l'API                                                                                                | moyen                        | non        |
 
+### B2 n'est PAS incrémental par contexte
+
+Découvert en préparant B2a : `allergens` est importé par `catalogue`, `locations`
+par `channels`. Déplacer une brique du PIM **casse l'app PIM tant qu'elle
+tourne** — et la partager en paquet le temps de la migration serait pire que la
+bascule elle-même.
+
+Il n'y a donc pas de migration douce contexte par contexte : **B2c est un bloc**,
+121 fichiers en un commit, l'app PIM supprimée dans le même geste. Ce qui peut
+être préparé avant l'est (B2a, B2b) ; le reste se fait d'un coup, sur une branche,
+avec les tests des deux côtés en filet.
+
 **B1 avant tout code de fusion.** C'est la seule marche non négociable : c'est
 elle qui remplace le mur que le réseau tenait.
 

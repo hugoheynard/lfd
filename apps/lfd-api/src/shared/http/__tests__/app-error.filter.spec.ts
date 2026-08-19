@@ -2,10 +2,26 @@ import { HttpStatus } from "@nestjs/common";
 import type { ArgumentsHost } from "@nestjs/common";
 import type { Response } from "express";
 
-import { InvalidEmailError } from "../../../account/domain/errors/account-errors.js";
+import { DomainError } from "../../errors/app-error.js";
 import { IdentityProviderUnavailableError } from "../../errors/identity-errors.js";
 import { PersistenceError } from "../../errors/persistence-errors.js";
 import { AppErrorFilter } from "../app-error.filter.js";
+
+/**
+ * Une erreur de domaine **fabriquée pour ce test**, et non empruntée à un
+ * domaine réel.
+ *
+ * Le filtre traduit des CATÉGORIES d'erreur en statuts HTTP ; il n'a aucune
+ * raison de connaître un domaine, et le test ne doit donc pas lui en imposer un.
+ * Emprunter `InvalidEmailError` à `account/` faisait précisément ça — et faisait
+ * dépendre la couche technique d'un contexte métier, ce que la matrice des
+ * frontières interdit.
+ */
+class SampleDomainError extends DomainError {
+  constructor() {
+    super("sample.domain.refused", "Refus de domaine.");
+  }
+}
 
 /** Réponse Express factice : capture le statut et le corps JSON. */
 interface CapturedResponse {
@@ -101,12 +117,12 @@ describe("AppErrorFilter", () => {
   describe("erreur domaine (400)", () => {
     it("passe son message voulu, jamais de détail — même en dev", () => {
       const captured = fakeResponse();
-      new AppErrorFilter(true).catch(new InvalidEmailError("nope"), hostFor(captured.response));
+      new AppErrorFilter(true).catch(new SampleDomainError(), hostFor(captured.response));
 
       expect(captured.status()).toBe(HttpStatus.BAD_REQUEST);
       const body = captured.body();
       expect(body).not.toBeNull();
-      expect(body?.["code"]).toBe("account.email.invalid");
+      expect(body?.["code"]).toBe("sample.domain.refused");
       expect(body).not.toHaveProperty("detail");
     });
   });
