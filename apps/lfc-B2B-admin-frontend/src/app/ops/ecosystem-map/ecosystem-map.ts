@@ -2,13 +2,21 @@ import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import type { HealthStatus, NodeHealth, NodeKind, TrafficWindow } from '@lfd/ops-contract';
 
-import { layoutOf, type PlacedNode } from '../layout';
+import { layoutOf, type Lane, type LaneWidths, type MapLayout, type PlacedNode } from '../layout';
 import { occupancyOf, type Occupancy } from '../occupancy';
 import { REASON_LABEL } from '../reason-label';
 
 /** Géométrie de la carte, en unités du `viewBox`. */
 const NODE = { width: 208, height: 48 } as const;
 const GAP = { column: 28, row: 64 } as const;
+/**
+ * L'écart qui sépare un couloir de l'échine. Plus large que l'écart entre deux
+ * voisins du même couloir, et c'est tout le propos : c'est ce blanc-là qui dit
+ * « ceci n'est pas la suite de cela ».
+ */
+const LANE_GAP = 72;
+/** L'écart entre deux nœuds empilés dans un couloir latéral — serré, exprès. */
+const STACK_GAP = 20;
 const PADDING = 26;
 /** La bande de relevés, sous chaque carte. Réservée même vide : sans hauteur
  *  constante, une rangée sauterait dès qu'une brique se met à parler. */
@@ -137,13 +145,15 @@ export class EcosystemMap {
   );
 
   protected readonly viewBox = computed(() => {
-    const { columns, rows } = this.layout();
+    const { columns, lanes } = this.layout();
     // L'axe est VERTICAL : la profondeur de dépendance descend, et les fronts —
     // les plus profonds, puisque tout part d'eux — se posent en bas. C'est le
     // sens dans lequel on raconte une panne : « je clique, et… ».
-    const width = rows * NODE.width + (rows - 1) * GAP.column + PADDING * 2;
-    const height = columns * (NODE.height + READINGS_BAND) + (columns - 1) * GAP.row + PADDING * 2;
-    return `0 0 ${width} ${height}`;
+    // La toile doit contenir l'échine ET la plus haute des deux ailes : une aile
+    // plus longue que l'échine déborderait par le bas, silencieusement.
+    const spine = columns * (NODE.height + READINGS_BAND) + (columns - 1) * GAP.row + PADDING * 2;
+    const height = Math.max(spine, stackHeight(lanes.left), stackHeight(lanes.right));
+    return `0 0 ${canvasWidth(lanes)} ${height}`;
   });
 
   protected readonly boxes = computed<readonly Box[]>(() =>
@@ -155,8 +165,8 @@ export class EcosystemMap {
       };
       return {
         node: placed.health,
-        x: position(placed, this.layout().columns).x,
-        y: position(placed, this.layout().columns).y,
+        x: position(placed, this.layout()).x,
+        y: position(placed, this.layout()).y,
         statusLabel: STATUS_LABEL[placed.health.status],
         occupancy,
         title: describe(placed.health, occupancy),
@@ -215,26 +225,86 @@ export class EcosystemMap {
   );
 }
 
-/**
- * Coin haut-gauche d'un nœud. La **colonne** de la mise en page devient une
- * RANGÉE, et elle est inversée : le rang 0 (ce dont tout part — les fronts)
- * atterrit en bas, ce dont on dépend remonte.
- */
-function position(placed: PlacedNode, depth: number): { x: number; y: number } {
+/** Le pas d'un nœud au suivant, dans un même couloir. */
+const STEP = NODE.width + GAP.column;
+
+/** La largeur d'un groupe de `count` nœuds côte à côte. */
+function spanOf(count: number): number {
+  return count === 0 ? 0 : count * NODE.width + (count - 1) * GAP.column;
+}
+
+/** Ce qu'un couloir latéral prend en largeur : un nœud, ou rien s'il est vide. */
+function wingSpan(count: number): number {
+  return count === 0 ? 0 : NODE.width + LANE_GAP;
+}
+
+/** Le centre de chaque couloir, en abscisse. Un seul calcul, trois usages. */
+function axesOf(lanes: LaneWidths): Record<Lane, number> {
+  const centre = spanOf(lanes.centre);
+  const centreAxis = PADDING + wingSpan(lanes.left) + centre / 2;
   return {
-    x: PADDING + placed.row * (NODE.width + GAP.column),
-    y: PADDING + (depth - 1 - placed.column) * (NODE.height + READINGS_BAND + GAP.row),
+    [-1]: centreAxis - centre / 2 - LANE_GAP - NODE.width / 2,
+    [0]: centreAxis,
+    [1]: centreAxis + centre / 2 + LANE_GAP + NODE.width / 2,
   };
 }
 
-/** Une courbe du bord HAUT de l'appelant au bord BAS de l'appelé — on remonte. */
+/** La toile : l'échine, ses deux ailes, et les marges. */
+function canvasWidth(lanes: LaneWidths): number {
+  return PADDING * 2 + wingSpan(lanes.left) + spanOf(lanes.centre) + wingSpan(lanes.right);
+}
+
+/** La hauteur d'une pile de `count` nœuds, marges comprises. */
+function stackHeight(count: number): number {
+  return count === 0
+    ? 0
+    : PADDING * 2 + count * (NODE.height + READINGS_BAND) + (count - 1) * STACK_GAP;
+}
+
+/**
+ * Coin haut-gauche d'un nœud. La **bande** de profondeur devient une rangée, et
+ * elle est inversée : la bande 0 (ce dont tout part — les fronts) atterrit en
+ * bas, ce dont on dépend remonte. Le **couloir** devient l'abscisse.
+ */
+function position(placed: PlacedNode, layout: MapLayout): { x: number; y: number } {
+  const band = (layout.columns - 1 - placed.column) * (NODE.height + READINGS_BAND + GAP.row);
+  const stacked = placed.stack * (NODE.height + READINGS_BAND + STACK_GAP);
+  return {
+    x: axesOf(layout.lanes)[placed.lane] + placed.offset * STEP - NODE.width / 2,
+    y: PADDING + band + stacked,
+  };
+}
+
+/**
+ * La courbe qui relie un appelant à ce dont il dépend.
+ *
+ * Elle sort par le bord le plus **direct**, pas toujours par le haut : depuis
+ * que les tiers sont empilés sur le côté, une aile peut se trouver plus bas que
+ * l'API qui l'appelle. Un tracé qui partirait quand même vers le haut ferait une
+ * boucle, et une boucle se lit comme un aller-retour — c'est-à-dire comme
+ * quelque chose que le graphe ne dit pas.
+ *
+ * L'arbitrage est purement géométrique : le plus grand des deux écarts gagne.
+ */
 function curveBetween(from: Box, to: Box): string {
-  const startX = from.x + NODE.width / 2;
-  const startY = from.y;
-  const endX = to.x + NODE.width / 2;
-  const endY = to.y + NODE.height;
+  const start = { x: from.x + NODE.width / 2, y: from.y + NODE.height / 2 };
+  const end = { x: to.x + NODE.width / 2, y: to.y + NODE.height / 2 };
+  if (Math.abs(end.x - start.x) > Math.abs(end.y - start.y)) {
+    return sideways(from, to, start.y, end.y);
+  }
+  const startY = end.y < start.y ? from.y : from.y + NODE.height;
+  const endY = end.y < start.y ? to.y + NODE.height : to.y;
   const bend = GAP.row / 2;
-  return `M ${startX} ${startY} C ${startX} ${startY - bend}, ${endX} ${endY + bend}, ${endX} ${endY}`;
+  return `M ${start.x} ${startY} C ${start.x} ${startY - bend}, ${end.x} ${endY + bend}, ${end.x} ${endY}`;
+}
+
+/** Le tracé de flanc à flanc, quand l'écart horizontal domine. */
+function sideways(from: Box, to: Box, startY: number, endY: number): string {
+  const goesRight = to.x > from.x;
+  const startX = goesRight ? from.x + NODE.width : from.x;
+  const endX = goesRight ? to.x : to.x + NODE.width;
+  const bend = (endX - startX) / 2;
+  return `M ${startX} ${startY} C ${startX + bend} ${startY}, ${endX - bend} ${endY}, ${endX} ${endY}`;
 }
 
 /**

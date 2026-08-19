@@ -751,3 +751,46 @@ bloc `pim`, il n'est pas encore branché dans `AppModule`, et son schéma est
 unique — il n'y aurait rien à répartir. Ses opérations puisent pourtant dans le
 **même** forfait. Le jour où il sera branché, il prendra le compteur en
 injection : `pim → platform` est autorisé, c'est une ligne.
+
+## 20. La carte en échine — ce que la géométrie encode
+
+Trois couloirs, et la nature d'un nœud décide du sien :
+
+- **au centre, l'échine** — fronts, passerelle, API. C'est le chemin d'une
+  requête, de bas en haut : « je clique, et… » ;
+- **à gauche, ce qu'on GARDE** — bases et stockage R2. Ensemble, parce qu'ils se
+  perdent ensemble et qu'on les regarde ensemble ;
+- **à droite, ce qu'on APPELLE** — Auth0, Stripe, Resend, Shopify.
+
+Une seule profondeur les aurait tous posés sur la même ligne : ce sont tous des
+feuilles du graphe. Or **une panne de tierce dégrade une fonction, une base
+perdue arrête tout** — les mélanger fait chercher au mauvais endroit, ce qui est
+exactement ce qu'une carte de diagnostic ne doit pas provoquer.
+
+Les deux ailes **s'empilent** au lieu de s'étaler. Quatre tiers côte à côte
+doublaient la largeur de la toile, et une toile deux fois plus large se rend deux
+fois plus petite : les chiffres devenaient illisibles. C'est un choix de rendu,
+pas une affirmation sur le graphe — ils restent tous à la même profondeur.
+
+Le couloir est déduit du `kind` par une **table exhaustive** : un `NodeKind`
+ajouté au contrat ne compile pas tant qu'il n'a pas choisi son côté. Atterrir au
+centre par défaut aurait été le comportement le plus discret et le plus faux.
+
+### Chaque brique porte sa mesure
+
+L'objectif est qu'aucune carte ne soit muette. L'état au 2026-08-19 :
+
+| Nœud                      | Mesure principale                                           |
+| ------------------------- | ----------------------------------------------------------- |
+| Gateway                   | requêtes par seconde                                        |
+| API                       | charge par module (B2B, PIM, OPS, Staff)                    |
+| Database — LFD            | opérations Prisma /min + répartition, connexions, taille    |
+| Auth0                     | actifs 30 j (ou identités) et part du plafond gratuit       |
+| Stripe · Resend · Shopify | latence de la sonde                                         |
+| Stockage R2               | latence de la sonde — les opérations A/B attendent un jeton |
+| Fronts                    | aucune : leur sonde dit « servi », elle ne compte rien      |
+
+La **latence de sonde** est le repli universel : c'est le seul chiffre qu'un
+tiers donne sans qu'on demande rien à personne. Elle n'est rendue que si la sonde
+a **abouti** — sur un échec, la « latence » est le délai d'attente, et afficher
+2500 ms ferait passer un service injoignable pour un service lent.
