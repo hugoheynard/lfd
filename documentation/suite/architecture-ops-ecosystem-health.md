@@ -1033,3 +1033,66 @@ et c'est du RGPD, pas du confort.
 
 **Un seul siège.** Le jour où quelqu'un d'autre doit voir les erreurs, le palier
 gratuit ne suit pas. À savoir avant de construire une habitude dessus.
+
+## 25. Fork ouvert — les erreurs backend, maison ou Sentry
+
+**Non tranché.** Les deux branches sont défendables, et l'une n'est pas une
+version pauvre de l'autre. Écrit ici pour que la décision se prenne sur des
+faits, le jour où elle se prendra.
+
+### Ce que « maison » donne, et qui est sous-estimé
+
+Une table `ops.error_log` dans le schéma qu'on vient de créer, un crochet dans
+`AppErrorFilter` — qui **catégorise déjà** — et l'écran qui existe. De l'ordre de
+deux cents lignes, plus cinquante pour regrouper par empreinte (classe d'erreur
+
+- premières frames) et transformer quatre cents événements en trois issues. La
+  boucle « nouvelle issue → e-mail » réutilise le mailer staff.
+
+Sur trois points maison est **meilleur**, pas seulement moins cher :
+
+- **rien ne sort.** E-mails, SIRET, adresses, contexte Stripe restent chez nous.
+  Le scrubbing cesse d'être un réglage qu'on peut rater — il n'y a rien à
+  scrubber ;
+- **on peut joindre.** « Cette erreur a touché quelles commandes, quelles
+  sociétés ? » devient une requête SQL. Aucun service tiers ne répondra jamais à
+  ça ;
+- **ni quota, ni siège.** Les 5 000 événements et l'utilisateur unique sortent du
+  raisonnement.
+
+### Les quatre choses que maison ne donnera pas
+
+1. 🔴 **Le magasin meurt avec ce qu'il observe.** Même défaut que la carte, en
+   pire : si Postgres tombe ou si le container ne démarre pas, l'erreur qui
+   l'explique **ne peut pas s'écrire**. Aveugle à l'instant précis où il faut
+   voir. Un service tiers reçoit parce qu'il est ailleurs.
+2. 🔴 **Les source maps du front.** Une stack Angular minifiée est illisible.
+   Les rendre lisibles suppose de stocker les source maps par build et d'écrire
+   un symbolicateur — ce n'est pas un week-end, et c'est le code le moins
+   réutilisable qu'on écrira jamais.
+3. **Le SDK navigateur.** `window.onerror` fait vingt lignes ; les fils
+   d'Ariane, la file hors-ligne, l'échantillonnage et le fait de ne pas casser
+   la page en cassant font un produit.
+4. **Le temps, pendant qu'on lance.** L'argument le plus fort, et il n'est pas
+   technique.
+
+### La ligne proposée (à confirmer)
+
+**Maison pour le backend, Sentry pour le front, et rien d'autre.** Ça achète
+exactement la partie difficile — le témoin dans le navigateur, symbolicé — et
+garde chez nous la partie riche, jointe à nos données. Le quota Sentry ne servant
+plus qu'aux fronts, les 5 000 deviennent confortables.
+
+Le prix est **deux endroits où regarder**. Il est réel et se paie une fois : le
+`traceId` relie les deux, et l'écran OPS peut porter le lien vers l'issue. Ça
+reste moins cher que d'écrire un symbolicateur. Le point 1 reste ouvert côté
+backend, et c'est acceptable : la carte dit déjà qu'une base est injoignable, par
+une autre voie que la base.
+
+### Ce qui ferait basculer
+
+| Si…                                             | Alors                                                                                                |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| une **deuxième personne** doit voir les erreurs | le siège unique tombe → tout-maison redevient cohérent                                               |
+| on passe à **plusieurs services**               | la corrélation cross-service est là où le tiers creuse l'écart → tout-Sentry                         |
+| on veut **lancer vite**                         | tout-Sentry en une demi-journée, remplacer le backend par du maison ensuite — l'inverse est plus dur |
