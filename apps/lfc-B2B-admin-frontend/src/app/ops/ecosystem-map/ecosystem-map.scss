@@ -1,0 +1,103 @@
+:host {
+  display: block;
+}
+
+.map {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* ── Les liens ─────────────────────────────────────────────────────────────
+   `link-bed` est le trait au repos, toujours présent : sans lui, un lien sans
+   trafic disparaîtrait, et l'absence de mesure ressemblerait à une absence de
+   dépendance. Le flux animé se pose PAR-DESSUS. */
+.link-bed {
+  fill: none;
+  stroke: var(--fold-color-border);
+  stroke-width: 1.5;
+}
+
+.link-flow {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 5 13;
+  animation: flow linear infinite;
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+
+/* La couleur vient de l'OCCUPATION du nœud visé, jamais du volume. */
+.link--calm .link-flow,
+.link--busy .link-flow {
+  stroke: var(--fold-color-primary);
+}
+.link--strained .link-flow {
+  stroke: var(--fold-color-warning);
+}
+.link--saturated .link-flow {
+  stroke: var(--fold-color-alert);
+}
+.link--unmeasured .link-bed {
+  stroke-dasharray: 3 5;
+}
+
+/* ── Les nœuds ─────────────────────────────────────────────────────────── */
+.node-card {
+  fill: var(--fold-color-surface-card);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.node-label {
+  fill: var(--fold-color-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.node-status {
+  fill: var(--fold-color-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La bandeau d'état — une forme en plus de la couleur. */
+.node-stripe {
+  fill: var(--fold-color-border);
+}
+.node--up .node-stripe {
+  fill: var(--fold-color-success);
+}
+.node--degraded .node-stripe {
+  fill: var(--fold-color-warning);
+}
+.node--down .node-stripe {
+  fill: var(--fold-color-alert);
+}
+.node--down .node-card {
+  stroke: var(--fold-color-alert);
+}
+
+.node-flag {
+  fill: var(--fold-color-alert);
+}
+
+.map-caveat {
+  margin: var(--fold-space-md) 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* Le mouvement est une information, pas une décoration — mais il ne doit jamais
+   être la SEULE : la couleur et le libellé disent déjà tout. On peut donc le
+   couper sans rien perdre. */
+@media (prefers-reduced-motion: reduce) {
+  .link-flow {
+    animation: none;
+  }
+}

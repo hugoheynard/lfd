@@ -1,0 +1,56 @@
+<!-- `role="img"` + description : le schéma raconte la même chose au lecteur
+     d'écran qu'à l'œil. Une carte de santé qu'on ne peut pas entendre est une
+     carte de santé qu'une partie de l'équipe ne peut pas consulter. -->
+<svg
+  class="map"
+  [attr.viewBox]="viewBox()"
+  role="img"
+  aria-labelledby="ecosystem-map-title"
+  preserveAspectRatio="xMinYMid meet"
+>
+  <title id="ecosystem-map-title">
+    Schéma de l'écosystème : {{ boxes().length }} briques et leurs dépendances.
+  </title>
+
+  <!-- Les liens D'ABORD : ils passent SOUS les nœuds. -->
+  @for (link of links(); track link.id) {
+    <g class="link" [class]="'link--' + link.tone">
+      <title>{{ link.title }}</title>
+      <path class="link-bed" [attr.d]="link.path" />
+      @if (link.duration !== null) {
+        <path class="link-flow" [attr.d]="link.path" [style.animation-duration.s]="link.duration" />
+      }
+    </g>
+  }
+
+  @for (box of boxes(); track box.node.node) {
+    <g class="node" [class]="'node--' + box.node.status">
+      <title>{{ box.title }}</title>
+      <rect class="node-card" [attr.x]="box.x" [attr.y]="box.y" rx="10" width="168" height="62" />
+      <!-- La barre d'état : une SECONDE forme, pas seulement une teinte. Elle
+           reste lisible en contraste forcé et en impression noir et blanc. -->
+      <rect class="node-stripe" [attr.x]="box.x" [attr.y]="box.y" rx="4" width="5" height="62" />
+      <text class="node-label" [attr.x]="box.x + 18" [attr.y]="box.y + 26">
+        {{ box.node.label }}
+      </text>
+      <text class="node-status" [attr.x]="box.x + 18" [attr.y]="box.y + 45">
+        {{ box.statusLabel }}
+        @if (box.occupancy.basis !== 'aucune mesure') {
+          · {{ box.occupancy.ratio * 100 | number: '1.0-0' }} %
+        }
+      </text>
+      @if (box.node.dependencyDown) {
+        <!-- La dépendance tombée est DÉSIGNÉE, jamais propagée : ce nœud garde
+             son propre statut, on montre seulement ce qui l'a peut-être touché. -->
+        <circle class="node-flag" [attr.cx]="box.x + 154" [attr.cy]="box.y + 16" r="5" />
+      }
+    </g>
+  }
+</svg>
+
+@if (hasNothingMeasured()) {
+  <p class="map-caveat">
+    Aucune mesure de trafic sur cette fenêtre : les liens sont gris, et les statuts ne reposent que
+    sur ce que les briques déclarent.
+  </p>
+}

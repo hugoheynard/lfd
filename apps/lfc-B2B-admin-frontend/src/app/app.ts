@@ -100,6 +100,12 @@ export class App {
   /** Le fournil lit les commandes ; il n'a rien à voir avec le commercial. */
   protected readonly canSeeProduction = computed(() => this.permissions.can('orders:read'));
   protected readonly canSeeSettings = computed(() => this.permissions.can('settings:read'));
+  /**
+   * La carte de santé. Son propre périmètre (`ops:read`), et pas celui des
+   * réglages : regarder la flotte n'est pas la régler, et le jour où l'un
+   * s'ouvre à quelqu'un l'autre n'a aucune raison de suivre.
+   */
+  protected readonly canSeeOps = computed(() => this.permissions.can('ops:read'));
 
   /**
    * Connecté, mais l'annuaire ne nous connaît pas — ou plus. On le **dit** :

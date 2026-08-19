@@ -1,0 +1,96 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  flex-wrap: wrap;
+}
+
+h1 {
+  margin: 0;
+}
+
+.page-sub {
+  margin: var(--fold-space-2xs) 0 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+}
+
+.stamp {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.rehearsal,
+.read-error {
+  margin: 0;
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-warning);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-muted);
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+}
+
+.totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-lg);
+}
+
+.total {
+  display: flex;
+  flex-direction: column;
+}
+
+.total-value {
+  font-size: var(--fold-text-xl);
+  font-weight: 600;
+  /* Des chiffres qui changent toutes les 15 s doivent rester alignés, sinon la
+     ligne tressaute et on croit à un rafraîchissement de la page entière. */
+  font-variant-numeric: tabular-nums;
+}
+
+.total-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.ailing {
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+
+  h2 {
+    margin: 0 0 var(--fold-space-sm);
+    font-size: var(--fold-text-md);
+  }
+
+  ul {
+    margin: 0;
+    padding-left: var(--fold-space-md);
+  }
+}
+
+.ailing-cause {
+  color: var(--fold-color-text-muted);
+}
+
+.legend {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+
+  p {
+    margin: 0;
+  }
+}

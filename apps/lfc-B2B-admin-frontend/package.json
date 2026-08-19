@@ -34,6 +34,7 @@
     "@lfd/b2b-ui": "workspace:*",
     "@lfd/catalog-ui": "workspace:*",
     "@lfd/contracts": "workspace:*",
+    "@lfd/ops-contract": "workspace:*",
     "@lfd/endpoints": "workspace:*",
     "@lfd/suite-embed": "workspace:*",
     "@stripe/stripe-js": "catalog:",

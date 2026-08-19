@@ -95,6 +95,24 @@
         ></a>
       }
 
+      @if (canSeeOps()) {
+        <!-- La santé de l'écosystème, au pied du rail avec les réglages : on n'y
+             va pas pour travailler, on y va quand quelque chose cloche. La
+             mettre au milieu des destinations de travail lui donnerait le poids
+             d'une page qu'on ouvre vingt fois par jour. -->
+        <a
+          footer
+          fold-menu-item
+          icon="waveform"
+          label="Santé"
+          routerLink="/sante"
+          routerLinkActive
+          #santeRla="routerLinkActive"
+          [active]="santeRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       <!-- QUI est connecté, quand la session est celle de cette app. Embarqué,
            l'identité appartient au shell et s'affiche là-haut : la répéter ici
            laisserait croire à deux sessions distinctes. -->
@@ -230,6 +248,19 @@
           routerLinkActive
           #accesTile="routerLinkActive"
           [active]="accesTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeOps()) {
+        <a
+          fold-nav-tile
+          variant="filled"
+          icon="waveform"
+          label="Santé"
+          routerLink="/sante"
+          routerLinkActive
+          #santeTile="routerLinkActive"
+          [active]="santeTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }

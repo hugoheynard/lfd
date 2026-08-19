@@ -40,6 +40,11 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
 
   'acces-en-attente': 'companies:read',
 
+  // Son PROPRE périmètre, et pas `settings:read` : regarder la flotte n'est pas
+  // la régler. Le jour où l'un s'ouvre à quelqu'un, l'autre n'a aucune raison
+  // de suivre — et un écran qui expose la topologie interne mérite sa décision.
+  sante: 'ops:read',
+
   reglages: 'settings:read',
   'reglages/retraits-livraisons': null,
   // `null` = hérite du `settings:read` du parent : le paramétrage du catalogue

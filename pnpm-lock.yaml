@@ -207,6 +207,9 @@ importers:
       '@lfd/endpoints':
         specifier: workspace:*
         version: link:../../packages/endpoints
+      '@lfd/ops-contract':
+        specifier: workspace:*
+        version: link:../../packages/ops-contract
       '@lfd/suite-embed':
         specifier: workspace:*
         version: link:../../packages/suite-embed

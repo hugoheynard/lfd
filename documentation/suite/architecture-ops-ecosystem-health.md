@@ -531,7 +531,49 @@ réponse serait indistinguable d'un nœud qui va bien.
 
 ---
 
-## 16. Les jalons
+## 16. L'écran — ce qu'il encode, et ce qu'il refuse
+
+Il vit dans le **back-office** (`/sante`), derrière son propre périmètre
+`ops:read` : regarder la flotte n'est pas la régler, et le jour où l'un s'ouvre
+à quelqu'un l'autre n'a aucune raison de suivre.
+
+### Deux encodages, séparés exprès
+
+| Ce qu'on voit              | Ce que ça dit                                                 |
+| -------------------------- | ------------------------------------------------------------- |
+| **Couleur** d'un lien      | l'**occupation** de la brique visée — sa proximité du plafond |
+| **Vitesse** des pointillés | le **débit**, et rien d'autre                                 |
+
+C'est la règle du §13 rendue visible. Le volume s'exprime, mais dans la seule
+dimension qui ne peut alarmer personne : un trait qui rougirait parce que le
+trafic monte alors que tout va bien apprendrait à ignorer la couleur.
+
+L'occupation se lit sur le pire de deux plafonds — la **latence** (une file
+d'attente se voit avant de déborder) et les **rejets** (un nœud qui refuse est
+par définition à son plafond). On retient le maximum, jamais la moyenne :
+moyenner diluerait un rejet massif dans une latence honnête. La **concurrence en
+vol** manquera jusqu'au J6 — d'où le champ `basis`, qui dit sur quoi la jauge se
+prononce plutôt que de laisser croire à une jauge de CPU.
+
+### Trois refus
+
+- **Il ne juge pas.** Les statuts viennent du serveur, où la dérivation est pure
+  et testée. Un second jeu de règles dans le front donnerait deux vérités sur ce
+  que « ça va » veut dire, et c'est toujours la mauvaise qui s'affiche.
+- **Il ne parle pas qu'en couleurs.** Chaque nœud porte son statut **en toutes
+  lettres** et une bande latérale — une seconde forme, pas une teinte. Une carte
+  qui n'encode qu'en couleur est illisible pour une partie de ceux qui la
+  regardent, et invérifiable en capture d'écran.
+- **Il ne cache pas sa source.** Tant qu'Analytics Engine n'est pas configuré,
+  un bandeau dit **en haut** que les chiffres sont une répétition. Un tableau de
+  bord branché sur un double qui se tait est pire qu'un tableau absent.
+
+Et le mouvement n'est jamais la seule information : sous
+`prefers-reduced-motion`, l'animation s'arrête et rien n'est perdu.
+
+---
+
+## 17. Les jalons
 
 | Jalon     | Quoi                                                                                                                                                                                               | Dépend de |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
@@ -539,7 +581,7 @@ réponse serait indistinguable d'un nœud qui va bien.
 | **J2** ✅ | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (requêtes, erreurs serveur, 429, 502 passerelle, p95) — **fait le 2026-08-19**                                                                  | J1        |
 | **J3** ✅ | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE derrière un port (+ le double de répétition), endpoint staff-only — **fait le 2026-08-19** | J2        |
 | **J4** ✅ | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` — **fait le 2026-08-19**                                                                                                 | J3        |
-| **J5**    | Écran : schéma live, liens animés par **occupation** (§13), staff-only                                                                                                                             | J4        |
+| **J5** ✅ | Écran : schéma live, liens animés par **occupation** (§13), staff-only — **fait le 2026-08-19**                                                                                                    | J4        |
 | **J6**    | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                                                                                        | J3, en // |
 
 ### Lire la fenêtre — deux pièges d'Analytics Engine

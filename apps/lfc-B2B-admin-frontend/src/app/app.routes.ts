@@ -44,6 +44,16 @@ export const routes: Routes = [
       ),
   },
   {
+    // La carte de santé de l'écosystème. Route de premier niveau et courte : on
+    // y va quand quelque chose cloche, souvent depuis un autre onglet, et
+    // parfois en la dictant. `ops:read` et pas `settings:read` — regarder la
+    // flotte n'est pas la régler.
+    path: 'sante',
+    canActivate: [permissionGuard('ops:read')],
+    title: 'Santé de l’écosystème — LFC B2B admin',
+    loadComponent: () => import('./ops/sante-page/sante-page').then((m) => m.SantePage),
+  },
+  {
     // La cible d'un QR de retrait. Route de premier niveau et courte : elle est
     // encodée dans un code-barres, et parfois dictée au téléphone le jour où une
     // caméra refuse de lire. Chaque caractère de plus densifie les modules, donc
