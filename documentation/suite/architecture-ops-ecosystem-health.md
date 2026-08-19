@@ -324,6 +324,11 @@ sert le 1ᵉʳ worker ; l'**app** attend d'avoir de quoi la remplir.
 
 ## 11. Décisions ouvertes (à trancher avant l'étape 3)
 
+> **Mise à jour 2026-08-19.** Trois points sont tranchés plus bas : la troisième
+> source d'observation (§12, la passerelle via Analytics Engine), ce que
+> « plafond machine » veut dire et pourquoi le coût en sort (§13), et l'hébergement
+> du backend OPS dans `lfd-api` avant la mise en service (§14). Les jalons sont au §15.
+
 1. **État live multi-pod** : mémoire process + **Redis pub/sub** (l'infra existe)
    suffit-elle, ou faut-il un « board » persistant Redis (hash par nœud) pour
    qu'un pod qui redémarre retrouve l'état sans attendre le prochain heartbeat ?
@@ -338,3 +343,166 @@ sert le 1ᵉʳ worker ; l'**app** attend d'avoir de quoi la remplir.
 ```
 
 ```
+
+---
+
+## 12. La passerelle devient un observateur (Workers Analytics Engine)
+
+Décidé le 2026-08-19. Le design d'origine connaissait deux sources : le **push**
+(heartbeat, ce qu'un nœud dit de lui-même) et le **probe** (ce qu'on constate du
+dehors sur ce qu'on ne possède pas). Il en manquait une troisième, et c'est la
+plus fiable pour nos propres briques : **ce que la passerelle voit passer**.
+
+Elle est le seul chemin (§ `ops/securite-frontiere-de-confiance.md`) : rien
+n'atteint un backend sans traverser `lfc-suite-gateway`. Elle sait donc, sans
+rien demander à personne, combien de requêtes sont parties vers chaque backend,
+combien sont revenues en erreur, et en combien de temps.
+
+### Ce que ça répare dans le modèle
+
+L'invariant « **silence ≠ mort** » (§10) protège d'un faux positif la nuit, au
+prix d'un trou : un backend réellement mort reste `unknown` indéfiniment. La
+passerelle lève l'ambiguïté, et c'est une **preuve**, pas une déduction :
+
+| Trafic vu par la passerelle | Heartbeat | Verdict    |
+| --------------------------- | --------- | ---------- |
+| aucun                       | muet      | `idle`     |
+| présent, réponses normales  | muet      | `degraded` |
+| présent, **5xx / 502**      | muet      | **`down`** |
+
+Un 502 rendu par la passerelle a un sens particulier : il signifie « upstream
+injoignable » — c'est **elle** qui l'a fabriqué, pas le backend. C'est le signal
+le plus propre qu'un container ne répond plus.
+
+### Pourquoi Analytics Engine et pas un compteur
+
+Un compteur (Durable Object, KV) impose de décider **à l'écriture** ce qu'on
+saura lire : une granularité, une fenêtre, des dimensions. On se trompe toujours,
+et on ne peut pas revenir en arrière sur le passé.
+
+Analytics Engine écrit des **points**, et l'agrégation se fait **à la lecture**,
+en SQL. L'écriture ne bloque pas la requête (`writeDataPoint` est synchrone et
+non-bloquant côté Worker), le coût est celui de l'échantillonnage, et une
+question qu'on n'avait pas prévue reste posable sur les données déjà écrites.
+
+C'est exactement le compromis que le design demande : **métriques agrégées, pas
+de télémétrie fine** — la finesse existe à l'écriture, mais personne ne lit
+jamais une requête individuelle.
+
+### Le point de donnée
+
+Un par requête traversée, dimensions choisies pour ce qu'on veut **grouper**, pas
+pour ce qu'on aimerait fouiller :
+
+- `indexes` : le nœud cible (`b2b`, `pim`) — c'est la clé d'échantillonnage,
+  donc la dimension qu'on ne veut jamais perdre.
+- `blobs` : classe de statut (`2xx`/`4xx`/`5xx`/`502-gateway`), préfixe de route.
+- `doubles` : durée en ms, et `1` (le compteur).
+
+**Jamais d'identifiant client, jamais d'IP, jamais de chemin complet.** La
+passerelle est le seul endroit qui voit l'IP réelle ; ce n'est pas une raison
+pour l'écrire quelque part. Un préfixe de route suffit à savoir _quoi_ est
+lent — savoir _qui_ n'est pas la question d'une carte de santé.
+
+### Le rate-limit enfin visible
+
+`ops/README.md` établit que **le seul rate-limit qui fonctionne est le throttler
+NestJS** — celui de l'edge Cloudflare est inerte, et il n'y a ni zone ni WAF.
+Cette défense mord aujourd'hui **sans que personne ne le sache**. Les `429`
+comptés par la passerelle la rendent observable : c'est le premier vrai bénéfice
+de sécurité de tout ce chantier.
+
+---
+
+## 13. Le « plafond machine » — dire ce que ça veut dire avant de l'animer
+
+L'app doit colorer les liens selon qu'on approche du plafond. Encore faut-il que
+le plafond existe.
+
+**Ce n'est pas un débit.** Les containers Cloudflare ne facturent ni ne limitent
+à la requête : ils facturent le **temps d'instance allumée** (vCPU·s, GiB·s), et
+`lfd-api` tourne en `max_instances: 1`, `instance_type: "basic"` (¼ vCPU, 1 Gio).
+Dix requêtes par heure ou dix mille : **le coût est le même**. Un « prix par
+requête » serait un nombre précis et faux.
+
+Le vrai plafond est la **saturation d'une instance unique** : la concurrence en
+vol face à ce qu'un ¼ de vCPU peut absorber. Il se lit sur trois signes, dont
+aucun n'est suffisant seul :
+
+1. **La latence qui décroche** — p95 mesuré par la passerelle. Le premier signe,
+   toujours ; une file d'attente se voit avant de déborder.
+2. **La concurrence en vol** — rapportée par le nœud lui-même (`inFlight` du
+   heartbeat, déjà au contrat) et corroborée par la passerelle.
+3. **Les rejets** — 429 du throttler, 502 quand l'instance ne répond plus.
+
+D'où la règle de rendu : **la couleur d'un lien vient d'un rapport
+d'occupation, pas d'un compteur de hits.** Un trait qui rougit parce que le
+trafic monte alors que tout va bien serait pire qu'inutile — il apprendrait à
+ignorer la couleur.
+
+Et on garde la discipline adversariale du §10 : `inFlight` est **auto-déclaré**,
+la latence est **observée**. Si les deux divergent, la mesure gagne.
+
+> **Le coût, lui, n'est pas dans cette carte.** « Ça va mal » et « ça coûte
+> cher » se regardent à des moments différents et se trompent différemment. Une
+> surface FinOps séparée, alimentée par l'API de facturation Cloudflare et les
+> factures tierces (Postgres, Resend, Auth0), et annoncée comme une **estimation**.
+> Hors périmètre v1.
+
+---
+
+## 14. Où vit le backend OPS — dans `lfd-api`, en pré-release
+
+Décidé le 2026-08-19, et **assumé comme provisoire**.
+
+Le design plaçait OPS comme une app de la suite. Avant la mise en service, on
+l'héberge dans `lfd-api` — pour une raison qui vaut plus que la commodité :
+**l'annuaire staff et son mur y sont déjà**. `staff_users`, les rôles, les
+dérogations, `StaffAccessResolver` et son cache : OPS a besoin d'exactement ça,
+et le recréer ailleurs signifierait deux vérités sur qui est staff.
+
+### Ce que ça impose au découpage
+
+`src/ops/` devient un **cinquième bloc**, à inscrire dans `BLOCK_OF` du gate
+`lint:context-boundaries` — qui échoue sur un dossier inconnu, exprès. Sa ligne
+dans la matrice est la plus stricte possible :
+
+```
+ops → platform          (rien d'autre)
+personne → ops
+```
+
+OPS **observe**, il ne possède aucun métier : il n'a donc rien à lire chez
+`b2b`, `pim` ou `staff`. Le mur staff lui arrive comme aux autres, par le port
+`StaffAccessResolver` déclaré dans `platform` et lié dans `appBootstrap`.
+Une ressource `ops` s'ajoute à l'enum `StaffResource` (Prisma + contrats +
+migration), exactement comme `catalog` en B2d.
+
+### Le prix, et la sortie
+
+Deux choses à ne pas perdre de vue :
+
+- **OPS ne doit jamais être dans le chemin critique** (§10). Hébergé dans le
+  même processus, la tentation d'un appel synchrone existe : aucune lecture OPS
+  ne doit se trouver sur le trajet d'une requête métier.
+- **La sortie est un déménagement de bloc**, c'est-à-dire l'opération qu'on sait
+  déjà faire : B2c a déplacé le référentiel entier. Un bloc qui ne lit que
+  `platform` et que personne n'importe est précisément celui qui part le plus
+  facilement.
+
+---
+
+## 15. Les jalons
+
+| Jalon  | Quoi                                                                                                              | Dépend de |
+| ------ | ----------------------------------------------------------------------------------------------------------------- | --------- |
+| **J1** | Dataset Analytics Engine + `writeDataPoint` dans la passerelle (hors du chemin de réponse), sous tests            | —         |
+| **J2** | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (hits, %5xx, p95, 429, par nœud et par fenêtre)                | J1        |
+| **J3** | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE, endpoint | J2        |
+| **J4** | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` (§8 + table du §12)                     | J3        |
+| **J5** | Écran : schéma live, liens animés par **occupation** (§13), staff-only                                            | J4        |
+| **J6** | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                       | J3, en // |
+
+Le J1 est autonome et sans risque : la passerelle écrit, personne ne lit encore.
+Rien n'est visible avant J5, et c'est voulu — on accumule d'abord de quoi
+remplir l'écran, sinon il naîtrait vide et mentirait.
