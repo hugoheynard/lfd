@@ -348,6 +348,21 @@ de la passerelle : **brancher, repointer, VÉRIFIER, et seulement ensuite
 | 5   | Pointer `PIM_API_BASE_URL` sur `…/api/b2b/pim`                     | variable Pages du front PIM |
 | 6   | Vérifier le PIM dans le shell, connecté                            | à la main                   |
 | 7   | Supprimer le Worker `lfc-pim-backend` et son container             | Cloudflare                  |
+| 8   | Retirer le nœud `pim` de la topologie OPS (il n'existe plus)       | `src/ops/topology/`         |
+
+L'étape 8 n'est pas cosmétique : la carte de santé déclare ses nœuds, elle ne
+les devine pas du trafic — c'est ce qui rend visible une brique qui cesse d'être
+appelée. Le revers est qu'une brique **supprimée** y reste affichée, et passerait
+« aucune preuve » : un angle mort qui ressemble à une panne. La charge du
+référentiel, elle, ne se perd pas — elle descend d'un cran, du nœud `pim` vers la
+**surface** `pim/…` du nœud `b2b`, où elle devient comparable aux autres modules
+de l'API.
+
+⚠️ La **base** du référentiel, elle, ne bouge pas : elle reste un nœud, son arête
+se rebranchant de `pim` vers `b2b`. Sa disparition est **B4**, avec sa migration
+de données — et B4 fermera du même geste le trou de comptage des opérations
+(cf. `architecture-ops-ecosystem-health.md` §19), puisque les deux bases puisent
+dans le même forfait Prisma.
 
 **Le retour arrière tient tant que l'étape 7 n'est pas faite** : le Worker PIM
 tourne encore sur sa dernière image, sur sa base inchangée. Revenir, c'est
