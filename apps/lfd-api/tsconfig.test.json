@@ -1,6 +1,11 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    // Sa PROPRE racine, et pas celle de l'émission : cette configuration couvre
+    // `src`, `test` ET `container`. TypeScript 6.0 ne la déduit plus (TS5011),
+    // et la poser à `./src` — comme le fait `tsconfig.build.json` — mettrait
+    // `container/` hors racine.
+    "rootDir": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "target": "ES2022",

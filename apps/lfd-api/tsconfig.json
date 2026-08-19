@@ -8,14 +8,6 @@
     "resolvePackageJsonExports": true,
     "isolatedModules": true,
     "outDir": "./dist",
-    // Explicite depuis TypeScript 6.0 : le compilateur ne déduit plus le
-    // répertoire racine commun (TS5011). Sans ça, `nest build` refuse de partir.
-    "rootDir": "./src",
-    // Le cache incrémental vit DANS `dist`. `nest build` fait `deleteOutDir` :
-    // laissé à la racine, le `.tsbuildinfo` survivait à la suppression et
-    // affirmait ensuite que tout était à jour — `nest build` sortait vert avec
-    // un `dist` vide, et l'image Docker n'avait plus de `main.js`.
-    "tsBuildInfoFile": "./dist/.tsbuildinfo",
     // Redondants avec le flag layer (tsc les hérite déjà via `extends`), mais
     // déclarés en clair pour les transpileurs esbuild (tsx) qui ne résolvent PAS
     // `extends` pour ces deux options : sans ça, la DI Nest par type casse sous

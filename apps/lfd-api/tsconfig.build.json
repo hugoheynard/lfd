@@ -1,4 +1,19 @@
 {
+  // La configuration d'ÉMISSION. Les deux réglages ci-dessous ne vivent que
+  // ici, et pas dans `tsconfig.json` : celui-là sert aussi au typecheck des
+  // specs (`tsconfig.test.json`), qui inclut `container/` — un `rootDir` posé
+  // en amont l'aurait mis hors racine et rendu ce typecheck rouge. Un réglage
+  // d'émission n'a rien à faire dans une configuration de vérification.
   "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Explicite depuis TypeScript 6.0 : le compilateur ne déduit plus le
+    // répertoire racine commun (TS5011). Sans ça, `nest build` refuse de partir.
+    "rootDir": "./src",
+    // Le cache incrémental vit DANS `dist`. `nest build` fait `deleteOutDir` :
+    // laissé à la racine, le `.tsbuildinfo` survivait à la suppression et
+    // affirmait ensuite que tout était à jour — `nest build` sortait vert avec
+    // un `dist` vide, et l'image Docker n'avait plus de `main.js`.
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+  },
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }
