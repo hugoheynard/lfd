@@ -12,7 +12,7 @@ import {
   type SnapshotView,
 } from "@lfd/pim-contracts";
 
-import { Public } from "../../../../infra/auth/public.decorator.js";
+import { AdminSurface } from "../../../../infra/auth/admin-surface.decorator.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { ZodBody } from "../../../../shared/http/zod-body.pipe.js";
 import { ShopifyInspectionService } from "./inspection.service.js";
@@ -25,9 +25,12 @@ import { ShopifySnapshotService } from "./snapshot.service.js";
  * empreinte → binding, simulé tant que le driver est en dry-run). Sous-chemin
  * `products` sous le préfixe module `channels/shopify`.
  *
- * ⚠️ `@Public()` temporaire — même dérogation que le catalogue (Auth0 non câblé).
+ * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
+ * référentiel vivait dans son propre processus — un jeton Auth0 valide
+ * suffisait, et un révoqué gardait la main sur le catalogue.
  */
-@Public()
+@AdminSurface("catalog")
 @Controller("products")
 export class ShopifyProductsController {
   constructor(

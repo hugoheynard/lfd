@@ -28,6 +28,7 @@ import { z } from "zod";
 export const staffResourceSchema = z.enum([
   "companies",
   "orders",
+  "catalog",
   "growth",
   "appointments",
   "support",
@@ -71,6 +72,7 @@ export const STAFF_ROLE_LABELS: Readonly<Record<StaffRole, string>> = {
 export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   companies: "Comptes clients",
   orders: "Commandes",
+  catalog: "Catalogue",
   growth: "Croissance",
   appointments: "Rendez-vous",
   support: "Demandes",
@@ -100,11 +102,17 @@ type RoleGrants = Partial<Readonly<Record<StaffResource, StaffAction>>>;
  *   par une dérogation, qui laisse une trace.
  * - **`comptabilite` ne lit pas `growth`** — le pipeline commercial n'est pas de
  *   la donnée comptable.
+ * - **`catalog` n'est en écriture que pour `admin`** — le référentiel décide de
+ *   ce qui existe, de ce qui se publie en vitrine et à quel prix canonique ;
+ *   trois écrans en aval en dépendent. Les autres rôles le **lisent**, ce qui
+ *   est exactement l'audience qu'ils avaient quand l'écran catalogue vivait
+ *   sous `settings` : la ressource change de nom, personne ne perd un accès.
  */
 export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   admin: {
     companies: "write",
     orders: "write",
+    catalog: "write",
     growth: "write",
     appointments: "write",
     support: "write",
@@ -121,6 +129,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Il ne couvre TOUJOURS PAS la modification d'une commande passée : aucune
     // route ne l'expose, et ce sont les avenants qui la porteront.
     orders: "write",
+    catalog: "read",
     growth: "write",
     appointments: "write",
     support: "write",
@@ -129,6 +138,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   comptabilite: {
     companies: "read",
     orders: "write",
+    catalog: "read",
     settings: "read",
   },
   support: {
@@ -138,6 +148,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     support: "write",
   },
   dev: {
+    catalog: "read",
     settings: "read",
     tech: "write",
   },

@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { z } from "zod";
 
-import { Public } from "../../../../infra/auth/public.decorator.js";
+import { AdminSurface } from "../../../../infra/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../shared/http/zod-body.pipe.js";
 import { B2bCatalogPushService, type B2bPushSummary } from "./push.service.js";
 
@@ -18,9 +18,12 @@ const pushPayload = z.object({
  * Ressource **push** du canal B2B. Sous-chemin `push` sous le préfixe module
  * `channels/b2b`.
  *
- * ⚠️ `@Public()` temporaire — même dérogation que le catalogue (Auth0 non câblé).
+ * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
+ * référentiel vivait dans son propre processus — un jeton Auth0 valide
+ * suffisait, et un révoqué gardait la main sur le catalogue.
  */
-@Public()
+@AdminSurface("catalog")
 @Controller("push")
 export class B2bPushController {
   constructor(private readonly pushService: B2bCatalogPushService) {}

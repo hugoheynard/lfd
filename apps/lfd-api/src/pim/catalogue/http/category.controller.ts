@@ -12,7 +12,7 @@ import {
   type SetCategoryTvaPayload,
 } from "@lfd/pim-contracts";
 
-import { Public } from "../../../infra/auth/public.decorator.js";
+import { AdminSurface } from "../../../infra/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../shared/http/zod-body.pipe.js";
 import { ArchiveCategoryCommand } from "../application/archive-category.js";
 import { CreateCategoryCommand } from "../application/create-category.js";
@@ -22,10 +22,14 @@ import { SetCategoryChannelsCommand } from "../application/set-category-channels
 import { SetCategoryTvaCommand } from "../application/set-category-tva.js";
 
 /**
- * Familles du catalogue — dispatchées sur les bus CQRS. ⚠️ **`@Public()`
- * temporaire** (tenant Auth0 absent), dette suivie dans `todo.md`.
+ * Familles du catalogue — dispatchées sur les bus CQRS.
+ *
+ * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
+ * référentiel vivait dans son propre processus — un jeton Auth0 valide
+ * suffisait, et un révoqué gardait la main sur le catalogue.
  */
-@Public()
+@AdminSurface("catalog")
 @Controller("catalogue/categories")
 export class CategoryController {
   constructor(

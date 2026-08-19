@@ -6,7 +6,7 @@ import {
   type TvaRegimeView,
 } from "@lfd/pim-contracts";
 
-import { Public } from "../../../infra/auth/public.decorator.js";
+import { AdminSurface } from "../../../infra/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../shared/http/zod-body.pipe.js";
 import { CreateTvaRegimeCommand } from "../application/create-tva-regime.js";
 import { ListTvaRegimesQuery } from "../application/list-tva-regimes.js";
@@ -18,9 +18,12 @@ import { UpdateTvaRegimeCommand } from "../application/update-tva-regime.js";
  * contrôleur ne fait que **dispatcher** sur les bus CQRS : commandes qui mutent,
  * requête qui lit.
  *
- * ⚠️ `@Public()` temporaire — même dérogation que le catalogue (Auth0 non câblé).
+ * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
+ * référentiel vivait dans son propre processus — un jeton Auth0 valide
+ * suffisait, et un révoqué gardait la main sur le catalogue.
  */
-@Public()
+@AdminSurface("catalog")
 @Controller("commerce/tva-regimes")
 export class TvaRegimeController {
   constructor(

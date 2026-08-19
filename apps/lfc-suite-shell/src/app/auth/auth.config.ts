@@ -41,7 +41,6 @@ export interface SuiteAuthConfig {
      * le vérificateur staff ne contrôle que l'émetteur et l'audience.
      */
     readonly b2bAdmin: string;
-    readonly pim: string;
   };
 }
 
@@ -52,7 +51,6 @@ export const SUITE_AUTH_CONFIG: SuiteAuthConfig = {
     self: AUTH_ENV.audiences.self,
     b2b: AUTH_ENV.audiences.b2b,
     b2bAdmin: AUTH_ENV.audiences.b2bAdmin,
-    pim: AUTH_ENV.audiences.pim,
   },
 };
 

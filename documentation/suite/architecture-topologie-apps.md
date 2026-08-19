@@ -17,26 +17,30 @@ multiplier les déployables parce que deux populations ne se ressemblent pas.
 
 ## L'état mesuré, le jour où la question s'est posée
 
-| Fait             | Mesure                                                                   |
-| ---------------- | ------------------------------------------------------------------------ |
-| Backends         | PIM **171** fichiers TS · B2B **866**                                    |
-| Bases            | deux Postgres · B2B déjà en `multiSchema` (`public`, `growth`)           |
-| Containers       | deux, `instance_type: "basic"` chacun                                    |
-| Instances max    | B2B (chemin de vente) **1** · PIM (outil staff) **2**                    |
-| Suite            | `SUITE_APPS` = 2 entrées, dont `b2b-admin` en **stub** sans URL          |
-| Couture iframe   | **~24** fichiers (`suite/`, `suite-embed`, clients d'embed)              |
-| Auth des fronts  | admin ✅ · client ✅ · **PIM ❌** (aucun SDK, jeton relayé par le shell) |
-| Annuaire staff   | `StaffUser` (rôle, statut, overrides) **dans le B2B seulement**          |
-| Autorisation PIM | **aucune** — `AuthGuard` global : jeton Auth0 valide ⇒ tu entres         |
+| Fait             | Mesure                                                                          |
+| ---------------- | ------------------------------------------------------------------------------- |
+| Backends         | PIM **171** fichiers TS · B2B **866**                                           |
+| Bases            | deux Postgres · B2B déjà en `multiSchema` (`public`, `growth`)                  |
+| Containers       | deux, `instance_type: "basic"` chacun                                           |
+| Instances max    | B2B (chemin de vente) **1** · PIM (outil staff) **2**                           |
+| Suite            | `SUITE_APPS` = 2 entrées, dont `b2b-admin` en **stub** sans URL                 |
+| Couture iframe   | **~24** fichiers (`suite/`, `suite-embed`, clients d'embed)                     |
+| Auth des fronts  | admin ✅ · client ✅ · **PIM ❌** (aucun SDK, jeton relayé par le shell)        |
+| Annuaire staff   | `StaffUser` (rôle, statut, overrides) **dans le B2B seulement**                 |
+| Autorisation PIM | **aucune, et pas d'authentification non plus** — les 10 contrôleurs `@Public()` |
 
 Deux de ces lignes sont des trous, pas des choix :
 
 - l'outil interne peut doubler ses instances, la **vente** est plafonnée à 1.
   Le commentaire du `wrangler.jsonc` B2B dit « grossir avant de multiplier » — la
   décision a été pensée, le PIM ne l'a jamais suivie ;
-- le PIM n'a **que l'audience** comme mur. Quelqu'un passé en `revoked` dans
-  l'annuaire staff **garde le PIM** : catalogue, prix canoniques, publication
-  Shopify. C'est vrai aujourd'hui, indépendamment de toute fusion.
+- le PIM n'a **aucun mur applicatif**. On a d'abord écrit ici « l'audience pour
+  seul mur » ; c'était encore optimiste. Ses dix contrôleurs portent `@Public()`
+  avec un commentaire « temporaire » : aucun jeton n'est demandé, et seule la
+  passerelle sépare le catalogue du reste du monde. Quelqu'un passé en `revoked`
+  dans l'annuaire staff garde donc tout — catalogue, prix canoniques,
+  publication Shopify. **Corrigé en B2d** ; c'était vrai le jour de la mesure,
+  et indépendamment de toute fusion.
 
 ## Ce que la séparation coûte réellement
 
@@ -268,6 +272,37 @@ elle qui remplace le mur que le réseau tenait.
 > Le déployé, lui, n'a pas bougé : le Worker `lfc-pim-backend` tourne encore sur
 > sa dernière image, plus rien ne le met à jour, et il s'éteint en **B2e** quand
 > la passerelle routera `/api/pim` vers le Worker de l'API.
+>
+> **B2d** ferme le trou (2026-08-19). Il était pire que ce que cette note disait
+> plus haut : le référentiel n'avait pas « l'audience pour seul mur », il
+> n'avait **aucun mur** — ses dix contrôleurs portaient `@Public()` avec un
+> commentaire « temporaire », donc aucun jeton n'était même demandé. Ils passent
+> tous par `@AdminSurface("catalog")`, c'est-à-dire la porte staff déjà en place
+> pour `/admin/*` : identité vérifiée contre l'annuaire, puis périmètre.
+>
+> Trois conséquences, dans l'ordre où elles comptent :
+>
+> - **un révoqué perd le catalogue**, ce qui était le motif ;
+> - **une audience disparaît.** Le PIM avait la sienne ; il emprunte celle de la
+>   surface staff, servie par le même backend. C'est le premier pas de « trois
+>   → une », et il ne coûte rien : une audience Auth0 n'est pas une adresse ;
+> - **le front envoie enfin un jeton.** Il n'en envoyait aucun — un
+>   intercepteur le demande au shell, ne l'attache qu'aux appels d'API, le
+>   mémorise, et l'oublie sur un 401.
+>
+> La ressource `catalog` rejoint le catalogue de permissions, et l'écran
+> `/admin/catalog` quitte `settings` pour elle : les deux écrans parlent du même
+> sujet, et les tenir sous deux ressources était exactement la confusion que la
+> matrice existe pour éviter. Personne ne perd un accès — les rôles qui lisaient
+> `settings` reçoivent `catalog:read`.
+>
+> **Une dérive de schéma est tombée avec** : quatre fonctionnalités du
+> référentiel (TVA, emplacements, snapshots de publication, présélection de
+> canal) vivaient en base sans migration, posées par `db push`. Une base neuve
+> construite depuis l'historique ne les avait pas. Le premier e2e à toucher
+> cette base l'a dit tout de suite — `schema_out_of_sync`, le garde-fou faisait
+> son travail, personne ne l'écoutait faute d'y toucher. La migration de
+> rattrapage est **rejouable**, puisque dev et prod portent déjà ces objets.
 
 **B0 seul**, aussi : un renommage qui casse un déploiement au milieu d'une fusion
 de contextes est indébrouillable. Et il se limite à l'identité **locale** —

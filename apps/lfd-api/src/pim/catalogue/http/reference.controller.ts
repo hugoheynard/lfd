@@ -1,10 +1,15 @@
 import { Controller, Get, Query } from "@nestjs/common";
 
 import { allergenReference, type AllergenReference } from "../../allergens/allergen-reference.js";
-import { Public } from "../../../infra/auth/public.decorator.js";
+import { AdminSurface } from "../../../infra/auth/admin-surface.decorator.js";
 
-/** ⚠️ `@Public()` temporaire — même dérogation que le reste (Auth0 non configuré). */
-@Public()
+/**
+ * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
+ * référentiel vivait dans son propre processus — un jeton Auth0 valide
+ * suffisait, et un révoqué gardait la main sur le catalogue.
+ */
+@AdminSurface("catalog")
 @Controller("reference")
 export class ReferenceController {
   /**

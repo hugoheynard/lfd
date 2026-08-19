@@ -8,7 +8,7 @@ import {
   type UpdateEmplacementPayload,
 } from "@lfd/pim-contracts";
 
-import { Public } from "../../../infra/auth/public.decorator.js";
+import { AdminSurface } from "../../../infra/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../shared/http/zod-body.pipe.js";
 import { CreateEmplacementCommand } from "../application/create-emplacement.js";
 import { DeleteEmplacementCommand } from "../application/delete-emplacement.js";
@@ -19,9 +19,14 @@ import { UpdateEmplacementCommand } from "../application/update-emplacement.js";
 
 /**
  * Emplacements (boutiques : modes + tables + QR click & collect) — dispatchés sur
- * les bus CQRS. ⚠️ **`@Public()` temporaire** (tenant Auth0 absent), dette `todo.md`.
+ * les bus CQRS.
+ *
+ * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
+ * référentiel vivait dans son propre processus — un jeton Auth0 valide
+ * suffisait, et un révoqué gardait la main sur le catalogue.
  */
-@Public()
+@AdminSurface("catalog")
 @Controller("locations/emplacements")
 export class EmplacementController {
   constructor(

@@ -196,6 +196,7 @@ enum StaffStatus {
 enum StaffResource {
   companies
   orders
+  catalog
   growth
   appointments
   support

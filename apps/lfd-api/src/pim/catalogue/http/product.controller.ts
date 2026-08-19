@@ -15,7 +15,7 @@ import {
   type UpdateVariantPricingPayload,
 } from "@lfd/pim-contracts";
 
-import { Public } from "../../../infra/auth/public.decorator.js";
+import { AdminSurface } from "../../../infra/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../shared/http/zod-body.pipe.js";
 import { ArchiveProductCommand } from "../application/archive-product.js";
 import { CreateProductCommand } from "../application/create-product.js";
@@ -29,10 +29,14 @@ import { UpdateVariantPricingCommand } from "../application/update-variant-prici
 
 /**
  * Produits du catalogue — dispatchés sur les bus CQRS. L'édition se fait **par
- * section** (une requête par section, pas par champ). ⚠️ **`@Public()` temporaire**
- * (tenant Auth0 absent), dette suivie dans `todo.md`.
+ * section** (une requête par section, pas par champ).
+ *
+ * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
+ * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
+ * référentiel vivait dans son propre processus — un jeton Auth0 valide
+ * suffisait, et un révoqué gardait la main sur le catalogue.
  */
-@Public()
+@AdminSurface("catalog")
 @Controller("catalogue/products")
 export class ProductController {
   constructor(

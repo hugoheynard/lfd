@@ -33,12 +33,12 @@ import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
  * Retirer un prix B2B est un `DELETE` et pas un `PUT { priceCents: null }` : on
  * **supprime une décision**, on n'en pose pas une qui vaudrait « rien ».
  *
- * Surface staff murée par `@AdminSurface("settings")` : le paramétrage du
+ * Surface staff murée par `@AdminSurface("catalog")` : le paramétrage du
  * catalogue est du réglage, et n'ouvrir une ressource `catalog` qu'ici créerait
  * un droit que rien d'autre n'exerce.
  */
 @Controller("admin/catalog")
-@AdminSurface("settings")
+@AdminSurface("catalog")
 export class AdminCatalogController {
   constructor(
     private readonly reader: CatalogAdminReader,
