@@ -109,6 +109,12 @@ jobs:
       - name: "Gate : dépendances partagées au catalogue"
         run: pnpm lint:catalog-shared-deps
 
+      # Un `files` sur une app conteneurisée amputerait ce que `pnpm deploy`
+      # emporte dans l'image — sans rendre aucune étape de build rouge. La panne
+      # n'apparaîtrait qu'au démarrage du container, en production.
+      - name: "Gate : pas de `files` sur une app conteneurisée"
+        run: pnpm lint:deployed-app-files
+
       # `docker run` plutôt qu'un `services:` : l'image MinIO a besoin d'une
       # commande (`server /data`), et un bloc `services` ne sait pas en passer.
       - name: Démarrer le stockage objet (MinIO)

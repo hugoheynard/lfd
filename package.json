@@ -26,6 +26,7 @@
     "lint:context-boundaries": "node dev-toolbox/gates/context-boundaries.mjs",
     "lint:cross-schema-join": "node dev-toolbox/gates/cross-schema-join.mjs",
     "lint:catalog-shared-deps": "node dev-toolbox/gates/catalog-shared-deps.mjs",
+    "lint:deployed-app-files": "node dev-toolbox/gates/deployed-app-files.mjs",
     "test": "turbo run test",
     "clean": "turbo run clean"
   },
