@@ -1,4 +1,4 @@
-import type { NodeManifest, TrafficWindow } from "@lfd/ops-contract";
+import type { HealthStatus, NodeHealth, NodeManifest, TrafficWindow } from "@lfd/ops-contract";
 
 import {
   DEGRADED_ERROR_RATE,
@@ -244,3 +244,53 @@ describe("un front est SERVI, jamais « en marche »", () => {
     expect(health?.lastError).toBeUndefined();
   });
 });
+
+describe("`since` date le changement, pas la lecture", () => {
+  const earlier = "2026-08-19T11:00:00.000Z";
+  const remembered = (status: HealthStatus): ReadonlyMap<string, NodeHealth> =>
+    new Map([["b2b", { ...BLANK, status, since: earlier }]]);
+
+  it("reconduit l'instant du constat tant que le statut tient", () => {
+    // « down depuis trois minutes » et « down depuis six heures » n'appellent
+    // pas le même geste. Recalculer `since` à chaque lecture faisait annoncer
+    // une durée au champ, et rendre toujours « maintenant ».
+    const [health] = deriveHealth(
+      [node()],
+      new Map([["b2b", { traffic: traffic() }]]),
+      NOW,
+      remembered("up"),
+    );
+
+    expect(health?.since).toBe(earlier);
+  });
+
+  it("repart de maintenant quand le statut change", () => {
+    const [health] = deriveHealth(
+      [node()],
+      new Map([["b2b", { traffic: traffic({ gatewayFaults: 1 }) }]]),
+      NOW,
+      remembered("up"),
+    );
+
+    expect(health).toMatchObject({ status: "down", since: NOW.toISOString() });
+  });
+
+  it("sans mémoire, date de maintenant plutôt que d'inventer un passé", () => {
+    const [health] = derive([node()], { b2b: { traffic: traffic() } });
+
+    expect(health?.since).toBe(NOW.toISOString());
+  });
+});
+
+/** Un état antérieur minimal — seuls `status` et `since` sont lus. */
+const BLANK: NodeHealth = {
+  node: "b2b",
+  kind: "service",
+  label: "API",
+  status: "unknown",
+  reason: "no-evidence",
+  since: "2026-08-19T11:00:00.000Z",
+  lastHeartbeatAt: null,
+  dependsOn: [],
+  readings: [],
+};

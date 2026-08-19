@@ -69,6 +69,9 @@
             <span class="ailing-dot" [class]="'ailing-dot ailing-dot--' + node.status"></span>
             <strong>{{ node.label }}</strong>
             <span class="ailing-reason">{{ reasonLabel(node.reason) }}</span>
+            <!-- La durée décide du geste : « depuis 6 h » dit que personne n'a
+                 rien vu passer, « depuis 3 min » qu'on le regarde arriver. -->
+            <span class="ailing-since">depuis {{ heldFor(node.since) }}</span>
             @if (node.lastError) {
               <!-- Le CONSTAT de la sonde, tel quel : « injoignable » et « point
                    d'entrée 404 » appellent deux gestes différents, et le statut

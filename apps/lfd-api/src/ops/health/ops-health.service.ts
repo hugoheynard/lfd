@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import type { EcosystemHealth, NodeReading, TrafficWindow } from "@lfd/ops-contract";
+import type { EcosystemHealth, NodeHealth, NodeReading, TrafficWindow } from "@lfd/ops-contract";
 
 import { Clock } from "../../platform/time/clock.js";
+import { Cached } from "../cached.js";
 import { TrafficReader } from "../traffic/traffic-reader.port.js";
 import { TOPOLOGY } from "../topology/topology.js";
 import { Auth0ReadingsReader } from "./auth0-readings.reader.js";
@@ -15,6 +16,18 @@ import { gatewayReadings, moduleReadings } from "./readings.js";
 const HEALTH_WINDOW_MINUTES = 5;
 
 /**
+ * Cadence maximale des appels vers l'extérieur — sondes tierces et Auth0.
+ *
+ * Trente secondes, alors que l'écran se rafraîchit toutes les quinze : c'est
+ * délibéré. Le **trafic** change d'une seconde à l'autre et se relit à chaque
+ * fois ; l'état d'un tiers, non — et surtout, rien de ce qu'on ferait d'une
+ * information fraîche de quinze secondes plutôt que trente ne serait différent.
+ * Payer le double d'appels pour ça serait acheter une précision qu'on n'utilise
+ * pas, au prix d'un rate-limit qu'on subirait.
+ */
+const OUTBOUND_TTL_MS = 30_000;
+
+/**
  * Assemble la carte : la topologie **déclarée**, plus ce qu'on sait de chaque
  * nœud, plus la dérivation.
  *
@@ -25,6 +38,23 @@ const HEALTH_WINDOW_MINUTES = 5;
  */
 @Injectable()
 export class OpsHealthService {
+  /** Ce qui sort de chez nous, mis en cache. Le reste — trafic, base — est à nous. */
+  private readonly cachedProbes = new Cached(OUTBOUND_TTL_MS, () => this.probes.run());
+  private readonly cachedAuth0 = new Cached(OUTBOUND_TTL_MS, () => this.auth0.read());
+
+  /**
+   * Le dernier état rendu, pour savoir **depuis quand** un statut tient.
+   *
+   * Sans cette mémoire, `since` valait l'instant de la lecture : le champ
+   * annonçait une durée et rendait toujours « maintenant ». Or « down depuis
+   * trois minutes » et « down depuis six heures » n'appellent pas le même geste.
+   *
+   * En mémoire du processus, comme les séries d'échecs des sondes : un
+   * redémarrage remet les compteurs à l'instant présent. C'est faux dans le sens
+   * prudent — on rajeunit un incident, on n'en invente pas.
+   */
+  private previous: ReadonlyMap<string, NodeHealth> = new Map();
+
   constructor(
     private readonly traffic: TrafficReader,
     private readonly database: DatabaseReadingsReader,
@@ -38,8 +68,8 @@ export class OpsHealthService {
     const [report, databaseReadings, auth0Readings, probes] = await Promise.all([
       this.traffic.read(HEALTH_WINDOW_MINUTES),
       this.database.read(),
-      this.auth0.read(),
-      this.probes.run(),
+      this.cachedAuth0.read(now.getTime()),
+      this.cachedProbes.read(now.getTime()),
     ]);
 
     const evidence = new Map<string, NodeEvidence>(
@@ -78,10 +108,9 @@ export class OpsHealthService {
       });
     }
 
-    return {
-      generatedAt: now.toISOString(),
-      nodes: deriveHealth(TOPOLOGY, evidence, now),
-    };
+    const nodes = deriveHealth(TOPOLOGY, evidence, now, this.previous);
+    this.previous = new Map(nodes.map((node) => [node.node, node]));
+    return { generatedAt: now.toISOString(), nodes };
   }
 }
 

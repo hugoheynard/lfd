@@ -14,6 +14,8 @@
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
+import { Auth0ReadingsReader } from "../src/ops/health/auth0-readings.reader.js";
+import { NODE_PROBES } from "../src/ops/probes/probe.port.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -28,7 +30,22 @@ let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      // 🔴 SANS CES DEUX-LÀ, cette suite appelle l'internet réel.
+      //
+      // `/admin/ops/health` déclenche toutes les sondes — Auth0, Stripe,
+      // Shopify, Resend, et les trois fronts Pages — plus le décompte Auth0.
+      // Une douzaine d'appels sortants depuis la CI, à chaque exécution : lent,
+      // dépendant du réseau de quelqu'un d'autre, et capable de faire échouer
+      // un test pour une panne qui n'est pas la nôtre.
+      //
+      // On les remplace ici plutôt que de faire renifler `NODE_ENV` au code de
+      // production : un service qui se comporte autrement en test n'est plus le
+      // service qu'on teste.
+      { token: NODE_PROBES, value: [] },
+      { token: Auth0ReadingsReader, value: { read: (): Promise<never[]> => Promise.resolve([]) } },
+    ],
   });
 });
 

@@ -794,3 +794,68 @@ La **latence de sonde** est le repli universel : c'est le seul chiffre qu'un
 tiers donne sans qu'on demande rien à personne. Elle n'est rendue que si la sonde
 a **abouti** — sur un échec, la « latence » est le délai d'attente, et afficher
 2500 ms ferait passer un service injoignable pour un service lent.
+
+## 21. Deux défauts corrigés, et ce qui reste ouvert
+
+### Les appels sortants ne dépendaient plus de rien de raisonnable
+
+Chaque lecture de l'écran relançait **tout** : quatre sondes tierces, trois
+sondes de front à deux requêtes chacune, le décompte Auth0. Une douzaine
+d'appels, toutes les quinze secondes, **multipliés par le nombre de personnes
+ayant l'écran ouvert**.
+
+Ce qui finit par arriver n'est pas une facture, c'est pire : un `429` chez Auth0
+ou Stripe, que la carte rendrait « accès refusé » — un incident inventé par
+l'outil censé les détecter, au moment précis où on le consulte.
+
+Ce qui sort de chez nous passe donc par un cache à **30 s**, alors que l'écran se
+rafraîchit toutes les 15. Délibéré : le trafic change d'une seconde à l'autre et
+se relit à chaque fois ; l'état d'un tiers, non — et rien de ce qu'on ferait
+d'une information fraîche de quinze secondes plutôt que trente ne serait
+différent. Deux lectures simultanées **partagent le même appel**, sinon deux
+onglets laisseraient passer exactement la rafale que le cache empêche. Un échec
+n'est pas mémorisé : garder une panne en cache la ferait durer plus longtemps
+que la panne.
+
+### `since` annonçait une durée et rendait « maintenant »
+
+Il était recalculé à chaque lecture. Or « down depuis trois minutes » et « down
+depuis six heures » n'appellent pas le même geste : le premier dit qu'on le
+regarde arriver, le second que personne n'a rien vu passer.
+
+Le service garde le dernier état rendu et **reconduit** l'instant du constat tant
+que le statut tient. En mémoire du processus, comme les séries d'échecs : un
+redémarrage rajeunit un incident, il n'en invente pas. La durée s'affiche sous
+« À regarder », datée sur l'instant de la RÉPONSE et non sur l'horloge du
+navigateur — les deux dérivent, et une durée négative ferait douter du reste.
+
+### Les tests n'appellent plus l'internet
+
+`/admin/ops/health` déclenchait, depuis la CI, une douzaine d'appels vers Auth0,
+Stripe, Shopify, Resend et les fronts Pages. Lent, dépendant du réseau de
+quelqu'un d'autre, et capable de faire échouer un test pour une panne qui n'est
+pas la nôtre. Les sondes et le lecteur Auth0 sont **surchargés dans la suite**,
+pas débranchés par un reniflage de `NODE_ENV` : un service qui se comporte
+autrement en test n'est plus le service qu'on teste.
+
+### Ce qui reste ouvert, et pourquoi
+
+- **Aucune mémoire longue.** Pas de tendance, pas de « est-ce pire qu'hier ».
+  Analytics Engine garde trois mois et on n'interroge que cinq minutes. Une
+  courbe par nœud est presque gratuite (même requête, groupée par tranche) ; un
+  journal des transitions en base rendrait `since` résistant au redémarrage.
+- **Personne n'est prévenu.** OPS est un écran qu'il faut ouvrir. Le canal
+  existe (mailer + cloche staff) ; ce qui manque est la **calibration**, et
+  brancher des alertes sans elle fabrique du bruit — un canal bruyant s'ignore,
+  la même faute que la carte durablement orange.
+- **OPS partage le sort de ce qu'il surveille.** Si l'API tombe, l'écran tombe
+  avec elle et ne dira jamais qu'elle est tombée. Compromis assumé (§14) ; la
+  sortie est déjà dessinée — le bloc est muré, son déménagement est un `git mv`.
+- **Le battement (J6) n'existe pas.** `expectsHeartbeat`, `heartbeat-fresh` et
+  `heartbeat-stale` sont dans le contrat et n'ont jamais tiré. Ce n'est pas un
+  mensonge — c'est un jalon planifié dont le trafic couvre aujourd'hui le
+  besoin — mais il reste à faire ou à retirer.
+- **`P95_SATURATED_MS = 1000`** est choisi, pas mesuré : l'occupation est une
+  intuition tant qu'aucun palier réel ne l'étalonne.
+- **R2 classe A/B** (jeton Cloudflare) et **catégories d'e-mails Resend**
+  (webhook) restent bloqués sur des gestes hors du dépôt.

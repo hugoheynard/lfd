@@ -119,6 +119,7 @@ export function deriveHealth(
   topology: readonly NodeManifest[],
   evidence: ReadonlyMap<string, NodeEvidence>,
   now: Date,
+  previous: ReadonlyMap<string, NodeHealth> = new Map(),
 ): readonly NodeHealth[] {
   const since = now.toISOString();
   const verdicts = new Map<string, Verdict>(
@@ -144,7 +145,11 @@ export function deriveHealth(
       label: node.label,
       status: verdict.status,
       reason: verdict.reason,
-      since,
+      // `since` date le CHANGEMENT, pas la lecture. Tant que le statut tient,
+      // on reconduit l'instant où il a été constaté pour la première fois :
+      // sans ça le champ annonce une durée et rend toujours « maintenant », ce
+      // qui est le seul cas où mieux vaut ne rien afficher.
+      since: sinceOf(previous.get(node.id), verdict.status, since),
       lastHeartbeatAt: observed?.lastHeartbeatAt ?? null,
       dependsOn: node.dependsOn,
       readings: observed?.readings ?? [],
@@ -152,4 +157,9 @@ export function deriveHealth(
       ...(fallen === undefined ? {} : { dependencyDown: fallen }),
     };
   });
+}
+
+/** L'instant où ce statut a commencé : celui d'avant s'il tient, sinon maintenant. */
+function sinceOf(previous: NodeHealth | undefined, status: HealthStatus, now: string): string {
+  return previous !== undefined && previous.status === status ? previous.since : now;
 }

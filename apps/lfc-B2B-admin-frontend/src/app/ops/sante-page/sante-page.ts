@@ -13,6 +13,7 @@ import type { EcosystemHealth, HealthReason, TrafficReport } from '@lfd/ops-cont
 import { ChargeTable } from '../charge-table/charge-table';
 import { EcosystemMap } from '../ecosystem-map/ecosystem-map';
 import { OpsService } from '../ops.service';
+import { elapsedSince } from '../elapsed';
 import { REASON_LABEL } from '../reason-label';
 
 /** La fenêtre du bandeau de chiffres. Cinq minutes = « en ce moment ». */
@@ -49,6 +50,14 @@ type LoadState = 'loading' | 'ready' | 'error';
 export class SantePage {
   /** La raison, lisible. Le contrat garde l'identifiant ; l'écran garde le sens. */
   protected readonly reasonLabel = (reason: HealthReason): string => REASON_LABEL[reason];
+
+  /**
+   * Depuis quand ce statut tient. Daté à l'instant de la RÉPONSE et non de
+   * l'horloge du navigateur : les deux dérivent, et une durée négative sur un
+   * écran de diagnostic ferait douter de tout le reste.
+   */
+  protected readonly heldFor = (since: string): string =>
+    elapsedSince(since, Date.parse(this.health()?.generatedAt ?? since));
 
   private readonly ops = inject(OpsService);
 
