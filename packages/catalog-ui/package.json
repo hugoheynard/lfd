@@ -29,16 +29,16 @@
   "devDependencies": {
     "@angular/common": "catalog:",
     "@angular/core": "catalog:",
-    "@eslint/js": "^9.28.0",
+    "@eslint/js": "catalog:",
     "@types/jest": "catalog:",
-    "@types/node": "^22.9.0",
-    "eslint": "^9.28.0",
-    "eslint-plugin-prettier": "^5.4.1",
-    "globals": "^16.0.0",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "globals": "catalog:",
     "jest": "catalog:",
-    "prettier": "^3.5.3",
+    "prettier": "catalog:",
     "ts-jest": "catalog:",
     "typescript": "catalog:",
-    "typescript-eslint": "^8.34.0"
+    "typescript-eslint": "catalog:"
   }
 }

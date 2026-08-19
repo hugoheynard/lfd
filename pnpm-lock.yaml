@@ -6,6 +6,12 @@ settings:
 
 catalogs:
   default:
+    '@analogjs/vite-plugin-angular':
+      specifier: 2.6.3
+      version: 2.6.3
+    '@analogjs/vitest-angular':
+      specifier: 2.6.3
+      version: 2.6.3
     '@angular/build':
       specifier: 22.1.4
       version: 22.1.4
@@ -33,6 +39,21 @@ catalogs:
     '@angular/router':
       specifier: 22.1.2
       version: 22.1.2
+    '@auth0/auth0-angular':
+      specifier: 2.11.0
+      version: 2.11.0
+    '@aws-sdk/client-s3':
+      specifier: 3.1097.0
+      version: 3.1097.0
+    '@aws-sdk/s3-request-presigner':
+      specifier: 3.1097.0
+      version: 3.1097.0
+    '@cloudflare/workers-types':
+      specifier: 5.20260804.1
+      version: 5.20260804.1
+    '@eslint/js':
+      specifier: 9.39.5
+      version: 9.39.5
     '@nestjs/cli':
       specifier: 11.0.24
       version: 11.0.24
@@ -63,15 +84,39 @@ catalogs:
     '@playwright/test':
       specifier: 1.62.1
       version: 1.62.1
+    '@stripe/stripe-js':
+      specifier: 9.13.0
+      version: 9.13.0
     '@types/jest':
       specifier: 29.5.14
       version: 29.5.14
+    '@types/node':
+      specifier: 22.20.1
+      version: 22.20.1
+    eslint:
+      specifier: 9.39.5
+      version: 9.39.5
+    eslint-plugin-prettier:
+      specifier: 5.5.6
+      version: 5.5.6
     fold-ng:
       specifier: 0.11.1
       version: 0.11.1
+    globals:
+      specifier: 16.5.0
+      version: 16.5.0
     jest:
       specifier: 29.7.0
       version: 29.7.0
+    jsdom:
+      specifier: 26.1.0
+      version: 26.1.0
+    prettier:
+      specifier: 3.9.5
+      version: 3.9.5
+    qrcode-generator:
+      specifier: 2.0.4
+      version: 2.0.4
     reflect-metadata:
       specifier: 0.2.2
       version: 0.2.2
@@ -87,6 +132,15 @@ catalogs:
     typescript:
       specifier: ~6.0.3
       version: 6.0.3
+    typescript-eslint:
+      specifier: 8.64.0
+      version: 8.64.0
+    vitest:
+      specifier: 4.1.10
+      version: 4.1.10
+    wrangler:
+      specifier: 4.118.0
+      version: 4.118.0
     zod:
       specifier: 4.4.3
       version: 4.4.3
@@ -103,7 +157,7 @@ importers:
         specifier: workspace:*
         version: link:packages/endpoints
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       turbo:
         specifier: ^2.5.0
@@ -133,7 +187,7 @@ importers:
         specifier: 'catalog:'
         version: 22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@auth0/auth0-angular':
-        specifier: ^2.11.0
+        specifier: 'catalog:'
         version: 2.11.0(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/router@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(rxjs@7.8.2))
       '@capacitor/core':
         specifier: ^8.5.0
@@ -157,7 +211,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/suite-embed
       '@stripe/stripe-js':
-        specifier: ^9.13.0
+        specifier: 'catalog:'
         version: 9.13.0
       d3:
         specifier: ^7.9.0
@@ -172,7 +226,7 @@ importers:
         specifier: 'catalog:'
         version: 0.11.1(22cfa20ad0110e19ca254a01bdc8a053)
       qrcode-generator:
-        specifier: ^2.0.4
+        specifier: 'catalog:'
         version: 2.0.4
       rxjs:
         specifier: 'catalog:'
@@ -182,17 +236,17 @@ importers:
         version: 2.8.1
     devDependencies:
       '@analogjs/vite-plugin-angular':
-        specifier: ^2.6.2
-        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+        specifier: 'catalog:'
+        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
       '@analogjs/vitest-angular':
-        specifier: ^2.6.2
-        version: 2.6.3(79e1715f8abff847eb1d02b3c843b72f)
+        specifier: 'catalog:'
+        version: 2.6.3(0fb4ae82094035d8ca4c8eb1e4fd28b6)
       '@angular/build':
         specifier: 'catalog:'
-        version: 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
+        version: 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
       '@angular/cli':
         specifier: 'catalog:'
-        version: 22.1.4(@types/node@26.1.1)(chokidar@5.0.0)
+        version: 22.1.4(@types/node@22.20.1)(chokidar@5.0.0)
       '@angular/compiler-cli':
         specifier: 'catalog:'
         version: 22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3)
@@ -209,20 +263,20 @@ importers:
         specifier: ^0.12.5
         version: 0.12.5
       '@types/node':
-        specifier: ^26.1.0
-        version: 26.1.1
+        specifier: 'catalog:'
+        version: 22.20.1
       jsdom:
-        specifier: ^26.1.0
+        specifier: 'catalog:'
         version: 26.1.0
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       vitest:
-        specifier: ^4.0.8
-        version: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
 
   apps/lfc-B2B-platform-frontend:
     dependencies:
@@ -245,7 +299,7 @@ importers:
         specifier: 'catalog:'
         version: 22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@auth0/auth0-angular':
-        specifier: ^2.11.0
+        specifier: 'catalog:'
         version: 2.11.0(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/router@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(rxjs@7.8.2))
       '@lfd/b2b-ui':
         specifier: workspace:*
@@ -257,13 +311,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/endpoints
       '@stripe/stripe-js':
-        specifier: ^9.13.0
+        specifier: 'catalog:'
         version: 9.13.0
       fold-ng:
         specifier: 'catalog:'
         version: 0.11.1(22cfa20ad0110e19ca254a01bdc8a053)
       qrcode-generator:
-        specifier: ^2.0.4
+        specifier: 'catalog:'
         version: 2.0.4
       rxjs:
         specifier: 'catalog:'
@@ -273,35 +327,35 @@ importers:
         version: 2.8.1
     devDependencies:
       '@analogjs/vite-plugin-angular':
-        specifier: ^2.6.2
-        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+        specifier: 'catalog:'
+        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
       '@analogjs/vitest-angular':
-        specifier: ^2.6.2
-        version: 2.6.3(72eead2a609bf1b67a22dacfb9bca3b8)
+        specifier: 'catalog:'
+        version: 2.6.3(c95e2f9bfd271f0e8c593a32f34b12f5)
       '@angular/build':
         specifier: 'catalog:'
-        version: 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
+        version: 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
       '@angular/cli':
         specifier: 'catalog:'
-        version: 22.1.4(@types/node@26.1.1)(chokidar@5.0.0)
+        version: 22.1.4(@types/node@22.20.1)(chokidar@5.0.0)
       '@angular/compiler-cli':
         specifier: 'catalog:'
         version: 22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3)
       '@types/node':
-        specifier: ^26.1.0
-        version: 26.1.1
+        specifier: 'catalog:'
+        version: 22.20.1
       jsdom:
-        specifier: ^26.1.0
+        specifier: 'catalog:'
         version: 26.1.0
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       vitest:
-        specifier: ^4.0.8
-        version: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
 
   apps/lfc-PIM-frontend:
     dependencies:
@@ -333,7 +387,7 @@ importers:
         specifier: 'catalog:'
         version: 0.11.1(22cfa20ad0110e19ca254a01bdc8a053)
       qrcode-generator:
-        specifier: ^2.0.4
+        specifier: 'catalog:'
         version: 2.0.4
       rxjs:
         specifier: 'catalog:'
@@ -343,35 +397,35 @@ importers:
         version: 2.8.1
     devDependencies:
       '@analogjs/vite-plugin-angular':
-        specifier: ^2.6.2
-        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+        specifier: 'catalog:'
+        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
       '@analogjs/vitest-angular':
-        specifier: ^2.6.2
-        version: 2.6.3(72eead2a609bf1b67a22dacfb9bca3b8)
+        specifier: 'catalog:'
+        version: 2.6.3(c95e2f9bfd271f0e8c593a32f34b12f5)
       '@angular/build':
         specifier: 'catalog:'
-        version: 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
+        version: 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
       '@angular/cli':
         specifier: 'catalog:'
-        version: 22.1.4(@types/node@26.1.1)(chokidar@5.0.0)
+        version: 22.1.4(@types/node@22.20.1)(chokidar@5.0.0)
       '@angular/compiler-cli':
         specifier: 'catalog:'
         version: 22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3)
       '@types/node':
-        specifier: ^26.1.0
-        version: 26.1.1
+        specifier: 'catalog:'
+        version: 22.20.1
       jsdom:
-        specifier: ^26.1.0
+        specifier: 'catalog:'
         version: 26.1.0
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       vitest:
-        specifier: ^4.0.8
-        version: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
 
   apps/lfc-suite-shell:
     dependencies:
@@ -394,7 +448,7 @@ importers:
         specifier: 'catalog:'
         version: 22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@auth0/auth0-angular':
-        specifier: ^2.11.0
+        specifier: 'catalog:'
         version: 2.11.0(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/router@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(rxjs@7.8.2))
       '@lfd/endpoints':
         specifier: workspace:*
@@ -413,43 +467,43 @@ importers:
         version: 2.8.1
     devDependencies:
       '@analogjs/vite-plugin-angular':
-        specifier: ^2.6.2
-        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+        specifier: 'catalog:'
+        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
       '@analogjs/vitest-angular':
-        specifier: ^2.6.2
-        version: 2.6.3(72eead2a609bf1b67a22dacfb9bca3b8)
+        specifier: 'catalog:'
+        version: 2.6.3(c95e2f9bfd271f0e8c593a32f34b12f5)
       '@angular/build':
         specifier: 'catalog:'
-        version: 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
+        version: 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
       '@angular/cli':
         specifier: 'catalog:'
-        version: 22.1.4(@types/node@26.1.1)(chokidar@5.0.0)
+        version: 22.1.4(@types/node@22.20.1)(chokidar@5.0.0)
       '@angular/compiler-cli':
         specifier: 'catalog:'
         version: 22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3)
       '@types/node':
-        specifier: ^26.1.0
-        version: 26.1.1
+        specifier: 'catalog:'
+        version: 22.20.1
       jsdom:
-        specifier: ^26.1.0
+        specifier: 'catalog:'
         version: 26.1.0
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       vitest:
-        specifier: ^4.0.8
-        version: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
 
   apps/lfd-api:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1097.0
+        specifier: 'catalog:'
         version: 3.1097.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1097.0
+        specifier: 'catalog:'
         version: 3.1097.0
       '@lfd/catalog-sync':
         specifier: workspace:*
@@ -525,13 +579,13 @@ importers:
         specifier: ^0.3.7
         version: 0.3.7
       '@cloudflare/workers-types':
-        specifier: ^5.20260804.1
+        specifier: 'catalog:'
         version: 5.20260804.1
       '@eslint/eslintrc':
         specifier: ^3.2.0
         version: 3.3.6
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@nestjs/cli':
         specifier: 'catalog:'
@@ -552,7 +606,7 @@ importers:
         specifier: ^2.2.0
         version: 2.2.0
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       '@types/pg':
         specifier: ^8.20.0
@@ -564,16 +618,16 @@ importers:
         specifier: ^16.4.7
         version: 16.6.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-config-prettier:
         specifier: ^10.0.1
         version: 10.1.8(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       jest:
         specifier: 'catalog:'
@@ -582,7 +636,7 @@ importers:
         specifier: ^8.22.0
         version: 8.22.0
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       prisma:
         specifier: ^7.8.0
@@ -612,10 +666,10 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
       wrangler:
-        specifier: ^4.118.0
+        specifier: 'catalog:'
         version: 4.118.0(@cloudflare/workers-types@5.20260804.1)
 
   gateway:
@@ -625,35 +679,35 @@ importers:
         version: link:../packages/endpoints
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4
-        version: 4.20260702.1
+        specifier: 'catalog:'
+        version: 5.20260804.1
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
       vitest:
-        specifier: ^4.1.10
+        specifier: 'catalog:'
         version: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
       wrangler:
-        specifier: ^4
-        version: 4.118.0(@cloudflare/workers-types@4.20260702.1)
+        specifier: 'catalog:'
+        version: 4.118.0(@cloudflare/workers-types@5.20260804.1)
 
   packages/b2b-ui:
     dependencies:
@@ -664,7 +718,7 @@ importers:
         specifier: 'catalog:'
         version: 0.11.1(22cfa20ad0110e19ca254a01bdc8a053)
       qrcode-generator:
-        specifier: ^2.0.4
+        specifier: 'catalog:'
         version: 2.0.4
       tslib:
         specifier: 'catalog:'
@@ -677,28 +731,28 @@ importers:
         specifier: 'catalog:'
         version: 22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3))
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
@@ -707,7 +761,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
   packages/catalog-sync:
@@ -717,28 +771,28 @@ importers:
         version: 4.4.3
     devDependencies:
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3))
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
@@ -747,7 +801,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
   packages/catalog-ui:
@@ -769,28 +823,28 @@ importers:
         specifier: 'catalog:'
         version: 22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3))
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
@@ -799,7 +853,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
   packages/contracts:
@@ -809,28 +863,28 @@ importers:
         version: 4.4.3
     devDependencies:
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3))
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
@@ -839,34 +893,34 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
   packages/endpoints:
     devDependencies:
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
   packages/mailer:
@@ -876,28 +930,28 @@ importers:
         version: 6.18.1
     devDependencies:
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3))
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
@@ -906,7 +960,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
   packages/ops-contract:
@@ -916,28 +970,28 @@ importers:
         version: 4.4.3
     devDependencies:
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3))
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
@@ -946,7 +1000,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
   packages/pim-contracts:
@@ -956,28 +1010,28 @@ importers:
         version: 4.4.3
     devDependencies:
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3))
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
@@ -986,34 +1040,34 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
   packages/shopify-admin:
     devDependencies:
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3))
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
@@ -1022,43 +1076,43 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
   packages/storage:
     devDependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.0.0
+        specifier: 'catalog:'
         version: 3.1097.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.0.0
+        specifier: 'catalog:'
         version: 3.1097.0
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       aws-sdk-client-mock:
         specifier: ^4.1.0
         version: 4.1.0
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3))
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
@@ -1067,34 +1121,34 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
   packages/suite-embed:
     devDependencies:
       '@eslint/js':
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5
       '@types/node':
-        specifier: ^22.9.0
+        specifier: 'catalog:'
         version: 22.20.1
       eslint:
-        specifier: ^9.28.0
+        specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)
       eslint-plugin-prettier:
-        specifier: ^5.4.1
+        specifier: 'catalog:'
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
       globals:
-        specifier: ^16.0.0
+        specifier: 'catalog:'
         version: 16.5.0
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.9.5
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.34.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
 packages:
@@ -1685,9 +1739,6 @@ packages:
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
-
-  '@cloudflare/workers-types@4.20260702.1':
-    resolution: {integrity: sha512-mOhf5TUEB1m2vPrxtqoIGfz0fUC9xyxRDx5gWHy5s+OCo6dcV+g7wI1R7gYCMFohhqF/2y2xeKVwMwCJjfn/WA==}
 
   '@cloudflare/workers-types@5.20260804.1':
     resolution: {integrity: sha512-B1dwxpN6e5RZXZkE5zpZj+ooNeNZ1mwavLIyHDYe10ojhlGTwDfe8sAl7R1mMXc1cyIsbr+jKVdvmMEyVcdTdg==}
@@ -7830,7 +7881,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
 
-  '@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))':
+  '@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))':
     dependencies:
       magic-string: 0.30.21
       obug: 2.1.4
@@ -7838,13 +7889,13 @@ snapshots:
       tinyglobby: 0.2.17
       ts-morph: 21.0.1
     optionalDependencies:
-      '@angular/build': 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
-      vite: 8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)
+      '@angular/build': 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
+      vite: 8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
 
-  '@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))':
+  '@analogjs/vite-plugin-angular@2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))':
     dependencies:
       magic-string: 0.30.21
       obug: 2.1.4
@@ -7852,25 +7903,25 @@ snapshots:
       tinyglobby: 0.2.17
       ts-morph: 21.0.1
     optionalDependencies:
-      '@angular/build': 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
-      vite: 8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)
+      '@angular/build': 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
+      vite: 8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
 
-  '@analogjs/vitest-angular@2.6.3(72eead2a609bf1b67a22dacfb9bca3b8)':
+  '@analogjs/vitest-angular@2.6.3(0fb4ae82094035d8ca4c8eb1e4fd28b6)':
     dependencies:
-      '@analogjs/vite-plugin-angular': 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+      '@analogjs/vite-plugin-angular': 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
       '@angular-devkit/architect': 0.2201.4(chokidar@5.0.0)
       '@angular-devkit/schematics': 22.1.4(chokidar@5.0.0)
-      vitest: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+      vitest: 4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
 
-  '@analogjs/vitest-angular@2.6.3(79e1715f8abff847eb1d02b3c843b72f)':
+  '@analogjs/vitest-angular@2.6.3(c95e2f9bfd271f0e8c593a32f34b12f5)':
     dependencies:
-      '@analogjs/vite-plugin-angular': 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+      '@analogjs/vite-plugin-angular': 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
       '@angular-devkit/architect': 0.2201.4(chokidar@5.0.0)
       '@angular-devkit/schematics': 22.1.4(chokidar@5.0.0)
-      vitest: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+      vitest: 4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
 
   '@angular-devkit/architect@0.2201.4(chokidar@5.0.0)':
     dependencies:
@@ -7954,7 +8005,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@26.1.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))':
+  '@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@angular-devkit/architect': 0.2201.4(chokidar@5.0.0)
@@ -7963,8 +8014,8 @@ snapshots:
       '@babel/core': 8.0.1
       '@babel/helper-annotate-as-pure': 8.0.0
       '@babel/helper-split-export-declaration': 7.24.7
-      '@inquirer/confirm': 6.1.1(@types/node@26.1.1)
-      '@vitejs/plugin-basic-ssl': 2.3.0(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+      '@inquirer/confirm': 6.1.1(@types/node@22.20.1)
+      '@vitejs/plugin-basic-ssl': 2.3.0(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
       beasties: 0.4.3
       browserslist: 4.28.6
       esbuild: 0.28.2
@@ -7984,7 +8035,7 @@ snapshots:
       tinyglobby: 0.2.17
       tslib: 2.8.1
       typescript: 6.0.3
-      vite: 8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)
+      vite: 8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)
       watchpack: 2.5.2
     optionalDependencies:
       '@angular/core': 22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)
@@ -7993,7 +8044,7 @@ snapshots:
       lmdb: 3.5.6
       postcss: 8.5.20
       rollup: 4.60.2
-      vitest: 4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+      vitest: 4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
     transitivePeerDependencies:
       - '@types/node'
       - '@vitejs/devtools'
@@ -8008,13 +8059,13 @@ snapshots:
       - tsx
       - yaml
 
-  '@angular/cli@22.1.4(@types/node@26.1.1)(chokidar@5.0.0)':
+  '@angular/cli@22.1.4(@types/node@22.20.1)(chokidar@5.0.0)':
     dependencies:
       '@angular-devkit/architect': 0.2201.4(chokidar@5.0.0)
       '@angular-devkit/core': 22.1.4(chokidar@5.0.0)
       '@angular-devkit/schematics': 22.1.4(chokidar@5.0.0)
-      '@inquirer/prompts': 8.5.2(@types/node@26.1.1)
-      '@listr2/prompt-adapter-inquirer': 4.2.4(@inquirer/prompts@8.5.2(@types/node@26.1.1))(@types/node@26.1.1)(listr2@10.2.2)
+      '@inquirer/prompts': 8.5.2(@types/node@22.20.1)
+      '@listr2/prompt-adapter-inquirer': 4.2.4(@inquirer/prompts@8.5.2(@types/node@22.20.1))(@types/node@22.20.1)(listr2@10.2.2)
       '@modelcontextprotocol/sdk': 1.30.0(zod@4.4.3)
       '@schematics/angular': 22.1.4(chokidar@5.0.0)
       jsonc-parser: 3.3.1
@@ -8713,8 +8764,6 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260730.1':
     optional: true
 
-  '@cloudflare/workers-types@4.20260702.1': {}
-
   '@cloudflare/workers-types@5.20260804.1': {}
 
   '@colors/colors@1.5.0':
@@ -9130,14 +9179,14 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/checkbox@5.2.1(@types/node@26.1.1)':
+  '@inquirer/checkbox@5.2.1(@types/node@22.20.1)':
     dependencies:
       '@inquirer/ansi': 2.0.7
-      '@inquirer/core': 11.2.1(@types/node@26.1.1)
+      '@inquirer/core': 11.2.1(@types/node@22.20.1)
       '@inquirer/figures': 2.0.7
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/confirm@5.1.21(@types/node@22.20.1)':
     dependencies:
@@ -9146,12 +9195,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/confirm@6.1.1(@types/node@26.1.1)':
+  '@inquirer/confirm@6.1.1(@types/node@22.20.1)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@26.1.1)
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/core': 11.2.1(@types/node@22.20.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/core@10.3.2(@types/node@22.20.1)':
     dependencies:
@@ -9166,17 +9215,17 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/core@11.2.1(@types/node@26.1.1)':
+  '@inquirer/core@11.2.1(@types/node@22.20.1)':
     dependencies:
       '@inquirer/ansi': 2.0.7
       '@inquirer/figures': 2.0.7
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
       cli-width: 4.1.0
       fast-wrap-ansi: 0.2.2
       mute-stream: 3.0.0
       signal-exit: 4.1.0
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/editor@4.2.23(@types/node@22.20.1)':
     dependencies:
@@ -9186,13 +9235,13 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/editor@5.2.2(@types/node@26.1.1)':
+  '@inquirer/editor@5.2.2(@types/node@22.20.1)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@26.1.1)
-      '@inquirer/external-editor': 3.0.3(@types/node@26.1.1)
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/core': 11.2.1(@types/node@22.20.1)
+      '@inquirer/external-editor': 3.0.3(@types/node@22.20.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/expand@4.0.23(@types/node@22.20.1)':
     dependencies:
@@ -9202,12 +9251,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/expand@5.1.1(@types/node@26.1.1)':
+  '@inquirer/expand@5.1.1(@types/node@22.20.1)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@26.1.1)
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/core': 11.2.1(@types/node@22.20.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/external-editor@1.0.3(@types/node@22.20.1)':
     dependencies:
@@ -9216,12 +9265,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/external-editor@3.0.3(@types/node@26.1.1)':
+  '@inquirer/external-editor@3.0.3(@types/node@22.20.1)':
     dependencies:
       chardet: 2.2.0
       iconv-lite: 0.7.3
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/figures@1.0.15': {}
 
@@ -9234,12 +9283,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/input@5.1.2(@types/node@26.1.1)':
+  '@inquirer/input@5.1.2(@types/node@22.20.1)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@26.1.1)
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/core': 11.2.1(@types/node@22.20.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/number@3.0.23(@types/node@22.20.1)':
     dependencies:
@@ -9248,12 +9297,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/number@4.1.1(@types/node@26.1.1)':
+  '@inquirer/number@4.1.1(@types/node@22.20.1)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@26.1.1)
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/core': 11.2.1(@types/node@22.20.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/password@4.0.23(@types/node@22.20.1)':
     dependencies:
@@ -9263,13 +9312,13 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/password@5.1.1(@types/node@26.1.1)':
+  '@inquirer/password@5.1.1(@types/node@22.20.1)':
     dependencies:
       '@inquirer/ansi': 2.0.7
-      '@inquirer/core': 11.2.1(@types/node@26.1.1)
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/core': 11.2.1(@types/node@22.20.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/prompts@7.10.1(@types/node@22.20.1)':
     dependencies:
@@ -9301,20 +9350,20 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/prompts@8.5.2(@types/node@26.1.1)':
+  '@inquirer/prompts@8.5.2(@types/node@22.20.1)':
     dependencies:
-      '@inquirer/checkbox': 5.2.1(@types/node@26.1.1)
-      '@inquirer/confirm': 6.1.1(@types/node@26.1.1)
-      '@inquirer/editor': 5.2.2(@types/node@26.1.1)
-      '@inquirer/expand': 5.1.1(@types/node@26.1.1)
-      '@inquirer/input': 5.1.2(@types/node@26.1.1)
-      '@inquirer/number': 4.1.1(@types/node@26.1.1)
-      '@inquirer/password': 5.1.1(@types/node@26.1.1)
-      '@inquirer/rawlist': 5.3.1(@types/node@26.1.1)
-      '@inquirer/search': 4.2.1(@types/node@26.1.1)
-      '@inquirer/select': 5.2.1(@types/node@26.1.1)
+      '@inquirer/checkbox': 5.2.1(@types/node@22.20.1)
+      '@inquirer/confirm': 6.1.1(@types/node@22.20.1)
+      '@inquirer/editor': 5.2.2(@types/node@22.20.1)
+      '@inquirer/expand': 5.1.1(@types/node@22.20.1)
+      '@inquirer/input': 5.1.2(@types/node@22.20.1)
+      '@inquirer/number': 4.1.1(@types/node@22.20.1)
+      '@inquirer/password': 5.1.1(@types/node@22.20.1)
+      '@inquirer/rawlist': 5.3.1(@types/node@22.20.1)
+      '@inquirer/search': 4.2.1(@types/node@22.20.1)
+      '@inquirer/select': 5.2.1(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/rawlist@4.1.11(@types/node@22.20.1)':
     dependencies:
@@ -9324,12 +9373,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/rawlist@5.3.1(@types/node@26.1.1)':
+  '@inquirer/rawlist@5.3.1(@types/node@22.20.1)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@26.1.1)
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/core': 11.2.1(@types/node@22.20.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/search@3.2.2(@types/node@22.20.1)':
     dependencies:
@@ -9340,13 +9389,13 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/search@4.2.1(@types/node@26.1.1)':
+  '@inquirer/search@4.2.1(@types/node@22.20.1)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@26.1.1)
+      '@inquirer/core': 11.2.1(@types/node@22.20.1)
       '@inquirer/figures': 2.0.7
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/select@4.4.2(@types/node@22.20.1)':
     dependencies:
@@ -9358,22 +9407,22 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/select@5.2.1(@types/node@26.1.1)':
+  '@inquirer/select@5.2.1(@types/node@22.20.1)':
     dependencies:
       '@inquirer/ansi': 2.0.7
-      '@inquirer/core': 11.2.1(@types/node@26.1.1)
+      '@inquirer/core': 11.2.1(@types/node@22.20.1)
       '@inquirer/figures': 2.0.7
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@inquirer/type@3.0.10(@types/node@22.20.1)':
     optionalDependencies:
       '@types/node': 22.20.1
 
-  '@inquirer/type@4.0.7(@types/node@26.1.1)':
+  '@inquirer/type@4.0.7(@types/node@22.20.1)':
     optionalDependencies:
-      '@types/node': 26.1.1
+      '@types/node': 22.20.1
 
   '@ionic/cli-framework-output@2.2.8':
     dependencies:
@@ -9700,10 +9749,10 @@ snapshots:
 
   '@kurkle/color@0.3.4': {}
 
-  '@listr2/prompt-adapter-inquirer@4.2.4(@inquirer/prompts@8.5.2(@types/node@26.1.1))(@types/node@26.1.1)(listr2@10.2.2)':
+  '@listr2/prompt-adapter-inquirer@4.2.4(@inquirer/prompts@8.5.2(@types/node@22.20.1))(@types/node@22.20.1)(listr2@10.2.2)':
     dependencies:
-      '@inquirer/prompts': 8.5.2(@types/node@26.1.1)
-      '@inquirer/type': 4.0.7(@types/node@26.1.1)
+      '@inquirer/prompts': 8.5.2(@types/node@22.20.1)
+      '@inquirer/type': 4.0.7(@types/node@22.20.1)
       listr2: 10.2.2
     transitivePeerDependencies:
       - '@types/node'
@@ -11062,9 +11111,9 @@ snapshots:
   '@ungap/structured-clone@1.3.3':
     optional: true
 
-  '@vitejs/plugin-basic-ssl@2.3.0(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))':
+  '@vitejs/plugin-basic-ssl@2.3.0(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))':
     dependencies:
-      vite: 8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)
+      vite: 8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)
 
   '@vitest/expect@4.1.10':
     dependencies:
@@ -11074,6 +11123,14 @@ snapshots:
       '@vitest/utils': 4.1.10
       chai: 6.2.2
       tinyrainbow: 3.1.0
+
+  '@vitest/mocker@4.1.10(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))':
+    dependencies:
+      '@vitest/spy': 4.1.10
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)
 
   '@vitest/mocker@4.1.10(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))':
     dependencies:
@@ -14811,6 +14868,22 @@ snapshots:
 
   vary@1.1.2: {}
 
+  vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1):
+    dependencies:
+      lightningcss: 1.33.0
+      picomatch: 4.0.5
+      postcss: 8.5.20
+      rolldown: 1.1.5
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 22.20.1
+      esbuild: 0.28.2
+      fsevents: 2.3.3
+      jiti: 2.7.0
+      sass: 1.101.0
+      terser: 5.49.0
+      tsx: 4.23.1
+
   vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1):
     dependencies:
       lightningcss: 1.33.0
@@ -14826,6 +14899,34 @@ snapshots:
       sass: 1.101.0
       terser: 5.49.0
       tsx: 4.23.1
+
+  vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)):
+    dependencies:
+      '@vitest/expect': 4.1.10
+      '@vitest/mocker': 4.1.10(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+      '@vitest/pretty-format': 4.1.10
+      '@vitest/runner': 4.1.10
+      '@vitest/snapshot': 4.1.10
+      '@vitest/spy': 4.1.10
+      '@vitest/utils': 4.1.10
+      es-module-lexer: 2.3.1
+      expect-type: 1.4.0
+      magic-string: 0.30.21
+      obug: 2.1.4
+      pathe: 2.0.3
+      picomatch: 4.0.5
+      std-env: 4.2.0
+      tinybench: 2.9.0
+      tinyexec: 1.2.4
+      tinyglobby: 0.2.17
+      tinyrainbow: 3.1.0
+      vite: 8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)
+      why-is-node-running: 2.3.0
+    optionalDependencies:
+      '@types/node': 22.20.1
+      jsdom: 26.1.0
+    transitivePeerDependencies:
+      - msw
 
   vitest@4.1.10(@types/node@26.1.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)):
     dependencies:
@@ -14951,23 +15052,6 @@ snapshots:
       '@cloudflare/workerd-linux-64': 1.20260730.1
       '@cloudflare/workerd-linux-arm64': 1.20260730.1
       '@cloudflare/workerd-windows-64': 1.20260730.1
-
-  wrangler@4.118.0(@cloudflare/workers-types@4.20260702.1):
-    dependencies:
-      '@cloudflare/kv-asset-handler': 0.5.0
-      '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260730.1)
-      blake3-wasm: 2.1.5
-      esbuild: 0.28.1
-      miniflare: 5.20260730.0-alpha
-      path-to-regexp: 6.3.0
-      unenv: 2.0.0-rc.24
-      workerd: 1.20260730.1
-    optionalDependencies:
-      '@cloudflare/workers-types': 4.20260702.1
-      fsevents: 2.3.3
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
 
   wrangler@4.118.0(@cloudflare/workers-types@5.20260804.1):
     dependencies:

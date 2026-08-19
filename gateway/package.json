@@ -15,15 +15,15 @@
     "@lfd/endpoints": "workspace:*"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4",
-    "@eslint/js": "^9.28.0",
-    "eslint": "^9.28.0",
-    "eslint-plugin-prettier": "^5.4.1",
-    "globals": "^16.0.0",
-    "prettier": "^3.5.3",
+    "@cloudflare/workers-types": "catalog:",
+    "@eslint/js": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "globals": "catalog:",
+    "prettier": "catalog:",
     "typescript": "catalog:",
-    "typescript-eslint": "^8.34.0",
-    "vitest": "^4.1.10",
-    "wrangler": "^4"
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
   }
 }

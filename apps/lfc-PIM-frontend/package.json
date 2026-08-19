@@ -25,20 +25,20 @@
     "@lfd/pim-contracts": "workspace:*",
     "@lfd/suite-embed": "workspace:*",
     "fold-ng": "catalog:",
-    "qrcode-generator": "^2.0.4",
+    "qrcode-generator": "catalog:",
     "rxjs": "catalog:",
     "tslib": "catalog:"
   },
   "devDependencies": {
-    "@analogjs/vite-plugin-angular": "^2.6.2",
-    "@analogjs/vitest-angular": "^2.6.2",
+    "@analogjs/vite-plugin-angular": "catalog:",
+    "@analogjs/vitest-angular": "catalog:",
     "@angular/build": "catalog:",
     "@angular/cli": "catalog:",
     "@angular/compiler-cli": "catalog:",
-    "@types/node": "^26.1.0",
-    "jsdom": "^26.1.0",
-    "prettier": "^3.5.3",
+    "@types/node": "catalog:",
+    "jsdom": "catalog:",
+    "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^4.0.8"
+    "vitest": "catalog:"
   }
 }

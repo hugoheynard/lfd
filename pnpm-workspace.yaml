@@ -68,6 +68,37 @@ catalog:
   "@angular/cli": 22.1.4
   "@angular/build": 22.1.4
   tslib: 2.8.1
+  # La chaîne lint/format. Dix-huit paquets la déclaraient ; deux versions
+  # d'ESLint ou de Prettier dans un dépôt, et le même fichier devient
+  # conforme ici et fautif là. C'est le cas d'école du catalogue.
+  prettier: 3.9.5
+  eslint: 9.39.5
+  "@eslint/js": 9.39.5
+  eslint-plugin-prettier: 5.5.6
+  globals: 16.5.0
+  typescript-eslint: 8.64.0
+  # Les types Node. Ils étaient en ^22 côté back et ^26 côté front alors que
+  # `engines` impose Node 22 : on aligne sur ce qui tourne réellement.
+  "@types/node": 22.20.1
+  # Le harnais de test des fronts et de la passerelle (Vitest, pas Jest).
+  vitest: 4.1.10
+  jsdom: 26.1.0
+  "@analogjs/vite-plugin-angular": 2.6.3
+  "@analogjs/vitest-angular": 2.6.3
+  # Bibliothèques applicatives partagées par plusieurs fronts. Auth0 surtout :
+  # les trois fronts parlent au MÊME tenant, un décalage de SDK entre eux
+  # produirait des sessions qui ne se comprennent pas.
+  "@auth0/auth0-angular": 2.11.0
+  "@stripe/stripe-js": 9.13.0
+  qrcode-generator: 2.0.4
+  # S3/R2 : @lfd/storage et l'API doivent présigner avec le même client.
+  # Cloudflare : la passerelle était en workers-types ^4 pendant que l'API
+  # était en ^5 — wrangler réclamait ^5, d'où l'avertissement de pair non
+  # satisfait à chaque installation.
+  "@aws-sdk/client-s3": 3.1097.0
+  "@aws-sdk/s3-request-presigner": 3.1097.0
+  "@cloudflare/workers-types": 5.20260804.1
+  wrangler: 4.118.0
 
 # `@angular/build` déclare @angular/platform-server et @angular/ssr en pairs
 # OPTIONNELS. pnpm les installe quand même — et, faute de contrainte, les
