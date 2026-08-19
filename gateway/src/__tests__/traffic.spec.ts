@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { statusClass, surfaceOf, trafficPoint } from "../traffic";
+import { formatTrafficPoint, statusClass, surfaceOf, trafficPoint } from "../traffic";
 
 /**
  * Ce que la passerelle retient de son trafic. Deux propriétés valent d'être
@@ -129,5 +129,49 @@ describe("trafficPoint", () => {
     });
 
     expect(point.doubles).toEqual([0]);
+  });
+});
+
+describe("formatTrafficPoint — la simulation de dev", () => {
+  it("rend la ligne journalisée en local, avec les MÊMES champs qu'en production", () => {
+    // Le point est construit par `trafficPoint`, pas recopié à la main : c'est
+    // ce qui garantit que ce qu'on lit en dev est ce qui partira chez
+    // Cloudflare. Une ligne « ressemblante » écrite à part finirait par diverger
+    // du vrai format, et on découvrirait l'écart après le déploiement.
+    const line = formatTrafficPoint(
+      trafficPoint({
+        node: "b2b",
+        status: 200,
+        forwardedPath: "/admin/orders",
+        durationMs: 12,
+        origin: "upstream",
+      }),
+    );
+
+    expect(line).toBe("ops b2b 2xx admin/orders upstream 12ms");
+  });
+
+  it("montre un throttle et un upstream muet aussi lisiblement", () => {
+    const throttled = formatTrafficPoint(
+      trafficPoint({
+        node: "b2b",
+        status: 429,
+        forwardedPath: "/orders",
+        durationMs: 3,
+        origin: "upstream",
+      }),
+    );
+    const unreachable = formatTrafficPoint(
+      trafficPoint({
+        node: "pim",
+        status: 502,
+        forwardedPath: "/catalogue",
+        durationMs: 5000,
+        origin: "gateway",
+      }),
+    );
+
+    expect(throttled).toBe("ops b2b 429 orders upstream 3ms");
+    expect(unreachable).toBe("ops pim 5xx catalogue gateway 5000ms");
   });
 });

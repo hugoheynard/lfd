@@ -503,6 +503,32 @@ Deux choses à ne pas perdre de vue :
 | **J5**    | Écran : schéma live, liens animés par **occupation** (§13), staff-only                                                          | J4        |
 | **J6**    | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                     | J3, en // |
 
+### Vérifier le J1 sans déployer
+
+En local il n'y a ni dataset ni API SQL. Le binding `TRAFFIC` est donc absent, et
+la passerelle **journalise** le point au lieu de l'écrire — construit par la même
+fonction pure, donc au format exact de ce qui partira en production :
+
+```bash
+pnpm suite:dev:gateway
+```
+
+Puis, en naviguant dans la suite, le terminal de la passerelle donne une ligne
+par requête traversée :
+
+```
+ops b2b 2xx admin/orders upstream 12ms
+ops b2b 429 orders upstream 3ms
+ops pim 5xx catalogue gateway 5000ms
+```
+
+La dernière est celle qui compte : `gateway` en origine signifie que le
+back-end **n'a pas répondu** — c'est le seul cas qui autorisera `down`.
+
+Un binding absent en **production** produirait les mêmes lignes, et c'est
+voulu : une erreur de configuration muette se traduirait par une carte de santé
+vide qu'on croirait calme.
+
 Le J1 est autonome et sans risque : la passerelle écrit, personne ne lit encore.
 Rien n'est visible avant J5, et c'est voulu — on accumule d'abord de quoi
 remplir l'écran, sinon il naîtrait vide et mentirait.

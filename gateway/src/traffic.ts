@@ -136,3 +136,19 @@ export function trafficPoint(observation: TrafficObservation): TrafficPoint {
     doubles: [Math.max(0, Math.round(observation.durationMs))],
   };
 }
+
+/**
+ * Le point, rendu en une ligne lisible — la **simulation de dev**.
+ *
+ * En local il n'y a ni dataset ni API SQL : sans ça, le J1 serait invérifiable
+ * avant un déploiement, et on écrirait la suite (lecture, agrégats, écran) à
+ * l'aveugle sur un format jamais vu. La ligne journalisée porte exactement les
+ * mêmes champs que le point écrit en production — pas une approximation :
+ * **la même fonction pure** la construit.
+ *
+ * Format : `ops b2b 2xx admin/orders upstream 12ms`. Volontairement plat et
+ * grep-able ; ce n'est pas une trace, c'est la preuve qu'on observe.
+ */
+export function formatTrafficPoint(point: TrafficPoint): string {
+  return ["ops", ...point.indexes, ...point.blobs, `${point.doubles[0]}ms`].join(" ");
+}

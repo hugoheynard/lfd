@@ -1,6 +1,6 @@
 import { resolveTarget } from "./routes";
 import type { BackendKey, Target } from "./routes";
-import { trafficPoint } from "./traffic";
+import { formatTrafficPoint, trafficPoint } from "./traffic";
 import type { TrafficObservation } from "./traffic";
 
 /**
@@ -121,15 +121,30 @@ function gatewayFault(
 
 /**
  * Dépose le point Analytics Engine. `writeDataPoint` ne rend pas de promesse et
- * n'attend rien : l'écriture n'allonge pas la réponse. Sans binding (dev), on ne
- * fait rien — et surtout on ne jette pas : une carte de santé indisponible ne
- * doit jamais faire échouer le trafic qu'elle observe.
+ * n'attend rien : l'écriture n'allonge pas la réponse.
+ *
+ * **Sans binding, on journalise au lieu d'écrire.** Deux situations, et la même
+ * réponse convient aux deux :
+ *
+ *   - en `wrangler dev`, il n'y a ni dataset ni API SQL — la ligne journalisée
+ *     est la seule façon de vérifier le J1 avant un déploiement, et d'écrire la
+ *     suite sur un format qu'on a vu plutôt que deviné ;
+ *   - en production, un binding absent est une **erreur de configuration**, et
+ *     on la veut bruyante : muette, elle se traduirait par une carte de santé
+ *     vide qu'on croirait calme.
+ *
+ * Dans aucun cas on ne jette : une observation impossible ne doit jamais faire
+ * échouer le trafic observé.
  */
 function observe(env: Env, observation: TrafficObservation): void {
   const point = trafficPoint(observation);
+  if (env.TRAFFIC === undefined) {
+    console.log(formatTrafficPoint(point));
+    return;
+  }
   // Recopie en tableaux mutables : notre contrat est `readonly` (règle du dépôt),
   // la signature Cloudflare ne l'est pas. On adapte à la frontière, sans `as`.
-  env.TRAFFIC?.writeDataPoint({
+  env.TRAFFIC.writeDataPoint({
     indexes: [...point.indexes],
     blobs: [...point.blobs],
     doubles: [...point.doubles],
