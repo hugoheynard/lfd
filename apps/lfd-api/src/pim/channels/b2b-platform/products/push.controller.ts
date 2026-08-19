@@ -1,8 +1,8 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { z } from "zod";
 
-import { AdminSurface } from "../../../../infra/auth/admin-surface.decorator.js";
-import { ZodBody } from "../../../../shared/http/zod-body.pipe.js";
+import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
+import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { B2bCatalogPushService, type B2bPushSummary } from "./push.service.js";
 
 const pushPayload = z.object({

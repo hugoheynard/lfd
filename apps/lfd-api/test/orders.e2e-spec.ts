@@ -11,10 +11,10 @@
  * e2e n'a pas à joindre Stripe. Le double renvoie une intention fixe, ce qui suffit
  * à prouver que le chemin carte marque `pending` et relie l'intention.
  */
-import type { CompanyStatus } from "../src/infra/database/client/client.js";
-import { CustomerRole } from "../src/infra/database/client/client.js";
+import type { CompanyStatus } from "../src/platform/database/client/client.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
 import type { BillingAddressPayload, OrderView, PlacedOrderResponse } from "@lfd/contracts";
-import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 

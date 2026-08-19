@@ -18,9 +18,9 @@ import {
   type Company,
   type Membership,
   type User,
-} from "../src/infra/database/client/client.js";
-import { Siret } from "../src/account/domain/value-objects/siret.js";
-import type { PrismaService } from "../src/infra/database/prisma.service.js";
+} from "../src/platform/database/client/client.js";
+import { Siret } from "../src/b2b/account/domain/value-objects/siret.js";
+import type { PrismaService } from "../src/platform/database/prisma.service.js";
 
 /** Ce qu'un test peut vouloir imposer sur une société. */
 export interface CompanySeed {

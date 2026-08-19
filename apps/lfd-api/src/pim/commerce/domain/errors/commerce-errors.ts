@@ -1,4 +1,4 @@
-import { BusinessError } from "../../../../shared/errors/app-error.js";
+import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 
 /** Un régime de TVA visé n'existe pas. */
 export class TvaRegimeNotFoundError extends BusinessError {

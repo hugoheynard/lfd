@@ -12,9 +12,9 @@ import {
   type SnapshotView,
 } from "@lfd/pim-contracts";
 
-import { AdminSurface } from "../../../../infra/auth/admin-surface.decorator.js";
+import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { ZodBody } from "../../../../shared/http/zod-body.pipe.js";
+import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { ShopifyInspectionService } from "./inspection.service.js";
 import { ShopifyPushService } from "./push.service.js";
 import { ShopifyReconciliationService } from "./reconciliation.service.js";

@@ -9,8 +9,8 @@
 import type { CreatedLeadResponse, LeadView } from "@lfd/contracts";
 import { EventBus } from "@nestjs/cqrs";
 
-import { UserRegisteredEvent } from "../src/account/domain/events/user-registered.event.js";
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { UserRegisteredEvent } from "../src/b2b/account/domain/events/user-registered.event.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {

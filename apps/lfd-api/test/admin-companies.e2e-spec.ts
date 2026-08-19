@@ -12,10 +12,10 @@
  * double **déclare** le porteur staff sans vérifier ; le reste (guard, bus,
  * domaine, SQL) est réel.
  */
-import { CustomerIdentityPort } from "../src/account/domain/ports/customer-identity.port.js";
-import type { CreatedCompanyResponse } from "../src/account/http/companies.controller.js";
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { CompanyStatus } from "../src/infra/database/client/client.js";
+import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
+import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.controller.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 

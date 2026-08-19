@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { SnapshotView } from "@lfd/pim-contracts";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { ResourceNotFoundError } from "../../../../shared/errors/app-error.js";
+import { ResourceNotFoundError } from "../../../../platform/shared/errors/app-error.js";
 import type { ShopifyProductPayload } from "./projection.js";
 import { payloadColumn, readPayloadColumn } from "./snapshot-payload.js";
 

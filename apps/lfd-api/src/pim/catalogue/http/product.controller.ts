@@ -15,8 +15,8 @@ import {
   type UpdateVariantPricingPayload,
 } from "@lfd/pim-contracts";
 
-import { AdminSurface } from "../../../infra/auth/admin-surface.decorator.js";
-import { ZodBody } from "../../../shared/http/zod-body.pipe.js";
+import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ArchiveProductCommand } from "../application/archive-product.js";
 import { CreateProductCommand } from "../application/create-product.js";
 import { DeclareProductNutritionCommand } from "../application/declare-product-nutrition.js";

@@ -19,9 +19,9 @@ import type {
   CreatedAppointmentResponse,
   SlotsView,
 } from "@lfd/contracts";
-import { CustomerRole } from "../src/infra/database/client/client.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
 
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 

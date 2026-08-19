@@ -7,15 +7,15 @@ import type {
 import {
   AddDeliveryAddressCommand,
   SaveBillingAddressCommand,
-} from "../../src/account/application/commands/address-commands.js";
-import { ActivateCompanyByStaffCommand } from "../../src/account/application/commands/activate-company.command.js";
-import { UpdateCompanyIdentityCommand } from "../../src/account/application/commands/company-settings-commands.js";
-import { CreateCompanyCommand } from "../../src/account/application/commands/create-company.command.js";
-import { UpdateMyProfileCommand } from "../../src/account/application/commands/update-my-profile.command.js";
-import { UploadKbisCommand } from "../../src/account/application/commands/upload-kbis.command.js";
+} from "../../src/b2b/account/application/commands/address-commands.js";
+import { ActivateCompanyByStaffCommand } from "../../src/b2b/account/application/commands/activate-company.command.js";
+import { UpdateCompanyIdentityCommand } from "../../src/b2b/account/application/commands/company-settings-commands.js";
+import { CreateCompanyCommand } from "../../src/b2b/account/application/commands/create-company.command.js";
+import { UpdateMyProfileCommand } from "../../src/b2b/account/application/commands/update-my-profile.command.js";
+import { UploadKbisCommand } from "../../src/b2b/account/application/commands/upload-kbis.command.js";
 import { customer, SEED_STAFF, SYSTEM, type SeedHarness } from "./harness.js";
 import { persona } from "./personas.js";
-import type { VerifiedToken } from "../../src/infra/auth/principal.js";
+import type { VerifiedToken } from "../../src/platform/auth/principal.js";
 
 /**
  * Phase **activation** : déclare des sociétés (propriétaires dédiés, index décalé)

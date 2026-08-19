@@ -10,7 +10,7 @@
  * 2. une règle posée en base **change réellement le prix facturé** au bout de la
  *    chaîne HTTP → handler → drafting → résolution → `order_lines`.
  */
-import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 

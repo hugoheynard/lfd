@@ -1,4 +1,4 @@
-import type { PricedSku } from "../src/orders/domain/ports/product-catalog.reader.js";
+import type { PricedSku } from "../src/b2b/orders/domain/ports/product-catalog.reader.js";
 
 /**
  * ⚠️ **Jeu de données de TEST**, plus une source de production.

@@ -6,8 +6,8 @@
  * verdicts du mur (gestionnaire → ok, simple membre → 403, non-membre → 404),
  * l'isolation entre deux entreprises, et l'exposition dans `GET /me`.
  */
-import { CustomerRole } from "../src/infra/database/client/client.js";
-import type { AccountView, CompanyView } from "../src/account/domain/ports/account.reader.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
+import type { AccountView, CompanyView } from "../src/b2b/account/domain/ports/account.reader.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 

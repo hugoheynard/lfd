@@ -1,5 +1,5 @@
 import { Prisma } from "../../../infra/database/client/client.js";
-import { TechnicalError } from "../../../../shared/errors/app-error.js";
+import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 import type { ShopifyProductPayload, ShopifyVariantPayload } from "./projection.js";
 
 /**

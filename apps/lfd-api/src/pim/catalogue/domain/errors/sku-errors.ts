@@ -1,4 +1,4 @@
-import { BusinessError, DomainError } from "../../../../shared/errors/app-error.js";
+import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /** La chaîne fournie ne peut pas être une référence — problème de **forme**. */
 export class InvalidSkuError extends DomainError {

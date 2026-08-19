@@ -14,11 +14,11 @@ const ENV_MSG =
  * pas de la dérogation par accident.
  */
 const ENV_ALLOWLIST = [
-  'src/infra/config/app-config.ts',
+  'src/platform/config/app-config.ts',
   // Les lecteurs, extraits d'app-config pour qu'il repasse sous 300 lignes.
   // Même discipline, même dossier — mais listé à la main, comme le reste.
-  'src/infra/config/env-readers.ts',
-  'src/infra/config/__tests__/app-config.spec.ts',
+  'src/platform/config/env-readers.ts',
+  'src/platform/config/__tests__/app-config.spec.ts',
   'test/setup-env.ts',
 ];
 
@@ -26,7 +26,7 @@ export default tseslint.config(
   {
     ignores: [
       'eslint.config.mjs',
-      'src/infra/database/client/**',
+      'src/platform/database/client/**',
       // Le second client Prisma, généré lui aussi — même raison, autre base.
       'src/pim/infra/database/client/**',
     ],

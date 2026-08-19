@@ -7,8 +7,8 @@
  * bases, un seul appel, aucun réseau.
  */
 import { B2bCatalogFeedPreview } from "../src/pim/channels/b2b-platform/products/feed-preview.js";
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { CheckCatalogParityService } from "../src/catalog/application/check-catalog-parity.service.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { CheckCatalogParityService } from "../src/b2b/catalog/application/check-catalog-parity.service.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {

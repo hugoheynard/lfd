@@ -13,8 +13,8 @@
  */
 import type { OrderDraftResponse, OrderDraftView } from "@lfd/contracts";
 
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { CompanyStatus } from "../src/infra/database/client/client.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 

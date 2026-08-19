@@ -1,5 +1,5 @@
 import { findMapping } from "../../../allergens/allergen-mapping.js";
-import { DomainError } from "../../../../shared/errors/app-error.js";
+import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 export class UnknownAllergenError extends DomainError {
   // Surtout PAS `code` : ce nom est déjà celui du code d'erreur lu par le filtre

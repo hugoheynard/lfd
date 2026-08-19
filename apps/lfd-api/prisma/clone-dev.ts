@@ -17,7 +17,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaClient } from "../src/infra/database/client/client.js";
+import { PrismaClient } from "../src/platform/database/client/client.js";
 import { DEV_DATABASE_URL } from "./dev-db-url.js";
 
 /** Le schéma de l'URL choisit le transport, comme `PrismaService`. */

@@ -11,8 +11,12 @@
  * R2) : le KBIS déposé par le staff emprunte donc le même chemin, jusqu'aux
  * octets, que celui déposé par le client.
  */
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { AddressKind, CompanyStatus, DeferredTerm } from "../src/infra/database/client/client.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import {
+  AddressKind,
+  CompanyStatus,
+  DeferredTerm,
+} from "../src/platform/database/client/client.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 

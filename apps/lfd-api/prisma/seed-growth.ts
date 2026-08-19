@@ -2,10 +2,10 @@ import "dotenv/config";
 
 import type { CaptureLeadPayload, LeadStatus } from "@lfd/contracts";
 
-import { CaptureLeadCommand } from "../src/growth/application/commands/capture-lead.command.js";
-import { ChangeLeadStatusCommand } from "../src/growth/application/commands/change-lead-status.command.js";
-import { RecomputeLeadScoresCommand } from "../src/growth/application/commands/recompute-lead-scores.command.js";
-import type { VerifiedToken } from "../src/infra/auth/principal.js";
+import { CaptureLeadCommand } from "../src/b2b/growth/application/commands/capture-lead.command.js";
+import { ChangeLeadStatusCommand } from "../src/b2b/growth/application/commands/change-lead-status.command.js";
+import { RecomputeLeadScoresCommand } from "../src/b2b/growth/application/commands/recompute-lead-scores.command.js";
+import type { VerifiedToken } from "../src/platform/auth/principal.js";
 import { bootstrapHarness, SEED_STAFF, SYSTEM, type SeedHarness } from "./seed-growth/harness.js";
 import { seedActivation } from "./seed-growth/phase-activation.js";
 import { seedFlagship, seedSatellites } from "./seed-growth/phase-flagship.js";

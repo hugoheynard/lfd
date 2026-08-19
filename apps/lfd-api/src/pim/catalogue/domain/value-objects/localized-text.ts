@@ -1,4 +1,4 @@
-import { DomainError } from "../../../../shared/errors/app-error.js";
+import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * Texte traduisible — `fr` **obligatoire**, les autres locales optionnelles.

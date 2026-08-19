@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaClient } from "../src/infra/database/client/client.js";
+import { PrismaClient } from "../src/platform/database/client/client.js";
 import { SEED_EMAIL_DOMAIN, SEED_SUB_PREFIX } from "./seed-growth/personas.js";
 
 /**

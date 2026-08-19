@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { CqrsModule } from "@nestjs/cqrs";
 
 import { CommerceModule } from "../commerce/commerce.module.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
@@ -47,7 +46,7 @@ import {
  * fournit. Remplacer Prisma ne touche que ce fichier.
  */
 @Module({
-  imports: [PimDatabaseModule, CqrsModule, CommerceModule],
+  imports: [PimDatabaseModule, CommerceModule],
   controllers: [CategoryController, ProductController, ReferenceController],
   providers: [
     // Familles (CQRS) — un handler par cas.

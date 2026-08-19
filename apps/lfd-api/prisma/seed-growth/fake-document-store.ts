@@ -1,4 +1,4 @@
-import { DocumentStore, type StoredDocument } from "../../src/infra/storage/document-store.js";
+import { DocumentStore, type StoredDocument } from "../../src/platform/storage/document-store.js";
 
 /**
  * `DocumentStore` **factice** pour les seeds : les vrais handlers tournent

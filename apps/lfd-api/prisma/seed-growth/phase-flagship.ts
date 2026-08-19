@@ -1,4 +1,4 @@
-import { MarketConfigStore } from "../../src/growth/domain/ports/market-config.store.js";
+import { MarketConfigStore } from "../../src/b2b/growth/domain/ports/market-config.store.js";
 import { seedCompany, validSiret } from "./phase-activation.js";
 import { type SeedHarness } from "./harness.js";
 import { persona } from "./personas.js";

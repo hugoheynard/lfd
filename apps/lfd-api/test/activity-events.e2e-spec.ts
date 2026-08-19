@@ -7,8 +7,8 @@
  * recorder retombe sur l'acteur `system` + une trace neuve — c'est ce qu'on
  * vérifie ici (les émetteurs réels, en requête, porteront customer/staff).
  */
-import { ActivityRecorder } from "../src/growth/domain/ports/activity-recorder.js";
-import type { RecordActivityInput } from "../src/growth/domain/activity-event.js";
+import { ActivityRecorder } from "../src/b2b/growth/domain/ports/activity-recorder.js";
+import type { RecordActivityInput } from "../src/b2b/growth/domain/activity-event.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
 let ctx: E2eContext;

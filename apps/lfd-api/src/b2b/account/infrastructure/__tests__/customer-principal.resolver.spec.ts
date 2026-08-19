@@ -1,0 +1,326 @@
+import { Test } from "@nestjs/testing";
+import { UserRegisteredEvent } from "../../domain/events/user-registered.event.js";
+import { CustomerPrincipalResolver } from "../customer-principal.resolver.js";
+import { PrismaService } from "../../../../platform/database/prisma.service.js";
+import {
+  CustomerRole,
+  UserStatus,
+  type User,
+} from "../../../../platform/database/client/client.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import type { VerifiedToken } from "../../../../platform/auth/principal.js";
+
+/** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
+class FakeEvents extends DomainEventPublisher {
+  readonly published: object[] = [];
+  publish(event: object): void {
+    this.published.push(event);
+  }
+}
+
+const token: VerifiedToken = {
+  subject: "auth0|123",
+  scopes: ["read:orders"],
+};
+
+/** Ce que le resolver lit : la personne et ses rattachements. */
+type UserWithMemberships = User & {
+  memberships: { companyId: string; role: CustomerRole }[];
+};
+
+/** Une personne active, rattachée à une société. */
+const activeUser: UserWithMemberships = {
+  id: "user_1",
+  auth0Sub: "auth0|123",
+  email: "jean@client.fr",
+  firstName: "Jean",
+  lastName: "Client",
+  phone: "01 02 03 04 05",
+  status: UserStatus.active,
+  emailVerified: false,
+  invitedBy: null,
+  createdAt: new Date(0),
+  updatedAt: new Date(0),
+  memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
+};
+
+/** Double Prisma : `findUnique` renvoie la séquence donnée (dernière valeur figée),
+ *  `create` capture ses `data` et peut échouer (course d'unicité). */
+interface PrismaDouble {
+  readonly createCalls: { auth0Sub: string; email: string; status: UserStatus }[];
+  readonly updateCalls: {
+    where: { id: string };
+    data: { status?: UserStatus; emailVerified?: boolean };
+  }[];
+  readonly prisma: {
+    user: {
+      findUnique: () => Promise<UserWithMemberships | null>;
+      create: (args: {
+        data: { auth0Sub: string; email: string; status: UserStatus };
+      }) => Promise<unknown>;
+      update: (args: {
+        where: { id: string };
+        data: { status?: UserStatus; emailVerified?: boolean };
+      }) => Promise<unknown>;
+    };
+  };
+}
+
+function prismaDouble(
+  results: (UserWithMemberships | null)[],
+  options: { createError?: Error } = {},
+): PrismaDouble {
+  let index = 0;
+  const createCalls: PrismaDouble["createCalls"] = [];
+  const updateCalls: PrismaDouble["updateCalls"] = [];
+  return {
+    createCalls,
+    updateCalls,
+    prisma: {
+      user: {
+        findUnique: () => Promise.resolve(results[Math.min(index++, results.length - 1)] ?? null),
+        create: ({ data }) => {
+          createCalls.push(data);
+          return options.createError === undefined
+            ? Promise.resolve({})
+            : Promise.reject(options.createError);
+        },
+        update: (args) => {
+          updateCalls.push(args);
+          return Promise.resolve({});
+        },
+      },
+    },
+  };
+}
+
+async function resolverWith(
+  double: PrismaDouble,
+  events: DomainEventPublisher = new FakeEvents(),
+): Promise<CustomerPrincipalResolver> {
+  const moduleRef = await Test.createTestingModule({
+    providers: [
+      CustomerPrincipalResolver,
+      { provide: PrismaService, useValue: double.prisma },
+      { provide: DomainEventPublisher, useValue: events },
+    ],
+  }).compile();
+  return moduleRef.get(CustomerPrincipalResolver);
+}
+
+describe("CustomerPrincipalResolver", () => {
+  describe("compte existant", () => {
+    it("résout un Principal autoritaire depuis la base pour un compte actif", async () => {
+      const resolver = await resolverWith(prismaDouble([activeUser]));
+      // userId / email / memberships viennent de la BASE ; subject + scopes du token.
+      await expect(resolver.resolve(token)).resolves.toEqual({
+        subject: "auth0|123",
+        userId: "user_1",
+        email: "jean@client.fr",
+        memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
+        scopes: ["read:orders"],
+      });
+    });
+
+    it("rejette un compte DÉSACTIVÉ", async () => {
+      // `disabled` est une décision prise sur la personne : rien dans un token
+      // ne la renverse.
+      const double = prismaDouble([{ ...activeUser, status: UserStatus.disabled }]);
+      const resolver = await resolverWith(double);
+      await expect(resolver.resolve(token)).rejects.toThrow("Compte non actif.");
+      expect(double.updateCalls).toHaveLength(0);
+    });
+
+    it("ACTIVE l'invité qui se connecte pour la première fois", async () => {
+      // Un compte provisionné par le staff n'a reçu qu'un lien de mot de passe :
+      // présenter un token prouve qu'il l'a suivi. Le laisser `invited`
+      // maintiendrait dehors le client à qui le commercial vient d'ouvrir
+      // l'accès — pour toujours.
+      const double = prismaDouble([{ ...activeUser, status: UserStatus.invited }]);
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve(token)).resolves.toMatchObject({ userId: "user_1" });
+
+      expect(double.updateCalls).toEqual([
+        { where: { id: "user_1" }, data: { status: UserStatus.active } },
+      ]);
+    });
+
+    it("recopie l'e-mail vérifié quand le token le prouve", async () => {
+      const double = prismaDouble([activeUser]);
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve({ ...token, emailVerified: true });
+
+      expect(double.updateCalls).toEqual([
+        { where: { id: "user_1" }, data: { emailVerified: true } },
+      ]);
+    });
+
+    it("n'écrit RIEN quand le token ne dit rien de l'e-mail", async () => {
+      // Un claim absent dit « on ne sait pas », pas « non vérifié » : le
+      // traiter comme un `false` effacerait une vérification acquise dès qu'un
+      // token est émis sans l'Action qui pose le claim.
+      const double = prismaDouble([{ ...activeUser, emailVerified: true }]);
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve(token);
+
+      expect(double.updateCalls).toEqual([]);
+    });
+
+    it("authentifie une personne sans aucune société (compte tout juste créé)", async () => {
+      const resolver = await resolverWith(prismaDouble([{ ...activeUser, memberships: [] }]));
+      await expect(resolver.resolve(token)).resolves.toMatchObject({
+        userId: "user_1",
+        memberships: [],
+      });
+    });
+
+    it("ne publie aucun événement pour un compte déjà existant", async () => {
+      const events = new FakeEvents();
+      const resolver = await resolverWith(prismaDouble([activeUser]), events);
+      await resolver.resolve(token);
+      expect(events.published).toEqual([]);
+    });
+
+    it("porte le rôle propre à chaque société pour une personne multi-sociétés", async () => {
+      const resolver = await resolverWith(
+        prismaDouble([
+          {
+            ...activeUser,
+            memberships: [
+              { companyId: "company_1", role: CustomerRole.owner },
+              { companyId: "company_2", role: CustomerRole.orders },
+            ],
+          },
+        ]),
+      );
+      await expect(resolver.resolve(token)).resolves.toMatchObject({
+        memberships: [
+          { companyId: "company_1", role: CustomerRole.owner },
+          { companyId: "company_2", role: CustomerRole.orders },
+        ],
+      });
+    });
+  });
+
+  describe("provisioning JIT (self-signup)", () => {
+    it("crée un compte ACTIF pour un sub inconnu et capture l'e-mail du token", async () => {
+      const provisioned: UserWithMemberships = {
+        ...activeUser,
+        id: "user_new",
+        auth0Sub: "auth0|new",
+        email: "new@client.fr",
+        memberships: [],
+      };
+      // 1er lookup: absent → provision ; 2e lookup: la personne créée.
+      const double = prismaDouble([null, provisioned]);
+      const resolver = await resolverWith(double);
+
+      const principal = await resolver.resolve({
+        subject: "auth0|new",
+        scopes: [],
+        email: "new@client.fr",
+      });
+
+      expect(double.createCalls).toEqual([
+        { auth0Sub: "auth0|new", email: "new@client.fr", status: UserStatus.active },
+      ]);
+      expect(principal).toMatchObject({
+        subject: "auth0|new",
+        userId: "user_new",
+        email: "new@client.fr",
+        memberships: [],
+      });
+    });
+
+    it("publie UserRegisteredEvent au provisioning (signal lead mid)", async () => {
+      const provisioned: UserWithMemberships = {
+        ...activeUser,
+        id: "user_new",
+        auth0Sub: "auth0|new",
+        email: "new@client.fr",
+        memberships: [],
+      };
+      const events = new FakeEvents();
+      const resolver = await resolverWith(prismaDouble([null, provisioned]), events);
+
+      await resolver.resolve({ subject: "auth0|new", scopes: [], email: "new@client.fr" });
+
+      expect(events.published).toHaveLength(1);
+      const [event] = events.published;
+      expect(event).toBeInstanceOf(UserRegisteredEvent);
+      const registered = event as UserRegisteredEvent;
+      expect(registered.userId).toBe("user_new");
+      expect(registered.email).toBe("new@client.fr");
+    });
+
+    it("ne publie PAS sur une course d'unicité (l'autre requête l'a déjà émis)", async () => {
+      const provisioned: UserWithMemberships = {
+        ...activeUser,
+        id: "user_race",
+        auth0Sub: "auth0|race",
+        memberships: [],
+      };
+      const events = new FakeEvents();
+      const resolver = await resolverWith(
+        prismaDouble([null, provisioned], {
+          createError: Object.assign(new Error("duplicate"), { code: "P2002" }),
+        }),
+        events,
+      );
+
+      await resolver.resolve({ subject: "auth0|race", scopes: [] });
+
+      expect(events.published).toEqual([]);
+    });
+
+    it("provisionne avec un e-mail vide quand le token n'en porte pas", async () => {
+      const provisioned: UserWithMemberships = {
+        ...activeUser,
+        id: "user_new",
+        auth0Sub: "auth0|new",
+        email: "",
+        memberships: [],
+      };
+      const double = prismaDouble([null, provisioned]);
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve({ subject: "auth0|new", scopes: [] });
+
+      expect(double.createCalls).toEqual([
+        { auth0Sub: "auth0|new", email: "", status: UserStatus.active },
+      ]);
+    });
+
+    it("est idempotent : une course (create en conflit d'unicité) retombe sur le re-lookup", async () => {
+      const provisioned: UserWithMemberships = {
+        ...activeUser,
+        id: "user_race",
+        auth0Sub: "auth0|race",
+        memberships: [],
+      };
+      // create échoue (P2002 : l'autre requête a gagné) ; le re-lookup trouve la ligne.
+      const double = prismaDouble([null, provisioned], {
+        createError: Object.assign(new Error("duplicate"), { code: "P2002" }),
+      });
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve({ subject: "auth0|race", scopes: [] })).resolves.toMatchObject({
+        userId: "user_race",
+      });
+    });
+
+    it("relaie une erreur de création non liée à l'unicité (pas un swallow silencieux)", async () => {
+      const double = prismaDouble([null, null], {
+        createError: Object.assign(new Error("db down"), { code: "P1001" }),
+      });
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve({ subject: "auth0|boom", scopes: [] })).rejects.toThrow(
+        "db down",
+      );
+    });
+  });
+});

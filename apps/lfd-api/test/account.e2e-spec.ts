@@ -11,10 +11,10 @@
  * permet de vérifier la seule chose qui compte ici — que le changement d'e-mail
  * passe par lui, et dans le bon ordre.
  */
-import { CustomerIdentityPort } from "../src/account/domain/ports/customer-identity.port.js";
-import type { AccountView } from "../src/account/domain/ports/account.reader.js";
-import type { CreatedCompanyResponse } from "../src/account/http/companies.controller.js";
-import { CompanyStatus } from "../src/infra/database/client/client.js";
+import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
+import type { AccountView } from "../src/b2b/account/domain/ports/account.reader.js";
+import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.controller.js";
+import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 

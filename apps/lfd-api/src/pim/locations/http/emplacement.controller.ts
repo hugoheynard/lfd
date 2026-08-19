@@ -8,8 +8,8 @@ import {
   type UpdateEmplacementPayload,
 } from "@lfd/pim-contracts";
 
-import { AdminSurface } from "../../../infra/auth/admin-surface.decorator.js";
-import { ZodBody } from "../../../shared/http/zod-body.pipe.js";
+import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CreateEmplacementCommand } from "../application/create-emplacement.js";
 import { DeleteEmplacementCommand } from "../application/delete-emplacement.js";
 import { GenerateTableQrCommand } from "../application/generate-table-qr.js";

@@ -7,7 +7,7 @@
  * réconcilie les dérogations), et la cascade de suppression.
  */
 import type { SubscriptionView } from "@lfd/contracts";
-import type { CreatedSubscription } from "../src/subscriptions/domain/ports/subscription.repository.js";
+import type { CreatedSubscription } from "../src/b2b/subscriptions/domain/ports/subscription.repository.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 

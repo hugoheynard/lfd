@@ -50,8 +50,8 @@ démarches, qui partent toutes du **même** mailer :
 **Auth0 n'envoie aucun de ces e-mails.** Il fabrique seulement le lien à usage
 unique (`passwordSetupUrl`, un ticket de la Management API) ; c'est notre backend
 qui le met en page et l'expédie
-([`grant-account-access.service.ts`](../../apps/lfd-api/src/account/application/services/grant-account-access.service.ts),
-[`invite-staff-user.handler.ts`](../../apps/lfd-api/src/staff-users/application/invite-staff-user.handler.ts)).
+([`grant-account-access.service.ts`](../../apps/lfd-api/src/b2b/account/application/services/grant-account-access.service.ts),
+[`invite-staff-user.handler.ts`](../../apps/lfd-api/src/staff/invitations/invite-staff-user.handler.ts)).
 Une seule adresse d'expédition couvre donc réellement les deux mondes — il n'y a
 pas de fournisseur d'e-mail à configurer côté Auth0.
 
@@ -194,7 +194,7 @@ dépôt (cf. [`secrets-et-variables.md §5`](secrets-et-variables.md)).
 
 - 🔴 **`MAILER_FROM_ADDRESS` est OBLIGATOIRE tant que le correctif du défaut
   n'est pas sur `main`.** Le défaut du code
-  ([`env-readers.ts`](../../apps/lfd-api/src/infra/config/env-readers.ts))
+  ([`env-readers.ts`](../../apps/lfd-api/src/platform/config/env-readers.ts))
   vaut bien `no-reply@lafoliecoffee.info`, mais ce commit vit sur `dev` : la
   version **déployée** porte encore `no-reply@lafoliedouce.fr`, un domaine que
   personne ne possède. Sans la Variable, le container expédierait depuis ce
@@ -281,7 +281,7 @@ dit — elle ne se saute pas en silence.
 ## 5. Vérifier — dans cet ordre
 
 1. **Le bulletin de démarrage.** Le backend dit à voix haute ce qu'il ne sait
-   pas faire ([`startup-report.service.ts`](../../apps/lfd-api/src/infra/startup/startup-report.service.ts)).
+   pas faire ([`startup-report.service.ts`](../../apps/lfd-api/src/platform/startup/startup-report.service.ts)).
    Attendu dans les logs du container :
 
    ```

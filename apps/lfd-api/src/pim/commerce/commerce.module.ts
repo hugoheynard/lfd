@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { CqrsModule } from "@nestjs/cqrs";
 
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
@@ -18,7 +17,7 @@ import { PrismaTvaRegimeRepository } from "./infrastructure/prisma-tva-regime.re
  * catégories puissent valider leurs références (`emporterTvaId` / `surPlaceTvaId`).
  */
 @Module({
-  imports: [PimDatabaseModule, CqrsModule],
+  imports: [PimDatabaseModule],
   controllers: [TvaRegimeController],
   providers: [
     { provide: PimIdGenerator, useClass: UuidV7Generator },

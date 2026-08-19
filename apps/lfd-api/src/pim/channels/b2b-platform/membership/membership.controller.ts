@@ -7,8 +7,8 @@ import {
   type SetB2bMembershipsPayload,
 } from "@lfd/pim-contracts";
 
-import { AdminSurface } from "../../../../infra/auth/admin-surface.decorator.js";
-import { ZodBody } from "../../../../shared/http/zod-body.pipe.js";
+import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
+import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { B2bMembershipService } from "./membership.service.js";
 
 /**

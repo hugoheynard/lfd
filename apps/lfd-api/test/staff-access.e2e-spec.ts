@@ -7,7 +7,7 @@
  * chose. Chaque cas ici correspond à une décision de
  * `documentation/b2b/architecture-acces-staff.md`.
  */
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 
 /** Le comptable : il écrit les commandes, ne touche ni aux réglages ni à l'annuaire. */

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { AppConfig } from "../../../../infra/config/app-config.js";
+import { AppConfig } from "../../../../platform/config/app-config.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 
 const SINGLETON_ID = "shopify";

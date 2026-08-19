@@ -47,7 +47,7 @@ et rafraîchi. Pas de redirect interactif, pas d'hébergement.
 | Jeton legacy (alternative) | env `SHOPIFY_ADMIN_TOKEN`    | seulement si legacy custom app pré-2026 |
 
 Le cœur est le **`ShopifyTokenProvider`**
-([`token-provider.ts`](../../apps/lfd-api/src/pim/channels/shopify/shared/token-provider.ts)) :
+([`token-provider.ts`](../../packages/shopify-admin/src/index.ts)) :
 
 1. si `SHOPIFY_ADMIN_TOKEN` est présent → rendu tel quel (aucun échange) ;
 2. sinon `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` → **échange client credentials**

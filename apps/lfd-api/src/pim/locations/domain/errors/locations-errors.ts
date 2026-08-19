@@ -1,4 +1,7 @@
-import { BusinessError, ResourceNotFoundError } from "../../../../shared/errors/app-error.js";
+import {
+  BusinessError,
+  ResourceNotFoundError,
+} from "../../../../platform/shared/errors/app-error.js";
 
 /** Le nom d'un emplacement est obligatoire. */
 export class EmplacementNameRequiredError extends BusinessError {

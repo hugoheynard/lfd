@@ -6,8 +6,8 @@ import {
   type TvaRegimeView,
 } from "@lfd/pim-contracts";
 
-import { AdminSurface } from "../../../infra/auth/admin-surface.decorator.js";
-import { ZodBody } from "../../../shared/http/zod-body.pipe.js";
+import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CreateTvaRegimeCommand } from "../application/create-tva-regime.js";
 import { ListTvaRegimesQuery } from "../application/list-tva-regimes.js";
 import { RemoveTvaRegimeCommand } from "../application/remove-tva-regime.js";

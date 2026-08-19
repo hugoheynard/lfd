@@ -5,7 +5,7 @@
  * la route est murée staff. On sème le journal directement (déterministe).
  */
 import type { ActivationView } from "@lfd/contracts";
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {

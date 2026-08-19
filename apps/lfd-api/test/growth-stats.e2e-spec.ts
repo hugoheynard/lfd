@@ -5,7 +5,7 @@
  */
 import type { GrowthStatsView } from "@lfd/contracts";
 
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 

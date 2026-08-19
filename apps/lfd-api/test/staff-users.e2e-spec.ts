@@ -6,7 +6,7 @@
  */
 import type { CreatedStaffUserResponse, StaffUserView } from "@lfd/contracts";
 
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_EMAIL, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { AppError } from "../../../../shared/errors/app-error.js";
+import { AppError } from "../../../../platform/shared/errors/app-error.js";
 import { ShopifyAdminClient } from "@lfd/shopify-admin";
 import { type ChannelMode, ShopifySettingsService } from "../shared/settings.service.js";
 

@@ -1,4 +1,4 @@
-import { TechnicalError } from "../../../shared/errors/app-error.js";
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { LocalizedText } from "../domain/value-objects/localized-text.js";
 import type { BoutiqueChannels, SalesChannels } from "../domain/value-objects/sales-channels.js";
 

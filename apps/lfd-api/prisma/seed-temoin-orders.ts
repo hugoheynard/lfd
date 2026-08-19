@@ -2,9 +2,9 @@ import "dotenv/config";
 
 import type { AdminPlaceOrderPayload, PlaceOrderPayload } from "@lfd/contracts";
 
-import { PlaceOrderForCustomerCommand } from "../src/orders/application/commands/place-order-for-customer.command.js";
-import { PlaceOrderCommand } from "../src/orders/application/commands/place-order.command.js";
-import { PaymentStatus } from "../src/infra/database/client/client.js";
+import { PlaceOrderForCustomerCommand } from "../src/b2b/orders/application/commands/place-order-for-customer.command.js";
+import { PlaceOrderCommand } from "../src/b2b/orders/application/commands/place-order.command.js";
+import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { bootstrapHarness, customer, type SeedHarness } from "./seed-growth/harness.js";
 
 /**

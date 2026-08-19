@@ -11,9 +11,12 @@
  */
 import type { MandateSectionView, PaymentMandateView } from "@lfd/contracts";
 
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { MandateGateway, type MandateToRegister } from "../src/payments/domain/mandate-gateway.js";
-import type { RegisteredMandate } from "../src/payments/domain/entities/payment-mandate.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import {
+  MandateGateway,
+  type MandateToRegister,
+} from "../src/b2b/payments/domain/mandate-gateway.js";
+import type { RegisteredMandate } from "../src/b2b/payments/domain/entities/payment-mandate.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 

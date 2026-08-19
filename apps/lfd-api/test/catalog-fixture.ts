@@ -1,5 +1,5 @@
 import { CATALOG_SEED } from "./catalog-seed.js";
-import type { PrismaService } from "../src/infra/database/prisma.service.js";
+import type { PrismaService } from "../src/platform/database/prisma.service.js";
 
 /**
  * **Le catalogue des suites e2e**, semé dans les tables que la boutique lit

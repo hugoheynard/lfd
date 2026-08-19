@@ -14,9 +14,9 @@
  */
 import type { CreatedStaffUserResponse, StaffUserView } from "@lfd/contracts";
 
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { StaffIdentityPort } from "../src/staff-users/domain/staff-identity.port.js";
-import { INVITATION_LIFETIME_DAYS } from "../src/shared/invitation/invitation-expiry.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { StaffIdentityPort } from "../src/staff/invitations/staff-identity.port.js";
+import { INVITATION_LIFETIME_DAYS } from "../src/platform/shared/invitation/invitation-expiry.js";
 import { bootstrapE2e, E2E_STAFF_EMAIL, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /**

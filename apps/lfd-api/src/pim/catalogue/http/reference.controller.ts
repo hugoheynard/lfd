@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from "@nestjs/common";
 
 import { allergenReference, type AllergenReference } from "../../allergens/allergen-reference.js";
-import { AdminSurface } from "../../../infra/auth/admin-surface.decorator.js";
+import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 
 /**
  * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée

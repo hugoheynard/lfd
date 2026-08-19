@@ -2,11 +2,11 @@ import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DEV_CORS_ORIGINS, PROD_CORS_ORIGINS } from "@lfd/endpoints";
 import helmet from "helmet";
-import { AppModule } from "./app.module.js";
-import { AppConfig } from "./infra/config/app-config.js";
-import { requestContextMiddleware } from "./infra/context/request-context.middleware.js";
-import { AppErrorFilter } from "./shared/http/app-error.filter.js";
-import { RecordingLogger } from "./infra/logging/recording-logger.js";
+import { AppModule } from "./appBootstrap/app.module.js";
+import { AppConfig } from "./platform/config/app-config.js";
+import { requestContextMiddleware } from "./platform/context/request-context.middleware.js";
+import { AppErrorFilter } from "./platform/shared/http/app-error.filter.js";
+import { RecordingLogger } from "./platform/logging/recording-logger.js";
 
 /** Plafond de taille du corps JSON : borne un vecteur de déni de service (payload géant). */
 const JSON_BODY_LIMIT = "512kb";

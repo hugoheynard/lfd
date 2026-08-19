@@ -1,8 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
-import { CatalogModule } from "../catalog/catalog.module.js";
+import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { B2bCatalogDriver } from "../pim/channels/b2b-platform/products/driver.js";
-import { InProcessB2bCatalogDriver } from "../catalog/infrastructure/in-process-catalog.driver.js";
+import { InProcessB2bCatalogDriver } from "../b2b/catalog/infrastructure/in-process-catalog.driver.js";
 
 /**
  * **Le fil catalogue, relié.** Un module dont c'est le seul objet : brancher le

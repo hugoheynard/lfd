@@ -14,9 +14,9 @@ import {
   type PendingAlertCounts,
 } from "@lfd/contracts";
 
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { CustomerRole, type CompanyStatus } from "../src/infra/database/client/client.js";
-import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { CustomerRole, type CompanyStatus } from "../src/platform/database/client/client.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { attachTo, createCompany, createUser } from "./factories.js";

@@ -3,5 +3,5 @@ node_modules
 .env
 
 # Prisma — client généré (regénéré au postinstall via `prisma generate`)
-/src/infra/database/client/
+/src/platform/database/client/
 /src/pim/infra/database/client/

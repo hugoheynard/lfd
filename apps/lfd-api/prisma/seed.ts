@@ -4,7 +4,7 @@ import {
   CompanyStatus,
   CustomerRole,
   UserStatus,
-} from "../src/infra/database/client/client.js";
+} from "../src/platform/database/client/client.js";
 
 /**
  * Seed de développement — **provisionne un customer de test**, exactement comme

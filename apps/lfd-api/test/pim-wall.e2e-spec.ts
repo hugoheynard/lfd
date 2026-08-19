@@ -12,7 +12,7 @@
  * différentes, parce que le mur ne se pose pas famille par famille et qu'un
  * contrôleur oublié ne se verrait pas autrement.
  */
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */

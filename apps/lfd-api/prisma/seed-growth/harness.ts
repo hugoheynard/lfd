@@ -1,15 +1,15 @@
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { Test, type TestingModule } from "@nestjs/testing";
 
-import { AppModule } from "../../src/app.module.js";
-import { EstablishmentDirectory } from "../../src/account/domain/ports/establishment-directory.js";
-import { DocumentStore } from "../../src/infra/storage/document-store.js";
-import { CustomerUserResolver } from "../../src/infra/auth/customer-user.resolver.js";
-import type { Actor } from "../../src/infra/context/request-context.js";
-import { runWithRequestContext } from "../../src/infra/context/request-context.store.js";
-import { newTraceId } from "../../src/infra/context/trace-context.js";
-import { PrismaService } from "../../src/infra/database/prisma.service.js";
-import { PaymentGateway } from "../../src/payments/domain/payment-gateway.js";
+import { AppModule } from "../../src/appBootstrap/app.module.js";
+import { EstablishmentDirectory } from "../../src/b2b/account/domain/ports/establishment-directory.js";
+import { DocumentStore } from "../../src/platform/storage/document-store.js";
+import { CustomerUserResolver } from "../../src/platform/auth/customer-user.resolver.js";
+import type { Actor } from "../../src/platform/context/request-context.js";
+import { runWithRequestContext } from "../../src/platform/context/request-context.store.js";
+import { newTraceId } from "../../src/platform/context/trace-context.js";
+import { PrismaService } from "../../src/platform/database/prisma.service.js";
+import { PaymentGateway } from "../../src/b2b/payments/domain/payment-gateway.js";
 import { FakeEstablishmentDirectory } from "./fake-establishment-directory.js";
 import { FakeDocumentStore } from "./fake-document-store.js";
 import { FakePaymentGateway } from "./fake-payment-gateway.js";

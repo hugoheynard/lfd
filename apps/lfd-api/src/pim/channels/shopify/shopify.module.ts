@@ -23,7 +23,7 @@ import { ShopifyProductsController } from "./products/products.controller.js";
 import { ShopifyPushService } from "./products/push.service.js";
 import { ShopifyReconciliationService } from "./products/reconciliation.service.js";
 import { ShopifySnapshotService } from "./products/snapshot.service.js";
-import { AppConfig } from "../../../infra/config/app-config.js";
+import { AppConfig } from "../../../platform/config/app-config.js";
 import { ShopifySettingsService } from "./shared/settings.service.js";
 
 /** Jeton d'injection du port de credentials — aliasé sur `AppConfig` ci-dessous. */

@@ -10,7 +10,7 @@
  */
 import type { CompanyAddressesView, DeliveryAddressPayload } from "@lfd/contracts";
 
-import { CustomerRole } from "../src/infra/database/client/client.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 

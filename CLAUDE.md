@@ -120,10 +120,46 @@ src/<contexte>/
 ├── infrastructure/       adaptateurs Prisma / HTTP sortant qui IMPLÉMENTENT les ports
 └── http/                 contrôleurs : validation Zod, mapping vers/depuis l'application
 
-src/infra/                primitives techniques sans aucune connaissance métier
-                          (auth, config, database, mailer…)
-src/shared/               erreurs de base, filtre HTTP, pipes, identité (IdGenerator)
 ```
+
+### Les quatre blocs de `src/`
+
+Un bloc **est** un dossier de premier niveau, et la frontière se voit en ouvrant
+`src/` — c'est tout l'objet du découpage. `lint:context-boundaries` transcrit la
+matrice ; elle tient en cinq lignes parce que l'arborescence la dessine.
+
+```
+src/
+├── staff/        ▸ LE SOCLE PARTAGÉ — qui est qui, qui peut quoi
+│   ├── directory/      l'annuaire des personnes
+│   ├── permissions/    rôles, dérogations, résolution d'accès
+│   ├── invitations/    ouverture d'accès, péremption, première entrée
+│   └── notifications/  la cloche du back-office
+├── pim/          ▸ LE RÉFÉRENTIEL — sa base, ses canaux, routes sous `/pim`
+├── b2b/          ▸ LA PLATEFORME MARCHANDE — account, orders, pricing, catalog…
+├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
+│                   auth, config, database, mailer, bus, http, errors…
+├── appBootstrap/ racine de composition : AppModule + les bindings de ports
+└── main.ts
+```
+
+| Depuis ↓ vers →    | `staff`          | `pim`               | `b2b` | `platform` |
+| ------------------ | ---------------- | ------------------- | ----- | ---------- |
+| **`staff`**        | —                | ✗                   | ✗     | ✓          |
+| **`pim`**          | ✓ (autorisation) | —                   | ✗     | ✓          |
+| **`b2b`**          | ✓ (autorisation) | **port uniquement** | —     | ✓          |
+| **`platform`**     | ✗                | ✗                   | ✗     | —          |
+| **`appBootstrap`** | ✓                | ✓                   | ✓     | ✓          |
+
+`platform` ne connaît **aucun** contexte : une brique technique qui sait qu'un
+annuaire staff existe n'est plus une brique technique. Quand elle a besoin d'un
+fait métier — résoudre un principal, un accès staff — elle déclare un **port**,
+et c'est `appBootstrap/` qui le relie à son adaptateur. Personne n'importe
+`appBootstrap`.
+
+⚠️ **Une frontière qu'on ne franchit qu'en SQL est franchie quand même.** Le
+gate lit les imports ; il ne verra pas une classe de `platform/` qui interroge
+les tables d'un domaine en Prisma direct. C'est arrivé deux fois.
 
 Règles non négociables :
 
@@ -141,7 +177,7 @@ Règles non négociables :
 - **Pas de DELETE physique** sur les agrégats métier : archivage / statut.
 - **Erreurs par catégorie** — `DomainError` (400) / `BusinessError` (409) /
   `ResourceNotFoundError` (404) / `TechnicalError` (500), définies dans
-  `src/shared/errors/app-error.ts`. Jamais de `throw new Error(...)` brut depuis
+  `src/platform/shared/errors/app-error.ts`. Jamais de `throw new Error(...)` brut depuis
   le domaine ou l'application, jamais d'`HttpException` en dehors de `http/`.
   Traduire en statut HTTP est le travail du seul `AppErrorFilter`. Jamais
   d'erreur avalée en silence.
@@ -150,7 +186,7 @@ Règles non négociables :
   `Principal`, résolu **en base** — le token n'atteste que le `sub`) dans le
   `where`, y compris les agrégats et les `count`. Un `where` sans le mur est un
   bug de sécurité, pas un oubli de filtre.
-- **L'environnement se lit uniquement via `AppConfig`** (`src/infra/config/`) —
+- **L'environnement se lit uniquement via `AppConfig`** (`src/platform/config/`) —
   interdiction ESLint de `process.env` partout ailleurs, allowlist explicite.
 
 ### 3.1 Agrégats — porter les invariants, pas les contourner

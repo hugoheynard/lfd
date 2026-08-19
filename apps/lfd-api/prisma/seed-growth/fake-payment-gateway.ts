@@ -3,7 +3,7 @@ import {
   type CreateIntentParams,
   type CreatedIntent,
   type PaymentWebhookEvent,
-} from "../../src/payments/domain/payment-gateway.js";
+} from "../../src/b2b/payments/domain/payment-gateway.js";
 
 /**
  * `PaymentGateway` **factice** pour le seed : le vrai handler de commande tourne

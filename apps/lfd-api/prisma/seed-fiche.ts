@@ -6,10 +6,10 @@ import {
   FulfillmentMethod,
   OrderStatus,
   UserStatus,
-} from "../src/infra/database/client/client.js";
+} from "../src/platform/database/client/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { localToInstant } from "../src/growth/domain/paris-time.js";
+import { localToInstant } from "../src/b2b/growth/domain/paris-time.js";
 
 /**
  * Seed **fiche client** — les deux cas qu'on regarde en boucle en développant la

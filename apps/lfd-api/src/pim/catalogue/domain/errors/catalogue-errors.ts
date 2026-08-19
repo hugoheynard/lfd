@@ -1,4 +1,7 @@
-import { BusinessError, ResourceNotFoundError } from "../../../../shared/errors/app-error.js";
+import {
+  BusinessError,
+  ResourceNotFoundError,
+} from "../../../../platform/shared/errors/app-error.js";
 
 export class CategoryNotFoundError extends ResourceNotFoundError {
   constructor(readonly categoryId: string) {

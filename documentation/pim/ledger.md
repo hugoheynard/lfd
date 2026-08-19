@@ -462,7 +462,7 @@ boot **isolé sur le port 3101** (« Nest application successfully started », H
 un **point unique**, validé au démarrage. Et un contrôle automatique empêche de contourner la règle
 plus tard — y compris par moi dans six mois.
 
-**Tech** — `src/infra/config/AppConfig` : **seule** classe autorisée à lire `process.env`, valide au
+**Tech** — `src/platform/config/AppConfig` : **seule** classe autorisée à lire `process.env`, valide au
 boot (fail-fast) et expose des méthodes typées (`databaseUrl()`, `auth0Domain()`, `auth0Audience()`,
 `port()`). `PrismaService`, `AuthConfig` et `main.ts` la consomment par injection — plus aucun accès
 direct. **Deux filets** :

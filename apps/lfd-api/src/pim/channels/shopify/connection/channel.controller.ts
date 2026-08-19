@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Post, Put } from "@nestjs/common";
 import { z } from "zod";
 
-import { AdminSurface } from "../../../../infra/auth/admin-surface.decorator.js";
-import { ZodBody } from "../../../../shared/http/zod-body.pipe.js";
+import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
+import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { ShopifyConnectionService } from "./connection.service.js";
 import { ShopifySettingsService } from "../shared/settings.service.js";
 

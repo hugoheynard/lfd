@@ -1,4 +1,4 @@
-import { EstablishmentDirectory } from "../../src/account/domain/ports/establishment-directory.js";
+import { EstablishmentDirectory } from "../../src/b2b/account/domain/ports/establishment-directory.js";
 
 /**
  * Double du seed pour {@link EstablishmentDirectory} : **aucun appel réseau**

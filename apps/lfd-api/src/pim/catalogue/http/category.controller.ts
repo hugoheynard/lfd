@@ -12,8 +12,8 @@ import {
   type SetCategoryTvaPayload,
 } from "@lfd/pim-contracts";
 
-import { AdminSurface } from "../../../infra/auth/admin-surface.decorator.js";
-import { ZodBody } from "../../../shared/http/zod-body.pipe.js";
+import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ArchiveCategoryCommand } from "../application/archive-category.js";
 import { CreateCategoryCommand } from "../application/create-category.js";
 import { ListCategoriesQuery } from "../application/list-categories.js";

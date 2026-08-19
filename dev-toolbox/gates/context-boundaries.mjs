@@ -35,21 +35,10 @@ const SRC = "apps/lfd-api/src";
  */
 const BLOCK_OF = {
   // ▸ LE SOCLE PARTAGÉ — il dit qui est qui et qui peut quoi.
-  "staff-users": "staff",
-  "staff-notifications": "staff",
+  staff: "staff",
 
   // ▸ LA PLATEFORME MARCHANDE.
-  account: "b2b",
-  alerts: "b2b",
-  catalog: "b2b",
-  "delivery-zones": "b2b",
-  growth: "b2b",
-  "order-cutoffs": "b2b",
-  orders: "b2b",
-  payments: "b2b",
-  "pickup-addresses": "b2b",
-  pricing: "b2b",
-  subscriptions: "b2b",
+  b2b: "b2b",
 
   // ▸ LE RÉFÉRENTIEL — arrivé en B2c, avec sa base et ses canaux.
   pim: "pim",
@@ -61,13 +50,18 @@ const BLOCK_OF = {
   appBootstrap: "root",
 
   // ▸ TECHNIQUE PURE — zéro connaissance métier.
-  infra: "platform",
-  shared: "platform",
+  platform: "platform",
 };
 
 /**
  * **Qui a le droit d'importer qui.** Courte exprès : si elle ne tient pas en
  * cinq lignes, le découpage est faux.
+ *
+ * Depuis le découpage cible, un bloc **est** un dossier de premier niveau : la
+ * table ci-dessus tient en cinq lignes parce que l'arborescence la dessine. Il
+ * a fallu treize entrées tant que onze contextes marchands vivaient à la racine
+ * — la frontière existait, mais il fallait la lire dans un fichier de gate au
+ * lieu de la voir en ouvrant `src/`.
  *
  * Les deux lectures qui comptent :
  *

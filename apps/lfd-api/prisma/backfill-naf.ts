@@ -2,11 +2,11 @@ import "dotenv/config";
 
 import { Test } from "@nestjs/testing";
 
-import { EstablishmentDirectory } from "../src/account/domain/ports/establishment-directory.js";
-import { KbisStore } from "../src/account/domain/ports/kbis-store.js";
-import { PrismaService } from "../src/infra/database/prisma.service.js";
-import { PaymentGateway } from "../src/payments/domain/payment-gateway.js";
-import { AppModule } from "../src/app.module.js";
+import { EstablishmentDirectory } from "../src/b2b/account/domain/ports/establishment-directory.js";
+import { KbisStore } from "../src/b2b/account/domain/ports/kbis-store.js";
+import { PrismaService } from "../src/platform/database/prisma.service.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { AppModule } from "../src/appBootstrap/app.module.js";
 import { FakeKbisStore } from "./seed-growth/fake-kbis-store.js";
 import { FakePaymentGateway } from "./seed-growth/fake-payment-gateway.js";
 

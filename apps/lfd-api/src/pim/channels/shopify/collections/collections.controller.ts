@@ -1,8 +1,8 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { z } from "zod";
 
-import { AdminSurface } from "../../../../infra/auth/admin-surface.decorator.js";
-import { ZodBody } from "../../../../shared/http/zod-body.pipe.js";
+import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
+import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { ShopifyCollectionsService } from "./collections.service.js";
 
 /** Les collections de TVA voulues, telles que le front les connaît (handle + titre). */

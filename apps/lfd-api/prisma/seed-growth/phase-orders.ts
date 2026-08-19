@@ -1,7 +1,7 @@
 import type { PlaceOrderPayload } from "@lfd/contracts";
 
-import { PlaceOrderCommand } from "../../src/orders/application/commands/place-order.command.js";
-import { CATALOG_SEED } from "../../src/orders/infrastructure/product-catalog.seed.js";
+import { PlaceOrderCommand } from "../../src/b2b/orders/application/commands/place-order.command.js";
+import { CATALOG_SEED } from "../../src/b2b/orders/infrastructure/product-catalog.seed.js";
 import { customer, type SeedHarness } from "./harness.js";
 import { persona } from "./personas.js";
 

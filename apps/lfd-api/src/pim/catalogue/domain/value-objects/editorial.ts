@@ -1,4 +1,4 @@
-import { DomainError } from "../../../../shared/errors/app-error.js";
+import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 import { localizedText, type LocalizedText } from "./localized-text.js";
 
 /** Usages d'un visuel. Chaque canal en consomme un sous-ensemble (doc 01). */

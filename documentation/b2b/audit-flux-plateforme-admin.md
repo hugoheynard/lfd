@@ -123,7 +123,7 @@ Réparé le 2026-08-09 ; la cause, elle, ne l'est pas.
 ### P1-1 · Le catalogue est semé **en dur, deux fois**
 
 `apps/lfc-B2B-platform-frontend/src/app/data/catalogue-seed.ts` (1 079 lignes) et
-`apps/lfd-api/src/orders/infrastructure/product-catalog.seed.ts`
+`apps/lfd-api/test/catalog-seed.ts`
 décrivent le même catalogue, à la main, et doivent s'accorder **par SKU** —
 sinon le checkout refuse un produit que la boutique affiche.
 

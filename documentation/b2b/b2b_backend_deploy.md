@@ -416,7 +416,7 @@ Le rate-limit vit sur les **Workers backend** (pas la gateway) : la sécurité e
 | Réglage                 | Fichier                                                  | Valeur     |
 | ----------------------- | -------------------------------------------------------- | ---------- |
 | Limite edge par IP      | `apps/lfc-*/wrangler.jsonc` (`unsafe.bindings[].simple`) | 300 / 60 s |
-| Limite throttler défaut | `apps/lfc-*/src/infra/security/security.module.ts`       | 300 / 60 s |
+| Limite throttler défaut | `apps/lfd-api/src/platform/security/security.module.ts`       | 300 / 60 s |
 | Limite GET anonymes     | décorateur `@Throttle` sur les 3 contrôleurs publics     | 60 / 60 s  |
 | Taille body JSON        | `apps/lfc-*/src/main.ts` (`JSON_BODY_LIMIT`)             | 512 kb     |
 | Origines CORS           | `packages/endpoints/src/index.ts` (`PROD_FRONT_ORIGINS`) | Pages prod |

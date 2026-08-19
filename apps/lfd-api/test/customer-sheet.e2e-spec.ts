@@ -7,9 +7,9 @@
  * précédente — trois erreurs qu'un test en mémoire ne verrait jamais.
  */
 import type { CustomerSheetView } from "@lfd/contracts";
-import { CustomerRole, OrderStatus } from "../src/infra/database/client/client.js";
+import { CustomerRole, OrderStatus } from "../src/platform/database/client/client.js";
 
-import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 

@@ -1,7 +1,7 @@
-import { AddMarketNafCommand } from "../../src/growth/application/commands/add-market-naf.command.js";
-import { AddMarketZoneCommand } from "../../src/growth/application/commands/add-market-zone.command.js";
-import { RefreshMarketCommand } from "../../src/growth/application/commands/refresh-market.command.js";
-import { MarketConfigStore } from "../../src/growth/domain/ports/market-config.store.js";
+import { AddMarketNafCommand } from "../../src/b2b/growth/application/commands/add-market-naf.command.js";
+import { AddMarketZoneCommand } from "../../src/b2b/growth/application/commands/add-market-zone.command.js";
+import { RefreshMarketCommand } from "../../src/b2b/growth/application/commands/refresh-market.command.js";
+import { MarketConfigStore } from "../../src/b2b/growth/domain/ports/market-config.store.js";
 import { SEED_STAFF, type SeedHarness } from "./harness.js";
 
 /** Les codes postaux distincts du corpus Savoie (dénominateur de la pénétration). */

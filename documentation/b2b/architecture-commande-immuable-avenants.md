@@ -139,7 +139,7 @@ raison. Même canal, message inverse, sans lien de paiement.
 ni conversion autre que centimes → euros pour l'affichage.
 
 La raison n'est pas dogmatique : la TVA se calcule **par taux, remise déduite au
-prorata, arrondie par groupe** ([`vat.ts`](../../apps/lfd-api/src/orders/domain/services/vat.ts)).
+prorata, arrondie par groupe** ([`vat.ts`](../../apps/lfd-api/src/b2b/orders/domain/services/vat.ts)).
 Deux implémentations de cette règle, c'est deux résultats à un centime près, et
 un client qui compare son écran à sa facture. Une seule implémentation, côté
 serveur, dans le domaine.

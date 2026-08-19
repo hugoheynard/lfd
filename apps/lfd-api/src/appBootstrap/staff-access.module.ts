@@ -1,8 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
-import { StaffAccessResolver } from "../infra/auth/staff-access.resolver.js";
-import { PrismaStaffAccessResolver } from "../staff-users/infrastructure/prisma-staff-access.resolver.js";
-import { StaffUsersModule } from "../staff-users/staff-users.module.js";
+import { StaffAccessResolver } from "../platform/auth/staff-access.resolver.js";
+import { PrismaStaffAccessResolver } from "../staff/permissions/prisma-staff-access.resolver.js";
+import { StaffUsersModule } from "../staff/staff.module.js";
 
 /**
  * **La résolution d'accès staff, reliée.** Un module dont c'est le seul objet :

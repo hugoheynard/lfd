@@ -11,8 +11,8 @@
  */
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { CustomerRole, UserStatus } from "../src/infra/database/client/client.js";
-import type { AccountView } from "../src/account/domain/ports/account.reader.js";
+import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
+import type { AccountView } from "../src/b2b/account/domain/ports/account.reader.js";
 
 const SUB = "auth0|lifecycle";
 

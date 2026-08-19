@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { CqrsModule } from "@nestjs/cqrs";
 
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
@@ -21,7 +20,7 @@ import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-gener
  * dépendance au catalogue : un emplacement ne connaît ni produit ni gamme.
  */
 @Module({
-  imports: [PimDatabaseModule, CqrsModule],
+  imports: [PimDatabaseModule],
   controllers: [EmplacementController],
   providers: [
     CreateEmplacementHandler,
