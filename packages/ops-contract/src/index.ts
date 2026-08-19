@@ -7,7 +7,7 @@ export type { Heartbeat, HeartbeatMetrics } from "./heartbeat.js";
 export { lifecycleEventSchema, lifecycleEventKindSchema } from "./event.js";
 export type { LifecycleEvent, LifecycleEventKind } from "./event.js";
 
-export type { NodeHealth, EcosystemHealth } from "./health.js";
+export type { HealthReason, NodeHealth, EcosystemHealth } from "./health.js";
 
 export { errorRate, isSilent } from "./traffic.js";
 export type {

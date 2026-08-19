@@ -86,3 +86,38 @@ describe("la fenêtre de trafic", () => {
     expect(status).toBe(200);
   });
 });
+
+describe("la carte de l'écosystème", () => {
+  const health = (): Promise<{ status: number; body: unknown }> =>
+    ctx
+      .http()
+      .get("/admin/ops/health")
+      .set("Authorization", "Bearer staff")
+      .then((response) => ({ status: response.status, body: response.body as unknown }));
+
+  it("est murée comme le reste", async () => {
+    const response = await ctx.http().get("/admin/ops/health");
+
+    expect(response.status).toBe(401);
+  });
+
+  it("rend TOUS les nœuds déclarés, avec la raison de leur statut", async () => {
+    // Un nœud absent de la réponse serait indistinguable d'un nœud qui va bien.
+    // Et le statut sans sa raison ne se vérifie pas : il s'accepte ou s'ignore.
+    const { body } = await health();
+    const board = body as { nodes: { node: string; status: string; reason: string }[] };
+
+    expect(board.nodes.length).toBeGreaterThan(5);
+    expect(board.nodes.every((node) => typeof node.reason === "string")).toBe(true);
+  });
+
+  it("ne peint AUCUN nœud en orange faute de battement", async () => {
+    // Aucune brique n'émet encore de heartbeat (J6). Si un `expectsHeartbeat`
+    // était posé par erreur, toute la carte virerait au dégradé en permanence —
+    // et une carte durablement orange enseigne à ignorer sa couleur.
+    const { body } = await health();
+    const board = body as { nodes: { status: string; reason: string }[] };
+
+    expect(board.nodes.filter((node) => node.reason === "heartbeat-stale")).toEqual([]);
+  });
+});

@@ -2,6 +2,23 @@ import type { HeartbeatMetrics } from "./heartbeat.js";
 import type { HealthStatus, NodeKind } from "./node.js";
 
 /**
+ * **Pourquoi** un nœud porte ce statut. Le statut seul ne se conteste pas : il
+ * s'accepte ou s'ignore. La raison, elle, se vérifie — et c'est ce qui fait la
+ * différence entre un tableau qu'on regarde et un tableau qu'on croit.
+ *
+ * `no-evidence` est le plus important à nommer : ni trafic, ni battement
+ * attendu. Ce n'est pas une panne, c'est un angle mort — et le confondre avec
+ * une panne est la première façon de perdre confiance en sa propre carte.
+ */
+export type HealthReason =
+  | "gateway-fault"
+  | "error-rate"
+  | "traffic-healthy"
+  | "heartbeat-stale"
+  | "heartbeat-fresh"
+  | "no-evidence";
+
+/**
  * Ce que OPS **rend** pour un nœud — agrégé, jamais poussé tel quel. Le `status`
  * est **dérivé** (heartbeat récent vs périmé, seuils, propagation d'une dépendance
  * `down`), pas la copie brute du dernier heartbeat.
@@ -16,6 +33,18 @@ export interface NodeHealth {
   /** Dernier heartbeat reçu, ou `null` si le nœud n'a jamais parlé. */
   readonly lastHeartbeatAt: string | null;
   readonly dependsOn: readonly string[];
+  /** Ce qui a produit ce `status` — vérifiable, contrairement au statut seul. */
+  readonly reason: HealthReason;
+  /**
+   * Une dépendance **déclarée `down`**, s'il y en a une.
+   *
+   * Elle n'altère PAS le `status` du nœud : un nœud que le trafic prouve vivant
+   * reste `up` même si ce dont il dépend est tombé — c'est un fait, pas une
+   * opinion. Propager le rouge peindrait toute la carte à partir d'un seul
+   * incident et **cacherait la cause au lieu de la montrer**. On expose donc le
+   * lien, et l'écran décide de le souligner.
+   */
+  readonly dependencyDown?: string;
   readonly metrics?: HeartbeatMetrics;
   readonly lastError?: { readonly at: string; readonly message: string };
 }

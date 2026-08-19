@@ -1,0 +1,125 @@
+import { errorRate, isSilent } from "@lfd/ops-contract";
+import type {
+  HealthReason,
+  HealthStatus,
+  NodeHealth,
+  NodeManifest,
+  TrafficWindow,
+} from "@lfd/ops-contract";
+
+/**
+ * **La dérivation du statut** — le cœur de la carte, et le seul endroit où
+ * l'on décide ce que « ça va » veut dire. Pur, donc testable, donc discutable.
+ *
+ * Trois principes, dans cet ordre :
+ *
+ * 1. **La preuve l'emporte sur la déclaration.** Ce que la passerelle a vu
+ *    passer bat ce qu'un nœud dit de lui-même. Un `up` auto-déclaré démenti par
+ *    les erreurs mesurées est un `degraded` — c'est la discipline adversariale
+ *    du §10, appliquée ici.
+ * 2. **Le silence n'est pas la mort.** Un nœud muet SANS trafic est `unknown`,
+ *    jamais `down`. On ne conclut à la mort que sur une preuve : la passerelle
+ *    n'a pas obtenu de réponse.
+ * 3. **On ne dégrade pas pour un silence qu'on n'attendait pas.** Un nœud sans
+ *    émetteur de battement (`expectsHeartbeat` absent) ne vire pas à l'orange
+ *    parce qu'il se tait. Une carte durablement orange enseigne à ignorer sa
+ *    couleur.
+ */
+
+/** Au-delà, un battement est **périmé** : le nœud ne dit plus rien de récent. */
+export const HEARTBEAT_TTL_MS = 90_000;
+
+/**
+ * Part d'erreurs serveur à partir de laquelle un nœud qui répond est **dégradé**.
+ * 2 % : assez haut pour qu'un incident isolé ne fasse pas clignoter la carte,
+ * assez bas pour qu'une vraie dérive se voie avant qu'on la subisse.
+ */
+export const DEGRADED_ERROR_RATE = 0.02;
+
+export interface NodeEvidence {
+  /** Ce que la passerelle a vu, ou `undefined` si ce nœud n'est pas observé. */
+  readonly traffic?: TrafficWindow;
+  /** Dernier battement reçu, `null` si le nœud n'a jamais parlé. */
+  readonly lastHeartbeatAt?: string | null;
+}
+
+/** Statut et raison, indissociables : rendre l'un sans l'autre serait un verdict. */
+interface Verdict {
+  readonly status: HealthStatus;
+  readonly reason: HealthReason;
+}
+
+/** Vrai si le battement est **récent** au regard du TTL. */
+function heartbeatIsFresh(lastHeartbeatAt: string | null | undefined, now: Date): boolean {
+  if (typeof lastHeartbeatAt !== "string") {
+    return false;
+  }
+  const at = Date.parse(lastHeartbeatAt);
+  return Number.isFinite(at) && now.getTime() - at <= HEARTBEAT_TTL_MS;
+}
+
+/** Le verdict d'un nœud, à partir de ce qu'on sait de lui — et de rien d'autre. */
+function verdictFor(node: NodeManifest, evidence: NodeEvidence, now: Date): Verdict {
+  const { traffic } = evidence;
+  const fresh = heartbeatIsFresh(evidence.lastHeartbeatAt, now);
+
+  // La seule preuve de mort : la passerelle n'a pas obtenu de réponse. Un `5xx`
+  // rendu par le backend ne compte PAS — il a répondu, mal.
+  if (traffic !== undefined && traffic.gatewayFaults > 0) {
+    return { status: "down", reason: "gateway-fault" };
+  }
+  if (traffic !== undefined && !isSilent(traffic)) {
+    if (errorRate(traffic) >= DEGRADED_ERROR_RATE) {
+      return { status: "degraded", reason: "error-rate" };
+    }
+    // Il sert, mais il ne rapporte plus : la moitié observable va bien, la
+    // moitié déclarative est cassée. Dégradé — et seulement si on l'attendait.
+    if (node.expectsHeartbeat === true && !fresh) {
+      return { status: "degraded", reason: "heartbeat-stale" };
+    }
+    return { status: "up", reason: "traffic-healthy" };
+  }
+  if (fresh) {
+    return { status: "up", reason: "heartbeat-fresh" };
+  }
+  if (node.expectsHeartbeat === true) {
+    // Attendu et muet, sans trafic : oisif ou mort, on NE SAIT PAS. C'est
+    // l'invariant du §10, et c'est ce qui interdit de crier au loup la nuit.
+    return { status: "unknown", reason: "heartbeat-stale" };
+  }
+  return { status: "unknown", reason: "no-evidence" };
+}
+
+/**
+ * L'état de tous les nœuds. Les statuts sont calculés d'abord, **puis** les
+ * dépendances tombées sont annotées : le rouge ne se propage pas, il se
+ * désigne. Propager peindrait toute la carte à partir d'un incident et cacherait
+ * la cause — l'inverse exact de ce qu'on lui demande.
+ */
+export function deriveHealth(
+  topology: readonly NodeManifest[],
+  evidence: ReadonlyMap<string, NodeEvidence>,
+  now: Date,
+): readonly NodeHealth[] {
+  const since = now.toISOString();
+  const verdicts = new Map<string, Verdict>(
+    topology.map((node) => [node.id, verdictFor(node, evidence.get(node.id) ?? {}, now)]),
+  );
+
+  return topology.map((node) => {
+    const verdict = verdicts.get(node.id) ?? { status: "unknown", reason: "no-evidence" };
+    const fallen = node.dependsOn.find((id) => verdicts.get(id)?.status === "down");
+    const observed = evidence.get(node.id);
+    return {
+      node: node.id,
+      kind: node.kind,
+      label: node.label,
+      status: verdict.status,
+      reason: verdict.reason,
+      since,
+      lastHeartbeatAt: observed?.lastHeartbeatAt ?? null,
+      dependsOn: node.dependsOn,
+      ...(fallen === undefined ? {} : { dependencyDown: fallen }),
+    };
+  });
+}

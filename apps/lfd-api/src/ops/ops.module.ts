@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 
 import { AppConfig } from "../platform/config/app-config.js";
+import { AdminHealthController } from "./health/admin-health.controller.js";
+import { OpsHealthService } from "./health/ops-health.service.js";
 import { AdminTrafficController } from "./traffic/admin-traffic.controller.js";
 import { AnalyticsEngineTrafficReader } from "./traffic/analytics-engine-traffic.reader.js";
 import { RehearsalTrafficReader } from "./traffic/rehearsal-traffic.reader.js";
@@ -20,8 +22,9 @@ import { TrafficReader } from "./traffic/traffic-reader.port.js";
  * les recréer ailleurs ferait deux vérités sur qui est staff.
  */
 @Module({
-  controllers: [AdminTrafficController],
+  controllers: [AdminTrafficController, AdminHealthController],
   providers: [
+    OpsHealthService,
     AnalyticsEngineTrafficReader,
     RehearsalTrafficReader,
     {

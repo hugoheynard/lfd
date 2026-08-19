@@ -43,4 +43,13 @@ export interface NodeManifest {
   readonly dependsOn: readonly string[];
   /** Présent uniquement pour les nœuds **sondés** (externes, datastores). */
   readonly probe?: NodeProbe;
+  /**
+   * Ce nœud **est censé battre**. Déclaré, jamais deviné — et par défaut faux.
+   *
+   * Sans cette distinction, un nœud qui n'a pas encore d'émetteur de heartbeat
+   * serait éternellement dégradé pour un silence que personne n'attendait. Une
+   * carte durablement orange enseigne à ignorer sa couleur : c'est la même
+   * faute que compter les 429 comme des erreurs, à un autre endroit.
+   */
+  readonly expectsHeartbeat?: boolean;
 }

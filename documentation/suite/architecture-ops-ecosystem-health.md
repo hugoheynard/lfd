@@ -492,14 +492,53 @@ Deux choses à ne pas perdre de vue :
 
 ---
 
-## 15. Les jalons
+## 15. La dérivation, telle qu'elle est écrite
+
+Trois principes, dans cet ordre — J4 les implémente en une fonction pure
+(`deriveHealth`), et chaque règle est verrouillée par un test qui dit sa raison.
+
+1. **La preuve l'emporte sur la déclaration.** Ce que la passerelle a vu bat ce
+   qu'un nœud dit de lui-même. Un `up` auto-déclaré démenti par les erreurs
+   mesurées est un `degraded`.
+2. **Le silence n'est pas la mort.** Un nœud muet SANS trafic est `unknown`,
+   jamais `down`. La seule preuve de mort est un `502` fabriqué par la
+   passerelle : elle n'a pas obtenu de réponse. Un `5xx` du backend ne compte
+   pas — il a répondu, mal.
+3. **On ne dégrade pas pour un silence qu'on n'attendait pas.** `expectsHeartbeat`
+   est déclaré par nœud, et faux par défaut. Sans lui, toutes les briques
+   — dont aucune n'émet encore — seraient éternellement orange, et une carte
+   durablement orange enseigne à ignorer sa couleur. Même faute que compter les
+   429 comme des erreurs, à un autre endroit.
+
+### Le rouge se désigne, il ne se propage pas
+
+Le §8 évoquait une **propagation** d'un `down` vers les dépendants. Elle n'est
+pas implémentée, et c'est une décision : propager peindrait toute la carte à
+partir d'un seul incident et **cacherait la cause au lieu de la montrer**. Un
+nœud que le trafic prouve vivant reste `up` même si ce dont il dépend est tombé
+— c'est un fait, pas une opinion.
+
+À la place, `NodeHealth.dependencyDown` **nomme** la dépendance tombée. La carte
+garde un seul point rouge et des liens qui expliquent ; l'écran décide de les
+souligner.
+
+### Ce que la carte rend aujourd'hui
+
+Dix nœuds déclarés, deux observés (`b2b`, `pim` — les identifiants que la
+passerelle indexe). Les huit autres sont `unknown` / `no-evidence` : ils
+attendent leurs sondes. C'est volontairement visible — un nœud absent de la
+réponse serait indistinguable d'un nœud qui va bien.
+
+---
+
+## 16. Les jalons
 
 | Jalon     | Quoi                                                                                                                                                                                               | Dépend de |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | **J1** ✅ | Dataset Analytics Engine + `writeDataPoint` dans la passerelle (hors du chemin de réponse), sous tests — **fait le 2026-08-19**                                                                    | —         |
 | **J2** ✅ | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (requêtes, erreurs serveur, 429, 502 passerelle, p95) — **fait le 2026-08-19**                                                                  | J1        |
 | **J3** ✅ | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE derrière un port (+ le double de répétition), endpoint staff-only — **fait le 2026-08-19** | J2        |
-| **J4**    | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` (§8 + table du §12)                                                                                                      | J3        |
+| **J4** ✅ | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` — **fait le 2026-08-19**                                                                                                 | J3        |
 | **J5**    | Écran : schéma live, liens animés par **occupation** (§13), staff-only                                                                                                                             | J4        |
 | **J6**    | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                                                                                        | J3, en // |
 
