@@ -451,6 +451,26 @@ Ne jamais committer de test qui échoue, ni de test `skip` sans TODO daté.
 Quand il y a un doute : la solution ennuyeuse, explicite et bien typée gagne
 contre la solution astucieuse.
 
+### Versions partagées — le catalogue pnpm, et rien d'autre
+
+Toute dépendance que **plusieurs** paquets utilisent, ou dont un décalage se
+paierait au démarrage plutôt qu'à la compilation, vit dans le `catalog:` de
+`pnpm-workspace.yaml`. Les `package.json` écrivent `"catalog:"` — jamais une
+plage. Un bump se fait alors sur une ligne, une fois, pour tout le dépôt.
+
+Y sont aujourd'hui : `fold-ng`, `@playwright/test`, `typescript`, le noyau
+NestJS (`common`/`core`/`platform-express`/`testing`, alignés sur la même
+version), `config`/`cqrs`/`throttler`/`cli`/`schematics`, `reflect-metadata`
+et `rxjs`. Pin **exact** : on adopte une version, on ne la subit pas.
+
+**TypeScript reste en 6.x, délibérément.** 7.0 est le port Go et ne ship
+aucune API programmatique (annoncée pour 7.1) : `nest build`, ts-jest et les
+règles ESLint type-aware appellent tous `createProgram()` et ne tournent pas
+dessus. 6.0 est la dernière version JavaScript ; elle refuse déjà ce que 7.0
+supprimera (`baseUrl`, `moduleResolution: node10`, `target: es5`,
+`downlevelIteration`) et son défaut `types: []` oblige à déclarer les
+globales — c'est voulu, pas à contourner avec `ignoreDeprecations`.
+
 ---
 
 ## 7. Déploiement — contrat minimal
