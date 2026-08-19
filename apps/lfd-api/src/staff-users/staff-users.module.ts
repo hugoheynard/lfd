@@ -13,7 +13,7 @@ import {
   SetStaffStatusHandler,
   UpdateStaffUserHandler,
 } from "./application/staff-user.handlers.js";
-import { StaffAccessResolver } from "../infra/auth/staff-access.resolver.js";
+import { PrismaStaffAccessResolver } from "./infrastructure/prisma-staff-access.resolver.js";
 import { StaffAccessCache } from "./domain/staff-access-cache.port.js";
 import { StaffIdentityPort } from "./domain/staff-identity.port.js";
 import { StaffUserRepository } from "./domain/staff-user.repository.js";
@@ -47,9 +47,12 @@ import { PrismaStaffUserRepository } from "./infrastructure/prisma-staff-user.re
     ListPendingStaffAccessHandler,
     IssueStaffPasswordLinkHandler,
     { provide: StaffUserRepository, useClass: PrismaStaffUserRepository },
+    // L'adaptateur de résolution vit ICI, avec les tables qu'il lit ; c'est la
+    // racine de composition qui le relie au port (cf. `StaffAccessModule`).
+    PrismaStaffAccessResolver,
     // Le resolver EST le cache : il n'y en a qu'un, et l'annuaire ne le connaît
     // que par ce port étroit — il ne sait ni sa clé, ni sa durée de vie.
-    { provide: StaffAccessCache, useExisting: StaffAccessResolver },
+    { provide: StaffAccessCache, useExisting: PrismaStaffAccessResolver },
     ListStaffUsersHandler,
     GetStaffMeHandler,
     CreateStaffUserHandler,
@@ -78,6 +81,8 @@ import { PrismaStaffUserRepository } from "./infrastructure/prisma-staff-user.re
     Auth0StaffIdentity,
     DevStaffIdentity,
   ],
+  // L'adaptateur sort pour que la racine puisse le relier au port.
+  exports: [PrismaStaffAccessResolver],
 })
 export class StaffUsersModule implements OnModuleInit {
   private readonly logger = new Logger(StaffUsersModule.name);

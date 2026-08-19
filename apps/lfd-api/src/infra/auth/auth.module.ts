@@ -5,7 +5,6 @@ import { AdminTokenVerifier } from "./admin-token.verifier.js";
 import { AuthConfig } from "./auth.config.js";
 import { DevImpersonation } from "./dev-impersonation.js";
 import { StaffAccessGuard } from "./staff-access.guard.js";
-import { StaffAccessResolver } from "./staff-access.resolver.js";
 
 /**
  * Couche infrastructure : authentification Auth0 (OIDC).
@@ -25,10 +24,15 @@ import { StaffAccessResolver } from "./staff-access.resolver.js";
  * jeton Auth0.
  *
  * Surface **staff** (Invariant C) : `AdminTokenVerifier` + `AdminAuthGuard`
- * portent une audience distincte du client, et `StaffAccessGuard` +
- * `StaffAccessResolver` disent ce que la personne a le droit de faire. Aucun de
- * ces guards n'est global : ils s'attachent ensemble par `@AdminSurface(...)` sur
- * les contrôleurs `/admin/*`, et sont exportés ici pour qu'ils s'y résolvent.
+ * portent une audience distincte du client, et `StaffAccessGuard` dit ce que la
+ * personne a le droit de faire. Aucun de ces guards n'est global : ils
+ * s'attachent ensemble par `@AdminSurface(...)` sur les contrôleurs `/admin/*`,
+ * et sont exportés ici pour qu'ils s'y résolvent.
+ *
+ * Le **port** `StaffAccessResolver` est déclaré ici, jamais implémenté :
+ * répondre suppose de lire l'annuaire, et cette couche n'a pas à le connaître.
+ * C'est la racine de composition qui relie le port à son adaptateur — même
+ * geste que pour `PrincipalResolver` côté client, même raison.
  */
 @Global()
 @Module({
@@ -38,7 +42,6 @@ import { StaffAccessResolver } from "./staff-access.resolver.js";
     DevImpersonation,
     AdminTokenVerifier,
     AdminAuthGuard,
-    StaffAccessResolver,
     StaffAccessGuard,
   ],
   exports: [
@@ -46,7 +49,6 @@ import { StaffAccessResolver } from "./staff-access.resolver.js";
     DevImpersonation,
     AdminTokenVerifier,
     AdminAuthGuard,
-    StaffAccessResolver,
     StaffAccessGuard,
   ],
 })

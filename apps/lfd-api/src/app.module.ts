@@ -13,6 +13,7 @@ import { OrderCutoffsModule } from "./order-cutoffs/order-cutoffs.module.js";
 import { CatalogModule } from "./catalog/catalog.module.js";
 import { PimModule } from "./pim/pim.module.js";
 import { CatalogFeedModule } from "./appBootstrap/catalog-feed.module.js";
+import { StaffAccessModule } from "./appBootstrap/staff-access.module.js";
 import { PickupAddressesModule } from "./pickup-addresses/pickup-addresses.module.js";
 import { StaffNotificationsModule } from "./staff-notifications/staff-notifications.module.js";
 import { StaffUsersModule } from "./staff-users/staff-users.module.js";
@@ -64,6 +65,9 @@ import { AuthGuard } from "./infra/auth/auth.guard.js";
     DeliveryZonesModule,
     // Annuaire back-office (isolé, source de vérité locale).
     StaffUsersModule,
+    // La résolution d'accès staff, reliée : le port est technique, l'adaptateur
+    // lit l'annuaire, et seule la racine voit les deux.
+    StaffAccessModule,
     // Cloche du back-office (@Global) : socle générique dont les alertes sont le
     // premier consommateur, J2 (RDV, demandes de contact) le second.
     StaffNotificationsModule,

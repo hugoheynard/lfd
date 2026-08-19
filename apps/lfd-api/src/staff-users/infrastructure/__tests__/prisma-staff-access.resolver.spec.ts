@@ -1,9 +1,9 @@
 import { Test } from "@nestjs/testing";
 
-import { PrismaService } from "../../database/prisma.service.js";
-import { Clock } from "../../time/clock.js";
-import { StaffAccessResolver } from "../staff-access.resolver.js";
-import type { StaffPrincipal } from "../staff-principal.js";
+import { PrismaService } from "../../../infra/database/prisma.service.js";
+import { Clock } from "../../../infra/time/clock.js";
+import { PrismaStaffAccessResolver } from "../prisma-staff-access.resolver.js";
+import type { StaffPrincipal } from "../../../infra/auth/staff-principal.js";
 
 /** Ce que le résolveur lit d'une fiche. */
 interface StaffRow {
@@ -42,15 +42,15 @@ interface Recorder {
  * un `PrismaService`, donc un transtypage — et un transtypage dans un test, c'est
  * la porte par laquelle un fake finit par mentir sur la forme qu'il imite.
  */
-async function buildResolver(prisma: object, clock: Clock): Promise<StaffAccessResolver> {
+async function buildResolver(prisma: object, clock: Clock): Promise<PrismaStaffAccessResolver> {
   const moduleRef = await Test.createTestingModule({
     providers: [
       { provide: PrismaService, useValue: prisma },
       { provide: Clock, useValue: clock },
-      StaffAccessResolver,
+      PrismaStaffAccessResolver,
     ],
   }).compile();
-  return moduleRef.get(StaffAccessResolver);
+  return moduleRef.get(PrismaStaffAccessResolver);
 }
 
 /** Fake Prisma à closures : compte les lectures pour prouver le cache. */
@@ -92,7 +92,7 @@ function row(overrides: Partial<StaffRow> = {}): StaffRow {
 const NOW = new Date("2026-08-12T10:00:00.000Z");
 const TOKEN: StaffPrincipal = { subject: "auth0|colette", email: "compta@lfc.test", scopes: [] };
 
-describe("StaffAccessResolver — qui entre", () => {
+describe("PrismaStaffAccessResolver — qui entre", () => {
   it("refuse un sujet que l'annuaire ignore", async () => {
     // Côté client un `sub` inconnu est provisionné ; ici il est refusé. On ne
     // rejoint pas l'équipe en se connectant.
@@ -125,7 +125,7 @@ describe("StaffAccessResolver — qui entre", () => {
   });
 });
 
-describe("StaffAccessResolver — l'entrée se constate", () => {
+describe("PrismaStaffAccessResolver — l'entrée se constate", () => {
   it("lie l'identité au premier rapprochement par e-mail, et active la fiche", async () => {
     const { prisma, lookups, updates } = fakePrisma(null, row({ status: "pending" }));
 
@@ -161,7 +161,7 @@ describe("StaffAccessResolver — l'entrée se constate", () => {
   });
 });
 
-describe("StaffAccessResolver — le cache", () => {
+describe("PrismaStaffAccessResolver — le cache", () => {
   it("ne relit pas l'annuaire dans la fenêtre", async () => {
     const { prisma, lookups } = fakePrisma(row({ auth0Id: TOKEN.subject }));
     const resolver = await buildResolver(prisma, new MovableClock(NOW));
