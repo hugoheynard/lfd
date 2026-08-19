@@ -78,7 +78,7 @@ function toneOf(ratio: number): OccupancyTone {
 }
 
 /**
- * L'occupation d'un nœud d'après ce que la passerelle a vu.
+ * L'occupation d'un nœud d'après ce que la gateway a vu.
  *
  * `undefined` (nœud non observé) ou fenêtre vide ⇒ **aucune mesure**, ratio nul.
  * On ne devine pas une charge : un lien gris qui dit « je ne sais pas » vaut

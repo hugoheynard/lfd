@@ -20,7 +20,7 @@ export class OpsService {
     return firstValueFrom(this.http.get<EcosystemHealth>(`${B2B_API_BASE}/admin/ops/health`));
   }
 
-  /** Ce que la passerelle a vu passer sur la fenêtre demandée. */
+  /** Ce que la gateway a vu passer sur la fenêtre demandée. */
   traffic(minutes: number): Promise<TrafficReport> {
     return firstValueFrom(
       this.http.get<TrafficReport>(`${B2B_API_BASE}/admin/ops/traffic?minutes=${minutes}`),

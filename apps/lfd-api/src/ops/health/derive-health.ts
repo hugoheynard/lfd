@@ -13,12 +13,12 @@ import type {
  *
  * Trois principes, dans cet ordre :
  *
- * 1. **La preuve l'emporte sur la déclaration.** Ce que la passerelle a vu
+ * 1. **La preuve l'emporte sur la déclaration.** Ce que la gateway a vu
  *    passer bat ce qu'un nœud dit de lui-même. Un `up` auto-déclaré démenti par
  *    les erreurs mesurées est un `degraded` — c'est la discipline adversariale
  *    du §10, appliquée ici.
  * 2. **Le silence n'est pas la mort.** Un nœud muet SANS trafic est `unknown`,
- *    jamais `down`. On ne conclut à la mort que sur une preuve : la passerelle
+ *    jamais `down`. On ne conclut à la mort que sur une preuve : la gateway
  *    n'a pas obtenu de réponse.
  * 3. **On ne dégrade pas pour un silence qu'on n'attendait pas.** Un nœud sans
  *    émetteur de battement (`expectsHeartbeat` absent) ne vire pas à l'orange
@@ -37,7 +37,7 @@ export const HEARTBEAT_TTL_MS = 90_000;
 export const DEGRADED_ERROR_RATE = 0.02;
 
 export interface NodeEvidence {
-  /** Ce que la passerelle a vu, ou `undefined` si ce nœud n'est pas observé. */
+  /** Ce que la gateway a vu, ou `undefined` si ce nœud n'est pas observé. */
   readonly traffic?: TrafficWindow;
   /** Dernier battement reçu, `null` si le nœud n'a jamais parlé. */
   readonly lastHeartbeatAt?: string | null;
@@ -63,7 +63,7 @@ function verdictFor(node: NodeManifest, evidence: NodeEvidence, now: Date): Verd
   const { traffic } = evidence;
   const fresh = heartbeatIsFresh(evidence.lastHeartbeatAt, now);
 
-  // La seule preuve de mort : la passerelle n'a pas obtenu de réponse. Un `5xx`
+  // La seule preuve de mort : la gateway n'a pas obtenu de réponse. Un `5xx`
   // rendu par le backend ne compte PAS — il a répondu, mal.
   if (traffic !== undefined && traffic.gatewayFaults > 0) {
     return { status: "down", reason: "gateway-fault" };

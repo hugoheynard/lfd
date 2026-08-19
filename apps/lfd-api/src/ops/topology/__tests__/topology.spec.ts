@@ -21,7 +21,7 @@ describe("la topologie déclarée", () => {
     expect(new Set(TOPOLOGY.map((node) => node.id)).size).toBe(TOPOLOGY.length);
   });
 
-  it("tient la couture avec ce que la passerelle indexe", () => {
+  it("tient la couture avec ce que la gateway indexe", () => {
     // Les identifiants observés doivent exister dans la carte, sinon leurs
     // fenêtres de trafic n'atteindraient aucun nœud — et tout passerait en
     // « aucune preuve », ce qui ne ressemble pas à une erreur de couture.

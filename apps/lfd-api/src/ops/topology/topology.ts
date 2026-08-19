@@ -9,12 +9,12 @@ import type { NodeManifest } from "@lfd/ops-contract";
  * précis où sa disparition est l'information. Déclarée, son absence de trafic
  * devient visible au lieu d'être silencieuse.
  *
- * L'arête se lit « **dépend de** » : `b2b` dépend de sa base, la passerelle
+ * L'arête se lit « **dépend de** » : `b2b` dépend de sa base, la gateway
  * dépend des deux backends qu'elle route. C'est le sens qui rend la causalité
  * lisible de l'amont vers l'aval.
  *
  * ⚠️ Les identifiants des deux backends (`b2b`, `pim`) sont **les mêmes** que
- * ceux écrits par la passerelle dans Analytics Engine (`index1`). C'est la seule
+ * ceux écrits par la gateway dans Analytics Engine (`index1`). C'est la seule
  * couture entre l'observation et la carte : la rompre ne casserait rien
  * bruyamment — les nœuds passeraient simplement en « aucune preuve », ce qui est
  * beaucoup plus difficile à remarquer.
@@ -23,7 +23,7 @@ export const TOPOLOGY: readonly NodeManifest[] = [
   {
     id: "gateway",
     kind: "worker",
-    label: "Passerelle",
+    label: "Gateway",
     dependsOn: ["b2b", "pim"],
   },
   {

@@ -41,8 +41,8 @@ const derive = (
 ): ReturnType<typeof deriveHealth> => deriveHealth(nodes, new Map(Object.entries(evidence)), NOW);
 
 describe("la preuve l'emporte sur la déclaration", () => {
-  it("conclut `down` sur un 502 de la passerelle, et sur rien d'autre", () => {
-    // La SEULE preuve de mort : la passerelle n'a pas obtenu de réponse.
+  it("conclut `down` sur un 502 de la gateway, et sur rien d'autre", () => {
+    // La SEULE preuve de mort : la gateway n'a pas obtenu de réponse.
     const [health] = derive([node()], { b2b: { traffic: traffic({ gatewayFaults: 3 }) } });
 
     expect(health).toMatchObject({ status: "down", reason: "gateway-fault" });

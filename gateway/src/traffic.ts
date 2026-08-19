@@ -1,7 +1,7 @@
 import type { BackendKey } from "./routes";
 
 /**
- * Ce que la passerelle **observe** de son propre trafic — la troisième source
+ * Ce que la gateway **observe** de son propre trafic — la troisième source
  * d'OPS, à côté du heartbeat (ce qu'un nœud dit de lui-même) et du probe (ce
  * qu'on constate du dehors). Design : `documentation/suite/architecture-ops-ecosystem-health.md` §12.
  *
@@ -22,7 +22,7 @@ import type { BackendKey } from "./routes";
  *
  * ## Ce qu'on écrit, et surtout ce qu'on n'écrit pas
  *
- * Aucun identifiant client, aucune IP, aucun chemin complet. La passerelle est
+ * Aucun identifiant client, aucune IP, aucun chemin complet. La gateway est
  * le seul maillon qui voit l'IP réelle (`cf-connecting-ip`) : raison de plus
  * pour qu'elle ne la dépose nulle part. Savoir **quoi** est lent suffit à une
  * carte de santé ; savoir **qui** n'est pas sa question.
@@ -41,7 +41,7 @@ export type TrafficOrigin = "upstream" | "gateway";
 
 /**
  * Le nœud visé. Deux valeurs hors backends : `unrouted` (aucun préfixe ne
- * correspond — le 404 de la passerelle) et `dev` (routage par sous-domaine, qui
+ * correspond — le 404 de la gateway) et `dev` (routage par sous-domaine, qui
  * n'existe qu'en local et ne désigne aucun nœud de production).
  */
 export type TrafficNode = BackendKey | "unrouted" | "dev";

@@ -1,3 +1,12 @@
+/**
+ * Écran d'exploitation. Le registre est celui de l'INSTRUMENT : filets d'un
+ * pixel, micro-libellés en capitales espacées, chiffres tabulaires, une seule
+ * couleur d'accent — celle de l'état qui demande une action.
+ *
+ * La retenue n'est pas une économie de moyens : sur un écran qu'on ouvre quand
+ * quelque chose cloche, chaque effet qui ne porte pas d'information vole une
+ * fraction de seconde à celui qui cherche la panne.
+ */
 :host {
   display: flex;
   flex-direction: column;
@@ -5,7 +14,8 @@
   padding: var(--fold-space-lg);
 }
 
-.page-head {
+/* ── En-tête ────────────────────────────────────────────────────────────── */
+.head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -13,77 +23,207 @@
   flex-wrap: wrap;
 }
 
-h1 {
-  margin: 0;
+.eyebrow {
+  margin: 0 0 var(--fold-space-xs);
+  color: var(--fold-color-text-faded);
+  font-size: var(--fold-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.page-sub {
-  margin: var(--fold-space-2xs) 0 0;
+h1 {
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: var(--fold-space-xs) 0 0;
+  max-width: 60ch;
   color: var(--fold-color-text-secondary);
   font-size: var(--fold-text-sm);
 }
 
 .stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
   font-variant-numeric: tabular-nums;
 }
 
-.rehearsal,
-.read-error {
+.pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fold-color-success);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ── Bandeaux ───────────────────────────────────────────────────────────── */
+.notice {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
   margin: 0;
   padding: var(--fold-space-sm) var(--fold-space-md);
-  border: 1px solid var(--fold-color-warning);
+  border: 1px solid var(--fold-color-border);
+  border-left-width: 3px;
   border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface-muted);
-  color: var(--fold-color-text);
+  background: var(--fold-color-surface-subtle);
   font-size: var(--fold-text-sm);
 }
 
-.totals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-lg);
+.notice--rehearsal {
+  border-left-color: var(--fold-color-warning);
 }
 
-.total {
-  display: flex;
-  flex-direction: column;
+.notice--error {
+  border-left-color: var(--fold-color-alert);
 }
 
-.total-value {
-  font-size: var(--fold-text-xl);
-  font-weight: 600;
-  /* Des chiffres qui changent toutes les 15 s doivent rester alignés, sinon la
-     ligne tressaute et on croit à un rafraîchissement de la page entière. */
-  font-variant-numeric: tabular-nums;
-}
-
-.total-label {
+.notice-tag {
+  flex: none;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
+/* ── Les cadrans ────────────────────────────────────────────────────────── */
+.gauges {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  overflow: hidden;
+}
+
+.gauge {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-md);
+  /* Un filet plutôt qu'un écart : quatre mesures d'une même fenêtre forment un
+     seul instrument, pas quatre cartes posées côte à côte. */
+  border-left: 1px solid var(--fold-color-border-subtle);
+
+  &:first-child {
+    border-left: 0;
+  }
+}
+
+.gauge-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.gauge-value {
+  color: var(--fold-color-text);
+  /* Grand et léger : un chiffre d'instrument se lit d'un coup d'œil, à deux
+     mètres, sans avoir l'air de crier. Le gras l'aurait rendu lourd sur quatre
+     cadrans alignés. */
+  font-size: var(--fold-text-xl);
+  font-weight: 500;
+  line-height: 1.15;
+  /* Des chiffres qui changent toutes les 15 s doivent rester alignés, sinon la
+     ligne tressaute et on croit à un rechargement de la page entière. */
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+
+  i {
+    color: var(--fold-color-text-muted);
+    font-size: var(--fold-text-sm);
+    font-style: normal;
+    font-weight: 500;
+  }
+}
+
+/* ── Ce qui ne va pas ───────────────────────────────────────────────────── */
 .ailing {
   padding: var(--fold-space-md);
-  border: 1px solid var(--fold-color-border);
+  border: 1px solid var(--fold-color-border-subtle);
   border-radius: var(--fold-radius-sm);
   background: var(--fold-color-surface-card);
 
   h2 {
     margin: 0 0 var(--fold-space-sm);
-    font-size: var(--fold-text-md);
+    color: var(--fold-color-text-muted);
+    font-size: var(--fold-text-xs);
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
   }
 
   ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fold-space-xs);
     margin: 0;
-    padding-left: var(--fold-space-md);
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--fold-space-sm);
+    font-size: var(--fold-text-sm);
   }
 }
 
+.ailing-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fold-color-warning);
+}
+
+.ailing-dot--down {
+  background: var(--fold-color-alert);
+}
+
+.ailing-reason,
 .ailing-cause {
   color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+/* ── Le schéma ──────────────────────────────────────────────────────────── */
+/* Le plan de travail. Il est CREUSÉ — surface enfoncée, lumière rasante au
+   centre — pour que les briques, elles, aient l'air posées dessus. C'est ce
+   contraste-là qui donne la profondeur, pas l'ombre d'une carte prise
+   isolément : un objet ne flotte que s'il flotte au-dessus de quelque chose. */
+.board {
+  position: relative;
+  padding: var(--fold-space-xl) var(--fold-space-lg);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+  background:
+    radial-gradient(
+      120% 90% at 50% 0%,
+      var(--fold-color-surface-subtle) 0%,
+      var(--fold-color-surface-sunken) 70%
+    ),
+    var(--fold-color-surface-sunken);
+  box-shadow: inset 0 1px 0 0 var(--fold-color-border-subtle);
+  /* Le schéma peut dépasser sur petit écran : il scrolle DANS son cadre, la
+     page ne part jamais de côté. */
+  overflow-x: auto;
 }
 
 .legend {
@@ -92,5 +232,12 @@ h1 {
 
   p {
     margin: 0;
+    max-width: 80ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
   }
 }

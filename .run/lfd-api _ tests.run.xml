@@ -2,6 +2,7 @@
   <configuration default="false" name="lfd-api &gt; tests" type="JavaScriptTestRunnerJest">
     <node-interpreter value="project" />
     <node-options value="--experimental-vm-modules" />
+    <jest-package value="$PROJECT_DIR$/apps/lfd-api/node_modules/jest" />
     <working-dir value="$PROJECT_DIR$/apps/lfd-api" />
     <envs>
       <env name="NODE_ENV" value="test" />

@@ -1,7 +1,7 @@
 import { DEV_PORTS, GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
 
 /**
- * Où va une requête — **la seule décision de la passerelle**, isolée ici pour
+ * Où va une requête — **la seule décision de la gateway**, isolée ici pour
  * être testable sans le monde Workers.
  *
  * Deux modes, parce que dev et prod n'ont pas la même topologie :
@@ -17,7 +17,7 @@ import { DEV_PORTS, GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
  * Router par sous-domaine suppose de POSSÉDER ces sous-domaines, donc une zone
  * Cloudflare, donc un domaine. Il n'y en a aucun sur le compte. Le préfixe de
  * chemin donne le même résultat fonctionnel sur la seule adresse dont on
- * dispose — celle de la passerelle elle-même — et se remplacera par des
+ * dispose — celle de la gateway elle-même — et se remplacera par des
  * sous-domaines le jour où un domaine existera, sans rien changer d'autre : les
  * backends, eux, ne verront jamais la différence (le préfixe est retiré avant
  * transmission).
@@ -26,7 +26,7 @@ import { DEV_PORTS, GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
  *
  * C'est TOUT l'intérêt de l'opération. Un `fetch("https://…workers.dev")`
  * ressortirait sur Internet et laisserait les backends publiquement joignables :
- * la passerelle serait contournable, donc décorative. Le binding est un appel
+ * la gateway serait contournable, donc décorative. Le binding est un appel
  * interne au compte — il permet d'éteindre ensuite `workers_dev` sur les
  * backends, qui n'auront alors **plus aucune adresse publique**.
  */

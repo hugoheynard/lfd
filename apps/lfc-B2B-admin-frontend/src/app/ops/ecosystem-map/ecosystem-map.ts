@@ -1,14 +1,45 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { HealthStatus, NodeHealth, TrafficWindow } from '@lfd/ops-contract';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import type { HealthStatus, NodeHealth, NodeKind, TrafficWindow } from '@lfd/ops-contract';
 
 import { layoutOf, type PlacedNode } from '../layout';
 import { occupancyOf, type Occupancy } from '../occupancy';
 
 /** Géométrie de la carte, en unités du `viewBox`. */
-const NODE = { width: 168, height: 62 } as const;
-const GAP = { column: 96, row: 22 } as const;
-const PADDING = 24;
+const NODE = { width: 208, height: 48 } as const;
+const GAP = { column: 116, row: 16 } as const;
+const PADDING = 26;
+
+/**
+ * **Les glyphes** — un symbole par nature de brique, tracé au trait.
+ *
+ * Le trait plutôt que l'aplat, et une géométrie franche : c'est le vocabulaire
+ * du schéma technique, celui du sujet. Une carte d'infrastructure qui emprunte
+ * ses formes au dessin d'exécution se lit sans qu'on ait à l'apprendre — et
+ * elle vieillit mieux qu'une mode graphique.
+ *
+ * Chaque glyphe tient dans une boîte de 20×20 posée à l'origine ; le composant
+ * la translate. Les tracer ici, en données, plutôt que dans le gabarit : le
+ * gabarit ne doit pas devenir une planche à dessin.
+ */
+const GLYPHS: Readonly<Record<NodeKind, readonly string[]>> = {
+  // La porte : deux montants, et ce qui les traverse.
+  worker: ['M4 3v14', 'M16 3v14', 'M7 10h6', 'M11 7l3 3-3 3'],
+  // Le service : des lames empilées, chacune avec sa diode.
+  service: ['M3 5h14v4H3z', 'M3 11h14v4H3z', 'M5.5 7h.01', 'M5.5 13h.01'],
+  // Le cylindre du stockage.
+  datastore: [
+    'M4 5c0-1.1 2.7-2 6-2s6 .9 6 2-2.7 2-6 2-6-.9-6-2z',
+    'M4 5v10c0 1.1 2.7 2 6 2s6-.9 6-2V5',
+  ],
+  // Le globe : ce qui n'est pas à nous.
+  'external-api': [
+    'M10 3a7 7 0 100 14 7 7 0 000-14z',
+    'M3 10h14',
+    'M10 3c1.8 1.9 2.8 4.4 2.8 7s-1 5.1-2.8 7',
+    'M10 3C8.2 4.9 7.2 7.4 7.2 10s1 5.1 2.8 7',
+  ],
+};
 
 /** Bornes de la durée d'un cycle de pointillés — la VITESSE dit le débit. */
 const FLOW = { fastest: 0.7, slowest: 4 } as const;
@@ -24,12 +55,19 @@ const STATUS_LABEL: Readonly<Record<HealthStatus, string>> = {
 /** Un trait de la carte, prêt à rendre. */
 interface Link {
   readonly id: string;
+  /** Identifiant DOM du tracé — les paquets s'y accrochent par `mpath`. */
+  readonly wire: string;
   readonly path: string;
   readonly tone: string;
   /** Durée d'un cycle en secondes — `null` ⇒ rien ne coule, on n'anime pas. */
   readonly duration: number | null;
+  /** Décalages de départ des paquets, pour qu'ils ne partent pas en peloton. */
+  readonly offsets: readonly number[];
   readonly title: string;
 }
+
+/** Combien de paquets circulent sur un fil. Trois : assez pour lire un flux. */
+const PACKETS = 3;
 
 /** Un nœud posé, prêt à rendre. */
 interface Box {
@@ -39,6 +77,9 @@ interface Box {
   readonly statusLabel: string;
   readonly occupancy: Occupancy;
   readonly title: string;
+  readonly glyph: readonly string[];
+  /** Part du plafond, en pourcentage plein — `null` quand rien n'est mesuré. */
+  readonly gauge: number | null;
 }
 
 /**
@@ -108,13 +149,15 @@ export class EcosystemMap {
         statusLabel: STATUS_LABEL[placed.health.status],
         occupancy,
         title: describe(placed.health, occupancy),
+        glyph: GLYPHS[placed.health.kind],
+        gauge: occupancy.basis === 'aucune mesure' ? null : occupancy.ratio,
       };
     }),
   );
 
   protected readonly links = computed<readonly Link[]>(() => {
     const at = new Map(this.boxes().map((box) => [box.node.node, box]));
-    return this.layout().edges.flatMap((edge) => {
+    return this.layout().edges.flatMap((edge, index) => {
       const from = at.get(edge.from);
       const to = at.get(edge.to);
       if (from === undefined || to === undefined) {
@@ -122,17 +165,38 @@ export class EcosystemMap {
       }
       const occupancy = to.occupancy;
       const requests = this.requestsByNode().get(edge.to) ?? 0;
+      const duration = requests > 0 ? flowDuration(requests) : null;
       return [
         {
           id: `${edge.from}→${edge.to}`,
+          wire: `ops-wire-${index}`,
           path: curveBetween(from, to),
           tone: occupancy.basis === 'aucune mesure' ? 'unmeasured' : occupancy.tone,
-          duration: requests > 0 ? flowDuration(requests) : null,
+          duration,
+          offsets:
+            duration === null
+              ? []
+              : Array.from({ length: PACKETS }, (_, slot) => (duration / PACKETS) * slot),
           title: `${from.node.label} dépend de ${to.node.label}`,
         },
       ];
     });
   });
+
+  /** Exposée au gabarit : les cotes ne doivent exister qu'à UN endroit. */
+  protected readonly node = NODE;
+
+  /**
+   * Le mouvement est-il le bienvenu ?
+   *
+   * Les paquets qui circulent sont de l'**animation déclarative SVG**
+   * (`animateMotion`), et celle-là ne s'éteint pas depuis une feuille de style :
+   * il faut ne pas la RENDRE. D'où cette lecture, faite une fois — le reste de
+   * la carte (couleur, jauge, libellé) dit déjà tout, donc on ne perd rien.
+   */
+  protected readonly motionAllowed = signal(
+    typeof window === 'undefined' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
 
   protected readonly hasNothingMeasured = computed(() =>
     this.boxes().every((box) => box.occupancy.basis === 'aucune mesure'),

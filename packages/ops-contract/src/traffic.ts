@@ -1,5 +1,5 @@
 /**
- * **Ce que la passerelle a vu passer**, agrégé sur une fenêtre — la troisième
+ * **Ce que la gateway a vu passer**, agrégé sur une fenêtre — la troisième
  * source d'OPS (design §12), à côté du heartbeat (ce qu'un nœud dit de
  * lui-même) et du probe (ce qu'on constate du dehors).
  *
@@ -29,7 +29,7 @@
  *   - **`throttled`** est le throttler applicatif qui mord — la seule défense
  *     qui fonctionne (le rate-limit edge est inerte). Noyé dans les `4xx`, il
  *     serait invisible ; c'est un signe de santé, pas un incident.
- *   - **`gatewayFault`** est un `502` fabriqué par la passerelle : le backend
+ *   - **`gatewayFault`** est un `502` fabriqué par la gateway : le backend
  *     n'a **pas répondu**. C'est le seul comptage qui autorise à conclure qu'un
  *     nœud est mort plutôt que muet.
  */
@@ -40,7 +40,7 @@ export interface TrafficCounts {
   readonly serverErrors: number;
   /** `429` du throttler applicatif. */
   readonly throttled: number;
-  /** Réponses fabriquées par la passerelle (`502`, `503`) — pas de réponse amont. */
+  /** Réponses fabriquées par la gateway (`502`, `503`) — pas de réponse amont. */
   readonly gatewayFaults: number;
 }
 
@@ -51,7 +51,7 @@ export interface TrafficSurface extends TrafficCounts {
 }
 
 /**
- * Ce que la passerelle a vu pour **un nœud**, sur **une fenêtre**. `from`/`to`
+ * Ce que la gateway a vu pour **un nœud**, sur **une fenêtre**. `from`/`to`
  * sont des ISO et bornent explicitement : une fenêtre sans bornes ne se compare
  * à rien, et un écran qui affiche « 1 200 requêtes » sans dire sur quoi ment par
  * omission.

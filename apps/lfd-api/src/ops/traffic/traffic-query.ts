@@ -8,7 +8,7 @@ import type { TrafficWindow } from "@lfd/ops-contract";
  * ici, sous tests ; ce qui ne peut que transporter vit dans l'adaptateur.
  */
 
-/** Le dataset — même nom que `TRAFFIC_DATASET` dans la passerelle. */
+/** Le dataset — même nom que `TRAFFIC_DATASET` dans la gateway. */
 export const TRAFFIC_DATASET = "lfc_gateway_traffic";
 
 /** Bornes de fenêtre acceptées, en minutes. Au-delà, la lecture coûte sans servir. */

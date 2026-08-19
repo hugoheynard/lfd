@@ -12,13 +12,70 @@
     Schéma de l'écosystème : {{ boxes().length }} briques et leurs dépendances.
   </title>
 
-  <!-- Les liens D'ABORD : ils passent SOUS les nœuds. -->
+  <defs>
+    <!-- La trame de fond : celle d'une feuille de dessin technique. Elle donne
+         une échelle à l'œil sans jamais entrer en concurrence avec la donnée. -->
+    <pattern id="ops-grid" width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" />
+    </pattern>
+
+    <!-- Ce qui fait la CARTE : un dégradé vertical très court — la lumière
+         tombe d'en haut — et une ombre portée basse. Les deux ensemble donnent
+         l'épaisseur ; l'un sans l'autre donne un aplat ou une vignette. -->
+    <linearGradient id="ops-card" x1="0" y1="0" x2="0" y2="1">
+      <stop class="card-stop-top" offset="0" />
+      <stop class="card-stop-bottom" offset="1" />
+    </linearGradient>
+    <filter id="ops-lift" x="-15%" y="-25%" width="130%" height="170%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" />
+    </filter>
+
+    <!-- La pointe qui dit le SENS de la dépendance. Sans elle, un trait entre
+         deux briques laisserait deviner qui appelle qui — et on devine mal. -->
+    <marker
+      id="ops-arrow"
+      viewBox="0 0 8 8"
+      refX="7"
+      refY="4"
+      markerWidth="6"
+      markerHeight="6"
+      orient="auto-start-reverse"
+    >
+      <path d="M0 1l6 3-6 3z" />
+    </marker>
+  </defs>
+
+  <rect class="map-grid" width="100%" height="100%" fill="url(#ops-grid)" />
+
+  <!-- Les liens D'ABORD : ils passent SOUS les cartes. -->
   @for (link of links(); track link.id) {
     <g class="link" [class]="'link--' + link.tone">
       <title>{{ link.title }}</title>
-      <path class="link-bed" [attr.d]="link.path" />
+      <!-- Trois calques, et chacun dit autre chose : le FIL (la dépendance
+           existe), le FAISCEAU (elle est vivante), les PAQUETS (à ce débit). -->
+      <path
+        class="link-bed"
+        [attr.id]="link.wire"
+        [attr.d]="link.path"
+        marker-end="url(#ops-arrow)"
+      />
       @if (link.duration !== null) {
+        <path class="link-beam" [attr.d]="link.path" />
         <path class="link-flow" [attr.d]="link.path" [style.animation-duration.s]="link.duration" />
+        @if (motionAllowed()) {
+          @for (offset of link.offsets; track $index) {
+            <circle class="link-packet" r="2.6">
+              <animateMotion
+                [attr.dur]="link.duration + 's'"
+                [attr.begin]="-offset + 's'"
+                repeatCount="indefinite"
+                rotate="auto"
+              >
+                <mpath [attr.href]="'#' + link.wire" />
+              </animateMotion>
+            </circle>
+          }
+        }
       }
     </g>
   }
@@ -26,27 +83,102 @@
   @for (box of boxes(); track box.node.node) {
     <g class="node" [class]="'node--' + box.node.status">
       <title>{{ box.title }}</title>
-      <rect class="node-card" [attr.x]="box.x" [attr.y]="box.y" rx="10" width="168" height="62" />
-      <!-- La barre d'état : une SECONDE forme, pas seulement une teinte. Elle
+
+      <rect
+        class="node-card"
+        [attr.x]="box.x"
+        [attr.y]="box.y"
+        [attr.width]="node.width"
+        [attr.height]="node.height"
+        fill="url(#ops-card)"
+      />
+      <!-- Le filet de crête : la lumière d'un pixel qui pose l'arête haute. -->
+      <line
+        class="node-crest"
+        [attr.x1]="box.x + 12"
+        [attr.y1]="box.y + 0.75"
+        [attr.x2]="box.x + node.width - 12"
+        [attr.y2]="box.y + 0.75"
+      />
+      <!-- La bande d'état : une SECONDE forme, pas seulement une teinte. Elle
            reste lisible en contraste forcé et en impression noir et blanc. -->
-      <rect class="node-stripe" [attr.x]="box.x" [attr.y]="box.y" rx="4" width="5" height="62" />
-      <text class="node-label" [attr.x]="box.x + 18" [attr.y]="box.y + 26">
+      <rect
+        class="node-stripe"
+        [attr.x]="box.x + 1"
+        [attr.y]="box.y + 10"
+        rx="1"
+        width="2.5"
+        [attr.height]="node.height - 20"
+      />
+
+      <!-- Le glyphe : la NATURE de la brique, lisible avant le texte. -->
+      <g
+        class="node-glyph"
+        [attr.transform]="'translate(' + (box.x + 15) + ' ' + (box.y + 15) + ') scale(0.9)'"
+      >
+        @for (segment of box.glyph; track $index) {
+          <path [attr.d]="segment" />
+        }
+      </g>
+
+      <text class="node-label" [attr.x]="box.x + 44" [attr.y]="box.y + 21">
         {{ box.node.label }}
       </text>
-      <text class="node-status" [attr.x]="box.x + 18" [attr.y]="box.y + 45">
+      <text class="node-status" [attr.x]="box.x + 44" [attr.y]="box.y + 35">
         {{ box.statusLabel }}
-        @if (box.occupancy.basis !== 'aucune mesure') {
-          · {{ box.occupancy.ratio * 100 | number: '1.0-0' }} %
-        }
       </text>
+
+      @if (box.gauge !== null) {
+        <text class="node-gauge-value" [attr.x]="box.x + node.width - 14" [attr.y]="box.y + 35">
+          {{ box.gauge * 100 | number: '1.0-0' }} %
+        </text>
+        <!-- La jauge court sur l'ARÊTE BASSE de la carte : une longueur se
+             compare d'une brique à l'autre, un chiffre non — et posée là, elle
+             ne prend aucune hauteur. -->
+        <rect
+          class="node-gauge-fill"
+          [attr.x]="box.x + 1"
+          [attr.y]="box.y + node.height - 2.5"
+          [attr.width]="(node.width - 2) * box.gauge"
+          height="1.5"
+        />
+      }
+
       @if (box.node.dependencyDown) {
-        <!-- La dépendance tombée est DÉSIGNÉE, jamais propagée : ce nœud garde
-             son propre statut, on montre seulement ce qui l'a peut-être touché. -->
-        <circle class="node-flag" [attr.cx]="box.x + 154" [attr.cy]="box.y + 16" r="5" />
+        <!-- La dépendance tombée est DÉSIGNÉE, jamais propagée : cette brique
+             garde son propre statut, on montre seulement ce qui l'a peut-être
+             touchée. -->
+        <g
+          class="node-flag"
+          [attr.transform]="'translate(' + (box.x + node.width - 18) + ' ' + (box.y + 11) + ')'"
+        >
+          <path d="M0 0v9" />
+          <path d="M0 0h6l-1.7 2.2L6 4.5H0" />
+        </g>
       }
     </g>
   }
 </svg>
+
+<!-- La légende. Une échelle de couleurs sans clé se devine — et se devine
+     toujours comme une alarme. -->
+<div class="map-key">
+  <span class="map-key-title">Occupation</span>
+  @for (step of ['calm', 'busy', 'strained', 'saturated']; track step) {
+    <span class="map-key-step" [class]="'map-key-step map-key-step--' + step">
+      <i aria-hidden="true"></i>
+      {{
+        step === 'calm'
+          ? 'au repos'
+          : step === 'busy'
+            ? 'active'
+            : step === 'strained'
+              ? 'sous tension'
+              : 'au plafond'
+      }}
+    </span>
+  }
+</div>
 
 @if (hasNothingMeasured()) {
   <p class="map-caveat">

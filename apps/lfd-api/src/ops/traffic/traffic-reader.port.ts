@@ -1,7 +1,7 @@
 import type { TrafficReport } from "@lfd/ops-contract";
 
 /**
- * Port **TrafficReader** — d'où OPS tire ce que la passerelle a vu passer.
+ * Port **TrafficReader** — d'où OPS tire ce que la gateway a vu passer.
  *
  * Une seule méthode, et un rapport qui **dit d'où viennent ses chiffres**
  * (`source`). Ce n'est pas de la décoration : sans cet aveu, un écran branché

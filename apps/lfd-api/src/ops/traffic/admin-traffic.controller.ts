@@ -6,7 +6,7 @@ import { resolveWindowMinutes } from "./traffic-query.js";
 import { TrafficReader } from "./traffic-reader.port.js";
 
 /**
- * La surface de lecture d'OPS : ce que la passerelle a vu passer.
+ * La surface de lecture d'OPS : ce que la gateway a vu passer.
  *
  * **Staff only**, comme toute la carte : elle expose la topologie interne et des
  * messages techniques, et rien de tout ça n'a à sortir côté client.

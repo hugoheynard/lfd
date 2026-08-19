@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { formatTrafficPoint, statusClass, surfaceOf, trafficPoint } from "../traffic";
 
 /**
- * Ce que la passerelle retient de son trafic. Deux propriétés valent d'être
+ * Ce que la gateway retient de son trafic. Deux propriétés valent d'être
  * verrouillées, et elles ne sont pas de même nature :
  *
  *   - **la lisibilité** : un point doit répondre aux questions du §12 du design
@@ -82,7 +82,7 @@ describe("trafficPoint", () => {
     expect(point.blobs).toEqual(["2xx", "admin/orders", "upstream"]);
   });
 
-  it("distingue un 5xx du backend d'un 502 de la passerelle", () => {
+  it("distingue un 5xx du backend d'un 502 de la gateway", () => {
     // La distinction porte toute la conclusion : un backend qui répond en
     // échouant n'est pas un backend mort. Seul le second autorise `down`.
     const upstream = trafficPoint({

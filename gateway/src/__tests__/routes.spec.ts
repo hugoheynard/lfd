@@ -5,12 +5,12 @@ import { GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
 import { API_PREFIXES, resolveTarget } from "../routes";
 
 /**
- * Le résolveur porte **toutes** les décisions de la passerelle : `index.ts` ne
+ * Le résolveur porte **toutes** les décisions de la gateway : `index.ts` ne
  * fait plus qu'exécuter. C'est donc ici que se joue la correction du routage —
  * et ces tests sont ce qui permet de la changer sans deviner.
  *
  * Trois choses valent d'être verrouillées :
- *   - le préfixe est RETIRÉ avant transmission (le backend ignore la passerelle) ;
+ *   - le préfixe est RETIRÉ avant transmission (le backend ignore la gateway) ;
  *   - un préfixe ne vole pas les requêtes d'un préfixe voisin ;
  *   - le dev par sous-domaine continue de fonctionner à l'identique.
  */

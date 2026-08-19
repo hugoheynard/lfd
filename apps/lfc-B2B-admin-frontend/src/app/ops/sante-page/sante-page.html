@@ -1,12 +1,19 @@
-<header class="page-head">
-  <div>
+<header class="head">
+  <div class="head-title">
+    <p class="eyebrow">Exploitation</p>
     <h1>Santé de l'écosystème</h1>
-    <p class="page-sub">
-      Ce que la passerelle a vu passer sur les 5 dernières minutes, et l'état de chaque brique.
+    <p class="sub">
+      Ce que la gateway a vu passer sur les 5 dernières minutes, et l'état de chaque brique.
     </p>
   </div>
+
   @if (health(); as board) {
-    <p class="stamp">Relevé à {{ board.generatedAt | date: 'HH:mm:ss' }}</p>
+    <p class="stamp">
+      <!-- Le point de vie : il dit que l'écran se rafraîchit tout seul. Sans lui,
+           un chiffre figé se lit comme un chiffre à jour. -->
+      <span class="pulse" aria-hidden="true"></span>
+      Relevé à {{ board.generatedAt | date: 'HH:mm:ss' }}
+    </p>
   }
 </header>
 
@@ -14,14 +21,16 @@
      sur un double qui se tait est pire qu'un tableau absent : on croit regarder
      la production. -->
 @if (isRehearsal()) {
-  <p class="rehearsal" role="status">
-    <strong>Données de répétition.</strong> Analytics Engine n'est pas configuré : les chiffres
-    ci-dessous sont fabriqués, et ne disent rien de la production.
+  <p class="notice notice--rehearsal" role="status">
+    <span class="notice-tag">Répétition</span>
+    Analytics Engine n'est pas configuré : les chiffres ci-dessous sont fabriqués, et ne disent rien
+    de la production.
   </p>
 }
 
 @if (state() === 'error') {
-  <p class="read-error" role="status">
+  <p class="notice notice--error" role="status">
+    <span class="notice-tag">Lecture</span>
     La lecture a échoué. Ce n'est pas la flotte qui est tombée, c'est la carte qui ne voit plus —
     l'affichage ci-dessous est le dernier relevé connu.
   </p>
@@ -30,24 +39,24 @@
 @if (state() === 'loading') {
   <fold-loading message="Lecture de l'écosystème…" />
 } @else {
-  <section class="totals" aria-label="Résumé de la fenêtre">
-    <div class="total">
-      <span class="total-value">{{ totals().requests | number: '1.0-0' }}</span>
-      <span class="total-label">requêtes</span>
+  <section class="gauges" aria-label="Résumé de la fenêtre">
+    <div class="gauge">
+      <span class="gauge-label">Requêtes</span>
+      <span class="gauge-value">{{ totals().requests | number: '1.0-0' }}</span>
     </div>
-    <div class="total">
-      <span class="total-value">{{ totals().errorRate * 100 | number: '1.0-1' }} %</span>
-      <span class="total-label">d'erreurs serveur</span>
+    <div class="gauge">
+      <span class="gauge-label">Erreurs serveur</span>
+      <span class="gauge-value">{{ totals().errorRate * 100 | number: '1.0-1' }} <i>%</i></span>
     </div>
-    <div class="total">
-      <span class="total-value">{{ totals().p95Ms | number: '1.0-0' }} ms</span>
-      <span class="total-label">au 95ᵉ centile</span>
+    <div class="gauge">
+      <span class="gauge-label">95ᵉ centile</span>
+      <span class="gauge-value">{{ totals().p95Ms | number: '1.0-0' }} <i>ms</i></span>
     </div>
-    <div class="total">
-      <span class="total-value">{{ totals().throttled | number: '1.0-0' }}</span>
+    <div class="gauge">
       <!-- Compté À PART des erreurs, exprès : un rejet est la défense qui
            fonctionne, pas un incident. -->
-      <span class="total-label">rejets du limiteur</span>
+      <span class="gauge-label">Rejets du limiteur</span>
+      <span class="gauge-value">{{ totals().throttled | number: '1.0-0' }}</span>
     </div>
   </section>
 
@@ -57,7 +66,9 @@
       <ul>
         @for (node of ailing(); track node.node) {
           <li>
-            <strong>{{ node.label }}</strong> — {{ node.reason }}
+            <span class="ailing-dot" [class]="'ailing-dot ailing-dot--' + node.status"></span>
+            <strong>{{ node.label }}</strong>
+            <span class="ailing-reason">{{ node.reason }}</span>
             @if (node.dependencyDown) {
               <span class="ailing-cause">dépend de {{ node.dependencyDown }}, injoignable</span>
             }
@@ -67,7 +78,9 @@
     </section>
   }
 
-  <app-ecosystem-map [nodes]="nodes()" [windows]="windows()" />
+  <section class="board" aria-label="Schéma de l'écosystème">
+    <app-ecosystem-map [nodes]="nodes()" [windows]="windows()" />
+  </section>
 
   <!-- La légende dit ce que la carte encode. Sans elle, la vitesse d'un trait
        serait devinée — et devinée comme une alarme. -->

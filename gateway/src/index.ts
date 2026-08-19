@@ -14,7 +14,7 @@ import type { TrafficObservation } from "./traffic";
  *   - **URL publique** (`fetch`) — les serveurs de dev, en local ;
  *   - **service binding** (`env.B2B_BACKEND.fetch`) — les backends en prod, par
  *     un appel INTERNE au compte. C'est ce qui permettra d'éteindre
- *     `workers_dev` sur les backends : sans adresse publique, la passerelle
+ *     `workers_dev` sur les backends : sans adresse publique, la gateway
  *     devient le seul chemin, donc une vraie frontière et non une décoration.
  *
  * Il **forwarde tout** — méthode, corps, en-têtes (`Authorization` compris) et
@@ -72,7 +72,7 @@ export default {
 /**
  * Le routage proprement dit. Chaque sortie dit **qui** a fabriqué la réponse :
  * un `5xx` venu de l'upstream signifie que le backend a répondu en échouant, un
- * `502` de la passerelle qu'il n'a pas répondu du tout. OPS ne peut conclure à
+ * `502` de la gateway qu'il n'a pas répondu du tout. OPS ne peut conclure à
  * un nœud mort que sur le second.
  */
 async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
@@ -106,7 +106,7 @@ async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
   }
 }
 
-/** Une réponse fabriquée par la passerelle elle-même — jamais par un backend. */
+/** Une réponse fabriquée par la gateway elle-même — jamais par un backend. */
 function gatewayFault(
   status: number,
   reason: string,
@@ -166,7 +166,7 @@ function destinationFor(target: Target, url: URL, env: Env): Destination | undef
     return undefined;
   }
   // L'origine est arbitraire — un binding ne résout aucun DNS — mais `Request`
-  // exige une URL absolue. On garde celle de la passerelle, ce qui rend les
+  // exige une URL absolue. On garde celle de la gateway, ce qui rend les
   // journaux du backend lisibles.
   return {
     url: new URL(target.path + url.search, url.origin).toString(),
