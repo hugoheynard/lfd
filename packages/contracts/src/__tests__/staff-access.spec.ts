@@ -4,6 +4,8 @@ import {
   hasStaffPermission,
   resolveStaffPermissions,
   ROLE_GRANTS,
+  staffActionSchema,
+  staffResourceSchema,
   staffRoleSchema,
   type StaffOverride,
   type StaffPermission,
@@ -130,7 +132,12 @@ describe("le catalogue", () => {
   });
 
   it("énumère chaque ressource dans les deux actions", () => {
-    expect(ALL_STAFF_PERMISSIONS).toHaveLength(16);
+    // Le produit cartésien complet, dérivé des deux enums plutôt que d'un
+    // nombre écrit à la main : une 10e ressource ne doit pas rendre ce test
+    // rouge, elle doit être couverte. C'est l'absence de trou qu'on teste.
+    const expected = staffResourceSchema.options.length * staffActionSchema.options.length;
+
+    expect(ALL_STAFF_PERMISSIONS).toHaveLength(expected);
     expect(new Set(ALL_STAFF_PERMISSIONS).size).toBe(ALL_STAFF_PERMISSIONS.length);
   });
 });
