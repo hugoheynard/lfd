@@ -686,3 +686,68 @@ La **Suite** n'a pas encore d'adresse de production : sans cible, pas de sonde,
 et elle reste grise. Grise est exact ; verte serait inventé. Les sondes de fronts
 sont dérivées de la topologie, pas listées à la main — l'ajouter tiendra en une
 ligne dans la carte, et en aucune dans le module.
+
+## 19. Le forfait Prisma — quel schéma mange les opérations
+
+Prisma Postgres facture à l'**opération**, et une opération est _un appel de
+client ORM_ — pas une instruction SQL, quel que soit son temps de calcul. Le
+forfait Starter (10 €/mois) en inclut **1 000 000**, puis 0,0080 $ par millier.
+
+### Ce que la topologie ne change pas
+
+Un schéma Postgres est un **espace de noms** : ni quota, ni compteur, ni ligne de
+facture. Dix schémas ou un seul, la facture est identique. Les **bases** non plus
+ne coûtent rien — mille sont incluses.
+
+C'est une correction utile pour B4 (« une base, quatre schémas ») : cette
+consolidation ne se justifie **pas** par le prix. Ses raisons restent les
+bonnes — une transaction peut traverser deux schémas, jamais deux bases ; une
+jointure aussi. Le seul levier sur la facture est le **nombre d'appels ORM
+émis**.
+
+### Pourquoi compter chez nous
+
+Le tableau de bord de Prisma compte par base. Il ne sait rien des schémas — ils
+n'existent pas dans sa comptabilité. Deux façons de combler le trou :
+
+- **`pg_stat_user_tables`, groupé par `schemaname`.** Gratuit, la colonne existe
+  déjà. Mais elle compte des **accès de table** : une requête avec `include` en
+  touche trois. Un chiffre juste, réponse à une autre question — et qui finirait
+  par servir à décider.
+- **Une extension de client Prisma** sur `$allOperations`. C'est **exactement
+  l'unité facturée**. C'est ce qui est fait.
+
+### Les décisions du compteur
+
+- **On compte ce qui est TENTÉ, pas ce qui réussit.** Prisma facture l'aller :
+  une requête qui lève est déjà payée. Compter après le `await` sous-estimerait
+  la facture précisément les jours d'incident.
+- **Le comptage ne peut pas échouer un appel.** Il incrémente une entrée de
+  `Map` avant de déléguer — rien n'attend, rien ne jette.
+- **Un régime, pas un cumul.** Le relevé est en opérations par minute, avec une
+  projection mensuelle : « 42 par minute » ne se compare à rien, « 1,8 M par
+  mois » se compare au million inclus. Un cumul depuis le démarrage serait
+  incomparable d'un déploiement au suivant.
+- **Le SQL brut a son seau.** `$queryRaw`, `$executeRaw` et `$transaction`
+  n'ont pas de modèle ; ils sont facturés comme les autres, et les taire ferait
+  mentir le total — or c'est le total qui approche la facture.
+
+### Les deux pièges, et leurs garde-fous
+
+**`$extends` rend un NOUVEAU client.** Exposer le client nu sous son jeton
+laisserait tout marcher — sauf le comptage, à zéro et silencieux. Le module
+fournit donc le client **compté** sous `PrismaService`, et deux tests e2e
+échouent si le branchement saute.
+
+**La table modèle → schéma est écrite à la main**, faute de DMMF exploitable au
+runtime en Prisma 7. Un modèle ajouté dans `growth` serait compté sous `public`,
+la répartition serait fausse, et **le total resterait juste** — donc rien ne le
+dirait. Un test relit `schema.prisma` et compare.
+
+### Le trou connu
+
+Le **référentiel** a sa propre base et n'est pas compté : son client vit dans le
+bloc `pim`, il n'est pas encore branché dans `AppModule`, et son schéma est
+unique — il n'y aurait rien à répartir. Ses opérations puisent pourtant dans le
+**même** forfait. Le jour où il sera branché, il prendra le compteur en
+injection : `pim → platform` est autorisé, c'est une ligne.

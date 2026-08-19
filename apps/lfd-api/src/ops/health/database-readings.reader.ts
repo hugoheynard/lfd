@@ -2,6 +2,10 @@ import { Injectable, Logger } from "@nestjs/common";
 import type { NodeReading } from "@lfd/ops-contract";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
+import {
+  SchemaOpsCounter,
+  type SchemaOpsRate,
+} from "../../platform/database/schema-ops.counter.js";
 
 /** Ce que Postgres rend pour une base : deux entiers, pas une ligne de plus. */
 interface DatabaseFacts {
@@ -29,7 +33,10 @@ interface DatabaseFacts {
 export class DatabaseReadingsReader {
   private readonly logger = new Logger(DatabaseReadingsReader.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ops: SchemaOpsCounter,
+  ) {}
 
   async read(): Promise<readonly NodeReading[]> {
     try {
@@ -42,6 +49,7 @@ export class DatabaseReadingsReader {
         return [];
       }
       return [
+        ...operationsReading(this.ops.perMinute()),
         {
           label: "Connexions",
           value: Number(facts.connections),
@@ -58,7 +66,57 @@ export class DatabaseReadingsReader {
       // Une carte de santé n'a pas le droit de tomber avec ce qu'elle observe.
       // Sans relevé, le nœud reste affiché — muet, et c'est une information.
       this.logger.warn("Relevés de base indisponibles", error);
-      return [];
+      // Le comptage d'opérations, lui, vit en mémoire : il survit à une base
+      // muette, et c'est justement un jour d'incident qu'on veut savoir ce
+      // qu'on est en train de consommer.
+      return operationsReading(this.ops.perMinute());
     }
   }
+}
+
+/** Jours moyens dans un mois — pour projeter un régime sur une facture. */
+const DAYS_PER_MONTH = 30;
+
+/**
+ * **Ce que le forfait est en train de consommer.**
+ *
+ * Un seul relevé, et pas un par schéma : la carte n'affiche que trois lignes par
+ * nœud, et les remplir avec la répartition chasserait la taille de la base — le
+ * chiffre qu'on découvre d'ordinaire par une facture. Le total porte donc la
+ * répartition dans son `hint`, où elle est lisible sans coûter une ligne.
+ *
+ * La projection mensuelle est là parce que c'est la seule forme comparable au
+ * forfait : « 42 opérations par minute » ne se compare à rien, « 1,8 M par
+ * mois » se compare au million inclus.
+ */
+function operationsReading(rates: readonly SchemaOpsRate[]): readonly NodeReading[] {
+  if (rates.length === 0) {
+    return [];
+  }
+  const perMinute = rates.reduce((total, rate) => total + rate.perMinute, 0);
+  const operations = rates.reduce((total, rate) => total + rate.operations, 0);
+  return [
+    {
+      label: "Opérations",
+      value: Math.round(perMinute),
+      unit: "/min",
+      hint: `${shareOf(rates, operations)}. Au régime observé depuis le démarrage, ≈ ${monthly(perMinute)} par mois. Prisma facture l'appel ORM, pas l'instruction SQL.`,
+    },
+  ];
+}
+
+/** La répartition, en parts entières — « public 78 %, growth 20 % ». */
+function shareOf(rates: readonly SchemaOpsRate[], total: number): string {
+  return rates
+    .map((rate) => `${rate.schema} ${Math.round((rate.operations / total) * 100)} %`)
+    .join(", ");
+}
+
+/** Le régime projeté sur un mois, en millions quand il y en a. */
+function monthly(perMinute: number): string {
+  const total = perMinute * 60 * 24 * DAYS_PER_MONTH;
+  if (total >= 1_000_000) {
+    return `${(total / 1_000_000).toFixed(1)} M d'opérations`;
+  }
+  return `${Math.round(total / 1_000)} k opérations`;
 }

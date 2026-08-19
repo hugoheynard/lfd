@@ -13,6 +13,7 @@
  *     on croit regarder la production.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -147,5 +148,29 @@ describe("le détail par requête", () => {
     expect(names.length).toBeGreaterThan(0);
     expect(names.filter((name) => /\d/.test(name))).toEqual([]);
     expect(names.filter((name) => name.split("/").length > 2)).toEqual([]);
+  });
+});
+
+describe("le compteur d'opérations est réellement branché", () => {
+  it("🔴 compte les appels ORM que l'application vient de faire", async () => {
+    // LA vérification qui manquerait autrement. `$extends` rend un NOUVEAU
+    // client : si le module exposait encore le client nu sous son jeton, tout
+    // marcherait — sauf le comptage, qui resterait à zéro sans que rien ne le
+    // signale. Un compteur partiel est pire qu'aucun, parce qu'on le croit.
+    const counter = ctx.app.get(SchemaOpsCounter);
+
+    // Une lecture ORM quelconque, par le vrai client injecté.
+    await ctx.prisma.company.findMany({ take: 1 });
+
+    const total = counter.perMinute().reduce((sum, rate) => sum + rate.operations, 0);
+    expect(total).toBeGreaterThan(0);
+  });
+
+  it("range les opérations sous le schéma de leur modèle", async () => {
+    const counter = ctx.app.get(SchemaOpsCounter);
+
+    await ctx.prisma.lead.findMany({ take: 1 });
+
+    expect(counter.perMinute().map((rate) => rate.schema)).toContain("growth");
   });
 });

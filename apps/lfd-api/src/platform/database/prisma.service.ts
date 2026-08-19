@@ -1,4 +1,4 @@
-import { Injectable, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { AppConfig } from "../config/app-config.js";
 import { PrismaClient } from "./client/client.js";
@@ -21,12 +21,18 @@ import { PrismaClient } from "./client/client.js";
  * Une seule et même classe pour les deux : les tests exercent le vrai provider,
  * les vraies contraintes SQL et les vraies migrations, et non un double.
  *
+ * ⚠️ Le cycle de vie n'est PAS ici : c'est `PrismaConnection` qui ouvre et ferme
+ * la connexion, parce que l'objet réellement injecté sous ce jeton est le client
+ * **compté** (cf. `database.module.ts`), et qu'il ne doit y avoir qu'un seul
+ * endroit qui appelle `$connect`. Porter les crochets sur cette classe les
+ * ferait jouer deux fois sur le même client, une fois par jeton.
+ *
  * ⚠️ En mode Accelerate la connexion est **paresseuse** : `$connect()` n'ouvre
  * pas de session physique, il ne prouve donc PAS que la base est joignable.
  * Seule une configuration manquante est détectée au boot (par `AppConfig`).
  */
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService extends PrismaClient {
   constructor(config: AppConfig) {
     const url = config.databaseUrl();
     super(
@@ -34,14 +40,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         ? { adapter: new PrismaPg({ connectionString: url }) }
         : { accelerateUrl: url },
     );
-  }
-
-  async onModuleInit(): Promise<void> {
-    await this.$connect();
-  }
-
-  async onModuleDestroy(): Promise<void> {
-    await this.$disconnect();
   }
 }
 
