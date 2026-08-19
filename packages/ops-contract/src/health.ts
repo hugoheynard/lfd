@@ -31,21 +31,30 @@ export interface NodeReading {
   readonly hint?: string;
 }
 
-export type HealthReason =
-  | "gateway-fault"
-  | "error-rate"
-  | "traffic-healthy"
-  | "heartbeat-stale"
-  | "heartbeat-fresh"
-  | "probe-ok"
-  | "probe-failed"
-  // Un front n'est pas « en marche », il est **servi** : la sonde constate que
-  // le shell ET son point d'entrée répondent, jamais que l'application démarre.
-  // Deux mots à part, parce qu'un `up` ici promettrait ce que personne n'a
-  // vérifié — et la carte ne vaut que ce que ses mots tiennent.
-  | "deploy-ok"
-  | "deploy-broken"
-  | "no-evidence";
+/**
+ * Les raisons, en **valeurs** et pas seulement en type : le journal relit du
+ * texte écrit hier, et un `as HealthReason` sur une colonne ferait passer pour
+ * une raison connue tout ce qu'une version antérieure a pu y déposer.
+ */
+export const HEALTH_REASONS = [
+  "gateway-fault",
+  "error-rate",
+  "traffic-healthy",
+  "heartbeat-stale",
+  "heartbeat-fresh",
+  "probe-ok",
+  "probe-failed",
+  "deploy-ok",
+  "deploy-broken",
+  "no-evidence",
+] as const;
+
+export type HealthReason = (typeof HEALTH_REASONS)[number];
+
+/** Vrai si cette valeur est une raison que ce contrat connaît. */
+export function isHealthReason(value: unknown): value is HealthReason {
+  return typeof value === "string" && HEALTH_REASONS.some((reason) => reason === value);
+}
 
 /**
  * Ce que OPS **rend** pour un nœud — agrégé, jamais poussé tel quel. Le `status`

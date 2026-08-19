@@ -900,3 +900,61 @@ l'arithmétique entière. Cette requête n'a **jamais tourné contre le vrai
 dataset** — rien n'est déployé. Son échec est toléré (la courbe disparaît,
 l'écran reste complet) et journalisé en `warn` : **c'est cette ligne de log
 qu'il faudra regarder** au premier déploiement.
+
+## 23. Le schéma `ops` — la mémoire de la carte
+
+OPS avait un mur logique (`ops → platform`, et personne n'importe `ops`) sans
+pendant en base. Il a désormais son **schéma Postgres**, et une table :
+`ops.node_status_log`.
+
+Un schéma plutôt que des tables dans `public`, pour la même raison qui a fait du
+bloc un bloc : le jour où OPS partira dans sa propre app, ce qui lui appartient
+est déjà rassemblé — et d'ici là, aucun autre contexte n'a de raison d'y écrire.
+
+### Une ligne par transition, jamais un échantillon
+
+À quinze secondes de cadence, échantillonner ferait des dizaines de milliers de
+lignes par jour pour répéter quatre-vingt-dix-neuf fois la même chose. Une
+transition en fait quelques dizaines — et ce sont exactement celles qu'on relit.
+À ce rythme, la croissance est de l'ordre de quelques milliers de lignes par an :
+aucune purge n'est prévue, et ce serait de l'ingénierie contre un problème qui
+n'existe pas.
+
+### Ce que ça répare
+
+**`since` survit au redémarrage.** Le service relit le dernier état de chaque
+nœud à sa première lecture, puis tient sa mémoire à jour. Sans cette relecture,
+un redéploiement rajeunissait tous les incidents : « down depuis 6 h » redevenait
+« depuis à l'instant », c'est-à-dire un chiffre faux au moment précis où sa durée
+était l'information.
+
+L'hydratation se fait à la **première lecture**, pas au constructeur : au boot,
+ce serait une requête pour un écran que personne n'ouvrira peut-être jamais.
+
+### Trois précautions
+
+**L'écriture n'est pas attendue.** Le journal est un effet de bord du
+diagnostic, pas son objet : une base lente ne doit pas ralentir l'écran qui sert
+justement à comprendre pourquoi elle est lente. Un échec est journalisé en
+`warn` et perd une ligne d'historique — jamais l'écran.
+
+**On relit en vérifiant, pas en affirmant.** Les colonnes sont du texte : un
+statut retiré du contrat ne doit pas rendre illisible l'historique écrit avant
+lui. Une valeur d'hier que le contrat d'aujourd'hui ne connaît plus retombe sur
+« on ne sait pas » — ce qui est la vérité — plutôt que d'être promue de force.
+`HEALTH_REASONS` existe désormais en **valeurs** dans le contrat, exprès : un
+`as HealthReason` sur une colonne aurait fait passer pour une raison connue tout
+ce qu'une version antérieure a pu y déposer.
+
+**`DISTINCT ON` en SQL brut**, parce que Prisma ne l'exprime pas. Un `groupBy`
+suivi d'une relecture par nœud ferait N+1 requêtes au démarrage — le seul
+endroit de l'application où le nombre de requêtes suivrait le nombre de nœuds de
+la carte.
+
+### Ce que ça débloque, et qui reste à faire
+
+- **une frise de disponibilité** pour les nœuds sans trafic — tiers, fronts,
+  base : ils n'ont pas de volume à tracer, mais ils ont une histoire, et c'est
+  leur vraie métrique (§22 ne couvre qu'eux par l'absence) ;
+- **des alertes calibrables** : après quelques jours de journal, on saura combien
+  de transitions par semaine un seuil produit, au lieu de le deviner.

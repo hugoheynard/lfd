@@ -106,6 +106,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   AvailabilityException: "growth",
   Appointment: "growth",
   BookingPolicySettings: "growth",
+  NodeStatusLog: "ops",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

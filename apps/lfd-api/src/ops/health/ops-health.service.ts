@@ -1,5 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import type { EcosystemHealth, NodeHealth, NodeReading, TrafficWindow } from "@lfd/ops-contract";
+import type {
+  EcosystemHealth,
+  HealthReason,
+  HealthStatus,
+  NodeHealth,
+  NodeReading,
+  TrafficWindow,
+} from "@lfd/ops-contract";
 
 import { Clock } from "../../platform/time/clock.js";
 import { Cached } from "../cached.js";
@@ -11,6 +18,7 @@ import { deriveHealth, type NodeEvidence } from "./derive-health.js";
 import { ProbeRunner } from "../probes/probe-runner.service.js";
 import type { ProbeOutcome } from "../probes/probe.port.js";
 import { gatewayReadings, moduleReadings } from "./readings.js";
+import { StatusJournal } from "../journal/status-journal.port.js";
 
 /** La fenêtre sur laquelle on juge la santé. Assez courte pour être « en ce moment ». */
 const HEALTH_WINDOW_MINUTES = 5;
@@ -45,26 +53,27 @@ export class OpsHealthService {
   /**
    * Le dernier état rendu, pour savoir **depuis quand** un statut tient.
    *
-   * Sans cette mémoire, `since` valait l'instant de la lecture : le champ
-   * annonçait une durée et rendait toujours « maintenant ». Or « down depuis
-   * trois minutes » et « down depuis six heures » n'appellent pas le même geste.
-   *
-   * En mémoire du processus, comme les séries d'échecs des sondes : un
-   * redémarrage remet les compteurs à l'instant présent. C'est faux dans le sens
-   * prudent — on rajeunit un incident, on n'en invente pas.
+   * Il est **hydraté du journal** à la première lecture, puis tenu en mémoire.
+   * Sans cette relecture, un redéploiement rajeunissait tous les incidents à
+   * l'instant présent : « down depuis 6 h » redevenait « down depuis à
+   * l'instant », c'est-à-dire un chiffre faux au moment précis où sa durée
+   * était l'information.
    */
   private previous: ReadonlyMap<string, NodeHealth> = new Map();
+  private hydrated = false;
 
   constructor(
     private readonly traffic: TrafficReader,
     private readonly database: DatabaseReadingsReader,
     private readonly auth0: Auth0ReadingsReader,
     private readonly probes: ProbeRunner,
+    private readonly journal: StatusJournal,
     private readonly clock: Clock,
   ) {}
 
   async read(): Promise<EcosystemHealth> {
     const now = this.clock.now();
+    await this.hydrate();
     const [report, databaseReadings, auth0Readings, probes] = await Promise.all([
       this.traffic.read(HEALTH_WINDOW_MINUTES),
       this.database.read(),
@@ -109,8 +118,44 @@ export class OpsHealthService {
     }
 
     const nodes = deriveHealth(TOPOLOGY, evidence, now, this.previous);
+    const changed = nodes.filter((node) => this.previous.get(node.node)?.status !== node.status);
     this.previous = new Map(nodes.map((node) => [node.node, node]));
+
+    // On écrit ce qui a CHANGÉ, et on ne l'attend pas : le journal est un effet
+    // de bord du diagnostic, pas son objet. Une base lente ne doit pas ralentir
+    // l'écran qui sert justement à comprendre pourquoi elle est lente.
+    void this.journal.record(
+      changed.map((node) => ({
+        node: node.node,
+        status: node.status,
+        reason: node.reason,
+        detail: node.lastError?.message ?? "",
+        at: now,
+      })),
+    );
+
     return { generatedAt: now.toISOString(), nodes };
+  }
+
+  /**
+   * Relit le dernier état connu — **une fois**, à la première lecture.
+   *
+   * Au constructeur, ce serait une requête au démarrage pour un écran que
+   * personne n'ouvrira peut-être jamais ; à chaque lecture, ce serait une
+   * requête pour rien puisque la mémoire est déjà à jour.
+   */
+  private async hydrate(): Promise<void> {
+    if (this.hydrated) {
+      return;
+    }
+    this.hydrated = true;
+    const latest = await this.journal.latest();
+    this.previous = new Map(
+      [...latest.entries()].map(([node, transition]) => [
+        node,
+        remembered(node, transition.status, transition.reason, transition.at),
+      ]),
+    );
   }
 }
 
@@ -133,4 +178,28 @@ function latencyReading(outcome: ProbeOutcome): readonly NodeReading[] {
       hint: "Aller-retour de la sonde depuis l'API, réseau compris.",
     },
   ];
+}
+
+/**
+ * Un état antérieur reconstitué du journal — juste assez pour que la dérivation
+ * sache si le statut a changé et depuis quand. Le reste (relevés, dépendances)
+ * est recalculé à chaque lecture : le rejouer d'hier serait le rendre faux.
+ */
+function remembered(
+  node: string,
+  status: HealthStatus,
+  reason: HealthReason,
+  at: Date,
+): NodeHealth {
+  return {
+    node,
+    kind: "service",
+    label: node,
+    status,
+    reason,
+    since: at.toISOString(),
+    lastHeartbeatAt: null,
+    dependsOn: [],
+    readings: [],
+  };
 }

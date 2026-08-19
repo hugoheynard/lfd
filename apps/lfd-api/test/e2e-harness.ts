@@ -231,7 +231,7 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
 async function truncateAll(prisma: PrismaService): Promise<void> {
   const tables = await prisma.$queryRaw<{ schemaname: string; tablename: string }[]>`
     SELECT schemaname, tablename FROM pg_tables
-    WHERE schemaname IN ('public', 'growth') AND tablename <> '_prisma_migrations'
+    WHERE schemaname IN ('public', 'growth', 'ops') AND tablename <> '_prisma_migrations'
   `;
   if (tables.length === 0) {
     return;

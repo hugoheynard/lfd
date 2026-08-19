@@ -6,6 +6,8 @@ import { Auth0ReadingsReader } from "./health/auth0-readings.reader.js";
 import { DatabaseReadingsReader } from "./health/database-readings.reader.js";
 import { Auth0Probe, ResendProbe, ShopifyProbe, StripeProbe } from "./probes/external.probes.js";
 import { FrontendProbe } from "./probes/frontend.probe.js";
+import { PrismaStatusJournal } from "./journal/prisma-status-journal.js";
+import { StatusJournal } from "./journal/status-journal.port.js";
 import { PostgresB2bProbe } from "./probes/postgres.probe.js";
 import { ProbeRunner } from "./probes/probe-runner.service.js";
 import { NODE_PROBES, type NodeProbe } from "./probes/probe.port.js";
@@ -48,6 +50,9 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     OpsHealthService,
     DatabaseReadingsReader,
     Auth0ReadingsReader,
+    // Le port est le jeton : la dérivation ne connaît que « la mémoire », et
+    // c'est l'adaptateur Postgres qui sait dans quel schéma elle vit.
+    { provide: StatusJournal, useClass: PrismaStatusJournal },
     ProbeRunner,
     PostgresB2bProbe,
     Auth0Probe,

@@ -37,7 +37,7 @@ generator client {
 // PrismaClient (runtime), comme le PIM.
 datasource db {
   provider = "postgresql"
-  schemas  = ["public", "growth"]
+  schemas  = ["public", "growth", "ops"]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2225,4 +2225,56 @@ model PricingEvent {
   @@index([occurredAt])
   @@map("pricing_events")
   @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OPS — la mémoire de la carte de santé
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Une transition de statut**, et rien d'autre.
+///
+/// Une ligne quand un nœud CHANGE d'état — pas un échantillon périodique. Une
+/// mesure toutes les quinze secondes ferait des dizaines de milliers de lignes
+/// par jour pour dire quatre-vingt-dix-neuf fois la même chose ; une transition
+/// en fait quelques dizaines, et ce sont exactement celles qu'on relit.
+///
+/// Ce que cette table rend possible, dans l'ordre où ça compte :
+///
+///  1. **`since` survit au redémarrage.** En mémoire seule, il repartait de
+///     l'instant présent à chaque déploiement : « down depuis 6 h » redevenait
+///     « down depuis à l'instant », c'est-à-dire un incident rajeuni au moment
+///     précis où sa durée était l'information ;
+///  2. **les nœuds sans trafic gagnent une histoire.** Tiers, fronts et base
+///     n'ont pas de volume à tracer, mais ils ont une frise de disponibilité —
+///     et c'est leur vraie métrique ;
+///  3. **les alertes deviennent calibrables.** Brancher un canal sans savoir
+///     combien de transitions par semaine fabrique du bruit, et un canal
+///     bruyant s'ignore.
+///
+/// Pas de clé étrangère vers quoi que ce soit : `node` est un identifiant du
+/// manifeste de topologie, pas une ligne d'une autre table. Une contrainte
+/// inventerait une dépendance là où il n'y a qu'un nom.
+model NodeStatusLog {
+  /// ULID préfixé `nodestatus_` (fourni par l'IdGenerator).
+  id String @id
+
+  /// L'identifiant du nœud dans la topologie déclarée (`b2b`, `auth0`, …).
+  node String
+
+  /// up | degraded | down | unknown.
+  status String
+
+  /// Ce qui a produit ce statut (`probe-failed`, `error-rate`, `deploy-ok`, …).
+  reason String
+
+  /// Le constat de la sonde, s'il y en avait un. Vide sinon.
+  detail String @default("")
+
+  /// L'instant du CHANGEMENT — c'est lui que `since` rend.
+  at DateTime @default(now())
+
+  /// Lecture par nœud, du plus récent au plus ancien : c'est la seule qu'on fait.
+  @@index([node, at(sort: Desc)])
+  @@map("node_status_log")
+  @@schema("ops")
 }

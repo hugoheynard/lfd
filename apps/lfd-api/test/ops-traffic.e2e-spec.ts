@@ -16,6 +16,8 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { Auth0ReadingsReader } from "../src/ops/health/auth0-readings.reader.js";
 import { NODE_PROBES } from "../src/ops/probes/probe.port.js";
+import { OpsHealthService } from "../src/ops/health/ops-health.service.js";
+import { StatusJournal } from "../src/ops/journal/status-journal.port.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -191,3 +193,67 @@ describe("le compteur d'opérations est réellement branché", () => {
     expect(counter.perMinute().map((rate) => rate.schema)).toContain("growth");
   });
 });
+
+describe("le journal de statuts — la mémoire de la carte", () => {
+  it("🔴 écrit une ligne par nœud à la première lecture, et rien tant que rien ne change", async () => {
+    // Une ligne par TRANSITION, jamais un échantillon : à quinze secondes de
+    // cadence, échantillonner ferait des dizaines de milliers de lignes par
+    // jour pour répéter quatre-vingt-dix-neuf fois la même chose.
+    //
+    // Une application NEUVE, exprès : la mémoire vive du service survit au
+    // `truncate` entre les tests, alors que la table, non. Réutiliser celle de
+    // la suite ferait dépendre l'assertion de l'ordre d'exécution — c'est-à-dire
+    // du hasard, déguisé en test.
+    const fresh = await bootstrapE2e({
+      overrides: [
+        { token: AdminTokenVerifier, value: stubAdminVerifier },
+        { token: NODE_PROBES, value: [] },
+        {
+          token: Auth0ReadingsReader,
+          value: { read: (): Promise<never[]> => Promise.resolve([]) },
+        },
+      ],
+    });
+    try {
+      const health = fresh.app.get(OpsHealthService);
+
+      await health.read();
+      await drainJournal();
+      const afterFirst = await countJournal(fresh);
+
+      await health.read();
+      await drainJournal();
+
+      expect(afterFirst).toBeGreaterThan(0);
+      expect(await countJournal(fresh)).toBe(afterFirst);
+    } finally {
+      await fresh.close();
+    }
+  });
+
+  it("relit le journal pour dire depuis QUAND, par-delà un redémarrage", async () => {
+    // Sans cette relecture, un redéploiement rajeunissait tous les incidents à
+    // l'instant présent : « down depuis 6 h » redevenait « à l'instant », un
+    // chiffre faux au moment précis où sa durée était l'information.
+    const journal = ctx.app.get(StatusJournal);
+    const earlier = new Date("2026-08-19T06:00:00.000Z");
+    await journal.record([
+      { node: "auth0", status: "down", reason: "probe-failed", detail: "injoignable", at: earlier },
+    ]);
+
+    const latest = await journal.latest();
+
+    expect(latest.get("auth0")).toMatchObject({ status: "down", reason: "probe-failed" });
+    expect(latest.get("auth0")?.at.toISOString()).toBe(earlier.toISOString());
+  });
+});
+
+/** L'écriture n'est pas attendue par la lecture : on lui laisse un tour de boucle. */
+const drainJournal = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
+
+const countJournal = async (context: E2eContext): Promise<number> => {
+  const [row] = await context.prisma.$queryRaw<readonly { count: bigint }[]>`
+    SELECT count(*)::bigint AS count FROM ops.node_status_log
+  `;
+  return Number(row?.count ?? 0);
+};
