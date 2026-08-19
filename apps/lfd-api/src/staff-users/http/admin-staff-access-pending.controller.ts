@@ -7,7 +7,7 @@ import {
   ListPendingStaffAccessQuery,
 } from "../application/pending-staff-access.js";
 import type { PendingStaffAccessView } from "../domain/pending-staff-access.reader.js";
-import type { IssuedPasswordLink } from "../../account/application/commands/issue-password-link.handler.js";
+import type { IssuedPasswordLink } from "../../infra/identity/password-link.js";
 
 /**
  * Les accès **staff** à remettre à la main — jumeau de la surface client, sous

@@ -82,14 +82,6 @@ const ALLOWED = {
  */
 const KNOWN = new Map([
   [
-    "staff-users/http/admin-staff-access-pending.controller.ts → account",
-    "Le lien de mot de passe est émis par `account/`. B2 : il remonte dans `platform/auth`, les deux populations s'en servent.",
-  ],
-  [
-    "staff-users/application/pending-staff-access.ts → account",
-    "Même émission de lien. Même cible B2.",
-  ],
-  [
     "infra/auth/customer-user.resolver.ts → account",
     "Résoudre un jeton vérifié en client est une affaire d'`account/`, pas de technique. B2 : le résolveur descend dans `account/`, `platform/auth` ne garde que la vérification du jeton.",
   ],

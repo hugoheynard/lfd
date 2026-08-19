@@ -3,7 +3,7 @@ import { Controller, Get, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { IssuePasswordLinkCommand } from "../application/commands/issue-password-link.command.js";
-import type { IssuedPasswordLink } from "../application/commands/issue-password-link.handler.js";
+import type { IssuedPasswordLink } from "../../infra/identity/password-link.js";
 import { ListPendingAccessQuery } from "../application/queries/list-pending-access.query.js";
 import type { PendingAccessView } from "../domain/ports/pending-access.reader.js";
 

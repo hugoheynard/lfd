@@ -11,10 +11,7 @@ import {
 } from "../domain/pending-staff-access.reader.js";
 import { StaffIdentityPort } from "../domain/staff-identity.port.js";
 import { Clock } from "../../infra/time/clock.js";
-import {
-  expiryFrom,
-  type IssuedPasswordLink,
-} from "../../account/application/commands/issue-password-link.handler.js";
+import { expiryFrom, type IssuedPasswordLink } from "../../infra/identity/password-link.js";
 import { StaffUserNotFoundError } from "../domain/staff-user-errors.js";
 
 /** La file des accès staff à remettre. Aucun paramètre : elle est entière. */

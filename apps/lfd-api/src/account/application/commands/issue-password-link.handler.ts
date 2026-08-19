@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
 import { Clock } from "../../../infra/time/clock.js";
-import { PASSWORD_TICKET_TTL_SECONDS } from "../../../infra/identity/auth0-identity.gateway.js";
+import { expiryFrom, type IssuedPasswordLink } from "../../../infra/identity/password-link.js";
 import { PendingAccessReader } from "../../domain/ports/pending-access.reader.js";
 import { PendingAccessNotFoundError } from "../../domain/errors/account-errors.js";
 import { IssuePasswordLinkCommand } from "./issue-password-link.command.js";
@@ -14,12 +14,6 @@ import { IssuePasswordLinkCommand } from "./issue-password-link.command.js";
  * l'envoie le lundi suivant enverrait une erreur, et il doit le savoir au
  * moment de coller, pas au moment où le client se plaint.
  */
-export interface IssuedPasswordLink {
-  readonly url: string;
-  /** ISO. Calculée sur le TTL réellement demandé au fournisseur. */
-  readonly expiresAt: string;
-}
-
 /**
  * Fabrique un lien de mot de passe **à la demande**, pour que le staff le
  * remette de la main à la main.
@@ -60,9 +54,4 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
     // TTL au fournisseur, lui seul sait combien de temps le ticket ouvre.
     return { url, expiresAt: expiryFrom(this.clock.now()) };
   }
-}
-
-/** L'instant où le ticket cesse d'ouvrir, sur le TTL demandé à Auth0. */
-export function expiryFrom(now: Date): string {
-  return new Date(now.getTime() + PASSWORD_TICKET_TTL_SECONDS * 1000).toISOString();
 }
