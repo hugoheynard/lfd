@@ -17,7 +17,7 @@
 import type { CreatedStaffUserResponse, StaffUserView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/infra/auth/admin-token.verifier.js";
-import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL } from "../src/staff-users/domain/bootstrap-admin.js";
+import { DEFAULT_BOOTSTRAP_ADMIN_EMAIL } from "../src/infra/config/bootstrap-admin-email.js";
 import { StaffUserRepository } from "../src/staff-users/domain/staff-user.repository.js";
 import { bootstrapE2e, E2E_STAFF_EMAIL, jsonBody, type E2eContext } from "./e2e-harness.js";
 
