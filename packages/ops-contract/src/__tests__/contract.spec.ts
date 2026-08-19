@@ -1,5 +1,6 @@
 import { heartbeatSchema, lifecycleEventSchema } from "../index.js";
 import { createOpsReporter, type OpsSignal } from "../index.js";
+import { errorRate, isSilent, type TrafficCounts } from "../index.js";
 
 describe("ops-contract schemas", () => {
   it("accepte un heartbeat minimal et refuse un errorRate hors bornes", () => {
@@ -75,5 +76,40 @@ describe("createOpsReporter", () => {
       expect(signal.event.ref).toBe("job_42");
       expect(lifecycleEventSchema.safeParse(signal.event).success).toBe(true);
     }
+  });
+});
+
+describe("fenêtre de trafic — ce qui compte comme une erreur", () => {
+  const counts = (over: Partial<TrafficCounts> = {}): TrafficCounts => ({
+    requests: 100,
+    serverErrors: 0,
+    throttled: 0,
+    gatewayFaults: 0,
+    ...over,
+  });
+
+  it("compte l'erreur amont ET l'absence de réponse", () => {
+    // Les deux disent « ça ne marche pas », même si elles ne disent pas la même
+    // chose sur QUI est en cause.
+    expect(errorRate(counts({ serverErrors: 3, gatewayFaults: 2 }))).toBeCloseTo(0.05);
+  });
+
+  it("ne compte JAMAIS les 429 comme des erreurs", () => {
+    // Le throttler qui refuse est le système qui fonctionne. Les compter ferait
+    // rougir la carte au moment précis où elle devrait rassurer — et pousserait
+    // un jour quelqu'un à relâcher la seule défense qui marche pour « faire
+    // repasser le tableau au vert ».
+    expect(errorRate(counts({ throttled: 90 }))).toBe(0);
+  });
+
+  it("rend 0 sur une fenêtre vide plutôt qu'une division par zéro", () => {
+    expect(errorRate(counts({ requests: 0 }))).toBe(0);
+  });
+
+  it("distingue le silence du calme", () => {
+    // `isSilent` ne conclut rien : il rend la question posable. Un nœud muet ET
+    // sans trafic est oisif ; muet AVEC du trafic est un tout autre sujet.
+    expect(isSilent(counts({ requests: 0 }))).toBe(true);
+    expect(isSilent(counts({ requests: 1 }))).toBe(false);
   });
 });

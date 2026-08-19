@@ -494,14 +494,31 @@ Deux choses à ne pas perdre de vue :
 
 ## 15. Les jalons
 
-| Jalon     | Quoi                                                                                                                            | Dépend de |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **J1** ✅ | Dataset Analytics Engine + `writeDataPoint` dans la passerelle (hors du chemin de réponse), sous tests — **fait le 2026-08-19** | —         |
-| **J2**    | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (hits, %5xx, p95, 429, par nœud et par fenêtre)                              | J1        |
-| **J3**    | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE, endpoint               | J2        |
-| **J4**    | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` (§8 + table du §12)                                   | J3        |
-| **J5**    | Écran : schéma live, liens animés par **occupation** (§13), staff-only                                                          | J4        |
-| **J6**    | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                     | J3, en // |
+| Jalon     | Quoi                                                                                                                              | Dépend de |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **J1** ✅ | Dataset Analytics Engine + `writeDataPoint` dans la passerelle (hors du chemin de réponse), sous tests — **fait le 2026-08-19**   | —         |
+| **J2** ✅ | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (requêtes, erreurs serveur, 429, 502 passerelle, p95) — **fait le 2026-08-19** | J1        |
+| **J3**    | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE, endpoint                 | J2        |
+| **J4**    | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` (§8 + table du §12)                                     | J3        |
+| **J5**    | Écran : schéma live, liens animés par **occupation** (§13), staff-only                                                            | J4        |
+| **J6**    | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                       | J3, en // |
+
+### Lire la fenêtre — deux pièges d'Analytics Engine
+
+Le contrat les rend explicites parce qu'ils ne se voient pas :
+
+- **`requests` se lit `SUM(_sample_interval)`, pas `COUNT(*)`.** Analytics
+  Engine échantillonne quand le volume monte et porte le poids de chaque point
+  dans cette colonne. Un `COUNT(*)` rendrait le nombre de points **conservés** :
+  un chiffre juste, réponse à une autre question.
+- **`p95Ms` se pondère du même poids.** Une latence calculée sur un échantillon
+  non pondéré ment dès le premier délestage — et ment vers le bas, donc rassure
+  à tort.
+
+Et une décision de fond : **les `429` ne sont pas des erreurs.** Le throttler qui
+refuse est le système qui fonctionne. Les compter dans le taux ferait rougir la
+carte au moment précis où elle devrait rassurer — et pousserait un jour quelqu'un
+à relâcher la seule défense qui marche pour « faire repasser le tableau au vert ».
 
 ### Vérifier le J1 sans déployer
 
