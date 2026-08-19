@@ -73,7 +73,7 @@ export class ShopifyCatalogue {
       this.products.set(result.products);
       this.state.set('loaded');
     } catch {
-      this.error.set('Backend PIM injoignable — démarrez lfc-PIM-backend (port 3100).');
+      this.error.set('API injoignable — démarrez lfd-api (port 3200).');
       this.state.set('error');
     }
   }

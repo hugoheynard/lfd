@@ -43,7 +43,7 @@ export class ReconciliationStore {
     try {
       this.boardState.set(await this.api.reconciliation());
     } catch {
-      this.error.set('Backend PIM injoignable — démarrez lfc-PIM-backend (port 3100).');
+      this.error.set('API injoignable — démarrez lfd-api (port 3200).');
     } finally {
       this.loading.set(false);
     }

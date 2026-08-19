@@ -6,12 +6,11 @@
 // depuis Jest tirerait tout le monde Workers. Ici, zéro import : des fonctions
 // pures sur `Request`, exécutables sous Node comme sous Workers.
 //
-// ⚠️ Ce fichier existe à l'identique dans apps/lfc-PIM-backend/container/. Deux
-// copies d'une primitive de sécurité, c'est un risque de dérive assumé pour
-// l'instant : le mutualiser demanderait un paquet partagé compilé pour le monde
-// Workers (tsconfig `types: ["@cloudflare/workers-types"]`, résolution Bundler),
-// ce qui coûte plus que la duplication de 40 lignes. Toute correction ici DOIT
-// être portée là-bas — les deux suites de tests sont jumelles pour le rappeler.
+// Ce fichier a longtemps existé à l'identique dans le container du PIM, et son
+// en-tête portait l'avertissement qui va avec : deux copies d'une primitive de
+// sécurité, toute correction à reporter des deux côtés. Le jumeau a disparu
+// avec l'app (B2c) — il n'y a plus qu'un exemplaire, plus de dérive possible,
+// et plus de dette à mutualiser dans un paquet compilé pour le monde Workers.
 
 /** L'en-tête que le backend NestJS lit pour identifier le client (throttler). */
 export const CLIENT_IP_HEADER = "x-lfc-client-ip";

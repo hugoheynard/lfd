@@ -165,6 +165,6 @@ export class ShopifyIntegration {
   }
 
   private unreachable(): string {
-    return 'Backend PIM injoignable — démarrez lfc-PIM-backend (port 3100).';
+    return 'API injoignable — démarrez lfd-api (port 3200).';
   }
 }
