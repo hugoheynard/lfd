@@ -43,3 +43,24 @@ service = "lfc-b2b-backend"
 [[services]]
 binding = "PIM_BACKEND"
 service = "lfc-pim-backend"
+
+# ── Observation du trafic (OPS J1) ─────────────────────────────────────────────
+# La passerelle est le SEUL chemin : elle est donc le seul endroit qui puisse
+# dire, sans rien demander à personne, ce qui est parti vers chaque backend et
+# ce qui en est revenu. C'est la troisième source d'OPS, à côté du heartbeat
+# (auto-déclaré) et du probe (externe) — cf.
+# documentation/suite/architecture-ops-ecosystem-health.md §12.
+#
+# Un point par requête, agrégé À LA LECTURE en SQL. Rien ne va en Postgres : les
+# points vivent chez Cloudflare, trois mois. Aucun identifiant client, aucune IP,
+# aucun chemin complet n'y entre (cf. src/traffic.ts).
+#
+# `dataset` doit rester identique à `TRAFFIC_DATASET` dans src/traffic.ts —
+# c'est la seule couture entre la configuration et le code.
+#
+# Absent en `wrangler dev` : `Env.TRAFFIC` est optionnel, et une écriture
+# impossible ne doit jamais empêcher une requête de passer. OPS observe, il
+# n'arbitre rien.
+[[analytics_engine_datasets]]
+binding = "TRAFFIC"
+dataset = "lfc_gateway_traffic"

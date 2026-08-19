@@ -494,14 +494,14 @@ Deux choses à ne pas perdre de vue :
 
 ## 15. Les jalons
 
-| Jalon  | Quoi                                                                                                              | Dépend de |
-| ------ | ----------------------------------------------------------------------------------------------------------------- | --------- |
-| **J1** | Dataset Analytics Engine + `writeDataPoint` dans la passerelle (hors du chemin de réponse), sous tests            | —         |
-| **J2** | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (hits, %5xx, p95, 429, par nœud et par fenêtre)                | J1        |
-| **J3** | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE, endpoint | J2        |
-| **J4** | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` (§8 + table du §12)                     | J3        |
-| **J5** | Écran : schéma live, liens animés par **occupation** (§13), staff-only                                            | J4        |
-| **J6** | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                       | J3, en // |
+| Jalon     | Quoi                                                                                                                            | Dépend de |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **J1** ✅ | Dataset Analytics Engine + `writeDataPoint` dans la passerelle (hors du chemin de réponse), sous tests — **fait le 2026-08-19** | —         |
+| **J2**    | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (hits, %5xx, p95, 429, par nœud et par fenêtre)                              | J1        |
+| **J3**    | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE, endpoint               | J2        |
+| **J4**    | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` (§8 + table du §12)                                   | J3        |
+| **J5**    | Écran : schéma live, liens animés par **occupation** (§13), staff-only                                                          | J4        |
+| **J6**    | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                     | J3, en // |
 
 Le J1 est autonome et sans risque : la passerelle écrit, personne ne lit encore.
 Rien n'est visible avant J5, et c'est voulu — on accumule d'abord de quoi

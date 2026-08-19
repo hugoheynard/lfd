@@ -1,5 +1,7 @@
 import { resolveTarget } from "./routes";
 import type { BackendKey, Target } from "./routes";
+import { trafficPoint } from "./traffic";
+import type { TrafficObservation } from "./traffic";
 
 /**
  * Passerelle de la suite LFC. **Zéro métier** — du routage, rien d'autre.
@@ -44,41 +46,95 @@ const TRACEPARENT_FORMAT = /^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/
 interface Env {
   B2B_BACKEND?: Fetcher;
   PIM_BACKEND?: Fetcher;
+  /**
+   * Le dataset Analytics Engine (`TRAFFIC_DATASET` dans `traffic.ts`). Optionnel comme
+   * les bindings : absent en `wrangler dev`, et son absence ne doit jamais
+   * empêcher une requête de passer — OPS observe, il n'arbitre rien.
+   */
+  TRAFFIC?: AnalyticsEngineDataset;
+}
+
+/** Une requête traitée : ce qu'on rend, et ce qu'on en retient pour OPS. */
+interface Handled {
+  readonly response: Response;
+  readonly observation: Omit<TrafficObservation, "durationMs">;
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-    const target = resolveTarget(url.hostname, url.pathname);
-    if (target === undefined) {
-      return new Response(`Gateway LFC : rien ne répond sur « ${url.pathname} ».`, {
-        status: 404,
-      });
-    }
-    const destination = destinationFor(target, url, env);
-    if (destination === undefined) {
-      // Binding déclaré nulle part : c'est une ERREUR DE CONFIGURATION, pas un
-      // incident réseau. On le dit en 503 plutôt que de retomber sur un appel
-      // public — ce serait rouvrir en silence la porte qu'on veut fermer.
-      return new Response(`Gateway LFC : backend non relié « ${url.pathname} ».`, {
-        status: 503,
-      });
-    }
-    try {
-      const forward = withTraceContext(
-        withClientIp(new Request(destination.url, request), request),
-        request,
-      );
-      return await destination.send(forward);
-    } catch {
-      // Upstream injoignable (down, en cours de build…) — on ne relaie pas le
-      // détail interne, on rend un 502 clair (comme la sonde AppFrame côté shell).
-      return new Response(`Gateway LFC : upstream injoignable pour « ${url.pathname} ».`, {
-        status: 502,
-      });
-    }
+    const startedAt = Date.now();
+    const handled = await handle(request, new URL(request.url), env);
+    observe(env, { ...handled.observation, durationMs: Date.now() - startedAt });
+    return handled.response;
   },
 };
+
+/**
+ * Le routage proprement dit. Chaque sortie dit **qui** a fabriqué la réponse :
+ * un `5xx` venu de l'upstream signifie que le backend a répondu en échouant, un
+ * `502` de la passerelle qu'il n'a pas répondu du tout. OPS ne peut conclure à
+ * un nœud mort que sur le second.
+ */
+async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
+  const target = resolveTarget(url.hostname, url.pathname);
+  if (target === undefined) {
+    return gatewayFault(404, `rien ne répond sur « ${url.pathname} »`, "unrouted", url.pathname);
+  }
+  const node = target.kind === "backend" ? target.backend : "dev";
+  const forwardedPath = target.kind === "backend" ? target.path : url.pathname;
+  const destination = destinationFor(target, url, env);
+  if (destination === undefined) {
+    // Binding déclaré nulle part : c'est une ERREUR DE CONFIGURATION, pas un
+    // incident réseau. On le dit en 503 plutôt que de retomber sur un appel
+    // public — ce serait rouvrir en silence la porte qu'on veut fermer.
+    return gatewayFault(503, `backend non relié « ${url.pathname} »`, node, forwardedPath);
+  }
+  try {
+    const forward = withTraceContext(
+      withClientIp(new Request(destination.url, request), request),
+      request,
+    );
+    const response = await destination.send(forward);
+    return {
+      response,
+      observation: { node, status: response.status, forwardedPath, origin: "upstream" },
+    };
+  } catch {
+    // Upstream injoignable (down, en cours de build…) — on ne relaie pas le
+    // détail interne, on rend un 502 clair (comme la sonde AppFrame côté shell).
+    return gatewayFault(502, `upstream injoignable pour « ${url.pathname} »`, node, forwardedPath);
+  }
+}
+
+/** Une réponse fabriquée par la passerelle elle-même — jamais par un backend. */
+function gatewayFault(
+  status: number,
+  reason: string,
+  node: TrafficObservation["node"],
+  forwardedPath: string,
+): Handled {
+  return {
+    response: new Response(`Gateway LFC : ${reason}.`, { status }),
+    observation: { node, status, forwardedPath, origin: "gateway" },
+  };
+}
+
+/**
+ * Dépose le point Analytics Engine. `writeDataPoint` ne rend pas de promesse et
+ * n'attend rien : l'écriture n'allonge pas la réponse. Sans binding (dev), on ne
+ * fait rien — et surtout on ne jette pas : une carte de santé indisponible ne
+ * doit jamais faire échouer le trafic qu'elle observe.
+ */
+function observe(env: Env, observation: TrafficObservation): void {
+  const point = trafficPoint(observation);
+  // Recopie en tableaux mutables : notre contrat est `readonly` (règle du dépôt),
+  // la signature Cloudflare ne l'est pas. On adapte à la frontière, sans `as`.
+  env.TRAFFIC?.writeDataPoint({
+    indexes: [...point.indexes],
+    blobs: [...point.blobs],
+    doubles: [...point.doubles],
+  });
+}
 
 /** Où envoyer, et par quel moyen. `undefined` ⇒ binding manquant. */
 interface Destination {
