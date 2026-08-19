@@ -958,3 +958,78 @@ la carte.
   leur vraie métrique (§22 ne couvre qu'eux par l'absence) ;
 - **des alertes calibrables** : après quelques jours de journal, on saura combien
   de transitions par semaine un seuil produit, au lieu de le deviner.
+
+## 24. Outillage tiers — ce qu'on prend, ce qu'on laisse
+
+OPS répond à « combien, à quelle vitesse, ça dérive ». Il ne répondra jamais à
+« **qu'est-ce qui a cassé, où, pour qui** » : agréger, c'est jeter le détail —
+c'est même le but. Une métrique dit qu'il y a 3 % de `5xx` ; elle ne dira pas
+lesquels, ni sur quelle ligne, ni pour quel client.
+
+### Ce qu'on prend : Sentry, et rien d'autre
+
+| Palier gratuit (vérifié le 2026-08-19) |                         |
+| -------------------------------------- | ----------------------- |
+| Erreurs                                | 5 000 / mois            |
+| Spans (traces)                         | 5 M                     |
+| Replays de session                     | 50                      |
+| Logs                                   | 5 Go                    |
+| Moniteur uptime · cron                 | 1 · 1                   |
+| Rétention                              | 30 jours                |
+| ⚠️ Sièges                              | **un seul utilisateur** |
+
+Il comble **les deux trous que ce document a laissés ouverts** :
+
+- **le témoin dans le navigateur** (§18) — `deploy-ok` dit qu'un front est servi,
+  jamais qu'il démarre. Le SDK navigateur est ce témoin, et il n'a pas fallu
+  inventer un endpoint public pour l'obtenir ;
+- **la calibration des alertes** (§21) — « première occurrence d'une erreur
+  jamais vue » est un signal **naturellement peu bruyant**. Il n'y a pas de seuil
+  à deviner, donc pas de canal qui s'apprend à s'ignorer.
+
+### Ce qu'on laisse, et pourquoi
+
+**Prometheus / Grafana métriques.** Ce serait racheter ce qu'on a, en moins bien :
+Analytics Engine garde **trois mois**, le palier gratuit de Grafana en garde
+**quatorze jours**. Et un Prometheus « gratuit » est un container facturé à
+l'uptime. Les 100 k tests synthétiques de Grafana redeviendront intéressants le
+jour où l'on voudra sonder depuis plusieurs régions — pas avant.
+
+**Un magasin de logs centralisés.** Un magasin de logs répond à « je ne sais pas
+ce que je cherche » ; un **fil d'Ariane** répond à « qu'est-ce qui a mené là », et
+c'est la question qu'on se pose. Les fils sont capturés en mémoire et expédiés
+**seulement avec l'erreur** : pas d'erreur, rien de stocké, aucune requête à
+deviner.
+
+Ce qu'ils ne couvriront jamais — une requête qui **n'échoue pas** (un `200` avec
+le mauvais prix), et la corrélation entre deux requêtes — n'est pas un problème
+de logs : c'est le **journal d'événements métier**, qui existe déjà. Un log dit
+ce que le code a fait ; le journal dit ce qui s'est passé, et c'est le second qui
+se relit dans six mois.
+
+### Les jalons
+
+| Jalon  | Quoi                                                                                                                                                                | Dépend de |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **S1** | Le fil visible de bout en bout : le `traceId` W3C (déjà posé à l'ingress) rendu en **en-tête** de réponse, gardé par les fronts, affiché dans leur message d'erreur | —         |
+| **S2** | Sentry backend, branché sur `AppErrorFilter` : **seules les erreurs techniques** partent ; scrubbing PII ; `traceId`, route, type d'acteur en tags                  | S1        |
+| **S3** | Les fils d'Ariane métier : commande posée, paiement, e-mail émis, publication Shopify — les étapes qui rendent un parcours relisible                                | S2        |
+| **S4** | Sentry sur les trois fronts + **source maps** uploadées au build, sans quoi les stacks Angular sont illisibles                                                      | S1        |
+| **S5** | Le moniteur uptime externe sur la passerelle — celui qui survit à l'API, et répond au défaut de fond du §21                                                         | —         |
+| **S6** | La boucle : nouvelle issue → e-mail staff, et le lien depuis l'écran OPS                                                                                            | S2, S4    |
+
+### Les trois pièges, décidés d'avance
+
+**Le quota se brûle en une heure, pas en un mois.** Sentry compte les
+**événements**, pas les issues : une boucle envoie 5 000 fois la même chose. Le
+filtre vit dans `AppErrorFilter`, qui catégorise déjà — une `BusinessError`
+(« ce SIRET existe déjà ») **n'est pas un incident**, c'est le système qui
+fonctionne, exactement comme un `429`. Elle ne part pas. Ça protège le quota et,
+plus important, ça garde la boîte lisible.
+
+**Les données personnelles.** E-mails, SIRET, adresses, et Stripe à côté. Le
+scrubbing se règle **avant** le premier événement : ce qui est parti est parti,
+et c'est du RGPD, pas du confort.
+
+**Un seul siège.** Le jour où quelqu'un d'autre doit voir les erreurs, le palier
+gratuit ne suit pas. À savoir avant de construire une habitude dessus.
