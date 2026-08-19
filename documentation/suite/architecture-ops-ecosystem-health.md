@@ -1166,6 +1166,40 @@ qui se règle : c'est la liste d'invitations qu'il faut nettoyer.
 Aucun envoi sur la fenêtre ⇒ **aucun relevé**, même règle que le débit de la
 passerelle : un zéro qui ressemble à une mesure est pire qu'une absence.
 
+### On VÉRIFIE la déclaration, on ne la crée pas
+
+L'API Resend sait créer un webhook (`webhooks.create`). On ne s'en sert pas au
+démarrage, et c'est une décision : déclarer depuis le code **mute l'état d'un
+tiers à chaque boot**. Un poste local, une CI ou un déploiement d'essai lancé
+avec la clé de production repointerait le vrai webhook vers lui-même — et les
+rebonds de la production partiraient sur un portable. La création reste un geste
+délibéré ; la **vérification**, elle, tourne à chaque démarrage et à chaque
+lecture de la carte.
+
+Ce qu'elle attrape, et que rien d'autre ne dit :
+
+| Constat                               | Pourquoi c'est grave                                                                          |
+| ------------------------------------- | --------------------------------------------------------------------------------------------- |
+| aucun webhook déclaré                 | aujourd'hui indiscernable d'un canal parfait                                                  |
+| **déclaré mais DÉSACTIVÉ**            | Resend éteint un endpoint qui échoue trop — personne n'a rien changé, et plus rien ne revient |
+| `email.bounced` absent des événements | les livraisons arrivent, tout paraît vert, les rebonds ne viennent jamais                     |
+| deux endpoints actifs                 | il en reste un d'avant un changement d'adresse ; on ne sait plus lequel fait foi              |
+
+Le jugement porte sur **le chemin de notre route**, pas sur l'adresse complète :
+l'hôte public change (passerelle aujourd'hui, domaine demain) alors que le
+chemin nous appartient. Exiger l'adresse exacte demanderait un réglage de plus à
+tenir à jour — et un réglage qu'on oublie fait sonner une fausse alerte, ce qui
+est pire que de ne pas vérifier.
+
+Le résultat sort à deux endroits : une **erreur au démarrage** (sans bloquer le
+boot — un tiers lent ne doit pas retarder l'ouverture du port) et un relevé
+**« Retour »** sur le nœud, posé **avant** les volumes. C'est voulu : un webhook
+désactivé rend « Rejetés : 0 » indiscernable d'un canal parfait — le chiffre le
+plus rassurant de l'écran, et le plus faux.
+
+Ne pas pouvoir demander (pas de clé, Resend muet) rend **aucun relevé** : ne
+rien savoir n'est pas savoir que c'est cassé.
+
 ### Ce qu'il reste à faire, hors dépôt
 
 1. déclarer le webhook chez Resend vers `…/api/b2b/webhooks/resend`
@@ -1173,4 +1207,6 @@ passerelle : un zéro qui ressemble à une mesure est pire qu'une absence.
 2. poser le `whsec_…` en Secret GitHub sous `RESEND_WEBHOOK_SECRET`.
 
 Sans le secret, la route refuse tout et le démarrage l'annonce en **dégradé** :
-les e-mails partent, mais on n'apprend jamais lesquels ont rebondi.
+les e-mails partent, mais on n'apprend jamais lesquels ont rebondi. Et si la
+déclaration est oubliée ou se désactive, la vérification ci-dessus le dira —
+c'est précisément le trou qu'elle bouche.

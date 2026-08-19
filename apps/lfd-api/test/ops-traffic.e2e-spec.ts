@@ -15,6 +15,7 @@
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { Auth0ReadingsReader } from "../src/ops/health/auth0-readings.reader.js";
+import { ResendWebhookChecker } from "../src/platform/mailer/webhook/resend-webhook.checker.js";
 import { NODE_PROBES } from "../src/ops/probes/probe.port.js";
 import { OpsHealthService } from "../src/ops/health/ops-health.service.js";
 import { StatusJournal } from "../src/ops/journal/status-journal.port.js";
@@ -47,6 +48,9 @@ beforeAll(async () => {
       // service qu'on teste.
       { token: NODE_PROBES, value: [] },
       { token: Auth0ReadingsReader, value: { read: (): Promise<never[]> => Promise.resolve([]) } },
+      // Même raison : `check()` interroge Resend. Une suite ne doit pas
+      // dépendre du réseau de quelqu'un d'autre pour passer.
+      { token: ResendWebhookChecker, value: { check: (): Promise<null> => Promise.resolve(null) } },
     ],
   });
 });

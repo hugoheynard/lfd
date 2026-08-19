@@ -26,6 +26,41 @@ export interface MailTally {
  */
 export const MAIL_WINDOW_DAYS = 7;
 
+/**
+ * L'état de la déclaration, tel que l'écran doit le voir. `null` = on n'a pas
+ * pu demander, et on s'abstient : ne rien savoir n'est pas savoir que c'est
+ * cassé.
+ */
+export interface WebhookState {
+  readonly healthy: boolean;
+  readonly detail: string;
+}
+
+/**
+ * Le relevé du **retour**, posé avant les volumes.
+ *
+ * Il répond à la question qu'aucun autre relevé ne pose : « est-ce qu'on sera
+ * prévenu si ça casse ? ». Un webhook désactivé rend « Rejetés : 0 »
+ * indiscernable d'un canal parfait — c'est le chiffre le plus rassurant de
+ * l'écran, et le plus faux. Il passe donc devant.
+ */
+export function webhookReading(state: WebhookState | null): readonly NodeReading[] {
+  if (state === null) {
+    return [];
+  }
+  return [
+    {
+      label: "Retour",
+      // 1 / 0 plutôt qu'un texte : la carte affiche des nombres, et la valeur
+      // seule doit distinguer les deux cas sans qu'on ouvre l'infobulle.
+      value: state.healthy ? 1 : 0,
+      hint: state.healthy
+        ? `Webhook Resend : ${state.detail}.`
+        : `⚠ Webhook Resend : ${state.detail}. Sans lui, « 0 rejeté » ne veut plus rien dire.`,
+    },
+  ];
+}
+
 export function mailReadings(
   tally: MailTally,
   worstTemplate: string | null,

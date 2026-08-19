@@ -1,4 +1,4 @@
-import { mailReadings, type MailTally } from "../mail-readings.js";
+import { mailReadings, webhookReading, type MailTally } from "../mail-readings.js";
 
 const tally = (over: Partial<MailTally> = {}): MailTally => ({
   sent: 0,
@@ -52,5 +52,27 @@ describe("mailReadings — est-ce que nos e-mails ARRIVENT", () => {
 
     expect(rejetés).toMatchObject({ value: 0 });
     expect(rejetés?.hint).toContain("le canal passe");
+  });
+});
+
+describe("webhookReading — sera-t-on prévenu si ça casse ?", () => {
+  it("s'abstient quand on n'a pas pu demander", () => {
+    // Ne rien savoir n'est pas savoir que c'est cassé.
+    expect(webhookReading(null)).toEqual([]);
+  });
+
+  it("🔴 alerte quand la déclaration est en défaut", () => {
+    // C'est le relevé qui décide d'un geste : sans webhook, « 0 rejeté » est le
+    // chiffre le plus rassurant de l'écran, et le plus faux.
+    const [reading] = webhookReading({ healthy: false, detail: "webhook DÉSACTIVÉ" });
+
+    expect(reading?.value).toBe(0);
+    expect(reading?.hint).toContain("ne veut plus rien dire");
+  });
+
+  it("se contente de confirmer quand tout va", () => {
+    const [reading] = webhookReading({ healthy: true, detail: "actif" });
+
+    expect(reading).toMatchObject({ label: "Retour", value: 1 });
   });
 });

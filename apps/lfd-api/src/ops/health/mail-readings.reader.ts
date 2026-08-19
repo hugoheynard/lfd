@@ -3,7 +3,8 @@ import type { NodeReading } from "@lfd/ops-contract";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { Clock } from "../../platform/time/clock.js";
-import { mailReadings, MAIL_WINDOW_DAYS, type MailTally } from "./mail-readings.js";
+import { ResendWebhookChecker } from "../../platform/mailer/webhook/resend-webhook.checker.js";
+import { mailReadings, webhookReading, MAIL_WINDOW_DAYS, type MailTally } from "./mail-readings.js";
 
 /** Les états qui comptent comme « personne n'a rien reçu ». */
 const REJECTED = ["bounced", "complained"];
@@ -22,10 +23,14 @@ export class MailReadingsReader {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
+    private readonly webhook: ResendWebhookChecker,
   ) {}
 
   async read(): Promise<readonly NodeReading[]> {
     const since = new Date(this.clock.now().getTime() - MAIL_WINDOW_DAYS * 86_400_000);
+    // L'état de la déclaration passe DEVANT les volumes : un webhook désactivé
+    // rend « 0 rejeté » indiscernable d'un canal parfait.
+    const declaration = webhookReading(await this.webhook.check());
     try {
       const [byStatus, byTemplate] = await Promise.all([
         this.prisma.mailSend.groupBy({
@@ -41,11 +46,11 @@ export class MailReadingsReader {
           take: 1,
         }),
       ]);
-      return mailReadings(tallyOf(byStatus), byTemplate[0]?.template ?? null);
+      return [...declaration, ...mailReadings(tallyOf(byStatus), byTemplate[0]?.template ?? null)];
     } catch (error) {
       // Une carte de santé ne tombe pas avec ce qu'elle observe.
       this.logger.warn("Relevés du courrier indisponibles", error);
-      return [];
+      return declaration;
     }
   }
 }
