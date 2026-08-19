@@ -431,6 +431,14 @@ export interface MailerConfig {
   readonly replyTo: string | null;
   /** Boîte de l'équipe commerciale, ou `null` : aucune alerte interne ne part. */
   readonly staffInbox: string | null;
+  /**
+   * Secret de signature des webhooks (`whsec_…`), ou `null`.
+   *
+   * Absent, la route de réception **refuse tout** : elle ne peut rien prouver,
+   * et accepter faute de secret laisserait n'importe qui déclarer que nos
+   * e-mails rebondissent.
+   */
+  readonly webhookSecret: string | null;
 }
 
 /**

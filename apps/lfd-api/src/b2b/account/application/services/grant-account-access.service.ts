@@ -237,7 +237,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
    * n'attendra jamais rien. On le laisse rendre le gabarit (une erreur de
    * gabarit doit se voir en local), et on dit la vérité sur l'envoi.
    */
-  private async send(to: string, deliver: () => Promise<void>): Promise<boolean> {
+  private async send(to: string, deliver: () => Promise<unknown>): Promise<boolean> {
     try {
       await deliver();
       return this.mailer.enabled;

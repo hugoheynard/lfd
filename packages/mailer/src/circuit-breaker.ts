@@ -1,6 +1,6 @@
 import { MailerCircuitOpenError } from "./errors.js";
 import { silentLogger } from "./types.js";
-import type { Mailer, MailerLogger, SendMailArgs, TemplateMap } from "./types.js";
+import type { Mailer, MailerLogger, MailReceipt, SendMailArgs, TemplateMap } from "./types.js";
 
 const DEFAULT_THRESHOLD = 5;
 const DEFAULT_COOLDOWN_MS = 30_000;
@@ -50,13 +50,14 @@ export class CircuitBreakerMailer<M extends TemplateMap> implements Mailer<M> {
     return this.inner.enabled;
   }
 
-  async send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<void> {
+  async send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
     if (this.isOpen()) {
       throw new MailerCircuitOpenError(this.openUntil);
     }
     try {
-      await this.inner.send(args);
+      const receipt = await this.inner.send(args);
       this.failures = 0; // un succès — y compris l'essai de reprise — referme.
+      return receipt;
     } catch (error) {
       this.recordFailure();
       throw error;

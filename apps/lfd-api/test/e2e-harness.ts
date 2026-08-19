@@ -124,7 +124,12 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
 
   // Typé `App` (le serveur HTTP sous-jacent) plutôt que `any` : c'est ce que
   // supertest attend, et ça évite de propager de l'`any` dans le harnais.
-  const app: INestApplication<App> = moduleRef.createNestApplication();
+  // `rawBody: true` comme `main.ts` : les webhooks signés (Stripe, Resend)
+  // vérifient la signature sur les OCTETS EXACTS. Sans cette option, `rawBody`
+  // est absent, toute signature échoue, et la suite éprouverait une application
+  // qui n'est pas celle qu'on déploie — en donnant raison au code pour de
+  // mauvaises raisons.
+  const app: INestApplication<App> = moduleRef.createNestApplication({ rawBody: true });
   // Même middleware d'ingress que `main.ts` : pose le RequestContext (instant +
   // traceId + acteur) autour de chaque requête. Sans lui, le journal d'événements
   // testerait une autre application (acteur toujours `system`).

@@ -24,6 +24,7 @@ export interface CapabilitySnapshot {
   readonly hasManagementCredentials: boolean;
   readonly hasAdminAudience: boolean;
   readonly hasMailerKey: boolean;
+  readonly hasMailerWebhookSecret: boolean;
   readonly hasStorage: boolean;
   readonly hasStripe: boolean;
   readonly hasClientBaseUrl: boolean;
@@ -94,6 +95,18 @@ const CHECKS: readonly Check[] = [
       "les e-mails sont rendus et journalisés, mais ne partent pas — une invitation ne parvient à personne",
     severity: "blocking",
     present: (s) => s.hasMailerKey,
+  },
+  {
+    capability: "Retour du courrier",
+    setting: "RESEND_WEBHOOK_SECRET",
+    // Dégradé et non bloquant : les e-mails partent quand même. Ce qu'on perd,
+    // c'est de SAVOIR qu'ils ne sont pas arrivés — une adresse morte reste
+    // indiscernable d'une invitation ignorée, ce qui se paie en clients qu'on
+    // croit joints.
+    consequence:
+      "les e-mails partent, mais on n'apprend jamais lesquels ont rebondi — une adresse morte reste indiscernable d'une invitation ignorée",
+    severity: "degraded",
+    present: (s) => s.hasMailerWebhookSecret,
   },
   {
     capability: "Paiement",

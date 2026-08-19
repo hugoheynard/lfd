@@ -132,6 +132,7 @@ jobs:
           # est un `no-reply` : sans elle, une personne qui répond à son
           # invitation écrit dans le vide.
           RESEND_MAILER_B2B_API_KEY: ${{ secrets.RESEND_MAILER_B2B_API_KEY }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
           MAILER_FROM_ADDRESS: ${{ vars.MAILER_FROM_ADDRESS }}
           MAILER_REPLY_TO: ${{ vars.MAILER_REPLY_TO }}
           MAILER_STAFF_INBOX: ${{ vars.MAILER_STAFF_INBOX }}
@@ -170,7 +171,7 @@ jobs:
                       AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET \
                       AUTH0_STAFF_CONNECTION AUTH0_CUSTOMER_CONNECTION \
                       BOOTSTRAP_ADMIN_EMAIL CLIENT_BASE_URL ADMIN_BASE_URL \
-                      RESEND_MAILER_B2B_API_KEY \
+                      RESEND_MAILER_B2B_API_KEY RESEND_WEBHOOK_SECRET \
                       MAILER_FROM_ADDRESS MAILER_REPLY_TO MAILER_STAFF_INBOX \
                       R2_ENDPOINT R2_REGION \
                       R2_KBIS_BUCKET R2_KBIS_ACCESS_KEY_ID R2_KBIS_SECRET_ACCESS_KEY \

@@ -78,7 +78,10 @@ describe("le mode à blanc", () => {
   it("ne délivre rien, et le dit", async () => {
     const mailer = new DryRunMailer<TestMails>(registry);
     expect(mailer.enabled).toBe(false);
-    await expect(mailer.send(HELLO)).resolves.toBeUndefined();
+    // Pas d'envoi, donc PAS d'identifiant — et surtout pas un identifiant
+    // inventé, qui ne correspondrait à rien le jour où on le rapprocherait
+    // d'un événement de webhook.
+    await expect(mailer.send(HELLO)).resolves.toEqual({ providerId: null });
   });
 
   it("rend QUAND MÊME le gabarit — une erreur de gabarit se voit en local", () => {
@@ -201,5 +204,39 @@ describe("la fabrique", () => {
 
   it("branche le vrai fournisseur dès qu'une clé est là", () => {
     expect(createMailer({ apiKey: "re_test", registry, fromAddress: "a@b.fr" }).enabled).toBe(true);
+  });
+});
+
+describe("l'accusé d'envoi", () => {
+  it("🔴 remonte l'identifiant du fournisseur à l'appelant", async () => {
+    // C'est la SEULE clé qui reliera cet envoi aux événements qui le suivront
+    // (délivré, rejeté, plainte). Le journaliser sans le rendre, c'était
+    // l'écrire là où personne ne peut le joindre — et rendre un webhook muet
+    // d'avance.
+    const client: ResendLike = {
+      emails: {
+        send: () => Promise.resolve({ data: { id: "re_abc123" }, error: null }),
+      },
+    };
+    const mailer = new ResendMailer<TestMails>({
+      client,
+      registry,
+      fromAddress: "bonjour@lfc.test",
+    });
+
+    await expect(mailer.send(HELLO)).resolves.toEqual({ providerId: "re_abc123" });
+  });
+
+  it("rend `null` quand le fournisseur n'a pas donné d'identifiant", async () => {
+    const client: ResendLike = {
+      emails: { send: () => Promise.resolve({ data: null, error: null }) },
+    };
+    const mailer = new ResendMailer<TestMails>({
+      client,
+      registry,
+      fromAddress: "bonjour@lfc.test",
+    });
+
+    await expect(mailer.send(HELLO)).resolves.toEqual({ providerId: null });
   });
 });

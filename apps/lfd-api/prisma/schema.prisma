@@ -2278,3 +2278,64 @@ model NodeStatusLog {
   @@map("node_status_log")
   @@schema("ops")
 }
+
+/// **Un e-mail parti**, et ce qu'il est devenu.
+///
+/// `providerId` est l'identifiant Resend : la SEULE clé qui relie un envoi aux
+/// événements qui le suivront. Nul en mode à blanc — rien n'est parti, et un
+/// identifiant inventé ne se rapprocherait de rien.
+///
+/// `template` sert de **catégorie** : c'est lui qui permet de dire « les liens
+/// d'accès rebondissent, les alertes internes non », qui est la seule forme
+/// utile de cette information.
+model MailSend {
+  /// ULID préfixé `mailsend_`.
+  id String @id
+
+  /// Identifiant Resend, unique quand il existe : il dédoublonne l'envoi.
+  providerId String? @unique @map("provider_id")
+
+  /// Le gabarit envoyé (`customer.access-opened`, `staff.appointment-booked`…).
+  template String
+
+  recipient String
+
+  /// sent | delayed | delivered | complained | bounced.
+  status String @default("sent")
+
+  /// Quand ce statut a été constaté — pas quand l'e-mail est parti.
+  statusAt DateTime @default(now()) @map("status_at")
+
+  /// Ce que le fournisseur a dit du rejet. Vide quand tout va bien.
+  detail String @default("")
+
+  sentAt DateTime @default(now()) @map("sent_at")
+
+  /// La lecture des relevés : par gabarit, sur une fenêtre récente.
+  @@index([template, sentAt])
+  @@map("mail_send")
+  @@schema("ops")
+}
+
+/// **Le registre des messages de webhook déjà vus.**
+///
+/// Les fournisseurs réessaient : le même événement arrive plusieurs fois, et le
+/// traiter deux fois compterait deux rebonds pour un seul. L'unicité
+/// `(provider, externalId)` est la garantie — portée par la base, pas par une
+/// vérification applicative qui perdrait la course à deux requêtes simultanées.
+model WebhookEvent {
+  /// ULID préfixé `webhookevent_`.
+  id String @id
+
+  /// `resend`, et demain `stripe`.
+  provider String
+
+  /// L'identifiant du message chez le fournisseur (`svix-id` pour Resend).
+  externalId String @map("external_id")
+
+  receivedAt DateTime @default(now()) @map("received_at")
+
+  @@unique([provider, externalId])
+  @@map("webhook_event")
+  @@schema("ops")
+}

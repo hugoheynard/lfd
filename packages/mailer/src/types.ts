@@ -12,6 +12,22 @@
  * peuvent donc partager ce transport sans partager leurs e-mails.
  */
 
+/**
+ * **L'accusé d'un envoi** — ce que le fournisseur en dit sur le moment.
+ *
+ * `providerId` est l'identifiant que Resend attribue au message. C'est la
+ * SEULE clé qui relie un envoi aux événements qui le suivront (délivré, rejeté,
+ * plainte) : sans elle, un webhook peut dire qu'un e-mail a rebondi, jamais
+ * lequel ni pour qui. Le jeter était le rendre muet d'avance.
+ *
+ * `null` quand aucun fournisseur n'est branché (mode à blanc) : il n'y a pas
+ * d'envoi, donc pas d'identifiant — et surtout pas un identifiant inventé, qui
+ * ne correspondrait à rien le jour où on essaierait de le rapprocher.
+ */
+export interface MailReceipt {
+  readonly providerId: string | null;
+}
+
 /** Un e-mail rendu, prêt à partir. */
 export interface RenderedMail {
   readonly subject: string;
@@ -73,7 +89,7 @@ export interface SendMailArgs<M extends TemplateMap, K extends keyof M = keyof M
  */
 export interface Mailer<M extends TemplateMap> {
   readonly enabled: boolean;
-  send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<void>;
+  send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt>;
 }
 
 /**

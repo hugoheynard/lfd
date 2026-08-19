@@ -1,5 +1,12 @@
 import { silentLogger } from "./types.js";
-import type { Mailer, MailerLogger, SendMailArgs, TemplateMap, TemplateRegistry } from "./types.js";
+import type {
+  Mailer,
+  MailerLogger,
+  MailReceipt,
+  SendMailArgs,
+  TemplateMap,
+  TemplateRegistry,
+} from "./types.js";
 
 /**
  * Adaptateur **à blanc** : il rend l'e-mail, le journalise, et ne l'envoie pas.
@@ -23,13 +30,15 @@ export class DryRunMailer<M extends TemplateMap> implements Mailer<M> {
     );
   }
 
-  send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<void> {
+  send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
     const { subject } = this.registry[args.template](args.data);
     this.log.info("E-mail à blanc", {
       template: String(args.template),
       to: args.to,
       subject,
     });
-    return Promise.resolve();
+    // Aucun identifiant : rien n'est parti. En inventer un donnerait une clé
+    // qui ne correspondra jamais à un événement de webhook.
+    return Promise.resolve({ providerId: null });
   }
 }

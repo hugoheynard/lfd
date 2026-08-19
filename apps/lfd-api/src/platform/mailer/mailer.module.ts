@@ -2,7 +2,12 @@ import { createMailer, type MailerLogger } from "@lfd/mailer";
 import { Global, Logger, Module } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
+import { Clock } from "../time/clock.js";
 import { AdminMailCheckController } from "./admin-mail-check.controller.js";
+import { JournalingMailer } from "./journal/journaling-mailer.js";
+import { MailJournal } from "./journal/mail-journal.port.js";
+import { PrismaMailJournal } from "./journal/prisma-mail-journal.js";
+import { ResendWebhookController } from "./webhook/resend-webhook.controller.js";
 import { b2bMailTemplates, type B2bMails } from "./mail-templates.js";
 import { MAILER, type B2bMailer } from "./mailer.tokens.js";
 
@@ -25,14 +30,20 @@ export type { B2bMailer };
   // n'a d'autre dépendance que le mailer et la configuration, et le garder à
   // côté de l'adaptateur qu'il éprouve évite qu'on le déplace un jour sans voir
   // ce qu'il teste réellement.
-  controllers: [AdminMailCheckController],
+  controllers: [AdminMailCheckController, ResendWebhookController],
   providers: [
+    { provide: MailJournal, useClass: PrismaMailJournal },
     {
       provide: MAILER,
-      inject: [AppConfig],
-      useFactory: (config: AppConfig): B2bMailer => {
+      inject: [AppConfig, MailJournal, Clock],
+      useFactory: (config: AppConfig, journal: MailJournal, clock: Clock): B2bMailer => {
         const mailer = config.mailerConfig();
-        return createMailer<B2bMails>({
+        // Le journal ENVELOPPE le mailer : `@lfd/mailer` est partagé et ne
+        // connaît ni Nest, ni Prisma, ni l'idée qu'une app tienne un registre.
+        // C'est l'app qui décide de garder une trace — et sans elle, le webhook
+        // Resend serait muet d'avance : il donne un identifiant fournisseur
+        // auquel rien, de notre côté, ne correspondrait.
+        const inner = createMailer<B2bMails>({
           apiKey: mailer.apiKey,
           // La marque est construite ICI, pas déclarée dans les gabarits :
           // l'adresse de recours est l'admin RACINE, la seule que le domaine
@@ -46,10 +57,11 @@ export type { B2bMailer };
           replyTo: mailer.replyTo,
           logger: nestLogger(),
         });
+        return new JournalingMailer(inner, journal, clock);
       },
     },
   ],
-  exports: [MAILER],
+  exports: [MAILER, MailJournal],
 })
 export class MailerModule {}
 

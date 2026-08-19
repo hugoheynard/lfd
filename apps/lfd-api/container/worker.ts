@@ -58,6 +58,9 @@ const RUNTIME_KEYS = [
   "MAILER_FROM_ADDRESS",
   "MAILER_REPLY_TO",
   "MAILER_STAFF_INBOX",
+  // Signature des webhooks Resend : sans elle, la route de réception refuse
+  // tout — elle ne peut rien prouver.
+  "RESEND_WEBHOOK_SECRET",
   // Stockage des pièces (KBIS). Endpoint et région sont des faits du COMPTE ;
   // bucket et clés appartiennent à l'USAGE, pour qu'un jeton n'ouvre que le sien.
   "R2_ENDPOINT",

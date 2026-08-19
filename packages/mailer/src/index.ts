@@ -29,6 +29,7 @@ export { silentLogger } from "./types.js";
 export type {
   Mailer,
   MailerLogger,
+  MailReceipt,
   RenderedMail,
   SendMailArgs,
   TemplateMap,

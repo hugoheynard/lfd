@@ -219,6 +219,7 @@ export function optionalMailerConfig(): MailerConfig {
     fromAddress: optionalString("MAILER_FROM_ADDRESS") ?? DEFAULT_FROM_ADDRESS,
     replyTo: optionalString("MAILER_REPLY_TO"),
     staffInbox: optionalString("MAILER_STAFF_INBOX"),
+    webhookSecret: optionalString("RESEND_WEBHOOK_SECRET"),
   };
 }
 

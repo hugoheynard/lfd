@@ -2,7 +2,14 @@ import { Resend } from "resend";
 
 import { MailerSendError } from "./errors.js";
 import { silentLogger } from "./types.js";
-import type { Mailer, MailerLogger, SendMailArgs, TemplateMap, TemplateRegistry } from "./types.js";
+import type {
+  Mailer,
+  MailerLogger,
+  MailReceipt,
+  SendMailArgs,
+  TemplateMap,
+  TemplateRegistry,
+} from "./types.js";
 
 /**
  * La part de Resend qu'on consomme, et rien de plus.
@@ -55,7 +62,7 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
     this.log = deps.logger ?? silentLogger;
   }
 
-  async send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<void> {
+  async send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
     const { subject, html } = this.deps.registry[args.template](args.data);
     const context = { template: String(args.template), to: args.to };
     const replyTo = this.deps.replyTo ?? null;
@@ -83,7 +90,12 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
       });
       throw new MailerSendError(`Resend a refusé l'envoi : ${message}`);
     }
-    this.log.info("E-mail envoyé", { ...context, providerId: result.data?.id ?? null });
+    const providerId = result.data?.id ?? null;
+    this.log.info("E-mail envoyé", { ...context, providerId });
+    // L'identifiant remonte à l'appelant : c'est la seule clé qui reliera cet
+    // envoi aux événements qui le suivront. Le journaliser sans le rendre,
+    // c'était l'écrire là où personne ne peut le joindre.
+    return { providerId };
   }
 
   /** L'appel au SDK, isolé pour que la panne réseau et le refus se traitent pareil. */
