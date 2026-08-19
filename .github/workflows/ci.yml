@@ -103,6 +103,12 @@ jobs:
       - name: "Gate : aucune jointure inter-schéma"
         run: pnpm lint:cross-schema-join
 
+      # Une dépendance partagée par deux paquets vient du catalogue, pas d'une
+      # plage recopiée. Deux versions d'un même paquet dans un monorepo ne se
+      # voient pas — elles se découvrent, et toujours au pire moment.
+      - name: "Gate : dépendances partagées au catalogue"
+        run: pnpm lint:catalog-shared-deps
+
       # `docker run` plutôt qu'un `services:` : l'image MinIO a besoin d'une
       # commande (`server /data`), et un bloc `services` ne sait pas en passer.
       - name: Démarrer le stockage objet (MinIO)

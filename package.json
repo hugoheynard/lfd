@@ -25,12 +25,13 @@
     "lint:fold-tokens": "node dev-toolbox/gates/fold-tokens.mjs",
     "lint:context-boundaries": "node dev-toolbox/gates/context-boundaries.mjs",
     "lint:cross-schema-join": "node dev-toolbox/gates/cross-schema-join.mjs",
+    "lint:catalog-shared-deps": "node dev-toolbox/gates/catalog-shared-deps.mjs",
     "test": "turbo run test",
     "clean": "turbo run clean"
   },
   "devDependencies": {
     "@lfd/endpoints": "workspace:*",
-    "prettier": "^3.5.3",
+    "prettier": "catalog:",
     "turbo": "^2.5.0",
     "typescript": "catalog:"
   },

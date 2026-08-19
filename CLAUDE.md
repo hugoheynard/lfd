@@ -458,10 +458,20 @@ paierait au démarrage plutôt qu'à la compilation, vit dans le `catalog:` de
 `pnpm-workspace.yaml`. Les `package.json` écrivent `"catalog:"` — jamais une
 plage. Un bump se fait alors sur une ligne, une fois, pour tout le dépôt.
 
-Y sont aujourd'hui : `fold-ng`, `@playwright/test`, `typescript`, le noyau
-NestJS (`common`/`core`/`platform-express`/`testing`, alignés sur la même
-version), `config`/`cqrs`/`throttler`/`cli`/`schematics`, `reflect-metadata`
-et `rxjs`. Pin **exact** : on adopte une version, on ne la subit pas.
+La règle est **vérifiée**, pas espérée : `pnpm lint:catalog-shared-deps`
+échoue dès qu'un paquet déclaré par deux manifestes porte une plage au lieu de
+`catalog:`. Pin **exact** dans le catalogue : on adopte une version, on ne la
+subit pas.
+
+Deux exceptions, toutes deux volontaires :
+
+- **Les `peerDependencies` restent des plages.** Un pair annonce une
+  compatibilité aux consommateurs ; l'épingler exact la transformerait en
+  exigence. Les libs (`@lfd/b2b-ui`, `@lfd/catalog-ui`) gardent donc
+  `^22.0.0` en pair — mais prennent la version du catalogue en
+  `devDependencies`, pour se compiler contre ce que les apps exécutent.
+- **Un paquet à consommateur unique n'y va pas** (`helmet`, `stripe`, `jose`,
+  `pg`, `@capacitor/*`…). Une entrée pour un seul lecteur n'aligne rien.
 
 **TypeScript reste en 6.x, délibérément.** 7.0 est le port Go et ne ship
 aucune API programmatique (annoncée pour 7.1) : `nest build`, ts-jest et les
