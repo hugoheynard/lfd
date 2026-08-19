@@ -33,7 +33,15 @@ export type HealthStatus = z.infer<typeof healthStatusSchema>;
  * l'interprète (URL, DSN, handle…). Les nœuds qu'on possède n'ont pas de probe :
  * ils **poussent** (heartbeat).
  */
-export const probeKindSchema = z.enum(["http", "shopify", "auth0", "postgres"]);
+export const probeKindSchema = z.enum([
+  "http",
+  "shopify",
+  "auth0",
+  "postgres",
+  // Une Page statique : `target` porte son origine publique, et la sonde y
+  // vérifie le shell puis le point d'entrée qu'il référence.
+  "frontend",
+]);
 export type ProbeKind = z.infer<typeof probeKindSchema>;
 
 export interface NodeProbe {

@@ -39,6 +39,12 @@ export type HealthReason =
   | "heartbeat-fresh"
   | "probe-ok"
   | "probe-failed"
+  // Un front n'est pas « en marche », il est **servi** : la sonde constate que
+  // le shell ET son point d'entrée répondent, jamais que l'application démarre.
+  // Deux mots à part, parce qu'un `up` ici promettrait ce que personne n'a
+  // vérifié — et la carte ne vaut que ce que ses mots tiennent.
+  | "deploy-ok"
+  | "deploy-broken"
   | "no-evidence";
 
 /**

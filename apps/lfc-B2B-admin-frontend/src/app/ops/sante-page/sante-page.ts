@@ -8,11 +8,12 @@ import {
   signal,
 } from '@angular/core';
 import { FoldLoadingStateComponent } from 'fold-ng';
-import type { EcosystemHealth, TrafficReport } from '@lfd/ops-contract';
+import type { EcosystemHealth, HealthReason, TrafficReport } from '@lfd/ops-contract';
 
 import { ChargeTable } from '../charge-table/charge-table';
 import { EcosystemMap } from '../ecosystem-map/ecosystem-map';
 import { OpsService } from '../ops.service';
+import { REASON_LABEL } from '../reason-label';
 
 /** La fenêtre du bandeau de chiffres. Cinq minutes = « en ce moment ». */
 const WINDOW_MINUTES = 5;
@@ -46,6 +47,9 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SantePage {
+  /** La raison, lisible. Le contrat garde l'identifiant ; l'écran garde le sens. */
+  protected readonly reasonLabel = (reason: HealthReason): string => REASON_LABEL[reason];
+
   private readonly ops = inject(OpsService);
 
   protected readonly state = signal<LoadState>('loading');

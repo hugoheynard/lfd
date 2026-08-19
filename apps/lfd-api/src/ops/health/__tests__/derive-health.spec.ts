@@ -208,3 +208,39 @@ describe("la sonde est une observation directe, et elle prime", () => {
     expect(health).toMatchObject({ status: "down", reason: "gateway-fault" });
   });
 });
+
+describe("un front est SERVI, jamais « en marche »", () => {
+  const front = node({ id: "b2b-front", kind: "frontend", label: "Boutique PRO" });
+
+  it("dit `deploy-ok`, et non `probe-ok`, quand la sonde passe", () => {
+    // La sonde constate le shell et son point d'entrée — pas le démarrage de
+    // l'application. `up` ici promettrait ce que personne n'a vérifié, et la
+    // carte ne vaut que ce que ses mots tiennent.
+    const [health] = derive([front], { "b2b-front": { probe: { verdict: "up" } } });
+
+    expect(health).toMatchObject({ status: "up", reason: "deploy-ok" });
+  });
+
+  it("remonte le CONSTAT de la sonde quand le déploiement est cassé", () => {
+    // « Injoignable » et « point d'entrée 404 » appellent deux gestes
+    // différents : c'est le détail, pas la couleur, qui dit par où commencer.
+    const [health] = derive([front], {
+      "b2b-front": { probe: { verdict: "down", detail: "point d'entrée main-A1.js : 404" } },
+    });
+
+    expect(health).toMatchObject({
+      status: "down",
+      reason: "deploy-broken",
+      lastError: { message: "point d'entrée main-A1.js : 404" },
+    });
+  });
+
+  it("laisse gris un front sans cible plutôt que de le supposer servi", () => {
+    // La Suite n'a pas d'adresse de production. Gris est exact ; vert serait
+    // inventé, et rouge accuserait une panne qui n'existe pas.
+    const [health] = derive([node({ id: "suite-shell", kind: "frontend", label: "Suite" })], {});
+
+    expect(health).toMatchObject({ status: "unknown", reason: "no-evidence" });
+    expect(health?.lastError).toBeUndefined();
+  });
+});

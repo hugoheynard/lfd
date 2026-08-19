@@ -4,6 +4,7 @@ import type { HealthStatus, NodeHealth, NodeKind, TrafficWindow } from '@lfd/ops
 
 import { layoutOf, type PlacedNode } from '../layout';
 import { occupancyOf, type Occupancy } from '../occupancy';
+import { REASON_LABEL } from '../reason-label';
 
 /** Géométrie de la carte, en unités du `viewBox`. */
 const NODE = { width: 208, height: 48 } as const;
@@ -248,7 +249,7 @@ function flowDuration(requests: number): number {
 
 /** L'infobulle : ce que la couleur ne peut pas dire. */
 function describe(node: NodeHealth, occupancy: Occupancy): string {
-  const parts = [`${node.label} — ${STATUS_LABEL[node.status]} (${node.reason})`];
+  const parts = [`${node.label} — ${STATUS_LABEL[node.status]} (${REASON_LABEL[node.reason]})`];
   if (occupancy.basis !== 'aucune mesure') {
     parts.push(`occupation ${Math.round(occupancy.ratio * 100)} % d'après la ${occupancy.basis}`);
   }

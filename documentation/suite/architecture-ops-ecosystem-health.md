@@ -575,17 +575,18 @@ Et le mouvement n'est jamais la seule information : sous
 
 ## 17. Les jalons
 
-| Jalon     | Quoi                                                                                                                                                                                               | Dépend de |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **J1** ✅ | Dataset Analytics Engine + `writeDataPoint` dans la passerelle (hors du chemin de réponse), sous tests — **fait le 2026-08-19**                                                                    | —         |
-| **J2** ✅ | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (requêtes, erreurs serveur, 429, 502 passerelle, p95) — **fait le 2026-08-19**                                                                  | J1        |
-| **J3** ✅ | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE derrière un port (+ le double de répétition), endpoint staff-only — **fait le 2026-08-19** | J2        |
-| **J4** ✅ | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` — **fait le 2026-08-19**                                                                                                 | J3        |
-| **J5** ✅ | Écran : schéma live, liens animés par **occupation** (§13), staff-only — **fait le 2026-08-19**                                                                                                    | J4        |
-| **J6**    | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                                                                                        | J3, en // |
-| **J7** ✅ | Détail **par requête** : quelles surfaces prennent la charge (AE groupé par nœud+surface, tableau sous la carte) — **fait le 2026-08-19**                                                          | J5        |
-| **J8** ✅ | Relevés par nœud (`readings`), fronts sur la carte, axe vertical — **fait le 2026-08-19**                                                                                                          | J5        |
-| **J9** ✅ | Les sondes : Postgres, Auth0, Resend, Stripe, Shopify — **fait le 2026-08-19**                                                                                                                     | J4        |
+| Jalon      | Quoi                                                                                                                                                                                               | Dépend de |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **J1** ✅  | Dataset Analytics Engine + `writeDataPoint` dans la passerelle (hors du chemin de réponse), sous tests — **fait le 2026-08-19**                                                                    | —         |
+| **J2** ✅  | Contrat : `TrafficWindow` dans `@lfd/ops-contract` (requêtes, erreurs serveur, 429, 502 passerelle, p95) — **fait le 2026-08-19**                                                                  | J1        |
+| **J3** ✅  | Bloc `src/ops/` dans `lfd-api` : entrée `BLOCK_OF`, ressource staff `ops` + migration, lecteur SQL d'AE derrière un port (+ le double de répétition), endpoint staff-only — **fait le 2026-08-19** | J2        |
+| **J4** ✅  | Manifeste de topologie déclaré (nœuds + arêtes) et dérivation du `status` — **fait le 2026-08-19**                                                                                                 | J3        |
+| **J5** ✅  | Écran : schéma live, liens animés par **occupation** (§13), staff-only — **fait le 2026-08-19**                                                                                                    | J4        |
+| **J6**     | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                                                                                        | J3, en // |
+| **J7** ✅  | Détail **par requête** : quelles surfaces prennent la charge (AE groupé par nœud+surface, tableau sous la carte) — **fait le 2026-08-19**                                                          | J5        |
+| **J8** ✅  | Relevés par nœud (`readings`), fronts sur la carte, axe vertical — **fait le 2026-08-19**                                                                                                          | J5        |
+| **J9** ✅  | Les sondes : Postgres, Auth0, Resend, Stripe, Shopify — **fait le 2026-08-19**                                                                                                                     | J4        |
+| **J10** ✅ | Les fronts sondés **en deux temps** (§18) : shell HTML + point d'entrée — **fait le 2026-08-19**                                                                                                   | J9        |
 
 ### Lire la fenêtre — deux pièges d'Analytics Engine
 
@@ -633,3 +634,55 @@ vide qu'on croirait calme.
 Le J1 est autonome et sans risque : la passerelle écrit, personne ne lit encore.
 Rien n'est visible avant J5, et c'est voulu — on accumule d'abord de quoi
 remplir l'écran, sinon il naîtrait vide et mentirait.
+
+## 18. Les fronts — « servi », et pas « en marche »
+
+Les quatre fronts sont la seule famille de nœuds que **rien** ne pouvait
+éclairer. Ce sont des Pages statiques : la passerelle ne les voit jamais — elles
+l'appellent, elles ne la traversent pas — et elles n'émettent aucun battement.
+Déclarés depuis J8, ils restaient gris en permanence.
+
+### Pourquoi pas un `200` sur la racine
+
+C'est **le vert qui ment**. Cloudflare sert le shell HTML même quand le build est
+cassé : bundle absent, mauvais projet Pages, `base-href` faux. Page blanche chez
+le client, carte verte chez nous — et le soupçon part alors chercher un incident
+ailleurs, ce qui coûte plus cher que de n'avoir rien affiché du tout.
+
+### La sonde en deux temps
+
+1. la racine rend `200` avec un `content-type` HTML ;
+2. le premier `<script src>` **de même origine** qu'elle référence répond
+   (demandé en un octet, via `Range` — un bundle pèse des mégaoctets et la sonde
+   tourne à chaque rafraîchissement).
+
+Aucun nom de bundle n'est écrit dans le code : il est **lu dans le HTML rendu**,
+donc la sonde suit les empreintes de build toute seule. C'est ce qui la rend
+tenable — une sonde qu'un déploiement normal fait rougir est une sonde qu'on
+éteint. Les scripts tiers sont ignorés : la panne d'une balise de mesure n'est
+pas la nôtre, et la compter comme telle rendrait la carte rouge pour le compte
+d'autrui.
+
+### Deux mots à part : `deploy-ok` / `deploy-broken`
+
+Un front n'est pas « en marche », il est **servi**. Cette sonde ne dit rien du
+démarrage de l'application : un runtime qui explose au boot la passe. Rendre
+`probe-ok` ici promettrait ce que personne n'a vérifié — et la carte ne vaut que
+ce que ses mots tiennent. Le seul témoin honnête de « ça marche » viendrait du
+**navigateur du client** (un battement émis au boot) ; il implique un endpoint
+public non authentifié et une décision de vie privée, et il n'est pas fait.
+
+En cas d'échec, le **constat** de la sonde remonte dans `lastError` et s'affiche
+sous « À regarder » : « injoignable » et « point d'entrée `main-A1B2.js` : 404 »
+appellent deux gestes différents, et un statut seul ne les distingue pas.
+
+### La cible vient de `@lfd/endpoints`
+
+`PROD_FRONT_ORIGINS` — la **même** table que l'allowlist CORS. Une seule vérité :
+si un projet Pages est renommé, les deux bougent ensemble ou aucun ne bouge.
+C'est exactement la panne silencieuse qu'a coûtée `lfc-b2b` → `lfc-b2b-eu7`.
+
+La **Suite** n'a pas encore d'adresse de production : sans cible, pas de sonde,
+et elle reste grise. Grise est exact ; verte serait inventé. Les sondes de fronts
+sont dérivées de la topologie, pas listées à la main — l'ajouter tiendra en une
+ligne dans la carte, et en aucune dans le module.

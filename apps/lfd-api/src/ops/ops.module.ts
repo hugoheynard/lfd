@@ -4,6 +4,7 @@ import { AppConfig } from "../platform/config/app-config.js";
 import { AdminHealthController } from "./health/admin-health.controller.js";
 import { DatabaseReadingsReader } from "./health/database-readings.reader.js";
 import { Auth0Probe, ResendProbe, ShopifyProbe, StripeProbe } from "./probes/external.probes.js";
+import { FrontendProbe } from "./probes/frontend.probe.js";
 import { PostgresB2bProbe } from "./probes/postgres.probe.js";
 import { ProbeRunner } from "./probes/probe-runner.service.js";
 import { NODE_PROBES, type NodeProbe } from "./probes/probe.port.js";
@@ -12,6 +13,20 @@ import { AdminTrafficController } from "./traffic/admin-traffic.controller.js";
 import { AnalyticsEngineTrafficReader } from "./traffic/analytics-engine-traffic.reader.js";
 import { RehearsalTrafficReader } from "./traffic/rehearsal-traffic.reader.js";
 import { TrafficReader } from "./traffic/traffic-reader.port.js";
+import { TOPOLOGY } from "./topology/topology.js";
+
+/**
+ * Les sondes de fronts sont **dérivées de la carte**, pas listées à la main :
+ * un front déclaré avec une cible est sondé, un front sans cible ne l'est pas.
+ * Ajouter la Suite le jour où elle aura une adresse tiendra en une ligne dans
+ * la topologie, et en aucune ici — c'est la seule façon que la carte et les
+ * sondes ne puissent pas diverger en silence.
+ */
+const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
+  node.probe?.kind === "frontend" && node.probe.target !== undefined
+    ? [new FrontendProbe(node.id, node.probe.target)]
+    : [],
+);
 
 /**
  * **OPS** — la carte de santé de l'écosystème. Il observe, il ne possède rien.
@@ -44,7 +59,7 @@ import { TrafficReader } from "./traffic/traffic-reader.port.js";
       // worker sans toucher à une ligne de règle.
       provide: NODE_PROBES,
       inject: [PostgresB2bProbe, Auth0Probe, ResendProbe, StripeProbe, ShopifyProbe],
-      useFactory: (...probes: NodeProbe[]): readonly NodeProbe[] => probes,
+      useFactory: (...probes: NodeProbe[]): readonly NodeProbe[] => [...probes, ...FRONTEND_PROBES],
     },
     AnalyticsEngineTrafficReader,
     RehearsalTrafficReader,

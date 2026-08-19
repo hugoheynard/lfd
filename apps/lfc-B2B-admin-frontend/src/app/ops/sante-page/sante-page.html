@@ -68,7 +68,13 @@
           <li>
             <span class="ailing-dot" [class]="'ailing-dot ailing-dot--' + node.status"></span>
             <strong>{{ node.label }}</strong>
-            <span class="ailing-reason">{{ node.reason }}</span>
+            <span class="ailing-reason">{{ reasonLabel(node.reason) }}</span>
+            @if (node.lastError) {
+              <!-- Le CONSTAT de la sonde, tel quel : « injoignable » et « point
+                   d'entrée 404 » appellent deux gestes différents, et le statut
+                   seul ne les distingue pas. -->
+              <span class="ailing-cause">{{ node.lastError.message }}</span>
+            }
             @if (node.dependencyDown) {
               <span class="ailing-cause">dépend de {{ node.dependencyDown }}, injoignable</span>
             }

@@ -1,3 +1,4 @@
+import { PROD_FRONT_ORIGINS } from "@lfd/endpoints";
 import type { NodeManifest } from "@lfd/ops-contract";
 
 /**
@@ -20,10 +21,18 @@ import type { NodeManifest } from "@lfd/ops-contract";
  * beaucoup plus difficile à remarquer.
  */
 export const TOPOLOGY: readonly NodeManifest[] = [
-  // ▸ CE QU'ON OUVRE — les quatre fronts. Ils n'ont ni sonde ni battement : leur
-  //   santé est celle de ce qu'ils appellent. Les déclarer quand même, c'est
-  //   refuser une carte qui commence au premier maillon qu'on possède — or on
-  //   entre dans le système par eux.
+  // ▸ CE QU'ON OUVRE — les quatre fronts. On entre dans le système par eux, et
+  //   la gateway ne les voit JAMAIS : ce sont des Pages statiques, elles
+  //   l'appellent, elles ne la traversent pas. Aucun trafic ne prouvera donc
+  //   qu'un front est servi — d'où la sonde, seule source possible ici.
+  //
+  //   Leur `target` est l'origine publique tenue dans `@lfd/endpoints`, la même
+  //   que l'allowlist CORS. Une seule vérité : si un projet Pages est renommé,
+  //   les deux bougent ensemble ou aucun ne bouge — c'est précisément la panne
+  //   silencieuse qu'a coûtée `lfc-b2b` → `lfc-b2b-eu7`.
+  //
+  //   La Suite n'a pas encore d'adresse de production : sans cible, pas de
+  //   sonde, et elle reste grise. Grise est exact ; verte serait inventé.
   {
     id: "suite-shell",
     kind: "frontend",
@@ -35,18 +44,21 @@ export const TOPOLOGY: readonly NodeManifest[] = [
     kind: "frontend",
     label: "Boutique PRO",
     dependsOn: ["gateway"],
+    probe: { kind: "frontend", target: PROD_FRONT_ORIGINS.b2bFront },
   },
   {
     id: "b2b-admin-front",
     kind: "frontend",
     label: "Back-office",
     dependsOn: ["gateway"],
+    probe: { kind: "frontend", target: PROD_FRONT_ORIGINS.b2bAdminFront },
   },
   {
     id: "pim-front",
     kind: "frontend",
     label: "Référentiel (écran)",
     dependsOn: ["gateway"],
+    probe: { kind: "frontend", target: PROD_FRONT_ORIGINS.pimFront },
   },
 
   {

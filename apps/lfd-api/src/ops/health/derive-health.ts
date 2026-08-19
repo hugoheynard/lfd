@@ -77,11 +77,15 @@ function verdictFor(node: NodeManifest, evidence: NodeEvidence, now: Date): Verd
   // même la seule qu'on ait. Le verdict `down` qui arrive ici est déjà confirmé
   // (échecs consécutifs) — la temporisation appartient au lanceur, pas à la
   // règle, sinon la règle ne serait plus pure.
+  // Un front est **servi** ou **cassé au déploiement** — jamais « en marche » :
+  // sa sonde constate le shell et son point d'entrée, pas le démarrage de
+  // l'application. Deux raisons distinctes pour ne pas laisser croire l'inverse.
+  const isFront = node.kind === "frontend";
   if (evidence.probe?.verdict === "down") {
-    return { status: "down", reason: "probe-failed" };
+    return { status: "down", reason: isFront ? "deploy-broken" : "probe-failed" };
   }
   if (evidence.probe?.verdict === "up") {
-    return { status: "up", reason: "probe-ok" };
+    return { status: "up", reason: isFront ? "deploy-ok" : "probe-ok" };
   }
   if (traffic !== undefined && !isSilent(traffic)) {
     if (errorRate(traffic) >= DEGRADED_ERROR_RATE) {
@@ -125,6 +129,15 @@ export function deriveHealth(
     const verdict = verdicts.get(node.id) ?? { status: "unknown", reason: "no-evidence" };
     const fallen = node.dependsOn.find((id) => verdicts.get(id)?.status === "down");
     const observed = evidence.get(node.id);
+    // Ce que la sonde a CONSTATÉ, remonté tel quel quand le nœud est tombé.
+    // « Injoignable » et « point d'entrée main-a1b2.js : 404 » appellent deux
+    // gestes différents, et un statut seul ne les distingue pas — c'est le
+    // détail, pas la couleur, qui dit par où commencer.
+    const probeDetail = observed?.probe?.detail;
+    const lastError =
+      verdict.status === "down" && probeDetail !== undefined
+        ? { lastError: { at: since, message: probeDetail } }
+        : {};
     return {
       node: node.id,
       kind: node.kind,
@@ -135,6 +148,7 @@ export function deriveHealth(
       lastHeartbeatAt: observed?.lastHeartbeatAt ?? null,
       dependsOn: node.dependsOn,
       readings: observed?.readings ?? [],
+      ...lastError,
       ...(fallen === undefined ? {} : { dependencyDown: fallen }),
     };
   });
