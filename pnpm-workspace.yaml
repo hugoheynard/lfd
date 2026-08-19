@@ -35,6 +35,22 @@ catalog:
   "@nestjs/schematics": 11.1.0
   reflect-metadata: 0.2.2
   rxjs: 7.8.2
+  # Zod — la source de vérité des contrats. Deux copies dans un même processus,
+  # et deux schémas « identiques » cessent de s'accepter : la validation croisée
+  # échoue sans rien dire d'utile. Une seule version, donc.
+  zod: 4.4.3
+  # Le harnais de test, partagé par lfd-api et les neuf packages.
+  #
+  # 🔴 Jest reste en 29, DÉLIBÉRÉMENT. Jest 30 a été essayé et rendu : sous ESM
+  # (`--experimental-vm-modules`, notre mode), le `require('net')` interne de
+  # `pg` retourne `undefined` et toutes les suites e2e qui touchent Postgres
+  # meurent au démarrage sur « Cannot read properties of undefined (reading
+  # 'Socket') ». `customExportConditions: ['node']` n'y change rien — c'est la
+  # résolution des modules du coeur de Node dans le registre ESM de Jest 30 qui
+  # est en cause. À rouvrir quand jest ou pg aura corrigé, pas avant.
+  jest: 29.7.0
+  ts-jest: 29.4.12
+  "@types/jest": 29.5.14
 
 onlyBuiltDependencies:
   - esbuild
