@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AppConfig } from "../platform/config/app-config.js";
 import { AdminHealthController } from "./health/admin-health.controller.js";
+import { Auth0ReadingsReader } from "./health/auth0-readings.reader.js";
 import { DatabaseReadingsReader } from "./health/database-readings.reader.js";
 import { Auth0Probe, ResendProbe, ShopifyProbe, StripeProbe } from "./probes/external.probes.js";
 import { FrontendProbe } from "./probes/frontend.probe.js";
@@ -46,6 +47,7 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
   providers: [
     OpsHealthService,
     DatabaseReadingsReader,
+    Auth0ReadingsReader,
     ProbeRunner,
     PostgresB2bProbe,
     Auth0Probe,

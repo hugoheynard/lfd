@@ -41,3 +41,28 @@ describe("la topologie déclarée", () => {
     expect(orphans.map((node) => node.id)).toEqual([]);
   });
 });
+
+describe("la carte ne montre que ce que cette application opère", () => {
+  it("n'a plus de service ni de base « référentiel » séparés", () => {
+    // Depuis B2c le référentiel EST cette API : un nœud à part décrirait un
+    // Worker qui ne se met plus à jour, et sa base ne parle à personne dans ce
+    // processus. Les deux passeraient « aucune preuve » — un angle mort qui
+    // ressemble à une panne, sur une carte qu'on consulte pour trancher.
+    const ids = TOPOLOGY.map((node) => node.id);
+
+    expect(ids).not.toContain("pim");
+    expect(ids).not.toContain("postgres-pim");
+  });
+
+  it("garde toute feuille rattachée à quelqu'un", () => {
+    // Un tiers dont plus rien ne dépend flotte : il s'affiche sans qu'on sache
+    // qui s'en sert, donc sans qu'on sache ce qui tombe avec lui. C'est ce qui
+    // serait arrivé à Shopify quand le nœud du référentiel a disparu.
+    const dependedUpon = new Set(TOPOLOGY.flatMap((node) => node.dependsOn));
+    const floating = TOPOLOGY.filter(
+      (node) => node.dependsOn.length === 0 && !dependedUpon.has(node.id),
+    );
+
+    expect(floating.map((node) => node.id)).toEqual([]);
+  });
+});

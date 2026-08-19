@@ -65,31 +65,22 @@ export const TOPOLOGY: readonly NodeManifest[] = [
     id: "gateway",
     kind: "worker",
     label: "Gateway",
-    dependsOn: ["b2b", "pim"],
+    dependsOn: ["b2b"],
   },
   {
+    // Une seule API depuis B2c : le référentiel n'est plus un service, c'est un
+    // bloc de celui-ci. Sa charge n'a pas disparu de la carte, elle a changé
+    // d'échelle — elle se lit dans les SURFACES (`pim/…`) du tableau de charge,
+    // où elle devient comparable aux autres modules au lieu de vivre à part.
     id: "b2b",
     kind: "service",
-    label: "API B2B",
-    dependsOn: ["postgres-b2b", "auth0", "stripe", "resend", "r2"],
-  },
-  {
-    id: "pim",
-    kind: "service",
-    label: "Référentiel produit",
-    dependsOn: ["postgres-pim", "shopify"],
+    label: "API",
+    dependsOn: ["postgres-b2b", "r2", "auth0", "stripe", "resend", "shopify"],
   },
   {
     id: "postgres-b2b",
     kind: "datastore",
     label: "Database — LFD",
-    dependsOn: [],
-    probe: { kind: "postgres" },
-  },
-  {
-    id: "postgres-pim",
-    kind: "datastore",
-    label: "Database — référentiel",
     dependsOn: [],
     probe: { kind: "postgres" },
   },
@@ -111,4 +102,4 @@ export const TOPOLOGY: readonly NodeManifest[] = [
  * aussi une clé d'index dans Analytics Engine. Les autres n'ont, à ce stade,
  * aucune source — leurs sondes sont l'étape suivante.
  */
-export const OBSERVED_BY_GATEWAY: readonly string[] = ["b2b", "pim"];
+export const OBSERVED_BY_GATEWAY: readonly string[] = ["b2b"];
