@@ -373,6 +373,22 @@ aucun module — ils restent dans `test/*.e2e-spec.ts` à la racine de l'app.
 
 Interdit : un e2e avec `PrismaService` stubbé — il ne prouve rien sur le schéma.
 
+### Lancer les tests depuis l'IDE
+
+Un clic droit « Run » sur un fichier de test ne passe **pas** par le script npm.
+Deux réglages lui manquent, et leurs pannes ne ressemblent pas à leur cause :
+
+| Manque                      | Symptôme                                                                                                                                                                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--experimental-vm-modules` | `SyntaxError: Unexpected token 'export'` dans `jose` — la suite meurt avant le premier test                                                                                                                                              |
+| suites en parallèle         | des dizaines d'échecs, quelques rescapés : les suites partagent la base jetable et se tronquent mutuellement, donc un staff semé par l'une n'existe plus quand l'autre l'interroge, et le mur refuse (403 légitime, utilisateur disparu) |
+
+Les deux sont réglés dans le dépôt, à l'endroit qui couvre TOUS les runners :
+`maxWorkers: 1` dans `apps/lfd-api/jest.config.cjs`, et le drapeau ESM dans le
+gabarit `.run/_template Jest.run.xml` dont hérite toute configuration créée par
+clic droit. Rien à faire côté poste — sauf supprimer les configurations Jest
+créées AVANT ce gabarit, qui ne l'ont pas hérité.
+
 ### Le harnais e2e (B2B — en place)
 
 ```bash

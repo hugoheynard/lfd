@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="lfd-api &gt; tests" type="JavaScriptTestRunnerJest">
+    <node-interpreter value="project" />
+    <node-options value="--experimental-vm-modules" />
+    <working-dir value="$PROJECT_DIR$/apps/lfd-api" />
+    <jest-package value="$PROJECT_DIR$/node_modules/jest" />
+    <envs>
+      <env name="NODE_ENV" value="test" />
+    </envs>
+    <scope-kind value="ALL" />
+    <method v="2" />
+  </configuration>
+</component>

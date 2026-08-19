@@ -1,0 +1,28 @@
+<component name="ProjectRunConfigurationManager">
+  <!--
+    GABARIT Jest (`default="true"`) : toute configuration créée par un clic droit
+    « Run » sur un fichier de test en hérite. C'est le seul endroit qui corrige
+    le clic droit ; un `.run` concret ne le ferait pas.
+
+    Il porte ce que le script npm porte, et que l'IDE ne devinerait pas :
+
+    · `--experimental-vm-modules` — les backs sont en ESM et des dépendances
+      comme `jose` ne s'exposent qu'en ESM. Sans ce drapeau, Jest les charge en
+      CommonJS et la suite meurt avant le premier test, sur un
+      `SyntaxError: Unexpected token 'export'` qui accuse le mauvais fichier.
+
+    · `NODE_ENV=test` — pour que l'app se sache en test.
+
+    La sérialisation des suites, elle, ne dépend PAS d'ici : `maxWorkers: 1` est
+    posé dans `apps/lfd-api/jest.config.cjs`, donc aucun runner ne peut la rater.
+  -->
+  <configuration default="true" type="JavaScriptTestRunnerJest">
+    <node-interpreter value="project" />
+    <node-options value="--experimental-vm-modules" />
+    <envs>
+      <env name="NODE_ENV" value="test" />
+    </envs>
+    <scope-kind value="ALL" />
+    <method v="2" />
+  </configuration>
+</component>
