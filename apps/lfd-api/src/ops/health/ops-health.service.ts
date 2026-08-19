@@ -14,6 +14,7 @@ import { TrafficReader } from "../traffic/traffic-reader.port.js";
 import { TOPOLOGY } from "../topology/topology.js";
 import { Auth0ReadingsReader } from "./auth0-readings.reader.js";
 import { DatabaseReadingsReader } from "./database-readings.reader.js";
+import { MailReadingsReader } from "./mail-readings.reader.js";
 import { deriveHealth, type NodeEvidence } from "./derive-health.js";
 import { ProbeRunner } from "../probes/probe-runner.service.js";
 import type { ProbeOutcome } from "../probes/probe.port.js";
@@ -66,6 +67,7 @@ export class OpsHealthService {
     private readonly traffic: TrafficReader,
     private readonly database: DatabaseReadingsReader,
     private readonly auth0: Auth0ReadingsReader,
+    private readonly mail: MailReadingsReader,
     private readonly probes: ProbeRunner,
     private readonly journal: StatusJournal,
     private readonly clock: Clock,
@@ -74,9 +76,10 @@ export class OpsHealthService {
   async read(): Promise<EcosystemHealth> {
     const now = this.clock.now();
     await this.hydrate();
-    const [report, databaseReadings, auth0Readings, probes] = await Promise.all([
+    const [report, databaseReadings, mailReadings, auth0Readings, probes] = await Promise.all([
       this.traffic.read(HEALTH_WINDOW_MINUTES),
       this.database.read(),
+      this.mail.read(),
       this.cachedAuth0.read(now.getTime()),
       this.cachedProbes.read(now.getTime()),
     ]);
@@ -96,6 +99,10 @@ export class OpsHealthService {
     evidence.set("gateway", { readings: gatewayReadings(report.windows) });
     evidence.set("postgres-b2b", { readings: databaseReadings });
     evidence.set("auth0", { readings: auth0Readings });
+    // La sonde dit que Resend RÉPOND ; ces relevés disent que nos e-mails
+    // ARRIVENT. Ce n'est pas la même question, et c'est la seconde qui coûte
+    // cher quand la réponse est non.
+    evidence.set("resend", { readings: mailReadings });
 
     // Les sondes s'ajoutent SANS écraser ce qu'on savait déjà : un nœud peut
     // être à la fois sondé et observé par la gateway, et les deux angles se

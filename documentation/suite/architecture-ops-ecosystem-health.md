@@ -1096,3 +1096,81 @@ une autre voie que la base.
 | une **deuxième personne** doit voir les erreurs | le siège unique tombe → tout-maison redevient cohérent                                               |
 | on passe à **plusieurs services**               | la corrélation cross-service est là où le tiers creuse l'écart → tout-Sentry                         |
 | on veut **lancer vite**                         | tout-Sentry en une demi-journée, remplacer le backend par du maison ensuite — l'inverse est plus dur |
+
+## 26. Le canal courrier — de l'envoi au rebond
+
+Le nœud Resend avait une sonde et rien d'autre. Or la sonde dit que Resend
+**répond** ; elle ne dira jamais que nos e-mails **arrivent**. Ce n'est pas la
+même question, et c'est la seconde qui coûte cher quand la réponse est non : un
+envoi qui part sans arriver ne fait échouer personne, ne remonte nulle part, et
+une cliente attend une invitation qui ne viendra jamais.
+
+### L'émission devait précéder la réception
+
+`send()` rendait `void` et jetait l'identifiant Resend. Un événement « rebondi »
+donne un identifiant fournisseur ; sans trace côté émission, rien n'y
+correspond — on apprend qu'un e-mail a échoué sans savoir lequel, pour qui, ni
+de quel gabarit. Le webhook aurait été **muet d'avance**.
+
+`send()` rend donc un accusé (élargir un retour `void` ne casse aucun appelant),
+et un décorateur d'app consigne l'envoi dans `ops.mail_send`. Le décorateur vit
+dans l'app et non dans `@lfd/mailer` : le paquet est partagé et n'a pas à
+connaître Prisma, ni l'idée qu'une app tienne un registre.
+
+### Le mur du webhook
+
+Route **publique** — Resend n'a pas de jeton Auth0 — mais **authentifiée par
+signature**. Sans preuve d'origine, n'importe qui déclarerait que nos e-mails
+rebondissent, et cet écran le croirait.
+
+La vérification Svix est pure et testée à part : secret `whsec_` décodé,
+`{id}.{timestamp}.{corps brut}` en HMAC-SHA256, comparaison à **temps constant**,
+fenêtre de cinq minutes contre le rejeu. L'en-tête peut porter **plusieurs**
+signatures — c'est ce qui permet de tourner un secret sans coupure, et en
+refuser une rendrait la rotation impossible sans perdre des événements.
+
+### Trois décisions de traitement
+
+- **Jamais de `5xx`.** Le code de retour dit à Resend s'il doit réessayer. Même
+  un événement illisible est acquitté : aucune reprise ne le rendra lisible.
+- **L'unicité est portée par la base.** Un `findFirst` suivi d'un `create`
+  laisserait passer deux livraisons simultanées du même événement, et compterait
+  deux rebonds pour un.
+- **Un statut ne recule pas.** Les webhooks n'ont aucune garantie d'ordre : un
+  « envoyé » tardif effacerait le rebond, c'est-à-dire la seule information qui
+  demandait une action.
+
+`email.opened` et `email.clicked` sont écartés : ils disent ce qu'une personne a
+fait de son courrier, ce qui ne nous regarde pas, et représenteraient
+l'essentiel du volume pour une information dont aucune décision ne dépend.
+
+### Les relevés du nœud
+
+Sur **sept jours** et non vingt-quatre heures : le courrier transactionnel est
+rare, zéro envoi sur une journée est le cas normal, et un relevé qui affiche
+zéro la plupart du temps cesse d'être lu — puis cesse d'alerter le jour où le
+zéro veut dire quelque chose.
+
+| Relevé      | Ce qu'il porte                                                 |
+| ----------- | -------------------------------------------------------------- |
+| **Envoyés** | tout ce qui est parti, avec « dont N délivrés, N sans retour » |
+| **Rejetés** | rebonds **et** plaintes, avec le gabarit le plus touché        |
+
+« Sans retour » n'est pas un échec : Resend n'a pas encore dit. Le compter comme
+un rejet ferait rougir le canal pour une lenteur. Une plainte, en revanche,
+compte **avec** les rebonds : la personne a reçu et n'en voulait pas, ça ne se
+range pas avec les succès. Et nommer le gabarit fautif est ce qui transforme
+« 3 rejets » — qui envoie chercher — en « surtout `customer.access-opened` »,
+qui se règle : c'est la liste d'invitations qu'il faut nettoyer.
+
+Aucun envoi sur la fenêtre ⇒ **aucun relevé**, même règle que le débit de la
+passerelle : un zéro qui ressemble à une mesure est pire qu'une absence.
+
+### Ce qu'il reste à faire, hors dépôt
+
+1. déclarer le webhook chez Resend vers `…/api/b2b/webhooks/resend`
+   (`sent`, `delivered`, `delivery_delayed`, `bounced`, `complained`) ;
+2. poser le `whsec_…` en Secret GitHub sous `RESEND_WEBHOOK_SECRET`.
+
+Sans le secret, la route refuse tout et le démarrage l'annonce en **dégradé** :
+les e-mails partent, mais on n'apprend jamais lesquels ont rebondi.

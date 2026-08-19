@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { AppConfig } from "../platform/config/app-config.js";
 import { AdminHealthController } from "./health/admin-health.controller.js";
 import { Auth0ReadingsReader } from "./health/auth0-readings.reader.js";
+import { MailReadingsReader } from "./health/mail-readings.reader.js";
 import { DatabaseReadingsReader } from "./health/database-readings.reader.js";
 import { Auth0Probe, ResendProbe, ShopifyProbe, StripeProbe } from "./probes/external.probes.js";
 import { FrontendProbe } from "./probes/frontend.probe.js";
@@ -50,6 +51,7 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     OpsHealthService,
     DatabaseReadingsReader,
     Auth0ReadingsReader,
+    MailReadingsReader,
     // Le port est le jeton : la dérivation ne connaît que « la mémoire », et
     // c'est l'adaptateur Postgres qui sait dans quel schéma elle vit.
     { provide: StatusJournal, useClass: PrismaStatusJournal },

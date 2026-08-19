@@ -218,11 +218,10 @@ describe("le journal de statuts — la mémoire de la carte", () => {
       const health = fresh.app.get(OpsHealthService);
 
       await health.read();
-      await drainJournal();
-      const afterFirst = await countJournal(fresh);
+      const afterFirst = await journalCount(fresh, { atLeast: 1 });
 
       await health.read();
-      await drainJournal();
+      await settle();
 
       expect(afterFirst).toBeGreaterThan(0);
       expect(await countJournal(fresh)).toBe(afterFirst);
@@ -248,8 +247,35 @@ describe("le journal de statuts — la mémoire de la carte", () => {
   });
 });
 
-/** L'écriture n'est pas attendue par la lecture : on lui laisse un tour de boucle. */
-const drainJournal = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
+/**
+ * L'écriture du journal n'est **pas attendue** par la lecture — c'est voulu :
+ * une base lente ne doit pas ralentir l'écran qui sert à comprendre pourquoi
+ * elle est lente. Le test, lui, doit donc attendre qu'elle arrive.
+ *
+ * Un `setImmediate` ne suffit PAS : l'écriture fait un aller-retour Postgres,
+ * pas un tour de boucle d'événements. Un test qui s'en contentait passait par
+ * chance, et la moindre milliseconde ajoutée ailleurs le faisait tomber — ce
+ * qui est arrivé.
+ */
+const SETTLE_MS = 25;
+const SETTLE_TRIES = 80;
+
+const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+
+/** Attend que le journal atteigne un plancher, puis rend son compte. */
+async function journalCount(
+  context: E2eContext,
+  expectation: { readonly atLeast: number },
+): Promise<number> {
+  for (let attempt = 0; attempt < SETTLE_TRIES; attempt++) {
+    const count = await countJournal(context);
+    if (count >= expectation.atLeast) {
+      return count;
+    }
+    await settle();
+  }
+  return countJournal(context);
+}
 
 const countJournal = async (context: E2eContext): Promise<number> => {
   const [row] = await context.prisma.$queryRaw<readonly { count: bigint }[]>`
