@@ -10,6 +10,7 @@ import {
 import { FoldLoadingStateComponent } from 'fold-ng';
 import type { EcosystemHealth, TrafficReport } from '@lfd/ops-contract';
 
+import { ChargeTable } from '../charge-table/charge-table';
 import { EcosystemMap } from '../ecosystem-map/ecosystem-map';
 import { OpsService } from '../ops.service';
 
@@ -39,7 +40,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'app-sante-page',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, EcosystemMap, FoldLoadingStateComponent],
+  imports: [ChargeTable, DatePipe, DecimalPipe, EcosystemMap, FoldLoadingStateComponent],
   templateUrl: './sante-page.html',
   styleUrl: './sante-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

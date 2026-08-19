@@ -226,6 +226,13 @@ h1 {
   overflow-x: auto;
 }
 
+.charge {
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+}
+
 .legend {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);

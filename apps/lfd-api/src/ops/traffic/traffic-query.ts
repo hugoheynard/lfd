@@ -1,4 +1,4 @@
-import type { TrafficWindow } from "@lfd/ops-contract";
+import type { TrafficSurface, TrafficWindow } from "@lfd/ops-contract";
 
 /**
  * La **décision** de lecture d'Analytics Engine : la requête SQL, et la lecture
@@ -118,4 +118,75 @@ export function rowsToWindows(
       },
     ];
   });
+}
+
+/**
+ * Combien de **surfaces** on ramène, tous nœuds confondus.
+ *
+ * Une borne, et elle est dite : la queue d'une distribution de routes est
+ * longue et sans intérêt — on vient sur cet écran pour les quelques appels qui
+ * pèsent, pas pour l'inventaire. L'écran annonce qu'il montre les plus
+ * sollicitées ; une troncature silencieuse laisserait croire à un inventaire.
+ */
+export const SURFACES_LIMIT = 60;
+
+/**
+ * La même fenêtre, découpée par **surface appelée** — ce qui répond à « quelles
+ * requêtes prennent la charge ».
+ *
+ * La surface est celle que la gateway a écrite : au plus deux segments, et tout
+ * segment porteur d'un chiffre remplacé par `_`. On lit donc `admin/companies`,
+ * jamais `admin/companies/cmsz…/contacts`. Ce n'est pas une limite technique,
+ * c'est la décision du J1 : un identifiant en dimension, c'est la cardinalité
+ * qui explose ET de la donnée client déposée dehors.
+ */
+export function surfacesQuery(minutes: number): string {
+  return [
+    "SELECT index1 AS node,",
+    "  blob2 AS surface,",
+    "  sum(_sample_interval) AS requests,",
+    "  sumIf(_sample_interval, blob1 = '5xx' AND blob3 = 'upstream') AS serverErrors,",
+    "  sumIf(_sample_interval, blob1 = '429') AS throttled,",
+    "  sumIf(_sample_interval, blob3 = 'gateway') AS gatewayFaults,",
+    "  quantileExactWeighted(0.95)(double1, _sample_interval) AS p95Ms",
+    `FROM ${TRAFFIC_DATASET}`,
+    `WHERE timestamp > NOW() - INTERVAL '${Math.trunc(minutes)}' MINUTE`,
+    "GROUP BY node, surface",
+    "ORDER BY requests DESC",
+    `LIMIT ${SURFACES_LIMIT}`,
+    "FORMAT JSON",
+  ].join("\n");
+}
+
+/** Une ligne du découpage par surface. */
+export interface SurfaceRow extends TrafficRow {
+  readonly surface?: unknown;
+}
+
+/**
+ * Range les surfaces **par nœud**. Une ligne sans nœud ou sans surface est
+ * écartée plutôt que rebaptisée : lui inventer un nom la ferait entrer dans le
+ * tableau sous une identité fausse, et c'est un tableau qu'on lit pour décider
+ * où regarder.
+ */
+export function rowsToSurfaces(
+  rows: readonly SurfaceRow[],
+): ReadonlyMap<string, readonly TrafficSurface[]> {
+  const byNode = new Map<string, TrafficSurface[]>();
+  for (const row of rows) {
+    const { node, surface } = row;
+    if (typeof node !== "string" || node === "" || typeof surface !== "string" || surface === "") {
+      continue;
+    }
+    const entry: TrafficSurface = {
+      surface,
+      requests: toNumber(row.requests),
+      serverErrors: toNumber(row.serverErrors),
+      throttled: toNumber(row.throttled),
+      gatewayFaults: toNumber(row.gatewayFaults),
+      p95Ms: Math.round(toNumber(row.p95Ms)),
+    };
+    byNode.set(node, [...(byNode.get(node) ?? []), entry]);
+  }
+  return byNode;
 }

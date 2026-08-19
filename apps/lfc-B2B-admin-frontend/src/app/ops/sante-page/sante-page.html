@@ -82,6 +82,10 @@
     <app-ecosystem-map [nodes]="nodes()" [windows]="windows()" />
   </section>
 
+  <section class="charge" aria-label="Charge par requête">
+    <app-charge-table [windows]="windows()" />
+  </section>
+
   <!-- La légende dit ce que la carte encode. Sans elle, la vitesse d'un trait
        serait devinée — et devinée comme une alarme. -->
   <footer class="legend">

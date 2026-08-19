@@ -121,3 +121,31 @@ describe("la carte de l'écosystème", () => {
     expect(board.nodes.filter((node) => node.reason === "heartbeat-stale")).toEqual([]);
   });
 });
+
+describe("le détail par requête", () => {
+  it("dit quelles surfaces prennent la charge", async () => {
+    const response = await ctx.http().get(ROUTE).set("Authorization", "Bearer staff");
+    const report = response.body as {
+      windows: { node: string; surfaces?: { surface: string; requests: number }[] }[];
+    };
+    const [window] = report.windows;
+
+    expect(window?.surfaces?.length).toBeGreaterThan(0);
+    expect(window?.surfaces?.[0]?.requests).toBeGreaterThan(0);
+  });
+
+  it("ne laisse AUCUN identifiant entrer dans un nom de surface", async () => {
+    // C'est la garantie du J1 tenue de bout en bout : ce que la gateway refuse
+    // d'écrire ne doit pas réapparaître par le double de répétition, sinon le
+    // tableau donnerait l'exemple d'un format qu'on s'interdit.
+    const response = await ctx.http().get(ROUTE).set("Authorization", "Bearer staff");
+    const report = response.body as { windows: { surfaces?: { surface: string }[] }[] };
+    const names = report.windows.flatMap((window) =>
+      (window.surfaces ?? []).map((entry) => entry.surface),
+    );
+
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.filter((name) => /\d/.test(name))).toEqual([]);
+    expect(names.filter((name) => name.split("/").length > 2)).toEqual([]);
+  });
+});

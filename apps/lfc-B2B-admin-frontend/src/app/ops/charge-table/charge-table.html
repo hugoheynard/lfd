@@ -1,0 +1,56 @@
+<h2 class="title">Ce qui prend la charge</h2>
+
+@if (hasNone()) {
+  <p class="empty">
+    Aucun détail par requête sur cette fenêtre — soit rien n'est passé, soit la lecture par surface
+    n'a rien rendu.
+  </p>
+} @else {
+  <table class="charge">
+    <caption class="sr-only">
+      Surfaces appelées sur la fenêtre, de la plus sollicitée à la moins sollicitée.
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Surface</th>
+        <th scope="col" class="num">Requêtes</th>
+        <th scope="col" class="num">95ᵉ centile</th>
+        <th scope="col" class="num">Échecs</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.key) {
+        <tr>
+          <th scope="row" class="surface">
+            <!-- La barre de part vit DERRIÈRE la ligne : elle donne l'échelle sans
+                 prendre de colonne, et sans qu'on ait à comparer des nombres. -->
+            <span class="share" [style.width.%]="row.share * 100" aria-hidden="true"></span>
+            <span class="node">{{ row.node }}</span>
+            <span class="path">{{ row.surface }}</span>
+          </th>
+          <td class="num">{{ row.requests | number: '1.0-0' }}</td>
+          <td class="num" [class.slow]="row.slow">
+            {{ row.p95Ms | number: '1.0-0' }} ms
+            @if (row.slow) {
+              <!-- Le volume seul désigne mal le coupable : une route appelée dix
+                   fois et lente dix secondes pèse plus qu'une route appelée mille
+                   fois en cinq millisecondes. -->
+              <span class="tag">lente</span>
+            }
+          </td>
+          <td class="num" [class.failing]="row.failures > 0">
+            {{ row.failures | number: '1.0-0' }}
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <p class="foot">
+    Les {{ rows().length }} surfaces les plus sollicitées
+    @if (hidden() > 0) {
+      · {{ hidden() }} autres non affichées
+    }
+    · deux segments au plus, les identifiants sont masqués.
+  </p>
+}

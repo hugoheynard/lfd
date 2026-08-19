@@ -1,5 +1,8 @@
 import {
   DEFAULT_WINDOW_MINUTES,
+  rowsToSurfaces,
+  surfacesQuery,
+  SURFACES_LIMIT,
   MAX_WINDOW_MINUTES,
   MIN_WINDOW_MINUTES,
   resolveWindowMinutes,
@@ -113,5 +116,55 @@ describe("rowsToWindows", () => {
     // c'est-à-dire précisément quand il n'y a eu aucun trafic, le cas qu'on
     // veut distinguer d'une panne de lecture.
     expect(rowsToWindows([], bounds)).toEqual([]);
+  });
+});
+
+describe("surfacesQuery — quelles requêtes prennent la charge", () => {
+  it("découpe par nœud ET par surface", () => {
+    const sql = surfacesQuery(60);
+
+    expect(sql).toContain("blob2 AS surface");
+    expect(sql).toContain("GROUP BY node, surface");
+  });
+
+  it("borne le nombre de lignes, et les rend par charge décroissante", () => {
+    // La queue d'une distribution de routes est longue et sans intérêt : on
+    // vient ici pour les quelques appels qui pèsent. La borne est DITE côté
+    // écran — une troncature silencieuse laisserait croire à un inventaire.
+    const sql = surfacesQuery(60);
+
+    expect(sql).toContain("ORDER BY requests DESC");
+    expect(sql).toContain(`LIMIT ${SURFACES_LIMIT}`);
+  });
+
+  it("compte comme la requête d'ensemble", () => {
+    // Deux façons de compter dans un même écran, et les totaux ne colleraient
+    // plus avec le détail — c'est ce qui fait douter d'un tableau de bord.
+    expect(surfacesQuery(60)).toContain("sum(_sample_interval) AS requests");
+  });
+});
+
+describe("rowsToSurfaces", () => {
+  it("range les surfaces sous leur nœud", () => {
+    const byNode = rowsToSurfaces([
+      { node: "b2b", surface: "orders", requests: "900", p95Ms: "40" },
+      { node: "b2b", surface: "admin/companies", requests: "120", p95Ms: "310" },
+      { node: "pim", surface: "catalogue/products", requests: "50", p95Ms: "80" },
+    ]);
+
+    expect(byNode.get("b2b")?.map((entry) => entry.surface)).toEqual(["orders", "admin/companies"]);
+    expect(byNode.get("pim")).toHaveLength(1);
+  });
+
+  it("écarte une ligne sans nœud ou sans surface plutôt que de la rebaptiser", () => {
+    // Lui inventer un nom la ferait entrer dans le tableau sous une identité
+    // fausse — et c'est un tableau qu'on lit pour décider où regarder.
+    const byNode = rowsToSurfaces([
+      { surface: "orders", requests: "1" },
+      { node: "b2b", requests: "1" },
+      { node: "b2b", surface: "", requests: "1" },
+    ]);
+
+    expect(byNode.size).toBe(0);
   });
 });

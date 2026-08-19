@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { TrafficReport, TrafficWindow } from "@lfd/ops-contract";
+import type { TrafficReport, TrafficSurface, TrafficWindow } from "@lfd/ops-contract";
 
 import { Clock } from "../../platform/time/clock.js";
 import { TrafficReader } from "./traffic-reader.port.js";
@@ -69,5 +69,39 @@ function rehearse(
     throttled: Math.floor(requests * 0.004),
     gatewayFaults: seed % 17 === 0 ? Math.floor(requests * 0.05) : 0,
     p95Ms: 40 + (seed % 220),
+    surfaces: rehearseSurfaces(node, seed, requests),
   };
+}
+
+/**
+ * Le détail par surface. Les noms sont ceux que la gateway écrirait VRAIMENT,
+ * `channels/_` compris : le canal B2B du référentiel s'appelle `/channels/b2b`,
+ * et `b2b` porte un chiffre — donc la gateway le masque. Écrire ici le nom
+ * lisible aurait donné l'exemple d'un format qu'on s'interdit, et le tableau
+ * aurait promis une finesse qu'il ne peut pas tenir. Un e2e le vérifie.
+ *
+ * La répartition suit une décroissance franche : dans la vraie vie, deux ou
+ * trois appels portent l'essentiel de la charge. Un tableau où tout est égal
+ * n'exercerait pas la question qu'on vient lui poser — « lesquels pèsent ? ».
+ */
+function rehearseSurfaces(node: string, seed: number, requests: number): readonly TrafficSurface[] {
+  const names =
+    node === "pim"
+      ? ["catalogue/products", "channels/_", "commerce/tva-regimes", "locations/emplacements"]
+      : ["orders", "admin/companies", "admin/orders", "me", "catalog"];
+
+  return names.map((surface, rank) => {
+    const share = Math.pow(0.45, rank);
+    const surfaceRequests = Math.max(1, Math.floor(requests * share * 0.5));
+    return {
+      surface,
+      requests: surfaceRequests,
+      serverErrors: rank === 2 ? Math.floor(surfaceRequests * 0.04) : 0,
+      throttled: rank === 0 ? Math.floor(surfaceRequests * 0.01) : 0,
+      gatewayFaults: 0,
+      // La surface la plus lente n'est PAS la plus appelée : c'est justement ce
+      // décalage qui rend le tableau utile, et il doit se voir en répétition.
+      p95Ms: 30 + ((seed + rank * 53) % 400) + (rank === 2 ? 500 : 0),
+    };
+  });
 }
