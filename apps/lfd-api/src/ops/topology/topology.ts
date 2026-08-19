@@ -20,6 +20,35 @@ import type { NodeManifest } from "@lfd/ops-contract";
  * beaucoup plus difficile à remarquer.
  */
 export const TOPOLOGY: readonly NodeManifest[] = [
+  // ▸ CE QU'ON OUVRE — les quatre fronts. Ils n'ont ni sonde ni battement : leur
+  //   santé est celle de ce qu'ils appellent. Les déclarer quand même, c'est
+  //   refuser une carte qui commence au premier maillon qu'on possède — or on
+  //   entre dans le système par eux.
+  {
+    id: "suite-shell",
+    kind: "frontend",
+    label: "Suite",
+    dependsOn: ["gateway"],
+  },
+  {
+    id: "b2b-front",
+    kind: "frontend",
+    label: "Boutique PRO",
+    dependsOn: ["gateway"],
+  },
+  {
+    id: "b2b-admin-front",
+    kind: "frontend",
+    label: "Back-office",
+    dependsOn: ["gateway"],
+  },
+  {
+    id: "pim-front",
+    kind: "frontend",
+    label: "Référentiel (écran)",
+    dependsOn: ["gateway"],
+  },
+
   {
     id: "gateway",
     kind: "worker",
@@ -41,14 +70,14 @@ export const TOPOLOGY: readonly NodeManifest[] = [
   {
     id: "postgres-b2b",
     kind: "datastore",
-    label: "Base B2B",
+    label: "Database — LFD",
     dependsOn: [],
     probe: { kind: "postgres" },
   },
   {
     id: "postgres-pim",
     kind: "datastore",
-    label: "Base référentiel",
+    label: "Database — référentiel",
     dependsOn: [],
     probe: { kind: "postgres" },
   },

@@ -141,6 +141,16 @@
         />
       }
 
+      @if (box.readings) {
+        <!-- Les relevés de CETTE brique, sous sa carte : la gateway dit un
+             débit, une base dit ses connexions, un service dit sa charge par
+             module. Le contrat ne connaît aucune des trois — il porte des
+             couples libellé/valeur, et chacune remplit les siens. -->
+        <text class="node-readings" [attr.x]="box.x + 2" [attr.y]="box.y + node.height + 12">
+          {{ box.readings }}
+        </text>
+      }
+
       @if (box.node.dependencyDown) {
         <!-- La dépendance tombée est DÉSIGNÉE, jamais propagée : cette brique
              garde son propre statut, on montre seulement ce qui l'a peut-être

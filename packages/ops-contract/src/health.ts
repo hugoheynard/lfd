@@ -10,6 +10,27 @@ import type { HealthStatus, NodeKind } from "./node.js";
  * attendu. Ce n'est pas une panne, c'est un angle mort — et le confondre avec
  * une panne est la première façon de perdre confiance en sa propre carte.
  */
+/**
+ * **Un relevé** — un chiffre que ce nœud, et lui seul, sait produire.
+ *
+ * C'est le champ qui permet à chaque brique de dire ce qui la concerne sans que
+ * le contrat ait à connaître aucune d'elles : la gateway sort des requêtes par
+ * seconde, un stockage des opérations par classe, un courrier des envois par
+ * catégorie. Générique ici, spécifique chez le producteur — un nœud ajouté
+ * demain amène ses relevés, et l'écran n'apprend rien de nouveau.
+ *
+ * `hint` porte ce qu'un libellé ne peut pas dire : ce qu'est une classe A, ce
+ * que compte exactement une catégorie. Un tableau de bord dont les intitulés
+ * demandent une note de service ailleurs n'est pas consultable.
+ */
+export interface NodeReading {
+  readonly label: string;
+  readonly value: number;
+  /** Suffixe affiché tel quel (`/s`, `ms`, `%`). Absent ⇒ un décompte nu. */
+  readonly unit?: string;
+  readonly hint?: string;
+}
+
 export type HealthReason =
   | "gateway-fault"
   | "error-rate"
@@ -45,6 +66,8 @@ export interface NodeHealth {
    * lien, et l'écran décide de le souligner.
    */
   readonly dependencyDown?: string;
+  /** Ce que CE nœud sait dire de son activité. Vide quand rien ne le mesure. */
+  readonly readings: readonly NodeReading[];
   readonly metrics?: HeartbeatMetrics;
   readonly lastError?: { readonly at: string; readonly message: string };
 }

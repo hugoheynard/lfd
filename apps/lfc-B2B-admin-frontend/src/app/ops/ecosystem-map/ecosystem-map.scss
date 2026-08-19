@@ -204,6 +204,15 @@
   fill: var(--fold-color-alert);
 }
 
+/* La ligne de relevés, HORS de la carte : elle appartient au nœud sans encombrer
+   l'objet. Une carte qui grossit avec ce qu'elle mesure ferait sauter la
+   rangée entière dès qu'une brique se met à parler. */
+.node-readings {
+  fill: var(--fold-color-text-faded);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
 .node-gauge-value {
   fill: var(--fold-color-text-faded);
   font-size: 10px;

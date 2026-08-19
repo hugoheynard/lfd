@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AppConfig } from "../platform/config/app-config.js";
 import { AdminHealthController } from "./health/admin-health.controller.js";
+import { DatabaseReadingsReader } from "./health/database-readings.reader.js";
 import { OpsHealthService } from "./health/ops-health.service.js";
 import { AdminTrafficController } from "./traffic/admin-traffic.controller.js";
 import { AnalyticsEngineTrafficReader } from "./traffic/analytics-engine-traffic.reader.js";
@@ -25,6 +26,7 @@ import { TrafficReader } from "./traffic/traffic-reader.port.js";
   controllers: [AdminTrafficController, AdminHealthController],
   providers: [
     OpsHealthService,
+    DatabaseReadingsReader,
     AnalyticsEngineTrafficReader,
     RehearsalTrafficReader,
     {

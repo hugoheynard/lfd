@@ -4,6 +4,7 @@ import type {
   HealthStatus,
   NodeHealth,
   NodeManifest,
+  NodeReading,
   TrafficWindow,
 } from "@lfd/ops-contract";
 
@@ -41,6 +42,8 @@ export interface NodeEvidence {
   readonly traffic?: TrafficWindow;
   /** Dernier battement reçu, `null` si le nœud n'a jamais parlé. */
   readonly lastHeartbeatAt?: string | null;
+  /** Ce que CE nœud sait dire de son activité — cf. `readings.ts`. */
+  readonly readings?: readonly NodeReading[];
 }
 
 /** Statut et raison, indissociables : rendre l'un sans l'autre serait un verdict. */
@@ -119,6 +122,7 @@ export function deriveHealth(
       since,
       lastHeartbeatAt: observed?.lastHeartbeatAt ?? null,
       dependsOn: node.dependsOn,
+      readings: observed?.readings ?? [],
       ...(fallen === undefined ? {} : { dependencyDown: fallen }),
     };
   });

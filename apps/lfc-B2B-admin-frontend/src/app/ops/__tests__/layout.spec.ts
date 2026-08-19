@@ -12,6 +12,7 @@ const node = (id: string, dependsOn: string[] = []): NodeHealth => ({
   since: '2026-08-19T12:00:00.000Z',
   lastHeartbeatAt: null,
   dependsOn,
+  readings: [],
 });
 
 describe('layoutOf', () => {

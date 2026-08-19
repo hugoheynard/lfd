@@ -7,8 +7,11 @@ import { occupancyOf, type Occupancy } from '../occupancy';
 
 /** Géométrie de la carte, en unités du `viewBox`. */
 const NODE = { width: 208, height: 48 } as const;
-const GAP = { column: 116, row: 16 } as const;
+const GAP = { column: 28, row: 64 } as const;
 const PADDING = 26;
+/** La bande de relevés, sous chaque carte. Réservée même vide : sans hauteur
+ *  constante, une rangée sauterait dès qu'une brique se met à parler. */
+const READINGS_BAND = 16;
 
 /**
  * **Les glyphes** — un symbole par nature de brique, tracé au trait.
@@ -39,6 +42,8 @@ const GLYPHS: Readonly<Record<NodeKind, readonly string[]>> = {
     'M10 3c1.8 1.9 2.8 4.4 2.8 7s-1 5.1-2.8 7',
     'M10 3C8.2 4.9 7.2 7.4 7.2 10s1 5.1 2.8 7',
   ],
+  // La fenêtre : ce qu'on ouvre pour entrer dans le système.
+  frontend: ['M3 4h14v12H3z', 'M3 8h14', 'M5.5 6h.01'],
 };
 
 /** Bornes de la durée d'un cycle de pointillés — la VITESSE dit le débit. */
@@ -80,6 +85,8 @@ interface Box {
   readonly glyph: readonly string[];
   /** Part du plafond, en pourcentage plein — `null` quand rien n'est mesuré. */
   readonly gauge: number | null;
+  /** Ce que CE nœud dit de son activité, déjà mis en forme. Vide = rien à dire. */
+  readonly readings: string;
 }
 
 /**
@@ -130,8 +137,11 @@ export class EcosystemMap {
 
   protected readonly viewBox = computed(() => {
     const { columns, rows } = this.layout();
-    const width = columns * NODE.width + (columns - 1) * GAP.column + PADDING * 2;
-    const height = rows * NODE.height + (rows - 1) * GAP.row + PADDING * 2;
+    // L'axe est VERTICAL : la profondeur de dépendance descend, et les fronts —
+    // les plus profonds, puisque tout part d'eux — se posent en bas. C'est le
+    // sens dans lequel on raconte une panne : « je clique, et… ».
+    const width = rows * NODE.width + (rows - 1) * GAP.column + PADDING * 2;
+    const height = columns * (NODE.height + READINGS_BAND) + (columns - 1) * GAP.row + PADDING * 2;
     return `0 0 ${width} ${height}`;
   });
 
@@ -144,13 +154,14 @@ export class EcosystemMap {
       };
       return {
         node: placed.health,
-        x: position(placed).x,
-        y: position(placed).y,
+        x: position(placed, this.layout().columns).x,
+        y: position(placed, this.layout().columns).y,
         statusLabel: STATUS_LABEL[placed.health.status],
         occupancy,
         title: describe(placed.health, occupancy),
         glyph: GLYPHS[placed.health.kind],
         gauge: occupancy.basis === 'aucune mesure' ? null : occupancy.ratio,
+        readings: formatReadings(placed.health.readings),
       };
     }),
   );
@@ -203,21 +214,26 @@ export class EcosystemMap {
   );
 }
 
-/** Coin haut-gauche d'un nœud, en unités du `viewBox`. */
-function position(placed: PlacedNode): { x: number; y: number } {
+/**
+ * Coin haut-gauche d'un nœud. La **colonne** de la mise en page devient une
+ * RANGÉE, et elle est inversée : le rang 0 (ce dont tout part — les fronts)
+ * atterrit en bas, ce dont on dépend remonte.
+ */
+function position(placed: PlacedNode, depth: number): { x: number; y: number } {
   return {
-    x: PADDING + placed.column * (NODE.width + GAP.column),
-    y: PADDING + placed.row * (NODE.height + GAP.row),
+    x: PADDING + placed.row * (NODE.width + GAP.column),
+    y: PADDING + (depth - 1 - placed.column) * (NODE.height + READINGS_BAND + GAP.row),
   };
 }
 
-/** Une courbe de Bézier du bord droit de l'appelant au bord gauche de l'appelé. */
+/** Une courbe du bord HAUT de l'appelant au bord BAS de l'appelé — on remonte. */
 function curveBetween(from: Box, to: Box): string {
-  const startX = from.x + NODE.width;
-  const startY = from.y + NODE.height / 2;
-  const endY = to.y + NODE.height / 2;
-  const bend = GAP.column / 2;
-  return `M ${startX} ${startY} C ${startX + bend} ${startY}, ${to.x - bend} ${endY}, ${to.x} ${endY}`;
+  const startX = from.x + NODE.width / 2;
+  const startY = from.y;
+  const endX = to.x + NODE.width / 2;
+  const endY = to.y + NODE.height;
+  const bend = GAP.row / 2;
+  return `M ${startX} ${startY} C ${startX} ${startY - bend}, ${endX} ${endY + bend}, ${endX} ${endY}`;
 }
 
 /**
@@ -240,4 +256,15 @@ function describe(node: NodeHealth, occupancy: Occupancy): string {
     parts.push(`dépendance injoignable : ${node.dependencyDown}`);
   }
   return parts.join(' · ');
+}
+
+/**
+ * Les relevés en une ligne. Trois au plus : au-delà, une carte de schéma cesse
+ * d'être une carte et devient un tableau — or le tableau existe déjà, plus bas.
+ */
+function formatReadings(readings: NodeHealth['readings']): string {
+  return readings
+    .slice(0, 3)
+    .map((reading) => `${reading.label} ${reading.value}${reading.unit ?? ''}`)
+    .join(' · ');
 }

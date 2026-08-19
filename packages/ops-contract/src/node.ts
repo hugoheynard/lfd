@@ -6,7 +6,17 @@ import { z } from "zod";
  * `documentation/architecture-ops-ecosystem-health.md`.
  */
 
-export const nodeKindSchema = z.enum(["external-api", "worker", "service", "datastore"]);
+export const nodeKindSchema = z.enum([
+  "external-api",
+  "worker",
+  "service",
+  "datastore",
+  // Ce qu'un client charge dans son navigateur. Il n'a ni sonde ni battement :
+  // sa santé est celle de ce qu'il appelle. Le déclarer quand même, c'est
+  // refuser une carte qui s'arrête au premier maillon qu'on possède — or c'est
+  // par là qu'on entre dans le système.
+  "frontend",
+]);
 export type NodeKind = z.infer<typeof nodeKindSchema>;
 
 /**
