@@ -320,6 +320,47 @@ dette qui grossit.
 `C7` reste **en dernier** : il câble le front client sur l'API du catalogue et
 fige la frontière qu'on est en train de déplacer.
 
+### B2e — la check-list de bascule
+
+**Rien de B2e n'est fait, et rien n'a touché Cloudflare.** Le code est prêt ;
+la bascule est une opération de configuration, à faire d'un bloc, à une heure
+où personne ne se sert de rien. Cette liste existe pour que ce moment-là soit
+mécanique plutôt qu'une enquête.
+
+> 🔴 **Le piège, à traiter AVANT tout déploiement.** `DATABASE_PIM_URL` est
+> devenue **requise** (B2c) : sans elle dans les Secrets GitHub du dépôt, le
+> container refuse de démarrer — pas une dégradation, un boot qui échoue. Le
+> même déploiement veut aussi `SHOPIFY_ADMIN_TOKEN` (ou la paire
+> `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET`) si la publication en vitrine
+> doit rester allumée ; celles-là, absentes, éteignent une capacité et le
+> disent — c'est une gêne, pas une panne.
+
+L'ordre compte, et il est le même que celui déjà écrit dans le `wrangler.toml`
+de la passerelle : **brancher, repointer, VÉRIFIER, et seulement ensuite
+éteindre**. L'inverse coupe la production entre deux déploiements.
+
+| #   | Geste                                                              | Où                          |
+| --- | ------------------------------------------------------------------ | --------------------------- |
+| 1   | Poser `DATABASE_PIM_URL` (+ Shopify si le canal doit vivre)        | Secrets GitHub              |
+| 2   | Déployer l'API — elle sert désormais `/pim/*`                      | `deploy_b2b_backend`        |
+| 3   | Vérifier `/api/b2b/pim/catalogue/products` à travers la passerelle | `curl`                      |
+| 4   | Retirer le préfixe `/api/pim` et le binding `PIM_BACKEND`          | `gateway/`                  |
+| 5   | Pointer `PIM_API_BASE_URL` sur `…/api/b2b/pim`                     | variable Pages du front PIM |
+| 6   | Vérifier le PIM dans le shell, connecté                            | à la main                   |
+| 7   | Supprimer le Worker `lfc-pim-backend` et son container             | Cloudflare                  |
+
+**Le retour arrière tient tant que l'étape 7 n'est pas faite** : le Worker PIM
+tourne encore sur sa dernière image, sur sa base inchangée. Revenir, c'est
+remettre `PIM_API_BASE_URL` sur l'ancienne adresse — rien d'autre n'a bougé de
+son côté. C'est précisément pourquoi l'extinction est en dernier, et pourquoi
+elle mérite d'attendre d'avoir vu la nouvelle chaîne fonctionner.
+
+Deux choses **ne se font pas** ce jour-là, et il vaut mieux le dire que de les
+découvrir dans la liste : l'API Auth0 du PIM devient inutilisée (plus personne
+ne demande cette audience depuis B2d) mais la supprimer est un geste à part, et
+la consolidation des deux bases en schémas reste **B4**, avec sa migration de
+données.
+
 ## Ce qui n'est pas tranché
 
 - **Shopify reste-t-il une vitrine vivante ?** Si oui, le PIM garde la propriété
