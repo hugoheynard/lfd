@@ -62,6 +62,20 @@ export function runningInstalled(): boolean {
   return iosStandalone || window.matchMedia('(display-mode: standalone)').matches;
 }
 
+/**
+ * L'app tourne-t-elle **dans un cadre** ?
+ *
+ * Le shell de la suite l'encadrait ; il est retiré, et plus rien ne devrait le
+ * faire. La question reste posée parce que sa réponse change ce que l'écran a
+ * le droit de promettre : dans un cadre d'une autre origine, la permission est
+ * refusée d'office, et `Notification.permission` y ment en rendant `denied`.
+ * Trois lignes pour que le message reste vrai si quoi que ce soit encadre à
+ * nouveau le back-office.
+ */
+export function runningFramed(): boolean {
+  return typeof window !== 'undefined' && window.self !== window.top;
+}
+
 /** iOS impose l'installation ; les autres acceptent depuis un onglet ordinaire. */
 export function isIos(): boolean {
   if (typeof navigator === 'undefined') {

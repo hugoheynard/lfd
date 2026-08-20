@@ -4,12 +4,12 @@ import type { PushCapability } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
-import { SuiteEmbed } from '../../suite-embed/suite-embed';
 import {
   isIos,
   matchesServerKey,
   pushStateOf,
   pushSupported,
+  runningFramed,
   runningInstalled,
   vapidKeyToBytes,
   type PushState,
@@ -30,8 +30,8 @@ const WORKER = '/sw.js';
 @Injectable({ providedIn: 'root' })
 export class PushNotificationsService {
   private readonly http = inject(HttpClient);
-  /** Embarquée dans le shell ? Un cadre tiers ne peut ni demander ni s'abonner. */
-  private readonly embedded = inject(SuiteEmbed).hosted;
+  /** Dans un cadre ? Un cadre tiers ne peut ni demander la permission ni s'abonner. */
+  private readonly embedded = runningFramed();
 
   private readonly stateValue = signal<PushState>('unsupported');
   /** Ce que l'écran affiche. Lecture seule au dehors. */

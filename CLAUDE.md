@@ -6,9 +6,9 @@ Monorepo `lfd` (pnpm + turbo), branche de travail **`dev`**.
 apps/lfd-api/                    NestJS · UN processus, DEUX bases Prisma  ← ce document
                                    src/pim/ = le référentiel (db PIM, routes /pim)
 apps/lfc-B2B-platform-frontend/  Angular 22 zoneless SSR · fold-ng      ─┐ frontends :
-apps/lfc-B2B-admin-frontend/     Angular 22 · back-office staff          │ CLAUDE.md de l'app
-                                   src/app/pim/ = le référentiel (greffé) │
-apps/lfc-suite-shell/            hôte de la suite interne (iframes)     ─┘
+apps/lfc-B2B-admin-frontend/     Angular 22 · back-office staff         ─┘ CLAUDE.md de l'app
+                                   src/app/pim/ = le référentiel (greffé)
+gateway/                         frontière de confiance : SEUL chemin public vers les backends
 packages/                        contracts · b2b-ui · endpoints · mailer · storage · …
 ```
 

@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 /**
- * Compagnon des launchers `suite:dev*` : attend que le **shell** réponde et
+ * Compagnon des launchers `dev:*` : attend que le **back-office** réponde et
  * affiche une bannière « prête » avec l'URL (cliquable dans le terminal) — pour ne
  * plus la chercher dans le flux entrelacé de turbo.
  *
- * Lancé en tâche de fond par les scripts `suite:dev*` (`(node … &)`), il sonde
- * puis sort — sur succès (bannière), ou après un délai de garde.
+ * Lancé en tâche de fond par les scripts `dev:*` (`(node … &)`), il sonde puis
+ * sort — sur succès (bannière), ou après un délai de garde.
  *
  * **N'ouvre PAS de navigateur par défaut** : chaque relance du script en ouvrait
  * une nouvelle (spam de fenêtres). Ouverture **opt-in** via `SUITE_OPEN=1`.
- * `SUITE_URL` surcharge l'URL (défaut le shell).
+ * `SUITE_URL` surcharge l'URL (défaut le back-office).
  */
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-const URL = process.env['SUITE_URL'] ?? 'http://localhost:7300';
+const URL = process.env['SUITE_URL'] ?? 'http://localhost:7317';
 const DEADLINE_MS = 120_000;
 const POLL_MS = 1500;
 
-/** Vrai dès que le shell accepte une requête (peu importe le code). */
+/** Vrai dès que l'app accepte une requête (peu importe le code). */
 async function ready() {
   try {
     await fetch(URL, { redirect: 'manual' });
@@ -49,5 +49,5 @@ while (Date.now() < deadline) {
   await sleep(POLL_MS);
 }
 process.stdout.write(
-  `\n  ⚠️  Shell pas prêt après ${DEADLINE_MS / 1000}s (${URL}) — voir 'pnpm suite:status'.\n\n`,
+  `\n  ⚠️  Back-office pas prêt après ${DEADLINE_MS / 1000}s (${URL}) — voir 'pnpm dev:status'.\n\n`,
 );

@@ -69,13 +69,13 @@ describe("ce qu'elle refuse, et sans le dire", () => {
     // Cinquante mesures dans un corps : on en garde douze. Sans borne, une
     // seule requête remplirait la file en mémoire.
     const samples = Array.from({ length: 50 }, () => ({
-      front: "suite-shell",
+      front: "b2b-front",
       metric: "CLS",
       value: 0.02,
     }));
 
     await post({ samples }).expect(204);
 
-    expect(ctx.app.get(VitalsStore).percentiles("suite-shell", Date.now()).get("CLS")).toBe(0.02);
+    expect(ctx.app.get(VitalsStore).percentiles("b2b-front", Date.now()).get("CLS")).toBe(0.02);
   });
 });

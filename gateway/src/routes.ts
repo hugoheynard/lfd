@@ -43,8 +43,6 @@ export type BackendKey = keyof typeof API_PREFIXES;
 const local = (port: number): string => `http://127.0.0.1:${port}`;
 
 const DEV_ROUTES: Readonly<Record<string, string>> = {
-  [`${GATEWAY_SUBDOMAINS.suiteShell}.localhost`]: local(DEV_PORTS.suiteShell),
-  [`${GATEWAY_SUBDOMAINS.pimFront}.localhost`]: local(DEV_PORTS.pimFront),
   [`${GATEWAY_SUBDOMAINS.b2bFront}.localhost`]: local(DEV_PORTS.b2bFront),
   [`${GATEWAY_SUBDOMAINS.b2bAdminFront}.localhost`]: local(DEV_PORTS.b2bAdminFront),
   [`${GATEWAY_SUBDOMAINS.b2bBack}.localhost`]: local(DEV_PORTS.b2bBack),

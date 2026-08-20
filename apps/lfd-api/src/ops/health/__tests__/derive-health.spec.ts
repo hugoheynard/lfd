@@ -238,7 +238,7 @@ describe("un front est SERVI, jamais « en marche »", () => {
   it("laisse gris un front sans cible plutôt que de le supposer servi", () => {
     // La Suite n'a pas d'adresse de production. Gris est exact ; vert serait
     // inventé, et rouge accuserait une panne qui n'existe pas.
-    const [health] = derive([node({ id: "suite-shell", kind: "frontend", label: "Suite" })], {});
+    const [health] = derive([node({ id: "b2b-front", kind: "frontend", label: "Boutique" })], {});
 
     expect(health).toMatchObject({ status: "unknown", reason: "no-evidence" });
     expect(health?.lastError).toBeUndefined();

@@ -16,7 +16,7 @@ import { STAFF_OWNS_SESSION } from './auth.providers';
  *
  * Embarquée dans la suite, la façade est **inerte** : Auth0 n'est pas fourni,
  * `inject(…, { optional: true })` rend `null`, et c'est le shell qui authentifie
- * (cf. `SuiteEmbed`). Un seul objet à interroger dans les deux vies.
+ * Un seul objet à interroger, quel que soit l'état de la session.
  */
 @Injectable({ providedIn: 'root' })
 export class StaffAuth {

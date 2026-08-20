@@ -30,15 +30,6 @@ export const TOPOLOGY: readonly NodeManifest[] = [
   //   que l'allowlist CORS. Une seule vérité : si un projet Pages est renommé,
   //   les deux bougent ensemble ou aucun ne bouge — c'est précisément la panne
   //   silencieuse qu'a coûtée `lfc-b2b` → `lfc-b2b-eu7`.
-  //
-  //   La Suite n'a pas encore d'adresse de production : sans cible, pas de
-  //   sonde, et elle reste grise. Grise est exact ; verte serait inventé.
-  {
-    id: "suite-shell",
-    kind: "frontend",
-    label: "Suite",
-    dependsOn: ["gateway"],
-  },
   {
     id: "b2b-front",
     kind: "frontend",

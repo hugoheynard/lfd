@@ -2,27 +2,25 @@ import { makeEnvironmentProviders } from '@angular/core';
 import type { EnvironmentProviders } from '@angular/core';
 import { provideAuth0 } from '@auth0/auth0-angular';
 
-import { isEmbedded } from '../suite-embed/hosted';
 import { STAFF_AUTH_CONFIG, STAFF_AUTH_CONFIGURED } from './auth.config';
 
 /**
  * Cette app tient-elle sa **propre** session Auth0 ?
  *
- * Non quand elle est **embarquée** : le shell possède la session de la suite et
- * relaie un jeton par `postMessage`. Fournir Auth0 dans le cadre ferait tourner
- * `checkSession()` en iframe tierce — bloqué par les navigateurs sur les cookies
- * tiers — donc un échec bruyant pour une session qu'on a déjà par ailleurs.
+ * Toujours, sauf quand la configuration manque : voir `STAFF_AUTH_CONFIGURED`.
  *
- * Non plus quand la configuration manque : voir `STAFF_AUTH_CONFIGURED`.
+ * Il y avait une seconde raison de répondre non — l'app tournait embarquée dans
+ * le shell de la suite, qui possédait la session et relayait un jeton par
+ * `postMessage`. Le shell est retiré : le back-office n'a plus qu'une vie, et
+ * c'est celle-ci.
  *
  * Évalué **au module**, pas dans un service : `app.config.ts` doit trancher avant
  * qu'aucun contexte d'injection n'existe.
  */
-export const STAFF_OWNS_SESSION =
-  typeof window !== 'undefined' && !isEmbedded(window) && STAFF_AUTH_CONFIGURED;
+export const STAFF_OWNS_SESSION = typeof window !== 'undefined' && STAFF_AUTH_CONFIGURED;
 
 /**
- * Providers Auth0 de l'app admin — **uniquement en standalone**.
+ * Providers Auth0 de l'app admin.
  *
  * `redirect_uri` = l'origine courante, évaluée à l'appel : la même build sert
  * `127.0.0.1:7317` et l'origine Pages, chaque origine étant simplement listée

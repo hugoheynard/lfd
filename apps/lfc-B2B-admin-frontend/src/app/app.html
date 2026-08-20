@@ -10,15 +10,8 @@
   <!-- `mobileNav="none"` : sous 768px le shell ne rend AUCUN tiroir — le rail
        s'efface et le lanceur de tuiles, plus bas, prend le relais. -->
   <fold-app-shell #shell="foldAppShell" mobileNav="none" [(mobileNavOpen)]="mobileNavOpen">
-    <!-- Rail primaire — le menu de l'app. Déployé par défaut, repliable.
-         Embarqué : `secondary` (2ᵉ rail sous le switcher). -->
-    <fold-menu
-      railPrimary
-      collapsible
-      tint="primary"
-      [level]="hosted ? 'secondary' : 'primary'"
-      [(expanded)]="menuExpanded"
-    >
+    <!-- Rail primaire — le menu de l'app. Déployé par défaut, repliable. -->
+    <fold-menu railPrimary collapsible tint="primary" level="primary" [(expanded)]="menuExpanded">
       <a header class="rail-brand" routerLink="/" aria-label="LFC B2B admin — accueil">
         <span class="brand-mark" aria-hidden="true">B2B</span>
         @if (menuExpanded()) {
@@ -224,9 +217,7 @@
       </a>
 
       <div class="app-header-actions">
-        <!-- Embarqué, l'identité appartient au shell de la suite : la répéter ici
-             laisserait croire à deux sessions distinctes. -->
-        @if (!hosted && email(); as who) {
+        @if (email(); as who) {
           <span class="app-user" [title]="who">{{ who }}</span>
         }
         <!-- La cloche interroge `/admin/notifications` : sans ce garde, elle

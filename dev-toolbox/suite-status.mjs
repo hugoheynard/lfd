@@ -13,8 +13,6 @@ import { DEV_PORTS } from '@lfd/endpoints';
 
 /** Les services à sonder (on ignore `spareFront`, port de secours non lancé). */
 const SERVICES = [
-  { label: 'Shell suite', port: DEV_PORTS.suiteShell },
-  { label: 'PIM front', port: DEV_PORTS.pimFront },
   { label: 'B2B front', port: DEV_PORTS.b2bFront },
   { label: 'B2B admin front', port: DEV_PORTS.b2bAdminFront },
   { label: 'B2B back', port: DEV_PORTS.b2bBack },

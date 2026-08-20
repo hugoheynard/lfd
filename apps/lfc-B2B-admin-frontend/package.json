@@ -38,7 +38,6 @@
     "@lfd/front-ops": "workspace:*",
     "@lfd/ops-contract": "workspace:*",
     "@lfd/pim-contracts": "workspace:*",
-    "@lfd/suite-embed": "workspace:*",
     "@sentry/angular": "catalog:",
     "@stripe/stripe-js": "catalog:",
     "d3": "^7.9.0",

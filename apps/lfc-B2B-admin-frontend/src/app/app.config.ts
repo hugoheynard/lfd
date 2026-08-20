@@ -1,7 +1,5 @@
 import {
   type ApplicationConfig,
-  inject,
-  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
@@ -15,7 +13,6 @@ import { routes } from './app.routes';
 import { providePimIcons } from './pim/pim-icons';
 import { provideStaffAuth } from './auth/auth.providers';
 import { staffAuthInterceptor } from './auth/staff-auth.interceptor';
-import { SuiteEmbed } from './suite-embed/suite-embed';
 
 // App browser-only (pas de SSR — la suite est CSR). HttpClient en mode `fetch`
 // pour appeler la surface `/admin/*` du backend B2B.
@@ -62,15 +59,10 @@ export const appConfig: ApplicationConfig = {
     // Un seul point d'attache du jeton staff, pour que treize services n'aient
     // pas à s'en souvenir chacun (sept l'avaient oublié). Cf. `staff-auth.interceptor.ts`.
     provideHttpClient(withFetch(), withInterceptors([staffAuthInterceptor])),
-    // Session Auth0 **propre à cette app**, fournie uniquement quand elle tourne
-    // hors du shell (sinon la suite authentifie, et une iframe tierce ne peut de
-    // toute façon pas rejouer `checkSession`). Cf. `auth.providers.ts`.
+    // Session Auth0 propre à cette app. Cf. `auth.providers.ts`.
     provideStaffAuth(),
     // Toasts d'opération (succès/échec). Durées par défaut de fold : succès bref,
     // erreur **sticky** (à fermer, pas à rater).
     provideFoldToasts({}),
-    // Vie embarquée dans la suite (hello + sync route + relais token). No-op en
-    // standalone.
-    provideAppInitializer(() => inject(SuiteEmbed).init()),
   ],
 };

@@ -1,8 +1,8 @@
 /**
- * Registre des ports & URLs **de développement** (localhost) de la suite LFC.
+ * Registre des ports & URLs **de développement** (localhost) des apps LFC.
  *
  * Source de vérité UNIQUE : un port n'est écrit qu'ici. Tout le reste en dérive
- * — le shell (`suite-config.dev.ts`) et les CORS dev des backends PIM/B2B
+ * — les CORS dev des backends
  * l'importent au lieu de recopier le nombre. C'est la Phase 1 du plan
  * `documentation/architecture-suite-gateway-scaling.md` : tuer le drift où le
  * même port vivait dans 2–3 fichiers.
@@ -13,16 +13,11 @@
  * Auth0) reste injecté au build via `generate-auth-config.mjs` — pas ici.
  *
  * ⚠️ Les ports de serve dans les `angular.json` (JSON, non importable) doivent
- * rester alignés sur `DEV_PORTS` : shell→7300, pimFront→7315, b2bFront→7316,
- * b2bAdminFront→7317.
+ * rester alignés sur `DEV_PORTS` : b2bFront→7316, b2bAdminFront→7317.
  */
 
 /** Bloc de ports alloué en dev. Le seul endroit où ces nombres sont écrits. */
 export const DEV_PORTS = {
-  /** Shell hôte de la suite (`lfc-suite-shell`). */
-  suiteShell: 7300,
-  /** Front PIM (`lfc-PIM-frontend`). */
-  pimFront: 7315,
   /** Front B2B (`lfc-B2B-platform-frontend`). */
   b2bFront: 7316,
   /** Front B2B admin (`lfc-B2B-admin-frontend`). */
@@ -60,8 +55,6 @@ export const PIM_API_PREFIX = "/pim";
 
 /** URLs dev (localhost) des fronts ET des backends, dérivées de `DEV_PORTS`. */
 export const DEV_URLS = {
-  suiteShell: localhost(DEV_PORTS.suiteShell),
-  pimFront: localhost(DEV_PORTS.pimFront),
   b2bFront: localhost(DEV_PORTS.b2bFront),
   b2bAdminFront: localhost(DEV_PORTS.b2bAdminFront),
   b2bBack: localhost(DEV_PORTS.b2bBack),
@@ -80,8 +73,6 @@ export const DEV_GATEWAY_PORT = 8787;
 
 /** app → sous-domaine de la passerelle. Le worker `gateway/src/routes.ts` en dérive. */
 export const GATEWAY_SUBDOMAINS = {
-  suiteShell: "suite",
-  pimFront: "pim",
   b2bFront: "b2b",
   b2bAdminFront: "b2b-admin",
   b2bBack: "api-b2b",
@@ -92,8 +83,6 @@ const gatewayUrl = (subdomain: string): string =>
 
 /** URLs des apps **via la passerelle** (sous-domaines `*.localhost:8787`). */
 export const GATEWAY_URLS = {
-  suiteShell: gatewayUrl(GATEWAY_SUBDOMAINS.suiteShell),
-  pimFront: gatewayUrl(GATEWAY_SUBDOMAINS.pimFront),
   b2bFront: gatewayUrl(GATEWAY_SUBDOMAINS.b2bFront),
   b2bAdminFront: gatewayUrl(GATEWAY_SUBDOMAINS.b2bAdminFront),
   b2bBack: gatewayUrl(GATEWAY_SUBDOMAINS.b2bBack),
@@ -126,10 +115,8 @@ export function isViaGateway(hostname: string): boolean {
 export const DEV_CORS_ORIGINS: string[] = [
   ...loopbacks(DEV_PORTS.b2bFront),
   ...loopbacks(DEV_PORTS.b2bAdminFront),
-  ...loopbacks(DEV_PORTS.pimFront),
   GATEWAY_URLS.b2bFront,
   GATEWAY_URLS.b2bAdminFront,
-  GATEWAY_URLS.pimFront,
   ...loopbacks(DEV_PORTS.spareFront),
 ];
 

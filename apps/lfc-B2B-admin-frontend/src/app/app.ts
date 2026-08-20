@@ -27,13 +27,10 @@ import { StaffLoginPage } from './auth/staff-login/staff-login';
 import { PushNotificationsService } from './shared/push/push-notifications.service';
 import { CanDirective } from './shared/can/can.directive';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
-import { SuiteEmbed } from './suite-embed/suite-embed';
 
 /**
- * Racine de l'app **B2B admin** (staff). Structurée comme PIM : un rail de
- * navigation + le contenu routé. Embarquée dans la suite, le rail passe de
- * `primary` à `secondary` (le rail navy primaire est le switcher de la suite) ;
- * en standalone, `primary`.
+ * Racine de l'app **B2B admin** (staff) : un rail de navigation + le contenu
+ * routé.
  *
  * C'est aussi ici que se joue la **porte d'entrée** hors du shell : tant que la
  * session n'est pas résolue — ou qu'elle est vide — la coquille n'est pas rendue
@@ -141,9 +138,6 @@ export class App {
     () => this.permissions.loaded() && this.permissions.permissions().length === 0,
   );
 
-  /** Embarqué dans la suite (iframe) ? → rail `secondary` ; sinon `primary`. */
-  protected readonly hosted = inject(SuiteEmbed).hosted;
-
   /** Session en cours de résolution : on ne montre ni la porte ni l'app. */
   protected readonly resolving = this.auth.isLoading;
 
@@ -152,9 +146,9 @@ export class App {
 
   /**
    * Montrer la porte ? Seulement quand cette app porte sa propre session et que
-   * personne n'y est entré. Embarquée — ou sur un poste sans Auth0 configuré —
-   * `ownsSession` est faux : l'app s'affiche, et c'est le **backend** qui refuse
-   * ou non les appels. Le front n'a jamais été le mur.
+   * personne n'y est entré. Sur un poste sans Auth0 configuré, `ownsSession` est
+   * faux : l'app s'affiche, et c'est le **backend** qui refuse ou non les
+   * appels. Le front n'a jamais été le mur.
    */
   protected readonly locked = computed(
     () => this.auth.ownsSession && !this.auth.isAuthenticated() && !this.auth.isLoading(),
@@ -197,10 +191,9 @@ export class App {
   }
 
   /**
-   * Déconnexion. Standalone, elle ferme la vraie session Auth0 (retour sur la
-   * porte). Embarquée, la session appartient au shell : on ne peut que refermer
-   * le tiroir et revenir à l'accueil — se déconnecter de la suite depuis une
-   * app hébergée déconnecterait aussi les autres.
+   * Déconnexion : elle ferme la session Auth0 et ramène sur la porte. Sans
+   * session propre — dev sans Auth0 configuré — il n'y a rien à fermer, on
+   * revient simplement à l'accueil.
    */
   protected logout(): void {
     this.mobileNavOpen.set(false);

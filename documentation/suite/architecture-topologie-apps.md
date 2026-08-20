@@ -1,5 +1,31 @@
 # Topologie des apps — ce qui fusionne, ce qui reste séparé
 
+> 🔴 **2026-08-20 — la fédération est abandonnée, le shell est retiré.**
+>
+> Ce document a exploré la suite fédérée (un shell hôte, des apps en iframes,
+> une session relayée par `postMessage`) et l'a menée jusqu'au code. Elle a
+> tenu ; ce qui n'a pas tenu, c'est sa raison d'être. Les sujets qu'elle
+> fédérait ont fondu un par un — backend unique (B2c), audience retirée (B2d),
+> base décidée unique (B4), référentiel greffé dans le back-office — et il ne
+> restait qu'une coquille qui encadrait une seule app.
+>
+> Ce qu'elle coûtait, elle, restait entier : une session à relayer, une
+> deuxième origine à autoriser, un rail secondaire, une audience Auth0, un
+> projet Pages, un déployable de plus dans la CI. Et un effet de bord découvert
+> le 2026-08-20 en durcissant les notifications — **un cadre d'une autre origine
+> ne peut pas demander la permission d'afficher des notifications**, et le
+> navigateur y répond `denied` sans que personne n'ait rien refusé.
+>
+> Ce qui SURVIT : la **passerelle** (`gateway/`), qui n'a jamais été un objet de
+> la suite mais la frontière de confiance des backends, et reste le seul chemin
+> public vers eux. Elle garde son nom `lfc-suite-gateway` — le renommer
+> déplacerait un Worker en production pour une question de vocabulaire.
+>
+> Ce qui reste vrai du reste du document : **la règle**. Le backend se découpe
+> par propriété des données, le front par audience × appareil. C'est elle qui a
+> conduit à greffer le référentiel plutôt qu'à le fédérer, et elle resservira au
+> prochain sujet.
+
 > 📐 **Doc-first.** Rien de ce document n'est codé. Il fixe la règle et l'ordre,
 > pour que la question ne se rejoue pas à chaque nouveau sujet.
 >
