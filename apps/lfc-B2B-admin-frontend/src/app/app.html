@@ -26,33 +26,34 @@
         }
       </a>
 
-      @if (canSeeCompanies()) {
-        <!-- Accent et non alerte sur les comptes : un dossier incomplet n'est
-             pas un incident, c'est du travail qui attend. L'alerte reste pour
-             ce qui coûte tout de suite. -->
-        <a
-          fold-menu-item
-          icon="company"
-          label="Comptes clients"
-          [badge]="companyBadge()"
-          badgeTone="accent"
-          routerLink="/comptes-clients"
-          routerLinkActive
-          #comptesRla="routerLinkActive"
-          [active]="comptesRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-
       @if (canSeeCommercial()) {
         <a
           fold-menu-item
           icon="calendar"
           label="Commercial"
+          [badge]="companyBadge()"
+          badgeTone="accent"
           routerLink="/commercial"
           routerLinkActive
           #commercialRla="routerLinkActive"
           [active]="commercialRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
+      @if (canSeeAnalytics()) {
+        <!-- ANALYTICS — ce que le parc raconte, par opposition à ce qu'on lui
+             fait. La croissance y a été sortie de Commercial : on l'ouvrait au
+             milieu du cockpit et des prospects, alors qu'on ne la consulte pas
+             pour agir sur un dossier mais pour comprendre un mouvement. -->
+        <a
+          fold-menu-item
+          icon="stats"
+          label="Analytics"
+          routerLink="/analytics"
+          routerLinkActive
+          #analyticsRla="routerLinkActive"
+          [active]="analyticsRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -96,19 +97,19 @@
       }
 
       @if (canSeeOps()) {
-        <!-- La santé de l'écosystème, au pied du rail avec les réglages : on n'y
-             va pas pour travailler, on y va quand quelque chose cloche. La
-             mettre au milieu des destinations de travail lui donnerait le poids
-             d'une page qu'on ouvre vingt fois par jour. -->
+        <!-- OPS dans le CORPS, plus au pied. Il y était rangé avec les réglages,
+             au motif qu'on n'y va pas pour travailler — c'était vrai d'un écran
+             de santé, ça ne l'est plus d'un module qui porte le trafic, la
+             charge par requête, le forfait consommé et le retour du courrier.
+             On y va pour savoir, pas seulement quand ça casse. -->
         <a
-          footer
           fold-menu-item
           icon="waveform"
-          label="Santé"
+          label="OPS"
           routerLink="/sante"
           routerLinkActive
-          #santeRla="routerLinkActive"
-          [active]="santeRla.isActive"
+          #opsRla="routerLinkActive"
+          [active]="opsRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -202,7 +203,7 @@
           variant="filled"
           icon="company"
           label="Comptes clients"
-          routerLink="/comptes-clients"
+          routerLink="/commercial/comptes-clients"
           routerLinkActive
           #comptesTile="routerLinkActive"
           [active]="comptesTile.isActive"
@@ -215,10 +216,25 @@
           variant="filled"
           icon="calendar"
           label="Commercial"
+          [badge]="companyBadge()"
+          badgeTone="accent"
           routerLink="/commercial"
           routerLinkActive
           #commercialTile="routerLinkActive"
           [active]="commercialTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeAnalytics()) {
+        <a
+          fold-nav-tile
+          variant="filled"
+          icon="stats"
+          label="Analytics"
+          routerLink="/analytics"
+          routerLinkActive
+          #analyticsTile="routerLinkActive"
+          [active]="analyticsTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -256,7 +272,7 @@
           fold-nav-tile
           variant="filled"
           icon="waveform"
-          label="Santé"
+          label="OPS"
           routerLink="/sante"
           routerLinkActive
           #santeTile="routerLinkActive"

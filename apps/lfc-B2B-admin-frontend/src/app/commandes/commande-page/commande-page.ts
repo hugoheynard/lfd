@@ -91,6 +91,6 @@ export class AdminCommandePage {
   }
 
   protected async back(): Promise<void> {
-    await this.router.navigate(['/comptes-clients']);
+    await this.router.navigate(['/commercial/comptes-clients']);
   }
 }

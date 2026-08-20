@@ -243,6 +243,6 @@ export class InformationsPage {
   }
 
   protected back(): void {
-    void this.router.navigate(['/comptes-clients']);
+    void this.router.navigate(['/commercial/comptes-clients']);
   }
 }

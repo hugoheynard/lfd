@@ -27,7 +27,7 @@ import type {
   ZonePenetrationTrend,
 } from '@lfd/contracts';
 
-import { MarketService } from '../market/market.service';
+import { MarketService } from '../../commercial/market/market.service';
 import { CHURN_COLORS } from './churn-palette';
 import { type SectorGrain, SECTOR_GRAINS } from './sector-grain';
 import { Chart, type ChartOption } from '../../shared/chart/chart';

@@ -141,7 +141,7 @@ export class FicheClientShell {
   }
 
   protected async back(): Promise<void> {
-    await this.router.navigate(['/comptes-clients']);
+    await this.router.navigate(['/commercial/comptes-clients']);
   }
 
   /** Le nom seul : l'en-tête n'a besoin de rien d'autre, les vues chargent le reste. */

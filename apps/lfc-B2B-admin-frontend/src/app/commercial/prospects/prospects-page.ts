@@ -27,8 +27,8 @@ import { NotifyService } from '../../notify.service';
 import { LeadsService } from '../leads.service';
 import { LeadCapturePanel } from './lead-capture-panel/lead-capture-panel';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
-import { funnelOption } from '../croissance/growth-charts';
-import { GrowthService } from '../croissance/growth.service';
+import { funnelOption } from '../../analytics/croissance/growth-charts';
+import { GrowthService } from '../../analytics/croissance/growth.service';
 import { ActivationTable } from './activation/activation-table';
 import { ProspectsService } from './prospects.service';
 

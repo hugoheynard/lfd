@@ -10,7 +10,7 @@ import { PermissionsStore } from './permissions.store';
  * renvoie vers la première porte ouverte, pas vers une page d'erreur.
  */
 const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: string }[] = [
-  { permission: 'companies:read', path: '/comptes-clients' },
+  { permission: 'companies:read', path: '/commercial/comptes-clients' },
   { permission: 'growth:read', path: '/commercial' },
   { permission: 'orders:read', path: '/commandes' },
   { permission: 'settings:read', path: '/reglages' },

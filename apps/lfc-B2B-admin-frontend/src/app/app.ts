@@ -98,6 +98,14 @@ export class App {
   );
   protected readonly canSeeCommercial = computed(() => this.permissions.can('growth:read'));
   /** Le fournil lit les commandes ; il n'a rien à voir avec le commercial. */
+  /**
+   * Analytics lit le même droit que Commercial (`growth:read`) — c'est la même
+   * matière, lue pour comprendre plutôt que pour agir. Un droit à part
+   * n'aurait de sens que le jour où l'on montrera des chiffres qu'un
+   * commercial ne doit pas voir.
+   */
+  protected readonly canSeeAnalytics = computed(() => this.permissions.can('growth:read'));
+
   protected readonly canSeeProduction = computed(() => this.permissions.can('orders:read'));
   protected readonly canSeeSettings = computed(() => this.permissions.can('settings:read'));
   /**

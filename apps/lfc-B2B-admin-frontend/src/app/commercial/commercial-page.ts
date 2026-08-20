@@ -47,20 +47,22 @@ const COCKPIT: CommercialTab = {
 const TABS: CommercialTab[] = [
   COCKPIT,
   {
+    // En DEUXIÈME, juste après le tableau de bord : c'est la destination la
+    // plus ouverte de l'app, et elle vivait dans le rail comme une section à
+    // part alors qu'elle est le cœur du poste de travail commercial.
+    key: 'comptes-clients',
+    label: 'Comptes clients',
+    link: 'comptes-clients',
+    icon: 'company',
+    description: 'Le parc, ceux qui commandent et ceux qui dorment.',
+  },
+  {
     key: 'prospects',
     label: 'Prospects',
     link: 'prospects',
     icon: 'team',
     description:
       "Le parcours entier, d'un nom sur une liste à un compte qui commande — froid, tiède, chaud, puis l'activation du dossier.",
-  },
-  {
-    key: 'croissance',
-    label: 'Croissance',
-    link: 'croissance',
-    icon: 'stats',
-    description:
-      "De l'acquisition au chiffre d'affaires : comment le parc se construit, ce qu'il rapporte, et ce qui le fait partir.",
   },
   {
     key: 'calendrier',

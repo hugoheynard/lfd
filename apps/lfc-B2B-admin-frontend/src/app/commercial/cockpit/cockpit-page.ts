@@ -29,8 +29,8 @@ import { AdminCompaniesService } from '../../comptes-clients/admin-companies.ser
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { AvailabilityService } from '../availability/availability.service';
 import { buildAppointmentEvents, type AppointmentEvent } from '../calendrier/appointment-events';
-import { sparklineOption } from '../croissance/growth-charts';
-import { GrowthService } from '../croissance/growth.service';
+import { sparklineOption } from '../../analytics/croissance/growth-charts';
+import { GrowthService } from '../../analytics/croissance/growth.service';
 import { SupportService } from '../support/support.service';
 import { SupportQueue } from '../support/support-queue/support-queue';
 import { CockpitService } from './cockpit.service';

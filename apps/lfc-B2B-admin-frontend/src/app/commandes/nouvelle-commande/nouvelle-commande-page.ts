@@ -450,8 +450,7 @@ function sameSkus(left: readonly CartLine[], right: readonly CartLine[]): boolea
   return (
     left.length === right.length &&
     left.every(
-      (line, index) =>
-        line.sku === right[index]?.sku && line.quantity === right[index]?.quantity,
+      (line, index) => line.sku === right[index]?.sku && line.quantity === right[index]?.quantity,
     )
   );
 }

@@ -50,7 +50,7 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
     // Renvoyer ailleurs donnerait l'impression d'avoir cliqué de travers.
     const result = await guardWith(['companies:read', 'orders:read']);
 
-    expect(redirectPath(result)).toBe('/comptes-clients');
+    expect(redirectPath(result)).toBe('/commercial/comptes-clients');
   });
 
   it('descend dans la liste quand les premières portes sont fermées', async () => {

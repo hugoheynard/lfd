@@ -22,7 +22,7 @@ import type { PermissionGuard } from '../auth/permission.guard';
  * la page et chaque appel rendait 403.
  */
 const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
-  'comptes-clients': 'companies:read',
+  'commercial/comptes-clients': 'companies:read',
   'comptes-clients/nouveau': 'companies:write',
   'commandes/:id': 'orders:read',
   'comptes-clients/:id/nouvelle-commande': 'orders:write',
@@ -63,11 +63,11 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
 
   production: 'orders:read',
 
-  commercial: 'growth:read',
-  'commercial/cockpit': null,
-  'commercial/prospects': null,
-  'commercial/croissance': null,
-  'commercial/calendrier': null,
+  commercial: 'companies:read',
+  'commercial/cockpit': 'growth:read',
+  'commercial/prospects': 'growth:read',
+  analytics: 'growth:read',
+  'commercial/calendrier': 'growth:read',
   // Les deux gabarits héritent du mur de `commercial` (`growth:read`) : ils
   // portent des prix négociés, et la même personne qui voit les prospects
   // négocie leurs tarifs.

@@ -5,13 +5,6 @@ import { permissionGuard } from './auth/permission.guard';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'comptes-clients' },
   {
-    path: 'comptes-clients',
-    canActivate: [permissionGuard('companies:read')],
-    title: 'Comptes clients — LFC B2B admin',
-    loadComponent: () =>
-      import('./comptes-clients/comptes-clients-page').then((m) => m.ComptesClientsPage),
-  },
-  {
     // AVANT `comptes-clients/:id` : sans cela « nouveau » serait lu comme un
     // identifiant de société, et la page afficherait « Société introuvable ».
     path: 'comptes-clients/nouveau',
@@ -214,6 +207,27 @@ export const routes: Routes = [
     ],
   },
   {
+    // ANALYTICS — le module qui lit ce que le parc raconte.
+    //
+    // La croissance en est la première vue, sortie de Commercial : elle y était
+    // rangée avec le travail du commercial (son cockpit, ses prospects, son
+    // calendrier), alors qu'elle ne se consulte pas pour agir sur un dossier
+    // mais pour comprendre un mouvement. Deux gestes différents, deux endroits.
+    //
+    // Une section à part et non une page : ce qui viendra ensuite — cohortes,
+    // marges, saisonnalité — sont des VUES de la même question, et elles
+    // demanderont des onglets plutôt qu'une entrée de rail chacune.
+    // PLAT tant qu'il n'y a qu'une vue. Un shell à onglets pour un seul onglet
+    // serait une coquille : il deviendra une section — comme Commercial —
+    // quand la deuxième vue arrivera (cohortes, marges, saisonnalité), et pas
+    // avant. Généraliser au SECOND usage, ici comme ailleurs.
+    path: 'analytics',
+    canActivate: [permissionGuard('growth:read')],
+    title: 'Analytics — LFC B2B admin',
+    loadComponent: () =>
+      import('./analytics/croissance/croissance-page').then((m) => m.CroissancePage),
+  },
+  {
     path: 'production',
     // Les commandes en lecture : c'est la même donnée que la liste staff, vue
     // par le fournil. Le garde est ici parce qu'une URL tapée ou un favori ne
@@ -224,21 +238,43 @@ export const routes: Routes = [
   },
   {
     path: 'commercial',
-    // Le rail masquait déjà l'entrée sans `growth:read` — mais une URL tapée,
-    // un favori ou un lien collé ne passent pas par le rail. Le garde est ici
+    // Le rail masquait déjà l'entrée sans le droit — mais une URL tapée, un
+    // favori ou un lien collé ne passent pas par le rail. Le garde est ici
     // parce que c'est le seul endroit par lequel on entre vraiment.
-    canActivate: [permissionGuard('growth:read')],
+    //
+    // 🔴 `companies:read` et NON `growth:read` depuis que « Comptes clients »
+    // est un onglet d'ici. `comptabilite` et `support` ont le premier sans le
+    // second : garder `growth:read` sur le parent les enfermerait dehors, et
+    // leur retirerait des fiches clients qu'ils consultent aujourd'hui. Chaque
+    // vue de croissance porte donc son propre garde, et le parent ne contrôle
+    // plus que l'entrée.
+    //
+    // ⚠️ À revoir avec la refonte des rôles : c'est la direction PRUDENTE
+    // (personne ne perd d'accès), pas forcément la bonne au terme.
+    canActivate: [permissionGuard('companies:read')],
     title: 'Commercial — LFC B2B admin',
     loadComponent: () => import('./commercial/commercial-page').then((m) => m.CommercialPage),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'cockpit' },
       {
         path: 'cockpit',
+        canActivate: [permissionGuard('growth:read')],
         title: 'Tableau de bord — LFC B2B admin',
         loadComponent: () => import('./commercial/cockpit/cockpit-page').then((m) => m.CockpitPage),
       },
       {
+        // La LISTE des comptes est une vue du poste de travail commercial ; la
+        // FICHE, elle, reste au premier niveau (comme `commandes/:id`) — on ne
+        // reste pas dans le poste de travail quand on ouvre un dossier.
+        path: 'comptes-clients',
+        canActivate: [permissionGuard('companies:read')],
+        title: 'Comptes clients — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptes-clients/comptes-clients-page').then((m) => m.ComptesClientsPage),
+      },
+      {
         path: 'prospects',
+        canActivate: [permissionGuard('growth:read')],
         title: 'Prospects — LFC B2B admin',
         loadComponent: () =>
           import('./commercial/prospects/prospects-page').then((m) => m.ProspectsPage),
@@ -247,13 +283,8 @@ export const routes: Routes = [
       // lien partagé caduc.
       { path: 'activation', pathMatch: 'full', redirectTo: 'prospects' },
       {
-        path: 'croissance',
-        title: 'Croissance — LFC B2B admin',
-        loadComponent: () =>
-          import('./commercial/croissance/croissance-page').then((m) => m.CroissancePage),
-      },
-      {
         path: 'calendrier',
+        canActivate: [permissionGuard('growth:read')],
         title: 'Calendrier — LFC B2B admin',
         loadComponent: () =>
           import('./commercial/calendrier/calendrier-page').then((m) => m.CalendrierPage),
