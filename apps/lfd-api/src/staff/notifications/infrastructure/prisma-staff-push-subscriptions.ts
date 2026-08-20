@@ -39,13 +39,36 @@ export class PrismaStaffPushSubscriptions extends StaffPushSubscriptions {
     });
   }
 
+  /** Un abonnement qui repasse est **guéri** : sa marque de refus s'efface. */
   async markSent(endpoints: readonly string[], at: Date): Promise<void> {
     if (endpoints.length === 0) {
       return;
     }
     await this.prisma.staffPushSubscription.updateMany({
       where: { endpoint: { in: [...endpoints] } },
-      data: { lastSentAt: at },
+      data: { lastSentAt: at, failingSince: null },
     });
+  }
+
+  /**
+   * `failingSince: null` dans le `where` : on note le **début** du refus, pas
+   * le dernier. Écraser la date à chaque envoi repousserait indéfiniment le
+   * délai de grâce, et rien ne partirait jamais.
+   */
+  async markFailing(endpoints: readonly string[], since: Date): Promise<void> {
+    if (endpoints.length === 0) {
+      return;
+    }
+    await this.prisma.staffPushSubscription.updateMany({
+      where: { endpoint: { in: [...endpoints] }, failingSince: null },
+      data: { failingSince: since },
+    });
+  }
+
+  async forgetFailingSince(before: Date): Promise<number> {
+    const forgotten = await this.prisma.staffPushSubscription.deleteMany({
+      where: { failingSince: { lt: before } },
+    });
+    return forgotten.count;
   }
 }

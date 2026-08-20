@@ -3,6 +3,7 @@ import { StaffNoticeStore, type StaffNotice } from "../../domain/ports/staff-not
 import {
   StaffPushSender,
   StaffPushSubscriptions,
+  type PushOutcome,
   type StaffPushTarget,
 } from "../../domain/ports/staff-push.js";
 import { PushingStaffNotifier } from "../pushing-staff-notifier.js";
@@ -21,6 +22,9 @@ function notice(key: string): StaffNotice {
 }
 
 const PHONE: StaffPushTarget = { endpoint: "https://push.example/1", p256dh: "k", auth: "a" };
+const TABLET: StaffPushTarget = { endpoint: "https://push.example/2", p256dh: "k", auth: "a" };
+
+const NOTHING: PushOutcome = { gone: [], rejected: [] };
 
 class StoreDouble extends StaffNoticeStore {
   constructor(private readonly created: readonly StaffNotice[]) {
@@ -36,6 +40,8 @@ class StoreDouble extends StaffNoticeStore {
 class SubscriptionsDouble extends StaffPushSubscriptions {
   forgotten: string[] = [];
   sent: string[] = [];
+  failing: string[] = [];
+  expiredBefore: Date | null = null;
   constructor(private readonly targets: readonly StaffPushTarget[] = [PHONE]) {
     super();
   }
@@ -53,13 +59,21 @@ class SubscriptionsDouble extends StaffPushSubscriptions {
     this.sent.push(...endpoints);
     return Promise.resolve();
   }
+  markFailing(endpoints: readonly string[]): Promise<void> {
+    this.failing.push(...endpoints);
+    return Promise.resolve();
+  }
+  forgetFailingSince(before: Date): Promise<number> {
+    this.expiredBefore = before;
+    return Promise.resolve(0);
+  }
 }
 
 class SenderDouble extends StaffPushSender {
   pushed: StaffNotice[] = [];
   constructor(
     private readonly key: string | null = "vapid-public",
-    private readonly dead: readonly string[] = [],
+    private readonly outcome: PushOutcome = NOTHING,
     private readonly boom = false,
   ) {
     super();
@@ -67,12 +81,12 @@ class SenderDouble extends StaffPushSender {
   publicKey(): string | null {
     return this.key;
   }
-  send(_targets: readonly StaffPushTarget[], n: StaffNotice): Promise<readonly string[]> {
+  send(_targets: readonly StaffPushTarget[], n: StaffNotice): Promise<PushOutcome> {
     if (this.boom) {
       return Promise.reject(new Error("service de push injoignable"));
     }
     this.pushed.push(n);
-    return Promise.resolve(this.dead);
+    return Promise.resolve(this.outcome);
   }
 }
 
@@ -109,7 +123,7 @@ describe("la cloche qui pousse", () => {
 
   it("oublie un abonnement DÉFINITIVEMENT mort, et ne le marque pas envoyé", async () => {
     const created = notice("k1");
-    const sender = new SenderDouble("vapid-public", [PHONE.endpoint]);
+    const sender = new SenderDouble("vapid-public", { gone: [PHONE.endpoint], rejected: [] });
     const subs = new SubscriptionsDouble();
     await build(new StoreDouble([created]), subs, sender).notify([created]);
 
@@ -122,12 +136,51 @@ describe("la cloche qui pousse", () => {
     // éteint serait absurde. L'écran est le canal sûr, le push un bonus.
     const created = notice("k1");
     const store = new StoreDouble([created]);
-    const sender = new SenderDouble("vapid-public", [], true);
+    const sender = new SenderDouble("vapid-public", NOTHING, true);
 
     await expect(
       build(store, new SubscriptionsDouble(), sender).notify([created]),
     ).resolves.toBeUndefined();
     expect(store.saved).toEqual([created]);
+  });
+
+  it("NE désabonne PAS sur un refus — il peut venir de nous", async () => {
+    // Le piège : une paire VAPID mal déployée refuse EXACTEMENT comme un
+    // abonnement périmé. Oublier au premier 403 viderait la table sur une
+    // erreur de configuration, et chaque téléphone devrait réactiver à la main.
+    const created = notice("k1");
+    const sender = new SenderDouble("vapid-public", { gone: [], rejected: [PHONE.endpoint] });
+    const subs = new SubscriptionsDouble();
+    await build(new StoreDouble([created]), subs, sender).notify([created]);
+
+    expect(subs.forgotten).toEqual([]);
+    expect(subs.failing).toEqual([PHONE.endpoint]);
+    // Ni marqué envoyé : il ne l'a pas été.
+    expect(subs.sent).toEqual([]);
+  });
+
+  it("laisse au refus une semaine avant de l'oublier", async () => {
+    const created = notice("k1");
+    const subs = new SubscriptionsDouble();
+    await build(new StoreDouble([created]), subs, new SenderDouble()).notify([created]);
+
+    // Le temps est le seul arbitre entre « cet abonnement est périmé » et
+    // « notre clé est la mauvaise » : le premier ne guérit jamais, le second se
+    // répare dans la journée.
+    expect(subs.expiredBefore).toEqual(new Date("2026-08-13T10:00:00.000Z"));
+  });
+
+  it("distingue le disparu du refusé dans le même envoi", async () => {
+    const created = notice("k1");
+    const sender = new SenderDouble("vapid-public", {
+      gone: [PHONE.endpoint],
+      rejected: [TABLET.endpoint],
+    });
+    const subs = new SubscriptionsDouble([PHONE, TABLET]);
+    await build(new StoreDouble([created]), subs, sender).notify([created]);
+
+    expect(subs.forgotten).toEqual([PHONE.endpoint]);
+    expect(subs.failing).toEqual([TABLET.endpoint]);
   });
 
   it("ne lit même pas les abonnements sans paire VAPID", async () => {

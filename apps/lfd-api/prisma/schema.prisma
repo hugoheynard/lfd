@@ -1711,6 +1711,20 @@ model StaffPushSubscription {
   /// des mois est un téléphone remplacé, pas une panne.
   lastSentAt DateTime? @map("last_sent_at")
 
+  /// Depuis quand le service de push REFUSE nos envois (403), ou `null`.
+  ///
+  /// Le 403 est ambigu, et c'est toute la raison de cette colonne : il dit « ta
+  /// signature ne vaut pas pour cet abonnement », ce qui arrive aussi bien
+  /// parce que l'abonnement date d'une paire VAPID révolue que parce que la
+  /// paire déployée est la mauvaise. Les deux se ressemblent trait pour trait —
+  /// tous les abonnements refusent, tout le temps.
+  ///
+  /// D'où le **délai de grâce** plutôt qu'un oubli immédiat : une paire mal
+  /// posée se répare en quelques heures et ne doit désabonner personne ; un
+  /// abonnement orphelin d'une vraie rotation, lui, ne guérit jamais et part au
+  /// bout d'une semaine. Remis à `null` au premier envoi accepté.
+  failingSince DateTime? @map("failing_since")
+
   @@index([staffSub])
   @@map("staff_push_subscriptions")
   @@schema("public")

@@ -3,7 +3,11 @@ import webpush, { WebPushError } from "web-push";
 
 import { AppConfig, type WebPushConfig } from "../../../platform/config/app-config.js";
 import type { StaffNotice } from "../domain/ports/staff-notifier.js";
-import { StaffPushSender, type StaffPushTarget } from "../domain/ports/staff-push.js";
+import {
+  StaffPushSender,
+  type PushOutcome,
+  type StaffPushTarget,
+} from "../domain/ports/staff-push.js";
 
 /**
  * Les codes que rend un service de push pour un abonnement **définitivement**
@@ -12,6 +16,15 @@ import { StaffPushSender, type StaffPushTarget } from "../domain/ports/staff-pus
  * et n'autorise pas à désabonner qui que ce soit.
  */
 const GONE = new Set([404, 410]);
+
+/**
+ * « Ta signature ne vaut pas pour cet abonnement. »
+ *
+ * Rendu aussi bien par un abonnement né sous une paire VAPID révolue que par
+ * TOUS les abonnements quand la paire déployée est la mauvaise. C'est
+ * l'appelant qui tranche, avec le temps pour arbitre — cf. `PushOutcome`.
+ */
+const REJECTED = 403;
 
 /**
  * La charge poussée, telle que le service worker la lira.
@@ -50,27 +63,34 @@ export class WebPushSender extends StaffPushSender {
     return this.config?.publicKey ?? null;
   }
 
-  async send(targets: readonly StaffPushTarget[], notice: StaffNotice): Promise<readonly string[]> {
+  async send(targets: readonly StaffPushTarget[], notice: StaffNotice): Promise<PushOutcome> {
     const config = this.config;
     if (config === null) {
-      return [];
+      return { gone: [], rejected: [] };
     }
     const payload = JSON.stringify(toPayload(notice));
-    const outcomes = await Promise.all(
-      targets.map(async (target) => this.sendOne(target, payload, config)),
+    const verdicts = await Promise.all(
+      targets.map(async (target) => ({
+        endpoint: target.endpoint,
+        verdict: await this.sendOne(target, payload, config),
+      })),
     );
-    return outcomes.filter((endpoint): endpoint is string => endpoint !== null);
+    const pick = (wanted: Verdict): string[] =>
+      verdicts.filter((entry) => entry.verdict === wanted).map((entry) => entry.endpoint);
+
+    return { gone: pick("gone"), rejected: pick("rejected") };
   }
 
   /**
-   * @returns l'endpoint s'il est **définitivement** mort, `null` sinon — y
-   *   compris en cas d'échec temporaire, qui ne doit désabonner personne.
+   * @returns ce que le service de push a dit de CET abonnement. `ok` couvre
+   *   aussi les échecs temporaires : ils ne doivent désabonner personne, et le
+   *   prochain envoi retentera.
    */
   private async sendOne(
     target: StaffPushTarget,
     payload: string,
     config: WebPushConfig,
-  ): Promise<string | null> {
+  ): Promise<Verdict> {
     try {
       await webpush.sendNotification(
         {
@@ -90,16 +110,24 @@ export class WebPushSender extends StaffPushSender {
           TTL: 4 * 60 * 60,
         },
       );
-      return null;
+      return "ok";
     } catch (error) {
-      if (error instanceof WebPushError && GONE.has(error.statusCode)) {
-        return target.endpoint;
+      if (error instanceof WebPushError) {
+        if (GONE.has(error.statusCode)) {
+          return "gone";
+        }
+        if (error.statusCode === REJECTED) {
+          return "rejected";
+        }
       }
       this.logger.warn({ message: "push_send_failed", endpoint: target.endpoint, error });
-      return null;
+      return "ok";
     }
   }
 }
+
+/** Ce qu'un service de push a dit d'un abonnement. */
+type Verdict = "ok" | "gone" | "rejected";
 
 /** La notice, réduite à ce qu'une bannière système peut montrer. */
 function toPayload(notice: StaffNotice): PushPayload {
