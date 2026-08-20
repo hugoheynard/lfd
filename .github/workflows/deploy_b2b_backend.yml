@@ -154,7 +154,6 @@ jobs:
           RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
           # La base du référentiel produit — il vit dans cette image depuis B2c,
           # avec son propre client Prisma. Deux bases, un seul processus.
-          DATABASE_PIM_URL: ${{ secrets.DATABASE_PIM_URL }}
           # Identifiants Shopify du référentiel. Un seul des deux chemins suffit ;
           # absents, le canal de publication est éteint (et le dit).
           SHOPIFY_ADMIN_TOKEN: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}
@@ -175,7 +174,7 @@ jobs:
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
         run: |
-          for name in DATABASE_LFD_URL DATABASE_PIM_URL \
+          for name in DATABASE_LFD_URL \
                       AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
                       AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET \
                       AUTH0_STAFF_CONNECTION AUTH0_CUSTOMER_CONNECTION \
@@ -226,28 +225,6 @@ jobs:
         env:
           DATABASE_LFD_URL: ${{ secrets.DATABASE_LFD_URL }}
         run: pnpm exec prisma migrate deploy
-
-      # 🔴 La base du RÉFÉRENTIEL, qui n'est pas encore la même (B4 la fondra en
-      #    un schéma). Cette étape manquait : elle vivait dans
-      #    `deploy_pim_backend.yml`, supprimé quand le backend du référentiel a
-      #    fondu dans celui-ci (B2c) — et la migration est partie avec le
-      #    workflow, sans que rien ne le signale.
-      #
-      #    Le symptôme aurait été muet et tardif : le module référentiel du
-      #    back-office interrogeant des tables absentes, en production
-      #    seulement, longtemps après le déploiement qui l'a causé.
-      #
-      # ⚠️ `20260817083828_canal_b2b_appartenance` crée `b2b_channel_binding`
-      #    SANS `IF NOT EXISTS`. Si la production porte déjà cette table (posée
-      #    par un `db push`), cette étape ÉCHOUERA — et c'est le bon
-      #    comportement : elle bloque le déploiement au lieu de mentir. La
-      #    reprise est alors `prisma migrate resolve --applied <migration>`,
-      #    qui la marque appliquée sans la rejouer.
-      - name: Migrer la base du référentiel
-        working-directory: apps/lfd-api
-        env:
-          DATABASE_PIM_URL: ${{ secrets.DATABASE_PIM_URL }}
-        run: pnpm exec prisma migrate deploy --config prisma.pim.config.ts
 
       # 4) Injecte l'account id dans l'`image` du wrangler (jamais commité), puis déploie
       #    le Worker qui référence l'image poussée.

@@ -6,14 +6,17 @@
 //
 // Exécution : `pnpm --filter lfd-api db:pim:seed` (voir package.json) — le
 // script charge `.env` via `--env-file` (natif), pas via `dotenv`.
+//
+// Depuis B4, il écrit dans le schéma `pim` de la base COMMUNE : plus de seconde
+// base, donc plus de `DATABASE_PIM_URL`. Le client est celui de tout le monde.
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaClient } from "../../src/pim/infra/database/client/client.js";
+import { PrismaClient } from "../src/platform/database/client/client.js";
 import { ROWS, SEED_CATEGORIES } from "./catalogue-seed-data.js";
 
-const connectionString = process.env.DATABASE_PIM_URL;
+const connectionString = process.env.DATABASE_LFD_URL;
 if (connectionString === undefined || connectionString === "") {
-  throw new Error("DATABASE_PIM_URL manquant : impossible de seeder le référentiel.");
+  throw new Error("DATABASE_LFD_URL manquant : impossible de seeder le référentiel.");
 }
 
 const prisma = new PrismaClient({

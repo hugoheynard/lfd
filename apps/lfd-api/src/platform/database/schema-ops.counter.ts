@@ -109,6 +109,26 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   NodeStatusLog: "ops",
   MailSend: "ops",
   WebhookEvent: "ops",
+  // Le référentiel, depuis B4. Il avait sa propre BASE : ses opérations
+  // n'apparaissaient donc nulle part dans ce compteur, et le forfait qu'elles
+  // consommaient se lisait sur une autre facture. Elles comptent ici désormais,
+  // sous leur schéma.
+  SkuRegistry: "pim",
+  Category: "pim",
+  TvaRegime: "pim",
+  Emplacement: "pim",
+  EmplacementTable: "pim",
+  Product: "pim",
+  ProductVariant: "pim",
+  ShopifySettings: "pim",
+  ShopifyProductBinding: "pim",
+  ShopifyPushSnapshot: "pim",
+  ShopifyVariantBinding: "pim",
+  NutritionDeclaration: "pim",
+  ProductEditorial: "pim",
+  MediaAsset: "pim",
+  ProductMedia: "pim",
+  B2bChannelBinding: "pim",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

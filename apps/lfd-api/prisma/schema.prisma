@@ -37,7 +37,7 @@ generator client {
 // PrismaClient (runtime), comme le PIM.
 datasource db {
   provider = "postgresql"
-  schemas  = ["public", "growth", "ops"]
+  schemas  = ["public", "growth", "ops", "pim"]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2394,4 +2394,475 @@ model WebhookEvent {
   @@unique([provider, externalId])
   @@map("webhook_event")
   @@schema("ops")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCHÉMA `pim` — le référentiel produit.
+//
+// Il avait sa propre BASE, avec son propre client et son propre historique de
+// migrations : c'était l'étape B2, qui fusionnait les processus sans toucher
+// aux données. B4 la termine — une seule base, un schéma par besoin, aux côtés
+// de `public`, `growth` et `ops`.
+//
+// La frontière, elle, ne disparaît pas : `PimDatabaseModule` reste NON global,
+// et seul `src/pim/` injecte de quoi lire ces tables. Un schéma partagé n'est
+// pas une permission partagée.
+//
+// Conventions héritées du socle catalogue (doc `02-catalogue-items.md`) :
+// - identifiants assignés par la COMMANDE (R1) — aucun `@default(uuid())` ;
+// - aucun DELETE physique (R3) — archivage par drapeau ;
+// - `created_at` / `updated_at` / `updated_by` sont des colonnes SYSTÈME ;
+// - textes traduisibles = `Json` `{ fr, en? }` (`fr` obligatoire).
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ProductKind {
+  daily
+  made_to_order
+  resale
+
+  @@schema("pim")
+}
+
+enum ProductStatus {
+  draft
+  published
+  archived
+
+  @@schema("pim")
+}
+
+enum SkuOwnerType {
+  product
+  variant
+
+  @@schema("pim")
+}
+
+/// Registre des références — garantit l'unicité du SKU dans un espace de noms
+/// GLOBAL (produits et déclinaisons confondus, doc 06 invariant 1).
+/// Une contrainte d'unicité ne pouvant pas s'étendre à deux tables, c'est ce
+/// registre qui porte la garantie : la violation de sa clé primaire est le
+/// `23505` traduit en `SkuAlreadyUsedError` par l'adaptateur de dépôt.
+model SkuRegistry {
+  value     String       @id
+  ownerType SkuOwnerType @map("owner_type")
+  ownerId   String       @map("owner_id")
+
+  @@index([ownerId])
+  @@map("sku_registry")
+
+  @@schema("pim")
+}
+
+model Category {
+  id         String     @id
+  name       Json
+  slug       Json
+  parentId   String?    @map("parent_id")
+  parent     Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children   Category[] @relation("CategoryTree")
+  position   Int        @default(0)
+  isArchived Boolean    @default(false) @map("is_archived")
+  products   Product[]
+
+  /// Canaux de vente hérités par les produits (matrice boutiques × modes).
+  /// `{}` sur les lignes antérieures est relu comme « rien vendu » (défensif).
+  channelPreset Json @default("{}") @map("channel_preset")
+
+  /// Régimes de TVA visés par les fiches à emporter / sur place. `NULL` = non
+  /// réglé. `onDelete: Restrict` (défaut) : un régime référencé ne peut pas être
+  /// supprimé tant qu'une famille le vise.
+  emporterTvaId String?    @map("emporter_tva_id")
+  emporterTva   TvaRegime? @relation("CategoryEmporterTva", fields: [emporterTvaId], references: [id])
+  surPlaceTvaId String?    @map("sur_place_tva_id")
+  surPlaceTva   TvaRegime? @relation("CategorySurPlaceTva", fields: [surPlaceTvaId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@index([parentId])
+  @@index([emporterTvaId])
+  @@index([surPlaceTvaId])
+  @@map("category")
+
+  @@schema("pim")
+}
+
+/// Régime de TVA — référence commerciale partagée (catégories + collection Shopify).
+model TvaRegime {
+  id          String @id
+  name        String
+  description String @default("")
+  percent     Float
+  /// Handle Shopify dérivé du taux (`tva-5-5`) — identité côté canal, unique.
+  tag         String @unique
+
+  /// Familles qui visent ce régime — extrémités des relations portées par
+  /// `Category`. Aucune colonne ajoutée ici ; sert le mur `Restrict` à la suppression.
+  categoriesEmporter Category[] @relation("CategoryEmporterTva")
+  categoriesSurPlace Category[] @relation("CategorySurPlaceTva")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tva_regime")
+
+  @@schema("pim")
+}
+
+/// Un **emplacement** (boutique / point de vente) et ses modes. S'il fait « sur
+/// place », il ouvre une grille de tables click & collect (une URL + un QR par
+/// table). Contexte `locations` — aucune dépendance au catalogue.
+model Emplacement {
+  id           String  @id
+  name         String
+  /// Vente à emporter en ligne.
+  clickCollect Boolean @default(false) @map("click_collect")
+  /// Consommation sur place — ouvre les tables.
+  surPlace     Boolean @default(false) @map("sur_place")
+  /// URL de base du click & collect (`baseUrl?table=N&k=token`).
+  baseUrl      String  @default("") @map("base_url")
+
+  tables EmplacementTable[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("emplacement")
+
+  @@schema("pim")
+}
+
+/// Une **table** d'un emplacement sur place. Le `number` est verrouillé (identité
+/// de l'URL) : clé primaire composite `(emplacement, number)`. Suppression en
+/// cascade avec l'emplacement.
+model EmplacementTable {
+  emplacementId String      @map("emplacement_id")
+  emplacement   Emplacement @relation(fields: [emplacementId], references: [id], onDelete: Cascade)
+  number        Int
+  qrCreated     Boolean     @default(false) @map("qr_created")
+  /// Token rotatif du QR : le régénérer invalide l'ancien code imprimé.
+  /// `NULL` = aucun QR généré.
+  token         String?
+
+  @@id([emplacementId, number])
+  @@map("emplacement_table")
+
+  @@schema("pim")
+}
+
+model Product {
+  id         String           @id
+  sku        String           @unique
+  slug       Json
+  kind       ProductKind
+  name       Json
+  categoryId String           @map("category_id")
+  category   Category         @relation(fields: [categoryId], references: [id])
+  status     ProductStatus    @default(draft)
+  attributes Json             @default("{}")
+  variants   ProductVariant[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  /// Couche éditoriale — satellite **optionnel** (PK = FK, ADR-13) : la ligne
+  /// n'existe que si quelqu'un a écrit quelque chose.
+  editorial ProductEditorial?
+  media     ProductMedia[]
+
+  /// Relations virtuelles — la clé étrangère est portée par le binding (ADR-13).
+  shopifyBinding ShopifyProductBinding?
+  b2bBinding     B2bChannelBinding?
+
+  @@index([categoryId])
+  @@map("product")
+
+  @@schema("pim")
+}
+
+model ProductVariant {
+  id             String  @id
+  productId      String  @map("product_id")
+  product        Product @relation(fields: [productId], references: [id])
+  sku            String  @unique
+  name           Json
+  options        Json    @default("{}")
+  isDefault      Boolean @default(false) @map("is_default")
+  isDiscontinued Boolean @default(false) @map("is_discontinued")
+  position       Int     @default(0)
+  attributes     Json    @default("{}")
+
+  /// Prix **canonique** de l'unité réellement vendue (R4) — tarif de référence,
+  /// HT, en centimes d'euro, **pré-altération**. `NULL` = pas encore tarifé. Les
+  /// dégressifs de volume et remises vivent dans la couche pricing B2B, jamais
+  /// ici (cf. documentation/architecture-conditionnements-pricing.md).
+  priceCents  Int? @map("price_cents")
+  /// Poids net de l'unité vendue, en grammes. Fait physique de la déclinaison.
+  weightGrams Int? @map("weight_grams")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  /// Fiche réglementaire — **optionnelle** (`o|`) : son absence signifie
+  /// « pas encore renseigné ». Un 1:1 obligatoire forcerait une ligne vide à la
+  /// création, donc affirmerait « aucun allergène » sans vérification. La garde
+  /// est ailleurs : pas de publication sans fiche (doc 03).
+  nutrition NutritionDeclaration?
+
+  /// Relation **virtuelle** : aucune colonne n'est ajoutée ici. La clé étrangère
+  /// physique est portée par `shopify_variant_binding` — le sens imposé par ADR-13
+  /// (le socle ne pointe jamais vers un canal). Prisma exige seulement de déclarer
+  /// l'autre extrémité.
+  shopifyBinding ShopifyVariantBinding?
+
+  @@index([productId])
+  @@map("product_variant")
+
+  @@schema("pim")
+}
+
+// ---------------------------------------------------------------------------
+// Canal Shopify — tables possédées par l'ADAPTATEUR (ADR-13).
+// Non event-sourçables : ce sont des états de synchro re-dérivables, pas des
+// faits métier. Elles peuvent être perdues et reconstruites par un re-push.
+// ---------------------------------------------------------------------------
+
+enum ShopifySyncStatus {
+  never_pushed
+  up_to_date
+  drifted
+  failed
+
+  @@schema("pim")
+}
+
+/// Le mode du canal au moment d'une poussée — figé dans le snapshot pour qu'on
+/// sache *comment* il a été produit (une simulation n'est pas une poussée réelle).
+enum ShopifyChannelMode {
+  live
+  dry_run
+
+  @@schema("pim")
+}
+
+/// L'issue d'une poussée telle qu'inscrite dans l'historique.
+enum ShopifyPushOutcome {
+  pushed
+  failed
+
+  @@schema("pim")
+}
+
+/// Réglages de l'intégration — ligne unique.
+/// ⚠️ Aucun secret ici : le jeton d'API vit dans l'environnement (`AppConfig`).
+model ShopifySettings {
+  id         String   @id
+  shopDomain String   @map("shop_domain")
+  apiVersion String   @map("api_version")
+  isEnabled  Boolean  @default(false) @map("is_enabled")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("shopify_settings")
+
+  @@schema("pim")
+}
+
+/// État de synchro d'un **produit** — Shopify pousse un produit et ses variantes
+/// ensemble, donc l'empreinte et le statut vivent à ce niveau. Les *références*,
+/// elles, restent sur la déclinaison (R4) : ce sont deux choses différentes.
+model ShopifyProductBinding {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  shopifyProductGid String?           @map("shopify_product_gid")
+  lastPushedHash    String?           @map("last_pushed_hash")
+  lastPushedAt      DateTime?         @map("last_pushed_at")
+  syncStatus        ShopifySyncStatus @default(never_pushed) @map("sync_status")
+  lastError         String?           @map("last_error")
+
+  /// Le snapshot **head** = le BASE de la réconciliation (la dernière poussée réelle).
+  /// `NULL` tant que rien n'a été poussé en `live`.
+  headSnapshotId String? @map("head_snapshot_id")
+
+  @@map("shopify_product_binding")
+
+  @@schema("pim")
+}
+
+/// Historique **append-only** des poussées réelles d'un `handle` — l'ancêtre commun
+/// (BASE) de la réconciliation à trois voies et la matière du rollback. Voir
+/// [`publication-reconciliation-3way.md`](../../../documentation/lfc/publication-reconciliation-3way.md).
+///
+/// Contrairement aux bindings (états de synchro re-dérivables), ceci est un **journal** :
+/// le perdre efface l'historique et le retour arrière. Jamais muté après écriture — un
+/// rollback ré-écrit une **nouvelle** ligne (une copie d'une version antérieure).
+model ShopifyPushSnapshot {
+  id        String             @id @default(uuid())
+  /// L'unité de réconciliation (identité Shopify) — survit à la bascule fiche×mode.
+  handle    String             @map("handle")
+  /// Le produit PIM d'où venait la projection (peut projeter N handles à terme).
+  productId String             @map("product_id")
+  /// Numéro de version monotone par handle (1..n).
+  version   Int                @map("version")
+  hash      String             @map("hash")
+  /// `ShopifyProductPayload` rejouable tel quel — document figé, pas relationnel.
+  payload   Json               @map("payload")
+  mode      ShopifyChannelMode @map("mode")
+  outcome   ShopifyPushOutcome @map("outcome")
+  pushedAt  DateTime           @default(now()) @map("pushed_at")
+
+  @@unique([handle, version])
+  @@index([handle])
+  @@map("shopify_push_snapshot")
+
+  @@schema("pim")
+}
+
+/// Ce que Shopify sait d'une **déclinaison** — l'unité réellement vendue (R4).
+model ShopifyVariantBinding {
+  variantId String         @id @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  /// Référence propre au canal. `NULL` = le SKU interne est poussé tel quel.
+  /// L'index unique **est** l'unicité par canal : la table étant le canal, aucun
+  /// discriminant n'est nécessaire.
+  channelReference  String? @unique @map("channel_reference")
+  shopifyVariantGid String? @map("shopify_variant_gid")
+
+  @@map("shopify_variant_binding")
+
+  @@schema("pim")
+}
+
+/// Fiche réglementaire d'une **déclinaison** — c'est elle qui est mise sur le
+/// marché (doc 03). `variant_id` est PK **et** FK (*shared primary key*) : pas
+/// d'identifiant de substitution, donc deux fiches sont structurellement
+/// impossibles pour une même déclinaison.
+model NutritionDeclaration {
+  variantId String         @id @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  /// Codes GS1 canoniques. `[]` = déclaration positive « aucun allergène »,
+  /// à ne pas confondre avec l'absence de ligne (= non renseigné).
+  allergens     Json
+  mayContain    Json   @default("[]") @map("may_contain")
+  energyKcal    Float? @map("energy_kcal")
+  carbsG        Float? @map("carbs_g")
+  fatG          Float? @map("fat_g")
+  proteinG      Float? @map("protein_g")
+  glycemicIndex Float? @map("glycemic_index")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("nutrition_declaration")
+
+  @@schema("pim")
+}
+
+// ---------------------------------------------------------------------------
+// Couche éditoriale (doc 01). Rythme de vie propre : change à chaque saison,
+// là où l'identité ne bouge jamais. D'où une table séparée, pas des colonnes.
+// ---------------------------------------------------------------------------
+
+enum MediaRole {
+  hero
+  gallery
+  lifestyle
+  thumbnail
+  print
+
+  @@schema("pim")
+}
+
+model ProductEditorial {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  descriptionShort Json?   @map("description_short")
+  descriptionLong  Json?   @map("description_long")
+  story            Json?
+  pairing          Json?
+  brand            String?
+  seoTitle         Json?   @map("seo_title")
+  seoDescription   Json?   @map("seo_description")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("product_editorial")
+
+  @@schema("pim")
+}
+
+/// Agrégat propre : un visuel a son cycle de vie (upload, CDN) et peut servir
+/// plusieurs produits. On stocke le **master** + un point focal ; les tailles
+/// dérivées sont calculées par chaque canal, jamais ressaisies.
+model MediaAsset {
+  id     String @id
+  url    String
+  alt    Json
+  focalX Float? @map("focal_x")
+  focalY Float? @map("focal_y")
+
+  products ProductMedia[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("media_asset")
+
+  @@schema("pim")
+}
+
+/// Table de liaison dédiée — **pas** de FK polymorphe (`owner_type`/`owner_id`),
+/// qui priverait Postgres de toute intégrité référentielle (doc 01).
+model ProductMedia {
+  productId String     @map("product_id")
+  mediaId   String     @map("media_id")
+  product   Product    @relation(fields: [productId], references: [id])
+  media     MediaAsset @relation(fields: [mediaId], references: [id])
+  role      MediaRole
+  position  Int        @default(0)
+
+  @@id([productId, mediaId])
+  @@index([productId])
+  @@map("product_media")
+
+  @@schema("pim")
+}
+
+// ---------------------------------------------------------------------------
+// Canal **plateforme B2B** — table possédée par l'ADAPTATEUR (ADR-13). Le socle
+// ne pointe jamais vers un canal : la clé étrangère est portée ici.
+// Re-dérivable par un re-push ; ce n'est pas un fait métier, c'est un état de
+// synchro — SAUF la décision de publication elle-même, qui n'existe qu'ici.
+// ---------------------------------------------------------------------------
+
+/// L'**appartenance d'un produit au canal B2B** : sa présence dit « vendu aux
+/// pros », son absence dit le contraire. Un état de publication (`published`)
+/// ne suffirait pas — il confondrait « publié chez Shopify » et « vendu aux
+/// pros », et les deux catalogues ne pourraient jamais diverger.
+///
+/// Dépublier **supprime la ligne**. Le produit disparaîtra du prochain snapshot,
+/// et le récepteur le nommera dans son rapport (`removedSkus`) : la nouvelle est
+/// portée par le push, pas par un drapeau qu'il faudrait penser à relire.
+model B2bChannelBinding {
+  productId String  @id @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// Quand ce produit a rejoint le canal, et par qui. La question posée six mois
+  /// plus tard est toujours « qui a mis ça en vente ».
+  publishedAt DateTime @default(now()) @map("published_at")
+  publishedBy String?  @map("published_by")
+
+  /// Dernière poussée **réellement acceptée** par la plateforme. `NULL` = publié
+  /// mais jamais parti — l'écart que l'écran doit montrer.
+  lastPushedAt DateTime? @map("last_pushed_at")
+
+  @@map("b2b_channel_binding")
+
+  @@schema("pim")
 }

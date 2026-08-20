@@ -19,7 +19,7 @@
 import { spawnSync } from "node:child_process";
 import { Client } from "pg";
 
-import { testChildEnv, testDatabaseUrl, testPimDatabaseUrl } from "./setup-env.js";
+import { testChildEnv, testDatabaseUrl } from "./setup-env.js";
 
 /** Une base de test : son URL, et la config Prisma qui porte ses migrations. */
 interface TestDatabase {
@@ -29,9 +29,12 @@ interface TestDatabase {
   readonly prismaConfig: string | null;
 }
 
+// UNE base depuis B4 : le référentiel avait la sienne, il est maintenant le
+// schéma `pim` de celle-ci. La liste reste une LISTE — c'est elle qui rendait
+// l'ajout de la seconde mécanique, et qui rendra le retrait de la troisième
+// aussi simple si l'occasion se présente.
 const DATABASES: readonly TestDatabase[] = [
   { label: "plateforme", url: testDatabaseUrl(), prismaConfig: null },
-  { label: "référentiel", url: testPimDatabaseUrl(), prismaConfig: "prisma.pim.config.ts" },
 ];
 
 /** URL d'administration : même serveur, mais la db `postgres` toujours présente. */

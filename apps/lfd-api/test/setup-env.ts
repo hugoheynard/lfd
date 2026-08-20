@@ -28,15 +28,6 @@
 const DEFAULT_TEST_DATABASE_URL = "postgresql://lfc:lfc@localhost:5433/lfc_b2b_test";
 
 process.env["DATABASE_LFD_URL"] ??= DEFAULT_TEST_DATABASE_URL;
-/**
- * Base **jetable** du référentiel — même conteneur, db à part, même raison que
- * ci-dessus. Requise depuis que le PIM vit dans ce processus : `AppConfig`
- * refuse de se construire sans elle, donc son absence ferait échouer **toutes**
- * les suites, pas seulement celles qui lisent le référentiel.
- */
-const DEFAULT_TEST_PIM_DATABASE_URL = "postgresql://lfc:lfc@localhost:5433/lfc_pim_test";
-
-process.env["DATABASE_PIM_URL"] ??= DEFAULT_TEST_PIM_DATABASE_URL;
 process.env["AUTH0_DOMAIN"] ??= "test-tenant.eu.auth0.com";
 process.env["AUTH0_AUDIENCE"] ??= "https://api.test.local";
 
@@ -115,11 +106,6 @@ export function testDatabaseUrl(): string {
   return process.env["DATABASE_LFD_URL"] ?? DEFAULT_TEST_DATABASE_URL;
 }
 
-/** Idem pour la base du référentiel. */
-export function testPimDatabaseUrl(): string {
-  return process.env["DATABASE_PIM_URL"] ?? DEFAULT_TEST_PIM_DATABASE_URL;
-}
-
 /**
  * Environnement à passer à un process enfant (la CLI Prisma) pour qu'il vise la
  * base de test et non celle du `.env`.
@@ -128,6 +114,5 @@ export function testChildEnv(): NodeJS.ProcessEnv {
   return {
     ...process.env,
     DATABASE_LFD_URL: testDatabaseUrl(),
-    DATABASE_PIM_URL: testPimDatabaseUrl(),
   };
 }

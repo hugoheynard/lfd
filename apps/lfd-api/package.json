@@ -18,8 +18,8 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --runInBand --forceExit",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --watch --runInBand",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "postinstall": "prisma generate && prisma generate --config prisma.pim.config.ts",
-    "db:generate": "prisma generate && prisma generate --config prisma.pim.config.ts",
+    "postinstall": "prisma generate",
+    "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
@@ -33,10 +33,7 @@
     "seed:growth:reset": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/reset-growth.ts",
     "backfill:naf": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/backfill-naf.ts",
     "seed:temoin": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/seed-temoin-orders.ts",
-    "db:pim:migrate": "prisma migrate dev --config prisma.pim.config.ts",
-    "db:pim:deploy": "prisma migrate deploy --config prisma.pim.config.ts",
-    "db:pim:seed": "tsx --env-file=.env prisma/pim/seed.ts",
-    "db:pim:studio": "prisma studio --config prisma.pim.config.ts"
+    "db:pim:seed": "tsx --env-file=.env prisma/pim-seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",

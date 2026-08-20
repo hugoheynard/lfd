@@ -52,6 +52,10 @@ pnpm lfc-suite:dev:watch     # front PIM (7315) + API unique (3200) en watch
 ```
 
 `pnpm dev:infra:down` arrête la base (données gardées) · `dev:infra:nuke` détruit le volume.
+🔴 **Périmé depuis B4 (2026-08-20)** : il n'y a plus de base du référentiel.
+Ses 16 modèles sont le schéma `pim` de la base commune, lue par `DATABASE_LFD_URL`
+à côté de `public`, `growth` et `ops`. La phrase ci-dessous décrit l'état d'avant.
+
 En prod la même `DATABASE_PIM_URL` pointera sur **Neon** (ADR-09) — seul l'URL
 change. Le référentiel n'a plus de backend à lui depuis **B2c** : il est un
 contexte de `lfd-api`, sur **sa** base, avec ses routes sous le préfixe `/pim`.

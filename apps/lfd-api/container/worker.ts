@@ -34,9 +34,6 @@ import type { RateLimiter } from "./edge-guard";
  */
 const RUNTIME_KEYS = [
   "DATABASE_LFD_URL",
-  // La base du référentiel produit : depuis B2c il vit dans cette image, avec
-  // son propre client Prisma. Absente, l'application refuse de démarrer.
-  "DATABASE_PIM_URL",
   "AUTH0_DOMAIN",
   "AUTH0_AUDIENCE",
   "AUTH0_ADMIN_AUDIENCE",

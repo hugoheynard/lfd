@@ -55,7 +55,6 @@ export type { ShopifyOAuthCredentials };
 @Injectable()
 export class AppConfig implements ShopifyCredentialsSource {
   private readonly database: string;
-  private readonly pimDatabase: string;
   private readonly auth0DomainValue: string;
   private readonly auth0AudienceValue: string;
   private readonly auth0ConnectionValue: string;
@@ -82,7 +81,6 @@ export class AppConfig implements ShopifyCredentialsSource {
 
   constructor() {
     this.database = required("DATABASE_LFD_URL");
-    this.pimDatabase = required("DATABASE_PIM_URL");
     this.auth0DomainValue = required("AUTH0_DOMAIN");
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
     this.auth0ConnectionValue =
@@ -140,22 +138,6 @@ export class AppConfig implements ShopifyCredentialsSource {
    */
   databaseUrl(): string {
     return this.database;
-  }
-
-  /**
-   * URL de connexion à la base du **référentiel PIM** — le second client.
-   *
-   * Mêmes deux schémas acceptés que la base commerce, pour la même raison : le
-   * schéma de l'URL choisit le transport.
-   *
-   * **Requise** depuis que le référentiel vit dans ce processus : sans elle, le
-   * catalogue, la TVA et les emplacements sont muets. Elle a été facultative le
-   * temps d'un pas (B2b), quand le client existait sans consommateur ; laisser
-   * cette tolérance en place ferait passer une base injoignable pour un
-   * démarrage normal.
-   */
-  pimDatabaseUrl(): string {
-    return this.pimDatabase;
   }
 
   /** Tenant Auth0, sans schéma ni slash — ex. `lfc.eu.auth0.com`. */

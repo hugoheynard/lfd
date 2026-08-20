@@ -1226,7 +1226,6 @@ section qui porte le raisonnement.
 
 | Geste                                                         | Sans lui                                                               | Où              |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------- |
-| `DATABASE_PIM_URL` en Secret GitHub — **jusqu'à B4** (§19)    | le container ne démarre pas                                            | Secrets         |
 | `RESEND_WEBHOOK_SECRET` (après création du webhook, §26)      | la route de retour refuse tout                                         | Secrets         |
 | `CLOUDFLARE_ANALYTICS_TOKEN`                                  | OPS rend la répétition, et le dit                                      | Secrets         |
 | Périmètre `read:stats` sur l'app M2M Auth0 (§24 — facultatif) | on affiche les identités, un **majorant**, au lieu des actifs facturés | dashboard Auth0 |

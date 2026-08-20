@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { Prisma } from "../../infra/database/client/client.js";
+import { Prisma } from "../../../platform/database/client/client.js";
 import { PimPrismaService } from "../../infra/database/pim-prisma.service.js";
 import { PimIdGenerator } from "../../infra/id/pim-id-generator.js";
 import { EditorialRepository } from "../domain/ports/editorial.repository.js";
