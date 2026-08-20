@@ -1210,3 +1210,82 @@ Sans le secret, la route refuse tout et le démarrage l'annonce en **dégradé**
 les e-mails partent, mais on n'apprend jamais lesquels ont rebondi. Et si la
 déclaration est oubliée ou se désactive, la vérification ci-dessus le dira —
 c'est précisément le trou qu'elle bouche.
+
+## 27. Ce qui reste — état au 2026-08-19
+
+Une seule liste, pour ne pas relire tout le document. Chaque ligne renvoie à la
+section qui porte le raisonnement.
+
+### 🔴 Hors dépôt — rien ne marche sans, et personne d'autre ne peut le faire
+
+| Geste                                                         | Sans lui                                                               | Où              |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------- |
+| `DATABASE_PIM_URL` en Secret GitHub                           | le container ne démarre pas                                            | Secrets         |
+| `RESEND_WEBHOOK_SECRET` (après création du webhook, §26)      | la route de retour refuse tout                                         | Secrets         |
+| `CLOUDFLARE_ANALYTICS_TOKEN`                                  | OPS rend la répétition, et le dit                                      | Secrets         |
+| Périmètre `read:stats` sur l'app M2M Auth0 (§24 — facultatif) | on affiche les identités, un **majorant**, au lieu des actifs facturés | dashboard Auth0 |
+
+### La séquence du webhook Resend, dans l'ordre (§26)
+
+1. déployer l'API ;
+2. `curl -i -X POST https://<passerelle>/api/b2b/webhooks/resend` → attendre
+   **401**, pas 404. Le 401 prouve que le contrôleur est là _et_ que le mur
+   tient ;
+3. créer le webhook (dashboard ou `webhooks.create`) avec les **cinq**
+   événements — surtout pas `opened`/`clicked` ;
+4. poser le `whsec_…` en Secret, redéployer.
+
+⚠️ **Ne pas inverser 2 et 3.** Un endpoint qui répond 404 fait échouer Resend,
+qui réessaie puis **désactive** — précisément le cas silencieux que le contrôle
+de démarrage sait détecter, et qu'il vaut mieux ne pas provoquer soi-même.
+
+### À vérifier au premier déploiement, pas avant
+
+- **La requête d'histoire n'a jamais tourné** contre le vrai dataset (§22). Son
+  échec est toléré — la courbe disparaît, l'écran reste complet — et journalisé
+  en `warn` : c'est cette ligne qu'il faut regarder.
+- **Les sondes de fronts** n'ont jamais tourné contre les vraies Pages (§18).
+  `lfc-b2b-eu7` est vérifiée ; les deux autres se prononceront à l'ouverture de
+  l'écran.
+
+### Décidé, pas fait
+
+| Sujet                                                        | Où  | Note                                        |
+| ------------------------------------------------------------ | --- | ------------------------------------------- |
+| **Erreurs backend : maison ou Sentry**                       | §25 | fork ouvert, les deux branches écrites      |
+| **S1** — le `traceId` rendu en en-tête, gardé par les fronts | §24 | presque gratuit, utile même sans Sentry     |
+| **S4** — Sentry front + source maps                          | §24 | la partie qu'on ne veut pas écrire soi-même |
+| **S5** — moniteur uptime externe                             | §24 | répond au défaut de fond ci-dessous         |
+| **S6** — nouvelle issue → e-mail                             | §24 | dépend de S2/S4                             |
+
+### Ouvert, et assumé
+
+- **OPS partage le sort de ce qu'il surveille** (§14, §21). Si l'API tombe,
+  l'écran tombe avec elle et ne dira jamais qu'elle est tombée. Le bloc est
+  muré : son déménagement sera un `git mv`, pas une réécriture. **S5 est le
+  correctif partiel** — une sonde qui vit ailleurs.
+- **Aucune alerte** (§21). Le canal existe (mailer + cloche staff) ; ce qui
+  manque est la **calibration**. Le journal de statuts (§23) l'apportera : après
+  quelques jours, on saura combien de transitions par semaine un seuil produit.
+  Brancher avant, c'est fabriquer du bruit — et un canal bruyant s'ignore.
+- **Le battement (J6) n'existe pas** (§21). `expectsHeartbeat`,
+  `heartbeat-fresh` et `heartbeat-stale` sont dans le contrat et n'ont jamais
+  tiré. À faire ou à retirer — le trafic couvre le besoin aujourd'hui.
+- **`P95_SATURATED_MS = 1000`** est choisi, pas mesuré : l'occupation reste une
+  intuition tant qu'aucun palier réel ne l'étalonne.
+- **Les fronts n'ont pas de témoin navigateur** (§18). `deploy-ok` dit qu'un
+  front est _servi_, jamais qu'il _démarre_. S4 le comble.
+- **R2 classe A/B** : bloqué sur un jeton Cloudflare au périmètre _Account
+  Analytics Read_.
+- **Le référentiel n'est pas compté** dans les opérations Prisma (§19) : son
+  client vit dans `pim`, pas encore branché. Ses opérations puisent pourtant
+  dans le même forfait.
+- **État en mémoire** : séries d'échecs des sondes, compteur d'opérations. Perdu
+  au redémarrage, faux à plusieurs instances. Sans conséquence à cette échelle ;
+  ira dans Redis le jour où OPS tournera à plusieurs.
+
+### Une gêne connue, hors OPS
+
+Les suites e2e de `lfd-api` ont un **flake inter-suites** : un test échoue au
+premier passage, une suite différente à chaque fois, et repasse seul. Il n'est
+pas dans OPS, il est antérieur, et il n'a jamais été diagnostiqué.

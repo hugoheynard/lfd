@@ -339,24 +339,28 @@ L'ordre compte, et il est le même que celui déjà écrit dans le `wrangler.tom
 de la passerelle : **brancher, repointer, VÉRIFIER, et seulement ensuite
 éteindre**. L'inverse coupe la production entre deux déploiements.
 
-| #   | Geste                                                              | Où                          |
-| --- | ------------------------------------------------------------------ | --------------------------- |
-| 1   | Poser `DATABASE_PIM_URL` (+ Shopify si le canal doit vivre)        | Secrets GitHub              |
-| 2   | Déployer l'API — elle sert désormais `/pim/*`                      | `deploy_b2b_backend`        |
-| 3   | Vérifier `/api/b2b/pim/catalogue/products` à travers la passerelle | `curl`                      |
-| 4   | Retirer le préfixe `/api/pim` et le binding `PIM_BACKEND`          | `gateway/`                  |
-| 5   | Pointer `PIM_API_BASE_URL` sur `…/api/b2b/pim`                     | variable Pages du front PIM |
-| 6   | Vérifier le PIM dans le shell, connecté                            | à la main                   |
-| 7   | Supprimer le Worker `lfc-pim-backend` et son container             | Cloudflare                  |
-| 8   | Retirer le nœud `pim` de la topologie OPS (il n'existe plus)       | `src/ops/topology/`         |
+| #     | Geste                                                                           | Où                          |
+| ----- | ------------------------------------------------------------------------------- | --------------------------- |
+| 1     | Poser `DATABASE_PIM_URL` (+ Shopify si le canal doit vivre)                     | Secrets GitHub              |
+| 2     | Déployer l'API — elle sert désormais `/pim/*`                                   | `deploy_b2b_backend`        |
+| 3     | Vérifier `/api/b2b/pim/catalogue/products` à travers la passerelle              | `curl`                      |
+| 4     | Retirer le préfixe `/api/pim` et le binding `PIM_BACKEND`                       | `gateway/`                  |
+| 5     | Pointer `PIM_API_BASE_URL` sur `…/api/b2b/pim`                                  | variable Pages du front PIM |
+| 6     | Vérifier le PIM dans le shell, connecté                                         | à la main                   |
+| 7     | Supprimer le Worker `lfc-pim-backend` et son container                          | Cloudflare                  |
+| ~~8~~ | ~~Retirer le nœud `pim` de la topologie OPS~~ — **fait d'avance le 2026-08-19** | `src/ops/topology/`         |
 
-L'étape 8 n'est pas cosmétique : la carte de santé déclare ses nœuds, elle ne
-les devine pas du trafic — c'est ce qui rend visible une brique qui cesse d'être
-appelée. Le revers est qu'une brique **supprimée** y reste affichée, et passerait
-« aucune preuve » : un angle mort qui ressemble à une panne. La charge du
-référentiel, elle, ne se perd pas — elle descend d'un cran, du nœud `pim` vers la
-**surface** `pim/…` du nœud `b2b`, où elle devient comparable aux autres modules
-de l'API.
+L'étape 8 a été faite **avant** la bascule, et non après : le nœud décrivait déjà
+un Worker que plus rien ne met à jour depuis B2c, et une base à laquelle ce
+processus ne parle pas. Tous deux passaient « aucune preuve » en permanence — un
+angle mort qui ressemble à une panne, sur une carte qu'on consulte pour trancher.
+
+Ce que la note disait reste vrai et vaut pour la prochaine brique retirée : la
+carte **déclare** ses nœuds, elle ne les devine pas du trafic — c'est ce qui rend
+visible une brique qui cesse d'être appelée, au prix qu'une brique supprimée y
+reste affichée si personne ne l'enlève. La charge du référentiel, elle, ne s'est
+pas perdue : elle est descendue d'un cran, du nœud vers la **surface** `pim/…` du
+nœud `b2b`, où elle devient comparable aux autres modules de l'API.
 
 ⚠️ La **base** du référentiel, elle, ne bouge pas : elle reste un nœud, son arête
 se rebranchant de `pim` vers `b2b`. Sa disparition est **B4**, avec sa migration
