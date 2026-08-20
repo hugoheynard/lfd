@@ -4,7 +4,7 @@ name: deploy_b2b_admin_frontend
 # chaque push sur main. Pas de SSR. wrangler ne fait qu'uploader le statique déjà buildé.
 #
 # Secrets requis :
-#   CLOUDFLARE_LFC_B2B_ADMIN_PAGES — token « Account · Cloudflare Pages · Edit ».
+#   CLOUDFLARE_LFD_BACKOFFICE_PAGES — token « Account · Cloudflare Pages · Edit ».
 #   CLOUDFLARE_ACCOUNT_ID — account id partagé.
 # Variables PUBLIQUES (onglet Variables — jamais des secrets : elles finissent dans
 # le bundle navigateur, et c'est prévu) :
@@ -91,7 +91,7 @@ jobs:
 
       - name: Ensure Pages project exists
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_B2B_ADMIN_PAGES }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_BACKOFFICE_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
           pnpm dlx wrangler pages project create lfc-b2b-admin
@@ -99,7 +99,7 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_B2B_ADMIN_PAGES }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_BACKOFFICE_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
           pnpm dlx wrangler pages deploy

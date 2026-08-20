@@ -23,7 +23,7 @@
 
 ## Prérequis à faire une fois (par backend)
 
-1. **Secrets GitHub** : `LFC_PIM_BACKEND_WORKER`, `LFD_API_WORKER`
+1. **Secrets GitHub** : `LFC_PIM_BACKEND_WORKER`, `CLOUDFLARE_LFD_API_WORKER`
    (créés ✅), + `CLOUDFLARE_ACCOUNT_ID` si absent du repo.
 2. **Secrets RUNTIME du Worker** (≠ secrets GitHub) — posés une fois, ils arrivent
    comme variables d'env au container :

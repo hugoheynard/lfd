@@ -81,7 +81,7 @@ sequenceDiagram
     Note right of GH: image = code + deps prod + client Prisma<br/>SANS secrets runtime
 
     GH->>CR: wrangler containers push lfd-api:latest
-    Note right of CR: auth via CLOUDFLARE_API_TOKEN<br/>(secret LFD_API_WORKER)
+    Note right of CR: auth via CLOUDFLARE_API_TOKEN<br/>(secret CLOUDFLARE_LFD_API_WORKER)
 
     GH->>GH: sed __CF_ACCOUNT_ID__ → CLOUDFLARE_ACCOUNT_ID
     GH->>CF: wrangler deploy (Worker + binding container)
@@ -117,7 +117,7 @@ flowchart TB
             S4["STRIPE_PUBLISHABLE_KEY"]
             S5["AUTH0_M2M_CLIENT_SECRET"]
             S6["STORAGE_* (optionnel)"]
-            S7["LFD_API_WORKER<br/>CLOUDFLARE_ACCOUNT_ID"]
+            S7["CLOUDFLARE_LFD_API_WORKER<br/>CLOUDFLARE_ACCOUNT_ID"]
         end
         subgraph ghv["📢 Variables (publiques, lisibles)"]
             V1["B2B_AUTH0_DOMAIN"]
@@ -157,7 +157,7 @@ flowchart TB
 
 ### Deux natures de secret, deux usages
 
-- **Secrets de _pipeline_** (`LFD_API_WORKER`, `CLOUDFLARE_ACCOUNT_ID`) : authentifient la CI auprès de Cloudflare (push image, deploy). Ne finissent **jamais** dans le container.
+- **Secrets de _pipeline_** (`CLOUDFLARE_LFD_API_WORKER`, `CLOUDFLARE_ACCOUNT_ID`) : authentifient la CI auprès de Cloudflare (push image, deploy). Ne finissent **jamais** dans le container.
 - **Secrets de _runtime_** (`DATABASE_B2B_URL`, `STRIPE_*`, `AUTH0_M2M_*`, `STORAGE_*`) : consommés par NestJS à l'exécution. Poussés dans le **secret store du Worker**, puis relayés au container.
 
 ### Le relais Worker → container (le point clé)
@@ -312,7 +312,7 @@ Le schéma d'URL choisit le transport Prisma :
 
 **🔒 Secrets à créer :**
 
-- [ ] `LFD_API_WORKER` — token Cloudflare « Workers Scripts · Edit » + « Containers · Edit »
+- [ ] `CLOUDFLARE_LFD_API_WORKER` — token Cloudflare « Workers Scripts · Edit » + « Containers · Edit »
 - [ ] `CLOUDFLARE_ACCOUNT_ID`
 - [ ] `DATABASE_B2B_URL`
 - [ ] `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`

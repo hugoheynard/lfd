@@ -89,20 +89,20 @@ la production.
 
 ## 3. Les secrets, par destination
 
-| Secret                                                                   | Va vers                            | Notes                                                                              |
-| ------------------------------------------------------------------------ | ---------------------------------- | ---------------------------------------------------------------------------------- |
-| `DATABASE_B2B_URL`                                                       | backend B2B                        | forme `prisma+postgres://` (Accelerate)                                            |
-| `DATABASE_PIM_URL`                                                       | backend PIM (comme `DATABASE_URL`) | renommé depuis `PIM_DATABASE_URL` le 2026-08-13                                    |
-| `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY` | backend B2B                        | mode démo                                                                          |
-| `RESEND_MAILER_B2B_API_KEY`                                              | backend B2B                        | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md)           |
-| `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                        | backend B2B                        | Management API                                                                     |
-| `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                    | backend B2B                        | pièces (KBIS) — bucket et endpoint sont des Variables                              |
-| `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                               | backend PIM                        | le PIM **appelle** Shopify ; il ne reçoit aucun webhook                            |
-| `B2B_CATALOG_PUSH_SECRET`                                                | backend PIM **et** backend B2B     | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés**     |
-| `RECOMPUTE_TOKEN`                                                        | Worker B2B **et** container        | comparé par `RecomputeGuard`                                                       |
-| `CLOUDFLARE_ACCOUNT_ID`                                                  | tous les déploiements              | injecté dans l'image au deploy                                                     |
-| `LFD_API_WORKER` · `CLOUDFLARE_LFD_GATEWAY` · `CLOUDFLARE_LFC_*_PAGES`   | déploiements                       | jetons Cloudflare, un par app — préfixe `LFC_` → `LFD_` le 2026-08-20              |
-| `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`                                 | backend B2B                        | signent les notifications poussées — cf. §3 ter ; `VAPID_SUBJECT` est une Variable |
+| Secret                                                                            | Va vers                            | Notes                                                                              |
+| --------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `DATABASE_B2B_URL`                                                                | backend B2B                        | forme `prisma+postgres://` (Accelerate)                                            |
+| `DATABASE_PIM_URL`                                                                | backend PIM (comme `DATABASE_URL`) | renommé depuis `PIM_DATABASE_URL` le 2026-08-13                                    |
+| `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY`          | backend B2B                        | mode démo                                                                          |
+| `RESEND_MAILER_B2B_API_KEY`                                                       | backend B2B                        | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md)           |
+| `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                                 | backend B2B                        | Management API                                                                     |
+| `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                             | backend B2B                        | pièces (KBIS) — bucket et endpoint sont des Variables                              |
+| `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                                        | backend PIM                        | le PIM **appelle** Shopify ; il ne reçoit aucun webhook                            |
+| `B2B_CATALOG_PUSH_SECRET`                                                         | backend PIM **et** backend B2B     | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés**     |
+| `RECOMPUTE_TOKEN`                                                                 | Worker B2B **et** container        | comparé par `RecomputeGuard`                                                       |
+| `CLOUDFLARE_ACCOUNT_ID`                                                           | tous les déploiements              | injecté dans l'image au deploy                                                     |
+| `CLOUDFLARE_LFD_API_WORKER` · `CLOUDFLARE_LFD_GATEWAY` · `CLOUDFLARE_LFC_*_PAGES` | déploiements                       | jetons Cloudflare, un par app — préfixe `LFC_` → `LFD_` le 2026-08-20              |
+| `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`                                          | backend B2B                        | signent les notifications poussées — cf. §3 ter ; `VAPID_SUBJECT` est une Variable |
 
 **Le PIM ne reçoit aucun webhook** — zéro occurrence de « webhook » dans son
 code source. Le seul endpoint entrant de tiers est `POST /payments/webhook`
