@@ -23,6 +23,65 @@
   </fold-page-section>
 
   <fold-page-section
+    title="Notifications"
+    description="Être prévenu sans avoir le back-office ouvert — une alerte de compte, un accès à remettre, une commande qui arrive."
+  >
+    <fold-card class="push">
+      @switch (push.state()) {
+        @case ('subscribed') {
+          <p class="push-line">
+            <fold-badge variant="success" content="Activées" />
+            Cet appareil reçoit les notifications du back-office.
+          </p>
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            [disabled]="push.busy()"
+            (click)="disablePush()"
+          >
+            Désactiver sur cet appareil
+          </button>
+        }
+        @case ('available') {
+          <p class="push-line">
+            Le navigateur vous demandera l’autorisation. Elle vaut pour
+            <strong>cet appareil</strong>&nbsp;: activez-la sur chacun de ceux où vous voulez être
+            prévenu.
+          </p>
+          <button foldButton [disabled]="push.busy()" (click)="enablePush()">
+            Activer les notifications
+          </button>
+        }
+        @case ('needs-install') {
+          <p class="push-line">
+            Sur iPhone et iPad, les notifications ne fonctionnent qu’une fois l’app
+            <strong>ajoutée à l’écran d’accueil</strong> — voir juste en dessous. Rouvrez cette page
+            depuis l’icône, et le bouton apparaîtra.
+          </p>
+        }
+        @case ('denied') {
+          <p class="push-line">
+            <fold-badge variant="warning" content="Refusées" />
+            Le navigateur ne redemandera plus&nbsp;: le refus se lève dans ses réglages, à la ligne
+            Notifications de ce site.
+          </p>
+        }
+        @case ('unconfigured') {
+          <p class="push-line">
+            Le serveur n’a pas encore de clé d’envoi&nbsp;: personne ne peut s’abonner. C’est un
+            réglage à poser (<code>VAPID_PUBLIC_KEY</code> / <code>VAPID_PRIVATE_KEY</code>), pas
+            une panne de cet appareil.
+          </p>
+        }
+        @default {
+          <p class="push-line">Ce navigateur ne sait pas recevoir de notifications poussées.</p>
+        }
+      }
+    </fold-card>
+  </fold-page-section>
+
+  <fold-page-section
     title="L’ajouter à l’écran d’accueil"
     description="L’étape qui fait la différence : sans elle, on rouvre un onglet de navigateur avec sa barre d’adresse ; avec elle, on ouvre une icône."
   >

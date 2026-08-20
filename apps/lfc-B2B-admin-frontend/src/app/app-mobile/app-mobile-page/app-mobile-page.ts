@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, type OnInit } from '@angular/core';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -10,6 +11,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
+import { PushNotificationsService } from '../../shared/push/push-notifications.service';
 import { QrCode } from '../../shared/qr-code/qr-code';
 
 /**
@@ -31,6 +33,7 @@ import { QrCode } from '../../shared/qr-code/qr-code';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     QrCode,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -42,11 +45,44 @@ import { QrCode } from '../../shared/qr-code/qr-code';
   templateUrl: './app-mobile-page.html',
   styleUrl: './app-mobile-page.scss',
 })
-export class AppMobilePage {
+export class AppMobilePage implements OnInit {
   private readonly notify = inject(NotifyService);
+
+  /** Public : le gabarit lit son état et son occupation directement. */
+  protected readonly push = inject(PushNotificationsService);
 
   /** L'adresse de CETTE instance — jamais une constante d'environnement. */
   protected readonly appUrl = window.location.origin;
+
+  /**
+   * Constater l'état des notifications au premier affichage — jamais avant :
+   * la matrice des cas (iOS non installé, permission refusée, serveur sans
+   * clé) n'a de sens que sur cet écran-là, et l'interroger ailleurs ferait un
+   * appel réseau pour rien.
+   */
+  async ngOnInit(): Promise<void> {
+    await this.push.refresh();
+  }
+
+  protected async enablePush(): Promise<void> {
+    try {
+      await this.push.subscribe();
+      if (this.push.state() === 'subscribed') {
+        this.notify.success('Notifications activées sur cet appareil.');
+      }
+    } catch (error) {
+      this.notify.error(error, "Impossible d'activer les notifications.");
+    }
+  }
+
+  protected async disablePush(): Promise<void> {
+    try {
+      await this.push.unsubscribe();
+      this.notify.info('Notifications désactivées sur cet appareil.');
+    } catch (error) {
+      this.notify.error(error, 'Impossible de désactiver les notifications.');
+    }
+  }
 
   protected async copyLink(): Promise<void> {
     try {

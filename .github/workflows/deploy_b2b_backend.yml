@@ -165,6 +165,15 @@ jobs:
           # lecteur s'authentifie. Absents, OPS rend une fenêtre de RÉPÉTITION et
           # l'annonce dans sa réponse — il ne se tait pas.
           CLOUDFLARE_ANALYTICS_TOKEN: ${{ secrets.CLOUDFLARE_ANALYTICS_TOKEN }}
+          # La paire VAPID qui SIGNE nos envois Web Push. La publique voyage
+          # dans chaque abonnement de navigateur — elle est publique par
+          # construction — mais elle passe par le même chemin que la privée :
+          # les deux vont ensemble, et une seule des deux fait échouer le
+          # démarrage. Absentes, la cloche sonne toujours à l'écran ; seul le
+          # téléphone reste muet.
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
         run: |
           for name in DATABASE_B2B_URL DATABASE_PIM_URL \
                       AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
@@ -178,6 +187,7 @@ jobs:
                       STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET \
                       SHOPIFY_ADMIN_TOKEN SHOPIFY_CLIENT_ID SHOPIFY_CLIENT_SECRET \
                       CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ANALYTICS_TOKEN \
+                      VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
                       RECOMPUTE_TOKEN; do
             value="${!name}"
             if [ -n "$value" ]; then
