@@ -73,7 +73,7 @@ function rehearse(
     throttled: Math.floor(requests * 0.004),
     gatewayFaults: seed % 17 === 0 ? Math.floor(requests * 0.05) : 0,
     p95Ms: 40 + (seed % 220),
-    surfaces: rehearseSurfaces(node, seed, requests),
+    surfaces: rehearseSurfaces(seed, requests),
   };
 }
 
@@ -88,11 +88,11 @@ function rehearse(
  * trois appels portent l'essentiel de la charge. Un tableau où tout est égal
  * n'exercerait pas la question qu'on vient lui poser — « lesquels pèsent ? ».
  */
-function rehearseSurfaces(node: string, seed: number, requests: number): readonly TrafficSurface[] {
-  const names =
-    node === "pim"
-      ? ["catalogue/products", "channels/_", "commerce/tva-regimes", "locations/emplacements"]
-      : ["orders", "admin/companies", "admin/orders", "me", "catalog"];
+function rehearseSurfaces(seed: number, requests: number): readonly TrafficSurface[] {
+  // Les surfaces du SEUL backend derrière la passerelle. Il y en avait deux
+  // jeux, aiguillés sur le nœud ; celui du référentiel est parti avec son
+  // Worker (B6) — ses routes vivent maintenant sous `/pim` de ce backend-ci.
+  const names = ["orders", "admin/companies", "admin/orders", "me", "catalog"];
 
   return names.map((surface, rank) => {
     const share = Math.pow(0.45, rank);

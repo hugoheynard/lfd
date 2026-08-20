@@ -45,7 +45,6 @@ const TRACEPARENT_FORMAT = /^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/
 /** Les backends joignables par service binding. Absents en `wrangler dev`. */
 interface Env {
   B2B_BACKEND?: Fetcher;
-  PIM_BACKEND?: Fetcher;
   /**
    * Le dataset Analytics Engine (`TRAFFIC_DATASET` dans `traffic.ts`). Optionnel comme
    * les bindings : absent en `wrangler dev`, et son absence ne doit jamais
@@ -174,8 +173,16 @@ function destinationFor(target: Target, url: URL, env: Env): Destination | undef
   };
 }
 
+/**
+ * Le binding d'un backend. Un seul aujourd'hui — mais la fonction reste, et
+ * reste typée sur `BackendKey` : c'est le compilateur qui réclamera le cas
+ * manquant le jour où un deuxième backend rejoint `API_PREFIXES`.
+ */
 function bindingFor(backend: BackendKey, env: Env): Fetcher | undefined {
-  return backend === "b2b" ? env.B2B_BACKEND : env.PIM_BACKEND;
+  switch (backend) {
+    case "b2b":
+      return env.B2B_BACKEND;
+  }
 }
 
 /**

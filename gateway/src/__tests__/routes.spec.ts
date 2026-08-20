@@ -24,14 +24,6 @@ describe("resolveTarget — préfixes d'API vers les backends", () => {
     });
   });
 
-  it("distingue les deux backends", () => {
-    expect(resolveTarget("gw.example", `${API_PREFIXES.pim}/products`)).toEqual({
-      kind: "backend",
-      backend: "pim",
-      path: "/products",
-    });
-  });
-
   it("rend `/` quand le préfixe est seul, jamais la chaîne vide", () => {
     // La chaîne vide produirait une URL invalide côté backend.
     expect(resolveTarget("gw.example", API_PREFIXES.b2b)).toEqual({
@@ -48,8 +40,10 @@ describe("resolveTarget — préfixes d'API vers les backends", () => {
 
   it("ne matche PAS un préfixe qui n'est qu'un début de segment", () => {
     // `/api/b2bxyz` n'appartient pas à `/api/b2b`. Sans cette garde, deux
-    // préfixes dont l'un préfixe l'autre se voleraient des requêtes — le bug
-    // qui n'apparaît qu'à l'ajout du troisième backend.
+    // préfixes dont l'un préfixe l'autre se voleraient des requêtes. Il n'y a
+    // plus qu'un backend, donc plus de collision possible AUJOURD'HUI — ce test
+    // garde la garantie en vie pour le jour où un second arrive, et c'est
+    // précisément le jour où personne ne la re-déduirait.
     expect(resolveTarget("gw.example", `${API_PREFIXES.b2b}xyz/products`)).toBeUndefined();
   });
 

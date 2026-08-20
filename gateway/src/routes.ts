@@ -31,10 +31,17 @@ import { DEV_PORTS, GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
  * backends, qui n'auront alors **plus aucune adresse publique**.
  */
 
-/** Le préfixe qui désigne un backend, retiré avant transmission. */
+/**
+ * Le préfixe qui désigne un backend, retiré avant transmission.
+ *
+ * **Un seul**, depuis que le référentiel est un module du back-office (B6) :
+ * son backend a fondu dans celui-ci (B2c) et `/api/pim` ne menait plus qu'à un
+ * Worker que personne n'appelait. La table reste une TABLE, et non une
+ * constante : c'est elle qui rend l'ajout du deuxième backend mécanique, et
+ * `stripPrefix` garde sa garde de frontière pour ce jour-là.
+ */
 export const API_PREFIXES = {
   b2b: "/api/b2b",
-  pim: "/api/pim",
 } as const;
 
 export type BackendKey = keyof typeof API_PREFIXES;
@@ -80,7 +87,7 @@ export function resolveTarget(hostname: string, pathname: string): Target | unde
  * `/api/b2bxyz` ne doit PAS matcher `/api/b2b` : on exige la fin de chaîne ou un
  * `/`. Sans cette garde, deux préfixes dont l'un est le début de l'autre se
  * voleraient des requêtes — le genre de bug qui n'apparaît qu'à l'ajout du
- * troisième backend.
+ * DEUXIÈME backend, et qu'on ne veut pas redécouvrir ce jour-là.
  *
  * Le chemin rendu commence toujours par `/` : `/api/b2b` seul devient `/`, et
  * non la chaîne vide, qui produirait une URL invalide côté backend.

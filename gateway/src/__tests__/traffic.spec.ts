@@ -109,7 +109,7 @@ describe("trafficPoint", () => {
     // dès que Analytics Engine échantillonne. Le nombre se lit
     // `SUM(_sample_interval)`.
     const point = trafficPoint({
-      node: "pim",
+      node: "b2b",
       status: 200,
       forwardedPath: "/catalogue",
       durationMs: 12.6,
@@ -121,7 +121,7 @@ describe("trafficPoint", () => {
 
   it("ne rend jamais une durée négative", () => {
     const point = trafficPoint({
-      node: "pim",
+      node: "b2b",
       status: 200,
       forwardedPath: "/catalogue",
       durationMs: -1,
@@ -163,7 +163,7 @@ describe("formatTrafficPoint — la simulation de dev", () => {
     );
     const unreachable = formatTrafficPoint(
       trafficPoint({
-        node: "pim",
+        node: "b2b",
         status: 502,
         forwardedPath: "/catalogue",
         durationMs: 5000,
@@ -172,6 +172,6 @@ describe("formatTrafficPoint — la simulation de dev", () => {
     );
 
     expect(throttled).toBe("ops b2b 429 orders upstream 3ms");
-    expect(unreachable).toBe("ops pim 5xx catalogue gateway 5000ms");
+    expect(unreachable).toBe("ops b2b 5xx catalogue gateway 5000ms");
   });
 });

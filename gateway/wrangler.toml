@@ -1,6 +1,6 @@
 # Passerelle de la suite LFC (Cloudflare Worker) — **la seule porte d'entrée**.
 #
-# En PROD : routage par **préfixe de chemin** (`/api/b2b`, `/api/pim`, cf.
+# En PROD : routage par **préfixe de chemin** (`/api/b2b`, cf.
 # src/routes.ts) vers des **service bindings**, déclarés en fin de fichier. Les
 # backends n'ont plus aucune adresse publique ; ce Worker est le seul chemin.
 #
@@ -40,9 +40,6 @@ port = 8787
 binding = "B2B_BACKEND"
 service = "lfc-b2b-backend"
 
-[[services]]
-binding = "PIM_BACKEND"
-service = "lfc-pim-backend"
 
 # ── Observation du trafic (OPS J1) ─────────────────────────────────────────────
 # La passerelle est le SEUL chemin : elle est donc le seul endroit qui puisse
