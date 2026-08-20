@@ -27,6 +27,16 @@ export interface AuthConfig {
   /** Base URL de l'API B2B appelée avec le jeton (ex. `GET /me`). */
   readonly apiBaseUrl: string;
   /**
+   * Adresse du dépôt Sentry, ou chaîne vide — alors rien n'est envoyé et
+   * l'application démarre sans lui.
+   *
+   * Publique par nature : elle voyage dans le bundle, tout visiteur peut la
+   * lire. Ce n'est pas un secret, c'est une adresse de dépôt — le secret, côté
+   * Sentry, c'est le jeton qui téléverse les *source maps*, et lui ne quitte
+   * jamais la CI.
+   */
+  readonly sentryDsn: string;
+  /**
    * Origine de l'app **admin**, sans barre finale — la seule chose que cette
    * app sache de sa voisine.
    *
@@ -44,4 +54,5 @@ export const AUTH_CONFIG: AuthConfig = {
   audience: AUTH_ENV.audience,
   apiBaseUrl: AUTH_ENV.apiBaseUrl,
   adminBaseUrl: AUTH_ENV.adminBaseUrl,
+  sentryDsn: AUTH_ENV.sentryDsn,
 };

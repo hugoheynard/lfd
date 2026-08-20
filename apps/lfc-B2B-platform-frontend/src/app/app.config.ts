@@ -4,7 +4,13 @@ import { provideRouter } from '@angular/router';
 import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
+import { AUTH_CONFIG } from './auth/auth.config';
 import { provideAuth } from './auth/auth.providers';
+import { provideSentry } from './ops/sentry';
+import { provideWebVitals } from './ops/web-vitals';
+
+/** L'identifiant de CE front dans la topologie OPS — la couture avec la carte. */
+const OPS_NODE = 'b2b-front';
 
 // App **browser-only** (déployée en statique sur Cloudflare Pages, pas de SSR) :
 // HttpClient en mode `fetch` (pas de polyfill xhr2), et Auth0 fourni directement
@@ -27,5 +33,12 @@ export const appConfig: ApplicationConfig = {
     provideAuth(),
     // Toasts d'opération (succès/échec) : succès bref, erreur sticky (défauts fold).
     provideFoldToasts({}),
+    // Ce que les vraies personnes vivent, renvoyé à notre API : la sonde dit
+    // que ce front est SERVI, ces trois mesures disent s'il est utilisable.
+    provideWebVitals(OPS_NODE, AUTH_CONFIG.apiBaseUrl),
+    // Ce qui casse dans leur navigateur, et qui ne laisse aucune trace chez
+    // nous — ni 5xx, ni ligne de journal : une page blanche et quelqu'un qui
+    // s'en va. Sans DSN, rien n'est branché, et le SDK n'est même pas chargé.
+    ...provideSentry(AUTH_CONFIG.sentryDsn, OPS_NODE),
   ],
 };

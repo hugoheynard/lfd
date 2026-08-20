@@ -240,10 +240,10 @@ importers:
     devDependencies:
       '@analogjs/vite-plugin-angular':
         specifier: 'catalog:'
-        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
       '@analogjs/vitest-angular':
         specifier: 'catalog:'
-        version: 2.6.3(0fb4ae82094035d8ca4c8eb1e4fd28b6)
+        version: 2.6.3(c95e2f9bfd271f0e8c593a32f34b12f5)
       '@angular/build':
         specifier: 'catalog:'
         version: 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
@@ -313,6 +313,12 @@ importers:
       '@lfd/endpoints':
         specifier: workspace:*
         version: link:../../packages/endpoints
+      '@lfd/ops-contract':
+        specifier: workspace:*
+        version: link:../../packages/ops-contract
+      '@sentry/angular':
+        specifier: ^10.70.0
+        version: 10.70.0(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/router@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(rxjs@7.8.2))(rxjs@7.8.2)
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.13.0
@@ -328,13 +334,16 @@ importers:
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
+      web-vitals:
+        specifier: ^6.1.1
+        version: 6.1.1
     devDependencies:
       '@analogjs/vite-plugin-angular':
         specifier: 'catalog:'
-        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
+        version: 2.6.3(@angular/build@22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1))
       '@analogjs/vitest-angular':
         specifier: 'catalog:'
-        version: 2.6.3(c95e2f9bfd271f0e8c593a32f34b12f5)
+        version: 2.6.3(0fb4ae82094035d8ca4c8eb1e4fd28b6)
       '@angular/build':
         specifier: 'catalog:'
         version: 22.1.4(@angular/compiler-cli@22.1.2(@angular/compiler@22.1.2)(typescript@6.0.3))(@angular/compiler@22.1.2)(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(@types/node@22.20.1)(chokidar@5.0.0)(istanbul-lib-instrument@6.0.3)(jiti@2.7.0)(postcss@8.5.20)(rollup@4.60.2)(terser@5.49.0)(tslib@2.8.1)(tsx@4.23.1)(typescript@6.0.3)(vitest@4.1.10(@types/node@22.20.1)(jsdom@26.1.0)(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.49.0)(tsx@4.23.1)))
@@ -655,7 +664,7 @@ importers:
         version: 7.2.2
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       ts-loader:
         specifier: ^9.5.2
         version: 9.6.2(typescript@6.0.3)(webpack@5.106.2)
@@ -762,7 +771,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -802,7 +811,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -854,7 +863,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -894,7 +903,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -961,7 +970,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1001,7 +1010,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1041,7 +1050,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1077,7 +1086,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1122,7 +1131,7 @@ importers:
         version: 3.9.5
       ts-jest:
         specifier: 'catalog:'
-        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3)
+        version: 29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -3873,6 +3882,43 @@ packages:
   '@schematics/angular@22.1.4':
     resolution: {integrity: sha512-uiYKuiCnkTEbs4eOU1QJlM5NPw6BR1qgpct8VlrhS4n861WCCjTy5cxiAWJ3Doc0R72d44j3uoBfAEp7KEVn2w==}
     engines: {node: ^22.22.3 || ^24.15.0 || >=26.0.0, npm: ^6.11.0 || ^7.5.6 || >=8.0.0, yarn: '>= 1.13.0'}
+
+  '@sentry/angular@10.70.0':
+    resolution: {integrity: sha512-jYC6cgdcoLqgze+6IiWs2mCrL7c0VV7Chd4+IuQ0S+HnNTHkGfFRefEEG8+jt4Aus+9noF9TwXps6lUU7bKVQw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@angular/common': '>= 14.x <= 22.x'
+      '@angular/core': '>= 14.x <= 22.x'
+      '@angular/router': '>= 14.x <= 22.x'
+      rxjs: ^6.5.5 || ^7.x
+
+  '@sentry/browser-utils@10.70.0':
+    resolution: {integrity: sha512-IvjhafF5NFXrPCg5EHbAPGDwIhHxgUcLlHTklZ3DAdA6ky88BJYMfevbcnOEmgavf4nylhCaquRUFNB5+szj+A==}
+    engines: {node: '>=18'}
+
+  '@sentry/browser@10.70.0':
+    resolution: {integrity: sha512-IK6+J+8H06tZe+A8L37TT5ZxxwNtyQatW8zl5RYYJ/e9CsjrM8fPi8I1OT7uquTw8UtjqFHt7bEef/Vy63ksPg==}
+    engines: {node: '>=18'}
+
+  '@sentry/conventions@0.16.0':
+    resolution: {integrity: sha512-fO9PLmHdVURcSPUpWCItWAtgKiMwGdJHbovoSEyLplX5sxs2ugvI4CBPTrkkgqhObnZOD0CnWBKDzSVQYBKEyQ==}
+    engines: {node: '>=14'}
+
+  '@sentry/core@10.70.0':
+    resolution: {integrity: sha512-ozhCTDqg89oB4XmWfAwuHshABpvT7AkRpaPnogopPfMAaI61G1t8EKCJ4W7aum8JSBonlfyjPCyW5oYZFm0KvA==}
+    engines: {node: '>=18'}
+
+  '@sentry/feedback@10.70.0':
+    resolution: {integrity: sha512-6VQn2ETJjHkk4QQDdx/587/JDfXsk3yBTLZ3UZOMtBVrkmwgk+1FJZ8ULJ3ud1xZcuh2icunIkc7tGVv2axdnw==}
+    engines: {node: '>=18'}
+
+  '@sentry/replay-canvas@10.70.0':
+    resolution: {integrity: sha512-irzpw22bK5CF3jbecDa0gBUcfjv7tgeUoLAvtIfeHOP5ajmf3o4Cp99a9RQqkfgvkcMeRZBUwE91SQhp6Ank+w==}
+    engines: {node: '>=18'}
+
+  '@sentry/replay@10.70.0':
+    resolution: {integrity: sha512-xMnSGzJn9Xd29rYd32lkx/gFW+5mtgqADJ2FiZvis0MBGZuDlNRwPn0/Cs1xA3JNXKV3NGfhdmmvs90w4dHSmw==}
+    engines: {node: '>=18'}
 
   '@sinclair/typebox@0.27.12':
     resolution: {integrity: sha512-hhyNJ+nbR6ZR7pToHvllEFun9TL0sbL+tk/ON75lo+Xas054uez98qRbsuNt7MBCyZKK4+8Yli/OAGZhmfBZ/g==}
@@ -7669,6 +7715,9 @@ packages:
   weak-lru-cache@1.2.2:
     resolution: {integrity: sha512-DEAoo25RfSYMuTGc9vPJzZcZullwIqRDSI9LOy+fkCJPi6hykCnfKaXTuPBDuXAUcqHXyOgFtHNp/kB2FjYHbw==}
 
+  web-vitals@6.1.1:
+    resolution: {integrity: sha512-r93gKnR6ZC2O8F3JrS0AAGIQ0v0OhXuyg4DAj2oG7K+GPkwXfUSc3ZcWeu50AsV5yIc6xxnTjERipJ6EvSw2vg==}
+
   webidl-conversions@7.0.0:
     resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
     engines: {node: '>=12'}
@@ -10614,6 +10663,51 @@ snapshots:
       typescript: 6.0.3
     transitivePeerDependencies:
       - chokidar
+
+  '@sentry/angular@10.70.0(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/router@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(rxjs@7.8.2))(rxjs@7.8.2)':
+    dependencies:
+      '@angular/common': 22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2)
+      '@angular/core': 22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)
+      '@angular/router': 22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(rxjs@7.8.2)
+      '@sentry/browser': 10.70.0
+      '@sentry/conventions': 0.16.0
+      '@sentry/core': 10.70.0
+      rxjs: 7.8.2
+      tslib: 2.8.1
+
+  '@sentry/browser-utils@10.70.0':
+    dependencies:
+      '@sentry/conventions': 0.16.0
+      '@sentry/core': 10.70.0
+
+  '@sentry/browser@10.70.0':
+    dependencies:
+      '@sentry/browser-utils': 10.70.0
+      '@sentry/conventions': 0.16.0
+      '@sentry/core': 10.70.0
+      '@sentry/feedback': 10.70.0
+      '@sentry/replay': 10.70.0
+      '@sentry/replay-canvas': 10.70.0
+
+  '@sentry/conventions@0.16.0': {}
+
+  '@sentry/core@10.70.0':
+    dependencies:
+      '@sentry/conventions': 0.16.0
+
+  '@sentry/feedback@10.70.0':
+    dependencies:
+      '@sentry/core': 10.70.0
+
+  '@sentry/replay-canvas@10.70.0':
+    dependencies:
+      '@sentry/core': 10.70.0
+      '@sentry/replay': 10.70.0
+
+  '@sentry/replay@10.70.0':
+    dependencies:
+      '@sentry/browser-utils': 10.70.0
+      '@sentry/core': 10.70.0
 
   '@sinclair/typebox@0.27.12': {}
 
@@ -14692,7 +14786,7 @@ snapshots:
       babel-jest: 30.4.1(@babel/core@7.29.7)
       jest-util: 30.4.1
 
-  ts-jest@29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1))(typescript@6.0.3):
+  ts-jest@29.4.12(@babel/core@8.0.1)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@8.0.1))(jest-util@30.4.1)(jest@29.7.0(@types/node@22.20.1)(ts-node@10.9.2(@types/node@22.20.1)(typescript@6.0.3)))(typescript@6.0.3):
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
@@ -14980,6 +15074,8 @@ snapshots:
 
   weak-lru-cache@1.2.2:
     optional: true
+
+  web-vitals@6.1.1: {}
 
   webidl-conversions@7.0.0: {}
 

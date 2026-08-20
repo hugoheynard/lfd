@@ -47,7 +47,13 @@ const fileVars = existsSync(envPath)
 const read = (key) => (process.env[key] ?? fileVars[key] ?? '').trim();
 
 const KEYS = ['AUTH0_DOMAIN', 'AUTH0_CLIENT_ID', 'AUTH0_AUDIENCE', 'API_BASE_URL', 'ADMIN_BASE_URL'];
-const values = Object.fromEntries(KEYS.map((key) => [key, read(key)]));
+
+// Réglages FACULTATIFS : leur absence éteint une fonction, elle ne casse rien.
+// Ils ne figurent donc pas dans l'avertissement — une alerte qui sonne à chaque
+// build de dev pour un choix délibéré apprend à ignorer les alertes.
+const OPTIONAL_KEYS = ['SENTRY_DSN'];
+
+const values = Object.fromEntries([...KEYS, ...OPTIONAL_KEYS].map((key) => [key, read(key)]));
 
 const missing = KEYS.filter((key) => values[key] === '');
 if (missing.length > 0) {
@@ -69,6 +75,10 @@ const body =
   `  audience: ${JSON.stringify(values.AUTH0_AUDIENCE)},\n` +
   `  apiBaseUrl: ${JSON.stringify(values.API_BASE_URL)},\n` +
   `  adminBaseUrl: ${JSON.stringify(values.ADMIN_BASE_URL)},\n` +
+  // Vide = Sentry n'est pas branché, et l'app démarre sans lui. Une clé
+  // publique par nature (elle voyage dans le bundle) : ce n'est pas un secret,
+  // c'est une adresse de dépôt.
+  `  sentryDsn: ${JSON.stringify(values.SENTRY_DSN)},\n` +
   '} as const;\n';
 
 mkdirSync(dirname(outPath), { recursive: true });
