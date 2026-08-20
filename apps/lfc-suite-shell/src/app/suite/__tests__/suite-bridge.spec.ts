@@ -76,28 +76,39 @@ describe("SuiteBridge", () => {
   });
 
   it("relaie un token pour une origine + audience connues, en ciblant l’origine", async () => {
+    // L'audience demandée est **`b2bAdmin`**, celle de la surface staff — c'est
+    // ce que le référentiel demande vraiment (`staff-token.interceptor.ts`).
+    //
+    // Ce test réclamait `pim` : le référentiel avait son audience jusqu'à B2d,
+    // qui la lui a retirée puisqu'il est servi par le même backend, derrière le
+    // même mur. Le pont a suivi, la production aussi ; le test, non — il est
+    // resté rouge, et le bruit du flake inter-suites l'a couvert.
     const frame = fakeFrame();
     dispatch(PIM_ORIGIN, frame, {
       channel: SUITE_CHANNEL,
       kind: "token-request",
       requestId: "r1",
-      audience: "pim",
+      audience: "b2bAdmin",
     });
     await flush();
-    expect(getToken).toHaveBeenCalledWith("pim");
+    expect(getToken).toHaveBeenCalledWith("b2bAdmin");
     expect(frame.postMessage).toHaveBeenCalledWith(
       { channel: SUITE_CHANNEL, kind: "token", requestId: "r1", token: "tok-123" },
       PIM_ORIGIN,
     );
   });
 
-  it("rend token=null pour une audience inconnue", async () => {
+  it("rend token=null pour une audience RETIRÉE — `pim` depuis B2d", async () => {
+    // On éprouve l'audience retirée plutôt qu'une chaîne manifestement fausse :
+    // c'est celle-là qui a réellement dérivé, et c'est celle-là qu'une remise en
+    // service devrait forcer à re-décider. Un jeton rendu pour `pim` voudrait
+    // dire que le shell a recommencé à ouvrir une porte qu'on a fermée.
     const frame = fakeFrame();
     dispatch(PIM_ORIGIN, frame, {
       channel: SUITE_CHANNEL,
       kind: "token-request",
       requestId: "r2",
-      audience: "inconnue",
+      audience: "pim",
     });
     await flush();
     expect(getToken).not.toHaveBeenCalled();
