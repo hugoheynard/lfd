@@ -188,7 +188,7 @@ D'où l'ordre retenu, **backend d'abord** :
 | **B3** | `b2b/catalog/` fond — la parité reste en garde-fou explicite                                                                            | faible                       | oui        |
 | **B4** | Une base, **un schéma par besoin** — c'est désormais LA stratégie (cf. ci-dessous), plus une option                                     | moyen — migration de données | par dump   |
 | **B5** | T1→T3, puis l'audience unique                                                                                                           | moyen                        | non        |
-| **B6** | Le front — PIM greffé sur l'admin, shell réduit au registre                                                                             | faible                       | oui        |
+| **B6** | Le front — PIM greffé sur l'admin ; le shell **reste** (cf. ci-dessous)                                                                 | faible                       | oui        |
 | **B7** | `C7` — bascule du front client sur l'API                                                                                                | moyen                        | non        |
 
 ### La stratégie retenue : une base, un schéma par besoin
@@ -247,6 +247,60 @@ déploiement antérieur à B4.
 **Après B2e**, pas avec. La bascule du week-end a déjà sa séquence et son retour
 arrière ; y ajouter une migration de données multiplierait les façons d'échouer
 un même soir, et rendrait le diagnostic ambigu si quelque chose bronche.
+
+### Le référentiel cesse d'être une app (B6) — et le shell reste
+
+**Tranché le 2026-08-20.** Toutes les raisons d'être une application distincte
+sont tombées, une par une, sans qu'aucune ait été retirée pour elle-même :
+
+| Ce qui justifiait une app à part | État                                                        |
+| -------------------------------- | ----------------------------------------------------------- |
+| Son backend                      | fondu dans `lfd-api` (B2c)                                  |
+| Son audience Auth0               | retirée, il emprunte `b2bAdmin` (B2d)                       |
+| Sa base                          | décidée fondue en schéma `pim` (B4)                         |
+| Son mur                          | le même `@AdminSurface`, le même annuaire staff             |
+| Son projet Pages                 | **le dernier — et ce n'est pas une raison, c'est un reste** |
+
+Ce qui subsiste n'est plus une frontière : un projet Pages, un générateur de
+config, un workflow, un bundle, un DSN, un nœud sur la carte. De la duplication.
+
+**L'argument décisif est arrivé par un bug.** Le référentiel demandait son jeton
+au shell par `postMessage`, à travers une iframe, avec une audience typée
+`string` — et le jour où cette audience a disparu (B2d), rien ne l'a signalé
+sauf un test, resté rouge des semaines. Greffé sur le back-office, toute cette
+danse disparaît : même app, même session, même intercepteur.
+
+#### La contrainte à ne pas découvrir en route
+
+Le back-office est à **997 ko** pour une alerte à 1 050 et une erreur à 1 300 ;
+le référentiel pèse **594 ko**. Une greffe naïve dépasse largement. Le
+référentiel doit donc arriver en **routes paresseuses** — le patron existe déjà
+dans cette app (`entreprises-page`, 113 ko, chargée à la demande).
+
+#### Le shell reste, et sa raison change
+
+Après la greffe, le shell n'héberge plus qu'**une** application. La fédération ne
+le justifie donc plus.
+
+**Il est conservé quand même, et pour une autre raison : accueillir des sujets à
+venir, hors boulangerie.** Ce n'est pas un lanceur pour deux outils, c'est la
+porte d'entrée d'un portefeuille qui n'a qu'un locataire aujourd'hui. La
+distinction compte — un registre qu'on garde « au cas où » se dégrade, une porte
+d'entrée qu'on assume se tient.
+
+Deux conséquences à surveiller, pour que la décision ait des dents :
+
+- **le vocabulaire du shell est encore LFC.** `b2b`, `b2bAdmin` dans les
+  audiences, `SUITE_APPS` dans le registre. Un premier locataire étranger au
+  métier boulanger obligera à distinguer ce qui est _plateforme_ de ce qui est
+  _La Folie Coffee_ ;
+- **`EmbedTokenRequest.audience` est un `string` nu.** Une app distante qui
+  demande une audience que le shell ne connaît plus reçoit `null` — plus de
+  jeton, plus d'API — sans que rien ne le dise. C'est ce qui vient d'arriver avec
+  UNE app ; ça empirera avec plusieurs. Le vocabulaire des audiences a sa place
+  dans `@lfd/suite-embed`, pour que l'appelant légitime cesse de compiler avec
+  une audience morte. Le fil, lui, reste un `string` : il vient de `postMessage`,
+  donc d'un émetteur qu'on ne contrôle pas.
 
 ### B2 n'est PAS incrémental par contexte
 
