@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
+import { BackgroundWork } from "../../../platform/events/background-work.js";
 import { Clock } from "../../../platform/time/clock.js";
 import {
   StaffNoticeStore,
@@ -38,10 +39,13 @@ const REJECTION_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
  * 1. **On ne pousse que du nouveau.** `save` rend les notices réellement créées ;
  *    un fait rejoué n'en produit aucune, donc aucun téléphone ne vibre. Sans
  *    cela, l'anti-doublon de la cloche n'aurait valu que pour l'écran.
- * 2. **La poussée ne fait jamais échouer l'émission.** Un service de push
- *    injoignable, un abonnement mort : le fait est enregistré, l'écran l'affiche,
- *    et le téléphone reste muet. L'inverse — perdre la notification parce qu'un
- *    téléphone est éteint — serait absurde.
+ * 2. **La poussée ne fait jamais attendre ni échouer l'émission.** Elle part en
+ *    travail de FOND : ni la requête qui a provoqué le fait, ni son émetteur
+ *    n'attendent que trois services de push aient répondu. Un service
+ *    injoignable, un abonnement mort — le fait est enregistré, l'écran
+ *    l'affiche, et le téléphone reste muet. L'inverse, perdre la notification
+ *    parce qu'un téléphone est éteint, serait absurde ; la faire attendre par
+ *    un commercial au téléphone le serait presque autant.
  * 3. **Un refus ne désabonne pas tout de suite.** Cf. {@link REJECTION_GRACE_MS} :
  *    une paire VAPID mal posée refuse exactement comme un abonnement périmé, et
  *    oublier au premier 403 viderait la table sur une erreur de configuration —
@@ -56,21 +60,27 @@ export class PushingStaffNotifier extends StaffNotifier {
     private readonly subscriptions: StaffPushSubscriptions,
     private readonly sender: StaffPushSender,
     private readonly clock: Clock,
+    private readonly work: BackgroundWork,
   ) {
     super();
   }
 
+  /**
+   * L'écriture est attendue — c'est elle qui fait exister le fait. La poussée,
+   * non : elle est **suivie** plutôt qu'attendue.
+   *
+   * `track` porte les deux choses qui manquaient à un `void promise` nu : il
+   * avale l'échec après l'avoir journalisé (sans lui, un service de push
+   * injoignable devient un `unhandledRejection`), et il donne aux tests le
+   * `whenIdle()` sans lequel ils videraient la base pendant qu'un envoi est
+   * encore en vol.
+   */
   async notify(notices: readonly StaffNotice[]): Promise<void> {
     const created = await this.store.save(notices);
     if (created.length === 0 || this.sender.publicKey() === null) {
       return;
     }
-    try {
-      await this.push(created);
-    } catch (error) {
-      // Journalisé, pas propagé : cf. la garantie 2 ci-dessus.
-      this.logger.warn({ message: "push_notification_failed", error });
-    }
+    void this.work.track(this.push(created), "push-staff-notifications");
   }
 
   private async push(notices: readonly StaffNotice[]): Promise<void> {

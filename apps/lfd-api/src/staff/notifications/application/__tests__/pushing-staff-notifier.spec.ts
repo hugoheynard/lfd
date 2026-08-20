@@ -1,3 +1,4 @@
+import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { StaffNoticeStore, type StaffNotice } from "../../domain/ports/staff-notifier.js";
 import {
@@ -90,12 +91,38 @@ class SenderDouble extends StaffPushSender {
   }
 }
 
+/**
+ * La cloche, plus le point d'attente qui manquait.
+ *
+ * La poussée part en travail de FOND : `notify` rend la main avant qu'un seul
+ * service de push ait répondu. Sans `whenIdle()`, chaque assertion ci-dessous
+ * lirait un état encore en vol — et passerait ou non selon l'ordonnancement.
+ *
+ * Le vrai `BackgroundWork` plutôt qu'un double : c'est lui qui avale les échecs,
+ * et c'est précisément ce comportement-là qu'un des tests éprouve.
+ */
 function build(
   store: StoreDouble,
   subs: SubscriptionsDouble,
   sender: SenderDouble,
-): PushingStaffNotifier {
-  return new PushingStaffNotifier(store, subs, sender, new FixedClock(AT));
+): { notifier: PushingStaffNotifier; settled: () => Promise<void> } {
+  const work = new BackgroundWork();
+  return {
+    notifier: new PushingStaffNotifier(store, subs, sender, new FixedClock(AT), work),
+    settled: () => work.whenIdle(),
+  };
+}
+
+/** Émettre, puis attendre que le fond ait fini. */
+async function notifyAndSettle(
+  store: StoreDouble,
+  subs: SubscriptionsDouble,
+  sender: SenderDouble,
+  notices: readonly StaffNotice[],
+): Promise<void> {
+  const { notifier, settled } = build(store, subs, sender);
+  await notifier.notify(notices);
+  await settled();
 }
 
 describe("la cloche qui pousse", () => {
@@ -105,7 +132,7 @@ describe("la cloche qui pousse", () => {
     // rejeu réveillerait toute l'équipe.
     const sender = new SenderDouble();
     const subs = new SubscriptionsDouble();
-    await build(new StoreDouble([]), subs, sender).notify([notice("k1")]);
+    await notifyAndSettle(new StoreDouble([]), subs, sender, [notice("k1")]);
 
     expect(sender.pushed).toEqual([]);
     expect(subs.sent).toEqual([]);
@@ -115,7 +142,7 @@ describe("la cloche qui pousse", () => {
     const created = notice("k1");
     const sender = new SenderDouble();
     const subs = new SubscriptionsDouble();
-    await build(new StoreDouble([created]), subs, sender).notify([created]);
+    await notifyAndSettle(new StoreDouble([created]), subs, sender, [created]);
 
     expect(sender.pushed).toEqual([created]);
     expect(subs.sent).toEqual([PHONE.endpoint]);
@@ -125,7 +152,7 @@ describe("la cloche qui pousse", () => {
     const created = notice("k1");
     const sender = new SenderDouble("vapid-public", { gone: [PHONE.endpoint], rejected: [] });
     const subs = new SubscriptionsDouble();
-    await build(new StoreDouble([created]), subs, sender).notify([created]);
+    await notifyAndSettle(new StoreDouble([created]), subs, sender, [created]);
 
     expect(subs.forgotten).toEqual([PHONE.endpoint]);
     expect(subs.sent).toEqual([]);
@@ -139,7 +166,7 @@ describe("la cloche qui pousse", () => {
     const sender = new SenderDouble("vapid-public", NOTHING, true);
 
     await expect(
-      build(store, new SubscriptionsDouble(), sender).notify([created]),
+      notifyAndSettle(store, new SubscriptionsDouble(), sender, [created]),
     ).resolves.toBeUndefined();
     expect(store.saved).toEqual([created]);
   });
@@ -151,7 +178,7 @@ describe("la cloche qui pousse", () => {
     const created = notice("k1");
     const sender = new SenderDouble("vapid-public", { gone: [], rejected: [PHONE.endpoint] });
     const subs = new SubscriptionsDouble();
-    await build(new StoreDouble([created]), subs, sender).notify([created]);
+    await notifyAndSettle(new StoreDouble([created]), subs, sender, [created]);
 
     expect(subs.forgotten).toEqual([]);
     expect(subs.failing).toEqual([PHONE.endpoint]);
@@ -162,7 +189,7 @@ describe("la cloche qui pousse", () => {
   it("laisse au refus une semaine avant de l'oublier", async () => {
     const created = notice("k1");
     const subs = new SubscriptionsDouble();
-    await build(new StoreDouble([created]), subs, new SenderDouble()).notify([created]);
+    await notifyAndSettle(new StoreDouble([created]), subs, new SenderDouble(), [created]);
 
     // Le temps est le seul arbitre entre « cet abonnement est périmé » et
     // « notre clé est la mauvaise » : le premier ne guérit jamais, le second se
@@ -177,7 +204,7 @@ describe("la cloche qui pousse", () => {
       rejected: [TABLET.endpoint],
     });
     const subs = new SubscriptionsDouble([PHONE, TABLET]);
-    await build(new StoreDouble([created]), subs, sender).notify([created]);
+    await notifyAndSettle(new StoreDouble([created]), subs, sender, [created]);
 
     expect(subs.forgotten).toEqual([PHONE.endpoint]);
     expect(subs.failing).toEqual([TABLET.endpoint]);
@@ -186,7 +213,7 @@ describe("la cloche qui pousse", () => {
   it("ne lit même pas les abonnements sans paire VAPID", async () => {
     const created = notice("k1");
     const subs = new SubscriptionsDouble();
-    await build(new StoreDouble([created]), subs, new SenderDouble(null)).notify([created]);
+    await notifyAndSettle(new StoreDouble([created]), subs, new SenderDouble(null), [created]);
 
     expect(subs.sent).toEqual([]);
   });
