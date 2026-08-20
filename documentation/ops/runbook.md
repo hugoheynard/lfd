@@ -159,7 +159,7 @@ pendant la traversée.
    redéployer le backend.
 4. **Vérifier** : se connecter sur la nouvelle adresse, et regarder qu'un appel
    d'API rend bien un `access-control-allow-origin`.
-5. **Puis seulement** : passer `B2B_ADMIN_BASE_URL` à la nouvelle adresse
+5. **Puis seulement** : passer `LFD_BACKOFFICE_URL` à la nouvelle adresse
    (les liens des e-mails staff), retirer `LEGACY_B2B_ADMIN_FRONT` du CORS,
    retirer l'ancienne URL d'Auth0, supprimer le projet Pages `lfc-b2b-admin`.
 

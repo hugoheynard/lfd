@@ -44,7 +44,7 @@ secrets sont ceux qu'on croit.
 | ---------------------- | ---------------------------------- | -------------------------------------------------- |
 | `B2B_API_BASE_URL`     | `…gateway…workers.dev/api/b2b`     | **oui** — appelée par 2 fronts                     |
 | `PIM_API_BASE_URL`     | `…gateway…workers.dev/api/pim`     | **oui**                                            |
-| `B2B_ADMIN_BASE_URL`   | `https://lfc-b2b-admin.pages.dev`  | oui — liens dans les e-mails staff                 |
+| `LFD_BACKOFFICE_URL`   | `https://lfd-backoffice.pages.dev` | oui — liens dans les e-mails staff                 |
 | `B2B_CLIENT_BASE_URL`  | `https://lfc-b2b-eu7.pages.dev`    | **oui** — liens de création de mot de passe client |
 | `AUTH0_*_AUDIENCE`     | `https://api-b2b.lafoliedouce.eu…` | **non** — ce sont des **identifiants**             |
 | `B2B_CATALOG_PUSH_URL` | `…gateway…/api/b2b/catalog/ingest` | **oui** — le PIM y pousse le catalogue             |
@@ -70,7 +70,7 @@ jeton (« Callback URL mismatch »). Trois listes, à tenir identiques :
 | Application Auth0            | Doit contenir                      | Front concerné |
 | ---------------------------- | ---------------------------------- | -------------- |
 | La Folie Coffee B2B platform | la valeur de `B2B_CLIENT_BASE_URL` | espace client  |
-| LFC B2B Admin                | la valeur de `B2B_ADMIN_BASE_URL`  | back-office    |
+| LFC B2B Admin                | la valeur de `LFD_BACKOFFICE_URL`  | back-office    |
 | La Folie Coffee Admin Suite  | l'origine du shell                 | suite interne  |
 
 **Allowed Callback URLs**, **Allowed Logout URLs** et **Allowed Web Origins** —
@@ -82,7 +82,7 @@ Application URIs, puis « Save changes » (jusqu'à 30 s de propagation).
 `lfc-b2b-eu7`, la variable GitHub avait suivi, Auth0 non. Rien ne l'avait
 signalé — ce réglage est **invisible du dépôt**, et le déploiement le plus vert
 du monde ne le vérifie pas. Toute modification de `B2B_CLIENT_BASE_URL` ou de
-`B2B_ADMIN_BASE_URL` doit donc s'accompagner de la mise à jour de ces listes,
+`LFD_BACKOFFICE_URL` doit donc s'accompagner de la mise à jour de ces listes,
 dans le même geste.
 
 Ajouter, ne pas remplacer : les entrées de développement (`localhost:7316`,

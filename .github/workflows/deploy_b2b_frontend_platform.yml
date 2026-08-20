@@ -85,7 +85,7 @@ jobs:
           # Origine de l'app ADMIN — le QR de retrait que ce front affiche pointe
           # vers le back-office, puisque c'est le staff qui le scanne. Absente,
           # le front n'affiche AUCUN code plutôt qu'un code menant nulle part.
-          ADMIN_BASE_URL: ${{ vars.B2B_ADMIN_BASE_URL }}
+          ADMIN_BASE_URL: ${{ vars.LFD_BACKOFFICE_URL }}
         run: node scripts/generate-auth-config.mjs
 
       # Gate: a red typecheck must never reach Pages. The AOT build below also
