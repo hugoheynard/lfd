@@ -2,14 +2,25 @@
   // Backend B2B (NestJS) en Cloudflare Container, piloté par un Worker d'entrée.
   // Consommé par .github/workflows/deploy_b2b_backend.yml (wrangler deploy).
   //
-  // ⚠️ Le paquet s'appelle `lfd-api` depuis B0, PAS ce Worker. Le renommer
-  // créerait un Worker NEUF, laisserait l'ancien orphelin, et couperait la
-  // passerelle entre les deux déploiements — `gateway/wrangler.toml` le vise par
-  // un service binding (`service = "lfc-b2b-backend"`). Même chose pour le nom
-  // d'image plus bas. Renommer l'identité DÉPLOYÉE est une opération à part :
-  // déployer la passerelle et le backend ensemble, puis supprimer l'ancien
-  // Worker à la main. Cf. documentation/suite/architecture-topologie-apps.md.
-  "name": "lfc-b2b-backend",
+  // Renommé `lfc-b2b-backend` → `lfd-api` le 2026-08-20 : il ne sert plus la
+  // seule surface B2B mais quatre (b2b, pim, ops, staff), et son nom le disait
+  // encore. Il porte désormais celui du paquet, qui n'avait jamais bougé.
+  //
+  // ⚠️ Cloudflare ne renomme pas un Worker : il en CRÉE un. La bascule tient
+  // donc en deux poussées séparées, et c'est ce qui la rend sans coupure —
+  // les deux workflows sont filtrés par chemin, l'ancien Worker survit :
+  //
+  //   1. CE fichier seul. `lfd-api` naît, ses secrets sont poussés par la
+  //      boucle du workflow. La passerelle vise encore `lfc-b2b-backend`, qui
+  //      tourne toujours : rien ne bouge pour personne.
+  //   2. `gateway/wrangler.toml` seul, dont le binding passe à `lfd-api`.
+  //      Retour arrière = révoquer cette poussée ; l'ancien répond encore.
+  //   3. Vérifier, PUIS supprimer `lfc-b2b-backend` à la main sur Cloudflare.
+  //
+  // L'inverse — les deux dans la même poussée — ne coupe rien non plus, mais
+  // fait ÉCHOUER le déploiement de la passerelle si elle passe la première :
+  // `wrangler` résout chaque service binding au moment de publier.
+  "name": "lfd-api",
   "main": "container/worker.ts",
   "compatibility_date": "2025-06-01",
 
@@ -26,7 +37,7 @@
       // (« Invalid image. Latest tags are not allowed on images. »), constaté au
       // 1er déploiement réel. Un tag mouvant rendrait d'ailleurs un déploiement
       // non reproductible — on ne saurait plus quelle image tourne.
-      "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfc-b2b-backend:__IMAGE_TAG__",
+      "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfd-api:__IMAGE_TAG__",
       // UNE instance, tenue chaude par le cron `*/5` (cf. `triggers.crons`).
       //
       // Ce n'est pas un plafond de capacité mais un choix de routage : Cloudflare

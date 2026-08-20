@@ -424,7 +424,7 @@ Un écran Ops « état des canaux » (identité : configurée / e-mail : pas de 
 
 | Quoi                  | Où                                                                      |
 | --------------------- | ----------------------------------------------------------------------- |
-| Domaine + CQRS        | `apps/lfd-api/src/b2b/account/`                            |
+| Domaine + CQRS        | `apps/lfd-api/src/b2b/account/`                                         |
 | Verdict d'activation  | `.../account/domain/services/activation-gate.ts`                        |
 | Échéance d'invitation | `.../account/domain/services/invitation-expiry.ts`                      |
 | Ouverture d'accès     | `.../account/application/services/grant-account-access.service.ts`      |

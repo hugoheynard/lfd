@@ -43,12 +43,17 @@ distingue « déployé » de « configuré ».
 ## Vérifier que le mur tient
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" https://lfc-b2b-backend.lafoliedouce.workers.dev/platform-settings
+curl -s -o /dev/null -w "%{http_code}\n" https://lfd-api.lafoliedouce.workers.dev/platform-settings
 curl -s -o /dev/null -w "%{http_code}\n" https://lfc-suite-gateway.lafoliedouce.workers.dev/api/b2b/platform-settings
 ```
 
 Attendu : **404** puis **200**. Un `200` sur la première ligne veut dire que la
 porte directe est rouverte.
+
+⚠️ Tant que l'ancien Worker `lfc-b2b-backend` n'est pas supprimé, teste-le AUSSI :
+il porte encore les mêmes secrets et la même image, et sa porte directe est
+fermée par le même `workers_dev: false` — mais un Worker qu'on croit mort et qui
+répond est exactement le genre de chose qu'on ne découvre pas.
 
 ⚠️ Laisser **une minute** après un déploiement avant de conclure : la
 propagation des routes Cloudflare prend plusieurs dizaines de secondes. Mesurer

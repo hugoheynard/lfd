@@ -80,7 +80,7 @@ sequenceDiagram
     GH->>GH: docker build -f apps/.../Dockerfile . (contexte = RACINE monorepo)
     Note right of GH: image = code + deps prod + client Prisma<br/>SANS secrets runtime
 
-    GH->>CR: wrangler containers push lfc-b2b-backend:latest
+    GH->>CR: wrangler containers push lfd-api:latest
     Note right of CR: auth via CLOUDFLARE_API_TOKEN<br/>(secret LFC_B2B_BACKEND_WORKER)
 
     GH->>GH: sed __CF_ACCOUNT_ID__ → CLOUDFLARE_ACCOUNT_ID
@@ -95,7 +95,7 @@ sequenceDiagram
 Les étapes, dans l'ordre du yml :
 
 1. **Prépare** — `pnpm install --frozen-lockfile`, build de `@lfd/contracts` (types partagés), puis `tsc --noEmit` (gate : un typecheck rouge stoppe le deploy).
-2. **Build image** — `docker build -f apps/lfd-api/Dockerfile -t lfc-b2b-backend:latest .`
+2. **Build image** — `docker build -f apps/lfd-api/Dockerfile -t lfd-api:latest .`
    ⚠️ Le `.` final = **contexte racine du monorepo** : le build a besoin de `pnpm-workspace.yaml` + `packages/*`. C'est la seule voie ; `wrangler containers build` n'expose pas de build-context.
 3. **Push + Deploy** — `wrangler containers push` (image → registre Cloudflare), puis `sed` injecte l'account id dans `wrangler.jsonc` (jamais commité en clair : le fichier contient `__CF_ACCOUNT_ID__`), puis `wrangler deploy` publie le Worker qui référence l'image.
 4. **Sync des secrets runtime** — une boucle `wrangler secret put` pousse chaque secret **présent** (les vides sont sautés → feature simplement désactivée).
@@ -416,18 +416,18 @@ Le rate-limit vit sur les **Workers backend** (pas la gateway) : la sécurité e
 | Réglage                 | Fichier                                                  | Valeur     |
 | ----------------------- | -------------------------------------------------------- | ---------- |
 | Limite edge par IP      | `apps/lfc-*/wrangler.jsonc` (`unsafe.bindings[].simple`) | 300 / 60 s |
-| Limite throttler défaut | `apps/lfd-api/src/platform/security/security.module.ts`       | 300 / 60 s |
+| Limite throttler défaut | `apps/lfd-api/src/platform/security/security.module.ts`  | 300 / 60 s |
 | Limite GET anonymes     | décorateur `@Throttle` sur les 3 contrôleurs publics     | 60 / 60 s  |
 | Taille body JSON        | `apps/lfc-*/src/main.ts` (`JSON_BODY_LIMIT`)             | 512 kb     |
 | Origines CORS           | `packages/endpoints/src/index.ts` (`PROD_FRONT_ORIGINS`) | Pages prod |
 
 ## 9. Fichiers de référence
 
-| Fichier                                             | Rôle                                         |
-| --------------------------------------------------- | -------------------------------------------- |
-| `apps/lfd-api/container/worker.ts` | Worker : routage + relais `envVars`          |
-| `apps/lfd-api/wrangler.jsonc`      | Config Worker + container (image, instances) |
-| `apps/lfd-api/Dockerfile`          | Image NestJS (build contexte racine)         |
-| `apps/lfd-api/.env.example`        | Liste **autoritaire** des variables runtime  |
-| `.github/workflows/deploy_b2b_backend.yml`          | Pipeline CI (build → push → deploy → sync)   |
-| `documentation/CONTAINERIZE-NOTES.md`               | Points à valider au 1er build Docker         |
+| Fichier                                    | Rôle                                         |
+| ------------------------------------------ | -------------------------------------------- |
+| `apps/lfd-api/container/worker.ts`         | Worker : routage + relais `envVars`          |
+| `apps/lfd-api/wrangler.jsonc`              | Config Worker + container (image, instances) |
+| `apps/lfd-api/Dockerfile`                  | Image NestJS (build contexte racine)         |
+| `apps/lfd-api/.env.example`                | Liste **autoritaire** des variables runtime  |
+| `.github/workflows/deploy_b2b_backend.yml` | Pipeline CI (build → push → deploy → sync)   |
+| `documentation/CONTAINERIZE-NOTES.md`      | Points à valider au 1er build Docker         |

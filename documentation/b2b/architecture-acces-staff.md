@@ -23,13 +23,13 @@ Lié à [`../suite/architecture-iam-access.md`](../suite/architecture-iam-access
 
 La moitié du chemin est faite, et c'est la moitié structurante :
 
-| Pièce                                                                    | Où                                          | État |
-| ------------------------------------------------------------------------ | ------------------------------------------- | ---- |
-| Table `staff_users` — identité, `scopes[]`, `auth0Id` nullable           | `prisma/schema.prisma`                      | ✅   |
-| Module DDD/CQRS complet — port, repo Prisma, commandes, contrôleur admin | `src/staff/`                          | ✅   |
+| Pièce                                                                    | Où                                              | État |
+| ------------------------------------------------------------------------ | ----------------------------------------------- | ---- |
+| Table `staff_users` — identité, `scopes[]`, `auth0Id` nullable           | `prisma/schema.prisma`                          | ✅   |
+| Module DDD/CQRS complet — port, repo Prisma, commandes, contrôleur admin | `src/staff/`                                    | ✅   |
 | **Admin racine ineffaçable**, semé au boot, non rétrogradable            | `src/staff/directory/domain/bootstrap-admin.ts` | ✅   |
-| Porte staff — audience Auth0 dédiée, fail-closed sans elle               | `src/platform/auth/admin-auth.guard.ts`        | ✅   |
-| Écran Réglages → Utilisateurs — liste, création, édition, suppression    | `reglages/staff-users/`                     | ✅   |
+| Porte staff — audience Auth0 dédiée, fail-closed sans elle               | `src/platform/auth/admin-auth.guard.ts`         | ✅   |
+| Écran Réglages → Utilisateurs — liste, création, édition, suppression    | `reglages/staff-users/`                         | ✅   |
 
 Et voici le trou tel qu'il était, gardé ici parce qu'il explique tout le reste :
 

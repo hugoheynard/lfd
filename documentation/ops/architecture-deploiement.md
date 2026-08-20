@@ -20,7 +20,7 @@ flowchart TB
     GW["**lfc-suite-gateway**<br/>Worker · SEULE porte d'entrée<br/>lfc-suite-gateway.lafoliedouce.workers.dev"]
 
     subgraph prive["Sans aucune adresse publique"]
-        WB["Worker lfc-b2b-backend"]
+        WB["Worker lfd-api"]
         WP["Worker lfc-pim-backend<br/>⚠️ dernière image — plus déployé (B2c)"]
         CB["Container NestJS B2B<br/>WEUR · 1 instance chaude"]
         CP["Container NestJS PIM<br/>WEUR · 2 instances<br/>⚠️ s'éteint en B2e"]
@@ -46,6 +46,10 @@ flowchart TB
 de backend ont `"workers_dev": false` : ils ne répondent à personne sur
 Internet. Seul le _service binding_ de la passerelle les atteint, et un binding
 est un appel interne au compte Cloudflare, qui ne sort jamais sur le réseau.
+
+> **2026-08-20** — le Worker a été renommé `lfc-b2b-backend` → `lfd-api` : il
+> ne sert plus la seule surface B2B mais quatre. Les constats datés ci-dessous
+> gardent l'ancien nom, qui était le vrai ce jour-là.
 
 Vérifié le 2026-08-13 : `lfc-b2b-backend.lafoliedouce.workers.dev` → **404**,
 la même route par la passerelle → **200**.

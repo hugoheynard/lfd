@@ -65,14 +65,14 @@ jobs:
         run: |
           docker build -f apps/lfd-api/Dockerfile \
             --build-arg APP_REVISION="${GITHUB_SHA:0:7}" \
-            -t lfc-b2b-backend:"$GITHUB_SHA" .
+            -t lfd-api:"$GITHUB_SHA" .
 
       - name: Push image → registre Cloudflare
         working-directory: apps/lfd-api
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.LFC_B2B_BACKEND_WORKER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm exec wrangler containers push lfc-b2b-backend:"$GITHUB_SHA"
+        run: pnpm exec wrangler containers push lfd-api:"$GITHUB_SHA"
 
       # 2) Les secrets AVANT le déploiement : un container qui démarre sans
       #    DATABASE_B2B_URL meurt au boot (`required()` lève), puis redémarre une
