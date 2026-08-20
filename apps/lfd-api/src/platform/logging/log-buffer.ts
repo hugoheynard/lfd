@@ -26,6 +26,20 @@ export interface RecordedLog {
   /** Le contexte Nest (nom de classe), ou `null` quand il n'y en a pas. */
   readonly context: string | null;
   readonly message: string;
+  /**
+   * Le `traceId` de la requête qui a produit cette ligne, ou `null` hors
+   * requête (démarrage, tâche de fond).
+   *
+   * C'est ce qui transforme un tampon en **récit** : trois lignes d'erreur sans
+   * fil sont trois incidents possibles ; avec le même `traceId`, c'est un seul,
+   * et on le suit du premier symptôme à sa cause. C'est aussi le même
+   * identifiant que le client reçoit dans `requestId` — « ça a planté, voilà le
+   * code » devient une recherche, pas une enquête.
+   *
+   * Fourni **par l'appelant**, comme la date : ce tampon ne lit ni l'horloge ni
+   * l'`AsyncLocalStorage`, c'est ce qui permet de l'éprouver en énumérant.
+   */
+  readonly traceId: string | null;
 }
 
 /**

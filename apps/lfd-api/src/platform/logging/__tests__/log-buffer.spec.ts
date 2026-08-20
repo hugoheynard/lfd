@@ -47,3 +47,36 @@ describe("LogBuffer", () => {
     expect(new LogBuffer(10).recent(5)).toEqual([]);
   });
 });
+
+describe("le fil conducteur d'une ligne", () => {
+  it("garde le `traceId` fourni avec l'entrée", () => {
+    // Trois lignes d'erreur sans fil sont trois incidents possibles ; avec le
+    // même `traceId`, c'est un seul, qu'on suit du symptôme à la cause. Et
+    // c'est le même identifiant que le client a reçu dans `requestId`.
+    const buffer = new LogBuffer(10);
+    buffer.record({
+      at: "2026-08-19T12:00:00.000Z",
+      level: "error",
+      context: "OrdersController",
+      message: "échec",
+      traceId: "4bf92f3577b34da6a3ce929d0e0e4736",
+    });
+
+    expect(buffer.recent(1)[0]?.traceId).toBe("4bf92f3577b34da6a3ce929d0e0e4736");
+  });
+
+  it("accepte une ligne SANS fil — démarrage, tâche de fond", () => {
+    // Hors requête il n'y a pas de trace, et en inventer une relierait des
+    // lignes qui n'ont rien à voir.
+    const buffer = new LogBuffer(10);
+    buffer.record({
+      at: "2026-08-19T12:00:00.000Z",
+      level: "warn",
+      context: "Démarrage",
+      message: "clé absente",
+      traceId: null,
+    });
+
+    expect(buffer.recent(1)[0]?.traceId).toBeNull();
+  });
+});

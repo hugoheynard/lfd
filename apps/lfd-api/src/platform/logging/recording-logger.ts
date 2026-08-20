@@ -1,3 +1,4 @@
+import { currentRequestContext } from "../context/request-context.store.js";
 import { QuietBootLogger } from "../shared/quiet-boot-logger.js";
 import { RECENT_LOGS, type RecordedLog } from "./log-buffer.js";
 
@@ -9,6 +10,11 @@ import { RECENT_LOGS, type RecordedLog } from "./log-buffer.js";
  * jour où la plateforme saura enfin la capter. Le tampon n'est pas un
  * remplacement : c'est le seul moyen d'y accéder aujourd'hui depuis un
  * container Cloudflare (cf. {@link RECENT_LOGS}).
+ *
+ * Chaque ligne gardée porte le **`traceId`** de la requête qui l'a produite —
+ * le même que le client reçoit dans `requestId`. Sans lui, trois lignes
+ * d'erreur sont trois incidents possibles ; avec, c'est un seul, qu'on suit du
+ * premier symptôme jusqu'à sa cause.
  *
  * **Seuls `error` et `warn` sont gardés.** Un incident se lit dans ce qui a
  * échoué ou alerté ; tout garder ferait tourner un tampon de 300 lignes en
@@ -45,5 +51,7 @@ function entryOf(
     level,
     context: typeof last === "string" && !last.includes("\n") ? last : null,
     message: typeof message === "string" ? message : JSON.stringify(message),
+    // Lu ICI et pas dans le tampon : lui reste pur, et se teste en énumérant.
+    traceId: currentRequestContext()?.traceId ?? null,
   };
 }
