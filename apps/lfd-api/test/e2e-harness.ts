@@ -144,7 +144,25 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   await assertDatabaseReady(prisma);
   await ensureTestBucket();
 
-  const server = (): request.Agent => request.agent(app.getHttpServer());
+  // 🔴 On ÉCOUTE UNE FOIS, sur une adresse fixe pour toute la suite.
+  //
+  // `request.agent(app.getHttpServer())` faisait écouter puis refermer le
+  // serveur à chaque agent, sur un port éphémère différent. Entre la lecture de
+  // l'adresse et la connexion, il existe une fenêtre où le port est relâché — et
+  // un autre service local peut l'avoir repris. La requête part alors chez
+  // quelqu'un d'autre et rend un statut que l'application ne pourrait pas
+  // produire : un `301` sur `/me`, un `403` sur un administrateur qu'on vient de
+  // semer.
+  //
+  // C'est ce qui donnait au flake inter-suites son allure de hasard : une suite
+  // différente à chaque passage, toujours verte quand on la rejoue seule, et des
+  // symptômes qui n'accusaient jamais la bonne cause.
+  // On lie explicitement `127.0.0.1` : sans hôte, Node écoute aussi en IPv6 et
+  // `getUrl()` rend alors `http://[::1]:…`, que superagent résout autrement.
+  await app.listen(0, "127.0.0.1");
+  const baseUrl = await app.getUrl();
+
+  const server = (): request.Agent => request.agent(baseUrl);
 
   return {
     app,
@@ -170,7 +188,22 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       app.get(StaffAccessResolver).forgetAll();
       await resetStorage();
     },
-    close: () => app.close(),
+    // 🔴 On draine avant de FERMER, pour la même raison qu'avant de vider — et
+    // c'est le cas le plus vicieux des deux.
+    //
+    // Une suite qui se termine avec du travail en vol ferme son application ;
+    // la promesse, elle, continue et écrit dans la base PARTAGÉE pendant que la
+    // suite suivante tourne. Celle-ci a bien drainé — mais son propre traqueur,
+    // qui ne sait rien de l'application précédente. Résultat : une ligne
+    // apparaît de nulle part, dans une suite qui n'a rien demandé, et l'échec
+    // accuse un test innocent. `--forceExit` achève de rendre la chose muette.
+    //
+    // C'est le flake inter-suites : une suite différente à chaque passage,
+    // toujours verte quand on la rejoue seule.
+    close: async () => {
+      await background.whenIdle();
+      await app.close();
+    },
   };
 }
 
