@@ -37,7 +37,7 @@ flowchart LR
     end
 
     subgraph ext["Services externes"]
-        DB[("Prisma Postgres<br/>DATABASE_B2B_URL")]
+        DB[("Prisma Postgres<br/>DATABASE_LFD_URL")]
         A0["Auth0<br/>tenant PROD"]
         ST["Stripe<br/>(test mode)"]
         R2[("R2 / S3<br/>KBIS — optionnel")]
@@ -111,7 +111,7 @@ flowchart TB
     subgraph gh["GitHub — SOURCE UNIQUE"]
         direction LR
         subgraph ghs["🔒 Secrets (chiffrés, jamais lisibles)"]
-            S1["DATABASE_B2B_URL"]
+            S1["DATABASE_LFD_URL"]
             S2["STRIPE_SECRET_KEY"]
             S3["STRIPE_WEBHOOK_SECRET"]
             S4["STRIPE_PUBLISHABLE_KEY"]
@@ -158,14 +158,14 @@ flowchart TB
 ### Deux natures de secret, deux usages
 
 - **Secrets de _pipeline_** (`CLOUDFLARE_LFD_API_WORKER`, `CLOUDFLARE_ACCOUNT_ID`) : authentifient la CI auprès de Cloudflare (push image, deploy). Ne finissent **jamais** dans le container.
-- **Secrets de _runtime_** (`DATABASE_B2B_URL`, `STRIPE_*`, `AUTH0_M2M_*`, `STORAGE_*`) : consommés par NestJS à l'exécution. Poussés dans le **secret store du Worker**, puis relayés au container.
+- **Secrets de _runtime_** (`DATABASE_LFD_URL`, `STRIPE_*`, `AUTH0_M2M_*`, `STORAGE_*`) : consommés par NestJS à l'exécution. Poussés dans le **secret store du Worker**, puis relayés au container.
 
 ### Le relais Worker → container (le point clé)
 
 Un container Cloudflare **ne voit pas** automatiquement les secrets du Worker. Il faut les recopier explicitement dans `envVars` — c'est ce que fait `container/worker.ts` :
 
 ```ts
-const RUNTIME_KEYS = ["DATABASE_B2B_URL", "AUTH0_DOMAIN" /* … */] as const;
+const RUNTIME_KEYS = ["DATABASE_LFD_URL", "AUTH0_DOMAIN" /* … */] as const;
 
 function pickEnv(env: Env): Record<string, string> {
   const out: Record<string, string> = {};
@@ -193,7 +193,7 @@ Sans cette ligne `envVars`, NestJS démarrerait avec un `process.env` vide et pl
 
 | Nom (env NestJS)                                                                     | Nature GitHub                      | Obligatoire ? | Sert à                              | Absent ⇒                      |
 | ------------------------------------------------------------------------------------ | ---------------------------------- | ------------- | ----------------------------------- | ----------------------------- |
-| `DATABASE_B2B_URL`                                                                   | 🔒 Secret                          | **Oui**       | Connexion Prisma Postgres           | Boot échoue                   |
+| `DATABASE_LFD_URL`                                                                   | 🔒 Secret                          | **Oui**       | Connexion Prisma Postgres           | Boot échoue                   |
 | `AUTH0_DOMAIN`                                                                       | 📢 Variable (`B2B_AUTH0_DOMAIN`)   | **Oui**       | Vérif JWT client                    | Boot échoue                   |
 | `AUTH0_AUDIENCE`                                                                     | 📢 Variable (`B2B_AUTH0_AUDIENCE`) | **Oui**       | Audience API client                 | Boot échoue                   |
 | `AUTH0_ADMIN_AUDIENCE`                                                               | 📢 Variable                        | Non           | Vérif JWT **staff** (`/admin/*`)    | `/admin` refuse tout token    |
@@ -290,7 +290,7 @@ Chaque backend a sa **propre** base Postgres, jamais partagée :
 
 ```mermaid
 flowchart LR
-    B1["Backend B2B"] --> D1[("lfc_b2b<br/>DATABASE_B2B_URL")]
+    B1["Backend B2B"] --> D1[("lfc_b2b<br/>DATABASE_LFD_URL")]
     B2["Backend PIM"] --> D2[("lfc_pim<br/>PIM_DATABASE_URL → DATABASE_URL")]
     ADM["Surface /admin/* (même backend B2B)"] --> D1
 ```
@@ -314,7 +314,7 @@ Le schéma d'URL choisit le transport Prisma :
 
 - [ ] `CLOUDFLARE_LFD_API_WORKER` — token Cloudflare « Workers Scripts · Edit » + « Containers · Edit »
 - [ ] `CLOUDFLARE_ACCOUNT_ID`
-- [ ] `DATABASE_B2B_URL`
+- [ ] `DATABASE_LFD_URL`
 - [ ] `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
 - [ ] (optionnel) `AUTH0_M2M_CLIENT_ID`, `AUTH0_M2M_CLIENT_SECRET`
 - [ ] (optionnel) `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY`, `STORAGE_ENDPOINT`, `STORAGE_REGION`
@@ -352,7 +352,7 @@ Même patron, différences à connaître :
 |                            | B2B                                       | PIM                                                                 |
 | -------------------------- | ----------------------------------------- | ------------------------------------------------------------------- |
 | Worker/Dockerfile/wrangler | idem structure                            | idem structure                                                      |
-| DB (secret)                | `DATABASE_B2B_URL`                        | `PIM_DATABASE_URL` → env `DATABASE_URL`                             |
+| DB (secret)                | `DATABASE_LFD_URL`                        | `PIM_DATABASE_URL` → env `DATABASE_URL`                             |
 | Auth0 (variables)          | `B2B_AUTH0_DOMAIN` / `B2B_AUTH0_AUDIENCE` | `SUITE_AUTH0_DOMAIN` / `SUITE_AUTH0_AUDIENCE_PIM`                   |
 | Secrets spécifiques        | `STRIPE_*`, `STORAGE_*`, `AUTH0_M2M_*`    | `SHOPIFY_ADMIN_TOKEN`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET` |
 | Staff/audience admin       | oui (`AUTH0_ADMIN_AUDIENCE`)              | non                                                                 |

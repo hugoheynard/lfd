@@ -4,7 +4,7 @@
 #    besoin de pnpm-workspace.yaml + packages/*. À vérifier/forcer côté wrangler au
 #    1er `wrangler deploy` (option de build context) — c'est LE point à ajuster.
 #
-# Secrets RUNTIME (DATABASE_B2B_URL, Auth0, STRIPE_*) : PAS dans l'image → posés une
+# Secrets RUNTIME (DATABASE_LFD_URL, Auth0, STRIPE_*) : PAS dans l'image → posés une
 # fois via `wrangler secret put <NAME>` (ils arrivent comme variables d'env au Worker).
 
 # ---- build ----

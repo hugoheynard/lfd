@@ -66,7 +66,7 @@ Bounded contexts distincts, bases **physiquement séparées** :
 | ------------------- | --------------------------------------------------- | --------------------------------- |
 | Langage ubiquitaire | catalogue produit, SKU, canaux, fiche réglementaire | commerce, client pro, commande    |
 | Base                | db PIM                                              | db commerce (« La Folie Coffee ») |
-| Env de connexion    | `DATABASE_URL`                                      | `DATABASE_B2B_URL`                |
+| Env de connexion    | `DATABASE_URL`                                      | `DATABASE_LFD_URL`                |
 | `User` désigne      | le staff                                            | le client (customer)              |
 
 Un backend **ne lit jamais** la base de l'autre. La référence croisée se fait par

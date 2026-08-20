@@ -23,7 +23,7 @@ cette date (front → Auth0 → retour `/?code=…` → session).
 > transitent dans l'URL `/authorize`). Le seul secret du flux est le code
 > d'autorisation à usage unique + PKCE. Le **Client Secret** de l'app SPA n'est
 > **pas** utilisé (client public, PKCE). Ne jamais committer : le secret DB
-> (`DATABASE_B2B_URL`), qui n'a rien à voir avec Auth0.
+> (`DATABASE_LFD_URL`), qui n'a rien à voir avec Auth0.
 
 ⚠️ **Règle d'or** : l'audience doit être **identique au caractère près** à 3
 endroits — API Identifier (Auth0) · `auth.config.ts` (front) · `AUTH0_AUDIENCE`

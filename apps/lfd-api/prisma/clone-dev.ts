@@ -6,7 +6,7 @@
  * donc par PrismaClient des deux côtés. On lit les **scalaires** de chaque table
  * (aucune relation) et on réécrit dans l'ordre des clés étrangères.
  *
- * - Source : `CLONE_SOURCE_URL`, sinon le `DATABASE_B2B_URL` courant (le `.env`,
+ * - Source : `CLONE_SOURCE_URL`, sinon le `DATABASE_LFD_URL` courant (le `.env`,
  *   donc Accelerate). ⇒ lancer AVANT de basculer le `.env` sur la base locale.
  * - Cible : `CLONE_TARGET_URL`, sinon `DEV_DATABASE_URL`. **Refusée si ce n'est
  *   pas un Postgres direct local** (garde-fou : on n'écrase jamais une prod).
@@ -32,11 +32,11 @@ function isDirectPostgresUrl(url: string): boolean {
 }
 
 async function main(): Promise<void> {
-  const sourceUrl = process.env["CLONE_SOURCE_URL"] ?? process.env["DATABASE_B2B_URL"] ?? "";
+  const sourceUrl = process.env["CLONE_SOURCE_URL"] ?? process.env["DATABASE_LFD_URL"] ?? "";
   const targetUrl = process.env["CLONE_TARGET_URL"] ?? DEV_DATABASE_URL;
 
   if (sourceUrl === "") {
-    throw new Error("Source manquante : CLONE_SOURCE_URL, ou DATABASE_B2B_URL dans le .env.");
+    throw new Error("Source manquante : CLONE_SOURCE_URL, ou DATABASE_LFD_URL dans le .env.");
   }
   if (sourceUrl === targetUrl) {
     throw new Error("Source et cible identiques — refus (protection contre l'auto-écrasement).");

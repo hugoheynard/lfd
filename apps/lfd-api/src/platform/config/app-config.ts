@@ -81,7 +81,7 @@ export class AppConfig implements ShopifyCredentialsSource {
   private readonly production: boolean;
 
   constructor() {
-    this.database = required("DATABASE_B2B_URL");
+    this.database = required("DATABASE_LFD_URL");
     this.pimDatabase = required("DATABASE_PIM_URL");
     this.auth0DomainValue = required("AUTH0_DOMAIN");
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
@@ -129,7 +129,7 @@ export class AppConfig implements ShopifyCredentialsSource {
   }
 
   /**
-   * URL de connexion à la db commerce. Nommée `DATABASE_B2B_URL` — préfixée par
+   * URL de connexion à la db commerce. Nommée `DATABASE_LFD_URL` — préfixée par
    * app pour ne pas collisionner avec les autres bases (admin, PIM) si les env
    * se partagent un jour.
    *

@@ -29,7 +29,7 @@
    comme variables d'env au container :
    ```bash
    cd apps/lfd-api
-   pnpm exec wrangler secret put DATABASE_B2B_URL
+   pnpm exec wrangler secret put DATABASE_LFD_URL
    pnpm exec wrangler secret put STRIPE_SECRET_KEY
    pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET
    # + Auth0 (AUTH0_*), etc.

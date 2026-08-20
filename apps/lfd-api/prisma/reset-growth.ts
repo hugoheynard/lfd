@@ -16,9 +16,9 @@ import { SEED_EMAIL_DOMAIN, SEED_SUB_PREFIX } from "./seed-growth/personas.js";
  * exigent la suppression explicite ; Membership/Contact/OrderLine cascade).
  */
 async function main(): Promise<void> {
-  const connectionString = process.env["DATABASE_B2B_URL"];
+  const connectionString = process.env["DATABASE_LFD_URL"];
   if (connectionString === undefined || connectionString === "") {
-    throw new Error("DATABASE_B2B_URL manquant.");
+    throw new Error("DATABASE_LFD_URL manquant.");
   }
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
   try {

@@ -25,9 +25,9 @@ const EMAIL = process.env["SEED_EMAIL"] ?? "hheynard@gmail.com";
 const COMPANY_NAME = process.env["SEED_COMPANY"] ?? "LFC-TestComp-1";
 const SKIP_COMPANY = process.env["SEED_SKIP_COMPANY"] === "1";
 
-const url = process.env["DATABASE_B2B_URL"];
+const url = process.env["DATABASE_LFD_URL"];
 if (!url) {
-  throw new Error("DATABASE_B2B_URL manquante (.env) — impossible de seeder.");
+  throw new Error("DATABASE_LFD_URL manquante (.env) — impossible de seeder.");
 }
 
 const prisma = new PrismaClient({ accelerateUrl: url });

@@ -33,7 +33,7 @@ import type { RateLimiter } from "./edge-guard";
  * configuration lit réellement. Une troisième dérive échoue en CI.
  */
 const RUNTIME_KEYS = [
-  "DATABASE_B2B_URL",
+  "DATABASE_LFD_URL",
   // La base du référentiel produit : depuis B2c il vit dans cette image, avec
   // son propre client Prisma. Absente, l'application refuse de démarrer.
   "DATABASE_PIM_URL",

@@ -27,7 +27,7 @@
  */
 const DEFAULT_TEST_DATABASE_URL = "postgresql://lfc:lfc@localhost:5433/lfc_b2b_test";
 
-process.env["DATABASE_B2B_URL"] ??= DEFAULT_TEST_DATABASE_URL;
+process.env["DATABASE_LFD_URL"] ??= DEFAULT_TEST_DATABASE_URL;
 /**
  * Base **jetable** du référentiel — même conteneur, db à part, même raison que
  * ci-dessus. Requise depuis que le PIM vit dans ce processus : `AppConfig`
@@ -112,7 +112,7 @@ process.env["RECOMPUTE_TOKEN"] = TEST_RECOMPUTE_TOKEN;
 
 /** URL de la base de test, une fois le défaut ci-dessus appliqué. */
 export function testDatabaseUrl(): string {
-  return process.env["DATABASE_B2B_URL"] ?? DEFAULT_TEST_DATABASE_URL;
+  return process.env["DATABASE_LFD_URL"] ?? DEFAULT_TEST_DATABASE_URL;
 }
 
 /** Idem pour la base du référentiel. */
@@ -127,7 +127,7 @@ export function testPimDatabaseUrl(): string {
 export function testChildEnv(): NodeJS.ProcessEnv {
   return {
     ...process.env,
-    DATABASE_B2B_URL: testDatabaseUrl(),
+    DATABASE_LFD_URL: testDatabaseUrl(),
     DATABASE_PIM_URL: testPimDatabaseUrl(),
   };
 }

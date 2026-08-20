@@ -91,7 +91,7 @@ la production.
 
 | Secret                                                                            | Va vers                            | Notes                                                                              |
 | --------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
-| `DATABASE_B2B_URL`                                                                | backend B2B                        | forme `prisma+postgres://` (Accelerate)                                            |
+| `DATABASE_LFD_URL`                                                                | backend B2B                        | forme `prisma+postgres://` (Accelerate)                                            |
 | `DATABASE_PIM_URL`                                                                | backend PIM (comme `DATABASE_URL`) | renommé depuis `PIM_DATABASE_URL` le 2026-08-13                                    |
 | `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY`          | backend B2B                        | mode démo                                                                          |
 | `RESEND_MAILER_B2B_API_KEY`                                                       | backend B2B                        | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md)           |

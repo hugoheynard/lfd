@@ -55,7 +55,7 @@ async function createDatabaseIfMissing(): Promise<void> {
 function applyMigrations(): void {
   const result = spawnSync("prisma", ["migrate", "deploy"], {
     stdio: "inherit",
-    env: { ...process.env, DATABASE_B2B_URL: DEV_DATABASE_URL },
+    env: { ...process.env, DATABASE_LFD_URL: DEV_DATABASE_URL },
     shell: true,
   });
   if (result.status !== 0) {

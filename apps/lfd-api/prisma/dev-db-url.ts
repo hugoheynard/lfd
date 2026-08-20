@@ -4,7 +4,7 @@
  * `lfc_b2b_test` (jetable des tests). Schéma `postgresql://` ⇒ adapter `pg`
  * direct côté `PrismaService` (jamais Accelerate).
  *
- * Surchargeable par `DEV_DATABASE_B2B_URL` si le conteneur bouge.
+ * Surchargeable par `DEV_DATABASE_LFD_URL` si le conteneur bouge.
  */
 export const DEV_DATABASE_URL =
-  process.env["DEV_DATABASE_B2B_URL"] ?? "postgresql://lfc:lfc@localhost:5433/lfc_b2b_dev";
+  process.env["DEV_DATABASE_LFD_URL"] ?? "postgresql://lfc:lfc@localhost:5433/lfc_b2b_dev";

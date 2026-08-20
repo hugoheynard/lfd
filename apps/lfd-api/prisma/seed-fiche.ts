@@ -57,9 +57,9 @@ const SIGNING_UP = {
   time: "17:00",
 } as const;
 
-const url = process.env["DATABASE_B2B_URL"];
+const url = process.env["DATABASE_LFD_URL"];
 if (!url) {
-  throw new Error("DATABASE_B2B_URL manquante (.env) — impossible de seeder.");
+  throw new Error("DATABASE_LFD_URL manquante (.env) — impossible de seeder.");
 }
 
 /**
