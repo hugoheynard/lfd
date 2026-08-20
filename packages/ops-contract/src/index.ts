@@ -23,3 +23,6 @@ export type {
 
 export { createOpsReporter } from "./reporter.js";
 export type { OpsSignal, OpsSink, OpsReporter, OpsReporterOptions } from "./reporter.js";
+
+export { WEB_VITALS, isWebVitalName, VITAL_THRESHOLDS, VITAL_MAX, vitalVerdict } from "./vitals.js";
+export type { WebVitalName, WebVitalSample } from "./vitals.js";

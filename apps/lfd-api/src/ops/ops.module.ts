@@ -4,6 +4,8 @@ import { AppConfig } from "../platform/config/app-config.js";
 import { AdminHealthController } from "./health/admin-health.controller.js";
 import { Auth0ReadingsReader } from "./health/auth0-readings.reader.js";
 import { MailReadingsReader } from "./health/mail-readings.reader.js";
+import { VitalsController } from "./vitals/vitals.controller.js";
+import { VitalsStore } from "./vitals/vitals.store.js";
 import { DatabaseReadingsReader } from "./health/database-readings.reader.js";
 import { Auth0Probe, ResendProbe, ShopifyProbe, StripeProbe } from "./probes/external.probes.js";
 import { FrontendProbe } from "./probes/frontend.probe.js";
@@ -46,12 +48,16 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
  * les recréer ailleurs ferait deux vérités sur qui est staff.
  */
 @Module({
-  controllers: [AdminTrafficController, AdminHealthController],
+  // La collecte des vitals est la SEULE route publique d'OPS, et elle doit
+  // l'être : un visiteur de la boutique n'a pas de jeton, et c'est justement son
+  // expérience qu'on mesure. Ce qui la rend acceptable est écrit sur elle.
+  controllers: [AdminTrafficController, AdminHealthController, VitalsController],
   providers: [
     OpsHealthService,
     DatabaseReadingsReader,
     Auth0ReadingsReader,
     MailReadingsReader,
+    VitalsStore,
     // Le port est le jeton : la dérivation ne connaît que « la mémoire », et
     // c'est l'adaptateur Postgres qui sait dans quel schéma elle vit.
     { provide: StatusJournal, useClass: PrismaStatusJournal },

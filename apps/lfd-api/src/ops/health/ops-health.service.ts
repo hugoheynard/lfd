@@ -15,11 +15,13 @@ import { TOPOLOGY } from "../topology/topology.js";
 import { Auth0ReadingsReader } from "./auth0-readings.reader.js";
 import { DatabaseReadingsReader } from "./database-readings.reader.js";
 import { MailReadingsReader } from "./mail-readings.reader.js";
+import { vitalsReadings } from "./vitals-readings.js";
 import { deriveHealth, type NodeEvidence } from "./derive-health.js";
 import { ProbeRunner } from "../probes/probe-runner.service.js";
 import type { ProbeOutcome } from "../probes/probe.port.js";
 import { gatewayReadings, moduleReadings } from "./readings.js";
 import { StatusJournal } from "../journal/status-journal.port.js";
+import { VitalsStore } from "../vitals/vitals.store.js";
 
 /** La fenêtre sur laquelle on juge la santé. Assez courte pour être « en ce moment ». */
 const HEALTH_WINDOW_MINUTES = 5;
@@ -70,6 +72,7 @@ export class OpsHealthService {
     private readonly mail: MailReadingsReader,
     private readonly probes: ProbeRunner,
     private readonly journal: StatusJournal,
+    private readonly vitals: VitalsStore,
     private readonly clock: Clock,
   ) {}
 
@@ -103,6 +106,16 @@ export class OpsHealthService {
     // ARRIVENT. Ce n'est pas la même question, et c'est la seconde qui coûte
     // cher quand la réponse est non.
     evidence.set("resend", { readings: mailReadings });
+
+    // Les fronts étaient les seuls nœuds sans aucune mesure : leur sonde dit
+    // « servi », elle ne compte rien. Ces relevés-là viennent des navigateurs —
+    // la seule source qui parle de l'expérience réelle.
+    for (const node of TOPOLOGY.filter((one) => one.kind === "frontend")) {
+      const readings = vitalsReadings(this.vitals.percentiles(node.id, now.getTime()));
+      if (readings.length > 0) {
+        evidence.set(node.id, { ...evidence.get(node.id), readings });
+      }
+    }
 
     // Les sondes s'ajoutent SANS écraser ce qu'on savait déjà : un nœud peut
     // être à la fois sondé et observé par la gateway, et les deux angles se
