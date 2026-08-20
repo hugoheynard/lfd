@@ -1,0 +1,19 @@
+/* Ce que les fronts renvoient d'eux-mêmes : vitals et erreurs. Source seule. */
+{
+  // Mêmes flags stricts que les apps (calqués sur fold-ng). Lib **source** : pas
+  // d'émission — les apps consommatrices la compilent (AOT). Ce `tsc --noEmit`
+  // est un filet de types autonome ; le vrai contrôle des templates a lieu dans
+  // le build de chaque app.
+  "extends": "../../tsconfig.flags.frontend.json",
+  "compilerOptions": {
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"],
+  // Les specs sont type-checkées par ts-jest via `tsconfig.test.json` (qui
+  // étend celui-ci et ajoute les types jest) — les inclure ici ferait échouer
+  // ce filet sur `describe`/`expect`.
+  "exclude": ["node_modules", "**/*.spec.ts", "**/__tests__/**"]
+}

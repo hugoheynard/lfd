@@ -1,8 +1,8 @@
-import { ErrorHandler, provideAppInitializer } from '@angular/core';
-import type { EnvironmentProviders, Provider } from '@angular/core';
+import { ErrorHandler, provideAppInitializer } from "@angular/core";
+import type { EnvironmentProviders, Provider } from "@angular/core";
 // Import de TYPE seul : il s'efface à la compilation, donc il ne remet pas le
 // SDK dans le bundle initial — c'est ce qui permet de typer sans importer.
-import type { ErrorEvent as SentryErrorEvent } from '@sentry/angular';
+import type { ErrorEvent as SentryErrorEvent } from "@sentry/angular";
 
 /**
  * **Ce qui casse dans le navigateur d'un client**, et qu'on n'apprenait jamais.
@@ -73,7 +73,7 @@ export function provideSentry(
   dsn: string,
   release: string,
 ): readonly (Provider | EnvironmentProviders)[] {
-  if (dsn === '') {
+  if (dsn === "") {
     return [];
   }
   const handler = new DeferredErrorHandler();
@@ -89,7 +89,7 @@ export function provideSentry(
 }
 
 async function load(dsn: string, release: string, handler: DeferredErrorHandler): Promise<void> {
-  const Sentry = await import('@sentry/angular');
+  const Sentry = await import("@sentry/angular");
   Sentry.init({
     dsn,
     release,
@@ -111,7 +111,12 @@ async function load(dsn: string, release: string, handler: DeferredErrorHandler)
  * rien pour identifier.
  */
 function strip(event: SentryErrorEvent): SentryErrorEvent {
-  const { request, user: _user, ...rest } = event;
-  const url = request?.url;
-  return { ...rest, ...(url === undefined ? {} : { request: { url } }) };
+  // On reconstruit à partir d'une COPIE plutôt que de déstructurer pour écarter :
+  // un `user: _user` inutilisé se lit comme un oubli, alors que ces deux
+  // suppressions sont le cœur de la fonction.
+  const cleaned: SentryErrorEvent = { ...event };
+  const url = cleaned.request?.url;
+  delete cleaned.user;
+  delete cleaned.request;
+  return url === undefined ? cleaned : { ...cleaned, request: { url } };
 }

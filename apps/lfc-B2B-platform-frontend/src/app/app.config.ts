@@ -6,8 +6,7 @@ import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
 import { provideAuth } from './auth/auth.providers';
-import { provideSentry } from './ops/sentry';
-import { provideWebVitals } from './ops/web-vitals';
+import { provideSentry, provideWebVitals } from '@lfd/front-ops';
 
 /** L'identifiant de CE front dans la topologie OPS — la couture avec la carte. */
 const OPS_NODE = 'b2b-front';

@@ -1,7 +1,7 @@
-import { provideEnvironmentInitializer } from '@angular/core';
-import type { EnvironmentProviders } from '@angular/core';
-import { onCLS, onINP, onLCP, type Metric } from 'web-vitals';
-import { isWebVitalName, type WebVitalSample } from '@lfd/ops-contract';
+import { provideEnvironmentInitializer } from "@angular/core";
+import type { EnvironmentProviders } from "@angular/core";
+import { onCLS, onINP, onLCP, type Metric } from "web-vitals";
+import { isWebVitalName, type WebVitalSample } from "@lfd/ops-contract";
 
 /**
  * **Ce que les vraies personnes vivent**, renvoyé à notre API.
@@ -32,7 +32,7 @@ export function provideWebVitals(front: string, apiBaseUrl: string): Environment
   return provideEnvironmentInitializer(() => {
     // SSR et environnements sans navigateur : il n'y a rien à mesurer, et
     // `navigator` n'existe pas.
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    if (typeof window === "undefined" || typeof navigator === "undefined") {
       return;
     }
     startReporting(front, `${apiBaseUrl}/ops/vitals`);
@@ -61,16 +61,16 @@ function startReporting(front: string, endpoint: string): void {
     const body = JSON.stringify({ samples: pending.splice(0) });
     // Le type MIME compte : sans `application/json`, le beacon part en
     // `text/plain` et l'API le reçoit non analysé — donc vide, silencieusement.
-    navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }));
+    navigator.sendBeacon(endpoint, new Blob([body], { type: "application/json" }));
   };
 
   // `visibilitychange` et non `unload` : sur mobile, une page mise en arrière-plan
   // peut ne jamais recevoir d'événement de déchargement. C'est le seul moment
   // fiable pour dire au revoir.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
       flush();
     }
   });
-  window.addEventListener('pagehide', flush);
+  window.addEventListener("pagehide", flush);
 }

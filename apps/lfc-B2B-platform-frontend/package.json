@@ -26,14 +26,13 @@
     "@lfd/b2b-ui": "workspace:*",
     "@lfd/contracts": "workspace:*",
     "@lfd/endpoints": "workspace:*",
+    "@lfd/front-ops": "workspace:*",
     "@lfd/ops-contract": "workspace:*",
-    "@sentry/angular": "^10.70.0",
     "@stripe/stripe-js": "catalog:",
     "fold-ng": "catalog:",
     "qrcode-generator": "catalog:",
     "rxjs": "catalog:",
-    "tslib": "catalog:",
-    "web-vitals": "^6.1.1"
+    "tslib": "catalog:"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "catalog:",
