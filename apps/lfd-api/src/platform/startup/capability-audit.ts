@@ -25,6 +25,7 @@ export interface CapabilitySnapshot {
   readonly hasAdminAudience: boolean;
   readonly hasMailerKey: boolean;
   readonly hasMailerWebhookSecret: boolean;
+  readonly hasWebPushKeys: boolean;
   readonly hasStorage: boolean;
   readonly hasStripe: boolean;
   readonly hasClientBaseUrl: boolean;
@@ -107,6 +108,17 @@ const CHECKS: readonly Check[] = [
       "les e-mails partent, mais on n'apprend jamais lesquels ont rebondi — une adresse morte reste indiscernable d'une invitation ignorée",
     severity: "degraded",
     present: (s) => s.hasMailerWebhookSecret,
+  },
+  {
+    capability: "Notifications poussées",
+    setting: "VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY",
+    // Dégradé : la cloche sonne toujours DANS le back-office. Ce qu'on perd,
+    // c'est d'apprendre quelque chose sans avoir l'écran ouvert — le cas qui
+    // justifiait le téléphone.
+    consequence:
+      "la cloche fonctionne à l'écran, mais aucun téléphone ne vibre — on n'apprend rien sans avoir le back-office ouvert",
+    severity: "degraded",
+    present: (s) => s.hasWebPushKeys,
   },
   {
     capability: "Paiement",

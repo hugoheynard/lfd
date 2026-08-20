@@ -25,6 +25,21 @@ export abstract class StaffNotifier {
   abstract notify(notices: readonly StaffNotice[]): Promise<void>;
 }
 
+/**
+ * L'**écriture seule** de la cloche — la moitié de `StaffNotifier` qui persiste.
+ *
+ * Extraite pour que la poussée vers les téléphones puisse s'y composer sans
+ * entrer dans la persistance (SRP), et surtout pour la question à laquelle
+ * `notify` ne savait pas répondre : **lesquelles étaient nouvelles ?** Un fait
+ * rejoué ne crée aucune ligne, mais aurait tout de même fait vibrer les
+ * téléphones — l'anti-doublon de la cloche ne valait que pour l'écran.
+ *
+ * @returns les notices réellement **créées**, jamais celles écartées en double.
+ */
+export abstract class StaffNoticeStore {
+  abstract save(notices: readonly StaffNotice[]): Promise<readonly StaffNotice[]>;
+}
+
 /** La lecture de la cloche — séparée de l'émission (ISP). */
 export abstract class StaffNotificationReader {
   abstract recent(limit: number): Promise<StaffNotificationView[]>;

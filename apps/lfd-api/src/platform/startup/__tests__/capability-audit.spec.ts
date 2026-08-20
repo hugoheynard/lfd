@@ -9,6 +9,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasAdminAudience: true,
   hasMailerKey: true,
   hasMailerWebhookSecret: true,
+  hasWebPushKeys: true,
   hasStorage: true,
   hasStripe: true,
   hasClientBaseUrl: true,
@@ -90,6 +91,7 @@ describe("inventaire — aucun réglage optionnel oublié", () => {
     "PORT", // a un défaut
     "NODE_ENV", // a un défaut
     "APP_REVISION", // gravée dans l'image ; absente = build local, aucune capacité éteinte
+    "VAPID_SUBJECT", // a un défaut : notre propre adresse d'expédition, déjà surveillée
   ]);
 
   it("chaque optionalString d'AppConfig est inventorié ou exempté", () => {

@@ -1674,6 +1674,48 @@ model StaffNotification {
   @@schema("public")
 }
 
+/// L'**abonnement d'une installation** aux notifications poussées du back-office.
+///
+/// Une ligne = un navigateur sur un appareil, pas une personne : le même compte
+/// sur le téléphone et sur le poste fait deux abonnements, et c'est voulu — on
+/// prévient l'appareil qu'on a sous la main.
+///
+/// `endpoint` est l'identité, telle que la fabrique le navigateur : c'est l'URL
+/// du service de push (Apple, Google, Mozilla) à laquelle nous déposerons le
+/// message. Elle est **unique** parce qu'un même navigateur qui se réabonne doit
+/// remplacer son abonnement, pas en accumuler.
+///
+/// Les deux clés sont celles du navigateur, stockées telles quelles : elles
+/// chiffrent la charge de bout en bout, de sorte que le service de push
+/// transporte sans pouvoir lire.
+model StaffPushSubscription {
+  /// ULID (fourni par l'`IdGenerator`) : triable par le temps.
+  id String @id
+
+  /// L'installation. Longue (jusqu'au millier de caractères chez certains
+  /// services), d'où l'index sur un hachage plutôt que sur la valeur.
+  endpoint String @unique
+
+  /// Clé publique P-256 du navigateur, en base64url.
+  p256dh String
+  /// Secret d'authentification, en base64url.
+  auth   String
+
+  /// Le `sub` staff qui s'est abonné — un identifiant, pas un nom. Sert à
+  /// couper les abonnements de quelqu'un qui part, pas à cibler : la cloche est
+  /// commune à l'équipe.
+  staffSub String @map("staff_sub")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  /// Dernier envoi ACCEPTÉ par le service de push. Un abonnement muet depuis
+  /// des mois est un téléphone remplacé, pas une panne.
+  lastSentAt DateTime? @map("last_sent_at")
+
+  @@index([staffSub])
+  @@map("staff_push_subscriptions")
+  @@schema("public")
+}
+
 /// Le **brouillon** d'une commande saisie par l'équipe — une saisie interrompue,
 /// pas une commande incomplète.
 ///

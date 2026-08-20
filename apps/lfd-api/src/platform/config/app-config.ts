@@ -14,6 +14,7 @@ import {
   optionalString,
   optionalAnalyticsConfig,
   optionalStripeConfig,
+  optionalWebPushConfig,
   type R2StorageUsage,
   required,
 } from "./env-readers.js";
@@ -64,6 +65,7 @@ export class AppConfig implements ShopifyCredentialsSource {
   private readonly stripeValue: StripeConfig | null;
   private readonly analyticsValue: AnalyticsConfig | null;
   private readonly mailerValue: MailerConfig;
+  private readonly webPushValue: WebPushConfig | null;
   private readonly portValue: number;
   private readonly impersonation: DevImpersonationConfig | null;
   private readonly adminAudienceValue: string | null;
@@ -92,6 +94,7 @@ export class AppConfig implements ShopifyCredentialsSource {
     this.stripeValue = optionalStripeConfig();
     this.analyticsValue = optionalAnalyticsConfig();
     this.mailerValue = optionalMailerConfig();
+    this.webPushValue = optionalWebPushConfig();
     this.portValue = optionalPort("PORT", 3200);
     this.impersonation = optionalDevImpersonation();
     this.adminAudienceValue = optionalString("AUTH0_ADMIN_AUDIENCE");
@@ -261,6 +264,11 @@ export class AppConfig implements ShopifyCredentialsSource {
     return this.mailerValue;
   }
 
+  /** La paire VAPID, ou `null` — alors aucune notification n'est poussée. */
+  webPushConfig(): WebPushConfig | null {
+    return this.webPushValue;
+  }
+
   /** Port d'écoute de l'API. */
   port(): number {
     return this.portValue;
@@ -424,6 +432,20 @@ export interface Auth0ManagementCredentials {
  * pris, une demande de rappel déposée). Elle est distincte de `replyTo` : l'une
  * dit où l'équipe est prévenue, l'autre où un client répond.
  */
+/**
+ * De quoi signer un envoi **Web Push**.
+ *
+ * `publicKey` est publique par construction : elle voyage dans chaque
+ * abonnement de navigateur et sert au service de push à vérifier notre
+ * signature. `privateKey` ne quitte jamais le serveur.
+ */
+export interface WebPushConfig {
+  readonly publicKey: string;
+  readonly privateKey: string;
+  /** `mailto:` ou URL — comment nous joindre, exigé par la norme VAPID. */
+  readonly subject: string;
+}
+
 export interface MailerConfig {
   /** Clé Resend, ou `null` — alors le mailer tourne à blanc. */
   readonly apiKey: string | null;

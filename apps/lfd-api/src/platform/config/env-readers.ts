@@ -6,6 +6,7 @@ import type {
   DevImpersonationConfig,
   MailerConfig,
   StripeConfig,
+  WebPushConfig,
 } from "./app-config.js";
 
 /**
@@ -220,6 +221,36 @@ export function optionalMailerConfig(): MailerConfig {
     replyTo: optionalString("MAILER_REPLY_TO"),
     staffInbox: optionalString("MAILER_STAFF_INBOX"),
     webhookSecret: optionalString("RESEND_WEBHOOK_SECRET"),
+  };
+}
+
+/**
+ * La paire VAPID qui signe nos envois Web Push, ou `null`.
+ *
+ * Les deux clés vont ensemble ou aucune : une seule des deux est une paire
+ * cassée, pas une configuration partielle — le service de push refuserait
+ * chaque envoi, et l'écran d'abonnement offrirait un bouton qui échoue.
+ *
+ * `subject` doit être un `mailto:` ou une URL : la norme VAPID en fait le moyen
+ * de nous joindre quand nos envois posent problème. Le défaut reprend l'adresse
+ * d'expédition, qui est déjà la nôtre et déjà surveillée.
+ */
+export function optionalWebPushConfig(): WebPushConfig | null {
+  const publicKey = optionalString("VAPID_PUBLIC_KEY");
+  const privateKey = optionalString("VAPID_PRIVATE_KEY");
+
+  if (publicKey === null && privateKey === null) {
+    return null;
+  }
+  if (publicKey === null || privateKey === null) {
+    throw new Error(
+      "VAPID_PUBLIC_KEY et VAPID_PRIVATE_KEY vont ensemble : renseignez les deux, ou aucune.",
+    );
+  }
+  return {
+    publicKey,
+    privateKey,
+    subject: optionalString("VAPID_SUBJECT") ?? `mailto:${DEFAULT_FROM_ADDRESS}`,
   };
 }
 

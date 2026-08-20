@@ -221,6 +221,13 @@ export type {
 } from "./order-preflight.js";
 export type { StaffNotificationView, StaffNotificationsSummary } from "./staff-notification.js";
 export {
+  pushSubscriptionSchema,
+  pushUnsubscribeSchema,
+  type PushCapability,
+  type PushSubscriptionPayload,
+  type PushUnsubscribePayload,
+} from "./staff-push.js";
+export {
   accountAlertOverrideSchema,
   effectiveAlertRule,
   sameAlertRule,

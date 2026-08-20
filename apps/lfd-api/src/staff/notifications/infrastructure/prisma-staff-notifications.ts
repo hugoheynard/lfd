@@ -4,8 +4,8 @@ import { Injectable } from "@nestjs/common";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
+  StaffNoticeStore,
   StaffNotificationReader,
-  StaffNotifier,
   type StaffNotice,
 } from "../domain/ports/staff-notifier.js";
 
@@ -22,11 +22,16 @@ interface NotificationRow {
 }
 
 /**
- * Émission — idempotente par la **contrainte unique**, pas par un « existe-t-il
+ * Écriture — idempotente par la **contrainte unique**, pas par un « existe-t-il
  * déjà ? » applicatif que deux émissions concurrentes gagneraient toutes les deux.
+ *
+ * `createManyAndReturn` et non `createMany` : c'est la base qui sait lesquelles
+ * ont survécu au `skipDuplicates`, et personne d'autre. Le compte seul ne
+ * suffisait pas — il fallait savoir **lesquelles**, pour ne faire vibrer les
+ * téléphones que sur du nouveau.
  */
 @Injectable()
-export class PrismaStaffNotifier extends StaffNotifier {
+export class PrismaStaffNoticeStore extends StaffNoticeStore {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ids: IdGenerator,
@@ -34,14 +39,16 @@ export class PrismaStaffNotifier extends StaffNotifier {
     super();
   }
 
-  async notify(notices: readonly StaffNotice[]): Promise<void> {
+  async save(notices: readonly StaffNotice[]): Promise<readonly StaffNotice[]> {
     if (notices.length === 0) {
-      return;
+      return [];
     }
-    await this.prisma.staffNotification.createMany({
+    const created = await this.prisma.staffNotification.createManyAndReturn({
       data: notices.map((notice) => ({ id: this.ids.next(), ...notice })),
       skipDuplicates: true,
     });
+    const kept = new Set(created.map((row) => row.idempotencyKey));
+    return notices.filter((notice) => kept.has(notice.idempotencyKey));
   }
 }
 
