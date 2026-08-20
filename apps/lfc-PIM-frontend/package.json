@@ -22,6 +22,7 @@
     "@angular/forms": "catalog:",
     "@angular/platform-browser": "catalog:",
     "@angular/router": "catalog:",
+    "@lfd/front-ops": "workspace:*",
     "@lfd/pim-contracts": "workspace:*",
     "@lfd/suite-embed": "workspace:*",
     "fold-ng": "catalog:",

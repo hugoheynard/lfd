@@ -55,7 +55,20 @@ const banner =
   '// Produit par scripts/generate-api-config.mjs depuis l’environnement\n' +
   '// (.env en dev local, variables CI/Cloudflare en déployé).\n\n';
 
-const body = `export const API_BASE_URL_VALUE = ${JSON.stringify(apiBaseUrl)};\n`;
+// La collecte des vitals vit à la RACINE de l'API (`/ops/vitals`), pas sous le
+// préfixe du référentiel : elle appartient à OPS, pas au PIM. On retire donc le
+// `/pim` final — la dérivation est ici, à un seul endroit, plutôt que répétée
+// dans le code de l'app où elle passerait pour une bricole.
+const opsBaseUrl = apiBaseUrl.replace(/\/pim\/?$/, '');
+
+// Vide = Sentry n'est pas branché et l'app démarre sans lui. Publique par nature
+// (elle voyage dans le bundle) : ce n'est pas un secret, c'est une adresse.
+const sentryDsn = (process.env['SENTRY_DSN'] ?? fileVars['SENTRY_DSN'] ?? '').trim();
+
+const body =
+  `export const API_BASE_URL_VALUE = ${JSON.stringify(apiBaseUrl)};\n` +
+  `export const OPS_BASE_URL_VALUE = ${JSON.stringify(opsBaseUrl)};\n` +
+  `export const SENTRY_DSN_VALUE = ${JSON.stringify(sentryDsn)};\n`;
 
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, banner + body);

@@ -63,7 +63,16 @@ const banner =
   '// Produit par scripts/generate-api-config.mjs depuis l’environnement\n' +
   '// (.env en dev local, variables CI/Cloudflare en déployé).\n\n';
 
-const body = `export const B2B_API_BASE_VALUE = ${JSON.stringify(apiBaseUrl)};\n`;
+// Vide = Sentry n'est pas branché et l'app démarre sans lui. Publique par
+// nature (elle voyage dans le bundle) : ce n'est pas un secret, c'est une
+// adresse de dépôt. Facultative, donc PAS dans l'avertissement ci-dessus — une
+// alerte qui sonne à chaque build de dev pour un choix délibéré apprend à
+// ignorer les alertes.
+const sentryDsn = (process.env['SENTRY_DSN'] ?? fileVars['SENTRY_DSN'] ?? '').trim();
+
+const body =
+  `export const B2B_API_BASE_VALUE = ${JSON.stringify(apiBaseUrl)};\n` +
+  `export const SENTRY_DSN_VALUE = ${JSON.stringify(sentryDsn)};\n`;
 
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, banner + body);

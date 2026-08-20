@@ -24,6 +24,7 @@
     // workspace absent de cette liste casse donc le serveur de dev SEUL, et la CI
     // reste verte. C'est ce qui est arrivé à `@lfd/catalog-ui` le 2026-08-17.
     "paths": {
+      "@lfd/front-ops": ["../../packages/front-ops/src/index.ts"],
       "@lfd/b2b-ui/appointment": ["../../packages/b2b-ui/src/appointment/index.ts"],
       "@lfd/b2b-ui/cart": ["../../packages/b2b-ui/src/cart/index.ts"],
       "@lfd/b2b-ui/catalog": ["../../packages/b2b-ui/src/catalog/index.ts"],

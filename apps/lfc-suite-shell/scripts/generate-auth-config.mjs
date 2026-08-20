@@ -52,7 +52,11 @@ const KEYS = [
   'SUITE_AUTH0_AUDIENCE_B2B',
   'SUITE_AUTH0_AUDIENCE_B2B_ADMIN',
 ];
-const values = Object.fromEntries(KEYS.map((key) => [key, read(key)]));
+// Réglage FACULTATIF : son absence éteint une fonction, elle ne casse rien —
+// il ne figure donc pas dans l'avertissement des variables manquantes.
+const OPTIONAL_KEYS = ['SENTRY_DSN'];
+
+const values = Object.fromEntries([...KEYS, ...OPTIONAL_KEYS].map((key) => [key, read(key)]));
 
 const missing = KEYS.filter((key) => values[key] === '');
 if (missing.length > 0) {
@@ -76,6 +80,9 @@ const body =
   `    b2b: ${JSON.stringify(values.SUITE_AUTH0_AUDIENCE_B2B)},\n` +
   `    b2bAdmin: ${JSON.stringify(values.SUITE_AUTH0_AUDIENCE_B2B_ADMIN)},\n` +
   '  },\n' +
+  // Vide = Sentry n'est pas branché et l'app démarre sans lui. Publique par
+  // nature (elle voyage dans le bundle) : ce n'est pas un secret.
+  `  sentryDsn: ${JSON.stringify(values.SENTRY_DSN)},\n` +
   '} as const;\n';
 
 mkdirSync(dirname(outPath), { recursive: true });

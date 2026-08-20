@@ -23,6 +23,7 @@
     "@angular/router": "catalog:",
     "@auth0/auth0-angular": "catalog:",
     "@lfd/endpoints": "workspace:*",
+    "@lfd/front-ops": "workspace:*",
     "@lfd/suite-embed": "workspace:*",
     "fold-ng": "catalog:",
     "rxjs": "catalog:",

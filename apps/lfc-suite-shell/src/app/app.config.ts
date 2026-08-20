@@ -3,7 +3,10 @@ import { provideFoldCommonLabels } from "fold-ng";
 import { provideHttpClient, withFetch } from "@angular/common/http";
 import { provideRouter, withComponentInputBinding } from "@angular/router";
 
+import { provideSentry } from "@lfd/front-ops";
+
 import { routes } from "./app.routes";
+import { AUTH_ENV } from "./auth/auth.env.generated";
 import { provideSuiteAuth } from "./auth/auth.providers";
 import { DEV_BYPASS_AUTH } from "./auth/dev-flags";
 
@@ -16,8 +19,16 @@ import { DEV_BYPASS_AUTH } from "./auth/dev-flags";
  * `false` en prod → `provideSuiteAuth()` réintégré et DCE retire la branche
  * vide) : ni SDK, ni checkSession, ni placeholder-clientId qui pédale.
  */
+/** L'identifiant de CE front dans la topologie OPS — la couture avec la carte. */
+const OPS_NODE = "suite-shell";
+
 export const appConfig: ApplicationConfig = {
   providers: [
+    // Sentry SEUL, pas de vitals : le shell n'appelle aucune API — il héberge
+    // des iframes, et ce sont elles qui rapportent leur propre expérience. Lui
+    // donner une adresse d'API pour trois nombres ajouterait une variable à la
+    // chaîne de déploiement pour mesurer un cadre.
+    ...provideSentry(AUTH_ENV.sentryDsn, OPS_NODE),
     // Les quatre mots que fold dit de lui-même, traduits UNE fois. Sans ce
     // fournisseur, chaque champ répétait `optionalLabel="facultatif"` (25 fois
     // dans 9 fichiers), et « More information » partait en anglais au lecteur

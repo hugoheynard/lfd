@@ -8,6 +8,9 @@ import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/
 import { provideRouter, withComponentInputBinding, withRouterConfig } from '@angular/router';
 import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 
+import { provideSentry, provideWebVitals } from '@lfd/front-ops';
+
+import { B2B_API_BASE_VALUE, SENTRY_DSN_VALUE } from './api/api.env.generated';
 import { routes } from './app.routes';
 import { provideStaffAuth } from './auth/auth.providers';
 import { staffAuthInterceptor } from './auth/staff-auth.interceptor';
@@ -15,8 +18,15 @@ import { SuiteEmbed } from './suite-embed/suite-embed';
 
 // App browser-only (pas de SSR — la suite est CSR). HttpClient en mode `fetch`
 // pour appeler la surface `/admin/*` du backend B2B.
+/** L'identifiant de CE front dans la topologie OPS — la couture avec la carte. */
+const OPS_NODE = 'b2b-admin-front';
+
 export const appConfig: ApplicationConfig = {
   providers: [
+    // Ce que l'équipe vit vraiment sur cet écran, et ce qui casse dans son
+    // navigateur : deux choses qu'aucune sonde ne peut constater du dehors.
+    provideWebVitals(OPS_NODE, B2B_API_BASE_VALUE),
+    ...provideSentry(SENTRY_DSN_VALUE, OPS_NODE),
     // Les quatre mots que fold dit de lui-même, traduits UNE fois. Sans ce
     // fournisseur, chaque champ répétait `optionalLabel="facultatif"` (25 fois
     // dans 9 fichiers), et « More information » partait en anglais au lecteur
