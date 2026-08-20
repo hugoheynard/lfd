@@ -40,14 +40,14 @@ secrets sont ceux qu'on croit.
 
 ## 2. Les URL, et lesquelles doivent résoudre
 
-| Variable               | Valeur                             | Doit résoudre ?                                    |
-| ---------------------- | ---------------------------------- | -------------------------------------------------- |
-| `B2B_API_BASE_URL`     | `…gateway…workers.dev/api/b2b`     | **oui** — appelée par 2 fronts                     |
-| `PIM_API_BASE_URL`     | `…gateway…workers.dev/api/pim`     | **oui**                                            |
-| `LFD_BACKOFFICE_URL`   | `https://lfd-backoffice.pages.dev` | oui — liens dans les e-mails staff                 |
-| `B2B_CLIENT_BASE_URL`  | `https://lfc-b2b-eu7.pages.dev`    | **oui** — liens de création de mot de passe client |
-| `AUTH0_*_AUDIENCE`     | `https://api-b2b.lafoliedouce.eu…` | **non** — ce sont des **identifiants**             |
-| `B2B_CATALOG_PUSH_URL` | `…gateway…/api/b2b/catalog/ingest` | **oui** — le PIM y pousse le catalogue             |
+| Variable               | Valeur                                                 | Doit résoudre ?                                    |
+| ---------------------- | ------------------------------------------------------ | -------------------------------------------------- |
+| `LFD_API_GATEWAY_URL`  | `https://lfd-gateway.lafoliedouce.workers.dev/api/b2b` | **oui** — compilée DANS les 2 fronts               |
+| `PIM_API_BASE_URL`     | `…gateway…workers.dev/api/pim`                         | **oui**                                            |
+| `LFD_BACKOFFICE_URL`   | `https://lfd-backoffice.pages.dev`                     | oui — liens dans les e-mails staff                 |
+| `B2B_CLIENT_BASE_URL`  | `https://lfc-b2b-eu7.pages.dev`                        | **oui** — liens de création de mot de passe client |
+| `AUTH0_*_AUDIENCE`     | `https://api-b2b.lafoliedouce.eu…`                     | **non** — ce sont des **identifiants**             |
+| `B2B_CATALOG_PUSH_URL` | `…gateway…/api/b2b/catalog/ingest`                     | **oui** — le PIM y pousse le catalogue             |
 
 ⚠️ **La distinction de la dernière ligne est celle qui se perd.** Une audience
 Auth0 est une chaîne d'identification, pas une adresse à joindre. Ces domaines

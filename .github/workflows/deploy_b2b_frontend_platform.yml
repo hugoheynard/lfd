@@ -16,7 +16,7 @@ name: deploy_b2b_frontend_platform
 # Plus four repo VARIABLES (Settings → Secrets and variables → Actions →
 # *Variables* tab — NOT secrets: it's the SPA's PUBLIC Auth0 config, it ships in
 # the browser bundle). They feed generate-auth-config.mjs at build time:
-#   B2B_AUTH0_DOMAIN · B2B_AUTH0_CLIENT_ID · B2B_AUTH0_AUDIENCE · B2B_API_BASE_URL
+#   B2B_AUTH0_DOMAIN · B2B_AUTH0_CLIENT_ID · B2B_AUTH0_AUDIENCE · LFD_API_GATEWAY_URL
 # The build runs HERE (GitHub Actions), then wrangler only UPLOADS the static
 # output — so these live in Actions, not in Cloudflare Pages env vars.
 
@@ -81,7 +81,7 @@ jobs:
           AUTH0_DOMAIN: ${{ vars.B2B_AUTH0_DOMAIN }}
           AUTH0_CLIENT_ID: ${{ vars.B2B_AUTH0_CLIENT_ID }}
           AUTH0_AUDIENCE: ${{ vars.B2B_AUTH0_AUDIENCE }}
-          API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
+          API_BASE_URL: ${{ vars.LFD_API_GATEWAY_URL }}
           # Origine de l'app ADMIN — le QR de retrait que ce front affiche pointe
           # vers le back-office, puisque c'est le staff qui le scanne. Absente,
           # le front n'affiche AUCUN code plutôt qu'un code menant nulle part.
