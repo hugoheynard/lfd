@@ -186,10 +186,67 @@ D'où l'ordre retenu, **backend d'abord** :
 | **B1** | Les **deux gates** (frontières de contexte, jointures inter-schéma)                                                                     | nul                          | —          |
 | **B2** | Un processus, deux clients Prisma, **deux bases inchangées**. Le PIM devient `pim/`, le fil devient un port, les deux audiences restent | faible                       | oui        |
 | **B3** | `b2b/catalog/` fond — la parité reste en garde-fou explicite                                                                            | faible                       | oui        |
-| **B4** | Une base, quatre schémas                                                                                                                | moyen — migration de données | par dump   |
+| **B4** | Une base, **un schéma par besoin** — c'est désormais LA stratégie (cf. ci-dessous), plus une option                                     | moyen — migration de données | par dump   |
 | **B5** | T1→T3, puis l'audience unique                                                                                                           | moyen                        | non        |
 | **B6** | Le front — PIM greffé sur l'admin, shell réduit au registre                                                                             | faible                       | oui        |
 | **B7** | `C7` — bascule du front client sur l'API                                                                                                | moyen                        | non        |
+
+### La stratégie retenue : une base, un schéma par besoin
+
+**Tranché le 2026-08-20.** B4 n'est plus une consolidation qu'on envisage : c'est
+la règle de rangement des données de la suite. Une base, et un schéma par
+besoin.
+
+L'origine est concrète. Le schéma `ops` a été créé pour donner à la carte de
+santé sa mémoire ; en le posant à côté de `public` et de `growth`, on a constaté
+qu'on ne créait pas une exception, on appliquait un patron. Le référentiel, lui,
+était resté dans une base séparée par **héritage** — parce qu'il venait d'une
+autre application — et non par décision.
+
+| Schéma   | Ce qu'il porte                                              |
+| -------- | ----------------------------------------------------------- |
+| `public` | le commerce B2B — sociétés, personnes, commandes, catalogue |
+| `growth` | prospection et rendez-vous                                  |
+| `ops`    | la mémoire de l'observabilité — statuts, courrier, webhooks |
+| `pim`    | le référentiel produit — **à faire, c'est B4**              |
+
+**Ce que ça achète, et qu'aucune paire de bases ne donnera jamais :** une
+transaction peut traverser deux schémas, jamais deux bases ; une jointure aussi.
+Plus un seul pool de connexions au lieu de deux, un seul historique de
+migrations, et un compteur d'opérations qui couvre enfin **tout** ce qui tire sur
+le forfait (cf. `architecture-ops-ecosystem-health.md` §19, dont le trou de
+comptage se referme du même geste).
+
+**Ce que ça n'achète pas :** rien sur la facture. Les schémas ne sont pas une
+unité de facturation, et mille bases sont incluses au forfait. Qui range ses
+données par base pour économiser se trompe de raison — c'est écrit au §19, et
+c'est ce qui rend la vraie raison lisible.
+
+#### Ce que B4 touche, concrètement
+
+- les **seize modèles** de `prisma/pim/schema.prisma` rejoignent le schéma
+  principal, marqués `@@schema("pim")` — Prisma multi-schéma n'admet qu'une
+  source de données ;
+- **un client au lieu de deux** : `PimPrismaService` disparaît, et les dépôts du
+  référentiel injectent `PrismaService` ;
+- `DATABASE_PIM_URL`, `prisma.pim.config.ts`, la clé du Worker, la ligne du
+  workflow et l'entrée de l'inventaire des capacités s'en vont ensemble ;
+- la table modèle → schéma de `schema-ops.counter.ts` gagne seize entrées, et le
+  test de parité l'exige — donc ça ne peut pas être oublié ;
+- une **migration de données** : dump du `public` de `lfc_pim`, restauration
+  dans le schéma `pim` de la base principale.
+
+#### ⚠️ Tant que ce n'est pas fait
+
+`DATABASE_PIM_URL` reste `required()` au démarrage : **écrire une stratégie ne
+change pas un contrôle de boot.** Le secret doit donc être posé pour tout
+déploiement antérieur à B4.
+
+#### Quand
+
+**Après B2e**, pas avec. La bascule du week-end a déjà sa séquence et son retour
+arrière ; y ajouter une migration de données multiplierait les façons d'échouer
+un même soir, et rendrait le diagnostic ambigu si quelque chose bronche.
 
 ### B2 n'est PAS incrémental par contexte
 

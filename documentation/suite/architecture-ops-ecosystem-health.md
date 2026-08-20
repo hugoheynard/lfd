@@ -699,11 +699,17 @@ Un schéma Postgres est un **espace de noms** : ni quota, ni compteur, ni ligne 
 facture. Dix schémas ou un seul, la facture est identique. Les **bases** non plus
 ne coûtent rien — mille sont incluses.
 
-C'est une correction utile pour B4 (« une base, quatre schémas ») : cette
-consolidation ne se justifie **pas** par le prix. Ses raisons restent les
-bonnes — une transaction peut traverser deux schémas, jamais deux bases ; une
-jointure aussi. Le seul levier sur la facture est le **nombre d'appels ORM
-émis**.
+C'est une correction utile pour B4 : cette consolidation ne se justifie **pas**
+par le prix. Ses raisons restent les bonnes — une transaction peut traverser deux
+schémas, jamais deux bases ; une jointure aussi. Le seul levier sur la facture
+est le **nombre d'appels ORM émis**.
+
+**Depuis le 2026-08-20, c'est la stratégie retenue** : une base, un schéma par
+besoin (`public`, `growth`, `ops`, et `pim` à venir). Le détail et ce que B4
+touche vivent dans `architecture-topologie-apps.md`. Deux conséquences ici : le
+**trou de comptage** ci-dessous se referme du même geste, et `DATABASE_PIM_URL`
+reste malgré tout `required()` au démarrage **tant que la migration n'est pas
+faite** — écrire une stratégie ne change pas un contrôle de boot.
 
 ### Pourquoi compter chez nous
 
@@ -1220,7 +1226,7 @@ section qui porte le raisonnement.
 
 | Geste                                                         | Sans lui                                                               | Où              |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------- |
-| `DATABASE_PIM_URL` en Secret GitHub                           | le container ne démarre pas                                            | Secrets         |
+| `DATABASE_PIM_URL` en Secret GitHub — **jusqu'à B4** (§19)    | le container ne démarre pas                                            | Secrets         |
 | `RESEND_WEBHOOK_SECRET` (après création du webhook, §26)      | la route de retour refuse tout                                         | Secrets         |
 | `CLOUDFLARE_ANALYTICS_TOKEN`                                  | OPS rend la répétition, et le dit                                      | Secrets         |
 | Périmètre `read:stats` sur l'app M2M Auth0 (§24 — facultatif) | on affiche les identités, un **majorant**, au lieu des actifs facturés | dashboard Auth0 |
