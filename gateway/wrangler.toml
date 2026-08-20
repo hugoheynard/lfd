@@ -36,9 +36,17 @@ port = 8787
 # Absents en `wrangler dev` (le routage local passe par les sous-domaines
 # `*.localhost` et des URL publiques) : `Env` les déclare optionnels, et un
 # binding manquant rend un 503 explicite plutôt qu'un repli silencieux.
+# POUSSÉE 2 SUR 2 du renommage du Worker (2026-08-20). La 1 a créé `lfd-api` et
+# laissé `lfc-b2b-backend` servir ; celle-ci fait basculer le trafic.
+#
+# ⚠️ La sonde de fin du déploiement backend interroge `${B2B_API_BASE_URL}/health`
+#    — donc À TRAVERS cette passerelle. Tant que le binding vise l'ancien Worker,
+#    elle lit l'ancienne révision et le workflow échoue APRÈS avoir tout réussi.
+#    C'est ce qui s'est passé à 15h36 : image poussée, secrets synchronisés, base
+#    migrée, `lfd-api` déployé — et la sonde qui regarde ailleurs.
 [[services]]
 binding = "B2B_BACKEND"
-service = "lfc-b2b-backend"
+service = "lfd-api"
 
 
 # ── Observation du trafic (OPS J1) ─────────────────────────────────────────────
