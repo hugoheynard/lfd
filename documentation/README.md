@@ -94,13 +94,14 @@ lignes et les trois pièges qui reviennent.
 
 ## Suite — le shell, la passerelle, l'exploitation
 
-| Doc                                                                                          | État | De quoi ça parle                                                                                                                                                         |
-| -------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`suite/architecture-topologie-apps.md`](suite/architecture-topologie-apps.md)               | 📐   | 🔴 **Fédération abandonnée le 2026-08-20** (le shell est retiré ; la règle de découpage, elle, reste). Backend par propriété des données, front par audience × appareil. |
-| [`suite/architecture-suite-gateway-scaling.md`](suite/architecture-suite-gateway-scaling.md) | 🟡   | Passerelle Cloudflare, sous-domaines, backends conteneurisés. Elle SURVIT au retrait du shell : c'est la frontière de confiance, pas une pièce de la suite.              |
-| [`suite/architecture-iam-access.md`](suite/architecture-iam-access.md)                       | 📐   | **IAM (« Access »)** : les personnes de la suite et leurs droits. Auth0 n'authentifie plus que ; les droits passent en base. Absorbe `staff_users`. Rien n'est codé.     |
-| [`suite/architecture-ops-ecosystem-health.md`](suite/architecture-ops-ecosystem-health.md)   | 📐   | L'app OPS « Ecosystem Health ». Rien n'est codé.                                                                                                                         |
-| [`suite/CONTAINERIZE-NOTES.md`](suite/CONTAINERIZE-NOTES.md)                                 | 🟡   | Notes de conteneurisation.                                                                                                                                               |
+| Doc                                                                                                  | État | De quoi ça parle                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`suite/architecture-topologie-apps.md`](suite/architecture-topologie-apps.md)                       | 📐   | 🔴 **Fédération abandonnée le 2026-08-20** (le shell est retiré ; la règle de découpage, elle, reste). Backend par propriété des données, front par audience × appareil. |
+| [`suite/architecture-suite-gateway-scaling.md`](suite/architecture-suite-gateway-scaling.md)         | 🟡   | Passerelle Cloudflare, sous-domaines, backends conteneurisés. Elle SURVIT au retrait du shell : c'est la frontière de confiance, pas une pièce de la suite.              |
+| [`suite/architecture-cloisonnement-des-schemas.md`](suite/architecture-cloisonnement-des-schemas.md) | 🟡   | Qui a le droit de lire quel schéma. Le référentiel est cloisonné (fait) ; les trois autres blocs ne le sont pas. La question ouverte est : qui possède `public`.         |
+| [`suite/architecture-iam-access.md`](suite/architecture-iam-access.md)                               | 📐   | **IAM (« Access »)** : les personnes de la suite et leurs droits. Auth0 n'authentifie plus que ; les droits passent en base. Absorbe `staff_users`. Rien n'est codé.     |
+| [`suite/architecture-ops-ecosystem-health.md`](suite/architecture-ops-ecosystem-health.md)           | 📐   | L'app OPS « Ecosystem Health ». Rien n'est codé.                                                                                                                         |
+| [`suite/CONTAINERIZE-NOTES.md`](suite/CONTAINERIZE-NOTES.md)                                         | 🟡   | Notes de conteneurisation.                                                                                                                                               |
 
 ## TODO et dette
 
