@@ -91,6 +91,13 @@ catalog:
   "@auth0/auth0-angular": 2.11.0
   "@stripe/stripe-js": 9.13.0
   qrcode-generator: 2.0.4
+  # Observabilité des fronts. Déclarées ICI parce que `@lfd/front-ops` est
+  # consommé en SOURCE (mapping tsconfig) : ses dépendances doivent être
+  # résolvables depuis chaque app, donc chacune les déclare — même raison que
+  # `qrcode-generator` pour `@lfd/b2b-ui`. Le catalogue garantit qu'elles ne
+  # divergent pas d'une app à l'autre.
+  "@sentry/angular": 10.70.0
+  web-vitals: 5.3.0
   # S3/R2 : @lfd/storage et l'API doivent présigner avec le même client.
   # Cloudflare : la passerelle était en workers-types ^4 pendant que l'API
   # était en ^5 — wrangler réclamait ^5, d'où l'avertissement de pair non

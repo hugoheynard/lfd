@@ -25,10 +25,12 @@
     "@lfd/front-ops": "workspace:*",
     "@lfd/pim-contracts": "workspace:*",
     "@lfd/suite-embed": "workspace:*",
+    "@sentry/angular": "catalog:",
     "fold-ng": "catalog:",
     "qrcode-generator": "catalog:",
     "rxjs": "catalog:",
-    "tslib": "catalog:"
+    "tslib": "catalog:",
+    "web-vitals": "catalog:"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "catalog:",

@@ -18,9 +18,9 @@
   },
   "dependencies": {
     "@lfd/ops-contract": "workspace:*",
-    "@sentry/angular": "^10.19.0",
+    "@sentry/angular": "catalog:",
     "tslib": "catalog:",
-    "web-vitals": "^5.1.0"
+    "web-vitals": "catalog:"
   },
   "peerDependencies": {
     "@angular/core": "^22.0.0"

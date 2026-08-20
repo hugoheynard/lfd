@@ -28,11 +28,13 @@
     "@lfd/endpoints": "workspace:*",
     "@lfd/front-ops": "workspace:*",
     "@lfd/ops-contract": "workspace:*",
+    "@sentry/angular": "catalog:",
     "@stripe/stripe-js": "catalog:",
     "fold-ng": "catalog:",
     "qrcode-generator": "catalog:",
     "rxjs": "catalog:",
-    "tslib": "catalog:"
+    "tslib": "catalog:",
+    "web-vitals": "catalog:"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "catalog:",

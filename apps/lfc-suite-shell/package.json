@@ -25,9 +25,11 @@
     "@lfd/endpoints": "workspace:*",
     "@lfd/front-ops": "workspace:*",
     "@lfd/suite-embed": "workspace:*",
+    "@sentry/angular": "catalog:",
     "fold-ng": "catalog:",
     "rxjs": "catalog:",
-    "tslib": "catalog:"
+    "tslib": "catalog:",
+    "web-vitals": "catalog:"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "catalog:",
