@@ -1,141 +1,48 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter, map } from 'rxjs';
-import {
-  FoldNavLayoutComponent,
-  FoldPageLayoutComponent,
-  FoldViewNavComponent,
-  type FoldIconName,
-  type FoldViewNavItem,
-} from 'fold-ng';
-
-import { narrowViewport } from '../../shared/viewport/narrow-viewport';
-
-/** Un onglet, plus ce que la page doit en dire — titre et intro vivent ICI. */
-interface PimTab extends FoldViewNavItem {
-  readonly link: string;
-  /** Le fragment qui allume l'onglet, quand il diffère du lien. */
-  readonly match?: string;
-  readonly icon: FoldIconName;
-  readonly description: string;
-}
-
-/** La vue par défaut — `/pim` y redirige, et c'est le repli du calcul. */
-const PRODUITS: PimTab = {
-  key: 'produits',
-  label: 'Produits',
-  link: 'produits',
-  icon: 'grid',
-  description: 'Le catalogue : ce qu’on vend, sous quelle forme et à quel prix.',
-};
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { FoldNavLayoutComponent, FoldViewNavComponent, type FoldViewNavItem } from 'fold-ng';
 
 /**
- * Les vues du référentiel.
+ * Les vues du **PIM**.
  *
- * C'était un **rail** quand le référentiel était une app ; c'est une barre
- * d'onglets depuis qu'il est un module. Le rail de l'application n'a qu'une
- * entrée pour lui — « Référentiel » — et ses vues se rangent dessous, comme
- * celles du poste de travail commercial. Deux rails superposés, c'était
- * exactement ce que l'iframe imposait et qu'on ne veut plus.
+ * C'était un rail d'application quand le PIM en était une ; c'est le rail
+ * TERTIAIRE de fold — app → workspace → vues en page — depuis qu'il est un
+ * module. Le rail de l'application n'a qu'une entrée pour lui, et ses vues se
+ * rangent dessous, comme celles des Réglages.
  *
- * **Une seule table**, comme pour Commercial : elle alimente la barre ET
- * l'en-tête de page, ce qui rend impossible qu'un titre et son onglet divergent.
+ * La table ne porte plus ni titre ni intro : chaque vue est une page complète
+ * qui écrit les siens, avec ses actions. Les répéter ici les affichait deux
+ * fois — c'était l'ancien prix de la barre d'onglets horizontale, qui devait
+ * bien annoncer où l'on venait d'arriver.
  */
-const TABS: PimTab[] = [
-  PRODUITS,
-  {
-    key: 'categories',
-    label: 'Catégories',
-    link: 'categories',
-    icon: 'folder',
-    description: 'L’arborescence qui range le catalogue, et que la boutique suit.',
-  },
-  {
-    key: 'tva',
-    label: 'Régimes de TVA',
-    link: 'tva',
-    icon: 'sliders',
-    description: 'Les taux applicables, et ce qu’ils qualifient.',
-  },
-  {
-    key: 'collections',
-    label: 'Collections',
-    link: 'collections',
-    icon: 'org-chart',
-    description: 'Des regroupements transverses, indépendants de l’arborescence.',
-  },
-  {
-    key: 'publication',
-    label: 'Publication',
-    link: 'publication',
-    icon: 'upload',
-    description: 'Ce qui part vers les canaux, et ce qui en revient.',
-  },
-  {
-    key: 'emplacements',
-    label: 'Emplacements',
-    link: 'emplacements',
-    icon: 'company',
-    description: 'Où l’on produit, où l’on retire.',
-  },
-  {
-    key: 'integration',
-    label: 'Intégrations',
-    link: 'integration',
-    icon: 'shopify',
-    description: 'Les canaux branchés, leur état et leurs réconciliations.',
-  },
-  {
-    key: 'documentation',
-    label: 'Documentation',
-    link: 'documentation',
-    icon: 'library',
-    description: 'Le mode d’emploi du référentiel, écrit pour ceux qui le tiennent.',
-  },
-  {
-    key: 'reglages',
-    label: 'Réglages',
-    link: 'reglages',
-    icon: 'settings',
-    description: 'Ce qui se règle une fois et se subit ensuite.',
-  },
+const TABS: readonly FoldViewNavItem[] = [
+  { key: 'produits', label: 'Produits', link: 'produits', icon: 'grid' },
+  { key: 'categories', label: 'Catégories', link: 'categories', icon: 'folder' },
+  { key: 'tva', label: 'Régimes de TVA', link: 'tva', icon: 'sliders' },
+  { key: 'collections', label: 'Collections', link: 'collections', icon: 'org-chart' },
+  { key: 'publication', label: 'Publication', link: 'publication', icon: 'upload' },
+  { key: 'emplacements', label: 'Emplacements', link: 'emplacements', icon: 'company' },
+  { key: 'integration', label: 'Intégrations', link: 'integration', icon: 'shopify' },
 ];
 
 /**
- * **Le référentiel produit**, section du back-office.
+ * **Le PIM**, section du back-office.
  *
  * Il fut une application à part, ouverte en iframe dans le shell. Ce qui le
  * justifiait est tombé pièce par pièce — son backend, son audience, sa base —
  * et ce qui restait n'était plus une frontière mais de la duplication.
+ *
+ * La coquille se réduit à la navigation : le rail replie tout seul, chaque vue
+ * routée est une page à part entière. Rien à calculer sur l'URL — `fold-view-nav`
+ * rend de vrais `<a routerLink>` et tient l'état actif lui-même.
  */
 @Component({
   selector: 'app-pim-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, FoldNavLayoutComponent, FoldPageLayoutComponent, FoldViewNavComponent],
+  imports: [RouterOutlet, FoldNavLayoutComponent, FoldViewNavComponent],
   templateUrl: './pim-page.html',
   styleUrl: './pim-page.scss',
 })
 export class PimPage {
-  private readonly router = inject(Router);
-
-  /** Barre repliée en accordéon d'icônes sur un écran étroit — cf. Commercial. */
-  protected readonly navCollapsed = narrowViewport();
-
-  protected readonly tabs: FoldViewNavItem[] = TABS;
-
-  /** L'URL courante — la seule source de vérité de l'onglet actif. */
-  private readonly url = toSignal(
-    this.router.events.pipe(
-      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      map((event) => event.urlAfterRedirects),
-    ),
-    { initialValue: this.router.url },
-  );
-
-  /** La vue affichée. Repli sur la première : `/pim` seul y redirige. */
-  protected readonly current = computed<PimTab>(() => {
-    const url = this.url();
-    return TABS.find((tab) => url.includes(`/pim/${tab.match ?? tab.link}`)) ?? PRODUITS;
-  });
+  protected readonly tabs = TABS;
 }

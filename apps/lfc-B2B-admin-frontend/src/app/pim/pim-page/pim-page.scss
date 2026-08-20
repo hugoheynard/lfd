@@ -2,15 +2,18 @@
   display: block;
 }
 
-/* Elle reste accrochée en haut : les vues sont longues (file d'appels,
-   calendrier), et changer d'onglet ne doit pas demander de remonter. L'opacité
-   qui empêche le contenu de défiler dessous vient de la barre elle-même
-   (`background="surface"`, opaque depuis fold-ng 0.10.1). */
+/* Le rail n'est pas dans un `fold-page-layout` : la gouttière de page est donc
+   la sienne à poser, et c'est le MÊME token que celui des vues à sa droite —
+   les deux restent alignés à tous les paliers, y compris sur la valeur fluide.
+
+   Accroché en haut : les vues sont longues (grille produits, publication), et
+   changer d'onglet ne doit pas demander de remonter. */
 .pim-tabs {
   position: sticky;
   top: 0;
   z-index: 2;
   display: block;
   min-width: 0;
-  padding-block: var(--fold-space-xs);
+  padding-inline-start: var(--fold-page-gutter);
+  padding-block: var(--fold-page-gap) var(--fold-space-xs);
 }

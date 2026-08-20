@@ -5,8 +5,11 @@
 /* Noir sur blanc, fixes : un QR doit garder son contraste quel que soit le
    thème pour rester scannable. */
 .qr {
-  width: 6.5rem;
-  height: 6.5rem;
+  /* Taille réglable par le parent : la vignette d'une table de restaurant et le
+     code qu'on scanne à un mètre d'un écran n'ont pas le même besoin. Défaut =
+     la vignette, qui reste le cas courant. */
+  width: var(--app-qr-size, 6.5rem);
+  height: var(--app-qr-size, 6.5rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm, 0.4rem);
 }

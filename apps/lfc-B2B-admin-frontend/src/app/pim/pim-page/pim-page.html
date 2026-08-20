@@ -1,26 +1,22 @@
-<fold-page-layout [icon]="current().icon" [title]="current().label">
-  <p description>{{ current().description }}</p>
+<!-- Le rail EST la structure de la page (« page scaffold » dans fold) : pas de
+     `fold-page-layout` ici, parce que chaque vue porte déjà le sien — son titre,
+     son intro et ses actions. En empiler un second donnait deux fois le titre
+     et deux fois la gouttière, à chaque écran du référentiel.
 
-  <!-- Barre horizontale en `fill`, comme Réglages → Commercial : les pastilles
-       pleines se posent DIRECTEMENT sur la première carte de la vue. C'est ce
-       contact qui fait tenir la composition — un rail latéral ou une barre
-       soulignée laissaient un blanc entre la nav et le contenu, et la page
-       repartait de zéro sous le menu.
+     `placement="side"` : rail à gauche, replié DE LUI-MÊME en barre horizontale
+     sous 56rem — et sur la largeur du LAYOUT, pas du viewport, donc juste aussi
+     en iframe. Le view-nav garde `direction="auto"` : il lit le layout par DI et
+     bascule vertical ↔ horizontal seul. -->
+<fold-nav-layout #nav placement="side" [foldAt]="896">
+  <fold-view-nav
+    tabNav
+    class="pim-tabs"
+    [items]="tabs"
+    [collapsed]="nav.stacked()"
+    size="comfortable"
+    activeStyle="underline"
+    background="transparent"
+  />
 
-       D'où le `gap` serré ci-dessous plutôt que le rythme de page : la nav
-       n'est pas un bloc de plus, elle appartient au bloc qui suit. -->
-  <fold-nav-layout>
-    <fold-view-nav
-      tabNav
-      class="pim-tabs"
-      [items]="tabs"
-      direction="horizontal"
-      size="comfortable"
-      [collapsed]="navCollapsed()"
-      activeStyle="fill"
-      background="surface"
-    />
-
-    <router-outlet />
-  </fold-nav-layout>
-</fold-page-layout>
+  <router-outlet />
+</fold-nav-layout>

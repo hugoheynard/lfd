@@ -22,8 +22,8 @@ import {
   EmplacementFormPanel,
   type EmplacementPanelData,
 } from '../emplacement-form-panel/emplacement-form-panel';
-import { QrCode } from '../qr-code/qr-code';
-import { qrSvgString } from '../qr-code/qr';
+import { QrCode } from '../../../shared/qr-code/qr-code';
+import { qrSvgString } from '../../../shared/qr-code/qr';
 
 /**
  * La **liste des emplacements** — une carte par boutique. Elle lit le
