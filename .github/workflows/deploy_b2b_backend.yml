@@ -227,6 +227,28 @@ jobs:
           DATABASE_LFD_URL: ${{ secrets.DATABASE_LFD_URL }}
         run: pnpm exec prisma migrate deploy
 
+      # 🔴 La base du RÉFÉRENTIEL, qui n'est pas encore la même (B4 la fondra en
+      #    un schéma). Cette étape manquait : elle vivait dans
+      #    `deploy_pim_backend.yml`, supprimé quand le backend du référentiel a
+      #    fondu dans celui-ci (B2c) — et la migration est partie avec le
+      #    workflow, sans que rien ne le signale.
+      #
+      #    Le symptôme aurait été muet et tardif : le module référentiel du
+      #    back-office interrogeant des tables absentes, en production
+      #    seulement, longtemps après le déploiement qui l'a causé.
+      #
+      # ⚠️ `20260817083828_canal_b2b_appartenance` crée `b2b_channel_binding`
+      #    SANS `IF NOT EXISTS`. Si la production porte déjà cette table (posée
+      #    par un `db push`), cette étape ÉCHOUERA — et c'est le bon
+      #    comportement : elle bloque le déploiement au lieu de mentir. La
+      #    reprise est alors `prisma migrate resolve --applied <migration>`,
+      #    qui la marque appliquée sans la rejouer.
+      - name: Migrer la base du référentiel
+        working-directory: apps/lfd-api
+        env:
+          DATABASE_PIM_URL: ${{ secrets.DATABASE_PIM_URL }}
+        run: pnpm exec prisma migrate deploy --config prisma.pim.config.ts
+
       # 4) Injecte l'account id dans l'`image` du wrangler (jamais commité), puis déploie
       #    le Worker qui référence l'image poussée.
       - name: Deploy Worker

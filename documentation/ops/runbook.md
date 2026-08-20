@@ -118,6 +118,28 @@ La sonde publique `/health` en porte les **compteurs** (`capabilities.blocking`
 verrouillée est une aide qu'on ne doit qu'à soi-même. Le déploiement s'arrête
 sur un canal bloquant (étape « Inventaire des canaux »).
 
+## Si « Migrer la base du référentiel » échoue
+
+Symptôme : `relation "b2b_channel_binding" already exists`, ou un autre objet
+déjà présent.
+
+Cause : la production porte l'objet parce qu'il y a été posé par un `db push`,
+sans passer par une migration. `migrate deploy` refuse alors d'avancer — et
+c'est ce qu'on veut : il bloque plutôt que de forcer.
+
+Reprise, une migration à la fois :
+
+```bash
+pnpm --filter lfd-api exec prisma migrate resolve \
+  --applied 20260817083828_canal_b2b_appartenance \
+  --config prisma.pim.config.ts
+```
+
+`resolve --applied` marque la migration comme jouée **sans exécuter son SQL**.
+Ne l'utiliser qu'après avoir vérifié que l'objet existe bel et bien et qu'il a
+la forme attendue — sinon on inscrit un mensonge dans `_prisma_migrations`, et
+la prochaine migration s'appuiera dessus.
+
 ## Basculer le back-office vers `lfd-backoffice`
 
 Cloudflare **ne renomme pas** un projet Pages. Le workflow en crée donc un neuf,
