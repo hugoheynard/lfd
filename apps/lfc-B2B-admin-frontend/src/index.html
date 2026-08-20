@@ -13,9 +13,26 @@
          écran à encoche ET laisse `env(safe-area-inset-*)` à zéro — les marges de
          sécurité du CSS ne s'appliqueraient donc jamais. Sans effet ailleurs. -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <!-- Coque iOS (Capacitor) : barre d'état en texte sombre sur notre fond clair. -->
+    <!-- Le manifeste : icône, nom, couleurs, et surtout `display: standalone`,
+         qui fait que l'app ajoutée à l'écran d'accueil s'ouvre SANS barre
+         d'adresse. C'est aussi la pièce que réclame Web Push sur iOS — sans
+         installation, pas d'abonnement possible. -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <!-- iOS ne lit PAS le manifeste pour décider du mode plein écran : il lui
+         faut ce meta-là. Il manquait, alors que le titre et la barre d'état
+         ci-dessous étaient déjà posés — or ces deux-là ne s'appliquent QU'EN
+         mode autonome. Ils étaient donc inertes, et « Ajouter à l'écran
+         d'accueil » rouvrait Safari avec sa barre d'adresse. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Barre d'état en texte sombre sur notre fond clair. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="LFC Admin" />
+    <!-- iOS prend CETTE icône pour l'écran d'accueil, jamais celles du
+         manifeste. Carrée et pleine : c'est le système qui applique l'arrondi,
+         et une icône déjà arrondie se retrouverait rognée deux fois. -->
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <meta name="theme-color" content="#24448f" />
   </head>
   <body>
     <app-root></app-root>
