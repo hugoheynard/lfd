@@ -1,0 +1,19 @@
+<fold-page-layout icon="shield" title="Admin">
+  <!-- Idiome des Réglages : la coquille porte le titre du module, le rail nomme
+       la vue, et les vues n'écrivent aucun en-tête — sans quoi chaque écran
+       s'annoncerait deux fois. `placement="side"` replie le rail à
+       l'horizontale sur la largeur du LAYOUT (pas du viewport), donc juste
+       aussi en iframe dans la suite. -->
+  <fold-nav-layout #nav placement="side" [foldAt]="896">
+    <fold-view-nav
+      tabNav
+      [items]="tabs()"
+      [collapsed]="nav.stacked()"
+      size="comfortable"
+      activeStyle="underline"
+      background="transparent"
+    />
+
+    <router-outlet />
+  </fold-nav-layout>
+</fold-page-layout>

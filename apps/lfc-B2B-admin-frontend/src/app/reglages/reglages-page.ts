@@ -37,11 +37,13 @@ export class ReglagesPage {
    * le catalogue **fold** : `FoldIconName` accepte n'importe quelle chaîne, donc
    * un nom emprunté ailleurs compile et n'affiche rien.
    *
-   * Chaque onglet porte le droit qui l'ouvre, et la liste se filtre dessus.
-   * Ranger trois écrans sous un même titre ne leur donne pas le même mur :
-   * « Utilisateurs » demande `staff:read`, réservé aux administrateurs. Montré à
-   * tous, il offrait une porte fermée à clé — un commercial cliquait, la page
-   * s'ouvrait, et chaque appel rendait 403.
+   * Chaque onglet porte le droit qui l'ouvre, et la liste se filtre dessus :
+   * ranger cinq écrans sous un même titre ne leur donne pas le même mur.
+   * Montré sans le droit, un onglet offre une porte fermée à clé — on clique,
+   * la page s’ouvre, et chaque appel rend 403.
+   *
+   * Ces cinq-là portent tous sur le COMMERCE. Ce qui porte sur les GENS — qui
+   * entre, qui tient l'outil — a quitté ces réglages pour le module Admin.
    */
   private readonly allTabs: readonly (FoldViewNavItem & { readonly needs: StaffPermission })[] = [
     {
@@ -78,13 +80,6 @@ export class ReglagesPage {
       link: 'commercial',
       icon: 'bell',
       needs: 'growth:read',
-    },
-    {
-      key: 'utilisateurs',
-      label: 'Utilisateurs',
-      link: 'utilisateurs',
-      icon: 'user',
-      needs: 'staff:read',
     },
   ];
 

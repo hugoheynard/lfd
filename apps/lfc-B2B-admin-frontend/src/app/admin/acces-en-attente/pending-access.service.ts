@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { B2B_API_BASE } from '../api/api-config';
+import { B2B_API_BASE } from '../../api/api-config';
 import type { PendingAccess } from './pending-access.model';
 
 /** La file des accès à remettre, et la fabrique de liens. */

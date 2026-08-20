@@ -6,13 +6,12 @@ import {
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldNavLayoutComponent,
-  FoldPageLayoutComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
   type FoldTabItem,
 } from 'fold-ng';
 
-import { NotifyService } from '../notify.service';
+import { NotifyService } from '../../notify.service';
 import {
   PendingAccessRowComponent,
   type PendingRow,
@@ -40,7 +39,6 @@ function count(people: readonly PendingAccess[], kind: PendingAccess['kind']): n
   selector: 'app-acces-en-attente-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldPageLayoutComponent,
     FoldButtonComponent,
     FoldIconComponent,
     FoldElementTitleComponent,

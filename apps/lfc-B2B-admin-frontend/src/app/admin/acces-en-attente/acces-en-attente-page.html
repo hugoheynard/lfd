@@ -1,85 +1,85 @@
-<fold-page-layout>
-  <!-- Le bouclier plutôt que l'enveloppe : cet écran ne parle pas d'e-mails, il
-       parle d'ACCÈS — et c'est le chemin de secours quand le canal habituel se
-       tait. L'enveloppe promettait un envoi ; le bouclier dit la clé. -->
-  <fold-element-title
-    variant="eyebrow"
-    icon="shield"
-    title="Accès à remettre"
-    subtitle="Les personnes à qui l'accès a été ouvert et qui n'ont pas encore créé le leur. Une ligne disparaît d'elle-même dès que son mot de passe est posé."
-  />
+<!-- Aucun `fold-page-layout` ici : la coquille Admin porte le titre du
+     module et la gouttière. En empiler un second doublait l'un et l'autre. -->
+<!-- Le bouclier plutôt que l'enveloppe : cet écran ne parle pas d'e-mails, il
+     parle d'ACCÈS — et c'est le chemin de secours quand le canal habituel se
+     tait. L'enveloppe promettait un envoi ; le bouclier dit la clé. -->
+<fold-element-title
+  variant="eyebrow"
+  icon="shield"
+  title="Accès à remettre"
+  subtitle="Les personnes à qui l'accès a été ouvert et qui n'ont pas encore créé le leur. Une ligne disparaît d'elle-même dès que son mot de passe est posé."
+/>
 
-  @switch (state()) {
-    @case ('loading') {
-      <fold-loading message="Lecture de la file…" />
-    }
-    @case ('error') {
-      <!-- Le même composant que le vide, en ton `alert` : les deux disent
-           « il n'y a rien sous les yeux », et distinguer les deux par la
-           couleur et le texte suffit — pas par deux mises en page. -->
-      <fold-empty-state
-        tone="alert"
-        title="Impossible de lire la file"
-        subtitle="Personne n'est perdu : la liste se recalcule à chaque ouverture."
-      >
-        <button foldButton (click)="load()">Réessayer</button>
-      </fold-empty-state>
-    }
-    @default {
-      <!-- `fold-nav-layout`, comme Commercial et la fiche client : c'est lui qui
-           tient l'écart entre la barre et ce qu'elle commande, et qui rabat la
-           nav sur étroit. Deux périmètres, deux onglets — le commercial ne
-           mélange pas les clients qu'il sert et l'équipe qui l'entoure — et le
-           compte vit SUR l'onglet, sinon il faut l'ouvrir pour savoir s'il vaut
-           la peine d'être ouvert. -->
-      <fold-nav-layout>
-        <fold-tabs
-          tabNav
-          #bar="foldTabs"
-          size="compact"
-          activeStyle="fill"
-          background="surface"
-          [tabs]="tabs()"
-          [activeKey]="tab()"
-          (activeKeyChange)="selectTab($event)"
-        />
-
-        <!-- UN seul panneau, dont la clé suit l'onglet : les deux périmètres se
-             rendent exactement pareil, seule la source change. Deux
-             `fold-tab-panel` dupliqueraient la liste pour n'en montrer qu'une. -->
-        <fold-tab-panel [tabs]="bar" [key]="tab()">
-          @if (rows().length === 0) {
-            <!-- Le vide sera fréquent, et c'est une bonne nouvelle : il se dit
-                 comme telle plutôt qu'en tableau sans lignes. -->
-            <!-- L'icône passe par le SLOT `[empty-icon]`, pas par un attribut :
-                 `fold-empty-state` n'a pas d'entrée `icon`, et `icon="check"`
-                 atterrissait en attribut HTML muet — ça compile, ça n'affiche
-                 rien. -->
-            <fold-empty-state
-              title="Personne n'attend"
-              [subtitle]="
-                tab() === 'client'
-                  ? 'Tous les accès clients ouverts ont été créés par leurs détenteurs.'
-                  : 'Toute l’équipe invitée a créé son accès.'
-              "
-            >
-              <fold-icon empty-icon name="check-circle" [size]="28" />
-            </fold-empty-state>
-          } @else {
-            <ul class="rows">
-              @for (row of rows(); track row.person.userId) {
-                <li>
-                  <app-pending-access-row
-                    [row]="row"
-                    [busy]="issuing() !== null"
-                    (copy)="copyLink(row.person)"
-                  />
-                </li>
-              }
-            </ul>
-          }
-        </fold-tab-panel>
-      </fold-nav-layout>
-    }
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture de la file…" />
   }
-</fold-page-layout>
+  @case ('error') {
+    <!-- Le même composant que le vide, en ton `alert` : les deux disent
+         « il n'y a rien sous les yeux », et distinguer les deux par la
+         couleur et le texte suffit — pas par deux mises en page. -->
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de lire la file"
+      subtitle="Personne n'est perdu : la liste se recalcule à chaque ouverture."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    <!-- `fold-nav-layout`, comme Commercial et la fiche client : c'est lui qui
+         tient l'écart entre la barre et ce qu'elle commande, et qui rabat la
+         nav sur étroit. Deux périmètres, deux onglets — le commercial ne
+         mélange pas les clients qu'il sert et l'équipe qui l'entoure — et le
+         compte vit SUR l'onglet, sinon il faut l'ouvrir pour savoir s'il vaut
+         la peine d'être ouvert. -->
+    <fold-nav-layout>
+      <fold-tabs
+        tabNav
+        #bar="foldTabs"
+        size="compact"
+        activeStyle="fill"
+        background="surface"
+        [tabs]="tabs()"
+        [activeKey]="tab()"
+        (activeKeyChange)="selectTab($event)"
+      />
+
+      <!-- UN seul panneau, dont la clé suit l'onglet : les deux périmètres se
+           rendent exactement pareil, seule la source change. Deux
+           `fold-tab-panel` dupliqueraient la liste pour n'en montrer qu'une. -->
+      <fold-tab-panel [tabs]="bar" [key]="tab()">
+        @if (rows().length === 0) {
+          <!-- Le vide sera fréquent, et c'est une bonne nouvelle : il se dit
+               comme telle plutôt qu'en tableau sans lignes. -->
+          <!-- L'icône passe par le SLOT `[empty-icon]`, pas par un attribut :
+               `fold-empty-state` n'a pas d'entrée `icon`, et `icon="check"`
+               atterrissait en attribut HTML muet — ça compile, ça n'affiche
+               rien. -->
+          <fold-empty-state
+            title="Personne n'attend"
+            [subtitle]="
+              tab() === 'client'
+                ? 'Tous les accès clients ouverts ont été créés par leurs détenteurs.'
+                : 'Toute l’équipe invitée a créé son accès.'
+            "
+          >
+            <fold-icon empty-icon name="check-circle" [size]="28" />
+          </fold-empty-state>
+        } @else {
+          <ul class="rows">
+            @for (row of rows(); track row.person.userId) {
+              <li>
+                <app-pending-access-row
+                  [row]="row"
+                  [busy]="issuing() !== null"
+                  (copy)="copyLink(row.person)"
+                />
+              </li>
+            }
+          </ul>
+        }
+      </fold-tab-panel>
+    </fold-nav-layout>
+  }
+}

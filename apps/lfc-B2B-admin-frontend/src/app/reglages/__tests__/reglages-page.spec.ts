@@ -6,10 +6,13 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { ReglagesPage } from '../reglages-page';
 
 /**
- * Réglages range trois écrans sous un même titre, et ce rangement ne leur donne
- * pas le même mur : « Utilisateurs » demande `staff:read`, réservé aux
- * administrateurs. Montré à tout le monde, l'onglet offrait une porte fermée à
- * clé — un commercial cliquait, la page s'ouvrait, et chaque appel rendait 403.
+ * Réglages range cinq écrans sous un même titre, et ce rangement ne leur donne
+ * pas le même mur : « Commercial » demande `growth:read`, que la comptabilité
+ * n'a pas. Montré à tout le monde, l'onglet offrirait une porte fermée à clé —
+ * on clique, la page s'ouvre, et chaque appel rend 403.
+ *
+ * Le cas d'école était « Utilisateurs » ; il a quitté ces réglages pour le
+ * module Admin, où la même garantie est éprouvée.
  */
 function tabsFor(permissions: readonly StaffPermission[]): string[] {
   const store: Pick<PermissionsStore, 'can'> = {
@@ -26,19 +29,6 @@ function tabsFor(permissions: readonly StaffPermission[]): string[] {
 describe('les onglets de Réglages', () => {
   it("n'offre à un administrateur aucune porte de moins", () => {
     expect(tabsFor(['settings:read', 'growth:read', 'staff:read'])).toEqual([
-      'retraits-livraisons',
-      'catalogue',
-      'tarification',
-      'facturation',
-      'commercial',
-      'utilisateurs',
-    ]);
-  });
-
-  it("cache « Utilisateurs » à qui n'a pas `staff:read`", () => {
-    // Le cas réel : un commercial a `settings:read` et `growth:read`, jamais
-    // `staff:read` — le catalogue réserve cette ressource à `admin`.
-    expect(tabsFor(['settings:read', 'growth:read'])).toEqual([
       'retraits-livraisons',
       'catalogue',
       'tarification',
