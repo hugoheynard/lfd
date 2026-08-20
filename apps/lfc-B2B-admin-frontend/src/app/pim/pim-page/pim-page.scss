@@ -1,0 +1,16 @@
+:host {
+  display: block;
+}
+
+/* Elle reste accrochée en haut : les vues sont longues (file d'appels,
+   calendrier), et changer d'onglet ne doit pas demander de remonter. L'opacité
+   qui empêche le contenu de défiler dessous vient de la barre elle-même
+   (`background="surface"`, opaque depuis fold-ng 0.10.1). */
+.pim-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: block;
+  min-width: 0;
+  padding-block: var(--fold-space-xs);
+}

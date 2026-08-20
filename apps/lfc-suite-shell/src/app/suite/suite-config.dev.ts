@@ -14,6 +14,5 @@ const viaGateway = typeof window !== "undefined" && isViaGateway(window.location
 const urls = viaGateway ? GATEWAY_URLS : DEV_URLS;
 
 export const SUITE_APP_URLS: Readonly<Record<string, string>> = {
-  pim: urls.pimFront,
   "b2b-admin": urls.b2bAdminFront,
 };

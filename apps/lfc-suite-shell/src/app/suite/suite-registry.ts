@@ -5,12 +5,16 @@ import type { SuiteAppEntry } from "./suite-app";
  * l'ordre du switcher. Ajouter une app = une ligne ici + son URL dans
  * `suite-config(.dev).ts`. L'app tourne telle quelle en iframe.
  *
- * `pim` est la 1ʳᵉ app réelle. `b2b-admin` est une **tuile stub** (pas d'URL en
- * config) — présente au switcher pour matérialiser la cible ; son montage affiche
- * « bientôt disponible » tant qu'elle n'a pas d'URL.
+ * Le back-office est le **seul locataire** depuis que le référentiel y a été
+ * greffé : il fut une app à part, ouverte ici en iframe, il est désormais un de
+ * ses modules. Une tuile de moins au switcher, une porte de moins à tenir.
+ *
+ * Le shell est conservé malgré ce locataire unique, et pour une autre raison que
+ * la fédération : accueillir des sujets à venir, hors boulangerie. C'est une
+ * porte d'entrée de plateforme, pas un lanceur devenu inutile — cf.
+ * `documentation/suite/architecture-topologie-apps.md`.
  */
 export const SUITE_APPS: readonly SuiteAppEntry[] = [
-  { id: "pim", title: "PIM", icon: "grid", routePath: "pim", requiredPermission: "app:pim" },
   {
     id: "b2b-admin",
     title: "B2B admin",

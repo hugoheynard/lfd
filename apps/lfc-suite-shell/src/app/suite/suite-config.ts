@@ -10,6 +10,5 @@
  * ⚠️ Ajuster aux URLs Pages réelles au moment du déploiement.
  */
 export const SUITE_APP_URLS: Readonly<Record<string, string>> = {
-  pim: "https://lfc-pim.pages.dev",
   "b2b-admin": "https://lfc-b2b-admin.pages.dev",
 };

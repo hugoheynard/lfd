@@ -6,8 +6,16 @@ import { AuthFacade } from "../../auth/auth.facade";
 import { SuiteBridge } from "../suite-bridge";
 import { SUITE_CHANNEL } from "@lfd/suite-embed";
 
-/** Origine de PIM — les tests tournent en config `development` (suite-config.dev.ts). */
-const PIM_ORIGIN = "http://localhost:7315";
+/**
+ * Origine du **back-office** — les tests tournent en config `development`
+ * (suite-config.dev.ts).
+ *
+ * C'était celle du référentiel jusqu'à sa greffe : il fut le premier locataire
+ * du shell, il est devenu un module du back-office. Le shell n'iframe donc plus
+ * qu'une application — et il est conservé pour en accueillir d'autres, hors
+ * boulangerie.
+ */
+const ADMIN_ORIGIN = "http://localhost:7317";
 const EVIL_ORIGIN = "https://evil.example.com";
 
 function fakeFrame(): { postMessage: ReturnType<typeof vi.fn> } {
@@ -70,7 +78,7 @@ describe("SuiteBridge", () => {
 
   it("ignore un message qui n’est pas au protocole", async () => {
     const frame = fakeFrame();
-    dispatch(PIM_ORIGIN, frame, { hello: true });
+    dispatch(ADMIN_ORIGIN, frame, { hello: true });
     await flush();
     expect(frame.postMessage).not.toHaveBeenCalled();
   });
@@ -84,7 +92,7 @@ describe("SuiteBridge", () => {
     // même mur. Le pont a suivi, la production aussi ; le test, non — il est
     // resté rouge, et le bruit du flake inter-suites l'a couvert.
     const frame = fakeFrame();
-    dispatch(PIM_ORIGIN, frame, {
+    dispatch(ADMIN_ORIGIN, frame, {
       channel: SUITE_CHANNEL,
       kind: "token-request",
       requestId: "r1",
@@ -94,7 +102,7 @@ describe("SuiteBridge", () => {
     expect(getToken).toHaveBeenCalledWith("b2bAdmin");
     expect(frame.postMessage).toHaveBeenCalledWith(
       { channel: SUITE_CHANNEL, kind: "token", requestId: "r1", token: "tok-123" },
-      PIM_ORIGIN,
+      ADMIN_ORIGIN,
     );
   });
 
@@ -104,7 +112,7 @@ describe("SuiteBridge", () => {
     // service devrait forcer à re-décider. Un jeton rendu pour `pim` voudrait
     // dire que le shell a recommencé à ouvrir une porte qu'on a fermée.
     const frame = fakeFrame();
-    dispatch(PIM_ORIGIN, frame, {
+    dispatch(ADMIN_ORIGIN, frame, {
       channel: SUITE_CHANNEL,
       kind: "token-request",
       requestId: "r2",
@@ -114,14 +122,14 @@ describe("SuiteBridge", () => {
     expect(getToken).not.toHaveBeenCalled();
     expect(frame.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "token", token: null }),
-      PIM_ORIGIN,
+      ADMIN_ORIGIN,
     );
   });
 
   it("rend token=null si non authentifié", async () => {
     authed = false;
     const frame = fakeFrame();
-    dispatch(PIM_ORIGIN, frame, {
+    dispatch(ADMIN_ORIGIN, frame, {
       channel: SUITE_CHANNEL,
       kind: "token-request",
       requestId: "r3",
@@ -131,32 +139,32 @@ describe("SuiteBridge", () => {
     expect(getToken).not.toHaveBeenCalled();
     expect(frame.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({ token: null }),
-      PIM_ORIGIN,
+      ADMIN_ORIGIN,
     );
   });
 
   it("reflète la route interne dans l’URL parent", async () => {
-    dispatch(PIM_ORIGIN, fakeFrame(), {
+    dispatch(ADMIN_ORIGIN, fakeFrame(), {
       channel: SUITE_CHANNEL,
       kind: "route",
       path: "produits/42",
     });
     await flush();
-    expect(replaceState).toHaveBeenCalledWith("/pim/produits/42");
+    expect(replaceState).toHaveBeenCalledWith("/b2b-admin/produits/42");
   });
 
   it("notifyNavigate poste vers la frame établie (après hello)", async () => {
     const frame = fakeFrame();
-    dispatch(PIM_ORIGIN, frame, { channel: SUITE_CHANNEL, kind: "hello" });
+    dispatch(ADMIN_ORIGIN, frame, { channel: SUITE_CHANNEL, kind: "hello" });
     await flush();
-    bridge.notifyNavigate("pim", "categories");
+    bridge.notifyNavigate("b2b-admin", "categories");
     expect(frame.postMessage).toHaveBeenCalledWith(
       { channel: SUITE_CHANNEL, kind: "navigate", path: "categories" },
-      PIM_ORIGIN,
+      ADMIN_ORIGIN,
     );
   });
 
   it("notifyNavigate est un no-op si la frame est inconnue", () => {
-    expect(() => bridge.notifyNavigate("pim", "x")).not.toThrow();
+    expect(() => bridge.notifyNavigate("b2b-admin", "x")).not.toThrow();
   });
 });

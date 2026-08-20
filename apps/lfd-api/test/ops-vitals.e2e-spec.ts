@@ -58,9 +58,11 @@ describe("ce qu'elle refuse, et sans le dire", () => {
     // n'aura pas.
     await post({ samples: "pas un tableau" }).expect(204);
     await post({}).expect(204);
-    await post({ samples: [{ front: "pim-front", metric: "INVENTÉE", value: 1 }] }).expect(204);
+    await post({ samples: [{ front: "b2b-admin-front", metric: "INVENTÉE", value: 1 }] }).expect(
+      204,
+    );
 
-    expect(lcpOf("pim-front")).toBeUndefined();
+    expect(lcpOf("b2b-admin-front")).toBeUndefined();
   });
 
   it("🔴 ne se laisse pas inonder par une seule requête", async () => {

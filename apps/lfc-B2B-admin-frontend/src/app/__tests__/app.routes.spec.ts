@@ -61,6 +61,18 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   'reglages/commercial': 'growth:read',
   'reglages/utilisateurs': 'staff:read',
 
+  pim: 'catalog:read',
+  'pim/tva': null,
+  'pim/collections': null,
+  'pim/publication': null,
+  'pim/categories': null,
+  'pim/emplacements': null,
+  'pim/documentation': null,
+  'pim/integration': null,
+  'pim/reglages': null,
+  'pim/produits/nouveau': null,
+  'pim/produits/:id': null,
+  'pim/produits': null,
   production: 'orders:read',
 
   commercial: 'companies:read',

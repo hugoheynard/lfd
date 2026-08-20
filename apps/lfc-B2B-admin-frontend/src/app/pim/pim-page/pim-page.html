@@ -1,0 +1,26 @@
+<fold-page-layout [icon]="current().icon" [title]="current().label">
+  <p description>{{ current().description }}</p>
+
+  <!-- Barre horizontale en `fill`, comme Réglages → Commercial : les pastilles
+       pleines se posent DIRECTEMENT sur la première carte de la vue. C'est ce
+       contact qui fait tenir la composition — un rail latéral ou une barre
+       soulignée laissaient un blanc entre la nav et le contenu, et la page
+       repartait de zéro sous le menu.
+
+       D'où le `gap` serré ci-dessous plutôt que le rythme de page : la nav
+       n'est pas un bloc de plus, elle appartient au bloc qui suit. -->
+  <fold-nav-layout>
+    <fold-view-nav
+      tabNav
+      class="pim-tabs"
+      [items]="tabs"
+      direction="horizontal"
+      size="comfortable"
+      [collapsed]="navCollapsed()"
+      activeStyle="fill"
+      background="surface"
+    />
+
+    <router-outlet />
+  </fold-nav-layout>
+</fold-page-layout>

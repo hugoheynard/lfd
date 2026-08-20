@@ -168,13 +168,11 @@ jobs:
           # y glissant un appel de méthode inexistante : aucune erreur.
           pnpm --filter lfc-b2b-admin-frontend exec tsc -p tsconfig.app.json --noEmit
           pnpm --filter lfc-b2b-platform-frontend exec tsc -p tsconfig.app.json --noEmit
-          pnpm --filter lfc-pim-frontend exec tsc -p tsconfig.app.json --noEmit
           pnpm --filter lfc-suite-shell exec tsc -p tsconfig.app.json --noEmit
       - name: Tests des fronts
         run: |
           pnpm --filter lfc-b2b-admin-frontend test
           pnpm --filter lfc-b2b-platform-frontend test
-          pnpm --filter lfc-pim-frontend test
       - name: Build de production (compilation AOT)
         run: |
           pnpm --filter lfc-b2b-admin-frontend build

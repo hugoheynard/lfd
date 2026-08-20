@@ -37,6 +37,7 @@
     "@lfd/endpoints": "workspace:*",
     "@lfd/front-ops": "workspace:*",
     "@lfd/ops-contract": "workspace:*",
+    "@lfd/pim-contracts": "workspace:*",
     "@lfd/suite-embed": "workspace:*",
     "@sentry/angular": "catalog:",
     "@stripe/stripe-js": "catalog:",

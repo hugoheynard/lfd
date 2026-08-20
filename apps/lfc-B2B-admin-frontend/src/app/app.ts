@@ -107,6 +107,9 @@ export class App {
   protected readonly canSeeAnalytics = computed(() => this.permissions.can('growth:read'));
 
   protected readonly canSeeProduction = computed(() => this.permissions.can('orders:read'));
+
+  /** Le référentiel — même droit que le catalogue, puisque c'est le catalogue. */
+  protected readonly canSeePim = computed(() => this.permissions.can('catalog:read'));
   protected readonly canSeeSettings = computed(() => this.permissions.can('settings:read'));
   /**
    * La carte de santé. Son propre périmètre (`ops:read`), et pas celui des

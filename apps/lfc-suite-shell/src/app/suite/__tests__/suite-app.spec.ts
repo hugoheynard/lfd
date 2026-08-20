@@ -5,7 +5,8 @@ import { appUrlFor, SUITE_ALLOWED_ORIGINS } from "../suite-app";
 describe("suite-app helpers", () => {
   // Les tests tournent en config `development` → suite-config.dev.ts (localhost).
   it("résout l’URL d’une app déclarée", () => {
-    expect(appUrlFor("pim")).toBe("http://localhost:7315");
+    // Le back-office est le seul locataire depuis la greffe du référentiel :
+    // celui-ci fut le premier hôte du shell, il est devenu un de ses modules.
     expect(appUrlFor("b2b-admin")).toBe("http://localhost:7317");
   });
 
@@ -14,7 +15,7 @@ describe("suite-app helpers", () => {
   });
 
   it("dérive l’allowlist d’origines depuis les URLs d’apps", () => {
-    expect(SUITE_ALLOWED_ORIGINS.has("http://localhost:7315")).toBe(true);
+    expect(SUITE_ALLOWED_ORIGINS.has("http://localhost:7317")).toBe(true);
     expect(SUITE_ALLOWED_ORIGINS.has("https://evil.example.com")).toBe(false);
   });
 });

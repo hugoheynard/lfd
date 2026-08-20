@@ -1,9 +1,11 @@
 /**
- * Les noms d'icônes que le PIM ajoute au jeu de fold.
+ * Les noms d'icônes que le **référentiel** ajoute au jeu de fold.
  *
  * Depuis fold 0.11, `FoldIconName` est fermé : il n'accepte plus n'importe
  * quelle chaîne, donc un nom maison doit être déclaré ici pour compiler. Le
- * dessin, lui, est enregistré dans `app/pim-icons.ts` — les deux vont ensemble.
+ * dessin, lui, est enregistré dans `app/pim/pim-icons.ts` — les deux vont
+ * ensemble, et la greffe l'a prouvé : déplacé sans lui, le module ne compilait
+ * plus sur cinq fichiers d'un coup.
  *
  * ⚠️ Ce bloc vit dans un `.d.ts`, et pas à côté du dessin dans le `.ts`. Une
  * augmentation ne s'applique qu'aux unités de compilation qui la CONTIENNENT :

@@ -53,13 +53,6 @@ export const TOPOLOGY: readonly NodeManifest[] = [
     dependsOn: ["gateway"],
     probe: { kind: "frontend", target: PROD_FRONT_ORIGINS.b2bAdminFront },
   },
-  {
-    id: "pim-front",
-    kind: "frontend",
-    label: "Référentiel (écran)",
-    dependsOn: ["gateway"],
-    probe: { kind: "frontend", target: PROD_FRONT_ORIGINS.pimFront },
-  },
 
   {
     id: "gateway",
