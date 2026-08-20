@@ -1289,3 +1289,72 @@ de démarrage sait détecter, et qu'il vaut mieux ne pas provoquer soi-même.
 Les suites e2e de `lfd-api` ont un **flake inter-suites** : un test échoue au
 premier passage, une suite différente à chaque fois, et repasse seul. Il n'est
 pas dans OPS, il est antérieur, et il n'a jamais été diagnostiqué.
+
+## 28. Persister les incidents — déplacer le coût d'observabilité vers la base
+
+Proposition **chiffrée, non tranchée**. Elle prolonge la branche « maison » du
+§25 et répond à une phrase déjà écrite dans `log-buffer.ts` : _« La conservation
+durable est un autre sujet, qui suppose une table, une rétention et une
+politique de données ; le jour où il faudra expliquer une panne de la nuit, il
+faudra le faire. »_
+
+### Le piège, chiffré
+
+Prisma facture **l'appel ORM** (§19). Écrire une ligne de journal = une
+opération. À dix lignes par requête et cinq mille requêtes par jour, c'est
+**1,5 M d'opérations par mois** : la totalité du forfait, en logs. C'est
+exactement le coût qu'on cherchait à éviter en ne prenant pas de service tiers,
+déplacé ailleurs sans être réduit.
+
+### Ce qui rend l'idée viable
+
+1. **Ne persister que ce que le tampon garde déjà** — `error` et `warn`. La
+   discipline existe et elle est bonne : un incident se lit dans ce qui a
+   échoué. Quelques dizaines de lignes par jour, pas des milliers.
+2. **Grouper.** `createMany` de cinquante lignes = **une** opération, pas
+   cinquante. Une file en mémoire vidée toutes les 5 s ou tous les 25 messages
+   transforme N opérations en une — et le compteur de J11 permet de le
+   **vérifier**, puisqu'il tique une fois par appel ORM.
+3. **Purger.** Un `deleteMany` par jour = une opération. Volume : ~300 octets ×
+   100 lignes/jour × 14 jours ≈ **400 Ko**, contre 10 Go inclus.
+
+**Coût estimé : moins de 3 000 opérations par mois, soit 0,3 % du forfait.**
+
+### Les trois pièges
+
+🔴 **Ça meurt avec la base**, et ici c'est pire qu'ailleurs : le cas d'usage
+numéro un est « pourquoi la base est tombée ». **Le tampon mémoire doit
+rester** — il répond à « que vient-il de se passer », la table répond à « qu'est-il
+arrivé cette nuit ». Deux questions, deux mécanismes ; le second ne remplace
+jamais le premier.
+
+🔴 **Le puits ne journalise jamais ses propres échecs.** Un `logger.error` dans
+le chemin d'écriture des logs est une boucle qui remplit une file jusqu'à
+épuiser la mémoire.
+
+🔴 **Des données personnelles pour quatorze jours.** Le contrôleur le dit déjà :
+_« une ligne de journal peut porter une adresse e-mail ou un identifiant »_.
+Toléré dans un tampon volatil, cela devient une **politique de rétention** dès
+qu'on écrit sur disque. À décider explicitement, pas à découvrir.
+
+Plus une contrainte de conception : la file en mémoire doit être **bornée**, et
+jeter les plus anciennes **en comptant les pertes** — sinon une base
+indisponible fait grossir la mémoire jusqu'au redémarrage du container.
+
+### La forme
+
+`ops.incident_log` — `at`, `level`, `context`, `message`, `trace_id`. Un puits
+branché **à côté** du tampon, pas à sa place. Purge à quatorze jours. Et un
+relevé « Incidents 24 h » sur le nœud API : aujourd'hui, personne ne sait
+combien il y en a eu.
+
+### Pourquoi toujours pas `nestjs-pino`
+
+Le gain est dans le **puits**, pas dans le formateur. `RecordedLog` porte déjà
+`level`, `context`, `message` et `traceId` — exactement ce qu'une table veut.
+Pino n'apporterait des champs structurés qu'au prix de réécrire chaque
+`logger.warn("…")` pour passer des objets : beaucoup de remaniement pour une
+colonne JSONB dont rien n'a besoin aujourd'hui.
+
+Et le motif qui l'écartait reste entier : Cloudflare ne remonte pas la sortie
+d'un container. Pino écrirait mieux, dans le même vide.
