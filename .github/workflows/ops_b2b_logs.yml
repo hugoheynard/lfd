@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Lire les dernières lignes
         env:
-          API_BASE_URL: ${{ vars.LFD_API_GATEWAY_URL }}
+          API_BASE_URL: ${{ vars.LFD_API_URL }}
           RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
           LIMIT: ${{ inputs.limit }}
         run: |

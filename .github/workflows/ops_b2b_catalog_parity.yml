@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Comparer le seed au catalogue reçu
         env:
-          API_BASE_URL: ${{ vars.LFD_API_GATEWAY_URL }}
+          API_BASE_URL: ${{ vars.LFD_API_URL }}
           RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
         run: |
           set -uo pipefail

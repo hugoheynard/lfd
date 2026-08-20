@@ -1,6 +1,6 @@
 # Passerelle de la suite LFC (Cloudflare Worker) — **la seule porte d'entrée**.
 #
-# En PROD : routage par **préfixe de chemin** (`/api/b2b`, cf.
+# En PROD : routage par **préfixe de chemin** (`/api/lfd`, cf.
 # src/routes.ts) vers des **service bindings**, déclarés en fin de fichier. Les
 # backends n'ont plus aucune adresse publique ; ce Worker est le seul chemin.
 #
@@ -21,7 +21,7 @@
 # frontière de confiance des backends — et il survivait au retrait de celle-ci.
 #
 # ⚠️ Ce nom EST l'adresse publique de l'API (`workers.dev`, aucune zone sur le
-#    compte). Le changer déplace donc `LFD_API_GATEWAY_URL`, qui est compilée
+#    compte). Le changer déplace donc `LFD_API_URL`, qui est compilée
 #    DANS les bundles des deux fronts au moment du build : ils doivent être
 #    reconstruits, sans quoi ils appellent une adresse qui rend 404 sur tout.
 #    C'est arrivé le jour même du renommage.
@@ -48,13 +48,13 @@ port = 8787
 # POUSSÉE 2 SUR 2 du renommage du Worker (2026-08-20). La 1 a créé `lfd-api` et
 # laissé `lfc-b2b-backend` servir ; celle-ci fait basculer le trafic.
 #
-# ⚠️ La sonde de fin du déploiement backend interroge `${LFD_API_GATEWAY_URL}/health`
+# ⚠️ La sonde de fin du déploiement backend interroge `${LFD_API_URL}/health`
 #    — donc À TRAVERS cette passerelle. Tant que le binding vise l'ancien Worker,
 #    elle lit l'ancienne révision et le workflow échoue APRÈS avoir tout réussi.
 #    C'est ce qui s'est passé à 15h36 : image poussée, secrets synchronisés, base
 #    migrée, `lfd-api` déployé — et la sonde qui regarde ailleurs.
 [[services]]
-binding = "B2B_BACKEND"
+binding = "LFD_BACKEND"
 service = "lfd-api"
 
 

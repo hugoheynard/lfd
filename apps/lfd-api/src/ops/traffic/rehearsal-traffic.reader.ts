@@ -44,8 +44,8 @@ export class RehearsalTrafficReader extends TrafficReader {
     return Promise.resolve({
       generatedAt: to.toISOString(),
       source: "rehearsal",
-      windows: [rehearse("b2b", seed, minutes, from, to)],
-      series: [{ node: "b2b", points: rehearseSeries(seed, to) }],
+      windows: [rehearse("lfd", seed, minutes, from, to)],
+      series: [{ node: "lfd", points: rehearseSeries(seed, to) }],
     });
   }
 }

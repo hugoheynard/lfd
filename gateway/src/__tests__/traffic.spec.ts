@@ -71,14 +71,14 @@ describe("trafficPoint", () => {
     // Analytics Engine n'accepte qu'un index : c'est la clé d'échantillonnage,
     // donc la dimension qu'on ne veut jamais perdre.
     const point = trafficPoint({
-      node: "b2b",
+      node: "lfd",
       status: 200,
       forwardedPath: "/admin/orders",
       durationMs: 12.4,
       origin: "upstream",
     });
 
-    expect(point.indexes).toEqual(["b2b"]);
+    expect(point.indexes).toEqual(["lfd"]);
     expect(point.blobs).toEqual(["2xx", "admin/orders", "upstream"]);
   });
 
@@ -86,14 +86,14 @@ describe("trafficPoint", () => {
     // La distinction porte toute la conclusion : un backend qui répond en
     // échouant n'est pas un backend mort. Seul le second autorise `down`.
     const upstream = trafficPoint({
-      node: "b2b",
+      node: "lfd",
       status: 500,
       forwardedPath: "/orders",
       durationMs: 30,
       origin: "upstream",
     });
     const gateway = trafficPoint({
-      node: "b2b",
+      node: "lfd",
       status: 502,
       forwardedPath: "/orders",
       durationMs: 30,
@@ -109,7 +109,7 @@ describe("trafficPoint", () => {
     // dès que Analytics Engine échantillonne. Le nombre se lit
     // `SUM(_sample_interval)`.
     const point = trafficPoint({
-      node: "b2b",
+      node: "lfd",
       status: 200,
       forwardedPath: "/catalogue",
       durationMs: 12.6,
@@ -121,7 +121,7 @@ describe("trafficPoint", () => {
 
   it("ne rend jamais une durée négative", () => {
     const point = trafficPoint({
-      node: "b2b",
+      node: "lfd",
       status: 200,
       forwardedPath: "/catalogue",
       durationMs: -1,
@@ -140,7 +140,7 @@ describe("formatTrafficPoint — la simulation de dev", () => {
     // du vrai format, et on découvrirait l'écart après le déploiement.
     const line = formatTrafficPoint(
       trafficPoint({
-        node: "b2b",
+        node: "lfd",
         status: 200,
         forwardedPath: "/admin/orders",
         durationMs: 12,
@@ -148,13 +148,13 @@ describe("formatTrafficPoint — la simulation de dev", () => {
       }),
     );
 
-    expect(line).toBe("ops b2b 2xx admin/orders upstream 12ms");
+    expect(line).toBe("ops lfd 2xx admin/orders upstream 12ms");
   });
 
   it("montre un throttle et un upstream muet aussi lisiblement", () => {
     const throttled = formatTrafficPoint(
       trafficPoint({
-        node: "b2b",
+        node: "lfd",
         status: 429,
         forwardedPath: "/orders",
         durationMs: 3,
@@ -163,7 +163,7 @@ describe("formatTrafficPoint — la simulation de dev", () => {
     );
     const unreachable = formatTrafficPoint(
       trafficPoint({
-        node: "b2b",
+        node: "lfd",
         status: 502,
         forwardedPath: "/catalogue",
         durationMs: 5000,
@@ -171,7 +171,7 @@ describe("formatTrafficPoint — la simulation de dev", () => {
       }),
     );
 
-    expect(throttled).toBe("ops b2b 429 orders upstream 3ms");
-    expect(unreachable).toBe("ops b2b 5xx catalogue gateway 5000ms");
+    expect(throttled).toBe("ops lfd 429 orders upstream 3ms");
+    expect(unreachable).toBe("ops lfd 5xx catalogue gateway 5000ms");
   });
 });

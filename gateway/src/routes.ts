@@ -34,6 +34,11 @@ import { DEV_PORTS, GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
 /**
  * Le préfixe qui désigne un backend, retiré avant transmission.
  *
+ * Il nomme le **DÉPLOYABLE**, pas une de ses surfaces. C'était `/api/b2b`, ce
+ * qui désignait un domaine métier sur les quatre que `lfd-api` sert — b2b, pim,
+ * ops, staff — et laissait croire qu'il existait ailleurs une autre API pour le
+ * reste. La boutique ET le back-office passent par celui-ci.
+ *
  * **Un seul**, depuis que le référentiel est un module du back-office (B6) :
  * son backend a fondu dans celui-ci (B2c) et `/api/pim` ne menait plus qu'à un
  * Worker que personne n'appelait. La table reste une TABLE, et non une
@@ -41,7 +46,7 @@ import { DEV_PORTS, GATEWAY_SUBDOMAINS } from "@lfd/endpoints";
  * `stripPrefix` garde sa garde de frontière pour ce jour-là.
  */
 export const API_PREFIXES = {
-  b2b: "/api/b2b",
+  lfd: "/api/lfd",
 } as const;
 
 export type BackendKey = keyof typeof API_PREFIXES;

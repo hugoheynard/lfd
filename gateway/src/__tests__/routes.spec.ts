@@ -17,25 +17,25 @@ import { API_PREFIXES, resolveTarget } from "../routes";
 
 describe("resolveTarget — préfixes d'API vers les backends", () => {
   it("route vers le backend et retire le préfixe", () => {
-    expect(resolveTarget("gw.example", `${API_PREFIXES.b2b}/platform-settings`)).toEqual({
+    expect(resolveTarget("gw.example", `${API_PREFIXES.lfd}/platform-settings`)).toEqual({
       kind: "backend",
-      backend: "b2b",
+      backend: "lfd",
       path: "/platform-settings",
     });
   });
 
   it("rend `/` quand le préfixe est seul, jamais la chaîne vide", () => {
     // La chaîne vide produirait une URL invalide côté backend.
-    expect(resolveTarget("gw.example", API_PREFIXES.b2b)).toEqual({
+    expect(resolveTarget("gw.example", API_PREFIXES.lfd)).toEqual({
       kind: "backend",
-      backend: "b2b",
+      backend: "lfd",
       path: "/",
     });
   });
 
   it("conserve les chemins profonds", () => {
-    const target = resolveTarget("gw.example", `${API_PREFIXES.b2b}/admin/companies/42`);
-    expect(target).toEqual({ kind: "backend", backend: "b2b", path: "/admin/companies/42" });
+    const target = resolveTarget("gw.example", `${API_PREFIXES.lfd}/admin/companies/42`);
+    expect(target).toEqual({ kind: "backend", backend: "lfd", path: "/admin/companies/42" });
   });
 
   it("ne matche PAS un préfixe qui n'est qu'un début de segment", () => {
@@ -44,7 +44,7 @@ describe("resolveTarget — préfixes d'API vers les backends", () => {
     // plus qu'un backend, donc plus de collision possible AUJOURD'HUI — ce test
     // garde la garantie en vie pour le jour où un second arrive, et c'est
     // précisément le jour où personne ne la re-déduirait.
-    expect(resolveTarget("gw.example", `${API_PREFIXES.b2b}xyz/products`)).toBeUndefined();
+    expect(resolveTarget("gw.example", `${API_PREFIXES.lfd}xyz/products`)).toBeUndefined();
   });
 
   it("rend undefined sur un chemin hors périmètre", () => {
@@ -63,7 +63,7 @@ describe("resolveTarget — sous-domaines de dev, inchangés", () => {
     // le chemin ressemble à un préfixe d'API.
     const target = resolveTarget(
       `${GATEWAY_SUBDOMAINS.b2bBack}.localhost`,
-      `${API_PREFIXES.b2b}/x`,
+      `${API_PREFIXES.lfd}/x`,
     );
     expect(target?.kind).toBe("url");
   });

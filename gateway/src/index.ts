@@ -12,7 +12,7 @@ import type { TrafficObservation } from "./traffic";
  *
  * Deux façons d'atteindre un upstream, et la différence est structurante :
  *   - **URL publique** (`fetch`) — les serveurs de dev, en local ;
- *   - **service binding** (`env.B2B_BACKEND.fetch`) — les backends en prod, par
+ *   - **service binding** (`env.LFD_BACKEND.fetch`) — les backends en prod, par
  *     un appel INTERNE au compte. C'est ce qui permettra d'éteindre
  *     `workers_dev` sur les backends : sans adresse publique, la gateway
  *     devient le seul chemin, donc une vraie frontière et non une décoration.
@@ -44,7 +44,7 @@ const TRACEPARENT_FORMAT = /^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/
 
 /** Les backends joignables par service binding. Absents en `wrangler dev`. */
 interface Env {
-  B2B_BACKEND?: Fetcher;
+  LFD_BACKEND?: Fetcher;
   /**
    * Le dataset Analytics Engine (`TRAFFIC_DATASET` dans `traffic.ts`). Optionnel comme
    * les bindings : absent en `wrangler dev`, et son absence ne doit jamais
@@ -180,8 +180,8 @@ function destinationFor(target: Target, url: URL, env: Env): Destination | undef
  */
 function bindingFor(backend: BackendKey, env: Env): Fetcher | undefined {
   switch (backend) {
-    case "b2b":
-      return env.B2B_BACKEND;
+    case "lfd":
+      return env.LFD_BACKEND;
   }
 }
 

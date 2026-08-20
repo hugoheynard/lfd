@@ -8,7 +8,7 @@ name: deploy_b2b_admin_frontend
 #   CLOUDFLARE_ACCOUNT_ID — account id partagé.
 # Variables PUBLIQUES (onglet Variables — jamais des secrets : elles finissent dans
 # le bundle navigateur, et c'est prévu) :
-#   LFD_API_GATEWAY_URL — URL du backend B2B, PARTAGÉE avec la boutique cliente :
+#   LFD_API_URL — URL du backend B2B, PARTAGÉE avec la boutique cliente :
 #     un seul backend, deux publics (Invariant C). Une seule variable pour les deux.
 #   B2B_ADMIN_AUTH0_DOMAIN · B2B_ADMIN_AUTH0_CLIENT_ID · B2B_ADMIN_AUTH0_AUDIENCE
 #     — connexion staff quand l'app tourne HORS du shell. Sous le shell, la suite
@@ -72,7 +72,7 @@ jobs:
           # à Sentry des cartes qu'il n'appliquerait jamais.
           APP_REVISION: ${{ github.sha }}
           SENTRY_DSN: ${{ vars.SENTRY_DSN }}
-          B2B_ADMIN_API_BASE_URL: ${{ vars.LFD_API_GATEWAY_URL }}
+          B2B_ADMIN_API_BASE_URL: ${{ vars.LFD_API_URL }}
         run: node scripts/generate-api-config.mjs
 
       - name: Generate Auth0 config (public build vars)
