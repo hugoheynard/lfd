@@ -146,6 +146,23 @@ Une seule fois, et dans cet ordre.
    back-office, l'ajouter à l'écran d'accueil, rouvrir **depuis l'icône**, puis
    Obtenir l'app mobile → Activer les notifications.
 
+### Les trois contextes, et ce que chacun peut
+
+|                               | Notifications | Pourquoi                                            |
+| ----------------------------- | ------------- | --------------------------------------------------- |
+| Écran d'accueil (iOS/Android) | **oui**       | le seul contexte qu'Apple autorise depuis 16.4      |
+| Onglet de navigateur          | Android oui   | iOS refuse hors installation, et **en silence**     |
+| Dans la suite (iframe)        | **non**       | un cadre tiers ne peut pas demander la permission   |
+| Coque Capacitor (iOS)         | **non**       | sa WebView n'expose pas l'API Push — c'est un recul |
+
+L'écran « Obtenir l'app mobile » dit lequel de ces cas il est en train de vivre,
+plutôt que d'offrir un bouton qui échoue. Vérifier après déploiement que le
+manifeste sort bien avec un type JSON, sans quoi Chrome refuse l'installation :
+
+```bash
+curl -sI https://<admin>/manifest.webmanifest | grep -i content-type
+```
+
 ⚠️ **Rien de tout cela n'est testable en local.** Web Push exige HTTPS et une
 origine réelle, et sur iPhone l'abonnement n'est possible qu'une fois l'app
 installée sur l'écran d'accueil — Safari refuse en **silence** avant cela. C'est

@@ -4,6 +4,7 @@ import { matchesServerKey, pushStateOf, vapidKeyToBytes } from '../web-push';
 
 const FACTS = {
   supported: true,
+  embedded: false,
   publicKey:
     'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U',
   installed: true,
@@ -18,6 +19,13 @@ describe('ce que l’écran doit dire', () => {
     // dont le navigateur ne sait pas faire l'enverrait chercher au mauvais
     // endroit.
     expect(pushStateOf({ ...FACTS, supported: false, publicKey: null })).toBe('unsupported');
+  });
+
+  it('parle du CADRE avant de parler d’un refus', () => {
+    // Dans un iframe tiers, `Notification.permission` vaut `denied` sans que
+    // personne n'ait rien refusé. Sans ce cas, l'écran annonçait un refus
+    // imaginaire et envoyait fouiller des réglages où il n'y a rien.
+    expect(pushStateOf({ ...FACTS, embedded: true, permission: 'denied' })).toBe('embedded');
   });
 
   it('dit « non configuré » quand le serveur n’a pas de paire VAPID', () => {

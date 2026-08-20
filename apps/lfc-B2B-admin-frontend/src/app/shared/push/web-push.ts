@@ -8,6 +8,16 @@
 export type PushState =
   /** Le navigateur ne sait pas faire (Safari de bureau ancien, mode privé…). */
   | 'unsupported'
+  /**
+   * L'app tourne dans un cadre d'une autre origine — le shell de la suite.
+   *
+   * Les navigateurs refusent `Notification.requestPermission()` à un iframe
+   * tiers, et le cloisonnement du stockage cache l'abonnement de l'origine
+   * principale. Pire que l'échec : `Notification.permission` y rend `denied`,
+   * donc sans ce cas l'écran annonçait un refus que personne n'a jamais donné,
+   * et envoyait fouiller des réglages où il n'y a rien à trouver.
+   */
+  | 'embedded'
   /** Le serveur n'a pas de paire VAPID : personne ne peut s'abonner. */
   | 'unconfigured'
   /** iOS exige l'installation sur l'écran d'accueil avant tout abonnement. */
@@ -73,6 +83,7 @@ export function isIos(): boolean {
  */
 export function pushStateOf(facts: {
   readonly supported: boolean;
+  readonly embedded: boolean;
   readonly publicKey: string | null;
   readonly installed: boolean;
   readonly ios: boolean;
@@ -81,6 +92,11 @@ export function pushStateOf(facts: {
 }): PushState {
   if (!facts.supported) {
     return 'unsupported';
+  }
+  // AVANT la permission : dans un cadre tiers elle vaut `denied` sans que
+  // personne n'ait rien refusé.
+  if (facts.embedded) {
+    return 'embedded';
   }
   if (facts.publicKey === null) {
     return 'unconfigured';

@@ -60,6 +60,16 @@
             depuis l’icône, et le bouton apparaîtra.
           </p>
         }
+        @case ('embedded') {
+          <p class="push-line">
+            Vous êtes dans la <strong>suite</strong>, qui affiche le back-office dans un cadre. Un
+            navigateur refuse d’accorder les notifications à un cadre d’une autre origine — ouvrez
+            le back-office <strong>directement</strong> pour les activer.
+          </p>
+          <a foldButton emphasis="outline" [href]="appUrl" target="_blank" rel="noopener">
+            Ouvrir le back-office seul
+          </a>
+        }
         @case ('denied') {
           <p class="push-line">
             <fold-badge variant="warning" content="Refusées" />
@@ -127,7 +137,10 @@
   <fold-callout variant="info" appearance="inset">
     <strong>Et la coque iOS&nbsp;?</strong> Le dépôt en porte une (Capacitor, en mode
     <em>distant</em>&nbsp;: elle charge exactement cette adresse, donc elle suit les déploiements
-    sans être reconstruite). Elle n’est installée sur aucun téléphone à ce jour, et elle n’apporte
-    rien de plus que l’écran d’accueil tant qu’on ne veut ni caméra native ni notifications système.
+    sans être reconstruite). Elle n’est installée sur aucun téléphone à ce jour — et pour les
+    notifications, elle est un <strong>recul</strong>&nbsp;: sa WebView n’expose pas l’API Push,
+    donc aucune bannière n’y arrive. Sur iPhone, c’est l’app ajoutée à l’écran d’accueil qui les
+    reçoit. La coque ne se justifierait que pour ce que le web ne sait pas faire — appareil photo
+    natif, accès hors ligne.
   </fold-callout>
 </fold-page-layout>

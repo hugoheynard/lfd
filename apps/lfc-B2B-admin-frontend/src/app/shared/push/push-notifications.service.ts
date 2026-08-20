@@ -4,6 +4,7 @@ import type { PushCapability } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { SuiteEmbed } from '../../suite-embed/suite-embed';
 import {
   isIos,
   matchesServerKey,
@@ -29,6 +30,8 @@ const WORKER = '/sw.js';
 @Injectable({ providedIn: 'root' })
 export class PushNotificationsService {
   private readonly http = inject(HttpClient);
+  /** Embarquée dans le shell ? Un cadre tiers ne peut ni demander ni s'abonner. */
+  private readonly embedded = inject(SuiteEmbed).hosted;
 
   private readonly stateValue = signal<PushState>('unsupported');
   /** Ce que l'écran affiche. Lecture seule au dehors. */
@@ -38,6 +41,8 @@ export class PushNotificationsService {
   readonly busy = this.busyValue.asReadonly();
 
   private publicKey: string | null = null;
+  /** `reconcile()` est branché sur un `effect` : il peut se rejouer. */
+  private reconciled = false;
 
   /**
    * Constate l'état, sans jamais rien demander.
@@ -48,11 +53,12 @@ export class PushNotificationsService {
    * geste explicite.
    */
   async refresh(): Promise<void> {
-    const supported = pushSupported();
+    const supported = pushSupported() && !this.embedded;
     this.publicKey = supported ? await this.readPublicKey() : null;
     this.stateValue.set(
       pushStateOf({
-        supported,
+        supported: pushSupported(),
+        embedded: this.embedded,
         publicKey: this.publicKey,
         installed: runningInstalled(),
         ios: isIos(),
@@ -76,7 +82,11 @@ export class PushNotificationsService {
    * suffit que la personne ouvre l'app une fois.
    */
   async reconcile(): Promise<void> {
-    if (!pushSupported() || Notification.permission !== 'granted') {
+    if (this.reconciled || this.embedded || !pushSupported()) {
+      return;
+    }
+    this.reconciled = true;
+    if (Notification.permission !== 'granted') {
       return;
     }
     const subscription = await this.current();
@@ -102,6 +112,9 @@ export class PushNotificationsService {
     }
     this.busyValue.set(true);
     try {
+      // ⚠️ PREMIER `await` de la méthode, et ça doit le rester : Safari n'accorde
+      // la permission que dans la tâche du clic. Un `await` glissé au-dessus la
+      // ferait refuser sans un mot.
       if ((await Notification.requestPermission()) !== 'granted') {
         await this.refresh();
         return;
@@ -115,7 +128,11 @@ export class PushNotificationsService {
 
   /** Abonne le navigateur et déclare l'abonnement au serveur. */
   private async resubscribe(key: string): Promise<void> {
-    const registration = await navigator.serviceWorker.register(WORKER);
+    await navigator.serviceWorker.register(WORKER);
+    // `register()` rend la main dès l'INSCRIPTION ; `ready` attend qu'un worker
+    // soit ACTIF. S'abonner entre les deux échoue sur Safari — et c'est
+    // exactement le premier abonnement, celui qu'on ne peut tester qu'en ligne.
+    const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.subscribe({
       // Obligatoire, et vrai : chaque poussée fait apparaître une bannière. Une
       // notification silencieuse serait un canal de fond, que ni Chrome ni

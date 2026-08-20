@@ -66,14 +66,24 @@ self.addEventListener('notificationclick', (event) => {
   const url = (event.notification.data && event.notification.data.url) || '/';
 
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
-      for (const client of windows) {
-        if (client.url.startsWith(self.registration.scope) && 'focus' in client) {
-          client.navigate(url);
-          return client.focus();
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windows) => {
+        for (const client of windows) {
+          if (client.url.startsWith(self.registration.scope) && 'focus' in client) {
+            /* `navigate` échoue sur un client que ce worker ne contrôle pas —
+               un onglet ouvert avant l'installation, typiquement. On se rabat
+               sur le focus seul : mieux vaut la bonne fenêtre au mauvais écran
+               qu'un clic qui ne fait rien. */
+            return Promise.resolve(client.navigate(url))
+              .catch(() => undefined)
+              .then(() => client.focus());
+          }
         }
-      }
-      return self.clients.openWindow(url);
-    }),
+        return self.clients.openWindow(url);
+      })
+      /* Rien ne rattrape un rejet ici : sans ce garde, un clic sur la bannière
+         devient une erreur silencieuse dans le worker. */
+      .catch(() => undefined),
   );
 });
