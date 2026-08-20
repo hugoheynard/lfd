@@ -250,7 +250,14 @@ export function optionalWebPushConfig(): WebPushConfig | null {
   return {
     publicKey,
     privateKey,
-    subject: optionalString("VAPID_SUBJECT") ?? `mailto:${DEFAULT_FROM_ADDRESS}`,
+    // Le repli suit l'adresse d'expédition RÉELLEMENT configurée, pas la
+    // constante : le raisonnement était « notre adresse, déjà surveillée », et
+    // il ne tient que si c'est bien celle d'où partent nos e-mails. Retomber
+    // sur le défaut du code aurait donné, à qui a posé `MAILER_FROM_ADDRESS`,
+    // une adresse de contact que personne ne relève.
+    subject:
+      optionalString("VAPID_SUBJECT") ??
+      `mailto:${optionalString("MAILER_FROM_ADDRESS") ?? DEFAULT_FROM_ADDRESS}`,
   };
 }
 
