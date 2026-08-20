@@ -97,9 +97,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DATABASE_LFD_URL: ${{ secrets.DATABASE_LFD_URL }}
           # Identifiants Auth0 = PUBLICS → GitHub VARIABLES (pas Secrets). Tenant PROD.
-          AUTH0_DOMAIN: ${{ vars.B2B_AUTH0_DOMAIN }}
-          AUTH0_AUDIENCE: ${{ vars.B2B_AUTH0_AUDIENCE }}
-          AUTH0_ADMIN_AUDIENCE: ${{ vars.AUTH0_ADMIN_AUDIENCE }}
+          AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN }}
+          AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE_CUSTOMERS }}
+          AUTH0_ADMIN_AUDIENCE: ${{ vars.AUTH0_AUDIENCE_STAFF }}
           AUTH0_M2M_CLIENT_ID: ${{ secrets.AUTH0_M2M_CLIENT_ID }}
           AUTH0_M2M_CLIENT_SECRET: ${{ secrets.AUTH0_M2M_CLIENT_SECRET }}
           # Connexion staff : distincte de la connexion client, c'est le mur qui
@@ -118,7 +118,7 @@ jobs:
           # donc pointer vers le back-office. Une seule variable pour les deux
           # usages : deux copies à tenir identiques finiraient par diverger, et
           # le QR mènerait alors nulle part sans que rien ne le signale.
-          CLIENT_BASE_URL: ${{ vars.B2B_CLIENT_BASE_URL }}
+          CLIENT_BASE_URL: ${{ vars.LFC_BOUTIQUE_URL }}
           ADMIN_BASE_URL: ${{ vars.LFD_BACKOFFICE_URL }}
           # Courrier : sans la clé, aucune invitation ne part — ni pour l'équipe,
           # ni pour un client.

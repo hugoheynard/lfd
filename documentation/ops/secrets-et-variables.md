@@ -2,6 +2,13 @@
 
 ✅ **Inventaire relu contre GitHub et le code au 2026-08-13.**
 
+> **2026-08-20 (soir)** — les variables Auth0 sont refondues : **un tenant, une
+> variable** (`AUTH0_DOMAIN`, qui en remplaçait trois) et **une API, une
+> variable** (`AUTH0_AUDIENCE_STAFF`, qui en remplaçait deux — le front la
+> demandait, le backend la vérifiait, et rien ne garantissait qu'elles ne
+> divergent pas). Le préfixe distingue désormais l'enseigne de la plateforme :
+> `LFC_` pour ce que le client voit (la boutique), `LFD_` pour le reste.
+>
 > **2026-08-20** — ajout de la paire VAPID (§3 ter) ; `DATABASE_B2B_URL` devient
 > `DATABASE_LFD_URL` ; **`DATABASE_PIM_URL` est SUPPRIMÉE** — le référentiel est
 > passé en schéma `pim` de la base commune (B4), il n'a plus de base à lui. Les entrées sont écrites
@@ -45,7 +52,7 @@ secrets sont ceux qu'on croit.
 | `LFD_API_URL`          | `https://lfd-gateway.lafoliedouce.workers.dev/api/lfd` | **oui** — compilée DANS les 2 fronts. Schéma ET préfixe obligatoires : l'hôte nu donne une URL relative, qui tombe sur le repli SPA de Pages en 200/HTML. |
 | `PIM_API_BASE_URL`     | `…gateway…workers.dev/api/pim`                         | **oui**                                                                                                                                                   |
 | `LFD_BACKOFFICE_URL`   | `https://lfd-backoffice.pages.dev`                     | oui — liens dans les e-mails staff                                                                                                                        |
-| `B2B_CLIENT_BASE_URL`  | `https://lfc-b2b-eu7.pages.dev`                        | **oui** — liens de création de mot de passe client                                                                                                        |
+| `LFC_BOUTIQUE_URL`     | `https://lfc-b2b-eu7.pages.dev`                        | **oui** — liens de création de mot de passe client                                                                                                        |
 | `AUTH0_*_AUDIENCE`     | `https://api-b2b.lafoliedouce.eu…`                     | **non** — ce sont des **identifiants**                                                                                                                    |
 | `B2B_CATALOG_PUSH_URL` | `…gateway…/api/b2b/catalog/ingest`                     | **oui** — le PIM y pousse le catalogue                                                                                                                    |
 
@@ -67,11 +74,11 @@ build sert tous les environnements. En contrepartie, **son origine doit être
 déclarée dans l'application Auth0**, sinon le fournisseur refuse de rendre un
 jeton (« Callback URL mismatch »). Trois listes, à tenir identiques :
 
-| Application Auth0            | Doit contenir                      | Front concerné |
-| ---------------------------- | ---------------------------------- | -------------- |
-| La Folie Coffee B2B platform | la valeur de `B2B_CLIENT_BASE_URL` | espace client  |
-| LFC B2B Admin                | la valeur de `LFD_BACKOFFICE_URL`  | back-office    |
-| La Folie Coffee Admin Suite  | l'origine du shell                 | suite interne  |
+| Application Auth0            | Doit contenir                     | Front concerné |
+| ---------------------------- | --------------------------------- | -------------- |
+| La Folie Coffee B2B platform | la valeur de `LFC_BOUTIQUE_URL`   | espace client  |
+| LFC B2B Admin                | la valeur de `LFD_BACKOFFICE_URL` | back-office    |
+| La Folie Coffee Admin Suite  | l'origine du shell                | suite interne  |
 
 **Allowed Callback URLs**, **Allowed Logout URLs** et **Allowed Web Origins** —
 les trois, pas une seule. Auth0 → Applications → _l'app_ → Settings →
@@ -81,7 +88,7 @@ Application URIs, puis « Save changes » (jusqu'à 30 s de propagation).
 était cassée en production : le projet Pages était passé de `lfc-b2b` à
 `lfc-b2b-eu7`, la variable GitHub avait suivi, Auth0 non. Rien ne l'avait
 signalé — ce réglage est **invisible du dépôt**, et le déploiement le plus vert
-du monde ne le vérifie pas. Toute modification de `B2B_CLIENT_BASE_URL` ou de
+du monde ne le vérifie pas. Toute modification de `LFC_BOUTIQUE_URL` ou de
 `LFD_BACKOFFICE_URL` doit donc s'accompagner de la mise à jour de ces listes,
 dans le même geste.
 

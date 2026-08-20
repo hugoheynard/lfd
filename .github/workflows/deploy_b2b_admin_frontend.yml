@@ -78,9 +78,9 @@ jobs:
       - name: Generate Auth0 config (public build vars)
         working-directory: apps/lfc-B2B-admin-frontend
         env:
-          B2B_ADMIN_AUTH0_DOMAIN: ${{ vars.B2B_ADMIN_AUTH0_DOMAIN }}
-          B2B_ADMIN_AUTH0_CLIENT_ID: ${{ vars.B2B_ADMIN_AUTH0_CLIENT_ID }}
-          B2B_ADMIN_AUTH0_AUDIENCE: ${{ vars.B2B_ADMIN_AUTH0_AUDIENCE }}
+          B2B_ADMIN_AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN }}
+          B2B_ADMIN_AUTH0_CLIENT_ID: ${{ vars.AUTH0_LFD_BACKOFFICE_CLIENT_ID }}
+          B2B_ADMIN_AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE_STAFF }}
         run: node scripts/generate-auth-config.mjs
 
       - name: Typecheck

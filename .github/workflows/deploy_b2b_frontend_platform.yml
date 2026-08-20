@@ -78,9 +78,9 @@ jobs:
           # à Sentry des cartes qu'il n'appliquerait jamais.
           APP_REVISION: ${{ github.sha }}
           SENTRY_DSN: ${{ vars.SENTRY_DSN }}
-          AUTH0_DOMAIN: ${{ vars.B2B_AUTH0_DOMAIN }}
-          AUTH0_CLIENT_ID: ${{ vars.B2B_AUTH0_CLIENT_ID }}
-          AUTH0_AUDIENCE: ${{ vars.B2B_AUTH0_AUDIENCE }}
+          AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN }}
+          AUTH0_CLIENT_ID: ${{ vars.AUTH0_LFC_BOUTIQUE_CLIENT_ID }}
+          AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE_CUSTOMERS }}
           API_BASE_URL: ${{ vars.LFD_API_URL }}
           # Origine de l'app ADMIN — le QR de retrait que ce front affiche pointe
           # vers le back-office, puisque c'est le staff qui le scanne. Absente,
