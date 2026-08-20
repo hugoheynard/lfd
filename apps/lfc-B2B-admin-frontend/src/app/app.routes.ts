@@ -116,11 +116,45 @@ export const routes: Routes = [
     ],
   },
   {
-    path: 'acces-en-attente',
+    // ADMIN — ce qui se règle sur les GENS, par opposition aux Réglages, qui
+    // portent sur le commerce (retraits, catalogue, tarification, facturation).
+    // Deux vues qui vivaient chacune ailleurs, et mal : « Utilisateurs » sous
+    // Réglages avec un garde d'exception, « Accès à remettre » dans le menu
+    // principal pour un geste rare. Les deux répondent à la même question —
+    // qui entre, et avec quoi.
+    //
+    // Le garde du parent est le PLUS FAIBLE des deux enfants, et chaque vue
+    // porte le sien : le contraire enfermerait dehors qui n'a que l'un des deux
+    // droits — même prudence que sur Commercial.
+    path: 'admin',
     canActivate: [permissionGuard('companies:read')],
-    title: 'Accès à remettre — LFC B2B admin',
-    loadComponent: () =>
-      import('./acces-en-attente/acces-en-attente-page').then((m) => m.AccesEnAttentePage),
+    title: 'Admin — LFC B2B admin',
+    loadComponent: () => import('./admin/admin-page/admin-page').then((m) => m.AdminPage),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'acces-en-attente' },
+      {
+        path: 'acces-en-attente',
+        canActivate: [permissionGuard('companies:read')],
+        title: 'Accès à remettre — LFC B2B admin',
+        loadComponent: () =>
+          import('./admin/acces-en-attente/acces-en-attente-page').then(
+            (m) => m.AccesEnAttentePage,
+          ),
+      },
+      {
+        path: 'utilisateurs',
+        // `staff:read` et non `companies:read` : l'annuaire de l'équipe est la
+        // seule ressource que le catalogue réserve à `admin`. Hériter du garde
+        // du parent ouvrait l'écran à quiconque lit les sociétés, et chaque
+        // appel y rendait 403.
+        canActivate: [permissionGuard('staff:read')],
+        title: 'Utilisateurs — LFC B2B admin',
+        loadComponent: () =>
+          import('./admin/staff-users/reglages-staff-users-page').then(
+            (m) => m.ReglagesStaffUsersPage,
+          ),
+      },
+    ],
   },
   {
     path: 'reglages',
@@ -189,20 +223,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./reglages/commercial/reglages-commercial-page').then(
             (m) => m.ReglagesCommercialPage,
-          ),
-      },
-      {
-        path: 'utilisateurs',
-        // `staff:read` et non `settings:read` : l'annuaire de l'équipe vit sous
-        // Réglages par commodité de rangement, mais c'est une AUTRE ressource —
-        // la seule que le catalogue réserve à `admin`. Hériter du garde du
-        // parent ouvrait l'écran à quiconque peut lire les réglages, et chaque
-        // appel y rendait 403.
-        canActivate: [permissionGuard('staff:read')],
-        title: 'Utilisateurs — LFC B2B admin',
-        loadComponent: () =>
-          import('./reglages/staff-users/reglages-staff-users-page').then(
-            (m) => m.ReglagesStaffUsersPage,
           ),
       },
     ],
@@ -279,24 +299,12 @@ export const routes: Routes = [
           import('./pim/emplacements/emplacements-page').then((m) => m.EmplacementsPage),
       },
       {
-        path: 'documentation',
-        title: 'Documentation — LFC B2B admin',
-        loadComponent: () =>
-          import('./pim/documentation/documentation-page').then((m) => m.DocumentationPage),
-      },
-      {
         path: 'integration',
         title: 'Intégrations — LFC B2B admin',
         loadComponent: () =>
           import('./pim/integration/integration-page/integration-page').then(
             (m) => m.IntegrationPage,
           ),
-      },
-      {
-        path: 'reglages',
-        title: 'Réglages — LFC B2B admin',
-        loadComponent: () =>
-          import('./pim/channels/settings-page/settings-page').then((m) => m.SettingsPage),
       },
       {
         path: 'produits/nouveau',
@@ -319,6 +327,37 @@ export const routes: Routes = [
           import('./pim/catalogue/products-page/products-page').then((m) => m.ProductsPage),
       },
     ],
+  },
+  {
+    // LA DOCUMENTATION — au pied du menu, avec les Réglages : on ne l'ouvre pas
+    // pour travailler, on l'ouvre pour comprendre puis on repart. Elle était un
+    // onglet du PIM, ce qui la réservait à qui a `catalog:read` et la noyait
+    // parmi des écrans de travail. Sans garde : c'est de la prose sur le
+    // fonctionnement du catalogue, pas une donnée.
+    path: 'documentation',
+    title: 'Documentation — LFC B2B admin',
+    loadComponent: () =>
+      import('./documentation/documentation-page').then((m) => m.DocumentationPage),
+  },
+  {
+    // LIVRAISON — la place réservée, et rien d'autre pour l'instant. L'entrée
+    // existe avant le module pour que personne ne range ses premiers écrans
+    // dans « Production » en attendant, d'où plus personne ne les sortirait.
+    // Même mur que la production : c'est la même commande, vue au bout.
+    path: 'livraison',
+    canActivate: [permissionGuard('orders:read')],
+    title: 'Livraison — LFC B2B admin',
+    loadComponent: () =>
+      import('./livraison/livraison-page/livraison-page').then((m) => m.LivraisonPage),
+  },
+  {
+    // L'APP MOBILE — il n'y en a pas à télécharger : c'est cette adresse-ci,
+    // ajoutée à l'écran d'accueil. Sans garde, comme la documentation : la page
+    // ne montre qu'un QR de sa propre origine et le mode d'emploi.
+    path: 'app-mobile',
+    title: 'Obtenir l’app mobile — LFC B2B admin',
+    loadComponent: () =>
+      import('./app-mobile/app-mobile-page/app-mobile-page').then((m) => m.AppMobilePage),
   },
   {
     path: 'production',

@@ -15,13 +15,23 @@ import type { PermissionGuard } from '../auth/permission.guard';
  * récolte des 403 partout, ce qui ressemble à une panne bien plus qu'à un refus.
  *
  * `null` = hérite du garde de son parent, et c'est **correct** parce que
- * l'écran parle de la même ressource. « Réglages → Utilisateurs » est
- * précisément le cas où ça ne l'était pas : rangé sous Réglages, il exige
+ * l'écran parle de la même ressource. « Admin → Utilisateurs » est
+ * précisément le cas où ça ne l'est pas : l'annuaire de l'équipe exige
  * `staff:read`, la seule ressource que le catalogue réserve aux
- * administrateurs. Il héritait de `settings:read`, donc un commercial ouvrait
- * la page et chaque appel rendait 403.
+ * administrateurs, alors que son parent s'ouvre sur `companies:read`. Hériter
+ * y ouvrait la page à un commercial, dont chaque appel rendait ensuite 403.
  */
-const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
+const OPEN = 'open';
+
+/**
+ * `null` = hérite d'un ancêtre gardé. `OPEN` = personne ne le garde, et c'est
+ * VOULU. Les distinguer est tout l'intérêt : sans ce mot, un écran oublié et un
+ * écran ouvert exprès s'écrivent pareil, et le test qui traque les orphelins ne
+ * peut plus rien dire.
+ */
+type ScreenAccess = StaffPermission | null | typeof OPEN;
+
+const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'commercial/comptes-clients': 'companies:read',
   'comptes-clients/nouveau': 'companies:write',
   'commandes/:id': 'orders:read',
@@ -38,7 +48,12 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   'comptes-clients/:id/alertes': null,
   'comptes-clients/:id/data': null,
 
-  'acces-en-attente': 'companies:read',
+  // ADMIN — ce qui se règle sur les GENS. Le parent s'ouvre sur le plus faible
+  // des deux droits, et chaque vue porte le sien : `null` aurait donné à
+  // l'annuaire de l'équipe le mur des sociétés, qui n'est pas le sien.
+  admin: 'companies:read',
+  'admin/acces-en-attente': 'companies:read',
+  'admin/utilisateurs': 'staff:read',
 
   // Son PROPRE périmètre, et pas `settings:read` : regarder la flotte n'est pas
   // la régler. Le jour où l'un s'ouvre à quelqu'un, l'autre n'a aucune raison
@@ -59,7 +74,6 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   // Même mur que l'onglet qu'elle commente.
   'reglages/facturation': null,
   'reglages/commercial': 'growth:read',
-  'reglages/utilisateurs': 'staff:read',
 
   pim: 'catalog:read',
   'pim/tva': null,
@@ -67,13 +81,18 @@ const SCREENS: Readonly<Record<string, StaffPermission | null>> = {
   'pim/publication': null,
   'pim/categories': null,
   'pim/emplacements': null,
-  'pim/documentation': null,
   'pim/integration': null,
-  'pim/reglages': null,
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,
   'pim/produits': null,
   production: 'orders:read',
+  livraison: 'orders:read',
+  // Un QR de sa propre origine et un mode d'emploi : rien à garder.
+  'app-mobile': OPEN,
+  // AUCUN garde, et c'est voulu : de la prose sur le fonctionnement du
+  // catalogue, pas une donnée. Elle n'a pas de parent dont hériter — d'où
+  // `OPEN` plutôt que `null`.
+  documentation: OPEN,
 
   commercial: 'companies:read',
   'commercial/cockpit': 'growth:read',
@@ -139,7 +158,8 @@ describe("l'arbre de routes du back-office", () => {
   it('ferme chaque écran derrière EXACTEMENT le droit annoncé', () => {
     const wrong = screens()
       .map(({ path, route }) => ({ path, declared: declaredPermission(route) }))
-      .filter(({ path, declared }) => declared !== SCREENS[path]);
+      // Un écran `OPEN` ne déclare rien — c'est exactement ce qu'on attend de lui.
+      .filter(({ path, declared }) => declared !== (SCREENS[path] === OPEN ? null : SCREENS[path]));
 
     expect(wrong).toEqual([]);
   });

@@ -11,7 +11,7 @@ import type { AdminCompanyDetail, CompanyOpened } from '../../comptes-clients/ad
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
 import type { HolderChoice } from '../holder-picker/holder-picker';
-import { validUntil } from '../../acces-en-attente/pending-access.model';
+import { validUntil } from '../../admin/acces-en-attente/pending-access.model';
 
 /**
  * Ce que la fiche **écrit**.

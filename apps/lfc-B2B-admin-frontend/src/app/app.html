@@ -41,23 +41,6 @@
         ></a>
       }
 
-      @if (canSeeAnalytics()) {
-        <!-- ANALYTICS — ce que le parc raconte, par opposition à ce qu'on lui
-             fait. La croissance y a été sortie de Commercial : on l'ouvrait au
-             milieu du cockpit et des prospects, alors qu'on ne la consulte pas
-             pour agir sur un dossier mais pour comprendre un mouvement. -->
-        <a
-          fold-menu-item
-          icon="stats"
-          label="Analytics"
-          routerLink="/analytics"
-          routerLinkActive
-          #analyticsRla="routerLinkActive"
-          [active]="analyticsRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-
       @if (canSeeProduction()) {
         <!-- La production : ce que le labo doit fabriquer aujourd'hui et demain.
              Après le commercial parce qu'on y va une ou deux fois par jour, à la
@@ -74,14 +57,32 @@
         ></a>
       }
 
+      @if (canSeeProduction()) {
+        <!-- LIVRAISON — la place réservée. Le module n'existe pas encore ;
+             l'entrée si, pour que personne ne range ses premiers écrans dans
+             « Production » en attendant. Même droit : c'est la même commande,
+             vue au bout. -->
+        <a
+          fold-menu-item
+          icon="truck"
+          label="Livraison"
+          routerLink="/livraison"
+          routerLinkActive
+          #livraisonRla="routerLinkActive"
+          [active]="livraisonRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeePim()) {
-        <!-- LE RÉFÉRENTIEL, à la place que ce rail lui gardait depuis le début :
-             entre la production et le canal de secours. Il fut une app à part,
-             ouverte en iframe ; il est un module d'ici. -->
+        <!-- LE PIM, à la place que ce rail lui gardait depuis le début : entre
+             la production et l'administration. Il fut une app à part, ouverte
+             en iframe ; il est un module d'ici — et il garde son nom, celui
+             sous lequel on l'a toujours appelé. -->
         <a
           fold-menu-item
           icon="grid"
-          label="Référentiel"
+          label="PIM"
           routerLink="/pim"
           routerLinkActive
           #pimRla="routerLinkActive"
@@ -90,22 +91,39 @@
         ></a>
       }
 
-      @if (canSeeCompanies()) {
-        <!-- Le canal de secours, donc en dernier : les accès ouverts que
-             personne n'a créés. C'est un geste commercial, mais rare — au
-             milieu des destinations de travail, il pesait autant que « Comptes
-             clients », qu'on ouvre vingt fois par jour. Sa pastille suffit à le
-             faire remonter à l'œil quand il a quelque chose à dire. -->
+      @if (canSeeAdmin()) {
+        <!-- ADMIN — ce qui se règle sur les GENS : qui entre (les accès à
+             remettre) et qui tient l'outil (l'annuaire de l'équipe). Une
+             entrée pour les deux, parce qu'aucune ne mérite la sienne : l'une
+             est un geste rare, l'autre se règle une fois par embauche. La
+             pastille du canal de secours remonte ici — rien ne se perd à
+             l'avoir rangé d'un cran plus bas. -->
         <a
           fold-menu-item
           icon="shield"
-          label="Accès à remettre"
+          label="Admin"
           [badge]="accessBadge()"
           badgeTone="warning"
-          routerLink="/acces-en-attente"
+          routerLink="/admin"
           routerLinkActive
-          #accesRla="routerLinkActive"
-          [active]="accesRla.isActive"
+          #adminRla="routerLinkActive"
+          [active]="adminRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeAnalytics()) {
+        <!-- ANALYTICS — ce que le parc raconte, par opposition à ce qu'on lui
+             fait. La croissance y a été sortie de Commercial : on l'ouvrait au
+             milieu du cockpit et des prospects, alors qu'on ne la consulte pas
+             pour agir sur un dossier mais pour comprendre un mouvement. -->
+        <a
+          fold-menu-item
+          icon="stats"
+          label="Analytics"
+          routerLink="/analytics"
+          routerLinkActive
+          #analyticsRla="routerLinkActive"
+          [active]="analyticsRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -128,17 +146,42 @@
         ></a>
       }
 
-      <!-- QUI est connecté, quand la session est celle de cette app. Embarqué,
-           l'identité appartient au shell et s'affiche là-haut : la répéter ici
-           laisserait croire à deux sessions distinctes. -->
-      @if (menuExpanded() && email(); as who) {
-        <p footer class="rail-who" [title]="who">{{ who }}</p>
-      }
+      <!-- L'APP MOBILE prend la place que tenait l'e-mail du staff. Celui-ci
+           ne disait rien qu'on ne sache déjà — on connaît son propre compte —
+           et il reste affiché en haut à droite quand cette app porte sa
+           session. Le passage du poste au téléphone, lui, demandait de retaper
+           une URL interne : un QR code et un bouton « copier » suffisent. -->
+      <a
+        footer
+        fold-menu-item
+        icon="qr-code"
+        label="Obtenir l’app mobile"
+        routerLink="/app-mobile"
+        routerLinkActive
+        #mobileRla="routerLinkActive"
+        [active]="mobileRla.isActive"
+        (click)="mobileNavOpen.set(false)"
+      ></a>
 
       <!-- RÉGLAGES au pied, avec la session : on n'y va pas pour travailler, on y
            va pour régler quelque chose et repartir. Au milieu des destinations de
            travail, il pesait autant que « Comptes clients », qu'on ouvre vingt
            fois par jour. -->
+      <!-- LA DOCUMENTATION au pied, avec les réglages et la session : on ne
+           l'ouvre pas pour travailler, on l'ouvre pour comprendre puis on
+           repart. Sans garde — c'est de la prose, pas une donnée. -->
+      <a
+        footer
+        fold-menu-item
+        icon="library"
+        label="Documentation"
+        routerLink="/documentation"
+        routerLinkActive
+        #docRla="routerLinkActive"
+        [active]="docRla.isActive"
+        (click)="mobileNavOpen.set(false)"
+      ></a>
+
       @if (canSeeSettings()) {
         <a
           footer
@@ -239,19 +282,6 @@
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
-      @if (canSeeAnalytics()) {
-        <a
-          fold-nav-tile
-          variant="filled"
-          icon="stats"
-          label="Analytics"
-          routerLink="/analytics"
-          routerLinkActive
-          #analyticsTile="routerLinkActive"
-          [active]="analyticsTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
       @if (canSeeProduction()) {
         <a
           fold-nav-tile
@@ -265,6 +295,19 @@
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
+      @if (canSeeProduction()) {
+        <a
+          fold-nav-tile
+          variant="filled"
+          icon="truck"
+          label="Livraison"
+          routerLink="/livraison"
+          routerLinkActive
+          #livraisonTile="routerLinkActive"
+          [active]="livraisonTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
       <!-- Même ordre que le rail : le catalogue s'insérera ici, et le canal de
            secours reste en dernier. Deux navigations qui ne rangent pas pareil
            obligent à réapprendre l'écran en changeant de taille. -->
@@ -273,7 +316,7 @@
           fold-nav-tile
           variant="filled"
           icon="grid"
-          label="Référentiel"
+          label="PIM"
           routerLink="/pim"
           routerLinkActive
           #pimTile="routerLinkActive"
@@ -281,16 +324,31 @@
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
-      @if (canSeeCompanies()) {
+      @if (canSeeAdmin()) {
         <a
           fold-nav-tile
           variant="filled"
           icon="shield"
-          label="Accès à remettre"
-          routerLink="/acces-en-attente"
+          label="Admin"
+          [badge]="accessBadge()"
+          badgeTone="warning"
+          routerLink="/admin"
           routerLinkActive
-          #accesTile="routerLinkActive"
-          [active]="accesTile.isActive"
+          #adminTile="routerLinkActive"
+          [active]="adminTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeAnalytics()) {
+        <a
+          fold-nav-tile
+          variant="filled"
+          icon="stats"
+          label="Analytics"
+          routerLink="/analytics"
+          routerLinkActive
+          #analyticsTile="routerLinkActive"
+          [active]="analyticsTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -307,6 +365,17 @@
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
+      <a
+        fold-nav-tile
+        variant="filled"
+        icon="library"
+        label="Documentation"
+        routerLink="/documentation"
+        routerLinkActive
+        #docTile="routerLinkActive"
+        [active]="docTile.isActive"
+        (click)="mobileNavOpen.set(false)"
+      ></a>
       @if (canSeeSettings()) {
         <a
           fold-nav-tile

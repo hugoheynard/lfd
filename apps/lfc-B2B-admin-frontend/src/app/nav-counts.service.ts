@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 
 import { AdminCompaniesService } from './comptes-clients/admin-companies.service';
-import { PendingAccessService } from './acces-en-attente/pending-access.service';
+import { PendingAccessService } from './admin/acces-en-attente/pending-access.service';
 
 /**
  * Les **compteurs du menu** : ce qui attend derrière chaque entrée.

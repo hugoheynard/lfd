@@ -108,8 +108,20 @@ export class App {
 
   protected readonly canSeeProduction = computed(() => this.permissions.can('orders:read'));
 
-  /** Le référentiel — même droit que le catalogue, puisque c'est le catalogue. */
+  /** Le PIM — même droit que le catalogue, puisque c'est le catalogue. */
   protected readonly canSeePim = computed(() => this.permissions.can('catalog:read'));
+
+  /**
+   * **Admin** — deux vues, deux murs : les accès à remettre demandent
+   * `companies:read`, l'annuaire de l'équipe `staff:read`. L'entrée s'ouvre sur
+   * le PLUS FAIBLE des deux, et la coquille filtre ses onglets ensuite : la
+   * fermer sur `staff:read` retirerait au commercial un canal de secours qu'il
+   * utilise, la fermer sur les deux à la fois enfermerait dehors qui n'a que
+   * l'un. Le mur reste, comme toujours, côté backend.
+   */
+  protected readonly canSeeAdmin = computed(
+    () => this.permissions.can('companies:read') || this.permissions.can('staff:read'),
+  );
   protected readonly canSeeSettings = computed(() => this.permissions.can('settings:read'));
   /**
    * La carte de santé. Son propre périmètre (`ops:read`), et pas celui des
