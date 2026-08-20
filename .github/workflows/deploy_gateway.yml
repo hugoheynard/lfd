@@ -10,7 +10,7 @@ name: deploy_gateway
 # existent. On peut déjà le déployer sans risque (il ne capte aucun trafic).
 #
 # Secrets requis (Settings → Secrets and variables → Actions) :
-#   CLOUDFLARE_LFC_GATEWAY — token « Account · Workers Scripts · Edit »
+#   CLOUDFLARE_LFD_GATEWAY — token « Account · Workers Scripts · Edit »
 #     (+ « Zone · Workers Routes · Edit » le jour où on posera les routes prod).
 #   CLOUDFLARE_ACCOUNT_ID — l'account id partagé.
 
@@ -52,6 +52,6 @@ jobs:
       # l'account id depuis l'environnement, et `gateway/wrangler.toml` pour le reste.
       - name: Deploy Worker
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_GATEWAY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_GATEWAY }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm --filter lfc-suite-gateway exec wrangler deploy

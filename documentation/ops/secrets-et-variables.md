@@ -101,7 +101,7 @@ la production.
 | `B2B_CATALOG_PUSH_SECRET`                                                | backend PIM **et** backend B2B     | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés**     |
 | `RECOMPUTE_TOKEN`                                                        | Worker B2B **et** container        | comparé par `RecomputeGuard`                                                       |
 | `CLOUDFLARE_ACCOUNT_ID`                                                  | tous les déploiements              | injecté dans l'image au deploy                                                     |
-| `LFC_{PIM,B2B}_BACKEND_WORKER`                                           | déploiements                       | jetons Cloudflare, un par app                                                      |
+| `LFD_API_WORKER` · `CLOUDFLARE_LFD_GATEWAY` · `CLOUDFLARE_LFC_*_PAGES`   | déploiements                       | jetons Cloudflare, un par app — préfixe `LFC_` → `LFD_` le 2026-08-20              |
 | `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`                                 | backend B2B                        | signent les notifications poussées — cf. §3 ter ; `VAPID_SUBJECT` est une Variable |
 
 **Le PIM ne reçoit aucun webhook** — zéro occurrence de « webhook » dans son
