@@ -1,4 +1,4 @@
-name: deploy_b2b_frontend_platform
+name: deploy_lfc_boutique
 
 # Builds the browser-only static bundle of lfc-B2B-platform-frontend and pushes
 # it to Cloudflare Pages on every push to main. No SSR (the B2B space needs no
@@ -31,19 +31,19 @@ on:
     paths:
       - "apps/lfc-B2B-platform-frontend/**"
       - "pnpm-workspace.yaml"
-      - ".github/workflows/deploy_b2b_frontend_platform.yml"
+      - ".github/workflows/deploy_lfc_boutique.yml"
   workflow_dispatch:
 
 # One live deploy at a time; a newer push supersedes an in-flight one.
 concurrency:
-  group: deploy_b2b_frontend_platform
+  group: deploy_lfc_boutique
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  deploy_b2b_frontend_platform:
+  deploy_lfc_boutique:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

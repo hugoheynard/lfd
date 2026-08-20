@@ -225,7 +225,7 @@ flowchart LR
 sont lues qu'à son démarrage, et poser un secret ne déclenche **aucun** rollout
 — seule une **image neuve** le fait. Poser les quatre valeurs puis attendre ne
 change donc rien : il faut relancer le workflow
-[`deploy_b2b_backend.yml`](../../.github/workflows/deploy_b2b_backend.yml).
+[`deploy_lfd_api.yml`](../../.github/workflows/deploy_lfd_api.yml).
 
 Les trois maillons de ce schéma sont tenus par
 [`container/__tests__/runtime-keys.spec.ts`](../../apps/lfd-api/container/__tests__/runtime-keys.spec.ts),

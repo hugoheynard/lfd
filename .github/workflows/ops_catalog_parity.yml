@@ -1,4 +1,4 @@
-name: ops_b2b_catalog_parity
+name: ops_catalog_parity
 
 # Compare, EN PRODUCTION, ce que le checkout facture aujourd'hui (le seed) à ce
 # qu'il facturerait après la bascule (le catalogue reçu du PIM).
@@ -9,7 +9,7 @@ name: ops_b2b_catalog_parity
 # un écart silencieux facture le mauvais montant sans que rien ne le signale.
 #
 # Pourquoi un workflow : la route est gardée par `RECOMPUTE_TOKEN`, secret
-# GitHub donc en écriture seule. Même raison que `ops_b2b_logs`.
+# GitHub donc en écriture seule. Même raison que `ops_logs`.
 #
 # ⚠️ TEMPORAIRE. Ce workflow meurt avec le seed, à la slice C7.
 

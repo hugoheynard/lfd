@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CONTAINER = join(HERE, "..");
 const CONFIG = join(HERE, "../../src/platform/config");
-const WORKFLOW = join(HERE, "../../../../.github/workflows/deploy_b2b_backend.yml");
+const WORKFLOW = join(HERE, "../../../../.github/workflows/deploy_lfd_api.yml");
 
 /**
  * Les réglages que le déploiement **ne pose pas**, avec la raison — même

@@ -107,7 +107,7 @@ l'espace client, et c'est une coquille.
 ### P0-6 · Aucune CI : ni lint, ni tests, avant un déploiement
 
 `.github/workflows/` ne contient que des workflows de **déploiement**. Le plus
-complet (`deploy_b2b_backend.yml`) fait `tsc --noEmit`, puis construit et pousse
+complet (`deploy_lfd_api.yml`) fait `tsc --noEmit`, puis construit et pousse
 l'image. **Aucun `lint`, aucun `test`, sur aucune app**, et rien du tout sur les
 Pull Requests.
 

@@ -216,7 +216,7 @@ Le seed backend est l'autorité de prix : tant que l'étape 2 n'est pas faite, u
 
 **L'étape 2 est outillée** : `GET /admin/catalog/parity` compare les deux
 implémentations réelles — le seed tel que le checkout le résout, le catalogue
-reçu tel que la boutique le lirait — et le workflow `ops_b2b_catalog_parity`
+reçu tel que la boutique le lirait — et le workflow `ops_catalog_parity`
 l'imprime en tableau lisible. Comparer les fichiers sources aurait prouvé que
 deux tableaux se ressemblent, pas que la caisse rend la même monnaie.
 
@@ -304,7 +304,7 @@ réglé dans le PIM.
       le moule Shopify.
 - [ ] **C4 — B2B : contexte `catalog/`.** Les deux tables, l'ingestion
       anti-corruption, le port de lecture. **Dépend de l'arbitrage d'identité.**
-- [~] **C5 — B2B : la comparaison de parité est livrée** (`/admin/catalog/parity` + workflow `ops_b2b_catalog_parity`). **La bascule du port reste à faire**,
+- [~] **C5 — B2B : la comparaison de parité est livrée** (`/admin/catalog/parity` + workflow `ops_catalog_parity`). **La bascule du port reste à faire**,
   et attend les deux blocages ci-dessus — dont un qui est de la saisie PIM.
 - [ ] **C6 — `catalog-ui` + écran admin.** Prix B2B et visibilité, avec la
       provenance affichée.

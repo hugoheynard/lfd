@@ -1,10 +1,10 @@
-name: ops_b2b_logs
+name: ops_logs
 
 # Lit les dernières lignes d'incident de l'instance B2B en production.
 #
 # Pourquoi un workflow : la route est gardée par `RECOMPUTE_TOKEN`, un secret
 # GitHub — donc en écriture seule. La clé n'est détenue que par la CI, c'est
-# donc depuis la CI que ça se lit. Même raison que `ops_b2b_identity_probe`.
+# donc depuis la CI que ça se lit. Même raison que `ops_identity_probe`.
 #
 # Ce qu'on lit est un TAMPON EN MÉMOIRE, borné et perdu au redémarrage : il
 # répond à « que vient-il de se passer ? », pas à « qu'est-il arrivé cette

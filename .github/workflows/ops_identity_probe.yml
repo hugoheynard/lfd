@@ -1,4 +1,4 @@
-name: ops_b2b_identity_probe
+name: ops_identity_probe
 
 # Sonde le canal d'identité de la PROD, à la demande.
 #

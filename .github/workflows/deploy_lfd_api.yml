@@ -1,4 +1,4 @@
-name: deploy_b2b_backend
+name: deploy_lfd_api
 
 # Déploie le backend B2B (lfd-api, NestJS + Prisma) sur Cloudflare
 # **Containers** : build de l'image depuis la racine monorepo → push registre
@@ -24,18 +24,18 @@ on:
       - "apps/lfd-api/**"
       - "packages/**"
       - "pnpm-workspace.yaml"
-      - ".github/workflows/deploy_b2b_backend.yml"
+      - ".github/workflows/deploy_lfd_api.yml"
   workflow_dispatch:
 
 concurrency:
-  group: deploy_b2b_backend
+  group: deploy_lfd_api
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  deploy_b2b_backend:
+  deploy_lfd_api:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

@@ -59,7 +59,7 @@ flowchart LR
 | **Worker** (`container/worker.ts`) | Router + injecter `envVars` dans le container | Aucune logique métier, aucun accès DB             |
 | **Container** (`Backend` DO)       | Faire tourner NestJS, port 8080               | N'est jamais joignable directement de l'extérieur |
 | **Image** (`Dockerfile`)           | Embarque le code + deps prod + client Prisma  | Ne contient AUCUN secret runtime                  |
-| **CI** (`deploy_b2b_backend.yml`)  | Build → push → deploy → sync secrets          | N'invente aucune valeur : tout vient de GitHub    |
+| **CI** (`deploy_lfd_api.yml`)      | Build → push → deploy → sync secrets          | N'invente aucune valeur : tout vient de GitHub    |
 
 ---
 
@@ -126,7 +126,7 @@ flowchart TB
         end
     end
 
-    subgraph ci["CI — deploy_b2b_backend.yml"]
+    subgraph ci["CI — deploy_lfd_api.yml"]
         DEP["étape 'Deploy'<br/>utilise S7"]
         SYNC["étape 'Sync runtime secrets'<br/>mappe Secrets+Variables → env"]
     end
@@ -270,7 +270,7 @@ réciproquement. La confiance vient du JWT, jamais de l'URL ou d'un flag.
 ### Où se fait le mapping (yml)
 
 ```yaml
-# deploy_b2b_backend.yml — étape Sync runtime secrets
+# deploy_lfd_api.yml — étape Sync runtime secrets
 AUTH0_DOMAIN: ${{ vars.B2B_AUTH0_DOMAIN }} # Variable → env générique
 AUTH0_AUDIENCE: ${{ vars.B2B_AUTH0_AUDIENCE }} # Variable → env générique
 AUTH0_ADMIN_AUDIENCE: ${{ vars.AUTH0_ADMIN_AUDIENCE }}
@@ -423,11 +423,11 @@ Le rate-limit vit sur les **Workers backend** (pas la gateway) : la sécurité e
 
 ## 9. Fichiers de référence
 
-| Fichier                                    | Rôle                                         |
-| ------------------------------------------ | -------------------------------------------- |
-| `apps/lfd-api/container/worker.ts`         | Worker : routage + relais `envVars`          |
-| `apps/lfd-api/wrangler.jsonc`              | Config Worker + container (image, instances) |
-| `apps/lfd-api/Dockerfile`                  | Image NestJS (build contexte racine)         |
-| `apps/lfd-api/.env.example`                | Liste **autoritaire** des variables runtime  |
-| `.github/workflows/deploy_b2b_backend.yml` | Pipeline CI (build → push → deploy → sync)   |
-| `documentation/CONTAINERIZE-NOTES.md`      | Points à valider au 1er build Docker         |
+| Fichier                                | Rôle                                         |
+| -------------------------------------- | -------------------------------------------- |
+| `apps/lfd-api/container/worker.ts`     | Worker : routage + relais `envVars`          |
+| `apps/lfd-api/wrangler.jsonc`          | Config Worker + container (image, instances) |
+| `apps/lfd-api/Dockerfile`              | Image NestJS (build contexte racine)         |
+| `apps/lfd-api/.env.example`            | Liste **autoritaire** des variables runtime  |
+| `.github/workflows/deploy_lfd_api.yml` | Pipeline CI (build → push → deploy → sync)   |
+| `documentation/CONTAINERIZE-NOTES.md`  | Points à valider au 1er build Docker         |

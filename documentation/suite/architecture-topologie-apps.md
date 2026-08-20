@@ -479,7 +479,7 @@ de la passerelle : **brancher, repointer, VÉRIFIER, et seulement ensuite
 | #     | Geste                                                                           | Où                          |
 | ----- | ------------------------------------------------------------------------------- | --------------------------- |
 | 1     | Poser `DATABASE_PIM_URL` (+ Shopify si le canal doit vivre)                     | Secrets GitHub              |
-| 2     | Déployer l'API — elle sert désormais `/pim/*`                                   | `deploy_b2b_backend`        |
+| 2     | Déployer l'API — elle sert désormais `/pim/*`                                   | `deploy_lfd_api`            |
 | 3     | Vérifier `/api/b2b/pim/catalogue/products` à travers la passerelle              | `curl`                      |
 | 4     | Retirer le préfixe `/api/pim` et le binding `PIM_BACKEND`                       | `gateway/`                  |
 | 5     | Pointer `PIM_API_BASE_URL` sur `…/api/b2b/pim`                                  | variable Pages du front PIM |

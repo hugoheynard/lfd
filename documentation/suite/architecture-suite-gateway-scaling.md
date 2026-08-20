@@ -196,8 +196,8 @@ mystérieux ».
 
 **Phase 4 — Gateway Worker (prod).**
 `gateway/wrangler.toml` (routes + carte d'upstreams en `[vars]`) + worker de
-routing trivial + workflow `deploy_gateway.yml` calqué sur
-`deploy_b2b_frontend_platform.yml`. Déploiement **canary + rollback**
+routing trivial + workflow `deploy_lfd_gateway.yml` calqué sur
+`deploy_lfc_boutique.yml`. Déploiement **canary + rollback**
 (`wrangler versions` / `rollback`).
 
 **Phase 5 — Bascule single-origin.**
@@ -223,7 +223,7 @@ future doit être isolée.
 En prod, **le registre dev ne sert plus** — et c'est voulu : il n'y a **pas de
 ports exposés** (chaque backend est une origine stable, Invariant A). Ce qui
 « se met en place tout seul », c'est la **CI/CD self-bootstrap**, sur le patron
-déjà en place pour le B2B front (`.github/workflows/deploy_b2b_frontend_platform.yml`).
+déjà en place pour le B2B front (`.github/workflows/deploy_lfc_boutique.yml`).
 
 ### Un workflow par déployable (push `main` → deploy)
 

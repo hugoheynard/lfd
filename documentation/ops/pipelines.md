@@ -22,9 +22,9 @@ flowchart LR
         D["packages/**"]
         E["gateway/**"]
     end
-    A --> WB[deploy_b2b_backend]
-    C --> WA[deploy_b2b_admin_frontend]
-    E --> WG[deploy_gateway]
+    A --> WB[deploy_lfd_api]
+    C --> WA[deploy_lfd_backoffice]
+    E --> WG[deploy_lfd_gateway]
     D -.->|"touche tout le monde"| WB & WA
 ```
 

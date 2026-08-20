@@ -1,4 +1,4 @@
-name: deploy_gateway
+name: deploy_lfd_gateway
 
 # Déploie le Worker passerelle de la Suite LFC (gateway/) sur Cloudflare, à chaque
 # push sur main qui touche gateway/**.
@@ -19,18 +19,18 @@ on:
     branches: [main]
     paths:
       - "gateway/**"
-      - ".github/workflows/deploy_gateway.yml"
+      - ".github/workflows/deploy_lfd_gateway.yml"
   workflow_dispatch:
 
 concurrency:
-  group: deploy_gateway
+  group: deploy_lfd_gateway
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  deploy_gateway:
+  deploy_lfd_gateway:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

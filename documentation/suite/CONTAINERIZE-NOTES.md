@@ -117,5 +117,5 @@ transaction : `prisma/migrations/20260730065832_company_contacts/migration.sql`.
 - Le PIM reste sur `getRandom` : backoffice interne, où un démarrage à froid
   occasionnel est acceptable. À revoir si l'usage devient quotidien.
 - Le Worker ne fait que router ; toute la logique reste dans l'image NestJS.
-- Les deux workflows `deploy_pim_backend.yml` / `deploy_b2b_backend.yml` lancent
+- Les deux workflows `deploy_pim_backend.yml` / `deploy_lfd_api.yml` lancent
   `wrangler deploy` sur push `main` touchant le backend concerné.

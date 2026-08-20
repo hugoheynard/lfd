@@ -1,6 +1,6 @@
 {
   // Backend B2B (NestJS) en Cloudflare Container, piloté par un Worker d'entrée.
-  // Consommé par .github/workflows/deploy_b2b_backend.yml (wrangler deploy).
+  // Consommé par .github/workflows/deploy_lfd_api.yml (wrangler deploy).
   //
   // Renommé `lfc-b2b-backend` → `lfd-api` le 2026-08-20 : il ne sert plus la
   // seule surface B2B mais quatre (b2b, pim, ops, staff), et son nom le disait

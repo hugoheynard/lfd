@@ -1,4 +1,4 @@
-name: deploy_b2b_admin_frontend
+name: deploy_lfd_backoffice
 
 # Build browser-only du B2B admin front (lfc-B2B-admin-frontend) → Cloudflare Pages, à
 # chaque push sur main. Pas de SSR. wrangler ne fait qu'uploader le statique déjà buildé.
@@ -23,18 +23,18 @@ on:
     paths:
       - "apps/lfc-B2B-admin-frontend/**"
       - "pnpm-workspace.yaml"
-      - ".github/workflows/deploy_b2b_admin_frontend.yml"
+      - ".github/workflows/deploy_lfd_backoffice.yml"
   workflow_dispatch:
 
 concurrency:
-  group: deploy_b2b_admin_frontend
+  group: deploy_lfd_backoffice
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  deploy_b2b_admin_frontend:
+  deploy_lfd_backoffice:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

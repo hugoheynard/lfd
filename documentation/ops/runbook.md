@@ -27,7 +27,7 @@ message signifie qu'on tape encore sur l'ancienne.
 Rien ne se déclenche : les variables ne sont lues qu'au build.
 
 ```bash
-gh workflow run deploy_b2b_backend.yml --ref main
+gh workflow run deploy_lfd_api.yml --ref main
 ```
 
 **Contrôle** — pour un front, lire la valeur **dans le bundle servi**, pas dans
@@ -236,7 +236,7 @@ curl -s "https://<api>/admin/ops/logs?limit=50" -H "x-lfc-recompute-token: <jeto
 ```
 
 Le jeton étant en écriture seule dans GitHub, le chemin normal est le workflow
-**`ops_b2b_logs`** (Actions → Run workflow), qui imprime un tableau lisible.
+**`ops_logs`** (Actions → Run workflow), qui imprime un tableau lisible.
 
 ⚠️ Tampon **vivant** : borné, perdu au redémarrage, propre à l'instance qui
 répond. Il dit ce qui vient de se passer, pas ce qui s'est passé cette nuit —
