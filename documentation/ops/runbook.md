@@ -118,6 +118,33 @@ La sonde publique `/health` en porte les **compteurs** (`capabilities.blocking`
 verrouillée est une aide qu'on ne doit qu'à soi-même. Le déploiement s'arrête
 sur un canal bloquant (étape « Inventaire des canaux »).
 
+## Basculer le back-office vers `lfd-backoffice`
+
+Cloudflare **ne renomme pas** un projet Pages. Le workflow en crée donc un neuf,
+et l'ancien continue de servir jusqu'à ce que tu le supprimes — c'est ce qui
+rend la bascule sans coupure, à condition de laisser les DEUX origines ouvertes
+pendant la traversée.
+
+1. **Auth0**, application « LFC B2B Admin » → **AJOUTER** (sans retirer)
+   `https://lfd-backoffice.pages.dev` dans _Allowed Callback URLs_, _Logout
+   URLs_ et _Web Origins_. Sans ça, la connexion échoue sur la nouvelle adresse.
+2. **Fusionner.** Le front se déploie sur le projet neuf, le backend repart avec
+   les deux origines autorisées.
+3. 🔴 **LIRE L'URL RÉELLEMENT SERVIE** dans le journal du workflow. Si le nom
+   court était pris, Cloudflare a suffixé le sous-domaine **sans rien dire** —
+   l'accident `lfc-b2b` → `lfc-b2b-eu7`, qui a laissé la boutique hors CORS
+   pendant des jours. Corriger `PROD_FRONT_ORIGINS.b2bAdminFront` si besoin, et
+   redéployer le backend.
+4. **Vérifier** : se connecter sur la nouvelle adresse, et regarder qu'un appel
+   d'API rend bien un `access-control-allow-origin`.
+5. **Puis seulement** : passer `B2B_ADMIN_BASE_URL` à la nouvelle adresse
+   (les liens des e-mails staff), retirer `LEGACY_B2B_ADMIN_FRONT` du CORS,
+   retirer l'ancienne URL d'Auth0, supprimer le projet Pages `lfc-b2b-admin`.
+
+⚠️ L'étape 5 est celle qu'on oublie, **parce que tout marche sans elle**. Une
+origine laissée en CORS est une origine dont on ne relit plus le contenu
+déployé.
+
 ## Mettre en service les notifications poussées
 
 Une seule fois, et dans cet ordre.

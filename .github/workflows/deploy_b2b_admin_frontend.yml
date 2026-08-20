@@ -15,7 +15,7 @@ name: deploy_b2b_admin_frontend
 #       possède la session et ces trois valeurs ne servent pas.
 #     ⚠️ _AUDIENCE = l'AUTH0_ADMIN_AUDIENCE du backend (surface staff), jamais son
 #       AUTH0_AUDIENCE (surface client).
-# Projet Pages `lfc-b2b-admin` (créé au 1er run).
+# Projet Pages `lfd-backoffice` (créé au 1er run ; `lfc-b2b-admin` avant le 2026-08-20).
 
 on:
   push:
@@ -89,12 +89,25 @@ jobs:
       - name: Build (static, browser-only)
         run: pnpm --filter lfc-b2b-admin-frontend exec ng build --configuration cloudflare
 
+      # 🔴 `lfd-backoffice` depuis le 2026-08-20 : le projet s'appelait
+      #    `lfc-b2b-admin`. Cloudflare ne renomme PAS un projet Pages — celui-ci
+      #    est donc NEUF, et l'ancien continue de servir jusqu'à suppression
+      #    manuelle. C'est ce qui rend la bascule sans coupure, à condition que
+      #    les DEUX origines soient autorisées en CORS (elles le sont, cf.
+      #    `packages/endpoints` → `LEGACY_B2B_ADMIN_FRONT`) et déclarées chez
+      #    Auth0.
+      #
+      # ⚠️ APRÈS LE PREMIER DÉPLOIEMENT, LIRE L'URL RENDUE ICI. Si le nom court
+      #    était pris, Cloudflare suffixe le sous-domaine SANS RIEN DIRE — c'est
+      #    l'accident `lfc-b2b` → `lfc-b2b-eu7`, qui a laissé la boutique hors
+      #    CORS pendant des jours sans que personne ne le voie. L'origine réelle
+      #    doit être recopiée dans `PROD_FRONT_ORIGINS.b2bAdminFront`.
       - name: Ensure Pages project exists
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_BACKOFFICE_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          pnpm dlx wrangler pages project create lfc-b2b-admin
+          pnpm dlx wrangler pages project create lfd-backoffice
           --production-branch=main || true
 
       - name: Deploy to Cloudflare Pages
@@ -104,5 +117,5 @@ jobs:
         run: >-
           pnpm dlx wrangler pages deploy
           apps/lfc-B2B-admin-frontend/dist/lfc-b2b-admin-frontend/browser
-          --project-name=lfc-b2b-admin
+          --project-name=lfd-backoffice
           --branch=main

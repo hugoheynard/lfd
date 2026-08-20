@@ -126,7 +126,7 @@ export const DEV_CORS_ORIGINS: string[] = [
  * d'environnement : une seule source de vérité, zéro câblage CI pour le CORS.
  *
  * Noms de projet Pages (cf. `.github/workflows/deploy_*_frontend*.yml`) :
- * `lfc-b2b` (boutique), `lfc-b2b-admin` (staff), `lfc-pim`. Quand un domaine
+ * `lfc-b2b` (boutique), `lfd-backoffice` (staff), `lfc-pim`. Quand un domaine
  * custom est branché (ex. `b2b.lafoliedouce.eu`), l'AJOUTER ici — le navigateur
  * envoie l'`Origin` du domaine réellement visité.
  */
@@ -143,7 +143,17 @@ export const PROD_FRONT_ORIGINS = {
   // en-tête `access-control-allow-origin`. Personne ne l'avait vu parce que
   // personne ne s'était encore connecté à la boutique cliente.
   b2bFront: "https://lfc-b2b-eu7.pages.dev",
-  b2bAdminFront: "https://lfc-b2b-admin.pages.dev",
+  // 🔴 BASCULE EN COURS (2026-08-20) : le projet Pages passe de `lfc-b2b-admin`
+  // à `lfd-backoffice`. Cloudflare ne RENOMME pas un projet — le workflow en
+  // crée un neuf et l'ancien continue de servir — d'où une période où les DEUX
+  // origines existent, et où les deux doivent être autorisées.
+  //
+  // ⚠️ Cette valeur est une PRÉDICTION tant que le premier déploiement n'a pas
+  // eu lieu : si `lfd-backoffice` est déjà pris, Cloudflare suffixe le
+  // sous-domaine EN SILENCE — c'est ce qui a donné `lfc-b2b-eu7` et une panne
+  // que personne n'a vue. À confirmer contre le journal du workflow, puis à
+  // corriger ici, AVANT de supprimer l'ancien projet.
+  b2bAdminFront: "https://lfd-backoffice.pages.dev",
   pimFront: "https://lfc-pim.pages.dev",
 } as const;
 
@@ -159,6 +169,17 @@ export const PROD_FRONT_ORIGINS = {
 const LEGACY_B2B_FRONT = "https://lfc-b2b.pages.dev";
 
 /**
+ * L'ancienne adresse du back-office, le temps de la bascule vers
+ * `lfd-backoffice`. Elle sert encore : tant que le projet `lfc-b2b-admin`
+ * existe, il répond, et des onglets déjà ouverts continuent d'en émettre des
+ * appels.
+ *
+ * ⚠️ À RETIRER dès que le nouveau est confirmé — c'est la moitié de l'opération
+ * qui ne se voit pas si on l'oublie, puisque tout marche.
+ */
+const LEGACY_B2B_ADMIN_FRONT = "https://lfc-b2b-admin.pages.dev";
+
+/**
  * Origines CORS autorisées **en prod**. Une seule liste, pour la même raison
  * qu'en dev : une seule API, trois fronts. Liste **fermée** → un site tiers
  * reste refusé.
@@ -168,6 +189,7 @@ export const PROD_CORS_ORIGINS: string[] = [
   PROD_FRONT_ORIGINS.b2bAdminFront,
   PROD_FRONT_ORIGINS.pimFront,
   LEGACY_B2B_FRONT,
+  LEGACY_B2B_ADMIN_FRONT,
 ];
 
 /**
