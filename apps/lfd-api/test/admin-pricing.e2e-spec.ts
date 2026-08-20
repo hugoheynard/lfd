@@ -109,6 +109,21 @@ function ruleBody(overrides: RuleBody = {}): Record<string, unknown> {
 const postRule = (overrides: RuleBody = {}) =>
   staff().post("/admin/pricing/rules").send(ruleBody(overrides));
 
+/**
+ * Une date à `days` jours d'aujourd'hui, à minuit UTC.
+ *
+ * À réserver aux tests dont le résultat dépend de **maintenant** — typiquement
+ * ceux qui suspendent, puisque suspendre tronque à l'instant présent. Partout
+ * ailleurs, une date fixe reste préférable : elle rend l'assertion lisible et
+ * ne bouge pas.
+ */
+function daysFromToday(days: number): string {
+  const at = new Date();
+  at.setUTCHours(0, 0, 0, 0);
+  at.setUTCDate(at.getUTCDate() + days);
+  return at.toISOString();
+}
+
 const board = async (): Promise<PricingBoardView> =>
   jsonBody<PricingBoardView>(await staff().get("/admin/pricing"));
 
@@ -496,20 +511,33 @@ describe("suspendre, reprendre, archiver", () => {
     expect(overlap?.kind).toBe("compose");
   });
 
-  /** Une règle suspendue ne recouvre rien : elle n'agit plus. */
+  /**
+   * Une règle suspendue ne recouvre rien : elle n'agit plus.
+   *
+   * ⚠️ Les dates sont **relatives à maintenant**, et c'est la seule façon
+   * d'écrire ce test. Suspendre tronque la validité à l'instant présent : sur
+   * une période DÉJÀ ÉCOULÉE, il n'y a rien à tronquer et le recouvrement
+   * passé reste — ce qui est le bon comportement, on ne réécrit pas ce qui a
+   * facturé.
+   *
+   * Les dates fixes d'origine décrivaient « une règle en cours » et ont cessé
+   * de l'être : la suite a viré au rouge en passant minuit le 2026-08-20, sans
+   * qu'une ligne de code ait bougé. Un test qui dépend du calendrier ne dit
+   * plus ce qu'il croit dire.
+   */
   it("cesse de signaler le recouvrement dès qu'une des deux est suspendue", async () => {
     const { id } = jsonBody<{ id: string }>(
       await postRule({
         stage: "promotion",
-        validFrom: "2026-08-01T00:00:00.000Z",
-        validTo: "2026-08-20T00:00:00.000Z",
+        validFrom: daysFromToday(-19),
+        validTo: daysFromToday(1),
       }),
     );
     await postRule({
       stage: "geste",
       label: "Geste",
-      validFrom: "2026-08-15T00:00:00.000Z",
-      validTo: "2026-08-30T00:00:00.000Z",
+      validFrom: daysFromToday(-5),
+      validTo: daysFromToday(10),
     });
     expect(await familyOverlaps()).toHaveLength(1);
 
