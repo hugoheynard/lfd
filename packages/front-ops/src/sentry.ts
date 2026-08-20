@@ -69,11 +69,35 @@ class DeferredErrorHandler implements ErrorHandler {
   }
 }
 
-export function provideSentry(
-  dsn: string,
-  release: string,
-): readonly (Provider | EnvironmentProviders)[] {
-  if (dsn === "") {
+/** Ce qu'il faut pour signaler une erreur utilement. */
+export interface SentrySetup {
+  readonly dsn: string;
+  /**
+   * 🔴 L'identité du **BUILD**, jamais celle de l'application.
+   *
+   * C'est la clé par laquelle Sentry rapproche une pile minifiée des *source
+   * maps* téléversées au moment de la construction. Si elle ne change pas d'un
+   * déploiement à l'autre, Sentry détient les cartes et **ne les applique
+   * jamais** : on voit des piles illisibles sans savoir pourquoi, ce qui est le
+   * pire des deux mondes — on croit l'outil branché.
+   *
+   * Donc la révision du dépôt (`APP_REVISION`, comme le backend), et surtout
+   * pas un nom de front, qui serait constant à vie.
+   */
+  readonly release: string;
+  /**
+   * Quel front parle — posé en **étiquette**, pas en `release`.
+   *
+   * Les quatre fronts envoient dans le même projet Sentry ; sans cette
+   * étiquette on ne saurait pas lequel a cassé. C'est le rôle qu'on faisait
+   * jouer au `release` par erreur, et les deux ne sont pas interchangeables :
+   * l'un identifie un code, l'autre une application.
+   */
+  readonly front: string;
+}
+
+export function provideSentry(setup: SentrySetup): readonly (Provider | EnvironmentProviders)[] {
+  if (setup.dsn === "") {
     return [];
   }
   const handler = new DeferredErrorHandler();
@@ -83,16 +107,18 @@ export function provideSentry(
       // PAS d'`await` : attendre le SDK retarderait le premier rendu de tout le
       // monde pour une fonction dont personne n'a besoin dans les 200 premières
       // millisecondes.
-      void load(dsn, release, handler);
+      void load(setup, handler);
     }),
   ];
 }
 
-async function load(dsn: string, release: string, handler: DeferredErrorHandler): Promise<void> {
+async function load(setup: SentrySetup, handler: DeferredErrorHandler): Promise<void> {
   const Sentry = await import("@sentry/angular");
   Sentry.init({
-    dsn,
-    release,
+    dsn: setup.dsn,
+    release: setup.release,
+    // Le front qui parle, en étiquette : quatre applications, un seul projet.
+    initialScope: { tags: { front: setup.front } },
     // Une part seulement des traces : le forfait gratuit compte les spans, et
     // une boutique n'a pas besoin d'être tracée intégralement pour dire si elle
     // est lente.

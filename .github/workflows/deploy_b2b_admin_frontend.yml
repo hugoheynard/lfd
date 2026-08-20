@@ -66,6 +66,12 @@ jobs:
       - name: Generate API config (public build var)
         working-directory: apps/lfc-B2B-admin-frontend
         env:
+          # L'identité du BUILD, pour Sentry : c'est par elle qu'il rapproche une
+          # pile minifiée de ses source maps. Le SHA court, comme `APP_REVISION`
+          # côté backend — surtout pas une valeur constante, qui ferait détenir
+          # à Sentry des cartes qu'il n'appliquerait jamais.
+          APP_REVISION: ${{ github.sha }}
+          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
           B2B_ADMIN_API_BASE_URL: ${{ vars.B2B_API_BASE_URL }}
         run: node scripts/generate-api-config.mjs
 

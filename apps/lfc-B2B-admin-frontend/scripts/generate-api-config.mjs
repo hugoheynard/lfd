@@ -58,6 +58,14 @@ if (apiBaseUrl === '') {
   );
 }
 
+
+// La révision du dépôt — l'identité du BUILD, celle par laquelle Sentry
+// rapproche une pile minifiée de ses source maps. Même variable que le
+// backend (`APP_REVISION`), posée par la CI au SHA du commit. Absente en
+// local : « inconnue » est plus honnête qu'une valeur qui ferait croire à un
+// build tracé.
+const appRevision = (process.env['APP_REVISION'] ?? fileVars['APP_REVISION'] ?? '').trim() || 'inconnue';
+
 const banner =
   '// ⚠️ GÉNÉRÉ — ne pas éditer, ne pas committer (git-ignored).\n' +
   '// Produit par scripts/generate-api-config.mjs depuis l’environnement\n' +
@@ -72,7 +80,8 @@ const sentryDsn = (process.env['SENTRY_DSN'] ?? fileVars['SENTRY_DSN'] ?? '').tr
 
 const body =
   `export const B2B_API_BASE_VALUE = ${JSON.stringify(apiBaseUrl)};\n` +
-  `export const SENTRY_DSN_VALUE = ${JSON.stringify(sentryDsn)};\n`;
+  `export const SENTRY_DSN_VALUE = ${JSON.stringify(sentryDsn)};\n` +
+  `export const APP_REVISION_VALUE = ${JSON.stringify(appRevision)};\n`;
 
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, banner + body);

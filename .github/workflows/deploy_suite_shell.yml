@@ -48,6 +48,12 @@ jobs:
       - name: Generate Auth0 config (public build vars)
         working-directory: apps/lfc-suite-shell
         env:
+          # L'identité du BUILD, pour Sentry : c'est par elle qu'il rapproche une
+          # pile minifiée de ses source maps. Le SHA court, comme `APP_REVISION`
+          # côté backend — surtout pas une valeur constante, qui ferait détenir
+          # à Sentry des cartes qu'il n'appliquerait jamais.
+          APP_REVISION: ${{ github.sha }}
+          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
           SUITE_AUTH0_DOMAIN: ${{ vars.SUITE_AUTH0_DOMAIN }}
           SUITE_AUTH0_CLIENT_ID: ${{ vars.SUITE_AUTH0_CLIENT_ID }}
           SUITE_AUTH0_AUDIENCE_SELF: ${{ vars.SUITE_AUTH0_AUDIENCE_SELF }}

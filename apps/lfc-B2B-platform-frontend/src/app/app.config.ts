@@ -38,6 +38,10 @@ export const appConfig: ApplicationConfig = {
     // Ce qui casse dans leur navigateur, et qui ne laisse aucune trace chez
     // nous — ni 5xx, ni ligne de journal : une page blanche et quelqu'un qui
     // s'en va. Sans DSN, rien n'est branché, et le SDK n'est même pas chargé.
-    ...provideSentry(AUTH_CONFIG.sentryDsn, OPS_NODE),
+    ...provideSentry({
+      dsn: AUTH_CONFIG.sentryDsn,
+      release: AUTH_CONFIG.appRevision,
+      front: OPS_NODE,
+    }),
   ],
 };

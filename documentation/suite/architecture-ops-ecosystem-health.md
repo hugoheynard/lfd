@@ -1364,3 +1364,57 @@ colonne JSONB dont rien n'a besoin aujourd'hui.
 
 Et le motif qui l'écartait reste entier : Cloudflare ne remonte pas la sortie
 d'un container. Pino écrirait mieux, dans le même vide.
+
+## 29. Les _source maps_, et le piège du `release`
+
+Angular livre du code **minifié**. Une erreur en production dit :
+
+```
+t.n is not a function — chunk-A1B2.js:1:48210
+```
+
+Ni fichier, ni ligne, ni nom de fonction. Une **source map** est la table qui
+traduit `1:48210` en « ligne 42 de `products-page.ts`, dans `loadProducts()` ».
+Sentry sait l'appliquer **de son côté** si on la lui téléverse au moment du
+build.
+
+**Sans elles, Sentry marche et ne sert presque à rien** : on apprend qu'une
+erreur est survenue, jamais où. C'est la moitié qui donne toute sa valeur à
+l'autre.
+
+### 🔴 Le `release` est l'identité du BUILD, pas de l'application
+
+C'est la clé du rapprochement : le build téléverse les cartes sous un
+identifiant, l'application signale ses erreurs avec le même. S'ils divergent,
+**Sentry détient les cartes et ne les applique jamais** — on voit des piles
+illisibles sans savoir pourquoi, et l'on croit l'outil branché. C'est le pire
+des deux mondes : un échec silencieux d'un outil de diagnostic.
+
+Le premier câblage passait le **nom du nœud OPS** (`b2b-admin-front`) en
+`release`. Chaque front aurait donc eu un `release` fixe à vie, identique d'un
+déploiement au suivant : aucune carte ne se serait jamais rapprochée.
+
+Corrigé : le `release` est **`APP_REVISION`**, le SHA du commit posé par la CI —
+la même variable que le backend, pour la même raison. En local elle vaut
+« inconnue », ce qui est plus honnête qu'une valeur qui ferait croire à un build
+tracé.
+
+Et l'identité de l'application, elle, part en **étiquette** (`front`) : les
+quatre fronts écrivent dans le même projet, sans elle on ne saurait pas lequel a
+cassé. Les deux besoins existaient bien — ils n'étaient simplement pas
+interchangeables.
+
+### Ce qui reste à faire, et le piège de sécurité
+
+⚠️ **Les cartes ne doivent jamais être livrées aux visiteurs.** Publiée à côté du
+bundle, une source map permet de reconstituer le code source. Il faut
+`"sourceMap": { "scripts": true, "hidden": true }` — _hidden_ les produit sans
+les référencer, donc aucun navigateur ne va les chercher. Elles partent chez
+Sentry, pas sur Pages.
+
+**À vérifier** : les fronts sont aujourd'hui en `"sourceMap": true` dans les
+configurations lues au 2026-08-20. Si la configuration de production les
+référence et les déploie, le source est déjà lisible.
+
+Le téléversement demande enfin un **`SENTRY_AUTH_TOKEN`** en CI — celui-là est
+un vrai secret, contrairement au DSN qui voyage dans le bundle.

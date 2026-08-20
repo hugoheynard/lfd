@@ -37,6 +37,11 @@ export interface AuthConfig {
    */
   readonly sentryDsn: string;
   /**
+   * La révision du dépôt — l'identité du BUILD, celle par laquelle Sentry
+   * rapproche une pile minifiée de ses source maps. « inconnue » en local.
+   */
+  readonly appRevision: string;
+  /**
    * Origine de l'app **admin**, sans barre finale — la seule chose que cette
    * app sache de sa voisine.
    *
@@ -55,4 +60,5 @@ export const AUTH_CONFIG: AuthConfig = {
   apiBaseUrl: AUTH_ENV.apiBaseUrl,
   adminBaseUrl: AUTH_ENV.adminBaseUrl,
   sentryDsn: AUTH_ENV.sentryDsn,
+  appRevision: AUTH_ENV.appRevision,
 };

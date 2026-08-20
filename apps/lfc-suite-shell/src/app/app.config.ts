@@ -28,7 +28,11 @@ export const appConfig: ApplicationConfig = {
     // des iframes, et ce sont elles qui rapportent leur propre expérience. Lui
     // donner une adresse d'API pour trois nombres ajouterait une variable à la
     // chaîne de déploiement pour mesurer un cadre.
-    ...provideSentry(AUTH_ENV.sentryDsn, OPS_NODE),
+    ...provideSentry({
+      dsn: AUTH_ENV.sentryDsn,
+      release: AUTH_ENV.appRevision,
+      front: OPS_NODE,
+    }),
     // Les quatre mots que fold dit de lui-même, traduits UNE fois. Sans ce
     // fournisseur, chaque champ répétait `optionalLabel="facultatif"` (25 fois
     // dans 9 fichiers), et « More information » partait en anglais au lecteur
