@@ -1,0 +1,17 @@
+<fold-page-layout icon="truck" title="Livraison">
+  <p description>
+    L'acheminement des commandes jusqu'au client : tournées, créneaux et suivi. En attendant, tout
+    passe par le <strong>retrait</strong> — les points de retrait se règlent dans
+    <strong>Réglages → Retraits &amp; livraisons</strong>, et les frais de zone y sont déjà posés.
+  </p>
+
+  <fold-empty-state
+    icon="truck"
+    title="À venir"
+    description="Rien à faire ici pour l'instant : l'entrée existe pour que la place soit prise, et pour que personne ne range la livraison ailleurs entre-temps."
+  >
+    <button foldButton emphasis="outline" routerLink="/reglages/retraits-livraisons">
+      Voir les retraits &amp; livraisons
+    </button>
+  </fold-empty-state>
+</fold-page-layout>

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 
 import { FoldDisclosureComponent } from 'fold-ng';
 
-import { CatalogueApi, type Category, type Product } from '../../catalogue/catalogue-api';
+import { CatalogueApi, type Category, type Product } from '../../pim/catalogue/catalogue-api';
 
 interface MenuGroup {
   readonly category: Category;

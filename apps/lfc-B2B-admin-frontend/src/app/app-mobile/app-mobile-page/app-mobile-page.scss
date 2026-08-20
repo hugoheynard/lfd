@@ -1,0 +1,26 @@
+.scan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-lg);
+}
+
+/* Assez grand pour être scanné à un bras d'écart, sans devenir une affiche. */
+.scan-code {
+  --app-qr-size: 11rem;
+}
+
+.scan-text {
+  display: flex;
+  flex: 1 1 16rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+}
+
+.scan-url {
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-sm);
+  overflow-wrap: anywhere;
+}
