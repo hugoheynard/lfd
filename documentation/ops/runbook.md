@@ -113,6 +113,44 @@ La sonde publique `/health` en porte les **compteurs** (`capabilities.blocking`
 verrouillée est une aide qu'on ne doit qu'à soi-même. Le déploiement s'arrête
 sur un canal bloquant (étape « Inventaire des canaux »).
 
+## Mettre en service les notifications poussées
+
+Une seule fois, et dans cet ordre.
+
+1. **Générer la paire**, sur ton poste :
+
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+
+   Elle identifie ce serveur auprès des services de push. **Garde-la** : la
+   régénérer invalide tous les abonnements existants (cf.
+   [`secrets-et-variables.md#3-ter`](secrets-et-variables.md)).
+
+2. **Poser les valeurs dans GitHub**, du terminal vers l'interface directement :
+   `VAPID_PUBLIC_KEY` et `VAPID_PRIVATE_KEY` en **Secrets**, `VAPID_SUBJECT` en
+   **Variable** si tu veux autre chose que le défaut.
+
+3. **Redéployer le backend.** Un secret posé ne redémarre aucun container : les
+   `envVars` ne sont lues qu'au démarrage, et seule une image neuve en déclenche
+   un.
+
+4. **Vérifier que la capacité s'est allumée** — elle ne doit plus figurer dans
+   l'inventaire :
+
+   ```bash
+   curl -s https://<api>/admin/ops/capabilities -H "x-lfc-recompute-token: <jeton>"
+   ```
+
+5. **Vérifier depuis un téléphone**, et c'est la seule vraie preuve : ouvrir le
+   back-office, l'ajouter à l'écran d'accueil, rouvrir **depuis l'icône**, puis
+   Obtenir l'app mobile → Activer les notifications.
+
+⚠️ **Rien de tout cela n'est testable en local.** Web Push exige HTTPS et une
+origine réelle, et sur iPhone l'abonnement n'est possible qu'une fois l'app
+installée sur l'écran d'accueil — Safari refuse en **silence** avant cela. C'est
+le même profil que le webhook Resend : la chaîne ne se vérifie qu'en ligne.
+
 ## Lire les journaux de l'application
 
 Cloudflare **ne remonte pas** la sortie d'un container : l'API `Container`

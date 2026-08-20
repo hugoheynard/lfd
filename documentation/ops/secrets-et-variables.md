@@ -2,6 +2,10 @@
 
 ✅ **Inventaire relu contre GitHub et le code au 2026-08-13.**
 
+> **2026-08-20** — ajout de la paire VAPID (§3 ter). Les entrées sont écrites
+> contre le code et le workflow ; l'inventaire complet n'a **pas** été rerelu
+> contre GitHub à cette date.
+
 ## 1. La règle
 
 ```mermaid
@@ -85,19 +89,20 @@ la production.
 
 ## 3. Les secrets, par destination
 
-| Secret                                                                   | Va vers                            | Notes                                                                          |
-| ------------------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------ |
-| `DATABASE_B2B_URL`                                                       | backend B2B                        | forme `prisma+postgres://` (Accelerate)                                        |
-| `DATABASE_PIM_URL`                                                       | backend PIM (comme `DATABASE_URL`) | renommé depuis `PIM_DATABASE_URL` le 2026-08-13                                |
-| `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY` | backend B2B                        | mode démo                                                                      |
-| `RESEND_MAILER_B2B_API_KEY`                                              | backend B2B                        | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md)       |
-| `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                        | backend B2B                        | Management API                                                                 |
-| `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                    | backend B2B                        | pièces (KBIS) — bucket et endpoint sont des Variables                          |
-| `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                               | backend PIM                        | le PIM **appelle** Shopify ; il ne reçoit aucun webhook                        |
-| `B2B_CATALOG_PUSH_SECRET`                                                | backend PIM **et** backend B2B     | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés** |
-| `RECOMPUTE_TOKEN`                                                        | Worker B2B **et** container        | comparé par `RecomputeGuard`                                                   |
-| `CLOUDFLARE_ACCOUNT_ID`                                                  | tous les déploiements              | injecté dans l'image au deploy                                                 |
-| `LFC_{PIM,B2B}_BACKEND_WORKER`                                           | déploiements                       | jetons Cloudflare, un par app                                                  |
+| Secret                                                                   | Va vers                            | Notes                                                                              |
+| ------------------------------------------------------------------------ | ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `DATABASE_B2B_URL`                                                       | backend B2B                        | forme `prisma+postgres://` (Accelerate)                                            |
+| `DATABASE_PIM_URL`                                                       | backend PIM (comme `DATABASE_URL`) | renommé depuis `PIM_DATABASE_URL` le 2026-08-13                                    |
+| `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY` | backend B2B                        | mode démo                                                                          |
+| `RESEND_MAILER_B2B_API_KEY`                                              | backend B2B                        | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md)           |
+| `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                        | backend B2B                        | Management API                                                                     |
+| `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                    | backend B2B                        | pièces (KBIS) — bucket et endpoint sont des Variables                              |
+| `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                               | backend PIM                        | le PIM **appelle** Shopify ; il ne reçoit aucun webhook                            |
+| `B2B_CATALOG_PUSH_SECRET`                                                | backend PIM **et** backend B2B     | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés**     |
+| `RECOMPUTE_TOKEN`                                                        | Worker B2B **et** container        | comparé par `RecomputeGuard`                                                       |
+| `CLOUDFLARE_ACCOUNT_ID`                                                  | tous les déploiements              | injecté dans l'image au deploy                                                     |
+| `LFC_{PIM,B2B}_BACKEND_WORKER`                                           | déploiements                       | jetons Cloudflare, un par app                                                      |
+| `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`                                 | backend B2B                        | signent les notifications poussées — cf. §3 ter ; `VAPID_SUBJECT` est une Variable |
 
 **Le PIM ne reçoit aucun webhook** — zéro occurrence de « webhook » dans son
 code source. Le seul endpoint entrant de tiers est `POST /payments/webhook`
@@ -126,6 +131,47 @@ réglage est branché.
 sont lues qu'à son démarrage, et un changement de secret ne déclenche **aucun**
 rollout — seule une image neuve le fait. Cf.
 [`../todos/todo-deploiement-en-exploitation.md`](../todos/todo-deploiement-en-exploitation.md).
+
+## 3 ter. La paire VAPID — ce qu'elle est, et ce qu'elle n'est pas
+
+Elle **n'ouvre rien** : ce n'est ni une clé d'API, ni un jeton d'accès. C'est une
+paire de signature qui répond à une seule question, posée par le service de push
+(Apple, Google, Mozilla) à chaque envoi : _« qui es-tu, et est-ce bien toi qui as
+signé ce message ? »_
+
+- **`VAPID_PUBLIC_KEY`** est publique par construction : le navigateur la reçoit
+  au moment de s'abonner et la transmet à son service de push, qui s'en servira
+  pour vérifier nos signatures. Elle se pose quand même **côté backend** et non
+  dans le front : c'est l'API qui la sert (`GET /admin/notifications/push/key`),
+  de sorte qu'elle ne puisse jamais diverger de la privée.
+- **`VAPID_PRIVATE_KEY`** signe. Elle ne quitte pas le serveur.
+- **`VAPID_SUBJECT`** est notre **adresse de contact**, pas un secret — d'où la
+  Variable plutôt que le Secret. Détail plus bas.
+
+### `VAPID_SUBJECT` : à qui écrire quand nos envois posent problème
+
+La norme (RFC 8292) exige que chaque envoi porte un moyen de joindre celui qui
+l'émet — un `mailto:` ou une URL `https:`. Ce n'est pas de la formalité : le
+service de push est un intermédiaire qui transporte des millions de messages, et
+quand une source se met à mal se comporter (volume anormal, abonnements morts en
+masse), il a besoin d'un humain à prévenir avant de couper. Une source
+injoignable, il la coupe sans prévenir.
+
+Ce n'est **pas** l'expéditeur affiché : la personne qui reçoit la notification ne
+voit jamais cette valeur. Elle ne sert qu'entre notre serveur et le service de
+push.
+
+Le défaut est `mailto:` + `MAILER_FROM_ADDRESS` — notre adresse d'expédition, qui
+est déjà la nôtre et déjà surveillée. La poser explicitement n'a d'intérêt que
+pour router ces signalements ailleurs que dans la boîte transactionnelle.
+
+### ⚠️ La régénérer déconnecte tout le monde
+
+Un abonnement de navigateur est lié à la clé publique qui l'a créé. Changer la
+paire n'invalide pas seulement la signature : elle rend **tous les abonnements
+existants** inutilisables, et chaque téléphone doit réactiver depuis « Obtenir
+l'app mobile ». Personne n'est prévenu — les envois échouent en 403, en silence.
+Génère la paire une fois, et garde-la.
 
 ## 4. La liste qui fait foi
 

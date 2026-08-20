@@ -85,6 +85,12 @@ const RUNTIME_KEYS = [
   // s'authentifie. Absents, OPS rend une fenêtre de répétition — et le dit.
   "CLOUDFLARE_ACCOUNT_ID",
   "CLOUDFLARE_ANALYTICS_TOKEN",
+  // La paire VAPID qui signe nos envois Web Push, et l'adresse de contact
+  // qu'exige la norme. Absentes, la cloche sonne toujours DANS le back-office ;
+  // seul le téléphone reste muet — et le bulletin de démarrage le dit.
+  "VAPID_PUBLIC_KEY",
+  "VAPID_PRIVATE_KEY",
+  "VAPID_SUBJECT",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];
