@@ -165,12 +165,29 @@ Le défaut est `mailto:` + `MAILER_FROM_ADDRESS` — notre adresse d'expédition
 est déjà la nôtre et déjà surveillée. La poser explicitement n'a d'intérêt que
 pour router ces signalements ailleurs que dans la boîte transactionnelle.
 
-### ⚠️ La régénérer déconnecte tout le monde
+### La régénérer : ce qui se passe vraiment
 
-Un abonnement de navigateur est lié à la clé publique qui l'a créé. Changer la
-paire n'invalide pas seulement la signature : elle rend **tous les abonnements
-existants** inutilisables, et chaque téléphone doit réactiver depuis « Obtenir
-l'app mobile ». Personne n'est prévenu — les envois échouent en 403, en silence.
+Un abonnement de navigateur est **scellé** à la clé publique qui l'a créé.
+Changer la paire ne casse pas seulement la signature : elle rend tous les
+abonnements existants définitivement inutilisables. Aucun réglage serveur ne les
+répare — seul un navigateur peut en fabriquer un neuf.
+
+Deux mécanismes encaissent le coup, et il faut les connaître tous les deux :
+
+1. **Le front se réabonne tout seul.** Au démarrage de l'app, si un abonnement
+   existe et que sa clé ne correspond plus à celle du serveur, il est remplacé
+   **en silence** — la permission du navigateur, elle, reste acquise. Il suffit
+   donc que chacun ouvre le back-office une fois. Personne ne clique sur rien.
+2. **Les orphelins partent au bout d'une semaine.** Un abonnement refusé (403)
+   n'est pas oublié tout de suite : il l'est après un délai de grâce. Ce délai
+   existe parce qu'une paire **mal déployée** refuse exactement comme un
+   abonnement périmé — oublier au premier refus viderait la table sur une erreur
+   de configuration.
+
+Ce qui reste vrai malgré ces deux filets : **quelqu'un qui n'ouvre pas l'app ne
+reçoit plus rien**, et rien ne le lui dit. Le journal, lui, le dit — un
+`push_all_rejected` en `error` signale une paire qui ne correspond à rien.
+
 Génère la paire une fois, et garde-la.
 
 ## 4. La liste qui fait foi

@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { B2B_API_BASE } from '../../api/api-config';
 import {
   isIos,
+  matchesServerKey,
   pushStateOf,
   pushSupported,
   runningInstalled,
@@ -61,6 +62,38 @@ export class PushNotificationsService {
     );
   }
 
+  /**
+   * Rattrape un abonnement devenu **caduc**, sans rien demander.
+   *
+   * À appeler au démarrage de l'app. Ne fait rien pour qui n'est pas abonné :
+   * la question ne se pose que si un abonnement existe déjà, et on ne va pas
+   * interroger le serveur pour tout le monde à chaque chargement.
+   *
+   * Le cas qu'elle règle est la **rotation de la paire VAPID**. Les abonnements
+   * existants sont alors définitivement refusés, et aucun serveur ne peut les
+   * réparer — seul le navigateur en fabrique. Mais la permission, elle, reste
+   * acquise : on peut donc réabonner en silence, sans bannière ni bouton. Il
+   * suffit que la personne ouvre l'app une fois.
+   */
+  async reconcile(): Promise<void> {
+    if (!pushSupported() || Notification.permission !== 'granted') {
+      return;
+    }
+    const subscription = await this.current();
+    if (subscription === null) {
+      return;
+    }
+    const key = await this.readPublicKey();
+    if (key === null || matchesServerKey(subscription, key)) {
+      return;
+    }
+    // Scellé à l'ancienne clé : on le remplace. `unsubscribe` d'abord, sinon le
+    // navigateur refuse un second abonnement sur une autre clé.
+    await subscription.unsubscribe();
+    this.publicKey = key;
+    await this.resubscribe(key);
+  }
+
   /** Demande la permission, abonne, et déclare l'abonnement au serveur. */
   async subscribe(): Promise<void> {
     const key = this.publicKey;
@@ -73,21 +106,26 @@ export class PushNotificationsService {
         await this.refresh();
         return;
       }
-      const registration = await navigator.serviceWorker.register(WORKER);
-      const subscription = await registration.pushManager.subscribe({
-        // Obligatoire, et vrai : chaque poussée fait apparaître une bannière.
-        // Une notification silencieuse serait un canal de fond, que ni Chrome
-        // ni Safari n'accordent à une application web.
-        userVisibleOnly: true,
-        applicationServerKey: vapidKeyToBytes(key),
-      });
-      await firstValueFrom(
-        this.http.post<void>(`${B2B_API_BASE}/admin/notifications/push`, subscription.toJSON()),
-      );
+      await this.resubscribe(key);
       await this.refresh();
     } finally {
       this.busyValue.set(false);
     }
+  }
+
+  /** Abonne le navigateur et déclare l'abonnement au serveur. */
+  private async resubscribe(key: string): Promise<void> {
+    const registration = await navigator.serviceWorker.register(WORKER);
+    const subscription = await registration.pushManager.subscribe({
+      // Obligatoire, et vrai : chaque poussée fait apparaître une bannière. Une
+      // notification silencieuse serait un canal de fond, que ni Chrome ni
+      // Safari n'accordent à une application web.
+      userVisibleOnly: true,
+      applicationServerKey: vapidKeyToBytes(key),
+    });
+    await firstValueFrom(
+      this.http.post<void>(`${B2B_API_BASE}/admin/notifications/push`, subscription.toJSON()),
+    );
   }
 
   /**

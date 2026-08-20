@@ -24,6 +24,7 @@ import {
 import { PermissionsStore } from './auth/permissions.store';
 import { StaffAuth } from './auth/staff-auth';
 import { StaffLoginPage } from './auth/staff-login/staff-login';
+import { PushNotificationsService } from './shared/push/push-notifications.service';
 import { CanDirective } from './shared/can/can.directive';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
 import { SuiteEmbed } from './suite-embed/suite-embed';
@@ -89,6 +90,7 @@ export class App {
   protected readonly canSeeCompanies = computed(() => this.permissions.can('companies:read'));
 
   private readonly counts = inject(NavCountsService);
+  private readonly push = inject(PushNotificationsService);
   /** Ce qui attend derrière chaque entrée — `undefined` masque le badge. */
   protected readonly companyBadge = computed(() =>
     this.counts.companyWarnings() > 0 ? this.counts.companyWarnings() : undefined,
@@ -175,6 +177,21 @@ export class App {
     effect(() => {
       if (this.canSeeCompanies()) {
         void this.counts.refresh();
+      }
+    });
+
+    // Rattraper un abonnement aux notifications devenu caduc — une ROTATION de
+    // la paire VAPID le scelle définitivement, et aucun serveur ne peut le
+    // réparer : seul le navigateur en fabrique un neuf. La permission, elle,
+    // reste acquise, donc le remplacement est silencieux et il suffit d'ouvrir
+    // l'app. Sans cela, chacun devrait aller réactiver à la main, sur chaque
+    // appareil, sans que rien ne le lui dise.
+    //
+    // Ne coûte un appel qu'à qui est DÉJÀ abonné : le service sort tout de
+    // suite si le navigateur n'a pas d'abonnement.
+    effect(() => {
+      if (!this.resolving() && !this.locked()) {
+        void this.push.reconcile();
       }
     });
   }

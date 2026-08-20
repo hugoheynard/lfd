@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { pushStateOf, vapidKeyToBytes } from '../web-push';
+import { matchesServerKey, pushStateOf, vapidKeyToBytes } from '../web-push';
 
 const FACTS = {
   supported: true,
@@ -51,5 +51,32 @@ describe('la clé VAPID', () => {
 
     expect(bytes).toHaveLength(65);
     expect(bytes[0]).toBe(0x04);
+  });
+});
+
+/** Le minimum d'un `PushSubscription` que `matchesServerKey` regarde. */
+function subscribedWith(key: string | null): PushSubscription {
+  const applicationServerKey = key === null ? null : vapidKeyToBytes(key).buffer;
+  return { options: { applicationServerKey } } as PushSubscription;
+}
+
+const OTHER_KEY =
+  'BCbiKrPBcVpPCiOAmPXsIRTFvhpwVkgWKPGXbcSTV3POeYSMYFAqSYzZmSC7bkYnQeQ1QO0mCGVDzMWLoRWnHVE';
+
+describe('un abonnement scellé à une clé', () => {
+  it('reconnaît la sienne', () => {
+    expect(matchesServerKey(subscribedWith(FACTS.publicKey), FACTS.publicKey)).toBe(true);
+  });
+
+  it('refuse celle d’une autre paire — c’est le cas d’une ROTATION', () => {
+    // Le seul moyen de rattraper une rotation : aucun serveur ne peut réparer
+    // un abonnement scellé à l'ancienne clé, seul le navigateur en fabrique.
+    expect(matchesServerKey(subscribedWith(OTHER_KEY), FACTS.publicKey)).toBe(false);
+  });
+
+  it('traite l’absence de clé comme un désaccord', () => {
+    // Un abonnement sans clé d'application vient d'une autre époque : le
+    // remplacer est toujours plus sûr que le garder.
+    expect(matchesServerKey(subscribedWith(null), FACTS.publicKey)).toBe(false);
   });
 });

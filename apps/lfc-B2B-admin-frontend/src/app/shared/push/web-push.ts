@@ -116,3 +116,30 @@ export function vapidKeyToBytes(base64Url: string): Uint8Array<ArrayBuffer> {
   }
   return bytes;
 }
+
+/**
+ * L'abonnement en cours a-t-il été créé avec **cette** clé-là ?
+ *
+ * Un abonnement de navigateur est scellé à la clé publique qui l'a fabriqué :
+ * si le serveur en change, l'ancien ne redeviendra JAMAIS valide — le service
+ * de push le refusera en 403, indéfiniment, et rien du côté serveur ne peut le
+ * réparer. Seul le navigateur peut en fabriquer un neuf.
+ *
+ * D'où cette comparaison : elle est ce qui permet de rattraper une rotation
+ * sans rien demander à personne. La permission, elle, reste acquise.
+ *
+ * `options.applicationServerKey` rend la clé telle qu'elle a été fournie, en
+ * octets bruts. On compare des octets et non des chaînes : le navigateur ne
+ * conserve pas la forme base64url d'origine.
+ */
+export function matchesServerKey(subscription: PushSubscription, publicKey: string): boolean {
+  const used = subscription.options.applicationServerKey;
+  if (used === null || used === undefined) {
+    return false;
+  }
+  const expected = vapidKeyToBytes(publicKey);
+  const actual = new Uint8Array(used);
+  return (
+    actual.length === expected.length && actual.every((byte, index) => byte === expected[index])
+  );
+}
