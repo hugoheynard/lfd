@@ -4,6 +4,21 @@
 sa comparaison de parité, mais la bascule attend deux blocages hors code (voir
 « La bascule »). C6 et C7 ne sont pas commencés. Date : 2026-08-17.
 
+> ⚠️ **Trois choses ont changé depuis, et ce document ne les porte pas.** Il
+> reste la référence sur les **décisions** ; pour la mécanique telle qu'elle
+> tourne, lire [`push-catalogue-pim-vers-boutique.md`](push-catalogue-pim-vers-boutique.md).
+>
+> 1. **Une seule base, deux schémas.** Le référentiel n'a plus la sienne : il est
+>    le schéma `pim`, la boutique est `public`. Le mur est tenu par deux gardes
+>    (`lint:context-boundaries` pour le code, `lint:cross-schema-join` pour la
+>    base), plus par une frontière réseau.
+> 2. **Le transport a disparu, pas le port.** `B2bCatalogDriver` est désormais
+>    branché **dans le processus** ; le secret partagé décrit plus bas
+>    (« Comment le PIM prouve son identité au B2B ») n'existe plus.
+> 3. **Le taux de TVA voyage sur l'ARTICLE** (contrat v2, 2026-08-21), plus sur
+>    la famille. Les tables citées ici sous `catalog_products` s'appellent
+>    `catalog_items`.
+
 Voisins :
 
 - [`architecture-conditionnements-pricing.md`](architecture-conditionnements-pricing.md)
