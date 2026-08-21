@@ -13,6 +13,7 @@ Le reste de `documentation/` décrit le métier ; ici on décrit la machine.
 | [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md) | « Qu'est-ce qui nous protège vraiment ? » — les trois couches, dont une inerte                   |
 | [`runbook.md`](runbook.md)                                                 | « Comment je fais, et comment je sais que ça a marché ? » — les gestes et leurs contrôles        |
 | [`mailer-resend.md`](mailer-resend.md)                                     | « Pourquoi l'e-mail n'est pas arrivé ? » — le domaine à vérifier, les 4 réglages, les contrôles  |
+| [`architecture-stockage-media.md`](architecture-stockage-media.md)         | « Où vivent les images, et pourquoi il faut un domaine ? » — R2, cache, ce que « CDN » recouvre  |
 
 Voir aussi, hors de ce dossier :
 [`b2b/admin-app-ios-capacitor.md`](../b2b/admin-app-ios-capacitor.md) (l'admin en
@@ -31,8 +32,11 @@ app iPhone) et
   explicite, ils atterrissaient au Texas.
 - **Le seul rate-limit qui fonctionne est le throttler NestJS.** Celui de l'edge
   Cloudflare est inerte — prouvé, ne pas re-diagnostiquer.
-- **Aucune zone Cloudflare**, donc pas de WAF ni de règles de rate limiting.
-  C'est le prochain levier structurant.
+- **Une zone Cloudflare existe** (`lafoliecoffee.info`, prise le 2026-08-16
+  pour le courrier) mais **rien ne passe encore par elle** : les Workers et les
+  Pages restent sur `workers.dev` / `pages.dev`, donc toujours pas de WAF ni de
+  règles de rate limiting. C'est le prochain levier structurant — et le
+  prérequis, lui, est déjà payé.
 
 ## Les trois pièges qui reviennent
 
@@ -53,4 +57,6 @@ app iPhone) et
   qu'aucun workflow ne met à jour.
 - Le **parcours utilisateur complet**, connexion Auth0 comprise, n'a jamais été
   vérifié de bout en bout.
-- Amener un **domaine** sur Cloudflare.
+- **Faire servir la zone.** Le domaine est là ; aucune des sept choses
+  déployées n'est derrière lui. Le premier usage prévu est le domaine média
+  ([`architecture-stockage-media.md`](architecture-stockage-media.md)).

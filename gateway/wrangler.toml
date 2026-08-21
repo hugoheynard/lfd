@@ -5,10 +5,17 @@
 # backends n'ont plus aucune adresse publique ; ce Worker est le seul chemin.
 #
 # ⚠️ L'en-tête précédent décrivait un routage par SOUS-DOMAINE sur « la zone » —
-# il n'a jamais été appliqué : le compte Cloudflare n'a aucune zone, et rien ne
-# pointait vers cette passerelle. Le routage par chemin donne le même résultat
-# sans posséder de domaine ; on repassera aux sous-domaines le jour où il y en
-# aura un, sans toucher aux backends (le préfixe est retiré avant transmission).
+# il n'a jamais été appliqué, faute de zone à l'époque, et rien ne pointait vers
+# cette passerelle. Le routage par chemin donne le même résultat sans posséder de
+# domaine ; on repassera aux sous-domaines sans toucher aux backends (le préfixe
+# est retiré avant transmission).
+#
+# ⚠️ « Aucune zone » n'est PLUS VRAI depuis le 2026-08-16 : `lafoliecoffee.info`
+# est servie par Cloudflare (cf. documentation/ops/mailer-resend.md). Rien n'a
+# encore bougé ici — la passerelle reste sur workers.dev — mais la raison qui
+# imposait le routage par chemin a disparu ; c'est désormais un choix, pas une
+# contrainte. Le premier usage de la zone est le domaine média
+# (documentation/ops/architecture-stockage-media.md).
 #
 # En DEV : `wrangler dev` sert sur 127.0.0.1:8787 et route les `*.localhost:8787`
 # vers les serveurs locaux — inchangé. `*.localhost` résout en loopback sans
@@ -20,8 +27,8 @@
 # « suite » pour une passerelle qui n'a jamais été une pièce de la suite mais la
 # frontière de confiance des backends — et il survivait au retrait de celle-ci.
 #
-# ⚠️ Ce nom EST l'adresse publique de l'API (`workers.dev`, aucune zone sur le
-#    compte). Le changer déplace donc `LFD_API_URL`, qui est compilée
+# ⚠️ Ce nom EST l'adresse publique de l'API (`workers.dev` — la zone existe mais
+#    ne sert rien, cf. ci-dessus). Le changer déplace donc `LFD_API_URL`, qui est compilée
 #    DANS les bundles des deux fronts au moment du build : ils doivent être
 #    reconstruits, sans quoi ils appellent une adresse qui rend 404 sur tout.
 #    C'est arrivé le jour même du renommage.
