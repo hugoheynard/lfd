@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ViewEncapsulation, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
 import {
   FoldNavLayoutComponent,
@@ -39,8 +39,6 @@ import { PublicationShopify } from '../publication-shopify/publication-shopify';
     PublicationTvaCollections,
   ],
   templateUrl: './publication-page.html',
-  styleUrl: './publication-page.scss',
-  encapsulation: ViewEncapsulation.None,
 })
 export class PublicationPage {
   protected readonly tabs: FoldTabItem[] = [

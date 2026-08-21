@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ViewEncapsulation, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
 import {
   FoldNavLayoutComponent,
@@ -38,7 +38,6 @@ import { ShopifyIntegration } from '../shopify-integration/shopify-integration';
   ],
   templateUrl: './integration-page.html',
   styleUrl: './integration-page.scss',
-  encapsulation: ViewEncapsulation.None,
 })
 export class IntegrationPage {
   protected readonly tabs: FoldTabItem[] = [
