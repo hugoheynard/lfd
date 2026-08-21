@@ -16,13 +16,13 @@ import { FoldNavLayoutComponent, FoldViewNavComponent, type FoldViewNavItem } fr
  * bien annoncer où l'on venait d'arriver.
  */
 const TABS: readonly FoldViewNavItem[] = [
-  { key: 'produits', label: 'Produits', link: 'produits', icon: 'grid' },
+  { key: 'produits', label: 'Produits', link: 'produits', icon: 'product' },
   { key: 'categories', label: 'Catégories', link: 'categories', icon: 'category' },
   { key: 'tva', label: 'Régimes de TVA', link: 'tva', icon: 'tax' },
   { key: 'collections', label: 'Collections', link: 'collections', icon: 'org-chart' },
   { key: 'publication', label: 'Publication', link: 'publication', icon: 'publish' },
   { key: 'emplacements', label: 'Emplacements', link: 'emplacements', icon: 'places' },
-  { key: 'integration', label: 'Intégrations', link: 'integration', icon: 'shopify' },
+  { key: 'integration', label: 'Intégrations', link: 'integration', icon: 'integrations' },
 ];
 
 /**

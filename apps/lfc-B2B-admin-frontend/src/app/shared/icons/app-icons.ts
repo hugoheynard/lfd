@@ -223,6 +223,49 @@ const PLACES_ICON =
   '</svg>';
 
 /**
+ * Les intégrations — deux maillons de chaîne. Source : SVG Repo (domaine
+ * public). Remplace le `shopify` que portait l'onglet : Shopify est UNE
+ * intégration, pas la catégorie, et l'onglet en accueillera d'autres.
+ *
+ * Anneaux pleins de 64 unités sur 1024, soit 6,25 % — la graisse d'IBM Carbon,
+ * pas celle de fold. Un trait de 21 la porte à 8,3 % sans coût : l'ouverture
+ * intérieure d'un maillon fait 256 unités, elle en perd 21.
+ */
+const INTEGRATIONS_ICON =
+  '<svg viewBox="29.37 29.34 965.26 965.26" fill="currentColor" stroke="currentColor" ' +
+  'stroke-width="21" stroke-linejoin="round">' +
+  '<path d="M640 384v64H448a128 128 0 0 0-128 128v128a128 128 0 0 0 128 128h320a128 128 0 0 0 128-1' +
+  '28V576a128 128 0 0 0-64-110.848V394.88c74.56 26.368 128 97.472 128 181.056v128a192 192 0 0 1-192' +
+  ' 192H448a192 192 0 0 1-192-192V576a192 192 0 0 1 192-192h192z"/>' +
+  '<path d="M384 640v-64h192a128 128 0 0 0 128-128V320a128 128 0 0 0-128-128H256a128 128 0 0 0-128 ' +
+  '128v128a128 128 0 0 0 64 110.848v70.272A192.064 192.064 0 0 1 64 448V320a192 192 0 0 1 192-192h3' +
+  '20a192 192 0 0 1 192 192v128a192 192 0 0 1-192 192H384z"/>' +
+  '</svg>';
+
+/**
+ * Un produit — la fiche et son étiquette. Source : SVG Repo / IBM Carbon
+ * (domaine public). Remplace le `grid` de l'onglet Produits, qui disait
+ * « tableau » et servait aussi ailleurs.
+ *
+ * ⚠️ Deux `<rect>` **font partie du dessin** (les traits de l'étiquette) et un
+ * troisième est le cadrage transparent de Carbon. Ne garder que les `<path>`
+ * aurait effacé l'étiquette ; garder le troisième aurait peint un carré plein.
+ * On distingue le cadrage à ce qu'il **couvre la boîte entière** — plus fiable
+ * que son nom de classe, qui change d'un export à l'autre.
+ *
+ * Graisse relevée à 8,4 % comme {@link CATEGORY_ICON}, même origine Carbon,
+ * même écart avec fold.
+ */
+const PRODUCT_ICON =
+  '<svg viewBox="3 3 26 26" fill="currentColor" stroke="currentColor" ' +
+  'stroke-width="0.7" stroke-linejoin="round">' +
+  '<rect x="8" y="18" width="6" height="2"/>' +
+  '<rect x="8" y="22" width="10" height="2"/>' +
+  '<path d="M26,4H6A2.0025,2.0025,0,0,0,4,6V26a2.0025,2.0025,0,0,0,2,2H26a2.0025,2.0025,0,0,0,2-2V6' +
+  'A2.0025,2.0025,0,0,0,26,4ZM18,6v4H14V6ZM6,26V6h6v6h8V6h6l.0012,20Z"/>' +
+  '</svg>';
+
+/**
  * Le catalogue. Une entrée = un nom que `<fold-icon name="…">` accepte.
  *
  * `as const` n'est pas décoratif : c'est lui qui donne à `keyof typeof` des
@@ -230,9 +273,11 @@ const PLACES_ICON =
  */
 export const APP_ICONS = {
   catalog: CATALOG_ICON,
+  integrations: INTEGRATIONS_ICON,
   category: CATEGORY_ICON,
   mobile: MOBILE_ICON,
   places: PLACES_ICON,
+  product: PRODUCT_ICON,
   shopify: SHOPIFY_ICON,
   publish: PUBLISH_ICON,
   tax: TAX_ICON,
