@@ -57,10 +57,7 @@ export interface B2bMembershipView {
 
 /** Pourquoi un article n'est **pas** parti. Nommé, jamais tu. */
 export type B2bExclusionReason =
-  | "variant_sans_prix"
-  | "variant_arretee"
-  | "produit_sans_variante_vendable"
-  | "famille_inconnue";
+  "variant_sans_prix" | "variant_arretee" | "produit_sans_variante_vendable" | "famille_inconnue";
 
 export interface B2bExclusionView {
   readonly sku: string;
