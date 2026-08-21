@@ -52,9 +52,12 @@ const LOGOUT_ICON =
  *   `stroke="#CCCCCC"` qui aurait dessiné un liseré gris en clair comme en
  *   sombre.
  *
- * Le `viewBox` d'origine (1024) est **conservé** : les tracés sont dessinés
- * pour lui, et les remettre à l'échelle 24 à la main serait une occasion de
- * les déformer sans que personne ne s'en aperçoive. fold ne lit que le ratio.
+ * L'échelle d'origine (1024) est **conservée** — remettre les tracés à 24 à la
+ * main serait une occasion de les déformer sans que personne ne s'en aperçoive,
+ * et fold ne lit que le ratio. Le `viewBox` est en revanche **resserré sur
+ * l'emprise réelle du dessin** : le cadrage d'origine laissait 14 % de marge,
+ * donc l'icône rendait plus petite que ses voisines à taille égale. Les icônes
+ * fold remplissent ~92 % de leur boîte ; celle-ci aussi maintenant.
  *
  * Le trait est porté de `10.24` à **30** — l'anneau passe de 5 % à 6,9 % de la
  * boîte. Il s'ARRÊTE là volontairement, alors que l'alignement exact sur fold
@@ -64,7 +67,7 @@ const LOGOUT_ICON =
  * de graisse à un signe qu'on ne reconnaît plus.
  */
 const TAX_ICON =
-  '<svg viewBox="0 0 1024 1024" fill="currentColor" stroke="currentColor" ' +
+  '<svg viewBox="33.4 33.4 957.2 957.2" fill="currentColor" stroke="currentColor" ' +
   'stroke-width="30">' +
   '<path d="M441.71 414.154c0-23.138-17.983-41.656-39.864-41.656-21.875 0-39.864 18.522-39.864 ' +
   '41.656s17.989 41.656 39.864 41.656c21.881 0 39.864-18.518 39.864-41.656zm40.96 0c0 45.495-36.048 ' +
@@ -85,13 +88,18 @@ const TAX_ICON =
  * Publication — deux fenêtres reliées par un aiguillage : le catalogue qui part
  * vers ses canaux. Source : SVG Repo (domaine public).
  *
- * Même normalisation que {@link TAX_ICON}. La source portait un
+ * Même normalisation que {@link TAX_ICON}, resserrage du `viewBox` compris —
+ * et c'est ici qu'il comptait le plus : le dessin n'occupait que **64 %** de sa
+ * boîte, si bien qu'il paraissait nettement plus petit que ses voisines dans la
+ * même barre. Ce n'était pas une affaire de graisse, mais de cadrage.
+ *
+ * La source portait un
  * `stroke-width="0.001"` — résidu de l'outil d'export, invisible à l'écran —
  * remplacé par une valeur qui, elle, sert : le cadre du dessin fait 6 % de la
  * boîte quand fold en trace 8,33 %, et l'écart se voyait dans la même barre.
  */
 const PUBLISH_ICON =
-  '<svg viewBox="0 0 100 100" fill="currentColor" stroke="currentColor" ' +
+  '<svg viewBox="16.1 15.2 69.6 69.6" fill="currentColor" stroke="currentColor" ' +
   'stroke-width="2.33" stroke-linejoin="round">' +
   '<path d="M78,60a2,2,0,0,1,2,2V78a2,2,0,0,1-2,2H62a2,2,0,0,1-2-2V62a2,2,0,0,1,2-2ZM40.2,26.9l12.9' +
   '.2a1.16,1.16,0,0,1,1.2,1.2h0l.2,12.9a1.16,1.16,0,0,1-1.2,1.2H51a1.16,1.16,0,0,1-1.2-1.2h0l-.1-4a' +
