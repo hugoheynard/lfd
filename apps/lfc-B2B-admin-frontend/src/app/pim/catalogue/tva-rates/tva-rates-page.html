@@ -11,7 +11,11 @@
        disparu, le titre de page disant déjà de quoi il s'agit. -->
   @if (canWrite()) {
     <button pageActions foldButton emphasis="solid" intent="primary" (click)="openCreate()">
-      Ajouter un taux de TVA
+      <!-- Deux libellés, un seul bouton : sur la ligne du titre en mobile,
+           « Ajouter un taux de TVA » répéterait « taux de TVA » à côté du titre
+           qui le dit déjà — et ne tiendrait pas sur 375 px. -->
+      <span class="cta-full">Ajouter un taux de TVA</span>
+      <span class="cta-short">Ajouter</span>
     </button>
   }
 

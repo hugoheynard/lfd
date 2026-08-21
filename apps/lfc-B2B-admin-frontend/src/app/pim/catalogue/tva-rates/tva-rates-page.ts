@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ViewEncapsulation,
+  computed,
+  inject,
+} from '@angular/core';
 
 import { FoldButtonComponent, FoldPageLayoutComponent, FoldPanelHostService } from 'fold-ng';
 
@@ -11,7 +17,7 @@ import { TvaRateTable } from './tva-rate-table/tva-rate-table';
  * chrome, l'action « Ajouter un taux de TVA » (side-panel), et le tableau.
  *
  * L'écran disait « taux » ; le mot est celui du modèle, pas celui du métier.
- * Ce qu'un comptable ajoute, c'est un TAUX. Le code garde `regime` — l'agrégat
+ * Ce qu'un comptable ajoute, c'est un TAUX. Le code garde `rate` — l'agrégat
  * n'a pas changé de nature.
  *
  * Elle portait aussi une section « Usages plateforme » qui inspectait Shopify et
@@ -27,6 +33,12 @@ import { TvaRateTable } from './tva-rate-table/tva-rate-table';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldPageLayoutComponent, FoldButtonComponent, TvaRateTable],
   templateUrl: './tva-rates-page.html',
+  styleUrl: './tva-rates-page.scss',
+  // Encapsulation désactivée pour une seule règle : garder le CTA sur la ligne
+  // du titre en mobile suppose de contredire `.page-head`, qui vit dans le
+  // gabarit de `fold-page-layout`. Tout est porté sous le sélecteur d'hôte, donc
+  // la portée reste celle de cette page.
+  encapsulation: ViewEncapsulation.None,
 })
 export class TvaRatesPage {
   private readonly panelHost = inject(FoldPanelHostService);
