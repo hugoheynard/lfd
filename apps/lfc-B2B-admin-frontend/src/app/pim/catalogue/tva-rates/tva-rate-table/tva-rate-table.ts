@@ -4,6 +4,7 @@ import {
   FoldBadgeComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDataTableRowCardDirective,
   FoldIconComponent,
   FoldPanelHostService,
   type FoldTableColumn,
@@ -51,6 +52,10 @@ const ALL_COLUMNS: readonly FoldTableColumn[] = [
     FoldIconComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    // Sans elle, `foldRowCard` n'est qu'un attribut inerte sur un `ng-template` :
+    // Angular ne s'en plaint pas, le build reste vert, et la vue mobile rend le
+    // vide. C'est ce qui est arrivé.
+    FoldDataTableRowCardDirective,
   ],
   templateUrl: './tva-rate-table.html',
   styleUrl: './tva-rate-table.scss',
