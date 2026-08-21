@@ -452,6 +452,47 @@ const DASHBOARD_ICON =
   '</svg>';
 
 /**
+ * Un cadran — l'aiguille et sa graduation. Source : SVG Repo (domaine public).
+ * Posée sur « Les coups du jour » : une file scorée, c'est-à-dire une mesure.
+ *
+ * ⚠️ Son tracé porte `fill-rule="evenodd"`, et il est **conservé**. Ce n'est
+ * pas décoratif : c'est lui qui creuse les anneaux. Sous la règle par défaut
+ * (`nonzero`), les sous-tracés de même sens se remplissent et le cadran devient
+ * un disque plein — l'icône s'afficherait, en tache.
+ *
+ * Ni trait ni resserrage : le dessin est déjà tracé épais et remplit sa boîte.
+ */
+const GAUGE_ICON =
+  '<svg viewBox="0 0 1920 1920" fill="currentColor">' +
+  '<path fill-rule="evenodd" d="M833.935 1063.327c28.913 170.315 64.038 348.198 83.464 384.79 27.55' +
+  '7 51.84 92.047 71.944 144 44.387 51.84-27.558 71.717-92.273 44.16-144.113-19.426-36.593-146.937-' +
+  '165.46-271.624-285.064Zm-43.821-196.405c61.553 56.923 370.899 344.81 415.285 428.612 56.696 106.' +
+  '842 15.811 239.887-91.144 296.697-32.64 17.28-67.765 25.411-102.325 25.411-78.72 0-154.955-42.35' +
+  '3-194.371-116.555-44.386-83.802-109.102-501.346-121.638-584.245-3.501-23.717 8.245-47.21 29.365-' +
+  '58.277 21.346-11.294 47.096-8.02 64.828 8.357ZM960.045 281.99c529.355 0 960 430.757 960 960 0 77' +
+  '.139-8.922 153.148-26.654 225.882l-10.39 43.144h-524.386v-112.942h434.258c9.487-50.71 14.231-103' +
+  '.115 14.231-156.084 0-467.125-380.047-847.06-847.059-847.06-467.125 0-847.059 379.935-847.059 84' +
+  '7.06 0 52.97 4.744 105.374 14.118 156.084h487.454v112.942H36.977l-10.39-43.144C8.966 1395.137.04' +
+  '4 1319.128.044 1241.99c0-529.243 430.645-960 960-960Zm542.547 390.686 79.85 79.85-112.716 112.71' +
+  '5-79.85-79.85 112.716-112.715Zm-1085.184 0L530.123 785.39l-79.85 79.85L337.56 752.524l79.849-79.' +
+  '85Zm599.063-201.363v159.473H903.529V471.312h112.942Z"/>' +
+  '</svg>';
+
+/**
+ * Aujourd'hui — un calendrier dont la case du jour est marquée. Source : SVG
+ * Repo (domaine public). Posée sur le bloc « Aujourd'hui » du cockpit.
+ *
+ * Trait de 0,4 sur 24 : le dessin est tracé à 7,3 % de sa boîte, un cheveu sous
+ * les 8,33 % du jeu fold, et l'écart se voyait à côté du cadran voisin.
+ */
+const TODAY_ICON =
+  '<svg viewBox="1.26 0.26 21.47 21.47" fill="currentColor" stroke="currentColor" ' +
+  'stroke-width="0.4" stroke-linejoin="round">' +
+  '<path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5' +
+  'c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>' +
+  '</svg>';
+
+/**
  * Le catalogue. Une entrée = un nom que `<fold-icon name="…">` accepte.
  *
  * `as const` n'est pas décoratif : c'est lui qui donne à `keyof typeof` des
@@ -463,6 +504,7 @@ export const APP_ICONS = {
   'client-account': CLIENT_ACCOUNT_ICON,
   collections: COLLECTIONS_ICON,
   dashboard: DASHBOARD_ICON,
+  gauge: GAUGE_ICON,
   integrations: INTEGRATIONS_ICON,
   category: CATEGORY_ICON,
   mobile: MOBILE_ICON,
@@ -474,6 +516,7 @@ export const APP_ICONS = {
   shopify: SHOPIFY_ICON,
   publish: PUBLISH_ICON,
   tax: TAX_ICON,
+  today: TODAY_ICON,
   // ÉCRASE le `logout` de fold — même nom, notre dessin.
   logout: LOGOUT_ICON,
 } as const;

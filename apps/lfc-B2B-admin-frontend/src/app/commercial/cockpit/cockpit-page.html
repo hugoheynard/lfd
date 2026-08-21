@@ -52,7 +52,10 @@
       <div class="ck-columns">
         <section class="ck-main ck-block">
           <div class="ck-h2-row">
-            <h2 class="ck-h2">Les coups du jour</h2>
+            <h2 class="ck-h2">
+                <fold-icon name="gauge" [size]="16" tone="muted" />
+                Les coups du jour
+              </h2>
             @if (computedAt(); as at) {
               <span class="ck-fresh">Recalculé le {{ freshnessLabel(at) }}</span>
             }
@@ -65,6 +68,7 @@
           <section class="ck-block">
             <div class="ck-h2-row">
               <h2 class="ck-h2">
+                <fold-icon name="today" [size]="16" tone="muted" />
                 Aujourd'hui
                 @if (todayCount() > 0) {
                   <span class="ck-count ck-count--neutral">{{ todayCount() }}</span>
