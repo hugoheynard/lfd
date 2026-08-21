@@ -131,6 +131,30 @@ const CATALOG_ICON =
   '</svg>';
 
 /**
+ * L'application mobile — un téléphone, écran et bouton. Source : SVG Repo
+ * (domaine public).
+ *
+ * ⚠️ **La rotation a dû être refaite.** La source porte
+ * `transform="rotate(270)"` sur la balise `<svg>` racine, donc autour de
+ * l'origine `(0,0)` : le dessin partait en `y` négatif, hors du `viewBox`, et
+ * l'icône aurait été **invisible** — pas déformée, absente. Le pivot est
+ * rétabli autour du centre (`rotate(270 50 50)`) et porté par un groupe
+ * intérieur, ce qui rend le téléphone au portrait, bouton en bas.
+ *
+ * Pas de trait ajouté, contrairement à ses voisines : le boîtier est déjà
+ * dessiné à ~8 % de la boîte, la graisse du jeu fold.
+ */
+const MOBILE_ICON =
+  '<svg viewBox="18.4 18.4 63.2 63.2" fill="currentColor">' +
+  '<g transform="rotate(270 50 50)">' +
+  '<path d="M74,30H26c-3.3,0-6,2.7-6,6v28c0,3.3,2.7,6,6,6h48c3.3,0,6-2.7,6-6V36C80,32.7,77.3,30,74,' +
+  '30z M25,53 c-1.7,0-3-1.3-3-3s1.3-3,3-3s3,1.3,3,3S26.7,53,25,53z M72,62c0,1.1-0.9,2-2,2H32c-1.1,' +
+  '0-2-0.9-2-2V38c0-1.1,0.9-2,2-2h38 c1.1,0,2,0.9,2,2V62z"/>' +
+  '<path d="M64,42H38c-1.1,0-2,0.9-2,2v12c0,1.1,0.9,2,2,2h26c1.1,0,2-0.9,2-2V44C66,42.9,65.1,42,64,' +
+  '42z"/>' +
+  '</g></svg>';
+
+/**
  * Le catalogue. Une entrée = un nom que `<fold-icon name="…">` accepte.
  *
  * `as const` n'est pas décoratif : c'est lui qui donne à `keyof typeof` des
@@ -138,6 +162,7 @@ const CATALOG_ICON =
  */
 export const APP_ICONS = {
   catalog: CATALOG_ICON,
+  mobile: MOBILE_ICON,
   shopify: SHOPIFY_ICON,
   publish: PUBLISH_ICON,
   tax: TAX_ICON,
