@@ -6,8 +6,13 @@
     dans <strong>Publication</strong>.
   </p>
 
+  <!-- Projeté dans les actions de page (`pageActions`) : l'action principale de
+       l'écran appartient à son en-tête, pas à la barre du tableau — qui a
+       disparu, le titre de page disant déjà de quoi il s'agit. -->
   @if (canWrite()) {
-    <button pageActions foldButton size="sm" (click)="openCreate()">Ajouter un taux de TVA</button>
+    <button pageActions foldButton emphasis="solid" intent="primary" (click)="openCreate()">
+      Ajouter un taux de TVA
+    </button>
   }
 
   <app-tva-rate-table />

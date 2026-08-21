@@ -2,18 +2,10 @@
   [columns]="columns()"
   [rows]="regimes()"
   [rowKey]="rowKey"
-  mobileLayout="auto-cards"
+  mobileLayout="custom"
   zebra
-  toolbarSurface="accent"
   [empty]="emptyState"
 >
-  <div foldToolbar class="table-toolbar">
-    <span class="toolbar-title">
-      <fold-icon name="tax" size="sm" />
-      Taux de TVA
-    </span>
-  </div>
-
   <ng-template foldCell="name" let-r
     ><strong>{{ r.name }}</strong></ng-template
   >
@@ -49,6 +41,29 @@
       (click)="open(r)"
     >
       <fold-icon name="more-vertical" size="sm" />
+    </button>
+  </ng-template>
+
+  <!-- La vue mobile, à nous : `auto-cards` empile encore des paires
+       libellé/valeur, donc un tableau debout. Sur un téléphone on veut une
+       CARTE — le nom en tête, le taux en évidence, l'usage en pied — et la
+       carte entière est la cible. -->
+  <ng-template foldRowCard let-r>
+    <button type="button" class="tva-card" (click)="open(r)">
+      <span class="tva-card-head">
+        <span class="tva-card-name">{{ r.name }}</span>
+        <fold-badge [content]="format(r.percent)" variant="accent" />
+      </span>
+      @if (r.description) {
+        <span class="tva-card-desc">{{ r.description }}</span>
+      }
+      <span class="tva-card-usage">
+        @if (usageTotal(r) === 0) {
+          Aucune famille
+        } @else {
+          {{ usageLabel(r) }}
+        }
+      </span>
     </button>
   </ng-template>
 </fold-data-table>

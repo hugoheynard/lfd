@@ -35,8 +35,13 @@ const ALL_COLUMNS: readonly FoldTableColumn[] = [
  * (backend) et n'expose que l'affichage : toute mutation passe par le
  * side-panel et le store, donc la liste se met à jour toute seule.
  *
- * Sur écran étroit, `auto-cards` empile chaque ligne en carte — un tableau de
- * cinq colonnes ne se lit pas en scrollant de côté sur un téléphone.
+ * Sur écran étroit il rend sa propre **carte** (`mobileLayout="custom"` + un
+ * `foldRowCard` projeté) : `auto-cards` empile des paires libellé/valeur, donc
+ * un tableau debout. Une carte n'a pas d'en-têtes de colonnes à répéter.
+ *
+ * Plus de barre d'outils : elle affichait « Taux de TVA » sous un titre de page
+ * qui dit déjà « Taux de TVA », dans un bandeau accent qui pesait plus lourd que
+ * le tableau qu'il coiffait.
  */
 @Component({
   selector: 'app-tva-rate-table',
