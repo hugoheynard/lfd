@@ -1,0 +1,101 @@
+@if (error(); as text) {
+  <fold-callout appearance="inset" variant="alert" role="alert">{{ text }}</fold-callout>
+}
+
+<div class="integration">
+  <!-- Le hero dit ce que Shopify dit du sien : ce qu'est ce canal, et son état.
+       Sauf qu'ici il n'y a rien à connecter — le canal est interne. -->
+  <fold-hero-card accent="gradient" [accentBar]="true" padding="lg">
+    <div class="hero">
+      <div class="hero-head">
+        <span class="hero-mark"><fold-icon name="shopping-bag" [size]="28" /></span>
+        <div class="hero-titles">
+          <span class="hero-eyebrow">Canal de vente</span>
+          <h2 class="hero-title">Boutique B2B</h2>
+          <p class="hero-sub">Celle qui facture. Le catalogue y descend, rien n'en remonte.</p>
+        </div>
+        <fold-status-badge status="success" label="Interne" />
+      </div>
+
+      <fold-field-list>
+        <fold-field label="Transport">En processus — aucun réseau traversé</fold-field>
+        <fold-field label="Identifiants">Aucun : ni domaine, ni jeton à faire tourner</fold-field>
+        <fold-field label="Ce qui descend"
+          >Familles, articles, prix canonique, taux de TVA</fold-field
+        >
+        <fold-field label="Quand">Au push, depuis <strong>Publication</strong></fold-field>
+      </fold-field-list>
+    </div>
+  </fold-hero-card>
+
+  <!-- La seule chose à surveiller sur un canal sans connexion. -->
+  <fold-card class="parity">
+    <header class="parity-head">
+      <div class="parity-titles">
+        <span class="block-label">Fidélité du miroir</span>
+        <p class="parity-sub">
+          La boutique ne lit pas le référentiel : elle en tient une copie, et c'est cette copie
+          qu'elle facture. Si elle décroche, un prix ou un taux que personne n'a décidé part sur une
+          facture — sans que rien ne le signale.
+        </p>
+      </div>
+      <button foldButton emphasis="outline" size="sm" [disabled]="loading()" (click)="check()">
+        {{ loading() ? 'Comparaison…' : 'Comparer' }}
+      </button>
+    </header>
+
+    @if (loading() && parity() === null) {
+      <div class="parity-loading"><fold-spinner /> Comparaison en cours…</div>
+    } @else if (parity(); as report) {
+      <fold-field-list>
+        <fold-field label="Publiés par le référentiel">{{ report.referenceCount }}</fold-field>
+        <fold-field label="Tenus par la boutique">{{ report.mirrorCount }}</fold-field>
+      </fold-field-list>
+
+      @if (report.inSync) {
+        <fold-callout appearance="inset" variant="success">
+          <strong>Le miroir est fidèle.</strong> Rien ne diffère — ni un article, ni un prix, ni un
+          taux.
+        </fold-callout>
+      } @else {
+        @if (report.missing.length > 0) {
+          <fold-callout appearance="inset" variant="alert">
+            <strong>Absents de la boutique</strong> — publiés par le référentiel, la boutique ne
+            sait pas les vendre :
+            @for (sku of report.missing; track sku) {
+              <code>{{ sku }}</code>
+            }
+          </fold-callout>
+        }
+        @if (report.stale.length > 0) {
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Encore vendus</strong> — le référentiel les a retirés, la boutique continue :
+            @for (sku of report.stale; track sku) {
+              <code>{{ sku }}</code>
+            }
+          </fold-callout>
+        }
+        @if (gaps().length > 0) {
+          <!-- Les deux versions côte à côte : « diffère » n'aide personne. -->
+          <ul class="gap-list">
+            @for (gap of gaps(); track gap.sku + gap.field) {
+              <li class="gap-row">
+                <code>{{ gap.sku }}</code>
+                <fold-badge [content]="gap.field" variant="neutral" />
+                <span class="gap-values">
+                  <span class="gap-ref">{{ gap.reference }}</span>
+                  <fold-icon name="arrow-right" size="sm" />
+                  <span class="gap-mirror">{{ gap.mirror }}</span>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+        <p class="parity-fix">
+          Un écart se répare par un <strong>push</strong> depuis Publication — la boutique reprend
+          alors ce que le référentiel publie.
+        </p>
+      }
+    }
+  </fold-card>
+</div>

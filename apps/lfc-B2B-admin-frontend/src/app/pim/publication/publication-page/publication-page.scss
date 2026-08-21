@@ -1,0 +1,13 @@
+/* Même resserrement que sur Intégrations : la densité `compact` de fold donne
+   8 px de marge autour d'une icône de 16 px pour un libellé de 10 px. Porté
+   sous le sélecteur d'hôte (`ViewEncapsulation.None`), `.tab-bar-item` vivant
+   dans le gabarit de `fold-tabs`. */
+app-publication-page {
+  .tab-bar-item {
+    padding-block: var(--fold-space-xs);
+  }
+
+  .bg-surface {
+    padding-top: 0;
+  }
+}

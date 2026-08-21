@@ -1,0 +1,134 @@
+.integration {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.hero-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-md);
+}
+
+.hero-mark {
+  display: inline-flex;
+  color: var(--fold-color-primary-text);
+}
+
+.hero-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hero-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.hero-title {
+  margin: 0;
+  font-size: var(--fold-text-lg);
+  font-weight: 700;
+  color: var(--fold-color-text);
+}
+
+.hero-sub {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--fold-color-text-secondary);
+}
+
+// ── Fidélité du miroir ──────────────────────────────────────────────────────
+.parity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.parity-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.parity-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.block-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fold-color-text-muted);
+}
+
+.parity-sub,
+.parity-fix {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--fold-color-text-secondary);
+}
+
+.parity-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.gap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.gap-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+/* Les deux versions, l'une menant à l'autre : la source puis le miroir. */
+.gap-values {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-left: auto;
+}
+
+.gap-ref {
+  color: var(--fold-color-text);
+}
+
+.gap-mirror {
+  color: var(--fold-color-alert-text);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  color: var(--fold-color-text-muted);
+}

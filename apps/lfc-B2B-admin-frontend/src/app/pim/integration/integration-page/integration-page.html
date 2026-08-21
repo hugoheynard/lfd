@@ -1,10 +1,17 @@
 <fold-page-layout icon="integrations" title="Intégrations">
   <p description>
-    Les canaux branchés sur le catalogue. Chaque intégration a sa page ; le catalogue descend vers
-    elles, rien ne remonte.
+    Les canaux branchés sur le catalogue. La <strong>boutique B2B</strong> d'abord — c'est elle qui
+    facture — puis Shopify. Chaque intégration a sa page ; le catalogue descend vers elles, rien ne
+    remonte.
   </p>
 
   <fold-nav-layout>
+    <!-- La densité `compact` est la bonne ici ; c'est sa HAUTEUR qui ne l'est
+         pas. Fold lui donne 8 px de marge au-dessus et au-dessous d'une icône
+         de 16 px, pour un libellé de 10 px : la barre fait 36 px pour deux
+         lignes de texte minuscule. On la resserre dans la feuille de la page
+         (cf. `.tab-bar-item`) — la vraie place de ce réglage est fold, où le
+         ratio marge/typo de `compact` mériterait d'être revu. -->
     <fold-tabs
       tabNav
       [tabs]="tabs"
@@ -16,20 +23,15 @@
       #ref="foldTabs"
     />
 
+    <fold-tab-panel [tabs]="ref" key="b2b">
+      <app-b2b-integration />
+    </fold-tab-panel>
+
     <fold-tab-panel [tabs]="ref" key="shopify">
       <div class="shopify-stack">
         <app-shopify-integration />
         <app-shopify-catalogue />
       </div>
-    </fold-tab-panel>
-
-    <fold-tab-panel [tabs]="ref" key="autres">
-      <fold-empty-state
-        title="Pas d'autre intégration"
-        subtitle="Shopify est le seul canal branché. Caisse, marketplace ou ERP viendront s'ajouter ici comme de nouveaux onglets."
-      >
-        <fold-icon empty-icon name="teams" [size]="40" />
-      </fold-empty-state>
     </fold-tab-panel>
   </fold-nav-layout>
 </fold-page-layout>

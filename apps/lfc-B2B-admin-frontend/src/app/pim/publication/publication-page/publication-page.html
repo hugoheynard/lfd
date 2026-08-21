@@ -6,6 +6,12 @@
   </p>
 
   <fold-nav-layout>
+    <!-- La densité `compact` est la bonne ici ; c'est sa HAUTEUR qui ne l'est
+         pas. Fold lui donne 8 px de marge au-dessus et au-dessous d'une icône
+         de 16 px, pour un libellé de 10 px : la barre fait 36 px pour deux
+         lignes de texte minuscule. On la resserre dans la feuille de la page
+         (cf. `.tab-bar-item`) — la vraie place de ce réglage est fold, où le
+         ratio marge/typo de `compact` mériterait d'être revu. -->
     <fold-tabs
       tabNav
       [tabs]="tabs"

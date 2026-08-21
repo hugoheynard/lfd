@@ -2,3 +2,18 @@
   display: grid;
   gap: var(--fold-space-lg);
 }
+
+/* ── La hauteur de la barre d'onglets ──────────────────────────────────────
+   Portée sous le sélecteur d'hôte (`ViewEncapsulation.None`) : `.tab-bar-item`
+   vit dans le gabarit de `fold-tabs`, hors d'atteinte d'un style encapsulé. */
+app-integration-page {
+  .tab-bar-item {
+    padding-block: var(--fold-space-xs);
+  }
+
+  /* Le liseré que la barre pose au-dessus des onglets — inutile ici, la
+     gouttière de page l'a déjà posé. */
+  .bg-surface {
+    padding-top: 0;
+  }
+}

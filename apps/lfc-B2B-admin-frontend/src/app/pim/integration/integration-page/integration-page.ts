@@ -1,8 +1,6 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewEncapsulation, signal } from '@angular/core';
 
 import {
-  FoldEmptyStateComponent,
-  FoldIconComponent,
   FoldNavLayoutComponent,
   FoldPageLayoutComponent,
   FoldTabPanelComponent,
@@ -10,14 +8,21 @@ import {
   type FoldTabItem,
 } from 'fold-ng';
 
+import { B2bIntegration } from '../b2b-integration/b2b-integration';
 import { ShopifyCatalogue } from '../shopify-catalogue/shopify-catalogue';
 import { ShopifyIntegration } from '../shopify-integration/shopify-integration';
 
 /**
- * Hub des **intégrations** — les canaux branchés sur le catalogue. Un nav-layout
- * (Shopify · Autres) héberge chaque page d'intégration ; aujourd'hui seule
- * Shopify est branchée, les suivantes (caisse, marketplace) s'ajouteront comme
- * de nouveaux onglets.
+ * Hub des **intégrations** — les canaux branchés sur le catalogue.
+ *
+ * La **boutique B2B en premier**, et c'est un ordre de vérité : c'est elle qui
+ * facture. Elle manquait entièrement à cet écran, dont l'état vide affirmait que
+ * « Shopify est le seul canal branché » — faux depuis que le catalogue et les
+ * taux descendent vers la plateforme.
+ *
+ * L'onglet « Autres » part avec : un inventaire des canaux tenu à la main est un
+ * inventaire qui ment dès qu'un canal arrive, et c'est exactement ce qui s'est
+ * produit. Un nouveau canal s'ajoute en onglet, pas en promesse.
  */
 @Component({
   selector: 'app-integration-page',
@@ -27,18 +32,18 @@ import { ShopifyIntegration } from '../shopify-integration/shopify-integration';
     FoldNavLayoutComponent,
     FoldTabsComponent,
     FoldTabPanelComponent,
-    FoldEmptyStateComponent,
-    FoldIconComponent,
+    B2bIntegration,
     ShopifyIntegration,
     ShopifyCatalogue,
   ],
   templateUrl: './integration-page.html',
   styleUrl: './integration-page.scss',
+  encapsulation: ViewEncapsulation.None,
 })
 export class IntegrationPage {
   protected readonly tabs: FoldTabItem[] = [
+    { key: 'b2b', label: 'Boutique B2B', icon: 'shopping-bag' },
     { key: 'shopify', label: 'Shopify', icon: 'shopify' },
-    { key: 'autres', label: 'Autres', icon: 'grid' },
   ];
-  protected readonly activeTab = signal('shopify');
+  protected readonly activeTab = signal('b2b');
 }
