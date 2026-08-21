@@ -6,7 +6,7 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-5, 1.5rem);
+  gap: var(--fold-space-2xl);
 }
 
 :host p,
@@ -18,7 +18,7 @@
 .intro {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm, 0.5rem);
 }
 
 .title {
@@ -42,7 +42,7 @@
 }
 
 .sub {
-  margin: var(--fold-space-4, 1rem) 0 var(--fold-space-2, 0.5rem);
+  margin: var(--fold-space-lg, 1rem) 0 var(--fold-space-sm, 0.5rem);
   font-size: var(--fold-text-md, 1rem);
 }
 
@@ -51,8 +51,8 @@
  * Le lecteur pressé lit les règles ; celui qui doute lit les raisons.
  */
 .why {
-  margin: var(--fold-space-2, 0.5rem) 0 0;
-  padding-left: var(--fold-space-3, 0.75rem);
+  margin: var(--fold-space-sm, 0.5rem) 0 0;
+  padding-left: var(--fold-space-md, 0.75rem);
   border-left: 2px solid var(--fold-color-border);
   font-size: var(--fold-text-sm, 0.875rem);
   color: var(--fold-color-text-muted);
@@ -61,18 +61,18 @@
 .pair {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-  gap: var(--fold-space-4, 1rem);
-  margin: var(--fold-space-4, 1rem) 0;
+  gap: var(--fold-space-lg, 1rem);
+  margin: var(--fold-space-lg, 1rem) 0;
 }
 
 .fact {
-  padding: var(--fold-space-3, 0.75rem);
+  padding: var(--fold-space-md, 0.75rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
 }
 
 .fact-title {
-  margin: 0 0 var(--fold-space-2, 0.5rem);
+  margin: 0 0 var(--fold-space-sm, 0.5rem);
   font-size: var(--fold-text-sm, 0.875rem);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -85,18 +85,18 @@
 
 /* Le classement de spécificité : numéroté parce que c'est un ORDRE, pas une liste. */
 .ranks {
-  margin: var(--fold-space-3, 0.75rem) 0;
+  margin: var(--fold-space-md, 0.75rem) 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3, 0.75rem);
+  gap: var(--fold-space-md, 0.75rem);
 }
 
 .ranks li {
   display: flex;
   align-items: flex-start;
-  gap: var(--fold-space-3, 0.75rem);
+  gap: var(--fold-space-md, 0.75rem);
 }
 
 .rank-n {
@@ -124,12 +124,12 @@
  * brochure, pas une doctrine.
  */
 .tally {
-  margin: var(--fold-space-2, 0.5rem) 0 0;
+  margin: var(--fold-space-sm, 0.5rem) 0 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm, 0.5rem);
 }
 
 .tally li {
@@ -155,11 +155,11 @@
 }
 
 .consequences {
-  margin: var(--fold-space-3, 0.75rem) 0;
-  padding-left: var(--fold-space-4, 1rem);
+  margin: var(--fold-space-md, 0.75rem) 0;
+  padding-left: var(--fold-space-lg, 1rem);
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm, 0.5rem);
 }
 
 .formula {
@@ -167,8 +167,8 @@
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
-  margin: var(--fold-space-4, 1rem) 0;
-  padding: var(--fold-space-4, 1rem);
+  margin: var(--fold-space-lg, 1rem) 0;
+  padding: var(--fold-space-lg, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
   background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
@@ -187,8 +187,8 @@
 /* Ce qui est décidé mais pas construit : dit en pointillés, pour qu'on ne le
    cherche pas dans l'application. */
 .pending {
-  margin-top: var(--fold-space-4, 1rem);
-  padding: var(--fold-space-3, 0.75rem);
+  margin-top: var(--fold-space-lg, 1rem);
+  padding: var(--fold-space-md, 0.75rem);
   border: 1px dashed var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
   font-size: var(--fold-text-sm, 0.875rem);

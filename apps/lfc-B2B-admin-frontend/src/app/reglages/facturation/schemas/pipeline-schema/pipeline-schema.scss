@@ -11,7 +11,7 @@
 }
 
 .node rect {
-  fill: var(--fold-color-surface);
+  fill: var(--fold-color-surface-card);
   stroke: var(--fold-color-border);
   stroke-width: 1;
 }
@@ -21,7 +21,7 @@
 }
 
 .node-final rect {
-  stroke: var(--fold-color-accent, var(--fold-color-text));
+  stroke: var(--fold-color-primary, var(--fold-color-text));
   stroke-width: 1.5;
 }
 
@@ -38,7 +38,7 @@
 }
 
 .guard rect {
-  fill: var(--fold-color-surface);
+  fill: var(--fold-color-surface-card);
   stroke: var(--fold-color-border);
   stroke-width: 1;
   stroke-dasharray: 5 4;

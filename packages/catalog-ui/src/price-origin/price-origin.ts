@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from "@angular/core";
 
+import { formatEuros } from "./format-euros";
+
 /**
  * **Un prix et d'où il vient.**
  *
@@ -27,7 +29,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from "@angular/co
     .price {
       display: inline-flex;
       align-items: baseline;
-      gap: var(--fold-space-2, 0.5rem);
+      gap: var(--fold-space-sm, 0.5rem);
       font-variant-numeric: tabular-nums;
     }
     .effective {
@@ -36,10 +38,10 @@ import { ChangeDetectionStrategy, Component, computed, input } from "@angular/co
     /* Un prix décidé ici se voit : sans marque, l'écran laisse croire que tout
        vient du PIM, et personne ne sait plus ce qu'il a négocié. */
     .altered {
-      color: var(--fold-color-accent-fg, currentColor);
+      color: var(--fold-color-on-primary, currentColor);
     }
     .origin {
-      color: var(--fold-color-fg-muted, #6b7280);
+      color: var(--fold-color-text-muted, #6b7280);
       font-size: 0.875em;
       text-decoration: line-through;
     }
@@ -60,15 +62,4 @@ export class PriceOrigin {
   protected readonly origin = computed(() => formatEuros(this.originCents()));
 
   protected readonly originTitle = computed(() => `Tarif d'origine : ${this.origin()}`);
-}
-
-/**
- * Centimes → euros, en français.
- *
- * Le formatage vit **ici** et pas dans un pipe partagé : c'est la seule règle du
- * paquet qui touche à l'argent, et deux écrans qui l'écriraient différemment
- * afficheraient deux prix pour la même valeur.
- */
-export function formatEuros(cents: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(cents / 100);
 }

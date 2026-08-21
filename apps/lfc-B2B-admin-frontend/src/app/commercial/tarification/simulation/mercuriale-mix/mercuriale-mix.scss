@@ -1,8 +1,8 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2, 0.5rem);
-  padding: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: var(--fold-space-lg, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg, 0.75rem);
   background: var(--fold-color-surface-card);
@@ -13,7 +13,7 @@
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: var(--fold-space-3, 0.75rem);
+  gap: var(--fold-space-md, 0.75rem);
 }
 
 .title {
@@ -34,7 +34,7 @@
 .rings {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg, 1rem);
 }
 
 .ring-title {

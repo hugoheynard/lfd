@@ -37,8 +37,8 @@ import { PriceOrigin } from "../price-origin/price-origin";
       display: grid;
       grid-template-columns: minmax(12rem, 2fr) minmax(8rem, 1fr) auto auto;
       align-items: center;
-      gap: var(--fold-space-4, 1rem);
-      padding: var(--fold-space-3, 0.75rem) 0;
+      gap: var(--fold-space-lg, 1rem);
+      padding: var(--fold-space-md, 0.75rem) 0;
       border-block-end: 1px solid var(--fold-color-border, #e5e7eb);
     }
     /* Un article retiré de la vente reste LISIBLE, seulement en retrait : le
@@ -57,13 +57,13 @@ import { PriceOrigin } from "../price-origin/price-origin";
     }
     .sku,
     .category {
-      color: var(--fold-color-fg-muted, #6b7280);
+      color: var(--fold-color-text-muted, #6b7280);
       font-size: 0.875rem;
     }
     .trailing {
       display: flex;
       align-items: center;
-      gap: var(--fold-space-2, 0.5rem);
+      gap: var(--fold-space-sm, 0.5rem);
       justify-content: end;
     }
     @media (max-width: 48rem) {

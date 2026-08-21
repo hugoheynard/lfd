@@ -6,7 +6,7 @@
   justify-content: center;
   gap: 0.05rem;
   min-height: 2.5rem;
-  padding: var(--fold-space-2, 0.5rem) var(--fold-space-3, 0.75rem);
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 0.75rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
   background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
@@ -14,8 +14,8 @@
 
 // Un prix qu'une règle a touché n'est plus le tarif : il sort du fond en creux.
 :host(.is-changed) {
-  border-color: var(--fold-color-accent, var(--fold-color-border));
-  background: var(--fold-color-surface-card, var(--fold-color-surface));
+  border-color: var(--fold-color-primary, var(--fold-color-border));
+  background: var(--fold-color-surface-card, var(--fold-color-surface-card));
   box-shadow: var(--fold-shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
 }
 

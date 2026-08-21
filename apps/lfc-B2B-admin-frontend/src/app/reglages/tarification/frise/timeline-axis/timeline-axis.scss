@@ -93,8 +93,8 @@
   display: flex;
   align-items: start;
   justify-content: center;
-  border-inline: 1px solid var(--fold-color-accent, currentcolor);
-  background: color-mix(in srgb, var(--fold-color-accent, #666) 10%, transparent);
+  border-inline: 1px solid var(--fold-color-primary, currentcolor);
+  background: color-mix(in srgb, var(--fold-color-primary, #666) 10%, transparent);
   pointer-events: none;
 }
 
@@ -102,8 +102,8 @@
   margin-top: -0.1rem;
   padding: 0 0.35rem;
   border-radius: 999px;
-  background: var(--fold-color-accent, currentcolor);
-  color: var(--fold-color-accent-contrast, #fff);
+  background: var(--fold-color-primary, currentcolor);
+  color: var(--fold-color-on-primary, #fff);
   font-size: var(--fold-text-xs, 0.75rem);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -146,8 +146,8 @@
   // barre légèrement modelée se lit comme un objet posé sur la piste.
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--fold-color-accent, #666) 92%, #fff),
-    var(--fold-color-accent, currentcolor)
+    color-mix(in srgb, var(--fold-color-primary, #666) 92%, #fff),
+    var(--fold-color-primary, currentcolor)
   );
   box-shadow: 0 1px 2px rgb(0 0 0 / 14%);
   overflow: hidden;
@@ -163,7 +163,7 @@
 .bar-label {
   font-size: var(--fold-text-xs, 0.75rem);
   font-weight: 500;
-  color: var(--fold-color-accent-contrast, #fff);
+  color: var(--fold-color-on-primary, #fff);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -177,7 +177,7 @@
   bottom: 0;
   width: 2px;
   background: var(--fold-color-text);
-  box-shadow: 0 0 0 1px var(--fold-color-surface);
+  box-shadow: 0 0 0 1px var(--fold-color-surface-card);
   pointer-events: none;
 }
 
@@ -204,7 +204,7 @@
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
   background: var(--fold-color-text);
-  color: var(--fold-color-surface);
+  color: var(--fold-color-surface-card);
   font-size: var(--fold-text-xs, 0.75rem);
   font-weight: 600;
   font-variant-numeric: tabular-nums;

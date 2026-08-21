@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from "@angular/core";
 
-import { formatEuros } from "../price-origin/price-origin";
+import { formatEuros } from "../price-origin/format-euros";
 
 /**
  * **Poser un prix, ou revenir à l'origine.**
@@ -56,7 +56,7 @@ import { formatEuros } from "../price-origin/price-origin";
     .actions {
       display: flex;
       align-items: center;
-      gap: var(--fold-space-2, 0.5rem);
+      gap: var(--fold-space-sm, 0.5rem);
     }
     .amount {
       inline-size: 6rem;
@@ -68,7 +68,7 @@ import { formatEuros } from "../price-origin/price-origin";
       font-variant-numeric: tabular-nums;
     }
     .unit {
-      color: var(--fold-color-fg-muted, #6b7280);
+      color: var(--fold-color-text-muted, #6b7280);
     }
     button {
       font: inherit;
@@ -78,18 +78,18 @@ import { formatEuros } from "../price-origin/price-origin";
       border: 0;
       background: none;
       padding: 0;
-      color: var(--fold-color-accent-fg, #2563eb);
+      color: var(--fold-color-on-primary, #2563eb);
       text-decoration: underline;
     }
     .link.muted {
-      color: var(--fold-color-fg-muted, #6b7280);
+      color: var(--fold-color-text-muted, #6b7280);
     }
     .ok,
     .cancel {
       padding: 0.25rem 0.5rem;
       border-radius: var(--fold-radius-sm, 0.25rem);
       border: 1px solid var(--fold-color-border, #d1d5db);
-      background: var(--fold-color-surface, #fff);
+      background: var(--fold-color-surface-card, #fff);
     }
     .ok:disabled {
       opacity: 0.5;

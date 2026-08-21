@@ -461,7 +461,7 @@ export function adoptionOption(
   const rows = sort.endsWith('desc') ? asc : [...asc].reverse();
   // Teintes sémantiques du thème : adoption = succès, churn = alerte (légende alignée).
   const success = themeColor('--fold-color-success', '#1a9e6a');
-  const alert = themeColor('--fold-color-danger', '#dc2626');
+  const alert = themeColor('--fold-color-alert', '#dc2626');
   const muted = themeColor('--fold-color-text-muted', PALETTE.slate);
   const text = themeColor('--fold-color-text', '#1f2937');
   const adoption = rows.map((z) => ({

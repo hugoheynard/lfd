@@ -41,7 +41,7 @@
   cursor: pointer;
 
   &.is-on {
-    background: var(--fold-color-surface-raised, var(--fold-color-surface));
+    background: var(--fold-color-surface-raised, var(--fold-color-surface-card));
     color: var(--fold-color-text);
     font-weight: 600;
   }
@@ -103,7 +103,7 @@
   padding: var(--fold-space-sm) var(--fold-space-md);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   color: var(--fold-color-text);
   font: inherit;
 }

@@ -12,7 +12,7 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-5, 1.5rem);
+  gap: var(--fold-space-2xl);
 }
 
 $col-gap: 2.25rem;
@@ -39,7 +39,7 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
 // elle s'apprend à être sautée.
 .caveat {
   margin: 0;
-  padding-left: var(--fold-space-3, 0.75rem);
+  padding-left: var(--fold-space-md, 0.75rem);
   border-left: 2px solid var(--fold-color-border);
   line-height: 1.5;
   color: var(--fold-color-text-muted);
@@ -51,9 +51,9 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
   position: sticky;
   top: 0;
   z-index: 3;
-  padding: var(--fold-space-2, 0.5rem) var(--fold-space-4, 1rem);
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-lg, 1rem);
   border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   box-shadow: 0 1px 0 var(--fold-color-border);
 }
 
@@ -66,10 +66,10 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
 }
 
 .shelf {
-  padding: var(--fold-space-4, 1rem);
+  padding: var(--fold-space-lg, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg, 0.75rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   // Deux ombres : une courte qui décolle la carte, une large et presque
   // invisible qui l'assoit. Une seule grossit sans donner de poids.
   box-shadow:
@@ -81,15 +81,15 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
 // rayon de plus. Une teinte suffit — un cadre plus lourd l'aurait fait passer
 // pour une alerte.
 .shelf-global {
-  background: var(--fold-color-surface-subtle, var(--fold-color-surface));
+  background: var(--fold-color-surface-subtle, var(--fold-color-surface-card));
 }
 
 .global-rules {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--fold-space-3, 0.75rem);
-  padding: 0 var(--fold-space-1, 0.25rem) var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-md, 0.75rem);
+  padding: 0 var(--fold-space-xs, 0.25rem) var(--fold-space-sm, 0.5rem);
 }
 
 // **L'en-tête du rayon reste visible** pendant qu'on descend ses articles, sans
@@ -105,9 +105,9 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: var(--fold-space-2, 0.5rem);
-  padding: var(--fold-space-1, 0.25rem) var(--fold-space-1, 0.25rem) var(--fold-space-3, 0.75rem);
-  background: linear-gradient(180deg, var(--fold-color-surface) 72%, transparent);
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: var(--fold-space-xs, 0.25rem) var(--fold-space-xs, 0.25rem) var(--fold-space-md, 0.75rem);
+  background: linear-gradient(180deg, var(--fold-color-surface-card) 72%, transparent);
 }
 
 .shelf-name {
@@ -135,7 +135,7 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
 // Les lignes respirent un cran de plus que les colonnes : c'est ce qui fait
 // qu'on lit UNE ligne d'un bout à l'autre plutôt qu'une colonne de haut en bas.
 .grid {
-  row-gap: var(--fold-space-3, 0.75rem);
+  row-gap: var(--fold-space-md, 0.75rem);
 }
 
 // **La ligne se survole comme une ligne.** Sept cellules séparées par des
@@ -252,10 +252,10 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
   justify-content: center;
   gap: 0.15rem;
   min-height: 2.5rem;
-  padding: var(--fold-space-2, 0.5rem) var(--fold-space-3, 0.75rem);
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 0.75rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface-card, var(--fold-color-surface));
+  background: var(--fold-color-surface-card, var(--fold-color-surface-card));
   box-shadow: var(--fold-shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
   font: inherit;
   text-align: left;
@@ -273,7 +273,7 @@ $link: var(--fold-color-text-faded, var(--fold-color-border));
 // pour ne pas rogner le contenu : sans lui, un écran fait de cartes cliquables se
 // parcourt en aveugle au `Tab`.
 button.node:focus-visible {
-  outline: 2px solid var(--fold-color-accent, currentcolor);
+  outline: 2px solid var(--fold-color-primary, currentcolor);
   outline-offset: 2px;
 }
 
@@ -351,17 +351,17 @@ button.node:focus-visible {
 
 .node-family,
 .node-product {
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm, 0.5rem);
   justify-content: center;
-  padding-top: var(--fold-space-2, 0.5rem);
-  padding-bottom: var(--fold-space-2, 0.5rem);
+  padding-top: var(--fold-space-sm, 0.5rem);
+  padding-bottom: var(--fold-space-sm, 0.5rem);
 }
 
 // Le nœud de famille couvre tout le rayon : ses règles se posent en HAUT, sinon
 // elles flotteraient au milieu d'une colonne vide.
 .node-family {
   justify-content: flex-start;
-  padding-top: var(--fold-space-3, 0.75rem);
+  padding-top: var(--fold-space-md, 0.75rem);
 }
 
 // Le nœud « créer » : en pointillés, parce qu'il n'existe pas encore.
@@ -378,8 +378,8 @@ button.node:focus-visible {
   &:hover,
   &:focus-visible {
     border-style: solid;
-    border-color: var(--fold-color-accent, var(--fold-color-text));
-    color: var(--fold-color-accent, var(--fold-color-text));
+    border-color: var(--fold-color-primary, var(--fold-color-text));
+    color: var(--fold-color-primary, var(--fold-color-text));
   }
 }
 
@@ -471,7 +471,7 @@ button.node:focus-visible {
 
   .grid {
     grid-template-columns: 1fr;
-    row-gap: var(--fold-space-3, 0.75rem);
+    row-gap: var(--fold-space-md, 0.75rem);
   }
 
   .cell,
@@ -492,7 +492,7 @@ button.node:focus-visible {
 .other-readings {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg, 1rem);
   margin: 0;
-  font-size: var(--fold-font-size-sm, 0.875rem);
+  font-size: var(--fold-text-md, 0.875rem);
 }

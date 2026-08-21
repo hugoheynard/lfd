@@ -469,8 +469,8 @@ fold-aside-layout {
 // concurrencer le montant.
 .od-step {
   display: inline-block;
-  margin-left: var(--fold-space-1, 0.25rem);
-  padding: 0 var(--fold-space-1, 0.25rem);
+  margin-left: var(--fold-space-xs, 0.25rem);
+  padding: 0 var(--fold-space-xs, 0.25rem);
   border-radius: var(--fold-radius-sm, 3px);
   background: var(--fold-color-surface-sunken, rgb(0 0 0 / 4%));
   color: var(--fold-color-text-muted);
@@ -484,6 +484,6 @@ fold-aside-layout {
 }
 
 .od-was {
-  margin-right: var(--fold-space-1, 0.25rem);
+  margin-right: var(--fold-space-xs, 0.25rem);
   color: var(--fold-color-text-muted);
 }

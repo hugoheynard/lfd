@@ -1,8 +1,8 @@
 .timeline {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2, 0.5rem);
-  padding: var(--fold-space-3, 0.75rem) var(--fold-space-1, 0.25rem) var(--fold-space-1, 0.25rem);
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: var(--fold-space-md, 0.75rem) var(--fold-space-xs, 0.25rem) var(--fold-space-xs, 0.25rem);
   border-top: 1px solid var(--fold-color-border);
 }
 
@@ -25,7 +25,7 @@
 // Les recouvrements se lisent SOUS les barres qui les produisent : un filet les
 // sépare sans les détacher.
 .overlaps {
-  padding-top: var(--fold-space-2, 0.5rem);
+  padding-top: var(--fold-space-sm, 0.5rem);
   border-top: 1px dashed var(--fold-color-border);
 }
 
@@ -33,7 +33,7 @@
   display: grid;
   grid-template-columns: minmax(7rem, 12rem) 1fr minmax(0, 9rem);
   align-items: center;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm, 0.5rem);
 }
 
 .row-name {
@@ -70,7 +70,7 @@
   top: 0;
   bottom: 0;
   border-radius: 999px;
-  background: var(--fold-color-accent, currentcolor);
+  background: var(--fold-color-primary, currentcolor);
   opacity: 0.55;
 }
 
@@ -82,7 +82,7 @@
 // Elle n'a pas disparu — elle ne produit simplement rien —, donc on la creuse au
 // lieu de la couper : le tracé continue, la matière s'en va.
 .bar-evicted {
-  background: var(--fold-color-surface, #fff);
+  background: var(--fold-color-surface-card, #fff);
   border: 1px dashed var(--fold-color-border);
   opacity: 1;
 }

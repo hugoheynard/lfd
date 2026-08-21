@@ -24,7 +24,7 @@
 }
 
 .level-door {
-  stroke: var(--fold-color-accent, var(--fold-color-text));
+  stroke: var(--fold-color-primary, var(--fold-color-text));
   stroke-width: 2;
   stroke-dasharray: 7 5;
 }

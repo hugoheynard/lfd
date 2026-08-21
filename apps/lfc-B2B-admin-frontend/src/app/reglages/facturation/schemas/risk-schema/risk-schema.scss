@@ -16,7 +16,7 @@
 }
 
 .line-living {
-  stroke: var(--fold-color-accent, var(--fold-color-text));
+  stroke: var(--fold-color-primary, var(--fold-color-text));
 }
 
 .line-locked {
@@ -56,7 +56,7 @@
 }
 
 .t-living {
-  fill: var(--fold-color-accent, var(--fold-color-text));
+  fill: var(--fold-color-primary, var(--fold-color-text));
 }
 
 .t-sub,

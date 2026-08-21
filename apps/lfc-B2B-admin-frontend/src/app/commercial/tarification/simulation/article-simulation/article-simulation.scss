@@ -4,9 +4,9 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3, 0.75rem);
-  margin: var(--fold-space-2, 0.5rem) 0 var(--fold-space-3, 0.75rem);
-  padding: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-md, 0.75rem);
+  margin: var(--fold-space-sm, 0.5rem) 0 var(--fold-space-md, 0.75rem);
+  padding: var(--fold-space-lg, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg, 0.75rem);
   background: var(--fold-color-surface-card);
@@ -17,7 +17,7 @@
   display: flex;
   align-items: flex-end;
   flex-wrap: wrap;
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg, 1rem);
 }
 
 .bar-spacer {
@@ -42,7 +42,7 @@
   padding: 0.375rem 0.5rem;
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm, 0.25rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   color: inherit;
   font: inherit;
   font-variant-numeric: tabular-nums;
@@ -84,7 +84,7 @@
 .exits {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm, 0.5rem);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -121,7 +121,7 @@
 .charts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg, 1rem);
 }
 
 .chart-title {
@@ -135,7 +135,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
-  padding: var(--fold-space-2, 0.5rem) var(--fold-space-3, 0.75rem);
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 0.75rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
   background: var(--fold-color-surface-sunken);
@@ -154,7 +154,7 @@
 
 .exit-delta {
   font-weight: 600;
-  color: var(--fold-color-danger-text);
+  color: var(--fold-color-alert-text);
 }
 
 // Le prix fixe saisi sous la limite : dit une fois, à côté du nombre corrigé.
@@ -172,7 +172,7 @@
 // qu'elle dément.
 .pierced {
   margin: 0;
-  padding-left: var(--fold-space-3, 0.75rem);
+  padding-left: var(--fold-space-md, 0.75rem);
   border-left: 2px solid var(--fold-color-warning-border);
   color: var(--fold-color-warning-text);
   font-size: var(--fold-text-sm, 0.875rem);
@@ -183,7 +183,7 @@
 // n'est vrai ni sans engagement (seuils par commande) ni avec (prix plat).
 .regime {
   margin: 0;
-  padding-left: var(--fold-space-3, 0.75rem);
+  padding-left: var(--fold-space-md, 0.75rem);
   border-left: 2px solid var(--fold-color-border);
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm, 0.875rem);

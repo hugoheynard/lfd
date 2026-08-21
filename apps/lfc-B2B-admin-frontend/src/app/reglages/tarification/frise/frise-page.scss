@@ -1,7 +1,7 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-5, 1.25rem);
+  gap: var(--fold-space-xl);
 }
 
 // La frise est un OUTIL : elle vit dans une carte posée, pas dans le flux de la
@@ -9,11 +9,11 @@
 .stage {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2, 0.5rem);
-  padding: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: var(--fold-space-lg, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg, 0.75rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
 }
 
@@ -22,11 +22,11 @@
 .result {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3, 0.75rem);
-  padding: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-md, 0.75rem);
+  padding: var(--fold-space-lg, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg, 0.75rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   // La même élévation que les rayons de la grille : deux écrans, une seule
   // matière — sans quoi la frise passerait pour une autre application.
   box-shadow:
@@ -37,7 +37,7 @@
 .result-head {
   display: flex;
   align-items: baseline;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm, 0.5rem);
   flex-wrap: wrap;
 }
 
@@ -51,7 +51,7 @@
 // Le titre et son compte tiennent sur la même ligne de base, séparés par un
 // filet : deux informations de poids différent, pas deux titres.
 .result-head .hint {
-  padding-left: var(--fold-space-2, 0.5rem);
+  padding-left: var(--fold-space-sm, 0.5rem);
   border-left: 1px solid var(--fold-color-border);
 }
 
@@ -59,14 +59,14 @@
   display: flex;
   align-items: start;
   justify-content: space-between;
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg, 1rem);
   flex-wrap: wrap;
 }
 
 .head-text {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-1, 0.25rem);
+  gap: var(--fold-space-xs, 0.25rem);
 }
 
 .title {
@@ -88,7 +88,7 @@
 }
 
 .caveat {
-  padding: var(--fold-space-2, 0.5rem) var(--fold-space-3, 0.75rem);
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 0.75rem);
   border-left: 2px solid var(--fold-color-border);
   background: var(--fold-color-surface-sunken, rgb(0 0 0 / 3%));
 
@@ -105,7 +105,7 @@
 .markers {
   display: flex;
   align-items: end;
-  gap: var(--fold-space-3, 0.75rem);
+  gap: var(--fold-space-md, 0.75rem);
   flex-wrap: wrap;
 }
 
@@ -150,7 +150,7 @@
   padding: 0.4rem 0.55rem;
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   color: inherit;
   font: inherit;
   font-size: var(--fold-text-sm, 0.875rem);
@@ -185,7 +185,7 @@
 .table thead th {
   position: sticky;
   top: 0;
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   border-bottom-width: 2px;
 }
 
@@ -261,7 +261,7 @@
 }
 
 .delta.is-down {
-  color: var(--fold-color-danger-text, currentcolor);
+  color: var(--fold-color-alert-text, currentcolor);
 }
 
 .delta.is-up {

@@ -79,7 +79,7 @@ export class Chart {
     const text = read('--fold-color-text', '#1f2937');
     const muted = read('--fold-color-text-muted', '#6b7280');
     const border = read('--fold-color-border', 'rgba(0,0,0,0.1)');
-    const surface = read('--fold-color-surface', '#ffffff');
+    const surface = read('--fold-color-surface-card', '#ffffff');
     const axisLabel = { color: muted, fontSize: 11, fontFamily: 'inherit' };
     return {
       textStyle: { color: text, fontFamily: 'inherit' },

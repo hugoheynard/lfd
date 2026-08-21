@@ -217,7 +217,7 @@ h1 {
   /* Pas de fond teinté : les cartes portent déjà leur propre surface, et un
      dégradé derrière elles ajoutait une profondeur que rien n'encode. Le cadre
      suffit à dire « ceci est un schéma ». */
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   /* Le schéma peut dépasser sur petit écran : il scrolle DANS son cadre, la
      page ne part jamais de côté. */
   overflow-x: auto;

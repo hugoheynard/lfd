@@ -12,7 +12,7 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg, 1rem);
 }
 
 .legend,
@@ -32,28 +32,28 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg, 1rem);
   flex-wrap: wrap;
 }
 
 .head-actions {
   display: flex;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm, 0.5rem);
   flex-wrap: wrap;
 }
 
 .back {
-  font-size: var(--fold-font-size-sm, 0.875rem);
+  font-size: var(--fold-text-md, 0.875rem);
 }
 
 .title {
   margin: 0.25rem 0 0;
-  font-size: var(--fold-font-size-lg, 1.125rem);
+  font-size: 1.125rem;
 }
 
 .tally {
   margin: 0;
-  font-size: var(--fold-font-size-sm, 0.875rem);
+  font-size: var(--fold-text-md, 0.875rem);
   color: var(--fold-color-text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -62,7 +62,7 @@
 // à être sautée.
 .caveat {
   margin: 0;
-  padding-left: var(--fold-space-3, 0.75rem);
+  padding-left: var(--fold-space-md, 0.75rem);
   border-left: 2px solid var(--fold-color-border);
   line-height: 1.5;
   color: var(--fold-color-text-muted);
@@ -74,9 +74,9 @@
   position: sticky;
   top: 0;
   z-index: 3;
-  padding: var(--fold-space-2, 0.5rem) var(--fold-space-4, 1rem);
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-lg, 1rem);
   border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   box-shadow: 0 1px 0 var(--fold-color-border);
 }
 
@@ -89,10 +89,10 @@
 }
 
 .shelf {
-  padding: var(--fold-space-4, 1rem);
+  padding: var(--fold-space-lg, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg, 0.75rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   box-shadow:
     0 1px 2px rgb(0 0 0 / 5%),
     0 8px 24px -16px rgb(0 0 0 / 18%);
@@ -106,9 +106,9 @@
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: var(--fold-space-2, 0.5rem);
-  padding: var(--fold-space-1, 0.25rem) var(--fold-space-1, 0.25rem) var(--fold-space-3, 0.75rem);
-  background: linear-gradient(180deg, var(--fold-color-surface) 72%, transparent);
+  gap: var(--fold-space-sm, 0.5rem);
+  padding: var(--fold-space-xs, 0.25rem) var(--fold-space-xs, 0.25rem) var(--fold-space-md, 0.75rem);
+  background: linear-gradient(180deg, var(--fold-color-surface-card) 72%, transparent);
 }
 
 .shelf-name {
@@ -125,7 +125,7 @@
 // Les lignes respirent un cran de plus que les colonnes : c'est ce qui fait
 // qu'on lit UNE ligne d'un bout à l'autre plutôt qu'une colonne de haut en bas.
 .grid {
-  row-gap: var(--fold-space-3, 0.75rem);
+  row-gap: var(--fold-space-md, 0.75rem);
 }
 
 .cell {
@@ -173,10 +173,10 @@
   justify-content: center;
   gap: 0.15rem;
   min-height: 2.5rem;
-  padding: var(--fold-space-2, 0.5rem) var(--fold-space-3, 0.75rem);
+  padding: var(--fold-space-sm, 0.5rem) var(--fold-space-md, 0.75rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 0.5rem);
-  background: var(--fold-color-surface-card, var(--fold-color-surface));
+  background: var(--fold-color-surface-card, var(--fold-color-surface-card));
   box-shadow: var(--fold-shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
   font: inherit;
   text-align: left;
@@ -193,7 +193,7 @@
 // **Le clavier voit ce que la souris voit.** Un anneau franc, posé à l'extérieur
 // pour ne pas rogner le contenu.
 button.node:focus-visible {
-  outline: 2px solid var(--fold-color-accent, currentcolor);
+  outline: 2px solid var(--fold-color-primary, currentcolor);
   outline-offset: 2px;
 }
 
@@ -256,7 +256,7 @@ button.node:focus-visible {
   padding: 0.2rem 0.4rem;
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm, 0.375rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
   color: inherit;
   font: inherit;
   font-size: var(--fold-text-sm, 0.875rem);
@@ -351,12 +351,12 @@ button.node:focus-visible {
 }
 
 .link.is-danger:hover {
-  color: var(--fold-color-danger-text, var(--fold-color-text));
+  color: var(--fold-color-alert-text, var(--fold-color-text));
 }
 
 .price-actions {
   display: flex;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm, 0.5rem);
 }
 
 // Le nœud « tarifer » : en pointillés, parce qu'il n'existe pas encore.
@@ -373,8 +373,8 @@ button.node:focus-visible {
   &:hover,
   &:focus-visible {
     border-style: solid;
-    border-color: var(--fold-color-accent, var(--fold-color-text));
-    color: var(--fold-color-accent, var(--fold-color-text));
+    border-color: var(--fold-color-primary, var(--fold-color-text));
+    color: var(--fold-color-primary, var(--fold-color-text));
   }
 }
 
@@ -430,7 +430,7 @@ button.node:focus-visible {
 }
 
 .impact-value.is-up {
-  color: var(--fold-color-danger-text, var(--fold-color-text));
+  color: var(--fold-color-alert-text, var(--fold-color-text));
 }
 
 .loading {
@@ -447,7 +447,7 @@ button.node:focus-visible {
 
   .grid {
     grid-template-columns: 1fr;
-    row-gap: var(--fold-space-4, 1rem);
+    row-gap: var(--fold-space-lg, 1rem);
   }
 
   .cell {

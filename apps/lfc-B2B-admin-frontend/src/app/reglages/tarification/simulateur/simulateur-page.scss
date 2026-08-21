@@ -1,26 +1,26 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-5, 1.25rem);
+  gap: var(--fold-space-xl);
 }
 
 .head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-lg, 1rem);
   flex-wrap: wrap;
 }
 
 .title {
   margin: 0;
-  font-size: var(--fold-font-size-xl, 1.5rem);
+  font-size: 1.5rem;
 }
 
 .hint {
   margin: 0;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-sm, 0.875rem);
+  font-size: var(--fold-text-md, 0.875rem);
   max-width: 62ch;
 }
 
@@ -30,11 +30,11 @@
 .result {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-3, 0.75rem);
-  padding: var(--fold-space-4, 1rem);
+  gap: var(--fold-space-md, 0.75rem);
+  padding: var(--fold-space-lg, 1rem);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg, 0.75rem);
-  background: var(--fold-color-surface);
+  background: var(--fold-color-surface-card);
 }
 
 .result {
@@ -47,35 +47,35 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   align-items: end;
-  gap: var(--fold-space-3, 0.75rem);
+  gap: var(--fold-space-md, 0.75rem);
 }
 
 .caveat {
   margin: 0;
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-font-size-sm, 0.875rem);
+  font-size: var(--fold-text-md, 0.875rem);
 }
 
 .result-head {
   display: flex;
   align-items: baseline;
-  gap: var(--fold-space-2, 0.5rem);
+  gap: var(--fold-space-sm, 0.5rem);
   flex-wrap: wrap;
 }
 
 .result-title {
   margin: 0;
-  font-size: var(--fold-font-size-lg, 1.125rem);
+  font-size: 1.125rem;
 }
 
 .facts {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-1, 0.25rem);
+  gap: var(--fold-space-xs, 0.25rem);
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: var(--fold-font-size-sm, 0.875rem);
+  font-size: var(--fold-text-md, 0.875rem);
 }
 
 .fact.is-sealed {
@@ -93,12 +93,12 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fold-font-size-sm, 0.875rem);
+  font-size: var(--fold-text-md, 0.875rem);
 }
 
 .table th,
 .table td {
-  padding: var(--fold-space-2, 0.5rem);
+  padding: var(--fold-space-sm, 0.5rem);
   border-bottom: 1px solid var(--fold-color-border);
   text-align: left;
   vertical-align: top;
@@ -128,7 +128,7 @@
 }
 
 .delta.is-up {
-  color: var(--fold-color-danger-text, var(--fold-color-text));
+  color: var(--fold-color-alert-text, var(--fold-color-text));
 }
 
 .marche {
@@ -151,12 +151,12 @@
 
 .pill {
   display: inline-block;
-  margin-top: var(--fold-space-1, 0.25rem);
+  margin-top: var(--fold-space-xs, 0.25rem);
   padding: 0.05rem 0.4rem;
   border-radius: var(--fold-radius-sm, 0.25rem);
   background: var(--fold-color-surface-sunken, transparent);
   border: 1px solid var(--fold-color-border);
-  font-size: var(--fold-font-size-xs, 0.75rem);
+  font-size: var(--fold-text-sm, 0.75rem);
 }
 
 .sr-only {
@@ -176,7 +176,7 @@
 
 .stage-title {
   margin: 0;
-  font-size: var(--fold-font-size-lg, 1.125rem);
+  font-size: 1.125rem;
 }
 
 // Le scénario nominal est la RÉFÉRENCE de lecture : les deux autres se lisent

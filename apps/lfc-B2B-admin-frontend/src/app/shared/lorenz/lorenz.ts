@@ -55,7 +55,7 @@ export class Lorenz {
       return;
     }
     const styles = getComputedStyle(el);
-    const accent = styles.getPropertyValue('--fold-color-accent').trim() || '#3b82f6';
+    const accent = styles.getPropertyValue('--fold-color-primary').trim() || '#3b82f6';
     const muted = styles.getPropertyValue('--fold-color-text-muted').trim() || '#6b7280';
     const border = styles.getPropertyValue('--fold-color-border').trim() || 'rgba(0,0,0,0.1)';
 

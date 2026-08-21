@@ -68,7 +68,7 @@
 // Le tarif d'entrée, quand une règle l'a fait bouger : présent mais effacé, la
 // lecture doit tomber sur le prix FACTURÉ en premier.
 .line-was {
-  margin-right: var(--fold-space-1, 0.25rem);
+  margin-right: var(--fold-space-xs, 0.25rem);
   color: var(--fold-color-text-muted);
 }
 
