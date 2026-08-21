@@ -118,6 +118,31 @@ La sonde publique `/health` en porte les **compteurs** (`capabilities.blocking`
 verrouillée est une aide qu'on ne doit qu'à soi-même. Le déploiement s'arrête
 sur un canal bloquant (étape « Inventaire des canaux »).
 
+## Si l'API refuse de démarrer : `persistence.migrations_pending`
+
+Symptôme : au démarrage, `La base de données est en retard de N migration(s) : …`
+et le processus sort en code 1. Aucune requête n'a été servie.
+
+C'est **voulu**. L'API compare, à l'ouverture de la connexion, les dossiers de
+`prisma/migrations` au journal `_prisma_migrations`. Une base en retard ne se
+signalait auparavant qu'à l'usage — un 500 `persistence.schema_out_of_sync` sur
+la première route touchant une table absente, le reste de l'app paraissant
+saine. On servait donc une base à trous sans le savoir.
+
+```bash
+pnpm --filter lfd-api exec prisma migrate deploy
+```
+
+En déployé, ce message ne devrait jamais apparaître : l'étape « Migrer la base »
+précède la mise en ligne de l'image. S'il apparaît, c'est que le déploiement a
+sauté cette étape ou visé une autre base — vérifier `DATABASE_LFD_URL` avant
+toute chose.
+
+⚠️ Le contrôle ne s'alarme **que de ce qui manque**. Une base plus avancée que
+le code démarre sans broncher : c'est l'état normal d'un retour en arrière
+applicatif, et refuser de démarrer là interdirait la manœuvre même qui répare
+une mise en production ratée.
+
 ## Si « Migrer la base du référentiel » échoue
 
 Symptôme : `relation "b2b_channel_binding" already exists`, ou un autre objet
@@ -131,8 +156,7 @@ Reprise, une migration à la fois :
 
 ```bash
 pnpm --filter lfd-api exec prisma migrate resolve \
-  --applied 20260817083828_canal_b2b_appartenance \
-  --config prisma.pim.config.ts
+  --applied 20260817083828_canal_b2b_appartenance
 ```
 
 `resolve --applied` marque la migration comme jouée **sans exécuter son SQL**.
