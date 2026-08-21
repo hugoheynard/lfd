@@ -86,6 +86,8 @@ export class StartupReport implements OnApplicationBootstrap {
       hasMailerWebhookSecret: this.config.mailerConfig().webhookSecret !== null,
       hasWebPushKeys: this.config.webPushConfig() !== null,
       hasStorage: this.config.r2Storage("kbis") !== null,
+      hasMediaStorage:
+        this.config.r2Storage("media") !== null && this.config.mediaPublicBaseUrl() !== null,
       hasStripe: this.config.stripeConfig() !== null,
       hasClientBaseUrl: this.config.clientBaseUrl() !== null,
       hasShopifyCredentials: this.config.hasShopifyCredentials(),

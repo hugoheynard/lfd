@@ -27,6 +27,8 @@ export interface CapabilitySnapshot {
   readonly hasMailerWebhookSecret: boolean;
   readonly hasWebPushKeys: boolean;
   readonly hasStorage: boolean;
+  /** Bucket média **et** domaine public : l'un sans l'autre ne sert à rien. */
+  readonly hasMediaStorage: boolean;
   readonly hasStripe: boolean;
   readonly hasClientBaseUrl: boolean;
   readonly hasAdminBaseUrl: boolean;
@@ -134,6 +136,18 @@ const CHECKS: readonly Check[] = [
     consequence: "les KBIS ne peuvent être ni déposés ni téléchargés",
     severity: "degraded",
     present: (s) => s.hasStorage,
+  },
+  {
+    capability: "Stockage des visuels",
+    setting:
+      "R2_MEDIA_BUCKET / R2_MEDIA_ACCESS_KEY_ID / R2_MEDIA_SECRET_ACCESS_KEY / R2_MEDIA_PUBLIC_BASE_URL",
+    // Les quatre vont ensemble, et l'adresse publique compte autant que les
+    // clés : un bucket qu'aucun domaine ne sert ferait ranger des octets en
+    // enregistrant des URL que personne ne résout — une panne qui ne se voit
+    // qu'à l'affichage, longtemps après le dépôt.
+    consequence: "aucune image ne peut être déposée ; le catalogue reste aux URL saisies à la main",
+    severity: "degraded",
+    present: (s) => s.hasMediaStorage,
   },
   {
     capability: "Retour d'e-mail vers l'espace client",
