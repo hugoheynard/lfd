@@ -4,6 +4,7 @@ import {
   FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
+  FoldNavLayoutComponent,
   FoldPageLayoutComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
@@ -16,15 +17,25 @@ import { LeafPreview } from './leaf-preview/leaf-preview';
 import { UpsertDiagram } from './upsert-diagram/upsert-diagram';
 
 /**
- * Documentation vivante — explique, au fil des onglets, l'architecture des
+ * Documentation vivante — explique, section par section, l'architecture des
  * collections et le système en général, schémas à l'appui. Contenu statique :
  * une carte mentale du POC, pas une source de vérité runtime.
+ *
+ * Les sections se rangent dans un **rail latéral**, comme le PIM et le
+ * Commercial : c'est la troisième section à onglets de l'app, et trois façons
+ * différentes de ranger la même chose obligent à réapprendre l'écran à chaque
+ * changement de section.
+ *
+ * La barre reste un `fold-tabs` et non un `fold-view-nav` : ici rien ne
+ * navigue — six panneaux sur la même URL. Le rail est une affaire de layout,
+ * pas de sémantique.
  */
 @Component({
   selector: 'app-documentation-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldPageLayoutComponent,
+    FoldNavLayoutComponent,
     FoldCardComponent,
     FoldCalloutComponent,
     FoldElementTitleComponent,
@@ -44,8 +55,13 @@ export class DocumentationPage {
     { key: 'bricks', label: 'Les briques', icon: 'grid' },
     { key: 'flow', label: 'Flux des collections', icon: 'sliders' },
     { key: 'web', label: 'Segmentation web', icon: 'globe' },
-    { key: 'emplacements', label: 'Emplacements', icon: 'company' },
-    { key: 'shopify', label: 'Intégration Shopify', icon: 'upload' },
+    // `places` et `shopify` viennent du catalogue de l'app
+    // (`shared/icons/app-icons.ts`) : ce sont DÉJÀ les glyphes que le rail du
+    // PIM pose sur « Emplacements » et « Publication ». Les génériques d'avant
+    // (`company`, `upload`) montraient deux icônes différentes pour la même
+    // chose, à un rail d'écart.
+    { key: 'emplacements', label: 'Emplacements', icon: 'places' },
+    { key: 'shopify', label: 'Intégration Shopify', icon: 'shopify' },
   ];
 
   protected readonly active = signal<string>('overview');

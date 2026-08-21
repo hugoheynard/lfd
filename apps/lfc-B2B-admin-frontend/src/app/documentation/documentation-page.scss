@@ -1,14 +1,30 @@
+:host {
+  display: block;
+}
+
+/* Accroché en haut : les sections sont longues (schémas, cartes empilées), et
+   changer de section ne doit pas demander de remonter.
+
+   Pas de gouttière de page ici, contrairement au rail du PIM : celui-ci vit
+   DANS un `fold-page-layout`, qui a déjà posé la sienne. */
+.doc-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: block;
+  min-width: 0;
+  padding-block: var(--fold-page-gap) var(--fold-space-xs);
+}
+
 .doc-stack {
   display: grid;
   gap: var(--fold-space-lg, 1.25rem);
-  margin-top: var(--fold-space-lg, 1.25rem);
 }
 
 .doc-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   gap: var(--fold-space-lg, 1.25rem);
-  margin-top: var(--fold-space-lg, 1.25rem);
 }
 
 .doc-card {
