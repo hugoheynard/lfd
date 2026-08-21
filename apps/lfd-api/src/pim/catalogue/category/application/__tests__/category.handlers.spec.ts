@@ -1,3 +1,4 @@
+import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { TvaRegimeNotFoundError } from "../../../../commerce/domain/errors/commerce-errors.js";
 import { TvaRegime } from "../../../../commerce/domain/entities/tva-regime.js";
 import { TvaRegimeRepository } from "../../../../commerce/domain/ports/tva-regime.repository.js";
@@ -238,7 +239,7 @@ describe("SetCategoryTvaHandler", () => {
     );
     const [id] = await openRoots(categories, 1);
 
-    await new SetCategoryTvaHandler(categories, regimes).execute(
+    await new SetCategoryTvaHandler(categories, regimes, new RecordingJournal()).execute(
       new SetCategoryTvaCommand(id!, "tva_5", null),
     );
 
@@ -251,7 +252,7 @@ describe("SetCategoryTvaHandler", () => {
     const [id] = await openRoots(categories, 1);
 
     await expect(
-      new SetCategoryTvaHandler(categories, new InMemoryRegimes()).execute(
+      new SetCategoryTvaHandler(categories, new InMemoryRegimes(), new RecordingJournal()).execute(
         new SetCategoryTvaCommand(id!, "tva_absent", null),
       ),
     ).rejects.toBeInstanceOf(TvaRegimeNotFoundError);

@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { requireRegime } from "../../../commerce/application/tva-support.js";
 import { TvaRegimeRepository } from "../../../commerce/domain/ports/tva-regime.repository.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { requireCategory } from "./category-support.js";
 
@@ -24,6 +25,7 @@ export class SetCategoryTvaHandler implements ICommandHandler<SetCategoryTvaComm
   constructor(
     private readonly categories: CategoryRepository,
     private readonly regimes: TvaRegimeRepository,
+    private readonly journal: PimJournal,
   ) {}
 
   async execute(command: SetCategoryTvaCommand): Promise<void> {
@@ -34,7 +36,39 @@ export class SetCategoryTvaHandler implements ICommandHandler<SetCategoryTvaComm
     if (command.surPlaceTvaId !== null) {
       await requireRegime(this.regimes, command.surPlaceTvaId);
     }
+    const before = category.snapshot();
     category.setTva(command.emporterTvaId, command.surPlaceTvaId);
     await this.categories.save(category);
+    await this.journalize(before, category.snapshot());
+  }
+
+  /**
+   * Le rattachement d'une famille à un régime — la décision qui détermine
+   * réellement ce qui est taxé à quel taux. Silencieux quand rien n'a bougé :
+   * un formulaire réenregistré à l'identique n'est pas un fait.
+   */
+  private async journalize(
+    before: { emporterTvaId: string | null; surPlaceTvaId: string | null },
+    after: {
+      id: string;
+      name: unknown;
+      emporterTvaId: string | null;
+      surPlaceTvaId: string | null;
+    },
+  ): Promise<void> {
+    const changed =
+      before.emporterTvaId !== after.emporterTvaId || before.surPlaceTvaId !== after.surPlaceTvaId;
+    if (!changed) {
+      return;
+    }
+    await this.journal.record({
+      type: PIM_EVENTS.categoryTvaChanged,
+      subjectType: "category",
+      subjectId: after.id,
+      payload: {
+        emporter: { from: before.emporterTvaId, to: after.emporterTvaId },
+        surPlace: { from: before.surPlaceTvaId, to: after.surPlaceTvaId },
+      },
+    });
   }
 }

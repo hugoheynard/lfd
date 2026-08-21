@@ -1,3 +1,4 @@
+import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { ProductNotFoundError, VariantNotFoundError } from "../../domain/errors/product-errors.js";
 import {
   CategoryArchivedError,
@@ -325,7 +326,9 @@ describe("PublishProductHandler", () => {
     const repo = new FakeProductRepository(seedProduct());
 
     await expect(
-      new PublishProductHandler(repo).execute(new PublishProductCommand(PRODUCT_ID)),
+      new PublishProductHandler(repo, new RecordingJournal()).execute(
+        new PublishProductCommand(PRODUCT_ID),
+      ),
     ).rejects.toBeInstanceOf(ProductNotPublishableError);
     expect(repo.snapshot()?.status).toBe("draft");
   });
@@ -338,14 +341,16 @@ describe("PublishProductHandler", () => {
       variants: [{ ...variant!, allergens: ["gluten"] }],
     });
 
-    await new PublishProductHandler(repo).execute(new PublishProductCommand(PRODUCT_ID));
+    await new PublishProductHandler(repo, new RecordingJournal()).execute(
+      new PublishProductCommand(PRODUCT_ID),
+    );
 
     expect(repo.snapshot()?.status).toBe("published");
   });
 
   it("jette si le produit n’existe pas", async () => {
     await expect(
-      new PublishProductHandler(new FakeProductRepository(null)).execute(
+      new PublishProductHandler(new FakeProductRepository(null), new RecordingJournal()).execute(
         new PublishProductCommand(PRODUCT_ID),
       ),
     ).rejects.toBeInstanceOf(ProductNotFoundError);
@@ -362,7 +367,9 @@ describe("UnpublishProductHandler", () => {
       variants: [{ ...variant!, allergens: [] }],
     });
 
-    await new UnpublishProductHandler(repo).execute(new UnpublishProductCommand(PRODUCT_ID));
+    await new UnpublishProductHandler(repo, new RecordingJournal()).execute(
+      new UnpublishProductCommand(PRODUCT_ID),
+    );
 
     expect(repo.snapshot()?.status).toBe("draft");
   });

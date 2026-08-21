@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 
@@ -14,11 +15,23 @@ export class PublishProductCommand {
  */
 @CommandHandler(PublishProductCommand)
 export class PublishProductHandler implements ICommandHandler<PublishProductCommand, void> {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(
+    private readonly products: ProductRepository,
+    private readonly journal: PimJournal,
+  ) {}
 
   async execute(command: PublishProductCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
     product.publish();
     await this.products.save(product);
+    const { sku, name, variants } = product.snapshot();
+    await this.journal.record({
+      type: PIM_EVENTS.productPublished,
+      subjectType: "product",
+      subjectId: command.id,
+      payload: { sku, name },
+      // La portée d'une mise en vente : les articles qui partent avec.
+      blast: { variants: variants.length },
+    });
   }
 }

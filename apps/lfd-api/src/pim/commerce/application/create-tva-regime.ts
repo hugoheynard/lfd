@@ -2,6 +2,7 @@ import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PimIdGenerator } from "../../infra/id/pim-id-generator.js";
+import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { TvaRegime } from "../domain/entities/tva-regime.js";
 import { TvaRegimeRepository } from "../domain/ports/tva-regime.repository.js";
 import { ensureTagFree } from "./tva-support.js";
@@ -21,6 +22,7 @@ export class CreateTvaRegimeHandler implements ICommandHandler<CreateTvaRegimeCo
   constructor(
     private readonly regimes: TvaRegimeRepository,
     @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
+    private readonly journal: PimJournal,
   ) {}
 
   /**
@@ -38,6 +40,13 @@ export class CreateTvaRegimeHandler implements ICommandHandler<CreateTvaRegimeCo
     });
     await ensureTagFree(this.regimes, regime.tag, null);
     await this.regimes.add(regime);
+    // Pas de portée : un régime qui naît ne vise encore aucune famille.
+    await this.journal.record({
+      type: PIM_EVENTS.tvaRegimeCreated,
+      subjectType: "tva_regime",
+      subjectId: regime.id,
+      payload: { name: payload.name, percent: payload.percent, tag: regime.tag },
+    });
     return regime.id;
   }
 }
