@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 import {
   FoldBadgeComponent,
@@ -13,6 +13,7 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../../../auth/permissions.store';
 import { formatPercent } from '../../../data/channels';
 import { type TvaRegime } from '../../catalogue-api';
 import { TvaStore } from '../tva-store';
@@ -20,6 +21,17 @@ import {
   TvaRegimeFormPanel,
   type TvaRegimePanelData,
 } from '../tva-regime-form-panel/tva-regime-form-panel';
+
+const ALL_COLUMNS: readonly FoldTableColumn[] = [
+  { key: 'name', label: 'Nom', width: '12rem' },
+  { key: 'description', label: 'Description' },
+  { key: 'rate', label: 'Taux', width: '7rem' },
+  // « Tag » et non « Collection » : le tag sert aussi de clé au canal B2B, il
+  // n'appartient plus au vocabulaire Shopify.
+  { key: 'tag', label: 'Tag', width: '10rem' },
+  { key: 'usage', label: 'Utilisé par', width: '11rem' },
+  { key: 'actions', label: '', align: 'right', width: '5rem' },
+];
 
 /**
  * Le **tableau des régimes** de TVA (Famille A — `tva-5-5`, `tva-10`,
@@ -46,20 +58,17 @@ import {
 export class TvaRegimeTable {
   private readonly store = inject(TvaStore);
   private readonly panelHost = inject(FoldPanelHostService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** Sans `tax:write`, la colonne d'actions n'a rien à proposer — on la retire. */
+  protected readonly canWrite = computed(() => this.permissions.can('tax:write'));
 
   /** Liste réactive : suit le store, donc création / édition / suppression se voient direct. */
   protected readonly regimes = this.store.items;
 
-  protected readonly columns: readonly FoldTableColumn[] = [
-    { key: 'name', label: 'Nom', width: '12rem' },
-    { key: 'description', label: 'Description' },
-    { key: 'rate', label: 'Taux', width: '7rem' },
-    // « Tag » et non « Collection » : le tag sert aussi de clé au canal B2B, il
-    // n'appartient plus au vocabulaire Shopify.
-    { key: 'tag', label: 'Tag', width: '10rem' },
-    { key: 'usage', label: 'Utilisé par', width: '11rem' },
-    { key: 'actions', label: '', align: 'right', width: '5rem' },
-  ];
+  protected readonly columns = computed<readonly FoldTableColumn[]>(() =>
+    this.canWrite() ? ALL_COLUMNS : ALL_COLUMNS.filter((column) => column.key !== 'actions'),
+  );
 
   protected readonly emptyState = {
     title: 'Aucun régime',

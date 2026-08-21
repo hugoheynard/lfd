@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 import { FoldButtonComponent, FoldPageLayoutComponent, FoldPanelHostService } from 'fold-ng';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { TvaRegimeFormPanel } from './tva-regime-form-panel/tva-regime-form-panel';
 import { TvaRegimeTable } from './tva-regime-table/tva-regime-table';
 
@@ -25,6 +26,14 @@ import { TvaRegimeTable } from './tva-regime-table/tva-regime-table';
 })
 export class TvaRegimesPage {
   private readonly panelHost = inject(FoldPanelHostService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * Poser un taux est un droit à part (`tax:write`, la comptabilité l'a).
+   * Le front cache, le serveur refuse : ce test évite d'offrir un bouton qui
+   * répondrait 403, il ne protège rien.
+   */
+  protected readonly canWrite = computed(() => this.permissions.can('tax:write'));
 
   /** Ouvre le side-panel de création ; le tableau, réactif à la DB, se met à
    *  jour tout seul quand un régime en sort. */

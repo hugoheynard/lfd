@@ -268,6 +268,11 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'produits' },
       {
         path: 'tva',
+        // Le référentiel fiscal a sa propre ressource : la comptabilité l'écrit,
+        // alors qu'elle ne fait que lire le reste du catalogue. Le parent exige
+        // déjà `catalog:read`, mais c'est `tax:read` qui décide de CET écran —
+        // une dérogation `deny tax:read` doit le fermer sans fermer le PIM.
+        canActivate: [permissionGuard('tax:read')],
         title: 'Régimes de TVA — LFC B2B admin',
         loadComponent: () =>
           import('./pim/catalogue/tva-regimes/tva-regimes-page').then((m) => m.TvaRegimesPage),

@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import type { StaffPermission } from '@lfd/contracts';
 import { FoldNavLayoutComponent, FoldViewNavComponent, type FoldViewNavItem } from 'fold-ng';
+
+import { PermissionsStore } from '../../auth/permissions.store';
 
 /**
  * Les vues du **PIM**.
@@ -14,11 +17,20 @@ import { FoldNavLayoutComponent, FoldViewNavComponent, type FoldViewNavItem } fr
  * qui écrit les siens, avec ses actions. Les répéter ici les affichait deux
  * fois — c'était l'ancien prix de la barre d'onglets horizontale, qui devait
  * bien annoncer où l'on venait d'arriver.
+ *
+ * `needs` n'y figure que là où la vue ne se contente PAS de `catalog:read`, le
+ * droit qui ouvre déjà le PIM : aujourd'hui la seule est le référentiel fiscal,
+ * qui a sa propre ressource. Répéter `catalog:read` sur les six autres serait
+ * une condition toujours vraie, donc jamais relue.
  */
-const TABS: readonly FoldViewNavItem[] = [
+interface PimTab extends FoldViewNavItem {
+  readonly needs?: StaffPermission;
+}
+
+const TABS: readonly PimTab[] = [
   { key: 'produits', label: 'Produits', link: 'produits', icon: 'product' },
   { key: 'categories', label: 'Catégories', link: 'categories', icon: 'category' },
-  { key: 'tva', label: 'Régimes de TVA', link: 'tva', icon: 'tax' },
+  { key: 'tva', label: 'Régimes de TVA', link: 'tva', icon: 'tax', needs: 'tax:read' },
   { key: 'collections', label: 'Collections', link: 'collections', icon: 'collections' },
   { key: 'publication', label: 'Publication', link: 'publication', icon: 'publish' },
   { key: 'emplacements', label: 'Emplacements', link: 'emplacements', icon: 'places' },
@@ -44,5 +56,12 @@ const TABS: readonly FoldViewNavItem[] = [
   styleUrl: './pim-page.scss',
 })
 export class PimPage {
-  protected readonly tabs = TABS;
+  private readonly permissions = inject(PermissionsStore);
+
+  /** Le rail ne montre pas une vue dont la route refusera l'entrée. */
+  protected readonly tabs = computed<FoldViewNavItem[]>(() =>
+    TABS.filter((tab) => tab.needs === undefined || this.permissions.can(tab.needs)).map(
+      ({ needs, ...tab }) => tab,
+    ),
+  );
 }
