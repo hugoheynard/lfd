@@ -9,20 +9,20 @@ import { TvaRateRepository } from "../domain/ports/tva-rate.repository.js";
 
 /** Refuse un taux déjà porté par un **autre** taux. */
 export async function ensureRateFree(
-  regimes: TvaRateRepository,
+  rates: TvaRateRepository,
   percent: number,
   exceptId: string | null,
 ): Promise<void> {
-  const existing = await regimes.findByPercent(percent);
+  const existing = await rates.findByPercent(percent);
   if (existing !== null && existing.id !== exceptId) {
     throw new TvaRateConflictError(percent);
   }
 }
 
-export async function requireRegime(regimes: TvaRateRepository, id: string): Promise<TvaRate> {
-  const regime = await regimes.findById(id);
-  if (regime === null) {
+export async function requireRate(rates: TvaRateRepository, id: string): Promise<TvaRate> {
+  const rate = await rates.findById(id);
+  if (rate === null) {
     throw new TvaRateNotFoundError(id);
   }
-  return regime;
+  return rate;
 }

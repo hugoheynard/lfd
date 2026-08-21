@@ -17,15 +17,12 @@ const UNUSED = { emporter: 0, surPlace: 0 } as const;
  */
 @QueryHandler(ListTvaRatesQuery)
 export class ListTvaRatesHandler implements IQueryHandler<ListTvaRatesQuery, TvaRateView[]> {
-  constructor(private readonly regimes: TvaRateRepository) {}
+  constructor(private readonly rates: TvaRateRepository) {}
 
   async execute(): Promise<TvaRateView[]> {
-    const [regimes, usage] = await Promise.all([
-      this.regimes.listAll(),
-      this.regimes.usageByRegime(),
-    ]);
-    return regimes.map((regime) => {
-      const snapshot = regime.snapshot();
+    const [rates, usage] = await Promise.all([this.rates.listAll(), this.rates.usageByRegime()]);
+    return rates.map((rate) => {
+      const snapshot = rate.snapshot();
       return { ...snapshot, usage: usage.get(snapshot.id) ?? UNUSED };
     });
   }

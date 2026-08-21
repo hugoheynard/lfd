@@ -24,7 +24,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
   constructor(
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
-    private readonly regimes: TvaRateRepository,
+    private readonly rates: TvaRateRepository,
   ) {
     super();
   }
@@ -65,11 +65,11 @@ export class PrismaCatalogueReader extends CatalogueReader {
    * ferait N+1 requêtes pour une table qui tient en quelques lignes.
    */
   async channelCategories(): Promise<ChannelCategory[]> {
-    const [categories, regimes] = await Promise.all([
+    const [categories, rates] = await Promise.all([
       this.categories.listAll(),
-      this.regimes.listAll(),
+      this.rates.listAll(),
     ]);
-    const percentById = new Map(regimes.map((regime) => [regime.id, regime.percent]));
+    const percentById = new Map(rates.map((rate) => [rate.id, rate.percent]));
 
     return categories
       .filter((category) => !category.isArchived)
@@ -91,7 +91,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
     if (regimeId === null) {
       return null;
     }
-    const regime = await this.regimes.findById(regimeId);
-    return regime?.percent ?? null;
+    const rate = await this.rates.findById(regimeId);
+    return rate?.percent ?? null;
   }
 }

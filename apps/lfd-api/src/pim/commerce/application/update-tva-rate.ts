@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { TvaRateRepository } from "../domain/ports/tva-rate.repository.js";
 import type { TvaRatePayload } from "./create-tva-rate.js";
-import { ensureRateFree, requireRegime } from "./tva-support.js";
+import { ensureRateFree, requireRate } from "./tva-support.js";
 
 export class UpdateTvaRateCommand {
   constructor(
@@ -15,7 +15,7 @@ export class UpdateTvaRateCommand {
 @CommandHandler(UpdateTvaRateCommand)
 export class UpdateTvaRateHandler implements ICommandHandler<UpdateTvaRateCommand, void> {
   constructor(
-    private readonly regimes: TvaRateRepository,
+    private readonly rates: TvaRateRepository,
     private readonly journal: PimJournal,
   ) {}
 
@@ -24,13 +24,13 @@ export class UpdateTvaRateHandler implements ICommandHandler<UpdateTvaRateComman
    * plus, et un journal qui ne dit pas d'où l'on vient ne sert à rien.
    */
   async execute(command: UpdateTvaRateCommand): Promise<void> {
-    const regime = await requireRegime(this.regimes, command.id);
-    const before = regime.snapshot();
+    const rate = await requireRate(this.rates, command.id);
+    const before = rate.snapshot();
     const { payload } = command;
-    regime.revise(payload.name, payload.description ?? "", payload.percent);
-    await ensureRateFree(this.regimes, regime.percent, regime.id);
-    await this.regimes.save(regime);
-    await this.journalize(before, regime.snapshot());
+    rate.revise(payload.name, payload.description ?? "", payload.percent);
+    await ensureRateFree(this.rates, rate.percent, rate.id);
+    await this.rates.save(rate);
+    await this.journalize(before, rate.snapshot());
   }
 
   /**
@@ -45,7 +45,7 @@ export class UpdateTvaRateHandler implements ICommandHandler<UpdateTvaRateComman
   ): Promise<void> {
     if (before.percent !== after.percent) {
       // La portée : ce que ce taux touchait à l'instant du changement.
-      const usage = (await this.regimes.usageByRegime()).get(after.id);
+      const usage = (await this.rates.usageByRegime()).get(after.id);
       await this.journal.record({
         type: PIM_EVENTS.tvaRateRateChanged,
         subjectType: "tva_rate",

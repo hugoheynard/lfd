@@ -23,12 +23,12 @@ import { TvaStore } from '../tva-store';
 
 /** Charge passée à `open()` : le taux à modifier. Absente = création. */
 export interface TvaRatePanelData {
-  readonly regime: TvaRate;
+  readonly rate: TvaRate;
 }
 
 /**
  * Panneau **taux de TVA** : création ou modification, ouvert impérativement via
- * `FoldPanelHostService.open()`. Sans `data` il crée ; avec `{ regime }` il
+ * `FoldPanelHostService.open()`. Sans `data` il crée ; avec `{ rate }` il
  * modifie, et la **zone dangereuse** de suppression vit au bas du même panneau.
  *
  * Elle avait un mode `delete` à elle, ouvert depuis un menu déroulant du
@@ -70,29 +70,29 @@ export class TvaRateFormPanel {
   /** La zone dangereuse reste repliée : on ne supprime pas par inadvertance. */
   protected readonly dangerOpen = signal(false);
 
-  protected readonly regime = computed(() => this.data()?.regime);
-  protected readonly isEdit = computed(() => this.regime() !== undefined);
+  protected readonly rate = computed(() => this.data()?.rate);
+  protected readonly isEdit = computed(() => this.rate() !== undefined);
 
   protected readonly heading = computed(() =>
     this.isEdit() ? 'Modifier le taux' : 'Nouveau taux de TVA',
   );
   protected readonly subtitle = computed(() => 'Un nom et un taux — 5,5 %, 10 %, 20 %.');
 
-  /** Le taux visé, formaté : « 5,5 % ». */
-  protected readonly rate = computed(() => {
-    const target = this.regime();
+  /** La VALEUR du taux visé, formatée : « 5,5 % ». */
+  protected readonly percentLabel = computed(() => {
+    const target = this.rate();
     return target === undefined ? '—' : formatPercent(target.percent);
   });
 
   /** Combien de familles visent ce taux — 0 = suppression sans conséquence. */
   protected readonly usageTotal = computed(() => {
-    const target = this.regime();
+    const target = this.rate();
     return target === undefined ? 0 : target.usage.emporter + target.usage.surPlace;
   });
 
   /** Pour supprimer, le nom retapé doit correspondre exactement. */
   protected readonly confirmMatches = computed(() => {
-    const target = this.regime();
+    const target = this.rate();
     return target !== undefined && this.confirmName().trim() === target.name;
   });
 
@@ -104,7 +104,7 @@ export class TvaRateFormPanel {
   constructor() {
     // Préremplit les champs quand un taux est fourni (modification).
     effect(() => {
-      const target = this.regime();
+      const target = this.rate();
       if (target !== undefined) {
         this.draftName.set(target.name);
         this.draftDescription.set(target.description);
@@ -122,7 +122,7 @@ export class TvaRateFormPanel {
   }
 
   protected async remove(): Promise<void> {
-    const target = this.regime();
+    const target = this.rate();
     if (target === undefined) {
       return;
     }
@@ -158,7 +158,7 @@ export class TvaRateFormPanel {
       return;
     }
     const payload = { name, description: this.draftDescription(), percent };
-    const target = this.regime();
+    const target = this.rate();
     if (target === undefined) {
       await this.store.create(payload);
     } else {

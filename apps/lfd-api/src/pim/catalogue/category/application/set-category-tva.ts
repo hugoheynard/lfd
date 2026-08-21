@@ -1,6 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { requireRegime } from "../../../commerce/application/tva-support.js";
+import { requireRate } from "../../../commerce/application/tva-support.js";
 import { TvaRateRepository } from "../../../commerce/domain/ports/tva-rate.repository.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
@@ -16,7 +16,7 @@ export class SetCategoryTvaCommand {
 
 /**
  * Règle les deux taux de TVA d'une famille en un geste. Chaque référence
- * non nulle est **validée** contre le contexte commerce (`requireRegime`) : on
+ * non nulle est **validée** contre le contexte commerce (`requireRate`) : on
  * ne pointe jamais un taux fantôme, et l'agrégat ne peut pas le savoir seul.
  * `null` efface la référence.
  */
@@ -24,17 +24,17 @@ export class SetCategoryTvaCommand {
 export class SetCategoryTvaHandler implements ICommandHandler<SetCategoryTvaCommand, void> {
   constructor(
     private readonly categories: CategoryRepository,
-    private readonly regimes: TvaRateRepository,
+    private readonly rates: TvaRateRepository,
     private readonly journal: PimJournal,
   ) {}
 
   async execute(command: SetCategoryTvaCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
     if (command.emporterTvaId !== null) {
-      await requireRegime(this.regimes, command.emporterTvaId);
+      await requireRate(this.rates, command.emporterTvaId);
     }
     if (command.surPlaceTvaId !== null) {
-      await requireRegime(this.regimes, command.surPlaceTvaId);
+      await requireRate(this.rates, command.surPlaceTvaId);
     }
     const before = category.snapshot();
     category.setTva(command.emporterTvaId, command.surPlaceTvaId);

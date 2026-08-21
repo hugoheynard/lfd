@@ -50,10 +50,10 @@ function toEntry(f: FicheContext): CollectionEntry {
 export function buildCollections(
   products: readonly Product[],
   categories: readonly Category[],
-  regimes: readonly TvaRate[],
+  rates: readonly TvaRate[],
 ): CollectionFamily[] {
   const categoryById = new Map(categories.map((c) => [c.id, c]));
-  const regimeById = new Map(regimes.map((r) => [r.id, r]));
+  const regimeById = new Map(rates.map((r) => [r.id, r]));
 
   const fiches: FicheContext[] = [];
   for (const product of products) {
@@ -78,12 +78,12 @@ export function buildCollections(
   // Famille A — TVA : une collection par taux, groupée par handle. Le handle
   // se DÉRIVE du taux ici : il est du vocabulaire Shopify, et cette projection
   // est justement l'endroit qui parle Shopify.
-  const tva: Collection[] = regimes.map((regime) => {
-    const tag = tvaTagFromPercent(regime.percent);
+  const tva: Collection[] = rates.map((rate) => {
+    const tag = tvaTagFromPercent(rate.percent);
     return {
       tag,
-      label: regime.name,
-      sub: `${tag} · ${formatPercent(regime.percent)}`,
+      label: rate.name,
+      sub: `${tag} · ${formatPercent(rate.percent)}`,
       entries: fiches.filter((f) => f.tvaTag === tag).map(toEntry),
     };
   });

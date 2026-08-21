@@ -55,12 +55,12 @@ export interface GeneratedFiche {
  * lu sur le taux : le référentiel fiscal ne porte plus de vocabulaire de
  * canal. C'est ici, dans la projection Shopify, qu'il se recalcule.
  */
-function tagOf(regime: TvaRate | undefined): string {
-  return regime === undefined ? '—' : tvaTagFromPercent(regime.percent);
+function tagOf(rate: TvaRate | undefined): string {
+  return rate === undefined ? '—' : tvaTagFromPercent(rate.percent);
 }
 
-function rateOf(regime: TvaRate | undefined): string {
-  return regime === undefined ? '—' : formatPercent(regime.percent);
+function rateOf(rate: TvaRate | undefined): string {
+  return rate === undefined ? '—' : formatPercent(rate.percent);
 }
 
 /**
@@ -80,27 +80,27 @@ export function generateFiches(
 
   const emporter = boutiquesWith(channels, 'emporter');
   if (emporter.length > 0) {
-    const regime = regimeById.get(category.emporterTvaId);
+    const rate = regimeById.get(category.emporterTvaId);
     fiches.push({
       mode: 'emporter',
       title: product.name.fr,
       handle,
       boutiques: emporter,
-      tvaTag: tagOf(regime),
-      tvaRate: rateOf(regime),
+      tvaTag: tagOf(rate),
+      tvaRate: rateOf(rate),
     });
   }
 
   const surPlace = boutiquesWith(channels, 'surPlace');
   if (surPlace.length > 0) {
-    const regime = regimeById.get(category.surPlaceTvaId);
+    const rate = regimeById.get(category.surPlaceTvaId);
     fiches.push({
       mode: 'surPlace',
       title: `${product.name.fr} (sur place)`,
       handle: `${handle}-sur-place`,
       boutiques: surPlace,
-      tvaTag: tagOf(regime),
-      tvaRate: rateOf(regime),
+      tvaTag: tagOf(rate),
+      tvaRate: rateOf(rate),
     });
   }
 

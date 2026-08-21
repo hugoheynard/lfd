@@ -69,7 +69,7 @@ export class TvaRateTable {
   protected readonly canWrite = computed(() => this.permissions.can('tax:write'));
 
   /** Liste réactive : suit le store, donc création / édition / suppression se voient direct. */
-  protected readonly regimes = this.store.items;
+  protected readonly rates = this.store.items;
 
   protected readonly columns = computed<readonly FoldTableColumn[]>(() =>
     this.canWrite() ? ALL_COLUMNS : ALL_COLUMNS.filter((column) => column.key !== 'actions'),
@@ -80,25 +80,25 @@ export class TvaRateTable {
     subtitle: 'Ajoutez-en au moins un (5,5 %, 10 %, 20 %).',
   };
 
-  protected readonly rowKey = (regime: TvaRate): string => regime.id;
+  protected readonly rowKey = (rate: TvaRate): string => rate.id;
 
   protected format(percent: number): string {
     return formatPercent(percent);
   }
 
   /** Combien de familles visent ce taux, les deux modes confondus. */
-  protected usageTotal(regime: TvaRate): number {
-    return regime.usage.emporter + regime.usage.surPlace;
+  protected usageTotal(rate: TvaRate): number {
+    return rate.usage.emporter + rate.usage.surPlace;
   }
 
   /** « 3 à emporter · 1 sur place » — les modes cités seulement s'ils comptent. */
-  protected usageLabel(regime: TvaRate): string {
+  protected usageLabel(rate: TvaRate): string {
     const parts: string[] = [];
-    if (regime.usage.emporter > 0) {
-      parts.push(`${regime.usage.emporter} à emporter`);
+    if (rate.usage.emporter > 0) {
+      parts.push(`${rate.usage.emporter} à emporter`);
     }
-    if (regime.usage.surPlace > 0) {
-      parts.push(`${regime.usage.surPlace} sur place`);
+    if (rate.usage.surPlace > 0) {
+      parts.push(`${rate.usage.surPlace} sur place`);
     }
     return parts.join(' · ');
   }
@@ -109,8 +109,8 @@ export class TvaRateTable {
    * d'avoir regardé l'objet. Le panneau porte les deux, la suppression dans sa
    * zone dangereuse.
    */
-  protected open(regime: TvaRate): void {
-    const data: TvaRatePanelData = { regime };
+  protected open(rate: TvaRate): void {
+    const data: TvaRatePanelData = { rate };
     this.panelHost.open(TvaRateFormPanel, { data, side: 'right' });
   }
 }

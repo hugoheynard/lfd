@@ -24,8 +24,8 @@ export abstract class TvaRateRepository {
   abstract findById(id: string): Promise<TvaRate | null>;
   /** Le taux qui porte ce taux, s'il existe — l'unicité est fiscale. */
   abstract findByPercent(percent: number): Promise<TvaRate | null>;
-  abstract add(regime: TvaRate): Promise<void>;
-  abstract save(regime: TvaRate): Promise<void>;
+  abstract add(rate: TvaRate): Promise<void>;
+  abstract save(rate: TvaRate): Promise<void>;
   /** Refuse (`TvaRateInUseError`) si une famille vise encore ce taux. */
   abstract remove(id: string): Promise<void>;
   /**

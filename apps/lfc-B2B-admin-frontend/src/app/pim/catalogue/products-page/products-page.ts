@@ -81,7 +81,7 @@ export class ProductsPage {
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly bindings = signal<ProductBinding[]>([]);
-  protected readonly regimes = signal<TvaRate[]>([]);
+  protected readonly rates = signal<TvaRate[]>([]);
   protected readonly pushMessage = signal<string | null>(null);
   protected readonly query = signal('');
   protected readonly page = signal(1);
@@ -179,7 +179,7 @@ export class ProductsPage {
   );
 
   private readonly regimeById = computed(
-    () => new Map(this.regimes().map((regime) => [regime.id, regime])),
+    () => new Map(this.rates().map((rate) => [rate.id, rate])),
   );
 
   constructor() {
@@ -230,8 +230,8 @@ export class ProductsPage {
   protected categoryTvaText(category: Category): string {
     const emporter = this.regimeById().get(category.emporterTvaId);
     const surPlace = this.regimeById().get(category.surPlaceTvaId);
-    const rate = (regime: TvaRate | undefined): string =>
-      regime === undefined ? '—' : formatPercent(regime.percent);
+    const rate = (rate: TvaRate | undefined): string =>
+      rate === undefined ? '—' : formatPercent(rate.percent);
     return `${rate(emporter)} → ${rate(surPlace)}`;
   }
 
@@ -356,7 +356,7 @@ export class ProductsPage {
 
   private async reload(): Promise<void> {
     try {
-      const [products, categories, bindings, regimes] = await Promise.all([
+      const [products, categories, bindings, rates] = await Promise.all([
         this.api.listProducts(),
         this.api.listCategories(),
         this.shopify.listBindings(),
@@ -364,7 +364,7 @@ export class ProductsPage {
       ]);
       this.products.set(products);
       this.bindings.set(bindings);
-      this.regimes.set(regimes);
+      this.rates.set(rates);
       this.categories.set(categories.filter((category) => !category.isArchived));
     } catch (caught) {
       this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');

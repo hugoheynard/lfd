@@ -8,7 +8,11 @@ export class TvaRateNotFoundError extends BusinessError {
 }
 
 /**
- * Deux taux ne peuvent pas viser le même taux.
+ * Deux taux de TVA ne peuvent pas porter la même **valeur**.
+ *
+ * Sinon deux lignes « Réduit · 5,5 % » et « Alimentaire · 5,5 % » coexistent, et
+ * plus personne ne sait laquelle une famille vise — ni ce qu'il advient de la
+ * collection de taxe, dont le handle se dérive du taux et serait le même.
  *
  * L'erreur s'appelait `TvaTagConflictError` et nommait un handle Shopify
  * (`tva-5-5`) : le référentiel annonçait une collision de canal là où

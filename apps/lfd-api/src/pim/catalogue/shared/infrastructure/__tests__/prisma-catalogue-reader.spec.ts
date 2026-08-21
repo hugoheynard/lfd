@@ -13,7 +13,7 @@ interface CategoryLike {
 
 async function build(
   category: CategoryLike | null,
-  regimes: Record<string, number>,
+  rates: Record<string, number>,
 ): Promise<CatalogueReader> {
   const moduleRef = await Test.createTestingModule({
     providers: [
@@ -29,8 +29,7 @@ async function build(
       {
         provide: TvaRateRepository,
         useValue: {
-          findById: (id: string) =>
-            Promise.resolve(id in regimes ? { percent: regimes[id] } : null),
+          findById: (id: string) => Promise.resolve(id in rates ? { percent: rates[id] } : null),
         },
       },
     ],

@@ -23,7 +23,7 @@ describe('ChannelsPanel', () => {
 
   it('rend l’héritage par famille quand une catégorie est choisie', () => {
     const store = setup();
-    store.regimes.set([
+    store.rates.set([
       {
         id: 'tva_55',
         name: 'Réduit',

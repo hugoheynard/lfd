@@ -50,7 +50,7 @@ export class CategoriesPage {
   private readonly api = inject(CatalogueApi);
 
   protected readonly categories = signal<Category[]>([]);
-  protected readonly regimes = signal<TvaRate[]>([]);
+  protected readonly rates = signal<TvaRate[]>([]);
   protected readonly draftName = signal('');
   protected readonly draftParent = signal('');
   protected readonly error = signal<string | null>(null);
@@ -73,7 +73,7 @@ export class CategoriesPage {
   protected readonly rowKey = (category: Category): string => category.id;
 
   private readonly regimeById = computed(
-    () => new Map(this.regimes().map((regime) => [regime.id, regime])),
+    () => new Map(this.rates().map((rate) => [rate.id, rate])),
   );
 
   /** La catégorie en cours de réglage. */
@@ -102,13 +102,13 @@ export class CategoriesPage {
   }
 
   /** Libellé d'un taux : « Réduit · 5,5 % ». */
-  protected regimeLabel(regime: TvaRate): string {
-    return `${regime.name} · ${formatPercent(regime.percent)}`;
+  protected regimeLabel(rate: TvaRate): string {
+    return `${rate.name} · ${formatPercent(rate.percent)}`;
   }
 
   protected rateOf(regimeId: string): string {
-    const regime = this.regimeById().get(regimeId);
-    return regime === undefined ? '—' : formatPercent(regime.percent);
+    const rate = this.regimeById().get(regimeId);
+    return rate === undefined ? '—' : formatPercent(rate.percent);
   }
 
   protected presetEmporter(category: Category): string[] {
@@ -187,12 +187,12 @@ export class CategoriesPage {
 
   private async reload(): Promise<void> {
     try {
-      const [categories, regimes] = await Promise.all([
+      const [categories, rates] = await Promise.all([
         this.api.listCategories(),
         this.api.listTvaRates(),
       ]);
       this.categories.set(categories);
-      this.regimes.set(regimes);
+      this.rates.set(rates);
     } catch (caught) {
       this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
     }

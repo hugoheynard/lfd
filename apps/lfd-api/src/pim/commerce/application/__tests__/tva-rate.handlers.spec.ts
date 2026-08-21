@@ -25,11 +25,11 @@ class InMemoryRepo extends TvaRateRepository {
     const snapshot = [...this.stored.values()].find((row) => row.percent === percent);
     return Promise.resolve(snapshot === undefined ? null : TvaRate.reconstitute(snapshot));
   }
-  add(regime: TvaRate): Promise<void> {
-    return this.save(regime);
+  add(rate: TvaRate): Promise<void> {
+    return this.save(rate);
   }
-  save(regime: TvaRate): Promise<void> {
-    const snapshot = regime.snapshot();
+  save(rate: TvaRate): Promise<void> {
+    const snapshot = rate.snapshot();
     this.stored.set(snapshot.id, snapshot);
     return Promise.resolve();
   }
@@ -216,5 +216,27 @@ describe("Le journal du référentiel", () => {
 
     // Un formulaire réenregistré à l'identique n'est pas un fait.
     expect(journal.types()).toEqual(["tax_rate.created"]);
+  });
+});
+
+describe("l’unicité de la valeur du taux", () => {
+  it("refuse un second taux à la même valeur, création comme révision", async () => {
+    // Deux « 5,5 % » côte à côte, et plus personne ne sait lequel une famille
+    // vise — ni quelle collection de taxe leur handle commun désigne.
+    const repo = new InMemoryRepo();
+    const journal = new RecordingJournal();
+    const create = new CreateTvaRateHandler(repo, new StubIds(), journal);
+    await create.execute(new CreateTvaRateCommand({ name: "Réduit", percent: 5.5 }));
+    const other = await create.execute(new CreateTvaRateCommand({ name: "Normal", percent: 20 }));
+
+    await expect(
+      create.execute(new CreateTvaRateCommand({ name: "Alimentaire", percent: 5.5 })),
+    ).rejects.toBeInstanceOf(TvaRateConflictError);
+
+    await expect(
+      new UpdateTvaRateHandler(repo, journal).execute(
+        new UpdateTvaRateCommand(other, { name: "Normal", percent: 5.5 }),
+      ),
+    ).rejects.toBeInstanceOf(TvaRateConflictError);
   });
 });

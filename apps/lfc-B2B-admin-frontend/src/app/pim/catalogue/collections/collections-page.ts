@@ -22,9 +22,9 @@ import { TvaStore } from '../tva-rates/tva-store';
 export class CollectionsPage {
   private readonly products = inject(ProductStore);
   private readonly categories = inject(CategoryStore);
-  private readonly regimes = inject(TvaStore);
+  private readonly rates = inject(TvaStore);
 
   protected readonly families = computed(() =>
-    buildCollections(this.products.items(), this.categories.items(), this.regimes.items()),
+    buildCollections(this.products.items(), this.categories.items(), this.rates.items()),
   );
 }

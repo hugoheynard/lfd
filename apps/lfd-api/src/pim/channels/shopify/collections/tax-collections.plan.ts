@@ -25,12 +25,12 @@ function formatPercent(percent: number): string {
  */
 @Injectable()
 export class TaxCollectionsPlan {
-  constructor(private readonly regimes: TvaRateRepository) {}
+  constructor(private readonly rates: TvaRateRepository) {}
 
   async desired(): Promise<DesiredCollection[]> {
-    const regimes = await this.regimes.listAll();
-    return regimes.map((regime) => {
-      const { percent } = regime.snapshot();
+    const rates = await this.rates.listAll();
+    return rates.map((rate) => {
+      const { percent } = rate.snapshot();
       return { handle: tvaHandleOf(percent), title: `TVA ${formatPercent(percent)}` };
     });
   }

@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { TvaRateRepository } from "../domain/ports/tva-rate.repository.js";
-import { requireRegime } from "./tva-support.js";
+import { requireRate } from "./tva-support.js";
 
 export class RemoveTvaRateCommand {
   constructor(readonly id: string) {}
@@ -11,7 +11,7 @@ export class RemoveTvaRateCommand {
 @CommandHandler(RemoveTvaRateCommand)
 export class RemoveTvaRateHandler implements ICommandHandler<RemoveTvaRateCommand, void> {
   constructor(
-    private readonly regimes: TvaRateRepository,
+    private readonly rates: TvaRateRepository,
     private readonly journal: PimJournal,
   ) {}
 
@@ -21,9 +21,9 @@ export class RemoveTvaRateHandler implements ICommandHandler<RemoveTvaRateComman
    * eu lieu est pire que pas de trace du tout.
    */
   async execute(command: RemoveTvaRateCommand): Promise<void> {
-    const regime = await requireRegime(this.regimes, command.id);
-    const { name, percent } = regime.snapshot();
-    await this.regimes.remove(command.id);
+    const rate = await requireRate(this.rates, command.id);
+    const { name, percent } = rate.snapshot();
+    await this.rates.remove(command.id);
     await this.journal.record({
       type: PIM_EVENTS.tvaRateDeleted,
       subjectType: "tva_rate",

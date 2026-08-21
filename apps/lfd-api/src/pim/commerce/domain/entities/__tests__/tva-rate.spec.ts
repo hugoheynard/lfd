@@ -33,9 +33,9 @@ describe("l’agrégat TvaRate", () => {
   });
 
   it("révise son taux", () => {
-    const regime = TvaRate.open(OPEN);
-    regime.revise("Intermédiaire", "", 10);
-    expect(regime.snapshot()).toMatchObject({ name: "Intermédiaire", percent: 10 });
+    const rate = TvaRate.open(OPEN);
+    rate.revise("Intermédiaire", "", 10);
+    expect(rate.snapshot()).toMatchObject({ name: "Intermédiaire", percent: 10 });
   });
 
   it("se reconstitue à l’identique depuis son instantané", () => {

@@ -91,8 +91,8 @@ class InMemoryRegimes extends TvaRateRepository {
   findByTag(tag: string): Promise<TvaRate | null> {
     return Promise.resolve(this.rows.find((r) => r.tag === tag) ?? null);
   }
-  add(regime: TvaRate): Promise<void> {
-    this.rows.push(regime);
+  add(rate: TvaRate): Promise<void> {
+    this.rows.push(rate);
     return Promise.resolve();
   }
   save(): Promise<void> {
@@ -233,11 +233,11 @@ describe("SetCategoryChannelsHandler", () => {
 describe("SetCategoryTvaHandler", () => {
   it("règle les deux taux quand ils existent", async () => {
     const categories = new InMemoryCategories();
-    const regimes = new InMemoryRegimes();
-    await regimes.add(TvaRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
+    const rates = new InMemoryRegimes();
+    await rates.add(TvaRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
     const [id] = await openRoots(categories, 1);
 
-    await new SetCategoryTvaHandler(categories, regimes, new RecordingJournal()).execute(
+    await new SetCategoryTvaHandler(categories, rates, new RecordingJournal()).execute(
       new SetCategoryTvaCommand(id!, "tva_5", null),
     );
 

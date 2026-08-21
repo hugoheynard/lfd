@@ -106,7 +106,7 @@ export class ProductFormStore {
 
   // Référentiels
   readonly categories = signal<Category[]>([]);
-  readonly regimes = signal<TvaRate[]>([]);
+  readonly rates = signal<TvaRate[]>([]);
   readonly entries = signal<AllergenEntry[]>([]);
   readonly provisional = signal(false);
   readonly scope = signal<AllergenScope>('eu');
@@ -137,7 +137,7 @@ export class ProductFormStore {
     return name === '' ? 'Éditer le produit' : `Éditer le produit — ${name}`;
   });
 
-  private readonly regimeById = computed(() => new Map(this.regimes().map((r) => [r.id, r])));
+  private readonly regimeById = computed(() => new Map(this.rates().map((r) => [r.id, r])));
 
   private readonly selectedCategory = computed<Category | undefined>(() =>
     this.categories().find((c) => c.id === this.categoryId()),
@@ -149,8 +149,8 @@ export class ProductFormStore {
       return null;
     }
     const tva = (id: string): string => {
-      const regime = this.regimeById().get(id);
-      return regime === undefined ? '—' : `${regime.name} · ${formatPercent(regime.percent)}`;
+      const rate = this.regimeById().get(id);
+      return rate === undefined ? '—' : `${rate.name} · ${formatPercent(rate.percent)}`;
     };
     return {
       categoryName: category.name.fr,
@@ -275,13 +275,13 @@ export class ProductFormStore {
     this.productId.set(id ?? '');
     this.loading.set(true);
     try {
-      const [categories, regimes] = await Promise.all([
+      const [categories, rates] = await Promise.all([
         this.api.listCategories(),
         this.api.listTvaRates(),
       ]);
       const active = categories.filter((category) => !category.isArchived);
       this.categories.set(active);
-      this.regimes.set(regimes);
+      this.rates.set(rates);
       await this.loadReference('eu');
       if (id === null) {
         const first = active[0];
