@@ -1,9 +1,11 @@
 import { Injectable } from "@nestjs/common";
-import type { PushReport, PushSummary } from "@lfd/pim-contracts";
+import type { PushReport, PushSummary, TaxCollectionsPass } from "@lfd/pim-contracts";
 
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
+import { ShopifyCollectionsService } from "../collections/collections.service.js";
+import { TaxCollectionsPlan } from "../collections/tax-collections.plan.js";
 import { DryRunShopifyDriver, LiveShopifyDriver, type ShopifyDriver } from "./driver.js";
 import { ShopifyMembershipService, type MembershipOutcome } from "./membership.service.js";
 import { fingerprint, projectProduct } from "./projection.js";
@@ -38,6 +40,8 @@ export class ShopifyPushService {
     private readonly prisma: PimPrismaService,
     private readonly snapshots: ShopifySnapshotService,
     private readonly membership: ShopifyMembershipService,
+    private readonly collections: ShopifyCollectionsService,
+    private readonly taxPlan: TaxCollectionsPlan,
   ) {}
 
   /**
@@ -53,13 +57,36 @@ export class ShopifyPushService {
         ? await this.catalogue.publishable()
         : await this.catalogue.byIds(productIds);
 
+    // AVANT les fiches : chacune se range dans la collection `tva-*` de son
+    // taux, et le rangement échoue si la collection n'existe pas. Un pré-push
+    // n'écrit rien, donc il ne la fait pas.
+    const taxCollections = preview ? null : await this.ensureTaxCollections();
+
     const results: PushReport[] = [];
     for (const product of products) {
       results.push(preview ? await this.previewOne(product) : await this.pushOne(product, driver));
     }
 
     // Un pré-push n'atteint jamais la boutique : le mode rapporté est `dry-run`.
-    return { mode: preview ? "dry-run" : mode, results };
+    return { mode: preview ? "dry-run" : mode, results, taxCollections };
+  }
+
+  /**
+   * Crée les collections de taxe qui manquent, dérivées du référentiel.
+   *
+   * Elle **ne fait pas échouer** la publication : une collection absente dégrade
+   * le rangement d'une fiche (le rapport de push le dit déjà), elle n'invalide
+   * pas la fiche. Faire tomber tout un envoi sur un aléa réseau côté collections
+   * coûterait plus cher que le rangement qu'on essaie de sauver.
+   */
+  private async ensureTaxCollections(): Promise<TaxCollectionsPass> {
+    try {
+      const { created } = await this.collections.push(await this.taxPlan.desired());
+      return { created: created.map((collection) => collection.handle), error: null };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Échec inattendu.";
+      return { created: [], error: message };
+    }
   }
 
   /**

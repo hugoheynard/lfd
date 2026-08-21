@@ -6,10 +6,11 @@
     qu'elles n'existent pas côté Shopify, rien ne peut s'y rattacher.
   </p>
   <p>
-    On <strong>pousse les collections vides</strong> si elles manquent — un squelette
-    <code>tva-5-5</code> / <code>tva-10</code> / <code>tva-20</code> — que les fiches viennent
-    remplir ensuite. L'inspection ci-dessous rapproche les régimes du PIM et les collections
-    réellement présentes sur la boutique, pour la <strong>réconciliation</strong>.
+    Rien à faire d'ordinaire :
+    <strong>publier des produits crée d'abord les collections manquantes</strong>, dérivées des
+    régimes du référentiel. La collection ne contient aucune décision humaine — son handle et son
+    titre viennent du taux. Ce tableau est un <strong>miroir</strong> ; le bouton n'est là que pour
+    rétablir la boutique sans rien publier.
   </p>
 </fold-callout>
 
@@ -24,7 +25,7 @@
   <header class="recon-head">
     <div class="recon-status">
       <span class="block-label">
-        Réconciliation
+        État de la boutique
         @if (mode(); as m) {
           <fold-badge
             [content]="m === 'live' ? 'réel' : 'simulation'"
@@ -46,10 +47,11 @@
         <button
           foldButton
           size="sm"
+          emphasis="outline"
           [disabled]="pushing() || r.missingCount === 0"
           (click)="pushMissing()"
         >
-          Pousser {{ r.missingCount }} manquante(s)
+          Rétablir {{ r.missingCount }} manquante(s)
         </button>
       }
     </div>
@@ -57,10 +59,10 @@
 
   @if (recon(); as r) {
     <ul class="recon-list">
-      @for (row of r.rows; track row.regimeId) {
+      @for (row of r.rows; track row.handle) {
         <li class="recon-row" [class.is-missing]="row.state === 'missing'">
           <code>{{ row.handle }}</code>
-          <span class="recon-name"> {{ row.name }} · {{ format(row.percent) }} </span>
+          <span class="recon-name">{{ row.title }}</span>
           @if (row.state === 'present') {
             <fold-badge content="Présente" variant="success" />
             <span class="muted">{{ row.remote?.productCount ?? 0 }} fiche(s)</span>
@@ -71,9 +73,9 @@
               emphasis="soft"
               size="sm"
               [disabled]="pushing()"
-              (click)="pushOne(row.regimeId)"
+              (click)="pushMissing()"
             >
-              Pousser
+              Rétablir
             </button>
           }
         </li>

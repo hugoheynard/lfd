@@ -83,6 +83,7 @@ export type {
   ProductBindingView,
   PushReport,
   PushSummary,
+  TaxCollectionsPass,
   SnapshotView,
   ReconciliationStatus,
   FieldDiffView,

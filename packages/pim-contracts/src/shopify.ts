@@ -123,8 +123,30 @@ export interface PushReport {
   readonly message: string;
 }
 
+/**
+ * La passe de **collections de taxe** qui précède un push de produits.
+ *
+ * Une fiche se range dans la collection `tva-*` de son taux ; si la collection
+ * n'existe pas, le rangement échoue. La publication la crée donc d'elle-même,
+ * au lieu de demander un second geste : la collection est entièrement dérivée
+ * du régime (handle et titre viennent du taux), il n'y a aucune décision
+ * humaine à confirmer.
+ */
+export interface TaxCollectionsPass {
+  /** Les handles créés pendant cette passe. Vide = la boutique était à jour. */
+  readonly created: readonly string[];
+  /**
+   * Pourquoi la passe n'a pas abouti, le cas échéant. Elle **n'interrompt pas**
+   * la publication : une collection absente dégrade le rangement d'une fiche,
+   * elle n'invalide pas la fiche.
+   */
+  readonly error: string | null;
+}
+
 /** Synthèse d'un push : le mode effectif + le résultat par produit. */
 export interface PushSummary {
   readonly mode: "live" | "dry-run";
   readonly results: readonly PushReport[];
+  /** La passe de collections de taxe. `null` en pré-push : il n'écrit rien. */
+  readonly taxCollections: TaxCollectionsPass | null;
 }

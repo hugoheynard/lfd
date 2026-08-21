@@ -106,18 +106,18 @@ export class ShopifyChannelApi {
     return firstValueFrom(this.http.get<CatalogueInspection>(this.url('products/inspection')));
   }
 
-  inspectTvaCollections(desired: readonly DesiredCollection[]): Promise<InspectResult> {
-    return firstValueFrom(
-      this.http.post<InspectResult>(this.url('collections/tva/inspect'), {
-        desired,
-      }),
-    );
+  /**
+   * Les deux routes n'envoient **rien** : le serveur dérive les collections
+   * voulues du référentiel des régimes. Le front postait sa propre liste, ce qui
+   * faisait décider le titre d'une collection Shopify par un composant Angular —
+   * et interdisait à la publication de créer ce qui manque sans écran ouvert.
+   */
+  inspectTvaCollections(): Promise<InspectResult> {
+    return firstValueFrom(this.http.post<InspectResult>(this.url('collections/tva/inspect'), {}));
   }
 
-  pushTvaCollections(desired: readonly DesiredCollection[]): Promise<PushResult> {
-    return firstValueFrom(
-      this.http.post<PushResult>(this.url('collections/tva/push'), { desired }),
-    );
+  pushTvaCollections(): Promise<PushResult> {
+    return firstValueFrom(this.http.post<PushResult>(this.url('collections/tva/push'), {}));
   }
 
   private url(path: string): string {

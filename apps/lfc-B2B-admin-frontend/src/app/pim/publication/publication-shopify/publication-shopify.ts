@@ -159,7 +159,7 @@ export class PublicationShopify {
     this.busy.set(true);
     try {
       const summary = await this.api.push(targets);
-      this.message.set(`Publié — ${this.summarize(summary)}`);
+      this.message.set(`Publié — ${this.summarize(summary)}${this.describeTaxPass(summary)}`);
       this.selected.set(new Set());
       await this.store.reload();
     } catch {
@@ -191,6 +191,23 @@ export class PublicationShopify {
 
   protected trackRow(_index: number, row: ReconciliationRowView): string {
     return row.handle;
+  }
+
+  /**
+   * La passe de collections de taxe, dite seulement quand elle a fait quelque
+   * chose : à jour, elle n'a rien à raconter.
+   */
+  private describeTaxPass(summary: PushSummary): string {
+    const pass = summary.taxCollections;
+    if (pass === null) {
+      return '';
+    }
+    if (pass.error !== null) {
+      return ` ⚠ collections de taxe non vérifiées (${pass.error}).`;
+    }
+    return pass.created.length === 0
+      ? ''
+      : ` Collections de taxe créées : ${pass.created.join(', ')}.`;
   }
 
   private summarize(summary: PushSummary): string {

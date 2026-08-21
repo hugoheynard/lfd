@@ -1,28 +1,25 @@
-import { Body, Controller, Post } from "@nestjs/common";
-import { z } from "zod";
+import { Controller, Post } from "@nestjs/common";
 
 import {
   AdminSurface,
   RequirePermission,
 } from "../../../../platform/auth/admin-surface.decorator.js";
-import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
-import { ShopifyCollectionsService } from "./collections.service.js";
-
-/** Les collections de TVA voulues, telles que le front les connaît (handle + titre). */
-const desiredCollectionsPayload = z.object({
-  desired: z.array(
-    z.object({
-      handle: z.string().min(1),
-      title: z.string().min(1),
-    }),
-  ),
-});
+import {
+  ShopifyCollectionsService,
+  type InspectResult,
+  type PushResult,
+} from "./collections.service.js";
+import { TaxCollectionsPlan } from "./tax-collections.plan.js";
 
 /**
  * Ressource **collections de TVA** : inspection (diff) et push (créer les
- * manquantes). Le front envoie l'ensemble voulu ; le backend reste
- * TVA-agnostique. Sous-chemin `collections/tva` sous le préfixe module
+ * manquantes). Sous-chemin `collections/tva` sous le préfixe module
  * `channels/shopify`.
+ *
+ * Les deux routes ne prennent **aucun corps** : les collections voulues se
+ * dérivent du référentiel côté serveur ({@link TaxCollectionsPlan}). Le front
+ * envoyait sa propre liste, ce qui laissait un composant Angular décider du
+ * titre d'une collection et rendait la publication tributaire d'un écran ouvert.
  *
  * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
  * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
@@ -36,7 +33,10 @@ const desiredCollectionsPayload = z.object({
 @AdminSurface("catalog")
 @Controller("collections/tva")
 export class ShopifyCollectionsController {
-  constructor(private readonly collections: ShopifyCollectionsService) {}
+  constructor(
+    private readonly collections: ShopifyCollectionsService,
+    private readonly plan: TaxCollectionsPlan,
+  ) {}
 
   /**
    * Rapproche les collections de TVA voulues et la boutique, sans rien écrire.
@@ -47,19 +47,19 @@ export class ShopifyCollectionsController {
    */
   @RequirePermission("catalog:read")
   @Post("inspect")
-  inspect(
-    @Body(new ZodBody(desiredCollectionsPayload))
-    body: z.infer<typeof desiredCollectionsPayload>,
-  ) {
-    return this.collections.inspect(body.desired);
+  async inspect(): Promise<InspectResult> {
+    return this.collections.inspect(await this.plan.desired());
   }
 
-  /** Crée les collections manquantes (vides), puis renvoie l'état réconcilié. */
+  /**
+   * Crée les collections manquantes (vides), puis renvoie l'état réconcilié.
+   *
+   * **Rattrapage.** La publication des produits crée d'elle-même ce qui manque
+   * ({@link ShopifyPushService}) ; cette route sert à rétablir la boutique sans
+   * rien publier — après une suppression côté Shopify, par exemple.
+   */
   @Post("push")
-  push(
-    @Body(new ZodBody(desiredCollectionsPayload))
-    body: z.infer<typeof desiredCollectionsPayload>,
-  ) {
-    return this.collections.push(body.desired);
+  async push(): Promise<PushResult> {
+    return this.collections.push(await this.plan.desired());
   }
 }

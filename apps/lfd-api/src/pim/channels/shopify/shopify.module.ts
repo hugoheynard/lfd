@@ -7,6 +7,7 @@ import {
 } from "@lfd/shopify-admin";
 
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
+import { CommerceModule } from "../../commerce/commerce.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
 import { ShopifyCollectionsController } from "./collections/collections.controller.js";
 import { ShopifyCollectionsService } from "./collections/collections.service.js";
@@ -14,6 +15,7 @@ import {
   DryRunShopifyCollectionsGateway,
   LiveShopifyCollectionsGateway,
 } from "./collections/gateway.js";
+import { TaxCollectionsPlan } from "./collections/tax-collections.plan.js";
 import { ChannelController } from "./connection/channel.controller.js";
 import { ShopifyConnectionService } from "./connection/connection.service.js";
 import { DryRunShopifyDriver, LiveShopifyDriver } from "./products/driver.js";
@@ -36,7 +38,10 @@ const SHOPIFY_CREDENTIALS_SOURCE = Symbol("SHOPIFY_CREDENTIALS_SOURCE");
  * exporté (ADR-13). Supprimer ce module ne casserait rien en amont.
  */
 @Module({
-  imports: [PimDatabaseModule, CatalogueModule],
+  // `CommerceModule` pour son `TvaRegimeRepository` : les collections de taxe
+  // se dérivent des régimes. Un PORT exporté, pas une table — la règle d'ADR-13
+  // tient, et la dépendance va bien du canal vers le centre.
+  imports: [PimDatabaseModule, CatalogueModule, CommerceModule],
   // Un contrôleur par thématique, sous le préfixe module `channels/shopify`
   // (monté par `RouterModule` dans `AppModule` — un module ne pouvant pas se
   // référencer lui-même dans `RouterModule.register`) :
@@ -76,6 +81,7 @@ const SHOPIFY_CREDENTIALS_SOURCE = Symbol("SHOPIFY_CREDENTIALS_SOURCE");
     DryRunShopifyCollectionsGateway,
     LiveShopifyCollectionsGateway,
     ShopifyCollectionsService,
+    TaxCollectionsPlan,
     ShopifyConnectionService,
   ],
 })

@@ -8,6 +8,8 @@ import { ShopifySettingsService } from "../../shared/settings.service.js";
 import { DryRunShopifyDriver, LiveShopifyDriver } from "../driver.js";
 import { fingerprint, projectProduct, type ShopifyProductPayload } from "../projection.js";
 import { ShopifyMembershipService } from "../membership.service.js";
+import { ShopifyCollectionsService } from "../../collections/collections.service.js";
+import { TaxCollectionsPlan } from "../../collections/tax-collections.plan.js";
 import { ShopifyPushService } from "../push.service.js";
 import type { RecordSnapshotInput } from "../snapshot.service.js";
 import { ShopifySnapshotService } from "../snapshot.service.js";
@@ -50,6 +52,7 @@ interface Harness {
   dryPushes: ShopifyProductPayload[];
   bindingUpserts: UpsertArg[];
   assigns: { productGid: string; tags: readonly string[] }[];
+  collectionPushes: readonly { handle: string; title: string }[][];
   setLoad: (value: {
     id: string;
     version: number;
@@ -68,6 +71,8 @@ async function build(
   const dryPushes: ShopifyProductPayload[] = [];
   const bindingUpserts: UpsertArg[] = [];
   const assigns: { productGid: string; tags: readonly string[] }[] = [];
+  /** Les collections de taxe que la passe préalable a demandé de créer. */
+  const collectionPushes: { handle: string; title: string }[][] = [];
   const loadArgs: [string, number][] = [];
   let loadValue: {
     id: string;
@@ -147,6 +152,19 @@ async function build(
       },
       { provide: PimPrismaService, useValue: prisma },
       { provide: ShopifySnapshotService, useValue: snapshots },
+      {
+        provide: TaxCollectionsPlan,
+        useValue: { desired: () => Promise.resolve([{ handle: "tva-5-5", title: "TVA 5,5 %" }]) },
+      },
+      {
+        provide: ShopifyCollectionsService,
+        useValue: {
+          push: (desired: readonly { handle: string; title: string }[]) => {
+            collectionPushes.push([...desired]);
+            return Promise.resolve({ created: [{ handle: "tva-5-5" }] });
+          },
+        },
+      },
     ],
   }).compile();
 
@@ -157,6 +175,7 @@ async function build(
     dryPushes,
     bindingUpserts,
     assigns,
+    collectionPushes,
     setLoad: (value) => {
       loadValue = value;
     },
@@ -257,5 +276,27 @@ describe("ShopifyPushService — rollback", () => {
     });
     expect(report.outcome).toBe("pushed");
     expect(report.message).toContain("v2");
+  });
+});
+
+describe("ShopifyPushService — collections de taxe", () => {
+  it("crée les collections manquantes AVANT de pousser les fiches", async () => {
+    const h = await build("live");
+
+    const summary = await h.service.push(["p1"]);
+
+    // La passe a bien eu lieu, avec la liste dérivée du référentiel…
+    expect(h.collectionPushes).toEqual([[{ handle: "tva-5-5", title: "TVA 5,5 %" }]]);
+    // …et ce qu'elle a créé remonte dans la synthèse.
+    expect(summary.taxCollections).toEqual({ created: ["tva-5-5"], error: null });
+  });
+
+  it("ne touche à rien en pré-push", async () => {
+    const h = await build("live");
+
+    const summary = await h.service.push(["p1"], true);
+
+    expect(h.collectionPushes).toEqual([]);
+    expect(summary.taxCollections).toBeNull();
   });
 });

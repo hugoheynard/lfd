@@ -62,7 +62,7 @@ class FakeApi {
   }
   push(ids?: string[], dryRun = false): Promise<PushSummary> {
     this.pushes.push({ ids, dryRun });
-    return Promise.resolve({ mode: 'live', results: [] });
+    return Promise.resolve({ mode: 'live', results: [], taxCollections: null });
   }
 }
 
