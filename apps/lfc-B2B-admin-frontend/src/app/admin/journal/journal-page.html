@@ -46,18 +46,26 @@
               <fold-badge [content]="m" variant="neutral" />
             }
           </div>
-          <div class="jr-meta">
-            <span>{{ line.event.occurredAt }}</span>
-            <span>·</span>
-            <span class="jr-actor">{{ line.actor }}</span>
+          <!-- La seconde ligne : quand, par qui, pour qui. Elle se lit comme
+               une phrase — « 21 août 2026 à 14:32, par Hugo Heynard
+               (Commercial) pour Boulangerie Martin (SARL MARTIN) ». -->
+          <p class="jr-meta">
+            <span>{{ line.when }}</span>
+            <span
+              >, par <span class="jr-actor">{{ line.actor }}</span></span
+            >
+            @if (line.forWhom) {
+              <span>
+                pour <span class="jr-actor">{{ line.forWhom }}</span>
+              </span>
+            }
             @if (line.blast) {
-              <span>·</span>
               <!-- La portée telle qu'elle a été FIGÉE : ce que le fait touchait
                    à l'instant où il s'est produit, pas aujourd'hui. -->
-              <span class="jr-blast">{{ line.blast }}</span>
+              <span class="jr-blast">— {{ line.blast }}</span>
             }
             <code class="jr-type">{{ line.event.type }}</code>
-          </div>
+          </p>
         </li>
       }
     </ol>

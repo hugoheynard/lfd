@@ -40,13 +40,23 @@ function paramsOf(filters: JournalFilters): HttpParams {
   return params;
 }
 
-/** Ce que l'événement raconte, sans jargon — sujet, portée, acteur. */
+/**
+ * Ce que l'événement raconte, **en français**.
+ *
+ * Deux lignes, et c'est délibéré : la première dit CE QUI s'est passé, la
+ * seconde QUAND, PAR QUI et POUR QUI. Tout sur une seule ligne, on ne lisait
+ * plus rien ; réparti sur deux, un journal se parcourt à l'œil.
+ */
 export interface JournalLine {
   readonly event: ActivityEventView;
-  /** « Taux passé de 5,5 % à 10 % » — la phrase, dérivée du type et du payload. */
+  /** « Commande ORD-142 passée » — la phrase, dérivée du type et du payload. */
   readonly sentence: string;
+  /** « 21 août 2026 à 14:32 » — jamais l'ISO brut. */
+  readonly when: string;
+  /** « Hugo Heynard (Commercial) », ou la NATURE de l'acteur si l'annuaire l'ignorait. */
+  readonly actor: string;
+  /** « pour Boulangerie Martin (SARL MARTIN) » — vide quand le fait n'a pas de client. */
+  readonly forWhom: string;
   /** « 3 familles à emporter · 1 sur place » — vide quand le fait n'a pas de portée. */
   readonly blast: string;
-  /** « Hugo Heynard », ou la NATURE de l'acteur quand l'annuaire l'ignorait. */
-  readonly actor: string;
 }

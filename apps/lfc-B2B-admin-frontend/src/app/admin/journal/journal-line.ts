@@ -18,9 +18,43 @@ export function toLine(event: ActivityEventView): JournalLine {
   return {
     event,
     sentence: sentenceOf(event),
-    blast: blastOf(event),
+    when: whenOf(event.occurredAt),
     actor: actorOf(event),
+    forWhom: forWhomOf(event),
+    blast: blastOf(event),
   };
+}
+
+/**
+ * « 21 août 2026 à 14:32 ». Le journal affichait l'ISO brut, ce qui est lisible
+ * par une machine et par personne d'autre — or il est fait pour être lu par des
+ * humains. Heure **locale** : celui qui lit cherche « ce qui s'est passé ce
+ * matin », pas un instant UTC.
+ */
+function whenOf(iso: string): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) {
+    return iso;
+  }
+  return new Intl.DateTimeFormat('fr-FR', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+  }).format(at);
+}
+
+/**
+ * Pour qui — le client, tel qu'il a été figé dans le fait.
+ *
+ * L'enseigne d'abord, la raison sociale entre parenthèses **si elle diffère** :
+ * répéter « Boulangerie Martin (Boulangerie Martin) » n'apprend rien.
+ */
+function forWhomOf(event: ActivityEventView): string {
+  const name = optional(event.payload['clientName']);
+  if (name === null) {
+    return '';
+  }
+  const legal = optional(event.payload['clientLegalName']);
+  return legal === null || legal === name ? name : `${name} (${legal})`;
 }
 
 function sentenceOf(event: ActivityEventView): string {
@@ -36,6 +70,10 @@ function sentenceOf(event: ActivityEventView): string {
       return `Régime de TVA « ${text(p['name'])} » supprimé (${percent(p['percent'])})`;
     case 'category.tva_changed':
       return 'Régimes de TVA d’une famille modifiés';
+    case 'order.placed':
+      // Le NUMÉRO d'abord : c'est par lui qu'on retrouve une commande, pas par
+      // son identifiant technique.
+      return `Commande ${text(p['orderNumber'])} passée`;
     case 'product.published':
       return `Produit « ${text(p['name'])} » mis en vente (${text(p['sku'])})`;
     case 'product.unpublished':
@@ -77,8 +115,12 @@ function blastOf(event: ActivityEventView): string {
  * identifiant technique au milieu d'une phrase.
  */
 function actorOf(event: ActivityEventView): string {
-  if (event.actorName !== null && event.actorName !== '') {
-    return event.actorName;
+  const name = optional(event.actorName);
+  if (name !== null) {
+    // La fonction entre parenthèses : « qui a fait ça, et à quel titre » est la
+    // question qu'on pose à un journal.
+    const role = optional(event.actorRole);
+    return role === null ? name : `${name} (${role})`;
   }
   switch (event.actorType) {
     case 'staff':
@@ -91,7 +133,12 @@ function actorOf(event: ActivityEventView): string {
 }
 
 function text(value: unknown): string {
-  return typeof value === 'string' && value !== '' ? value : '—';
+  return optional(value) ?? '—';
+}
+
+/** Une chaîne non vide, ou `null`. Le vide n'est pas une valeur à afficher. */
+function optional(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() !== '' ? value : null;
 }
 
 /** « 5,5 % ». Un taux absent rend `—` plutôt qu'un `NaN %`. */

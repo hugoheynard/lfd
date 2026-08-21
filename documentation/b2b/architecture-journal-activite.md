@@ -158,19 +158,52 @@ répondre aux deux.
 
 ---
 
-## 4. Le nom de l'acteur, figé
+## 4. Ce que le journal fige, et ce qu'il ne joint pas
 
-`actorName` est un **instantané** pris à l'écriture, pas une jointure à
+**Le journal doit être lu par des humains.** Un écran qui affiche
+`order.placed · 2026-08-21T12:32:00.000Z · auth0|abc` est lisible par une
+machine et par personne d'autre. D'où deux lignes par fait :
+
+```
+Commande ORD-142 passée
+21 août 2026 à 14:32, par Hugo Heynard (Commercial) pour Boulangerie Martin (SARL MARTIN)
+```
+
+Cela suppose de connaître, longtemps après, le nom de l'acteur, sa fonction, et
+l'identité du client. Ces trois-là sont **figés à l'écriture**, pas rejoints à
 l'affichage. Deux raisons, et la seconde est la vraie :
 
 - une jointure par ligne coûterait une lecture par événement affiché ;
 - surtout, elle supposerait que **le nom d'aujourd'hui vaut pour l'acte
-  d'hier** — précisément ce qu'une trace ne doit jamais faire.
+  d'hier** — précisément ce qu'une trace ne doit jamais faire. Une enseigne
+  change ; une commande de 2024 doit continuer de nommer son client comme il
+  s'appelait en 2024.
 
-Quand l'annuaire ne connaissait pas l'acteur, `actorName` est `null` et l'écran
-affiche sa **nature** — « un membre de l'équipe » — ce qui reste vrai. Il
-n'invente pas un nom et n'affiche pas un identifiant technique au milieu d'une
-phrase.
+### Le coût, compté
+
+Figer n'est pas une excuse pour multiplier les lectures. Le budget, par fait :
+
+| Donnée figée                     | Coût                                               |
+| -------------------------------- | -------------------------------------------------- |
+| `actorName`                      | 1 lecture de l'annuaire — elle existait déjà       |
+| `actorRole`                      | **0** — une colonne de plus dans la fiche déjà lue |
+| `clientName` / `clientLegalName` | 1 lecture, **sur `order.placed` seulement**        |
+
+La société est résolue par l'**émetteur**, pas par le recorder : seul ce fait-là
+parle d'un client, et le faire dans le recorder l'aurait fait payer à tous les
+autres. Une commande sans société (zéro-friction personnelle) ne paie rien du
+tout — on n'interroge pas l'annuaire pour un `null`.
+
+### Quand on ne sait pas
+
+Ni nom inventé, ni identifiant technique au milieu d'une phrase :
+
+- acteur inconnu → sa **nature** : « un membre de l'équipe », « le système » ;
+- société absente ou introuvable → **pas de « pour »** du tout ;
+- raison sociale identique à l'enseigne → une seule fois, pas
+  « Martin (Martin) » ;
+- type d'événement inconnu de l'écran → le **type lui-même**, ce qui reste vrai.
+  Le journal est ouvert : un module peut émettre un fait que l'écran ignore.
 
 ---
 

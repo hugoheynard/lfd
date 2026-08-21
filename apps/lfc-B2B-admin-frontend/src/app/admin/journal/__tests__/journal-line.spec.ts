@@ -14,6 +14,7 @@ function event(overrides: Partial<ActivityEventView>): ActivityEventView {
     actorType: 'staff',
     actorId: 'auth0|x',
     actorName: 'Hugo Heynard',
+    actorRole: 'Commercial',
     traceId: 'trace',
     payload: {},
     ...overrides,
@@ -35,7 +36,7 @@ describe('toLine', () => {
 
     expect(line.sentence).toBe('Taux de « Réduit » passé de 5,5 % à 10 %');
     expect(line.blast).toBe('3 famille(s) à emporter · 1 sur place');
-    expect(line.actor).toBe('Hugo Heynard');
+    expect(line.actor).toBe('Hugo Heynard (Commercial)');
   });
 
   it('ne rend pas de portée quand le fait n’en avait pas', () => {
@@ -54,7 +55,7 @@ describe('toLine', () => {
 
   it('rend la NATURE de l’acteur quand l’annuaire ne le connaissait pas', () => {
     // Jamais l'identifiant technique au milieu d'une phrase.
-    const line = toLine(event({ actorName: null }));
+    const line = toLine(event({ actorName: null, actorRole: null }));
 
     expect(line.actor).toBe('un membre de l’équipe');
   });
@@ -65,5 +66,53 @@ describe('toLine', () => {
     const line = toLine(event({ type: 'commande.avenant_signe', payload: {} }));
 
     expect(line.sentence).toBe('commande.avenant_signe');
+  });
+});
+
+describe('toLine — une commande, telle qu’un humain la lit', () => {
+  it('nomme la commande par son NUMÉRO, et le client tel qu’il a été figé', () => {
+    const line = toLine(
+      event({
+        type: 'order.placed',
+        module: 'commandes',
+        occurredAt: '2026-08-21T12:32:00.000Z',
+        payload: {
+          orderId: 'order_9',
+          orderNumber: 'ORD-142',
+          clientName: 'Boulangerie Martin',
+          clientLegalName: 'SARL MARTIN',
+        },
+      }),
+    );
+
+    expect(line.sentence).toBe('Commande ORD-142 passée');
+    expect(line.forWhom).toBe('Boulangerie Martin (SARL MARTIN)');
+    expect(line.actor).toBe('Hugo Heynard (Commercial)');
+    // Une date lisible, pas l'ISO brut.
+    expect(line.when).not.toContain('T');
+    expect(line.when).toContain('2026');
+  });
+
+  it('ne répète pas la raison sociale quand elle vaut l’enseigne', () => {
+    const line = toLine(
+      event({
+        type: 'order.placed',
+        payload: {
+          orderNumber: 'ORD-1',
+          clientName: 'SARL MARTIN',
+          clientLegalName: 'SARL MARTIN',
+        },
+      }),
+    );
+
+    expect(line.forWhom).toBe('SARL MARTIN');
+  });
+
+  it('n’affiche pas de client quand le fait n’en avait pas', () => {
+    // Commande zéro-friction personnelle : pas de société, et on ne prétend pas
+    // le contraire.
+    const line = toLine(event({ type: 'order.placed', payload: { orderNumber: 'ORD-2' } }));
+
+    expect(line.forWhom).toBe('');
   });
 });
