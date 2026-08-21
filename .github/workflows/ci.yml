@@ -159,6 +159,13 @@ jobs:
       - name: "Gate : variables fold existantes"
         run: pnpm lint:fold-tokens
 
+      # Un `routerLink` absolu qui ne mène nulle part compile, démarre et passe
+      # les tests : il casse au CLIC, en NG04002, devant l'utilisateur. Le PIM en
+      # portait cinq, survivants de sa fusion dans le back-office — ses routes
+      # étaient passées de `/produits` à `/pim/produits`, les liens non.
+      - name: "Gate : les liens absolus mènent quelque part"
+        run: pnpm lint:router-links
+
       - name: Typecheck des fronts
         run: |
           # `-p tsconfig.app.json` et NON `tsc --noEmit` : le tsconfig racine de

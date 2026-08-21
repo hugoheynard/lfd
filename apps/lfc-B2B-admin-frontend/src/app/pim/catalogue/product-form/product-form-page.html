@@ -1,5 +1,5 @@
 <fold-page-layout icon="edit" [title]="store.pageTitle()">
-  <fold-back-link pageActions label="Retour aux produits" routerLink="/produits" />
+  <fold-back-link pageActions label="Retour aux produits" routerLink="/pim/produits" />
 
   <p description>
     @if (store.isEdit()) {
@@ -82,7 +82,7 @@
           <small class="muted">Un nom et une catégorie suffisent.</small>
         }
         <div class="save-actions">
-          <button foldButton emphasis="soft" intent="neutral" routerLink="/produits">
+          <button foldButton emphasis="soft" intent="neutral" routerLink="/pim/produits">
             Annuler
           </button>
           <button foldButton [disabled]="!store.isValid() || store.busy()" (click)="submit()">

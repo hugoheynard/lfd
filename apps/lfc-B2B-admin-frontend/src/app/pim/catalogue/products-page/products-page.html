@@ -6,7 +6,7 @@
 
   <div pageActions>
     @if (categories().length > 0) {
-      <button foldButton emphasis="outline" routerLink="/produits/nouveau">Créer un produit</button>
+      <button foldButton emphasis="outline" routerLink="/pim/produits/nouveau">Créer un produit</button>
     }
     @if (products().length > 0) {
       <button
@@ -32,7 +32,7 @@
 
   @if (categories().length === 0) {
     <fold-callout appearance="inset" variant="warning">
-      Créez d'abord une <a routerLink="/categories">catégorie</a> : un produit s'y rattache.
+      Créez d'abord une <a routerLink="/pim/categories">catégorie</a> : un produit s'y rattache.
     </fold-callout>
   }
 
