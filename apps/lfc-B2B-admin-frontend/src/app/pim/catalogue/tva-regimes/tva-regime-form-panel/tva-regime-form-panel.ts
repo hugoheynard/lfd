@@ -34,8 +34,13 @@ export interface TvaRegimePanelData {
  * impérativement via `FoldPanelHostService.open()`. Sans `data` il crée ; avec
  * `{ mode: 'edit', regime }` il édite (champs préremplis) ; avec
  * `{ mode: 'delete', regime }` il affiche une **zone dangereuse** — confirmation
- * en retapant le nom du régime, car la suppression touchera les plateformes qui
- * consomment ce taux à la prochaine synchronisation.
+ * en retapant le nom du régime.
+ *
+ * La zone dangereuse annonçait que « les plateformes seront affectées à la
+ * prochaine synchronisation ». C'est faux : la base pose un `Restrict` sur les
+ * deux relations, donc un régime encore visé n'est pas supprimé du tout — la
+ * requête échoue. Elle dit désormais ce qui va vraiment se passer, en s'appuyant
+ * sur le compte d'usages que l'API rend avec chaque régime.
  */
 @Component({
   selector: 'app-tva-regime-form-panel',
@@ -89,6 +94,12 @@ export class TvaRegimeFormPanel {
         : 'Ajouter le régime',
   );
 
+  /** Combien de familles visent ce régime — 0 = suppression sans conséquence. */
+  protected readonly usageTotal = computed(() => {
+    const target = this.regime();
+    return target === undefined ? 0 : target.usage.emporter + target.usage.surPlace;
+  });
+
   /** En suppression, le nom retapé doit correspondre exactement. */
   protected readonly confirmMatches = computed(() => {
     const target = this.regime();
@@ -109,7 +120,7 @@ export class TvaRegimeFormPanel {
 
   protected get canSubmit(): boolean {
     if (this.isDelete()) {
-      return this.confirmMatches();
+      return this.usageTotal() === 0 && this.confirmMatches();
     }
     return this.draftName().trim() !== '' && this.draftPercent() !== null;
   }

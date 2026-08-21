@@ -30,3 +30,11 @@ code {
   font-size: 0.85em;
   color: var(--fold-color-text-muted);
 }
+
+// Le compte, puis le détail des modes — sur une ligne tant que la colonne tient.
+.usage {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}

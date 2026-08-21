@@ -54,7 +54,10 @@ export class TvaRegimeTable {
     { key: 'name', label: 'Nom', width: '12rem' },
     { key: 'description', label: 'Description' },
     { key: 'rate', label: 'Taux', width: '7rem' },
-    { key: 'tag', label: 'Collection', width: '10rem' },
+    // « Tag » et non « Collection » : le tag sert aussi de clé au canal B2B, il
+    // n'appartient plus au vocabulaire Shopify.
+    { key: 'tag', label: 'Tag', width: '10rem' },
+    { key: 'usage', label: 'Utilisé par', width: '11rem' },
     { key: 'actions', label: '', align: 'right', width: '5rem' },
   ];
 
@@ -67,6 +70,23 @@ export class TvaRegimeTable {
 
   protected format(percent: number): string {
     return formatPercent(percent);
+  }
+
+  /** Combien de familles visent ce régime, les deux modes confondus. */
+  protected usageTotal(regime: TvaRegime): number {
+    return regime.usage.emporter + regime.usage.surPlace;
+  }
+
+  /** « 3 à emporter · 1 sur place » — les modes cités seulement s'ils comptent. */
+  protected usageLabel(regime: TvaRegime): string {
+    const parts: string[] = [];
+    if (regime.usage.emporter > 0) {
+      parts.push(`${regime.usage.emporter} à emporter`);
+    }
+    if (regime.usage.surPlace > 0) {
+      parts.push(`${regime.usage.surPlace} sur place`);
+    }
+    return parts.join(' · ');
   }
 
   /** Édition : side-panel prérempli sur ce régime. */

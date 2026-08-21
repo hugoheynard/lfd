@@ -32,6 +32,14 @@ export interface TvaRegime {
   percent: number;
   /** Tag / handle de la collection Shopify — dérivé du taux (`tva-5-5`). */
   tag: string;
+  /** Combien de familles le visent — rendu par l'API, jamais recalculé ici. */
+  usage: TvaRegimeUsage;
+}
+
+/** Le compte d'usages d'un régime, par mode de vente. */
+export interface TvaRegimeUsage {
+  readonly emporter: number;
+  readonly surPlace: number;
 }
 
 /** Ce qu'une boutique propose pour un produit : à emporter et/ou sur place. */

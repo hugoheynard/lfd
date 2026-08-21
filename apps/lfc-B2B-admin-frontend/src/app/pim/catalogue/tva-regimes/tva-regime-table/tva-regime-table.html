@@ -29,6 +29,19 @@
     ><code>{{ r.tag }}</code></ng-template
   >
 
+  <!-- Le compte d'usages : ce qui dit, AVANT le menu de suppression, qu'un
+       régime est visé — la base pose un `Restrict`, elle refusera. -->
+  <ng-template foldCell="usage" let-r>
+    @if (usageTotal(r) === 0) {
+      <span class="muted">Aucune famille</span>
+    } @else {
+      <span class="usage">
+        <fold-badge [content]="usageTotal(r) + ' famille(s)'" variant="neutral" />
+        <span class="muted">{{ usageLabel(r) }}</span>
+      </span>
+    }
+  </ng-template>
+
   <ng-template foldCell="actions" let-r>
     <fold-dropdown ariaLabel="Actions du régime" placement="bottom-end">
       <button

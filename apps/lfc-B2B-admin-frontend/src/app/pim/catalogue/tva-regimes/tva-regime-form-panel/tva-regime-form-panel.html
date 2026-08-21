@@ -8,23 +8,32 @@
   }
 
   @if (isDelete()) {
-    <!-- Zone dangereuse : confirmation en retapant le nom du régime. -->
-    <fold-callout appearance="inset" variant="alert">
-      <strong>Zone dangereuse.</strong> Vous êtes sur le point de supprimer «&nbsp;{{
-        regime()?.name
-      }}&nbsp;» (<code>{{ regime()?.tag }}</code
-      >). À la prochaine synchronisation, les <strong>plateformes qui utilisent ce taux</strong>
-      (Shopify, et les futurs canaux) seront affectées&nbsp;: la collection
-      <code>{{ regime()?.tag }}</code> et les fiches qui s'y rattachent perdent leur référence de
-      taxe.
-    </fold-callout>
+    @if (usageTotal() > 0) {
+      <!-- Régime encore visé : la base refusera. On le dit ici plutôt que de
+           laisser l'erreur de clé étrangère l'apprendre après coup. -->
+      <fold-callout appearance="inset" variant="warning">
+        <strong>Suppression impossible.</strong> «&nbsp;{{ regime()?.name }}&nbsp;» est encore visé
+        par <strong>{{ usageTotal() }} famille(s)</strong>. Réattribuez-les à un autre régime
+        d'abord&nbsp;: tant qu'une seule le vise, la base refuse la suppression.
+      </fold-callout>
+    } @else {
+      <!-- Zone dangereuse : confirmation en retapant le nom du régime. -->
+      <fold-callout appearance="inset" variant="alert">
+        <strong>Zone dangereuse.</strong> Vous êtes sur le point de supprimer «&nbsp;{{
+          regime()?.name
+        }}&nbsp;» (<code>{{ regime()?.tag }}</code
+        >). Aucune famille ne le vise, donc rien ne perd sa référence de taxe. Côté Shopify, la
+        collection <code>{{ regime()?.tag }}</code> restera en place&nbsp;: elle devient orpheline,
+        et Publication la signalera.
+      </fold-callout>
 
-    <fold-input
-      label="Retapez le nom du régime pour confirmer"
-      [placeholder]="regime()?.name ?? ''"
-      [value]="confirmName()"
-      (valueChange)="confirmName.set($event)"
-    />
+      <fold-input
+        label="Retapez le nom du régime pour confirmer"
+        [placeholder]="regime()?.name ?? ''"
+        [value]="confirmName()"
+        (valueChange)="confirmName.set($event)"
+      />
+    }
   } @else {
     <fold-input
       label="Nom"
