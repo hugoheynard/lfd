@@ -266,18 +266,159 @@ const PRODUCT_ICON =
   '</svg>';
 
 /**
+ * Les collections — un document et son étiquette accrochée. Source : SVG Repo /
+ * IBM Carbon (domaine public), sous le nom « classification ». Remplace
+ * `org-chart`, qui dessinait une hiérarchie : une collection est justement ce
+ * qui NE hiérarchise pas — un produit appartient à une famille et à 0..n
+ * collections.
+ *
+ * ⚠️ Elle embarque un `<circle>` — le point de l'étiquette. Une version du
+ * normalisateur qui ne lit que les `<path>` l'aurait fait disparaître sans rien
+ * signaler : l'icône se serait affichée, simplement amputée. Le cadrage
+ * transparent de Carbon est retiré comme ailleurs.
+ *
+ * Graisse relevée à 8,4 %, même origine Carbon, même écart avec fold.
+ */
+const COLLECTIONS_ICON =
+  '<svg viewBox="0.89 0.89 30.21 30.21" fill="currentColor" stroke="currentColor" ' +
+  'stroke-width="0.7" stroke-linejoin="round">' +
+  '<circle cx="15" cy="19" r="1"/>' +
+  '<path d="M27.7,9.3l-7-7A.9087.9087,0,0,0,20,2H10A2.0058,2.0058,0,0,0,8,4V14H6a2.0023,2.0023,0,0,' +
+  '0-2,2v6a2.0023,2.0023,0,0,0,2,2H8v4a2.0058,2.0058,0,0,0,2,2H26a2.0058,2.0058,0,0,0,2-2V10A.9092.' +
+  '9092,0,0,0,27.7,9.3ZM20,4.4,25.6,10H20ZM6,16h9.5972L19,19l-3.3926,3H6ZM26,28H10V24h5.6089a2.0076' +
+  ',2.0076,0,0,0,1.3135-.4927l3.3833-2.9917a2.0015,2.0015,0,0,0,.01-3.0229l-3.4033-3.0083A1.9961,1.' +
+  '9961,0,0,0,15.6089,14H10V4h8v6a2.0058,2.0058,0,0,0,2,2h6Z"/>' +
+  '</svg>';
+
+/**
+ * La production — un tapis, ses roues et son mécanisme. Source : SVG Repo
+ * (domaine public). Remplace le `list` du menu, qui décrivait la forme de
+ * l'écran (une liste) et non ce qu'on y fait.
+ *
+ * Boîte laissée telle quelle : le dessin la remplit déjà entièrement. Un trait
+ * de 0,35 sur 16 porte sa graisse à 8,4 %, celle du jeu fold.
+ */
+const PRODUCTION_ICON =
+  '<svg viewBox="0 0 16 16" fill="currentColor" stroke="currentColor" ' +
+  'stroke-width="0.35" stroke-linejoin="round">' +
+  '<path d="M14,11.05V8.5a.5.5,0,0,0-.5-.5h-3a.5.5,0,0,0-.5.5V11H6V8.5A.5.5,0,0,0,5.5,8h-3a.5.5,0,0' +
+  ',0-.5.5v2.55A2.5,2.5,0,0,0,2.5,16h11a2.5,2.5,0,0,0,.5-4.95ZM6,12a2.46,2.46,0,0,0,0,3H4.49a2.46,2' +
+  '.46,0,0,0,0-3H6Zm.49,1.5A1.5,1.5,0,1,1,8,15,1.5,1.5,0,0,1,6.5,13.5ZM10,12h1.52a2.46,2.46,0,0,0,0' +
+  ',3H10a2.46,2.46,0,0,0,0-3Zm1-3h2v2H11ZM3,9H5v2H3ZM1,13.5A1.5,1.5,0,1,1,2.5,15,1.5,1.5,0,0,1,1,13' +
+  '.5ZM13.5,15A1.5,1.5,0,1,1,15,13.5,1.5,1.5,0,0,1,13.5,15ZM2,7A.5.5,0,0,0,2,6,1,1,0,1,1,3,5,.5.5,0' +
+  ',0,0,4,5,2,2,0,0,0,2,3V2H6a2,2,0,0,0,4,0h4V3a2,2,0,0,0-2,2,.5.5,0,0,0,1,0,1,1,0,1,1,1,1,.5.5,0,0' +
+  ',0,0,1,2,2,0,0,0,1-3.72V1.5a.5.5,0,0,0-.5-.5H9.72A2,2,0,0,0,6.28,1H1.5a.5.5,0,0,0-.5.5V3.28A2,2,' +
+  '0,0,0,2,7ZM8,1A1,1,0,1,1,7,2,1,1,0,0,1,8,1Z"/>' +
+  '</svg>';
+
+/**
+ * `basha` — enregistrée à la demande, **sans usage pour l'instant**.
+ *
+ * C'est un choix explicite et non un oubli : elle attend sa page. Le jour où
+ * elle n'en trouve pas, la retirer coûte une ligne — et une icône enregistrée
+ * que rien n'affiche pèse ses quelques centaines d'octets dans le bundle, ce
+ * qui est le prix qu'on accepte ici.
+ *
+ * Boîte laissée telle quelle : le dessin remplit déjà ses 512 unités. Pas de
+ * trait ajouté non plus — c'est une illustration détaillée, et l'épaissir
+ * empâterait les traits fins plutôt que de l'aligner sur quoi que ce soit.
+ */
+const BASHA_ICON =
+  '<svg viewBox="0 0 512 512" fill="currentColor">' +
+  '<path d="M205.436,283.406c9.759,0,17.674-7.915,17.674-17.684s-7.915-17.684-17.674-17.684 c-9.778' +
+  ',0-17.693,7.915-17.693,17.684S195.657,283.406,205.436,283.406z"/>' +
+  '<path d="M306.563,283.406c9.76,0,17.674-7.915,17.674-17.684s-7.914-17.684-17.674-17.684 c-9.778,' +
+  '0-17.693,7.915-17.693,17.684S296.785,283.406,306.563,283.406z"/>' +
+  '<path d="M508.56,480.316c0-0.011-36.776-200.64-55.08-299.509c7.096-3.48,12.017-10.701,12.017-19.' +
+  '134 c0-11.799-9.573-21.371-21.383-21.371h-0.031c-3.78-12.453-8.287-24.21-13.757-35.097c-14.938-2' +
+  '9.835-36.993-53.611-66.268-69.169 c-29.276-15.612-65.14-23.133-108.068-23.133c-28.633,0-54.066,3' +
+  '.335-76.566,10.193c-33.741,10.214-60.809,28.748-80.44,54.366 c-13.758,17.881-23.848,39.003-31.08' +
+  '9,62.84h-0.031c-11.81,0-21.381,9.572-21.381,21.371c0,8.432,4.93,15.653,12.016,19.134 C40.215,279' +
+  '.676,3.44,480.316,3.44,480.316L0,499.097h512L508.56,480.316z M110.099,119.5 c12.588-24.862,29.48' +
+  '3-42.856,52.822-55.392c23.361-12.482,53.785-19.382,93.069-19.382c26.168,0,48.471,3.066,67.304,8.' +
+  '806 c28.25,8.691,48.74,22.966,64.498,43.343c9.302,12.079,16.875,26.572,22.842,43.427H101.438 C10' +
+  '4.049,132.957,106.868,125.923,110.099,119.5z M284.664,430.974H256.01h-28.674c0,0,22.044,15.053-4' +
+  '.413,16.41 c-26.458,1.378-88.2-50.605-57.328-49.249c30.891,1.357,94.808-36.941,94.808-36.941s55.' +
+  '112,38.298,86.003,36.941 c30.871-1.356-30.87,50.627-57.348,49.249C262.62,446.027,284.664,430.974' +
+  ',284.664,430.974z M136.494,357.723V225.155h239.011 v132.578c-6.765-6.184-14.618-14.958-23.589-28' +
+  '.809c-19.848-30.643-43.011-28.281-95.906-28.281 c-52.936,0-76.079-2.362-95.926,28.281C151.122,34' +
+  '2.765,143.259,351.549,136.494,357.723z M334.089,467.273 c53.755-31.192,71.127-81.144,62.207-93.3' +
+  '48V204.364H115.704v169.531c-8.971,12.151,8.391,62.166,62.196,93.378H38.184 c0.839-4.6,1.813-9.87' +
+  '3,2.912-15.86c11.53-62.841,35.904-195.688,49.351-268.359h331.084 c8.879,47.953,22.511,122.032,34' +
+  '.073,184.986c5.967,32.487,11.374,61.991,15.3,83.372c1.099,5.987,2.072,11.26,2.911,15.86H334.089 ' +
+  'z"/>' +
+  '</svg>';
+
+/**
+ * OPS — un assemblage de blocs vu en isométrie : l'écosystème et ses briques.
+ * Source : SVG Repo (domaine public). Remplace `waveform`, qui évoquait un
+ * signal alors que la section montre une CARTE de briques et leur santé.
+ *
+ * Boîte laissée telle quelle : le dessin la remplit déjà. Un trait de 0,6 sur
+ * 24 relève sa graisse à celle du jeu fold — le tracé d'origine est très fin,
+ * et c'est le genre d'icône qui disparaît dans un rail sombre.
+ */
+const OPS_ICON =
+  '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" ' +
+  'stroke-width="0.6" stroke-linejoin="round">' +
+  '<path d="M11.998 0 7.303 2.717v2.045L2.428 7.555v5.01l-2.09 1.209v5.435l4.697 2.719 1.662-.963L1' +
+  '2 24l5.3-3.035 1.665.963 4.697-2.719v-5.436l-2.09-1.207V7.555l-4.877-2.793V2.717L11.998 0zm0 1.1' +
+  '95 3.127 1.813L12 4.803 8.875 3.006l3.123-1.81zm-3.658 2.7L11.482 5.7v3.676L8.34 7.555v-3.66zm7.' +
+  '318 0v3.66L12.52 9.373V5.699l3.138-1.804zm1.037 2.062 3.842 2.197v3.813l-1.572-.91-4.697 2.716v5' +
+  '.436l1.998 1.156L12 22.805l-4.264-2.44 1.996-1.156v-5.436l-4.697-2.716-1.57.908v-3.81l3.838-2.19' +
+  '6v2.195h.002L12 10.871l4.695-2.717V5.957zm-11.66 6.297 3.125 1.808-3.125 1.797-3.125-1.796.518-.' +
+  '301 2.607-1.508zm13.93 0 2.607 1.51.516.299-3.123 1.796-3.125-1.796 3.125-1.81zM1.377 14.949l3.1' +
+  '42 1.809v3.676L1.377 18.61v-3.66zm7.318 0v3.662L5.658 20.37l-.101.06v-3.673l3.138-1.807zm6.61 0 ' +
+  '3.144 1.809v3.676l-.107-.065-3.037-1.758V14.95zm7.318 0v3.662l-3.139 1.819v-3.672l3.139-1.809z"/' +
+  '>' +
+  '</svg>';
+
+/**
+ * Imprimer — une imprimante et sa feuille. Source : SVG Repo (domaine public).
+ * Portée par « Imprimer le dossier », le seul bouton d'impression de l'app
+ * (dossier de production), qui n'avait aucune icône.
+ *
+ * Pas de trait ajouté : le dessin est déjà tracé épais (les montants font ~42
+ * unités sur 512, soit 8,2 %), et la boîte est pleine.
+ */
+const PRINT_ICON =
+  '<svg viewBox="0 0 512 512" fill="currentColor">' +
+  '<path d="M490.667,149.333h-85.333v-128C405.333,9.551,395.782,0,384,0H128c-11.782,0-21.333,9.551-' +
+  '21.333,21.333v128H21.333 C9.551,149.333,0,158.885,0,170.667v106.667v128c0,11.782,9.551,21.333,21' +
+  '.333,21.333h85.333v64 c0,11.782,9.551,21.333,21.333,21.333h256c11.782,0,21.333-9.551,21.333-21.3' +
+  '33v-64h85.333c11.782,0,21.333-9.551,21.333-21.333 v-128V170.667C512,158.885,502.449,149.333,490.' +
+  '667,149.333z M149.333,42.667h213.333v106.667H149.333V42.667z M42.667,192H128 h256h85.333v64H384H' +
+  '128H42.667V192z M42.667,384v-85.333h64V384H42.667z M362.667,469.333H149.333v-64V298.667h213.333v' +
+  '106.667 V469.333z M469.333,384h-64v-85.333h64V384z"/>' +
+  '<path d="M298.667,320h-85.333C201.551,320,192,329.551,192,341.333c0,11.782,9.551,21.333,21.333,2' +
+  '1.333h85.333 c11.782,0,21.333-9.551,21.333-21.333C320,329.551,310.449,320,298.667,320z"/>' +
+  '<path d="M213.333,85.333H192c-11.782,0-21.333,9.551-21.333,21.333c0,11.782,9.551,21.333,21.333,2' +
+  '1.333h21.333 c11.782,0,21.333-9.551,21.333-21.333C234.667,94.885,225.115,85.333,213.333,85.333z"' +
+  '/>' +
+  '<path d="M320,64h-21.333c-11.782,0-21.333,9.551-21.333,21.333c0,11.782,9.551,21.333,21.333,21.33' +
+  '3H320 c11.782,0,21.333-9.551,21.333-21.333C341.333,73.551,331.782,64,320,64z"/>' +
+  '<path d="M298.667,384h-85.333C201.551,384,192,393.551,192,405.333c0,11.782,9.551,21.333,21.333,2' +
+  '1.333h85.333 c11.782,0,21.333-9.551,21.333-21.333C320,393.551,310.449,384,298.667,384z"/>' +
+  '</svg>';
+
+/**
  * Le catalogue. Une entrée = un nom que `<fold-icon name="…">` accepte.
  *
  * `as const` n'est pas décoratif : c'est lui qui donne à `keyof typeof` des
  * littéraux, donc à l'augmentation de types une liste exacte.
  */
 export const APP_ICONS = {
+  basha: BASHA_ICON,
   catalog: CATALOG_ICON,
+  collections: COLLECTIONS_ICON,
   integrations: INTEGRATIONS_ICON,
   category: CATEGORY_ICON,
   mobile: MOBILE_ICON,
+  ops: OPS_ICON,
   places: PLACES_ICON,
+  print: PRINT_ICON,
   product: PRODUCT_ICON,
+  production: PRODUCTION_ICON,
   shopify: SHOPIFY_ICON,
   publish: PUBLISH_ICON,
   tax: TAX_ICON,

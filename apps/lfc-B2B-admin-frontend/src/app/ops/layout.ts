@@ -37,8 +37,11 @@ import type { NodeHealth, NodeKind } from '@lfd/ops-contract';
  */
 const LANE_OF_KIND: Readonly<Record<NodeKind, Lane>> = {
   // Ce qu'on GARDE : bases et stockage. À gauche, ensemble, parce qu'ils se
-  // perdent ensemble et qu'on les regarde ensemble.
+  // perdent ensemble et qu'on les regarde ensemble. Deux natures distinctes —
+  // on requête l'une, on dépose dans l'autre — mais un même couloir : le
+  // commentaire ci-dessus dit « ensemble », et c'est vrai des deux.
   datastore: -1,
+  'object-storage': -1,
   // Ce qu'on APPELLE : les tiers. À droite — leur panne dégrade une fonction,
   // elle n'efface rien.
   'external-api': 1,

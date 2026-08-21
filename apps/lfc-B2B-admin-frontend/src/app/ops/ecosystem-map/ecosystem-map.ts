@@ -57,6 +57,10 @@ const GLYPHS: Readonly<Record<NodeKind, readonly string[]>> = {
     'M4 5c0-1.1 2.7-2 6-2s6 .9 6 2-2.7 2-6 2-6-.9-6-2z',
     'M4 5v10c0 1.1 2.7 2 6 2s6-.9 6-2V5',
   ],
+  // Le stockage d'objets : un bac, et ce qu'on y dépose. Volontairement SANS
+  // cylindre — c'est ce qui le sépare, d'un coup d'œil, de la base de données
+  // juste à côté.
+  'object-storage': ['M3 7h14v10H3z', 'M3 7l2-3h10l2 3', 'M7 11h6', 'M7 14h3'],
   // Le globe : ce qui n'est pas à nous.
   'external-api': [
     'M10 3a7 7 0 100 14 7 7 0 000-14z',

@@ -78,7 +78,13 @@ export const TOPOLOGY: readonly NodeManifest[] = [
   },
   { id: "stripe", kind: "external-api", label: "Stripe", dependsOn: [], probe: { kind: "http" } },
   { id: "resend", kind: "external-api", label: "Resend", dependsOn: [], probe: { kind: "http" } },
-  { id: "r2", kind: "datastore", label: "Stockage R2", dependsOn: [], probe: { kind: "http" } },
+  {
+    id: "r2",
+    kind: "object-storage",
+    label: "Stockage R2",
+    dependsOn: [],
+    probe: { kind: "http" },
+  },
 ];
 
 /**

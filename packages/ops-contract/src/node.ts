@@ -11,6 +11,11 @@ export const nodeKindSchema = z.enum([
   "worker",
   "service",
   "datastore",
+  // Le stockage d'OBJETS — R2 aujourd'hui, un compatible S3 demain, MinIO en
+  // dev. Distinct de `datastore` : on n'y requête pas, on y dépose et on y
+  // reprend. Les confondre les faisait porter le même cylindre sur la carte,
+  // et une carte qui donne le même dessin à deux natures n'apprend rien.
+  "object-storage",
   // Ce qu'un client charge dans son navigateur. Il n'a ni sonde ni battement :
   // sa santé est celle de ce qu'il appelle. Le déclarer quand même, c'est
   // refuser une carte qui s'arrête au premier maillon qu'on possède — or c'est
