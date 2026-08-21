@@ -3,9 +3,9 @@
 // LocalDb → Prisma. Le backend devient la source de vérité ; ce fichier en est
 // le point de départ reproductible. Format compact `Row` = ce que portait le CSV.
 //
-// ⚠️ Slice 1 : seules catégories + produits sont modélisées côté backend. Les
-// régimes de TVA et les presets de canaux (colonnes du POC) arrivent avec les
-// contextes commerce/locations dédiés (slices 2/4/5) et seront ajoutés ici.
+// ⚠️ Slice 1 : seules catégories + produits étaient modélisés côté backend. Les
+// régimes de TVA sont arrivés depuis (contexte commerce) et vivent plus bas ;
+// les presets de canaux attendent toujours le contexte locations.
 
 export interface SeedCategory {
   readonly id: string;
@@ -20,6 +20,46 @@ export const SEED_CATEGORIES: readonly SeedCategory[] = [
   { id: "cat_patis", nameFr: "Pâtisseries", slug: "patisseries", position: 3 },
   { id: "cat_sale", nameFr: "Salé & traiteur", slug: "sale-traiteur", position: 4 },
   { id: "cat_choco", nameFr: "Chocolat & confiserie", slug: "chocolat-confiserie", position: 5 },
+];
+
+/** Un régime de TVA de départ. Le `tag` n'est PAS ici : il se dérive du taux. */
+export interface SeedTvaRegime {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly percent: number;
+}
+
+/**
+ * Les trois taux français de la restauration et de l'alimentaire.
+ *
+ * 5,5 % est le taux de l'alimentaire à emporter ; 10 % celui de la consommation
+ * sur place ; 20 % le taux normal, qui rattrape ce qui n'est pas alimentaire
+ * (confiserie de luxe, boissons alcoolisées, marchandise revendue).
+ *
+ * Ils sont posés **sans être rattachés** à une famille : décider quelle gamme
+ * relève de quel taux est une décision comptable, pas une donnée de départ. Le
+ * seed installe le référentiel, il ne remplit pas la déclaration.
+ */
+export const SEED_TVA_REGIMES: readonly SeedTvaRegime[] = [
+  {
+    id: "tva_reduit",
+    name: "Réduit",
+    description: "Alimentaire à emporter.",
+    percent: 5.5,
+  },
+  {
+    id: "tva_intermediaire",
+    name: "Intermédiaire",
+    description: "Consommation sur place.",
+    percent: 10,
+  },
+  {
+    id: "tva_normal",
+    name: "Normal",
+    description: "Taux plein — non alimentaire, alcools, revente.",
+    percent: 20,
+  },
 ];
 
 export type Row = readonly [
