@@ -10,7 +10,7 @@ import { provideSentry, provideWebVitals } from '@lfd/front-ops';
 
 import { APP_REVISION_VALUE, B2B_API_BASE_VALUE, SENTRY_DSN_VALUE } from './api/api.env.generated';
 import { routes } from './app.routes';
-import { providePimIcons } from './pim/pim-icons';
+import { provideAppIcons } from './shared/icons/app-icons';
 import { provideStaffAuth } from './auth/auth.providers';
 import { staffAuthInterceptor } from './auth/staff-auth.interceptor';
 
@@ -22,7 +22,7 @@ const OPS_NODE = 'b2b-admin-front';
 export const appConfig: ApplicationConfig = {
   providers: [
     // Le catalogue d'icônes du référentiel — il en apporte que fold n'a pas.
-    providePimIcons(),
+    provideAppIcons(),
     // Ce que l'équipe vit vraiment sur cet écran, et ce qui casse dans son
     // navigateur : deux choses qu'aucune sonde ne peut constater du dehors.
     provideWebVitals(OPS_NODE, B2B_API_BASE_VALUE),
