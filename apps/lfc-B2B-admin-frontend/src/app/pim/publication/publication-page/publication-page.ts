@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
 import {
-  FoldEmptyStateComponent,
-  FoldIconComponent,
   FoldNavLayoutComponent,
   FoldPageLayoutComponent,
   FoldTabPanelComponent,
@@ -10,12 +8,16 @@ import {
   type FoldTabItem,
 } from 'fold-ng';
 
+import { PublicationB2b } from '../publication-b2b/publication-b2b';
 import { PublicationShopify } from '../publication-shopify/publication-shopify';
 
 /**
- * Hub de **publication** — le catalogue FOLIE COFFEE poussé vers ses canaux. Un
- * nav-layout (Shopify · Autre) héberge le staging de chaque canal ; aujourd'hui
- * seul Shopify est branché, la caisse / le B2B s'ajouteront comme des onglets.
+ * Hub de **publication** — le catalogue FOLIE COFFEE poussé vers ses canaux.
+ *
+ * Deux canaux réels : Shopify, et la **boutique B2B** — celle qui facture.
+ * L'onglet B2B a longtemps manqué alors que le canal savait pousser côté
+ * serveur : prix, taux de TVA et publications n'avaient donc aucun chemin
+ * jusqu'à la boutique depuis cet écran.
  */
 @Component({
   selector: 'app-publication-page',
@@ -25,8 +27,7 @@ import { PublicationShopify } from '../publication-shopify/publication-shopify';
     FoldNavLayoutComponent,
     FoldTabsComponent,
     FoldTabPanelComponent,
-    FoldEmptyStateComponent,
-    FoldIconComponent,
+    PublicationB2b,
     PublicationShopify,
   ],
   templateUrl: './publication-page.html',
@@ -34,7 +35,7 @@ import { PublicationShopify } from '../publication-shopify/publication-shopify';
 export class PublicationPage {
   protected readonly tabs: FoldTabItem[] = [
     { key: 'shopify', label: 'Shopify', icon: 'shopify' },
-    { key: 'autre', label: 'Autre', icon: 'grid' },
+    { key: 'b2b', label: 'Boutique B2B', icon: 'shopping-cart' },
   ];
   protected readonly activeTab = signal('shopify');
 }

@@ -45,3 +45,48 @@ export interface B2bMembershipView {
    */
   readonly lastPushedAt: string | null;
 }
+
+/**
+ * ── Le push du catalogue vers la boutique ────────────────────────────────────
+ *
+ * Le canal savait pousser côté serveur sans aucun appelant : le back-office ne
+ * poussait que vers Shopify, et un régime de TVA révisé n'atteignait donc
+ * jamais la boutique qui facture. Ces vues sont ce qui manquait pour le
+ * brancher.
+ */
+
+/** Pourquoi un article n'est **pas** parti. Nommé, jamais tu. */
+export type B2bExclusionReason =
+  | "variant_sans_prix"
+  | "variant_arretee"
+  | "produit_sans_variante_vendable"
+  | "famille_inconnue";
+
+export interface B2bExclusionView {
+  readonly sku: string;
+  readonly reason: B2bExclusionReason;
+}
+
+/** Ce que la plateforme a réellement enregistré. */
+export interface B2bIngestionReportView {
+  readonly acceptedProducts: number;
+  readonly acceptedVariants: number;
+  readonly acceptedCategories: number;
+  /** Les SKU retirés de la vente par ce push — nommés, pas comptés. */
+  readonly removedSkus: readonly string[];
+  readonly appliedAt: string;
+}
+
+/**
+ * Le compte rendu d'un push.
+ *
+ * `mode` n'est pas décoratif : c'est le serveur qui tranche entre simulation et
+ * envoi réel, et l'écran doit le redire à chaque fois — sans quoi on croit
+ * pousser pour de vrai.
+ */
+export interface B2bPushSummaryView {
+  readonly mode: "dry-run" | "live";
+  readonly candidates: number;
+  readonly report: B2bIngestionReportView | null;
+  readonly excluded: readonly B2bExclusionView[];
+}

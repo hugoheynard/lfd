@@ -67,6 +67,10 @@ export type {
   SetB2bMembershipPayload,
   SetB2bMembershipsPayload,
   B2bMembershipView,
+  B2bExclusionReason,
+  B2bExclusionView,
+  B2bIngestionReportView,
+  B2bPushSummaryView,
 } from "./b2b-channel.js";
 
 export { pushPayloadSchema, rollbackPayloadSchema } from "./shopify.js";

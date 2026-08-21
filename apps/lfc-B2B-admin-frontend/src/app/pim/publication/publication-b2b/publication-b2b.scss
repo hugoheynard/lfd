@@ -1,0 +1,15 @@
+.lede {
+  margin: 0 0 var(--fold-space-md);
+  color: var(--fold-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-md);
+}
+
+.excluded {
+  margin: var(--fold-space-xs) 0 0;
+  padding-inline-start: var(--fold-space-lg);
+}

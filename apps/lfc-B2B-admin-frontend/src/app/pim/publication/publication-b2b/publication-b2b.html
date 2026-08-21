@@ -1,0 +1,49 @@
+<fold-card>
+  <p class="lede">
+    Le catalogue part vers la <strong>boutique B2B</strong> — celle qui facture. Prix, taux de TVA
+    et publication n'y changent qu'au moment du push : entre deux envois, la boutique vend l'état
+    du dernier.
+  </p>
+
+  <div class="actions">
+    <button foldButton emphasis="soft" [disabled]="busy()" (click)="simulate()">Simuler</button>
+    <button foldButton [disabled]="busy() || !simulated()" (click)="send()">Envoyer</button>
+  </div>
+
+  @if (error(); as message) {
+    <fold-callout variant="alert">{{ message }}</fold-callout>
+  }
+
+  @if (summary(); as s) {
+    <fold-callout [variant]="s.mode === 'dry-run' ? 'info' : 'success'">
+      <strong>{{ s.mode === 'dry-run' ? 'Simulation' : 'Envoi réel' }}</strong> —
+      {{ s.candidates }} produit(s) candidat(s).
+      @if (s.report; as r) {
+        {{ r.acceptedVariants }} article(s) et {{ r.acceptedCategories }} famille(s) enregistrés.
+        @if (r.removedSkus.length > 0) {
+          Retirés de la vente : {{ r.removedSkus.join(', ') }}.
+        }
+      } @else {
+        Rien à envoyer — aucun produit publié.
+      }
+    </fold-callout>
+
+    @if (excluded().length > 0) {
+      <fold-callout variant="warning">
+        <strong>Écartés</strong> — ces articles ne partent pas, et la boutique ne les vendra pas :
+        <ul class="excluded">
+          @for (item of excluded(); track item.sku) {
+            <li><code>{{ item.sku }}</code> — {{ item.label }}</li>
+          }
+        </ul>
+      </fold-callout>
+    }
+  } @else if (!busy()) {
+    <fold-empty-state
+      title="Rien encore envoyé depuis cet écran"
+      subtitle="Simuler d'abord : on voit ce qui partirait et ce qui serait écarté, sans rien changer."
+    >
+      <fold-icon empty-icon name="upload" [size]="40" />
+    </fold-empty-state>
+  }
+</fold-card>

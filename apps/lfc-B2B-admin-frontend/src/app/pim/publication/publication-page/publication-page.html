@@ -21,13 +21,8 @@
       <app-publication-shopify />
     </fold-tab-panel>
 
-    <fold-tab-panel [tabs]="ref" key="autre">
-      <fold-empty-state
-        title="Pas d'autre canal"
-        subtitle="Shopify est le seul canal de publication branché. Caisse, marketplace ou B2B viendront s'ajouter ici comme de nouveaux onglets."
-      >
-        <fold-icon empty-icon name="teams" [size]="40" />
-      </fold-empty-state>
+    <fold-tab-panel [tabs]="ref" key="b2b">
+      <app-publication-b2b />
     </fold-tab-panel>
   </fold-nav-layout>
 </fold-page-layout>
