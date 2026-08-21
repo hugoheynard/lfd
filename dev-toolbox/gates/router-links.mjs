@@ -20,18 +20,20 @@ import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
 
-/** Les apps Angular qui ont un arbre de routes, et où sont leurs gabarits. */
+/**
+ * Les apps Angular à vérifier. Un seul dossier suffit : l'arbre de routes est
+ * lu dans **tous** les `*.routes.ts` qu'il contient, pas seulement
+ * `app.routes.ts`.
+ *
+ * Ça compte : le back-office a éclaté son arbre en fragments de section
+ * (`pim/pim.routes.ts`, `commercial/commercial.routes.ts`…) et le gate, qui ne
+ * lisait que le fichier d'assemblage, a déclaré morts vingt-et-un liens
+ * parfaitement valides. Chaque fragment déclare des chemins de premier niveau
+ * complets, donc l'union des fichiers redonne l'arbre.
+ */
 const APPS = [
-  {
-    name: "lfc-b2b-admin-frontend",
-    routes: "apps/lfc-B2B-admin-frontend/src/app/app.routes.ts",
-    templates: "apps/lfc-B2B-admin-frontend/src/app",
-  },
-  {
-    name: "lfc-b2b-platform-frontend",
-    routes: "apps/lfc-B2B-platform-frontend/src/app/app.routes.ts",
-    templates: "apps/lfc-B2B-platform-frontend/src/app",
-  },
+  { name: "lfc-b2b-admin-frontend", root: "apps/lfc-B2B-admin-frontend/src/app" },
+  { name: "lfc-b2b-platform-frontend", root: "apps/lfc-B2B-platform-frontend/src/app" },
 ];
 
 /**
@@ -88,14 +90,14 @@ function matches(link, declared) {
   return false;
 }
 
-function* walk(dir) {
+function* walk(dir, suffix) {
   for (const entry of readdirSync(dir)) {
     const path = join(dir, entry);
     if (statSync(path).isDirectory()) {
       if (entry !== "node_modules" && entry !== "dist") {
-        yield* walk(path);
+        yield* walk(path, suffix);
       }
-    } else if (path.endsWith(".html")) {
+    } else if (path.endsWith(suffix)) {
       yield path;
     }
   }
@@ -105,12 +107,18 @@ let broken = 0;
 let checked = 0;
 
 for (const app of APPS) {
-  const declared = declaredPaths(readFileSync(join(ROOT, app.routes), "utf8"));
+  const root = join(ROOT, app.root);
+  const declared = new Set();
+  for (const file of walk(root, ".routes.ts")) {
+    for (const path of declaredPaths(readFileSync(file, "utf8"))) {
+      declared.add(path);
+    }
+  }
   if (declared.size === 0) {
     console.error(`✖ ${app.name} : aucune route lue — le gate ne sait plus lire l'arbre.`);
     process.exit(1);
   }
-  for (const file of walk(join(ROOT, app.templates))) {
+  for (const file of walk(root, ".html")) {
     const source = readFileSync(file, "utf8");
     for (const [, link] of source.matchAll(/\srouterLink="(\/[^"]*)"/g)) {
       checked += 1;
