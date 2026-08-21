@@ -17,6 +17,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { NotifyService } from '../../../../notify.service';
 import { formatPercent } from '../../../data/channels';
 import { type TvaRate } from '../../catalogue-api';
 import { TvaStore } from '../tva-store';
@@ -56,6 +57,7 @@ export interface TvaRatePanelData {
 export class TvaRateFormPanel {
   private readonly store = inject(TvaStore);
   private readonly ref = inject(FoldPanelRef);
+  private readonly notify = inject(NotifyService);
 
   /** Le taux visé ; absent = création. */
   readonly data = input<TvaRatePanelData | undefined>(undefined);
@@ -65,7 +67,6 @@ export class TvaRateFormPanel {
   protected readonly draftPercent = signal<number | null>(null);
   /** Saisie de confirmation de suppression (doit égaler le nom du taux). */
   protected readonly confirmName = signal('');
-  protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   /** La zone dangereuse reste repliée : on ne supprime pas par inadvertance. */
   protected readonly dangerOpen = signal(false);
@@ -137,15 +138,22 @@ export class TvaRateFormPanel {
     this.ref.close();
   }
 
-  /** Le va-et-vient commun : occupé, erreur affichée, panneau fermé si ça passe. */
+  /**
+   * Le va-et-vient commun : occupé, panneau fermé si ça passe, toast sinon.
+   *
+   * Le panneau **reste ouvert** sur un refus, et c'est le point : le message dit
+   * pourquoi (« Un taux de TVA existe déjà à 5,5 % »), et le champ est encore là
+   * pour corriger. Le message part en toast plutôt qu'en bandeau interne — il
+   * s'efface tout seul, alors qu'un bandeau resterait sous les yeux après la
+   * correction.
+   */
   private async run(action: () => Promise<void>): Promise<void> {
     this.busy.set(true);
-    this.error.set(null);
     try {
       await action();
       this.ref.close(true);
     } catch (caught) {
-      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
+      this.notify.refused(caught, 'Opération refusée.');
     } finally {
       this.busy.set(false);
     }

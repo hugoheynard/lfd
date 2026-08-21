@@ -1,12 +1,6 @@
 <fold-panel-header [title]="heading()" [subtitle]="subtitle()" />
 
 <div class="body">
-  @if (error(); as message) {
-    <fold-callout appearance="inset" variant="alert" role="alert">
-      {{ message }}
-    </fold-callout>
-  }
-
   <fold-input
     label="Nom"
     placeholder="ex. Réduit"
@@ -55,8 +49,8 @@
           <fold-callout appearance="inset" variant="alert">
             <strong>Action irréversible.</strong> Aucune famille ne vise «&nbsp;{{
               rate()?.name
-            }}&nbsp;» ({{ percentLabel() }}), donc rien ne perd sa référence de taxe. La collection de taxe
-            correspondante restera en place côté Shopify&nbsp;: elle devient orpheline, et
+            }}&nbsp;» ({{ percentLabel() }}), donc rien ne perd sa référence de taxe. La collection
+            de taxe correspondante restera en place côté Shopify&nbsp;: elle devient orpheline, et
             Publication la signalera.
           </fold-callout>
 

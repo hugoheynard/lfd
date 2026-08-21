@@ -33,4 +33,24 @@ export class NotifyService {
     }
     this.toasts.show(httpErrorMessage(error, fallback), 'error');
   }
+
+  /**
+   * Opération **refusée** — et l'utilisateur peut la corriger tout de suite :
+   * un taux qui existe déjà, un nom en double. Même ton d'alerte que
+   * {@link error}, mais le toast **s'efface** : la règle est comprise en une
+   * lecture, et le geste suivant est la correction. Un bandeau collant à
+   * refermer par-dessus serait une punition pour une faute de saisie.
+   *
+   * Sans risque pour la lisibilité : le compte à rebours de `fold-toast` se met
+   * en pause tant que le pointeur ou le clavier est dessus (WCAG 2.2.1).
+   */
+  refused(error: unknown, fallback?: string): void {
+    if (isDevMode()) {
+      console.error('[notify] opération refusée', error);
+    }
+    this.toasts.show(httpErrorMessage(error, fallback), 'error', REFUSAL_MS);
+  }
 }
+
+/** De quoi lire une phrase sans se presser, sans rester en travers de l'écran. */
+const REFUSAL_MS = 6000;

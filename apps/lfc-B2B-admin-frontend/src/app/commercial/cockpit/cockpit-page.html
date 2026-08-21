@@ -53,9 +53,9 @@
         <section class="ck-main ck-block">
           <div class="ck-h2-row">
             <h2 class="ck-h2">
-                <fold-icon name="gauge" [size]="16" tone="muted" />
-                Les coups du jour
-              </h2>
+              <fold-icon name="gauge" [size]="16" tone="muted" />
+              Les coups du jour
+            </h2>
             @if (computedAt(); as at) {
               <span class="ck-fresh">Recalculé le {{ freshnessLabel(at) }}</span>
             }
