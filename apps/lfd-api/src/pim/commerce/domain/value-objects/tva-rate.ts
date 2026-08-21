@@ -52,7 +52,12 @@ export class TvaRate {
 /**
  * Au-delà de deux décimales le taux n'a plus de sens comptable, et le tag
  * dérivé devient une chaîne fragile (`tva-5-4999999`).
+ *
+ * ⚠️ Surtout PAS `Number.isInteger(percent * 100)` : la multiplication
+ * flottante ment. `4.85 * 100` vaut `484.99999999999994`, et ce taux — deux
+ * décimales, parfaitement légitime — se faisait refuser. On repasse par la
+ * décimale, qui arrondit là où la binaire dérive.
  */
 function hasAtMostTwoDecimals(percent: number): boolean {
-  return Number.isInteger(percent * 10 ** MAX_DECIMALS);
+  return Number(percent.toFixed(MAX_DECIMALS)) === percent;
 }
