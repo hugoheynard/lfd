@@ -62,6 +62,8 @@ export type {
   ProductEditorialView,
   ProductDetailView,
   ProductMediaView,
+  MediaFactsView,
+  UploadedMediaView,
   SetProductMediaPayload,
 } from "./product.js";
 

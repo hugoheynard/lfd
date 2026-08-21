@@ -20,6 +20,7 @@ import { PublishProductHandler } from "./product/application/publish-product.js"
 import { UnpublishProductHandler } from "./product/application/unpublish-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
 import { SetProductMediaHandler } from "./product/application/set-product-media.js";
+import { UploadProductImageHandler } from "./product/application/upload-product-image.js";
 import { UpdateProductEditorialHandler } from "./product/application/update-product-editorial.js";
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
 import { UpdateVariantPricingHandler } from "./product/application/update-variant-pricing.js";
@@ -27,15 +28,18 @@ import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
 import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
+import { MediaLibrary } from "./product/domain/ports/media-library.js";
 import { NutritionRepository } from "./product/domain/ports/nutrition.repository.js";
 import { ProductRepository } from "./product/domain/ports/product.repository.js";
 import { CategoryController } from "./category/http/category.controller.js";
+import { MediaController } from "./product/http/media.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
 import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial-reader.js";
 import { PrismaEditorialRepository } from "./product/infrastructure/prisma-editorial.repository.js";
+import { PrismaMediaLibrary } from "./product/infrastructure/prisma-media-library.js";
 import { PrismaNutritionRepository } from "./product/infrastructure/prisma-nutrition.repository.js";
 import { PrismaProductRepository } from "./product/infrastructure/prisma-product.repository.js";
 import {
@@ -52,7 +56,7 @@ import {
  */
 @Module({
   imports: [PimDatabaseModule, CommerceModule],
-  controllers: [CategoryController, ProductController, ReferenceController],
+  controllers: [CategoryController, MediaController, ProductController, ReferenceController],
   providers: [
     // Familles (CQRS) — un handler par cas.
     CreateCategoryHandler,
@@ -68,6 +72,7 @@ import {
     UpdateProductIdentityHandler,
     UpdateVariantPricingHandler,
     SetProductMediaHandler,
+    UploadProductImageHandler,
     UpdateProductEditorialHandler,
     DeclareProductNutritionHandler,
     ArchiveProductHandler,
@@ -78,6 +83,7 @@ import {
     GetProductDetailHandler,
     { provide: PimIdGenerator, useClass: UuidV7Generator },
     { provide: CategoryRepository, useClass: PrismaCategoryRepository },
+    { provide: MediaLibrary, useClass: PrismaMediaLibrary },
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },

@@ -62,12 +62,25 @@ export class PrismaEditorialRepository extends EditorialRepository {
     await this.attach(productId, media);
   }
 
-  /** Crée l'actif puis son lien, dans l'ordre reçu. */
+  /**
+   * Crée l'actif puis son lien, dans l'ordre reçu.
+   *
+   * Une ligne par lien, et non une ligne partagée : le `alt` appartient à la
+   * FICHE (c'est ainsi que CE produit décrit l'image), et partager la ligne
+   * ferait qu'en corriger un changerait silencieusement l'autre. La
+   * déduplication qui compte se fait dans le bucket, par l'adressage par
+   * contenu — les mêmes octets ne sont stockés qu'une fois.
+   *
+   * Les faits techniques, eux, sont **relus** depuis l'inscription faite au
+   * dépôt plutôt que renvoyés par le navigateur : le serveur les a mesurés dans
+   * les octets, il n'a aucune raison de les redemander à un écran.
+   */
   private async attach(productId: string, media: readonly MediaItem[]): Promise<void> {
     for (const item of media) {
       const mediaId = this.ids.next();
+      const facts = await this.factsFor(item.url);
       await this.prisma.mediaAsset.create({
-        data: { id: mediaId, url: item.url, alt: localizedColumn(item.alt) },
+        data: { id: mediaId, url: item.url, alt: localizedColumn(item.alt), ...facts },
       });
       await this.prisma.productMedia.create({
         data: {
@@ -78,5 +91,27 @@ export class PrismaEditorialRepository extends EditorialRepository {
         },
       });
     }
+  }
+
+  /**
+   * Ce qu'on sait déjà de cette URL, ou des colonnes vides.
+   *
+   * Vide est le cas normal d'un visuel saisi à la main : on n'héberge pas cet
+   * octet, on ne l'a pas mesuré, et aller le télécharger pour le mesurer serait
+   * une requête sortante par visuel à chaque enregistrement de fiche.
+   */
+  private async factsFor(url: string): Promise<{
+    storageKey: string | null;
+    contentType: string | null;
+    width: number | null;
+    height: number | null;
+    bytes: number | null;
+  }> {
+    const known = await this.prisma.mediaAsset.findFirst({
+      where: { url, storageKey: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { storageKey: true, contentType: true, width: true, height: true, bytes: true },
+    });
+    return known ?? { storageKey: null, contentType: null, width: null, height: null, bytes: null };
   }
 }

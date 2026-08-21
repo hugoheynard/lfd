@@ -55,6 +55,10 @@ export class PrismaEditorialReader extends EditorialReader {
       url: row.media.url,
       // L'alternative est stockée localisée ; le back-office est monolingue FR.
       alt: frOf(row.media.alt) ?? "",
+      width: row.media.width,
+      height: row.media.height,
+      bytes: row.media.bytes,
+      contentType: row.media.contentType,
     }));
   }
 }

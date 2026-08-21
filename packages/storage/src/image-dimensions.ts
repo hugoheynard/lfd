@@ -29,9 +29,19 @@ export function imageDimensions(buffer: Buffer): ImageDimensions | null {
   );
 }
 
-/** PNG: IHDR is always the first chunk — width/height at 16, big-endian u32. */
+/**
+ * PNG: IHDR is always the first chunk — width/height at 16, big-endian u32.
+ *
+ * The full 8-byte signature is required, not just the first four: the trailing
+ * `0d 0a 1a 0a` is what catches a file mangled by a CRLF-translating transfer,
+ * and matching on four bytes would let `sniffContentType` and this disagree
+ * about what a PNG is.
+ */
 function pngDimensions(buffer: Buffer): ImageDimensions | null {
-  if (buffer.length < 24 || buffer.readUInt32BE(0) !== 0x89504e47) {
+  if (buffer.length < 24) {
+    return null;
+  }
+  if (buffer.readUInt32BE(0) !== 0x89504e47 || buffer.readUInt32BE(4) !== 0x0d0a1a0a) {
     return null;
   }
   return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };

@@ -131,12 +131,37 @@ export interface ProductEditorialView {
   readonly seoDescription: string | null;
 }
 
+/**
+ * Ce qu'on a constaté d'un visuel qu'on héberge. Tout est nullable : un visuel
+ * saisi par son URL n'a rien de tout ça, et `null` veut dire « pas mesuré »,
+ * jamais « zéro » — un écran ne doit pas le coercer en dimension.
+ */
+export interface MediaFactsView {
+  readonly width: number | null;
+  readonly height: number | null;
+  readonly bytes: number | null;
+  readonly contentType: string | null;
+}
+
 /** Un visuel attaché à un produit, tel que l'écran le lit et le renvoie. */
-export interface ProductMediaView {
+export interface ProductMediaView extends MediaFactsView {
   /** `hero`, `gallery`, `lifestyle`, `thumbnail`, `print`. */
   readonly role: string;
   readonly url: string;
   readonly alt: string;
+}
+
+/**
+ * Ce que rend un dépôt d'image : l'entrée de bibliothèque créée.
+ *
+ * L'écran n'a plus qu'à l'ajouter à sa liste et à enregistrer la section. Les
+ * dimensions viennent d'ici et **ne repartent pas** dans l'enregistrement : le
+ * serveur les a mesurées, il les relira lui-même au rattachement plutôt que de
+ * les redemander à un navigateur qui pourrait en dire autre chose.
+ */
+export interface UploadedMediaView extends MediaFactsView {
+  readonly id: string;
+  readonly url: string;
 }
 
 /** Détail enrichi (socle + éditorial + visuels) — pour la page d'édition. */

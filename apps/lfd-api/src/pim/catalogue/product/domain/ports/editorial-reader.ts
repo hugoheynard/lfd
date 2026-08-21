@@ -14,11 +14,21 @@ export interface ProductEditorialView {
   readonly seoDescription: string | null;
 }
 
-/** Un visuel attaché, rendu à plat et dans l'ordre d'affichage. */
+/**
+ * Un visuel attaché, rendu à plat et dans l'ordre d'affichage.
+ *
+ * Les dimensions accompagnent l'URL parce qu'elles ne servent qu'ensemble :
+ * sans elles, l'écran ne peut pas réserver la place du visuel et la fiche saute
+ * au chargement. `null` = pas mesuré (visuel saisi par son URL), jamais zéro.
+ */
 export interface ProductMediaRecord {
   readonly role: string;
   readonly url: string;
   readonly alt: string;
+  readonly width: number | null;
+  readonly height: number | null;
+  readonly bytes: number | null;
+  readonly contentType: string | null;
 }
 
 export abstract class EditorialReader {

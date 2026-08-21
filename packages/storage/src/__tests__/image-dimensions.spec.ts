@@ -5,6 +5,7 @@ import { sha256Hex, extensionForMime, contentAddressedKey } from "../content-add
 function png(width: number, height: number): Buffer {
   const buffer = Buffer.alloc(24);
   buffer.writeUInt32BE(0x89504e47, 0);
+  buffer.writeUInt32BE(0x0d0a1a0a, 4);
   buffer.writeUInt32BE(width, 16);
   buffer.writeUInt32BE(height, 20);
   return buffer;

@@ -2836,6 +2836,13 @@ model ProductEditorial {
 /// Agrégat propre : un visuel a son cycle de vie (upload, CDN) et peut servir
 /// plusieurs produits. On stocke le **master** + un point focal ; les tailles
 /// dérivées sont calculées par chaque canal, jamais ressaisies.
+/// Un visuel. `url` est ce que consomment le front et les canaux ; le reste
+/// décrit l'objet, et n'est renseigné que pour ce que NOUS hébergeons.
+///
+/// Les colonnes techniques sont toutes nullables, et c'est le modèle : une URL
+/// saisie à la main (tout ce qui existait avant le stockage média) n'a ni clé,
+/// ni type constaté, ni dimensions. `null` veut dire « pas mesuré », jamais
+/// « zéro » — un consommateur ne doit pas le coercer en taille.
 model MediaAsset {
   id     String @id
   url    String
@@ -2843,10 +2850,23 @@ model MediaAsset {
   focalX Float? @map("focal_x")
   focalY Float? @map("focal_y")
 
+  /// La clé dans le bucket média — `products/{sha256}.{ext}`. `null` ⇒ l'octet
+  /// n'est pas chez nous. C'est par elle qu'un ramassage d'orphelins saura un
+  /// jour quel objet R2 plus aucune fiche ne référence.
+  storageKey String? @map("storage_key")
+  /// Type MIME **constaté dans les octets** au dépôt, jamais annoncé.
+  contentType String? @map("content_type")
+  /// Taille intrinsèque, lue dans l'en-tête au dépôt. Sans elle, une galerie ne
+  /// peut pas réserver sa place et la fiche saute au chargement des images.
+  width  Int?
+  height Int?
+  bytes  Int?
+
   products ProductMedia[]
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([url])
   @@map("media_asset")
 
   @@schema("pim")
