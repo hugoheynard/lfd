@@ -75,8 +75,11 @@ describe("sniffContentType", () => {
       expect(sniffContentType(withHeader([0xff, 0xd8, 0xff, 0xe0]))).toBe("image/jpeg");
     });
 
-    it("rejects RIFF containers that are not WAVE (webp/avi)", () => {
-      expect(sniffContentType(riff("WEBP"))).toBeNull();
+    it("classifies RIFF/WEBP as an image, and still rejects other RIFF (avi)", () => {
+      // WEBP was rejected until product imagery needed it: matching "RIFF" alone
+      // would have claimed AVI too, so each container is claimed by its OWN
+      // secondary marker, never by the envelope.
+      expect(sniffContentType(riff("WEBP"))).toBe("image/webp");
       expect(sniffContentType(riff("AVI "))).toBeNull();
     });
 

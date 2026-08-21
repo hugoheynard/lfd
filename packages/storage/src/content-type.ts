@@ -6,7 +6,9 @@
  * allow-list (a hostile `.html`/`.svg` sniffs to `null` → rejected).
  *
  * Deliberately a small, dependency-free table covering exactly the types we
- * accept. ZIP-container formats (docx/xlsx) sniff to `application/zip` — they
+ * accept. ⚠️ AVIF and HEIC are `ftyp`-based like MP4, and the `ftyp` branch
+ * below claims them as `audio/mp4` — they must NOT be added to an image
+ * allow-list without first splitting that branch on its brand box. ZIP-container formats (docx/xlsx) sniff to `application/zip` — they
  * are NOT distinguishable from any other zip by header alone; supporting them
  * would require inspecting the archive (e.g. the `file-type` lib). Out of scope
  * until a real need appears.
@@ -54,6 +56,12 @@ export function sniffContentType(buffer: Buffer): string | null {
     matchesAt(buffer, [0x41, 0x49, 0x46, 0x46], 8)
   ) {
     return "audio/aiff"; // FORM....AIFF
+  }
+  if (
+    matchesAt(buffer, [0x52, 0x49, 0x46, 0x46], 0) &&
+    matchesAt(buffer, [0x57, 0x45, 0x42, 0x50], 8)
+  ) {
+    return "image/webp"; // RIFF....WEBP
   }
   if (matchesAt(buffer, [0x66, 0x74, 0x79, 0x70], 4)) {
     return "audio/mp4"; // ....ftyp (m4a / mp4)
