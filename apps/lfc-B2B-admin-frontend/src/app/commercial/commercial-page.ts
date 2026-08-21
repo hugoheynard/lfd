@@ -9,7 +9,6 @@ import {
   type FoldIconName,
   type FoldViewNavItem,
 } from 'fold-ng';
-import { narrowViewport } from '../shared/viewport/narrow-viewport';
 
 /** Un onglet, plus ce que la page doit en dire — titre et intro vivent ICI. */
 interface CommercialTab extends FoldViewNavItem {
@@ -86,12 +85,18 @@ const TABS: CommercialTab[] = [
 
 /**
  * Le **poste de travail commercial** : un `fold-page-layout` dont l'en-tête suit
- * la vue affichée, une **barre horizontale en `fill`**, et le corps de la vue.
+ * la vue affichée, un **rail latéral**, et le corps de la vue.
  *
- * Le rail latéral a été essayé puis abandonné : les pastilles pleines tiennent
- * parce qu'elles se posent SUR la première carte de la vue — même composition
- * que Réglages → Commercial. En rail, la nav et le contenu redevenaient deux
- * blocs séparés par du vide.
+ * Le rail avait été essayé puis abandonné au profit d'une barre horizontale en
+ * `fill` — les pastilles pleines tenaient parce qu'elles se posaient SUR la
+ * première carte de la vue. Retour au rail le 2026-08-21, pour s'aligner sur le
+ * PIM : deux sections à onglets qui ne se rangeaient pas pareil obligeaient à
+ * réapprendre l'écran en changeant de section, ce qui coûte plus cher que le
+ * blanc entre la nav et la première carte.
+ *
+ * Une différence avec le PIM demeure, et elle est structurelle : là-bas le rail
+ * EST la page (chaque vue porte son propre `fold-page-layout`), ici il vit
+ * DEDANS — les vues du Commercial n'ont plus d'en-tête à elles.
  *
  * L'en-tête appartient au **shell**, et c'est le point : chaque vue affichait son
  * propre `<h1>` sous un onglet qui portait déjà son nom, et sous un titre de page
@@ -110,17 +115,6 @@ const TABS: CommercialTab[] = [
 })
 export class CommercialPage {
   private readonly router = inject(Router);
-
-  /**
-   * Barre repliée en accordéon d'icônes sur un écran étroit : chaque onglet
-   * tombe à son icône, sauf l'actif qui garde son libellé.
-   *
-   * Une barre horizontale qui déborde devient défilante — donc des onglets
-   * qu'on ne voit qu'en balayant, sans savoir qu'ils sont là. Repliée, ils
-   * tiennent tous à l'écran, et le seul libellé qui compte vraiment — celui de
-   * la page où l'on est — reste lisible.
-   */
-  protected readonly navCollapsed = narrowViewport();
 
   protected readonly tabs: FoldViewNavItem[] = TABS;
 

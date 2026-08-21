@@ -1,24 +1,30 @@
 <fold-page-layout [icon]="current().icon" [title]="current().label">
   <p description>{{ current().description }}</p>
 
-  <!-- Barre horizontale en `fill`, comme Réglages → Commercial : les pastilles
-       pleines se posent DIRECTEMENT sur la première carte de la vue. C'est ce
-       contact qui fait tenir la composition — un rail latéral ou une barre
-       soulignée laissaient un blanc entre la nav et le contenu, et la page
-       repartait de zéro sous le menu.
+  <!-- Rail latéral, comme le PIM — mais DANS le `fold-page-layout`, et c'est la
+       seule façon possible ici : les vues du Commercial n'ont plus d'en-tête à
+       elles (le shell porte titre et intro, tirés de la table des onglets).
+       Sortir le rail du page-layout, comme fait le PIM, effacerait le titre de
+       chaque vue.
 
-       D'où le `gap` serré ci-dessous plutôt que le rythme de page : la nav
-       n'est pas un bloc de plus, elle appartient au bloc qui suit. -->
-  <fold-nav-layout>
+       `placement="side"` replie DE LUI-MÊME en barre horizontale sous 56rem, et
+       sur la largeur du LAYOUT plutôt que du viewport. Le view-nav garde
+       `direction="auto"` : il lit le layout par DI et bascule vertical ↔
+       horizontal seul — d'où la disparition du `direction="horizontal"` et du
+       repli calculé sur le viewport, qui faisaient ce travail à la main.
+
+       `underline` sur fond transparent remplace les pastilles pleines : leur
+       raison d'être était de se poser SUR la première carte de la vue, une
+       composition qui n'existe plus dès que la nav passe sur le côté. -->
+  <fold-nav-layout #nav placement="side" [foldAt]="896">
     <fold-view-nav
       tabNav
       class="cm-tabs"
       [items]="tabs"
-      direction="horizontal"
+      [collapsed]="nav.stacked()"
       size="comfortable"
-      [collapsed]="navCollapsed()"
-      activeStyle="fill"
-      background="surface"
+      activeStyle="underline"
+      background="transparent"
     />
 
     <router-outlet />
