@@ -10,13 +10,17 @@ export type { TvaRegimePayload, TvaRegimeView } from "./commerce.js";
 
 export {
   createCategoryPayloadSchema,
+  moveCategoryPayloadSchema,
   renameCategoryPayloadSchema,
+  reorderCategoriesPayloadSchema,
   setCategoryChannelsPayloadSchema,
   setCategoryTvaPayloadSchema,
 } from "./category.js";
 export type {
   CreateCategoryPayload,
+  MoveCategoryPayload,
   RenameCategoryPayload,
+  ReorderCategoriesPayload,
   SetCategoryChannelsPayload,
   SetCategoryTvaPayload,
   CategoryView,

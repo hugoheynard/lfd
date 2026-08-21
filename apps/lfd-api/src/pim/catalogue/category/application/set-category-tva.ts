@@ -16,7 +16,8 @@ export class SetCategoryTvaCommand {
 /**
  * Règle les deux régimes de TVA d'une famille en un geste. Chaque référence
  * non nulle est **validée** contre le contexte commerce (`requireRegime`) : on
- * ne pointe jamais un régime fantôme. `null` efface la référence.
+ * ne pointe jamais un régime fantôme, et l'agrégat ne peut pas le savoir seul.
+ * `null` efface la référence.
  */
 @CommandHandler(SetCategoryTvaCommand)
 export class SetCategoryTvaHandler implements ICommandHandler<SetCategoryTvaCommand, void> {
@@ -26,13 +27,14 @@ export class SetCategoryTvaHandler implements ICommandHandler<SetCategoryTvaComm
   ) {}
 
   async execute(command: SetCategoryTvaCommand): Promise<void> {
-    await requireCategory(this.categories, command.id);
+    const category = await requireCategory(this.categories, command.id);
     if (command.emporterTvaId !== null) {
       await requireRegime(this.regimes, command.emporterTvaId);
     }
     if (command.surPlaceTvaId !== null) {
       await requireRegime(this.regimes, command.surPlaceTvaId);
     }
-    await this.categories.setTva(command.id, command.emporterTvaId, command.surPlaceTvaId);
+    category.setTva(command.emporterTvaId, command.surPlaceTvaId);
+    await this.categories.save(category);
   }
 }

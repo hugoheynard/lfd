@@ -1,13 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import {
-  CategoryRepository,
-  type CategoryRecord,
-  type NewCategory,
-} from "../domain/ports/category.repository.js";
-import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
-import type { SalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
+import { Category, type CategorySnapshot } from "../domain/entities/category.js";
+import { CategoryRepository } from "../domain/ports/category.repository.js";
 import {
   localizedColumn,
   readLocalizedColumn,
@@ -27,8 +22,8 @@ interface CategoryRow {
   surPlaceTvaId: string | null;
 }
 
-function toRecord(row: CategoryRow): CategoryRecord {
-  return {
+function toCategory(row: CategoryRow): Category {
+  return Category.reconstitute({
     id: row.id,
     name: readLocalizedColumn(row.name, "category.name"),
     slug: readLocalizedColumn(row.slug, "category.slug"),
@@ -38,6 +33,20 @@ function toRecord(row: CategoryRow): CategoryRecord {
     channelPreset: readSalesChannelsColumn(row.channelPreset, "category.channelPreset"),
     emporterTvaId: row.emporterTvaId,
     surPlaceTvaId: row.surPlaceTvaId,
+  });
+}
+
+/** Les colonnes que l'agrégat possède — l'id n'en est pas une, il identifie. */
+function toColumns(snapshot: CategorySnapshot) {
+  return {
+    name: localizedColumn(snapshot.name),
+    slug: localizedColumn(snapshot.slug),
+    parentId: snapshot.parentId,
+    position: snapshot.position,
+    isArchived: snapshot.isArchived,
+    channelPreset: salesChannelsColumn(snapshot.channelPreset),
+    emporterTvaId: snapshot.emporterTvaId,
+    surPlaceTvaId: snapshot.surPlaceTvaId,
   };
 }
 
@@ -47,61 +56,46 @@ export class PrismaCategoryRepository extends CategoryRepository {
     super();
   }
 
-  async findById(id: string): Promise<CategoryRecord | null> {
+  async findById(id: string): Promise<Category | null> {
     const row = await this.prisma.category.findUnique({ where: { id } });
-    return row === null ? null : toRecord(row);
+    return row === null ? null : toCategory(row);
   }
 
-  async listAll(): Promise<CategoryRecord[]> {
-    const rows = await this.prisma.category.findMany({
-      orderBy: [{ position: "asc" }],
-    });
-    return rows.map(toRecord);
+  async listAll(): Promise<Category[]> {
+    const rows = await this.prisma.category.findMany({ orderBy: [{ position: "asc" }] });
+    return rows.map(toCategory);
   }
 
-  async insert(category: NewCategory): Promise<void> {
-    await this.prisma.category.create({
-      data: {
-        id: category.id,
-        name: localizedColumn(category.name),
-        slug: localizedColumn(category.slug),
-        parentId: category.parentId,
-        position: category.position,
-        channelPreset: salesChannelsColumn(category.channelPreset),
-      },
-    });
+  async add(category: Category): Promise<void> {
+    const snapshot = category.snapshot();
+    await this.prisma.category.create({ data: { id: snapshot.id, ...toColumns(snapshot) } });
   }
 
-  async rename(id: string, name: LocalizedText, slug: LocalizedText): Promise<void> {
+  async save(category: Category): Promise<void> {
+    const snapshot = category.snapshot();
     await this.prisma.category.update({
-      where: { id },
-      data: { name: localizedColumn(name), slug: localizedColumn(slug) },
+      where: { id: snapshot.id },
+      data: toColumns(snapshot),
     });
   }
 
-  async archive(id: string): Promise<void> {
-    await this.prisma.category.update({
-      where: { id },
-      data: { isArchived: true },
-    });
-  }
-
-  async setChannels(id: string, channels: SalesChannels): Promise<void> {
-    await this.prisma.category.update({
-      where: { id },
-      data: { channelPreset: salesChannelsColumn(channels) },
-    });
-  }
-
-  async setTva(
-    id: string,
-    emporterTvaId: string | null,
-    surPlaceTvaId: string | null,
-  ): Promise<void> {
-    await this.prisma.category.update({
-      where: { id },
-      data: { emporterTvaId, surPlaceTvaId },
-    });
+  /**
+   * Une seule transaction : une fratrie à moitié renumérotée porterait des
+   * rangs en double, et l'ordre affiché deviendrait celui de l'insertion.
+   */
+  async saveAll(categories: readonly Category[]): Promise<void> {
+    if (categories.length === 0) {
+      return;
+    }
+    await this.prisma.$transaction(
+      categories.map((category) => {
+        const snapshot = category.snapshot();
+        return this.prisma.category.update({
+          where: { id: snapshot.id },
+          data: toColumns(snapshot),
+        });
+      }),
+    );
   }
 
   async countActiveProducts(id: string): Promise<number> {

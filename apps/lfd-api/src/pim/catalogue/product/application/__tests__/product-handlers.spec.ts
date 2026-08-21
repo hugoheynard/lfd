@@ -1,13 +1,9 @@
+import { ProductNotFoundError, VariantNotFoundError } from "../../domain/errors/product-errors.js";
 import {
   CategoryArchivedError,
   CategoryNotFoundError,
-  ProductNotFoundError,
-  VariantNotFoundError,
-} from "../../../shared/domain/errors/catalogue-errors.js";
-import type {
-  CategoryRecord,
-  NewCategory,
-} from "../../../category/domain/ports/category.repository.js";
+} from "../../../category/domain/errors/category-errors.js";
+import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
 import { NutritionRepository } from "../../domain/ports/nutrition.repository.js";
@@ -134,59 +130,47 @@ const NO_CHANNELS = {
 };
 
 class FakeCategoryRepository extends CategoryRepository {
-  findById(id: string): Promise<CategoryRecord | null> {
+  /** Deux familles suffisent aux verbes produit : une vivante, une archivée. */
+  private static family(id: string, name: string, isArchived: boolean): Category {
+    return Category.reconstitute({
+      id,
+      name: { fr: name },
+      slug: { fr: name.toLowerCase() },
+      parentId: null,
+      position: 0,
+      isArchived,
+      channelPreset: NO_CHANNELS,
+      emporterTvaId: null,
+      surPlaceTvaId: null,
+    });
+  }
+
+  findById(id: string): Promise<Category | null> {
     if (id === "cat_active") {
-      return Promise.resolve({
-        id,
-        name: { fr: "Boissons" },
-        slug: { fr: "boissons" },
-        parentId: null,
-        position: 1,
-        isArchived: false,
-        channelPreset: NO_CHANNELS,
-        emporterTvaId: null,
-        surPlaceTvaId: null,
-      });
+      return Promise.resolve(FakeCategoryRepository.family(id, "Boissons", false));
     }
     if (id === "cat_archived") {
-      return Promise.resolve({
-        id,
-        name: { fr: "Ancien" },
-        slug: { fr: "ancien" },
-        parentId: null,
-        position: 2,
-        isArchived: true,
-        channelPreset: NO_CHANNELS,
-        emporterTvaId: null,
-        surPlaceTvaId: null,
-      });
+      return Promise.resolve(FakeCategoryRepository.family(id, "Ancien", true));
     }
     return Promise.resolve(null);
   }
-  listAll(): Promise<CategoryRecord[]> {
+  listAll(): Promise<Category[]> {
     return Promise.resolve([]);
   }
-  insert(category: NewCategory): Promise<void> {
-    void category;
+  add(): Promise<void> {
     return Promise.resolve();
   }
-  rename(): Promise<void> {
+  save(): Promise<void> {
     return Promise.resolve();
   }
-  archive(): Promise<void> {
-    return Promise.resolve();
-  }
-  setChannels(): Promise<void> {
-    return Promise.resolve();
-  }
-  setTva(): Promise<void> {
+  saveAll(): Promise<void> {
     return Promise.resolve();
   }
   countActiveProducts(): Promise<number> {
     return Promise.resolve(0);
   }
   nextPosition(): Promise<number> {
-    return Promise.resolve(1);
+    return Promise.resolve(0);
   }
 }
 

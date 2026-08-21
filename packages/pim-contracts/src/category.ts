@@ -37,6 +37,27 @@ export const setCategoryTvaPayloadSchema = z.object({
 });
 export type SetCategoryTvaPayload = z.infer<typeof setCategoryTvaPayloadSchema>;
 
+/**
+ * Déplacer une famille. `parentId: null` = remonter à la racine — d'où le
+ * `nullable()` plutôt qu'un champ absent : « pas de parent » est une valeur,
+ * pas une omission.
+ */
+export const moveCategoryPayloadSchema = z.object({
+  parentId: z.string().nullable(),
+});
+export type MoveCategoryPayload = z.infer<typeof moveCategoryPayloadSchema>;
+
+/**
+ * Réordonner un niveau. `orderedIds` doit lister **exactement** les familles
+ * vivantes de ce niveau, une seule fois chacune : le serveur refuse un ordre
+ * partiel plutôt que de laisser des rangs en double.
+ */
+export const reorderCategoriesPayloadSchema = z.object({
+  parentId: z.string().nullable(),
+  orderedIds: z.array(z.string()).min(1),
+});
+export type ReorderCategoriesPayload = z.infer<typeof reorderCategoriesPayloadSchema>;
+
 /** Vue d'une famille telle que l'API la rend. */
 export interface CategoryView {
   readonly id: string;

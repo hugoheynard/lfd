@@ -5,7 +5,7 @@ import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import {
   CategoryArchivedError,
   CategoryNotFoundError,
-} from "../../shared/domain/errors/catalogue-errors.js";
+} from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { EditorialRepository } from "../domain/ports/editorial.repository.js";
 import { NutritionRepository } from "../domain/ports/nutrition.repository.js";

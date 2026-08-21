@@ -1,46 +1,21 @@
-import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
-import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
+import type { Category } from "../entities/category.js";
 
 /**
- * Vue d'une famille telle que la persistance la rend.
- * Aucune colonne système : le domaine ne connaît ni `created_at` ni `updated_at`.
+ * Port : le domaine dépend de cette abstraction, jamais de Prisma.
+ *
+ * Il ne porte plus une méthode par mutation (`rename`, `archive`,
+ * `setChannels`…) : c'était au dépôt de savoir ce qu'un verbe change, donc à
+ * lui de rester d'accord avec le domaine. Il rend et reprend l'**agrégat** ;
+ * ce que le verbe a modifié, l'agrégat le sait, et le dépôt ne fait qu'écrire
+ * l'état qu'on lui tend.
  */
-export interface CategoryRecord {
-  readonly id: string;
-  readonly name: LocalizedText;
-  readonly slug: LocalizedText;
-  readonly parentId: string | null;
-  readonly position: number;
-  readonly isArchived: boolean;
-  /** Canaux dont héritent les produits de la famille (sauf override). */
-  readonly channelPreset: SalesChannels;
-  /** Régimes de TVA appliqués aux fiches à emporter / sur place. `null` = non réglé. */
-  readonly emporterTvaId: string | null;
-  readonly surPlaceTvaId: string | null;
-}
-
-export interface NewCategory {
-  readonly id: string;
-  readonly name: LocalizedText;
-  readonly slug: LocalizedText;
-  readonly parentId: string | null;
-  readonly position: number;
-  readonly channelPreset: SalesChannels;
-}
-
-/** Port : le domaine dépend de cette abstraction, jamais de Prisma. */
 export abstract class CategoryRepository {
-  abstract findById(id: string): Promise<CategoryRecord | null>;
-  abstract listAll(): Promise<CategoryRecord[]>;
-  abstract insert(category: NewCategory): Promise<void>;
-  abstract rename(id: string, name: LocalizedText, slug: LocalizedText): Promise<void>;
-  abstract archive(id: string): Promise<void>;
-  abstract setChannels(id: string, channels: SalesChannels): Promise<void>;
-  abstract setTva(
-    id: string,
-    emporterTvaId: string | null,
-    surPlaceTvaId: string | null,
-  ): Promise<void>;
+  abstract findById(id: string): Promise<Category | null>;
+  abstract listAll(): Promise<Category[]>;
+  abstract add(category: Category): Promise<void>;
+  abstract save(category: Category): Promise<void>;
+  /** Écrit plusieurs familles **en une transaction** — le réordonnancement. */
+  abstract saveAll(categories: readonly Category[]): Promise<void>;
   abstract countActiveProducts(id: string): Promise<number>;
   abstract nextPosition(parentId: string | null): Promise<number>;
 }

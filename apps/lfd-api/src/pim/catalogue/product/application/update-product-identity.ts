@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import {
   CategoryArchivedError,
   CategoryNotFoundError,
-} from "../../shared/domain/errors/catalogue-errors.js";
+} from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { ProductRepository, type ProductKind } from "../domain/ports/product.repository.js";
 import { localizedText } from "../../shared/domain/value-objects/localized-text.js";

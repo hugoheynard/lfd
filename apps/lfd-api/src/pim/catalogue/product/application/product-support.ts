@@ -1,7 +1,4 @@
-import {
-  ProductNotFoundError,
-  VariantNotFoundError,
-} from "../../shared/domain/errors/catalogue-errors.js";
+import { ProductNotFoundError, VariantNotFoundError } from "../domain/errors/product-errors.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { slugify, type LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 

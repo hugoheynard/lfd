@@ -82,9 +82,24 @@ générique.
 
 ### Agrégat `Category`
 
-`CreateCategory` → `CategoryCreated` · `RenameCategory` → `CategoryRenamed` · `MoveCategory` →
-`CategoryMoved` (**refusée si elle crée un cycle**) · `ReorderCategories` → `CategoriesReordered` ·
-`ArchiveCategory` → `CategoryArchived` (**refusée si des produits actifs y sont rattachés**).
+| Commande              | Invariant vérifié                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| `CreateCategory`      | `name.fr` non vide · parent existant · **slug dérivé du nom**                        |
+| `RenameCategory`      | `name.fr` non vide · **slug re-dérivé** · seul verbe permis sur une famille archivée |
+| `MoveCategory`        | ⛔ **refusée si elle crée un cycle** · parent non archivé · jamais sa propre parente |
+| `ReorderCategories`   | **permutation complète** de la fratrie vivante — un ordre partiel est refusé         |
+| `SetCategoryChannels` | famille non archivée                                                                 |
+| `SetCategoryTva`      | famille non archivée · chaque régime visé existe                                     |
+| `ArchiveCategory`     | ⛔ **refusée si des produits actifs y sont rattachés** · idempotente                 |
+
+**Une famille archivée est gelée** : canaux, TVA et place dans l'arbre sont refusés. Le
+**renommage reste permis** — corriger une faute de frappe ne doit pas obliger à ressusciter une
+famille qui ne vend plus rien. Elle sort aussi du jeu du réordonnancement : ni exigée dans
+l'ordre proposé, ni renumérotée.
+
+Ce que l'agrégat garantit seul s'arrête à ce qu'il voit. L'existence du parent, l'absence de
+cycle (il faut l'arbre entier), le compte de produits actifs et l'existence du régime de TVA
+appartiennent aux handlers ou au service `category-tree` — pas à l'entité.
 
 ### Agrégat `Collection`
 

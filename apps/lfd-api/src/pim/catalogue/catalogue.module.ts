@@ -8,6 +8,8 @@ import { ArchiveProductHandler } from "./product/application/archive-product.js"
 import { CreateCategoryHandler } from "./category/application/create-category.js";
 import { CreateProductHandler } from "./product/application/create-product.js";
 import { ListCategoriesHandler } from "./category/application/list-categories.js";
+import { MoveCategoryHandler } from "./category/application/move-category.js";
+import { ReorderCategoriesHandler } from "./category/application/reorder-categories.js";
 import { RenameCategoryHandler } from "./category/application/rename-category.js";
 import { SetCategoryChannelsHandler } from "./category/application/set-category-channels.js";
 import { SetCategoryTvaHandler } from "./category/application/set-category-tva.js";
@@ -56,6 +58,8 @@ import {
     SetCategoryTvaHandler,
     ArchiveCategoryHandler,
     ListCategoriesHandler,
+    MoveCategoryHandler,
+    ReorderCategoriesHandler,
     // Produits (CQRS) — un handler par cas.
     CreateProductHandler,
     UpdateProductIdentityHandler,

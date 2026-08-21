@@ -6,79 +6,79 @@ import {
   type TvaRegimeUpdate,
 } from "../../../../commerce/domain/ports/tva-regime.repository.js";
 import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
+import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
 import {
+  CategoryArchivedParentError,
+  CategoryCycleError,
+  CategoryFrozenError,
   CategoryHasActiveProductsError,
   CategoryNotFoundError,
-} from "../../../shared/domain/errors/catalogue-errors.js";
-import {
-  CategoryRepository,
-  type CategoryRecord,
-  type NewCategory,
-} from "../../domain/ports/category.repository.js";
-import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
+  CategoryOrderMismatchError,
+} from "../../domain/errors/category-errors.js";
+import { CategoryRepository } from "../../domain/ports/category.repository.js";
 import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import { ArchiveCategoryCommand, ArchiveCategoryHandler } from "../archive-category.js";
-import { wouldCreateCycle } from "../category-support.js";
 import { CreateCategoryCommand, CreateCategoryHandler } from "../create-category.js";
+import { MoveCategoryCommand, MoveCategoryHandler } from "../move-category.js";
 import { RenameCategoryCommand, RenameCategoryHandler } from "../rename-category.js";
+import { ReorderCategoriesCommand, ReorderCategoriesHandler } from "../reorder-categories.js";
 import {
   SetCategoryChannelsCommand,
   SetCategoryChannelsHandler,
 } from "../set-category-channels.js";
 import { SetCategoryTvaCommand, SetCategoryTvaHandler } from "../set-category-tva.js";
 
+/**
+ * Le faux dépôt garde des **agrégats**, pas des lignes : c'est ce que le port
+ * rend depuis qu'il ne porte plus une méthode par mutation. Il reconstitue à
+ * chaque lecture, pour qu'un test ne puisse pas passer parce qu'il tient la
+ * même instance que le handler — ce que la vraie base ne fera jamais.
+ */
 class InMemoryCategories extends CategoryRepository {
-  readonly rows: CategoryRecord[] = [];
+  readonly stored = new Map<string, CategorySnapshot>();
   activeProducts = 0;
+  transactions = 0;
 
-  findById(id: string): Promise<CategoryRecord | null> {
-    return Promise.resolve(this.rows.find((r) => r.id === id) ?? null);
+  findById(id: string): Promise<Category | null> {
+    const snapshot = this.stored.get(id);
+    return Promise.resolve(snapshot === undefined ? null : Category.reconstitute(snapshot));
   }
-  listAll(): Promise<CategoryRecord[]> {
-    return Promise.resolve([...this.rows]);
+  listAll(): Promise<Category[]> {
+    return Promise.resolve(
+      [...this.stored.values()].map((snapshot) => Category.reconstitute(snapshot)),
+    );
   }
-  insert(category: NewCategory): Promise<void> {
-    this.rows.push({
-      ...category,
-      isArchived: false,
-      emporterTvaId: null,
-      surPlaceTvaId: null,
-    });
+  add(category: Category): Promise<void> {
+    return this.save(category);
+  }
+  save(category: Category): Promise<void> {
+    const snapshot = category.snapshot();
+    this.stored.set(snapshot.id, snapshot);
     return Promise.resolve();
   }
-  rename(id: string, name: LocalizedText, slug: LocalizedText): Promise<void> {
-    const index = this.rows.findIndex((r) => r.id === id);
-    if (index >= 0) {
-      this.rows[index] = { ...this.rows[index]!, name, slug };
-    }
-    return Promise.resolve();
-  }
-  archive(id: string): Promise<void> {
-    const index = this.rows.findIndex((r) => r.id === id);
-    if (index >= 0) {
-      this.rows[index] = { ...this.rows[index]!, isArchived: true };
-    }
-    return Promise.resolve();
-  }
-  setChannels(id: string, channels: SalesChannels): Promise<void> {
-    const index = this.rows.findIndex((r) => r.id === id);
-    if (index >= 0) {
-      this.rows[index] = { ...this.rows[index]!, channelPreset: channels };
-    }
-    return Promise.resolve();
-  }
-  setTva(id: string, emporterTvaId: string | null, surPlaceTvaId: string | null): Promise<void> {
-    const index = this.rows.findIndex((r) => r.id === id);
-    if (index >= 0) {
-      this.rows[index] = { ...this.rows[index]!, emporterTvaId, surPlaceTvaId };
+  saveAll(categories: readonly Category[]): Promise<void> {
+    this.transactions += 1;
+    for (const category of categories) {
+      const snapshot = category.snapshot();
+      this.stored.set(snapshot.id, snapshot);
     }
     return Promise.resolve();
   }
   countActiveProducts(): Promise<number> {
     return Promise.resolve(this.activeProducts);
   }
-  nextPosition(): Promise<number> {
-    return Promise.resolve(this.rows.length);
+  nextPosition(parentId: string | null): Promise<number> {
+    const siblings = [...this.stored.values()].filter((row) => row.parentId === parentId);
+    return Promise.resolve(siblings.length);
+  }
+
+  /** Confort de lecture pour les assertions. */
+  at(id: string): CategorySnapshot {
+    const snapshot = this.stored.get(id);
+    if (snapshot === undefined) {
+      throw new Error(`famille ${id} absente du faux dépôt`);
+    }
+    return snapshot;
   }
 }
 
@@ -119,31 +119,39 @@ const ALL_OPEN: SalesChannels = {
   b2: { emporter: true, surPlace: false },
 };
 
-class StubIds extends PimIdGenerator {
+class SequentialIds extends PimIdGenerator {
+  private count = 0;
   next(): string {
-    return "cat_fixed";
+    this.count += 1;
+    return `cat_${this.count}`;
   }
+}
+
+/** Ouvre `count` familles racines, rend leurs ids dans l'ordre de création. */
+async function openRoots(repo: InMemoryCategories, count: number): Promise<string[]> {
+  const handler = new CreateCategoryHandler(repo, new SequentialIds());
+  const ids: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    ids.push(await handler.execute(new CreateCategoryCommand({ nameFr: `Famille ${index}` })));
+  }
+  return ids;
 }
 
 describe("CreateCategoryHandler", () => {
   it("crée une famille avec un slug dérivé", async () => {
     const repo = new InMemoryCategories();
-    const id = await new CreateCategoryHandler(repo, new StubIds()).execute(
+    const id = await new CreateCategoryHandler(repo, new SequentialIds()).execute(
       new CreateCategoryCommand({ nameFr: "Chocolats fins" }),
     );
 
-    expect(id).toBe("cat_fixed");
-    expect(repo.rows[0]?.slug.fr).toBe("chocolats-fins");
+    expect(repo.at(id).slug.fr).toBe("chocolats-fins");
   });
 
   it("refuse un parent inexistant", async () => {
     const repo = new InMemoryCategories();
     await expect(
-      new CreateCategoryHandler(repo, new StubIds()).execute(
-        new CreateCategoryCommand({
-          nameFr: "Sous-famille",
-          parentId: "absent",
-        }),
+      new CreateCategoryHandler(repo, new SequentialIds()).execute(
+        new CreateCategoryCommand({ nameFr: "Sous-famille", parentId: "absent" }),
       ),
     ).rejects.toBeInstanceOf(CategoryNotFoundError);
   });
@@ -152,57 +160,47 @@ describe("CreateCategoryHandler", () => {
 describe("RenameCategoryHandler", () => {
   it("renomme et re-dérive le slug", async () => {
     const repo = new InMemoryCategories();
-    await new CreateCategoryHandler(repo, new StubIds()).execute(
-      new CreateCategoryCommand({ nameFr: "Chocolats" }),
-    );
+    const [id] = await openRoots(repo, 1);
 
     await new RenameCategoryHandler(repo).execute(
-      new RenameCategoryCommand("cat_fixed", {
-        nameFr: "Chocolats & pralinés",
-      }),
+      new RenameCategoryCommand(id!, { nameFr: "Chocolats & pralinés" }),
     );
 
-    expect(repo.rows[0]?.slug.fr).toBe("chocolats-pralines");
+    expect(repo.at(id!).slug.fr).toBe("chocolats-pralines");
   });
 });
 
 describe("ArchiveCategoryHandler", () => {
   it("refuse d’archiver une famille avec des produits actifs", async () => {
     const repo = new InMemoryCategories();
-    await new CreateCategoryHandler(repo, new StubIds()).execute(
-      new CreateCategoryCommand({ nameFr: "Chocolats" }),
-    );
+    const [id] = await openRoots(repo, 1);
     repo.activeProducts = 2;
 
     await expect(
-      new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand("cat_fixed")),
+      new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(id!)),
     ).rejects.toBeInstanceOf(CategoryHasActiveProductsError);
   });
 
   it("archive une famille vide", async () => {
     const repo = new InMemoryCategories();
-    await new CreateCategoryHandler(repo, new StubIds()).execute(
-      new CreateCategoryCommand({ nameFr: "Chocolats" }),
-    );
+    const [id] = await openRoots(repo, 1);
 
-    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand("cat_fixed"));
+    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(id!));
 
-    expect(repo.rows[0]?.isArchived).toBe(true);
+    expect(repo.at(id!).isArchived).toBe(true);
   });
 });
 
 describe("SetCategoryChannelsHandler", () => {
   it("remplace les canaux hérités de la famille", async () => {
     const repo = new InMemoryCategories();
-    await new CreateCategoryHandler(repo, new StubIds()).execute(
-      new CreateCategoryCommand({ nameFr: "Chocolats" }),
-    );
+    const [id] = await openRoots(repo, 1);
 
     await new SetCategoryChannelsHandler(repo).execute(
-      new SetCategoryChannelsCommand("cat_fixed", ALL_OPEN),
+      new SetCategoryChannelsCommand(id!, ALL_OPEN),
     );
 
-    expect(repo.rows[0]?.channelPreset).toEqual(ALL_OPEN);
+    expect(repo.at(id!).channelPreset).toEqual(ALL_OPEN);
   });
 
   it("refuse une famille inexistante", async () => {
@@ -212,6 +210,30 @@ describe("SetCategoryChannelsHandler", () => {
         new SetCategoryChannelsCommand("absent", ALL_OPEN),
       ),
     ).rejects.toBeInstanceOf(CategoryNotFoundError);
+  });
+
+  /** La décision « archivée = gelée » : les réglages sont refusés. */
+  it("refuse de régler les canaux d’une famille archivée", async () => {
+    const repo = new InMemoryCategories();
+    const [id] = await openRoots(repo, 1);
+    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(id!));
+
+    await expect(
+      new SetCategoryChannelsHandler(repo).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN)),
+    ).rejects.toBeInstanceOf(CategoryFrozenError);
+  });
+
+  /** …mais le renommage, lui, reste permis : corriger une faute de frappe. */
+  it("laisse renommer une famille archivée", async () => {
+    const repo = new InMemoryCategories();
+    const [id] = await openRoots(repo, 1);
+    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(id!));
+
+    await new RenameCategoryHandler(repo).execute(
+      new RenameCategoryCommand(id!, { nameFr: "Chocolats" }),
+    );
+
+    expect(repo.at(id!).name.fr).toBe("Chocolats");
   });
 });
 
@@ -226,60 +248,106 @@ describe("SetCategoryTvaHandler", () => {
       percent: 5.5,
       tag: "tva-5-5",
     });
-    await new CreateCategoryHandler(categories, new StubIds()).execute(
-      new CreateCategoryCommand({ nameFr: "Chocolats" }),
-    );
+    const [id] = await openRoots(categories, 1);
 
     await new SetCategoryTvaHandler(categories, regimes).execute(
-      new SetCategoryTvaCommand("cat_fixed", "tva_5", null),
+      new SetCategoryTvaCommand(id!, "tva_5", null),
     );
 
-    expect(categories.rows[0]?.emporterTvaId).toBe("tva_5");
-    expect(categories.rows[0]?.surPlaceTvaId).toBeNull();
+    expect(categories.at(id!).emporterTvaId).toBe("tva_5");
+    expect(categories.at(id!).surPlaceTvaId).toBeNull();
   });
 
   it("refuse un régime fantôme", async () => {
     const categories = new InMemoryCategories();
-    const regimes = new InMemoryRegimes();
-    await new CreateCategoryHandler(categories, new StubIds()).execute(
-      new CreateCategoryCommand({ nameFr: "Chocolats" }),
-    );
+    const [id] = await openRoots(categories, 1);
 
     await expect(
-      new SetCategoryTvaHandler(categories, regimes).execute(
-        new SetCategoryTvaCommand("cat_fixed", "tva_absent", null),
+      new SetCategoryTvaHandler(categories, new InMemoryRegimes()).execute(
+        new SetCategoryTvaCommand(id!, "tva_absent", null),
       ),
     ).rejects.toBeInstanceOf(TvaRegimeNotFoundError);
   });
 });
 
-describe("wouldCreateCycle", () => {
-  it("détecte un cycle dans l’arbre des familles", () => {
-    const base = {
-      channelPreset: ALL_OPEN,
-      emporterTvaId: null,
-      surPlaceTvaId: null,
-      isArchived: false,
-    };
-    const rows: CategoryRecord[] = [
-      {
-        id: "a",
-        name: { fr: "A" },
-        slug: { fr: "a" },
-        parentId: null,
-        position: 0,
-        ...base,
-      },
-      {
-        id: "b",
-        name: { fr: "B" },
-        slug: { fr: "b" },
-        parentId: "a",
-        position: 0,
-        ...base,
-      },
-    ];
-    expect(wouldCreateCycle(rows, "a", "b")).toBe(true);
-    expect(wouldCreateCycle(rows, "b", "a")).toBe(false);
+describe("MoveCategoryHandler", () => {
+  it("range une famille sous une autre, en dernier", async () => {
+    const repo = new InMemoryCategories();
+    const [parent, moved] = await openRoots(repo, 2);
+
+    await new MoveCategoryHandler(repo).execute(new MoveCategoryCommand(moved!, parent!));
+
+    expect(repo.at(moved!).parentId).toBe(parent);
+    expect(repo.at(moved!).position).toBe(0);
+  });
+
+  it("remonte à la racine avec un parent nul", async () => {
+    const repo = new InMemoryCategories();
+    const [parent, moved] = await openRoots(repo, 2);
+    await new MoveCategoryHandler(repo).execute(new MoveCategoryCommand(moved!, parent!));
+
+    await new MoveCategoryHandler(repo).execute(new MoveCategoryCommand(moved!, null));
+
+    expect(repo.at(moved!).parentId).toBeNull();
+  });
+
+  /** L'invariant 5 du socle, enfin gardé par un verbe capable de le violer. */
+  it("refuse un déplacement qui créerait un cycle", async () => {
+    const repo = new InMemoryCategories();
+    const [grandParent, child] = await openRoots(repo, 2);
+    await new MoveCategoryHandler(repo).execute(new MoveCategoryCommand(child!, grandParent!));
+
+    await expect(
+      new MoveCategoryHandler(repo).execute(new MoveCategoryCommand(grandParent!, child!)),
+    ).rejects.toBeInstanceOf(CategoryCycleError);
+  });
+
+  it("refuse de ranger une famille sous une famille archivée", async () => {
+    const repo = new InMemoryCategories();
+    const [parent, moved] = await openRoots(repo, 2);
+    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(parent!));
+
+    await expect(
+      new MoveCategoryHandler(repo).execute(new MoveCategoryCommand(moved!, parent!)),
+    ).rejects.toBeInstanceOf(CategoryArchivedParentError);
+  });
+});
+
+describe("ReorderCategoriesHandler", () => {
+  it("renumérote la fratrie dans l’ordre reçu, en une transaction", async () => {
+    const repo = new InMemoryCategories();
+    const [first, second, third] = await openRoots(repo, 3);
+
+    await new ReorderCategoriesHandler(repo).execute(
+      new ReorderCategoriesCommand(null, [third!, first!, second!]),
+    );
+
+    expect(repo.at(third!).position).toBe(0);
+    expect(repo.at(first!).position).toBe(1);
+    expect(repo.at(second!).position).toBe(2);
+    expect(repo.transactions).toBe(1);
+  });
+
+  it("refuse un ordre partiel plutôt que de laisser des rangs en double", async () => {
+    const repo = new InMemoryCategories();
+    const [first] = await openRoots(repo, 3);
+
+    await expect(
+      new ReorderCategoriesHandler(repo).execute(new ReorderCategoriesCommand(null, [first!])),
+    ).rejects.toBeInstanceOf(CategoryOrderMismatchError);
+  });
+
+  /** Une famille archivée n'est ni exigée dans l'ordre, ni réécrite. */
+  it("ignore les familles archivées du niveau", async () => {
+    const repo = new InMemoryCategories();
+    const [first, second, archived] = await openRoots(repo, 3);
+    await new ArchiveCategoryHandler(repo).execute(new ArchiveCategoryCommand(archived!));
+
+    await new ReorderCategoriesHandler(repo).execute(
+      new ReorderCategoriesCommand(null, [second!, first!]),
+    );
+
+    expect(repo.at(second!).position).toBe(0);
+    expect(repo.at(archived!).position).toBe(2);
   });
 });
