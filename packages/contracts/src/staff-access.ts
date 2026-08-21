@@ -29,6 +29,16 @@ export const staffResourceSchema = z.enum([
   "companies",
   "orders",
   "catalog",
+  // La **fiscalité** du catalogue : le référentiel des régimes de TVA, et lui
+  // seul. Détachée de `catalog` parce que ses décideurs ne sont pas les mêmes —
+  // le catalogue décide de ce qui existe et à quel prix, la fiscalité de ce qui
+  // est taxé et à quel taux. Comptabilité tenait la seconde sans pouvoir y
+  // toucher, faute d'une ressource pour la nommer.
+  //
+  // La frontière s'arrête au référentiel : POUSSER les collections de taxe vers
+  // un canal reste `catalog:write`. Un taux juste au référentiel suffit — le
+  // publieur n'a plus qu'à réconcilier.
+  "tax",
   "growth",
   "appointments",
   "support",
@@ -76,6 +86,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   companies: "Comptes clients",
   orders: "Commandes",
   catalog: "Catalogue",
+  tax: "Fiscalité",
   growth: "Croissance",
   appointments: "Rendez-vous",
   support: "Demandes",
@@ -111,12 +122,18 @@ type RoleGrants = Partial<Readonly<Record<StaffResource, StaffAction>>>;
  *   trois écrans en aval en dépendent. Les autres rôles le **lisent**, ce qui
  *   est exactement l'audience qu'ils avaient quand l'écran catalogue vivait
  *   sous `settings` : la ressource change de nom, personne ne perd un accès.
+ * - **`tax` est en écriture pour `comptabilite`** — c'est la seule découpe du
+ *   catalogue qui échappe à l'admin, et elle est délibérée : un taux de TVA est
+ *   une décision comptable, pas un choix d'assortiment. La ressource se détache
+ *   de `catalog` **sans retirer d'accès** : tous ceux qui lisaient les régimes
+ *   sous `catalog:read` gardent `tax:read`.
  */
 export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   admin: {
     companies: "write",
     orders: "write",
     catalog: "write",
+    tax: "write",
     growth: "write",
     appointments: "write",
     support: "write",
@@ -135,6 +152,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // route ne l'expose, et ce sont les avenants qui la porteront.
     orders: "write",
     catalog: "read",
+    tax: "read",
     growth: "write",
     appointments: "write",
     support: "write",
@@ -144,6 +162,11 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     companies: "read",
     orders: "write",
     catalog: "read",
+    // Le seul `write` de la comptabilité en dehors des commandes : poser un
+    // taux et le corriger. **Pas** le pousser vers un canal : publier reste un
+    // geste de catalogue, et un taux juste au référentiel suffit — le publieur
+    // n'a plus qu'à réconcilier.
+    tax: "write",
     settings: "read",
   },
   support: {
@@ -154,6 +177,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   },
   dev: {
     catalog: "read",
+    tax: "read",
     settings: "read",
     tech: "write",
     // `read` et pas `write` : OPS est en lecture seule en v1 (il observe, il

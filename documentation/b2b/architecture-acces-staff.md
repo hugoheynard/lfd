@@ -150,22 +150,27 @@ Pure, déterministe, testable sans base ni réseau. C'est la première brique à
 Elles sont calquées sur les surfaces `/admin/*` **réellement montées**, pas sur
 une taxonomie d'intention :
 
-| Ressource      | Ce qu'elle couvre                                                                                                                |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `companies`    | `admin/companies` et ses sous-routes, `admin/activations`, `admin/companies/:id/alert-rules`, `admin/companies/:id/members`      |
-| `orders`       | `admin/orders`, `admin/handover`, les alertes de compte (`admin/alerts/*`)                                                       |
-| `growth`       | `admin/cockpit`, `admin/growth`, `admin/leads`, `admin/prospects`, `admin/commercial/market`                                     |
-| `appointments` | `admin/availability`, `admin/appointments`                                                                                       |
-| `support`      | `admin/support-requests`, `admin/notifications`                                                                                  |
-| `settings`     | `admin/platform-settings`, `admin/delivery-zones`, `admin/pickup-addresses`, `admin/order-cutoffs`, `admin/alert-rules` (global) |
-| `staff`        | `admin/staff-users` — l'annuaire lui-même                                                                                        |
-| `tech`         | La page Tech (feature flags, diagnostics). N'existe pas encore ; la ressource est posée avec le rôle `dev`.                      |
+| Ressource      | Ce qu'elle couvre                                                                                                                                           |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `companies`    | `admin/companies` et ses sous-routes, `admin/activations`, `admin/companies/:id/alert-rules`, `admin/companies/:id/members`                                 |
+| `orders`       | `admin/orders`, `admin/handover`, les alertes de compte (`admin/alerts/*`)                                                                                  |
+| `catalog`      | Le PIM : produits, familles, collections, emplacements, canaux et publication (`products`, `categories`, `channels/*`, `collections/tva`, `admin/catalog*`) |
+| `tax`          | Le référentiel fiscal, et lui seul : `commerce/tva-regimes`                                                                                                 |
+| `growth`       | `admin/cockpit`, `admin/growth`, `admin/leads`, `admin/prospects`, `admin/commercial/market`                                                                |
+| `appointments` | `admin/availability`, `admin/appointments`                                                                                                                  |
+| `support`      | `admin/support-requests`, `admin/notifications`                                                                                                             |
+| `settings`     | `admin/platform-settings`, `admin/delivery-zones`, `admin/pickup-addresses`, `admin/order-cutoffs`, `admin/alert-rules` (global)                            |
+| `staff`        | `admin/staff-users` — l'annuaire lui-même                                                                                                                   |
+| `tech`         | La page Tech (feature flags, diagnostics). N'existe pas encore ; la ressource est posée avec le rôle `dev`.                                                 |
+| `ops`          | La carte de santé de l'écosystème (`admin/ops/*`) — topologie interne, staff only                                                                           |
 
-**Deux ressources absentes, volontairement.** `catalog` appartient au PIM, pas à
-ce backend. `billing` n'existe pas — la
+**Une ressource absente, volontairement.** `billing` n'existe pas — la
 [facturation](architecture-facturation.md) est encore
 doc-first ; la ressource naîtra avec ses routes, pas avant. Nommer une ressource
 sans surface, c'est écrire un droit que personne ne peut ni exercer ni tester.
+
+`catalog` fut absente pour la même raison — le PIM vivait dans son propre
+backend. Il a été fondu ici, et la ressource est arrivée avec ses routes.
 
 `admin/recompute` reste hors du modèle : c'est le cron Cloudflare, gardé par son
 propre `RecomputeGuard`, et aucune personne ne s'y authentifie.
@@ -179,15 +184,18 @@ propre `RecomputeGuard`, et aucune personne ne s'y authentifie.
 | Ressource      | `admin` | `commercial` | `comptabilite` | `support` | `dev` |
 | -------------- | ------- | ------------ | -------------- | --------- | ----- |
 | `companies`    | w       | w            | r              | r         | —     |
-| `orders`       | w       | r            | w              | r         | —     |
-| `growth`       | w       | w            | r              | —         | —     |
+| `orders`       | w       | w            | w              | r         | —     |
+| `catalog`      | w       | r            | r              | —         | r     |
+| `tax`          | w       | r            | w              | —         | r     |
+| `growth`       | w       | w            | —              | —         | —     |
 | `appointments` | w       | w            | —              | w         | —     |
 | `support`      | w       | w            | —              | w         | —     |
 | `settings`     | w       | r            | r              | —         | r     |
 | `staff`        | w       | —            | —              | —         | —     |
 | `tech`         | w       | —            | —              | —         | w     |
+| `ops`          | w       | —            | —              | —         | r     |
 
-Trois choix méritent leur justification.
+Quatre choix méritent leur justification.
 
 **`staff` n'est ouvert qu'à `admin`.** Accorder des droits est le seul geste qui
 permet de s'en accorder : le laisser à un autre rôle, c'est le rendre équivalent
@@ -202,6 +210,17 @@ laisse une trace — pas par un rôle qui ouvre tout, tout le temps, en silence.
 **`comptabilite` écrit les commandes mais ne lit pas `growth`.** Le pipeline
 commercial n'est pas de la donnée comptable, et l'exposer par défaut brouille la
 question « qui a vu quoi » le jour où elle se pose.
+
+**`tax` est la seule découpe du catalogue qu'un non-admin écrit.** `catalog:write`
+reste réservé à `admin` : le référentiel décide de ce qui existe, de ce qui se
+publie et à quel prix. Mais un **taux de TVA** n'est pas un choix d'assortiment,
+c'est une décision comptable — et la comptabilité voyait les régimes sans pouvoir
+y toucher. La ressource se détache **sans retirer de lecture** : tous ceux qui
+lisaient les régimes sous `catalog:read` ont `tax:read`, et un test le vérifie.
+
+La frontière s'arrête au référentiel. **Pousser** les collections de taxe vers un
+canal reste `catalog:write` : publier est un geste de catalogue. Un taux juste au
+référentiel suffit — le publieur n'a plus qu'à réconcilier.
 
 ---
 

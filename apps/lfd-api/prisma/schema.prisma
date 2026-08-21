@@ -197,6 +197,7 @@ enum StaffResource {
   companies
   orders
   catalog
+  tax
   growth
   appointments
   support

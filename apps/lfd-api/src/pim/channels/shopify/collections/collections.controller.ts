@@ -1,7 +1,10 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { z } from "zod";
 
-import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
+import {
+  AdminSurface,
+  RequirePermission,
+} from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { ShopifyCollectionsService } from "./collections.service.js";
 
@@ -25,13 +28,24 @@ const desiredCollectionsPayload = z.object({
  * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
  * référentiel vivait dans son propre processus — un jeton Auth0 valide
  * suffisait, et un révoqué gardait la main sur le catalogue.
+ *
+ * `catalog` et non `tax`, bien que le contenu soit fiscal : ce contrôleur
+ * **écrit chez un tiers**. Poser le taux est comptable, le publier est un geste
+ * de catalogue — la comptabilité pose un taux juste, le publieur réconcilie.
  */
 @AdminSurface("catalog")
 @Controller("collections/tva")
 export class ShopifyCollectionsController {
   constructor(private readonly collections: ShopifyCollectionsService) {}
 
-  /** Rapproche les collections de TVA voulues et la boutique, sans rien écrire. */
+  /**
+   * Rapproche les collections de TVA voulues et la boutique, sans rien écrire.
+   *
+   * `catalog:read` explicite : le verbe ment. `POST` impliquerait `write`, donc
+   * l'inspection était réservée à l'admin — un lecteur du catalogue voyait un
+   * bouton « Inspecter » qui lui répondait 403.
+   */
+  @RequirePermission("catalog:read")
   @Post("inspect")
   inspect(
     @Body(new ZodBody(desiredCollectionsPayload))

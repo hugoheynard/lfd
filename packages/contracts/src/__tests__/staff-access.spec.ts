@@ -44,6 +44,29 @@ describe("resolveStaffPermissions — le rôle seul", () => {
     expect(holders).toEqual(["admin"]);
   });
 
+  it("ouvre la fiscalité à la comptabilité, et à elle seule hors admin", () => {
+    // La seule découpe du catalogue qu'un non-admin peut écrire. Si un autre
+    // rôle apparaît ici, c'est qu'on a élargi par habitude : un taux de TVA
+    // n'est pas un choix d'assortiment.
+    const writers = staffRoleSchema.options.filter((role) =>
+      hasStaffPermission(resolveStaffPermissions(role), "tax:write"),
+    );
+
+    expect(writers).toEqual(["admin", "comptabilite"]);
+  });
+
+  it("ne retire la lecture des taux à personne en détachant `tax` de `catalog`", () => {
+    // Les régimes se lisaient sous `catalog:read`. La ressource change, pas
+    // l'audience — sinon le découpage coûte un accès à quelqu'un, en silence.
+    const readers = staffRoleSchema.options.filter((role) =>
+      hasStaffPermission(resolveStaffPermissions(role), "catalog:read"),
+    );
+
+    for (const role of readers) {
+      expect(hasStaffPermission(resolveStaffPermissions(role), "tax:read")).toBe(true);
+    }
+  });
+
   it("garde le rôle technique hors des données clients", () => {
     const permissions = resolveStaffPermissions("dev");
 

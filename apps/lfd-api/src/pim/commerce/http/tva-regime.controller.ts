@@ -18,12 +18,17 @@ import { UpdateTvaRegimeCommand } from "../application/update-tva-regime.js";
  * contrôleur ne fait que **dispatcher** sur les bus CQRS : commandes qui mutent,
  * requête qui lit.
  *
- * Surface staff murée par `@AdminSurface("catalog")` : identité vérifiée
- * contre l'annuaire, puis périmètre. Elle a été **ouverte** tant que le
- * référentiel vivait dans son propre processus — un jeton Auth0 valide
- * suffisait, et un révoqué gardait la main sur le catalogue.
+ * Surface staff murée par `@AdminSurface("tax")` : identité vérifiée contre
+ * l'annuaire, puis périmètre. Elle a été **ouverte** tant que le référentiel
+ * vivait dans son propre processus — un jeton Auth0 valide suffisait, et un
+ * révoqué gardait la main sur le catalogue.
+ *
+ * `tax` et non `catalog` : poser un taux de TVA est une décision comptable, et
+ * `catalog:write` est réservé à l'admin. La comptabilité voyait les régimes
+ * sans pouvoir les toucher. La frontière s'arrête ici — POUSSER les collections
+ * de taxe vers un canal reste `catalog:write`.
  */
-@AdminSurface("catalog")
+@AdminSurface("tax")
 @Controller("commerce/tva-regimes")
 export class TvaRegimeController {
   constructor(
