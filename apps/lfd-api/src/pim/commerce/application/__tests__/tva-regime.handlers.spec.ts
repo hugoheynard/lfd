@@ -4,8 +4,12 @@ import {
   TvaRegimeNotFoundError,
   TvaTagConflictError,
 } from "../../domain/errors/commerce-errors.js";
-import { TvaRegimeRepository } from "../../domain/ports/tva-regime.repository.js";
+import {
+  TvaRegimeRepository,
+  type TvaRegimeUsage,
+} from "../../domain/ports/tva-regime.repository.js";
 import { CreateTvaRegimeCommand, CreateTvaRegimeHandler } from "../create-tva-regime.js";
+import { ListTvaRegimesHandler, ListTvaRegimesQuery } from "../list-tva-regimes.js";
 import { RemoveTvaRegimeCommand, RemoveTvaRegimeHandler } from "../remove-tva-regime.js";
 import { UpdateTvaRegimeCommand, UpdateTvaRegimeHandler } from "../update-tva-regime.js";
 
@@ -37,6 +41,11 @@ class InMemoryRepo extends TvaRegimeRepository {
   remove(id: string): Promise<void> {
     this.stored.delete(id);
     return Promise.resolve();
+  }
+  /** Usages posés à la main par le test — la vraie base les compte. */
+  readonly usage = new Map<string, TvaRegimeUsage>();
+  usageByRegime(): Promise<ReadonlyMap<string, TvaRegimeUsage>> {
+    return Promise.resolve(this.usage);
   }
 
   at(id: string): TvaRegimeSnapshot | undefined {
@@ -149,5 +158,24 @@ describe("RemoveTvaRegimeHandler", () => {
     await new RemoveTvaRegimeHandler(repo).execute(new RemoveTvaRegimeCommand(id));
 
     expect(repo.at(id)).toBeUndefined();
+  });
+});
+
+describe("ListTvaRegimesHandler", () => {
+  it("joint le compte d’usages, et pose zéro sur un régime que personne ne vise", async () => {
+    const repo = new InMemoryRepo();
+    // Un SEUL générateur : deux instances repartiraient de `tva_1` chacune, et
+    // le second régime écraserait le premier.
+    const create = new CreateTvaRegimeHandler(repo, new StubIds());
+    await create.execute(new CreateTvaRegimeCommand({ name: "Réduit", percent: 5.5 }));
+    await create.execute(new CreateTvaRegimeCommand({ name: "Normal", percent: 20 }));
+    repo.usage.set("tva_1", { emporter: 3, surPlace: 1 });
+
+    const views = await new ListTvaRegimesHandler(repo).execute(new ListTvaRegimesQuery());
+
+    expect(views.map((view) => [view.tag, view.usage])).toEqual([
+      ["tva-5-5", { emporter: 3, surPlace: 1 }],
+      ["tva-20", { emporter: 0, surPlace: 0 }],
+    ]);
   });
 });

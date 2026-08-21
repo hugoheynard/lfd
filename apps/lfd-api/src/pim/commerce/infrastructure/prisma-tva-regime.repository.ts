@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { PimPrismaService } from "../../infra/database/pim-prisma.service.js";
 import { TvaRegime, type TvaRegimeSnapshot } from "../domain/entities/tva-regime.js";
 import { TvaRegimeInUseError } from "../domain/errors/commerce-errors.js";
-import { TvaRegimeRepository } from "../domain/ports/tva-regime.repository.js";
+import { TvaRegimeRepository, type TvaRegimeUsage } from "../domain/ports/tva-regime.repository.js";
 
 /** Violation de clé étrangère Prisma — le `23503` de Postgres, vu depuis l'ORM. */
 function isForeignKeyViolation(error: unknown): boolean {
@@ -67,6 +67,26 @@ export class PrismaTvaRegimeRepository extends TvaRegimeRepository {
   async save(regime: TvaRegime): Promise<void> {
     const snapshot = regime.snapshot();
     await this.prisma.tvaRegime.update({ where: { id: snapshot.id }, data: toColumns(snapshot) });
+  }
+
+  /**
+   * Les deux relations comptées côté base (`_count`), en une requête. Compter
+   * en mémoire aurait demandé de charger toutes les familles pour n'en garder
+   * que le nombre.
+   */
+  async usageByRegime(): Promise<ReadonlyMap<string, TvaRegimeUsage>> {
+    const rows = await this.prisma.tvaRegime.findMany({
+      select: {
+        id: true,
+        _count: { select: { categoriesEmporter: true, categoriesSurPlace: true } },
+      },
+    });
+    return new Map(
+      rows.map((row) => [
+        row.id,
+        { emporter: row._count.categoriesEmporter, surPlace: row._count.categoriesSurPlace },
+      ]),
+    );
   }
 
   async remove(id: string): Promise<void> {

@@ -1,6 +1,18 @@
 import type { TvaRegime } from "../entities/tva-regime.js";
 
 /**
+ * Combien de familles visent un régime, par mode de vente.
+ *
+ * Une **projection de lecture**, pas un état de l'agrégat : `TvaRegime` n'a
+ * aucun invariant qui dépende de ce compte, et le lui faire porter obligerait
+ * à le recompter à chaque `save()` pour rien.
+ */
+export interface TvaRegimeUsage {
+  readonly emporter: number;
+  readonly surPlace: number;
+}
+
+/**
  * Port : l'application dépend de cette abstraction, jamais de Prisma.
  *
  * Il rend et reprend l'**agrégat** plutôt qu'une ligne et un tas de champs :
@@ -15,4 +27,9 @@ export abstract class TvaRegimeRepository {
   abstract save(regime: TvaRegime): Promise<void>;
   /** Refuse (`TvaRegimeInUseError`) si une famille vise encore ce régime. */
   abstract remove(id: string): Promise<void>;
+  /**
+   * Le compte d'usages par id de régime — un seul aller-retour pour toute la
+   * liste, et non un `count` par ligne. Les régimes sans usage en sont absents.
+   */
+  abstract usageByRegime(): Promise<ReadonlyMap<string, TvaRegimeUsage>>;
 }
