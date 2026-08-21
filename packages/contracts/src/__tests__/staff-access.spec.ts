@@ -67,6 +67,16 @@ describe("resolveStaffPermissions — le rôle seul", () => {
     }
   });
 
+  it("réserve le journal d’activité à l’administrateur", () => {
+    // Il traverse tous les modules : l'ouvrir à un rôle métier lui donnerait
+    // l'activité des autres par la bande. Élargir plus tard reste possible.
+    const readers = staffRoleSchema.options.filter((role) =>
+      hasStaffPermission(resolveStaffPermissions(role), "activity:read"),
+    );
+
+    expect(readers).toEqual(["admin"]);
+  });
+
   it("garde le rôle technique hors des données clients", () => {
     const permissions = resolveStaffPermissions("dev");
 

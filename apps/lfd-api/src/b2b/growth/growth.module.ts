@@ -80,6 +80,10 @@ import { AdminRecomputeController } from "./http/admin-recompute.controller.js";
 import { PrismaActivationReader } from "./infrastructure/prisma-activation.reader.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
 import { PrismaActorNamer } from "./infrastructure/prisma-actor-namer.js";
+import { ActivityJournalReader } from "./domain/ports/activity-journal.reader.js";
+import { PrismaActivityJournalReader } from "./infrastructure/prisma-activity-journal.reader.js";
+import { AdminActivityController } from "./http/admin-activity.controller.js";
+import { ReadActivityJournalHandler } from "./application/queries/read-activity-journal.handler.js";
 import {
   OnKbisCertificationRevoked,
   OnKbisCertified,
@@ -126,10 +130,16 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     AdminMarketController,
     AdminAppointmentsController,
     AppointmentsController,
+    // Le journal traverse tous les modules, mais la table qui le porte vit ici :
+    // sa surface de lecture aussi, tant que le journal n'a pas été promu en
+    // `platform/` (cf. `pim/journal/pim-journal.ts`).
+    AdminActivityController,
   ],
   providers: [
     { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
     { provide: ActorNamer, useClass: PrismaActorNamer },
+    { provide: ActivityJournalReader, useClass: PrismaActivityJournalReader },
+    ReadActivityJournalHandler,
     OnKbisCertified,
     OnKbisCertificationRevoked,
     { provide: ProspectReader, useClass: PrismaProspectReader },

@@ -44,6 +44,10 @@ export const staffResourceSchema = z.enum([
   "support",
   "settings",
   "staff",
+  // Le **journal d'activité** : qui a fait quoi, tous modules confondus. Une
+  // ressource à lui parce qu'il traverse les autres — le lire, c'est voir
+  // passer des comptes, des commandes et du référentiel à la fois.
+  "activity",
   "tech",
   // La carte de santé de l'écosystème. Elle expose la topologie interne et des
   // messages techniques : staff only, jamais côté client.
@@ -92,6 +96,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   support: "Demandes",
   settings: "Réglages",
   staff: "Utilisateurs",
+  activity: "Journal d'activité",
   tech: "Technique",
   ops: "Santé de l'écosystème",
 };
@@ -122,6 +127,12 @@ type RoleGrants = Partial<Readonly<Record<StaffResource, StaffAction>>>;
  *   trois écrans en aval en dépendent. Les autres rôles le **lisent**, ce qui
  *   est exactement l'audience qu'ils avaient quand l'écran catalogue vivait
  *   sous `settings` : la ressource change de nom, personne ne perd un accès.
+ * - **`activity` n'est ouvert qu'à `admin`** — le journal
+ *   traverse tous les modules, donc l'ouvrir à un rôle métier lui donnerait à
+ *   voir l'activité des autres par la bande. Élargir plus tard est facile ;
+ *   reprendre un accès déjà donné ne l'est pas. Seul `activity:read` est
+ *   vérifié quelque part : le journal est append-only, alimenté par les
+ *   handlers, jamais à la main.
  * - **`tax` est en écriture pour `comptabilite`** — c'est la seule découpe du
  *   catalogue qui échappe à l'admin, et elle est délibérée : un taux de TVA est
  *   une décision comptable, pas un choix d'assortiment. La ressource se détache
@@ -139,6 +150,12 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     support: "write",
     settings: "write",
     staff: "write",
+    // `write` alors qu'aucune route ne le vérifiera jamais — le journal est
+    // append-only, alimenté par les handlers. C'est le prix de l'invariant qui
+    // compte le plus : `admin` couvre TOUT le catalogue, sans trou. Un `read`
+    // ici ferait de l'administrateur le premier rôle incomplet, et c'est ce
+    // qu'un test vérifie explicitement.
+    activity: "write",
     tech: "write",
     ops: "write",
   },

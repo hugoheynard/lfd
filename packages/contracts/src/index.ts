@@ -581,3 +581,11 @@ export type {
   ApplyPriceTemplatePayload,
   MercurialeBenchmarkView,
 } from "./pricing.js";
+
+export { activityModuleSchema, activityQuerySchema } from "./activity-journal.js";
+export type {
+  ActivityModule,
+  ActivityQuery,
+  ActivityEventView,
+  ActivityPageView,
+} from "./activity-journal.js";

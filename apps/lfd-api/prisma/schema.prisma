@@ -203,6 +203,7 @@ enum StaffResource {
   support
   settings
   staff
+  activity
   tech
   ops
 
