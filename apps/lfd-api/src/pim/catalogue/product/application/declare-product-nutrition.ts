@@ -6,7 +6,7 @@ import {
   nutritionDeclaration,
   type NutritionValues,
 } from "../domain/value-objects/nutrition-declaration.js";
-import { requireVariant } from "./product-support.js";
+import { requireProduct } from "./product-support.js";
 
 export interface DeclareNutritionInput {
   readonly allergens: readonly string[];
@@ -35,7 +35,8 @@ export class DeclareProductNutritionHandler implements ICommandHandler<
 
   async execute(command: DeclareProductNutritionCommand): Promise<void> {
     const { productId, variantId, input } = command;
-    await requireVariant(this.products, productId, variantId);
+    const product = await requireProduct(this.products, productId);
+    product.requireVariant(variantId);
     const declaration = nutritionDeclaration(
       input.allergens,
       input.mayContain ?? [],

@@ -7,15 +7,9 @@ import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
 import { NutritionRepository } from "../../domain/ports/nutrition.repository.js";
-import {
-  ProductRepository,
-  type NewProduct,
-  type ProductKind,
-  type ProductRecord,
-  type ProductStatus,
-} from "../../domain/ports/product.repository.js";
+import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
+import { ProductRepository } from "../../domain/ports/product.repository.js";
 import type { Editorial, MediaItem } from "../../domain/value-objects/editorial.js";
-import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { NutritionDeclaration } from "../../domain/value-objects/nutrition-declaration.js";
 import { ArchiveProductHandler } from "../archive-product.js";
 import { ArchiveProductCommand } from "../archive-product.js";
@@ -33,7 +27,7 @@ import { UpdateVariantPricingCommand } from "../update-variant-pricing.js";
 const PRODUCT_ID = "prd_1";
 const VARIANT_ID = "prd_1_v1";
 
-function seedProduct(): ProductRecord {
+function seedProduct(): ProductSnapshot {
   return {
     id: PRODUCT_ID,
     sku: "CAFE-1",
@@ -60,67 +54,33 @@ function seedProduct(): ProductRecord {
   };
 }
 
+/**
+ * Garde un instantané et **reconstitue** à chaque lecture : un test ne doit
+ * pas passer parce qu'il tient la même instance que le handler — ce que la
+ * vraie base ne fera jamais.
+ */
 class FakeProductRepository extends ProductRepository {
-  constructor(private product: ProductRecord | null) {
+  constructor(private stored: ProductSnapshot | null) {
     super();
   }
-  findById(id: string): Promise<ProductRecord | null> {
-    return Promise.resolve(this.product !== null && this.product.id === id ? this.product : null);
+
+  findById(id: string): Promise<Product | null> {
+    const found = this.stored !== null && this.stored.id === id ? this.stored : null;
+    return Promise.resolve(found === null ? null : Product.reconstitute(found));
   }
-  listAll(): Promise<ProductRecord[]> {
-    return Promise.resolve(this.product === null ? [] : [this.product]);
+  listAll(): Promise<Product[]> {
+    return Promise.resolve(this.stored === null ? [] : [Product.reconstitute(this.stored)]);
   }
-  createWithDefaultVariant(product: NewProduct): Promise<void> {
-    void product;
-    return Promise.resolve();
+  add(product: Product): Promise<void> {
+    return this.save(product);
   }
-  rename(id: string, name: LocalizedText, slug: LocalizedText): Promise<void> {
-    this.patch(id, { name, slug });
-    return Promise.resolve();
-  }
-  setStatus(id: string, status: ProductStatus): Promise<void> {
-    this.patch(id, { status });
-    return Promise.resolve();
-  }
-  setKind(id: string, kind: ProductKind): Promise<void> {
-    this.patch(id, { kind });
-    return Promise.resolve();
-  }
-  moveToCategory(id: string, categoryId: string): Promise<void> {
-    this.patch(id, { categoryId });
-    return Promise.resolve();
-  }
-  setVariantPrice(variantId: string, priceCents: number | null): Promise<void> {
-    this.patchVariant(variantId, { priceCents });
-    return Promise.resolve();
-  }
-  setVariantWeight(variantId: string, weightGrams: number | null): Promise<void> {
-    this.patchVariant(variantId, { weightGrams });
+  save(product: Product): Promise<void> {
+    this.stored = product.snapshot();
     return Promise.resolve();
   }
 
-  snapshot(): ProductRecord | null {
-    return this.product;
-  }
-
-  private patch(id: string, fields: Partial<ProductRecord>): void {
-    if (this.product !== null && this.product.id === id) {
-      this.product = { ...this.product, ...fields };
-    }
-  }
-  private patchVariant(
-    variantId: string,
-    fields: { priceCents?: number | null; weightGrams?: number | null },
-  ): void {
-    if (this.product === null) {
-      return;
-    }
-    this.product = {
-      ...this.product,
-      variants: this.product.variants.map((variant) =>
-        variant.id === variantId ? { ...variant, ...fields } : variant,
-      ),
-    };
+  snapshot(): ProductSnapshot | null {
+    return this.stored;
   }
 }
 

@@ -80,6 +80,19 @@ générique.
 | `ArchiveProduct`     | `ProductArchived`       | non publié                                                                                          |
 | `RestoreProduct`     | `ProductRestored`       |                                                                                                     |
 
+> **Ce qui est réellement implémenté, au 2026-08-21.** La table ci-dessus décrit le modèle
+> visé ; le code en tient une partie. Les agrégats `Product`, `Category` et `TvaRegime`
+> existent (fabrique privée, méthodes nommées, invariants testés). Côté `Product`, les verbes
+> `CreateProduct`, `RenameProduct`/`ReclassifyProduct` (une commande « identité »),
+> `ArchiveProduct`, `RestoreProduct` et le tarif d'une déclinaison sont branchés.
+>
+> 🔴 **Manquent, et ça se voit en production** : aucun verbe ne publie. `status` porte
+> `published`, la projection Shopify le lit (`published` → `ACTIVE`, sinon `DRAFT`), mais rien
+> ne le pose jamais — **tout part en brouillon**. L'invariant 7 n'a donc pas encore de
+> gardien, faute de verbe capable de le violer. Manquent aussi les verbes de déclinaison
+> (`AddVariant`, `SetDefaultVariant`, `DiscontinueVariant`, `ReorderVariants`), qui porteraient
+> les invariants 3 et 4.
+
 ### Agrégat `Category`
 
 | Commande              | Invariant vérifié                                                                    |

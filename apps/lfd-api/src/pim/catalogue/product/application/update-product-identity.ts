@@ -7,7 +7,7 @@ import {
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { ProductRepository, type ProductKind } from "../domain/ports/product.repository.js";
 import { localizedText } from "../../shared/domain/value-objects/localized-text.js";
-import { requireProduct, slugOf } from "./product-support.js";
+import { requireProduct } from "./product-support.js";
 
 export interface UpdateProductIdentityInput {
   readonly nameFr: string;
@@ -40,7 +40,7 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
 
   async execute(command: UpdateProductIdentityCommand): Promise<void> {
     const { id, input } = command;
-    await requireProduct(this.products, id);
+    const product = await requireProduct(this.products, id);
 
     const category = await this.categories.findById(input.categoryId);
     if (category === null) {
@@ -50,9 +50,9 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
       throw new CategoryArchivedError(input.categoryId);
     }
 
-    const name = localizedText("nom", input.nameFr, input.nameEn);
-    await this.products.rename(id, name, slugOf(name));
-    await this.products.setKind(id, input.kind);
-    await this.products.moveToCategory(id, input.categoryId);
+    product.rename(localizedText("nom", input.nameFr, input.nameEn));
+    product.changeKind(input.kind);
+    product.reclassify(input.categoryId);
+    await this.products.save(product);
   }
 }

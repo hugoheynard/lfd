@@ -1,79 +1,33 @@
-import type { Sku } from "../value-objects/sku.value-object.js";
-import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
-
-export type ProductKind = "daily" | "made_to_order" | "resale";
-export type ProductStatus = "draft" | "published" | "archived";
-
-export interface ProductRecord {
-  readonly id: string;
-  readonly sku: string;
-  readonly name: LocalizedText;
-  readonly slug: LocalizedText;
-  readonly kind: ProductKind;
-  readonly categoryId: string;
-  readonly status: ProductStatus;
-  readonly variants: readonly VariantRecord[];
-}
-
-/** Valeurs nutritionnelles pour 100 g ; chaque champ `null` = non renseigné. */
-export interface VariantNutritionView {
-  readonly mayContain: readonly string[];
-  readonly energyKcal: number | null;
-  readonly carbsG: number | null;
-  readonly fatG: number | null;
-  readonly proteinG: number | null;
-  readonly glycemicIndex: number | null;
-}
-
-export interface VariantRecord {
-  readonly id: string;
-  readonly sku: string;
-  readonly name: LocalizedText;
-  readonly options: Readonly<Record<string, string>>;
-  readonly isDefault: boolean;
-  readonly isDiscontinued: boolean;
-  readonly position: number;
-  /** Prix canonique HT en centimes ; `null` = pas encore tarifé. */
-  readonly priceCents: number | null;
-  /** Poids net de l'unité vendue, en grammes ; `null` = non renseigné. */
-  readonly weightGrams: number | null;
-  /** `null` = fiche **non renseignée** ; `[]` = « aucun allergène » déclaré. */
-  readonly allergens: readonly string[] | null;
-  /** Valeurs nutritionnelles ; `null` = fiche non renseignée. */
-  readonly nutrition: VariantNutritionView | null;
-}
+import type { Product, ProductSnapshot } from "../entities/product.js";
+import type { VariantNutritionSnapshot, VariantSnapshot } from "../entities/variant.js";
 
 /**
- * Création d'un produit **avec sa déclinaison par défaut**.
- *
- * Les deux sont indissociables : invariant 2 du socle — un produit a toujours au moins
- * une déclinaison, et exactement une par défaut. Les créer séparément ouvrirait une
- * fenêtre où l'invariant est faux, donc une seule opération atomique.
+ * **Le read model du catalogue** — ce que les canaux (Shopify, plateforme
+ * B2B) consomment. C'est l'instantané de l'agrégat, pas l'agrégat : une
+ * projection n'a rien à muter, et lui tendre des méthodes serait l'inviter à
+ * le faire. Les noms restent ceux que les canaux importent déjà.
  */
-export interface NewProduct {
-  readonly id: string;
-  readonly sku: Sku;
-  readonly name: LocalizedText;
-  readonly slug: LocalizedText;
-  readonly kind: ProductKind;
-  readonly categoryId: string;
-  readonly defaultVariant: {
-    readonly id: string;
-    readonly sku: Sku;
-    readonly name: LocalizedText;
-  };
-}
+export type ProductRecord = ProductSnapshot;
+export type VariantRecord = VariantSnapshot;
+export type VariantNutritionView = VariantNutritionSnapshot;
+export type { ProductKind, ProductStatus } from "../entities/product.js";
 
+/**
+ * Port d'écriture : il rend et reprend l'**agrégat**.
+ *
+ * Il ne porte plus une méthode par mutation (`rename`, `setStatus`,
+ * `setVariantPrice`…). Ces méthodes obligeaient le dépôt à savoir ce que
+ * chaque verbe change — et le tarif d'une déclinaison s'écrivait par son id
+ * seul, sans que rien ne rappelle à quel produit elle appartient.
+ */
 export abstract class ProductRepository {
-  abstract findById(id: string): Promise<ProductRecord | null>;
-  abstract listAll(): Promise<ProductRecord[]>;
-  abstract createWithDefaultVariant(product: NewProduct): Promise<void>;
-  abstract rename(id: string, name: LocalizedText, slug: LocalizedText): Promise<void>;
-  abstract setStatus(id: string, status: ProductStatus): Promise<void>;
-  abstract setKind(id: string, kind: ProductKind): Promise<void>;
-  abstract moveToCategory(id: string, categoryId: string): Promise<void>;
-  /** Tarif canonique HT (centimes) de la déclinaison ; `null` = dé-tarifer. */
-  abstract setVariantPrice(variantId: string, priceCents: number | null): Promise<void>;
-  /** Poids net (grammes) de la déclinaison ; `null` = effacer. */
-  abstract setVariantWeight(variantId: string, weightGrams: number | null): Promise<void>;
+  abstract findById(id: string): Promise<Product | null>;
+  abstract listAll(): Promise<Product[]>;
+  /**
+   * Écrit le produit, sa déclinaison par défaut **et** la réservation des deux
+   * références, en une transaction : l'invariant 2 n'est jamais faux, même une
+   * fraction de seconde.
+   */
+  abstract add(product: Product): Promise<void>;
+  abstract save(product: Product): Promise<void>;
 }

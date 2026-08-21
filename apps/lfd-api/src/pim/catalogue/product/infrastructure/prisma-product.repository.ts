@@ -2,15 +2,13 @@ import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { SkuAlreadyUsedError } from "../domain/errors/sku-errors.js";
+import { Product, type ProductSnapshot } from "../domain/entities/product.js";
+import type { VariantSnapshot } from "../domain/entities/variant.js";
 import {
   ProductRepository,
-  type NewProduct,
   type ProductKind,
-  type ProductRecord,
   type ProductStatus,
-  type VariantRecord,
 } from "../domain/ports/product.repository.js";
-import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import {
   isUniqueViolation,
   localizedColumn,
@@ -53,7 +51,7 @@ interface ProductRow {
   variants: VariantRow[];
 }
 
-function toVariant(row: VariantRow): VariantRecord {
+function toVariant(row: VariantRow): VariantSnapshot {
   return {
     id: row.id,
     sku: row.sku,
@@ -82,8 +80,8 @@ function toVariant(row: VariantRow): VariantRecord {
   };
 }
 
-function toRecord(row: ProductRow): ProductRecord {
-  return {
+function toProduct(row: ProductRow): Product {
+  return Product.reconstitute({
     id: row.id,
     sku: row.sku,
     name: readLocalizedColumn(row.name, "product.name"),
@@ -92,6 +90,17 @@ function toRecord(row: ProductRow): ProductRecord {
     categoryId: row.categoryId,
     status: row.status,
     variants: row.variants.map(toVariant),
+  });
+}
+
+/** Les colonnes du produit lui-même — les déclinaisons ont les leurs. */
+function toColumns(snapshot: ProductSnapshot) {
+  return {
+    name: localizedColumn(snapshot.name),
+    slug: localizedColumn(snapshot.slug),
+    kind: snapshot.kind,
+    categoryId: snapshot.categoryId,
+    status: snapshot.status,
   };
 }
 
@@ -101,7 +110,7 @@ export class PrismaProductRepository extends ProductRepository {
     super();
   }
 
-  async findById(id: string): Promise<ProductRecord | null> {
+  async findById(id: string): Promise<Product | null> {
     const row = await this.prisma.product.findUnique({
       where: { id },
       include: {
@@ -111,10 +120,10 @@ export class PrismaProductRepository extends ProductRepository {
         },
       },
     });
-    return row === null ? null : toRecord(row);
+    return row === null ? null : toProduct(row);
   }
 
-  async listAll(): Promise<ProductRecord[]> {
+  async listAll(): Promise<Product[]> {
     const rows = await this.prisma.product.findMany({
       include: {
         variants: {
@@ -124,7 +133,7 @@ export class PrismaProductRepository extends ProductRepository {
       },
       orderBy: { sku: "asc" },
     });
-    return rows.map(toRecord);
+    return rows.map(toProduct);
   }
 
   /**
@@ -135,40 +144,34 @@ export class PrismaProductRepository extends ProductRepository {
    * C'est ici — et nulle part ailleurs — que la violation d'unicité Postgres est traduite
    * en erreur métier : ni le handler ni le contrôleur ne connaissent le code `P2002`.
    */
-  async createWithDefaultVariant(product: NewProduct): Promise<void> {
-    const { defaultVariant } = product;
+  async add(product: Product): Promise<void> {
+    const snapshot = product.snapshot();
+    const [defaultVariant] = snapshot.variants;
+    if (defaultVariant === undefined) {
+      // Inatteignable : l'agrégat refuse de naître sans déclinaison par défaut.
+      throw new Error("produit sans déclinaison — invariant 2 violé avant écriture");
+    }
 
     try {
       await this.prisma.$transaction([
         this.prisma.skuRegistry.create({
-          data: {
-            value: product.sku.value,
-            ownerType: "product",
-            ownerId: product.id,
-          },
+          data: { value: snapshot.sku, ownerType: "product", ownerId: snapshot.id },
         }),
         this.prisma.skuRegistry.create({
-          data: {
-            value: defaultVariant.sku.value,
-            ownerType: "variant",
-            ownerId: defaultVariant.id,
-          },
+          data: { value: defaultVariant.sku, ownerType: "variant", ownerId: defaultVariant.id },
         }),
         this.prisma.product.create({
           data: {
-            id: product.id,
-            sku: product.sku.value,
-            name: localizedColumn(product.name),
-            slug: localizedColumn(product.slug),
-            kind: product.kind,
-            categoryId: product.categoryId,
+            id: snapshot.id,
+            sku: snapshot.sku,
+            ...toColumns(snapshot),
             variants: {
               create: {
                 id: defaultVariant.id,
-                sku: defaultVariant.sku.value,
+                sku: defaultVariant.sku,
                 name: localizedColumn(defaultVariant.name),
-                isDefault: true,
-                position: 0,
+                isDefault: defaultVariant.isDefault,
+                position: defaultVariant.position,
               },
             },
           },
@@ -176,42 +179,36 @@ export class PrismaProductRepository extends ProductRepository {
       ]);
     } catch (error) {
       if (isUniqueViolation(error)) {
-        throw new SkuAlreadyUsedError(product.sku.value);
+        throw new SkuAlreadyUsedError(snapshot.sku);
       }
       throw error;
     }
   }
 
-  async rename(id: string, name: LocalizedText, slug: LocalizedText): Promise<void> {
-    await this.prisma.product.update({
-      where: { id },
-      data: { name: localizedColumn(name), slug: localizedColumn(slug) },
-    });
-  }
-
-  async setStatus(id: string, status: ProductStatus): Promise<void> {
-    await this.prisma.product.update({ where: { id }, data: { status } });
-  }
-
-  async setKind(id: string, kind: ProductKind): Promise<void> {
-    await this.prisma.product.update({ where: { id }, data: { kind } });
-  }
-
-  async moveToCategory(id: string, categoryId: string): Promise<void> {
-    await this.prisma.product.update({ where: { id }, data: { categoryId } });
-  }
-
-  async setVariantPrice(variantId: string, priceCents: number | null): Promise<void> {
-    await this.prisma.productVariant.update({
-      where: { id: variantId },
-      data: { priceCents },
-    });
-  }
-
-  async setVariantWeight(variantId: string, weightGrams: number | null): Promise<void> {
-    await this.prisma.productVariant.update({
-      where: { id: variantId },
-      data: { weightGrams },
-    });
+  /**
+   * Écrit le produit ET ses déclinaisons, en une transaction. On réécrit
+   * toutes les déclinaisons plutôt que de deviner celles qui ont bougé : un
+   * agrégat en porte une poignée, et « deviner » est précisément ce que
+   * l'ancien port faisait — une méthode par mutation, à tenir d'accord avec
+   * le domaine à la main.
+   */
+  async save(product: Product): Promise<void> {
+    const snapshot = product.snapshot();
+    await this.prisma.$transaction([
+      this.prisma.product.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
+      ...snapshot.variants.map((variant) =>
+        this.prisma.productVariant.update({
+          where: { id: variant.id },
+          data: {
+            name: localizedColumn(variant.name),
+            isDefault: variant.isDefault,
+            isDiscontinued: variant.isDiscontinued,
+            position: variant.position,
+            priceCents: variant.priceCents,
+            weightGrams: variant.weightGrams,
+          },
+        }),
+      ),
+    ]);
   }
 }

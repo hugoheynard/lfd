@@ -7,13 +7,14 @@ export class RestoreProductCommand {
   constructor(readonly id: string) {}
 }
 
-/** Remet un produit archivé en brouillon (`draft`). */
+/** Remet un produit archivé en brouillon (`draft`) — jamais directement en ligne. */
 @CommandHandler(RestoreProductCommand)
 export class RestoreProductHandler implements ICommandHandler<RestoreProductCommand, void> {
   constructor(private readonly products: ProductRepository) {}
 
   async execute(command: RestoreProductCommand): Promise<void> {
-    await requireProduct(this.products, command.id);
-    await this.products.setStatus(command.id, "draft");
+    const product = await requireProduct(this.products, command.id);
+    product.restore();
+    await this.products.save(product);
   }
 }

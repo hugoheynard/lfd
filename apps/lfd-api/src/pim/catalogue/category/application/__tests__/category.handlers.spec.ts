@@ -1,10 +1,6 @@
 import { TvaRegimeNotFoundError } from "../../../../commerce/domain/errors/commerce-errors.js";
-import {
-  TvaRegimeRepository,
-  type NewTvaRegime,
-  type TvaRegimeRecord,
-  type TvaRegimeUpdate,
-} from "../../../../commerce/domain/ports/tva-regime.repository.js";
+import { TvaRegime } from "../../../../commerce/domain/entities/tva-regime.js";
+import { TvaRegimeRepository } from "../../../../commerce/domain/ports/tva-regime.repository.js";
 import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
 import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
 import {
@@ -83,26 +79,22 @@ class InMemoryCategories extends CategoryRepository {
 }
 
 class InMemoryRegimes extends TvaRegimeRepository {
-  readonly rows: TvaRegimeRecord[] = [];
+  private readonly rows: TvaRegime[] = [];
 
-  listAll(): Promise<TvaRegimeRecord[]> {
+  listAll(): Promise<TvaRegime[]> {
     return Promise.resolve([...this.rows]);
   }
-  findById(id: string): Promise<TvaRegimeRecord | null> {
+  findById(id: string): Promise<TvaRegime | null> {
     return Promise.resolve(this.rows.find((r) => r.id === id) ?? null);
   }
-  findByTag(tag: string): Promise<TvaRegimeRecord | null> {
+  findByTag(tag: string): Promise<TvaRegime | null> {
     return Promise.resolve(this.rows.find((r) => r.tag === tag) ?? null);
   }
-  insert(regime: NewTvaRegime): Promise<void> {
+  add(regime: TvaRegime): Promise<void> {
     this.rows.push(regime);
     return Promise.resolve();
   }
-  update(id: string, update: TvaRegimeUpdate): Promise<void> {
-    const index = this.rows.findIndex((r) => r.id === id);
-    if (index >= 0) {
-      this.rows[index] = { id, ...update };
-    }
+  save(): Promise<void> {
     return Promise.resolve();
   }
   remove(id: string): Promise<void> {
@@ -241,13 +233,9 @@ describe("SetCategoryTvaHandler", () => {
   it("règle les deux régimes quand ils existent", async () => {
     const categories = new InMemoryCategories();
     const regimes = new InMemoryRegimes();
-    await regimes.insert({
-      id: "tva_5",
-      name: "Réduit",
-      description: "",
-      percent: 5.5,
-      tag: "tva-5-5",
-    });
+    await regimes.add(
+      TvaRegime.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }),
+    );
     const [id] = await openRoots(categories, 1);
 
     await new SetCategoryTvaHandler(categories, regimes).execute(

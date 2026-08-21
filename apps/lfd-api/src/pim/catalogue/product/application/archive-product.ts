@@ -13,7 +13,8 @@ export class ArchiveProductHandler implements ICommandHandler<ArchiveProductComm
   constructor(private readonly products: ProductRepository) {}
 
   async execute(command: ArchiveProductCommand): Promise<void> {
-    await requireProduct(this.products, command.id);
-    await this.products.setStatus(command.id, "archived");
+    const product = await requireProduct(this.products, command.id);
+    product.archive();
+    await this.products.save(product);
   }
 }

@@ -1,7 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { ProductRepository } from "../domain/ports/product.repository.js";
-import { requireVariant } from "./product-support.js";
+import { requireProduct } from "./product-support.js";
 
 export interface UpdateVariantPricingInput {
   readonly priceCents: number | null;
@@ -16,7 +16,11 @@ export class UpdateVariantPricingCommand {
   ) {}
 }
 
-/** Section « Tarif & logistique » d'une déclinaison : prix + poids en une opération. */
+/**
+ * Section « Tarif & logistique » d'une déclinaison : prix + poids en une
+ * opération. L'appartenance de la déclinaison au produit est tenue par
+ * l'agrégat — une requête forgée ne peut plus tarifer la variante d'un autre.
+ */
 @CommandHandler(UpdateVariantPricingCommand)
 export class UpdateVariantPricingHandler implements ICommandHandler<
   UpdateVariantPricingCommand,
@@ -26,8 +30,8 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
 
   async execute(command: UpdateVariantPricingCommand): Promise<void> {
     const { productId, variantId, input } = command;
-    await requireVariant(this.products, productId, variantId);
-    await this.products.setVariantPrice(variantId, input.priceCents);
-    await this.products.setVariantWeight(variantId, input.weightGrams);
+    const product = await requireProduct(this.products, productId);
+    product.priceVariant(variantId, input.priceCents, input.weightGrams);
+    await this.products.save(product);
   }
 }

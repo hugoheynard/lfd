@@ -133,6 +133,13 @@
 
 ## Prochaine étape en cours
 
+🔴 **Aucun verbe ne publie un produit** (constaté le 2026-08-21). `ProductStatus` porte
+`published`, la projection Shopify en dépend (`published` → `ACTIVE`, sinon `DRAFT`), et
+rien ne le pose : tout le catalogue part en brouillon. `PublishProduct` / `UnpublishProduct`
+sont à écrire — ce sont eux qui donneront un gardien à l'invariant 7 (pas de publication
+sans fiche réglementaire sur chaque déclinaison active), aujourd'hui inapplicable faute de
+verbe capable de le violer.
+
 ➡️ **Le questionnaire PI** (§ actions de cadrage) — c'est lui qui débloque le pricing,
 l'anti-drift et la validité d'ADR-15. Côté code, la suite naturelle est `AddVariant`
 (saisir les déclinaisons) puis la fiche réglementaire.

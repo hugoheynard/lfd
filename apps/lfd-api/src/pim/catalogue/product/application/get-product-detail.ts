@@ -29,6 +29,6 @@ export class GetProductDetailHandler implements IQueryHandler<
       return null;
     }
     const editorial = await this.editorials.findByProduct(query.id);
-    return { ...product, editorial };
+    return { ...product.snapshot(), editorial };
   }
 }

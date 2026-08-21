@@ -30,7 +30,7 @@ import {
 } from "../domain/value-objects/nutrition-declaration.js";
 import { Sku } from "../domain/value-objects/sku.value-object.js";
 import { SKU_AVAILABILITY } from "../infrastructure/prisma-sku-availability.js";
-import { slugOf } from "./product-support.js";
+import { Product } from "../domain/entities/product.js";
 
 export interface CreateProductInput {
   readonly nameFr: string;
@@ -101,15 +101,15 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     const variantId = this.ids.next();
     const variantSku = await proposeSku(variantSkuRoot(sku, new Map(), 0), this.availability);
 
-    await this.products.createWithDefaultVariant({
+    const product = Product.open({
       id: productId,
       sku,
       name,
-      slug: slugOf(name),
       kind: input.kind,
       categoryId: input.categoryId,
       defaultVariant: { id: variantId, sku: variantSku, name },
     });
+    await this.products.add(product);
 
     if (declaration !== null) {
       await this.nutrition.declare(variantId, declaration);

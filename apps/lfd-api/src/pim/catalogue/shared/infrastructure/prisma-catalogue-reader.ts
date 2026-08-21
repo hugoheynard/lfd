@@ -29,16 +29,22 @@ export class PrismaCatalogueReader extends CatalogueReader {
     super();
   }
 
-  /** Un produit archivé n'a rien à faire sur un canal de vente. */
+  /**
+   * Un produit archivé n'a rien à faire sur un canal de vente.
+   *
+   * Le port d'écriture rend des agrégats ; le lecteur en rend l'instantané —
+   * une projection n'a rien à muter, et lui tendre des méthodes serait
+   * l'inviter à le faire.
+   */
   async publishable(): Promise<ProductRecord[]> {
     const all = await this.products.listAll();
-    return all.filter((product) => product.status !== "archived");
+    return all.filter((product) => product.status !== "archived").map((p) => p.snapshot());
   }
 
   async byIds(ids: readonly string[]): Promise<ProductRecord[]> {
     const wanted = new Set(ids);
     const all = await this.products.listAll();
-    return all.filter((product) => wanted.has(product.id));
+    return all.filter((product) => wanted.has(product.id)).map((p) => p.snapshot());
   }
 
   async tvaTags(categoryId: string): Promise<CategoryTvaTags> {
