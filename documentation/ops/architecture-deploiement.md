@@ -17,7 +17,7 @@ flowchart TB
         S["Shell suite<br/>lfc-suite.pages.dev"]
     end
 
-    GW["**lfc-suite-gateway**<br/>Worker · SEULE porte d'entrée<br/>lfc-suite-gateway.lafoliedouce.workers.dev"]
+    GW["**lfd-gateway**<br/>Worker · SEULE porte dʼentrée<br/>lfd-gateway.lafoliedouce.workers.dev"]
 
     subgraph prive["Sans aucune adresse publique"]
         WB["Worker lfd-api"]
@@ -29,8 +29,8 @@ flowchart TB
     DBB[("Prisma Postgres<br/>base B2B")]
     DBP[("Prisma Postgres<br/>base PIM<br/>lue par le container B2B depuis B2c")]
 
-    A -->|"/api/b2b/*"| GW
-    B -->|"/api/b2b/*"| GW
+    A -->|"/api/lfd/*"| GW
+    B -->|"/api/lfd/*"| GW
     P -->|"/api/pim/*"| GW
     S --> A & B & P
 
@@ -68,8 +68,8 @@ sequenceDiagram
     participant C as Container NestJS
     participant D as Base Prisma
 
-    N->>G: GET /api/b2b/platform-settings
-    Note over G: résout le préfixe → backend b2b<br/>RETIRE `/api/b2b`<br/>écrase x-lfc-client-ip ← cf-connecting-ip<br/>pose/propage traceparent
+    N->>G: GET /api/lfd/platform-settings
+    Note over G: résout le préfixe → lfd-api<br/>RETIRE `/api/lfd`<br/>écrase x-lfc-client-ip ← cf-connecting-ip<br/>pose/propage traceparent
     G->>W: fetch(/platform-settings) via service binding
     Note over W: rate-limit edge par IP<br/>RÉÉCRIT x-lfc-client-ip (2ᵉ fois)
     W->>C: fetch via Durable Object

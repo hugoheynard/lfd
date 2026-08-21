@@ -354,7 +354,7 @@ dehors sur ce qu'on ne possède pas). Il en manquait une troisième, et c'est la
 plus fiable pour nos propres briques : **ce que la passerelle voit passer**.
 
 Elle est le seul chemin (§ `ops/securite-frontiere-de-confiance.md`) : rien
-n'atteint un backend sans traverser `lfc-suite-gateway`. Elle sait donc, sans
+nʼatteint un backend sans traverser `lfd-gateway`. Elle sait donc, sans
 rien demander à personne, combien de requêtes sont parties vers chaque backend,
 combien sont revenues en erreur, et en combien de temps.
 

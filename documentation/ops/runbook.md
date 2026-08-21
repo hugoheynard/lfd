@@ -44,7 +44,7 @@ distingue « déployé » de « configuré ».
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" https://lfd-api.lafoliedouce.workers.dev/platform-settings
-curl -s -o /dev/null -w "%{http_code}\n" https://lfc-suite-gateway.lafoliedouce.workers.dev/api/b2b/platform-settings
+curl -s -o /dev/null -w "%{http_code}\n" https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/platform-settings
 ```
 
 Attendu : **404** puis **200**. Un `200` sur la première ligne veut dire que la
@@ -63,7 +63,7 @@ trop tôt fait conclure à un échec qui n'existe pas.
 
 ```bash
 curl -s -D- -o /dev/null -X OPTIONS \
-  https://lfc-suite-gateway.lafoliedouce.workers.dev/api/b2b/platform-settings \
+  https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/platform-settings \
   -H "Origin: https://lfc-b2b-eu7.pages.dev" \
   -H "Access-Control-Request-Method: GET" | grep -i access-control
 ```
@@ -74,7 +74,7 @@ sans ça, on teste une porte ouverte, pas une serrure.
 ## Vérifier que le throttler limite le bon client
 
 ```bash
-U=https://lfc-suite-gateway.lafoliedouce.workers.dev/api/b2b/platform-settings
+U=https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/platform-settings
 for i in $(seq 1 75); do curl -s -o /dev/null -w "%{http_code}\n" -H "x-lfc-client-ip: 198.51.100.$i" $U; done | sort | uniq -c
 ```
 

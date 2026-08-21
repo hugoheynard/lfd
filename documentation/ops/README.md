@@ -22,9 +22,9 @@ app iPhone) et
 
 ## Le résumé en dix lignes
 
-- **Une seule porte d'entrée** : le Worker `lfc-suite-gateway`. Les deux backends
+- **Une seule porte d'entrée** : le Worker `lfd-gateway`. Les deux backends
   n'ont **aucune adresse publique** ; on les atteint par _service binding_.
-- **Routage par préfixe de chemin** (`/api/b2b`, `/api/pim`), retiré avant
+- **Routage par préfixe de chemin** (`/api/lfd`), retiré avant
   transmission. Le jour où un domaine existera, on repassera aux sous-domaines
   sans toucher aux backends.
 - **Containers ancrés en Europe de l'Ouest** (`lhr20`, Londres). Sans contrainte
