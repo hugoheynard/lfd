@@ -9,6 +9,13 @@
 // Absentes, on écrit des chaînes vides : l'app se sait alors « non configurée » et
 // ne fournit pas Auth0 du tout (cf. auth.config.ts). C'est l'état normal d'un poste
 // de dev dont le backend tourne en bypass staff.
+//
+// `DEV_BYPASS_AUTH=true` force cet état SANS effacer les valeurs Auth0 du `.env` :
+// on garde de quoi rejouer un vrai login staff le jour où on le teste, au lieu de
+// supprimer trois lignes et d'espérer s'en souvenir. Le drapeau se lit UNIQUEMENT
+// dans le fichier `.env`, jamais dans `process.env` — un build déployé part d'un
+// dépôt git où ce fichier n'existe pas, donc le contournement y est inatteignable
+// par construction, et pas seulement par convention.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -46,13 +53,29 @@ function parseDotenv(text) {
 
 const fileVars = existsSync(envPath) ? parseDotenv(readFileSync(envPath, 'utf8')) : {};
 
+// Volontairement lu dans le FICHIER seulement : cf. l'en-tête.
+const bypass = (fileVars.DEV_BYPASS_AUTH ?? '').trim().toLowerCase() === 'true';
+if (bypass && process.env.NODE_ENV === 'production') {
+  throw new Error(
+    "[auth-config] DEV_BYPASS_AUTH=true avec NODE_ENV=production : refusé. " +
+      "Ce drapeau éteint la connexion staff ; il n'a de sens que sur un poste local " +
+      'dont le backend tourne en AUTH_ADMIN_DEV_BYPASS.',
+  );
+}
+
 // process.env (CI/shell) gagne sur le fichier .env.
 const read = (key) => (process.env[key] ?? fileVars[key] ?? '').trim();
 
 const KEYS = ['B2B_ADMIN_AUTH0_DOMAIN', 'B2B_ADMIN_AUTH0_CLIENT_ID', 'B2B_ADMIN_AUTH0_AUDIENCE'];
-const values = Object.fromEntries(KEYS.map((key) => [key, read(key)]));
+const values = Object.fromEntries(KEYS.map((key) => [key, bypass ? '' : read(key)]));
 
-const missing = KEYS.filter((key) => values[key] === '');
+const missing = bypass ? [] : KEYS.filter((key) => values[key] === '');
+if (bypass) {
+  console.log(
+    '[auth-config] DEV_BYPASS_AUTH=true — connexion staff éteinte, ' +
+      "l'app entre d'office. Le backend doit tourner en AUTH_ADMIN_DEV_BYPASS.",
+  );
+}
 if (missing.length > 0) {
   console.warn(
     `[auth-config] variables manquantes : ${missing.join(', ')} — valeurs vides écrites. ` +
