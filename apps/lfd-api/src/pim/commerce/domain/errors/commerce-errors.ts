@@ -1,4 +1,4 @@
-import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
+import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /** Un régime de TVA visé n'existe pas. */
 export class TvaRegimeNotFoundError extends BusinessError {
@@ -21,5 +21,12 @@ export class TvaRegimeInUseError extends BusinessError {
       "commerce.tva_regime_in_use",
       `Régime de TVA utilisé par une catégorie — réaffectez-la d'abord (${id}).`,
     );
+  }
+}
+
+/** Un régime sans nom ne se retrouve pas dans une liste déroulante. */
+export class EmptyTvaRegimeNameError extends DomainError {
+  constructor() {
+    super("commerce.tva_regime.empty_name", "Le nom du régime de TVA est obligatoire.");
   }
 }

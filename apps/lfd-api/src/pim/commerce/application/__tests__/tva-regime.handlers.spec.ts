@@ -1,75 +1,67 @@
 import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
+import { TvaRegime, type TvaRegimeSnapshot } from "../../domain/entities/tva-regime.js";
 import {
   TvaRegimeNotFoundError,
   TvaTagConflictError,
 } from "../../domain/errors/commerce-errors.js";
-import {
-  TvaRegimeRepository,
-  type NewTvaRegime,
-  type TvaRegimeRecord,
-  type TvaRegimeUpdate,
-} from "../../domain/ports/tva-regime.repository.js";
+import { TvaRegimeRepository } from "../../domain/ports/tva-regime.repository.js";
 import { CreateTvaRegimeCommand, CreateTvaRegimeHandler } from "../create-tva-regime.js";
 import { RemoveTvaRegimeCommand, RemoveTvaRegimeHandler } from "../remove-tva-regime.js";
-import { tagFor } from "../tva-support.js";
 import { UpdateTvaRegimeCommand, UpdateTvaRegimeHandler } from "../update-tva-regime.js";
 
+/** Garde des agrégats et reconstitue à chaque lecture — comme la vraie base. */
 class InMemoryRepo extends TvaRegimeRepository {
-  readonly rows: TvaRegimeRecord[] = [];
+  readonly stored = new Map<string, TvaRegimeSnapshot>();
 
-  listAll(): Promise<TvaRegimeRecord[]> {
-    return Promise.resolve([...this.rows]);
+  listAll(): Promise<TvaRegime[]> {
+    return Promise.resolve(
+      [...this.stored.values()].map((snapshot) => TvaRegime.reconstitute(snapshot)),
+    );
   }
-  findById(id: string): Promise<TvaRegimeRecord | null> {
-    return Promise.resolve(this.rows.find((r) => r.id === id) ?? null);
+  findById(id: string): Promise<TvaRegime | null> {
+    const snapshot = this.stored.get(id);
+    return Promise.resolve(snapshot === undefined ? null : TvaRegime.reconstitute(snapshot));
   }
-  findByTag(tag: string): Promise<TvaRegimeRecord | null> {
-    return Promise.resolve(this.rows.find((r) => r.tag === tag) ?? null);
+  findByTag(tag: string): Promise<TvaRegime | null> {
+    const snapshot = [...this.stored.values()].find((row) => row.tag === tag);
+    return Promise.resolve(snapshot === undefined ? null : TvaRegime.reconstitute(snapshot));
   }
-  insert(regime: NewTvaRegime): Promise<void> {
-    this.rows.push(regime);
-    return Promise.resolve();
+  add(regime: TvaRegime): Promise<void> {
+    return this.save(regime);
   }
-  update(id: string, update: TvaRegimeUpdate): Promise<void> {
-    const index = this.rows.findIndex((r) => r.id === id);
-    if (index >= 0) {
-      this.rows[index] = { id, ...update };
-    }
+  save(regime: TvaRegime): Promise<void> {
+    const snapshot = regime.snapshot();
+    this.stored.set(snapshot.id, snapshot);
     return Promise.resolve();
   }
   remove(id: string): Promise<void> {
-    const index = this.rows.findIndex((r) => r.id === id);
-    if (index >= 0) {
-      this.rows.splice(index, 1);
-    }
+    this.stored.delete(id);
     return Promise.resolve();
+  }
+
+  at(id: string): TvaRegimeSnapshot | undefined {
+    return this.stored.get(id);
   }
 }
 
 class StubIds extends PimIdGenerator {
+  private count = 0;
   next(): string {
-    return "tva_fixed";
+    this.count += 1;
+    return `tva_${this.count}`;
   }
 }
-
-describe("tagFor", () => {
-  it("dérive le handle Shopify du taux", () => {
-    expect(tagFor(5.5)).toBe("tva-5-5");
-    expect(tagFor(10)).toBe("tva-10");
-    expect(tagFor(20)).toBe("tva-20");
-  });
-});
 
 describe("CreateTvaRegimeHandler", () => {
   it("dérive le tag, insère et renvoie l’id", async () => {
     const repo = new InMemoryRepo();
-    const handler = new CreateTvaRegimeHandler(repo, new StubIds());
 
-    const id = await handler.execute(new CreateTvaRegimeCommand({ name: "Réduit", percent: 5.5 }));
+    const id = await new CreateTvaRegimeHandler(repo, new StubIds()).execute(
+      new CreateTvaRegimeCommand({ name: "Réduit", percent: 5.5 }),
+    );
 
-    expect(id).toBe("tva_fixed");
-    expect(repo.rows[0]).toEqual({
-      id: "tva_fixed",
+    expect(repo.at(id)).toEqual({
+      id,
       name: "Réduit",
       description: "",
       percent: 5.5,
@@ -90,46 +82,72 @@ describe("CreateTvaRegimeHandler", () => {
 
 describe("UpdateTvaRegimeHandler", () => {
   it("jette si le régime n’existe pas", async () => {
-    const repo = new InMemoryRepo();
-    const handler = new UpdateTvaRegimeHandler(repo);
-
     await expect(
-      handler.execute(new UpdateTvaRegimeCommand("absent", { name: "X", percent: 20 })),
+      new UpdateTvaRegimeHandler(new InMemoryRepo()).execute(
+        new UpdateTvaRegimeCommand("absent", { name: "X", percent: 20 }),
+      ),
     ).rejects.toBeInstanceOf(TvaRegimeNotFoundError);
   });
 
   it("met à jour et re-dérive le tag", async () => {
     const repo = new InMemoryRepo();
-    await new CreateTvaRegimeHandler(repo, new StubIds()).execute(
+    const id = await new CreateTvaRegimeHandler(repo, new StubIds()).execute(
       new CreateTvaRegimeCommand({ name: "Réduit", percent: 5.5 }),
     );
 
     await new UpdateTvaRegimeHandler(repo).execute(
-      new UpdateTvaRegimeCommand("tva_fixed", {
-        name: "Intermédiaire",
-        percent: 10,
-      }),
+      new UpdateTvaRegimeCommand(id, { name: "Intermédiaire", percent: 10 }),
     );
 
-    expect(repo.rows[0]).toEqual({
-      id: "tva_fixed",
+    expect(repo.at(id)).toEqual({
+      id,
       name: "Intermédiaire",
       description: "",
       percent: 10,
       tag: "tva-10",
     });
   });
+
+  /**
+   * Le régime garde SON tag : le conflit ne se déclenche que contre un autre.
+   * Sans l'exception, réviser un nom sans toucher au taux serait impossible.
+   */
+  it("laisse réviser un régime sans changer son taux", async () => {
+    const repo = new InMemoryRepo();
+    const id = await new CreateTvaRegimeHandler(repo, new StubIds()).execute(
+      new CreateTvaRegimeCommand({ name: "Réduit", percent: 5.5 }),
+    );
+
+    await new UpdateTvaRegimeHandler(repo).execute(
+      new UpdateTvaRegimeCommand(id, { name: "Réduit alimentaire", percent: 5.5 }),
+    );
+
+    expect(repo.at(id)?.name).toBe("Réduit alimentaire");
+  });
+
+  it("refuse de déplacer un régime sur le taux d’un autre", async () => {
+    const repo = new InMemoryRepo();
+    const create = new CreateTvaRegimeHandler(repo, new StubIds());
+    const first = await create.execute(new CreateTvaRegimeCommand({ name: "A", percent: 5.5 }));
+    await create.execute(new CreateTvaRegimeCommand({ name: "B", percent: 20 }));
+
+    await expect(
+      new UpdateTvaRegimeHandler(repo).execute(
+        new UpdateTvaRegimeCommand(first, { name: "A", percent: 20 }),
+      ),
+    ).rejects.toBeInstanceOf(TvaTagConflictError);
+  });
 });
 
 describe("RemoveTvaRegimeHandler", () => {
   it("supprime un régime existant", async () => {
     const repo = new InMemoryRepo();
-    await new CreateTvaRegimeHandler(repo, new StubIds()).execute(
+    const id = await new CreateTvaRegimeHandler(repo, new StubIds()).execute(
       new CreateTvaRegimeCommand({ name: "Réduit", percent: 5.5 }),
     );
 
-    await new RemoveTvaRegimeHandler(repo).execute(new RemoveTvaRegimeCommand("tva_fixed"));
+    await new RemoveTvaRegimeHandler(repo).execute(new RemoveTvaRegimeCommand(id));
 
-    expect(repo.rows).toHaveLength(0);
+    expect(repo.at(id)).toBeUndefined();
   });
 });

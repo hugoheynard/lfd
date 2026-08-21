@@ -1,13 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../infra/database/pim-prisma.service.js";
+import { TvaRegime, type TvaRegimeSnapshot } from "../domain/entities/tva-regime.js";
 import { TvaRegimeInUseError } from "../domain/errors/commerce-errors.js";
-import {
-  TvaRegimeRepository,
-  type NewTvaRegime,
-  type TvaRegimeRecord,
-  type TvaRegimeUpdate,
-} from "../domain/ports/tva-regime.repository.js";
+import { TvaRegimeRepository } from "../domain/ports/tva-regime.repository.js";
 
 /** Violation de clé étrangère Prisma — le `23503` de Postgres, vu depuis l'ORM. */
 function isForeignKeyViolation(error: unknown): boolean {
@@ -22,13 +18,23 @@ interface TvaRegimeRow {
   tag: string;
 }
 
-function toRecord(row: TvaRegimeRow): TvaRegimeRecord {
-  return {
+function toRegime(row: TvaRegimeRow): TvaRegime {
+  return TvaRegime.reconstitute({
     id: row.id,
     name: row.name,
     description: row.description,
     percent: row.percent,
     tag: row.tag,
+  });
+}
+
+/** Les colonnes que l'agrégat possède — le `tag` en fait partie, mais dérivé. */
+function toColumns(snapshot: TvaRegimeSnapshot) {
+  return {
+    name: snapshot.name,
+    description: snapshot.description,
+    percent: snapshot.percent,
+    tag: snapshot.tag,
   };
 }
 
@@ -38,45 +44,29 @@ export class PrismaTvaRegimeRepository extends TvaRegimeRepository {
     super();
   }
 
-  async listAll(): Promise<TvaRegimeRecord[]> {
-    const rows = await this.prisma.tvaRegime.findMany({
-      orderBy: [{ percent: "asc" }],
-    });
-    return rows.map(toRecord);
+  async listAll(): Promise<TvaRegime[]> {
+    const rows = await this.prisma.tvaRegime.findMany({ orderBy: [{ percent: "asc" }] });
+    return rows.map(toRegime);
   }
 
-  async findById(id: string): Promise<TvaRegimeRecord | null> {
+  async findById(id: string): Promise<TvaRegime | null> {
     const row = await this.prisma.tvaRegime.findUnique({ where: { id } });
-    return row === null ? null : toRecord(row);
+    return row === null ? null : toRegime(row);
   }
 
-  async findByTag(tag: string): Promise<TvaRegimeRecord | null> {
+  async findByTag(tag: string): Promise<TvaRegime | null> {
     const row = await this.prisma.tvaRegime.findUnique({ where: { tag } });
-    return row === null ? null : toRecord(row);
+    return row === null ? null : toRegime(row);
   }
 
-  async insert(regime: NewTvaRegime): Promise<void> {
-    await this.prisma.tvaRegime.create({
-      data: {
-        id: regime.id,
-        name: regime.name,
-        description: regime.description,
-        percent: regime.percent,
-        tag: regime.tag,
-      },
-    });
+  async add(regime: TvaRegime): Promise<void> {
+    const snapshot = regime.snapshot();
+    await this.prisma.tvaRegime.create({ data: { id: snapshot.id, ...toColumns(snapshot) } });
   }
 
-  async update(id: string, update: TvaRegimeUpdate): Promise<void> {
-    await this.prisma.tvaRegime.update({
-      where: { id },
-      data: {
-        name: update.name,
-        description: update.description,
-        percent: update.percent,
-        tag: update.tag,
-      },
-    });
+  async save(regime: TvaRegime): Promise<void> {
+    const snapshot = regime.snapshot();
+    await this.prisma.tvaRegime.update({ where: { id: snapshot.id }, data: toColumns(snapshot) });
   }
 
   async remove(id: string): Promise<void> {
