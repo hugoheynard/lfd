@@ -62,6 +62,11 @@ function projectVariant(
     isDefault: variant.isDefault,
     position: variant.position,
     vatRatePercent,
+    // Le `null` est transmis TEL QUEL : c'est la différence entre « rien n'a été
+    // déclaré » et « rien ne s'y trouve », et elle ne se reconstitue pas en
+    // aval. La copie n'est que le passage du `readonly` du domaine au tableau
+    // du schéma de fil.
+    allergens: variant.allergens === null ? null : [...variant.allergens],
   };
 }
 

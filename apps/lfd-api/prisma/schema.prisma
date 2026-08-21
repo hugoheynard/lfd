@@ -1873,6 +1873,19 @@ model CatalogItem {
   /// `CatalogReader` l'écarte plutôt que d'inventer 5,5 %.
   vatRatePercent Decimal? @map("vat_rate_percent") @db.Decimal(5, 2)
 
+  /// Les **codes allergènes GS1** déclarés par le PIM pour cet article.
+  ///
+  /// `Json` et non `String[]`, pour une raison précise : une liste scalaire
+  /// Prisma ne peut pas être nulle, elle vaut `[]` par défaut — or il faut
+  /// distinguer TROIS états. `null` = aucune fiche réglementaire (rien n'a été
+  /// déclaré), `[]` = fiche déclarée SANS allergène (une affirmation), une
+  /// liste = les codes. Confondre les deux premiers transformerait un oubli de
+  /// saisie en promesse au consommateur.
+  ///
+  /// Des CODES, jamais des libellés : la projection vers les catégories INCO
+  /// (dédup n:1, mise en évidence, langue) appartient à qui affiche.
+  allergens Json? @map("allergens")
+
   /// Quand ce push l'a écrit. Sert à repérer ce qu'un push partiel aurait laissé.
   receivedAt DateTime @map("received_at")
 

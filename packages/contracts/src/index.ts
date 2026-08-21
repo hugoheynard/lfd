@@ -359,6 +359,7 @@ export {
 } from "./catalog-admin.js";
 export type {
   CatalogAdminItemView,
+  CatalogAllergenView,
   SetB2bPricePayload,
   SetCatalogVisibilityPayload,
   SetCatalogFeaturedPayload,

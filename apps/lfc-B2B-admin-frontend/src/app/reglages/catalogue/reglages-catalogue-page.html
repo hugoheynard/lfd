@@ -79,6 +79,19 @@
               } @else {
                 <fold-badge content="sans TVA" variant="warning" />
               }
+              <!-- La fiche réglementaire, telle que la BOUTIQUE la connaît.
+                   Trois états distincts : rien de déclaré, déclaré sans
+                   allergène, ou la liste — le premier n'est pas le second. -->
+              @if (item.allergens === null) {
+                <fold-badge content="sans fiche" variant="warning" />
+              } @else if (item.allergens.length === 0) {
+                <span class="allergens">Sans allergène</span>
+              } @else {
+                <span class="allergens">{{ allergenLabels(item) }}</span>
+              }
+              @if (item.allergensIncomplete) {
+                <fold-badge content="code inconnu" variant="alert" />
+              }
               <lfd-price-editor
                 [originCents]="item.pimPriceCents"
                 [alteredCents]="item.b2bPriceCents"

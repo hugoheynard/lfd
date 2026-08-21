@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 2;
+export const CATALOG_SNAPSHOT_VERSION = 3;
 
 /**
  * Une famille de produits, **à plat**.
@@ -107,6 +107,28 @@ export const syncVariantSchema = z.object({
    * taux.
    */
   vatRatePercent: z.number().nonnegative().nullable(),
+  /**
+   * Les **codes allergènes GS1** déclarés pour cet article — le stockage
+   * canonique, pas des libellés.
+   *
+   * Trois états, et les trois se distinguent :
+   * - `null` — **aucune fiche réglementaire**. Rien n'a été déclaré ; le
+   *   récepteur ne doit surtout pas l'afficher comme « sans allergène ».
+   * - `[]` — fiche déclarée, **aucun allergène**. C'est une affirmation, pas un
+   *   silence, et c'est ce qu'un client a le droit de lire.
+   * - `["AW", "AM"]` — les codes déclarés.
+   *
+   * Confondre les deux premiers est la seule faute qui compte ici : elle
+   * transforme un oubli de saisie en promesse au consommateur. C'est aussi ce
+   * que l'agrégat encode déjà (`hasRegulatorySheet`), et ce que la version 2 du
+   * fil perdait — les allergènes ne voyageaient pas du tout, si bien que la
+   * boutique qui vend le produit ignorait ce qu'il contient.
+   *
+   * **Des codes, jamais des libellés** : la projection vers les catégories INCO
+   * (dédup n:1, mise en évidence, langue) est une décision d'AFFICHAGE, et elle
+   * appartient à qui affiche.
+   */
+  allergens: z.array(z.string().min(1)).nullable(),
 });
 export type SyncVariant = z.infer<typeof syncVariantSchema>;
 

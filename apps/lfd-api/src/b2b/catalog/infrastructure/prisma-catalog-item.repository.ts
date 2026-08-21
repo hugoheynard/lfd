@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { CatalogItem, type CatalogItemState } from "../domain/entities/catalog-item.js";
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
@@ -19,6 +20,7 @@ interface ItemRow {
   readonly isDefault: boolean;
   readonly position: number;
   readonly vatRatePercent: { toNumber(): number } | null;
+  readonly allergens: unknown;
   readonly receivedAt: Date;
   readonly override: {
     readonly priceCents: number | null;
@@ -170,6 +172,7 @@ function toDomain(row: ItemRow): CatalogItem {
       position: row.position,
       // `Decimal` → `number` : le domaine ne connaît pas le type de l'ORM.
       vatRatePercent: row.vatRatePercent === null ? null : row.vatRatePercent.toNumber(),
+      allergens: allergensOf(row.allergens),
       receivedAt: row.receivedAt,
     },
     decision:
@@ -198,6 +201,24 @@ function factsRow(state: CatalogItemState) {
     isDefault: facts.isDefault,
     position: facts.position,
     vatRatePercent: facts.vatRatePercent,
+    // `?? Prisma.DbNull` : sans ça, `undefined` laisserait la colonne INCHANGÉE
+    // sur un upsert, et un article dont la fiche a été retirée dans le PIM
+    // garderait ses anciens allergènes.
+    allergens: facts.allergens ?? Prisma.DbNull,
     receivedAt: facts.receivedAt,
   };
+}
+
+/**
+ * La colonne `jsonb` relue en liste de codes.
+ *
+ * Tout ce qui n'est pas un tableau de chaînes rend `null` — « pas de fiche »
+ * plutôt qu'une fiche vide. Sur un champ réglementé, la valeur par défaut doit
+ * être celle qui n'affirme RIEN.
+ */
+function allergensOf(raw: unknown): readonly string[] | null {
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+  return raw.filter((code): code is string => typeof code === "string");
 }

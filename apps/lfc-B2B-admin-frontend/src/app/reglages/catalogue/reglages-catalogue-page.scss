@@ -57,3 +57,10 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* La fiche réglementaire, en note discrète : elle informe, elle n'appelle pas
+   à l'action — contrairement au badge « sans fiche », qui est un manque. */
+.allergens {
+  font-size: 0.85rem;
+  color: var(--fold-color-text-muted);
+}

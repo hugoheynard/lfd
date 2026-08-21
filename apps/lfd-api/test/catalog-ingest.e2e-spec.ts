@@ -47,13 +47,18 @@ const CATEGORY = {
 };
 
 function snapshot(
-  skus: readonly { sku: string; priceCents: number; vatRatePercent?: number | null }[],
+  skus: readonly {
+    sku: string;
+    priceCents: number;
+    vatRatePercent?: number | null;
+    allergens?: readonly string[] | null;
+  }[],
 ): CatalogSnapshot {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
     generatedAt: "2026-08-17T08:00:00.000Z",
     categories: [CATEGORY],
-    products: skus.map(({ sku, priceCents, vatRatePercent = 5.5 }) => ({
+    products: skus.map(({ sku, priceCents, vatRatePercent = 5.5, allergens = ["AW"] }) => ({
       id: `prd_${sku}`,
       sku,
       name: `Produit ${sku}`,
@@ -68,6 +73,7 @@ function snapshot(
           isDefault: true,
           position: 0,
           vatRatePercent,
+          allergens: allergens === null ? null : [...allergens],
         },
       ],
     })),
@@ -178,5 +184,45 @@ describe("le taux de TVA arrive sur l’ARTICLE", () => {
     const item = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: "VIE-003-1" } });
 
     expect(item.vatRatePercent).toBeNull();
+  });
+});
+
+describe("les allergènes traversent le fil", () => {
+  /**
+   * Les trois états doivent arriver DISTINCTS jusqu'à la colonne. C'est la
+   * seule faute qui compte sur ce champ : confondre « rien n'a été déclaré »
+   * avec « rien ne s'y trouve », c'est afficher un oubli de saisie comme une
+   * promesse au consommateur.
+   */
+  it("distingue « pas de fiche », « fiche vide » et « des codes »", async () => {
+    await push(
+      snapshot([
+        { sku: "ALG-001", priceCents: 100, allergens: ["AW", "AM"] },
+        { sku: "ALG-002", priceCents: 100, allergens: [] },
+        { sku: "ALG-003", priceCents: 100, allergens: null },
+      ]),
+    );
+
+    const rows = await ctx.prisma.catalogItem.findMany({
+      where: { sku: { in: ["ALG-001-1", "ALG-002-1", "ALG-003-1"] } },
+      orderBy: { sku: "asc" },
+      select: { sku: true, allergens: true },
+    });
+
+    expect(rows.map((row) => row.allergens)).toEqual([["AW", "AM"], [], null]);
+  });
+
+  it("efface la fiche quand le PIM la retire", async () => {
+    // Un `undefined` laisserait la colonne inchangée sur l'upsert, et l'article
+    // garderait des allergènes que le référentiel ne déclare plus.
+    await push(snapshot([{ sku: "ALG-004", priceCents: 100, allergens: ["AW"] }]));
+    await push(snapshot([{ sku: "ALG-004", priceCents: 100, allergens: null }]));
+
+    const row = await ctx.prisma.catalogItem.findUnique({
+      where: { sku: "ALG-004-1" },
+      select: { allergens: true },
+    });
+
+    expect(row?.allergens).toBeNull();
   });
 });

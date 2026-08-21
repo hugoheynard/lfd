@@ -12,6 +12,14 @@ import { z } from "zod";
  */
 
 /** Un article, avec sa provenance et la décision prise dessus s'il y en a une. */
+/** Un allergène tel qu'une étiquette le nomme. */
+export interface CatalogAllergenView {
+  /** La catégorie réglementaire INCO — la clé, stable et non traduite. */
+  readonly category: string;
+  /** Le libellé d'étiquette, en français. C'est lui qui fait foi. */
+  readonly label: string;
+}
+
 export interface CatalogAdminItemView {
   readonly sku: string;
   /** Le SKU du produit dont l'article est une déclinaison. */
@@ -33,6 +41,23 @@ export interface CatalogAdminItemView {
    * de laisser croire à un catalogue en ligne.
    */
   readonly vatRatePercent: number | null;
+
+  /**
+   * Les allergènes de l'article, **projetés INCO** — les catégories d'étiquette
+   * (« Fruits à coque »), pas les codes GS1 du stockage.
+   *
+   * `null` = **aucune fiche réglementaire** déclarée dans le PIM. `[]` = fiche
+   * déclarée, aucun allergène. Les confondre transformerait un oubli de saisie
+   * en promesse au consommateur — c'est la seule faute qui compte sur ce champ.
+   */
+  readonly allergens: readonly CatalogAllergenView[] | null;
+  /**
+   * Vrai si un code stocké n'existe plus dans le référentiel — la fiche
+   * affichée est alors INCOMPLÈTE, et l'écran doit le dire plutôt que de rendre
+   * une liste amputée qui a l'air entière.
+   */
+  readonly allergensIncomplete: boolean;
+
   readonly isHidden: boolean;
   readonly isFeatured: boolean;
 

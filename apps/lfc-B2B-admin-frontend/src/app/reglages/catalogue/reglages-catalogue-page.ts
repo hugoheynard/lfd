@@ -167,6 +167,17 @@ export class ReglagesCataloguePage {
       this.notify.error(error, "L'article n'a pas pu être modifié.");
     }
   }
+
+  /**
+   * Les allergènes d'un article, en une ligne : « Gluten · Lait ».
+   *
+   * Ce sont les catégories INCO — les mots d'une étiquette —, pas les codes GS1
+   * du stockage. Le serveur a fait la projection ; l'écran ne fait que les
+   * joindre.
+   */
+  protected allergenLabels(item: CatalogAdminItemView): string {
+    return (item.allergens ?? []).map((allergen) => allergen.label).join(' · ');
+  }
 }
 
 /** Sans accent ni casse : on tape « pate » et « Pâté » sort. */

@@ -42,6 +42,15 @@ export interface PimFacts {
    * vendable — cf. `CatalogReader`.
    */
   readonly vatRatePercent: number | null;
+  /**
+   * Les codes allergènes GS1 déclarés par le PIM. **Trois états**, tous
+   * significatifs : `null` = aucune fiche réglementaire, `[]` = fiche déclarée
+   * sans allergène, une liste = les codes.
+   *
+   * Les deux premiers ne se confondent pas : l'un est un silence, l'autre une
+   * affirmation qu'un client a le droit de lire.
+   */
+  readonly allergens: readonly string[] | null;
   readonly receivedAt: Date;
 }
 

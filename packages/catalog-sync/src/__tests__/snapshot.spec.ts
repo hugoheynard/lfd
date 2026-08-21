@@ -14,6 +14,7 @@ const variant = {
   isDefault: true,
   position: 0,
   vatRatePercent: 5.5,
+  allergens: ["AW"],
 };
 
 const snapshot = {
@@ -27,6 +28,7 @@ const snapshot = {
       parentId: null,
       position: 0,
       vatRatePercent: 5.5,
+      allergens: ["AW"],
     },
   ],
   products: [
@@ -118,5 +120,32 @@ describe("le taux de TVA de l’article", () => {
 
   it("refuse un taux négatif", () => {
     expect(syncVariantSchema.safeParse({ ...variant, vatRatePercent: -1 }).success).toBe(false);
+  });
+});
+
+describe("les allergènes de l’article", () => {
+  /**
+   * Les trois états doivent traverser le fil sans se confondre — c'est la seule
+   * faute qui compte sur ce champ : un oubli de saisie affiché comme une
+   * promesse au consommateur.
+   */
+  it("distingue « pas de fiche » de « fiche sans allergène »", () => {
+    expect(syncVariantSchema.safeParse({ ...variant, allergens: null }).success).toBe(true);
+    expect(syncVariantSchema.safeParse({ ...variant, allergens: [] }).success).toBe(true);
+
+    const sansFiche = syncVariantSchema.parse({ ...variant, allergens: null });
+    const ficheVide = syncVariantSchema.parse({ ...variant, allergens: [] });
+    expect(sansFiche.allergens).toBeNull();
+    expect(ficheVide.allergens).toEqual([]);
+  });
+
+  it("exige le champ : un article muet sur ses allergènes n’est pas un article sans allergène", () => {
+    const muet: Record<string, unknown> = { ...variant };
+    delete muet["allergens"];
+    expect(syncVariantSchema.safeParse(muet).success).toBe(false);
+  });
+
+  it("refuse un code vide", () => {
+    expect(syncVariantSchema.safeParse({ ...variant, allergens: [""] }).success).toBe(false);
   });
 });
