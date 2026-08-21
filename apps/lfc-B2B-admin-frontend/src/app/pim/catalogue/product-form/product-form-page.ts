@@ -105,11 +105,11 @@ export class ProductFormPage implements HasPendingChanges {
   protected async submit(): Promise<void> {
     const id = await this.store.submit();
     if (id !== null) {
-      await this.router.navigate(['/produits', id]);
+      await this.router.navigate(['/pim/produits', id]);
     }
   }
 
   private back(): void {
-    void this.router.navigate(['/produits']);
+    void this.router.navigate(['/pim/produits']);
   }
 }

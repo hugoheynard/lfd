@@ -188,7 +188,7 @@ export class ProductsPage {
 
   /** Un clic sur une ligne ouvre la page produit (plus d'édition dans la table). */
   protected openProduct(product: Product): void {
-    void this.router.navigate(['/produits', product.id]);
+    void this.router.navigate(['/pim/produits', product.id]);
   }
 
   /** Filtrer remet en page 1 pour ne pas rester sur une page vide. */

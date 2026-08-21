@@ -8,10 +8,18 @@
  * fusion dans le back-office, où ses routes sont passées de `/produits` à
  * `/pim/produits`. Personne ne les a vus pendant des mois.
  *
- * Ce qu'il vérifie, et rien d'autre : tout `routerLink` **littéral et absolu**
- * d'un gabarit correspond à une route déclarée. Les liens relatifs et les liens
- * calculés (`[routerLink]="…"`) lui échappent — c'est assumé : un gate qui
- * essaierait de les résoudre devrait exécuter l'application.
+ * Ce qu'il vérifie : tout chemin **absolu et littéral** correspond à une route
+ * déclarée — dans un `routerLink="/…"` de gabarit comme dans un
+ * `router.navigate(["/…", …])` de composant.
+ *
+ * Les deux formes comptent. La première version ne lisait que les gabarits, et
+ * la page produit restait inaccessible : sa navigation passait par
+ * `navigate(["/produits", id])`, un lien mort de plus que le gate déclarait
+ * sain. Un tableau dont seuls les premiers segments sont littéraux est vérifié
+ * en PRÉFIXE — le reste est un paramètre, et un gate n'a pas à le deviner.
+ *
+ * Restent hors de portée : les liens relatifs et les chemins entièrement
+ * calculés. C'est assumé — les résoudre demanderait d'exécuter l'application.
  *
  * Usage : `pnpm lint:router-links` (branché en CI).
  */
@@ -69,8 +77,13 @@ function declaredPaths(source) {
   return paths;
 }
 
-/** Un lien correspond si une route déclarée l'égale, segment à segment. */
-function matches(link, declared) {
+/**
+ * Un chemin correspond à une route déclarée.
+ *
+ * `exact` faux = on ne vérifie qu'un PRÉFIXE : les segments suivants sont des
+ * paramètres que l'appelant calcule.
+ */
+function matches(link, declared, exact = true) {
   const wanted = link.split("/").filter((s) => s !== "");
   // La racine existe toujours : c'est le `path: ''` de l'arbre, avec ou sans
   // redirection. Elle n'a pas de segment, donc rien à rapprocher.
@@ -79,15 +92,42 @@ function matches(link, declared) {
   }
   for (const path of declared) {
     const parts = path.split("/").filter((s) => s !== "");
-    if (parts.length !== wanted.length) {
+    if (exact ? parts.length !== wanted.length : parts.length < wanted.length) {
       continue;
     }
     // Un segment de route paramétré (`:id`) accepte n'importe quelle valeur.
-    if (parts.every((part, i) => part.startsWith(":") || part === wanted[i])) {
+    const head = parts.slice(0, wanted.length);
+    if (head.every((part, i) => part.startsWith(":") || part === wanted[i])) {
       return true;
     }
   }
   return false;
+}
+
+/**
+ * Les segments LITTÉRAUX de tête d'un `navigate([...])`.
+ *
+ * `exact` n'est vrai que si TOUS les segments sont littéraux : sinon la suite
+ * est un paramètre, et seul le préfixe est vérifiable. Rend `null` quand le
+ * premier segment est calculé — il n'y a alors rien à dire.
+ */
+function literalPrefix(args) {
+  const parts = args.split(",").map((part) => part.trim());
+  const literals = [];
+  for (const part of parts) {
+    const literal = /^['"`]([^'"`]*)['"`]$/.exec(part);
+    if (literal === null) {
+      break;
+    }
+    literals.push(literal[1]);
+  }
+  if (literals.length === 0 || !literals[0].startsWith("/")) {
+    return null;
+  }
+  return {
+    path: literals.join("/"),
+    exact: literals.length === parts.filter((p) => p !== "").length,
+  };
 }
 
 function* walk(dir, suffix) {
@@ -127,6 +167,23 @@ for (const app of APPS) {
       if (!matches(path, declared)) {
         broken += 1;
         console.error(`✖ ${relative(ROOT, file)}\n    routerLink="${link}" ne mène à aucune route`);
+      }
+    }
+  }
+
+  for (const file of walk(root, ".ts")) {
+    const source = readFileSync(file, "utf8");
+    for (const call of source.matchAll(/navigate\(\s*\[([^\]]*)\]/g)) {
+      const target = literalPrefix(call[1]);
+      if (target === null) {
+        continue; // premier segment calculé : rien à vérifier.
+      }
+      checked += 1;
+      if (!matches(target.path, declared, target.exact)) {
+        broken += 1;
+        console.error(
+          `✖ ${relative(ROOT, file)}\n    navigate(["${target.path}"…]) ne mène à aucune route`,
+        );
       }
     }
   }
