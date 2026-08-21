@@ -39,9 +39,11 @@ const COCKPIT: CommercialTab = {
  * barre d'onglets et l'en-tête de page, ce qui rend impossible qu'un titre et
  * son onglet divergent.
  *
- * Les icônes viennent du catalogue **fold** (86 noms). `FoldIconName` accepte
- * n'importe quelle chaîne : un nom emprunté à une autre bibliothèque compile et
- * n'affiche rien.
+ * Les icônes viennent du jeu **fold** ou du catalogue de l'app
+ * (`shared/icons/app-icons.ts`). Depuis fold 0.11, `FoldIconName` est FERMÉ :
+ * un nom inventé ne compile plus. Ce commentaire disait l'inverse — il datait
+ * d'une version où une faute de frappe passait le build et laissait un trou à
+ * la place du glyphe.
  */
 const TABS: CommercialTab[] = [
   COCKPIT,
@@ -52,7 +54,7 @@ const TABS: CommercialTab[] = [
     key: 'comptes-clients',
     label: 'Comptes clients',
     link: 'comptes-clients',
-    icon: 'company',
+    icon: 'client-account',
     description: 'Le parc, ceux qui commandent et ceux qui dorment.',
   },
   {

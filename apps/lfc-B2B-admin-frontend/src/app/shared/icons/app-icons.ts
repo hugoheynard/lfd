@@ -402,6 +402,32 @@ const PRINT_ICON =
   '</svg>';
 
 /**
+ * Un compte client — la fenêtre du dossier, sa fiche et ses lignes. Source :
+ * SVG Repo (domaine public). Remplace le `company` de l'onglet « Comptes
+ * clients » : `company` dessine un bâtiment, c'est-à-dire l'ENTREPRISE ; ici on
+ * range des dossiers, et le même glyphe servait déjà aux emplacements.
+ *
+ * ⚠️ Ses tracés portaient `fill="#0F1F3C"` — un bleu nuit, pas le noir habituel.
+ * Il disparaît comme les autres couleurs en dur : seul le `d` est repris, et la
+ * couleur vient de `currentColor`. Une icône qui garde sa teinte d'origine
+ * ignore le thème ET les tons sémantiques, et ce bleu-là se serait fondu dans
+ * le rail sombre.
+ *
+ * Boîte resserrée de 79 % à 94 % de remplissage, et trait de 12 pour passer de
+ * 7,15 % à 8,3 % — la graisse du jeu fold.
+ */
+const CLIENT_ACCOUNT_ICON =
+  '<svg viewBox="82.21 82.21 859.58 859.58" fill="currentColor" stroke="currentColor" ' +
+  'stroke-width="12" stroke-linejoin="round">' +
+  '<path d="M841.2 841.1H182.9V182.9h292.5v-73.2H109.7v804.6h804.6V621.7h-73.1z"/>' +
+  '<path d="M402.3 585.1h73.1c0-100.8 82-182.9 182.9-182.9s182.9 82 182.9 182.9h73.1c0-102.2-60.2-1' +
+  '90.6-147-231.6 23.2-25.9 37.3-60.1 37.3-97.5 0-80.8-65.5-146.3-146.3-146.3-80.8 0-146.3 65.5-146' +
+  '.3 146.3 0 37.5 14.1 71.7 37.3 97.5-86.8 41.1-147 129.4-147 231.6z m256-402.2c40.3 0 73.1 32.8 7' +
+  '3.1 73.1s-32.8 73.1-73.1 73.1-73.1-32.8-73.1-73.1 32.8-73.1 73.1-73.1zM219.4 256h219.4v73.1H219.' +
+  '4zM219.4 658.3h585.1v73.1H219.4zM219.4 402.3h146.3v73.1H219.4z"/>' +
+  '</svg>';
+
+/**
  * Le catalogue. Une entrée = un nom que `<fold-icon name="…">` accepte.
  *
  * `as const` n'est pas décoratif : c'est lui qui donne à `keyof typeof` des
@@ -410,6 +436,7 @@ const PRINT_ICON =
 export const APP_ICONS = {
   basha: BASHA_ICON,
   catalog: CATALOG_ICON,
+  'client-account': CLIENT_ACCOUNT_ICON,
   collections: COLLECTIONS_ICON,
   integrations: INTEGRATIONS_ICON,
   category: CATEGORY_ICON,
