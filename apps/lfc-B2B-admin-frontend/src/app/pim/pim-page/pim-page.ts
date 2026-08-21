@@ -21,7 +21,7 @@ const TABS: readonly FoldViewNavItem[] = [
   { key: 'tva', label: 'Régimes de TVA', link: 'tva', icon: 'tax' },
   { key: 'collections', label: 'Collections', link: 'collections', icon: 'org-chart' },
   { key: 'publication', label: 'Publication', link: 'publication', icon: 'publish' },
-  { key: 'emplacements', label: 'Emplacements', link: 'emplacements', icon: 'company' },
+  { key: 'emplacements', label: 'Emplacements', link: 'emplacements', icon: 'places' },
   { key: 'integration', label: 'Intégrations', link: 'integration', icon: 'shopify' },
 ];
 
