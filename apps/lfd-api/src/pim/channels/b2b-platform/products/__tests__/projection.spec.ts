@@ -1,8 +1,8 @@
-import type { ChannelCategory } from "../../../../catalogue/domain/ports/catalogue-reader.js";
+import type { ChannelCategory } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type {
   ProductRecord,
   VariantRecord,
-} from "../../../../catalogue/domain/ports/product.repository.js";
+} from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { projectCatalog } from "../projection.js";
 
 const AT = "2026-08-17T08:00:00.000Z";

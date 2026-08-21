@@ -1,7 +1,7 @@
 import { Test } from "@nestjs/testing";
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
-import type { ProductRecord } from "../../../../catalogue/domain/ports/product.repository.js";
+import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../../infra/database/pim-prisma.service.js";
 import { B2bCatalogDriver, DryRunB2bCatalogDriver } from "../driver.js";
 import { B2bCatalogFeedPreview } from "../feed-preview.js";

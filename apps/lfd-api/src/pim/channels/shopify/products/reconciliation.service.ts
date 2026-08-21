@@ -6,7 +6,7 @@ import type {
   ReconciliationStatus,
 } from "@lfd/pim-contracts";
 
-import { CatalogueReader } from "../../../catalogue/domain/ports/catalogue-reader.js";
+import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { ShopifyInspectionService } from "./inspection.service.js";
 import { fingerprint, projectProduct, type ShopifyProductPayload } from "./projection.js";

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
 
-import { CatalogueReader } from "../../../catalogue/domain/ports/catalogue-reader.js";
+import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import { B2bMembershipService } from "../membership/membership.service.js";
 import { B2bCatalogFeedPreview, type FeedPreview } from "./feed-preview.js";
 import { projectCatalog } from "./projection.js";

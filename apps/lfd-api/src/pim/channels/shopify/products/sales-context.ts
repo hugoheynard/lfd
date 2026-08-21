@@ -1,4 +1,4 @@
-import type { CategoryTvaTags } from "../../../catalogue/domain/ports/catalogue-reader.js";
+import type { CategoryTvaTags } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 
 /**
  * Un **contexte de vente** — une manière de vendre l'article qui a son propre traitement

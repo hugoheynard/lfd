@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import type { PushReport, PushSummary } from "@lfd/pim-contracts";
 
-import { CatalogueReader } from "../../../catalogue/domain/ports/catalogue-reader.js";
-import type { ProductRecord } from "../../../catalogue/domain/ports/product.repository.js";
+import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { DryRunShopifyDriver, LiveShopifyDriver, type ShopifyDriver } from "./driver.js";
 import { ShopifyMembershipService, type MembershipOutcome } from "./membership.service.js";

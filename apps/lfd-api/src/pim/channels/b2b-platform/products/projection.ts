@@ -1,11 +1,11 @@
 import type { CatalogSnapshot, SyncCategory, SyncProduct, SyncVariant } from "@lfd/catalog-sync";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
 
-import type { ChannelCategory } from "../../../catalogue/domain/ports/catalogue-reader.js";
+import type { ChannelCategory } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type {
   ProductRecord,
   VariantRecord,
-} from "../../../catalogue/domain/ports/product.repository.js";
+} from "../../../catalogue/product/domain/ports/product.repository.js";
 
 /**
  * Projection catalogue → snapshot de la plateforme B2B. **Pure et testable** :

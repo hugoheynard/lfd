@@ -1,8 +1,8 @@
 import { Test } from "@nestjs/testing";
 
 import type { ShopifyProductSnapshot } from "@lfd/shopify-admin";
-import { CatalogueReader } from "../../../../catalogue/domain/ports/catalogue-reader.js";
-import type { ProductRecord } from "../../../../catalogue/domain/ports/product.repository.js";
+import { CatalogueReader } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../../infra/database/pim-prisma.service.js";
 import { ShopifyInspectionService } from "../inspection.service.js";
 import { fingerprint, projectProduct } from "../projection.js";

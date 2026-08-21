@@ -1,7 +1,7 @@
 import { Test } from "@nestjs/testing";
 
-import { CatalogueReader } from "../../../../catalogue/domain/ports/catalogue-reader.js";
-import type { ProductRecord } from "../../../../catalogue/domain/ports/product.repository.js";
+import { CatalogueReader } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../../infra/database/pim-prisma.service.js";
 import type { ChannelMode } from "../../shared/settings.service.js";
 import { ShopifySettingsService } from "../../shared/settings.service.js";

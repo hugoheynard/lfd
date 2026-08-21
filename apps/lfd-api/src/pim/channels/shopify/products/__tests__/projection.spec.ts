@@ -1,4 +1,4 @@
-import type { ProductRecord } from "../../../../catalogue/domain/ports/product.repository.js";
+import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { fingerprint, projectProduct } from "../projection.js";
 
 function product(overrides: Partial<ProductRecord> = {}): ProductRecord {
