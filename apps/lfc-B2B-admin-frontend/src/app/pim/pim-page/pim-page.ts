@@ -17,7 +17,7 @@ import { FoldNavLayoutComponent, FoldViewNavComponent, type FoldViewNavItem } fr
  */
 const TABS: readonly FoldViewNavItem[] = [
   { key: 'produits', label: 'Produits', link: 'produits', icon: 'grid' },
-  { key: 'categories', label: 'Catégories', link: 'categories', icon: 'folder' },
+  { key: 'categories', label: 'Catégories', link: 'categories', icon: 'category' },
   { key: 'tva', label: 'Régimes de TVA', link: 'tva', icon: 'tax' },
   { key: 'collections', label: 'Collections', link: 'collections', icon: 'org-chart' },
   { key: 'publication', label: 'Publication', link: 'publication', icon: 'publish' },

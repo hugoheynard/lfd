@@ -155,6 +155,32 @@ const MOBILE_ICON =
   '</g></svg>';
 
 /**
+ * Les familles du catalogue — trois épingles de tailles décroissantes, la
+ * taxonomie qui se ramifie. Source : SVG Repo / IBM Carbon (domaine public).
+ *
+ * ⚠️ **Le rectangle transparent a été retiré, et il fallait le retirer.** La
+ * source embarque un `<rect width="32" height="32">` dont le `fill:none` vient
+ * d'une `<style>` INTERNE (`.cls-1`). En supprimant la feuille de style —
+ * inutile hors de son contexte d'origine — le rectangle aurait hérité du
+ * `fill="currentColor"` de la racine et **peint un carré plein** à la place de
+ * l'icône. Il ne servait qu'à figer les bornes 32×32 dans l'outil de dessin ;
+ * ici, c'est le `viewBox` qui les tient.
+ *
+ * `<defs>` et `<title>` partent pour la même raison : rien de ce qui ne dessine
+ * pas n'a de raison d'entrer dans le bundle.
+ */
+const CATEGORY_ICON =
+  '<svg viewBox="0 0 32 32" fill="currentColor">' +
+  '<path d="M29,10H24v2h5v6H22v2h3v2.142a4,4,0,1,0,2,0V20h2a2.0027,2.0027,0,0,0,2-2V12A2.0023,' +
+  '2.0023,0,0,0,29,10ZM28,26a2,2,0,1,1-2-2A2.0027,2.0027,0,0,1,28,26Z"/>' +
+  '<path d="M19,6H14V8h5v6H12v2h3v6.142a4,4,0,1,0,2,0V16h2a2.0023,2.0023,0,0,0,2-2V8A2.0023,2.0023,' +
+  '0,0,0,19,6ZM18,26a2,2,0,1,1-2-2A2.0027,2.0027,0,0,1,18,26Z"/>' +
+  '<path d="M9,2H3A2.002,2.002,0,0,0,1,4v6a2.002,2.002,0,0,0,2,2H5V22.142a4,4,0,1,0,2,0V12H9a2.002,' +
+  '2.002,0,0,0,2-2V4A2.002,2.002,0,0,0,9,2ZM8,26a2,2,0,1,1-2-2A2.0023,2.0023,0,0,1,8,26ZM3,10V4H9l.' +
+  '0015,6Z"/>' +
+  '</svg>';
+
+/**
  * Le catalogue. Une entrée = un nom que `<fold-icon name="…">` accepte.
  *
  * `as const` n'est pas décoratif : c'est lui qui donne à `keyof typeof` des
@@ -162,6 +188,7 @@ const MOBILE_ICON =
  */
 export const APP_ICONS = {
   catalog: CATALOG_ICON,
+  category: CATEGORY_ICON,
   mobile: MOBILE_ICON,
   shopify: SHOPIFY_ICON,
   publish: PUBLISH_ICON,
