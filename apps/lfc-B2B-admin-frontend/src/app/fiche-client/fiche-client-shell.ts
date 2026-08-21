@@ -21,7 +21,6 @@ import { companyDisplayName } from '@lfd/contracts';
 import { PinnedAccountsStore, MAX_PINNED } from '../commercial/cockpit/pinned-store';
 import { NotifyService } from '../notify.service';
 import { AdminCompaniesService } from '../comptes-clients/admin-companies.service';
-import { narrowViewport } from '../shared/viewport/narrow-viewport';
 
 /**
  * La **coquille d'un compte client** : un en-tête qui porte le nom de la société
@@ -85,15 +84,14 @@ export class FicheClientShell {
    * tiennent tous à l'écran, et le seul libellé qui compte vraiment — celui de
    * la page où l'on est — reste lisible.
    */
-  protected readonly navCollapsed = narrowViewport();
 
   /** Le nom d'usage de la société — enseigne, à défaut raison sociale. */
   protected readonly name = signal<string>('');
 
   protected readonly tabs: FoldViewNavItem[] = [
-    { key: 'dashboard', label: 'Tableau de bord', link: 'dashboard', icon: 'grid' },
+    { key: 'dashboard', label: 'Tableau de bord', link: 'dashboard', icon: 'dashboard' },
     { key: 'informations', label: 'Informations', link: 'informations', icon: 'company' },
-    { key: 'commandes', label: 'Commandes', link: 'commandes', icon: 'list' },
+    { key: 'commandes', label: 'Commandes', link: 'commandes', icon: 'shopping-cart' },
     {
       key: 'paniers-recurrents',
       label: 'Paniers récurrents',
@@ -103,7 +101,10 @@ export class FicheClientShell {
     { key: 'facturation', label: 'Facturation', link: 'facturation', icon: 'receipt' },
     { key: 'alertes', label: 'Alertes', link: 'alertes', icon: 'bell' },
     { key: 'stats', label: 'Stats', link: 'stats', icon: 'stats' },
-    { key: 'data', label: 'Données', link: 'data', icon: 'stats' },
+    // `timeline` et non `stats` : cet onglet montre l'identité technique et le
+    // JOURNAL du compte. Il portait le même glyphe que « Stats » juste à côté,
+    // et deux onglets voisins au même dessin ne se distinguent que par le mot.
+    { key: 'data', label: 'Données', link: 'data', icon: 'timeline' },
   ];
 
   protected readonly title = computed<string>(() => {

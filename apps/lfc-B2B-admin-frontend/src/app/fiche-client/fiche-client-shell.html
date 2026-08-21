@@ -19,17 +19,26 @@
   <!-- `fold-nav-layout`, et non un div à nous : c'est LUI qui tient l'écart
        nav↔contenu et qui neutralise la gouttière de page sous la barre, pour
        que les cartes s'alignent sur le menu qui les nomme. Refaire cette
-       composition à la main, c'était réécrire ces règles — et les rater. -->
-  <fold-nav-layout>
+       composition à la main, c'était réécrire ces règles — et les rater.
+
+       Rail LATÉRAL, comme le PIM et le poste commercial. Une fiche client a
+       huit onglets : en barre horizontale ils débordaient et devenaient
+       défilants — donc des onglets qu'on ne voit qu'en balayant, sans savoir
+       qu'ils sont là. Verticalement, ils tiennent tous à l'écran.
+
+       Il vit DANS le `fold-page-layout` : l'en-tête porte le nom du client et
+       ses actions (retour, épingle), qui valent pour le compte entier et non
+       pour une de ses pages. `nav.stacked()` mesure la largeur du LAYOUT et
+       replie seul en barre — plus besoin d'écouter le viewport. -->
+  <fold-nav-layout #nav placement="side" [foldAt]="896">
     <fold-view-nav
       tabNav
       class="fc-tabs"
       [items]="tabs"
-      direction="horizontal"
+      [collapsed]="nav.stacked()"
       size="comfortable"
-      [collapsed]="navCollapsed()"
-      activeStyle="fill"
-      background="surface"
+      activeStyle="underline"
+      background="transparent"
     />
 
     <router-outlet />

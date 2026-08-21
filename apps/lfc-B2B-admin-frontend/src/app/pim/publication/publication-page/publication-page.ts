@@ -35,7 +35,10 @@ import { PublicationShopify } from '../publication-shopify/publication-shopify';
 export class PublicationPage {
   protected readonly tabs: FoldTabItem[] = [
     { key: 'shopify', label: 'Shopify', icon: 'shopify' },
-    { key: 'b2b', label: 'Boutique B2B', icon: 'shopping-cart' },
+    // `shopping-bag` (la boutique) et non `shopping-cart` (l'acte de commander),
+    // qui nomme l'onglet « Commandes » d'une fiche client. Deux gestes voisins,
+    // deux dessins.
+    { key: 'b2b', label: 'Boutique B2B', icon: 'shopping-bag' },
   ];
   protected readonly activeTab = signal('shopify');
 }
