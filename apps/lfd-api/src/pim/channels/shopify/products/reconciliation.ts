@@ -7,7 +7,7 @@ import { fingerprint, type ShopifyProductPayload } from "./projection.js";
  * Réconciliation à trois voies — la **logique pure** (aucun réseau, aucune base). Voir
  * `documentation/lfc/publication-reconciliation-3way.md`.
  *
- * Deux régimes d'empreinte, volontairement :
+ * Deux taux d'empreinte, volontairement :
  * - **dérive locale** (OURS vs BASE) → empreinte *pleine* (`fingerprint`) : les deux
  *   côtés portent les options, on détecte donc jusqu'au changement d'option.
  * - **dérive distante** (THEIRS vs BASE) → empreinte *comparable* : Shopify n'expose pas

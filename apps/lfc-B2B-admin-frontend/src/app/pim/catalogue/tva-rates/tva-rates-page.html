@@ -1,0 +1,14 @@
+<fold-page-layout icon="tax" title="Taux de TVA">
+  <p description>
+    Le <strong>référentiel fiscal</strong> du catalogue : un nom, un taux. Une famille y rattache
+    ses fiches à emporter et sur place, la boutique B2B facture au taux résolu, et Shopify en tire
+    une collection — dont le handle se dérive du taux, côté canal. Pousser les collections se fait
+    dans <strong>Publication</strong>.
+  </p>
+
+  @if (canWrite()) {
+    <button pageActions foldButton size="sm" (click)="openCreate()">Ajouter un taux de TVA</button>
+  }
+
+  <app-tva-rate-table />
+</fold-page-layout>

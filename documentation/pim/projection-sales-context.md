@@ -17,7 +17,7 @@
 > 1. **Data-driven, pas en dur.** Toute dimension scalable (contextes/canaux de vente, TVA par
 >    contexte) = **donnée**, jamais colonnes fixes ni const. `sales_context` (table = registre :
 >    `key`, `label`, `handleSuffix`, `active`, `position`) + `category_context_tva` (jointure
->    `(categoryId, contextId) → tvaRegimeId`) **remplacent** `Category.emporterTvaId`/`surPlaceTvaId`
+>    `(categoryId, contextId) → tvaRateId`) **remplacent** `Category.emporterTvaId`/`surPlaceTvaId`
 >    et `ACTIVE_SALES_CONTEXTS`. Les lectures deviennent des **listes** `[{contextKey, tag}]`.
 >    Ajouter un contexte (B2B) = **une ligne**, zéro code. **Une fois testé, le modèle ne bouge plus**
 >    (règle produit). Cousin à traiter pareil : `Category.channelPreset` (boutiques `b1`/`b2` en clés fixes).
@@ -52,12 +52,12 @@ contexte**. La collection porte l'override ; le produit n'en porte aucun.
 
 Un contexte se déclare une fois :
 
-| Champ    | Rôle                                                                                |
-| -------- | ----------------------------------------------------------------------------------- |
-| `key`    | `emporter` / `surPlace` / `b2b` … — identité stable                                 |
-| `tvaRef` | quel régime de la catégorie ce contexte lit (`emporterTvaId` / `surPlaceTvaId` / …) |
-| `handle` | stratégie de handle Shopify (voir §4)                                               |
-| `active` | le contexte est-il projeté aujourd'hui ?                                            |
+| Champ    | Rôle                                                                              |
+| -------- | --------------------------------------------------------------------------------- |
+| `key`    | `emporter` / `surPlace` / `b2b` … — identité stable                               |
+| `tvaRef` | quel taux de la catégorie ce contexte lit (`emporterTvaId` / `surPlaceTvaId` / …) |
+| `handle` | stratégie de handle Shopify (voir §4)                                             |
+| `active` | le contexte est-il projeté aujourd'hui ?                                          |
 
 **Aujourd'hui : `[{ emporter, active }]`.** Ajouter « sur place » = passer `active: true` sur un
 contexte déjà décrit ; ajouter « B2B 20 % » = décrire un nouveau contexte + son `tvaRef`. Le reste
@@ -69,12 +69,12 @@ La TVA d'un `(article, contexte)` se résout en composant **deux contextes born�
 composition vit au **bord**, l'adaptateur Shopify demande à un port) :
 
 ```
-article.categoryId ─► Category.<contexte.tvaRef>  (catalogue)  ─► TvaRegime.tag  (commerce)  ─► handle collection « tva-5-5 »
+article.categoryId ─► Category.<contexte.tvaRef>  (catalogue)  ─► TvaRate.tag  (commerce)  ─► handle collection « tva-5-5 »
 ```
 
 Le socle existe déjà : `Category` porte `emporterTvaId` / `surPlaceTvaId`
 ([`set-category-tva`](../../apps/lfd-api/src/pim/catalogue/application/set-category-tva.ts)),
-`TvaRegime.tag` est le handle dérivé du taux. Manque **le read composé** exposé à l'adaptateur :
+`TvaRate.tag` est le handle dérivé du taux. Manque **le read composé** exposé à l'adaptateur :
 « pour cet article et ce contexte, quel handle de collection ». Il ne lit jamais les tables de
 l'autre domaine — il passe par un port.
 
@@ -96,7 +96,7 @@ Shopify ne pose pas la collection dans `productSet`. Ordre (findings **F11**) :
 4. `collectionAddProductsV2(collectionGid, [productGid])` — range le produit.
 
 Idempotent : ré-appartenir un produit déjà membre est sans effet. Un produit ne doit être que dans
-**une** collection `tva-*` (S2) — si son contexte change de régime, on l'ôte de l'ancienne.
+**une** collection `tva-*` (S2) — si son contexte change de taux, on l'ôte de l'ancienne.
 
 ## 6. Réconciliation : rien à changer
 

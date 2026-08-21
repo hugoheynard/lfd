@@ -1,6 +1,6 @@
-import { InvalidTvaRateError, TvaRate } from "../tva-rate.js";
+import { InvalidTvaPercentError, TvaPercent } from "../tva-percent.js";
 
-describe("TvaRate", () => {
+describe("TvaPercent", () => {
   describe("les taux impossibles sont refusés dès le domaine", () => {
     /**
      * Le cas qui motivait le VO : la route HTTP exige `positive()`, mais un
@@ -15,12 +15,12 @@ describe("TvaRate", () => {
       ["plus de 100 %", 120],
       ["trois décimales", 5.555],
     ])("refuse %s", (_label, percent) => {
-      expect(() => TvaRate.create(percent)).toThrow(InvalidTvaRateError);
+      expect(() => TvaPercent.create(percent)).toThrow(InvalidTvaPercentError);
     });
 
     it("accepte les taux français en vigueur", () => {
       for (const percent of [2.1, 5.5, 10, 20]) {
-        expect(() => TvaRate.create(percent)).not.toThrow();
+        expect(() => TvaPercent.create(percent)).not.toThrow();
       }
     });
 
@@ -31,7 +31,7 @@ describe("TvaRate", () => {
      */
     it("accepte les taux de Corse et d’outre-mer", () => {
       for (const percent of [0.9, 1.05, 1.75, 8.5, 13]) {
-        expect(() => TvaRate.create(percent)).not.toThrow();
+        expect(() => TvaPercent.create(percent)).not.toThrow();
       }
     });
 
@@ -44,13 +44,13 @@ describe("TvaRate", () => {
      */
     it("n’est pas piégé par la multiplication flottante", () => {
       for (const percent of [4.85, 7.35, 12.35, 1.15, 2.95]) {
-        expect(() => TvaRate.create(percent)).not.toThrow();
+        expect(() => TvaPercent.create(percent)).not.toThrow();
       }
     });
   });
 
   it("compare par la valeur, pas par l’instance", () => {
-    expect(TvaRate.create(5.5).equals(TvaRate.create(5.5))).toBe(true);
-    expect(TvaRate.create(5.5).equals(TvaRate.create(10))).toBe(false);
+    expect(TvaPercent.create(5.5).equals(TvaPercent.create(5.5))).toBe(true);
+    expect(TvaPercent.create(5.5).equals(TvaPercent.create(10))).toBe(false);
   });
 });

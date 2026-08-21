@@ -107,7 +107,7 @@ function sortVariants(
  * - un produit dont plus aucune déclinaison n'est vendable ;
  * - un produit dont la famille est **inconnue** — on ne range pas au hasard.
  *
- * Ce qui entre malgré tout : une famille **sans régime de TVA**. Le taux part à
+ * Ce qui entre malgré tout : une famille **sans taux de TVA**. Le taux part à
  * `null` plutôt que d'exclure le produit, parce que le prix canonique a de la
  * valeur sans lui — un écran de paramétrage n'a pas besoin de savoir facturer.
  * Le refus n'a pas disparu, il est déplacé là où il compte : la plateforme

@@ -2,25 +2,21 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 
 import {
   FoldBadgeComponent,
-  FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
-  FoldDropdownComponent,
-  FoldDropdownItemComponent,
   FoldIconComponent,
   FoldPanelHostService,
-  FoldPopoverTriggerDirective,
   type FoldTableColumn,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../../auth/permissions.store';
 import { formatPercent } from '../../../data/channels';
-import { type TvaRegime } from '../../catalogue-api';
+import { type TvaRate } from '../../catalogue-api';
 import { TvaStore } from '../tva-store';
 import {
-  TvaRegimeFormPanel,
-  type TvaRegimePanelData,
-} from '../tva-regime-form-panel/tva-regime-form-panel';
+  TvaRateFormPanel,
+  type TvaRatePanelData,
+} from '../tva-rate-form-panel/tva-rate-form-panel';
 
 const ALL_COLUMNS: readonly FoldTableColumn[] = [
   { key: 'name', label: 'Nom', width: '12rem' },
@@ -35,28 +31,26 @@ const ALL_COLUMNS: readonly FoldTableColumn[] = [
 ];
 
 /**
- * Le **tableau des régimes** de TVA (Famille A — `tva-5-5`, `tva-10`,
- * `tva-20`). Il lit la liste depuis le {@link TvaStore} (backend) et n'expose que
- * l'affichage + un menu par ligne (modifier / supprimer) : toute mutation passe
- * par le side-panel et le store, donc la liste se met à jour toute seule.
+ * Le **tableau des taux** de TVA. Il lit la liste depuis le {@link TvaStore}
+ * (backend) et n'expose que l'affichage : toute mutation passe par le
+ * side-panel et le store, donc la liste se met à jour toute seule.
+ *
+ * Sur écran étroit, `auto-cards` empile chaque ligne en carte — un tableau de
+ * cinq colonnes ne se lit pas en scrollant de côté sur un téléphone.
  */
 @Component({
-  selector: 'app-tva-regime-table',
+  selector: 'app-tva-rate-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldButtonComponent,
     FoldBadgeComponent,
     FoldIconComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
-    FoldDropdownComponent,
-    FoldDropdownItemComponent,
-    FoldPopoverTriggerDirective,
   ],
-  templateUrl: './tva-regime-table.html',
-  styleUrl: './tva-regime-table.scss',
+  templateUrl: './tva-rate-table.html',
+  styleUrl: './tva-rate-table.scss',
 })
-export class TvaRegimeTable {
+export class TvaRateTable {
   private readonly store = inject(TvaStore);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
@@ -72,23 +66,23 @@ export class TvaRegimeTable {
   );
 
   protected readonly emptyState = {
-    title: 'Aucun régime',
-    subtitle: 'Créez au moins un taux (ex. 5,5 %, 10 %, 20 %).',
+    title: 'Aucun taux',
+    subtitle: 'Ajoutez-en au moins un (5,5 %, 10 %, 20 %).',
   };
 
-  protected readonly rowKey = (regime: TvaRegime): string => regime.id;
+  protected readonly rowKey = (regime: TvaRate): string => regime.id;
 
   protected format(percent: number): string {
     return formatPercent(percent);
   }
 
-  /** Combien de familles visent ce régime, les deux modes confondus. */
-  protected usageTotal(regime: TvaRegime): number {
+  /** Combien de familles visent ce taux, les deux modes confondus. */
+  protected usageTotal(regime: TvaRate): number {
     return regime.usage.emporter + regime.usage.surPlace;
   }
 
   /** « 3 à emporter · 1 sur place » — les modes cités seulement s'ils comptent. */
-  protected usageLabel(regime: TvaRegime): string {
+  protected usageLabel(regime: TvaRate): string {
     const parts: string[] = [];
     if (regime.usage.emporter > 0) {
       parts.push(`${regime.usage.emporter} à emporter`);
@@ -99,17 +93,14 @@ export class TvaRegimeTable {
     return parts.join(' · ');
   }
 
-  /** Édition : side-panel prérempli sur ce régime. */
-  protected openEdit(regime: TvaRegime): void {
-    this.openPanel({ mode: 'edit', regime });
-  }
-
-  /** Suppression : side-panel en zone dangereuse (confirmation par le nom). */
-  protected openDelete(regime: TvaRegime): void {
-    this.openPanel({ mode: 'delete', regime });
-  }
-
-  private openPanel(data: TvaRegimePanelData): void {
-    this.panelHost.open(TvaRegimeFormPanel, { data, side: 'right' });
+  /**
+   * Ouvre le taux — une seule action par ligne, et c'est le point : le menu
+   * déroulant demandait de choisir entre « Modifier » et « Supprimer » AVANT
+   * d'avoir regardé l'objet. Le panneau porte les deux, la suppression dans sa
+   * zone dangereuse.
+   */
+  protected open(regime: TvaRate): void {
+    const data: TvaRatePanelData = { regime };
+    this.panelHost.open(TvaRateFormPanel, { data, side: 'right' });
   }
 }

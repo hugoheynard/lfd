@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 
 import { CategoryStore } from './category-store';
 import { ProductHttpApi } from './product-http-api';
-import { TvaStore } from './tva-regimes/tva-store';
+import { TvaStore } from './tva-rates/tva-store';
 
 // Types re-exportés depuis le modèle central : les pages continuent d'importer
 // `type Category` / `type Product` depuis ce fichier sans changement.
@@ -15,16 +15,16 @@ export type {
   ProductKind,
   ProductStatus,
   SalesChannels,
-  TvaRegime,
+  TvaRate,
   Variant,
 } from '../data/models';
 
-import type { Category, Product, ProductKind, SalesChannels, TvaRegime } from '../data/models';
+import type { Category, Product, ProductKind, SalesChannels, TvaRate } from '../data/models';
 
 /**
  * Façade catalogue — délègue au backend Prisma via des **stores réactifs**
  * (familles, TVA) et le client produit. Plus aucune branche LocalDb : produits,
- * familles et régimes de TVA vivent tous côté serveur. Les signatures restent des
+ * familles et taux de TVA vivent tous côté serveur. Les signatures restent des
  * `Promise` ; les pages ne voient pas la couche réseau.
  */
 @Injectable({ providedIn: 'root' })
@@ -57,14 +57,14 @@ export class CatalogueApi {
     await this.categoryStore.setChannels(id, preset);
   }
 
-  /** Régimes de TVA appliqués aux fiches à emporter / sur place d'une catégorie. */
+  /** Taux de TVA appliqués aux fiches à emporter / sur place d'une catégorie. */
   async setCategoryTva(id: string, emporterTvaId: string, surPlaceTvaId: string): Promise<void> {
     await this.categoryStore.setTva(id, emporterTvaId, surPlaceTvaId);
   }
 
-  // ── Régimes de TVA (backend `commerce/tva-regimes`, via TvaStore) ─────────
+  // ── Taux de TVA (backend `commerce/tva-rates`, via TvaStore) ─────────
 
-  async listTvaRegimes(): Promise<TvaRegime[]> {
+  async listTvaRates(): Promise<TvaRate[]> {
     await this.tvaStore.reload();
     return [...this.tvaStore.items()];
   }

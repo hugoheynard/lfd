@@ -17,7 +17,7 @@ import { Clock } from "../time/clock.js";
  * réponse à une autre question, et il aurait fini par servir à décider.
  *
  * Il vit en mémoire du processus et repart de zéro à chaque redémarrage. C'est
- * assumé : ce qu'on lit est un **régime**, pas un total de facturation — le
+ * assumé : ce qu'on lit est un **taux**, pas un total de facturation — le
  * total, c'est Prisma qui l'a.
  */
 @Injectable()
@@ -36,9 +36,9 @@ export class SchemaOpsCounter {
   }
 
   /**
-   * Le régime observé, par schéma, en opérations par minute.
+   * Le taux observé, par schéma, en opérations par minute.
    *
-   * Un régime et non un cumul : un cumul depuis le démarrage n'est comparable ni
+   * Un taux et non un cumul : un cumul depuis le démarrage n'est comparable ni
    * d'un écran à l'autre, ni d'un déploiement au suivant — deux processus d'âges
    * différents rendraient des chiffres incomparables sur la même carte.
    */
@@ -115,7 +115,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // sous leur schéma.
   SkuRegistry: "pim",
   Category: "pim",
-  TvaRegime: "pim",
+  TvaRate: "pim",
   Emplacement: "pim",
   EmplacementTable: "pim",
   Product: "pim",

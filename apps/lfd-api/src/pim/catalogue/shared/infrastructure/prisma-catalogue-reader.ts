@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
-import { TvaRegimeRepository } from "../../../commerce/domain/ports/tva-regime.repository.js";
+import { TvaRateRepository } from "../../../commerce/domain/ports/tva-rate.repository.js";
 import {
   CatalogueReader,
-  type CategoryTvaRates,
+  type CategoryTvaPercents,
   type ChannelCategory,
 } from "../domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
@@ -15,7 +15,7 @@ import {
 /**
  * Implémentation du port de lecture. Elle s'appuie sur les dépôts du catalogue —
  * c'est-à-dire qu'elle reste **à l'intérieur** du module, là où lire ces tables est
- * légitime — et compose avec le port `TvaRegimeRepository` (commerce, déjà importé par
+ * légitime — et compose avec le port `TvaRateRepository` (commerce, déjà importé par
  * le module) pour résoudre le tag de collection d'une catégorie. L'adaptateur Shopify
  * ne voit que le résultat (ADR-13).
  */
@@ -24,7 +24,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
   constructor(
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
-    private readonly regimes: TvaRegimeRepository,
+    private readonly regimes: TvaRateRepository,
   ) {
     super();
   }
@@ -47,7 +47,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
     return all.filter((product) => wanted.has(product.id)).map((p) => p.snapshot());
   }
 
-  async tvaRates(categoryId: string): Promise<CategoryTvaRates> {
+  async tvaPercents(categoryId: string): Promise<CategoryTvaPercents> {
     const category = await this.categories.findById(categoryId);
     if (category === null) {
       return { emporter: null, surPlace: null };
@@ -61,7 +61,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
   /**
    * Les familles vivantes, avec leur taux « à emporter » résolu.
    *
-   * Les régimes sont lus **une fois** et indexés : résoudre famille par famille
+   * Les taux sont lus **une fois** et indexés : résoudre famille par famille
    * ferait N+1 requêtes pour une table qui tient en quelques lignes.
    */
   async channelCategories(): Promise<ChannelCategory[]> {
@@ -86,7 +86,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
       }));
   }
 
-  /** Un id de régime → son taux, ou `null` si non réglé / introuvable. */
+  /** Un id de taux → son taux, ou `null` si non réglé / introuvable. */
   private async percentOf(regimeId: string | null): Promise<number | null> {
     if (regimeId === null) {
       return null;

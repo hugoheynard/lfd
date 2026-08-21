@@ -1,7 +1,7 @@
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { TvaRegimeNotFoundError } from "../../../../commerce/domain/errors/commerce-errors.js";
-import { TvaRegime } from "../../../../commerce/domain/entities/tva-regime.js";
-import { TvaRegimeRepository } from "../../../../commerce/domain/ports/tva-regime.repository.js";
+import { TvaRateNotFoundError } from "../../../../commerce/domain/errors/commerce-errors.js";
+import { TvaRate } from "../../../../commerce/domain/entities/tva-rate.js";
+import { TvaRateRepository } from "../../../../commerce/domain/ports/tva-rate.repository.js";
 import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
 import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
 import {
@@ -79,19 +79,19 @@ class InMemoryCategories extends CategoryRepository {
   }
 }
 
-class InMemoryRegimes extends TvaRegimeRepository {
-  private readonly rows: TvaRegime[] = [];
+class InMemoryRegimes extends TvaRateRepository {
+  private readonly rows: TvaRate[] = [];
 
-  listAll(): Promise<TvaRegime[]> {
+  listAll(): Promise<TvaRate[]> {
     return Promise.resolve([...this.rows]);
   }
-  findById(id: string): Promise<TvaRegime | null> {
+  findById(id: string): Promise<TvaRate | null> {
     return Promise.resolve(this.rows.find((r) => r.id === id) ?? null);
   }
-  findByTag(tag: string): Promise<TvaRegime | null> {
+  findByTag(tag: string): Promise<TvaRate | null> {
     return Promise.resolve(this.rows.find((r) => r.tag === tag) ?? null);
   }
-  add(regime: TvaRegime): Promise<void> {
+  add(regime: TvaRate): Promise<void> {
     this.rows.push(regime);
     return Promise.resolve();
   }
@@ -231,12 +231,10 @@ describe("SetCategoryChannelsHandler", () => {
 });
 
 describe("SetCategoryTvaHandler", () => {
-  it("règle les deux régimes quand ils existent", async () => {
+  it("règle les deux taux quand ils existent", async () => {
     const categories = new InMemoryCategories();
     const regimes = new InMemoryRegimes();
-    await regimes.add(
-      TvaRegime.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }),
-    );
+    await regimes.add(TvaRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
     const [id] = await openRoots(categories, 1);
 
     await new SetCategoryTvaHandler(categories, regimes, new RecordingJournal()).execute(
@@ -247,7 +245,7 @@ describe("SetCategoryTvaHandler", () => {
     expect(categories.at(id!).surPlaceTvaId).toBeNull();
   });
 
-  it("refuse un régime fantôme", async () => {
+  it("refuse un taux fantôme", async () => {
     const categories = new InMemoryCategories();
     const [id] = await openRoots(categories, 1);
 
@@ -255,7 +253,7 @@ describe("SetCategoryTvaHandler", () => {
       new SetCategoryTvaHandler(categories, new InMemoryRegimes(), new RecordingJournal()).execute(
         new SetCategoryTvaCommand(id!, "tva_absent", null),
       ),
-    ).rejects.toBeInstanceOf(TvaRegimeNotFoundError);
+    ).rejects.toBeInstanceOf(TvaRateNotFoundError);
   });
 });
 

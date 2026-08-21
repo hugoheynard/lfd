@@ -1,6 +1,6 @@
 import { Test } from "@nestjs/testing";
 
-import { TvaRegimeRepository } from "../../../../commerce/domain/ports/tva-regime.repository.js";
+import { TvaRateRepository } from "../../../../commerce/domain/ports/tva-rate.repository.js";
 import { CatalogueReader } from "../../domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import { ProductRepository } from "../../../product/domain/ports/product.repository.js";
@@ -27,7 +27,7 @@ async function build(
         useValue: { findById: () => Promise.resolve(category) },
       },
       {
-        provide: TvaRegimeRepository,
+        provide: TvaRateRepository,
         useValue: {
           findById: (id: string) =>
             Promise.resolve(id in regimes ? { percent: regimes[id] } : null),
@@ -38,11 +38,11 @@ async function build(
   return moduleRef.get(CatalogueReader);
 }
 
-describe("PrismaCatalogueReader.tvaRates", () => {
-  it("résout le TAUX par contexte depuis les régimes de la catégorie", async () => {
+describe("PrismaCatalogueReader.tvaPercents", () => {
+  it("résout le TAUX par contexte depuis les taux de la catégorie", async () => {
     const reader = await build({ emporterTvaId: "r1", surPlaceTvaId: "r2" }, { r1: 5.5, r2: 10 });
 
-    const rates = await reader.tvaRates("cat_vien");
+    const rates = await reader.tvaPercents("cat_vien");
 
     expect(rates.emporter).toBe(5.5);
     expect(rates.surPlace).toBe(10);
@@ -51,7 +51,7 @@ describe("PrismaCatalogueReader.tvaRates", () => {
   it("rend null pour un contexte non réglé sur la catégorie", async () => {
     const reader = await build({ emporterTvaId: "r1", surPlaceTvaId: null }, { r1: 5.5 });
 
-    const rates = await reader.tvaRates("cat_vien");
+    const rates = await reader.tvaPercents("cat_vien");
 
     expect(rates.emporter).toBe(5.5);
     expect(rates.surPlace).toBeNull();
@@ -59,7 +59,7 @@ describe("PrismaCatalogueReader.tvaRates", () => {
 
   it("rend null/null pour une catégorie introuvable", async () => {
     const reader = await build(null, {});
-    expect(await reader.tvaRates("nope")).toEqual({
+    expect(await reader.tvaPercents("nope")).toEqual({
       emporter: null,
       surPlace: null,
     });

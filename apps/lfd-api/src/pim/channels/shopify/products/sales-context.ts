@@ -1,4 +1,4 @@
-import type { CategoryTvaRates } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { CategoryTvaPercents } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 
 /**
  * Un **contexte de vente** — une manière de vendre l'article qui a son propre traitement
@@ -12,7 +12,7 @@ import type { CategoryTvaRates } from "../../../catalogue/shared/domain/ports/ca
 export interface SalesContext {
   readonly key: string;
   readonly handleSuffix: string;
-  readonly pick: (rates: CategoryTvaRates) => number | null;
+  readonly pick: (rates: CategoryTvaPercents) => number | null;
 }
 
 /**

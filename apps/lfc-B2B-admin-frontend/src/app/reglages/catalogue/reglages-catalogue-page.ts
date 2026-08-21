@@ -20,7 +20,7 @@ interface Shelf {
   readonly id: string;
   readonly name: string;
   readonly items: readonly CatalogAdminItemView[];
-  /** La famille n'a pas de régime de TVA : ses articles ne sont pas vendables. */
+  /** La famille n'a pas de taux de TVA : ses articles ne sont pas vendables. */
   readonly untaxed: boolean;
 }
 
@@ -35,7 +35,7 @@ interface Shelf {
  * Deux choses que l'écran doit dire, parce qu'elles décident de la suite :
  *
  * - **d'où vient chaque prix** — un tarif sans provenance ne se défend pas ;
- * - **quels articles ne sont pas vendables** — une famille sans régime de TVA
+ * - **quels articles ne sont pas vendables** — une famille sans taux de TVA
  *   entre au catalogue mais reste hors boutique. Le taire donnerait une liste
  *   rassurante dont la moitié n'est achetable par personne.
  */

@@ -1,21 +1,21 @@
-import { EmptyTvaRegimeNameError } from "../../errors/commerce-errors.js";
-import { InvalidTvaRateError } from "../../value-objects/tva-rate.js";
-import { TvaRegime } from "../tva-regime.js";
+import { EmptyTvaRateNameError } from "../../errors/commerce-errors.js";
+import { InvalidTvaPercentError } from "../../value-objects/tva-percent.js";
+import { TvaRate } from "../tva-rate.js";
 
 const OPEN = { id: "tva_1", name: "Réduit", description: "Alimentaire", percent: 5.5 };
 
-describe("l’agrégat TvaRegime", () => {
+describe("l’agrégat TvaRate", () => {
   it("refuse un taux impossible", () => {
-    expect(() => TvaRegime.open({ ...OPEN, percent: 0 })).toThrow(InvalidTvaRateError);
+    expect(() => TvaRate.open({ ...OPEN, percent: 0 })).toThrow(InvalidTvaPercentError);
   });
 
   it("refuse un nom vide, à l’ouverture comme à la révision", () => {
-    expect(() => TvaRegime.open({ ...OPEN, name: "   " })).toThrow(EmptyTvaRegimeNameError);
-    expect(() => TvaRegime.open(OPEN).revise("  ", "", 10)).toThrow(EmptyTvaRegimeNameError);
+    expect(() => TvaRate.open({ ...OPEN, name: "   " })).toThrow(EmptyTvaRateNameError);
+    expect(() => TvaRate.open(OPEN).revise("  ", "", 10)).toThrow(EmptyTvaRateNameError);
   });
 
   it("rogne les blancs autour du nom et de la description", () => {
-    const snapshot = TvaRegime.open({
+    const snapshot = TvaRate.open({
       ...OPEN,
       name: "  Réduit  ",
       description: "  x ",
@@ -29,17 +29,17 @@ describe("l’agrégat TvaRegime", () => {
    * la règle existe se signale ici, plutôt que de ressortir vers un canal.
    */
   it("refuse à la reconstitution un taux que la base n’aurait pas dû porter", () => {
-    expect(() => TvaRegime.reconstitute({ ...OPEN, percent: 0 })).toThrow(InvalidTvaRateError);
+    expect(() => TvaRate.reconstitute({ ...OPEN, percent: 0 })).toThrow(InvalidTvaPercentError);
   });
 
   it("révise son taux", () => {
-    const regime = TvaRegime.open(OPEN);
+    const regime = TvaRate.open(OPEN);
     regime.revise("Intermédiaire", "", 10);
     expect(regime.snapshot()).toMatchObject({ name: "Intermédiaire", percent: 10 });
   });
 
   it("se reconstitue à l’identique depuis son instantané", () => {
-    const snapshot = TvaRegime.open(OPEN).snapshot();
-    expect(TvaRegime.reconstitute(snapshot).snapshot()).toEqual(snapshot);
+    const snapshot = TvaRate.open(OPEN).snapshot();
+    expect(TvaRate.reconstitute(snapshot).snapshot()).toEqual(snapshot);
   });
 });

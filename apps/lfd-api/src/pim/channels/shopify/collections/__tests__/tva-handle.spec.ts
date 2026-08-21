@@ -1,8 +1,8 @@
 import { tvaHandleOf } from "../tva-handle.js";
 
 /**
- * La dérivation a quitté le référentiel fiscal (`TvaRate.tag`, colonne
- * `tva_regime.tag`) pour ce fichier : un handle de collection est du
+ * La dérivation a quitté le référentiel fiscal (`TvaPercent.tag`, colonne
+ * `tva_rate.tag`) pour ce fichier : un handle de collection est du
  * vocabulaire Shopify. Le résultat, lui, ne change pas — les collections déjà
  * créées gardent leur handle.
  */

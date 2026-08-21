@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
- * Schéma « flux des collections » — régimes de TVA + catégorie → produit
+ * Schéma « flux des collections » — taux de TVA + catégorie → produit
  * (héritage / override) → fiches → les trois familles de collections. Couleurs
  * par tokens (thème-aware).
  */

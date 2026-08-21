@@ -5,8 +5,8 @@ export type {
   CreatedIdResponse,
 } from "./shared.js";
 
-export { tvaRegimePayloadSchema } from "./commerce.js";
-export type { TvaRegimePayload, TvaRegimeView } from "./commerce.js";
+export { tvaRatePayloadSchema } from "./commerce.js";
+export type { TvaRatePayload, TvaRateView } from "./commerce.js";
 
 export {
   createCategoryPayloadSchema,

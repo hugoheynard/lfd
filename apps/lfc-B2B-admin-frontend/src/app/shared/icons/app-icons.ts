@@ -41,7 +41,7 @@ const LOGOUT_ICON =
   '<path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>';
 
 /**
- * Régimes de TVA — le « % » dans un cadre. Source : SVG Repo (domaine public).
+ * Taux de TVA — le « % » dans un cadre. Source : SVG Repo (domaine public).
  *
  * Normalisée en trois gestes, tous nécessaires :
  * - `fill="#000000"` → `currentColor`, sinon l'icône reste noire en thème

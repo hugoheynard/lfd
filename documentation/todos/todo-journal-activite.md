@@ -70,7 +70,7 @@ passe ; c'est le premier index à poser quand il ne passera plus.
 L'API accepte `type`, `subjectType`, `subjectId`, `actorId` et `until` ; l'écran
 n'offre que le module et la période. Les deux qui manqueront en premier :
 
-- **par sujet** — « l'histoire de ce régime », depuis la fiche elle-même plutôt
+- **par sujet** — « l'histoire de ce taux », depuis la fiche elle-même plutôt
   que depuis le journal ;
 - **par acteur** — « qu'a fait cette personne », depuis l'annuaire staff.
 
@@ -80,6 +80,6 @@ dans sa barre de filtres. C'est ce qui décidera de leur forme.
 ### 6. Le mur, à réexaminer
 
 `activity:read` est réservé à `admin`. La question qui reviendra : ouvrir la
-**tranche fiscale** à `comptabilite`, qui écrit les régimes sans pouvoir relire
+**tranche fiscale** à `comptabilite`, qui écrit les taux sans pouvoir relire
 qui les a changés. Ça suppose un filtrage par module **côté serveur imposé**, et
 non un filtre d'écran — sinon c'est le journal entier qui s'ouvre.

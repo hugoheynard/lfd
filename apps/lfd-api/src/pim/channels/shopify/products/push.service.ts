@@ -250,7 +250,7 @@ export class ShopifyPushService {
       return "";
     }
     try {
-      const rates = await this.catalogue.tvaRates(product.categoryId);
+      const rates = await this.catalogue.tvaPercents(product.categoryId);
       // Le handle se dérive ICI, chez le canal qui range par collection — le
       // catalogue ne rend qu'un taux.
       const tags = ACTIVE_SALES_CONTEXTS.flatMap((context) => {

@@ -1820,7 +1820,7 @@ model CatalogCategory {
   parentId String? @map("parent_id")
   position Int     @default(0)
 
-  /// Taux de TVA en %, résolu par le PIM depuis le régime « à emporter » de la
+  /// Taux de TVA en %, résolu par le PIM depuis le taux « à emporter » de la
   /// famille. Reçu plutôt que déduit : la plateforme codait 5,5 % en dur pour
   /// tout, y compris le non-alimentaire.
   ///
@@ -2487,13 +2487,13 @@ model Category {
   /// `{}` sur les lignes antérieures est relu comme « rien vendu » (défensif).
   channelPreset Json @default("{}") @map("channel_preset")
 
-  /// Régimes de TVA visés par les fiches à emporter / sur place. `NULL` = non
-  /// réglé. `onDelete: Restrict` (défaut) : un régime référencé ne peut pas être
+  /// Taux de TVA visés par les fiches à emporter / sur place. `NULL` = non
+  /// réglé. `onDelete: Restrict` (défaut) : un taux référencé ne peut pas être
   /// supprimé tant qu'une famille le vise.
   emporterTvaId String?    @map("emporter_tva_id")
-  emporterTva   TvaRegime? @relation("CategoryEmporterTva", fields: [emporterTvaId], references: [id])
+  emporterTva   TvaRate? @relation("CategoryEmporterTva", fields: [emporterTvaId], references: [id])
   surPlaceTvaId String?    @map("sur_place_tva_id")
-  surPlaceTva   TvaRegime? @relation("CategorySurPlaceTva", fields: [surPlaceTvaId], references: [id])
+  surPlaceTva   TvaRate? @relation("CategorySurPlaceTva", fields: [surPlaceTvaId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2507,20 +2507,20 @@ model Category {
   @@schema("pim")
 }
 
-/// Régime de TVA — référence commerciale partagée. Les canaux en dérivent ce
+/// Taux de TVA — référence commerciale partagée. Les canaux en dérivent ce
 /// dont ils ont besoin : Shopify un handle de collection, la boutique B2B un
 /// nombre à facturer. Aucun de ces deux vocabulaires ne vit ici.
-model TvaRegime {
+model TvaRate {
   id          String @id
   name        String
   description String @default("")
-  /// UNIQUE, et c'est l'invariant fiscal : deux régimes au même taux n'ont pas
+  /// UNIQUE, et c'est l'invariant fiscal : deux taux au même taux n'ont pas
   /// de sens. L'unicité portait avant sur le `tag` Shopify dérivé du taux — le
   /// référentiel faisait donc tenir une règle comptable par une collision de
   /// handles de canal.
   percent     Float  @unique
 
-  /// Familles qui visent ce régime — extrémités des relations portées par
+  /// Familles qui visent ce taux — extrémités des relations portées par
   /// `Category`. Aucune colonne ajoutée ici ; sert le mur `Restrict` à la suppression.
   categoriesEmporter Category[] @relation("CategoryEmporterTva")
   categoriesSurPlace Category[] @relation("CategorySurPlaceTva")
@@ -2528,7 +2528,7 @@ model TvaRegime {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("tva_regime")
+  @@map("tva_rate")
 
   @@schema("pim")
 }

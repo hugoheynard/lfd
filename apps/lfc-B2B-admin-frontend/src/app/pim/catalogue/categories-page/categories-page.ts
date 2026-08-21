@@ -18,11 +18,11 @@ import {
 
 import { boutiquesWith, formatPercent } from '../../data/channels';
 import { ChannelMatrix } from '../channel-matrix/channel-matrix';
-import { CatalogueApi, type Category, type SalesChannels, type TvaRegime } from '../catalogue-api';
+import { CatalogueApi, type Category, type SalesChannels, type TvaRate } from '../catalogue-api';
 
 /**
  * Catégories (= familles = gammes). Chaque catégorie porte les **défauts de
- * canaux** et les **régimes de TVA** (à emporter / sur place) dont héritent ses
+ * canaux** et les **taux de TVA** (à emporter / sur place) dont héritent ses
  * produits. Composants fold ; l'unique `<input>` natif est l'éditeur en cellule.
  */
 @Component({
@@ -50,7 +50,7 @@ export class CategoriesPage {
   private readonly api = inject(CatalogueApi);
 
   protected readonly categories = signal<Category[]>([]);
-  protected readonly regimes = signal<TvaRegime[]>([]);
+  protected readonly regimes = signal<TvaRate[]>([]);
   protected readonly draftName = signal('');
   protected readonly draftParent = signal('');
   protected readonly error = signal<string | null>(null);
@@ -101,8 +101,8 @@ export class CategoriesPage {
     return parent?.name.fr ?? '—';
   }
 
-  /** Libellé d'un régime : « Réduit · 5,5 % ». */
-  protected regimeLabel(regime: TvaRegime): string {
+  /** Libellé d'un taux : « Réduit · 5,5 % ». */
+  protected regimeLabel(regime: TvaRate): string {
     return `${regime.name} · ${formatPercent(regime.percent)}`;
   }
 
@@ -189,7 +189,7 @@ export class CategoriesPage {
     try {
       const [categories, regimes] = await Promise.all([
         this.api.listCategories(),
-        this.api.listTvaRegimes(),
+        this.api.listTvaRates(),
       ]);
       this.categories.set(categories);
       this.regimes.set(regimes);

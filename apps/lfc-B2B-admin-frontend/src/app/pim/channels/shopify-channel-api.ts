@@ -108,7 +108,7 @@ export class ShopifyChannelApi {
 
   /**
    * Les deux routes n'envoient **rien** : le serveur dérive les collections
-   * voulues du référentiel des régimes. Le front postait sa propre liste, ce qui
+   * voulues du référentiel des taux. Le front postait sa propre liste, ce qui
    * faisait décider le titre d'une collection Shopify par un composant Angular —
    * et interdisait à la publication de créer ce qui manque sans écran ouvert.
    */

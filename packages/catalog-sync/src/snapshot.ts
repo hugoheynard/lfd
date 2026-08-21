@@ -39,8 +39,8 @@ export const syncCategorySchema = z.object({
   parentId: z.string().min(1).nullable(),
   position: z.number().int().nonnegative(),
   /**
-   * Taux de TVA en pourcentage (5.5, 20…), résolu depuis le `TvaRegime` de la
-   * famille — **le régime « à emporter »**.
+   * Taux de TVA en pourcentage (5.5, 20…), résolu depuis le `TvaRate` de la
+   * famille — **le taux « à emporter »**.
    *
    * ⚠️ **Descriptif depuis la v2.** L'autorité est passée à l'article
    * ({@link syncVariantSchema}) : c'est lui qu'on vend, c'est lui qui doit
@@ -49,7 +49,7 @@ export const syncCategorySchema = z.object({
    * champ-ci.
    *
    * Une vente B2B est une livraison ou un retrait : la marchandise repart. Le
-   * régime « sur place » décrit une consommation en boutique, qui n'existe pas
+   * taux « sur place » décrit une consommation en boutique, qui n'existe pas
    * sur ce canal. Le choix est fait ici, une fois, plutôt que laissé au
    * récepteur qui n'a pas de quoi trancher.
    *
@@ -93,7 +93,7 @@ export const syncVariantSchema = z.object({
   position: z.number().int().nonnegative(),
   /**
    * **Le taux qui sera facturé sur cet article**, en pourcentage, résolu à
-   * l'émission depuis le régime « à emporter » de sa famille.
+   * l'émission depuis le taux « à emporter » de sa famille.
    *
    * Porté par l'ARTICLE et non par la famille depuis la v2. La raison n'est pas
    * cosmétique : le récepteur vendait en rejoignant la famille pour retrouver

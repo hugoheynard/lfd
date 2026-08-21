@@ -38,8 +38,8 @@ const SHOPIFY_CREDENTIALS_SOURCE = Symbol("SHOPIFY_CREDENTIALS_SOURCE");
  * exporté (ADR-13). Supprimer ce module ne casserait rien en amont.
  */
 @Module({
-  // `CommerceModule` pour son `TvaRegimeRepository` : les collections de taxe
-  // se dérivent des régimes. Un PORT exporté, pas une table — la règle d'ADR-13
+  // `CommerceModule` pour son `TvaRateRepository` : les collections de taxe
+  // se dérivent des taux. Un PORT exporté, pas une table — la règle d'ADR-13
   // tient, et la dépendance va bien du canal vers le centre.
   imports: [PimDatabaseModule, CatalogueModule, CommerceModule],
   // Un contrôleur par thématique, sous le préfixe module `channels/shopify`

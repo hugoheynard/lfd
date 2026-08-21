@@ -111,7 +111,7 @@ async function build(
         provide: CatalogueReader,
         useValue: {
           byIds: () => Promise.resolve([product()]),
-          tvaRates: () => Promise.resolve({ emporter: 5.5, surPlace: null }),
+          tvaPercents: () => Promise.resolve({ emporter: 5.5, surPlace: null }),
         },
       },
       {

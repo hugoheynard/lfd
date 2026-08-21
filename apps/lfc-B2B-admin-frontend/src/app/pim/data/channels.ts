@@ -1,5 +1,5 @@
 import { BOUTIQUE_LABEL } from './boutiques';
-import type { BoutiqueChannels, Category, Product, SalesChannels, TvaRegime } from './models';
+import type { BoutiqueChannels, Category, Product, SalesChannels, TvaRate } from './models';
 import { slugify } from './sku';
 
 /** Libellés des boutiques qui proposent un mode donné (à emporter / sur place). */
@@ -51,28 +51,28 @@ export interface GeneratedFiche {
 }
 
 /**
- * Le handle de la collection Shopify d'un régime — **dérivé** du taux, et non
- * lu sur le régime : le référentiel fiscal ne porte plus de vocabulaire de
+ * Le handle de la collection Shopify d'un taux — **dérivé** du taux, et non
+ * lu sur le taux : le référentiel fiscal ne porte plus de vocabulaire de
  * canal. C'est ici, dans la projection Shopify, qu'il se recalcule.
  */
-function tagOf(regime: TvaRegime | undefined): string {
+function tagOf(regime: TvaRate | undefined): string {
   return regime === undefined ? '—' : tvaTagFromPercent(regime.percent);
 }
 
-function rateOf(regime: TvaRegime | undefined): string {
+function rateOf(regime: TvaRate | undefined): string {
   return regime === undefined ? '—' : formatPercent(regime.percent);
 }
 
 /**
  * Les fiches Shopify qu'une recette produit au push, dérivées de ses canaux et
- * des régimes de TVA de sa catégorie. Une recette → 0, 1 ou 2 fiches (emporter
- * et/ou sur place). Le taux/tag vient du régime référencé — l'exception chocolat
+ * des taux de TVA de sa catégorie. Une recette → 0, 1 ou 2 fiches (emporter
+ * et/ou sur place). Le taux/tag vient du taux référencé — l'exception chocolat
  * (20 % sur place) n'est plus une règle codée, juste `surPlaceTvaId = tva-20`.
  */
 export function generateFiches(
   product: Product,
   category: Category,
-  regimeById: ReadonlyMap<string, TvaRegime>,
+  regimeById: ReadonlyMap<string, TvaRate>,
 ): GeneratedFiche[] {
   const { channels } = resolveChannels(product, category);
   const handle = slugify(product.name.fr);

@@ -27,7 +27,7 @@ import {
  * Ce qu'il ne peut PAS garantir, faute de voir plus loin que lui-même, et qui
  * reste donc aux handlers : que le parent existe, que le déplacement ne crée
  * pas de cycle (il faut l'arbre entier — cf. `domain/services/category-tree`),
- * qu'aucun produit actif n'y est rattaché, que le régime de TVA visé existe.
+ * qu'aucun produit actif n'y est rattaché, que le taux de TVA visé existe.
  * Un objet ne garantit que ce qu'il voit.
  */
 export interface CategorySnapshot {

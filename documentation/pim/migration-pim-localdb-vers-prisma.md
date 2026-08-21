@@ -17,7 +17,7 @@
   l'infra HTTP existe, rien à installer.
 - Services front sur LocalDb : `catalogue-api.ts`, `publication-api.ts`,
   `shopify-api.ts`, `shopify-channel-api.ts`, `emplacement-list`,
-  `collections-page`, `tva-regimes/*`, `data/api.ts`.
+  `collections-page`, `tva-rates/*`, `data/api.ts`.
 - **Le backend persiste bien via Prisma**, mais n'expose qu'un sous-ensemble :
   catégories (list/create/rename/archive), produits (list/get/create/rename/
   archive). Controller `@Public()` temporaire (Auth0 pas encore câblé) → joignable
@@ -35,7 +35,7 @@ qu'un (produits/catégories, sans les champs commerce).
 | **Produits** `deleteProduct`                                                                                                        | ❌ R3 : pas de DELETE physique                                                       | rester sur archive            |
 | **Catégories** list/create/rename/archive                                                                                           | ✅                                                                                   | mécanique                     |
 | **Catégories — champs** `channelPreset` (b1/b2 × emporter/surPlace), `emporterTvaId`/`surPlaceTvaId`                                | ❌                                                                                   | colonnes/relation + events    |
-| **Régimes de TVA** list/create/update/delete                                                                                        | ❌ **modèle inexistant**                                                             | domaine backend entier        |
+| **Taux de TVA** list/create/update/delete                                                                                           | ❌ **modèle inexistant**                                                             | domaine backend entier        |
 | **Emplacements** (boutiques + modes + tables + QR) list/create/update/delete/generateTableQr/removeTableQr                          | ❌ **modèle inexistant**                                                             | domaine backend entier        |
 | **Publication / Shopify** bindings, `bindingHashes`, `publishedFiches`, `scheduledPush`, settings                                   | 🟡 `ShopifyProductBinding`/`ShopifyVariantBinding` (ADR-13), module channels partiel | aligner + compléter           |
 
@@ -51,13 +51,13 @@ qu'un (produits/catégories, sans les champs commerce).
 
 ## Décision de frontière (verrouillée 2026-08-04 : contextes séparés)
 
-`channelPreset`, régimes de TVA, emplacements sont des concepts **canaux /
+`channelPreset`, taux de TVA, emplacements sont des concepts **canaux /
 commerce**, pas catalogue. Le backend a été dessiné **channel-agnostic** exprès
 (Shopify = binding séparé, ADR-13). Les migrer verbatim en colonnes sur
 `Product`/`Category` importerait la dette de modélisation du POC.
 
 **Décidé :** contextes **séparés** dans le backend — un module commerce/`channels`
-(régimes TVA + presets de canaux), un module `locations` (emplacements + tables +
+(taux TVA + presets de canaux), un module `locations` (emplacements + tables +
 QR) — plutôt que des colonnes sur `Product`/`Category`. La TVA et les canaux se
 **référencent** depuis la catégorie, ils n'y vivent pas. Conséquence pour slice 1 :
 `channelsOverride` ne va PAS sur `Product` ; il est traité avec le contexte
@@ -100,7 +100,7 @@ sa parité backend atteinte.
   4 pour les refs) ; rewire.
 - **Slice 3 — Publication / Shopify.** Aligner `publication-api`/`shopify-*` sur
   les bindings backend existants.
-- **Slice 4 — Régimes de TVA.** Nouveau contexte commerce/channels.
+- **Slice 4 — Taux de TVA.** Nouveau contexte commerce/channels.
 - **Slice 5 — Emplacements.** Nouveau contexte locations (tables + QR rotatif).
 
 ## À trancher au fil de l'eau (pas bloquant maintenant)

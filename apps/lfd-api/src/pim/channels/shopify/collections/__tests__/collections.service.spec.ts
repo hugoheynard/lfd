@@ -14,7 +14,7 @@ const DRY_RUN_VIEW: ShopifySettingsView = {
   updatedAt: null,
 };
 
-/** Les trois régimes de la démo. `tva-8-5` est volontairement absent → orpheline. */
+/** Les trois taux de la démo. `tva-8-5` est volontairement absent → orpheline. */
 const DESIRED = [
   { handle: "tva-5-5", title: "TVA 5,5 %" },
   { handle: "tva-10", title: "TVA 10 %" },

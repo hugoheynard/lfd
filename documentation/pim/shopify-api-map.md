@@ -63,17 +63,17 @@
 
 ## Collections de TVA (`tva-*`)
 
-| Sens | Scope            | Fonction (`admin-client`)                    | Opération GraphQL                    | Action                                                       | Statut |
-| ---- | ---------------- | -------------------------------------------- | ------------------------------------ | ------------------------------------------------------------ | ------ |
-| R    | `read_products`  | `listTvaCollections()`                       | `query collections` (filtre `tva-*`) | Lister les collections de TVA présentes (réconciliation)     | ✅     |
-| W    | `write_products` | `createCollection()`                         | `mutation collectionCreate`          | Créer une collection **manuelle** vide pour un régime de TVA | ✅     |
-| W    | `write_products` | `addProductsToCollection()` _(proposé)_      | `collectionAddProductsV2`            | Ranger les produits d'un régime dans sa collection de TVA    | ⬜     |
-| W    | `write_products` | `removeProductsFromCollection()` _(proposé)_ | `collectionRemoveProducts`           | Retirer un produit d'un régime (changement de taux)          | ⬜     |
+| Sens | Scope            | Fonction (`admin-client`)                    | Opération GraphQL                    | Action                                                     | Statut |
+| ---- | ---------------- | -------------------------------------------- | ------------------------------------ | ---------------------------------------------------------- | ------ |
+| R    | `read_products`  | `listTvaCollections()`                       | `query collections` (filtre `tva-*`) | Lister les collections de TVA présentes (réconciliation)   | ✅     |
+| W    | `write_products` | `createCollection()`                         | `mutation collectionCreate`          | Créer une collection **manuelle** vide pour un taux de TVA | ✅     |
+| W    | `write_products` | `addProductsToCollection()` _(proposé)_      | `collectionAddProductsV2`            | Ranger les produits d'un taux dans sa collection de TVA    | ⬜     |
+| W    | `write_products` | `removeProductsFromCollection()` _(proposé)_ | `collectionRemoveProducts`           | Retirer un produit d'un taux (changement de taux)          | ⬜     |
 
 > Les collections n'ont **pas** de scope propre : `collectionCreate` /
 > `collectionAddProductsV2` passent par **`write_products`** (déjà accordé).
 
-> Modèle : une collection **par régime** (`emporterTvaId` / `surPlaceTvaId`), le QR
+> Modèle : une collection **par taux** (`emporterTvaId` / `surPlaceTvaId`), le QR
 > d'une table pointe vers une **collection filtrée**. Voir [`projection-shopify.md`](projection-shopify.md).
 
 ---

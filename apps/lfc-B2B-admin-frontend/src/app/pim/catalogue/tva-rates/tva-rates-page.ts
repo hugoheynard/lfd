@@ -3,28 +3,32 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { FoldButtonComponent, FoldPageLayoutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
-import { TvaRegimeFormPanel } from './tva-regime-form-panel/tva-regime-form-panel';
-import { TvaRegimeTable } from './tva-regime-table/tva-regime-table';
+import { TvaRateFormPanel } from './tva-rate-form-panel/tva-rate-form-panel';
+import { TvaRateTable } from './tva-rate-table/tva-rate-table';
 
 /**
- * Régimes de TVA — le **référentiel fiscal** du catalogue. Page-coquille : le
- * chrome, l'action « Nouveau régime » (side-panel), et le tableau.
+ * Taux de TVA — le **référentiel fiscal** du catalogue. Page-coquille : le
+ * chrome, l'action « Ajouter un taux de TVA » (side-panel), et le tableau.
+ *
+ * L'écran disait « taux » ; le mot est celui du modèle, pas celui du métier.
+ * Ce qu'un comptable ajoute, c'est un TAUX. Le code garde `regime` — l'agrégat
+ * n'a pas changé de nature.
  *
  * Elle portait aussi une section « Usages plateforme » qui inspectait Shopify et
  * y poussait les collections `tva-*`. Ce n'était pas un usage mais un **envoi**,
  * et il est parti dans Publication → Shopify, où vivent les canaux. Restait ici
  * le seul usage qui regarde vers l'intérieur : combien de familles visent le
- * régime — la colonne « Utilisé par », qui dit avant la suppression ce que la
+ * taux — la colonne « Utilisé par », qui dit avant la suppression ce que la
  * base refuserait après.
  */
 
 @Component({
-  selector: 'app-tva-regimes-page',
+  selector: 'app-tva-rates-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPageLayoutComponent, FoldButtonComponent, TvaRegimeTable],
-  templateUrl: './tva-regimes-page.html',
+  imports: [FoldPageLayoutComponent, FoldButtonComponent, TvaRateTable],
+  templateUrl: './tva-rates-page.html',
 })
-export class TvaRegimesPage {
+export class TvaRatesPage {
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
 
@@ -36,8 +40,8 @@ export class TvaRegimesPage {
   protected readonly canWrite = computed(() => this.permissions.can('tax:write'));
 
   /** Ouvre le side-panel de création ; le tableau, réactif à la DB, se met à
-   *  jour tout seul quand un régime en sort. */
+   *  jour tout seul quand un taux en sort. */
   protected openCreate(): void {
-    this.panelHost.open<boolean>(TvaRegimeFormPanel, { side: 'right' });
+    this.panelHost.open<boolean>(TvaRateFormPanel, { side: 'right' });
   }
 }

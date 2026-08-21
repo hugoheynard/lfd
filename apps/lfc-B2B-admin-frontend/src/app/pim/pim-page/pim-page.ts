@@ -30,7 +30,7 @@ interface PimTab extends FoldViewNavItem {
 const TABS: readonly PimTab[] = [
   { key: 'produits', label: 'Produits', link: 'produits', icon: 'product' },
   { key: 'categories', label: 'Catégories', link: 'categories', icon: 'category' },
-  { key: 'tva', label: 'Régimes de TVA', link: 'tva', icon: 'tax', needs: 'tax:read' },
+  { key: 'tva', label: 'Taux de TVA', link: 'tva', icon: 'tax', needs: 'tax:read' },
   { key: 'collections', label: 'Collections', link: 'collections', icon: 'collections' },
   { key: 'publication', label: 'Publication', link: 'publication', icon: 'publish' },
   { key: 'emplacements', label: 'Emplacements', link: 'emplacements', icon: 'places' },

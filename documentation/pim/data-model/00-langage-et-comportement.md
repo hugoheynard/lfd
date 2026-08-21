@@ -81,7 +81,7 @@ générique.
 | `RestoreProduct`     | `ProductRestored`       |                                                                                                     |
 
 > **Ce qui est réellement implémenté, au 2026-08-21.** La table ci-dessus décrit le modèle
-> visé ; le code en tient une partie. Les agrégats `Product`, `Category` et `TvaRegime`
+> visé ; le code en tient une partie. Les agrégats `Product`, `Category` et `TvaRate`
 > existent (fabrique privée, méthodes nommées, invariants testés). Côté `Product`, les verbes
 > `CreateProduct`, `RenameProduct`/`ReclassifyProduct` (une commande « identité »),
 > `ArchiveProduct`, `RestoreProduct` et le tarif d'une déclinaison sont branchés.
@@ -105,7 +105,7 @@ générique.
 | `MoveCategory`        | ⛔ **refusée si elle crée un cycle** · parent non archivé · jamais sa propre parente |
 | `ReorderCategories`   | **permutation complète** de la fratrie vivante — un ordre partiel est refusé         |
 | `SetCategoryChannels` | famille non archivée                                                                 |
-| `SetCategoryTva`      | famille non archivée · chaque régime visé existe                                     |
+| `SetCategoryTva`      | famille non archivée · chaque taux visé existe                                       |
 | `ArchiveCategory`     | ⛔ **refusée si des produits actifs y sont rattachés** · idempotente                 |
 
 **Une famille archivée est gelée** : canaux, TVA et place dans l'arbre sont refusés. Le
@@ -114,7 +114,7 @@ famille qui ne vend plus rien. Elle sort aussi du jeu du réordonnancement : ni 
 l'ordre proposé, ni renumérotée.
 
 Ce que l'agrégat garantit seul s'arrête à ce qu'il voit. L'existence du parent, l'absence de
-cycle (il faut l'arbre entier), le compte de produits actifs et l'existence du régime de TVA
+cycle (il faut l'arbre entier), le compte de produits actifs et l'existence du taux de TVA
 appartiennent aux handlers ou au service `category-tree` — pas à l'entité.
 
 ### Agrégat `Collection`

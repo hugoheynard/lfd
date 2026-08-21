@@ -730,7 +730,7 @@ n'existent pas dans sa comptabilité. Deux façons de combler le trou :
   la facture précisément les jours d'incident.
 - **Le comptage ne peut pas échouer un appel.** Il incrémente une entrée de
   `Map` avant de déléguer — rien n'attend, rien ne jette.
-- **Un régime, pas un cumul.** Le relevé est en opérations par minute, avec une
+- **Un taux, pas un cumul.** Le relevé est en opérations par minute, avec une
   projection mensuelle : « 42 par minute » ne se compare à rien, « 1,8 M par
   mois » se compare au million inclus. Un cumul depuis le démarrage serait
   incomparable d'un déploiement au suivant.

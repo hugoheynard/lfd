@@ -28,7 +28,7 @@ import {
   type Category,
   type Product,
   type SalesChannels,
-  type TvaRegime,
+  type TvaRate,
 } from '../catalogue-api';
 
 const SYNC_LABELS: Record<SyncStatus, string> = {
@@ -81,7 +81,7 @@ export class ProductsPage {
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly bindings = signal<ProductBinding[]>([]);
-  protected readonly regimes = signal<TvaRegime[]>([]);
+  protected readonly regimes = signal<TvaRate[]>([]);
   protected readonly pushMessage = signal<string | null>(null);
   protected readonly query = signal('');
   protected readonly page = signal(1);
@@ -230,7 +230,7 @@ export class ProductsPage {
   protected categoryTvaText(category: Category): string {
     const emporter = this.regimeById().get(category.emporterTvaId);
     const surPlace = this.regimeById().get(category.surPlaceTvaId);
-    const rate = (regime: TvaRegime | undefined): string =>
+    const rate = (regime: TvaRate | undefined): string =>
       regime === undefined ? '—' : formatPercent(regime.percent);
     return `${rate(emporter)} → ${rate(surPlace)}`;
   }
@@ -360,7 +360,7 @@ export class ProductsPage {
         this.api.listProducts(),
         this.api.listCategories(),
         this.shopify.listBindings(),
-        this.api.listTvaRegimes(),
+        this.api.listTvaRates(),
       ]);
       this.products.set(products);
       this.bindings.set(bindings);

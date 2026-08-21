@@ -1,15 +1,15 @@
-import { TvaRateConflictError, TvaRegimeNotFoundError } from "../domain/errors/commerce-errors.js";
-import type { TvaRegime } from "../domain/entities/tva-regime.js";
-import { TvaRegimeRepository } from "../domain/ports/tva-regime.repository.js";
+import { TvaRateConflictError, TvaRateNotFoundError } from "../domain/errors/commerce-errors.js";
+import type { TvaRate } from "../domain/entities/tva-rate.js";
+import { TvaRateRepository } from "../domain/ports/tva-rate.repository.js";
 
 /**
  * Les gardes que l'agrégat ne peut pas tenir : elles regardent les AUTRES
- * régimes.
+ * taux.
  */
 
-/** Refuse un taux déjà porté par un **autre** régime. */
+/** Refuse un taux déjà porté par un **autre** taux. */
 export async function ensureRateFree(
-  regimes: TvaRegimeRepository,
+  regimes: TvaRateRepository,
   percent: number,
   exceptId: string | null,
 ): Promise<void> {
@@ -19,10 +19,10 @@ export async function ensureRateFree(
   }
 }
 
-export async function requireRegime(regimes: TvaRegimeRepository, id: string): Promise<TvaRegime> {
+export async function requireRegime(regimes: TvaRateRepository, id: string): Promise<TvaRate> {
   const regime = await regimes.findById(id);
   if (regime === null) {
-    throw new TvaRegimeNotFoundError(id);
+    throw new TvaRateNotFoundError(id);
   }
   return regime;
 }

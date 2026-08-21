@@ -18,11 +18,11 @@ export type ProductKind = 'daily' | 'made_to_order' | 'resale';
 export type ProductStatus = 'draft' | 'published' | 'archived';
 
 /**
- * Un **régime de TVA** = un taux, = une collection Shopify (Famille A du doc :
+ * Un **taux de TVA** = un taux, = une collection Shopify (Famille A du doc :
  * `tva-5-5`, `tva-10`, `tva-20`). Donnée créable — la base qui porte les
- * dérogations. Une catégorie référence un régime à emporter et un sur place.
+ * dérogations. Une catégorie référence un taux à emporter et un sur place.
  */
-export interface TvaRegime {
+export interface TvaRate {
   id: string;
   /** Nom lisible — « Réduit », « Intermédiaire », « Normal ». */
   name: string;
@@ -31,11 +31,11 @@ export interface TvaRegime {
   /** Taux en pourcentage : 5.5, 10, 20. */
   percent: number;
   /** Combien de familles le visent — rendu par l'API, jamais recalculé ici. */
-  usage: TvaRegimeUsage;
+  usage: TvaRateUsage;
 }
 
-/** Le compte d'usages d'un régime, par mode de vente. */
-export interface TvaRegimeUsage {
+/** Le compte d'usages d'un taux, par mode de vente. */
+export interface TvaRateUsage {
   readonly emporter: number;
   readonly surPlace: number;
 }
@@ -98,7 +98,7 @@ export interface Category {
   isArchived: boolean;
   /** Défauts dont héritent les produits de la catégorie (sauf override). */
   channelPreset: SalesChannels;
-  /** Régime de TVA appliqué aux fiches à emporter / sur place. */
+  /** Taux de TVA appliqué aux fiches à emporter / sur place. */
   emporterTvaId: string;
   surPlaceTvaId: string;
 }

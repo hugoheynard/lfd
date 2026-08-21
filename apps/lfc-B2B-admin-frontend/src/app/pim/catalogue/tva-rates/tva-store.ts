@@ -1,11 +1,11 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 
-import type { TvaRegime } from '../../data/models';
-import { TvaHttpApi, type TvaRegimeInput } from './tva-http-api';
+import type { TvaRate } from '../../data/models';
+import { TvaHttpApi, type TvaRateInput } from './tva-http-api';
 
 /**
- * Source **réactive** unique des régimes de TVA — remplace le signal LocalDb.
+ * Source **réactive** unique des taux de TVA — remplace le signal LocalDb.
  * Table, panneau et usages plateforme lisent `items()` ; les mutations passent
  * ici (backend puis relecture), donc tout ce qui affiche la liste se recompose.
  */
@@ -14,7 +14,7 @@ export class TvaStore {
   private readonly api = inject(TvaHttpApi);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  private readonly state = signal<TvaRegime[]>([]);
+  private readonly state = signal<TvaRate[]>([]);
   readonly items = this.state.asReadonly();
 
   constructor() {
@@ -29,13 +29,13 @@ export class TvaStore {
     this.state.set(await this.api.list());
   }
 
-  async create(input: TvaRegimeInput): Promise<{ id: string }> {
+  async create(input: TvaRateInput): Promise<{ id: string }> {
     const created = await this.api.create(input);
     await this.reload();
     return created;
   }
 
-  async update(id: string, input: TvaRegimeInput): Promise<void> {
+  async update(id: string, input: TvaRateInput): Promise<void> {
     await this.api.update(id, input);
     await this.reload();
   }

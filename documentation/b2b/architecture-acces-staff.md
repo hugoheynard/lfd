@@ -155,7 +155,7 @@ une taxonomie d'intention :
 | `companies`    | `admin/companies` et ses sous-routes, `admin/activations`, `admin/companies/:id/alert-rules`, `admin/companies/:id/members`                                 |
 | `orders`       | `admin/orders`, `admin/handover`, les alertes de compte (`admin/alerts/*`)                                                                                  |
 | `catalog`      | Le PIM : produits, familles, collections, emplacements, canaux et publication (`products`, `categories`, `channels/*`, `collections/tva`, `admin/catalog*`) |
-| `tax`          | Le référentiel fiscal, et lui seul : `commerce/tva-regimes`                                                                                                 |
+| `tax`          | Le référentiel fiscal, et lui seul : `commerce/tva-rates`                                                                                                   |
 | `growth`       | `admin/cockpit`, `admin/growth`, `admin/leads`, `admin/prospects`, `admin/commercial/market`                                                                |
 | `appointments` | `admin/availability`, `admin/appointments`                                                                                                                  |
 | `support`      | `admin/support-requests`, `admin/notifications`                                                                                                             |
@@ -214,9 +214,9 @@ question « qui a vu quoi » le jour où elle se pose.
 **`tax` est la seule découpe du catalogue qu'un non-admin écrit.** `catalog:write`
 reste réservé à `admin` : le référentiel décide de ce qui existe, de ce qui se
 publie et à quel prix. Mais un **taux de TVA** n'est pas un choix d'assortiment,
-c'est une décision comptable — et la comptabilité voyait les régimes sans pouvoir
+c'est une décision comptable — et la comptabilité voyait les taux sans pouvoir
 y toucher. La ressource se détache **sans retirer de lecture** : tous ceux qui
-lisaient les régimes sous `catalog:read` ont `tax:read`, et un test le vérifie.
+lisaient les taux sous `catalog:read` ont `tax:read`, et un test le vérifie.
 
 La frontière s'arrête au référentiel. **Pousser** les collections de taxe vers un
 canal reste `catalog:write` : publier est un geste de catalogue. Un taux juste au

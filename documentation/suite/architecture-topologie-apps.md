@@ -553,7 +553,7 @@ apps/lfd-api/                          ← ex lfd-api, renommé
     │   ├── channels/
     │   │   ├── shopify/                 réconciliation 3 voies, snapshots
     │   │   └── b2b-platform/            le fil — devient un PORT, plus du HTTP
-    │   ├── commerce/                    régimes de TVA
+    │   ├── commerce/                    taux de TVA
     │   ├── locations/  allergens/
     │   └── pim.module.ts
     │

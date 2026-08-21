@@ -14,8 +14,7 @@
  * migration, et la table reste la seule — deux journaux, ce serait deux vérités
  * sur « qui a fait quoi ».
  */
-export type ActivitySubjectType =
-  "user" | "company" | "lead" | "tva_regime" | "product" | "category";
+export type ActivitySubjectType = "user" | "company" | "lead" | "tva_rate" | "product" | "category";
 
 /** Nature de l'acteur, recopiée du `RequestContext` (`actor.type`). */
 export type ActivityActorType = "customer" | "staff" | "system";

@@ -6,7 +6,7 @@ import type {
   AllergenScope,
   Category,
   ProductKind,
-  TvaRegime,
+  TvaRate,
 } from '../../data/models';
 import { CatalogueApi } from '../catalogue-api';
 import { ReferenceApi } from '../reference-api';
@@ -106,7 +106,7 @@ export class ProductFormStore {
 
   // Référentiels
   readonly categories = signal<Category[]>([]);
-  readonly regimes = signal<TvaRegime[]>([]);
+  readonly regimes = signal<TvaRate[]>([]);
   readonly entries = signal<AllergenEntry[]>([]);
   readonly provisional = signal(false);
   readonly scope = signal<AllergenScope>('eu');
@@ -277,7 +277,7 @@ export class ProductFormStore {
     try {
       const [categories, regimes] = await Promise.all([
         this.api.listCategories(),
-        this.api.listTvaRegimes(),
+        this.api.listTvaRates(),
       ]);
       const active = categories.filter((category) => !category.isArchived);
       this.categories.set(active);

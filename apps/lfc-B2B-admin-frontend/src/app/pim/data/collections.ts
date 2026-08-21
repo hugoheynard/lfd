@@ -1,5 +1,5 @@
 import { formatPercent, generateFiches, tvaTagFromPercent } from './channels';
-import type { Category, Product, TvaRegime } from './models';
+import type { Category, Product, TvaRate } from './models';
 
 /** Une fiche telle qu'elle apparaît dans une collection. */
 export interface CollectionEntry {
@@ -50,7 +50,7 @@ function toEntry(f: FicheContext): CollectionEntry {
 export function buildCollections(
   products: readonly Product[],
   categories: readonly Category[],
-  regimes: readonly TvaRegime[],
+  regimes: readonly TvaRate[],
 ): CollectionFamily[] {
   const categoryById = new Map(categories.map((c) => [c.id, c]));
   const regimeById = new Map(regimes.map((r) => [r.id, r]));
@@ -75,7 +75,7 @@ export function buildCollections(
 
   const active = categories.filter((c) => !c.isArchived);
 
-  // Famille A — TVA : une collection par régime, groupée par handle. Le handle
+  // Famille A — TVA : une collection par taux, groupée par handle. Le handle
   // se DÉRIVE du taux ici : il est du vocabulaire Shopify, et cette projection
   // est justement l'endroit qui parle Shopify.
   const tva: Collection[] = regimes.map((regime) => {

@@ -1,7 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { requireRegime } from "../../../commerce/application/tva-support.js";
-import { TvaRegimeRepository } from "../../../commerce/domain/ports/tva-regime.repository.js";
+import { TvaRateRepository } from "../../../commerce/domain/ports/tva-rate.repository.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { requireCategory } from "./category-support.js";
@@ -15,16 +15,16 @@ export class SetCategoryTvaCommand {
 }
 
 /**
- * Règle les deux régimes de TVA d'une famille en un geste. Chaque référence
+ * Règle les deux taux de TVA d'une famille en un geste. Chaque référence
  * non nulle est **validée** contre le contexte commerce (`requireRegime`) : on
- * ne pointe jamais un régime fantôme, et l'agrégat ne peut pas le savoir seul.
+ * ne pointe jamais un taux fantôme, et l'agrégat ne peut pas le savoir seul.
  * `null` efface la référence.
  */
 @CommandHandler(SetCategoryTvaCommand)
 export class SetCategoryTvaHandler implements ICommandHandler<SetCategoryTvaCommand, void> {
   constructor(
     private readonly categories: CategoryRepository,
-    private readonly regimes: TvaRegimeRepository,
+    private readonly regimes: TvaRateRepository,
     private readonly journal: PimJournal,
   ) {}
 
@@ -43,7 +43,7 @@ export class SetCategoryTvaHandler implements ICommandHandler<SetCategoryTvaComm
   }
 
   /**
-   * Le rattachement d'une famille à un régime — la décision qui détermine
+   * Le rattachement d'une famille à un taux — la décision qui détermine
    * réellement ce qui est taxé à quel taux. Silencieux quand rien n'a bougé :
    * un formulaire réenregistré à l'identique n'est pas un fait.
    */

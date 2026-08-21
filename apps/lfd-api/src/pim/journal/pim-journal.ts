@@ -16,24 +16,24 @@
  */
 
 /** La chose dont l'événement parle. Le référentiel n'en connaît que trois. */
-export type PimSubjectType = "tva_regime" | "product" | "category";
+export type PimSubjectType = "tva_rate" | "product" | "category";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
- * HTTP : `tax_regime.rate_changed` se relit dans six mois,
- * `PUT /commerce/tva-regimes/x` non.
+ * HTTP : `tax_rate.rate_changed` se relit dans six mois,
+ * `PUT /commerce/tva-rates/x` non.
  *
  * On ne trace pas tout. Ces sept-là ont en commun de **changer ce qui est taxé
  * ou vendu** — le reste (une description retouchée, un libellé) n'a pas d'aval
  * et n'a rien à faire dans un journal qu'on relit pour comprendre un écart.
  */
 export const PIM_EVENTS = {
-  tvaRegimeCreated: "tax_regime.created",
-  /** Le taux a bougé — le seul changement de régime qui ait un aval. */
-  tvaRegimeRateChanged: "tax_regime.rate_changed",
+  tvaRateCreated: "tax_rate.created",
+  /** Le taux a bougé — le seul changement de taux qui ait un aval. */
+  tvaRateRateChanged: "tax_rate.rate_changed",
   /** Renommage / description : tracé à part, parce que c'est sans conséquence. */
-  tvaRegimeRenamed: "tax_regime.renamed",
-  tvaRegimeDeleted: "tax_regime.deleted",
+  tvaRateRenamed: "tax_rate.renamed",
+  tvaRateDeleted: "tax_rate.deleted",
   categoryTvaChanged: "category.tva_changed",
   productPublished: "product.published",
   productUnpublished: "product.unpublished",
@@ -42,7 +42,7 @@ export const PIM_EVENTS = {
 /**
  * **La portée** d'un fait : ce qu'il touchait, au moment où il s'est produit.
  *
- * Des **comptes directs**, jamais un rayon transitif. Un régime touche des
+ * Des **comptes directs**, jamais un rayon transitif. Un taux touche des
  * familles ; ces familles portent des articles ; ces articles partent sur des
  * canaux ; ces canaux facturent des commandes. Figer un nombre au bout de cette
  * chaîne, ce serait figer surtout l'endroit où l'on a choisi de s'arrêter — et
@@ -57,9 +57,9 @@ export const PIM_EVENTS = {
  * magique dont personne ne saurait dire ce qu'il additionne.
  */
 export interface PimBlastRadius {
-  /** Familles visant ce régime, à emporter. */
+  /** Familles visant ce taux, à emporter. */
   readonly familiesEmporter?: number;
-  /** Familles visant ce régime, sur place. */
+  /** Familles visant ce taux, sur place. */
   readonly familiesSurPlace?: number;
   /** Articles portés par le produit concerné. */
   readonly variants?: number;

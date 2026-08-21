@@ -23,7 +23,7 @@ import { PublicationShopify } from '../publication-shopify/publication-shopify';
  *
  * L'onglet Shopify se lit en deux temps, dans l'ordre où la boutique se
  * construit : les **collections de taxe** d'abord (rapatriées du référentiel des
- * régimes, qui n'avait pas à pousser), les **produits** ensuite.
+ * taux, qui n'avait pas à pousser), les **produits** ensuite.
  */
 @Component({
   selector: 'app-publication-page',

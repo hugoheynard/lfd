@@ -44,8 +44,8 @@ observés — une projection d'audit, avec un seul invariant : l'immuabilité.
 | Colonne             | Pourquoi elle existe                                                 |
 | ------------------- | -------------------------------------------------------------------- |
 | `id` (ULID)         | Trie par le temps → curseur de pagination, sans index supplémentaire |
-| `type`              | Le fait, en vocabulaire métier (`tax_regime.rate_changed`)           |
-| `subjectType/Id`    | Ce dont il parle — c'est la clé de « l'histoire de ce régime »       |
+| `type`              | Le fait, en vocabulaire métier (`tax_rate.rate_changed`)             |
+| `subjectType/Id`    | Ce dont il parle — c'est la clé de « l'histoire de ce taux »         |
 | `actorId/actorName` | Le nom **figé au moment de l'acte** (cf. §4)                         |
 | `traceId`           | Corrélation : tous les faits d'une même requête se retrouvent        |
 | `idempotencyKey`    | Un rejeu ne compte pas deux fois                                     |
@@ -61,7 +61,7 @@ réel — le montage de `B2bCatalogDriver`, pour la même raison.
 
 ```mermaid
 flowchart TD
-  H["Handler PIM<br/>UpdateTvaRegimeHandler"] -->|dépend de| PJ["PimJournal<br/>(port, dans pim/journal/)"]
+  H["Handler PIM<br/>UpdateTvaRateHandler"] -->|dépend de| PJ["PimJournal<br/>(port, dans pim/journal/)"]
   PJ -.->|branché par| RM["PimJournalModule<br/>(appBootstrap, @Global)"]
   RM -->|délègue à| AR["ActivityRecorder<br/>(b2b/growth)"]
   AR --> DB[("growth.activity_events")]
@@ -79,18 +79,18 @@ taxé ou vendu** — le reste (une description retouchée, une position dans
 l'arbre) n'a pas d'aval, et un journal qu'on relit pour comprendre un écart n'a
 rien à y gagner.
 
-| Type                      | Portée figée                            |
-| ------------------------- | --------------------------------------- |
-| `tax_regime.created`      | — (un régime qui naît ne vise personne) |
-| `tax_regime.rate_changed` | `familiesEmporter`, `familiesSurPlace`  |
-| `tax_regime.renamed`      | — (un nom qui change ne change rien)    |
-| `tax_regime.deleted`      | —                                       |
-| `category.tva_changed`    | —                                       |
-| `product.published`       | `variants`                              |
-| `product.unpublished`     | `variants`                              |
+| Type                    | Portée figée                           |
+| ----------------------- | -------------------------------------- |
+| `tax_rate.created`      | — (un taux qui naît ne vise personne)  |
+| `tax_rate.rate_changed` | `familiesEmporter`, `familiesSurPlace` |
+| `tax_rate.renamed`      | — (un nom qui change ne change rien)   |
+| `tax_rate.deleted`      | —                                      |
+| `category.tva_changed`  | —                                      |
+| `product.published`     | `variants`                             |
+| `product.unpublished`   | `variants`                             |
 
 Renommer et changer un taux sont **deux faits distincts** alors qu'ils passent
-par la même route. Les confondre sous « régime modifié » obligerait à ouvrir le
+par la même route. Les confondre sous « taux modifié » obligerait à ouvrir le
 payload pour savoir si l'événement compte.
 
 ---
@@ -108,7 +108,7 @@ Changer un taux de TVA a des conséquences. Le journal devrait-il les chiffrer ?
 
 ```mermaid
 flowchart LR
-  R[Régime 5,5 %] --> F[12 familles]
+  R[Taux 5,5 %] --> F[12 familles]
   F --> A[340 articles]
   A --> C[2 canaux]
   C --> CO[les commandes à venir]
@@ -128,7 +128,7 @@ a choisi de s'arrêter**. Un tel nombre :
 ### Ce qu'on fait : des comptes directs, nommés
 
 On fige ce que le handler **sait déjà**, en une requête qu'il fait de toute
-façon — pour un régime, le compte de familles qui le visent, qui est aussi ce
+façon — pour un taux, le compte de familles qui le visent, qui est aussi ce
 qu'affiche la colonne « Utilisé par ».
 
 ```json
@@ -152,7 +152,7 @@ Deux règles tiennent la décision :
 
 Elle se **dérive à la lecture**, quand quelqu'un ouvre un événement et demande
 « ça a touché quoi ». À ce moment-là c'est une requête, et elle peut être honnête
-sur sa date : « aujourd'hui, ce régime est visé par 14 familles » est une phrase
+sur sa date : « aujourd'hui, ce taux est visé par 14 familles » est une phrase
 vraie ; « ce jour-là il en touchait 3 » aussi. Un seul nombre stocké prétendrait
 répondre aux deux.
 
@@ -217,7 +217,7 @@ récent au plus ancien, donc un `skip` glisserait d'une ligne à chaque fait éc
 pendant la lecture. L'`id` étant un ULID, trier par `id` décroissant trie par le
 temps.
 
-Le **module** est dérivé du préfixe du type (`tax_regime.` → `pim`) plutôt que
+Le **module** est dérivé du préfixe du type (`tax_rate.` → `pim`) plutôt que
 stocké : la colonne n'existe pas, et l'ajouter obligerait à la remplir pour tous
 les faits déjà écrits. Le jour où un type ne se range plus sous un préfixe, c'est
 le type qu'il faut renommer.

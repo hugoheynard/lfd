@@ -7,9 +7,9 @@
   </p>
   <p>
     Rien à faire d'ordinaire :
-    <strong>publier des produits crée d'abord les collections manquantes</strong>, dérivées des
-    régimes du référentiel. La collection ne contient aucune décision humaine — son handle et son
-    titre viennent du taux. Ce tableau est un <strong>miroir</strong> ; le bouton n'est là que pour
+    <strong>publier des produits crée d'abord les collections manquantes</strong>, dérivées des taux
+    du référentiel. La collection ne contient aucune décision humaine — son handle et son titre
+    viennent du taux. Ce tableau est un <strong>miroir</strong> ; le bouton n'est là que pour
     rétablir la boutique sans rien publier.
   </p>
 </fold-callout>
@@ -85,11 +85,11 @@
     @if (r.orphans.length > 0) {
       <fold-callout appearance="inset" variant="warning">
         <strong>Orphelines</strong> — des collections <code>tva-*</code> sur la boutique n'ont plus
-        de régime correspondant :
+        de taux correspondant :
         @for (o of r.orphans; track o.handle) {
           <code>{{ o.handle }}</code>
         }
-        — à rapprocher (recréer le régime au bon taux, ou nettoyer côté Shopify).
+        — à rapprocher (recréer le taux au bon taux, ou nettoyer côté Shopify).
       </fold-callout>
     }
   }

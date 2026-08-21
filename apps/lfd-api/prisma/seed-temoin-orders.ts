@@ -22,7 +22,7 @@ import { bootstrapHarness, customer, type SeedHarness } from "./seed-growth/harn
  * **Additif et idempotent** : une échéance déjà servie (même société, même jour)
  * est sautée. Rejouable à volonté ; il n'efface rien.
  *
- * **Deux régimes de règlement**, parce que l'écran de facturation les oppose :
+ * **Deux taux de règlement**, parce que l'écran de facturation les oppose :
  * deux tiers des échéances partent au compte (`not_required`, à facturer en fin
  * de mois), un tiers est réglé à la commande (`paid`). Un compte qui n'aurait
  * que l'un des deux ne dirait rien de la mise en page.

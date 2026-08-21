@@ -1,46 +1,46 @@
-import { EmptyTvaRegimeNameError } from "../errors/commerce-errors.js";
-import { TvaRate } from "../value-objects/tva-rate.js";
+import { EmptyTvaRateNameError } from "../errors/commerce-errors.js";
+import { TvaPercent } from "../value-objects/tva-percent.js";
 
 /**
- * **Le régime de TVA — l'agrégat.**
+ * **Le taux de TVA — l'agrégat.**
  *
  * Référence commerciale partagée : les familles pointent dessus
  * (`emporterTvaId` / `surPlaceTvaId`), et les canaux en dérivent ce dont ils
  * ont besoin — une collection pour Shopify, un nombre pour la boutique B2B.
  *
- * Ce qu'il garantit : le **taux est valide** (VO `TvaRate`) et le **nom n'est
+ * Ce qu'il garantit : le **taux est valide** (VO `TvaPercent`) et le **nom n'est
  * jamais vide**. Ce qu'il ne peut pas voir, et qui reste au handler : qu'aucun
- * AUTRE régime ne porte déjà ce taux, et qu'aucune famille ne le vise au moment
+ * AUTRE taux ne porte déjà ce taux, et qu'aucune famille ne le vise au moment
  * de le supprimer.
  */
-export interface TvaRegimeSnapshot {
+export interface TvaRateSnapshot {
   readonly id: string;
   readonly name: string;
   readonly description: string;
   readonly percent: number;
 }
 
-export interface NewTvaRegimeInput {
+export interface NewTvaRateInput {
   readonly id: string;
   readonly name: string;
   readonly description: string;
   readonly percent: number;
 }
 
-export class TvaRegime {
+export class TvaRate {
   private constructor(
     private readonly identity: string,
     private nameValue: string,
     private descriptionValue: string,
-    private rateValue: TvaRate,
+    private rateValue: TvaPercent,
   ) {}
 
-  static open(input: NewTvaRegimeInput): TvaRegime {
-    return new TvaRegime(
+  static open(input: NewTvaRateInput): TvaRate {
+    return new TvaRate(
       input.id,
       requireName(input.name),
       input.description.trim(),
-      TvaRate.create(input.percent),
+      TvaPercent.create(input.percent),
     );
   }
 
@@ -49,12 +49,12 @@ export class TvaRegime {
    * écrite avant que la règle existe se signale ici plutôt que de ressortir
    * telle quelle vers un canal.
    */
-  static reconstitute(snapshot: TvaRegimeSnapshot): TvaRegime {
-    return new TvaRegime(
+  static reconstitute(snapshot: TvaRateSnapshot): TvaRate {
+    return new TvaRate(
       snapshot.id,
       snapshot.name,
       snapshot.description,
-      TvaRate.create(snapshot.percent),
+      TvaPercent.create(snapshot.percent),
     );
   }
 
@@ -66,14 +66,14 @@ export class TvaRegime {
     return this.rateValue.percent;
   }
 
-  /** Révise le régime d'un geste — c'est ainsi que le back-office l'édite. */
+  /** Révise le taux d'un geste — c'est ainsi que le back-office l'édite. */
   revise(name: string, description: string, percent: number): void {
     this.nameValue = requireName(name);
     this.descriptionValue = description.trim();
-    this.rateValue = TvaRate.create(percent);
+    this.rateValue = TvaPercent.create(percent);
   }
 
-  snapshot(): TvaRegimeSnapshot {
+  snapshot(): TvaRateSnapshot {
     return {
       id: this.identity,
       name: this.nameValue,
@@ -86,7 +86,7 @@ export class TvaRegime {
 function requireName(name: string): string {
   const trimmed = name.trim();
   if (trimmed === "") {
-    throw new EmptyTvaRegimeNameError();
+    throw new EmptyTvaRateNameError();
   }
   return trimmed;
 }

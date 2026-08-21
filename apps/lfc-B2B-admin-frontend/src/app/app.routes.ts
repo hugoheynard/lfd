@@ -281,9 +281,9 @@ export const routes: Routes = [
         // déjà `catalog:read`, mais c'est `tax:read` qui décide de CET écran —
         // une dérogation `deny tax:read` doit le fermer sans fermer le PIM.
         canActivate: [permissionGuard('tax:read')],
-        title: 'Régimes de TVA — LFC B2B admin',
+        title: 'Taux de TVA — LFC B2B admin',
         loadComponent: () =>
-          import('./pim/catalogue/tva-regimes/tva-regimes-page').then((m) => m.TvaRegimesPage),
+          import('./pim/catalogue/tva-rates/tva-rates-page').then((m) => m.TvaRatesPage),
       },
       {
         path: 'collections',

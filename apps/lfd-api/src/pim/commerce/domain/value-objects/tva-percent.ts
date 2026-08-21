@@ -1,10 +1,10 @@
 import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /** Un taux de TVA hors des bornes du possible. */
-export class InvalidTvaRateError extends DomainError {
+export class InvalidTvaPercentError extends DomainError {
   constructor(readonly received: number) {
     super(
-      "commerce.tva_rate.invalid",
+      "commerce.tva_percent.invalid",
       `Taux de TVA impossible (${String(received)}) : attendu un nombre > 0 et ≤ 100, ` +
         `avec au plus deux décimales.`,
     );
@@ -17,29 +17,29 @@ const MAX_DECIMALS = 2;
 /**
  * **Le taux de TVA.**
  *
- * Il portait aussi le `tag` (`tva-5-5`), l'identité du régime côté Shopify. Ce
+ * Il portait aussi le `tag` (`tva-5-5`), l'identité du taux côté Shopify. Ce
  * n'était pas sa place : un taux de TVA est une donnée fiscale, un handle de
  * collection est du vocabulaire de canal. Le référentiel décrivait donc un de
- * ses consommateurs, et la seule chose qui empêchait deux régimes de porter le
+ * ses consommateurs, et la seule chose qui empêchait deux taux de porter le
  * même taux était la collision de leurs handles Shopify.
  *
  * La dérivation vit désormais dans l'adaptateur Shopify, qui est le seul à en
  * avoir jamais eu besoin.
  */
-export class TvaRate {
+export class TvaPercent {
   private constructor(readonly percent: number) {}
 
-  static create(percent: number): TvaRate {
+  static create(percent: number): TvaPercent {
     if (!Number.isFinite(percent) || percent <= 0 || percent > MAX_PERCENT) {
-      throw new InvalidTvaRateError(percent);
+      throw new InvalidTvaPercentError(percent);
     }
     if (!hasAtMostTwoDecimals(percent)) {
-      throw new InvalidTvaRateError(percent);
+      throw new InvalidTvaPercentError(percent);
     }
-    return new TvaRate(percent);
+    return new TvaPercent(percent);
   }
 
-  equals(other: TvaRate): boolean {
+  equals(other: TvaPercent): boolean {
     return this.percent === other.percent;
   }
 }

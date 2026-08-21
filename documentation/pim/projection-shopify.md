@@ -13,7 +13,7 @@
 
 ## 1. Les quatre forces en présence
 
-1. **La TVA dépend du mode.** Une catégorie porte deux régimes — `emporterTvaId` et `surPlaceTvaId`
+1. **La TVA dépend du mode.** Une catégorie porte deux taux — `emporterTvaId` et `surPlaceTvaId`
    (cf. [`data-model/06`](./data-model/06-identifiants-et-sku.md) et le modèle `Category`). Le
    croissant est à 5,5 % à emporter, 10 % sur place.
 2. **La disponibilité dépend de la boutique.** `SalesChannels` déclare, **par boutique**, si l'article
@@ -136,7 +136,7 @@ s'expose en **deux** variantes Shopify (une par mode-produit). Le binding devien
 
 Aujourd'hui `Category.surPlaceTvaId` est **unique** (pas de dimension boutique sur le taux) — correct
 tant qu'on est en disponibilité (§7). La vraie divergence exigerait un **override sparse**
-`(catégorie|produit, boutique) → régime`, présent **uniquement** là où ça diverge, et le générateur de
+`(catégorie|produit, boutique) → taux`, présent **uniquement** là où ça diverge, et le générateur de
 fiches forkant `× boutique` pour ces seuls cas. **Ne pas** l'ajouter tant que le besoin n'est pas réel.
 
 ### 8.4 Flow de push **par fiche** (backend, cible) — transactionnel & réversible

@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import type { DesiredCollection } from "@lfd/shopify-admin";
 
-import { TvaRegimeRepository } from "../../../commerce/domain/ports/tva-regime.repository.js";
+import { TvaRateRepository } from "../../../commerce/domain/ports/tva-rate.repository.js";
 import { tvaHandleOf } from "./tva-handle.js";
 
 /** « 5.5 » → « 5,5 % ». Le rendu du taux dans un titre de collection. */
@@ -12,7 +12,7 @@ function formatPercent(percent: number): string {
 
 /**
  * Les collections de taxe que la boutique **devrait** avoir, dérivées du
- * référentiel des régimes de TVA.
+ * référentiel des taux de TVA.
  *
  * La dérivation vivait dans le front, qui envoyait la liste voulue au backend à
  * chaque appel. Deux problèmes : elle rendait la publication dépendante d'un
@@ -20,12 +20,12 @@ function formatPercent(percent: number): string {
  * collection se décidait dans un composant Angular.
  *
  * Elle appartient au **canal** et non au commerce : le handle et le titre sont
- * du vocabulaire Shopify. Le commerce rend des régimes — un nom et un taux ;
+ * du vocabulaire Shopify. Le commerce rend des taux — un nom et un taux ;
  * c'est ici qu'ils deviennent des collections.
  */
 @Injectable()
 export class TaxCollectionsPlan {
-  constructor(private readonly regimes: TvaRegimeRepository) {}
+  constructor(private readonly regimes: TvaRateRepository) {}
 
   async desired(): Promise<DesiredCollection[]> {
     const regimes = await this.regimes.listAll();

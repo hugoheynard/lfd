@@ -29,7 +29,7 @@ flowchart TB
     subgraph pim["schéma <code>pim</code> — la vérité produit"]
         direction TB
         PC["<b>category</b><br/>arbre, emporter_tva_id"]
-        PT["<b>tva_regime</b><br/>nom + taux"]
+        PT["<b>tva_rate</b><br/>nom + taux"]
         PP["<b>product</b>"]
         PV["<b>product_variant</b><br/>sku, price_cents"]
         PC --> PP --> PV
@@ -158,9 +158,9 @@ rejoignant la famille de l'article** : la ligne facturée dépendait d'une
 jointure et d'un rafraîchissement de famille réussi.
 
 Un article se vend seul ; il doit pouvoir se facturer seul. Le PIM résout le
-taux à l'émission — depuis le régime **« à emporter »** de la famille, parce
+taux à l'émission — depuis le taux **« à emporter »** de la famille, parce
 qu'une vente B2B est une livraison ou un retrait : la marchandise repart, le
-régime « sur place » décrit une consommation en boutique qui n'existe pas sur
+taux « sur place » décrit une consommation en boutique qui n'existe pas sur
 ce canal.
 
 `null` traverse tel quel. Il veut dire « famille non réglée dans le
@@ -235,7 +235,7 @@ jamais 5,5 %.
 à oublier : le push est **manuel**, il n'y a aucun automate.
 
 Entre deux envois, la boutique vend l'état du dernier snapshot. Un prix corrigé,
-un produit publié, un régime de TVA révisé **n'existent pas pour le client**
+un produit publié, un taux de TVA révisé **n'existent pas pour le client**
 tant que personne n'a cliqué.
 
 Deux garde-fous, à ne pas confondre :
@@ -257,9 +257,9 @@ en laissant chacun libre d'y appliquer un taux différent.
 | Symptôme                                      | Regarder                                                                 |
 | --------------------------------------------- | ------------------------------------------------------------------------ |
 | Un produit n'apparaît pas dans la boutique    | le compte rendu du push : il est probablement **nommé dans les écartés** |
-| Il est parti, mais reste invisible à l'achat  | son `vat_rate_percent` — famille sans régime « à emporter » dans le PIM  |
+| Il est parti, mais reste invisible à l'achat  | son `vat_rate_percent` — famille sans taux « à emporter » dans le PIM    |
 | Le prix affiché n'est pas celui du PIM        | `catalog_item_overrides` : une décision B2B gagne, et c'est voulu        |
-| La parité signale un écart de TVA             | un régime révisé dans le PIM, jamais poussé — pousser                    |
+| La parité signale un écart de TVA             | un taux révisé dans le PIM, jamais poussé — pousser                      |
 | `persistence.migrations_pending` au démarrage | `pnpm --filter lfd-api exec prisma migrate deploy`                       |
 
 ---

@@ -38,3 +38,25 @@ code {
   flex-wrap: wrap;
   gap: 0.4rem;
 }
+
+/* Les trois points : le glyphe seul, sans chrome de bouton. La cible reste
+   confortable au doigt — c'est la seule action de la ligne. */
+.row-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fold-radius-sm);
+  background: none;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+
+.row-open:hover,
+.row-open:focus-visible {
+  color: var(--fold-color-text);
+  background: var(--fold-color-surface-hover);
+}

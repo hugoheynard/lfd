@@ -47,7 +47,7 @@ Le catalogue B2B est **copié trois fois**, et les copies ont déjà divergé.
 
 Le backend B2B **n'a aucune table produit**. Vingt-deux fichiers du front
 importent le seed. Le taux de TVA y est codé en dur à 5,5 % alors que le PIM
-porte un `TvaRegime` par catégorie.
+porte un `TvaRate` par catégorie.
 
 Ce n'est donc pas une intégration à ajouter : c'est une duplication à supprimer,
 sur un chemin qui facture de l'argent réel depuis le 2026-08-17.
@@ -59,7 +59,7 @@ sur un chemin qui facture de l'argent réel depuis le 2026-08-17.
 ```mermaid
 flowchart LR
     subgraph pim["PIM — vérité produit"]
-        P["Product · ProductVariant<br/>priceCents canonique<br/>Category · TvaRegime"]
+        P["Product · ProductVariant<br/>priceCents canonique<br/>Category · TvaRate"]
         M["Appartenance au canal B2B<br/><i>(table de l'adaptateur, ADR-13)</i>"]
     end
     P --> D["channels/b2b-platform/<br/>projection + push"]
@@ -160,7 +160,7 @@ c'est un format de **synchronisation entre deux contextes**, donc réellement
 transverse — le seul cas où un type partagé est légitime.
 
 Par SKU : identifiant, nom, catégorie, prix canonique HT en centimes, **taux de
-TVA résolu** depuis le `TvaRegime` de la catégorie, poids, statut. Plus la liste
+TVA résolu** depuis le `TvaRate` de la catégorie, poids, statut. Plus la liste
 des catégories, pour que la plateforme range sans deviner.
 
 Le taux de TVA réel est un gain immédiat : le B2B code aujourd'hui 5,5 % en dur
@@ -237,11 +237,11 @@ deux tableaux se ressemblent, pas que la caisse rend la même monnaie.
 
 ### 🔴 Deux blocages, tous deux HORS code (constatés le 2026-08-17)
 
-**1. ~~Cinq familles sur six n'ont pas de régime de TVA dans le PIM.~~** Résolu
+**1. ~~Cinq familles sur six n'ont pas de taux de TVA dans le PIM.~~** Résolu
 autrement le 2026-08-17 : le taux voyage **nullable**, et le refus est déplacé de
 « ne pas recevoir » vers « ne pas vendre ». Tout le catalogue entre et se voit
 dans le paramétrage ; `CatalogReader.listSellable()` écarte de la boutique les
-articles sans taux, sans jamais inventer 5,5 %. La saisie des régimes reste à
+articles sans taux, sans jamais inventer 5,5 %. La saisie des taux reste à
 faire dans le PIM — elle ne bloque plus que la VENTE. (Au passage : deux familles
 « Viennoiseries » coexistent, dont une portant un seul produit — à fusionner.)
 
@@ -303,8 +303,8 @@ docker exec lfd-dev-postgres psql -U lfc -d lfc_b2b_dev -c \
 ```
 
 ⚠️ Sur les 93 produits du PIM, **92 sont tarifés** et 5 familles sur 6 n'ont pas
-de régime de TVA. Tout arrive quand même ; les articles sans taux se voient dans
-le paramétrage, marqués, et ne sont pas vendables tant que le régime n'est pas
+de taux de TVA. Tout arrive quand même ; les articles sans taux se voient dans
+le paramétrage, marqués, et ne sont pas vendables tant que le taux n'est pas
 réglé dans le PIM.
 
 ---

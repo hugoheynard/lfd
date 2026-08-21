@@ -4,7 +4,7 @@
 // le point de départ reproductible. Format compact `Row` = ce que portait le CSV.
 //
 // ⚠️ Slice 1 : seules catégories + produits étaient modélisés côté backend. Les
-// régimes de TVA sont arrivés depuis (contexte commerce) et vivent plus bas ;
+// taux de TVA sont arrivés depuis (contexte commerce) et vivent plus bas ;
 // les presets de canaux attendent toujours le contexte locations.
 
 export interface SeedCategory {
@@ -22,8 +22,8 @@ export const SEED_CATEGORIES: readonly SeedCategory[] = [
   { id: "cat_choco", nameFr: "Chocolat & confiserie", slug: "chocolat-confiserie", position: 5 },
 ];
 
-/** Un régime de TVA de départ : un nom et un taux, rien d'autre. */
-export interface SeedTvaRegime {
+/** Un taux de TVA de départ : un nom et un taux, rien d'autre. */
+export interface SeedTvaRate {
   readonly id: string;
   readonly name: string;
   readonly description: string;
@@ -41,7 +41,7 @@ export interface SeedTvaRegime {
  * relève de quel taux est une décision comptable, pas une donnée de départ. Le
  * seed installe le référentiel, il ne remplit pas la déclaration.
  */
-export const SEED_TVA_REGIMES: readonly SeedTvaRegime[] = [
+export const SEED_TVA_RATES: readonly SeedTvaRate[] = [
   {
     id: "tva_reduit",
     name: "Réduit",

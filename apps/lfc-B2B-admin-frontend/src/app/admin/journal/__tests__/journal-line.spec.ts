@@ -6,10 +6,10 @@ import { toLine } from '../journal-line';
 function event(overrides: Partial<ActivityEventView>): ActivityEventView {
   return {
     id: '01J',
-    type: 'tax_regime.rate_changed',
+    type: 'tax_rate.rate_changed',
     module: 'pim',
     occurredAt: '2026-08-21T10:00:00.000Z',
-    subjectType: 'tva_regime',
+    subjectType: 'tva_rate',
     subjectId: 'tva_1',
     actorType: 'staff',
     actorId: 'auth0|x',
@@ -41,9 +41,9 @@ describe('toLine', () => {
 
   it('ne rend pas de portée quand le fait n’en avait pas', () => {
     // Une portée absente n'est pas un zéro : c'est un fait sans aval.
-    const line = toLine(event({ type: 'tax_regime.renamed', payload: { from: 'A', to: 'B' } }));
+    const line = toLine(event({ type: 'tax_rate.renamed', payload: { from: 'A', to: 'B' } }));
 
-    expect(line.sentence).toBe('Régime « A » renommé « B »');
+    expect(line.sentence).toBe('Taux « A » renommé « B »');
     expect(line.blast).toBe('');
   });
 

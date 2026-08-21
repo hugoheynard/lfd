@@ -1,0 +1,84 @@
+<fold-panel-header [title]="heading()" [subtitle]="subtitle()" />
+
+<div class="body">
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">
+      {{ message }}
+    </fold-callout>
+  }
+
+  <fold-input
+    label="Nom"
+    placeholder="ex. Réduit"
+    required
+    [value]="draftName()"
+    (valueChange)="draftName.set($event)"
+  />
+  <fold-input
+    label="Description"
+    placeholder="À quoi il s'applique"
+    [value]="draftDescription()"
+    (valueChange)="draftDescription.set($event)"
+  />
+  <fold-number-input
+    label="Taux (%)"
+    [min]="0"
+    [step]="0.1"
+    [value]="draftPercent()"
+    (valueChange)="draftPercent.set($event)"
+  />
+
+  @if (isEdit()) {
+    <!-- La zone dangereuse vit au bas du panneau, repliée : on décide de
+         supprimer en REGARDANT l'objet, pas en choisissant son intention dans
+         un menu avant de l'ouvrir. -->
+    <section class="danger">
+      <button
+        type="button"
+        class="danger-toggle"
+        [attr.aria-expanded]="dangerOpen()"
+        (click)="toggleDanger()"
+      >
+        Supprimer ce taux
+      </button>
+
+      @if (dangerOpen()) {
+        @if (usageTotal() > 0) {
+          <!-- Encore visé : la base refusera. On le dit ici plutôt que de
+               laisser l'erreur de clé étrangère l'apprendre après coup. -->
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Suppression impossible.</strong> «&nbsp;{{ regime()?.name }}&nbsp;» est encore
+            visé par <strong>{{ usageTotal() }} famille(s)</strong>. Réattribuez-les à un autre taux
+            d'abord&nbsp;: tant qu'une seule le vise, la base refuse la suppression.
+          </fold-callout>
+        } @else {
+          <fold-callout appearance="inset" variant="alert">
+            <strong>Action irréversible.</strong> Aucune famille ne vise «&nbsp;{{
+              regime()?.name
+            }}&nbsp;» ({{ rate() }}), donc rien ne perd sa référence de taxe. La collection de taxe
+            correspondante restera en place côté Shopify&nbsp;: elle devient orpheline, et
+            Publication la signalera.
+          </fold-callout>
+
+          <fold-input
+            label="Retapez le nom du taux pour confirmer"
+            [placeholder]="regime()?.name ?? ''"
+            [value]="confirmName()"
+            (valueChange)="confirmName.set($event)"
+          />
+
+          <button foldButton intent="danger" [disabled]="!canDelete()" (click)="remove()">
+            Supprimer définitivement
+          </button>
+        }
+      }
+    </section>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit" (click)="submit()">
+    {{ isEdit() ? 'Enregistrer' : 'Ajouter le taux' }}
+  </button>
+</footer>

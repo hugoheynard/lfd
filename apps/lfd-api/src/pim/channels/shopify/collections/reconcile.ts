@@ -4,7 +4,7 @@
  * pièce qui a de la valeur ; le transport (quel appel Admin, quelle version d'API)
  * changera, mais ce que *signifie* « réconcilier » ne changera pas.
  *
- * Le backend reste **agnostique de la TVA** : il ne connaît pas les régimes, seulement
+ * Le backend reste **agnostique de la TVA** : il ne connaît pas les taux, seulement
  * une liste de collections désirées (handle + titre) que le front lui transmet. Une
  * collection `tva-*` présente sur la boutique que plus rien ne réclame est une
  * **orpheline**.

@@ -6,11 +6,11 @@ import { CollectionsTree } from '../collections-tree/collections-tree';
 import { buildCollections } from '../../data/collections';
 import { CategoryStore } from '../category-store';
 import { ProductStore } from '../product-store';
-import { TvaStore } from '../tva-regimes/tva-store';
+import { TvaStore } from '../tva-rates/tva-store';
 
 /**
  * Arbre des collections que le paramétrage génère — trois lectures des tags,
- * jusqu'aux produits. **Live** : produits, familles et régimes viennent des
+ * jusqu'aux produits. **Live** : produits, familles et taux viennent des
  * stores backend ; se recompose à chaque réglage fait ailleurs.
  */
 @Component({

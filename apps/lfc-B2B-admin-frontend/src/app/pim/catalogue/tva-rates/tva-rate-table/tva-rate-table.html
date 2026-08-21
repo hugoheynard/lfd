@@ -2,14 +2,15 @@
   [columns]="columns()"
   [rows]="regimes()"
   [rowKey]="rowKey"
+  mobileLayout="auto-cards"
   zebra
   toolbarSurface="accent"
   [empty]="emptyState"
 >
   <div foldToolbar class="table-toolbar">
     <span class="toolbar-title">
-      <fold-icon name="sliders" size="sm" />
-      Régimes
+      <fold-icon name="tax" size="sm" />
+      Taux de TVA
     </span>
   </div>
 
@@ -25,8 +26,8 @@
     <fold-badge [content]="format(r.percent)" variant="accent" />
   </ng-template>
 
-  <!-- Le compte d'usages : ce qui dit, AVANT le menu de suppression, qu'un
-       régime est visé — la base pose un `Restrict`, elle refusera. -->
+  <!-- Le compte d'usages : ce qui dit, avant même d'ouvrir le taux, qu'il est
+       visé — la base pose un `Restrict`, elle refusera la suppression. -->
   <ng-template foldCell="usage" let-r>
     @if (usageTotal(r) === 0) {
       <span class="muted">Aucune famille</span>
@@ -38,22 +39,16 @@
     }
   </ng-template>
 
+  <!-- Les trois points nus : une affordance, pas un bouton. Une seule action
+       par ligne — ouvrir le taux — donc rien à choisir dans un menu. -->
   <ng-template foldCell="actions" let-r>
-    <fold-dropdown ariaLabel="Actions du régime" placement="bottom-end">
-      <button
-        foldPopoverTrigger
-        foldButton
-        emphasis="soft"
-        intent="neutral"
-        size="sm"
-        aria-label="Actions"
-      >
-        <fold-icon name="more-vertical" size="sm" />
-      </button>
-      <fold-dropdown-item icon="edit" (selected)="openEdit(r)"> Modifier </fold-dropdown-item>
-      <fold-dropdown-item icon="bin" tone="danger" (selected)="openDelete(r)">
-        Supprimer
-      </fold-dropdown-item>
-    </fold-dropdown>
+    <button
+      type="button"
+      class="row-open"
+      [attr.aria-label]="'Ouvrir « ' + r.name + ' »'"
+      (click)="open(r)"
+    >
+      <fold-icon name="more-vertical" size="sm" />
+    </button>
   </ng-template>
 </fold-data-table>

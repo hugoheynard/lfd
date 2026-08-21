@@ -13,8 +13,8 @@ import type { ProductRecord } from "../../../product/domain/ports/product.reposi
  */
 /**
  * **Taux** de TVA d'une catégorie, par contexte de vente. La résolution
- * `catégorie → régime → taux` est faite *dans* le catalogue (qui possède la
- * catégorie et connaît le régime qu'elle vise) ; l'adaptateur n'en lit que le
+ * `catégorie → taux → taux` est faite *dans* le catalogue (qui possède la
+ * catégorie et connaît le taux qu'elle vise) ; l'adaptateur n'en lit que le
  * résultat. `null` = contexte non réglé sur la catégorie.
  *
  * Un **taux**, et non un handle `tva-*` comme auparavant : le catalogue rendait
@@ -22,7 +22,7 @@ import type { ProductRecord } from "../../../product/domain/ports/product.reposi
  * collection. Chacun dérive maintenant ce dont il a besoin — Shopify un handle,
  * la boutique B2B un nombre à facturer.
  */
-export interface CategoryTvaRates {
+export interface CategoryTvaPercents {
   readonly emporter: number | null;
   readonly surPlace: number | null;
 }
@@ -33,7 +33,7 @@ export interface CategoryTvaRates {
  *
  * Shopify range par collection, donc il lit un `tag` ; la plateforme B2B calcule
  * une facture, donc elle lit un nombre. Deux besoins distincts sur la même
- * donnée d'origine — résolus tous les deux **ici**, où la catégorie et le régime
+ * donnée d'origine — résolus tous les deux **ici**, où la catégorie et le taux
  * sont connus, plutôt que dans chaque adaptateur.
  *
  * Le texte reste `LocalizedText` : l'aplatissement vers une langue est une
@@ -45,15 +45,15 @@ export interface ChannelCategory {
   readonly slug: LocalizedText;
   readonly parentId: string | null;
   readonly position: number;
-  /** Taux du régime « à emporter » en %, ou `null` si la famille n'est pas réglée. */
+  /** Taux du taux « à emporter » en %, ou `null` si la famille n'est pas réglée. */
   readonly emporterVatPercent: number | null;
 }
 
 export abstract class CatalogueReader {
   abstract publishable(): Promise<ProductRecord[]>;
   abstract byIds(ids: readonly string[]): Promise<ProductRecord[]>;
-  /** Le taux de TVA par contexte pour une catégorie (résout le régime). */
-  abstract tvaRates(categoryId: string): Promise<CategoryTvaRates>;
+  /** Le taux de TVA par contexte pour une catégorie (résout le taux). */
+  abstract tvaPercents(categoryId: string): Promise<CategoryTvaPercents>;
   /** Les familles **non archivées**, avec leur taux de TVA à emporter résolu. */
   abstract channelCategories(): Promise<ChannelCategory[]>;
 }

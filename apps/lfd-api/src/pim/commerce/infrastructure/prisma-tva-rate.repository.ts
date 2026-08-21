@@ -1,24 +1,24 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../infra/database/pim-prisma.service.js";
-import { TvaRegime, type TvaRegimeSnapshot } from "../domain/entities/tva-regime.js";
-import { TvaRegimeInUseError } from "../domain/errors/commerce-errors.js";
-import { TvaRegimeRepository, type TvaRegimeUsage } from "../domain/ports/tva-regime.repository.js";
+import { TvaRate, type TvaRateSnapshot } from "../domain/entities/tva-rate.js";
+import { TvaRateInUseError } from "../domain/errors/commerce-errors.js";
+import { TvaRateRepository, type TvaRateUsage } from "../domain/ports/tva-rate.repository.js";
 
 /** Violation de clé étrangère Prisma — le `23503` de Postgres, vu depuis l'ORM. */
 function isForeignKeyViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "P2003";
 }
 
-interface TvaRegimeRow {
+interface TvaRateRow {
   id: string;
   name: string;
   description: string;
   percent: number;
 }
 
-function toRegime(row: TvaRegimeRow): TvaRegime {
-  return TvaRegime.reconstitute({
+function toRegime(row: TvaRateRow): TvaRate {
+  return TvaRate.reconstitute({
     id: row.id,
     name: row.name,
     description: row.description,
@@ -27,7 +27,7 @@ function toRegime(row: TvaRegimeRow): TvaRegime {
 }
 
 /** Les colonnes que l'agrégat possède. */
-function toColumns(snapshot: TvaRegimeSnapshot) {
+function toColumns(snapshot: TvaRateSnapshot) {
   return {
     name: snapshot.name,
     description: snapshot.description,
@@ -36,34 +36,34 @@ function toColumns(snapshot: TvaRegimeSnapshot) {
 }
 
 @Injectable()
-export class PrismaTvaRegimeRepository extends TvaRegimeRepository {
+export class PrismaTvaRateRepository extends TvaRateRepository {
   constructor(private readonly prisma: PimPrismaService) {
     super();
   }
 
-  async listAll(): Promise<TvaRegime[]> {
-    const rows = await this.prisma.tvaRegime.findMany({ orderBy: [{ percent: "asc" }] });
+  async listAll(): Promise<TvaRate[]> {
+    const rows = await this.prisma.tvaRate.findMany({ orderBy: [{ percent: "asc" }] });
     return rows.map(toRegime);
   }
 
-  async findById(id: string): Promise<TvaRegime | null> {
-    const row = await this.prisma.tvaRegime.findUnique({ where: { id } });
+  async findById(id: string): Promise<TvaRate | null> {
+    const row = await this.prisma.tvaRate.findUnique({ where: { id } });
     return row === null ? null : toRegime(row);
   }
 
-  async findByPercent(percent: number): Promise<TvaRegime | null> {
-    const row = await this.prisma.tvaRegime.findUnique({ where: { percent } });
+  async findByPercent(percent: number): Promise<TvaRate | null> {
+    const row = await this.prisma.tvaRate.findUnique({ where: { percent } });
     return row === null ? null : toRegime(row);
   }
 
-  async add(regime: TvaRegime): Promise<void> {
+  async add(regime: TvaRate): Promise<void> {
     const snapshot = regime.snapshot();
-    await this.prisma.tvaRegime.create({ data: { id: snapshot.id, ...toColumns(snapshot) } });
+    await this.prisma.tvaRate.create({ data: { id: snapshot.id, ...toColumns(snapshot) } });
   }
 
-  async save(regime: TvaRegime): Promise<void> {
+  async save(regime: TvaRate): Promise<void> {
     const snapshot = regime.snapshot();
-    await this.prisma.tvaRegime.update({ where: { id: snapshot.id }, data: toColumns(snapshot) });
+    await this.prisma.tvaRate.update({ where: { id: snapshot.id }, data: toColumns(snapshot) });
   }
 
   /**
@@ -71,8 +71,8 @@ export class PrismaTvaRegimeRepository extends TvaRegimeRepository {
    * en mémoire aurait demandé de charger toutes les familles pour n'en garder
    * que le nombre.
    */
-  async usageByRegime(): Promise<ReadonlyMap<string, TvaRegimeUsage>> {
-    const rows = await this.prisma.tvaRegime.findMany({
+  async usageByRegime(): Promise<ReadonlyMap<string, TvaRateUsage>> {
+    const rows = await this.prisma.tvaRate.findMany({
       select: {
         id: true,
         _count: { select: { categoriesEmporter: true, categoriesSurPlace: true } },
@@ -88,10 +88,10 @@ export class PrismaTvaRegimeRepository extends TvaRegimeRepository {
 
   async remove(id: string): Promise<void> {
     try {
-      await this.prisma.tvaRegime.delete({ where: { id } });
+      await this.prisma.tvaRate.delete({ where: { id } });
     } catch (error) {
       if (isForeignKeyViolation(error)) {
-        throw new TvaRegimeInUseError(id);
+        throw new TvaRateInUseError(id);
       }
       throw error;
     }

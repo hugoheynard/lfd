@@ -33,11 +33,11 @@ interface TvaCollectionsView {
  * Les **collections de taxe** Shopify (`tva-5-5`, `tva-10`, `tva-20`) — l'état
  * de la boutique, et le rattrapage quand elle a divergé.
  *
- * Vit dans **Publication**, et non plus sous « Régimes de TVA » d'où elle
+ * Vit dans **Publication**, et non plus sous « Taux de TVA » d'où elle
  * arrive : ce bloc ne décrit pas les taux, il regarde ce que la boutique en a
  * fait. Logé dans le référentiel, il en faisait un second point d'envoi vers
  * Shopify, et son état vide affirmait — faux depuis le taux par article — que
- * Shopify était le seul canal branché sur les régimes.
+ * Shopify était le seul canal branché sur les taux.
  *
  * Il **ne dérive plus rien** : le serveur calcule les collections voulues à
  * partir du référentiel, et la publication des produits crée d'elle-même celles

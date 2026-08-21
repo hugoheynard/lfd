@@ -26,7 +26,7 @@ const REASONS: Readonly<Record<B2bExclusionReason, string>> = {
  * Publication vers la **boutique B2B** — la plateforme qui encaisse.
  *
  * Cet onglet manquait, et son absence coûtait cher : le canal savait pousser
- * côté serveur, mais rien dans le back-office ne l'appelait. Un régime de TVA
+ * côté serveur, mais rien dans le back-office ne l'appelait. Un taux de TVA
  * révisé, un prix corrigé, un produit publié n'atteignaient donc jamais la
  * boutique — qui continuait de vendre l'état du dernier push, sans que rien ne
  * le dise.

@@ -12,7 +12,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "../src/platform/database/client/client.js";
-import { ROWS, SEED_CATEGORIES, SEED_TVA_REGIMES } from "./catalogue-seed-data.js";
+import { ROWS, SEED_CATEGORIES, SEED_TVA_RATES } from "./catalogue-seed-data.js";
 
 const connectionString = process.env.DATABASE_LFD_URL;
 if (connectionString === undefined || connectionString === "") {
@@ -23,15 +23,15 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString }),
 });
 
-/** Les régimes de TVA : un nom, un taux. Le reste se dérive chez les canaux. */
-async function seedTvaRegimes(): Promise<void> {
-  for (const regime of SEED_TVA_REGIMES) {
+/** Les taux de TVA : un nom, un taux. Le reste se dérive chez les canaux. */
+async function seedTvaRates(): Promise<void> {
+  for (const regime of SEED_TVA_RATES) {
     const fields = {
       name: regime.name,
       description: regime.description,
       percent: regime.percent,
     };
-    await prisma.tvaRegime.upsert({
+    await prisma.tvaRate.upsert({
       where: { id: regime.id },
       create: { id: regime.id, ...fields },
       update: fields,
@@ -119,11 +119,11 @@ async function seedProducts(): Promise<number> {
 }
 
 async function main(): Promise<void> {
-  await seedTvaRegimes();
+  await seedTvaRates();
   await seedCategories();
   const products = await seedProducts();
   console.log(
-    `Seed OK : ${SEED_TVA_REGIMES.length} régimes de TVA, ` +
+    `Seed OK : ${SEED_TVA_RATES.length} taux de TVA, ` +
       `${SEED_CATEGORIES.length} catégories, ${products} produits.`,
   );
 }
