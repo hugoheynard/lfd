@@ -237,11 +237,10 @@ journal est append-only. C'est le prix de l'invariant qui compte le plus,
 
 ## 6. Ce qui reste
 
-- **Les autres modules** n'émettent encore que ce que la croissance émettait :
-  commandes, comptes et rendez-vous ont leurs faits, le référentiel a les siens,
-  mais les avenants, les prix et les emplacements n'écrivent rien.
-- **La dérivation de profondeur à la lecture** (§3) n'est pas branchée : l'écran
-  affiche la portée figée, il ne sait pas encore répondre à « et aujourd'hui ? ».
-- **La rétention et le partitionnement mensuel** restent une migration SQL brute
-  à écrire, comme prévu à la pose du journal.
-- **La promotion en `platform/`** attend son troisième émetteur (§2).
+La chaîne est prouvée de bout en bout sur **un** module ; elle n'est pas
+généralisée, et c'est délibéré — étendre le journal à tous les modules avant
+d'avoir vu le premier se lire en vrai figerait un vocabulaire et un budget de
+lectures sur des suppositions.
+
+Le détail, les seuils et l'ordre :
+[`../todos/todo-journal-activite.md`](../todos/todo-journal-activite.md).
