@@ -1,4 +1,5 @@
 import {
+  BusinessError,
   DomainError,
   ResourceNotFoundError,
 } from "../../../../../platform/shared/errors/app-error.js";
@@ -44,6 +45,35 @@ export class InvalidVariantPricingError extends DomainError {
       "catalogue.variant.invalid_pricing",
       `Valeur impossible pour « ${field} » (${String(received)}) : ` +
         `attendu un entier positif ou nul.`,
+    );
+  }
+}
+
+/**
+ * Invariant 7 du socle : `PublishProduct` est **refusée** si une déclinaison
+ * active n'a pas de fiche réglementaire.
+ *
+ * Le message nomme les références en cause : « ce produit n'est pas
+ * publiable » n'aide personne devant un produit à six déclinaisons.
+ */
+export class ProductNotPublishableError extends BusinessError {
+  constructor(
+    readonly productId: string,
+    readonly missingSheetSkus: readonly string[],
+  ) {
+    super(
+      "catalogue.product.not_publishable",
+      `Publication refusée : fiche réglementaire manquante sur ${missingSheetSkus.join(", ")}.`,
+    );
+  }
+}
+
+/** Un produit archivé se restaure avant de se publier — jamais d'un geste. */
+export class ArchivedProductNotPublishableError extends BusinessError {
+  constructor(readonly productId: string) {
+    super(
+      "catalogue.product.archived_not_publishable",
+      "Ce produit est archivé : le restaurer avant de le publier.",
     );
   }
 }

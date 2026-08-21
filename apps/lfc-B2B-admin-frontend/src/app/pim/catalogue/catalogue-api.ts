@@ -106,6 +106,14 @@ export class CatalogueApi {
     });
   }
 
+  async publishProduct(id: string): Promise<void> {
+    await this.productsApi.publish(id);
+  }
+
+  async unpublishProduct(id: string): Promise<void> {
+    await this.productsApi.unpublish(id);
+  }
+
   async archiveProduct(id: string): Promise<void> {
     await this.productsApi.archive(id);
   }

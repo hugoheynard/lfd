@@ -137,6 +137,16 @@
           <fold-dropdown-item icon="upload" [disabled]="busy()" (selected)="push(p)">
             Pousser
           </fold-dropdown-item>
+          @if (p.status === 'draft') {
+            <fold-dropdown-item icon="check" [disabled]="busy()" (selected)="publish(p)">
+              Publier
+            </fold-dropdown-item>
+          }
+          @if (p.status === 'published') {
+            <fold-dropdown-item icon="eye-off" [disabled]="busy()" (selected)="unpublish(p)">
+              Dépublier
+            </fold-dropdown-item>
+          }
           @if (p.status !== 'archived') {
             <fold-dropdown-item icon="folder" (selected)="archive(p)">
               Archiver

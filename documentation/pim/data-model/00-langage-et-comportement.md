@@ -86,12 +86,15 @@ générique.
 > `CreateProduct`, `RenameProduct`/`ReclassifyProduct` (une commande « identité »),
 > `ArchiveProduct`, `RestoreProduct` et le tarif d'une déclinaison sont branchés.
 >
-> 🔴 **Manquent, et ça se voit en production** : aucun verbe ne publie. `status` porte
-> `published`, la projection Shopify le lit (`published` → `ACTIVE`, sinon `DRAFT`), mais rien
-> ne le pose jamais — **tout part en brouillon**. L'invariant 7 n'a donc pas encore de
-> gardien, faute de verbe capable de le violer. Manquent aussi les verbes de déclinaison
-> (`AddVariant`, `SetDefaultVariant`, `DiscontinueVariant`, `ReorderVariants`), qui porteraient
-> les invariants 3 et 4.
+> `PublishProduct` / `UnpublishProduct` existent depuis le 2026-08-21, et avec eux le gardien
+> de l'**invariant 7** : publier exige une fiche réglementaire sur chaque déclinaison **active**
+> (`[]` compte comme déclarée — « aucun allergène » est une affirmation), et un produit archivé
+> se restaure avant de se publier. Dépublier ramène en **brouillon**, jamais aux archives : le
+> retrait temporaire et la sortie de catalogue sont deux gestes distincts.
+>
+> 🔴 **Manquent encore** les verbes de déclinaison (`AddVariant`, `SetDefaultVariant`,
+> `DiscontinueVariant`, `ReorderVariants`), qui porteraient les invariants 3 et 4 — aujourd'hui
+> sans gardien, faute de verbe capable de les violer.
 
 ### Agrégat `Category`
 

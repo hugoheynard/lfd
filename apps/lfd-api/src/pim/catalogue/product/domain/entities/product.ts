@@ -1,4 +1,9 @@
-import { InvalidProductVariantsError, VariantNotFoundError } from "../errors/product-errors.js";
+import {
+  ArchivedProductNotPublishableError,
+  InvalidProductVariantsError,
+  ProductNotPublishableError,
+  VariantNotFoundError,
+} from "../errors/product-errors.js";
 import { Variant, type VariantSnapshot } from "./variant.js";
 import {
   slugify,
@@ -122,6 +127,37 @@ export class Product {
   /** Range le produit dans une autre famille (`ReclassifyProduct`). */
   reclassify(categoryId: string): void {
     this.categoryIdValue = categoryId;
+  }
+
+  /**
+   * **Invariant 7** : on ne met pas en vente ce qu'on ne peut pas étiqueter.
+   *
+   * Toute déclinaison **active** doit porter une fiche réglementaire. `[]`
+   * compte comme déclarée — « aucun allergène » est une affirmation, pas une
+   * absence de réponse. Les déclinaisons arrêtées ne comptent pas : elles ne
+   * partiront chez aucun canal.
+   *
+   * Un produit archivé se restaure d'abord : passer d'« retiré de la vente » à
+   * « en ligne » d'un seul geste ferait sauter l'étape où quelqu'un regarde.
+   */
+  publish(): void {
+    if (this.statusValue === "archived") {
+      throw new ArchivedProductNotPublishableError(this.identity);
+    }
+    const missing = this.variantList
+      .filter((variant) => !variant.isDiscontinued && !variant.hasRegulatorySheet)
+      .map((variant) => variant.sku);
+    if (missing.length > 0) {
+      throw new ProductNotPublishableError(this.identity, missing);
+    }
+    this.statusValue = "published";
+  }
+
+  /** Retire de la vente en ligne, sans archiver : le produit redevient brouillon. */
+  unpublish(): void {
+    if (this.statusValue === "published") {
+      this.statusValue = "draft";
+    }
   }
 
   /** Retire de la vente sans supprimer. Idempotent. */

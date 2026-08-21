@@ -256,6 +256,14 @@ export class ProductsPage {
       : '';
   }
 
+  protected async publish(product: Product): Promise<void> {
+    await this.run(() => this.api.publishProduct(product.id));
+  }
+
+  protected async unpublish(product: Product): Promise<void> {
+    await this.run(() => this.api.unpublishProduct(product.id));
+  }
+
   protected async archive(product: Product): Promise<void> {
     await this.run(() => this.api.archiveProduct(product.id));
   }

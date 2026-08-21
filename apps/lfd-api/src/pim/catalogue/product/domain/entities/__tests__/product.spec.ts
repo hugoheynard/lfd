@@ -1,6 +1,8 @@
 import {
+  ArchivedProductNotPublishableError,
   InvalidProductVariantsError,
   InvalidVariantPricingError,
+  ProductNotPublishableError,
   VariantNotFoundError,
 } from "../../errors/product-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
@@ -21,6 +23,29 @@ const snapshotWith = (variants: ProductSnapshot["variants"]): ProductSnapshot =>
   ...open().snapshot(),
   variants,
 });
+
+/**
+ * Un produit dont les déclinaisons portent (ou non) une fiche réglementaire.
+ * La première reste celle par défaut ; les suivantes sont ajoutées à
+ * l'instantané, seul chemin possible tant qu'`AddVariant` n'existe pas.
+ */
+function declared(
+  variants: readonly { allergens: readonly string[] | null; isDiscontinued?: boolean }[],
+): Product {
+  const [template] = open().snapshot().variants;
+  return Product.reconstitute(
+    snapshotWith(
+      variants.map((variant, index) => ({
+        ...template!,
+        id: `var_${String(index + 1)}`,
+        sku: `PATI-TARTE-${String(index + 1)}`,
+        isDefault: index === 0,
+        isDiscontinued: variant.isDiscontinued ?? false,
+        allergens: variant.allergens,
+      })),
+    ),
+  );
+}
 
 describe("l’agrégat Product", () => {
   describe("invariant 2 : une déclinaison au moins, une par défaut exactement", () => {
@@ -78,6 +103,72 @@ describe("l’agrégat Product", () => {
       const product = open();
       product.archive();
       expect(() => product.archive()).not.toThrow();
+    });
+  });
+
+  describe("invariant 7 : on ne met pas en vente ce qu’on ne peut pas étiqueter", () => {
+    /** Le produit tel qu'il naît : aucune fiche renseignée. */
+    it("refuse de publier tant qu’une déclinaison active n’a pas de fiche", () => {
+      expect(() => open().publish()).toThrow(ProductNotPublishableError);
+    });
+
+    it("nomme les références en cause plutôt que de dire « non »", () => {
+      expect(() => open().publish()).toThrow("PATI-TARTE-1");
+    });
+
+    it("publie dès que chaque déclinaison active est étiquetée", () => {
+      const product = declared([{ allergens: ["gluten"] }]);
+      product.publish();
+      expect(product.status).toBe("published");
+    });
+
+    /**
+     * `[]` n'est pas une absence de réponse : c'est « aucun allergène », une
+     * affirmation positive. La confondre avec `null` interdirait de publier
+     * tout ce qui n'en contient pas.
+     */
+    it("traite « aucun allergène » comme une fiche déclarée", () => {
+      const product = declared([{ allergens: [] }]);
+      product.publish();
+      expect(product.status).toBe("published");
+    });
+
+    /** Une déclinaison arrêtée ne part chez aucun canal : elle ne compte pas. */
+    it("ignore les déclinaisons arrêtées", () => {
+      const product = declared([
+        { allergens: ["gluten"] },
+        { allergens: null, isDiscontinued: true },
+      ]);
+      product.publish();
+      expect(product.status).toBe("published");
+    });
+
+    it("refuse de publier un produit archivé — le restaurer d’abord", () => {
+      const product = declared([{ allergens: ["gluten"] }]);
+      product.archive();
+      expect(() => product.publish()).toThrow(ArchivedProductNotPublishableError);
+    });
+  });
+
+  describe("dépublier", () => {
+    it("ramène en brouillon, pas aux archives", () => {
+      const product = declared([{ allergens: [] }]);
+      product.publish();
+      product.unpublish();
+      expect(product.status).toBe("draft");
+    });
+
+    it("ne réveille pas un produit archivé", () => {
+      const product = open();
+      product.archive();
+      product.unpublish();
+      expect(product.status).toBe("archived");
+    });
+
+    it("sur un brouillon, ne fait rien", () => {
+      const product = open();
+      product.unpublish();
+      expect(product.status).toBe("draft");
     });
   });
 

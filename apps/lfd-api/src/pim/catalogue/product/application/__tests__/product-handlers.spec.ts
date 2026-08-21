@@ -15,7 +15,10 @@ import { ArchiveProductHandler } from "../archive-product.js";
 import { ArchiveProductCommand } from "../archive-product.js";
 import { DeclareProductNutritionHandler } from "../declare-product-nutrition.js";
 import { DeclareProductNutritionCommand } from "../declare-product-nutrition.js";
+import { ProductNotPublishableError } from "../../domain/errors/product-errors.js";
+import { PublishProductCommand, PublishProductHandler } from "../publish-product.js";
 import { RestoreProductHandler } from "../restore-product.js";
+import { UnpublishProductCommand, UnpublishProductHandler } from "../unpublish-product.js";
 import { RestoreProductCommand } from "../restore-product.js";
 import { UpdateProductEditorialHandler } from "../update-product-editorial.js";
 import { UpdateProductEditorialCommand } from "../update-product-editorial.js";
@@ -314,5 +317,53 @@ describe("Archive / Restore product", () => {
     await expect(
       new ArchiveProductHandler(products).execute(new ArchiveProductCommand("prd_absent")),
     ).rejects.toBeInstanceOf(ProductNotFoundError);
+  });
+});
+
+describe("PublishProductHandler", () => {
+  it("refuse un produit dont la déclinaison n’a pas de fiche réglementaire", async () => {
+    const repo = new FakeProductRepository(seedProduct());
+
+    await expect(
+      new PublishProductHandler(repo).execute(new PublishProductCommand(PRODUCT_ID)),
+    ).rejects.toBeInstanceOf(ProductNotPublishableError);
+    expect(repo.snapshot()?.status).toBe("draft");
+  });
+
+  it("publie un produit étiqueté", async () => {
+    const seeded = seedProduct();
+    const [variant] = seeded.variants;
+    const repo = new FakeProductRepository({
+      ...seeded,
+      variants: [{ ...variant!, allergens: ["gluten"] }],
+    });
+
+    await new PublishProductHandler(repo).execute(new PublishProductCommand(PRODUCT_ID));
+
+    expect(repo.snapshot()?.status).toBe("published");
+  });
+
+  it("jette si le produit n’existe pas", async () => {
+    await expect(
+      new PublishProductHandler(new FakeProductRepository(null)).execute(
+        new PublishProductCommand(PRODUCT_ID),
+      ),
+    ).rejects.toBeInstanceOf(ProductNotFoundError);
+  });
+});
+
+describe("UnpublishProductHandler", () => {
+  it("ramène un produit publié en brouillon", async () => {
+    const seeded = seedProduct();
+    const [variant] = seeded.variants;
+    const repo = new FakeProductRepository({
+      ...seeded,
+      status: "published",
+      variants: [{ ...variant!, allergens: [] }],
+    });
+
+    await new UnpublishProductHandler(repo).execute(new UnpublishProductCommand(PRODUCT_ID));
+
+    expect(repo.snapshot()?.status).toBe("draft");
   });
 });

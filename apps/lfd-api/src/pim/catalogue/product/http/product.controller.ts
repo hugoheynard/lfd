@@ -22,7 +22,9 @@ import { CreateProductCommand } from "../application/create-product.js";
 import { DeclareProductNutritionCommand } from "../application/declare-product-nutrition.js";
 import { GetProductDetailQuery } from "../application/get-product-detail.js";
 import { ListProductsQuery } from "../application/list-products.js";
+import { PublishProductCommand } from "../application/publish-product.js";
 import { RestoreProductCommand } from "../application/restore-product.js";
+import { UnpublishProductCommand } from "../application/unpublish-product.js";
 import { UpdateProductEditorialCommand } from "../application/update-product-editorial.js";
 import { UpdateProductIdentityCommand } from "../application/update-product-identity.js";
 import { UpdateVariantPricingCommand } from "../application/update-variant-pricing.js";
@@ -117,6 +119,23 @@ export class ProductController {
       new DeclareProductNutritionCommand(id, variantId, body),
     );
     return { id, variantId };
+  }
+
+  /**
+   * Mise en vente. Refusée (409) si une déclinaison active n'a pas de fiche
+   * réglementaire, ou si le produit est archivé — c'est l'agrégat qui tranche.
+   */
+  @Put(":id/publish")
+  async publishProduct(@Param("id") id: string) {
+    await this.commands.execute<PublishProductCommand, void>(new PublishProductCommand(id));
+    return { id };
+  }
+
+  /** Retrait de la vente : le produit redevient brouillon, pas archivé. */
+  @Put(":id/unpublish")
+  async unpublishProduct(@Param("id") id: string) {
+    await this.commands.execute<UnpublishProductCommand, void>(new UnpublishProductCommand(id));
+    return { id };
   }
 
   @Put(":id/archive")

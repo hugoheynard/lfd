@@ -251,6 +251,16 @@ export class ProductHttpApi {
     });
   }
 
+  /** Mise en vente. Le back refuse si une déclinaison active n'a pas de fiche. */
+  publish(id: string): Promise<void> {
+    return this.put(`products/${id}/publish`, {});
+  }
+
+  /** Retrait de la vente : le produit redevient brouillon, pas archivé. */
+  unpublish(id: string): Promise<void> {
+    return this.put(`products/${id}/unpublish`, {});
+  }
+
   archive(id: string): Promise<void> {
     return this.put(`products/${id}/archive`, {});
   }

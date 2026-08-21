@@ -94,6 +94,10 @@ export class Variant {
     return this.identity;
   }
 
+  get sku(): string {
+    return this.skuValue;
+  }
+
   get isDefault(): boolean {
     return this.defaultFlag;
   }
