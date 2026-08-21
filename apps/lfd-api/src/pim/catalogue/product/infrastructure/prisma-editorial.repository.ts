@@ -45,6 +45,25 @@ export class PrismaEditorialRepository extends EditorialRepository {
       update: data,
     });
 
+    await this.attach(productId, media);
+  }
+
+  /**
+   * Remplace les visuels : on détache tout, puis on rattache la liste reçue.
+   *
+   * Les `MediaAsset` détachés ne sont **pas** supprimés — un visuel peut servir
+   * plusieurs produits, et une suppression en cascade retirerait l'image d'une
+   * fiche voisine. Ils deviennent orphelins ; les ramasser est le travail d'un
+   * nettoyage périodique, à écrire le jour où les images sont vraiment
+   * téléversées plutôt que saisies par URL.
+   */
+  async replaceMedia(productId: string, media: readonly MediaItem[]): Promise<void> {
+    await this.prisma.productMedia.deleteMany({ where: { productId } });
+    await this.attach(productId, media);
+  }
+
+  /** Crée l'actif puis son lien, dans l'ordre reçu. */
+  private async attach(productId: string, media: readonly MediaItem[]): Promise<void> {
     for (const item of media) {
       const mediaId = this.ids.next();
       await this.prisma.mediaAsset.create({

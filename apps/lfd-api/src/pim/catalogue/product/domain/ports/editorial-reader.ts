@@ -14,6 +14,22 @@ export interface ProductEditorialView {
   readonly seoDescription: string | null;
 }
 
+/** Un visuel attaché, rendu à plat et dans l'ordre d'affichage. */
+export interface ProductMediaRecord {
+  readonly role: string;
+  readonly url: string;
+  readonly alt: string;
+}
+
 export abstract class EditorialReader {
   abstract findByProduct(productId: string): Promise<ProductEditorialView | null>;
+  /**
+   * Les visuels d'un produit, ordonnés.
+   *
+   * Ils n'étaient RELUS nulle part : acceptés à la création, ils disparaissaient
+   * de la vue. Le formulaire ouvrait donc un panneau vide sur un produit qui
+   * avait des images — et le premier enregistrement de ce panneau les aurait
+   * remplacées par rien.
+   */
+  abstract mediaOf(productId: string): Promise<readonly ProductMediaRecord[]>;
 }

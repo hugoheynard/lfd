@@ -44,7 +44,14 @@ export interface EditorialFields {
   readonly seoDescription: string;
 }
 
-/** Détail complet pour la page d'édition : produit + éditorial + fiche réglementaire. */
+/** Un visuel attaché : son rôle, son URL, son texte alternatif. */
+export interface MediaSlot {
+  role: string;
+  url: string;
+  alt?: string;
+}
+
+/** Détail complet pour la page d'édition : produit + éditorial + fiche + visuels. */
 export interface ProductDetail {
   readonly product: Product;
   readonly editorial: EditorialFields;
@@ -52,6 +59,8 @@ export interface ProductDetail {
   readonly allergens: readonly string[] | null;
   readonly mayContain: readonly string[];
   readonly nutrition: NutritionValues;
+  /** Les visuels attachés, dans l'ordre. Relus depuis peu : ils ne l'étaient pas. */
+  readonly media: readonly MediaSlot[];
 }
 
 function toNutritionValues(nutrition: VariantNutritionView | null): NutritionValues {
@@ -173,6 +182,7 @@ export class ProductHttpApi {
       allergens: base?.allergens ?? null,
       mayContain: base?.nutrition?.mayContain ?? [],
       nutrition: toNutritionValues(base?.nutrition ?? null),
+      media: row.media.map((item) => ({ role: item.role, url: item.url, alt: item.alt })),
     };
   }
 
@@ -215,6 +225,22 @@ export class ProductHttpApi {
     input: { priceCents: number | null; weightGrams: number | null },
   ): Promise<void> {
     return this.put(`products/${id}/variants/${variantId}/pricing`, input);
+  }
+
+  /**
+   * Section **Visuels** — la liste entière, dans son ordre.
+   *
+   * Un remplacement : ce que l'écran affiche fait foi. Ce panneau n'avait aucune
+   * route ; on pouvait attacher des images à la création, et plus jamais.
+   */
+  saveMedia(id: string, media: readonly MediaSlot[]): Promise<void> {
+    return this.put(`products/${id}/media`, {
+      media: media.map((slot) => ({
+        role: slot.role,
+        url: slot.url,
+        ...(slot.alt === undefined || slot.alt === '' ? {} : { alt: slot.alt }),
+      })),
+    });
   }
 
   /** Section Communication — couche éditoriale complète (une requête). */

@@ -1,7 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { EditorialReader, type ProductEditorialView } from "../domain/ports/editorial-reader.js";
+import {
+  EditorialReader,
+  type ProductEditorialView,
+  type ProductMediaRecord,
+} from "../domain/ports/editorial-reader.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -38,5 +42,19 @@ export class PrismaEditorialReader extends EditorialReader {
       seoTitle: frOf(row.seoTitle),
       seoDescription: frOf(row.seoDescription),
     };
+  }
+
+  async mediaOf(productId: string): Promise<readonly ProductMediaRecord[]> {
+    const rows = await this.prisma.productMedia.findMany({
+      where: { productId },
+      orderBy: { position: "asc" },
+      include: { media: true },
+    });
+    return rows.map((row) => ({
+      role: row.role,
+      url: row.media.url,
+      // L'alternative est stockée localisée ; le back-office est monolingue FR.
+      alt: frOf(row.media.alt) ?? "",
+    }));
   }
 }

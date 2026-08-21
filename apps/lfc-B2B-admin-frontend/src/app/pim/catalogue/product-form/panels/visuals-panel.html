@@ -35,3 +35,10 @@
     Ajouter un visuel
   </button>
 </fold-card>
+
+<!-- Le pied de section, comme les autres panneaux enregistrables. Les visuels
+     n'en avaient pas : ils se saisissaient dans le vide. -->
+<div class="section-footer">
+  <button foldButton size="sm" (click)="store.saveMedia()">Enregistrer</button>
+  <span class="section-status">{{ store.statusText('visuels') }}</span>
+</div>

@@ -46,6 +46,7 @@ export {
   updateVariantPricingPayloadSchema,
   productEditorialPayloadSchema,
   declareNutritionPayloadSchema,
+  setProductMediaPayloadSchema,
 } from "./product.js";
 export type {
   ProductKind,
@@ -60,6 +61,8 @@ export type {
   ProductView,
   ProductEditorialView,
   ProductDetailView,
+  ProductMediaView,
+  SetProductMediaPayload,
 } from "./product.js";
 
 export { setB2bMembershipPayloadSchema, setB2bMembershipsPayloadSchema } from "./b2b-channel.js";

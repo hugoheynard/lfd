@@ -1,12 +1,13 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { EditorialReader } from "../domain/ports/editorial-reader.js";
-import type { ProductEditorialView } from "../domain/ports/editorial-reader.js";
+import type { ProductEditorialView, ProductMediaRecord } from "../domain/ports/editorial-reader.js";
 import { ProductRepository, type ProductRecord } from "../domain/ports/product.repository.js";
 
-/** Détail complet d'un produit : le socle + sa couche éditoriale (pour l'édition). */
+/** Détail complet : le socle, sa couche éditoriale et ses visuels. */
 export type ProductDetail = ProductRecord & {
   readonly editorial: ProductEditorialView | null;
+  readonly media: readonly ProductMediaRecord[];
 };
 
 export class GetProductDetailQuery {
@@ -28,7 +29,10 @@ export class GetProductDetailHandler implements IQueryHandler<
     if (product === null) {
       return null;
     }
-    const editorial = await this.editorials.findByProduct(query.id);
-    return { ...product.snapshot(), editorial };
+    const [editorial, media] = await Promise.all([
+      this.editorials.findByProduct(query.id),
+      this.editorials.mediaOf(query.id),
+    ]);
+    return { ...product.snapshot(), editorial, media };
   }
 }

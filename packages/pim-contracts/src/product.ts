@@ -131,7 +131,41 @@ export interface ProductEditorialView {
   readonly seoDescription: string | null;
 }
 
-/** Détail enrichi (socle + éditorial) — pour la page d'édition produit. */
+/** Un visuel attaché à un produit, tel que l'écran le lit et le renvoie. */
+export interface ProductMediaView {
+  /** `hero`, `gallery`, `lifestyle`, `thumbnail`, `print`. */
+  readonly role: string;
+  readonly url: string;
+  readonly alt: string;
+}
+
+/** Détail enrichi (socle + éditorial + visuels) — pour la page d'édition. */
 export type ProductDetailView = ProductView & {
   readonly editorial: ProductEditorialView | null;
+  /**
+   * Les visuels attachés, dans l'ordre. Ils étaient acceptés à la CRÉATION et
+   * jamais relus : le formulaire ouvrait un panneau vide sur un produit qui
+   * avait des images, et le premier enregistrement les aurait effacées.
+   */
+  readonly media: readonly ProductMediaView[];
 };
+
+/**
+ * Le panneau **Visuels**, enregistré d'un bloc.
+ *
+ * Un REMPLACEMENT et non un ajout : l'écran envoie la liste entière, dans son
+ * ordre, et c'est elle qui fait foi. Retirer une image et réordonner les autres
+ * sont le même geste ; les séparer en deux routes obligerait l'écran à
+ * décomposer ce que l'utilisateur a fait en une suite d'appels dont l'échec
+ * partiel laisserait un ordre incohérent.
+ */
+export const setProductMediaPayloadSchema = z.object({
+  media: z.array(
+    z.object({
+      role: z.string().min(1),
+      url: z.string().min(1),
+      alt: z.string().optional(),
+    }),
+  ),
+});
+export type SetProductMediaPayload = z.infer<typeof setProductMediaPayloadSchema>;

@@ -7,6 +7,7 @@ import {
 import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
+import { SetProductMediaCommand, SetProductMediaHandler } from "../set-product-media.js";
 import { NutritionRepository } from "../../domain/ports/nutrition.repository.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
@@ -154,6 +155,12 @@ class RecordingEditorialRepository extends EditorialRepository {
   }[] = [];
   save(productId: string, editorial: Editorial, media: readonly MediaItem[]): Promise<void> {
     this.calls.push({ productId, editorial, media });
+    return Promise.resolve();
+  }
+
+  readonly replaced: { productId: string; media: readonly MediaItem[] }[] = [];
+  replaceMedia(productId: string, media: readonly MediaItem[]): Promise<void> {
+    this.replaced.push({ productId, media });
     return Promise.resolve();
   }
 }
@@ -372,5 +379,40 @@ describe("UnpublishProductHandler", () => {
     );
 
     expect(repo.snapshot()?.status).toBe("draft");
+  });
+});
+
+describe("SetProductMediaHandler", () => {
+  it("remplace la liste, et tire la position du RANG reçu", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const editorials = new RecordingEditorialRepository();
+
+    await new SetProductMediaHandler(products, editorials).execute(
+      new SetProductMediaCommand(PRODUCT_ID, [
+        { role: "hero", url: "https://cdn/1.jpg", alt: "De face" },
+        { role: "gallery", url: "https://cdn/2.jpg" },
+      ]),
+    );
+
+    expect(editorials.replaced).toHaveLength(1);
+    // La position ne vient pas d'un champ : deux images ne peuvent donc pas
+    // revendiquer la même place, et l'ordre affiché est l'ordre enregistré.
+    expect(editorials.replaced[0]?.media.map((item) => [item.role, item.position])).toEqual([
+      ["hero", 0],
+      ["gallery", 1],
+    ]);
+    // La couche éditoriale n'est PAS touchée : les textes ne partent pas avec.
+    expect(editorials.calls).toEqual([]);
+  });
+
+  it("accepte une liste vide — retirer le dernier visuel est un geste légitime", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const editorials = new RecordingEditorialRepository();
+
+    await new SetProductMediaHandler(products, editorials).execute(
+      new SetProductMediaCommand(PRODUCT_ID, []),
+    );
+
+    expect(editorials.replaced[0]?.media).toEqual([]);
   });
 });

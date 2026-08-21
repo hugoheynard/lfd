@@ -10,7 +10,16 @@ import type {
 } from '../../data/models';
 import { CatalogueApi } from '../catalogue-api';
 import { ReferenceApi } from '../reference-api';
-import { ProductHttpApi, type EditorialFields, type NutritionValues } from '../product-http-api';
+import {
+  ProductHttpApi,
+  type EditorialFields,
+  type MediaSlot,
+  type NutritionValues,
+} from '../product-http-api';
+
+// Réexporté : les panneaux le tenaient d'ici, et il vit maintenant au niveau de
+// l'API — la couche qui parle au serveur possède la forme qu'elle envoie.
+export type { MediaSlot };
 
 // ── Types de vue partagés par la page et les panneaux ──────────────────────
 
@@ -35,14 +44,8 @@ export interface CategoryInheritanceView {
   readonly surPlace: ModeInheritance;
 }
 
-export interface MediaSlot {
-  role: string;
-  url: string;
-  alt?: string;
-}
-
 /** Les sections **enregistrables** — la seule source des clés de section. */
-export type FormSection = 'identite' | 'tarif' | 'fiche' | 'communication';
+export type FormSection = 'identite' | 'tarif' | 'fiche' | 'communication' | 'visuels';
 
 export interface SectionRef {
   readonly key: FormSection;
@@ -62,6 +65,10 @@ const SAVEABLE: readonly SectionRef[] = [
   { key: 'tarif', label: 'Tarif & logistique' },
   { key: 'fiche', label: 'Allergènes & nutrition' },
   { key: 'communication', label: 'Communication' },
+  // Les visuels s'enregistraient... nulle part. Le panneau ajoutait, retirait et
+  // réordonnait dans le vide, et le garde « modifications non enregistrées » ne
+  // les comptait pas — on pouvait donc les perdre sans le moindre avertissement.
+  { key: 'visuels', label: 'Visuels' },
 ];
 
 const EMPTY_NUTRITION: NutritionValues = {
@@ -371,6 +378,11 @@ export class ProductFormStore {
     );
   }
 
+  /** Section Visuels — la liste entière, dans son ordre : c'est un remplacement. */
+  saveMedia(): Promise<void> {
+    return this.save('visuels', () => this.products.saveMedia(this.productId(), this.media()));
+  }
+
   saveCommunication(): Promise<void> {
     return this.save('communication', () =>
       this.products.saveEditorial(this.productId(), this.editorial()),
@@ -394,6 +406,8 @@ export class ProductFormStore {
         return this.saveFiche();
       case 'communication':
         return this.saveCommunication();
+      case 'visuels':
+        return this.saveMedia();
     }
   }
 
@@ -423,6 +437,10 @@ export class ProductFormStore {
         return JSON.stringify([this.declaresNone(), [...this.selected()].sort(), this.nutrition()]);
       case 'communication':
         return JSON.stringify(this.editorial());
+      case 'visuels':
+        // L'ORDRE compte autant que le contenu : réordonner deux images est une
+        // modification, et un instantané insensible à l'ordre l'ignorerait.
+        return JSON.stringify(this.media());
     }
   }
 
@@ -448,6 +466,7 @@ export class ProductFormStore {
     this.priceEur.set(product.priceEur ?? null);
     this.weightGrams.set(product.weightGrams ?? null);
     this.editorial.set(detail.editorial);
+    this.media.set([...detail.media]);
     this.nutrition.set(detail.nutrition);
     const variant = product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
     this.variantId.set(variant?.id ?? '');

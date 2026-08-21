@@ -19,6 +19,7 @@ import { ListProductsHandler } from "./product/application/list-products.js";
 import { PublishProductHandler } from "./product/application/publish-product.js";
 import { UnpublishProductHandler } from "./product/application/unpublish-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
+import { SetProductMediaHandler } from "./product/application/set-product-media.js";
 import { UpdateProductEditorialHandler } from "./product/application/update-product-editorial.js";
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
 import { UpdateVariantPricingHandler } from "./product/application/update-variant-pricing.js";
@@ -66,6 +67,7 @@ import {
     CreateProductHandler,
     UpdateProductIdentityHandler,
     UpdateVariantPricingHandler,
+    SetProductMediaHandler,
     UpdateProductEditorialHandler,
     DeclareProductNutritionHandler,
     ArchiveProductHandler,

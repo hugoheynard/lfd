@@ -13,6 +13,8 @@ import {
   type ProductView,
   type UpdateProductIdentityPayload,
   type UpdateVariantPricingPayload,
+  setProductMediaPayloadSchema,
+  type SetProductMediaPayload,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
@@ -25,6 +27,7 @@ import { ListProductsQuery } from "../application/list-products.js";
 import { PublishProductCommand } from "../application/publish-product.js";
 import { RestoreProductCommand } from "../application/restore-product.js";
 import { UnpublishProductCommand } from "../application/unpublish-product.js";
+import { SetProductMediaCommand } from "../application/set-product-media.js";
 import { UpdateProductEditorialCommand } from "../application/update-product-editorial.js";
 import { UpdateProductIdentityCommand } from "../application/update-product-identity.js";
 import { UpdateVariantPricingCommand } from "../application/update-variant-pricing.js";
@@ -89,6 +92,24 @@ export class ProductController {
   ) {
     await this.commands.execute<UpdateProductEditorialCommand, void>(
       new UpdateProductEditorialCommand(id, body),
+    );
+    return { id };
+  }
+
+  /**
+   * Section **Visuels** : la liste entière, dans son ordre.
+   *
+   * Un `PUT` de remplacement, comme les autres sections — l'écran envoie ce
+   * qu'il affiche. Ce panneau n'avait AUCUNE route : on pouvait attacher des
+   * images à la création et plus jamais y toucher.
+   */
+  @Put(":id/media")
+  async setProductMedia(
+    @Param("id") id: string,
+    @Body(new ZodBody(setProductMediaPayloadSchema)) body: SetProductMediaPayload,
+  ) {
+    await this.commands.execute<SetProductMediaCommand, void>(
+      new SetProductMediaCommand(id, body.media),
     );
     return { id };
   }
