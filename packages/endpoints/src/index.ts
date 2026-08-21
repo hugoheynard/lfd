@@ -63,7 +63,7 @@ export const DEV_URLS = {
 } as const;
 
 /**
- * Passerelle dev (`lfc-suite-gateway`, `wrangler dev`) : UN worker route par
+ * Passerelle dev (`lfd-gateway`, `wrangler dev`) : UN worker route par
  * sous-domaine `*.localhost:PORT` vers les serveurs locaux, pour **simuler la
  * prod B** (sous-domaines) en dev. `*.localhost` résout en loopback sans
  * `/etc/hosts`. Le gateway ET les fronts (détection à l'exécution) dérivent de

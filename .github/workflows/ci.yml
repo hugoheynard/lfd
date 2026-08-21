@@ -206,11 +206,11 @@ jobs:
       - name: Construire les paquets
         run: pnpm --filter "./packages/**" build
       - name: Typecheck
-        run: pnpm --filter lfc-suite-gateway exec tsc --noEmit
+        run: pnpm --filter lfd-gateway exec tsc --noEmit
       - name: Lint
-        run: pnpm --filter lfc-suite-gateway lint
+        run: pnpm --filter lfd-gateway lint
       - name: Tests
-        run: pnpm --filter lfc-suite-gateway test
+        run: pnpm --filter lfd-gateway test
 
   ci-gate:
     name: ci-gate

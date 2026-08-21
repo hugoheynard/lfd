@@ -18,8 +18,8 @@
 >
 > Ce qui SURVIT : la **passerelle** (`gateway/`), qui n'a jamais été un objet de
 > la suite mais la frontière de confiance des backends, et reste le seul chemin
-> public vers eux. Elle garde son nom `lfc-suite-gateway` — le renommer
-> déplacerait un Worker en production pour une question de vocabulaire.
+> public vers eux. Elle a été renommée `lfd-gateway` le 2026-08-20 : son ancien
+> nom la disait pièce de la suite, alors qu'elle lui survit.
 >
 > Ce qui reste vrai du reste du document : **la règle**. Le backend se découpe
 > par propriété des données, le front par audience × appareil. C'est elle qui a
