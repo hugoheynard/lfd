@@ -1,4 +1,12 @@
-<fold-page-layout icon="company" [title]="title()">
+<!-- `customer-account` et non `company` : l'en-tête nomme LE DOSSIER du client,
+     pas la société. Le bâtiment revient à l'onglet « Informations », qui montre
+     l'identité légale et le détenteur — les deux portaient le même glyphe, et
+     ils ne se distinguaient que par le mot.
+
+     C'est aussi le glyphe de la liste dont on vient : passer de « Comptes
+     clients » à la fiche garde la même image, ce qui dit qu'on est descendu
+     dans un élément, pas arrivé ailleurs. -->
+<fold-page-layout icon="customer-account" [title]="title()">
   <button pageActions foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="back()">
     Retour
   </button>
