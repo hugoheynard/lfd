@@ -5,6 +5,7 @@ import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogu
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { ShopifyCollectionsService } from "../collections/collections.service.js";
+import { tvaHandleOf } from "../collections/tva-handle.js";
 import { TaxCollectionsPlan } from "../collections/tax-collections.plan.js";
 import { DryRunShopifyDriver, LiveShopifyDriver, type ShopifyDriver } from "./driver.js";
 import { ShopifyMembershipService, type MembershipOutcome } from "./membership.service.js";
@@ -249,10 +250,12 @@ export class ShopifyPushService {
       return "";
     }
     try {
-      const tvaTags = await this.catalogue.tvaTags(product.categoryId);
+      const rates = await this.catalogue.tvaRates(product.categoryId);
+      // Le handle se dérive ICI, chez le canal qui range par collection — le
+      // catalogue ne rend qu'un taux.
       const tags = ACTIVE_SALES_CONTEXTS.flatMap((context) => {
-        const tag = context.pick(tvaTags);
-        return tag === null ? [] : [tag];
+        const percent = context.pick(rates);
+        return percent === null ? [] : [tvaHandleOf(percent)];
       });
       return describeMembership(await this.membership.assign(productGid, tags));
     } catch (error) {

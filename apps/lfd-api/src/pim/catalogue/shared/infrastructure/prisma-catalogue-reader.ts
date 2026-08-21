@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { TvaRegimeRepository } from "../../../commerce/domain/ports/tva-regime.repository.js";
 import {
   CatalogueReader,
-  type CategoryTvaTags,
+  type CategoryTvaRates,
   type ChannelCategory,
 } from "../domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
@@ -47,14 +47,14 @@ export class PrismaCatalogueReader extends CatalogueReader {
     return all.filter((product) => wanted.has(product.id)).map((p) => p.snapshot());
   }
 
-  async tvaTags(categoryId: string): Promise<CategoryTvaTags> {
+  async tvaRates(categoryId: string): Promise<CategoryTvaRates> {
     const category = await this.categories.findById(categoryId);
     if (category === null) {
       return { emporter: null, surPlace: null };
     }
     return {
-      emporter: await this.tagOf(category.emporterTvaId),
-      surPlace: await this.tagOf(category.surPlaceTvaId),
+      emporter: await this.percentOf(category.emporterTvaId),
+      surPlace: await this.percentOf(category.surPlaceTvaId),
     };
   }
 
@@ -86,12 +86,12 @@ export class PrismaCatalogueReader extends CatalogueReader {
       }));
   }
 
-  /** Un id de régime → son tag `tva-*`, ou `null` si non réglé / introuvable. */
-  private async tagOf(regimeId: string | null): Promise<string | null> {
+  /** Un id de régime → son taux, ou `null` si non réglé / introuvable. */
+  private async percentOf(regimeId: string | null): Promise<number | null> {
     if (regimeId === null) {
       return null;
     }
     const regime = await this.regimes.findById(regimeId);
-    return regime?.tag ?? null;
+    return regime?.percent ?? null;
   }
 }

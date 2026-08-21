@@ -22,13 +22,13 @@ export class RemoveTvaRegimeHandler implements ICommandHandler<RemoveTvaRegimeCo
    */
   async execute(command: RemoveTvaRegimeCommand): Promise<void> {
     const regime = await requireRegime(this.regimes, command.id);
-    const { name, percent, tag } = regime.snapshot();
+    const { name, percent } = regime.snapshot();
     await this.regimes.remove(command.id);
     await this.journal.record({
       type: PIM_EVENTS.tvaRegimeDeleted,
       subjectType: "tva_regime",
       subjectId: command.id,
-      payload: { name, percent, tag },
+      payload: { name, percent },
     });
   }
 }

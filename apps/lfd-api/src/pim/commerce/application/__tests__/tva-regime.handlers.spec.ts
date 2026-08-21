@@ -3,7 +3,7 @@ import { RecordingJournal } from "../../../journal/__tests__/recording-journal.j
 import { TvaRegime, type TvaRegimeSnapshot } from "../../domain/entities/tva-regime.js";
 import {
   TvaRegimeNotFoundError,
-  TvaTagConflictError,
+  TvaRateConflictError,
 } from "../../domain/errors/commerce-errors.js";
 import {
   TvaRegimeRepository,
@@ -27,8 +27,8 @@ class InMemoryRepo extends TvaRegimeRepository {
     const snapshot = this.stored.get(id);
     return Promise.resolve(snapshot === undefined ? null : TvaRegime.reconstitute(snapshot));
   }
-  findByTag(tag: string): Promise<TvaRegime | null> {
-    const snapshot = [...this.stored.values()].find((row) => row.tag === tag);
+  findByPercent(percent: number): Promise<TvaRegime | null> {
+    const snapshot = [...this.stored.values()].find((row) => row.percent === percent);
     return Promise.resolve(snapshot === undefined ? null : TvaRegime.reconstitute(snapshot));
   }
   add(regime: TvaRegime): Promise<void> {
@@ -63,7 +63,7 @@ class StubIds extends PimIdGenerator {
 }
 
 describe("CreateTvaRegimeHandler", () => {
-  it("dérive le tag, insère et renvoie l’id", async () => {
+  it("valide le taux, insère et renvoie l’id", async () => {
     const repo = new InMemoryRepo();
 
     const id = await new CreateTvaRegimeHandler(
@@ -77,18 +77,17 @@ describe("CreateTvaRegimeHandler", () => {
       name: "Réduit",
       description: "",
       percent: 5.5,
-      tag: "tva-5-5",
     });
   });
 
-  it("refuse deux régimes au même taux (collision de tag)", async () => {
+  it("refuse deux régimes au même taux", async () => {
     const repo = new InMemoryRepo();
     const handler = new CreateTvaRegimeHandler(repo, new StubIds(), new RecordingJournal());
     await handler.execute(new CreateTvaRegimeCommand({ name: "A", percent: 10 }));
 
     await expect(
       handler.execute(new CreateTvaRegimeCommand({ name: "B", percent: 10 })),
-    ).rejects.toBeInstanceOf(TvaTagConflictError);
+    ).rejects.toBeInstanceOf(TvaRateConflictError);
   });
 });
 
@@ -101,7 +100,7 @@ describe("UpdateTvaRegimeHandler", () => {
     ).rejects.toBeInstanceOf(TvaRegimeNotFoundError);
   });
 
-  it("met à jour et re-dérive le tag", async () => {
+  it("met à jour le nom et le taux", async () => {
     const repo = new InMemoryRepo();
     const id = await new CreateTvaRegimeHandler(
       repo,
@@ -118,12 +117,11 @@ describe("UpdateTvaRegimeHandler", () => {
       name: "Intermédiaire",
       description: "",
       percent: 10,
-      tag: "tva-10",
     });
   });
 
   /**
-   * Le régime garde SON tag : le conflit ne se déclenche que contre un autre.
+   * Le régime garde SON taux : le conflit ne se déclenche que contre un autre.
    * Sans l'exception, réviser un nom sans toucher au taux serait impossible.
    */
   it("laisse réviser un régime sans changer son taux", async () => {
@@ -151,7 +149,7 @@ describe("UpdateTvaRegimeHandler", () => {
       new UpdateTvaRegimeHandler(repo, new RecordingJournal()).execute(
         new UpdateTvaRegimeCommand(first, { name: "A", percent: 20 }),
       ),
-    ).rejects.toBeInstanceOf(TvaTagConflictError);
+    ).rejects.toBeInstanceOf(TvaRateConflictError);
   });
 });
 
@@ -184,9 +182,9 @@ describe("ListTvaRegimesHandler", () => {
 
     const views = await new ListTvaRegimesHandler(repo).execute(new ListTvaRegimesQuery());
 
-    expect(views.map((view) => [view.tag, view.usage])).toEqual([
-      ["tva-5-5", { emporter: 3, surPlace: 1 }],
-      ["tva-20", { emporter: 0, surPlace: 0 }],
+    expect(views.map((view) => [view.percent, view.usage])).toEqual([
+      [5.5, { emporter: 3, surPlace: 1 }],
+      [20, { emporter: 0, surPlace: 0 }],
     ]);
   });
 });

@@ -15,16 +15,16 @@ const MAX_PERCENT = 100;
 const MAX_DECIMALS = 2;
 
 /**
- * **Le taux de TVA, et le handle qui en découle.**
+ * **Le taux de TVA.**
  *
- * Le `tag` (`tva-5-5`) est l'identité du régime côté Shopify. Il était dérivé
- * par l'appelant — `tagFor(percent)`, recopié à la création et à la mise à
- * jour — et rien ne validait le taux dans le domaine : la route HTTP exigeait
- * `positive()`, mais un seed, un import ou un futur appelant passaient à côté,
- * et `tva-NaN` serait parti chez Shopify comme un handle ordinaire.
+ * Il portait aussi le `tag` (`tva-5-5`), l'identité du régime côté Shopify. Ce
+ * n'était pas sa place : un taux de TVA est une donnée fiscale, un handle de
+ * collection est du vocabulaire de canal. Le référentiel décrivait donc un de
+ * ses consommateurs, et la seule chose qui empêchait deux régimes de porter le
+ * même taux était la collision de leurs handles Shopify.
  *
- * Ici les deux ne peuvent plus diverger : le taux se valide en naissant, et le
- * tag n'existe que dérivé de lui.
+ * La dérivation vit désormais dans l'adaptateur Shopify, qui est le seul à en
+ * avoir jamais eu besoin.
  */
 export class TvaRate {
   private constructor(readonly percent: number) {}
@@ -39,19 +39,14 @@ export class TvaRate {
     return new TvaRate(percent);
   }
 
-  /** Handle stable côté canal : `5.5` → `tva-5-5`. Jamais saisi, toujours dérivé. */
-  get tag(): string {
-    return `tva-${String(this.percent).replace(".", "-")}`;
-  }
-
   equals(other: TvaRate): boolean {
     return this.percent === other.percent;
   }
 }
 
 /**
- * Au-delà de deux décimales le taux n'a plus de sens comptable, et le tag
- * dérivé devient une chaîne fragile (`tva-5-4999999`).
+ * Au-delà de deux décimales le taux n'a plus de sens comptable, et le handle
+ * qu'un canal en dérive devient une chaîne fragile (`tva-5-4999999`).
  *
  * ⚠️ Surtout PAS `Number.isInteger(percent * 100)` : la multiplication
  * flottante ment. `4.85 * 100` vaut `484.99999999999994`, et ce taux — deux

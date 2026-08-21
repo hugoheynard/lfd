@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import type { DesiredCollection } from "@lfd/shopify-admin";
 
 import { TvaRegimeRepository } from "../../../commerce/domain/ports/tva-regime.repository.js";
+import { tvaHandleOf } from "./tva-handle.js";
 
 /** « 5.5 » → « 5,5 % ». Le rendu du taux dans un titre de collection. */
 function formatPercent(percent: number): string {
@@ -19,8 +20,8 @@ function formatPercent(percent: number): string {
  * collection se décidait dans un composant Angular.
  *
  * Elle appartient au **canal** et non au commerce : le handle et le titre sont
- * du vocabulaire Shopify. Le commerce rend des régimes ; c'est ici qu'ils
- * deviennent des collections.
+ * du vocabulaire Shopify. Le commerce rend des régimes — un nom et un taux ;
+ * c'est ici qu'ils deviennent des collections.
  */
 @Injectable()
 export class TaxCollectionsPlan {
@@ -29,8 +30,8 @@ export class TaxCollectionsPlan {
   async desired(): Promise<DesiredCollection[]> {
     const regimes = await this.regimes.listAll();
     return regimes.map((regime) => {
-      const { tag, percent } = regime.snapshot();
-      return { handle: tag, title: `TVA ${formatPercent(percent)}` };
+      const { percent } = regime.snapshot();
+      return { handle: tvaHandleOf(percent), title: `TVA ${formatPercent(percent)}` };
     });
   }
 }

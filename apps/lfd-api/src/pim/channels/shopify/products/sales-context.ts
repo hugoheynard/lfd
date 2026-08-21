@@ -1,4 +1,4 @@
-import type { CategoryTvaTags } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { CategoryTvaRates } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 
 /**
  * Un **contexte de vente** — une manière de vendre l'article qui a son propre traitement
@@ -6,13 +6,13 @@ import type { CategoryTvaTags } from "../../../catalogue/shared/domain/ports/cat
  * `documentation/lfc/projection-sales-context.md`.
  *
  * `handleSuffix` = suffixe de handle Shopify du contexte ; **vide pour le contexte par
- * défaut** (handle nu → migration nulle sur l'existant). `pick` choisit, dans les tags
- * résolus de la catégorie, celui de ce contexte.
+ * défaut** (handle nu → migration nulle sur l'existant). `pick` choisit, dans les taux
+ * résolus de la catégorie, celui de ce contexte ; le handle s'en dérive ensuite.
  */
 export interface SalesContext {
   readonly key: string;
   readonly handleSuffix: string;
-  readonly pick: (tags: CategoryTvaTags) => string | null;
+  readonly pick: (rates: CategoryTvaRates) => number | null;
 }
 
 /**
@@ -21,5 +21,5 @@ export interface SalesContext {
  * compte : le premier est le contexte par défaut (handle nu).
  */
 export const ACTIVE_SALES_CONTEXTS: readonly SalesContext[] = [
-  { key: "emporter", handleSuffix: "", pick: (tags) => tags.emporter },
+  { key: "emporter", handleSuffix: "", pick: (rates) => rates.emporter },
 ];

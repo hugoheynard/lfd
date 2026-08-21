@@ -30,8 +30,6 @@ export interface TvaRegime {
   description: string;
   /** Taux en pourcentage : 5.5, 10, 20. */
   percent: number;
-  /** Tag / handle de la collection Shopify — dérivé du taux (`tva-5-5`). */
-  tag: string;
   /** Combien de familles le visent — rendu par l'API, jamais recalculé ici. */
   usage: TvaRegimeUsage;
 }

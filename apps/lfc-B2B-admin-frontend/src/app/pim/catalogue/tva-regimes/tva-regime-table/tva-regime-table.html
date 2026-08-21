@@ -25,10 +25,6 @@
     <fold-badge [content]="format(r.percent)" variant="accent" />
   </ng-template>
 
-  <ng-template foldCell="tag" let-r
-    ><code>{{ r.tag }}</code></ng-template
-  >
-
   <!-- Le compte d'usages : ce qui dit, AVANT le menu de suppression, qu'un
        régime est visé — la base pose un `Restrict`, elle refusera. -->
   <ng-template foldCell="usage" let-r>

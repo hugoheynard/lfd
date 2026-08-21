@@ -5,14 +5,6 @@ import { TvaRegime } from "../tva-regime.js";
 const OPEN = { id: "tva_1", name: "Réduit", description: "Alimentaire", percent: 5.5 };
 
 describe("l’agrégat TvaRegime", () => {
-  it("dérive son tag du taux, à l’ouverture comme à la révision", () => {
-    const regime = TvaRegime.open(OPEN);
-    expect(regime.tag).toBe("tva-5-5");
-
-    regime.revise("Intermédiaire", "", 10);
-    expect(regime.tag).toBe("tva-10");
-  });
-
   it("refuse un taux impossible", () => {
     expect(() => TvaRegime.open({ ...OPEN, percent: 0 })).toThrow(InvalidTvaRateError);
   });
@@ -33,13 +25,17 @@ describe("l’agrégat TvaRegime", () => {
   });
 
   /**
-   * Le tag n'est jamais relu de la base : il est recalculé. Une ligne dont le
-   * tag aurait dérivé du taux se corrige donc au premier enregistrement, au
-   * lieu de partir telle quelle chez Shopify.
+   * Le taux repasse par son VO à la reconstitution : une ligne écrite avant que
+   * la règle existe se signale ici, plutôt que de ressortir vers un canal.
    */
-  it("recalcule le tag à la reconstitution plutôt que de croire la colonne", () => {
-    const regime = TvaRegime.reconstitute({ ...OPEN, tag: "tva-menteur" });
-    expect(regime.snapshot().tag).toBe("tva-5-5");
+  it("refuse à la reconstitution un taux que la base n’aurait pas dû porter", () => {
+    expect(() => TvaRegime.reconstitute({ ...OPEN, percent: 0 })).toThrow(InvalidTvaRateError);
+  });
+
+  it("révise son taux", () => {
+    const regime = TvaRegime.open(OPEN);
+    regime.revise("Intermédiaire", "", 10);
+    expect(regime.snapshot()).toMatchObject({ name: "Intermédiaire", percent: 10 });
   });
 
   it("se reconstitue à l’identique depuis son instantané", () => {

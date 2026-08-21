@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 /**
- * Contrat de fil du contexte **commerce** — les régimes de TVA. Le `tag` (handle
- * Shopify) est dérivé du taux **côté serveur** : jamais dans le payload.
+ * Contrat de fil du contexte **commerce** — les régimes de TVA.
+ *
+ * Un régime, c'est un nom et un taux. Le handle de collection Shopify n'y
+ * figure plus : c'est du vocabulaire de canal, dérivé par le canal.
  */
 export const tvaRegimePayloadSchema = z.object({
   name: z.string().min(1),
@@ -30,8 +32,6 @@ export interface TvaRegimeView {
   readonly description: string;
   /** Taux en pourcentage : 5.5, 10, 20. */
   readonly percent: number;
-  /** Handle Shopify dérivé du taux (`tva-5-5`) — unique. */
-  readonly tag: string;
   /** Ce qui s'y rattache dans le PIM — un compte, pas un état de l'agrégat. */
   readonly usage: TvaRegimeUsageView;
 }

@@ -5,19 +5,19 @@ import { TvaRate } from "../value-objects/tva-rate.js";
  * **Le régime de TVA — l'agrégat.**
  *
  * Référence commerciale partagée : les familles pointent dessus
- * (`emporterTvaId` / `surPlaceTvaId`) et Shopify le projette en collection.
+ * (`emporterTvaId` / `surPlaceTvaId`), et les canaux en dérivent ce dont ils
+ * ont besoin — une collection pour Shopify, un nombre pour la boutique B2B.
  *
- * Ce qu'il garantit : le **taux est valide** (VO `TvaRate`), le **tag en
- * découle** toujours, et le **nom n'est jamais vide**. Ce qu'il ne peut pas
- * voir, et qui reste au handler : qu'aucun AUTRE régime ne porte déjà ce tag,
- * et qu'aucune famille ne le vise au moment de le supprimer.
+ * Ce qu'il garantit : le **taux est valide** (VO `TvaRate`) et le **nom n'est
+ * jamais vide**. Ce qu'il ne peut pas voir, et qui reste au handler : qu'aucun
+ * AUTRE régime ne porte déjà ce taux, et qu'aucune famille ne le vise au moment
+ * de le supprimer.
  */
 export interface TvaRegimeSnapshot {
   readonly id: string;
   readonly name: string;
   readonly description: string;
   readonly percent: number;
-  readonly tag: string;
 }
 
 export interface NewTvaRegimeInput {
@@ -47,7 +47,7 @@ export class TvaRegime {
   /**
    * Reconstitue depuis la base. Le taux **repasse par son VO** : une ligne
    * écrite avant que la règle existe se signale ici plutôt que de ressortir
-   * telle quelle vers Shopify.
+   * telle quelle vers un canal.
    */
   static reconstitute(snapshot: TvaRegimeSnapshot): TvaRegime {
     return new TvaRegime(
@@ -60,10 +60,6 @@ export class TvaRegime {
 
   get id(): string {
     return this.identity;
-  }
-
-  get tag(): string {
-    return this.rateValue.tag;
   }
 
   get percent(): number {
@@ -83,7 +79,6 @@ export class TvaRegime {
       name: this.nameValue,
       description: this.descriptionValue,
       percent: this.rateValue.percent,
-      tag: this.rateValue.tag,
     };
   }
 }

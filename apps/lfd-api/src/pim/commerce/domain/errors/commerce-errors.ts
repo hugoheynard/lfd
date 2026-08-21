@@ -7,10 +7,20 @@ export class TvaRegimeNotFoundError extends BusinessError {
   }
 }
 
-/** Deux régimes ne peuvent pas viser le même taux (même `tag`). */
-export class TvaTagConflictError extends BusinessError {
-  constructor(tag: string) {
-    super("commerce.tva_tag_conflict", `Un régime de TVA existe déjà pour ce taux (${tag}).`);
+/**
+ * Deux régimes ne peuvent pas viser le même taux.
+ *
+ * L'erreur s'appelait `TvaTagConflictError` et nommait un handle Shopify
+ * (`tva-5-5`) : le référentiel annonçait une collision de canal là où
+ * l'invariant est fiscal. Un comptable à qui l'on répond « conflit de tag » n'a
+ * aucun moyen de savoir qu'il vient de recréer le taux réduit.
+ */
+export class TvaRateConflictError extends BusinessError {
+  constructor(percent: number) {
+    super(
+      "commerce.tva_rate_conflict",
+      `Un régime de TVA existe déjà à ${String(percent).replace(".", ",")} %.`,
+    );
   }
 }
 

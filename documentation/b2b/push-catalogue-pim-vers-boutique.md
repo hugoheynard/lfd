@@ -29,7 +29,7 @@ flowchart TB
     subgraph pim["schéma <code>pim</code> — la vérité produit"]
         direction TB
         PC["<b>category</b><br/>arbre, emporter_tva_id"]
-        PT["<b>tva_regime</b><br/>taux + tag"]
+        PT["<b>tva_regime</b><br/>nom + taux"]
         PP["<b>product</b>"]
         PV["<b>product_variant</b><br/>sku, price_cents"]
         PC --> PP --> PV

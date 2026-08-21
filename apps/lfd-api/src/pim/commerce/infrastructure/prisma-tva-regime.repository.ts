@@ -15,7 +15,6 @@ interface TvaRegimeRow {
   name: string;
   description: string;
   percent: number;
-  tag: string;
 }
 
 function toRegime(row: TvaRegimeRow): TvaRegime {
@@ -24,17 +23,15 @@ function toRegime(row: TvaRegimeRow): TvaRegime {
     name: row.name,
     description: row.description,
     percent: row.percent,
-    tag: row.tag,
   });
 }
 
-/** Les colonnes que l'agrégat possède — le `tag` en fait partie, mais dérivé. */
+/** Les colonnes que l'agrégat possède. */
 function toColumns(snapshot: TvaRegimeSnapshot) {
   return {
     name: snapshot.name,
     description: snapshot.description,
     percent: snapshot.percent,
-    tag: snapshot.tag,
   };
 }
 
@@ -54,8 +51,8 @@ export class PrismaTvaRegimeRepository extends TvaRegimeRepository {
     return row === null ? null : toRegime(row);
   }
 
-  async findByTag(tag: string): Promise<TvaRegime | null> {
-    const row = await this.prisma.tvaRegime.findUnique({ where: { tag } });
+  async findByPercent(percent: number): Promise<TvaRegime | null> {
+    const row = await this.prisma.tvaRegime.findUnique({ where: { percent } });
     return row === null ? null : toRegime(row);
   }
 

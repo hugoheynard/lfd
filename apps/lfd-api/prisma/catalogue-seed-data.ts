@@ -22,7 +22,7 @@ export const SEED_CATEGORIES: readonly SeedCategory[] = [
   { id: "cat_choco", nameFr: "Chocolat & confiserie", slug: "chocolat-confiserie", position: 5 },
 ];
 
-/** Un régime de TVA de départ. Le `tag` n'est PAS ici : il se dérive du taux. */
+/** Un régime de TVA de départ : un nom et un taux, rien d'autre. */
 export interface SeedTvaRegime {
   readonly id: string;
   readonly name: string;

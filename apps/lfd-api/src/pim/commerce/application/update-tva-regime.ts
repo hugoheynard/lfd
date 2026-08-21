@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { TvaRegimeRepository } from "../domain/ports/tva-regime.repository.js";
 import type { TvaRegimePayload } from "./create-tva-regime.js";
-import { ensureTagFree, requireRegime } from "./tva-support.js";
+import { ensureRateFree, requireRegime } from "./tva-support.js";
 
 export class UpdateTvaRegimeCommand {
   constructor(
@@ -28,7 +28,7 @@ export class UpdateTvaRegimeHandler implements ICommandHandler<UpdateTvaRegimeCo
     const before = regime.snapshot();
     const { payload } = command;
     regime.revise(payload.name, payload.description ?? "", payload.percent);
-    await ensureTagFree(this.regimes, regime.tag, regime.id);
+    await ensureRateFree(this.regimes, regime.percent, regime.id);
     await this.regimes.save(regime);
     await this.journalize(before, regime.snapshot());
   }
@@ -41,7 +41,7 @@ export class UpdateTvaRegimeHandler implements ICommandHandler<UpdateTvaRegimeCo
    */
   private async journalize(
     before: { name: string; percent: number },
-    after: { id: string; name: string; percent: number; tag: string },
+    after: { id: string; name: string; percent: number },
   ): Promise<void> {
     if (before.percent !== after.percent) {
       // La portée : ce que ce taux touchait à l'instant du changement.
@@ -50,7 +50,7 @@ export class UpdateTvaRegimeHandler implements ICommandHandler<UpdateTvaRegimeCo
         type: PIM_EVENTS.tvaRegimeRateChanged,
         subjectType: "tva_regime",
         subjectId: after.id,
-        payload: { name: after.name, from: before.percent, to: after.percent, tag: after.tag },
+        payload: { name: after.name, from: before.percent, to: after.percent },
         blast: {
           familiesEmporter: usage?.emporter ?? 0,
           familiesSurPlace: usage?.surPlace ?? 0,

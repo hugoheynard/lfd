@@ -29,7 +29,6 @@ describe('ChannelsPanel', () => {
         name: 'Réduit',
         description: '',
         percent: 5.5,
-        tag: 'tva-5-5',
         usage: { emporter: 0, surPlace: 0 },
       },
     ]);

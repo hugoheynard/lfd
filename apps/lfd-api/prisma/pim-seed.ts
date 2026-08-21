@@ -12,7 +12,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "../src/platform/database/client/client.js";
-import { TvaRate } from "../src/pim/commerce/domain/value-objects/tva-rate.js";
 import { ROWS, SEED_CATEGORIES, SEED_TVA_REGIMES } from "./catalogue-seed-data.js";
 
 const connectionString = process.env.DATABASE_LFD_URL;
@@ -24,19 +23,13 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString }),
 });
 
-/**
- * Les régimes de TVA. Le `tag` passe par le **value object** plutôt que par une
- * chaîne recopiée : un seed qui dérive son handle à la main est exactement le
- * chemin par lequel un `tva-5-5` de la base finirait par différer du `tva-5-5`
- * que l'application recalcule.
- */
+/** Les régimes de TVA : un nom, un taux. Le reste se dérive chez les canaux. */
 async function seedTvaRegimes(): Promise<void> {
   for (const regime of SEED_TVA_REGIMES) {
     const fields = {
       name: regime.name,
       description: regime.description,
       percent: regime.percent,
-      tag: TvaRate.create(regime.percent).tag,
     };
     await prisma.tvaRegime.upsert({
       where: { id: regime.id },

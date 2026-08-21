@@ -1,22 +1,21 @@
-import { TvaRegimeNotFoundError, TvaTagConflictError } from "../domain/errors/commerce-errors.js";
+import { TvaRateConflictError, TvaRegimeNotFoundError } from "../domain/errors/commerce-errors.js";
 import type { TvaRegime } from "../domain/entities/tva-regime.js";
 import { TvaRegimeRepository } from "../domain/ports/tva-regime.repository.js";
 
 /**
  * Les gardes que l'agrégat ne peut pas tenir : elles regardent les AUTRES
- * régimes. La dérivation du `tag`, elle, a rejoint le VO `TvaRate` — c'était
- * une règle de domaine qui vivait dans la couche application.
+ * régimes.
  */
 
-/** Refuse un `tag` déjà porté par un **autre** régime (même taux ⇒ même handle). */
-export async function ensureTagFree(
+/** Refuse un taux déjà porté par un **autre** régime. */
+export async function ensureRateFree(
   regimes: TvaRegimeRepository,
-  tag: string,
+  percent: number,
   exceptId: string | null,
 ): Promise<void> {
-  const existing = await regimes.findByTag(tag);
+  const existing = await regimes.findByPercent(percent);
   if (existing !== null && existing.id !== exceptId) {
-    throw new TvaTagConflictError(tag);
+    throw new TvaRateConflictError(percent);
   }
 }
 

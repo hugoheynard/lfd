@@ -17,6 +17,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { formatPercent } from '../../../data/channels';
 import { type TvaRegime } from '../../catalogue-api';
 import { TvaStore } from '../tva-store';
 
@@ -82,10 +83,14 @@ export class TvaRegimeFormPanel {
         : 'Nouveau régime',
   );
   protected readonly subtitle = computed(() =>
-    this.isDelete()
-      ? 'Action irréversible.'
-      : 'Un taux = une collection Shopify (tva-5-5, tva-10, tva-20).',
+    this.isDelete() ? 'Action irréversible.' : 'Un nom et un taux — 5,5 %, 10 %, 20 %.',
   );
+
+  /** Le taux du régime visé, formaté : « 5,5 % ». */
+  protected readonly rate = computed(() => {
+    const target = this.regime();
+    return target === undefined ? '—' : formatPercent(target.percent);
+  });
   protected readonly submitLabel = computed(() =>
     this.isDelete()
       ? 'Supprimer définitivement'

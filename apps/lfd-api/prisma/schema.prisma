@@ -2507,14 +2507,18 @@ model Category {
   @@schema("pim")
 }
 
-/// Régime de TVA — référence commerciale partagée (catégories + collection Shopify).
+/// Régime de TVA — référence commerciale partagée. Les canaux en dérivent ce
+/// dont ils ont besoin : Shopify un handle de collection, la boutique B2B un
+/// nombre à facturer. Aucun de ces deux vocabulaires ne vit ici.
 model TvaRegime {
   id          String @id
   name        String
   description String @default("")
-  percent     Float
-  /// Handle Shopify dérivé du taux (`tva-5-5`) — identité côté canal, unique.
-  tag         String @unique
+  /// UNIQUE, et c'est l'invariant fiscal : deux régimes au même taux n'ont pas
+  /// de sens. L'unicité portait avant sur le `tag` Shopify dérivé du taux — le
+  /// référentiel faisait donc tenir une règle comptable par une collision de
+  /// handles de canal.
+  percent     Float  @unique
 
   /// Familles qui visent ce régime — extrémités des relations portées par
   /// `Category`. Aucune colonne ajoutée ici ; sert le mur `Restrict` à la suppression.

@@ -50,8 +50,13 @@ export interface GeneratedFiche {
   tvaRate: string;
 }
 
+/**
+ * Le handle de la collection Shopify d'un régime — **dérivé** du taux, et non
+ * lu sur le régime : le référentiel fiscal ne porte plus de vocabulaire de
+ * canal. C'est ici, dans la projection Shopify, qu'il se recalcule.
+ */
 function tagOf(regime: TvaRegime | undefined): string {
-  return regime?.tag ?? '—';
+  return regime === undefined ? '—' : tvaTagFromPercent(regime.percent);
 }
 
 function rateOf(regime: TvaRegime | undefined): string {
