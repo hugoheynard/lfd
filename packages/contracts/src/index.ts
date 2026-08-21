@@ -589,3 +589,5 @@ export type {
   ActivityEventView,
   ActivityPageView,
 } from "./activity-journal.js";
+
+export type { CatalogParityGap, CatalogParityView } from "./catalog-parity.js";

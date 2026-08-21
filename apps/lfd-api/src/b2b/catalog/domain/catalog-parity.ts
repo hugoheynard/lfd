@@ -28,6 +28,8 @@
  * horloge — ce qui permet de l'éprouver par énumération.
  */
 
+import type { CatalogParityGap, CatalogParityView } from "@lfd/contracts";
+
 /** Un article tel que le référentiel le publierait — la source. */
 export interface ReferenceEntry {
   /** SKU de la **déclinaison** : la clé de rapprochement des deux côtés. */
@@ -56,40 +58,13 @@ export interface MirrorEntry {
   readonly vatRate: number | null;
 }
 
-/** Un écart sur une valeur, dit avec les deux versions — jamais juste « diffère ». */
-export interface FieldGap<T> {
-  readonly sku: string;
-  readonly reference: T;
-  readonly mirror: T;
-}
-
-export interface ParityReport {
-  readonly referenceCount: number;
-  readonly mirrorCount: number;
-  /**
-   * Publiés par le référentiel, absents du miroir. **Le pire cas** : la
-   * boutique ne sait pas les vendre, et le client ne comprend pas pourquoi.
-   */
-  readonly missing: readonly string[];
-  /**
-   * Dans le miroir, plus publiés. Ils continuent d'être vendus alors que le
-   * référentiel les a retirés — ce qui est l'autre moitié du même défaut.
-   */
-  readonly stale: readonly string[];
-  /** Le prix canonique a bougé sans que le miroir suive. Chaque ligne est de l'argent. */
-  readonly priceGaps: readonly FieldGap<number>[];
-  /**
-   * Le taux a bougé sans que le miroir suive — un régime révisé dans le PIM et
-   * jamais poussé. Chaque ligne est un montant de TVA facturé à tort.
-   */
-  readonly vatGaps: readonly FieldGap<number | null>[];
-  readonly nameGaps: readonly FieldGap<string>[];
-  /**
-   * `true` **seulement** si rien ne diffère. Un booléen plutôt qu'un score : la
-   * question est « le miroir est-il fidèle ? », et elle n'a pas de nuance.
-   */
-  readonly inSync: boolean;
-}
+/**
+ * Le rapport, et l'écart qu'il contient, vivent dans `@lfd/contracts` : un écran
+ * doit pouvoir les lire sans redéclarer leur forme. Les alias gardent au domaine
+ * ses propres mots — il n'emprunte que la structure.
+ */
+export type FieldGap<T> = CatalogParityGap<T>;
+export type ParityReport = CatalogParityView;
 
 export function compareToReference(
   reference: readonly ReferenceEntry[],
