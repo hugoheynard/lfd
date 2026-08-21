@@ -143,7 +143,7 @@
   overflow: hidden;
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface-sunken, var(--fold-color-surface));
+  background: var(--fold-color-surface-sunken);
 
   img {
     display: block;

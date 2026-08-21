@@ -1,13 +1,15 @@
 # Stockage et diffusion des médias — R2 derrière le cache Cloudflare
 
-📐 **Doc-first : décidé, rien n'est codé.** Aucun bucket média n'existe, aucune
-route d'upload n'est écrite. Ce qui est vérifié l'est contre la plateforme (DNS
-public, docs Cloudflare) et non contre l'intention ; ce qui reste à confirmer
-est signalé.
+🟡 **Le code est écrit ; le bucket n'existe pas encore.** Tout ce qui relève du
+dépôt — validation, adressage par contenu, route, écran — est en place et
+testé. Ce qui manque est la création du bucket et de son domaine (§6), sans
+quoi le dépôt refuse explicitement. Ce qui est vérifié l'est contre la
+plateforme (DNS public, docs Cloudflare) et non contre l'intention.
 
-Les visuels d'un produit sont aujourd'hui des **URL saisies à la main** dans le
-panneau Visuels du PIM. Rien n'est hébergé par nous, rien n'est validé, et une
-URL qui tombe emporte l'image du catalogue. Cette note pose comment on héberge.
+Les visuels d'un produit étaient des **URL saisies à la main** dans le panneau
+Visuels du PIM : rien n'était hébergé par nous, rien n'était validé, et une URL
+qui tombe emportait l'image du catalogue. Cette note dit comment on héberge, et
+ce que ça coûte.
 
 ---
 
@@ -214,17 +216,58 @@ vont du tableau de bord d'origine aux secrets GitHub, directement.
    poser en secrets : `R2_MEDIA_BUCKET`, `R2_MEDIA_ACCESS_KEY_ID`,
    `R2_MEDIA_SECRET_ACCESS_KEY` (cf. [`secrets-et-variables.md`](secrets-et-variables.md)).
 
-**Dans le code.** Rien de tout cela n'est un prérequis pour écrire et tester :
-le stockage est déjà derrière un port, et l'absence de configuration donne un
-refus explicite au lieu d'un échec obscur (`DocumentStorageUnavailableError`).
+**Dans le code — fait.** Rien de tout cela n'était un prérequis : le stockage
+est derrière un port, et l'absence de configuration donne un refus explicite
+(`MediaStorageUnavailableError`) au lieu d'un échec obscur.
 
-1. L'usage `media` dans `R2StorageUsage` + le port de dépôt public.
-2. La route d'upload multipart, adressage par contenu, validation par les
-   octets.
-3. La migration du modèle (§5) et le comptage des références.
-4. Le panneau Visuels : un vrai dépôt de fichier à la place du champ « URL ».
+1. ✅ L'usage `media` dans `R2StorageUsage`, le port `MediaStore` et son
+   adaptateur R2 ; les quatre noms ajoutés à `RUNTIME_KEYS` **et** au workflow
+   (la porte `runtime-keys` a refusé le commit tant que le second manquait).
+2. ✅ `POST catalogue/media` — multipart, adressage par contenu, validation par
+   les octets (`productImage`).
+3. ✅ La migration du modèle (§5).
+4. ✅ Le panneau Visuels : dépôt de fichier, aperçu au bon ratio, texte
+   alternatif enfin saisissable.
+
+⚠️ **Un déploiement ne suffira pas à mettre ça en service.** Les variables ne
+sont lues qu'au démarrage du container, et poser un secret ne déclenche aucun
+rollout : il faut une image neuve après avoir posé les quatre valeurs.
 
 ---
+
+## 6 bis. Ce que ça coûte
+
+R2 facture trois choses, et **l'égress n'en fait pas partie** — c'est tout
+l'écart avec S3, et c'est ce qui rend le calcul ennuyeux :
+
+| Poste                   | Prix (2026-08)  | Gratuit chaque mois |
+| ----------------------- | --------------- | ------------------- |
+| Stockage                | 0,015 $/Go-mois | 10 Go-mois          |
+| Opérations A (écriture) | 4,50 $/million  | 1 million           |
+| Opérations B (lecture)  | 0,36 $/million  | 10 millions         |
+| Sortie vers Internet    | **0 $**         | —                   |
+
+Ce que ça donne ici : le catalogue est de l'ordre de la centaine de produits,
+disons cinq visuels chacun à 500 Ko — **250 Mo**, soit 2,5 % du palier gratuit.
+Les écritures sont des dépôts faits à la main par le staff : quelques centaines
+par mois contre un million offert. Les lectures ne comptent presque pas, parce
+que le cache absorbe tout : après le premier client parisien, les suivants sont
+servis par le PoP et R2 ne voit rien passer.
+
+**Le catalogue tient donc entièrement dans le palier gratuit**, et il faudrait
+multiplier les visuels par quarante pour en sortir — auquel cas la facture
+serait de l'ordre de quelques centimes.
+
+Deux postes ne sont PAS gratuits, et il faut les nommer pour ne pas les
+découvrir :
+
+- **Le domaine**, ~10 €/an — déjà payé, il sert le courrier.
+- **Les transformations d'images** (§4.4), facturées à la transformation unique
+  par mois. C'est le seul poste qui grandit avec le trafic, et c'est pour ça
+  qu'il est différé jusqu'à ce qu'un volume réel existe.
+
+Le vrai coût de ce chantier n'est donc pas la facture : c'est le stockage qui ne
+se nettoie pas tout seul (§7).
 
 ## 7. Ce qui reste ouvert
 
