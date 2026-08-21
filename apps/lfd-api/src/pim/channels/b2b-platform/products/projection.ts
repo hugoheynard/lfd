@@ -49,7 +49,11 @@ function frenchOf(text: { readonly fr: string }): string {
  * faute que le tri en amont existe pour empêcher. Une signature qui ne peut pas
  * mentir vaut mieux qu'un commentaire promettant qu'elle ne ment pas.
  */
-function projectVariant(variant: VariantRecord, priceCents: number): SyncVariant {
+function projectVariant(
+  variant: VariantRecord,
+  priceCents: number,
+  vatRatePercent: number | null,
+): SyncVariant {
   return {
     sku: variant.sku,
     name: frenchOf(variant.name),
@@ -57,6 +61,7 @@ function projectVariant(variant: VariantRecord, priceCents: number): SyncVariant
     weightGrams: variant.weightGrams,
     isDefault: variant.isDefault,
     position: variant.position,
+    vatRatePercent,
   };
 }
 
@@ -67,7 +72,10 @@ function projectVariant(variant: VariantRecord, priceCents: number): SyncVariant
  * décision produit, une déclinaison **sans prix** est un oubli de saisie. Les
  * confondre priverait l'écran de la seule information actionnable des deux.
  */
-function sortVariants(product: ProductRecord): {
+function sortVariants(
+  product: ProductRecord,
+  vatRatePercent: number | null,
+): {
   sellable: SyncVariant[];
   excluded: Exclusion[];
 } {
@@ -84,7 +92,7 @@ function sortVariants(product: ProductRecord): {
       excluded.push({ sku: variant.sku, reason: "variant_sans_prix" });
       continue;
     }
-    sellable.push(projectVariant(variant, priceCents));
+    sellable.push(projectVariant(variant, priceCents, vatRatePercent));
   }
 
   return { sellable, excluded };
@@ -125,7 +133,9 @@ export function projectCatalog(
       excluded.push({ sku: product.sku, reason: "famille_inconnue" });
       continue;
     }
-    const { sellable, excluded: rejected } = sortVariants(product);
+    // Résolu ICI, une fois par produit : chaque article part avec SON taux,
+    // et le récepteur n'a plus à rejoindre une famille pour savoir facturer.
+    const { sellable, excluded: rejected } = sortVariants(product, category.emporterVatPercent);
     excluded.push(...rejected);
 
     if (sellable.length === 0) {

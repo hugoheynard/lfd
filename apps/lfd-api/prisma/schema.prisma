@@ -1855,6 +1855,18 @@ model CatalogItem {
   isDefault   Boolean @default(false) @map("is_default")
   position    Int     @default(0)
 
+  /// Taux de TVA en %, **résolu par le PIM pour CET article** et reçu tel quel.
+  ///
+  /// Porté par l'article et non par la famille : c'est l'article qu'on vend,
+  /// c'est lui qui doit savoir se facturer. Le lire sur la famille faisait
+  /// dépendre la ligne facturée d'une jointure et d'un rafraîchissement de
+  /// famille réussi.
+  ///
+  /// `NULL` = famille non réglée dans le PIM. L'article entre quand même (le
+  /// prix canonique a de la valeur sans le taux) mais n'est pas VENDABLE :
+  /// `CatalogReader` l'écarte plutôt que d'inventer 5,5 %.
+  vatRatePercent Decimal? @map("vat_rate_percent") @db.Decimal(5, 2)
+
   /// Quand ce push l'a écrit. Sert à repérer ce qu'un push partiel aurait laissé.
   receivedAt DateTime @map("received_at")
 

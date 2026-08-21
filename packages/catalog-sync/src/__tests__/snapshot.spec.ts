@@ -13,6 +13,7 @@ const variant = {
   weightGrams: null,
   isDefault: true,
   position: 0,
+  vatRatePercent: 5.5,
 };
 
 const snapshot = {
@@ -46,7 +47,10 @@ describe("catalogSnapshotSchema", () => {
   });
 
   it("refuse une version de format inconnue plutôt que d'ingérer à moitié", () => {
-    const future = { ...snapshot, version: 2 };
+    // Dérivée, jamais écrite en dur : le test disait `2`, qui est devenu la
+    // version COURANTE le jour où le taux est descendu sur l'article. Un
+    // numéro figé finit toujours par désigner le présent.
+    const future = { ...snapshot, version: CATALOG_SNAPSHOT_VERSION + 1 };
 
     expect(catalogSnapshotSchema.safeParse(future).success).toBe(false);
   });
@@ -91,5 +95,28 @@ describe("syncVariantSchema", () => {
 
   it("accepte un poids absent — tout ne se pèse pas", () => {
     expect(syncVariantSchema.safeParse({ ...variant, weightGrams: null }).success).toBe(true);
+  });
+});
+
+describe("le taux de TVA de l’article", () => {
+  /**
+   * Depuis la v2, c'est l'ARTICLE qui porte son taux. Le rendre facultatif
+   * aurait laissé un émetteur l'oublier, et le récepteur aurait facturé sur un
+   * taux hérité d'une jointure — précisément ce que le déplacement corrige.
+   */
+  it("est obligatoire — un article muet sur sa TVA n’est pas un article", () => {
+    const sansTaux: Record<string, unknown> = { ...variant };
+    delete sansTaux["vatRatePercent"];
+
+    expect(syncVariantSchema.safeParse(sansTaux).success).toBe(false);
+  });
+
+  /** `null` est une réponse : « famille non réglée », donc non vendable. */
+  it("accepte `null`, qui dit « pas de taux » sans mentir", () => {
+    expect(syncVariantSchema.safeParse({ ...variant, vatRatePercent: null }).success).toBe(true);
+  });
+
+  it("refuse un taux négatif", () => {
+    expect(syncVariantSchema.safeParse({ ...variant, vatRatePercent: -1 }).success).toBe(false);
   });
 });

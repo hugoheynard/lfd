@@ -36,6 +36,12 @@ export interface PimFacts {
   readonly weightGrams: number | null;
   readonly isDefault: boolean;
   readonly position: number;
+  /**
+   * Le taux de TVA de CET article, résolu par le PIM. `null` = famille non
+   * réglée là-bas : l'article entre au référentiel local mais n'est pas
+   * vendable — cf. `CatalogReader`.
+   */
+  readonly vatRatePercent: number | null;
   readonly receivedAt: Date;
 }
 

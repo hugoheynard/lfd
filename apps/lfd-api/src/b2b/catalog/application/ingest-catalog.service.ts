@@ -86,6 +86,7 @@ function factsOf(snapshot: CatalogSnapshot, receivedAt: Date): PimFacts[] {
       weightGrams: variant.weightGrams,
       isDefault: variant.isDefault,
       position: variant.position,
+      vatRatePercent: variant.vatRatePercent,
       receivedAt,
     })),
   );

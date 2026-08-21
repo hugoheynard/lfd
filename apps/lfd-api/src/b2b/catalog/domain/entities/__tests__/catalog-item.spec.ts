@@ -22,6 +22,7 @@ function facts(over: Partial<PimFacts> = {}): PimFacts {
     weightGrams: null,
     isDefault: true,
     position: 0,
+    vatRatePercent: 5.5,
     receivedAt: new Date("2026-08-17T08:00:00.000Z"),
     ...over,
   };

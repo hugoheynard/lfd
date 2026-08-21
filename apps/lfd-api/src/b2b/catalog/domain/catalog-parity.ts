@@ -35,6 +35,15 @@ export interface ReferenceEntry {
   readonly name: string;
   /** Prix canonique HT, en centimes. Celui du référentiel, avant toute décision. */
   readonly priceCents: number;
+  /**
+   * Le taux de TVA que le référentiel publierait pour cet article.
+   *
+   * Comparé au même titre que le prix, et pour la même raison : il décide du
+   * montant facturé. Il manquait — la comparaison prouvait que les deux côtés
+   * vendaient le même article au même prix HT, en laissant chacun libre d'y
+   * appliquer un taux différent.
+   */
+  readonly vatRate: number | null;
 }
 
 /** Un article tel que la plateforme le tient — le miroir. */
@@ -43,6 +52,8 @@ export interface MirrorEntry {
   readonly name: string;
   /** Le prix **reçu** du référentiel, pas celui qui sera facturé. */
   readonly pimPriceCents: number;
+  /** Le taux que la boutique appliquerait aujourd'hui. */
+  readonly vatRate: number | null;
 }
 
 /** Un écart sur une valeur, dit avec les deux versions — jamais juste « diffère ». */
@@ -67,6 +78,11 @@ export interface ParityReport {
   readonly stale: readonly string[];
   /** Le prix canonique a bougé sans que le miroir suive. Chaque ligne est de l'argent. */
   readonly priceGaps: readonly FieldGap<number>[];
+  /**
+   * Le taux a bougé sans que le miroir suive — un régime révisé dans le PIM et
+   * jamais poussé. Chaque ligne est un montant de TVA facturé à tort.
+   */
+  readonly vatGaps: readonly FieldGap<number | null>[];
   readonly nameGaps: readonly FieldGap<string>[];
   /**
    * `true` **seulement** si rien ne diffère. Un booléen plutôt qu'un score : la
@@ -84,6 +100,7 @@ export function compareToReference(
 
   const missing: string[] = [];
   const priceGaps: FieldGap<number>[] = [];
+  const vatGaps: FieldGap<number | null>[] = [];
   const nameGaps: FieldGap<string>[] = [];
 
   for (const entry of reference) {
@@ -96,6 +113,9 @@ export function compareToReference(
 
     if (match.pimPriceCents !== entry.priceCents) {
       priceGaps.push({ sku: entry.sku, reference: entry.priceCents, mirror: match.pimPriceCents });
+    }
+    if (match.vatRate !== entry.vatRate) {
+      vatGaps.push({ sku: entry.sku, reference: entry.vatRate, mirror: match.vatRate });
     }
     if (match.name !== entry.name) {
       nameGaps.push({ sku: entry.sku, reference: entry.name, mirror: match.name });
@@ -110,8 +130,13 @@ export function compareToReference(
     missing,
     stale,
     priceGaps,
+    vatGaps,
     nameGaps,
     inSync:
-      missing.length === 0 && stale.length === 0 && priceGaps.length === 0 && nameGaps.length === 0,
+      missing.length === 0 &&
+      stale.length === 0 &&
+      priceGaps.length === 0 &&
+      vatGaps.length === 0 &&
+      nameGaps.length === 0,
   };
 }

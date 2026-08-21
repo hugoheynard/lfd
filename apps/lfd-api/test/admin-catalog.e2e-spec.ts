@@ -66,6 +66,7 @@ function snapshot(priceCents: number): CatalogSnapshot {
             weightGrams: null,
             isDefault: true,
             position: 0,
+            vatRatePercent: 5.5,
           },
         ],
       },

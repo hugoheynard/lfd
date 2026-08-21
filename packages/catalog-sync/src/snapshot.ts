@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 1;
+export const CATALOG_SNAPSHOT_VERSION = 2;
 
 /**
  * Une famille de produits, **à plat**.
@@ -41,6 +41,12 @@ export const syncCategorySchema = z.object({
   /**
    * Taux de TVA en pourcentage (5.5, 20…), résolu depuis le `TvaRegime` de la
    * famille — **le régime « à emporter »**.
+   *
+   * ⚠️ **Descriptif depuis la v2.** L'autorité est passée à l'article
+   * ({@link syncVariantSchema}) : c'est lui qu'on vend, c'est lui qui doit
+   * porter son taux. La famille le garde pour les écrans de rayonnage, qui
+   * regroupent sans facturer. Un récepteur qui facture ne doit PAS lire ce
+   * champ-ci.
    *
    * Une vente B2B est une livraison ou un retrait : la marchandise repart. Le
    * régime « sur place » décrit une consommation en boutique, qui n'existe pas
@@ -85,6 +91,22 @@ export const syncVariantSchema = z.object({
   weightGrams: z.number().int().positive().nullable(),
   isDefault: z.boolean(),
   position: z.number().int().nonnegative(),
+  /**
+   * **Le taux qui sera facturé sur cet article**, en pourcentage, résolu à
+   * l'émission depuis le régime « à emporter » de sa famille.
+   *
+   * Porté par l'ARTICLE et non par la famille depuis la v2. La raison n'est pas
+   * cosmétique : le récepteur vendait en rejoignant la famille pour retrouver
+   * un taux, donc la ligne facturée dépendait d'une jointure et d'un
+   * rafraîchissement de famille réussi. Un article se vend seul ; il doit
+   * pouvoir se facturer seul.
+   *
+   * `null` = famille non réglée dans le PIM. L'article voyage quand même — un
+   * écran de paramétrage n'a pas besoin de savoir facturer — mais il n'est pas
+   * VENDABLE : le récepteur l'écarte de sa boutique plutôt que d'inventer un
+   * taux.
+   */
+  vatRatePercent: z.number().nonnegative().nullable(),
 });
 export type SyncVariant = z.infer<typeof syncVariantSchema>;
 

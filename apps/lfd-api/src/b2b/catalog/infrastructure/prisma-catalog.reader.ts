@@ -11,6 +11,7 @@ interface ItemRow {
   readonly priceCents: number;
   readonly isDefault: boolean;
   readonly position: number;
+  readonly vatRatePercent: { toNumber: () => number } | null;
   readonly category: {
     readonly id: string;
     readonly name: string;
@@ -45,8 +46,8 @@ export class PrismaCatalogReader extends CatalogReader {
     if (row === null || row.override?.isHidden === true) {
       return null;
     }
-    const vatRate = row.category.vatRatePercent;
-    return vatRate === null ? null : resolve(row, vatRate.toNumber());
+    const vatRate = billableRate(row);
+    return vatRate === null ? null : resolve(row, vatRate);
   }
 
   /** Une seule ligne visée par index, jamais le catalogue entier chargé puis filtré. */
@@ -58,8 +59,8 @@ export class PrismaCatalogReader extends CatalogReader {
     if (row === null || row.override?.isHidden === true) {
       return null;
     }
-    const vatRate = row.category.vatRatePercent;
-    return vatRate === null ? null : resolve(row, vatRate.toNumber());
+    const vatRate = billableRate(row);
+    return vatRate === null ? null : resolve(row, vatRate);
   }
 
   async listDefaultsByProductSkus(
@@ -74,11 +75,11 @@ export class PrismaCatalogReader extends CatalogReader {
     });
     const resolved = new Map<string, ResolvedCatalogItem>();
     for (const row of rows) {
-      const vatRate = row.category.vatRatePercent;
+      const vatRate = billableRate(row);
       if (row.override?.isHidden === true || vatRate === null) {
         continue;
       }
-      resolved.set(row.productSku, resolve(row, vatRate.toNumber()));
+      resolved.set(row.productSku, resolve(row, vatRate));
     }
     return resolved;
   }
@@ -86,19 +87,51 @@ export class PrismaCatalogReader extends CatalogReader {
   async listSellable(): Promise<ResolvedCatalogItem[]> {
     const rows = await this.prisma.catalogItem.findMany({
       where: {
-        OR: [{ override: null }, { override: { isHidden: false } }],
-        // Le mur : sans taux de TVA, on ne sait pas facturer. L'article reste au
-        // catalogue et se voit dans le paramétrage ; il ne se vend pas.
-        category: { vatRatePercent: { not: null } },
+        // Deux conditions indépendantes, donc un `AND` explicite : deux clés
+        // `OR` dans le même objet se seraient écrasées en silence.
+        AND: [
+          { OR: [{ override: null }, { override: { isHidden: false } }] },
+          // Le mur : sans taux de TVA, on ne sait pas facturer. L'article reste
+          // au catalogue et se voit dans le paramétrage ; il ne se vend pas.
+          //
+          // Le taux de l'ARTICLE d'abord ; à défaut celui de sa famille, tant
+          // que tous les articles n'ont pas reçu le leur (cf. `billableRate`).
+          {
+            OR: [
+              { vatRatePercent: { not: null } },
+              { category: { vatRatePercent: { not: null } } },
+            ],
+          },
+        ],
       },
       include: { category: true, override: true },
       orderBy: [{ category: { position: "asc" } }, { position: "asc" }],
     });
     return rows.flatMap((row) => {
-      const vatRate = row.category.vatRatePercent;
-      return vatRate === null ? [] : [resolve(row, vatRate.toNumber())];
+      const vatRate = billableRate(row);
+      return vatRate === null ? [] : [resolve(row, vatRate)];
     });
   }
+}
+
+/**
+ * **Le taux qu'on facturera pour cet article**, ou `null` s'il n'y en a pas.
+ *
+ * L'article d'abord : c'est lui qu'on vend, et c'est le PIM qui a résolu son
+ * taux à l'émission. La famille ensuite, en **repli de transition** — sans lui,
+ * la boutique s'éteindrait entre le déploiement de cette version et le premier
+ * push, puisque aucun article ne porterait encore le sien.
+ *
+ * ⚠️ Ce repli est à retirer une fois que tous les articles ont reçu leur taux
+ * (un push suffit). Le garder indéfiniment ferait resurgir le défaut qu'on
+ * corrige : une ligne facturée qui dépend d'une jointure de famille.
+ */
+function billableRate(row: ItemRow): number | null {
+  const own = row.vatRatePercent;
+  if (own !== null) {
+    return own.toNumber();
+  }
+  return row.category.vatRatePercent?.toNumber() ?? null;
 }
 
 /**

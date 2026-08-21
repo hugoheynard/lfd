@@ -46,12 +46,14 @@ const CATEGORY = {
   vatRatePercent: 5.5,
 };
 
-function snapshot(skus: readonly { sku: string; priceCents: number }[]): CatalogSnapshot {
+function snapshot(
+  skus: readonly { sku: string; priceCents: number; vatRatePercent?: number | null }[],
+): CatalogSnapshot {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
     generatedAt: "2026-08-17T08:00:00.000Z",
     categories: [CATEGORY],
-    products: skus.map(({ sku, priceCents }) => ({
+    products: skus.map(({ sku, priceCents, vatRatePercent = 5.5 }) => ({
       id: `prd_${sku}`,
       sku,
       name: `Produit ${sku}`,
@@ -65,6 +67,7 @@ function snapshot(skus: readonly { sku: string; priceCents: number }[]): Catalog
           weightGrams: null,
           isDefault: true,
           position: 0,
+          vatRatePercent,
         },
       ],
     })),
@@ -95,7 +98,7 @@ describe("le fil catalogue, côté plateforme", () => {
       where: { id: CATEGORY.id },
     });
 
-    expect(category.vatRatePercent.toNumber()).toBe(5.5);
+    expect(category.vatRatePercent?.toNumber()).toBe(5.5);
   });
 
   /**
@@ -150,5 +153,30 @@ describe("le fil catalogue, côté plateforme", () => {
     await push(snapshot([]));
 
     expect(await ctx.prisma.catalogItemOverride.count()).toBe(0);
+  });
+});
+
+describe("le taux de TVA arrive sur l’ARTICLE", () => {
+  /**
+   * Le défaut corrigé : la boutique retrouvait le taux en rejoignant la
+   * famille, donc la ligne facturée dépendait d'une jointure et d'un
+   * rafraîchissement de famille réussi. Un article se vend seul ; il doit
+   * pouvoir se facturer seul.
+   */
+  it("écrit le taux reçu sur la ligne d’article", async () => {
+    await push(snapshot([{ sku: "VIE-002", priceCents: 220, vatRatePercent: 20 }]));
+
+    const item = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: "VIE-002-1" } });
+
+    expect(item.vatRatePercent?.toNumber()).toBe(20);
+  });
+
+  /** Famille non réglée dans le référentiel : l'article entre sans taux. */
+  it("laisse le taux vide quand le référentiel n’en a pas", async () => {
+    await push(snapshot([{ sku: "VIE-003", priceCents: 240, vatRatePercent: null }]));
+
+    const item = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: "VIE-003-1" } });
+
+    expect(item.vatRatePercent).toBeNull();
   });
 });

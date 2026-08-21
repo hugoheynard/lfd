@@ -6,7 +6,12 @@
  * Prisma. C'est exactement le point où la fusion des processus se voit — deux
  * bases, un seul appel, aucun réseau.
  */
-import { B2bCatalogFeedPreview } from "../src/pim/channels/b2b-platform/products/feed-preview.js";
+import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
+
+import {
+  B2bCatalogFeedPreview,
+  type FeedPreview,
+} from "../src/pim/channels/b2b-platform/products/feed-preview.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CheckCatalogParityService } from "../src/b2b/catalog/application/check-catalog-parity.service.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -18,14 +23,19 @@ const stubAdminVerifier = {
 
 /** Le référentiel doublé : ce qu'il publierait, posé test par test. */
 class StubFeed extends B2bCatalogFeedPreview {
-  products: { sku: string; name: string; priceCents: number }[] = [];
+  products: {
+    sku: string;
+    name: string;
+    priceCents: number;
+    vatRatePercent: number | null;
+  }[] = [];
 
-  preview(generatedAt: string) {
+  preview(generatedAt: string): Promise<FeedPreview> {
     return Promise.resolve({
       candidates: this.products.length,
       excluded: [],
       snapshot: {
-        version: 1 as const,
+        version: CATALOG_SNAPSHOT_VERSION,
         generatedAt,
         categories: [],
         products: this.products.map((variant) => ({
@@ -42,6 +52,7 @@ class StubFeed extends B2bCatalogFeedPreview {
               weightGrams: null,
               isDefault: true,
               position: 0,
+              vatRatePercent: variant.vatRatePercent,
             },
           ],
         })),
@@ -73,8 +84,19 @@ beforeEach(async () => {
 
 /** Le miroir tel que la boutique le lit, réduit aux SKU semés par le harnais. */
 async function mirrorOf(skus: readonly string[]) {
-  const items = await ctx.prisma.catalogItem.findMany({ where: { sku: { in: [...skus] } } });
-  return items.map((item) => ({ sku: item.sku, name: item.name, priceCents: item.priceCents }));
+  const items = await ctx.prisma.catalogItem.findMany({
+    where: { sku: { in: [...skus] } },
+    include: { category: true },
+  });
+  return items.map((item) => ({
+    sku: item.sku,
+    name: item.name,
+    priceCents: item.priceCents,
+    // Le taux tel que la boutique le facturerait — celui de l'article, ou
+    // celui de sa famille tant que le repli de transition tient.
+    vatRatePercent:
+      item.vatRatePercent?.toNumber() ?? item.category.vatRatePercent?.toNumber() ?? null,
+  }));
 }
 
 describe("le miroir face à sa source", () => {
@@ -130,5 +152,29 @@ describe("le miroir face à sa source", () => {
     const response = await ctx.http().get("/admin/catalog/parity");
 
     expect(response.status).toBe(401);
+  });
+});
+
+describe("le taux de TVA, à parité comme le prix", () => {
+  /**
+   * Le trou trouvé en passe adversariale : la comparaison ignorait le taux.
+   * Un régime révisé dans le référentiel et jamais poussé laissait la boutique
+   * facturer l'ancien, et le garde-fou disait « en phase ».
+   */
+  it("voit un taux qui a bougé côté référentiel sans être repoussé", async () => {
+    const [seeded] = await mirrorOf(["VIE-001-1"]);
+    if (seeded === undefined) {
+      throw new Error("le harnais doit semer VIE-001-1");
+    }
+    feed.products = [{ ...seeded, vatRatePercent: 20 }];
+
+    const report = await ctx.app.get(CheckCatalogParityService).check();
+
+    expect(report.vatGaps).toContainEqual({
+      sku: "VIE-001-1",
+      reference: 20,
+      mirror: seeded.vatRatePercent,
+    });
+    expect(report.inSync).toBe(false);
   });
 });

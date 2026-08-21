@@ -18,6 +18,7 @@ interface ItemRow {
   readonly weightGrams: number | null;
   readonly isDefault: boolean;
   readonly position: number;
+  readonly vatRatePercent: { toNumber(): number } | null;
   readonly receivedAt: Date;
   readonly override: {
     readonly priceCents: number | null;
@@ -167,6 +168,8 @@ function toDomain(row: ItemRow): CatalogItem {
       weightGrams: row.weightGrams,
       isDefault: row.isDefault,
       position: row.position,
+      // `Decimal` → `number` : le domaine ne connaît pas le type de l'ORM.
+      vatRatePercent: row.vatRatePercent === null ? null : row.vatRatePercent.toNumber(),
       receivedAt: row.receivedAt,
     },
     decision:
@@ -194,6 +197,7 @@ function factsRow(state: CatalogItemState) {
     weightGrams: facts.weightGrams,
     isDefault: facts.isDefault,
     position: facts.position,
+    vatRatePercent: facts.vatRatePercent,
     receivedAt: facts.receivedAt,
   };
 }

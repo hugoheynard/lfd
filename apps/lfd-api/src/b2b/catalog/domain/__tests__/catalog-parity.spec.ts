@@ -7,11 +7,11 @@ import { compareToReference, type MirrorEntry, type ReferenceEntry } from "../ca
  */
 
 function reference(over: Partial<ReferenceEntry> = {}): ReferenceEntry {
-  return { sku: "VIE-001-1", name: "Croissant", priceCents: 200, ...over };
+  return { sku: "VIE-001-1", name: "Croissant", priceCents: 200, vatRate: 5.5, ...over };
 }
 
 function mirror(over: Partial<MirrorEntry> = {}): MirrorEntry {
-  return { sku: "VIE-001-1", name: "Croissant", pimPriceCents: 200, ...over };
+  return { sku: "VIE-001-1", name: "Croissant", pimPriceCents: 200, vatRate: 5.5, ...over };
 }
 
 describe("compareToReference", () => {
@@ -77,5 +77,31 @@ describe("compareToReference", () => {
 
     expect(report.referenceCount).toBe(2);
     expect(report.mirrorCount).toBe(1);
+  });
+});
+
+describe("l’écart de TVA", () => {
+  /**
+   * Le trou que la passe adversariale a trouvé : la comparaison prouvait que
+   * les deux côtés vendaient le même article au même prix HT, en laissant
+   * chacun libre d'y appliquer un taux différent. Un régime révisé dans le
+   * référentiel et jamais poussé passait donc pour « en phase ».
+   */
+  it("dit qu’un taux a bougé sans que la boutique suive", () => {
+    const report = compareToReference([reference({ vatRate: 20 })], [mirror({ vatRate: 5.5 })]);
+
+    expect(report.vatGaps).toEqual([{ sku: "VIE-001-1", reference: 20, mirror: 5.5 }]);
+    expect(report.inSync).toBe(false);
+  });
+
+  it("compte un taux effacé comme un écart, pas comme un silence", () => {
+    const report = compareToReference([reference({ vatRate: null })], [mirror({ vatRate: 5.5 })]);
+
+    expect(report.vatGaps).toHaveLength(1);
+    expect(report.inSync).toBe(false);
+  });
+
+  it("se tait quand les deux côtés portent le même taux", () => {
+    expect(compareToReference([reference()], [mirror()]).vatGaps).toEqual([]);
   });
 });

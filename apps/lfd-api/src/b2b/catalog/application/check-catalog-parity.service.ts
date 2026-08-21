@@ -34,6 +34,7 @@ export class CheckCatalogParityService {
         sku: variant.sku,
         name: variant.name,
         priceCents: variant.priceCents,
+        vatRate: variant.vatRatePercent,
       })),
     );
 
@@ -43,6 +44,7 @@ export class CheckCatalogParityService {
         sku: item.sku,
         name: item.name,
         pimPriceCents: item.pimPriceCents,
+        vatRate: item.vatRate,
       })),
     );
   }
