@@ -65,6 +65,14 @@ const RUNTIME_KEYS = [
   "R2_KBIS_BUCKET",
   "R2_KBIS_ACCESS_KEY_ID",
   "R2_KBIS_SECRET_ACCESS_KEY",
+  // Stockage des médias publics (visuels du catalogue) — second usage R2, avec
+  // son propre bucket et son propre jeton : un jeton média fuité ne doit pas
+  // ouvrir les papiers des clients. L'adresse publique va AVEC : sans elle on
+  // rangerait des octets en enregistrant des URL que personne ne résout.
+  "R2_MEDIA_BUCKET",
+  "R2_MEDIA_ACCESS_KEY_ID",
+  "R2_MEDIA_SECRET_ACCESS_KEY",
+  "R2_MEDIA_PUBLIC_BASE_URL",
   "STRIPE_SECRET_KEY",
   "STRIPE_PUBLISHABLE_KEY",
   "STRIPE_WEBHOOK_SECRET",

@@ -10,6 +10,7 @@ import {
   optionalMailerConfig,
   optionalManagementCredentials,
   optionalPort,
+  optionalMediaPublicBaseUrl,
   optionalR2Storage,
   optionalString,
   optionalAnalyticsConfig,
@@ -211,6 +212,17 @@ export class AppConfig implements ShopifyCredentialsSource {
    */
   r2Storage(usage: R2StorageUsage): S3StorageConfig | null {
     return optionalR2Storage(usage);
+  }
+
+  /**
+   * L'adresse publique du bucket média, sans barre finale, ou `null`.
+   *
+   * Elle ne fait pas partie du triplet de l'usage : le droit d'écrire dans un
+   * bucket et l'existence d'un domaine qui le sert sont deux décisions
+   * distinctes, et on peut avoir la première sans la seconde.
+   */
+  mediaPublicBaseUrl(): string | null {
+    return optionalMediaPublicBaseUrl();
   }
 
   /**

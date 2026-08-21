@@ -25,6 +25,24 @@ export class DocumentStorageUnavailableError extends TechnicalError {
 }
 
 /**
+ * Le canal des **médias publics** est absent ou en échec.
+ *
+ * Distincte de celle des pièces parce que les deux canaux tombent séparément :
+ * le bucket média peut manquer alors que les KBIS fonctionnent, et l'inverse.
+ * Les confondre ferait chercher le mauvais secret.
+ *
+ * « Absent » couvre un cas de plus ici : un bucket accessible **sans domaine
+ * public**. Écrire alors serait pire que refuser — on rangerait des octets et
+ * on enregistrerait en base une adresse que personne ne peut résoudre, ce qui
+ * ne se voit qu'à l'affichage, longtemps après le dépôt.
+ */
+export class MediaStorageUnavailableError extends TechnicalError {
+  constructor(reason: string, cause?: unknown) {
+    super("storage.media.unavailable", reason, cause);
+  }
+}
+
+/**
  * La pièce déposée n'est pas exploitable : nom vide, fichier vide, trop lourd,
  * ou format non accepté (les octets ne sont ni un PDF ni une image connue).
  *

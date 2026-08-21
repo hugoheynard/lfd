@@ -98,7 +98,7 @@ export function optionalR2Storage(usage: R2StorageUsage): S3StorageConfig | null
 }
 
 /** Les stockages de cette app. Un de plus ⇒ une entrée de plus ci-dessous. */
-export type R2StorageUsage = "kbis";
+export type R2StorageUsage = "kbis" | "media";
 
 /**
  * Les variables d'environnement de chaque usage.
@@ -115,7 +115,41 @@ const R2_SETTINGS: Readonly<
     accessKeyId: "R2_KBIS_ACCESS_KEY_ID",
     secretAccessKey: "R2_KBIS_SECRET_ACCESS_KEY",
   },
+  media: {
+    bucket: "R2_MEDIA_BUCKET",
+    accessKeyId: "R2_MEDIA_ACCESS_KEY_ID",
+    secretAccessKey: "R2_MEDIA_SECRET_ACCESS_KEY",
+  },
 };
+
+/**
+ * L'adresse **publique** du bucket média — `https://media.lafoliecoffee.info`,
+ * sans barre finale.
+ *
+ * C'est la moitié du stockage qui ne passe PAS par nous : les octets partent du
+ * bucket au navigateur, et cette valeur est tout ce que le backend en sait. Elle
+ * est donc une **variable**, pas un secret : elle finit de toute façon dans le
+ * HTML de chaque fiche produit.
+ *
+ * Séparée du triplet de l'usage parce qu'elle relève d'une autre décision : on
+ * peut avoir le droit d'écrire dans un bucket sans qu'aucun domaine ne le
+ * serve. `null` ⇒ le dépôt refuse, plutôt que de fabriquer des URL que personne
+ * ne saura résoudre — un visuel enregistré sur une adresse morte est pire qu'un
+ * dépôt refusé, parce qu'il ne se voit qu'à l'affichage.
+ */
+export function optionalMediaPublicBaseUrl(): string | null {
+  const raw = optionalString("R2_MEDIA_PUBLIC_BASE_URL");
+  if (raw === null) {
+    return null;
+  }
+  const trimmed = raw.replace(/\/+$/, "");
+  if (!trimmed.startsWith("https://")) {
+    throw new Error(
+      `R2_MEDIA_PUBLIC_BASE_URL doit être une URL https (reçu : ${JSON.stringify(raw)}).`,
+    );
+  }
+  return trimmed;
+}
 
 /**
  * Lit le flag d'impersonation de dev. **Fail-closed** : si le flag est actif

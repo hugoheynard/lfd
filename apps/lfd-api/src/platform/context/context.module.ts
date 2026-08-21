@@ -5,13 +5,16 @@ import { UlidGenerator } from "../id/ulid-generator.js";
 import { RandomSecretGenerator } from "../secret/random-secret-generator.js";
 import { SecretGenerator } from "../secret/secret-generator.js";
 import { DocumentStore } from "../storage/document-store.js";
+import { MediaStore } from "../storage/media-store.js";
+import { R2MediaStore } from "../storage/r2-media-store.js";
 import { S3DocumentStore } from "../storage/s3-document-store.js";
 import { Clock } from "../time/clock.js";
 import { SystemClock } from "../time/system-clock.js";
 
 /**
  * Fondations **cross-cutting** : les ports `Clock`, `IdGenerator`,
- * `SecretGenerator` et `DocumentStore`, câblés sur leurs adaptateurs de production. `@Global` →
+ * `SecretGenerator`, `DocumentStore` et `MediaStore`, câblés sur leurs adaptateurs
+ * de production. `@Global` →
  * injectables partout sans ré-importer le module dans chaque contexte métier.
  *
  * `IdGenerator` et `SecretGenerator` ne font pas double emploi : le premier
@@ -28,7 +31,8 @@ import { SystemClock } from "../time/system-clock.js";
     { provide: IdGenerator, useClass: UlidGenerator },
     { provide: SecretGenerator, useClass: RandomSecretGenerator },
     { provide: DocumentStore, useClass: S3DocumentStore },
+    { provide: MediaStore, useClass: R2MediaStore },
   ],
-  exports: [Clock, IdGenerator, SecretGenerator, DocumentStore],
+  exports: [Clock, IdGenerator, SecretGenerator, DocumentStore, MediaStore],
 })
 export class ContextModule {}

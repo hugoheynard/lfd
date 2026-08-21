@@ -144,6 +144,14 @@ jobs:
           R2_KBIS_BUCKET: ${{ vars.R2_KBIS_BUCKET }}
           R2_KBIS_ACCESS_KEY_ID: ${{ secrets.R2_KBIS_ACCESS_KEY_ID }}
           R2_KBIS_SECRET_ACCESS_KEY: ${{ secrets.R2_KBIS_SECRET_ACCESS_KEY }}
+          # Second usage : les visuels du catalogue. Bucket et jeton distincts
+          # des KBIS — un jeton média fuité ne doit pas ouvrir les papiers des
+          # clients. L'adresse publique est une VARIABLE : elle finit dans le
+          # HTML de chaque fiche produit, elle ne protège rien.
+          R2_MEDIA_BUCKET: ${{ vars.R2_MEDIA_BUCKET }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          R2_MEDIA_PUBLIC_BASE_URL: ${{ vars.R2_MEDIA_PUBLIC_BASE_URL }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
@@ -183,6 +191,8 @@ jobs:
                       MAILER_FROM_ADDRESS MAILER_REPLY_TO MAILER_STAFF_INBOX \
                       R2_ENDPOINT R2_REGION \
                       R2_KBIS_BUCKET R2_KBIS_ACCESS_KEY_ID R2_KBIS_SECRET_ACCESS_KEY \
+                      R2_MEDIA_BUCKET R2_MEDIA_ACCESS_KEY_ID R2_MEDIA_SECRET_ACCESS_KEY \
+                      R2_MEDIA_PUBLIC_BASE_URL \
                       STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET \
                       SHOPIFY_ADMIN_TOKEN SHOPIFY_CLIENT_ID SHOPIFY_CLIENT_SECRET \
                       CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ANALYTICS_TOKEN \

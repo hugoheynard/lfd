@@ -47,12 +47,12 @@ secrets sont ceux qu'on croit.
 
 ## 2. Les URL, et lesquelles doivent résoudre
 
-| Variable               | Valeur                                                 | Doit résoudre ?                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `LFD_API_URL`          | `https://lfd-gateway.lafoliedouce.workers.dev/api/lfd` | **oui** — compilée DANS les 2 fronts. Schéma ET préfixe obligatoires : l'hôte nu donne une URL relative, qui tombe sur le repli SPA de Pages en 200/HTML. |
-| `LFD_BACKOFFICE_URL`   | `https://lfd-backoffice.pages.dev`                     | oui — liens dans les e-mails staff                                                                                                                        |
-| `LFC_BOUTIQUE_URL`     | `https://lfc-b2b-eu7.pages.dev`                        | **oui** — liens de création de mot de passe client                                                                                                        |
-| `AUTH0_*_AUDIENCE`     | `https://api-b2b.lafoliedouce.eu…`                     | **non** — ce sont des **identifiants**                                                                                                                    |
+| Variable             | Valeur                                                 | Doit résoudre ?                                                                                                                                           |
+| -------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LFD_API_URL`        | `https://lfd-gateway.lafoliedouce.workers.dev/api/lfd` | **oui** — compilée DANS les 2 fronts. Schéma ET préfixe obligatoires : l'hôte nu donne une URL relative, qui tombe sur le repli SPA de Pages en 200/HTML. |
+| `LFD_BACKOFFICE_URL` | `https://lfd-backoffice.pages.dev`                     | oui — liens dans les e-mails staff                                                                                                                        |
+| `LFC_BOUTIQUE_URL`   | `https://lfc-b2b-eu7.pages.dev`                        | **oui** — liens de création de mot de passe client                                                                                                        |
+| `AUTH0_*_AUDIENCE`   | `https://api-b2b.lafoliedouce.eu…`                     | **non** — ce sont des **identifiants**                                                                                                                    |
 
 ⚠️ **La distinction que porte `AUTH0_*_AUDIENCE` est celle qui se perd.** Une audience
 Auth0 est une chaîne d'identification, pas une adresse à joindre. Ces domaines
@@ -103,6 +103,7 @@ la production.
 | `RESEND_MAILER_B2B_API_KEY`                                                       | backend B2B                    | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md)           |
 | `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                                 | backend B2B                    | Management API                                                                     |
 | `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                             | backend B2B                    | pièces (KBIS) — bucket et endpoint sont des Variables                              |
+| `R2_MEDIA_ACCESS_KEY_ID` · `R2_MEDIA_SECRET_ACCESS_KEY`                           | backend B2B                    | visuels du catalogue — **jeton restreint au seul bucket média** (cf. ci-dessous)   |
 | `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                                        | backend PIM                    | le PIM **appelle** Shopify ; il ne reçoit aucun webhook                            |
 | `B2B_CATALOG_PUSH_SECRET`                                                         | backend PIM **et** backend B2B | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés**     |
 | `RECOMPUTE_TOKEN`                                                                 | Worker B2B **et** container    | comparé par `RecomputeGuard`                                                       |
@@ -202,6 +203,22 @@ Pas ce document : la **boucle `for name in …`** en fin de chaque workflow de
 déploiement. C'est elle qui décide ce qui est réellement poussé au Worker. Ce
 tableau est une aide à la lecture, pas une source de vérité — s'ils divergent,
 c'est le workflow qui a raison.
+
+### Le bucket média : deux Variables, et pourquoi elles n'en sont pas
+
+`R2_MEDIA_BUCKET` et `R2_MEDIA_PUBLIC_BASE_URL`
+(`https://media.lafoliecoffee.info`) sont des **Variables**, pas des secrets :
+la seconde finit dans le HTML de chaque fiche produit, elle ne protège rien.
+
+Elles vont pourtant **ensemble avec le jeton**, et le code refuse le dépôt si
+l'une manque. Un bucket accessible sans domaine qui le sert produirait le pire
+des trois états : les octets partent, la base enregistre une adresse que
+personne ne résout, et rien ne le dit avant l'affichage — longtemps après.
+
+Le jeton doit être **restreint au bucket média**. C'est tout l'intérêt d'avoir
+séparé les usages : les visuels sont publics par construction, les KBIS sont des
+pièces d'identité d'entreprise, et un jeton fuité depuis le premier ne doit pas
+ouvrir les seconds.
 
 ## 5. Ce que je ne fais jamais
 
