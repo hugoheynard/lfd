@@ -38,4 +38,37 @@ describe('VisualsPanel', () => {
     fixture.detectChanges();
     expect(store.media()).toHaveLength(0);
   });
+
+  it("réserve la place de l'aperçu au ratio de l'image", () => {
+    // Sans ratio, la liste saute au chargement de chaque image — le défaut que
+    // les dimensions mesurées au dépôt existent pour corriger.
+    const store = setup();
+    store.media.set([{ role: 'hero', url: 'https://media.test/a.png', width: 1200, height: 800 }]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const thumb = (fixture.nativeElement as HTMLElement).querySelector('.media-thumb');
+    expect(thumb?.getAttribute('style')).toContain('1200 / 800');
+  });
+
+  it("n'invente pas de ratio pour un visuel dont on ne connaît pas la taille", () => {
+    const store = setup();
+    store.media.set([{ role: 'hero', url: 'https://ailleurs.test/a.png' }]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.media-thumb')?.getAttribute('style')).toContain('1 / 1');
+    expect(host.textContent).toContain('non hébergée');
+  });
+
+  it('expose le texte alternatif, qui ne se saisissait nulle part', () => {
+    const store = setup();
+    store.media.set([{ role: 'hero', url: 'https://media.test/a.png', width: 800, height: 800 }]);
+    const fixture = TestBed.createComponent(VisualsPanel);
+    fixture.detectChanges();
+
+    const alts = [...(fixture.nativeElement as HTMLElement).querySelectorAll('fold-input')];
+    expect(alts.length).toBeGreaterThan(0);
+  });
 });

@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
   ProductDetailView,
+  UploadedMediaView,
   ProductEditorialView,
   ProductView,
   VariantNutritionView,
@@ -44,11 +45,20 @@ export interface EditorialFields {
   readonly seoDescription: string;
 }
 
-/** Un visuel attaché : son rôle, son URL, son texte alternatif. */
+/**
+ * Un visuel attaché : son rôle, son URL, son texte alternatif.
+ *
+ * Les dimensions sont **lues, jamais renvoyées** : le serveur les a mesurées
+ * dans les octets au dépôt, et les relit lui-même au rattachement. Elles ne
+ * servent ici qu'à réserver la place de l'aperçu — sans elles la liste saute au
+ * chargement. `null`/absent = visuel saisi par son URL, qu'on n'héberge pas.
+ */
 export interface MediaSlot {
   role: string;
   url: string;
   alt?: string;
+  readonly width?: number | null;
+  readonly height?: number | null;
 }
 
 /** Détail complet pour la page d'édition : produit + éditorial + fiche + visuels. */
@@ -182,7 +192,13 @@ export class ProductHttpApi {
       allergens: base?.allergens ?? null,
       mayContain: base?.nutrition?.mayContain ?? [],
       nutrition: toNutritionValues(base?.nutrition ?? null),
-      media: row.media.map((item) => ({ role: item.role, url: item.url, alt: item.alt })),
+      media: row.media.map((item) => ({
+        role: item.role,
+        url: item.url,
+        alt: item.alt,
+        width: item.width,
+        height: item.height,
+      })),
     };
   }
 
@@ -233,6 +249,20 @@ export class ProductHttpApi {
    * Un remplacement : ce que l'écran affiche fait foi. Ce panneau n'avait aucune
    * route ; on pouvait attacher des images à la création, et plus jamais.
    */
+  /**
+   * Dépose une image dans la bibliothèque et rend son entrée.
+   *
+   * Séparé de l'enregistrement de la section : déposer crée un fichier, ranger
+   * décide où il sert. Un dépôt ne modifie donc AUCUN produit — c'est ce qui
+   * permet d'illustrer un produit qu'on est en train de créer, et ce qui fait
+   * qu'une image déposée puis non enregistrée ne casse rien.
+   */
+  async uploadMedia(file: File): Promise<UploadedMediaView> {
+    const body = new FormData();
+    body.append('file', file);
+    return firstValueFrom(this.http.post<UploadedMediaView>(this.url('media'), body));
+  }
+
   saveMedia(id: string, media: readonly MediaSlot[]): Promise<void> {
     return this.put(`products/${id}/media`, {
       media: media.map((slot) => ({

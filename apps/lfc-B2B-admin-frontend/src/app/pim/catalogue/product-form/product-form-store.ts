@@ -130,6 +130,8 @@ export class ProductFormStore {
   readonly nutrition = signal<NutritionValues>(EMPTY_NUTRITION);
   readonly editorial = signal<EditorialFields>(EMPTY_EDITORIAL);
   readonly media = signal<MediaSlot[]>([]);
+  /** Un dépôt en cours — le bouton se désarme, la liste ne bouge pas encore. */
+  readonly uploading = signal(false);
 
   private readonly productId = signal('');
   private readonly variantId = signal('');
@@ -263,6 +265,39 @@ export class ProductFormStore {
       ...current,
       { role: current.length === 0 ? 'hero' : 'gallery', url: '' },
     ]);
+  }
+
+  /**
+   * Dépose un fichier et l'ajoute à la liste — SANS enregistrer la section.
+   *
+   * Les deux gestes restent distincts parce qu'ils ne portent pas le même
+   * risque : déposer crée un fichier et ne touche à aucune fiche, enregistrer
+   * remplace la liste entière du produit. Confondre les deux ferait qu'ouvrir
+   * une image écrase les autres avant même qu'on ait choisi son rôle.
+   *
+   * Le refus du serveur (format, poids, dimensions) s'affiche dans l'erreur de
+   * la page : c'est lui qui porte la raison, en français, et la répéter ici
+   * serait la maintenir à deux endroits.
+   */
+  async uploadMedia(file: File): Promise<void> {
+    this.uploading.set(true);
+    this.error.set(null);
+    try {
+      const uploaded = await this.products.uploadMedia(file);
+      this.media.update((current) => [
+        ...current,
+        {
+          role: current.length === 0 ? 'hero' : 'gallery',
+          url: uploaded.url,
+          width: uploaded.width,
+          height: uploaded.height,
+        },
+      ]);
+    } catch (caught) {
+      this.error.set(messageOf(caught));
+    } finally {
+      this.uploading.set(false);
+    }
   }
 
   removeMedia(index: number): void {
