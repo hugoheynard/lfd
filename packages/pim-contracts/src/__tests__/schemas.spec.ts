@@ -1,7 +1,7 @@
 import {
   createCategoryPayloadSchema,
   createEmplacementPayloadSchema,
-  tvaRegimePayloadSchema,
+  tvaRatePayloadSchema,
 } from "../index.js";
 
 describe("pim-contracts payload schemas", () => {
@@ -11,8 +11,8 @@ describe("pim-contracts payload schemas", () => {
   });
 
   it("refuse un taux de TVA non positif", () => {
-    expect(tvaRegimePayloadSchema.safeParse({ name: "Réduit", percent: 5.5 }).success).toBe(true);
-    expect(tvaRegimePayloadSchema.safeParse({ name: "Zéro", percent: 0 }).success).toBe(false);
+    expect(tvaRatePayloadSchema.safeParse({ name: "Réduit", percent: 5.5 }).success).toBe(true);
+    expect(tvaRatePayloadSchema.safeParse({ name: "Zéro", percent: 0 }).success).toBe(false);
   });
 
   it("borne le nombre de tables d’un emplacement", () => {
