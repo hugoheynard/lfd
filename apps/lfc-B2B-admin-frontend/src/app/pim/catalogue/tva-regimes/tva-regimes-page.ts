@@ -1,33 +1,26 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import {
-  FoldButtonComponent,
-  FoldPageLayoutComponent,
-  FoldPageSectionComponent,
-  FoldPanelHostService,
-} from 'fold-ng';
+import { FoldButtonComponent, FoldPageLayoutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { TvaRegimeFormPanel } from './tva-regime-form-panel/tva-regime-form-panel';
-import { TvaRegimePlatformUsages } from './tva-regime-platform-usages/tva-regime-platform-usages';
 import { TvaRegimeTable } from './tva-regime-table/tva-regime-table';
 
 /**
- * Régimes de TVA = collections Famille A (le doc : `tva-5-5`, `tva-10`,
- * `tva-20`). Page-coquille : elle pose le chrome, l'action « Nouveau régime »
- * (side-panel de création) et compose deux briques — la gestion des régimes
- * ({@link TvaRegimeTable}) puis leurs usages plateforme
- * ({@link TvaRegimePlatformUsages}, la réconciliation Shopify).
+ * Régimes de TVA — le **référentiel fiscal** du catalogue. Page-coquille : le
+ * chrome, l'action « Nouveau régime » (side-panel), et le tableau.
+ *
+ * Elle portait aussi une section « Usages plateforme » qui inspectait Shopify et
+ * y poussait les collections `tva-*`. Ce n'était pas un usage mais un **envoi**,
+ * et il est parti dans Publication → Shopify, où vivent les canaux. Restait ici
+ * le seul usage qui regarde vers l'intérieur : combien de familles visent le
+ * régime — la colonne « Utilisé par », qui dit avant la suppression ce que la
+ * base refuserait après.
  */
+
 @Component({
   selector: 'app-tva-regimes-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldPageLayoutComponent,
-    FoldPageSectionComponent,
-    FoldButtonComponent,
-    TvaRegimeTable,
-    TvaRegimePlatformUsages,
-  ],
+  imports: [FoldPageLayoutComponent, FoldButtonComponent, TvaRegimeTable],
   templateUrl: './tva-regimes-page.html',
 })
 export class TvaRegimesPage {

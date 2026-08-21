@@ -1,16 +1,13 @@
 <fold-page-layout icon="tax" title="Régimes de TVA">
   <p description>
-    Un <strong>régime</strong> = un taux = une <strong>collection</strong> Shopify (Famille A du doc
-    : <code>tva-5-5</code>, <code>tva-10</code>, <code>tva-20</code>). La base qui porte les
-    dérogations ; une catégorie y rattache ses fiches à emporter et sur place. Le tag de collection
-    est dérivé du taux automatiquement.
+    Un <strong>régime</strong> = un taux nommé (<code>tva-5-5</code>, <code>tva-10</code>,
+    <code>tva-20</code>). Le référentiel fiscal du catalogue : une famille y rattache ses fiches à
+    emporter et sur place, la boutique B2B facture au taux résolu, et Shopify en tire une
+    collection. Le tag est dérivé du taux automatiquement. Pousser les collections se fait dans
+    <strong>Publication</strong>.
   </p>
 
   <button pageActions foldButton size="sm" (click)="openCreate()">+ Nouveau régime</button>
 
   <app-tva-regime-table />
-
-  <fold-page-section title="Usages plateforme">
-    <app-tva-regime-platform-usages />
-  </fold-page-section>
 </fold-page-layout>

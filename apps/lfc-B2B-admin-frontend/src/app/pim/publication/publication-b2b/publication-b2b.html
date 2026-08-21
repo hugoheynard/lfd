@@ -1,8 +1,8 @@
 <fold-card>
   <p class="lede">
     Le catalogue part vers la <strong>boutique B2B</strong> — celle qui facture. Prix, taux de TVA
-    et publication n'y changent qu'au moment du push : entre deux envois, la boutique vend l'état
-    du dernier.
+    et publication n'y changent qu'au moment du push : entre deux envois, la boutique vend l'état du
+    dernier.
   </p>
 
   <div class="actions">
@@ -33,7 +33,9 @@
         <strong>Écartés</strong> — ces articles ne partent pas, et la boutique ne les vendra pas :
         <ul class="excluded">
           @for (item of excluded(); track item.sku) {
-            <li><code>{{ item.sku }}</code> — {{ item.label }}</li>
+            <li>
+              <code>{{ item.sku }}</code> — {{ item.label }}
+            </li>
           }
         </ul>
       </fold-callout>

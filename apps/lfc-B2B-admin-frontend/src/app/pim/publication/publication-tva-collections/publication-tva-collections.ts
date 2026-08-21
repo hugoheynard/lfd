@@ -13,12 +13,6 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldEmptyStateComponent,
-  FoldIconComponent,
-  FoldNavLayoutComponent,
-  FoldTabPanelComponent,
-  FoldTabsComponent,
-  type FoldTabItem,
 } from 'fold-ng';
 
 import {
@@ -27,13 +21,13 @@ import {
   type DesiredCollection,
   type Reconciliation,
   type ShopifyCollection,
-} from '../../../channels/shopify-channel-api';
-import { formatPercent } from '../../../data/channels';
-import { type TvaRegime } from '../../catalogue-api';
-import { TvaStore } from '../tva-store';
+} from '../../channels/shopify-channel-api';
+import { formatPercent } from '../../data/channels';
+import { type TvaRegime } from '../../catalogue/catalogue-api';
+import { TvaStore } from '../../catalogue/tva-regimes/tva-store';
 
-/** Une ligne d'usage : le régime local rapproché de sa collection distante. */
-interface TvaUsageRow {
+/** Une ligne : le régime local rapproché de sa collection distante. */
+interface TvaCollectionRow {
   readonly regimeId: string;
   readonly name: string;
   readonly percent: number;
@@ -42,51 +36,42 @@ interface TvaUsageRow {
   readonly remote: ShopifyCollection | null;
 }
 
-interface TvaUsageView {
-  readonly rows: readonly TvaUsageRow[];
+interface TvaCollectionsView {
+  readonly rows: readonly TvaCollectionRow[];
   readonly orphans: readonly ShopifyCollection[];
   readonly missingCount: number;
 }
 
 /**
- * Les **usages plateforme** d'un régime de TVA : comment ses collections de taxe
- * (Famille A) se rapprochent des consommateurs du catalogue. Un seul canal
- * aujourd'hui — Shopify — dans un onglet de réconciliation **réelle** : le front
- * envoie les régimes voulus au backend ({@link ShopifyChannelApi}), qui inspecte
- * la boutique et pousse les collections manquantes.
+ * Les **collections de taxe** Shopify (Famille A : `tva-5-5`, `tva-10`,
+ * `tva-20`) — inspection de la boutique, et push de celles qui manquent.
  *
- * Découplée du tableau : elle relit les régimes depuis le {@link TvaStore} via un
- * `effect`, donc un régime ajouté / retiré ailleurs re-déclenche l'inspection.
+ * Vit dans **Publication**, et non plus sous « Régimes de TVA » d'où elle
+ * arrive : ce bloc ne décrit pas les taux, il les **pousse**. Logé dans le
+ * référentiel, il en faisait un second point d'envoi vers Shopify, appelait le
+ * réseau à chaque ouverture d'un écran de lecture, et son état vide affirmait
+ * — faux depuis le taux par article — que Shopify était le seul canal branché
+ * sur les régimes.
+ *
+ * Ici, il précède le tableau des produits, qui est son ordre réel : tant que la
+ * collection de taxe n'existe pas, aucune fiche ne peut s'y rattacher.
+ *
+ * Découplée du référentiel : elle relit les régimes depuis le {@link TvaStore}
+ * via un `effect`, donc un régime ajouté ailleurs re-déclenche l'inspection.
  */
 @Component({
-  selector: 'app-tva-regime-platform-usages',
+  selector: 'app-publication-tva-collections',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldNavLayoutComponent,
-    FoldTabsComponent,
-    FoldTabPanelComponent,
-    FoldCardComponent,
-    FoldCalloutComponent,
-    FoldBadgeComponent,
-    FoldButtonComponent,
-    FoldEmptyStateComponent,
-    FoldIconComponent,
-  ],
-  templateUrl: './tva-regime-platform-usages.html',
-  styleUrl: './tva-regime-platform-usages.scss',
+  imports: [FoldCardComponent, FoldCalloutComponent, FoldBadgeComponent, FoldButtonComponent],
+  templateUrl: './publication-tva-collections.html',
+  styleUrl: './publication-tva-collections.scss',
 })
-export class TvaRegimePlatformUsages {
+export class PublicationTvaCollections {
   private readonly api = inject(ShopifyChannelApi);
   private readonly store = inject(TvaStore);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  protected readonly tabs: FoldTabItem[] = [
-    { key: 'shopify', label: 'Shopify', icon: 'shopify' },
-    { key: 'autre', label: 'Autre', icon: 'grid' },
-  ];
-  protected readonly activeTab = signal('shopify');
-
-  protected readonly recon = signal<TvaUsageView | null>(null);
+  protected readonly recon = signal<TvaCollectionsView | null>(null);
   protected readonly mode = signal<ChannelMode | null>(null);
   protected readonly inspecting = signal(false);
   protected readonly pushing = signal(false);
@@ -171,8 +156,11 @@ export class TvaRegimePlatformUsages {
   }
 
   /** Joint la réconciliation du backend (par handle) aux régimes locaux. */
-  private toView(reconciliation: Reconciliation, regimes: readonly TvaRegime[]): TvaUsageView {
-    const rows = regimes.map<TvaUsageRow>((regime) => {
+  private toView(
+    reconciliation: Reconciliation,
+    regimes: readonly TvaRegime[],
+  ): TvaCollectionsView {
+    const rows = regimes.map<TvaCollectionRow>((regime) => {
       const remote = reconciliation.rows.find((row) => row.handle === regime.tag)?.remote ?? null;
       return {
         regimeId: regime.id,
