@@ -116,6 +116,13 @@ export interface ResolvedActivityContext {
    * le rejoindre à chaque affichage coûterait une requête par ligne.
    */
   readonly actorName: string | null;
+  /**
+   * La **fonction** de l'acteur, figée avec son nom et pour la même raison :
+   * « qui a fait ça, et à quel titre » est une question qu'on pose au journal
+   * bien après que la personne a changé de rôle. `null` pour un client ou un
+   * acteur inconnu.
+   */
+  readonly actorRole: string | null;
 }
 
 /** Ligne de journal prête à persister (avant l'écriture Prisma). */
@@ -130,6 +137,7 @@ export interface ActivityEventRow {
   readonly actorType: ActivityActorType;
   readonly actorId: string | null;
   readonly actorName: string | null;
+  readonly actorRole: string | null;
   readonly traceId: string;
   readonly idempotencyKey: string;
   readonly payload: Record<string, unknown>;
@@ -154,6 +162,7 @@ export function buildActivityEventRow(
     establishmentId: input.establishmentId ?? null,
     actorId: context.actorId,
     actorName: context.actorName,
+    actorRole: context.actorRole,
     actorType: context.actorType,
     traceId: context.traceId,
     idempotencyKey: input.idempotencyKey,

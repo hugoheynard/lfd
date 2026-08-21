@@ -80,6 +80,8 @@ import { AdminRecomputeController } from "./http/admin-recompute.controller.js";
 import { PrismaActivationReader } from "./infrastructure/prisma-activation.reader.js";
 import { PrismaActivityRecorder } from "./infrastructure/prisma-activity-recorder.js";
 import { PrismaActorNamer } from "./infrastructure/prisma-actor-namer.js";
+import { CompanyNamer } from "./domain/ports/company-namer.js";
+import { PrismaCompanyNamer } from "./infrastructure/prisma-company-namer.js";
 import { ActivityJournalReader } from "./domain/ports/activity-journal.reader.js";
 import { PrismaActivityJournalReader } from "./infrastructure/prisma-activity-journal.reader.js";
 import { AdminActivityController } from "./http/admin-activity.controller.js";
@@ -138,6 +140,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
   providers: [
     { provide: ActivityRecorder, useClass: PrismaActivityRecorder },
     { provide: ActorNamer, useClass: PrismaActorNamer },
+    { provide: CompanyNamer, useClass: PrismaCompanyNamer },
     { provide: ActivityJournalReader, useClass: PrismaActivityJournalReader },
     ReadActivityJournalHandler,
     OnKbisCertified,

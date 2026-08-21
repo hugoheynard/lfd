@@ -57,6 +57,8 @@ export interface ActivityEventView {
    * n'invente pas un nom et n'affiche pas un identifiant technique.
    */
   readonly actorName: string | null;
+  /** Sa **fonction** à ce moment-là (« Commercial »), `null` pour un client. */
+  readonly actorRole: string | null;
   /** Corrélation : tous les faits d'une même requête partagent cette trace. */
   readonly traceId: string;
   /** Le « avant → après » du fait, et sa portée sous la clé `blast`. */

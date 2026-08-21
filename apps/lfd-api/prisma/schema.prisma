@@ -1153,6 +1153,10 @@ model ActivityEvent {
   /// (« un membre du staff »), et n'invente pas un nom.
   actorId   String? @map("actor_id")
   actorName String? @map("actor_name")
+  /// La FONCTION de l'acteur, en clair (« Commercial »), figée avec son nom et
+  /// pour la même raison. Elle ne coûte aucune lecture de plus : c'est une
+  /// colonne de la fiche qu'on lisait déjà pour le nom.
+  actorRole String? @map("actor_role")
 
   /// Corrélation bout-en-bout (le `traceId` W3C de la requête).
   traceId String @map("trace_id")

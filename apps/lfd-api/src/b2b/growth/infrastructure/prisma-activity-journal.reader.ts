@@ -17,6 +17,7 @@ const COLUMNS = {
   actorType: true,
   actorId: true,
   actorName: true,
+  actorRole: true,
   traceId: true,
   payload: true,
 } as const;
@@ -103,6 +104,7 @@ function toView(row: {
   actorType: string;
   actorId: string | null;
   actorName: string | null;
+  actorRole: string | null;
   traceId: string;
   payload: Prisma.JsonValue;
 }): ActivityEventView {
@@ -116,6 +118,7 @@ function toView(row: {
     actorType: actorTypeOf(row.actorType),
     actorId: row.actorId,
     actorName: row.actorName,
+    actorRole: row.actorRole,
     traceId: row.traceId,
     payload: payloadOf(row.payload),
   };

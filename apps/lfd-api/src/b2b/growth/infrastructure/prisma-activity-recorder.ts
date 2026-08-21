@@ -8,7 +8,7 @@ import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { buildActivityEventRow, type RecordActivityInput } from "../domain/activity-event.js";
 import { ActivityRecorder } from "../domain/ports/activity-recorder.js";
-import { ActorNamer } from "../domain/ports/actor-namer.js";
+import { ActorNamer, type ActorIdentity } from "../domain/ports/actor-namer.js";
 
 /**
  * Adaptateur Prisma du journal — écrit dans `growth.activity_events`.
@@ -39,15 +39,17 @@ export class PrismaActivityRecorder extends ActivityRecorder {
     const context = currentRequestContext();
     const actorType = context?.actor.type ?? "system";
     const actorId = context?.actor.id ?? null;
+    const actor = await this.describeOrNothing(actorType, actorId);
     const row = buildActivityEventRow(input, {
       id: this.ids.next(),
       now: this.clock.now(),
       traceId: context?.traceId ?? newTraceId(),
       actorType,
       actorId,
-      // Figé ici, pas résolu à la lecture : le journal doit dire qui a agi ce
-      // jour-là, pas qui porte ce nom aujourd'hui.
-      actorName: await this.nameOrNull(actorType, actorId),
+      // Figés ici, pas résolus à la lecture : le journal doit dire qui a agi ce
+      // jour-là et à quel titre, pas qui porte ce nom et ce rôle aujourd'hui.
+      actorName: actor.name,
+      actorRole: actor.role,
     });
     try {
       await this.prisma.activityEvent.create({
@@ -63,18 +65,18 @@ export class PrismaActivityRecorder extends ActivityRecorder {
   }
 
   /**
-   * Le nom, ou rien. L'annuaire est **best-effort comme le reste du journal** :
-   * une panne de résolution ne doit pas empêcher d'écrire le fait lui-même —
-   * un événement sans nom vaut infiniment mieux qu'un événement perdu.
+   * Le nom et la fonction, ou rien. L'annuaire est **best-effort comme le reste
+   * du journal** : une panne de résolution ne doit pas empêcher d'écrire le fait
+   * lui-même — un événement anonyme vaut infiniment mieux qu'un événement perdu.
    */
-  private async nameOrNull(
+  private async describeOrNothing(
     type: "customer" | "staff" | "system",
     id: string | null,
-  ): Promise<string | null> {
+  ): Promise<ActorIdentity> {
     try {
-      return await this.actors.nameOf(type, id);
+      return await this.actors.describe(type, id);
     } catch {
-      return null;
+      return { name: null, role: null };
     }
   }
 }

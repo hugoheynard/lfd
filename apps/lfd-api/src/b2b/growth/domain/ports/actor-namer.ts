@@ -1,10 +1,21 @@
 import type { ActivityActorType } from "../activity-event.js";
 
+/** Qui agit, tel qu'on le figera : son nom, et sa fonction s'il en a une. */
+export interface ActorIdentity {
+  readonly name: string | null;
+  /**
+   * La fonction **en clair** (« Commercial »), pas la clé du rôle. Un journal se
+   * relit dans six mois : figer « Comptabilité » survit au renommage du rôle,
+   * et évite à l'écran d'embarquer la table des libellés.
+   */
+  readonly role: string | null;
+}
+
 /**
- * Comment s'appelle celui qui agit, **au moment où il agit**.
+ * Comment s'appelle celui qui agit — et à quel titre — **au moment où il agit**.
  *
- * Port **étroit** (ISP) : le journal n'a besoin que d'un nom à figer, pas de
- * l'annuaire staff ni du profil client. `growth/` déclare donc sa propre
+ * Port **étroit** (ISP) : le journal n'a besoin que de deux chaînes à figer, pas
+ * de l'annuaire staff ni du profil client. `growth/` déclare donc sa propre
  * dépendance plutôt que d'importer le port d'`account/` — les deux contextes
  * poseraient la même question pour des raisons différentes, et celui-ci a le
  * droit de répondre « je ne sais pas » sans casser quoi que ce soit.
@@ -15,5 +26,5 @@ import type { ActivityActorType } from "../activity-event.js";
  * identifiant technique au milieu d'une phrase.
  */
 export abstract class ActorNamer {
-  abstract nameOf(type: ActivityActorType, id: string | null): Promise<string | null>;
+  abstract describe(type: ActivityActorType, id: string | null): Promise<ActorIdentity>;
 }
