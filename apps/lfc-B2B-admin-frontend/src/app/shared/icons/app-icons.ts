@@ -168,9 +168,16 @@ const MOBILE_ICON =
  *
  * `<defs>` et `<title>` partent pour la même raison : rien de ce qui ne dessine
  * pas n'a de raison d'entrer dans le bundle.
+ *
+ * **Graisse relevée de 6,25 % à 8,44 %** (trait 0,7). Carbon trace à 2 sur une
+ * boîte de 32 ; fold trace à 2 sur 24. L'écart n'était pas une impression : à
+ * taille égale, celle-ci rendait un quart plus fine que ses voisines. Le plus
+ * petit contre-fond du dessin — le rectangle intérieur de la grande épingle —
+ * passe de 6 à 5,3 unités, il reste largement lisible.
  */
 const CATEGORY_ICON =
-  '<svg viewBox="0 0 32 32" fill="currentColor">' +
+  '<svg viewBox="0 0 32 32" fill="currentColor" stroke="currentColor" ' +
+  'stroke-width="0.7" stroke-linejoin="round">' +
   '<path d="M29,10H24v2h5v6H22v2h3v2.142a4,4,0,1,0,2,0V20h2a2.0027,2.0027,0,0,0,2-2V12A2.0023,' +
   '2.0023,0,0,0,29,10ZM28,26a2,2,0,1,1-2-2A2.0027,2.0027,0,0,1,28,26Z"/>' +
   '<path d="M19,6H14V8h5v6H12v2h3v6.142a4,4,0,1,0,2,0V16h2a2.0023,2.0023,0,0,0,2-2V8A2.0023,2.0023,' +
