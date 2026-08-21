@@ -56,6 +56,13 @@ export class AdminPage {
       icon: 'user',
       needs: 'staff:read',
     },
+    {
+      key: 'journal',
+      label: 'Journal',
+      link: 'journal',
+      icon: 'timeline',
+      needs: 'activity:read',
+    },
   ];
 
   protected readonly tabs = computed<FoldViewNavItem[]>(() =>

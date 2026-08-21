@@ -1,0 +1,74 @@
+:host {
+  display: block;
+}
+
+.jr-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+  margin-bottom: var(--fold-space-lg);
+}
+
+.jr-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.jr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.jr-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.jr-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.jr-sentence {
+  color: var(--fold-color-text);
+}
+
+/* La ligne de contexte : tout ce qui situe le fait sans le raconter. */
+.jr-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--fold-color-text-muted);
+}
+
+.jr-actor {
+  color: var(--fold-color-text-secondary);
+}
+
+.jr-blast {
+  color: var(--fold-color-text-secondary);
+}
+
+.jr-type {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8em;
+}
+
+.jr-more {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--fold-space-lg);
+}

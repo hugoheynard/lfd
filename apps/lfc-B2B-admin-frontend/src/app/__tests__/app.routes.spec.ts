@@ -54,6 +54,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   admin: 'companies:read',
   'admin/acces-en-attente': 'companies:read',
   'admin/utilisateurs': 'staff:read',
+  // Le journal traverse les modules : il a sa propre ressource, et n'hérite
+  // donc pas du `companies:read` de son parent.
+  'admin/journal': 'activity:read',
 
   // Son PROPRE périmètre, et pas `settings:read` : regarder la flotte n'est pas
   // la régler. Le jour où l'un s'ouvre à quelqu'un, l'autre n'a aucune raison

@@ -154,6 +154,14 @@ export const routes: Routes = [
             (m) => m.ReglagesStaffUsersPage,
           ),
       },
+      {
+        path: 'journal',
+        // `activity:read` : le journal traverse les modules, il a sa ressource.
+        // Hériter du garde du parent l'ouvrirait à quiconque lit les sociétés.
+        canActivate: [permissionGuard('activity:read')],
+        title: 'Journal d’activité — LFC B2B admin',
+        loadComponent: () => import('./admin/journal/journal-page').then((m) => m.JournalPage),
+      },
     ],
   },
   {

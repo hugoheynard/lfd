@@ -1,0 +1,73 @@
+<fold-page-layout icon="timeline" title="Journal d'activité">
+  <p description>
+    Qui a fait quoi, tous modules confondus. Le journal est
+    <strong>append-only</strong> : rien ne s'y modifie, rien ne s'y efface — ce qu'on lit est ce qui
+    s'est passé, avec le nom que portait l'auteur ce jour-là.
+  </p>
+
+  <div class="jr-filters">
+    <fold-listbox
+      label="Module"
+      [options]="modules"
+      [value]="module()"
+      (selectionChange)="onModule($event)"
+    />
+    <fold-listbox
+      label="Période"
+      [options]="windows"
+      [value]="windowDays()"
+      (selectionChange)="onWindow($event)"
+    />
+    <button foldButton emphasis="soft" size="sm" [disabled]="loading()" (click)="reload()">
+      <fold-icon name="reload" [size]="14" /> Rafraîchir
+    </button>
+  </div>
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" role="alert">{{ message }}</fold-callout>
+  }
+
+  @if (loading() && lines().length === 0) {
+    <div class="jr-loading"><fold-spinner /> Lecture du journal…</div>
+  } @else if (lines().length === 0) {
+    <fold-empty-state
+      title="Rien sur cette période"
+      subtitle="Élargissez la fenêtre, ou retirez le filtre de module."
+    >
+      <fold-icon empty-icon name="timeline" [size]="40" />
+    </fold-empty-state>
+  } @else {
+    <ol class="jr-list">
+      @for (line of lines(); track line.event.id) {
+        <li class="jr-row">
+          <div class="jr-head">
+            <span class="jr-sentence">{{ line.sentence }}</span>
+            @if (line.event.module; as m) {
+              <fold-badge [content]="m" variant="neutral" />
+            }
+          </div>
+          <div class="jr-meta">
+            <span>{{ line.event.occurredAt }}</span>
+            <span>·</span>
+            <span class="jr-actor">{{ line.actor }}</span>
+            @if (line.blast) {
+              <span>·</span>
+              <!-- La portée telle qu'elle a été FIGÉE : ce que le fait touchait
+                   à l'instant où il s'est produit, pas aujourd'hui. -->
+              <span class="jr-blast">{{ line.blast }}</span>
+            }
+            <code class="jr-type">{{ line.event.type }}</code>
+          </div>
+        </li>
+      }
+    </ol>
+
+    @if (hasMore()) {
+      <div class="jr-more">
+        <button foldButton emphasis="outline" [disabled]="loading()" (click)="loadMore()">
+          {{ loading() ? 'Lecture…' : 'Charger la suite' }}
+        </button>
+      </div>
+    }
+  }
+</fold-page-layout>
