@@ -30,7 +30,7 @@ const COCKPIT: CommercialTab = {
   key: 'cockpit',
   label: 'Tableau de bord',
   link: 'cockpit',
-  icon: 'grid',
+  icon: 'dashboard',
   description: 'La journée, ceux qui attendent, et les coups à jouer.',
 };
 

@@ -428,6 +428,30 @@ const CLIENT_ACCOUNT_ICON =
   '</svg>';
 
 /**
+ * Le tableau de bord — trois zones d'un écran composé. Source : SVG Repo
+ * (domaine public). Remplace le `grid` de l'onglet « Tableau de bord », qui
+ * disait « grille » et servait déjà au menu du PIM.
+ *
+ * ⚠️ Première icône **AU TRAIT** de ce lot, et la distinction n'est pas
+ * cosmétique : ses tracés portent un `stroke` et la racine dit `fill="none"`.
+ * Traitée comme les précédentes — remplie — ses trois rectangles vides
+ * seraient devenus trois pavés pleins.
+ *
+ * Sa graisse d'origine est **déjà** celle de fold (2 sur 24) : rien à relever,
+ * seule la boîte est resserrée, l'encre passant de 75 % à 95 %.
+ */
+const DASHBOARD_ICON =
+  '<svg viewBox="2.53 2.53 18.95 18.95" fill="none" stroke="currentColor" ' +
+  'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M12 12C12 11.4477 12.4477 11 13 11H19C19.5523 11 20 11.4477 20 12V19C20 19.5523 19.5523' +
+  ' 20 19 20H13C12.4477 20 12 19.5523 12 19V12Z"/>' +
+  '<path d="M4 5C4 4.44772 4.44772 4 5 4H8C8.55228 4 9 4.44772 9 5V19C9 19.5523 8.55228 20 8 20H5C4' +
+  '.44772 20 4 19.5523 4 19V5Z"/>' +
+  '<path d="M12 5C12 4.44772 12.4477 4 13 4H19C19.5523 4 20 4.44772 20 5V7C20 7.55228 19.5523 8 19 ' +
+  '8H13C12.4477 8 12 7.55228 12 7V5Z"/>' +
+  '</svg>';
+
+/**
  * Le catalogue. Une entrée = un nom que `<fold-icon name="…">` accepte.
  *
  * `as const` n'est pas décoratif : c'est lui qui donne à `keyof typeof` des
@@ -438,6 +462,7 @@ export const APP_ICONS = {
   catalog: CATALOG_ICON,
   'client-account': CLIENT_ACCOUNT_ICON,
   collections: COLLECTIONS_ICON,
+  dashboard: DASHBOARD_ICON,
   integrations: INTEGRATIONS_ICON,
   category: CATEGORY_ICON,
   mobile: MOBILE_ICON,
