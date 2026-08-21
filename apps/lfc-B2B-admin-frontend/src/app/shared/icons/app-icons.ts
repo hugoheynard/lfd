@@ -407,6 +407,13 @@ const PRINT_ICON =
  * clients » : `company` dessine un bâtiment, c'est-à-dire l'ENTREPRISE ; ici on
  * range des dossiers, et le même glyphe servait déjà aux emplacements.
  *
+ * Nommée `customer-account` et non `client-account` : **`customer` est le mot
+ * du domaine** — `CustomerRole`, `Principal.role`, l'audience Auth0 des
+ * clients — celui qui s'oppose à `staff`. Le front admin dit « client » dans
+ * ses dossiers et ses routes (`comptes-clients/`, `fiche-client/`), un écart
+ * de vocabulaire qui reste à reprendre ; le catalogue, lui, n'avait aucune
+ * raison de l'épouser.
+ *
  * ⚠️ Ses tracés portaient `fill="#0F1F3C"` — un bleu nuit, pas le noir habituel.
  * Il disparaît comme les autres couleurs en dur : seul le `d` est repris, et la
  * couleur vient de `currentColor`. Une icône qui garde sa teinte d'origine
@@ -416,7 +423,7 @@ const PRINT_ICON =
  * Boîte resserrée de 79 % à 94 % de remplissage, et trait de 12 pour passer de
  * 7,15 % à 8,3 % — la graisse du jeu fold.
  */
-const CLIENT_ACCOUNT_ICON =
+const CUSTOMER_ACCOUNT_ICON =
   '<svg viewBox="82.21 82.21 859.58 859.58" fill="currentColor" stroke="currentColor" ' +
   'stroke-width="12" stroke-linejoin="round">' +
   '<path d="M841.2 841.1H182.9V182.9h292.5v-73.2H109.7v804.6h804.6V621.7h-73.1z"/>' +
@@ -501,7 +508,7 @@ const TODAY_ICON =
 export const APP_ICONS = {
   basha: BASHA_ICON,
   catalog: CATALOG_ICON,
-  'client-account': CLIENT_ACCOUNT_ICON,
+  'customer-account': CUSTOMER_ACCOUNT_ICON,
   collections: COLLECTIONS_ICON,
   dashboard: DASHBOARD_ICON,
   gauge: GAUGE_ICON,

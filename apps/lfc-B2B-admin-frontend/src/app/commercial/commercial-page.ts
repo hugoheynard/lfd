@@ -54,7 +54,7 @@ const TABS: CommercialTab[] = [
     key: 'comptes-clients',
     label: 'Comptes clients',
     link: 'comptes-clients',
-    icon: 'client-account',
+    icon: 'customer-account',
     description: 'Le parc, ceux qui commandent et ceux qui dorment.',
   },
   {
