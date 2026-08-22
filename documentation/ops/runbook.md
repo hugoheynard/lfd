@@ -246,6 +246,33 @@ origine réelle, et sur iPhone l'abonnement n'est possible qu'une fois l'app
 installée sur l'écran d'accueil — Safari refuse en **silence** avant cela. C'est
 le même profil que le webhook Resend : la chaîne ne se vérifie qu'en ligne.
 
+## En dev : un `400` sur un corps pourtant valide
+
+Le symptôme : une requête que le front envoie correctement, refusée en `400`
+par un backend qui tourne. Il accuse le front ; le fautif est un **processus qui
+sert un contrat périmé**.
+
+**La cause.** Les paquets `@lfd/*` exposent leurs types depuis `src/` et leur
+exécutable depuis `dist/` : le compilateur lit la source, Node lit le build.
+Deux artefacts qui peuvent diverger — et deux façons de diverger :
+
+1. **Le paquet n'était surveillé par personne.** Les lanceurs énuméraient trois
+   paquets à la main (`endpoints`, `contracts`, `storage`) alors que le backend
+   en consomme huit. Modifier `pim-contracts` ne reconstruisait donc **rien**,
+   indéfiniment. Corrigé : les filtres utilisent le graphe de turbo
+   (`--filter=lfd-api...`), qui inclut les dépendances d'une app — et se tient à
+   jour tout seul quand on ajoute un paquet.
+2. **Le redémarrage tombait trop tôt.** Le programme tsc du backend inclut les
+   SOURCES des paquets (vérifiable : `tsc --listFiles | grep packages/`). Une
+   modification de paquet faisait donc redémarrer Nest **avant** que le `dist`
+   du paquet ne soit reconstruit — puis plus rien ne redémarrait. Corrigé par
+   `dev-toolbox/restart-api-on-package-build.mjs`, qui surveille les `dist` et
+   touche `apps/lfd-api/src/main.ts` une fois le build posé.
+
+**Si ça se reproduit malgré tout** : redémarrer le backend suffit. Et pour
+confirmer que c'est bien ça plutôt qu'un vrai refus de validation, comparer la
+date du `dist` du paquet à celle du démarrage du processus.
+
 ## Lire les journaux de l'application
 
 Cloudflare **ne remonte pas** la sortie d'un container : l'API `Container`
