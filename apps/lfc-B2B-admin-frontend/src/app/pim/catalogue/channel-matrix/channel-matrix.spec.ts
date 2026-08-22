@@ -13,7 +13,14 @@ const CHANNELS: SalesChannels = {
 
 /** Les points de vente sont une DONNÉE : la grille en reçoit la liste. */
 const EMPLACEMENTS: Emplacement[] = [
-  { id: 'emp_village', name: 'Village', clickCollect: true, surPlace: true, baseUrl: '', tables: [] },
+  {
+    id: 'emp_village',
+    name: 'Village',
+    clickCollect: true,
+    surPlace: true,
+    baseUrl: '',
+    tables: [],
+  },
   { id: 'emp_val', name: 'Val', clickCollect: true, surPlace: false, baseUrl: '', tables: [] },
 ];
 
