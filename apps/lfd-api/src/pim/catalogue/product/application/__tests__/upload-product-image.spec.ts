@@ -22,11 +22,18 @@ function png(width: number, height: number): Buffer {
 
 class FakeStore extends MediaStore {
   readonly puts: { prefix: string; asset: PublicAsset }[] = [];
+  readonly removed: string[] = [];
 
   put(prefix: string, asset: PublicAsset): Promise<StoredAsset> {
     this.puts.push({ prefix, asset });
     const key = `${prefix}/deadbeef.png`;
     return Promise.resolve({ storageKey: key, url: `https://media.example/${key}` });
+  }
+  // Le dépôt sait supprimer depuis le ramassage des orphelins ; l'envoi ne s'en
+  // sert pas, mais un double doit implémenter le port qu'il prétend jouer.
+  remove(storageKey: string): Promise<void> {
+    this.removed.push(storageKey);
+    return Promise.resolve();
   }
 }
 
@@ -40,6 +47,15 @@ class FakeLibrary extends MediaLibrary {
 
   factsFor(): Promise<MediaFacts | null> {
     return Promise.resolve(null);
+  }
+  findOrphanKeys(): Promise<readonly string[]> {
+    return Promise.resolve([]);
+  }
+  isStillOrphan(): Promise<boolean> {
+    return Promise.resolve(false);
+  }
+  forget(): Promise<number> {
+    return Promise.resolve(0);
   }
 }
 
@@ -84,6 +100,9 @@ describe("UploadProductImageHandler", () => {
     class FailingStore extends MediaStore {
       put(): Promise<StoredAsset> {
         return Promise.reject(new Error("R2 refuse"));
+      }
+      remove(): Promise<void> {
+        return Promise.resolve();
       }
     }
     const library = new FakeLibrary();

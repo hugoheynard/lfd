@@ -5,7 +5,7 @@ import {
   type MediaFacts,
   type RegisteredMedia,
 } from "../../domain/ports/media-library.js";
-import { SweepOrphanMediaCommand, SweepOrphanMediaHandler } from "../sweep-orphan-media.js";
+import { SweepOrphanMediaHandler } from "../sweep-orphan-media.js";
 
 const NOW = new Date("2026-08-22T04:00:00Z");
 
@@ -88,7 +88,7 @@ describe("SweepOrphanMediaHandler", () => {
     // resterait dans le bucket et plus rien ne pourrait le désigner.
     const { run, steps } = handler(["products/aa.png"]);
 
-    await run.execute(new SweepOrphanMediaCommand());
+    await run.execute();
 
     expect(steps).toEqual([
       "check:products/aa.png",
@@ -100,7 +100,7 @@ describe("SweepOrphanMediaHandler", () => {
   it("n'oublie AUCUNE ligne si la suppression de l'objet échoue", async () => {
     const { run, steps } = handler(["products/aa.png"], () => true, "products/aa.png");
 
-    await expect(run.execute(new SweepOrphanMediaCommand())).rejects.toThrow("R2 refuse");
+    await expect(run.execute()).rejects.toThrow("R2 refuse");
 
     expect(steps).not.toContain("forget:products/aa.png");
   });
@@ -113,7 +113,7 @@ describe("SweepOrphanMediaHandler", () => {
       (key) => key !== "products/aa.png",
     );
 
-    const report = await run.execute(new SweepOrphanMediaCommand());
+    const report = await run.execute();
 
     expect(steps).not.toContain("remove:products/aa.png");
     expect(report).toMatchObject({ removed: 1, spared: 1, forgotten: 2 });
@@ -125,7 +125,7 @@ describe("SweepOrphanMediaHandler", () => {
     // recul, le ramassage effacerait le travail en cours de quelqu'un.
     const { run, library } = handler(["products/aa.png"]);
 
-    await run.execute(new SweepOrphanMediaCommand());
+    await run.execute();
 
     expect(library.cutoff).toEqual(new Date("2026-08-15T04:00:00Z"));
   });
@@ -133,7 +133,7 @@ describe("SweepOrphanMediaHandler", () => {
   it("ne signale rien à faire quand il n'y a rien", async () => {
     const { run } = handler([]);
 
-    expect(await run.execute(new SweepOrphanMediaCommand())).toEqual({
+    expect(await run.execute()).toEqual({
       removed: 0,
       forgotten: 0,
       spared: 0,
@@ -147,6 +147,6 @@ describe("SweepOrphanMediaHandler", () => {
     const full = Array.from({ length: 200 }, (_, i) => `products/${String(i)}.png`);
     const { run } = handler(full);
 
-    expect((await run.execute(new SweepOrphanMediaCommand())).capped).toBe(true);
+    expect((await run.execute()).capped).toBe(true);
   });
 });

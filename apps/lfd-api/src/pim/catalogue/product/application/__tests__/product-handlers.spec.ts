@@ -6,6 +6,7 @@ import {
 } from "../../../category/domain/errors/category-errors.js";
 import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
+import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
 import { SetProductMediaCommand, SetProductMediaHandler } from "../set-product-media.js";
 import { NutritionRepository } from "../../domain/ports/nutrition.repository.js";
@@ -89,10 +90,9 @@ class FakeProductRepository extends ProductRepository {
   }
 }
 
-const NO_CHANNELS = {
-  b1: { emporter: false, surPlace: false },
-  b2: { emporter: false, surPlace: false },
-};
+/** Rien de vendu. Les emplacements sont une DONNÉE : la carte est vide, elle
+ *  ne porte pas deux boutiques codées en dur à zéro. */
+const NO_CHANNELS: SalesChannels = { boutiques: {}, b2b: false };
 
 class FakeCategoryRepository extends CategoryRepository {
   /** Deux familles suffisent aux verbes produit : une vivante, une archivée. */
@@ -132,7 +132,13 @@ class FakeCategoryRepository extends CategoryRepository {
   saveAll(): Promise<void> {
     return Promise.resolve();
   }
-  countActiveProducts(): Promise<number> {
+  findBySlugFr(): Promise<Category | null> {
+    return Promise.resolve(null);
+  }
+  listChildren(): Promise<Category[]> {
+    return Promise.resolve([]);
+  }
+  countActiveChildren(): Promise<number> {
     return Promise.resolve(0);
   }
   nextPosition(): Promise<number> {
