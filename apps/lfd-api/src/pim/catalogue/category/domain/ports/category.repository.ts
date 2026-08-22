@@ -17,5 +17,17 @@ export abstract class CategoryRepository {
   /** Écrit plusieurs familles **en une transaction** — le réordonnancement. */
   abstract saveAll(categories: readonly Category[]): Promise<void>;
   abstract countActiveProducts(id: string): Promise<number>;
+  /**
+   * Le compte de fiches actives **par famille**, en une requête.
+   *
+   * Séparé de `countActiveProducts` volontairement : la version unitaire garde
+   * un invariant à l'écriture (peut-on archiver celle-ci ?), celle-ci sert une
+   * LECTURE de liste. Les appeler en boucle ferait N requêtes pour peupler un
+   * tableau.
+   *
+   * Les familles sans fiche active sont **absentes** de la table — un lecteur
+   * lit `?? 0`, il ne suppose pas la présence de la clé.
+   */
+  abstract activeProductCounts(): Promise<ReadonlyMap<string, number>>;
   abstract nextPosition(parentId: string | null): Promise<number>;
 }

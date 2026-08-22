@@ -69,4 +69,12 @@ export interface CategoryView {
   readonly channelPreset: SalesChannels;
   readonly emporterTvaId: string | null;
   readonly surPlaceTvaId: string | null;
+  /**
+   * Combien de fiches **actives** cette famille porte.
+   *
+   * Une famille qui en porte ne peut pas être archivée — le domaine refuse
+   * (invariant 5). Le compte voyage avec la vue pour que l'écran le DISE avant,
+   * plutôt que de laisser le refus l'apprendre après le clic.
+   */
+  readonly activeProductCount: number;
 }

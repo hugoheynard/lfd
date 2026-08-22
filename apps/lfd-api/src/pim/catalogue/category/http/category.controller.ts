@@ -20,7 +20,7 @@ import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { ArchiveCategoryCommand } from "../application/archive-category.js";
 import { CreateCategoryCommand } from "../application/create-category.js";
-import { ListCategoriesQuery } from "../application/list-categories.js";
+import { ListCategoriesQuery, type CategoryListItem } from "../application/list-categories.js";
 import { MoveCategoryCommand } from "../application/move-category.js";
 import { ReorderCategoriesCommand } from "../application/reorder-categories.js";
 import { RenameCategoryCommand } from "../application/rename-category.js";
@@ -45,7 +45,7 @@ export class CategoryController {
 
   @Get()
   listCategories(): Promise<CategoryView[]> {
-    return this.queries.execute<ListCategoriesQuery, CategoryView[]>(new ListCategoriesQuery());
+    return this.queries.execute<ListCategoriesQuery, CategoryListItem[]>(new ListCategoriesQuery());
   }
 
   @Post()

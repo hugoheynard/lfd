@@ -104,6 +104,15 @@ export class PrismaCategoryRepository extends CategoryRepository {
     });
   }
 
+  async activeProductCounts(): Promise<ReadonlyMap<string, number>> {
+    const rows = await this.prisma.product.groupBy({
+      by: ["categoryId"],
+      where: { status: { not: "archived" } },
+      _count: { _all: true },
+    });
+    return new Map(rows.map((row) => [row.categoryId, row._count._all]));
+  }
+
   async nextPosition(parentId: string | null): Promise<number> {
     const last = await this.prisma.category.findFirst({
       where: { parentId },

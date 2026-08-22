@@ -16,6 +16,7 @@ import { CategoryRepository } from "../../domain/ports/category.repository.js";
 import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import { ArchiveCategoryCommand, ArchiveCategoryHandler } from "../archive-category.js";
 import { CreateCategoryCommand, CreateCategoryHandler } from "../create-category.js";
+import { ListCategoriesHandler, ListCategoriesQuery } from "../list-categories.js";
 import { MoveCategoryCommand, MoveCategoryHandler } from "../move-category.js";
 import { RenameCategoryCommand, RenameCategoryHandler } from "../rename-category.js";
 import { ReorderCategoriesCommand, ReorderCategoriesHandler } from "../reorder-categories.js";
@@ -35,6 +36,8 @@ class InMemoryCategories extends CategoryRepository {
   readonly stored = new Map<string, CategorySnapshot>();
   activeProducts = 0;
   transactions = 0;
+  /** Ce que la lecture de liste joindra. Vide = aucune famille n'a de fiche. */
+  countsByCategory: ReadonlyMap<string, number> = new Map();
 
   findById(id: string): Promise<Category | null> {
     const snapshot = this.stored.get(id);
@@ -63,6 +66,9 @@ class InMemoryCategories extends CategoryRepository {
   }
   countActiveProducts(): Promise<number> {
     return Promise.resolve(this.activeProducts);
+  }
+  activeProductCounts(): Promise<ReadonlyMap<string, number>> {
+    return Promise.resolve(this.countsByCategory);
   }
   nextPosition(parentId: string | null): Promise<number> {
     const siblings = [...this.stored.values()].filter((row) => row.parentId === parentId);
@@ -336,5 +342,34 @@ describe("ReorderCategoriesHandler", () => {
 
     expect(repo.at(second!).position).toBe(0);
     expect(repo.at(archived!).position).toBe(2);
+  });
+});
+
+describe("ListCategoriesHandler", () => {
+  it("joint le compte de fiches ACTIVES à chaque famille", async () => {
+    // Il ne vit pas dans l'agrégat : une famille ne voit pas les fiches qui la
+    // référencent. C'est une donnée de lecture, jointe au moment de lire.
+    const repo = new InMemoryCategories();
+    const created = await new CreateCategoryHandler(repo, new SequentialIds()).execute(
+      new CreateCategoryCommand({ nameFr: "Viennoiseries" }),
+    );
+    repo.countsByCategory = new Map([[created, 3]]);
+
+    const [row] = await new ListCategoriesHandler(repo).execute(new ListCategoriesQuery());
+
+    expect(row?.activeProductCount).toBe(3);
+  });
+
+  it("rend 0 — jamais `undefined` — pour une famille sans fiche", async () => {
+    // Les familles sans fiche sont ABSENTES du groupBy. Un écran qui lirait
+    // `undefined` afficherait « undefined fiche(s) » dans sa zone dangereuse.
+    const repo = new InMemoryCategories();
+    await new CreateCategoryHandler(repo, new SequentialIds()).execute(
+      new CreateCategoryCommand({ nameFr: "Pains" }),
+    );
+
+    const [row] = await new ListCategoriesHandler(repo).execute(new ListCategoriesQuery());
+
+    expect(row?.activeProductCount).toBe(0);
   });
 });
