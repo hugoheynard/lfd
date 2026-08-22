@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 
 import { CategoryStore } from './category-store';
-import type { CategoryTvaDraft } from './category-http-api';
 import { ProductHttpApi } from './product-http-api';
 import { TvaStore } from './tva-rates/tva-store';
 
@@ -41,27 +40,10 @@ export class CatalogueApi {
     return [...this.categoryStore.items()];
   }
 
-  async createCategory(payload: { nameFr: string; parentId?: string }): Promise<{ id: string }> {
-    return this.categoryStore.create(payload);
-  }
-
-  async renameCategory(id: string, nameFr: string): Promise<void> {
-    await this.categoryStore.rename(id, nameFr);
-  }
-
-  async archiveCategory(id: string): Promise<void> {
-    await this.categoryStore.archive(id);
-  }
-
-  /** Défaut de canaux d'une gamme — les produits hérités en héritent. */
-  async setCategoryChannelPreset(id: string, preset: SalesChannels): Promise<void> {
-    await this.categoryStore.setChannels(id, preset);
-  }
-
-  /** Les trois taux de TVA d'une famille, un par canal de vente. */
-  async setCategoryTva(id: string, ids: CategoryTvaDraft): Promise<void> {
-    await this.categoryStore.setTva(id, ids);
-  }
+  // Les MUTATIONS de famille ne passent plus par ici : l'écran qui les émet
+  // parle au `CategoryStore` directement. Cette classe ne réexpédiait plus
+  // rien d'autre qu'un appel, et deux portes vers la même donnée finissent par
+  // ne plus dire la même chose.
 
   // ── Taux de TVA (backend `commerce/tva-rates`, via TvaStore) ─────────
 

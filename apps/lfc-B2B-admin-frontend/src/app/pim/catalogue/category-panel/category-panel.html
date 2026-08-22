@@ -9,20 +9,12 @@
     (valueChange)="draftName.set($event)"
   />
 
-  <!-- À la création seulement — non pas faute de verbe côté référentiel
-       (`PUT :id/parent` existe), mais faute de l'avoir câblé côté front. -->
-  @if (isCreate()) {
-    <fold-listbox
-      label="Parent"
-      [value]="draftParent()"
-      (selectionChange)="draftParent.set($event)"
-    >
-      <fold-option value="">— Racine —</fold-option>
-      @for (parent of parents(); track parent.id) {
-        <fold-option [value]="parent.id">{{ parent.name.fr }}</fold-option>
-      }
-    </fold-listbox>
-  }
+  <fold-listbox label="Parent" [value]="draftParent()" (selectionChange)="draftParent.set($event)">
+    <fold-option value="">— Racine —</fold-option>
+    @for (parent of parents(); track parent.id) {
+      <fold-option [value]="parent.id">{{ parent.name.fr }}</fold-option>
+    }
+  </fold-listbox>
 
   <section class="block">
     <fold-element-title variant="eyebrow" icon="places" title="Canaux par défaut" />

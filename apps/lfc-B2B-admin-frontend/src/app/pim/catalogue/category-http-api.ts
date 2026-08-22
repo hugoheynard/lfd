@@ -69,6 +69,17 @@ export class CategoryHttpApi {
     return this.put(`categories/${id}/name`, { nameFr });
   }
 
+  /**
+   * Déplace une famille — `null` = la racine.
+   *
+   * La route existait côté référentiel (avec son refus de cycle et son refus
+   * de parent archivé, testés) et n'avait aucun appelant : le front ne l'avait
+   * jamais câblée, et le champ « Parent » était donc réservé à la création.
+   */
+  move(id: string, parentId: string | null): Promise<void> {
+    return this.put(`categories/${id}/parent`, { parentId });
+  }
+
   archive(id: string): Promise<void> {
     return this.put(`categories/${id}/archive`, {});
   }

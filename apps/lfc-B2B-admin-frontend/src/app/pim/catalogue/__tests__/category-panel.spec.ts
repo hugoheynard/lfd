@@ -4,7 +4,8 @@ import { provideRouter } from '@angular/router';
 import { FoldPanelRef, provideFoldInlineConfirmLabels } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CatalogueApi, type Category } from '../catalogue-api';
+import type { Category } from '../catalogue-api';
+import { CategoryHttpApi } from '../category-http-api';
 import { CategoryPanel, type CategoryPanelData } from '../category-panel/category-panel';
 
 function category(overrides: Partial<Category> = {}): Category {
@@ -30,9 +31,24 @@ function category(overrides: Partial<Category> = {}): Category {
   };
 }
 
+/**
+ * On espionne la couche HTTP, pas une façade : ce sont les REQUÊTES qui
+ * comptent — leur nombre, leur ordre et ce qu'elles portent. C'est aussi ce qui
+ * rend visible la relecture unique, invisible un cran plus haut.
+ */
+interface HttpSpy {
+  list: ReturnType<typeof vi.fn>;
+  create: ReturnType<typeof vi.fn>;
+  rename: ReturnType<typeof vi.fn>;
+  move: ReturnType<typeof vi.fn>;
+  setChannels: ReturnType<typeof vi.fn>;
+  setTva: ReturnType<typeof vi.fn>;
+  archive: ReturnType<typeof vi.fn>;
+}
+
 interface Mounted {
   host: HTMLElement;
-  api: CatalogueApi;
+  http: HttpSpy;
   closed: unknown[];
   detect: () => void;
   stable: () => Promise<unknown>;
@@ -49,6 +65,16 @@ function setupCreate(): Mounted {
 
 function mount(data: CategoryPanelData): Mounted {
   const closed: unknown[] = [];
+  const known = data.category === undefined ? [] : [data.category];
+  const http: HttpSpy = {
+    list: vi.fn(async () => known),
+    create: vi.fn(async () => ({ id: 'cat_neuve' })),
+    rename: vi.fn(async () => undefined),
+    move: vi.fn(async () => undefined),
+    setChannels: vi.fn(async () => undefined),
+    setTva: vi.fn(async () => undefined),
+    archive: vi.fn(async () => undefined),
+  };
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
@@ -59,6 +85,7 @@ function mount(data: CategoryPanelData): Mounted {
       // et c'est exactement ce que ce test doit empêcher de revenir.
       provideFoldInlineConfirmLabels({ confirm: 'Confirmer', cancel: 'Annuler' }),
       { provide: FoldPanelRef, useValue: { close: (v: unknown) => closed.push(v) } },
+      { provide: CategoryHttpApi, useValue: http },
     ],
   });
   const fixture = TestBed.createComponent(CategoryPanel);
@@ -66,7 +93,7 @@ function mount(data: CategoryPanelData): Mounted {
   fixture.detectChanges();
   return {
     host: fixture.nativeElement as HTMLElement,
-    api: TestBed.inject(CatalogueApi),
+    http,
     closed,
     detect: () => fixture.detectChanges(),
     stable: () => fixture.whenStable(),
@@ -106,8 +133,8 @@ describe('CategoryPanel — la zone dangereuse', () => {
     // Deux choses en un geste. La zone dangereuse ne fait qu'ouvrir : c'est
     // toute sa valeur. Et sa confirmation parle français — les défauts de fold
     // sont « Confirm / Cancel », au moment précis où il faut être compris.
-    const { host, api, detect, stable } = setup(category());
-    const archive = vi.spyOn(api, 'archiveCategory').mockResolvedValue();
+    const { host, http, detect, stable } = setup(category());
+    const archive = http.archive;
 
     button(host, 'Archiver la famille').click();
     detect();
@@ -132,21 +159,19 @@ describe('CategoryPanel — la zone dangereuse', () => {
 });
 
 describe('CategoryPanel — enregistrer', () => {
-  it('envoie les trois réglages en une fois, puis ferme', async () => {
+  it('envoie les réglages en une fois, puis ferme', async () => {
     // Ils partaient à chaque frappe : trois requêtes pour une hésitation sur un
     // taux, et aucun moyen d'annuler.
-    const { host, api, closed, stable } = setup(category());
-    const channels = vi.spyOn(api, 'setCategoryChannelPreset').mockResolvedValue();
-    const tva = vi.spyOn(api, 'setCategoryTva').mockResolvedValue();
-    const rename = vi.spyOn(api, 'renameCategory').mockResolvedValue();
+    const { host, http, closed, stable } = setup(category());
 
     button(host, 'Enregistrer').click();
     await stable();
 
-    expect(channels).toHaveBeenCalledTimes(1);
-    expect(tva).toHaveBeenCalledTimes(1);
-    // Le nom n'a pas changé : on ne renomme pas pour rien.
-    expect(rename).not.toHaveBeenCalled();
+    expect(http.setChannels).toHaveBeenCalledTimes(1);
+    expect(http.setTva).toHaveBeenCalledTimes(1);
+    // Ni le nom ni le parent n'ont changé : on n'écrit pas pour rien.
+    expect(http.rename).not.toHaveBeenCalled();
+    expect(http.move).not.toHaveBeenCalled();
     expect(closed).toHaveLength(1);
   });
 });
@@ -161,7 +186,9 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     const { host } = setup(category({ channelPreset: channels() }));
 
     expect(host.textContent).toContain('Cochez un canal');
-    expect(host.querySelectorAll('fold-listbox')).toHaveLength(0);
+    // Dans `.tva-pickers` uniquement : « Parent » est une liste lui aussi, et
+    // il n'a rien à voir avec les taux.
+    expect(host.querySelectorAll('.tva-pickers fold-listbox')).toHaveLength(0);
   });
 
   /** Les libellés des listes de taux — PAS le texte de la page : la matrice de
@@ -210,7 +237,7 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     // Le garder laisserait la famille pointer un taux dont personne ne se sert :
     // le compte d'usages de l'écran des taux le compterait, et la base
     // refuserait de supprimer un taux que plus rien ne facture.
-    const { host, api, stable } = setup(
+    const { host, http, stable } = setup(
       category({
         channelPreset: channels({ b2b: true }),
         emporterTvaId: 'tva_55',
@@ -218,13 +245,16 @@ describe('CategoryPanel — un taux par canal vendu', () => {
         b2bTvaId: 'tva_20',
       }),
     );
-    const tva = vi.spyOn(api, 'setCategoryTva').mockResolvedValue();
-    vi.spyOn(api, 'setCategoryChannelPreset').mockResolvedValue();
 
     button(host, 'Enregistrer').click();
     await stable();
 
-    expect(tva).toHaveBeenCalledWith('cat_1', { emporter: '', surPlace: '', b2b: 'tva_20' });
+    // La CHARGE remise au transport ; c'est lui qui traduit `''` en `null`.
+    expect(http.setTva).toHaveBeenCalledWith('cat_1', {
+      emporter: '',
+      surPlace: '',
+      b2b: 'tva_20',
+    });
   });
 });
 
@@ -257,28 +287,19 @@ describe('CategoryPanel — création', () => {
     expect(boxes(setupCreate().host)).toContain('Parent');
   });
 
-  it('ne propose PAS de parent en édition', () => {
-    // Le front n'appelle pas `PUT :id/parent` (qui existe pourtant côté
-    // référentiel) : le montrer offrirait un réglage que rien n'enregistrerait.
-    expect(boxes(setup(category()).host)).not.toContain('Parent');
-  });
-
   it('crée, puis pose canaux et taux SUR LA FAMILLE CRÉÉE, puis ferme', async () => {
     // Le formulaire qu'il remplace ne savait que le nom et le parent : toute
     // famille naissait sans canaux ni taux, à finir dans un second écran.
-    const { host, api, closed, detect, stable } = setupCreate();
-    const create = vi.spyOn(api, 'createCategory').mockResolvedValue({ id: 'cat_neuve' });
-    const channels = vi.spyOn(api, 'setCategoryChannelPreset').mockResolvedValue();
-    const tva = vi.spyOn(api, 'setCategoryTva').mockResolvedValue();
+    const { host, http, closed, detect, stable } = setupCreate();
 
     type(host, 'Glaces');
     detect();
     button(host, 'Créer la famille').click();
     await stable();
 
-    expect(create).toHaveBeenCalledWith({ nameFr: 'Glaces' });
-    expect(channels.mock.calls[0]?.[0]).toBe('cat_neuve');
-    expect(tva.mock.calls[0]?.[0]).toBe('cat_neuve');
+    expect(http.create).toHaveBeenCalledWith({ nameFr: 'Glaces' });
+    expect(http.setChannels.mock.calls[0]?.[0]).toBe('cat_neuve');
+    expect(http.setTva.mock.calls[0]?.[0]).toBe('cat_neuve');
     expect(closed).toHaveLength(1);
   });
 
@@ -286,5 +307,56 @@ describe('CategoryPanel — création', () => {
     const { host } = setupCreate();
 
     expect(button(host, 'Créer la famille').disabled).toBe(true);
+  });
+});
+
+describe('CategoryPanel — déplacer', () => {
+  /**
+   * `PUT :id/parent` existait côté référentiel — refus de cycle et refus de
+   * parent archivé compris, testés — et n'avait aucun appelant. Le champ était
+   * réservé à la création faute de verbe côté FRONT, pas faute de verbe.
+   */
+  function parentBox(host: HTMLElement): Element | undefined {
+    return [...host.querySelectorAll('fold-listbox')].find(
+      (box) => box.getAttribute('label') === 'Parent',
+    );
+  }
+
+  it('propose le parent en édition aussi', () => {
+    expect(parentBox(setup(category()).host)).toBeDefined();
+  });
+
+  it('ne se propose pas comme son propre parent', () => {
+    // Le référentiel refuserait (`CategorySelfParentError`) : autant ne pas
+    // l'offrir. Les descendantes, elles, restent proposées — le refus de cycle
+    // demande l'arbre entier, que le panneau ne voit pas.
+    expect(parentBox(setup(category()).host)?.textContent).not.toContain('Viennoiseries');
+  });
+
+  it("n'écrit RIEN quand le parent n'a pas bougé", async () => {
+    const { host, http, stable } = setup(category());
+
+    button(host, 'Enregistrer').click();
+    await stable();
+
+    expect(http.move).not.toHaveBeenCalled();
+  });
+});
+
+describe('CategoryPanel — le coût d’un enregistrement', () => {
+  /**
+   * Chaque méthode du store relisait la liste entière derrière son écriture :
+   * enregistrer coûtait jusqu'à quatre `PUT` et quatre `GET`. L'écran se
+   * félicitait de ne plus écrire à chaque frappe, le store lui reprenait ce
+   * qu'il avait gagné.
+   */
+  it('relit la liste UNE fois, pas une fois par écriture', async () => {
+    const { host, http, stable } = setup(category());
+    const atStartup = http.list.mock.calls.length;
+
+    button(host, 'Enregistrer').click();
+    await stable();
+
+    expect(http.list.mock.calls.length - atStartup).toBe(1);
   });
 });

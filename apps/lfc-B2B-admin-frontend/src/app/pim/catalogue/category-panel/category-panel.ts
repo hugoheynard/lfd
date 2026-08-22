@@ -25,7 +25,7 @@ import {
 import { NotifyService } from '../../../notify.service';
 import { NO_CHANNELS, formatPercent, sellsMode } from '../../data/channels';
 import { ChannelMatrix } from '../channel-matrix/channel-matrix';
-import { CatalogueApi, type Category, type SalesChannels, type TvaRate } from '../catalogue-api';
+import type { Category, SalesChannels, TvaRate } from '../catalogue-api';
 import type { CategoryTvaDraft } from '../category-http-api';
 import { CategoryStore } from '../category-store';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
@@ -77,7 +77,6 @@ export interface CategoryPanelData {
   styleUrl: './category-panel.scss',
 })
 export class CategoryPanel {
-  private readonly api = inject(CatalogueApi);
   private readonly ref = inject(FoldPanelRef);
   private readonly notify = inject(NotifyService);
   private readonly emplacementStore = inject(EmplacementStore);
@@ -101,17 +100,22 @@ export class CategoryPanel {
 
   protected readonly rates = computed<readonly TvaRate[]>(() => this.data()?.rates ?? []);
   /**
-   * Les parents proposables — **à la création seulement**.
+   * Les parents proposables — dans les DEUX modes désormais.
    *
-   * Non pas parce que le référentiel ne sait pas déplacer : il expose
-   * `PUT /catalogue/categories/:id/parent`, avec son refus de cycle et son
-   * refus de parent archivé. C'est le FRONT qui ne l'a jamais câblé. Montrer
-   * le parent en édition offrirait donc aujourd'hui un réglage que rien
-   * n'enregistrerait — le jour où `CategoryHttpApi` gagne son `move`, ce
-   * `@if` n'a plus de raison d'être.
+   * Le champ était réservé à la création faute d'appelant : `PUT :id/parent`
+   * existait côté référentiel, testé, refus de cycle et de parent archivé
+   * compris, et le front ne l'avait jamais câblé. Une surface qui vit sans
+   * consommateur dérive de ce qu'elle sert.
+   *
+   * La famille elle-même est retirée de la liste : le référentiel refuserait
+   * (`CategorySelfParentError`), autant ne pas l'offrir. Ses descendantes, en
+   * revanche, restent proposées — le refus de cycle est du ressort du
+   * référentiel, qui voit l'arbre entier ; le panneau ne voit qu'une liste.
    */
   protected readonly parents = computed(() =>
-    this.categoryStore.items().filter((item) => !item.isArchived),
+    this.categoryStore
+      .items()
+      .filter((item) => !item.isArchived && item.id !== this.existing()?.id),
   );
   /** Les points de vente à proposer — la liste du référentiel, jamais une constante. */
   protected readonly emplacements = computed(() => this.emplacementStore.items());
@@ -141,8 +145,8 @@ export class CategoryPanel {
   protected readonly draftEmporterTva = linkedSignal(() => this.existing()?.emporterTvaId ?? '');
   protected readonly draftSurPlaceTva = linkedSignal(() => this.existing()?.surPlaceTvaId ?? '');
   protected readonly draftB2bTva = linkedSignal(() => this.existing()?.b2bTvaId ?? '');
-  /** Création seulement : `''` = racine. */
-  protected readonly draftParent = signal('');
+  /** `''` = la racine. */
+  protected readonly draftParent = linkedSignal(() => this.existing()?.parentId ?? '');
 
   /**
    * Un taux ne se règle que pour un canal qu'on vend.
@@ -171,52 +175,32 @@ export class CategoryPanel {
   }
 
   /**
-   * Trois routes, une intention. Le nom, les canaux et les taux ont chacun leur
-   * commande côté backend — c'est le découpage par SECTION du référentiel, pas
-   * une maladresse — mais l'écran n'en montre qu'un seul bouton.
-   *
-   * Séquentiel et non parallèle : un échec doit arrêter la suite plutôt que
-   * laisser trois requêtes se croiser et une famille à moitié réglée.
+   * Une intention, un bouton. Le référentiel découpe par section — un verbe
+   * pour le nom, un pour le parent, un pour les canaux, un pour les taux —
+   * mais l'ORDRE de ces écritures et leur relecture unique sont une affaire de
+   * persistance, pas d'écran : le store les tient.
    */
   protected async submit(): Promise<void> {
     await this.run(async () => {
-      const existing = this.existing();
-      const id = existing === undefined ? await this.createFamily() : await this.rename(existing);
-      await this.api.setCategoryChannelPreset(id, this.draftChannels());
-      await this.api.setCategoryTva(id, this.tvaToSave());
+      await this.categoryStore.saveSettings({
+        id: this.existing()?.id ?? null,
+        nameFr: this.draftName().trim(),
+        parentId: this.draftParent() === '' ? null : this.draftParent(),
+        channels: this.draftChannels(),
+        tva: this.tvaToSave(),
+      });
       this.ref.close();
     });
   }
 
   /**
-   * La création rend l'identifiant, et le reste du panneau s'enregistre dessus
-   * comme pour une famille existante : canaux et taux partent dans la foulée,
-   * au lieu de naître vides et d'attendre un second passage.
-   */
-  private async createFamily(): Promise<string> {
-    const nameFr = this.draftName().trim();
-    const parentId = this.draftParent();
-    const created = await this.api.createCategory(
-      parentId === '' ? { nameFr } : { nameFr, parentId },
-    );
-    return created.id;
-  }
-
-  private async rename(category: Category): Promise<string> {
-    const name = this.draftName().trim();
-    if (name !== category.name.fr) {
-      await this.api.renameCategory(category.id, name);
-    }
-    return category.id;
-  }
-
-  /**
-   * Les taux à enregistrer — **effacés** pour tout canal décoché.
+   * Les taux à enregistrer — **vidés** pour tout canal décoché.
    *
-   * Masquer un champ sans effacer sa valeur laisserait la famille pointer un
-   * taux qu'elle n'utilise plus : ça gonflerait le compte d'usages affiché sur
-   * l'écran des taux, et la base refuserait de supprimer un taux que plus rien
-   * ne facture. Ce qui n'est pas vendu ne référence rien.
+   * Ce n'est plus l'écran qui tient la règle : l'agrégat efface le taux d'un
+   * canal qu'on ferme, et refuse un taux pour un canal fermé. Ce nettoyage
+   * reste néanmoins nécessaire — sans lui, le panneau enverrait le taux d'un
+   * champ qu'il vient de masquer, et le référentiel refuserait l'enregistrement
+   * entier. On envoie ce qu'on montre.
    */
   private tvaToSave(): CategoryTvaDraft {
     return {
@@ -228,7 +212,7 @@ export class CategoryPanel {
 
   protected async archive(category: Category): Promise<void> {
     await this.run(async () => {
-      await this.api.archiveCategory(category.id);
+      await this.categoryStore.archive(category.id);
       this.ref.close();
     });
   }
