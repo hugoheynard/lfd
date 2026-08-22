@@ -34,98 +34,30 @@
     </fold-callout>
   }
 
-  @if (selected(); as cat) {
-    <fold-card surface="accent" raisedBands="header" class="gamme-editor">
-      <fold-element-title
-        cardHeader
-        variant="title"
-        icon="settings"
-        iconTone="primary"
-        [title]="cat.name.fr"
-        subtitle="Réglage de la catégorie"
-      >
-        <button
-          titleAction
-          foldButton
-          emphasis="soft"
-          intent="neutral"
-          size="sm"
-          (click)="closeEditor()"
-        >
-          Fermer
-        </button>
-      </fold-element-title>
-
-      <div class="editor-body">
-        <div class="editor-block">
-          <span class="block-label">Canaux par défaut</span>
-          <app-channel-matrix
-            [channels]="cat.channelPreset"
-            [showState]="false"
-            (channelsChange)="onPreset(cat, $event)"
-          />
-        </div>
-
-        <div class="editor-block">
-          <span class="block-label">Taux de TVA</span>
-          <div class="tva-pickers">
-            <fold-listbox
-              label="À emporter"
-              [value]="cat.emporterTvaId"
-              (selectionChange)="onEmporterTva(cat, $event)"
-            >
-              @for (rate of rates(); track rate.id) {
-                <fold-option [value]="rate.id">{{ regimeLabel(rate) }}</fold-option>
-              }
-            </fold-listbox>
-            <fold-listbox
-              label="Sur place"
-              [value]="cat.surPlaceTvaId"
-              (selectionChange)="onSurPlaceTva(cat, $event)"
-            >
-              @for (rate of rates(); track rate.id) {
-                <fold-option [value]="rate.id">{{ regimeLabel(rate) }}</fold-option>
-              }
-            </fold-listbox>
-          </div>
-          <p class="muted">
-            Deux taux, un par canal : le chocolat prend « Normal » sur place comme à emporter. Les
-            taux se gèrent dans
-            <a routerLink="/pim/tva">Taux de TVA</a>.
-          </p>
-        </div>
-
-        @if (isPatisserie(cat)) {
-          <fold-callout appearance="inset" variant="alert">
-            <strong>5 fiches en attente de validation TVA (cabinet comptable).</strong>
-            Les bouchées &lt; 20 g et le chocolat noir peuvent relever du taux réduit : sablés
-            Gianduja, meringuettes, mendiants, magalinettes et grignottines sont taguées
-            <code>tva-a-valider</code>. Ne rien publier ni exporter tant que le cabinet n'a pas
-            tranché la frontière 5,5 / 10 %.
-          </fold-callout>
-        }
-      </div>
-    </fold-card>
-  }
-
   <fold-data-table
     [columns]="columns"
     [rows]="categories()"
     [rowKey]="rowKey"
+    mobileLayout="custom"
     zebra
     [empty]="emptyState"
   >
     <ng-template foldCell="name" let-c>
-      <input
-        class="cell-name"
-        type="text"
-        [value]="c.name.fr"
-        aria-label="Nom de la catégorie"
-        (change)="rename(c, inputValue($event))"
-      />
+      <strong>{{ c.name.fr }}</strong>
+      @if (c.isArchived) {
+        <fold-badge content="archivée" variant="neutral" />
+      }
     </ng-template>
 
     <ng-template foldCell="parent" let-c>{{ parentName(c) }}</ng-template>
+
+    <ng-template foldCell="products" let-c>
+      @if (c.activeProductCount === 0) {
+        <span class="muted">aucune</span>
+      } @else {
+        <fold-badge [content]="c.activeProductCount + ' fiche(s)'" variant="neutral" />
+      }
+    </ng-template>
 
     <ng-template foldCell="tva" let-c>
       <span class="tva-cell"> {{ rateOf(c.emporterTvaId) }} → {{ rateOf(c.surPlaceTvaId) }} </span>
@@ -145,17 +77,40 @@
       </span>
     </ng-template>
 
+    <!-- Les trois points nus : une affordance, pas un bouton. Une seule action
+         par ligne — ouvrir la famille — donc rien à choisir dans un menu. -->
     <ng-template foldCell="actions" let-c>
-      <div class="row-actions">
-        <button foldButton emphasis="outline" size="sm" (click)="editGamme(c)">Réglages</button>
-        @if (!c.isArchived) {
-          <button foldButton emphasis="soft" intent="neutral" size="sm" (click)="archive(c)">
-            Archiver
-          </button>
-        } @else {
-          <fold-badge content="archivée" variant="neutral" />
-        }
-      </div>
+      <button
+        type="button"
+        class="row-open"
+        [attr.aria-label]="'Ouvrir « ' + c.name.fr + ' »'"
+        (click)="open(c)"
+      >
+        <fold-icon name="more-vertical" size="sm" />
+      </button>
+    </ng-template>
+
+    <!-- Sur téléphone, une CARTE : `auto-cards` empilerait des paires
+         libellé/valeur, donc un tableau debout. La carte entière est la cible. -->
+    <ng-template foldRowCard let-c>
+      <button type="button" class="cat-card" (click)="open(c)">
+        <span class="cat-card-head">
+          <span class="cat-card-name">{{ c.name.fr }}</span>
+          @if (c.isArchived) {
+            <fold-badge content="archivée" variant="neutral" />
+          }
+        </span>
+        <span class="cat-card-meta">
+          {{ parentName(c) }} · {{ rateOf(c.emporterTvaId) }} → {{ rateOf(c.surPlaceTvaId) }}
+        </span>
+        <span class="cat-card-meta">
+          @if (c.activeProductCount === 0) {
+            Aucune fiche
+          } @else {
+            {{ c.activeProductCount }} fiche(s)
+          }
+        </span>
+      </button>
     </ng-template>
   </fold-data-table>
 </fold-page-layout>

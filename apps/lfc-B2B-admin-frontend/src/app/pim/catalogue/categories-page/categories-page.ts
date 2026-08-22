@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 import {
   FoldBadgeComponent,
@@ -8,28 +7,41 @@ import {
   FoldCardComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDataTableRowCardDirective,
   FoldElementTitleComponent,
+  FoldIconComponent,
   FoldInputComponent,
   FoldListboxComponent,
   FoldOptionComponent,
   FoldPageLayoutComponent,
+  FoldPanelHostService,
   type FoldTableColumn,
 } from 'fold-ng';
 
 import { boutiquesWith, formatPercent } from '../../data/channels';
-import { ChannelMatrix } from '../channel-matrix/channel-matrix';
-import { CatalogueApi, type Category, type SalesChannels, type TvaRate } from '../catalogue-api';
+import { CategoryStore } from '../category-store';
+import { TvaStore } from '../tva-rates/tva-store';
+import { CategoryPanel, type CategoryPanelData } from '../category-panel/category-panel';
+import { CatalogueApi, type Category } from '../catalogue-api';
 
 /**
  * Catégories (= familles = gammes). Chaque catégorie porte les **défauts de
  * canaux** et les **taux de TVA** (à emporter / sur place) dont héritent ses
- * produits. Composants fold ; l'unique `<input>` natif est l'éditeur en cellule.
+ * produits.
+ *
+ * La page ne fait plus que **lister et créer**. Le réglage d'une famille — nom,
+ * canaux, taux — et son archivage vivent dans un side-panel ouvert par les trois
+ * points de sa ligne. Avant, une carte d'édition s'ouvrait EN HAUT de la page et
+ * poussait le tableau vers le bas : on perdait de vue la ligne qu'on réglait. Et
+ * « Archiver » était posé à même la ligne, à un clic d'un bouton voisin.
+ *
+ * La liste se lit directement depuis les stores : toute mutation, d'où qu'elle
+ * vienne, s'y voit sans que la page ait à recharger quoi que ce soit.
  */
 @Component({
   selector: 'app-categories-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
     FoldPageLayoutComponent,
     FoldCardComponent,
     FoldInputComponent,
@@ -38,31 +50,39 @@ import { CatalogueApi, type Category, type SalesChannels, type TvaRate } from '.
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldBadgeComponent,
+    FoldIconComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    // Sans elle, `foldRowCard` n'est qu'un attribut inerte : Angular ne s'en
+    // plaint pas, le build reste vert, et la vue mobile rend le vide.
+    FoldDataTableRowCardDirective,
     FoldElementTitleComponent,
-    ChannelMatrix,
   ],
   templateUrl: './categories-page.html',
   styleUrl: './categories-page.scss',
 })
 export class CategoriesPage {
   private readonly api = inject(CatalogueApi);
+  private readonly categoryStore = inject(CategoryStore);
+  private readonly tvaStore = inject(TvaStore);
+  private readonly panelHost = inject(FoldPanelHostService);
 
-  protected readonly categories = signal<Category[]>([]);
-  protected readonly rates = signal<TvaRate[]>([]);
+  /** Lectures réactives : le panneau écrit dans les stores, la table suit. */
+  protected readonly categories = this.categoryStore.items;
+  protected readonly rates = this.tvaStore.items;
+
   protected readonly draftName = signal('');
   protected readonly draftParent = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
-  protected readonly editingId = signal<string | null>(null);
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'name', label: 'Nom' },
     { key: 'parent', label: 'Parent' },
+    { key: 'products', label: 'Fiches', width: '8rem' },
     { key: 'tva', label: 'TVA (emporter → sur place)' },
     { key: 'channels', label: 'Canaux par défaut' },
-    { key: 'actions', label: '', align: 'right', width: '13rem' },
+    { key: 'actions', label: '', align: 'right', width: '5rem' },
   ];
 
   protected readonly emptyState = {
@@ -72,22 +92,7 @@ export class CategoriesPage {
 
   protected readonly rowKey = (category: Category): string => category.id;
 
-  private readonly regimeById = computed(
-    () => new Map(this.rates().map((rate) => [rate.id, rate])),
-  );
-
-  /** La catégorie en cours de réglage. */
-  protected readonly selected = computed<Category | null>(() => {
-    const id = this.editingId();
-    if (id === null) {
-      return null;
-    }
-    return this.categories().find((c) => c.id === id) ?? null;
-  });
-
-  constructor() {
-    void this.reload();
-  }
+  private readonly rateById = computed(() => new Map(this.rates().map((rate) => [rate.id, rate])));
 
   protected activeCategories(): Category[] {
     return this.categories().filter((category) => !category.isArchived);
@@ -97,17 +102,11 @@ export class CategoriesPage {
     if (category.parentId === null) {
       return '—';
     }
-    const parent = this.categories().find((item) => item.id === category.parentId);
-    return parent?.name.fr ?? '—';
+    return this.categories().find((item) => item.id === category.parentId)?.name.fr ?? '—';
   }
 
-  /** Libellé d'un taux : « Réduit · 5,5 % ». */
-  protected regimeLabel(rate: TvaRate): string {
-    return `${rate.name} · ${formatPercent(rate.percent)}`;
-  }
-
-  protected rateOf(regimeId: string): string {
-    const rate = this.regimeById().get(regimeId);
+  protected rateOf(rateId: string): string {
+    const rate = this.rateById().get(rateId);
     return rate === undefined ? '—' : formatPercent(rate.percent);
   }
 
@@ -119,34 +118,10 @@ export class CategoriesPage {
     return boutiquesWith(category.channelPreset, 'surPlace');
   }
 
-  /** Alerte de démo : la pâtisserie a des cas tva-a-valider (cf. doc §3). */
-  protected isPatisserie(category: Category): boolean {
-    return category.slug.fr.includes('patisser');
-  }
-
-  protected editGamme(category: Category): void {
-    this.editingId.set(category.id);
-  }
-
-  protected closeEditor(): void {
-    this.editingId.set(null);
-  }
-
-  protected async onPreset(category: Category, channels: SalesChannels): Promise<void> {
-    await this.run(() => this.api.setCategoryChannelPreset(category.id, channels));
-  }
-
-  protected async onEmporterTva(category: Category, regimeId: string): Promise<void> {
-    await this.run(() => this.api.setCategoryTva(category.id, regimeId, category.surPlaceTvaId));
-  }
-
-  protected async onSurPlaceTva(category: Category, regimeId: string): Promise<void> {
-    await this.run(() => this.api.setCategoryTva(category.id, category.emporterTvaId, regimeId));
-  }
-
-  protected inputValue(event: Event): string {
-    const target = event.target;
-    return target instanceof HTMLInputElement ? target.value : '';
+  /** Ouvre la famille — une seule action par ligne, réglages et archivage compris. */
+  protected open(category: Category): void {
+    const data: CategoryPanelData = { category, rates: this.rates() };
+    this.panelHost.open(CategoryPanel, { data, side: 'right' });
   }
 
   protected async create(): Promise<void> {
@@ -155,46 +130,15 @@ export class CategoriesPage {
       return;
     }
     const parentId = this.draftParent();
-    await this.run(async () => {
-      await this.api.createCategory(parentId === '' ? { nameFr } : { nameFr, parentId });
-      this.draftName.set('');
-    });
-  }
-
-  protected async rename(category: Category, nameFr: string): Promise<void> {
-    if (nameFr.trim() === '' || nameFr === category.name.fr) {
-      return;
-    }
-    await this.run(() => this.api.renameCategory(category.id, nameFr));
-  }
-
-  protected async archive(category: Category): Promise<void> {
-    await this.run(() => this.api.archiveCategory(category.id));
-  }
-
-  private async run(action: () => Promise<unknown>): Promise<void> {
     this.busy.set(true);
     this.error.set(null);
     try {
-      await action();
-      await this.reload();
+      await this.api.createCategory(parentId === '' ? { nameFr } : { nameFr, parentId });
+      this.draftName.set('');
     } catch (caught) {
       this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
     } finally {
       this.busy.set(false);
-    }
-  }
-
-  private async reload(): Promise<void> {
-    try {
-      const [categories, rates] = await Promise.all([
-        this.api.listCategories(),
-        this.api.listTvaRates(),
-      ]);
-      this.categories.set(categories);
-      this.rates.set(rates);
-    } catch (caught) {
-      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
     }
   }
 }

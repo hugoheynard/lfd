@@ -79,3 +79,50 @@ code {
     grid-template-columns: 1fr;
   }
 }
+
+/* Les trois points nus en bout de ligne : une affordance discrète, pas un
+   bouton. Même geste que le tableau des taux de TVA. */
+.row-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm);
+  background: none;
+  cursor: pointer;
+  color: var(--fold-color-text-muted);
+
+  &:hover,
+  &:focus-visible {
+    background: var(--fold-color-surface-hover);
+    color: var(--fold-color-text);
+  }
+}
+
+.cat-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  width: 100%;
+  padding: var(--fold-space-sm);
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cat-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.cat-card-name {
+  font-weight: 600;
+}
+
+.cat-card-meta {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

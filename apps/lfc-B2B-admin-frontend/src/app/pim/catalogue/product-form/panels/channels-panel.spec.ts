@@ -46,6 +46,7 @@ describe('ChannelsPanel', () => {
         },
         emporterTvaId: 'tva_55',
         surPlaceTvaId: 'tva_55',
+        activeProductCount: 0,
       },
     ]);
     store.categoryId.set('cat_vien');

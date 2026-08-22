@@ -22,6 +22,7 @@ function toCategory(row: CategoryView): Category {
     channelPreset: row.channelPreset,
     emporterTvaId: row.emporterTvaId ?? '',
     surPlaceTvaId: row.surPlaceTvaId ?? '',
+    activeProductCount: row.activeProductCount,
   };
 }
 

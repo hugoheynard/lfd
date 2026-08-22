@@ -1,0 +1,93 @@
+<fold-panel-header [title]="category().name.fr" subtitle="Réglage de la famille" />
+
+<div class="body">
+  <fold-input
+    label="Nom"
+    placeholder="ex. Viennoiseries"
+    required
+    [value]="draftName()"
+    (valueChange)="draftName.set($event)"
+  />
+
+  <section class="block">
+    <span class="block-label">Canaux par défaut</span>
+    <app-channel-matrix
+      [channels]="draftChannels()"
+      [showState]="false"
+      (channelsChange)="draftChannels.set($event)"
+    />
+    <p class="muted">Les fiches de la famille en héritent, sauf réglage propre.</p>
+  </section>
+
+  <section class="block">
+    <span class="block-label">Taux de TVA</span>
+    <div class="tva-pickers">
+      <fold-listbox
+        label="À emporter"
+        [value]="draftEmporterTva()"
+        (selectionChange)="draftEmporterTva.set($event)"
+      >
+        <fold-option value="">— Non réglé —</fold-option>
+        @for (rate of rates(); track rate.id) {
+          <fold-option [value]="rate.id">{{ rateLabel(rate) }}</fold-option>
+        }
+      </fold-listbox>
+      <fold-listbox
+        label="Sur place"
+        [value]="draftSurPlaceTva()"
+        (selectionChange)="draftSurPlaceTva.set($event)"
+      >
+        <fold-option value="">— Non réglé —</fold-option>
+        @for (rate of rates(); track rate.id) {
+          <fold-option [value]="rate.id">{{ rateLabel(rate) }}</fold-option>
+        }
+      </fold-listbox>
+    </div>
+    <p class="muted">
+      Le mode de consommation décide du taux, pas la boutique : c'est la loi, identique dans les
+      deux. Les taux se gèrent dans <a routerLink="/pim/tva">Taux de TVA</a>.
+    </p>
+  </section>
+
+  <!-- La zone dangereuse au bas du panneau, repliée : on décide d'archiver en
+       REGARDANT la famille, pas en choisissant son intention dans un menu avant
+       de l'ouvrir. -->
+  @if (!category().isArchived) {
+    <section class="danger">
+      <button
+        type="button"
+        class="danger-toggle"
+        [attr.aria-expanded]="dangerOpen()"
+        (click)="toggleDanger()"
+      >
+        Archiver cette famille
+      </button>
+
+      @if (dangerOpen()) {
+        @if (activeProducts() > 0) {
+          <!-- Le domaine refuse (invariant 5). On le dit ici plutôt que de
+               laisser l'erreur l'apprendre après le clic. -->
+          <fold-callout appearance="inset" variant="warning">
+            <strong>Archivage impossible.</strong> «&nbsp;{{ category().name.fr }}&nbsp;» porte
+            encore <strong>{{ activeProducts() }} fiche(s) active(s)</strong>. Déplacez-les ou
+            archivez-les d'abord&nbsp;: tant qu'une seule reste, le référentiel refuse.
+          </fold-callout>
+        } @else {
+          <fold-callout appearance="inset" variant="alert">
+            <strong>La famille sortira des listes.</strong> Elle ne portera plus de nouvelle fiche
+            et disparaîtra des choix de parent. Ses réglages — canaux et taux — sont conservés.
+          </fold-callout>
+
+          <button foldButton intent="danger" [disabled]="busy()" (click)="archive()">
+            Archiver la famille
+          </button>
+        }
+      }
+    </section>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" (click)="submit()">Enregistrer</button>
+</footer>

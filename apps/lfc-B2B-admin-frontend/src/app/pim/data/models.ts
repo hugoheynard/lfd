@@ -101,6 +101,12 @@ export interface Category {
   /** Taux de TVA appliqué aux fiches à emporter / sur place. */
   emporterTvaId: string;
   surPlaceTvaId: string;
+  /**
+   * Fiches **actives** portées par la famille. Une famille qui en porte ne peut
+   * pas être archivée : le compte permet de le dire AVANT le clic, plutôt que
+   * de laisser le refus du backend l'apprendre après.
+   */
+  activeProductCount: number;
 }
 
 // Types de synchro Shopify (SyncStatus, PushOutcome, ProductBinding, PushReport,
