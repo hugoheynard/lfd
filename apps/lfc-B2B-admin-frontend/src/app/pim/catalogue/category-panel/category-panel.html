@@ -9,9 +9,8 @@
     (valueChange)="draftName.set($event)"
   />
 
-  <!-- Le parent ne se choisit qu'à la création : le référentiel n'expose aucun
-       déplacement, donc le proposer en édition offrirait un réglage que rien
-       n'enregistrerait. -->
+  <!-- À la création seulement — non pas faute de verbe côté référentiel
+       (`PUT :id/parent` existe), mais faute de l'avoir câblé côté front. -->
   @if (isCreate()) {
     <fold-listbox
       label="Parent"

@@ -258,8 +258,8 @@ describe('CategoryPanel — création', () => {
   });
 
   it('ne propose PAS de parent en édition', () => {
-    // Le référentiel n'expose aucun déplacement : le montrer sur une famille
-    // existante offrirait un réglage que rien n'enregistrerait.
+    // Le front n'appelle pas `PUT :id/parent` (qui existe pourtant côté
+    // référentiel) : le montrer offrirait un réglage que rien n'enregistrerait.
     expect(boxes(setup(category()).host)).not.toContain('Parent');
   });
 

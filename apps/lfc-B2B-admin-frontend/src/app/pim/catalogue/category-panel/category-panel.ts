@@ -101,9 +101,14 @@ export class CategoryPanel {
 
   protected readonly rates = computed<readonly TvaRate[]>(() => this.data()?.rates ?? []);
   /**
-   * Les parents proposables. Le référentiel n'expose pas de déplacement, donc
-   * le parent ne se choisit qu'à la création — le montrer en édition offrirait
-   * un réglage que rien n'enregistrerait.
+   * Les parents proposables — **à la création seulement**.
+   *
+   * Non pas parce que le référentiel ne sait pas déplacer : il expose
+   * `PUT /catalogue/categories/:id/parent`, avec son refus de cycle et son
+   * refus de parent archivé. C'est le FRONT qui ne l'a jamais câblé. Montrer
+   * le parent en édition offrirait donc aujourd'hui un réglage que rien
+   * n'enregistrerait — le jour où `CategoryHttpApi` gagne son `move`, ce
+   * `@if` n'a plus de raison d'être.
    */
   protected readonly parents = computed(() =>
     this.categoryStore.items().filter((item) => !item.isArchived),
