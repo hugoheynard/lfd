@@ -16,6 +16,7 @@ import {
   optionalAnalyticsConfig,
   optionalStripeConfig,
   optionalWebPushConfig,
+  type R2StorageState,
   type R2StorageUsage,
   required,
 } from "./env-readers.js";
@@ -211,6 +212,18 @@ export class AppConfig implements ShopifyCredentialsSource {
    * seul cet usage est indisponible.
    */
   r2Storage(usage: R2StorageUsage): S3StorageConfig | null {
+    return optionalR2Storage(usage).config;
+  }
+
+  /**
+   * L'état complet d'un stockage — dont le cas « à moitié posé », que
+   * {@link AppConfig.r2Storage} réduit à `null` comme n'importe quelle absence.
+   *
+   * Deux lecteurs seulement en ont besoin : le bulletin de démarrage, qui doit
+   * NOMMER ce qui manque, et l'adaptateur, qui doit refuser en le disant. Tout
+   * le reste ne veut savoir que si le canal est utilisable.
+   */
+  r2StorageState(usage: R2StorageUsage): R2StorageState {
     return optionalR2Storage(usage);
   }
 

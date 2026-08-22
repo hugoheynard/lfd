@@ -6,6 +6,21 @@ import { AppConfig } from "../config/app-config.js";
 import { MediaStore, type PublicAsset, type StoredAsset } from "./media-store.js";
 
 /**
+ * Le refus, dit avec ce qui manque VRAIMENT.
+ *
+ * « Le stockage n'est pas configuré » est faux et trompeur quand trois valeurs
+ * sur quatre sont posées : ça envoie chercher un branchement absent là où il y
+ * a une faute de frappe.
+ */
+function missingMediaReason(missing: readonly string[], baseUrl: string | null): string {
+  const names = [...missing, ...(baseUrl === null ? ["R2_MEDIA_PUBLIC_BASE_URL"] : [])];
+  if (names.length === 0) {
+    return "Le stockage des médias n'est pas configuré (R2_MEDIA_BUCKET / R2_MEDIA_ACCESS_KEY_ID / R2_MEDIA_SECRET_ACCESS_KEY / R2_MEDIA_PUBLIC_BASE_URL).";
+  }
+  return `Le stockage des médias est configuré à moitié — il manque ${names.join(", ")}.`;
+}
+
+/**
  * Adaptateur **R2** du stockage des médias publics.
  *
  * Construit à la première image, et seulement si le bucket ET le domaine public
@@ -50,14 +65,12 @@ export class R2MediaStore extends MediaStore {
     if (this.cached !== null) {
       return this.cached;
     }
-    const config = this.config.r2Storage("media");
+    const state = this.config.r2StorageState("media");
     const baseUrl = this.config.mediaPublicBaseUrl();
-    if (config === null || baseUrl === null) {
-      throw new MediaStorageUnavailableError(
-        "Le stockage des médias n'est pas configuré (R2_MEDIA_BUCKET / R2_MEDIA_ACCESS_KEY_ID / R2_MEDIA_SECRET_ACCESS_KEY / R2_MEDIA_PUBLIC_BASE_URL).",
-      );
+    if (state.config === null || baseUrl === null) {
+      throw new MediaStorageUnavailableError(missingMediaReason(state.missing, baseUrl));
     }
-    this.cached = { service: new S3StorageService(config), baseUrl };
+    this.cached = { service: new S3StorageService(state.config), baseUrl };
     return this.cached;
   }
 }

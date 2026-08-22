@@ -184,6 +184,33 @@ function toMissing(check: Check): MissingCapability {
   };
 }
 
+/**
+ * Le soupçon de **faute de frappe** : des variables posées à moitié.
+ *
+ * Délibérément HORS de {@link auditCapabilities}, et pas par scrupule de
+ * rangement. L'audit inventorie des capacités depuis des booléens ; ceci porte
+ * des NOMS, et l'y glisser aurait forcé un tableau dans un instantané que ce
+ * module promet « réduit à des booléens ». C'est la porte d'inventaire qui l'a
+ * dit, en refusant le mélange.
+ *
+ * Un canal absent est un CHOIX (poste de dev, CI). Un canal dont deux valeurs
+ * sur trois sont posées est un ACCIDENT — et il se lit autrement.
+ *
+ * @returns l'anomalie, ou `null` si rien n'est à moitié posé.
+ */
+export function halfConfiguredSettings(names: readonly string[]): MissingCapability | null {
+  if (names.length === 0) {
+    return null;
+  }
+  return {
+    capability: "Réglages posés à moitié",
+    setting: names.join(", "),
+    consequence:
+      "le canal correspondant est ÉTEINT alors qu'il a l'air configuré — vérifiez l'orthographe du nom, c'est presque toujours ça",
+    severity: "blocking",
+  };
+}
+
 function bySeverity(left: MissingCapability, right: MissingCapability): number {
   const rank = (severity: CapabilitySeverity): number => (severity === "blocking" ? 0 : 1);
   return rank(left.severity) - rank(right.severity);

@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { auditCapabilities, type CapabilitySnapshot } from "../capability-audit.js";
+import {
+  auditCapabilities,
+  halfConfiguredSettings,
+  type CapabilitySnapshot,
+} from "../capability-audit.js";
 
 /** Tout est branché : le cas nominal, celui qui ne doit rien dire. */
 const ALL_PRESENT: CapabilitySnapshot = {
@@ -24,6 +28,27 @@ function without(...keys: readonly (keyof CapabilitySnapshot)[]): CapabilitySnap
     ALL_PRESENT,
   );
 }
+
+describe("halfConfiguredSettings", () => {
+  it("ne dit rien quand rien n'est à moitié posé", () => {
+    // Un canal ABSENT est un choix (dev, CI). Seul le demi-réglage est un
+    // accident, et lui seul doit crier.
+    expect(halfConfiguredSettings([])).toBeNull();
+  });
+
+  it("nomme les variables manquantes, et tient ça pour bloquant", () => {
+    const found = halfConfiguredSettings(["R2_MEDIA_ACCESS_KEY_ID", "R2_MEDIA_SECRET_ACCESS_KEY"]);
+
+    expect(found?.setting).toContain("R2_MEDIA_ACCESS_KEY_ID");
+    expect(found?.setting).toContain("R2_MEDIA_SECRET_ACCESS_KEY");
+    expect(found?.severity).toBe("blocking");
+  });
+
+  it("dit que le CANAL est éteint, pas que l'API est morte", () => {
+    // Toute la correction tient dans cette nuance : le démarrage a survécu.
+    expect(halfConfiguredSettings(["R2_MEDIA_BUCKET"])?.consequence).toMatch(/ÉTEINT/);
+  });
+});
 
 describe("auditCapabilities", () => {
   it("ne dit rien quand tout est configuré", () => {

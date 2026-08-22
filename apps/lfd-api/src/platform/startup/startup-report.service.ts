@@ -1,7 +1,11 @@
 import { Injectable, Logger, type OnApplicationBootstrap } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
-import { auditCapabilities, type MissingCapability } from "./capability-audit.js";
+import {
+  auditCapabilities,
+  halfConfiguredSettings,
+  type MissingCapability,
+} from "./capability-audit.js";
 
 /**
  * Le **bulletin de démarrage** : ce que cette instance ne saura pas faire, dit
@@ -49,7 +53,23 @@ export class StartupReport implements OnApplicationBootstrap {
    * le container redémarre.
    */
   missing(): readonly MissingCapability[] {
-    return [...auditCapabilities(this.snapshot()), ...this.reported];
+    const halfPosed = halfConfiguredSettings(this.halfConfigured());
+    return [
+      ...(halfPosed === null ? [] : [halfPosed]),
+      ...auditCapabilities(this.snapshot()),
+      ...this.reported,
+    ];
+  }
+
+  /**
+   * Les variables posées à moitié, tous stockages confondus. **Des noms, jamais
+   * des valeurs** : ce constat part dans un journal.
+   */
+  private halfConfigured(): readonly string[] {
+    return [
+      ...this.config.r2StorageState("kbis").missing,
+      ...this.config.r2StorageState("media").missing,
+    ];
   }
 
   onApplicationBootstrap(): void {
@@ -79,15 +99,16 @@ export class StartupReport implements OnApplicationBootstrap {
 
   /** L'état des réglages, réduit à des booléens : aucune valeur n'est lue ici. */
   private snapshot() {
+    const kbis = this.config.r2StorageState("kbis");
+    const media = this.config.r2StorageState("media");
     return {
       hasManagementCredentials: this.config.auth0ManagementCredentials() !== null,
       hasAdminAudience: this.config.auth0AdminAudience() !== null,
       hasMailerKey: this.config.mailerConfig().apiKey !== null,
       hasMailerWebhookSecret: this.config.mailerConfig().webhookSecret !== null,
       hasWebPushKeys: this.config.webPushConfig() !== null,
-      hasStorage: this.config.r2Storage("kbis") !== null,
-      hasMediaStorage:
-        this.config.r2Storage("media") !== null && this.config.mediaPublicBaseUrl() !== null,
+      hasStorage: kbis.config !== null,
+      hasMediaStorage: media.config !== null && this.config.mediaPublicBaseUrl() !== null,
       hasStripe: this.config.stripeConfig() !== null,
       hasClientBaseUrl: this.config.clientBaseUrl() !== null,
       hasShopifyCredentials: this.config.hasShopifyCredentials(),

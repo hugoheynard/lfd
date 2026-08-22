@@ -250,6 +250,14 @@ est derrière un port, et l'absence de configuration donne un refus explicite
 4. ✅ Le panneau Visuels : dépôt de fichier, aperçu au bon ratio, texte
    alternatif enfin saisissable.
 
+**Une configuration à moitié posée n'est plus fatale.** Poser les Variables puis
+le secret est une séquence de déploiement ordinaire ; jusqu'au 2026-08-22 elle
+faisait **échouer le démarrage de toute l'API**, parce que le lecteur levait sur
+un bucket sans ses clés. C'était contraire à ce que `capability-audit` énonce
+lui-même — seules trois variables ont le droit de tuer le boot. Désormais
+l'usage s'éteint, le bulletin de démarrage **nomme les variables manquantes**,
+et le reste de la plateforme sert.
+
 ⚠️ **Un déploiement ne suffira pas à mettre ça en service.** Les variables ne
 sont lues qu'au démarrage du container, et poser un secret ne déclenche aucun
 rollout : il faut une image neuve après avoir posé les quatre valeurs.

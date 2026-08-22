@@ -1,11 +1,11 @@
 // @ts-check
-import eslint from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+import eslint from "@eslint/js";
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 
 const ENV_MSG =
-  'Accès direct à l’environnement interdit : passer par AppConfig (src/infra/config/app-config.ts).';
+  "Accès direct à l’environnement interdit : passer par AppConfig (src/infra/config/app-config.ts).";
 
 /**
  * Seuls fichiers autorisés à lire l'environnement : la passerelle, son test,
@@ -14,21 +14,23 @@ const ENV_MSG =
  * pas de la dérogation par accident.
  */
 const ENV_ALLOWLIST = [
-  'src/platform/config/app-config.ts',
+  "src/platform/config/app-config.ts",
   // Les lecteurs, extraits d'app-config pour qu'il repasse sous 300 lignes.
   // Même discipline, même dossier — mais listé à la main, comme le reste.
-  'src/platform/config/env-readers.ts',
-  'src/platform/config/__tests__/app-config.spec.ts',
-  'test/setup-env.ts',
+  "src/platform/config/env-readers.ts",
+  "src/platform/config/__tests__/app-config.spec.ts",
+  // Même raison : il vérifie le LECTEUR qui a le monopole de `process.env`.
+  "src/platform/config/__tests__/env-readers-r2.spec.ts",
+  "test/setup-env.ts",
 ];
 
 export default tseslint.config(
   {
     ignores: [
-      'eslint.config.mjs',
-      'src/platform/database/client/**',
+      "eslint.config.mjs",
+      "src/platform/database/client/**",
       // Le second client Prisma, généré lui aussi — même raison, autre base.
-      'src/pim/infra/database/client/**',
+      "src/pim/infra/database/client/**",
     ],
   },
   eslint.configs.recommended,
@@ -40,9 +42,9 @@ export default tseslint.config(
         ...globals.node,
         ...globals.jest,
       },
-      sourceType: 'module',
+      sourceType: "module",
       parserOptions: {
-        project: ['./tsconfig.json', './tsconfig.test.json'],
+        project: ["./tsconfig.json", "./tsconfig.test.json"],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -53,23 +55,22 @@ export default tseslint.config(
       // Les trois règles étaient relâchées à l'amorçage du projet. Le code ne
       // les violait nulle part au moment du durcissement : passer en `error`
       // ne demandait aucun nettoyage, et empêche la dette d'entrer.
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-floating-promises': 'error',
-      '@typescript-eslint/no-unsafe-argument': 'error',
-      'prettier/prettier': ['error', { endOfLine: 'auto' }],
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-unsafe-argument": "error",
+      "prettier/prettier": ["error", { endOfLine: "auto" }],
 
       // --- L'environnement ne se lit QUE via AppConfig ---------------------
       // Sans ça, la passerelle serait contournée au premier oubli.
-      'no-restricted-properties': [
-        'error',
-        { object: 'process', property: 'env', message: ENV_MSG },
+      "no-restricted-properties": [
+        "error",
+        { object: "process", property: "env", message: ENV_MSG },
       ],
-      'no-restricted-syntax': [
-        'error',
+      "no-restricted-syntax": [
+        "error",
         // process['env'] — accès calculé
         {
-          selector:
-            "MemberExpression[object.name='process'][property.value='env']",
+          selector: "MemberExpression[object.name='process'][property.value='env']",
           message: ENV_MSG,
         },
         // `const p = process` ET `const { env } = process` :
@@ -86,12 +87,12 @@ export default tseslint.config(
         },
       ],
       // import { env } from 'node:process'
-      'no-restricted-imports': [
-        'error',
+      "no-restricted-imports": [
+        "error",
         {
           paths: [
-            { name: 'process', message: ENV_MSG },
-            { name: 'node:process', message: ENV_MSG },
+            { name: "process", message: ENV_MSG },
+            { name: "node:process", message: ENV_MSG },
           ],
         },
       ],
@@ -100,9 +101,9 @@ export default tseslint.config(
   {
     files: ENV_ALLOWLIST,
     rules: {
-      'no-restricted-properties': 'off',
-      'no-restricted-syntax': 'off',
-      'no-restricted-imports': 'off',
+      "no-restricted-properties": "off",
+      "no-restricted-syntax": "off",
+      "no-restricted-imports": "off",
     },
   },
 );

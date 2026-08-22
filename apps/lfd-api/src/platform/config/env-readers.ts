@@ -79,33 +79,71 @@ export function optionalManagementCredentials(): Auth0ManagementCredentials | nu
  * d'entreprise. Le jour où un autre bucket sert à des assets publics, un jeton
  * fuité depuis là ne doit pas ouvrir les papiers des clients.
  *
- * Les deux clés vont ENSEMBLE : une configuration à moitié posée est une erreur
- * de démarrage, pas un `undefined` découvert au premier dépôt de fichier.
+ * Les trois valeurs vont ENSEMBLE. Une configuration à moitié posée n'est
+ * cependant PAS une erreur de démarrage — voir {@link R2StorageState} : elle
+ * éteint l'usage et se dit dans le bulletin, elle ne couche pas l'API.
  */
-export function optionalR2Storage(usage: R2StorageUsage): S3StorageConfig | null {
+export function optionalR2Storage(usage: R2StorageUsage): R2StorageState {
   const names = R2_SETTINGS[usage];
-  const bucket = optionalString(names.bucket) ?? "";
-  const accessKeyId = optionalString(names.accessKeyId) ?? "";
-  const secretAccessKey = optionalString(names.secretAccessKey) ?? "";
+  const values = {
+    [names.bucket]: optionalString(names.bucket) ?? "",
+    [names.accessKeyId]: optionalString(names.accessKeyId) ?? "",
+    [names.secretAccessKey]: optionalString(names.secretAccessKey) ?? "",
+  };
+  const posed = Object.entries(values).filter(([, value]) => value !== "");
 
-  if (bucket === "" && accessKeyId === "" && secretAccessKey === "") {
-    return null;
+  if (posed.length === 0) {
+    return ABSENT;
   }
-  if (bucket === "" || accessKeyId === "" || secretAccessKey === "") {
-    throw new Error(
-      `${names.bucket}, ${names.accessKeyId} et ${names.secretAccessKey} vont ensemble : ` +
-        "renseignez les trois, ou aucun.",
-    );
+  if (posed.length < Object.keys(values).length) {
+    // À MOITIÉ posé : on refuse l'usage, pas le démarrage — mais on nomme ce
+    // qui manque, sans quoi ce serait la panne silencieuse que tout ce module
+    // existe pour éviter.
+    return {
+      config: null,
+      missing: Object.entries(values)
+        .filter(([, value]) => value === "")
+        .map(([name]) => name),
+    };
   }
+
   const endpoint = optionalString(names.endpoint) ?? optionalString("R2_ENDPOINT");
   const region = optionalString("R2_REGION");
   return {
-    bucket,
-    accessKeyId,
-    secretAccessKey,
-    ...(endpoint === null ? {} : { endpoint }),
-    ...(region === null ? {} : { region }),
+    config: {
+      bucket: values[names.bucket] ?? "",
+      accessKeyId: values[names.accessKeyId] ?? "",
+      secretAccessKey: values[names.secretAccessKey] ?? "",
+      ...(endpoint === null ? {} : { endpoint }),
+      ...(region === null ? {} : { region }),
+    },
+    missing: [],
   };
+}
+
+const ABSENT: R2StorageState = { config: null, missing: [] };
+
+/**
+ * L'état d'un stockage, en **trois** cas et non deux.
+ *
+ * - `config` posée, `missing` vide → utilisable ;
+ * - `config` nulle, `missing` vide → délibérément absent (dev, CI) : normal ;
+ * - `config` nulle, `missing` peuplé → **à moitié posé**, donc presque
+ *   certainement une faute de frappe dans un nom de variable.
+ *
+ * Le troisième cas levait, et faisait donc échouer le DÉMARRAGE de toute l'API
+ * — alors que `capability-audit` énonce que seules trois variables ont ce droit,
+ * et que « rendre ces réglages obligatoires mettrait la boutique hors ligne pour
+ * une invitation cassée ». Poser les variables puis le secret est une séquence
+ * de déploiement ordinaire ; elle ne doit pas coûter une panne totale.
+ *
+ * Le refus est donc devenu une DONNÉE : l'usage s'éteint, le bulletin de
+ * démarrage nomme les variables manquantes, et le reste de la plateforme sert.
+ */
+export interface R2StorageState {
+  readonly config: S3StorageConfig | null;
+  /** Les variables posées à moitié. Vide ⇒ rien à signaler. */
+  readonly missing: readonly string[];
 }
 
 /** Les stockages de cette app. Un de plus ⇒ une entrée de plus ci-dessous. */
@@ -159,12 +197,11 @@ export function optionalMediaPublicBaseUrl(): string | null {
     return null;
   }
   const trimmed = raw.replace(/\/+$/, "");
-  if (!trimmed.startsWith("https://")) {
-    throw new Error(
-      `R2_MEDIA_PUBLIC_BASE_URL doit être une URL https (reçu : ${JSON.stringify(raw)}).`,
-    );
-  }
-  return trimmed;
+  // Une valeur non-https est traitée comme ABSENTE plutôt que fatale, pour la
+  // même raison que ci-dessus : servir des images en clair depuis une adresse
+  // qu'on n'a pas voulue serait pire, mais coucher l'API pour ça le serait
+  // encore plus. L'usage s'éteint, et le bulletin le dit.
+  return trimmed.startsWith("https://") ? trimmed : null;
 }
 
 /**
