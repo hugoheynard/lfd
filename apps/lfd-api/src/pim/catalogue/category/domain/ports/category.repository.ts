@@ -11,7 +11,23 @@ import type { Category } from "../entities/category.js";
  */
 export abstract class CategoryRepository {
   abstract findById(id: string): Promise<Category | null>;
+  /**
+   * La famille qui porte ce slug français, s'il y en a une — **archivées
+   * comprises**.
+   *
+   * Le slug est dérivé du nom, jamais saisi, et sert d'identifiant en aval :
+   * préfixe de famille de tous les SKU, et clé projetée vers le catalogue B2B.
+   * Deux familles qui le partagent, c'est un identifiant qui cesse
+   * d'identifier. Les archivées comptent : elles gardent leurs fiches, donc
+   * leur préfixe de SKU reste pris.
+   */
+  abstract findBySlugFr(slugFr: string): Promise<Category | null>;
   abstract listAll(): Promise<Category[]>;
+  /**
+   * Les familles d'UN niveau, rangées. Réordonner ou renuméroter une fratrie
+   * chargeait l'arbre entier pour en garder une poignée.
+   */
+  abstract listChildren(parentId: string | null): Promise<Category[]>;
   abstract add(category: Category): Promise<void>;
   abstract save(category: Category): Promise<void>;
   /** Écrit plusieurs familles **en une transaction** — le réordonnancement. */

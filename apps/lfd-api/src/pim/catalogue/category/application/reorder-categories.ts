@@ -29,8 +29,8 @@ export class ReorderCategoriesHandler implements ICommandHandler<ReorderCategori
   constructor(private readonly categories: CategoryRepository) {}
 
   async execute(command: ReorderCategoriesCommand): Promise<void> {
-    const living = (await this.categories.listAll()).filter(
-      (category) => category.parentId === command.parentId && !category.isArchived,
+    const living = (await this.categories.listChildren(command.parentId)).filter(
+      (category) => !category.isArchived,
     );
     assertCompleteOrder(
       living.map((category) => category.id),

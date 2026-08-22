@@ -15,6 +15,7 @@ import {
   CategoryHasActiveProductsError,
   CategoryNotFoundError,
   CategoryOrderMismatchError,
+  CategorySlugTakenError,
   CategoryTvaWithoutChannelError,
   CategoryUnknownEmplacementError,
 } from "../../domain/errors/category-errors.js";
@@ -75,9 +76,31 @@ class InMemoryCategories extends CategoryRepository {
     );
     return Promise.resolve(live.length);
   }
+  /**
+   * `max(position) + 1`, comme le vrai dépôt — et **pas** `siblings.length`.
+   *
+   * Les deux coïncident tant que les rangs sont contigus. Ils divergent dès
+   * qu'il y a un trou, et un déplacement en laisse un : sur `[0, 2]`, le compte
+   * rend `2`, qui est déjà pris, là où la base rend `3`. Un double qui ne ment
+   * pas assez pour qu'on le remarque fait passer des tests sur un état que la
+   * production ne produit jamais.
+   */
   nextPosition(parentId: string | null): Promise<number> {
     const siblings = [...this.stored.values()].filter((row) => row.parentId === parentId);
-    return Promise.resolve(siblings.length);
+    const highest = siblings.reduce((max, row) => Math.max(max, row.position), -1);
+    return Promise.resolve(highest + 1);
+  }
+
+  findBySlugFr(slugFr: string): Promise<Category | null> {
+    const found = [...this.stored.values()].find((row) => row.slug.fr === slugFr);
+    return Promise.resolve(found === undefined ? null : Category.reconstitute(found));
+  }
+
+  listChildren(parentId: string | null): Promise<Category[]> {
+    const level = [...this.stored.values()]
+      .filter((row) => row.parentId === parentId)
+      .sort((a, b) => a.position - b.position);
+    return Promise.resolve(level.map((row) => Category.reconstitute(row)));
   }
 
   /** Confort de lecture pour les assertions. */
@@ -419,6 +442,81 @@ describe("SetCategoryTvaHandler", () => {
         new SetCategoryTvaCommand(id!, { emporter: "tva_5", surPlace: null, b2b: null }),
       ),
     ).rejects.toBeInstanceOf(CategoryTvaWithoutChannelError);
+  });
+});
+
+describe("le rang d’un niveau", () => {
+  /**
+   * Les rangs sont **ordinaux, pas contigus**. Un déplacement laisse un trou
+   * dans le niveau quitté, et c'est sans conséquence tant que le rang suivant
+   * se prend au MAXIMUM et non au compte — sinon il retombe sur un rang occupé.
+   */
+  it("ne redonne jamais un rang déjà pris, même après un départ", async () => {
+    const repo = new InMemoryCategories();
+    const [ailleurs, first, second, third] = await openRoots(repo, 4);
+    // `second` s'en va : la racine garde les rangs 0 et 2 pour first et third.
+    await new MoveCategoryHandler(repo).execute(new MoveCategoryCommand(second!, ailleurs!));
+
+    const [nouvelle] = await openRoots(repo, 1);
+
+    const taken = [repo.at(first!).position, repo.at(third!).position];
+    expect(taken).toEqual([1, 3]);
+    expect(taken).not.toContain(repo.at(nouvelle!).position);
+  });
+});
+
+describe("le slug est unique", () => {
+  /**
+   * Il est dérivé du nom et sert d'identifiant en aval : préfixe de famille de
+   * tous les SKU, et clé projetée vers le catalogue B2B.
+   */
+  it("refuse une seconde famille du même nom", async () => {
+    const repo = new InMemoryCategories();
+    const handler = new CreateCategoryHandler(repo, new SequentialIds());
+    await handler.execute(new CreateCategoryCommand({ nameFr: "Pains" }));
+
+    await expect(
+      handler.execute(new CreateCategoryCommand({ nameFr: "Pains" })),
+    ).rejects.toBeInstanceOf(CategorySlugTakenError);
+  });
+
+  it("refuse un renommage qui prend le slug d’une autre", async () => {
+    const repo = new InMemoryCategories();
+    const handler = new CreateCategoryHandler(repo, new SequentialIds());
+    await handler.execute(new CreateCategoryCommand({ nameFr: "Pains" }));
+    const second = await handler.execute(new CreateCategoryCommand({ nameFr: "Viennoiseries" }));
+
+    await expect(
+      new RenameCategoryHandler(repo).execute(
+        new RenameCategoryCommand(second, { nameFr: "Pains" }),
+      ),
+    ).rejects.toBeInstanceOf(CategorySlugTakenError);
+  });
+
+  it("laisse une famille garder son propre slug en se renommant à peine", async () => {
+    // « Pains » → « Pains  » dérive le même slug : ce n'est pas une collision
+    // avec un voisin, c'est elle-même.
+    const repo = new InMemoryCategories();
+    const [id] = await openRoots(repo, 1);
+    const own = repo.at(id!).slug.fr;
+
+    await new RenameCategoryHandler(repo).execute(
+      new RenameCategoryCommand(id!, { nameFr: repo.at(id!).name.fr }),
+    );
+
+    expect(repo.at(id!).slug.fr).toBe(own);
+  });
+
+  /** Une archivée garde ses fiches, donc son préfixe de SKU reste pris. */
+  it("compte aussi les familles archivées", async () => {
+    const repo = new InMemoryCategories();
+    const handler = new CreateCategoryHandler(repo, new SequentialIds());
+    const id = await handler.execute(new CreateCategoryCommand({ nameFr: "Pains" }));
+    await archive(repo).execute(new ArchiveCategoryCommand(id));
+
+    await expect(
+      handler.execute(new CreateCategoryCommand({ nameFr: "Pains" })),
+    ).rejects.toBeInstanceOf(CategorySlugTakenError);
   });
 });
 

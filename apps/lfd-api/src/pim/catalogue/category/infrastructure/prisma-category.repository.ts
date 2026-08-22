@@ -64,6 +64,22 @@ export class PrismaCategoryRepository extends CategoryRepository {
     return row === null ? null : toCategory(row);
   }
 
+  /** Filtre sur le chemin `fr` de la colonne `jsonb` — pas de lecture en mémoire. */
+  async findBySlugFr(slugFr: string): Promise<Category | null> {
+    const row = await this.prisma.category.findFirst({
+      where: { slug: { path: ["fr"], equals: slugFr } },
+    });
+    return row === null ? null : toCategory(row);
+  }
+
+  async listChildren(parentId: string | null): Promise<Category[]> {
+    const rows = await this.prisma.category.findMany({
+      where: { parentId },
+      orderBy: [{ position: "asc" }],
+    });
+    return rows.map(toCategory);
+  }
+
   async listAll(): Promise<Category[]> {
     const rows = await this.prisma.category.findMany({ orderBy: [{ position: "asc" }] });
     return rows.map(toCategory);

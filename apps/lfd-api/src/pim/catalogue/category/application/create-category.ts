@@ -6,7 +6,7 @@ import { CategoryArchivedParentError } from "../domain/errors/category-errors.js
 import { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { localizedText } from "../../shared/domain/value-objects/localized-text.js";
-import { requireCategory } from "./category-support.js";
+import { requireCategory, requireFreeSlug } from "./category-support.js";
 
 export interface CreateCategoryPayload {
   readonly nameFr: string;
@@ -50,6 +50,7 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
       parentId,
       position: await this.categories.nextPosition(parentId),
     });
+    await requireFreeSlug(this.categories, category);
     await this.categories.add(category);
     return category.id;
   }
