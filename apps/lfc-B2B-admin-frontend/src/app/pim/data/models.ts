@@ -156,6 +156,14 @@ export interface Emplacement {
   baseUrl: string;
   /** Tables (si sur place) — dérivées du nombre de tables. */
   tables: EmplacementTable[];
+  /**
+   * Combien de **familles** cochent cet emplacement dans leurs canaux.
+   *
+   * Vient de l'API pour que l'écran DISE qu'une suppression échouera avant
+   * qu'on clique : le référentiel refuse de supprimer un point de vente encore
+   * vendeur. Même raison que le compte de fiches sur une famille.
+   */
+  usedByCategories: number;
 }
 
 export type AllergenScope = 'eu' | 'world';

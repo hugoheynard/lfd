@@ -7,6 +7,7 @@ import {
   FoldDropdownComponent,
   FoldDropdownItemComponent,
   FoldElementTitleComponent,
+  FoldEmptyStateComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
   FoldIconComponent,
@@ -14,6 +15,8 @@ import {
   FoldPanelHostService,
   FoldPopoverTriggerDirective,
 } from 'fold-ng';
+
+import { httpErrorMessage } from '@lfd/endpoints';
 
 import type { Emplacement, EmplacementTable } from '../../data/models';
 import { slugify } from '../../data/sku';
@@ -38,6 +41,7 @@ import { qrSvgString } from '../../../shared/qr-code/qr';
   imports: [
     FoldCardComponent,
     FoldButtonComponent,
+    FoldEmptyStateComponent,
     FoldCalloutComponent,
     FoldIconComponent,
     FoldElementTitleComponent,
@@ -58,6 +62,8 @@ export class EmplacementList {
 
   /** Liste réactive : suit le store, donc les mutations du panel se voient direct. */
   protected readonly emplacements = this.store.items;
+  /** Pourquoi la liste est vide — `null` = elle l'est vraiment. */
+  protected readonly loadError = this.store.loadError;
 
   /** Erreurs des actions QR (les mutations de la boutique remontent via le panel). */
   protected readonly error = signal<string | null>(null);
@@ -120,12 +126,23 @@ export class EmplacementList {
     URL.revokeObjectURL(href);
   }
 
+  /** Relance la lecture : le vide d'erreur propose de réessayer, pas de créer. */
+  protected async retry(): Promise<void> {
+    await this.run(() => this.store.reload());
+  }
+
+  /**
+   * Le message est celui du référentiel, pas le `message` brut d'une
+   * `HttpErrorResponse` — qui affichait « Http failure response for
+   * http://… : 409 Conflict » là où le backend avait pris soin de dire quoi
+   * faire.
+   */
   private async run(action: () => Promise<unknown>): Promise<void> {
     this.error.set(null);
     try {
       await action();
     } catch (caught) {
-      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
+      this.error.set(httpErrorMessage(caught, 'Opération refusée.'));
     }
   }
 }

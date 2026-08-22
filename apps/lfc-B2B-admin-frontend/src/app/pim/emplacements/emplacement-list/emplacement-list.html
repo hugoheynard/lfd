@@ -4,6 +4,29 @@
   </fold-callout>
 }
 
+<!-- Trois vides, trois causes, trois gestes : rien du tout, rien parce qu'on
+     n'a pas pu lire, ou une vraie liste. Il n'y en avait AUCUN — zéro
+     emplacement rendait une page blanche, et un chargement échoué rendait
+     exactement la même. -->
+@if (emplacements().length === 0) {
+  @if (loadError(); as reason) {
+    <fold-empty-state
+      tone="alert"
+      icon="places"
+      title="Emplacements illisibles"
+      [subtitle]="reason"
+    >
+      <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+    </fold-empty-state>
+  } @else {
+    <fold-empty-state
+      icon="places"
+      title="Aucun emplacement"
+      subtitle="Ouvrez votre première boutique : c'est elle qui apparaîtra dans les canaux d'une famille."
+    />
+  }
+}
+
 @for (emp of emplacements(); track emp.id) {
   <fold-card class="emp">
     <fold-element-title

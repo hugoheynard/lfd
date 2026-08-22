@@ -2,9 +2,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   inject,
   input,
+  linkedSignal,
   signal,
 } from '@angular/core';
 
@@ -18,6 +18,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { NotifyService } from '../../../notify.service';
 import type { Emplacement } from '../../data/models';
 import { EmplacementStore } from '../emplacement-store';
 
@@ -55,21 +56,33 @@ export interface EmplacementPanelData {
 export class EmplacementFormPanel {
   private readonly store = inject(EmplacementStore);
   private readonly ref = inject(FoldPanelRef);
+  private readonly notify = inject(NotifyService);
 
   /** Boutique + intention ; absent = création. */
   readonly data = input<EmplacementPanelData | undefined>(undefined);
 
-  protected readonly draftName = signal('');
-  protected readonly draftBaseUrl = signal('');
-  protected readonly draftClickCollect = signal(true);
-  protected readonly draftSurPlace = signal(false);
-  protected readonly draftTables = signal<number | null>(0);
+  protected readonly emplacement = computed(() => this.data()?.emplacement);
+
+  /**
+   * Les brouillons **dérivent** de la boutique reçue.
+   *
+   * `linkedSignal` plutôt qu'un `effect` d'amorçage : l'effet re-tirait à chaque
+   * changement de l'entrée et **écrasait la saisie en cours**, et il laissait
+   * une fenêtre où les champs étaient vides — assez pour qu'un enregistrement
+   * précoce parte avec un nom vide. Même correction que sur le panneau famille.
+   */
+  protected readonly draftName = linkedSignal(() => this.emplacement()?.name ?? '');
+  protected readonly draftBaseUrl = linkedSignal(() => this.emplacement()?.baseUrl ?? '');
+  protected readonly draftClickCollect = linkedSignal(
+    () => this.emplacement()?.clickCollect ?? true,
+  );
+  protected readonly draftSurPlace = linkedSignal(() => this.emplacement()?.surPlace ?? false);
+  protected readonly draftTables = linkedSignal<number | null>(
+    () => this.emplacement()?.tables.length ?? 0,
+  );
   /** Saisie de confirmation en mode suppression (doit égaler le nom de la boutique). */
   protected readonly confirmName = signal('');
-  protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
-
-  protected readonly emplacement = computed(() => this.data()?.emplacement);
   protected readonly isEdit = computed(() => this.data()?.mode === 'edit');
   protected readonly isDelete = computed(() => this.data()?.mode === 'delete');
 
@@ -97,35 +110,41 @@ export class EmplacementFormPanel {
     return target !== undefined && this.confirmName().trim() === target.name;
   });
 
-  constructor() {
-    // Préremplit les champs quand une boutique est fournie (édition).
-    effect(() => {
-      const target = this.emplacement();
-      if (target !== undefined) {
-        this.draftName.set(target.name);
-        this.draftBaseUrl.set(target.baseUrl);
-        this.draftClickCollect.set(target.clickCollect);
-        this.draftSurPlace.set(target.surPlace);
-        this.draftTables.set(target.tables.length);
-      }
-    });
-  }
+  /** Combien de familles vendent ici — le référentiel refusera tant que > 0. */
+  protected readonly usedByCategories = computed(() => this.emplacement()?.usedByCategories ?? 0);
+
+  /**
+   * Supprimable : **personne ne s'en sert**, et le nom est confirmé.
+   *
+   * Le compte vient de l'API. Sans lui, le bouton était armé quoi qu'il arrive
+   * et le refus n'arrivait qu'après le clic — alors que le panneau des taux, à
+   * deux dossiers d'ici, désarme le sien pour exactement cette raison.
+   */
+  protected readonly canDelete = computed(
+    () => this.usedByCategories() === 0 && this.confirmMatches(),
+  );
 
   protected get canSubmit(): boolean {
     if (this.isDelete()) {
-      return this.confirmMatches();
+      return this.canDelete();
     }
     return this.draftName().trim() !== '';
   }
 
+  /**
+   * Le panneau **reste ouvert** sur un refus, et le message est celui du
+   * référentiel — « Emplacement encore vendeur : 3 famille(s) le cochent » —
+   * et non le `message` brut d'une `HttpErrorResponse`, qui aurait affiché
+   * « Http failure response for http://… : 409 Conflict ». Le backend prend
+   * soin de dire quoi faire ; l'écran le lui reprenait.
+   */
   protected async submit(): Promise<void> {
     this.busy.set(true);
-    this.error.set(null);
     try {
       await this.persist();
       this.ref.close(true);
     } catch (caught) {
-      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
+      this.notify.refused(caught, 'Opération refusée.');
     } finally {
       this.busy.set(false);
     }
@@ -139,7 +158,10 @@ export class EmplacementFormPanel {
     }
     const name = this.draftName().trim();
     if (name === '') {
-      return;
+      // Le bouton est désarmé sur un nom vide ; si on arrive quand même ici,
+      // se taire et fermer serait annoncer un enregistrement qui n'a pas eu
+      // lieu. On refuse, et le va-et-vient ci-dessus le dit.
+      throw new Error('Le nom est obligatoire.');
     }
     const payload = {
       name,

@@ -1,28 +1,33 @@
 <fold-panel-header [title]="heading()" [subtitle]="subtitle()" />
 
 <div class="body">
-  @if (error(); as message) {
-    <fold-callout appearance="inset" variant="alert" role="alert">
-      {{ message }}
-    </fold-callout>
-  }
-
   @if (isDelete()) {
-    <!-- Zone dangereuse : confirmation en retapant le nom de la boutique. -->
-    <fold-callout appearance="inset" variant="alert">
-      <strong>Zone dangereuse.</strong> Vous êtes sur le point de supprimer «&nbsp;{{
-        emplacement()?.name
-      }}&nbsp;». Ses <strong>tables</strong> et leurs URLs de click &amp; collect disparaissent, et
-      les <strong>QR déjà imprimés</strong> deviennent caducs — il faudra les régénérer sur une
-      nouvelle boutique.
-    </fold-callout>
+    <!-- Le refus se DIT avant le clic : le référentiel refusera tant qu'une
+         famille coche cet emplacement, et un bouton dont on sait qu'il
+         échouera n'a pas à être offert. Le compte voyage avec la vue. -->
+    @if (usedByCategories() > 0) {
+      <fold-callout appearance="inset" variant="alert" role="alert">
+        <strong>Suppression impossible.</strong> «&nbsp;{{ emplacement()?.name }}&nbsp;» est encore
+        coché par <strong>{{ usedByCategories() }} famille(s)</strong>. Décochez-le de leurs canaux
+        par défaut d'abord&nbsp;: tant qu'une seule le vend, le référentiel refuse.
+      </fold-callout>
+    } @else {
+      <!-- Zone dangereuse : confirmation en retapant le nom de la boutique. -->
+      <fold-callout appearance="inset" variant="alert">
+        <strong>Zone dangereuse.</strong> Vous êtes sur le point de supprimer «&nbsp;{{
+          emplacement()?.name
+        }}&nbsp;». Ses <strong>tables</strong> et leurs URLs de click &amp; collect disparaissent,
+        et les <strong>QR déjà imprimés</strong> deviennent caducs — il faudra les régénérer sur une
+        nouvelle boutique.
+      </fold-callout>
 
-    <fold-input
-      label="Retapez le nom de la boutique pour confirmer"
-      [placeholder]="emplacement()?.name ?? ''"
-      [value]="confirmName()"
-      (valueChange)="confirmName.set($event)"
-    />
+      <fold-input
+        label="Retapez le nom de la boutique pour confirmer"
+        [placeholder]="emplacement()?.name ?? ''"
+        [value]="confirmName()"
+        (valueChange)="confirmName.set($event)"
+      />
+    }
   } @else {
     <fold-input
       label="Nom"

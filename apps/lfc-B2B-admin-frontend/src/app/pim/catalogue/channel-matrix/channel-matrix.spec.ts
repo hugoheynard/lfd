@@ -16,12 +16,21 @@ const EMPLACEMENTS: Emplacement[] = [
   {
     id: 'emp_village',
     name: 'Village',
+    usedByCategories: 0,
     clickCollect: true,
     surPlace: true,
     baseUrl: '',
     tables: [],
   },
-  { id: 'emp_val', name: 'Val', clickCollect: true, surPlace: false, baseUrl: '', tables: [] },
+  {
+    id: 'emp_val',
+    name: 'Val',
+    usedByCategories: 0,
+    clickCollect: true,
+    surPlace: false,
+    baseUrl: '',
+    tables: [],
+  },
 ];
 
 function render(

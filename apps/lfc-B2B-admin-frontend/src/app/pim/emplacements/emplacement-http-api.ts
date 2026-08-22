@@ -20,6 +20,7 @@ function toEmplacement(row: EmplacementView): Emplacement {
     surPlace: row.surPlace,
     baseUrl: row.baseUrl,
     tables: row.tables.map(toTable),
+    usedByCategories: row.usedByCategories,
   };
 }
 
