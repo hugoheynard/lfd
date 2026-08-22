@@ -40,7 +40,7 @@
     [rowKey]="rowKey"
     mobileLayout="custom"
     zebra
-    [empty]="emptyState"
+    [empty]="emptyState()"
   >
     <ng-template foldCell="name" let-c>
       <strong>{{ c.name.fr }}</strong>

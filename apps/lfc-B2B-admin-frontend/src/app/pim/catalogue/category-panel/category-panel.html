@@ -14,6 +14,7 @@
     <app-channel-matrix
       [channels]="draftChannels()"
       [emplacements]="emplacements()"
+      [unreadable]="emplacementsError()"
       [showState]="false"
       (channelsChange)="draftChannels.set($event)"
     />

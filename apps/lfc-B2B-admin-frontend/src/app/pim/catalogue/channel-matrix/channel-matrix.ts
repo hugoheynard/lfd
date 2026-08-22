@@ -27,6 +27,11 @@ export class ChannelMatrix {
   readonly channels = input.required<SalesChannels>();
   /** Les points de vente à proposer — la liste du référentiel. */
   readonly emplacements = input.required<readonly Emplacement[]>();
+  /**
+   * Pourquoi la liste est vide, si elle l'est faute d'avoir pu la lire.
+   * L'hôte le sait (il tient le store) ; la grille se contente de le dire.
+   */
+  readonly unreadable = input<string | null>(null);
   /** `true` = valeurs héritées de la gamme ; `false` = personnalisé. */
   readonly inherited = input<boolean>(true);
   /** Masque l'entête héritage/revert — au niveau gamme, la grille EST la source. */

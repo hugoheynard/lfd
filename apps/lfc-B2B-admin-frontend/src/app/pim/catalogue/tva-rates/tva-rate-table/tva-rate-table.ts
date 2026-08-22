@@ -75,10 +75,16 @@ export class TvaRateTable {
     this.canWrite() ? ALL_COLUMNS : ALL_COLUMNS.filter((column) => column.key !== 'actions'),
   );
 
-  protected readonly emptyState = {
-    title: 'Aucun taux',
-    subtitle: 'Ajoutez-en au moins un (5,5 %, 10 %, 20 %).',
-  };
+  /**
+   * Vide **parce qu'il n'y en a pas**, ou vide **parce qu'on n'a pas pu lire** ?
+   * Les deux rendaient le même écran, et le second invitait à recréer ce qui
+   * existe déjà.
+   */
+  protected readonly emptyState = computed(() =>
+    this.store.loadError() === null
+      ? { title: 'Aucun taux', subtitle: 'Ajoutez-en au moins un (5,5 %, 10 %, 20 %).' }
+      : { title: 'Taux illisibles', subtitle: this.store.loadError() ?? '' },
+  );
 
   protected readonly rowKey = (rate: TvaRate): string => rate.id;
 

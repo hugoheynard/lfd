@@ -89,10 +89,12 @@ export class CategoriesPage {
     { key: 'actions', label: '', align: 'right', width: '5rem' },
   ];
 
-  protected readonly emptyState = {
-    title: 'Aucune catégorie',
-    subtitle: 'Commencez par « Viennoiseries ».',
-  };
+  /** Vide parce qu'il n'y en a pas, ou parce qu'on n'a pas pu lire ? */
+  protected readonly emptyState = computed(() =>
+    this.categoryStore.loadError() === null
+      ? { title: 'Aucune catégorie', subtitle: 'Commencez par « Viennoiseries ».' }
+      : { title: 'Catégories illisibles', subtitle: this.categoryStore.loadError() ?? '' },
+  );
 
   protected readonly rowKey = (category: Category): string => category.id;
 

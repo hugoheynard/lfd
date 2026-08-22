@@ -162,6 +162,9 @@ export class ProductsPage {
     { key: 'actions', label: '', align: 'right', width: '8rem' },
   ];
 
+  // Pas de variante « illisible » ici : cette page tient sa propre liste et son
+  // propre `error`, qu'elle AFFICHE au-dessus du tableau. L'état vide ne ment
+  // donc pas — contrairement aux écrans qui lisent un store en silence.
   protected readonly emptyState = {
     title: 'Aucun produit',
     subtitle: 'Créez votre premier produit pour démarrer le catalogue.',

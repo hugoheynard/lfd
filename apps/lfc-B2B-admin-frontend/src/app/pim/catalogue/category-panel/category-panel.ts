@@ -89,6 +89,7 @@ export class CategoryPanel {
   protected readonly rates = computed<readonly TvaRate[]>(() => this.data()?.rates ?? []);
   /** Les points de vente à proposer — la liste du référentiel, jamais une constante. */
   protected readonly emplacements = computed(() => this.emplacementStore.items());
+  protected readonly emplacementsError = computed(() => this.emplacementStore.loadError());
   protected readonly activeProducts = computed(() => this.category().activeProductCount);
 
   /**

@@ -24,10 +24,15 @@ const EMPLACEMENTS: Emplacement[] = [
   { id: 'emp_val', name: 'Val', clickCollect: true, surPlace: false, baseUrl: '', tables: [] },
 ];
 
-function render(inherited: boolean, emplacements: Emplacement[] = EMPLACEMENTS) {
+function render(
+  inherited: boolean,
+  emplacements: Emplacement[] = EMPLACEMENTS,
+  unreadable: string | null = null,
+) {
   const fixture = TestBed.createComponent(ChannelMatrix);
   fixture.componentRef.setInput('channels', CHANNELS);
   fixture.componentRef.setInput('emplacements', emplacements);
+  fixture.componentRef.setInput('unreadable', unreadable);
   fixture.componentRef.setInput('inherited', inherited);
   fixture.detectChanges();
   return fixture;
@@ -65,5 +70,15 @@ describe('ChannelMatrix', () => {
     const text = render(true, []).nativeElement.textContent ?? '';
 
     expect(text).toContain('Aucun emplacement');
+  });
+
+  it("ne confond pas « aucun » avec « je n'ai pas pu lire »", () => {
+    // Les deux rendaient la même ligne, et la première invite à recréer ce qui
+    // existe déjà — le pire conseil possible sur un backend éteint.
+    const text = render(true, [], 'Serveur injoignable.').nativeElement.textContent ?? '';
+
+    expect(text).toContain('illisibles');
+    expect(text).toContain('Serveur injoignable.');
+    expect(text).not.toContain('Créez-en un');
   });
 });

@@ -40,10 +40,16 @@
         </span>
       </div>
     } @empty {
+      <!-- « Il n'y en a aucun » et « je n'ai pas pu les lire » rendaient la
+           même ligne — et la première invite à recréer ce qui existe déjà. -->
       <div class="cm-row">
-        <span class="cm-label cm-empty">
-          Aucun emplacement. Créez-en un dans <strong>Emplacements</strong>.
-        </span>
+        @if (unreadable(); as reason) {
+          <span class="cm-label cm-empty">Emplacements illisibles — {{ reason }}</span>
+        } @else {
+          <span class="cm-label cm-empty">
+            Aucun emplacement. Créez-en un dans <strong>Emplacements</strong>.
+          </span>
+        }
       </div>
     }
 

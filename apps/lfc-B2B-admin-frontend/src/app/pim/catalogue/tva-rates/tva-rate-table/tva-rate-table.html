@@ -4,7 +4,7 @@
   [rowKey]="rowKey"
   mobileLayout="custom"
   zebra
-  [empty]="emptyState"
+  [empty]="emptyState()"
 >
   <ng-template foldCell="name" let-r
     ><strong>{{ r.name }}</strong></ng-template
