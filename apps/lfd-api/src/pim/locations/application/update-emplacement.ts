@@ -1,7 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
-import { requireEmplacement } from "./emplacement-support.js";
+import { requireEmplacement, requireFreeName } from "./emplacement-support.js";
 
 export interface UpdateEmplacementPatch {
   readonly name?: string | undefined;
@@ -37,6 +37,7 @@ export class UpdateEmplacementHandler implements ICommandHandler<UpdateEmplaceme
 
     if (patch.name !== undefined) {
       emplacement.rename(patch.name);
+      await requireFreeName(this.emplacements, emplacement.name, emplacement.id);
     }
     if (patch.clickCollect !== undefined) {
       emplacement.setClickCollect(patch.clickCollect);

@@ -16,4 +16,18 @@ export abstract class EmplacementUsageReader {
    * donc aucune clé étrangère ne peut la tenir, et le domaine doit le faire.
    */
   abstract countCategoriesUsing(emplacementId: string): Promise<number>;
+
+  /**
+   * Le même compte, **pour tous les emplacements**, en une lecture.
+   *
+   * Sert la LISTE, pas un invariant : l'écran doit pouvoir dire « 3 familles
+   * s'y vendent » AVANT qu'on clique sur Supprimer, plutôt que de laisser le
+   * refus l'apprendre après. La version unitaire garde l'invariant à
+   * l'écriture ; les appeler en boucle ferait N lectures pour peupler une
+   * liste. C'est le découpage de `ProductCountReader`, côté catalogue.
+   *
+   * Les emplacements que personne ne coche sont **absents** de la table : un
+   * lecteur lit `?? 0`, il ne suppose pas la présence de la clé.
+   */
+  abstract countByEmplacement(): Promise<ReadonlyMap<string, number>>;
 }

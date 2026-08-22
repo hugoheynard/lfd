@@ -1,4 +1,7 @@
-import { EmplacementNotFoundError } from "../domain/errors/locations-errors.js";
+import {
+  EmplacementNameTakenError,
+  EmplacementNotFoundError,
+} from "../domain/errors/locations-errors.js";
 import type { Emplacement } from "../domain/entities/emplacement.js";
 import { EmplacementRepository } from "../domain/ports/emplacement.repository.js";
 
@@ -15,4 +18,22 @@ export async function requireEmplacement(
     throw new EmplacementNotFoundError(id);
   }
   return emplacement;
+}
+
+/**
+ * Exige que le nom soit **libre**.
+ *
+ * L'agrégat ne voit que lui-même : il sait exiger un nom non vide, pas qu'un
+ * voisin le porte déjà. Même forme que « le parent doit exister » côté famille
+ * — une règle qui parle des autres, donc tenue par le handler.
+ */
+export async function requireFreeName(
+  emplacements: EmplacementRepository,
+  name: string,
+  exceptId: string | null,
+): Promise<void> {
+  const holder = await emplacements.findByName(name);
+  if (holder !== null && holder.id !== exceptId) {
+    throw new EmplacementNameTakenError(name, holder.id);
+  }
 }

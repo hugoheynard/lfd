@@ -44,6 +44,15 @@ export interface EmplacementView {
   readonly surPlace: boolean;
   readonly baseUrl: string;
   readonly tables: readonly TableView[];
+  /**
+   * Combien de **familles** cochent cet emplacement dans leurs canaux.
+   *
+   * Voyage avec la vue pour que l'écran le DISE avant le clic : le référentiel
+   * refuse de supprimer un point de vente encore vendeur, et un bouton dont on
+   * sait qu'il échouera n'a pas à être offert. Même raison que le compte de
+   * fiches sur une famille.
+   */
+  readonly usedByCategories: number;
 }
 
 /** Réponse de génération de QR : le token neuf minté par le serveur. */

@@ -2,15 +2,21 @@ import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import {
   EmplacementInUseError,
   EmplacementNameRequiredError,
+  EmplacementNameTakenError,
   EmplacementTableNotFoundError,
 } from "../../domain/errors/locations-errors.js";
 import { Emplacement, type EmplacementSnapshot } from "../../domain/entities/emplacement.js";
 import { EmplacementRepository } from "../../domain/ports/emplacement.repository.js";
 import { EmplacementUsageReader } from "../../domain/ports/emplacement-usage.reader.js";
 import { TableTokenGenerator } from "../../domain/ports/table-token-generator.js";
-import { CreateEmplacementCommand, CreateEmplacementHandler } from "../create-emplacement.js";
+import {
+  CreateEmplacementCommand,
+  CreateEmplacementHandler,
+  type CreateEmplacementPayload,
+} from "../create-emplacement.js";
 import { DeleteEmplacementCommand, DeleteEmplacementHandler } from "../delete-emplacement.js";
 import { GenerateTableQrCommand, GenerateTableQrHandler } from "../generate-table-qr.js";
+import { ListEmplacementsHandler } from "../list-emplacements.js";
 import { UpdateEmplacementCommand, UpdateEmplacementHandler } from "../update-emplacement.js";
 
 /**
@@ -29,6 +35,12 @@ class InMemoryEmplacements extends EmplacementRepository {
   findById(id: string): Promise<Emplacement | null> {
     const snapshot = this.stored.get(id);
     return Promise.resolve(snapshot === undefined ? null : Emplacement.reconstitute(snapshot));
+  }
+  /** Insensible à la casse, comme le vrai dépôt : sinon le double ment. */
+  findByName(name: string): Promise<Emplacement | null> {
+    const wanted = name.trim().toLowerCase();
+    const found = [...this.stored.values()].find((row) => row.name.toLowerCase() === wanted);
+    return Promise.resolve(found === undefined ? null : Emplacement.reconstitute(found));
   }
   add(emplacement: Emplacement): Promise<void> {
     return this.save(emplacement);
@@ -59,17 +71,33 @@ class InMemoryEmplacements extends EmplacementRepository {
 
 /** Combien de familles cochent l'emplacement — fixé par le test. */
 class StubUsage extends EmplacementUsageReader {
-  constructor(private readonly count = 0) {
+  constructor(
+    private readonly count = 0,
+    private readonly byId: ReadonlyMap<string, number> = new Map(),
+  ) {
     super();
   }
   countCategoriesUsing(): Promise<number> {
     return Promise.resolve(this.count);
   }
+  countByEmplacement(): Promise<ReadonlyMap<string, number>> {
+    return Promise.resolve(this.byId);
+  }
 }
 
+/**
+ * **Séquentiel**, pas fixe. Il rendait `"emp_fixed"` pour tous : deux créations
+ * dans le même test s'écrasaient dans le dépôt, si bien qu'un test qui croyait
+ * manipuler deux emplacements n'en avait qu'un — et toute règle qui parle des
+ * AUTRES emplacements passait pour la seule raison qu'il n'y en avait pas.
+ *
+ * Le premier reste `emp_fixed`, pour que les tests qui le nomment tiennent.
+ */
 class StubIds extends PimIdGenerator {
+  private count = 0;
   next(): string {
-    return "emp_fixed";
+    this.count += 1;
+    return this.count === 1 ? "emp_fixed" : `emp_${String(this.count)}`;
   }
 }
 
@@ -77,6 +105,32 @@ class StubTokens extends TableTokenGenerator {
   next(): string {
     return "tok_fixed";
   }
+}
+
+/** Ouvre un emplacement quelconque ; seuls les champs cités comptent au test. */
+const idsOf = new WeakMap<InMemoryEmplacements, StubIds>();
+
+function open(
+  repo: InMemoryEmplacements,
+  over: Partial<CreateEmplacementPayload> = {},
+): Promise<string> {
+  // UN générateur par dépôt : en construire un par appel les ferait tous
+  // repartir de `emp_fixed`, donc s'écraser — le défaut qu'on vient de fermer.
+  let ids = idsOf.get(repo);
+  if (ids === undefined) {
+    ids = new StubIds();
+    idsOf.set(repo, ids);
+  }
+  return new CreateEmplacementHandler(repo, ids).execute(
+    new CreateEmplacementCommand({
+      name: "Boutique",
+      clickCollect: true,
+      surPlace: false,
+      baseUrl: "",
+      tableCount: 0,
+      ...over,
+    }),
+  );
 }
 
 function createSurPlace(repo: InMemoryEmplacements, tableCount: number) {
@@ -236,5 +290,87 @@ describe("DeleteEmplacementHandler — la protection", () => {
     );
 
     expect(repo.rows).toEqual([]);
+  });
+});
+
+describe("le nom d'un emplacement est unique", () => {
+  /**
+   * Dans la grille de canaux d'une famille, le nom est la SEULE chose qui
+   * distingue une ligne d'une autre. Deux « Village » y font deux cases
+   * identiques dont l'une vend et l'autre non.
+   */
+  it("refuse un second emplacement du même nom", async () => {
+    const repo = new InMemoryEmplacements();
+    await open(repo, { name: "Village" });
+
+    await expect(open(repo, { name: "Village" })).rejects.toBeInstanceOf(EmplacementNameTakenError);
+  });
+
+  it("refuse aussi une casse différente — c'est le même point de vente à l'écran", async () => {
+    const repo = new InMemoryEmplacements();
+    await open(repo, { name: "Village" });
+
+    await expect(open(repo, { name: "  village " })).rejects.toBeInstanceOf(
+      EmplacementNameTakenError,
+    );
+  });
+
+  it("refuse un renommage qui prend le nom d'un autre", async () => {
+    const repo = new InMemoryEmplacements();
+    await open(repo, { name: "Village" });
+    const second = await open(repo, { name: "Labo" });
+
+    await expect(
+      new UpdateEmplacementHandler(repo).execute(
+        new UpdateEmplacementCommand(second, { name: "Village" }),
+      ),
+    ).rejects.toBeInstanceOf(EmplacementNameTakenError);
+  });
+
+  it("laisse un emplacement garder son propre nom", async () => {
+    const repo = new InMemoryEmplacements();
+    const id = await open(repo, { name: "Village" });
+
+    await new UpdateEmplacementHandler(repo).execute(
+      new UpdateEmplacementCommand(id, { name: "Village", clickCollect: false }),
+    );
+
+    expect(repo.at(id).clickCollect).toBe(false);
+  });
+
+  it("n'écrit RIEN quand il refuse la création", async () => {
+    const repo = new InMemoryEmplacements();
+    await open(repo, { name: "Village" });
+
+    await expect(open(repo, { name: "Village" })).rejects.toBeInstanceOf(EmplacementNameTakenError);
+    expect(repo.rows).toHaveLength(1);
+  });
+});
+
+describe("ListEmplacementsHandler", () => {
+  /**
+   * Le compte ne vit pas dans l'agrégat — un emplacement ignore les familles
+   * qui le cochent. C'est une donnée de LECTURE, jointe ici pour que l'écran
+   * puisse dire qu'une suppression échouera AVANT qu'on clique.
+   */
+  it("joint le compte de familles à chaque emplacement", async () => {
+    const repo = new InMemoryEmplacements();
+    const id = await open(repo, { name: "Village" });
+    const usage = new StubUsage(0, new Map([[id, 3]]));
+
+    const [row] = await new ListEmplacementsHandler(repo, usage).execute();
+
+    expect(row?.usedByCategories).toBe(3);
+  });
+
+  it("rend 0 — jamais `undefined` — pour un emplacement que personne ne coche", async () => {
+    // Les emplacements sans usage sont ABSENTS de la table : un écran qui
+    // lirait `undefined` afficherait « undefined famille(s) ».
+    const repo = new InMemoryEmplacements();
+    await open(repo, { name: "Village" });
+
+    const [row] = await new ListEmplacementsHandler(repo, new StubUsage()).execute();
+
+    expect(row?.usedByCategories).toBe(0);
   });
 });

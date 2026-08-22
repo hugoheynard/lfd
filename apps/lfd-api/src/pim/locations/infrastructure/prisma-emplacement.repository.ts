@@ -60,6 +60,19 @@ export class PrismaEmplacementRepository extends EmplacementRepository {
     return rows.map(toEmplacement);
   }
 
+  /**
+   * Insensible à la casse — `mode: "insensitive"` côté Postgres, pas un
+   * `toLowerCase()` en mémoire : on ne lit pas la table entière pour trouver
+   * un nom.
+   */
+  async findByName(name: string): Promise<Emplacement | null> {
+    const row = await this.prisma.emplacement.findFirst({
+      where: { name: { equals: name, mode: "insensitive" } },
+      include: WITH_TABLES,
+    });
+    return row === null ? null : toEmplacement(row);
+  }
+
   async findById(id: string): Promise<Emplacement | null> {
     const row = await this.prisma.emplacement.findUnique({
       where: { id },

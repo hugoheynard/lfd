@@ -10,6 +10,27 @@ export class EmplacementNameRequiredError extends BusinessError {
   }
 }
 
+/**
+ * Deux emplacements ne portent pas le même nom.
+ *
+ * Le nom est ce que l'écran affiche pour désigner un point de vente — dans la
+ * grille de canaux d'une famille, c'est la SEULE chose qui distingue une ligne
+ * d'une autre. Deux « Village » y produisent deux cases identiques dont l'une
+ * vend et l'autre non, et personne ne peut dire laquelle. La grille est indexée
+ * par identifiant : elle, elle s'y retrouve. Pas l'humain devant.
+ */
+export class EmplacementNameTakenError extends BusinessError {
+  constructor(
+    override readonly name: string,
+    readonly takenBy: string,
+  ) {
+    super(
+      "locations.emplacement.name_taken",
+      `Un autre emplacement porte déjà le nom « ${name} ».`,
+    );
+  }
+}
+
 /** L'emplacement visé n'existe pas (→ 404). */
 export class EmplacementNotFoundError extends ResourceNotFoundError {
   constructor(id: string) {
