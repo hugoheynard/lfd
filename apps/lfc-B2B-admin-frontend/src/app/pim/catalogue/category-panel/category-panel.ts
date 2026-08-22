@@ -20,6 +20,7 @@ import {
   FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
+  FoldCalloutComponent,
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
@@ -69,6 +70,7 @@ export interface CategoryPanelData {
     FoldListboxComponent,
     FoldOptionComponent,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldDangerZoneComponent,
     FoldElementTitleComponent,
     ChannelMatrix,
@@ -89,11 +91,23 @@ export class CategoryPanel {
   /** La famille visée — `undefined` en création. */
   protected readonly existing = computed<Category | undefined>(() => this.data()?.category);
   protected readonly isCreate = computed(() => this.existing() === undefined);
+  /**
+   * Une famille archivée est **gelée** : le référentiel refuse ses canaux, ses
+   * taux et son déplacement, et n'accepte que le renommage. Le panneau offrait
+   * pourtant le formulaire entier avec un bouton armé — enregistrer écrivait le
+   * nom, PUIS échouait sur les canaux. Une moitié appliquée et un message
+   * d'erreur : le contraire de ce que sa zone dangereuse fait trois blocs plus
+   * bas, où elle refuse d'offrir un bouton dont elle sait qu'il échouera.
+   */
+  protected readonly isFrozen = computed(() => this.existing()?.isArchived ?? false);
 
   protected readonly heading = computed(() => this.existing()?.name.fr ?? 'Nouvelle famille');
-  protected readonly subtitle = computed(() =>
-    this.isCreate() ? 'Ajouter au référentiel' : 'Réglage de la famille',
-  );
+  protected readonly subtitle = computed(() => {
+    if (this.isCreate()) {
+      return 'Ajouter au référentiel';
+    }
+    return this.isFrozen() ? 'Famille archivée — nom seulement' : 'Réglage de la famille';
+  });
   protected readonly submitLabel = computed(() =>
     this.isCreate() ? 'Créer la famille' : 'Enregistrer',
   );
@@ -185,9 +199,13 @@ export class CategoryPanel {
       await this.categoryStore.saveSettings({
         id: this.existing()?.id ?? null,
         nameFr: this.draftName().trim(),
-        parentId: this.draftParent() === '' ? null : this.draftParent(),
-        channels: this.draftChannels(),
-        tva: this.tvaToSave(),
+        settings: this.isFrozen()
+          ? null
+          : {
+              parentId: this.draftParent() === '' ? null : this.draftParent(),
+              channels: this.draftChannels(),
+              tva: this.tvaToSave(),
+            },
       });
       this.ref.close();
     });

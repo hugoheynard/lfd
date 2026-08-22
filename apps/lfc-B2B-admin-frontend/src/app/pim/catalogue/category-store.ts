@@ -12,6 +12,20 @@ import { ListLoadState } from '../data/list-load-state';
 export interface CategorySettingsDraft {
   readonly id: string | null;
   readonly nameFr: string;
+  /**
+   * Tout ce qui n'est PAS le nom — `null` pour une famille **gelée**.
+   *
+   * Une famille archivée n'accepte que son renommage : le référentiel refuse
+   * ses canaux, ses taux et son déplacement. Les rendre absents d'un bloc,
+   * plutôt que de laisser l'appelant les envoyer quand même, met la règle dans
+   * le TYPE — l'écran ne peut plus demander ce qu'on sait refusé, et un
+   * renommage ne peut plus partir devant trois écritures qui échoueront.
+   */
+  readonly settings: CategoryMutableSettings | null;
+}
+
+/** Les réglages qu'une famille vivante accepte. */
+export interface CategoryMutableSettings {
   readonly parentId: string | null;
   readonly channels: SalesChannels;
   readonly tva: CategoryTvaDraft;
@@ -74,29 +88,43 @@ export class CategoryStore {
    */
   async saveSettings(draft: CategorySettingsDraft): Promise<string> {
     const id = draft.id === null ? await this.openNew(draft) : await this.reword(draft.id, draft);
-    await this.api.setChannels(id, draft.channels);
-    await this.api.setTva(id, draft.tva);
+    if (draft.settings !== null) {
+      await this.api.setChannels(id, draft.settings.channels);
+      await this.api.setTva(id, draft.settings.tva);
+    }
     await this.reload();
     return id;
   }
 
   private async openNew(draft: CategorySettingsDraft): Promise<string> {
+    const parentId = draft.settings?.parentId ?? null;
     const created = await this.api.create(
-      draft.parentId === null
-        ? { nameFr: draft.nameFr }
-        : { nameFr: draft.nameFr, parentId: draft.parentId },
+      parentId === null ? { nameFr: draft.nameFr } : { nameFr: draft.nameFr, parentId },
     );
     return created.id;
   }
 
-  /** Renomme et déplace — **seulement si ça a bougé**. On n'écrit pas pour rien. */
+  /**
+   * Renomme et déplace — **seulement si ça a bougé**. On n'écrit pas pour rien.
+   *
+   * La comparaison se fait sur la liste en mémoire, qui peut ne pas contenir la
+   * famille (premier chargement pas encore revenu, écran ouvert par un lien
+   * direct). Dans ce cas on ÉCRIT, au lieu de conclure « rien n'a changé » :
+   * ne pas savoir n'est pas savoir que non. Un enregistrement silencieusement
+   * sans effet, qui rend la main comme un succès, est plus coûteux qu'une
+   * écriture de trop.
+   */
   private async reword(id: string, draft: CategorySettingsDraft): Promise<string> {
     const current = this.state().find((item) => item.id === id);
-    if (current !== undefined && current.name.fr !== draft.nameFr) {
+    if (current === undefined || current.name.fr !== draft.nameFr) {
       await this.api.rename(id, draft.nameFr);
     }
-    if (current !== undefined && current.parentId !== draft.parentId) {
-      await this.api.move(id, draft.parentId);
+    // Le déplacement ne concerne que les vivantes : `settings` est absent sinon.
+    if (draft.settings !== null) {
+      const { parentId } = draft.settings;
+      if (current === undefined || current.parentId !== parentId) {
+        await this.api.move(id, parentId);
+      }
     }
     return id;
   }
