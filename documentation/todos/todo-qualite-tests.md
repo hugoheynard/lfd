@@ -38,6 +38,23 @@ douzaine de fichiers côté B2B, autant côté PIM.
 CI. Tant que ce n'est pas fait, l'ajouter maintenant rendrait la CI rouge en
 permanence — et une CI rouge en permanence se fait désactiver.
 
+> **2026-08-22 — mesuré, et un contexte nettoyé.** `tsc -p tsconfig.test.json`
+> sur `lfd-api` rend **211 erreurs**. Une revue de la famille du catalogue en a
+> vidé six, et ce qu'elles cachaient mérite d'être cité, parce que c'est
+> exactement le risque que ce trou fait courir :
+>
+> - `category.spec.ts` appelait `setChannels({ b1, b2 })` et
+>   `setTva("tva_5", null)` — **deux signatures mortes**. Les tests passaient
+>   quand même : le refus « famille archivée » se déclenche AVANT que la forme
+>   fausse ne soit lue. Un test vert qui ne teste plus rien est pire qu'un test
+>   absent, parce qu'il occupe la place.
+> - `InMemoryRegimes` avait dérivé de `TvaRateRepository` (un `findByTag`
+>   disparu, deux méthodes jamais implémentées) et lisait un champ `tag` que
+>   l'agrégat n'a plus.
+>
+> `src/pim/catalogue/**` passe désormais au vert sous `tsconfig.test.json`.
+> Reste le compte ci-dessus, essentiellement B2B.
+
 ## 2. Les quatre apps Angular n'ont aucun ESLint
 
 `lfc-B2B-admin-frontend`, `lfc-B2B-platform-frontend`, `lfc-PIM-frontend` et
