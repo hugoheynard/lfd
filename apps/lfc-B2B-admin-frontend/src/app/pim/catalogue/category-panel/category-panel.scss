@@ -1,9 +1,26 @@
-.body {
+// ⚠️ Le panneau se pose LUI-MÊME en colonne pleine hauteur. Un panneau ouvert
+// par COMPOSANT n'est pas enveloppé dans le `.panel-body` de la coquille, qui
+// n'existe que pour les panneaux par template : sans ce bloc, le `flex: none`
+// que `fold-panel-footer` documente ne s'applique à rien — le pied défile avec
+// le corps, puis se fait rogner par l'`overflow: hidden` du panneau.
+// Onze panneaux de cette app recopient déjà ces deux règles.
+:host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-xl);
-  padding: var(--fold-space-md);
+  min-height: 0;
   height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  // Sans lui, un enfant qui déborde pousse la boîte au lieu de la faire défiler :
+  // la valeur `auto` par défaut d'un élément flex est `min-content`.
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg);
 }
 
 .block {
