@@ -1,4 +1,4 @@
-<fold-panel-header [title]="category().name.fr" subtitle="Réglage de la famille" />
+<fold-panel-header [title]="heading()" [subtitle]="subtitle()" />
 
 <fold-panel-body>
   <fold-input
@@ -8,6 +8,22 @@
     [value]="draftName()"
     (valueChange)="draftName.set($event)"
   />
+
+  <!-- Le parent ne se choisit qu'à la création : le référentiel n'expose aucun
+       déplacement, donc le proposer en édition offrirait un réglage que rien
+       n'enregistrerait. -->
+  @if (isCreate()) {
+    <fold-listbox
+      label="Parent"
+      [value]="draftParent()"
+      (selectionChange)="draftParent.set($event)"
+    >
+      <fold-option value="">— Racine —</fold-option>
+      @for (parent of parents(); track parent.id) {
+        <fold-option [value]="parent.id">{{ parent.name.fr }}</fold-option>
+      }
+    </fold-listbox>
+  }
 
   <section class="block">
     <fold-element-title variant="eyebrow" icon="places" title="Canaux par défaut" />
@@ -80,25 +96,27 @@
        ouvre une confirmation sur place, et sans `actionLabel` la zone reste un
        cadre qui EXPLIQUE sans rien offrir — exactement ce qu'il faut quand le
        référentiel refusera de toute façon. -->
-  @if (!category().isArchived) {
-    <fold-danger-zone
-      title="Archiver cette famille"
-      [actionLabel]="canArchive() ? 'Archiver la famille' : undefined"
-      (confirmed)="archive()"
-    >
-      @if (activeProducts() > 0) {
-        <p>
-          <strong>Archivage impossible.</strong> «&nbsp;{{ category().name.fr }}&nbsp;» porte encore
-          <strong>{{ activeProducts() }} fiche(s) active(s)</strong>. Déplacez-les ou archivez-les
-          d'abord&nbsp;: tant qu'une seule reste, le référentiel refuse.
-        </p>
-      } @else {
-        <p>
-          La famille sortira des listes&nbsp;: elle ne portera plus de nouvelle fiche et disparaîtra
-          des choix de parent. Ses réglages — canaux et taux — sont conservés.
-        </p>
-      }
-    </fold-danger-zone>
+  @if (existing(); as family) {
+    @if (!family.isArchived) {
+      <fold-danger-zone
+        title="Archiver cette famille"
+        [actionLabel]="canArchive() ? 'Archiver la famille' : undefined"
+        (confirmed)="archive(family)"
+      >
+        @if (activeProducts() > 0) {
+          <p>
+            <strong>Archivage impossible.</strong> «&nbsp;{{ family.name.fr }}&nbsp;» porte encore
+            <strong>{{ activeProducts() }} fiche(s) active(s)</strong>. Déplacez-les ou archivez-les
+            d'abord&nbsp;: tant qu'une seule reste, le référentiel refuse.
+          </p>
+        } @else {
+          <p>
+            La famille sortira des listes&nbsp;: elle ne portera plus de nouvelle fiche et
+            disparaîtra des choix de parent. Ses réglages — canaux et taux — sont conservés.
+          </p>
+        }
+      </fold-danger-zone>
+    }
   }
 </fold-panel-body>
 
@@ -106,5 +124,5 @@
      sa séparation. La version maison redéfinissait tout ça à côté. -->
 <fold-panel-footer>
   <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
-  <button foldButton [disabled]="!canSubmit()" (click)="submit()">Enregistrer</button>
+  <button foldButton [disabled]="!canSubmit()" (click)="submit()">{{ submitLabel() }}</button>
 </fold-panel-footer>

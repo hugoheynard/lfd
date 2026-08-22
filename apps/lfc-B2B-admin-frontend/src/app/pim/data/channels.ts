@@ -9,6 +9,15 @@ import type {
 import { slugify } from './sku';
 
 /**
+ * Aucun canal — le point de départ d'une fiche ou d'une famille qu'on crée.
+ *
+ * Une constante partagée plutôt qu'un littéral par appelant : `boutiques: {}`
+ * et `b2b: false` sont la MÊME notion de « rien de coché », et deux copies
+ * divergent le jour où la forme gagne un canal.
+ */
+export const NO_CHANNELS: SalesChannels = { boutiques: {}, b2b: false };
+
+/**
  * Les **noms** des emplacements qui proposent un mode donné.
  *
  * Il lisait deux libellés codés en dur, dont l'un ne correspondait à aucun

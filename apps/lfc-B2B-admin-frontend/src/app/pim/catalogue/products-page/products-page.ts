@@ -20,7 +20,7 @@ import {
   type FoldTableTone,
 } from 'fold-ng';
 
-import { boutiquesWith, formatPercent, resolveChannels } from '../../data/channels';
+import { NO_CHANNELS, boutiquesWith, formatPercent, resolveChannels } from '../../data/channels';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
 import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
 
@@ -45,8 +45,6 @@ const SYNC_VARIANTS: Record<SyncStatus, FoldBadgeVariant> = {
   drifted: 'warning',
   failed: 'alert',
 };
-
-const NO_CHANNELS: SalesChannels = { boutiques: {}, b2b: false };
 
 @Component({
   selector: 'app-products-page',

@@ -5,7 +5,7 @@ import { FoldPanelRef, provideFoldInlineConfirmLabels } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CatalogueApi, type Category } from '../catalogue-api';
-import { CategoryPanel } from '../category-panel/category-panel';
+import { CategoryPanel, type CategoryPanelData } from '../category-panel/category-panel';
 
 function category(overrides: Partial<Category> = {}): Category {
   return {
@@ -30,13 +30,24 @@ function category(overrides: Partial<Category> = {}): Category {
   };
 }
 
-function setup(cat: Category): {
+interface Mounted {
   host: HTMLElement;
   api: CatalogueApi;
   closed: unknown[];
   detect: () => void;
   stable: () => Promise<unknown>;
-} {
+}
+
+function setup(cat: Category): Mounted {
+  return mount({ category: cat, rates: [] });
+}
+
+/** Sans `category` dans la charge, le panneau crée. */
+function setupCreate(): Mounted {
+  return mount({ rates: [] });
+}
+
+function mount(data: CategoryPanelData): Mounted {
   const closed: unknown[] = [];
   TestBed.configureTestingModule({
     providers: [
@@ -51,7 +62,7 @@ function setup(cat: Category): {
     ],
   });
   const fixture = TestBed.createComponent(CategoryPanel);
-  fixture.componentRef.setInput('data', { category: cat, rates: [] });
+  fixture.componentRef.setInput('data', data);
   fixture.detectChanges();
   return {
     host: fixture.nativeElement as HTMLElement,
@@ -214,5 +225,66 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     await stable();
 
     expect(tva).toHaveBeenCalledWith('cat_1', { emporter: '', surPlace: '', b2b: 'tva_20' });
+  });
+});
+
+describe('CategoryPanel — création', () => {
+  /** Écrit dans le champ « Nom » comme le ferait une frappe. */
+  function type(host: HTMLElement, value: string): void {
+    const input = host.querySelector('fold-input input');
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error('Champ « Nom » introuvable.');
+    }
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+  }
+
+  it('sans famille, le panneau se présente comme une création', () => {
+    const { host } = setupCreate();
+
+    expect(host.textContent).toContain('Nouvelle famille');
+    expect(() => button(host, 'Créer la famille')).not.toThrow();
+    // Rien à archiver : la zone dangereuse n'a pas de sujet.
+    expect(host.querySelectorAll('fold-danger-zone')).toHaveLength(0);
+  });
+
+  /** Les libellés des listes déroulantes du panneau. */
+  function boxes(host: HTMLElement): string[] {
+    return [...host.querySelectorAll('fold-listbox')].map((box) => box.getAttribute('label') ?? '');
+  }
+
+  it('propose un parent en création', () => {
+    expect(boxes(setupCreate().host)).toContain('Parent');
+  });
+
+  it('ne propose PAS de parent en édition', () => {
+    // Le référentiel n'expose aucun déplacement : le montrer sur une famille
+    // existante offrirait un réglage que rien n'enregistrerait.
+    expect(boxes(setup(category()).host)).not.toContain('Parent');
+  });
+
+  it('crée, puis pose canaux et taux SUR LA FAMILLE CRÉÉE, puis ferme', async () => {
+    // Le formulaire qu'il remplace ne savait que le nom et le parent : toute
+    // famille naissait sans canaux ni taux, à finir dans un second écran.
+    const { host, api, closed, detect, stable } = setupCreate();
+    const create = vi.spyOn(api, 'createCategory').mockResolvedValue({ id: 'cat_neuve' });
+    const channels = vi.spyOn(api, 'setCategoryChannelPreset').mockResolvedValue();
+    const tva = vi.spyOn(api, 'setCategoryTva').mockResolvedValue();
+
+    type(host, 'Glaces');
+    detect();
+    button(host, 'Créer la famille').click();
+    await stable();
+
+    expect(create).toHaveBeenCalledWith({ nameFr: 'Glaces' });
+    expect(channels.mock.calls[0]?.[0]).toBe('cat_neuve');
+    expect(tva.mock.calls[0]?.[0]).toBe('cat_neuve');
+    expect(closed).toHaveLength(1);
+  });
+
+  it('reste désarmé tant que le nom est vide', () => {
+    const { host } = setupCreate();
+
+    expect(button(host, 'Créer la famille').disabled).toBe(true);
   });
 });

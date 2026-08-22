@@ -23,21 +23,29 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
-import { formatPercent, sellsMode } from '../../data/channels';
+import { NO_CHANNELS, formatPercent, sellsMode } from '../../data/channels';
 import { ChannelMatrix } from '../channel-matrix/channel-matrix';
 import { CatalogueApi, type Category, type SalesChannels, type TvaRate } from '../catalogue-api';
 import type { CategoryTvaDraft } from '../category-http-api';
+import { CategoryStore } from '../category-store';
 import { EmplacementStore } from '../../emplacements/emplacement-store';
 
-/** Charge passée à `open()` : la famille à régler, et les taux disponibles. */
+/**
+ * Charge passée à `open()` : les taux disponibles, et la famille à régler —
+ * **absente en création**. Même panneau, deux intentions : la page n'a plus de
+ * second formulaire à tenir à jour quand un réglage bouge.
+ */
 export interface CategoryPanelData {
-  readonly category: Category;
   readonly rates: readonly TvaRate[];
+  readonly category?: Category;
 }
 
 /**
  * Panneau **famille** : nom, canaux par défaut, taux de TVA — et l'archivage
- * dans sa zone dangereuse, au bas du même panneau.
+ * dans sa zone dangereuse, au bas du même panneau. Sans `category` dans sa
+ * charge, le même panneau **crée** : la page portait pour ça un formulaire à
+ * deux champs, qui ne proposait ni canaux ni taux et laissait donc toute
+ * famille naître incomplète, à régler dans un second écran.
  *
  * Il remplace deux choses. Une carte d'édition qui s'ouvrait EN HAUT de la page
  * et poussait le tableau vers le bas, si bien qu'on perdait de vue la ligne
@@ -73,24 +81,37 @@ export class CategoryPanel {
   private readonly ref = inject(FoldPanelRef);
   private readonly notify = inject(NotifyService);
   private readonly emplacementStore = inject(EmplacementStore);
+  private readonly categoryStore = inject(CategoryStore);
 
   readonly data = input<CategoryPanelData | undefined>(undefined);
 
   protected readonly busy = signal(false);
 
-  protected readonly category = computed<Category>(() => {
-    const data = this.data();
-    if (data === undefined) {
-      throw new Error('CategoryPanel ouvert sans famille.');
-    }
-    return data.category;
-  });
+  /** La famille visée — `undefined` en création. */
+  protected readonly existing = computed<Category | undefined>(() => this.data()?.category);
+  protected readonly isCreate = computed(() => this.existing() === undefined);
+
+  protected readonly heading = computed(() => this.existing()?.name.fr ?? 'Nouvelle famille');
+  protected readonly subtitle = computed(() =>
+    this.isCreate() ? 'Ajouter au référentiel' : 'Réglage de la famille',
+  );
+  protected readonly submitLabel = computed(() =>
+    this.isCreate() ? 'Créer la famille' : 'Enregistrer',
+  );
 
   protected readonly rates = computed<readonly TvaRate[]>(() => this.data()?.rates ?? []);
+  /**
+   * Les parents proposables. Le référentiel n'expose pas de déplacement, donc
+   * le parent ne se choisit qu'à la création — le montrer en édition offrirait
+   * un réglage que rien n'enregistrerait.
+   */
+  protected readonly parents = computed(() =>
+    this.categoryStore.items().filter((item) => !item.isArchived),
+  );
   /** Les points de vente à proposer — la liste du référentiel, jamais une constante. */
   protected readonly emplacements = computed(() => this.emplacementStore.items());
   protected readonly emplacementsError = computed(() => this.emplacementStore.loadError());
-  protected readonly activeProducts = computed(() => this.category().activeProductCount);
+  protected readonly activeProducts = computed(() => this.existing()?.activeProductCount ?? 0);
 
   /**
    * Le domaine refuse d'archiver une famille qui porte des fiches (invariant 5).
@@ -108,13 +129,15 @@ export class CategoryPanel {
    * « Enregistrer » précoce parte avec un nom vide, donc désarmé. La valeur est
    * ici juste dès la première lecture, et reste modifiable.
    */
-  protected readonly draftName = linkedSignal(() => this.category().name.fr);
+  protected readonly draftName = linkedSignal(() => this.existing()?.name.fr ?? '');
   protected readonly draftChannels = linkedSignal<SalesChannels>(
-    () => this.category().channelPreset,
+    () => this.existing()?.channelPreset ?? NO_CHANNELS,
   );
-  protected readonly draftEmporterTva = linkedSignal(() => this.category().emporterTvaId);
-  protected readonly draftSurPlaceTva = linkedSignal(() => this.category().surPlaceTvaId);
-  protected readonly draftB2bTva = linkedSignal(() => this.category().b2bTvaId);
+  protected readonly draftEmporterTva = linkedSignal(() => this.existing()?.emporterTvaId ?? '');
+  protected readonly draftSurPlaceTva = linkedSignal(() => this.existing()?.surPlaceTvaId ?? '');
+  protected readonly draftB2bTva = linkedSignal(() => this.existing()?.b2bTvaId ?? '');
+  /** Création seulement : `''` = racine. */
+  protected readonly draftParent = signal('');
 
   /**
    * Un taux ne se règle que pour un canal qu'on vend.
@@ -151,16 +174,35 @@ export class CategoryPanel {
    * laisser trois requêtes se croiser et une famille à moitié réglée.
    */
   protected async submit(): Promise<void> {
-    const category = this.category();
     await this.run(async () => {
-      const name = this.draftName().trim();
-      if (name !== category.name.fr) {
-        await this.api.renameCategory(category.id, name);
-      }
-      await this.api.setCategoryChannelPreset(category.id, this.draftChannels());
-      await this.api.setCategoryTva(category.id, this.tvaToSave());
+      const existing = this.existing();
+      const id = existing === undefined ? await this.createFamily() : await this.rename(existing);
+      await this.api.setCategoryChannelPreset(id, this.draftChannels());
+      await this.api.setCategoryTva(id, this.tvaToSave());
       this.ref.close();
     });
+  }
+
+  /**
+   * La création rend l'identifiant, et le reste du panneau s'enregistre dessus
+   * comme pour une famille existante : canaux et taux partent dans la foulée,
+   * au lieu de naître vides et d'attendre un second passage.
+   */
+  private async createFamily(): Promise<string> {
+    const nameFr = this.draftName().trim();
+    const parentId = this.draftParent();
+    const created = await this.api.createCategory(
+      parentId === '' ? { nameFr } : { nameFr, parentId },
+    );
+    return created.id;
+  }
+
+  private async rename(category: Category): Promise<string> {
+    const name = this.draftName().trim();
+    if (name !== category.name.fr) {
+      await this.api.renameCategory(category.id, name);
+    }
+    return category.id;
   }
 
   /**
@@ -179,9 +221,9 @@ export class CategoryPanel {
     };
   }
 
-  protected async archive(): Promise<void> {
+  protected async archive(category: Category): Promise<void> {
     await this.run(async () => {
-      await this.api.archiveCategory(this.category().id);
+      await this.api.archiveCategory(category.id);
       this.ref.close();
     });
   }
