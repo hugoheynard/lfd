@@ -62,6 +62,6 @@ export abstract class CatalogueReader {
   abstract byIds(ids: readonly string[]): Promise<ProductRecord[]>;
   /** Le taux de TVA par contexte pour une catégorie (résout le taux). */
   abstract tvaPercents(categoryId: string): Promise<CategoryTvaPercents>;
-  /** Les familles **non archivées**, avec leur taux de TVA à emporter résolu. */
+  /** Les familles **non archivées**, avec leurs taux résolus (emporter + B2B). */
   abstract channelCategories(): Promise<ChannelCategory[]>;
 }

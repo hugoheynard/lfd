@@ -1820,9 +1820,11 @@ model CatalogCategory {
   parentId String? @map("parent_id")
   position Int     @default(0)
 
-  /// Taux de TVA en %, résolu par le PIM depuis le taux « à emporter » de la
-  /// famille. Reçu plutôt que déduit : la plateforme codait 5,5 % en dur pour
-  /// tout, y compris le non-alimentaire.
+  /// Taux de TVA en %, résolu par le PIM depuis le taux **B2B** de la famille.
+  /// Reçu plutôt que déduit : la plateforme codait 5,5 % en dur pour tout, y
+  /// compris le non-alimentaire — puis a emprunté le taux « à emporter », faute
+  /// que la famille en porte un pour le B2B. Elle en porte un depuis le
+  /// 2026-08-22, et c'est celui-là qui arrive ici.
   ///
   /// `NULL` = famille **non réglée dans le PIM**. Le catalogue entre quand même :
   /// le prix canonique a de la valeur sans le taux. Ce qui reste interdit, c'est
