@@ -5,34 +5,7 @@
     héritent ses produits. Côté Shopify, elle devient une <em>collection</em>.
   </p>
 
-  <fold-card>
-    <fold-element-title variant="eyebrow" icon="plus" title="Ajouter une catégorie" />
-    <div class="create-fields">
-      <fold-input
-        label="Nom"
-        placeholder="ex. Viennoiseries"
-        [value]="draftName()"
-        (valueChange)="draftName.set($event)"
-      />
-      <fold-listbox
-        label="Parent"
-        [value]="draftParent()"
-        (selectionChange)="draftParent.set($event)"
-      >
-        <fold-option value="">— Racine —</fold-option>
-        @for (category of activeCategories(); track category.id) {
-          <fold-option [value]="category.id">{{ category.name.fr }}</fold-option>
-        }
-      </fold-listbox>
-      <button foldButton [disabled]="busy()" (click)="create()">Ajouter</button>
-    </div>
-  </fold-card>
-
-  @if (error(); as message) {
-    <fold-callout appearance="inset" variant="alert" role="alert">
-      {{ message }}
-    </fold-callout>
-  }
+  <button pageActions foldButton size="sm" (click)="openCreate()">+ Nouvelle catégorie</button>
 
   <fold-data-table
     [columns]="columns"
@@ -57,10 +30,6 @@
       } @else {
         <fold-badge [content]="c.activeProductCount + ' fiche(s)'" variant="neutral" />
       }
-    </ng-template>
-
-    <ng-template foldCell="tva" let-c>
-      <span class="tva-cell"> {{ rateOf(c.emporterTvaId) }} → {{ rateOf(c.surPlaceTvaId) }} </span>
     </ng-template>
 
     <ng-template foldCell="channels" let-c>
@@ -100,9 +69,7 @@
             <fold-badge content="archivée" variant="neutral" />
           }
         </span>
-        <span class="cat-card-meta">
-          {{ parentName(c) }} · {{ rateOf(c.emporterTvaId) }} → {{ rateOf(c.surPlaceTvaId) }}
-        </span>
+        <span class="cat-card-meta">{{ parentName(c) }}</span>
         <span class="cat-card-meta">
           @if (c.activeProductCount === 0) {
             Aucune fiche
