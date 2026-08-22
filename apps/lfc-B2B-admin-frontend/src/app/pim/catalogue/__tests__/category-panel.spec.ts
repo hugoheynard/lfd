@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { FoldPanelRef } from 'fold-ng';
+import { FoldPanelRef, provideFoldInlineConfirmLabels } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CatalogueApi, type Category } from '../catalogue-api';
@@ -40,6 +40,9 @@ function setup(cat: Category): {
       // Le panneau renvoie vers « Taux de TVA » — un `routerLink` a besoin
       // d'une route, même vide.
       provideRouter([]),
+      // Les mêmes libellés qu'en production : les défauts de fold sont anglais,
+      // et c'est exactement ce que ce test doit empêcher de revenir.
+      provideFoldInlineConfirmLabels({ confirm: 'Confirmer', cancel: 'Annuler' }),
       { provide: FoldPanelRef, useValue: { close: (v: unknown) => closed.push(v) } },
     ],
   });
@@ -66,13 +69,11 @@ function button(root: HTMLElement, label: string): HTMLButtonElement {
 }
 
 describe('CategoryPanel — la zone dangereuse', () => {
-  it("dit que l'archivage est impossible AVANT le clic, quand des fiches restent", () => {
+  it("explique le refus AVANT le clic, et n'offre AUCUNE action", () => {
     // Le domaine refuse (invariant 5). Sans le compte, l'écran ne pouvait que
-    // tenter et rendre l'erreur après coup.
-    const { host, detect } = setup(category({ activeProductCount: 3 }));
-
-    button(host, 'Archiver cette famille').click();
-    detect();
+    // tenter et rendre l'erreur après coup. Sans `actionLabel`, `fold-danger-zone`
+    // reste un cadre qui explique — pas un bouton dont on sait qu'il échouera.
+    const { host } = setup(category({ activeProductCount: 3 }));
 
     expect(host.textContent).toContain('Archivage impossible');
     expect(host.textContent).toContain('3 fiche(s) active(s)');
@@ -80,21 +81,32 @@ describe('CategoryPanel — la zone dangereuse', () => {
   });
 
   it("n'offre l'archivage que lorsque la famille est vide", () => {
-    const { host, detect } = setup(category({ activeProductCount: 0 }));
-
-    button(host, 'Archiver cette famille').click();
-    detect();
+    const { host } = setup(category({ activeProductCount: 0 }));
 
     expect(host.textContent).not.toContain('Archivage impossible');
     expect(button(host, 'Archiver la famille')).toBeTruthy();
   });
 
-  it('garde la zone dangereuse REPLIÉE tant que personne ne la déplie', () => {
-    // On décide d'archiver en regardant la famille ; le bouton ne doit pas être
-    // sous le curseur par accident.
-    const { host } = setup(category());
+  it("n'archive PAS au premier clic — il révèle une confirmation, en français", async () => {
+    // Deux choses en un geste. La zone dangereuse ne fait qu'ouvrir : c'est
+    // toute sa valeur. Et sa confirmation parle français — les défauts de fold
+    // sont « Confirm / Cancel », au moment précis où il faut être compris.
+    const { host, api, detect, stable } = setup(category());
+    const archive = vi.spyOn(api, 'archiveCategory').mockResolvedValue();
 
-    expect(() => button(host, 'Archiver la famille')).toThrow();
+    button(host, 'Archiver la famille').click();
+    detect();
+    await stable();
+
+    expect(archive).not.toHaveBeenCalled();
+    expect(host.textContent).toContain('Confirmer');
+    expect(host.textContent).not.toContain('Confirm ');
+
+    button(host, 'Confirmer').click();
+    detect();
+    await stable();
+
+    expect(archive).toHaveBeenCalledWith('cat_1');
   });
 
   it('ne propose rien à archiver sur une famille déjà archivée', () => {

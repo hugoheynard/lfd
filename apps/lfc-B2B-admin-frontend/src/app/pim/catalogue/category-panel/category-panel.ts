@@ -11,10 +11,12 @@ import { RouterLink } from '@angular/router';
 
 import {
   FoldButtonComponent,
-  FoldCalloutComponent,
+  FoldDangerZoneComponent,
+  FoldElementTitleComponent,
   FoldInputComponent,
   FoldListboxComponent,
   FoldOptionComponent,
+  FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
 } from 'fold-ng';
@@ -50,11 +52,13 @@ export interface CategoryPanelData {
   imports: [
     RouterLink,
     FoldPanelHeaderComponent,
+    FoldPanelFooterComponent,
     FoldInputComponent,
     FoldListboxComponent,
     FoldOptionComponent,
     FoldButtonComponent,
-    FoldCalloutComponent,
+    FoldDangerZoneComponent,
+    FoldElementTitleComponent,
     ChannelMatrix,
   ],
   templateUrl: './category-panel.html',
@@ -68,7 +72,6 @@ export class CategoryPanel {
   readonly data = input<CategoryPanelData | undefined>(undefined);
 
   protected readonly busy = signal(false);
-  protected readonly dangerOpen = signal(false);
 
   protected readonly category = computed<Category>(() => {
     const data = this.data();
@@ -80,6 +83,13 @@ export class CategoryPanel {
 
   protected readonly rates = computed<readonly TvaRate[]>(() => this.data()?.rates ?? []);
   protected readonly activeProducts = computed(() => this.category().activeProductCount);
+
+  /**
+   * Le domaine refuse d'archiver une famille qui porte des fiches (invariant 5).
+   * Sans action proposée, la zone dangereuse reste un cadre qui explique — elle
+   * n'offre pas un bouton dont on sait qu'il échouera.
+   */
+  protected readonly canArchive = computed(() => this.activeProducts() === 0);
 
   /**
    * Les brouillons **dérivent** de la famille reçue.
@@ -101,10 +111,6 @@ export class CategoryPanel {
 
   protected rateLabel(rate: TvaRate): string {
     return `${rate.name} · ${formatPercent(rate.percent)}`;
-  }
-
-  protected toggleDanger(): void {
-    this.dangerOpen.update((open) => !open);
   }
 
   protected cancel(): void {

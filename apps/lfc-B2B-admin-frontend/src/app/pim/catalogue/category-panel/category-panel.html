@@ -10,7 +10,7 @@
   />
 
   <section class="block">
-    <span class="block-label">Canaux par défaut</span>
+    <fold-element-title variant="eyebrow" icon="places" title="Canaux par défaut" />
     <app-channel-matrix
       [channels]="draftChannels()"
       [showState]="false"
@@ -20,7 +20,7 @@
   </section>
 
   <section class="block">
-    <span class="block-label">Taux de TVA</span>
+    <fold-element-title variant="eyebrow" icon="tax" title="Taux de TVA" />
     <div class="tva-pickers">
       <fold-listbox
         label="À emporter"
@@ -49,45 +49,35 @@
     </p>
   </section>
 
-  <!-- La zone dangereuse au bas du panneau, repliée : on décide d'archiver en
-       REGARDANT la famille, pas en choisissant son intention dans un menu avant
-       de l'ouvrir. -->
+  <!-- `fold-danger-zone` plutôt qu'un dépliant maison : le libellé d'action
+       ouvre une confirmation sur place, et sans `actionLabel` la zone reste un
+       cadre qui EXPLIQUE sans rien offrir — exactement ce qu'il faut quand le
+       référentiel refusera de toute façon. -->
   @if (!category().isArchived) {
-    <section class="danger">
-      <button
-        type="button"
-        class="danger-toggle"
-        [attr.aria-expanded]="dangerOpen()"
-        (click)="toggleDanger()"
-      >
-        Archiver cette famille
-      </button>
-
-      @if (dangerOpen()) {
-        @if (activeProducts() > 0) {
-          <!-- Le domaine refuse (invariant 5). On le dit ici plutôt que de
-               laisser l'erreur l'apprendre après le clic. -->
-          <fold-callout appearance="inset" variant="warning">
-            <strong>Archivage impossible.</strong> «&nbsp;{{ category().name.fr }}&nbsp;» porte
-            encore <strong>{{ activeProducts() }} fiche(s) active(s)</strong>. Déplacez-les ou
-            archivez-les d'abord&nbsp;: tant qu'une seule reste, le référentiel refuse.
-          </fold-callout>
-        } @else {
-          <fold-callout appearance="inset" variant="alert">
-            <strong>La famille sortira des listes.</strong> Elle ne portera plus de nouvelle fiche
-            et disparaîtra des choix de parent. Ses réglages — canaux et taux — sont conservés.
-          </fold-callout>
-
-          <button foldButton intent="danger" [disabled]="busy()" (click)="archive()">
-            Archiver la famille
-          </button>
-        }
+    <fold-danger-zone
+      title="Archiver cette famille"
+      [actionLabel]="canArchive() ? 'Archiver la famille' : undefined"
+      (confirmed)="archive()"
+    >
+      @if (activeProducts() > 0) {
+        <p>
+          <strong>Archivage impossible.</strong> «&nbsp;{{ category().name.fr }}&nbsp;» porte encore
+          <strong>{{ activeProducts() }} fiche(s) active(s)</strong>. Déplacez-les ou archivez-les
+          d'abord&nbsp;: tant qu'une seule reste, le référentiel refuse.
+        </p>
+      } @else {
+        <p>
+          La famille sortira des listes&nbsp;: elle ne portera plus de nouvelle fiche et disparaîtra
+          des choix de parent. Ses réglages — canaux et taux — sont conservés.
+        </p>
       }
-    </section>
+    </fold-danger-zone>
   }
 </div>
 
-<footer class="foot">
+<!-- Le pied de panneau de fold : c'est lui qui pose la barre, son alignement et
+     sa séparation. La version maison redéfinissait tout ça à côté. -->
+<fold-panel-footer>
   <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
   <button foldButton [disabled]="!canSubmit()" (click)="submit()">Enregistrer</button>
-</footer>
+</fold-panel-footer>

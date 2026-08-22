@@ -1,7 +1,11 @@
 import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding, withRouterConfig } from '@angular/router';
-import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
+import {
+  provideFoldCommonLabels,
+  provideFoldInlineConfirmLabels,
+  provideFoldToasts,
+} from 'fold-ng';
 
 import { provideSentry, provideWebVitals } from '@lfd/front-ops';
 
@@ -37,6 +41,19 @@ export const appConfig: ApplicationConfig = {
       info: 'En savoir plus',
       clear: 'Effacer',
       loading: 'Chargement…',
+    }),
+    // La confirmation sur place — celle que `fold-danger-zone` révèle sous un
+    // bouton destructif. Ses défauts sont ANGLAIS : sans ce fournisseur, un
+    // back-office entièrement français demande « Confirm / Cancel » au moment
+    // précis où il faut être compris sans hésiter.
+    provideFoldInlineConfirmLabels({
+      confirm: 'Confirmer',
+      cancel: 'Annuler',
+      cancelAria: 'Annuler',
+      busy: 'En cours…',
+      group: 'Confirmation',
+      secret: 'Saisissez pour confirmer',
+      typePrompt: (match) => `Retapez « ${match} » pour confirmer`,
     }),
     provideBrowserGlobalErrorListeners(),
     // `withComponentInputBinding` : un segment de route arrive dans un `input()`
