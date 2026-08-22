@@ -20,6 +20,7 @@ import { PublishProductHandler } from "./product/application/publish-product.js"
 import { UnpublishProductHandler } from "./product/application/unpublish-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
 import { SetProductMediaHandler } from "./product/application/set-product-media.js";
+import { SweepOrphanMediaHandler } from "./product/application/sweep-orphan-media.js";
 import { UploadProductImageHandler } from "./product/application/upload-product-image.js";
 import { UpdateProductEditorialHandler } from "./product/application/update-product-editorial.js";
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
@@ -33,6 +34,7 @@ import { NutritionRepository } from "./product/domain/ports/nutrition.repository
 import { ProductRepository } from "./product/domain/ports/product.repository.js";
 import { CategoryController } from "./category/http/category.controller.js";
 import { MediaController } from "./product/http/media.controller.js";
+import { MediaSweepController } from "./product/http/media-sweep.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
@@ -56,7 +58,13 @@ import {
  */
 @Module({
   imports: [PimDatabaseModule, CommerceModule],
-  controllers: [CategoryController, MediaController, ProductController, ReferenceController],
+  controllers: [
+    CategoryController,
+    MediaController,
+    MediaSweepController,
+    ProductController,
+    ReferenceController,
+  ],
   providers: [
     // Familles (CQRS) — un handler par cas.
     CreateCategoryHandler,
@@ -73,6 +81,7 @@ import {
     UpdateVariantPricingHandler,
     SetProductMediaHandler,
     UploadProductImageHandler,
+    SweepOrphanMediaHandler,
     UpdateProductEditorialHandler,
     DeclareProductNutritionHandler,
     ArchiveProductHandler,

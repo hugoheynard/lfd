@@ -47,4 +47,17 @@ export abstract class MediaStore {
    *   public, ou en échec.
    */
   abstract put(prefix: string, asset: PublicAsset): Promise<StoredAsset>;
+
+  /**
+   * Supprime un objet. **Idempotent** : supprimer ce qui n'existe pas n'est pas
+   * une erreur, et c'est ce qui rend un ramassage rejouable sans précaution.
+   *
+   * Rien d'autre que le ramassage d'orphelins ne doit appeler ceci. Un visuel
+   * retiré d'une fiche n'est PAS supprimable sur-le-champ : le même objet peut
+   * servir une fiche voisine, puisque des octets identiques tombent sur la même
+   * clé. Seul un comptage global sait qu'un objet n'a plus aucun lecteur.
+   *
+   * @throws {MediaStorageUnavailableError} stockage non configuré ou en échec.
+   */
+  abstract remove(storageKey: string): Promise<void>;
 }

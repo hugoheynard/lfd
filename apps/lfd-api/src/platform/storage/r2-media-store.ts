@@ -61,6 +61,20 @@ export class R2MediaStore extends MediaStore {
     return { storageKey, url: `${baseUrl}/${storageKey}` };
   }
 
+  async remove(storageKey: string): Promise<void> {
+    const { service } = this.channel();
+    try {
+      await service.delete(storageKey);
+    } catch (error) {
+      const cause = error instanceof Error ? error.name : String(error);
+      this.logger.error(`Stockage média — suppression de « ${storageKey} » refusée : ${cause}`);
+      throw new MediaStorageUnavailableError(
+        "Le stockage des médias a refusé la suppression.",
+        error,
+      );
+    }
+  }
+
   private channel(): { service: S3StorageService; baseUrl: string } {
     if (this.cached !== null) {
       return this.cached;

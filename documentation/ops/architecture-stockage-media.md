@@ -212,6 +212,46 @@ migration de contenu — c'est ce que le `storageKey` nullable achète.
 
 ---
 
+## 5 bis. Le ramassage des orphelins
+
+Rien ne supprime un objet au fil de l'eau, et c'est **délibéré** : `replaceMedia`
+détache sans supprimer, parce que des octets identiques tombent sur la même clé
+et peuvent donc servir une fiche voisine. Seul un comptage global sait qu'un
+objet n'a plus aucun lecteur. Sans ce passage, un visuel retiré d'une fiche — ou
+déposé et jamais enregistré — resterait dans le bucket pour toujours : le seul
+poste de coût qui croît tout seul.
+
+Un Cron Trigger (`30 3 * * *`) réveille le container et frappe
+`POST /admin/media/sweep`, derrière la porte machine-à-machine du recompute.
+
+### Trois règles, et ce qu'elles coûteraient si on les enlevait
+
+**1. Un délai de grâce de 7 jours.** Déposer crée une inscription **sans fiche** —
+rien dans sa forme ne la distingue d'un orphelin. Sans ce recul, le ramassage
+effacerait l'image que quelqu'un vient de déposer et n'a pas encore enregistrée.
+Sept jours couvrent une session de travail interrompue ; le raccourcir
+n'accélérerait rien, un objet ne coûte que son octet.
+
+**2. L'objet d'abord, les lignes ensuite.** L'ordre inverse est tentant — la base
+est plus rapide — et il est faux : oublier les lignes puis échouer sur R2
+effacerait la seule trace de ce qu'il reste à supprimer. L'octet resterait dans
+le bucket et **plus rien au monde ne pourrait le désigner**. Une fuite
+définitive, et silencieuse. À l'endroit, l'échec laisse des lignes pointant un
+objet disparu, qu'aucune fiche n'affiche : invisible, et ramassé au passage
+suivant.
+
+**3. Un re-contrôle juste avant chaque suppression.** Entre le recensement et la
+suppression, quelqu'un peut redéposer la même image — mêmes octets, donc **même
+clé** — et l'attacher. Le re-contrôle ramène la fenêtre de plusieurs minutes à
+quelques millisecondes sans la fermer ; seul un verrou la fermerait, pour un
+risque qui ne le mérite pas. Le pire cas est un visuel cassé, réparable en
+redéposant le même fichier : l'adressage par contenu rend le remède identique à
+la cause.
+
+**Et un plafond de 200 objets par passage**, annoncé dans le journal quand il est
+atteint. Un ramassage qui tronque en silence se lit comme un ramassage complet —
+c'est ainsi qu'on croit un bucket propre pendant des mois.
+
 ## 6. Le partage des gestes
 
 **Au tableau de bord — 1 et 2 faits le 2026-08-22.**
@@ -300,16 +340,15 @@ se nettoie pas tout seul (§7).
 
 ## 7. Ce qui reste ouvert
 
-- **Le nettoyage des orphelins.** Le comptage de références dit _quand_ un objet
-  devient supprimable ; il reste à décider _qui_ le supprime — au détachement,
-  ou par une passe périodique. Rien ne presse tant que le volume est nul.
+- **Le premier passage du ramassage n'a jamais tourné** : le cron est posé, le
+  code est testé, mais aucun objet n'a encore été supprimé pour de vrai — il
+  attend un déploiement sur `main`.
 - **Les dérivés** (§4.4), délibérément différés.
 - **La boutique client n'a toujours aucun point d'entrée catalogue** : les
   visuels, comme la TVA et les allergènes, n'atteignent pas l'acheteur. Héberger
   les images ne referme pas cette boucle-là.
-- **Le plafond de taille au dépôt** n'est pas tranché. Le KBIS coupe à 10 Mo
-  côté domaine, avec un garde-fou DoS à 20 Mo côté multipart ; une photo produit
-  n'a pas les mêmes ordres de grandeur.
+- **Le plafond de taille** est tranché (10 Mo côté domaine, 25 Mo en garde-fou
+  DoS du multipart) mais jamais éprouvé sur de vraies photos d'appareil.
 
 ## 8. À lire ensuite
 

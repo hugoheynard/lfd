@@ -197,12 +197,40 @@ async function triggerRecompute(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et déclenche le ramassage des visuels orphelins.
+ *
+ * Même porte machine-à-machine et même jeton que le recompute : c'est LA porte
+ * interne du backend, nommée d'après son premier usage. Un second jeton serait
+ * un secret de plus à faire tourner pour exactement le même genre de trafic.
+ */
+async function triggerMediaSweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await backend(env).fetch(
+    new Request("https://internal/admin/media/sweep", {
+      method: "POST",
+      headers: { "x-lfc-recompute-token": token },
+    }),
+  );
+}
+
+/**
  * L'expression exacte du cron de rafraîchissement, telle qu'écrite dans
  * `wrangler.jsonc`. Cloudflare ne transmet que cette chaîne pour distinguer les
  * déclenchements : elle doit rester **identique des deux côtés**, sinon le ping
  * serait traité comme un recompute (et le recompute ne partirait jamais).
  */
 const KEEP_WARM_CRON = "*/5 * * * *";
+
+/**
+ * Le ramassage des visuels orphelins — une fois par jour, à l'heure la plus
+ * creuse. Comme ci-dessus, cette chaîne doit rester **identique** à celle de
+ * `wrangler.jsonc` : Cloudflare ne transmet qu'elle pour distinguer les
+ * déclenchements, et un écart ferait passer le ramassage pour un recompute.
+ */
+const MEDIA_SWEEP_CRON = "30 3 * * *";
 
 /**
  * Garde l'instance chaude en la sollicitant plus souvent que son `sleepAfter`.
@@ -223,6 +251,21 @@ async function keepWarm(env: Env): Promise<void> {
   }
 }
 
+/**
+ * Quel travail pour quelle expression. Le `default` est le recompute — il l'a
+ * toujours été, et un cron inconnu vaut mieux traité que perdu.
+ */
+function dispatchCron(cron: string, env: Env): Promise<void> {
+  switch (cron) {
+    case KEEP_WARM_CRON:
+      return keepWarm(env);
+    case MEDIA_SWEEP_CRON:
+      return triggerMediaSweep(env);
+    default:
+      return triggerRecompute(env);
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // Toute la politique d'edge (limite + réécriture de l'IP cliente) vit dans
@@ -232,13 +275,12 @@ export default {
     return guardedFetch(request, env.RATE_LIMITER, (forwarded) => backend(env).fetch(forwarded));
   },
 
-  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Deux
+  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Trois
   // rythmes sur le même handler, départagés par l'expression : toutes les 5 min
-  // pour garder le container chaud, et 3×/jour aux heures creuses pour le
-  // recompute batch. `waitUntil` garde le Worker vivant jusqu'à la fin de
-  // l'appel container.
+  // pour garder le container chaud, 3×/jour aux heures creuses pour le recompute
+  // batch, et 1×/jour pour le ramassage des visuels orphelins. `waitUntil` garde
+  // le Worker vivant jusqu'à la fin de l'appel container.
   scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
-    const work = controller.cron === KEEP_WARM_CRON ? keepWarm(env) : triggerRecompute(env);
-    ctx.waitUntil(work);
+    ctx.waitUntil(dispatchCron(controller.cron, env));
   },
 };

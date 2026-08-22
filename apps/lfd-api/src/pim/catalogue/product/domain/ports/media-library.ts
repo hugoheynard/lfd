@@ -34,4 +34,43 @@ export abstract class MediaLibrary {
    * de la lui demander, puisqu'on l'a mesurée nous-mêmes au dépôt.
    */
   abstract factsFor(url: string): Promise<MediaFacts | null>;
+
+  /**
+   * Les clés d'objets **candidates** au ramassage : plus aucune fiche ne les
+   * porte, et la plus récente inscription qui les mentionne est antérieure à
+   * `before`.
+   *
+   * « Candidates » et non « supprimables », et le mot compte : entre ce
+   * recensement et la suppression, quelqu'un peut redéposer la même image —
+   * mêmes octets, donc **même clé** — et l'attacher. D'où
+   * {@link MediaLibrary.isStillOrphan}, rejoué juste avant chaque suppression.
+   *
+   * @param limit plafond par passage : un premier ramassage sur un arriéré ne
+   *   doit pas tourner une heure ni saturer R2 d'appels.
+   */
+  abstract findOrphanKeys(before: Date, limit: number): Promise<readonly string[]>;
+
+  /**
+   * Cette clé est-elle **encore** sans lecteur et hors délai de grâce ?
+   *
+   * Relue au dernier moment. Elle ne ferme pas la fenêtre — rien ne peut la
+   * fermer sans verrou — mais la réduit de plusieurs minutes à quelques
+   * millisecondes. Le pire cas restant est un objet supprimé alors qu'il vient
+   * d'être rattaché ; l'adressage par contenu le rend réparable en redéposant
+   * le même fichier.
+   */
+  abstract isStillOrphan(storageKey: string, before: Date): Promise<boolean>;
+
+  /**
+   * Oublie **toutes** les inscriptions portant cette clé.
+   *
+   * Appelé APRÈS la suppression de l'objet, jamais avant : l'ordre inverse
+   * perdrait la seule trace de ce qu'il reste à supprimer, et l'octet
+   * resterait dans le bucket sans que rien ne puisse le désigner. À l'endroit,
+   * l'état intermédiaire — des lignes qui pointent un objet disparu, et qu'aucune
+   * fiche ne porte — est inoffensif et se répare au passage suivant.
+   *
+   * @returns le nombre de lignes oubliées.
+   */
+  abstract forget(storageKey: string): Promise<number>;
 }
