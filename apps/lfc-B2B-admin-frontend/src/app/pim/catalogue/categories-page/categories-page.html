@@ -5,7 +5,9 @@
     héritent ses produits. Côté Shopify, elle devient une <em>collection</em>.
   </p>
 
-  <button pageActions foldButton size="sm" (click)="openCreate()">+ Nouvelle catégorie</button>
+  <button pageActions foldButton emphasis="solid" size="sm" (click)="openCreate()">
+    Ajouter une catégorie
+  </button>
 
   <fold-data-table
     [columns]="columns"
@@ -32,15 +34,22 @@
       }
     </ng-template>
 
+    <!-- Le B2B d'abord : c'est le canal de CET écran, et il ne se décline pas
+         par boutique — le lire après une liste d'emplacements le noierait. -->
     <ng-template foldCell="channels" let-c>
       <span class="chan-pills">
+        @if (c.channelPreset.b2b) {
+          <fold-badge content="B2B" variant="success" />
+        }
         @if (presetEmporter(c).length > 0) {
           <fold-badge [content]="'Emporter ' + presetEmporter(c).join(' · ')" variant="accent" />
         }
         @if (presetSurPlace(c).length > 0) {
           <fold-badge [content]="'Salle ' + presetSurPlace(c).join(' · ')" variant="info" />
         }
-        @if (presetEmporter(c).length === 0 && presetSurPlace(c).length === 0) {
+        @if (
+          !c.channelPreset.b2b && presetEmporter(c).length === 0 && presetSurPlace(c).length === 0
+        ) {
           <span class="muted">aucun</span>
         }
       </span>
