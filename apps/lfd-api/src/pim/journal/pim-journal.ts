@@ -61,6 +61,14 @@ export interface PimBlastRadius {
   readonly familiesEmporter?: number;
   /** Familles visant ce taux, sur place. */
   readonly familiesSurPlace?: number;
+  /**
+   * Familles visant ce taux sur la **plateforme B2B**.
+   *
+   * Manquait : la portée d'un changement de taux comptait deux canaux sur
+   * trois, et un taux que seules des familles B2B visent bougeait sous un
+   * « 0 / 0 » — la trace disait que ça ne touchait personne.
+   */
+  readonly familiesB2b?: number;
   /** Articles portés par le produit concerné. */
   readonly variants?: number;
 }

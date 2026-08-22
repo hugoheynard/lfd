@@ -20,6 +20,13 @@ export interface TvaRateSnapshot {
   readonly percent: number;
 }
 
+/** Ce qu'une révision remplace — tout, d'un bloc. */
+export interface TvaRateRevision {
+  readonly name: string;
+  readonly description: string;
+  readonly percent: number;
+}
+
 export interface NewTvaRateInput {
   readonly id: string;
   readonly name: string;
@@ -66,11 +73,19 @@ export class TvaRate {
     return this.rateValue.percent;
   }
 
-  /** Révise le taux d'un geste — c'est ainsi que le back-office l'édite. */
-  revise(name: string, description: string, percent: number): void {
-    this.nameValue = requireName(name);
-    this.descriptionValue = description.trim();
-    this.rateValue = TvaPercent.create(percent);
+  /**
+   * Révise le taux d'un geste — c'est ainsi que le back-office l'édite.
+   *
+   * Un record plutôt que trois arguments positionnels : `name` et `description`
+   * sont deux `string` voisins, et les intervertir ne se voit ni au compilateur
+   * ni à la lecture — le taux s'appellerait « Appliqué aux viennoiseries » et
+   * sa description « Réduit ». La même raison a fait passer `Category.setTva`
+   * au record.
+   */
+  revise(input: TvaRateRevision): void {
+    this.nameValue = requireName(input.name);
+    this.descriptionValue = input.description.trim();
+    this.rateValue = TvaPercent.create(input.percent);
   }
 
   snapshot(): TvaRateSnapshot {

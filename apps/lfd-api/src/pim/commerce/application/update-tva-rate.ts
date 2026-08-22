@@ -27,7 +27,11 @@ export class UpdateTvaRateHandler implements ICommandHandler<UpdateTvaRateComman
     const rate = await requireRate(this.rates, command.id);
     const before = rate.snapshot();
     const { payload } = command;
-    rate.revise(payload.name, payload.description ?? "", payload.percent);
+    rate.revise({
+      name: payload.name,
+      description: payload.description ?? "",
+      percent: payload.percent,
+    });
     await ensureRateFree(this.rates, rate.percent, rate.id);
     await this.rates.save(rate);
     await this.journalize(before, rate.snapshot());
@@ -51,9 +55,13 @@ export class UpdateTvaRateHandler implements ICommandHandler<UpdateTvaRateComman
         subjectType: "tva_rate",
         subjectId: after.id,
         payload: { name: after.name, from: before.percent, to: after.percent },
+        // Les TROIS canaux. Il n'en portait que deux : un taux que seules
+        // les familles B2B visent changeait sous une portée annoncée « 0 / 0 »,
+        // c'est-à-dire sous la promesse que ça ne touchait personne.
         blast: {
           familiesEmporter: usage?.emporter ?? 0,
           familiesSurPlace: usage?.surPlace ?? 0,
+          familiesB2b: usage?.b2b ?? 0,
         },
       });
     }

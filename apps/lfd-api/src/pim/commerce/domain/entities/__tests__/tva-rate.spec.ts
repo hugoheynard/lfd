@@ -11,7 +11,9 @@ describe("l’agrégat TvaRate", () => {
 
   it("refuse un nom vide, à l’ouverture comme à la révision", () => {
     expect(() => TvaRate.open({ ...OPEN, name: "   " })).toThrow(EmptyTvaRateNameError);
-    expect(() => TvaRate.open(OPEN).revise("  ", "", 10)).toThrow(EmptyTvaRateNameError);
+    expect(() => TvaRate.open(OPEN).revise({ name: "  ", description: "", percent: 10 })).toThrow(
+      EmptyTvaRateNameError,
+    );
   });
 
   it("rogne les blancs autour du nom et de la description", () => {
@@ -34,7 +36,7 @@ describe("l’agrégat TvaRate", () => {
 
   it("révise son taux", () => {
     const rate = TvaRate.open(OPEN);
-    rate.revise("Intermédiaire", "", 10);
+    rate.revise({ name: "Intermédiaire", description: "", percent: 10 });
     expect(rate.snapshot()).toMatchObject({ name: "Intermédiaire", percent: 10 });
   });
 
