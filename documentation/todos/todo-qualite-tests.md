@@ -52,8 +52,11 @@ permanence — et une CI rouge en permanence se fait désactiver.
 >   disparu, deux méthodes jamais implémentées) et lisait un champ `tag` que
 >   l'agrégat n'a plus.
 >
-> `src/pim/catalogue/**` passe désormais au vert sous `tsconfig.test.json`.
-> Reste le compte ci-dessus, essentiellement B2B.
+> `src/pim/catalogue/**` passe au vert sous `tsconfig.test.json` — **tout le
+> catalogue**, famille et produit : les doubles du ramassage des visuels
+> traînaient la même dérive (`MediaStore.remove`, trois méthodes de
+> `MediaLibrary`, un paramètre disparu de `SweepOrphanMedia.execute`).
+> **194 erreurs** restantes, essentiellement B2B.
 
 ## 2. Les quatre apps Angular n'ont aucun ESLint
 
