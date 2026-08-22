@@ -8,7 +8,7 @@ import type {
 } from "@lfd/contracts";
 
 import { ACTIVITY_TYPES } from "./activity-event.js";
-import { type GrowthStatsEvent, weekStart } from "./growth-stats.js";
+import { weekStart, type GrowthStatsEvent } from "./growth-week.js";
 
 /**
  * **Stats de croissance v2** (fonctions pures) : le flux de cycle de vie (Sankey),

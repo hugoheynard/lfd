@@ -9,6 +9,14 @@ import type {
 } from "@lfd/contracts";
 
 import { ACTIVITY_TYPES } from "./activity-event.js";
+import { weekStart, type GrowthStatsEvent } from "./growth-week.js";
+
+// Ré-exportés : les lecteurs historiques (readers Prisma, handlers) gardent
+// leur chemin. Ils sont DÉFINIS dans `growth-week.ts`, qui ne dépend de rien —
+// sans quoi `growth-stats-advanced`, qui les lit, boucle un cycle avec ce
+// fichier.
+export { weekStart };
+export type { GrowthStatsEvent };
 import { deriveActivations } from "./activation.js";
 import {
   accountConcentration,
@@ -27,14 +35,6 @@ import { temperatureFlow, temperatureTransitions } from "./temperature-flow.js";
  * Déterministe (temps injecté) ; lit le journal + les leads, jamais les tables
  * voisines. Bucketing hebdo au lundi UTC (raffinement Europe/Paris = plus tard).
  */
-export interface GrowthStatsEvent {
-  readonly type: string;
-  readonly subjectType: string;
-  readonly subjectId: string;
-  readonly occurredAt: Date;
-  readonly actorType: string;
-  readonly payload: Record<string, unknown>;
-}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * DAY_MS;
@@ -231,13 +231,6 @@ export function weekStarts(now: Date, weeks: number): string[] {
     out.push(shiftWeek(current, -i));
   }
   return out;
-}
-
-export function weekStart(d: Date): string {
-  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const diff = (dt.getUTCDay() + 6) % 7;
-  dt.setUTCDate(dt.getUTCDate() - diff);
-  return dt.toISOString().slice(0, 10);
 }
 
 function shiftWeek(weekStartIso: string, byWeeks: number): string {

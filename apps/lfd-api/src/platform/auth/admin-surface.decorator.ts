@@ -3,13 +3,13 @@ import { applyDecorators, SetMetadata, UseGuards } from "@nestjs/common";
 
 import { AdminAuthGuard } from "./admin-auth.guard.js";
 import { Public } from "./public.decorator.js";
+import { ADMIN_PERMISSION_KEY, ADMIN_RESOURCE_KEY, ADMIN_SELF_KEY } from "./admin-surface.keys.js";
 import { StaffAccessGuard } from "./staff-access.guard.js";
 
-/** Clé de la ressource déclarée par un contrôleur admin. */
-export const ADMIN_RESOURCE_KEY = "admin:resource";
-
-/** Clé de la permission explicitement exigée par une route. */
-export const ADMIN_PERMISSION_KEY = "admin:permission";
+// Ré-exportées pour que les appelants historiques gardent leur chemin d'import ;
+// elles sont DÉFINIES dans `admin-surface.keys.ts`, qui ne dépend de rien —
+// sans quoi le guard, qui les lit, boucle un cycle avec ce fichier.
+export { ADMIN_PERMISSION_KEY, ADMIN_RESOURCE_KEY, ADMIN_SELF_KEY };
 
 /**
  * Déclare un contrôleur comme **surface admin** portant sur une ressource.
@@ -43,9 +43,6 @@ export function AdminSurface(resource: StaffResource): ClassDecorator {
 export function RequirePermission(permission: StaffPermission): MethodDecorator {
   return SetMetadata(ADMIN_PERMISSION_KEY, permission);
 }
-
-/** Clé d'une surface qui ne parle que de **soi**. */
-export const ADMIN_SELF_KEY = "admin:self";
 
 /**
  * Surface **réflexive** : « qui suis-je et que puis-je faire ».

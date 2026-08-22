@@ -166,6 +166,13 @@ jobs:
       - name: "Gate : les liens absolus mènent quelque part"
         run: pnpm lint:router-links
 
+      # Un cycle d'import ne se voit NULLE PART : tsc n'en dit rien, les tests
+      # passent, la compilation de production réussit. Seul le navigateur tombe,
+      # à l'exécution, sur la page concernée — « Failed to fetch dynamically
+      # imported module », qui ne nomme ni le cycle ni les fichiers.
+      - name: "Gate : aucun cycle d'import"
+        run: pnpm lint:import-cycles
+
       - name: Typecheck des fronts
         run: |
           # `-p tsconfig.app.json` et NON `tsc --noEmit` : le tsconfig racine de

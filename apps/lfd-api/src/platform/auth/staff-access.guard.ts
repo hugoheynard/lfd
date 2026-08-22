@@ -13,11 +13,7 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 
-import {
-  ADMIN_PERMISSION_KEY,
-  ADMIN_RESOURCE_KEY,
-  ADMIN_SELF_KEY,
-} from "./admin-surface.decorator.js";
+import { ADMIN_PERMISSION_KEY, ADMIN_RESOURCE_KEY, ADMIN_SELF_KEY } from "./admin-surface.keys.js";
 import { StaffAccessResolver } from "./staff-access.resolver.js";
 import type { AuthenticatedStaffRequest } from "./staff-principal.js";
 
