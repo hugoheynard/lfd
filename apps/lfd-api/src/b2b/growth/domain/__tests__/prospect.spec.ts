@@ -66,8 +66,8 @@ describe("deriveProspects", () => {
 
   it("un hot sans inscription connue au journal a un e-mail vide", () => {
     const [prospect] = deriveProspects([ordered("u1", "2026-08-19T09:00:00.000Z", 400)], NOW);
-    expect(prospect.email).toBe("");
-    expect(prospect.temperature).toBe("hot");
+    expect(prospect!.email).toBe("");
+    expect(prospect!.temperature).toBe("hot");
   });
 
   it("trie hot avant mid, puis par récence (le plus frais d'abord)", () => {
@@ -112,7 +112,7 @@ describe("momentumOf", () => {
 describe("deriveProspects — momentum intégré", () => {
   it("porte le momentum sur chaque prospect (mid = dormant)", () => {
     const [prospect] = deriveProspects([registered("u_mid", "2026-08-18T09:00:00.000Z")], NOW);
-    expect(prospect.momentum).toBe("dormant");
+    expect(prospect!.momentum).toBe("dormant");
   });
 
   it("un hot qui accélère est marqué accelerating", () => {
@@ -124,7 +124,7 @@ describe("deriveProspects — momentum intégré", () => {
       ],
       NOW,
     );
-    expect(prospect.momentum).toBe("accelerating");
+    expect(prospect!.momentum).toBe("accelerating");
   });
 });
 
@@ -175,7 +175,7 @@ describe("coldProspectsFrom", () => {
 
   it("prend la date de saisie comme ancre quand jamais contacté", () => {
     const [cold] = coldProspectsFrom([lead({ lastContactedAt: null })], NOW);
-    expect(cold.recencyDays).toBe(10); // 10 → 20 août
+    expect(cold!.recencyDays).toBe(10); // 10 → 20 août
   });
 });
 

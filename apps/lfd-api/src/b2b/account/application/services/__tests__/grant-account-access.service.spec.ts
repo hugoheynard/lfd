@@ -22,6 +22,7 @@ import {
 } from "../../../../../platform/shared/errors/identity-errors.js";
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
 import { GrantAccountAccess, type AccessToGrant } from "../grant-account-access.service.js";
+import type { MailReceipt } from "@lfd/mailer";
 
 /** Un rattachement enregistré, tel que le double le capture. */
 interface Attachment {
@@ -139,7 +140,7 @@ function fakeMailer(options: { readonly failing?: boolean; readonly enabled?: bo
   const sent: SentMail[] = [];
   const mailer: B2bMailer = {
     enabled,
-    send: (args): Promise<void> => {
+    send: (args): Promise<MailReceipt> => {
       if (failing) {
         return Promise.reject(new Error("canal indisponible"));
       }
@@ -147,9 +148,9 @@ function fakeMailer(options: { readonly failing?: boolean; readonly enabled?: bo
         to: args.to,
         template: args.template,
         carriesPasswordLink: "passwordSetupUrl" in args.data,
-        greeting: args.data.firstName,
+        greeting: "firstName" in args.data ? String(args.data.firstName) : "",
       });
-      return Promise.resolve();
+      return Promise.resolve({ providerId: null });
     },
   };
   return { mailer, sent };

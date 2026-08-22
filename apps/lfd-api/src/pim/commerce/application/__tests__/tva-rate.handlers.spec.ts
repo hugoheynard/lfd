@@ -4,7 +4,7 @@ import { TvaRate, type TvaRateSnapshot } from "../../domain/entities/tva-rate.js
 import { TvaRateNotFoundError, TvaRateConflictError } from "../../domain/errors/commerce-errors.js";
 import { TvaRateRepository, type TvaRateUsage } from "../../domain/ports/tva-rate.repository.js";
 import { CreateTvaRateCommand, CreateTvaRateHandler } from "../create-tva-rate.js";
-import { ListTvaRatesHandler, ListTvaRatesQuery } from "../list-tva-rates.js";
+import { ListTvaRatesHandler } from "../list-tva-rates.js";
 import { RemoveTvaRateCommand, RemoveTvaRateHandler } from "../remove-tva-rate.js";
 import { UpdateTvaRateCommand, UpdateTvaRateHandler } from "../update-tva-rate.js";
 
@@ -164,13 +164,15 @@ describe("ListTvaRatesHandler", () => {
     const create = new CreateTvaRateHandler(repo, new StubIds(), new RecordingJournal());
     await create.execute(new CreateTvaRateCommand({ name: "Réduit", percent: 5.5 }));
     await create.execute(new CreateTvaRateCommand({ name: "Normal", percent: 20 }));
-    repo.usage.set("tva_1", { emporter: 3, surPlace: 1 });
+    repo.usage.set("tva_1", { b2b: 0, emporter: 3, surPlace: 1 });
 
-    const views = await new ListTvaRatesHandler(repo).execute(new ListTvaRatesQuery());
+    const views = await new ListTvaRatesHandler(repo).execute();
 
+    // Le B2B compte comme les deux autres : c'est un canal de vente à part
+    // entière, et un taux qu'il seul utilise ne doit pas paraître libre.
     expect(views.map((view) => [view.percent, view.usage])).toEqual([
-      [5.5, { emporter: 3, surPlace: 1 }],
-      [20, { emporter: 0, surPlace: 0 }],
+      [5.5, { b2b: 0, emporter: 3, surPlace: 1 }],
+      [20, { b2b: 0, emporter: 0, surPlace: 0 }],
     ]);
   });
 });
@@ -183,7 +185,7 @@ describe("Le journal du référentiel", () => {
       new CreateTvaRateCommand({ name: "Réduit", percent: 5.5 }),
     );
     // Ce que ce taux touchait à l'instant du changement.
-    repo.usage.set(id, { emporter: 3, surPlace: 1 });
+    repo.usage.set(id, { b2b: 0, emporter: 3, surPlace: 1 });
 
     await new UpdateTvaRateHandler(repo, journal).execute(
       new UpdateTvaRateCommand(id, { name: "Intermédiaire", percent: 10 }),

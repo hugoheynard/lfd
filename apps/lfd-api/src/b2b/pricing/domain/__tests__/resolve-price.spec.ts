@@ -374,6 +374,7 @@ describe("resolvePrice — l'ambiguïté", () => {
  */
 describe("le plancher naturel du système", () => {
   const context: PricingContext = {
+    cumulativeQuantity: null,
     at: new Date("2026-08-17T00:00:00.000Z"),
     quantity: 1,
     variantSku: "VIE-001",
@@ -384,6 +385,7 @@ describe("le plancher naturel du système", () => {
   };
 
   const minus = (cents: number): PriceRule => ({
+    stacksOverMercuriale: false,
     id: "geste",
     stage: "geste",
     scope: { type: "global", id: null },

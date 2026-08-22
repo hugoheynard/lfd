@@ -15,9 +15,10 @@ name: CI
 # Ce que cette CI ne couvre PAS, et pourquoi (cf. documentation/todos/todo-qualite-tests.md) :
 #   · les 4 apps Angular n'ont **aucune configuration ESLint** — il n'y a rien à
 #     lancer. Elles sont couvertes par le typecheck, les tests et le build ;
-#   · le typecheck des **specs** (`tsconfig.test.json`) est rouge sur les deux
-#     backends (mocks devenus obsolètes). L'ajouter ici ferait une CI rouge dès
-#     le premier jour, donc inutile : c'est une tranche de nettoyage à part.
+#   · plus rien pour les specs : le typecheck de `tsconfig.test.json` est passé
+#     de 194 erreurs à zéro le 2026-08-22, et il est branché ci-dessous. C'est
+#     lui qui empêche un double de test de dériver du port qu'il prétend jouer
+#     — la panne qui rend un test VERT sur du code qui n'existe plus.
 
 on:
   pull_request:
@@ -85,6 +86,14 @@ jobs:
         run: pnpm --filter "./packages/**" build
       - name: Typecheck
         run: pnpm --filter lfd-api exec tsc --noEmit
+      # Les SPECS, que le typecheck ci-dessus ignore (`tsconfig.json` exclut
+      # `test/` et `**/*.spec.ts`) et que Jest transpile sans vérifier. Sans
+      # cette porte, un double de test survit à la disparition de la méthode
+      # qu'il simule : le test reste vert, et ce qu'il prouve a disparu. Deux
+      # cas réels le jour où elle a été posée — `setChannels({b1, b2})` et
+      # `setTva("tva_5", null)`, deux signatures mortes, deux tests verts.
+      - name: "Typecheck des specs"
+        run: pnpm --filter lfd-api exec tsc --noEmit -p tsconfig.test.json
       - name: Lint
         run: pnpm --filter lfd-api lint:ci
       # Un abonné d'événement qui ne s'inscrit pas au travail de fond ne casse

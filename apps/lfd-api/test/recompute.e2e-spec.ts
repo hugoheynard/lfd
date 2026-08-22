@@ -8,6 +8,7 @@
  */
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
 let ctx: E2eContext;
 let sequence = 0;
@@ -32,7 +33,7 @@ async function seed(
   type: string,
   subjectId: string,
   occurredAt: string,
-  payload: Record<string, unknown>,
+  payload: InputJsonObject,
 ): Promise<void> {
   sequence += 1;
   await ctx.prisma.activityEvent.create({

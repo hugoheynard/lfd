@@ -63,6 +63,7 @@ function bookWith(
   const written: Written = { contacts: [], alignedRoles: [] };
 
   const companies: CompanyRepository = {
+    saveKbisCertification: () => Promise.resolve(),
     existsBySiret: () => Promise.resolve(false),
     declareOwnedBy: () => Promise.resolve("cmp_1"),
     declareUnowned: () => Promise.resolve("cmp_1"),
@@ -85,6 +86,7 @@ function bookWith(
   };
 
   const members: CompanyMemberRepository = {
+    rebindSubject: () => Promise.resolve(),
     findAccountByEmail: () => Promise.resolve(known),
     findOwner: () => Promise.resolve(null),
     createInvited: () => Promise.resolve("user_new"),
@@ -144,6 +146,7 @@ describe("CompanyContactBook — un rôle, pas deux", () => {
     const { book, written } = bookWith({
       userId: "user_1",
       subject: "auth0|1",
+      firstName: "Camille",
       status: "active",
     });
 

@@ -4,7 +4,6 @@ import type { RecordActivityInput } from "../../../domain/activity-event.js";
 import { ActivityRecorder } from "../../../domain/ports/activity-recorder.js";
 import { LeadScoreReader } from "../../../domain/ports/lead-score.reader.js";
 import { GetCockpitHandler } from "../get-cockpit.handler.js";
-import { GetCockpitQuery } from "../get-cockpit.query.js";
 
 /** Reader doublé par EXTENSION : rend une queue figée. */
 class FakeReader extends LeadScoreReader {
@@ -48,7 +47,7 @@ describe("GetCockpitHandler", () => {
     const reader = new FakeReader([lead()]);
     const handler = new GetCockpitHandler(reader, new CapturingRecorder());
 
-    const result = await handler.execute(new GetCockpitQuery());
+    const result = await handler.execute();
 
     expect(reader.lastLimit).toBe(5);
     expect(result).toHaveLength(1);
@@ -65,7 +64,7 @@ describe("GetCockpitHandler", () => {
       recorder,
     );
 
-    await handler.execute(new GetCockpitQuery());
+    await handler.execute();
 
     expect(recorder.records).toHaveLength(2);
     expect(recorder.records[0]).toMatchObject({
@@ -82,7 +81,7 @@ describe("GetCockpitHandler", () => {
     const recorder = new CapturingRecorder();
     const handler = new GetCockpitHandler(new FakeReader([]), recorder);
 
-    const result = await handler.execute(new GetCockpitQuery());
+    const result = await handler.execute();
 
     expect(result).toEqual([]);
     expect(recorder.records).toHaveLength(0);

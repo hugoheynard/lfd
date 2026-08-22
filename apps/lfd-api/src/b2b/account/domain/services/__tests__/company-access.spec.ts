@@ -15,6 +15,6 @@ describe("ensureCompanyAdmin", () => {
   it("refuse un simple membre (403)", () => {
     // Membre mais pas gestionnaire : il sait que l'entreprise existe (il en est),
     // donc un refus explicite plutôt qu'un 404.
-    expect(() => ensureCompanyAdmin("member", "company_1")).toThrow(CompanyAdminRequiredError);
+    expect(() => ensureCompanyAdmin("orders", "company_1")).toThrow(CompanyAdminRequiredError);
   });
 });

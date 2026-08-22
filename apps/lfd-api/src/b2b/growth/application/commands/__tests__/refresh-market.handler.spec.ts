@@ -3,7 +3,6 @@ import type { MarketConfigView, MarketZoneCount } from "@lfd/contracts";
 import { Clock } from "../../../../../platform/time/clock.js";
 import { MarketConfigStore } from "../../../domain/ports/market-config.store.js";
 import { MarketDirectory } from "../../../domain/ports/market-directory.js";
-import { RefreshMarketCommand } from "../refresh-market.command.js";
 import { RefreshMarketHandler } from "../refresh-market.handler.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
@@ -68,7 +67,7 @@ describe("RefreshMarketHandler", () => {
     const directory = new FakeDirectory();
     const handler = new RefreshMarketHandler(store, directory, new FixedClock());
 
-    await handler.execute(new RefreshMarketCommand());
+    await handler.execute();
 
     // 2 zones × 2 NAF = 4 appels.
     expect(directory.calls).toHaveLength(4);

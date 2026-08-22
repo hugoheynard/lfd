@@ -33,6 +33,7 @@ function handoverOrder(overrides: Partial<HandoverOrder> = {}): HandoverOrder {
 /** Reader doublé : rend une commande fixe pour tout jeton, ou `null`. */
 function readerOf(order: HandoverOrder | null): OrderReader {
   return {
+    listForProduction: () => Promise.resolve([]),
     listByCompany: () => Promise.reject(new Error("non utilisé")),
     listPersonal: () => Promise.reject(new Error("non utilisé")),
     findById: () => Promise.reject(new Error("non utilisé")),

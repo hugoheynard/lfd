@@ -45,16 +45,16 @@ describe("journal activity_events (e2e SQL)", () => {
     const rows = await ctx.prisma.activityEvent.findMany();
     expect(rows).toHaveLength(1);
     const [row] = rows;
-    expect(row.type).toBe("order.placed");
-    expect(row.subjectType).toBe("user");
-    expect(row.subjectId).toBe("user_1");
-    expect(row.actorType).toBe("system"); // hors requête HTTP → fallback
-    expect(row.traceId).toMatch(/^[0-9a-f]{32}$/);
-    expect(row.schemaVersion).toBe(1);
-    expect(row.establishmentId).toBeNull();
-    expect(row.payload).toEqual({ totalCents: 4200 });
-    expect(row.id).toHaveLength(26); // ULID
-    expect(row.recordedAt).toBeInstanceOf(Date);
+    expect(row!.type).toBe("order.placed");
+    expect(row!.subjectType).toBe("user");
+    expect(row!.subjectId).toBe("user_1");
+    expect(row!.actorType).toBe("system"); // hors requête HTTP → fallback
+    expect(row!.traceId).toMatch(/^[0-9a-f]{32}$/);
+    expect(row!.schemaVersion).toBe(1);
+    expect(row!.establishmentId).toBeNull();
+    expect(row!.payload).toEqual({ totalCents: 4200 });
+    expect(row!.id).toHaveLength(26); // ULID
+    expect(row!.recordedAt).toBeInstanceOf(Date);
   });
 
   it("est idempotent : deux émissions de même idempotencyKey → une seule ligne", async () => {
@@ -72,6 +72,6 @@ describe("journal activity_events (e2e SQL)", () => {
   it("porte l'establishmentId quand il est fourni (identity resolution future)", async () => {
     await recorder.record(input({ establishmentId: "estab_9" }));
     const [row] = await ctx.prisma.activityEvent.findMany();
-    expect(row.establishmentId).toBe("estab_9");
+    expect(row!.establishmentId).toBe("estab_9");
   });
 });

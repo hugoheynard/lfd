@@ -46,7 +46,7 @@ function forwardedKeys(): string[] {
   if (block === null) {
     throw new Error("RUNTIME_KEYS introuvable dans container/worker.ts");
   }
-  return [...block[1].matchAll(/"([A-Z0-9_]+)"/g)].map((match) => match[1]);
+  return [...block[1]!.matchAll(/"([A-Z0-9_]+)"/g)].map((match) => match[1]!);
 }
 
 /**
@@ -62,7 +62,7 @@ function configuredKeys(): string[] {
     readFileSync(join(CONFIG, file), "utf8"),
   );
   const names = sources.flatMap((source) =>
-    [...source.matchAll(/"([A-Z][A-Z0-9_]{2,})"/g)].map((match) => match[1]),
+    [...source.matchAll(/"([A-Z][A-Z0-9_]{2,})"/g)].map((match) => match[1]!),
   );
   return [...new Set(names)].sort();
 }
@@ -83,7 +83,7 @@ function deployedKeys(): string[] {
   if (loop === null) {
     throw new Error("Boucle `for name in …` introuvable dans le workflow de déploiement");
   }
-  return [...loop[1].matchAll(/[A-Z][A-Z0-9_]{2,}/g)].map((match) => match[0]);
+  return [...loop[1]!.matchAll(/[A-Z][A-Z0-9_]{2,}/g)].map((match) => match[0]);
 }
 
 /**

@@ -59,6 +59,7 @@ import { PlaceOrderHandler } from "../place-order.handler.js";
  * résolution a ses propres tests, purs et exhaustifs.
  */
 const noPriceRules: PriceRuleReader = {
+  listArchived: () => Promise.resolve([]),
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
 };
@@ -96,8 +97,20 @@ const noCustomerVolumes: CustomerVolumeReader = {
 };
 
 const CATALOG: Record<string, CatalogItem> = {
-  "VIE-001": { sku: "VIE-001", name: "Croissant", unitPriceCents: 200, vatRate: 0 },
-  "VIE-002": { sku: "VIE-002", name: "Pain au chocolat", unitPriceCents: 220, vatRate: 0 },
+  "VIE-001": {
+    category: "pain",
+    sku: "VIE-001",
+    name: "Croissant",
+    unitPriceCents: 200,
+    vatRate: 0,
+  },
+  "VIE-002": {
+    category: "pain",
+    sku: "VIE-002",
+    name: "Pain au chocolat",
+    unitPriceCents: 220,
+    vatRate: 0,
+  },
 };
 
 /**
@@ -137,7 +150,6 @@ function payments(sink: { intent: CreateIntentParams | null } = { intent: null }
       sink.intent = params;
       return Promise.resolve({ paymentIntentId: "pi_test_1", clientSecret: "pi_test_1_secret" });
     },
-    retrieveIntent: () => Promise.resolve({ paymentIntentId: "pi_1", clientSecret: "pi_1_secret" }),
     retrieveIntent: () => Promise.resolve({ paymentIntentId: "pi_1", clientSecret: "pi_1_secret" }),
     publishableKey: () => "pk_test_123",
     parseWebhook: () => ({ kind: "ignored" }),
@@ -252,6 +264,7 @@ const COURIER_ADDR: BillingAddressPayload = {
 /** Repo qui capture ce qu'on lui demande d'écrire, sans base. */
 function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
   return {
+    markHandedOver: () => Promise.resolve(false),
     // On capture l'état sérialisé de l'agrégat : les assertions portent sur ce que
     // la commande a réellement calculé (sous-total/TVA/total, lignes, règlement).
     place: (order) => {
@@ -269,8 +282,9 @@ function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
     companyId: null,
     fulfillmentMethod: "pickup",
     deliveryAddress: null,
+    deliveryAddressId: null,
     pickupAddressId: null,
-    requestedDeliveryDate: null,
+    requestedDeliveryDate: "2026-09-01",
     note: "",
     lines: [{ sku: "VIE-001", quantity: 2 }],
     ...over,
@@ -340,7 +354,7 @@ describe("PlaceOrderHandler", () => {
   it("résout les prix au SERVEUR — le prix du client est ignoré", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active"),
+      guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
@@ -382,7 +396,7 @@ describe("PlaceOrderHandler", () => {
   it("fusionne les lignes en double par SKU", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active"),
+      guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
@@ -413,7 +427,7 @@ describe("PlaceOrderHandler", () => {
   it("refuse un SKU inconnu du catalogue (400), sans rien écrire", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active"),
+      guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
@@ -434,7 +448,7 @@ describe("PlaceOrderHandler", () => {
   it("en RETRAIT, fige l'adresse du point et n'attache ni zone ni adresse de livraison", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active"),
+      guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
@@ -452,7 +466,7 @@ describe("PlaceOrderHandler", () => {
   it("refuse le RETRAIT quand aucun point de retrait n'est configuré (409)", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active"),
+      guard("orders", "active"),
       drafting(pickups(null), zones()),
       capturingRepo(sink),
       payments(),
@@ -469,7 +483,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const point: PickupAddressView = { ...LABO_POINT, discount: { mode: "percent", bp: 2000 } };
     const handler = new PlaceOrderHandler(
-      guard("member", "active"),
+      guard("orders", "active"),
       drafting(pickups(point), zones()),
       capturingRepo(sink),
       payments(),
@@ -488,7 +502,7 @@ describe("PlaceOrderHandler", () => {
   it("en COURSIER, fige l'adresse livrée et déduit le frais de SON code postal", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active"),
+      guard("orders", "active"),
       drafting(pickups(), zones(TARENTAISE)),
       capturingRepo(sink),
       payments(),
@@ -522,7 +536,7 @@ describe("PlaceOrderHandler", () => {
     // la tournée n'a pas de coût connu. On refuse plutôt que de livrer à 0 €.
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active"),
+      guard("orders", "active"),
       drafting(pickups(), zones(TARENTAISE)),
       capturingRepo(sink),
       payments(),
@@ -548,7 +562,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active", false),
+      guard("orders", "active", false),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(intentSink),
@@ -571,7 +585,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "active"),
+      guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(intentSink),
@@ -590,7 +604,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
-      guard("member", "pending"),
+      guard("orders", "pending"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(intentSink),

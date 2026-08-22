@@ -41,9 +41,9 @@ describe("velocityMetrics", () => {
       ev("user.registered", "user", "u1", "2026-08-01T00:00:00Z"),
       ev("order.placed", "user", "u1", "2026-08-05T00:00:00Z", { totalCents: 100 }),
     ]);
-    expect(firstOrder.key).toBe("first_order");
-    expect(firstOrder.count).toBe(1);
-    expect(firstOrder.quantiles.median).toBe(4);
+    expect(firstOrder!.key).toBe("first_order");
+    expect(firstOrder!.count).toBe(1);
+    expect(firstOrder!.quantiles.median).toBe(4);
   });
 });
 

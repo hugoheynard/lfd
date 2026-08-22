@@ -41,13 +41,15 @@ function doubles(
   const declared: { company: Company; ownerUserId: string }[] = [];
 
   const companies: CompanyRepository = {
+    load: () => Promise.resolve(null),
+    save: () => Promise.resolve(),
+    saveKbisCertification: () => Promise.resolve(),
     existsBySiret: () => Promise.resolve(options.siretTaken === true),
     declareOwnedBy: (company, ownerUserId) => {
       declared.push({ company, ownerUserId });
       return Promise.resolve("company_new");
     },
     declareUnowned: () => Promise.resolve("company_new"),
-    updatePrimaryContact: () => Promise.resolve(),
     saveKbisMetadata: () => Promise.resolve(),
     kbisLocation: () => Promise.resolve(null),
   };
@@ -107,8 +109,8 @@ describe("CreateCompanyHandler", () => {
 
     await handler.execute(command());
 
-    expect(declared[0]?.company.contact.email.value).toBe("camille@pqmarais.fr");
-    expect(declared[0]?.ownerUserId).toBe("user_1");
+    expect(declared[0]!.company.contact!.email.value).toBe("camille@pqmarais.fr");
+    expect(declared[0]!.ownerUserId).toBe("user_1");
   });
 
   it("refuse un SIRET déjà enregistré", async () => {

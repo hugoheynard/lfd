@@ -60,6 +60,7 @@ function snapshot(priceCents: number): CatalogSnapshot {
         kind: "daily",
         variants: [
           {
+            allergens: null,
             sku: SKU,
             name: "Croissant",
             priceCents,

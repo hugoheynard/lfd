@@ -134,7 +134,7 @@ describe("EvaluateOrderAlerts", () => {
     const off: AccountAlertOverride = { kind: "product.first_order", mode: "off" };
 
     const { service, recorded } = build({
-      accountOverrides: [{ readable: true, override: off, updatedAt: NOW }],
+      accountOverrides: [{ updatedBy: null, readable: true, override: off, updatedAt: NOW }],
     });
 
     await service.evaluate("order_1");
@@ -163,6 +163,7 @@ describe("EvaluateOrderAlerts", () => {
       Object.keys(ALERT_KINDS) as (keyof typeof ALERT_KINDS)[]
     ).map((kind) => ({
       kind,
+      updatedBy: null,
       readable: true,
       enabled: false,
       params: ALERT_KINDS[kind].defaults.params,

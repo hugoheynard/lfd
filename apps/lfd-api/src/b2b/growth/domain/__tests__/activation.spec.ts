@@ -70,7 +70,7 @@ describe("deriveActivations", () => {
       ],
       NOW,
     );
-    expect(view.adoptionPlus).toBe(true);
+    expect(view!.adoptionPlus).toBe(true);
   });
 
   it("retire adoption+ dès qu'une pièce est posée par le staff", () => {
@@ -81,13 +81,13 @@ describe("deriveActivations", () => {
       ],
       NOW,
     );
-    expect(view.adoptionPlus).toBe(false);
+    expect(view!.adoptionPlus).toBe(false);
   });
 
   it("une société déclarée par le staff n'est jamais adoption+", () => {
     const [view] = deriveActivations([declared("c1", "2026-08-10T09:00:00.000Z", "staff")], NOW);
-    expect(view.adoptionPlus).toBe(false);
-    expect(view.declaredVia).toBe("staff");
+    expect(view!.adoptionPlus).toBe(false);
+    expect(view!.declaredVia).toBe("staff");
   });
 
   it("reste adoption+ si activée par le staff sans qu'il ait posé de pièce (0-touch)", () => {
@@ -100,8 +100,8 @@ describe("deriveActivations", () => {
       ],
       NOW,
     );
-    expect(view.adoptionPlus).toBe(true);
-    expect(view.status).toBe("active");
+    expect(view!.adoptionPlus).toBe(true);
+    expect(view!.status).toBe("active");
   });
 
   it("passe active et arrête le compteur stalled une fois activée", () => {

@@ -5,6 +5,9 @@ import {
 import { ListAllCompaniesHandler } from "../list-all-companies.handler.js";
 
 const view: AdminCompanyView = {
+  requestedTerm: null,
+  owner: null,
+  warnings: [],
   id: "company_1",
   reference: "C-000123",
   raisonSociale: "Café des Amis",
@@ -14,8 +17,8 @@ const view: AdminCompanyView = {
   tvaIntracom: "FR12345678901",
   status: "pending",
   grantedTerms: [],
-  requestedPaymentTerm: "monthly",
   primaryContact: {
+    role: null,
     id: null,
     firstName: "Léa",
     lastName: "Martin",

@@ -10,6 +10,7 @@ import {
 } from "../../../domain/ports/user-profile.repository.js";
 import { UpdateMyProfileCommand } from "../update-my-profile.command.js";
 import { UpdateMyProfileHandler } from "../update-my-profile.handler.js";
+import type { ProvisionedIdentity } from "../../../../../platform/shared/identity/provisioned-identity.js";
 
 const STORED: UserProfileRecord = {
   userId: "user_1",
@@ -51,6 +52,10 @@ function doubles(
   };
 
   const identity: CustomerIdentityPort = {
+    provision: (): Promise<ProvisionedIdentity> =>
+      Promise.resolve({ subject: "auth0|double", passwordSetupUrl: "https://exemple.test/mdp" }),
+    issuePasswordLink: (): Promise<string> => Promise.resolve("https://exemple.test/mdp"),
+
     changeEmail: () => {
       journal.calls.push("identity");
       return options.identityFails === true

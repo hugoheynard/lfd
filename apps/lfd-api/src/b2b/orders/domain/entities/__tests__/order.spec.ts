@@ -28,6 +28,13 @@ const food = (qty: number, price = 200, rate = 5.5): OrderLineInput => ({
 function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
   return {
     companyId: null,
+    placedByStaffId: null,
+    // L'acheminement CONVENU, figé à la commande : ici, le défaut du point.
+    agreed: {
+      window: { value: null, source: "default" },
+      contact: { value: null, source: "default" },
+      signatureRequired: { value: false, source: "default" },
+    },
     placedByUserId: "user_1",
     fulfillment: {
       method: "pickup",

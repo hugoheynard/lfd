@@ -55,7 +55,7 @@ describe("RequestActivationSupportHandler", () => {
     const recorder = { recorded: 0 };
     const published: unknown[] = [];
     const handler = new RequestActivationSupportHandler(
-      memberships("member"),
+      memberships("orders"),
       supportRepo(false, recorder),
       eventBus(published),
       CLOCK,
@@ -75,7 +75,7 @@ describe("RequestActivationSupportHandler", () => {
   it("refuse (409) si une demande est déjà ouverte", async () => {
     const recorder = { recorded: 0 };
     const handler = new RequestActivationSupportHandler(
-      memberships("member"),
+      memberships("orders"),
       supportRepo(true, recorder),
       eventBus([]),
       CLOCK,
@@ -88,7 +88,12 @@ describe("RequestActivationSupportHandler", () => {
   });
 
   it("refuse (404 non-divulguant) un non-membre", async () => {
-    const handler = new RequestActivationSupportHandler(memberships(null), supportRepo(false));
+    const handler = new RequestActivationSupportHandler(
+      memberships(null),
+      supportRepo(false),
+      eventBus([]),
+      CLOCK,
+    );
 
     await expect(
       handler.execute(new RequestActivationSupportCommand("user_x", PAYLOAD)),

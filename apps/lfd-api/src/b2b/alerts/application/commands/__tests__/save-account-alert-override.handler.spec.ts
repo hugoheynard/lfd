@@ -26,7 +26,7 @@ function build(stored: readonly StoredAlertRule[] = []) {
     { readAll: () => Promise.resolve([...stored]), save: () => Promise.resolve(true) },
     // Société connue : le cas « inconnue » est éprouvé en e2e, là où la
     // contrainte de clé étrangère existe vraiment.
-    { exists: () => Promise.resolve(true) },
+    { isActiveMember: () => Promise.resolve(false), exists: () => Promise.resolve(true) },
   );
   return { handler, saved, cleared };
 }

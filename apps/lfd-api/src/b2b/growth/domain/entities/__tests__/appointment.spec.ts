@@ -19,6 +19,7 @@ function input(overrides: Partial<BookAppointmentInput> = {}): BookAppointmentIn
     startAt: START,
     durationMinutes: 30,
     channel: "phone",
+    purpose: "discover",
     subjectType: "company",
     subjectId: "cmp_1",
     contactName: "  Camille Roy  ",
@@ -168,6 +169,7 @@ describe("Appointment", () => {
       // Un rendez-vous passé DOIT pouvoir se relire : sinon on ne pourrait plus
       // le clore en honoré/absent, qui est précisément ce qui se fait après coup.
       const appointment = Appointment.reconstitute({
+        purpose: "discover",
         id: "appt_1",
         startAt: new Date("2020-01-01T09:00:00.000Z"),
         endAt: new Date("2020-01-01T09:30:00.000Z"),

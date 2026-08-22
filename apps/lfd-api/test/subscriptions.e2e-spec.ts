@@ -201,10 +201,10 @@ describe("émission du journal (subscription.created)", () => {
     const [event] = await ctx.prisma.activityEvent.findMany({
       where: { type: "subscription.created" },
     });
-    expect(event.subjectType).toBe("user");
-    expect(event.subjectId).toBe(owner.id);
-    expect(event.actorType).toBe("customer");
-    expect(event.idempotencyKey).toBe(`subscription.created:${id}`);
-    expect(event.payload).toMatchObject({ subscriptionId: id, recurrence: "weekly" });
+    expect(event!.subjectType).toBe("user");
+    expect(event!.subjectId).toBe(owner.id);
+    expect(event!.actorType).toBe("customer");
+    expect(event!.idempotencyKey).toBe(`subscription.created:${id}`);
+    expect(event!.payload).toMatchObject({ subscriptionId: id, recurrence: "weekly" });
   });
 });

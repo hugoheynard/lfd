@@ -30,6 +30,7 @@ type UserWithMemberships = User & {
 
 /** Une personne active, rattachée à une société. */
 const activeUser: UserWithMemberships = {
+  navPrefs: null,
   id: "user_1",
   auth0Sub: "auth0|123",
   email: "jean@client.fr",

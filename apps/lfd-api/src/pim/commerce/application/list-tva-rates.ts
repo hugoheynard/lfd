@@ -7,8 +7,15 @@ import { TvaRateRepository } from "../domain/ports/tva-rate.repository.js";
 /** Lecture des taux de TVA — dispatchée par le `QueryBus`. Sans paramètre. */
 export class ListTvaRatesQuery {}
 
-/** Un taux jamais visé : absent de la carte d'usages, donc à zéro. */
-const UNUSED = { emporter: 0, surPlace: 0 } as const;
+/**
+ * Un taux jamais visé : absent de la carte d'usages, donc à zéro.
+ *
+ * **Les trois canaux**, B2B compris. Ce défaut n'en portait que deux : un taux
+ * que seule la plateforme B2B utilise s'affichait donc « 0 famille », ce qui
+ * invite à le supprimer — la base l'aurait refusé, mais l'écran promettait
+ * l'inverse.
+ */
+const UNUSED = { b2b: 0, emporter: 0, surPlace: 0 } as const;
 
 /**
  * Rend un **modèle de lecture**, et non l'instantané de l'agrégat : la vue porte

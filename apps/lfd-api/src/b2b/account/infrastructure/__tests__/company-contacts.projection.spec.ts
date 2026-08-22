@@ -29,7 +29,7 @@ const RECEPTION: ContactRow = {
   fonction: "réception",
   email: "r@p.fr",
   telephone: "06 12 34 56 78",
-  role: "manager",
+  role: "admin",
 };
 
 /** Le jour de référence de tous ces tests — le temps est une donnée, pas un hasard. */

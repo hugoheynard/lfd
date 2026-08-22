@@ -21,6 +21,7 @@ const APRES = new Date("2026-09-05T09:00:00.000Z");
 function draft(overrides: Partial<PricingRuleDraft> = {}): PricingRuleDraft {
   return {
     stage: "promotion",
+    stacksOverMercuriale: false,
     scope: { type: "global", id: null },
     audience: { type: "all", id: null },
     minQuantity: null,

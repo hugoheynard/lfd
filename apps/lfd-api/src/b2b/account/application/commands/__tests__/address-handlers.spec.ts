@@ -54,6 +54,7 @@ const DELIVERY: DeliveryAddressPayload = {
   label: "Boutique",
   isDefault: false,
   specs: {
+    signatureRequired: false,
     note: "",
     slots: { mode: "everyday", slot: null },
     deliveryContact: null,
@@ -137,7 +138,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
     const recorder: Recorder = { writes: [] };
     await expect(
       new UpdateDeliveryAddressHandler(
-        membershipReturning("member"),
+        membershipReturning("orders"),
         addressesRecorder(recorder),
       ).execute(new UpdateDeliveryAddressCommand("u1", "c1", "a1", DELIVERY)),
     ).rejects.toBeInstanceOf(CompanyAdminRequiredError);
@@ -168,7 +169,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
   it("un simple membre LIT les adresses ; un non-membre reçoit 404", async () => {
     const recorder: Recorder = { writes: [] };
     await new ListCompanyAddressesHandler(
-      membershipReturning("member"),
+      membershipReturning("orders"),
       readerRecorder(recorder),
     ).execute(new ListCompanyAddressesQuery("u1", "c1"));
     expect(recorder.writes).toEqual(["read"]);

@@ -186,8 +186,6 @@ describe("Company — activation", () => {
       activatedAt: null,
       activatedBy: null,
       suspensionCause: null,
-      activatedBy: null,
-      suspensionCause: null,
       nafCode: "",
     });
   }

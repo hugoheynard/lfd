@@ -29,7 +29,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-const post = (body: unknown) => ctx.http().post(ROUTE).send(body);
+const post = (body: object) => ctx.http().post(ROUTE).send(body);
 
 const lcpOf = (front: string): number | undefined =>
   ctx.app.get(VitalsStore).percentiles(front, Date.now()).get("LCP");

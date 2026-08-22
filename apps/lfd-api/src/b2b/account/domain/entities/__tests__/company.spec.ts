@@ -35,7 +35,7 @@ describe("Company.declare", () => {
     );
 
     expect(company.raisonSociale).toBe("Boulangerie du Marais SAS");
-    expect(company.siret.value).toBe("81245678900021");
+    expect(company.siret!.value).toBe("81245678900021");
   });
 
   it("n'exige que l'ENSEIGNE — le nom d'usage, pas celui du greffe", () => {
@@ -139,8 +139,6 @@ describe("Company.declare", () => {
       requestedTerm: null,
       status: "pending",
       activatedAt: null,
-      activatedBy: null,
-      suspensionCause: null,
       activatedBy: null,
       suspensionCause: null,
       nafCode: "",

@@ -18,6 +18,7 @@ const day = (iso: string): Date => new Date(`2026-08-${iso}T00:00:00.000Z`);
 
 function promo(id: string, from: string, to: string | null, bp = 2_000): PriceRule {
   return {
+    stacksOverMercuriale: false,
     id,
     stage: "promotion",
     scope: { type: "global", id: null },

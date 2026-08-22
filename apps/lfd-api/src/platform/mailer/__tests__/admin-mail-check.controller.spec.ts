@@ -18,7 +18,7 @@ function mailerSpy(sent: SentMail[], fail = false): B2bMailer {
         return Promise.reject(new Error("Resend a refusé l'envoi"));
       }
       sent.push({ to: args.to, template: String(args.template), data: { ...args.data } });
-      return Promise.resolve();
+      return Promise.resolve({ providerId: null });
     },
   };
 }

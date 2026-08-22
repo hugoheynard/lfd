@@ -25,10 +25,12 @@ describe("PriceTemplate.compose", () => {
    * distingue, et c'est exactement ce qu'on veut.
    */
   it("accepte un prix fixe comme grille à un seul palier", () => {
-    const template = compose([{ sku: "PAI-001", tiers: [{ minQuantity: 1, unitPriceCents: 80 }] }]);
+    const template = compose([
+      { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
+    ]);
 
     expect(template.lines).toEqual([
-      { sku: "PAI-001", tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
+      { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
     ]);
   });
 
@@ -36,6 +38,7 @@ describe("PriceTemplate.compose", () => {
     const template = compose([
       {
         sku: "PAI-001",
+        plannedVolume: null,
         tiers: [
           { minQuantity: 5000, unitPriceCents: 80 },
           { minQuantity: 1, unitPriceCents: 85 },
@@ -56,6 +59,7 @@ describe("PriceTemplate.compose", () => {
       compose([
         {
           sku: "PAI-001",
+          plannedVolume: null,
           tiers: [
             { minQuantity: 1, unitPriceCents: 80 },
             { minQuantity: 5000, unitPriceCents: 85 },
@@ -70,6 +74,7 @@ describe("PriceTemplate.compose", () => {
       compose([
         {
           sku: "PAI-001",
+          plannedVolume: null,
           tiers: [
             { minQuantity: 100, unitPriceCents: 85 },
             { minQuantity: 100, unitPriceCents: 80 },
@@ -82,19 +87,23 @@ describe("PriceTemplate.compose", () => {
   it("refuse deux lignes sur le même article", () => {
     expect(() =>
       compose([
-        { sku: "PAI-001", tiers: [{ minQuantity: 1, unitPriceCents: 85 }] },
-        { sku: "PAI-001", tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
+        { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 85 }] },
+        { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
       ]),
     ).toThrow(DuplicateTemplateSkuError);
   });
 
   it("refuse une grille vide, et une ligne sans palier", () => {
     expect(() => compose([])).toThrow(EmptyPriceTemplateError);
-    expect(() => compose([{ sku: "PAI-001", tiers: [] }])).toThrow(EmptyPriceTemplateError);
+    expect(() => compose([{ sku: "PAI-001", plannedVolume: null, tiers: [] }])).toThrow(
+      EmptyPriceTemplateError,
+    );
   });
 
   it("accepte un article offert — zéro est un prix réel", () => {
-    const template = compose([{ sku: "PAI-001", tiers: [{ minQuantity: 1, unitPriceCents: 0 }] }]);
+    const template = compose([
+      { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 0 }] },
+    ]);
 
     expect(template.lines[0]?.tiers[0]?.unitPriceCents).toBe(0);
   });
@@ -110,6 +119,7 @@ describe("templateToRules", () => {
     const template = compose([
       {
         sku: "PAI-001",
+        plannedVolume: null,
         tiers: [
           { minQuantity: 1, unitPriceCents: 85 },
           { minQuantity: 10_000, unitPriceCents: 78 },
@@ -144,7 +154,9 @@ describe("templateToRules", () => {
   });
 
   it("un prix fixe ne pose qu'une règle", () => {
-    const template = compose([{ sku: "PAI-001", tiers: [{ minQuantity: 1, unitPriceCents: 80 }] }]);
+    const template = compose([
+      { sku: "PAI-001", plannedVolume: null, tiers: [{ minQuantity: 1, unitPriceCents: 80 }] },
+    ]);
 
     expect(templateToRules(template.lines, "cmp_clubmed", SAISON, "Fixe")).toHaveLength(1);
   });
@@ -154,6 +166,7 @@ describe("templateToRules", () => {
     const template = compose([
       {
         sku: "PAI-001",
+        plannedVolume: null,
         tiers: [
           { minQuantity: 1, unitPriceCents: 85 },
           { minQuantity: 500, unitPriceCents: 80 },

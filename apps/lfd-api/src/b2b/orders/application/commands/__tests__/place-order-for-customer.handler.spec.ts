@@ -53,6 +53,7 @@ import { PlaceOrderForCustomerHandler } from "../place-order-for-customer.handle
  * résolution a ses propres tests, purs et exhaustifs.
  */
 const noPriceRules: PriceRuleReader = {
+  listArchived: () => Promise.resolve([]),
   candidatesFor: () => Promise.resolve([]),
   listAll: () => Promise.resolve([]),
 };
@@ -162,7 +163,6 @@ function payments(sink: { intent: CreateIntentParams | null } = { intent: null }
       return Promise.resolve({ paymentIntentId: "pi_1", clientSecret: "pi_1_secret" });
     },
     retrieveIntent: () => Promise.resolve({ paymentIntentId: "pi_1", clientSecret: "pi_1_secret" }),
-    retrieveIntent: () => Promise.resolve({ paymentIntentId: "pi_1", clientSecret: "pi_1_secret" }),
     publishableKey: () => "pk_test_123",
     parseWebhook: () => ({ kind: "ignored" }),
   };
@@ -205,8 +205,9 @@ function payload(over: Partial<AdminPlaceOrderPayload> = {}): AdminPlaceOrderPay
     settlement: "account",
     fulfillmentMethod: "pickup",
     deliveryAddress: null,
+    deliveryAddressId: null,
     pickupAddressId: null,
-    requestedDeliveryDate: null,
+    requestedDeliveryDate: "2026-09-01",
     note: "",
     lines: [{ sku: "VIE-001", quantity: 2 }],
     ...over,

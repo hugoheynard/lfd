@@ -185,9 +185,9 @@ describe("zéro friction — commande sans entreprise", () => {
     const [registered] = await ctx.prisma.activityEvent.findMany({
       where: { type: "user.registered" },
     });
-    expect(registered.subjectId).toBe(provisioned.id);
-    expect(registered.actorType).toBe("system");
-    expect(registered.idempotencyKey).toBe(`user.registered:${provisioned.id}`);
+    expect(registered!.subjectId).toBe(provisioned.id);
+    expect(registered!.actorType).toBe("system");
+    expect(registered!.idempotencyKey).toBe(`user.registered:${provisioned.id}`);
   });
 });
 
@@ -381,12 +381,12 @@ describe("émission du journal (order.placed)", () => {
     const events = await ctx.prisma.activityEvent.findMany({ where: { type: "order.placed" } });
     expect(events).toHaveLength(1);
     const [event] = events;
-    expect(event.subjectType).toBe("user");
-    expect(event.subjectId).toBe(user.id);
-    expect(event.actorType).toBe("customer"); // le middleware d'ingress a résolu le principal
-    expect(event.traceId).toMatch(/^[0-9a-f]{32}$/);
-    expect(event.idempotencyKey).toBe(`order.placed:${placed.id}`);
-    expect(event.payload).toMatchObject({
+    expect(event!.subjectType).toBe("user");
+    expect(event!.subjectId).toBe(user.id);
+    expect(event!.actorType).toBe("customer"); // le middleware d'ingress a résolu le principal
+    expect(event!.traceId).toMatch(/^[0-9a-f]{32}$/);
+    expect(event!.idempotencyKey).toBe(`order.placed:${placed.id}`);
+    expect(event!.payload).toMatchObject({
       orderId: placed.id,
       orderNumber: placed.orderNumber,
       companyId: null,

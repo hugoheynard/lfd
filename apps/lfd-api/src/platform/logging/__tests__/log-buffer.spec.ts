@@ -1,7 +1,7 @@
 import { LogBuffer, type RecordedLog } from "../log-buffer.js";
 
 function line(message: string, at = "2026-08-16T13:00:00.000Z"): RecordedLog {
-  return { at, level: "error", context: "Test", message };
+  return { traceId: null, at, level: "error", context: "Test", message };
 }
 
 describe("LogBuffer", () => {

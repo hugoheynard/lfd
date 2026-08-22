@@ -29,6 +29,7 @@ function owned(over: {
 
 function reader(order: OwnedOrder | null): OrderReader {
   return {
+    listForProduction: () => Promise.resolve([]),
     listByCompany: () => Promise.resolve([]),
     listPersonal: () => Promise.resolve([]),
     findById: () => Promise.resolve(order),

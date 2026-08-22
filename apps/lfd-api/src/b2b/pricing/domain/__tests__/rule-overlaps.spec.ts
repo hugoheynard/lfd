@@ -18,6 +18,7 @@ function rule(
   over: { stage?: PriceStage; bp?: number; scope?: PriceScope } = {},
 ): PriceRule {
   return {
+    stacksOverMercuriale: false,
     id,
     stage: over.stage ?? "promotion",
     scope: over.scope ?? { type: "global", id: null },

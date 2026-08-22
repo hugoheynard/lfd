@@ -34,6 +34,7 @@ function ruleRow(
 ): RuleRow {
   const scope = over.scope ?? { type: "global", id: null };
   return {
+    stacksOverMercuriale: false,
     id,
     stage: over.stage ?? "promotion",
     nature: "alter",

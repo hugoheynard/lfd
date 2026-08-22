@@ -2,9 +2,9 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     // Sa PROPRE racine, et pas celle de l'émission : cette configuration couvre
-    // `src`, `test` ET `container`. TypeScript 6.0 ne la déduit plus (TS5011),
-    // et la poser à `./src` — comme le fait `tsconfig.build.json` — mettrait
-    // `container/` hors racine.
+    // `src`, `test` ET les specs du `container`. TypeScript 6.0 ne la déduit
+    // plus (TS5011), et la poser à `./src` — comme le fait
+    // `tsconfig.build.json` — mettrait `container/` hors racine.
     "rootDir": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -15,6 +15,11 @@
     "allowSyntheticDefaultImports": true,
     "types": ["jest", "node"]
   },
-  "include": ["src", "test", "container"],
+  // `container/worker.ts` est EXCLU : il vit dans le monde Cloudflare Workers et
+  // a son propre tsconfig (`container/tsconfig.json`, types
+  // `@cloudflare/workers-types`). Le compiler ici, avec les types Node, produit
+  // huit erreurs qui ne disent rien de vrai. Sa spec, elle, reste couverte —
+  // elle lit le fichier comme du TEXTE et n'en importe rien.
+  "include": ["src", "test", "container/__tests__"],
   "exclude": ["dist", "node_modules"]
 }

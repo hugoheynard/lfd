@@ -4,6 +4,9 @@ import { StaffIdentityPort } from "../staff-identity.port.js";
 import { SuspendedStaffInviteError } from "../../directory/domain/staff-user-errors.js";
 import type { StaffIdentityFacts } from "../../directory/domain/staff-user.repository.js";
 import { OpenStaffAccess } from "../open-staff-access.service.js";
+import type { MailReceipt } from "@lfd/mailer";
+import type { SendMailArgs } from "@lfd/mailer";
+import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
 
 const NOW = new Date("2026-08-12T12:00:00.000Z");
 
@@ -49,7 +52,8 @@ function harness(row: StaffIdentityFacts, identityFails = false, mailerOn = true
       return Promise.resolve();
     },
   };
-  const identities: Pick<StaffIdentityPort, "provision" | "issuePasswordLink"> = {
+  const identities: Pick<StaffIdentityPort, "provision" | "issuePasswordLink" | "changeEmail"> = {
+    changeEmail: (): Promise<void> => Promise.resolve(),
     provision: (input) => {
       if (identityFails) {
         return Promise.reject(new IdentityDown());
@@ -71,12 +75,10 @@ function harness(row: StaffIdentityFacts, identityFails = false, mailerOn = true
   // pas, ce qui est exactement le garde qu'on veut.
   const mailer: Pick<Deps[3], "enabled" | "send"> = {
     enabled: mailerOn,
-    send: (args: {
-      readonly to: string;
-      readonly data: { readonly passwordSetupUrl: string };
-    }): Promise<void> => {
-      mails.push({ to: args.to, url: args.data.passwordSetupUrl });
-      return Promise.resolve();
+    send: <K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> => {
+      const url = "passwordSetupUrl" in args.data ? String(args.data.passwordSetupUrl) : "";
+      mails.push({ to: args.to, url });
+      return Promise.resolve({ providerId: null });
     },
   };
 

@@ -435,7 +435,7 @@ describe("le garde-fou du panier", () => {
     await order(companyId, quantity);
   }
 
-  function preflight(body: unknown): ReturnType<ReturnType<E2eContext["asSub"]>["post"]> {
+  function preflight(body: object): ReturnType<ReturnType<E2eContext["asSub"]>["post"]> {
     return ctx.asSub(CLIENT).post("/orders/preflight").send(body);
   }
 

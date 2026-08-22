@@ -53,6 +53,9 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
   const owned = { count: 0 };
 
   const companies: CompanyRepository = {
+    load: () => Promise.resolve(null),
+    save: () => Promise.resolve(),
+    saveKbisCertification: () => Promise.resolve(),
     existsBySiret: () => Promise.resolve(options.siretTaken === true),
     declareOwnedBy: () => {
       owned.count += 1;
@@ -62,16 +65,13 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
       unowned.push(company);
       return Promise.resolve("company_unowned");
     },
-    updatePrimaryContact: () => Promise.resolve(),
-    updateIdentity: () => Promise.resolve(),
-    requestPaymentTerm: () => Promise.resolve(),
     saveKbisMetadata: () => Promise.resolve(),
     kbisLocation: () => Promise.resolve(null),
   };
 
   const events = new FakeEvents();
   const access = new FakeAccess(
-    options.access ?? { userId: "user_1", identityCreated: true, mailSent: true },
+    options.access ?? { userId: "user_1", outcome: "identity_created", mailSent: true },
   );
   return {
     handler: new CreateCompanyByStaffHandler(companies, access, events),

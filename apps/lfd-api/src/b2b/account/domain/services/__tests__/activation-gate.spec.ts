@@ -5,6 +5,8 @@ import { activationGate } from "../activation-gate.js";
 function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailView {
   return {
     id: "company_1",
+    owner: null,
+    warnings: [],
     reference: "C-1",
     raisonSociale: "Café",
     enseigne: "Le Pain Quotidien",
@@ -15,6 +17,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     grantedTerms: [],
     requestedTerm: null,
     primaryContact: {
+      role: null,
       id: null,
       firstName: "L",
       lastName: "M",
@@ -54,10 +57,16 @@ const COMPLETE: Partial<AdminCompanyDetailView> = {
       codePostal: "75004",
       ville: "Paris",
       pays: "France",
-      isDefault: true,
     },
     deliveries: [
       {
+        specs: {
+          note: "",
+          slots: { mode: "everyday", slot: null },
+          deliveryContact: null,
+          gps: null,
+          signatureRequired: false,
+        },
         id: "addr_d",
         label: "Boutique",
         ligne1: "3 rue Oberkampf",
@@ -128,6 +137,7 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
     const mute = detail({
       ...COMPLETE,
       primaryContact: {
+        role: null,
         id: null,
         firstName: "L",
         lastName: "M",
@@ -143,6 +153,7 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
     const viaContact = detail({
       ...COMPLETE,
       primaryContact: {
+        role: null,
         id: null,
         firstName: "L",
         lastName: "M",
@@ -152,8 +163,9 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
       },
       contacts: [
         {
+          emailVerified: false,
           contactId: "ct_1",
-          role: "manager",
+          role: "admin",
           firstName: "R",
           lastName: "P",
           fonction: "réception",
@@ -178,11 +190,20 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
     // dont la porte est murée.
     const sansDetenteur = detail({
       ...COMPLETE,
-      primaryContact: { id: null, firstName: "", lastName: "", fonction: "", email: "", phone: "" },
+      primaryContact: {
+        role: null,
+        id: null,
+        firstName: "",
+        lastName: "",
+        fonction: "",
+        email: "",
+        phone: "",
+      },
       contacts: [
         {
+          emailVerified: false,
           contactId: "ct_1",
-          role: "manager",
+          role: "admin",
           firstName: "R",
           lastName: "P",
           fonction: "réception",

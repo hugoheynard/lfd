@@ -13,6 +13,8 @@ const VIEW = { id: "ord_1", orderNumber: "CMD-0001" } as unknown as OrderView;
 /** Lecteur doublé : rend la commande demandée (ou rien), et compte ses appels. */
 function reader(owned: OwnedOrder | null): OrderReader {
   return {
+    findByHandoverToken: () => Promise.resolve(null),
+    listForProduction: () => Promise.resolve([]),
     listByCompany: () => Promise.resolve([]),
     listPersonal: () => Promise.resolve([]),
     listForAdmin: () => Promise.resolve([]),
@@ -30,16 +32,17 @@ function guard(role: OrderRole | null): OrderGuardReader & { asked: boolean } {
     },
     companyStatusOf: () => Promise.resolve(null),
     paymentTermOf: () => Promise.resolve(null),
+    settlesOnAccount: () => Promise.resolve(false),
   };
   return spy;
 }
 
 function personal(placedByUserId: string): OwnedOrder {
-  return { view: VIEW, companyId: null, placedByUserId };
+  return { stripePaymentIntentId: null, view: VIEW, companyId: null, placedByUserId };
 }
 
 function ofCompany(companyId: string): OwnedOrder {
-  return { view: VIEW, companyId, placedByUserId: "usr_someone_else" };
+  return { stripePaymentIntentId: null, view: VIEW, companyId, placedByUserId: "usr_someone_else" };
 }
 
 describe("GetOrderHandler", () => {
@@ -67,7 +70,7 @@ describe("GetOrderHandler", () => {
   });
 
   it("rend une commande d'entreprise à l'un de ses membres", async () => {
-    const handler = new GetOrderHandler(guard("member"), reader(ofCompany("cmp_1")));
+    const handler = new GetOrderHandler(guard("orders"), reader(ofCompany("cmp_1")));
 
     await expect(handler.execute(new GetOrderQuery("usr_1", "ord_1"))).resolves.toBe(VIEW);
   });

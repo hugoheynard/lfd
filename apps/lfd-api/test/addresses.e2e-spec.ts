@@ -37,7 +37,13 @@ function delivery(over: Partial<DeliveryAddressPayload> = {}): DeliveryAddressPa
     ville: "Paris",
     pays: "France",
     isDefault: false,
-    specs: { note: "", slots: { mode: "everyday", slot: null }, deliveryContact: null, gps: null },
+    specs: {
+      signatureRequired: false,
+      note: "",
+      slots: { mode: "everyday", slot: null },
+      deliveryContact: null,
+      gps: null,
+    },
     ...over,
   };
 }
@@ -172,6 +178,7 @@ describe("livraison — défaut, tri, archivage", () => {
       .send(
         delivery({
           specs: {
+            signatureRequired: false,
             note: "Sonner « Boulangerie »",
             slots: {
               mode: "perDay",
@@ -223,6 +230,7 @@ describe("livraison — défaut, tri, archivage", () => {
       .send(
         delivery({
           specs: {
+            signatureRequired: false,
             note: "",
             slots: { mode: "everyday", slot: { start: "10:00", end: "08:00" } },
             deliveryContact: null,

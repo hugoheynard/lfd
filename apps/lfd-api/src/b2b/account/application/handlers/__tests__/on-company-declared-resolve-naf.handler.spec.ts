@@ -38,6 +38,10 @@ function reconstituted(): Company {
 class FakeCompanyRepository extends CompanyRepository {
   saved: Company | null = null;
 
+  saveKbisCertification(): Promise<void> {
+    return Promise.resolve();
+  }
+
   constructor(private readonly stored: Company | null) {
     super();
   }

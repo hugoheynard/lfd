@@ -39,8 +39,8 @@ describe("resolveAccountRules", () => {
   it("sans dérogation, le compte applique le global — et l'override reste null", () => {
     const [first] = resolveAccountRules(GLOBALS, []);
 
-    expect(first.override).toBeNull();
-    expect(first.effective).toEqual(first.global);
+    expect(first!.override).toBeNull();
+    expect(first!.effective).toEqual(first!.global);
   });
 
   it("rappelle TOUJOURS la règle globale, même quand le compte y déroge", () => {
@@ -151,6 +151,6 @@ describe("l'auteur d'une dérogation", () => {
   it("reste null quand le compte suit le réglage global", () => {
     const [first] = resolveAccountRules(GLOBALS, []);
 
-    expect(first.overrideUpdatedBy).toBeNull();
+    expect(first!.overrideUpdatedBy).toBeNull();
   });
 });

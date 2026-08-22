@@ -18,6 +18,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -31,7 +32,8 @@ const stubAdminVerifier = {
  */
 const identityDouble: CustomerIdentityPort = {
   changeEmail: (): Promise<void> => Promise.resolve(),
-  provision: (): Promise<{ subject: string }> => Promise.resolve({ subject: "auth0|milo" }),
+  provision: (): Promise<ProvisionedIdentity> =>
+    Promise.resolve({ subject: "auth0|milo", passwordSetupUrl: "https://exemple.test/mdp" }),
   issuePasswordLink: (): Promise<string> => Promise.resolve("https://exemple.test/mot-de-passe"),
 };
 

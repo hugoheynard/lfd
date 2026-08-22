@@ -100,8 +100,8 @@ describe("pièces d'activation staff (Porte B)", () => {
     const [step] = await ctx.prisma.activityEvent.findMany({
       where: { type: "company.step_reached" },
     });
-    expect(step.idempotencyKey).toBe(`company.step_reached:tva:${companyId}`);
-    expect(step.payload).toMatchObject({ step: "tva" });
+    expect(step!.idempotencyKey).toBe(`company.step_reached:tva:${companyId}`);
+    expect(step!.payload).toMatchObject({ step: "tva" });
   });
 
   it("fixe le règlement CONVENU et solde la demande client", async () => {

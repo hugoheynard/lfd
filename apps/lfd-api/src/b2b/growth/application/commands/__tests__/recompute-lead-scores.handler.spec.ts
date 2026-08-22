@@ -5,7 +5,6 @@ import type { LeadEvent } from "../../../domain/lead-score.js";
 import { LeadEventSource } from "../../../domain/ports/lead-event-source.js";
 import { LeadReader } from "../../../domain/ports/lead.reader.js";
 import { LeadScoreStore } from "../../../domain/ports/lead-score.store.js";
-import { RecomputeLeadScoresCommand } from "../recompute-lead-scores.command.js";
 import { RecomputeLeadScoresHandler } from "../recompute-lead-scores.handler.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
@@ -60,7 +59,7 @@ describe("RecomputeLeadScoresHandler", () => {
       new FixedClock(NOW),
     );
 
-    const count = await handler.execute(new RecomputeLeadScoresCommand());
+    const count = await handler.execute();
 
     expect(count).toBe(1);
     expect(store.written).toHaveLength(1);
@@ -80,7 +79,7 @@ describe("RecomputeLeadScoresHandler", () => {
       new FixedClock(NOW),
     );
 
-    const count = await handler.execute(new RecomputeLeadScoresCommand());
+    const count = await handler.execute();
 
     expect(count).toBe(0);
     expect(store.written).toEqual([]);

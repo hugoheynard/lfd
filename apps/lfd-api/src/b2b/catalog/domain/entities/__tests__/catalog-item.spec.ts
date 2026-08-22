@@ -13,6 +13,7 @@ import { CatalogItem, type PimFacts } from "../catalog-item.js";
 function facts(over: Partial<PimFacts> = {}): PimFacts {
   return {
     sku: "VIE-001-1",
+    allergens: null,
     productId: "prd_1",
     productSku: "VIE-001",
     name: "Croissant",

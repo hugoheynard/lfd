@@ -17,6 +17,7 @@ import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.c
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";
 
 const SUB = "auth0|compte";
 
@@ -26,6 +27,10 @@ const emailChanges: { subject: string; email: string }[] = [];
 let identityFails = false;
 
 const identityDouble: CustomerIdentityPort = {
+  provision: (): Promise<ProvisionedIdentity> =>
+    Promise.resolve({ subject: "auth0|double", passwordSetupUrl: "https://exemple.test/mdp" }),
+  issuePasswordLink: (): Promise<string> => Promise.resolve("https://exemple.test/mdp"),
+
   changeEmail(subject: string, email: string): Promise<void> {
     if (identityFails) {
       return Promise.reject(new Error("Auth0 indisponible (double e2e)"));
@@ -207,11 +212,11 @@ describe("POST /companies", () => {
     const [event] = await ctx.prisma.activityEvent.findMany({
       where: { type: "company.declared" },
     });
-    expect(event.subjectType).toBe("company");
-    expect(event.subjectId).toBe(companyId);
-    expect(event.actorType).toBe("customer");
-    expect(event.idempotencyKey).toBe(`company.declared:${companyId}`);
-    expect(event.payload).toMatchObject({ via: "self", ownerUserId: userId });
+    expect(event!.subjectType).toBe("company");
+    expect(event!.subjectId).toBe(companyId);
+    expect(event!.actorType).toBe("customer");
+    expect(event!.idempotencyKey).toBe(`company.declared:${companyId}`);
+    expect(event!.payload).toMatchObject({ via: "self", ownerUserId: userId });
   });
 
   it("la fait apparaître dans le compte du créateur, et de personne d'autre", async () => {

@@ -71,9 +71,9 @@ describe("dépôt du KBIS", () => {
     const [step] = await ctx.prisma.activityEvent.findMany({
       where: { type: "company.step_reached" },
     });
-    expect(step.subjectId).toBe(companyId);
-    expect(step.idempotencyKey).toBe(`company.step_reached:kbis:${companyId}`);
-    expect(step.payload).toMatchObject({ step: "kbis" });
+    expect(step!.subjectId).toBe(companyId);
+    expect(step!.idempotencyKey).toBe(`company.step_reached:kbis:${companyId}`);
+    expect(step!.payload).toMatchObject({ step: "kbis" });
   });
 
   it("est certifié quand le staff pose kbis_certified_at (découplé du statut)", async () => {

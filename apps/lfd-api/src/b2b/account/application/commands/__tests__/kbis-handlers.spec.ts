@@ -41,7 +41,10 @@ describe("UploadKbisHandler", () => {
     const companies = {
       existsBySiret: () => Promise.resolve(false),
       declareOwnedBy: () => Promise.resolve("c"),
-      updatePrimaryContact: () => Promise.resolve(),
+      load: () => Promise.resolve(null),
+      save: () => Promise.resolve(),
+      declareUnowned: () => Promise.resolve("c"),
+      saveKbisCertification: () => Promise.resolve(),
       saveKbisMetadata: (_companyId: string, meta: KbisMetadata) => {
         saved.meta = meta;
         return Promise.resolve();
@@ -76,7 +79,7 @@ describe("UploadKbisHandler", () => {
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(stranger.saved.meta).toBeNull();
 
-    const member = doubles("member");
+    const member = doubles("orders");
     await expect(
       member.handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF)),
     ).rejects.toBeInstanceOf(CompanyAdminRequiredError);
@@ -106,7 +109,10 @@ describe("DownloadKbisHandler", () => {
     const companies = {
       existsBySiret: () => Promise.resolve(false),
       declareOwnedBy: () => Promise.resolve("c"),
-      updatePrimaryContact: () => Promise.resolve(),
+      load: () => Promise.resolve(null),
+      save: () => Promise.resolve(),
+      declareUnowned: () => Promise.resolve("c"),
+      saveKbisCertification: () => Promise.resolve(),
       saveKbisMetadata: () => Promise.resolve(),
       kbisLocation: () => Promise.resolve(location),
     } satisfies CompanyRepository;
@@ -120,7 +126,7 @@ describe("DownloadKbisHandler", () => {
   };
 
   it("sert le fichier à tout membre (même simple)", async () => {
-    const result = await handlerFor("member", location).execute(new DownloadKbisQuery("u1", "c1"));
+    const result = await handlerFor("orders", location).execute(new DownloadKbisQuery("u1", "c1"));
     expect(result).toMatchObject({ fileName: "kbis.pdf", contentType: "application/pdf" });
   });
 

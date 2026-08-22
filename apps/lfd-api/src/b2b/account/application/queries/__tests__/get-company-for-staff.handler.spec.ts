@@ -12,6 +12,8 @@ const emptyAddresses: CompanyAddressesView = { billing: null, deliveries: [] };
 
 const detail: AdminCompanyDetailView = {
   id: "company_1",
+  owner: null,
+  warnings: [],
   reference: "C-000123",
   raisonSociale: "Café des Amis",
   enseigne: "Chez Léa",
@@ -22,6 +24,7 @@ const detail: AdminCompanyDetailView = {
   grantedTerms: [],
   requestedTerm: null,
   primaryContact: {
+    role: null,
     id: null,
     firstName: "Léa",
     lastName: "Martin",

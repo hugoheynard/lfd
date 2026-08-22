@@ -370,7 +370,7 @@ describe("une règle change le prix facturé", () => {
   });
 
   it("une règle visant une entreprise n'atteint pas une commande sans entreprise", async () => {
-    const company = await createCompany(ctx.prisma, { name: "Dupont" });
+    const company = await createCompany(ctx.prisma, {});
     await seedRule({
       id: "merc",
       stage: "mercuriale",

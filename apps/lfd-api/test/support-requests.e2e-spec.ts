@@ -43,6 +43,7 @@ function staff(): ReturnType<E2eContext["http"]> {
 
 /** Une demande de rappel « au plus vite », le chemin non daté. */
 const CALL_BACK: ActivationSupportPayload = {
+  companyId: null,
   channel: "phone",
   purpose: "discover",
   phoneNumber: "0600000000",

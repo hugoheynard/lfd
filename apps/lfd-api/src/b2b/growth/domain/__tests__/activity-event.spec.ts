@@ -5,6 +5,9 @@ import {
 } from "../activity-event.js";
 
 const CONTEXT: ResolvedActivityContext = {
+  actorId: null,
+  actorName: null,
+  actorRole: null,
   id: "01J000000000000000000EVENT",
   now: new Date("2026-08-07T10:00:00.000Z"),
   traceId: "4bf92f3577b34da6a3ce929d0e0e4736",

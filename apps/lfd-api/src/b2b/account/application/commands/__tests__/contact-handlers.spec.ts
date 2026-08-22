@@ -67,6 +67,7 @@ function bookRecorder(recorder: Recorder): CompanyContactBook {
 /** Aucun accès ouvert : le carnet n'a alors aucun rôle à aligner. */
 function membersStub(): CompanyMemberRepository {
   return {
+    rebindSubject: () => Promise.resolve(),
     findAccountByEmail: () => Promise.resolve(null),
     findOwner: () => Promise.resolve(null),
     createInvited: () => Promise.resolve("user_new"),
@@ -115,6 +116,8 @@ function sampleCompany(): Company {
 
 function companiesRecorder(recorder: Recorder): CompanyRepository {
   return {
+    declareUnowned: () => Promise.resolve(""),
+    saveKbisCertification: () => Promise.resolve(),
     existsBySiret: () => Promise.resolve(false),
     declareOwnedBy: () => Promise.resolve("company_new"),
     load: () => Promise.resolve(sampleCompany()),
@@ -149,7 +152,7 @@ describe("handlers de contacts — le mur owner/admin", () => {
     const handler = new AddCompanyContactHandler(membershipReturning(null), bookRecorder(recorder));
 
     await expect(
-      handler.execute(new AddCompanyContactCommand("u1", "c1", DETAILS)),
+      handler.execute(new AddCompanyContactCommand("u1", "c1", DETAILS, "orders")),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(recorder.writes).toEqual([]);
   });
@@ -157,12 +160,12 @@ describe("handlers de contacts — le mur owner/admin", () => {
   it("un simple membre reçoit 403 et rien n'est écrit", async () => {
     const recorder: Recorder = { writes: [] };
     const handler = new UpdateCompanyContactHandler(
-      membershipReturning("member"),
+      membershipReturning("orders"),
       bookRecorder(recorder),
     );
 
     await expect(
-      handler.execute(new UpdateCompanyContactCommand("u1", "c1", "ct1", DETAILS)),
+      handler.execute(new UpdateCompanyContactCommand("u1", "c1", "ct1", DETAILS, "orders")),
     ).rejects.toBeInstanceOf(CompanyAdminRequiredError);
     expect(recorder.writes).toEqual([]);
   });
@@ -173,10 +176,10 @@ describe("handlers de contacts — le mur owner/admin", () => {
     const book = bookRecorder(recorder);
 
     await new AddCompanyContactHandler(admin, book).execute(
-      new AddCompanyContactCommand("u1", "c1", DETAILS),
+      new AddCompanyContactCommand("u1", "c1", DETAILS, "orders"),
     );
     await new UpdateCompanyContactHandler(admin, book).execute(
-      new UpdateCompanyContactCommand("u1", "c1", "ct1", DETAILS),
+      new UpdateCompanyContactCommand("u1", "c1", "ct1", DETAILS, "orders"),
     );
     await new RemoveCompanyContactHandler(admin, contactsRecorder(recorder)).execute(
       new RemoveCompanyContactCommand("u1", "c1", "ct1"),
