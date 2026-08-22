@@ -18,7 +18,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { type Emplacement } from '../../catalogue/catalogue-api';
+import type { Emplacement } from '../../data/models';
 import { EmplacementStore } from '../emplacement-store';
 
 /** Ce qu'on fait d'un emplacement existant depuis le panneau. */
