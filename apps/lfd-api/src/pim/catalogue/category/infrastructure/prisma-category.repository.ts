@@ -20,6 +20,7 @@ interface CategoryRow {
   channelPreset: unknown;
   emporterTvaId: string | null;
   surPlaceTvaId: string | null;
+  b2bTvaId: string | null;
 }
 
 function toCategory(row: CategoryRow): Category {
@@ -33,6 +34,7 @@ function toCategory(row: CategoryRow): Category {
     channelPreset: readSalesChannelsColumn(row.channelPreset, "category.channelPreset"),
     emporterTvaId: row.emporterTvaId,
     surPlaceTvaId: row.surPlaceTvaId,
+    b2bTvaId: row.b2bTvaId,
   });
 }
 
@@ -47,6 +49,7 @@ function toColumns(snapshot: CategorySnapshot) {
     channelPreset: salesChannelsColumn(snapshot.channelPreset),
     emporterTvaId: snapshot.emporterTvaId,
     surPlaceTvaId: snapshot.surPlaceTvaId,
+    b2bTvaId: snapshot.b2bTvaId,
   };
 }
 

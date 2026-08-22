@@ -2507,6 +2507,11 @@ model Category {
   emporterTva   TvaRate? @relation("CategoryEmporterTva", fields: [emporterTvaId], references: [id])
   surPlaceTvaId String?    @map("sur_place_tva_id")
   surPlaceTva   TvaRate? @relation("CategorySurPlaceTva", fields: [surPlaceTvaId], references: [id])
+  /// Taux visé par la **plateforme B2B**. Vendre à un professionnel n'est ni « à
+  /// emporter » ni « sur place » : le canal facturait jusqu'ici au taux « à
+  /// emporter », emprunté sans que rien ne le dise.
+  b2bTvaId      String?    @map("b2b_tva_id")
+  b2bTva        TvaRate? @relation("CategoryB2bTva", fields: [b2bTvaId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2515,6 +2520,7 @@ model Category {
   @@index([parentId])
   @@index([emporterTvaId])
   @@index([surPlaceTvaId])
+  @@index([b2bTvaId])
   @@map("category")
 
   @@schema("pim")
@@ -2537,6 +2543,7 @@ model TvaRate {
   /// `Category`. Aucune colonne ajoutée ici ; sert le mur `Restrict` à la suppression.
   categoriesEmporter Category[] @relation("CategoryEmporterTva")
   categoriesSurPlace Category[] @relation("CategorySurPlaceTva")
+  categoriesB2b      Category[] @relation("CategoryB2bTva")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

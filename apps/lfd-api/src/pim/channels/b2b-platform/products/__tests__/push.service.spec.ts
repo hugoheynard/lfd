@@ -59,6 +59,7 @@ const category = {
   parentId: null,
   position: 0,
   emporterVatPercent: 5.5,
+  b2bVatPercent: 5.5,
 };
 
 /** Enregistre les `updateMany` pour dire QUI a été estampillé. */

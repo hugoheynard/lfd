@@ -140,7 +140,7 @@ export function projectCatalog(
     }
     // Résolu ICI, une fois par produit : chaque article part avec SON taux,
     // et le récepteur n'a plus à rejoindre une famille pour savoir facturer.
-    const { sellable, excluded: rejected } = sortVariants(product, category.emporterVatPercent);
+    const { sellable, excluded: rejected } = sortVariants(product, category.b2bVatPercent);
     excluded.push(...rejected);
 
     if (sellable.length === 0) {
@@ -183,6 +183,6 @@ function projectCategory(category: ChannelCategory): SyncCategory {
     slug: frenchOf(category.slug),
     parentId: category.parentId,
     position: category.position,
-    vatRatePercent: category.emporterVatPercent,
+    vatRatePercent: category.b2bVatPercent,
   };
 }

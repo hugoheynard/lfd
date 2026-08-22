@@ -244,11 +244,12 @@ describe("SetCategoryTvaHandler", () => {
     const [id] = await openRoots(categories, 1);
 
     await new SetCategoryTvaHandler(categories, rates, new RecordingJournal()).execute(
-      new SetCategoryTvaCommand(id!, "tva_5", null),
+      new SetCategoryTvaCommand(id!, { emporter: "tva_5", surPlace: null, b2b: null }),
     );
 
     expect(categories.at(id!).emporterTvaId).toBe("tva_5");
     expect(categories.at(id!).surPlaceTvaId).toBeNull();
+    expect(categories.at(id!).b2bTvaId).toBeNull();
   });
 
   it("refuse un taux fantôme", async () => {
@@ -257,7 +258,7 @@ describe("SetCategoryTvaHandler", () => {
 
     await expect(
       new SetCategoryTvaHandler(categories, new InMemoryRegimes(), new RecordingJournal()).execute(
-        new SetCategoryTvaCommand(id!, "tva_absent", null),
+        new SetCategoryTvaCommand(id!, { emporter: "tva_absent", surPlace: null, b2b: null }),
       ),
     ).rejects.toBeInstanceOf(TvaRateNotFoundError);
   });

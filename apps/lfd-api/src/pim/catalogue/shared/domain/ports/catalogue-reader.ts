@@ -45,8 +45,16 @@ export interface ChannelCategory {
   readonly slug: LocalizedText;
   readonly parentId: string | null;
   readonly position: number;
-  /** Taux du taux « à emporter » en %, ou `null` si la famille n'est pas réglée. */
+  /** Taux « à emporter » en %, ou `null` si la famille n'est pas réglée. */
   readonly emporterVatPercent: number | null;
+  /**
+   * Taux **de la plateforme B2B** en %, ou `null` si non réglé.
+   *
+   * Distinct de celui à emporter, et c'est le point : la projection B2B lisait
+   * `emporterVatPercent` — un emprunt que rien ne signalait et qu'aucun écran
+   * ne permettait de corriger.
+   */
+  readonly b2bVatPercent: number | null;
 }
 
 export abstract class CatalogueReader {

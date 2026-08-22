@@ -6,9 +6,9 @@ import { CategoryRepository } from "../../../category/domain/ports/category.repo
 import { ProductRepository } from "../../../product/domain/ports/product.repository.js";
 import { PrismaCatalogueReader } from "../prisma-catalogue-reader.js";
 
+/** Le peu de l'agrégat que le lecteur touche : ses taux, d'un bloc. */
 interface CategoryLike {
-  emporterTvaId: string | null;
-  surPlaceTvaId: string | null;
+  tvaIds: { emporter: string | null; surPlace: string | null; b2b: string | null };
 }
 
 async function build(
@@ -39,7 +39,10 @@ async function build(
 
 describe("PrismaCatalogueReader.tvaPercents", () => {
   it("résout le TAUX par contexte depuis les taux de la catégorie", async () => {
-    const reader = await build({ emporterTvaId: "r1", surPlaceTvaId: "r2" }, { r1: 5.5, r2: 10 });
+    const reader = await build(
+      { tvaIds: { emporter: "r1", surPlace: "r2", b2b: null } },
+      { r1: 5.5, r2: 10 },
+    );
 
     const rates = await reader.tvaPercents("cat_vien");
 
@@ -48,7 +51,10 @@ describe("PrismaCatalogueReader.tvaPercents", () => {
   });
 
   it("rend null pour un contexte non réglé sur la catégorie", async () => {
-    const reader = await build({ emporterTvaId: "r1", surPlaceTvaId: null }, { r1: 5.5 });
+    const reader = await build(
+      { tvaIds: { emporter: "r1", surPlace: null, b2b: null } },
+      { r1: 5.5 },
+    );
 
     const rates = await reader.tvaPercents("cat_vien");
 

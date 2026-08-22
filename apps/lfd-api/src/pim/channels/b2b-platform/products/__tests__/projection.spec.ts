@@ -46,6 +46,7 @@ function category(over: Partial<ChannelCategory> = {}): ChannelCategory {
     parentId: null,
     position: 0,
     emporterVatPercent: 5.5,
+    b2bVatPercent: 5.5,
     ...over,
   };
 }
@@ -59,6 +60,22 @@ describe("projectCatalog", () => {
     expect(snapshot.products).toHaveLength(1);
     expect(snapshot.products[0]?.variants[0]?.priceCents).toBe(200);
     expect(snapshot.categories[0]?.vatRatePercent).toBe(5.5);
+  });
+
+  it("facture au taux B2B, JAMAIS à celui « à emporter »", () => {
+    // Le canal lisait `emporterVatPercent` faute d'avoir le sien : les
+    // professionnels étaient facturés au taux de la vente au comptoir, sans que
+    // rien ne le dise et sans qu'aucun écran ne permette de le corriger. Les
+    // deux valeurs diffèrent ici précisément pour que l'emprunt ne puisse plus
+    // passer inaperçu.
+    const { snapshot } = projectCatalog(
+      [product()],
+      [category({ emporterVatPercent: 5.5, b2bVatPercent: 20 })],
+      AT,
+    );
+
+    expect(snapshot.categories[0]?.vatRatePercent).toBe(20);
+    expect(snapshot.products[0]?.variants[0]?.vatRatePercent).toBe(20);
   });
 
   it("ne lit aucune horloge : l’instant d’émission est celui qu’on lui passe", () => {
@@ -120,7 +137,7 @@ describe("projectCatalog", () => {
   it("pousse un produit dont la famille n’a pas de TVA, avec un taux null", () => {
     const { snapshot, excluded } = projectCatalog(
       [product()],
-      [category({ emporterVatPercent: null })],
+      [category({ b2bVatPercent: null })],
       AT,
     );
 

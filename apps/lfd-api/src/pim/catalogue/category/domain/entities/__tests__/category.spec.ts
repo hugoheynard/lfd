@@ -80,7 +80,9 @@ describe("l’agrégat Category", () => {
     expect(snapshot.isArchived).toBe(false);
     expect(snapshot.emporterTvaId).toBeNull();
     expect(snapshot.surPlaceTvaId).toBeNull();
+    expect(snapshot.b2bTvaId).toBeNull();
     expect(snapshot.channelPreset).toEqual({
+      b2b: false,
       b1: { emporter: false, surPlace: false },
       b2: { emporter: false, surPlace: false },
     });

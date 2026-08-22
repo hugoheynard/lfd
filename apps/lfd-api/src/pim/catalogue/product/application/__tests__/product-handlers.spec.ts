@@ -107,6 +107,7 @@ class FakeCategoryRepository extends CategoryRepository {
       channelPreset: NO_CHANNELS,
       emporterTvaId: null,
       surPlaceTvaId: null,
+      b2bTvaId: null,
     });
   }
 

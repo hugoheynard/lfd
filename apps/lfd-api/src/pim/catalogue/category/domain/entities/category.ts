@@ -40,6 +40,22 @@ export interface CategorySnapshot {
   readonly channelPreset: SalesChannels;
   readonly emporterTvaId: string | null;
   readonly surPlaceTvaId: string | null;
+  readonly b2bTvaId: string | null;
+}
+
+/**
+ * Les taux d'une famille, **un par canal de vente**. `null` = non réglé.
+ *
+ * Le mode de consommation décide du taux — c'est la loi, pas un choix de
+ * boutique — donc « à emporter » et « sur place » ne se déclinent pas par
+ * boutique. Le B2B a le sien parce que vendre à un professionnel n'est ni l'un
+ * ni l'autre ; jusqu'ici la plateforme facturait au taux « à emporter »,
+ * emprunté sans que rien ne le dise.
+ */
+export interface CategoryTvaIds {
+  readonly emporter: string | null;
+  readonly surPlace: string | null;
+  readonly b2b: string | null;
 }
 
 /** Ce qu'il faut pour ouvrir une famille. Le reste, l'agrégat le décide. */
@@ -61,6 +77,7 @@ export class Category {
     private channelPresetValue: SalesChannels,
     private emporterTvaIdValue: string | null,
     private surPlaceTvaIdValue: string | null,
+    private b2bTvaIdValue: string | null,
   ) {}
 
   /** Ouvre une famille : vivante, sans canal vendu, sans TVA réglée. */
@@ -78,6 +95,7 @@ export class Category {
       defaultSalesChannels(),
       null,
       null,
+      null,
     );
   }
 
@@ -93,6 +111,7 @@ export class Category {
       snapshot.channelPreset,
       snapshot.emporterTvaId,
       snapshot.surPlaceTvaId,
+      snapshot.b2bTvaId,
     );
   }
 
@@ -120,12 +139,21 @@ export class Category {
     return this.archivedValue;
   }
 
-  get emporterTvaId(): string | null {
-    return this.emporterTvaIdValue;
-  }
-
-  get surPlaceTvaId(): string | null {
-    return this.surPlaceTvaIdValue;
+  /**
+   * Les taux, **d'un bloc** — la même valeur que `setTva` reprend.
+   *
+   * Trois getters séparés invitaient à en lire un et à oublier les autres :
+   * c'est exactement ce qui s'est passé quand la projection B2B a lu
+   * `emporterTvaId` faute de mieux, et a facturé les professionnels au taux à
+   * emporter pendant tout ce temps. Lire la valeur entière rend l'oubli
+   * visible au point d'usage.
+   */
+  get tvaIds(): CategoryTvaIds {
+    return {
+      emporter: this.emporterTvaIdValue,
+      surPlace: this.surPlaceTvaIdValue,
+      b2b: this.b2bTvaIdValue,
+    };
   }
 
   /** Renomme — et **re-dérive le slug**. Permis même archivée (cf. en-tête). */
@@ -155,10 +183,18 @@ export class Category {
     this.channelPresetValue = normalizeSalesChannels(channels);
   }
 
-  setTva(emporterTvaId: string | null, surPlaceTvaId: string | null): void {
+  /**
+   * Règle les taux **d'un bloc**, un par canal de vente.
+   *
+   * Un record plutôt que des arguments positionnels : à trois taux, une liste
+   * de `string | null` devient un piège — inverser « sur place » et « B2B » ne
+   * se voit ni au compilateur ni à la lecture, et se paie en TVA facturée.
+   */
+  setTva(ids: CategoryTvaIds): void {
     this.refuseIfArchived();
-    this.emporterTvaIdValue = emporterTvaId;
-    this.surPlaceTvaIdValue = surPlaceTvaId;
+    this.emporterTvaIdValue = ids.emporter;
+    this.surPlaceTvaIdValue = ids.surPlace;
+    this.b2bTvaIdValue = ids.b2b;
   }
 
   /** Idempotent : archiver deux fois n'est pas une erreur, c'est un état visé. */
@@ -177,6 +213,7 @@ export class Category {
       channelPreset: this.channelPresetValue,
       emporterTvaId: this.emporterTvaIdValue,
       surPlaceTvaId: this.surPlaceTvaIdValue,
+      b2bTvaId: this.b2bTvaIdValue,
     };
   }
 

@@ -28,12 +28,22 @@ const boutiqueChannelsSchema = z.object({
 export const setCategoryChannelsPayloadSchema = z.object({
   b1: boutiqueChannelsSchema,
   b2: boutiqueChannelsSchema,
+  // Un booléen, pas une paire : un professionnel qui commande en gros ne
+  // consomme ni sur place ni à emporter.
+  b2b: z.boolean(),
 });
 export type SetCategoryChannelsPayload = z.infer<typeof setCategoryChannelsPayloadSchema>;
 
+/**
+ * Les trois taux **d'un bloc** : un par canal de vente. `null` = non réglé, et
+ * c'est aussi ce qu'envoie l'écran quand le canal correspondant est décoché —
+ * garder la référence d'un canal qu'on ne vend plus gonflerait le compte
+ * d'usages du taux et bloquerait sa suppression pour rien.
+ */
 export const setCategoryTvaPayloadSchema = z.object({
   emporterTvaId: z.string().nullable(),
   surPlaceTvaId: z.string().nullable(),
+  b2bTvaId: z.string().nullable(),
 });
 export type SetCategoryTvaPayload = z.infer<typeof setCategoryTvaPayloadSchema>;
 
@@ -69,6 +79,7 @@ export interface CategoryView {
   readonly channelPreset: SalesChannels;
   readonly emporterTvaId: string | null;
   readonly surPlaceTvaId: string | null;
+  readonly b2bTvaId: string | null;
   /**
    * Combien de fiches **actives** cette famille porte.
    *

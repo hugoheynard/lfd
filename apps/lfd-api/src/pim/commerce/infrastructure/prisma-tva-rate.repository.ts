@@ -96,7 +96,7 @@ export class PrismaTvaRateRepository extends TvaRateRepository {
   }
 
   /**
-   * Les deux relations comptées côté base (`_count`), en une requête. Compter
+   * Les trois relations comptées côté base (`_count`), en une requête. Compter
    * en mémoire aurait demandé de charger toutes les familles pour n'en garder
    * que le nombre.
    */
@@ -104,13 +104,23 @@ export class PrismaTvaRateRepository extends TvaRateRepository {
     const rows = await this.prisma.tvaRate.findMany({
       select: {
         id: true,
-        _count: { select: { categoriesEmporter: true, categoriesSurPlace: true } },
+        _count: {
+          select: {
+            categoriesEmporter: true,
+            categoriesSurPlace: true,
+            categoriesB2b: true,
+          },
+        },
       },
     });
     return new Map(
       rows.map((row) => [
         row.id,
-        { emporter: row._count.categoriesEmporter, surPlace: row._count.categoriesSurPlace },
+        {
+          emporter: row._count.categoriesEmporter,
+          surPlace: row._count.categoriesSurPlace,
+          b2b: row._count.categoriesB2b,
+        },
       ]),
     );
   }

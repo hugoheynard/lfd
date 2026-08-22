@@ -10,6 +10,7 @@ import type { TvaRate } from "../entities/tva-rate.js";
 export interface TvaRateUsage {
   readonly emporter: number;
   readonly surPlace: number;
+  readonly b2b: number;
 }
 
 /**

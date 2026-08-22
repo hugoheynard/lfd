@@ -53,8 +53,8 @@ export class PrismaCatalogueReader extends CatalogueReader {
       return { emporter: null, surPlace: null };
     }
     return {
-      emporter: await this.percentOf(category.emporterTvaId),
-      surPlace: await this.percentOf(category.surPlaceTvaId),
+      emporter: await this.percentOf(category.tvaIds.emporter),
+      surPlace: await this.percentOf(category.tvaIds.surPlace),
     };
   }
 
@@ -79,10 +79,8 @@ export class PrismaCatalogueReader extends CatalogueReader {
         slug: category.slug,
         parentId: category.parentId,
         position: category.position,
-        emporterVatPercent:
-          category.emporterTvaId === null
-            ? null
-            : (percentById.get(category.emporterTvaId) ?? null),
+        emporterVatPercent: percentOrNull(percentById, category.tvaIds.emporter),
+        b2bVatPercent: percentOrNull(percentById, category.tvaIds.b2b),
       }));
   }
 
@@ -94,4 +92,12 @@ export class PrismaCatalogueReader extends CatalogueReader {
     const rate = await this.rates.findById(regimeId);
     return rate?.percent ?? null;
   }
+}
+
+/** Un id de taux → son taux dans la table déjà indexée, ou `null`. */
+function percentOrNull(
+  percentById: ReadonlyMap<string, number>,
+  rateId: string | null,
+): number | null {
+  return rateId === null ? null : (percentById.get(rateId) ?? null);
 }
