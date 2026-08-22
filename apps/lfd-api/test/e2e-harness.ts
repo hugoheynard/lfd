@@ -262,14 +262,17 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
  * La liste des tables est **lue dans le catalogue Postgres** plutôt qu'écrite en
  * dur : un modèle ajouté au schéma est tronqué automatiquement, là où une liste
  * figée laisserait silencieusement fuiter des lignes d'un test à l'autre. On
- * balaie **les deux schémas** (`public` métier + `growth` journal) pour la même
- * raison — sinon les événements du journal fuiteraient d'un test au suivant.
+ * balaie **tous les schémas** (`public` métier, `growth` journal, `ops`, et
+ * `pim` le référentiel) pour la même raison — sinon les lignes fuiteraient d'un
+ * test au suivant. `pim` manquait : une famille créée par une suite survivait à
+ * la suivante, qui refusait alors son propre slug pour une raison qui n'avait
+ * rien à voir avec ce qu'elle testait.
  * `_prisma_migrations` est préservée — la vider forcerait une re-migration.
  */
 async function truncateAll(prisma: PrismaService): Promise<void> {
   const tables = await prisma.$queryRaw<{ schemaname: string; tablename: string }[]>`
     SELECT schemaname, tablename FROM pg_tables
-    WHERE schemaname IN ('public', 'growth', 'ops') AND tablename <> '_prisma_migrations'
+    WHERE schemaname IN ('public', 'growth', 'ops', 'pim') AND tablename <> '_prisma_migrations'
   `;
   if (tables.length === 0) {
     return;
