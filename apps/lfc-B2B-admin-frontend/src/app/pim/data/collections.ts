@@ -1,5 +1,5 @@
 import { formatPercent, generateFiches, tvaTagFromPercent } from './channels';
-import type { Category, Product, TvaRate } from './models';
+import type { Category, Emplacement, Product, TvaRate } from './models';
 
 /** Une fiche telle qu'elle apparaît dans une collection. */
 export interface CollectionEntry {
@@ -51,6 +51,7 @@ export function buildCollections(
   products: readonly Product[],
   categories: readonly Category[],
   rates: readonly TvaRate[],
+  emplacements: readonly Emplacement[],
 ): CollectionFamily[] {
   const categoryById = new Map(categories.map((c) => [c.id, c]));
   const regimeById = new Map(rates.map((r) => [r.id, r]));
@@ -61,7 +62,7 @@ export function buildCollections(
     if (category === undefined) {
       continue;
     }
-    for (const fiche of generateFiches(product, category, regimeById)) {
+    for (const fiche of generateFiches(product, category, regimeById, emplacements)) {
       fiches.push({
         handle: fiche.handle,
         title: fiche.title,

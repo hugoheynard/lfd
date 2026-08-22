@@ -16,16 +16,17 @@ export interface BoutiqueChannels {
 }
 
 /**
- * Où et comment une gamme se vend : les boutiques déclinées par mode, plus la
- * plateforme B2B.
+ * Où et comment une gamme se vend.
  *
- * Le B2B est un **booléen**, pas une paire : un professionnel qui commande en
- * gros ne consomme ni sur place ni à emporter, et lui donner la forme d'une
- * boutique inventerait un choix qui n'existe pas.
+ * Les emplacements sont une **donnée** : la carte est indexée par identifiant
+ * d'emplacement, jamais par des clés fixes. Ouvrir un point de vente est une
+ * ligne de plus dans le référentiel, pas une migration.
+ *
+ * Le B2B reste un booléen à part : la plateforme n'est pas un emplacement, et
+ * un professionnel qui commande en gros ne consomme ni sur place ni à emporter.
  */
 export interface SalesChannels {
-  readonly b1: BoutiqueChannels;
-  readonly b2: BoutiqueChannels;
+  readonly boutiques: Readonly<Record<string, BoutiqueChannels>>;
   readonly b2b: boolean;
 }
 

@@ -26,3 +26,20 @@ export class EmplacementTableNotFoundError extends ResourceNotFoundError {
     );
   }
 }
+
+/**
+ * L'emplacement est encore coché par des familles : on refuse de le supprimer.
+ *
+ * **Business** et non domaine : la règle n'est pas un invariant de l'agrégat —
+ * un emplacement ignore les familles — mais une protection de l'exploitation
+ * contre elle-même. Elle se satisfait en décochant, donc l'appelant peut agir.
+ */
+export class EmplacementInUseError extends BusinessError {
+  constructor(id: string, categories: number) {
+    super(
+      "locations.emplacement_in_use",
+      `Emplacement encore vendeur : ${String(categories)} famille(s) le cochent. ` +
+        `Décochez-le de leurs canaux avant de le supprimer (${id}).`,
+    );
+  }
+}

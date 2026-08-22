@@ -41,8 +41,10 @@ describe('ChannelsPanel', () => {
         position: 1,
         isArchived: false,
         channelPreset: {
-          b1: { emporter: true, surPlace: false },
-          b2: { emporter: true, surPlace: false },
+          boutiques: {
+            emp_village: { emporter: true, surPlace: false },
+            emp_val: { emporter: true, surPlace: false },
+          },
           b2b: false,
         },
         emporterTvaId: 'tva_55',

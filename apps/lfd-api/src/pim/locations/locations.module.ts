@@ -9,9 +9,11 @@ import { ListEmplacementsHandler } from "./application/list-emplacements.js";
 import { RemoveTableQrHandler } from "./application/remove-table-qr.js";
 import { UpdateEmplacementHandler } from "./application/update-emplacement.js";
 import { EmplacementRepository } from "./domain/ports/emplacement.repository.js";
+import { EmplacementUsageReader } from "./domain/ports/emplacement-usage.reader.js";
 import { TableTokenGenerator } from "./domain/ports/table-token-generator.js";
 import { EmplacementController } from "./http/emplacement.controller.js";
 import { PrismaEmplacementRepository } from "./infrastructure/prisma-emplacement.repository.js";
+import { PrismaEmplacementUsageReader } from "./infrastructure/prisma-emplacement-usage.reader.js";
 import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-generator.js";
 
 /**
@@ -32,6 +34,7 @@ import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-gener
     { provide: PimIdGenerator, useClass: UuidV7Generator },
     { provide: TableTokenGenerator, useClass: UuidTableTokenGenerator },
     { provide: EmplacementRepository, useClass: PrismaEmplacementRepository },
+    { provide: EmplacementUsageReader, useClass: PrismaEmplacementUsageReader },
   ],
 })
 export class LocationsModule {}

@@ -1,17 +1,34 @@
-import { BOUTIQUE_LABEL } from './boutiques';
-import type { BoutiqueChannels, Category, Product, SalesChannels, TvaRate } from './models';
+import type {
+  BoutiqueChannels,
+  Category,
+  Emplacement,
+  Product,
+  SalesChannels,
+  TvaRate,
+} from './models';
 import { slugify } from './sku';
 
-/** Libellés des boutiques qui proposent un mode donné (à emporter / sur place). */
-export function boutiquesWith(channels: SalesChannels, mode: keyof BoutiqueChannels): string[] {
-  const result: string[] = [];
-  if (channels.b1[mode]) {
-    result.push(BOUTIQUE_LABEL.b1);
-  }
-  if (channels.b2[mode]) {
-    result.push(BOUTIQUE_LABEL.b2);
-  }
-  return result;
+/**
+ * Les **noms** des emplacements qui proposent un mode donné.
+ *
+ * Il lisait deux libellés codés en dur, dont l'un ne correspondait à aucun
+ * emplacement du référentiel : l'écran affichait une boutique qui n'existait
+ * pas. Les noms viennent maintenant de la liste qu'on lui passe, et une clé
+ * qui ne désigne plus rien est simplement ignorée.
+ */
+export function boutiquesWith(
+  channels: SalesChannels,
+  mode: keyof BoutiqueChannels,
+  emplacements: readonly Emplacement[],
+): string[] {
+  return emplacements
+    .filter((emplacement) => channels.boutiques[emplacement.id]?.[mode] === true)
+    .map((emplacement) => emplacement.name);
+}
+
+/** Un mode est-il vendu **quelque part** ? Le taux suit le mode, pas la boutique. */
+export function sellsMode(channels: SalesChannels, mode: keyof BoutiqueChannels): boolean {
+  return Object.values(channels.boutiques).some((modes) => modes[mode]);
 }
 
 /** `5.5` → « 5,5 % » ; `10` → « 10 % ». Affichage FR. */
@@ -73,12 +90,13 @@ export function generateFiches(
   product: Product,
   category: Category,
   regimeById: ReadonlyMap<string, TvaRate>,
+  emplacements: readonly Emplacement[],
 ): GeneratedFiche[] {
   const { channels } = resolveChannels(product, category);
   const handle = slugify(product.name.fr);
   const fiches: GeneratedFiche[] = [];
 
-  const emporter = boutiquesWith(channels, 'emporter');
+  const emporter = boutiquesWith(channels, 'emporter', emplacements);
   if (emporter.length > 0) {
     const rate = regimeById.get(category.emporterTvaId);
     fiches.push({
@@ -91,7 +109,7 @@ export function generateFiches(
     });
   }
 
-  const surPlace = boutiquesWith(channels, 'surPlace');
+  const surPlace = boutiquesWith(channels, 'surPlace', emplacements);
   if (surPlace.length > 0) {
     const rate = regimeById.get(category.surPlaceTvaId);
     fiches.push({

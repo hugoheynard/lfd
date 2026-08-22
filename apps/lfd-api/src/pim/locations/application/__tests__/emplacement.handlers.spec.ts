@@ -1,10 +1,12 @@
 import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import {
+  EmplacementInUseError,
   EmplacementNameRequiredError,
   EmplacementTableNotFoundError,
 } from "../../domain/errors/locations-errors.js";
 import { Emplacement, type EmplacementSnapshot } from "../../domain/entities/emplacement.js";
 import { EmplacementRepository } from "../../domain/ports/emplacement.repository.js";
+import { EmplacementUsageReader } from "../../domain/ports/emplacement-usage.reader.js";
 import { TableTokenGenerator } from "../../domain/ports/table-token-generator.js";
 import { CreateEmplacementCommand, CreateEmplacementHandler } from "../create-emplacement.js";
 import { DeleteEmplacementCommand, DeleteEmplacementHandler } from "../delete-emplacement.js";
@@ -52,6 +54,16 @@ class InMemoryEmplacements extends EmplacementRepository {
 
   get rows(): EmplacementSnapshot[] {
     return [...this.stored.values()];
+  }
+}
+
+/** Combien de familles cochent l'emplacement — fixé par le test. */
+class StubUsage extends EmplacementUsageReader {
+  constructor(private readonly count = 0) {
+    super();
+  }
+  countCategoriesUsing(): Promise<number> {
+    return Promise.resolve(this.count);
   }
 }
 
@@ -179,7 +191,49 @@ describe("DeleteEmplacementHandler", () => {
     const repo = new InMemoryEmplacements();
     await createSurPlace(repo, 1);
 
-    await new DeleteEmplacementHandler(repo).execute(new DeleteEmplacementCommand("emp_fixed"));
+    await new DeleteEmplacementHandler(repo, new StubUsage()).execute(
+      new DeleteEmplacementCommand("emp_fixed"),
+    );
+
+    expect(repo.rows).toEqual([]);
+  });
+});
+
+describe("DeleteEmplacementHandler — la protection", () => {
+  it("REFUSE de supprimer un emplacement encore coché par des familles", async () => {
+    // Les canaux d'une gamme référencent l'emplacement dans un `jsonb` : aucune
+    // clé étrangère ne peut tenir cette référence, donc supprimer sous elle
+    // laisserait des grilles pointant un point de vente disparu.
+    const repo = new InMemoryEmplacements();
+    const id = await createSurPlace(repo, 2);
+
+    await expect(
+      new DeleteEmplacementHandler(repo, new StubUsage(3)).execute(
+        new DeleteEmplacementCommand(id),
+      ),
+    ).rejects.toThrow(EmplacementInUseError);
+
+    expect(repo.rows).toHaveLength(1);
+  });
+
+  it("DIT combien de familles bloquent — sans quoi on les cherche à la main", async () => {
+    const repo = new InMemoryEmplacements();
+    const id = await createSurPlace(repo, 1);
+
+    await expect(
+      new DeleteEmplacementHandler(repo, new StubUsage(2)).execute(
+        new DeleteEmplacementCommand(id),
+      ),
+    ).rejects.toThrow(/2 famille/);
+  });
+
+  it("supprime quand plus personne ne le coche", async () => {
+    const repo = new InMemoryEmplacements();
+    const id = await createSurPlace(repo, 1);
+
+    await new DeleteEmplacementHandler(repo, new StubUsage(0)).execute(
+      new DeleteEmplacementCommand(id),
+    );
 
     expect(repo.rows).toEqual([]);
   });

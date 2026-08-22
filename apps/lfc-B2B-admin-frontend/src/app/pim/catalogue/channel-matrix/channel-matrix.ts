@@ -2,15 +2,19 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 
 import { FoldBadgeComponent, FoldButtonComponent, FoldCheckboxComponent } from 'fold-ng';
 
-import { BOUTIQUE_LABEL } from '../../data/boutiques';
-import type { SalesChannels } from '../../data/models';
+import type { BoutiqueChannels, Emplacement, SalesChannels } from '../../data/models';
 
 /**
- * L'atome de la décision « sur quels canaux se vend ce produit ». Grille
- * **asymétrique** : les boutiques déclinent « à emporter » et « sur place », la
- * plateforme B2B est une seule case. Purement présentationnel : il montre les canaux
- * effectifs et émet la nouvelle valeur ; l'hôte décide de la sémantique
- * héritage/override (tout-ou-rien) car elle dépend du défaut de la gamme.
+ * L'atome de la décision « sur quels canaux se vend ce produit ».
+ *
+ * **Une ligne par emplacement réel**, plus une pour la plateforme B2B. Les deux
+ * boutiques étaient auparavant des clés fixes (`b1`/`b2`) avec des libellés en
+ * dur — et l'un des deux, « Ardroit », ne correspondait à aucun emplacement du
+ * référentiel : l'écran proposait de cocher une boutique qui n'existait pas.
+ *
+ * Purement présentationnel : il montre les canaux effectifs et émet la nouvelle
+ * valeur ; l'hôte décide de la sémantique héritage/override, car elle dépend du
+ * défaut de la gamme.
  */
 @Component({
   selector: 'app-channel-matrix',
@@ -21,6 +25,8 @@ import type { SalesChannels } from '../../data/models';
 })
 export class ChannelMatrix {
   readonly channels = input.required<SalesChannels>();
+  /** Les points de vente à proposer — la liste du référentiel. */
+  readonly emplacements = input.required<readonly Emplacement[]>();
   /** `true` = valeurs héritées de la gamme ; `false` = personnalisé. */
   readonly inherited = input<boolean>(true);
   /** Masque l'entête héritage/revert — au niveau gamme, la grille EST la source. */
@@ -29,14 +35,29 @@ export class ChannelMatrix {
   readonly channelsChange = output<SalesChannels>();
   readonly revert = output<void>();
 
-  protected readonly boutiques = BOUTIQUE_LABEL;
+  /** Une clé absente = rien n'y est vendu ; la carte ne porte que ce qui l'est. */
+  protected isOn(emplacementId: string, mode: keyof BoutiqueChannels): boolean {
+    return this.channels().boutiques[emplacementId]?.[mode] === true;
+  }
 
-  protected setCell(boutique: 'b1' | 'b2', mode: 'emporter' | 'surPlace', value: boolean): void {
+  /**
+   * Écrit une case. L'entrée devenue **entièrement fausse est retirée** plutôt
+   * que gardée à zéro : la carte dit ce qui est vendu, et une clé qui ne vend
+   * rien ferait grossir la colonne à chaque emplacement décoché — puis
+   * bloquerait sa suppression, puisque le référentiel refuse d'ôter un
+   * emplacement encore coché.
+   */
+  protected setCell(emplacementId: string, mode: keyof BoutiqueChannels, value: boolean): void {
     const current = this.channels();
-    this.channelsChange.emit({
-      ...current,
-      [boutique]: { ...current[boutique], [mode]: value },
-    });
+    const before = current.boutiques[emplacementId] ?? { emporter: false, surPlace: false };
+    const after: BoutiqueChannels = { ...before, [mode]: value };
+    const boutiques = { ...current.boutiques };
+    if (after.emporter || after.surPlace) {
+      boutiques[emplacementId] = after;
+    } else {
+      delete boutiques[emplacementId];
+    }
+    this.channelsChange.emit({ ...current, boutiques });
   }
 
   protected setB2b(value: boolean): void {

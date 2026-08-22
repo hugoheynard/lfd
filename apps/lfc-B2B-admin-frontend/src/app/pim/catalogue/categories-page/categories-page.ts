@@ -21,6 +21,7 @@ import {
 import { boutiquesWith, formatPercent } from '../../data/channels';
 import { CategoryStore } from '../category-store';
 import { TvaStore } from '../tva-rates/tva-store';
+import { EmplacementStore } from '../../emplacements/emplacement-store';
 import { CategoryPanel, type CategoryPanelData } from '../category-panel/category-panel';
 import { CatalogueApi, type Category } from '../catalogue-api';
 
@@ -65,11 +66,14 @@ export class CategoriesPage {
   private readonly api = inject(CatalogueApi);
   private readonly categoryStore = inject(CategoryStore);
   private readonly tvaStore = inject(TvaStore);
+  private readonly emplacementStore = inject(EmplacementStore);
   private readonly panelHost = inject(FoldPanelHostService);
 
   /** Lectures réactives : le panneau écrit dans les stores, la table suit. */
   protected readonly categories = this.categoryStore.items;
   protected readonly rates = this.tvaStore.items;
+  /** Les noms affichés dans les pastilles viennent du référentiel. */
+  protected readonly emplacements = this.emplacementStore.items;
 
   protected readonly draftName = signal('');
   protected readonly draftParent = signal('');
@@ -111,11 +115,11 @@ export class CategoriesPage {
   }
 
   protected presetEmporter(category: Category): string[] {
-    return boutiquesWith(category.channelPreset, 'emporter');
+    return boutiquesWith(category.channelPreset, 'emporter', this.emplacements());
   }
 
   protected presetSurPlace(category: Category): string[] {
-    return boutiquesWith(category.channelPreset, 'surPlace');
+    return boutiquesWith(category.channelPreset, 'surPlace', this.emplacements());
   }
 
   /** Ouvre la famille — une seule action par ligne, réglages et archivage compris. */

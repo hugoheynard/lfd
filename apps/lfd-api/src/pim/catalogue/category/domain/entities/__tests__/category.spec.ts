@@ -81,11 +81,9 @@ describe("l’agrégat Category", () => {
     expect(snapshot.emporterTvaId).toBeNull();
     expect(snapshot.surPlaceTvaId).toBeNull();
     expect(snapshot.b2bTvaId).toBeNull();
-    expect(snapshot.channelPreset).toEqual({
-      b2b: false,
-      b1: { emporter: false, surPlace: false },
-      b2: { emporter: false, surPlace: false },
-    });
+    // Une carte VIDE, pas deux boutiques à zéro : les emplacements sont une
+    // donnée, et une famille neuve n'en coche aucun.
+    expect(snapshot.channelPreset).toEqual({ boutiques: {}, b2b: false });
   });
 
   it("se reconstitue à l’identique depuis son instantané", () => {

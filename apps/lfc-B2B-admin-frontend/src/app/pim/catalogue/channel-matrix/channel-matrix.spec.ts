@@ -1,17 +1,26 @@
 import { TestBed } from '@angular/core/testing';
 
-import type { SalesChannels } from '../../data/models';
+import type { Emplacement, SalesChannels } from '../../data/models';
 import { ChannelMatrix } from './channel-matrix';
 
 const CHANNELS: SalesChannels = {
-  b1: { emporter: true, surPlace: true },
-  b2: { emporter: true, surPlace: false },
+  boutiques: {
+    emp_village: { emporter: true, surPlace: true },
+    emp_val: { emporter: true, surPlace: false },
+  },
   b2b: false,
 };
 
-function render(inherited: boolean) {
+/** Les points de vente sont une DONNÉE : la grille en reçoit la liste. */
+const EMPLACEMENTS: Emplacement[] = [
+  { id: 'emp_village', name: 'Village', clickCollect: true, surPlace: true, baseUrl: '', tables: [] },
+  { id: 'emp_val', name: 'Val', clickCollect: true, surPlace: false, baseUrl: '', tables: [] },
+];
+
+function render(inherited: boolean, emplacements: Emplacement[] = EMPLACEMENTS) {
   const fixture = TestBed.createComponent(ChannelMatrix);
   fixture.componentRef.setInput('channels', CHANNELS);
+  fixture.componentRef.setInput('emplacements', emplacements);
   fixture.componentRef.setInput('inherited', inherited);
   fixture.detectChanges();
   return fixture;
@@ -34,5 +43,20 @@ describe('ChannelMatrix', () => {
 
     button?.click();
     expect(reverted).toBe(true);
+  });
+
+  it('rend une ligne par emplacement RÉEL, avec son nom du référentiel', () => {
+    // C'étaient deux lignes en dur, dont l'une nommait « Ardroit » — une
+    // boutique absente de la base. Les noms viennent maintenant de la liste.
+    const text = render(true).nativeElement.textContent ?? '';
+
+    expect(text).toContain('Village');
+    expect(text).toContain('Val');
+  });
+
+  it("le dit plutôt que d'afficher une grille vide quand il n'y a aucun emplacement", () => {
+    const text = render(true, []).nativeElement.textContent ?? '';
+
+    expect(text).toContain('Aucun emplacement');
   });
 });

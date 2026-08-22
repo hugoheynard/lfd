@@ -11,9 +11,11 @@
       <div>
         <dt>À emporter</dt>
         <dd>
-          @if (inh.emporter.boutiques.length > 0) {
-            {{ inh.emporter.boutiques.join(' · ') }} — TVA
-            <strong>{{ inh.emporter.tva }}</strong>
+          @if (inh.emporter.sold) {
+            @if (inh.emporter.boutiques.length > 0) {
+              {{ inh.emporter.boutiques.join(' · ') }} —
+            }
+            TVA <strong>{{ inh.emporter.tva }}</strong>
           } @else {
             <span class="muted">non proposé</span>
           }
@@ -22,9 +24,11 @@
       <div>
         <dt>Sur place</dt>
         <dd>
-          @if (inh.surPlace.boutiques.length > 0) {
-            {{ inh.surPlace.boutiques.join(' · ') }} — TVA
-            <strong>{{ inh.surPlace.tva }}</strong>
+          @if (inh.surPlace.sold) {
+            @if (inh.surPlace.boutiques.length > 0) {
+              {{ inh.surPlace.boutiques.join(' · ') }} —
+            }
+            TVA <strong>{{ inh.surPlace.tva }}</strong>
           } @else {
             <span class="muted">non proposé</span>
           }

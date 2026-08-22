@@ -26,10 +26,10 @@ const boutiqueChannelsSchema = z.object({
 });
 
 export const setCategoryChannelsPayloadSchema = z.object({
-  b1: boutiqueChannelsSchema,
-  b2: boutiqueChannelsSchema,
-  // Un booléen, pas une paire : un professionnel qui commande en gros ne
-  // consomme ni sur place ni à emporter.
+  /** Clé = identifiant d'emplacement. Une clé absente ⇒ rien n'y est vendu. */
+  boutiques: z.record(z.string(), boutiqueChannelsSchema),
+  // Un booléen, pas une entrée de la carte : la plateforme n'est pas un
+  // emplacement, et un professionnel ne consomme ni sur place ni à emporter.
   b2b: z.boolean(),
 });
 export type SetCategoryChannelsPayload = z.infer<typeof setCategoryChannelsPayloadSchema>;

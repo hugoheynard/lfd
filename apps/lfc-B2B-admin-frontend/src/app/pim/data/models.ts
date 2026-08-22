@@ -47,14 +47,16 @@ export interface BoutiqueChannels {
 }
 
 /**
- * Où et comment un produit se vend. Chaque boutique décline indépendamment « à
- * emporter » et « sur place » ; la plateforme B2B est une seule case, parce
- * qu'un professionnel qui commande en gros ne fait ni l'un ni l'autre. Le labo
- * ne vend pas (absent de la grille).
+ * Où et comment un produit se vend.
+ *
+ * Les emplacements sont une **donnée** : la carte est indexée par identifiant,
+ * jamais par des clés fixes. C'était `{ b1, b2 }`, avec des libellés en dur qui
+ * avaient fini par désigner une boutique absente du référentiel.
+ *
+ * Le B2B reste un booléen à part — la plateforme n'est pas un emplacement.
  */
 export interface SalesChannels {
-  b1: BoutiqueChannels;
-  b2: BoutiqueChannels;
+  boutiques: Record<string, BoutiqueChannels>;
   b2b: boolean;
 }
 

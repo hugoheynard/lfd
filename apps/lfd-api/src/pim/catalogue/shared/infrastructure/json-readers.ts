@@ -88,24 +88,26 @@ export function readSalesChannelsColumn(value: unknown, field: string): SalesCha
   if (!isRecord(value)) {
     throw new CorruptedRecordError(field);
   }
-  return {
-    b1: readBoutiqueChannels(value["b1"] ?? {}, field),
-    b2: readBoutiqueChannels(value["b2"] ?? {}, field),
-    // Absent des lignes antérieures au canal B2B : relu comme « pas vendu »,
-    // jamais comme une corruption — c'est l'état vrai de ces familles.
-    b2b: readModeFlag(value["b2b"], field),
-  };
+  const raw = value["boutiques"];
+  const boutiques: Record<string, BoutiqueChannels> = {};
+  if (isRecord(raw)) {
+    for (const [id, modes] of Object.entries(raw)) {
+      boutiques[id] = readBoutiqueChannels(modes ?? {}, field);
+    }
+  }
+  return { boutiques, b2b: readModeFlag(value["b2b"], field) };
 }
 
-/** `SalesChannels` → objet JSON écrivable par Prisma (clés fixes, pas d'index signature). */
-export function salesChannelsColumn(
-  channels: SalesChannels,
-): Record<string, Record<string, boolean> | boolean> {
-  return {
-    b1: { emporter: channels.b1.emporter, surPlace: channels.b1.surPlace },
-    b2: { emporter: channels.b2.emporter, surPlace: channels.b2.surPlace },
-    b2b: channels.b2b,
-  };
+/** `SalesChannels` → objet JSON écrivable par Prisma (pas d'index signature). */
+export function salesChannelsColumn(channels: SalesChannels): {
+  boutiques: Record<string, Record<string, boolean>>;
+  b2b: boolean;
+} {
+  const boutiques: Record<string, Record<string, boolean>> = {};
+  for (const [id, modes] of Object.entries(channels.boutiques)) {
+    boutiques[id] = { emporter: modes.emporter, surPlace: modes.surPlace };
+  }
+  return { boutiques, b2b: channels.b2b };
 }
 
 /**

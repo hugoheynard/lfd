@@ -113,9 +113,13 @@ class InMemoryRegimes extends TvaRateRepository {
   }
 }
 
+/** Deux emplacements quelconques : ce sont des ids, plus des clés fixes. */
 const ALL_OPEN: SalesChannels = {
-  b1: { emporter: true, surPlace: true },
-  b2: { emporter: true, surPlace: false },
+  boutiques: {
+    emp_village: { emporter: true, surPlace: true },
+    emp_val: { emporter: true, surPlace: false },
+  },
+  b2b: false,
 };
 
 class SequentialIds extends PimIdGenerator {

@@ -16,8 +16,10 @@ function category(overrides: Partial<Category> = {}): Category {
     position: 0,
     isArchived: false,
     channelPreset: {
-      b1: { emporter: true, surPlace: false },
-      b2: { emporter: false, surPlace: false },
+      boutiques: {
+        emp_village: { emporter: true, surPlace: false },
+        emp_val: { emporter: false, surPlace: false },
+      },
       b2b: false,
     },
     emporterTvaId: 'tva_55',
@@ -139,13 +141,9 @@ describe('CategoryPanel — enregistrer', () => {
 });
 
 describe('CategoryPanel — un taux par canal vendu', () => {
+  /** Une grille vide ; `boutiques` porte des IDENTIFIANTS d'emplacement. */
   function channels(over: Partial<Category['channelPreset']> = {}): Category['channelPreset'] {
-    return {
-      b1: { emporter: false, surPlace: false },
-      b2: { emporter: false, surPlace: false },
-      b2b: false,
-      ...over,
-    };
+    return { boutiques: {}, b2b: false, ...over };
   }
 
   it("ne propose aucun taux tant qu'aucun canal n'est coché", () => {
@@ -166,7 +164,11 @@ describe('CategoryPanel — un taux par canal vendu', () => {
 
   it('ne montre que les taux des canaux vendus', () => {
     const { host } = setup(
-      category({ channelPreset: channels({ b1: { emporter: true, surPlace: false } }) }),
+      category({
+        channelPreset: channels({
+          boutiques: { emp_village: { emporter: true, surPlace: false } },
+        }),
+      }),
     );
 
     expect(rateLabels(host)).toHaveLength(1);
@@ -184,7 +186,7 @@ describe('CategoryPanel — un taux par canal vendu', () => {
     const { host } = setup(
       category({
         channelPreset: channels({
-          b1: { emporter: true, surPlace: true },
+          boutiques: { emp_village: { emporter: true, surPlace: true } },
           b2b: true,
         }),
       }),

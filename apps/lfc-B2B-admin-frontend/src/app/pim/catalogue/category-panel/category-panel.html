@@ -13,6 +13,7 @@
     <fold-element-title variant="eyebrow" icon="places" title="Canaux par défaut" />
     <app-channel-matrix
       [channels]="draftChannels()"
+      [emplacements]="emplacements()"
       [showState]="false"
       (channelsChange)="draftChannels.set($event)"
     />

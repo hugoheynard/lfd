@@ -23,10 +23,11 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
-import { formatPercent } from '../../data/channels';
+import { formatPercent, sellsMode } from '../../data/channels';
 import { ChannelMatrix } from '../channel-matrix/channel-matrix';
 import { CatalogueApi, type Category, type SalesChannels, type TvaRate } from '../catalogue-api';
 import type { CategoryTvaDraft } from '../category-http-api';
+import { EmplacementStore } from '../../emplacements/emplacement-store';
 
 /** Charge passée à `open()` : la famille à régler, et les taux disponibles. */
 export interface CategoryPanelData {
@@ -71,6 +72,7 @@ export class CategoryPanel {
   private readonly api = inject(CatalogueApi);
   private readonly ref = inject(FoldPanelRef);
   private readonly notify = inject(NotifyService);
+  private readonly emplacementStore = inject(EmplacementStore);
 
   readonly data = input<CategoryPanelData | undefined>(undefined);
 
@@ -85,6 +87,8 @@ export class CategoryPanel {
   });
 
   protected readonly rates = computed<readonly TvaRate[]>(() => this.data()?.rates ?? []);
+  /** Les points de vente à proposer — la liste du référentiel, jamais une constante. */
+  protected readonly emplacements = computed(() => this.emplacementStore.items());
   protected readonly activeProducts = computed(() => this.category().activeProductCount);
 
   /**
@@ -118,12 +122,8 @@ export class CategoryPanel {
    * concerne le MODE, donc il suffit qu'une boutique le propose. Le B2B est
    * une case unique.
    */
-  protected readonly sellsEmporter = computed(
-    () => this.draftChannels().b1.emporter || this.draftChannels().b2.emporter,
-  );
-  protected readonly sellsSurPlace = computed(
-    () => this.draftChannels().b1.surPlace || this.draftChannels().b2.surPlace,
-  );
+  protected readonly sellsEmporter = computed(() => sellsMode(this.draftChannels(), 'emporter'));
+  protected readonly sellsSurPlace = computed(() => sellsMode(this.draftChannels(), 'surPlace'));
   protected readonly sellsB2b = computed(() => this.draftChannels().b2b);
 
   /** Aucun canal coché ⇒ la section des taux n'a rien à montrer. */

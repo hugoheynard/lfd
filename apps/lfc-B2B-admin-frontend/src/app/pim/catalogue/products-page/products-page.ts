@@ -21,6 +21,7 @@ import {
 } from 'fold-ng';
 
 import { boutiquesWith, formatPercent, resolveChannels } from '../../data/channels';
+import { EmplacementStore } from '../../emplacements/emplacement-store';
 import { ShopifyApi, type ProductBinding, type SyncStatus } from '../../channels/shopify-api';
 
 import {
@@ -45,11 +46,7 @@ const SYNC_VARIANTS: Record<SyncStatus, FoldBadgeVariant> = {
   failed: 'alert',
 };
 
-const NO_CHANNELS: SalesChannels = {
-  b1: { emporter: false, surPlace: false },
-  b2: { emporter: false, surPlace: false },
-  b2b: false,
-};
+const NO_CHANNELS: SalesChannels = { boutiques: {}, b2b: false };
 
 @Component({
   selector: 'app-products-page',
@@ -74,6 +71,10 @@ const NO_CHANNELS: SalesChannels = {
 })
 export class ProductsPage {
   private readonly api = inject(CatalogueApi);
+  private readonly emplacementStore = inject(EmplacementStore);
+
+  /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
+  protected readonly emplacements = this.emplacementStore.items;
   private readonly shopify = inject(ShopifyApi);
   private readonly router = inject(Router);
 
@@ -216,11 +217,11 @@ export class ProductsPage {
   }
 
   protected rowEmporter(product: Product): string[] {
-    return boutiquesWith(this.rowChannels(product), 'emporter');
+    return boutiquesWith(this.rowChannels(product), 'emporter', this.emplacements());
   }
 
   protected rowSurPlace(product: Product): string[] {
-    return boutiquesWith(this.rowChannels(product), 'surPlace');
+    return boutiquesWith(this.rowChannels(product), 'surPlace', this.emplacements());
   }
 
   protected rowInherited(product: Product): boolean {

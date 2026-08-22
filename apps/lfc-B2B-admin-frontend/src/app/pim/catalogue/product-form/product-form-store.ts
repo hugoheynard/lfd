@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
-import { boutiquesWith, formatPercent } from '../../data/channels';
+import { boutiquesWith, formatPercent, sellsMode } from '../../data/channels';
+import { EmplacementStore } from '../../emplacements/emplacement-store';
 import type {
   AllergenEntry,
   AllergenScope,
@@ -36,6 +37,14 @@ export interface AllergenGroup {
 export interface ModeInheritance {
   readonly boutiques: readonly string[];
   readonly tva: string;
+  /**
+   * Le mode est-il vendu ? **Distinct** de la liste de noms ci-dessus : savoir
+   * qu'un mode se vend et savoir nommer les boutiques sont deux faits, et le
+   * second peut manquer (référentiel pas encore chargé) sans que le premier
+   * soit faux. L'écran affichait « non proposé » dès que les noms manquaient,
+   * et cachait la TVA derrière eux.
+   */
+  readonly sold: boolean;
 }
 
 export interface CategoryInheritanceView {
@@ -100,6 +109,10 @@ const EMPTY_EDITORIAL: EditorialFields = {
 export class ProductFormStore {
   private readonly products = inject(ProductHttpApi);
   private readonly api = inject(CatalogueApi);
+  private readonly emplacementStore = inject(EmplacementStore);
+
+  /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
+  readonly emplacements = this.emplacementStore.items;
   private readonly reference = inject(ReferenceApi);
 
   readonly kinds = KINDS;
@@ -164,11 +177,13 @@ export class ProductFormStore {
     return {
       categoryName: category.name.fr,
       emporter: {
-        boutiques: boutiquesWith(category.channelPreset, 'emporter'),
+        sold: sellsMode(category.channelPreset, 'emporter'),
+        boutiques: boutiquesWith(category.channelPreset, 'emporter', this.emplacements()),
         tva: tva(category.emporterTvaId),
       },
       surPlace: {
-        boutiques: boutiquesWith(category.channelPreset, 'surPlace'),
+        sold: sellsMode(category.channelPreset, 'surPlace'),
+        boutiques: boutiquesWith(category.channelPreset, 'surPlace', this.emplacements()),
         tva: tva(category.surPlaceTvaId),
       },
     };
