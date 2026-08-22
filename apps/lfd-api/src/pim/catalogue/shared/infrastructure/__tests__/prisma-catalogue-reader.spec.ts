@@ -4,6 +4,7 @@ import { TvaRateRepository } from "../../../../commerce/domain/ports/tva-rate.re
 import { CatalogueReader } from "../../domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import { ProductRepository } from "../../../product/domain/ports/product.repository.js";
+import { CategoryNotFoundError } from "../../../category/domain/errors/category-errors.js";
 import { PrismaCatalogueReader } from "../prisma-catalogue-reader.js";
 
 /** Le peu de l'agrégat que le lecteur touche : ses taux, d'un bloc. */
@@ -62,11 +63,15 @@ describe("PrismaCatalogueReader.tvaPercents", () => {
     expect(rates.surPlace).toBeNull();
   });
 
-  it("rend null/null pour une catégorie introuvable", async () => {
+  /**
+   * Il rendait `null/null` — exactement ce que rend une famille bien réelle
+   * dont personne n'a réglé la TVA. Deux causes (un rattachement cassé / un
+   * taux à régler), deux gestes, et un seul symptôme à l'écran. Le pousseur
+   * Shopify, seul appelant, attrape déjà les erreurs de cette lecture et les
+   * rend visibles dans son rapport plutôt que de tomber.
+   */
+  it("REFUSE une catégorie introuvable, au lieu de la dire non réglée", async () => {
     const reader = await build(null, {});
-    expect(await reader.tvaPercents("nope")).toEqual({
-      emporter: null,
-      surPlace: null,
-    });
+    await expect(reader.tvaPercents("nope")).rejects.toBeInstanceOf(CategoryNotFoundError);
   });
 });

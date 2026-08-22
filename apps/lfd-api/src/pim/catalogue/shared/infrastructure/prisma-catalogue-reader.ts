@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
+import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
+
 import { TvaRateRepository } from "../../../commerce/domain/ports/tva-rate.repository.js";
 import {
   CatalogueReader,
@@ -47,10 +49,19 @@ export class PrismaCatalogueReader extends CatalogueReader {
     return all.filter((product) => wanted.has(product.id)).map((p) => p.snapshot());
   }
 
+  /**
+   * Une famille INCONNUE n'est pas une famille non réglée.
+   *
+   * Elle rendait `{ emporter: null, surPlace: null }` — exactement ce que rend
+   * une famille bien réelle dont personne n'a réglé la TVA. Deux causes, deux
+   * gestes (réparer un rattachement / régler un taux), un seul symptôme. Le
+   * refus est donc explicite ; son appelant, le pousseur Shopify, l'attrape
+   * déjà et le rend visible dans son rapport plutôt que de tomber.
+   */
   async tvaPercents(categoryId: string): Promise<CategoryTvaPercents> {
     const category = await this.categories.findById(categoryId);
     if (category === null) {
-      return { emporter: null, surPlace: null };
+      throw new CategoryNotFoundError(categoryId);
     }
     return {
       emporter: await this.percentOf(category.tvaIds.emporter),
@@ -59,7 +70,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
   }
 
   /**
-   * Les familles vivantes, avec leur taux « à emporter » résolu.
+   * Les familles vivantes, avec leurs taux résolus — « à emporter » **et** B2B.
    *
    * Les taux sont lus **une fois** et indexés : résoudre famille par famille
    * ferait N+1 requêtes pour une table qui tient en quelques lignes.
