@@ -58,11 +58,22 @@ export function optionalManagementCredentials(): Auth0ManagementCredentials | nu
  * De quoi parler au stockage d'un **usage** : son bucket, ses clés — ou `null`
  * si ce stockage n'est pas configuré.
  *
- * **Ce qui est propre à l'usage, et ce qui ne l'est pas.** L'endpoint et la
- * région sont des faits du COMPTE : ils ne changent pas d'un bucket à l'autre,
- * et les répéter par usage produirait des copies à tenir alignées à la main. Le
- * bucket et les clés, eux, appartiennent à l'usage — c'est ce qui permet à un
- * jeton de n'ouvrir QUE ce bucket.
+ * **Ce qui est propre à l'usage, et ce qui ne l'est pas.** Le bucket et les
+ * clés appartiennent à l'usage — c'est ce qui permet à un jeton de n'ouvrir QUE
+ * ce bucket. La région est un fait du COMPTE (`auto` partout).
+ *
+ * ⚠️ **L'endpoint N'EN EST PAS UN**, contrairement à ce que cette même page a
+ * affirmé jusqu'au 2026-08-22. Il dépend de la JURIDICTION du bucket, qui se
+ * choisit à sa création :
+ *
+ * - `lfc-b2b-kbis` est en juridiction **EU** → `…{account}.eu.r2.cloudflarestorage.com`
+ * - `lfc-media` n'a aucune juridiction         → `…{account}.r2.cloudflarestorage.com`
+ *
+ * Un seul `R2_ENDPOINT` ne peut donc pas servir les deux : celui de l'autre
+ * rend une erreur S3 opaque au premier dépôt. L'endpoint est par usage, avec
+ * repli sur la valeur commune — ce qui garde une configuration à une variable
+ * tant que tous les buckets partagent une juridiction, et la rend correcte dès
+ * qu'ils divergent.
  *
  * Cette isolation est le vrai sujet : les KBIS sont des pièces d'identité
  * d'entreprise. Le jour où un autre bucket sert à des assets publics, un jeton
@@ -86,7 +97,7 @@ export function optionalR2Storage(usage: R2StorageUsage): S3StorageConfig | null
         "renseignez les trois, ou aucun.",
     );
   }
-  const endpoint = optionalString("R2_ENDPOINT");
+  const endpoint = optionalString(names.endpoint) ?? optionalString("R2_ENDPOINT");
   const region = optionalString("R2_REGION");
   return {
     bucket,
@@ -108,17 +119,22 @@ export type R2StorageUsage = "kbis" | "media";
  * ce qu'on lit quand on cherche d'où vient un bucket ou quelle clé l'ouvre.
  */
 const R2_SETTINGS: Readonly<
-  Record<R2StorageUsage, { bucket: string; accessKeyId: string; secretAccessKey: string }>
+  Record<
+    R2StorageUsage,
+    { bucket: string; accessKeyId: string; secretAccessKey: string; endpoint: string }
+  >
 > = {
   kbis: {
     bucket: "R2_KBIS_BUCKET",
     accessKeyId: "R2_KBIS_ACCESS_KEY_ID",
     secretAccessKey: "R2_KBIS_SECRET_ACCESS_KEY",
+    endpoint: "R2_KBIS_ENDPOINT",
   },
   media: {
     bucket: "R2_MEDIA_BUCKET",
     accessKeyId: "R2_MEDIA_ACCESS_KEY_ID",
     secretAccessKey: "R2_MEDIA_SECRET_ACCESS_KEY",
+    endpoint: "R2_MEDIA_ENDPOINT",
   },
 };
 

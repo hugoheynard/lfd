@@ -60,8 +60,13 @@ const RUNTIME_KEYS = [
   "RESEND_WEBHOOK_SECRET",
   // Stockage des pièces (KBIS). Endpoint et région sont des faits du COMPTE ;
   // bucket et clés appartiennent à l'USAGE, pour qu'un jeton n'ouvre que le sien.
+  // ⚠️ `R2_ENDPOINT` n'est PAS un fait du compte : il dépend de la juridiction
+  // du bucket. Il reste le repli commun, et chaque usage peut le surcharger —
+  // ce qu'il FAUT ici, les KBIS étant en juridiction EU et les médias non.
   "R2_ENDPOINT",
   "R2_REGION",
+  "R2_KBIS_ENDPOINT",
+  "R2_MEDIA_ENDPOINT",
   "R2_KBIS_BUCKET",
   "R2_KBIS_ACCESS_KEY_ID",
   "R2_KBIS_SECRET_ACCESS_KEY",

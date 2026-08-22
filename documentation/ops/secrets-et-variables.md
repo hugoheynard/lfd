@@ -215,6 +215,14 @@ l'une manque. Un bucket accessible sans domaine qui le sert produirait le pire
 des trois états : les octets partent, la base enregistre une adresse que
 personne ne résout, et rien ne le dit avant l'affichage — longtemps après.
 
+⚠️ **`R2_ENDPOINT` n'est pas un fait du compte.** Il dépend de la
+**juridiction** du bucket, choisie à sa création : `lfc-b2b-kbis` est en
+juridiction EU (`…{compte}.eu.r2.cloudflarestorage.com`), `lfc-media` n'a aucune
+juridiction (`…{compte}.r2.cloudflarestorage.com`). D'où `R2_KBIS_ENDPOINT` et
+`R2_MEDIA_ENDPOINT`, deux Variables, avec repli sur `R2_ENDPOINT` quand tous les
+buckets partagent une juridiction. Une seule valeur pour les deux rend une
+erreur S3 opaque au premier dépôt.
+
 Le jeton doit être **restreint au bucket média**. C'est tout l'intérêt d'avoir
 séparé les usages : les visuels sont publics par construction, les KBIS sont des
 pièces d'identité d'entreprise, et un jeton fuité depuis le premier ne doit pas

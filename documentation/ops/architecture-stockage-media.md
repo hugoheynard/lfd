@@ -153,6 +153,14 @@ supprimer, et laisse des `MediaAsset` orphelins s'accumuler.
 
 ### 4.3 Le hint `WEUR`, pas la juridiction `eu`
 
+> **Conséquence non anticipée, découverte à la création (2026-08-22).** Deux
+> buckets de juridictions différentes n'ont pas le même **endpoint S3** :
+> `…{compte}.eu.r2.cloudflarestorage.com` pour le KBIS, `…{compte}.r2.cloudflarestorage.com`
+> pour les médias. Le code n'avait qu'un `R2_ENDPOINT`, documenté comme « un
+> fait du COMPTE » — c'était faux, et le premier dépôt aurait échoué sur une
+> erreur S3 opaque. L'endpoint est désormais **par usage** (`R2_KBIS_ENDPOINT`,
+> `R2_MEDIA_ENDPOINT`), avec repli sur la valeur commune.
+
 Les deux sont **irréversibles à la création** du bucket, ce qui justifie de
 trancher ici plutôt qu'au moment du clic.
 
@@ -206,15 +214,28 @@ migration de contenu — c'est ce que le `storageKey` nullable achète.
 
 ## 6. Le partage des gestes
 
-**Chez l'humain, au tableau de bord.** Les valeurs de jeton ne transitent ni par
-un terminal, ni par un fil de conversation, ni par un fichier du dépôt — elles
-vont du tableau de bord d'origine aux secrets GitHub, directement.
+**Au tableau de bord — 1 et 2 faits le 2026-08-22.**
 
-1. Créer le bucket `lfc-media`, hint **WEUR**, **sans** juridiction.
-2. Lui attacher le domaine `media.lafoliecoffee.info`.
-3. Créer un jeton R2 **restreint à ce seul bucket**, en lecture-écriture, et le
-   poser en secrets : `R2_MEDIA_BUCKET`, `R2_MEDIA_ACCESS_KEY_ID`,
-   `R2_MEDIA_SECRET_ACCESS_KEY` (cf. [`secrets-et-variables.md`](secrets-et-variables.md)).
+1. ✅ Bucket `lfc-media`, **Western Europe (WEUR)**, classe Standard, **sans**
+   juridiction. Endpoint : `https://{compte}.r2.cloudflarestorage.com`.
+2. ✅ Domaine `media.lafoliecoffee.info` rattaché (CNAME `media` → `lfc-media`).
+   Le DNS résout ; le certificat s'émet en quelques minutes. L'URL de
+   développement `r2.dev` est restée **désactivée**, comme il se doit dès qu'un
+   domaine sert.
+3. ⬜ **Le jeton reste à créer** — et il ne se crée pas depuis une session
+   assistée : sa valeur s'afficherait à l'écran, alors qu'un secret va du
+   tableau de bord d'origine aux secrets GitHub, directement, sans passer par un
+   terminal ni par un fil de conversation. Le jeton doit être **restreint au
+   seul bucket `lfc-media`**, en lecture-écriture.
+
+Les Variables à poser, elles, ne sont pas des secrets :
+
+| Nom                        | Valeur                                         |
+| -------------------------- | ---------------------------------------------- |
+| `R2_MEDIA_BUCKET`          | `lfc-media`                                    |
+| `R2_MEDIA_PUBLIC_BASE_URL` | `https://media.lafoliecoffee.info`             |
+| `R2_MEDIA_ENDPOINT`        | `https://{compte}.r2.cloudflarestorage.com`    |
+| `R2_KBIS_ENDPOINT`         | `https://{compte}.eu.r2.cloudflarestorage.com` |
 
 **Dans le code — fait.** Rien de tout cela n'était un prérequis : le stockage
 est derrière un port, et l'absence de configuration donne un refus explicite
